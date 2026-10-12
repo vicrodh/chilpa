@@ -228,7 +228,8 @@ pub struct FolderEntry {
     pub artwork_path: Option<String>,
     /// How many folders sit in it.
     pub folders: usize,
-    /// The record it is, when its files sit in it and are all of one.
+    /// The record it is, when its files sit in it and are the whole of one.
+    /// A disc of a box set holds part of a record, and is a folder.
     pub album_id: Option<i64>,
 }
 
@@ -730,6 +731,13 @@ impl Library {
                 })
             })?
             .collect::<rusqlite::Result<Vec<_>>>()?;
+        let mut folders = folders;
+        let whole = self.album_track_counts(folders.iter().filter_map(|f| f.album_id))?;
+        for folder in &mut folders {
+            if folder.album_id.is_some_and(|id| whole.get(&id).is_some_and(|&all| all > folder.tracks)) {
+                folder.album_id = None;
+            }
+        }
         let sql = format!(
             "{} {ROW} {FROM} JOIN folder_tracks ft ON ft.id = t.id WHERE instr(substr(ft.location, ?3), '/') = 0
              ORDER BY coalesce(t.release_disc, t.disc_number), t.track_number, t.external_id", folder_tracks()
@@ -737,6 +745,22 @@ impl Library {
         let mut stmt = self.db.prepare(&sql)?;
         let tracks = stmt.query_map(rusqlite::params![from, to, cut], row)?.collect::<rusqlite::Result<Vec<_>>>()?;
         Ok((folders, tracks))
+    }
+
+    /// How many tracks of the library each of those records has.
+    fn album_track_counts(&self, ids: impl Iterator<Item = i64>) -> rusqlite::Result<std::collections::HashMap<i64, usize>> {
+        let ids: Vec<i64> = ids.collect();
+        let mut counts = std::collections::HashMap::new();
+        for chunk in ids.chunks(500) {
+            let marks = vec!["?"; chunk.len()].join(",");
+            let sql = format!("SELECT t.album_id, count(*) FROM tracks t WHERE {LOCAL} AND t.present = 1 AND t.album_id IN ({marks}) GROUP BY t.album_id");
+            let mut stmt = self.db.prepare(&sql)?;
+            for row in stmt.query_map(params_from_iter(chunk.iter()), |r| Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)? as usize)))? {
+                let (id, count) = row?;
+                counts.insert(id, count);
+            }
+        }
+        Ok(counts)
     }
 
     /// How many tracks there are under `dir`, all the way down.
@@ -1005,13 +1029,33 @@ mod tests {
         let names: Vec<(String, usize)> = folders.iter().map(|f| (f.name.clone(), f.tracks)).collect();
         assert_eq!(names, [("Disc 1".to_string(), 2), ("Disc 2".to_string(), 1)]);
         assert_eq!(folders[0].path, "/m/Box/Disc 1");
-        assert_eq!((folders[0].folders, folders[0].album_id), (0, Some(1)), "its files sit in it and are of one record");
+        assert_eq!((folders[0].folders, folders[0].album_id), (0, None), "a disc holds part of its record, and is a folder");
         let (top, _) = lib.folder_children("/m").unwrap();
         let box_folder = top.iter().find(|f| f.name == "Box").unwrap();
         assert_eq!((box_folder.folders, box_folder.album_id), (2, None), "a folder of folders is a folder");
         assert_eq!(tracks.iter().map(|t| t.id).collect::<Vec<_>>(), [4], "only what sits in it");
         assert_eq!(lib.folder_track_count("/m/Box").unwrap(), 4, "Box0 is not under Box");
         assert_eq!(lib.folder_paths("/m/Box/").unwrap().len(), 4, "a trailing slash is the same folder");
+    }
+
+    #[test]
+    fn a_folder_that_holds_a_whole_record_is_that_record() {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.db.execute("INSERT INTO albums (id, title, album_artist) VALUES (1, 'Box', 'X'), (2, 'Single', 'Y')", []).unwrap();
+        for (id, path, album) in [(1, "/m/Box/Disc 1/01.flac", 1), (2, "/m/Box/Disc 2/01.flac", 1), (3, "/m/Single/01.flac", 2), (4, "/m/Single/02.flac", 2)] {
+            lib.db
+                .execute(
+                    "INSERT INTO tracks (id, source_id, external_id, title, album_id, added_at) VALUES (?1, ?2, ?3, 'T', ?4, 1)",
+                    params![id, source, path, album],
+                )
+                .unwrap();
+        }
+        let (discs, _) = lib.folder_children("/m/Box").unwrap();
+        assert_eq!(discs.iter().map(|f| f.album_id).collect::<Vec<_>>(), [None, None], "each disc is a folder of its own");
+        let (top, _) = lib.folder_children("/m").unwrap();
+        let single = top.iter().find(|f| f.name == "Single").unwrap();
+        assert_eq!(single.album_id, Some(2), "every track of it sits in it");
     }
 
     #[test]
