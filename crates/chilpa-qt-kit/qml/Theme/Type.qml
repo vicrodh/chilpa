@@ -4,9 +4,11 @@ import QtQuick
 // Typography (design/01-tokens.md 2). Sizes are given in pixels and applied
 // as point sizes, because the design uses half pixels (12.5, 11.5, 10.5) and
 // `font.pixelSize` only takes whole ones. At the 96 dpi logical resolution
-// Qt reports for a scaled desktop, a point is 4/3 of a pixel.
+// Qt reports on Linux and Windows, a point is 4/3 of a pixel. On a Mac Qt
+// reports 72, a point is one pixel, and 0.75 drew every text at three
+// quarters of its size there.
 QtObject {
-    readonly property real pointsPerPixel: 0.75
+    readonly property real pointsPerPixel: Qt.platform.os === "osx" ? 1 : 0.75
 
     // A record's, an artist's or a playlist's name at the head of its page.
     readonly property real display: 23 * pointsPerPixel
