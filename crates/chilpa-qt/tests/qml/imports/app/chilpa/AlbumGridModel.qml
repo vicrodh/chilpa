@@ -1,6 +1,6 @@
 import QtQuick
 ListModel {
-    property int limit: 0; property string kind; property string key; property string order; property string group; property string filter; property int contentRev; property int albums: 0; property int columns: 0; property int maxRows: 0
+    property int limit: 0; property string kind; property string key; property string order; property string group; property string filter; property int contentRev; property int albums: kind === "recentlyAdded" ? 2 : 0; property int columns: 0; property int maxRows: 0
     property int rev: 0
     property int expanded: -1
     property int fresh: -1
