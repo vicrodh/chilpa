@@ -1,6 +1,7 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
@@ -16,7 +17,9 @@ Rectangle {
     property bool expanded
     // Only where a grid can open one under the row (ADR-0007).
     property bool canExpand: true
-    readonly property bool favorite: Ratings.favorite("album", albumId, Ratings.rev)
+    readonly property var nativeInfo: albumId < 0 ? JSON.parse(Sources.card(albumId, Library.remoteRev) || "{}") : ({})
+    readonly property bool favoriteSupported: albumId > 0 || !!nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")
+    readonly property bool favorite: nativeInfo.plugin ? nativeInfo.favorite === true : Ratings.favorite("album", albumId, Ratings.rev)
     readonly property var sources: JSON.parse(AlbumActions.sources(albumId, Library.contentRev) || "[]")
     readonly property var information: JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}")
     readonly property string genre: information.genre || ""
@@ -157,7 +160,8 @@ Rectangle {
             }
             IconButton {
                 // A source's record is a favorite of the service, not of the library.
-                visible: overlay.albumId >= 0
+                objectName: "albumFavorite"
+                visible: overlay.favoriteSupported
                 size: Metrics.overlayButton
                 iconSize: Metrics.overlayIcon
                 round: true
@@ -166,7 +170,12 @@ Rectangle {
                 glyph: overlay.favorite ? Icons.heartFilled : Icons.heart
                 filled: overlay.favorite
                 tip: overlay.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev)
-                onClicked: Ratings.setFavorite("album", overlay.albumId, !overlay.favorite)
+                onClicked: {
+                    if (overlay.nativeInfo.plugin)
+                        Sources.command("native", overlay.nativeInfo.plugin, JSON.stringify({action:"favorite",ref:overlay.nativeInfo.ref,on:!overlay.favorite}))
+                    else
+                        Ratings.setFavorite("album", overlay.albumId, !overlay.favorite)
+                }
             }
             IconButton {
                 id: more

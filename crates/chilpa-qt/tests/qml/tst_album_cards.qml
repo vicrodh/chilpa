@@ -108,6 +108,25 @@ TestCase {
         mouseMove(card, card.width / 2, card.height + 40)
         card.albumId = 0; card.year = ""
     }
+    function test_source_album_overlay_uses_its_native_favorite() {
+        Sources.show({cards: {"-7": {plugin: "test", ref: "album:record", favorite: false}}})
+        card.albumId = -7
+        mouseMove(card, card.width / 2, card.width / 2)
+        const favorite = findChild(card, "albumFavorite")
+        tryVerify(() => favorite !== null && favorite.visible)
+        compare(favorite.checked, false)
+        mouseClick(favorite)
+        const command = Sources.asked[Sources.asked.length - 1]
+        compare(command[0], "native")
+        compare(command[1], "test")
+        compare(JSON.parse(command[2]), {action: "favorite", ref: "album:record", on: true})
+        Sources.show({cards: {"-7": {plugin: "test", ref: "album:record", favorite: true}}})
+        Library.remoteRev++
+        tryCompare(favorite, "checked", true)
+        mouseMove(card, card.width / 2, card.height + 40)
+        card.albumId = 0
+        Sources.show({cards: {}})
+    }
     function test_quality_is_visible_without_card_hover_and_has_a_tooltip() {
         const badge = findChild(card, "albumQualityBadge")
         verify(badge.visible)

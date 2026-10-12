@@ -60,7 +60,7 @@ Item {
         onWheel: (wheel) => wheel.accepted = true
     }
 
-    ElevatedShadow { target: panel; radius: panel.radius }
+    ElevatedShadow { target: panel; radius: panel.radius; subtle: bar.docked }
 
     Rectangle {
         id: panel
