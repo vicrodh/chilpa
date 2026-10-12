@@ -260,7 +260,8 @@ fn empty_queries_and_every_dimension_have_defined_results() {
 #[test]
 fn source_adapters_can_log_stable_keys_before_tracks_are_cached() {
     let lib = fixture();
-    for source in [1, 2] {
+    let plugin = lib.source_id("plugin", "app.chilpa.fixture").unwrap();
+    for source in [1, 2, plugin] {
         let mut e = event(&lib, 1, 1000, Some(1800), 1000);
         e.context = ListenContext {
             source_id: Some(source),
@@ -268,18 +269,19 @@ fn source_adapters_can_log_stable_keys_before_tracks_are_cached() {
             album_external_id: "opaque-album".into(),
             title: "Remote song".into(),
             album: "Remote album".into(),
+            artwork_path: if source == plugin { "/cache/source.jpg".into() } else { String::new() },
             genres: vec!["Rock; Blues".into(), "rock".into()],
             ..Default::default()
         };
         lib.record_listen(&e).unwrap();
     }
     let f = ListenFilter::default();
-    assert_eq!(lib.listening_summary(&f).unwrap().distinct_tracks, 2);
+    assert_eq!(lib.listening_summary(&f).unwrap().distinct_tracks, 3);
     assert_eq!(
         lib.listening_buckets(&f, ListenDimension::Album, ListenOrder::Key, 10)
             .unwrap()
             .len(),
-        2
+        3
     );
     assert_eq!(
         lib.listening_buckets(&f, ListenDimension::Genre, ListenOrder::Key, 10)
@@ -287,6 +289,13 @@ fn source_adapters_can_log_stable_keys_before_tracks_are_cached() {
             .len(),
         2
     );
+    let (history, _) = lib.listening_history(&f, "", 0, 10).unwrap();
+    let source = history.iter().find(|entry| entry.source_id == Some(plugin)).unwrap();
+    assert_eq!((source.external_id.as_str(), source.album_external_id.as_str()), ("opaque-track", "opaque-album"));
+    assert_eq!(source.artwork_path.as_deref(), Some("/cache/source.jpg"));
+    assert_eq!(lib.listening_source(plugin).unwrap(), Some(("plugin".into(), "app.chilpa.fixture".into())));
+    assert_eq!(lib.listening_source_art(plugin, "opaque-album", true).unwrap().as_deref(), Some("/cache/source.jpg"));
+    assert_eq!(lib.listening_source_art(plugin, "opaque-track", false).unwrap().as_deref(), Some("/cache/source.jpg"));
 }
 
 #[test]
@@ -377,6 +386,18 @@ fn the_history_finds_every_word_in_a_track_its_artist_or_its_record() {
     assert_eq!(lib.listening_history(&filter, "nothing", 0, 10).unwrap().1, 0);
     let late = ListenFilter { from: Some(7200), ..ListenFilter::default() };
     assert_eq!(lib.listening_history(&late, "one", 0, 10).unwrap().1, 1, "the search keeps the period's bounds");
+}
+
+#[test]
+fn history_keeps_library_and_server_cover_scope() {
+    let lib = fixture();
+    lib.db.execute_batch("UPDATE albums SET artwork_path = '/covers/album.jpg' WHERE id = 1;
+        UPDATE tracks SET release_artwork = '/covers/server-disc.jpg' WHERE id = 2;").unwrap();
+    lib.record_listen(&event(&lib, 1, 1000, Some(0), 1000)).unwrap();
+    lib.record_listen(&event(&lib, 2, 2000, Some(0), 1000)).unwrap();
+    let (history, _) = lib.listening_history(&ListenFilter::default(), "", 0, 10).unwrap();
+    assert_eq!(history[0].artwork_path.as_deref(), Some("/covers/server-disc.jpg"));
+    assert_eq!(history[1].artwork_path.as_deref(), Some("/covers/album.jpg"));
 }
 
 #[test]

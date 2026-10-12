@@ -64,6 +64,7 @@ impl Chilpa {
         started: i64,
     ) -> ListenContext {
         let mut context = ListenContext::default();
+        let cover = self.now.artwork_path.clone();
         // A source's track: its stable id, and its record's as the catalog
         // read it, so the history and the home can name the record and find
         // it again. Asked before the library, which holds the facade.
@@ -112,6 +113,9 @@ impl Chilpa {
                 context.album_artist = tags.album_artist.clone().unwrap_or_default();
                 context.genres = tags.genres.clone();
             }
+        }
+        if std::path::Path::new(&cover).is_absolute() {
+            context.artwork_path = cover;
         }
         context.utc_offset_seconds = lib.local_utc_offset(started).ok().flatten();
         context

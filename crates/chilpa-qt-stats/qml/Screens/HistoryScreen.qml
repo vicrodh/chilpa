@@ -22,7 +22,7 @@ Item {
     property int at: 1
     property string query
     readonly property bool rich: SettingsModel.density === "rich"
-    readonly property var doc: JSON.parse(Stats.history(at, perPage, query, I18n.rev) || "{}")
+    readonly property var doc: JSON.parse(Stats.history(at, perPage, query, I18n.rev + Library.contentRev + Library.remoteRev + Library.remoteArtRev) || "{}")
     readonly property var rows: doc.rows || []
     readonly property real wide: Math.min(width - 2 * Metrics.contentX, Charts.widest) // derived: padding on both sides
 

@@ -1482,3 +1482,9 @@ UPDATE tracks SET revision = NULL
 pub(super) const MIGRATION_V38: &str = r#"
 ALTER TABLE sources ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1;
 "#;
+
+/// I keep the cover that was available when a source played, even when its
+/// catalog card is no longer cached.
+pub(super) const MIGRATION_V39: &str = r#"
+ALTER TABLE play_context ADD COLUMN artwork_path TEXT NOT NULL DEFAULT '';
+"#;

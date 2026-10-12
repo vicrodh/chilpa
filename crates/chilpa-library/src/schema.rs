@@ -24,7 +24,7 @@ use later::*;
 use steps::*;
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 38;
+pub const VERSION: i64 = 39;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -32,7 +32,7 @@ pub const VERSION: i64 = 38;
 /// Each step runs once and is never edited after shipping: a database that
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
-const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30, MIGRATION_V31, MIGRATION_V32, MIGRATION_V33, MIGRATION_V34, MIGRATION_V35, MIGRATION_V36, MIGRATION_V37, MIGRATION_V38];
+const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30, MIGRATION_V31, MIGRATION_V32, MIGRATION_V33, MIGRATION_V34, MIGRATION_V35, MIGRATION_V36, MIGRATION_V37, MIGRATION_V38, MIGRATION_V39];
 
 /// Where the copy of a library about to be upgraded goes.
 ///
@@ -341,6 +341,19 @@ mod tests {
             migrate(&db).unwrap_or_else(|e| panic!("from version {v}: {e}"));
             assert_eq!(db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).unwrap(), VERSION, "from version {v}");
         }
+    }
+
+    #[test]
+    fn adding_listen_art_keeps_an_existing_play_and_its_context() {
+        let db = Connection::open_in_memory().unwrap();
+        stop_at(&db, 38);
+        db.execute_batch("INSERT INTO sources(id, provider, instance) VALUES (1, 'plugin', 'fixture');
+            INSERT INTO play_events(id, source_id, started_at, played_ms, duration_ms) VALUES (1, 1, 100, 1000, 1000);
+            INSERT INTO play_context(event_id, external_id, album_external_id, title) VALUES (1, 'track:1', 'album:1', 'Song');").unwrap();
+        migrate(&db).unwrap();
+        let (title, art): (String, String) = db.query_row("SELECT title, artwork_path FROM play_context WHERE event_id = 1", [], |r| Ok((r.get(0)?, r.get(1)?))).unwrap();
+        assert_eq!((title.as_str(), art.as_str()), ("Song", ""));
+        assert_eq!(db.query_row("SELECT count(*) FROM play_events", [], |r| r.get::<_, i64>(0)).unwrap(), 1);
     }
 
     #[test]

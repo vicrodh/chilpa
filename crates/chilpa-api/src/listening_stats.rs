@@ -25,6 +25,26 @@ pub(crate) fn khz(rate: u32) -> String {
 /// How many of the top artists, records and tracks the report names.
 const TOP: usize = 5;
 
+/// I read the source id and a length-checked reference, including its colons.
+fn source_key<'a>(key: &'a str, prefix: &str) -> Option<(i64, &'a str)> {
+    let (source, rest) = key.strip_prefix(prefix)?.split_once(':')?;
+    let (length, reference) = rest.split_once(':')?;
+    (reference.chars().count() == length.parse::<usize>().ok()?)
+        .then_some((source.parse().ok()?, reference))
+}
+
+fn plugin_art(catalog: &crate::source_catalog::Catalog, plugin: &str, track: &str, album: &str) -> String {
+    if !track.is_empty() {
+        let path = crate::source_opener::entry_of(plugin, track);
+        if let Some((_, art)) = catalog.track_by_path(&path).filter(|(_, art)| !art.is_empty()) {
+            return art;
+        }
+        catalog.want_art_of(&path);
+    }
+    if album.is_empty() { return String::new(); }
+    catalog.card_by_identity(plugin, album).and_then(|card| catalog.card(card.id)).map(|card| card.art).unwrap_or_default()
+}
+
 /// The days of the week from Monday, as a date says them short.
 const WEEKDAYS: [&str; 7] = [
     i18n::mark("Mon"), i18n::mark("Tue"), i18n::mark("Wed"), i18n::mark("Thu"), i18n::mark("Fri"), i18n::mark("Sat"), i18n::mark("Sun"),
@@ -151,6 +171,7 @@ impl crate::Chilpa {
     /// in the future is today), with weeks starting on `first_day` as Qt
     /// counts it, Monday 1 to Sunday 7.
     pub fn stats_report_json(&mut self, kind: &str, anchor: &str, first_day: i64) -> String {
+        let catalog = self.catalog.clone();
         let Some(lib) = self.library() else { return "{}".into() };
         let kind = Kind::of(kind);
         let week_start = (first_day - 1).rem_euclid(7) as usize;
@@ -187,11 +208,22 @@ impl crate::Chilpa {
             .map(|b| {
                 let id = b.key.as_deref().and_then(|k| k.strip_prefix("album:")).and_then(|id| id.parse::<i64>().ok());
                 let album = id.and_then(|id| lib.album(id).ok().flatten()).map(|(a, _)| a);
+                let source = b.key.as_deref().and_then(|key| source_key(key, "source:"))
+                    .and_then(|(source_id, reference)| {
+                        let (provider, plugin) = lib.listening_source(source_id).ok().flatten()?;
+                        if provider != crate::source_opener::PROVIDER { return None; }
+                        catalog.card_by_identity(&plugin, reference).and_then(|card| catalog.card(card.id))
+                    });
+                let art = album.as_ref().and_then(|a| a.artwork_path.clone()).filter(|art| !art.is_empty())
+                    .or_else(|| source.as_ref().map(|c| c.art.clone()).filter(|art| !art.is_empty()))
+                    .or_else(|| b.key.as_deref().and_then(|key| source_key(key, "source:"))
+                        .and_then(|(source_id, reference)| lib.listening_source_art(source_id, reference, true).ok().flatten()))
+                    .unwrap_or_default();
                 json!({
-                    "title": album.as_ref().map(|a| a.title.clone()).unwrap_or(b.label.clone()),
-                    "artist": album.as_ref().map(|a| a.album_artist.clone()).unwrap_or_default(),
-                    "art": album.as_ref().and_then(|a| a.artwork_path.clone()).unwrap_or_default(),
-                    "id": id.unwrap_or(0),
+                    "title": album.as_ref().map(|a| a.title.clone()).or_else(|| source.as_ref().map(|c| c.title.clone())).unwrap_or(b.label.clone()),
+                    "artist": album.as_ref().map(|a| a.album_artist.clone()).or_else(|| source.as_ref().map(|c| c.artist.clone())).unwrap_or_default(),
+                    "art": art,
+                    "id": id.or_else(|| source.as_ref().map(|c| c.id)).unwrap_or(0),
                     "plays": b.metrics.plays,
                 })
             })
@@ -202,10 +234,25 @@ impl crate::Chilpa {
             .map(|b| {
                 let id = b.key.as_deref().and_then(|k| k.strip_prefix("track:")).and_then(|id| id.parse::<i64>().ok());
                 let track = id.and_then(|id| lib.tracks_by_ids(&[id]).ok()).and_then(|mut rows| rows.pop());
+                let source = b.key.as_deref().and_then(|key| source_key(key, ""))
+                    .and_then(|(source_id, reference)| {
+                        let (provider, plugin) = lib.listening_source(source_id).ok().flatten()?;
+                        (provider == crate::source_opener::PROVIDER).then(|| {
+                            let path = crate::source_opener::entry_of(&plugin, reference);
+                            let track = catalog.track_by_path(&path);
+                            if track.as_ref().is_none_or(|(_, art)| art.is_empty()) { catalog.want_art_of(&path); }
+                            track
+                        }).flatten()
+                    });
+                let art = track.as_ref().and_then(|t| t.artwork_path.clone()).filter(|art| !art.is_empty())
+                    .or_else(|| source.as_ref().map(|(_, art)| art.clone()).filter(|art| !art.is_empty()))
+                    .or_else(|| b.key.as_deref().and_then(|key| source_key(key, ""))
+                        .and_then(|(source_id, reference)| lib.listening_source_art(source_id, reference, false).ok().flatten()))
+                    .unwrap_or_default();
                 json!({
                     "title": b.label,
-                    "artist": track.as_ref().map(|t| t.artist.clone()).unwrap_or_default(),
-                    "art": track.as_ref().and_then(|t| t.artwork_path.clone()).unwrap_or_default(),
+                    "artist": track.as_ref().map(|t| t.artist.clone()).or_else(|| source.as_ref().map(|(t, _)| t.artist.clone())).unwrap_or_default(),
+                    "art": art,
                     "plays": b.metrics.plays,
                 })
             })
@@ -282,6 +329,7 @@ impl crate::Chilpa {
     /// `per_page` listens, 20, 50 or 100, and with `search` only the listens
     /// whose track, artist or record hold every word of it.
     pub fn listening_history_json(&mut self, page: i64, per_page: i64, search: &str) -> String {
+        let catalog = self.catalog.clone();
         let Some(lib) = self.library() else { return "{}".into() };
         let per_page = if matches!(per_page, 20 | 50 | 100) { per_page as usize } else { 20 };
         let page = page.max(1) as usize;
@@ -300,6 +348,14 @@ impl crate::Chilpa {
                 } else {
                     day_label(day, true)
                 };
+                let art = e.artwork_path.clone().filter(|art| !art.is_empty()).unwrap_or_else(|| {
+                    let Some((provider, plugin)) = e.source_id.and_then(|id| lib.listening_source(id).ok().flatten()) else { return String::new(); };
+                    if provider == crate::source_opener::PROVIDER {
+                        plugin_art(&catalog, &plugin, &e.external_id, &e.album_external_id)
+                    } else {
+                        String::new()
+                    }
+                });
                 json!({
                     "time": e.local_time, "day": day, "clock": e.local_time.get(11..16).unwrap_or_default(),
                     "played": crate::format::clock(e.played_ms),
@@ -307,7 +363,7 @@ impl crate::Chilpa {
                     "title": e.title, "artist": e.artist, "album": e.album,
                     "played_ms": e.played_ms, "duration_ms": e.duration_ms, "skipped": e.skipped,
                     "bit_perfect": e.bit_perfect, "quality": quality(e.bit_depth, e.sample_rate_hz),
-                    "art": e.artwork_path.unwrap_or_default(), "album_id": e.album_id.unwrap_or(0),
+                    "art": art, "album_id": e.album_id.unwrap_or(0),
                 })
             })
             .collect();
@@ -336,6 +392,14 @@ fn kind_name(kind: Kind) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn source_keys_keep_the_plugin_reference_intact() {
+        assert_eq!(source_key("source:3:10:album:mx:ñ", "source:"), Some((3, "album:mx:ñ")));
+        assert_eq!(source_key("3:8:track:42", ""), Some((3, "track:42")));
+        assert_eq!(source_key("source:3:9:album:mx:ñ", "source:"), None);
+        assert_eq!(source_key("track:12", ""), None);
+    }
 
     #[test]
     fn a_change_is_a_whole_percent_and_nothing_before_is_no_change() {

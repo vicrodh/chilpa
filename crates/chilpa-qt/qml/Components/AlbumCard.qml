@@ -80,7 +80,9 @@ Item {
     }
 
     Rectangle {
-        x: Metrics.overlayPad; y: Metrics.overlayPad
+        anchors.right: cover.right
+        anchors.top: cover.top
+        anchors.margins: Metrics.overlayPad
         width: Metrics.overlayCheck; height: Metrics.overlayCheck
         visible: card.selecting && !hover.hovered
         radius: width / 2 // derived: a circle
