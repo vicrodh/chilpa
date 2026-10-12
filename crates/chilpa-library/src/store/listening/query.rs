@@ -1,7 +1,7 @@
 //! I query the log by event start, using captured local time or an explicit UTC offset.
 
 use crate::store::Library;
-use rusqlite::{params, Row};
+use rusqlite::{params, OptionalExtension, Row};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ListenFilter {
