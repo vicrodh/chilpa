@@ -6,12 +6,12 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
-import app.chilpa.wizard
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/wizard/qml/Patterns" as WizardPatterns
 
 // Settings rows follow the facade schema.
 Item {
@@ -263,7 +263,7 @@ Item {
         }
     }
 
-    OutputDiagnosisDialog { id: diagnosis; settingsPage: rows }
+    WizardPatterns.OutputDiagnosisDialog { id: diagnosis; settingsPage: rows }
 
     // A sync moving, a server coming back: its rows follow while shown.
     Timer {
