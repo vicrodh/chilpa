@@ -399,6 +399,58 @@ fn match_rate(device: AudioObjectID, rate_hz: u32) {
     );
 }
 
+/// The widest integer word the wire takes at the rate the device is at.
+///
+/// A device keeps the word it was last left at. The Macaron sat at 16 bits,
+/// so a 24-bit track was cut to 16 on the way out, and DoP -- whose markers
+/// live in the top bits of a 24-bit word -- would have reached the DAC as
+/// noise. QBZ never sets it; here it is asked for like the rate, read back,
+/// and never required: the verdict reads the wire as it ended up.
+fn widen_wire(device: AudioObjectID) {
+    let rate = read::current_rate(device);
+    let integer = |f: &AudioStreamBasicDescription| {
+        f.mFormatID == kAudioFormatLinearPCM
+            && f.mFormatFlags & kAudioFormatFlagIsFloat == 0
+            && f.mFormatFlags & kAudioFormatFlagIsSignedInteger != 0
+    };
+    for stream in read::output_streams(device) {
+        let widest = read::available_physical_formats(stream)
+            .into_iter()
+            // A format published with no rate of its own takes any.
+            .filter(|f| integer(f) && (f.mSampleRate == 0.0 || (f.mSampleRate - rate).abs() < 0.5))
+            .max_by_key(|f| (f.mBitsPerChannel, f.mFormatFlags & kAudioFormatFlagIsNonMixable == 0));
+        let Some(mut widest) = widest else { continue };
+        widest.mSampleRate = rate;
+        let now = read::format(stream, kAudioStreamPropertyPhysicalFormat);
+        if now.is_some_and(|f| integer(&f) && f.mBitsPerChannel >= widest.mBitsPerChannel) {
+            continue;
+        }
+        let outcome = match set(stream, &global(kAudioStreamPropertyPhysicalFormat), &widest) {
+            Err(status) => format!("refused ({status})"),
+            Ok(()) if !wire_settles(stream, widest.mBitsPerChannel) => "did not settle".to_string(),
+            Ok(()) => continue,
+        };
+        chilpa_audio::diagnostics::trace(
+            "coreaudio",
+            "wire_not_widened",
+            format_args!("stream={stream} bits={} outcome={outcome}", widest.mBitsPerChannel),
+        );
+    }
+}
+
+/// Waits for a stream's wire to carry at least that many bits: the same
+/// patience as the rate, for the same reason.
+fn wire_settles(stream: AudioObjectID, bits: u32) -> bool {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    while std::time::Instant::now() < deadline {
+        if read::format(stream, kAudioStreamPropertyPhysicalFormat).is_some_and(|f| f.mBitsPerChannel >= bits) {
+            return true;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    false
+}
+
 /// The output unit, bound to one device and started. Torn down on drop.
 struct Unit(AudioUnit);
 
@@ -535,6 +587,7 @@ impl CoreAudioSink {
             self.hold = Some(Hold::take(self.device, &self.name)?);
         }
         match_rate(self.device, self.stream.sample_rate_hz);
+        widen_wire(self.device);
         self.unit = Some(Unit::open(self.device, &self.name, self.stream, &self.shared)?);
         Ok(())
     }

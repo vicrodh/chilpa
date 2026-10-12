@@ -135,6 +135,10 @@ pub const kAudioFormatLinearPCM: u32 = fourcc(b"lpcm");
 pub const kAudioFormatFlagIsFloat: u32 = 1 << 0;
 pub const kAudioFormatFlagIsSignedInteger: u32 = 1 << 2;
 pub const kAudioFormatFlagIsPacked: u32 = 1 << 3;
+/// A stream nobody else can be mixed into. Of two wire formats equally
+/// wide, the one without it is chosen: it keeps what the program is handed
+/// unchanged.
+pub const kAudioFormatFlagIsNonMixable: u32 = 1 << 6;
 
 /// Nobody has the device. CoreAudio spells "no owner" as -1.
 pub const kAudioHogModeNobody: i32 = -1;
