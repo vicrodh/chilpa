@@ -8,9 +8,11 @@ use super::artwork::{self, Candidate, Waiting};
 use super::draft::{HomeState, Read};
 use super::save::{self, Plan, Written};
 use chilpa_library::sidecar::{load, Home};
+use chilpa_library::scan::ContainedTrack;
 use chilpa_library::EditTrack;
 use chilpa_meta::{discogs, musicbrainz, Failure, Hit, Http, Net, Provider, Release, Reply};
 use chilpa_tags::edit::{inspect, placed, snapshot, Layers, Snapshot};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
@@ -106,10 +108,9 @@ impl Worker {
 }
 
 /// What a track's container says of it, as what a file would have said.
-fn held(track: &EditTrack, container: &str) -> Option<Snapshot> {
-    let inside = chilpa_core::sacd_tracks::disc_images().tracks(Path::new(container))?;
-    let tags = inside.into_iter().find(|t| t.path == track.external_id)?.info.tags;
-    Some(Snapshot {
+fn held(track: &EditTrack, inside: Option<&[ContainedTrack]>, xml: Option<&chilpa_core::sacd_xml::XmlMetadata>) -> Option<Snapshot> {
+    let tags = inside?.iter().find(|t| t.path == track.external_id)?.info.tags.clone();
+    let mut snapshot = Snapshot {
         title: tags.title,
         artist_credit: tags.artists,
         album: tags.album,
@@ -120,19 +121,34 @@ fn held(track: &EditTrack, container: &str) -> Option<Snapshot> {
         disc_number: tags.disc_number.map(u32::from),
         musicbrainz_recording_id: tags.musicbrainz_recording_id,
         ..Snapshot::default()
-    })
+    };
+    if let Some((_, number)) = chilpa_core::sacd_tracks::parse(Path::new(&track.external_id)) {
+        if let Some(xml) = xml { xml.overlay_snapshot(number, &mut snapshot); }
+    }
+    Some(snapshot)
 }
 
 fn open(session: u64, tracks: Vec<EditTrack>) -> Done {
     let mut reads = Vec::with_capacity(tracks.len());
     let mut homes: Vec<HomeState> = Vec::new();
     let mut files: Vec<PathBuf> = Vec::new();
+    let mut containers: HashMap<String, (Option<Vec<ContainedTrack>>, Option<chilpa_core::sacd_xml::XmlMetadata>)> = HashMap::new();
     for track in &tracks {
         let read = match &track.container {
-            Some(container) => match held(track, container) {
-                Some(said) => Read { said, known: true, placed: Vec::new() },
-                None => Read::default(),
-            },
+            Some(container) => {
+                let (inside, xml) = containers.entry(container.clone()).or_insert_with(|| {
+                    let inside = chilpa_core::sacd_tracks::disc_images().tracks(Path::new(container));
+                    let expected: Vec<_> = inside.as_ref().into_iter().flatten()
+                        .filter_map(|track| chilpa_core::sacd_tracks::parse(Path::new(&track.path)).map(|(_, number)| number))
+                        .collect();
+                    let xml = chilpa_core::sacd_xml::read_for(Path::new(container), &expected);
+                    (inside, xml)
+                });
+                match held(track, inside.as_deref(), xml.as_ref()) {
+                    Some(said) => Read { said, known: true, placed: Vec::new() },
+                    None => Read::default(),
+                }
+            }
             None => {
                 let path = Path::new(&track.external_id);
                 files.push(path.to_path_buf());
@@ -150,7 +166,9 @@ fn open(session: u64, tracks: Vec<EditTrack>) -> Done {
                 Ok(sidecar) => (sidecar, String::new()),
                 Err(e) => (None, e.to_string()),
             };
-            homes.push(HomeState { home, of: track.external_id.clone(), sidecar, unreadable });
+            let xml = track.container.as_ref().and_then(|container| containers.get(container))
+                .and_then(|(_, xml)| xml.as_ref()).map(|xml| xml.path.clone());
+            homes.push(HomeState { home, of: track.external_id.clone(), sidecar, unreadable, xml });
         }
     }
     Done::Opened { session, tracks, reads, homes, layers: inspect(&files) }

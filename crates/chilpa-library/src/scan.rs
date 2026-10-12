@@ -59,6 +59,9 @@ pub trait Containers {
     /// The tracks a file holds, or `None` when it holds none: a DVD image
     /// beside the music is neither an error nor audio.
     fn tracks(&self, path: &Path) -> Option<Vec<ContainedTrack>>;
+
+    /// A side file's change marker, folded into the container's scan stamp.
+    fn evidence_stamp(&self, _: &Path) -> u64 { 0 }
 }
 
 /// Every file is one track.
@@ -349,7 +352,7 @@ impl Found<'_> {
             .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
             .map(|d| d.as_nanos() as i64)
             .unwrap_or(0);
-        let size = meta.len() as i64;
+        let size = (meta.len() as i64) ^ (containers.evidence_stamp(file) as i64);
         let container = file.display().to_string();
         let home = Home::of("", Some(&container));
         let stale = homes.of(lib, &home, &container).stale;

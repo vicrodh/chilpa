@@ -553,6 +553,7 @@ dependencies = [
  "chilpa-tags",
  "chilpa-wasapi",
  "ebur128",
+ "roxmltree",
  "rusqlite",
  "tempfile",
 ]

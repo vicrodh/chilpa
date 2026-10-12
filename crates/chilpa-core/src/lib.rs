@@ -21,6 +21,7 @@ pub mod remote;
 mod preload;
 pub mod playback_events;
 pub mod sacd_tracks;
+pub mod sacd_xml;
 pub mod seek_waveform;
 pub mod loudness;
 /// The HiFi Wizard: its configuration is PipeWire's, so it is Linux's.

@@ -13,6 +13,7 @@ use crate::Chilpa;
 use chilpa_library::sidecar::{split, stage, Home, Override, Sidecar, SidecarError, StagedHome, VERSION};
 use chilpa_library::{AlbumEdit, Put, TrackEdit};
 use chilpa_tags::edit::{self, Change, Cover, FileChanges, Options, Refusal, WriteError};
+use chilpa_core::sacd_xml::{self, XmlChanges};
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 
@@ -36,8 +37,16 @@ pub(crate) struct Plan {
     pub file_tracks: Vec<i64>,
     pub options: Options,
     pub homes: Vec<HomePlan>,
+    pub xmls: Vec<XmlPlan>,
     pub cover: Option<Waiting>,
     pub now: i64,
+}
+
+pub(crate) struct XmlPlan {
+    pub image: PathBuf,
+    pub path: PathBuf,
+    pub changes: XmlChanges,
+    pub tracks: Vec<i64>,
 }
 
 /// What a save left on disk.
@@ -47,6 +56,7 @@ pub(crate) struct Written {
     pub files: Vec<i64>,
     /// The tracks whose home's sidecar was written or removed.
     pub sidecars: Vec<i64>,
+    pub xmls: Vec<i64>,
     /// The homes that changed, each with a track of it.
     pub homes: Vec<(Home, String)>,
     /// Where the record's cover is now. Empty if it did not change.
@@ -55,7 +65,7 @@ pub(crate) struct Written {
 
 impl Written {
     pub fn nothing(&self) -> bool {
-        self.files.is_empty() && self.sidecars.is_empty()
+        self.files.is_empty() && self.sidecars.is_empty() && self.xmls.is_empty()
     }
 }
 
@@ -123,7 +133,7 @@ fn put(changes: &mut FileChanges, of_the_record: bool, name: &str, value: &str) 
 fn goes(cell: &Cell, mode: Mode) -> bool {
     match mode {
         Mode::Sidecar => cell.dirty(),
-        Mode::Files => cell.materializes(),
+        Mode::Files | Mode::Xml => cell.materializes(),
     }
 }
 
@@ -131,6 +141,13 @@ fn goes(cell: &Cell, mode: Mode) -> bool {
 pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Waiting>, now: i64) -> Plan {
     let mut files: Vec<FileChanges> = draft.rows.iter().map(|row| FileChanges::none(PathBuf::from(&row.track.external_id))).collect();
     let mut sidecars: Vec<Sidecar> = draft.homes.iter().map(|h| h.sidecar.clone().unwrap_or_else(|| Sidecar::new(now))).collect();
+    let mut xmls: Vec<Option<XmlPlan>> = draft.homes.iter().enumerate().map(|(home, state)| {
+        if mode != Mode::Xml { return None; }
+        let path = state.xml.as_ref()?.clone();
+        let image = draft.rows.iter().find(|row| row.home == home)?.track.container.as_ref()?;
+        Some(XmlPlan { image: PathBuf::from(image), path, changes: XmlChanges::default(),
+            tracks: draft.rows.iter().filter(|row| row.home == home).map(|row| row.track.id).collect() })
+    }).collect();
     let in_home = |home: usize| draft.rows.iter().enumerate().filter(move |(_, row)| row.home == home);
     let to_the_file = |row: &Row, of_the_record: bool, name: &'static str| mode == Mode::Files && row.placed.contains(&tag_name(of_the_record, name));
 
@@ -140,6 +157,11 @@ pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Wa
             continue;
         }
         for (home, sidecar) in sidecars.iter_mut().enumerate() {
+            if let Some(xml) = xmls[home].as_mut().filter(|_| sacd_xml::album_field(field.name)) {
+                xml.changes.album.insert(field.name.to_owned(), cell.now.clone());
+                sidecar.album.put(field.name, if cell.now.is_empty() { Override::Cleared } else { Override::Absent });
+                continue;
+            }
             // What every file of the home ends up saying is not laid over
             // any of them.
             let mut laid = Override::Absent;
@@ -160,6 +182,16 @@ pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Wa
             let cell = &row.cells[at];
             if !goes(cell, mode) {
                 continue;
+            }
+            if let Some(xml) = xmls[row.home].as_mut().filter(|_| sacd_xml::track_field(field.name)) {
+                if let Some((_, number)) = chilpa_core::sacd_tracks::parse(std::path::Path::new(&row.track.external_id)) {
+                    xml.changes.tracks.entry(number).or_default().insert(field.name.to_owned(), cell.now.clone());
+                    let sidecar = &mut sidecars[row.home];
+                    if sidecar.tracks.contains_key(&row.key) || cell.now.is_empty() {
+                        sidecar.track_mut(&row.key).put(field.name, if cell.now.is_empty() { Override::Cleared } else { Override::Absent });
+                    }
+                    continue;
+                }
             }
             let laid = if to_the_file(row, false, field.name) {
                 if cell.now != row.file[at] {
@@ -182,7 +214,7 @@ pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Wa
 
     if let Some(waiting) = &cover {
         match mode {
-            Mode::Sidecar => {}
+            Mode::Sidecar | Mode::Xml => {}
             Mode::Files => {
                 for changes in &mut files {
                     changes.cover = Change::Set(Cover { bytes: waiting.bytes.clone(), mime: waiting.mime });
@@ -196,7 +228,7 @@ pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Wa
         }
     }
 
-    let beside = cover.is_some() && mode == Mode::Sidecar;
+    let beside = cover.is_some() && mode != Mode::Files;
     let homes = draft
         .homes
         .iter()
@@ -214,7 +246,8 @@ pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Wa
         .collect();
 
     let file_tracks = draft.rows.iter().map(|row| row.track.id).collect();
-    Plan { files, file_tracks, options, homes, cover, now }
+    let xmls = xmls.into_iter().flatten().filter(|xml| !xml.changes.album.is_empty() || !xml.changes.tracks.is_empty()).collect();
+    Plan { files, file_tracks, options, homes, xmls, cover, now }
 }
 
 fn refusal(why: Refusal) -> String {
@@ -265,6 +298,14 @@ pub(crate) fn run(session: u64, plan: Plan, finished: &Sender<Done>) -> Done {
         Err(e) => return failed(said(e).0, written),
     };
 
+    let mut xmls = Vec::with_capacity(plan.xmls.len());
+    for xml in &plan.xmls {
+        match sacd_xml::stage(&xml.image, &xml.path, &xml.changes) {
+            Ok(staged) => xmls.extend(staged.into_iter().map(|staged| (staged, xml))),
+            Err(reason) => return failed(chilpa_i18n::t_args("the SACD XML could not be written: {}", &[&reason]), written),
+        }
+    }
+
     // 2. The sidecars and their covers, written beside themselves.
     let cover = plan.cover.as_ref().map(|w| (w.bytes.as_slice(), w.extension));
     let mut homes: Vec<(StagedHome, &HomePlan)> = Vec::with_capacity(plan.homes.len());
@@ -292,7 +333,15 @@ pub(crate) fn run(session: u64, plan: Plan, finished: &Sender<Done>) -> Done {
         }
     }
 
-    // 4. Then the sidecars.
+    // 4. External XML is replaced only after every stage has succeeded.
+    for (staged, xml) in xmls {
+        if let Err(reason) = staged.land() {
+            return failed(chilpa_i18n::t_args("the SACD XML could not be written: {}", &[&reason]), written);
+        }
+        written.xmls.extend(&xml.tracks);
+    }
+
+    // 5. Then the sidecars.
     for (staged, home) in homes {
         let cover_at = staged.cover().map(|p| p.to_string_lossy().into_owned());
         if let Err(e) = staged.land() {
@@ -305,7 +354,7 @@ pub(crate) fn run(session: u64, plan: Plan, finished: &Sender<Done>) -> Done {
         }
     }
 
-    // 5. A cover that went into the files is shown from the first of them.
+    // 6. A cover that went into the files is shown from the first of them.
     if plan.cover.is_some() && written.cover.is_empty() {
         if let Some(first) = changed.first() {
             let kept = chilpa_tags::extract_artwork(first, &chilpa_core::artwork_cache()).ok().flatten();
@@ -388,6 +437,10 @@ impl Chilpa {
                 return editor.refuse(refused);
             }
         }
+        if editor.mode == Mode::Xml {
+            let refused = super::view::xml_refused(draft);
+            if !refused.is_empty() { return editor.refuse(refused); }
+        }
         let made = plan(draft, editor.mode, Options { id3: editor.id3, secondary_layers: editor.secondary_layers }, editor.waiting.clone(), crate::now_unix());
         for home in &made.homes {
             let state = draft.homes.iter().find(|h| h.home == home.home);
@@ -423,7 +476,7 @@ impl Chilpa {
     /// What a save left is told to the library, and the editor is left as
     /// it has to be after it.
     pub(super) fn metadata_saved(&mut self, written: Written, failed: Option<String>) {
-        let reached: Vec<i64> = written.files.iter().chain(&written.sidecars).copied().collect();
+        let reached: Vec<i64> = written.files.iter().chain(&written.sidecars).chain(&written.xmls).copied().collect();
         let edit = self.metadata.draft.as_ref().filter(|_| !reached.is_empty()).map(|draft| project(draft, &reached, &written.cover));
         let now = crate::now_unix();
 
@@ -485,6 +538,32 @@ mod tests {
             preview: PathBuf::from("/nowhere/preview.png"),
             from: "file",
         }
+    }
+
+    #[test]
+    fn sacd_xml_save_writes_supported_fields_and_keeps_other_fields_in_sidecar() {
+        let mut first = track(1, 1);
+        first.external_id = "sacd:/m/disc.iso#1".into();
+        first.container = Some("/m/disc.iso".into());
+        let mut second = track(2, 2);
+        second.external_id = "sacd:/m/disc.iso#2".into();
+        second.container = first.container.clone();
+        let home = super::super::draft::HomeState {
+            home: Home::of("", Some("/m/disc.iso")), of: first.external_id.clone(),
+            sidecar: None, unreadable: String::new(), xml: Some(PathBuf::from("/m/disc.xml")),
+        };
+        let mut draft = Draft::open(&album(), vec![first, second], vec![read(1), read(2)], vec![home]);
+        draft.set_album("title", "New album");
+        draft.set_album("label", "New label");
+        draft.set_track(1, "title", "New track");
+        let made = plan(&draft, Mode::Xml, options(), None, 5);
+        assert!(made.files.iter().all(FileChanges::is_empty));
+        assert_eq!(made.xmls.len(), 1);
+        assert_eq!(made.xmls[0].changes.album["title"], "New album");
+        assert_eq!(made.xmls[0].changes.tracks[&1]["title"], "New track");
+        assert_eq!(made.homes.len(), 1);
+        assert_eq!(made.homes[0].sidecar.album.label, Override::Value("New label".into()));
+        assert!(made.homes[0].sidecar.album.title.is_absent());
     }
 
     #[test]
@@ -583,6 +662,7 @@ mod tests {
             of: "/m/A record/CD2/02.flac".into(),
             sidecar: None,
             unreadable: String::new(),
+            xml: None,
         };
         let mut draft = Draft::open(&album(), vec![track(1, 1), second], vec![read(1), read(2)], vec![home(None), other]);
         draft.set_album("title", "Renamed");
@@ -602,6 +682,7 @@ mod tests {
             of: "/m/A record/CD2/02.flac".into(),
             sidecar: None,
             unreadable: String::new(),
+            xml: None,
         };
         let mut draft = Draft::open(&album(), vec![track(1, 1), second], vec![read(1), read(2)], vec![home(None), other]);
         draft.set_track(2, "title", "Another");
