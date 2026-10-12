@@ -118,6 +118,13 @@ impl Natives {
     pub(crate) fn searches(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|k| k.capabilities["search"] == true)
     }
+    /// A source may declare a smaller per-scene search budget to protect its
+    /// remote quota. Zero opts it out of candidate lookups.
+    pub(crate) fn scene_search_limit(&self, id: &str) -> usize {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id)
+            .and_then(|k| k.capabilities["scene_search_limit"].as_u64())
+            .unwrap_or(100).min(100) as usize
+    }
 
     pub(crate) fn permits(&self, id: &str, capability: &chilpa_plugin::Capability) -> bool {
         self.is_native(id) && self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|k| k.manifest.has(capability))

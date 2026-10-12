@@ -387,6 +387,9 @@ msgstr "Artist radio"
 msgid "Artists"
 msgstr ""
 
+msgid "Artists from this scene"
+msgstr ""
+
 msgid "Artwork"
 msgstr ""
 
@@ -471,6 +474,9 @@ msgstr ""
 msgid "Background image"
 msgstr ""
 
+msgid "Based on {artist} · {genres}"
+msgstr ""
+
 msgid "Between tracks"
 msgstr ""
 
@@ -490,6 +496,9 @@ msgid "Booklet"
 msgstr ""
 
 msgid "Browse for a music folder, or type its full path."
+msgstr ""
+
+msgid "Browse view"
 msgstr ""
 
 msgid "Browse…"
@@ -593,6 +602,9 @@ msgstr ""
 msgid "Checking your audio stack…"
 msgstr ""
 
+msgid "Checking your selected sources…"
+msgstr ""
+
 msgid "Chilpa Native Plugins"
 msgstr "Chilpa Native Plugins"
 
@@ -687,6 +699,9 @@ msgid "Clear"
 msgstr ""
 
 msgid "Clear after this track"
+msgstr ""
+
+msgid "Clear filters"
 msgstr ""
 
 msgid "Clear loop"
@@ -1229,6 +1244,9 @@ msgstr ""
 msgid "FOUNDED IN"
 msgstr ""
 
+msgid "Failed to load albums"
+msgstr ""
+
 msgid "Favorites"
 msgstr ""
 
@@ -1248,6 +1266,9 @@ msgid "Filter albums"
 msgstr ""
 
 msgid "Filter artists"
+msgstr ""
+
+msgid "Filter by genre"
 msgstr ""
 
 msgid "Filter playlists"
@@ -1367,6 +1388,9 @@ msgstr ""
 msgid "Genres"
 msgstr ""
 
+msgid "Genres ({})"
+msgstr ""
+
 msgid "German"
 msgstr ""
 
@@ -1400,10 +1424,19 @@ msgstr ""
 msgid "Grid"
 msgstr ""
 
+msgid "Grid view"
+msgstr ""
+
 msgid "Group album versions"
 msgstr ""
 
 msgid "Group collections"
+msgstr ""
+
+msgid "Group: A-Z"
+msgstr ""
+
+msgid "Group: Off"
 msgstr ""
 
 msgid "Guided DAC Setup"
@@ -1551,6 +1584,12 @@ msgid "In library"
 msgstr ""
 
 msgid "In progress"
+msgstr ""
+
+msgid "Include matches from your plugins?"
+msgstr ""
+
+msgid "Include plugins"
 msgstr ""
 
 msgid "Include source albums in Albums"
@@ -1730,9 +1769,6 @@ msgstr ""
 msgid "Like Track"
 msgstr ""
 
-msgid "Links"
-msgstr ""
-
 msgid "List"
 msgstr ""
 
@@ -1761,6 +1797,9 @@ msgid "Live"
 msgstr ""
 
 msgid "Load more"
+msgstr ""
+
+msgid "Loading albums…"
 msgstr ""
 
 msgid "Loading purchases…"
@@ -2060,6 +2099,12 @@ msgstr ""
 msgid "No"
 msgstr ""
 
+msgid "No albums found"
+msgstr ""
+
+msgid "No artists from this scene were found."
+msgstr ""
+
 msgid "No cover"
 msgstr ""
 
@@ -2114,6 +2159,9 @@ msgstr ""
 msgid "No playlists yet."
 msgstr ""
 
+msgid "No plugin catalog match for this artist"
+msgstr ""
+
 msgid "No plugins installed"
 msgstr ""
 
@@ -2121,6 +2169,9 @@ msgid "No purchases match the current view."
 msgstr "No purchases match the current view."
 
 msgid "No results for"
+msgstr ""
+
+msgid "No results found."
 msgstr ""
 
 msgid "No review available"
@@ -2277,6 +2328,9 @@ msgid "Open account page"
 msgstr ""
 
 msgid "Open album"
+msgstr ""
+
+msgid "Open artist"
 msgstr ""
 
 msgid "Open audio CD"
@@ -2535,6 +2589,9 @@ msgid "Position in Streaming"
 msgstr "Position in Streaming"
 
 msgid "Preferred GPU"
+msgstr ""
+
+msgid "Preparing results…"
 msgstr ""
 
 msgid "Press keys…"
@@ -2843,6 +2900,9 @@ msgstr ""
 msgid "Resume"
 msgstr ""
 
+msgid "Retry"
+msgstr ""
+
 msgid "Revert"
 msgstr ""
 
@@ -2954,6 +3014,9 @@ msgstr ""
 msgid "Search folders"
 msgstr ""
 
+msgid "Search genres"
+msgstr ""
+
 msgid "Search listens"
 msgstr ""
 
@@ -2993,10 +3056,16 @@ msgstr ""
 msgid "Search this page…"
 msgstr ""
 
+msgid "Searching MusicBrainz for {genre} artists…"
+msgstr ""
+
 msgid "Searching for devices…"
 msgstr ""
 
 msgid "Searching…"
+msgstr ""
+
+msgid "Search…"
 msgstr ""
 
 msgid "See all"
@@ -3029,6 +3098,9 @@ msgid "Select"
 msgstr ""
 
 msgid "Select a folder to see its contents."
+msgstr ""
+
+msgid "Select an artist to see their albums"
 msgstr ""
 
 msgid "Select folders"
@@ -3420,6 +3492,9 @@ msgstr ""
 msgid "Theme"
 msgstr ""
 
+msgid "This can take a few minutes when MusicBrainz is busy."
+msgstr ""
+
 msgid "This chapter format is not supported."
 msgstr ""
 
@@ -3439,6 +3514,9 @@ msgid "This episode material could not be loaded."
 msgstr ""
 
 msgid "This folder has no tracks."
+msgstr ""
+
+msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr ""
 
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
@@ -3781,6 +3859,9 @@ msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr ""
 
 msgid "Withdraw approval"
+msgstr ""
+
+msgid "Without plugins"
 msgstr ""
 
 msgid "Working…"
@@ -4144,6 +4225,9 @@ msgid "min"
 msgstr ""
 
 msgid "mono"
+msgstr ""
+
+msgid "nearby"
 msgstr ""
 
 msgid "network"
@@ -4899,10 +4983,16 @@ msgstr ""
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
 msgstr ""
 
+msgid "{} / {} artists"
+msgstr ""
+
 msgid "{} album"
 msgid_plural "{} albums"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "{} albums"
+msgstr ""
 
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr ""
@@ -4920,6 +5010,9 @@ msgid "{} artist"
 msgid_plural "{} artists"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "{} artists"
+msgstr ""
 
 msgid "{} bit at {} Hz, {}"
 msgstr ""

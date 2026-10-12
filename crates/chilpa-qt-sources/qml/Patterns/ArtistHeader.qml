@@ -22,8 +22,11 @@ Item {
     // Showing what the listener keeps of the artist in its source.
     property bool inLibrary: false
     signal toggleNetwork()
+    signal sceneRequested()
+    property bool sceneAvailable: false
     signal libraryChosen(bool on)
     readonly property var sourceInfo: (JSON.parse(Sources.snapshot || "{}").panels || []).find(p => p.id === info.plugin) || ({name: info.plugin || ""})
+    readonly property var validLinks: (info.links || []).filter(l => /^https?:\/\//.test(l.url || ""))
     readonly property string bio: info.description || ""
     // At most 360 characters, cut at the last space, with an ellipsis.
     readonly property string bioShort: {
@@ -34,7 +37,11 @@ Item {
     }
     readonly property bool favorite: local ? Ratings.favorite("artist", info.title || "", Ratings.rev) : info.favorite === true
     function follow(link) {
-        if (/^artist:/.test(link)) Navigation.goKey("source", info.plugin + " native:" + link)
+        if (/^(album|playlist):[^:]+/.test(link)) {
+            const id = Sources.referenceCard(info.plugin, link)
+            if (id) Navigation.go("album", id)
+        } else if (/^artist:[^:]+/.test(link)) Navigation.goKey("source", info.plugin + " native:" + link)
+        else if (/^label:[^:]+/.test(link)) Navigation.goKey("source", info.plugin + " native:" + link)
         else if (/^https?:\/\//.test(link)) Qt.openUrlExternally(link)
     }
     implicitHeight: Math.max(portrait.height, body.height)
@@ -141,14 +148,13 @@ Item {
                 objectName: "networkAction"; round: true; size: Metrics.button32; glyph: SourceGlyphs.spiderWeb; iconFamily: SourceGlyphs.font; checked: header.networkOpen
                 tip: I18n.tr("Network", I18n.rev); onClicked: header.toggleNetwork()
             }
-            // The artist's own links (site, social), when the source has
-            // them. Artist Scene waits for the scene to exist.
+            // The scene and the artist's own links share the overflow menu.
             IconButton {
-                id: more; objectName: "moreAction"; visible: (header.info.links || []).length > 0; round: true; size: Metrics.button32; glyph: Icons.dots; tip: I18n.tr("Links", I18n.rev)
-                onClicked: { moreMenu.entries = (header.info.links || []).map(l => ({ text: l.title || l.url, url: l.url })); moreMenu.open() }
+                id: more; objectName: "moreAction"; visible: header.sceneAvailable || header.validLinks.length > 0; round: true; size: Metrics.button32; glyph: Icons.dots; tip: I18n.tr("More", I18n.rev)
+                onClicked: { moreMenu.entries = (header.sceneAvailable ? [{text:I18n.tr("Artists from this scene", I18n.rev), scene:true}] : []).concat(header.validLinks.map(l => ({ text: l.title || l.url, url: l.url }))); moreMenu.open() }
                 Menu {
                     id: moreMenu; y: parent.height + Metrics.gap4
-                    onChosen: (index) => { const url = entries[index].url; if (url) Qt.openUrlExternally(url) }
+                    onChosen: (index) => { if (entries[index].scene) header.sceneRequested(); else { const url = entries[index].url; if (url) Qt.openUrlExternally(url) } }
                 }
             }
         }
