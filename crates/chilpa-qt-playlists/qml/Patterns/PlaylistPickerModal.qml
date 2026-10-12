@@ -160,6 +160,7 @@ Modal {
             width: parent.width
             height: Math.max(0, parent.height - y - footer.height - parent.spacing)
             // A click on the picker's empty space closes the list.
+            // no cursor: empty space is not a control
             MouseArea { anchors.fill: parent; onClicked: dialog.listOpen = false }
             Column {
                 id: choosing

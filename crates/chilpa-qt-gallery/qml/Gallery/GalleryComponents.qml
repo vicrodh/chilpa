@@ -19,16 +19,6 @@ TitledFlow {
     AlbumDetailModel { id: detail; albumId: added.albumId(0, added.rev) }
     AlbumArtistLine { document: ({artist_html:"<a href=\"0\">Artist</a>",artist_links:[{target:"artist",key:"Artist"}]}) }
     Clipboard {}
-    QtObject {
-        id: playlistManager
-        function open(index) {}
-        function moveCustom(index, by) {}
-        function folderIds() { return [] }
-        function folderNames() { return [] }
-        function setVisible(id, visible) {}
-        function moveToFolder(id, folder) {}
-        function removeFolder(id) {}
-    }
 
     Column {
         width: section.width
@@ -200,26 +190,7 @@ TitledFlow {
         }
         TrackRowEnd { height: Metrics.rowCompact; trackId: 1 }
         PlaylistFolderRow { width: Metrics.sidebarWidth; index: 0; folderId: 1; name: "Road music"; tracks: 4; folderColor: "warning"; expanded: true }
-        Row {
-            spacing: Metrics.gap12
-            PlaylistManagerRow { width: Metrics.playlistManagerCardWidth; index: 0; rowKind: 1; entryId: 1; name: "Road music"; detail: ""; source: ""; sourceName: "Local"; artwork: ""; cover1: ""; cover2: ""; cover3: ""; cover4: ""; colorName: "warning"; tracks: 4; plays: 0; folderId: 0; local: true; visibleInSidebar: true; manager: playlistManager }
-            PlaylistManagerRow { width: Metrics.playlistManagerCardWidth; index: 1; rowKind: 0; entryId: 2; name: "Late Night"; detail: "Quiet records"; source: "demo"; sourceName: "Example source"; artwork: ""; cover1: ""; cover2: ""; cover3: ""; cover4: ""; colorName: ""; tracks: 18; plays: 9; folderId: 0; local: false; visibleInSidebar: true; manager: playlistManager }
-        }
         PlaylistForm { width: Metrics.playlistModalWidth - Metrics.modalInsets; name: "Evening music" }
-        Repeater {
-            model: [
-                { playlist: { name: "Empty playlist", mixed: true, track_count: 0 }, accepts: true, exact: 0, similar: 0 },
-                { playlist: { name: "Already saved", mixed: true, track_count: 12 }, accepts: true, exact: 2, similar: 1 },
-                { playlist: { name: "Source playlist", provider: "Home server", mixed: false, track_count: 9 }, accepts: false, exact: 0, similar: 0 }
-            ]
-            PlaylistTargetRow {
-                required property var modelData
-                required property int index
-                width: Metrics.playlistModalWidth - Metrics.modalInsets
-                rowIndex: index
-                target: modelData
-            }
-        }
         SearchHit { width: Metrics.searchFlyout; index: 0; kind: 1; title: "Mora Vale"; detail: "Artist · 8 records"; art: ""; duration: "" }
         SearchHit { width: Metrics.searchFlyout; index: 1; kind: 4; title: "Blue Weather"; detail: "Mora Vale — Low Orbit"; art: ""; duration: "4:37" }
         SourceCrumbs { width: Metrics.searchFlyout; height: Metrics.breadcrumb; view: ({ name: "Radio", crumbs: ["By country", "Mexico"], explorer: false, columns: [], shortcuts: [{ id: "chilpa:saved", title: "Saved" }] }) }

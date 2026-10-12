@@ -30,6 +30,7 @@ Rectangle {
     clip: true
 
     // A click on the list's own chrome stays in the list.
+    // no cursor: it only keeps the click from the picker under the list
     MouseArea { anchors.fill: parent }
 
     Flickable {

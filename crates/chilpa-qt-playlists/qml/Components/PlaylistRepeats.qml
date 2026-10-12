@@ -20,6 +20,7 @@ Rectangle {
     radius: Metrics.radiusControl
 
     // The picker underneath takes no click while this is asked.
+    // no cursor: it only keeps the click from the picker underneath
     MouseArea { anchors.fill: parent }
 
     Column {

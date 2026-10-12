@@ -29,14 +29,11 @@ crates/chilpa-qt/qml/Components/PaneRow.qml
 crates/chilpa-qt/qml/Components/PlaylistCollage.qml
 crates/chilpa-qt/qml/Components/PlaylistFolderRow.qml
 crates/chilpa-qt/qml/Components/PlaylistForm.qml
-crates/chilpa-qt/qml/Components/PlaylistManagerRow.qml
 crates/chilpa-qt/qml/Components/PlaylistNotice.qml
-crates/chilpa-qt/qml/Components/PlaylistPickerDialog.qml
 crates/chilpa-qt/qml/Components/PlaylistPicker.qml
 crates/chilpa-qt/qml/Components/PlaylistRow.qml
 crates/chilpa-qt/qml/Components/PlaylistSourceChooser.qml
 crates/chilpa-qt/qml/Components/PlaylistSourceWrite.qml
-crates/chilpa-qt/qml/Components/PlaylistTargetRow.qml
 crates/chilpa-qt/qml/Components/PlaylistTree.js
 crates/chilpa-qt/qml/Components/QualityIcon.qml
 crates/chilpa-qt/qml/Components/QueueMenu.qml
@@ -102,7 +99,6 @@ crates/chilpa-qt/qml/Screens/HomeScreen.qml
 crates/chilpa-qt/qml/Screens/LibraryScreen.qml
 crates/chilpa-qt/qml/Screens/ListenListScreen.qml
 crates/chilpa-qt/qml/Screens/PendingScreen.qml
-crates/chilpa-qt/qml/Screens/PlaylistManagerScreen.qml
 crates/chilpa-qt/qml/Screens/PlaylistScreen.qml
 crates/chilpa-qt/qml/Screens/SettingsScreen.qml
 crates/chilpa-qt/qml/Screens/SourceEntryScreen.qml

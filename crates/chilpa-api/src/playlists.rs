@@ -6,6 +6,46 @@
 use super::*;
 use chilpa_plugin::messages;
 
+/// What the add-to-playlist picker says about one target.
+#[derive(Clone, PartialEq, Eq, Debug, serde::Serialize)]
+pub struct PlaylistTarget {
+    pub playlist: Playlist,
+    pub exact: usize,
+    pub similar: usize,
+    pub accepts: bool,
+    /// It belongs where the tracks come from: one of ours for the library's
+    /// tracks, or for a mix of sources; a source's own for that source's.
+    pub same_source: bool,
+    /// What marks it: [`OURS`] for one of ours, the source's own image for
+    /// a source's.
+    pub icon: String,
+}
+
+/// The glyph of Chilpa's own playlists: the tray's mark.
+pub const OURS: &str = "chilpa";
+
+/// Where a carried track comes from: a source of the library, or a plugin.
+#[derive(Clone, PartialEq, Eq, Debug)]
+enum Home {
+    Source(i64),
+    Plugin(String),
+}
+
+/// Where each of the carried tracks comes from, once each.
+fn homes_of(entries: &[chilpa_library::PlaylistEntry]) -> Vec<Home> {
+    let mut homes = Vec::new();
+    for entry in entries {
+        let home = match crate::source_opener::of_plugin(&entry.external_id) {
+            Some((plugin, _)) => Some(Home::Plugin(plugin)),
+            None => entry.source_id.map(Home::Source),
+        };
+        if let Some(home) = home.filter(|home| !homes.contains(home)) {
+            homes.push(home);
+        }
+    }
+    homes
+}
+
 pub(crate) fn playlist_of(p: chilpa_library::StoredPlaylist) -> Playlist {
     let local = p.provider == "local";
     Playlist {
@@ -322,6 +362,9 @@ impl Chilpa {
         let entries = self.mixed_playlist_entries(track_ids, false).unwrap_or_default();
         let native = self.native_playlist_rows();
         let Some(lib) = self.library() else { return Vec::new() };
+        let local = lib.source_id("local", "default").ok();
+        let homes = homes_of(&entries);
+        let plugins = Self::plugins_dir();
         let words: Vec<String> = query.to_lowercase().split_whitespace().map(str::to_string).collect();
         let mut targets: Vec<_> = lib.playlists()
             .unwrap_or_default()
@@ -334,14 +377,20 @@ impl Chilpa {
             .map(|playlist| {
                 let membership = lib.playlist_membership(playlist.id, &entries).unwrap_or_default();
                 let accepts = playlist.writable && (playlist.mixed || entries.iter().all(|entry| entry.source_id == Some(playlist.source_id)));
-                PlaylistTarget { playlist, exact: membership.exact, similar: membership.similar, accepts }
+                // Ours are the library's home, and the home of a mix.
+                let home = if playlist.mixed { local.map(Home::Source) } else { Some(Home::Source(playlist.source_id)) };
+                let same_source = home.is_some_and(|home| homes.iter().all(|h| *h == home) || (playlist.mixed && homes.len() > 1));
+                let icon = if playlist.mixed { OURS.to_string() } else { String::new() };
+                PlaylistTarget { playlist, exact: membership.exact, similar: membership.similar, accepts, same_source, icon }
             })
             .collect();
         let complete = entries.len() == track_ids.len();
         for playlist in native {
             let accepts = complete && playlist.writable && entries.iter().all(|entry| crate::source_opener::of_plugin(&entry.external_id).is_some_and(|(plugin, _)| plugin == playlist.source));
             if words.iter().all(|word| playlist.name.to_lowercase().contains(word)) {
-                targets.push(PlaylistTarget { playlist, exact: 0, similar: 0, accepts });
+                let same_source = !homes.is_empty() && homes.iter().all(|h| *h == Home::Plugin(playlist.source.clone()));
+                let icon = crate::plugin_icons::image_url(&plugins, &playlist.source);
+                targets.push(PlaylistTarget { playlist, exact: 0, similar: 0, accepts, same_source, icon });
             }
         }
         targets.retain(|target| target.playlist.source != crate::source_opener::PROVIDER);
@@ -351,6 +400,16 @@ impl Chilpa {
     }
 
     pub fn add_track_ids_to_playlist(&mut self, playlist_id: i64, track_ids: &[i64]) -> PlaylistAddResult {
+        self.add_track_ids(playlist_id, track_ids, false)
+    }
+
+    /// The same, adding again what the playlist already carries: the
+    /// picker's "Add all tracks".
+    pub fn add_track_ids_again(&mut self, playlist_id: i64, track_ids: &[i64]) -> PlaylistAddResult {
+        self.add_track_ids(playlist_id, track_ids, true)
+    }
+
+    fn add_track_ids(&mut self, playlist_id: i64, track_ids: &[i64], repeats: bool) -> PlaylistAddResult {
         let Some(lib) = self.library() else {
             return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
         };
@@ -373,7 +432,8 @@ impl Chilpa {
         let Ok(membership) = lib.playlist_membership(playlist_id, &entries) else {
             return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
         };
-        let Ok(added) = lib.append_to_playlist(playlist_id, &entries) else {
+        let appended = if repeats { lib.append_again_to_playlist(playlist_id, &entries) } else { lib.append_to_playlist(playlist_id, &entries) };
+        let Ok(added) = appended else {
             return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
         };
         PlaylistAddResult { added, exact: membership.exact, similar: membership.similar, rejected: false }

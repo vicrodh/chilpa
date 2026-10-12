@@ -34,6 +34,9 @@ msgstr "(Re)inicia los servicios de audio de PipeWire"
 msgid "(unreadable manifest)"
 msgstr "(manifest ilegible)"
 
+msgid "+ Create new playlist"
+msgstr "+ Crear playlist nueva"
+
 msgid "-11 LUFS · Loud"
 msgstr "-11 LUFS · Fuerte"
 
@@ -175,6 +178,9 @@ msgstr "Agregar todas a una playlist…"
 msgid "Add all to queue"
 msgstr "Agregar todas a la cola"
 
+msgid "Add all tracks"
+msgstr "Agregar todas"
+
 msgid "Add cover"
 msgstr "Agregar carátula"
 
@@ -183,6 +189,9 @@ msgstr "Añadir carpeta a la biblioteca"
 
 msgid "Add image"
 msgstr "Agregar imagen"
+
+msgid "Add only new tracks"
+msgstr "Agregar solo las nuevas"
 
 msgid "Add server"
 msgstr "Agregar servidor"
@@ -213,6 +222,14 @@ msgstr "Agregadas este mes"
 
 msgid "Adding tracks…"
 msgstr "Agregando pistas…"
+
+msgid "Adding {} track"
+msgid_plural "Adding {} tracks"
+msgstr[0] "Agregando {} pista"
+msgstr[1] "Agregando {} pistas"
+
+msgid "Adding..."
+msgstr "Agregando..."
 
 msgid "Add…"
 msgstr "Agregar…"
@@ -292,10 +309,8 @@ msgstr "Dominios de red permitidos, separados por comas"
 msgid "Alphabetical"
 msgstr "Alfabético"
 
-msgid "Already contains {} track"
-msgid_plural "Already contains {} tracks"
-msgstr[0] "Ya contiene {} pista"
-msgstr[1] "Ya contiene {} pistas"
+msgid "Already in"
+msgstr "Ya está en"
 
 msgid "Already used by {}"
 msgstr "Ya lo usa {}"
@@ -656,6 +671,9 @@ msgstr ""
 msgid "Choose image…"
 msgstr "Elegir imagen…"
 
+msgid "Choose playlist"
+msgstr "Elige una playlist"
+
 msgid "Choose playlist artwork"
 msgstr "Elegir imagen de la playlist"
 
@@ -791,11 +809,6 @@ msgstr "Conectando…"
 msgid "Connection error"
 msgstr "Error de conexión"
 
-msgid "Contains {} similar version"
-msgid_plural "Contains {} similar versions"
-msgstr[0] "Contiene {} versión similar"
-msgstr[1] "Contiene {} versiones similares"
-
 msgid "Continue"
 msgstr "Continuar"
 
@@ -859,11 +872,8 @@ msgstr "Collage de portadas"
 msgid "Coverflow"
 msgstr "Coverflow"
 
-msgid "Create and add"
+msgid "Create & Add"
 msgstr "Crear y agregar"
-
-msgid "Create new playlist"
-msgstr "Crear playlist"
 
 msgid "Create playlist"
 msgstr "Crear playlist"
@@ -1393,6 +1403,9 @@ msgstr "Cuadrícula"
 msgid "Group album versions"
 msgstr "Agrupar versiones de un álbum"
 
+msgid "Group collections"
+msgstr "Agrupar colecciones"
+
 msgid "Guided DAC Setup"
 msgstr "Configuración guiada del DAC"
 
@@ -1671,6 +1684,9 @@ msgstr ""
 
 msgid "Large"
 msgstr "Grande"
+
+msgid "Last playlist"
+msgstr "Última playlist"
 
 msgid "Last.fm opens in the browser to allow Chilpa."
 msgstr "Last.fm se abre en el navegador para permitir a Chilpa."
@@ -1960,6 +1976,9 @@ msgstr "Silenciar"
 msgid "Mute / Unmute"
 msgstr "Silenciar / Activar sonido"
 
+msgid "My Playlist"
+msgstr "Mi playlist"
+
 msgid "My library"
 msgstr "Mi biblioteca"
 
@@ -2041,9 +2060,6 @@ msgstr "Página siguiente"
 msgid "No"
 msgstr "No"
 
-msgid "No compatible playlists. Create one to get started."
-msgstr "No hay playlists compatibles. Crea una para comenzar."
-
 msgid "No cover"
 msgstr "Sin carátula"
 
@@ -2092,8 +2108,8 @@ msgstr "No hay plugins que coincidan"
 msgid "No playable tracks found."
 msgstr "No se encontraron pistas reproducibles."
 
-msgid "No playlists match your search."
-msgstr "No hay playlists que coincidan con tu búsqueda."
+msgid "No playlists found"
+msgstr "No se encontraron playlists"
 
 msgid "No playlists yet."
 msgstr "Todavía no hay playlists."
@@ -2448,6 +2464,9 @@ msgstr "Reproduciendo"
 
 msgid "Playlist"
 msgstr "Playlist"
+
+msgid "Playlist Name"
+msgstr "Nombre de la playlist"
 
 msgid "Playlist artwork in the sidebar"
 msgstr "Imagen de playlist en el sidebar"
@@ -2902,6 +2921,9 @@ msgstr "Guardadas"
 msgid "Saved position"
 msgstr "Posición guardada"
 
+msgid "Saving..."
+msgstr "Guardando..."
+
 msgid "Saving…"
 msgstr "Guardando…"
 
@@ -2938,11 +2960,11 @@ msgstr "Buscar escuchas"
 msgid "Search only while the picker is open. Disconnecting stops the receiver and leaves local playback stopped."
 msgstr "Busca solo mientras el selector está abierto. Al desconectar se detiene el receptor y la reproducción local permanece detenida."
 
-msgid "Search playlists"
-msgstr "Buscar playlists"
-
 msgid "Search playlists and folders"
 msgstr "Buscar playlists y folders"
+
+msgid "Search playlists..."
+msgstr "Buscar playlists..."
 
 msgid "Search plugins"
 msgstr "Buscar plugins"
@@ -3066,6 +3088,9 @@ msgstr "Mostrar en la carpeta"
 msgid "Show in sidebar"
 msgstr "Mostrar en el sidebar"
 
+msgid "Show playlist only from the same source as the track"
+msgstr "Mostrar solo playlists de la misma fuente que la pista"
+
 msgid "Show saved releases in Albums"
 msgstr "Mostrar los releases guardados en Álbumes"
 
@@ -3137,6 +3162,9 @@ msgstr "Suave"
 
 msgid "Software"
 msgstr "Software"
+
+msgid "Some of these tracks were already added"
+msgstr "Algunas de estas pistas ya estaban agregadas"
 
 msgid "Some packages are missing"
 msgstr "Faltan algunos paquetes"
@@ -3434,8 +3462,8 @@ msgstr "Esta salida toma el DSD convertido a PCM. DoP necesita el modo exclusivo
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "Esta salida recibe el DSD convertido a PCM. Solo una tarjeta en hw lo recibe intacto; lo elegido para la tarjeta se conserva."
 
-msgid "This playlist is read-only or belongs to another source."
-msgstr "Esta playlist es de solo lectura o pertenece a otra fuente."
+msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
+msgstr "Esta playlist ya tiene {} de las {} pistas que estás agregando. Agrega solo las nuevas o agrégalas todas, incluidas las repetidas."
 
 msgid "This purchase is unavailable for download."
 msgstr "Esta compra no está disponible para descargar."
@@ -4997,6 +5025,11 @@ msgstr "{} min"
 msgid "{} modified"
 msgstr "{} modificados"
 
+msgid "{} more playlist..."
+msgid_plural "{} more playlists..."
+msgstr[0] "{} playlist más..."
+msgstr[1] "{} playlists más..."
+
 msgid "{} no longer accepts the account; connect again"
 msgstr "{} ya no acepta la cuenta; vuelve a conectar"
 
@@ -5005,6 +5038,9 @@ msgstr "{} de sus pistas salen de {} de tus playlists."
 
 msgid "{} of the list's tracks are gone"
 msgstr "{} de las pistas de la lista ya no están"
+
+msgid "{} of {}"
+msgstr "{} de {}"
 
 msgid "{} of {} files were changed before it failed: {}"
 msgstr "{} de {} archivos se cambiaron antes de que fallara: {}"
@@ -5041,18 +5077,8 @@ msgstr[1] "{} discos"
 msgid "{} sel"
 msgstr "{} sel."
 
-msgid "{} selected track"
-msgid_plural "{} selected tracks"
-msgstr[0] "{} pista seleccionada"
-msgstr[1] "{} pistas seleccionadas"
-
 msgid "{} shown"
 msgstr "{} visibles"
-
-msgid "{} similar version is also there"
-msgid_plural "{} similar versions are also there"
-msgstr[0] "También hay {} versión similar"
-msgstr[1] "También hay {} versiones similares"
 
 msgid "{} song"
 msgid_plural "{} songs"
@@ -5069,21 +5095,11 @@ msgid_plural "{} tracks"
 msgstr[0] "{} pista"
 msgstr[1] "{} pistas"
 
-msgid "{} track added"
-msgid_plural "{} tracks added"
-msgstr[0] "Se agregó {} pista"
-msgstr[1] "Se agregaron {} pistas"
-
 msgid "{} tracks"
 msgstr "{} pistas"
 
 msgid "{} tracks in {} records"
 msgstr "{} pistas en {} discos"
-
-msgid "{} was already there"
-msgid_plural "{} were already there"
-msgstr[0] "{} ya estaba ahí"
-msgstr[1] "{} ya estaban ahí"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "No se permitió a tiempo en {}; vuelve a conectar"

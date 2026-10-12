@@ -15,6 +15,8 @@ pub mod qobject {
         #[qml_element]
         #[qml_singleton]
         #[qproperty(i32, rev)]
+        /// The playlist tracks last went into, this session: the picker pins it.
+        #[qproperty(i64, last_target)]
         type Playlists = super::PlaylistsRust;
 
         #[qinvokable]
@@ -77,9 +79,8 @@ pub mod qobject {
         #[qinvokable] fn write_state(self: Pin<&mut Playlists>, source: &QString) -> QString;
         #[qinvokable] fn order_folders(self: Pin<&mut Playlists>, ids: &QString);
         #[qinvokable] fn catalog_json(self: &Playlists, query: &QString) -> QString;
-        #[qinvokable] fn manager_json(self: &Playlists, query: &QString, filter: &QString, order: &QString, ascending: bool, folder_id: i64) -> QString;
         #[qinvokable] fn picker_json(self: &Playlists, track_ids_json: &QString, query: &QString) -> QString;
-        #[qinvokable] fn add_track_ids(self: Pin<&mut Playlists>, playlist_id: i64, track_ids_json: &QString) -> QString;
+        #[qinvokable] fn add_track_ids(self: Pin<&mut Playlists>, playlist_id: i64, track_ids_json: &QString, repeats: bool) -> QString;
         #[qinvokable] fn create_full(self: Pin<&mut Playlists>, name: &QString, description: &QString, artwork: &QString, tags: &QString, folder_id: i64, track_ids_json: &QString) -> i64;
         #[qinvokable] fn choose_artwork(self: &Playlists) -> QString;
         #[qinvokable] fn create_folder(self: Pin<&mut Playlists>, name: &QString, color: &QString) -> i64;
@@ -103,6 +104,7 @@ use std::pin::Pin;
 #[derive(Default)]
 pub struct PlaylistsRust {
     rev: i32,
+    last_target: i64,
 }
 
 fn paths_of(id: i64) -> Vec<String> {
@@ -268,19 +270,15 @@ impl qobject::Playlists {
         QString::from(&app::with(|api| api.sidebar_playlists(&query.to_string())))
     }
 
-    pub fn manager_json(&self, query: &QString, filter: &QString, order: &QString, ascending: bool, folder_id: i64) -> QString {
-        let rows = app::with(|api| api.managed_playlists(&query.to_string(), &filter.to_string(), &order.to_string(), ascending, (folder_id > 0).then_some(folder_id)));
-        QString::from(&serde_json::to_string(&rows).unwrap_or_else(|_| "[]".into()))
-    }
-
     pub fn picker_json(&self, track_ids_json: &QString, query: &QString) -> QString {
         let track_ids = ids_from_json(track_ids_json);
         QString::from(&serde_json::to_string(&app::with(|api| api.playlist_targets(&track_ids, &query.to_string()))).unwrap_or_else(|_| "[]".into()))
     }
 
-    pub fn add_track_ids(mut self: Pin<&mut Self>, playlist_id: i64, track_ids_json: &QString) -> QString {
+    pub fn add_track_ids(mut self: Pin<&mut Self>, playlist_id: i64, track_ids_json: &QString, repeats: bool) -> QString {
         let track_ids = ids_from_json(track_ids_json);
-        let result = app::with(|api| api.add_track_ids_to_playlist(playlist_id, &track_ids));
+        let result = app::with(|api| if repeats { api.add_track_ids_again(playlist_id, &track_ids) } else { api.add_track_ids_to_playlist(playlist_id, &track_ids) });
+        if !result.rejected { self.as_mut().set_last_target(playlist_id); }
         if result.added > 0 { self.as_mut().changed(); }
         QString::from(&serde_json::to_string(&result).unwrap_or_else(|_| "{}".into()))
     }
