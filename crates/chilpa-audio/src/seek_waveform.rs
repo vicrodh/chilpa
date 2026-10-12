@@ -31,8 +31,9 @@ pub trait Feed: Send + Sync {
     fn begin(&self, path: &std::path::Path, channels: u16, total_frames: Option<u64>);
     fn feed_float(&self, start_frame: u64, samples: &[f32]);
     fn feed_int(&self, start_frame: u64, samples: &[i32], bits: u8);
-    /// The track is over, finished or not.
-    fn end(&self);
+    /// The track is over: `finished` when it ran out on its own, not when
+    /// it was skipped or stopped.
+    fn end(&self, finished: bool);
 }
 
 /// The document as the view reads it: the upward and the downward swing
@@ -63,7 +64,14 @@ pub struct Accumulator {
     counts: [u32; BINS],
     analyzed: u16,
     complete: bool,
+    /// The furthest frame that came, so a track that ran out can tell a
+    /// length it announced too long from a hole a seek left.
+    furthest: Option<u64>,
 }
+
+/// What a gathering kept between two plays starts with, and how long it is.
+const KEPT_MAGIC: &[u8; 4] = b"CWG1";
+const KEPT_LEN: usize = 4 + 8 + BINS * 4 * 3 + 8;
 
 impl Accumulator {
     pub fn new(channels: u16, total_frames: u64) -> Self {
@@ -75,7 +83,63 @@ impl Accumulator {
             counts: [0; BINS],
             analyzed: 0,
             complete: false,
+            furthest: None,
         }
+    }
+
+    /// What is gathered so far, to go on from at the next play: the length
+    /// it was gathered against, both swings, which bins are known and the
+    /// furthest frame.
+    pub fn kept(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(KEPT_LEN);
+        bytes.extend_from_slice(KEPT_MAGIC);
+        bytes.extend_from_slice(&self.total_frames.to_le_bytes());
+        self.highs.iter().chain(self.lows.iter()).for_each(|v| bytes.extend_from_slice(&v.to_le_bytes()));
+        self.counts.iter().for_each(|c| bytes.extend_from_slice(&c.to_le_bytes()));
+        bytes.extend_from_slice(&self.furthest.unwrap_or(u64::MAX).to_le_bytes());
+        bytes
+    }
+
+    /// Goes on from what an earlier play kept, when it was gathered against
+    /// the same length; anything else starts over.
+    pub fn resume(channels: u16, total_frames: u64, bytes: &[u8]) -> Option<Self> {
+        if bytes.len() != KEPT_LEN || &bytes[..4] != KEPT_MAGIC {
+            return None;
+        }
+        let word = |at: usize| u32::from_le_bytes(bytes[at..at + 4].try_into().unwrap_or_default());
+        let long = |at: usize| u64::from_le_bytes(bytes[at..at + 8].try_into().unwrap_or_default());
+        if long(4) != total_frames {
+            return None;
+        }
+        let mut gathered = Self::new(channels, total_frames);
+        let swings = 12;
+        let counts = swings + BINS * 8;
+        for bin in 0..BINS {
+            gathered.highs[bin] = f32::from_bits(word(swings + bin * 4));
+            gathered.lows[bin] = f32::from_bits(word(swings + (BINS + bin) * 4));
+            gathered.counts[bin] = word(counts + bin * 4);
+        }
+        gathered.analyzed = gathered.counts.iter().filter(|c| **c > 0).count() as u16;
+        gathered.complete = usize::from(gathered.analyzed) == BINS;
+        gathered.furthest = Some(long(counts + BINS * 4)).filter(|frame| *frame != u64::MAX);
+        Some(gathered)
+    }
+
+    /// The track ran out on its own: when every bin up to the furthest
+    /// frame is known, that is the whole document, even when the length it
+    /// announced runs past its last frame. A hole a seek left keeps it open.
+    pub fn finish_played(&mut self) -> bool {
+        if let Some(last) = self.furthest.filter(|_| !self.complete) {
+            let bin = self.bin_of(last);
+            if self.counts[..=bin].iter().all(|count| *count > 0) {
+                self.complete = true;
+            }
+        }
+        self.complete
+    }
+
+    fn bin_of(&self, frame: u64) -> usize {
+        (((u128::from(frame) * BINS as u128) / u128::from(self.total_frames.max(1))) as usize).min(BINS - 1)
     }
 
     pub fn analyzed(&self) -> u16 {
@@ -119,7 +183,8 @@ impl Accumulator {
             if absolute >= self.total_frames || absolute % stride != 0 {
                 continue;
             }
-            let bin = ((u128::from(absolute) * BINS as u128) / u128::from(self.total_frames)) as usize;
+            let bin = self.bin_of(absolute);
+            self.furthest = Some(self.furthest.map_or(absolute, |furthest| furthest.max(absolute)));
             let (high, low) = swing(frame);
             self.highs[bin] = self.highs[bin].max(high);
             self.lows[bin] = self.lows[bin].max(low);
@@ -185,6 +250,40 @@ pub fn columns(highs: &[u8; BINS], lows: &[u8; BINS], count: usize) -> (Vec<f32>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_track_that_ran_out_short_of_its_announced_length_is_whole() {
+        let total = 44_100 * 10;
+        let mut gathered = Accumulator::new(1, total);
+        // The source said ten seconds and ran out at nine.
+        gathered.feed_float(0, &vec![0.5; 44_100 * 9]);
+        assert!(!gathered.complete(), "the last bins never came");
+        assert!(gathered.finish_played(), "it ran out on its own with no hole before its end");
+    }
+
+    #[test]
+    fn a_hole_a_seek_left_keeps_the_document_open() {
+        let total = 44_100 * 10;
+        let mut gathered = Accumulator::new(1, total);
+        gathered.feed_float(0, &vec![0.5; 44_100 * 2]);
+        gathered.feed_float(44_100 * 6, &vec![0.5; 44_100 * 4]);
+        assert!(!gathered.finish_played(), "seconds two to six were never heard");
+    }
+
+    #[test]
+    fn what_was_gathered_goes_on_at_the_next_play() {
+        let total = 44_100 * 10;
+        let mut first = Accumulator::new(2, total);
+        first.feed_float(0, &vec![0.25; 2 * 44_100 * 4]);
+        let kept = first.kept();
+        assert!(Accumulator::resume(2, total + 1, &kept).is_none(), "another length starts over");
+        assert!(Accumulator::resume(2, total, &kept[1..]).is_none());
+        let mut second = Accumulator::resume(2, total, &kept).expect("the same track");
+        assert_eq!(second.analyzed(), first.analyzed());
+        assert_eq!(second.snapshot(1).highs, first.snapshot(1).highs);
+        second.feed_float(44_100 * 4, &vec![0.25; 2 * 44_100 * 6]);
+        assert!(second.complete(), "the rest filled what the first play left");
+    }
 
     #[test]
     fn frames_by_position_leave_holes_where_nothing_was_fed() {

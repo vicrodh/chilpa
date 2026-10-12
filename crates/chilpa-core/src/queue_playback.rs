@@ -1212,7 +1212,7 @@ where
                         on_progress(index, Progress { position: at.max(0) as u64, delivered: f })
                     });
                 if let Some(feed) = &feed {
-                    feed.end();
+                    feed.end(matches!(outcome, chilpa_audio::render::Outcome::Finished { .. }) && !frames.skipped);
                 }
                 (outcome, frames.skipped)
             }
@@ -1265,7 +1265,7 @@ where
                     },
                 );
                 if let Some(feed) = &feed {
-                    feed.end();
+                    feed.end(matches!(outcome, chilpa_audio::render::Outcome::Finished { .. }) && !frames.skipped);
                 }
                 (outcome, frames.skipped)
             }
