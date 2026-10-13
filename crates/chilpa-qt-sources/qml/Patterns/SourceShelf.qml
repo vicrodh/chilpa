@@ -37,6 +37,7 @@ Column {
     SectionHeader {
         objectName: "shelfHeader"
         width: parent.width; title: shelf.section.title || ""
+        sourceIcon: shelf.section.sourceIcon || ""
         link: shelf.wrap || shelf.modelKind !== "source" || !shelf.section.more || !shelf.section.more_key ? "" : I18n.tr("See all", I18n.rev)
         onLinkClicked: shelf.wrap ? Sources.command("section_more", shelf.activeKey, "") : Navigation.goKey("source", shelf.section.more_key || shelf.section.key)
         paged: rail.visible && rail.interactive && shelf.farthest > 0

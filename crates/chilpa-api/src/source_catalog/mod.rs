@@ -532,6 +532,24 @@ impl Catalog {
         cards
     }
 
+    pub(crate) fn record_playlist_play(&self, id: i64) {
+        let mut inner = self.lock();
+        if let Some(card) = inner.store.cards.get_mut(&id).filter(|card| card.kind == store::CardKind::Playlist) {
+            card.last_played_at = Some(crate::now_unix());
+            card.seen_at = now();
+            inner.dirty = true;
+            drop(inner);
+            self.changed();
+        }
+    }
+
+    pub(crate) fn played_playlist_cards(&self) -> Vec<store::Card> {
+        let ids: Vec<_> = self.lock().store.cards.values()
+            .filter(|card| card.kind == store::CardKind::Playlist && card.last_played_at.is_some())
+            .map(|card| card.id).collect();
+        ids.into_iter().filter_map(|id| self.card(id)).collect()
+    }
+
     pub fn cards(&self, ids: &[i64]) -> Vec<store::Card> {
         let inner = self.lock();
         ids.iter().filter_map(|id| inner.store.cards.get(id).cloned()).map(|mut card| { card.art = inner.store.shown_art(&card); card }).collect()

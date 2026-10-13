@@ -13,6 +13,7 @@ Item {
 
     property string title
     property string glyph
+    property string sourceIcon
     property string link
     property bool paged: false
     property bool canBack: false
@@ -33,6 +34,14 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             visible: head.glyph !== ""
             glyph: head.glyph
+            color: Theme.color.textSecondary
+        }
+        SourceIcon {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: head.sourceIcon !== ""
+            sourceInfo: ({icon: head.sourceIcon})
+            width: visible ? Metrics.iconSm : 0
+            height: Metrics.iconSm
             color: Theme.color.textSecondary
         }
         Text {

@@ -53,8 +53,9 @@ impl Chilpa {
     pub fn home_libraries(&self) -> String {
         let root = Self::plugins_dir();
         let mut rows: Vec<_> = self.natives.ids().into_iter()
-            .filter(|id| self.natives.has_pages(id) && read(&root, id).integrate_home)
-            .map(|id| json!({"id":id,"name":self.catalog.name(&id).unwrap_or_else(|| id.clone())})).collect();
+            .filter(|id| self.natives.has_pages(id))
+            .map(|id| json!({"id":id,"name":self.catalog.name(&id).unwrap_or_else(|| id.clone()),
+                "icon":crate::plugin_icons::image_url(&root, &id),"enabled":read(&root, &id).integrate_home})).collect();
         rows.sort_by(|a,b| a["name"].as_str().cmp(&b["name"].as_str()));
         json!(rows).to_string()
     }

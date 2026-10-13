@@ -1706,9 +1706,6 @@ msgstr "Incluir plugins"
 msgid "Include source albums in Albums"
 msgstr "Integrar los álbumes de esta fuente en Álbumes"
 
-msgid "Include source recommendations in Home"
-msgstr "Incluir recomendaciones de esta fuente en Inicio"
-
 msgid "Influences"
 msgstr "Influencias"
 
@@ -2269,6 +2266,9 @@ msgstr "Ninguna carpeta coincide con tu búsqueda."
 
 msgid "No genres in this period."
 msgstr "No hay géneros en este periodo."
+
+msgid "No Home modules are available for this source."
+msgstr "Esta fuente no tiene módulos disponibles para Inicio."
 
 msgid "No grouping"
 msgstr "Sin agrupar"
@@ -2933,6 +2933,12 @@ msgstr "Recientes"
 msgid "Recently added"
 msgstr "Agregados recientemente"
 
+msgid "Recently listened playlists"
+msgstr "Playlists escuchadas recientemente"
+
+msgid "Recently listened playlists, all sources"
+msgstr "Playlists escuchadas recientemente, todas las fuentes"
+
 msgid "Recently played"
 msgstr "Escuchados recientemente"
 
@@ -3357,6 +3363,9 @@ msgstr "Mostrar los releases guardados en Álbumes"
 
 msgid "Show saved tracks in Tracks"
 msgstr "Mostrar canciones guardadas en Canciones"
+
+msgid "Show source recommendations by default in Home"
+msgstr "Mostrar las recomendaciones de esta fuente por defecto en Inicio"
 
 msgid "Show the columns"
 msgstr "Mostrar las columnas"

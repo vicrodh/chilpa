@@ -74,6 +74,8 @@ pub mod qobject {
         #[qinvokable]
         fn ids(self: &Playlists, rev: i32) -> QStringList;
 
+        #[qinvokable] fn recent(self: &Playlists, all_sources: bool, limit: i32, rev: i32) -> QString;
+
         #[qinvokable] fn sources_json(self: &Playlists, track_ids_json: &QString) -> QString;
         #[qinvokable] fn write_source(self: Pin<&mut Playlists>, source: &QString, id: i64, name: &QString, description: &QString, track_ids_json: &QString, request: &QString) -> bool;
         #[qinvokable] fn write_state(self: Pin<&mut Playlists>, source: &QString) -> QString;
@@ -163,14 +165,19 @@ impl qobject::Playlists {
         registry::navigation(move |nav| nav.left_behind("playlist", id));
     }
 
-    pub fn play(self: Pin<&mut Self>, id: i64, shuffled: bool) {
-        if id < 0 { app::with(|api| api.album_action(&[id], "play", shuffled)); return; }
+    pub fn play(mut self: Pin<&mut Self>, id: i64, shuffled: bool) {
+        if id < 0 {
+            app::with(|api| api.album_action(&[id], "play", shuffled));
+            self.as_mut().changed();
+            return;
+        }
         let paths = paths_of(id);
         app::with(|api| {
             api.set_shuffle(shuffled);
             api.count_playlist_play(id);
             api.play_from(&paths, 0);
         });
+        self.as_mut().changed();
     }
 
     pub fn queue(self: Pin<&mut Self>, id: i64) {
@@ -187,33 +194,19 @@ impl qobject::Playlists {
         id
     }
 
-    pub fn name(&self, id: i64, _rev: i32) -> QString {
-        QString::from(&app::with(|api| api.playlist(id).map(|p| p.name)).unwrap_or_default())
-    }
+    pub fn name(&self, id: i64, _rev: i32) -> QString { QString::from(&app::with(|api| api.playlist(id).map(|p| p.name)).unwrap_or_default()) }
 
-    pub fn description(&self, id: i64, _rev: i32) -> QString {
-        QString::from(&app::with(|api| api.playlist(id).map(|playlist| playlist.description)).unwrap_or_default())
-    }
+    pub fn description(&self, id: i64, _rev: i32) -> QString { QString::from(&app::with(|api| api.playlist(id).map(|playlist| playlist.description)).unwrap_or_default()) }
 
-    pub fn source_name(&self, id: i64, _rev: i32) -> QString {
-        QString::from(&app::with(|api| api.playlist(id).map(|playlist| playlist.provider)).unwrap_or_default())
-    }
+    pub fn source_name(&self, id: i64, _rev: i32) -> QString { QString::from(&app::with(|api| api.playlist(id).map(|playlist| playlist.provider)).unwrap_or_default()) }
 
-    pub fn editable(&self, id: i64, _rev: i32) -> bool {
-        app::with(|api| api.playlist(id).is_some_and(|playlist| playlist.mixed))
-    }
+    pub fn editable(&self, id: i64, _rev: i32) -> bool { app::with(|api| api.playlist(id).is_some_and(|playlist| playlist.mixed)) }
 
-    pub fn artwork(&self, id: i64, _rev: i32) -> QString {
-        QString::from(&app::with(|api| api.playlist(id).map(|playlist| playlist.artwork_path)).unwrap_or_default())
-    }
+    pub fn artwork(&self, id: i64, _rev: i32) -> QString { QString::from(&app::with(|api| api.playlist(id).map(|playlist| playlist.artwork_path)).unwrap_or_default()) }
 
-    pub fn tags(&self, id: i64, _rev: i32) -> QString {
-        QString::from(&app::with(|api| api.playlist(id).map(|playlist| playlist.tags.join(", "))).unwrap_or_default())
-    }
+    pub fn tags(&self, id: i64, _rev: i32) -> QString { QString::from(&app::with(|api| api.playlist(id).map(|playlist| playlist.tags.join(", "))).unwrap_or_default()) }
 
-    pub fn folder_id(&self, id: i64, _rev: i32) -> i64 {
-        app::with(|api| api.playlist(id).and_then(|playlist| playlist.folder_id)).unwrap_or_default()
-    }
+    pub fn folder_id(&self, id: i64, _rev: i32) -> i64 { app::with(|api| api.playlist(id).and_then(|playlist| playlist.folder_id)).unwrap_or_default() }
 
     pub fn update(mut self: Pin<&mut Self>, id: i64, name: &QString, description: &QString, artwork: &QString, tags: &QString, folder_id: i64) -> bool {
         let tags: Vec<String> = tags.to_string().split(',').map(str::trim).filter(|tag| !tag.is_empty()).map(str::to_string).collect();
@@ -250,6 +243,8 @@ impl qobject::Playlists {
     pub fn ids(&self, _rev: i32) -> QStringList {
         strings(app::with(|api| api.local_playlists()).into_iter().map(|p| p.id.to_string()))
     }
+
+    pub fn recent(&self, all_sources: bool, limit: i32, _rev: i32) -> QString { QString::from(&app::with(|api| api.recently_listened_playlists(all_sources, limit.clamp(1, 100) as usize))) }
 
     pub fn sources_json(&self, track_ids_json: &QString) -> QString {
         QString::from(&app::with(|api| api.playlist_sources_json(&ids_from_json(track_ids_json))))

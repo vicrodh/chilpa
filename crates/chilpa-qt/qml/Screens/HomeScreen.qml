@@ -25,7 +25,9 @@ Flickable {
     Component.onCompleted: restore()
     readonly property var available: [
         { id: "library.recentlyPlayed", title: I18n.tr("Recently played", I18n.rev), kind: "albums", source: "recentlyPlayed" },
-        { id: "everywhere.recentlyPlayed", title: I18n.tr("Recently played, all sources", I18n.rev), kind: "albums", source: "recentlyPlayedEverywhere" },
+        { id: "everywhere.recentlyPlayed", title: I18n.tr("Recently played", I18n.rev), configTitle: I18n.tr("Recently played, all sources", I18n.rev), kind: "albums", source: "recentlyPlayedEverywhere" },
+        { id: "library.recentPlaylists", title: I18n.tr("Recently listened playlists", I18n.rev), kind: "playlists", allSources: false },
+        { id: "everywhere.recentPlaylists", title: I18n.tr("Recently listened playlists", I18n.rev), configTitle: I18n.tr("Recently listened playlists, all sources", I18n.rev), kind: "playlists", allSources: true },
         { id: "library.recentlyAdded", title: I18n.tr("Recently added", I18n.rev), kind: "albums", source: "recentlyAdded" },
         { id: "library.mostPlayed", title: I18n.tr("Most played", I18n.rev), kind: "tracks" }
     ].concat(remote.sections.map(section => Object.assign({}, section, { id: "source:" + section.homeId, kind: "shelf" })))
@@ -72,6 +74,68 @@ Flickable {
         TrackListModel { id: most; kind: "mostPlayed"; filterRev: Library.contentRev; limit: tracks.entry.size || Metrics.mostPlayedLimit; playingPath: Player.path }
         SectionHeader { width: parent.width; title: tracks.entry.title || "" }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; showPlays: true; model: most }
+    }
+    component PlaylistShelf: Column {
+        id: shelf
+        property var entry: ({})
+        readonly property var lists: JSON.parse(Playlists.recent(entry.allSources === true, entry.size || Metrics.shelfLimit, Playlists.rev + Library.rev + Library.remoteRev + page.homeRefresh) || "[]")
+        readonly property var panels: JSON.parse(Sources.snapshot || "{}").panels || []
+        readonly property bool shown: lists.length > 0
+        spacing: Metrics.gap8
+        SectionHeader { width: parent.width; title: shelf.entry.title || "" }
+        Flickable {
+            width: parent.width; height: cards.implicitHeight + Metrics.gap8
+            contentWidth: cards.width; contentHeight: height; clip: true
+            interactive: contentWidth > width; flickableDirection: Flickable.HorizontalFlick
+            boundsBehavior: Flickable.StopAtBounds
+            Row {
+                id: cards; spacing: Metrics.gridGap
+                Repeater {
+                    model: shelf.lists
+                    Column {
+                        required property var modelData
+                        width: Metrics.cardMinWidth; spacing: Metrics.gap4
+                        Item {
+                            width: parent.width; height: width
+                            ArtTile {
+                                id: cover; anchors.fill: parent
+                                source: modelData.artwork_path ? modelData.artwork_path.indexOf("://") >= 0
+                                    ? modelData.artwork_path
+                                    : "file://" + modelData.artwork_path.split("/").map(encodeURIComponent).join("/") : ""
+                            }
+                            PlaylistCollage {
+                                anchors.fill: parent; visible: !cover.ready && (modelData.covers || []).length > 0
+                                covers: modelData.covers || []
+                            }
+                            Icon {
+                                anchors.centerIn: parent; visible: !cover.ready && !(modelData.covers || []).length
+                                glyph: Icons.playlist; size: Metrics.iconPlay; color: Theme.color.textSecondary
+                            }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Playlists.open(modelData.id) }
+                            IconButton {
+                                anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: Metrics.gap8
+                                round: true; glyph: Icons.playerPlayFilled; filled: true
+                                tip: I18n.tr("Play", I18n.rev)
+                                onClicked: Playlists.play(modelData.id, false)
+                            }
+                        }
+                        Text { width: parent.width; text: modelData.name || ""; elide: Text.ElideRight; font.pointSize: Type.body; color: Theme.color.textPrimary }
+                        Row {
+                            id: sourceLabel
+                            width: parent.width; spacing: Metrics.gap4
+                            SourceIcon {
+                                id: providerIcon
+                                readonly property var panel: shelf.panels.find(panel => panel.id === modelData.source) || ({})
+                                visible: !!modelData.source
+                                sourceInfo: ({icon: panel.icon_image || panel.icon || ""})
+                                width: visible ? Metrics.iconSm : 0; height: Metrics.iconSm
+                            }
+                            Text { width: sourceLabel.width - providerIcon.width - sourceLabel.spacing; text: modelData.mixed ? "Chilpa" : modelData.provider || ""; elide: Text.ElideRight; font.pointSize: Type.meta; color: Theme.color.textSecondary }
+                        }
+                    }
+                }
+            }
+        }
     }
     // A source's shelf, cut to the size chosen.
     component SourceRail: SourceShelf {
@@ -125,7 +189,7 @@ Flickable {
         }
 
         Repeater {
-            model: page.sections.filter(section => section.enabled !== false)
+            model: page.sections.filter(section => section.enabled !== false && (section.kind !== "shelf" || (section.items || []).length > 0))
             Loader {
                 required property var modelData
                 objectName: "homeShelf"
@@ -134,7 +198,7 @@ Flickable {
                 // hidden Loader is hidden too, and the two would wait for
                 // each other.
                 visible: status === Loader.Ready && item.shown
-                sourceComponent: modelData.kind === "albums" ? albumShelf : modelData.kind === "tracks" ? trackShelf : sourceRail
+                sourceComponent: modelData.kind === "albums" ? albumShelf : modelData.kind === "playlists" ? playlistShelf : modelData.kind === "tracks" ? trackShelf : sourceRail
                 onLoaded: item.entry = Qt.binding(() => modelData)
             }
         }
@@ -142,11 +206,15 @@ Flickable {
     }
     Component { id: albumShelf; AlbumShelf { width: parent ? parent.width : 0 } }
     Component { id: trackShelf; TrackShelf { width: parent ? parent.width : 0 } }
+    Component { id: playlistShelf; PlaylistShelf { width: parent ? parent.width : 0 } }
     Component { id: sourceRail; SourceRail { width: parent ? parent.width : 0 } }
 
     SectionsCustomizer {
         id: customizer
+        objectName: "homeCustomizer"
+        grouped: true
         sections: page.sections
+        groupSources: remote.sources
         sizes: [{ value: "0", text: I18n.tr("One row", I18n.rev) }, { value: "6", text: "6" }, { value: "12", text: "12" }, { value: "18", text: "18" }, { value: "24", text: "24" }]
         defaultSize: 0
         onToggled: (index, on) => page.change(index, "enabled", on)

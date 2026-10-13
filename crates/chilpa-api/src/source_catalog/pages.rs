@@ -216,6 +216,7 @@ impl crate::Chilpa {
         let Some(card) = self.catalog.card(id) else { return "{}".into(); };
         if !self.natives.has_pages(&card.plugin) { return "{}".into(); }
         let mut info = card.metadata.clone();
+        if info["genre"].as_str().is_none_or(str::is_empty) && !card.genre.is_empty() { info["genre"] = json!(card.genre); }
         if card.contain_art() { info["art_fit"] = json!("contain"); }
         let quality = self.album_card_quality(id);
         info["quality_label"] = json!(quality.short()); info["quality_tier"] = json!(quality.tier.rank());

@@ -1488,3 +1488,9 @@ ALTER TABLE sources ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1;
 pub(super) const MIGRATION_V39: &str = r#"
 ALTER TABLE play_context ADD COLUMN artwork_path TEXT NOT NULL DEFAULT '';
 "#;
+
+/// A playlist's edit date and its last listening date answer different questions.
+pub(super) const MIGRATION_V40: &str = r#"
+ALTER TABLE playlists ADD COLUMN last_played_at INTEGER;
+CREATE INDEX playlists_last_played ON playlists(last_played_at DESC);
+"#;

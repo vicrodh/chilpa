@@ -92,6 +92,7 @@ pub(crate) struct Card {
     pub artist: String,
     pub year: Option<i32>,
     pub genre: String,
+    pub last_played_at: Option<i64>,
     /// The cover's address, and the cover on disk once it was fetched.
     pub image: String,
     pub art: String,

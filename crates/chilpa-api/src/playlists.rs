@@ -60,6 +60,7 @@ pub(crate) fn playlist_of(p: chilpa_library::StoredPlaylist) -> Playlist {
         instance: p.instance,
         track_count: p.track_count,
         play_count: p.play_count,
+        last_played_at: p.last_played_at,
         folder_id: p.folder_id,
         custom_position: p.custom_position,
         visible_sidebar: p.visible_sidebar,
@@ -587,9 +588,30 @@ impl Chilpa {
     }
 
     pub fn count_playlist_play(&mut self, id: i64) {
-        if let Some(lib) = self.library() {
-            let _ = lib.record_playlist_play(id);
+        if let Some(id) = self.playlist_storage_id(id) {
+            if let Some(lib) = self.library() { let _ = lib.record_playlist_play(id); }
         }
+    }
+
+    /// Lists that actually started playing, newest first. The local view
+    /// includes mixed lists; the all-sources view also includes source lists.
+    pub fn recently_listened_playlists(&mut self, all_sources: bool, limit: usize) -> String {
+        let disabled: std::collections::HashSet<i64> = self.library().and_then(|lib| lib.servers().ok())
+            .unwrap_or_default().into_iter().filter(|server| !server.enabled).map(|server| server.source_id).collect();
+        let mut rows: Vec<serde_json::Value> = self.playlists().into_iter()
+            .filter(|playlist| playlist.last_played_at.is_some() && (all_sources || playlist.mixed)
+                && !disabled.contains(&playlist.source_id))
+            .filter_map(|playlist| serde_json::to_value(playlist).ok()).collect();
+        if all_sources {
+            for card in self.catalog.played_playlist_cards().into_iter().filter(|card| self.natives.is_native(&card.plugin)) {
+                if rows.iter().any(|row| row["id"] == card.id) { continue; }
+                let name = self.catalog.name(&card.plugin).unwrap_or_else(|| card.plugin.clone());
+                rows.push(serde_json::json!({"id":card.id,"name":card.title,"provider":name,"source":card.plugin,
+                    "artwork_path":card.art,"covers":[],"mixed":false,"last_played_at":card.last_played_at}));
+            }
+        }
+        rows.sort_by_key(|playlist| std::cmp::Reverse(playlist["last_played_at"].as_i64().unwrap_or_default()));
+        serde_json::to_string(&rows.into_iter().take(limit).collect::<Vec<_>>()).unwrap_or_else(|_| "[]".into())
     }
 }
 
@@ -651,7 +673,27 @@ fn refresh_source_playlists(library: Option<&chilpa_library::Library>, host: &mu
 
 #[cfg(test)]
 mod group_tests {
-    use super::group_moves;
+    use super::*;
+
+    #[test]
+    fn recent_playlists_keep_local_and_all_sources_separate() {
+        let lib = chilpa_library::Library::in_memory().unwrap();
+        let local = lib.source_id("local", "default").unwrap();
+        let remote = lib.source_id("fixture", "account").unwrap();
+        let local_id = lib.create_playlist(local, "Local list", "").unwrap();
+        let remote_id = lib.create_playlist(remote, "Source list", "").unwrap();
+        let mut api = crate::Chilpa::new();
+        api.library = Some(lib);
+        assert_eq!(api.recently_listened_playlists(true, 10), "[]");
+        api.count_playlist_play(local_id);
+        api.count_playlist_play(remote_id);
+        let local: serde_json::Value = serde_json::from_str(&api.recently_listened_playlists(false, 10)).unwrap();
+        let all: serde_json::Value = serde_json::from_str(&api.recently_listened_playlists(true, 10)).unwrap();
+        assert_eq!(local.as_array().unwrap().len(), 1);
+        assert_eq!(local[0]["name"], "Local list");
+        assert_eq!(all.as_array().unwrap().len(), 2);
+        assert!(all.as_array().unwrap().iter().any(|row| row["name"] == "Source list"));
+    }
 
     fn dropped(rows: &[usize], to: usize) -> String {
         let mut list: Vec<char> = "abcdef".chars().collect();

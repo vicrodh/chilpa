@@ -1706,9 +1706,6 @@ msgstr ""
 msgid "Include source albums in Albums"
 msgstr "Include source albums in Albums"
 
-msgid "Include source recommendations in Home"
-msgstr ""
-
 msgid "Influences"
 msgstr ""
 
@@ -2268,6 +2265,9 @@ msgid "No folders match your search."
 msgstr ""
 
 msgid "No genres in this period."
+msgstr ""
+
+msgid "No Home modules are available for this source."
 msgstr ""
 
 msgid "No grouping"
@@ -2933,6 +2933,12 @@ msgstr ""
 msgid "Recently added"
 msgstr ""
 
+msgid "Recently listened playlists"
+msgstr ""
+
+msgid "Recently listened playlists, all sources"
+msgstr ""
+
 msgid "Recently played"
 msgstr ""
 
@@ -3356,6 +3362,9 @@ msgid "Show saved releases in Albums"
 msgstr "Show saved releases in Albums"
 
 msgid "Show saved tracks in Tracks"
+msgstr ""
+
+msgid "Show source recommendations by default in Home"
 msgstr ""
 
 msgid "Show the columns"

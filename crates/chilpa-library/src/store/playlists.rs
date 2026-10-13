@@ -26,6 +26,7 @@ pub struct StoredPlaylist {
     pub tags: Vec<String>,
     pub track_count: usize,
     pub play_count: u64,
+    pub last_played_at: Option<i64>,
     pub folder_id: Option<i64>,
     pub custom_position: i64,
     pub visible_sidebar: bool,
@@ -295,7 +296,7 @@ impl Library {
                     COALESCE((SELECT group_concat(tag, char(31))
                                 FROM playlist_tags WHERE playlist_id = p.id), ''),
                     count(pt.position), p.play_count, p.folder_id,
-                    p.custom_position, p.visible_sidebar, p.writable, p.updated_at
+                    p.custom_position, p.visible_sidebar, p.writable, p.updated_at, p.last_played_at
              FROM playlists p
              JOIN sources s ON s.id = p.source_id
              LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.id
@@ -321,6 +322,7 @@ impl Library {
                 visible_sidebar: r.get::<_, i64>(14)? != 0,
                 writable: r.get::<_, i64>(15)? != 0,
                 updated_at: r.get(16)?,
+                last_played_at: r.get(17)?,
             })
         })?;
         rows.collect()
@@ -543,7 +545,7 @@ impl Library {
     }
 
     pub fn record_playlist_play(&self, playlist_id: i64) -> rusqlite::Result<()> {
-        self.db.execute("UPDATE playlists SET play_count = play_count + 1 WHERE id = ?1", params![playlist_id])?;
+        self.db.execute("UPDATE playlists SET play_count = play_count + 1, last_played_at = ?2 WHERE id = ?1", params![playlist_id, now_unix()])?;
         Ok(())
     }
 
@@ -719,6 +721,7 @@ mod tests {
         assert_eq!(playlist.artwork_path.as_deref(), Some("/cover.jpg"));
         assert_eq!(playlist.tags, ["driving", "night"]);
         assert_eq!(playlist.play_count, 1);
+        assert!(playlist.last_played_at.is_some());
         assert_eq!(lib.playlist_folders().unwrap()[0].playlist_count, 1);
     }
 }
