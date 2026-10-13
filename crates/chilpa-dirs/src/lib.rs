@@ -54,6 +54,16 @@ pub fn cache() -> PathBuf {
         .join(NAME)
 }
 
+/// Environment overrides for launching a child process with its own profile.
+/// I leave the parent's environment alone so parallel tests remain independent.
+pub fn profile_environment(root: &std::path::Path) -> [(&'static str, PathBuf); 3] {
+    [
+        ("XDG_CONFIG_HOME", root.join("config")),
+        ("XDG_DATA_HOME", root.join("data")),
+        ("XDG_CACHE_HOME", root.join("cache")),
+    ]
+}
+
 /// The variables a desktop hands a launched program to raise its first
 /// window: Wayland's activation token and X11's startup notification id. A
 /// helper process the program starts must not inherit them, or it uses up
