@@ -13,6 +13,7 @@ TestCase {
     SidebarPlaylists { id: sidebar; width: 240; height: 580 }
     SidebarPlaylistActions { id: actions; sidebar: sidebar }
     function init() {
+        Playlists.refreshes = 0
         Playlists.catalog = {folders: [
             {id: 1, name: "Empty", playlist_count: 0, color: "accent", position: 0},
             {id: 2, name: "Mixed", playlist_count: 2, color: "accent", position: 1}],
@@ -41,6 +42,15 @@ TestCase {
         actions.selected = sidebar.rows[2]
         actions.move(1)
         compare(Playlists.created, [7, -3])
+    }
+    function test_refresh_action_rebuilds_the_sidebar_from_the_current_catalog() {
+        const catalog=Object.assign({},Playlists.catalog,{playlists:Playlists.catalog.playlists.filter(p=>p.mixed)})
+        Playlists.catalog=catalog
+        actions.head(0,0)
+        const menu=findChild(actions,"playlistsMenu")
+        menu.chosen(menu.entries.findIndex(entry=>entry.action === "refresh"))
+        compare(Playlists.refreshes,1)
+        compare(sidebar.rows.filter(row=>row.rowKind === 0).map(row=>row.playlistId),[7])
     }
     function test_the_heads_actions_carry_their_glyphs_and_its_orders_none() {
         sidebar.setOrder("name")

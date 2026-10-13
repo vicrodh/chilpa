@@ -112,6 +112,7 @@ enum Answer {
 /// Where the window stands in a source, and what it sees there.
 pub(crate) struct SourcesState {
     pub(crate) native_actions: BTreeMap<String, serde_json::Value>,
+    pub(crate) playlist_refresh_pending: bool,
     native_action_serial: u64,
     collection: collection::Collection,
     panels: Vec<Panel>,
@@ -190,6 +191,7 @@ impl Default for SourcesState {
         let (tx, rx) = mpsc::channel();
         Self {
             native_actions: BTreeMap::new(),
+            playlist_refresh_pending: false,
             native_action_serial: 0,
             collection: collection::Collection::default(),
             panels: Vec::new(),
@@ -1119,6 +1121,7 @@ impl Chilpa {
 
     /// Takes in what the plugin threads answered. Called from `poll`.
     pub(crate) fn advance_sources(&mut self) {
+        self.advance_playlist_refresh();
         if self.natives.broker.changed.swap(false, std::sync::atomic::Ordering::AcqRel) { self.refresh_playlist_sources(); self.mark_library_changed(); }
         for plugin in self.natives.take_history_changes() { self.catalog.expire_personal_pages(&plugin); }
         while let Ok(answer) = self.sources.rx.try_recv() {

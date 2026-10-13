@@ -42,4 +42,16 @@ TestCase {
         editor.destination="local:1"; editor.save()
         compare(Playlists.created,[-8,1]); compare(Sources.asked.length,0)
     }
+    function test_read_only_account_folders_keep_local_moves_available() {
+        Playlists.catalog={folders:[{id:1,name:"Local"}],folder_sources:[{id:"fixture",name:"Cloud",editable:false}],
+            native_folders:[{source:"fixture",ref:"folder:1",name:"Native",editable:false}]}
+        editor.move({playlistId:-8,nativeRef:"playlist:8",source:"fixture",folderId:0,nativeFolder:"folder:1"})
+        compare(editor.provider,""); verify(editor.nativeReadOnly)
+        compare(editor.providers.map(p=>p.id),[""])
+        compare(editor.destinations.map(p=>p.id),["local:0","local:1"])
+        editor.destination="local:1"; editor.save()
+        compare(Playlists.created,[-8,1]); compare(Sources.asked.length,0)
+        editor.showNative({source:"fixture",nativeRef:"folder:1",editable:false})
+        verify(!editor.visible)
+    }
 }

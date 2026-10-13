@@ -97,9 +97,9 @@ impl PluginCenter {
                 }
                 let started = std::time::Instant::now();
                 let result = run(&action, &input, &root, &plugins, &mut pending, &mut state, &mut evidence);
-                if result.is_ok() && (action == "submit" || action == "integration") { if let Some(id) = input["id"].as_str() { reload.lock().unwrap().push(id.to_string()); } }
+                if result.is_ok() && matches!(action.as_str(), "submit" | "integration" | "enable" | "restart" | "grant_network") { if let Some(id) = input["id"].as_str() { reload.lock().unwrap().push(id.to_string()); } }
                 if result.is_ok() && action == "uninstall" { if let Some(id) = input["id"].as_str() { deleted.lock().unwrap().push(id.to_string()); } }
-                if result.is_ok() && matches!(action.as_str(), "library_visibility" | "integration" | "sidebar_position" | "download_access" | "uninstall" | "tint" | "icon") { changed.store(true, Ordering::Release); }
+                if result.is_ok() && matches!(action.as_str(), "library_visibility" | "integration" | "sidebar_position" | "download_access" | "enable" | "disable" | "restart" | "grant_network" | "uninstall" | "tint" | "icon") { changed.store(true, Ordering::Release); }
                 if action == "prepare" {
                     state["validation"] = json!({"id":input["id"],"repository_id":input["repository"],
                         "state":if result.is_ok() {"passed"} else {"failed"},
@@ -161,6 +161,10 @@ impl Chilpa {
                 self.plugin_center = Some(center);
             }
         }
+        self.advance_plugin_changes();
+        self.plugin_center.as_ref().map(|center| center.snapshot().to_string()).unwrap_or_else(|| "{}".into())
+    }
+    pub(crate) fn advance_plugin_changes(&mut self) {
         let refreshed = self.plugin_center.as_ref().map(|c| std::mem::take(&mut *c.refreshed.lock().unwrap())).unwrap_or_default();
         for id in refreshed { if self.natives.is_native(&id) {
             for kind in self.natives.library_kinds(&id) { self.catalog.retry(&format!("{id} section:{kind}")); }
@@ -170,7 +174,6 @@ impl Chilpa {
         let removed = self.plugin_center.as_ref().map(|c| std::mem::take(&mut *c.removed.lock().unwrap())).unwrap_or_default();
         for id in removed { self.sources.native_actions.remove(&id); self.forget_source_preferences(&id); self.purge_queue(|path| crate::source_opener::of_plugin(path).is_some_and(|(plugin, _)| plugin == id)); self.catalog.forget_plugin(&id); self.invalidate_source_menus(); }
         if self.plugin_center.as_ref().is_some_and(|center| center.library_dirty.swap(false, Ordering::AcqRel)) { self.mark_library_changed(); }
-        self.plugin_center.as_ref().map(|center| center.snapshot().to_string()).unwrap_or_else(|| "{}".into())
     }
     pub fn plugin_center_command(&mut self, action: &str, input: &str) {
         let Ok(input) = serde_json::from_str::<Value>(input) else { return };

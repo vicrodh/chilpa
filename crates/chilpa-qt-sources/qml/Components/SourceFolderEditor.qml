@@ -21,7 +21,8 @@ Modal {
     property string request: ""
     readonly property var state: (JSON.parse(Sources.snapshot || "{}").native_actions || {})[provider] || ({})
     readonly property bool pending: !!request && state.pending === true
-    readonly property var providers: [{id:"",name:I18n.tr("Local — Chilpa", I18n.rev)}].concat((catalog.folder_sources || []).map(p => ({id:p.id,name:I18n.trArgs("Native — {}",[p.name],I18n.rev)})))
+    readonly property bool nativeReadOnly: mode === "move" && (catalog.folder_sources || []).some(p => p.id === playlist.source && p.editable === false)
+    readonly property var providers: [{id:"",name:I18n.tr("Local — Chilpa", I18n.rev)}].concat((catalog.folder_sources || []).filter(p => p.editable !== false).map(p => ({id:p.id,name:I18n.trArgs("Native — {}",[p.name],I18n.rev)})))
     readonly property var destinations: {
         const rows = mode === "move" ? [{id:"local:0",name:I18n.tr("Local — No folder",I18n.rev)}].concat((catalog.folders || []).map(f => ({id:"local:"+f.id,name:I18n.trArgs("Local — {}",[f.name],I18n.rev)}))) : []
         if (provider) {
@@ -41,10 +42,10 @@ Modal {
         mode="folder"; folderId=id; nameField.text=name; colorName=color; notice=""; provider=""; reference=""; request=""; destination="native:"
         open(); Qt.callLater(nameField.focusInput)
     }
-    function showNative(row) { show(0,row.name,"accent"); provider=row.source; reference=row.nativeRef }
+    function showNative(row) { if (row.editable === false) return; show(0,row.name,"accent"); provider=row.source; reference=row.nativeRef }
     function move(row) {
         show(0,"","accent"); mode="move"; playlist=row
-        provider=(catalog.folder_sources || []).some(p=>p.id===row.source) ? row.source : ""
+        provider=(catalog.folder_sources || []).some(p=>p.id===row.source && p.editable !== false) ? row.source : ""
         destination=row.folderId>0 ? "local:"+row.folderId : provider && row.nativeFolder ? "native:"+row.nativeFolder : "local:0"
     }
     function save() {
@@ -86,7 +87,7 @@ Modal {
             width:parent.width; visible:dialog.mode === "move" || !!dialog.provider && !dialog.reference; enabled:!dialog.pending
             options:dialog.destinations.map(p=>p.name); values:dialog.destinations.map(p=>p.id); value:dialog.destination; onPicked:value=>dialog.destination=value
         }
-        Text { width:parent.width; visible:dialog.mode === "move"; text:I18n.tr("Local folders organize this sidebar. Native folders are saved in your service account.",I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.small; wrapMode:Text.WordWrap }
+        Text { width:parent.width; visible:dialog.mode === "move"; text:dialog.nativeReadOnly ? I18n.tr("This source's folders are read-only. Choose a local folder to organize its playlists in Chilpa.",I18n.rev) : I18n.tr("Local folders organize this sidebar. Native folders are saved in your service account.",I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.small; wrapMode:Text.WordWrap }
         Row {
             visible:dialog.mode === "folder" && !dialog.provider; spacing:Metrics.gap8
             Repeater {

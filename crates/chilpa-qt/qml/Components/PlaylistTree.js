@@ -60,7 +60,7 @@ function rows(catalog, order, ascending, query, expanded, groupTitle) {
                 const f = entry.nativeFolder, key = f.source + " " + f.ref
                 if (visited.has(key)) continue
                 visited.add(key)
-                folder({name:f.name,source:f.source,sourceName:provider(f.source).name || "",folderId:nextFolderId--,nativeRef:f.ref,depth:depth,
+                folder({name:f.name,source:f.source,sourceName:provider(f.source).name || "",folderId:nextFolderId--,nativeRef:f.ref,editable:f.editable !== false,depth:depth,
                     tracks:chosen.filter(p => !p.folder_id && p.native_folder === f.ref).length,sourceIcon:f.folder_icon || f.source_icon || provider(f.source).icon || ""},key,
                     () => branch(f.source, f.ref, depth + 1))
             }

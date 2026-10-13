@@ -52,6 +52,7 @@ impl Chilpa {
         self.plugin_startup.progress.lock().ok().map(|at| at.clone())
     }
     pub(crate) fn advance_plugins(&mut self) {
+        self.advance_plugin_changes();
         let Some(result) = self.plugin_startup.take() else { return };
         if let Some(plugins) = result {
             self.natives = plugins.natives.clone();

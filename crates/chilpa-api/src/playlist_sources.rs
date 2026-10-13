@@ -25,6 +25,33 @@ pub(crate) fn execute(natives: &std::sync::Arc<crate::natives::Natives>, source:
     Ok(result)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn explicit_refresh_waits_for_a_busy_host_without_blocking_the_window() {
+        let directory = tempfile::tempdir().unwrap();
+        let host = std::sync::Arc::new(std::sync::Mutex::new(crate::plugins::Plugins::new(directory.path().into()).unwrap()));
+        let source = "app.example.music";
+        assert!(host.lock().unwrap().playlists_due(source));
+        let mut api = Chilpa::new();
+        api.plugins = Some(host.clone());
+        api.library_changed();
+        let held = host.lock().unwrap();
+        let started = std::time::Instant::now();
+        api.refresh_playlist_sources();
+        assert!(started.elapsed() < std::time::Duration::from_millis(250));
+        assert!(api.sources.playlist_refresh_pending);
+        assert!(!api.library_changed());
+        drop(held);
+        api.advance_sources();
+        assert!(!api.sources.playlist_refresh_pending);
+        assert!(api.library_changed());
+        assert!(host.lock().unwrap().playlists_due(source));
+        assert!(!host.lock().unwrap().playlists_due(source));
+    }
+}
+
 impl Chilpa {
     pub(crate) fn native_playlist_rows(&mut self) -> Vec<Playlist> {
         for plugin in self.natives.ids() {
@@ -142,10 +169,24 @@ impl Chilpa {
     }
 
     pub fn refresh_playlist_sources(&mut self) {
+        self.sources.playlist_refresh_pending = true;
+        self.advance_playlist_refresh();
         for id in self.natives.ids() {
             if self.natives.library_kinds(&id).iter().any(|kind| kind == "playlists") {
                 self.catalog.retry(&format!("{id} section:playlists"));
             }
+        }
+    }
+
+    /// I keep an explicit refresh pending while a compatibility call owns the host.
+    pub(crate) fn advance_playlist_refresh(&mut self) {
+        if !self.sources.playlist_refresh_pending { return; }
+        let refreshed = self.plugins.as_ref().and_then(|host| host.try_lock().ok()).map(|mut host| {
+            host.refresh_playlist_reads();
+        }).is_some();
+        if refreshed || (self.plugins.is_none() && !self.plugins_starting()) {
+            self.sources.playlist_refresh_pending = false;
+            self.mark_library_changed();
         }
     }
 

@@ -211,8 +211,9 @@ fn read_library(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, key: &s
     let kind = if kind == "library" { "albums" } else { kind };
     let mut items = Vec::new();
     let mut folders = Value::Null;
+    let refresh = catalog.stored_shelf(key).is_some_and(|shelf| shelf.read_at == 0);
     for page in 0..PAGES {
-        let answer = natives.call(plugin, "library.list", json!({"kind": kind, "offset": page * PAGE, "limit": PAGE}), ASKED)?;
+        let answer = natives.call(plugin, "library.list", json!({"kind": kind, "offset": page * PAGE, "limit": PAGE,"refresh":refresh && page == 0}), ASKED)?;
         if answer["folders"].is_array() { folders = answer["folders"].clone(); }
         let found = answer.get("items").and_then(Value::as_array).cloned().unwrap_or_default();
         let total = number(&answer, "total").unwrap_or(0);
