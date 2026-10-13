@@ -20,6 +20,8 @@ pub mod qobject {
         #[qproperty(QString, error)]
         /// The link is a playlist of another service: the importer can take it.
         #[qproperty(bool, playlist)]
+        /// Verified destinations offered by the library and sources.
+        #[qproperty(QString, choices)]
         type Link = super::LinkRust;
 
         /// Shows the modal, empty.
@@ -34,6 +36,9 @@ pub mod qobject {
         /// Hands the playlist to the importer, which starts reading it.
         #[qinvokable]
         fn open_importer(self: Pin<&mut Link>) -> bool;
+        /// Opens one of the verified destinations.
+        #[qinvokable]
+        fn choose(self: Pin<&mut Link>, index: i32);
 
         /// The link resolved to a screen: by id, or by key when the key is
         /// not empty.
@@ -60,6 +65,7 @@ pub struct LinkRust {
     resolving: bool,
     error: QString,
     playlist: bool,
+    choices: QString,
 }
 
 impl qobject::Link {
@@ -69,6 +75,7 @@ impl qobject::Link {
         self.as_mut().set_resolving(false);
         self.as_mut().set_error(QString::default());
         self.as_mut().set_playlist(false);
+        self.as_mut().set_choices(QString::from("[]"));
         self.as_mut().set_open(true);
     }
 
@@ -84,6 +91,7 @@ impl qobject::Link {
         app::with(|api| api.open_link(&url.to_string()));
         self.as_mut().set_error(QString::default());
         self.as_mut().set_playlist(false);
+        self.as_mut().set_choices(QString::from("[]"));
         self.as_mut().set_resolving(true);
         self.as_mut().read();
         let thread = self.qt_thread();
@@ -105,6 +113,23 @@ impl qobject::Link {
         handed
     }
 
+    pub fn choose(mut self: Pin<&mut Self>, index: i32) {
+        let lead = usize::try_from(index).ok().and_then(|index| app::with(|api| api.choose_open_link(index)));
+        self.as_mut().open_lead(lead);
+    }
+
+    fn open_lead(mut self: Pin<&mut Self>, lead: Option<Leads>) {
+        let place = match lead {
+            Some(Leads::Screen(screen, id) | Leads::Tab(screen, id)) => Some((screen.to_string(), id, String::new())),
+            Some(Leads::Source(key)) => Some(("source".to_string(), 0, key)),
+            _ => None,
+        };
+        if let Some((screen, id, key)) = place {
+            self.as_mut().close();
+            self.as_mut().opened(QString::from(&screen), id, QString::from(&key));
+        }
+    }
+
     /// Reads how the link goes and, when it is done, where it leads.
     fn read(mut self: Pin<&mut Self>) {
         if !*self.open() {
@@ -116,17 +141,10 @@ impl qobject::Link {
         self.as_mut().set_resolving(resolving);
         self.as_mut().set_error(QString::from(state["error"].as_str().unwrap_or_default()));
         self.as_mut().set_playlist(state["playlist"].as_bool().unwrap_or(false));
+        self.as_mut().set_choices(QString::from(state["choices"].to_string()));
         if !resolving {
             ROUND.fetch_add(1, Ordering::SeqCst);
         }
-        let place = match lead {
-            Some(Leads::Screen(screen, id) | Leads::Tab(screen, id)) => Some((screen.to_string(), id, String::new())),
-            Some(Leads::Source(key)) => Some(("source".to_string(), 0, key)),
-            _ => None,
-        };
-        if let Some((screen, id, key)) = place {
-            self.as_mut().close();
-            self.as_mut().opened(QString::from(&screen), id, QString::from(&key));
-        }
+        self.as_mut().open_lead(lead);
     }
 }

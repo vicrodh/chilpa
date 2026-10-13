@@ -48,6 +48,7 @@ mod playlist_sources;
 mod plugin_broker;
 mod playlist_import;
 mod pictures;
+mod storage_cache;
 mod plugins;
 mod plugin_startup;
 mod worker_services;
@@ -717,6 +718,7 @@ impl Chilpa {
         // The language is set before anything can speak: a message built
         // during startup has to come out in the same language as the rest.
         let saved = chilpa_core::settings::load();
+        storage_cache::start(saved.window.get("storage.remoteLimitMb").map(String::as_str));
         chilpa_i18n::set_language(if saved.language.is_empty() { chilpa_i18n::from_environment() } else { &saved.language });
         let on = |key| saved.window.get(key).is_some_and(|v| v == "true");
         chilpa_core::backends::set_reserving(on(outputs::RESERVE));

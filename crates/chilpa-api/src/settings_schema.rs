@@ -254,6 +254,27 @@ pub const SECTIONS: &[Section] = &[
         ],
     },
     Section {
+        id: "storage",
+        label: Chilpa::mark("Storage"),
+        icon: "folderOpen",
+        groups: &[
+            Group { title: Chilpa::mark("Usage"), settings: &[
+                setting("storage.total", Chilpa::mark("Cache used"), Chilpa::mark("Artwork, generated images, plugin data and other temporary files."), Control::Status),
+                setting("storage.remote", Chilpa::mark("Remote artwork"), Chilpa::mark("Images from sources and plugins. Covers saved in your library stay protected."), Control::Status),
+                setting("storage.embedded", Chilpa::mark("Local artwork"), Chilpa::mark("Extracted from your music files and kept while the library refers to it."), Control::Status),
+                setting("storage.derivatives", Chilpa::mark("Generated images"), Chilpa::mark("Smaller covers and background images; Chilpa can make these again."), Control::Status),
+                setting("storage.other", Chilpa::mark("Other cache"), Chilpa::mark("Includes downloaded plugin models, waveform data and server caches."), Control::Status),
+                action("storage.refresh", Chilpa::mark("Recalculate usage"), Chilpa::mark("Read the current size of the cache folders in the background."), Control::Button, Chilpa::mark("Refresh")),
+                action("storage.open", Chilpa::mark("Cache folder"), Chilpa::mark("Open the folder used for disposable files."), Control::Button, Chilpa::mark("Open")),
+            ] },
+            Group { title: Chilpa::mark("Limits and cleanup"), settings: &[
+                setting("storage.remoteLimitMb", Chilpa::mark("Remote image limit"), Chilpa::mark("Older temporary images are removed in the background. Artwork referenced by your library is kept."), Control::Select),
+                action("storage.clear.remote", Chilpa::mark("Clear temporary remote artwork"), Chilpa::mark("Remove unreferenced images from sources and plugins. Needed images download again."), Control::Button, Chilpa::mark("Clear…")),
+                action("storage.clear.derivatives", Chilpa::mark("Clear generated images"), Chilpa::mark("Remove smaller covers and backgrounds. Chilpa makes them again as needed."), Control::Button, Chilpa::mark("Clear…")),
+            ] },
+        ],
+    },
+    Section {
         id: "sources",
         label: Chilpa::mark("Sources"),
         icon: "server",

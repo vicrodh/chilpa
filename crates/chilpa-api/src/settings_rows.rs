@@ -9,6 +9,11 @@
 
 use crate::{settings_schema, Chilpa};
 
+fn cache_size(bytes: u64) -> String {
+    if bytes < 1024 * 1024 { format!("{} KiB", bytes.div_ceil(1024)) }
+    else { format!("{:.1} MiB", bytes as f64 / (1024 * 1024) as f64) }
+}
+
 /// One row: a group title (0), a setting (1) or a line of a report under
 /// one (2).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -83,6 +88,7 @@ pub(crate) fn fixed(key: &str) -> Vec<(&'static str, String)> {
         "navigation.playlistArtwork" => {
             vec![("icon", chilpa_i18n::t("Playlist icon")), ("collage", chilpa_i18n::t("Cover collage"))]
         }
+        "storage.remoteLimitMb" => vec![("100", "100 MiB".into()), ("200", "200 MiB".into()), ("500", "500 MiB".into()), ("1024", "1 GiB".into())],
         "library.metaSrc" => vec![("musicbrainz", "MusicBrainz".to_string()), ("discogs", "Discogs".to_string()), ("embedded", chilpa_i18n::t("Embedded tags only"))],
         "audio.dsdMode" => vec![("native", chilpa_i18n::t("Native DSD")), ("dop", chilpa_i18n::t("DSD over PCM (DoP)")), ("pcm", chilpa_i18n::t("Convert to PCM"))],
         "desktop.trayIcon" => vec![("auto", chilpa_i18n::t("Auto")), ("mono-light", chilpa_i18n::t("Mono light")), ("mono-dark", chilpa_i18n::t("Mono dark")), ("color", chilpa_i18n::t("Color"))],
@@ -105,6 +111,13 @@ impl Chilpa {
     /// its entry in the schema and an arm where its feature lives: no list
     /// of keys grows here, and nothing changes in the window's bridge.
     pub fn maintain(&mut self, key: &str) -> Option<String> {
+        if key == "storage.refresh" {
+            crate::storage_cache::request_scan();
+            return Some(chilpa_i18n::t("Updating usage…"));
+        }
+        if let Some(kind) = key.strip_prefix("storage.clear.") {
+            return crate::storage_cache::clear(kind).then(|| chilpa_i18n::t("Clearing in the background…"));
+        }
         if let Some(said) = self.library_maintenance(key) {
             return Some(said);
         }
@@ -116,6 +129,11 @@ impl Chilpa {
     /// of keys: the window's bridge hands over what it does not know by
     /// name. `false` for a key nobody takes.
     pub fn adjust(&mut self, key: &str, value: &str) -> bool {
+        if key == "storage.remoteLimitMb" {
+            if !crate::storage_cache::set_limit(value) { return false }
+            self.remember_preference(key, value);
+            return true;
+        }
         if key == "audio.hwVolume" {
             self.set_hardware_volume(value == "true");
             return true;
@@ -145,6 +163,9 @@ impl Chilpa {
     /// The rows of one section, with what each says now, and whether the
     /// section has nothing built yet.
     pub fn settings_rows(&mut self, section: &str, notes: &RowNotes) -> (Vec<SettingsRow>, bool) {
+        if section == "storage" && !crate::storage_cache::usage().ready {
+            crate::storage_cache::request_scan();
+        }
         let section = settings_schema::section(section);
         let mut rows = Vec::new();
         let (output, _) = self.chosen_output();
@@ -197,6 +218,37 @@ impl Chilpa {
             return;
         }
         match row.key.as_str() {
+            "storage.total" | "storage.remote" | "storage.embedded" | "storage.derivatives" | "storage.other" => {
+                let usage = crate::storage_cache::usage();
+                row.control = "none".into();
+                if usage.ready {
+                    let count = match row.key.as_str() {
+                        "storage.remote" => usage.remote,
+                        "storage.embedded" => usage.embedded,
+                        "storage.derivatives" => usage.derivatives,
+                        "storage.other" => usage.other,
+                        _ => crate::storage_cache::Count { bytes: usage.total(), files: usage.remote.files + usage.embedded.files + usage.derivatives.files + usage.other.files },
+                    };
+                    row.value = cache_size(count.bytes);
+                    row.description = format!("{} · {}", row.description, chilpa_i18n::t_args("{} files", &[&count.files.to_string()]));
+                    if row.key == "storage.remote" && usage.pinned.files > 0 {
+                        row.description = format!("{} · {}", row.description,
+                            chilpa_i18n::t_args("{} protected by the library", &[&cache_size(usage.pinned.bytes)]));
+                    }
+                } else {
+                    row.value = chilpa_i18n::t("Calculating…");
+                }
+            }
+            "storage.remoteLimitMb" => {
+                row.value = crate::storage_cache::limit_mb().to_string();
+                for (value, label) in fixed(&row.key) {
+                    row.values.push(value.into());
+                    row.options.push(label);
+                }
+            }
+            "storage.open" => {
+                row.value = url::Url::from_directory_path(chilpa_dirs::cache()).map(|url| url.to_string()).unwrap_or_default();
+            }
             "devices.original" | "devices.discovery" => row.control = "none".into(),
             "audio.backend" => {
                 let (stacks, current) = (self.stacks(), self.stack_of(output));

@@ -30,6 +30,7 @@ Item {
     readonly property int shown: SettingsModel.panelWidthAt(dragged >= 0 ? dragged : kept, Window.width)
 
     RectangularShadow {
+        visible: frame.dragged < 0
         anchors.fill: parent
         radius: panel.radius
         offset.y: Metrics.shadowSubtleY

@@ -39,7 +39,7 @@ Item {
         : SettingsModel.sidebarWidth > 0 ? SettingsModel.sidebarWidth : Metrics.sidebarWidth
 
     RectangularShadow {
-        visible: frame.shown > 0
+        visible: frame.shown > 0 && !frame.dragging
         x: Metrics.spaceWindow
         y: frame.head
         width: frame.shown

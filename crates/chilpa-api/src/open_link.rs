@@ -22,16 +22,27 @@ use std::time::Duration;
 
 /// How long one plugin has to answer one question.
 const ASK: Duration = Duration::from_secs(15);
+const IDENTIFY: Duration = Duration::from_secs(35);
 
 /// What a link came to.
 #[derive(Clone, Debug, PartialEq)]
 enum Found {
     /// A record of the library: its best edition.
-    Library(i64),
+    Library { id: i64, title: String, artist: String },
     /// Something of a source, as its search shows it.
     Source { plugin: String, name: String, item: Value },
     /// A playlist of another service, for the importer.
     Playlist,
+}
+
+impl Found {
+    fn choice(&self) -> Value {
+        match self {
+            Self::Library { title, artist, .. } => json!({"source": "Chilpa", "title": title, "artist": artist}),
+            Self::Source { name, item, .. } => json!({"source": name, "title": item["title"], "artist": item["artist"]}),
+            Self::Playlist => Value::Null,
+        }
+    }
 }
 
 #[derive(Default)]
@@ -40,6 +51,7 @@ pub(crate) struct LinkState {
     resolving: bool,
     error: String,
     found: Option<Found>,
+    choices: Vec<Found>,
     generation: u64,
 }
 
@@ -63,8 +75,18 @@ fn clean_title(title: &str) -> String {
 }
 
 /// The first item of one list of a native search's answer.
-fn first(answer: &Value, list: &str) -> Option<Value> {
-    answer[list].as_array()?.iter().find(|item| item["ref"].as_str().is_some_and(|r| !r.is_empty())).cloned()
+fn match_item(answer: &Value, list: &str, title: &str, artist: &str) -> Option<Value> {
+    let wanted = clean_title(title).to_lowercase();
+    let artist = artist.to_lowercase();
+    answer[list].as_array()?.iter().find(|item| {
+        let name = item["title"].as_str().unwrap_or_default().to_lowercase();
+        let credit = item["artist"].as_str().unwrap_or_default().to_lowercase();
+        item["ref"].as_str().is_some_and(|r| !r.is_empty())
+            && !wanted.is_empty()
+            && (if list == "tracks" { name == title.to_lowercase() }
+                else { clean_title(&name).to_lowercase() == wanted || name == title.to_lowercase() })
+            && (artist.is_empty() || credit.contains(&artist) || artist.contains(&credit) && !credit.is_empty())
+    }).cloned()
 }
 
 /// QBZ's three searches in one source: "title artist" (a track first when
@@ -74,28 +96,23 @@ fn search_source(ask: &dyn Fn(&str, usize) -> Option<Value>, title: &str, artist
     let full = if artist.is_empty() { title.to_string() } else { format!("{title} {artist}") };
     if let Some(answer) = ask(&full, 5) {
         if track {
-            if let Some(found) = first(&answer, "tracks") {
-                return Some(found);
-            }
+            return match_item(&answer, "tracks", title, artist);
         }
-        if let Some(found) = first(&answer, "albums") {
+        if let Some(found) = match_item(&answer, "albums", title, artist) {
             return Some(found);
         }
     }
+    if track { return None }
     let cleaned = clean_title(title);
     if cleaned != title && !cleaned.is_empty() {
         let query = if artist.is_empty() { cleaned.clone() } else { format!("{cleaned} {artist}") };
-        if let Some(found) = ask(&query, 5).and_then(|answer| first(&answer, "albums")) {
+        if let Some(found) = ask(&query, 5).and_then(|answer| match_item(&answer, "albums", title, artist)) {
             return Some(found);
         }
     }
     if !artist.is_empty() && artist != title {
         let answer = ask(artist, 10)?;
-        let (title, cleaned) = (title.to_lowercase(), cleaned.to_lowercase());
-        return answer["albums"].as_array()?.iter().find(|album| {
-            let name = album["title"].as_str().unwrap_or_default().to_lowercase();
-            !name.is_empty() && (name.contains(&cleaned) || cleaned.contains(&name) || name.contains(&title))
-        }).cloned();
+        return match_item(&answer, "albums", &cleaned, artist);
     }
     None
 }
@@ -124,41 +141,68 @@ fn source_found(natives: &Arc<crate::natives::Natives>, plugin: &str, name: &str
     Ok(Found::Source { plugin: plugin.to_string(), name: name.to_string(), item })
 }
 
-fn resolve(url: &str, natives: &Arc<crate::natives::Natives>, sources: &[(String, String)]) -> Result<Found, String> {
-    // A source that claims the link opens it.
-    for (plugin, name) in sources {
-        let Ok(answer) = natives.call(plugin, "link.resolve", json!({"url": url}), ASK) else { continue };
-        if answer["ref"].as_str().is_some_and(|r| !r.is_empty()) {
-            return source_found(natives, plugin, name, answer);
-        }
-    }
+enum Resolution { Direct(Found), Choices(Vec<Found>) }
+
+fn resolve(url: &str, natives: &Arc<crate::natives::Natives>, sources: &[(String, String)]) -> Result<Resolution, String> {
+    // Ask source resolvers together so an unrelated plugin cannot hold the
+    // link modal for another source's timeout. Keep sidebar priority.
+    let direct = std::thread::scope(|scope| {
+        let handles: Vec<_> = sources.iter().map(|(plugin, name)| scope.spawn(move || {
+            let answer = natives.call(plugin, "link.resolve", json!({"url": url}), ASK).ok()?;
+            answer["ref"].as_str().filter(|r| !r.is_empty())?;
+            source_found(natives, plugin, name, answer).ok()
+        })).collect();
+        handles.into_iter().filter_map(|handle| handle.join().ok().flatten()).next()
+    });
+    if let Some(found) = direct { return Ok(Resolution::Direct(found)) }
     // What the link is, from a plugin that knows other services' links.
-    let what = natives
-        .ids()
-        .into_iter()
-        .find_map(|id| natives.call(&id, "link.identify", json!({"url": url}), ASK).ok().filter(|v| v["kind"].is_string()))
+    let mut identifiers = natives.ids();
+    identifiers.sort_by_key(|id| !natives.imports_playlists(id));
+    let what = identifiers.into_iter()
+        .find_map(|id| natives.call(&id, "link.identify", json!({"url": url}), IDENTIFY).ok().filter(|v| v["kind"].is_string()))
         .ok_or_else(|| chilpa_i18n::t("Chilpa cannot read this link"))?;
     if what["kind"] == "playlist" {
-        return Ok(Found::Playlist);
+        return Ok(Resolution::Direct(Found::Playlist));
     }
     let text = |key: &str| what[key].as_str().unwrap_or_default().trim().to_string();
     let (title, artist, album) = (text("title"), text("artist"), text("album"));
     let track = what["kind"] == "track";
-    // The library first, its best edition.
+    // Keep every verified destination so the user can choose a source.
     let record = if track { album.clone() } else { title.clone() };
+    let mut choices = Vec::new();
     if !record.is_empty() {
         if let Some(id) = in_library(&record, &artist) {
-            return Ok(Found::Library(id));
+            choices.push(Found::Library { id, title: record, artist: artist.clone() });
         }
     }
-    // Then the sources, in the sidebar's order.
-    for (plugin, name) in sources {
-        let ask = |text: &str, limit: usize| natives.call(plugin, "search", json!({"text": text, "limit": limit}), ASK).ok();
-        if let Some(item) = search_source(&ask, &title, &artist, track) {
-            return source_found(natives, plugin, name, item);
+    if track && choices.is_empty() {
+        if let Some((id, album)) = local_track_album(&title, &artist) {
+            choices.push(Found::Library { id, title: album, artist: artist.clone() });
         }
     }
-    Err(chilpa_i18n::t("Not in your library or in your sources"))
+    // Search sources concurrently, then present results in sidebar order.
+    let remote = std::thread::scope(|scope| {
+        let handles: Vec<_> = sources.iter().map(|(plugin, name)| {
+            let (title, artist, album) = (&title, &artist, &album);
+            scope.spawn(move || {
+                let ask = |text: &str, limit: usize| natives.call(plugin, "search", json!({"text": text, "limit": limit}), ASK).ok();
+                let found = search_source(&ask, title, artist, track);
+                let found = if track && found.is_none() && !album.is_empty() {
+                    search_source(&ask, album, artist, false)
+                } else { found }?;
+                source_found(natives, plugin, name, found).ok()
+            })
+        }).collect();
+        handles.into_iter().filter_map(|handle| handle.join().ok().flatten()).collect::<Vec<_>>()
+    });
+    choices.extend(remote);
+    if choices.is_empty() { Err(chilpa_i18n::t("Not in your library or in your sources")) }
+    else { Ok(Resolution::Choices(choices)) }
+}
+
+fn local_track_album(title: &str, artist: &str) -> Option<(i64, String)> {
+    let library = chilpa_library::Library::open_read_only(&chilpa_library::Library::default_path()).ok()?;
+    library.album_of_matching_track(title, artist).ok().flatten()
 }
 
 /// The best edition the library has of a record: the group's first, the
@@ -194,6 +238,7 @@ impl Chilpa {
             state.generation += 1;
             state.url = url.clone();
             state.found = None;
+            state.choices.clear();
             state.error.clear();
             state.resolving = !url.is_empty();
             state.generation
@@ -210,7 +255,8 @@ impl Chilpa {
             }
             state.resolving = false;
             match result {
-                Ok(found) => state.found = Some(found),
+                Ok(Resolution::Direct(found)) => state.found = Some(found),
+                Ok(Resolution::Choices(choices)) => state.choices = choices,
                 Err(error) => state.error = error,
             }
         });
@@ -228,10 +274,20 @@ impl Chilpa {
         *state = LinkState { generation: state.generation, ..LinkState::default() };
     }
 
-    /// How the link goes: `{resolving, error, playlist}`.
+    /// How the link goes, including destination choices for foreign links.
     pub fn open_link_state(&self) -> String {
         let state = lock(&self.open_link);
-        json!({"resolving": state.resolving, "error": state.error, "playlist": state.found == Some(Found::Playlist)}).to_string()
+        json!({"resolving": state.resolving, "error": state.error, "playlist": state.found == Some(Found::Playlist),
+            "choices": state.choices.iter().map(Found::choice).collect::<Vec<_>>()}).to_string()
+    }
+
+    pub fn choose_open_link(&mut self, index: usize) -> Option<Leads> {
+        let found = {
+            let mut state = lock(&self.open_link);
+            if index >= state.choices.len() { return None }
+            state.choices.remove(index)
+        };
+        self.lead_for_link(found)
     }
 
     /// Where the resolved link leads, once. A playlist stays for the
@@ -244,8 +300,12 @@ impl Chilpa {
                 Some(_) => state.found.take()?,
             }
         };
+        self.lead_for_link(found)
+    }
+
+    fn lead_for_link(&mut self, found: Found) -> Option<Leads> {
         match found {
-            Found::Library(id) => Some(Leads::Screen("album", id)),
+            Found::Library { id, .. } => Some(Leads::Screen("album", id)),
             Found::Source { plugin, name, item } => Some(self.open_source_item(&plugin, &name, &item)),
             Found::Playlist => None,
         }
@@ -309,7 +369,7 @@ mod tests {
             match text {
                 "Senjutsu Iron Maiden" => Some(json!({"albums": [], "tracks": []})),
                 "Senjutsu (2021 Remaster) Iron Maiden" => Some(json!({"albums": []})),
-                "Iron Maiden" => Some(json!({"albums": [{"ref": "album:1", "title": "Killers"}, {"ref": "album:2", "title": "Senjutsu"}]})),
+                "Iron Maiden" => Some(json!({"albums": [{"ref": "album:1", "title": "Killers", "artist": "Iron Maiden"}, {"ref": "album:2", "title": "Senjutsu", "artist": "Iron Maiden"}]})),
                 _ => None,
             }
         };
@@ -324,15 +384,17 @@ mod tests {
 
     #[test]
     fn a_track_link_finds_the_track_first() {
-        let answers = |_: &str, _: usize| Some(json!({"tracks": [{"kind": "track", "ref": "track:9"}], "albums": [{"ref": "album:1"}]}));
+        let answers = |_: &str, _: usize| Some(json!({"tracks": [{"kind": "track", "ref": "track:9", "title": "Song", "artist": "Band"}], "albums": [{"ref": "album:1", "title": "Song", "artist": "Band"}]}));
         assert_eq!(search_source(&answers, "Song", "Band", true).unwrap()["ref"], "track:9");
         assert_eq!(search_source(&answers, "Song", "Band", false).unwrap()["ref"], "album:1");
+        let only_album = |_: &str, _: usize| Some(json!({"tracks": [], "albums": [{"ref": "album:1", "title": "Song", "artist": "Band"}]}));
+        assert!(search_source(&only_album, "Song", "Band", true).is_none());
     }
 
     #[test]
     fn nothing_found_is_none() {
         let answers = |_: &str, _: usize| Some(json!({"albums": [{"ref": "album:1", "title": "Other"}]}));
         assert!(search_source(&|_: &str, _: usize| None, "Song", "Band", false).is_none());
-        assert_eq!(search_source(&answers, "Song", "", false).unwrap()["ref"], "album:1", "QBZ takes the first record of the full query");
+        assert!(search_source(&answers, "Song", "", false).is_none());
     }
 }

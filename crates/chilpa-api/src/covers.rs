@@ -41,7 +41,9 @@ pub fn contained_cover(path: &Path, size: u32) -> Option<PathBuf> {
     std::fs::create_dir_all(directory).ok()?;
     let mut file = tempfile::NamedTempFile::new_in(output.parent()?).ok()?;
     image::codecs::jpeg::JpegEncoder::new_with_quality(&mut file, QUALITY).encode_image(&field).ok()?;
+    let bytes = file.as_file().metadata().ok()?.len();
     file.persist(&output).ok()?;
+    crate::storage_cache::note_stored(bytes);
     Some(output)
 }
 
@@ -95,6 +97,7 @@ fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBuf> {
     image::codecs::jpeg::JpegEncoder::new_with_quality(&mut writer, QUALITY).encode_image(&pixels).ok()?;
     drop(writer);
     std::fs::rename(&next, &out).ok()?;
+    if let Ok(meta) = std::fs::metadata(&out) { crate::storage_cache::note_stored(meta.len()); }
     Some(out)
 }
 
@@ -112,6 +115,7 @@ fn atmosphere_in(dir: &Path, path: &Path) -> Option<PathBuf> {
     let next = out.with_extension("png.new");
     field.save_with_format(&next, image::ImageFormat::Png).ok()?;
     std::fs::rename(next, &out).ok()?;
+    if let Ok(meta) = std::fs::metadata(&out) { crate::storage_cache::note_stored(meta.len()); }
     Some(out)
 }
 

@@ -12,7 +12,10 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 // the surface, opened by the app menu or by its key.
 Modal {
     id: modal
-    width: Math.min((parent ? parent.width : Metrics.linkModal) - Metrics.modalInsets, Metrics.linkModal)
+    width: Math.min((parent ? parent.width : Metrics.linkModal) - Metrics.modalInsets, Metrics.linkModal + Metrics.sidebarWidth)
+    readonly property var destinations: {
+        try { return JSON.parse(Link.choices || "[]") } catch (_) { return [] }
+    }
 
     onClosed: if (Link.open) Link.close()
 
@@ -101,6 +104,82 @@ Modal {
             wrapMode: Text.WordWrap
             font.pointSize: Type.small
             color: Theme.color.statusNegative
+        }
+
+        Column {
+            objectName: "linkChoices"
+            width: parent.width
+            spacing: Metrics.gap8
+            visible: modal.destinations.length > 0
+            Text {
+                text: I18n.tr("Open in", I18n.rev)
+                font.pointSize: Type.small
+                color: Theme.color.textSecondary
+            }
+            Flickable {
+                id: choicesScroll
+                width: parent.width
+                height: Math.min(choiceList.implicitHeight, Metrics.settingsRow * 5 + Metrics.gap8 * 4) // derived: five visible choices
+                contentHeight: choiceList.implicitHeight
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                Column {
+                    id: choiceList
+                    width: parent.width
+                    spacing: Metrics.gap8
+                    Repeater {
+                        model: modal.destinations
+                        Rectangle {
+                            required property var modelData
+                            required property int index
+                            objectName: "linkChoice"
+                            width: parent.width
+                            height: Metrics.settingsRow
+                            radius: Metrics.radiusControl
+                            color: chooseMouse.containsMouse ? Theme.color.stateHover : Theme.color.surfacePanel
+                            activeFocusOnTab: true
+                            border.width: activeFocus ? Metrics.focusRing : 0
+                            border.color: Theme.color.accent
+                            onActiveFocusChanged: if (activeFocus)
+                                choicesScroll.contentY = Math.max(0, Math.min(y, choiceList.implicitHeight - choicesScroll.height))
+                            Keys.onPressed: (event) => {
+                                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                                    Link.choose(index)
+                                    event.accepted = true
+                                }
+                            }
+                            Row {
+                                anchors.fill: parent
+                                anchors.margins: Metrics.gap12
+                                spacing: Metrics.gap12
+                                Text {
+                                    width: Metrics.sidebarWidth / 2 // derived: compact source label
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: modelData.source || ""
+                                    color: Theme.color.accent
+                                    font.pointSize: Type.small
+                                    elide: Text.ElideRight
+                                }
+                                Text {
+                                    width: parent.width - Metrics.sidebarWidth / 2 - Metrics.gap12 // derived: remaining title space
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: modelData.title + (modelData.artist ? " · " + modelData.artist : "")
+                                    color: Theme.color.textPrimary
+                                    font.pointSize: Type.small
+                                    elide: Text.ElideRight
+                                }
+                            }
+                            MouseArea {
+                                id: chooseMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: Link.choose(index)
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         Column {
