@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.artwork
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
@@ -16,6 +17,10 @@ Flickable {
     id: page
 
     property bool selectionMode: false
+    KeyedModel {
+        id: sourceShelves
+        items: (sourceDetails.info.shelves || []).filter(shelf => !(shelf.id === "tracks" && shelf.kind === "track"))
+    }
     function toggleSelection() { selectionMode = !selectionMode; tracks.clearSelection() }
     function showActions(item, left, top) { const at = item.mapToItem(page, left, top); albumMenu.show(detail.selectedId, detail.title, detail.artist, -1, at.x, at.y) }
     // The cover's own menu, with what it offers now.
@@ -142,7 +147,7 @@ Flickable {
             modelKind: "sameArtist"
             section: ({title: I18n.tr("From same artist", I18n.rev), key: String(detail.selectedId), size: 18})
         }
-        Repeater { model: sourceDetails.info.shelves || []; SourceShelf { required property var modelData; width: column.width; section: modelData } }
+        Repeater { model: sourceShelves; SourceShelf { required property var entry; width: column.width; section: entry } }
         AlbumCarousel {
             width: parent.width
             title: I18n.tr("Similar albums", I18n.rev)

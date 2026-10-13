@@ -36,6 +36,7 @@ pub mod qobject {
         #[qproperty(i32, filter_rev)]
         #[qproperty(QString, playing_path)]
         #[qproperty(i32, count)]
+        #[qproperty(bool, ready)]
         #[qproperty(QString, summary)]
         #[qproperty(i32, selected_count)]
         type TrackListModel = super::TrackListRust;
@@ -194,20 +195,19 @@ pub struct TrackListRust {
     filter_rev: i32,
     playing_path: QString,
     count: i32,
+    ready: bool,
     summary: QString,
     selected_count: i32,
     rows: Rows,
     playing: String,
-    /// A record numbers its rows by track number; any other list, by
-    /// position.
+    /// Albums use track numbers; other lists use row positions.
     by_track_number: bool,
     selected: HashSet<i64>,
     anchor: Option<usize>,
     /// Which list the rows are: kind, id and key.
     loaded: Option<(String, i64, String)>,
     pending: bool,
-    /// The Tracks screen: how its rows are grouped, where each letter
-    /// starts, and which of its questions is the last one asked.
+    /// Tracks grouping, letter boundaries and latest query generation.
     group: String,
     letters: String,
     asked: u64,
@@ -871,8 +871,7 @@ impl qobject::TrackListModel {
                 let top = kind == "artistTop";
                 let (order, count) = if top { (TrackOrder::Plays, 10) } else { (TrackOrder::Artist, 100_000) };
                 let mut tracks = app::with(|api| api.artist_tracks(&name, order, count));
-                // What never played is not "most played"; an artist nothing
-                // of whom played yet shows its first tracks instead.
+                // With no plays, show the artist's first tracks instead.
                 if top {
                     tracks.retain(|t| t.plays > 0);
                     if tracks.is_empty() {
@@ -923,13 +922,22 @@ impl qobject::TrackListModel {
 
     fn show(mut self: Pin<&mut Self>, kind: String, rows: Rows, length: Option<u64>) {
         let id = self.rust().album_id;
-        // The same list read again -- a track moved in a playlist, the filter
-        // narrowed -- keeps what is selected and still there; another list
-        // starts with nothing selected.
+        // I preserve selection when refreshing the same list.
         let identity = (kind.clone(), id, self.rust().key.to_string());
         let same = self.rust().loaded.as_ref() == Some(&identity);
         // Read again and unchanged, it is left as it is: a reset would flash.
         if same && matches!((&self.rust().rows, &rows), (Rows::Loaded(a), Rows::Loaded(b)) if a == b) { return; }
+        if same {
+            if let (Rows::Loaded(old), Rows::Loaded(new)) = (&self.rust().rows, &rows) {
+                if old.len() == new.len() && old.iter().zip(new).all(|(a, b)| a.same_row(b)) {
+                    let changed: Vec<_> = old.iter().zip(new).enumerate().filter_map(|(i, (a, b))| (a != b).then_some(i)).collect();
+                    self.as_mut().rust_mut().rows = rows;
+                    for row in changed { let at = self.index(row as i32, 0, &QModelIndex::default()); self.as_mut().data_changed(&at, &at, &QVector::<i32>::default()); }
+                    if let Some(ms) = length { let count = *self.count() as usize; self.as_mut().set_summary(QString::from(&summary(count, ms))); }
+                    return;
+                }
+            }
+        }
         // SAFETY: the reset is begun and ended around the swap, as Qt asks.
         unsafe { self.as_mut().begin_reset_model() };
         {
@@ -957,6 +965,7 @@ impl qobject::TrackListModel {
         self.as_mut().set_count(tracks as i32);
         let text = length.map(|ms| summary(tracks, ms)).unwrap_or_default();
         self.as_mut().set_summary(QString::from(&text));
+        self.as_mut().set_ready(true);
     }
 }
 

@@ -3,6 +3,11 @@ use super::store::Card;
 use serde_json::Value;
 use std::cmp::Ordering;
 
+pub(super) fn matches(card: &Card, words: &[String]) -> bool {
+    let text = format!("{} {} {}", card.title, card.artist, card.genre).to_lowercase();
+    words.iter().all(|word| text.contains(word))
+}
+
 fn compare(a: &Value, b: &Value, field: &str, descending: bool) -> Ordering {
     let missing = |v: &Value| v.is_null() || v.as_str() == Some("");
     match (missing(&a[field]), missing(&b[field])) {
@@ -73,6 +78,13 @@ impl crate::Chilpa {
 mod tests {
     use super::*;
     use serde_json::json;
+    #[test]
+    fn every_genre_remains_searchable_when_only_the_first_is_displayed() {
+        let card = Card { title: "Record".into(), genre: "Rock, Alternative, Pop".into(), ..Default::default() };
+        assert!(matches(&card, &["alternative".into()]));
+        assert!(matches(&card, &["record".into(), "pop".into()]));
+        assert!(!matches(&card, &["jazz".into()]));
+    }
     #[test]
     fn sorting_keeps_missing_dates_last_and_reverses_the_source_order() {
         let mut cards = vec![Card { id: -1, metadata: json!({"added_at":20}), ..Default::default() },

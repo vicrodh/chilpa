@@ -3,7 +3,7 @@ import QtTest
 import app.chilpa
 import app.chilpa.sources
 import "../../qml/Components"
-import "../../../chilpa-qt-kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 TestCase {
     name: "AlbumCardQualityAndViewport"
@@ -108,6 +108,16 @@ TestCase {
         mouseMove(card, card.width / 2, card.height + 40)
         card.albumId = 0; card.year = ""
     }
+    function test_overlay_shows_only_the_first_genre_without_changing_metadata() {
+        card.albumId = 5
+        AlbumActions.informationDocument = {genre:"Rock, Alternative, Pop", genres:["Rock", "Alternative", "Pop"]}
+        mouseMove(card, card.width / 2, card.width / 2)
+        tryVerify(() => shown(card).includes("Rock"))
+        verify(!shown(card).includes("Rock, Alternative, Pop"))
+        compare(AlbumActions.informationDocument.genres.length, 3)
+        mouseMove(card, card.width / 2, card.height + 40)
+        AlbumActions.informationDocument = {}; card.albumId = 0
+    }
     function test_source_album_overlay_uses_its_native_favorite() {
         Sources.show({cards: {"-7": {plugin: "test", ref: "album:record", favorite: false}}})
         card.albumId = -7
@@ -115,7 +125,8 @@ TestCase {
         const favorite = findChild(card, "albumFavorite")
         tryVerify(() => favorite !== null && favorite.visible)
         compare(favorite.checked, false)
-        mouseClick(favorite)
+        waitForRendering(favorite)
+        mouseClick(favorite, favorite.width / 2, favorite.height / 2)
         const command = Sources.asked[Sources.asked.length - 1]
         compare(command[0], "native")
         compare(command[1], "test")

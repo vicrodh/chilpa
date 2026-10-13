@@ -6,6 +6,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 TitledFlow {
     CircleCheck { text: "Selected"; checked: true }
+    KeyedModel { items: [{id:"preview", title:"Stable descriptor"}] }
     ViewportScrollBar { visible: false }
     Item {
         width: Metrics.cardMinWidth

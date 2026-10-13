@@ -17,12 +17,12 @@ TestCase {
             id: delayedPage
             objectName: "delayedPage"
             property bool visualReady: false
-            Timer { interval: 100; running: true; onTriggered: delayedPage.visualReady = true }
+            Timer { interval: 1500; running: true; onTriggered: delayedPage.visualReady = true }
         }
     }
     PageTransition { id: pages; anchors.fill: parent }
 
-    function test_current_page_remains_until_the_destination_is_ready() {
+    function test_a_slow_module_does_not_delay_its_destination_shell() {
         pages.sourceComponent = albums
         pages.route = "albums"
         tryCompare(pages, "committedRoute", "albums")
@@ -30,10 +30,11 @@ TestCase {
 
         pages.sourceComponent = delayed
         pages.route = "delayed"
-        wait(30)
-        compare(pages.item.objectName, "albumsPage", "a built page still waits for its first data snapshot")
-        tryCompare(pages, "committedRoute", "delayed")
+        const started = Date.now()
+        tryCompare(pages, "committedRoute", "delayed", 500)
         compare(pages.item.objectName, "delayedPage")
+        verify(Date.now() - started < 500)
+        compare(pages.item.visualReady, false, "the page owns its skeleton while data is still pending")
 
         pages.sourceComponent = home
         pages.route = "home"

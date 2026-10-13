@@ -14,18 +14,18 @@ Item {
     property var source: ({})
     property var document: ({})
     signal artistOpened()
-    readonly property int columns: Math.max(1, Math.floor((Math.max(0, width - Metrics.scenePanelPadTotal) + Metrics.scenePanelGridGap) / (Metrics.scenePanelTrackMin + Metrics.scenePanelGridGap)))
-    readonly property real trackWidth: Math.max(Metrics.scenePanelTrackMin, (width - Metrics.scenePanelPadTotal - (columns - 1) * Metrics.scenePanelGridGap) / columns)
+    readonly property int columns: CardLayout.columns(width - Metrics.scenePanelPadTotal)
+    readonly property real trackWidth: CardLayout.cardWidth
     readonly property var sections: (document.shelves || []).filter(function (s) { return s.kind === "album" && s.role !== "latest" && s.id !== "latest" && (s.items || []).length > 0 })
     readonly property var entries: {
         var out = []
         for (var i = 0; i < sections.length; ++i) {
             var section = sections[i], albums = section.items || []
-            out.push({heading: section.title || "", count: albums.length})
+            out.push({id: section.id + ":heading", heading: section.title || "", count: albums.length})
             for (var j = 0; j < albums.length; j += columns)
-                out.push({albums:albums.slice(j, j + columns)})
+                out.push({id: section.id + ":" + albums[j].ref, albums:albums.slice(j, j + columns)})
             if (section.key && (section.more || section.loading || section.error))
-                out.push({continuation:section})
+                out.push({id: section.id + ":more", continuation:section})
         }
         return out
     }
@@ -34,6 +34,7 @@ Item {
     readonly property bool loading: !idle && !noSource && document.loading === true && entries.length === 0
     readonly property bool failed: !idle && !noSource && !!document.error && entries.length === 0
     readonly property bool empty: !idle && !noSource && !loading && !failed && entries.length === 0
+    KeyedModel { id: albumRows; items: pane.entries }
 
     Column {
         visible: pane.idle || pane.noSource || pane.loading || pane.failed || pane.empty
@@ -71,54 +72,55 @@ Item {
         id: list
         visible: pane.entries.length > 0
         x: Metrics.scenePanelPadLeft; width: Math.max(0, parent.width - Metrics.scenePanelPadTotal); height: parent.height
-        model: pane.entries; clip: true; cacheBuffer: Metrics.scenePanelCardHeight * 2
+        model: albumRows; clip: true; cacheBuffer: CardLayout.cardHeight * 2
         boundsBehavior: Flickable.StopAtBounds
         delegate: Item {
-            id: entry
-            required property var modelData
+            id: row
+            required property var entry
+            readonly property var modelData: entry
             readonly property bool heading: modelData.heading !== undefined
             readonly property bool continuation: !!modelData.continuation
             width: list.width
             height: heading ? Metrics.scenePanelSectionHeader
-                : continuation ? (entry.modelData.continuation.error ? Metrics.sceneFooterHeight : Metrics.sceneNavHeight)
-                : Metrics.scenePanelCardHeight + Metrics.scenePanelGridGap
+                : continuation ? (row.modelData.continuation.error ? Metrics.sceneFooterHeight : Metrics.sceneNavHeight)
+                : CardLayout.cardHeight + Metrics.gridGap
             Text {
                 id: sectionTitle
-                visible: entry.heading; text: entry.modelData.heading || ""
+                visible: row.heading; text: row.modelData.heading || ""
                 font.pointSize: Type.titleSmall; font.weight: Type.semibold; color: Theme.color.textPrimary
             }
             Text {
-                visible: entry.heading; anchors.left: sectionTitle.right; anchors.leftMargin: Metrics.gap12
-                anchors.baseline: sectionTitle.baseline; text: entry.modelData.count || ""
+                visible: row.heading; anchors.left: sectionTitle.right; anchors.leftMargin: Metrics.gap12
+                anchors.baseline: sectionTitle.baseline; text: row.modelData.count || ""
                 font.pointSize: Type.meta; color: Theme.color.textTertiary
             }
             Rectangle {
-                visible: entry.heading; y: Metrics.scenePanelSectionHeader - Metrics.gap16
+                visible: row.heading; y: Metrics.scenePanelSectionHeader - Metrics.gap16
                 width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline
             }
             Repeater {
-                model: entry.heading || entry.continuation ? [] : entry.modelData.albums || []
+                model: row.heading || row.continuation ? [] : row.modelData.albums || []
                 SceneAlbumCard {
                     required property var modelData
                     required property int index
-                    x: index * (pane.trackWidth + Metrics.scenePanelGridGap)
+                    x: index * (pane.trackWidth + Metrics.gridGap)
                     album: modelData; plugin: pane.source.plugin || ""
                 }
             }
             Column {
-                visible: entry.continuation; spacing: Metrics.gap8
+                visible: row.continuation; spacing: Metrics.gap8
                 Text {
-                    visible: !!entry.modelData.continuation?.error
-                    width: list.width; text: entry.modelData.continuation?.error || ""
+                    visible: !!row.modelData.continuation?.error
+                    width: list.width; text: row.modelData.continuation?.error || ""
                     textFormat: Text.PlainText; wrapMode: Text.WordWrap
                     font.pointSize: Type.meta; color: Theme.color.statusNegative
                 }
                 PillButton {
-                    objectName: entry.continuation ? "sceneSectionMore" : ""
-                    visible: !!entry.modelData.continuation?.more || entry.modelData.continuation?.loading === true
-                    enabled: entry.modelData.continuation?.loading !== true
-                    text: entry.modelData.continuation?.loading === true ? I18n.tr("Loading…", I18n.rev) : I18n.tr("Load more", I18n.rev)
-                    onClicked: Sources.command("section_more", entry.modelData.continuation.key, "")
+                    objectName: row.continuation ? "sceneSectionMore" : ""
+                    visible: !!row.modelData.continuation?.more || row.modelData.continuation?.loading === true
+                    enabled: row.modelData.continuation?.loading !== true
+                    text: row.modelData.continuation?.loading === true ? I18n.tr("Loading…", I18n.rev) : I18n.tr("Load more", I18n.rev)
+                    onClicked: Sources.command("section_more", row.modelData.continuation.key, "")
                 }
             }
         }

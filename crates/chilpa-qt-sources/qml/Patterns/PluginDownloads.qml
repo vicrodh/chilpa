@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.folders
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives" as P
+import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 
 Item {
     id: view
@@ -31,6 +32,7 @@ Item {
     readonly property var formats: selection ? selection.formats || [] : []
     readonly property var albums: document.albums || []
     readonly property var tracks: document.tracks || []
+    KeyedModel { id: purchaseRows; items: view.rows }
     readonly property var rows: {
         const source = tab === "albums" ? albums : tracks
         const needle = search.text.trim().toLocaleLowerCase()
@@ -162,13 +164,14 @@ Item {
         x: header.x; width: header.width
         visible: !view.selection && view.document.loaded === true && view.tab === "albums" && view.mode === "grid"
         clip: true; boundsBehavior: Flickable.StopAtBounds
-        cellWidth: (width + Metrics.gridGap) / Math.max(1, Math.floor((width + Metrics.gridGap) / (Metrics.cardMinWidth + Metrics.gridGap)))
+        cellWidth: CardLayout.cardWidth + Metrics.gridGap
         cellHeight: cellWidth - Metrics.gridGap + Metrics.cardTextGap + Metrics.cardTextHeight + Metrics.gridGap
-        model: view.rows
+        model: purchaseRows
         ScrollBar.vertical: P.ViewportScrollBar { gutter: -Metrics.gap8 }
         delegate: Loader {
             id: cardLoader
-            required property var modelData
+            required property var entry
+            readonly property var modelData: entry
             width: cards.cellWidth - Metrics.gridGap; height: cards.cellHeight - Metrics.gridGap
             sourceComponent: view.purchaseCard
             Binding { target: cardLoader.item; property: "record"; value: cardLoader.modelData; when: !!cardLoader.item }
@@ -183,10 +186,11 @@ Item {
         x: header.x; width: header.width
         visible: !view.selection && view.document.loaded === true && (view.tab === "tracks" || view.mode === "list")
         clip: true; reuseItems: true; boundsBehavior: Flickable.StopAtBounds
-        model: view.rows
+        model: purchaseRows
         ScrollBar.vertical: P.ViewportScrollBar { gutter: -Metrics.gap8 }
         delegate: Item {
-            required property var modelData
+            required property var entry
+            readonly property var modelData: entry
             required property int index
             width: listRows.width - Metrics.gap12; height: Metrics.rowRich
             P.ListRowSurface { anchors.fill: parent; rowIndex: index; radius: Metrics.radiusRow; hovered: hover.hovered }

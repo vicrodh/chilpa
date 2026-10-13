@@ -3,36 +3,70 @@ import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
-// The sources' shelves that join the Home, each with an id that stays
-// across runs ("<source>:<shelf>"). Shown here, or handed to a page that
-// places them among its own (`rendered: false`).
+// I keep the last descriptors while refreshing one source per frame.
+// Returning to Home reserves the same slots before any plugin is queried.
 Column {
     id: home
     property int refresh: 0
     property bool rendered: true
-    readonly property var sources: JSON.parse(Sources.homeLibraries(Library.remoteRev + Library.rev + Sources.revision + home.refresh) || "[]")
-    readonly property var sections: {
-        const rows = []
-        for (const source of home.sources) {
-            const page = JSON.parse(Sources.page(source.id + " native:discover:home", Library.remoteRev) || "{}")
-            let preferences = []
-            try { preferences = JSON.parse(SettingsModel.kept("ui.source." + source.id + ".discover.home") || "[]") } catch (_) {}
-            const available = page.shelves || []
-            const sections = preferences.map(preference => Object.assign({}, available.find(section => section.id === preference.id) || {}, preference))
-                .filter(section => available.some(found => found.id === section.id))
-                .concat(available.filter(section => !preferences.some(preference => preference.id === section.id)))
-            for (const section of sections) {
-                rows.push(Object.assign({}, section, {title: source.icon ? section.title : source.name + " · " + section.title,
-                    enabled: source.enabled === true && section.enabled !== false,
-                    sourceIcon: source.icon || "", sourceId: source.id, sourceName: source.name,
-                    homeId: source.id + ":" + section.id}))
-            }
-        }
-        return rows
+    property bool active: true
+    property bool ready: false
+    property var documents: Visit.recall("home.source.documents", ({}))
+    property var sections: Visit.recall("home.source.sections", [])
+    readonly property var sources: active
+        ? JSON.parse(Sources.homeLibraries(Library.remoteRev + Library.rev + Sources.revision + home.refresh) || "[]")
+        : Visit.recall("home.source.list", [])
+    onSourcesChanged: Qt.callLater(schedule)
+    onActiveChanged: Qt.callLater(schedule)
+    Component.onCompleted: Qt.callLater(schedule)
+    function schedule() {
+        if (!active) { step.stop(); return }
+        Visit.keep("home.source.list", sources)
+        step.index = 0
+        ready = sources.length === 0
+        publish()
+        if (!ready) step.restart()
     }
+    function publish() {
+        let rows = []
+        for (const source of sources)
+            rows = rows.concat((documents[source.id] || []).map(section =>
+                Object.assign({}, section, { enabled: source.enabled === true && section.sourceEnabled !== false })))
+        sections = rows
+        Visit.keep("home.source.sections", sections)
+    }
+    function resolve(source) {
+        const page = JSON.parse(Sources.page(source.id + " native:discover:home", Library.remoteRev) || "{}")
+        let preferences = []
+        try { preferences = JSON.parse(SettingsModel.kept("ui.source." + source.id + ".discover.home") || "[]") } catch (_) {}
+        const available = page.shelves || []
+        const ordered = preferences.map(preference => Object.assign({}, available.find(section => section.id === preference.id) || {}, preference))
+            .filter(section => available.some(found => found.id === section.id))
+            .concat(available.filter(section => !preferences.some(preference => preference.id === section.id)))
+        documents[source.id] = ordered.map(section => Object.assign({}, section, {
+            title: source.icon ? section.title : source.name + " · " + section.title,
+            sourceEnabled: section.enabled !== false, sourceIcon: source.icon || "", sourceId: source.id,
+            sourceName: source.name, homeId: source.id + ":" + section.id
+        }))
+        Visit.keep("home.source.documents", documents)
+        publish()
+    }
+    Timer {
+        id: step
+        property int index: 0
+        interval: Motion.moduleStart
+        repeat: true
+        onTriggered: {
+            if (!home.active || index >= home.sources.length) { stop(); home.ready = true; return }
+            home.resolve(home.sources[index++])
+            if (index >= home.sources.length) { stop(); home.ready = true }
+        }
+    }
+    KeyedModel { id: renderedRows; items: home.rendered ? home.sections.filter(section => section.enabled !== false && ((section.items || []).length || section.error)) : [] }
     Repeater {
-        model: home.rendered ? home.sections.filter(section => section.enabled !== false && ((section.items || []).length || section.error)) : []
-        SourceShelf { required property var modelData; width: home.width; section: modelData }
+        model: renderedRows
+        SourceShelf { required property var entry; width: home.width; section: entry }
     }
 }

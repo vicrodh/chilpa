@@ -1,6 +1,7 @@
 import QtQuick
 ListModel {
     property int limit: 0
+    property bool ready: true
     property string kind: ""
     property double albumId: 0
     property string key: ""

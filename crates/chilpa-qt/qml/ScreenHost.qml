@@ -12,6 +12,7 @@ import "qrc:/qt/qml/app/chilpa/playlists/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 
 // I acknowledge the route before I mount its view (frontend ADR-0014).
@@ -19,6 +20,7 @@ PageTransition {
     id: host
     property bool resizing: false
     property real heldWidth: -1
+    Binding { target: CardLayout; property: "viewportWidth"; value: host.width }
     onResizingChanged: if (resizing) heldWidth = width; else heldWidth = -1
     route: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.routeKey].join("\u001f")
     ScrollMemory { viewport: host.item && host.item.contentY !== undefined ? host.item : host.item?.scrollView || null; key: host.committedRoute }

@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.sources
 import "../../qml/Screens"
 import "../../qml/Components"
+import "../../qml/Patterns"
 
 TestCase {
     name: "ArtistScene"; when: windowShown; visible: true; width: 1100; height: 800
@@ -56,8 +57,8 @@ TestCase {
         compare(albums.sections.map(s => s.title), ["Discography", "EPs & Singles"])
         compare(albums.entries.length, 5, "the first section also has a continuation")
         compare(albums.entries[2].continuation.key, "fixture native:artist:7|album")
+        tryVerify(() => { const button = findChild(albums, "sceneSectionMore"); return button !== null && button.visible })
         const more = findChild(albums, "sceneSectionMore")
-        verify(more !== null && more.visible)
         more.clicked()
         compare(Sources.asked[Sources.asked.length - 1], ["section_more", "fixture native:artist:7|album", ""])
         panel.selectedPlugin = "second"

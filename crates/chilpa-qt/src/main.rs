@@ -134,15 +134,17 @@ fn main() {
         api.start_media_controls();
     });
 
-    // CHILPA_GALLERY opens the Gallery instead of the window: every piece of
-    // the interface in its states, in either theme.
+    // CHILPA_GALLERY opens the component gallery.
     let root = if std::env::var_os("CHILPA_GALLERY").is_some() { "gallery/qml/Gallery/Gallery.qml" } else { "qml/Main.qml" };
     let mut engine = QQmlApplicationEngine::new();
     if let Some(mut engine) = engine.as_mut() {
         // SAFETY: the engine is alive and a QQmlEngine; the provider it is
         // given is its own from then on.
         unsafe { chilpa_install_covers(engine.as_mut().get_unchecked_mut() as *mut QQmlApplicationEngine as *mut std::ffi::c_void) };
-        engine.load(&QUrl::from(&format!("qrc:/qt/qml/app/chilpa/{root}")));
+        let url = std::env::var_os("CHILPA_QML_SMOKE")
+            .map(|path| QUrl::from_local_file(&cxx_qt_lib::QString::from(std::path::PathBuf::from(path).to_string_lossy().as_ref())))
+            .unwrap_or_else(|| QUrl::from(&format!("qrc:/qt/qml/app/chilpa/{root}")));
+        engine.load(&url);
     }
     if let Some(app) = app.as_mut() {
         app.exec();

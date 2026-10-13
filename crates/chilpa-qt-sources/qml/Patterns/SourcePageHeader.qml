@@ -117,8 +117,8 @@ Column {
     }
     Modal {
         id: biography
-        width: Math.min(Metrics.settingsMaxWidth, parent.width - Metrics.modalInsets)
-        height: Math.min(parent.height - Metrics.modalInsets, Metrics.heroArt * 3) // derived: readable body with room for the title and close action
+        width: parent ? Math.min(Metrics.settingsMaxWidth, parent.width - Metrics.modalInsets) : 0
+        height: parent ? Math.min(parent.height - Metrics.modalInsets, Metrics.heroArt * 3) : 0 // derived: readable body with room for the title and close action
         Column {
             anchors.fill: parent; spacing: Metrics.gap12
             Text { id: biographyTitle; width: parent.width; text: header.info.title || ""; textFormat: Text.PlainText; font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }

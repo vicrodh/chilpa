@@ -14,18 +14,17 @@ TestCase {
     height: 800
 
     HomeScreen { id: home; width: 1200; height: 800 }
+    function init() { tryCompare(home, "presented", true); wait(40) }
 
     function shelves() {
-        const found = []
-        const walk = item => { for (const child of item.children) { if (child.objectName === "homeShelf") found.push(child.entry.id); walk(child) } }
-        walk(home.contentItem)
-        return found
+        return Array.from({length: home.model.count}, (_, index) => home.model.get(index).key)
     }
     function cleanup() {
         const customizer = findChild(home, "homeCustomizer")
-        if (customizer.opened) customizer.close()
+        if (customizer && customizer.opened) customizer.close()
         Sources.show({homeLibraries: []})
         home.keep([])
+        wait(40)
     }
 
     function test_the_library_shelves_come_first_in_their_own_order() {
@@ -84,19 +83,34 @@ TestCase {
         walk(home.contentItem)
         const added = loaders.find(l => l.entry.id === "library.recentlyAdded")
         tryVerify(() => added.visible && added.height > 0, 1000, "the records added show")
-        verify(!loaders.find(l => l.entry.id === "library.recentlyPlayed").visible, "nothing played, nothing shown")
+        tryVerify(() => loaders.find(l => l.entry.id === "library.recentlyPlayed").height === 0, 1000, "nothing played, nothing shown")
     }
 
     function test_customize_lists_every_shelf() {
         findChild(home, "homeCustomize").clicked()
-        const list = findChild(home, "customizeChoices")
+        const list = findChild(home, "customizeSourceChoices")
         tryVerify(() => list !== null && list.count === 6)
         compare(findChild(home, "homeCustomizer").groups[0].name, "Chilpa")
+    }
+
+    function test_many_plugin_modules_only_mount_the_viewport() {
+        const modules = Array.from({length: 40}, (_, index) => ({id:"module-" + index, title:"Module " + index,
+            key:"fixture native:discover:home|module-" + index, items:[{ref:"album:1"}], enabled:true}))
+        Sources.pages = {"fixture native:discover:home": JSON.stringify({shelves:modules})}
+        Sources.show({homeLibraries:[{id:"fixture", name:"Fixture", enabled:true}]})
+        home.homeRefresh++
+        tryVerify(() => shelves().length === 46)
+        wait(100)
+        let mounted = 0
+        const walk = item => { for (const child of item.children) { if (child.objectName === "homeModuleLoader" && child.item) mounted++; walk(child) } }
+        walk(home.contentItem)
+        verify(mounted < 16, "forty modules must not construct forty card rails")
     }
 
     function test_switching_customizer_source_keeps_the_modal_open() {
         Sources.show({homeLibraries: [{id: "fixture", name: "Fixture", enabled: true}]})
         home.homeRefresh++
+        findChild(home, "homeCustomize").clicked()
         const customizer = findChild(home, "homeCustomizer")
         tryVerify(() => customizer.groups.length > 1)
         customizer.open()

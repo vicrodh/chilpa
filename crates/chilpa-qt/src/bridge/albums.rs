@@ -1,11 +1,5 @@
-//! The rows of an album grid (frontend ADR-0002, `AlbumGrid`).
-//!
-//! A grid recycles rows of cards, which also lets a quick view open between
-//! rows. `columns` comes from the width; zero lays out nothing.
-//!
-//! A shelf ("recentlyPlayed", "recentlyAdded") is read whole. The whole
-//! library ("all") is a snapshot of ids taken on the worker and read a page
-//! of 128 albums at a time by id, as the track list does.
+//! Album grid rows, paged snapshots and shelf models (frontend ADR-0002).
+//! Zero columns lays out nothing; library pages hold 128 records each.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -217,7 +211,6 @@ pub struct AlbumGridRust {
     groups: Vec<(usize, String)>,
     rows: Vec<chilpa_api::GridRow>,
     pending: bool,
-    /// Tags the worker's answers, so one for an old order is dropped.
     generation: u64,
 }
 
@@ -403,11 +396,7 @@ impl qobject::AlbumGridModel {
     }
 
     fn show(mut self: Pin<&mut Self>, list: Albums) {
-        // The same records read again change at most their covers: a new revision redraws those, a reset would flash.
-        if let (Albums::Loaded(old), Albums::Loaded(new)) = (&self.rust().list, &list) { if old.len() == new.len() && old.iter().zip(new).all(|(a, b)| a.id == b.id && a.title == b.title) { self.as_mut().rust_mut().list = list; let next = self.rev().wrapping_add(1); self.as_mut().set_rev(next); self.as_mut().set_ready(true); return; } }
-        // The same records with more after them: a shelf's "Load more". The
-        // rows stay and the new ones come in under them, so nothing on
-        // screen moves.
+        // I append a shelf's next page without moving its existing rows.
         if let (Albums::Loaded(old), Albums::Loaded(new)) = (&self.rust().list, &list) {
             if new.len() > old.len() && self.rust().groups.is_empty() && old.iter().zip(new).all(|(a, b)| a.id == b.id) {
                 let from = old.len();
@@ -434,9 +423,7 @@ impl qobject::AlbumGridModel {
         self.as_mut().set_ready(true);
     }
 
-    /// Takes in records added to the end of the list shown: the rows that
-    /// were there keep their items, the last of them may fill up, and the
-    /// rest are inserted after it.
+    /// Appends records without rebuilding the rows already shown.
     fn grow(mut self: Pin<&mut Self>, list: Albums, from: usize) {
         let count = list.len() as i32;
         self.as_mut().set_mixed(list.mixed());
@@ -464,10 +451,12 @@ impl qobject::AlbumGridModel {
         self.as_mut().set_ready(true);
     }
 
-    /// Splits the albums into rows again. Only the row count depends on the
-    /// width, so nothing is read again.
+    /// Reflows cached albums without querying their data again.
     fn split_rows(mut self: Pin<&mut Self>) {
         let rows = self.rust().laid_out();
+        // A refreshed snapshot or a width within the same column count
+        // changes card bindings through rev, without tearing down the grid.
+        if rows == self.rust().rows { return; }
         // SAFETY: the reset is begun and ended around the swap, as Qt asks.
         unsafe { self.as_mut().begin_reset_model() };
         self.as_mut().rust_mut().rows = rows;

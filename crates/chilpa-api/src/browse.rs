@@ -50,6 +50,14 @@ pub enum TrackEntry {
 }
 
 impl TrackEntry {
+    /// Whether refreshed metadata belongs to the same visual row.
+    pub fn same_row(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Track(a), Self::Track(b)) => a.id == b.id && a.path == b.path,
+            (Self::Header(a), Self::Header(b)) => a.label == b.label && a.record == b.record && a.work == b.work,
+            _ => false,
+        }
+    }
     /// A header that only names its group.
     pub fn header(label: String, meta: String) -> Self {
         Self::Header(GroupHeader { label, meta, ..GroupHeader::default() })
@@ -894,6 +902,14 @@ impl Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn refreshed_header_art_keeps_its_row_but_a_different_group_does_not() {
+        let old = GroupHeader { label: "Disc 1".into(), record: true, ..Default::default() };
+        let refreshed = GroupHeader { art: "cover.jpg".into(), ..old.clone() };
+        assert!(TrackEntry::Header(old.clone()).same_row(&TrackEntry::Header(refreshed)));
+        assert!(!TrackEntry::Header(old).same_row(&TrackEntry::header("Disc 2".into(), String::new())));
+    }
 
     fn entry(label: &str) -> FacetEntry {
         FacetEntry { key: label.into(), label: label.into(), albums: 0, year: None, icon: String::new() }

@@ -85,10 +85,7 @@ QtObject {
     readonly property int scenePanelRow: 64
     readonly property int scenePanelGroupHeader: 32
     readonly property int scenePanelPortrait: 48
-    readonly property int scenePanelAlbumWidth: 220
-    readonly property int scenePanelCardHeight: 262
     readonly property int scenePanelGridGap: 22
-    readonly property int scenePanelTrackMin: 210
     readonly property int scenePanelSectionHeader: 51
     readonly property int scenePanelPadLeft: 24
     readonly property int scenePanelPadTotal: 40
@@ -369,6 +366,7 @@ QtObject {
     readonly property int shelfLimit: 12
     // How many items a source's shelf shows before a size is chosen.
     readonly property int shelfItems: 18
+    readonly property int shelfTrackLimit: 6
     readonly property int mostPlayedLimit: 10
     readonly property int heroArt: 220
     readonly property int pageHero: 168
@@ -514,7 +512,6 @@ QtObject {
     // the latest release, the Network sidebar and its rows, the jump bar,
     // and how much is shown before "Load more".
     readonly property int artistPortrait: 200
-    readonly property int latestCard: 200
     readonly property int networkPanel: 300
     readonly property int networkPad: 14
     readonly property int networkRow: 28
