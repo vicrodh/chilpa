@@ -112,7 +112,7 @@ TestCase {
                          downloads: {signed_in: true, loaded: true, albums: albums, tracks: []}}
         manager.read()
         const grid = findChild(manager, "purchaseGrid")
-        compare(grid.count, 220)
+        tryCompare(grid, "count", 220)
         verify(grid.visible)
         verify(grid.contentHeight > grid.height)
         manager.settings(plugin)
