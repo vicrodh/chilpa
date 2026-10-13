@@ -31,9 +31,9 @@ PageTransition {
     }
     readonly property var sourceDocument: JSON.parse(Sources.snapshot || "{}")
     readonly property bool medium: ["radio", "podcasts"].indexOf(sourceDocument.medium) >= 0
-    readonly property var committed: host.committedRoute.split("\u001f")
-    readonly property string screen: committed.length > 1 ? committed[1] : ""
-    readonly property string routeKey: committed.length > 3 ? committed[3] : ""
+    readonly property var requested: host.route.split("\u001f")
+    readonly property string screen: requested.length > 1 ? requested[1] : ""
+    readonly property string routeKey: requested.length > 3 ? requested[3] : ""
     readonly property var music: screen === "source" ? JSON.parse(Sources.page(routeKey, Library.remoteRev) || "{}") : ({})
 
     sourceComponent: {

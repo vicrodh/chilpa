@@ -17,6 +17,7 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 // thousand scroll like ten. With `source`, a source's listing on the same grid.
 Item {
     id: page
+    readonly property bool visualReady: all.ready
 
     // "<plugin> <address>" of a source's listing, or empty for the library.
     property string source

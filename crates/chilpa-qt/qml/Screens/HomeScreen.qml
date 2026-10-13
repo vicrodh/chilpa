@@ -22,7 +22,7 @@ Flickable {
     readonly property string preference: "ui.home.sections"
     property var kept: []
     function restore() { try { kept = JSON.parse(SettingsModel.kept(preference) || "[]") } catch (_) { kept = [] } }
-    Component.onCompleted: restore()
+    Component.onCompleted: { restore(); syncVisibleSections() }
     readonly property var available: [
         { id: "library.recentlyPlayed", title: I18n.tr("Recently played", I18n.rev), kind: "albums", source: "recentlyPlayed" },
         { id: "everywhere.recentlyPlayed", title: I18n.tr("Recently played", I18n.rev), configTitle: I18n.tr("Recently played, all sources", I18n.rev), kind: "albums", source: "recentlyPlayedEverywhere" },
@@ -36,6 +36,31 @@ Flickable {
     readonly property var sections: kept.map(choice => Object.assign({}, available.find(s => s.id === choice.id) || {}, choice))
         .filter(choice => available.some(s => s.id === choice.id))
         .concat(available.filter(s => !kept.some(choice => choice.id === s.id)))
+    // I update rows by id so a late source shelf does not remount the Home
+    // shelves already on screen. Replacing a JS array model discarded them.
+    ListModel { id: visibleSections; dynamicRoles: true }
+    function syncVisibleSections() {
+        const wanted = sections.filter(section => section.enabled !== false
+            && (section.kind !== "shelf" || (section.items || []).length > 0))
+        for (let index = 0; index < wanted.length; index++) {
+            const signature = JSON.stringify(wanted[index])
+            let found = index
+            while (found < visibleSections.count && visibleSections.get(found).key !== wanted[index].id)
+                found++
+            if (found === visibleSections.count)
+                visibleSections.insert(index, { key: wanted[index].id, entry: wanted[index], signature: signature })
+            else {
+                if (found !== index) visibleSections.move(found, index, 1)
+                if (visibleSections.get(index).signature !== signature) {
+                    visibleSections.setProperty(index, "entry", wanted[index])
+                    visibleSections.setProperty(index, "signature", signature)
+                }
+            }
+        }
+        while (visibleSections.count > wanted.length)
+            visibleSections.remove(visibleSections.count - 1)
+    }
+    onSectionsChanged: Qt.callLater(syncVisibleSections)
     function change(index, field, value) {
         const rows = sections.map(s => ({ id: s.id, enabled: s.enabled !== false, size: s.size || 0 }))
         rows[index][field] = value
@@ -189,37 +214,21 @@ Flickable {
         }
 
         Repeater {
-            model: page.sections.filter(section => section.enabled !== false && (section.kind !== "shelf" || (section.items || []).length > 0))
+            model: visibleSections
             Loader {
-                required property var modelData
+                required property var entry
+                required property string key
                 objectName: "homeShelf"
                 width: column.width
-                // I reserve space before building the shelf, and only build
-                // shelves near the viewport. A slow source cannot hold Home.
-                active: y < page.contentY + page.height * 1.5
-                asynchronous: true
-                height: status === Loader.Ready ? item.implicitHeight : placeholder.height
-                visible: status !== Loader.Ready || item.shown
-                sourceComponent: modelData.kind === "albums" ? albumShelf : modelData.kind === "playlists" ? playlistShelf : modelData.kind === "tracks" ? trackShelf : sourceRail
-                onLoaded: item.entry = Qt.binding(() => modelData)
-                Column {
-                    id: placeholder
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    spacing: Metrics.gap12
-                    visible: parent.status !== Loader.Ready
-                    Rectangle { width: parent.width * 0.3; height: Metrics.gap16; radius: Metrics.gap8; color: Theme.color.stateHover }
-                    Row {
-                        spacing: Metrics.gridGap
-                        Repeater {
-                            model: Math.max(1, Math.min(5, Math.floor(placeholder.width / Metrics.cardMinWidth)))
-                            Rectangle { width: Metrics.cardMinWidth; height: width; radius: Metrics.radiusControl; color: Theme.color.stateHover; opacity: 0.7 }
-                        }
-                    }
-                }
+                // What the shelf says it has, not its `visible`: a child of a
+                // hidden Loader is hidden too, and the two would wait for
+                // each other.
+                visible: status === Loader.Ready && item.shown
+                sourceComponent: entry.kind === "albums" ? albumShelf : entry.kind === "playlists" ? playlistShelf : entry.kind === "tracks" ? trackShelf : sourceRail
+                onLoaded: item.entry = Qt.binding(() => entry)
             }
         }
-        SourceHomeSections { id: remote; width: parent.width; refresh: page.homeRefresh; rendered: false; deferred: true }
+        SourceHomeSections { id: remote; width: parent.width; refresh: page.homeRefresh; rendered: false }
     }
     Component { id: albumShelf; AlbumShelf { width: parent ? parent.width : 0 } }
     Component { id: trackShelf; TrackShelf { width: parent ? parent.width : 0 } }

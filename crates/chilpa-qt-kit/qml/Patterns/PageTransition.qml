@@ -1,71 +1,89 @@
 import QtQuick
 import "../Theme"
 
-// I show the destination on the next presented frame. Building a full page
-// synchronously in the click handler would delay any visual acknowledgement.
+// I keep the current page visible while the next one is built. A page may
+// still load its own data after construction, but navigation never exposes
+// an empty Loader or repeatedly remounts the page being left.
 Item {
     id: transition
     property string route: ""
     property Component sourceComponent
     property string committedRoute: ""
-    readonly property var item: page.item
-    property bool armed: false
+    readonly property var item: (frontA ? first : second).item
+    property bool frontA: true
+    property string pendingRoute: ""
+    property Component pendingComponent
 
-    onRouteChanged: {
-        if (route === committedRoute)
+    function request() { Qt.callLater(start) }
+    onRouteChanged: request()
+    onSourceComponentChanged: request()
+    Component.onCompleted: request()
+
+    function start() {
+        if (!sourceComponent)
             return
-        armed = true
-        reveal.stop()
-        page.opacity = 0
-        commitGuard.restart()
-    }
-    onSourceComponentChanged: {
-        if (!armed && committedRoute === route)
-            committedPage = sourceComponent
-    }
-    property Component committedPage
-    function commit() {
-        if (!armed)
-            return
-        commitGuard.stop()
-        const previous = committedPage
-        committedRoute = route
-        committedPage = sourceComponent
-        armed = false
-        if (previous === committedPage && page.status === Loader.Ready) {
+        const current = frontA ? first : second
+        const next = frontA ? second : first
+        if (route === committedRoute && current.sourceComponent === sourceComponent) {
             revealGuard.stop()
-            if (Motion.reduced) page.opacity = 1
-            else reveal.restart()
-        } else if (page.status !== Loader.Ready) {
-            revealGuard.restart()
+            pendingRoute = ""
+            pendingComponent = null
+            next.sourceComponent = null
+            return
         }
+        if (pendingRoute === route && pendingComponent === sourceComponent
+                && next.sourceComponent === sourceComponent)
+            return
+        pendingRoute = route
+        pendingComponent = sourceComponent
+        next.sourceComponent = null
+        next.sourceComponent = sourceComponent
+        revealGuard.restart()
     }
-    Connections {
-        target: transition.Window.window
-        ignoreUnknownSignals: true
-        function onFrameSwapped() { transition.commit() }
+
+    function present(next, timedOut) {
+        const current = frontA ? first : second
+        if (next === current || next.sourceComponent !== pendingComponent || pendingRoute !== route)
+            return
+        if (!next.item)
+            return
+        if (!timedOut && next.item.visualReady === false)
+            return
+        revealGuard.stop()
+        frontA = next === first
+        committedRoute = pendingRoute
+        pendingRoute = ""
+        current.sourceComponent = null
     }
-    Timer { id: commitGuard; interval: 250; onTriggered: transition.commit() }
-    Timer { id: revealGuard; interval: 1500; onTriggered: page.opacity = 1 }
-    OpacityAnimator {
-        id: reveal
-        target: page
-        from: 0
-        to: 1
-        duration: Motion.page
-        easing.type: Easing.OutCubic
-    }
+
     Loader {
-        id: page
+        id: first
         anchors.fill: parent
         asynchronous: true
-        sourceComponent: transition.committedPage
-        onLoaded: {
-            if (transition.armed) return
-            revealGuard.stop()
-            if (Motion.reduced) page.opacity = 1
-            else reveal.restart()
-        }
+        visible: transition.frontA
+        onLoaded: transition.present(first)
+    }
+    Connections {
+        target: first.item
+        ignoreUnknownSignals: true
+        function onVisualReadyChanged() { transition.present(first) }
+    }
+    Loader {
+        id: second
+        anchors.fill: parent
+        asynchronous: true
+        visible: !transition.frontA
+        onLoaded: transition.present(second)
+    }
+    Connections {
+        target: second.item
+        ignoreUnknownSignals: true
+        function onVisualReadyChanged() { transition.present(second) }
+    }
+    Timer {
+        id: revealGuard
+        interval: 2500
+        onTriggered: transition.present(transition.frontA ? second : first, true)
     }
     Column {
         anchors.left: parent.left
@@ -73,7 +91,7 @@ Item {
         anchors.top: parent.top
         anchors.margins: Metrics.contentX
         spacing: Metrics.gap16
-        visible: transition.armed || (page.status === Loader.Loading)
+        visible: !transition.item
         Rectangle { width: parent.width * 0.36; height: Metrics.gap16; radius: Metrics.gap8; color: Theme.color.stateHover }
         Repeater {
             model: 5
