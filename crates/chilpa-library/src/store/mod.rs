@@ -32,6 +32,7 @@ pub mod credits;
 pub mod edit;
 pub mod favorites;
 pub mod features;
+pub mod mood;
 mod genres;
 mod integrations;
 pub mod find;

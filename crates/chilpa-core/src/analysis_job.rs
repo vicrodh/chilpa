@@ -171,6 +171,11 @@ impl AnalysisJob {
         self.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 
+    /// Whether Analyze was stopped before the plugin phase could start.
+    pub fn is_cancelled(&self) -> bool {
+        self.cancel.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
     pub fn finished(&self) -> bool {
         self.thread.as_ref().is_some_and(|t| t.is_finished())
     }
@@ -244,6 +249,41 @@ pub fn analyze_file(path: &Path) -> Option<chilpa_analysis::Analysis> {
     let mut features = chilpa_analysis::analyze(&mono, rate);
     features.loudness_lufs = meter.and_then(|m| m.integrated()).map(|l| l as f32);
     Some(features)
+}
+
+/// A centered excerpt for an analyzer plugin. Chilpa decodes the file; the
+/// plugin receives mono PCM and never needs access to the music folder.
+pub fn mono_excerpt(path: &Path) -> Option<(Vec<f32>, u32)> {
+    let mut decoded = chilpa_decode::Decoded::open(path).ok()?;
+    let format = decoded.stream_format();
+    let rate = format.sample_rate_hz;
+    let channels = format.channels.max(1) as usize;
+    if !(8_000..=384_000).contains(&rate) { return None; }
+    let want = SECONDS_EXAMINED * u64::from(rate);
+    if let Some(total) = decoded.frame_count() {
+        let start = total.saturating_sub(want) / 2;
+        if start > u64::from(rate) { let _ = decoded.seek_to_frame(start); }
+    }
+    let mut mono = Vec::with_capacity(want as usize);
+    while mono.len() < want as usize {
+        let block = match decoded.next_block() { Ok(Some(block)) => block, _ => break };
+        match block {
+            chilpa_decode::Block::Int { data, bits } => {
+                let scale = 1.0f32 / (1i64 << (bits.max(1) - 1)) as f32;
+                for frame in data.chunks_exact(channels) {
+                    mono.push(frame.iter().map(|sample| *sample as f32 * scale).sum::<f32>() / channels as f32);
+                    if mono.len() == want as usize { break; }
+                }
+            }
+            chilpa_decode::Block::Float(data) => {
+                for frame in data.chunks_exact(channels) {
+                    mono.push(frame.iter().sum::<f32>() / channels as f32);
+                    if mono.len() == want as usize { break; }
+                }
+            }
+        }
+    }
+    (mono.len() >= rate as usize).then_some((mono, rate))
 }
 
 #[cfg(test)]

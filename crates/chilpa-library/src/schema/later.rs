@@ -153,3 +153,23 @@ ALTER TABLE tracks ADD COLUMN work TEXT;
 
 UPDATE tracks SET release_evidence_read = 0;
 "#;
+
+/// Analyzer-owned local audio features and similarity vectors. Versioning
+/// lets a replacement model recompute a track without keeping stale scores.
+pub(super) const MIGRATION_V41: &str = r#"
+CREATE TABLE mood_features (
+    track_id       INTEGER NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    analyzer       TEXT NOT NULL,
+    version        INTEGER NOT NULL,
+    mood_happy     REAL NOT NULL,
+    mood_sad       REAL NOT NULL,
+    mood_relaxed   REAL NOT NULL,
+    mood_aggressive REAL NOT NULL,
+    mood_party     REAL NOT NULL,
+    danceability   REAL NOT NULL,
+    embedding      BLOB NOT NULL,
+    analyzed_at    INTEGER NOT NULL,
+    PRIMARY KEY (track_id, analyzer)
+);
+CREATE INDEX mood_features_analyzer ON mood_features(analyzer, version);
+"#;
