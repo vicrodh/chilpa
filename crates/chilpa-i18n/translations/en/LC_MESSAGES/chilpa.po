@@ -351,6 +351,9 @@ msgstr ""
 msgid "Analysis"
 msgstr ""
 
+msgid "Analysis inventory"
+msgstr ""
+
 msgid "Analyze"
 msgstr ""
 
@@ -358,6 +361,9 @@ msgid "Analyze the library"
 msgstr ""
 
 msgid "Analyze the new music too?"
+msgstr ""
+
+msgid "Analyzed"
 msgstr ""
 
 msgid "Analyzes local files and puts the results in Playlists > Mood."
@@ -936,6 +942,9 @@ msgid "Could not load the image"
 msgstr ""
 
 msgid "Could not move the playlist."
+msgstr ""
+
+msgid "Could not read the analysis inventory."
 msgstr ""
 
 msgid "Could not save the folder. Please try again."
@@ -1970,6 +1979,9 @@ msgstr ""
 msgid "Local only"
 msgstr "Local only"
 
+msgid "Local tracks"
+msgstr ""
+
 msgid "Local — Chilpa"
 msgstr ""
 
@@ -2114,10 +2126,19 @@ msgstr ""
 msgid "Mood analysis stopped: {}"
 msgstr ""
 
+msgid "Mood done"
+msgstr ""
+
 msgid "Mood is off. Enable it in Mood models."
 msgstr ""
 
 msgid "Mood models"
+msgstr ""
+
+msgid "Mood pending"
+msgstr ""
+
+msgid "Mood stored"
 msgstr ""
 
 msgid "Mood: {} tracks analyzed, {} playlists updated"
@@ -3281,6 +3302,9 @@ msgstr ""
 msgid "Search this page…"
 msgstr ""
 
+msgid "Search title, artist or album"
+msgstr ""
+
 msgid "Searching MusicBrainz for {genre} artists…"
 msgstr ""
 
@@ -3294,6 +3318,9 @@ msgid "Search…"
 msgstr ""
 
 msgid "See all"
+msgstr ""
+
+msgid "See which local tracks have analysis results and which are pending."
 msgstr ""
 
 msgid "See {} more"
@@ -3424,6 +3451,9 @@ msgstr ""
 msgid "Show/Hide Window"
 msgstr ""
 
+msgid "Showing"
+msgstr ""
+
 msgid "Shuffle"
 msgstr ""
 
@@ -3500,6 +3530,15 @@ msgid "Spanish"
 msgstr ""
 
 msgid "Spectrum"
+msgstr ""
+
+msgid "Standard analyzed"
+msgstr ""
+
+msgid "Standard done"
+msgstr ""
+
+msgid "Standard pending"
 msgstr ""
 
 msgid "Start"

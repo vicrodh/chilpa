@@ -14,6 +14,7 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components" as SourceParts
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components/SettingsActions.js" as SettingsActions
 import "qrc:/qt/qml/app/chilpa/wizard/qml/Patterns" as WizardPatterns
+import "qrc:/qt/qml/app/chilpa/stats/qml/Patterns" as AnalysisUi
 // Settings rows follow the facade schema.
 Item {
     id: page
@@ -219,7 +220,7 @@ Item {
         id: actions
         property string editingServerKey: ""
         function set(key, value) { SettingsActions.set(actions, rows, removing, Servers, key, value) }
-        function press(key) { SettingsActions.press(actions, rows, pluginManager, casting, adding, diagnosis, Navigation, Servers, Qt, key) }
+        function press(key) { SettingsActions.press(actions, rows, pluginManager, casting, adding, diagnosis, inventory, Navigation, Servers, Qt, key) }
     }
 
     CastPicker { id: casting }
@@ -241,6 +242,7 @@ Item {
     }
 
     WizardPatterns.OutputDiagnosisDialog { id: diagnosis; settingsPage: rows }
+    AnalysisUi.AnalysisInventoryDialog { id: inventory }
 
     // A sync moving, a server coming back: its rows follow while shown.
     Timer {

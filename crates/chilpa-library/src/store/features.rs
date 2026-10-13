@@ -8,7 +8,71 @@ use crate::store::Library;
 use rusqlite::{params, OptionalExtension};
 use crate::store::{now_unix, row_to_track, StoredTrack};
 
+/// One available local track and the analyses recorded for it.
+pub struct AnalysisInventoryTrack {
+    pub id: i64,
+    pub title: String,
+    pub artist: String,
+    pub album: String,
+    pub standard: bool,
+    pub mood: bool,
+}
+
+/// A bounded page over the same local tracks the analyzers can read.
+pub struct AnalysisInventory {
+    pub total: usize,
+    pub standard: usize,
+    pub mood: usize,
+    pub matched: usize,
+    pub tracks: Vec<AnalysisInventoryTrack>,
+}
+
+const INVENTORY: &str = "WITH eligible AS (
+    SELECT t.id, t.title, t.artist, COALESCE(a.title, '') AS album,
+           COALESCE(f.version >= ?1, 0) AS standard,
+           (m.track_id IS NOT NULL) AS mood
+    FROM tracks t JOIN sources s ON s.id = t.source_id AND s.kind = 'local'
+    LEFT JOIN albums a ON a.id = t.album_id
+    LEFT JOIN audio_features f ON f.track_id = t.id AND f.analyzer = 'chilpa'
+    LEFT JOIN mood_features m ON m.track_id = t.id AND m.analyzer = 'app.chilpa.mood'
+    WHERE t.present = 1 AND t.reachable = 1
+) ";
+const INVENTORY_MATCH: &str = "(?2 = '' OR instr(lower(title), lower(?2)) > 0
+    OR instr(lower(artist), lower(?2)) > 0 OR instr(lower(album), lower(?2)) > 0)
+    AND (?3 = 'all' OR (?3 = 'standard' AND standard = 1)
+    OR (?3 = 'mood' AND mood = 1)
+    OR (?3 = 'standard-pending' AND standard = 0)
+    OR (?3 = 'mood-pending' AND mood = 0))";
+
 impl Library {
+    /// Lists recorded analyses without loading an entire library into the UI.
+    /// Mood means a stored result; the plugin owns its model version.
+    pub fn analysis_inventory(&self, standard_version: i64, filter: &str, search: &str, offset: usize) -> rusqlite::Result<AnalysisInventory> {
+        let filter = match filter {
+            "standard" | "mood" | "standard-pending" | "mood-pending" => filter,
+            _ => "all",
+        };
+        let search: String = search.trim().chars().take(128).collect();
+        let (total, standard, mood): (i64, i64, i64) = self.db.query_row(
+            &(INVENTORY.to_owned() + "SELECT count(*), COALESCE(sum(standard), 0), COALESCE(sum(mood), 0) FROM eligible"),
+            params![standard_version], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )?;
+        let matched: i64 = self.db.query_row(
+            &(INVENTORY.to_owned() + "SELECT count(*) FROM eligible WHERE " + INVENTORY_MATCH),
+            params![standard_version, search, filter], |row| row.get(0),
+        )?;
+        let mut stmt = self.db.prepare(&(INVENTORY.to_owned()
+            + "SELECT id, title, artist, album, standard, mood FROM eligible WHERE "
+            + INVENTORY_MATCH
+            + " ORDER BY title COLLATE NOCASE, artist COLLATE NOCASE, id LIMIT 100 OFFSET ?4"))?;
+        let tracks = stmt.query_map(params![standard_version, search, filter, offset.min(1_000_000) as i64], |row| {
+            Ok(AnalysisInventoryTrack { id: row.get(0)?, title: row.get(1)?, artist: row.get(2)?,
+                album: row.get(3)?, standard: row.get::<_, i64>(4)? != 0, mood: row.get::<_, i64>(5)? != 0 })
+        })?.collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok(AnalysisInventory { total: total as usize, standard: standard as usize, mood: mood as usize,
+            matched: matched as usize, tracks })
+    }
+
     /// Present tracks that are missing that version's analysis.
     ///
     /// Asked for in batches: analyzing a large library cannot start by loading
@@ -177,6 +241,25 @@ impl Library {
 #[cfg(test)]
 mod tests {
     use crate::store::fixtures::*;
+
+    #[test]
+    fn analysis_inventory_uses_persisted_versions_and_filters_local_tracks() {
+        let lib = sample_library();
+        lib.save_features(1, "chilpa", 1, None, None, None, None).unwrap();
+        lib.save_features(2, "chilpa", 2, Some(120.0), None, None, None).unwrap();
+        lib.save_mood_features(3, 1, [0.5; 6], &[0.0; crate::store::mood::VECTOR_LENGTH]).unwrap();
+
+        let all = lib.analysis_inventory(2, "all", "", 0).unwrap();
+        assert_eq!((all.total, all.standard, all.mood, all.matched), (3, 1, 1, 3));
+        assert_eq!(all.tracks.iter().filter(|track| track.standard).map(|track| track.id).collect::<Vec<_>>(), [2]);
+        assert_eq!(all.tracks.iter().filter(|track| track.mood).map(|track| track.id).collect::<Vec<_>>(), [3]);
+
+        let pending = lib.analysis_inventory(2, "standard-pending", "Cosmo", 0).unwrap();
+        assert_eq!(pending.matched, 1);
+        assert_eq!(pending.tracks[0].id, 3);
+        let page = lib.analysis_inventory(2, "all", "", 2).unwrap();
+        assert_eq!(page.tracks.len(), 1);
+    }
 
     #[test]
     fn features_for_several_tracks_come_out_in_one_query() {
