@@ -357,6 +357,9 @@ msgstr "Analizar la biblioteca"
 msgid "Analyze the new music too?"
 msgstr "¿Analizar también la música nueva?"
 
+msgid "Analyzing Mood"
+msgstr "Analizando Mood"
+
 msgid "Analyzing {} of {} tracks"
 msgstr "Analizando {} de {} pistas"
 
@@ -2084,6 +2087,12 @@ msgstr "Mono claro"
 msgid "Month"
 msgstr "Mes"
 
+msgid "Mood analysis stopped: {}"
+msgstr "Se detuvo el análisis Mood: {}"
+
+msgid "Mood: {} tracks analyzed, {} playlists updated"
+msgstr "Mood: {} pistas analizadas, {} listas actualizadas"
+
 msgid "More"
 msgstr "Más"
 
@@ -2234,6 +2243,9 @@ msgstr "Página siguiente"
 msgid "No"
 msgstr "No"
 
+msgid "No Home modules are available for this source."
+msgstr "Esta fuente no tiene módulos disponibles para Inicio."
+
 msgid "No albums found"
 msgstr "No se encontraron álbumes"
 
@@ -2266,9 +2278,6 @@ msgstr "Ninguna carpeta coincide con tu búsqueda."
 
 msgid "No genres in this period."
 msgstr "No hay géneros en este periodo."
-
-msgid "No Home modules are available for this source."
-msgstr "Esta fuente no tiene módulos disponibles para Inicio."
 
 msgid "No grouping"
 msgstr "Sin agrupar"
@@ -2758,6 +2767,9 @@ msgstr "Posición en Streaming"
 
 msgid "Preferred GPU"
 msgstr "GPU preferida"
+
+msgid "Preparing Mood analysis"
+msgstr "Preparando el análisis Mood"
 
 msgid "Preparing results…"
 msgstr "Preparando resultados…"

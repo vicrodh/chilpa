@@ -24,6 +24,8 @@ pub enum Kind {
     Metadata,
     /// It reports what was listened to, to a service.
     Scrobbler,
+    /// It derives features from decoded local audio.
+    Analyzer,
 }
 
 /// Where it runs.

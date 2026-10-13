@@ -88,14 +88,15 @@ impl Chilpa {
 
     /// The same, only for what is missing under `folder` when one is given.
     fn start_analysis_under(&mut self, folder: Option<String>) {
-        if self.analysis.is_some() {
+        if self.analysis.is_some() || self.mood_analysis.is_some() {
             self.now.error = chilpa_i18n::t("an analysis is already running");
             return;
         }
         self.analysis = Some(chilpa_core::analysis_job::AnalysisJob::start_under(
             chilpa_library::Library::default_path(),
-            folder,
+            folder.clone(),
         ));
+        self.analysis_folder = folder;
         self.analysis_status = AnalysisStatus { running: true, ..AnalysisStatus::default() };
     }
 
@@ -116,6 +117,7 @@ impl Chilpa {
         if let Some(j) = &self.analysis {
             j.cancel();
         }
+        if let Some(j) = &self.mood_analysis { j.cancel(); }
     }
 
     /// How the analysis is going.
@@ -123,6 +125,7 @@ impl Chilpa {
         use chilpa_core::analysis_job::AnalysisProgress;
         let events = self.analysis.as_ref().map(|j| j.poll()).unwrap_or_default();
         let mut finished = false;
+        let mut standard_done = false;
         for event in events {
             match event {
                 AnalysisProgress::Counted { total } => self.analysis_status.total = total,
@@ -144,6 +147,7 @@ impl Chilpa {
                     self.analysis_status.without_pulse = without_pulse;
                     self.analysis_status.failed = failed;
                     finished = true;
+                    standard_done = true;
                 }
                 AnalysisProgress::Failed(e) => {
                     self.analysis_status.running = false;
@@ -153,7 +157,58 @@ impl Chilpa {
             }
         }
         if finished {
+            let cancelled = self.analysis.as_ref().is_some_and(|job| job.is_cancelled());
             self.analysis = None;
+            if standard_done && !cancelled && self.natives.is_native(chilpa_library::store::mood::ANALYZER) {
+                self.mood_analysis = Some(crate::mood::Job::start(
+                    chilpa_library::Library::default_path(),
+                    self.analysis_folder.take(),
+                    self.natives.clone(),
+                ));
+                self.analysis_status.running = true;
+                self.analysis_status.last = chilpa_i18n::t("Preparing Mood analysis");
+            } else {
+                self.analysis_folder = None;
+            }
+        }
+        let mood_events = self.mood_analysis.as_ref().map(|job| job.poll()).unwrap_or_default();
+        let mut mood_finished = false;
+        for event in mood_events {
+            match event {
+                crate::mood::Progress::Skipped => {
+                    self.analysis_status.running = false;
+                    mood_finished = true;
+                }
+                crate::mood::Progress::Cancelled => {
+                    self.analysis_status.running = false;
+                    mood_finished = true;
+                }
+                crate::mood::Progress::Counted { total } => {
+                    self.analysis_status.done = 0;
+                    self.analysis_status.total = total;
+                    self.analysis_status.last = chilpa_i18n::t("Analyzing Mood");
+                }
+                crate::mood::Progress::Advanced { done, total, title } => {
+                    self.analysis_status.done = done;
+                    self.analysis_status.total = total;
+                    self.analysis_status.last = format!("Mood · {title}");
+                }
+                crate::mood::Progress::Done { analyzed, failed, playlists } => {
+                    self.analysis_status.running = false;
+                    self.analysis_status.failed += failed;
+                    self.analysis_status.last = chilpa_i18n::t_args("Mood: {} tracks analyzed, {} playlists updated",
+                        &[&analyzed.to_string(), &playlists.to_string()]);
+                    mood_finished = true;
+                }
+                crate::mood::Progress::Failed(error) => {
+                    self.analysis_status.running = false;
+                    self.now.error = chilpa_i18n::t_args("Mood analysis stopped: {}", &[&error]);
+                    mood_finished = true;
+                }
+            }
+        }
+        if mood_finished {
+            self.mood_analysis = None;
         }
         &self.analysis_status
     }
