@@ -4,9 +4,9 @@ use chilpa_plugin::catalog::Digest;
 use sha2::{Digest as _, Sha256};
 use std::{collections::BTreeSet, io::{Cursor, Read, Write}, path::{Path, PathBuf}};
 
-pub const MAX_PACKAGE_BYTES: usize = 32 * 1024 * 1024;
-const MAX_EXPANDED_BYTES: u64 = 64 * 1024 * 1024;
-const MAX_FILE_BYTES: u64 = 16 * 1024 * 1024;
+pub const MAX_PACKAGE_BYTES: usize = 64 * 1024 * 1024;
+const MAX_EXPANDED_BYTES: u64 = 128 * 1024 * 1024;
+const MAX_FILE_BYTES: u64 = 32 * 1024 * 1024;
 const MAX_FILES: usize = 4096;
 
 /// Dropping a staged package removes all extracted files. No package file
@@ -85,6 +85,8 @@ impl StagedPackage {
                 || (!file.is_dir() && !matches!(kind, 0 | 0o100000)) {
                 return Err("Links and special files are not supported in plugin packages.".into());
             }
+            #[cfg(unix)]
+            let executable = file.unix_mode().is_some_and(|mode| mode & 0o111 != 0);
             let target = directory.path().join(&relative);
             if file.is_dir() {
                 std::fs::create_dir_all(&target).map_err(|_| "The package directory could not be extracted.")?;
@@ -105,6 +107,12 @@ impl StagedPackage {
             let mut output = std::fs::OpenOptions::new().write(true).create_new(true).open(&target)
                 .map_err(|_| "The package contains conflicting files.")?;
             output.write_all(&contents).map_err(|_| "The package file could not be extracted.")?;
+            #[cfg(unix)]
+            if executable {
+                use std::os::unix::fs::PermissionsExt;
+                output.set_permissions(std::fs::Permissions::from_mode(0o755))
+                    .map_err(|_| "The plugin file permissions could not be set.")?;
+            }
             files.push(relative);
         }
         Ok(Self { directory, sha256, files })
@@ -187,5 +195,22 @@ mod tests {
         assert!(bytes.len() < MAX_PACKAGE_BYTES);
         assert!(StagedPackage::unpack(parent.path(), &bytes, &digest(&bytes)).is_err());
         assert_eq!(std::fs::read_dir(parent.path()).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn a_large_native_engine_keeps_its_executable_permission() {
+        let parent = tempfile::tempdir().unwrap();
+        let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+        writer.start_file("plugin/runtime/engine", SimpleFileOptions::default().unix_permissions(0o755)).unwrap();
+        writer.write_all(&vec![0; 17 * 1024 * 1024]).unwrap();
+        let bytes = writer.finish().unwrap().into_inner();
+        let staged = StagedPackage::unpack(parent.path(), &bytes, &digest(&bytes)).unwrap();
+        let engine = staged.root().join("plugin/runtime/engine");
+        assert_eq!(std::fs::metadata(&engine).unwrap().len(), 17 * 1024 * 1024);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(std::fs::metadata(engine).unwrap().permissions().mode() & 0o111, 0o111);
+        }
     }
 }
