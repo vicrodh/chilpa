@@ -50,6 +50,7 @@ pub mod qobject {
         /// Zero lays out every row; a shelf asks for one.
         #[qproperty(i32, max_rows)]
         #[qproperty(i32, albums)]
+        #[qproperty(bool, ready)]
         #[qproperty(i32, rev)]
         /// Bound to `Library.contentRev`: the library changed. A grid of
         /// kind "library" binds it to `Library.rev`: the filter moved.
@@ -201,6 +202,7 @@ pub struct AlbumGridRust {
     columns: i32,
     max_rows: i32,
     albums: i32,
+    ready: bool,
     rev: i32,
     content_rev: i32,
     filter: QString,
@@ -242,15 +244,12 @@ impl qobject::AlbumGridModel {
     pub fn title(&self, index: i32, _rev: i32) -> QString {
         self.rust().get(index, |a| QString::from(&a.title)).unwrap_or_default()
     }
-
     pub fn subtitle(&self, index: i32, _rev: i32) -> QString {
         self.rust().get(index, |a| QString::from(&a.artist)).unwrap_or_default()
     }
-
     pub fn year(&self, index: i32, _rev: i32) -> QString {
         self.rust().get(index, |a| a.year.map(|year| QString::from(&year.to_string())).unwrap_or_default()).unwrap_or_default()
     }
-
     pub fn art(&self, index: i32, _rev: i32) -> QUrl {
         self.rust()
             .get(index, |a| {
@@ -262,7 +261,6 @@ impl qobject::AlbumGridModel {
             })
             .unwrap_or_default()
     }
-
     pub fn album_id(&self, index: i32, _rev: i32) -> i64 {
         self.rust().get(index, |a| a.id).unwrap_or(0)
     }
@@ -406,7 +404,7 @@ impl qobject::AlbumGridModel {
 
     fn show(mut self: Pin<&mut Self>, list: Albums) {
         // The same records read again change at most their covers: a new revision redraws those, a reset would flash.
-        if let (Albums::Loaded(old), Albums::Loaded(new)) = (&self.rust().list, &list) { if old.len() == new.len() && old.iter().zip(new).all(|(a, b)| a.id == b.id && a.title == b.title) { self.as_mut().rust_mut().list = list; let next = self.rev().wrapping_add(1); return self.set_rev(next); } }
+        if let (Albums::Loaded(old), Albums::Loaded(new)) = (&self.rust().list, &list) { if old.len() == new.len() && old.iter().zip(new).all(|(a, b)| a.id == b.id && a.title == b.title) { self.as_mut().rust_mut().list = list; let next = self.rev().wrapping_add(1); self.as_mut().set_rev(next); self.as_mut().set_ready(true); return; } }
         // The same records with more after them: a shelf's "Load more". The
         // rows stay and the new ones come in under them, so nothing on
         // screen moves.
@@ -433,6 +431,7 @@ impl qobject::AlbumGridModel {
         self.as_mut().set_albums(count);
         let next = self.rev().wrapping_add(1);
         self.as_mut().set_rev(next);
+        self.as_mut().set_ready(true);
     }
 
     /// Takes in records added to the end of the list shown: the rows that
@@ -462,6 +461,7 @@ impl qobject::AlbumGridModel {
         self.as_mut().set_fresh(from as i32);
         let next = self.rev().wrapping_add(1);
         self.as_mut().set_rev(next);
+        self.as_mut().set_ready(true);
     }
 
     /// Splits the albums into rows again. Only the row count depends on the

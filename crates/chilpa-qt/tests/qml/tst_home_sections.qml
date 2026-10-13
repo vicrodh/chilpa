@@ -17,7 +17,7 @@ TestCase {
 
     function shelves() {
         const found = []
-        const walk = item => { for (const child of item.children) { if (child.objectName === "homeShelf") found.push(child.modelData.id); walk(child) } }
+        const walk = item => { for (const child of item.children) { if (child.objectName === "homeShelf") found.push(child.entry.id); walk(child) } }
         walk(home.contentItem)
         return found
     }
@@ -34,14 +34,16 @@ TestCase {
 
     function test_a_shelf_turned_off_is_gone_and_a_moved_one_moves() {
         home.change(5, "enabled", false)
+        tryVerify(() => shelves().length === 5)
         compare(shelves(), ["library.recentlyPlayed", "everywhere.recentlyPlayed", "library.recentPlaylists", "everywhere.recentPlaylists", "library.recentlyAdded"])
         home.move(1, -1)
+        tryVerify(() => shelves()[0] === "everywhere.recentlyPlayed")
         compare(shelves(), ["everywhere.recentlyPlayed", "library.recentlyPlayed", "library.recentPlaylists", "everywhere.recentPlaylists", "library.recentlyAdded"])
         const kept = JSON.parse(SettingsModel.kept("ui.home.sections"))
         compare(kept[0].id, "everywhere.recentlyPlayed", "kept for the next time")
         compare(kept[5].enabled, false)
         home.keep([])
-        compare(shelves().length, 6, "restoring brings them back")
+        tryVerify(() => shelves().length === 6, 1000, "restoring brings them back")
     }
 
     function test_a_source_s_shelf_joins_after_the_library_s() {
@@ -56,11 +58,23 @@ TestCase {
         compare(shelves()[6], "source:fixture:recent")
         compare(home.sections.length, 8, "disabled source shelves remain available for Customize")
         home.change(7, "enabled", true)
-        compare(shelves().length, 8, "a disabled source shelf can be chosen for Home")
+        tryVerify(() => shelves().length === 8, 1000, "a disabled source shelf can be chosen for Home")
         home.change(7, "enabled", false)
         home.move(6, -6)
-        compare(shelves()[0], "source:fixture:recent", "it goes wherever it is put")
+        tryVerify(() => shelves()[0] === "source:fixture:recent", 1000, "it goes wherever it is put")
         Sources.show({homeLibraries: []})
+    }
+
+    function test_a_late_source_does_not_remount_local_shelves() {
+        const first = findChild(home.contentItem, "homeShelf")
+        verify(first !== null)
+        Sources.pages = { "fixture native:discover:home": JSON.stringify({ shelves: [
+            { id: "late", title: "Late source", items: [{ ref: "album:1" }], enabled: true }
+        ] }) }
+        Sources.show({ homeLibraries: [{ id: "fixture", name: "Fixture", enabled: true }] })
+        home.homeRefresh++
+        tryVerify(() => shelves().includes("source:fixture:late"))
+        compare(findChild(home.contentItem, "homeShelf"), first, "the mounted shelf keeps its delegate")
     }
 
     // A shelf with records shows; one without stays out of the way.
@@ -68,9 +82,9 @@ TestCase {
         const loaders = []
         const walk = item => { for (const child of item.children) { if (child.objectName === "homeShelf") loaders.push(child); walk(child) } }
         walk(home.contentItem)
-        const added = loaders.find(l => l.modelData.id === "library.recentlyAdded")
+        const added = loaders.find(l => l.entry.id === "library.recentlyAdded")
         tryVerify(() => added.visible && added.height > 0, 1000, "the records added show")
-        verify(!loaders.find(l => l.modelData.id === "library.recentlyPlayed").visible, "nothing played, nothing shown")
+        verify(!loaders.find(l => l.entry.id === "library.recentlyPlayed").visible, "nothing played, nothing shown")
     }
 
     function test_customize_lists_every_shelf() {

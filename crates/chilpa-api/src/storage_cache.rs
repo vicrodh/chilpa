@@ -7,7 +7,9 @@ use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const DEFAULT_REMOTE_MB: u64 = 200;
-const DERIVATIVE_BYTES: u64 = 128 * 1024 * 1024;
+// A library with thousands of records needs its scaled covers to survive
+// ordinary scrolling. A 128 MiB ceiling evicted the warm grid cache.
+const DERIVATIVE_BYTES: u64 = 512 * 1024 * 1024;
 const TRIM_AFTER_BYTES: u64 = 16 * 1024 * 1024;
 static REMOTE_MB: AtomicU64 = AtomicU64::new(DEFAULT_REMOTE_MB);
 static STORED: AtomicU64 = AtomicU64::new(0);
