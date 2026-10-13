@@ -89,6 +89,7 @@ Flickable {
             visible: cards.albums > 0
             fitContent: true
             round: page.about.round === true
+            roundIds: page.about.artist_cards || []
             model: cards
             onOpen: (albumId) => Navigation.go("album", albumId)
         }

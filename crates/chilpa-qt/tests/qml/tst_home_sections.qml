@@ -75,6 +75,21 @@ TestCase {
         tryVerify(() => shelves().includes("source:fixture:late"))
         compare(findChild(home.contentItem, "homeShelf"), first, "the mounted shelf keeps its delegate")
     }
+    function test_consolidated_source_module_is_one_choice_and_retains_home_settings() {
+        home.keep([{id:"source:fixture:interest:artist",enabled:false,size:12},
+            {id:"source:fixture:interest:album",enabled:false,size:24}])
+        Sources.pages = {"fixture native:discover:home": JSON.stringify({shelves:[
+            {id:"interest:mixed",title:"Recommendations",kind:"mixed",key:"fixture native:discover:home|interest:mixed",
+                previous_ids:["interest:artist","interest:album"],items:[{ref:"artist:1"},{ref:"album:2"}]}]})}
+        Sources.show({homeLibraries:[{id:"fixture",name:"Fixture",enabled:true}]})
+        home.homeRefresh++
+        tryVerify(() => home.sections.some(section => section.id === "source:fixture:interest:mixed"))
+        const module = home.sections.filter(section => section.sourceId === "fixture")
+        compare(module.length, 1)
+        compare(module[0].enabled, false)
+        compare(module[0].size, 12)
+        verify(!shelves().includes(module[0].id), "a disabled consolidated module stays hidden")
+    }
 
     // A shelf with records shows; one without stays out of the way.
     function test_a_shelf_with_records_shows_and_an_empty_one_does_not() {

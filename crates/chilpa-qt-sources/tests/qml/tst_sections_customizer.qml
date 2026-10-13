@@ -35,6 +35,7 @@ TestCase {
         verify(center.x > 0 && center.x < test.width && center.y > 0 && center.y < test.height,
                "the tab is inside the window: " + center.x + ", " + center.y)
         verify(tab.visible && tab.enabled, "the tab accepts input")
+        waitForRendering(tab)
         mouseClick(tab, tab.width / 2, tab.height / 2)
         compare(customizer.activeGroup, "fixture")
         verify(customizer.opened)
@@ -47,14 +48,17 @@ TestCase {
         compare(customizer.activeRows.length, 2)
         compare(customizer.activeRows[0].id, "local")
         compare(customizer.activeRows[1].id, "source")
+        tryVerify(() => findChild(customizer.contentItem, "activeCount_local") !== null
+            && findChild(customizer.contentItem, "activeCount_source") !== null, 1000, "the active list has instantiated both delegates")
         const localCount = findChild(customizer.contentItem, "activeCount_local")
         const sourceCount = findChild(customizer.contentItem, "activeCount_source")
         verify(localCount !== null && sourceCount !== null)
         verify(localCount.visible && sourceCount.visible)
         const sourceTab = findChild(customizer.contentItem, "customizeGroup_fixture")
+        waitForRendering(sourceTab)
         mouseClick(sourceTab, sourceTab.width / 2, sourceTab.height / 2)
         compare(customizer.activeGroup, "fixture")
-        verify(findChild(customizer.contentItem, "sourceModule_source") !== null)
+        tryVerify(() => findChild(customizer.contentItem, "sourceModule_source") !== null)
         verify(findChild(customizer.contentItem, "activeModule_local") !== null)
         compare(backgroundClicks, 0)
     }

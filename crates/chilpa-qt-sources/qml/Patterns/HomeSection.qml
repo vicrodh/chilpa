@@ -35,9 +35,11 @@ Item {
         Item {
             visible: !!slot.entry.header
             width: parent.width
-            height: visible ? Math.min(Metrics.heroArt, width / 3) : 0 // derived: the source header's portrait size
-            Rectangle { width: parent.height; height: width; radius: Metrics.radiusCard; color: Theme.color.stateHover }
+            height: !visible ? 0 : slot.entry.header.kind === "album" ? CardLayout.cardHeight + Metrics.cardRing * 2 // derived: room for the context card's ring on both edges
+                : Math.min(Metrics.heroArt, width / 3) // derived: the source portrait footprint
+            Rectangle { width: slot.entry.header?.kind === "album" ? CardLayout.cardWidth : parent.height; height: width; radius: Metrics.radiusCard; color: Theme.color.stateHover }
             Column {
+                visible: slot.entry.header?.kind !== "album"
                 x: parent.height + Metrics.heroGap
                 width: parent.width - x
                 spacing: Metrics.gap12

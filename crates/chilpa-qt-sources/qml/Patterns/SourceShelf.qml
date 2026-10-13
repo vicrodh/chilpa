@@ -48,7 +48,13 @@ Column {
         onForward: rail.contentX = Math.min(shelf.farthest, rail.contentX + shelf.step)
     }
     Text { width: parent.width; visible: !!shelf.section.error; text: shelf.section.error || ""; wrapMode: Text.WordWrap; font.pointSize: Type.body; color: Theme.color.statusNegative }
-    SourcePageHeader { width: parent.width; info: shelf.section.header || ({}); visible: !!shelf.section.header }
+    Loader {
+        width: parent.width
+        active: !!shelf.section.header
+        sourceComponent: shelf.section.header?.kind === "album" ? albumContext : otherContext
+        Component { id: albumContext; SourceContextCard { objectName: "sourceContextCard"; key: shelf.section.header_key || "" } }
+        Component { id: otherContext; SourcePageHeader { info: shelf.section.header || ({}) } }
+    }
     Flow {
         width: parent.width; spacing: Metrics.gap8; visible: (shelf.section.tags || []).length > 0
         PillButton { text: I18n.tr("All", I18n.rev); onClicked: shelf.selectedTag = "" }
@@ -80,7 +86,7 @@ Column {
             height: implicitHeight; fitContent: true
             fixedColumns: shelf.wrap || list ? 0 : shelf.railCards
             viewportX: rail.contentX; viewportWidth: rail.width
-            round: shelf.section.round === true; list: shelf.section.presentation === "ranked"
+            round: shelf.section.round === true; roundIds: shelf.section.artist_cards || []; list: shelf.section.presentation === "ranked"
             model: cards; onOpen: albumId => Navigation.go("album", albumId)
         }
     }

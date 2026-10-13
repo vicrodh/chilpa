@@ -16,6 +16,18 @@ fn ingest(catalog: &Catalog, plugin: &str, key: &str, value: &Value) {
     inner.store.shelves.insert(key.into(), shelf);
     inner.dirty = true;
 }
+fn artist_cards(catalog: &Catalog, key: &str) -> Vec<i64> {
+    let inner = catalog.lock();
+    inner.store.shelves.get(key).into_iter().flat_map(|shelf| &shelf.cards)
+        .filter(|id| inner.store.cards.get(id).is_some_and(|card| card.kind == super::store::CardKind::Artist)).copied().collect()
+}
+fn context_card(catalog: &Catalog, plugin: &str, key: &str, shelf: &mut Value) {
+    let header_key = format!("{key}-header");
+    if shelf["header"].is_object() && (shelf["header_key"] != header_key || catalog.stored_shelf(&header_key).is_none()) {
+        ingest(catalog, plugin, &header_key, &json!({"items":[shelf["header"]]}));
+        shelf["header_key"] = json!(header_key);
+    }
+}
 pub(super) fn read(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, reference: &str) -> Result<(), String> {
     let parent = reference.split('|').next().unwrap_or(reference);
     let reading = catalog.page_reads.lock().unwrap_or_else(|e| e.into_inner())
@@ -41,6 +53,7 @@ pub(super) fn ingest_document(catalog: &Catalog, plugin: &str, reference: &str, 
             shelf["personal"] = json!(personal);
             let id = shelf["id"].as_str().unwrap_or_default();
             let child = format!("{key}|{id}");
+            context_card(catalog, plugin, &child, shelf);
             if let Some(tags) = shelf["tags"].as_array().cloned() {
                 let mut choices = vec![];
                 for mut tag in tags {
@@ -124,6 +137,8 @@ fn page_shelves(catalog: &Catalog, plugin: &str, reference: &str, header: &mut V
         let mut shelf = shelf.clone();
         // Its "Load more" is on its way: the button says so and waits.
         let child = format!("{page_key}|{}", shelf["id"].as_str().unwrap_or_default());
+        context_card(catalog, plugin, &child, &mut shelf);
+        shelf["artist_cards"] = json!(artist_cards(catalog, &child));
         shelf["loading"] = json!(catalog.lock().running.contains(&super::Job::Shelf(child)));
         let items = shelf["items"].as_array();
         if items.is_some_and(|items| items.len() == 1 && items[0]["ref"] == radio) {
@@ -317,7 +332,9 @@ impl crate::Chilpa {
         if let Some(rows) = document.get_mut("shelves").and_then(Value::as_array_mut) { for row in rows { decorate_header(&self.catalog, plugin, &mut row["header"]); } }
         let kind = shelf.document["items"].as_array().and_then(|items| items.first()).and_then(|item| item["kind"].as_str()).unwrap_or("album");
         document["entity"] = json!(kind);
-        document["round"] = json!(kind == "artist");
+        let artists = artist_cards(&self.catalog, &key);
+        document["round"] = json!(!shelf.cards.is_empty() && artists.len() == shelf.cards.len());
+        document["artist_cards"] = json!(artists);
         document["albumsOnly"] = json!(shelf.tracks.is_empty());
         if document.get("shelves").is_none() && document["more"].is_string() && document["next"].is_null() {
             document["next"] = document["more"].clone();
@@ -394,6 +411,35 @@ mod tests {
             assert_eq!(listing["cards"], 1);
             assert_eq!(listing["albumsOnly"], true);
         }
+    }
+
+    #[test]
+    fn mixed_modules_keep_artist_portraits_and_an_actionable_context_record() {
+        let mut app = crate::Chilpa::new();
+        ingest_document(&app.catalog, "fixture", "discover:home", &json!({"shelves":[{
+            "id":"interest:mixed","kind":"mixed","title":"Recommendations",
+            "header":{"kind":"album","ref":"album:seed","title":"Seed","artist":"Band","image":"https://example.org/seed.jpg"},
+            "items":[{"kind":"artist","ref":"artist:1","title":"Band"},{"kind":"playlist","ref":"playlist:2","title":"List"},
+                {"kind":"album","ref":"album:3","title":"Record"}]}]}));
+        let page: Value = serde_json::from_str(&app.native_page_view("fixture", "discover:home")).unwrap();
+        let shelf = &page["shelves"][0];
+        let seed = app.catalog.stored_shelf(shelf["header_key"].as_str().unwrap()).unwrap();
+        assert_eq!(seed.cards.len(), 1);
+        let card = app.catalog.card(seed.cards[0]).unwrap();
+        assert_eq!((card.identity.as_str(), card.title.as_str(), card.artist.as_str()), ("album:seed", "Seed", "Band"));
+        let listing: Value = serde_json::from_str(&app.native_page_view("fixture", "discover:home|interest:mixed")).unwrap();
+        assert_eq!(listing["cards"], 3);
+        assert_eq!(listing["round"], false, "an artist first must not round every record in the mixed grid");
+        assert_eq!(shelf["artist_cards"], listing["artist_cards"]);
+        let artists = listing["artist_cards"].as_array().unwrap();
+        assert_eq!(artists.len(), 1);
+        assert_eq!(app.catalog.card(artists[0].as_i64().unwrap()).unwrap().identity, "artist:1");
+        let mut legacy = json!({"header":{"kind":"album","ref":"album:old","title":"Cached seed"}});
+        context_card(&app.catalog, "fixture", "fixture native:old|module", &mut legacy);
+        assert_eq!(app.catalog.stored_shelf(legacy["header_key"].as_str().unwrap()).unwrap().cards.len(), 1);
+        legacy["header_key"] = json!("another native:home|context");
+        context_card(&app.catalog, "fixture", "fixture native:old|module", &mut legacy);
+        assert_eq!(legacy["header_key"], "fixture native:old|module-header");
     }
 
     #[test]

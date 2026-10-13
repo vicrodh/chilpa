@@ -3,6 +3,7 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/SectionChoices.js" as SectionChoices
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
@@ -14,11 +15,7 @@ Item {
     property var preferences: []
     property var selectedGenres: []
     property bool filtering: false
-    readonly property var sections: {
-        const available = about.shelves || []
-        const kept = preferences.map(p => Object.assign({}, available.find(s => s.id === p.id) || {}, p)).filter(p => p.id && available.some(s => s.id === p.id))
-        return kept.concat(available.filter(s => !kept.some(p => p.id === s.id)))
-    }
+    readonly property var sections: SectionChoices.order(about.shelves || [], preferences)
     readonly property var shown: sections.filter(s => s.enabled !== false)
     implicitWidth: buttons.implicitWidth
     implicitHeight: buttons.implicitHeight

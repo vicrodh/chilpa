@@ -3,6 +3,7 @@ import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/SectionChoices.js" as SectionChoices
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // I keep the last descriptors while refreshing one source per frame.
@@ -42,9 +43,7 @@ Column {
         let preferences = []
         try { preferences = JSON.parse(SettingsModel.kept("ui.source." + source.id + ".discover.home") || "[]") } catch (_) {}
         const available = page.shelves || []
-        const ordered = preferences.map(preference => Object.assign({}, available.find(section => section.id === preference.id) || {}, preference))
-            .filter(section => available.some(found => found.id === section.id))
-            .concat(available.filter(section => !preferences.some(preference => preference.id === section.id)))
+        const ordered = SectionChoices.order(available, preferences)
         documents[source.id] = ordered.map(section => Object.assign({}, section, {
             title: source.icon ? section.title : source.name + " · " + section.title,
             sourceEnabled: section.enabled !== false, sourceIcon: source.icon || "", sourceId: source.id,

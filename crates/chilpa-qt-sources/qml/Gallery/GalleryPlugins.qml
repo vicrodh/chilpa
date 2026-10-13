@@ -50,6 +50,8 @@ TitledFlow {
     ScenePanelAlbums { width: Metrics.confirmWidth; height: Metrics.panesHeight }
     SceneAlbumCard { album: ({title:"Scene album",artist:"Scene artist",year:"2026"}) }
     SourceShelf { width: Metrics.confirmWidth; section: ({title:"Releases",error:"Unavailable",key:""}) }
+    SourceContextCard { width: Metrics.confirmWidth; key: "preview native:home|context-header" }
+    HomePlaylistShelf { width: Metrics.confirmWidth; entry: ({title:"Recently listened playlists"}) }
     SourceHomeSections { width: Metrics.confirmWidth }
     PillButton {
         text: "Customize shelves"
