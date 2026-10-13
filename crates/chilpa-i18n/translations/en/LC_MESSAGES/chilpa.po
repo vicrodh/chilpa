@@ -3894,9 +3894,6 @@ msgstr ""
 msgid "This can take a few minutes when MusicBrainz is busy."
 msgstr ""
 
-msgid "This catalog could not be reached."
-msgstr ""
-
 msgid "This chapter format is not supported."
 msgstr ""
 

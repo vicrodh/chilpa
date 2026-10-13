@@ -3894,9 +3894,6 @@ msgstr "Esta dirección pertenece a otro servidor."
 msgid "This can take a few minutes when MusicBrainz is busy."
 msgstr "Esto puede tardar unos minutos si MusicBrainz está ocupado."
 
-msgid "This catalog could not be reached."
-msgstr "No se pudo acceder a este catálogo."
-
 msgid "This chapter format is not supported."
 msgstr "Este formato de capítulos no es compatible."
 

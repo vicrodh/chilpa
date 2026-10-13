@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // A record: its cover, its title and a subtitle (design/03 AlbumCard). The
 // hover overlay is built only for the card under the pointer. A selected
@@ -17,6 +18,8 @@ Item {
     property int albumId
     property string title
     property string subtitle
+    property string artistName: subtitle
+    property var artistDestination: ({})
     property string year
     property url art
     property var artColors: []
@@ -146,11 +149,15 @@ Item {
             HoverHandler { enabled: titleLine.truncated; onHoveredChanged: hovered ? TipState.show(card.title, titleLine) : TipState.hide(titleLine) }
             Component.onDestruction: TipState.hide(titleLine)
         }
-        Text {
+        AlbumArtistText {
+            id: artistLabel
             width: parent.width
             text: card.subtitle
+            albumId: card.albumId; artist: card.artistName; destination: card.artistDestination
+            navigable: !card.round && !!card.artistName
+            onFallback: card.clicked(0)
             horizontalAlignment: card.round ? Text.AlignHCenter : Text.AlignLeft
-            elide: Text.ElideRight; font.pointSize: Type.meta; color: Theme.color.textSecondary
+            elide: Text.ElideRight; font.pointSize: Type.meta
         }
     }
 
@@ -169,6 +176,8 @@ Item {
         id: tap
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onTapped: (point, button) => {
+            const at = artistLabel.mapFromItem(card, point.position.x, point.position.y)
+            if (button === Qt.LeftButton && artistLabel.navigable && at.x >= 0 && at.x <= artistLabel.width && at.y >= 0 && at.y <= artistLabel.height) return
             if (button === Qt.RightButton && !card.purchaseMode)
                 return card.menu(point.position.x, point.position.y)
             if (button === Qt.RightButton)

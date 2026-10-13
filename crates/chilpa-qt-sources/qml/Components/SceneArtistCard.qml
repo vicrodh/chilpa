@@ -12,19 +12,20 @@ Rectangle {
     property var artist: ({})
     property bool selected: false
     signal activated()
+    signal sourceActivated(var source)
     width: Metrics.sceneCardWidth; height: Metrics.sceneCardHeight
     radius: Metrics.radiusCard
     color: selected ? Theme.color.rowSelected : hover.hovered ? Theme.color.stateHover : Theme.color.surfacePanel
     border.width: selected ? 1 : 0
     border.color: Theme.color.accent
-    readonly property var firstSource: (artist.sources || [])[0] || ({})
+    readonly property var firstSource: (artist.sources || []).find(source => source.image) || ({})
 
     ArtTile {
         id: portrait
         x: Metrics.gap8; y: Metrics.gap8
         width: parent.width - Metrics.gap16; height: width
         radius: width / Metrics.gap2
-        source: card.firstSource.plugin && card.firstSource.image
+        source: card.firstSource.local ? card.firstSource.image || "" : card.firstSource.plugin && card.firstSource.image
             ? Sources.art(card.firstSource.plugin, card.firstSource.image, Library.remoteArtRev) : ""
     }
     Icon { anchors.centerIn: portrait; visible: !portrait.ready; glyph: SourceGlyphs.musicArtist; iconFamily: SourceGlyphs.font; size: Metrics.iconPlay; color: Theme.color.textTertiary }
@@ -37,5 +38,23 @@ Rectangle {
         font.pointSize: Type.body; font.weight: Type.semibold; color: Theme.color.textPrimary
     }
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
-    TapHandler { onTapped: card.activated() }
+    TapHandler { onTapped: point => { if (point.position.y < sourceButtons.y || !sourceButtons.visible) card.activated() } }
+    Row {
+        id: sourceButtons
+        visible: (card.artist.sources || []).length > 0
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom; anchors.bottomMargin: Metrics.gap4
+        spacing: Metrics.gap6
+        Repeater {
+            model: card.artist.sources || []
+            IconButton {
+                required property var modelData
+                objectName: "sceneArtistSource_" + (modelData.local ? "library" : modelData.plugin)
+                size: Metrics.button24; round: true
+                tip: modelData.name || modelData.plugin || "Chilpa"
+                onClicked: card.sourceActivated(modelData)
+                SourceIcon { anchors.centerIn: parent; width: Metrics.iconSm; height: width; sourceInfo: ({icon:modelData.icon || "",local:modelData.local === true}) }
+            }
+        }
+    }
 }

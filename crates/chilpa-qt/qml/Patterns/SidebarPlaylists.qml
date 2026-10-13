@@ -5,6 +5,7 @@ import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 import "../Components/PlaylistTree.js" as PlaylistTree
 
 // The sidebar's playlists (design/02 2, item 6): the label with a button to
@@ -24,7 +25,7 @@ Item {
     property var expanded: ({})
     function reload() {
         const catalog = JSON.parse(Playlists.catalogJson(filter.text))
-        rows = PlaylistTree.rows(catalog, order, ascending, filter.text, expanded)
+        rows = PlaylistTree.rows(catalog, order, ascending, filter.text, expanded, I18n.tr("Playlists", I18n.rev))
     }
     function toggleFolder(id) { expanded[id] = !expanded[id]; reload() }
     Component.onCompleted: reload()
@@ -106,7 +107,8 @@ Item {
             x: depth * Metrics.gap8 // derived: one small inset per folder depth
             width: ListView.view.width - x
             height: Metrics.playlistRowHeight
-            sourceComponent: rowKind === 1 ? folderDelegate : playlistDelegate
+            sourceComponent: rowKind === 2 ? groupDelegate : rowKind === 1 ? folderDelegate : playlistDelegate
+            Component { id: groupDelegate; PlaylistGroupHeader { title:host.name; sourceName:host.sourceName; sourceIcon:host.sourceIcon } }
 
             Component {
                 id: folderDelegate

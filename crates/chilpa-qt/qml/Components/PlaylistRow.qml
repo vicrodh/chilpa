@@ -76,7 +76,7 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: Metrics.navItemPadding
         anchors.verticalCenter: parent.verticalCenter
-        visible: row.showSourceBadge && !row.editing
+        visible: row.showSourceBadge && (collage.active || row.local) && !row.editing
         sourceInfo: ({icon: row.sourceIcon, label: row.sourceName})
     }
     Text {

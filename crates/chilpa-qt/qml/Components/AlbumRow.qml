@@ -2,6 +2,7 @@
 import QtQuick
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // A record as a row: an arrow that opens its quick view under it, its cover,
 // its title and who made it, and its year. A click anywhere but the arrow
@@ -88,12 +89,13 @@ Item {
             font.weight: Type.medium
             color: Theme.color.textPrimary
         }
-        Text {
+        AlbumArtistText {
+            id: artistLabel
             width: parent.width
             text: row.subtitle
+            albumId: row.albumId; onFallback: row.clicked(0)
             elide: Text.ElideRight
             font.pointSize: Type.meta
-            color: Theme.color.textSecondary
         }
     }
     Text {
@@ -111,6 +113,8 @@ Item {
         id: tap
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onTapped: (point, button) => {
+            const at = artistLabel.mapFromItem(row, point.position.x, point.position.y)
+            if (button === Qt.LeftButton && at.x >= 0 && at.x <= artistLabel.width && at.y >= 0 && at.y <= artistLabel.height) return
             if (button === Qt.RightButton)
                 return row.menu(point.position.x, point.position.y)
             // The arrow is its own place.

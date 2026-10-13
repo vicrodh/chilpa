@@ -1,6 +1,5 @@
 # The files of the window's crate (crates/chilpa-qt/qml and src). This list
 # only shrinks: see tools/lint/window-files.
-crates/chilpa-qt/qml/Components/AlbumArtistLine.qml
 crates/chilpa-qt/qml/Components/AlbumCardOverlay.qml
 crates/chilpa-qt/qml/Components/AlbumCard.qml
 crates/chilpa-qt/qml/Components/AlbumCarousel.qml

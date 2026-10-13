@@ -129,13 +129,14 @@ impl Chilpa {
         let words: Vec<_> = query.to_lowercase().split_whitespace().map(str::to_owned).collect();
         playlists.retain(|p| p["visible_sidebar"] == true && words.iter().all(|word| p["name"].as_str().unwrap_or_default().to_lowercase().contains(word)));
         let mut native_folders = Vec::new(); let mut folder_sources = Vec::new();
-        for source in self.natives.ids() {
+        for (position, source) in crate::plugin_sidebar::ordered(&root, self.natives.ids()).into_iter().enumerate() {
+            let name = self.catalog.name(&source).unwrap_or_else(|| source.clone());
+            let icon = crate::plugin_icons::image_url(&root, &source);
+            let folder_icon = crate::plugin_icons::folder_image_url(&root, &source);
+            folder_sources.push(json!({"id":source,"name":name,"icon":icon,"folder_icon":folder_icon,
+                "separate":read(&root, &source).separate_playlists,"position":position}));
             if let Some(shelf) = self.catalog.stored_shelf(&format!("{source} section:playlists")) {
                 if let Some(folders) = shelf.document["folders"].as_array() {
-                    let name = self.catalog.name(&source).unwrap_or_else(|| source.clone());
-                    let icon = crate::plugin_icons::image_url(&root, &source);
-                    let folder_icon = crate::plugin_icons::folder_image_url(&root,&source);
-                    folder_sources.push(json!({"id":source,"name":name,"icon":icon}));
                     native_folders.extend(folders.iter().map(|folder| { let mut folder = folder.clone(); folder["source"] = source.clone().into(); folder["source_name"] = name.clone().into(); folder["source_icon"] = icon.clone().into(); folder["folder_icon"] = folder_icon.clone().into(); folder }));
                 }
             }

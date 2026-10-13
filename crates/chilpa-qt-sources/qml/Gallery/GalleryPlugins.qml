@@ -52,6 +52,7 @@ TitledFlow {
     SourceShelf { width: Metrics.confirmWidth; section: ({title:"Releases",error:"Unavailable",key:""}) }
     SourceContextCard { width: Metrics.confirmWidth; key: "preview native:home|context-header" }
     HomePlaylistShelf { width: Metrics.confirmWidth; entry: ({title:"Recently listened playlists"}) }
+    PlaylistGroupHeader { width: Metrics.sidebarWidth; height: Metrics.playlistRowHeight; title: "Playlists" }
     SourceHomeSections { width: Metrics.confirmWidth }
     PillButton {
         text: "Customize shelves"

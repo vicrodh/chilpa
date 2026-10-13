@@ -2,7 +2,7 @@ import QtQuick
 import QtTest
 import app.chilpa
 import app.chilpa.kit
-import "../../qml/Components"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../../../chilpa-qt-kit/qml/Theme/TextLinks.js" as TextLinks
 
 TestCase {
