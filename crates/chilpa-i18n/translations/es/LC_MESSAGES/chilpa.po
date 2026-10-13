@@ -163,6 +163,9 @@ msgstr "Agradecimientos"
 msgid "Active"
 msgstr "Activa"
 
+msgid "Active modules"
+msgstr "Módulos activos"
+
 msgid "Add"
 msgstr "Agregar"
 

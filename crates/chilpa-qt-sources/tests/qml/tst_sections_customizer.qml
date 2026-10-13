@@ -40,4 +40,22 @@ TestCase {
         verify(customizer.opened)
         compare(backgroundClicks, 0)
     }
+
+    function test_active_modules_keep_global_order_and_local_count() {
+        customizer.open()
+        tryVerify(() => customizer.opened)
+        compare(customizer.activeRows.length, 2)
+        compare(customizer.activeRows[0].id, "local")
+        compare(customizer.activeRows[1].id, "source")
+        const localCount = findChild(customizer.contentItem, "activeCount_local")
+        const sourceCount = findChild(customizer.contentItem, "activeCount_source")
+        verify(localCount !== null && sourceCount !== null)
+        verify(localCount.visible && sourceCount.visible)
+        const sourceTab = findChild(customizer.contentItem, "customizeGroup_fixture")
+        mouseClick(sourceTab, sourceTab.width / 2, sourceTab.height / 2)
+        compare(customizer.activeGroup, "fixture")
+        verify(findChild(customizer.contentItem, "sourceModule_source") !== null)
+        verify(findChild(customizer.contentItem, "activeModule_local") !== null)
+        compare(backgroundClicks, 0)
+    }
 }
