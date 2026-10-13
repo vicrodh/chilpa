@@ -163,6 +163,9 @@ msgstr ""
 msgid "Active"
 msgstr ""
 
+msgid "Active modules"
+msgstr ""
+
 msgid "Add"
 msgstr ""
 
