@@ -3972,6 +3972,9 @@ msgstr "This source cannot accept these tracks right now."
 msgid "This source owns the order."
 msgstr ""
 
+msgid "This source's folders are read-only. Choose a local folder to organize its playlists in Chilpa."
+msgstr ""
+
 msgid "This track has no album to open"
 msgstr ""
 

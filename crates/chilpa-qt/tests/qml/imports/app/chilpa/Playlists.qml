@@ -22,7 +22,8 @@ QtObject {
     function setCustomOrder(ids) { created = JSON.parse(ids) }
     function moveToFolder(id, folder) { created = [id, folder]; return !fail }
     function setVisible(id, visible) { created = [id, visible] }
-    function refresh() {}
+    property int refreshes: 0
+    function refresh() { refreshes++; rev++ }
 
     function pickerJson(ids, query) { return JSON.stringify(rows.filter(r => r.playlist.name.toLowerCase().includes(query.toLowerCase()))) }
     property int lastTarget: 0

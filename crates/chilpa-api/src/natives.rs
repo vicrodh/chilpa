@@ -112,6 +112,10 @@ impl Natives {
     pub(crate) fn edits_playlists(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["playlist_edit"] == true)
     }
+    pub(crate) fn edits_folders(&self, id: &str) -> bool {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p|
+            p.capabilities["folder_edit"].as_bool().unwrap_or(p.capabilities["playlist_edit"] == true))
+    }
     pub(crate) fn ids(&self) -> Vec<String> {
         self.live.read().unwrap_or_else(|e| e.into_inner()).keys().cloned().collect()
     }

@@ -726,6 +726,11 @@ impl Plugins {
         }
     }
 
+    /// I bypass freshness on request without retrying unsupported exports.
+    pub(crate) fn refresh_playlist_reads(&mut self) {
+        self.playlist_reads.retain(|_, (_, _, absent)| *absent);
+    }
+
     /// Sidebar redraws reuse the cache; an absent operation stays absent until reload.
     pub(crate) fn playlists_due(&mut self, id: &str) -> bool {
         let epoch = self.epoch(id);
@@ -1182,11 +1187,14 @@ mod tests {
         let id = "app.example.music";
         assert!(host.playlists_due(id));
         assert!(!host.playlists_due(id));
+        host.refresh_playlist_reads();
+        assert!(host.playlists_due(id), "an explicit refresh bypasses the five-minute cache");
         host.playlist_reads.get_mut(id).unwrap().1 -= std::time::Duration::from_secs(301);
         assert!(host.playlists_due(id));
         let read = host.playlist_reads.get_mut(id).unwrap();
         read.1 -= std::time::Duration::from_secs(301);
         read.2 = true;
+        host.refresh_playlist_reads();
         assert!(!host.playlists_due(id));
         host.epochs.insert(id.into(), 1);
         assert!(host.playlists_due(id));

@@ -23,7 +23,9 @@ while IFS= read -r line; do
       *'"method":"home"'*) printf '{"jsonrpc":"2.0","id":%s,"result":{"shelves":[{"id":"n","title":"New","kind":"album","items":[{"kind":"album","ref":"album:1","title":"Record","artist":"Band"}]}]}}\n' "$id" ;;
       *'"method":"library.list"'*)
         if [[ "$line" == *'"kind":"playlists"'* ]]; then
-          printf '{"jsonrpc":"2.0","id":%s,"result":{"items":[{"kind":"playlist","ref":"playlist:1","title":"Cloud list","tracks":1,"editable":true,"native_folder":"folder:a"}],"folders":[{"ref":"folder:a","name":"Remote folder","parent":""}],"total":1}}\n' "$id"
+          title="Cloud list"
+          if [[ -f /data/playlist-title ]]; then IFS= read -r title < /data/playlist-title; fi
+          printf '{"jsonrpc":"2.0","id":%s,"result":{"items":[{"kind":"playlist","ref":"playlist:1","title":"%s","tracks":1,"editable":true,"native_folder":"folder:a"}],"folders":[{"ref":"folder:a","name":"Remote folder","parent":""}],"total":1}}\n' "$id" "$title"
         elif [[ "$line" == *'"kind":"tracks"'* ]]; then
           printf '{"jsonrpc":"2.0","id":%s,"result":{"items":[{"kind":"track","ref":"track:7","title":"Remote song","artist":"Band","duration_ms":120000,"quality":{"codec":"flac"}}],"total":1}}\n' "$id"
         else printf '{"jsonrpc":"2.0","id":%s,"result":{"items":[{"kind":"album","ref":"album:1","title":"Record","artist":"Band"}],"total":1}}\n' "$id"; fi ;;
@@ -175,17 +177,17 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     assert!(row["origin"].is_null());
     chilpa.plugin_center_command("settings", r#"{"id":"com.test.native"}"#);
     let opened = wait_center(&mut chilpa);
-    assert_eq!(opened["error"], "", "{opened}");
+    assert_success(&opened);
     assert_eq!(opened["form"]["revision"], 7);
     assert_eq!(opened["form"]["form"]["fields"][0]["control"]["type"], "secret");
     chilpa.plugin_center_command("submit", &json!({"id":"com.test.native","submission":{
         "revision":7,"action":"sign_in","values":{"app_id":"fixture"}}}).to_string());
     let submitted = wait_center(&mut chilpa);
-    assert_eq!(submitted["error"], "", "{submitted}");
+    assert_success(&submitted);
     assert_eq!(submitted["form"]["revision"], 8);
     assert_eq!(submitted["form"]["links"][0]["url"], "https://example.org/authorize");
     chilpa.plugin_center_command("tick", r#"{"id":"com.test.native"}"#);
-    assert_eq!(wait_center(&mut chilpa)["error"], "");
+    assert_success(&wait_center(&mut chilpa));
     chilpa.plugin_center_command("disable", r#"{"id":"com.test.native"}"#);
     assert_eq!(wait_center(&mut chilpa)["installed"][0]["enabled"], false);
     assert!(!chilpa.same_artist_albums(record_id, 8).iter().any(|a| a.id < 0));
@@ -199,7 +201,7 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     let proposal = wait_center(&mut chilpa)["approval"].clone();
     assert!(!proposal["permissions"].as_array().unwrap().is_empty());
     chilpa.plugin_center_command("enable", &json!({"id":"com.test.native","permission_revision":proposal["revision"]}).to_string());
-    assert_eq!(wait_center(&mut chilpa)["error"], "");
+    assert_success(&wait_center(&mut chilpa));
     let deadline = Instant::now() + Duration::from_secs(10);
     let lists = loop {
         let value: serde_json::Value = serde_json::from_str(&chilpa.sidebar_playlists("")).unwrap();
@@ -251,21 +253,59 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     assert!(chilpa.integrated_albums("", &Default::default()).is_empty());
     assert_eq!(serde_json::from_str::<serde_json::Value>(&chilpa.album_libraries()).unwrap()[0]["enabled"], false);
     chilpa.plugin_center_command("integration", r#"{"id":"com.test.native","field":"separate_playlists","enabled":true}"#);
-    assert_eq!(wait_center(&mut chilpa)["error"], "");
+    assert_success(&wait_center(&mut chilpa));
     let lists: serde_json::Value = serde_json::from_str(&chilpa.sidebar_playlists("")).unwrap();
     assert_eq!(lists["playlists"].as_array().unwrap().iter().find(|p| p["name"] == "Cloud list").unwrap()["separate"], true);
     chilpa.plugin_center_command("tint", r#"{"id":"com.test.native","enabled":true}"#);
-    assert_eq!(wait_center(&mut chilpa)["error"], "");
+    assert_success(&wait_center(&mut chilpa));
     assert!(chilpa.source_panels().iter().find(|p| p.id == "com.test.native").unwrap().icon_tint);
     let data = chilpa_dirs::data().join("plugin-data/com.test.native");
     let cache = chilpa_dirs::cache().join("plugins/com.test.native");
+    chilpa.library_changed();
+    chilpa.plugin_center_command("disable", r#"{"id":"com.test.native"}"#);
+    // I close settings before the command finishes: only ordinary polling remains.
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        chilpa.poll();
+        if chilpa.library_changed() { break; }
+        assert!(Instant::now() < deadline, "disabling a plugin must redraw the sidebar with settings closed");
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let sidebar: serde_json::Value = serde_json::from_str(&chilpa.sidebar_playlists("")).unwrap();
+    assert!(!sidebar["playlists"].as_array().unwrap().iter().any(|p| p["source"] == "com.test.native"));
+    assert!(sidebar["native_folders"].as_array().unwrap().is_empty());
+    assert!(sidebar["playlists"].as_array().unwrap().iter().any(|p| p["id"] == mixed));
+    assert!(chilpa.cached_playlists().iter().any(|p| p.id == remote_id), "disabling hides the provider's lists without deleting their cache");
+    assert_eq!(chilpa.playlist_rows(mixed)[0].title, "Remote song");
+    assert!(!chilpa.playlist_rows(mixed)[0].available);
+    assert_success(&wait_center(&mut chilpa));
+    chilpa.refresh_playlist_sources();
+    let refreshed: serde_json::Value = serde_json::from_str(&chilpa.sidebar_playlists("")).unwrap();
+    assert!(!refreshed["playlists"].as_array().unwrap().iter().any(|p| p["source"] == "com.test.native"));
+    chilpa.plugin_center_command("review_permissions", r#"{"id":"com.test.native"}"#);
+    let revision = wait_center(&mut chilpa)["approval"]["revision"].clone();
+    chilpa.plugin_center_command("enable", &json!({"id":"com.test.native","permission_revision":revision}).to_string());
+    assert_success(&wait_center(&mut chilpa));
+    assert!(chilpa.library_changed());
+    let restored: serde_json::Value = serde_json::from_str(&chilpa.sidebar_playlists("")).unwrap();
+    assert!(restored["playlists"].as_array().unwrap().iter().any(|p| p["id"] == remote_id));
+    assert!(chilpa.playlist_rows(mixed)[0].available);
+    std::fs::write(data.join("playlist-title"), b"Updated cloud list\n").unwrap();
+    chilpa.refresh_playlist_sources();
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        let refreshed: serde_json::Value = serde_json::from_str(&chilpa.sidebar_playlists("")).unwrap();
+        if refreshed["playlists"].as_array().unwrap().iter().any(|p| p["id"] == remote_id && p["name"] == "Updated cloud list") { break; }
+        assert!(Instant::now() < deadline, "explicit refresh did not replace fresh cached playlist metadata");
+        std::thread::sleep(Duration::from_millis(20));
+    }
     std::fs::create_dir_all(&data).unwrap(); std::fs::create_dir_all(&cache).unwrap();
     std::fs::write(data.join("account.json"), b"fixture").unwrap();
     std::fs::write(cache.join("catalog.json"), b"fixture").unwrap();
     chilpa.remember_preference("ui.source.com.test.native section:albums.order", "title");
     chilpa.plugin_center_command("uninstall", r#"{"id":"com.test.native"}"#);
     let removed = wait_center(&mut chilpa);
-    assert_eq!(removed["error"], "", "{removed}");
+    assert_success(&removed);
     assert!(removed["installed"].as_array().unwrap().is_empty());
     assert_eq!(chilpa.playlist_rows(mixed)[0].title, "Remote song");
     assert!(!chilpa.same_artist_albums(record_id, 8).iter().any(|a| a.id < 0));
@@ -278,11 +318,15 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     let _ = std::fs::remove_dir_all(dir);
 }
 
+fn assert_success(view: &serde_json::Value) {
+    assert!(view["error"].is_null() || view["error"] == "", "{view}");
+}
+
 fn wait_center(chilpa: &mut chilpa_api::Chilpa) -> serde_json::Value {
     let deadline = Instant::now() + Duration::from_secs(10);
     loop {
         let view: serde_json::Value = serde_json::from_str(&chilpa.plugin_center_json()).unwrap();
-        if view["working"] == false { return view; }
+        if view["working"] == false && view["settings_loading_id"].is_null() { return view; }
         assert!(Instant::now() < deadline, "plugin center timed out");
         std::thread::sleep(Duration::from_millis(10));
     }

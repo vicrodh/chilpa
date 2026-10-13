@@ -36,6 +36,7 @@ Item {
     function row(value, left, top) {
         selected = value
         const folder = value.rowKind === 1
+        if (folder && value.nativeRef && value.editable === false) return
         let entries = folder ? [
             {text: I18n.tr("Edit folder", I18n.rev), action: "editFolder"},
             {text: I18n.tr("Delete folder…", I18n.rev), action: "deleteFolder"}

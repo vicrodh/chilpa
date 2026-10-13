@@ -13,6 +13,50 @@ pub(crate) struct Preferences {
     pub integrate_home: bool,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn sidebar_visibility_keeps_local_and_server_lists_when_a_compatibility_plugin_is_disabled() {
+        let directory = tempfile::tempdir().unwrap();
+        let id = "app.example.music";
+        let folder = directory.path().join(id);
+        std::fs::create_dir_all(&folder).unwrap();
+        std::fs::write(folder.join("manifest.json"), format!(r#"{{"id":"{id}","name":"Fixture","version":"1","api_version":1,"kind":"source","capabilities":[]}}"#)).unwrap();
+        let wasm = wat::parse_str(r#"(module (memory (export "memory") 1)
+            (func (export "chilpa_alloc") (param i32) (result i32) (i32.const 4096))
+            (func (export "chilpa_api_version") (result i32) (i32.const 1)))"#).unwrap();
+        std::fs::write(folder.join("plugin.wasm"), wasm).unwrap();
+        let mut host = crate::plugins::Plugins::new(directory.path().into()).unwrap();
+        host.load_all(); host.approve(id).unwrap(); host.reload_one(id);
+        assert!(host.searchers().iter().any(|(source, _)| source == id));
+        let host = std::sync::Arc::new(std::sync::Mutex::new(host));
+        let library = chilpa_library::Library::in_memory().unwrap();
+        let local = library.create_playlist(library.source_id("local", "default").unwrap(), "Local", "").unwrap();
+        let plugin = library.create_playlist(library.source_id(id, "default").unwrap(), "Plugin", "").unwrap();
+        let server = library.add_server(&chilpa_library::NewServer {
+            provider:"example-server".into(),instance:"fixture".into(),label:"Server".into(),icon:"server".into(),
+            address:"https://example.org".into(),account:"fixture".into(),identity:"fixture".into(),product:String::new(),
+            libraries:"[]".into(),details:"{}".into(),
+        }).unwrap();
+        let server_list = library.sync_source_playlist(server, "playlist:1", "Server", "", None).unwrap();
+        let mut api = Chilpa::new(); api.library = Some(library); api.plugins = Some(host.clone());
+        let visible = |api: &mut Chilpa| -> Vec<i64> {
+            serde_json::from_str::<Value>(&api.sidebar_playlists("")).unwrap()["playlists"].as_array().unwrap()
+                .iter().filter_map(|p| p["id"].as_i64()).collect()
+        };
+        let before = visible(&mut api);
+        for id in [local, plugin, server_list] { assert!(before.contains(&id)); }
+        { let mut host = host.lock().unwrap(); host.revoke(id).unwrap(); host.reload_one(id); }
+        let hidden = visible(&mut api);
+        assert!(hidden.contains(&local) && hidden.contains(&server_list));
+        assert!(!hidden.contains(&plugin));
+        assert!(api.cached_playlists().iter().any(|row| row.id == plugin));
+        { let mut host = host.lock().unwrap(); host.approve(id).unwrap(); host.reload_one(id); }
+        assert!(visible(&mut api).contains(&plugin));
+    }
+}
+
 pub(crate) fn read(root: &Path, id: &str) -> Preferences {
     if id.is_empty() || id.contains("..") || !id.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'.' | b'-')) { return Preferences::default(); }
     std::fs::read(root.join(".integration").join(format!("{id}.json"))).ok()
@@ -114,8 +158,15 @@ impl Chilpa {
     /// Sidebar lists include native cached library cards without opening their tracks.
     pub fn sidebar_playlists(&mut self, query: &str) -> String {
         self.source_panels();
+        let active: std::collections::HashSet<_> = self.sources.listed.lock().unwrap_or_else(|e| e.into_inner()).iter()
+            .filter(|plugin| matches!(plugin.state.as_str(), "fine" | "stumbling")).map(|plugin| plugin.id.clone()).collect();
+        let servers: std::collections::HashSet<_> = self.library().and_then(|lib| lib.servers().ok()).unwrap_or_default()
+            .into_iter().filter(|server| server.enabled).map(|server| server.source_id).collect();
         let root = Self::plugins_dir();
-        let mut playlists: Vec<Value> = self.playlists().into_iter().map(|p| {
+        let mut playlists: Vec<Value> = self.playlists().into_iter().filter(|p| {
+            if p.id < 0 { self.natives.is_native(&p.source) }
+            else { p.mixed || active.contains(&p.source) || servers.contains(&p.source_id) }
+        }).map(|p| {
             let mut row = serde_json::to_value(&p).unwrap_or_default();
             if let Some(card) = self.catalog.card(p.id) {
                 row["contain_art"] = card.contain_art().into();
@@ -133,11 +184,12 @@ impl Chilpa {
             let name = self.catalog.name(&source).unwrap_or_else(|| source.clone());
             let icon = crate::plugin_icons::image_url(&root, &source);
             let folder_icon = crate::plugin_icons::folder_image_url(&root, &source);
+            let editable = self.natives.edits_folders(&source);
             folder_sources.push(json!({"id":source,"name":name,"icon":icon,"folder_icon":folder_icon,
-                "separate":read(&root, &source).separate_playlists,"position":position}));
+                "separate":read(&root, &source).separate_playlists,"position":position,"editable":editable}));
             if let Some(shelf) = self.catalog.stored_shelf(&format!("{source} section:playlists")) {
                 if let Some(folders) = shelf.document["folders"].as_array() {
-                    native_folders.extend(folders.iter().map(|folder| { let mut folder = folder.clone(); folder["source"] = source.clone().into(); folder["source_name"] = name.clone().into(); folder["source_icon"] = icon.clone().into(); folder["folder_icon"] = folder_icon.clone().into(); folder }));
+                    native_folders.extend(folders.iter().map(|folder| { let mut folder = folder.clone(); folder["source"] = source.clone().into(); folder["source_name"] = name.clone().into(); folder["source_icon"] = icon.clone().into(); folder["folder_icon"] = folder_icon.clone().into(); folder["editable"] = editable.into(); folder }));
                 }
             }
         }
