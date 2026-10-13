@@ -598,6 +598,8 @@ mod tests {
             archive.start_file(name, zip::write::SimpleFileOptions::default()).unwrap();
             archive.write_all(bytes).unwrap();
         }
+        archive.start_file("wrapper/runtime/engine", zip::write::SimpleFileOptions::default().unix_permissions(0o755)).unwrap();
+        archive.write_all(b"bundled program").unwrap();
         let path = temporary.path().join("local package.zip");
         std::fs::write(&path, archive.finish().unwrap().into_inner()).unwrap();
         let address = url::Url::from_file_path(&path).unwrap().to_string();
@@ -608,6 +610,11 @@ mod tests {
         assert_eq!(view["installed"][0]["enabled"], false);
         assert!(view["repositories"].as_array().unwrap().is_empty());
         assert_eq!(std::fs::read(root.join("app.test.local/plugin")).unwrap(), b"must not run");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(std::fs::metadata(root.join("app.test.local/runtime/engine")).unwrap().permissions().mode() & 0o111, 0o111);
+        }
         let source: Value = serde_json::from_slice(&std::fs::read(root.join("app.test.local/source.json")).unwrap()).unwrap();
         assert_eq!(source["repository"], "local");
         host.lock().unwrap().approve("app.test.local").unwrap();
