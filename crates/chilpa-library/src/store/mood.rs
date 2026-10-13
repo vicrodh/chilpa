@@ -1,5 +1,5 @@
 //! Local features supplied by an analyzer plugin, and the playlists built
-//! from those features when Analyze finishes.
+//! from those features when the user runs Mood generation.
 
 use super::{now_unix, row_to_track, Library, PlaylistEntry, StoredTrack};
 use rusqlite::{params, OptionalExtension};
@@ -115,7 +115,7 @@ impl Library {
             let id = self.create_playlist(source, name, &format!("{ANALYZER}:{key}"))?;
             self.move_playlist_to_folder(id, Some(folder))?;
             self.db.execute("UPDATE playlists SET description = ?2 WHERE id = ?1",
-                params![id, "Generated from local audio by the Mood plugin after Analyze."])?;
+                params![id, "Generated from local audio by the Mood plugin."])?;
             let entries = selected.iter().map(|track| PlaylistEntry { track_id: Some(track.id),
                 source_id: Some(track.source_id), external_id: track.external_id.clone() }).collect::<Vec<_>>();
             self.set_playlist_entries(id, &entries)?;

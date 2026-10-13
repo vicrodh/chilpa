@@ -8,6 +8,7 @@ Controls.Popup {
     id: menu
     modal: true
     dim: false
+    closePolicy: Controls.Popup.CloseOnEscape | Controls.Popup.CloseOnReleaseOutside
     property var entries: []
     // A binding and not an alias: Qt 6.11.1 refuses an alias into another
     // object's list, and the whole window failed to load on a Mac.

@@ -18,7 +18,7 @@ Modal {
     readonly property bool pending: state.pending === true
     readonly property string error: state.request_id === request ? state.error || "" : ""
     width: Math.min(Metrics.confirmWidth + Metrics.confirmWidth, parent ? parent.width - Metrics.modalInsets : Metrics.confirmWidth)
-    closePolicy: pending ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    closePolicy: pending ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
 
     function begin(value, action) {
         info = value

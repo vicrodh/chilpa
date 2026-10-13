@@ -559,6 +559,8 @@ pub struct AnalysisStatus {
     pub failed: usize,
     /// The background analyzer changed generated playlists.
     pub playlists_updated: bool,
+    /// Mood analysis is running or supplied the latest analysis result.
+    pub mood_requested: bool,
     /// Asked for while a scan runs, for that folder: it starts when the scan
     /// ends.
     pub waiting: Option<String>,

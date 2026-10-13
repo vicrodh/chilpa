@@ -351,13 +351,13 @@ msgstr ""
 msgid "Analyze"
 msgstr ""
 
-msgid "Analyze local files to fill the Mood folder in Playlists. Manage the optional Mood plugin and its models here."
-msgstr ""
-
 msgid "Analyze the library"
 msgstr ""
 
 msgid "Analyze the new music too?"
+msgstr ""
+
+msgid "Analyzes local files and puts the results in Playlists > Mood."
 msgstr ""
 
 msgid "Analyzing Mood"
@@ -1277,6 +1277,9 @@ msgstr ""
 msgid "Enable PipeWire in your NixOS configuration"
 msgstr ""
 
+msgid "Enable the optional Mood plugin and manage its model download."
+msgstr ""
+
 msgid "Enable {} in Settings › Sources to play this record."
 msgstr ""
 
@@ -1397,6 +1400,9 @@ msgstr "Finding matches…"
 msgid "Finish"
 msgstr ""
 
+msgid "Finish or cancel the current analysis first."
+msgstr ""
+
 msgid "Finish selecting"
 msgstr ""
 
@@ -1491,6 +1497,12 @@ msgid "GPU (compatibility)"
 msgstr ""
 
 msgid "Gapless"
+msgstr ""
+
+msgid "Generate"
+msgstr ""
+
+msgid "Generate Mood playlists"
 msgstr ""
 
 msgid "Generated test signal"
@@ -1744,6 +1756,9 @@ msgstr ""
 
 msgid "Install and enable a playlist importer in Settings → Plugins."
 msgstr "Install and enable a playlist importer in Settings → Plugins."
+
+msgid "Install and enable the Mood plugin first."
+msgstr ""
 
 msgid "Install from ZIP…"
 msgstr ""
@@ -2090,10 +2105,16 @@ msgstr ""
 msgid "Month"
 msgstr ""
 
+msgid "Mood analysis cancelled."
+msgstr ""
+
 msgid "Mood analysis stopped: {}"
 msgstr ""
 
-msgid "Mood playlists"
+msgid "Mood is off. Enable it in Mood models."
+msgstr ""
+
+msgid "Mood models"
 msgstr ""
 
 msgid "Mood: {} tracks analyzed, {} playlists updated"
@@ -3610,6 +3631,9 @@ msgid "The ISO stays untouched. Supported metadata goes into the XML; other fiel
 msgstr ""
 
 msgid "The ISO stays untouched; fields without an XML place and cover art use a sidecar."
+msgstr ""
+
+msgid "The Mood models are not ready. Finish the download in Mood models first."
 msgstr ""
 
 msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."

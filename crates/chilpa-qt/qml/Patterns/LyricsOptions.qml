@@ -66,7 +66,7 @@ Popup {
     padding: Metrics.gap12
     width: Metrics.lyricsOptions
     margins: Metrics.gap10
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
 
     background: Item {
         Hold {}

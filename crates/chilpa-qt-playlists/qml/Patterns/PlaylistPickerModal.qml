@@ -42,7 +42,7 @@ Modal {
     readonly property var lastUsed: shown.find(row => Playlists.lastTarget !== 0 && row.playlist.id === Playlists.lastTarget) || null
     readonly property var alreadyIn: every.filter(row => row.exact > 0)
     readonly property bool pending: writer.pending
-    closePolicy: pending ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    closePolicy: pending ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
 
     PlaylistSourceWrite {
         id: writer

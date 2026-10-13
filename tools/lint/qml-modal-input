@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+"""Keep a modal's closing press from reaching the page underneath."""
+import re
+import sys
+
+sys.path.insert(0, __file__.rsplit("/", 1)[0])
+from qmllib import code_only, files, rel  # noqa: E402
+
+
+def main():
+    errors = []
+    for path in files():
+        code = code_only(path.read_text())
+        modal = re.search(r"\bmodal\s*:\s*true\b", code) or re.search(r"(?m)^\s*(?:\w+\.)?Modal\s*\{", code)
+        if not modal:
+            continue
+        if re.search(r"\bCloseOnPressOutside\b", code):
+            errors.append(f"{rel(path)}: a modal must not close on press; use release or an explicit close action")
+        popup = re.search(r"(?m)^\s*(?:Controls\.)?Popup\s*\{", code)
+        if popup and "closePolicy:" not in code:
+            errors.append(f"{rel(path)}: a modal Popup needs an explicit close policy")
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        sys.exit(1)
+    print("qml-modal-input: modal closing policies cannot forward a press")
+
+
+if __name__ == "__main__":
+    main()

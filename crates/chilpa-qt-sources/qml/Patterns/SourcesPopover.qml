@@ -32,7 +32,7 @@ Popup {
     width: Metrics.sourcesPopoverWidth
     padding: Metrics.gap12
     margins: Metrics.gap10
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
 
     background: Item {
         Hold {}

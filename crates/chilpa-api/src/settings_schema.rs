@@ -247,7 +247,8 @@ pub const SECTIONS: &[Section] = &[
             },
             Group { title: Chilpa::mark("Analysis"), settings: &[
                 action("library.analysis", Chilpa::mark("Analyze the library"), Chilpa::mark("Reads tempo, musical key and loudness in the background. AutoMix appears when enough tracks have tempo."), Control::Progress, Chilpa::mark("Analyze")),
-                action("library.mood", Chilpa::mark("Mood playlists"), Chilpa::mark("Analyze local files to fill the Mood folder in Playlists. Manage the optional Mood plugin and its models here."), Control::Button, Chilpa::mark("Manage")),
+                action("library.mood.generate", Chilpa::mark("Generate Mood playlists"), Chilpa::mark("Analyzes local files and puts the results in Playlists > Mood."), Control::Progress, Chilpa::mark("Generate")),
+                action("library.mood", Chilpa::mark("Mood models"), Chilpa::mark("Enable the optional Mood plugin and manage its model download."), Control::Button, Chilpa::mark("Manage")),
             ] },
         ],
     },

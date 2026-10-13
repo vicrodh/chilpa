@@ -70,11 +70,8 @@ Modal {
                             SourceIcon { visible: !!modelData.icon; sourceInfo: ({icon: modelData.icon || ""}); width: visible ? Metrics.iconSm : 0; height: Metrics.iconSm }
                             Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.name; font.pointSize: Type.body; color: Theme.color.textPrimary }
                         }
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: customization.activeGroup = modelData.id
-                        }
+                        HoverHandler { cursorShape: Qt.PointingHandCursor }
+                        TapHandler { onTapped: customization.activeGroup = modelData.id }
                     }
                 }
             }

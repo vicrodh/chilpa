@@ -47,7 +47,7 @@ Item {
         x: (control.width - width) / 2 // derived: centered under its button
         y: control.height + Metrics.gap6
         padding: Metrics.gap12
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
         onClosed: settle.stop()
 
         background: Item {
