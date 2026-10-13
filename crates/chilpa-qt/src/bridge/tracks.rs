@@ -152,7 +152,7 @@ use chilpa_api::{TrackEntry as Entry, TrackOrder, TrackRow};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant, QVector};
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::HashSet;
 use std::pin::Pin;
 use std::rc::Rc;
 
@@ -166,15 +166,10 @@ const ROLE_SELECTED: i32 = USER_ROLE + 10;
 const PAGE: usize = 128;
 const PAGES_KEPT: usize = 32;
 
-#[derive(Default)]
-struct Pages {
-    map: HashMap<usize, Rc<Vec<TrackRow>>>,
-    order: VecDeque<usize>,
-}
 
 enum Rows {
     Loaded(Vec<Entry>),
-    Snapshot { ids: Rc<chilpa_api::Snapshot>, pages: RefCell<Pages> },
+    Snapshot { ids: Rc<chilpa_api::Snapshot>, pages: Rc<RefCell<chilpa_api::PageCache<TrackRow>>> },
 }
 
 impl Default for Rows {
@@ -238,25 +233,10 @@ impl TrackListRust {
             },
             Rows::Snapshot { ids, pages } => {
                 let page = row / PAGE;
-                let rows = {
-                    let mut cache = pages.borrow_mut();
-                    match cache.map.get(&page) {
-                        Some(r) => r.clone(),
-                        None => {
-                            let end = ((page + 1) * PAGE).min(ids.ids.len());
-                            let wanted = &ids.ids[page * PAGE..end];
-                            let read = Rc::new(app::with(|api| api.track_rows(wanted)));
-                            cache.map.insert(page, read.clone());
-                            cache.order.push_back(page);
-                            if cache.order.len() > PAGES_KEPT {
-                                if let Some(old) = cache.order.pop_front() {
-                                    cache.map.remove(&old);
-                                }
-                            }
-                            read
-                        }
-                    }
-                };
+                let rows = pages.borrow_mut().read(page, PAGES_KEPT, || {
+                    let end = ((page + 1) * PAGE).min(ids.ids.len());
+                    app::with(|api| api.track_rows(&ids.ids[page * PAGE..end]))
+                });
                 (row % PAGE < rows.len()).then(|| At::Track(rows, row % PAGE))
             }
         }
@@ -825,12 +805,30 @@ impl qobject::TrackListModel {
         let _ = self.qt_thread().queue(|model| model.reload());
     }
 
+    fn home_arrived(self: Pin<&mut Self>, asked: u64, rows: chilpa_api::HomeRows) {
+        if asked == self.rust().asked {
+            if let chilpa_api::HomeRows::Tracks(tracks) = rows {
+                self.show("mostPlayed".into(), Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), None);
+            }
+        }
+    }
+
     fn reload(mut self: Pin<&mut Self>) {
         self.as_mut().rust_mut().queue_keys.clear();
         self.as_mut().rust_mut().queue_numbers.clear();
         self.as_mut().rust_mut().pending = false;
         let (id, limit) = (self.rust().album_id, self.rust().limit.max(1) as usize);
         let kind = self.rust().kind.to_string();
+        if kind == "mostPlayed" {
+            let asked = self.rust().asked.wrapping_add(1);
+            self.as_mut().rust_mut().asked = asked;
+            let (thread, revision) = (self.qt_thread(), self.rust().filter_rev);
+            let cached = app::with(|api| api.home_section(&kind, limit, revision, move |rows| {
+                let _ = thread.queue(move |model| model.home_arrived(asked, rows));
+            }));
+            if let Some(rows) = cached { self.home_arrived(asked, rows); }
+            return;
+        }
         if kind == "tracks" {
             app::with(|api| api.prepare_track_libraries());
             // Found on the worker; what is shown stays until it is back.
@@ -843,7 +841,7 @@ impl qobject::TrackListModel {
                     if model.rust().asked == asked {
                         let ms = found.snapshot.totals.duration_ms;
                         (model.as_mut().rust_mut().group, model.as_mut().rust_mut().letters) = (found.group, found.letters);
-                        model.show("tracks".into(), Rows::Snapshot { ids: Rc::new(found.snapshot), pages: RefCell::default() }, Some(ms));
+                        model.show("tracks".into(), Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms));
                     }
                 });
             }));
@@ -861,10 +859,6 @@ impl qobject::TrackListModel {
                 if self.rust().limit > 0 { entries.truncate(limit); }
                 let duration = entries.iter().filter_map(|e| match e { Entry::Track(t) => Some(t.duration_ms), _ => None }).sum();
                 (Rows::Loaded(entries), Some(duration))
-            }
-            "mostPlayed" => {
-                let tracks = app::with(|api| api.most_played_rows(limit));
-                (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), None)
             }
             "artist" | "artistTop" => {
                 let name = self.rust().key.to_string();
@@ -911,9 +905,9 @@ impl qobject::TrackListModel {
                 (Rows::Loaded(entries), Some(ms))
             }
             "library" => {
-                let snapshot = browse::read(|s| s.snapshot.clone());
+                let (snapshot, pages) = browse::read(|s| (s.snapshot.clone(), s.track_pages.clone()));
                 let ms = snapshot.totals.duration_ms;
-                (Rows::Snapshot { ids: snapshot, pages: RefCell::default() }, Some(ms))
+                (Rows::Snapshot { ids: snapshot, pages }, Some(ms))
             }
             _ => (Rows::default(), None),
         };
@@ -925,6 +919,20 @@ impl qobject::TrackListModel {
         // I preserve selection when refreshing the same list.
         let identity = (kind.clone(), id, self.rust().key.to_string());
         let same = self.rust().loaded.as_ref() == Some(&identity);
+        if same {
+            if let (Rows::Snapshot { ids: old, pages: old_pages }, Rows::Snapshot { ids: new, pages: new_pages }) = (&self.rust().rows, &rows) {
+                if old.ids == new.ids {
+                    let changed = !Rc::ptr_eq(old_pages, new_pages);
+                    self.as_mut().rust_mut().rows = rows;
+                    if changed && *self.count() > 0 {
+                        let (first, last) = (self.index(0, 0, &QModelIndex::default()), self.index(*self.count() - 1, 0, &QModelIndex::default()));
+                        self.as_mut().data_changed(&first, &last, &QVector::<i32>::default());
+                    }
+                    if let Some(ms) = length { let count = *self.count() as usize; self.as_mut().set_summary(QString::from(&summary(count, ms))); }
+                    return;
+                }
+            }
+        }
         // Read again and unchanged, it is left as it is: a reset would flash.
         if same && matches!((&self.rust().rows, &rows), (Rows::Loaded(a), Rows::Loaded(b)) if a == b) { return; }
         if same {

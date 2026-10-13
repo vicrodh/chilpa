@@ -24,14 +24,9 @@ pub mod qobject {
         #[qobject]
         #[base = QAbstractListModel]
         #[qml_element]
-        /// "recentlyPlayed", "recentlyPlayedEverywhere" (with the sources'),
-        /// "recentlyAdded", "all", "library" (the records
-        /// the Library screen's filter leaves), "artist" (one artist's
-        /// records, by `key`), "sameArtist" and "related" (an album id),
-        /// "appearsOn" (the compilations they are on)
-        /// "folder" (the records directly in its current directory) or
-        /// "artists" (the artists, as round cards; `key` is "all" for
-        /// everyone who plays, and the album artists otherwise).
+        /// Home shelves, "all", filtered "library", "artist"/"appearsOn" by
+        /// name, "sameArtist"/"related" by album id, or "folder". "artists"
+        /// draws round cards; key "all" includes contributing performers.
         #[qproperty(QString, kind)]
         #[qproperty(QString, key)]
         /// For "all": "artist", "title", "year", "added", "played" or
@@ -117,7 +112,6 @@ pub mod qobject {
 use crate::{app, registry, worker};
 use chilpa_api::Album;
 use std::cell::RefCell;
-use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant, QVector};
@@ -126,14 +120,9 @@ use std::pin::Pin;
 const USER_ROLE: i32 = 256;
 const PAGE: usize = 128;
 const PAGES_KEPT: usize = 24;
-#[derive(Default)]
-struct Pages {
-    map: HashMap<usize, Rc<Vec<Album>>>,
-    order: VecDeque<usize>,
-}
 enum Albums {
     Loaded(Vec<Album>),
-    Snapshot { ids: Vec<i64>, pages: RefCell<Pages> },
+    Snapshot { ids: Vec<i64>, pages: Rc<RefCell<chilpa_api::PageCache<Album>>> },
 }
 impl Default for Albums {
     fn default() -> Self {
@@ -153,8 +142,7 @@ impl Albums {
             Albums::Snapshot { ids, .. } => ids.len(),
         }
     }
-    /// Runs `f` with the album at `index`, reading its page if it is not
-    /// cached. By id: any page costs what the first one costs.
+    /// Reads one bounded page by id on a miss; any page costs the same.
     fn with<R>(&self, index: usize, f: impl FnOnce(&Album) -> R) -> Option<R> {
         match self {
             Albums::Loaded(v) => v.get(index).map(f),
@@ -163,24 +151,10 @@ impl Albums {
                     return None;
                 }
                 let page = index / PAGE;
-                let rows = {
-                    let mut cache = pages.borrow_mut();
-                    match cache.map.get(&page) {
-                        Some(r) => r.clone(),
-                        None => {
-                            let end = ((page + 1) * PAGE).min(ids.len());
-                            let read = Rc::new(app::with(|api| api.albums_by_ids(&ids[page * PAGE..end])));
-                            cache.map.insert(page, read.clone());
-                            cache.order.push_back(page);
-                            if cache.order.len() > PAGES_KEPT {
-                                if let Some(old) = cache.order.pop_front() {
-                                    cache.map.remove(&old);
-                                }
-                            }
-                            read
-                        }
-                    }
-                };
+                let rows = pages.borrow_mut().read(page, PAGES_KEPT, || {
+                    let end = ((page + 1) * PAGE).min(ids.len());
+                    app::with(|api| api.albums_by_ids(&ids[page * PAGE..end]))
+                });
                 rows.get(index % PAGE).map(f)
             }
         }
@@ -301,10 +275,18 @@ impl qobject::AlbumGridModel {
     fn reload(mut self: Pin<&mut Self>) {
         self.as_mut().rust_mut().pending = false;
         let limit = self.rust().limit.max(1) as usize;
+        let kind = self.rust().kind.to_string();
+        if matches!(kind.as_str(), "recentlyPlayed" | "recentlyPlayedEverywhere" | "recentlyAdded") {
+            let generation = self.rust().generation.wrapping_add(1);
+            self.as_mut().rust_mut().generation = generation;
+            let (thread, revision) = (self.qt_thread(), self.rust().content_rev);
+            let cached = app::with(|api| api.home_section(&kind, limit, revision, move |rows| {
+                let _ = thread.queue(move |model| model.home_arrived(generation, rows));
+            }));
+            if let Some(rows) = cached { self.home_arrived(generation, rows); }
+            return;
+        }
         let list = match self.rust().kind.to_string().as_str() {
-            "recentlyPlayed" => app::with(|api| api.recently_played_albums(limit)),
-            "recentlyPlayedEverywhere" => app::with(|api| api.recently_played_everywhere(limit)),
-            "recentlyAdded" => app::with(|api| api.recently_added_albums(limit)),
             "all" => {
                 // Sorting the whole library does not fit in a frame: the
                 // worker takes the snapshot and the rows follow.
@@ -362,16 +344,22 @@ impl qobject::AlbumGridModel {
             "library" => {
                 // Unlike the facet, this includes the album choice itself
                 // and follows the result's requested order.
-                let ids = crate::browse::read(|s| s.snapshot.album_ids.clone());
-                return self.show(Albums::Snapshot { ids, pages: RefCell::default() });
+                let (ids, pages) = crate::browse::read(|s| (s.snapshot.album_ids.clone(), s.album_pages.clone()));
+                return self.show(Albums::Snapshot { ids, pages });
             }
             "folder" => {
                 let ids = chilpa_qt_folders::bridge::folder_view::album_ids();
-                return self.show(Albums::Snapshot { ids, pages: RefCell::default() });
+                return self.show(Albums::Snapshot { ids, pages: Rc::default() });
             }
             _ => Vec::new(),
         };
         self.show(Albums::Loaded(list));
+    }
+
+    fn home_arrived(self: Pin<&mut Self>, generation: u64, rows: chilpa_api::HomeRows) {
+        if generation == self.rust().generation {
+            if let chilpa_api::HomeRows::Albums(rows) = rows { self.show(Albums::Loaded(rows)); }
+        }
     }
 
     fn arrive_artists(mut self: Pin<&mut Self>, generation: u64, artists: Vec<chilpa_api::Artist>) {
@@ -391,7 +379,7 @@ impl qobject::AlbumGridModel {
     fn arrive(mut self: Pin<&mut Self>, generation: u64, found: chilpa_api::AlbumsFound) {
         if generation == self.rust().generation {
             self.as_mut().rust_mut().groups = found.groups;
-            self.show(Albums::Snapshot { ids: found.ids, pages: RefCell::default() });
+            self.show(Albums::Snapshot { ids: found.ids, pages: Rc::default() });
         }
     }
 
@@ -468,8 +456,8 @@ impl cxx_qt::Initialize for qobject::AlbumGridModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().set_expanded(-1);
         self.as_mut().set_fresh(-1);
-        self.as_mut().on_kind_changed(|m| m.schedule()).release();
-        self.as_mut().on_key_changed(|m| m.schedule()).release();
+        self.as_mut().on_kind_changed(|mut m| { m.as_mut().set_ready(false); m.schedule(); }).release();
+        self.as_mut().on_key_changed(|mut m| { m.as_mut().set_ready(false); m.schedule(); }).release();
         self.as_mut().on_order_changed(|m| m.schedule()).release();
         self.as_mut().on_group_changed(|m| m.schedule()).release();
         self.as_mut().on_limit_changed(|m| m.schedule()).release();

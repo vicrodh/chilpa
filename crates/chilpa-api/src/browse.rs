@@ -310,6 +310,27 @@ pub struct Reader {
     pub(crate) catalog: Option<std::sync::Arc<crate::source_catalog::Catalog>>,
 }
 
+/// I retain bounded snapshot pages; views can share them across navigation.
+pub struct PageCache<T> {
+    pages: std::collections::HashMap<usize, std::rc::Rc<Vec<T>>>,
+    order: std::collections::VecDeque<usize>,
+}
+impl<T> Default for PageCache<T> {
+    fn default() -> Self { Self { pages: Default::default(), order: Default::default() } }
+}
+impl<T> PageCache<T> {
+    pub fn read(&mut self, page: usize, capacity: usize, load: impl FnOnce() -> Vec<T>) -> std::rc::Rc<Vec<T>> {
+        if let Some(rows) = self.pages.get(&page) { return rows.clone(); }
+        let rows = std::rc::Rc::new(load());
+        self.pages.insert(page, rows.clone());
+        self.order.push_back(page);
+        if self.order.len() > capacity {
+            if let Some(old) = self.order.pop_front() { self.pages.remove(&old); }
+        }
+        rows
+    }
+}
+
 impl Reader {
     pub(crate) fn open(path: &std::path::Path) -> Result<Self, String> {
         chilpa_library::Library::open_read_only(path).map(|lib| Self { lib, catalog: None })
@@ -902,6 +923,16 @@ impl Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn snapshot_pages_are_reused_until_the_bounded_cache_evicts_them() {
+        let mut pages = PageCache::<i64>::default();
+        let first = pages.read(0, 2, || vec![1]);
+        assert!(std::rc::Rc::ptr_eq(&first, &pages.read(0, 2, || panic!("a cached page must not query again"))));
+        pages.read(1, 2, || vec![2]);
+        pages.read(2, 2, || vec![3]);
+        assert_eq!(pages.pages.len(), 2);
+        assert!(!std::rc::Rc::ptr_eq(&first, &pages.read(0, 2, || vec![4])));
+    }
 
     #[test]
     fn refreshed_header_art_keeps_its_row_but_a_different_group_does_not() {

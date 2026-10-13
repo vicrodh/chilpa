@@ -17,6 +17,7 @@ pub mod qobject {
         #[qml_singleton]
         #[qproperty(i32, rev)]
         #[qproperty(i32, content_rev)]
+        #[qproperty(i32, listening_rev)]
         /// Sources' listings and records changed; apart, their covers.
         #[qproperty(i32, remote_rev)]
         #[qproperty(i32, remote_art_rev)]
@@ -83,6 +84,7 @@ use std::rc::Rc;
 pub struct LibraryRust {
     rev: i32,
     content_rev: i32,
+    listening_rev: i32,
     remote_rev: i32,
     remote_art_rev: i32,
     busy: bool,
@@ -239,12 +241,20 @@ impl qobject::Library {
         if generation != self.rust().generation {
             return;
         }
+        if browse::read(|s| s.snapshot.as_ref() == &snapshot && s.facets.as_ref() == &facets && s.page_revision == self.rust().content_rev) {
+            self.as_mut().set_busy(false);
+            return;
+        }
         let totals = snapshot.totals;
         self.as_mut().set_source_keys(strings(facets.sources.iter().map(|entry| entry.key.clone())));
         self.as_mut().set_source_labels(strings(facets.sources.iter().map(|entry| entry.label.clone())));
         self.as_mut().set_source_counts(strings(facets.sources.iter().map(|entry| entry.albums.to_string())));
         self.as_mut().set_source_icons(strings(facets.sources.iter().map(|entry| entry.icon.clone())));
         browse::write(|s| {
+            if s.snapshot.ids != snapshot.ids || s.snapshot.album_ids != snapshot.album_ids || s.page_revision != self.rust().content_rev {
+                s.album_pages = Rc::default(); s.track_pages = Rc::default();
+                s.page_revision = self.rust().content_rev;
+            }
             s.facets = Rc::new(facets);
             s.snapshot = Rc::new(snapshot);
         });

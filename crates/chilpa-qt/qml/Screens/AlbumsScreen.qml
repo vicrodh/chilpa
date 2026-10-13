@@ -9,7 +9,6 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 import "../Patterns"
-import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 
 // Albums (design/06): every record in the library, as cards or as rows,
 // through the sources and qualities chosen, and grouped or not. It scrolls

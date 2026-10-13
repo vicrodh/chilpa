@@ -36,4 +36,4 @@ if [[ "${result}" -ne 0 ]] || rg -q 'SMOKE FAIL|ReferenceError:|TypeError:|bindi
     exit 1
 fi
 rg 'SMOKE|navigation:' "${profile}/navigation.log"
-rg -q 'navigation completed samples=6 failures=0' "${profile}/navigation.log"
+rg -q 'navigation completed samples=8 failures=0' "${profile}/navigation.log"

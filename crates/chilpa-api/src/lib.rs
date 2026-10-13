@@ -28,6 +28,8 @@ mod chosen_artwork;
 mod covers;
 mod folders;
 mod hotkeys;
+mod home;
+pub use home::HomeRows;
 pub use hotkeys::{Pressed, Scope};
 pub mod format;
 pub mod paths;
@@ -131,6 +133,7 @@ pub use volume::VolumeView;
 pub use metadata::view::MetadataView;
 
 pub use browse::{filter_facets, select_facets, select_tracks, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, GroupHeader, Reader, Snapshot, Totals, TrackEntry, TrackOrder, TrackRow};
+pub use browse::PageCache;
 mod album_versions;
 mod album_information;
 pub use album_versions::{AlbumSource, AlbumVersion};
@@ -670,6 +673,7 @@ pub struct Chilpa {
     /// user coming back.
     connecting: Option<plugins::Connecting>,
     now: NowPlaying,
+    home: home::Home,
     sample_rate: u32,
     /// Set while a relaunch we asked for is unwinding the old playback.
     ///
@@ -777,6 +781,7 @@ impl Chilpa {
             catalog,
             connecting: None,
             now: NowPlaying::default(),
+            home: home::Home::default(),
             sample_rate: 0,
             relaunching: None,
             outputs_generation: String::new(),
@@ -1268,6 +1273,7 @@ impl Chilpa {
                         self.log_play(false);
                         let listen = self.announce(tags.as_ref(), duration_ms, started_at);
                         let context = self.context_at_start(&path, tags.as_ref(), started_at);
+                        self.home.changed();
                         self.in_progress = Some(InProgress {
                             context,
                             path: path.clone(),

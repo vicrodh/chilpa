@@ -1,10 +1,5 @@
-//! What is playing and the transport, as the player bar reads them.
-//!
-//! The tick runs in Rust, four times a second, on a thread of its own that
-//! only queues work onto the window's thread: QML has no timer to keep
-//! alive. A property is set only when its value changes, so a window that
-//! is not playing does not repaint at all, and one that is repaints four
-//! times a second, not at the display's rate.
+//! Playback and transport. A Rust thread queues four UI ticks per second;
+//! properties change only when their values do, avoiding idle repaints.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -345,7 +340,8 @@ impl qobject::Player {
     fn tick(mut self: Pin<&mut Self>) {
         self.as_mut().set_origin(QString::from(&app::with(|api| api.playing_origin_json())));
         let (now, changed, casting, remote) = app::with(|api| (api.poll().clone(), api.library_changed(), api.cast_destination().is_some(), api.source_revisions()));
-        crate::registry::library(move |mut l| { l.as_mut().set_remote_rev(remote.0); l.set_remote_art_rev(remote.1); });
+        let listening = app::with(|api| api.listening_revision());
+        crate::registry::library(move |mut l| { l.as_mut().set_listening_rev(listening); l.as_mut().set_remote_rev(remote.0); l.set_remote_art_rev(remote.1); });
         if let Some(asked) = app::with(|api| api.window_request()) {
             use chilpa_api::WindowRequest;
             self.as_mut().window_asked(match asked { WindowRequest::Raise => 0, WindowRequest::Quit => 1, WindowRequest::Toggle => 2, WindowRequest::QuitAsked => 3 });

@@ -8,11 +8,12 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 ApplicationWindow {
     id: window
     width: 1280; height: 800; visible: true
-    property var destinations: ["albums", "home", "albums", "home", "albums", "home"]
+    property var destinations: ["albums", "home", "library", "home", "albums", "home", "library", "home"]
     property int sample: 0
     property string requested: ""
     property double started: 0
     property bool awaiting: false
+    property bool awaitingContent: false
     property var failures: []
     property int resets: 0
     property int initialResets: -1
@@ -62,16 +63,36 @@ ApplicationWindow {
         started = Date.now()
         Navigation.go(requested, 0)
     }
+    function cardsVisible(item) {
+        if (item.hasOwnProperty("cardWidth") && item.hasOwnProperty("rowHeight") && item.model
+                && item.model.ready && item.model.albums > 0 && item.visible && item.height > 0) {
+            const at = item.mapToItem(host, 0, 0)
+            if (at.y < host.height && at.y + item.height > 0) return true
+        }
+        for (const child of item.children || []) if (cardsVisible(child)) return true
+        return false
+    }
     Connections {
         target: window
         function onFrameSwapped() {
-            if (!window.awaiting || host.committedRoute.split("\u001f")[1] !== window.requested) return
+            if (host.committedRoute.split("\u001f")[1] !== window.requested) return
+            if (window.awaitingContent) {
+                if (!window.cardsVisible(host)) return
+                const loaded = Date.now() - window.started
+                console.log("SMOKE navigation " + window.requested + " visible-cards=" + loaded + "ms")
+                if (loaded > 500) window.failures.push(window.requested + " cards took " + loaded + "ms")
+                window.awaitingContent = false
+                window.sample++
+                next.restart()
+                return
+            }
+            if (!window.awaiting) return
             const elapsed = Date.now() - window.started
             console.log("SMOKE navigation " + window.requested + " first-frame=" + elapsed + "ms")
             if (elapsed > 500) window.failures.push(window.requested + " first frame took " + elapsed + "ms")
             window.awaiting = false
-            window.sample++
-            next.restart()
+            if (window.requested === "home" || window.requested === "library") window.awaitingContent = true
+            else { window.sample++; next.restart() }
         }
     }
     Timer { id: next; interval: 400; onTriggered: window.request() }
