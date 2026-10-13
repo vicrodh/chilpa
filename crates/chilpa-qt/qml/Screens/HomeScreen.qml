@@ -10,10 +10,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "../Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 
-// Home (design/06): what played last, here and everywhere, what came in
-// last, the most played tracks, and the sources' own shelves after them.
-// Which show, in what order and how many each has, the listener chooses in
-// Customize, the same choice a source's page offers (the owner, 2026-10-12).
+// I compose Home from local and source modules in the chosen order and size.
 ListView {
     id: page
     property int homeRefresh: 0
@@ -80,7 +77,7 @@ ListView {
         readonly property bool ready: records.ready
         readonly property bool shown: records.albums > 0
         spacing: Metrics.gap8
-        AlbumGridModel { id: records; kind: shelf.entry.source || ""; contentRev: Library.contentRev; limit: shelf.entry.size || Metrics.shelfLimit; maxRows: shelf.entry.size ? 0 : 1; columns: grid.columns }
+        AlbumGridModel { id: records; kind: shelf.entry.source || ""; contentRev: Library.contentRev + (kind === "recentlyAdded" ? 0 : Library.listeningRev + Library.remoteRev + Library.remoteArtRev); limit: shelf.entry.size || Metrics.shelfLimit; maxRows: shelf.entry.size ? 0 : 1; columns: grid.columns }
         SectionHeader { width: parent.width; title: shelf.entry.title || "" }
         AlbumGrid { id: grid; width: parent.width; height: implicitHeight; fitContent: true; model: records; onOpen: (albumId) => Navigation.go("album", albumId) }
     }
@@ -90,7 +87,7 @@ ListView {
         readonly property bool ready: most.ready
         readonly property bool shown: most.count > 0
         spacing: Metrics.gap8
-        TrackListModel { id: most; kind: "mostPlayed"; filterRev: Library.contentRev; limit: tracks.entry.size || Metrics.mostPlayedLimit; playingPath: Player.path }
+        TrackListModel { id: most; kind: "mostPlayed"; filterRev: Library.contentRev + Library.listeningRev; limit: tracks.entry.size || Metrics.mostPlayedLimit; playingPath: Player.path }
         SectionHeader { width: parent.width; title: tracks.entry.title || "" }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; showPlays: true; model: most }
     }
@@ -98,7 +95,7 @@ ListView {
         id: shelf
         property var entry: ({})
         readonly property bool ready: true
-        readonly property var lists: JSON.parse(Playlists.recent(entry.allSources === true, entry.size || Metrics.shelfLimit, Playlists.rev + Library.rev + Library.remoteRev + page.homeRefresh) || "[]")
+        readonly property var lists: JSON.parse(Playlists.recent(entry.allSources === true, entry.size || Metrics.shelfLimit, Playlists.rev + Library.listeningRev + Library.remoteRev) || "[]")
         readonly property var panels: JSON.parse(Sources.snapshot || "{}").panels || []
         readonly property bool shown: lists.length > 0
         spacing: Metrics.gap8
@@ -223,7 +220,7 @@ ListView {
             x: Metrics.contentX
             width: page.width - Metrics.contentX * 2 // derived: padding on both sides
             entry: parent.entry
-            started: page.presented
+            started: entry.kind !== "shelf" || page.presented
             content: entry.kind === "albums" ? albumShelf : entry.kind === "playlists" ? playlistShelf : entry.kind === "tracks" ? trackShelf : sourceRail
         }
     }

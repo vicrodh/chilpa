@@ -39,7 +39,7 @@ Item {
             x: modelData.x
             width: Math.max(0, modelData.w - Metrics.gap8)
             visible: modelData.w > 0
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: parent ? parent.verticalCenter : undefined
             text: modelData.text
             horizontalAlignment: modelData.right ? Text.AlignRight : Text.AlignLeft
             elide: Text.ElideRight

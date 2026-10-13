@@ -244,7 +244,7 @@ impl qobject::Playlists {
         strings(app::with(|api| api.local_playlists()).into_iter().map(|p| p.id.to_string()))
     }
 
-    pub fn recent(&self, all_sources: bool, limit: i32, _rev: i32) -> QString { QString::from(&app::with(|api| api.recently_listened_playlists(all_sources, limit.clamp(1, 100) as usize))) }
+    pub fn recent(&self, all_sources: bool, limit: i32, rev: i32) -> QString { QString::from(&app::with(|api| api.cached_home_json(if all_sources { "playlistsEverywhere" } else { "playlists" }, limit.clamp(1, 100) as usize, rev, |api| api.recently_listened_playlists(all_sources, limit.clamp(1, 100) as usize)))) }
 
     pub fn sources_json(&self, track_ids_json: &QString) -> QString {
         QString::from(&app::with(|api| api.playlist_sources_json(&ids_from_json(track_ids_json))))

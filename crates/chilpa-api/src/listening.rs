@@ -144,6 +144,8 @@ impl Chilpa {
                 self.now.error =
                     chilpa_i18n::t_args("the listen could not be saved: {}", &[&error.to_string()]);
                 eprintln!("listening.record_failed error={error}");
+            } else {
+                self.home.changed();
             }
         }
     }

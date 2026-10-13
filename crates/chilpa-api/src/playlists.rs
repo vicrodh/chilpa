@@ -591,6 +591,7 @@ impl Chilpa {
         if let Some(id) = self.playlist_storage_id(id) {
             if let Some(lib) = self.library() { let _ = lib.record_playlist_play(id); }
         }
+        self.home.changed();
     }
 
     /// Lists that actually started playing, newest first. The local view

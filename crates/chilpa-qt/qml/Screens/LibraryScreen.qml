@@ -36,13 +36,13 @@ Item {
     TrackListModel {
         id: tracks
         kind: "library"
-        filterRev: Library.rev
+        filterRev: Library.rev + Library.contentRev
         playingPath: Player.path
     }
     AlbumGridModel {
         id: records
         kind: "library"
-        contentRev: Library.rev
+        contentRev: Library.rev + Library.contentRev
         columns: result.columns
     }
 
@@ -160,6 +160,7 @@ Item {
     // The records the columns leave, as cards or as rows.
     AlbumGrid {
         id: result
+        visible: records.albums > 0 || !Library.busy
         anchors.top: toolbar.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
@@ -169,5 +170,12 @@ Item {
         list: !page.grid
         model: records
         onOpen: (albumId) => Navigation.go("album", albumId)
+    }
+    ShelfSkeleton {
+        anchors.fill: result
+        visible: Library.busy && records.albums === 0
+        tracks: !page.grid
+        oneRow: false
+        count: Metrics.shelfLimit
     }
 }

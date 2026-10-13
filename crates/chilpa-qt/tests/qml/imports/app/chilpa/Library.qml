@@ -1,6 +1,7 @@
 pragma Singleton
 import QtQuick
 QtObject {
+    property int listeningRev: 0
     property string albumOrder: "artist"; property int rev: 0; property int contentRev: 0; property int remoteRev: 0; property int remoteArtRev: 0
     property string year: ""; property string genre: ""; property string label: ""; property string composer: ""; property string rating: ""; property string artist: ""; property string album: ""
     property var queries: ["", "", "", "", "", "", ""]

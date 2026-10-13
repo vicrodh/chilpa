@@ -59,6 +59,16 @@ TestCase {
     // A page read again with the same shelves keeps each shelf's item on
     // screen; only a shelf that comes or goes is built or dropped.
     Component { id: homeMaker; SourceHome { width: 1100; height: 600; key: "fixture native:artist:1" } }
+    Component { id: discoverMaker; SourceHome { width: 1100; height: 600; key: "fixture native:discover:home" } }
+    function test_cached_discovery_modules_show_actual_cards() {
+        Sources.pages = {"fixture native:discover:home": JSON.stringify({plugin:"fixture", tab:"home", title:"Source", shelves:[
+            {id:"recent", kind:"album", title:"Recently played", key:"fixture native:discover:home|recent", items:[{ref:"album:1"}]},
+            {id:"releases", kind:"album", title:"New releases", key:"fixture native:discover:home|releases", items:[{ref:"album:2"}]}
+        ]})}
+        const discover = createTemporaryObject(discoverMaker, this)
+        tryVerify(() => shelvesOf(discover).some(shelf => shelf.activeKey === "fixture native:discover:home|recent" && shelf.ready && shelf.shown && shelf.visible
+            && shelf.width > 0 && shelf.height > 0), 1000, "a cached provider module must reveal its cards")
+    }
     function shelvesOf(item) {
         let out = []
         for (const child of item.children || []) {
@@ -76,10 +86,12 @@ TestCase {
         // Made with its page already there: the shelves show without a change.
         const home = createTemporaryObject(homeMaker, this)
         waitForRendering(home)
-        tryVerify(() => shelvesOf(home).length === 2)
+        tryVerify(() => shelvesOf(home).length === 2 && shelvesOf(home)[0].section.items?.length === 2)
         const before = shelvesOf(home)
         compare(before.length, 2)
         compare(before[0].section.items.length, 2)
+        tryVerify(() => before[0].visible && before[0].height > 0 && before[0].width > 0,
+            1000, "cached source albums must be visible, not only mounted under a skeleton")
         Sources.pages = { "fixture native:artist:1": page(4) }
         Library.remoteRev++
         tryVerify(() => shelvesOf(home)[0].section.items.length === 4)

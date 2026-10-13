@@ -12,8 +12,9 @@ Item {
     property var entry: ({})
     property Component content
     property bool started: false
+    property bool bound: false
     clip: true
-    readonly property bool ready: body.status === Loader.Ready && body.item && body.item.ready === true
+    readonly property bool ready: bound && body.status === Loader.Ready && body.item && body.item.ready === true
     readonly property bool shown: !ready || body.item.shown
     readonly property bool trackRows: entry.kind === "tracks" || entry.tracks === true || !!entry.tracks_key || entry.presentation === "ranked"
     readonly property var footprint: Visit.recall("home.module." + entry.id, null)
@@ -70,6 +71,6 @@ Item {
         asynchronous: true
         visible: slot.ready && slot.shown
         sourceComponent: slot.content
-        onLoaded: item.entry = Qt.binding(() => slot.entry)
+        onLoaded: { item.entry = Qt.binding(() => slot.entry); slot.bound = true }
     }
 }

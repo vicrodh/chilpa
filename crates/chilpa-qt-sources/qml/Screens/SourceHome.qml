@@ -21,7 +21,7 @@ ListView {
     Connections { target: page.Window.window; function onFrameSwapped() { if (page.visible) page.presented = true } }
     readonly property string document: Sources.page(key, Library.remoteRev) || "{}"
     readonly property var about: JSON.parse(document)
-    readonly property var shelves: about.tab ? discovery.shown : about.shelves || []
+    readonly property var shelves: about.tab ? (headerItem ? headerItem.shownShelves : []) : about.shelves || []
     // The shelves by key, changed only when a shelf comes or goes: a page
     // read again, or a shelf that loaded more, keeps every shelf's item on
     // screen where it was, and only what changed is drawn again.
@@ -37,6 +37,7 @@ ListView {
     ScrollBar.vertical: ViewportScrollBar {}
 
     header: Item {
+        readonly property var shownShelves: discovery.shown
         width: page.width
         height: column.height + Metrics.gap16
         Column {
