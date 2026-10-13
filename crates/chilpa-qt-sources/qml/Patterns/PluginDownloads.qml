@@ -32,7 +32,7 @@ Item {
     readonly property var formats: selection ? selection.formats || [] : []
     readonly property var albums: document.albums || []
     readonly property var tracks: document.tracks || []
-    KeyedModel { id: purchaseRows; items: view.rows }
+    P.KeyedModel { id: purchaseRows; items: view.rows }
     readonly property var rows: {
         const source = tab === "albums" ? albums : tracks
         const needle = search.text.trim().toLocaleLowerCase()
@@ -80,7 +80,7 @@ Item {
         }
         Text {
             width: parent.width
-            visible: view.problem !== "" || view.document.error
+            visible: view.problem !== "" || !!view.document.error
             text: view.problem || view.document.error || ""
             textFormat: Text.PlainText; wrapMode: Text.WordWrap
             color: Theme.color.statusWarning; font.pointSize: Type.body
