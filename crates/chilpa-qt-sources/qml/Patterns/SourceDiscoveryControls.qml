@@ -69,7 +69,7 @@ Item {
         height: Math.min(implicitHeight, Overlay.overlay ? Overlay.overlay.height - Metrics.modalInsets : implicitHeight)
         padding: Metrics.gap16
         modal: true; dim: false; focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
         background: Rectangle { radius: Metrics.radiusPanel; color: Theme.color.surfaceRaised; Edge {} }
         onOpened: genreSearch.text = ""
         contentItem: Column {

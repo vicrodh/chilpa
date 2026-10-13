@@ -100,6 +100,31 @@ impl Chilpa {
         self.analysis_status = AnalysisStatus { running: true, ..AnalysisStatus::default() };
     }
 
+    /// Generates Mood playlists from local audio without rerunning tempo analysis.
+    pub fn start_mood_analysis(&mut self) {
+        if self.analysis.is_some() || self.mood_analysis.is_some() {
+            self.now.error = chilpa_i18n::t("an analysis is already running");
+            return;
+        }
+        if !self.natives.is_native(chilpa_library::store::mood::ANALYZER) {
+            self.analysis_status = AnalysisStatus {
+                mood_requested: true,
+                last: chilpa_i18n::t("Install and enable the Mood plugin first."),
+                ..AnalysisStatus::default()
+            };
+            return;
+        }
+        self.mood_analysis = Some(crate::mood::Job::start(
+            chilpa_library::Library::default_path(), None, self.natives.clone(),
+        ));
+        self.analysis_status = AnalysisStatus {
+            running: true,
+            mood_requested: true,
+            last: chilpa_i18n::t("Preparing Mood analysis"),
+            ..AnalysisStatus::default()
+        };
+    }
+
     /// Analyzes what `folder` holds once the scan that runs now ends, or at
     /// once when none runs: a folder just added is read first, and nothing
     /// else of the library is analyzed with it.
@@ -166,6 +191,7 @@ impl Chilpa {
                     self.natives.clone(),
                 ));
                 self.analysis_status.running = true;
+                self.analysis_status.mood_requested = true;
                 self.analysis_status.last = chilpa_i18n::t("Preparing Mood analysis");
             } else {
                 self.analysis_folder = None;
@@ -177,10 +203,12 @@ impl Chilpa {
             match event {
                 crate::mood::Progress::Skipped => {
                     self.analysis_status.running = false;
+                    self.analysis_status.last = chilpa_i18n::t("Mood is off. Enable it in Mood models.");
                     mood_finished = true;
                 }
                 crate::mood::Progress::Cancelled => {
                     self.analysis_status.running = false;
+                    self.analysis_status.last = chilpa_i18n::t("Mood analysis cancelled.");
                     mood_finished = true;
                 }
                 crate::mood::Progress::Counted { total } => {
@@ -203,6 +231,7 @@ impl Chilpa {
                 }
                 crate::mood::Progress::Failed(error) => {
                     self.analysis_status.running = false;
+                    self.analysis_status.last = chilpa_i18n::t_args("Mood analysis stopped: {}", &[&error]);
                     self.now.error = chilpa_i18n::t_args("Mood analysis stopped: {}", &[&error]);
                     mood_finished = true;
                 }
@@ -253,6 +282,17 @@ impl Chilpa {
     /// row says afterwards.
     pub(crate) fn library_maintenance(&mut self, key: &str) -> Option<String> {
         match key {
+            "library.mood.generate" => {
+                if self.mood_analysis.is_some() {
+                    self.cancel_analysis();
+                    Some(String::new())
+                } else if self.analysis.is_some() {
+                    Some(chilpa_i18n::t("Finish or cancel the current analysis first."))
+                } else {
+                    self.start_mood_analysis();
+                    Some(String::new())
+                }
+            }
             "library.repair" if self.repair_library() => Some(chilpa_i18n::t("Repaired. Nothing was lost.")),
             "library.repair" => Some(self.now.error.clone()),
             _ => None,

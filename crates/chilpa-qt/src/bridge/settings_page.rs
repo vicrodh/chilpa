@@ -384,8 +384,11 @@ impl qobject::SettingsPage {
             }
             // Any other button is the facade's; a new one needs nothing here.
             pressed => {
+                let was_running = app::with(|api| api.analysis_status().running);
                 let Some(said) = app::with(|api| api.maintain(pressed)) else { return };
-                self.as_mut().rust_mut().said = Some((pressed.into(), said));
+                self.as_mut().rust_mut().said = (!said.is_empty()).then(|| (pressed.into(), said));
+                let status = app::with(|api| api.analysis_status().clone());
+                if !was_running && (status.running || status.playlists_updated) { self.as_mut().watch_analysis(); }
                 // The feature's own objects read again: a button can open one.
                 chilpa_qt_kit::bridge::prefs::changed();
             }
@@ -393,9 +396,7 @@ impl qobject::SettingsPage {
         self.reload();
     }
 
-    /// Follows the analysis without blocking Settings. The worker owns the
-    /// files; this only drains its progress four times a second and refreshes
-    /// the player switches when AutoMix may have become available.
+    /// Follows analysis progress and refreshes the player switches when AutoMix becomes available.
     fn watch_analysis(self: Pin<&mut Self>) {
         let thread = self.qt_thread();
         let done = Arc::new(AtomicBool::new(false));

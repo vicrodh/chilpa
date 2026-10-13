@@ -89,6 +89,7 @@ TestCase {
         tryVerify(() => customizer.opened)
         const tab = findChild(customizer.contentItem, "customizeGroup_fixture")
         verify(tab !== null)
+        tryVerify(() => tab.x > 0, 1000, "the tabs have finished positioning")
         mouseClick(tab, tab.width / 2, tab.height / 2)
         compare(customizer.activeGroup, "fixture")
         verify(customizer.opened, "changing tabs must not dismiss the dialog")

@@ -25,7 +25,7 @@ Modal {
     width: Math.min((parent ? parent.width : 0) - Metrics.shortcutsAround, Metrics.shortcutsEditor)
     // While a key is being recorded Escape is that recording's, not the
     // editor's.
-    closePolicy: recording ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    closePolicy: recording ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
     onAboutToShow: Hotkeys.refresh()
     onClosed: Hotkeys.command("cancel", "")
 

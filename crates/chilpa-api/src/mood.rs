@@ -10,7 +10,6 @@ use std::time::Duration;
 
 const CALL: Duration = Duration::from_secs(20);
 const INFERENCE: Duration = Duration::from_secs(120);
-const DOWNLOAD: Duration = Duration::from_secs(180);
 const PCM_SAMPLES_PER_CHUNK: usize = 524_288;
 
 pub(crate) enum Progress {
@@ -41,8 +40,7 @@ impl Job {
                     return Ok(());
                 }
                 if status["ready"] != true {
-                    let ready = natives.call(mood::ANALYZER, "analysis.ensure", json!({}), DOWNLOAD)?;
-                    if ready["ready"] != true { return Err("The analyzer models are unavailable.".into()); }
+                    return Err(chilpa_i18n::t("The Mood models are not ready. Finish the download in Mood models first."));
                 }
                 let version = status["version"].as_i64().filter(|value| *value > 0)
                     .ok_or("The analyzer did not report a model version.")?;

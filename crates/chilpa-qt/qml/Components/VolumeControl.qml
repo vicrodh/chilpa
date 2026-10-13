@@ -43,7 +43,7 @@ Item {
         y: control.opensDown ? control.height + Metrics.gap8 : -height - Metrics.gap8
         width: Metrics.volumePopupWidth
         padding: Metrics.gap8
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
 
         background: Item {
             Hold {}

@@ -351,14 +351,14 @@ msgstr "Análisis"
 msgid "Analyze"
 msgstr "Analizar"
 
-msgid "Analyze local files to fill the Mood folder in Playlists. Manage the optional Mood plugin and its models here."
-msgstr "Analiza archivos locales para llenar la carpeta Mood en Playlists. Gestiona aquí el plugin opcional Mood y sus modelos."
-
 msgid "Analyze the library"
 msgstr "Analizar la biblioteca"
 
 msgid "Analyze the new music too?"
 msgstr "¿Analizar también la música nueva?"
+
+msgid "Analyzes local files and puts the results in Playlists > Mood."
+msgstr "Analiza archivos locales y coloca los resultados en Playlists > Mood."
 
 msgid "Analyzing Mood"
 msgstr "Analizando Mood"
@@ -1277,6 +1277,9 @@ msgstr "Activar"
 msgid "Enable PipeWire in your NixOS configuration"
 msgstr "Activa PipeWire en tu configuración de NixOS"
 
+msgid "Enable the optional Mood plugin and manage its model download."
+msgstr "Activa el plugin opcional Mood y gestiona la descarga de sus modelos."
+
 msgid "Enable {} in Settings › Sources to play this record."
 msgstr ""
 
@@ -1397,6 +1400,9 @@ msgstr "Buscando coincidencias…"
 msgid "Finish"
 msgstr "Terminar"
 
+msgid "Finish or cancel the current analysis first."
+msgstr "Termina o cancela primero el análisis en curso."
+
 msgid "Finish selecting"
 msgstr "Terminar selección"
 
@@ -1492,6 +1498,12 @@ msgstr "GPU (compatibilidad)"
 
 msgid "Gapless"
 msgstr "Gapless"
+
+msgid "Generate"
+msgstr "Generar"
+
+msgid "Generate Mood playlists"
+msgstr "Generar playlists Mood"
 
 msgid "Generated test signal"
 msgstr "Señal de prueba generada"
@@ -1744,6 +1756,9 @@ msgstr "Instalar"
 
 msgid "Install and enable a playlist importer in Settings → Plugins."
 msgstr "Instala y activa un importador de playlists en Ajustes → Plugins."
+
+msgid "Install and enable the Mood plugin first."
+msgstr "Primero instala y activa el plugin Mood."
 
 msgid "Install from ZIP…"
 msgstr "Instalar desde ZIP…"
@@ -2090,11 +2105,17 @@ msgstr "Mono claro"
 msgid "Month"
 msgstr "Mes"
 
+msgid "Mood analysis cancelled."
+msgstr "Análisis de Mood cancelado."
+
 msgid "Mood analysis stopped: {}"
 msgstr "Se detuvo el análisis Mood: {}"
 
-msgid "Mood playlists"
-msgstr "Listas Mood"
+msgid "Mood is off. Enable it in Mood models."
+msgstr "Mood está apagado. Actívalo en Modelos Mood."
+
+msgid "Mood models"
+msgstr "Modelos Mood"
 
 msgid "Mood: {} tracks analyzed, {} playlists updated"
 msgstr "Mood: {} pistas analizadas, {} listas actualizadas"
@@ -3611,6 +3632,9 @@ msgstr "El ISO queda intacto. Los metadatos compatibles van al XML; los demás c
 
 msgid "The ISO stays untouched; fields without an XML place and cover art use a sidecar."
 msgstr "El ISO queda intacto; los campos sin lugar en el XML y la portada van al sidecar."
+
+msgid "The Mood models are not ready. Finish the download in Mood models first."
+msgstr "Los modelos Mood aún no están listos. Termina la descarga en Modelos Mood."
 
 msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."
 msgstr "El protocolo de PulseAudio mezcla todos los programas y remuestrea el resultado a una sola frecuencia, así que una pista nunca llega al aparato como salió del archivo. No hay ningún ajuste aquí que cambie eso. Es el que funciona en todos lados; para que las muestras lleguen sin tocarse, elige la tarjeta directo o PipeWire."

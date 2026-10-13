@@ -37,6 +37,7 @@ Controls.Popup {
 
     modal: true
     dim: false
+    closePolicy: Controls.Popup.CloseOnEscape | Controls.Popup.CloseOnReleaseOutside
     // So Escape reaches it and closes it.
     focus: true
     padding: Metrics.gap12

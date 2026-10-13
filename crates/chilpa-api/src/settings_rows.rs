@@ -431,6 +431,18 @@ impl Chilpa {
                     row.description = chilpa_i18n::t_args("{} analyzed, {} without pulse, {} unreadable", &[&analyzed, &quiet, &failed]);
                 }
             }
+            "library.mood.generate" => {
+                let status = self.analysis_status().clone();
+                row.action = if status.running && status.mood_requested { chilpa_i18n::t("Cancel") } else { chilpa_i18n::t("Generate") };
+                if status.mood_requested && !status.last.is_empty() {
+                    row.description = status.last;
+                } else if status.running {
+                    row.description = chilpa_i18n::t("Finish or cancel the current analysis first.");
+                }
+                if status.running && status.total > 0 {
+                    row.value = (status.done as f64 / status.total as f64).to_string();
+                }
+            }
             key => {
                 for (value, label) in fixed(key) {
                     row.values.push(value.to_string());
