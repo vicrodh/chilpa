@@ -61,7 +61,7 @@ Column {
             checked: (integration.plugin.integration || {}).integrate_home === true
             onToggled: on => integration.command("integration", {id: integration.plugin.id, field: "integrate_home", enabled: on})
         }
-        Text { text: I18n.tr("Include source recommendations in Home", I18n.rev); anchors.verticalCenter: parent.verticalCenter; font.pointSize: Type.body; color: Theme.color.textPrimary }
+        Text { text: I18n.tr("Show source recommendations by default in Home", I18n.rev); anchors.verticalCenter: parent.verticalCenter; font.pointSize: Type.body; color: Theme.color.textPrimary }
     }
     Text { visible: integration.plugin.native !== true; text: I18n.tr("Library integration", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
     Text {

@@ -23,6 +23,7 @@ Rectangle {
         { screen: "playlistManager", glyph: Icons.playlist, text: I18n.tr("Playlists", I18n.rev) }
     ].concat(panels.map(p => ({ screen: "source", key: p.id, text: p.name,
         glyph: SourceGlyphs.of(p.icon) || Icons[p.icon] || Icons.server,
+        sourceIcon: p.icon_image || "",
         family: SourceGlyphs.of(p.icon) ? SourceGlyphs.font : "", music: p.music === true })))
 
     implicitWidth: label.implicitWidth + Metrics.gap10 * 2 // derived: padding on both sides
@@ -66,6 +67,7 @@ Rectangle {
         entries: button.places.map((place) => ({
             text: place.text,
             glyph: place.glyph, family: place.family || "",
+            leadingSourceIcon: place.sourceIcon || "",
             checked: Navigation.screen === place.screen && (!place.key || Navigation.routeKey === place.key)
         }))
         onChosen: (index) => {

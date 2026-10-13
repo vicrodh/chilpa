@@ -14,6 +14,7 @@ Item {
 
     property string title
     property string glyph
+    property string sourceIcon
     property bool active: false
     property bool renamable: false
     // What renaming starts from: the name alone, without what the title adds.
@@ -82,8 +83,17 @@ Item {
 
         Icon {
             anchors.verticalCenter: parent.verticalCenter
+            visible: tab.sourceIcon === ""
             glyph: tab.glyph
             size: Metrics.iconSm
+            color: Theme.color.textTertiary
+        }
+        SourceIcon {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: tab.sourceIcon !== ""
+            sourceInfo: ({icon: tab.sourceIcon})
+            width: visible ? Metrics.iconSm : 0
+            height: Metrics.iconSm
             color: Theme.color.textTertiary
         }
 

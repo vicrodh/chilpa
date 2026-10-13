@@ -386,6 +386,14 @@ impl Chilpa {
         let paths = self.album_paths(ids);
         match act {
             "play" => {
+                if !paths.is_empty() {
+                    for id in ids.iter().copied().filter(|id| *id < 0) {
+                        if self.catalog.card(id).is_some_and(|card| card.kind == super::store::CardKind::Playlist) {
+                            self.catalog.record_playlist_play(id);
+                            self.count_playlist_play(id);
+                        }
+                    }
+                }
                 self.play_list(&paths, shuffled);
             }
             "next" => self.play_next_here(&paths),

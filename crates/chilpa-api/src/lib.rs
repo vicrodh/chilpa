@@ -400,7 +400,7 @@ pub struct Playlist {
     pub provider: String,
     pub instance: String,
     pub track_count: usize,
-    pub play_count: u64,
+    pub play_count: u64, pub last_played_at: Option<i64>,
     pub folder_id: Option<i64>,
     pub custom_position: i64,
     pub visible_sidebar: bool,

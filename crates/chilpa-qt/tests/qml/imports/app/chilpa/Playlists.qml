@@ -2,6 +2,8 @@ pragma Singleton
 import QtQuick
 QtObject {
     property int rev: 0
+    property var recentRows: []
+    function recent(allSources, limit, revision) { return JSON.stringify(recentRows.filter(row => allSources || row.mixed).slice(0, limit)) }
     property var rows: []
     property var created: []
     property string added: ""

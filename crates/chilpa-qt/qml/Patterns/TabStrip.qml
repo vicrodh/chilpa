@@ -88,6 +88,7 @@ Row {
                     required property string modelData
                     title: modelData
                     glyph: Icons[Navigation.tabIcons[index]] || ""
+                    sourceIcon: !Icons[Navigation.tabIcons[index]] ? Navigation.tabIcons[index] || "" : ""
                     active: index === Navigation.active
                     onActivated: Navigation.activate(index)
                     onClosed: Navigation.close(index)

@@ -42,7 +42,7 @@ Item {
 
     Icon {
         id: check
-        visible: !line.separator
+        visible: !line.separator && !line.entry.leadingSourceIcon
         x: Metrics.gap10
         anchors.verticalCenter: parent.verticalCenter
         width: Metrics.menuIconColumn
@@ -51,6 +51,13 @@ Item {
         iconFamily: line.entry.checked ? "" : line.entry.family || ""
         size: Metrics.iconNav
         color: line.entry.checked || line.entry.accent === true ? Theme.color.accent : Theme.color.textSecondary
+    }
+    SourceIcon {
+        anchors.centerIn: check
+        visible: !!line.entry.leadingSourceIcon && !line.separator
+        sourceInfo: ({icon: line.entry.leadingSourceIcon || ""})
+        width: Metrics.iconNav
+        height: Metrics.iconNav
     }
 
     SourceIcon {

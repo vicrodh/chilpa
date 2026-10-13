@@ -11,10 +11,10 @@ Column {
     id: home
     property int refresh: 0
     property bool rendered: true
+    readonly property var sources: JSON.parse(Sources.homeLibraries(Library.remoteRev + Library.rev + Sources.revision + home.refresh) || "[]")
     readonly property var sections: {
-        const sources = JSON.parse(Sources.homeLibraries(Library.remoteRev + Library.rev + Sources.revision + home.refresh) || "[]")
         const rows = []
-        for (const source of sources) {
+        for (const source of home.sources) {
             const page = JSON.parse(Sources.page(source.id + " native:discover:home", Library.remoteRev) || "{}")
             let preferences = []
             try { preferences = JSON.parse(SettingsModel.kept("ui.source." + source.id + ".discover.home") || "[]") } catch (_) {}
@@ -23,14 +23,16 @@ Column {
                 .filter(section => available.some(found => found.id === section.id))
                 .concat(available.filter(section => !preferences.some(preference => preference.id === section.id)))
             for (const section of sections) {
-                if (section.enabled === false || !(section.items || []).length) continue
-                rows.push(Object.assign({}, section, {title: source.name + " · " + section.title, homeId: source.id + ":" + section.id}))
+                rows.push(Object.assign({}, section, {title: source.icon ? section.title : source.name + " · " + section.title,
+                    enabled: source.enabled === true && section.enabled !== false,
+                    sourceIcon: source.icon || "", sourceId: source.id, sourceName: source.name,
+                    homeId: source.id + ":" + section.id}))
             }
         }
         return rows
     }
     Repeater {
-        model: home.rendered ? home.sections : []
+        model: home.rendered ? home.sections.filter(section => section.enabled !== false && ((section.items || []).length || section.error)) : []
         SourceShelf { required property var modelData; width: home.width; section: modelData }
     }
 }
