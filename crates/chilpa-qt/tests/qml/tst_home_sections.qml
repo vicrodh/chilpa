@@ -21,7 +21,12 @@ TestCase {
         walk(home.contentItem)
         return found
     }
-    function cleanup() { home.keep([]) }
+    function cleanup() {
+        const customizer = findChild(home, "homeCustomizer")
+        if (customizer.opened) customizer.close()
+        Sources.show({homeLibraries: []})
+        home.keep([])
+    }
 
     function test_the_library_shelves_come_first_in_their_own_order() {
         compare(shelves(), ["library.recentlyPlayed", "everywhere.recentlyPlayed", "library.recentPlaylists", "everywhere.recentPlaylists", "library.recentlyAdded", "library.mostPlayed"])
@@ -73,5 +78,21 @@ TestCase {
         const list = findChild(home, "customizeChoices")
         tryVerify(() => list !== null && list.count === 6)
         compare(findChild(home, "homeCustomizer").groups[0].name, "Chilpa")
+    }
+
+    function test_switching_customizer_source_keeps_the_modal_open() {
+        Sources.show({homeLibraries: [{id: "fixture", name: "Fixture", enabled: true}]})
+        home.homeRefresh++
+        const customizer = findChild(home, "homeCustomizer")
+        tryVerify(() => customizer.groups.length > 1)
+        customizer.open()
+        tryVerify(() => customizer.opened)
+        const tab = findChild(customizer.contentItem, "customizeGroup_fixture")
+        verify(tab !== null)
+        mouseClick(tab, tab.width / 2, tab.height / 2)
+        compare(customizer.activeGroup, "fixture")
+        verify(customizer.opened, "changing tabs must not dismiss the dialog")
+        customizer.close()
+        Sources.show({homeLibraries: []})
     }
 }

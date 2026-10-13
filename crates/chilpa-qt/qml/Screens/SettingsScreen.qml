@@ -12,6 +12,7 @@ import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components" as SourceParts
+import "qrc:/qt/qml/app/chilpa/sources/qml/Components/SettingsActions.js" as SettingsActions
 import "qrc:/qt/qml/app/chilpa/wizard/qml/Patterns" as WizardPatterns
 // Settings rows follow the facade schema.
 Item {
@@ -201,6 +202,7 @@ Item {
     }
 
     PluginManager {
+        id: pluginManager
         visible: page.section === "plugins" && search.text === ""
         page: rows
         purchaseCard: page.purchaseCard
@@ -213,23 +215,11 @@ Item {
         anchors.rightMargin: Metrics.contentX
     }
 
-    // What a row does, with the servers' own steps in between: adding one
-    // opens its dialog, removing one says first what it takes (ADR-017).
     QtObject {
         id: actions
         property string editingServerKey: ""
-        function set(key, value) {
-            if (key.startsWith("sources.server/") && value === "edit") { Servers.begin("edit/" + key.split("/")[1]); editingServerKey = key; return }
-            if (key.startsWith("sources.server/") && value === "close-edit") { Servers.cancel(); editingServerKey = ""; rows.refresh(); return }
-            if (key.startsWith("sources.server/") && value === "remove") { removing.serverId = Number(key.split("/")[1]); removing.message = Servers.removal(removing.serverId); return removing.open() }
-            rows.set(key, value)
-        }
-        function press(key) {
-            if (key === "devices.cast") return casting.show(actions)
-            if (key === "sources.addServer") { Servers.cancel(); editingServerKey = ""; return adding.open() }
-            if (key === "audio.wizard" && rows.diagnosis_requires_stop()) return diagnosis.request()
-            rows.press(key)
-        }
+        function set(key, value) { SettingsActions.set(actions, rows, removing, Servers, key, value) }
+        function press(key) { SettingsActions.press(actions, rows, pluginManager, casting, adding, diagnosis, Navigation, Servers, Qt, key) }
     }
 
     CastPicker { id: casting }

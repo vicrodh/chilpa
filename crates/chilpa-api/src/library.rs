@@ -196,6 +196,7 @@ impl Chilpa {
                 crate::mood::Progress::Done { analyzed, failed, playlists } => {
                     self.analysis_status.running = false;
                     self.analysis_status.failed += failed;
+                    self.analysis_status.playlists_updated = true;
                     self.analysis_status.last = chilpa_i18n::t_args("Mood: {} tracks analyzed, {} playlists updated",
                         &[&analyzed.to_string(), &playlists.to_string()]);
                     mood_finished = true;

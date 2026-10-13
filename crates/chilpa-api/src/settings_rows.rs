@@ -424,6 +424,8 @@ impl Chilpa {
                         row.description = if status.last.is_empty() { progress } else { format!("{progress} · {}", status.last) };
                         row.value = (status.done as f64 / status.total as f64).to_string();
                     }
+                } else if status.playlists_updated {
+                    row.description = status.last;
                 } else if status.analyzed + status.without_pulse + status.failed > 0 {
                     let (analyzed, quiet, failed) = (status.analyzed.to_string(), status.without_pulse.to_string(), status.failed.to_string());
                     row.description = chilpa_i18n::t_args("{} analyzed, {} without pulse, {} unreadable", &[&analyzed, &quiet, &failed]);

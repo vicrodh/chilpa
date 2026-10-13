@@ -14,7 +14,7 @@ Popup {
     modal: true
     focus: true
     padding: 0
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
 
     contentItem: Item {
         implicitWidth: inset.implicitWidth + Metrics.modalInsets

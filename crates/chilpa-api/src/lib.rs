@@ -557,6 +557,8 @@ pub struct AnalysisStatus {
     pub analyzed: usize,
     pub without_pulse: usize,
     pub failed: usize,
+    /// The background analyzer changed generated playlists.
+    pub playlists_updated: bool,
     /// Asked for while a scan runs, for that folder: it starts when the scan
     /// ends.
     pub waiting: Option<String>,

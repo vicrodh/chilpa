@@ -21,6 +21,21 @@ Column {
         problem: (form.document.status || {}).description || ""
     }
 
+    Rectangle {
+        width: form.width
+        height: Metrics.progress
+        radius: Metrics.radiusControl
+        color: Theme.color.strokeHairline
+        visible: (form.document.progress || {}).total > 0
+        Rectangle {
+            width: parent.width * Math.max(0, Math.min(1,
+                ((form.document.progress || {}).done || 0) / ((form.document.progress || {}).total || 1)))
+            height: parent.height
+            radius: parent.radius
+            color: Theme.color.accent
+        }
+    }
+
     Repeater {
         model: form.document.content || []
         Text {
