@@ -47,10 +47,25 @@ fn channels_are_named_the_way_they_are_said() {
 
 #[test]
 fn the_state_starts_empty_and_without_error() {
-    let chilpa = Chilpa::new();
-    assert!(!chilpa.now_playing().playing);
-    assert!(chilpa.now_playing().error.is_empty());
-    assert_eq!(chilpa.now_playing().frames, 0);
+    const CHILD: &str = "CHILPA_TEST_EMPTY_STATE";
+    if std::env::var(CHILD).as_deref() == Ok("1") {
+        let chilpa = Chilpa::new();
+        assert_eq!(chilpa.now_playing(), &NowPlaying::default());
+        assert!(chilpa.queue_paths().is_empty());
+        return;
+    }
+    // I exercise the real constructor without restoring my saved queue or
+    // changing the process-wide environment of concurrently running tests.
+    let profile = tempfile::tempdir().unwrap();
+    let result = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", "lib_tests::the_state_starts_empty_and_without_error", "--nocapture"])
+        .env(CHILD, "1")
+        .envs(chilpa_dirs::profile_environment(profile.path()))
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8_lossy(&result.stdout);
+    assert!(result.status.success(), "isolated startup failed: {stdout}\n{}", String::from_utf8_lossy(&result.stderr));
+    assert!(stdout.contains("1 passed; 0 failed"), "the isolated startup assertion did not run: {stdout}");
 }
 
 #[test]

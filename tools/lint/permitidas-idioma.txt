@@ -162,6 +162,7 @@ english
 enodev
 enoent
 env
+envs
 enxio
 eof
 epipe
