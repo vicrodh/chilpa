@@ -441,6 +441,9 @@ msgstr "Portada"
 msgid "Artwork view"
 msgstr "Vista de portada"
 
+msgid "Artwork, generated images, plugin data and other temporary files."
+msgstr "Portadas, imágenes generadas, datos de plugins y otros archivos temporales."
+
 msgid "Ask before quitting"
 msgstr "Preguntar antes de salir"
 
@@ -596,6 +599,15 @@ msgstr "CD en {}"
 msgid "CDs are not read outside Linux yet"
 msgstr "todavía no se leen CD fuera de Linux"
 
+msgid "Cache folder"
+msgstr "Carpeta de caché"
+
+msgid "Cache used"
+msgstr "Caché usado"
+
+msgid "Calculating…"
+msgstr "Calculando…"
+
 msgid "Calm"
 msgstr "Tranquilo"
 
@@ -704,6 +716,9 @@ msgstr "Chilpa no envía telemetría. Si lo activas, las búsquedas de artistas 
 msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
 msgstr "Chilpa pone el aparato a la frecuencia de cada pista. Con el modo exclusivo, además, el aparato es solo de Chilpa mientras suena una pista, así que nada más en la Mac lo puede usar mientras tanto. Apaga el modo exclusivo para compartirlo; la Mac mezcla lo demás que suene."
 
+msgid "Chilpa will make smaller covers and backgrounds again when needed."
+msgstr "Chilpa volverá a crear las portadas pequeñas y los fondos cuando los necesite."
+
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
 msgstr "El icono de Chilpa en el panel: un clic muestra u oculta la ventana, el botón central reproduce o pausa, la rueda mueve el volumen."
 
@@ -779,6 +794,12 @@ msgstr "Vaciar después de esta pista"
 msgid "Clear filter"
 msgstr "Limpiar filtro"
 
+msgid "Clear generated images"
+msgstr "Borrar imágenes generadas"
+
+msgid "Clear generated images?"
+msgstr "¿Borrar las imágenes generadas?"
+
 msgid "Clear loop"
 msgstr "Quitar bucle"
 
@@ -788,11 +809,23 @@ msgstr "Vaciar caché de letras"
 msgid "Clear queue"
 msgstr "Vaciar queue"
 
+msgid "Clear temporary remote artwork"
+msgstr "Borrar portadas remotas temporales"
+
+msgid "Clear temporary remote images?"
+msgstr "¿Borrar las imágenes remotas temporales?"
+
 msgid "Clear the selection"
 msgstr "Quitar la selección"
 
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr "Listo: se olvidaron {} letras. Se vuelven a buscar al reproducir."
+
+msgid "Clearing in the background…"
+msgstr "Borrando en segundo plano…"
+
+msgid "Clear…"
+msgstr "Borrar…"
 
 msgid "Click tracks to select them; Shift selects a range."
 msgstr "Haz clic en las pistas para seleccionarlas; Shift selecciona un rango."
@@ -1346,6 +1379,9 @@ msgstr "Extra queues"
 msgid "Extra small"
 msgstr "Extra pequeño"
 
+msgid "Extracted from your music files and kept while the library refers to it."
+msgstr "Extraídas de tus archivos de música y conservadas mientras la biblioteca las necesite."
+
 msgid "FOCUS"
 msgstr "FOCO"
 
@@ -1516,6 +1552,9 @@ msgstr "Generar"
 
 msgid "Generate Mood playlists"
 msgstr "Generar playlists Mood"
+
+msgid "Generated images"
+msgstr "Imágenes generadas"
 
 msgid "Generated test signal"
 msgstr "Señal de prueba generada"
@@ -1700,6 +1739,12 @@ msgstr "Imagen guardada"
 msgid "Images"
 msgstr "Imágenes"
 
+msgid "Images from sources and plugins will download again when needed. Artwork saved in your library stays."
+msgstr "Las imágenes de las fuentes y los plugins se descargarán otra vez cuando hagan falta. Las portadas guardadas en tu biblioteca se conservan."
+
+msgid "Images from sources and plugins. Covers saved in your library stay protected."
+msgstr "Imágenes de fuentes y plugins. Las portadas guardadas en tu biblioteca están protegidas."
+
 msgid "Immersive"
 msgstr "Inmersivo"
 
@@ -1735,6 +1780,9 @@ msgstr "Incluir plugins"
 
 msgid "Include source albums in Albums"
 msgstr "Integrar los álbumes de esta fuente en Álbumes"
+
+msgid "Includes downloaded plugin models, waveform data and server caches."
+msgstr "Incluye modelos descargados por plugins, datos de formas de onda y cachés de servidores."
 
 msgid "Influences"
 msgstr "Influencias"
@@ -1922,6 +1970,9 @@ msgstr "Claro"
 msgid "Like Track"
 msgstr "Marcar como favorita"
 
+msgid "Limits and cleanup"
+msgstr "Límites y limpieza"
+
 msgid "List"
 msgstr "Lista"
 
@@ -1969,6 +2020,9 @@ msgstr "Cargando…"
 
 msgid "Local"
 msgstr ""
+
+msgid "Local artwork"
+msgstr "Portadas locales"
 
 msgid "Local folders organize this sidebar. Native folders are saved in your service account."
 msgstr "Los folders locales organizan este sidebar. Los folders nativos se guardan en tu cuenta del servicio."
@@ -2492,6 +2546,9 @@ msgstr "octubre"
 msgid "Off"
 msgstr "Apagado"
 
+msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
+msgstr "Las imágenes temporales más antiguas se borran en segundo plano. Se conservan las portadas que usa tu biblioteca."
+
 msgid "Oldest first"
 msgstr "Más viejos primero"
 
@@ -2555,6 +2612,9 @@ msgstr "Abrir CD de audio"
 msgid "Open downloads"
 msgstr "Abrir descargas"
 
+msgid "Open in"
+msgstr "Abrir en"
+
 msgid "Open in browser"
 msgstr "Abrir en el navegador"
 
@@ -2588,6 +2648,9 @@ msgstr "Abrir el importador de playlists"
 msgid "Open plex.tv/link"
 msgstr "Abrir plex.tv/link"
 
+msgid "Open the folder used for disposable files."
+msgstr "Abrir la carpeta de archivos temporales."
+
 msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
 msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin o Plex. Su música se une a la biblioteca."
 
@@ -2614,6 +2677,9 @@ msgstr "Otros"
 
 msgid "Other / unknown"
 msgstr "Otro / desconocido"
+
+msgid "Other cache"
+msgstr "Otros datos en caché"
 
 msgid "Output"
 msgstr "Salida"
@@ -2960,6 +3026,9 @@ msgstr "Leer más"
 msgid "Read playlist"
 msgstr "Leer playlist"
 
+msgid "Read the current size of the cache folders in the background."
+msgstr "Calcular en segundo plano el tamaño actual de las carpetas de caché."
+
 msgid "Reading it from {}…"
 msgstr "Leyéndolo de {}…"
 
@@ -2983,6 +3052,9 @@ msgstr "Lista para revisar"
 
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
 msgstr "Reconstruye los conteos y el índice de búsqueda a partir de las pistas y el historial. No se pierde nada."
+
+msgid "Recalculate usage"
+msgstr "Actualizar uso"
 
 msgid "Receiver processing unknown"
 msgstr "Procesamiento del receptor desconocido"
@@ -3038,6 +3110,12 @@ msgstr "Lanzamientos"
 msgid "Remember"
 msgstr "Recordar"
 
+msgid "Remote artwork"
+msgstr "Portadas remotas"
+
+msgid "Remote image limit"
+msgstr "Límite de imágenes remotas"
+
 msgid "Remove"
 msgstr "Quitar"
 
@@ -3065,11 +3143,17 @@ msgstr "Quitar de la biblioteca"
 msgid "Remove image"
 msgstr "Quitar imagen"
 
+msgid "Remove smaller covers and backgrounds. Chilpa makes them again as needed."
+msgstr "Borrar portadas pequeñas y fondos. Chilpa volverá a crearlos cuando hagan falta."
+
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "¿Eliminar este plugin, su cuenta, ajustes y biblioteca en caché de Chilpa? Esto no elimina tu cuenta ni tus playlists en el servicio."
 
 msgid "Remove this server?"
 msgstr "¿Quitar este servidor?"
+
+msgid "Remove unreferenced images from sources and plugins. Needed images download again."
+msgstr "Borrar imágenes de fuentes y plugins que no usa la biblioteca. Se descargarán otra vez cuando hagan falta."
 
 msgid "Remove…"
 msgstr "Quitar…"
@@ -3499,6 +3583,9 @@ msgstr "Temporizador"
 msgid "Small"
 msgstr "Pequeño"
 
+msgid "Smaller covers and background images; Chilpa can make these again."
+msgstr "Portadas pequeñas e imágenes de fondo que Chilpa puede volver a crear."
+
 msgid "Soft"
 msgstr "Suave"
 
@@ -3588,6 +3675,9 @@ msgstr "Se detiene en"
 
 msgid "Stops in {}"
 msgstr "Se detiene en {}"
+
+msgid "Storage"
+msgstr "Almacenamiento"
 
 msgid "Stream address"
 msgstr "Dirección de stream"
@@ -4062,8 +4152,14 @@ msgstr "Actualizado {}"
 msgid "Updates"
 msgstr "Actualizaciones"
 
+msgid "Updating usage…"
+msgstr "Actualizando uso…"
+
 msgid "Uppercase"
 msgstr "Mayúsculas"
+
+msgid "Usage"
+msgstr "Uso"
 
 msgid "Use MusicBrainz"
 msgstr "Usar MusicBrainz"
@@ -5404,6 +5500,9 @@ msgid_plural "{} files whose tags disagree"
 msgstr[0] "{} archivo con tags que no coinciden"
 msgstr[1] "{} archivos con tags que no coinciden"
 
+msgid "{} files"
+msgstr "{} archivos"
+
 msgid "{} folder"
 msgid_plural "{} folders"
 msgstr[0] "{} carpeta"
@@ -5504,6 +5603,9 @@ msgid "{} playlist"
 msgid_plural "{} playlists"
 msgstr[0] "{} playlist"
 msgstr[1] "{} playlists"
+
+msgid "{} protected by the library"
+msgstr "{} protegidos por la biblioteca"
 
 msgid "{} rating"
 msgid_plural "{} ratings"

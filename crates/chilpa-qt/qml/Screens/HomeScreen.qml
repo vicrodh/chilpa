@@ -194,15 +194,32 @@ Flickable {
                 required property var modelData
                 objectName: "homeShelf"
                 width: column.width
-                // What the shelf says it has, not its `visible`: a child of a
-                // hidden Loader is hidden too, and the two would wait for
-                // each other.
-                visible: status === Loader.Ready && item.shown
+                // I reserve space before building the shelf, and only build
+                // shelves near the viewport. A slow source cannot hold Home.
+                active: y < page.contentY + page.height * 1.5
+                asynchronous: true
+                height: status === Loader.Ready ? item.implicitHeight : placeholder.height
+                visible: status !== Loader.Ready || item.shown
                 sourceComponent: modelData.kind === "albums" ? albumShelf : modelData.kind === "playlists" ? playlistShelf : modelData.kind === "tracks" ? trackShelf : sourceRail
                 onLoaded: item.entry = Qt.binding(() => modelData)
+                Column {
+                    id: placeholder
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    spacing: Metrics.gap12
+                    visible: parent.status !== Loader.Ready
+                    Rectangle { width: parent.width * 0.3; height: Metrics.gap16; radius: Metrics.gap8; color: Theme.color.stateHover }
+                    Row {
+                        spacing: Metrics.gridGap
+                        Repeater {
+                            model: Math.max(1, Math.min(5, Math.floor(placeholder.width / Metrics.cardMinWidth)))
+                            Rectangle { width: Metrics.cardMinWidth; height: width; radius: Metrics.radiusControl; color: Theme.color.stateHover; opacity: 0.7 }
+                        }
+                    }
+                }
             }
         }
-        SourceHomeSections { id: remote; width: parent.width; refresh: page.homeRefresh; rendered: false }
+        SourceHomeSections { id: remote; width: parent.width; refresh: page.homeRefresh; rendered: false; deferred: true }
     }
     Component { id: albumShelf; AlbumShelf { width: parent ? parent.width : 0 } }
     Component { id: trackShelf; TrackShelf { width: parent ? parent.width : 0 } }

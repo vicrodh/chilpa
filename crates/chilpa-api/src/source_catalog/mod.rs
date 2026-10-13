@@ -293,7 +293,7 @@ impl Catalog {
         }
         if let Some(shelf) = &shelf {
             let images: Vec<String> = shelf.cards.iter().filter_map(|id| inner.store.cards.get(id))
-                .filter(|c| c.art.is_empty()).map(|c| c.image.clone())
+                .filter(|c| c.art.is_empty() || !std::path::Path::new(&c.art).is_file()).map(|c| c.image.clone())
                 .chain(shelf.tracks.iter().take(TRACK_COVERS).filter_map(|id| inner.store.tracks.get(id)).map(|t| t.image.clone()))
                 .collect();
             for image in images {
@@ -450,8 +450,14 @@ impl Catalog {
     }
 
     pub fn art_of_card(&self, id: i64) -> String {
-        let inner = self.lock();
-        inner.store.cards.get(&id).map(|c| inner.store.shown_art(c)).unwrap_or_default()
+        let mut inner = self.lock();
+        let Some(card) = inner.store.cards.get(&id) else { return String::new() };
+        let art = inner.store.shown_art(card);
+        if art.is_empty() {
+            let image = card.image.clone();
+            self.want_cover(&mut inner, &image);
+        }
+        art
     }
 
     /// Takes in a record or a track a search found, which no listing showed:

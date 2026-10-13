@@ -362,7 +362,13 @@ impl Store {
     /// A card's cover as shown: the one the listener chose, over the one
     /// fetched.
     pub fn shown_art(&self, card: &Card) -> String {
-        self.chosen.get(&(card.plugin.clone(), card.identity.clone())).cloned().unwrap_or_else(|| card.art.clone())
+        if let Some(chosen) = self.chosen.get(&(card.plugin.clone(), card.identity.clone())) {
+            return chosen.clone();
+        }
+        if !card.art.is_empty() && std::path::Path::new(&card.art).is_file() {
+            return card.art.clone();
+        }
+        crate::pictures::kept(&card.image).unwrap_or_default()
     }
 
     /// The cover on disk for a track: its record's, when it has one.

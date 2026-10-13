@@ -220,7 +220,7 @@ Item {
         id: actions
         property string editingServerKey: ""
         function set(key, value) { SettingsActions.set(actions, rows, removing, Servers, key, value) }
-        function press(key) { SettingsActions.press(actions, rows, pluginManager, casting, adding, diagnosis, inventory, Navigation, Servers, Qt, key) }
+        function press(key) { if (!storage.press(key)) SettingsActions.press(actions, rows, pluginManager, casting, adding, diagnosis, inventory, Navigation, Servers, Qt, key) }
     }
 
     CastPicker { id: casting }
@@ -243,6 +243,7 @@ Item {
 
     WizardPatterns.OutputDiagnosisDialog { id: diagnosis; settingsPage: rows }
     AnalysisUi.AnalysisInventoryDialog { id: inventory }
+    StorageSettingsActions { id: storage; rows: rows; current: page.visible && page.section === "storage" }
 
     // A sync moving, a server coming back: its rows follow while shown.
     Timer {

@@ -5,6 +5,8 @@ use super::favorites::folded;
 use super::Library;
 use rusqlite::{params, Connection, OptionalExtension};
 use std::collections::HashMap;
+use std::collections::HashSet;
+use std::path::{Path, PathBuf};
 
 /// The pictures chosen for artists, asked by name whatever its capitals.
 #[derive(Clone, Debug, Default)]
@@ -21,6 +23,28 @@ impl ArtistPictures {
 }
 
 impl Library {
+    /// Cache files still named by persistent library rows. Pruning these
+    /// without changing the rows would leave blank covers until a rescan.
+    pub fn protected_cache_artwork(&self, root: &Path) -> rusqlite::Result<HashSet<PathBuf>> {
+        let mut paths = HashSet::new();
+        let mut stmt = self.db.prepare(
+            "SELECT artwork_path FROM albums UNION SELECT release_artwork FROM tracks
+             UNION SELECT artwork_path FROM playlists UNION SELECT path FROM album_artwork
+             UNION SELECT path FROM artist_artwork UNION SELECT path FROM remote_artwork
+             UNION SELECT artwork_path FROM play_context",
+        )?;
+        let rows = stmt.query_map([], |row| row.get::<_, Option<String>>(0))?;
+        for path in rows {
+            if let Some(path) = path? {
+                let path = PathBuf::from(path);
+                if path.starts_with(root) {
+                    paths.insert(path);
+                }
+            }
+        }
+        Ok(paths)
+    }
+
     /// The cover chosen for a record, if one was.
     pub fn album_artwork(&self, album_id: i64) -> rusqlite::Result<Option<String>> {
         self.db.query_row("SELECT path FROM album_artwork WHERE album_id = ?1", params![album_id], |r| r.get(0)).optional()
@@ -184,5 +208,18 @@ mod tests {
         assert!(lib.artist_pictures().unwrap().is_empty());
         assert!(lib.set_remote_artwork("plugin", "record-1", Some("/r.webp")).unwrap());
         assert_eq!(lib.remote_artworks().unwrap().get(&("plugin".into(), "record-1".into())).map(String::as_str), Some("/r.webp"));
+    }
+
+    #[test]
+    fn cache_cleanup_keeps_artwork_chosen_for_source_records() {
+        let lib = fixtures::sample_library();
+        let folder = tempfile::tempdir().unwrap();
+        let root = folder.path();
+        let chosen = root.join("chosen.webp");
+        lib.set_remote_artwork("plugin", "record-1", chosen.to_str()).unwrap();
+        lib.set_artist_artwork("Other", Some("other.webp")).unwrap();
+        let protected = lib.protected_cache_artwork(root).unwrap();
+        assert!(protected.contains(&root.join("chosen.webp")));
+        assert!(!protected.contains(std::path::Path::new("other.webp")));
     }
 }

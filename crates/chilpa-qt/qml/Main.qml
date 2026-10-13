@@ -50,9 +50,10 @@ Window {
     // tab bar, which stays on top of it.
     ScreenHost {
         id: host
+        resizing: sidebar.dragging || right.dragged >= 0
         x: window.contentLeft
         y: plan.planeTop
-        width: (right.visible ? right.x : window.width) - Metrics.spaceWindow - x // derived: the window's margin on the right too
+        width: resizing && heldWidth >= 0 ? heldWidth : (right.visible ? right.x : window.width) - Metrics.spaceWindow - x
         // Under the dynamic background the plane is a card that ends at the
         // window's margin, so the screens end there too.
         height: window.height - y - plan.contentBottom

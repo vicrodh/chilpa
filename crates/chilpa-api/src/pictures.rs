@@ -8,10 +8,29 @@
 
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
+use std::io::Write;
+use std::sync::{mpsc, OnceLock};
 use std::time::Duration;
 
 /// A logo is small. More than this is somebody serving something else.
 const LARGEST: usize = 2 * 1024 * 1024;
+static TOUCHES: OnceLock<mpsc::SyncSender<PathBuf>> = OnceLock::new();
+
+fn touch_later(path: &PathBuf, accessed: std::time::SystemTime) {
+    if accessed.elapsed().is_ok_and(|age| age < Duration::from_secs(24 * 60 * 60)) { return }
+    let sender = TOUCHES.get_or_init(|| {
+        let (sender, receiver) = mpsc::sync_channel::<PathBuf>(1024);
+        let _ = std::thread::Builder::new().name("chilpa-cache-touch".into()).spawn(move || {
+            for path in receiver {
+                if let Ok(file) = std::fs::File::options().write(true).open(path) {
+                    let _ = file.set_times(std::fs::FileTimes::new().set_accessed(std::time::SystemTime::now()));
+                }
+            }
+        });
+        sender
+    });
+    let _ = sender.try_send(path.clone());
+}
 
 fn folder() -> PathBuf {
     chilpa_core::artwork_cache().join("remote")
@@ -34,17 +53,29 @@ fn name_of(address: &str) -> String {
     format!("{:016x}", hasher.finish())
 }
 
-/// The picture at that address if it is already on disk. Never goes out.
+/// The picture at that address if it is already on disk.
 pub(crate) fn kept(address: &str) -> Option<String> {
     if address.is_empty() {
         return None;
     }
     let (dir, name) = (folder(), name_of(address));
-    ["jpg", "png", "webp"]
-        .into_iter()
-        .map(|extension| dir.join(format!("{name}.{extension}")))
-        .find(|kept| kept.is_file())
-        .map(|kept| kept.to_string_lossy().into_owned())
+    ["jpg", "png", "webp"].into_iter().find_map(|extension| {
+        let path = dir.join(format!("{name}.{extension}"));
+        let meta = path.metadata().ok().filter(|meta| meta.is_file())?;
+        if let Ok(accessed) = meta.accessed() { touch_later(&path, accessed); }
+        Some(path.to_string_lossy().into_owned())
+    })
+}
+
+fn store(address: &str, extension: &str, bytes: &[u8]) -> Option<String> {
+    let dir = folder();
+    std::fs::create_dir_all(&dir).ok()?;
+    let path = dir.join(format!("{}.{}", name_of(address), extension));
+    let mut temporary = tempfile::NamedTempFile::new_in(&dir).ok()?;
+    temporary.write_all(bytes).ok()?;
+    temporary.persist(&path).ok()?;
+    crate::storage_cache::note_stored(bytes.len() as u64);
+    Some(path.to_string_lossy().into_owned())
 }
 
 /// The picture at that address, on disk. Fetched the first time and read
@@ -53,7 +84,6 @@ pub(crate) fn keep(address: &str) -> Option<String> {
     if let Some(kept) = kept(address) {
         return Some(kept);
     }
-    let (dir, name) = (folder(), name_of(address));
     let asked = chilpa_core::Fetch {
         url: address,
         user_agent: "Chilpa",
@@ -64,10 +94,7 @@ pub(crate) fn keep(address: &str) -> Option<String> {
     let got = chilpa_core::fetch(&asked).ok().filter(|reply| reply.status == 200)?;
     let extension = kind(&got.body)?;
     image::load_from_memory(&got.body).ok()?;
-    std::fs::create_dir_all(&dir).ok()?;
-    let path = dir.join(format!("{name}.{extension}"));
-    std::fs::write(&path, &got.body).ok()?;
-    Some(path.to_string_lossy().into_owned())
+    store(address, extension, &got.body)
 }
 
 /// Guest artwork obeys the installation's domain permissions on every hop.
@@ -94,11 +121,7 @@ pub(crate) fn keep_approved(address: &str, domains: &[String]) -> Option<String>
         limits.max_alloc = Some(32 * 1024 * 1024);
         reader.limits(limits);
         reader.decode().ok()?;
-        let directory = folder();
-        std::fs::create_dir_all(&directory).ok()?;
-        let path = directory.join(format!("{}.{}", name_of(address), extension));
-        std::fs::write(&path, &reply.body).ok()?;
-        return Some(path.to_string_lossy().into_owned());
+        return store(address, extension, &reply.body);
     }
     None
 }

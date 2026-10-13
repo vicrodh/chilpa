@@ -20,6 +20,8 @@ TestCase {
         Link.close()
         Link.error = ""
         Link.playlist = false
+        Link.choices = "[]"
+        Link.chosen = -1
         Link.resolving = false
         tryCompare(modal, "visible", false)
     }
@@ -56,6 +58,19 @@ TestCase {
         compare(Link.importers, 1)
         compare(Navigation.page, "playlistImport")
         tryCompare(modal, "visible", false)
+    }
+
+    function test_verified_destinations_can_be_chosen() {
+        Link.show()
+        tryCompare(modal, "visible", true)
+        Link.choices = JSON.stringify([{ source: "Local", title: "Song", artist: "Band" },
+                                      { source: "Another source", title: "Song", artist: "Band" }])
+        const choices = findChild(modal.contentItem, "linkChoices")
+        tryCompare(choices, "visible", true)
+        const first = findChild(modal.contentItem, "linkChoice")
+        verify(first)
+        mouseClick(first)
+        compare(Link.chosen, 0)
     }
 
     function test_it_opens_where_the_link_leads() {

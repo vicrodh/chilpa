@@ -120,7 +120,7 @@ Item {
         PillButton {
             text: row.action
             glyph: row.control === "link" ? Icons.chevronRight : ""
-            onClicked: row.page.press(row.key)
+            onClicked: row.key === "storage.open" ? Qt.openUrlExternally(row.value) : row.page.press(row.key)
         }
     }
     Component {

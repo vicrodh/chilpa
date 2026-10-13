@@ -5,6 +5,7 @@ import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/stats/qml/Patterns" as AnalysisUi
@@ -20,6 +21,7 @@ TitledFlow {
     ServerSetupDialog { id: serverSetup }
     AnalysisUi.AnalysisInventoryDialog { id: inventoryPreview }
     CastPicker { id: castPreview; preview: true }
+    StorageSettingsActions { current: false; visible: false }
 
     SystemControls {}
     NavMenu {}
@@ -58,5 +60,12 @@ TitledFlow {
             PillButton { text: "Analysis inventory"; onClicked: inventoryPreview.show() }
         }
         Toast { visible: true; message: "Playback failed" }
+        PageTransition {
+            width: Metrics.sidebarWidth
+            height: Metrics.settingsRow
+            sourceComponent: Component {
+                Rectangle { color: Theme.color.surfacePanel; radius: Metrics.radiusControl }
+            }
+        }
     }
 }

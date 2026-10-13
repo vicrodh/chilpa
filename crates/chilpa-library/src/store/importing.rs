@@ -1,6 +1,6 @@
 //! Metadata-only candidates for playlist conversion. I never resolve or decode audio here.
 use super::Library;
-use rusqlite::params;
+use rusqlite::{params, OptionalExtension};
 
 #[derive(Clone, Debug)]
 pub struct Candidate {
@@ -15,6 +15,23 @@ pub struct Candidate {
     pub rate: Option<u32>,
 }
 impl Library {
+    /// Find the album of an available local track by its exact credit.
+    /// A direct lookup does not lose a match behind a browse page limit.
+    pub fn album_of_matching_track(&self, title: &str, artist: &str) -> rusqlite::Result<Option<(i64, String)>> {
+        self.db.query_row(
+            "SELECT a.id, a.title FROM tracks t
+             JOIN albums a ON a.id = t.album_id
+             JOIN sources s ON s.id = t.source_id
+             WHERE s.provider = 'local' AND s.enabled = 1
+               AND t.present = 1 AND t.reachable = 1
+               AND t.title = ?1 COLLATE NOCASE
+               AND (?2 = '' OR t.artist = ?2 COLLATE NOCASE)
+             ORDER BY t.id LIMIT 1",
+            params![title, artist],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        ).optional()
+    }
+
     pub fn import_candidates(
         &self,
         text: &str,
@@ -62,6 +79,24 @@ impl Library {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn local_track_album_lookup_sees_past_browse_limits_and_skips_disabled_sources() {
+        let library = Library::in_memory().unwrap();
+        let source = library.source_id("local", "default").unwrap();
+        library.connection().execute("INSERT INTO albums (id, title) VALUES (1, 'The Album')", []).unwrap();
+        for id in 1..=101 {
+            library.connection().execute(
+                "INSERT INTO tracks (id, source_id, external_id, title, artist, album_id, duration_ms, added_at)
+                 VALUES (?1, ?2, ?3, 'The Song', ?4, 1, 1000, 1)",
+                params![id, source, format!("/{id}.flac"), if id == 101 { "The Artist" } else { "Another Artist" }],
+            ).unwrap();
+        }
+        assert_eq!(library.album_of_matching_track("the song", "the artist").unwrap(), Some((1, "The Album".into())));
+        library.connection().execute("UPDATE sources SET enabled = 0 WHERE id = ?1", [source]).unwrap();
+        assert_eq!(library.album_of_matching_track("The Song", "The Artist").unwrap(), None);
+    }
+
     #[test]
     fn candidates_include_local_quality_and_isrc_but_exclude_unavailable_and_remote_tracks() {
         let library = Library::in_memory().unwrap();
