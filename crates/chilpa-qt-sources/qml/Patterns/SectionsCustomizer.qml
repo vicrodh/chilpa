@@ -13,6 +13,7 @@ import "qrc:/qt/qml/app/chilpa/qml/Components"
 // choice and says here what changed.
 Modal {
     id: customization
+    closePolicy: Popup.CloseOnEscape
     onOpened: if (grouped) activeGroup = "chilpa"
 
     // [{id, title, enabled, size}], in the order shown.
@@ -60,6 +61,7 @@ Modal {
                     model: customization.groups
                     Rectangle {
                         required property var modelData
+                        objectName: "customizeGroup_" + modelData.id
                         width: tabLabel.implicitWidth + Metrics.gap12 + Metrics.gap12
                         height: tabs.height; radius: Metrics.radiusControl
                         color: customization.activeGroup === modelData.id ? Theme.color.stateSelected : Theme.color.surfaceRaised
@@ -68,8 +70,11 @@ Modal {
                             SourceIcon { visible: !!modelData.icon; sourceInfo: ({icon: modelData.icon || ""}); width: visible ? Metrics.iconSm : 0; height: Metrics.iconSm }
                             Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.name; font.pointSize: Type.body; color: Theme.color.textPrimary }
                         }
-                        HoverHandler { cursorShape: Qt.PointingHandCursor }
-                        TapHandler { onTapped: customization.activeGroup = modelData.id }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: customization.activeGroup = modelData.id
+                        }
                     }
                 }
             }

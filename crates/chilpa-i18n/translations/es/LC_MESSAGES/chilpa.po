@@ -351,6 +351,9 @@ msgstr "Análisis"
 msgid "Analyze"
 msgstr "Analizar"
 
+msgid "Analyze local files to fill the Mood folder in Playlists. Manage the optional Mood plugin and its models here."
+msgstr "Analiza archivos locales para llenar la carpeta Mood en Playlists. Gestiona aquí el plugin opcional Mood y sus modelos."
+
 msgid "Analyze the library"
 msgstr "Analizar la biblioteca"
 
@@ -2089,6 +2092,9 @@ msgstr "Mes"
 
 msgid "Mood analysis stopped: {}"
 msgstr "Se detuvo el análisis Mood: {}"
+
+msgid "Mood playlists"
+msgstr "Listas Mood"
 
 msgid "Mood: {} tracks analyzed, {} playlists updated"
 msgstr "Mood: {} pistas analizadas, {} listas actualizadas"

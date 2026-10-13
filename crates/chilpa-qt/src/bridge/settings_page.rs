@@ -403,9 +403,15 @@ impl qobject::SettingsPage {
             std::thread::sleep(Duration::from_millis(250));
             let finished = Arc::clone(&done);
             let queued = thread.queue(move |page| {
-                let running = app::with(|api| api.analysis_status().running);
+                let (running, playlists_updated) = app::with(|api| {
+                    let status = api.analysis_status();
+                    (status.running, status.playlists_updated)
+                });
                 page.reload();
                 if !running {
+                    if playlists_updated {
+                        registry::playlists(|mut playlists| playlists.as_mut().changed());
+                    }
                     registry::player(|player| player.read_switches());
                     finished.store(true, Ordering::Relaxed);
                 }

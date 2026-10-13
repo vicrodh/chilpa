@@ -25,7 +25,8 @@ fn files(dir: &str, keep: &dyn Fn(&Path) -> bool) -> Vec<String> {
 fn main() {
     let qml = files("qml", &|p| p.extension().is_some_and(|e| e == "qml"));
     let bridges = files("src/bridge", &|p| p.extension().is_some_and(|e| e == "rs"));
-    let assets = files("assets", &|p| p.extension().is_some_and(|e| e == "svg"));
+    let mut assets = files("assets", &|p| p.extension().is_some_and(|e| e == "svg"));
+    assets.extend(files("qml", &|p| p.extension().is_some_and(|e| e == "js")));
     println!("cargo:rerun-if-changed=qml");
     println!("cargo:rerun-if-changed=src/bridge");
     println!("cargo:rerun-if-changed=assets");

@@ -245,7 +245,10 @@ pub const SECTIONS: &[Section] = &[
                     action("library.lyricsCache", Chilpa::mark("Clear lyrics cache"), Chilpa::mark("Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."), Control::Button, Chilpa::mark("Clear")),
                 ],
             },
-            Group { title: Chilpa::mark("Analysis"), settings: &[action("library.analysis", Chilpa::mark("Analyze the library"), Chilpa::mark("Reads tempo, musical key and loudness in the background. AutoMix appears when enough tracks have tempo."), Control::Progress, Chilpa::mark("Analyze"))] },
+            Group { title: Chilpa::mark("Analysis"), settings: &[
+                action("library.analysis", Chilpa::mark("Analyze the library"), Chilpa::mark("Reads tempo, musical key and loudness in the background. AutoMix appears when enough tracks have tempo."), Control::Progress, Chilpa::mark("Analyze")),
+                action("library.mood", Chilpa::mark("Mood playlists"), Chilpa::mark("Analyze local files to fill the Mood folder in Playlists. Manage the optional Mood plugin and its models here."), Control::Button, Chilpa::mark("Manage")),
+            ] },
         ],
     },
     Section {
