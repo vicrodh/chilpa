@@ -460,6 +460,8 @@ QtObject {
     readonly property int settingsRow: 54
     readonly property int settingsGroup: 44
     readonly property int settingsMaxWidth: 880
+    readonly property int analysisInventoryWidth: 900
+    readonly property int analysisInventoryHeight: 720
     // The percentage beside a settings slider.
     readonly property int settingsPercent: 40
     // The sheet of keyboard shortcuts and its editor at their widest, the

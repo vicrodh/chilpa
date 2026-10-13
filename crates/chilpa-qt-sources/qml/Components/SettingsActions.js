@@ -5,7 +5,8 @@ function set(actions, rows, removing, servers, key, value) {
     rows.set(key, value)
 }
 
-function press(actions, rows, manager, casting, adding, diagnosis, navigation, servers, qt, key) {
+function press(actions, rows, manager, casting, adding, diagnosis, inventory, navigation, servers, qt, key) {
+    if (key === "library.analysis.inventory") return inventory.show()
     if (key === "library.mood") {
         navigation.openSection("plugins")
         qt.callLater(() => {

@@ -6,6 +6,26 @@
 use super::*;
 
 impl Chilpa {
+    /// A read-only, paged inventory of local tracks and their stored analyses.
+    pub fn analysis_inventory(&mut self, filter: &str, search: &str, offset: usize) -> serde_json::Value {
+        let Some(lib) = self.library() else {
+            return serde_json::json!({"error": "The library could not be opened."});
+        };
+        match lib.analysis_inventory(chilpa_core::analysis_job::VERSION, filter, search, offset) {
+            Ok(inventory) => serde_json::json!({
+                "total": inventory.total,
+                "standard": inventory.standard,
+                "mood": inventory.mood,
+                "matched": inventory.matched,
+                "tracks": inventory.tracks.into_iter().map(|track| serde_json::json!({
+                    "id": track.id, "title": track.title, "artist": track.artist, "album": track.album,
+                    "standard": track.standard, "mood": track.mood,
+                })).collect::<Vec<_>>(),
+            }),
+            Err(error) => serde_json::json!({"error": error.to_string()}),
+        }
+    }
+
     /// Attaches what the analysis found to each track, in a single query.
     fn with_analysis(&mut self, mut tracks: Vec<LibraryTrack>) -> Vec<LibraryTrack> {
         if tracks.is_empty() {

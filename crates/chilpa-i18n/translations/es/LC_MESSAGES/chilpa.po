@@ -351,6 +351,9 @@ msgstr "Ambiente"
 msgid "Analysis"
 msgstr "Análisis"
 
+msgid "Analysis inventory"
+msgstr "Inventario de análisis"
+
 msgid "Analyze"
 msgstr "Analizar"
 
@@ -359,6 +362,9 @@ msgstr "Analizar la biblioteca"
 
 msgid "Analyze the new music too?"
 msgstr "¿Analizar también la música nueva?"
+
+msgid "Analyzed"
+msgstr "Analizada"
 
 msgid "Analyzes local files and puts the results in Playlists > Mood."
 msgstr "Analiza archivos locales y coloca los resultados en Playlists > Mood."
@@ -937,6 +943,9 @@ msgstr "No se pudo cargar la imagen"
 
 msgid "Could not move the playlist."
 msgstr "No se pudo mover la playlist."
+
+msgid "Could not read the analysis inventory."
+msgstr "No se pudo leer el inventario de análisis."
 
 msgid "Could not save the folder. Please try again."
 msgstr "No se pudo guardar la carpeta. Inténtalo de nuevo."
@@ -1970,6 +1979,9 @@ msgstr "Biblioteca local"
 msgid "Local only"
 msgstr "Solo local"
 
+msgid "Local tracks"
+msgstr "Pistas locales"
+
 msgid "Local — Chilpa"
 msgstr "Local — Chilpa"
 
@@ -2114,11 +2126,20 @@ msgstr "Análisis de Mood cancelado."
 msgid "Mood analysis stopped: {}"
 msgstr "Se detuvo el análisis Mood: {}"
 
+msgid "Mood done"
+msgstr "Mood completado"
+
 msgid "Mood is off. Enable it in Mood models."
 msgstr "Mood está apagado. Actívalo en Modelos Mood."
 
 msgid "Mood models"
 msgstr "Modelos Mood"
+
+msgid "Mood pending"
+msgstr "Mood pendiente"
+
+msgid "Mood stored"
+msgstr "Mood guardado"
 
 msgid "Mood: {} tracks analyzed, {} playlists updated"
 msgstr "Mood: {} pistas analizadas, {} listas actualizadas"
@@ -3281,6 +3302,9 @@ msgstr "Buscar en estos episodios"
 msgid "Search this page…"
 msgstr "Buscar en esta página…"
 
+msgid "Search title, artist or album"
+msgstr "Buscar título, artista o álbum"
+
 msgid "Searching MusicBrainz for {genre} artists…"
 msgstr "Buscando artistas de {genre} en MusicBrainz…"
 
@@ -3295,6 +3319,9 @@ msgstr "Buscar…"
 
 msgid "See all"
 msgstr "Ver todo"
+
+msgid "See which local tracks have analysis results and which are pending."
+msgstr "Consulta qué pistas locales tienen análisis y cuáles están pendientes."
 
 msgid "See {} more"
 msgid_plural "See {} more"
@@ -3424,6 +3451,9 @@ msgstr "Mostrar traducción"
 msgid "Show/Hide Window"
 msgstr "Mostrar/Ocultar ventana"
 
+msgid "Showing"
+msgstr "Mostrando"
+
 msgid "Shuffle"
 msgstr "Aleatorio"
 
@@ -3501,6 +3531,15 @@ msgstr "Español"
 
 msgid "Spectrum"
 msgstr "Espectro"
+
+msgid "Standard analyzed"
+msgstr "Análisis normal completado"
+
+msgid "Standard done"
+msgstr "Análisis normal completo"
+
+msgid "Standard pending"
+msgstr "Análisis normal pendiente"
 
 msgid "Start"
 msgstr "Empezar"

@@ -7,6 +7,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/stats/qml/Patterns" as AnalysisUi
 
 TitledFlow {
     id: section
@@ -17,6 +18,7 @@ TitledFlow {
     PlaylistFolderDialog { id: folderEditor }
     SidebarPlaylistActions { id: playlistActions; sidebar: sampleSidebar }
     ServerSetupDialog { id: serverSetup }
+    AnalysisUi.AnalysisInventoryDialog { id: inventoryPreview }
     CastPicker { id: castPreview; preview: true }
 
     SystemControls {}
@@ -53,6 +55,7 @@ TitledFlow {
             PillButton { text: "Edit playlist modal"; enabled: false; onClicked: playlistEditor.show(0) }
             PillButton { text: I18n.tr("Play on", I18n.rev); onClicked: castPreview.show(this) }
             PillButton { text: "Add server modal"; onClicked: serverSetup.open() }
+            PillButton { text: "Analysis inventory"; onClicked: inventoryPreview.show() }
         }
         Toast { visible: true; message: "Playback failed" }
     }
