@@ -40,6 +40,7 @@ ScrollBar {
             area.height = Qt.binding(function() { return sideways ? gutter + bar.height : viewport.height })
         }
         Qt.callLater(function() {
+            if (!bar || !bar.viewport) return
             // Keep the bar inside clipped pages. A positive gutter uses a
             // free margin beside the viewport.
             parent = overlayParent || (gutter < 0 ? viewport : viewport.parent)

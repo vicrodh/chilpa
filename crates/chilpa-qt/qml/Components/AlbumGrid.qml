@@ -23,6 +23,8 @@ Item {
     property real scrollGutter: Metrics.pageGutter
     // Artists: round portraits, the name centered (design/03 ArtistCard).
     property bool round: false
+    property var roundIds: []
+    function isRound(albumId) { return round || roundIds.includes(albumId) }
     // Room below the last row, for what floats over the grid.
     property int bottomInset: 0
     // The artist whose page holds the grid: its menu does not lead there.
@@ -50,9 +52,9 @@ Item {
     function clicked(at, albumId, title, modifiers, available) {
         if (!available)
             AlbumActions.explain(albumId)
-        else if (!grid.round && (modifiers !== 0 || AlbumActions.selectedCount > 0))
+        else if (!grid.isRound(albumId) && (modifiers !== 0 || AlbumActions.selectedCount > 0))
             grid.model.select(at, modifiers === 0 ? 1 : modifiers)
-        else if (!grid.round && !grid.list && SettingsModel.quickViewClick)
+        else if (!grid.isRound(albumId) && !grid.list && SettingsModel.quickViewClick)
             toggleQuick(at)
         else {
             grid.model.prepareOpen(at)
@@ -162,21 +164,21 @@ Item {
                     year: visible ? grid.model.year(at, rev) : ""
                     art: visible ? grid.model.art(at, rev) : ""
                     artColors: visible && albumId < 0 && String(art) === "" ? JSON.parse(Sources.artColors(albumId, rev) || "[]") : []
-                    qualityInfo: visible && !grid.round ? JSON.parse(AlbumActions.quality(albumId, rev) || "{}") : ({})
+                    qualityInfo: visible && !round ? JSON.parse(AlbumActions.quality(albumId, rev) || "{}") : ({})
                     tint: at
-                    round: grid.round
+                    round: grid.isRound(albumId)
                     fresh: grid.model && grid.model.fresh >= 0 && at >= grid.model.fresh
                     freshAt: grid.freshAt
-                    selected: !grid.round && AlbumActions.selected(albumId, AlbumActions.rev)
-                    selecting: !grid.round && AlbumActions.selectedCount > 0
+                    selected: !round && AlbumActions.selected(albumId, AlbumActions.rev)
+                    selecting: !round && AlbumActions.selectedCount > 0
                     expanded: grid.model.expanded === at
-                    available: grid.round || !visible || AlbumActions.available(albumId, rev)
+                    available: round || !visible || AlbumActions.available(albumId, rev)
                     onClicked: (modifiers) => grid.clicked(at, albumId, title, modifiers, available)
                     // A record that stops playing closes its quick view too.
                     onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
                     onQuick: grid.toggleQuick(at)
                     onMenu: (x, y) => {
-                        if (grid.round || !available)
+                        if (round || !available)
                             return
                         const p = mapToItem(grid, x, y)
                         albumMenu.show(albumId, title, subtitle, at, p.x, p.y)

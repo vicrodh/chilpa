@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import app.chilpa.folders
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/SectionChoices.js" as SectionChoices
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "../Components"
@@ -33,12 +34,11 @@ ListView {
         { id: "everywhere.recentPlaylists", title: I18n.tr("Recently listened playlists", I18n.rev), configTitle: I18n.tr("Recently listened playlists, all sources", I18n.rev), kind: "playlists", allSources: true },
         { id: "library.recentlyAdded", title: I18n.tr("Recently added", I18n.rev), kind: "albums", source: "recentlyAdded" },
         { id: "library.mostPlayed", title: I18n.tr("Most played", I18n.rev), kind: "tracks" }
-    ].concat(remote.sections.map(section => Object.assign({}, section, { id: "source:" + section.homeId, kind: "shelf" })))
+    ].concat(remote.sections.map(section => Object.assign({}, section, { id: "source:" + section.homeId, kind: "shelf",
+        previous_ids: (section.previous_ids || []).map(id => "source:" + section.sourceId + ":" + id) })))
     // The kept choice over what there is today: a shelf that went is left
     // out, and a new one comes last, shown.
-    readonly property var sections: kept.map(choice => Object.assign({}, available.find(s => s.id === choice.id) || {}, choice))
-        .filter(choice => available.some(s => s.id === choice.id))
-        .concat(available.filter(s => !kept.some(choice => choice.id === s.id)))
+    readonly property var sections: SectionChoices.order(available, kept)
     // I update rows by id so a late source shelf does not remount the Home
     // shelves already on screen. Replacing a JS array model discarded them.
     KeyedModel {
@@ -91,69 +91,7 @@ ListView {
         SectionHeader { width: parent.width; title: tracks.entry.title || "" }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; showPlays: true; model: most }
     }
-    component PlaylistShelf: Column {
-        id: shelf
-        property var entry: ({})
-        readonly property bool ready: true
-        readonly property var lists: JSON.parse(Playlists.recent(entry.allSources === true, entry.size || Metrics.shelfLimit, Playlists.rev + Library.listeningRev + Library.remoteRev) || "[]")
-        readonly property var panels: JSON.parse(Sources.snapshot || "{}").panels || []
-        readonly property bool shown: lists.length > 0
-        spacing: Metrics.gap8
-        SectionHeader { width: parent.width; title: shelf.entry.title || "" }
-        Flickable {
-            width: parent.width; height: cards.implicitHeight + Metrics.gap8
-            contentWidth: cards.width; contentHeight: height; clip: true
-            interactive: contentWidth > width; flickableDirection: Flickable.HorizontalFlick
-            boundsBehavior: Flickable.StopAtBounds
-            Row {
-                id: cards; spacing: Metrics.gridGap
-                Repeater {
-                    model: shelf.lists
-                    Column {
-                        required property var modelData
-                        width: Metrics.cardMinWidth; spacing: Metrics.gap4
-                        Item {
-                            width: parent.width; height: width
-                            ArtTile {
-                                id: cover; anchors.fill: parent
-                                source: modelData.artwork_path ? modelData.artwork_path.indexOf("://") >= 0
-                                    ? modelData.artwork_path
-                                    : "file://" + modelData.artwork_path.split("/").map(encodeURIComponent).join("/") : ""
-                            }
-                            PlaylistCollage {
-                                anchors.fill: parent; visible: !cover.ready && (modelData.covers || []).length > 0
-                                covers: modelData.covers || []
-                            }
-                            Icon {
-                                anchors.centerIn: parent; visible: !cover.ready && !(modelData.covers || []).length
-                                glyph: Icons.playlist; size: Metrics.iconPlay; color: Theme.color.textSecondary
-                            }
-                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Playlists.open(modelData.id) }
-                            IconButton {
-                                anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: Metrics.gap8
-                                round: true; glyph: Icons.playerPlayFilled; filled: true
-                                tip: I18n.tr("Play", I18n.rev)
-                                onClicked: Playlists.play(modelData.id, false)
-                            }
-                        }
-                        Text { width: parent.width; text: modelData.name || ""; elide: Text.ElideRight; font.pointSize: Type.body; color: Theme.color.textPrimary }
-                        Row {
-                            id: sourceLabel
-                            width: parent.width; spacing: Metrics.gap4
-                            SourceIcon {
-                                id: providerIcon
-                                readonly property var panel: shelf.panels.find(panel => panel.id === modelData.source) || ({})
-                                visible: !!modelData.source
-                                sourceInfo: ({icon: panel.icon_image || panel.icon || ""})
-                                width: visible ? Metrics.iconSm : 0; height: Metrics.iconSm
-                            }
-                            Text { width: sourceLabel.width - providerIcon.width - sourceLabel.spacing; text: modelData.mixed ? "Chilpa" : modelData.provider || ""; elide: Text.ElideRight; font.pointSize: Type.meta; color: Theme.color.textSecondary }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    component PlaylistShelf: HomePlaylistShelf {}
     // A source's shelf, cut to the size chosen.
     component SourceRail: SourceShelf {
         property var entry: ({})

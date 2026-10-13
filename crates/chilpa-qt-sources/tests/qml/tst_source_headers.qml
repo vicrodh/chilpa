@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import app.chilpa
 import app.chilpa.sources
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../../qml/Patterns"
 import "../../qml/Screens"
 
@@ -55,6 +56,31 @@ TestCase {
         verify(!button.enabled)
         shelf.section = was
         verify(findText(shelf, "Load more").enabled)
+    }
+    Component { id: contextMaker; SourceShelf { width:1100; section:({id:"context",key:"fixture native:home|context",kind:"album",
+        header:{kind:"album",ref:"album:seed",title:"Seed"},header_key:"fixture native:home|context-header"}) } }
+    function test_recommendation_context_has_the_library_card_and_its_actions() {
+        Sources.show({cards:{"-1":{plugin:"fixture",ref:"album:seed",favorite:false}}})
+        SettingsModel.quickViewClick = false
+        const module = createTemporaryObject(contextMaker, this)
+        const context = findChild(module, "sourceContextCard")
+        verify(context)
+        tryVerify(() => findChild(context, "albumTitle") !== null)
+        const card = findChild(context, "albumTitle").parent.parent
+        compare(card.width, CardLayout.cardWidth)
+        mouseClick(card, card.width / 2, card.width / 2)
+        compare(Navigation.page, "album")
+        compare(Navigation.selectedId, -1)
+        mouseMove(card, card.width / 2, card.width / 2)
+        tryVerify(() => findChild(card, "albumFavorite") !== null)
+        const favorite = findChild(card, "albumFavorite")
+        verify(favorite.visible)
+        mouseClick(favorite)
+        compare(Sources.asked[Sources.asked.length - 1], ["native", "fixture", JSON.stringify({action:"favorite",ref:"album:seed",on:true})])
+        const quick = findChild(context, "albumQuickLoader")
+        card.quick()
+        tryCompare(quick, "active", true)
+        compare(quick.width, context.width - Metrics.cardRing * 2)
     }
     // A page read again with the same shelves keeps each shelf's item on
     // screen; only a shelf that comes or goes is built or dropped.

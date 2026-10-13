@@ -24,6 +24,18 @@ TestCase {
         records.kind = ""
         records.rev++
     }
+    function test_mixed_module_artist_opens_without_album_quick_view() {
+        records.kind = "source"; records.rev++
+        grid.roundIds = [-1]
+        SettingsModel.quickViewClick = true
+        records.expanded = -1
+        grid.clicked(0, -1, "Artist", 0, true)
+        compare(records.expanded, -1)
+        grid.clicked(1, -2, "Record", 0, true)
+        compare(records.expanded, 1)
+        grid.roundIds = []; SettingsModel.quickViewClick = false
+        records.expanded = -1; records.kind = ""; records.rev++
+    }
     // Beside a source's records the library's own wear the player's badge; alone, none.
     function test_the_records_of_the_library_wear_the_players_badge_beside_a_source() {
         tryVerify(() => findChild(grid, "albumAnimatedCover") !== null, 1000, "the grid laid its cards out")
