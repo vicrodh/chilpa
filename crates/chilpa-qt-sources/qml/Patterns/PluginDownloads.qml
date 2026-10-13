@@ -174,7 +174,7 @@ Item {
             readonly property var modelData: entry
             width: cards.cellWidth - Metrics.gridGap; height: cards.cellHeight - Metrics.gridGap
             sourceComponent: view.purchaseCard
-            Binding { target: cardLoader.item; property: "record"; value: cardLoader.modelData; when: !!cardLoader.item }
+            Binding { target: cardLoader.item; property: "record"; value: Object.assign({}, cardLoader.modelData, {plugin:view.plugin.id}); when: !!cardLoader.item }
             Connections { target: cardLoader.item; function onOpened() { view.action({action:"select_album",id:cardLoader.modelData.id}) } }
         }
     }

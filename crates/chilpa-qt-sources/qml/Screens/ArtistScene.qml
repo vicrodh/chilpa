@@ -10,19 +10,10 @@ Item {
     id: root
     readonly property var doc: JSON.parse(Sources.scene(Library.remoteRev) || "{}")
     readonly property var sourceLanes: doc.sources || []
-    property string sourceId: ""
-    readonly property var activeSource: sourceLanes.find(function (lane) { return lane.id === sourceId }) || sourceLanes[0] || ({})
-    readonly property var allArtists: activeSource.artists || doc.artists || []
-    readonly property var shownDoc: {
-        var copy = Object.assign({}, doc)
-        if (doc.state === "ready" && activeSource.state === "error") {
-            copy.state = "error"
-            copy.error = activeSource.error || I18n.tr("This catalog could not be reached.", I18n.rev)
-        }
-        if (activeSource.state === "partial") copy.error = activeSource.error
-        copy.hasMore = activeSource.hasMore === true
-        return copy
-    }
+    readonly property var allArtists: doc.artists || []
+    readonly property var shownDoc: Object.assign({}, doc, {
+        error: doc.error || sourceLanes.filter(lane => lane.error).map(lane => lane.name + ": " + lane.error).join("\n")
+    })
     readonly property bool ready: doc.state === "ready"
     readonly property bool canBrowse: allArtists.some(function (artist) { return (artist.sources || []).length > 0 })
     property string mode: "grid"
@@ -31,7 +22,6 @@ Item {
     property var activeGenres: []
     property bool genrePopupOpen: false
     property string selectedArtistId: ""
-    onSourceIdChanged: { activeGenres = []; searchQuery = ""; selectedArtistId = ""; genrePopupOpen = false; mode = "grid" }
     onCanBrowseChanged: if (!canBrowse) { mode = "grid"; selectedArtistId = "" }
     readonly property string sceneTitle: doc.sceneLabel || ""
     readonly property string flagSource: doc.countryCode
@@ -96,9 +86,9 @@ Item {
         var out = []
         for (var g = 0; g < root.groups.length; ++g) {
             var group = root.groups[g]
-            if (root.groupingEnabled && group.key !== "") out.push({type:"header", key:group.key, count:group.artists.length})
+            if (root.groupingEnabled && group.key !== "") out.push({id:"heading:" + group.key, type:"header", key:group.key, count:group.artists.length})
             for (var i = 0; i < group.artists.length; i += root.columns)
-                out.push({type:"row", key:group.key, artists:group.artists.slice(i, i + root.columns)})
+                out.push({id:"artist:" + group.artists[i].mbid, type:"row", key:group.key, artists:group.artists.slice(i, i + root.columns)})
         }
         return out
     }
@@ -114,11 +104,16 @@ Item {
             return
         }
     }
+    function openSource(source) {
+        if (source.local) Navigation.openArtist(source.key)
+        else if (source.plugin && source.ref) Navigation.goKey("source", source.plugin + " native:" + source.ref)
+    }
     function openArtist(artist) {
         var first = (artist.sources || [])[0]
-        if (first && first.plugin && first.ref) Navigation.goKey("source", first.plugin + " native:" + first.ref)
+        if (first) openSource(first)
         else Navigation.openArtist(artist.title || "")
     }
+    KeyedModel { id: sceneRows; items: root.rowModel }
     Component.onDestruction: Sources.sceneClose()
 
     SceneState {
@@ -126,20 +121,11 @@ Item {
         onRetry: Sources.sceneRetry()
         onMore: Sources.sceneMore()
     }
-    SceneSourceTabs {
-        id: sourceTabs
-        objectName: "sceneSourceTabs"
-        x: Metrics.scenePadLeft; y: 0
-        width: parent.width - Metrics.scenePadTotal
-        visible: root.ready && root.doc.includeSources === true && root.sourceLanes.length > 0
-        sources: root.sourceLanes; currentId: root.activeSource.id || ""
-        onSelected: (id) => root.sourceId = id
-    }
     Item {
         id: content
-        x: 0; y: sourceTabs.visible ? sourceTabs.height : 0
+        x: 0; y: 0
         width: parent.width; height: parent.height - y
-        visible: ready && root.activeSource.state !== "error" && allArtists.length > 0
+        visible: ready && allArtists.length > 0
         Item {
             id: compact
             x: Metrics.scenePadLeft; width: parent.width - Metrics.scenePadTotal; height: root.heroScrolledPast ? Metrics.sceneCompactHeight : 0
@@ -185,7 +171,7 @@ Item {
                 ListView {
                     id: grid
                     anchors.fill: parent; clip: true; boundsBehavior: Flickable.StopAtBounds
-                    model: root.rowModel; cacheBuffer: (root.cardH + root.rowGap) * 2
+                    model: sceneRows; cacheBuffer: (root.cardH + root.rowGap) * 2
                     NumberAnimation { id: jumpAnimation; target: grid; property: "contentY"; duration: Metrics.sceneJumpDuration; easing.type: Easing.OutCubic }
                     header: SceneHero {
                         width: grid.width; title: root.sceneTitle; artistName: root.doc.artistName || ""
@@ -193,7 +179,8 @@ Item {
                     }
                     delegate: Item {
                         id: row
-                        required property var modelData
+                        required property var entry
+                        readonly property var modelData: entry
                         readonly property bool heading: modelData.type === "header"
                         width: grid.width; height: heading ? root.headerH : root.cardH + root.rowGap
                         Text { visible: row.heading; y: 12; text: (row.modelData.key || "").toUpperCase(); font.pointSize: Type.meta; font.weight: Type.semibold; color: Theme.color.textTertiary }
@@ -201,17 +188,24 @@ Item {
                         Row {
                             visible: !row.heading; spacing: root.cardGap
                             Repeater {
-                                model: row.heading ? [] : row.modelData.artists || []
-                                SceneArtistCard { required property var modelData; artist: modelData; onActivated: root.openArtist(modelData) }
+                                model: row.heading ? 0 : root.columns
+                                SceneArtistCard {
+                                    required property int index
+                                    artist: (row.modelData.artists || [])[index] || ({})
+                                    visible: index < (row.modelData.artists || []).length
+                                    onActivated: root.openArtist(artist)
+                                    onSourceActivated: source => root.openSource(source)
+                                }
                             }
                         }
                     }
                     footer: Item {
-                        width: grid.width; height: Metrics.sceneFooterHeight
+                        width: grid.width; height: Math.max(Metrics.sceneFooterHeight, footerBody.implicitHeight + Metrics.gap24)
                         Column {
-                            anchors.horizontalCenter: parent.horizontalCenter; spacing: Metrics.gap12
-                            Text { visible: !!root.shownDoc.error; text: root.shownDoc.error || ""; color: Theme.color.statusNegative }
-                            PillButton { visible: root.activeSource.hasMore === true && root.doc.loadingMore !== true; text: I18n.tr("Load more", I18n.rev); onClicked: Sources.sceneMore() }
+                            id: footerBody
+                            width: parent.width; spacing: Metrics.gap12
+                            Text { width: parent.width; wrapMode: Text.WordWrap; visible: !!root.shownDoc.error; text: root.shownDoc.error || ""; color: Theme.color.statusNegative }
+                            PillButton { visible: root.doc.hasMore === true && root.doc.loadingMore !== true; text: I18n.tr("Load more", I18n.rev); onClicked: Sources.sceneMore() }
                             Text { visible: root.doc.loadingMore === true; text: I18n.tr("Loading…", I18n.rev) + " " + (root.doc.progress?.percentage || 0) + "%"; color: Theme.color.textSecondary }
                         }
                     }

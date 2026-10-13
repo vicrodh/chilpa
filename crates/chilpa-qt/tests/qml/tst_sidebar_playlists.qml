@@ -18,7 +18,7 @@ TestCase {
             {id: 2, name: "Mixed", playlist_count: 2, color: "accent", position: 1}],
             playlists: [
                 {id: -3, name: "Cloud", source: "com.test.cloud", provider: "Cloud", mixed: false,
-                    folder_id: 2, separate: true, visible_sidebar: true, track_count: 4,
+                    folder_id: 2, separate: false, visible_sidebar: true, track_count: 4,
                     artwork_path: "", covers: [], custom_position: 0, updated_at: 1},
                 {id: 7, name: "Local", source: "", provider: "Local", mixed: true,
                     folder_id: 2, separate: false, visible_sidebar: true, track_count: 2,

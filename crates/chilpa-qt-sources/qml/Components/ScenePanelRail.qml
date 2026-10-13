@@ -54,7 +54,7 @@ Item {
                     x: Metrics.gap8; anchors.verticalCenter: parent.verticalCenter
                     width: Metrics.scenePanelPortrait; height: width; radius: width / Metrics.gap2
                     readonly property var sourceRow: (entry.artist.sources || [])[0] || ({})
-                    source: sourceRow.plugin && sourceRow.image ? Sources.art(sourceRow.plugin, sourceRow.image, Library.remoteArtRev) : ""
+                    source: sourceRow.local ? sourceRow.image || "" : sourceRow.plugin && sourceRow.image ? Sources.art(sourceRow.plugin, sourceRow.image, Library.remoteArtRev) : ""
                 }
                 Icon { anchors.centerIn: portrait; visible: !portrait.ready; glyph: SourceGlyphs.musicArtist; iconFamily: SourceGlyphs.font; size: Metrics.iconXs; color: Theme.color.textTertiary }
                 Text {

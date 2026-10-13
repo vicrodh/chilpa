@@ -116,7 +116,7 @@ Item {
             Text { text: latest.section.title || ""; textFormat: Text.PlainText; font.pointSize: Type.section; font.weight: Type.heading; font.letterSpacing: Type.sectionTracking; color: Theme.color.textPrimary }
             AlbumCard {
                 width: CardLayout.cardWidth
-                albumId: one.albumId(0, one.rev); title: one.title(0, one.rev); subtitle: one.year(0, one.rev); art: one.art(0, one.rev)
+                albumId: one.albumId(0, one.rev); title: one.title(0, one.rev); subtitle: one.subtitle(0, one.rev); year: one.year(0, one.rev); art: one.art(0, one.rev)
                 sourceInfo: albumId < 0 ? (JSON.parse(AlbumActions.sources(albumId, one.rev) || "[]")[0] || {}) : ({})
                 qualityInfo: JSON.parse(AlbumActions.quality(albumId, one.rev) || "{}")
                 canExpand: false

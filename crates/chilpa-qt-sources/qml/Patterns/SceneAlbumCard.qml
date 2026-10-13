@@ -16,6 +16,8 @@ AlbumCard {
     height: implicitHeight
     title: album.title || ""
     subtitle: [album.artist || "", album.year || ""].filter(Boolean).join(" · ")
+    artistName: album.artist || ""
+    artistDestination: artistName && plugin ? ({target:"source",key:plugin + " " + (album.artist_ref ? "native:" + album.artist_ref : "matching-artist-v3:" + artistName)}) : ({})
     year: String(album.year || "")
     art: plugin && album.image ? Sources.art(plugin, album.image, Library.remoteArtRev) : ""
     sourceInfo: albumId ? (JSON.parse(AlbumActions.sources(albumId, Library.remoteRev) || "[]")[0] || {}) : ({})

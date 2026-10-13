@@ -3,6 +3,18 @@ use crate::Chilpa;
 use serde_json::{json, Value};
 
 impl Chilpa {
+    /// I resolve a card's credit only on interaction, without loading its tracks.
+    pub fn album_artist_link(&mut self, id: i64, name: &str) -> String {
+        let name = name.trim();
+        if name.is_empty() { return "{}".into(); }
+        let info = self.catalog.card(id).map(|card| {
+            if card.kind != crate::source_catalog::store::CardKind::Album { return Value::Null; }
+            let mut info = card.metadata; info["plugin"] = json!(card.plugin); info
+        });
+        if info.as_ref().is_some_and(Value::is_null) { return "{}".into(); }
+        let info = info.unwrap_or_else(|| json!({}));
+        person(name, info["artist_ref"].as_str().unwrap_or(""), &info).to_string()
+    }
     pub fn album_information(&mut self, id: i64) -> String {
         let Some(detail) = self.album_detail(id) else { return "{}".into(); };
         let mut info = self.catalog.card(id).map(|card| {

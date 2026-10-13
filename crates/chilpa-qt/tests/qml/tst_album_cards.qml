@@ -11,9 +11,22 @@ TestCase {
     visible: true
     width: 1000; height: 800
     AlbumCard { id: card; width: 180; height: 230; title: "Record"; qualityInfo: ({tier:3,label:"FLAC 24/96"}) }
+    property int albumClicks: 0
+    Connections { target: card; function onClicked() { albumClicks++ } }
     AlbumGridModel { id: records }
     AlbumGrid { id: grid; y: 260; width: 1400; height: 500; fitContent: true; model: records; viewportWidth: 700; viewportX: 320 }
     function initTestCase() { records.append({first:0,span:6,group:""}) }
+    function test_artist_name_opens_the_source_artist_without_opening_the_album() {
+        card.albumId = -7; card.subtitle = "Band"
+        AlbumActions.artistDestination = {target:"source",key:"fixture native:artist:7"}
+        const label = findChild(card, "albumCardArtist")
+        waitForRendering(label)
+        albumClicks = 0
+        mouseClick(label)
+        compare(Navigation.went, ["source", "fixture native:artist:7"])
+        compare(albumClicks, 0)
+        AlbumActions.artistDestination = {}; card.albumId = 0; card.subtitle = ""
+    }
     function test_remote_mix_card_shows_animated_art_with_empty_url() {
         Sources.show({artColors:{"-1":["#221725","#d17655","#f8dda7"]}})
         records.kind = "source"

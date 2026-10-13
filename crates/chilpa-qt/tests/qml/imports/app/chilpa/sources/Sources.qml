@@ -1,5 +1,6 @@
 pragma Singleton
 import QtQuick
+import app.chilpa
 QtObject {
     property int revision: 0
     property var state: ({ panels: [{ id: "radio", name: "Radio", icon: "broadcast" }], source: "radio", name: "Radio", crumbs: [], entries: [], searchable: true, loading: false, more: false, error: "" })
@@ -7,6 +8,7 @@ QtObject {
     readonly property string snapshot: JSON.stringify(state)
     function art(plugin, image, rev) { return "" }
     function artistKey(id, path) { return "" }
+    function artistLink(id, name) { return JSON.stringify(AlbumActions.artistDestination.key ? AlbumActions.artistDestination : {target:"artist",key:name}) }
     function card(id, rev) { return JSON.stringify((state.cards || {})[id] || {}) }
     function artColors(id, rev) { return JSON.stringify((state.artColors || {})[id] || []) }
     function albumLibraries(rev) { return JSON.stringify(state.albumLibraries || []) }

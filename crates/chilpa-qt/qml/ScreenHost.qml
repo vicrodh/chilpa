@@ -93,6 +93,7 @@ PageTransition {
             purchaseMode: true
             title: record.title || ""
             subtitle: record.artist || ""
+            artistDestination: record.artist && record.plugin ? ({target:"source",key:record.plugin + " " + (record.artist_ref ? "native:" + record.artist_ref : "matching-artist-v3:" + record.artist)}) : ({})
             year: record.year || ""
             art: record.image || ""
             available: record.downloadable !== false

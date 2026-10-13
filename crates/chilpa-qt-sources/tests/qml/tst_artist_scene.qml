@@ -10,6 +10,7 @@ TestCase {
     name: "ArtistScene"; when: windowShown; visible: true; width: 1100; height: 800
     Component { id: maker; ArtistScene { width: 1100; height: 800 } }
     Component { id: albumMaker; SceneAlbumCard { plugin: "fixture" } }
+    Component { id: cardMaker; SceneArtistCard {} }
     function init() {
         Sources.sceneDocument = {state:"ready",includeSources:true,sceneLabel:"Seattle scene",artistName:"Source artist",genreSummary:"grunge / post-punk",
             artists:[
@@ -67,6 +68,28 @@ TestCase {
         scene.selectedArtistId = "b"
         compare(albums.noSource, true)
     }
+    function test_local_releases_and_progress_keep_the_existing_artist_card() {
+        const local = {mbid:"local",title:"Local Band",genres:["rock"],sources:[{local:true,name:"Chilpa",key:"Local Band"}]}
+        Sources.sceneDocument = {state:"ready",includeSources:true,artists:[local],loadingMore:true}
+        Library.remoteRev++
+        const scene = createTemporaryObject(maker, this)
+        waitForRendering(scene)
+        const card = findChild(scene, "sceneArtistCard")
+        verify(card !== null)
+        Sources.sceneDocument = {state:"ready",includeSources:true,artists:[Object.assign({}, local, {sources:local.sources.concat([{plugin:"fixture",name:"Fixture",ref:"artist:7"}])})],loadingMore:true}
+        Library.remoteRev++
+        tryVerify(() => findChild(card, "sceneArtistSource_fixture") !== null)
+        compare(findChild(scene, "sceneArtistCard"), card, "a late source keeps the existing card and portrait alive")
+        scene.mode = "sidepanel"; scene.selectedArtistId = "local"
+        const panel = findChild(scene, "scenePanel")
+        compare(panel.source.local, true)
+        verify(findChild(scene, "sceneLocalAlbums").visible)
+        verify(!findChild(scene, "scenePanelAlbums").visible)
+        panel.selectedPlugin = "fixture"
+        compare(panel.pageKey, "fixture native:artist:7")
+        verify(!findChild(scene, "sceneLocalAlbums").visible)
+        verify(findChild(scene, "scenePanelAlbums").visible)
+    }
     function test_without_plugin_matches_keeps_the_grid() {
         const scene = createTemporaryObject(maker, this)
         waitForRendering(scene)
@@ -84,10 +107,10 @@ TestCase {
                 sources:[{plugin:"catalog_a",ref:"artist:" + i}]})
         var few = []
         for (var j = 0; j < 5; ++j)
-            few.push({mbid:"a" + j,title:"Apple artist " + j,genres:["soul"],
+            few.push({mbid:"a" + j,title:"Limited artist " + j,genres:["soul"],
                 sources:[{plugin:"catalog_c",ref:"artist:us:" + j}]})
         Sources.sceneDocument = {state:"ready",includeSources:true,sceneLabel:"United Kingdom",artistName:"David Bowie",
-            genreSummary:"rock",sources:[
+            genreSummary:"rock",artists:many.concat(few),sources:[
                 {id:"catalog_a",name:"Catalog A",state:"ready",artists:many,hasMore:true},
                 {id:"catalog_b",name:"Catalog B",state:"error",error:"Authentication required",artists:[],hasMore:false},
                 {id:"catalog_c",name:"Catalog C",state:"ready",artists:few,hasMore:false}
@@ -95,21 +118,29 @@ TestCase {
         Library.remoteRev++
         const scene = createTemporaryObject(maker, this)
         waitForRendering(scene)
-        verify(findChild(scene, "sceneSourceTabs").visible)
-        compare(scene.activeSource.id, "catalog_a")
-        compare(scene.allArtists.length, 94)
-        compare(scene.availableGenres.sort(), ["art rock", "glam rock"])
-        compare(findChild(scene, "sceneGenreFilter").genres.sort(), ["art rock", "glam rock"])
+        compare(findChild(scene, "sceneSourceTabs"), null)
+        compare(scene.allArtists.length, 99)
+        compare(scene.availableGenres.sort(), ["art rock", "glam rock", "soul"])
+        compare(findChild(scene, "sceneGenreFilter").genres.sort(), ["art rock", "glam rock", "soul"])
         scene.activeGenres = ["glam rock"]
         compare(scene.filteredArtists.length, 47)
-        scene.sourceId = "catalog_c"
-        compare(scene.allArtists.length, 5)
-        compare(scene.availableGenres, ["soul"])
-        compare(findChild(scene, "sceneGenreFilter").genres, ["soul"])
-        compare(scene.activeGenres, [], "switching catalog clears stale genre filters")
-        scene.sourceId = "catalog_b"
-        compare(scene.shownDoc.state, "error")
-        compare(scene.shownDoc.error, "Authentication required")
+        scene.activeGenres = ["soul"]
+        compare(scene.filteredArtists.length, 5)
+        compare(scene.shownDoc.state, "ready", "one unavailable source must not hide the unified scene")
+        verify(scene.shownDoc.error.includes("Catalog B: Authentication required"))
+    }
+    function test_each_source_button_opens_its_own_artist_without_following_the_default() {
+        const card = createTemporaryObject(cardMaker, this, {artist:{mbid:"same",title:"Band",sources:[
+            {local:true,name:"Chilpa",key:"Local Band"},{plugin:"first",name:"First",ref:"artist:7"},{plugin:"second",name:"Second",ref:"artist:8"}]}})
+        let whole = 0
+        card.activated.connect(() => whole++)
+        card.sourceActivated.connect(source => source.local ? Navigation.openArtist(source.key) : Navigation.goKey("source", source.plugin + " native:" + source.ref))
+        waitForRendering(card)
+        mouseClick(findChild(card, "sceneArtistSource_second"))
+        compare(Navigation.went, ["source", "second native:artist:8"])
+        mouseClick(findChild(card, "sceneArtistSource_library"))
+        compare(Navigation.went, ["artist", "Local Band"])
+        compare(whole, 0)
     }
     function test_album_action_accepts_opaque_storefront_refs() {
         const card = createTemporaryObject(albumMaker, this)

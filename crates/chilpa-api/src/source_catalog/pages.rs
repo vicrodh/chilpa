@@ -354,6 +354,19 @@ impl crate::Chilpa {
 mod tests {
     use super::*;
     #[test]
+    fn card_artist_links_keep_source_identity_without_opening_the_record() {
+        let mut api = crate::Chilpa::new();
+        let id = api.catalog.lock().store.take_item("fixture", &json!({"kind":"album","ref":"album:1","title":"Record",
+            "artist":"Band","artist_ref":"artist:us:7"}), 1).unwrap();
+        let link: Value = serde_json::from_str(&api.album_artist_link(id, "Band")).unwrap();
+        assert_eq!(link["target"], "source");
+        assert_eq!(link["key"], "fixture native:artist:us:7");
+        assert!(api.catalog.card(id).unwrap().tracks.is_none(), "following a credit must not fetch an album's tracks");
+        assert_eq!(serde_json::from_str::<Value>(&api.album_artist_link(1, "Local Band")).unwrap()["key"], "Local Band");
+        let playlist = api.catalog.lock().store.take_item("fixture", &json!({"kind":"playlist","ref":"playlist:1","title":"List","artist":"Owner"}), 1).unwrap();
+        assert_eq!(api.album_artist_link(playlist, "Owner"), "{}");
+    }
+    #[test]
     fn a_sources_track_finds_its_artist_by_name_when_its_source_names_none() {
         let mut app = crate::Chilpa::new();
         let path = crate::source_opener::entry_of("fixture", "track:1");

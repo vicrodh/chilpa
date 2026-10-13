@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
@@ -52,6 +53,20 @@ Item {
         x: rail.width + Metrics.hairline; y: sourcePicker.visible ? Metrics.sceneNavHeight : 0
         width: Math.max(0, parent.width - x); height: parent.height - y
         artist: panel.selectedArtist; source: panel.source; document: panel.page; includeSources: panel.includeSources
+        visible: panel.source.local !== true
         onArtistOpened: panel.artistOpened(panel.selectedArtist)
+    }
+    ScrollView {
+        id: localAlbums
+        objectName: "sceneLocalAlbums"
+        visible: panel.source.local === true
+        x: rail.width + Metrics.scenePanelPadLeft; y: sourcePicker.visible ? Metrics.sceneNavHeight : 0
+        width: Math.max(0, parent.width - x - Metrics.scenePanelPadLeft); height: parent.height - y
+        contentWidth: availableWidth; clip: true
+        ScrollBar.vertical: ViewportScrollBar {}
+        SourceShelf {
+            width: localAlbums.availableWidth; modelKind: "artist"; wrap: true
+            section: ({title:I18n.tr("Albums", I18n.rev),kind:"album",model_key:panel.source.key || ""})
+        }
     }
 }
