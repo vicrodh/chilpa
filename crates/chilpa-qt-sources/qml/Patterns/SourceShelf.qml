@@ -24,15 +24,16 @@ Column {
     function albumIds() { const ids = []; for (let i = 0; i < cards.albums; i++) ids.push(cards.albumId(i, cards.rev)); return JSON.stringify(ids) }
     spacing: Metrics.gap12
     readonly property bool shown: !!section.error || cards.albums > 0 || tracks.count > 0
+    readonly property bool ready: cards.ready && (!tracks.kind || tracks.ready)
     // A page of the rail: the cards that fit across, as QBZ's rails step.
-    readonly property int viewportColumns: Math.max(Metrics.gridMinColumns, Math.floor((rail.width - Metrics.cardRing - Metrics.cardRing + Metrics.gridGap) / Metrics.cardMinWidth))
-    readonly property real viewportCardWidth: (rail.width - Metrics.cardRing - Metrics.cardRing - (viewportColumns - 1) * Metrics.gridGap) / viewportColumns
+    readonly property int viewportColumns: CardLayout.columns(rail.width)
+    readonly property real viewportCardWidth: CardLayout.cardWidth
     readonly property int railCards: Math.max(1, Math.min(section.size || 18, (section.items || []).length || cards.albums))
     readonly property real step: viewportColumns * (viewportCardWidth + Metrics.gridGap) // derived: whole library-sized cards and their gaps
     readonly property real farthest: Math.max(0, rail.contentWidth - rail.width)
     visible: shown
     AlbumGridModel { id: cards; kind: shelf.modelKind; key: shelf.modelKey; limit: shelf.wrap ? 0 : shelf.section.size || 18; columns: grid.columns; order: sorting.sort; group: sorting.grouping; filter: shelf.filter; contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev }
-    TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.modelKey : ""); limit: shelf.section.size || 6; filterRev: Library.remoteRev + Library.remoteArtRev; playingPath: Player.path }
+    TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.modelKey : ""); limit: shelf.section.size || Metrics.shelfTrackLimit; filterRev: Library.remoteRev + Library.remoteArtRev; playingPath: Player.path }
     TrackListModel { id: fullTracks; kind: tracks.kind; key: tracks.key; filterRev: Library.remoteRev + Library.remoteArtRev }
     SectionHeader {
         objectName: "shelfHeader"

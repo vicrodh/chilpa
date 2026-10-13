@@ -1,0 +1,2 @@
+module app.chilpa.playlists
+singleton AddToPlaylist 1.0 AddToPlaylist.qml

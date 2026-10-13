@@ -92,10 +92,7 @@ impl Chilpa {
         let needle = words(filter);
         let mut cards: Vec<Card> = self.catalog.cards(&shelf.cards).into_iter()
             .filter(|c| membership.is_empty() || shelf.membership.get(&c.id).is_some_and(|m| m.split(',').any(|m| m == membership)))
-            .filter(|c| {
-                let haystack = format!("{} {}", c.title, c.artist).to_lowercase();
-                needle.iter().all(|w| haystack.contains(w.as_str()))
-            })
+            .filter(|c| super::sorting::matches(c, &needle))
             .collect();
         super::sorting::sort_cards(&mut cards, order);
         if !matches!(group, "letter" | "artist" | "year" | "decade") {

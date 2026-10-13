@@ -12,6 +12,7 @@ Item {
     id: grid
 
     property AlbumGridModel model
+    readonly property alias scrollView: view
     // When the model last grew at the end: the cards that came then fade in.
     property real freshAt: 0
     Connections { target: grid.model; function onFreshChanged() { if (grid.model.fresh >= 0) grid.freshAt = Date.now() } }
@@ -38,8 +39,8 @@ Item {
     // scrollable plane on every edge instead of clipping boundary cards.
     readonly property real layoutWidth: Math.max(0, width - Metrics.cardRing * 2) // derived: a ring on both sides
     readonly property int columns: layoutWidth <= 0 ? 0 : list ? 1 : fixedColumns > 0 ? fixedColumns
-        : Math.max(Metrics.gridMinColumns, Math.floor((layoutWidth + Metrics.gridGap) / Metrics.cardMinWidth))
-    readonly property real cardWidth: columns > 0 ? (layoutWidth - (columns - 1) * Metrics.gridGap) / columns : 0
+        : CardLayout.columns(width)
+    readonly property real cardWidth: columns > 0 ? CardLayout.cardWidth : 0
     readonly property real rowHeight: list ? Metrics.rowRich : cardWidth + Metrics.cardTextGap + Metrics.cardTextHeight
 
     signal open(int albumId, string title)

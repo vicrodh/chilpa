@@ -17,7 +17,7 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 // thousand scroll like ten. With `source`, a source's listing on the same grid.
 Item {
     id: page
-    readonly property bool visualReady: all.ready
+    readonly property alias scrollView: grid.scrollView
 
     // "<plugin> <address>" of a source's listing, or empty for the library.
     property string source
@@ -195,5 +195,13 @@ Item {
         visible: page.source !== "" && all.albums === 0
         source: page.source
         about: page.about
+    }
+    ShelfSkeleton {
+        anchors.fill: grid
+        visible: !all.ready
+        tracks: page.rows
+        oneRow: false
+        count: page.rows ? Math.ceil(grid.height / Metrics.rowRich)
+            : grid.columns * Math.ceil(grid.height / Math.max(1, grid.rowHeight))
     }
 }

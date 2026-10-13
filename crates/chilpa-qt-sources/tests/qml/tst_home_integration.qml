@@ -18,11 +18,12 @@ TestCase {
                 {id:"empty",title:"Empty",items:[],enabled:true}
             ]})
         }
-        Sources.show({homeLibraries:[{id:"fixture",name:"Fixture"}]})
-        tryVerify(() => home.sections.length === 1)
+        Sources.show({homeLibraries:[{id:"fixture",name:"Fixture",enabled:true}]})
+        tryVerify(() => home.sections.length === 3)
+        compare(home.sections.filter(s => s.enabled && s.items.length).length, 1)
         compare(home.sections[0].title, "Fixture · Recently played")
         SettingsModel.keep("ui.source.fixture.discover.home", JSON.stringify([{id:"recent",enabled:false}]))
         home.refresh++
-        tryVerify(() => home.sections.length === 0)
+        tryVerify(() => home.sections.filter(s => s.enabled && s.items.length).length === 0)
     }
 }

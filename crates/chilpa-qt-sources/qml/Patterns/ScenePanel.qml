@@ -4,6 +4,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "../Components"
 
 // The two-column browse mode: a grouped artist rail and the
 // selected artist's release sections. The source page supplies the releases.

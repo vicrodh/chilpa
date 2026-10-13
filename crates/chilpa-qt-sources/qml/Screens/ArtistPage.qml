@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Components"
 import "../Patterns"
@@ -38,14 +39,8 @@ Item {
     onAboutChanged: if (!inLibrary) libraryKey = !local && header.plugin && header.ref ? header.plugin + " artist-library:" + header.ref : ""
     // The shelves by key, changed only when a shelf comes or goes, so a
     // page read again keeps every block where it was.
-    property var shelfKeys: []
-    onShelvesChanged: {
-        const keys = shelves.map(shelf => shelf.key || shelf.id)
-        if (keys.join("\n") !== shelfKeys.join("\n"))
-            shelfKeys = keys
-    }
-    Component.onCompleted: { shelvesChanged(); aboutChanged() }
-    function shelf(key) { return shelves.find(s => (s.key || s.id) === key) || ({}) }
+    KeyedModel { id: shelfRows; items: page.shelves }
+    Component.onCompleted: aboutChanged()
     function blockOf(id) {
         for (let i = 0; i < blocks.count; i++) {
             const item = blocks.itemAt(i)
@@ -89,11 +84,11 @@ Item {
             Item { id: jumpSlot; width: parent.width; height: Metrics.jumpBar }
             Repeater {
                 id: blocks
-                model: page.shelfKeys
+                model: shelfRows
                 Loader {
                     id: block
-                    required property string modelData
-                    readonly property var section: page.shelf(modelData)
+                    required property var entry
+                    readonly property var section: entry
                     readonly property string role: section.role || "shelf"
                     width: column.width - panel.width
                     // Each block says whether it has anything to show; its
@@ -120,7 +115,7 @@ Item {
             AlbumGridModel { id: one; kind: latest.section.model || "source"; key: latest.section.model_key || latest.section.key || ""; limit: 1; columns: 1; contentRev: Library.remoteRev + Library.remoteArtRev }
             Text { text: latest.section.title || ""; textFormat: Text.PlainText; font.pointSize: Type.section; font.weight: Type.heading; font.letterSpacing: Type.sectionTracking; color: Theme.color.textPrimary }
             AlbumCard {
-                width: Metrics.latestCard
+                width: CardLayout.cardWidth
                 albumId: one.albumId(0, one.rev); title: one.title(0, one.rev); subtitle: one.year(0, one.rev); art: one.art(0, one.rev)
                 sourceInfo: albumId < 0 ? (JSON.parse(AlbumActions.sources(albumId, one.rev) || "[]")[0] || {}) : ({})
                 qualityInfo: JSON.parse(AlbumActions.quality(albumId, one.rev) || "{}")

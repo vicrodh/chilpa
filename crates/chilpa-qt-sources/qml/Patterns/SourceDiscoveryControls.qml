@@ -57,7 +57,7 @@ Item {
             size: Metrics.button32; round: true
             glyph: Icons.settings
             tip: I18n.tr("Customize", I18n.rev)
-            onClicked: customization.open()
+            onClicked: { customization.active = true; customization.item.open() }
         }
     }
     Popup {
@@ -109,12 +109,15 @@ Item {
             }
         }
     }
-    SectionsCustomizer {
+    Loader {
         id: customization
-        sections: controls.sections
-        onToggled: (index, on) => controls.change(index, "enabled", on)
-        onSized: (index, size) => controls.change(index, "size", size)
-        onMoved: (index, delta) => controls.move(index, delta)
-        onRestored: { controls.preferences = []; SettingsModel.keep(controls.preference, "[]") }
+        active: false
+        sourceComponent: SectionsCustomizer {
+            sections: controls.sections
+            onToggled: (index, on) => controls.change(index, "enabled", on)
+            onSized: (index, size) => controls.change(index, "size", size)
+            onMoved: (index, delta) => controls.move(index, delta)
+            onRestored: { controls.preferences = []; SettingsModel.keep(controls.preference, "[]") }
+        }
     }
 }

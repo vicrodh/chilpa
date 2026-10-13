@@ -1,11 +1,11 @@
 import QtQuick
-import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
+import "../Patterns"
 Item {
     id: root
     readonly property var doc: JSON.parse(Sources.scene(Library.remoteRev) || "{}")

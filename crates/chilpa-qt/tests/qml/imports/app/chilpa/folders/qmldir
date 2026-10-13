@@ -1,0 +1,2 @@
+module app.chilpa.folders
+singleton LibraryFolders 1.0 LibraryFolders.qml

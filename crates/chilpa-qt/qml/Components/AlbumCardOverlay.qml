@@ -22,7 +22,8 @@ Rectangle {
     readonly property bool favorite: nativeInfo.plugin ? nativeInfo.favorite === true : Ratings.favorite("album", albumId, Ratings.rev)
     readonly property var sources: JSON.parse(AlbumActions.sources(albumId, Library.contentRev) || "[]")
     readonly property var information: JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}")
-    readonly property string genre: information.genre || ""
+    readonly property string genre: (Array.isArray(information.genres) && typeof information.genres[0] === "string"
+        ? information.genres[0] : information.genre || "").split(/[,;]+/)[0].trim()
     // "April 26, 1981" when the record's files or its source say the day.
     readonly property string released: information.released || year
 

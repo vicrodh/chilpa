@@ -6,6 +6,7 @@ import app.chilpa.sources
 import app.chilpa.folders
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "../Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 
@@ -13,16 +14,21 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 // last, the most played tracks, and the sources' own shelves after them.
 // Which show, in what order and how many each has, the listener chooses in
 // Customize, the same choice a source's page offers (the owner, 2026-10-12).
-Flickable {
+ListView {
     id: page
     property int homeRefresh: 0
     readonly property alias homeSections: remote.sections
     onVisibleChanged: if (visible) homeRefresh++
+    property bool presented: false
+    Connections {
+        target: page.Window.window
+        function onFrameSwapped() { if (page.visible) page.presented = true }
+    }
 
     readonly property string preference: "ui.home.sections"
     property var kept: []
     function restore() { try { kept = JSON.parse(SettingsModel.kept(preference) || "[]") } catch (_) { kept = [] } }
-    Component.onCompleted: { restore(); syncVisibleSections() }
+    Component.onCompleted: restore()
     readonly property var available: [
         { id: "library.recentlyPlayed", title: I18n.tr("Recently played", I18n.rev), kind: "albums", source: "recentlyPlayed" },
         { id: "everywhere.recentlyPlayed", title: I18n.tr("Recently played", I18n.rev), configTitle: I18n.tr("Recently played, all sources", I18n.rev), kind: "albums", source: "recentlyPlayedEverywhere" },
@@ -38,29 +44,11 @@ Flickable {
         .concat(available.filter(s => !kept.some(choice => choice.id === s.id)))
     // I update rows by id so a late source shelf does not remount the Home
     // shelves already on screen. Replacing a JS array model discarded them.
-    ListModel { id: visibleSections; dynamicRoles: true }
-    function syncVisibleSections() {
-        const wanted = sections.filter(section => section.enabled !== false
+    KeyedModel {
+        id: visibleSections
+        items: page.sections.filter(section => section.enabled !== false
             && (section.kind !== "shelf" || (section.items || []).length > 0))
-        for (let index = 0; index < wanted.length; index++) {
-            const signature = JSON.stringify(wanted[index])
-            let found = index
-            while (found < visibleSections.count && visibleSections.get(found).key !== wanted[index].id)
-                found++
-            if (found === visibleSections.count)
-                visibleSections.insert(index, { key: wanted[index].id, entry: wanted[index], signature: signature })
-            else {
-                if (found !== index) visibleSections.move(found, index, 1)
-                if (visibleSections.get(index).signature !== signature) {
-                    visibleSections.setProperty(index, "entry", wanted[index])
-                    visibleSections.setProperty(index, "signature", signature)
-                }
-            }
-        }
-        while (visibleSections.count > wanted.length)
-            visibleSections.remove(visibleSections.count - 1)
     }
-    onSectionsChanged: Qt.callLater(syncVisibleSections)
     function change(index, field, value) {
         const rows = sections.map(s => ({ id: s.id, enabled: s.enabled !== false, size: s.size || 0 }))
         rows[index][field] = value
@@ -76,8 +64,12 @@ Flickable {
     }
     function keep(rows) { kept = rows; SettingsModel.keep(preference, JSON.stringify(rows)) }
 
-    contentWidth: width
-    contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
+    model: visibleSections
+    clip: true
+    spacing: Metrics.gap8
+    cacheBuffer: height * 1.25 // derived: the viewport's runway, as the reference Home uses
+    topMargin: Metrics.contentTop
+    bottomMargin: Metrics.contentBottom
     boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ViewportScrollBar {}
 
@@ -85,6 +77,7 @@ Flickable {
     component AlbumShelf: Column {
         id: shelf
         property var entry: ({})
+        readonly property bool ready: records.ready
         readonly property bool shown: records.albums > 0
         spacing: Metrics.gap8
         AlbumGridModel { id: records; kind: shelf.entry.source || ""; contentRev: Library.contentRev; limit: shelf.entry.size || Metrics.shelfLimit; maxRows: shelf.entry.size ? 0 : 1; columns: grid.columns }
@@ -94,6 +87,7 @@ Flickable {
     component TrackShelf: Column {
         id: tracks
         property var entry: ({})
+        readonly property bool ready: most.ready
         readonly property bool shown: most.count > 0
         spacing: Metrics.gap8
         TrackListModel { id: most; kind: "mostPlayed"; filterRev: Library.contentRev; limit: tracks.entry.size || Metrics.mostPlayedLimit; playingPath: Player.path }
@@ -103,6 +97,7 @@ Flickable {
     component PlaylistShelf: Column {
         id: shelf
         property var entry: ({})
+        readonly property bool ready: true
         readonly property var lists: JSON.parse(Playlists.recent(entry.allSources === true, entry.size || Metrics.shelfLimit, Playlists.rev + Library.rev + Library.remoteRev + page.homeRefresh) || "[]")
         readonly property var panels: JSON.parse(Sources.snapshot || "{}").panels || []
         readonly property bool shown: lists.length > 0
@@ -168,84 +163,90 @@ Flickable {
         section: Object.assign({}, entry, { items: (entry.items || []).slice(0, entry.size || undefined) })
     }
 
-    Column {
-        id: column
-        x: Metrics.contentX
-        y: Metrics.contentTop
-        width: page.width - Metrics.contentX * 2 // derived: padding on both sides
-        spacing: Metrics.gap8
+    header: Item {
+        width: page.width
+        height: column.height + Metrics.gap8
+        Column {
+            id: column
+            x: Metrics.contentX
+            width: page.width - Metrics.contentX * 2 // derived: padding on both sides
+            spacing: Metrics.gap8
 
-        Item {
-            width: parent.width
-            height: homeTitle.height
+            Item {
+                width: parent.width
+                height: homeTitle.height
+                Text {
+                    id: homeTitle
+                    text: I18n.tr("Home", I18n.rev)
+                    font.pointSize: Type.title
+                    font.weight: Type.bold
+                    font.letterSpacing: Type.titleTracking
+                    color: Theme.color.textPrimary
+                }
+                IconButton {
+                    objectName: "homeCustomize"
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    size: Metrics.button32
+                    round: true
+                    glyph: Icons.settings
+                    tip: I18n.tr("Customize", I18n.rev)
+                    onClicked: { customization.active = true; customization.item.open() }
+                }
+            }
+
             Text {
-                id: homeTitle
-                text: I18n.tr("Home", I18n.rev)
-                font.pointSize: Type.title
-                font.weight: Type.bold
-                font.letterSpacing: Type.titleTracking
-                color: Theme.color.textPrimary
+                visible: remote.ready && LibraryFolders.count === 0 && remote.sections.length === 0
+                topPadding: Metrics.section
+                text: I18n.tr("Nothing here yet: add a folder to the library and its records show up here.", I18n.rev)
+                font.pointSize: Type.body
+                color: Theme.color.textSecondary
             }
-            IconButton {
-                objectName: "homeCustomize"
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                size: Metrics.button32
-                round: true
-                glyph: Icons.settings
-                tip: I18n.tr("Customize", I18n.rev)
-                onClicked: customizer.open()
+            PillButton {
+                visible: remote.ready && LibraryFolders.count === 0 && remote.sections.length === 0
+                kind: "primary"
+                glyph: Icons.folderPlus
+                text: I18n.tr("Add a folder", I18n.rev)
+                onClicked: Navigation.go("libraryFolders", 0)
             }
-        }
 
-        Text {
-            visible: LibraryFolders.count === 0 && remote.sections.length === 0
-            topPadding: Metrics.section
-            text: I18n.tr("Nothing here yet: add a folder to the library and its records show up here.", I18n.rev)
-            font.pointSize: Type.body
-            color: Theme.color.textSecondary
         }
-        PillButton {
-            visible: LibraryFolders.count === 0 && remote.sections.length === 0
-            kind: "primary"
-            glyph: Icons.folderPlus
-            text: I18n.tr("Add a folder", I18n.rev)
-            onClicked: Navigation.go("libraryFolders", 0)
-        }
-
-        Repeater {
-            model: visibleSections
-            Loader {
-                required property var entry
-                required property string key
-                objectName: "homeShelf"
-                width: column.width
-                // What the shelf says it has, not its `visible`: a child of a
-                // hidden Loader is hidden too, and the two would wait for
-                // each other.
-                visible: status === Loader.Ready && item.shown
-                sourceComponent: entry.kind === "albums" ? albumShelf : entry.kind === "playlists" ? playlistShelf : entry.kind === "tracks" ? trackShelf : sourceRail
-                onLoaded: item.entry = Qt.binding(() => entry)
-            }
-        }
-        SourceHomeSections { id: remote; width: parent.width; refresh: page.homeRefresh; rendered: false }
     }
+    delegate: Item {
+        required property var entry
+        required property string key
+        objectName: "homeShelf"
+        width: page.width
+        height: module.height
+        HomeSection {
+            id: module
+            x: Metrics.contentX
+            width: page.width - Metrics.contentX * 2 // derived: padding on both sides
+            entry: parent.entry
+            started: page.presented
+            content: entry.kind === "albums" ? albumShelf : entry.kind === "playlists" ? playlistShelf : entry.kind === "tracks" ? trackShelf : sourceRail
+        }
+    }
+    SourceHomeSections { id: remote; active: page.presented; refresh: page.homeRefresh; rendered: false }
     Component { id: albumShelf; AlbumShelf { width: parent ? parent.width : 0 } }
     Component { id: trackShelf; TrackShelf { width: parent ? parent.width : 0 } }
     Component { id: playlistShelf; PlaylistShelf { width: parent ? parent.width : 0 } }
     Component { id: sourceRail; SourceRail { width: parent ? parent.width : 0 } }
 
-    SectionsCustomizer {
-        id: customizer
-        objectName: "homeCustomizer"
-        grouped: true
-        sections: page.sections
-        groupSources: remote.sources
-        sizes: [{ value: "0", text: I18n.tr("One row", I18n.rev) }, { value: "6", text: "6" }, { value: "12", text: "12" }, { value: "18", text: "18" }, { value: "24", text: "24" }]
-        defaultSize: 0
-        onToggled: (index, on) => page.change(index, "enabled", on)
-        onSized: (index, size) => page.change(index, "size", size)
-        onMoved: (index, delta) => page.move(index, delta)
-        onRestored: page.keep([])
+    Loader {
+        id: customization
+        active: false
+        sourceComponent: SectionsCustomizer {
+            objectName: "homeCustomizer"
+            grouped: true
+            sections: page.sections
+            groupSources: remote.sources
+            sizes: [{ value: "0", text: I18n.tr("One row", I18n.rev) }, { value: "6", text: "6" }, { value: "12", text: "12" }, { value: "18", text: "18" }, { value: "24", text: "24" }]
+            defaultSize: 0
+            onToggled: (index, on) => page.change(index, "enabled", on)
+            onSized: (index, size) => page.change(index, "size", size)
+            onMoved: (index, delta) => page.move(index, delta)
+            onRestored: page.keep([])
+        }
     }
 }

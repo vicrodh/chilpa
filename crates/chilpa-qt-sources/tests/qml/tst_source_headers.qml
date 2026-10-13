@@ -76,12 +76,13 @@ TestCase {
         // Made with its page already there: the shelves show without a change.
         const home = createTemporaryObject(homeMaker, this)
         waitForRendering(home)
+        tryVerify(() => shelvesOf(home).length === 2)
         const before = shelvesOf(home)
         compare(before.length, 2)
         compare(before[0].section.items.length, 2)
         Sources.pages = { "fixture native:artist:1": page(4) }
         Library.remoteRev++
-        waitForRendering(home)
+        tryVerify(() => shelvesOf(home)[0].section.items.length === 4)
         const after = shelvesOf(home)
         compare(after.length, 2)
         verify(after[0] === before[0] && after[1] === before[1], "the same shelves stand")

@@ -1,9 +1,8 @@
 import QtQuick
 import "../Theme"
 
-// I keep the current page visible while the next one is built. A page may
-// still load its own data after construction, but navigation never exposes
-// an empty Loader or repeatedly remounts the page being left.
+// I replace the current page as soon as the destination shell is built.
+// Each page owns placeholders for its data; a source cannot delay navigation.
 Item {
     id: transition
     property string route: ""
@@ -13,6 +12,9 @@ Item {
     property bool frontA: true
     property string pendingRoute: ""
     property Component pendingComponent
+    property double requestedAt: 0
+    property bool awaitingFrame: false
+    LoggingCategory { id: timing; name: "chilpa.nav.timing"; defaultLogLevel: LoggingCategory.Warning }
 
     function request() { Qt.callLater(start) }
     onRouteChanged: request()
@@ -25,7 +27,6 @@ Item {
         const current = frontA ? first : second
         const next = frontA ? second : first
         if (route === committedRoute && current.sourceComponent === sourceComponent) {
-            revealGuard.stop()
             pendingRoute = ""
             pendingComponent = null
             next.sourceComponent = null
@@ -36,23 +37,21 @@ Item {
             return
         pendingRoute = route
         pendingComponent = sourceComponent
+        requestedAt = Date.now()
         next.sourceComponent = null
         next.sourceComponent = sourceComponent
-        revealGuard.restart()
     }
 
-    function present(next, timedOut) {
+    function present(next) {
         const current = frontA ? first : second
         if (next === current || next.sourceComponent !== pendingComponent || pendingRoute !== route)
             return
         if (!next.item)
             return
-        if (!timedOut && next.item.visualReady === false)
-            return
-        revealGuard.stop()
         frontA = next === first
         committedRoute = pendingRoute
         pendingRoute = ""
+        awaitingFrame = true
         current.sourceComponent = null
     }
 
@@ -63,11 +62,6 @@ Item {
         visible: transition.frontA
         onLoaded: transition.present(first)
     }
-    Connections {
-        target: first.item
-        ignoreUnknownSignals: true
-        function onVisualReadyChanged() { transition.present(first) }
-    }
     Loader {
         id: second
         anchors.fill: parent
@@ -76,14 +70,13 @@ Item {
         onLoaded: transition.present(second)
     }
     Connections {
-        target: second.item
-        ignoreUnknownSignals: true
-        function onVisualReadyChanged() { transition.present(second) }
-    }
-    Timer {
-        id: revealGuard
-        interval: 2500
-        onTriggered: transition.present(transition.frontA ? second : first, true)
+        target: transition.Window.window
+        function onFrameSwapped() {
+            if (!transition.awaitingFrame) return
+            transition.awaitingFrame = false
+            console.info(timing, "navigation: " + transition.committedRoute.split("\u001f")[1]
+                + " presented in " + (Date.now() - transition.requestedAt) + "ms")
+        }
     }
     Column {
         anchors.left: parent.left
