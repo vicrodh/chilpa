@@ -10,7 +10,18 @@ TestCase {
     visible: true
     width: 1000; height: 800
     SourceDiscoveryControls { id: controls; anchors.right: parent.right; about: ({plugin:"fixture",tab:"home",genres:[],shelves:[]}) }
-    function init() { controls.about = {plugin:"fixture",tab:"home",genres:[],shelves:[]} }
+    function init() { SettingsModel.keep("ui.source.fixture.discover.home", "[]"); controls.about = {plugin:"fixture",tab:"home",genres:[],shelves:[]} }
+    function test_every_source_defaults_to_one_row_and_preserves_an_explicit_count() {
+        controls.about = {plugin:"fixture",tab:"home",genres:[],shelves:[{id:"a",size:18},{id:"b",size:12}]}
+        compare(controls.sections.map(section => section.size), [0,0])
+        controls.change(0,"size",24)
+        compare(controls.sections[0].size,24)
+        controls.change(0,"size",0)
+        controls.change(0,"enabled",false)
+        controls.move(0,1)
+        compare(controls.sections[1].size,0)
+        compare(controls.sections[1].enabled,false)
+    }
     function test_missing_genres_hide_the_button_but_keep_customization() {
         verify(!findChild(controls, "discoveryGenres").visible)
         verify(findChild(controls, "discoveryCustomize").visible)

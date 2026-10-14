@@ -1,6 +1,8 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // A shelf of records inside a page: a title and one row of the same grid as
 // every other, so a record on a shelf has all a record has anywhere: its
@@ -14,6 +16,12 @@ Column {
     property string link
     // Artists: round portraits.
     property bool round: false
+    property int size: 0
+    property string sourceIcon: ""
+    readonly property int viewportColumns: CardLayout.columns(width)
+    readonly property int cardCount: Math.max(1, Math.min(model ? model.albums : 0, size || viewportColumns))
+    readonly property real farthest: Math.max(0, rail.contentWidth - rail.width)
+    readonly property real step: viewportColumns * (CardLayout.cardWidth + Metrics.gridGap) // derived: a page of library-sized cards
 
     signal linkClicked()
 
@@ -24,16 +32,35 @@ Column {
         width: parent.width
         title: root.title
         link: root.link
+        sourceIcon: root.sourceIcon
+        paged: root.farthest > 0
+        canBack: rail.contentX > 1
+        canForward: rail.contentX < root.farthest - 1
+        onBack: rail.contentX = Math.max(0, rail.contentX - root.step)
+        onForward: rail.contentX = Math.min(root.farthest, rail.contentX + root.step)
         onLinkClicked: root.linkClicked()
     }
-    AlbumGrid {
-        id: grid
+    Flickable {
+        id: rail
+        objectName: "albumCarouselRail"
         width: parent.width
-        height: implicitHeight
-        fitContent: true
-        round: root.round
-        model: root.model
-        onOpen: (albumId) => Navigation.go("album", albumId)
+        height: grid.implicitHeight + Metrics.gap8
+        contentWidth: grid.width; contentHeight: height
+        interactive: contentWidth > width
+        flickableDirection: Flickable.HorizontalFlick
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
+        ScrollBar.horizontal: ViewportScrollBar {}
+        AlbumGrid {
+            id: grid
+            width: Metrics.cardRing * 2 + root.cardCount * CardLayout.cardWidth + (root.cardCount - 1) * Metrics.gridGap // derived: one row and its selection rings
+            height: implicitHeight
+            fitContent: true; fixedColumns: root.cardCount
+            viewportX: rail.contentX; viewportWidth: rail.width
+            round: root.round
+            model: root.model
+            onOpen: (albumId) => Navigation.go("album", albumId)
+        }
     }
     // One row: as many records as fit across.
     Binding {

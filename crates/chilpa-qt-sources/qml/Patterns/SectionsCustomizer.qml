@@ -19,7 +19,7 @@ Modal {
     // [{id, title, enabled, size}], in the order shown.
     property var sections: []
     property var groupSources: []
-    property var sizes: [{value: "6", text: "6"}, {value: "12", text: "12"}, {value: "18", text: "18"}, {value: "24", text: "24"}]
+    property var sizes: [{value: "0", text: I18n.tr("One row", I18n.rev)}, {value: "6", text: "6"}, {value: "12", text: "12"}, {value: "18", text: "18"}, {value: "24", text: "24"}]
     property bool grouped: false
     property string activeGroup: "chilpa"
     readonly property var groups: {
@@ -39,7 +39,7 @@ Modal {
     readonly property var activeRows: sections.map((section, sectionIndex) => Object.assign({}, section, {sectionIndex}))
         .filter(section => section.enabled !== false)
     // The size a shelf has before one is chosen.
-    property int defaultSize: Metrics.shelfItems
+    property int defaultSize: 0
 
     signal toggled(int index, bool on)
     signal sized(int index, int size)

@@ -42,7 +42,7 @@ Column {
         const page = JSON.parse(Sources.page(source.id + " native:discover:home", Library.remoteRev) || "{}")
         let preferences = []
         try { preferences = JSON.parse(SettingsModel.kept("ui.source." + source.id + ".discover.home") || "[]") } catch (_) {}
-        const available = page.shelves || []
+        const available = (page.shelves || []).map(section => Object.assign({}, section, {size:0}))
         const ordered = SectionChoices.order(available, preferences)
         documents[source.id] = ordered.map(section => Object.assign({}, section, {
             title: source.icon ? section.title : source.name + " · " + section.title,
@@ -66,6 +66,6 @@ Column {
     KeyedModel { id: renderedRows; items: home.rendered ? home.sections.filter(section => section.enabled !== false && ((section.items || []).length || section.error)) : [] }
     Repeater {
         model: renderedRows
-        SourceShelf { required property var entry; width: home.width; section: entry }
+        SourceShelf { required property var entry; width: home.width; section: entry; oneRow: true }
     }
 }

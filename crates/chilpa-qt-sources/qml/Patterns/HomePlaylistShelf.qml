@@ -1,5 +1,7 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import app.chilpa
+import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
@@ -13,20 +15,33 @@ Column {
     readonly property var lists: JSON.parse(Playlists.recent(entry.allSources === true, entry.size || Metrics.shelfLimit, Playlists.rev + Library.listeningRev + Library.remoteRev) || "[]")
     readonly property var panels: JSON.parse(Sources.snapshot || "{}").panels || []
     readonly property bool shown: lists.length > 0
+    readonly property var shownLists: lists.slice(0, entry.size || CardLayout.columns(width))
+    readonly property real farthest: Math.max(0, rail.contentWidth - rail.width)
+    readonly property real step: CardLayout.columns(width) * (CardLayout.cardWidth + Metrics.gridGap) // derived: one viewport of playlist cards
     spacing: Metrics.gap8
-    SectionHeader { width: parent.width; title: shelf.entry.title || "" }
+    SectionHeader {
+        width: parent.width; title: shelf.entry.title || ""
+        paged: shelf.farthest > 0
+        canBack: rail.contentX > 1; canForward: rail.contentX < shelf.farthest - 1
+        onBack: rail.contentX = Math.max(0, rail.contentX - shelf.step)
+        onForward: rail.contentX = Math.min(shelf.farthest, rail.contentX + shelf.step)
+    }
     Flickable {
+        id: rail
+        objectName: "homePlaylistRail"
         width: parent.width; height: cards.implicitHeight + Metrics.gap8
         contentWidth: cards.width; contentHeight: height; clip: true
         interactive: contentWidth > width; flickableDirection: Flickable.HorizontalFlick
         boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.horizontal: ViewportScrollBar {}
         Row {
             id: cards; spacing: Metrics.gridGap
             Repeater {
-                model: shelf.lists
+                model: shelf.shownLists
                 Column {
                     required property var modelData
-                    width: Metrics.cardMinWidth; spacing: Metrics.gap4
+                    width: CardLayout.cardWidth; spacing: Metrics.gap4
+                    height: CardLayout.cardHeight
                     Item {
                         width: parent.width; height: width
                         ArtTile {

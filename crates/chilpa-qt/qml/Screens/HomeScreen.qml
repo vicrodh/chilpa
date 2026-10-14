@@ -34,7 +34,7 @@ ListView {
         { id: "everywhere.recentPlaylists", title: I18n.tr("Recently listened playlists", I18n.rev), configTitle: I18n.tr("Recently listened playlists, all sources", I18n.rev), kind: "playlists", allSources: true },
         { id: "library.recentlyAdded", title: I18n.tr("Recently added", I18n.rev), kind: "albums", source: "recentlyAdded" },
         { id: "library.mostPlayed", title: I18n.tr("Most played", I18n.rev), kind: "tracks" }
-    ].concat(remote.sections.map(section => Object.assign({}, section, { id: "source:" + section.homeId, kind: "shelf",
+    ].concat(remote.sections.map(section => Object.assign({}, section, { id: "source:" + section.homeId, entityKind: section.kind, kind: "shelf",
         previous_ids: (section.previous_ids || []).map(id => "source:" + section.sourceId + ":" + id) })))
     // The kept choice over what there is today: a shelf that went is left
     // out, and a new one comes last, shown.
@@ -70,32 +70,34 @@ ListView {
     boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ViewportScrollBar {}
 
-    // A shelf of records: one row unless a size was chosen.
-    component AlbumShelf: Column {
+    // I keep one row when a chosen count makes the shelf wider than its viewport.
+    component AlbumShelf: AlbumCarousel {
         id: shelf
         property var entry: ({})
         readonly property bool ready: records.ready
         readonly property bool shown: records.albums > 0
+        title: entry.title || ""
+        size: entry.size || 0
+        model: records
         spacing: Metrics.gap8
-        AlbumGridModel { id: records; kind: shelf.entry.source || ""; contentRev: Library.contentRev + (kind === "recentlyAdded" ? 0 : Library.listeningRev + Library.remoteRev + Library.remoteArtRev); limit: shelf.entry.size || Metrics.shelfLimit; maxRows: shelf.entry.size ? 0 : 1; columns: grid.columns }
-        SectionHeader { width: parent.width; title: shelf.entry.title || "" }
-        AlbumGrid { id: grid; width: parent.width; height: implicitHeight; fitContent: true; model: records; onOpen: (albumId) => Navigation.go("album", albumId) }
+        AlbumGridModel { id: records; kind: shelf.entry.source || ""; contentRev: Library.contentRev + (kind === "recentlyAdded" ? 0 : Library.listeningRev + Library.remoteRev + Library.remoteArtRev); limit: shelf.entry.size || Metrics.shelfLimit }
     }
-    component TrackShelf: Column {
+    component TrackShelf: TrackCarousel {
         id: tracks
         property var entry: ({})
         readonly property bool ready: most.ready
         readonly property bool shown: most.count > 0
-        spacing: Metrics.gap8
-        TrackListModel { id: most; kind: "mostPlayed"; filterRev: Library.contentRev + Library.listeningRev; limit: tracks.entry.size || Metrics.mostPlayedLimit; playingPath: Player.path }
-        SectionHeader { width: parent.width; title: tracks.entry.title || "" }
-        TrackList { width: parent.width; height: implicitHeight; fitContent: true; showPlays: true; model: most }
+        title: entry.title || ""
+        showPlays: true
+        model: most
+        TrackListModel { id: most; kind: "mostPlayed"; filterRev: Library.contentRev + Library.listeningRev; limit: tracks.entry.size || CardLayout.columns(tracks.width); playingPath: Player.path }
     }
     component PlaylistShelf: HomePlaylistShelf {}
     // A source's shelf, cut to the size chosen.
     component SourceRail: SourceShelf {
         property var entry: ({})
-        section: Object.assign({}, entry, { items: (entry.items || []).slice(0, entry.size || undefined) })
+        oneRow: true
+        section: Object.assign({}, entry, { kind: entry.entityKind || "album", items: (entry.items || []).slice(0, entry.size || undefined) })
     }
 
     header: Item {
@@ -176,8 +178,6 @@ ListView {
             grouped: true
             sections: page.sections
             groupSources: remote.sources
-            sizes: [{ value: "0", text: I18n.tr("One row", I18n.rev) }, { value: "6", text: "6" }, { value: "12", text: "12" }, { value: "18", text: "18" }, { value: "24", text: "24" }]
-            defaultSize: 0
             onToggled: (index, on) => page.change(index, "enabled", on)
             onSized: (index, size) => page.change(index, "size", size)
             onMoved: (index, delta) => page.move(index, delta)
