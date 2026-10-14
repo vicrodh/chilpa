@@ -58,7 +58,7 @@ pub fn album_group(title: &str, artist: &str) -> String {
         lower.split_whitespace().any(|w| matches!(w,
             "remaster" | "remastered" | "remastering" | "deluxe" | "expanded" |
             "anniversary" | "edition" | "reissue" | "bonus" | "mono" | "stereo" |
-            "sacd" | "dsd" | "flac" | "alac" | "mp3" | "bit" | "hires"))
+            "sacd" | "dsd" | "dsf" | "dff" | "vinyl" | "flac" | "alac" | "mp3" | "bit" | "hires"))
     }
     let mut base = title.trim().to_string();
     loop {

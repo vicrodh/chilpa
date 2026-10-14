@@ -23,6 +23,29 @@ fn edition_annotations_group_but_other_records_and_artists_do_not() {
 }
 
 #[test]
+fn physical_formats_group_without_merging_their_tracks() {
+    for (title, annotated, extension) in [("Powerslave", "Powerslave (DSF)", "dsf"),
+        ("The Book of Souls", "The Book of Souls (3LP Vinyl)", "flac")] {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        album(&lib, 1, title, "Iron Maiden");
+        album(&lib, 2, annotated, "Iron Maiden");
+        track(&lib, 1, 1, source, "/first/1.flac", 16, 44100);
+        track(&lib, 2, 2, source, &format!("/second/1.{extension}"), 24, 96000);
+        assert_eq!(lib.grouped_album_ids(&[1, 2]).unwrap().len(), 1);
+        assert_eq!(lib.version_catalog().unwrap().choices(1).len(), 2);
+        assert_eq!(lib.album_tracks(1).unwrap()[0].id, 1);
+        assert_eq!(lib.album_tracks(2).unwrap()[0].id, 2);
+        assert!(lib.select_album_version(1, 2).unwrap());
+        assert_eq!(lib.grouped_album_ids(&[1, 2]).unwrap(), [2]);
+        lib.set_group_album_versions(false).unwrap();
+        assert_eq!(lib.grouped_album_ids(&[1, 2]).unwrap(), [1, 2]);
+    }
+    assert_ne!(album_group("Record (Live Vinyl)", "Band"), album_group("Record", "Band"));
+    assert_ne!(album_group("Record (Part II)", "Band"), album_group("Record", "Band"));
+}
+
+#[test]
 fn quality_then_tracks_then_remaster_and_remembered_choice() {
     let lib = Library::in_memory().unwrap();
     let source = lib.source_id("local", "default").unwrap();

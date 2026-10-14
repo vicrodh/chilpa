@@ -161,6 +161,10 @@ QtObject {
     readonly property int toggleHeight: 22
     readonly property int toggleKnob: 16
     readonly property int toggleInset: 3
+    readonly property int toggleCompactWidth: 32
+    readonly property int toggleCompactHeight: 18
+    readonly property int toggleCompactKnob: 14
+    readonly property int toggleCompactInset: 2
     readonly property int focusRing: 2
     // How far outside a slider its focus ring sits (QBZ's QbzSlider).
     readonly property int focusRingGap: 3

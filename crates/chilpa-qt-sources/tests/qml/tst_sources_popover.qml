@@ -34,6 +34,17 @@ TestCase {
         compare(test.asked.join(","), "label")
         withPanes.close()
     }
+    function test_artist_and_album_are_available_in_the_compact_selector() {
+        withPanes.open()
+        tryVerify(() => withPanes.opened)
+        for (const name of ["artist", "album"]) {
+            const toggle = findChild(withPanes.contentItem, "paneToggle-" + name)
+            verify(toggle !== null && toggle.compact)
+            mouseClick(toggle)
+        }
+        compare(test.asked.join(","), "artist,album")
+        withPanes.close()
+    }
 
     function test_no_toggles_where_the_screen_has_no_columns() {
         without.open()

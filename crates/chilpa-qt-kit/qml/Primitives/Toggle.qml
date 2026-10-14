@@ -6,11 +6,13 @@ Rectangle {
     id: toggle
 
     property bool checked: false
+    property bool compact: false
+    readonly property int knobInset: compact ? Metrics.toggleCompactInset : Metrics.toggleInset
 
     signal toggled(bool checked)
 
-    implicitWidth: Metrics.toggleWidth
-    implicitHeight: Metrics.toggleHeight
+    implicitWidth: compact ? Metrics.toggleCompactWidth : Metrics.toggleWidth
+    implicitHeight: compact ? Metrics.toggleCompactHeight : Metrics.toggleHeight
     radius: height / 2 // derived: a pill
     color: checked ? Theme.color.accent : Theme.color.stateSelected
 
@@ -28,16 +30,16 @@ Rectangle {
     FocusRing { onAccent: toggle.checked }
 
     Rectangle {
-        x: toggle.checked ? toggle.width - width - Metrics.toggleInset : Metrics.toggleInset
+        x: toggle.checked ? toggle.width - width - toggle.knobInset : toggle.knobInset
         anchors.verticalCenter: parent.verticalCenter
-        width: Metrics.toggleKnob
-        height: Metrics.toggleKnob
+        width: toggle.compact ? Metrics.toggleCompactKnob : Metrics.toggleKnob
+        height: width
         radius: width / 2 // derived: a circle
         color: Theme.color.textOnAccent
 
         Behavior on x { NumberAnimation { duration: Motion.base; easing.type: Easing.OutCubic } }
     }
 
-    HoverHandler { cursorShape: Qt.PointingHandCursor }
-    TapHandler { gesturePolicy: TapHandler.ReleaseWithinBounds; onTapped: toggle.toggled(!toggle.checked) }
+    HoverHandler { margin: toggle.compact ? Metrics.gap4 : 0; cursorShape: Qt.PointingHandCursor }
+    TapHandler { margin: toggle.compact ? Metrics.gap4 : 0; gesturePolicy: TapHandler.ReleaseWithinBounds; onTapped: toggle.toggled(!toggle.checked) }
 }

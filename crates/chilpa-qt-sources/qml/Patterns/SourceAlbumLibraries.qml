@@ -50,6 +50,7 @@ Column {
             }
             Toggle {
                 id: toggle
+                compact: true
                 objectName: "albumLibraryToggle-" + modelData.id
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
