@@ -257,7 +257,10 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
     // reader's language are sent to the service for one; it arrives after
     // the lyrics, in the same place, and is remembered with them.
     assert_eq!(service.translations_asked(), 0);
-    chilpa.remember_preference("integrations.lyrics.translate", "true");
+    let translate_row = |chilpa: &mut chilpa_api::Chilpa| chilpa.settings_rows("integrations", &Default::default()).0.into_iter().find(|row| row.key == "integrations.lyrics.translate").expect("the toggle is in Settings");
+    assert_eq!(translate_row(&mut chilpa).value, "false", "off until asked for");
+    assert!(chilpa.adjust("integrations.lyrics.translate", "true"), "the toggle takes its value from Settings");
+    assert_eq!(translate_row(&mut chilpa).value, "true");
     let deadline = Instant::now() + long;
     loop {
         chilpa.poll();
@@ -281,7 +284,8 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
         std::thread::sleep(Duration::from_millis(20));
     }
     assert_eq!(service.translations_asked(), 1, "a translation is remembered");
-    chilpa.remember_preference("integrations.lyrics.translate", "false");
+    assert!(chilpa.adjust("integrations.lyrics.translate", "false"));
+    assert_eq!(translate_row(&mut chilpa).value, "false");
 
     // Clearing the cache from Settings forgets them, and what plays is
     // looked up again at once.
