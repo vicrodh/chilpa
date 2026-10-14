@@ -319,6 +319,7 @@ pub const SECTIONS: &[Section] = &[
             Group { title: Chilpa::mark("Lyrics"), settings: &[
                 setting("integrations.lyrics.service", Chilpa::mark("Chilpa lyrics API"), Chilpa::mark("Look up lyrics through Chilpa's lyrics service when the file and its source have none."), Control::Toggle),
                 setting("integrations.lyrics.plugin", Chilpa::mark("Plugin lyrics"), Chilpa::mark("Allow a plugin to supply lyrics for its own tracks and prefer them over Chilpa's lyrics API."), Control::Toggle),
+                setting("integrations.lyrics.translate", Chilpa::mark("Translate lyrics"), Chilpa::mark("Ask Chilpa's lyrics API to translate lyrics that carry no translation in your language. The lines of the track are sent to it. Off by default."), Control::Toggle),
                 setting("integrations.lyrics.provider.lrclib", "LRCLIB", Chilpa::mark("Allow results from LRCLIB through Chilpa's lyrics API."), Control::Toggle),
                 setting("integrations.lyrics.provider.musixmatch", "Musixmatch", Chilpa::mark("Allow results from Musixmatch when the lyrics service has access to it."), Control::Toggle),
                 setting("integrations.lyrics.provider.amll", "AMLL", Chilpa::mark("Allow word-timed lyrics from AMLL."), Control::Toggle),

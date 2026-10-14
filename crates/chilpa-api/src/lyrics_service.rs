@@ -10,9 +10,14 @@
 //! `track_lyrics`, which answers `track.lyrics` for its own. The source goes
 //! through [`Natives::call_raw`], so the pause it asks for in its error is
 //! kept. No plugin is asked to find lyrics by name.
+//!
+//! Lyrics that carry no translation in the reader's language are sent to
+//! the service for one, when the reader asked for that in Settings. The
+//! translation comes after the lyrics, in the same place: the lines show
+//! while it is made.
 
 use crate::natives::Natives;
-use chilpa_lyrics::pipeline::{Answer, Limits, Pipeline, Remote, Request, Resolved, Source};
+use chilpa_lyrics::pipeline::{Answer, Limits, Pipeline, Remote, Request, Resolved, Source, Translator};
 use chilpa_lyrics::{wire, Cache, Track};
 use chilpa_plugin::native::NativeError;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -29,6 +34,9 @@ fn cache_path() -> std::path::PathBuf {
 /// The preference that says which language a translation is wanted in:
 /// empty or "auto" for the window's own, else a language code.
 pub(crate) const TRANSLATION_LANGUAGE: &str = "ui.lyrics.translation";
+/// Whether lyrics without a translation in that language are sent to the
+/// service for one. Off unless the reader turned it on.
+pub(crate) const TRANSLATE: &str = "integrations.lyrics.translate";
 pub(crate) const LYRICS_API: &str = "integrations.lyrics.service";
 pub(crate) const PLUGIN_LYRICS: &str = "integrations.lyrics.plugin";
 const REMOTE_PROVIDERS: &[&str] = &["lrclib", "musixmatch", "amll", "netease", "qq", "kugou"];
@@ -83,9 +91,9 @@ impl LyricsService {
             // lyrics are found again next run, nothing worse.
             let Some(cache) = Cache::open(&cache_path()).or_else(|_| Cache::in_memory()).ok() else { return };
             // The lyrics service, asked for what neither the file nor its
-            // source has.
-            let remote: Arc<dyn Remote> = Arc::new(crate::lyrics_client::LyricsServiceClient::new());
-            let pipeline = Pipeline::new(cache, Some(remote), Limits::default());
+            // source has, and for the translation of what is shown.
+            let service = Arc::new(crate::lyrics_client::LyricsServiceClient::new());
+            let pipeline = Pipeline::new(cache, Some(service.clone() as Arc<dyn Remote>), Limits::default()).with_translator(service as Arc<dyn Translator>);
             while let Ok(mut job) = rx.recv() {
                 while let Ok(newer) = rx.try_recv() {
                     job = newer;
@@ -100,13 +108,32 @@ impl LyricsService {
                     }
                 };
                 deliver(outcome.resolved.clone());
+                // A translation the lyrics lack comes after them, in the
+                // same place. A track that stopped playing meanwhile is not
+                // translated.
+                let translated = |resolved: &Option<Resolved>| -> Option<Resolved> {
+                    if job.generation != thread_wanted.load(Ordering::SeqCst) {
+                        return None;
+                    }
+                    let found = resolved.as_ref()?;
+                    let layer = pipeline.translate(&job.request, &found.document)?;
+                    let mut document = found.document.clone();
+                    document.layers.push(layer);
+                    Some(Resolved { document, origin: found.origin.clone() })
+                };
+                if let Some(with) = translated(&outcome.resolved) {
+                    deliver(Some(with));
+                }
                 if outcome.refresh {
                     // What the cache had is old: it was shown, and now the
                     // source and the service are asked again. What they
                     // say now replaces it.
                     let again = pipeline.resolve(&job.request, true);
                     if again.resolved.is_some() && again.resolved != outcome.resolved {
-                        deliver(again.resolved);
+                        deliver(again.resolved.clone());
+                        if let Some(with) = translated(&again.resolved) {
+                            deliver(Some(with));
+                        }
                     }
                 }
             }
@@ -123,8 +150,8 @@ impl LyricsService {
     /// The plugins are the ones running now, handed in with every request:
     /// the first track can start before they do, and whoever kept the
     /// plugins of that moment would never ask a source for its lyrics.
-    pub(crate) fn request(&self, natives: &Arc<Natives>, generation: u64, request: (Track, Option<std::path::PathBuf>, Option<(String, String)>, Option<String>, bool, Option<Vec<String>>)) {
-        let (track, path, source, language, allow_remote, remote_providers) = request;
+    pub(crate) fn request(&self, natives: &Arc<Natives>, generation: u64, request: (Track, Option<std::path::PathBuf>, Option<(String, String)>, Option<String>, bool, bool, Option<Vec<String>>)) {
+        let (track, path, source, language, translate, allow_remote, remote_providers) = request;
         self.wanted.store(generation, Ordering::SeqCst);
         let source = source
             .filter(|(id, _)| natives.has_track_lyrics(id))
@@ -132,7 +159,7 @@ impl LyricsService {
                 let name = natives.display_name(&id);
                 (Arc::new(NativeSource { natives: natives.clone(), id, name }) as Arc<dyn Source>, reference)
             });
-        let _ = self.jobs.send(Job { generation, request: Request { track, path, source, language, allow_remote, remote_providers } });
+        let _ = self.jobs.send(Job { generation, request: Request { track, path, source, language, translate, allow_remote, remote_providers } });
     }
 
     /// The answer for that generation, once, when it has arrived. `Some(None)`
@@ -189,6 +216,7 @@ impl crate::Chilpa {
         };
         let file = (source.is_none() && path.is_file()).then(|| path.to_path_buf());
         let language = self.translation_language();
+        let translate = self.translating();
         let allow_source = self.preference(PLUGIN_LYRICS).as_deref() != Some("false");
         let allow_remote = self.preference(LYRICS_API).as_deref() != Some("false");
         let selected: Vec<String> = REMOTE_PROVIDERS.iter().filter(|id| {
@@ -197,7 +225,13 @@ impl crate::Chilpa {
         let remote_providers = (selected.len() != REMOTE_PROVIDERS.len()).then_some(selected);
         let generation = self.lyrics.generation;
         let service = self.lyrics.service.get_or_insert_with(LyricsService::start);
-        service.request(&self.natives, generation, (track, file, source.filter(|_| allow_source), Some(language), allow_remote, remote_providers));
+        service.request(&self.natives, generation, (track, file, source.filter(|_| allow_source), Some(language), translate, allow_remote, remote_providers));
+    }
+
+    /// Whether the reader asked for lyrics without a translation in their
+    /// language to be translated.
+    fn translating(&self) -> bool {
+        self.preference(TRANSLATE).as_deref() == Some("true")
     }
 
     /// The language a translation is wanted in: the one chosen for lyrics,
@@ -209,15 +243,17 @@ impl crate::Chilpa {
     }
 
     /// A preference of the lyrics changed. Another language for the
-    /// translation asks the track's source again, which is who translates;
-    /// for any other track it only changes which translation is offered.
+    /// translation asks the track's source again, which is who translates,
+    /// and the service when translating is on; for any other track it only
+    /// changes which translation is offered.
     pub(crate) fn lyrics_preference_changed(&mut self, key: &str) {
-        if !matches!(key, TRANSLATION_LANGUAGE | LYRICS_API | PLUGIN_LYRICS)
+        if !matches!(key, TRANSLATION_LANGUAGE | TRANSLATE | LYRICS_API | PLUGIN_LYRICS)
             && !key.starts_with("integrations.lyrics.provider.") {
             return;
         }
+        let again = key != TRANSLATION_LANGUAGE || self.translating() || crate::source_opener::of_plugin(&self.now.path).is_some();
         match self.lyrics.asked.clone() {
-            Some((path, length_ms)) if key != TRANSLATION_LANGUAGE || crate::source_opener::of_plugin(&self.now.path).is_some() => self.load_lyrics(&path, length_ms),
+            Some((path, length_ms)) if again => self.load_lyrics(&path, length_ms),
             _ => self.now.lyrics_revision += 1,
         }
     }

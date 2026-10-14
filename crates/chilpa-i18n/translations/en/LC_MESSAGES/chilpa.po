@@ -456,6 +456,9 @@ msgstr ""
 msgid "Artwork, generated images, plugin data and other temporary files."
 msgstr ""
 
+msgid "Ask Chilpa's lyrics API to translate lyrics that carry no translation in your language. The lines of the track are sent to it. Off by default."
+msgstr ""
+
 msgid "Ask before quitting"
 msgstr ""
 
@@ -4171,6 +4174,9 @@ msgid "Trailers"
 msgstr ""
 
 msgid "Transcript"
+msgstr ""
+
+msgid "Translate lyrics"
 msgstr ""
 
 msgid "Translation"

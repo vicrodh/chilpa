@@ -7,9 +7,10 @@
 //! without a new Chilpa.
 //!
 //! The pipeline sees it as its [`Remote`]: whoever answers for a track with
-//! no lyrics of its own.
+//! no lyrics of its own; and as its [`Translator`]: whoever translates the
+//! lyrics shown when they carry no translation in the reader's language.
 
-use chilpa_lyrics::pipeline::{Answer, Remote};
+use chilpa_lyrics::pipeline::{Answer, Remote, Translation, Translator};
 use chilpa_lyrics::{service, Timing, Track};
 use serde_json::{json, Value};
 use std::time::Duration;
@@ -33,6 +34,28 @@ impl LyricsServiceClient {
     }
 }
 
+impl LyricsServiceClient {
+    /// Posts a question at a path and splits the reply: the status, the
+    /// `Retry-After` and the body. `Err` is no reply at all: the network,
+    /// not the service.
+    fn post(&self, path: &str, body: &Value) -> Result<(u16, Option<String>, String), String> {
+        let request = json!({
+            "url": format!("{}{path}", self.origin),
+            "method": "POST",
+            "headers": { "Content-Type": "application/json", "Accept": "application/json" },
+            "body": body.to_string(),
+        });
+        let raw = chilpa_core::send_request(request.to_string().as_bytes(), None);
+        let reply = serde_json::from_slice::<Value>(&raw).map_err(|_| "the lyrics service could not be reached".to_string())?;
+        if let Some(error) = reply.get("error").and_then(Value::as_str) {
+            return Err(error.to_string());
+        }
+        let status = reply.get("status").and_then(Value::as_u64).unwrap_or(0) as u16;
+        let retry_after = reply.get("headers").and_then(|h| h.get("retry-after")).and_then(Value::as_str).map(str::to_string);
+        Ok((status, retry_after, reply.get("body").and_then(Value::as_str).unwrap_or_default().to_string()))
+    }
+}
+
 impl Remote for LyricsServiceClient {
     fn id(&self) -> &str {
         "lyrics-service"
@@ -44,23 +67,23 @@ impl Remote for LyricsServiceClient {
     }
 
     fn resolve(&self, track: &Track, language: Option<&str>, providers: Option<&[String]>, _timeout: Duration) -> Answer {
-        let request = json!({
-            "url": format!("{}{}", self.origin, service::RESOLVE_PATH),
-            "method": "POST",
-            "headers": { "Content-Type": "application/json", "Accept": "application/json" },
-            "body": service::request_with_providers(track, Timing::Unsynced, language, providers).to_string(),
-        });
-        let raw = chilpa_core::send_request(request.to_string().as_bytes(), None);
-        let Ok(reply) = serde_json::from_slice::<Value>(&raw) else {
-            return Answer::Failed { retry_after: None, message: "the lyrics service could not be reached".into() };
-        };
-        // No reply at all: the network, not the service.
-        if let Some(error) = reply.get("error").and_then(Value::as_str) {
-            return Answer::Failed { retry_after: None, message: error.to_string() };
+        match self.post(service::RESOLVE_PATH, &service::request_with_providers(track, Timing::Unsynced, language, providers)) {
+            Ok((status, retry_after, body)) => service::read(status, retry_after.as_deref(), &body),
+            Err(message) => Answer::Failed { retry_after: None, message },
         }
-        let status = reply.get("status").and_then(Value::as_u64).unwrap_or(0) as u16;
-        let retry_after = reply.get("headers").and_then(|h| h.get("retry-after")).and_then(Value::as_str);
-        service::read(status, retry_after, reply.get("body").and_then(Value::as_str).unwrap_or_default())
+    }
+}
+
+impl Translator for LyricsServiceClient {
+    fn id(&self) -> &str {
+        "lyrics-service"
+    }
+
+    fn translate(&self, track: &Track, lines: &[String], language: &str, from: Option<&str>, _timeout: Duration) -> Translation {
+        match self.post(service::TRANSLATE_PATH, &service::translate_request(track, lines, language, from)) {
+            Ok((status, retry_after, body)) => service::read_translation(status, retry_after.as_deref(), &body),
+            Err(message) => Translation::Failed { retry_after: None, message },
+        }
     }
 }
 
@@ -131,6 +154,31 @@ mod tests {
         let (origin, _asked) = serve(FAILED);
         let answer = LyricsServiceClient::at(&origin).resolve(&track(), None, None, Duration::from_secs(5));
         assert!(matches!(answer, Answer::Failed { .. }), "{answer:?}");
+    }
+
+    const TRANSLATE_FOUND: &str = include_str!("../../chilpa-lyrics/tests/service/translate-found.json");
+    const TRANSLATE_LATER: &str = include_str!("../../chilpa-lyrics/tests/service/translate-later.json");
+
+    #[test]
+    fn it_asks_for_a_translation_as_the_contract_says_and_reads_the_layer() {
+        let (origin, asked) = serve(TRANSLATE_FOUND);
+        let golden: Value = serde_json::from_str(TRANSLATE_FOUND).unwrap();
+        let lines: Vec<String> = golden["request"]["lines"].as_array().unwrap().iter().map(|l| l.as_str().unwrap().to_string()).collect();
+        let small = Track { title: "Small Hours".into(), artist: "Example Artist".into(), album: None, duration_ms: None, isrc: None, mbid: None };
+        let answer = LyricsServiceClient::at(&origin).translate(&small, &lines, "es", Some("en"), Duration::from_secs(5));
+        let (line, agent, body) = asked.recv().unwrap();
+        assert_eq!(line, "POST /v1/lyrics/translate");
+        assert!(agent.starts_with("Chilpa"), "the service only serves Chilpa: {agent}");
+        assert_eq!(body, golden["request"], "the question is the contract's");
+        let Translation::Found(layer) = answer else { panic!("{answer:?}") };
+        assert_eq!(layer.lines.len(), 3);
+    }
+
+    #[test]
+    fn a_translation_still_being_made_is_a_failure_with_its_wait() {
+        let (origin, _asked) = serve(TRANSLATE_LATER);
+        let answer = LyricsServiceClient::at(&origin).translate(&track(), &["Line".to_string()], "es", None, Duration::from_secs(5));
+        assert!(matches!(answer, Translation::Failed { retry_after: Some(wait), .. } if wait == Duration::from_secs(5)), "{answer:?}");
     }
 
     #[test]
