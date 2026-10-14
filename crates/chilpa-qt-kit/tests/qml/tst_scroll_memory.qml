@@ -16,8 +16,9 @@ TestCase {
     ScrollMemory { id: memory; viewport: view; key: "first" }
     ListView {
         id: headed
+        property int headerHeight: 72
         width: 240; height: 200; topMargin: 24; model: 40
-        header: Rectangle { width: 240; height: 72 }
+        header: Rectangle { width: 240; height: headed.headerHeight }
         delegate: Rectangle { width: 240; height: 32 }
     }
     function init() { memory.viewport = view; memory.key = "first"; view.contentHeight = 1800; memory.pending = -1 }
@@ -38,6 +39,16 @@ TestCase {
         const start = headed.originY - headed.topMargin
         headed.contentY = start + 300
         compare(Visit.recall("relative", -1), 300)
+    }
+    function test_loading_header_keeps_the_page_at_the_beginning() {
+        headed.headerHeight = 280
+        memory.viewport = headed
+        memory.key = "loading-header"
+        wait(30)
+        headed.headerHeight = 72
+        wait(30)
+        compare(headed.contentY, headed.originY - headed.topMargin)
+        verify(headed.headerItem.mapToItem(headed, 0, 0).y >= 0)
     }
 
     function test_restores_a_route_after_delayed_content() {
