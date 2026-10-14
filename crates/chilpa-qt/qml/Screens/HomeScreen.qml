@@ -18,6 +18,7 @@ ListView {
     readonly property alias homeSections: remote.sections
     onVisibleChanged: if (visible) homeRefresh++
     property bool presented: false
+    property bool leaving: false
     Connections {
         target: page.Window.window
         function onFrameSwapped() { if (page.visible) page.presented = true }
@@ -160,7 +161,7 @@ ListView {
             x: Metrics.contentX
             width: page.width - Metrics.contentX * 2 // derived: padding on both sides
             entry: parent.entry
-            started: entry.kind !== "shelf" || page.presented
+            started: !page.leaving && (entry.kind !== "shelf" || page.presented)
             content: entry.kind === "albums" ? albumShelf : entry.kind === "playlists" ? playlistShelf : entry.kind === "tracks" ? trackShelf : sourceRail
         }
     }

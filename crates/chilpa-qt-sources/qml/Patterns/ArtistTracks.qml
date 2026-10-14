@@ -13,12 +13,14 @@ import "qrc:/qt/qml/app/chilpa/qml/Components"
 Column {
     id: block
     property var section: ({})
+    property Flickable viewport: null
     property bool actions: true
     property bool expanded: false
     readonly property string modelKind: section.model || "source"
     readonly property int first: section.preview || Metrics.previewRows
     readonly property int preview: expanded ? 0 : first
     readonly property bool shown: tracks.count > 0
+    readonly property bool ready: tracks.ready && all.ready
     spacing: Metrics.gap12
     visible: shown
     TrackListModel { id: tracks; playingPath: Player.path; kind: block.modelKind; key: block.section.model_key || block.section.key || ""; limit: block.preview; filterRev: Library.remoteRev + Library.remoteArtRev }
@@ -33,7 +35,7 @@ Column {
                 id: menuButton; objectName: "tracksMenu"; round: true; size: Metrics.button32; glyph: Icons.dots; tip: I18n.tr("Queue actions", I18n.rev)
                 onClicked: menu.open()
                 Menu {
-                    id: menu; objectName: "tracksMenuPopup"; y: parent.height + Metrics.gap4; x: parent.width - width
+                    id: menu; objectName: "tracksMenuPopup"; y: menuButton.height + Metrics.gap4; x: menuButton.width - width
                     entries: [
                         { text: I18n.tr("Play all next", I18n.rev), act: "next", glyph: Lucide.listStart, family: Lucide.font },
                         { text: I18n.tr("Play all later", I18n.rev), act: "later", glyph: Lucide.listPlus, family: Lucide.font },
@@ -54,7 +56,7 @@ Column {
             }
         }
     }
-    TrackList { width: parent.width; height: implicitHeight; fitContent: true; model: tracks; header: false; showArtist: true; showAlbum: block.section.role !== "appears" }
+    TrackList { width: parent.width; height: implicitHeight; fitContent: true; viewport: block.viewport; model: tracks; header: false; showArtist: true; showAlbum: block.section.role !== "appears" }
     // All of them, or five again: the toggle is the page's, nothing is asked for.
     PillButton {
         objectName: "tracksMore"; visible: block.expanded || all.count > block.first; kind: "ghost"

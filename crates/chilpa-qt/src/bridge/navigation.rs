@@ -86,6 +86,9 @@ pub mod qobject {
         fn activate(self: Pin<&mut Navigation>, index: i32);
 
         #[qinvokable]
+        fn step(self: Pin<&mut Navigation>, by: i32);
+
+        #[qinvokable]
         fn close(self: Pin<&mut Navigation>, index: i32);
     }
 
@@ -188,6 +191,11 @@ impl qobject::Navigation {
 
     pub fn activate(mut self: Pin<&mut Self>, index: i32) {
         self.as_mut().rust_mut().tabs.activate(index.max(0) as usize);
+        self.publish();
+    }
+
+    pub fn step(mut self: Pin<&mut Self>, by: i32) {
+        self.as_mut().rust_mut().tabs.step(by);
         self.publish();
     }
 

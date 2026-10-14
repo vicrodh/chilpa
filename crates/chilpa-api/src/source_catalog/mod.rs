@@ -284,6 +284,7 @@ impl Catalog {
 
     /// A listing as it is known now, asking for it when it is missing or stale.
     pub fn shelf(&self, key: &str) -> Option<store::Shelf> {
+        if key.trim().is_empty() { return None; }
         let mut inner = self.lock();
         let shelf = inner.store.shelves.get(key).cloned();
         // What an earlier run read is drawn at once and asked for again once.

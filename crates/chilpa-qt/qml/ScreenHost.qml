@@ -41,7 +41,7 @@ PageTransition {
 
     sourceComponent: {
         if (music.music === true)
-            return music.artist === true ? sourceArtist : music.shelves !== undefined ? sourceHome : music.albumsOnly === false ? sourceListing : sourceAlbums
+            return music.artist === true || / (native:artist:|matching-artist-v[23]:)/.test(routeKey) ? sourceArtist : music.shelves !== undefined ? sourceHome : music.albumsOnly === false ? sourceListing : sourceAlbums
         switch (screen) {
         case "home": return home
         case "library": return library

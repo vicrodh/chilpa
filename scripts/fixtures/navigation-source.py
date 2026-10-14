@@ -19,7 +19,15 @@ def answer(request):
         result = dict(protocol=1, capabilities=dict(pages=True, home=True, library=["albums", "tracks", "artists", "labels", "playlists"]))
     elif method == "page.get":
         time.sleep(1.2)
-        result = dict(title="Fixture home", shelves=[dict(id=f"shelf-{i}", title=f"Module {i}", kind="album", items=items("album")) for i in range(6)])
+        reference = params.get("ref", "")
+        if reference.startswith("artist:"):
+            result = dict(header=dict(kind="artist", ref=reference, title="Fixture artist", image=f"{image_base}/artist.png"), shelves=[
+                dict(id="tracks", title="Popular Tracks", kind="track", items=items("track", 10)),
+                dict(id="album", title="Albums", kind="album", items=items("album", 48))])
+        elif reference.startswith("album:"):
+            result = dict(header=dict(kind="album", ref=reference, title="Fixture record", artist="Fixture artist", artist_ref="artist:0", image=f"{image_base}/record.png"), extra_tracks=items("track", 12))
+        else:
+            result = dict(title="Fixture home", shelves=[dict(id=f"shelf-{i}", title=f"Module {i}", kind="album", items=items("album")) for i in range(6)])
     elif method == "library.list":
         kind = params.get("kind", "albums")
         time.sleep(dict(albums=0.8, tracks=0.3, artists=0.5, labels=0.4, playlists=0.6).get(kind, 0.5))

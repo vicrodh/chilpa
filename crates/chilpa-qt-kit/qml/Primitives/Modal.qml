@@ -17,6 +17,7 @@ Popup {
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
 
     contentItem: Item {
+        property bool blocksWindowShortcuts: true
         implicitWidth: inset.implicitWidth + Metrics.modalInsets
         implicitHeight: inset.implicitHeight + Metrics.modalInsets
 

@@ -47,6 +47,7 @@ pub(crate) fn fixed(key: &str) -> Vec<(&'static str, String)> {
     // Each label is spelled out as a `chilpa_i18n::t` call so the extractor
     // finds it.
     match key {
+        "appearance.language" => vec![("", chilpa_i18n::t("System")), ("en", "English".into()), ("es", "Español".into())],
         "appearance.theme" => {
             vec![("light", chilpa_i18n::t("Light")), ("dark", chilpa_i18n::t("Dark")), ("oled", chilpa_i18n::t("Dark OLED")), ("system", chilpa_i18n::t("System"))]
         }
@@ -218,6 +219,12 @@ impl Chilpa {
             return;
         }
         match row.key.as_str() {
+            "appearance.language" => {
+                row.value = chilpa_core::settings::load().language;
+                for (value, label) in fixed(&row.key) {
+                    row.values.push(value.into()); row.options.push(label);
+                }
+            }
             "storage.total" | "storage.remote" | "storage.embedded" | "storage.derivatives" | "storage.other" => {
                 let usage = crate::storage_cache::usage();
                 row.control = "none".into();

@@ -669,3 +669,5 @@ prereleases
 semver
 gt
 cli
+# Qt's reverse tab key.
+BACKTAB

@@ -254,21 +254,20 @@ impl crate::Chilpa {
 
     /// Whether the library has records under that artist's name.
     pub(crate) fn has_artist(&mut self, name: &str) -> bool {
-        self.library().is_some_and(|lib| lib.albums_filtered(chilpa_library::AlbumSort::Year, Some(name), 1, 0).is_ok_and(|a| !a.is_empty()))
+        self.library().is_some_and(|lib| lib.has_artist(name).unwrap_or(false))
     }
 
     /// The library's artist, in the shape of a source's page: the window
     /// draws both with the same screen.
     pub fn artist_document(&mut self, name: &str) -> String {
-        let records = self.artist_release_cards(name, false);
-        let guest = self.artist_release_cards(name, true);
-        let chosen = Some(self.artist_art(name)).filter(|a| !a.is_empty());
-        let art = chosen.or_else(|| records.first().or(guest.first()).map(|a| a.artwork_path.clone())).filter(|a| !a.is_empty())
+        let collection = self.artist_collection(name);
+        let loading = collection.is_none();
+        let collection = collection.unwrap_or_default();
+        let (records, guest, labels) = (collection.records, collection.appearances, collection.labels);
+        let art = Some(collection.art).filter(|a| !a.is_empty())
             .and_then(|path| url::Url::from_file_path(path).ok()).map(|u| u.to_string()).unwrap_or_default();
         let known = self.artist_network.of(name, &[], self.musicbrainz_enabled());
         // The labels its records' tracks name, which the sidebar lists.
-        let ids: Vec<i64> = records.iter().map(|a| a.id).collect();
-        let labels = self.library().and_then(|lib| lib.albums_labels(&ids).ok()).unwrap_or_default();
         let similar: Vec<Value> = known.similar.iter().take(12).cloned().collect::<Vec<_>>().into_iter()
             .map(|n| { let local = self.has_artist(&n); json!({"kind": "artist", "title": n, "local": local}) }).collect();
         // `model` names the window's model for the library ("artist",
@@ -292,7 +291,7 @@ impl crate::Chilpa {
             "music": true,
             "local": true,
             "title": name,
-            "loading": false,
+            "loading": loading,
             "error": "",
             "header": {
                 "kind": "artist",
