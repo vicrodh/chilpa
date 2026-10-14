@@ -95,6 +95,32 @@ TestCase {
         tryVerify(() => shelvesOf(discover).some(shelf => shelf.activeKey === "fixture native:discover:home|recent" && shelf.ready && shelf.shown && shelf.visible
             && shelf.width > 0 && shelf.height > 0), 1000, "a cached provider module must reveal its cards")
     }
+    Component {
+        id: pendingMaker
+        HomeSection {
+            width: 1100; started: true
+            entry: ({id:"pending",kind:"shelf",title:"Albums",key:"fixture native:pending|albums"})
+            content: Component { SourceShelf { section: parent.entry; oneRow: true } }
+        }
+    }
+    function test_a_pending_provider_keeps_its_skeleton_footprint() {
+        Sources.pages = {
+            "fixture native:pending": JSON.stringify({shelves:[{id:"albums",items:[]}]}),
+            "fixture native:pending|albums": JSON.stringify({loading:true})
+        }
+        const module = createTemporaryObject(pendingMaker, this)
+        wait(50)
+        compare(module.ready, false, "an empty local query does not finish the provider request")
+        const height = module.height
+        verify(height >= CardLayout.cardHeight)
+        Sources.pages = {
+            "fixture native:pending": JSON.stringify({shelves:[{id:"albums",items:[{ref:"album:1"}]}]}),
+            "fixture native:pending|albums": JSON.stringify({loading:false})
+        }
+        Library.remoteRev++
+        tryCompare(module, "ready", true)
+        verify(module.height >= height, "the first polished rail must not contract its placeholder")
+    }
     function shelvesOf(item) {
         let out = []
         for (const child of item.children || []) {

@@ -13,7 +13,7 @@ Rectangle {
     // "year", "genre", "label", "composer", "rating", "artist" or "album".
     property string column
 
-    color: Theme.color.surfacePane
+    color: "transparent"
 
     FacetModel {
         id: facets
@@ -26,7 +26,7 @@ Rectangle {
         id: head
         width: parent.width
         height: Metrics.paneHeader
-        color: Theme.color.surfacePane
+        color: "transparent"
 
         Icon {
             id: lens

@@ -20,14 +20,17 @@ Item {
         pending = key ? Visit.recall(key, 0) : -1
         resume()
     }
-    function resume() {
-        if (!viewport || pending < 0) return
-        if (typeof viewport.forceLayout === "function") viewport.forceLayout()
+    function cancel() { pending = -1; remember() }
+    function rebase() { resume(true) }
+    function resume(rebase) {
+        if (!viewport || (!rebase && pending < 0)) return
+        const offset = pending >= 0 ? pending : Visit.recall(key, 0)
+        if (!rebase && typeof viewport.forceLayout === "function") viewport.forceLayout()
         const start = origin()
         const end = Math.max(0, viewport.contentHeight - viewport.height
             + (viewport.topMargin || 0) + (viewport.bottomMargin || 0))
         applying = true
-        viewport.contentY = start + Math.min(pending, end)
+        viewport.contentY = start + Math.min(offset, end)
         applying = false
         if (end >= pending) pending = -1
     }
@@ -37,7 +40,7 @@ Item {
         target: memory.viewport
         ignoreUnknownSignals: true
         function onContentHeightChanged() { Qt.callLater(memory.resume) }
-        function onOriginYChanged() { Qt.callLater(memory.resume) }
+        function onOriginYChanged() { if (!memory.applying) memory.rebase() }
         function onContentYChanged() {
             if (memory.applying || !memory.key || !memory.viewport) return
             if (memory.pending >= 0) Qt.callLater(memory.resume)

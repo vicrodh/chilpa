@@ -15,20 +15,28 @@ Item {
     id: page
 
     // The filter columns turned on in the sources popover, kept.
-    property var panes: (SettingsModel.kept("ui.library.panes") || "year,genre").split(",").filter(c => c !== "")
+    property var panes: initialPanes()
+    function initialPanes() {
+        const saved = SettingsModel.kept("ui.library.columns")
+        if (saved) { try { const columns = JSON.parse(saved); if (Array.isArray(columns)) return columns } catch (_) {} }
+        return (SettingsModel.kept("ui.library.panes") || "year,genre").split(",").filter(c => c !== "").concat(["artist", "album"])
+    }
     function togglePane(column) {
         const on = page.panes.indexOf(column) < 0
         page.panes = on ? page.panes.concat([column]) : page.panes.filter(c => c !== column)
-        SettingsModel.keep("ui.library.panes", page.panes.join(","))
+        SettingsModel.keep("ui.library.columns", JSON.stringify(page.panes))
         // A column turned off does not narrow what it no longer shows.
-        if (!on)
+        if (!on) {
+            Library.searchColumn(column, "")
             Library.choose(column, "", "")
+        }
     }
     // The columns' height while their grip is dragged, or -1.
     property real dragged: -1
     // The columns' height when the grip was pressed.
     property real grabbed: 0
-    readonly property real panesHeight: !SettingsModel.panesOpen ? 0
+    readonly property bool panesShown: SettingsModel.panesOpen && page.panes.length > 0
+    readonly property real panesHeight: !panesShown ? 0
         : dragged >= 0 ? dragged
         : SettingsModel.panesHeight > 0 ? SettingsModel.panesHeight : Metrics.panesHeight
     readonly property bool grid: SettingsModel.libraryView === "grid"
@@ -128,13 +136,13 @@ Item {
         x: head.x
         width: head.width
         height: page.panesHeight
-        visible: SettingsModel.panesOpen
+        visible: page.panesShown
         shown: page.panes
     }
 
     ResizeHandle {
         id: grip
-        visible: SettingsModel.panesOpen
+        visible: page.panesShown
         vertical: false
         anchors.top: panes.bottom
         anchors.horizontalCenter: panes.horizontalCenter
@@ -150,8 +158,8 @@ Item {
 
     LibraryToolbar {
         id: toolbar
-        anchors.top: SettingsModel.panesOpen ? grip.bottom : crumbs.bottom
-        anchors.topMargin: SettingsModel.panesOpen ? 0 : Metrics.gap12
+        anchors.top: page.panesShown ? grip.bottom : crumbs.bottom
+        anchors.topMargin: page.panesShown ? 0 : Metrics.gap12
         x: head.x
         width: head.width
         tracks: tracks

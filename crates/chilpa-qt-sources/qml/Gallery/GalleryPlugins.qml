@@ -29,6 +29,7 @@ TitledFlow {
     SourceRecordDetails { width: Metrics.confirmWidth }
     SourceAlbumLibraries { width: Metrics.confirmWidth; model: [{id:"preview",name:"Streaming library",enabled:false,icon:""}] }
     SourcesPopover {}
+    LibraryColumnChoices { width: Metrics.confirmWidth; selected: ["year", "artist", "album"]; onToggled: column => selected = selected.includes(column) ? selected.filter(value => value !== column) : selected.concat([column]) }
     SourcePlaylistEditor {}
     SourceFolderEditor {}
     SourcePlaylistRows { width: Metrics.confirmWidth; rows: [{title:"Song",artist:"Artist",member:"1"}] }

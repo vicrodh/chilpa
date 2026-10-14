@@ -7,8 +7,6 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
 
-// Library Explorer's provenance and encoded-file filters. Sources are read
-// from the library; tiers and formats use the facade's generic vocabulary.
 Popup {
     id: popover
     property bool showAlbumLibraries: false
@@ -62,9 +60,6 @@ Popup {
     contentItem: Column {
         spacing: Metrics.gap8
 
-        // Two columns side by side, so the popover grows across and not down
-        // (the owner, 2026-10-09): where the tracks come from on the left;
-        // the columns shown, the quality and the format on the right.
         Row {
             spacing: Metrics.gap16
 
@@ -87,6 +82,7 @@ Popup {
                     }
                     Toggle {
                         id: grouping
+                        compact: true
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
                         checked: Library.groupVersions
@@ -138,6 +134,7 @@ Popup {
                         }
                         Toggle {
                             id: sourceToggle
+                            compact: true
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             checked: Library.excludedSources.indexOf(sourceKey) < 0
@@ -152,44 +149,10 @@ Popup {
             Column {
                 width: popover.half
                 spacing: Metrics.gap8
-                Column {
-                    visible: popover.panes !== null
+                LibraryColumnChoices {
                     width: parent.width
-                    spacing: Metrics.gap8
-                    Text {
-                        text: I18n.tr("Columns", I18n.rev)
-                        font.pointSize: Type.small
-                        font.weight: Type.semibold
-                        color: Theme.color.textTertiary
-                    }
-                    Repeater {
-                        model: [
-                            { column: "year", label: I18n.tr("Year", I18n.rev) },
-                            { column: "genre", label: I18n.tr("Genre", I18n.rev) },
-                            { column: "label", label: I18n.tr("Label", I18n.rev) },
-                            { column: "composer", label: I18n.tr("Composer", I18n.rev) },
-                            { column: "rating", label: I18n.tr("Rating", I18n.rev) }
-                        ]
-                        Item {
-                            required property var modelData
-                            width: parent.width
-                            height: Metrics.sourceFilterRow
-                            Text {
-                                anchors.left: parent.left
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: modelData.label
-                                font.pointSize: Type.body
-                                color: Theme.color.textPrimary
-                            }
-                            Toggle {
-                                objectName: "paneToggle-" + modelData.column
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                checked: popover.panes !== null && popover.panes.indexOf(modelData.column) >= 0
-                                onToggled: popover.paneToggled(modelData.column)
-                            }
-                        }
-                    }
+                    selected: popover.panes
+                    onToggled: column => popover.paneToggled(column)
                 }
                 Text {
                     text: I18n.tr("Quality", I18n.rev)

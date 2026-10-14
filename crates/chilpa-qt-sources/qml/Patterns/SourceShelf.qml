@@ -26,7 +26,8 @@ Column {
     function albumIds() { const ids = []; for (let i = 0; i < cards.albums; i++) ids.push(cards.albumId(i, cards.rev)); return JSON.stringify(ids) }
     spacing: Metrics.gap12
     readonly property bool shown: !!section.error || cards.albums > 0 || tracks.count > 0
-    readonly property bool ready: trackSection ? tracks.ready : cards.ready
+    readonly property var loadState: modelKind === "source" && modelKey ? JSON.parse(Sources.page(modelKey, Library.remoteRev) || "{}") : section
+    readonly property bool ready: (trackSection ? tracks.ready : cards.ready) && (shown || loadState.loading !== true)
     // A page of the rail: the cards that fit across, as QBZ's rails step.
     readonly property int viewportColumns: CardLayout.columns(rail.width)
     readonly property real viewportCardWidth: CardLayout.cardWidth
