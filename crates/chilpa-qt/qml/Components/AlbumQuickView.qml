@@ -3,6 +3,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // A record opened under its row without leaving the grid (design/03
 // AlbumQuickView): cover, kind and year, title, artist, the line of facts

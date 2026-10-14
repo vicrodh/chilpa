@@ -8,7 +8,6 @@ crates/chilpa-qt/qml/Components/AlbumHero.qml
 crates/chilpa-qt/qml/Components/AlbumMenu.qml
 crates/chilpa-qt/qml/Components/AlbumQuickView.qml
 crates/chilpa-qt/qml/Components/AlbumRow.qml
-crates/chilpa-qt/qml/Components/AlbumVersionSelect.qml
 crates/chilpa-qt/qml/Components/AlphaStrip.qml
 crates/chilpa-qt/qml/Components/CascadingMenu.qml
 crates/chilpa-qt/qml/Components/ChoiceRow.qml
