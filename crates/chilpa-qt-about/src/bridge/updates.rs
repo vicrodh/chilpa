@@ -28,7 +28,7 @@ use std::pin::Pin;
 pub struct UpdatesRust { snapshot: QString }
 
 impl qobject::Updates {
-    pub fn refresh(mut self: Pin<&mut Self>) {
+    pub fn refresh(self: Pin<&mut Self>) {
         let next = QString::from(app::with(|api| api.appimage_updates_json()));
         if *self.snapshot() != next { self.set_snapshot(next); }
     }

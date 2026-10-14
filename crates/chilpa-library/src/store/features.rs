@@ -16,6 +16,10 @@ pub struct AnalysisInventoryTrack {
     pub album: String,
     pub standard: bool,
     pub mood: bool,
+    pub standard_at: Option<i64>,
+    pub mood_at: Option<i64>,
+    pub result: String,
+    pub processed_at: Option<i64>,
 }
 
 /// A bounded page over the same local tracks the analyzers can read.
@@ -30,7 +34,8 @@ pub struct AnalysisInventory {
 const INVENTORY: &str = "WITH eligible AS (
     SELECT t.id, t.title, t.artist, COALESCE(a.title, '') AS album,
            COALESCE(f.version >= ?1, 0) AS standard,
-           (m.track_id IS NOT NULL) AS mood
+           (m.track_id IS NOT NULL) AS mood,
+           f.analyzed_at AS standard_at, m.analyzed_at AS mood_at
     FROM tracks t JOIN sources s ON s.id = t.source_id AND s.kind = 'local'
     LEFT JOIN albums a ON a.id = t.album_id
     LEFT JOIN audio_features f ON f.track_id = t.id AND f.analyzer = 'chilpa'
@@ -48,6 +53,10 @@ impl Library {
     /// Lists recorded analyses without loading an entire library into the UI.
     /// Mood means a stored result; the plugin owns its model version.
     pub fn analysis_inventory(&self, standard_version: i64, filter: &str, search: &str, offset: usize) -> rusqlite::Result<AnalysisInventory> {
+        self.analysis_inventory_for_run(standard_version, filter, search, offset, 0)
+    }
+
+    pub fn analysis_inventory_for_run(&self, standard_version: i64, filter: &str, search: &str, offset: usize, run: i64) -> rusqlite::Result<AnalysisInventory> {
         let filter = match filter {
             "standard" | "mood" | "standard-pending" | "mood-pending" => filter,
             _ => "all",
@@ -58,16 +67,21 @@ impl Library {
             params![standard_version], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
         )?;
         let matched: i64 = self.db.query_row(
-            &(INVENTORY.to_owned() + "SELECT count(*) FROM eligible WHERE " + INVENTORY_MATCH),
-            params![standard_version, search, filter], |row| row.get(0),
+            &(INVENTORY.to_owned() + "SELECT count(*) FROM eligible WHERE " + INVENTORY_MATCH
+                + " AND (?5 = 0 OR EXISTS (SELECT 1 FROM analysis_results p WHERE p.run_id = ?5 AND p.track_id = eligible.id))"),
+            params![standard_version, search, filter, offset as i64, run.max(0)], |row| row.get(0),
         )?;
         let mut stmt = self.db.prepare(&(INVENTORY.to_owned()
-            + "SELECT id, title, artist, album, standard, mood FROM eligible WHERE "
+            + "SELECT id, title, artist, album, standard, mood, standard_at, mood_at,
+                COALESCE(p.state, ''), p.analyzed_at FROM eligible
+                LEFT JOIN analysis_results p ON p.track_id = eligible.id AND p.run_id = ?5 WHERE "
             + INVENTORY_MATCH
-            + " ORDER BY title COLLATE NOCASE, artist COLLATE NOCASE, id LIMIT 100 OFFSET ?4"))?;
-        let tracks = stmt.query_map(params![standard_version, search, filter, offset.min(1_000_000) as i64], |row| {
+            + " AND (?5 = 0 OR p.track_id IS NOT NULL)
+                ORDER BY p.analyzed_at DESC, p.rowid DESC, title COLLATE NOCASE, artist COLLATE NOCASE, id LIMIT 100 OFFSET ?4"))?;
+        let tracks = stmt.query_map(params![standard_version, search, filter, offset.min(1_000_000) as i64, run.max(0)], |row| {
             Ok(AnalysisInventoryTrack { id: row.get(0)?, title: row.get(1)?, artist: row.get(2)?,
-                album: row.get(3)?, standard: row.get::<_, i64>(4)? != 0, mood: row.get::<_, i64>(5)? != 0 })
+                album: row.get(3)?, standard: row.get::<_, i64>(4)? != 0, mood: row.get::<_, i64>(5)? != 0,
+                standard_at:row.get(6)?, mood_at:row.get(7)?, result:row.get(8)?, processed_at:row.get(9)? })
         })?.collect::<rusqlite::Result<Vec<_>>>()?;
         Ok(AnalysisInventory { total: total as usize, standard: standard as usize, mood: mood as usize,
             matched: matched as usize, tracks })

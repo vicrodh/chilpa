@@ -29,7 +29,7 @@ pub mod qobject {
 
         /// A bounded page of the persisted local analysis inventory.
         #[qinvokable]
-        fn inventory(self: &Stats, filter: &QString, search: &QString, offset: i32) -> QString;
+        fn inventory(self: &Stats, filter: &QString, search: &QString, offset: i32, run: i64) -> QString;
 
         /// Asks where, and writes the whole history there as CSV.
         #[qinvokable]
@@ -72,9 +72,9 @@ impl qobject::Stats {
         QString::from(&app::with(|api| api.listening_history_json(i64::from(page), i64::from(per_page), &query)))
     }
 
-    pub fn inventory(&self, filter: &QString, search: &QString, offset: i32) -> QString {
+    pub fn inventory(&self, filter: &QString, search: &QString, offset: i32, run: i64) -> QString {
         let (filter, search) = (filter.to_string(), search.to_string());
-        QString::from(app::with(|api| api.analysis_inventory(&filter, &search, offset.max(0) as usize).to_string()))
+        QString::from(app::with(|api| api.analysis_inventory_for_run(&filter, &search, offset.max(0) as usize, run).to_string()))
     }
 
     pub fn export_history(self: Pin<&mut Self>) {

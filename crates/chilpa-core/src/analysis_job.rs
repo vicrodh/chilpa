@@ -54,6 +54,7 @@ pub struct AnalysisJob {
     events: Receiver<AnalysisProgress>,
     cancel: Arc<std::sync::atomic::AtomicBool>,
     thread: Option<JoinHandle<()>>,
+    run_id: Arc<std::sync::atomic::AtomicI64>,
 }
 
 impl AnalysisJob {
@@ -67,6 +68,8 @@ impl AnalysisJob {
         let (tx, rx) = channel();
         let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let flag = Arc::clone(&cancel);
+        let run_id = Arc::new(std::sync::atomic::AtomicI64::new(0));
+        let current_run = run_id.clone();
         let thread = std::thread::Builder::new()
             .name("chilpa-analysis".into())
             .spawn(move || {
@@ -87,6 +90,11 @@ impl AnalysisJob {
                         return;
                     }
                 };
+                let mut run = match lib.begin_analysis_run(analyzer,version,folder.as_deref(),total) {
+                    Ok(run) => run,
+                    Err(error) => { let _ = tx.send(AnalysisProgress::Failed(error.to_string())); return; }
+                };
+                current_run.store(run.id,std::sync::atomic::Ordering::Release);
                 let _ = tx.send(AnalysisProgress::Counted { total });
 
                 let (mut made, mut no_pulse, mut failed) = (0usize, 0usize, 0usize);
@@ -98,6 +106,7 @@ impl AnalysisJob {
                         Ok(v) if v.is_empty() => break,
                         Ok(v) => v,
                         Err(e) => {
+                            let _ = run.finish("failed",&e.to_string());
                             let _ = tx.send(AnalysisProgress::Failed(e.to_string()));
                             return;
                         }
@@ -110,7 +119,7 @@ impl AnalysisJob {
                         // Even with no pulse found, the row is saved: otherwise
                         // the track would come out pending forever and the
                         // analysis would never end.
-                        let saved = lib.save_features(
+                        let saved = run.record(track.id,features.is_some(),|| lib.save_features(
                             track.id,
                             analyzer,
                             version,
@@ -121,9 +130,10 @@ impl AnalysisJob {
                                 .and_then(|f| f.key.as_ref())
                                 .map(|k| format!("{} · {}", k.name, k.camelot)),
                             features.as_ref().and_then(|f| f.loudness_lufs),
-                        );
+                        ));
                         match (&features, &saved) {
                             (_, Err(e)) => {
+                                let _ = run.finish("failed",&e.to_string());
                                 let _ = tx.send(AnalysisProgress::Failed(e.to_string()));
                                 return;
                             }
@@ -144,6 +154,10 @@ impl AnalysisJob {
                         });
                     }
                 }
+                let state = if flag.load(std::sync::atomic::Ordering::Relaxed) { "cancelled" } else { "completed" };
+                if let Err(error) = run.finish(state,"") {
+                    let _ = tx.send(AnalysisProgress::Failed(error.to_string())); return;
+                }
                 let _ = tx.send(AnalysisProgress::Done {
                     analyzed: made,
                     without_pulse: no_pulse,
@@ -151,7 +165,7 @@ impl AnalysisJob {
                 });
             })
             .expect("the analysis thread starts");
-        Self { events: rx, cancel, thread: Some(thread) }
+        Self { events: rx, cancel, thread: Some(thread), run_id }
     }
 
     /// Whatever has happened, without blocking.
@@ -175,6 +189,8 @@ impl AnalysisJob {
     pub fn is_cancelled(&self) -> bool {
         self.cancel.load(std::sync::atomic::Ordering::Relaxed)
     }
+
+    pub fn run_id(&self) -> i64 { self.run_id.load(std::sync::atomic::Ordering::Acquire) }
 
     pub fn finished(&self) -> bool {
         self.thread.as_ref().is_some_and(|t| t.is_finished())
@@ -329,5 +345,28 @@ mod tests {
     #[test]
     fn a_file_that_cannot_be_opened_does_not_bring_the_analysis_down() {
         assert!(analyze_file(Path::new("/does/not/exist.flac")).is_none());
+    }
+
+    #[test]
+    fn a_completed_pass_saves_its_failure_history_and_does_not_restart_processed_tracks() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("library.db");
+        let library = Library::open(&path).unwrap();
+        let source = library.source_id("local","default").unwrap();
+        library.connection().execute("INSERT INTO tracks(source_id,external_id,title,added_at)
+            VALUES (?1,'/missing-analysis-fixture.flac','Missing track',0)",[source]).unwrap();
+        drop(library);
+        let job = AnalysisJob::start(path.clone());
+        let events = wait(&job);
+        assert!(matches!(events.last(),Some(AnalysisProgress::Done {analyzed:1,failed:1,..})));
+        drop(job);
+        let library = Library::open(&path).unwrap();
+        let history = library.analysis_runs().unwrap();
+        assert_eq!(history[0].state,"completed");
+        assert_eq!((history[0].processed,history[0].saved,history[0].failed),(1,0,1));
+        assert_eq!(library.analysis_inventory_for_run(VERSION,"all","",0,history[0].id).unwrap().tracks[0].result,"failed");
+        drop(library);
+        let job = AnalysisJob::start(path);
+        assert!(matches!(wait(&job).first(),Some(AnalysisProgress::Counted {total:0})));
     }
 }
