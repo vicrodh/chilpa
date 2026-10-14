@@ -34,10 +34,13 @@ ApplicationWindow {
     id: window
     width:1280; height:800; visible:true
     property int phase:0
+    property int frames:0
+    property int observedFrame:0
     property int total: EXPECTED_TOTAL
     property var before:null
     property double started:0
     AnalysisInventoryDialog { id: inventory }
+    Connections { target:window; function onFrameSwapped() { window.frames++ } }
     function find(item,name) {
         if (item.objectName===name) return item
         for (const child of item.children || []) { const result=find(child,name); if(result) return result }
@@ -53,23 +56,31 @@ ApplicationWindow {
             if (inventory.summary.total!==window.total || list.count!==Math.min(100,window.total)) return window.fail("saved inventory count differs")
             if (!list.height || !list.itemAtIndex(0).height) return window.fail("track rows have no visible geometry")
             console.log("SMOKE saved inventory tracks="+inventory.summary.total+" rows="+list.count)
-            inventory.chooseRun(RUN_ID); window.phase=1; return
+            inventory.chooseRun(RUN_ID); window.observedFrame=window.frames; window.phase=1; return
         }
         if (window.phase===1) {
-            if (list.count!==EXPECTED_RESULTS || !list.itemAtIndex(0)) return
+            if (window.frames<=window.observedFrame || list.count!==EXPECTED_RESULTS || !list.itemAtIndex(0)) return
             if (inventory.summary.runs[0].state!=="interrupted") return window.fail("an unfinished previous pass was reported as running")
+            if (EXPECTED_RESULTS===3) {
+                if (inventory.summary.runs[0].processed!==3) return window.fail("saved progress was lost after reopening")
+                console.log("SMOKE persisted inventory processed=3 results=3")
+                inventory.history=true; window.observedFrame=window.frames; window.phase=3; return
+            }
             window.before=list.itemAtIndex(0); window.phase=2
             console.log("SMOKE READY live-inventory")
             return
         }
         if (window.phase===2 && list.count===3 && inventory.summary.runs[0].processed===3) {
+            window.observedFrame=window.frames; window.phase=4; return
+        }
+        if (window.phase===4 && window.frames>window.observedFrame) {
             if (EXPECTED_RESULTS===2 && list.itemAtIndex(1)!==window.before) return window.fail("live progress recreated an existing row")
             console.log("SMOKE live inventory processed=3 saved=2 failed=1 previous="+inventory.summary.runs[0].previous)
-            inventory.history=true; window.phase=3; return
+            inventory.history=true; window.observedFrame=window.frames; window.phase=3; return
         }
         if (window.phase===3) {
             const history=window.find(inventory.contentItem,"inventoryRunList")
-            if (!history || !history.itemAtIndex(0)) return
+            if (window.frames<=window.observedFrame || !history || !history.itemAtIndex(0)) return
             console.log("SMOKE analysis history rows="+history.count)
             Qt.exit(0)
         }
