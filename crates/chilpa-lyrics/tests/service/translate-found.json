@@ -1,0 +1,41 @@
+{
+ "request": {
+  "schema": 1,
+  "language": "es",
+  "from": "en",
+  "track": {
+   "title": "Small Hours",
+   "artist": "Example Artist"
+  },
+  "lines": [
+   "Stay until the morning",
+   "Oh, oh, oh",
+   "Placeholder words",
+   "Stay until the morning"
+  ]
+ },
+ "status": 200,
+ "response": {
+  "schema": 1,
+  "status": "found",
+  "layer": {
+   "kind": "translation",
+   "language": "es",
+   "provider": "fake",
+   "lines": [
+    {
+     "line": 0,
+     "text": "Quédate hasta la mañana"
+    },
+    {
+     "line": 2,
+     "text": "Palabras de relleno"
+    },
+    {
+     "line": 3,
+     "text": "Quédate hasta la mañana"
+    }
+   ]
+  }
+ }
+}

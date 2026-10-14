@@ -22,9 +22,9 @@
 //! still judged here against the track ([`crate::matching`]) before it is
 //! shown or kept.
 
-use crate::cache::{Cache, Hit, Origin};
+use crate::cache::{self, Cache, Hit, Origin, TranslationHit};
 use crate::matching::{judge, Track};
-use crate::model::Document;
+use crate::model::{Document, Layer};
 use crate::wire::Candidate;
 use std::path::PathBuf;
 use std::sync::mpsc;
@@ -58,18 +58,42 @@ pub trait Source: Send + Sync {
     fn lyrics(&self, reference: &str, track: &Track, language: Option<&str>, timeout: Duration) -> Answer;
 }
 
-/// How long the source and the service are waited for.
+/// How long the source, the service and the translator are waited for.
 #[derive(Clone, Copy, Debug)]
 pub struct Limits {
     pub source: Duration,
     pub remote: Duration,
+    pub translate: Duration,
 }
 
 impl Default for Limits {
     fn default() -> Self {
-        Limits { source: Duration::from_secs(4), remote: Duration::from_secs(6) }
+        Limits { source: Duration::from_secs(4), remote: Duration::from_secs(6), translate: Duration::from_secs(12) }
     }
 }
+
+/// What a translator answered for some lines.
+#[derive(Clone, PartialEq, Debug)]
+pub enum Translation {
+    Found(Layer),
+    /// These lines have no translation there.
+    None,
+    /// It could not be asked, or it is still working: when to ask again.
+    Failed { retry_after: Option<Duration>, message: String },
+}
+
+/// Whoever translates lyrics already shown: the lyrics service today.
+pub trait Translator: Send + Sync {
+    fn id(&self) -> &str;
+    /// A translation of `lines` into `language`, by position. `from` is
+    /// the language sung, when the document says it.
+    fn translate(&self, track: &Track, lines: &[String], language: &str, from: Option<&str>, timeout: Duration) -> Translation;
+}
+
+/// The longest "ask again in a moment" that is waited out here.
+const TRANSLATION_WAIT: Duration = Duration::from_secs(10);
+/// How long a translator that failed without saying is left alone.
+const TRANSLATION_PAUSE: Duration = Duration::from_secs(60);
 
 /// One track to find lyrics for.
 #[derive(Clone)]
@@ -81,6 +105,9 @@ pub struct Request {
     pub source: Option<(Arc<dyn Source>, String)>,
     /// The language a translation is wanted in, when the reader wants one.
     pub language: Option<String>,
+    /// Whether lyrics that carry no translation in that language may be
+    /// sent to the translator for one.
+    pub translate: bool,
     /// Whether the configured remote service may answer this request.
     pub allow_remote: bool,
     /// Remote provider ids selected by the listener; `None` allows all.
@@ -103,12 +130,15 @@ pub struct Outcome {
     pub refresh: bool,
 }
 
-/// The lyrics pipeline: the cache, the service and its pause.
+/// The lyrics pipeline: the cache, the service and its pause, and the
+/// translator with its own.
 pub struct Pipeline {
     cache: Mutex<Cache>,
     remote: Option<Arc<dyn Remote>>,
     /// The service asked to be left alone, until when.
     cooling: Mutex<Option<Instant>>,
+    translator: Option<Arc<dyn Translator>>,
+    translator_cooling: Mutex<Option<Instant>>,
     limits: Limits,
 }
 
@@ -116,7 +146,63 @@ impl Pipeline {
     /// A pipeline over a cache. Without a `remote`, only what came with the
     /// track and what its source has are found.
     pub fn new(cache: Cache, remote: Option<Arc<dyn Remote>>, limits: Limits) -> Pipeline {
-        Pipeline { cache: Mutex::new(cache), remote, cooling: Mutex::new(None), limits }
+        Pipeline { cache: Mutex::new(cache), remote, cooling: Mutex::new(None), translator: None, translator_cooling: Mutex::new(None), limits }
+    }
+
+    /// The same pipeline, with somebody to translate what is shown.
+    pub fn with_translator(mut self, translator: Arc<dyn Translator>) -> Pipeline {
+        self.translator = Some(translator);
+        self
+    }
+
+    /// The translation of a document into the language the request wants,
+    /// when it carries none and the reader asked for one: what the cache
+    /// has, or what the translator makes now. None when there is nothing
+    /// to add. A translator that says "in a moment" is waited for, once or
+    /// twice; one that fails is left alone for the pause it asked for.
+    pub fn translate(&self, request: &Request, document: &Document) -> Option<Layer> {
+        let language = request.language.as_deref().filter(|_| request.translate)?;
+        if document.translation_for(language).is_some() {
+            return None;
+        }
+        let lines: Vec<String> = document.lines.iter().map(|l| l.text.clone()).collect();
+        if !lines.iter().any(|l| l.chars().any(char::is_alphabetic)) {
+            return None;
+        }
+        let key = cache::translation_key(language, &lines);
+        match self.cache.lock().unwrap_or_else(|e| e.into_inner()).get_translation(&key) {
+            Some(TranslationHit::Found(layer)) => return fits(layer, lines.len()),
+            Some(TranslationHit::None) => return None,
+            None => {}
+        }
+        let translator = self.translator.as_ref()?;
+        if self.translator_cooling.lock().unwrap_or_else(|e| e.into_inner()).is_some_and(|until| until > Instant::now()) {
+            return None;
+        }
+        for attempt in 0..3 {
+            match translator.translate(&request.track, &lines, language, document.language.as_deref(), self.limits.translate) {
+                Translation::Found(layer) => {
+                    let layer = fits(layer, lines.len());
+                    if layer.is_some() {
+                        self.cache.lock().unwrap_or_else(|e| e.into_inner()).put_translation(&key, layer.as_ref());
+                    }
+                    return layer;
+                }
+                Translation::None => {
+                    self.cache.lock().unwrap_or_else(|e| e.into_inner()).put_translation(&key, None);
+                    return None;
+                }
+                Translation::Failed { retry_after, .. } => match retry_after {
+                    Some(wait) if wait <= TRANSLATION_WAIT && attempt < 2 => std::thread::sleep(wait),
+                    other => {
+                        let pause = other.unwrap_or(TRANSLATION_PAUSE).min(Duration::from_secs(3600));
+                        *self.translator_cooling.lock().unwrap_or_else(|e| e.into_inner()) = Some(Instant::now() + pause);
+                        return None;
+                    }
+                },
+            }
+        }
+        None
     }
 
     /// Forgets what a plugin gave, when it is removed.
@@ -328,9 +414,17 @@ fn choose(source: Option<Resolved>, remote: Option<Resolved>) -> Option<Resolved
     source.or(remote)
 }
 
+/// A layer only fits the lines it was made for: one that points past them
+/// is for another document.
+fn fits(layer: Layer, count: usize) -> Option<Layer> {
+    (!layer.lines.is_empty() && layer.lines.iter().all(|line| (line.line as usize) < count)).then_some(layer)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::{Layer, LayerKind, LayerLine};
+    use std::collections::VecDeque;
     use crate::lrc;
     use crate::matching::Claim;
     use crate::model::Timing;
@@ -405,11 +499,11 @@ mod tests {
     const PLAIN: &str = "Just words";
 
     fn pipeline(remote: Arc<Fake>) -> Pipeline {
-        Pipeline::new(Cache::in_memory().unwrap(), Some(remote as Arc<dyn Remote>), Limits { source: Duration::from_millis(400), remote: Duration::from_millis(600) })
+        Pipeline::new(Cache::in_memory().unwrap(), Some(remote as Arc<dyn Remote>), Limits { source: Duration::from_millis(400), remote: Duration::from_millis(600), translate: Duration::from_millis(600) })
     }
 
     fn request(source: Option<Arc<Fake>>) -> Request {
-        Request { track: track(), path: None, source: source.map(|s| (s as Arc<dyn Source>, "track:1".to_string())), language: None, allow_remote: true, remote_providers: None }
+        Request { track: track(), path: None, source: source.map(|s| (s as Arc<dyn Source>, "track:1".to_string())), language: None, translate: false, allow_remote: true, remote_providers: None }
     }
 
     fn origin(outcome: &Outcome) -> &str {
@@ -614,9 +708,111 @@ mod tests {
         std::fs::write(dir.join("song.lrc"), "Plain words next door\n").unwrap();
         let service = Fake::new("service", found(WORDS));
         let p = pipeline(service.clone());
-        let outcome = p.resolve(&Request { track: track(), path: Some(file), source: None, language: None, allow_remote: true, remote_providers: None }, false);
+        let outcome = p.resolve(&Request { track: track(), path: Some(file), source: None, language: None, translate: false, allow_remote: true, remote_providers: None }, false);
         assert_eq!(origin(&outcome), "file");
         assert_eq!(service.calls(), 0, "nobody is asked when the file has lyrics, however fine the service's are");
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+
+    struct FakeTranslator {
+        answers: Mutex<VecDeque<Translation>>,
+        calls: AtomicUsize,
+    }
+
+    impl FakeTranslator {
+        fn new(answers: Vec<Translation>) -> Arc<FakeTranslator> {
+            Arc::new(FakeTranslator { answers: Mutex::new(answers.into()), calls: AtomicUsize::new(0) })
+        }
+        fn calls(&self) -> usize {
+            self.calls.load(Ordering::SeqCst)
+        }
+    }
+
+    impl Translator for FakeTranslator {
+        fn id(&self) -> &str {
+            "translator"
+        }
+        fn translate(&self, _: &Track, _: &[String], _: &str, _: Option<&str>, _: Duration) -> Translation {
+            self.calls.fetch_add(1, Ordering::SeqCst);
+            self.answers.lock().unwrap().pop_front().unwrap_or(Translation::None)
+        }
+    }
+
+    fn layer(language: &str) -> Layer {
+        Layer {
+            kind: LayerKind::Translation,
+            language: language.into(),
+            provider: Some("translator".into()),
+            lines: vec![LayerLine { line: 0, text: "Zeile mit Zeit".into(), segments: vec![] }],
+        }
+    }
+
+    fn translating(answers: Vec<Translation>) -> (Pipeline, Arc<FakeTranslator>) {
+        let translator = FakeTranslator::new(answers);
+        let p = pipeline(Fake::new("service", found(LINES))).with_translator(translator.clone() as Arc<dyn Translator>);
+        (p, translator)
+    }
+
+    fn wanting(language: &str) -> Request {
+        let mut r = request(None);
+        r.language = Some(language.into());
+        r.translate = true;
+        r
+    }
+
+    #[test]
+    fn a_document_without_a_translation_gets_one_and_it_is_remembered() {
+        let (p, translator) = translating(vec![Translation::Found(layer("es"))]);
+        let document = lrc::parse(LINES);
+        assert_eq!(p.translate(&wanting("es"), &document), Some(layer("es")));
+        assert_eq!(p.translate(&wanting("es"), &document), Some(layer("es")), "the second time from the cache");
+        assert_eq!(translator.calls(), 1);
+    }
+
+    #[test]
+    fn a_document_that_carries_the_translation_is_not_asked_and_neither_is_one_nobody_wants() {
+        let (p, translator) = translating(vec![Translation::Found(layer("es"))]);
+        let mut carrying = lrc::parse(LINES);
+        carrying.layers.push(layer("es"));
+        assert_eq!(p.translate(&wanting("es"), &carrying), None);
+        let mut unwanted = wanting("es");
+        unwanted.translate = false;
+        assert_eq!(p.translate(&unwanted, &lrc::parse(LINES)), None);
+        let mut nowhere = wanting("es");
+        nowhere.language = None;
+        assert_eq!(p.translate(&nowhere, &lrc::parse(LINES)), None);
+        assert_eq!(translator.calls(), 0);
+    }
+
+    #[test]
+    fn none_is_remembered_and_a_failure_pauses_the_translator() {
+        let document = lrc::parse(LINES);
+        let (p, translator) = translating(vec![Translation::None]);
+        assert_eq!(p.translate(&wanting("es"), &document), None);
+        assert_eq!(p.translate(&wanting("es"), &document), None);
+        assert_eq!(translator.calls(), 1, "none is remembered");
+
+        let (p, translator) = translating(vec![Translation::Failed { retry_after: Some(Duration::from_secs(3600)), message: "no credit".into() }]);
+        assert_eq!(p.translate(&wanting("es"), &document), None);
+        assert_eq!(p.translate(&wanting("es"), &document), None);
+        assert_eq!(translator.calls(), 1, "a paused translator is left alone");
+    }
+
+    #[test]
+    fn a_short_wait_is_waited_out() {
+        let later = Translation::Failed { retry_after: Some(Duration::from_millis(10)), message: "still being made".into() };
+        let (p, translator) = translating(vec![later, Translation::Found(layer("es"))]);
+        assert_eq!(p.translate(&wanting("es"), &lrc::parse(LINES)), Some(layer("es")));
+        assert_eq!(translator.calls(), 2);
+    }
+
+    #[test]
+    fn a_layer_pointing_past_the_lines_is_not_believed() {
+        let mut wrong = layer("es");
+        wrong.lines[0].line = 7;
+        let (p, translator) = translating(vec![Translation::Found(wrong)]);
+        assert_eq!(p.translate(&wanting("es"), &lrc::parse(LINES)), None);
+        assert_eq!(translator.calls(), 1);
     }
 }

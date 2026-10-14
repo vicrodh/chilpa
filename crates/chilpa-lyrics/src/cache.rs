@@ -18,7 +18,7 @@
 //!   anyone.
 
 use crate::matching::{self, Claim, Track};
-use crate::model::{Document, SCHEMA};
+use crate::model::{Document, Layer, SCHEMA};
 use rusqlite::{params, Connection};
 use std::path::Path;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -29,6 +29,16 @@ pub const FRESH: Duration = Duration::from_secs(60 * 60 * 24 * 90);
 pub const NONE_FOR: Duration = Duration::from_secs(60 * 60 * 24 * 7);
 /// Rows nobody read in this long are removed when the cache opens.
 pub const FORGET_AFTER: Duration = Duration::from_secs(60 * 60 * 24 * 180);
+/// How long "no translation" is believed.
+pub const TRANSLATION_NONE_FOR: Duration = Duration::from_secs(60 * 60 * 24);
+
+/// What a read of a translation finds.
+#[derive(Clone, PartialEq, Debug)]
+pub enum TranslationHit {
+    Found(Layer),
+    /// Somebody asked recently and there was none.
+    None,
+}
 
 /// Where a row came from, so the screen can say it.
 #[derive(Clone, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
@@ -91,6 +101,13 @@ impl Cache {
                 fetched_at INTEGER NOT NULL,
                 used_at INTEGER NOT NULL,
                 PRIMARY KEY (key, seconds)
+            );
+            CREATE TABLE IF NOT EXISTS translations (
+                key TEXT NOT NULL PRIMARY KEY,
+                found INTEGER NOT NULL,
+                layer TEXT,
+                fetched_at INTEGER NOT NULL,
+                used_at INTEGER NOT NULL
             );",
         )?;
         let cache = Cache { db };
@@ -192,9 +209,39 @@ impl Cache {
         self.write(&source_key(plugin, reference), track, None, None);
     }
 
-    /// Forgets everything: every lyric found and every "none". Says how
-    /// many rows went.
+    /// A translation kept for some lines in some language, by
+    /// [`translation_key`]. "None" is believed for a day.
+    pub fn get_translation(&self, key: &str) -> Option<TranslationHit> {
+        let (found, layer, fetched_at): (bool, Option<String>, i64) = self
+            .db
+            .query_row("SELECT found, layer, fetched_at FROM translations WHERE key = ?1", params![key], |r| Ok((r.get::<_, i64>(0)? != 0, r.get(1)?, r.get(2)?)))
+            .ok()?;
+        let now = now();
+        let age = Duration::from_secs(now.saturating_sub(fetched_at).max(0) as u64);
+        let hit = if found {
+            TranslationHit::Found(serde_json::from_str::<Layer>(layer.as_deref()?).ok()?)
+        } else if age < TRANSLATION_NONE_FOR {
+            TranslationHit::None
+        } else {
+            return None;
+        };
+        let _ = self.db.execute("UPDATE translations SET used_at = ?2 WHERE key = ?1", params![key, now]);
+        Some(hit)
+    }
+
+    /// Keeps a translation, or that there is none, for some lines in some
+    /// language.
+    pub fn put_translation(&self, key: &str, layer: Option<&Layer>) {
+        let _ = self.db.execute(
+            "INSERT OR REPLACE INTO translations (key, found, layer, fetched_at, used_at) VALUES (?1, ?2, ?3, ?4, ?4)",
+            params![key, layer.is_some() as i64, layer.and_then(|l| serde_json::to_string(l).ok()), now()],
+        );
+    }
+
+    /// Forgets everything: every lyric found, every "none" and every
+    /// translation. Says how many lyrics went.
     pub fn clear(&self) -> usize {
+        let _ = self.db.execute("DELETE FROM translations", []);
         self.db.execute("DELETE FROM lyrics", []).unwrap_or(0)
     }
 
@@ -239,6 +286,7 @@ impl Cache {
     fn forget_unused(&self) -> rusqlite::Result<()> {
         let before = now() - FORGET_AFTER.as_secs() as i64;
         self.db.execute("DELETE FROM lyrics WHERE used_at < ?1", params![before])?;
+        self.db.execute("DELETE FROM translations WHERE used_at < ?1", params![before])?;
         Ok(())
     }
 
@@ -278,6 +326,26 @@ fn source_key(plugin: &str, reference: &str) -> String {
     format!("source:{plugin}:{reference}")
 }
 
+/// The key for a translation: the language and the lines, digested, so a
+/// song's words are the same key wherever they came from. FNV-1a, which
+/// needs nothing and never changes.
+pub fn translation_key(language: &str, lines: &[String]) -> String {
+    let language = language.trim().to_ascii_lowercase();
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    let mut feed = |bytes: &[u8]| {
+        for byte in bytes {
+            hash ^= u64::from(*byte);
+            hash = hash.wrapping_mul(0x0100_0000_01b3);
+        }
+    };
+    feed(language.as_bytes());
+    for line in lines {
+        feed(&[0x1f]);
+        feed(line.trim().as_bytes());
+    }
+    format!("tr:{language}:{}:{hash:016x}", lines.len())
+}
+
 /// The length in whole seconds. An unknown length is far below zero, so rows
 /// for unknown lengths only meet each other.
 fn seconds_of(track: &Track) -> i64 {
@@ -291,6 +359,7 @@ fn now() -> i64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::{Layer, LayerKind, LayerLine};
     use crate::lrc;
 
     fn track() -> Track {
@@ -412,5 +481,28 @@ mod tests {
         assert!(cache.get(&found).is_none());
         assert!(cache.get(&missing).is_none(), "a remembered \"none\" goes too: it is asked again");
         assert_eq!(cache.clear(), 0);
+    }
+
+
+    #[test]
+    fn a_translation_is_kept_by_its_lines_and_language() {
+        let cache = Cache::in_memory().unwrap();
+        let lines = vec!["Line timed".to_string()];
+        let key = translation_key("es", &lines);
+        assert_eq!(cache.get_translation(&key), None);
+        let layer = Layer {
+            kind: LayerKind::Translation,
+            language: "es".into(),
+            provider: Some("service".into()),
+            lines: vec![LayerLine { line: 0, text: "Zeile".into(), segments: vec![] }],
+        };
+        cache.put_translation(&key, Some(&layer));
+        assert_eq!(cache.get_translation(&key), Some(TranslationHit::Found(layer.clone())));
+        assert_eq!(cache.get_translation(&translation_key("fr", &lines)), None, "another language is another row");
+        assert_ne!(translation_key("es", &lines), translation_key("es", &["Other".to_string()]));
+        cache.put_translation(&translation_key("fr", &lines), None);
+        assert_eq!(cache.get_translation(&translation_key("fr", &lines)), Some(TranslationHit::None));
+        cache.clear();
+        assert_eq!(cache.get_translation(&key), None, "clearing forgets translations too");
     }
 }

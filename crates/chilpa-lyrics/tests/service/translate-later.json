@@ -1,0 +1,24 @@
+{
+ "request": {
+  "schema": 1,
+  "language": "es",
+  "from": "en",
+  "track": {
+   "title": "Small Hours",
+   "artist": "Example Artist"
+  },
+  "lines": [
+   "Stay until the morning",
+   "Oh, oh, oh",
+   "Placeholder words",
+   "Stay until the morning"
+  ]
+ },
+ "status": 503,
+ "retry_after": "5",
+ "response": {
+  "schema": 1,
+  "error": "The translator could not be asked",
+  "detail": "the translation is still being made"
+ }
+}
