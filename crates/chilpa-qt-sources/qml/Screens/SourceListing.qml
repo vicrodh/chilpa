@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Components"
 import "../Patterns"
@@ -107,9 +108,18 @@ Flickable {
             model: tracks
         }
 
+        ShelfSkeleton {
+            width: parent.width
+            visible: cards.albums === 0 && tracks.count === 0 && page.about.loading === true
+            tracks: page.about.entity === "track"
+            round: page.about.round === true
+            oneRow: false
+            count: tracks ? Math.ceil(page.height / Metrics.rowRich)
+                : CardLayout.columns(width) * Math.ceil(page.height / CardLayout.cardHeight)
+        }
         SourceState {
             width: parent.width
-            visible: cards.albums === 0 && tracks.count === 0 && (page.about.folders || []).length === 0
+            visible: cards.albums === 0 && tracks.count === 0 && (page.about.folders || []).length === 0 && page.about.loading !== true
             source: page.source
             about: page.about
         }

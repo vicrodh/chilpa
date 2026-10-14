@@ -61,6 +61,7 @@ Item {
     }
     Loader {
         id: body
+        property var entry: slot.entry
         objectName: "homeModuleLoader"
         width: parent.width
         height: item ? item.implicitHeight : 0
@@ -68,6 +69,6 @@ Item {
         asynchronous: true
         visible: slot.ready && slot.shown
         sourceComponent: slot.content
-        onLoaded: { item.entry = Qt.binding(() => slot.entry); slot.bound = true }
+        onLoaded: slot.bound = true
     }
 }

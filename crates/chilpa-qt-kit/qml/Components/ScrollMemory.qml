@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import "../Primitives"
 
-// Keep a route's viewport position while the screen Loader replaces pages.
+// I store distance from the viewport origin, including its top margin.
 Item {
     id: memory
     property var viewport: null
@@ -11,31 +11,41 @@ Item {
     property bool applying: false
     visible: false
 
+    function origin() { return viewport ? (viewport.originY || 0) - (viewport.topMargin || 0) : 0 }
+    function remember() {
+        if (key && viewport && !applying && pending < 0)
+            Visit.keep(key, Math.max(0, viewport.contentY - origin()))
+    }
+    function restore() {
+        pending = key ? Visit.recall(key, 0) : -1
+        resume()
+    }
     function resume() {
         if (!viewport || pending < 0) return
-        const end = Math.max(0, viewport.contentHeight - viewport.height)
+        if (typeof viewport.forceLayout === "function") viewport.forceLayout()
+        const start = origin()
+        const end = Math.max(0, viewport.contentHeight - viewport.height
+            + (viewport.topMargin || 0) + (viewport.bottomMargin || 0))
         applying = true
-        viewport.contentY = Math.min(pending, end)
+        viewport.contentY = start + Math.min(pending, end)
         applying = false
         if (end >= pending) pending = -1
     }
-    onKeyChanged: {
-        pending = key ? Visit.recall(key, 0) : -1
-        if (pending <= 0) { pending = -1; if (viewport) viewport.contentY = 0 }
-        else Qt.callLater(resume)
-    }
-    onViewportChanged: Qt.callLater(resume)
+    onKeyChanged: restore()
+    onViewportChanged: if (viewport) Qt.callLater(restore)
     Connections {
         target: memory.viewport
+        ignoreUnknownSignals: true
         function onContentHeightChanged() { Qt.callLater(memory.resume) }
+        function onOriginYChanged() { Qt.callLater(memory.resume) }
         function onContentYChanged() {
             if (memory.applying || !memory.key || !memory.viewport) return
             if (memory.pending >= 0) Qt.callLater(memory.resume)
-            else Visit.keep(memory.key, memory.viewport.contentY)
+            else memory.remember()
         }
         function onMovementStarted() {
             memory.pending = -1
-            if (memory.key) Visit.keep(memory.key, memory.viewport.contentY)
+            memory.remember()
         }
     }
     Connections {
@@ -43,5 +53,10 @@ Item {
         function onPressedChanged() {
             if (target.pressed) memory.pending = -1
         }
+    }
+    WheelHandler {
+        parent: memory.viewport
+        target: null
+        onWheel: event => { memory.pending = -1; event.accepted = false }
     }
 }

@@ -13,10 +13,10 @@ Flickable {
     readonly property var document: JSON.parse(Sources.snapshot || "{}")
     readonly property var entry: document.detail || ({})
     readonly property bool radio: entry.live === true
-    readonly property string key: Navigation.routeKey
+    property string key: Navigation.routeKey
     function ask(action) { Sources.command(action, entry.id || "", entry.source || "") }
     function open() { const cut = key.indexOf(" "); if (cut >= 0 && Navigation.screen === "sourceEntry") Sources.command("detail", key.slice(cut + 1), key.slice(0, cut)) }
-    Component.onCompleted: open()
+    Component.onCompleted: Qt.callLater(page.open)
     onKeyChanged: Qt.callLater(page.open)
     Timer { interval: Motion.poll; repeat: true; running: page.visible && !!(page.entry.sounding || page.entry.metadata_loading || (page.entry.extras || {}).loading); onTriggered: Sources.refresh() }
     contentHeight: body.height + Metrics.contentBottom; clip: true

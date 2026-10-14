@@ -165,10 +165,10 @@ ListView {
         }
     }
     SourceHomeSections { id: remote; active: page.presented; refresh: page.homeRefresh; rendered: false }
-    Component { id: albumShelf; AlbumShelf { width: parent ? parent.width : 0 } }
-    Component { id: trackShelf; TrackShelf { width: parent ? parent.width : 0 } }
-    Component { id: playlistShelf; PlaylistShelf { width: parent ? parent.width : 0 } }
-    Component { id: sourceRail; SourceRail { width: parent ? parent.width : 0 } }
+    Component { id: albumShelf; AlbumShelf { entry: parent.entry; width: parent ? parent.width : 0 } }
+    Component { id: trackShelf; TrackShelf { entry: parent.entry; width: parent ? parent.width : 0 } }
+    Component { id: playlistShelf; PlaylistShelf { entry: parent.entry; width: parent ? parent.width : 0 } }
+    Component { id: sourceRail; SourceRail { entry: parent.entry; width: parent ? parent.width : 0 } }
 
     Loader {
         id: customization

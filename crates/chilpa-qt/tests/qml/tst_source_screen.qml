@@ -33,6 +33,14 @@ TestCase {
         compare(Sources.asked[0], ["open", "radio", ""])
     }
 
+    function test_an_outgoing_page_keeps_its_own_source_contents() {
+        const previous = screen.view
+        Sources.show({source:"another-source", entries:[], name:"Another source"})
+        wait(20)
+        compare(screen.view, previous, "another source must not blank the page that is leaving")
+        Sources.show({source:"radio", name:"Radio"})
+    }
+
     function test_a_folder_is_entered_and_a_station_played_by_the_same_click() {
         mouseClick(row(0), 60, 10)
         compare(last(), ["enter", "countries", ""])

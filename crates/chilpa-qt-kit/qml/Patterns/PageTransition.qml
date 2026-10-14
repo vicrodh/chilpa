@@ -1,5 +1,6 @@
 import QtQuick
 import "../Theme"
+import "../Components"
 
 // I replace the current page as soon as the destination shell is built.
 // Each page owns placeholders for its data; a source cannot delay navigation.
@@ -39,6 +40,7 @@ Item {
         pendingComponent = sourceComponent
         requestedAt = Date.now()
         next.sourceComponent = null
+        next.pageRoute = route
         next.sourceComponent = sourceComponent
     }
 
@@ -48,6 +50,7 @@ Item {
             return
         if (!next.item)
             return
+        next.scroll.restore()
         frontA = next === first
         committedRoute = pendingRoute
         pendingRoute = ""
@@ -57,17 +60,31 @@ Item {
 
     Loader {
         id: first
+        property string pageRoute: ""
+        readonly property alias scroll: firstScroll
         anchors.fill: parent
         asynchronous: true
         visible: transition.frontA
-        onLoaded: transition.present(first)
+        onLoaded: Qt.callLater(transition.present, first)
+        ScrollMemory {
+            id: firstScroll
+            viewport: first.item && first.item.contentY !== undefined ? first.item : first.item?.scrollView || null
+            key: first.pageRoute
+        }
     }
     Loader {
         id: second
+        property string pageRoute: ""
+        readonly property alias scroll: secondScroll
         anchors.fill: parent
         asynchronous: true
         visible: !transition.frontA
-        onLoaded: transition.present(second)
+        onLoaded: Qt.callLater(transition.present, second)
+        ScrollMemory {
+            id: secondScroll
+            viewport: second.item && second.item.contentY !== undefined ? second.item : second.item?.scrollView || null
+            key: second.pageRoute
+        }
     }
     Connections {
         target: transition.Window.window

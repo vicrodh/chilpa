@@ -12,6 +12,8 @@ import "../Components"
 // plugin's to say.
 Item {
     id: page
+    property string routeKey: Navigation.routeKey
+    property bool initialized: false
 
     property var view: ({})
     readonly property var crumbs: view.crumbs || []
@@ -27,9 +29,10 @@ Item {
     function read() {
         if (settling) return
         const next = JSON.parse(Sources.snapshot || "{}")
+        if (next.source !== page.routeKey) return
         if (startingPlugins && !next.starting) Qt.callLater(page.open)
         startingPlugins = next.starting === true
-        const mine = next.source === Navigation.routeKey
+        const mine = next.source === page.routeKey
         const at = mine ? next.source + "/" + (next.crumbs || []).join("/") : ""
         const y = at === place ? list.contentY : 0
         settling = true
@@ -44,18 +47,15 @@ Item {
         // The key changes before the screen does: on the way out it is
         // already another screen's, and not a plugin to open.
         if (Navigation.screen !== "source") return
-        ask("open", Navigation.routeKey, "")
+        ask("open", page.routeKey, "")
         read()
     }
 
-    Component.onCompleted: open()
+    Component.onCompleted: { initialized = true; open() }
+    onRouteKeyChanged: if (initialized) Qt.callLater(page.open)
     Connections {
         target: Sources
         function onRevisionChanged() { page.read() }
-    }
-    Connections {
-        target: Navigation
-        function onRouteKeyChanged() { Qt.callLater(page.open) }
     }
     Connections {
         target: Player

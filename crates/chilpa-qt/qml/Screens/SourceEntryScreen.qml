@@ -12,7 +12,7 @@ import "../Components"
 Flickable {
     id: page
 
-    readonly property string key: Navigation.routeKey
+    property string key: Navigation.routeKey
     readonly property var entry: JSON.parse(Sources.snapshot || "{}").detail || ({})
     readonly property bool known: entry.id !== undefined
 
@@ -27,7 +27,7 @@ Flickable {
     contentHeight: body.height + Metrics.contentTop * 2 // derived: padding above and below
     clip: true; ScrollBar.vertical: ViewportScrollBar {}
 
-    Component.onCompleted: open()
+    Component.onCompleted: Qt.callLater(page.open)
     onKeyChanged: Qt.callLater(page.open)
     Timer {
         interval: Motion.poll

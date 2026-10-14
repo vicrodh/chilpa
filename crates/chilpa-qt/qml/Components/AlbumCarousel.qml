@@ -44,7 +44,7 @@ Column {
         id: rail
         objectName: "albumCarouselRail"
         width: parent.width
-        height: grid.implicitHeight + Metrics.gap8
+        height: Math.max(CardLayout.cardHeight + Metrics.cardRing * 2, grid.implicitHeight) + Metrics.gap8 // derived: a full cover row before ListView's first polish
         contentWidth: grid.width; contentHeight: height
         interactive: contentWidth > width
         flickableDirection: Flickable.HorizontalFlick

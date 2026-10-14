@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import "../../qml/Patterns"
+import "../../qml/Primitives"
 
 TestCase {
     name: "PageTransition"
@@ -21,6 +22,33 @@ TestCase {
         }
     }
     PageTransition { id: pages; anchors.fill: parent }
+    Component {
+        id: scrolling
+        Flickable {
+            readonly property string mountedRoute: parent.pageRoute
+            contentWidth: width; contentHeight: 1800
+        }
+    }
+
+    function test_pages_keep_their_own_route_and_scroll() {
+        pages.sourceComponent = scrolling
+        pages.route = "first-scrolling-page"
+        tryCompare(pages, "committedRoute", pages.route)
+        pages.item.contentY = 420
+        const previous = pages.item
+        pages.route = "second-scrolling-page"
+        compare(previous.mountedRoute, "first-scrolling-page",
+            "preparing the next page must not retarget the visible one")
+        compare(previous.contentY, 420)
+        tryCompare(pages, "committedRoute", pages.route)
+        compare(pages.item.contentY, 0)
+        compare(Visit.recall("first-scrolling-page", -1), 420)
+        pages.item.contentY = 210
+        pages.route = "first-scrolling-page"
+        tryCompare(pages, "committedRoute", pages.route)
+        compare(pages.item.contentY, 420)
+        compare(Visit.recall("second-scrolling-page", -1), 210)
+    }
 
     function test_a_slow_module_does_not_delay_its_destination_shell() {
         pages.sourceComponent = albums
