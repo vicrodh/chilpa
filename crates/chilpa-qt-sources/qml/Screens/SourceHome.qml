@@ -18,6 +18,7 @@ ListView {
     // "<plugin>" or "<plugin> section:<name>".
     property string key
     property bool presented: false
+    property bool leaving: false
     Connections { target: page.Window.window; function onFrameSwapped() { if (page.visible) page.presented = true } }
     readonly property string document: Sources.page(key, Library.remoteRev) || "{}"
     readonly property var about: JSON.parse(document)
@@ -85,7 +86,7 @@ ListView {
             x: Metrics.contentX
             width: page.width - Metrics.contentX * 2 // derived: padding on both sides
             entry: Object.assign({}, parent.entry, {id:"native:" + page.key + ":" + parent.entry.id, kind:"shelf", entityKind:parent.entry.kind})
-            started: page.presented
+            started: page.presented && !page.leaving
             content: sourceModule
         }
     }

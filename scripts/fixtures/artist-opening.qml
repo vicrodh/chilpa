@@ -16,6 +16,7 @@ ApplicationWindow {
     property var mounted: null
     property var failures: []
     property int updates: 0
+    readonly property string playbackPath: Player.path
     ScreenHost { id: host; anchors.fill: parent }
     SearchModel { id: search }
     ListView {
@@ -86,7 +87,7 @@ ApplicationWindow {
                 const objects = window.descendants(page)
                 const grids = objects.filter(item => item.model?.kind === "artist" && item.cardWidth !== undefined)
                 if (!grids.length || !grids[0].model.albums) { restart(); return }
-                if (window.step === 2 && Math.abs(page.scrollView.contentY - 120) > 2) window.fail("back lost the artist scroll position")
+                if (window.step === 2 && Math.abs(page.scrollView.contentY - 120) > 2) window.fail("back lost the artist scroll position: " + page.scrollView.contentY)
                 const before = page.scrollView.contentHeight
                 page.scrollView.contentY = Math.max(0, before - page.scrollView.height)
                 page.scrollView.contentY = window.step === 0 ? 120 : 0

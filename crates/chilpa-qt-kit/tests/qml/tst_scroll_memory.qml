@@ -21,7 +21,22 @@ TestCase {
         header: Rectangle { width: 240; height: headed.headerHeight }
         delegate: Rectangle { width: 240; height: 32 }
     }
-    function init() { memory.viewport = view; memory.key = "first"; view.contentHeight = 1800; memory.pending = -1 }
+    function init() { memory.enabled = true; memory.viewport = view; memory.key = "first"; view.contentHeight = 1800; memory.pending = -1 }
+
+    function test_teardown_cannot_replace_the_saved_scroll_with_a_clamped_position() {
+        memory.key = "teardown"
+        view.contentY = 420
+        compare(Visit.recall("teardown", -1), 420)
+        memory.enabled = false
+        view.contentHeight = view.height
+        view.contentY = 0
+        wait(20)
+        compare(Visit.recall("teardown", -1), 420)
+        view.contentHeight = 1800
+        memory.enabled = true
+        memory.restore()
+        tryCompare(view, "contentY", 420)
+    }
 
     function test_a_new_page_keeps_its_header_and_top_margin() {
         memory.viewport = headed

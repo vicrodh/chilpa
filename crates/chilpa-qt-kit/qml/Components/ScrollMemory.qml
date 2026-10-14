@@ -13,7 +13,7 @@ Item {
 
     function origin() { return viewport ? (viewport.originY || 0) - (viewport.topMargin || 0) : 0 }
     function remember() {
-        if (key && viewport && !applying && pending < 0)
+        if (enabled && key && viewport && !applying && pending < 0)
             Visit.keep(key, Math.max(0, viewport.contentY - origin()))
     }
     function restore() {
@@ -23,7 +23,7 @@ Item {
     function cancel() { pending = -1; remember() }
     function rebase() { resume(true) }
     function resume(rebase) {
-        if (!viewport || (!rebase && pending < 0)) return
+        if (!enabled || !viewport || (!rebase && pending < 0)) return
         const offset = pending >= 0 ? pending : Visit.recall(key, 0)
         if (!rebase && typeof viewport.forceLayout === "function") viewport.forceLayout()
         const start = origin()
