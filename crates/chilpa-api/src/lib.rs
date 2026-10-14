@@ -731,7 +731,10 @@ impl Chilpa {
         // during startup has to come out in the same language as the rest.
         let saved = chilpa_core::settings::load();
         storage_cache::start(saved.window.get("storage.remoteLimitMb").map(String::as_str));
+        #[cfg(not(test))]
         chilpa_i18n::set_language(if saved.language.is_empty() { chilpa_i18n::from_environment() } else { &saved.language });
+        #[cfg(test)]
+        chilpa_i18n::set_language("en");
         let on = |key| saved.window.get(key).is_some_and(|v| v == "true");
         chilpa_core::backends::set_reserving(on(outputs::RESERVE));
         chilpa_core::backends::set_forcing_rate(on(outputs::FORCE_RATE));
