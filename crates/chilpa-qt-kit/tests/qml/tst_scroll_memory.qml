@@ -14,7 +14,31 @@ TestCase {
         ScrollBar.vertical: ViewportScrollBar { id: bar }
     }
     ScrollMemory { id: memory; viewport: view; key: "first" }
-    function init() { memory.key = "first"; view.contentHeight = 1800; memory.pending = -1 }
+    ListView {
+        id: headed
+        width: 240; height: 200; topMargin: 24; model: 40
+        header: Rectangle { width: 240; height: 72 }
+        delegate: Rectangle { width: 240; height: 32 }
+    }
+    function init() { memory.viewport = view; memory.key = "first"; view.contentHeight = 1800; memory.pending = -1 }
+
+    function test_a_new_page_keeps_its_header_and_top_margin() {
+        memory.viewport = headed
+        memory.key = "header"
+        wait(20)
+        compare(headed.contentY, headed.originY - headed.topMargin,
+            "zero means the page's beginning, not an absolute content coordinate")
+        verify(headed.headerItem.mapToItem(headed, 0, 0).y >= 0)
+    }
+    function test_saved_positions_are_relative_to_the_view_origin() {
+        headed.forceLayout()
+        memory.viewport = headed
+        memory.key = "relative"
+        wait(20)
+        const start = headed.originY - headed.topMargin
+        headed.contentY = start + 300
+        compare(Visit.recall("relative", -1), 300)
+    }
 
     function test_restores_a_route_after_delayed_content() {
         memory.pending = -1

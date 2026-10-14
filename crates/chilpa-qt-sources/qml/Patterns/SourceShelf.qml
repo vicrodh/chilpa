@@ -79,7 +79,8 @@ Column {
     Flickable {
         id: rail
         objectName: "sourceShelfRail"
-        width: parent.width; height: grid.implicitHeight + Metrics.gap8
+        width: parent.width
+        height: Math.max(grid.list ? Metrics.rowRich : CardLayout.cardHeight + Metrics.cardRing * 2, grid.implicitHeight) + Metrics.gap8 // derived: reserve the card or ranked row before its view is polished
         visible: !shelf.trackSection && cards.albums > 0; contentWidth: grid.width; contentHeight: height
         interactive: !shelf.wrap && contentWidth > width; flickableDirection: Flickable.HorizontalFlick; boundsBehavior: Flickable.StopAtBounds; clip: true
         ScrollBar.horizontal: ViewportScrollBar {}

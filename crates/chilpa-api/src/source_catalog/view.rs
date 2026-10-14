@@ -22,6 +22,28 @@ pub(crate) fn album_of(card: &Card) -> Album {
 }
 
 #[cfg(test)]
+mod tests {
+    use serde_json::json;
+    #[test]
+    fn declared_tabs_keep_their_presentation_before_items_arrive() {
+        let mut app = crate::Chilpa::new();
+        app.catalog.lock().loaded = true;
+        app.catalog.remember_drawn("fixture", true);
+        app.sources.layouts.insert("fixture".into(), serde_json::from_value(json!({"sections":{
+            "library":{"title":"Library"},
+            "tracks":{"title":"Tracks","entity":"track","under":"library"},
+            "artists":{"title":"Artists","entity":"artist","under":"library"}
+        }})).unwrap());
+        let tracks: serde_json::Value = serde_json::from_str(&app.source_page("fixture section:tracks")).unwrap();
+        assert_eq!(tracks["music"], true);
+        assert_eq!(tracks["albumsOnly"], false, "a waiting track tab must retain its track layout");
+        assert_eq!(tracks["entity"], "track");
+        let artists: serde_json::Value = serde_json::from_str(&app.source_page("fixture section:artists")).unwrap();
+        assert_eq!(artists["round"], true, "a waiting artist tab must reserve round portraits");
+    }
+}
+
+#[cfg(test)]
 mod work_tests {
     use super::*;
 
@@ -221,10 +243,10 @@ impl Chilpa {
             "memberships": memberships,
             "cards": shelf.cards.len(),
             "tracks": shelf.tracks.len(),
-            "round": artists,
+            "round": artists || (shelf.cards.is_empty() && section.is_some_and(|s| s.entity == "artist")),
             "entity": section.map(|s| s.entity.clone()).unwrap_or_default(),
             "tabs": tabs,
-            "albumsOnly": shelf.tracks.is_empty() && shelf.folders.is_empty(),
+            "albumsOnly": shelf.tracks.is_empty() && shelf.folders.is_empty() && section.is_none_or(|s| s.entity != "track"),
         }).to_string()
     }
 

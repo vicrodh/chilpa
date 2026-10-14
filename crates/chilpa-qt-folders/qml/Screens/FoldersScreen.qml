@@ -15,8 +15,9 @@ import "../Patterns"
 // library, or a CD, opens from here without joining it.
 Item {
     id: page
+    property string routeKey: Navigation.routeKey
 
-    property bool flat: Navigation.routeKey === "" && SettingsModel.kept("ui.folders.mode") === "flat"
+    property bool flat: routeKey === "" && SettingsModel.kept("ui.folders.mode") === "flat"
     property real rail: Number(SettingsModel.kept("ui.folders.rail")) || Metrics.folderTreeWidth
     // The rail's width when its edge was taken.
     property real taken: 0
@@ -24,7 +25,7 @@ Item {
     FolderModel {
         id: current
         objectName: "folderContents"
-        path: Navigation.routeKey
+        path: page.routeKey
         content: true
         contentRev: Library.contentRev
 

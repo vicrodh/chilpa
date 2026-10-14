@@ -197,7 +197,8 @@ Item {
     }
     ShelfSkeleton {
         anchors.fill: grid
-        visible: !all.ready
+        visible: !all.ready || (all.albums === 0 && page.about.loading === true)
+        round: page.about.round === true
         tracks: page.rows
         oneRow: false
         count: page.rows ? Math.ceil(grid.height / Metrics.rowRich)

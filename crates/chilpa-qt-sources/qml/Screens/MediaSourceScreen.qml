@@ -10,6 +10,7 @@ import "../Patterns"
 
 Item {
     id: page
+    property string routeKey: Navigation.routeKey
     readonly property var view: JSON.parse(Sources.snapshot || "{}")
     readonly property bool radio: view.medium === "radio"
     readonly property bool root: (view.crumbs || []).length === 0
@@ -34,7 +35,9 @@ Item {
     }
     function open(entry) { if (entry.kind === "folder") { quick = null; ask("enter", entry.id) } else quick = entry }
     Timer { interval: Motion.poll; running: page.visible && (page.view.loading || (page.view.entries || []).some(e => e.sounding || e.resolving)); repeat: true; onTriggered: Sources.refresh() }
-    Connections { target: Navigation; function onRouteKeyChanged() { if (Navigation.screen === "source") page.ask("open", Navigation.routeKey) } }
+    function ensureSource() { if (Navigation.screen === "source" && routeKey && view.source !== routeKey) ask("open", routeKey) }
+    onRouteKeyChanged: Qt.callLater(ensureSource)
+    Component.onCompleted: Qt.callLater(ensureSource)
     Column {
         id: heading; x: Metrics.contentX; y: Metrics.contentTop; width: parent.width - Metrics.contentX * 2; spacing: Metrics.gap16 // derived: proportional space within the parent
         Text { text: page.root && page.tab === "explore" ? I18n.tr("Explore", I18n.rev) : page.view.name || ""; color: Theme.color.textPrimary; font.pointSize: Type.title; font.weight: Type.bold }

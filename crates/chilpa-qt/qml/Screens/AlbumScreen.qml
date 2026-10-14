@@ -15,6 +15,7 @@ import "qrc:/qt/qml/app/chilpa/artwork/qml/Components"
 // information comes from, and its tracks with a header per disc.
 Flickable {
     id: page
+    property double albumId: Navigation.routeId
 
     property bool selectionMode: false
     KeyedModel {
@@ -40,7 +41,7 @@ Flickable {
 
     AlbumDetailModel {
         id: detail
-        albumId: Navigation.routeId
+        albumId: page.albumId
         contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev
     }
     TrackListModel {

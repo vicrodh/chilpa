@@ -14,7 +14,7 @@ import "../Patterns"
 Flickable {
     id: page
 
-    readonly property int playlistId: Navigation.routeId
+    property int playlistId: Navigation.routeId
     readonly property string playlistName: Playlists.name(playlistId, Playlists.rev)
     readonly property bool editable: Playlists.editable(playlistId, Playlists.rev)
     property string order: "custom"
