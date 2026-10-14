@@ -942,6 +942,7 @@ impl Chilpa {
     /// An empty code means whatever the environment asks for, which is what
     /// a fresh install has and what someone gets back by clearing the choice.
     pub fn choose_language(&mut self, language: &str) {
+        if !language.is_empty() && !self.languages().contains(&language) { return; }
         let code = if language.is_empty() { chilpa_i18n::from_environment() } else { language };
         chilpa_i18n::set_language(code);
         let mut s = chilpa_core::settings::load();

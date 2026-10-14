@@ -9,6 +9,7 @@ QtObject {
     property int active: 0
     property int backCount: 0
     property int forwardCount: 0
+    property int stepCount: 0
     property var went: []
     function goKey(screen, key) { went = [screen, key] }
     function go(target, id) { page = target; selectedId = id }
@@ -17,4 +18,6 @@ QtObject {
     function openArtist(name) { went = ["artist", name] }
     function back() { backCount++ }
     function forward() { forwardCount++ }
+    function step(by) { stepCount += by }
+    function activate(index) { active = index }
 }

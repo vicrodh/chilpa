@@ -1,4 +1,5 @@
-function set(actions, rows, removing, servers, key, value) {
+function set(actions, rows, removing, servers, language, key, value) {
+    if (key === "appearance.language") { language.choose(value); rows.refresh(); return }
     if (key.startsWith("sources.server/") && value === "edit") { servers.begin("edit/" + key.split("/")[1]); actions.editingServerKey = key; return }
     if (key.startsWith("sources.server/") && value === "close-edit") { servers.cancel(); actions.editingServerKey = ""; rows.refresh(); return }
     if (key.startsWith("sources.server/") && value === "remove") { removing.serverId = Number(key.split("/")[1]); removing.message = servers.removal(removing.serverId); return removing.open() }

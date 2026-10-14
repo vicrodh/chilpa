@@ -31,6 +31,7 @@ impl Chilpa {
         self.now.playing.hash(&mut hash); self.now.paused.hash(&mut hash);
         let b = self.buffer_snapshot(self.listen.selected);
         json!({"tabs": tabs, "selected": self.listen.selected.to_string(),
+            "language": self.language(),
             "active": self.listen.active.to_string(), "revision": hash.finish().to_string(),
             "name": b.as_ref().map(|b| self.buffer_name(b)), "undo": self.listen.undo.is_some(),
             "pending": self.listen.pending.is_some(), "error": self.now.error}).to_string()
@@ -93,7 +94,7 @@ impl Chilpa {
         }
         (rows, keys)
     }
-    fn locate(&self, key: &str) -> Option<(Buffer, usize)> {
+    pub(super) fn locate(&self, key: &str) -> Option<(Buffer, usize)> {
         let id = key.split(':').next()?.parse().ok()?;
         let b = self.buffer_snapshot(id)?;
         let index = b.order.iter().copied().find(|&i| b.key(i) == key && b.live(i))?;
@@ -102,6 +103,7 @@ impl Chilpa {
     pub fn listen_row_action(&mut self, key: &str, action: &str, target: &str) -> bool {
         let Some((mut b, index)) = self.locate(key) else { return false };
         if action == "play" { return self.listen_play(b.id, key); }
+        if action == "split" { return self.listen_split(key).is_some(); }
         let active = b.id == self.listen.active;
         let current = active && index == self.now.index && self.now.playing;
         let at = b.order.iter().position(|&i| i == index).unwrap();
@@ -146,6 +148,9 @@ impl Chilpa {
         }
         items.push(item("listen:stop", if b.stop_after == Some(index) { chilpa_i18n::mark("Cancel stop after this track") } else { chilpa_i18n::mark("Stop after this track") }));
         items.push(item("listen:after", chilpa_i18n::mark("Clear after this track")));
+        if self.can_split(&b, index) {
+            items.push(item("listen:split", chilpa_i18n::mark("Split queue before this track")));
+        }
         items
     }
     pub fn collection_queue_menu(&self) -> Value {
@@ -182,6 +187,8 @@ impl Chilpa {
         let id = id.parse().unwrap_or(self.listen.selected);
         match action {
             "select" => self.listen_select(id),
+            "next" => self.listen_step(1),
+            "previous" => self.listen_step(-1),
             "new" => { self.listen_create("", &[]); }
             "rename" => self.listen_rename(id, text),
             "play" => { self.listen_play(id, ""); }

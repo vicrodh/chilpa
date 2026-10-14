@@ -19,6 +19,7 @@ mod qt {
     pub const SPACE: i32 = 0x20;
     pub const ESCAPE: i32 = 0x0100_0000;
     pub const TAB: i32 = 0x0100_0001;
+    pub const BACKTAB: i32 = 0x0100_0002;
     pub const BACKSPACE: i32 = 0x0100_0003;
     pub const RETURN: i32 = 0x0100_0004;
     pub const ENTER: i32 = 0x0100_0005;
@@ -132,6 +133,10 @@ const ACTIONS: &[Action] = &[
     action("nav.settings", i18n::mark("Settings"), NAVIGATION, "Ctrl+,", ""),
     action("nav.newTab", i18n::mark("New Tab"), NAVIGATION, "Ctrl+t", ""),
     action("nav.closeTab", i18n::mark("Close Tab"), NAVIGATION, "Ctrl+w", ""),
+    action("nav.nextTab", i18n::mark("Next tab"), NAVIGATION, "Ctrl+Tab", ""),
+    action("nav.previousTab", i18n::mark("Previous tab"), NAVIGATION, "Ctrl+Shift+Tab", ""),
+    action("queue.next", i18n::mark("Next queue"), NAVIGATION, "Ctrl+Alt+ArrowRight", ""),
+    action("queue.previous", i18n::mark("Previous queue"), NAVIGATION, "Ctrl+Alt+ArrowLeft", ""),
     action("nav.quit", i18n::mark("Quit"), NAVIGATION, "Ctrl+q", ""),
     action("ui.sidebar", i18n::mark("Toggle Sidebar"), INTERFACE, "Shift+S", ""),
     action("ui.queue", i18n::mark("Queue"), INTERFACE, "q", ""),
@@ -156,7 +161,7 @@ const ACTIONS: &[Action] = &[
 
 /// The actions a key still reaches while a text field has the keyboard,
 /// and only with Ctrl held.
-const THROUGH_TEXT: [&str; 3] = ["nav.search", "nav.settings", "ui.openLink"];
+const THROUGH_TEXT: [&str; 7] = ["nav.search", "nav.settings", "ui.openLink", "nav.nextTab", "nav.previousTab", "queue.next", "queue.previous"];
 
 fn known(id: &str) -> Option<&'static Action> {
     ACTIONS.iter().find(|a| a.id == id)
@@ -166,7 +171,7 @@ fn known(id: &str) -> Option<&'static Action> {
 /// `None` for a modifier pressed alone and for keys that cannot be written.
 pub fn shortcut(key: i32, modifiers: i32, text: &str) -> Option<String> {
     let ctrl = modifiers & (qt::CONTROL | qt::META) != 0;
-    let (alt, shift) = (modifiers & qt::ALT != 0, modifiers & qt::SHIFT != 0);
+    let (alt, shift) = (modifiers & qt::ALT != 0, modifiers & qt::SHIFT != 0 || key == qt::BACKTAB);
     let named = match key {
         qt::SPACE => Some("Space"),
         qt::LEFT => Some("ArrowLeft"),
@@ -175,7 +180,7 @@ pub fn shortcut(key: i32, modifiers: i32, text: &str) -> Option<String> {
         qt::DOWN => Some("ArrowDown"),
         qt::ESCAPE => Some("Escape"),
         qt::RETURN | qt::ENTER => Some("Enter"),
-        qt::TAB => Some("Tab"),
+        qt::TAB | qt::BACKTAB => Some("Tab"),
         qt::BACKSPACE => Some("Backspace"),
         qt::DELETE => Some("Delete"),
         _ => None,
@@ -484,6 +489,22 @@ mod tests {
                 assert!(seen.insert(a.base(keymap)), "{} twice in {keymap:?}", a.base(keymap));
             }
         }
+    }
+
+    #[test]
+    fn tab_and_queue_shortcuts_work_from_fields_and_remain_customizable() {
+        let mut keys = Keys::default();
+        for typing in [false, true] {
+            assert_eq!(keys.pressed_in(Scope::Window, qt::TAB, qt::CONTROL, "", typing), Pressed::Run("nav.nextTab"));
+            assert_eq!(keys.pressed_in(Scope::Window, qt::BACKTAB, qt::CONTROL | qt::SHIFT, "", typing), Pressed::Run("nav.previousTab"));
+            assert_eq!(keys.pressed_in(Scope::Window, qt::RIGHT, qt::CONTROL | qt::ALT, "", typing), Pressed::Run("queue.next"));
+            assert_eq!(keys.pressed_in(Scope::Window, qt::LEFT, qt::CONTROL | qt::ALT, "", typing), Pressed::Run("queue.previous"));
+        }
+        assert_eq!(keys.pressed_in(Scope::Window, qt::TAB, 0, "", true), Pressed::Pass);
+        assert_eq!(keys.pressed_in(Scope::Mini, qt::TAB, qt::CONTROL, "", false), Pressed::Pass);
+        keys.bind("queue.next", "Ctrl+Alt+j").unwrap();
+        assert_eq!(keys.pressed_in(Scope::Window, 0x4a, qt::CONTROL | qt::ALT, "", true), Pressed::Run("queue.next"));
+        assert_eq!(keys.pressed_in(Scope::Window, qt::RIGHT, qt::CONTROL | qt::ALT, "", false), Pressed::Pass);
     }
 
     #[test]

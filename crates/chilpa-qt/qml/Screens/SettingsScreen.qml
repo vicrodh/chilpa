@@ -59,6 +59,7 @@ Item {
         id: rows
         section: page.section
     }
+    Connections { target: I18n; function onRevChanged() { rows.refresh() } }
     Text {
         id: title
         x: Metrics.contentX
@@ -92,7 +93,7 @@ Item {
                 required property int index
                 required property string modelData
                 width: nav.width
-                text: SettingsModel.sectionLabels[index]
+                text: I18n.tr(SettingsModel.sectionLabels[index], I18n.rev)
                 glyph: Icons[SettingsModel.sectionIcons[index]] || ""
                 active: modelData === page.section
                 onClicked: Navigation.openSection(modelData)
@@ -219,7 +220,7 @@ Item {
     QtObject {
         id: actions
         property string editingServerKey: ""
-        function set(key, value) { SettingsActions.set(actions, rows, removing, Servers, key, value) }
+        function set(key, value) { SettingsActions.set(actions, rows, removing, Servers, I18n, key, value) }
         function press(key) { if (!storage.press(key)) SettingsActions.press(actions, rows, pluginManager, casting, adding, diagnosis, inventory, Navigation, Servers, Qt, key) }
     }
 

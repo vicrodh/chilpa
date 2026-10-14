@@ -95,6 +95,35 @@ TestCase {
         verify(!controls.typing())
     }
 
+    function test_tab_keys_and_queue_keys_switch_the_requested_workspace() {
+        Navigation.stepCount = 0
+        Hotkeys.answer = "nav.nextTab"
+        keyClick(Qt.Key_Tab, Qt.ControlModifier)
+        compare(Navigation.stepCount, 1)
+        Hotkeys.answer = "nav.previousTab"
+        keyClick(Qt.Key_Tab, Qt.ControlModifier | Qt.ShiftModifier)
+        compare(Navigation.stepCount, 0)
+        Hotkeys.answer = "queue.next"
+        keyClick(Qt.Key_Right, Qt.ControlModifier | Qt.AltModifier)
+        compare(ListenList.lastAction, "next")
+        compare(Navigation.page, "listenlist")
+        Hotkeys.answer = "queue.previous"
+        keyClick(Qt.Key_Left, Qt.ControlModifier | Qt.AltModifier)
+        compare(ListenList.lastAction, "previous")
+    }
+
+    function test_modals_keep_tab_and_queue_shortcuts_away_from_the_background() {
+        timer.open(); shown(timer)
+        Navigation.stepCount = 0; ListenList.lastAction = ""
+        Hotkeys.answer = "nav.nextTab"
+        keyClick(Qt.Key_Tab, Qt.ControlModifier)
+        compare(Navigation.stepCount, 0)
+        Hotkeys.answer = "queue.next"
+        keyClick(Qt.Key_Right, Qt.ControlModifier | Qt.AltModifier)
+        compare(ListenList.lastAction, "")
+        verify(timer.opened)
+    }
+
     function test_the_search_box_is_asked_through_the_shortcuts() {
         let asked = 0
         const count = () => ++asked

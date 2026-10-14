@@ -181,7 +181,7 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             let mut this = self.as_mut().rust_mut();
             let all = chilpa_api::settings_schema::SECTIONS;
             this.sections = strings(all.iter().map(|s| s.id.to_string()));
-            this.section_labels = strings(all.iter().map(|s| app::t(s.label)));
+            this.section_labels = strings(all.iter().map(|s| s.label.to_string()));
             this.section_icons = strings(all.iter().map(|s| s.icon.to_string()));
             this.density = QString::from(density.as_deref().unwrap_or("compact"));
             this.sidebar_mode = QString::from(mode.as_deref().unwrap_or("open"));
