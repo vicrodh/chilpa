@@ -139,7 +139,7 @@ Item {
                 // One source makes a radio and a mix: the button offers both.
                 onClicked: header.info.mix_id && header.info.radio_id ? radioMenu.open() : AlbumActions.play(header.info.radio_id || header.info.mix_id, false)
                 Menu {
-                    id: radioMenu; y: parent.height + Metrics.gap4
+                    id: radioMenu; y: radio.height + Metrics.gap4
                     entries: [{ text: I18n.tr("Artist radio", I18n.rev) }, { text: I18n.tr("Artist mix", I18n.rev) }]
                     onChosen: (index) => AlbumActions.play(index === 0 ? header.info.radio_id : header.info.mix_id, false)
                 }
@@ -153,7 +153,7 @@ Item {
                 id: more; objectName: "moreAction"; visible: header.sceneAvailable || header.validLinks.length > 0; round: true; size: Metrics.button32; glyph: Icons.dots; tip: I18n.tr("More", I18n.rev)
                 onClicked: { moreMenu.entries = (header.sceneAvailable ? [{text:I18n.tr("Artists from this scene", I18n.rev), scene:true}] : []).concat(header.validLinks.map(l => ({ text: l.title || l.url, url: l.url }))); moreMenu.open() }
                 Menu {
-                    id: moreMenu; y: parent.height + Metrics.gap4
+                    id: moreMenu; y: more.height + Metrics.gap4
                     onChosen: (index) => { if (entries[index].scene) header.sceneRequested(); else { const url = entries[index].url; if (url) Qt.openUrlExternally(url) } }
                 }
             }
@@ -161,8 +161,8 @@ Item {
     }
     Modal {
         id: biography
-        width: Math.min(Metrics.settingsMaxWidth, parent.width - Metrics.modalInsets)
-        height: Math.min(parent.height - Metrics.modalInsets, Metrics.heroArt * 3) // derived: readable body with room for the title and close action
+        width: Math.min(Metrics.settingsMaxWidth, (header.Window.window?.width || header.width) - Metrics.modalInsets)
+        height: Math.min((header.Window.window?.height || header.height) - Metrics.modalInsets, Metrics.heroArt * 3) // derived: readable body with room for the title and close action
         Column {
             anchors.fill: parent; spacing: Metrics.gap12
             Text { id: biographyTitle; width: parent.width; text: header.info.title || ""; textFormat: Text.PlainText; font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }

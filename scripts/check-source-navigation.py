@@ -54,7 +54,8 @@ with tempfile.TemporaryDirectory(prefix="chilpa-source-smoke-") as directory:
     output = Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else profile / "captures"
     output.mkdir(parents=True, exist_ok=True)
     smoke = profile / "sources.qml"
-    smoke.write_text((root / "source-navigation.qml").read_text().replace('property string captureFolder: ""', 'property string captureFolder: ' + json.dumps(str(output))))
+    fixture = "artist-source-links.qml" if "--artist-links" in sys.argv[3:] else "source-navigation.qml"
+    smoke.write_text((root / fixture).read_text().replace('property string captureFolder: ""', 'property string captureFolder: ' + json.dumps(str(output))))
     env = dict(os.environ, XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"), XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"), QT_QPA_PLATFORM="offscreen", CHILPA_RENDERER="software", CHILPA_QML_SMOKE=str(smoke))
     result = subprocess.run(["timeout", "--signal=TERM", "--kill-after=2s", "40s", "dbus-run-session", "--", sys.argv[1]], env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     (output / "source-navigation.log").write_text(result.stdout)
@@ -64,5 +65,6 @@ with tempfile.TemporaryDirectory(prefix="chilpa-source-smoke-") as directory:
     if requests == 0:
         print("SMOKE FAIL no covers were requested")
         sys.exit(1)
-    if result.returncode or any(error in result.stdout for error in errors) or "SMOKE sources completed" not in result.stdout:
+    completed = "SMOKE source artist links completed" if fixture == "artist-source-links.qml" else "SMOKE sources completed"
+    if result.returncode or any(error in result.stdout for error in errors) or completed not in result.stdout:
         sys.exit(1)

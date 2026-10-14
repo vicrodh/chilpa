@@ -133,6 +133,7 @@ impl crate::Chilpa {
         let before = self.library().and_then(|lib| lib.artist_artwork(name).ok().flatten());
         let changed = self.library().is_some_and(|lib| lib.set_artist_artwork(name, path.as_deref()).unwrap_or(false));
         if changed {
+            self.invalidate_artist_collections();
             self.chosen_art_changed(before);
         }
         changed

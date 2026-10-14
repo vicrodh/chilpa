@@ -218,6 +218,7 @@ impl qobject::Library {
 
     /// The library changed under the screens: read it again and tell them.
     pub fn content_changed(mut self: Pin<&mut Self>) {
+        app::with(|api| api.invalidate_artist_collections());
         let next = self.content_rev().wrapping_add(1);
         self.as_mut().set_content_rev(next);
         self.refresh();

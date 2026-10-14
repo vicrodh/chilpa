@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Components"
@@ -20,13 +21,16 @@ Item {
     id: page
     // "<plugin> native:artist:<id>", or "local artist:<name>".
     property string key
+    readonly property alias scrollView: flick
+    property bool presented: false
+    Connections { target: page.Window.window; function onFrameSwapped() { if (page.visible) page.presented = true } }
     // What the listener keeps of the artist in its source, in place of the
     // source's catalog; its key comes from the catalog page's header.
     property bool inLibrary: false
     property string libraryKey
     readonly property string document: Sources.page(inLibrary && libraryKey !== "" ? libraryKey : key, Library.remoteRev) || "{}"
     readonly property var about: JSON.parse(document)
-    readonly property var header: about.header || ({})
+    readonly property var header: about.header || ({title:key.includes("matching-artist-") ? key.slice(key.indexOf(":") + 1) : ""})
     readonly property bool local: about.local === true
     readonly property string name: header.title || ""
     readonly property var network: name !== "" ? JSON.parse(Sources.network(name, Library.remoteRev) || "{}") : ({})
@@ -90,25 +94,35 @@ Item {
                     required property var entry
                     readonly property var section: entry
                     readonly property string role: section.role || "shelf"
+                    property bool mounted: false
                     width: column.width - panel.width
                     // Each block says whether it has anything to show; its
                     // own visibility would read back the Loader's.
-                    visible: item ? item.shown === true : false
-                    height: visible ? item.implicitHeight : 0
+                    visible: !!item?.shown || page.about.loading === true || !active || status === Loader.Loading
+                    height: item?.shown ? item.implicitHeight : visible ? skeleton.implicitHeight : 0
+                    active: page.presented && page.about.loading !== true && (mounted || column.y + y < flick.contentY + flick.height * 2)
+                    asynchronous: true
                     sourceComponent: role === "popular" || (role === "appears" && section.kind === "track") ? trackBlock
                         : role === "latest" ? latestBlock : role === "other" ? otherBlock : shelfBlock
-                    onLoaded: item.section = Qt.binding(() => block.section)
+                    onLoaded: { item.section = Qt.binding(() => block.section); mounted = true }
+                    Column {
+                        id: skeleton
+                        width: parent.width; spacing: Metrics.gap12
+                        visible: !block.item?.shown && block.visible
+                        Text { text: block.section.title || ""; font.pointSize: Type.section; font.weight: Type.heading; color: Theme.color.textPrimary }
+                        ShelfSkeleton { width: parent.width; tracks: block.role === "popular"; trackRowHeight: SettingsModel.density === "rich" ? Metrics.rowRich : Metrics.rowCompact; count: tracks ? block.section.preview || Metrics.previewRows : block.role === "latest" ? 1 : CardLayout.columns(width); oneRow: true }
+                    }
                 }
             }
             SourceState { width: parent.width; visible: page.shelves.length === 0 && !page.local; source: page.key; about: page.about }
         }
     }
-    Component { id: trackBlock; ArtistTracks { actions: (section.role || "") === "popular" } }
+    Component { id: trackBlock; ArtistTracks { viewport: flick; actions: (section.role || "") === "popular" } }
     Component {
         id: latestBlock
         Column {
             id: latest
-            property var section
+            property var section: ({})
             readonly property bool shown: one.albums > 0
             spacing: Metrics.gap12
             visible: shown
@@ -127,6 +141,7 @@ Item {
     Component {
         id: shelfBlock
         SourceShelf {
+            viewport: flick
             modelKind: section.model || "source"
             wrap: (section.role || "") === "release" || ((section.role || "") === "appears" && section.kind !== "track")
             filter: page.search
@@ -138,7 +153,7 @@ Item {
         id: otherBlock
         Column {
             id: other
-            property var section
+            property var section: ({})
             property bool expanded: false
             readonly property bool shown: true
             spacing: Metrics.gap12
@@ -152,7 +167,7 @@ Item {
                     TapHandler { onTapped: other.expanded = !other.expanded }
                 }
             }
-            SourceShelf { visible: other.expanded; width: parent.width; section: other.section; modelKind: other.section.model || "source"; wrap: true; plain: true }
+            Loader { width: parent.width; active: other.expanded; sourceComponent: Component { SourceShelf { viewport: flick; width: parent.width; section: other.section; modelKind: other.section.model || "source"; wrap: true; plain: true } } }
         }
     }
     JumpBar {

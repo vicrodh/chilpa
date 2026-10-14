@@ -122,8 +122,9 @@ TestCase {
         const page = createTemporaryObject(pageMaker, this)
         waitForRendering(page)
         // Five rows first; "Load more" shows the eight, in the window.
+        tryVerify(() => findChild(page, "tracksMore") !== null, 1000)
         const more = findChild(page, "tracksMore")
-        verify(more.visible)
+        tryCompare(more, "visible", true)
         tryVerify(() => findText(page, "Track 4") !== null)
         compare(findText(page, "Track 5"), null)
         mouseClick(more)
