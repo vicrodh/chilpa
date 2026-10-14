@@ -13,6 +13,9 @@ impl Chilpa {
     pub fn listen_is_playing(&self, key: &str) -> bool {
         self.now.playing && self.listen_key(self.now.index) == key
     }
+    pub fn listen_playing_key(&self) -> String {
+        if self.now.playing { self.listen_key(self.now.index) } else { String::new() }
+    }
     /// Metadata only: track rows continue through the shared track model.
     pub fn listen_json(&self) -> String {
         let mut hash = std::collections::hash_map::DefaultHasher::new();

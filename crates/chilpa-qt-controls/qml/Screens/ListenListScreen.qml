@@ -5,8 +5,8 @@ import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Parts
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import "../Components"
-import "../Patterns"
+import "qrc:/qt/qml/app/chilpa/qml/Components"
+import "qrc:/qt/qml/app/chilpa/qml/Patterns"
 
 Item {
     id: page
@@ -22,7 +22,7 @@ Item {
         if (row < 0 || row >= tracks.count)
             return
         positioningList = true
-        list.rows.positionViewAtIndex(row, mode)
+        list.positionAt(row, mode)
         Qt.callLater(function() { page.positioningList = false })
     }
     function focusPlaying() {
@@ -37,7 +37,8 @@ Item {
             positionAt(0, ListView.Beginning)
     }
     function refreshPlayingRow() {
-        playingRow = tracks.playing_row()
+        playingRow = tracks.playingRow()
+        if (playingRow < 0) cancelFollow()
         if (followPlaying)
             Qt.callLater(function() { if (page.followPlaying) page.positionAt(page.playingRow, ListView.Center) })
     }
@@ -58,6 +59,7 @@ Item {
     Parts.SleepTimer { id: sleep }
     TrackListModel {
         id: tracks
+        objectName: "queueTracks"
         kind: "listenlist"
         albumId: Number(page.document.selected || 0)
         key: page.typed
@@ -72,6 +74,8 @@ Item {
     Connections {
         target: Player
         function onPathChanged() { Qt.callLater(page.refreshPlayingRow) }
+        function onQueueRevChanged() { Qt.callLater(page.refreshPlayingRow) }
+        function onPlayingChanged() { Qt.callLater(page.refreshPlayingRow) }
     }
     ListenNow {
         id: now
@@ -120,7 +124,7 @@ Item {
                         else ListenList.command("play", page.document.selected, "")
                     }
                 }
-                IconButton { glyph: Icons.playlistAdd; size: Metrics.button32; round: true; tip: I18n.tr("Save as playlist", I18n.rev); enabled: tracks.count > 0; onClicked: { page.forceActiveFocus(); ListenList.command("save", page.document.selected, "") } }
+                IconButton { objectName: "queueSavePlaylist"; glyph: Icons.playlistAdd; size: Metrics.button32; round: true; tip: I18n.tr("Save as playlist", I18n.rev); enabled: tracks.count > 0; onClicked: { page.forceActiveFocus(); ListenList.command("save", page.document.selected, "") } }
                 IconButton { glyph: Icons.trash; size: Metrics.button32; round: true; tip: I18n.tr("Clear queue", I18n.rev); onClicked: ListenList.command("clear", page.document.selected, "") }
                 IconButton { glyph: Lucide.undo2; iconFamily: Lucide.font; size: Metrics.button32; round: true; tip: I18n.tr("Undo queue replacement or closing", I18n.rev); enabled: page.document.undo || false; onClicked: ListenList.command("undo", "", "") }
                 IconButton { objectName: "queuesTimer"; glyph: SourceGlyphs.clock; iconFamily: SourceGlyphs.font; size: Metrics.button32; round: true; tone: Controls.sleepLeft !== "" ? "accent" : "secondary"; tip: Controls.sleepLeft !== "" ? I18n.trArgs("Stops in {}", [Controls.sleepLeft], I18n.rev) : I18n.tr("Sleep timer", I18n.rev); onClicked: sleep.open() }
@@ -156,6 +160,7 @@ Item {
             groupActionsEnabled: false
             reorderable: page.typed === ""
             scrollGutter: Metrics.queueScrollGutter
+            onUserScrollStarted: page.cancelFollow()
         }
         Connections {
             target: list.rows

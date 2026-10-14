@@ -117,6 +117,11 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
             )),
         ));
     }
+    if actual == VERSION { return Ok(()); }
+    // I let one startup connection upgrade a file at a time; otherwise
+    // their per-step writer transactions can starve each other's timeout.
+    let gate = migration_gate(db);
+    let _migration = gate.as_ref().map(|gate| gate.lock().unwrap_or_else(|poisoned| poisoned.into_inner()));
     for (i, step) in STEPS.iter().enumerate() {
         let target = i as i64 + 1;
         if actual >= target {
@@ -124,13 +129,30 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
         }
         // Each step goes in its own transaction: if it blows up halfway, the
         // version does not advance and the database stays as it was.
-        let tx = db.unchecked_transaction()?;
+        let tx = rusqlite::Transaction::new_unchecked(db, rusqlite::TransactionBehavior::Immediate)?;
+        // I reread the version after acquiring the writer lock. Another
+        // startup connection may already have committed this same step.
+        let applied: i64 = tx.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+        if applied >= target { tx.commit()?; continue; }
         if target == 23 { credits::upgrade(&tx)?; }
         tx.execute_batch(step)?;
         tx.pragma_update(None, "user_version", target)?;
         tx.commit()?;
     }
     Ok(())
+}
+
+fn migration_gate(db: &Connection) -> Option<std::sync::Arc<std::sync::Mutex<()>>> {
+    use std::sync::{Arc, Mutex, Weak};
+    static GATES: Mutex<Option<std::collections::HashMap<String, Weak<Mutex<()>>>>> = Mutex::new(None);
+    let path = db.path().filter(|path| !path.is_empty())?;
+    let mut gates = GATES.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let gates = gates.get_or_insert_with(Default::default);
+    gates.retain(|_, gate| gate.strong_count() > 0);
+    if let Some(gate) = gates.get(path).and_then(Weak::upgrade) { return Some(gate); }
+    let gate = Arc::new(Mutex::new(()));
+    gates.insert(path.to_string(), Arc::downgrade(&gate));
+    Some(gate)
 }
 
 /// The pragmas it opens with. WAL lets the interface read while the scan
@@ -236,6 +258,31 @@ pub fn apply_pragmas(db: &Connection) -> rusqlite::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn concurrent_connections_do_not_apply_the_same_migration_twice() {
+        for version in [0, 20] {
+            let directory = tempfile::tempdir().unwrap();
+            let path = directory.path().join("library.db");
+            let db = Connection::open(&path).unwrap();
+            apply_pragmas(&db).unwrap();
+            stop_at(&db, version);
+            drop(db);
+            let barrier = std::sync::Arc::new(std::sync::Barrier::new(2));
+            let workers: Vec<_> = (0..2).map(|_| {
+                let (path, barrier) = (path.clone(), barrier.clone());
+                std::thread::spawn(move || {
+                    let db = Connection::open(path).unwrap();
+                    apply_pragmas(&db).unwrap();
+                    barrier.wait();
+                    migrate(&db).unwrap();
+                })
+            }).collect();
+            for worker in workers { worker.join().unwrap(); }
+            let db = Connection::open(path).unwrap();
+            assert_eq!(db.query_row("PRAGMA user_version", [], |row| row.get::<_, i64>(0)).unwrap(), VERSION);
+        }
+    }
 
     fn in_memory() -> Connection {
         let db = Connection::open_in_memory().unwrap();

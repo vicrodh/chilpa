@@ -33,7 +33,12 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
     subprocess.run(["c++", "-shared", "-fPIC", str(loader), "-o", str(temporary / "loader.so"), *flags], check=True)
     imports = temporary / "imports"
     shutil.copytree(root / "crates/chilpa-qt/tests/qml/imports", imports)
-    shutil.copytree(root / "crates/chilpa-qt-kit/tests/qml/imports/app/chilpa/kit", imports / "app/chilpa/kit")
+    for crate in sorted((root / "crates").glob("chilpa-qt*")):
+        modules = crate / "tests/qml/imports/app/chilpa"
+        if modules.is_dir():
+            for module in sorted(modules.iterdir()):
+                if module.is_dir():
+                    shutil.copytree(module, imports / "app/chilpa" / module.name, dirs_exist_ok=True)
     environment = dict(os.environ, QT_QPA_PLATFORM="offscreen", CHILPA_QML_RESOURCES=str(temporary / "resources.rcc"),
                        LD_PRELOAD=str(temporary / "loader.so"))
     result = subprocess.run([str(qt / "qmltestrunner"), "-import", str(imports), "-input", str(test)], env=environment)

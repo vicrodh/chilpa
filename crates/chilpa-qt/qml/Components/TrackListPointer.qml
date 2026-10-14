@@ -34,6 +34,7 @@ MouseArea {
     readonly property bool dropAfter: dropRow > pressedRow
 
     hoverEnabled: true
+    onWheel: (wheel) => { host.userScrollStarted(); wheel.accepted = false }
     // A movable row owns its press so the page cannot steal it for scrolling.
     preventStealing: pressedRow >= 0
     acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -113,6 +114,7 @@ MouseArea {
     }
 
     onPressed: (mouse) => {
+        if (mouse.button === Qt.LeftButton && host.reorderable) host.userScrollStarted()
         dropped = false
         pressedRating = ratingAt(rowAt(mouse.y), mouse.x, mouse.y) > 0
         const pressed = rows.itemAtIndex(rowAt(mouse.y))

@@ -139,7 +139,11 @@ impl qobject::AlbumActions {
     /// Plays, puts next or queues the record, or the selection it is in.
     fn act(&self, id: i64, act: &str, shuffled: bool) {
         let ids = self.rust().targets(id);
-        app::with(|api| api.album_action(&ids, act, shuffled));
+        self.act_on(ids, act.to_string(), shuffled, String::new());
+    }
+
+    fn act_on(&self, ids: Vec<i64>, action: String, shuffled: bool, label: String) {
+        chilpa_qt_kit::bridge::queue_activity::albums(ids, action, shuffled, label);
     }
 
     pub fn play(&self, id: i64, shuffled: bool) { self.act(id, "play", shuffled) }
@@ -147,18 +151,18 @@ impl qobject::AlbumActions {
     pub fn queue(&self, id: i64) { self.act(id, "queue", false) }
     pub fn play_many(&self, ids_json: &cxx_qt_lib::QString, shuffled: bool) {
         let ids: Vec<i64> = serde_json::from_str(&ids_json.to_string()).unwrap_or_default();
-        if !ids.is_empty() { app::with(|api| api.album_action(&ids, "play", shuffled)); }
+        self.act_on(ids, "play".into(), shuffled, String::new());
     }
     pub fn play_later(&self, id: i64, label: &cxx_qt_lib::QString) {
         let ids = self.rust().targets(id);
-        app::with(|api| api.album_later(&ids, &label.to_string()));
+        self.act_on(ids, "later".into(), false, label.to_string());
     }
     pub fn listen_targets_json(&self) -> cxx_qt_lib::QString {
         cxx_qt_lib::QString::from(serde_json::to_string(&app::with(|api| api.listen_targets())).unwrap_or_default())
     }
     pub fn list_action(&self, id: i64, action: &cxx_qt_lib::QString) {
         let ids = self.rust().targets(id);
-        app::with(|api| api.album_listen_action(&ids, &action.to_string()));
+        self.act_on(ids, action.to_string(), false, String::new());
     }
 
     pub fn track_ids_json(&self, id: i64) -> cxx_qt_lib::QString {

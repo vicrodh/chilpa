@@ -355,9 +355,18 @@ impl Reader {
     /// library resolves without one statement holding thousands of
     /// parameters.
     pub fn paths(&self, ids: &[i64]) -> Vec<String> {
-        let mut paths: std::collections::HashMap<_, _> = ids.chunks(500).flat_map(|chunk| self.lib.tracks_by_ids(chunk).unwrap_or_default()).map(|t| (t.id, t.external_id)).collect();
+        let local: Vec<_> = ids.iter().copied().filter(|id| *id > 0).collect();
+        let mut paths = self.lib.track_paths(&local).unwrap_or_default();
         if let Some(catalog) = &self.catalog { paths.extend(catalog.tracks_by_ids(ids).into_iter().map(|(t, _)| (t.id, t.path))); }
         ids.iter().filter_map(|id| paths.get(id).cloned()).collect()
+    }
+
+    pub fn album_paths(&self, ids: &[i64]) -> Vec<String> {
+        ids.iter().flat_map(|id| {
+            let filter = chilpa_library::Filter { album: Some(*id), ..Default::default() };
+            self.lib.browse_ids(&filter, chilpa_library::TrackOrder::Disc).ok()
+                .map(|snapshot| self.paths(&snapshot.ids)).unwrap_or_default()
+        }).collect()
     }
 
     /// The artists with something present, by name, with their records,
@@ -609,10 +618,8 @@ impl Chilpa {
     }
 
     pub(crate) fn rows_for_paths(&mut self, paths: &[String]) -> Vec<TrackRow> {
-        let Some(lib) = self.library() else {
-            return Vec::new();
-        };
-        let known = lib.tracks_by_paths(&paths).unwrap_or_else(|_| vec![None; paths.len()]);
+        let known = self.library().and_then(|lib| lib.tracks_by_paths(paths).ok())
+            .unwrap_or_else(|| vec![None; paths.len()]);
         paths
             .into_iter()
             .zip(known)
@@ -741,7 +748,13 @@ impl Chilpa {
     /// Every file of those records, one record after another, each in disc
     /// order.
     pub fn album_paths(&mut self, ids: &[i64]) -> Vec<String> {
-        ids.iter().flat_map(|id| self.album_track_rows(*id)).filter(|t| t.available).map(|t| t.path).collect()
+        ids.iter().flat_map(|id| {
+            if *id < 0 {
+                self.catalog.tracks(*id).unwrap_or_default().into_iter().filter(|track| track.playable).map(|track| track.path).collect()
+            } else {
+                self.album_track_rows(*id).into_iter().filter(|track| track.available).map(|track| track.path).collect::<Vec<_>>()
+            }
+        }).collect()
     }
 
     /// The records by others an artist plays on: the compilations.
@@ -1004,6 +1017,30 @@ mod tests {
         }
         let credited: Vec<(String, usize, usize)> = reader.artists("album").into_iter().map(|a| (a.name, a.album_count, a.track_count)).collect();
         assert_eq!(credited, [("Various Artists".to_string(), 1, 2)], "who plays on a compilation is not credited with it");
+    }
+
+    #[test]
+    fn long_queue_paths_preserve_order_duplicates_and_missing_ids_across_chunks() {
+        let lib = chilpa_library::Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.connection().execute("INSERT INTO albums(id,title,album_artist) VALUES (1,'Box','Band')", []).unwrap();
+        lib.connection().execute_batch("BEGIN").unwrap();
+        for id in 1..=1205 {
+            lib.connection().execute("INSERT INTO tracks(id,source_id,external_id,title,album_id,disc_number,track_number,added_at)
+                VALUES (?1,?2,?3,'Song',1,?4,?5,1)", rusqlite::params![id,source,format!("/{id}.flac"),3 - (id - 1) / 500,id]).unwrap();
+        }
+        lib.connection().execute_batch("COMMIT").unwrap();
+        let reader = Reader { lib, catalog: None };
+        let mut ids: Vec<i64> = (1..=1205).rev().collect();
+        ids.insert(2, 9999); ids.push(1); ids.push(1205);
+        let paths = reader.paths(&ids);
+        let expected: Vec<_> = ids.iter().filter(|&&id| id != 9999).map(|id| format!("/{id}.flac")).collect();
+        assert_eq!(paths, expected);
+        let album = reader.album_paths(&[1]);
+        assert_eq!(album.len(), 1205, "the whole album is resolved without a display-row limit");
+        assert_eq!(&album[..3], &["/1001.flac", "/1002.flac", "/1003.flac"]);
+        assert_eq!(reader.album_paths(&[1,1]).len(), 2410);
+        assert!(reader.paths(&[]).is_empty());
     }
 
     #[test]

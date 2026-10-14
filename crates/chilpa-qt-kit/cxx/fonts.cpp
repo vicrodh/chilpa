@@ -4,6 +4,7 @@
 // this is the one call the window needs from it.
 
 #include <QtGui/QFont>
+#include <QtGui/QCursor>
 #include <QtGui/QFontDatabase>
 #include <QtGui/QGuiApplication>
 #include <QtCore/QStandardPaths>
@@ -30,4 +31,12 @@ extern "C" bool chilpa_has_desktop_entry(const char *name)
 {
     const QString file = QString::fromUtf8(name) + QStringLiteral(".desktop");
     return !QStandardPaths::locate(QStandardPaths::ApplicationsLocation, file).isEmpty();
+}
+
+extern "C" void chilpa_queue_cursor(bool busy)
+{
+    if (busy)
+        QGuiApplication::setOverrideCursor(QCursor(Qt::BusyCursor));
+    else
+        QGuiApplication::restoreOverrideCursor();
 }

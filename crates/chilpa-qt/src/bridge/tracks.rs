@@ -155,6 +155,7 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::pin::Pin;
 use std::rc::Rc;
+use chilpa_qt_kit::bridge::queue_activity;
 
 /// The roles, in order from `Qt::UserRole`.
 const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo", "composer", "headerWork", "headerComposer", "headerComposerTarget"];
@@ -434,21 +435,11 @@ impl qobject::TrackListModel {
     }
 
     fn with_all_paths(&self, then: impl FnOnce(&mut chilpa_api::Chilpa, &[String]) + Send + 'static) {
-        match &self.rust().rows {
-            Rows::Loaded(_) => {
-                let paths: Vec<String> = self.rust().loaded_tracks().iter().map(|t| t.path.clone()).collect();
-                app::with(|api| then(api, &paths));
-            }
-            Rows::Snapshot { ids, .. } => {
-                let ids = ids.ids.clone();
-                let thread = self.qt_thread();
-                let origin = app::with(|api| api.browse_origin());
-                worker::submit(move |reader| {
-                    let paths = reader.paths(&ids);
-                    let _ = thread.queue(move |_| app::with(|api| api.with_queue_origin(origin, |api| then(api, &paths))));
-                });
-            }
-        }
+        let paths = match &self.rust().rows {
+            Rows::Loaded(_) => queue_activity::QueuePaths::Known(self.rust().loaded_tracks().iter().map(|t| t.path.clone()).collect()),
+            Rows::Snapshot { ids, .. } => queue_activity::QueuePaths::Ids(ids.ids.clone()),
+        };
+        queue_activity::paths(paths, then);
     }
 
     pub fn list_action(mut self: Pin<&mut Self>, action: &QString, row: i32, to: i32) {
@@ -606,7 +597,11 @@ impl qobject::TrackListModel {
         (0..this.len()).find(|&r| this.track_id(r).is_some_and(|id| this.selected.contains(&id))).map_or(-1, |r| r as i32)
     }
 
-    pub fn playing_row(&self) -> i32 { app::with(|api| self.rust().queue_keys.iter().position(|key| !key.is_empty() && api.listen_is_playing(key))).map_or(-1, |row| row as i32) }
+    pub fn playing_row(&self) -> i32 {
+        let playing = app::with(|api| api.listen_playing_key());
+        if playing.is_empty() { return -1; }
+        self.rust().queue_keys.iter().position(|key| key == &playing).map_or(-1, |row| row as i32)
+    }
 
     pub fn selected_any_row(&self) -> i32 {
         let this = self.rust();
@@ -681,21 +676,11 @@ impl qobject::TrackListModel {
     /// keep -- handed to `then` on the window's thread.
     fn with_selection(&self, then: impl FnOnce(&mut chilpa_api::Chilpa, &[String]) + Send + 'static) {
         let this = self.rust();
-        match &this.rows {
-            Rows::Loaded(_) => {
-                let paths: Vec<String> = this.loaded_tracks().iter().filter(|t| this.selected.contains(&t.id)).map(|t| t.path.clone()).collect();
-                app::with(|api| then(api, &paths));
-            }
-            Rows::Snapshot { ids, .. } => {
-                let chosen: Vec<i64> = ids.ids.iter().copied().filter(|id| this.selected.contains(id)).collect();
-                let thread = self.qt_thread();
-                let origin = app::with(|api| api.browse_origin());
-                worker::submit(move |reader| {
-                    let paths = reader.paths(&chosen);
-                    let _ = thread.queue(move |_| app::with(|api| api.with_queue_origin(origin, |api| then(api, &paths))));
-                });
-            }
-        }
+        let paths = match &this.rows {
+            Rows::Loaded(_) => queue_activity::QueuePaths::Known(this.loaded_tracks().iter().filter(|t| this.selected.contains(&t.id)).map(|t| t.path.clone()).collect()),
+            Rows::Snapshot { ids, .. } => queue_activity::QueuePaths::Ids(ids.ids.iter().copied().filter(|id| this.selected.contains(id)).collect()),
+        };
+        queue_activity::paths(paths, then);
     }
 
     pub fn can_go(&self, row: i32, target: &QString) -> bool {

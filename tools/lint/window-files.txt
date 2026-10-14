@@ -96,7 +96,6 @@ crates/chilpa-qt/qml/Screens/AlbumsScreen.qml
 crates/chilpa-qt/qml/Screens/ArtistsScreen.qml
 crates/chilpa-qt/qml/Screens/HomeScreen.qml
 crates/chilpa-qt/qml/Screens/LibraryScreen.qml
-crates/chilpa-qt/qml/Screens/ListenListScreen.qml
 crates/chilpa-qt/qml/Screens/PendingScreen.qml
 crates/chilpa-qt/qml/Screens/PlaylistScreen.qml
 crates/chilpa-qt/qml/Screens/SettingsScreen.qml

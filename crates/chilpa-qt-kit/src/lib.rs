@@ -10,6 +10,7 @@ pub mod bridge {
     pub mod i18n;
     pub mod prefs;
     pub mod pulse;
+    pub mod queue_activity;
     pub mod theme;
 }
 

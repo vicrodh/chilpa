@@ -20,6 +20,7 @@ TitledFlow {
     AlbumArtistLine { document: ({artist_html:"<a href=\"0\">Artist</a>",artist_links:[{target:"artist",key:"Artist"}]}) }
     Clipboard {}
     ShelfSkeleton { width: Metrics.confirmWidth; count: 3 }
+    QueueProgress { visible: true }
 
     Column {
         width: section.width
@@ -67,9 +68,9 @@ TitledFlow {
         AlbumCarousel { width: parent.width; title: "From same artist"; model: added }
         Row {
             spacing: Metrics.gridGap
-            AlbumCardOverlay { width: Metrics.cardMinWidth; height: width; albumId: added.albumId(0, added.rev); year: "2026"; selected: true }
-            AlbumCard { width: Metrics.cardMinWidth; title: "Selected"; subtitle: "While selecting"; tint: 3; selected: true; selecting: true }
-            AlbumCard { width: Metrics.cardMinWidth; title: "Quick view open"; subtitle: "Mora Vale"; tint: 4; expanded: true }
+            AlbumCardOverlay { width: CardLayout.cardWidth; height: width; albumId: added.albumId(0, added.rev); year: "2026"; selected: true }
+            AlbumCard { width: CardLayout.cardWidth; title: "Selected"; subtitle: "While selecting"; tint: 3; selected: true; selecting: true }
+            AlbumCard { width: CardLayout.cardWidth; title: "Quick view open"; subtitle: "Mora Vale"; tint: 4; expanded: true }
         }
         AlbumQuickView { width: parent.width; albumId: added.albumId(0, added.rev); notchX: Metrics.cardMinWidth / 2 } // derived: under the first card
         AlbumHeaderBackground { width: parent.width; height: Metrics.heroArt; art: detail.art; mode: "full" }
@@ -136,8 +137,8 @@ TitledFlow {
                 available: modelData.available
             }
         }
-        AlbumCard { width: Metrics.cardMinWidth; title: "Low Orbit"; subtitle: "Mora Vale"; tint: 2 }
-        AlbumCard { width: Metrics.cardMinWidth; title: "Away Record"; subtitle: "Server that does not answer"; tint: 3; available: false }
+        AlbumCard { width: CardLayout.cardWidth; title: "Low Orbit"; subtitle: "Mora Vale"; tint: 2 }
+        AlbumCard { width: CardLayout.cardWidth; title: "Away Record"; subtitle: "Server that does not answer"; tint: 3; available: false }
         FolderModel { id: top; path: ""; content: true }
         TrackListModel { id: folderTracks; kind: "folder"; filterRev: top.rev }
         AlbumGridModel { id: folderAlbums; kind: "folder"; contentRev: top.rev; columns: 3 }

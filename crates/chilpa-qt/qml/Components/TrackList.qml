@@ -36,6 +36,7 @@ Item {
     property bool groupActionsEnabled: true
 
     signal sortRequested(string order)
+    signal userScrollStarted()
 
     readonly property alias contentHeight: view.contentHeight
     // The list itself, for a screen that groups its rows or jumps in them.
@@ -47,6 +48,11 @@ Item {
     // and how far into it. A view goes back to its top on a reset, and a
     // queue is read again on every change; the same list stays where it was.
     property var place: null
+    function positionAt(row, mode) {
+        place = null
+        view.forceLayout()
+        view.positionViewAtIndex(row, mode)
+    }
     function identity() { return model ? model.kind + "\n" + model.albumId + "\n" + model.key : "" }
     function keepPlace() {
         const row = view.indexAt(0, view.contentY)
@@ -126,6 +132,8 @@ Item {
         bottomMargin: list.bottomInset
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar {
+            objectName: "trackListScrollbar"
+            onPressedChanged: if (pressed) list.userScrollStarted()
             policy: list.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
             gutter: list.scrollGutter
             viewportHovered: pointer.containsMouse

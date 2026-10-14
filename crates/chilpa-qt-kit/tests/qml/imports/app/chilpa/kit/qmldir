@@ -3,3 +3,4 @@ singleton ThemeModel 1.0 ThemeModel.qml
 singleton I18n 1.0 I18n.qml
 singleton Pulse 1.0 Pulse.qml
 singleton Prefs 1.0 Prefs.qml
+singleton QueueActivity 1.0 QueueActivity.qml
