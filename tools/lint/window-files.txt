@@ -4,7 +4,6 @@ crates/chilpa-qt/qml/Components/AlbumCardOverlay.qml
 crates/chilpa-qt/qml/Components/AlbumCard.qml
 crates/chilpa-qt/qml/Components/AlbumCarousel.qml
 crates/chilpa-qt/qml/Components/AlbumGrid.qml
-crates/chilpa-qt/qml/Components/AlbumHeaderBackground.qml
 crates/chilpa-qt/qml/Components/AlbumHero.qml
 crates/chilpa-qt/qml/Components/AlbumMenu.qml
 crates/chilpa-qt/qml/Components/AlbumQuickView.qml

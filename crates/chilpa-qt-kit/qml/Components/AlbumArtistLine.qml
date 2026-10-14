@@ -7,7 +7,7 @@ Text {
     id: line
     objectName: "albumArtistLine"
     property double albumId: 0
-    property var document: albumId ? JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}") : ({})
+    property var document: albumId ? JSON.parse(AlbumActions.artistInformation(albumId, Library.contentRev + Library.remoteRev) || "{}") : ({})
     property bool contrasted: false
     readonly property color restingColor: contrasted ? Theme.color.textOnAccentMuted : color
     readonly property color activeColor: contrasted ? color : Theme.color.accentHover

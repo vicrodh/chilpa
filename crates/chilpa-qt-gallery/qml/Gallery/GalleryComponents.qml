@@ -87,6 +87,7 @@ TitledFlow {
             PaneColumn { width: Metrics.sidebarWidth; height: parent.height; title: "Genre"; column: "genre" }
             PaneRow { width: Metrics.sidebarWidth; key: ""; label: "A selected entry"; meta: "8"; selected: true; all: false }
         }
+        TrackRowSlot { width: section.width; height: Metrics.rowCompact; inViewport: false }
         TrackColumns { id: rowCols; width: section.width }
         TrackHeader { cols: rowCols }
         TrackSourceLabel { cols: TrackColumns { showSource: true } name: "Local" }

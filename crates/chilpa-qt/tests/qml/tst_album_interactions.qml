@@ -50,6 +50,12 @@ TestCase {
             if (row.containsArtist(x, y)) return y
         return -1
     }
+    function containsAlbum(x, y) {
+        const label = row.albumText
+        const point = label.mapFromItem(row, x, y)
+        return !row.header && label.visible && point.x >= 0 && point.y >= 0
+            && point.x < Math.min(label.width, label.contentWidth) && point.y < label.height
+    }
 
     function test_rich_link_is_only_the_rendered_text() {
         const x = columns.titleX + 2
@@ -82,12 +88,12 @@ TestCase {
             columns.showSource = true
             row.sourceName = "Remote source"
             wait(0)
-            verify(row.containsAlbum(columns.albumX + 2, row.height / 2))
-            verify(!row.containsAlbum(columns.albumX + columns.albumW - 1, row.height / 2))
+            verify(containsAlbum(columns.albumX + 2, row.height / 2))
+            verify(!containsAlbum(columns.albumX + columns.albumW - 1, row.height / 2))
             compare(columns.playsX, columns.sourceX + columns.sourceWidth)
             verify(columns.sourceWidth > 0)
             row.rowKind = 1
-            verify(!row.containsAlbum(columns.albumX + 2, row.height / 2))
+            verify(!containsAlbum(columns.albumX + 2, row.height / 2))
             row.rowKind = 0
         }
         columns.showSource = false
@@ -120,7 +126,7 @@ TestCase {
         const record = findChild(row, "groupHeader")
         verify(record.record)
         compare(record.artist, row.artist)
-        verify(record.width < row.width - columns.more, "it leaves room for the group's actions")
+        compare(record.width, row.width - columns.indexX, "the list positions group actions over the header")
 
         row.rowKind = 0
         row.art = ""
