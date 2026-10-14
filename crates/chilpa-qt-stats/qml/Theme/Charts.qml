@@ -5,6 +5,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 // The stats screens' numbers, with Last.fm's weekly report as the model
 // (borradores/listening-stats-v1-2026-10-09).
 QtObject {
+    readonly property int inventoryPoll: 1000
+    readonly property int inventoryRunHeight: Metrics.settingsRow + Metrics.gap24 + Metrics.gap6
     // Past this the page stops growing and stays centered.
     readonly property int widest: 1180
     // The hero: its numbers on the left, the bars of the period beside.

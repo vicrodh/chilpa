@@ -300,6 +300,9 @@ msgstr "Toda la música"
 msgid "All qualities"
 msgstr "Todas las calidades"
 
+msgid "All saved results"
+msgstr ""
+
 msgid "All seasons"
 msgstr "Todas las temporadas"
 
@@ -357,6 +360,9 @@ msgstr "Ambiente"
 msgid "Analysis"
 msgstr "Análisis"
 
+msgid "Analysis history"
+msgstr ""
+
 msgid "Analysis inventory"
 msgstr "Inventario de análisis"
 
@@ -374,6 +380,9 @@ msgstr "Analizada"
 
 msgid "Analyzes local files and puts the results in Playlists > Mood."
 msgstr "Analiza archivos locales y coloca los resultados en Playlists > Mood."
+
+msgid "Analyzing"
+msgstr ""
 
 msgid "Analyzing Mood"
 msgstr "Analizando Mood"
@@ -631,6 +640,9 @@ msgstr "Cancelar descarga"
 
 msgid "Cancel stop after this track"
 msgstr "Cancelar la parada después de esta pista"
+
+msgid "Cancelled"
+msgstr ""
 
 msgid "Cancelling update…"
 msgstr ""
@@ -928,6 +940,9 @@ msgstr "Compilación (varios artistas)"
 
 msgid "Compilations"
 msgstr "Compilaciones"
+
+msgid "Completed"
+msgstr ""
 
 msgid "Composer"
 msgstr "Compositor"
@@ -1424,6 +1439,12 @@ msgstr "SE FORMÓ"
 msgid "FOUNDED IN"
 msgstr "SE FORMÓ EN"
 
+msgid "Failed"
+msgstr ""
+
+msgid "Failed in this run"
+msgstr ""
+
 msgid "Failed to load albums"
 msgstr "No se pudieron cargar los álbumes"
 
@@ -1889,6 +1910,9 @@ msgstr "Interfaz"
 msgid "Interface size"
 msgstr "Tamaño de la interfaz"
 
+msgid "Interrupted"
+msgstr ""
+
 msgid "Invalid — should contain alsa_output or alsa_input"
 msgstr "No es válido: debe contener alsa_output o alsa_input"
 
@@ -1972,6 +1996,9 @@ msgstr "Pestañas siguientes"
 
 msgid "Latest release"
 msgstr "Último lanzamiento"
+
+msgid "Latest run"
+msgstr ""
 
 msgid "Length"
 msgstr "Duración"
@@ -2207,6 +2234,9 @@ msgstr "Mono claro"
 msgid "Month"
 msgstr "Mes"
 
+msgid "Mood"
+msgstr ""
+
 msgid "Mood analysis cancelled."
 msgstr "Análisis de Mood cancelado."
 
@@ -2333,6 +2363,9 @@ msgstr "Nativo — {} — {}"
 msgid "Navigation"
 msgstr "Navegación"
 
+msgid "Needs update"
+msgstr ""
+
 msgid "Network"
 msgstr "Red"
 
@@ -2347,6 +2380,9 @@ msgstr "Nunca escuchadas"
 
 msgid "New Tab"
 msgstr "Nueva pestaña"
+
+msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
+msgstr ""
 
 msgid "New folder"
 msgstr "Nuevo folder"
@@ -2483,8 +2519,14 @@ msgstr "No hay historias de este artista"
 msgid "No track playing"
 msgstr "Nada en reproducción"
 
+msgid "No tracks have been processed in this run yet."
+msgstr ""
+
 msgid "No tracks in the selected libraries yet."
 msgstr "Aún no hay canciones en las bibliotecas seleccionadas."
+
+msgid "No tracks match this filter."
+msgstr ""
 
 msgid "No tracks match your search."
 msgstr "Ninguna pista coincide con tu búsqueda."
@@ -2924,6 +2966,9 @@ msgstr "GPU preferida"
 msgid "Preparing Mood analysis"
 msgstr "Preparando el análisis Mood"
 
+msgid "Preparing analysis…"
+msgstr ""
+
 msgid "Preparing results…"
 msgstr "Preparando resultados…"
 
@@ -2947,6 +2992,9 @@ msgstr "Mes anterior"
 
 msgid "Previous page"
 msgstr "Página anterior"
+
+msgid "Previously saved"
+msgstr ""
 
 msgid "Processed"
 msgstr "Procesado"
@@ -3263,6 +3311,9 @@ msgstr ""
 msgid "Restore tabs"
 msgstr "Restaurar pestañas"
 
+msgid "Results are saved after every track. Run Analyze again to continue the pending tracks."
+msgstr ""
+
 msgid "Resume"
 msgstr "Continuar"
 
@@ -3352,6 +3403,9 @@ msgstr "Guardadas"
 
 msgid "Saved position"
 msgstr "Posición guardada"
+
+msgid "Saved results remain available between sessions."
+msgstr ""
 
 msgid "Saving..."
 msgstr "Guardando..."
@@ -3660,6 +3714,9 @@ msgstr "Español"
 
 msgid "Spectrum"
 msgstr "Espectro"
+
+msgid "Standard analysis"
+msgstr ""
 
 msgid "Standard analyzed"
 msgstr "Análisis normal completado"
@@ -4262,6 +4319,9 @@ msgstr "Ver imagen"
 
 msgid "View less"
 msgstr "Ver menos"
+
+msgid "View tracks"
+msgstr ""
 
 msgid "Volume Down"
 msgstr "Bajar volumen"

@@ -39,6 +39,8 @@ Item {
         StatsTops { width: parent.width; report: gallery.week }
         StatsCharts { width: parent.width; report: gallery.week }
         StatsFacts { width: parent.width; report: gallery.week }
+        AnalysisInventoryRow { width: parent.width; entry: ({title:"Saved track",artist:"Mora Vale",album:"Faded Lines",standard:true,mood:true,standard_at:1780000000,mood_at:1780000000}); alternate:true }
+        AnalysisRunRow { width: parent.width; entry: ({kind:"mood",processed:23,total:100,saved:22,failed:1,previous:400,error:"",folder:"",last:"Saved track"}); stamp:"2026-10-14 10:00"; status:"Analyzing" }
         HistoryHeader { width: parent.width }
         HistoryRow { width: parent.width; listen: ({ clock: "08:12", title: "Lion", artist: "May'n", album: "Macross Frontier", played: "4:58", length: "4:58", quality: "16/44.1", bit_perfect: true }) }
         HistoryRow { width: parent.width; index: 1; listen: ({ clock: "07:58", title: "Northern Cross", artist: "May'n", album: "Macross Frontier", played: "0:31", length: "4:57", quality: "24/96", skipped: true }) }

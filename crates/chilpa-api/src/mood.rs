@@ -25,6 +25,7 @@ pub(crate) struct Job {
     events: Receiver<Progress>,
     cancel: Arc<AtomicBool>,
     thread: Option<JoinHandle<()>>,
+    run_id: Arc<std::sync::atomic::AtomicI64>,
 }
 
 impl Job {
@@ -32,6 +33,8 @@ impl Job {
         let (sender, events) = channel();
         let cancel = Arc::new(AtomicBool::new(false));
         let flag = cancel.clone();
+        let run_id = Arc::new(std::sync::atomic::AtomicI64::new(0));
+        let current_run = run_id.clone();
         let thread = std::thread::Builder::new().name("chilpa-mood-analysis".into()).spawn(move || {
             let run = || -> Result<(), String> {
                 let status = natives.call(mood::ANALYZER, "analysis.status", json!({}), CALL)?;
@@ -48,36 +51,54 @@ impl Job {
                 let tracks = library.tracks_pending_mood_under(version, folder.as_deref())
                     .map_err(|error| error.to_string())?;
                 let total = tracks.len();
+                let mut pass = library.begin_analysis_run(mood::ANALYZER,version,folder.as_deref(),total)
+                    .map_err(|error| error.to_string())?;
+                current_run.store(pass.id,Ordering::Release);
                 let _ = sender.send(Progress::Counted { total });
                 let (mut analyzed, mut failed) = (0, 0);
                 for (index, track) in tracks.into_iter().enumerate() {
                     if flag.load(Ordering::Relaxed) {
+                        pass.finish("cancelled","").map_err(|error| error.to_string())?;
                         let _ = sender.send(Progress::Cancelled);
                         return Ok(());
                     }
-                    if let Some((pcm, rate)) = chilpa_core::analysis_job::mono_excerpt(Path::new(&track.external_id)) {
-                        let features = send_audio(&natives, &pcm, rate)?;
-                        let scores = parse_scores(&features)?;
-                        let embedding = parse_embedding(&features)?;
-                        library.save_mood_features(track.id, version, scores, &embedding)
-                            .map_err(|error| error.to_string())?;
-                        analyzed += 1;
-                    } else {
-                        failed += 1;
+                    let result = (|| -> Result<(),String> {
+                        if let Some((pcm, rate)) = chilpa_core::analysis_job::mono_excerpt(Path::new(&track.external_id)) {
+                            let features = send_audio(&natives, &pcm, rate)?;
+                            let scores = parse_scores(&features)?;
+                            let embedding = parse_embedding(&features)?;
+                            pass.record(track.id,true,|| library.save_mood_features(track.id, version, scores, &embedding))
+                                .map_err(|error| error.to_string())?;
+                            analyzed += 1;
+                        } else {
+                            pass.record(track.id,false,|| Ok(())).map_err(|error| error.to_string())?;
+                            failed += 1;
+                        }
+                        Ok(())
+                    })();
+                    if let Err(error) = result {
+                        let _ = pass.record(track.id,false,|| Ok(()));
+                        let _ = pass.finish("failed",&error);
+                        return Err(error);
                     }
                     let _ = sender.send(Progress::Advanced { done: index + 1, total, title: track.title });
                 }
                 if flag.load(Ordering::Relaxed) {
+                    pass.finish("cancelled","").map_err(|error| error.to_string())?;
                     let _ = sender.send(Progress::Cancelled);
                     return Ok(());
                 }
-                let playlists = library.rebuild_mood_playlists(version).map_err(|error| error.to_string())?;
+                let playlists = match library.rebuild_mood_playlists(version) {
+                    Ok(playlists) => playlists,
+                    Err(error) => { let _ = pass.finish("failed",&error.to_string()); return Err(error.to_string()); }
+                };
+                pass.finish("completed","").map_err(|error| error.to_string())?;
                 let _ = sender.send(Progress::Done { analyzed, failed, playlists });
                 Ok(())
             };
             if let Err(error) = run() { let _ = sender.send(Progress::Failed(error)); }
         }).expect("the mood analysis thread starts");
-        Self { events, cancel, thread: Some(thread) }
+        Self { events, cancel, thread: Some(thread), run_id }
     }
 
     pub(crate) fn poll(&self) -> Vec<Progress> {
@@ -92,6 +113,7 @@ impl Job {
     }
 
     pub(crate) fn cancel(&self) { self.cancel.store(true, Ordering::Relaxed); }
+    pub(crate) fn run_id(&self) -> i64 { self.run_id.load(Ordering::Acquire) }
 }
 
 impl Drop for Job {

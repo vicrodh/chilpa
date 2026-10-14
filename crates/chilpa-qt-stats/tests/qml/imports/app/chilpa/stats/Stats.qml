@@ -12,6 +12,8 @@ QtObject {
     readonly property var asked: []
     readonly property var exports: []
     property int total: 130
+    property var inventoryDocument: ({total:0,standard:0,mood:0,matched:0,tracks:[],runs:[],active:[]})
+    function inventory(filter, query, offset, run) { return JSON.stringify(inventoryDocument) }
 
     signal saved(string note)
 

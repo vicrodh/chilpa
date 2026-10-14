@@ -8,18 +8,40 @@ use super::*;
 impl Chilpa {
     /// A read-only, paged inventory of local tracks and their stored analyses.
     pub fn analysis_inventory(&mut self, filter: &str, search: &str, offset: usize) -> serde_json::Value {
+        self.analysis_inventory_for_run(filter, search, offset, 0)
+    }
+
+    pub fn analysis_inventory_for_run(&mut self, filter: &str, search: &str, offset: usize, run: i64) -> serde_json::Value {
+        let running = self.analysis_status().running;
+        let active: Vec<i64> = self.analysis.as_ref().map(|job| job.run_id()).into_iter()
+            .chain(self.mood_analysis.as_ref().map(|job| job.run_id())).filter(|id| *id > 0).collect();
         let Some(lib) = self.library() else {
             return serde_json::json!({"error": "The library could not be opened."});
         };
-        match lib.analysis_inventory(chilpa_core::analysis_job::VERSION, filter, search, offset) {
+        let runs = match lib.analysis_runs() {
+            Ok(runs) => runs,
+            Err(error) => return serde_json::json!({"error":error.to_string()}),
+        };
+        match lib.analysis_inventory_for_run(chilpa_core::analysis_job::VERSION, filter, search, offset, run) {
             Ok(inventory) => serde_json::json!({
                 "total": inventory.total,
                 "standard": inventory.standard,
                 "mood": inventory.mood,
                 "matched": inventory.matched,
+                "active": active,
+                "running":running,
+                "runs": runs.into_iter().map(|run| serde_json::json!({
+                    "id":run.id, "kind":if run.analyzer == chilpa_library::store::mood::ANALYZER { "mood" } else { "standard" },
+                    "version":run.version, "folder":run.folder, "started_at":run.started_at, "finished_at":run.finished_at,
+                    "state":if run.state == "running" && !active.contains(&run.id) { "interrupted" } else { &run.state },
+                    "total":run.total, "previous":run.previous, "processed":run.processed, "saved":run.saved,
+                    "failed":run.failed, "error":run.error, "last":run.last,
+                })).collect::<Vec<_>>(),
                 "tracks": inventory.tracks.into_iter().map(|track| serde_json::json!({
                     "id": track.id, "title": track.title, "artist": track.artist, "album": track.album,
                     "standard": track.standard, "mood": track.mood,
+                    "standard_at":track.standard_at, "mood_at":track.mood_at,
+                    "result":track.result, "processed_at":track.processed_at,
                 })).collect::<Vec<_>>(),
             }),
             Err(error) => serde_json::json!({"error": error.to_string()}),

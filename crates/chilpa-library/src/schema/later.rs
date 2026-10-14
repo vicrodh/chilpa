@@ -173,3 +173,30 @@ CREATE TABLE mood_features (
 );
 CREATE INDEX mood_features_analyzer ON mood_features(analyzer, version);
 "#;
+
+/// I keep each analysis pass and commit its progress with the track's result.
+pub(super) const MIGRATION_V42: &str = r#"
+CREATE TABLE analysis_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    analyzer TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    folder TEXT,
+    started_at INTEGER NOT NULL,
+    finished_at INTEGER,
+    state TEXT NOT NULL DEFAULT 'running',
+    total INTEGER NOT NULL,
+    previous INTEGER NOT NULL,
+    processed INTEGER NOT NULL DEFAULT 0,
+    saved INTEGER NOT NULL DEFAULT 0,
+    failed INTEGER NOT NULL DEFAULT 0,
+    error TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE analysis_results (
+    run_id INTEGER NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+    track_id INTEGER NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    state TEXT NOT NULL,
+    analyzed_at INTEGER NOT NULL,
+    PRIMARY KEY (run_id, track_id)
+);
+CREATE INDEX analysis_results_track ON analysis_results(track_id, run_id);
+"#;
