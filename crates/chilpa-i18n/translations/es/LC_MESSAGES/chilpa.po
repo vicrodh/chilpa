@@ -375,9 +375,6 @@ msgstr "Analizar la biblioteca"
 msgid "Analyze the new music too?"
 msgstr "¿Analizar también la música nueva?"
 
-msgid "Analyzed"
-msgstr "Analizada"
-
 msgid "Analyzes local files and puts the results in Playlists > Mood."
 msgstr "Analiza archivos locales y coloca los resultados en Playlists > Mood."
 
@@ -3718,14 +3715,14 @@ msgstr "Espectro"
 msgid "Standard analysis"
 msgstr ""
 
-msgid "Standard analyzed"
-msgstr "Análisis normal completado"
-
 msgid "Standard done"
 msgstr "Análisis normal completo"
 
 msgid "Standard pending"
 msgstr "Análisis normal pendiente"
+
+msgid "Standard processed"
+msgstr ""
 
 msgid "Start"
 msgstr "Empezar"
