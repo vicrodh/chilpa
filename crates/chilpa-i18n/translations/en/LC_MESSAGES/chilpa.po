@@ -375,9 +375,6 @@ msgstr ""
 msgid "Analyze the new music too?"
 msgstr ""
 
-msgid "Analyzed"
-msgstr ""
-
 msgid "Analyzes local files and puts the results in Playlists > Mood."
 msgstr ""
 
@@ -3718,13 +3715,13 @@ msgstr ""
 msgid "Standard analysis"
 msgstr ""
 
-msgid "Standard analyzed"
-msgstr ""
-
 msgid "Standard done"
 msgstr ""
 
 msgid "Standard pending"
+msgstr ""
+
+msgid "Standard processed"
 msgstr ""
 
 msgid "Start"

@@ -76,12 +76,15 @@ jobs:
       - name: Check the repository and update worker
         run: |
           tools/lint/fast
+          cargo test --locked -q -p chilpa-library --lib
+          cargo test --locked -q -p chilpa-core --lib
           cargo test --locked -q -p chilpa-api --lib
       - name: Build Linux binary
         run: |
           export RUSTFLAGS="--remap-path-prefix=$GITHUB_WORKSPACE=. --remap-path-prefix=$HOME/.cargo=/cargo"
           cargo build --locked --release -p chilpa-qt
           scripts/check-qml-startup.sh "$GITHUB_WORKSPACE/target/release/chilpa-qt"
+          python3 scripts/check-analysis-inventory.py target/release/chilpa-qt
       - name: Fetch verified packaging tools
         run: python3 scripts/fetch-release-tools.py "$RUNNER_TEMP/release-tools"
       - name: Package Linux tarball and AppImage

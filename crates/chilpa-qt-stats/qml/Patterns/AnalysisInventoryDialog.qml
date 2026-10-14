@@ -83,7 +83,7 @@ Modal {
             id: counts
             anchors.top: heading.bottom; anchors.topMargin: Metrics.gap12
             width: parent.width
-            text: I18n.tr("Local tracks", I18n.rev) + ": " + summary.total + "  ·  " + I18n.tr("Standard analyzed", I18n.rev) + ": " + summary.standard + "  ·  " + I18n.tr("Mood stored", I18n.rev) + ": " + summary.mood
+            text: I18n.tr("Local tracks", I18n.rev) + ": " + summary.total + "  ·  " + I18n.tr("Standard processed", I18n.rev) + ": " + summary.standard + "  ·  " + I18n.tr("Mood stored", I18n.rev) + ": " + summary.mood
             font.pointSize: Type.body; color: Theme.color.textSecondary
         }
         Column {

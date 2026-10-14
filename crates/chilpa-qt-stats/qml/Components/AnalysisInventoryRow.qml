@@ -22,7 +22,7 @@ Rectangle {
         Column {
             id: standard
             anchors.verticalCenter: parent.verticalCenter
-            Text { text: row.track.result === "failed" ? I18n.tr("Failed in this run", I18n.rev) : row.track.standard ? I18n.tr("Analyzed", I18n.rev) : row.track.standard_at ? I18n.tr("Needs update", I18n.rev) : I18n.tr("Pending", I18n.rev); font.pointSize: Type.meta; color: row.track.result === "failed" ? Theme.color.statusWarning : Theme.color.textSecondary }
+            Text { text: row.track.result === "failed" ? I18n.tr("Failed in this run", I18n.rev) : row.track.standard ? I18n.tr("Processed", I18n.rev) : row.track.standard_at ? I18n.tr("Needs update", I18n.rev) : I18n.tr("Pending", I18n.rev); font.pointSize: Type.meta; color: row.track.result === "failed" ? Theme.color.statusWarning : Theme.color.textSecondary }
             Text { text: row.date(row.track.processed_at || row.track.standard_at); font.pointSize: Type.meta; color: Theme.color.textTertiary }
         }
         Column {
