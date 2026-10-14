@@ -20,7 +20,7 @@ Item {
     readonly property bool playingSelected: document.active === document.selected && Player.playing && !Player.paused
     function cancelFollow() { followPlaying = false }
     function positionAt(row, mode) {
-        if (row < 0 || row >= tracks.count)
+        if (row < 0 || row >= list.rows.count)
             return
         positioningList = true
         list.positionAt(row, mode)

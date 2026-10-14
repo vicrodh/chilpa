@@ -27,6 +27,7 @@ ApplicationWindow {
     Component { id: queues; QueueScreens.ListenListScreen {} }
     property int phase: 0
     property int waits: 0
+    onPhaseChanged: console.log("SMOKE phase=" + phase)
     function check(ok, message) {
         if (!ok) { console.log("SMOKE FAIL " + message); Qt.exit(1) }
         return ok
@@ -37,7 +38,8 @@ ApplicationWindow {
         visited.add(item)
         let result = [item]
         const data = typeof item.data === "function" ? null : item.data
-        for (const child of data || item.children || []) result = result.concat(descendants(child, visited))
+        for (const child of data || []) result = result.concat(descendants(child, visited))
+        for (const child of item.children || []) result = result.concat(descendants(child, visited))
         if (item.contentItem) result = result.concat(descendants(item.contentItem, visited))
         return result
     }
@@ -47,7 +49,7 @@ ApplicationWindow {
     Timer {
         interval: 100; repeat: true; running: true
         onTriggered: {
-            if (!window.check(++window.waits < 100, "native queue and language checks timed out")) return
+            if (!window.check(++window.waits < 100, "native queue and language checks timed out at phase " + window.phase)) return
             ListenList.refresh()
             if (window.phase === 0) {
                 const row = window.languageRow()
@@ -69,8 +71,8 @@ ApplicationWindow {
             } else if (window.phase === 2) {
                 if (!page.item || page.item.selectedQueue !== "2") return
                 const rows = window.find("trackListView")
-                const model = rows ? rows.model : null
-                if (!model || model.count < 4) return
+                const model = window.find("queueTracks")
+                if (!model || !rows || rows.count < 4) return
                 model.listAction("split", 3, -1)
                 ListenList.refresh()
                 window.check(JSON.parse(ListenList.snapshot).active === "1", "splitting another queue preserves the playing queue")
@@ -97,7 +99,7 @@ ApplicationWindow {
                 window.check(doc.tabs.length === 2 && doc.selected === "1" && doc.active === "1", "only the chosen originals are retired")
                 window.check(doc.tabs.find(tab => tab.id === "1").count === 4, "the merged queue keeps repeated tracks")
                 console.log("SMOKE language, shortcuts, split and merge completed")
-                Qt.quit()
+                stop(); Qt.exit(0)
             }
         }
     }
@@ -119,7 +121,49 @@ ApplicationWindow {
                 console.log("SMOKE FAIL language or queues were lost between sessions"); Qt.exit(1); return
             }
             console.log("SMOKE language and queues restored in a new process")
-            Qt.quit()
+            Qt.exit(0)
+        }
+    }
+}
+'''
+focus_fixture = r'''
+import QtQuick
+import QtQuick.Controls.Basic
+import app.chilpa
+import "qrc:/qt/qml/app/chilpa/controls/qml/Screens" as QueueScreens
+ApplicationWindow {
+    id: window
+    visible: true; width: 1100; height: 700
+    QueueScreens.ListenListScreen { id: page; anchors.fill: parent }
+    property int phase: 0
+    property int waits: 0
+    function find(item, name) {
+        if (item.objectName === name) return item
+        for (const child of item.children || []) { const found = find(child, name); if (found) return found }
+        return null
+    }
+    function check(ok, message) {
+        if (!ok) { console.log("SMOKE FAIL " + message); Qt.exit(1) }
+        return ok
+    }
+    Timer {
+        interval: 100; running: true; repeat: true
+        onTriggered: {
+            if (!window.check(++window.waits < 60, "last-track focus timed out")) return
+            const rows = window.find(page, "trackListView")
+            if (!rows || rows.count < 82 || page.playingRow < 0) return
+            if (window.phase === 0) {
+                window.check(page.playingRow >= rows.model.count, "headers give the last song a row index above the song count")
+                window.find(page, "queueFocusPlaying").clicked()
+                if (!window.check(page.positioningList, "focus accepts the native row index including headers")) return
+                window.phase = 1
+            } else {
+                const item = rows.itemAtIndex(page.playingRow)
+                if (!window.check(!!item && item.y >= rows.contentY - 1 && item.y + item.height <= rows.contentY + rows.height + 1,
+                    "focus brings the last playing occurrence into the viewport")) return
+                console.log("SMOKE last-track focus completed row=" + page.playingRow + " songs=" + rows.model.count)
+                stop(); Qt.exit(0)
+            }
         }
     }
 }
@@ -141,17 +185,21 @@ with tempfile.TemporaryDirectory(prefix="chilpa-language-queues-") as temporary:
     environment = dict(os.environ, XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"),
         XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"),
         QT_QPA_PLATFORM="offscreen", CHILPA_RENDERER="software")
-    for code in (fixture, reopened):
+    def run(code, marker):
         path = profile / "probe.qml"
         path.write_text(code)
         result = subprocess.run(["timeout", "--signal=TERM", "--kill-after=2s", "20s", "dbus-run-session", "--", str(binary)],
             env=dict(environment, CHILPA_QML_SMOKE=str(path)), text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "binding loop", "QQmlApplicationEngine failed", "is not a type")
-        if result.returncode or any(error in result.stdout for error in errors) or "SMOKE language" not in result.stdout:
+        if result.returncode or any(error in result.stdout for error in errors) or marker not in result.stdout:
             print(result.stdout); sys.exit(1)
         print("\n".join(line for line in result.stdout.splitlines() if "SMOKE" in line))
+    for code in (fixture, reopened):
+        run(code, "SMOKE language")
     stored = json.loads(session.read_text())
     merged = next(row for row in stored["buffers"] if row["id"] == 1)
     assert merged["paths"][1] == str(profile / "Firstb.flac")
     assert merged["cursor"] == 1 and merged["seconds"] == 12
     print("The compiled app retained the playback occurrence and position in its saved session.")
+    session.write_text(json.dumps(dict(version=1, buffers=[buffer(1, "Focus fixture", [str(i) for i in range(80)], 79)], active=1, selected=1, next=2)))
+    run(focus_fixture, "SMOKE last-track focus completed")
