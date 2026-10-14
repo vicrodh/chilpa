@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import "../../qml/Components"
 import "../../../chilpa-qt-kit/qml/Primitives"
+import "../../../chilpa-qt-kit/qml/Components"
 import "../../../chilpa-qt-kit/qml/Theme"
 
 TestCase {
@@ -41,6 +42,10 @@ TestCase {
         columns.width = 1000
         row.rowKind = 0
         row.artist = "Band"
+        detail.versions = JSON.stringify([
+            { id: 1, label: "Local", source: { local: true } },
+            { id: 2, label: "Home", source: { local: false } }
+        ])
         detail.selectedId = 1
         wait(0)
     }
@@ -158,13 +163,22 @@ TestCase {
     }
 
     function test_version_selector_preserves_source_and_selection() {
-        compare(selector.values.length, 2)
-        compare(selector.current, 0)
-        compare(selector.sources[0].local, true)
-        compare(selector.sources[1].local, false)
-        selector.picked("2")
+        compare(selector.item.values.length, 2)
+        compare(selector.item.current, 0)
+        compare(selector.item.sources[0].local, true)
+        compare(selector.item.sources[1].local, false)
+        selector.item.picked("2")
         compare(detail.selectedId, 2)
-        compare(selector.current, 1)
+        compare(selector.item.current, 1)
+    }
+
+    function test_single_version_builds_no_field_or_menu() {
+        detail.versions = JSON.stringify([{ id: 1, label: "Local", detail: "An edition" }])
+        compare(selector.active, false)
+        compare(selector.visible, false)
+        compare(selector.item, null)
+        wait(0)
+        compare(findChild(selector, "selectOptions"), null)
     }
 
     function test_version_menu_measures_after_its_source_badge_and_text() {
