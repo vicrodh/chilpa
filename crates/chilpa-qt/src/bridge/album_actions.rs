@@ -25,6 +25,7 @@ pub mod qobject {
         type AlbumActions = super::AlbumActionsRust;
 
         #[qinvokable] fn information(self: &AlbumActions, id: i64, rev: i32) -> QString;
+        #[qinvokable] fn artist_information(self: &AlbumActions, id: i64, rev: i32) -> QString;
         #[qinvokable]
         fn sources(self: &AlbumActions, id: i64, rev: i32) -> QString;
         #[qinvokable]
@@ -104,6 +105,7 @@ impl qobject::AlbumActions {
     }
 
     pub fn information(&self, id: i64, _rev: i32) -> cxx_qt_lib::QString { cxx_qt_lib::QString::from(app::with(|api| api.album_information(id))) }
+    pub fn artist_information(&self, id: i64, _rev: i32) -> cxx_qt_lib::QString { cxx_qt_lib::QString::from(app::with(|api| api.album_artist_information(id))) }
 
     pub fn sources(&self, id: i64, _rev: i32) -> cxx_qt_lib::QString {
         cxx_qt_lib::QString::from(app::with(|api| serde_json::to_string(&api.album_sources(id)).unwrap_or_default()))

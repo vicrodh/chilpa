@@ -78,7 +78,7 @@ MouseArea {
     }
     function actionAt(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
-        return item ? item.end.actionAt(x - item.x - item.end.x, y + rows.contentY - item.y) : 0
+        return item && item.end ? item.end.actionAt(x - item.x - item.end.x, y + rows.contentY - item.y) : 0
     }
     function groupActionAt(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null

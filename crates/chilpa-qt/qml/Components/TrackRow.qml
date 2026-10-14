@@ -4,8 +4,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
-Item {
-    id: row
+TrackRowSlot {
+    id: track
 
     required property int index
     required property int rowKind
@@ -36,195 +36,183 @@ Item {
     property bool albumHovered: false; property string sourceName: ""
     // Who wrote it, quiet after the title; empty when nobody is named.
     property string composer: ""
-    property var sourceInfo: ({}); readonly property Item sourceBadge: badge
+    property var sourceInfo: ({})
     property bool selectionMode: false
     property bool groupActionsEnabled: false
     property int rating: 0
     property int ratingPreview: 0
-    property bool canRate: false
     property bool favorite: false
     // The action under the pointer: 1 the heart, 2 the menu, 0 neither.
     property int actionHovered: 0
     // The arrow under the pointer: 1 up, 2 down, 0 neither.
     property int moveHovered: 0
-    // Its heart and its menu button, which the list resolves the clicks of.
-    readonly property TrackRowEnd end: rowEnd
 
     // A header: a divider (1), or one that stands for a record (2).
-    readonly property bool header: rowKind !== 0
+    header: rowKind !== 0
     readonly property bool record: rowKind === 2
     readonly property bool rich: cols.rich
-
-    // The label that shows its artist, for the list to tell which one of
-    // several a click is on.
-    readonly property Text artistLabel: rich ? richArtist : compactArtist
-    readonly property Text albumText: albumLabel
-    readonly property Item headerComposerLabel: groupHeader.composerLabel
-    readonly property Item groupActionArea: groupHeader.actionArea
-    function groupActionAt(from, x, y) { return groupHeader.actionAt(from, x, y) }
-
-    function containsArtist(x, y) {
-        const label = rich ? richArtist : compactArtist
-        const point = label.mapFromItem(row, x, y)
-        return !header && label.visible && point.x >= 0 && point.y >= 0
-            && point.x < Math.min(label.width, label.contentWidth)
-            && point.y < Math.min(label.height, label.contentHeight)
-    }
-
-    function ratingAt(x, y) {
-        const point = stars.mapFromItem(row, x, y)
-        return !header && canRate && stars.visible && point.x >= 0 && point.x < stars.width
-            && point.y >= 0 && point.y < stars.height
-            ? Math.floor(point.x / stars.width * Metrics.ratingMaximum) + 1 : 0
-    }
 
     width: cols.width
     height: record ? Metrics.rowRecord : headerWork ? Metrics.rowWork : header ? Metrics.rowGroup : rich ? Metrics.rowRich : Metrics.rowCompact
     opacity: available ? 1 : Metrics.disabledOpacity
 
-    ListRowSurface {
-        anchors.fill: parent
-        rowIndex: row.index
-        radius: row.rich ? Metrics.radiusCard : Metrics.radiusRow
-        visible: !row.header
-        hovered: row.hovered; selected: row.selected
-        emphasized: row.playing && row.rich
-        edge: row.playing && !Prefs.animatedIndicator
-    }
+    content: Item {
+        id: content
+        objectName: "trackRowBody"
+        readonly property var row: track
+        readonly property Text artistLabel: row.rich ? richArtist : compactArtist
+        readonly property alias albumText: albumLabel
+        readonly property alias sourceBadge: badge
+        readonly property alias end: rowEnd
+        readonly property alias ratingStars: stars
+        readonly property Item headerComposerLabel: groupHeader.composerLabel
+        readonly property Item groupActionArea: groupHeader.actionArea
+        function groupActionAt(from, x, y) { return groupHeader.actionAt(from, x, y) }
 
-    TrackRowHeader { id: groupHeader; row: row; actionsEnabled: row.groupActionsEnabled }
-    Item {
-        anchors.fill: parent
-        visible: !row.header
-
-        TrackRowLead {
-            x: row.cols.moveX
-            width: row.cols.move + row.cols.index
-            height: parent.height
-            gutter: row.cols.move
-            stacked: row.rich
-            number: row.number
-            playing: row.playing
-            selected: row.selected
-            selectionMode: row.selectionMode
-            reorder: row.cols.reorder && row.available
-            moveHovered: row.moveHovered
+        ListRowSurface {
+            anchors.fill: parent
+            rowIndex: row.index
+            radius: row.rich ? Metrics.radiusCard : Metrics.radiusRow
+            visible: !row.header
+            hovered: row.hovered; selected: row.selected
+            emphasized: row.playing && row.rich
+            edge: row.playing && !Prefs.animatedIndicator
         }
 
-        // Only a rich row with covers builds one: a compact row carries no
-        // image and no shader at all.
-        Loader {
-            active: row.cols.art > 0
-            x: row.cols.artX
-            anchors.verticalCenter: parent.verticalCenter
-            sourceComponent: ArtTile {
-                width: Metrics.artRow
-                height: Metrics.artRow
-                radius: Metrics.radiusArtSmall
-                source: row.art
-                tint: row.index
-            }
-        }
+        TrackRowHeader { id: groupHeader; row: content.row; actionsEnabled: content.row.groupActionsEnabled }
+        Item {
+            anchors.fill: parent
+            visible: !row.header
 
-        Column {
-            x: row.cols.titleX
-            width: row.cols.titleW - Metrics.gap12
-            anchors.verticalCenter: parent.verticalCenter
-
-            CreditedTitle {
-                width: parent.width
-                title: row.title
-                credit: row.composer
-                titleSize: row.rich ? Type.bodyLarge : Type.row
-                titleWeight: row.rich ? Type.medium : Type.regular
+            TrackRowLead {
+                x: row.cols.moveX
+                width: row.cols.move + row.cols.index
+                height: parent.height
+                gutter: row.cols.move
+                stacked: row.rich
+                number: row.number
+                playing: row.playing
+                selected: row.selected
+                selectionMode: row.selectionMode
+                reorder: row.cols.reorder && row.available
+                moveHovered: row.moveHovered
             }
+
+            // Only a rich row with covers builds one: a compact row carries no
+            // image and no shader at all.
+            Loader {
+                active: row.cols.art > 0
+                x: row.cols.artX
+                anchors.verticalCenter: parent.verticalCenter
+                sourceComponent: ArtTile {
+                    width: Metrics.artRow
+                    height: Metrics.artRow
+                    radius: Metrics.radiusArtSmall
+                    source: row.art
+                    tint: row.index
+                }
+            }
+
+            Column {
+                x: row.cols.titleX
+                width: row.cols.titleW - Metrics.gap12
+                anchors.verticalCenter: parent.verticalCenter
+
+                CreditedTitle {
+                    width: parent.width
+                    title: row.title
+                    credit: row.composer
+                    titleSize: row.rich ? Type.bodyLarge : Type.row
+                    titleWeight: row.rich ? Type.medium : Type.regular
+                }
+                Text {
+                    id: richArtist
+                    width: parent.width
+                    visible: row.rich
+                    text: row.artist
+                    elide: Text.ElideRight
+                    font.pointSize: Type.meta
+                    color: row.artistHovered ? Theme.color.textPrimary : Theme.color.textSecondary
+                }
+            }
+
             Text {
-                id: richArtist
-                width: parent.width
-                visible: row.rich
+                id: compactArtist
+                x: row.cols.artistX
+                width: row.cols.artistW - Metrics.gap12
+                visible: width > 0
+                anchors.verticalCenter: parent.verticalCenter
                 text: row.artist
                 elide: Text.ElideRight
-                font.pointSize: Type.meta
-                color: row.artistHovered ? Theme.color.textPrimary : Theme.color.textSecondary
+                font.pointSize: Type.row
+                color: Theme.color.textPrimary
             }
-        }
 
-        Text {
-            id: compactArtist
-            x: row.cols.artistX
-            width: row.cols.artistW - Metrics.gap12
-            visible: width > 0
-            anchors.verticalCenter: parent.verticalCenter
-            text: row.artist
-            elide: Text.ElideRight
-            font.pointSize: Type.row
-            color: Theme.color.textPrimary
-        }
+            Text {
+                id: albumLabel
+                x: row.cols.albumX
+                width: row.cols.albumW - Metrics.gap12
+                visible: width > 0
+                anchors.verticalCenter: parent.verticalCenter
+                text: row.album
+                elide: Text.ElideRight
+                font.pointSize: Type.row
+                color: row.albumHovered || !row.rich ? Theme.color.textPrimary : Theme.color.textSecondary
+            }
 
-        Text {
-            id: albumLabel
-            x: row.cols.albumX
-            width: row.cols.albumW - Metrics.gap12
-            visible: width > 0
-            anchors.verticalCenter: parent.verticalCenter
-            text: row.album
-            elide: Text.ElideRight
-            font.pointSize: Type.row
-            color: row.albumHovered || !row.rich ? Theme.color.textPrimary : Theme.color.textSecondary
-        }
+            TrackSourceLabel { id: badge; cols: row.cols; name: row.sourceName; sourceInfo: row.sourceInfo; anchors.verticalCenter: parent.verticalCenter }
 
-        TrackSourceLabel { id: badge; cols: row.cols; name: row.sourceName; sourceInfo: row.sourceInfo; anchors.verticalCenter: parent.verticalCenter }
+            Row {
+                x: row.cols.qualityX
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Metrics.gap6
 
-        Row {
-            x: row.cols.qualityX
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: Metrics.gap6
+                QualityIcon { tier: row.tier }
+                Text { text: row.quality; font.pointSize: Type.small; color: Theme.color.textSecondary }
+            }
 
-            QualityIcon { tier: row.tier }
-            Text { text: row.quality; font.pointSize: Type.small; color: Theme.color.textSecondary }
-        }
+            RatingStars {
+                id: stars
+                x: row.cols.ratingX
+                anchors.verticalCenter: parent.verticalCenter
+                visible: row.cols.rating > 0
+                interactive: false
+                value: row.rating
+                pointerPreview: row.ratingPreview
+            }
 
-        RatingStars {
-            id: stars
-            x: row.cols.ratingX
-            anchors.verticalCenter: parent.verticalCenter
-            visible: row.cols.rating > 0
-            interactive: false
-            value: row.rating
-            pointerPreview: row.ratingPreview
-        }
+            Text {
+                x: row.cols.playsX
+                width: row.cols.plays - Metrics.gap12
+                visible: row.cols.plays > 0
+                anchors.verticalCenter: parent.verticalCenter
+                text: row.plays
+                horizontalAlignment: Text.AlignRight
+                font.pointSize: Type.small
+                font.features: { "tnum": 1 }
+                color: Theme.color.textTertiary
+            }
 
-        Text {
-            x: row.cols.playsX
-            width: row.cols.plays - Metrics.gap12
-            visible: row.cols.plays > 0
-            anchors.verticalCenter: parent.verticalCenter
-            text: row.plays
-            horizontalAlignment: Text.AlignRight
-            font.pointSize: Type.small
-            font.features: { "tnum": 1 }
-            color: Theme.color.textTertiary
-        }
+            TrackRowEnd {
+                id: rowEnd
+                x: row.cols.moreX
+                height: parent.height
+                visible: row.available
+                trackId: row.trackId
+                favorite: row.favorite
+                hovered: row.actionHovered
+            }
 
-        TrackRowEnd {
-            id: rowEnd
-            x: row.cols.moreX
-            height: parent.height
-            visible: row.available
-            trackId: row.trackId
-            favorite: row.favorite
-            hovered: row.actionHovered
-        }
-
-        Text {
-            x: row.cols.timeX
-            width: row.cols.time
-            anchors.verticalCenter: parent.verticalCenter
-            text: row.duration
-            horizontalAlignment: Text.AlignRight
-            font.pointSize: Type.row
-            font.features: { "tnum": 1 }
-            color: row.rich ? Theme.color.textSecondary : Theme.color.textPrimary
+            Text {
+                x: row.cols.timeX
+                width: row.cols.time
+                anchors.verticalCenter: parent.verticalCenter
+                text: row.duration
+                horizontalAlignment: Text.AlignRight
+                font.pointSize: Type.row
+                font.features: { "tnum": 1 }
+                color: row.rich ? Theme.color.textSecondary : Theme.color.textPrimary
+            }
         }
     }
 }

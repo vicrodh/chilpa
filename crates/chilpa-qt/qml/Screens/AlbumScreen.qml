@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.artwork
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "../Components"
 import "../Patterns"
@@ -23,15 +24,18 @@ Flickable {
         items: (sourceDetails.info.shelves || []).filter(shelf => !(shelf.id === "tracks" && shelf.kind === "track"))
     }
     function toggleSelection() { selectionMode = !selectionMode; tracks.clearSelection() }
-    function showActions(item, left, top) { const at = item.mapToItem(page, left, top); albumMenu.show(detail.selectedId, detail.title, detail.artist, -1, at.x, at.y) }
+    function showActions(item, left, top) { const at = item.mapToItem(page, left, top); albumMenu.active = true; albumMenu.item.show(detail.selectedId, detail.title, detail.artist, -1, at.x, at.y) }
     // The cover's own menu, with what it offers now.
     function showCoverMenu(item, left, top) {
         const at = item.mapToItem(page, left, top)
-        coverMenu.custom = Artwork.albumChosen(detail.selectedId, Artwork.rev)
-        coverMenu.showing = detail.art.toString() !== ""
-        coverMenu.address = Artwork.albumAddress(detail.selectedId, Artwork.rev)
-        coverMenu.popupAt(at.x, at.y)
+        coverMenu.active = true
+        coverMenu.item.custom = Artwork.albumChosen(detail.selectedId, Artwork.rev)
+        coverMenu.item.showing = detail.art.toString() !== ""
+        coverMenu.item.address = Artwork.albumAddress(detail.selectedId, Artwork.rev)
+        coverMenu.item.popupAt(at.x, at.y)
     }
+    function showArtwork() { lightbox.active = true; lightbox.item.show(detail.art) }
+    function showInformation() { information.active = true; information.item.open() }
 
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
@@ -51,14 +55,6 @@ Flickable {
         filterRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev
         playingPath: Player.path
     }
-    AlbumGridModel {
-        id: related
-        kind: "related"
-        key: detail.selectedId.toString()
-        limit: 8
-        contentRev: Library.contentRev
-    }
-
     AlbumHeaderBackground {
         width: page.width
         height: Metrics.contentTop + (sourceDetails.visible ? sourceDetails.heroHeight : hero.height) + Metrics.gap16
@@ -85,17 +81,26 @@ Flickable {
             onSelectToggle: page.toggleSelection()
             onContext: (left, top) => page.showActions(hero, left, top)
             onArtworkMenu: (left, top) => page.showCoverMenu(hero, left, top)
-            onArtwork: lightbox.show(detail.art)
-            onInformation: information.open()
+            onArtwork: page.showArtwork()
+            onInformation: page.showInformation()
         }
 
-        SourceRecordDetails { id: sourceDetails; width: parent.width; cardId: detail.selectedId; trackModel: tracks; record: detail
-            selecting: page.selectionMode
-            onArtwork: lightbox.show(detail.art)
-            onInformation: information.open()
-            onSelectToggle: page.toggleSelection()
-            onContext: (left, top) => page.showActions(sourceDetails, left, top)
-            onArtworkMenu: (left, top) => page.showCoverMenu(sourceDetails, left, top)
+        Loader {
+            id: sourceDetails
+            width: parent.width
+            active: detail.selectedId < 0
+            visible: active
+            readonly property var info: item ? item.info : ({})
+            readonly property real heroHeight: item ? item.heroHeight : 0
+            sourceComponent: SourceRecordDetails {
+                width: parent.width; cardId: detail.selectedId; trackModel: tracks; record: detail
+                selecting: page.selectionMode
+                onArtwork: page.showArtwork()
+                onInformation: page.showInformation()
+                onSelectToggle: page.toggleSelection()
+                onContext: (left, top) => page.showActions(sourceDetails, left, top)
+                onArtworkMenu: (left, top) => page.showCoverMenu(sourceDetails, left, top)
+            }
         }
 
         Rectangle { width: parent.width; height: 1; color: Theme.color.strokeHairline }
@@ -136,6 +141,7 @@ Flickable {
             width: parent.width
             height: implicitHeight
             fitContent: true
+            viewport: page
             showArtist: sourceDetails.info.kind === "playlist"
             showAlbum: sourceDetails.info.kind === "playlist"
             showArt: sourceDetails.info.kind === "playlist"
@@ -143,40 +149,47 @@ Flickable {
             selectionMode: page.selectionMode
         }
 
-        SourceShelf {
+        Loader {
             width: parent.width
-            modelKind: "sameArtist"
-            section: ({title: I18n.tr("From same artist", I18n.rev), key: String(detail.selectedId), size: 18})
-        }
-        Repeater { model: sourceShelves; SourceShelf { required property var entry; width: column.width; section: entry } }
-        AlbumCarousel {
-            width: parent.width
-            title: I18n.tr("Similar albums", I18n.rev)
-            model: related
+            active: page.visible && detail.found
+            asynchronous: true
+            property double albumId: detail.selectedId
+            property var shelves: sourceShelves.items
+            source: "qrc:/qt/qml/app/chilpa/sources/qml/Patterns/AlbumRecommendations.qml"
         }
     }
 
-    AlbumMenu { id: albumMenu }
-    CoverLightbox { id: lightbox }
-    CoverMenu {
+    Loader { id: albumMenu; objectName: "albumActionMenuLoader"; active: false; sourceComponent: AlbumMenu {} }
+    Loader { id: lightbox; active: false; sourceComponent: CoverLightbox {} }
+    Loader {
         id: coverMenu
-        onChoose: Artwork.chooseAlbum(detail.selectedId)
-        onForget: Artwork.forgetAlbum(detail.selectedId)
-        onView: lightbox.show(detail.art)
-        onSave: Artwork.saveAlbum(detail.selectedId, detail.title)
+        active: false
+        sourceComponent: CoverMenu {
+            onChoose: Artwork.chooseAlbum(detail.selectedId)
+            onForget: Artwork.forgetAlbum(detail.selectedId)
+            onView: page.showArtwork()
+            onSave: Artwork.saveAlbum(detail.selectedId, detail.title)
+        }
     }
-    AlbumInfoModal { id: information; albumId: detail.selectedId; art: detail.art; summary: detail.summary }
-    PlaylistSelectionBar {
-        visible: page.selectionMode && tracks.selectedCount > 0
+    Loader {
+        id: information
+        objectName: "albumInformationLoader"
+        active: false
+        sourceComponent: AlbumInfoModal { albumId: detail.selectedId; art: detail.art; summary: detail.summary }
+    }
+    Loader {
+        active: page.selectionMode && tracks.selectedCount > 0
         z: 2
-        model: tracks
-        playlistName: detail.title
-        canRemove: false
         x: (page.width - width) / 2
         y: page.contentY + page.height - height - Metrics.selectionBottom
-        onFinished: {
-            tracks.clearSelection()
-            page.selectionMode = false
+        sourceComponent: PlaylistSelectionBar {
+            model: tracks
+            playlistName: detail.title
+            canRemove: false
+            onFinished: {
+                tracks.clearSelection()
+                page.selectionMode = false
+            }
         }
     }
 }

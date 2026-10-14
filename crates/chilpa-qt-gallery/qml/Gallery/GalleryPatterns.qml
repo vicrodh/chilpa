@@ -1,4 +1,5 @@
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import QtQuick
 import app.chilpa
 import app.chilpa.kit
@@ -22,6 +23,7 @@ TitledFlow {
     AnalysisUi.AnalysisInventoryDialog { id: inventoryPreview }
     CastPicker { id: castPreview; preview: true }
     StorageSettingsActions { current: false; visible: false }
+    AlbumRecommendations { width: section.width; albumId: 0; shelves: [] }
 
     SystemControls {}
     NavMenu {}

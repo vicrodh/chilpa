@@ -5,6 +5,7 @@ QtObject {
     property int selectedCount: 0
     property var informationDocument: ({})
     function information(id, revision) { return JSON.stringify(informationDocument) }
+    function artistInformation(id, revision) { return JSON.stringify(informationDocument) }
     property var artistDestination: ({})
     function sources(id, revision) { return "[]" }
     function quality(id, revision) { return '{"tier":3,"label":"FLAC 24/96"}' }

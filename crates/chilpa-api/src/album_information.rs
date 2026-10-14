@@ -15,6 +15,49 @@ impl Chilpa {
         let info = info.unwrap_or_else(|| json!({}));
         person(name, info["artist_ref"].as_str().unwrap_or(""), &info).to_string()
     }
+    /// I read only the header's linked names; full credits remain on demand.
+    pub fn album_artist_information(&mut self, id: i64) -> String {
+        let Some(album) = self.album(id) else { return "{}".into(); };
+        let mut info = self.catalog.card(id).map(|card| {
+            let mut value = card.metadata;
+            if !value.is_object() { value = json!({}); }
+            value["plugin"] = json!(card.plugin);
+            value
+        }).unwrap_or_else(|| json!({}));
+        let rows = if chilpa_library::is_various(&album.artist) { self.album_track_rows(id) } else { Vec::new() };
+        if info["track_credits"].as_array().is_none_or(Vec::is_empty) {
+            info["track_credits"] = json!(rows.iter().map(|row| json!({"artist":row.artist})).collect::<Vec<_>>());
+        }
+        self.album_artist_document(&album.artist, &info, &rows).to_string()
+    }
+
+    fn album_artist_document(&mut self, artist: &str, info: &Value, rows: &[crate::TrackRow]) -> Value {
+        let mut artists = Vec::new();
+        let artist = artist.trim();
+        if !chilpa_library::is_various(artist) {
+            add_artist(&mut artists, person(artist, info["artist_ref"].as_str().unwrap_or(""), info));
+        }
+        for credit in info["credits"].as_array().into_iter().flatten() {
+            let name = credit["name"].as_str().unwrap_or("");
+            let reference = credit["ref"].as_str().map(str::to_owned).unwrap_or_else(|| credit["id"].as_i64().map(|id| format!("artist:{id}")).unwrap_or_default());
+            add_artist(&mut artists, person(name, &reference, info));
+        }
+        if chilpa_library::is_various(artist) {
+            for row in rows {
+                let metadata = self.catalog.track_by_path(&row.path).map(|(track,_)| track.metadata).unwrap_or(Value::Null);
+                for name in self.credit_names(&row.artist) {
+                    add_artist(&mut artists, person(&name, metadata["artist_ref"].as_str().unwrap_or(""), info));
+                }
+            }
+            for track in info["track_credits"].as_array().into_iter().flatten() {
+                if let Some(name) = track["artist"].as_str() { add_artist(&mut artists, person(name, "", info)); }
+            }
+        }
+        let links = linked_names(&artists);
+        let html = json!(if chilpa_library::is_various(artist) && !artists.is_empty() { format!("{} ({links})", escape(artist)) } else if artists.is_empty() { escape(artist) } else { links });
+        json!({"artist_html":html,"artist_links":artists})
+    }
+
     pub fn album_information(&mut self, id: i64) -> String {
         let Some(detail) = self.album_detail(id) else { return "{}".into(); };
         let mut info = self.catalog.card(id).map(|card| {
@@ -38,30 +81,9 @@ impl Chilpa {
                 json!({"title":track.title,"artist":track.artist,"number":track.number,"performers":metadata["performers"],"copyright":metadata["copyright"]})
             }).collect::<Vec<_>>());
         }
-        let mut artists = Vec::new();
-        let artist = detail.album.artist.trim();
-        if !chilpa_library::is_various(artist) {
-            add_artist(&mut artists, person(artist, info["artist_ref"].as_str().unwrap_or(""), &info));
-        }
-        for credit in info["credits"].as_array().into_iter().flatten() {
-            let name = credit["name"].as_str().unwrap_or("");
-            let reference = credit["ref"].as_str().map(str::to_owned).unwrap_or_else(|| credit["id"].as_i64().map(|id| format!("artist:{id}")).unwrap_or_default());
-            add_artist(&mut artists, person(name, &reference, &info));
-        }
-        if chilpa_library::is_various(artist) {
-            for row in &rows {
-                let metadata = self.catalog.track_by_path(&row.path).map(|(track,_)| track.metadata).unwrap_or(Value::Null);
-                for name in self.credit_names(&row.artist) {
-                    add_artist(&mut artists, person(&name, metadata["artist_ref"].as_str().unwrap_or(""), &info));
-                }
-            }
-            for track in info["track_credits"].as_array().into_iter().flatten() {
-                if let Some(name) = track["artist"].as_str() { add_artist(&mut artists, person(name, "", &info)); }
-            }
-        }
-        let links = linked_names(&artists);
-        info["artist_html"] = json!(if chilpa_library::is_various(artist) && !artists.is_empty() { format!("{} ({links})", escape(artist)) } else if artists.is_empty() { escape(artist) } else { links });
-        info["artist_links"] = json!(artists);
+        let artists = self.album_artist_document(&detail.album.artist, &info, &rows);
+        info["artist_html"] = artists["artist_html"].clone();
+        info["artist_links"] = artists["artist_links"].clone();
         let mut tracks = info["track_credits"].as_array().cloned().unwrap_or_default();
         for (index, track) in tracks.iter_mut().enumerate() {
             if track["artist"].as_str().is_none_or(str::is_empty) {
@@ -191,6 +213,10 @@ mod tests {
         assert_eq!(info["description"], "Review");
         assert_eq!(info["copyright"], "Publisher");
         assert_eq!(info["track_credits"][0]["performers"], "Player, Guitar");
+        let header: Value = serde_json::from_str(&api.album_artist_information(album)).unwrap();
+        assert_eq!(header["artist_html"], info["artist_html"]);
+        assert_eq!(header["artist_links"], info["artist_links"]);
+        assert!(header.get("track_credits").is_none());
     }
     #[test]
     fn local_information_uses_library_metadata_without_a_plugin() {
@@ -204,6 +230,10 @@ mod tests {
         assert_eq!(info["release_date"], "2001");
         assert_eq!(info["released"], "2001");
         assert_eq!(info["track_credits"][0]["artist"], "Performer");
+        let header: Value = serde_json::from_str(&api.album_artist_information(album)).unwrap();
+        assert_eq!(header["artist_html"], info["artist_html"]);
+        assert_eq!(header["artist_links"], info["artist_links"]);
+        assert!(header.get("track_credits").is_none(), "the header does not serialize full credits");
         api.library.as_ref().unwrap().connection().execute("UPDATE tracks SET release_date = '2001-09-11' WHERE album_id = ?1", [album]).unwrap();
         let dated: Value = serde_json::from_str(&api.album_information(album)).unwrap();
         assert_eq!(dated["release_date"], "2001-09-11", "the whole date its file says");
@@ -214,6 +244,9 @@ mod tests {
         let compilation: Value = serde_json::from_str(&api.album_information(album)).unwrap();
         assert_eq!(compilation["artist_html"], "Various Artists (<a href=\"0\">Performer</a>)");
         assert_eq!(compilation["artist_links"][0]["key"], "Performer");
+        let header: Value = serde_json::from_str(&api.album_artist_information(album)).unwrap();
+        assert_eq!(header["artist_html"], compilation["artist_html"]);
+        assert_eq!(header["artist_links"], compilation["artist_links"]);
         api.library.as_ref().unwrap().connection().execute("UPDATE tracks SET artist='Various Artists' WHERE album_id=?1", [album]).unwrap();
         let mislabeled: Value = serde_json::from_str(&api.album_information(album)).unwrap();
         assert_eq!(mislabeled["artist_html"], "Various Artists");

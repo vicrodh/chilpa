@@ -24,6 +24,9 @@ Item {
     // Grow with the rows instead of scrolling: a list inside a page that
     // scrolls as a whole.
     property bool fitContent: false
+    // A page keeps row slots at full height and builds only nearby contents.
+    property Flickable viewport: null
+    readonly property real visibleTop: viewport ? viewport.contentY - parent.mapToItem(viewport.contentItem, 0, y + view.y).y : view.contentY
     // Room below the last row, for what floats over the list.
     property int bottomInset: 0
     // Titles that reorder the list, and the order in use.
@@ -126,8 +129,8 @@ Item {
         reuseItems: true
         // Off the screen a current row and a pooled one stay alive: the playing mark would move there (QBZ).
         currentIndex: -1
-        // A list that grows with its rows builds them all; one that scrolls
-        // keeps a screen of them ready on each side.
+        // A growing list retains its slots; the outer viewport windows their
+        // contents. A standalone list caches one screen on each side.
         cacheBuffer: list.fitContent ? Metrics.fitContentBuffer : Math.max(0, height)
         bottomMargin: list.bottomInset
         boundsBehavior: Flickable.StopAtBounds
@@ -141,6 +144,7 @@ Item {
 
         delegate: TrackRow {
             required property var model
+            inViewport: !list.viewport || y + height >= list.visibleTop - list.viewport.height && y < list.visibleTop + list.viewport.height * 2
             sourceName: model.sourceName || ""
             composer: model.composer || ""
             headerWork: model.headerWork || false
@@ -150,8 +154,8 @@ Item {
             albumHovered: index === view.albumHovered
             cols: columns
             canRate: trackId !== 0
-            rating: Ratings.stars("track", trackId, Ratings.rev)
-            favorite: Ratings.favorite("track", trackId, Ratings.rev)
+            rating: inViewport ? Ratings.stars("track", trackId, Ratings.rev) : 0
+            favorite: inViewport && Ratings.favorite("track", trackId, Ratings.rev)
             ratingPreview: index === view.hovered ? view.ratingHovered : 0
             hovered: index === view.hovered
             actionHovered: index === view.hovered ? view.actionHovered : 0
