@@ -19,9 +19,10 @@ Column {
     readonly property var sources: active
         ? JSON.parse(Sources.homeLibraries(Library.remoteRev + Library.rev + Sources.revision + home.refresh) || "[]")
         : Visit.recall("home.source.list", [])
-    onSourcesChanged: Qt.callLater(schedule)
-    onActiveChanged: Qt.callLater(schedule)
-    Component.onCompleted: Qt.callLater(schedule)
+    onSourcesChanged: scheduled.restart()
+    onActiveChanged: scheduled.restart()
+    Component.onCompleted: scheduled.restart()
+    Timer { id: scheduled; interval: 0; onTriggered: home.schedule() }
     function schedule() {
         if (!active) { step.stop(); return }
         Visit.keep("home.source.list", sources)
@@ -40,6 +41,7 @@ Column {
     }
     function resolve(source) {
         const page = JSON.parse(Sources.page(source.id + " native:discover:home", Library.remoteRev) || "{}")
+        if (page.loading === true && !(page.shelves || []).length) return
         let preferences = []
         try { preferences = JSON.parse(SettingsModel.kept("ui.source." + source.id + ".discover.home") || "[]") } catch (_) {}
         const available = (page.shelves || []).map(section => Object.assign({}, section, {size:0}))
