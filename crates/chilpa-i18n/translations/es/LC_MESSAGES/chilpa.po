@@ -226,6 +226,9 @@ msgstr "Agrega pistas a esta queue desde el menú de una pista."
 msgid "Added this month"
 msgstr "Agregadas este mes"
 
+msgid "Adding to queue…"
+msgstr "Agregando a la cola…"
+
 msgid "Adding tracks…"
 msgstr "Agregando pistas…"
 

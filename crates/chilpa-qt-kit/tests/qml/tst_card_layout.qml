@@ -12,14 +12,12 @@ TestCase {
     function test_narrow_sections_keep_the_library_cover_size() {
         for (const viewport of [960, 1280, 1720]) {
             CardLayout.viewportWidth = viewport
-            const available = viewport - Metrics.contentX * 2 - Metrics.cardRing * 2
-            const columns = Math.max(Metrics.gridMinColumns, Math.floor((available + Metrics.gridGap) / Metrics.cardMinWidth))
-            const reference = (available - (columns - 1) * Metrics.gridGap) / columns
-            compare(CardLayout.cardWidth, reference, "the existing Library geometry remains the reference")
+            const reference = Metrics.albumCardWidth
+            compare(CardLayout.cardWidth, 200, "resizing the window never resizes its covers")
             compare(shelf.cardWidth, reference)
             shelf.width = 650
             compare(shelf.cardWidth, reference, "a sidebar fits fewer cards instead of shrinking them")
-            verify(CardLayout.columns(650) <= columns)
+            verify(CardLayout.columns(650) < CardLayout.columns(viewport))
         }
         CardLayout.viewportWidth = 0
     }

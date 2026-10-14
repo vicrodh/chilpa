@@ -41,6 +41,8 @@ pub mod listening;
 mod metadata;
 pub mod navigation;
 pub mod queue_origin;
+mod queue_activity;
+pub use queue_activity::{QueueWork, AlbumQueueWork};
 mod outputs;
 mod playlists;
 pub use playlists::PlaylistTarget;
@@ -604,6 +606,7 @@ pub struct Chilpa {
     /// The current queue's paths, whole and in the order they were queued.
     /// Going back does not trim it.
     queue: Vec<String>,
+    queue_work: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     queue_origins: Vec<Option<queue_origin::QueueOrigin>>,
     browse_origin: Option<queue_origin::QueueOrigin>,
     listen: listen::Workspace,
@@ -737,6 +740,7 @@ impl Chilpa {
             in_progress: None,
             scrobbler: None,
             queue: Vec::new(),
+            queue_work: Default::default(),
             queue_origins: Vec::new(),
             browse_origin: None,
             listen: listen::Workspace::default(),

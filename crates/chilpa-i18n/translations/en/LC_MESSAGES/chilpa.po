@@ -226,6 +226,9 @@ msgstr ""
 msgid "Added this month"
 msgstr ""
 
+msgid "Adding to queue…"
+msgstr ""
+
 msgid "Adding tracks…"
 msgstr "Adding tracks…"
 

@@ -335,6 +335,7 @@ QtObject {
 
     // Album cards and grids (02-layout.md 4, 03-components.md AlbumCard).
     readonly property int cardMinWidth: 180
+    readonly property int albumCardWidth: 200
     readonly property int gridMinColumns: 3
     readonly property int cardTextGap: 8
     readonly property int cardTextHeight: 40

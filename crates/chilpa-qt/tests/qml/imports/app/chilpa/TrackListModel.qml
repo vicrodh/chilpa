@@ -43,6 +43,11 @@ ListModel {
     function chosenTrackIdsJson(row) { return "[42,43]" }
     function playLater(row, label) { lastAction = "later"; lastRow = row }
     function playAll(shuffled) { lastAction = shuffled ? "shuffle" : "playAll" }
+    function playingRow() {
+        for (let row = 0; row < count; ++row)
+            if (get(row).playing) return row
+        return -1
+    }
     function selectAll() {}
     function clearSelection() {}
     function selectedTrackIdsJson() { return "[42,43]" }

@@ -12,6 +12,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 // while anything is selected every check shows, since a click selects.
 Item {
     id: card
+    implicitWidth: CardLayout.cardWidth
 
     property var sourceInfo: ({})
     property var qualityInfo: ({})

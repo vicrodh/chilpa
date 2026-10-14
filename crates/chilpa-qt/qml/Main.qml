@@ -11,6 +11,7 @@ import "qrc:/qt/qml/app/chilpa/mini/qml/Screens" as Mini
 import "qrc:/qt/qml/app/chilpa/immersive/qml/Screens" as Overlay
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "Patterns"
 
 // The window (design/02): the floating sidebar, the tab bar, the screen of
@@ -138,6 +139,7 @@ Window {
     }
 
     Tooltip { watching: window.contentItem }
+    QueueProgress { anchors.right: parent.right; anchors.rightMargin: Metrics.spaceWindow; y: plan.planeTop + Metrics.gap8; z: 7 }
 
     WindowGrips { anchors.fill: parent; window: window }
     DevHooks { window: window }

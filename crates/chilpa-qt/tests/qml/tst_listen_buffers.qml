@@ -1,7 +1,7 @@
 import QtQuick
 import QtTest
 import app.chilpa
-import "../../qml/Screens"
+import "qrc:/qt/qml/app/chilpa/controls/qml/Screens"
 import "../../qml/Patterns"
 
 TestCase {
@@ -71,7 +71,7 @@ TestCase {
         const other = tab("Other · 2")
         other.rename()
         findChild(other, "tabName").text = "Saved"
-        descendants(page).find(item => item.text === "Save as playlist" && item.clicked).clicked()
+        findChild(page, "queueSavePlaylist").clicked()
         compare(ListenList.renamedId, "2")
         compare(ListenList.renamedText, "Saved")
         compare(ListenList.lastAction, "save")

@@ -698,6 +698,20 @@ impl Library {
     /// library does not have. What a queue shows, where anything can be
     /// queued, library or not. In chunks, so a long queue never builds one
     /// statement with thousands of parameters.
+    /// I read queue paths without credits, artwork, ratings or play counts.
+    pub fn track_paths(&self, ids: &[i64]) -> rusqlite::Result<std::collections::HashMap<i64, String>> {
+        let mut found = std::collections::HashMap::new();
+        for chunk in ids.chunks(500) {
+            let marks = vec!["?"; chunk.len()].join(",");
+            let mut stmt = self.db.prepare(&format!("SELECT id, external_id FROM tracks WHERE id IN ({marks})"))?;
+            for row in stmt.query_map(params_from_iter(chunk.iter()), |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))? {
+                let (id, path) = row?;
+                found.insert(id, path);
+            }
+        }
+        Ok(found)
+    }
+
     pub fn tracks_by_paths(&self, paths: &[String]) -> rusqlite::Result<Vec<Option<BrowseTrack>>> {
         let mut found = std::collections::HashMap::new();
         for chunk in paths.chunks(500) {
