@@ -66,6 +66,7 @@ Column {
         }
     }
     Item { width: 1; height: Metrics.gap24 }
+    UpdatesPanel { width: parent.width }
     Text {
         text: I18n.tr("Acknowledgments", I18n.rev)
         font.pointSize: Type.micro

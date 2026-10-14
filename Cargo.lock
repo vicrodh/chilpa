@@ -453,10 +453,12 @@ dependencies = [
  "chilpa-servers",
  "chilpa-tags",
  "image",
+ "libc",
  "native-tls",
  "rand 0.10.3",
  "roxmltree",
  "rusqlite",
+ "semver",
  "serde",
  "serde_json",
  "sha1",
@@ -686,7 +688,6 @@ dependencies = [
 [[package]]
 name = "chilpa-plugin-api"
 version = "0.1.0"
-source = "git+ssh://forgejo/blitzkriegfc/chilpa-plugins.git?tag=protocol-4#30d304ae2dc4186b1a789518a0ba4b494a9b2410"
 dependencies = [
  "serde",
 ]

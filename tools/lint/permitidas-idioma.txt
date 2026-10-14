@@ -662,3 +662,10 @@ ucm
 
 # I renew a saved server sign-in.
 reauthenticate
+appimage
+sigkill
+percentages
+prereleases
+semver
+gt
+cli

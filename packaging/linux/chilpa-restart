@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+parent_pid="${1:?missing parent process}"
+image="${2:?missing image}"
+[[ "$parent_pid" =~ ^[1-9][0-9]*$ && "$image" = /* && -x "$image" ]] || exit 1
+deadline=$((SECONDS + 60))
+while kill -0 "$parent_pid" 2>/dev/null; do
+    (( SECONDS < deadline )) || exit 1
+    sleep 0.2
+done
+unset APPDIR APPIMAGE OWD LD_LIBRARY_PATH QT_PLUGIN_PATH QML2_IMPORT_PATH QML_IMPORT_PATH
+exec "$image"
