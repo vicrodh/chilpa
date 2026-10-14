@@ -5,6 +5,7 @@ import "../Theme"
 Item {
     id: slot
     property bool inViewport: true
+    property bool immediate: true
     property bool header: false
     property bool canRate: false
     property Component content
@@ -28,5 +29,5 @@ Item {
         return point.x >= 0 && point.x < stars.width && point.y >= 0 && point.y < stars.height
             ? Math.floor(point.x / stars.width * Metrics.ratingMaximum) + 1 : 0
     }
-    Loader { id: body; anchors.fill: parent; active: slot.inViewport; sourceComponent: slot.content }
+    Loader { id: body; anchors.fill: parent; active: slot.inViewport; asynchronous: !slot.immediate; sourceComponent: slot.content }
 }
