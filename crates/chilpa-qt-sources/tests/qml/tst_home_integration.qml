@@ -10,6 +10,27 @@ TestCase {
     visible: true
     width: 1000; height: 800
     SourceHomeSections { id: home; width: parent.width }
+    Component { id: temporary; SourceHomeSections { rendered: false } }
+    function test_a_pending_refresh_keeps_cached_module_descriptors() {
+        Sources.pages = {"cached native:discover:home": JSON.stringify({shelves:[
+            {id:"record",title:"Records",items:[{ref:"album:1"}]}
+        ]})}
+        Sources.show({homeLibraries:[{id:"cached",name:"Fixture",enabled:true}]})
+        tryCompare(home, "ready", true)
+        tryVerify(() => home.sections.length === 1 && home.sections[0].id === "record")
+        Sources.pages = {"cached native:discover:home": JSON.stringify({loading:true,shelves:[]})}
+        home.refresh++
+        wait(100)
+        compare(home.sections.length, 1)
+        compare(home.sections[0].id, "record")
+    }
+    function test_pending_refresh_is_cancelled_when_the_page_is_destroyed() {
+        const page = createTemporaryObject(temporary, this)
+        verify(page)
+        page.refresh++
+        page.destroy()
+        wait(50)
+    }
     function test_selected_source_sections_join_home() {
         Sources.pages = {
             "fixture native:discover:home": JSON.stringify({shelves:[
