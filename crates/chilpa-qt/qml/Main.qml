@@ -1,14 +1,13 @@
 import QtQuick
-import QtQuick.Effects
 import app.chilpa
 import app.chilpa.controls
 import app.chilpa.folders
-import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as Driving
 import "qrc:/qt/qml/app/chilpa/ambient/qml/Patterns" as Backdrop
 import "qrc:/qt/qml/app/chilpa/mini/qml/Screens" as Mini
 import "qrc:/qt/qml/app/chilpa/immersive/qml/Screens" as Overlay
+import "qrc:/qt/qml/app/chilpa/about/qml/Components" as AboutUi
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
@@ -140,6 +139,7 @@ Window {
 
     Tooltip { watching: window.contentItem }
     QueueProgress { anchors.right: parent.right; anchors.rightMargin: Metrics.spaceWindow; y: plan.planeTop + Metrics.gap8; z: 7 }
+    AboutUi.UpdateNotice { anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.rightMargin: Metrics.spaceWindow; anchors.bottomMargin: plan.contentBottom + Metrics.spaceWindow; z: 8 }
 
     WindowGrips { anchors.fill: parent; window: window }
     DevHooks { window: window }

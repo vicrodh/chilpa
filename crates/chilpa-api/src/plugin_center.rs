@@ -157,7 +157,7 @@ impl Chilpa {
             if self.plugins.is_none() { self.start_plugins(); }
             if let Some(plugins) = &self.plugins {
                 let center = PluginCenter::start(plugins.clone(), Self::plugins_dir());
-                center.command("refresh", json!({}));
+                center.command("refresh", json!({"initial":true}));
                 self.plugin_center = Some(center);
             }
         }
@@ -381,7 +381,9 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         "refresh" => {
             // A fresh installation has no cache yet. Keep the manager usable
             // offline if the public catalog is temporarily unavailable.
-            if repositories.cached("native")?.is_empty() {
+            if input["initial"] != true {
+                repositories.refresh("native", "EN")?;
+            } else if repositories.cached("native")?.is_empty() {
                 let _ = repositories.refresh("native", "EN");
             }
         },

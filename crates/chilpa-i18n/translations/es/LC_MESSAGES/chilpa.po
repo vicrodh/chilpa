@@ -112,6 +112,9 @@ msgstr "Un grafo de JACK corre a una sola frecuencia y todos los programas dentr
 msgid "A click on a record opens"
 msgstr "Un clic en un disco abre"
 
+msgid "A new version of Chilpa is available."
+msgstr ""
+
 msgid "A secure cast URL could not be created."
 msgstr "No se pudo crear una URL segura para transmitir."
 
@@ -629,6 +632,9 @@ msgstr "Cancelar descarga"
 msgid "Cancel stop after this track"
 msgstr "Cancelar la parada después de esta pista"
 
+msgid "Cancelling update…"
+msgstr ""
+
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "Limita la subida para que el pico más alto quede por debajo de la escala completa. Apagado, las pistas bajas llegan al objetivo aunque sus picos saturen."
 
@@ -661,6 +667,18 @@ msgstr "Revisión"
 
 msgid "Check Audio Stack"
 msgstr "Revisar el stack de audio"
+
+msgid "Check for a newer version of Chilpa."
+msgstr ""
+
+msgid "Check for updates"
+msgstr ""
+
+msgid "Check for updates automatically"
+msgstr ""
+
+msgid "Checking for updates…"
+msgstr ""
 
 msgid "Checking the account…"
 msgstr "Revisando la cuenta…"
@@ -698,6 +716,9 @@ msgstr "Chilpa no pudo liberar la salida exclusiva. Detén la reproducción y vu
 msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
 msgstr "Chilpa está empaquetado como Flatpak/Snap y no puede revisar el stack de audio de tu sistema. Si la reproducción ya funciona, ya quedó. Elige abajo tu distribución y tu sistema init para ver los comandos correctos."
 
+msgid "Chilpa is up to date."
+msgstr ""
+
 msgid "Chilpa lyrics API"
 msgstr "API de letras de Chilpa"
 
@@ -718,6 +739,9 @@ msgstr "Chilpa no envía telemetría. Si lo activas, las búsquedas de artistas 
 
 msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
 msgstr "Chilpa pone el aparato a la frecuencia de cada pista. Con el modo exclusivo, además, el aparato es solo de Chilpa mientras suena una pista, así que nada más en la Mac lo puede usar mientras tanto. Apaga el modo exclusivo para compartirlo; la Mac mezcla lo demás que suene."
+
+msgid "Chilpa update available"
+msgstr ""
 
 msgid "Chilpa will make smaller covers and backgrounds again when needed."
 msgstr "Chilpa volverá a crear las portadas pequeñas y los fondos cuando los necesite."
@@ -1226,6 +1250,9 @@ msgstr "Descubrir"
 msgid "Discs"
 msgstr "Discos"
 
+msgid "Dismiss"
+msgstr ""
+
 msgid "Display settings"
 msgstr "Opciones de visualización"
 
@@ -1258,6 +1285,9 @@ msgstr "Descargar pista"
 
 msgid "Downloaded"
 msgstr "Descargado"
+
+msgid "Downloading update…"
+msgstr ""
 
 msgid "Downloading {} of {}"
 msgstr "Descargando {} de {}"
@@ -2222,6 +2252,9 @@ msgstr "Bajar"
 msgid "Move the output's own volume from the player bar when the selected ALSA control supports safe playback volume."
 msgstr "Ajustar el volumen propio de la salida desde la barra del reproductor cuando el control ALSA elegido lo permita con seguridad."
 
+msgid "Move this AppImage to a writable folder, then try again."
+msgstr ""
+
 msgid "Move to folder"
 msgstr "Mover a carpeta"
 
@@ -2894,6 +2927,9 @@ msgstr "Preparando el análisis Mood"
 msgid "Preparing results…"
 msgstr "Preparando resultados…"
 
+msgid "Preparing the updated AppImage…"
+msgstr ""
+
 msgid "Press keys…"
 msgstr "Presiona las teclas…"
 
@@ -3211,6 +3247,9 @@ msgstr "Restablecer todos"
 
 msgid "Resolving…"
 msgstr "Buscando…"
+
+msgid "Restart Chilpa"
+msgstr ""
 
 msgid "Restart plugin"
 msgstr ""
@@ -3882,6 +3921,12 @@ msgstr "La línea cantada se ilumina completa. Ahorra CPU."
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "El fondo de pantalla del sistema. Elige una imagen tuya en su lugar."
 
+msgid "The update could not be completed. Your current AppImage is safe. Try again later."
+msgstr ""
+
+msgid "The update is ready. Restart Chilpa to use it."
+msgstr ""
+
 msgid "The view the immersive view opens with. Remember keeps the one it was last on."
 msgstr "La vista con la que abre el modo inmersivo. Recordar conserva la última."
 
@@ -4149,11 +4194,23 @@ msgstr "Próximos"
 msgid "Update"
 msgstr "Actualizar"
 
+msgid "Update cancelled."
+msgstr ""
+
+msgid "Update ready"
+msgstr ""
+
 msgid "Updated {}"
 msgstr "Actualizado {}"
 
 msgid "Updates"
 msgstr "Actualizaciones"
+
+msgid "Updates keep your library, settings and plugins. One previous AppImage is kept beside the new one."
+msgstr ""
+
+msgid "Updating Chilpa…"
+msgstr ""
 
 msgid "Updating usage…"
 msgstr "Actualizando uso…"

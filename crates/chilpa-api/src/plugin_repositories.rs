@@ -7,6 +7,7 @@ use std::{io::{Read, Write}, path::{Path, PathBuf}, time::Duration};
 const MAX_REPOSITORIES: usize = 128;
 const MAX_CACHE: usize = 4 * 1024 * 1024;
 const NATIVE_CATALOG: &str = "https://raw.githubusercontent.com/vicrodh/chilpa-plugins/main/index.json";
+const BUNDLED_CATALOG: &[u8] = include_bytes!("../../../packaging/plugins/index.json");
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -109,7 +110,11 @@ impl PluginRepositories {
         if id != "native" { self.source(id)?; }
         match read_bounded(&self.cache_path(id), MAX_CACHE) {
             Ok(bytes) => serde_json::from_slice(&bytes).map_err(|_| "The cached catalog is invalid.".into()),
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Vec::new()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                if id == "native" && self.saved.native_catalog == NATIVE_CATALOG {
+                    read_catalog(BUNDLED_CATALOG, "EN").map_err(|_| "The bundled catalog is invalid.".into())
+                } else { Ok(Vec::new()) }
+            },
             Err(_) => Err("The cached catalog could not be read.".into()),
         }
     }
@@ -194,6 +199,20 @@ fn fetch(source: &str, maximum: usize) -> Result<Vec<u8>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_official_catalog_is_available_offline_on_new_and_existing_profiles() {
+        let root = tempfile::tempdir().unwrap();
+        for saved in [None, Some(br#"{"native_catalog":"","compatible":[]}"#.as_slice())] {
+            if let Some(saved) = saved { std::fs::write(root.path().join("repositories.json"), saved).unwrap(); }
+            let repositories = PluginRepositories::load(root.path().into()).unwrap();
+            assert_eq!(repositories.native_catalog(), NATIVE_CATALOG);
+            let entries = repositories.cached("native").unwrap();
+            assert_eq!(entries.len(), 3);
+            assert!(entries.iter().all(|entry| entry.problem.is_empty()));
+            assert!(repositories.compatible().is_empty());
+        }
+    }
 
     #[test]
     fn a_local_native_index_keeps_the_public_default_separate_from_compatible_repositories() {

@@ -1,5 +1,6 @@
 [workspace]
 resolver = "2"
+exclude = ["vendor/chilpa-plugin-api"]
 members = [
     "crates/chilpa-models",
     "crates/chilpa-dirs",
@@ -107,8 +108,5 @@ chilpa-qt-folders = { path = "crates/chilpa-qt-folders" }
 chilpa-qt-gallery = { path = "crates/chilpa-qt-gallery" }
 chilpa-qt-lyrics = { path = "crates/chilpa-qt-lyrics" }
 chilpa-qt-metadata = { path = "crates/chilpa-qt-metadata" }
-# The messages Chilpa and a plugin exchange. They live in the sdk branch of the
-# plugins repository so a plugin builds without this source. It is pinned to
-# a tag of that branch, one per change to the protocol, and the lockfile
-# holds the commit the tag named when it was taken.
-chilpa-plugin-api = { git = "ssh://forgejo/blitzkriegfc/chilpa-plugins.git", tag = "protocol-4" }
+# I vendor the public protocol snapshot so release builds need no private host.
+chilpa-plugin-api = { path = "vendor/chilpa-plugin-api" }

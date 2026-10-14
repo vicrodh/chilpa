@@ -1,0 +1,125 @@
+name: Linux release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Commit or tag to package; empty uses the selected branch'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_BUILD_JOBS: '2'
+      QT_VERSION: '6.11.2'
+      GH_TOKEN: ${{ github.token }}
+      GH_CONFIG_DIR: ${{ runner.temp }}/chilpa-gh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source_ref || github.ref }}
+          persist-credentials: false
+      - name: Validate release identity
+        id: version
+        env:
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_EVENT: ${{ github.event_name }}
+        run: |
+          python3 - <<'PY'
+          import os, re, subprocess, tomllib
+          from pathlib import Path
+          version = tomllib.loads(Path('Cargo.toml').read_text())['workspace']['package']['version']
+          if not re.fullmatch(r'\d+\.\d+\.\d+', version):
+              raise SystemExit('I require a stable workspace version.')
+          if os.environ['RELEASE_EVENT'] == 'push' and os.environ['RELEASE_REF'] != 'refs/tags/v' + version:
+              raise SystemExit('The release tag and workspace version differ.')
+          epoch = subprocess.check_output(['git', 'show', '-s', '--format=%ct', 'HEAD'], text=True).strip()
+          with open(os.environ['GITHUB_ENV'], 'a') as stream:
+              stream.write(f'RELEASE_VERSION={version}\nSOURCE_DATE_EPOCH={epoch}\n')
+          PY
+      - name: Install build and deployment dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config cmake clang libclang-dev nasm \
+            libasound2-dev libjack-jackd2-dev libpulse-dev libpipewire-0.3-dev \
+            libdbus-1-dev libssl-dev libgl1-mesa-dev libegl1-mesa-dev \
+            libxkbcommon-dev libwayland-dev libxkbcommon-x11-0 \
+            libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxcb-shape0 \
+            libxcb-randr0 libxcb-sync1 libxcb-xfixes0 libxcb-glx0 \
+            patchelf file binutils dbus-daemon desktop-file-utils zsync python3-venv \
+            ripgrep hunspell hunspell-en-us hunspell-es
+          python3 -m venv "$RUNNER_TEMP/qt-installer"
+          "$RUNNER_TEMP/qt-installer/bin/python" -m pip install aqtinstall==3.3.0
+          "$RUNNER_TEMP/qt-installer/bin/python" -m aqt install-qt linux desktop "$QT_VERSION" linux_gcc_64 \
+            --outputdir "$RUNNER_TEMP/Qt"
+          echo "$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/bin" >> "$GITHUB_PATH"
+          echo "CMAKE_PREFIX_PATH=$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/lib" >> "$GITHUB_ENV"
+          echo "QMAKE=$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/bin/qmake" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+        with:
+          toolchain: '1.90.0'
+      - name: Check the repository and update worker
+        run: |
+          tools/lint/fast
+          cargo test --locked -q -p chilpa-api --lib
+      - name: Build Linux binary
+        run: |
+          export RUSTFLAGS="--remap-path-prefix=$GITHUB_WORKSPACE=. --remap-path-prefix=$HOME/.cargo=/cargo"
+          cargo build --locked --release -p chilpa-qt
+          scripts/check-qml-startup.sh "$GITHUB_WORKSPACE/target/release/chilpa-qt"
+      - name: Fetch verified packaging tools
+        run: python3 scripts/fetch-release-tools.py "$RUNNER_TEMP/release-tools"
+      - name: Package Linux tarball and AppImage
+        run: |
+          python3 scripts/package-linux.py \
+            --binary target/release/chilpa-qt --version "$RELEASE_VERSION" \
+            --repository "$GITHUB_REPOSITORY" --tools "$RUNNER_TEMP/release-tools" \
+            --output dist --glibc-max 2.39
+      - name: Smoke the AppImage in an isolated profile
+        run: |
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          scripts/check-qml-startup.sh "$GITHUB_WORKSPACE/dist/Chilpa-$RELEASE_VERSION-x86_64.AppImage"
+          cd dist
+          sha256sum --check SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: chilpa-linux-x86_64
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  draft:
+    if: github.event_name == 'push'
+    needs: linux
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_CONFIG_DIR: ${{ runner.temp }}/chilpa-gh
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: chilpa-linux-x86_64
+          path: dist
+      - name: Create the draft release
+        run: |
+          gh release create "$RELEASE_TAG" dist/* --draft --verify-tag \
+            --title "Chilpa $RELEASE_TAG" --generate-notes

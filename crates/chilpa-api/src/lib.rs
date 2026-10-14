@@ -59,6 +59,7 @@ mod worker_services;
 pub use worker_services::WorkerContext;
 mod worker_install;
 mod plugin_repositories;
+mod appimage_updates;
 pub use plugin_repositories::{PluginRepositories, PluginRepository};
 mod plugin_package;
 pub use plugin_package::StagedPackage;
@@ -645,6 +646,7 @@ pub struct Chilpa {
     /// must not leave the window waiting.
     plugins: Option<std::sync::Arc<std::sync::Mutex<plugins::Plugins>>>,
     plugin_center: Option<plugin_center::PluginCenter>,
+    appimage_updates: Option<appimage_updates::Updates>,
     plugin_startup: plugin_startup::Startup,
     /// Process plugins, reached without the sandbox lock.
     natives: std::sync::Arc<natives::Natives>,
@@ -765,6 +767,7 @@ impl Chilpa {
             source_favorites: Default::default(),
             plugins: None,
             plugin_center: None,
+            appimage_updates: None,
             plugin_startup: plugin_startup::Startup::default(),
             natives: Default::default(),
             open_link: Default::default(),
@@ -1429,6 +1432,7 @@ impl Chilpa {
 
 impl Drop for Chilpa {
     fn drop(&mut self) {
+        self.appimage_updates.take();
         self.persist_queue_session();
         if let Some(player) = self.player.as_mut() { player.shutdown(); }
         if self.player.is_some() { self.poll(); }

@@ -4,4 +4,5 @@
 
 pub mod bridge {
     pub mod about;
+    pub mod updates;
 }

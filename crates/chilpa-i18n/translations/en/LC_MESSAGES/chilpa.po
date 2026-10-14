@@ -112,6 +112,9 @@ msgstr ""
 msgid "A click on a record opens"
 msgstr ""
 
+msgid "A new version of Chilpa is available."
+msgstr ""
+
 msgid "A secure cast URL could not be created."
 msgstr ""
 
@@ -629,6 +632,9 @@ msgstr "Cancel download"
 msgid "Cancel stop after this track"
 msgstr ""
 
+msgid "Cancelling update…"
+msgstr ""
+
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr ""
 
@@ -660,6 +666,18 @@ msgid "Check"
 msgstr ""
 
 msgid "Check Audio Stack"
+msgstr ""
+
+msgid "Check for a newer version of Chilpa."
+msgstr ""
+
+msgid "Check for updates"
+msgstr ""
+
+msgid "Check for updates automatically"
+msgstr ""
+
+msgid "Checking for updates…"
 msgstr ""
 
 msgid "Checking the account…"
@@ -698,6 +716,9 @@ msgstr ""
 msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
 msgstr ""
 
+msgid "Chilpa is up to date."
+msgstr ""
+
 msgid "Chilpa lyrics API"
 msgstr ""
 
@@ -717,6 +738,9 @@ msgid "Chilpa sends no telemetry. When enabled, artist and release searches make
 msgstr ""
 
 msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
+msgstr ""
+
+msgid "Chilpa update available"
 msgstr ""
 
 msgid "Chilpa will make smaller covers and backgrounds again when needed."
@@ -1226,6 +1250,9 @@ msgstr ""
 msgid "Discs"
 msgstr ""
 
+msgid "Dismiss"
+msgstr ""
+
 msgid "Display settings"
 msgstr ""
 
@@ -1258,6 +1285,9 @@ msgstr "Download track"
 
 msgid "Downloaded"
 msgstr "Downloaded"
+
+msgid "Downloading update…"
+msgstr ""
 
 msgid "Downloading {} of {}"
 msgstr "Downloading {} of {}"
@@ -2222,6 +2252,9 @@ msgstr ""
 msgid "Move the output's own volume from the player bar when the selected ALSA control supports safe playback volume."
 msgstr ""
 
+msgid "Move this AppImage to a writable folder, then try again."
+msgstr ""
+
 msgid "Move to folder"
 msgstr "Move to folder"
 
@@ -2894,6 +2927,9 @@ msgstr ""
 msgid "Preparing results…"
 msgstr ""
 
+msgid "Preparing the updated AppImage…"
+msgstr ""
+
 msgid "Press keys…"
 msgstr ""
 
@@ -3210,6 +3246,9 @@ msgid "Reset All to Defaults"
 msgstr ""
 
 msgid "Resolving…"
+msgstr ""
+
+msgid "Restart Chilpa"
 msgstr ""
 
 msgid "Restart plugin"
@@ -3882,6 +3921,12 @@ msgstr ""
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr ""
 
+msgid "The update could not be completed. Your current AppImage is safe. Try again later."
+msgstr ""
+
+msgid "The update is ready. Restart Chilpa to use it."
+msgstr ""
+
 msgid "The view the immersive view opens with. Remember keeps the one it was last on."
 msgstr ""
 
@@ -4149,10 +4194,22 @@ msgstr ""
 msgid "Update"
 msgstr ""
 
+msgid "Update cancelled."
+msgstr ""
+
+msgid "Update ready"
+msgstr ""
+
 msgid "Updated {}"
 msgstr ""
 
 msgid "Updates"
+msgstr ""
+
+msgid "Updates keep your library, settings and plugins. One previous AppImage is kept beside the new one."
+msgstr ""
+
+msgid "Updating Chilpa…"
 msgstr ""
 
 msgid "Updating usage…"

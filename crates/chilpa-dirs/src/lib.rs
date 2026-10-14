@@ -72,6 +72,19 @@ pub fn activation_variables() -> [&'static str; 2] {
     ["XDG_ACTIVATION_TOKEN", "DESKTOP_STARTUP_ID"]
 }
 
+/// The original image outside its read-only runtime mount, on Linux only.
+pub fn appimage() -> Option<PathBuf> {
+    if !cfg!(target_os = "linux") { return None; }
+    from_env("APPIMAGE").filter(|path| path.is_absolute() && path.is_file()).and_then(|path| path.canonicalize().ok())
+}
+
+/// An application-owned executable beside the running binary.
+pub fn executable_helper(name: &str) -> Option<PathBuf> {
+    let executable = std::env::current_exe().ok()?;
+    let helper = executable.parent()?.join(name);
+    helper.is_file().then_some(helper)
+}
+
 /// A variable, when it is set to something.
 ///
 /// An empty value is the same as unset: a shell that exports `XDG_DATA_HOME=`
