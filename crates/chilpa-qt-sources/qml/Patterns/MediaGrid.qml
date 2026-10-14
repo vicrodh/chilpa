@@ -6,8 +6,9 @@ Column {
     id: grid
     property var entries: []
     property bool station: false
+    property int fixedColumns: 0
     property var selected: null
-    readonly property int columns: Math.max(2, Math.floor((width + Metrics.gridGap) / (Metrics.pageHero + Metrics.gridGap)))
+    readonly property int columns: fixedColumns > 0 ? fixedColumns : Math.max(2, Math.floor((width + Metrics.gridGap) / (Metrics.pageHero + Metrics.gridGap)))
     readonly property int selectedIndex: selected ? entries.findIndex(e => e.id === selected.id) : -1
     signal opened(var entry)
     signal played(var entry)

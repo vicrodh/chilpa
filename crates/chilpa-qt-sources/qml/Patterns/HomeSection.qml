@@ -16,7 +16,6 @@ Item {
     clip: true
     readonly property bool ready: bound && body.status === Loader.Ready && body.item && body.item.ready === true
     readonly property bool shown: !ready || body.item.shown
-    readonly property bool trackRows: entry.kind === "tracks" || entry.tracks === true || !!entry.tracks_key || entry.presentation === "ranked"
     readonly property var footprint: Visit.recall("home.module." + entry.id, null)
     height: ready ? (shown ? body.height : 0)
         : footprint && Math.abs(footprint.width - width) < Metrics.gap2 ? footprint.height : placeholder.height
@@ -54,15 +53,11 @@ Item {
         }
         ShelfSkeleton {
             width: parent.width
-            tracks: slot.trackRows
+            implicitHeight: CardLayout.cardHeight + Metrics.gap8 + (slot.entry.kind === "tracks" || slot.entry.tracks === true || !!slot.entry.tracks_key || slot.entry.kind === "playlists" ? 0 : Metrics.cardRing * 2) // derived: the rail's card height, ring and scrollbar space
             round: slot.entry.round === true
-            oneRow: slot.entry.kind !== "albums" || !slot.entry.size
-            count: slot.entry.size || (tracks ? slot.entry.kind === "tracks" ? Metrics.mostPlayedLimit
-                : slot.entry.presentation === "ranked" ? Metrics.shelfItems : Metrics.shelfTrackLimit : Metrics.shelfLimit)
-            trackRowHeight: slot.entry.presentation === "ranked" || SettingsModel.density === "rich" ? Metrics.rowRich : Metrics.rowCompact
-            fixedCardWidth: slot.entry.kind === "playlists" ? Metrics.cardMinWidth : 0
+            oneRow: true
+            count: slot.entry.size || Metrics.shelfLimit
         }
-        Item { width: parent.width; height: slot.entry.kind === "shelf" && !slot.trackRows ? Metrics.gap8 : 0 }
     }
     Loader {
         id: body

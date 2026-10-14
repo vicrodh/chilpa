@@ -23,11 +23,13 @@ ListModel {
         const wanted = section ? (section.items || []).length : 18
         albums = limit > 0 ? Math.min(limit, wanted) : wanted
         const size = Math.max(1, columns)
-        for (let first = 0; first < albums; first += size)
-            append({ first: first, span: Math.min(size, albums - first), group: "" })
+        const shown = maxRows > 0 ? Math.min(albums, size * maxRows) : albums
+        for (let first = 0; first < shown; first += size)
+            append({ first: first, span: Math.min(size, shown - first), group: "" })
     }
     onKeyChanged: fillSource()
     onColumnsChanged: fillSource()
+    onMaxRowsChanged: fillSource()
     onLimitChanged: fillSource()
     onContentRevChanged: fillSource()
 }

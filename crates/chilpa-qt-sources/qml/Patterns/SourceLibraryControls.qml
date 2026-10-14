@@ -9,6 +9,7 @@ Row {
     id: controls
     required property string source
     property string entity: "album"
+    property bool allowGrouping: true
     readonly property string prefix: "ui.source." + source + "."
     property string order: SettingsModel.kept(prefix + "order") || "default"
     property string grouping: SettingsModel.kept(prefix + "group")
@@ -46,5 +47,5 @@ Row {
             SettingsModel.keep(controls.prefix + "descending", String(controls.descending))
         }
     }
-    SortButton { visible: controls.groups.length > 1; directed: false; glyph: Icons.stack2; value: controls.grouping; options: controls.groups; onPicked: value => { controls.grouping = value; SettingsModel.keep(controls.prefix + "group", value) } }
+    SortButton { visible: controls.allowGrouping && controls.groups.length > 1; directed: false; glyph: Icons.stack2; value: controls.grouping; options: controls.groups; onPicked: value => { controls.grouping = value; SettingsModel.keep(controls.prefix + "group", value) } }
 }

@@ -95,6 +95,7 @@ ListView {
             property var entry: ({})
             section: Object.assign({}, entry, {kind:entry.entityKind || entry.kind})
             wrap: (page.about.header || {}).kind === "artist" && section.kind === "album"
+            oneRow: !wrap
         }
     }
 }

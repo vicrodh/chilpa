@@ -15,7 +15,7 @@ Item {
     property var preferences: []
     property var selectedGenres: []
     property bool filtering: false
-    readonly property var sections: SectionChoices.order(about.shelves || [], preferences)
+    readonly property var sections: SectionChoices.order((about.shelves || []).map(s => Object.assign({}, s, {size:0})), preferences)
     readonly property var shown: sections.filter(s => s.enabled !== false)
     implicitWidth: buttons.implicitWidth
     implicitHeight: buttons.implicitHeight
@@ -26,12 +26,12 @@ Item {
     onPreferenceChanged: restore()
     onAboutChanged: restore()
     function change(index, field, value) {
-        const rows = sections.map(s => ({id:s.id, enabled:s.enabled !== false, size:s.size || 18}))
+        const rows = sections.map(s => ({id:s.id, enabled:s.enabled !== false, size:s.size || 0}))
         rows[index][field] = value
         preferences = rows; SettingsModel.keep(preference, JSON.stringify(rows))
     }
     function move(index, delta) {
-        const rows = sections.map(s => ({id:s.id, enabled:s.enabled !== false, size:s.size || 18}))
+        const rows = sections.map(s => ({id:s.id, enabled:s.enabled !== false, size:s.size || 0}))
         const other = index + delta
         if (other < 0 || other >= rows.length) return
         const row = rows[index]; rows[index] = rows[other]; rows[other] = row

@@ -13,10 +13,12 @@ Column {
     property var section: ({})
     property string selectedTag: ""
     property bool wrap: false
+    property bool oneRow: false
     // Only records whose title holds every word of it.
     property string filter: ""
     // No sort, no play and no Load more: the page's folded "Other".
     property bool plain: false
+    readonly property bool trackSection: section.tracks === true || !!section.tracks_key
     readonly property string activeKey: (section.tags || []).find(t => t.slug === selectedTag)?.key || section.key || ""
     // What the models read by: the shelf's key, or what the document says
     // when the model is the library's (an artist's name).
@@ -24,16 +26,17 @@ Column {
     function albumIds() { const ids = []; for (let i = 0; i < cards.albums; i++) ids.push(cards.albumId(i, cards.rev)); return JSON.stringify(ids) }
     spacing: Metrics.gap12
     readonly property bool shown: !!section.error || cards.albums > 0 || tracks.count > 0
-    readonly property bool ready: cards.ready && (!tracks.kind || tracks.ready)
+    readonly property bool ready: trackSection ? tracks.ready : cards.ready
     // A page of the rail: the cards that fit across, as QBZ's rails step.
     readonly property int viewportColumns: CardLayout.columns(rail.width)
     readonly property real viewportCardWidth: CardLayout.cardWidth
-    readonly property int railCards: Math.max(1, Math.min(section.size || 18, (section.items || []).length || cards.albums))
+    readonly property int railCards: Math.max(1, Math.min(section.size || (oneRow ? viewportColumns : Metrics.shelfItems), cards.albums))
     readonly property real step: viewportColumns * (viewportCardWidth + Metrics.gridGap) // derived: whole library-sized cards and their gaps
-    readonly property real farthest: Math.max(0, rail.contentWidth - rail.width)
+    readonly property var horizontalView: trackSection && oneRow ? trackContent.item?.scrollView || null : rail
+    readonly property real farthest: horizontalView ? Math.max(0, horizontalView.contentWidth - horizontalView.width) : 0
     visible: shown
-    AlbumGridModel { id: cards; kind: shelf.modelKind; key: shelf.modelKey; limit: shelf.wrap ? 0 : shelf.section.size || 18; columns: grid.columns; order: sorting.sort; group: sorting.grouping; filter: shelf.filter; contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev }
-    TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.modelKey : ""); limit: shelf.section.size || Metrics.shelfTrackLimit; filterRev: Library.remoteRev + Library.remoteArtRev; playingPath: Player.path }
+    AlbumGridModel { id: cards; kind: shelf.trackSection ? "" : shelf.modelKind; key: shelf.modelKey; limit: shelf.wrap ? 0 : shelf.section.size || Metrics.shelfItems; maxRows: shelf.oneRow ? 1 : 0; columns: grid.columns; order: sorting.sort; group: shelf.oneRow ? "" : sorting.grouping; filter: shelf.filter; contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev }
+    TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.modelKey : ""); limit: shelf.section.size || (shelf.oneRow ? shelf.viewportColumns : Metrics.shelfTrackLimit); filterRev: Library.remoteRev + Library.remoteArtRev; playingPath: Player.path }
     TrackListModel { id: fullTracks; kind: tracks.kind; key: tracks.key; filterRev: Library.remoteRev + Library.remoteArtRev }
     SectionHeader {
         objectName: "shelfHeader"
@@ -41,11 +44,11 @@ Column {
         sourceIcon: shelf.section.sourceIcon || ""
         link: shelf.wrap || shelf.modelKind !== "source" || !shelf.section.more || !shelf.section.more_key ? "" : I18n.tr("See all", I18n.rev)
         onLinkClicked: shelf.wrap ? Sources.command("section_more", shelf.activeKey, "") : Navigation.goKey("source", shelf.section.more_key || shelf.section.key)
-        paged: rail.visible && rail.interactive && shelf.farthest > 0
-        canBack: rail.contentX > 1
-        canForward: rail.contentX < shelf.farthest - 1
-        onBack: rail.contentX = Math.max(0, rail.contentX - shelf.step)
-        onForward: rail.contentX = Math.min(shelf.farthest, rail.contentX + shelf.step)
+        paged: !!shelf.horizontalView && shelf.horizontalView.visible && shelf.horizontalView.interactive && shelf.farthest > 0
+        canBack: (shelf.horizontalView?.contentX || 0) > 1
+        canForward: (shelf.horizontalView?.contentX || 0) < shelf.farthest - 1
+        onBack: if (shelf.horizontalView) shelf.horizontalView.contentX = Math.max(0, shelf.horizontalView.contentX - shelf.step)
+        onForward: if (shelf.horizontalView) shelf.horizontalView.contentX = Math.min(shelf.farthest, shelf.horizontalView.contentX + shelf.step)
     }
     Text { width: parent.width; visible: !!shelf.section.error; text: shelf.section.error || ""; wrapMode: Text.WordWrap; font.pointSize: Type.body; color: Theme.color.statusNegative }
     Loader {
@@ -63,7 +66,7 @@ Column {
     Item {
         visible: !shelf.plain && (shelf.section.sortable === true || shelf.wrap)
         width: parent.width; height: Math.max(sorting.height, plays.height)
-        SourceLibraryControls { id: sorting; anchors.verticalCenter: parent.verticalCenter; source: shelf.activeKey; entity: shelf.section.kind || "album" }
+        SourceLibraryControls { id: sorting; anchors.verticalCenter: parent.verticalCenter; source: shelf.activeKey; entity: shelf.section.kind || "album"; allowGrouping: !shelf.oneRow }
         // Every record of the section, in its order, or one at random: two
         // round buttons at the row's end (the owner, 2026-10-09).
         Row {
@@ -75,9 +78,10 @@ Column {
     }
     Flickable {
         id: rail
+        objectName: "sourceShelfRail"
         width: parent.width; height: grid.implicitHeight + Metrics.gap8
-        visible: cards.albums > 0; contentWidth: grid.width; contentHeight: height
-        interactive: !shelf.wrap; flickableDirection: Flickable.HorizontalFlick; boundsBehavior: Flickable.StopAtBounds; clip: true
+        visible: !shelf.trackSection && cards.albums > 0; contentWidth: grid.width; contentHeight: height
+        interactive: !shelf.wrap && contentWidth > width; flickableDirection: Flickable.HorizontalFlick; boundsBehavior: Flickable.StopAtBounds; clip: true
         ScrollBar.horizontal: ViewportScrollBar {}
         AlbumGrid {
             id: grid
@@ -86,7 +90,7 @@ Column {
             height: implicitHeight; fitContent: true
             fixedColumns: shelf.wrap || list ? 0 : shelf.railCards
             viewportX: rail.contentX; viewportWidth: rail.width
-            round: shelf.section.round === true; roundIds: shelf.section.artist_cards || []; list: shelf.section.presentation === "ranked"
+            round: shelf.section.round === true; roundIds: shelf.section.artist_cards || []; list: !shelf.oneRow && shelf.section.presentation === "ranked"
             model: cards; onOpen: albumId => Navigation.go("album", albumId)
         }
     }
@@ -96,7 +100,14 @@ Column {
         PillButton { text: I18n.tr("Shuffle", I18n.rev); onClicked: fullTracks.playAll(true) }
         PillButton { text: I18n.tr("Add to queue", I18n.rev); onClicked: fullTracks.queueAll() }
     }
-    TrackList { width: parent.width; height: implicitHeight; fitContent: true; visible: tracks.count > 0; model: tracks }
+    Loader {
+        id: trackContent
+        width: parent.width
+        active: tracks.count > 0
+        sourceComponent: shelf.oneRow ? trackRail : trackRows
+        Component { id: trackRail; TrackCarousel { width: parent.width; model: tracks } }
+        Component { id: trackRows; TrackList { width: parent.width; height: implicitHeight; fitContent: true; model: tracks } }
+    }
     // More of the shelf comes in under what is there; while it is on its
     // way the button says so and takes no second click.
     PillButton {
