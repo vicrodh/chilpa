@@ -13,10 +13,14 @@ import "../Components"
 // at the foot, copying the lyrics and going back to how it all began.
 //
 // It keeps each choice as the window keeps its own ("ui.lyrics."), and the
-// panel reads them from here.
+// panel reads them from here. Whether lyrics without a translation are
+// translated is Settings' toggle, mirrored here under its own key.
 Popup {
     id: flyout
     objectName: "lyricsOptions"
+
+    // Where the choices are kept: the window's settings, or a double.
+    property var store: SettingsModel
 
     // The lyrics as text, for copying. Empty when there are none.
     property string text
@@ -29,6 +33,8 @@ Popup {
     property bool uppercase: kept("uppercase", "false") === "true"
     property bool lite: kept("lite", "false") === "true"
     property string dimming: kept("dimming", "strong")
+    property bool translate: store.kept(translateKey) === "true"
+    readonly property string translateKey: "integrations.lyrics.translate"
 
     // The lyrics went to the clipboard.
     signal copied()
@@ -39,13 +45,21 @@ Popup {
     readonly property var languages: ["auto", "en", "es", "fr", "de", "it", "pt", "nl", "ja", "zh", "ru"]
 
     function kept(name, fallback) {
-        return SettingsModel.kept("ui.lyrics." + name) || fallback
+        return store.kept("ui.lyrics." + name) || fallback
     }
 
     function choose(name, value) {
         flyout[name] = value
-        SettingsModel.keep("ui.lyrics." + name, String(value))
+        store.keep("ui.lyrics." + name, String(value))
     }
+
+    function translating(on) {
+        translate = on
+        store.keep(translateKey, String(on))
+    }
+
+    // Settings may have changed it since.
+    onAboutToShow: translate = store.kept(translateKey) === "true"
 
     function reset() {
         for (const name in first)
@@ -128,6 +142,14 @@ Popup {
                 menuWidthLimit: Metrics.lyricsOptions
                 onPicked: (value) => flyout.choose("translation", value)
             }
+        }
+        OptionRow {
+            objectName: "translateRow"
+            width: parent.width
+            title: I18n.tr("Translate lyrics", I18n.rev)
+            detail: I18n.tr("Lyrics without one are sent to Chilpa's lyrics API.", I18n.rev)
+            checked: flyout.translate
+            onToggled: (on) => flyout.translating(on)
         }
         ChoiceRow {
             width: parent.width

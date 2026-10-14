@@ -2174,6 +2174,9 @@ msgstr ""
 msgid "Lyrics view"
 msgstr ""
 
+msgid "Lyrics without one are sent to Chilpa's lyrics API."
+msgstr ""
+
 msgid "Magazine"
 msgstr ""
 

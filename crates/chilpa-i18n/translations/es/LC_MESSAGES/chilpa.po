@@ -2174,6 +2174,9 @@ msgstr "Fuente de la letra:"
 msgid "Lyrics view"
 msgstr "Vista de letras"
 
+msgid "Lyrics without one are sent to Chilpa's lyrics API."
+msgstr ""
+
 msgid "Magazine"
 msgstr "Revista"
 

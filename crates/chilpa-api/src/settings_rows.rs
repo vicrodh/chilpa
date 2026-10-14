@@ -148,7 +148,7 @@ impl Chilpa {
             self.set_musicbrainz_enabled(value == "true");
             return true;
         }
-        if matches!(key, "integrations.lyrics.service" | "integrations.lyrics.plugin")
+        if matches!(key, "integrations.lyrics.service" | "integrations.lyrics.plugin" | "integrations.lyrics.translate")
             || key.starts_with("integrations.lyrics.provider.") {
             self.remember_preference(key, value);
             return true;
@@ -458,6 +458,13 @@ impl Chilpa {
             "integrations.lastfm.enabled" => row.value = self.lastfm().enabled.to_string(),
             "integrations.musicbrainz.enabled" => row.value = self.musicbrainz_enabled().to_string(),
             "integrations.lyrics.service" | "integrations.lyrics.plugin" => row.value = self.pref_on(&row.key, true),
+            // Off until asked for: the lines of a track leave the machine.
+            "integrations.lyrics.translate" => {
+                row.value = self.pref_on(&row.key, false);
+                if self.preference("integrations.lyrics.service").as_deref() == Some("false") {
+                    row.control = "fixed".into();
+                }
+            }
             key if key.starts_with("integrations.lyrics.provider.") => {
                 row.value = self.pref_on(&row.key, true);
                 if self.preference("integrations.lyrics.service").as_deref() == Some("false") {
