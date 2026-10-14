@@ -3,6 +3,7 @@ import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Parts
+import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as Tools
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
@@ -57,6 +58,7 @@ Item {
     Component.onCompleted: tick()
     Timer { interval: Motion.listenRefresh; running: page.visible; repeat: true; onTriggered: page.tick() }
     Parts.SleepTimer { id: sleep }
+    Tools.QueueMergeDialog { id: merging; document: page.document }
     TrackListModel {
         id: tracks
         objectName: "queueTracks"
@@ -95,7 +97,7 @@ Item {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Metrics.playerSpace + Metrics.playerBottom + Metrics.gap16
         Behavior on anchors.bottomMargin { NumberAnimation { duration: Motion.panel; easing.type: Easing.OutCubic } }
-        ListenBuffers {
+        Tools.ListenBuffers {
             id: tabs
             anchors.top: parent.top
             width: parent.width
@@ -125,8 +127,9 @@ Item {
                     }
                 }
                 IconButton { objectName: "queueSavePlaylist"; glyph: Icons.playlistAdd; size: Metrics.button32; round: true; tip: I18n.tr("Save as playlist", I18n.rev); enabled: tracks.count > 0; onClicked: { page.forceActiveFocus(); ListenList.command("save", page.document.selected, "") } }
+                IconButton { objectName: "queueMerge"; glyph: Icons.stack2; size: Metrics.button32; round: true; tip: I18n.tr("Combine queues", I18n.rev); enabled: (page.document.tabs || []).length > 1 && !page.document.pending; onClicked: merging.show() }
                 IconButton { glyph: Icons.trash; size: Metrics.button32; round: true; tip: I18n.tr("Clear queue", I18n.rev); onClicked: ListenList.command("clear", page.document.selected, "") }
-                IconButton { glyph: Lucide.undo2; iconFamily: Lucide.font; size: Metrics.button32; round: true; tip: I18n.tr("Undo queue replacement or closing", I18n.rev); enabled: page.document.undo || false; onClicked: ListenList.command("undo", "", "") }
+                IconButton { glyph: Lucide.undo2; iconFamily: Lucide.font; size: Metrics.button32; round: true; tip: I18n.tr("Undo queue edit", I18n.rev); enabled: page.document.undo || false; onClicked: ListenList.command("undo", "", "") }
                 IconButton { objectName: "queuesTimer"; glyph: SourceGlyphs.clock; iconFamily: SourceGlyphs.font; size: Metrics.button32; round: true; tone: Controls.sleepLeft !== "" ? "accent" : "secondary"; tip: Controls.sleepLeft !== "" ? I18n.trArgs("Stops in {}", [Controls.sleepLeft], I18n.rev) : I18n.tr("Sleep timer", I18n.rev); onClicked: sleep.open() }
             }
             Row {

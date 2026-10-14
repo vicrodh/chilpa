@@ -3,6 +3,8 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import QtQuick
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.controls
+import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as QueueTools
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
@@ -25,6 +27,7 @@ TitledFlow {
     StorageSettingsActions { current: false; visible: false }
     AlbumRecommendations { width: section.width; albumId: 0; shelves: [] }
 
+    QueueTools.QueueMergeDialog { document: ({selected: "1", tabs: [{id:"1", name:"First", count:12}, {id:"2", name:"Second", count:8}]}) }
     SystemControls {}
     NavMenu {}
     TabStrip { room: Metrics.sidebarWidth }
@@ -42,7 +45,7 @@ TitledFlow {
         spacing: Metrics.gap12
         TabBar { width: parent.width }
         PlayerBar { width: parent.width }
-        ListenBuffers { width: parent.width; document: ({ selected: "1", tabs: [{id: "1", name: "Jazz", count: 12, playing: true}, {id: "2", name: "Later", count: 8, playing: false}] }) }
+        QueueTools.ListenBuffers { width: parent.width; document: ({ selected: "1", tabs: [{id: "1", name: "Jazz", count: 12, playing: true}, {id: "2", name: "Later", count: 8, playing: false}] }) }
         ListenNow { width: Metrics.listenArt }
         PlayerLcd { width: parent.width / 2 } // derived: half the section
         QualityTooltip {}

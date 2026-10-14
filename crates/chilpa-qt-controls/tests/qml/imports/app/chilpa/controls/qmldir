@@ -3,3 +3,4 @@ singleton Controls 1.0 Controls.qml
 singleton Hotkeys 1.0 Hotkeys.qml
 singleton WindowPlace 1.0 WindowPlace.qml
 singleton PlayerLayout 1.0 PlayerLayout.qml
+singleton Queues 1.0 Queues.qml

@@ -118,6 +118,9 @@ msgstr ""
 msgid "A secure cast URL could not be created."
 msgstr ""
 
+msgid "A selected queue is no longer available."
+msgstr ""
+
 msgid "A sidecar sets this, not the file"
 msgstr ""
 
@@ -788,6 +791,9 @@ msgstr ""
 msgid "Choose an image"
 msgstr ""
 
+msgid "Choose at least two different queues."
+msgstr ""
+
 msgid "Choose device"
 msgstr ""
 
@@ -816,6 +822,9 @@ msgid "Choose playlist file"
 msgstr "Choose playlist file"
 
 msgid "Choose plugin icon"
+msgstr ""
+
+msgid "Choose queues and arrange their order. Repeated tracks are kept."
 msgstr ""
 
 msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
@@ -909,6 +918,15 @@ msgid "Colors"
 msgstr ""
 
 msgid "Columns"
+msgstr ""
+
+msgid "Combine"
+msgstr ""
+
+msgid "Combine queues"
+msgstr ""
+
+msgid "Combined queue"
 msgstr ""
 
 msgid "Compact"
@@ -1949,6 +1967,9 @@ msgstr ""
 msgid "June"
 msgstr ""
 
+msgid "Keep original queues"
+msgstr ""
+
 msgid "Keep the current one"
 msgstr ""
 
@@ -1971,6 +1992,9 @@ msgid "Label"
 msgstr "Label"
 
 msgid "Labels"
+msgstr ""
+
+msgid "Language"
 msgstr ""
 
 msgid "Large"
@@ -2412,6 +2436,12 @@ msgid "Next month"
 msgstr ""
 
 msgid "Next page"
+msgstr ""
+
+msgid "Next queue"
+msgstr ""
+
+msgid "Next tab"
 msgstr ""
 
 msgid "No"
@@ -2990,6 +3020,12 @@ msgstr ""
 msgid "Previous page"
 msgstr ""
 
+msgid "Previous queue"
+msgstr ""
+
+msgid "Previous tab"
+msgstr ""
+
 msgid "Previously saved"
 msgstr ""
 
@@ -3225,6 +3261,9 @@ msgid "Remove from the library"
 msgstr ""
 
 msgid "Remove image"
+msgstr ""
+
+msgid "Remove original queues"
 msgstr ""
 
 msgid "Remove smaller covers and backgrounds. Chilpa makes them again as needed."
@@ -3712,6 +3751,9 @@ msgstr ""
 msgid "Spectrum"
 msgstr ""
 
+msgid "Split queue before this track"
+msgstr ""
+
 msgid "Standard analysis"
 msgstr ""
 
@@ -3933,6 +3975,9 @@ msgstr ""
 msgid "The plugin did not answer within 15 seconds. Its account status is unknown."
 msgstr ""
 
+msgid "The queues exceed the session limit of 100,000 tracks."
+msgstr ""
+
 msgid "The record is not open in the editor."
 msgstr ""
 
@@ -3960,6 +4005,9 @@ msgstr ""
 msgid "The selected hardware volume control is gone."
 msgstr ""
 
+msgid "The selected queues are empty."
+msgstr ""
+
 msgid "The service sent no code."
 msgstr ""
 
@@ -3973,6 +4021,9 @@ msgid "The sung line lights up whole. Saves CPU."
 msgstr ""
 
 msgid "The system wallpaper. Choose an image of your own instead."
+msgstr ""
+
+msgid "The temporary media queue cannot be combined."
 msgstr ""
 
 msgid "The update could not be completed. Your current AppImage is safe. Try again later."
@@ -4209,7 +4260,7 @@ msgstr ""
 msgid "Uncategorized"
 msgstr "Uncategorized"
 
-msgid "Undo queue replacement or closing"
+msgid "Undo queue edit"
 msgstr ""
 
 msgid "Unfollow"
@@ -4290,6 +4341,9 @@ msgstr ""
 msgid "Use the playlist icon or a cover collage."
 msgstr ""
 
+msgid "Use the system language or choose a language."
+msgstr ""
+
 msgid "User"
 msgstr ""
 
@@ -4332,6 +4386,9 @@ msgstr ""
 msgid "Volume {}%"
 msgstr ""
 
+msgid "Wait for the queue to finish switching."
+msgstr ""
+
 msgid "Waiting for the DAC to start playing…"
 msgstr ""
 
@@ -4363,6 +4420,9 @@ msgid "Welcome"
 msgstr ""
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
+msgstr ""
+
+msgid "What should happen to the original queues?"
 msgstr ""
 
 msgid "What to test with"
@@ -5550,6 +5610,9 @@ msgstr ""
 msgid "your sources"
 msgstr ""
 
+msgid "{} (split)"
+msgstr ""
+
 msgid "{} / {} artists"
 msgstr ""
 
@@ -5722,6 +5785,9 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid "{} protected by the library"
+msgstr ""
+
+msgid "{} queues · {} tracks"
 msgstr ""
 
 msgid "{} rating"
