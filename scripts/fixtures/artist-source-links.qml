@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.sources
+import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/qml"
 
 ApplicationWindow {
@@ -12,9 +13,10 @@ ApplicationWindow {
     property double started: 0
     property bool awaiting: false
     property bool prepared: false
+    readonly property bool queueBusy: QueueActivity.busy
     readonly property string source: sample === 0 ? "app.test.navigation" : "app.test.second"
     ScreenHost { id: host; anchors.fill: parent }
-    TrackListModel { id: tracks; kind: "source"; key: window.source + " section:tracks"; filterRev: Library.remoteRev }
+    TrackListModel { id: tracks; kind: "source"; key: window.source + " section:tracks"; filterRev: Library.remoteRev; playingPath: Player.path }
     function find(item, name) {
         if (item?.objectName === name) return item
         for (const child of item?.children || []) { const found = find(child, name); if (found) return found }
@@ -23,6 +25,7 @@ ApplicationWindow {
     function fail(message) { console.log("SMOKE FAIL " + message); Qt.exit(1) }
     function request() {
         started = Date.now(); awaiting = true
+        console.log("SMOKE source link requested sample=" + sample + " step=" + step)
         if (step === 0) {
             const rows = find(host.item, "trackListView")
             for (let row = rows.count - 1; row >= 0; row--) {
@@ -41,10 +44,10 @@ ApplicationWindow {
             if (!window.prepared) {
                 window.prepared = true
                 SettingsModel.density = window.sample === 0 ? "rich" : "compact"
-                tracks.queueAll(); Navigation.go("listenlist", 0); return
+                tracks.listAction("buffer:new", -1, -1); Navigation.go("listenlist", 0); return
             }
             const rows = window.find(host.item, "trackListView")
-            if (host.item?.selectedQueue && rows?.model.count >= tracks.count * (window.sample + 1)) window.request()
+            if (host.item?.selectedQueue && rows?.model.count >= tracks.count) window.request()
         }
     }
     Connections {

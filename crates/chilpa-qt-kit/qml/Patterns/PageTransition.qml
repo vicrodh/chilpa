@@ -27,9 +27,11 @@ Item {
             return
         const current = frontA ? first : second
         const next = frontA ? second : first
+        if (current.item?.leaving !== undefined) current.item.leaving = route !== committedRoute
         if (route === committedRoute && current.sourceComponent === sourceComponent) {
             pendingRoute = ""
             pendingComponent = null
+            next.scroll.enabled = false
             next.sourceComponent = null
             return
         }
@@ -39,6 +41,7 @@ Item {
         pendingRoute = route
         pendingComponent = sourceComponent
         requestedAt = Date.now()
+        next.scroll.enabled = false
         next.sourceComponent = null
         next.pageRoute = route
         next.sourceComponent = sourceComponent
@@ -50,11 +53,14 @@ Item {
             return
         if (!next.item)
             return
+        next.scroll.enabled = true
         next.scroll.restore()
         frontA = next === first
         committedRoute = pendingRoute
         pendingRoute = ""
         awaitingFrame = true
+        current.scroll.remember()
+        current.scroll.enabled = false
         current.sourceComponent = null
     }
 

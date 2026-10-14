@@ -20,6 +20,7 @@ Column {
     readonly property int first: section.preview || Metrics.previewRows
     readonly property int preview: expanded ? 0 : first
     readonly property bool shown: tracks.count > 0
+    readonly property bool ready: tracks.ready && all.ready
     spacing: Metrics.gap12
     visible: shown
     TrackListModel { id: tracks; playingPath: Player.path; kind: block.modelKind; key: block.section.model_key || block.section.key || ""; limit: block.preview; filterRev: Library.remoteRev + Library.remoteArtRev }
