@@ -456,6 +456,9 @@ msgstr "Vista de portada"
 msgid "Artwork, generated images, plugin data and other temporary files."
 msgstr "Portadas, imágenes generadas, datos de plugins y otros archivos temporales."
 
+msgid "Ask Chilpa's lyrics API to translate lyrics that carry no translation in your language. The lines of the track are sent to it. Off by default."
+msgstr ""
+
 msgid "Ask before quitting"
 msgstr "Preguntar antes de salir"
 
@@ -4172,6 +4175,9 @@ msgstr "Avances"
 
 msgid "Transcript"
 msgstr "Transcripción"
+
+msgid "Translate lyrics"
+msgstr ""
 
 msgid "Translation"
 msgstr "Traducción"

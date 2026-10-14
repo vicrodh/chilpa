@@ -100,11 +100,21 @@ fn song(dir: &Path, title: &str) -> String {
 struct Service {
     origin: String,
     asked: Arc<Mutex<Vec<Value>>>,
+    /// The translations asked for, as they came.
+    translated: Arc<Mutex<Vec<Value>>>,
 }
 
 impl Service {
     fn asked_about(&self, title: &str) -> usize {
         self.asked.lock().unwrap().iter().filter(|q| q["track"]["title"] == title).count()
+    }
+
+    fn translations_asked(&self) -> usize {
+        self.translated.lock().unwrap().len()
+    }
+
+    fn translation_question(&self, index: usize) -> Value {
+        self.translated.lock().unwrap().get(index).cloned().unwrap_or_default()
     }
 
     fn question_about(&self, title: &str) -> Value {
@@ -113,15 +123,17 @@ impl Service {
 }
 
 /// Answers the contract by the title asked: "Slow" takes its time, "Missing"
-/// has none, "Broken" fails, anything else is found. It also hands out the
-/// audio of the source's tracks.
+/// has none, "Broken" fails, anything else is found. A translation is each
+/// line with "Translated: " in front. It also hands out the audio of the
+/// source's tracks.
 fn serve() -> Service {
     let server = Arc::new(tiny_http::Server::http("127.0.0.1:0").unwrap());
     let origin = format!("http://{}", server.server_addr().to_ip().unwrap());
     let asked = Arc::new(Mutex::new(Vec::new()));
+    let translated = Arc::new(Mutex::new(Vec::new()));
     let audio = Arc::new(wave("", ""));
     for _ in 0..4 {
-        let (server, asked, audio) = (server.clone(), asked.clone(), audio.clone());
+        let (server, asked, translated, audio) = (server.clone(), asked.clone(), translated.clone(), audio.clone());
         std::thread::spawn(move || {
             while let Ok(mut request) = server.recv() {
                 if request.method() == &tiny_http::Method::Get {
@@ -138,6 +150,20 @@ fn serve() -> Service {
                 let mut body = String::new();
                 let _ = request.as_reader().read_to_string(&mut body);
                 let question: Value = serde_json::from_str(&body).unwrap_or_default();
+                if request.url().ends_with("/v1/lyrics/translate") {
+                    translated.lock().unwrap().push(question.clone());
+                    let lines: Vec<Value> = question["lines"]
+                        .as_array()
+                        .cloned()
+                        .unwrap_or_default()
+                        .iter()
+                        .enumerate()
+                        .map(|(i, text)| json!({"line": i, "text": format!("Translated: {}", text.as_str().unwrap_or_default())}))
+                        .collect();
+                    let answer = json!({"schema": 1, "status": "found", "layer": {"kind": "translation", "language": question["language"], "provider": "fixture", "lines": lines}});
+                    let _ = request.respond(tiny_http::Response::from_string(answer.to_string()).with_status_code(200));
+                    continue;
+                }
                 let title = question["track"]["title"].as_str().unwrap_or_default().to_string();
                 asked.lock().unwrap().push(question.clone());
                 let (status, answer) = if title.starts_with("Slow") {
@@ -154,7 +180,7 @@ fn serve() -> Service {
             }
         });
     }
-    Service { origin, asked }
+    Service { origin, asked, translated }
 }
 
 fn found(question: &Value) -> Value {
@@ -226,6 +252,36 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
     // The second time they come from Chilpa's own cache.
     lyrics_of(&mut chilpa, &remote, "Remote Song", long).expect("still there");
     assert_eq!(service.asked_about("Remote Song"), 1, "found lyrics are remembered");
+
+    // Translating is off until asked for. On, lyrics that carry none in the
+    // reader's language are sent to the service for one; it arrives after
+    // the lyrics, in the same place, and is remembered with them.
+    assert_eq!(service.translations_asked(), 0);
+    chilpa.remember_preference("integrations.lyrics.translate", "true");
+    let deadline = Instant::now() + long;
+    loop {
+        chilpa.poll();
+        let now = said(&chilpa);
+        if now["translation"] == 0 {
+            assert_eq!(now["document"]["layers"][0]["lines"][0]["text"], "Translated: From the service for Remote Song");
+            break;
+        }
+        assert!(Instant::now() < deadline, "the translation never arrived: {now}");
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert_eq!(service.translations_asked(), 1);
+    let question = service.translation_question(0);
+    assert_eq!(question["lines"][0], "From the service for Remote Song", "the lines go as shown");
+    assert!(question["language"].is_string(), "with the language wanted");
+    lyrics_of(&mut chilpa, &remote, "Remote Song", long).expect("still there");
+    let deadline = Instant::now() + long;
+    while said(&chilpa)["translation"] != 0 {
+        chilpa.poll();
+        assert!(Instant::now() < deadline, "the remembered translation did not come back");
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert_eq!(service.translations_asked(), 1, "a translation is remembered");
+    chilpa.remember_preference("integrations.lyrics.translate", "false");
 
     // Clearing the cache from Settings forgets them, and what plays is
     // looked up again at once.
