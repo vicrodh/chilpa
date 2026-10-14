@@ -21,7 +21,7 @@ import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as Actions
 ApplicationWindow {
     id: window
     width: 1100; height: 760; visible: true
-    Actions.WindowControls { id: controls; window: window }
+    Actions.WindowControls { id: controls; window: page.Window.window }
     Loader { id: page; anchors.fill: parent; sourceComponent: Navigation.screen === "listenlist" ? queues : settings }
     Component { id: settings; Screens.SettingsScreen {} }
     Component { id: queues; QueueScreens.ListenListScreen {} }
@@ -36,7 +36,8 @@ ApplicationWindow {
         if (!item || visited.has(item)) return []
         visited.add(item)
         let result = [item]
-        for (const child of item.data || item.children || []) result = result.concat(descendants(child, visited))
+        const data = typeof item.data === "function" ? null : item.data
+        for (const child of data || item.children || []) result = result.concat(descendants(child, visited))
         if (item.contentItem) result = result.concat(descendants(item.contentItem, visited))
         return result
     }
