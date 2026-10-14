@@ -22,8 +22,8 @@
 //! not known here and must not be.
 
 use crate::matching::{Claim, Track};
-use crate::model::{Document, Timing, SCHEMA as DOCUMENT_SCHEMA};
-use crate::pipeline::Answer;
+use crate::model::{Document, Layer, LayerKind, Timing, SCHEMA as DOCUMENT_SCHEMA};
+use crate::pipeline::{Answer, Translation};
 use crate::wire::Candidate;
 use serde_json::{json, Map, Value};
 use std::time::Duration;
@@ -33,8 +33,10 @@ pub const SCHEMA: u64 = 1;
 /// Where the service is. Released builds carry this address, so it never
 /// changes; what answers behind it can.
 pub const ORIGIN: &str = "https://lyrics.chilpa.app";
-/// The one path asked.
+/// The path lyrics are asked at.
 pub const RESOLVE_PATH: &str = "/v1/lyrics/resolve";
+/// The path lyrics already shown are sent to for a translation.
+pub const TRANSLATE_PATH: &str = "/v1/lyrics/translate";
 /// The largest answer read. Lyrics with every word timed are a few tens of
 /// kilobytes.
 pub const MAX_ANSWER: usize = 1024 * 1024;
@@ -70,6 +72,58 @@ pub fn request_with_providers(track: &Track, minimum: Timing, language: Option<&
         "track": identity,
         "preferences": preferences,
     })
+}
+
+/// The question for a translation: the lines as they are shown, the
+/// language wanted, the one sung when it is known, and the track's names.
+/// The service answers by position, so the lines go whole and in order.
+pub fn translate_request(track: &Track, lines: &[String], language: &str, from: Option<&str>) -> Value {
+    let mut question = Map::new();
+    question.insert("schema".into(), json!(SCHEMA));
+    question.insert("language".into(), json!(language));
+    if let Some(from) = from.map(str::trim).filter(|f| !f.is_empty()) {
+        question.insert("from".into(), json!(from));
+    }
+    let mut names = Map::new();
+    names.insert("title".into(), json!(track.title));
+    names.insert("artist".into(), json!(track.artist));
+    question.insert("track".into(), Value::Object(names));
+    question.insert("lines".into(), json!(lines));
+    Value::Object(question)
+}
+
+/// Reads the service's answer to a translation. A 200 that says "none" is
+/// none, and so is a layer with nothing in it: every line said the same.
+/// Anything else is a failure, with the pause the service asked for: a 503
+/// says the translation is still being made and when to ask again.
+pub fn read_translation(status: u16, retry_after: Option<&str>, body: &str) -> Translation {
+    let failed = |message: String| Translation::Failed { retry_after: pause(retry_after).filter(|_| matches!(status, 429 | 503)), message };
+    if status != 200 {
+        return failed(format!("the lyrics service answered {status}"));
+    }
+    if body.len() > MAX_ANSWER {
+        return failed("the lyrics service sent more than is read".into());
+    }
+    let Ok(answer) = serde_json::from_str::<Value>(body) else {
+        return failed("the lyrics service sent what is not JSON".into());
+    };
+    if answer.get("schema").and_then(Value::as_u64) != Some(SCHEMA) {
+        return failed("the lyrics service speaks another version".into());
+    }
+    match answer.get("status").and_then(Value::as_str) {
+        Some("none") => Translation::None,
+        Some("found") => match answer.get("layer").cloned().and_then(|l| serde_json::from_value::<Layer>(l).ok()) {
+            Some(layer) if layer.kind == LayerKind::Translation => {
+                if layer.lines.is_empty() {
+                    Translation::None
+                } else {
+                    Translation::Found(layer)
+                }
+            }
+            _ => failed("the lyrics service sent a translation that cannot be read".into()),
+        },
+        other => failed(format!("the lyrics service answered an unknown status {other:?}")),
+    }
 }
 
 /// Reads the service's answer: its HTTP status, the `Retry-After` it sent
@@ -303,5 +357,39 @@ mod tests {
         assert_eq!(pause(Some("999999")), Some(MAX_PAUSE));
         assert_eq!(pause(Some("Wed, 21 Oct 2026 07:28:00 GMT")), None);
         assert_eq!(pause(None), None);
+    }
+
+
+    const TRANSLATE_FOUND: &str = include_str!("../tests/service/translate-found.json");
+    const TRANSLATE_NONE: &str = include_str!("../tests/service/translate-none.json");
+    const TRANSLATE_LATER: &str = include_str!("../tests/service/translate-later.json");
+
+    #[test]
+    fn the_translate_question_is_the_one_the_service_reads() {
+        let golden: Value = serde_json::from_str(TRANSLATE_FOUND).unwrap();
+        let lines: Vec<String> = golden["request"]["lines"].as_array().unwrap().iter().map(|l| l.as_str().unwrap().to_string()).collect();
+        let track = Track { title: "Small Hours".into(), artist: "Example Artist".into(), album: None, duration_ms: None, isrc: None, mbid: None };
+        assert_eq!(translate_request(&track, &lines, "es", Some("en")), golden["request"]);
+    }
+
+    #[test]
+    fn a_translation_is_read_as_a_layer_by_position() {
+        let golden: Value = serde_json::from_str(TRANSLATE_FOUND).unwrap();
+        let Translation::Found(layer) = read_translation(200, None, &golden["response"].to_string()) else { panic!("not found") };
+        assert_eq!(layer.language, "es");
+        assert_eq!(layer.lines.len(), 3);
+        assert_eq!(json!(layer.lines[0]), json!({"line": 0, "text": golden["response"]["layer"]["lines"][0]["text"]}));
+        assert_eq!(layer.lines[2].line, 3);
+    }
+
+    #[test]
+    fn no_translation_is_none_and_a_wait_is_a_failure_with_its_pause() {
+        let none: Value = serde_json::from_str(TRANSLATE_NONE).unwrap();
+        assert_eq!(read_translation(200, None, &none["response"].to_string()), Translation::None);
+        let later: Value = serde_json::from_str(TRANSLATE_LATER).unwrap();
+        let answer = read_translation(503, later["retry_after"].as_str(), &later["response"].to_string());
+        assert!(matches!(answer, Translation::Failed { retry_after: Some(wait), .. } if wait == Duration::from_secs(5)), "{answer:?}");
+        assert!(matches!(read_translation(400, None, "{}"), Translation::Failed { retry_after: None, .. }));
+        assert!(matches!(read_translation(200, None, "not json"), Translation::Failed { .. }));
     }
 }
