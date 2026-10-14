@@ -10,7 +10,7 @@ ApplicationWindow {
     width: 1100; height: 700; visible: true
     ListenListScreen { id: page; anchors.fill: parent }
     QueueProgress { id: notice }
-    Component { id: trackMaker; TrackListModel { kind:"tracks"; key:"Queue smoke fixture" } }
+    Component { id: trackMaker; TrackListModel { kind:"tracks"; key:"album\u001foff\u001fQueue smoke fixture" } }
     property var addedModel: null
     property int fixtureAlbum: 0
     property int phase: 0
@@ -39,7 +39,7 @@ ApplicationWindow {
         onTriggered: {
             ListenList.refresh()
             const rows = window.find(page, "trackListView")
-            if (!rows || rows.count < 80 || page.playingRow < 0) return
+            if (!rows || rows.count < 80 || (window.phase < 3 && page.playingRow < 0)) return
             if (window.phase === 0) {
                 if (!window.check(typeof rows.model.playingRow === "function", "the native model exposes playingRow")) return
                 window.check(rows.model.playingRow() === page.playingRow, "the screen reads the actual native method")
@@ -55,7 +55,8 @@ ApplicationWindow {
                 console.log("SMOKE queues native focus and top passed rows=" + rows.count)
                 window.addedModel = trackMaker.createObject(window)
             } else if (window.phase === 3) {
-                if (!window.addedModel.ready || window.addedModel.count !== 20000) return
+                if (!window.addedModel.ready) return
+                if (!window.check(window.addedModel.count === 20000, "the fixture query has 20000 tracks, found " + window.addedModel.count)) return
                 window.started = Date.now()
                 window.addedModel.queueAll()
                 QueueActivity.refresh()
