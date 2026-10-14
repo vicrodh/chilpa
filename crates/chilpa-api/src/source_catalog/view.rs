@@ -147,6 +147,7 @@ impl Chilpa {
     /// its title, whether it waits or failed, its folders, the memberships
     /// its records have, and whether it is a source the catalog draws.
     pub fn source_page(&mut self, key: &str) -> String {
+        if key.trim().is_empty() { return "{}".into(); }
         let (plugin, rest) = split(key);
         // The library's artist is drawn as a source's page would be.
         if plugin == "local" {

@@ -12,6 +12,7 @@ ListModel {
     property string lastAction: ""
     property int lastRow: -1
     function canGo(row, kind) { return true }
+    function creditOf(row) { return get(row).artist || "" }
     function select(row, mode) { lastAction = "select"; lastRow = row }
     function play(row) { lastAction = "play"; lastRow = row }
     function go(row, kind) { lastAction = kind; lastRow = row }

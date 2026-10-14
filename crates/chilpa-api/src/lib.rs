@@ -123,6 +123,7 @@ pub mod graphics_boot;
 pub mod startup_chain;
 pub mod settings_schema;
 mod artist_page;
+mod artist_library;
 mod artist_scene;
 mod scene_catalog;
 mod scene_results;
@@ -674,6 +675,7 @@ pub struct Chilpa {
     catalog: std::sync::Arc<source_catalog::Catalog>,
     /// What MusicBrainz and Last.fm know of the artists whose pages opened.
     artist_network: artist_page::Network,
+    artist_library: artist_library::ArtistLibrary,
     artist_scene: artist_scene::Scene,
     /// The account being connected, between the browser opening and the
     /// user coming back.
@@ -785,6 +787,7 @@ impl Chilpa {
             sources: sources::SourcesState::default(),
             playlist_import: playlist_import::State::default(),
             artist_network: artist_page::Network::new(catalog.clone()),
+            artist_library: Default::default(),
             artist_scene: artist_scene::Scene::new(),
             catalog,
             connecting: None,

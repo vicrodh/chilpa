@@ -302,18 +302,11 @@ impl qobject::AlbumGridModel {
                 });
                 return;
             }
-            "artist" => {
+            "artist" | "appearsOn" | "artistLatest" => {
                 let name = self.rust().key.to_string();
-                app::with(|api| api.artist_release_cards(&name, false))
-            }
-            "appearsOn" => {
-                let name = self.rust().key.to_string();
-                app::with(|api| api.artist_release_cards(&name, true))
-            }
-            // The artist's newest record, for the page's "Latest release".
-            "artistLatest" => {
-                let name = self.rust().key.to_string();
-                app::with(|api| api.artist_release_cards(&name, false)).into_iter().take(1).collect()
+                let mut records = app::with(|api| api.cached_artist_releases(&name, kind == "appearsOn"));
+                if kind == "artistLatest" { records.truncate(1); }
+                records
             }
             "sameArtist" => {
                 let id = self.rust().key.to_string().parse().unwrap_or_default();

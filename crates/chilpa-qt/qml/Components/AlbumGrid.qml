@@ -18,6 +18,8 @@ Item {
     Connections { target: grid.model; function onFreshChanged() { if (grid.model.fresh >= 0) grid.freshAt = Date.now() } }
     // Grow with the rows instead of scrolling, for a shelf inside a page.
     property bool fitContent: false
+    property Flickable viewport: null
+    readonly property real visibleTop: viewport ? viewport.contentY - grid.mapToItem(viewport.contentItem, 0, 0).y : view.contentY
     // How far right of the cards the scrollbar sits: in the middle of the
     // page's margin.
     property real scrollGutter: Metrics.pageGutter
@@ -98,6 +100,7 @@ Item {
             // The group this row opens, if it opens one.
             required property string group
             readonly property real lead: group !== "" ? Metrics.rowGroup : 0
+            readonly property bool nearby: !grid.viewport || y + height >= grid.visibleTop - grid.viewport.height && y < grid.visibleTop + grid.viewport.height * 2
 
             width: grid.width
             height: lead + grid.rowHeight + (quick.active ? Metrics.gap8 + quick.height : 0)
@@ -118,7 +121,7 @@ Item {
             AlbumRow {
                 readonly property int rev: grid.model ? grid.model.rev : 0
 
-                visible: grid.list
+                visible: grid.list && row.nearby
                 x: Metrics.cardRing
                 y: row.lead
                 width: grid.layoutWidth
@@ -146,7 +149,7 @@ Item {
             Repeater {
                 // A fixed count: a recycled row keeps its cards and only
                 // rebinds them.
-                model: grid.list ? 0 : grid.columns
+                model: grid.list || !row.nearby ? 0 : grid.columns
 
                 AlbumCard {
                     required property int index

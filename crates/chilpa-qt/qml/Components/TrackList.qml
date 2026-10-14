@@ -46,7 +46,7 @@ Item {
     // The list itself, for a screen that groups its rows or jumps in them.
     readonly property alias rows: view
 
-    implicitHeight: (header ? Metrics.rowHeader : 0) + view.contentHeight
+    implicitHeight: fitContent ? (header ? Metrics.rowHeader : 0) + view.contentHeight : 0
 
     // Where the list was when its model is read again: the row at the top
     // and how far into it. A view goes back to its top on a reset, and a
