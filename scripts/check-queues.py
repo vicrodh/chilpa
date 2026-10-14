@@ -24,11 +24,15 @@ with tempfile.TemporaryDirectory(prefix="chilpa-queue-smoke-") as directory:
     source_id = target.execute("SELECT id FROM sources WHERE provider='local' AND instance='queue-smoke'").fetchone()[0]
     album_id = target.execute("SELECT coalesce(max(id), 0) + 1 FROM albums").fetchone()[0]
     first_id = target.execute("SELECT coalesce(max(id), 0) + 1 FROM tracks").fetchone()[0]
-    target.execute("INSERT INTO albums(id,title,album_artist) VALUES (?, 'Queue smoke fixture', 'Fixture artist')", (album_id,))
+    release_title = "Queue smoke fixture"
+    release_key = f"release:{source_id}:{len(release_title)}:{release_title}{profile}"
+    target.execute("INSERT INTO albums(id,title,album_artist,folder,version_key) VALUES (?, ?, 'Fixture artist', ?, ?)",
+        (album_id, release_title, str(profile), release_key))
     target.executemany("""INSERT INTO tracks(id, source_id, external_id, title, artist, album_id,
-        disc_number, track_number, duration_ms, added_at) VALUES (?, ?, ?, ?, 'Fixture artist', ?, 1, ?, 180000, 1)""",
+        disc_number, track_number, duration_ms, added_at, album_title, release_part)
+        VALUES (?, ?, ?, ?, 'Fixture artist', ?, 1, ?, 180000, 1, 'Queue smoke fixture', ?)""",
         ((first_id + index, source_id, str(profile / f"track-{index}.flac"),
-          f"Queue smoke fixture {index}", album_id, index + 1) for index in range(20000)))
+          f"Queue smoke fixture {index}", album_id, index + 1, str(profile)) for index in range(20000)))
     target.commit()
     target.close()
     buffer = dict(id=1, name="Now playing", renamed=False, epoch=1,
