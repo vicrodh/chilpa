@@ -261,12 +261,13 @@ impl crate::Chilpa {
     /// its credit: the one the source names for its first artist, or that
     /// artist found by name in the source. None for a track of no source.
     pub fn source_track_artist(&mut self, path: &str, credit: &str, place: i32) -> Option<String> {
+        if place < 0 { return None; }
         let (plugin, _) = crate::source_opener::of_plugin(path)?;
-        if place <= 0 {
+        if place == 0 {
             if let Some(key) = self.source_artist_key(0, path) { return Some(key); }
         }
         let names = self.credit_names(credit);
-        let name = usize::try_from(place.max(0)).ok().and_then(|at| names.get(at)).cloned().unwrap_or_else(|| credit.to_string());
+        let name = names.get(place as usize)?.clone();
         Some(name.trim().to_string()).filter(|n| !n.is_empty()).map(|name| format!("{plugin} matching-artist-v3:{name}"))
     }
 
@@ -373,6 +374,8 @@ mod tests {
         assert_eq!(app.source_track_artist(&path, "Band", 0).as_deref(), Some("fixture matching-artist-v3:Band"));
         assert_eq!(app.source_track_artist("/music/song.flac", "Band", 0), None, "a file of the library has its own page");
         assert_eq!(app.source_track_artist(&path, "  ", 0), None);
+        assert_eq!(app.source_track_artist(&path, "Band", -1), None, "a separator in a credit opens nothing");
+        assert_eq!(app.source_track_artist(&path, "Band", 4), None, "a missing contributor opens nothing");
     }
     #[test]
     fn an_artists_library_is_what_the_listener_keeps_of_that_artist() {

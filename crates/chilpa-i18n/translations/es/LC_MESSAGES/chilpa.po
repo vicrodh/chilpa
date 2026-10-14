@@ -113,10 +113,13 @@ msgid "A click on a record opens"
 msgstr "Un clic en un disco abre"
 
 msgid "A new version of Chilpa is available."
-msgstr ""
+msgstr "Hay una nueva versión de Chilpa disponible."
 
 msgid "A secure cast URL could not be created."
 msgstr "No se pudo crear una URL segura para transmitir."
+
+msgid "A selected queue is no longer available."
+msgstr "Una de las colas seleccionadas ya no está disponible."
 
 msgid "A sidecar sets this, not the file"
 msgstr "Lo pone un sidecar, no el archivo"
@@ -301,7 +304,7 @@ msgid "All qualities"
 msgstr "Todas las calidades"
 
 msgid "All saved results"
-msgstr ""
+msgstr "Todos los resultados guardados"
 
 msgid "All seasons"
 msgstr "Todas las temporadas"
@@ -310,7 +313,7 @@ msgid "All set"
 msgstr "Todo listo"
 
 msgid "All sources"
-msgstr ""
+msgstr "Todas las fuentes"
 
 msgid "All time"
 msgstr "Todo"
@@ -361,7 +364,7 @@ msgid "Analysis"
 msgstr "Análisis"
 
 msgid "Analysis history"
-msgstr ""
+msgstr "Historial de análisis"
 
 msgid "Analysis inventory"
 msgstr "Inventario de análisis"
@@ -379,7 +382,7 @@ msgid "Analyzes local files and puts the results in Playlists > Mood."
 msgstr "Analiza archivos locales y coloca los resultados en Playlists > Mood."
 
 msgid "Analyzing"
-msgstr ""
+msgstr "Analizando"
 
 msgid "Analyzing Mood"
 msgstr "Analizando Mood"
@@ -406,10 +409,10 @@ msgid "Appears On"
 msgstr "Aparece en"
 
 msgid "Apply"
-msgstr ""
+msgstr "Aplicar"
 
 msgid "Apply system tint to the icon"
-msgstr ""
+msgstr "Aplicar el color del sistema al icono"
 
 msgid "Apply to the form"
 msgstr "Aplicar al formulario"
@@ -418,7 +421,7 @@ msgid "Approve"
 msgstr "Aprobar"
 
 msgid "Approve network permission"
-msgstr ""
+msgstr "Autorizar acceso a la red"
 
 msgid "Approve new access"
 msgstr "Aprobar el nuevo acceso"
@@ -559,7 +562,7 @@ msgid "Bonus"
 msgstr "Extras"
 
 msgid "Booklet"
-msgstr ""
+msgstr "Libreto"
 
 msgid "Browse for a music folder, or type its full path."
 msgstr "Busca una carpeta de música o escribe su ruta completa."
@@ -642,10 +645,10 @@ msgid "Cancel stop after this track"
 msgstr "Cancelar la parada después de esta pista"
 
 msgid "Cancelled"
-msgstr ""
+msgstr "Cancelado"
 
 msgid "Cancelling update…"
-msgstr ""
+msgstr "Cancelando actualización…"
 
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "Limita la subida para que el pico más alto quede por debajo de la escala completa. Apagado, las pistas bajas llegan al objetivo aunque sus picos saturen."
@@ -681,16 +684,16 @@ msgid "Check Audio Stack"
 msgstr "Revisar el stack de audio"
 
 msgid "Check for a newer version of Chilpa."
-msgstr ""
+msgstr "Buscar una versión más reciente de Chilpa."
 
 msgid "Check for updates"
-msgstr ""
+msgstr "Buscar actualizaciones"
 
 msgid "Check for updates automatically"
-msgstr ""
+msgstr "Buscar actualizaciones automáticamente"
 
 msgid "Checking for updates…"
-msgstr ""
+msgstr "Buscando actualizaciones…"
 
 msgid "Checking the account…"
 msgstr "Revisando la cuenta…"
@@ -729,7 +732,7 @@ msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stac
 msgstr "Chilpa está empaquetado como Flatpak/Snap y no puede revisar el stack de audio de tu sistema. Si la reproducción ya funciona, ya quedó. Elige abajo tu distribución y tu sistema init para ver los comandos correctos."
 
 msgid "Chilpa is up to date."
-msgstr ""
+msgstr "Chilpa está actualizado."
 
 msgid "Chilpa lyrics API"
 msgstr "API de letras de Chilpa"
@@ -753,7 +756,7 @@ msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the 
 msgstr "Chilpa pone el aparato a la frecuencia de cada pista. Con el modo exclusivo, además, el aparato es solo de Chilpa mientras suena una pista, así que nada más en la Mac lo puede usar mientras tanto. Apaga el modo exclusivo para compartirlo; la Mac mezcla lo demás que suene."
 
 msgid "Chilpa update available"
-msgstr ""
+msgstr "Actualización de Chilpa disponible"
 
 msgid "Chilpa will make smaller covers and backgrounds again when needed."
 msgstr "Chilpa volverá a crear las portadas pequeñas y los fondos cuando los necesite."
@@ -791,6 +794,9 @@ msgstr "Elige un receptor de tu red local. La cola permanece en Chilpa."
 msgid "Choose an image"
 msgstr "Elige una imagen"
 
+msgid "Choose at least two different queues."
+msgstr "Elige al menos dos colas distintas."
+
 msgid "Choose device"
 msgstr "Elegir dispositivo"
 
@@ -804,7 +810,7 @@ msgid "Choose file…"
 msgstr "Elegir archivo…"
 
 msgid "Choose image"
-msgstr ""
+msgstr "Elegir imagen"
 
 msgid "Choose image…"
 msgstr "Elegir imagen…"
@@ -819,7 +825,10 @@ msgid "Choose playlist file"
 msgstr "Elegir archivo de playlist"
 
 msgid "Choose plugin icon"
-msgstr ""
+msgstr "Elegir icono del plugin"
+
+msgid "Choose queues and arrange their order. Repeated tracks are kept."
+msgstr "Elige las colas y ordena cómo se combinarán. Se conservan las pistas repetidas."
 
 msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
 msgstr "Elige el control de volumen de reproducción de esta salida. Chilpa lo verifica antes de guardar la elección."
@@ -897,7 +906,7 @@ msgid "Collaborators"
 msgstr "Colaboradores"
 
 msgid "Collapse"
-msgstr ""
+msgstr "Contraer"
 
 msgid "Collapse all"
 msgstr "Contraer todo"
@@ -913,6 +922,15 @@ msgstr "Colores"
 
 msgid "Columns"
 msgstr "Columnas"
+
+msgid "Combine"
+msgstr "Combinar"
+
+msgid "Combine queues"
+msgstr "Combinar colas"
+
+msgid "Combined queue"
+msgstr "Cola combinada"
 
 msgid "Compact"
 msgstr "Compacta"
@@ -942,7 +960,7 @@ msgid "Compilations"
 msgstr "Compilaciones"
 
 msgid "Completed"
-msgstr ""
+msgstr "Completado"
 
 msgid "Composer"
 msgstr "Compositor"
@@ -1068,7 +1086,7 @@ msgid "Custom image"
 msgstr "Imagen personalizada"
 
 msgid "Customize"
-msgstr ""
+msgstr "Personalizar"
 
 msgid "Customize Shortcuts"
 msgstr "Personalizar atajos"
@@ -1266,7 +1284,7 @@ msgid "Discs"
 msgstr "Discos"
 
 msgid "Dismiss"
-msgstr ""
+msgstr "Cerrar"
 
 msgid "Display settings"
 msgstr "Opciones de visualización"
@@ -1302,7 +1320,7 @@ msgid "Downloaded"
 msgstr "Descargado"
 
 msgid "Downloading update…"
-msgstr ""
+msgstr "Descargando actualización…"
 
 msgid "Downloading {} of {}"
 msgstr "Descargando {} de {}"
@@ -1374,7 +1392,7 @@ msgid "Enable the optional Mood plugin and manage its model download."
 msgstr "Activa el plugin opcional Mood y gestiona la descarga de sus modelos."
 
 msgid "Enable {} in Settings › Sources to play this record."
-msgstr ""
+msgstr "Activa {} en Configuración › Fuentes para reproducir este disco."
 
 msgid "Ends at {}"
 msgstr "Termina a las {}"
@@ -1404,7 +1422,7 @@ msgid "Exit Immersive"
 msgstr "Salir del modo inmersivo"
 
 msgid "Expand"
-msgstr ""
+msgstr "Expandir"
 
 msgid "Explore"
 msgstr "Explorar"
@@ -1440,10 +1458,10 @@ msgid "FOUNDED IN"
 msgstr "SE FORMÓ EN"
 
 msgid "Failed"
-msgstr ""
+msgstr "Falló"
 
 msgid "Failed in this run"
-msgstr ""
+msgstr "Fallaron en esta sesión"
 
 msgid "Failed to load albums"
 msgstr "No se pudieron cargar los álbumes"
@@ -1785,7 +1803,7 @@ msgid "INFLUENCES"
 msgstr "INFLUENCIAS"
 
 msgid "Icon"
-msgstr ""
+msgstr "Icono"
 
 msgid "Image saved"
 msgstr "Imagen guardada"
@@ -1911,7 +1929,7 @@ msgid "Interface size"
 msgstr "Tamaño de la interfaz"
 
 msgid "Interrupted"
-msgstr ""
+msgstr "Interrumpido"
 
 msgid "Invalid — should contain alsa_output or alsa_input"
 msgstr "No es válido: debe contener alsa_output o alsa_input"
@@ -1952,6 +1970,9 @@ msgstr "junio"
 msgid "June"
 msgstr "junio"
 
+msgid "Keep original queues"
+msgstr "Conservar las colas originales"
+
 msgid "Keep the current one"
 msgstr "Quedarse con la actual"
 
@@ -1974,7 +1995,10 @@ msgid "Label"
 msgstr "Sello"
 
 msgid "Labels"
-msgstr ""
+msgstr "Sellos"
+
+msgid "Language"
+msgstr "Idioma"
 
 msgid "Large"
 msgstr "Grande"
@@ -1998,7 +2022,7 @@ msgid "Latest release"
 msgstr "Último lanzamiento"
 
 msgid "Latest run"
-msgstr ""
+msgstr "Última sesión"
 
 msgid "Length"
 msgstr "Duración"
@@ -2016,7 +2040,7 @@ msgid "Library folders"
 msgstr "Carpetas de la biblioteca"
 
 msgid "Library integration"
-msgstr ""
+msgstr "Integración con la biblioteca"
 
 msgid "Library scanning"
 msgstr "Escaneo de biblioteca"
@@ -2079,7 +2103,7 @@ msgid "Loading…"
 msgstr "Cargando…"
 
 msgid "Local"
-msgstr ""
+msgstr "Local"
 
 msgid "Local artwork"
 msgstr "Portadas locales"
@@ -2235,7 +2259,7 @@ msgid "Month"
 msgstr "Mes"
 
 msgid "Mood"
-msgstr ""
+msgstr "Estado de ánimo"
 
 msgid "Mood analysis cancelled."
 msgstr "Análisis de Mood cancelado."
@@ -2283,7 +2307,7 @@ msgid "Move the output's own volume from the player bar when the selected ALSA c
 msgstr "Ajustar el volumen propio de la salida desde la barra del reproductor cuando el control ALSA elegido lo permita con seguridad."
 
 msgid "Move this AppImage to a writable folder, then try again."
-msgstr ""
+msgstr "Mueve este AppImage a una carpeta donde tengas permiso de escritura e inténtalo de nuevo."
 
 msgid "Move to folder"
 msgstr "Mover a carpeta"
@@ -2364,13 +2388,13 @@ msgid "Navigation"
 msgstr "Navegación"
 
 msgid "Needs update"
-msgstr ""
+msgstr "Requiere actualización"
 
 msgid "Network"
 msgstr "Red"
 
 msgid "Network access, including authentication, artwork and audio servers discovered by the plugin"
-msgstr ""
+msgstr "Acceso a la red, incluidos los servidores de autenticación, imágenes y audio que descubra el plugin"
 
 msgid "Network playback"
 msgstr "Reproducción en red"
@@ -2382,7 +2406,7 @@ msgid "New Tab"
 msgstr "Nueva pestaña"
 
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
-msgstr ""
+msgstr "Las nuevas sesiones de análisis aparecerán aquí. Los resultados guardados están disponibles en Pistas."
 
 msgid "New folder"
 msgstr "Nuevo folder"
@@ -2416,6 +2440,12 @@ msgstr "Mes siguiente"
 
 msgid "Next page"
 msgstr "Página siguiente"
+
+msgid "Next queue"
+msgstr "Siguiente cola"
+
+msgid "Next tab"
+msgstr "Siguiente pestaña"
 
 msgid "No"
 msgstr "No"
@@ -2520,13 +2550,13 @@ msgid "No track playing"
 msgstr "Nada en reproducción"
 
 msgid "No tracks have been processed in this run yet."
-msgstr ""
+msgstr "Aún no se han procesado pistas en esta sesión."
 
 msgid "No tracks in the selected libraries yet."
 msgstr "Aún no hay canciones en las bibliotecas seleccionadas."
 
 msgid "No tracks match this filter."
-msgstr ""
+msgstr "No hay pistas que coincidan con este filtro."
 
 msgid "No tracks match your search."
 msgstr "Ninguna pista coincide con tu búsqueda."
@@ -2670,7 +2700,7 @@ msgid "Open Wizard"
 msgstr "Abrir el asistente"
 
 msgid "Open a collection in the source and choose Add collection to library. Imported music appears in Albums and Tracks with its source."
-msgstr ""
+msgstr "Abre una colección en la fuente y elige Añadir colección a la biblioteca. La música importada aparece en Álbumes y Pistas con su fuente."
 
 msgid "Open a folder…"
 msgstr "Abrir una carpeta…"
@@ -2787,7 +2817,7 @@ msgid "Paused"
 msgstr "En pausa"
 
 msgid "Pending"
-msgstr ""
+msgstr "Pendiente"
 
 msgid "Per-app bit-perfect (PipeWire client)"
 msgstr "Bit-perfect por aplicación (cliente de PipeWire)"
@@ -2967,13 +2997,13 @@ msgid "Preparing Mood analysis"
 msgstr "Preparando el análisis Mood"
 
 msgid "Preparing analysis…"
-msgstr ""
+msgstr "Preparando análisis…"
 
 msgid "Preparing results…"
 msgstr "Preparando resultados…"
 
 msgid "Preparing the updated AppImage…"
-msgstr ""
+msgstr "Preparando el AppImage actualizado…"
 
 msgid "Press keys…"
 msgstr "Presiona las teclas…"
@@ -2993,8 +3023,14 @@ msgstr "Mes anterior"
 msgid "Previous page"
 msgstr "Página anterior"
 
+msgid "Previous queue"
+msgstr "Cola anterior"
+
+msgid "Previous tab"
+msgstr "Pestaña anterior"
+
 msgid "Previously saved"
-msgstr ""
+msgstr "Guardados previamente"
 
 msgid "Processed"
 msgstr "Procesado"
@@ -3230,6 +3266,9 @@ msgstr "Quitar de la biblioteca"
 msgid "Remove image"
 msgstr "Quitar imagen"
 
+msgid "Remove original queues"
+msgstr "Eliminar las colas originales"
+
 msgid "Remove smaller covers and backgrounds. Chilpa makes them again as needed."
 msgstr "Borrar portadas pequeñas y fondos. Chilpa volverá a crearlos cuando hagan falta."
 
@@ -3297,22 +3336,22 @@ msgid "Resolving…"
 msgstr "Buscando…"
 
 msgid "Restart Chilpa"
-msgstr ""
+msgstr "Reiniciar Chilpa"
 
 msgid "Restart plugin"
-msgstr ""
+msgstr "Reiniciar plugin"
 
 msgid "Restore default"
 msgstr "Restaurar predeterminado"
 
 msgid "Restore defaults"
-msgstr ""
+msgstr "Restaurar valores predeterminados"
 
 msgid "Restore tabs"
 msgstr "Restaurar pestañas"
 
 msgid "Results are saved after every track. Run Analyze again to continue the pending tracks."
-msgstr ""
+msgstr "Los resultados se guardan después de cada pista. Ejecuta Analizar de nuevo para continuar con las pistas pendientes."
 
 msgid "Resume"
 msgstr "Continuar"
@@ -3405,7 +3444,7 @@ msgid "Saved position"
 msgstr "Posición guardada"
 
 msgid "Saved results remain available between sessions."
-msgstr ""
+msgstr "Los resultados guardados se conservan entre sesiones."
 
 msgid "Saving..."
 msgstr "Guardando..."
@@ -3596,7 +3635,7 @@ msgid "Show each playlist folder in its chosen color."
 msgstr "Muestra cada folder de playlists con el color elegido."
 
 msgid "Show imported albums and tracks"
-msgstr ""
+msgstr "Mostrar álbumes y pistas importados"
 
 msgid "Show in folder"
 msgstr "Mostrar en la carpeta"
@@ -3715,8 +3754,11 @@ msgstr "Español"
 msgid "Spectrum"
 msgstr "Espectro"
 
+msgid "Split queue before this track"
+msgstr "Dividir la cola antes de esta pista"
+
 msgid "Standard analysis"
-msgstr ""
+msgstr "Análisis estándar"
 
 msgid "Standard done"
 msgstr "Análisis normal completo"
@@ -3725,7 +3767,7 @@ msgid "Standard pending"
 msgstr "Análisis normal pendiente"
 
 msgid "Standard processed"
-msgstr ""
+msgstr "Procesadas con análisis estándar"
 
 msgid "Start"
 msgstr "Empezar"
@@ -3936,6 +3978,9 @@ msgstr "No se pudo leer el ZIP del plugin."
 msgid "The plugin did not answer within 15 seconds. Its account status is unknown."
 msgstr "El plugin no respondió en 15 segundos. No se pudo comprobar el estado de la cuenta."
 
+msgid "The queues exceed the session limit of 100,000 tracks."
+msgstr "Las colas exceden el límite de 100,000 pistas por sesión."
+
 msgid "The record is not open in the editor."
 msgstr "El disco no está abierto en el editor."
 
@@ -3963,6 +4008,9 @@ msgstr "No se pudo abrir el acceso guardado."
 msgid "The selected hardware volume control is gone."
 msgstr "El control de volumen de hardware elegido ya no está disponible."
 
+msgid "The selected queues are empty."
+msgstr "Las colas seleccionadas están vacías."
+
 msgid "The service sent no code."
 msgstr "El servicio no mandó un código."
 
@@ -3978,11 +4026,14 @@ msgstr "La línea cantada se ilumina completa. Ahorra CPU."
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "El fondo de pantalla del sistema. Elige una imagen tuya en su lugar."
 
+msgid "The temporary media queue cannot be combined."
+msgstr "La cola temporal de archivos abiertos no se puede combinar."
+
 msgid "The update could not be completed. Your current AppImage is safe. Try again later."
-msgstr ""
+msgstr "No se pudo completar la actualización. Tu AppImage actual se conserva. Inténtalo más tarde."
 
 msgid "The update is ready. Restart Chilpa to use it."
-msgstr ""
+msgstr "La actualización está lista. Reinicia Chilpa para usarla."
 
 msgid "The view the immersive view opens with. Remember keeps the one it was last on."
 msgstr "La vista con la que abre el modo inmersivo. Recordar conserva la última."
@@ -4003,7 +4054,7 @@ msgid "This chapter format is not supported."
 msgstr "Este formato de capítulos no es compatible."
 
 msgid "This collection exceeds the current page limit."
-msgstr ""
+msgstr "Esta colección excede el límite actual de la página."
 
 msgid "This computer"
 msgstr "Este equipo"
@@ -4078,7 +4129,7 @@ msgid "This source owns the order."
 msgstr "Este source controla el orden."
 
 msgid "This source's folders are read-only. Choose a local folder to organize its playlists in Chilpa."
-msgstr ""
+msgstr "Las carpetas de esta fuente son de solo lectura. Elige una carpeta local para organizar sus playlists en Chilpa."
 
 msgid "This track has no album to open"
 msgstr "Esta pista no tiene un álbum que abrir"
@@ -4215,8 +4266,8 @@ msgstr "No disponible"
 msgid "Uncategorized"
 msgstr "Sin categoría"
 
-msgid "Undo queue replacement or closing"
-msgstr "Deshacer reemplazo o cierre de queue"
+msgid "Undo queue edit"
+msgstr "Deshacer edición de cola"
 
 msgid "Unfollow"
 msgstr "Dejar de seguir"
@@ -4228,7 +4279,7 @@ msgid "Uninstall plugin"
 msgstr "Desinstalar plugin"
 
 msgid "Uninstall plugin and remove account data"
-msgstr ""
+msgstr "Desinstalar plugin y eliminar datos de la cuenta"
 
 msgid "Unknown quality"
 msgstr "Calidad desconocida"
@@ -4255,10 +4306,10 @@ msgid "Update"
 msgstr "Actualizar"
 
 msgid "Update cancelled."
-msgstr ""
+msgstr "Actualización cancelada."
 
 msgid "Update ready"
-msgstr ""
+msgstr "Actualización lista"
 
 msgid "Updated {}"
 msgstr "Actualizado {}"
@@ -4267,10 +4318,10 @@ msgid "Updates"
 msgstr "Actualizaciones"
 
 msgid "Updates keep your library, settings and plugins. One previous AppImage is kept beside the new one."
-msgstr ""
+msgstr "Las actualizaciones conservan tu biblioteca, configuración y plugins. Se guarda el AppImage anterior junto al nuevo."
 
 msgid "Updating Chilpa…"
-msgstr ""
+msgstr "Actualizando Chilpa…"
 
 msgid "Updating usage…"
 msgstr "Actualizando uso…"
@@ -4295,6 +4346,9 @@ msgstr "Usar el predeterminado"
 
 msgid "Use the playlist icon or a cover collage."
 msgstr "Usa el icono de playlist o un collage de portadas."
+
+msgid "Use the system language or choose a language."
+msgstr "Usa el idioma del sistema o elige uno."
 
 msgid "User"
 msgstr "Usuario"
@@ -4324,7 +4378,7 @@ msgid "View less"
 msgstr "Ver menos"
 
 msgid "View tracks"
-msgstr ""
+msgstr "Ver pistas"
 
 msgid "Volume Down"
 msgstr "Bajar volumen"
@@ -4338,6 +4392,9 @@ msgstr "Normalización de volumen"
 msgid "Volume {}%"
 msgstr "Volumen {}%"
 
+msgid "Wait for the queue to finish switching."
+msgstr "Espera a que termine el cambio de cola."
+
 msgid "Waiting for the DAC to start playing…"
 msgstr "Esperando a que el DAC empiece a sonar…"
 
@@ -4345,7 +4402,7 @@ msgid "Wallpaper"
 msgstr "Fondo de pantalla"
 
 msgid "Wallpaper blur"
-msgstr ""
+msgstr "Desenfoque del fondo"
 
 msgid "Wallpaper, blurred"
 msgstr "Fondo de pantalla, difuminado"
@@ -4370,6 +4427,9 @@ msgstr "Bienvenida"
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "Lo que hace Enter con un resultado de la búsqueda del modo inmersivo. Desactivada apaga la búsqueda."
+
+msgid "What should happen to the original queues?"
+msgstr "¿Qué debe pasar con las colas originales?"
 
 msgid "What to test with"
 msgstr "Con qué probar"
@@ -5556,6 +5616,9 @@ msgstr "tu biblioteca necesita actualizarse y no se pudo guardar una copia antes
 msgid "your sources"
 msgstr "tus fuentes"
 
+msgid "{} (split)"
+msgstr "{} (dividida)"
+
 msgid "{} / {} artists"
 msgstr "{} / {} artistas"
 
@@ -5667,8 +5730,8 @@ msgstr[1] "{} cosas necesitan atención antes de que funcione la reproducción b
 
 msgid "{} label"
 msgid_plural "{} labels"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{} sello"
+msgstr[1] "{} sellos"
 
 msgid "{} listen"
 msgid_plural "{} listens"
@@ -5729,6 +5792,9 @@ msgstr[1] "{} playlists"
 
 msgid "{} protected by the library"
 msgstr "{} protegidos por la biblioteca"
+
+msgid "{} queues · {} tracks"
+msgstr "{} colas · {} pistas"
 
 msgid "{} rating"
 msgid_plural "{} ratings"

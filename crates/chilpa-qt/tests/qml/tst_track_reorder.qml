@@ -68,6 +68,18 @@ TestCase {
             compare(tracks.lastAction, "select")
         }
     }
+    function test_artist_name_opens_artist_without_playing_or_selecting() {
+        for (const rich of [false, true]) {
+            list.rich = rich
+            wait(30)
+            const item = row(list, 0)
+            const label = item.artistLabel
+            const at = label.mapToItem(list, 2, label.height / 2)
+            mouseClick(list, at.x, at.y)
+            compare(tracks.lastAction, "artist:0")
+            compare(tracks.lastRow, 0)
+        }
+    }
     function test_compact_arrows_sit_side_by_side_before_the_number() { check_arrows() }
     function test_rich_arrows_are_stacked_before_the_number() {
         list.rich = true

@@ -25,6 +25,8 @@ Item {
     signal sceneRequested()
     property bool sceneAvailable: false
     signal libraryChosen(bool on)
+    function showPicture() { lightbox.active = true; lightbox.item.show(portrait.source) }
+    function showBiography() { biography.active = true; biography.item.open() }
     readonly property var sourceInfo: (JSON.parse(Sources.snapshot || "{}").panels || []).find(p => p.id === info.plugin) || ({name: info.plugin || ""})
     readonly property var validLinks: (info.links || []).filter(l => /^https?:\/\//.test(l.url || ""))
     readonly property string bio: info.description || ""
@@ -48,6 +50,7 @@ Item {
 
     ArtTile {
         id: portrait
+        objectName: "artistPortrait"
         width: Math.min(Metrics.artistPortrait, header.width / 3); height: width // derived: room for the text on narrow windows
         radius: width / 2 // derived: a circle
         // The picture the listener chose for the artist wins over the one
@@ -57,27 +60,33 @@ Item {
     }
     // As QBZ's portrait: a click shows it whole, a right click its menu.
     HoverHandler { parent: portrait; cursorShape: portrait.ready ? Qt.PointingHandCursor : Qt.ArrowCursor }
-    TapHandler { parent: portrait; onTapped: if (portrait.ready) lightbox.show(portrait.source) }
+    TapHandler { parent: portrait; onTapped: if (portrait.ready) header.showPicture() }
     TapHandler {
         parent: portrait
         acceptedButtons: Qt.RightButton
         onTapped: (point) => {
             const at = portrait.mapToItem(header, point.position.x, point.position.y)
-            portraitMenu.custom = portrait.chosen.toString() !== ""
-            portraitMenu.showing = portrait.ready
-            portraitMenu.address = /^https?:\/\//.test(header.info.image || "") ? header.info.image : ""
-            portraitMenu.popupAt(at.x, at.y)
+            portraitMenu.active = true
+            portraitMenu.item.custom = portrait.chosen.toString() !== ""
+            portraitMenu.item.showing = portrait.ready
+            portraitMenu.item.address = /^https?:\/\//.test(header.info.image || "") ? header.info.image : ""
+            portraitMenu.item.popupAt(at.x, at.y)
         }
     }
-    CoverMenu {
+    Loader {
         id: portraitMenu
+        active: false
+        sourceComponent: Component { CoverMenu {
+        objectName: "artistPortraitMenu"
+        parent: header
         kind: "artist"
         onChoose: Artwork.chooseArtist(header.info.title || "")
         onForget: Artwork.forgetArtist(header.info.title || "")
-        onView: lightbox.show(portrait.source)
+        onView: header.showPicture()
         onSave: Artwork.saveArtist(header.info.title || "", portrait.source)
+        } }
     }
-    CoverLightbox { id: lightbox }
+    Loader { id: lightbox; active: false; sourceComponent: Component { CoverLightbox {} } }
     Icon {
         anchors.centerIn: portrait
         visible: !portrait.ready
@@ -123,12 +132,13 @@ Item {
             visible: header.bioShort !== header.bio
             text: I18n.tr("Read more", I18n.rev); font.pointSize: Type.meta; color: hover.hovered ? Theme.color.accentHover : Theme.color.accent
             HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
-            TapHandler { onTapped: biography.open() }
+            TapHandler { onTapped: header.showBiography() }
         }
         Flow {
             width: parent.width; spacing: Metrics.gap12
             IconButton {
                 objectName: "followAction"; round: true; size: Metrics.button32; glyph: header.favorite ? Icons.heartFilled : Icons.heart; filled: header.favorite; checked: header.favorite
+                enabled: header.local || !!header.info.ref
                 tip: header.favorite ? I18n.tr("Unfollow", I18n.rev) : I18n.tr("Follow", I18n.rev)
                 onClicked: header.local ? Ratings.setFavorite("artist", header.info.title || "", !header.favorite)
                     : Sources.command("native", header.info.plugin, JSON.stringify({action:"favorite",ref:header.info.ref,on:!header.favorite}))
@@ -137,11 +147,14 @@ Item {
                 id: radio; objectName: "radioAction"; visible: !!header.info.radio_id || !!header.info.mix_id; round: true; size: Metrics.button32
                 glyph: Lucide.radio; iconFamily: Lucide.font; tip: I18n.tr("Artist radio", I18n.rev)
                 // One source makes a radio and a mix: the button offers both.
-                onClicked: header.info.mix_id && header.info.radio_id ? radioMenu.open() : AlbumActions.play(header.info.radio_id || header.info.mix_id, false)
-                Menu {
-                    id: radioMenu; y: parent.height + Metrics.gap4
+                onClicked: { if (header.info.mix_id && header.info.radio_id) { radioMenu.active = true; radioMenu.item.open() } else AlbumActions.play(header.info.radio_id || header.info.mix_id, false) }
+                Loader {
+                    id: radioMenu; active: false
+                    sourceComponent: Component { Menu {
+                    parent: radio; y: radio.height + Metrics.gap4
                     entries: [{ text: I18n.tr("Artist radio", I18n.rev) }, { text: I18n.tr("Artist mix", I18n.rev) }]
                     onChosen: (index) => AlbumActions.play(index === 0 ? header.info.radio_id : header.info.mix_id, false)
+                    } }
                 }
             }
             IconButton {
@@ -151,18 +164,25 @@ Item {
             // The scene and the artist's own links share the overflow menu.
             IconButton {
                 id: more; objectName: "moreAction"; visible: header.sceneAvailable || header.validLinks.length > 0; round: true; size: Metrics.button32; glyph: Icons.dots; tip: I18n.tr("More", I18n.rev)
-                onClicked: { moreMenu.entries = (header.sceneAvailable ? [{text:I18n.tr("Artists from this scene", I18n.rev), scene:true}] : []).concat(header.validLinks.map(l => ({ text: l.title || l.url, url: l.url }))); moreMenu.open() }
-                Menu {
-                    id: moreMenu; y: parent.height + Metrics.gap4
+                onClicked: { moreMenu.active = true; moreMenu.item.entries = (header.sceneAvailable ? [{text:I18n.tr("Artists from this scene", I18n.rev), scene:true}] : []).concat(header.validLinks.map(l => ({ text: l.title || l.url, url: l.url }))); moreMenu.item.open() }
+                Loader {
+                    id: moreMenu; active: false
+                    sourceComponent: Component { Menu {
+                    parent: more; y: more.height + Metrics.gap4
                     onChosen: (index) => { if (entries[index].scene) header.sceneRequested(); else { const url = entries[index].url; if (url) Qt.openUrlExternally(url) } }
+                    } }
                 }
             }
         }
     }
-    Modal {
+    Loader {
         id: biography
-        width: Math.min(Metrics.settingsMaxWidth, parent.width - Metrics.modalInsets)
-        height: Math.min(parent.height - Metrics.modalInsets, Metrics.heroArt * 3) // derived: readable body with room for the title and close action
+        active: false
+        sourceComponent: Component { Modal {
+        id: dialog
+        objectName: "artistBiography"
+        width: Math.min(Metrics.settingsMaxWidth, (header.Window.window?.width || header.width) - Metrics.modalInsets)
+        height: Math.min((header.Window.window?.height || header.height) - Metrics.modalInsets, Metrics.heroArt * 3) // derived: readable body with room for the title and close action
         Column {
             anchors.fill: parent; spacing: Metrics.gap12
             Text { id: biographyTitle; width: parent.width; text: header.info.title || ""; textFormat: Text.PlainText; font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
@@ -176,7 +196,8 @@ Item {
                 id: attribution; width: parent.width; textFormat: Text.PlainText; font.pointSize: Type.meta; color: Theme.color.textTertiary
                 text: [I18n.tr("Source: {}", I18n.rev).replace("{}", header.info.description_source || header.sourceInfo.name || ""), header.info.bio_updated ? I18n.tr("Updated {}", I18n.rev).replace("{}", header.info.bio_updated) : ""].filter(Boolean).join(" · ")
             }
-            PillButton { id: closeButton; text: I18n.tr("Close", I18n.rev); onClicked: biography.close() }
+            PillButton { id: closeButton; text: I18n.tr("Close", I18n.rev); onClicked: dialog.close() }
         }
+        } }
     }
 }

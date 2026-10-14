@@ -137,6 +137,10 @@ impl Tabs {
         self.active
     }
 
+    pub fn step(&mut self, by: i32) {
+        self.active = (self.active as i64 + i64::from(by)).rem_euclid(self.tabs.len() as i64) as usize;
+    }
+
     pub fn current(&self) -> Route {
         self.tabs[self.active].route.clone()
     }
@@ -317,6 +321,17 @@ mod tests {
 
     fn album(id: i64) -> Route {
         Route { screen: Screen::Album, id, key: String::new() }
+    }
+
+    #[test]
+    fn cycling_tabs_wraps_without_changing_their_histories() {
+        let mut tabs = Tabs::default();
+        tabs.go(album(7)); tabs.open(album(8)); tabs.go(album(9));
+        tabs.step(1); assert_eq!(tabs.current(), album(7));
+        tabs.step(-1); assert_eq!(tabs.current(), album(9));
+        tabs.back(); assert_eq!(tabs.current(), album(8));
+        tabs.step(i32::MIN); assert!(tabs.active() < 2);
+        let mut only = Tabs::default(); only.step(-1); assert_eq!(only.active(), 0);
     }
 
     #[test]

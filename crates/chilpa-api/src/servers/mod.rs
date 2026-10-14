@@ -472,7 +472,7 @@ impl Chilpa {
 
     /// Whether the library changed underneath the window since this was
     /// last asked: a sync, a server or a folder that came or went.
-    pub fn mark_library_changed(&mut self) { self.home.clear(); self.servers.changed = true; }
+    pub fn mark_library_changed(&mut self) { self.home.clear(); self.invalidate_artist_collections(); self.servers.changed = true; }
 
     pub fn library_changed(&mut self) -> bool {
         std::mem::take(&mut self.servers.changed)

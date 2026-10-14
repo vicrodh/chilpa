@@ -141,6 +141,7 @@ pub const SECTIONS: &[Section] = &[
         groups: &[Group {
             title: Chilpa::mark("Look"),
             settings: &[
+                setting("appearance.language", Chilpa::mark("Language"), Chilpa::mark("Use the system language or choose a language."), Control::Select),
                 setting("appearance.theme", Chilpa::mark("Theme"), "", Control::Select),
                 setting("appearance.accent", Chilpa::mark("Accent"), Chilpa::mark("The first follows the theme: crimson in light, red in dark."), Control::Swatches),
                 setting("appearance.density", Chilpa::mark("Track lists"), Chilpa::mark("Compact rows like a spreadsheet, or rich rows with the cover."), Control::Segmented),

@@ -27,6 +27,28 @@ TestCase {
         for (const child of item.children || []) { const found = findText(child, text); if (found) return found }
         return null
     }
+    function rendered(page) {
+        waitForRendering(page)
+        tryVerify(() => findChild(page, "artistHeaderLoader")?.status === Loader.Ready
+            && findChild(page, "artistNetworkLoader")?.status === Loader.Ready, 3000)
+    }
+    function test_the_biography_is_built_when_its_action_is_pressed() {
+        const page = createTemporaryObject(pageMaker, this)
+        rendered(page)
+        compare(findChild(page, "artistBiography"), null)
+        mouseClick(findText(page, "Read more"))
+        tryVerify(() => findChild(page, "artistBiography")?.opened === true)
+        findChild(page, "artistBiography").close()
+    }
+    function test_the_portrait_menu_is_built_at_the_portrait_when_requested() {
+        const page = createTemporaryObject(pageMaker, this)
+        rendered(page)
+        compare(findChild(page, "artistPortraitMenu"), null)
+        const picture = findChild(page, "artistPortrait")
+        mouseClick(picture, picture.width / 2, picture.height / 2, Qt.RightButton)
+        tryVerify(() => findChild(page, "artistPortraitMenu")?.opened === true)
+        findChild(page, "artistPortraitMenu").close()
+    }
     function init() {
         Sources.pages = { "fixture native:artist:1": document() }
         Sources.networks = { "Maiden": JSON.stringify({ loading: false, available: true, origin: { person: false, begin: "Dec 25, 1975", end: "", place: "Leyton", exact: true },
@@ -36,7 +58,7 @@ TestCase {
 
     function test_the_blocks_come_in_order_with_the_bar_and_the_sidebar() {
         const page = createTemporaryObject(pageMaker, this)
-        waitForRendering(page)
+        rendered(page)
         verify(findText(page, "Popular Tracks"), "the tracks block")
         verify(findText(page, "Latest release"))
         verify(findText(page, "Albums"))
@@ -65,7 +87,7 @@ TestCase {
         Sources.pages[kept] = JSON.stringify({ music: true, artist: true, library: true, header: JSON.parse(document()).header, jump: [],
             shelves: [{ id: "tracks", role: "popular", title: "Tracks", kind: "track", key: kept + "|tracks", tracks: true, items: [{ ref: "track:1" }] }] })
         const page = createTemporaryObject(pageMaker, this)
-        waitForRendering(page)
+        rendered(page)
         const sources = findChild(page, "artistSource")
         compare(sources.options.map(o => o.text), ["Chilpa", "Fixture"])
         compare(sources.current, 1)
@@ -84,7 +106,7 @@ TestCase {
 
     function test_the_network_button_closes_and_opens_the_sidebar() {
         const page = createTemporaryObject(pageMaker, this)
-        waitForRendering(page)
+        rendered(page)
         const button = findChild(page, "networkAction")
         mouseClick(button)
         tryCompare(button, "checked", false)
@@ -97,7 +119,7 @@ TestCase {
             origin:{place:"Leyton",country:"GB",tags:["heavy metal"]}, relationships:{any:false}, similar:[]})}
         Library.remoteRev++
         const page = createTemporaryObject(pageMaker, this)
-        waitForRendering(page)
+        rendered(page)
         const door = findChild(page, "artistSceneDoor")
         verify(door !== null && door.door, "the location is a scene door")
         mouseClick(door)
@@ -110,7 +132,7 @@ TestCase {
 
     function test_a_sidebar_row_opens_the_artist_at_its_source() {
         const page = createTemporaryObject(pageMaker, this)
-        waitForRendering(page)
+        rendered(page)
         const row = findText(page, "Saxon")
         mouseClick(row)
         compare(Navigation.went, ["source", "fixture native:artist:2"])
@@ -120,10 +142,11 @@ TestCase {
 
     function test_play_and_the_menu_act_on_every_popular_track() {
         const page = createTemporaryObject(pageMaker, this)
-        waitForRendering(page)
+        rendered(page)
         // Five rows first; "Load more" shows the eight, in the window.
+        tryVerify(() => findChild(page, "tracksMore") !== null, 1000)
         const more = findChild(page, "tracksMore")
-        verify(more.visible)
+        tryCompare(more, "visible", true)
         tryVerify(() => findText(page, "Track 4") !== null)
         compare(findText(page, "Track 5"), null)
         mouseClick(more)

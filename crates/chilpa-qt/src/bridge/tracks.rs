@@ -731,11 +731,11 @@ impl qobject::TrackListModel {
         let of_source = chilpa_api::on_a_source(&track.path);
         registry::navigation(move |mut nav| match target.as_str() {
             "artist" if source_artist.is_some() => nav.as_mut().go_key(&QString::from("source"), &QString::from(source_artist.as_deref().unwrap_or_default())),
-            one if one.starts_with("artist") && of_source => {}
             "album" => nav.as_mut().go(&QString::from("album"), track.album_id),
             "metadata" => nav.as_mut().go(&QString::from("metadata"), track.album_id),
             "artist" => nav.as_mut().open_credit(&QString::from(&track.artist), 0),
             one if one.starts_with("artist:") && source_artist.is_some() => nav.as_mut().go_key(&QString::from("source"), &QString::from(source_artist.as_deref().unwrap_or_default())),
+            one if one.starts_with("artist") && of_source => {}
             one if one.starts_with("artist:") => nav.as_mut().open_credit(&QString::from(&track.artist), one[7..].parse().unwrap_or(-1)),
             "folder" => {
                 let dir = std::path::Path::new(&track.path).parent().map(|d| d.display().to_string());
@@ -849,14 +849,8 @@ impl qobject::TrackListModel {
                 let name = self.rust().key.to_string();
                 let top = kind == "artistTop";
                 let (order, count) = if top { (TrackOrder::Plays, 10) } else { (TrackOrder::Artist, 100_000) };
-                let mut tracks = app::with(|api| api.artist_tracks(&name, order, count));
-                // With no plays, show the artist's first tracks instead.
-                if top {
-                    tracks.retain(|t| t.plays > 0);
-                    if tracks.is_empty() {
-                        tracks = app::with(|api| api.artist_tracks(&name, TrackOrder::Artist, 10));
-                    }
-                }
+                let mut tracks = app::with(|api| if top { api.cached_artist_top_tracks(&name) } else { api.artist_tracks(&name, order, count) });
+                if self.rust().limit > 0 { tracks.truncate(limit); }
                 let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
                 (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), (!top).then_some(ms))
             }

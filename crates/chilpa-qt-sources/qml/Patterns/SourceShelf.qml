@@ -10,6 +10,7 @@ import "qrc:/qt/qml/app/chilpa/qml/Components"
 Column {
     id: shelf
     property string modelKind: "source"
+    property Flickable viewport: null
     property var section: ({})
     property string selectedTag: ""
     property bool wrap: false
@@ -90,6 +91,7 @@ Column {
             // The rail keeps one card row; its width grows by one card and gap per item.
             width: shelf.wrap || list ? rail.width : Metrics.cardRing * 2 + shelf.railCards * shelf.viewportCardWidth + (shelf.railCards - 1) * Metrics.gridGap // derived: one row of the same cards as the library grid
             height: implicitHeight; fitContent: true
+            viewport: shelf.wrap ? shelf.viewport : null
             fixedColumns: shelf.wrap || list ? 0 : shelf.railCards
             viewportX: rail.contentX; viewportWidth: rail.width
             round: shelf.section.round === true; roundIds: shelf.section.artist_cards || []; list: !shelf.oneRow && shelf.section.presentation === "ranked"
@@ -108,7 +110,7 @@ Column {
         active: tracks.count > 0
         sourceComponent: shelf.oneRow ? trackRail : trackRows
         Component { id: trackRail; TrackCarousel { width: parent.width; model: tracks } }
-        Component { id: trackRows; TrackList { width: parent.width; height: implicitHeight; fitContent: true; model: tracks } }
+        Component { id: trackRows; TrackList { width: parent.width; height: implicitHeight; fitContent: true; viewport: shelf.viewport; model: tracks } }
     }
     // More of the shelf comes in under what is there; while it is on its
     // way the button says so and takes no second click.

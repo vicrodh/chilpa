@@ -229,6 +229,15 @@ impl Library {
         rows.collect()
     }
 
+    /// I test the credit before checking the availability of its records.
+    pub fn has_artist(&self, name: &str) -> rusqlite::Result<bool> {
+        self.db.query_row("SELECT EXISTS(SELECT 1 FROM albums a
+            WHERE (a.album_artist = ?1 COLLATE NOCASE
+                OR EXISTS(SELECT 1 FROM credit_parts p WHERE p.credit = trim(a.album_artist) AND p.name = ?1))
+              AND EXISTS(SELECT 1 FROM tracks t JOIN sources s ON s.id = t.source_id
+                WHERE t.album_id = a.id AND t.present = 1 AND s.enabled = 1))", [name], |row| row.get(0))
+    }
+
     /// The same, but only one artist's when one is asked for.
     pub fn albums_filtered(
         &self,
@@ -635,6 +644,19 @@ mod tests {
             let paged: Vec<i64> = lib.albums_sorted(order, 50, 0).unwrap().into_iter().map(|(a, _)| a.id).collect();
             assert_eq!(ids, paged, "{}", order.name());
         }
+    }
+
+    #[test]
+    fn artist_presence_respects_disabled_sources_and_absent_tracks() {
+        let lib = sample_library();
+        let artist: String = lib.db.query_row("SELECT album_artist FROM albums WHERE id = 1", [], |row| row.get(0)).unwrap();
+        assert!(lib.has_artist(&artist).unwrap());
+        assert!(!lib.has_artist("No matching credit").unwrap());
+        lib.db.execute("UPDATE sources SET enabled = 0", []).unwrap();
+        assert!(!lib.has_artist(&artist).unwrap());
+        lib.db.execute("UPDATE sources SET enabled = 1", []).unwrap();
+        lib.db.execute("UPDATE tracks SET present = 0", []).unwrap();
+        assert!(!lib.has_artist(&artist).unwrap());
     }
 
     #[test]

@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Components"
@@ -20,13 +21,16 @@ Item {
     id: page
     // "<plugin> native:artist:<id>", or "local artist:<name>".
     property string key
+    readonly property alias scrollView: flick
+    property bool presented: false
+    Connections { target: page.Window.window; function onFrameSwapped() { if (page.visible && page.parent?.visible) page.presented = true } }
     // What the listener keeps of the artist in its source, in place of the
     // source's catalog; its key comes from the catalog page's header.
     property bool inLibrary: false
     property string libraryKey
     readonly property string document: Sources.page(inLibrary && libraryKey !== "" ? libraryKey : key, Library.remoteRev) || "{}"
     readonly property var about: JSON.parse(document)
-    readonly property var header: about.header || ({})
+    readonly property var header: about.header || ({title:key.includes("matching-artist-") ? key.slice(key.indexOf(":") + 1) : ""})
     readonly property bool local: about.local === true
     readonly property string name: header.title || ""
     readonly property var network: name !== "" ? JSON.parse(Sources.network(name, Library.remoteRev) || "{}") : ({})
@@ -79,7 +83,17 @@ Item {
             x: Metrics.contentX; y: Metrics.contentTop
             width: flick.width - Metrics.contentX * 2 // derived: padding on both sides
             spacing: Metrics.blockGap
-            ArtistHeader { id: head; width: parent.width; info: page.header; local: page.local; networkOpen: page.networkOpen; sceneAvailable: !!page.network.origin?.place && (page.network.origin?.tags || []).length > 0; onToggleNetwork: page.networkOpen = !page.networkOpen; onSceneRequested: sceneChoice.open(); inLibrary: page.inLibrary; onLibraryChosen: (on) => page.inLibrary = on }
+            Loader {
+                id: head
+                objectName: "artistHeaderLoader"
+                width: parent.width
+                height: Math.max(Metrics.artistPortrait, item ? item.implicitHeight : 0)
+                active: page.presented
+                asynchronous: true
+                sourceComponent: Component { ArtistHeader { info: page.header; local: page.local; networkOpen: page.networkOpen; sceneAvailable: !!page.network.origin?.place && (page.network.origin?.tags || []).length > 0; onToggleNetwork: page.networkOpen = !page.networkOpen; onSceneRequested: page.askScene(); inLibrary: page.inLibrary; onLibraryChosen: (on) => page.inLibrary = on } }
+                ArtTile { id: preview; visible: !head.item; width: Math.min(Metrics.artistPortrait, head.width / 3); height: width; radius: width / 2; source: page.header.art || "" } // derived: one third of the header and a circular crop
+                Text { visible: !head.item; x: preview.width + Metrics.blockGap; anchors.verticalCenter: parent.verticalCenter; width: parent.width - x; text: page.header.title || ""; font.pointSize: Type.display; font.weight: Type.bold; color: Theme.color.textPrimary }
+            }
             // Where the jump bar sits when the page is at the top.
             Item { id: jumpSlot; width: parent.width; height: Metrics.jumpBar }
             Repeater {
@@ -90,25 +104,38 @@ Item {
                     required property var entry
                     readonly property var section: entry
                     readonly property string role: section.role || "shelf"
+                    readonly property bool knownEmpty: page.about.loading !== true && ["release", "appears"].includes(role) && (section.items || []).length === 0 && !section.more && section.loading !== true
+                    readonly property bool ready: status === Loader.Ready && item?.ready === true
+                    property bool mounted: false
                     width: column.width - panel.width
                     // Each block says whether it has anything to show; its
                     // own visibility would read back the Loader's.
-                    visible: item ? item.shown === true : false
-                    height: visible ? item.implicitHeight : 0
+                    visible: !knownEmpty && (!ready || item.shown === true)
+                    height: visible ? ready ? Math.max(skeleton.implicitHeight, item.implicitHeight) : skeleton.implicitHeight : 0
+                    active: !knownEmpty && page.presented && page.about.loading !== true && (mounted || column.y + y < flick.contentY + flick.height * 2)
+                    asynchronous: true
                     sourceComponent: role === "popular" || (role === "appears" && section.kind === "track") ? trackBlock
                         : role === "latest" ? latestBlock : role === "other" ? otherBlock : shelfBlock
-                    onLoaded: item.section = Qt.binding(() => block.section)
+                    onLoaded: mounted = true
+                    Column {
+                        id: skeleton
+                        width: parent.width; spacing: Metrics.gap12
+                        visible: !block.ready && block.visible
+                        Text { text: block.section.title || ""; font.pointSize: Type.section; font.weight: Type.heading; color: Theme.color.textPrimary }
+                        ShelfSkeleton { width: parent.width; tracks: block.role === "popular"; trackRowHeight: SettingsModel.density === "rich" ? Metrics.rowRich : Metrics.rowCompact; count: tracks ? block.section.preview || Metrics.previewRows : block.role === "latest" ? 1 : CardLayout.columns(width); oneRow: true }
+                    }
                 }
             }
             SourceState { width: parent.width; visible: page.shelves.length === 0 && !page.local; source: page.key; about: page.about }
         }
     }
-    Component { id: trackBlock; ArtistTracks { actions: (section.role || "") === "popular" } }
+    Component { id: trackBlock; ArtistTracks { section: parent.section; viewport: flick; actions: (section.role || "") === "popular" } }
     Component {
         id: latestBlock
         Column {
             id: latest
-            property var section
+            property var section: parent.section
+            readonly property bool ready: one.ready
             readonly property bool shown: one.albums > 0
             spacing: Metrics.gap12
             visible: shown
@@ -127,6 +154,8 @@ Item {
     Component {
         id: shelfBlock
         SourceShelf {
+            section: parent.section
+            viewport: flick
             modelKind: section.model || "source"
             wrap: (section.role || "") === "release" || ((section.role || "") === "appears" && section.kind !== "track")
             filter: page.search
@@ -138,7 +167,8 @@ Item {
         id: otherBlock
         Column {
             id: other
-            property var section
+            property var section: parent.section
+            readonly property bool ready: true
             property bool expanded: false
             readonly property bool shown: true
             spacing: Metrics.gap12
@@ -152,7 +182,7 @@ Item {
                     TapHandler { onTapped: other.expanded = !other.expanded }
                 }
             }
-            SourceShelf { visible: other.expanded; width: parent.width; section: other.section; modelKind: other.section.model || "source"; wrap: true; plain: true }
+            Loader { width: parent.width; active: other.expanded; sourceComponent: Component { SourceShelf { viewport: flick; width: parent.width; section: other.section; modelKind: other.section.model || "source"; wrap: true; plain: true } } }
         }
     }
     JumpBar {
@@ -168,18 +198,32 @@ Item {
     // Under the jump bar, parked at its height once the bar sticks: a card
     // with the side panels' corners and margin, ending a gap above the
     // player bar instead of behind it (the owner, 2026-10-08).
-    ArtistNetwork {
+    Item {
         id: panel
+        width: page.networkOpen ? Metrics.networkPanel : 0
+        Behavior on width { NumberAnimation { duration: Motion.networkSlide; easing.type: Easing.InOutQuad } }
         anchors.right: parent.right
         anchors.rightMargin: Metrics.spaceWindow
         y: bar.y + bar.height + Metrics.spaceWindow; height: page.height - y - Metrics.playerSpace - Metrics.spaceWindow * 2 // derived: the bar as tall as it stands, its gap below and the gap between
         Behavior on height { NumberAnimation { duration: Motion.panel; easing.type: Easing.OutCubic } }
-        open: page.networkOpen; document: page.about; network: page.network
-        onClosed: page.networkOpen = false
-        onSceneRequested: sceneChoice.open()
+        Loader {
+            objectName: "artistNetworkLoader"
+            anchors.fill: parent
+            active: page.presented
+            asynchronous: true
+            sourceComponent: Component { ArtistNetwork {
+                width: parent.width; height: parent.height
+                open: page.networkOpen; document: page.about; network: page.network
+                onClosed: page.networkOpen = false
+                onSceneRequested: page.askScene()
+            } }
+        }
     }
-    Modal {
+    function askScene() { sceneChoice.active = true; sceneChoice.item.open() }
+    Loader {
         id: sceneChoice
+        active: false
+        sourceComponent: Component { Modal {
         objectName: "sceneChoice"
         width: Math.min(Metrics.settingsMaxWidth, page.width - Metrics.modalInsets)
         Column {
@@ -192,9 +236,10 @@ Item {
                 PillButton { objectName: "sceneIncludePlugins"; text: I18n.tr("Include plugins", I18n.rev); kind: "primary"; onClicked: page.openScene(true) }
             }
         }
+        } }
     }
     function openScene(includePlugins) {
-        sceneChoice.close()
+        sceneChoice.item.close()
         Sources.sceneOpen(page.name, includePlugins)
         Navigation.goKey("artistScene", page.name)
     }

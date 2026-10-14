@@ -6,6 +6,7 @@
 pub mod bridge {
     pub mod controls;
     pub mod hotkeys;
+    pub mod queues;
     pub mod place;
     pub mod player_layout;
 }

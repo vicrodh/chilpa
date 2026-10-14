@@ -1,6 +1,7 @@
 //! Named listening buffers share the one live queue and output.
 mod storage;
 mod view;
+mod operations;
 
 use crate::{Chilpa, NowPlaying, QueueGroup, QueuePlacement, Repeat};
 use serde::{Deserialize, Serialize};
@@ -47,13 +48,20 @@ pub(super) struct Workspace {
     #[serde(skip)]
     pub pending: Option<(u64, usize, f64)>,
     #[serde(skip)]
-    pub(crate) undo: Option<Buffer>,
+    pub(crate) undo: Option<Undo>,
     #[serde(skip)]
     pub saved_at: Option<std::time::Instant>,
     /// How long each track of a queue lasts, by its index, as its rows were
     /// last listed whole: what the Queues screen's footer adds up.
     #[serde(skip)]
     pub lengths: Option<(u64, std::collections::HashMap<usize, u64>)>,
+}
+
+#[derive(Clone)]
+pub(crate) struct Undo {
+    originals: Vec<(usize, Buffer)>,
+    created: Vec<u64>,
+    selected: u64,
 }
 impl Default for Workspace {
     fn default() -> Self {
@@ -98,8 +106,9 @@ impl Chilpa {
             self.listen.selected = self.listen.active;
         }
         self.listen.pending = None;
-        if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) {
-            self.listen.undo = Some(b.clone());
+        if let Some(at) = self.listen.buffers.iter().position(|b| b.id == self.listen.active) {
+            let b = &mut self.listen.buffers[at];
+            self.listen.undo = Some(Undo { originals: vec![(at, b.clone())], created: Vec::new(), selected: b.id });
             b.epoch = b.epoch.wrapping_add(1); b.order.clear(); b.paths.clear(); b.origins.clear();
         }
         if let Some(p) = &self.player { p.clear_order(); }
@@ -190,7 +199,7 @@ impl Chilpa {
         self.persist_buffers(); id
     }
     pub fn listen_select(&mut self, id: u64) {
-        if self.listen.buffers.iter().any(|b| b.id == id) { self.listen.selected = id; }
+        if self.listen.buffers.iter().any(|b| b.id == id) { self.listen.selected = id; self.persist_buffers(); }
     }
     pub fn listen_rename(&mut self, id: u64, name: &str) {
         if name.trim().is_empty() { return; }
@@ -201,7 +210,7 @@ impl Chilpa {
         self.capture_buffer();
         let Some(at) = self.listen.buffers.iter().position(|b| b.id == id) else { return };
         if self.listen.pending.is_some_and(|p| p.0 == id) { self.listen.pending = None; }
-        self.listen.undo = Some(self.listen.buffers[at].clone());
+        self.listen.undo = Some(Undo { originals: vec![(at, self.listen.buffers[at].clone())], created: Vec::new(), selected: self.listen.selected });
         if id == self.listen.active {
             self.stop(); self.queue.clear(); self.queue_origins.clear(); self.removed.clear(); self.queue_groups.clear();
             self.queue_placement.clear(); self.now = NowPlaying::default();
@@ -218,7 +227,8 @@ impl Chilpa {
         self.capture_buffer();
         if self.listen.pending.is_some_and(|p| p.0 == id) { self.listen.pending = None; }
         let Some(mut b) = self.buffer_snapshot(id) else { return };
-        self.listen.undo = Some(b.clone());
+        let at = self.listen.buffers.iter().position(|item| item.id == id).unwrap();
+        self.listen.undo = Some(Undo { originals: vec![(at, b.clone())], created: Vec::new(), selected: id });
         b.epoch += 1; b.paths = paths.to_vec(); b.origins = vec![self.browse_origin.clone(); paths.len()]; b.removed = vec![false; paths.len()];
         b.order = (0..paths.len()).collect(); b.groups.clear(); b.placement = vec![QueuePlacement::Original; paths.len()];
         b.cursor = 0; b.seconds = 0.0; b.stop_after = None;
@@ -228,11 +238,17 @@ impl Chilpa {
         self.store_buffer(b); self.persist_buffers();
     }
     pub fn listen_undo(&mut self) {
-        let Some(b) = self.listen.undo.take() else { return };
-        if self.listen.active == b.id { self.stop(); self.listen.active = 0; self.queue.clear(); self.queue_origins.clear(); self.now = NowPlaying::default(); }
-        self.listen.selected = b.id;
-        if self.listen.buffers.iter().any(|v| v.id == b.id) { self.store_buffer(b); }
-        else { self.listen.buffers.push(b); }
+        let Some(undo) = self.listen.undo.take() else { return };
+        let affected: Vec<_> = undo.originals.iter().map(|(_, b)| b.id).chain(undo.created).collect();
+        if affected.contains(&self.listen.active) {
+            self.stop(); self.listen.active = 0; self.queue.clear(); self.queue_origins.clear();
+            self.removed.clear(); self.queue_placement.clear(); self.queue_groups.clear(); self.now = NowPlaying::default();
+        }
+        if self.listen.pending.is_some_and(|p| affected.contains(&p.0)) { self.listen.pending = None; }
+        self.listen.buffers.retain(|b| !affected.contains(&b.id));
+        for (at, b) in undo.originals { self.listen.buffers.insert(at.min(self.listen.buffers.len()), b); }
+        self.listen.selected = if self.listen.buffers.iter().any(|b| b.id == undo.selected) { undo.selected } else { self.listen.buffers[0].id };
+        self.listen.lengths = None;
         self.persist_buffers();
     }
     /// I append without starting the selected buffer, including when it is empty.

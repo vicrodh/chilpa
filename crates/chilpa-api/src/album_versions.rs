@@ -188,6 +188,7 @@ impl Chilpa {
     }
 
     pub fn set_group_artist_versions(&mut self, on: bool) -> bool {
+        self.invalidate_artist_collections();
         match self.library().map(|lib| lib.set_group_artist_versions(on)) {
             Some(Ok(())) => true,
             Some(Err(error)) => { self.now.error = error.to_string(); false }
@@ -198,13 +199,7 @@ impl Chilpa {
     /// I apply the artist page's preference without changing other grids.
     pub fn artist_release_cards(&mut self, name: &str, appearances: bool) -> Vec<Album> {
         let Some(lib) = self.library() else { return Vec::new() };
-        let records = if appearances { lib.albums_appearing(name) }
-            else { lib.albums_filtered(chilpa_library::AlbumSort::Year, Some(name), 10_000, 0) }.unwrap_or_default();
-        let mut ids: Vec<_> = records.iter().map(|(a, _)| a.id).collect();
-        if lib.group_artist_versions() {
-            if let Ok(catalog) = lib.version_catalog() { ids = catalog.collapse(&ids); }
-        }
-        ids.chunks(500).flat_map(|ids| lib.albums_by_ids(ids).unwrap_or_default()).map(crate::browse::album_of).collect()
+        crate::artist_library::releases(lib, name, appearances)
     }
 
     pub fn group_album_versions(&mut self) -> bool {

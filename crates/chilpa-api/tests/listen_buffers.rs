@@ -12,6 +12,9 @@ fn state(api: &Chilpa) -> Value { serde_json::from_str(&api.listen_json()).unwra
 fn keys(api: &mut Chilpa, id: u64) -> Vec<String> {
     api.listen_rows(id, "", true).1.into_iter().filter(|k| !k.is_empty()).collect()
 }
+fn paths(api: &mut Chilpa, id: u64) -> Vec<String> {
+    api.listen_rows(id, "", true).0.into_iter().filter_map(|row| match row { TrackEntry::Track(t) => Some(t.path), _ => None }).collect()
+}
 fn wave(path: &Path) {
     let data = 44_100u32 * 4 * 30;
     let mut bytes = Vec::new();
@@ -254,5 +257,117 @@ fn playing_with_no_queue_playing_uses_the_queue_in_view_instead_of_a_new_one() {
     assert_eq!(state(&api)["tabs"].as_array().unwrap().len(), 1, "a queue is made only when asked for: {}", api.listen_json());
     assert_eq!(state(&api)["active"], only.to_string());
     assert_eq!(api.queue_paths(), &paths[1..]);
+    api.stop();
+}
+
+#[test]
+fn split_and_merge_keep_playback_order_and_survive_a_new_session() {
+    let _env = ENV.lock().unwrap_or_else(|p| p.into_inner());
+    let dir = tempfile::tempdir().unwrap();
+    for (key, folder) in [("XDG_DATA_HOME", "data"), ("XDG_CONFIG_HOME", "config"), ("XDG_CACHE_HOME", "cache")] {
+        std::env::set_var(key, dir.path().join(folder));
+    }
+    let tracks: Vec<_> = ["a.wav", "b.wav", "c.wav"].into_iter().map(|name| {
+        let file = dir.path().join(name); wave(&file); file.to_string_lossy().into_owned()
+    }).collect();
+    let mut api = Chilpa::new(); api.use_output("file:capture", false);
+    let a = api.listen_create("First", &[tracks[0].clone(), tracks[1].clone(), tracks[0].clone()]);
+    let b = api.listen_create("Second", &[tracks[2].clone()]);
+    let original = keys(&mut api, a);
+    assert!(api.listen_split(&original[0]).is_none(), "both halves must contain tracks");
+    assert!(api.listen_play(a, &original[1]));
+    wait(&mut api, |api| api.now_playing().path == tracks[1] && api.now_playing().total_seconds > 0.0);
+    api.seek(3.0); wait(&mut api, |api| api.now_playing().seconds >= 3.0); api.set_paused(true);
+    let before = api.now_playing().seconds;
+    let tail = api.listen_split(&original[1]).unwrap();
+    assert_eq!(paths(&mut api, a), tracks[..1]);
+    assert_eq!(paths(&mut api, tail), [tracks[1].clone(), tracks[0].clone()]);
+    assert_eq!(state(&api)["active"], tail.to_string());
+    assert_eq!(api.now_playing().path, tracks[1]); assert!(api.now_playing().paused);
+    assert_eq!(api.now_playing().seconds, before);
+    assert!(!api.listen_row_action(&original[1], "play", ""), "the old occurrence cannot address the other half");
+    let combined = api.listen_merge(&[b, tail, a], "Together", true).unwrap();
+    assert_eq!(paths(&mut api, combined), [tracks[2].clone(), tracks[1].clone(), tracks[0].clone(), tracks[0].clone()]);
+    assert_eq!(state(&api)["active"], tail.to_string());
+    api.listen_undo(); assert!(!state(&api)["tabs"].as_array().unwrap().iter().any(|row| row["id"] == combined.to_string()));
+    assert_eq!(api.now_playing().path, tracks[1]);
+    let merged = api.listen_merge(&[b, tail], "Merged", false).unwrap();
+    assert_eq!(merged, tail, "the decoder retains its queue identity when originals are retired");
+    assert_eq!(paths(&mut api, merged), [tracks[2].clone(), tracks[1].clone(), tracks[0].clone()]);
+    assert_eq!(api.now_playing().path, tracks[1]); assert_eq!(api.now_playing().seconds, before);
+    assert_eq!(state(&api)["tabs"].as_array().unwrap().len(), 3);
+    api.listen_step(1); assert_ne!(api.listen_selected(), merged);
+    api.listen_step(-1); assert_eq!(api.listen_selected(), merged);
+    assert!(api.listen_merge(&[merged, merged], "", false).is_err());
+    assert!(api.listen_merge(&[merged, 9999], "", false).is_err());
+    drop(api);
+    let mut restored = Chilpa::new();
+    assert_eq!(paths(&mut restored, merged), [tracks[2].clone(), tracks[1].clone(), tracks[0].clone()]);
+    assert_eq!(restored.now_playing().path, tracks[1]); assert!(restored.now_playing().paused);
+    assert_eq!(restored.listen_selected(), merged);
+    let remaining = keys(&mut restored, merged);
+    let tail = restored.listen_split(&remaining[2]).unwrap();
+    assert_eq!(state(&restored)["active"], merged.to_string());
+    assert_eq!(restored.now_playing().path, tracks[1]);
+    assert_eq!(paths(&mut restored, merged), [tracks[2].clone(), tracks[1].clone()]);
+    assert_eq!(paths(&mut restored, tail), tracks[..1]);
+}
+
+#[test]
+fn undo_restores_both_halves_and_retired_queues_in_their_tab_order() {
+    let _env = ENV.lock().unwrap_or_else(|p| p.into_inner());
+    let dir = tempfile::tempdir().unwrap();
+    for (key, folder) in [("XDG_DATA_HOME", "data"), ("XDG_CONFIG_HOME", "config"), ("XDG_CACHE_HOME", "cache")] { std::env::set_var(key, dir.path().join(folder)); }
+    let mut api = Chilpa::new();
+    let a = api.listen_create("First", &["a".into(), "b".into(), "a".into()]);
+    let b = api.listen_create("Second", &["c".into()]);
+    let order = state(&api)["tabs"].clone();
+    let old = keys(&mut api, a);
+    api.listen_split(&old[2]).unwrap(); api.listen_undo();
+    assert_eq!(state(&api)["tabs"], order); assert_eq!(keys(&mut api, a), old);
+    let merged = api.listen_merge(&[b, a], "", false).unwrap();
+    assert_eq!(paths(&mut api, merged), ["c", "a", "b", "a"]);
+    api.listen_undo(); assert_eq!(state(&api)["tabs"], order);
+    assert_eq!(keys(&mut api, a), old); assert_eq!(paths(&mut api, b), ["c"]);
+}
+
+#[test]
+fn language_selection_is_saved_and_available_in_appearance() {
+    let _env = ENV.lock().unwrap_or_else(|p| p.into_inner());
+    let dir = tempfile::tempdir().unwrap();
+    for (key, folder) in [("XDG_DATA_HOME", "data"), ("XDG_CONFIG_HOME", "config"), ("XDG_CACHE_HOME", "cache")] { std::env::set_var(key, dir.path().join(folder)); }
+    let mut api = Chilpa::new();
+    api.choose_language("es"); assert_eq!(api.language(), "es"); drop(api);
+    let mut restored = Chilpa::new(); assert_eq!(restored.language(), "es");
+    let row = restored.settings_rows("appearance", &Default::default()).0.into_iter().find(|row| row.key == "appearance.language").unwrap();
+    assert_eq!(row.value, "es"); assert_eq!(row.values, ["", "en", "es"]);
+    restored.choose_language("unknown"); assert_eq!(restored.language(), "es");
+    restored.choose_language("");
+    assert_eq!(restored.settings_rows("appearance", &Default::default()).0.into_iter().find(|row| row.key == "appearance.language").unwrap().value, "");
+    restored.choose_language("en");
+}
+
+#[test]
+fn the_decoder_skips_the_split_tail_and_walks_the_combined_order() {
+    let _env = ENV.lock().unwrap_or_else(|p| p.into_inner());
+    let dir = tempfile::tempdir().unwrap();
+    for (key, folder) in [("XDG_DATA_HOME", "data"), ("XDG_CONFIG_HOME", "config"), ("XDG_CACHE_HOME", "cache")] { std::env::set_var(key, dir.path().join(folder)); }
+    let tracks: Vec<_> = ["a.wav", "b.wav", "c.wav"].into_iter().map(|name| {
+        let file = dir.path().join(name); wave(&file); file.to_string_lossy().into_owned()
+    }).collect();
+    let mut api = Chilpa::new(); api.use_output("file:capture", false);
+    api.play_tracks(&tracks, "file:capture", false); api.set_paused(true);
+    wait(&mut api, |api| api.now_playing().path == tracks[0] && api.now_playing().total_seconds > 0.0);
+    let original = api.listen_selected();
+    let keys = keys(&mut api, original);
+    let tail = api.listen_split(&keys[1]).unwrap();
+    assert_eq!(api.now_playing().path, tracks[0]);
+    api.next_track(); wait(&mut api, |api| !api.now_playing().playing);
+    assert!(api.listen_play(tail, ""));
+    wait(&mut api, |api| api.now_playing().path == tracks[1] && api.now_playing().total_seconds > 0.0); api.set_paused(true);
+    assert_eq!(api.listen_merge(&[tail, original], "Joined", false).unwrap(), tail);
+    api.next_track(); wait(&mut api, |api| api.now_playing().path == tracks[2] && api.now_playing().total_seconds > 0.0); api.set_paused(true);
+    api.next_track(); wait(&mut api, |api| api.now_playing().path == tracks[0] && api.now_playing().total_seconds > 0.0); api.set_paused(true);
+    assert_eq!(api.now_playing().index, 2, "the added occurrence reaches the existing decoder queue");
     api.stop();
 }

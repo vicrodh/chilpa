@@ -36,6 +36,10 @@ Item {
     }
 
     function pressed(event) {
+        for (let item = window.activeFocusItem; item; item = item.parent) {
+            if (item.blocksWindowShortcuts === true && !JSON.parse(Hotkeys.snapshot || "{}").recording)
+                return
+        }
         const action = Hotkeys.pressedIn(controls.immersiveOpen ? "immersive" : "window", event.key, event.modifiers, event.text, typing())
         if (action === "")
             return
@@ -68,6 +72,10 @@ Item {
         case "nav.settings": Navigation.openSection(""); break
         case "nav.newTab": Navigation.open("library", 0); break
         case "nav.closeTab": Navigation.close(Navigation.active); break
+        case "nav.nextTab": Navigation.step(1); break
+        case "nav.previousTab": Navigation.step(-1); break
+        case "queue.next": ListenList.command("next", "", ""); Navigation.go("listenlist", 0); break
+        case "queue.previous": ListenList.command("previous", "", ""); Navigation.go("listenlist", 0); break
         case "nav.quit": controls.requestQuit(); break
         case "ui.sidebar": SettingsModel.sidebarMode = sidebarTurns[SettingsModel.sidebarMode] || "open"; break
         case "ui.queue": SettingsModel.queueOpen = !SettingsModel.queueOpen; break
@@ -127,6 +135,7 @@ Item {
     // its place is put here, before it shows, and a size kept from a larger
     // screen is brought down to this one.
     function restorePlace() {
+        if (!window) return
         const screen = window.screen
         if (screen && window.width > screen.desktopAvailableWidth)
             window.width = Math.max(window.minimumWidth, screen.desktopAvailableWidth)
@@ -221,7 +230,7 @@ Item {
     Timer { id: settle; interval: Sizes.placeSettle; onTriggered: controls.keepPlace() }
     Connections {
         target: I18n
-        function onRevChanged() { Hotkeys.refresh(); Controls.relabelTray() }
+        function onRevChanged() { Hotkeys.refresh(); Controls.relabelTray(); Navigation.activate(Navigation.active); ListenList.refresh() }
     }
     // An action asked for without its key: a row of the app menu.
     Connections {
