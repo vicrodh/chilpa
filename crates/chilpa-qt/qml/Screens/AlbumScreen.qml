@@ -19,9 +19,10 @@ Flickable {
     property double albumId: Navigation.routeId
 
     property bool selectionMode: false
-    KeyedModel {
-        id: sourceShelves
-        items: (sourceDetails.info.shelves || []).filter(shelf => !(shelf.id === "tracks" && shelf.kind === "track"))
+    property bool presented: false
+    Connections {
+        target: page.Window.window
+        function onFrameSwapped() { if (page.visible) page.presented = true }
     }
     function toggleSelection() { selectionMode = !selectionMode; tracks.clearSelection() }
     function showActions(item, left, top) { const at = item.mapToItem(page, left, top); albumMenu.active = true; albumMenu.item.show(detail.selectedId, detail.title, detail.artist, -1, at.x, at.y) }
@@ -142,6 +143,7 @@ Flickable {
             height: implicitHeight
             fitContent: true
             viewport: page
+            prefetch: page.presented
             showArtist: sourceDetails.info.kind === "playlist"
             showAlbum: sourceDetails.info.kind === "playlist"
             showArt: sourceDetails.info.kind === "playlist"
@@ -151,10 +153,10 @@ Flickable {
 
         Loader {
             width: parent.width
-            active: page.visible && detail.found
+            active: page.presented && detail.found
             asynchronous: true
             property double albumId: detail.selectedId
-            property var shelves: sourceShelves.items
+            property var shelves: (sourceDetails.info.shelves || []).filter(shelf => !(shelf.id === "tracks" && shelf.kind === "track"))
             source: "qrc:/qt/qml/app/chilpa/sources/qml/Patterns/AlbumRecommendations.qml"
         }
     }

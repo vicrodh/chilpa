@@ -69,6 +69,7 @@ ApplicationWindow {
         target: window
         function onFrameSwapped() {
             if (!window.awaiting || !host.item || host.item.albumId !== window.albums[window.sample]) return
+            const elapsed = Date.now() - window.started
             const view = window.find(host.item, "trackListView")
             if (!view || !view.model.ready || !view.model.count) return
             let rows = 0
@@ -76,7 +77,6 @@ ApplicationWindow {
                 const row = view.itemAtIndex(i)
                 if (row && window.find(row, "trackRowBody")) rows++
             }
-            const elapsed = Date.now() - window.started
             console.log("SMOKE album=" + window.albums[window.sample] + " first-frame-with-tracks=" + elapsed + "ms tracks=" + view.model.count + " visual-rows=" + rows)
             if (elapsed > 500) window.failures.push("local record took " + elapsed + "ms to present its tracks")
             if (!rows || view.model.count > 100 && rows >= 60) window.failures.push("record built " + rows + " visual rows")

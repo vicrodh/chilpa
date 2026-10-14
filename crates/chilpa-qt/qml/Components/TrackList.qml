@@ -26,6 +26,7 @@ Item {
     property bool fitContent: false
     // A page keeps row slots at full height and builds only nearby contents.
     property Flickable viewport: null
+    property bool prefetch: true
     readonly property real visibleTop: viewport ? viewport.contentY - parent.mapToItem(viewport.contentItem, 0, y + view.y).y : view.contentY
     // Room below the last row, for what floats over the list.
     property int bottomInset: 0
@@ -144,7 +145,8 @@ Item {
 
         delegate: TrackRow {
             required property var model
-            inViewport: !list.viewport || y + height >= list.visibleTop - list.viewport.height && y < list.visibleTop + list.viewport.height * 2
+            immediate: !list.viewport || y + height >= list.visibleTop && y < list.visibleTop + list.viewport.height
+            inViewport: !list.viewport || immediate || list.prefetch && y + height >= list.visibleTop - list.viewport.height && y < list.visibleTop + list.viewport.height * 2
             sourceName: model.sourceName || ""
             composer: model.composer || ""
             headerWork: model.headerWork || false
