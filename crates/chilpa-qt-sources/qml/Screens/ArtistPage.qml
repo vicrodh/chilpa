@@ -94,13 +94,14 @@ Item {
                     required property var entry
                     readonly property var section: entry
                     readonly property string role: section.role || "shelf"
+                    readonly property bool knownEmpty: page.about.loading !== true && ["release", "appears"].includes(role) && (section.items || []).length === 0 && !section.more && section.loading !== true
                     property bool mounted: false
                     width: column.width - panel.width
                     // Each block says whether it has anything to show; its
                     // own visibility would read back the Loader's.
-                    visible: !!item?.shown || page.about.loading === true || !active || status === Loader.Loading
+                    visible: !knownEmpty && (!!item?.shown || page.about.loading === true || !active || status === Loader.Loading)
                     height: item?.shown ? item.implicitHeight : visible ? skeleton.implicitHeight : 0
-                    active: page.presented && page.about.loading !== true && (mounted || column.y + y < flick.contentY + flick.height * 2)
+                    active: !knownEmpty && page.presented && page.about.loading !== true && (mounted || column.y + y < flick.contentY + flick.height * 2)
                     asynchronous: true
                     sourceComponent: role === "popular" || (role === "appears" && section.kind === "track") ? trackBlock
                         : role === "latest" ? latestBlock : role === "other" ? otherBlock : shelfBlock
