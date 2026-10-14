@@ -186,6 +186,8 @@ with tempfile.TemporaryDirectory(prefix="chilpa-language-queues-") as temporary:
         XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"),
         QT_QPA_PLATFORM="offscreen", CHILPA_RENDERER="software")
     def run(code, marker):
+        # I reset the probe so fixture starts do not bypass the saved queue.
+        (profile / "data/chilpa/startup_probe").unlink(missing_ok=True)
         path = profile / "probe.qml"
         path.write_text(code)
         result = subprocess.run(["timeout", "--signal=TERM", "--kill-after=2s", "20s", "dbus-run-session", "--", str(binary)],
