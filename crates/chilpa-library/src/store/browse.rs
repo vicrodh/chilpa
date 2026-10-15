@@ -315,6 +315,8 @@ const ALBUMS: &str = "FROM albums a JOIN album_rollup ar ON ar.album_id = a.id W
     AND EXISTS (SELECT 1 FROM tracks member JOIN sources visible ON visible.id = member.source_id
                 WHERE member.album_id = a.id AND member.present = 1 AND visible.enabled = 1)";
 
+const FACET_FROM: &str = "FROM tracks t JOIN albums a ON a.id = t.album_id";
+
 const FROM: &str = "FROM tracks t
      JOIN albums a ON a.id = t.album_id
      LEFT JOIN track_rollup r ON r.track_id = t.id";
@@ -485,7 +487,7 @@ impl Library {
         left.albums.clear();
         let (filter, args) = self.browse_clause(&left);
         let sql = format!(
-            "SELECT g.name, count(DISTINCT a.id) {FROM}
+            "SELECT g.name, count(DISTINCT a.id) {FACET_FROM}
              JOIN track_genres tg ON tg.track_id = t.id
              JOIN genres g ON g.id = tg.genre_id
              {filter} GROUP BY g.name ORDER BY g.name COLLATE NOCASE"
@@ -500,7 +502,7 @@ impl Library {
         left.queries[2..].fill(String::new());
         let (filter, args) = self.browse_clause(&left);
         let sql = format!(
-            "SELECT min(t.label), count(DISTINCT a.id) {FROM}
+            "SELECT min(t.label), count(DISTINCT a.id) {FACET_FROM}
              {filter} AND t.label IS NOT NULL AND t.label <> ''
              GROUP BY t.label COLLATE NOCASE ORDER BY 1 COLLATE NOCASE"
         );
@@ -514,7 +516,7 @@ impl Library {
         left.queries[3..].fill(String::new());
         let (filter, args) = self.browse_clause(&left);
         let sql = format!(
-            "SELECT c.name, count(DISTINCT a.id) {FROM}
+            "SELECT c.name, count(DISTINCT a.id) {FACET_FROM}
              JOIN track_composers tc ON tc.track_id = t.id
              JOIN composers c ON c.id = tc.composer_id
              {filter} GROUP BY c.name ORDER BY c.name COLLATE NOCASE"
@@ -531,7 +533,7 @@ impl Library {
         left.queries[4..].fill(String::new());
         let (filter, args) = self.browse_clause(&left);
         let sql = format!(
-            "SELECT COALESCE(ra.stars, 0) AS stars, count(DISTINCT a.id) {FROM}
+            "SELECT COALESCE(ra.stars, 0) AS stars, count(DISTINCT a.id) {FACET_FROM}
              LEFT JOIN album_ratings ra ON ra.album_id = a.id
              {filter} GROUP BY stars ORDER BY stars DESC"
         );
@@ -583,7 +585,7 @@ impl Library {
         left.queries[6].clear();
         let (filter, args) = self.browse_clause(&left);
         let sql = format!(
-            "SELECT a.id, a.title, a.year, count(t.id) {FROM} {filter}
+            "SELECT a.id, a.title, a.year, count(t.id) {FACET_FROM} {filter}
              GROUP BY a.id ORDER BY a.title COLLATE NOCASE, a.album_artist COLLATE NOCASE, a.year"
         );
         let mut stmt = self.db.prepare(&sql)?;
@@ -640,12 +642,15 @@ impl Library {
     /// runs it off its own thread.
     pub fn browse_ids(&self, f: &Filter, order: TrackOrder) -> rusqlite::Result<Snapshot> {
         let (filter, args) = self.browse_clause(f);
+        let (from, plays) = if matches!(order, TrackOrder::Plays | TrackOrder::PlaysAscending) {
+            (FROM, ", COALESCE(r.plays, 0) AS plays")
+        } else { (FACET_FROM, "") };
         // The groups follow an order about what they are named: Artist
         // from Z puts the artists from Z.
         let turned = |on: bool| if on { " DESC" } else { "" };
         let sql = format!(
-            "SELECT t.id, t.album_id, t.duration_ms, COALESCE(r.plays, 0) AS plays
-             {FROM} {filter} ORDER BY {}{}",
+            "SELECT t.id, t.album_id, t.duration_ms{plays}
+             {from} {filter} ORDER BY {}{}",
             match f.grouped_by.as_str() {
                 "album" => format!("a.title COLLATE NOCASE{}, a.id, ", turned(order == TrackOrder::AlbumDescending)),
                 "artist" => format!("t.artist COLLATE NOCASE{}, ", turned(order == TrackOrder::ArtistDescending)),
@@ -980,6 +985,58 @@ mod tests {
         assert_eq!(lib.browse_ids(&format_filter, TrackOrder::Artist).unwrap().totals.tracks, 5);
         let sources = lib.facet_sources().unwrap();
         assert_eq!((sources[0].key.as_str(), sources[0].albums), ("local:default", 5));
+    }
+
+    #[test]
+    fn snapshots_keep_every_order_and_the_play_counts_of_detailed_rows() {
+        let lib = shelf();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.log_play(Some(10), Some(source), 3, 1000, 1000, false, None, None, true).unwrap();
+        for order in [TrackOrder::Artist, TrackOrder::Album, TrackOrder::Year, TrackOrder::Added,
+            TrackOrder::Title, TrackOrder::Plays, TrackOrder::Duration, TrackOrder::DurationDescending,
+            TrackOrder::Disc, TrackOrder::ArtistDescending, TrackOrder::TitleDescending, TrackOrder::YearDescending,
+            TrackOrder::Performer, TrackOrder::AlbumDescending, TrackOrder::AddedAscending, TrackOrder::PlaysAscending] {
+            let filter = Filter { formats: vec!["flac".into()], ..Default::default() };
+            let snapshot = lib.browse_ids(&filter, order).unwrap();
+            let rows = lib.browse_tracks(&filter, order, 100).unwrap();
+            assert_eq!(snapshot.ids, rows.iter().map(|row| row.id).collect::<Vec<_>>(), "{order:?}");
+            assert_eq!(snapshot.totals.duration_ms, rows.iter().map(|row| row.duration_ms).sum::<u64>());
+            assert_eq!(snapshot.totals.tracks, 5);
+            assert_eq!(snapshot.totals.albums, 3);
+        }
+        assert_eq!(lib.browse_ids(&Filter::default(), TrackOrder::Plays).unwrap().ids, [20, 10, 11, 12, 30]);
+        assert_eq!(lib.browse_ids(&Filter::default(), TrackOrder::PlaysAscending).unwrap().ids, [11, 12, 30, 10, 20]);
+        assert_eq!(lib.tracks_by_ids(&[10, 20, 30]).unwrap().iter().map(|row| row.plays).collect::<Vec<_>>(), [1, 2, 0]);
+    }
+
+    #[test]
+    fn play_history_does_not_change_the_filtered_facet_cascade() {
+        use crate::store::ratings::RatingTarget;
+        let lib = shelf();
+        lib.db.execute("UPDATE tracks SET label = 'First label' WHERE album_id = 1", []).unwrap();
+        lib.set_track_composers(10, &["Writer".into()]).unwrap();
+        lib.rate(RatingTarget::Album(1), 5).unwrap();
+        let excluded = lib.source_id("server", "excluded").unwrap();
+        let outside = lib.source_edition(excluded, "outside", "Outside", "Other", Some(2003)).unwrap();
+        lib.db.execute("INSERT INTO tracks(id, source_id, external_id, title, album_id, label, added_at, bit_depth, sample_rate_hz)
+            VALUES (40, ?1, '/outside.flac', 'Outside', ?2, 'Other label', 1, 24, 96000)", params![excluded, outside]).unwrap();
+        lib.set_track_genres(40, &["Other genre".into()]).unwrap();
+        lib.set_track_composers(40, &["Other writer".into()]).unwrap();
+        lib.rate(RatingTarget::Album(outside), 4).unwrap();
+        let filter = Filter { formats: vec!["flac".into()], qualities: vec!["hires".into()],
+            excluded_sources: vec!["server:excluded".into()], ..Default::default() };
+        let facets = || (lib.facet_genres(&filter).unwrap(), lib.facet_labels(&filter).unwrap(),
+            lib.facet_composers(&filter).unwrap(), lib.facet_ratings(&filter).unwrap(), lib.facet_albums(&filter).unwrap());
+        let before = facets();
+        assert_eq!(labels(before.0.clone()), ["Alternative"]);
+        assert_eq!(labels(before.1.clone()), ["First label"]);
+        assert_eq!(labels(before.2.clone()), ["Writer"]);
+        assert_eq!(before.3[0].key, "5");
+        assert_eq!(before.4.iter().map(|album| album.key.as_str()).collect::<Vec<_>>(), ["1"]);
+        let source = lib.source_id("local", "default").unwrap();
+        lib.log_play(Some(10), Some(source), 3, 1000, 1000, false, None, None, true).unwrap();
+        lib.log_play(Some(11), Some(source), 4, 1000, 1000, false, None, None, true).unwrap();
+        assert_eq!(facets(), before, "I keep metadata facets independent of missing or populated play rollups");
     }
 
     #[test]
