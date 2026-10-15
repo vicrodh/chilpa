@@ -40,7 +40,7 @@ impl qobject::ListenList {
     }
     pub fn command(mut self: Pin<&mut Self>, action: &QString, id: &QString, text: &QString) {
         crate::app::with(|api| api.listen_command(&action.to_string(), &id.to_string(), &text.to_string()));
-        if action.to_string() == "save" { crate::registry::playlists(|lists| lists.changed()); }
+        if matches!(action.to_string().as_str(), "save" | "saveNamed") { crate::registry::playlists(|lists| lists.changed()); }
         self.as_mut().refresh();
     }
 }

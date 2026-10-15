@@ -2,6 +2,7 @@ import QtQuick
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
+import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Tools
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
@@ -31,6 +32,7 @@ Item {
     implicitHeight: Metrics.fieldHeight
 
     SearchModel { id: search }
+    Tools.SearchCommands { active: box.active; host: box; search: search; field: field; flyout: flyout }
 
     Connections {
         target: Hotkeys

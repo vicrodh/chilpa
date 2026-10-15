@@ -8,6 +8,10 @@
 //! It is watched from `poll`, not from the audio thread: the jump back
 //! comes within a poll of the end, which is as close as a seek gets.
 
+pub(crate) const COMMANDS: &[crate::commands::Command] = &[
+    crate::commands::command("loop", "playback.loop", "a | b | off"),
+];
+
 use crate::Chilpa;
 
 /// The end has to come at least this long after the start.

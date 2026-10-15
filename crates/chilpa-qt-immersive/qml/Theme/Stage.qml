@@ -7,6 +7,30 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 // are QBZ's pixels taken to points. Nothing here is a color: those are
 // the theme's immersive.* tokens.
 QtObject {
+    readonly property int sceneMaxWide: 2560
+    readonly property int sceneMaxTall: 1440
+    readonly property int sceneFade: 240
+    readonly property int scopeHeightLess: 196
+    readonly property int scopeTracePad: 8
+    readonly property real scopeLine: 2.2
+    readonly property real scopeFill: 0.16
+    readonly property int scopeCorrelationEdge: 12
+    readonly property int scopeCorrelationWide: 132
+    readonly property int scopeCorrelationTall: 18
+    readonly property int scopeCorrelationTrack: 2
+    readonly property int scopeCorrelationThumbWide: 4
+    readonly property int scopeCorrelationThumbTall: 10
+    readonly property real spectralLabel: 11 * Type.pointsPerPixel
+    readonly property int spectralLabelWide: 40
+    readonly property int spectralLabelLead: 46
+    readonly property int spectralLabelApart: 6
+    readonly property int spectralTimeStep: 30
+    readonly property int spectralMaxLabels: 31
+    readonly property real spectralTimeText: 10 * Type.pointsPerPixel
+    readonly property int spectralHeaderPad: 28
+    readonly property int spectralHeaderTall: 22
+    readonly property int spectralHeaderRound: 5
+    readonly property real spectralHeaderText: 12 * Type.pointsPerPixel
     // ---- the overlay and its chrome ----------------------------------
     readonly property int edge: 24
     readonly property int headerTop: 16

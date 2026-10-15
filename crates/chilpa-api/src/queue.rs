@@ -3,6 +3,18 @@
 //! Everything that sets a list going goes through `launch`, so that repeat,
 //! shuffle and the position count are applied in one place.
 
+pub(crate) const COMMANDS: &[crate::commands::Command] = &[
+    crate::commands::command("play", "playback.play", ""),
+    crate::commands::command("pause", "playback.pause", ""),
+    crate::commands::command("next", "playback.next", ""),
+    crate::commands::command("prev", "playback.prev", ""),
+    crate::commands::command("seek", "playback.seek", "seconds | +seconds | mm:ss"),
+    crate::commands::command("vol", "playback.volume", "0..100 | +change"),
+    crate::commands::command("mute", "playback.mute", ""),
+    crate::commands::command("queue", "ui.queue", "[clear | save name]"),
+    crate::commands::command("sleep", "playback.sleep", "minutes | off"),
+];
+
 use super::*;
 
 pub(crate) mod normalization;

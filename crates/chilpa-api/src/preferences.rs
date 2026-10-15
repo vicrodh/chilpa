@@ -1,6 +1,10 @@
 //! What the window remembers between runs: its layout, its own
 //! preferences by dotted key, and the last folder opened.
 
+pub(crate) const COMMANDS: &[crate::commands::Command] = &[
+    crate::commands::command("set", "settings.set", "key value"),
+];
+
 use crate::Chilpa;
 
 impl Chilpa {

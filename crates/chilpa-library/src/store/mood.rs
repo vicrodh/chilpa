@@ -202,6 +202,9 @@ mod tests {
             lib.save_mood_features(id, 1, [id as f32 / 10.0; 6], &vector).unwrap();
         }
         assert_eq!(lib.rebuild_mood_playlists(1).unwrap(), 7);
+        // I exercise a changed recency order without depending on a clock boundary.
+        lib.db.execute("UPDATE playlists SET updated_at = id WHERE external_id LIKE ?1",
+            params![format!("{ANALYZER}:%")]).unwrap();
         let first = lib.playlists().unwrap();
         let generated = first.iter().filter(|item| item.external_id.starts_with(ANALYZER)).collect::<Vec<_>>();
         assert_eq!(generated.len(), 7);
@@ -212,11 +215,12 @@ mod tests {
         let artists = stmt.query_map(params![calm.id], |row| row.get::<_, String>(0)).unwrap()
             .collect::<rusqlite::Result<Vec<_>>>().unwrap();
         assert_eq!(artists.iter().filter(|artist| *artist == "First").count(), 4);
-        let ids = generated.iter().map(|item| item.id).collect::<Vec<_>>();
+        let identities = generated.iter().map(|item| (item.external_id.clone(), item.id))
+            .collect::<std::collections::BTreeMap<_, _>>();
         lib.rebuild_mood_playlists(1).unwrap();
         let second = lib.playlists().unwrap();
         assert_eq!(second.iter().filter(|item| item.external_id.starts_with(ANALYZER))
-                   .map(|item| item.id).collect::<Vec<_>>(), ids);
+                   .map(|item| (item.external_id.clone(), item.id)).collect::<std::collections::BTreeMap<_, _>>(), identities);
         assert!(second.iter().any(|item| item.id == manual && item.name == "My Mood"));
     }
 }

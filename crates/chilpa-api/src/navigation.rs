@@ -6,6 +6,12 @@
 //! is always at least one tab, and closing the active one activates the one
 //! to its left.
 
+pub(crate) const COMMANDS: &[crate::commands::Command] = &[
+    crate::commands::command("go", "nav.go", "album | artist | settings | library"),
+    crate::commands::command("q", "nav.closeTab", ""),
+    crate::commands::command("qa", "nav.quit", ""),
+];
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Screen {
     Home,

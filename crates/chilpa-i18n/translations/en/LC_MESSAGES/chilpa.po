@@ -486,6 +486,9 @@ msgstr ""
 msgid "August"
 msgstr ""
 
+msgid "Aurora"
+msgstr ""
+
 msgid "Author: {}"
 msgstr "Author: {}"
 
@@ -782,6 +785,9 @@ msgstr "Choose a download folder before downloading."
 msgid "Choose a file…"
 msgstr ""
 
+msgid "Choose a keymap: default, letters or vi."
+msgstr ""
+
 msgid "Choose a local ZIP file."
 msgstr ""
 
@@ -896,6 +902,9 @@ msgstr ""
 msgid "Close tab"
 msgstr ""
 
+msgid "Close the quotation marks."
+msgstr ""
+
 msgid "Close to tray"
 msgstr ""
 
@@ -930,6 +939,9 @@ msgid "Combine queues"
 msgstr ""
 
 msgid "Combined queue"
+msgstr ""
+
+msgid "Command line"
 msgstr ""
 
 msgid "Compact"
@@ -1077,6 +1089,12 @@ msgid "Credits"
 msgstr "Credits"
 
 msgid "Critics' Picks"
+msgstr ""
+
+msgid "Cursor down"
+msgstr ""
+
+msgid "Cursor up"
 msgstr ""
 
 msgid "Custom"
@@ -1403,6 +1421,15 @@ msgstr ""
 msgid "Enter"
 msgstr ""
 
+msgid "Enter a valid command; :help lists the commands."
+msgstr ""
+
+msgid "Enter a valid number or time."
+msgstr ""
+
+msgid "Enter a valid number."
+msgstr ""
+
 msgid "Episode notes"
 msgstr ""
 
@@ -1524,6 +1551,9 @@ msgid "Finish or cancel the current analysis first."
 msgstr ""
 
 msgid "Finish selecting"
+msgstr ""
+
+msgid "First track"
 msgstr ""
 
 msgid "Flat"
@@ -1649,6 +1679,9 @@ msgstr ""
 msgid "Go Forward"
 msgstr ""
 
+msgid "Go to"
+msgstr ""
+
 msgid "Go to album"
 msgstr ""
 
@@ -1689,6 +1722,12 @@ msgid "Group: Off"
 msgstr ""
 
 msgid "Guided DAC Setup"
+msgstr ""
+
+msgid "Half page down"
+msgstr ""
+
+msgid "Half page up"
 msgstr ""
 
 msgid "Hardware"
@@ -1931,6 +1970,12 @@ msgstr ""
 msgid "Interrupted"
 msgstr ""
 
+msgid "Invalid arguments; :help shows the syntax."
+msgstr ""
+
+msgid "Invalid preference value; check its choices in Settings."
+msgstr ""
+
 msgid "Invalid — should contain alsa_output or alsa_input"
 msgstr ""
 
@@ -2006,6 +2051,9 @@ msgstr ""
 msgid "Last playlist"
 msgstr ""
 
+msgid "Last track"
+msgstr ""
+
 msgid "Last.fm account"
 msgstr ""
 
@@ -2054,7 +2102,13 @@ msgstr ""
 msgid "Like Track"
 msgstr ""
 
+msgid "Like cursor track"
+msgstr ""
+
 msgid "Limits and cleanup"
+msgstr ""
+
+msgid "Line Bed"
 msgstr ""
 
 msgid "List"
@@ -2199,6 +2253,9 @@ msgid "Mark as heard"
 msgstr ""
 
 msgid "Mark as unplayed"
+msgstr ""
+
+msgid "Mark the start first with :loop a."
 msgstr ""
 
 msgid "Matched"
@@ -2445,6 +2502,9 @@ msgid "Next page"
 msgstr ""
 
 msgid "Next queue"
+msgstr ""
+
+msgid "Next search result"
 msgstr ""
 
 msgid "Next tab"
@@ -2843,6 +2903,9 @@ msgstr ""
 msgid "Plain seek bar"
 msgstr ""
 
+msgid "Plasma"
+msgstr ""
+
 msgid "Platform"
 msgstr ""
 
@@ -2865,6 +2928,9 @@ msgid "Play an album or track to get started"
 msgstr ""
 
 msgid "Play count"
+msgstr ""
+
+msgid "Play cursor track"
 msgstr ""
 
 msgid "Play indicator animation"
@@ -3029,6 +3095,9 @@ msgstr ""
 msgid "Previous queue"
 msgstr ""
 
+msgid "Previous search result"
+msgstr ""
+
 msgid "Previous tab"
 msgstr ""
 
@@ -3078,6 +3147,9 @@ msgid "Queue actions"
 msgstr "Queue actions"
 
 msgid "Queue and playlist actions"
+msgstr ""
+
+msgid "Queue cursor track"
 msgstr ""
 
 msgid "Queue is empty"
@@ -3550,6 +3622,9 @@ msgid_plural "See {} more"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "Seek"
+msgstr ""
+
 msgid "Seek Back"
 msgstr ""
 
@@ -3620,6 +3695,9 @@ msgid "Set loop end (B)"
 msgstr ""
 
 msgid "Set loop start (A)"
+msgstr ""
+
+msgid "Set preference"
 msgstr ""
 
 msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
@@ -3752,6 +3830,9 @@ msgid "Sources and quality"
 msgstr ""
 
 msgid "Spanish"
+msgstr ""
+
+msgid "Spectral Ribbon"
 msgstr ""
 
 msgid "Spectrum"
@@ -3927,6 +4008,9 @@ msgstr ""
 msgid "The connection is not encrypted."
 msgstr ""
 
+msgid "The current track has no such destination."
+msgstr ""
+
 msgid "The download view is unavailable."
 msgstr "The download view is unavailable."
 
@@ -3952,6 +4036,9 @@ msgid "The line being sung stays in view."
 msgstr ""
 
 msgid "The listening history could not be saved"
+msgstr ""
+
+msgid "The loop cannot be marked here; its end needs at least two seconds."
 msgstr ""
 
 msgid "The loudness every track is aligned to. -14 LUFS matches streaming services, -18 LUFS is the ReplayGain reference."
@@ -4164,6 +4251,9 @@ msgstr ""
 msgid "Time"
 msgstr ""
 
+msgid "Time is out of range."
+msgstr ""
+
 msgid "Title"
 msgstr ""
 
@@ -4207,6 +4297,9 @@ msgid "Track details · {}"
 msgstr ""
 
 msgid "Track lists"
+msgstr ""
+
+msgid "Track menu"
 msgstr ""
 
 msgid "Track review"
@@ -4254,6 +4347,12 @@ msgstr ""
 msgid "Tue"
 msgstr ""
 
+msgid "Tunnel"
+msgstr ""
+
+msgid "Tunnel Flow"
+msgstr ""
+
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr ""
 
@@ -4284,7 +4383,16 @@ msgstr "Uninstall plugin"
 msgid "Uninstall plugin and remove account data"
 msgstr ""
 
+msgid "Unknown command; enter :help."
+msgstr ""
+
+msgid "Unknown preference."
+msgstr ""
+
 msgid "Unknown quality"
+msgstr ""
+
+msgid "Unknown target; use Tab to complete the source."
 msgstr ""
 
 msgid "Unmatched"
@@ -4381,6 +4489,9 @@ msgid "View less"
 msgstr ""
 
 msgid "View tracks"
+msgstr ""
+
+msgid "Volume"
 msgstr ""
 
 msgid "Volume Down"

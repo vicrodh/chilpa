@@ -199,6 +199,8 @@ MouseArea {
             host.model.go(row, "album")
             return
         }
+        host.cursorRow = row
+        host.forceActiveFocus()
         host.model.select(row, (toggle ? 1 : 0) | (mouse.modifiers & Qt.ShiftModifier ? 2 : 0))
     }
     onDoubleClicked: (mouse) => {

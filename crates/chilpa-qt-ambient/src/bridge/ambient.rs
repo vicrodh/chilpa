@@ -40,6 +40,8 @@ pub mod qobject {
         #[qproperty(QColor, lifted)]
         #[qproperty(QColor, brightest)]
         #[qproperty(QString, ring_ramp_json)]
+        /// Four independently ranked cover colors for the feedback tunnel.
+        #[qproperty(QString, tunnel_palette_json)]
         /// The wallpaper and its atmosphere as file URLs; empty until a
         /// mode that paints them resolves one.
         #[qproperty(QString, wallpaper_url)]
@@ -108,6 +110,7 @@ pub struct AmbientRust {
     lifted: QColor,
     brightest: QColor,
     ring_ramp_json: QString,
+    tunnel_palette_json: QString,
     wallpaper_url: QString,
     wallpaper_atmosphere_url: QString,
     wallpaper_windows_json: QString,
@@ -137,6 +140,7 @@ impl Default for AmbientRust {
             lifted: qcolor(&chilpa_api::immersive::lifted_accent(&triad.primary)),
             brightest: qcolor(&chilpa_api::immersive::brightest([&triad.primary, &triad.secondary, &triad.accent])),
             ring_ramp_json: palette_json(&triad),
+            tunnel_palette_json: QString::from(&chilpa_api::visualizer::tunnel::line_palette_json(&chilpa_api::visualizer::tunnel::DEFAULT_LINE_PALETTE)),
             wallpaper_url: QString::default(),
             wallpaper_atmosphere_url: QString::default(),
             wallpaper_windows_json: QString::from("[]"),
@@ -183,6 +187,7 @@ impl qobject::Ambient {
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let Some(triad) = ambient::triad_of(std::path::Path::new(&path)) else { return };
+            let tunnel = chilpa_api::visualizer::tunnel::palette_of(std::path::Path::new(&path));
             let _ = thread.queue(move |mut this| {
                 this.as_mut().set_primary(qcolor(&triad.primary));
                 this.as_mut().set_secondary(qcolor(&triad.secondary));
@@ -191,6 +196,9 @@ impl qobject::Ambient {
                 this.as_mut().set_lifted(qcolor(&chilpa_api::immersive::lifted_accent(&triad.primary)));
                 this.as_mut().set_brightest(qcolor(&chilpa_api::immersive::brightest([&triad.primary, &triad.secondary, &triad.accent])));
                 this.as_mut().set_ring_ramp_json(palette_json(&triad));
+                if let Some(palette) = tunnel {
+                    this.as_mut().set_tunnel_palette_json(QString::from(&palette));
+                }
             });
         });
     }

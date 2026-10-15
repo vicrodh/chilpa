@@ -165,7 +165,7 @@ pub(crate) struct Shelf {
     pub epoch: u64,
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct Store {
     next_card: i64,

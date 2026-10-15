@@ -105,6 +105,7 @@ pub struct LibraryRust {
     order: QString,
     album_order: QString,
     generation: u64,
+    requested: std::sync::Arc<std::sync::atomic::AtomicU64>,
 }
 
 const ORDER_KEY: &str = "ui.library.order";
@@ -228,12 +229,13 @@ impl qobject::Library {
     fn refresh(mut self: Pin<&mut Self>) {
         let generation = self.rust().generation + 1;
         self.as_mut().rust_mut().generation = generation;
+        self.rust().requested.store(generation, std::sync::atomic::Ordering::Relaxed);
+        let requested = self.rust().requested.clone();
         self.as_mut().set_busy(true);
         let (filter, order) = browse::read(|s| (s.filter.clone(), s.order));
         let thread = self.qt_thread();
         worker::submit(move |reader| {
-            let facets = reader.facets(&filter);
-            let snapshot = reader.snapshot(&filter, order);
+            let Some((facets, snapshot)) = reader.refresh(&filter, order, || requested.load(std::sync::atomic::Ordering::Relaxed) == generation) else { return };
             let _ = thread.queue(move |library| library.arrive(generation, facets, snapshot));
         });
     }

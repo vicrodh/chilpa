@@ -9,6 +9,11 @@
 //! The window hands over every key it gets, as Qt names it, and is told
 //! which action to run. It runs it itself: this decides, it does not act.
 
+pub(crate) const COMMANDS: &[crate::commands::Command] = &[
+    crate::commands::command("like", "playback.favorite", ""),
+    crate::commands::command("help", "ui.showShortcuts", ""),
+];
+
 use crate::Chilpa;
 use chilpa_i18n as i18n;
 use serde_json::{json, Value};
@@ -41,19 +46,21 @@ pub enum Keymap {
     #[default]
     Default,
     Letters,
+    Vi,
 }
 
 impl Keymap {
     /// An unknown name is the default: a typo must not leave the window
     /// without keys.
     fn named(name: &str) -> Self {
-        if name == "letters" { Keymap::Letters } else { Keymap::Default }
+        match name { "vi" => Keymap::Vi, "letters" => Keymap::Letters, _ => Keymap::Default }
     }
 
     fn name(self) -> &'static str {
         match self {
             Keymap::Default => "default",
             Keymap::Letters => "letters",
+            Keymap::Vi => "vi",
         }
     }
 }
@@ -94,7 +101,17 @@ struct Action {
 
 impl Action {
     fn base(&self, keymap: Keymap) -> &'static str {
-        if keymap == Keymap::Letters && !self.letters.is_empty() { self.letters } else { self.default }
+        if self.group == VI { return if keymap == Keymap::Vi { self.letters } else { "" }; }
+        if keymap == Keymap::Vi {
+            match self.id {
+                "ui.focusMode" => return "z",
+                "nav.nextTab" => return "gt", "nav.previousTab" => return "gT",
+                "nav.back" => return "h", "nav.forward" => return "l",
+                "nav.search" => return "/", "playback.favorite" | "playback.seekBack" | "playback.seekForward" | "playback.next" => return self.default,
+                _ => {}
+            }
+        }
+        if keymap != Keymap::Default && !self.letters.is_empty() { self.letters } else { self.default }
     }
 }
 
@@ -113,9 +130,32 @@ const INTERFACE: &str = i18n::mark("Interface");
 const MINI: &str = i18n::mark("Mini player");
 const IMMERSIVE: &str = i18n::mark("Immersive view");
 /// The groups, in the order the sheet shows them.
-const GROUPS: [&str; 5] = [PLAYBACK, NAVIGATION, INTERFACE, MINI, IMMERSIVE];
+const VI: &str = "Vi";
+const GROUPS: [&str; 6] = [PLAYBACK, NAVIGATION, INTERFACE, MINI, IMMERSIVE, VI];
 
 const ACTIONS: &[Action] = &[
+    action("commands.open", i18n::mark("Command line"), VI, "", ":"),
+    action("list.down", i18n::mark("Cursor down"), VI, "", "j"),
+    action("list.up", i18n::mark("Cursor up"), VI, "", "k"),
+    action("list.first", i18n::mark("First track"), VI, "", "gg"),
+    action("list.last", i18n::mark("Last track"), VI, "", "Shift+G"),
+    action("list.halfDown", i18n::mark("Half page down"), VI, "", "Ctrl+d"),
+    action("list.halfUp", i18n::mark("Half page up"), VI, "", "Ctrl+u"),
+    action("list.play", i18n::mark("Play cursor track"), VI, "", "Enter"),
+    action("list.menu", i18n::mark("Track menu"), VI, "", "o"),
+    action("list.queue", i18n::mark("Queue cursor track"), VI, "", "a"),
+    action("list.favorite", i18n::mark("Like cursor track"), VI, "", "f"),
+    action("search.next", i18n::mark("Next search result"), VI, "", "n"),
+    action("search.previous", i18n::mark("Previous search result"), VI, "", "Shift+N"),
+    action("playback.play", i18n::mark("Play"), PLAYBACK, "", ""),
+    action("playback.pause", i18n::mark("Pause"), PLAYBACK, "", ""),
+    action("playback.seek", i18n::mark("Seek"), PLAYBACK, "", ""),
+    action("playback.volume", i18n::mark("Volume"), PLAYBACK, "", ""),
+    action("playback.sleep", i18n::mark("Sleep timer"), PLAYBACK, "", ""),
+    action("playback.loop", i18n::mark("A-B loop"), PLAYBACK, "", ""),
+    action("nav.go", i18n::mark("Go to"), PLAYBACK, "", ""),
+    action("settings.set", i18n::mark("Set preference"), PLAYBACK, "", ""),
+
     reaching(Scope::Both, action("playback.toggle", i18n::mark("Play / Pause"), PLAYBACK, "Space", "")),
     reaching(Scope::Both, action("playback.next", i18n::mark("Next Track"), PLAYBACK, "Ctrl+ArrowRight", "n")),
     reaching(Scope::Both, action("playback.prev", i18n::mark("Previous Track"), PLAYBACK, "Ctrl+ArrowLeft", "p")),
@@ -162,6 +202,8 @@ const ACTIONS: &[Action] = &[
 /// The actions a key still reaches while a text field has the keyboard,
 /// and only with Ctrl held.
 const THROUGH_TEXT: [&str; 7] = ["nav.search", "nav.settings", "ui.openLink", "nav.nextTab", "nav.previousTab", "queue.next", "queue.previous"];
+
+pub(crate) fn has_action(id: &str) -> bool { known(id).is_some() }
 
 fn known(id: &str) -> Option<&'static Action> {
     ACTIONS.iter().find(|a| a.id == id)
@@ -255,6 +297,8 @@ pub struct Keys {
     recording: String,
     tried: String,
     taken_by: &'static str,
+    sequence: super::vi_keys::Sequence,
+    repeat: usize,
 }
 
 impl Keys {
@@ -365,7 +409,7 @@ impl Keys {
         let active = self.active();
         let groups: Vec<Value> = GROUPS.iter().map(|group| {
             let rows: Vec<Value> = active.iter().filter(|(a, _)| a.group == *group).map(|(a, key)| json!({
-                "id": a.id, "label": i18n::t(a.label), "shortcut": shown(key), "modified": self.modified(a),
+                "command": crate::commands::for_action(a.id), "id": a.id, "label": i18n::t(a.label), "shortcut": shown(key), "modified": self.modified(a),
             })).collect();
             json!({"label": i18n::t(group), "rows": rows})
         }).collect();
@@ -403,12 +447,35 @@ impl Chilpa {
     }
 
     /// A key pressed in one of the windows.
+    pub fn key_repeat(&mut self) -> usize { self.keys().repeat.max(1) }
+
     pub fn key_pressed_in(&mut self, scope: Scope, key: i32, modifiers: i32, text: &str, typing: bool) -> Pressed {
         if !self.keys().recording.is_empty() {
             if self.keys().capture(key, modifiers, text) {
                 self.keep_keys();
             }
             return Pressed::Taken;
+        }
+        self.keys().repeat = 1;
+        if self.keys().keymap == Keymap::Vi && scope != Scope::Mini {
+            let Some(token) = shortcut(key, modifiers, text) else { return Pressed::Pass; };
+            let keys = self.keys();
+            if typing { keys.sequence.clear(); }
+            else {
+                let input = if keys.own.values().any(|value| value == &token) {
+                    keys.sequence.clear(); super::vi_keys::Input::Key(token, 1)
+                } else { keys.sequence.press(&token, std::time::Instant::now()) };
+                match input {
+                    super::vi_keys::Input::Pending => return Pressed::Taken,
+                    super::vi_keys::Input::Key(token, count) => {
+                        keys.repeat = count;
+                        if let Some(a) = keys.action_for(&token) {
+                            if a.scope == Scope::Both || a.scope == scope || (scope == Scope::Immersive && a.scope == Scope::Window) { return Pressed::Run(a.id); }
+                        }
+                        return Pressed::Pass;
+                    }
+                }
+            }
         }
         self.keys().pressed_in(scope, key, modifiers, text, typing)
     }
@@ -442,7 +509,7 @@ impl Chilpa {
                 keys.own.remove(argument);
             }
             "reset-all" => keys.own.clear(),
-            "keymap" => keys.keymap = Keymap::named(argument),
+            "keymap" => { keys.keymap = Keymap::named(argument); keys.sequence.clear(); },
             _ => return,
         }
         self.keep_keys();
@@ -483,9 +550,10 @@ mod tests {
 
     #[test]
     fn each_keymap_has_no_key_twice() {
-        for keymap in [Keymap::Default, Keymap::Letters] {
+        for keymap in [Keymap::Default, Keymap::Letters, Keymap::Vi] {
             let mut seen = std::collections::HashSet::new();
             for a in ACTIONS {
+                if a.base(keymap).is_empty() { continue; }
                 assert!(seen.insert(a.base(keymap)), "{} twice in {keymap:?}", a.base(keymap));
             }
         }

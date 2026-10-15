@@ -17,7 +17,7 @@ Modal {
 
     readonly property var keys: JSON.parse(Hotkeys.snapshot || "{}")
     readonly property bool recording: (keys.recording || "") !== ""
-    readonly property var keymaps: ["default", "letters"]
+    readonly property var keymaps: ["default", "letters", "vi"]
 
     // The room the window leaves it, once it is in one.
     readonly property real room: parent ? parent.height - Metrics.shortcutsAround : 0
@@ -69,7 +69,7 @@ Modal {
                 SegmentedControl {
                     objectName: "keymap"
                     anchors.verticalCenter: parent.verticalCenter
-                    options: [{ text: I18n.tr("Default", I18n.rev) }, { text: I18n.tr("Letters", I18n.rev) }]
+                    options: [{ text: I18n.tr("Default", I18n.rev) }, { text: I18n.tr("Letters", I18n.rev) }, { text: "Vi" }]
                     current: Math.max(0, editor.keymaps.indexOf(editor.keys.keymap))
                     onActivated: (index) => Hotkeys.command("keymap", editor.keymaps[index])
                 }

@@ -12,6 +12,7 @@ QtObject {
     property color lifted: "#3fd9c8"
     property color brightest: "#3fd9c8"
     property string ringRampJson: "[]"
+    property string tunnelPaletteJson: '["#ff6a6a","#ffcd5c","#68dcaa","#6eb0ff"]'
     property string wallpaperUrl: ""
     property string wallpaperAtmosphereUrl: ""
     property string wallpaperWindowsJson: "[]"

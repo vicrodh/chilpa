@@ -11,6 +11,8 @@ pub mod qobject {
         type QString = cxx_qt_lib::QString;
         include!("cxx-qt-lib/qlist.h");
         type QList_f32 = cxx_qt_lib::QList<f32>;
+        include!("cxx-qt-lib/qbytearray.h");
+        type QByteArray = cxx_qt_lib::QByteArray;
     }
 
     #[auto_cxx_name]
@@ -32,7 +34,18 @@ pub mod qobject {
         #[qproperty(f32, stereo_correlation)]
         /// The scenes' uniforms as one JSON object, once per frame.
         #[qproperty(QString, pack_json)]
+        #[qproperty(QByteArray, linebed_heights)]
+        #[qproperty(QByteArray, ribbon_frame)]
+        #[qproperty(u32, sample_rate_hz)]
+        #[qproperty(i32, bit_depth)]
         type Visualizer = super::VisualizerRust;
+
+        #[qinvokable]
+        fn set_presented(self: &Visualizer, presented: bool);
+        #[qinvokable]
+        fn set_cursor(self: &Visualizer, track: &QString, position: f64, duration: f64);
+        #[qinvokable]
+        fn ribbon_snapshot(self: &Visualizer) -> QByteArray;
     }
 
     impl cxx_qt::Threading for Visualizer {}
@@ -42,7 +55,7 @@ pub mod qobject {
 use chilpa_api::visualizer::Drained;
 use chilpa_qt_kit::app;
 use cxx_qt::Threading as _;
-use cxx_qt_lib::{QList, QString};
+use cxx_qt_lib::{QByteArray, QList, QString};
 use std::pin::Pin;
 
 #[derive(Default)]
@@ -54,6 +67,10 @@ pub struct VisualizerRust {
     oscilloscope: QList<f32>,
     stereo_correlation: f32,
     pack_json: QString,
+    linebed_heights: QByteArray,
+    ribbon_frame: QByteArray,
+    sample_rate_hz: u32,
+    bit_depth: i32,
 }
 
 fn list_of(values: &[f32]) -> QList<f32> {
@@ -66,6 +83,12 @@ fn list_of(values: &[f32]) -> QList<f32> {
 }
 
 fn apply(mut this: Pin<&mut qobject::Visualizer>, out: Drained) {
+    let (rate, bits) = app::with(|api| {
+        let quality = &api.now_playing().quality;
+        (quality.rate_hz.unwrap_or(0), i32::from(quality.bits.unwrap_or(0)))
+    });
+    this.as_mut().set_sample_rate_hz(rate);
+    this.as_mut().set_bit_depth(bits);
     if let Some(bars) = out.bars {
         this.as_mut().set_bars(list_of(&bars));
     }
@@ -84,6 +107,26 @@ fn apply(mut this: Pin<&mut qobject::Visualizer>, out: Drained) {
     }
     if let Some(pack) = out.pack {
         this.as_mut().set_pack_json(QString::from(&pack));
+    }
+    if let Some(bytes) = out.linebed {
+        this.as_mut().set_linebed_heights(QByteArray::from(bytes.as_slice()));
+    }
+    if let Some(bytes) = out.ribbon {
+        this.as_mut().set_ribbon_frame(QByteArray::from(bytes.as_slice()));
+    }
+}
+
+impl qobject::Visualizer {
+    pub fn set_presented(&self, presented: bool) {
+        app::with(|api| api.visualizer()).set_presented(presented);
+    }
+
+    pub fn set_cursor(&self, track: &QString, position: f64, duration: f64) {
+        app::with(|api| api.visualizer()).set_cursor(&track.to_string(), position, duration);
+    }
+
+    pub fn ribbon_snapshot(&self) -> QByteArray {
+        app::with(|api| api.visualizer()).ribbon_snapshot().map(|bytes| QByteArray::from(bytes.as_slice())).unwrap_or_default()
     }
 }
 

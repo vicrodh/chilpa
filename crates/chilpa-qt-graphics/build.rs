@@ -63,13 +63,16 @@ fn private_includes() -> Vec<String> {
 }
 
 fn main() {
+    build_scene_items();
     let qml = files("qml", &|p| p.extension().is_some_and(|e| e == "qml"));
     let bridges = files("src/bridge", &|p| p.extension().is_some_and(|e| e == "rs"));
-    let resources = files("qml", &|p| p.file_name().is_some_and(|n| n == "qmldir"));
+    let mut resources = files("qml", &|p| p.file_name().is_some_and(|n| n == "qmldir"));
+    resources.extend(files("assets", &|p| p.extension().is_some_and(|e| e == "qsb")));
     let includes = private_includes();
     println!("cargo:rerun-if-changed=qml");
     println!("cargo:rerun-if-changed=src/bridge");
     println!("cargo:rerun-if-changed=cxx/probe.cpp");
+    println!("cargo:rerun-if-changed=assets");
     CxxQtBuilder::library(Interface::default())
         .qt_module("Gui")
         .qt_module("Qml")
@@ -88,4 +91,46 @@ fn main() {
             cc.file("cxx/probe.cpp");
         })
         .build();
+}
+
+/// Native scene items need moc and Qt's RHI headers. The framework layout
+/// on macOS differs from the module folders used on Linux and Windows.
+fn build_scene_items() {
+    let mut qt = qt_build_utils::QtBuild::new(vec!["Core".into(), "Gui".into(), "Qml".into(), "Quick".into()])
+        .expect("Qt6 is required for the scene items");
+    let mut cc = cc::Build::new();
+    cc.cpp(true).std("c++17").pic(true).include("cxx");
+    if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") {
+        cc.flag("/Zc:__cplusplus").flag("/permissive-").flag("/utf-8");
+    }
+    for item in ["plasma", "ribbon", "linebed", "tunnelflow", "scope_trace"] {
+        let header = format!("cxx/{item}_item.h");
+        let source = format!("cxx/{item}_item.cpp");
+        println!("cargo:rerun-if-changed={header}");
+        println!("cargo:rerun-if-changed={source}");
+        let moc = qt.moc(&header, qt_build_utils::MocArguments::default());
+        cc.file(source).file(moc.cpp);
+    }
+    for include in qt.include_paths() {
+        cc.include(include);
+    }
+    let version = qt.version().to_string();
+    let macos = std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos");
+    let base = qt.qmake_query(if macos { "QT_INSTALL_LIBS" } else { "QT_INSTALL_HEADERS" });
+    if macos {
+        cc.flag(format!("-F{}", base.trim()));
+    }
+    for module in ["QtCore", "QtGui", "QtQml", "QtQuick"] {
+        let root = if macos {
+            format!("{}/{module}.framework/Headers/{version}", base.trim())
+        } else {
+            format!("{}/{module}/{version}", base.trim())
+        };
+        for include in [root.clone(), format!("{root}/{module}")] {
+            if Path::new(&include).is_dir() {
+                cc.include(include);
+            }
+        }
+    }
+    cc.compile("chilpa_scene_items");
 }

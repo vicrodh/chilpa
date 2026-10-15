@@ -21,6 +21,8 @@ TrackRowSlot {
     required property bool selected
     required property string headerLabel
     required property string headerMeta
+    property string headerGlyph: ""
+    property string headerIconFamily: ""
     property bool headerWork: false
     property string headerComposer: ""
     property string headerComposerTarget: ""

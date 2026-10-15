@@ -1,0 +1,134 @@
+import QtQuick
+import QtQuick.Controls.Basic
+import app.chilpa
+import app.chilpa.controls
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+
+// The command line shares window actions and keeps an invalid line editable.
+Rectangle {
+    id: bar
+    objectName: "commandBar"
+    property bool opened: false
+    property var returnFocus: null
+    property string error: ""
+    property var suggestions: []
+    property int suggestion: -1
+    property var history: []
+    property int historyAt: 0
+    property string draft: ""
+    readonly property alias input: field
+    signal execute(var command)
+    signal dismissed(var previous)
+    visible: opened
+    height: Metrics.fieldHeight + Metrics.gap16
+    color: Theme.color.surfaceRaised
+    border.color: error !== "" ? Theme.color.statusNegative : Theme.color.strokeHairline
+    function show(initial, previous) {
+        returnFocus = previous
+        opened = true
+        error = ""
+        history = JSON.parse(CommandLine.history() || "[]")
+        historyAt = history.length
+        field.text = initial
+        field.forceActiveFocus()
+        field.cursorPosition = field.text.length
+        updateSuggestions()
+    }
+    function dismiss() {
+        opened = false
+        dismissed(returnFocus)
+    }
+    function updateSuggestions() {
+        error = ""
+        suggestion = -1
+        suggestions = JSON.parse(CommandLine.complete(field.text) || "[]")
+    }
+    function complete(by) {
+        if (!suggestions.length) return
+        suggestion = suggestion < 0 ? (by > 0 ? 0 : suggestions.length - 1) : (suggestion + by + suggestions.length) % suggestions.length
+        const choices = suggestions
+        field.text = choices[suggestion]
+        suggestions = choices
+        field.cursorPosition = field.text.length
+    }
+    function recall(by) {
+        if (historyAt === history.length) draft = field.text
+        historyAt = Math.max(0, Math.min(history.length, historyAt + by))
+        field.text = historyAt === history.length ? draft : history[historyAt]
+        field.cursorPosition = field.text.length
+    }
+    function submit() {
+        const command = JSON.parse(CommandLine.prepare(field.text) || "{}")
+        if (command.error) { error = command.error; return }
+        dismiss()
+        execute(command)
+    }
+    Column {
+        anchors.bottom: parent.top
+        width: parent.width
+        visible: bar.opened && bar.suggestions.length > 0 && bar.error === ""
+        Repeater {
+            model: bar.suggestions.slice(0, 6)
+            Rectangle {
+                required property string modelData
+                required property int index
+                width: bar.width
+                height: Metrics.fieldHeight
+                color: index === bar.suggestion ? Theme.color.fillField : Theme.color.surfaceRaised
+                Text {
+                    anchors.fill: parent
+                    anchors.margins: Metrics.gap8
+                    text: ":" + modelData
+                    color: Theme.color.textSecondary
+                    font.pointSize: Type.body
+                }
+                HoverHandler { cursorShape: Qt.PointingHandCursor }
+                TapHandler { onTapped: { field.text = modelData; field.forceActiveFocus() } }
+            }
+        }
+    }
+    Text {
+        anchors.left: parent.left
+        anchors.leftMargin: Metrics.gap12
+        anchors.verticalCenter: field.verticalCenter
+        text: ":"
+        color: Theme.color.accent
+        font.pointSize: Type.body
+    }
+    TextInput {
+        id: field
+        objectName: "commandInput"
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: Metrics.gap12
+        anchors.leftMargin: Metrics.gap24
+        height: Metrics.fieldHeight - Metrics.gap12
+        color: Theme.color.textPrimary
+        selectionColor: Theme.color.accent
+        font.pointSize: Type.body
+        clip: true
+        selectByMouse: true
+        onTextEdited: { bar.updateSuggestions(); bar.historyAt = bar.history.length }
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Escape) bar.dismiss()
+            else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) bar.submit()
+            else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) bar.complete(event.modifiers & Qt.ShiftModifier || event.key === Qt.Key_Backtab ? -1 : 1)
+            else if (event.key === Qt.Key_Up) bar.recall(-1)
+            else if (event.key === Qt.Key_Down) bar.recall(1)
+            else return
+            event.accepted = true
+        }
+    }
+    Text {
+        objectName: "commandError"
+        anchors.left: field.left
+        anchors.right: field.right
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: Metrics.gap4
+        text: bar.error
+        elide: Text.ElideRight
+        color: Theme.color.statusNegative
+        font.pointSize: Type.meta
+    }
+}

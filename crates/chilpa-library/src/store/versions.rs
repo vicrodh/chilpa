@@ -32,7 +32,7 @@ pub struct AlbumVersion {
 }
 
 pub(crate) struct CachedVersions {
-    stamp: (i64, u64),
+    stamp: i64,
     catalog: Arc<VersionCatalog>,
 }
 
@@ -215,11 +215,12 @@ impl Library {
         Ok(self.version_catalog()?.collapse(ids))
     }
 
-    /// One catalog per database revision, shared by all reads on a connection.
+    /// I rebuild only when catalog inputs change, shared by every read on a connection.
     /// Scroll-page reads never scan the library again.
     pub fn version_catalog(&self) -> rusqlite::Result<Arc<VersionCatalog>> {
-        let stamp = (self.db.query_row("PRAGMA data_version", [], |r| r.get(0))?, self.db.total_changes());
-        if let Some(cache) = self.versions.borrow().as_ref().filter(|cache| cache.stamp == stamp) {
+        let stamp = self.db.query_row("SELECT revision FROM version_catalog_revision WHERE id = 1", [], |r| r.get(0))?;
+        let cacheable = self.db.is_autocommit();
+        if let Some(cache) = self.versions.borrow().as_ref().filter(|cache| cacheable && cache.stamp == stamp) {
             return Ok(Arc::clone(&cache.catalog));
         }
         let mut catalog = VersionCatalog::default();
@@ -277,7 +278,7 @@ impl Library {
             catalog.artists.entry(album).or_default().push((artist, tracks));
         }
         let catalog = Arc::new(catalog);
-        *self.versions.borrow_mut() = Some(CachedVersions { stamp, catalog: Arc::clone(&catalog) });
+        if cacheable { *self.versions.borrow_mut() = Some(CachedVersions { stamp, catalog: Arc::clone(&catalog) }); }
         Ok(catalog)
     }
 

@@ -12,6 +12,8 @@ pub mod qobject {
         #[qml_element]
         #[qml_singleton]
         #[qproperty(QString, snapshot)]
+        #[qproperty(i32, repeat)]
+        #[qproperty(bool, search_active)]
         type Hotkeys = super::HotkeysRust;
         #[qinvokable]
         fn refresh(self: Pin<&mut Hotkeys>);
@@ -43,6 +45,12 @@ pub mod qobject {
         /// The music link box is asked for.
         #[qsignal]
         fn link_asked(self: Pin<&mut Hotkeys>);
+        #[qsignal]
+        fn search_command(self: Pin<&mut Hotkeys>, query: QString, source: QString);
+        #[qsignal]
+        fn search_stepped(self: Pin<&mut Hotkeys>, by: i32);
+        #[qsignal]
+        fn search_confirmed(self: Pin<&mut Hotkeys>);
     }
 }
 use chilpa_api::{Pressed, Scope};
@@ -53,6 +61,8 @@ use std::pin::Pin;
 #[derive(Default)]
 pub struct HotkeysRust {
     snapshot: QString,
+    repeat: i32,
+    search_active: bool,
 }
 
 impl qobject::Hotkeys {
@@ -67,7 +77,12 @@ impl qobject::Hotkeys {
 
     pub fn pressed_in(mut self: Pin<&mut Self>, scope: &QString, key: i32, modifiers: i32, text: &QString, typing: bool) -> QString {
         let scope = Scope::named(&scope.to_string());
-        match app::with(|api| api.key_pressed_in(scope, key, modifiers, &text.to_string(), typing)) {
+        let (pressed, repeat) = app::with(|api| {
+            let pressed = api.key_pressed_in(scope, key, modifiers, &text.to_string(), typing);
+            (pressed, api.key_repeat() as i32)
+        });
+        self.as_mut().set_repeat(repeat);
+        match pressed {
             Pressed::Pass => QString::default(),
             Pressed::Taken => {
                 self.as_mut().refresh();

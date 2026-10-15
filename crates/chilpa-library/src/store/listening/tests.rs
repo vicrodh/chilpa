@@ -213,6 +213,8 @@ fn migration_preserves_totals_and_marks_reconstructed_metadata() {
         db,
         versions: Default::default(),
         related: Default::default(),
+        extra_candidates: Default::default(),
+        candidate_changes: Default::default(),
     };
     let f = ListenFilter::default();
     let summary = lib.listening_summary(&f).unwrap();

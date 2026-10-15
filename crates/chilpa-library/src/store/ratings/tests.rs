@@ -76,6 +76,8 @@ fn migration_from_v24_preserves_history_and_starts_unrated() {
         db,
         versions: Default::default(),
         related: Default::default(),
+        extra_candidates: Default::default(),
+        candidate_changes: Default::default(),
     };
     assert_eq!(lib.stats().unwrap().listened_ms, 100);
     assert_eq!(lib.ratings().unwrap(), Ratings::default());

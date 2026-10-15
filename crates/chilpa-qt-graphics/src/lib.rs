@@ -12,6 +12,11 @@ use chilpa_api::graphics_boot::{gpu, preflight};
 use cxx_qt_lib::QGuiApplication;
 
 unsafe extern "C" {
+    fn chilpa_plasma_register_qml_type();
+    fn chilpa_ribbon_register_qml_type();
+    fn chilpa_line_bed_register_qml_type();
+    fn chilpa_tunnel_flow_register_qml_type();
+    fn chilpa_scope_trace_register_qml_type();
     /// Qt's Vulkan devices as JSON. See `cxx/probe.cpp`.
     fn chilpa_vulkan_devices_json() -> *const std::ffi::c_char;
     /// The probe window for a saved GPU. See `cxx/probe.cpp`.
@@ -65,6 +70,15 @@ pub fn run_child_if_asked() -> Option<i32> {
 /// builds the window: Qt's Vulkan instance can be listed now, and QRhi reads
 /// the variables when the window is created.
 pub fn apply_gpu_preference() {
+    // These references retain the static objects whose startup functions
+    // register the native QML types before the engine loads a scene.
+    unsafe {
+        chilpa_plasma_register_qml_type();
+        chilpa_ribbon_register_qml_type();
+        chilpa_line_bed_register_qml_type();
+        chilpa_tunnel_flow_register_qml_type();
+        chilpa_scope_trace_register_qml_type();
+    }
     list_devices();
     gpu::apply_preference();
 }

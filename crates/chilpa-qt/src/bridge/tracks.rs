@@ -81,6 +81,8 @@ pub mod qobject {
         fn move_in_playlist_to(self: Pin<&mut TrackListModel>, from: i32, to: i32);
         #[qinvokable]
         fn selected_row(self: &TrackListModel) -> i32;
+        #[qinvokable]
+        fn is_track(self: &TrackListModel, row: i32) -> bool;
         #[qinvokable] fn playing_row(self: &TrackListModel) -> i32;
         #[qinvokable]
         fn selected_any_row(self: &TrackListModel) -> i32;
@@ -587,6 +589,8 @@ impl qobject::TrackListModel {
             registry::playlists(|lists| lists.changed());
         }
     }
+
+    pub fn is_track(&self, row: i32) -> bool { row >= 0 && self.rust().track(row as usize).is_some() }
 
     pub fn selected_row(&self) -> i32 {
         let this = self.rust();

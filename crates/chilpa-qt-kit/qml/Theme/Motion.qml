@@ -15,7 +15,7 @@ QtObject {
     readonly property int fast: reduced ? 0 : 120
     readonly property int base: reduced ? 0 : 150
     readonly property int panel: reduced ? 0 : 200
-    readonly property int page: reduced ? 0 : 260
+    readonly property int page: reduced ? 0 : 300
     readonly property int ambient: reduced ? 0 : 600
     readonly property int toast: 2200
     // How often a view reads again what moves on another thread: a setup

@@ -320,7 +320,7 @@ const FROM: &str = "FROM tracks t
      LEFT JOIN track_rollup r ON r.track_id = t.id";
 
 /// The `WHERE` a filter makes, and its parameters in order.
-fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
+pub(super) fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
     let mut sql = String::from("WHERE t.present = 1 AND t.source_id IN (SELECT id FROM sources WHERE enabled = 1)");
     let mut args: Vec<Box<dyn ToSql>> = Vec::new();
     for (column, query) in f.queries.iter().enumerate() {
@@ -386,7 +386,7 @@ fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
         sql.push_str(&format!(" AND t.source_id NOT IN (SELECT id FROM sources WHERE provider || ':' || instance IN ({}))", marks(f.excluded_sources.len())));
         args.extend(f.excluded_sources.iter().cloned().map(|v| Box::new(v) as Box<dyn ToSql>));
     }
-    let ext = |name: &str| format!("lower(t.external_id) LIKE '%.{name}'");
+    let ext = |name: &str| format!("substr(t.external_id, -{}) = '.{name}' COLLATE NOCASE", name.len() + 1);
     let format_clause = |name: &str| match name {
         "flac" => Some(ext("flac")),
         "alac" => Some(format!("({} OR {}) AND t.bit_depth IS NOT NULL", ext("m4a"), ext("mp4"))),
@@ -483,7 +483,7 @@ impl Library {
         left.artists.clear();
         left.album = None;
         left.albums.clear();
-        let (filter, args) = clause(&left);
+        let (filter, args) = self.browse_clause(&left);
         let sql = format!(
             "SELECT g.name, count(DISTINCT a.id) {FROM}
              JOIN track_genres tg ON tg.track_id = t.id
@@ -498,7 +498,7 @@ impl Library {
         let mut left = f.clone();
         left.choose(2, &[]);
         left.queries[2..].fill(String::new());
-        let (filter, args) = clause(&left);
+        let (filter, args) = self.browse_clause(&left);
         let sql = format!(
             "SELECT min(t.label), count(DISTINCT a.id) {FROM}
              {filter} AND t.label IS NOT NULL AND t.label <> ''
@@ -512,7 +512,7 @@ impl Library {
         let mut left = f.clone();
         left.choose(3, &[]);
         left.queries[3..].fill(String::new());
-        let (filter, args) = clause(&left);
+        let (filter, args) = self.browse_clause(&left);
         let sql = format!(
             "SELECT c.name, count(DISTINCT a.id) {FROM}
              JOIN track_composers tc ON tc.track_id = t.id
@@ -529,7 +529,7 @@ impl Library {
         let mut left = f.clone();
         left.choose(4, &[]);
         left.queries[4..].fill(String::new());
-        let (filter, args) = clause(&left);
+        let (filter, args) = self.browse_clause(&left);
         let sql = format!(
             "SELECT COALESCE(ra.stars, 0) AS stars, count(DISTINCT a.id) {FROM}
              LEFT JOIN album_ratings ra ON ra.album_id = a.id
@@ -564,11 +564,16 @@ impl Library {
                 GROUP BY m.artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE", Vec::new());
         }
         let albums: Vec<i64> = self.facet_albums(&left)?.iter().filter_map(|a| a.key.parse().ok()).collect();
+        self.facet_artists_for_albums(&albums)
+    }
+
+    /// I reuse the albums already read for the artist column's left side.
+    pub fn facet_artists_for_albums(&self, albums: &[i64]) -> rusqlite::Result<Vec<FacetEntry>> {
         if albums.is_empty() { return Ok(Vec::new()); }
         let placeholders = vec!["?"; albums.len()].join(",");
         let sql = format!("SELECT min(artist), count(album_id) FROM album_artist_rollup
             WHERE album_id IN ({placeholders}) GROUP BY artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE");
-        let args = albums.into_iter().map(|id| Box::new(id) as Box<dyn ToSql>).collect();
+        let args = albums.iter().map(|id| Box::new(*id) as Box<dyn ToSql>).collect();
         self.named_facet(&sql, args)
     }
 
@@ -576,7 +581,7 @@ impl Library {
     pub fn facet_albums(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
         let mut left = Filter { album: None, albums: Vec::new(), ..f.clone() };
         left.queries[6].clear();
-        let (filter, args) = clause(&left);
+        let (filter, args) = self.browse_clause(&left);
         let sql = format!(
             "SELECT a.id, a.title, a.year, count(t.id) {FROM} {filter}
              GROUP BY a.id ORDER BY a.title COLLATE NOCASE, a.album_artist COLLATE NOCASE, a.year"
@@ -634,7 +639,7 @@ impl Library {
 
     /// runs it off its own thread.
     pub fn browse_ids(&self, f: &Filter, order: TrackOrder) -> rusqlite::Result<Snapshot> {
-        let (filter, args) = clause(f);
+        let (filter, args) = self.browse_clause(f);
         // The groups follow an order about what they are named: Artist
         // from Z puts the artists from Z.
         let turned = |on: bool| if on { " DESC" } else { "" };
@@ -817,7 +822,7 @@ impl Library {
     /// All the tracks a small filter leaves, in one go: one record, one
     /// shelf of a home screen. For the whole library, the snapshot.
     pub fn browse_tracks(&self, f: &Filter, order: TrackOrder, limit: usize) -> rusqlite::Result<Vec<BrowseTrack>> {
-        let (filter, mut args) = clause(f);
+        let (filter, mut args) = self.browse_clause(f);
         let sql = format!("{ROW} {FROM} {filter} ORDER BY {} LIMIT ?", order.keys());
         args.push(Box::new(limit as i64));
         let mut stmt = self.db.prepare(&sql)?;
