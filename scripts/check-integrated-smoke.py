@@ -41,11 +41,15 @@ stages = {
     "sources": [python, "scripts/check-source-navigation.py", str(binary), str(output / "sources")],
     "commands": [python, "scripts/check-vi-commands.py", str(binary), str(output / "commands"),
                  "--library", str(library)],
+    "covers": [python, "scripts/check-immersive-scenes.py", str(binary), str(output / "covers"), "--covers-only"],
+    "covers-vulkan": [python, "scripts/check-immersive-scenes.py", str(binary),
+                      str(output / "covers-vulkan"), "--covers-only", "--backend", "vulkan"],
     "scenes": [python, "scripts/check-immersive-scenes.py", str(binary), str(output / "scenes")],
     "scenes-vulkan": [python, "scripts/check-immersive-scenes.py", str(binary),
                       str(output / "scenes-vulkan"), "--backend", "vulkan"],
 }
 if args.vulkan_host_display:
+    stages["covers-vulkan"].append("--host-display")
     stages["scenes-vulkan"].append("--host-display")
 if args.plugin_package:
     stages["process-host"] = [python, "scripts/check-process-plugin.py", str(binary),

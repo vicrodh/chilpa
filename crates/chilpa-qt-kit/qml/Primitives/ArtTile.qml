@@ -68,6 +68,7 @@ Item {
         property variant source: image
         property size dims: Qt.size(width, height)
         property vector4d corners: root.corners
+        vertexShader: "../../assets/shaders/rounded.vert.qsb"
         fragmentShader: "../../assets/shaders/rounded.frag.qsb"
     }
 

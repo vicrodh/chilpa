@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""I render every immersive scene and scope on an isolated Xvfb display."""
+"""I check cover pixels or immersive scenes with an actual GPU scene graph."""
 import argparse
+import base64
 from contextlib import contextmanager, nullcontext
 import json
 import os
@@ -10,7 +11,32 @@ import shutil
 import subprocess
 import tempfile
 
-from PIL import Image, ImageChops, ImageStat
+from PIL import Image, ImageChops, ImageDraw, ImageStat
+
+
+def cover_sources(output):
+    picture = Image.new("RGB", (320, 320))
+    drawing = ImageDraw.Draw(picture)
+    colors = ((240, 64, 32), (32, 192, 64), (32, 96, 224), (224, 208, 48))
+    for (x, y), color in zip(((0, 0), (160, 0), (0, 160), (160, 160)), colors):
+        drawing.rectangle((x, y, x + 159, y + 159), fill=color)
+    path = output / "fixture.png"
+    picture.save(path)
+    return path.as_uri(), "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode()
+
+
+def verify_covers(output):
+    rendered = Image.open(output / "covers.png").convert("RGB")
+    colors = ((240, 64, 32), (32, 192, 64), (32, 96, 224), (224, 208, 48))
+    for name, left in (("local", 24), ("URL", 232), ("contained", 440)):
+        for (x, y), expected in zip(((40, 40), (120, 40), (40, 120), (120, 120)), colors):
+            actual = rendered.getpixel((left + x, 24 + y))
+            if max(abs(a - b) for a, b in zip(actual, expected)) > 6:
+                raise SystemExit(f"SMOKE FAIL covers {name}: expected {expected}, got {actual}")
+        corner = rendered.getpixel((left, 24))
+        if max(abs(a - b) for a, b in zip(corner, (16, 24, 32))) > 6:
+            raise SystemExit(f"SMOKE FAIL covers {name}: rounded corner was not masked: {corner}")
+    print("SMOKE cover pixels verified: three loaded images, twelve color probes, rounded corners")
 
 
 @contextmanager
@@ -47,21 +73,27 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--backend", choices=("opengl", "vulkan"), default="opengl")
     parser.add_argument("--host-display", action="store_true", help="Use the existing X display with the isolated test profile.")
+    parser.add_argument("--covers-only", action="store_true", help="Check loaded cover pixels instead of immersive scenes.")
     arguments = parser.parse_args()
     if arguments.host_display and not os.environ.get("DISPLAY"):
         parser.error("--host-display requires DISPLAY")
     binary = str(arguments.binary.resolve())
     output = arguments.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    fixture = Path(__file__).resolve().parent / "fixtures/immersive-scenes.qml"
+    fixture_name = "cover-rendering.qml" if arguments.covers_only else "immersive-scenes.qml"
+    fixture = Path(__file__).resolve().parent / "fixtures" / fixture_name
     with tempfile.TemporaryDirectory(prefix="chilpa-immersive-scenes-") as directory:
         profile = Path(directory)
         for name in ("config", "data", "cache", "runtime"):
             (profile / name).mkdir()
         (profile / "runtime").chmod(0o700)
         qml = profile / "immersive-scenes.qml"
-        qml.write_text(fixture.read_text().replace('"OUTPUT_DIRECTORY"', json.dumps(str(output)))
-            .replace('"EXPECTED_BACKEND"', json.dumps(arguments.backend)))
+        contents = fixture.read_text().replace('"OUTPUT_DIRECTORY"', json.dumps(str(output)))
+        contents = contents.replace('"EXPECTED_BACKEND"', json.dumps(arguments.backend))
+        if arguments.covers_only:
+            local, remote = cover_sources(output)
+            contents = contents.replace('"LOCAL_SOURCE"', json.dumps(local)).replace('"REMOTE_SOURCE"', json.dumps(remote))
+        qml.write_text(contents)
         environment = dict(os.environ, XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"),
             XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"),
             QT_QPA_PLATFORM="xcb", QT_NO_XDG_DESKTOP_PORTAL="1",
@@ -79,9 +111,14 @@ def main():
         transcript = log_path.read_text()
         print("\n".join(line for line in transcript.splitlines() if "SMOKE" in line or "qrc:" in line))
         errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "Binding loop", "QQmlApplicationEngine failed", "is not a type",
-                  "failed to deserialize", "not found in the qrc", "pipeline creation failed", "resource creation failed", "Unable to assign")
-        if result.returncode or any(error in transcript for error in errors) or "SMOKE immersive scenes completed" not in transcript:
+                  "failed to deserialize", "not found in the qrc", "pipeline creation failed", "resource creation failed", "Unable to assign",
+                  "Failed to build graphics pipeline state", "Failed to link shader program")
+        completed = "SMOKE covers completed" if arguments.covers_only else "SMOKE immersive scenes completed"
+        if result.returncode or any(error in transcript for error in errors) or completed not in transcript:
             raise SystemExit(1)
+    if arguments.covers_only:
+        verify_covers(output)
+        return
     measurements = {}
     for name in ("plasma", "tunnel", "aurora", "ribbon", "linebed", "ambient", "tunnel-flow", "goniometer", "oscilloscope"):
         first = Image.open(output / f"{name}-a.png").convert("RGB")
