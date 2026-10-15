@@ -38,7 +38,7 @@ Window {
 
     function peak(values) {
         let value = 0
-        for (const sample of values) value = Math.max(value, Math.abs(sample))
+        for (let index = 0; index < values.length; ++index) value = Math.max(value, Math.abs(values[index]))
         return value
     }
     function fail(message) {
@@ -96,9 +96,10 @@ Window {
     }
     Timer {
         interval: 50
-        running: true
+        running: window.stage < window.modes.length
         repeat: true
         onTriggered: {
+            if (window.stage >= window.modes.length) return
             ++window.tick
             if (!window.started) {
                 // I use the restored player queue: this generated WAV has no library row.
