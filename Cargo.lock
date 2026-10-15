@@ -484,6 +484,7 @@ name = "chilpa-audio"
 version = "0.0.0"
 dependencies = [
  "chilpa-i18n",
+ "serde",
 ]
 
 [[package]]
@@ -711,6 +712,7 @@ dependencies = [
  "chilpa-qt-ambient",
  "chilpa-qt-artwork",
  "chilpa-qt-controls",
+ "chilpa-qt-dsp",
  "chilpa-qt-folders",
  "chilpa-qt-gallery",
  "chilpa-qt-graphics",
@@ -774,6 +776,19 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-controls"
+version = "0.0.0"
+dependencies = [
+ "chilpa-api",
+ "chilpa-qt-kit",
+ "cxx",
+ "cxx-qt",
+ "cxx-qt-build",
+ "cxx-qt-lib",
+ "serde_json",
+]
+
+[[package]]
+name = "chilpa-qt-dsp"
 version = "0.0.0"
 dependencies = [
  "chilpa-api",

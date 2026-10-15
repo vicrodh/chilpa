@@ -682,3 +682,6 @@ utils
 uint
 # The imported Line Bed renderer's module name.
 linebed
+# Digital signal processing and its headphone channel mix.
+dsp
+crossfeed

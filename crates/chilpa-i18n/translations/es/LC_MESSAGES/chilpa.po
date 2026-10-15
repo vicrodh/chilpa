@@ -196,6 +196,9 @@ msgstr "Agregar todas"
 msgid "Add cover"
 msgstr "Agregar carátula"
 
+msgid "Add filter"
+msgstr "Agregar filtro"
+
 msgid "Add folder to library"
 msgstr "Añadir carpeta a la biblioteca"
 
@@ -297,6 +300,9 @@ msgstr "Todos los discos"
 msgid "All episode types"
 msgstr "Todos los tipos de episodio"
 
+msgid "All groups"
+msgstr "Todos los grupos"
+
 msgid "All music"
 msgstr "Toda la música"
 
@@ -360,6 +366,12 @@ msgstr "Escribir también en las otras capas de tags"
 msgid "Ambient"
 msgstr "Ambiente"
 
+msgid "An EQ value is missing or invalid."
+msgstr "Falta un valor del EQ o no es válido."
+
+msgid "An active EQ filter is missing Q."
+msgstr "Un filtro activo del EQ no tiene valor Q."
+
 msgid "Analysis"
 msgstr "Análisis"
 
@@ -410,6 +422,9 @@ msgstr "Aparece en"
 
 msgid "Apply"
 msgstr "Aplicar"
+
+msgid "Apply import"
+msgstr "Aplicar perfil"
 
 msgid "Apply system tint to the icon"
 msgstr "Aplicar el color del sistema al icono"
@@ -513,6 +528,12 @@ msgstr "Detecta tus DACs y configura la reproducción bit-perfect, paso a paso."
 msgid "Auto-follow"
 msgstr "Seguir la letra"
 
+msgid "Automatic headroom"
+msgstr "Margen automático"
+
+msgid "Automatic headroom only reduces gain. Compression has no makeup gain; ratio 1 disables it."
+msgstr "El margen automático solo reduce ganancia. La compresión no añade ganancia de compensación; una relación de 1 la desactiva."
+
 msgid "Awaiting approval"
 msgstr "Espera aprobación"
 
@@ -545,6 +566,9 @@ msgstr "Fondo"
 
 msgid "Background image"
 msgstr "Imagen de fondo"
+
+msgid "Balance · −100 left / +100 right"
+msgstr "Balance · −100 izquierda / +100 derecha"
 
 msgid "Based on {artist} · {genres}"
 msgstr "Basado en {artist} · {genres}"
@@ -613,6 +637,9 @@ msgstr "Por nombre"
 
 msgid "By year"
 msgstr "Por año"
+
+msgid "Bypass · original samples"
+msgstr "Bypass · samples originales"
 
 msgid "CD in {}"
 msgstr "CD en {}"
@@ -776,6 +803,18 @@ msgstr "Chino"
 msgid "Choose"
 msgstr "Elegir"
 
+msgid "Choose DSP on or bypass."
+msgstr "Elige entre activar el DSP o dejarlo en bypass."
+
+msgid "Choose a DSP favorite."
+msgstr "Elige un preset favorito."
+
+msgid "Choose a DSP plugin."
+msgstr "Elige un plugin DSP."
+
+msgid "Choose a DSP preset."
+msgstr "Elige un preset DSP."
+
 msgid "Choose a cover"
 msgstr "Elige una carátula"
 
@@ -793,6 +832,9 @@ msgstr "Elige un archivo ZIP local."
 
 msgid "Choose a playback control"
 msgstr "Elegir un control de reproducción"
+
+msgid "Choose a preset."
+msgstr "Elige un preset."
 
 msgid "Choose a renderer on your local network. The queue stays in Chilpa."
 msgstr "Elige un receptor de tu red local. La cola permanece en Chilpa."
@@ -883,6 +925,9 @@ msgstr "Borrar…"
 
 msgid "Click tracks to select them; Shift selects a range."
 msgstr "Haz clic en las pistas para seleccionarlas; Shift selecciona un rango."
+
+msgid "Clipped samples"
+msgstr "Samples recortados"
 
 msgid "Close"
 msgstr "Cerrar"
@@ -980,6 +1025,12 @@ msgstr "Compositor"
 msgid "Composers"
 msgstr "Compositores"
 
+msgid "Compressor ratio · 1–6"
+msgstr "Relación del compresor · 1–6"
+
+msgid "Compressor threshold · −60–0 dB"
+msgstr "Umbral del compresor · −60–0 dB"
+
 msgid "Config files you can create:"
 msgstr "Archivos de configuración que puedes crear:"
 
@@ -1033,6 +1084,9 @@ msgstr "Copiar letra"
 
 msgid "Copy playlist"
 msgstr "Copiar playlist"
+
+msgid "Copy preset JSON"
+msgstr "Copiar preset JSON"
 
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio no reporta ningún aparato que pueda reproducir"
@@ -1090,6 +1144,9 @@ msgstr "Créditos"
 
 msgid "Critics' Picks"
 msgstr "Elegidos por la crítica"
+
+msgid "Crossfeed · 0–50%"
+msgstr "Crossfeed · 0–50%"
 
 msgid "Cursor down"
 msgstr "Cursor abajo"
@@ -1166,6 +1223,39 @@ msgstr "DSD{} · Nativo a {} Hz · {}"
 msgid "DSD{} · PCM at {} Hz · {}"
 msgstr "DSD{} · PCM a {} Hz · {}"
 
+msgid "DSP"
+msgstr "DSP"
+
+msgid "DSP active"
+msgstr "DSP activo"
+
+msgid "DSP applies to local output. Cast sends the original audio."
+msgstr "El DSP se aplica a la salida local. Cast envía el audio original."
+
+msgid "DSP catalog is too large."
+msgstr "El catálogo DSP es demasiado grande."
+
+msgid "DSP changes the signal and breaks strict bit-perfect playback."
+msgstr "El DSP modifica la señal y rompe el bit-perfect estricto."
+
+msgid "DSP control is unavailable."
+msgstr "El control DSP no está disponible."
+
+msgid "DSP filters need 10–24000 Hz, −18–12 dB and Q 0.2–12."
+msgstr "Los filtros DSP requieren 10–24000 Hz, −18–12 dB y Q de 0.2 a 12."
+
+msgid "DSP host is unavailable."
+msgstr "El host DSP no está disponible."
+
+msgid "DSP input is too large."
+msgstr "Los datos DSP son demasiado grandes."
+
+msgid "DSP preset is unavailable."
+msgstr "El preset DSP no está disponible."
+
+msgid "DSP · Equalizer and presets"
+msgstr "DSP · Ecualizador y presets"
+
 msgid "Dark"
 msgstr "Oscuro"
 
@@ -1210,6 +1300,9 @@ msgstr "Eliminar carpeta…"
 
 msgid "Delete playlist"
 msgstr "Eliminar playlist"
+
+msgid "Delete preset"
+msgstr "Eliminar preset"
 
 msgid "Delete “{}”?"
 msgstr "¿Borrar “{}”?"
@@ -1349,6 +1442,9 @@ msgstr "Descargas"
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr "Arrastra o usa ↑↓ para conservar un orden personalizado."
 
+msgid "Duplicate DSP preset ID."
+msgstr "Hay un identificador de preset DSP duplicado."
+
 msgid "Duration"
 msgstr "Duración"
 
@@ -1360,6 +1456,9 @@ msgstr "Fondo dinámico"
 
 msgid "EPs & Singles"
 msgstr "EPs y sencillos"
+
+msgid "EQ response · 20 Hz–20 kHz · ±18 dB · before preamp"
+msgstr "Respuesta del EQ · 20 Hz–20 kHz · ±18 dB · antes del preamplificador"
 
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr "Cada archivo se copia, la copia se escribe y se vuelve a leer, y solo entonces reemplaza al original. Hace falta tanto espacio libre como ocupa el disco. Lo que se escribe no se puede deshacer."
@@ -1406,6 +1505,9 @@ msgstr "Activar"
 msgid "Enable PipeWire in your NixOS configuration"
 msgstr "Activa PipeWire en tu configuración de NixOS"
 
+msgid "Enable a DSP plugin first."
+msgstr "Activa primero un plugin DSP."
+
 msgid "Enable the optional Mood plugin and manage its model download."
 msgstr "Activa el plugin opcional Mood y gestiona la descarga de sus modelos."
 
@@ -1432,6 +1534,9 @@ msgstr "Escribe un número válido."
 
 msgid "Episode notes"
 msgstr "Notas del episodio"
+
+msgid "Equalizer"
+msgstr "Ecualizador"
 
 msgid "Errors"
 msgstr "Errores"
@@ -1493,6 +1598,9 @@ msgstr "Fallaron en esta sesión"
 msgid "Failed to load albums"
 msgstr "No se pudieron cargar los álbumes"
 
+msgid "Favorite preset"
+msgstr "Preset favorito"
+
 msgid "Favorites"
 msgstr "Favoritos"
 
@@ -1511,6 +1619,9 @@ msgstr "Archivo"
 msgid "Files"
 msgstr "Archivos"
 
+msgid "Filter"
+msgstr "Filtro"
+
 msgid "Filter albums"
 msgstr "Filtrar discos"
 
@@ -1528,6 +1639,9 @@ msgstr "Filtrar pistas"
 
 msgid "Filter, Enter to search, or a stream URL"
 msgstr "Filtra, Enter para buscar, o la URL de un stream"
+
+msgid "Find a preset or device"
+msgstr "Buscar preset o equipo"
 
 msgid "Find covers"
 msgstr "Buscar carátulas"
@@ -1802,8 +1916,14 @@ msgstr "Alta 24/88.2"
 msgid "High 24/96"
 msgstr "Alta 24/96"
 
+msgid "High pass"
+msgstr "Pasaaltos"
+
 msgid "High resolution"
 msgstr "Alta resolución"
+
+msgid "High shelf"
+msgstr "Estante de agudos"
 
 msgid "History"
 msgstr "Historial"
@@ -1868,6 +1988,9 @@ msgstr "Búsqueda del modo inmersivo"
 msgid "Immersive view"
 msgstr "Modo inmersivo"
 
+msgid "Import / export"
+msgstr "Importar / exportar"
+
 msgid "Import cancelled"
 msgstr "Importación cancelada"
 
@@ -1876,6 +1999,9 @@ msgstr "Importación terminada"
 
 msgid "Import playlist"
 msgstr "Importar playlist"
+
+msgid "Imported"
+msgstr "Importado"
 
 msgid "In library"
 msgstr "En tu biblioteca"
@@ -1970,6 +2096,27 @@ msgstr "Tamaño de la interfaz"
 msgid "Interrupted"
 msgstr "Interrumpido"
 
+msgid "Invalid DSP catalog."
+msgstr "El catálogo DSP no es válido."
+
+msgid "Invalid DSP gain, stereo, delay or dynamics settings."
+msgstr "Los ajustes DSP de ganancia, estéreo, retardo o dinámica no son válidos."
+
+msgid "Invalid DSP input."
+msgstr "Los datos DSP no son válidos."
+
+msgid "Invalid DSP parameters."
+msgstr "Los parámetros DSP no son válidos."
+
+msgid "Invalid DSP preset JSON."
+msgstr "El JSON del preset DSP no es válido."
+
+msgid "Invalid DSP preset identity."
+msgstr "El nombre o identificador del preset DSP no es válido."
+
+msgid "Invalid EQ preamp line."
+msgstr "La línea del preamplificador del EQ no es válida."
+
 msgid "Invalid arguments; :help shows the syntax."
 msgstr "Argumentos inválidos; :help muestra la sintaxis."
 
@@ -1978,6 +2125,12 @@ msgstr "Valor no válido para esta preferencia; revisa sus opciones en Ajustes."
 
 msgid "Invalid — should contain alsa_output or alsa_input"
 msgstr "No es válido: debe contener alsa_output o alsa_input"
+
+msgid "Invert left polarity"
+msgstr "Invertir polaridad izquierda"
+
+msgid "Invert right polarity"
+msgstr "Invertir polaridad derecha"
 
 msgid "Italian"
 msgstr "Italiano"
@@ -2014,6 +2167,9 @@ msgstr "junio"
 
 msgid "June"
 msgstr "junio"
+
+msgid "Keep at most 64 personal presets."
+msgstr "Puedes guardar hasta 64 presets personales."
 
 msgid "Keep original queues"
 msgstr "Conservar las colas originales"
@@ -2071,6 +2227,9 @@ msgstr "Último lanzamiento"
 
 msgid "Latest run"
 msgstr "Última sesión"
+
+msgid "Left delay · 0–30 ms"
+msgstr "Retardo izquierdo · 0–30 ms"
 
 msgid "Length"
 msgstr "Duración"
@@ -2212,6 +2371,12 @@ msgstr "Solo lossless"
 
 msgid "Lossy"
 msgstr "Con pérdida"
+
+msgid "Low pass"
+msgstr "Pasabajos"
+
+msgid "Low shelf"
+msgstr "Estante de graves"
 
 msgid "Lyrics"
 msgstr "Letra"
@@ -2429,8 +2594,17 @@ msgstr "SONANDO"
 msgid "Name"
 msgstr "Nombre"
 
+msgid "Name a personal preset"
+msgstr "Nombre del preset personal"
+
+msgid "Name this preset."
+msgstr "Ponle un nombre al preset."
+
 msgid "Native DSD"
 msgstr "DSD nativo"
+
+msgid "Native DSD and DoP bypass DSP. Select PCM output to process them."
+msgstr "DSD nativo y DoP pasan sin DSP. Selecciona salida PCM para procesarlos."
 
 msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."
 msgstr "Nativo usa el formato DSD_U32 de ALSA. DoP transporta el mismo flujo de un bit dentro de palabras PCM marcadas. PCM convierte DSD para que cualquier salida pueda reproducirlo."
@@ -2516,6 +2690,9 @@ msgstr "No"
 msgid "No Home modules are available for this source."
 msgstr "Esta fuente no tiene módulos disponibles para Inicio."
 
+msgid "No active parametric EQ filters were found."
+msgstr "No se encontraron filtros paramétricos activos."
+
 msgid "No albums found"
 msgstr "No se encontraron álbumes"
 
@@ -2584,6 +2761,9 @@ msgstr "Este artista no aparece en el catálogo de ningún plugin"
 
 msgid "No plugins installed"
 msgstr "No hay plugins instalados"
+
+msgid "No presets match this search."
+msgstr "No hay presets para esta búsqueda."
 
 msgid "No purchases match the current view."
 msgstr "Ninguna compra coincide con la vista actual."
@@ -2656,6 +2836,9 @@ msgstr "Sin especificar"
 
 msgid "Not through this stack: it mixes by design."
 msgstr "No con esta pila: mezcla por diseño."
+
+msgid "Notch"
+msgstr "Rechazo de banda"
 
 msgid "Nothing found for “{}”"
 msgstr "Sin resultados para “{}”"
@@ -2737,6 +2920,9 @@ msgstr "Una pista entra justo después de la otra."
 
 msgid "One track straight into the next. Off, the device plays out and opens again."
 msgstr "Una pista entra justo después de la otra. Apagado, el dispositivo termina lo que tiene y se vuelve a abrir."
+
+msgid "Only personal presets can be deleted."
+msgstr "Solo se pueden eliminar presets personales."
 
 msgid "Only tracks from this source"
 msgstr "Solo pistas de esta fuente"
@@ -2864,8 +3050,17 @@ msgstr "no se pueden escribir muestras PCM en un flujo DSD nativo"
 msgid "Password"
 msgstr "Contraseña"
 
+msgid "Paste EQ filter settings here"
+msgstr "Pega aquí los filtros del ecualizador"
+
 msgid "Paste a link from one of your sources or from another service"
 msgstr "Pega un enlace de una de tus fuentes o de otro servicio"
+
+msgid "Paste a parametric EQ profile or a Chilpa preset JSON. Active unsupported filters reject the whole import."
+msgstr "Pega un perfil de EQ paramétrico o un preset JSON de Chilpa. Si hay filtros activos no compatibles, el perfil completo se rechaza."
+
+msgid "Paste a parametric EQ profile."
+msgstr "Pega un perfil de EQ paramétrico."
 
 msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
 msgstr "Pega el token proporcionado por la fuente. Chilpa lo guarda cifrado y el plugin nunca lo ve."
@@ -2878,6 +3073,9 @@ msgstr "Pausa"
 
 msgid "Paused"
 msgstr "En pausa"
+
+msgid "Peak"
+msgstr "Campana"
 
 msgid "Pending"
 msgstr "Pendiente"
@@ -3059,6 +3257,9 @@ msgstr "Portugués"
 msgid "Position in Streaming"
 msgstr "Posición en Streaming"
 
+msgid "Preamp · −60–0 dB"
+msgstr "Preamplificador · −60–0 dB"
+
 msgid "Preferred GPU"
 msgstr "GPU preferida"
 
@@ -3106,6 +3307,9 @@ msgstr "Guardados previamente"
 
 msgid "Processed"
 msgstr "Procesado"
+
+msgid "Profile name"
+msgstr "Nombre del perfil"
 
 msgid "Provider identifiers"
 msgstr "Identificadores de proveedores"
@@ -3245,6 +3449,9 @@ msgstr "Vuelve a leer todas las carpetas. Lo que no cambió no se lee dos veces.
 msgid "Reads tempo, musical key and loudness in the background. AutoMix appears when enough tracks have tempo."
 msgstr "Lee el tempo, la tonalidad y la sonoridad en segundo plano. AutoMix aparece cuando suficientes pistas tienen tempo."
 
+msgid "Ready for local PCM playback"
+msgstr "Preparado para reproducción PCM local"
+
 msgid "Ready to review"
 msgstr "Lista para revisar"
 
@@ -3319,6 +3526,9 @@ msgstr "Quitar"
 
 msgid "Remove cover"
 msgstr "Quitar carátula"
+
+msgid "Remove filter"
+msgstr "Quitar filtro"
 
 msgid "Remove from favorites"
 msgstr "Quitar de favoritos"
@@ -3452,6 +3662,9 @@ msgstr "Amplia"
 msgid "Rich rows"
 msgstr "Filas amplias"
 
+msgid "Right delay · 0–30 ms"
+msgstr "Retardo derecho · 0–30 ms"
+
 msgid "Route"
 msgstr "Ruta"
 
@@ -3499,6 +3712,9 @@ msgstr "Guardar como…"
 
 msgid "Save changes"
 msgstr "Guardar cambios"
+
+msgid "Save preset"
+msgstr "Guardar preset"
 
 msgid "Save stations to find them here."
 msgstr "Guarda estaciones para encontrarlas aquí."
@@ -3880,6 +4096,15 @@ msgstr "Estadísticas generadas por Chilpa"
 msgid "Status"
 msgstr "Estado"
 
+msgid "Stereo and dynamics"
+msgstr "Estéreo y dinámica"
+
+msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
+msgstr "Los controles estéreo se aplican a PCM de dos canales. El EQ y la compresión enlazada se aplican a todos los canales."
+
+msgid "Stereo width · 0–100%"
+msgstr "Anchura estéreo · 0–100%"
+
 msgid "Stop"
 msgstr "Detener"
 
@@ -3984,6 +4209,9 @@ msgstr "Esa respuesta no corresponde a esta ventana."
 msgid "That file is not a JPEG, PNG or WebP image"
 msgstr "Ese archivo no es una imagen JPEG, PNG o WebP"
 
+msgid "The EQ profile is too large."
+msgstr "El perfil de EQ es demasiado grande."
+
 msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
 msgstr "El ISO queda intacto. Los metadatos compatibles van al XML; los demás campos y la portada van a un sidecar de Chilpa."
 
@@ -4013,6 +4241,9 @@ msgstr "No hay una pista actual con ese destino."
 
 msgid "The download view is unavailable."
 msgstr "La vista de descargas no está disponible."
+
+msgid "The filter has no ON/OFF state."
+msgstr "El filtro no indica su estado ON/OFF."
 
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."
@@ -4383,6 +4614,9 @@ msgstr "Desinstalar plugin"
 msgid "Uninstall plugin and remove account data"
 msgstr "Desinstalar plugin y eliminar datos de la cuenta"
 
+msgid "Unknown DSP action."
+msgstr "La acción DSP no se reconoce."
+
 msgid "Unknown command; enter :help."
 msgstr "Comando desconocido; escribe :help."
 
@@ -4406,6 +4640,18 @@ msgstr "Sin escuchar"
 
 msgid "Unrated"
 msgstr "Sin calificar"
+
+msgid "Unsupported EQ directive. Paste parametric filters without channel routing or other commands."
+msgstr "Hay una instrucción de EQ no compatible. Pega filtros paramétricos sin ruteo de canales ni otros comandos."
+
+msgid "Unsupported EQ filter syntax or frequency unit."
+msgstr "El formato del filtro o su unidad de frecuencia no son compatibles."
+
+msgid "Unsupported active EQ filter. Use PK, LS, HS, LP, HP or NO."
+msgstr "Hay un filtro activo no compatible. Usa PK, LS, HS, LP, HP o NO."
+
+msgid "Unsupported or empty DSP preset catalog."
+msgstr "El catálogo de presets DSP está vacío o no es compatible."
 
 msgid "Up next"
 msgstr "A continuación"
@@ -4448,6 +4694,9 @@ msgstr "Usar MusicBrainz"
 
 msgid "Use Quick Connect"
 msgstr "Usar Quick Connect"
+
+msgid "Use at most 10 DSP filters."
+msgstr "Puedes usar hasta 10 filtros DSP."
 
 msgid "Use my current queue"
 msgstr "Usar mi cola actual"
@@ -5042,6 +5291,9 @@ msgstr "plughw: convierte lo que rechaza"
 
 msgid "present"
 msgstr "presente"
+
+msgid "process PCM audio with equalization and stereo controls"
+msgstr "procesar audio PCM con ecualización y controles estéreo"
 
 msgid "put a panel of its own in the window"
 msgstr "poner un panel suyo en la ventana"

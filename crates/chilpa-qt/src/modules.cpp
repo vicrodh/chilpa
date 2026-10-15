@@ -7,6 +7,7 @@
 extern const QStaticPlugin qt_static_plugin_app_chilpa_kit_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_ambient_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_mini_plugin();
+extern const QStaticPlugin qt_static_plugin_app_chilpa_dsp_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_immersive_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_waveform_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_graphics_plugin();
@@ -28,6 +29,7 @@ extern "C" void chilpa_import_modules()
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_kit_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_ambient_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_mini_plugin());
+    qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_dsp_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_immersive_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_waveform_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_graphics_plugin());

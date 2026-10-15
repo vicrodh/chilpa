@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Effects
 import app.chilpa
+import app.chilpa.dsp
+import "qrc:/qt/qml/app/chilpa/dsp/qml/Components" as DspUi
 import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -126,6 +128,7 @@ Item {
                 }
             }
         }
+        DspUi.DspQualityNote { width: parent.width; casting: Cast.active }
         Text {
             visible: Cast.active
             width: parent.width
