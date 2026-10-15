@@ -1,5 +1,6 @@
 import QtQuick
 import app.chilpa
+import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
@@ -7,6 +8,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 // does come from the facade; here they get their icons and are dispatched.
 Menu {
     id: menu
+    objectName: "searchResultMenu"
 
     property SearchModel search
     property int row: -1
@@ -24,31 +26,34 @@ Menu {
         }
         entries = JSON.parse(search.menuJson(row)).map(function(entry) {
             const act = (entry.act || "").split(":")[0]
-            entry.glyph = act === "mark" ? (entry.on ? Icons.heart : Icons.heartFilled) : icons[act] || ""
+            const favorite = act === "mark" || act === "favorite" || act === "unfavorite"
+            const marked = act === "unfavorite" || act === "mark" && !entry.on
+            entry.glyph = favorite ? (marked ? Icons.heartFilled : Icons.heart) : icons[act] || ""
             if (act === "artist") entry.family = SourceGlyphs.font
             else if (["queue", "next", "later"].includes(act)) entry.family = Lucide.font
-            entry.filled = act === "play" || (act === "mark" && !entry.on)
+            entry.filled = act === "play" || marked
             return entry
         })
-        if (entries.length === 0) return
+        if (entries.length === 0) { search.releaseMenu(); return }
         x = left
         y = top
         open()
     }
+
+    onClosed: Qt.callLater(function() { if (!menu.visible && menu.search) menu.search.releaseMenu() })
 
     onChosen: (index) => {
         const entry = entries[index]
         if (entry.act === "mark") {
             Ratings.setFavorite(entry.kind, entry.key, entry.on)
         } else if (entry.act === "pick") {
-            picker.trackIdsJson = search.trackIdsJson(row)
-            picker.show(x, y)
+            search.pickMenu()
         } else {
-            if (!["play", "queue", "next", "later"].includes(entry.act))
+            if (!["play", "queue", "next", "later", "favorite", "unfavorite"].includes(entry.act))
                 menu.left()
-            search.act(row, entry.act)
+            search.menuAct(entry.act)
         }
     }
 
-    PlaylistPicker { id: picker; parent: menu.parent }
+    SearchSelection { parent: menu.parent; search: menu.search }
 }

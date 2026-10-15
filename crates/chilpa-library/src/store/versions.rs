@@ -219,7 +219,7 @@ impl Library {
     /// Scroll-page reads never scan the library again.
     pub fn version_catalog(&self) -> rusqlite::Result<Arc<VersionCatalog>> {
         let stamp = self.db.query_row("SELECT revision FROM version_catalog_revision WHERE id = 1", [], |r| r.get(0))?;
-        let cacheable = self.db.is_autocommit();
+        let cacheable = self.db.is_autocommit() || self.db.is_readonly("main")?;
         if let Some(cache) = self.versions.borrow().as_ref().filter(|cache| cacheable && cache.stamp == stamp) {
             return Ok(Arc::clone(&cache.catalog));
         }

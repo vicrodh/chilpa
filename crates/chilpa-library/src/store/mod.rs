@@ -190,6 +190,20 @@ impl Library {
         Ok(Self { db, versions: Default::default(), related: Default::default(), extra_candidates: Default::default(), candidate_changes: Default::default() })
     }
 
+    /// I keep every query for one page on the same committed SQLite snapshot.
+    pub fn read_snapshot<T>(&self, read: impl FnOnce() -> T) -> rusqlite::Result<T> {
+        let transaction = self.db.unchecked_transaction()?;
+        let value = read();
+        transaction.commit()?;
+        Ok(value)
+    }
+
+    /// I persist a version choice on a separate writer, away from the window.
+    pub fn remember_album_version(&self, album: i64, version: i64) -> rusqlite::Result<bool> {
+        let path = self.db.path().ok_or(rusqlite::Error::InvalidQuery)?;
+        Self::open_existing(Path::new(path))?.select_album_version(album, version)
+    }
+
     /// A background writer for an already initialized library, without migrations.
     pub fn open_existing(path: &Path) -> rusqlite::Result<Self> {
         let db = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE)?;

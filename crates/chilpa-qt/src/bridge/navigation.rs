@@ -226,6 +226,7 @@ impl qobject::Navigation {
     /// swaps the page, and by then the route id it reads is the new one.
     fn publish(mut self: Pin<&mut Self>) {
         let tabs = self.rust().tabs.clone();
+        app::with(|api| api.keep_tabs(&tabs));
         let (mut titles, mut icons) = (QList::<QString>::default(), QList::<QString>::default());
         for r in tabs.routes() {
             let (title, icon) = app::with(|api| api.tab_label(&r));
@@ -243,7 +244,7 @@ impl qobject::Navigation {
         self.as_mut().set_section(QString::from(section));
         self.as_mut().set_route_key(QString::from(&now.key));
         self.as_mut().set_screen(QString::from(now.screen.name()));
-        app::with(|api| { api.set_browse_route(&now); api.keep_tabs(&tabs); });
+        app::with(|api| api.set_browse_route(&now));
     }
 }
 

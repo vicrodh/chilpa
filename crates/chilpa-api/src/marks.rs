@@ -159,7 +159,7 @@ mod tests {
         api.catalog.adopt(source, None, &crate::source_search::RemoteFound {
             source: source.into(), name: "Catalog".into(), id: id.into(), title: "Item".into(),
             detail: String::new(), art: String::new(), duration_ms: 0,
-            collection: kind != "track", entity: kind.into(), item: None,
+            collection: kind != "track", entity: kind.into(), item: None, no_audio: false,
         })
     }
 
@@ -192,6 +192,7 @@ mod tests {
             source: "test.catalog.one".into(), name: "Catalog".into(), id: reference.into(), title: "Song".into(),
             detail: String::new(), art: String::new(), duration_ms: 0, collection: false, entity: "track".into(),
             item: Some(serde_json::json!({"kind":"track", "ref":reference, "title":"Song"})),
+            no_audio: false,
         });
         let song = adopt("track:9");
         let row = adopt("track:9@playlist:3@entry:2");

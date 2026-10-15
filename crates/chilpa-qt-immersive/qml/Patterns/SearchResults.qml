@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Effects
 import app.chilpa
+import app.chilpa.controls
+import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Tools
 import app.chilpa.kit
 import app.chilpa.ambient
 import app.chilpa.immersive
@@ -46,6 +48,7 @@ Item {
     }
     Timer { interval: Motion.poll; repeat: true; running: root.visible; onTriggered: search.refresh() }
 
+    Tools.SearchNavigation { search: search }
     SearchModel {
         id: search
         scope: "immersive"

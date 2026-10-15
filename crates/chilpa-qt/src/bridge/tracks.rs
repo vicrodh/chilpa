@@ -26,6 +26,7 @@ pub mod qobject {
         #[qml_element]
         #[qproperty(QString, kind)]
         #[qproperty(i64, album_id)]
+        #[qproperty(i32, album_page)]
         #[qproperty(QString, key)]
         /// Playlist presentation order: custom, title, artist, album,
         /// duration or plays.
@@ -185,6 +186,7 @@ impl Default for Rows {
 pub struct TrackListRust {
     kind: QString,
     album_id: i64,
+    album_page: i32,
     key: QString,
     order: QString,
     ascending: bool,
@@ -787,6 +789,7 @@ impl qobject::TrackListModel {
     /// Asks for a reload once this turn of the event loop is over, however
     /// many inputs changed in it.
     fn schedule(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().asked = self.rust().asked.wrapping_add(1);
         if self.rust().pending {
             return;
         }
@@ -836,13 +839,28 @@ impl qobject::TrackListModel {
             }));
             return;
         }
+        if kind == "album" && id != 0 {
+            let asked = self.rust().asked.wrapping_add(1);
+            self.as_mut().rust_mut().asked = asked;
+            if let Some(page) = chilpa_qt_kit::album_pages::get(self.rust().album_page, id) {
+                self.show(kind, Rows::Loaded(page.entries.clone()), Some(page.detail.duration_ms));
+            } else if id > 0 {
+                let thread = self.qt_thread();
+                worker::submit_album(move |reader| {
+                    let page = reader.album_page(id, true);
+                    let _ = thread.queue(move |model| {
+                        if model.rust().asked == asked && model.rust().album_id == id && model.rust().kind.to_string() == "album" {
+                            if let Some(page) = page { model.show("album".into(), Rows::Loaded(page.entries), Some(page.detail.duration_ms)); }
+                        }
+                    });
+                });
+            } else if let Some(page) = app::with(|api| api.cached_album_page(id)) {
+                self.show(kind, Rows::Loaded(page.entries), Some(page.detail.duration_ms));
+            }
+            return;
+        }
         // The rows, and how long they last when the list says so.
         let (rows, length) = match kind.as_str() {
-            "album" if id != 0 => {
-                let entries = app::with(|api| api.album_track_entries(id));
-                let ms = entries.iter().filter_map(|entry| match entry { Entry::Track(track) => Some(track.duration_ms), Entry::Header(_) => None }).sum::<u64>();
-                (Rows::Loaded(entries), Some(ms))
-            }
             "source" => {
                 let mut entries = app::with(|api| api.source_track_entries(&self.rust().key.to_string()));
                 if self.rust().limit > 0 { entries.truncate(limit); }
@@ -964,6 +982,7 @@ impl cxx_qt::Initialize for qobject::TrackListModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().on_kind_changed(|m| m.schedule()).release();
         self.as_mut().on_album_id_changed(|m| m.schedule()).release();
+        self.as_mut().on_album_page_changed(|m| m.schedule()).release();
         self.as_mut().on_key_changed(|m| m.schedule()).release();
         self.as_mut().on_order_changed(|m| m.schedule()).release();
         self.as_mut().on_ascending_changed(|m| m.schedule()).release();

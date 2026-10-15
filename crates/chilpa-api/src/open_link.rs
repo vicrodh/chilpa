@@ -330,6 +330,7 @@ impl Chilpa {
             collection: true,
             entity: kind,
             item: Some(item.clone()),
+            no_audio: false,
         };
         self.act_on_remote_found(&row, "open")
     }

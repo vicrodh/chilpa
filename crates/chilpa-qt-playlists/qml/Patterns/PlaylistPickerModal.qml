@@ -18,6 +18,7 @@ import "../Components"
 Modal {
     id: dialog
     objectName: "playlistPickerModal"
+    onClosed: AddToPlaylist.finish()
     width: Math.max(Metrics.modalInsets, Math.min(creating ? Metrics.playlistModalWidth : Metrics.playlistPickerWidth, parent.width - Metrics.modalInset))
     height: Math.max(Metrics.modalInsets, Math.min(creating ? createBody.implicitHeight + heading.height + Metrics.gap12 + Metrics.modalInsets
                                                             : Metrics.playlistPickerHeight, parent.height - Metrics.modalInset))

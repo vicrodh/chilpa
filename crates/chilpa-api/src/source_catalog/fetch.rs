@@ -45,8 +45,8 @@ fn persist(catalog: &Catalog, write: impl FnOnce(&Store) -> std::io::Result<()>)
     let snapshot = {
         let mut inner = catalog.lock();
         if !inner.dirty { return; }
-        let Inner { store, protected_tracks, .. } = &mut *inner;
-        store.prune(protected_tracks);
+        let (protected_tracks, protected_cards) = inner.protection();
+        inner.store.prune(&protected_tracks, &protected_cards);
         let snapshot = inner.store.clone();
         inner.dirty = false;
         snapshot
@@ -457,6 +457,56 @@ mod persistence_tests {
             assert!(!snapshot.cards.contains_key(&album), "closing the last queue releases the unlisted album");
             assert!(snapshot.track_by_path(&path).is_none(), "unreferenced tracks can be evicted again");
             assert_eq!(snapshot.cards.len(), 6001, "referenced library cards retain the existing policy");
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn a_mixed_source_queue_keeps_each_sources_metadata_when_opaque_ids_match() {
+        let catalog = Catalog::new();
+        let expected: Vec<_> = {
+            let mut inner = catalog.lock();
+            let cards = (0..6001).map(|n| inner.store.card_id("guest", &format!("listed:{n}"))).collect();
+            inner.store.shelves.insert("guest library".into(), Shelf { cards, ..Default::default() });
+            ["source-a", "source-b", "source-c"].into_iter().enumerate().map(|(index, source)| {
+                let duration = 120_000 + index as u64 * 60_000;
+                let artist = format!("Artist {index}");
+                let image = format!("https://example.org/cover-{index}.png");
+                let id = inner.store.take_item_track(source, &serde_json::json!({
+                    "ref":"track:1", "title":format!("Song {index}"), "artist":artist,
+                    "album":format!("Album {index}"), "album_ref":"album:1", "duration_ms":duration,
+                    "image":image, "track_number":index + 1, "disc_number":index + 1
+                }), None, 10).unwrap();
+                let track = &inner.store.tracks[&id];
+                (track.path.clone(), id, track.album_id, source, duration, artist, image)
+            }).collect()
+        };
+        assert_eq!(expected.iter().map(|entry| entry.1).collect::<std::collections::HashSet<_>>().len(), 3);
+        assert_eq!(expected.iter().map(|entry| entry.2).collect::<std::collections::HashSet<_>>().len(), 3);
+        catalog.protect_tracks(expected.iter().map(|entry| entry.0.clone()).collect());
+        for _ in 0..4 {
+            catalog.lock().dirty = true;
+            persist(&catalog, |snapshot| {
+                for (path, id, album, source, duration, artist, image) in &expected {
+                    let track = snapshot.track_by_path(path).expect("every source in the queue remains readable");
+                    assert_eq!((track.id, track.album_id, track.duration_ms), (*id, *album, *duration));
+                    assert_eq!((&track.artist, &track.image), (artist, image));
+                    assert_eq!(snapshot.cards[album].plugin, *source);
+                }
+                Ok(())
+            });
+            let total: u64 = expected.iter().map(|entry| catalog.track_by_path(&entry.0).unwrap().0.duration_ms).sum();
+            assert_eq!(total, 540_000, "mixing sources must not change the queue duration between saves");
+        }
+        catalog.protect_tracks(expected[1..].iter().map(|entry| entry.0.clone()).collect());
+        catalog.lock().dirty = true;
+        persist(&catalog, |snapshot| {
+            assert!(snapshot.track_by_path(&expected[0].0).is_none(), "only the removed source releases its track");
+            assert!(!snapshot.cards.contains_key(&expected[0].2));
+            for (path, _, album, source, ..) in &expected[1..] {
+                assert!(snapshot.track_by_path(path).is_some());
+                assert_eq!(snapshot.cards[album].plugin, *source);
+            }
             Ok(())
         });
     }

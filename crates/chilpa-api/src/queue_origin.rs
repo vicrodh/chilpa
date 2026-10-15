@@ -79,6 +79,7 @@ mod tests {
                 title: "Record".into(), detail: String::new(), art: String::new(), duration_ms: 0,
                 collection: true, entity: kind.into(),
                 item: Some(serde_json::json!({"kind":kind,"ref":reference,"title":"Record"})),
+                no_audio: false,
             };
             let id = app.catalog.adopt(&found.source, None, &found);
             let origin = QueueOrigin { screen: "source".into(), key: format!("{} native:{reference}", found.source), ..Default::default() };

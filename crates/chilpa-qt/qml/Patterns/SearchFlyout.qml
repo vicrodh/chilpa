@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Effects
 import app.chilpa
+import app.chilpa.controls
+import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Tools
 import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -15,6 +17,7 @@ import "../Components"
 Popup {
     id: flyout
 
+    Tools.SearchNavigation { search: flyout.search }
     required property SearchModel search
     property bool ownInput: false
     // The tallest it can be.
@@ -207,7 +210,7 @@ Popup {
                 }
             }
 
-            SearchMenu {
+            Tools.SearchMenu {
                 id: hitMenu
                 search: flyout.search
                 onLeft: flyout.close()

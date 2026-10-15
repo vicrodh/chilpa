@@ -846,30 +846,9 @@ impl Chilpa {
     /// Album tracks with a header for every disc when there is more than
     /// one: its number, and the name and the cover its own files give it.
     pub fn album_track_entries(&mut self, album_id: i64) -> Vec<TrackEntry> {
-        use crate::discs::{named, only_distinct_art, several, with_headers, Disc};
         let rows = self.album_track_rows(album_id);
-        if rows.is_empty() { return Vec::new(); }
-        let multi = several(&rows);
-        // What the library kept of each disc when it read its files. A
-        // source's record has none: its discs keep their bare number.
-        let said = if multi && album_id > 0 { self.library().and_then(|lib| lib.album_discs(album_id).ok()).unwrap_or_default() } else { Vec::new() };
-        let mut discs: Vec<Disc> = said.iter().map(|disc| Disc {
-            number: disc.number,
-            title: named(&disc.path, &disc.subtitle, &disc.tagged, &rows[0].album),
-            art: disc.artwork.clone(),
-        }).collect();
-        only_distinct_art(&mut discs);
-        let mut entries = with_headers(rows, &discs, multi);
-        let mut composers = std::collections::HashMap::new();
-        for entry in &mut entries {
-            if let TrackEntry::Header(header) = entry {
-                if album_id > 0 && header.work && !header.composer.is_empty() && header.composer_target.is_empty() {
-                    let local = *composers.entry(header.composer.clone()).or_insert_with(|| self.has_artist(&header.composer));
-                    if local { header.composer_target = format!("artist:{}", header.composer); }
-                }
-            }
-        }
-        entries
+        let said = if album_id > 0 && crate::discs::several(&rows) { self.library().and_then(|lib| lib.album_discs(album_id).ok()).unwrap_or_default() } else { Vec::new() };
+        crate::album_page::entries(rows, said, |name| album_id > 0 && self.has_artist(name))
     }
 
     /// The most played tracks. What never played is not "most played".

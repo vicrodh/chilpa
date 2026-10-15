@@ -1,7 +1,6 @@
 module app.chilpa
 singleton Playlists 1.0 Playlists.qml
 TrackListModel 1.0 TrackListModel.qml
-SearchModel 1.0 SearchModel.qml
 singleton SettingsModel 1.0 SettingsModel.qml
 singleton Ratings 1.0 Ratings.qml
 singleton Cast 1.0 Cast.qml

@@ -20,6 +20,7 @@ pub mod qobject {
         #[qproperty(i64, album_id)]
         #[qproperty(i64, selected_id)]
         #[qproperty(i32, content_rev)]
+        #[qproperty(i32, tracks_rev)]
         #[qproperty(QString, versions)]
         #[qproperty(bool, found)]
         #[qproperty(QString, title)]
@@ -42,10 +43,12 @@ pub mod qobject {
     }
 
     impl cxx_qt::Initialize for AlbumDetailModel {}
+    impl cxx_qt::Threading for AlbumDetailModel {}
 }
 
-use crate::{app, format};
-use cxx_qt::CxxQtType as _;
+use crate::{app, worker};
+use chilpa_qt_kit::album_pages;
+use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QString, QUrl};
 use std::pin::Pin;
 
@@ -54,6 +57,11 @@ pub struct AlbumDetailRust {
     album_id: i64,
     selected_id: i64,
     content_rev: i32,
+    tracks_rev: i32,
+    generation: album_pages::Generation,
+    pending: bool,
+    requested_id: i64,
+    page: Option<std::rc::Rc<chilpa_api::AlbumPage>>,
     versions: QString,
     found: bool,
     title: QString,
@@ -71,23 +79,66 @@ impl qobject::AlbumDetailModel {
     pub fn select_version(mut self: Pin<&mut Self>, value: &QString) {
         let Ok(version) = value.to_string().parse() else { return };
         let album = self.rust().album_id;
-        if app::with(|api| api.select_album_version(album, version)) {
-            self.as_mut().set_selected_id(version);
-            self.as_mut().load();
-            crate::registry::library(|library| library.content_changed());
-        }
+        if album <= 0 { return; }
+        let valid = self.rust().page.as_ref().is_some_and(|page| page.versions.iter().any(|choice| choice.id == version));
+        if !valid { return; }
+        self.as_mut().rust_mut().requested_id = version;
+        let ticket = self.rust().generation.next();
+        let (thread, library) = (self.qt_thread(), crate::registry::library_thread());
+        worker::submit_album(move |reader| {
+            // Explicit choices persist even if a refresh or navigation cancels presentation.
+            let accepted = reader.select_album_version(album, version);
+            let page = (accepted && ticket.current()).then(|| reader.album_page(version, true)).flatten();
+            let _ = thread.queue(move |mut model| {
+                if !ticket.current() { return; }
+                model.as_mut().rust_mut().requested_id = 0;
+                if accepted { model.apply(page); } else { model.schedule(); }
+            });
+            if accepted {
+                if let Some(library) = library { let _ = library.queue(|library| library.content_changed()); }
+            }
+        });
+    }
+
+    fn schedule(mut self: Pin<&mut Self>) {
+        self.rust().generation.next();
+        if self.rust().pending { return; }
+        self.as_mut().rust_mut().pending = true;
+        let _ = self.qt_thread().queue(|model| model.load());
     }
 
     fn load(mut self: Pin<&mut Self>) {
-        let id = self.rust().selected_id;
-        let versions = app::with(|api| api.album_versions(id));
-        self.as_mut().set_versions(QString::from(serde_json::to_string(&versions).unwrap_or_default()));
-        let found = if id != 0 { app::with(|api| api.album_detail(id)) } else { None };
-        let Some(d) = found else {
+        self.as_mut().rust_mut().pending = false;
+        let original = self.rust().album_id;
+        let selected = if self.rust().requested_id != 0 { self.rust().requested_id } else { self.rust().selected_id };
+        let id = if selected != 0 { selected } else { original };
+        let retain = crate::browse::read(|state| state.filter.extra_filtered() && state.snapshot.album_ids.contains(&original));
+        let ticket = self.rust().generation.next();
+        if id <= 0 {
+            self.apply(app::with(|api| api.cached_album_page(id)));
+            return;
+        }
+        let thread = self.qt_thread();
+        worker::submit_album(move |reader| {
+            if !ticket.current() { return; }
+            let page = reader.album_page(id, retain);
+            let _ = thread.queue(move |model| { if ticket.current() { model.apply(page); } });
+        });
+    }
+
+    fn apply(mut self: Pin<&mut Self>, page: Option<chilpa_api::AlbumPage>) {
+        let Some(page) = page else {
+            self.as_mut().rust_mut().page = None;
             self.as_mut().set_found(false);
+            self.as_mut().set_selected_id(0);
             return;
         };
-        let lines = app::with(|api| api.album_heading(&d, &format::span(d.duration_ms)));
+        let (token, page) = album_pages::keep(page);
+        self.as_mut().rust_mut().page = Some(page.clone());
+        let (d, lines) = (&page.detail, &page.heading);
+        self.as_mut().set_versions(QString::from(serde_json::to_string(&page.versions).unwrap_or_default()));
+        self.as_mut().set_tracks_rev(token);
+        self.as_mut().set_selected_id(d.album.id);
         let art = if d.album.artwork_path.is_empty() {
             QUrl::default()
         } else {
@@ -108,17 +159,13 @@ impl qobject::AlbumDetailModel {
 
 impl cxx_qt::Initialize for qobject::AlbumDetailModel {
     fn initialize(mut self: Pin<&mut Self>) {
-        self.as_mut().on_album_id_changed(|mut m| {
-            let original = *m.album_id();
-            let filtered = crate::browse::read(|s| s.filter.extra_filtered() && s.snapshot.album_ids.contains(&original));
-            let id = if filtered { original } else { app::with(|api| api.selected_album_version(original)) };
-            m.as_mut().set_selected_id(id);
-            m.load();
+        self.as_mut().on_album_id_changed(|mut model| {
+            model.as_mut().rust_mut().requested_id = 0;
+            model.as_mut().rust_mut().page = None;
+            model.as_mut().set_found(false);
+            model.as_mut().set_selected_id(0);
+            model.schedule();
         }).release();
-        self.as_mut().on_content_rev_changed(|mut m| {
-            let id = app::with(|api| api.selected_album_version(*m.selected_id()));
-            m.as_mut().set_selected_id(id);
-            m.load();
-        }).release();
+        self.as_mut().on_content_rev_changed(|model| model.schedule()).release();
     }
 }

@@ -20,19 +20,28 @@ pub mod qobject {
         #[qinvokable]
         fn show(self: Pin<&mut AddToPlaylist>, tracks: &QString);
 
+        #[qinvokable]
+        fn finish(self: Pin<&mut AddToPlaylist>);
+
         #[qsignal]
         fn asked(self: Pin<&mut AddToPlaylist>, tracks: QString);
     }
 }
 
 use cxx_qt_lib::QString;
+use cxx_qt::CxxQtType as _;
 use std::pin::Pin;
 
 #[derive(Default)]
-pub struct AddToPlaylistRust;
+pub struct AddToPlaylistRust {
+    hold: Option<chilpa_api::SelectionHold>,
+}
 
 impl qobject::AddToPlaylist {
-    pub fn show(self: Pin<&mut Self>, tracks: &QString) {
+    pub fn show(mut self: Pin<&mut Self>, tracks: &QString) {
+        let ids: Vec<i64> = serde_json::from_str(&tracks.to_string()).unwrap_or_default();
+        self.as_mut().rust_mut().hold = Some(chilpa_qt_kit::app::with(|api| api.hold_playlist_tracks(&ids)));
         self.asked(tracks.clone());
     }
+    pub fn finish(self: Pin<&mut Self>) { self.rust_mut().hold = None; }
 }

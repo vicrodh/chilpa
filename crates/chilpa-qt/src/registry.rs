@@ -44,3 +44,8 @@ handle!(register_navigation, navigation, NAVIGATION, navigation::qobject::Naviga
 handle!(register_playlists, playlists, PLAYLISTS, playlists::qobject::Playlists);
 handle!(register_player, player, PLAYER, player::qobject::Player);
 handle!(register_album_actions, album_actions, ALBUM_ACTIONS, album_actions::qobject::AlbumActions);
+
+/// I capture this handle before a background preference write outlives its page.
+pub fn library_thread() -> Option<CxxQtThread<library::qobject::Library>> {
+    LIBRARY.with(|slot| slot.borrow().as_ref().cloned())
+}

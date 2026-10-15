@@ -5,6 +5,7 @@ pub struct RemoteFound {
     pub source: String, pub name: String, pub id: String, pub title: String,
     pub detail: String, pub art: String, pub duration_ms: u64, pub collection: bool,
     pub entity: String, pub item: Option<serde_json::Value>,
+    pub no_audio: bool,
 }
 
 impl Chilpa {
@@ -27,7 +28,7 @@ impl Chilpa {
                 let kept = crate::pictures::kept(&art);
                 if kept.is_none() { self.catalog.want_image(&reply.source, &art); }
                 FoundRow::Remote(RemoteFound {
-                    source: reply.source.clone(), name: reply.source_name.clone(), id, title, detail, art: kept.unwrap_or_default(), duration_ms, collection, entity: if collection { "album" } else { "track" }.into(), item: None,
+                    source: reply.source.clone(), name: reply.source_name.clone(), id, title, detail, art: kept.unwrap_or_default(), duration_ms, collection, entity: if collection { "album" } else { "track" }.into(), item: None, no_audio: !reply.delivers_audio,
                 })
             };
             if reply.entities.is_empty() && matches!(scope, "all" | "albums") {
@@ -62,7 +63,7 @@ impl Chilpa {
                     id: item["ref"].as_str().unwrap_or_default().into(), title: item["title"].as_str().unwrap_or_default().into(),
                     detail: [item["artist"].as_str().unwrap_or_default(), item["album"].as_str().unwrap_or_default()].into_iter().filter(|s| !s.is_empty()).collect::<Vec<_>>().join(" · "),
                     art: crate::pictures::kept(image).unwrap_or_default(), duration_ms: item["duration_ms"].as_u64().unwrap_or_default(),
-                    collection: kind != "track", entity: kind.into(), item: Some(item.clone()),
+                    collection: kind != "track", entity: kind.into(), item: Some(item.clone()), no_audio: !reply.delivers_audio,
                 }));
             }
             rows.extend(group);
@@ -149,13 +150,34 @@ impl Chilpa {
         rows
     }
     pub(crate) fn act_on_remote_found(&mut self, row: &RemoteFound, action: &str) -> Leads {
+        if row.item.as_ref().is_some_and(|item| item["available"] == false) { return Leads::Nowhere; }
+        if row.no_audio && matches!(action, "play" | "queue" | "next" | "later" | "pick") { return Leads::Nowhere; }
+        if matches!(action, "favorite" | "unfavorite") {
+            if self.natives.has_favorites(&row.source) && self.natives.has_pages(&row.source) && row.item.is_some() {
+                self.sources_command("native", &row.source, &serde_json::json!({"action":"favorite","ref":row.id,"on":action == "favorite"}).to_string());
+            }
+            return Leads::Nowhere;
+        }
+        if action == "artist" {
+            if let Some(reference) = row.item.as_ref().and_then(|item| item["artist_ref"].as_str()).filter(|v| !v.is_empty()) {
+                return Leads::Source(format!("{} native:{reference}", row.source));
+            }
+        }
+        let _hold = self.hold_found_menu(&FoundRow::Remote(row.clone()));
         // The host is not waited on: while it answers someone else, the load
         // the catalog last saw is the one the search ran in.
         let epoch = self.plugins.as_ref().and_then(|p| p.try_lock().ok().map(|p| p.epoch(&row.source)));
         let adopted = self.catalog.adopt(&row.source, epoch, row);
         if row.collection {
             // A record found opens on the record page, as a local one does.
-            if action == "open" { return Leads::Screen("album", adopted); }
+            if adopted == 0 { return Leads::Nowhere; }
+            match action {
+                "open" => return Leads::Screen("album", adopted),
+                "tab" => return Leads::Tab("album", adopted),
+                "play" | "queue" | "next" if matches!(row.entity.as_str(), "" | "album" | "playlist") => self.album_action(&[adopted], action, false),
+                "later" if matches!(row.entity.as_str(), "" | "album" | "playlist") => self.album_later(&[adopted], &row.title),
+                _ => {}
+            }
         } else if action == "album" {
             if let Some((track, _)) = self.catalog.tracks_by_ids(&[adopted]).first() {
                 if track.album_id != 0 { return Leads::Screen("album", track.album_id); }
@@ -165,7 +187,7 @@ impl Chilpa {
                 return Leads::Source(format!("{} native:{reference}", row.source));
             }
         } else if matches!(action, "open" | "play" | "queue" | "next" | "later") {
-            if row.item.as_ref().is_some_and(|item| item["available"] == false) { return Leads::Nowhere; }
+            if row.no_audio { return Leads::Nowhere; }
             let card = chilpa_library::store::progress::Heard { external_id: row.id.clone(), title: row.title.clone(), subtitle: row.detail.clone(), image_url: row.art.clone(), duration_ms: row.duration_ms, ..Default::default() };
             if let Some(library) = self.library() { let _ = library.remember_heard(&row.source, &card); }
             let path = crate::source_opener::entry_of(&row.source, &row.id);
@@ -182,7 +204,7 @@ impl Chilpa {
 
 /// Native search uses the native protocol and releases the compatibility host lock.
 pub(crate) fn native_reply(natives: &std::sync::Arc<crate::natives::Natives>, id: &str, name: &str, text: &str, limit: usize, quality: &str) -> crate::search::SourceReply {
-    let mut reply = crate::search::SourceReply { source: id.into(), source_name: name.into(), results: Default::default(), entities: Vec::new(), problem: String::new(), delivers_audio: true };
+    let mut reply = crate::search::SourceReply { source: id.into(), source_name: name.into(), results: Default::default(), entities: Vec::new(), problem: String::new(), delivers_audio: natives.delivers_audio(id) };
     match natives.call(id, "search", serde_json::json!({"text":text,"limit":limit,"filters":{"quality":quality}}), std::time::Duration::from_secs(30)) {
         Ok(value) => {
             for key in ["artists", "albums", "tracks", "playlists"] {
@@ -225,7 +247,7 @@ mod tests {
             "album":"Record","album_ref":"album:2","artist_ref":"artist:9"});
         let remote = RemoteFound { source:"source-a".into(),name:"Source A".into(),id:"track:7".into(),
             title:"Song".into(),detail:String::new(),art:String::new(),duration_ms:1000,
-            collection:false,entity:"track".into(),item:Some(item) };
+            collection:false,entity:"track".into(),item:Some(item),no_audio:false };
         let row = FoundRow::Remote(remote.clone());
         let menu = api.found_menu(&row);
         let actions: Vec<_> = menu.iter().filter_map(|v| v["act"].as_str()).collect();
@@ -246,6 +268,36 @@ mod tests {
         let menu = api.found_menu(&FoundRow::Remote(anonymous));
         let actions: Vec<_> = menu.iter().filter_map(|v| v["act"].as_str()).collect();
         assert_eq!(actions, ["play","queue","next","later","pick"]);
+    }
+
+    #[test]
+    fn collection_menus_share_actions_without_promising_unavailable_audio() {
+        let mut api = Chilpa::new();
+        for entity in ["album", "playlist"] {
+            let remote = RemoteFound { source:"source-a".into(), id:format!("{entity}:1"), collection:true, entity:entity.into(),
+                item:Some(json!({"kind":entity,"ref":format!("{entity}:1"),"title":"Collection"})), ..Default::default() };
+            let actions = |entries: Vec<serde_json::Value>| entries.into_iter().filter_map(|entry| entry["act"].as_str().map(str::to_string)).collect::<Vec<_>>();
+            assert_eq!(actions(api.found_menu(&FoundRow::Remote(remote.clone()))), ["play","queue","next","later","pick","open","tab"]);
+            let mut no_audio = remote.clone(); no_audio.no_audio = true;
+            assert_eq!(actions(api.found_menu(&FoundRow::Remote(no_audio.clone()))), ["open","tab"]);
+            // Construction may restore a saved queue; unsupported actions must preserve it.
+            let before = (api.queue_paths().to_vec(), api.now_playing().path.clone(), api.now_playing().playing, api.now_playing().paused);
+            for action in ["play", "queue", "next", "later"] {
+                assert_eq!(api.act_on_remote_found(&no_audio, action), Leads::Nowhere);
+                let after = (api.queue_paths().to_vec(), api.now_playing().path.clone(), api.now_playing().playing, api.now_playing().paused);
+                assert_eq!(after, before, "a direct {action} invocation cannot alter the queue or playback without audio delivery");
+            }
+            assert!(api.found_selection(&FoundRow::Remote(no_audio)).is_err());
+        }
+        api.search.replies.push(crate::search::SourceReply { source:"source-a".into(), source_name:"A".into(), delivers_audio:false,
+            entities:vec![json!({"kind":"album","ref":"album:2","title":"Record"}),json!({"kind":"track","ref":"track:1","title":"Song","album_ref":"album:2"})], results:Default::default(), problem:String::new() });
+        for row in api.source_found_rows("all") {
+            if let FoundRow::Remote(remote) = row {
+                assert!(remote.no_audio);
+                assert!(!api.found_menu(&FoundRow::Remote(remote.clone())).iter().any(|entry| matches!(entry["act"].as_str(), Some("play" | "queue" | "next" | "later" | "pick"))));
+                assert_eq!(api.act_on_remote_found(&remote, "open"), if remote.collection { let id = api.catalog.adopt(&remote.source, None, &remote); Leads::Screen("album", id) } else { Leads::Nowhere });
+            }
+        }
     }
 
     #[test]

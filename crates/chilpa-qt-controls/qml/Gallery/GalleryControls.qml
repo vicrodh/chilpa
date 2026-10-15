@@ -10,6 +10,10 @@ import "../Patterns"
 
 TitledFlow {
     title: "Controls"
+    SearchModel { id: previewSearch }
+    SearchMenu { search: previewSearch }
+    SearchSelection { search: previewSearch }
+    SearchNavigation { search: previewSearch }
     Keycap { text: "Ctrl + ▶" }
     Keycap { text: "Press keys…"; button: true; recording: true }
     ShortcutRow { width: Metrics.confirmWidth; entry: ({ id: "playback.next", label: "Next Track", shortcut: "Ctrl + ▶", modified: false }) }

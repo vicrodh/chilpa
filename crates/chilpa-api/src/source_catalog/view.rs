@@ -373,6 +373,11 @@ impl Chilpa {
     /// A source record has one version: the source's, with its quality.
     pub(crate) fn source_album_versions(&mut self, id: i64) -> Vec<AlbumVersion> {
         let Some(detail) = self.source_album_detail(id) else { return Vec::new() };
+        self.source_album_versions_for(&detail)
+    }
+
+    pub(crate) fn source_album_versions_for(&mut self, detail: &crate::AlbumDetail) -> Vec<AlbumVersion> {
+        let id = detail.album.id;
         let Some(card) = self.catalog.card(id) else { return Vec::new() };
         let source = self.source_of(&card.plugin);
         let (long, brief) = (detail.quality.long(), detail.quality.brief());
@@ -429,7 +434,10 @@ impl Chilpa {
             return;
         }
         let paths = self.album_paths(ids);
-        self.play_later_here(&paths, label);
+        let title = if label.is_empty() && ids.len() == 1 {
+            self.catalog.card(ids[0]).map(|card| card.title).unwrap_or_default()
+        } else { label.to_string() };
+        self.play_later_here(&paths, &title);
     }
 
     /// Sends records to an extra queue, by the `buffer:…` actions the menu
@@ -446,7 +454,8 @@ impl Chilpa {
     /// Runs what waited for a record's tracks, and puts a cover that came
     /// late on what plays. Called from `poll`.
     pub(crate) fn advance_catalog(&mut self) {
-        for deferred in self.catalog.ready() {
+        let (ready, _hold) = self.catalog.ready();
+        for deferred in ready {
             self.with_queue_origin(deferred.origin, |app| match deferred.act.as_str() {
                 "later" => app.album_later(&deferred.albums, ""),
                 act if act.starts_with("buffer:") => app.album_listen_action(&deferred.albums, act),

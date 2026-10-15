@@ -54,7 +54,14 @@ Connections {
     }
     function onSearchStepped(by) { this.stepSearch(by) }
     function stepSearch(by) {
-        if (active && search.text !== "") { flyout.open(); flyout.step(by) }
+        if (!active || search.text === "") return
+        if (!route.commandFocus) route.origin = route.host.Window.window.activeFocusItem
+        route.commandFocus = true
+        flyout.ownInput = host.compact
+        flyout.open()
+        flyout.step(by)
+        Hotkeys.searchActive = true
+        navigation.forceActiveFocus()
     }
     function onSearchConfirmed() { this.confirmSearch() }
     function confirmSearch() { if (active && flyout.opened) flyout.chooseCurrent() }

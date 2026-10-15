@@ -10,4 +10,5 @@ pub mod bridge {
     pub mod queues;
     pub mod place;
     pub mod player_layout;
+    pub mod search;
 }

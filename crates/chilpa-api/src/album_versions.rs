@@ -30,6 +30,7 @@ pub(crate) fn release_label(raw: &str) -> String {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct AlbumHeading {
     pub kind: String,
     pub meta: String,
@@ -163,24 +164,10 @@ impl Chilpa {
     }
 
     pub fn album_heading(&mut self, detail: &crate::AlbumDetail, length: &str) -> AlbumHeading {
-        let songs = self.tf("{} song", "{} songs", detail.album.track_count as i64, &[&detail.album.track_count.to_string()]);
-        let mut meta = Vec::new();
-        if !detail.genre.is_empty() { meta.push(detail.genre.clone()); }
-        if !detail.label.is_empty() { meta.push(detail.label.clone()); }
-        meta.extend([songs.clone(), length.to_owned()]);
-        let quality = detail.quality.long();
-        if !quality.is_empty() { meta.push(quality); }
-        let remote = detail.album.id < 0;
-        let kind = if remote { self.source_album_kind(detail.album.id) } else { self.t("Album").to_uppercase() };
-        let released = self.album_release_date(detail.album.id).map(|raw| release_label(&raw)).filter(|label| !label.is_empty())
-            .or_else(|| detail.album.year.map(|year| year.to_string()));
-        AlbumHeading {
-            kind: released.map_or(kind.clone(), |released| format!("{kind} · {released}")),
-            meta: meta.join(" · "),
-            discs: if detail.discs > 1 { self.tf("{} disc", "{} discs", detail.discs as i64, &[&detail.discs.to_string()]) } else { String::new() },
-            info: if remote { self.source_album_info(detail.album.id) } else { self.t("Info: Embedded tags") },
-            summary: format!("{songs} · {length}"),
-        }
+        let id = detail.album.id;
+        let kind = if id < 0 { self.source_album_kind(id) } else { i18n::t("Album").to_uppercase() };
+        let info = if id < 0 { self.source_album_info(id) } else { i18n::t("Info: Embedded tags") };
+        heading(detail, length, self.album_release_date(id), kind, info)
     }
 
     pub fn group_artist_versions(&mut self) -> bool {
@@ -238,20 +225,7 @@ impl Chilpa {
         }
         let Some(lib) = self.library() else { return Vec::new() };
         let versions = lib.version_catalog().map(|c| c.choices(album)).unwrap_or_default();
-        versions.into_iter().map(|v| {
-            // A server's version has an id for a path: its codec says the format.
-            let quality = if v.local { crate::quality::Quality::of_file(&v.path, v.bits, v.rate) }
-                else { crate::quality::Quality::of_codec(&v.codec, v.bits, v.rate) };
-            let (quality, brief) = (quality.long(), quality.brief());
-            let location = std::path::Path::new(&v.location).file_name().and_then(|s| s.to_str()).unwrap_or(&v.location);
-            let tracks = chilpa_i18n::tf("{} track", "{} tracks", v.tracks as i64, &[&v.tracks.to_string()]);
-            let source = AlbumSource::of(&v);
-            let annotation = edition(&v.title);
-            let annotation = if annotation.is_empty() { edition(location) } else { annotation };
-            let annotation = if annotation.is_empty() { annotation } else { format!(" - {annotation}") };
-            AlbumVersion { id: v.id, brief: format!("{} · {brief}", source.label), label: format!("{} · {quality}{annotation} · {tracks}", source.label),
-                detail: format!("{} · {location}", v.title), source }
-        }).collect()
+        version_labels(versions)
     }
 
     pub fn album_sources(&mut self, album: i64) -> Vec<AlbumSource> {
@@ -271,5 +245,41 @@ impl Chilpa {
         let ids: Vec<i64> = cards.iter().map(|a| a.id).collect();
         let ids = lib.grouped_album_ids(&ids).unwrap_or(ids);
         ids.chunks(500).flat_map(|ids| lib.albums_by_ids(ids).unwrap_or_default()).map(crate::browse::album_of).collect()
+    }
+}
+
+pub(crate) fn version_labels(versions: Vec<chilpa_library::store::versions::AlbumVersion>) -> Vec<AlbumVersion> {
+    versions.into_iter().map(|v| {
+            // A server's version has an id for a path: its codec says the format.
+            let quality = if v.local { crate::quality::Quality::of_file(&v.path, v.bits, v.rate) }
+                else { crate::quality::Quality::of_codec(&v.codec, v.bits, v.rate) };
+            let (quality, brief) = (quality.long(), quality.brief());
+            let location = std::path::Path::new(&v.location).file_name().and_then(|s| s.to_str()).unwrap_or(&v.location);
+            let tracks = chilpa_i18n::tf("{} track", "{} tracks", v.tracks as i64, &[&v.tracks.to_string()]);
+            let source = AlbumSource::of(&v);
+            let annotation = edition(&v.title);
+            let annotation = if annotation.is_empty() { edition(location) } else { annotation };
+            let annotation = if annotation.is_empty() { annotation } else { format!(" - {annotation}") };
+            AlbumVersion { id: v.id, brief: format!("{} · {brief}", source.label), label: format!("{} · {quality}{annotation} · {tracks}", source.label),
+                detail: format!("{} · {location}", v.title), source }
+        }).collect()
+}
+
+pub(crate) fn heading(detail: &crate::AlbumDetail, length: &str, released: Option<String>, kind: String, info: String) -> AlbumHeading {
+    let songs = i18n::tf("{} song", "{} songs", detail.album.track_count as i64, &[&detail.album.track_count.to_string()]);
+    let mut meta = Vec::new();
+    if !detail.genre.is_empty() { meta.push(detail.genre.clone()); }
+    if !detail.label.is_empty() { meta.push(detail.label.clone()); }
+    meta.extend([songs.clone(), length.to_owned()]);
+    let quality = detail.quality.long();
+    if !quality.is_empty() { meta.push(quality); }
+    let released = released.map(|raw| release_label(&raw)).filter(|label| !label.is_empty())
+        .or_else(|| detail.album.year.map(|year| year.to_string()));
+    AlbumHeading {
+        kind: released.map_or(kind.clone(), |released| format!("{kind} · {released}")),
+        meta: meta.join(" · "),
+        discs: if detail.discs > 1 { i18n::tf("{} disc", "{} discs", detail.discs as i64, &[&detail.discs.to_string()]) } else { String::new() },
+        info,
+        summary: format!("{songs} · {length}"),
     }
 }

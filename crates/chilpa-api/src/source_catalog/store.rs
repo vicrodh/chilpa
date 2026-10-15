@@ -379,13 +379,13 @@ impl Store {
 
     /// Keeps what fits: cards no kept listing names, seen longest ago, go
     /// first, and the tracks only they held go with them.
-    pub fn prune(&mut self, protected: &std::collections::HashSet<String>) {
+    pub fn prune(&mut self, protected: &std::collections::HashSet<String>, protected_cards: &std::collections::HashSet<i64>) {
         if self.cards.len() <= CARDS_KEPT {
             return;
         }
         let pinned: std::collections::HashSet<i64> = protected.iter().filter_map(|path| self.track_ids.get(path).copied()).collect();
         let listed: std::collections::HashSet<i64> = self.shelves.values().flat_map(|s| s.cards.iter().copied())
-            .chain(pinned.iter().filter_map(|id| self.tracks.get(id)).map(|track| track.album_id)).collect();
+            .chain(pinned.iter().filter_map(|id| self.tracks.get(id)).map(|track| track.album_id)).chain(protected_cards.iter().copied()).collect();
         let mut old: Vec<(u64, i64)> = self.cards.values().filter(|c| !listed.contains(&c.id)).map(|c| (c.seen_at, c.id)).collect();
         old.sort();
         for (_, id) in old.into_iter().take(self.cards.len() - CARDS_KEPT) {

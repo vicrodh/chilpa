@@ -47,13 +47,13 @@ Flickable {
     AlbumDetailModel {
         id: detail
         albumId: page.albumId
-        contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev
+        contentRev: Library.contentRev + I18n.rev + (page.albumId < 0 ? Library.remoteRev + Library.remoteArtRev : 0)
     }
     TrackListModel {
         id: tracks
         kind: "album"
         albumId: detail.selectedId
-        filterRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev
+        albumPage: detail.tracksRev
         playingPath: Player.path
     }
     AlbumHeaderBackground {

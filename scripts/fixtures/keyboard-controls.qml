@@ -4,6 +4,8 @@ import QtTest
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
+import app.chilpa.playlists
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Patterns"
@@ -21,6 +23,7 @@ ApplicationWindow {
     SearchModel { id: search }
     SearchFlyout { id: results; search: search; room: 600 }
     SearchCommands { host: searchHost; search: search; field: field; flyout: results }
+    PlaylistPickerModal { id: playlistPicker }
     FontMetrics { id: commandFont; font: tests.commandBar.input.font }
 
     TestCase {
@@ -67,6 +70,9 @@ ApplicationWindow {
                 Hotkeys.command("reset-all", "")
                 Hotkeys.command("keymap", "default")
                 Navigation.go("library", 0)
+                search.text = ""
+                field.text = ""
+                results.current = -1
                 origin.forceActiveFocus()
             } catch (error) {
                 console.log("SMOKE FAIL native keyboard init " + error)
@@ -76,6 +82,8 @@ ApplicationWindow {
         function cleanup() {
             console.log("SMOKE native keyboard result " + qtest_results.functionName + " failed=" + qtest_results.failed + " bar=" + commandBar)
             results.close()
+            playlistPicker.close()
+            if (typeof search.cancelSelection === "function") search.cancelSelection()
             editor.close()
             sheet.close()
             if (commandBar.opened) commandBar.dismiss()
@@ -197,6 +205,64 @@ ApplicationWindow {
             check(origin.activeFocus)
             same(search.text, "Vi smoke fixture")
             same(Navigation.screen, "library")
+        }
+        function selectedAlbumMenu() {
+            openSearch("colon")
+            keyClick(Qt.Key_Down)
+            const menu = findChild(results, "searchResultMenu")
+            check(menu !== null, "the native search menu must be mounted")
+            menu.show(results.current, 0, 0)
+            shown(menu)
+            return menu
+        }
+        function test_menu_keeps_the_selected_album_after_results_are_rebuilt() {
+            const menu = selectedAlbumMenu()
+            const open = menu.entries.findIndex(entry => entry.act === "open")
+            check(open >= 0)
+            search.text = "Vi fixture track"
+            tryVerify(() => search.count > 0)
+            search.refresh()
+            tryVerify(() => descendants(results.contentItem, item => item.kind === 4 && item.title.startsWith("Vi fixture track")).length > 0)
+            menu.choose(open, 0)
+            tryCompare(Navigation, "screen", "album")
+            same(Navigation.routeId, window.fixtureAlbum, "menu destination must survive a model reset")
+            check(!Player.playing || Player.paused)
+        }
+        function test_menu_reads_the_album_before_opening_the_playlist_picker() {
+            const menu = selectedAlbumMenu()
+            const pick = menu.entries.findIndex(entry => entry.act === "pick")
+            check(pick >= 0)
+            menu.choose(pick, 0)
+            shown(playlistPicker)
+            same(JSON.parse(playlistPicker.trackIdsJson).length, 100, "the picker receives every real album track")
+            check(!search.selectionPending)
+            same(search.selectionError, "")
+            keyClick(Qt.Key_Escape)
+            tryCompare(playlistPicker, "opened", false)
+            check(!Player.playing || Player.paused)
+        }
+        function test_search_reopens_with_native_n_and_keeps_keyboard_navigation() {
+            openSearch("colon")
+            keyClick(Qt.Key_Down)
+            const albumRow = results.current
+            keyClick(Qt.Key_Escape)
+            tryCompare(results, "opened", false)
+            check(origin.activeFocus)
+            Hotkeys.command("keymap", "vi")
+            keyClick(Qt.Key_N)
+            shown(results)
+            const reopened = results.current
+            check(reopened > albumRow)
+            keyClick(Qt.Key_Down)
+            check(results.current > reopened, "reopened search must receive Down")
+            keyClick(Qt.Key_Up)
+            same(results.current, reopened)
+            keyClick(Qt.Key_Up)
+            same(results.current, albumRow)
+            keyClick(Qt.Key_Return)
+            tryCompare(results, "opened", false)
+            tryCompare(Navigation, "screen", "album")
+            same(Navigation.routeId, window.fixtureAlbum)
         }
     }
     Timer {

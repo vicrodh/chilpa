@@ -85,6 +85,11 @@ impl Natives {
         self.live.read().unwrap_or_else(|e| e.into_inner()).contains_key(id)
     }
 
+    pub(crate) fn delivers_audio(&self, id: &str) -> bool {
+        self.known.lock().unwrap_or_else(|error| error.into_inner()).get(id)
+            .is_some_and(|known| known.manifest.delivers_audio)
+    }
+
     pub(crate) fn has_settings(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|known| {
             known.capabilities["settings"] == true || known.capabilities["auth"] == "browser"
@@ -313,4 +318,22 @@ fn launch(manifest: &Manifest, folder: &Path, natives: std::sync::Weak<Natives>)
 #[cfg(not(target_os = "linux"))]
 fn launch(_: &Manifest, _: &Path, _: std::sync::Weak<Natives>) -> Result<Arc<NativeClient>, PluginError> {
     Err(PluginError::NotAllowed("native plugins need a sandbox this system does not have yet".into()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn search_uses_the_pinned_manifest_audio_capability() {
+        let natives = Arc::new(Natives::default());
+        for audio in [false, true] {
+            let manifest: Manifest = serde_json::from_value(json!({"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","delivers_audio":audio})).unwrap();
+            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest, folder:PathBuf::new(), capabilities:json!({}), discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now() });
+            assert_eq!(natives.delivers_audio("test.source"), audio);
+            let reply = crate::source_search::native_reply(&natives, "test.source", "Fixture", "Song", 1, "");
+            assert_eq!(reply.delivers_audio, audio, "even a failed search retains its declared capability");
+        }
+        assert!(!natives.delivers_audio("unknown"));
+    }
 }

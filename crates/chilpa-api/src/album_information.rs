@@ -208,6 +208,7 @@ mod tests {
             source:"fixture.source".into(),name:"Source".into(),id:"album:7".into(),title:"Record".into(),
             detail:"Band".into(),art:String::new(),duration_ms:0,collection:true,entity:"album".into(),
             item:Some(json!({"kind":"album","ref":"album:7","title":"Record","artist":"Band","description":"Review","copyright":"Publisher","track_credits":[{"title":"Song","performers":"Player, Guitar"}]})),
+            no_audio:false,
         });
         let info: Value = serde_json::from_str(&api.album_information(album)).unwrap();
         assert_eq!(info["description"], "Review");

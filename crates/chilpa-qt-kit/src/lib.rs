@@ -6,6 +6,7 @@
 pub mod app;
 pub mod format;
 pub mod worker;
+pub mod album_pages;
 pub mod bridge {
     pub mod i18n;
     pub mod prefs;
