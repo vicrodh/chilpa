@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Effects
 import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/lyrics/qml/Components"
 import "../Components"
 import "../Theme"
@@ -15,7 +16,7 @@ ListView {
     property bool shaders: true
     property bool follow: true
     property real lineSize: Stage.lineMin * Type.pointsPerPixel
-    property var lines: feed ? feed.lines : []
+    property var lines: feed && !feed.waiting ? feed.lines : []
     readonly property int watched: feed ? feed.current : -1
     readonly property bool synced: feed !== null && feed.synced
     readonly property real anchor: height * Stage.lyricAnchor
@@ -33,6 +34,15 @@ ListView {
         anchor: Stage.lyricAnchor
         duration: Stage.lineEnter
         onBrowseRequested: view.follow = false
+    }
+    Icon {
+        objectName: "immersiveLyricsPrelude"
+        parent: view
+        anchors.centerIn: parent
+        visible: view.feed !== null && view.feed.waiting
+        glyph: Icons.music
+        size: Math.round(Stage.noteText / Type.pointsPerPixel)
+        color: Theme.color.immersiveTextDim
     }
     model: lines
     spacing: Stage.lyricLineApart

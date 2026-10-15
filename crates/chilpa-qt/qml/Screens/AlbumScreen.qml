@@ -156,6 +156,7 @@ Flickable {
             active: page.presented && detail.found
             asynchronous: true
             property double albumId: detail.selectedId
+            property Flickable viewport: page
             property var shelves: (sourceDetails.info.shelves || []).filter(shelf => !(shelf.id === "tracks" && shelf.kind === "track"))
             source: "qrc:/qt/qml/app/chilpa/sources/qml/Patterns/AlbumRecommendations.qml"
         }

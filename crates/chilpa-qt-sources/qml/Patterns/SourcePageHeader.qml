@@ -72,7 +72,7 @@ Column {
                 Text { text: header.sourceInfo.name || ""; textFormat: Text.PlainText; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary; font.pointSize: Type.meta }
             }
             Text { width: parent.width; text: header.info.title || ""; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pointSize: Type.display; font.weight: Type.bold; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textPrimary }
-            AlbumArtistLine { width: parent.width; visible: header.cardId !== 0; albumId: header.cardId; contrasted: header.contrasted; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary }
+            AlbumArtistLine { width: parent.width; visible: header.cardId !== 0; albumId: header.cardId; document: header.record && header.record.artistInformation !== undefined ? JSON.parse(header.record.artistInformation || "{}") : (albumId ? JSON.parse(AlbumActions.artistInformation(albumId, Library.contentRev + Library.remoteRev) || "{}") : ({})); contrasted: header.contrasted; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary }
             Text {
                 visible: header.cardId === 0 && !!header.info.artist; text: header.info.artist || ""; textFormat: Text.PlainText
                 color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary; font.pointSize: Type.body

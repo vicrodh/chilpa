@@ -10,6 +10,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 Column {
     id: root
 
+    property Flickable viewport: null
     property string title
     property AlbumGridModel model
     // A link on the right of the title ("See all").
@@ -58,6 +59,7 @@ Column {
             fitContent: true; fixedColumns: root.cardCount
             viewportX: rail.contentX; viewportWidth: rail.width
             round: root.round
+            viewport: root.viewport
             model: root.model
             onOpen: (albumId) => Navigation.go("album", albumId)
         }

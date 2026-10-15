@@ -47,6 +47,8 @@ TestCase {
         Player.lyricsSynced = false
         Player.lyricsLine = -1
         Player.position = 0
+        Player.path = "/test.wav"
+        Player.paused = true
         rows(1)
     }
     function cleanup() { Motion.reduced = false; if (deck) deck.destroy(); if (lyrics) lyrics.destroy(); deck = null; lyrics = null; wait(0) }
@@ -149,4 +151,78 @@ TestCase {
         wait(20)
         verify(!column.gliding)
     }
+    function delayedDocument(timing, start) {
+        return JSON.stringify({document:{timing:timing, lines:[{text:"A delayed first verse",start_ms:start},{text:"The next verse",start_ms:start + 3000}],
+            layers:[{kind:"translation",language:"es",lines:[{line:0,text:"A translation that must wait too"}]}]},translation:0})
+    }
+    function delayedLyrics(timing, start) {
+        Player.paused = true
+        Player.lyricsJson = delayedDocument(timing, start)
+        Player.lyricsSynced = timing !== "unsynced"
+        Player.lyricsLine = 0
+        lyrics = lyricsMaker.createObject(test)
+        return findChild(lyrics, "immersiveLyricColumn")
+    }
+    function prelude(column, waiting) {
+        compare(lyricFeed.waiting, waiting)
+        compare(findChild(column, "immersiveLyricsPrelude").visible, waiting)
+        if (waiting) {
+            compare(column.count, 0, "neither original nor translated rows exist before the first real timestamp")
+            compare(lyricFeed.current, -1)
+            verify(!findChild(lyrics, "immersiveLyricsFollow").visible)
+        }
+    }
+    function test_timed_prelude_uses_the_clock_despite_a_clamped_index_and_manual_follow() {
+        // A 10-second LRC line with +3000 ms offset reaches the UI at 7000 ms.
+        const column = delayedLyrics("line", 7000)
+        Player.position = 6.999
+        prelude(column, true)
+        column.follow = false
+        prelude(column, true)
+        column.resume()
+        prelude(column, true)
+        Player.position = 7
+        prelude(column, false)
+        tryCompare(column, "count", 2)
+        tryVerify(() => column.itemAtIndex(0) !== null)
+        verify(column.itemAtIndex(0).active)
+        Player.position = 2
+        prelude(column, true)
+        Player.position = 7.001
+        prelude(column, false)
+    }
+    function test_document_replacement_translation_and_native_sync_arrival_keep_the_prelude() {
+        const column = delayedLyrics("word", 10000)
+        Player.lyricsSynced = false
+        Player.position = 11
+        prelude(column, true)
+        Player.lyricsSynced = true
+        Player.lyricsLine = -1
+        prelude(column, true)
+        Player.lyricsLine = 0
+        prelude(column, false)
+        Player.lyricsJson = delayedDocument("line", 15000)
+        prelude(column, true)
+        const changed = JSON.parse(Player.lyricsJson)
+        changed.document.layers[0].lines[0].text += " with a late replacement"
+        Player.lyricsJson = JSON.stringify(changed)
+        prelude(column, true)
+        Player.path = "/next-track.wav"
+        Player.position = 0
+        Player.lyricsJson = delayedDocument("syllable", 4000)
+        prelude(column, true)
+        Player.position = 4
+        prelude(column, false)
+    }
+    function test_plain_lyrics_keep_normal_reading_without_starting_sync() {
+        const column = delayedLyrics("unsynced", 20000)
+        prelude(column, false)
+        tryCompare(column, "count", 2)
+        compare(lyricFeed.current, -1)
+        column.resume()
+        verify(!lyricFeed.synced)
+        compare(lyricFeed.current, -1)
+        compare(column.count, 2)
+    }
+
 }

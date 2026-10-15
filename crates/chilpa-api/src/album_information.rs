@@ -31,31 +31,10 @@ impl Chilpa {
         self.album_artist_document(&album.artist, &info, &rows).to_string()
     }
 
-    fn album_artist_document(&mut self, artist: &str, info: &Value, rows: &[crate::TrackRow]) -> Value {
-        let mut artists = Vec::new();
-        let artist = artist.trim();
-        if !chilpa_library::is_various(artist) {
-            add_artist(&mut artists, person(artist, info["artist_ref"].as_str().unwrap_or(""), info));
-        }
-        for credit in info["credits"].as_array().into_iter().flatten() {
-            let name = credit["name"].as_str().unwrap_or("");
-            let reference = credit["ref"].as_str().map(str::to_owned).unwrap_or_else(|| credit["id"].as_i64().map(|id| format!("artist:{id}")).unwrap_or_default());
-            add_artist(&mut artists, person(name, &reference, info));
-        }
-        if chilpa_library::is_various(artist) {
-            for row in rows {
-                let metadata = self.catalog.track_by_path(&row.path).map(|(track,_)| track.metadata).unwrap_or(Value::Null);
-                for name in self.credit_names(&row.artist) {
-                    add_artist(&mut artists, person(&name, metadata["artist_ref"].as_str().unwrap_or(""), info));
-                }
-            }
-            for track in info["track_credits"].as_array().into_iter().flatten() {
-                if let Some(name) = track["artist"].as_str() { add_artist(&mut artists, person(name, "", info)); }
-            }
-        }
-        let links = linked_names(&artists);
-        let html = json!(if chilpa_library::is_various(artist) && !artists.is_empty() { format!("{} ({links})", escape(artist)) } else if artists.is_empty() { escape(artist) } else { links });
-        json!({"artist_html":html,"artist_links":artists})
+    pub(crate) fn album_artist_document(&mut self, artist: &str, info: &Value, rows: &[crate::TrackRow]) -> Value {
+        let catalog = self.catalog.clone();
+        artist_document(artist, info, rows, |credit| self.credit_names(credit),
+            |path| catalog.track_by_path(path).map(|(track, _)| track.metadata).unwrap_or(Value::Null))
     }
 
     pub fn album_information(&mut self, id: i64) -> String {
@@ -118,6 +97,33 @@ impl Chilpa {
 fn escape(text: &str) -> String {
     text.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
 }
+pub(crate) fn artist_document(artist: &str, info: &Value, rows: &[crate::TrackRow], mut credit_names: impl FnMut(&str) -> Vec<String>, metadata: impl Fn(&str) -> Value) -> Value {
+        let mut artists = Vec::new();
+        let artist = artist.trim();
+        if !chilpa_library::is_various(artist) {
+            add_artist(&mut artists, person(artist, info["artist_ref"].as_str().unwrap_or(""), info));
+        }
+        for credit in info["credits"].as_array().into_iter().flatten() {
+            let name = credit["name"].as_str().unwrap_or("");
+            let reference = credit["ref"].as_str().map(str::to_owned).unwrap_or_else(|| credit["id"].as_i64().map(|id| format!("artist:{id}")).unwrap_or_default());
+            add_artist(&mut artists, person(name, &reference, info));
+        }
+        if chilpa_library::is_various(artist) {
+            for row in rows {
+                let metadata = metadata(&row.path);
+                for name in credit_names(&row.artist) {
+                    add_artist(&mut artists, person(&name, metadata["artist_ref"].as_str().unwrap_or(""), info));
+                }
+            }
+            for track in info["track_credits"].as_array().into_iter().flatten() {
+                if let Some(name) = track["artist"].as_str() { add_artist(&mut artists, person(name, "", info)); }
+            }
+        }
+        let links = linked_names(&artists);
+        let html = json!(if chilpa_library::is_various(artist) && !artists.is_empty() { format!("{} ({links})", escape(artist)) } else if artists.is_empty() { escape(artist) } else { links });
+        json!({"artist_html":html,"artist_links":artists})
+}
+
 fn person(name: &str, reference: &str, info: &Value) -> Value {
     let plugin = info["plugin"].as_str().unwrap_or("");
     let key = if plugin.is_empty() { name.to_string() }
@@ -218,6 +224,19 @@ mod tests {
         assert_eq!(header["artist_html"], info["artist_html"]);
         assert_eq!(header["artist_links"], info["artist_links"]);
         assert!(header.get("track_credits").is_none());
+        assert_eq!(api.cached_album_page(album).unwrap().artist_information, header.to_string());
+        let compilation = api.catalog.adopt("fixture.source", None, &crate::source_search::RemoteFound {
+            source: "fixture.source".into(), name: "Source".into(), id: "album:8".into(), title: "Compilation".into(),
+            detail: "Various Artists".into(), art: String::new(), duration_ms: 0, collection: true, entity: "album".into(),
+            item: Some(json!({"kind":"album","ref":"album:8","title":"Compilation","artist":"Various Artists",
+                "credits":[{"name":"Player & <Band>","ref":"artist:9"}],"track_credits":[{"artist":"Guest"}]})), no_audio: false,
+        });
+        let expected = api.album_artist_information(compilation);
+        let page = api.cached_album_page(compilation).unwrap();
+        assert_eq!(page.artist_information, expected);
+        let document: Value = serde_json::from_str(&page.artist_information).unwrap();
+        assert_eq!(document["artist_links"][0]["key"], "fixture.source native:artist:9");
+        assert_eq!(document["artist_links"][1]["name"], "Guest");
     }
     #[test]
     fn local_information_uses_library_metadata_without_a_plugin() {

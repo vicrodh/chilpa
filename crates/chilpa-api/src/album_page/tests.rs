@@ -29,6 +29,7 @@ fn page_matches_the_existing_header_versions_and_disc_rows() {
     let heading = api.album_heading(&expected, &crate::format::span(expected.duration_ms));
     let entries = api.album_track_entries(second);
     let versions = api.album_versions(second);
+    let artist_information = api.album_artist_information(second);
     let reader = Reader::open(&path).unwrap();
     let page = reader.album_page(first, false).unwrap();
     assert_eq!(page.detail, expected);
@@ -38,6 +39,7 @@ fn page_matches_the_existing_header_versions_and_disc_rows() {
     assert_eq!(page.heading.info, heading.info);
     assert_eq!(page.heading.summary, heading.summary);
     assert_eq!(page.entries, entries);
+    assert_eq!(page.artist_information, artist_information);
     assert_eq!(serde_json::to_value(page.versions).unwrap(), serde_json::to_value(versions).unwrap());
     assert_eq!(page.entries.iter().filter(|entry| matches!(entry, TrackEntry::Header(_))).count(), 2);
     assert_eq!(reader.album_page(first, true).unwrap().detail.album.id, first, "a filtered grid keeps the clicked edition");
@@ -85,4 +87,25 @@ fn a_writer_cannot_mix_the_selection_header_and_rows_in_one_page() {
     let page = reader.album_page(first, false).unwrap();
     assert_eq!(page.detail.album.id, first);
     assert_eq!(reader.album_page(second, true).unwrap().detail.duration_ms, 27000);
+}
+
+#[test]
+fn page_artist_links_preserve_compilation_credit_parts_and_metadata_updates() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    let library = Library::open(&path).unwrap();
+    let (album, _) = seed(&library);
+    library.connection().execute("UPDATE albums SET album_artist = 'Various Artists' WHERE id = ?1", [album]).unwrap();
+    library.connection().execute("UPDATE tracks SET artist = 'Player & <Band>, Guest' WHERE album_id = ?1", [album]).unwrap();
+    library.state_credit("Player & <Band>, Guest", &["Player & <Band>".into(), "Guest".into()]).unwrap();
+    let reader = Reader::open(&path).unwrap();
+    let mut api = Chilpa::new();
+    api.library = Some(library);
+    let page = reader.album_page(album, true).unwrap();
+    assert_eq!(page.artist_information, api.album_artist_information(album));
+    let document: serde_json::Value = serde_json::from_str(&page.artist_information).unwrap();
+    assert_eq!(document["artist_links"].as_array().unwrap().len(), 3, "I preserve the combined tag fallback alongside its stated people");
+    assert!(document["artist_html"].as_str().unwrap().contains("&amp; &lt;Band&gt;"));
+    api.library.as_ref().unwrap().connection().execute("UPDATE tracks SET artist = 'Replacement' WHERE album_id = ?1", [album]).unwrap();
+    assert_eq!(reader.album_page(album, true).unwrap().artist_information, api.album_artist_information(album));
 }

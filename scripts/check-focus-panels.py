@@ -94,6 +94,15 @@ def verify_images(output, samples):
         if motion < 0.1:
             raise ValueError(f"{direction}: captures did not move")
         measurements[direction] = dict(frames=len(frames), motion=motion)
+    prelude = Image.open(output / "lyrics-wait.png").convert("RGBA")
+    bounds = prelude.getchannel("A").getbbox()
+    if bounds is None:
+        raise ValueError("timed prelude has no musical glyph")
+    left, top, right, bottom = bounds
+    if (right - left > prelude.width / 4 or bottom - top > prelude.height / 4
+            or abs((left + right) / 2 - prelude.width / 2) > prelude.width / 10
+            or abs((top + bottom) / 2 - prelude.height / 2) > prelude.height / 10):
+        raise ValueError(f"timed prelude contains text beyond its centered musical glyph: {bounds}")
     first = Image.open(output / "lyrics-word-a.png").convert("RGB")
     second = Image.open(output / "lyrics-word-b.png").convert("RGB")
     progress = sum(ImageStat.Stat(ImageChops.difference(first, second)).mean)
@@ -107,7 +116,7 @@ def verify_images(output, samples):
         raise ValueError("composed lyric capture is not opaque")
     if composed.getpixel((0, 0))[:3] != (16, 24, 32):
         raise ValueError("composed lyric capture has the wrong background")
-    measurements["lyrics"] = dict(word_progress=progress, captures=4, opaque_composition=True)
+    measurements["lyrics"] = dict(word_progress=progress, captures=5, opaque_composition=True, prelude_bounds=bounds)
     return measurements
 
 
@@ -171,6 +180,9 @@ def main():
                         if "SMOKE focus evidence " in line]
             if len(evidence) != 1:
                 raise ValueError("missing final native identity/layout evidence")
+            for key in ("timed_prelude", "prelude_seek", "plain_reading", "document_replacement", "translated_prelude"):
+                if evidence[0].get(key) is not True:
+                    raise ValueError(f"missing lyric prelude assertion: {key}")
             report.update(measurements=verify_images(output, samples), samples=samples, evidence=evidence[0], passed=True)
     except (ValueError, OSError, subprocess.TimeoutExpired) as error:
         report["error"] = str(error)

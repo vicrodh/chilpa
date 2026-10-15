@@ -15,6 +15,8 @@ ApplicationWindow {
     property int snapshot: 0
     property double previous: 0
     property double worst: 0
+    property double worstAfter: 0
+    property double previousAfter: 0
     property double mounted: -1
     property double previousAlbum: 0
     property bool fromSearch: false
@@ -38,9 +40,14 @@ ApplicationWindow {
     AlbumDetailModel { id: rapidDetail; albumId: window.rapidAlbum }
     TrackListModel { id: rapidTracks; kind: "album"; albumId: rapidDetail.selectedId; albumPage: rapidDetail.tracksRev }
     FrameAnimation {
-        running: window.awaiting
+        running: true
         onTriggered: {
             const now = Date.now()
+            if (!window.awaiting) {
+                if (window.previousAfter) window.worstAfter = Math.max(window.worstAfter, now - window.previousAfter)
+                window.previousAfter = now
+                return
+            }
             if (window.previous) window.worst = Math.max(window.worst, now - window.previous)
             window.previous = now
         }
@@ -82,9 +89,18 @@ ApplicationWindow {
         previousAlbum = Navigation.routeId
         awaiting = true; started = Date.now(); previous = started; worst = 0; mounted = -1
     }
+    function contentBuilds(view) {
+        let total = 0
+        for (let i = 0; i < view.count; i++) total += view.itemAtIndex(i)?.contentBuilds || 0
+        return total
+    }
     function check() {
         const page = host.item, view = find(page, "trackListView")
         if (phase === 0) {
+            const builds = contentBuilds(view)
+            console.log("SMOKE album after-first-frame=" + sample + " worst-gui-gap=" + worstAfter + "ms content-builds=" + builds)
+            if (worstAfter > 250) failures.push("record blocked the GUI for " + worstAfter + "ms after its first frame")
+            if (view.model.count > 100 && builds >= 60) failures.push("record constructed " + builds + " visual contents before scrolling")
             trackHeight = view.contentHeight
             snapshot = view.model.albumPage
             Library.remoteRev++
@@ -93,15 +109,23 @@ ApplicationWindow {
         }
         if (phase === 1) {
             if (view.model.albumPage !== snapshot) failures.push("remote artwork reloaded a local record")
+            worstAfter = 0; previousAfter = Date.now()
             page.contentY = Math.max(0, page.contentHeight - page.height)
             phase = 2; next.restart(); return
         }
         if (phase === 2) {
+            console.log("SMOKE album scroll-bottom=" + sample + " worst-gui-gap=" + worstAfter + "ms")
+            if (worstAfter > 250) failures.push("scrolling down blocked the GUI for " + worstAfter + "ms")
             const last = view.itemAtIndex(view.count - 1)
             if (!last || !find(last, "trackRowBody")) failures.push("last track has no visual row")
             if (view.contentHeight !== trackHeight) failures.push("windowing changed track geometry")
+            worstAfter = 0; previousAfter = Date.now()
             page.contentY = 0
             phase = 3; next.restart(); return
+        }
+        if (phase === 3) {
+            console.log("SMOKE album scroll-top=" + sample + " worst-gui-gap=" + worstAfter + "ms")
+            if (worstAfter > 250) failures.push("scrolling up blocked the GUI for " + worstAfter + "ms")
         }
         if (phase === 3 && sample === 0) {
             page.showInformation()
@@ -142,11 +166,14 @@ ApplicationWindow {
                 const row = view.itemAtIndex(i)
                 if (row && window.find(row, "trackRowBody")) rows++
             }
+            if (!rows) return
+            const builds = window.contentBuilds(view)
             window.selectedIds[window.sample] = view.model.albumId
-            console.log("SMOKE album=" + window.albums[window.sample] + " selected=" + view.model.albumId + " search-click=" + window.fromSearch + " mount=" + window.mounted + "ms first-frame-with-tracks=" + elapsed + "ms worst-gui-gap=" + window.worst + "ms tracks=" + view.model.count + " visual-rows=" + rows)
+            console.log("SMOKE album=" + window.albums[window.sample] + " selected=" + view.model.albumId + " search-click=" + window.fromSearch + " mount=" + window.mounted + "ms first-frame-with-tracks=" + elapsed + "ms worst-gui-gap=" + window.worst + "ms tracks=" + view.model.count + " visual-rows=" + rows + " content-builds=" + builds)
             if (elapsed > 500) window.failures.push("local record took " + elapsed + "ms to present its tracks")
-            if (!rows || view.model.count > 100 && rows >= 60) window.failures.push("record built " + rows + " visual rows")
+            if (view.model.count > 100 && (rows >= 60 || builds >= 60)) window.failures.push("record built " + builds + " visual contents")
             window.awaiting = false
+            window.previousAfter = Date.now(); window.worstAfter = 0
             next.restart()
         }
     }

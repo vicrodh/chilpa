@@ -15,6 +15,27 @@ TestCase {
     Connections { target: card; function onClicked() { albumClicks++ } }
     AlbumGridModel { id: records }
     AlbumGrid { id: grid; y: 260; width: 1400; height: 500; fitContent: true; model: records; viewportWidth: 700; viewportX: 320 }
+    Component {
+        id: distantRail
+        Flickable {
+            id: railPage
+            width: 900; height: 500; contentHeight: 3000
+            AlbumGridModel { id: shelfRecords; albums: 6; Component.onCompleted: append({first:0,span:6,group:""}) }
+            AlbumCarousel { id: shelf; y: 1800; width: parent.width; viewport: railPage; title: "More records"; model: shelfRecords }
+            property alias shelf: shelf
+        }
+    }
+    function test_a_distant_rail_keeps_geometry_and_builds_its_cards_when_scrolled_into_view() {
+        const page = createTemporaryObject(distantRail, this)
+        verify(page)
+        wait(100)
+        const height = page.shelf.height
+        verify(height > 0)
+        compare(findChild(page, "albumAnimatedCover"), null, "I keep offscreen cards unconstructed")
+        page.contentY = 1800
+        tryVerify(() => findChild(page, "albumAnimatedCover") !== null)
+        compare(page.shelf.height, height, "I keep the shelf's scroll geometry while its cards load")
+    }
     function initTestCase() { records.append({first:0,span:6,group:""}) }
     function test_artist_name_opens_the_source_artist_without_opening_the_album() {
         card.albumId = -7; card.subtitle = "Band"
