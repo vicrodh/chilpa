@@ -10,6 +10,7 @@ import "qrc:/qt/qml/app/chilpa/folders/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/stats/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Screens"
+import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Driving
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -19,8 +20,7 @@ PageTransition {
     id: host
     Binding { target: CardLayout; property: "viewportWidth"; value: host.width }
     Connections { target: Navigation; function onRouteRequested() { host.request(true) } }
-    Connections { target: Navigation; function onPendingRevisionChanged() { host.Window.window?.update() } }
-    Connections { target: host.Window.window; function onFrameSwapped() { if (Navigation.pending && host.phase !== "acknowledging") Qt.callLater(Navigation.settle, Navigation.pendingRevision) } }
+    Driving.FrameSettlement { navigation: Navigation; router: host }
     onPreparingRoute: if (Navigation.prepare()) Sources.refresh()
     route: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.routeKey].join("\u001f")
     Connections { target: OpenMedia; function onOpened() { Navigation.go("openMedia", 0) } }

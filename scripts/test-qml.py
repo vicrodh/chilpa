@@ -29,8 +29,13 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
     ET.ElementTree(resources).write(temporary / "resources.qrc", encoding="utf-8")
     subprocess.run([str(libexec / "rcc"), "--binary", str(temporary / "resources.qrc"), "-o", str(temporary / "resources.rcc")], check=True)
     loader = root / "crates/chilpa-qt-kit/tests/resource_loader.cpp"
-    flags = shlex.split(subprocess.check_output(["pkg-config", "--cflags", "--libs", "Qt6Core"], text=True))
-    subprocess.run(["c++", "-shared", "-fPIC", str(loader), "-o", str(temporary / "loader.so"), *flags], check=True)
+    fence = root / "crates/chilpa-qt-kit/cxx/frame_fence.cpp"
+    fence_header = fence.with_suffix(".h")
+    fence_moc = temporary / "moc_frame_fence.cpp"
+    subprocess.run([str(libexec / "moc"), str(fence_header), "-o", str(fence_moc)], check=True)
+    flags = shlex.split(subprocess.check_output(["pkg-config", "--cflags", "--libs", "Qt6Quick", "Qt6Qml"], text=True))
+    subprocess.run(["c++", "-std=c++17", "-shared", "-fPIC", str(loader), str(fence), str(fence_moc),
+                    "-o", str(temporary / "loader.so"), *flags], check=True)
     imports = temporary / "imports"
     shutil.copytree(root / "crates/chilpa-qt/tests/qml/imports", imports)
     for crate in sorted((root / "crates").glob("chilpa-qt*")):

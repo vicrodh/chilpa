@@ -33,6 +33,7 @@ if bool(args.process_plugin) != bool(args.plugin_smoke_script):
 
 python = sys.executable
 stages = {
+    "frame-fence": [python, "scripts/check-frame-fence.py", str(output / "frame-fence")],
     "filters": [python, "scripts/check-library-filtering.py", str(binary), str(library),
                 "--budget-ms", str(args.filter_budget_ms)],
     "navigation": ["bash", "scripts/check-navigation.sh", str(binary), str(library)],
