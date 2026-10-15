@@ -70,6 +70,22 @@ report = {
     "library": str(library),
     "stages": [],
 }
+report_path = output / "report.json"
+if args.stage and report_path.exists():
+    try:
+        previous_report = json.loads(report_path.read_text())
+    except (OSError, ValueError) as error:
+        parser.error(f"cannot resume the existing report: {error}")
+    if not isinstance(previous_report, dict) or any(
+            previous_report.get(key) != report[key] for key in ("binary", "sha256", "library")):
+        parser.error("cannot resume: binary, sha256 and library must match the existing report")
+    previous_stages = previous_report.get("stages")
+    if (not isinstance(previous_stages, list)
+            or any(not isinstance(stage, dict) or not isinstance(stage.get("name"), str)
+                   or not isinstance(stage.get("exit_code"), int) for stage in previous_stages)
+            or len({stage["name"] for stage in previous_stages}) != len(previous_stages)):
+        parser.error("cannot resume: the existing report has invalid stage records")
+    report = previous_report
 for name in selected:
     command = stages[name]
     print(f"SMOKE integrated starting {name}", flush=True)
@@ -85,15 +101,28 @@ for name in selected:
             log = log.decode(errors="replace")
         log += "\nSMOKE FAIL integrated stage timed out\n"
     elapsed = round(time.monotonic() - started, 3)
-    (output / f"{name}.log").write_text(log)
-    report["stages"].append({"name": name, "exit_code": code, "seconds": elapsed,
-                             "log": str(output / f"{name}.log")})
+    log_path = output / f"{name}.log"
+    record = {"name": name, "exit_code": code, "seconds": elapsed, "log": str(log_path)}
+    previous_index = next((index for index, stage in enumerate(report["stages"])
+                           if stage["name"] == name), None)
+    if previous_index is not None:
+        previous = dict(report["stages"][previous_index])
+        attempts = previous.pop("attempts", [])
+        if log_path.is_file():
+            archived_log = output / f"{name}.attempt-{len(attempts) + 1}.log"
+            archived_log.write_bytes(log_path.read_bytes())
+            previous["log"] = str(archived_log)
+        record["attempts"] = attempts + [previous]
+        report["stages"][previous_index] = record
+    else:
+        report["stages"].append(record)
+    log_path.write_text(log)
     for line in log.splitlines():
         if "SMOKE" in line:
             print(line, flush=True)
     print(f"SMOKE integrated {name} exit={code} elapsed={elapsed}s", flush=True)
     report["passed"] = all(stage["exit_code"] == 0 for stage in report["stages"])
-    (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+    report_path.write_text(json.dumps(report, indent=2) + "\n")
 
 print(f"SMOKE integrated completed stages={len(report['stages'])} passed={report['passed']}")
 print(output / "report.json")
