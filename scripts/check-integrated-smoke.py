@@ -36,6 +36,12 @@ stages = {
     "filters": [python, "scripts/check-library-filtering.py", str(binary), str(library),
                 "--budget-ms", str(args.filter_budget_ms)],
     "navigation": ["bash", "scripts/check-navigation.sh", str(binary), str(library)],
+    "navigation-ack": [python, "scripts/check-navigation-ack.py", str(binary), str(library),
+                       str(output / "navigation-ack")],
+    "navigation-ack-vulkan": [python, "scripts/check-navigation-ack.py", str(binary), str(library),
+                              str(output / "navigation-ack-vulkan"), "--backend", "vulkan"],
+    "media-navigation-ack": [python, "scripts/check-media-navigation-ack.py", str(binary),
+                             str(output / "media-navigation-ack")],
     "albums": [python, "scripts/check-album-opening.py", str(binary), str(library),
                str(output / "album-details.log")],
     "queues": [python, "scripts/check-queues.py", str(binary), str(library)],
@@ -62,6 +68,7 @@ stages = {
                             str(output / "focus-panels-vulkan"), "--backend", "vulkan"],
 }
 if args.vulkan_host_display:
+    stages["navigation-ack-vulkan"].append("--host-display")
     stages["covers-vulkan"].append("--host-display")
     stages["reactive-artwork-vulkan"].append("--host-display")
     stages["scenes-vulkan"].append("--host-display")

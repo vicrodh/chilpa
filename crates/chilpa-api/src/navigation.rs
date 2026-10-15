@@ -90,6 +90,16 @@ pub struct Route {
     pub key: String,
 }
 
+/// I resolve the destination without opening its media parent before acknowledgement.
+pub struct PlannedRoute {
+    pub route: Route,
+    pub(crate) media_parent: Option<(String, chilpa_plugin::messages::Entry)>,
+}
+
+impl PlannedRoute {
+    pub fn needs_preparation(&self) -> bool { self.media_parent.is_some() }
+}
+
 impl Route {
     pub fn of(screen: Screen) -> Route {
         Route { screen, id: 0, key: String::new() }
@@ -250,6 +260,15 @@ impl Tabs {
 const TABS_KEY: &str = "ui.tabs";
 
 impl crate::Chilpa {
+    /// I perform the destination's source work after its acknowledgement frame.
+    pub fn prepare_planned_route(&mut self, plan: PlannedRoute) -> bool {
+        if let Some((source, parent)) = plan.media_parent {
+            self.open_media_parent(source, parent);
+            return true;
+        }
+        false
+    }
+
     /// A tab's title and the name of its icon. A record's tab is named
     /// after the record, and a source's after its plugin.
     pub fn tab_label(&mut self, r: &Route) -> (String, String) {
@@ -313,9 +332,14 @@ impl crate::Chilpa {
         Some(Tabs::restore(&saved.replace("\\n", "\n")))
     }
 
+    /// I protect live routes without reading labels or writing preferences.
+    pub fn protect_tabs(&self, tabs: &Tabs) {
+        self.catalog.protect_navigation(&tabs.routes());
+    }
+
     /// I protect live routes before optionally saving the open tabs for the next run.
     pub fn keep_tabs(&mut self, tabs: &Tabs) {
-        self.catalog.protect_navigation(&tabs.routes());
+        self.protect_tabs(tabs);
         if self.restores_tabs() {
             self.remember_preference(TABS_KEY, &tabs.save().replace('\n', "\\n"));
         }

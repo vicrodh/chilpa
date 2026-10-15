@@ -17,6 +17,22 @@ fn overflow(catalog: &Catalog, count: u64) {
 }
 
 #[test]
+fn a_new_route_retains_its_record_before_tab_persistence() {
+    let api = crate::Chilpa::new();
+    let menu = api.catalog.hold([("guest".into(), "album:pending".into())], []);
+    let id = api.catalog.lock().store.card_id("guest", "album:pending");
+    let mut tabs = Tabs::default();
+    tabs.go(record(Screen::Album, id));
+    api.protect_tabs(&tabs);
+    drop(menu);
+    overflow(&api.catalog, 6001);
+    assert!(api.catalog.card(id).is_some(), "I retain the destination before its view or persisted tabs exist");
+    api.protect_tabs(&Tabs::default());
+    overflow(&api.catalog, 1);
+    assert!(api.catalog.card(id).is_none(), "I release the destination when its live route is replaced");
+}
+
+#[test]
 fn open_tabs_take_over_menu_roots_before_mount_and_release_only_closed_tabs() {
     let catalog = Catalog::new();
     let menu = catalog.hold([("guest".into(), "album:chosen".into())], []);

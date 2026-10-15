@@ -269,19 +269,30 @@ impl Chilpa {
     /// Where a screen and an id lead. A source's artist is drawn as a card
     /// among records but opens its own listing, not a record page.
     pub fn route_to(&mut self, screen: &str, id: i64) -> Option<crate::navigation::Route> {
-        use crate::navigation::{Route, Screen};
+        if screen == "album" && id < 0 { self.source_panels(); }
+        let mut plan = self.plan_route(screen, id)?;
+        if plan.needs_preparation() { plan.media_parent = self.source_card_parent(id); }
+        let route = plan.route.clone();
+        self.prepare_planned_route(plan);
+        Some(route)
+    }
+
+    /// I resolve typed routes using metadata already in memory, leaving source work for presentation.
+    pub fn plan_route(&self, screen: &str, id: i64) -> Option<crate::navigation::PlannedRoute> {
+        use crate::navigation::{PlannedRoute, Route, Screen};
         let screen = Screen::from_name(screen)?;
-        if screen == Screen::Album && id < 0 {
-            self.source_panels();
-            if let Some((source, parent)) = self.source_card_parent(id) {
-                self.open_media_parent(source.clone(), parent);
-                return Some(Route { screen: Screen::Source, id: 0, key: source });
-            }
+        let mut route = Route { screen, id, key: String::new() };
+        if screen != Screen::Album || id >= 0 { return Some(PlannedRoute { route, media_parent: None }); }
+        let card = self.catalog.navigation_card(id);
+        let media_parent = card.as_ref().and_then(|card| self.planned_media_parent(card.clone()));
+        if let Some((source, _)) = &media_parent {
+            route = Route { screen: Screen::Source, id: 0, key: source.clone() };
+        } else if let Some(card) = card.filter(|card| matches!(card.kind, CardKind::Artist | CardKind::Label)) {
+            route = Route { screen: Screen::Source, id: 0, key: if self.natives.has_pages(&card.plugin) {
+                format!("{} native:{}", card.plugin, card.identity)
+            } else { format!("{} card:{}", card.plugin, card.id) } };
         }
-        match self.catalog.card(id).filter(|c| screen == Screen::Album && matches!(c.kind, CardKind::Artist | CardKind::Label)) {
-            Some(card) => Some(Route { screen: Screen::Source, id: 0, key: if self.natives.has_pages(&card.plugin) { format!("{} native:{}", card.plugin, card.identity) } else { format!("{} card:{}", card.plugin, card.id) } }),
-            None => Some(Route { screen, id, key: String::new() }),
-        }
+        Some(PlannedRoute { route, media_parent })
     }
 
     pub(crate) fn source_retry(&mut self, key: &str) {
