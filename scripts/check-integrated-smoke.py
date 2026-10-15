@@ -51,12 +51,17 @@ stages = {
     "music-views": [python, "scripts/check-live-visualizer.py", str(binary), str(output / "music-views")],
     "music-views-vulkan": [python, "scripts/check-live-visualizer.py", str(binary),
                            str(output / "music-views-vulkan"), "--backend", "vulkan"],
+    "focus-panels": [python, "scripts/check-focus-panels.py", str(binary), str(library), str(output / "focus-panels")],
+    "focus-panels-vulkan": [python, "scripts/check-focus-panels.py", str(binary), str(library),
+                            str(output / "focus-panels-vulkan"), "--backend", "vulkan"],
 }
 if args.vulkan_host_display:
     stages["covers-vulkan"].append("--host-display")
     stages["scenes-vulkan"].append("--host-display")
     stages["music-views"].append("--host-display")
     stages["music-views-vulkan"].append("--host-display")
+    stages["focus-panels"].append("--host-display")
+    stages["focus-panels-vulkan"].append("--host-display")
 if args.plugin_package:
     stages["process-host"] = [python, "scripts/check-process-plugin.py", str(binary),
                               str(args.plugin_package.resolve(strict=True)), str(output / "process-host")]
