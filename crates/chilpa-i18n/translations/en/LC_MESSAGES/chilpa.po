@@ -196,6 +196,9 @@ msgstr ""
 msgid "Add cover"
 msgstr ""
 
+msgid "Add filter"
+msgstr ""
+
 msgid "Add folder to library"
 msgstr "Add folder to library"
 
@@ -297,6 +300,9 @@ msgstr ""
 msgid "All episode types"
 msgstr ""
 
+msgid "All groups"
+msgstr ""
+
 msgid "All music"
 msgstr ""
 
@@ -360,6 +366,12 @@ msgstr ""
 msgid "Ambient"
 msgstr ""
 
+msgid "An EQ value is missing or invalid."
+msgstr ""
+
+msgid "An active EQ filter is missing Q."
+msgstr ""
+
 msgid "Analysis"
 msgstr ""
 
@@ -409,6 +421,9 @@ msgid "Appears On"
 msgstr ""
 
 msgid "Apply"
+msgstr ""
+
+msgid "Apply import"
 msgstr ""
 
 msgid "Apply system tint to the icon"
@@ -510,6 +525,12 @@ msgstr ""
 msgid "Auto-follow"
 msgstr ""
 
+msgid "Automatic headroom"
+msgstr ""
+
+msgid "Automatic headroom only reduces gain. Compression has no makeup gain; ratio 1 disables it."
+msgstr ""
+
 msgid "Awaiting approval"
 msgstr ""
 
@@ -541,6 +562,9 @@ msgid "Background"
 msgstr ""
 
 msgid "Background image"
+msgstr ""
+
+msgid "Balance · −100 left / +100 right"
 msgstr ""
 
 msgid "Based on {artist} · {genres}"
@@ -610,6 +634,9 @@ msgstr ""
 
 msgid "By year"
 msgstr "By year"
+
+msgid "Bypass · original samples"
+msgstr ""
 
 msgid "CD in {}"
 msgstr ""
@@ -773,6 +800,18 @@ msgstr ""
 msgid "Choose"
 msgstr ""
 
+msgid "Choose DSP on or bypass."
+msgstr ""
+
+msgid "Choose a DSP favorite."
+msgstr ""
+
+msgid "Choose a DSP plugin."
+msgstr ""
+
+msgid "Choose a DSP preset."
+msgstr ""
+
 msgid "Choose a cover"
 msgstr ""
 
@@ -786,6 +825,9 @@ msgid "Choose a local ZIP file."
 msgstr ""
 
 msgid "Choose a playback control"
+msgstr ""
+
+msgid "Choose a preset."
 msgstr ""
 
 msgid "Choose a renderer on your local network. The queue stays in Chilpa."
@@ -878,6 +920,9 @@ msgstr ""
 msgid "Click tracks to select them; Shift selects a range."
 msgstr ""
 
+msgid "Clipped samples"
+msgstr ""
+
 msgid "Close"
 msgstr ""
 
@@ -968,6 +1013,12 @@ msgstr ""
 msgid "Composers"
 msgstr ""
 
+msgid "Compressor ratio · 1–6"
+msgstr ""
+
+msgid "Compressor threshold · −60–0 dB"
+msgstr ""
+
 msgid "Config files you can create:"
 msgstr ""
 
@@ -1021,6 +1072,9 @@ msgstr ""
 
 msgid "Copy playlist"
 msgstr "Copy playlist"
+
+msgid "Copy preset JSON"
+msgstr ""
 
 msgid "CoreAudio reports no device that can play"
 msgstr ""
@@ -1077,6 +1131,9 @@ msgid "Credits"
 msgstr "Credits"
 
 msgid "Critics' Picks"
+msgstr ""
+
+msgid "Crossfeed · 0–50%"
 msgstr ""
 
 msgid "Custom"
@@ -1148,6 +1205,39 @@ msgstr ""
 msgid "DSD{} · PCM at {} Hz · {}"
 msgstr ""
 
+msgid "DSP"
+msgstr ""
+
+msgid "DSP active"
+msgstr ""
+
+msgid "DSP applies to local output. Cast sends the original audio."
+msgstr ""
+
+msgid "DSP catalog is too large."
+msgstr ""
+
+msgid "DSP changes the signal and breaks strict bit-perfect playback."
+msgstr ""
+
+msgid "DSP control is unavailable."
+msgstr ""
+
+msgid "DSP filters need 10–24000 Hz, −18–12 dB and Q 0.2–12."
+msgstr ""
+
+msgid "DSP host is unavailable."
+msgstr ""
+
+msgid "DSP input is too large."
+msgstr ""
+
+msgid "DSP preset is unavailable."
+msgstr ""
+
+msgid "DSP · Equalizer and presets"
+msgstr ""
+
 msgid "Dark"
 msgstr ""
 
@@ -1191,6 +1281,9 @@ msgid "Delete folder…"
 msgstr "Delete folder…"
 
 msgid "Delete playlist"
+msgstr ""
+
+msgid "Delete preset"
 msgstr ""
 
 msgid "Delete “{}”?"
@@ -1331,6 +1424,9 @@ msgstr "Downloads"
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr ""
 
+msgid "Duplicate DSP preset ID."
+msgstr ""
+
 msgid "Duration"
 msgstr ""
 
@@ -1341,6 +1437,9 @@ msgid "Dynamic background"
 msgstr ""
 
 msgid "EPs & Singles"
+msgstr ""
+
+msgid "EQ response · 20 Hz–20 kHz · ±18 dB · before preamp"
 msgstr ""
 
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
@@ -1388,6 +1487,9 @@ msgstr ""
 msgid "Enable PipeWire in your NixOS configuration"
 msgstr ""
 
+msgid "Enable a DSP plugin first."
+msgstr ""
+
 msgid "Enable the optional Mood plugin and manage its model download."
 msgstr ""
 
@@ -1404,6 +1506,9 @@ msgid "Enter"
 msgstr ""
 
 msgid "Episode notes"
+msgstr ""
+
+msgid "Equalizer"
 msgstr ""
 
 msgid "Errors"
@@ -1466,6 +1571,9 @@ msgstr ""
 msgid "Failed to load albums"
 msgstr ""
 
+msgid "Favorite preset"
+msgstr ""
+
 msgid "Favorites"
 msgstr ""
 
@@ -1484,6 +1592,9 @@ msgstr ""
 msgid "Files"
 msgstr ""
 
+msgid "Filter"
+msgstr ""
+
 msgid "Filter albums"
 msgstr ""
 
@@ -1500,6 +1611,9 @@ msgid "Filter tracks"
 msgstr "Filter tracks"
 
 msgid "Filter, Enter to search, or a stream URL"
+msgstr ""
+
+msgid "Find a preset or device"
 msgstr ""
 
 msgid "Find covers"
@@ -1763,7 +1877,13 @@ msgstr ""
 msgid "High 24/96"
 msgstr ""
 
+msgid "High pass"
+msgstr ""
+
 msgid "High resolution"
+msgstr ""
+
+msgid "High shelf"
 msgstr ""
 
 msgid "History"
@@ -1829,6 +1949,9 @@ msgstr ""
 msgid "Immersive view"
 msgstr ""
 
+msgid "Import / export"
+msgstr ""
+
 msgid "Import cancelled"
 msgstr "Import cancelled"
 
@@ -1837,6 +1960,9 @@ msgstr "Import complete"
 
 msgid "Import playlist"
 msgstr "Import playlist"
+
+msgid "Imported"
+msgstr ""
 
 msgid "In library"
 msgstr ""
@@ -1931,7 +2057,34 @@ msgstr ""
 msgid "Interrupted"
 msgstr ""
 
+msgid "Invalid DSP catalog."
+msgstr ""
+
+msgid "Invalid DSP gain, stereo, delay or dynamics settings."
+msgstr ""
+
+msgid "Invalid DSP input."
+msgstr ""
+
+msgid "Invalid DSP parameters."
+msgstr ""
+
+msgid "Invalid DSP preset JSON."
+msgstr ""
+
+msgid "Invalid DSP preset identity."
+msgstr ""
+
+msgid "Invalid EQ preamp line."
+msgstr ""
+
 msgid "Invalid — should contain alsa_output or alsa_input"
+msgstr ""
+
+msgid "Invert left polarity"
+msgstr ""
+
+msgid "Invert right polarity"
 msgstr ""
 
 msgid "Italian"
@@ -1968,6 +2121,9 @@ msgid "Jun"
 msgstr ""
 
 msgid "June"
+msgstr ""
+
+msgid "Keep at most 64 personal presets."
 msgstr ""
 
 msgid "Keep original queues"
@@ -2022,6 +2178,9 @@ msgid "Latest release"
 msgstr ""
 
 msgid "Latest run"
+msgstr ""
+
+msgid "Left delay · 0–30 ms"
 msgstr ""
 
 msgid "Length"
@@ -2157,6 +2316,12 @@ msgid "Lossless only"
 msgstr "Lossless only"
 
 msgid "Lossy"
+msgstr ""
+
+msgid "Low pass"
+msgstr ""
+
+msgid "Low shelf"
 msgstr ""
 
 msgid "Lyrics"
@@ -2372,7 +2537,16 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
+msgid "Name a personal preset"
+msgstr ""
+
+msgid "Name this preset."
+msgstr ""
+
 msgid "Native DSD"
+msgstr ""
+
+msgid "Native DSD and DoP bypass DSP. Select PCM output to process them."
 msgstr ""
 
 msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."
@@ -2456,6 +2630,9 @@ msgstr ""
 msgid "No Home modules are available for this source."
 msgstr ""
 
+msgid "No active parametric EQ filters were found."
+msgstr ""
+
 msgid "No albums found"
 msgstr ""
 
@@ -2523,6 +2700,9 @@ msgid "No plugin catalog match for this artist"
 msgstr ""
 
 msgid "No plugins installed"
+msgstr ""
+
+msgid "No presets match this search."
 msgstr ""
 
 msgid "No purchases match the current view."
@@ -2595,6 +2775,9 @@ msgid "Not specified"
 msgstr "Not specified"
 
 msgid "Not through this stack: it mixes by design."
+msgstr ""
+
+msgid "Notch"
 msgstr ""
 
 msgid "Nothing found for “{}”"
@@ -2676,6 +2859,9 @@ msgid "One track straight into the next."
 msgstr ""
 
 msgid "One track straight into the next. Off, the device plays out and opens again."
+msgstr ""
+
+msgid "Only personal presets can be deleted."
 msgstr ""
 
 msgid "Only tracks from this source"
@@ -2804,7 +2990,16 @@ msgstr ""
 msgid "Password"
 msgstr ""
 
+msgid "Paste EQ filter settings here"
+msgstr ""
+
 msgid "Paste a link from one of your sources or from another service"
+msgstr ""
+
+msgid "Paste a parametric EQ profile or a Chilpa preset JSON. Active unsupported filters reject the whole import."
+msgstr ""
+
+msgid "Paste a parametric EQ profile."
 msgstr ""
 
 msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
@@ -2817,6 +3012,9 @@ msgid "Pause"
 msgstr ""
 
 msgid "Paused"
+msgstr ""
+
+msgid "Peak"
 msgstr ""
 
 msgid "Pending"
@@ -2993,6 +3191,9 @@ msgstr ""
 msgid "Position in Streaming"
 msgstr "Position in Streaming"
 
+msgid "Preamp · −60–0 dB"
+msgstr ""
+
 msgid "Preferred GPU"
 msgstr ""
 
@@ -3036,6 +3237,9 @@ msgid "Previously saved"
 msgstr ""
 
 msgid "Processed"
+msgstr ""
+
+msgid "Profile name"
 msgstr ""
 
 msgid "Provider identifiers"
@@ -3173,6 +3377,9 @@ msgstr ""
 msgid "Reads tempo, musical key and loudness in the background. AutoMix appears when enough tracks have tempo."
 msgstr ""
 
+msgid "Ready for local PCM playback"
+msgstr ""
+
 msgid "Ready to review"
 msgstr "Ready to review"
 
@@ -3246,6 +3453,9 @@ msgid "Remove"
 msgstr ""
 
 msgid "Remove cover"
+msgstr ""
+
+msgid "Remove filter"
 msgstr ""
 
 msgid "Remove from favorites"
@@ -3380,6 +3590,9 @@ msgstr ""
 msgid "Rich rows"
 msgstr ""
 
+msgid "Right delay · 0–30 ms"
+msgstr ""
+
 msgid "Route"
 msgstr ""
 
@@ -3426,6 +3639,9 @@ msgid "Save as…"
 msgstr ""
 
 msgid "Save changes"
+msgstr ""
+
+msgid "Save preset"
 msgstr ""
 
 msgid "Save stations to find them here."
@@ -3799,6 +4015,15 @@ msgstr ""
 msgid "Status"
 msgstr ""
 
+msgid "Stereo and dynamics"
+msgstr ""
+
+msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
+msgstr ""
+
+msgid "Stereo width · 0–100%"
+msgstr ""
+
 msgid "Stop"
 msgstr ""
 
@@ -3903,6 +4128,9 @@ msgstr ""
 msgid "That file is not a JPEG, PNG or WebP image"
 msgstr ""
 
+msgid "The EQ profile is too large."
+msgstr ""
+
 msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
 msgstr ""
 
@@ -3929,6 +4157,9 @@ msgstr ""
 
 msgid "The download view is unavailable."
 msgstr "The download view is unavailable."
+
+msgid "The filter has no ON/OFF state."
+msgstr ""
 
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr ""
@@ -4284,6 +4515,9 @@ msgstr "Uninstall plugin"
 msgid "Uninstall plugin and remove account data"
 msgstr ""
 
+msgid "Unknown DSP action."
+msgstr ""
+
 msgid "Unknown quality"
 msgstr ""
 
@@ -4297,6 +4531,18 @@ msgid "Unplayed"
 msgstr ""
 
 msgid "Unrated"
+msgstr ""
+
+msgid "Unsupported EQ directive. Paste parametric filters without channel routing or other commands."
+msgstr ""
+
+msgid "Unsupported EQ filter syntax or frequency unit."
+msgstr ""
+
+msgid "Unsupported active EQ filter. Use PK, LS, HS, LP, HP or NO."
+msgstr ""
+
+msgid "Unsupported or empty DSP preset catalog."
 msgstr ""
 
 msgid "Up next"
@@ -4339,6 +4585,9 @@ msgid "Use MusicBrainz"
 msgstr ""
 
 msgid "Use Quick Connect"
+msgstr ""
+
+msgid "Use at most 10 DSP filters."
 msgstr ""
 
 msgid "Use my current queue"
@@ -4930,6 +5179,9 @@ msgid "plughw: converts what it refuses"
 msgstr ""
 
 msgid "present"
+msgstr ""
+
+msgid "process PCM audio with equalization and stereo controls"
 msgstr ""
 
 msgid "put a panel of its own in the window"

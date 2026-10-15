@@ -26,6 +26,8 @@ pub enum Kind {
     Scrobbler,
     /// It derives features from decoded local audio.
     Analyzer,
+    /// It supplies bounded PCM processing presets, evaluated by the host.
+    Dsp,
 }
 
 /// Where it runs.
@@ -68,6 +70,8 @@ pub enum Capability {
     RegisterPanel,
     /// Register a command the user can trigger.
     RegisterCommand,
+    /// Supply processing parameters for local PCM playback.
+    ProcessAudio,
     /// The compatibility guest receives its own account credentials. They
     /// remain encrypted at rest and scoped to this installation.
     GuestCredentials,
@@ -124,6 +128,7 @@ impl Capability {
             }
             Capability::RegisterPanel => chilpa_i18n::t("put a panel of its own in the window"),
             Capability::RegisterCommand => chilpa_i18n::t("add a command you trigger"),
+            Capability::ProcessAudio => chilpa_i18n::t("process PCM audio with equalization and stereo controls"),
             Capability::GuestCredentials => chilpa_i18n::t(
                 "let this plugin handle its own sign-in secrets, encrypted on disk and separate from other plugins",
             ),

@@ -240,6 +240,7 @@ impl Chilpa {
         let (target, prevent_clipping) = (self.normalize_target(), self.prevent_clipping());
         let dsd_mode = self.dsd_mode();
         let volume = self.software_gain();
+        let dsp = self.dsp_configuration(device);
         let (tap, feed) = (self.tap.clone(), self.seek_waveform.feed());
         let player = self.player.get_or_insert_with(move || {
             let player = chilpa_core::spawn_player_with(tap);
@@ -253,6 +254,7 @@ impl Chilpa {
         player.set_exclusive(exclusive);
         player.set_dsd_mode(dsd_mode);
         player.set_volume(volume);
+        let _ = player.dsp().set(dsp);
         player.set_order(order, tracks.len());
         // Moving output is the same track going on somewhere else, so what
         // the window is showing stays up. Clearing it would blank the title,

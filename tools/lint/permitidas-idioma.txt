@@ -671,3 +671,6 @@ gt
 cli
 # Qt's reverse tab key.
 BACKTAB
+# Digital signal processing and its headphone channel mix.
+dsp
+crossfeed

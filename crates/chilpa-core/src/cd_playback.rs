@@ -13,7 +13,7 @@
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
 use chilpa_audio::pack::{pack, Samples};
-use chilpa_audio::render::{render_paused, FrameSource, Outcome};
+use chilpa_audio::render::{render_processed, FrameSource, Outcome};
 use chilpa_audio::sink::{AudioSink, SinkError, SkipSignal};
 use chilpa_audio::seek::SeekSignal;
 use chilpa_cd::{CdDevice, CdError, Toc, Track, TrackReader, CDDA_FORMAT};
@@ -168,6 +168,7 @@ where
         if skipped_before {
             sink.flush().map_err(CdPlayError::Sink)?;
         }
+        controls.dsp.begin_stream();
         on_track(index, &delivery);
         let base = Arc::new(AtomicI64::new(0));
         let delivered = Arc::new(AtomicU64::new(0));
@@ -184,7 +185,7 @@ where
                 base: Arc::clone(&base),
                 delivered: Arc::clone(&delivered),
             };
-            let outcome = render_paused(&mut laid, &mut sink, &controls.stop, &controls.pause, &mut |f| {
+            let outcome = render_processed(&mut laid, &mut sink, &controls.stop, &controls.pause, Some(controls.dsp.clone()), &mut |f| {
                 delivered.store(f, Ordering::Relaxed);
                 let at = f as i64 + base.load(Ordering::Relaxed);
                 on_progress(index, Progress { position: at.max(0) as u64, delivered: f });

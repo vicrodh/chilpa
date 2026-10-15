@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Effects
 import app.chilpa
+import app.chilpa.dsp
+import "qrc:/qt/qml/app/chilpa/dsp/qml/Components" as DspUi
 import app.chilpa.kit
 import app.chilpa.ambient
 import app.chilpa.controls
@@ -253,6 +255,7 @@ Item {
             checked: Cast.active || castPicker.opened
             onClicked: castPicker.show(this)
         }
+        DspUi.DspControl {}
         IconButton {
             tip: I18n.tr("Lyrics", I18n.rev)
             glyph: Icons.quote
