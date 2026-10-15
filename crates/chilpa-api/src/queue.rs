@@ -73,6 +73,7 @@ impl Chilpa {
         if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) { b.order = order.clone(); }
         if let Some(p) = &self.player { p.set_order(order.clone(), self.queue.len()); }
         self.casting.order = order;
+        self.protect_queue_catalog();
         first
     }
 
@@ -144,6 +145,7 @@ impl Chilpa {
         };
         self.describe_waiting();
         self.restored_at = Some(saved.seconds.max(0.0));
+        self.protect_queue_catalog();
     }
 
     /// Says what the current track is before the player has opened it: a
@@ -402,11 +404,12 @@ impl Chilpa {
             .map(|i| (self.queue[i].clone(), self.queue_placement.get(i).copied().unwrap_or_default(), self.queue_group_at(i).cloned()))
             .collect();
         let next_group = self.next_queue_group;
-        self.clear_queue();
+        self.clear_queue_state();
         self.player = None;
         self.next_queue_group = next_group;
         if kept.is_empty() {
             self.now = NowPlaying::default();
+            self.protect_queue_catalog();
             return;
         }
         let mut groups = std::collections::BTreeMap::<u64, QueueGroup>::new();
@@ -434,6 +437,7 @@ impl Chilpa {
             ..NowPlaying::default()
         };
         self.restored_at = Some(seconds);
+        self.protect_queue_catalog();
         if playing && keeps_current {
             self.set_paused(false);
         }
@@ -441,6 +445,11 @@ impl Chilpa {
 
     /// Stops and empties the queue.
     pub fn clear_queue(&mut self) {
+        self.clear_queue_state();
+        self.protect_queue_catalog();
+    }
+
+    fn clear_queue_state(&mut self) {
         self.before_queue_replace();
         self.stop();
         self.set_stop_after(None);
@@ -537,6 +546,7 @@ impl Chilpa {
         if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) { b.order = order.clone(); }
         self.casting.order = order;
         self.now.queue_len = self.queue.len();
+        self.protect_queue_catalog();
     }
 
     /// `enqueue` on the output chosen in Settings, which is the one the

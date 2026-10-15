@@ -3,6 +3,15 @@ use super::*;
 fn file() -> std::path::PathBuf { chilpa_dirs::data().join("listenlist.json") }
 impl Chilpa {
     pub(crate) fn persist_buffers(&self) {
+        self.protect_queue_catalog();
+        self.write_buffer_snapshot();
+    }
+    /// I protect the live queue and every inactive buffer on edits, even
+    /// when session persistence is disabled. Local files need no catalog pin.
+    pub(crate) fn protect_queue_catalog(&self) {
+        self.catalog.protect_tracks(catalog_paths(&self.queue, &self.listen));
+    }
+    fn write_buffer_snapshot(&self) {
         if !self.keep_queue() { return; }
         // A start that bypassed the restore (the crash chain) and built no
         // queue of its own leaves the good copy on disk alone.
@@ -40,7 +49,7 @@ impl Chilpa {
         let due = self.listen.saved_at.is_none_or(|at| at.elapsed() >= EVERY);
         if now || (self.now.playing && !self.now.paused && due) {
             self.listen.saved_at = Some(std::time::Instant::now());
-            self.persist_buffers();
+            self.write_buffer_snapshot();
         }
     }
     pub(crate) fn forget_buffers(&self) { let _ = std::fs::remove_file(file()); }
@@ -65,7 +74,34 @@ impl Chilpa {
         if let Some(b) = self.listen.buffers.iter().find(|b| b.id == self.listen.active).cloned() {
             self.install_buffer(&b);
         }
+        self.protect_queue_catalog();
         true
+    }
+}
+
+fn catalog_paths(queue: &[String], workspace: &Workspace) -> std::collections::HashSet<String> {
+    queue.iter().chain(workspace.buffers.iter().filter(|buffer| buffer.id != workspace.active)
+        .flat_map(|buffer| buffer.paths.iter()))
+        .filter(|path| chilpa_models::RemoteEntry::is_remote(path)).cloned().collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn catalog_protection_uses_the_live_queue_and_every_inactive_buffer() {
+        let path = |id| crate::source_opener::entry_of("guest", id);
+        let mut workspace = Workspace::default();
+        workspace.buffers[0].paths = vec![path("stale")];
+        let mut other = Buffer::empty(2);
+        other.paths = vec![path("other"), "/local.flac".into()];
+        workspace.buffers.push(other);
+        let live = vec![path("live"), "/local.wav".into(), path("live")];
+        assert_eq!(catalog_paths(&live, &workspace), [path("live"), path("other")].into());
+        workspace.buffers.pop();
+        assert_eq!(catalog_paths(&live, &workspace), [path("live")].into());
+        assert!(catalog_paths(&[], &workspace).is_empty(), "clearing the active queue releases its protection");
     }
 }
 fn valid(work: &Workspace) -> bool {

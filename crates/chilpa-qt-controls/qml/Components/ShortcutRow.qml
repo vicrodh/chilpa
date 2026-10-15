@@ -50,7 +50,9 @@ Rectangle {
 
             Keycap {
                 objectName: "keycap"
-                text: row.recording ? (row.tried || I18n.tr("Press keys…", I18n.rev)) : (row.entry.shortcut || "")
+                visible: row.editing || (row.entry.shortcut || "") !== ""
+                text: row.recording ? (row.tried || I18n.tr("Press keys…", I18n.rev))
+                    : (row.entry.shortcut || (row.editing ? I18n.tr("Unassigned", I18n.rev) : ""))
                 button: row.editing
                 recording: row.recording
                 modified: row.editing && row.entry.modified === true
@@ -68,6 +70,7 @@ Rectangle {
             visible: !row.editing && (row.entry.command || "") !== ""
             anchors.right: parent.right
             text: row.entry.command || ""
+            font.family: Type.consoleFamily
             font.pointSize: Type.meta
             color: Theme.color.textTertiary
         }

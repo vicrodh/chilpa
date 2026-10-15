@@ -81,6 +81,7 @@ Rectangle {
                     text: ":" + modelData
                     color: Theme.color.textSecondary
                     font.pointSize: Type.body
+                    font.family: Type.consoleFamily
                 }
                 HoverHandler { cursorShape: Qt.PointingHandCursor }
                 TapHandler { onTapped: { field.text = modelData; field.forceActiveFocus() } }
@@ -94,6 +95,7 @@ Rectangle {
         text: ":"
         color: Theme.color.accent
         font.pointSize: Type.body
+        font.family: Type.consoleFamily
     }
     TextInput {
         id: field
@@ -107,6 +109,7 @@ Rectangle {
         color: Theme.color.textPrimary
         selectionColor: Theme.color.accent
         font.pointSize: Type.body
+        font.family: Type.consoleFamily
         clip: true
         selectByMouse: true
         onTextEdited: { bar.updateSuggestions(); bar.historyAt = bar.history.length }
@@ -130,5 +133,6 @@ Rectangle {
         elide: Text.ElideRight
         color: Theme.color.statusNegative
         font.pointSize: Type.meta
+        font.family: Type.consoleFamily
     }
 }

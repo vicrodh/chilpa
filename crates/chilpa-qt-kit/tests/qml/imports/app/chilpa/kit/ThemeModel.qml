@@ -10,4 +10,5 @@ QtObject {
     function color(key, rev) { return palette[key] || "#808080" }
     function shadowColor(key, rev) { return "#404040" }
     function placeholder(index, rev) { return "#404040" }
+    function fixedFontFamily() { return "monospace" }
 }

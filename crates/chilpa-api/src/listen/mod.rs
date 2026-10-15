@@ -143,6 +143,7 @@ impl Chilpa {
             playing: b.live(cursor), paused: true, ..Default::default() };
         self.describe_waiting();
         self.restored_at = Some(b.seconds);
+        self.protect_queue_catalog();
     }
     /// The chosen buffer becomes the single queue shown in the side panel.
     pub fn listen_play(&mut self, id: u64, key: &str) -> bool {

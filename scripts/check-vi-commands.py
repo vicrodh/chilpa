@@ -13,6 +13,7 @@ arguments = argparse.ArgumentParser(description=__doc__)
 arguments.add_argument("binary", type=Path)
 arguments.add_argument("output", type=Path, nargs="?")
 arguments.add_argument("--library", type=Path, required=True)
+arguments.add_argument("--keyboard-only", action="store_true", help="I exercise real key events and native shortcut/search bridges")
 options = arguments.parse_args()
 project = Path(__file__).resolve().parents[1]
 binary = options.binary.resolve()
@@ -49,30 +50,32 @@ with tempfile.TemporaryDirectory(prefix="chilpa-vi-smoke-") as directory:
         removed=[False]*20, placement=["Original"]*20, groups=[], order=list(range(20)),
         cursor=0, seconds=0, shuffle=False, repeat=0, stop_after=None)
     (profile / "data/chilpa/listenlist.json").write_text(json.dumps(dict(version=1,buffers=[buffer],active=1,selected=1,next=2)))
-    smoke = profile / "vi-commands.qml"
-    template = (project / "scripts/fixtures/vi-commands.qml").read_text()
+    fixture_name = "keyboard-controls" if options.keyboard_only else "vi-commands"
+    smoke = profile / (fixture_name + ".qml")
+    template = (project / "scripts/fixtures" / (fixture_name + ".qml")).read_text()
     smoke.write_text(template.replace("property int fixtureAlbum: 0", f"property int fixtureAlbum: {album_id}"))
     environment = dict(os.environ, XDG_CONFIG_HOME=str(profile/"config"), XDG_DATA_HOME=str(profile/"data"),
         XDG_CACHE_HOME=str(profile/"cache"), XDG_RUNTIME_DIR=str(profile/"runtime"),
         QT_QPA_PLATFORM="offscreen", CHILPA_RENDERER="software", CHILPA_QML_SMOKE=str(smoke))
     try:
-        result = subprocess.run(["dbus-run-session", "--", str(binary)], env=environment, timeout=30,
+        result = subprocess.run(["dbus-run-session", "--", str(binary)], env=environment, timeout=70 if options.keyboard_only else 30,
             text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         log, code = result.stdout, result.returncode
     except subprocess.TimeoutExpired as error:
         log = (error.stdout or b"").decode() if isinstance(error.stdout, bytes) else error.stdout or ""
-        log += "\nSMOKE FAIL Vi commands timed out\n"
+        log += f"\nSMOKE FAIL {fixture_name} timed out\n"
         code = 1
-    if output:
-        (output / "vi-commands.log").write_text(log)
-    errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "QQmlApplicationEngine failed", "is not a type", "binding loop")
-    if code == 0:
+    errors = ("SMOKE FAIL", "FAIL!", "ReferenceError:", "TypeError:", "Error:", "QQmlApplicationEngine failed", "is not a type", "binding loop", "Binding loop", "Unable to assign")
+    if code == 0 and not options.keyboard_only:
         with sqlite3.connect((profile / "data/chilpa/library.db").as_uri() + "?mode=ro", uri=True) as saved:
             named = saved.execute("SELECT id FROM playlists WHERE name='Vi smoke saved queue'").fetchone()
             count = saved.execute("SELECT count(*) FROM playlist_tracks WHERE playlist_id=?", (named[0],)).fetchone()[0] if named else 0
         if count != 20:
             log += f"\nSMOKE FAIL named queue saved {count} tracks instead of 20\n"
-    failed = code or any(error in log for error in errors) or "SMOKE vi commands completed" not in log
+    marker = "SMOKE native keyboard completed" if options.keyboard_only else "SMOKE vi commands completed"
+    failed = code or any(error in log for error in errors) or marker not in log
+    if output:
+        (output / (fixture_name + ".log")).write_text(log)
     if failed:
         print(log)
         sys.exit(1)

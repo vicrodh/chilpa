@@ -39,6 +39,23 @@ def verify_covers(output):
     print("SMOKE cover pixels verified: three loaded images, twelve color probes, rounded corners")
 
 
+def verify_reactive(output, transcript):
+    captures = [json.loads(line.split("SMOKE reactive capture ", 1)[1]) for line in transcript.splitlines()
+                if "SMOKE reactive capture " in line]
+    if len(captures) != 8:
+        raise SystemExit("SMOKE FAIL reactive artwork: missing pulse captures")
+    colors = ((240, 64, 32), (32, 192, 64), (32, 96, 224), (224, 208, 48))
+    for capture in captures:
+        rendered = Image.open(output / capture["file"]).convert("RGB")
+        for (dx, dy), expected in zip(((-40, -40), (40, -40), (-40, 40), (40, 40)), colors):
+            actual = rendered.getpixel((round(capture["x"]) + dx, round(capture["y"]) + dy))
+            if max(abs(a - b) for a, b in zip(actual, expected)) > 8:
+                raise SystemExit(f"SMOKE FAIL reactive artwork: missing cover pixels in {capture['file']}: {actual}")
+    (output / "measurements.json").write_text(json.dumps(
+        dict(captures=captures, injected_energy=True, stable_decode=True), indent=2) + "\n")
+    print("SMOKE reactive artwork verified: stable native texture, eight pulses, 32 color probes")
+
+
 @contextmanager
 def isolated_display(output):
     """I own this display process and terminate only that process on exit."""
@@ -73,14 +90,17 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--backend", choices=("opengl", "vulkan"), default="opengl")
     parser.add_argument("--host-display", action="store_true", help="Use the existing X display with the isolated test profile.")
-    parser.add_argument("--covers-only", action="store_true", help="Check loaded cover pixels instead of immersive scenes.")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--covers-only", action="store_true", help="Check loaded cover pixels instead of immersive scenes.")
+    mode.add_argument("--reactive-only", action="store_true", help="Check native artwork retention while energy crosses decode boundaries.")
     arguments = parser.parse_args()
     if arguments.host_display and not os.environ.get("DISPLAY"):
         parser.error("--host-display requires DISPLAY")
     binary = str(arguments.binary.resolve())
     output = arguments.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    fixture_name = "cover-rendering.qml" if arguments.covers_only else "immersive-scenes.qml"
+    fixture_name = ("reactive-artwork.qml" if arguments.reactive_only else
+                    "cover-rendering.qml" if arguments.covers_only else "immersive-scenes.qml")
     fixture = Path(__file__).resolve().parent / "fixtures" / fixture_name
     with tempfile.TemporaryDirectory(prefix="chilpa-immersive-scenes-") as directory:
         profile = Path(directory)
@@ -90,7 +110,7 @@ def main():
         qml = profile / "immersive-scenes.qml"
         contents = fixture.read_text().replace('"OUTPUT_DIRECTORY"', json.dumps(str(output)))
         contents = contents.replace('"EXPECTED_BACKEND"', json.dumps(arguments.backend))
-        if arguments.covers_only:
+        if arguments.covers_only or arguments.reactive_only:
             local, remote = cover_sources(output)
             contents = contents.replace('"LOCAL_SOURCE"', json.dumps(local)).replace('"REMOTE_SOURCE"', json.dumps(remote))
         qml.write_text(contents)
@@ -113,11 +133,15 @@ def main():
         errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "Binding loop", "QQmlApplicationEngine failed", "is not a type",
                   "failed to deserialize", "not found in the qrc", "pipeline creation failed", "resource creation failed", "Unable to assign",
                   "Failed to build graphics pipeline state", "Failed to link shader program")
-        completed = "SMOKE covers completed" if arguments.covers_only else "SMOKE immersive scenes completed"
+        completed = ("SMOKE reactive artwork completed" if arguments.reactive_only else
+                     "SMOKE covers completed" if arguments.covers_only else "SMOKE immersive scenes completed")
         if result.returncode or any(error in transcript for error in errors) or completed not in transcript:
             raise SystemExit(1)
     if arguments.covers_only:
         verify_covers(output)
+        return
+    if arguments.reactive_only:
+        verify_reactive(output, transcript)
         return
     measurements = {}
     for name in ("plasma", "tunnel", "aurora", "ribbon", "linebed", "ambient", "tunnel-flow", "goniometer", "oscilloscope"):

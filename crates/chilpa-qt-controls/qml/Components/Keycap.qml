@@ -28,7 +28,7 @@ Rectangle {
         id: label
         anchors.centerIn: parent
         text: cap.text
-        font.family: "monospace"
+        font.family: Type.consoleFamily
         font.pointSize: Type.body
         font.weight: cap.button ? Type.medium : Type.regular
         color: cap.button ? Theme.color.textPrimary : Theme.color.textSecondary
