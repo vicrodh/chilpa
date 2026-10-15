@@ -340,6 +340,41 @@ where
     S: FrameSource + Send,
     K: AudioSink,
 {
+    render_processed(source, sink, stop, pause, None, on_progress)
+}
+
+/// PCM only: processing runs after read-ahead, once per block, before any
+/// partial device writes. Raw one-bit sources use `render_paused` instead.
+pub fn render_processed<S, K>(
+    source: &mut S,
+    sink: &mut K,
+    stop: &StopSignal,
+    pause: &PauseSignal,
+    control: Option<crate::dsp::Control>,
+    on_progress: &mut dyn FnMut(u64),
+) -> Outcome
+where
+    S: FrameSource + Send,
+    K: AudioSink,
+{
+    let mut processor = control.map(|control| crate::dsp::Processor::new(control, sink.format()));
+    render_with_processor(source, sink, stop, pause, processor.as_mut(), on_progress)
+}
+
+/// A queue lends its processor across contiguous gapless tracks, keeping
+/// filter and delay histories at the boundary. Seeking still resets them.
+pub fn render_with_processor<S, K>(
+    source: &mut S,
+    sink: &mut K,
+    stop: &StopSignal,
+    pause: &PauseSignal,
+    processor: Option<&mut crate::dsp::Processor>,
+    on_progress: &mut dyn FnMut(u64),
+) -> Outcome
+where
+    S: FrameSource + Send,
+    K: AudioSink,
+{
     let format = sink.format();
     let frame_bytes = format.frame_bytes();
     let fill = frame_bytes * format.sample_rate_hz as usize * source.ahead().as_millis() as usize / 1000;
@@ -348,7 +383,7 @@ where
     std::thread::scope(|threads| {
         let reader = std::thread::Builder::new().name("chilpa-read-ahead".into());
         let outcome = match reader.spawn_scoped(threads, || cushion.read(source, stop)) {
-            Ok(_) => deliver(&cushion, sink, stop, pause, on_progress, frame_bytes, started),
+            Ok(_) => deliver(&cushion, sink, stop, pause, on_progress, frame_bytes, started, processor),
             Err(_) => Outcome::Failed { frames: 0, error: SinkError::Backend(chilpa_i18n::t("the read-ahead thread could not start")) },
         };
         cushion.finish();
@@ -365,6 +400,7 @@ fn deliver<K: AudioSink>(
     on_progress: &mut dyn FnMut(u64),
     frame_bytes: usize,
     started: std::time::Instant,
+    mut processor: Option<&mut crate::dsp::Processor>,
 ) -> Outcome {
     let format = sink.format();
     crate::diagnostics::trace("render", "started", format_args!("format={format:?}"));
@@ -381,7 +417,7 @@ fn deliver<K: AudioSink>(
     let mut released = false;
 
     while !stop.is_stopped() {
-        let (block, moved) = match cushion.take(stop) {
+        let (mut block, moved) = match cushion.take(stop) {
             Ok(Some(block)) => block,
             Ok(None) if stop.is_stopped() => break,
             Ok(None) => {
@@ -405,6 +441,7 @@ fn deliver<K: AudioSink>(
         // before, and it goes; so does what went out from before since the
         // source moved, which was heard but is not where the music is.
         if let Some((heard_at_move, position)) = moved {
+            if let Some(processor) = &mut processor { processor.reset(); }
             let held = sink.held();
             let stale = heard_at_move.map_or(0, |at| frames.saturating_sub(thrown_away + held).saturating_sub(at));
             crate::diagnostics::trace(
@@ -419,6 +456,7 @@ fn deliver<K: AudioSink>(
             }
             sink.position_changed(position);
         }
+        if let Some(processor) = &mut processor { processor.process(&mut block); }
         let mut offset = 0;
         let mut warned = false;
         while offset < block.len() {

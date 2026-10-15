@@ -13,7 +13,7 @@
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
 use chilpa_audio::pack::{pack, Samples};
-use chilpa_audio::render::{render_paused, FrameSource, Outcome};
+use chilpa_audio::render::{render_with_processor, FrameSource, Outcome};
 use chilpa_audio::sink::{AudioSink, SinkError, SkipSignal};
 use chilpa_audio::seek::SeekSignal;
 use chilpa_cd::{CdDevice, CdError, Toc, Track, TrackReader, CDDA_FORMAT};
@@ -153,6 +153,7 @@ where
     let delivery =
         negotiate(CDDA_FORMAT, caps, Policy::BitPerfect).map_err(|_| CdPlayError::Unsupported)?;
     let mut sink = open_sink(delivery.opened).map_err(CdPlayError::Sink)?;
+    let mut processor = chilpa_audio::dsp::Processor::new(controls.dsp.clone(), delivery.opened);
     let mut last = Outcome::Finished { frames: 0 };
     // Whether the last track ended by itself: then what is still in the
     // device is its end, and it is heard before the device is closed.
@@ -167,7 +168,9 @@ where
         }
         if skipped_before {
             sink.flush().map_err(CdPlayError::Sink)?;
+            processor.reset();
         }
+        controls.dsp.begin_stream();
         on_track(index, &delivery);
         let base = Arc::new(AtomicI64::new(0));
         let delivered = Arc::new(AtomicU64::new(0));
@@ -184,7 +187,7 @@ where
                 base: Arc::clone(&base),
                 delivered: Arc::clone(&delivered),
             };
-            let outcome = render_paused(&mut laid, &mut sink, &controls.stop, &controls.pause, &mut |f| {
+            let outcome = render_with_processor(&mut laid, &mut sink, &controls.stop, &controls.pause, Some(&mut processor), &mut |f| {
                 delivered.store(f, Ordering::Relaxed);
                 let at = f as i64 + base.load(Ordering::Relaxed);
                 on_progress(index, Progress { position: at.max(0) as u64, delivered: f });
@@ -193,6 +196,7 @@ where
         };
         if let Some(problem) = reader.error.as_ref() {
             on_read_error(index, problem.to_string());
+            processor.reset();
         }
         ended_by_itself = matches!(outcome, Outcome::Finished { .. }) && !skipped;
         skipped_before = skipped;
@@ -407,6 +411,31 @@ mod tests {
         )
         .expect("the disc plays");
         sink
+    }
+
+    #[test]
+    fn contiguous_cd_tracks_keep_the_dsp_history_without_another_fade() {
+        struct Tone(Disc);
+        impl CdDevice for Tone {
+            fn read_toc(&mut self) -> Result<(Vec<TocEntry>, u32), CdError> { self.0.read_toc() }
+            fn read_audio(&mut self, lsn: u32, sectors: u32, out: &mut Vec<u8>) -> Result<(), CdError> {
+                self.0.read_audio(lsn, sectors, out)?;
+                for sample in out.chunks_exact_mut(2) { sample.copy_from_slice(&10_000i16.to_le_bytes()); }
+                Ok(())
+            }
+        }
+        let mut disc = Tone(Disc { fail_at: None });
+        let tracks: Vec<Track> = read_toc(&mut disc).unwrap().audio_tracks().copied().collect();
+        let controls = Controls::new();
+        controls.dsp.set(Some(chilpa_audio::dsp::Preset { preamp_db: -6.0, filters: vec![chilpa_audio::dsp::Filter { shape: chilpa_audio::dsp::Shape::Peak, frequency: 1000.0, gain_db: -2.0, q: 1.0 }], ..Default::default() })).unwrap();
+        let mut sink = Recorder { opened: None, bytes: Vec::new() };
+        play_disc(&mut disc, &tracks, &caps(), &controls, |format| {
+            sink.opened = Some(format); Ok(&mut sink)
+        }, &mut |_, _| {}, &mut |_, _| {}, &mut |_, why| panic!("unexpected read error: {why}")).unwrap();
+        let samples: Vec<i16> = sink.bytes.chunks_exact(2).map(|s| i16::from_le_bytes(s.try_into().unwrap())).collect();
+        assert_eq!(samples.len(), 200 * 588 * 2);
+        assert!(samples[4000..].iter().all(|s| (5010..=5013).contains(s)), "the disc boundary keeps the same processing gain");
+        assert!(controls.dsp.touched());
     }
 
     #[test]

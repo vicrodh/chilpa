@@ -19,6 +19,7 @@ parser.add_argument("--filter-budget-ms", type=int, default=700)
 parser.add_argument("--process-plugin", type=Path)
 parser.add_argument("--plugin-smoke-script", type=Path)
 parser.add_argument("--plugin-package", type=Path)
+parser.add_argument("--dsp-package", type=Path)
 parser.add_argument("--vulkan-host-display", action="store_true")
 args = parser.parse_args()
 project = Path(__file__).resolve().parents[1]
@@ -52,6 +53,9 @@ if args.plugin_package:
 if args.process_plugin:
     stages["process-plugin"] = [python, str(args.plugin_smoke_script.resolve(strict=True)),
                                 str(args.process_plugin.resolve(strict=True))]
+if args.dsp_package:
+    stages["dsp"] = [python, "scripts/check-dsp.py", str(binary),
+                     str(args.dsp_package.resolve(strict=True)), str(output / "dsp")]
 selected = args.stage or list(stages)
 unknown = set(selected) - stages.keys()
 if unknown:

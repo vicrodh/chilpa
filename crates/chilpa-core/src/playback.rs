@@ -153,6 +153,7 @@ pub fn play_stream<F, K>(
     policy: Policy,
     stop: &StopSignal,
     pause: &chilpa_audio::sink::PauseSignal,
+    dsp: Option<chilpa_audio::dsp::Control>,
     open_sink: F,
     on_delivery: &mut dyn FnMut(&Delivery),
     on_progress: &mut dyn FnMut(u64),
@@ -173,7 +174,7 @@ where
         error: None,
     };
     let outcome =
-        chilpa_audio::render::render_paused(&mut frames, &mut sink, stop, pause, on_progress);
+        chilpa_audio::render::render_processed(&mut frames, &mut sink, stop, pause, dsp, on_progress);
     if let Some(e) = frames.error {
         return Err(PlayError::Pack(e));
     }

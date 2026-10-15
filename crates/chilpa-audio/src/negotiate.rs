@@ -74,6 +74,8 @@ pub enum Transform {
     Mixed,
     /// Software volume was applied to it.
     VolumeApplied,
+    /// A validated DSP preset changes the PCM signal.
+    DspApplied,
     /// A one-bit DSD source was low-pass filtered and decimated to PCM.
     DsdToPcm,
 }

@@ -1,0 +1,2 @@
+module app.chilpa.dsp
+singleton Dsp 1.0 Dsp.qml

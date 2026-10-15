@@ -55,6 +55,37 @@ fn dsf_of(name: &str, samples: u64) -> PathBuf {
 /// A device that takes what it is given at once.
 struct Swallow(StreamFormat);
 
+#[test]
+fn enabled_pcm_dsp_leaves_dop_and_native_dsd_untouched() {
+    struct Capture(StreamFormat, Arc<Mutex<Vec<u8>>>);
+    impl AudioSink for Capture {
+        fn format(&self) -> StreamFormat { self.0 }
+        fn write(&mut self, bytes: &[u8]) -> Result<usize, SinkError> {
+            self.1.lock().unwrap().extend_from_slice(bytes); Ok(bytes.len()/self.0.frame_bytes())
+        }
+        fn close(&mut self) -> Result<(), SinkError> { Ok(()) }
+    }
+    let track = dsf_of("dsp-passthrough", u64::from(RATE)/20);
+    for (mode, format, rate) in [(DsdMode::Dop, SampleFormat::S24In32, 176_400), (DsdMode::Native, SampleFormat::DsdU32Be, 88_200)] {
+        let render = |preset| {
+            let controls = Controls::new(); controls.dsd_mode.set(mode); controls.direct_dsd.set(true);
+            controls.dsp.set(preset).unwrap();
+            let caps = DeviceCaps { sample_rates: vec![rate], formats: vec![format], channels: vec![2], probed: true };
+            let kept = Arc::new(Mutex::new(Vec::new()));
+            play_queue_with(&SharedQueue::new(vec![track.clone()]), &caps, Policy::AllowAnything, &controls,
+                |opened| Ok(Capture(opened, kept.clone())), &mut |_, _, delivery| {
+                    assert!(!delivery.transforms.contains(&Transform::DspApplied));
+                }, &mut |_, _| {}).unwrap();
+            assert!(!controls.dsp.touched());
+            let bytes = kept.lock().unwrap().clone(); bytes
+        };
+        let original = render(None);
+        let processed = render(Some(chilpa_core::dsp::Preset { preamp_db: -20.0, width: 0.0, ..Default::default() }));
+        assert!(!original.is_empty()); assert_eq!(original, processed, "{mode:?}");
+    }
+    std::fs::remove_file(track).unwrap();
+}
+
 impl AudioSink for Swallow {
     fn format(&self) -> StreamFormat {
         self.0

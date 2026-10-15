@@ -149,6 +149,13 @@ QtObject {
     readonly property int selectWidth: 260
     readonly property int albumVersionMenuWidth: 560
     readonly property int castMenuWidth: 270
+    // The optional processing editor.
+    readonly property int dspPanelWidth: 660
+    readonly property int dspPanelHeight: 680
+    readonly property int dspCurveHeight: 120
+    readonly property int dspBandShapeWidth: 128
+    readonly property int dspBandValueWidth: 86
+    readonly property int dspImportHeight: 180
     readonly property int menuWidth: 236
     readonly property int menuMaxWidth: 310
     readonly property int menuIconColumn: 18
