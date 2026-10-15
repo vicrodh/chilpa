@@ -8,7 +8,13 @@ IconButton {
     objectName: "playerDsp"
     visible: Dsp.available
     tip: Dsp.active ? I18n.tr("DSP active", I18n.rev) + ": " + Dsp.presetName : I18n.tr("DSP · Equalizer and presets", I18n.rev)
-    glyph: Icons.adjustmentsHorizontal
+    glyph: Lucide.slidersVertical
+    iconFamily: Lucide.font
+    activeFocusOnTab: visible && enabled
+    Accessible.name: tip
+    Accessible.role: Accessible.Button
+    Keys.onReturnPressed: clicked()
+    Keys.onSpacePressed: clicked()
     checked: Dsp.active || panel.opened
     onClicked: panel.opened ? panel.close() : panel.open()
     DspPanel { id: panel }

@@ -80,9 +80,9 @@ Column {
                 value: band.modelData.shape
                 onPicked: value => editor.changeBand(band.index, "shape", value)
             }
-            DspNumber { value: band.modelData.frequency; onCommitted: value => editor.changeBand(band.index, "frequency", value) }
-            DspNumber { value: band.modelData.gain_db; enabled: ["peak", "low_shelf", "high_shelf"].includes(band.modelData.shape); onCommitted: value => editor.changeBand(band.index, "gain_db", value) }
-            DspNumber { value: band.modelData.q; onCommitted: value => editor.changeBand(band.index, "q", value) }
+            DspNumber { value: band.modelData.frequency; minimum: 10; maximum: 24000; label: "Hz"; onCommitted: value => editor.changeBand(band.index, "frequency", value) }
+            DspNumber { value: band.modelData.gain_db; minimum: -24; maximum: 18; label: "dB"; enabled: ["peak", "low_shelf", "high_shelf"].includes(band.modelData.shape); onCommitted: value => editor.changeBand(band.index, "gain_db", value) }
+            DspNumber { value: band.modelData.q; minimum: 0.1; maximum: 12; label: "Q"; onCommitted: value => editor.changeBand(band.index, "q", value) }
             IconButton {
                 glyph: Icons.x
                 tip: I18n.tr("Remove filter", I18n.rev)

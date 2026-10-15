@@ -20,6 +20,7 @@ parser.add_argument("--process-plugin", type=Path)
 parser.add_argument("--plugin-smoke-script", type=Path)
 parser.add_argument("--plugin-package", type=Path)
 parser.add_argument("--dsp-package", type=Path)
+parser.add_argument("--additional-host-smoke", action="append", nargs=2, metavar=("SCRIPT", "PACKAGE"))
 parser.add_argument("--vulkan-host-display", action="store_true")
 args = parser.parse_args()
 project = Path(__file__).resolve().parents[1]
@@ -47,10 +48,15 @@ stages = {
     "scenes": [python, "scripts/check-immersive-scenes.py", str(binary), str(output / "scenes")],
     "scenes-vulkan": [python, "scripts/check-immersive-scenes.py", str(binary),
                       str(output / "scenes-vulkan"), "--backend", "vulkan"],
+    "music-views": [python, "scripts/check-live-visualizer.py", str(binary), str(output / "music-views")],
+    "music-views-vulkan": [python, "scripts/check-live-visualizer.py", str(binary),
+                           str(output / "music-views-vulkan"), "--backend", "vulkan"],
 }
 if args.vulkan_host_display:
     stages["covers-vulkan"].append("--host-display")
     stages["scenes-vulkan"].append("--host-display")
+    stages["music-views"].append("--host-display")
+    stages["music-views-vulkan"].append("--host-display")
 if args.plugin_package:
     stages["process-host"] = [python, "scripts/check-process-plugin.py", str(binary),
                               str(args.plugin_package.resolve(strict=True)), str(output / "process-host")]
@@ -60,6 +66,12 @@ if args.process_plugin:
 if args.dsp_package:
     stages["dsp"] = [python, "scripts/check-dsp.py", str(binary),
                      str(args.dsp_package.resolve(strict=True)), str(output / "dsp")]
+    for name in ("music-views", "music-views-vulkan"):
+        stages[name].extend(["--dsp-package", str(args.dsp_package.resolve(strict=True))])
+for index, (script, package) in enumerate(args.additional_host_smoke or []):
+    name = f"additional-host-{index + 1}"
+    stages[name] = [python, str(Path(script).resolve(strict=True)), str(binary),
+                    str(Path(package).resolve(strict=True)), str(output / name)]
 selected = args.stage or list(stages)
 unknown = set(selected) - stages.keys()
 if unknown:

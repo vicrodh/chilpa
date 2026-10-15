@@ -1151,6 +1151,7 @@ where
         if shape.is_none() { dsp = None; }
         else if dsp.is_none() || !keep_open { dsp = Some(chilpa_audio::dsp::Processor::new(controls.dsp.clone(), delivery.opened)); }
         else if skipped_before { if let Some(dsp) = &mut dsp { dsp.reset(); } }
+        sink.set_dop(matches!(&source, Source::Dop(_)));
         sink.begin(observer);
         // The next track, opened ahead for gapless: a file at once, a track
         // over the network once this one has played a while (`Preload::at`).

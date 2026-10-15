@@ -154,6 +154,7 @@ Item {
         uppercase: options.uppercase
         lite: options.lite
         onSought: (ms) => Player.seek(ms / 1000)
+        onFollowAsked: on => options.choose("follow", on)
     }
 
     Image {

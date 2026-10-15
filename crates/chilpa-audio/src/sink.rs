@@ -60,6 +60,10 @@ impl SinkError {
 
 /// An open output device.
 pub trait AudioSink {
+    /// I announce each new source, including DoP in an ordinary PCM carrier.
+    /// This changes analysis metadata only; the device format stays intact.
+    fn set_dop(&mut self, _dop: bool) {}
+
     /// I announce the source cursor after a seek, without counting it as audio.
     fn position_changed(&mut self, _position: Option<u64>) {}
 
@@ -136,6 +140,14 @@ pub trait AudioSink {
 }
 
 impl AudioSink for Box<dyn AudioSink + Send> {
+    fn set_dop(&mut self, dop: bool) {
+        (**self).set_dop(dop)
+    }
+
+    fn position_changed(&mut self, position: Option<u64>) {
+        (**self).position_changed(position)
+    }
+
     fn suspend(&mut self) -> Result<(), SinkError> {
         (**self).suspend()
     }

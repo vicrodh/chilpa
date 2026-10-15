@@ -13,6 +13,9 @@ Column {
     DspQualityNote { width: parent.width }
     PillButton { text: "DSP editor"; onClicked: panel.open() }
     DspNumber { value: 1000 }
+    DspGraphic { width: parent.width; draft: parent.sample; graphic: false }
+    DspEditor { width: parent.width; draft: parent.sample; state: ({selection: {}, curve: [], clipped: 0}) }
+    DspGain { width: parent.width; preamp: -6; headroom: -7.5; clipped: 0 }
     DspEqualizer { width: parent.width; draft: parent.sample; curve: [0, 0.5, 2, 0.5, 0] }
     DspStereo { width: parent.width; draft: parent.sample }
     DspImport { width: parent.width }

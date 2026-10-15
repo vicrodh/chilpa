@@ -1,4 +1,5 @@
 import QtQuick
+import app.chilpa
 import app.chilpa.graphics
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
@@ -95,6 +96,9 @@ Rectangle {
             CoverFlowPanel { width: gallery.sampleWide / 2; height: gallery.sampleTall } // derived: half the sample
             ReactiveRingsPanel { width: gallery.sampleWide / 2; height: gallery.sampleTall } // derived: half the sample
         }
+        Item { width: gallery.sampleWide; height: Stage.flowArtMin; CoverFlowCard { artwork: Player.art; occupied: true } }
+        CoverFlowDeck { width: gallery.sampleWide; height: Stage.flowArtMin; currentPath: Player.path; currentArt: Player.art }
+        ImmersiveLyricColumn { width: gallery.sampleWide; height: gallery.sampleTall; lines: [{text: "The verse before"}, {text: "A line in focus"}, {text: "The verse to come"}] }
         Row {
             spacing: Stage.menuRowPad
             LyricsFocusPanel { width: gallery.sampleWide / 2; height: gallery.sampleTall } // derived: half the sample

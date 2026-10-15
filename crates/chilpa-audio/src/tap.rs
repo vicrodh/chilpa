@@ -27,7 +27,7 @@ pub const FRAMES_KEPT: usize = 8192;
 
 /// The last thing that went out, for whoever wants to draw it.
 #[derive(Clone, Default)]
-pub struct Tap(Arc<Mutex<State>>);
+pub struct Tap(Arc<Mutex<State>>, Arc<crate::tap_dsd::RawTap>);
 
 #[derive(Default)]
 struct State {
@@ -39,6 +39,7 @@ struct State {
     sample_rate_hz: u32,
     /// How many frames have been copied since it opened.
     frames: u64,
+    dsd: bool,
 }
 
 /// A snapshot of what just went out.
@@ -60,7 +61,8 @@ impl Tap {
     }
 
     /// Prepares the ring for a format. Called when the device opens.
-    fn prepare(&self, format: StreamFormat) {
+    fn prepare(&self, format: StreamFormat, dop: bool) {
+        self.1.prepare(crate::tap_dsd::Encoding { format, dop });
         if let Ok(mut e) = self.0.lock() {
             let channels = format.channels.max(1);
             e.samples = vec![0.0; FRAMES_KEPT * channels as usize];
@@ -68,13 +70,14 @@ impl Tap {
             e.channels = channels;
             e.sample_rate_hz = format.sample_rate_hz;
             e.frames = 0;
+            e.dsd = format.sample_format.is_dsd() || dop;
         }
     }
 
     /// Copies what was delivered. If the lock is busy, it does nothing.
     fn copy(&self, bytes: &[u8], format: StreamFormat) {
         let Ok(mut e) = self.0.try_lock() else { return };
-        if e.samples.is_empty() {
+        if e.samples.is_empty() || e.dsd {
             return;
         }
         let channels = e.channels.max(1) as usize;
@@ -97,7 +100,7 @@ impl Tap {
     /// The last thing that went out, in chronological order.
     pub fn snapshot(&self) -> Snapshot {
         let Ok(e) = self.0.lock() else { return Snapshot::default() };
-        if e.samples.is_empty() {
+        if e.samples.is_empty() || e.dsd {
             return Snapshot::default();
         }
         let channels = e.channels.max(1) as usize;
@@ -126,6 +129,10 @@ impl Tap {
         }
     }
 
+    pub(crate) fn drain_dsd(&self) -> crate::tap_dsd::Batch {
+        self.1.drain()
+    }
+
     /// How many frames have been copied.
     pub fn frames(&self) -> u64 {
         self.0.lock().map(|e| e.frames).unwrap_or(0)
@@ -134,8 +141,8 @@ impl Tap {
     /// Wraps a device to watch what is delivered to it.
     pub fn wrap<S: AudioSink>(&self, sink: S) -> TapSink<S> {
         let format = sink.format();
-        self.prepare(format);
-        TapSink { inner: sink, tap: self.clone(), format }
+        self.prepare(format, false);
+        TapSink { inner: sink, tap: self.clone(), format, dop: false }
     }
 }
 
@@ -144,9 +151,22 @@ pub struct TapSink<S: AudioSink> {
     inner: S,
     tap: Tap,
     format: StreamFormat,
+    dop: bool,
 }
 
 impl<S: AudioSink> AudioSink for TapSink<S> {
+    fn set_dop(&mut self, dop: bool) {
+        self.inner.set_dop(dop);
+        self.dop = dop;
+        self.format = self.inner.format();
+        self.tap.prepare(self.format, dop);
+    }
+
+    fn position_changed(&mut self, position: Option<u64>) {
+        self.tap.1.reset();
+        self.inner.position_changed(position);
+    }
+
     fn format(&self) -> StreamFormat {
         self.inner.format()
     }
@@ -155,9 +175,13 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
         // Write first, then copy what the device accepted: copying more would
         // show samples that never played.
         let accepted = self.inner.write(frames)?;
-        let bytes = accepted * self.format.frame_bytes();
+        let Some(bytes) = accepted.checked_mul(self.format.frame_bytes()) else { return Ok(accepted) };
         if let Some(delivered) = frames.get(..bytes) {
-            self.tap.copy(delivered, self.format);
+            if self.dop || self.format.sample_format.is_dsd() {
+                self.tap.1.copy(delivered);
+            } else {
+                self.tap.copy(delivered, self.format);
+            }
         }
         Ok(accepted)
     }
@@ -175,6 +199,7 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
     }
 
     fn flush(&mut self) -> Result<(), SinkError> {
+        self.tap.1.reset();
         self.inner.flush()
     }
 
@@ -187,6 +212,7 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
     }
 
     fn suspend(&mut self) -> Result<(), SinkError> {
+        self.tap.1.reset();
         self.inner.suspend()
     }
 

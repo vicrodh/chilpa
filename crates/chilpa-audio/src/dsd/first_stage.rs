@@ -73,13 +73,13 @@ fn lookup() -> &'static Lookup {
 }
 
 /// One channel of DSD, decimated eight to one.
-pub(crate) struct Dsd2Pcm {
+pub struct Dsd2Pcm {
     fifo: [u8; FIFO_SIZE],
     position: usize,
 }
 
 impl Dsd2Pcm {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         // A DC-balanced DSD idle pattern avoids a transient while the filter
         // history fills.
         Self {
@@ -88,7 +88,7 @@ impl Dsd2Pcm {
         }
     }
 
-    pub(crate) fn translate(&mut self, source: &[u8], output: &mut Vec<f32>) {
+    pub fn translate(&mut self, source: &[u8], output: &mut Vec<f32>) {
         let lookup = lookup();
         let mut position = self.position;
         output.reserve(source.len());

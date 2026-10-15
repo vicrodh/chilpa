@@ -685,3 +685,22 @@ linebed
 # Digital signal processing and its headphone channel mix.
 dsp
 crossfeed
+# Qt build tools and DSD analysis terminology.
+basename
+bfd
+cflags
+emscripten
+ld
+metatypes
+msvc
+prl
+qmlcachegen
+qmldir
+qmltyperegistrar
+qmltypes
+rcc
+subopt
+sem
+decimator
+downmix
+sidechain

@@ -252,6 +252,9 @@ msgstr ""
 msgid "Add…"
 msgstr ""
 
+msgid "Advanced"
+msgstr "Advanced"
+
 msgid "Album"
 msgstr ""
 
@@ -528,11 +531,11 @@ msgstr ""
 msgid "Auto-follow"
 msgstr ""
 
-msgid "Automatic headroom"
-msgstr ""
-
 msgid "Automatic headroom only reduces gain. Compression has no makeup gain; ratio 1 disables it."
 msgstr ""
+
+msgid "Automatic headroom lowers gain to leave room for EQ boosts."
+msgstr "Automatic headroom lowers gain to leave room for EQ boosts."
 
 msgid "Awaiting approval"
 msgstr ""
@@ -572,6 +575,9 @@ msgstr ""
 
 msgid "Based on {artist} · {genres}"
 msgstr ""
+
+msgid "Bass"
+msgstr "Bass"
 
 msgid "Between tracks"
 msgstr ""
@@ -652,6 +658,9 @@ msgstr ""
 
 msgid "Cache used"
 msgstr ""
+
+msgid "Calculated gain"
+msgstr "Calculated gain"
 
 msgid "Calculating…"
 msgstr ""
@@ -1130,6 +1139,9 @@ msgstr ""
 msgid "Create & Add"
 msgstr ""
 
+msgid "Create graphic EQ"
+msgstr "Create graphic EQ"
+
 msgid "Create playlist"
 msgstr ""
 
@@ -1223,9 +1235,6 @@ msgstr ""
 msgid "DSD{} · PCM at {} Hz · {}"
 msgstr ""
 
-msgid "DSP"
-msgstr ""
-
 msgid "DSP active"
 msgstr ""
 
@@ -1241,7 +1250,7 @@ msgstr ""
 msgid "DSP control is unavailable."
 msgstr ""
 
-msgid "DSP filters need 10–24000 Hz, −18–12 dB and Q 0.2–12."
+msgid "DSP filters need 10–24000 Hz, −24–18 dB and Q 0.1–12."
 msgstr ""
 
 msgid "DSP host is unavailable."
@@ -1508,6 +1517,9 @@ msgstr ""
 msgid "Enable a DSP plugin first."
 msgstr ""
 
+msgid "Enable audio processing; turn off for bypass"
+msgstr "Enable audio processing; turn off for bypass"
+
 msgid "Enable the optional Mood plugin and manage its model download."
 msgstr ""
 
@@ -1694,6 +1706,9 @@ msgstr ""
 msgid "Follow"
 msgstr ""
 
+msgid "Follow lyrics"
+msgstr "Follow lyrics"
+
 msgid "Font"
 msgstr ""
 
@@ -1714,6 +1729,9 @@ msgstr ""
 
 msgid "French"
 msgstr ""
+
+msgid "Frequency · Hz   /   Gain · dB   /   ±12 dB"
+msgstr "Frequency · Hz   /   Gain · dB   /   ±12 dB"
 
 msgid "Fri"
 msgstr ""
@@ -1759,6 +1777,9 @@ msgstr ""
 
 msgid "GPU (compatibility)"
 msgstr ""
+
+msgid "Gain in decibels. Use arrow keys to adjust; Home and End reach the limits."
+msgstr "Gain in decibels. Use arrow keys to adjust; Home and End reach the limits."
 
 msgid "Gapless"
 msgstr ""
@@ -1816,6 +1837,12 @@ msgstr ""
 
 msgid "Goniometer"
 msgstr ""
+
+msgid "Graphic EQ"
+msgstr "Graphic EQ"
+
+msgid "Graphic equalizer"
+msgstr "Graphic equalizer"
 
 msgid "Grid"
 msgstr ""
@@ -2378,6 +2405,9 @@ msgstr ""
 msgid "Low shelf"
 msgstr ""
 
+msgid "Lower the overall level without changing the EQ. Zero adds no attenuation."
+msgstr "Lower the overall level without changing the EQ. Zero adds no attenuation."
+
 msgid "Lyrics"
 msgstr ""
 
@@ -2455,6 +2485,9 @@ msgstr ""
 
 msgid "Middle click opens a new tab"
 msgstr ""
+
+msgid "Mids"
+msgstr "Mids"
 
 msgid "Mini player"
 msgstr ""
@@ -3257,8 +3290,11 @@ msgstr ""
 msgid "Position in Streaming"
 msgstr "Position in Streaming"
 
-msgid "Preamp · −60–0 dB"
-msgstr ""
+msgid "Preamp"
+msgstr "Preamp"
+
+msgid "Precise filters"
+msgstr "Precise filters"
 
 msgid "Preferred GPU"
 msgstr ""
@@ -3617,6 +3653,12 @@ msgstr ""
 msgid "Reset All to Defaults"
 msgstr ""
 
+msgid "Reset EQ"
+msgstr "Reset EQ"
+
+msgid "Reset counter"
+msgstr "Reset counter"
+
 msgid "Resolving…"
 msgstr ""
 
@@ -3631,6 +3673,9 @@ msgstr ""
 
 msgid "Restore defaults"
 msgstr ""
+
+msgid "Restore previous EQ"
+msgstr "Restore previous EQ"
 
 msgid "Restore tabs"
 msgstr ""
@@ -3921,6 +3966,9 @@ msgstr ""
 
 msgid "Settings"
 msgstr ""
+
+msgid "Shape the sound: raise a band to hear more, lower it to hear less."
+msgstr "Shape the sound: raise a band to hear more, lower it to hear less."
 
 msgid "Show"
 msgstr ""
@@ -4365,6 +4413,9 @@ msgstr ""
 msgid "Theme"
 msgstr ""
 
+msgid "There is no previous EQ to restore."
+msgstr "There is no previous EQ to restore."
+
 msgid "This address belongs to a different server."
 msgstr ""
 
@@ -4424,6 +4475,9 @@ msgstr ""
 
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr ""
+
+msgid "This preset uses precise filters. Keep them as they are, or create a separate graphic EQ. You can restore your previous EQ."
+msgstr "This preset uses precise filters. Keep them as they are, or create a separate graphic EQ. You can restore your previous EQ."
 
 msgid "This purchase is unavailable for download."
 msgstr "This purchase is unavailable for download."
@@ -4565,6 +4619,9 @@ msgstr ""
 
 msgid "Tray icon style"
 msgstr ""
+
+msgid "Treble"
+msgstr "Treble"
 
 msgid "Tree"
 msgstr ""
@@ -4736,6 +4793,9 @@ msgstr ""
 
 msgid "View less"
 msgstr ""
+
+msgid "View precise filters"
+msgstr "View precise filters"
 
 msgid "View tracks"
 msgstr ""

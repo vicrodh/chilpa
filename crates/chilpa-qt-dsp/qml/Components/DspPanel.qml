@@ -16,6 +16,7 @@ Modal {
     property var draft: ({})
     property string group: "all"
     property int tab: 0
+    readonly property var tabs: [I18n.tr("Graphic EQ", I18n.rev), I18n.tr("Advanced", I18n.rev), I18n.tr("Import / export", I18n.rev)]
     readonly property var allPresets: state.presets || []
     readonly property var favorites: state.favorites || []
     readonly property string selectedKey: (selection.plugin || "") + "/" + (selection.preset || "")
@@ -32,7 +33,6 @@ Modal {
     onPresetDataChanged: draft = JSON.parse(presetData)
     onOpened: { Dsp.refresh(); draft = JSON.parse(presetData) }
     onClosed: tab = 0
-    Clipboard { id: clipboard }
 
     Column {
         width: panel.availableWidth - Metrics.modalInsets
@@ -43,7 +43,7 @@ Modal {
             spacing: Metrics.gap10
             Text {
                 width: parent.width - enabledSwitch.width - closeButton.width - parent.spacing * 2 // derived: title beside two controls
-                text: I18n.tr("DSP", I18n.rev)
+                text: I18n.tr("Equalizer", I18n.rev)
                 font.pointSize: Type.section
                 font.weight: Type.semibold
                 color: Theme.color.textPrimary
@@ -53,9 +53,10 @@ Modal {
                 objectName: "dspEnabled"
                 checked: !!panel.selection.enabled
                 enabled: Dsp.available
+                Accessible.name: I18n.tr("Enable audio processing; turn off for bypass", I18n.rev)
                 onToggled: on => panel.send("enable", { enabled: on })
             }
-            IconButton { id: closeButton; glyph: Icons.x; tip: I18n.tr("Close", I18n.rev); onClicked: panel.close() }
+            IconButton { id: closeButton; glyph: Icons.x; tip: I18n.tr("Close", I18n.rev); onClicked: panel.close(); activeFocusOnTab: true; Accessible.name: tip; Accessible.role: Accessible.Button; Keys.onReturnPressed: clicked(); Keys.onSpacePressed: clicked() }
         }
         Text {
             objectName: "dspDisclaimer"
@@ -112,6 +113,11 @@ Modal {
                 tip: I18n.tr("Favorite preset", I18n.rev)
                 checked: panel.favorites.includes(panel.selectedKey)
                 enabled: !!panel.selection.preset && !panel.selection.edited
+                activeFocusOnTab: enabled
+                Accessible.name: tip
+                Accessible.role: Accessible.Button
+                Keys.onReturnPressed: clicked()
+                Keys.onSpacePressed: clicked()
                 onClicked: panel.send("favorite", { key: panel.selectedKey })
             }
         }
@@ -131,20 +137,33 @@ Modal {
             color: Theme.color.textTertiary
         }
         SegmentedControl {
+            objectName: "dspTabs"
+            visible: panel.width >= Metrics.dspCompactWidth
             current: panel.tab
-            options: [{ text: I18n.tr("Equalizer", I18n.rev) }, { text: I18n.tr("Stereo and dynamics", I18n.rev) }, { text: I18n.tr("Import / export", I18n.rev) }]
+            options: panel.tabs.map(text => ({text: text}))
             onActivated: index => panel.tab = index
+        }
+        SelectField {
+            visible: panel.width < Metrics.dspCompactWidth
+            width: parent.width
+            options: panel.tabs
+            values: ["0", "1", "2"]
+            value: String(panel.tab)
+            onPicked: value => panel.tab = Number(value)
         }
         Controls.ScrollView {
             width: parent.width
-            height: Math.max(Metrics.dspCurveHeight, parent.height - y - footer.height - Metrics.gap10)
+            height: Math.max(Metrics.fieldHeight, parent.height - y - footer.height - Metrics.gap10)
             contentWidth: availableWidth
             clip: true
-            Column {
+            DspEditor {
                 width: parent.width
-                DspEqualizer { width: parent.width; visible: panel.tab === 0; draft: panel.draft; curve: panel.state.curve || []; onEdited: value => panel.edit(value) }
-                DspStereo { width: parent.width; visible: panel.tab === 1; draft: panel.draft; onEdited: value => panel.edit(value) }
-                DspImport { width: parent.width; visible: panel.tab === 2; onSubmitted: (name, text) => panel.send("import", { name: name, text: text }); onExported: clipboard.write(JSON.stringify(panel.draft, null, 2)) }
+                state: panel.state
+                draft: panel.draft
+                tab: panel.tab
+                onCommand: (action, data) => panel.send(action, data)
+                onEdited: value => panel.edit(value)
+                onTabRequested: tab => panel.tab = tab
             }
         }
         Column {
@@ -159,18 +178,12 @@ Modal {
                 color: Theme.color.textSecondary
                 font.pointSize: Type.small
             }
-            Text {
-                width: parent.width
-                text: I18n.tr("Automatic headroom", I18n.rev) + ": " + Number(panel.state.headroom_db || 0).toFixed(1) + " dB · " + I18n.tr("Clipped samples", I18n.rev) + ": " + (panel.state.clipped || 0)
-                font.pointSize: Type.small
-                color: Theme.color.textTertiary
-            }
             Row {
                 width: parent.width
                 spacing: Metrics.gap8
-                TextField { id: saveName; width: parent.width - saveButton.width - deleteButton.width - parent.spacing * 2; placeholder: I18n.tr("Name a personal preset", I18n.rev) } // derived: room for two buttons
+                TextField { id: saveName; width: parent.width - saveButton.width - deleteButton.width - parent.spacing * 2; placeholder: I18n.tr("Name a personal preset", I18n.rev); Accessible.name: placeholder } // derived: room for two buttons
                 PillButton { id: saveButton; text: I18n.tr("Save preset", I18n.rev); enabled: saveName.text.trim() !== ""; onClicked: panel.send("save", { name: saveName.text }) }
-                IconButton { id: deleteButton; glyph: Icons.trash; tip: I18n.tr("Delete preset", I18n.rev); enabled: (panel.selection.preset || "").startsWith("user-"); onClicked: panel.send("delete", {}) }
+                IconButton { id: deleteButton; glyph: Icons.trash; tip: I18n.tr("Delete preset", I18n.rev); enabled: (panel.selection.preset || "").startsWith("user-"); onClicked: panel.send("delete", {}); activeFocusOnTab: enabled; Accessible.name: tip; Accessible.role: Accessible.Button; Keys.onReturnPressed: clicked(); Keys.onSpacePressed: clicked() }
             }
         }
     }

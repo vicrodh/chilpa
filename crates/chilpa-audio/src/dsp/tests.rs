@@ -41,7 +41,7 @@ fn raw_native_dsd_is_never_processed() {
 
 #[test]
 fn peak_filter_matches_its_center_gain() {
-    for gain_db in [-12.0, -3.0, 0.0, 6.0, 12.0] {
+    for gain_db in [-24.0, -12.0, -3.0, 0.0, 6.0, 12.0, 18.0] {
         let mut filter = biquad::Biquad::new(&Filter { shape: Shape::Peak, frequency: 1000.0, gain_db, q: 1.0 }, 48_000);
         let mut input_power = 0.0; let mut output_power = 0.0;
         for i in 0..48_000 {
@@ -59,12 +59,68 @@ fn extreme_valid_filters_stay_finite_at_every_supported_rate() {
     for rate in [8000, 44_100, 48_000, 96_000, 192_000, 384_000, 768_000] {
         for shape in [Shape::Peak, Shape::LowShelf, Shape::HighShelf, Shape::HighPass, Shape::LowPass, Shape::Notch] {
             for frequency in [10.0, 1000.0, 24_000.0] {
-                for q in [0.2, 12.0] {
-                    let mut filter = biquad::Biquad::new(&Filter { shape, frequency, gain_db: 12.0, q }, rate);
-                    for i in 0..12_000 { assert!(filter.tick(if i == 0 { 1.0 } else { 0.0 }).is_finite()); }
+                for q in [0.1, 12.0] {
+                    for gain_db in [-24.0, 18.0] {
+                        let mut filter = biquad::Biquad::new(&Filter { shape, frequency, gain_db, q }, rate);
+                        for i in 0..12_000 { assert!(filter.tick(if i == 0 { 1.0 } else { 0.0 }).is_finite()); }
+                    }
                 }
             }
         }
+    }
+}
+
+#[test]
+fn measured_broad_peak_keeps_its_center_gain_and_has_a_decaying_impulse() {
+    let band = Filter { shape: Shape::Peak, frequency: 8912.0, gain_db: -5.6, q: 0.18 };
+    let measured = Preset { filters: vec![band.clone()], ..Preset::default() };
+    measured.validate().unwrap();
+    assert_eq!(measured.filters[0].q, 0.18);
+    for rate in [44_100, 48_000, 96_000, 192_000, 384_000] {
+        let mut filter = biquad::Biquad::new(&band, rate);
+        assert!((filter.magnitude_db(band.frequency, rate) - band.gain_db).abs() < 1e-8);
+        let mut tail = 0.0_f64;
+        for sample in 0..48_000 {
+            let output = filter.tick(if sample == 0 { 1.0 } else { 0.0 });
+            assert!(output.is_finite() && output.abs() <= 1.0, "unstable broad peak at {rate}");
+            if sample >= 24_000 { tail = tail.max(output.abs()); }
+        }
+        assert!(tail < 1e-12, "the impulse did not decay at {rate}: {tail}");
+    }
+}
+
+#[test]
+fn q_bounds_reject_zero_non_finite_and_out_of_range_values() {
+    for q in [0.0, -0.1, 0.099, 12.001, f64::NAN, f64::INFINITY] {
+        let invalid = Preset { filters: vec![Filter { q, ..preset().filters[0].clone() }], ..Preset::default() };
+        assert!(invalid.validate().is_err(), "Q {q} must be rejected");
+    }
+    for q in [0.1, 0.18, 0.19, 12.0] {
+        let valid = Preset { filters: vec![Filter { q, ..preset().filters[0].clone() }], ..Preset::default() };
+        valid.validate().unwrap();
+    }
+}
+
+#[test]
+fn compensated_high_gain_filters_use_their_combined_headroom_and_keep_pcm_bounded() {
+    let settings = Preset { filters: vec![
+        Filter { shape: Shape::Peak, frequency: 1000.0, gain_db: 18.0, q: 0.18 },
+        Filter { shape: Shape::Peak, frequency: 900.0, gain_db: -24.0, q: 0.18 },
+    ], ..Preset::default() };
+    settings.validate().unwrap();
+    let response: f64 = settings.filters.iter().map(|band| biquad::Biquad::new(band, 48_000).magnitude_db(1000.0, 48_000)).sum();
+    let gain = settings.preamp_for_rate(48_000);
+    assert!(gain.is_finite() && gain <= 0.0 && gain + response < -0.99);
+    assert!(gain > -19.0, "compensating filters must not be treated as independent boosts: {gain}");
+    let (_, mut engine) = processor(Some(settings), 2);
+    let input: Vec<f32> = (0..48_000).flat_map(|index| {
+        let sample = (2.0 * std::f64::consts::PI * 1000.0 * index as f64 / 48_000.0).sin() as f32 * 0.8;
+        [sample, sample]
+    }).collect();
+    let mut block = bytes(&input); engine.process(&mut block);
+    assert!(floats(&block).iter().all(|sample| sample.is_finite() && sample.abs() <= 1.0));
+    for gain_db in [-24.001, 18.001, f64::NAN] {
+        assert!(Preset { filters: vec![Filter { gain_db, ..preset().filters[0].clone() }], ..Preset::default() }.validate().is_err());
     }
 }
 

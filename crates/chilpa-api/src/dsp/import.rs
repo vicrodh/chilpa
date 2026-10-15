@@ -55,6 +55,17 @@ mod tests {
         assert_eq!(p.filters[0].frequency, 105.0); assert_eq!(p.filters[0].gain_db, 3.2); assert_eq!(p.filters[1].shape, Shape::HighShelf);
     }
     #[test]
+    fn broad_measured_peaks_import_without_replacing_their_q() {
+        let preset = parse("Filter 1: ON PK Fc 8912 Hz Gain -5.6 dB Q 0.18", "Measured broad peak").unwrap();
+        assert_eq!(preset.filters[0].q, 0.18);
+        assert_eq!(preset.filters[0].gain_db, -5.6);
+        assert_eq!(preset.filters[0].frequency, 8912.0);
+        assert!(parse("Filter 1: ON PK Fc 8912 Hz Gain -5.6 dB Q 0", "Invalid peak").is_err());
+        let compensated = parse("Filter 1: ON PK Fc 1000 Hz Gain 18 dB Q 0.18\nFilter 2: ON PK Fc 900 Hz Gain -24 dB Q 0.18", "Compensated peaks").unwrap();
+        assert_eq!(compensated.filters[0].gain_db, 18.0);
+        assert_eq!(compensated.filters[1].gain_db, -24.0);
+    }
+    #[test]
     fn malformed_unsupported_and_unbounded_profiles_fail_whole() {
         for text in ["", "no EQ", "Filter 1: ON PK Fc NaN Hz Gain 2 dB Q 1", "Filter 1: ON AP Fc 200 Hz Q 1",
             "Channel: L\nFilter 1: ON PK Fc 100 Hz Gain 3 dB Q 1", "Filter 1: ON LS 12dB Fc 100 Hz Gain 3 dB",

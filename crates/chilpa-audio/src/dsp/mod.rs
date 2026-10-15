@@ -67,8 +67,8 @@ impl Preset {
         }
         if self.filters.len() > MAX_FILTERS { return Err(chilpa_i18n::t("Use at most 10 DSP filters.")); }
         for f in &self.filters {
-            if !bounded(f.frequency, 10.0, 24_000.0) || !bounded(f.gain_db, -18.0, 12.0) || !bounded(f.q, 0.2, 12.0) {
-                return Err(chilpa_i18n::t("DSP filters need 10–24000 Hz, −18–12 dB and Q 0.2–12."));
+            if !bounded(f.frequency, 10.0, 24_000.0) || !bounded(f.gain_db, -24.0, 18.0) || !bounded(f.q, 0.1, 12.0) {
+                return Err(chilpa_i18n::t("DSP filters need 10–24000 Hz, −24–18 dB and Q 0.1–12."));
             }
         }
         if !bounded(self.preamp_db, -60.0, 0.0) || !bounded(self.crossfeed, 0.0, 0.5)

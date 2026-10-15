@@ -19,6 +19,7 @@
 //! whatever the device holds: up to half a second on a direct backend.
 
 mod analysis;
+mod dsd;
 mod ribbon;
 mod scope;
 
@@ -122,43 +123,73 @@ pub fn spawn(tap: Tap, controls: Controls, sink: Arc<dyn Sink>) -> JoinHandle<()
         .expect("the visualizer thread starts")
 }
 
-fn run(tap: Tap, controls: Controls, sink: Arc<dyn Sink>) {
-    let mut samples = vec![0.0f32; FFT_SIZE];
-    let mut analyzer = analysis::Analyzer::default();
-    let mut ribbon = ribbon::SpectralAnalyzer::new(44_100, FFT_SIZE, SPECTRAL_BANDS, SPECTRAL_RATE_HZ, SPECTRAL_SMOOTHING);
-    let mut scopes = scope::ScopeProcessor::default();
-    let period = Duration::from_micros(1_000_000 / TARGET_FPS);
+struct Producer {
+    samples: Vec<f32>,
+    analyzer: analysis::Analyzer,
+    ribbon: ribbon::SpectralAnalyzer,
+    scopes: scope::ScopeProcessor,
+    dsd: dsd::Sidechain,
+}
 
+impl Producer {
+    fn new() -> Self {
+        Self {
+            samples: vec![0.0f32; FFT_SIZE],
+            analyzer: analysis::Analyzer::default(),
+            ribbon: ribbon::SpectralAnalyzer::new(44_100, FFT_SIZE, SPECTRAL_BANDS, SPECTRAL_RATE_HZ, SPECTRAL_SMOOTHING),
+            scopes: scope::ScopeProcessor::default(),
+            dsd: dsd::Sidechain::default(),
+        }
+    }
+
+    fn produce(&mut self, tap: &Tap, controls: &Controls, sink: &dyn Sink) {
+        if !controls.enabled() || controls.paused() {
+            self.dsd.reset();
+            return;
+        }
+        let update = self.dsd.poll(tap);
+        if update.reset {
+            self.analyzer = analysis::Analyzer::default();
+            self.ribbon = ribbon::SpectralAnalyzer::new(44_100, FFT_SIZE, SPECTRAL_BANDS, SPECTRAL_RATE_HZ, SPECTRAL_SMOOTHING);
+            self.scopes = scope::ScopeProcessor::default();
+        }
+        let snapshot = if update.active { update.snapshot } else { Some(tap.snapshot()) };
+        let Some(snapshot) = snapshot else { return };
+        if snapshot.sample_rate_hz == 0 || !fill(&snapshot, &mut self.samples) { return; }
+        let rate = snapshot.sample_rate_hz;
+        let samples = &self.samples;
+        let mask = controls.scopes();
+        if mask & GONIOMETER != 0 {
+            let (points, correlation) = self.scopes.goniometer(samples, rate);
+            sink.submit(Frame::Goniometer { points, correlation });
+        }
+        if mask & OSCILLOSCOPE != 0 {
+            sink.submit(Frame::Oscilloscope(self.scopes.oscilloscope(samples, rate)));
+        }
+        if self.ribbon.process(samples, rate) {
+            sink.submit(Frame::Spectral(self.ribbon.bands().to_vec()));
+        }
+        let analysis::Analyzed { bars, energy, transient } = self.analyzer.analyze(samples, rate);
+        sink.submit(Frame::Bars(bars));
+        sink.submit(Frame::Energy(energy));
+        if let Some(intensity) = transient {
+            sink.submit(Frame::Transient(intensity));
+        }
+        sink.submit(Frame::Wave(wave(samples)));
+    }
+}
+
+fn run(tap: Tap, controls: Controls, sink: Arc<dyn Sink>) {
+    let mut producer = Producer::new();
+    let period = Duration::from_micros(1_000_000 / TARGET_FPS);
     loop {
         if !controls.enabled() || controls.paused() {
+            producer.dsd.reset();
             std::thread::park_timeout(IDLE_POLL);
             continue;
         }
         let started = Instant::now();
-
-        let snapshot = tap.snapshot();
-        if snapshot.sample_rate_hz > 0 && fill(&snapshot, &mut samples) {
-            let rate = snapshot.sample_rate_hz;
-            let mask = controls.scopes();
-            if mask & GONIOMETER != 0 {
-                let (points, correlation) = scopes.goniometer(&samples, rate);
-                sink.submit(Frame::Goniometer { points, correlation });
-            }
-            if mask & OSCILLOSCOPE != 0 {
-                sink.submit(Frame::Oscilloscope(scopes.oscilloscope(&samples, rate)));
-            }
-            if ribbon.process(&samples, rate) {
-                sink.submit(Frame::Spectral(ribbon.bands().to_vec()));
-            }
-            let analysis::Analyzed { bars, energy, transient } = analyzer.analyze(&samples, rate);
-            sink.submit(Frame::Bars(bars));
-            sink.submit(Frame::Energy(energy));
-            if let Some(intensity) = transient {
-                sink.submit(Frame::Transient(intensity));
-            }
-            sink.submit(Frame::Wave(wave(&samples)));
-        }
-
+        producer.produce(&tap, &controls, sink.as_ref());
         let elapsed = started.elapsed();
         if elapsed < period {
             std::thread::sleep(period - elapsed);

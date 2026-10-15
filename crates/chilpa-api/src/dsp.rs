@@ -1,6 +1,7 @@
 //! Optional DSP catalogs are loaded off-thread; only validated parameters
 //! reach the PCM renderer. Preferences are scoped to output identifiers.
 mod import;
+mod graphic;
 #[cfg(test)]
 mod tests;
 use crate::Chilpa;
@@ -14,7 +15,10 @@ struct Provider { id: String, name: String, catalog: Catalog }
 struct Loaded { signature: Signature, providers: Vec<Provider>, error: String }
 #[derive(Clone, Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
-struct Selection { plugin: String, preset: String, enabled: bool, edited: Option<Preset> }
+struct Selection {
+    plugin: String, preset: String, enabled: bool, edited: Option<Preset>,
+    graphic_origin: Option<graphic::Origin>,
+}
 #[derive(Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 struct Saved { outputs: BTreeMap<String, Selection>, custom: Vec<Preset>, favorites: Vec<String> }
@@ -55,6 +59,11 @@ impl Dsp {
         self.saved.custom.truncate(64);
         self.saved.favorites.truncate(128);
         self.saved.outputs.retain(|_, s| s.edited.as_ref().is_none_or(|p| p.validate().is_ok()));
+        for selection in self.saved.outputs.values_mut() {
+            if selection.graphic_origin.as_ref().is_some_and(|origin| !origin.valid()) {
+                selection.graphic_origin = None;
+            }
+        }
     }
     fn persist(&self) -> Result<(), String> {
         let mut settings = chilpa_core::settings::load();
@@ -143,6 +152,7 @@ impl Chilpa {
             "presets":presets,"selection":selection,"preset":preset,"output":output,"favorites":self.dsp.saved.favorites,
             "headroom_db":self.dsp.analysis.as_ref().map(|(_, preamp, _)| preamp),
             "curve":self.dsp.analysis.as_ref().map(|(_, _, curve)| curve),
+            "graphic":preset.as_ref().is_some_and(graphic::matches),
             "active":preset.is_some() && blocked.is_empty() && control.as_ref().is_some_and(|c| c.active()),
             "clipped":control.as_ref().map_or(0, |c| c.clipped_samples()),"blocked":blocked,"error":self.dsp.error}).to_string()
     }
@@ -167,10 +177,16 @@ impl Chilpa {
                 return self.dsp.persist();
             }
             "enable" => selection.enabled = input["enabled"].as_bool().ok_or_else(|| chilpa_i18n::t("Choose DSP on or bypass."))?,
+            "graphic_start" => {
+                let preset = self.dsp.preset(&selection).ok_or_else(|| chilpa_i18n::t("Choose a DSP preset."))?;
+                selection.begin_graphic(preset);
+            }
+            "graphic_restore" => selection.restore_graphic()?,
             "choose" => {
                 selection.plugin = input["plugin"].as_str().ok_or_else(|| chilpa_i18n::t("Choose a DSP plugin."))?.into();
                 selection.preset = input["preset"].as_str().ok_or_else(|| chilpa_i18n::t("Choose a preset."))?.into();
                 selection.edited = None;
+                selection.graphic_origin = None;
                 if self.dsp.preset(&selection).is_none() { return Err(chilpa_i18n::t("DSP preset is unavailable.")); }
                 selection.enabled = true;
             }
@@ -183,6 +199,7 @@ impl Chilpa {
                 let text = input["text"].as_str().ok_or_else(|| chilpa_i18n::t("Paste a parametric EQ profile."))?;
                 let name = input["name"].as_str().unwrap_or("Importado");
                 selection.edited = Some(import::parse(text, name)?); selection.enabled = true;
+                selection.graphic_origin = None;
             }
             "save" => {
                 if self.dsp.saved.custom.len() >= 64 { return Err(chilpa_i18n::t("Keep at most 64 personal presets.")); }
@@ -201,6 +218,7 @@ impl Chilpa {
                     saved.preset = "flat".into(); saved.edited = None; saved.enabled = false;
                 }
                 selection.preset = "flat".into(); selection.edited = None; selection.enabled = false;
+                selection.graphic_origin = None;
             }
             "reset_meter" => { if let Some(player) = &self.player { player.dsp().reset_meter(); } return Ok(()); }
             _ => return Err(chilpa_i18n::t("Unknown DSP action.")),
