@@ -115,6 +115,7 @@ pub struct Player {
 }
 
 impl Player {
+    pub fn dsp(&self) -> chilpa_audio::dsp::Control { self.controls.dsp.clone() }
     /// Starts the player thread.
     pub fn spawn(mut probe: ProbeDevice, mut open: OpenSink) -> Self {
         let (orders_tx, orders_rx) = channel::<Order>();
@@ -545,7 +546,7 @@ fn play(
     let index = if controls.start_index.load(Ordering::Acquire) == usize::MAX { 0 } else { index };
     if let Some(first) = paths.get(index) {
         if is_url(first) {
-            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, index, total);
+            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, index, total, &controls.dsp);
         }
         if is_cd(first) {
             return play_cd(first, device, exclusive, &caps, controls, open, events);
@@ -704,7 +705,9 @@ fn play_stream(
     events: &Sender<PlayerEvent>,
     index: usize,
     queue_len: usize,
+    dsp: &chilpa_audio::dsp::Control,
 ) -> Result<Outcome, PlayError> {
+    dsp.begin_stream();
     let exact_path = crate::path_is_exact(device, exclusive);
     let parts = parts_of(url);
     let address = parts.first().cloned().unwrap_or_default();
@@ -727,6 +730,7 @@ fn play_stream(
         policy,
         stop,
         pause,
+        Some(dsp.clone()),
         |format| open(device, format, exclusive),
         &mut |delivery| {
             let _ = events.send(PlayerEvent::Started {
@@ -734,7 +738,7 @@ fn play_stream(
                 opened: delivery.opened,
                 channels: delivery.requested.channels,
                 bits: delivery.bits_carried(),
-                bit_perfect: delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery),
+                bit_perfect: delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery) && !dsp.requested(),
                 total_frames: None,
                 tags: Some(tag.clone()),
                 artwork: None,
@@ -799,7 +803,7 @@ fn play_cd(
     // it is not opened at all. That is half the answer. The other half is
     // where it went, and it used to be missing: through `default` this said
     // bit-perfect while the samples went into a mixer.
-    let bit_perfect = crate::path_is_exact(device, exclusive);
+    let bit_perfect = crate::path_is_exact(device, exclusive) && !controls.dsp.requested();
 
     crate::cd_playback::play_disc(
         &mut unit,

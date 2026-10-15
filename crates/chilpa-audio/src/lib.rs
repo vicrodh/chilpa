@@ -34,3 +34,4 @@ pub use render::{render, render_with, FrameSource, Outcome};
 pub use gapless::{transition, Transition, Trimmer};
 pub use seek::{Cursor, SeekPlan, SeekSignal};
 pub use sink::{AudioSink, SinkError, StopSignal};
+pub mod dsp;

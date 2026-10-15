@@ -643,6 +643,18 @@ impl Plugins {
         self.registry.usable_of_kind(chilpa_plugin::manifest::Kind::Source)
     }
 
+    /// Only an approved, usable DSP with the processing permission is offered.
+    pub(crate) fn dsp_sources(&self) -> Vec<(String, String, u64)> {
+        use chilpa_plugin::manifest::{Kind, Capability};
+        self.registry.usable_of_kind(Kind::Dsp).into_iter().filter_map(|(id, name)| {
+            let manifest = self.registry.installed().find(|p| p.id == id)?.manifest.as_ref()?;
+            manifest.has(&Capability::ProcessAudio).then(|| {
+                let epoch = self.epochs.get(&id).copied().unwrap_or(0);
+                (id, name, epoch)
+            })
+        }).collect()
+    }
+
     /// The plugins that put an entry of their own in the window: id, name
     /// and icon hint.
     pub fn panels(&self) -> Vec<(String, String, String)> {

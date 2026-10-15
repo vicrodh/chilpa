@@ -384,3 +384,4 @@ mod tests {
         assert_eq!(core.sources(), &[SourceId::local()]);
     }
 }
+pub use chilpa_audio::dsp;

@@ -12,6 +12,7 @@ mod ab_loop;
 pub mod about;
 mod accounts;
 mod casting;
+mod dsp;
 pub use chilpa_cast::{Device as CastDevice, Kind as CastKind};
 mod approvals;
 mod browse;
@@ -647,6 +648,7 @@ pub struct Chilpa {
     /// must not leave the window waiting.
     plugins: Option<std::sync::Arc<std::sync::Mutex<plugins::Plugins>>>,
     plugin_center: Option<plugin_center::PluginCenter>,
+    dsp: dsp::Dsp,
     appimage_updates: Option<appimage_updates::Updates>,
     plugin_startup: plugin_startup::Startup,
     /// Process plugins, reached without the sandbox lock.
@@ -772,6 +774,7 @@ impl Chilpa {
             source_favorites: Default::default(),
             plugins: None,
             plugin_center: None,
+            dsp: Default::default(),
             appimage_updates: None,
             plugin_startup: plugin_startup::Startup::default(),
             natives: Default::default(),
@@ -1211,6 +1214,7 @@ impl Chilpa {
         self.advance_desktop();
         self.advance_source_favorites();
         self.advance_plugins();
+        self.advance_dsp();
         self.advance_search();
         self.advance_sources();
         self.advance_catalog();
@@ -1231,6 +1235,7 @@ impl Chilpa {
             if self.listen.active == 0 { continue; }
             match event {
                 PlayerEvent::Started { path, opened, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, index, queue_len, dsd_multiple, dsd_passthrough } => {
+                    self.dsp.passthrough = dsd_passthrough;
                     // What was playing until now is left where it was.
                     self.keep_place(true);
                     started = true;
@@ -1404,6 +1409,7 @@ impl Chilpa {
         // level the player holds, not the settings: this runs every tick.
         let gain = self.player.as_ref().map_or(1.0, |p| p.volume());
         self.mark_scaled(gain);
+        if self.player.as_ref().is_some_and(|p| p.dsp().touched()) { self.now.bit_perfect = false; }
         self.finish_tick(started);
         &self.now
     }

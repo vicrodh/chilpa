@@ -464,6 +464,8 @@ fn is_permutation(order: &[usize], len: usize) -> bool {
 /// blocks waiting on the device.
 #[derive(Clone)]
 pub struct Controls {
+    /// Validated DSP parameters, read by PCM renderers after read-ahead.
+    pub dsp: chilpa_audio::dsp::Control,
     pub stop: StopSignal,
     pub pause: PauseSignal,
     pub seek: SeekSignal,
@@ -548,6 +550,7 @@ impl Switch {
 impl Default for Controls {
     fn default() -> Self {
         Self {
+            dsp: chilpa_audio::dsp::Control::default(),
             stop: StopSignal::default(),
             pause: PauseSignal::default(),
             seek: SeekSignal::default(),
@@ -943,6 +946,7 @@ where
     // The DoP marker of whatever is open. It carries on across tracks that
     // share an opening and starts over with a new one.
     let mut packer = DopPacker::new();
+    let mut dsp = None;
     // Whether the track before ended by itself: then what is still in the
     // device is its last part, and it is waited for before the device is
     // closed. Skipped or stopped, it is not.
@@ -1137,10 +1141,16 @@ where
         if level.touches() {
             delivery.transforms.push(chilpa_audio::negotiate::Transform::VolumeApplied);
         }
+        if shape.is_some() && controls.dsp.requested() {
+            delivery.transforms.push(chilpa_audio::negotiate::Transform::DspApplied);
+        }
         let observer = match &source {
             Source::Pcm(_, observer, _) => observer.clone(),
             _ => None,
         };
+        if shape.is_none() { dsp = None; }
+        else if dsp.is_none() || !keep_open { dsp = Some(chilpa_audio::dsp::Processor::new(controls.dsp.clone(), delivery.opened)); }
+        else if skipped_before { if let Some(dsp) = &mut dsp { dsp.reset(); } }
         sink.begin(observer);
         // The next track, opened ahead for gapless: a file at once, a track
         // over the network once this one has played a while (`Preload::at`).
@@ -1162,6 +1172,7 @@ where
             preload.reached(progress.delivered);
             on_progress(index, progress)
         };
+        controls.dsp.begin_stream();
         on_track(index, path, &delivery, &about);
         chilpa_audio::diagnostics::trace(
             "queue",
@@ -1206,7 +1217,7 @@ where
                 let base = std::sync::Arc::clone(&frames.base);
                 let delivered = std::sync::Arc::clone(&frames.delivered);
                 let outcome =
-                    chilpa_audio::render::render_paused(&mut frames, sink, stop, pause, &mut |f| {
+                    chilpa_audio::render::render_with_processor(&mut frames, sink, stop, pause, dsp.as_mut(), &mut |f| {
                         delivered.store(f, std::sync::atomic::Ordering::Relaxed);
                         let at = f as i64 + base.load(std::sync::atomic::Ordering::Relaxed);
                         on_progress(index, Progress { position: at.max(0) as u64, delivered: f })
@@ -1255,11 +1266,12 @@ where
                     feed: feed.clone(),
                     decoded_at: 0,
                 };
-                let outcome = chilpa_audio::render::render_paused(
+                let outcome = chilpa_audio::render::render_with_processor(
                     &mut frames,
                     sink,
                     stop,
                     pause,
+                    dsp.as_mut(),
                     &mut |position| {
                         on_progress(index, Progress { position, delivered: position })
                     },
