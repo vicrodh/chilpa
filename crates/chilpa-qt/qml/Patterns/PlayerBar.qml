@@ -1,7 +1,5 @@
 import QtQuick
-import QtQuick.Effects
 import app.chilpa
-import app.chilpa.dsp
 import "qrc:/qt/qml/app/chilpa/dsp/qml/Components" as DspUi
 import app.chilpa.kit
 import app.chilpa.ambient
@@ -236,7 +234,8 @@ Item {
         IconButton {
             id: optionsButton
             tip: I18n.tr("Playback options", I18n.rev)
-            glyph: Icons.adjustmentsHorizontal
+            glyph: Lucide.settings2
+            iconFamily: Lucide.font
             // Lit when something differs from how it came.
             checked: options.opened || !Player.gapless || (Player.normalize && Player.normalizeApplies)
             onClicked: options.opened ? options.close() : options.open()

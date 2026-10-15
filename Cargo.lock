@@ -3153,8 +3153,6 @@ checksum = "d55d956fa96f5ec02be2e13af0e20391a5aa83d6a074e3ad368959d0fab299ea"
 [[package]]
 name = "qt-build-utils"
 version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63c7e24653d0b3084180066306b26e532b152470b13a050c2d2960284d4b9f53"
 dependencies = [
  "cc",
  "thiserror 1.0.69",

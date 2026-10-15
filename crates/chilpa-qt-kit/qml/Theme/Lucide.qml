@@ -34,6 +34,7 @@ QtObject {
     readonly property string settings2: "\ue245"
     readonly property string skipBack: "\ue15f"
     readonly property string skipForward: "\ue160"
+    readonly property string slidersVertical: "\ue162"
     readonly property string squarePlay: "\ue481"
     readonly property string undo2: "\ue2a1"
     readonly property string x: "\ue1b2"

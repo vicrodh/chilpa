@@ -229,6 +229,33 @@ TestCase {
         compare(row(1).translation, "")
     }
 
+    function test_late_translation_keeps_follow_and_a_manual_drag_can_return_to_it() {
+        show(song, true, 4)
+        Player.paused = true
+        const list = findChild(panel, "lyricsList")
+        const centered = () => {
+            const active = row(Player.lyricsLine)
+            return active !== null && Math.abs(active.mapToItem(list, 0, active.height / 2).y - list.height / 2) <= 1
+        }
+        tryVerify(centered)
+        const document = JSON.parse(song)
+        document.translation = 0
+        document.document.layers = [{kind:"translation",language:"es",lines:document.document.lines.map((line, index) => ({line:index,text:Array(24).fill("Translated verse").join(" ")}))}]
+        Player.lyricsJson = JSON.stringify(document)
+        panel.translating = true
+        tryVerify(centered, 1500)
+        verify(options().follow && list.following, "a late translation preserves follow while paused")
+        mouseDrag(list, list.width / 2, list.height / 2, 0, -100)
+        tryCompare(options(), "follow", false)
+        verify(!list.following)
+        const follow = findChild(panel, "lyricsFollow")
+        verify(follow.visible)
+        mouseClick(follow)
+        tryVerify(centered, 1500)
+        verify(options().follow && list.following)
+        Player.paused = false
+    }
+
     function test_the_translation_is_put_away_with_its_track() {
         show(translated, true, 0)
         mouseClick(findChild(panel, "translateButton"))

@@ -5,89 +5,19 @@
 //! before any general-purpose audio backend can resample its ultrasonic
 //! noise into the audible band.
 
-use crate::dsd2pcm::Dsd2Pcm;
+use chilpa_audio::dsd::Decimator;
 use crate::{DsdError, DsdSource};
-use std::sync::OnceLock;
 
 /// PCM rate used for converted DSD on shared and converting outputs.
 pub const OUTPUT_RATE: u32 = 88_200;
 /// Headroom used because low-passed DSD may exceed PCM full scale.
 pub const DEFAULT_GAIN_DB: f32 = -6.0;
 
-const HALF_BAND_TAPS: usize = 63;
-
-fn half_band_taps() -> &'static [f32; HALF_BAND_TAPS] {
-    static TAPS: OnceLock<[f32; HALF_BAND_TAPS]> = OnceLock::new();
-    TAPS.get_or_init(|| {
-        let center = (HALF_BAND_TAPS - 1) as f64 / 2.0;
-        let mut taps = [0.0; HALF_BAND_TAPS];
-        let mut sum = 0.0;
-        for (index, tap) in taps.iter_mut().enumerate() {
-            let x = index as f64 - center;
-            let sinc = if x == 0.0 {
-                0.5
-            } else {
-                (std::f64::consts::PI * 0.5 * x).sin() / (std::f64::consts::PI * x)
-            };
-            let window = 0.42
-                - 0.5
-                    * (2.0 * std::f64::consts::PI * index as f64 / (HALF_BAND_TAPS - 1) as f64)
-                        .cos()
-                + 0.08
-                    * (4.0 * std::f64::consts::PI * index as f64 / (HALF_BAND_TAPS - 1) as f64)
-                        .cos();
-            let value = sinc * window;
-            *tap = value as f32;
-            sum += value;
-        }
-        let scale = (1.0 / sum) as f32;
-        for tap in &mut taps {
-            *tap *= scale;
-        }
-        taps
-    })
-}
-
-struct HalfBand {
-    pending: Vec<f32>,
-    next: usize,
-}
-
-impl HalfBand {
-    fn new() -> Self {
-        Self {
-            pending: vec![0.0; HALF_BAND_TAPS - 1],
-            next: HALF_BAND_TAPS - 1,
-        }
-    }
-
-    fn process(&mut self, input: &[f32], output: &mut Vec<f32>) {
-        let taps = half_band_taps();
-        self.pending.extend_from_slice(input);
-        let mut center = self.next;
-        while center < self.pending.len() {
-            let window = &self.pending[center + 1 - HALF_BAND_TAPS..=center];
-            let mut sum = 0.0;
-            for tap in (0..HALF_BAND_TAPS).step_by(2) {
-                sum += taps[tap] * window[HALF_BAND_TAPS - 1 - tap];
-            }
-            sum += taps[HALF_BAND_TAPS / 2] * window[HALF_BAND_TAPS / 2];
-            output.push(sum);
-            center += 2;
-        }
-        let keep_from = self.pending.len().saturating_sub(HALF_BAND_TAPS - 1);
-        let overshoot = center - self.pending.len();
-        self.pending.drain(..keep_from);
-        self.next = HALF_BAND_TAPS - 1 + overshoot;
-    }
-}
-
 /// Converts one open DSD source into interleaved stereo PCM blocks.
 pub struct DsdPcmConverter {
     source: Box<dyn DsdSource>,
     source_channels: usize,
-    first_stage: Vec<Dsd2Pcm>,
-    half_bands: Vec<Vec<HalfBand>>,
+    decimator: Decimator,
     gain: f32,
     total_frames: u64,
     emitted_frames: u64,
@@ -111,15 +41,12 @@ impl DsdPcmConverter {
             )));
         }
         let source_channels = info.channels as usize;
-        let stage_count = (ratio / 8).trailing_zeros() as usize;
+        let decimator = Decimator::new(info.dsd_rate_hz, source_channels).expect("validated DSD rate");
         Ok(Self {
             total_frames: info.samples / u64::from(ratio),
             source,
             source_channels,
-            first_stage: (0..source_channels).map(|_| Dsd2Pcm::new()).collect(),
-            half_bands: (0..stage_count)
-                .map(|_| (0..source_channels).map(|_| HalfBand::new()).collect())
-                .collect(),
+            decimator,
             gain: 10f32.powf(gain_db / 20.0),
             emitted_frames: 0,
             finished: false,
@@ -158,17 +85,7 @@ impl DsdPcmConverter {
             ));
         }
 
-        let mut channels = Vec::with_capacity(self.source_channels);
-        for channel in 0..self.source_channels {
-            let mut samples = Vec::new();
-            self.first_stage[channel].translate(&planar[channel], &mut samples);
-            for stage in &mut self.half_bands {
-                let mut downsampled = Vec::with_capacity(samples.len() / 2 + 1);
-                stage[channel].process(&samples, &mut downsampled);
-                samples = downsampled;
-            }
-            channels.push(samples);
-        }
+        let channels = self.decimator.process(&planar);
 
         let available = channels.iter().map(Vec::len).min().unwrap_or(0) as u64;
         let frames = available.min(self.total_frames.saturating_sub(self.emitted_frames)) as usize;
@@ -263,5 +180,77 @@ mod tests {
         assert_eq!(output.len(), 2048);
         assert!(output[256..].iter().all(|sample| sample.abs() < 1e-3));
         assert!(converter.next_block().unwrap().is_none());
+    }
+
+    #[test]
+    fn shared_kernel_matches_playback_gain_duration_and_odd_source_chunks() {
+        for multiplier in [1, 2, 4, 8] {
+            let rate = 2_822_400 * multiplier;
+            let bytes = 1024 * (rate / OUTPUT_RATE / 8) as usize;
+            let planar: Vec<Vec<u8>> = (0..2).map(|channel| {
+                (0..bytes).map(|i| ((i * 73 + channel * 131) ^ (i >> 3)) as u8).collect()
+            }).collect();
+            let blocks: Vec<Vec<Vec<u8>>> = (0..bytes).step_by(251).map(|start| {
+                planar.iter().map(|channel| channel[start..(start + 251).min(bytes)].to_vec()).collect()
+            }).collect();
+            let mut kernel = Decimator::new(rate, 2).unwrap();
+            let mut expected = Vec::new();
+            let gain = 10f32.powf(DEFAULT_GAIN_DB / 20.0);
+            for block in &blocks {
+                let channels = kernel.process(block);
+                for frame in 0..channels[0].len() {
+                    expected.extend([channels[0][frame] * gain, channels[1][frame] * gain]);
+                }
+            }
+            let source = IdleDsd {
+                info: DsdInfo { dsd_rate_hz: rate, channels: 2, samples: bytes as u64 * 8 },
+                blocks: blocks.into_iter().rev().collect(),
+            };
+            let mut converter = DsdPcmConverter::new(Box::new(source), DEFAULT_GAIN_DB).unwrap();
+            let mut actual = Vec::new();
+            while let Some(block) = converter.next_block().unwrap() { actual.extend(block); }
+            assert_eq!(actual, expected);
+            assert_eq!(actual.len(), converter.total_frames() as usize * 2);
+            let mut whole = Decimator::new(rate, 2).unwrap();
+            let whole = whole.process(&planar);
+            let whole: Vec<f32> = (0..whole[0].len()).flat_map(|i| [whole[0][i] * gain, whole[1][i] * gain]).collect();
+            assert_eq!(actual, whole, "chunk boundaries preserve every FIR accumulation and phase");
+        }
+    }
+
+    #[test]
+    fn multichannel_downmix_and_gain_still_use_the_original_channel_layout() {
+        for count in 1..=6 {
+            let rate = 2_822_400;
+            let planar: Vec<Vec<u8>> = (0..count).map(|channel| {
+                (0..8192).map(|i| ((i * 53 + channel * 29) ^ (i >> 2)) as u8).collect()
+            }).collect();
+            let source = IdleDsd {
+                info: DsdInfo { dsd_rate_hz: rate, channels: count as u16, samples: 8192 * 8 },
+                blocks: vec![planar.clone()],
+            };
+            let mut converter = DsdPcmConverter::new(Box::new(source), -3.0).unwrap();
+            let actual = converter.next_block().unwrap().unwrap();
+            let channels = Decimator::new(rate, count).unwrap().process(&planar);
+            let gain = 10f32.powf(-3.0 / 20.0);
+            let scale = std::f32::consts::FRAC_1_SQRT_2;
+            for (index, frame) in actual.chunks_exact(2).enumerate() {
+                let (mut left, mut right) = (channels[0][index], channels[count.min(2) - 1][index]);
+                let mut weights = 1.0;
+                if matches!(count, 3 | 5 | 6) {
+                    left += channels[2][index] * scale;
+                    right += channels[2][index] * scale;
+                    weights += scale;
+                }
+                if count >= 4 {
+                    let surround = if count == 4 { 2 } else if count == 5 { 3 } else { 4 };
+                    left += channels[surround][index] * scale;
+                    right += channels[surround + 1][index] * scale;
+                    weights += scale;
+                }
+                assert!((frame[0] - left / weights * gain).abs() < 1e-7);
+                assert!((frame[1] - right / weights * gain).abs() < 1e-7);
+            }
+        }
     }
 }

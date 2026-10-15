@@ -2,10 +2,9 @@ pragma Singleton
 import QtQuick
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
-// Every measure of the immersive view, read off QBZ's immersive QML file
-// by file (03-immersive.md keeps each number with its line). Font sizes
-// are QBZ's pixels taken to points. Nothing here is a color: those are
-// the theme's immersive.* tokens.
+// I keep the immersive view's measures together. The scenes and controls
+// retain the source measurements; the lyric column reserves room for its
+// surrounding verses. Colors remain the theme's immersive.* tokens.
 QtObject {
     readonly property int sceneMaxWide: 2560
     readonly property int sceneMaxTall: 1440
@@ -200,6 +199,10 @@ QtObject {
 
     // ---- Coverflow -------------------------------------------------------
     readonly property int flowArtMin: 160
+    readonly property int flowNeighbours: 6
+    // I read only the identity and image roles of the public track model.
+    readonly property int flowTrackRole: Qt.UserRole + 13
+    readonly property int flowArtRole: Qt.UserRole + 15
     readonly property int flowArtMax: 560
     readonly property int flowHeightLess: 372
     readonly property real flowShare: 0.52
@@ -221,11 +224,23 @@ QtObject {
     readonly property int flowApart: 28
 
     // ---- Lyrics in focus and Queue ----------------------------------------
-    readonly property int lineMin: 30
-    readonly property int lineMax: 48
+    readonly property int lineMin: 36
+    readonly property int lineMax: 58
     readonly property real lineShare: 0.026
     readonly property int lineRise: 24
     readonly property int lineEnter: 500
+    readonly property int lyricColumnMax: 920
+    readonly property real lyricColumnShare: 0.7
+    readonly property real lyricTypeShare: 0.065
+    readonly property real lyricAnchor: 0.5
+    readonly property int lyricLineApart: 30
+    readonly property int lyricFollowPad: 12
+    readonly property real lyricNearOpacity: 0.48
+    readonly property real lyricFarOpacity: 0.16
+    readonly property real lyricFadeStep: 0.1
+    readonly property int lyricBlurReach: 16
+    readonly property real lyricBlurStep: 0.12
+    readonly property real lyricBlurMax: 0.45
     readonly property int lyricsPadTop: 80
     readonly property int lyricsPadSide: 60
     readonly property int lyricsPadBottom: 140

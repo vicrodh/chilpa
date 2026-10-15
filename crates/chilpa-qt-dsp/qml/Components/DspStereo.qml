@@ -22,7 +22,6 @@ Column {
     }
     Repeater {
         model: [
-            { key: "preamp_db", label: I18n.tr("Preamp · −60–0 dB", I18n.rev), factor: 1 },
             { key: "crossfeed", label: I18n.tr("Crossfeed · 0–50%", I18n.rev), factor: 100 },
             { key: "width", label: I18n.tr("Stereo width · 0–100%", I18n.rev), factor: 100 },
             { key: "balance", label: I18n.tr("Balance · −100 left / +100 right", I18n.rev), factor: 100 },

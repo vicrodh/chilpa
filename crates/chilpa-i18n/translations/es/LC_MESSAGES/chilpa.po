@@ -252,6 +252,9 @@ msgstr "Agregando..."
 msgid "Add…"
 msgstr "Agregar…"
 
+msgid "Advanced"
+msgstr "Avanzado"
+
 msgid "Album"
 msgstr "Álbum"
 
@@ -528,11 +531,11 @@ msgstr "Detecta tus DACs y configura la reproducción bit-perfect, paso a paso."
 msgid "Auto-follow"
 msgstr "Seguir la letra"
 
-msgid "Automatic headroom"
-msgstr "Margen automático"
-
 msgid "Automatic headroom only reduces gain. Compression has no makeup gain; ratio 1 disables it."
 msgstr "El margen automático solo reduce ganancia. La compresión no añade ganancia de compensación; una relación de 1 la desactiva."
+
+msgid "Automatic headroom lowers gain to leave room for EQ boosts."
+msgstr "La reducción automática baja la ganancia para dejar margen a los realces del EQ."
 
 msgid "Awaiting approval"
 msgstr "Espera aprobación"
@@ -572,6 +575,9 @@ msgstr "Balance · −100 izquierda / +100 derecha"
 
 msgid "Based on {artist} · {genres}"
 msgstr "Basado en {artist} · {genres}"
+
+msgid "Bass"
+msgstr "Graves"
 
 msgid "Between tracks"
 msgstr "Entre pistas"
@@ -652,6 +658,9 @@ msgstr "Carpeta de caché"
 
 msgid "Cache used"
 msgstr "Caché usado"
+
+msgid "Calculated gain"
+msgstr "Ganancia calculada"
 
 msgid "Calculating…"
 msgstr "Calculando…"
@@ -1130,6 +1139,9 @@ msgstr "Coverflow"
 msgid "Create & Add"
 msgstr "Crear y agregar"
 
+msgid "Create graphic EQ"
+msgstr "Crear EQ gráfico"
+
 msgid "Create playlist"
 msgstr "Crear playlist"
 
@@ -1223,9 +1235,6 @@ msgstr "DSD{} · Nativo a {} Hz · {}"
 msgid "DSD{} · PCM at {} Hz · {}"
 msgstr "DSD{} · PCM a {} Hz · {}"
 
-msgid "DSP"
-msgstr "DSP"
-
 msgid "DSP active"
 msgstr "DSP activo"
 
@@ -1241,8 +1250,8 @@ msgstr "El DSP modifica la señal y rompe el bit-perfect estricto."
 msgid "DSP control is unavailable."
 msgstr "El control DSP no está disponible."
 
-msgid "DSP filters need 10–24000 Hz, −18–12 dB and Q 0.2–12."
-msgstr "Los filtros DSP requieren 10–24000 Hz, −18–12 dB y Q de 0.2 a 12."
+msgid "DSP filters need 10–24000 Hz, −24–18 dB and Q 0.1–12."
+msgstr "Los filtros DSP requieren 10–24000 Hz, −24–18 dB y Q de 0.1 a 12."
 
 msgid "DSP host is unavailable."
 msgstr "El host DSP no está disponible."
@@ -1508,6 +1517,9 @@ msgstr "Activa PipeWire en tu configuración de NixOS"
 msgid "Enable a DSP plugin first."
 msgstr "Activa primero un plugin DSP."
 
+msgid "Enable audio processing; turn off for bypass"
+msgstr "Activar el procesamiento; desactívalo para escuchar la señal original"
+
 msgid "Enable the optional Mood plugin and manage its model download."
 msgstr "Activa el plugin opcional Mood y gestiona la descarga de sus modelos."
 
@@ -1694,6 +1706,9 @@ msgstr "Carpetas"
 msgid "Follow"
 msgstr "Seguir"
 
+msgid "Follow lyrics"
+msgstr "Seguir la letra"
+
 msgid "Font"
 msgstr "Fuente"
 
@@ -1714,6 +1729,9 @@ msgstr "Adelante 10 segundos"
 
 msgid "French"
 msgstr "Francés"
+
+msgid "Frequency · Hz   /   Gain · dB   /   ±12 dB"
+msgstr "Frecuencia · Hz   /   Ganancia · dB   /   ±12 dB"
 
 msgid "Fri"
 msgstr "vie"
@@ -1759,6 +1777,9 @@ msgstr "GPU"
 
 msgid "GPU (compatibility)"
 msgstr "GPU (compatibilidad)"
+
+msgid "Gain in decibels. Use arrow keys to adjust; Home and End reach the limits."
+msgstr "Ganancia en decibelios. Ajusta con las flechas; Inicio y Fin llevan a los límites."
 
 msgid "Gapless"
 msgstr "Gapless"
@@ -1816,6 +1837,12 @@ msgstr "Ir a {}"
 
 msgid "Goniometer"
 msgstr "Goniómetro"
+
+msgid "Graphic EQ"
+msgstr "EQ gráfico"
+
+msgid "Graphic equalizer"
+msgstr "Ecualizador gráfico"
 
 msgid "Grid"
 msgstr "Cuadrícula"
@@ -2378,6 +2405,9 @@ msgstr "Pasabajos"
 msgid "Low shelf"
 msgstr "Estante de graves"
 
+msgid "Lower the overall level without changing the EQ. Zero adds no attenuation."
+msgstr "Reduce el nivel general sin cambiar el EQ. Cero no añade atenuación."
+
 msgid "Lyrics"
 msgstr "Letra"
 
@@ -2455,6 +2485,9 @@ msgstr "Vista micro"
 
 msgid "Middle click opens a new tab"
 msgstr "El clic medio abre una pestaña nueva"
+
+msgid "Mids"
+msgstr "Medios"
 
 msgid "Mini player"
 msgstr "Mini reproductor"
@@ -3257,8 +3290,11 @@ msgstr "Portugués"
 msgid "Position in Streaming"
 msgstr "Posición en Streaming"
 
-msgid "Preamp · −60–0 dB"
-msgstr "Preamplificador · −60–0 dB"
+msgid "Preamp"
+msgstr "Preamplificador"
+
+msgid "Precise filters"
+msgstr "Filtros precisos"
 
 msgid "Preferred GPU"
 msgstr "GPU preferida"
@@ -3617,6 +3653,12 @@ msgstr "Restablecer"
 msgid "Reset All to Defaults"
 msgstr "Restablecer todos"
 
+msgid "Reset EQ"
+msgstr "Restablecer EQ"
+
+msgid "Reset counter"
+msgstr "Reiniciar contador"
+
 msgid "Resolving…"
 msgstr "Buscando…"
 
@@ -3631,6 +3673,9 @@ msgstr "Restaurar predeterminado"
 
 msgid "Restore defaults"
 msgstr "Restaurar valores predeterminados"
+
+msgid "Restore previous EQ"
+msgstr "Recuperar EQ anterior"
 
 msgid "Restore tabs"
 msgstr "Restaurar pestañas"
@@ -3921,6 +3966,9 @@ msgstr "Pone el grafo de PipeWire a la frecuencia de cada pista mientras Chilpa 
 
 msgid "Settings"
 msgstr "Ajustes"
+
+msgid "Shape the sound: raise a band to hear more, lower it to hear less."
+msgstr "Ajusta el sonido: sube una banda para resaltarla o bájala para atenuarla."
 
 msgid "Show"
 msgstr "Mostrar"
@@ -4365,6 +4413,9 @@ msgstr "La vista con la que abre el mini reproductor. Recordar conserva la últi
 msgid "Theme"
 msgstr "Tema"
 
+msgid "There is no previous EQ to restore."
+msgstr "No hay un EQ anterior que recuperar."
+
 msgid "This address belongs to a different server."
 msgstr "Esta dirección pertenece a otro servidor."
 
@@ -4424,6 +4475,9 @@ msgstr "Esta salida recibe el DSD convertido a PCM. Solo una tarjeta en hw lo re
 
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "Esta playlist ya tiene {} de las {} pistas que estás agregando. Agrega solo las nuevas o agrégalas todas, incluidas las repetidas."
+
+msgid "This preset uses precise filters. Keep them as they are, or create a separate graphic EQ. You can restore your previous EQ."
+msgstr "Este preset usa filtros precisos. Puedes conservarlos o crear un EQ gráfico aparte. Después podrás recuperar el EQ anterior."
 
 msgid "This purchase is unavailable for download."
 msgstr "Esta compra no está disponible para descargar."
@@ -4565,6 +4619,9 @@ msgstr "Icono en la bandeja"
 
 msgid "Tray icon style"
 msgstr "Estilo del icono de la bandeja"
+
+msgid "Treble"
+msgstr "Agudos"
 
 msgid "Tree"
 msgstr "Árbol"
@@ -4736,6 +4793,9 @@ msgstr "Ver imagen"
 
 msgid "View less"
 msgstr "Ver menos"
+
+msgid "View precise filters"
+msgstr "Ver filtros precisos"
 
 msgid "View tracks"
 msgstr "Ver pistas"

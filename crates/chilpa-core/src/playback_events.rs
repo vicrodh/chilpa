@@ -95,6 +95,7 @@ impl<K: AudioSink> Measured<K> {
     }
 }
 impl<K: AudioSink> AudioSink for Measured<K> {
+    fn set_dop(&mut self, dop: bool) { self.inner.set_dop(dop); }
     fn position_changed(&mut self, position: Option<u64>) {
         if let Some(segment) = self.meter.get_mut().segments.back_mut() { segment.position = position; }
         self.inner.position_changed(position);

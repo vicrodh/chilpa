@@ -14,6 +14,7 @@ pub mod backend;
 pub mod capture;
 pub mod diagnostics;
 pub mod dop;
+pub mod dsd;
 pub mod format;
 pub mod gapless;
 pub mod negotiate;
@@ -24,6 +25,7 @@ pub mod seek_waveform;
 pub mod sink;
 pub mod spectrum;
 pub mod tap;
+mod tap_dsd;
 pub mod visualizer;
 
 pub use capture::{CaptureSink, CAPTURE_ID};

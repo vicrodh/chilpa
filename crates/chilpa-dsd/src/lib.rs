@@ -12,7 +12,6 @@
 
 mod convert;
 pub mod dff;
-mod dsd2pcm;
 pub mod dsf;
 
 pub use convert::{DsdPcmConverter, DEFAULT_GAIN_DB, OUTPUT_RATE};

@@ -428,6 +428,7 @@ where
     };
 
     let mut sink = open_sink(delivery.opened).map_err(DsdPlayError::Sink)?;
+    sink.set_dop(true);
     let mut packer = DopPacker::new();
     let mut frames = DopFrames::new(source, &mut packer, &delivery);
     let outcome = render_paused(&mut frames, &mut sink, stop, pause, on_progress);

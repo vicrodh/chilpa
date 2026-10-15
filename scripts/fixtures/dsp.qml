@@ -149,6 +149,31 @@ Window {
             check(state.selection.enabled === false && state.selection.preset === savedId,
                   "the real bypass control did not retain the saved preset")
             check(state.favorites.includes(favoriteKey), "editing lost the favorite")
+            panel.tab = 0
+            named("dspStartGraphic").clicked()
+        } else if (step === 14) {
+            check(state.graphic && state.selection.graphic_origin && state.selection.enabled,
+                  "the real graphic EQ action did not preserve the previous selection")
+            check(state.preset.filters.length === 10 && state.preset.filters[0].frequency === 31.25,
+                  "the graphic EQ did not create its real frequency bands")
+            const band = named("dspGraphicBand0")
+            band.value = 3
+            band.moved()
+        } else if (step === 15) {
+            check(state.preset.filters[0].gain_db === 3 && state.preset.preamp_db === -7,
+                  "the real vertical slider did not edit its band while preserving preamp")
+            named("dspResetGraphic").clicked()
+        } else if (step === 16) {
+            check(state.preset.filters.every(filter => filter.gain_db === 0),
+                  "the real reset control did not flatten the graphic bands")
+            named("dspRestorePrevious").clicked()
+        } else if (step === 17) {
+            check(!state.graphic && !state.selection.graphic_origin && !state.selection.enabled,
+                  "restoring the precise EQ did not recover bypass")
+            check(state.selection.preset === savedId && !state.selection.edited
+                  && state.preset.preamp_db === -7 && state.preset.filters.length === 1
+                  && state.preset.filters[0].frequency === 110 && state.preset.filters[0].gain_db === 2.5,
+                  "the graphic editor changed the saved precise preset")
             complete(state)
         }
         ++step

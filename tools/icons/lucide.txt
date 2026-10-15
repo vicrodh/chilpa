@@ -8,6 +8,7 @@ refresh-ccw-dot
 radio
 proportions
 settings-2
+sliders-vertical
 link
 keyboard
 book-open

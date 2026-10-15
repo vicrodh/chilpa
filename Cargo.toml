@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-exclude = ["vendor/chilpa-plugin-api"]
+exclude = ["vendor/chilpa-plugin-api", "crates/chilpa-qt-kit/vendor/qt-build-utils"]
 members = [
     "crates/chilpa-models",
     "crates/chilpa-dirs",
@@ -112,3 +112,6 @@ chilpa-qt-lyrics = { path = "crates/chilpa-qt-lyrics" }
 chilpa-qt-metadata = { path = "crates/chilpa-qt-metadata" }
 # I vendor the public protocol snapshot so release builds need no private host.
 chilpa-plugin-api = { path = "vendor/chilpa-plugin-api" }
+
+[patch.crates-io]
+qt-build-utils = { path = "crates/chilpa-qt-kit/vendor/qt-build-utils" }
