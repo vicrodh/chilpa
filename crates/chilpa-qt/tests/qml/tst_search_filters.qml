@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import app.chilpa
+import app.chilpa.controls
 import "../../qml/Patterns"
 import "../../qml/Components"
 

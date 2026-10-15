@@ -187,7 +187,6 @@ TitledFlow {
         OptionRow { width: Metrics.playbackOptionsWidth; title: "Gapless"; detail: "One track straight into the next."; checked: true }
         OptionRow { width: Metrics.playbackOptionsWidth; title: "Volume normalization"; detail: "Level loudness across tracks. This breaks strict bit perfect." }
         AlbumMenu {}
-        SearchMenu {}
         PlaylistPicker {}
         PlaylistRow { width: Metrics.sidebarWidth; index: 0; playlistId: 1; name: "Road Trip 2026"; tracks: 19; source: ""; sourceName: "Local"; local: true; artwork: ""; folderId: 0; visibleInSidebar: true; covers: []; active: true }
         PlaylistRow { width: Metrics.sidebarWidth; index: 1; playlistId: 2; name: "Late Night"; tracks: 8; source: "demo"; sourceName: "Example source"; local: false; artwork: ""; folderId: 0; visibleInSidebar: true; covers: [] }

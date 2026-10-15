@@ -145,21 +145,34 @@ pub fn found_menu(row: &FoundRow, names: Vec<String>, favorite: bool) -> Vec<Val
         json!({"act": "mark", "kind": kind, "key": key, "on": !favorite, "text": i18n::t(text)})
     };
     let mut entries = match row {
-        FoundRow::Playlist(_) => return vec![item("open", i18n::mark("Open")), item("play", i18n::mark("Play now")), item("queue", i18n::mark("Add to queue"))],
+
         FoundRow::More(..) => return Vec::new(),
-        FoundRow::Remote(row) => return if row.collection {
-            vec![item("open", i18n::mark("Open"))]
-        } else {
+        FoundRow::Remote(row) => {
             let metadata = row.item.as_ref().unwrap_or(&Value::Null);
-            track_menu(TrackMenuContext {
+            if metadata["available"] == false { return Vec::new(); }
+            if row.collection {
+                let mut entries = if !row.no_audio && matches!(row.entity.as_str(), "" | "album" | "playlist") { collection_actions() } else { Vec::new() };
+                entries.push(item("open", match row.entity.as_str() {
+                    "artist" => i18n::mark("Go to artist"), "playlist" => i18n::mark("Open"), _ => i18n::mark("Open album")
+                }));
+                entries.push(item("tab", i18n::mark("Open in new tab")));
+                if metadata["artist_ref"].as_str().is_some_and(|reference| !reference.is_empty()) {
+                    entries.push(item("artist", i18n::mark("Go to artist")));
+                }
+                return entries;
+            }
+            let mut entries = track_menu(TrackMenuContext {
                 count: 1,
                 album: metadata["album_ref"].as_str().is_some_and(|v| !v.is_empty()),
                 artist: metadata["artist_ref"].as_str().is_some_and(|v| !v.is_empty()),
-                unavailable: metadata["available"] == false,
                 remote: true,
                 ..Default::default()
-            })
-        },
+            });
+            if row.no_audio {
+                entries.retain(|entry| matches!(entry["act"].as_str(), Some("album" | "artist")));
+            }
+            return entries;
+        }
         FoundRow::Header(_) => return Vec::new(),
         FoundRow::Track(t) => {
             return track_menu(TrackMenuContext {
@@ -172,16 +185,15 @@ pub fn found_menu(row: &FoundRow, names: Vec<String>, favorite: bool) -> Vec<Val
                 ..TrackMenuContext::default()
             })
         }
-        FoundRow::Album(_) | FoundRow::Top(_) | FoundRow::Artist(_) => vec![
-            item("play", i18n::mark("Play now")),
-            item("next", i18n::mark("Play next")),
-            item("queue", i18n::mark("Add to queue")),
-            json!({"separator": true}),
-            item("pick", i18n::mark("Add to playlist…")),
-            json!({"separator": true}),
-        ],
+        FoundRow::Album(_) | FoundRow::Playlist(_) | FoundRow::Top(_) | FoundRow::Artist(_) => collection_actions(),
     };
     match row {
+        FoundRow::Playlist(playlist) => {
+            entries.push(item("open", i18n::mark("Open")));
+            entries.push(item("tab", i18n::mark("Open in new tab")));
+            entries.push(json!({"separator": true}));
+            entries.push(mark("playlist", playlist.id.to_string()));
+        }
         FoundRow::Album(a) => {
             entries.push(item("open", i18n::mark("Open album")));
             entries.push(item("tab", i18n::mark("Open in new tab")));
@@ -201,6 +213,14 @@ pub fn found_menu(row: &FoundRow, names: Vec<String>, favorite: bool) -> Vec<Val
     entries
 }
 
+fn collection_actions() -> Vec<Value> {
+    [("play", i18n::mark("Play now")), ("queue", i18n::mark("Add to queue")),
+        ("next", i18n::mark("Play next")), ("later", i18n::mark("Play later")),
+        ("pick", i18n::mark("Add to playlist…"))].into_iter()
+        .map(|(act, label)| json!({"act":act,"text":i18n::t(label)}))
+        .chain(std::iter::once(json!({"separator":true}))).collect()
+}
+
 impl Chilpa {
     /// What the row offers, as the library stands.
     pub fn found_menu(&mut self, row: &FoundRow) -> Vec<Value> {
@@ -209,9 +229,19 @@ impl Chilpa {
             FoundRow::Track(t) => (self.credit_names(&t.artist), false),
             FoundRow::Album(a) => (Vec::new(), favorite("album", &a.id.to_string())),
             FoundRow::Top(a) | FoundRow::Artist(a) => (Vec::new(), favorite("artist", &a.name)),
-            FoundRow::Header(_) | FoundRow::Remote(_) | FoundRow::More(..) | FoundRow::Playlist(_) => (Vec::new(), false),
+            FoundRow::Playlist(playlist) => (Vec::new(), favorite("playlist", &playlist.id.to_string())),
+            FoundRow::Header(_) | FoundRow::Remote(_) | FoundRow::More(..) => (Vec::new(), false),
         };
-        found_menu(row, names, favorite)
+        let mut menu = found_menu(row, names, favorite);
+        if let FoundRow::Remote(row) = row {
+            if !menu.is_empty() && self.natives.has_favorites(&row.source) && self.natives.has_pages(&row.source) && row.item.is_some() {
+                let favorite = row.item.as_ref().is_some_and(|item| item["favorite"] == true);
+                menu.push(json!({"separator":true}));
+                menu.push(json!({"act":if favorite {"unfavorite"} else {"favorite"},
+                    "text":i18n::t(if favorite { i18n::mark("Remove from favorites") } else { i18n::mark("Add to favorites") })}));
+            }
+        }
+        menu
     }
 
     /// The tracks a row stands for: a song, a record's, or an artist's.
@@ -261,6 +291,7 @@ impl Chilpa {
             ("open", FoundRow::Playlist(p)) => return Leads::Screen("playlist", p.id),
             ("open", FoundRow::Album(a)) => return Leads::Screen("album", a.id),
             ("tab", FoundRow::Album(a)) => return Leads::Tab("album", a.id),
+            ("tab", FoundRow::Playlist(playlist)) => return Leads::Tab("playlist", playlist.id),
             ("album", FoundRow::Track(t)) if t.album_id > 0 => return Leads::Screen("album", t.album_id),
             ("artist", FoundRow::Album(a)) => return Leads::Artist(a.artist.clone()),
             ("artist", FoundRow::Track(t)) => {
@@ -322,12 +353,12 @@ mod tests {
     #[test]
     fn a_record_and_an_artist_offer_to_play_to_go_and_to_be_a_favorite() {
         let menu = found_menu(&FoundRow::Album(album(7, "A")), Vec::new(), false);
-        assert_eq!(acts(&menu), ["play", "next", "queue", "pick", "open", "tab", "artist", "mark"]);
+        assert_eq!(acts(&menu), ["play", "queue", "next", "later", "pick", "open", "tab", "artist", "mark"]);
         let mark = menu.last().unwrap();
         assert_eq!((mark["kind"].as_str(), mark["key"].as_str(), mark["on"].as_bool()), (Some("album"), Some("7"), Some(true)));
 
         let menu = found_menu(&FoundRow::Top(artist("A")), Vec::new(), true);
-        assert_eq!(acts(&menu), ["play", "next", "queue", "pick", "open", "mark"]);
+        assert_eq!(acts(&menu), ["play", "queue", "next", "later", "pick", "open", "mark"]);
         assert_eq!(menu.last().unwrap()["on"].as_bool(), Some(false), "a favorite offers to stop being one");
         assert!(found_menu(&FoundRow::Header("Songs".into()), Vec::new(), false).is_empty());
     }

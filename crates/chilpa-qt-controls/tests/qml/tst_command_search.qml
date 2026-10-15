@@ -36,7 +36,7 @@ TestCase {
         model.text = ""
         model.actedRow = -1
         flyout.current = -1
-        for (let i = 0; i < 4; ++i)
+        for (let i = 0; i < 6; ++i)
             model.append({kind:i % 2 === 0 ? 0 : 4, title:"Result " + i, detail:"Album", art:"", duration:"3:00", sourceName:"", sourceIcon:""})
         origin.forceActiveFocus()
     }
@@ -86,5 +86,22 @@ TestCase {
         verify(origin.activeFocus)
         compare(model.text, "Album")
         compare(model.actedRow, -1)
+    }
+    function test_reopened_search_takes_arrows_and_enter() {
+        openSearch("colon")
+        keyClick(Qt.Key_Down)
+        compare(flyout.current, 1)
+        keyClick(Qt.Key_Escape)
+        tryCompare(flyout, "opened", false)
+        verify(origin.activeFocus)
+        Hotkeys.answer = "search.next"
+        keyClick(Qt.Key_N)
+        Hotkeys.answer = ""
+        tryCompare(flyout, "opened", true)
+        keyClick(Qt.Key_Down)
+        compare(flyout.current, 5)
+        keyClick(Qt.Key_Return)
+        compare(model.actedRow, 5)
+        tryCompare(flyout, "opened", false)
     }
 }

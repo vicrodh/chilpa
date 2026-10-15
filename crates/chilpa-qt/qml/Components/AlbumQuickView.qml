@@ -25,13 +25,13 @@ Item {
     AlbumDetailModel {
         id: detail
         albumId: quick.albumId
-        contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev
+        contentRev: Library.contentRev + I18n.rev + (quick.albumId < 0 ? Library.remoteRev + Library.remoteArtRev : 0)
     }
     TrackListModel {
         id: tracks
         kind: "album"
         albumId: detail.selectedId
-        filterRev: Library.contentRev + Library.remoteRev
+        albumPage: detail.tracksRev
         playingPath: Player.path
     }
 

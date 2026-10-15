@@ -313,8 +313,9 @@ impl crate::Chilpa {
         Some(Tabs::restore(&saved.replace("\\n", "\n")))
     }
 
-    /// Keeps the open tabs for the next run, unless that was turned off.
+    /// I protect live routes before optionally saving the open tabs for the next run.
     pub fn keep_tabs(&mut self, tabs: &Tabs) {
+        self.catalog.protect_navigation(&tabs.routes());
         if self.restores_tabs() {
             self.remember_preference(TABS_KEY, &tabs.save().replace('\n', "\\n"));
         }

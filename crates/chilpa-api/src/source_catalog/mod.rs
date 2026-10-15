@@ -27,6 +27,9 @@ mod pages;
 pub(crate) mod store;
 pub(crate) mod view;
 mod sorting;
+mod selection;
+mod navigation;
+pub use selection::SelectionHold;
 #[cfg(test)]
 mod queue_retention_tests;
 
@@ -87,6 +90,9 @@ struct Inner {
     store: Store,
     /// Queue entries stay readable even when no source listing owns them.
     protected_tracks: HashSet<String>,
+    selections: HashMap<u64, selection::SelectionRoots>,
+    selection_serial: u64,
+    navigation: navigation::NavigationRoots,
     loaded: bool,
     queue: Queue,
     /// Why the last attempt failed, by listing key or by card.
@@ -515,7 +521,7 @@ impl Catalog {
 
     /// The deferred actions whose records are all read now. Those that
     /// waited too long, or whose records failed, are dropped.
-    pub fn ready(&self) -> Vec<Deferred> {
+    pub fn ready(self: &Arc<Self>) -> (Vec<Deferred>, Option<SelectionHold>) {
         let mut inner = self.lock();
         let deferred = std::mem::take(&mut inner.deferred);
         let mut ready = Vec::new();
@@ -528,7 +534,12 @@ impl Catalog {
                 inner.deferred.push(d);
             }
         }
-        ready
+        let hold = if ready.is_empty() { None } else {
+            let cards: Vec<_> = ready.iter().flat_map(|action| action.albums.iter())
+                .filter_map(|id| inner.store.cards.get(id)).map(|card| (card.plugin.clone(), card.identity.clone())).collect();
+            Some(self.hold_locked(&mut inner, cards, []))
+        };
+        (ready, hold)
     }
 
     pub fn actions_pending(&self) -> bool { !self.lock().deferred.is_empty() }
@@ -819,22 +830,22 @@ mod retry_tests {
         catalog.lock().store.cards.insert(-1, store::Card { id:-1, ..Default::default() });
         catalog.defer(vec![-1], "queue", false, None);
         assert!(catalog.actions_pending());
-        assert!(catalog.ready().is_empty());
+        assert!(catalog.ready().0.is_empty());
         assert!(catalog.actions_pending());
         catalog.lock().store.cards.get_mut(&-1).unwrap().tracks = Some(Vec::new());
-        assert_eq!(catalog.ready().len(), 1);
+        assert_eq!(catalog.ready().0.len(), 1);
         assert!(!catalog.actions_pending());
         catalog.lock().store.cards.get_mut(&-1).unwrap().tracks = None;
         catalog.defer(vec![-1], "queue", false, None);
         catalog.lock().card_errors.insert(-1, "Unavailable".into());
-        assert!(catalog.ready().is_empty());
+        assert!(catalog.ready().0.is_empty());
         assert!(!catalog.actions_pending());
         catalog.defer(vec![-1], "queue", false, None);
         catalog.lock().deferred[0].asked = Instant::now() - ACTION_PATIENCE;
-        assert!(catalog.ready().is_empty());
+        assert!(catalog.ready().0.is_empty());
         assert!(!catalog.actions_pending());
         catalog.defer(vec![-99], "queue", false, None);
-        assert!(catalog.ready().is_empty());
+        assert!(catalog.ready().0.is_empty());
         assert!(!catalog.actions_pending(), "a disabled source cannot perpetually defer its missing card");
     }
 }

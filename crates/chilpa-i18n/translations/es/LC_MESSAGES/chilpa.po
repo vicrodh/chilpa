@@ -531,11 +531,11 @@ msgstr "Detecta tus DACs y configura la reproducción bit-perfect, paso a paso."
 msgid "Auto-follow"
 msgstr "Seguir la letra"
 
-msgid "Automatic headroom only reduces gain. Compression has no makeup gain; ratio 1 disables it."
-msgstr "El margen automático solo reduce ganancia. La compresión no añade ganancia de compensación; una relación de 1 la desactiva."
-
 msgid "Automatic headroom lowers gain to leave room for EQ boosts."
 msgstr "La reducción automática baja la ganancia para dejar margen a los realces del EQ."
+
+msgid "Automatic headroom only reduces gain. Compression has no makeup gain; ratio 1 disables it."
+msgstr "El margen automático solo reduce ganancia. La compresión no añade ganancia de compensación; una relación de 1 la desactiva."
 
 msgid "Awaiting approval"
 msgstr "Espera aprobación"
@@ -2783,6 +2783,9 @@ msgstr "No hay plugins que coincidan"
 msgid "No playable tracks found."
 msgstr "No se encontraron pistas reproducibles."
 
+msgid "No playable tracks were found."
+msgstr "No se encontraron pistas que se puedan reproducir."
+
 msgid "No playlists found"
 msgstr "No se encontraron playlists"
 
@@ -3473,8 +3476,14 @@ msgstr "Leyéndolo de {}…"
 msgid "Reading playlist…"
 msgstr "Leyendo playlist…"
 
+msgid "Reading selected tracks…"
+msgstr "Leyendo las pistas seleccionadas…"
+
 msgid "Reading the files…"
 msgstr "Leyendo los archivos…"
+
+msgid "Reading the selected tracks timed out. Please try again."
+msgstr "Se agotó el tiempo para leer las pistas seleccionadas. Inténtalo de nuevo."
 
 msgid "Reading {} of {} files"
 msgstr "Leyendo {} de {} archivos"
@@ -4380,6 +4389,9 @@ msgstr "El control de volumen de hardware elegido ya no está disponible."
 msgid "The selected queues are empty."
 msgstr "Las colas seleccionadas están vacías."
 
+msgid "The selected tracks could not be read."
+msgstr "No se pudieron leer las pistas seleccionadas."
+
 msgid "The service sent no code."
 msgstr "El servicio no mandó un código."
 
@@ -4649,6 +4661,9 @@ msgstr "Escribe este código en Quick Connect, en un Jellyfin donde ya iniciaste
 
 msgid "UP NEXT"
 msgstr "A CONTINUACIÓN"
+
+msgid "Unassigned"
+msgstr "Sin asignar"
 
 msgid "Unavailable"
 msgstr "No disponible"
@@ -6294,6 +6309,3 @@ msgstr "{}s"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "“{}” tiene cambios sin guardar. Si abres este disco se pierden."
-
-msgid "Unassigned"
-msgstr "Sin asignar"
