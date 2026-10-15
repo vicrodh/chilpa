@@ -671,3 +671,14 @@ gt
 cli
 # Qt's reverse tab key.
 BACKTAB
+# Cache and worker terminology.
+noop
+retryable
+
+# Qt tooling and JavaScript typed-array API names.
+cpp
+moc
+utils
+uint
+# The imported Line Bed renderer's module name.
+linebed

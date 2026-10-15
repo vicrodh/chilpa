@@ -47,6 +47,11 @@ Popup {
         if (menu.scopes) {
             rows.push({ viewMode: 0, mode: 7, panel: -1, label: I18n.tr("Goniometer", I18n.rev) })
             rows.push({ viewMode: 0, mode: 8, panel: -1, label: I18n.tr("Oscilloscope", I18n.rev) })
+            for (const row of [
+                [1, I18n.tr("Plasma", I18n.rev)], [2, I18n.tr("Tunnel", I18n.rev)], [3, I18n.tr("Aurora", I18n.rev)], [7, I18n.tr("Ambient", I18n.rev)],
+                [4, I18n.tr("Spectral Ribbon", I18n.rev)], [5, I18n.tr("Line Bed", I18n.rev)], [8, I18n.tr("Tunnel Flow", I18n.rev)]
+            ])
+                rows.push({ viewMode: 0, scene: row[0], label: row[1] })
         }
         return rows
     }
@@ -59,11 +64,19 @@ Popup {
     readonly property int focusCut: Math.ceil(focusRows.length / 2) // derived: two balanced columns
 
     function rowIsActive(row) {
+        if (row.scene !== undefined)
+            return Immersive.scene === row.scene
         if (row.viewMode === 0)
             return Immersive.viewMode === 0 && Immersive.mode === row.mode && Immersive.scene === 0
         return Immersive.viewMode === 1 && Immersive.splitPanel === row.panel && Immersive.scene === 0
     }
     function fireRow(row) {
+        if (row.scene !== undefined) {
+            Immersive.setView(0, Immersive.mode, Immersive.splitPanel)
+            Immersive.chooseScene(row.scene)
+            menu.close()
+            return
+        }
         // A panel row turns any scene off first.
         if (Immersive.scene !== 0)
             Immersive.chooseScene(0)

@@ -194,6 +194,7 @@ impl Chilpa {
             "play" => { self.listen_play(id, ""); }
             "close" => self.listen_close(id),
             "clear" => self.listen_replace(id, &[]),
+            "saveNamed" => { self.listen_save_named(id, text); }
             "save" => { self.listen_save(id); }
             "undo" => self.listen_undo(),
             _ => {}

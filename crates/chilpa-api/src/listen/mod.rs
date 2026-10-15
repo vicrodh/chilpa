@@ -264,10 +264,11 @@ impl Chilpa {
         }
         self.persist_buffers();
     }
-    pub fn listen_save(&mut self, id: u64) -> Option<i64> {
+    pub fn listen_save(&mut self, id: u64) -> Option<i64> { self.listen_save_named(id, "") }
+    pub fn listen_save_named(&mut self, id: u64, name: &str) -> Option<i64> {
         let b = self.buffer_snapshot(id)?;
         let paths: Vec<_> = b.order.iter().filter(|&&i| b.live(i)).map(|&i| b.paths[i].clone()).collect();
-        self.save_paths_as(&b.name, &paths)
+        self.save_paths_as(if name.trim().is_empty() { &b.name } else { name.trim() }, &paths)
     }
     pub fn listen_selected(&self) -> u64 { self.listen.selected }
 }

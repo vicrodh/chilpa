@@ -15,6 +15,10 @@
 //! - **Never a query per keystroke.** It waits for the user to stop typing,
 //!   and each source has a minimum rest between queries.
 
+pub(crate) const COMMANDS: &[crate::commands::Command] = &[
+    crate::commands::command("search", "nav.search", "text"),
+];
+
 use super::*;
 use chilpa_plugin::messages;
 use std::collections::HashMap;

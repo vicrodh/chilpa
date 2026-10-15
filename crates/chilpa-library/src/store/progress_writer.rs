@@ -22,7 +22,7 @@ impl Library {
         std::thread::Builder::new().name("chilpa-progress".into()).spawn(move || {
             let opened = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_WRITE).and_then(|db| {
                 db.busy_timeout(Duration::from_millis(100))?;
-                Ok(Library { db, versions: Default::default(), related: Default::default() })
+                Ok(Library { db, versions: Default::default(), related: Default::default(), extra_candidates: Default::default(), candidate_changes: Default::default() })
             });
             let library = match opened {
                 Ok(library) => library,

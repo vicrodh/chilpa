@@ -128,7 +128,7 @@ msgid "A track counts once half of it has played, or four minutes. Listens made 
 msgstr "Una pista cuenta cuando se reprodujo la mitad, o cuatro minutos. Lo que escuches sin conexión se envía después."
 
 msgid "A-B loop"
-msgstr "Bucle A-B"
+msgstr "Loop A-B"
 
 msgid "ALSA direct"
 msgstr "ALSA directo"
@@ -486,6 +486,9 @@ msgstr "agosto"
 msgid "August"
 msgstr "agosto"
 
+msgid "Aurora"
+msgstr "Aurora"
+
 msgid "Author: {}"
 msgstr "Autor: {}"
 
@@ -782,6 +785,9 @@ msgstr "Elige una carpeta de descarga antes de descargar."
 msgid "Choose a file…"
 msgstr "Elegir un archivo…"
 
+msgid "Choose a keymap: default, letters or vi."
+msgstr "Keymap: default, letters o vi."
+
 msgid "Choose a local ZIP file."
 msgstr "Elige un archivo ZIP local."
 
@@ -896,6 +902,9 @@ msgstr "Cerrar búsqueda"
 msgid "Close tab"
 msgstr "Cerrar pestaña"
 
+msgid "Close the quotation marks."
+msgstr "Falta cerrar las comillas."
+
 msgid "Close to tray"
 msgstr "Cerrar a la bandeja"
 
@@ -931,6 +940,9 @@ msgstr "Combinar colas"
 
 msgid "Combined queue"
 msgstr "Cola combinada"
+
+msgid "Command line"
+msgstr "Línea de comandos"
 
 msgid "Compact"
 msgstr "Compacta"
@@ -1078,6 +1090,12 @@ msgstr "Créditos"
 
 msgid "Critics' Picks"
 msgstr "Elegidos por la crítica"
+
+msgid "Cursor down"
+msgstr "Cursor abajo"
+
+msgid "Cursor up"
+msgstr "Cursor arriba"
 
 msgid "Custom"
 msgstr "Personalizado"
@@ -1403,6 +1421,15 @@ msgstr "Inglés"
 msgid "Enter"
 msgstr "Enter"
 
+msgid "Enter a valid command; :help lists the commands."
+msgstr "Escribe un comando válido; :help muestra los comandos."
+
+msgid "Enter a valid number or time."
+msgstr "Escribe un número o un tiempo válido."
+
+msgid "Enter a valid number."
+msgstr "Escribe un número válido."
+
 msgid "Episode notes"
 msgstr "Notas del episodio"
 
@@ -1525,6 +1552,9 @@ msgstr "Termina o cancela primero el análisis en curso."
 
 msgid "Finish selecting"
 msgstr "Terminar selección"
+
+msgid "First track"
+msgstr "Primera pista"
 
 msgid "Flat"
 msgstr "Plano"
@@ -1649,6 +1679,9 @@ msgstr "Atrás"
 msgid "Go Forward"
 msgstr "Adelante"
 
+msgid "Go to"
+msgstr "Ir a"
+
 msgid "Go to album"
 msgstr "Ir al disco"
 
@@ -1690,6 +1723,12 @@ msgstr "Agrupar: desactivado"
 
 msgid "Guided DAC Setup"
 msgstr "Configuración guiada del DAC"
+
+msgid "Half page down"
+msgstr "Media página abajo"
+
+msgid "Half page up"
+msgstr "Media página arriba"
 
 msgid "Hardware"
 msgstr "Hardware"
@@ -1931,6 +1970,12 @@ msgstr "Tamaño de la interfaz"
 msgid "Interrupted"
 msgstr "Interrumpido"
 
+msgid "Invalid arguments; :help shows the syntax."
+msgstr "Argumentos inválidos; :help muestra la sintaxis."
+
+msgid "Invalid preference value; check its choices in Settings."
+msgstr "Valor no válido para esta preferencia; revisa sus opciones en Ajustes."
+
 msgid "Invalid — should contain alsa_output or alsa_input"
 msgstr "No es válido: debe contener alsa_output o alsa_input"
 
@@ -2006,6 +2051,9 @@ msgstr "Grande"
 msgid "Last playlist"
 msgstr "Última playlist"
 
+msgid "Last track"
+msgstr "Última pista"
+
 msgid "Last.fm account"
 msgstr "Cuenta de Last.fm"
 
@@ -2054,8 +2102,14 @@ msgstr "Claro"
 msgid "Like Track"
 msgstr "Marcar como favorita"
 
+msgid "Like cursor track"
+msgstr "Favorito de la pista del cursor"
+
 msgid "Limits and cleanup"
 msgstr "Límites y limpieza"
+
+msgid "Line Bed"
+msgstr "Lecho de líneas"
 
 msgid "List"
 msgstr "Lista"
@@ -2200,6 +2254,9 @@ msgstr "Marcar como escuchado"
 
 msgid "Mark as unplayed"
 msgstr "Marcar como no escuchado"
+
+msgid "Mark the start first with :loop a."
+msgstr "Marca primero el inicio con :loop a."
 
 msgid "Matched"
 msgstr "Coincidencia encontrada"
@@ -2446,6 +2503,9 @@ msgstr "Página siguiente"
 
 msgid "Next queue"
 msgstr "Siguiente cola"
+
+msgid "Next search result"
+msgstr "Siguiente resultado"
 
 msgid "Next tab"
 msgstr "Siguiente pestaña"
@@ -2843,6 +2903,9 @@ msgstr "el grafo de PipeWire solo corre a {} Hz, así que {} Hz se remuestrearí
 msgid "Plain seek bar"
 msgstr "Barra de avance simple"
 
+msgid "Plasma"
+msgstr "Plasma"
+
 msgid "Platform"
 msgstr "Plataforma"
 
@@ -2866,6 +2929,9 @@ msgstr "Reproduce un álbum o una pista para empezar"
 
 msgid "Play count"
 msgstr "Reproducciones"
+
+msgid "Play cursor track"
+msgstr "Reproducir pista del cursor"
 
 msgid "Play indicator animation"
 msgstr "Animación del indicador de reproducción"
@@ -3029,6 +3095,9 @@ msgstr "Página anterior"
 msgid "Previous queue"
 msgstr "Cola anterior"
 
+msgid "Previous search result"
+msgstr "Resultado anterior"
+
 msgid "Previous tab"
 msgstr "Pestaña anterior"
 
@@ -3079,6 +3148,9 @@ msgstr "Acciones de cola"
 
 msgid "Queue and playlist actions"
 msgstr "Acciones de cola y playlist"
+
+msgid "Queue cursor track"
+msgstr "Añadir pista del cursor a la cola"
 
 msgid "Queue is empty"
 msgstr "La cola está vacía"
@@ -3550,6 +3622,9 @@ msgid_plural "See {} more"
 msgstr[0] "Ver {} más"
 msgstr[1] "Ver {} más"
 
+msgid "Seek"
+msgstr "Ir a posición"
+
 msgid "Seek Back"
 msgstr "Retroceder"
 
@@ -3621,6 +3696,9 @@ msgstr "Marcar fin (B)"
 
 msgid "Set loop start (A)"
 msgstr "Marcar inicio (A)"
+
+msgid "Set preference"
+msgstr "Cambiar preferencia"
 
 msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
 msgstr "Pone el grafo de PipeWire a la frecuencia de cada pista mientras Chilpa tiene la salida para él solo, así el DAC recibe la frecuencia que trae el archivo. La frecuencia regresa cuando Chilpa se detiene."
@@ -3753,6 +3831,9 @@ msgstr "Fuentes y calidad"
 
 msgid "Spanish"
 msgstr "Español"
+
+msgid "Spectral Ribbon"
+msgstr "Cinta espectral"
 
 msgid "Spectrum"
 msgstr "Espectro"
@@ -3927,6 +4008,9 @@ msgstr "La prueba integrada reproduce cuatro pistas con distintas profundidades 
 msgid "The connection is not encrypted."
 msgstr "La conexión no está cifrada."
 
+msgid "The current track has no such destination."
+msgstr "No hay una pista actual con ese destino."
+
 msgid "The download view is unavailable."
 msgstr "La vista de descargas no está disponible."
 
@@ -3953,6 +4037,9 @@ msgstr "La línea que se canta se mantiene a la vista."
 
 msgid "The listening history could not be saved"
 msgstr "No se pudo guardar el historial de escucha"
+
+msgid "The loop cannot be marked here; its end needs at least two seconds."
+msgstr "No se pudo marcar el loop aquí; el final necesita al menos dos segundos."
 
 msgid "The loudness every track is aligned to. -14 LUFS matches streaming services, -18 LUFS is the ReplayGain reference."
 msgstr "El volumen al que se alinea cada pista. -14 LUFS coincide con los servicios de streaming; -18 LUFS es la referencia de ReplayGain."
@@ -4164,6 +4251,9 @@ msgstr "jue"
 msgid "Time"
 msgstr "Duración"
 
+msgid "Time is out of range."
+msgstr "Tiempo fuera de rango."
+
 msgid "Title"
 msgstr "Título"
 
@@ -4208,6 +4298,9 @@ msgstr "Detalles de la pista · {}"
 
 msgid "Track lists"
 msgstr "Listas de pistas"
+
+msgid "Track menu"
+msgstr "Menú de la pista"
 
 msgid "Track review"
 msgstr "Revisión de pistas"
@@ -4254,6 +4347,12 @@ msgstr "Reintentar"
 msgid "Tue"
 msgstr "mar"
 
+msgid "Tunnel"
+msgstr "Túnel"
+
+msgid "Tunnel Flow"
+msgstr "Flujo de túnel"
+
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr "Escribe este código en plex.tv/link, con tu cuenta de Plex abierta."
 
@@ -4284,8 +4383,17 @@ msgstr "Desinstalar plugin"
 msgid "Uninstall plugin and remove account data"
 msgstr "Desinstalar plugin y eliminar datos de la cuenta"
 
+msgid "Unknown command; enter :help."
+msgstr "Comando desconocido; escribe :help."
+
+msgid "Unknown preference."
+msgstr "Preferencia desconocida."
+
 msgid "Unknown quality"
 msgstr "Calidad desconocida"
+
+msgid "Unknown target; use Tab to complete the source."
+msgstr "Destino desconocido; usa Tab para completar la fuente."
 
 msgid "Unmatched"
 msgstr "Sin coincidencia"
@@ -4382,6 +4490,9 @@ msgstr "Ver menos"
 
 msgid "View tracks"
 msgstr "Ver pistas"
+
+msgid "Volume"
+msgstr ""
 
 msgid "Volume Down"
 msgstr "Bajar volumen"

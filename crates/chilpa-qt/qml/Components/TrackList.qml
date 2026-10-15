@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as Tools
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 // The one track list (frontend ADR-0006): configured by properties, never
@@ -8,6 +10,13 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 // the whole list, so a row carries no mouse handling of its own.
 Item {
     id: list
+
+    readonly property bool viTrackList: true
+    property alias cursorRow: viCursor.row
+    activeFocusOnTab: true
+
+    function viAction(action) { viCursor.run(action) }
+    Tools.ViCursor { id: viCursor; host: list; view: view; menu: actions; ratings: Ratings }
 
     property TrackListModel model
     property bool rich: SettingsModel.density === "rich"
@@ -51,37 +60,24 @@ Item {
     // Where the list was when its model is read again: the row at the top
     // and how far into it. A view goes back to its top on a reset, and a
     // queue is read again on every change; the same list stays where it was.
-    property var place: null
+    property alias place: keptViewport.place
+    Tools.TrackListViewport { id: keptViewport; model: list.model; view: view }
     function positionAt(row, mode) {
         place = null
         view.forceLayout()
         view.positionViewAtIndex(row, mode)
     }
-    function identity() { return model ? model.kind + "\n" + model.albumId + "\n" + model.key : "" }
-    function keepPlace() {
-        const row = view.indexAt(0, view.contentY)
-        const item = view.itemAtIndex(row)
-        place = item ? { list: identity(), row: row, into: view.contentY - item.y } : null
-    }
-    function restorePlace() {
-        const was = place
-        place = null
-        if (!was || was.list !== identity() || view.count === 0)
-            return
-        view.forceLayout()
-        if (was.row >= view.count) {
-            view.positionViewAtEnd()
-            return
-        }
-        view.positionViewAtIndex(was.row, ListView.Beginning)
-        view.contentY += was.into
-        view.returnToBounds()
-    }
+    function identity() { return keptViewport.identity() }
+    function keepPlace() { keptViewport.keep() }
+    function restorePlace() { keptViewport.restore() }
     Connections {
         target: list.model
         function onModelAboutToBeReset() { list.keepPlace() }
         // After the view has taken the reset in.
-        function onModelReset() { Qt.callLater(list.restorePlace) }
+        function onModelReset() {
+            if (list.cursorRow >= view.count) list.cursorRow = -1
+            Qt.callLater(list.restorePlace)
+        }
     }
 
     TrackColumns {
@@ -149,6 +145,8 @@ Item {
             inViewport: !list.viewport || immediate || list.prefetch && y + height >= list.visibleTop - list.viewport.height && y < list.visibleTop + list.viewport.height * 2
             sourceName: model.sourceName || ""
             composer: model.composer || ""
+            headerGlyph: list.model && list.model.kind === "listenlist" ? (headerLabel === I18n.tr("History", I18n.rev) ? Lucide.rotateCcwClock : headerLabel === I18n.tr("Up next", I18n.rev) ? Lucide.listVideo : "") : ""
+            headerIconFamily: headerGlyph !== "" ? Lucide.font : ""
             headerWork: model.headerWork || false
             headerComposer: model.headerComposer || ""
             headerComposerTarget: model.headerComposerTarget || ""
@@ -159,7 +157,7 @@ Item {
             rating: inViewport ? Ratings.stars("track", trackId, Ratings.rev) : 0
             favorite: inViewport && Ratings.favorite("track", trackId, Ratings.rev)
             ratingPreview: index === view.hovered ? view.ratingHovered : 0
-            hovered: index === view.hovered
+            hovered: index === view.hovered || list.activeFocus && index === list.cursorRow
             actionHovered: index === view.hovered ? view.actionHovered : 0
             moveHovered: index === view.hovered ? view.moveHovered : 0
             artistHovered: index === view.artistHovered

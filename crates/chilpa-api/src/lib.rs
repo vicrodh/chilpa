@@ -28,6 +28,8 @@ mod chosen_artwork;
 mod covers;
 mod folders;
 mod hotkeys;
+mod commands;
+mod vi_keys;
 mod home;
 pub use home::HomeRows;
 pub use hotkeys::{Pressed, Scope};

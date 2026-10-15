@@ -813,11 +813,13 @@ dependencies = [
 name = "chilpa-qt-graphics"
 version = "0.0.0"
 dependencies = [
+ "cc",
  "chilpa-api",
  "cxx",
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
+ "qt-build-utils",
 ]
 
 [[package]]

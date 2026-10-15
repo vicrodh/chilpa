@@ -16,22 +16,28 @@ pub enum HomeRows {
 }
 #[derive(Clone, PartialEq, Eq, Hash)]
 struct Key(String, usize);
+type Arrived = Box<dyn FnOnce(HomeRows) + Send>;
 struct Entry {
     rows: Option<HomeRows>,
     stamp: (i32, i32),
     fetched: Instant,
     ticket: u64,
     pending: bool,
+    valid: bool,
 }
 #[derive(Default)]
 struct Cache {
     entries: HashMap<Key, Entry>,
+    waiting: HashMap<u64, Vec<Arrived>>,
     next: u64,
 }
 impl Cache {
     fn ask(&mut self, key: &Key, stamp: (i32, i32), now: Instant) -> (Option<HomeRows>, Option<u64>) {
         if let Some(entry) = self.entries.get(key) {
-            if !entry.pending && entry.rows.is_some() && entry.stamp == stamp && now.duration_since(entry.fetched) < FRESH_FOR {
+            if entry.pending && entry.stamp == stamp {
+                return (entry.rows.clone(), None);
+            }
+            if !entry.pending && entry.valid && entry.rows.is_some() && entry.stamp == stamp && now.duration_since(entry.fetched) < FRESH_FOR {
                 return (entry.rows.clone(), None);
             }
         }
@@ -40,17 +46,57 @@ impl Cache {
             self.entries.remove(&oldest);
         }
         self.next = self.next.wrapping_add(1);
-        let entry = self.entries.entry(key.clone()).or_insert(Entry { rows: None, stamp, fetched: now, ticket: 0, pending: false });
+        let entry = self.entries.entry(key.clone()).or_insert(Entry { rows: None, stamp, fetched: now, ticket: 0, pending: false, valid: false });
         entry.ticket = self.next;
         entry.stamp = stamp;
         entry.pending = true;
+        entry.valid = false;
         (entry.rows.clone(), Some(entry.ticket))
     }
-    fn finish(&mut self, key: &Key, ticket: u64, rows: HomeRows, now: Instant) {
+    fn finish(&mut self, key: &Key, ticket: u64, rows: HomeRows, now: Instant) -> Vec<Arrived> {
         if let Some(entry) = self.entries.get_mut(key).filter(|entry| entry.ticket == ticket) {
             entry.rows = Some(rows);
             entry.fetched = now;
             entry.pending = false;
+            entry.valid = true;
+        }
+        self.waiting.remove(&ticket).unwrap_or_default()
+    }
+    fn failed(&mut self, key: &Key, ticket: u64) -> (HomeRows, Vec<Arrived>) {
+        let entry = self.entries.get_mut(key);
+        let rows = entry.as_ref().and_then(|entry| entry.rows.clone()).unwrap_or_else(|| {
+            if key.0 == "mostPlayed" { HomeRows::Tracks(Vec::new()) } else { HomeRows::Albums(Vec::new()) }
+        });
+        if let Some(entry) = entry.filter(|entry| entry.ticket == ticket) {
+            entry.pending = false;
+        }
+        (rows, self.waiting.remove(&ticket).unwrap_or_default())
+    }
+    fn subscribe(&mut self, key: &Key, arrived: Arrived) {
+        if let Some(entry) = self.entries.get(key).filter(|entry| entry.pending) {
+            self.waiting.entry(entry.ticket).or_default().push(arrived);
+        }
+    }
+}
+
+// I release a request even when the worker drops its job before opening a reader.
+struct Pending {
+    cache: Arc<Mutex<Cache>>,
+    key: Key,
+    ticket: Option<u64>,
+}
+impl Pending {
+    fn complete(mut self, rows: HomeRows) {
+        let ticket = self.ticket.take().unwrap();
+        let waiting = self.cache.lock().unwrap().finish(&self.key, ticket, rows.clone(), Instant::now());
+        for arrived in waiting { arrived(rows.clone()); }
+    }
+}
+impl Drop for Pending {
+    fn drop(&mut self) {
+        if let Some(ticket) = self.ticket.take() {
+            let (rows, waiting) = self.cache.lock().unwrap().failed(&self.key, ticket);
+            for arrived in waiting { arrived(rows.clone()); }
         }
     }
 }
@@ -91,16 +137,22 @@ impl Chilpa {
             self.album(self.now.album_id)
         } else { None };
         let stamp = (revision, if kind == "recentlyAdded" { 0 } else { self.home.revision });
-        let (cached, ticket) = self.home.cache.lock().unwrap().ask(&key, stamp, Instant::now());
+        let (cached, ticket) = {
+            let mut cache = self.home.cache.lock().unwrap();
+            let result = cache.ask(&key, stamp, Instant::now());
+            let (current, limit) = (current.clone(), key.1);
+            cache.subscribe(&key, Box::new(move |rows| arrived(with_current(rows, current, limit))));
+            result
+        };
         if let Some(ticket) = ticket {
+            let pending = Pending { cache: self.home.cache.clone(), key: key.clone(), ticket: Some(ticket) };
             if self.home.worker.is_none() { self.home.worker = self.query_worker(); }
             if let Some(worker) = &self.home.worker {
-                let (cache, current) = (self.home.cache.clone(), current.clone());
-                let _ = worker.submit(move |reader| {
+                let accepted = worker.submit(move |reader| {
                     let rows = reader.home_section(&key.0, key.1);
-                    cache.lock().unwrap().finish(&key, ticket, rows.clone(), Instant::now());
-                    arrived(with_current(rows, current, key.1));
+                    pending.complete(rows);
                 });
+                if !accepted { self.home.worker = None; }
             }
         }
         cached.or_else(|| current.as_ref().map(|_| HomeRows::Albums(Vec::new())))
@@ -173,6 +225,81 @@ mod tests {
         let (mut cache, now) = (Cache::default(), Instant::now());
         for limit in 1..100 { cache.ask(&Key("recentlyAdded".into(), limit), (0, 0), now); }
         assert_eq!(cache.entries.len(), SECTIONS);
+    }
+    fn pending(cache: &Arc<Mutex<Cache>>, key: &Key, stamp: (i32, i32)) -> Pending {
+        let ticket = cache.lock().unwrap().ask(key, stamp, Instant::now()).1.unwrap();
+        Pending { cache: cache.clone(), key: key.clone(), ticket: Some(ticket) }
+    }
+    #[test]
+    fn pending_sections_share_one_query_and_deliver_each_subscriber_outside_the_lock() {
+        let (cache, key, now) = (Arc::new(Mutex::new(Cache::default())), Key("recentlyAdded".into(), 18), Instant::now());
+        let request = pending(&cache, &key, (1, 0));
+        let (sent, received) = std::sync::mpsc::channel();
+        for n in 0..4 {
+            let mut inner = cache.lock().unwrap();
+            assert!(inner.ask(&key, (1, 0), now).1.is_none(), "one query serves this revision");
+            let (cache, sent) = (cache.clone(), sent.clone());
+            inner.subscribe(&key, Box::new(move |_| {
+                assert!(cache.try_lock().is_ok(), "callbacks can query the cache again");
+                sent.send(n).unwrap();
+            }));
+        }
+        request.complete(empty());
+        assert_eq!(received.try_iter().collect::<Vec<_>>(), [0, 1, 2, 3]);
+        assert!(cache.lock().unwrap().waiting.is_empty());
+    }
+    #[test]
+    fn evicted_and_cleared_requests_still_deliver_without_restoring_old_entries() {
+        for clear in [false, true] {
+            let (cache, key) = (Arc::new(Mutex::new(Cache::default())), Key("recentlyAdded".into(), 18));
+            let request = pending(&cache, &key, (1, 0));
+            let (sent, received) = std::sync::mpsc::channel();
+            cache.lock().unwrap().subscribe(&key, Box::new(move |_| sent.send(()).unwrap()));
+            {
+                let mut inner = cache.lock().unwrap();
+                if clear { inner.entries.clear(); } else {
+                    for n in 0..SECTIONS {
+                        inner.ask(&Key(format!("other-{n}"), 18), (1, 0), Instant::now());
+                    }
+                }
+                assert!(!inner.entries.contains_key(&key));
+            }
+            request.complete(empty());
+            received.try_recv().unwrap();
+            let inner = cache.lock().unwrap();
+            assert!(!inner.entries.contains_key(&key));
+            assert!(inner.waiting.is_empty());
+        }
+    }
+    #[test]
+    fn dropped_jobs_notify_subscribers_and_leave_the_revision_retryable() {
+        let (cache, key, now) = (Arc::new(Mutex::new(Cache::default())), Key("mostPlayed".into(), 18), Instant::now());
+        let first = pending(&cache, &key, (1, 0));
+        first.complete(HomeRows::Tracks(Vec::new()));
+        let request = pending(&cache, &key, (2, 0));
+        let (sent, received) = std::sync::mpsc::channel();
+        cache.lock().unwrap().subscribe(&key, Box::new(move |rows| sent.send(matches!(rows, HomeRows::Tracks(_))).unwrap()));
+        drop(request);
+        assert!(received.try_recv().unwrap());
+        let mut inner = cache.lock().unwrap();
+        assert!(inner.waiting.is_empty());
+        assert!(inner.ask(&key, (2, 0), now).1.is_some(), "failed refreshes are never marked fresh");
+    }
+    #[test]
+    fn superseded_queries_deliver_their_subscribers_without_overwriting_the_new_revision() {
+        let (cache, key) = (Arc::new(Mutex::new(Cache::default())), Key("recentlyAdded".into(), 18));
+        let first = pending(&cache, &key, (1, 0));
+        let (sent, received) = std::sync::mpsc::channel();
+        let old_sent = sent.clone();
+        cache.lock().unwrap().subscribe(&key, Box::new(move |_| old_sent.send(1).unwrap()));
+        let second = pending(&cache, &key, (2, 0));
+        cache.lock().unwrap().subscribe(&key, Box::new(move |_| sent.send(2).unwrap()));
+        second.complete(HomeRows::Json("new".into()));
+        first.complete(HomeRows::Json("old".into()));
+        assert_eq!(received.try_iter().collect::<Vec<_>>(), [2, 1]);
+        let inner = cache.lock().unwrap();
+        assert!(matches!(&inner.entries[&key].rows, Some(HomeRows::Json(value)) if value == "new"));
+        assert!(inner.waiting.is_empty());
     }
     #[test]
     fn the_current_album_moves_to_the_front_without_duplicate_entries() {

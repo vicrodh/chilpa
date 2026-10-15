@@ -12,6 +12,8 @@ Item {
     // The row of a track list it is the header of, which it reads itself
     // from; or nothing, and each part is given.
     property var of: null
+    property string glyph: of && of.headerGlyph ? of.headerGlyph : Icons.disc
+    property string iconFamily: of && of.headerIconFamily ? of.headerIconFamily : ""
     property bool record: of ? of.record : false
     property bool work: of ? of.headerWork : false
     property string label: of ? of.headerLabel : ""
@@ -52,7 +54,8 @@ Item {
         Icon {
             visible: !head.covered
             anchors.verticalCenter: parent.verticalCenter
-            glyph: Icons.disc
+            glyph: head.glyph
+            iconFamily: head.iconFamily
             size: Metrics.iconMd
             color: Theme.color.accent
         }

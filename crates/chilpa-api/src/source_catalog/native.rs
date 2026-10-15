@@ -124,8 +124,8 @@ impl Store {
         track.album = Some(text(item, "album")).filter(|a| !a.is_empty())
             .or_else(|| under.filter(|c| c.kind == CardKind::Album).map(|c| c.title.clone())).unwrap_or_default();
         track.album_id = album_id.unwrap_or(track.album_id);
-        track.disc = number(item, "disc_number").and_then(|n| u16::try_from(n).ok()).unwrap_or(0);
-        track.number = number(item, "track_number").and_then(|n| u16::try_from(n).ok()).unwrap_or(0);
+        track.disc = number(item, "disc_number").and_then(|n| u16::try_from(n).ok()).unwrap_or(track.disc);
+        track.number = number(item, "track_number").and_then(|n| u16::try_from(n).ok()).unwrap_or(track.number);
         track.duration_ms = number(item, "duration_ms").unwrap_or(0);
         let incoming = format(item);
         if !track.format.as_ref().is_some_and(|f| f.rate.is_some() && f.bits.is_some()) || incoming.as_ref().is_some_and(|f| f.rate.is_some() && f.bits.is_some()) {
@@ -490,6 +490,41 @@ mod tests {
         assert_eq!((track.artist.as_str(), track.album.as_str(), track.album_id, track.number), ("Band", "Record", id, 2));
         assert!(track.playable);
         assert_eq!(track.image, "https://i/l.jpg", "its record's cover");
+    }
+
+    #[test]
+    fn partial_pages_keep_album_track_and_disc_numbers() {
+        let catalog = Catalog::new();
+        let ids = {
+            let mut inner = catalog.lock();
+            let record = json!({"kind":"album","ref":"album:1","title":"Record"});
+            let album = inner.store.take_item("fixture", &record, 1).unwrap();
+            let card = inner.store.cards[&album].clone();
+            [("track:1", 3, 1), ("track:2", 1, 2)].map(|(reference, number, disc)| {
+                inner.store.take_item_track("fixture", &json!({"kind":"track","ref":reference,
+                    "title":"Song","track_number":number,"disc_number":disc}), Some(&card), 1).unwrap()
+            })
+        };
+        super::super::pages::ingest_document(&catalog, "fixture", "artist:1", &json!({"shelves":[{
+            "id":"tracks","kind":"track","items":[
+                {"kind":"track","ref":"track:1","title":"Song"},
+                {"kind":"track","ref":"track:2","title":"Song","track_number":null,"disc_number":null}
+            ]}]}));
+        let mut inner = catalog.lock();
+        for (id, expected) in ids.into_iter().zip([(3, 1), (1, 2)]) {
+            let track = &inner.store.tracks[&id];
+            let row = super::super::view::row_of(track, String::new());
+            assert_eq!((row.number, row.disc), expected);
+        }
+        let invalid = json!({"ref":"track:1","track_number":65536,"disc_number":"unknown"});
+        inner.store.take_item_track("fixture", &invalid, None, 2);
+        assert_eq!((inner.store.tracks[&ids[0]].number, inner.store.tracks[&ids[0]].disc), (3, 1));
+        let updated = json!({"ref":"track:1","track_number":4,"disc_number":2});
+        assert_eq!(inner.store.take_item_track("fixture", &updated, None, 3), Some(ids[0]));
+        let row = super::super::view::row_of(&inner.store.tracks[&ids[0]], String::new());
+        assert_eq!((row.number, row.disc), (4, 2));
+        let unknown = inner.store.take_item_track("fixture", &json!({"ref":"track:3"}), None, 4).unwrap();
+        assert_eq!((inner.store.tracks[&unknown].number, inner.store.tracks[&unknown].disc), (0, 0));
     }
 
     #[test]

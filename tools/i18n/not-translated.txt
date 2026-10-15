@@ -21,3 +21,5 @@ Chilpa Mini Player
 # Parentheses around a work's composer: identical punctuation in both languages.
 (
 )
+# The command prompt is punctuation in every language.
+:

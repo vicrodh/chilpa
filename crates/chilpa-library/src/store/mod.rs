@@ -28,6 +28,7 @@ pub mod artwork;
 pub mod advisory;
 pub mod artists;
 pub mod browse;
+mod browse_candidates;
 pub mod credits;
 pub mod edit;
 pub mod favorites;
@@ -100,6 +101,8 @@ pub struct Library {
     pub(crate) db: Connection,
     versions: std::cell::RefCell<Option<versions::CachedVersions>>,
     related: std::cell::RefCell<Option<related::Profiles>>,
+    extra_candidates: std::cell::RefCell<Option<Filter>>,
+    candidate_changes: std::cell::Cell<u64>,
 }
 
 /// A transaction of one's own, or somebody else's.
@@ -155,7 +158,7 @@ impl Library {
         // statistics of an empty database and would keep them until its next
         // scan, which may be never.
         schema::update_statistics_if_stale(&db)?;
-        let lib = Self { db, versions: Default::default(), related: Default::default() };
+        let lib = Self { db, versions: Default::default(), related: Default::default(), extra_candidates: Default::default(), candidate_changes: Default::default() };
         // Genres an earlier scan stored joined are split once, here: files
         // that did not change are never read again to do it.
         lib.split_stored_genres()?;
@@ -184,7 +187,7 @@ impl Library {
                 Some(format!("library reader needs schema version {}, found {version}; open the main library first", schema::VERSION)),
             ));
         }
-        Ok(Self { db, versions: Default::default(), related: Default::default() })
+        Ok(Self { db, versions: Default::default(), related: Default::default(), extra_candidates: Default::default(), candidate_changes: Default::default() })
     }
 
     /// A background writer for an already initialized library, without migrations.
@@ -193,7 +196,7 @@ impl Library {
         schema::apply_pragmas(&db)?;
         let version: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
         if version != schema::VERSION { return Err(rusqlite::Error::InvalidQuery); }
-        Ok(Self { db, versions: Default::default(), related: Default::default() })
+        Ok(Self { db, versions: Default::default(), related: Default::default(), extra_candidates: Default::default(), candidate_changes: Default::default() })
     }
 
     /// An in-memory library, for tests.
@@ -208,7 +211,7 @@ impl Library {
         let db = Connection::open_in_memory()?;
         schema::apply_pragmas(&db)?;
         schema::migrate(&db)?;
-        Ok(Self { db, versions: Default::default(), related: Default::default() })
+        Ok(Self { db, versions: Default::default(), related: Default::default(), extra_candidates: Default::default(), candidate_changes: Default::default() })
     }
 
     /// Lets the planner see the library it actually has.

@@ -55,6 +55,10 @@ Item {
             return
         next.scroll.enabled = true
         next.scroll.restore()
+        // I reveal the mounted page on the render thread without holding up
+        // navigation, input or the page's data. A new route replaces this fade.
+        settleReveal()
+        next.opacity = Motion.reduced ? 1 : 0
         frontA = next === first
         committedRoute = pendingRoute
         pendingRoute = ""
@@ -62,6 +66,27 @@ Item {
         current.scroll.remember()
         current.scroll.enabled = false
         current.sourceComponent = null
+        if (!Motion.reduced)
+            reveal.restart()
+    }
+
+    function settleReveal() {
+        reveal.stop()
+        first.opacity = 1
+        second.opacity = 1
+    }
+
+    OpacityAnimator {
+        id: reveal
+        target: transition.frontA ? first : second
+        from: 0
+        to: 1
+        duration: Motion.page
+        easing.type: Easing.OutCubic
+    }
+    Connections {
+        target: Motion
+        function onReducedChanged() { if (Motion.reduced) transition.settleReveal() }
     }
 
     Loader {

@@ -3,6 +3,7 @@ import QtQuick.Window
 import app.chilpa
 import app.chilpa.ambient
 import app.chilpa.immersive
+import app.chilpa.graphics
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/ambient/qml/Components" as Fields
 import "../Components"
@@ -43,8 +44,17 @@ Item {
 
     // The renderer decides the scopes and the scenes; without acceleration
     // they fall to their panels. The native traces come with their block.
+    onShadersChanged: Immersive.setAvailable(Graphics.gpuTier && shaders)
+    Connections {
+        target: Graphics
+        function onGpuTierChanged() { Immersive.setAvailable(Graphics.gpuTier && view.shaders) }
+    }
+    readonly property bool windowShowing: window === null || (window.visibility !== Window.Minimized && window.visibility !== Window.Hidden)
+    readonly property bool presented: visible && windowShowing
+    onPresentedChanged: Visualizer.setPresented(presented)
     Component.onCompleted: {
-        Immersive.accelerated = false
+        Immersive.setAvailable(Graphics.gpuTier && shaders)
+        Visualizer.setPresented(presented)
         if (Immersive.devOpen)
             Immersive.open = true
     }
@@ -52,6 +62,7 @@ Item {
     property bool wasFullScreen: false
     Connections {
         target: Immersive
+        function onSceneChanged() { if (Immersive.scene === 4) Visualizer.setCursor(Player.path, Player.position, Player.duration) }
         function onOpenChanged() {
             if (Immersive.open) {
                 view.wasFullScreen = view.window !== null && view.window.visibility === Window.FullScreen
@@ -130,6 +141,7 @@ Item {
         id: stage
         anchors.fill: parent
         Rectangle { anchors.fill: parent; color: Theme.color.immersiveStage }
+        ShaderSceneLayer { anchors.fill: parent; spectralHeaderVisible: !header.typing }
 
         // The cover's atmosphere, drifting while it plays; off under the
         // scopes, the rings and any scene.
@@ -150,6 +162,12 @@ Item {
         Loader { anchors.fill: parent; active: view.sceneOff && view.focusMode && view.mode === 5; visible: active; sourceComponent: QueueTabsPanel { centered: false } }
         WaveBedPanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 6 }
         ReactiveRingsPanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 9 }
+        Loader {
+            anchors.fill: parent
+            active: view.presented && view.sceneOff && view.focusMode && (view.mode === 7 || view.mode === 8) && Immersive.accelerated
+            visible: active
+            sourceComponent: ScopeStage { scopeMode: view.mode === 7 ? 0 : 1; atmosphere: view.atmosphere }
+        }
         Loader {
             anchors.fill: parent
             active: view.sceneOff && !view.focusMode && (view.splitPanel === 0 || view.splitPanel === 3)
@@ -227,6 +245,8 @@ Item {
     Connections {
         target: Player
         function onPathChanged() { if (Immersive.open) Immersive.refreshFavorite() }
+        function onPositionChanged() { if (Immersive.open && Immersive.scene === 4) Visualizer.setCursor(Player.path, Player.position, Player.duration) }
+        function onDurationChanged() { if (Immersive.open && Immersive.scene === 4) Visualizer.setCursor(Player.path, Player.position, Player.duration) }
     }
     Connections {
         target: Ratings

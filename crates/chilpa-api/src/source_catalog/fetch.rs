@@ -28,15 +28,31 @@ fn load() -> Store {
     store
 }
 
-pub(super) fn save(store: &Store) {
-    let Ok(text) = serde_json::to_vec(store) else { return };
+fn save(store: &Store) -> std::io::Result<()> {
+    let text = serde_json::to_vec(store).map_err(std::io::Error::other)?;
     let path = file();
     if let Some(dir) = path.parent() {
-        let _ = std::fs::create_dir_all(dir);
+        std::fs::create_dir_all(dir)?;
     }
     let temporary = path.with_extension("json.tmp");
-    if std::fs::write(&temporary, text).is_ok() {
-        let _ = std::fs::rename(&temporary, &path);
+    std::fs::write(&temporary, text)?;
+    std::fs::rename(&temporary, &path)
+}
+
+// I write snapshots only on the catalog thread, in capture order. Readers
+// keep using the live store while serialization and disk writes run here.
+fn persist(catalog: &Catalog, write: impl FnOnce(&Store) -> std::io::Result<()>) {
+    let snapshot = {
+        let mut inner = catalog.lock();
+        if !inner.dirty { return; }
+        inner.store.prune();
+        let snapshot = inner.store.clone();
+        inner.dirty = false;
+        snapshot
+    };
+    if let Err(error) = write(&snapshot) {
+        catalog.lock().dirty = true;
+        eprintln!("source-catalog: could not save catalog: {error}");
     }
 }
 
@@ -154,16 +170,12 @@ pub(super) fn run(catalog: &Arc<Catalog>) {
             Job::Track(_) => Ok(()),
         };
         eprintln!("source-catalog: job={job:?} ok={} elapsed_ms={}", outcome.is_ok(), started.elapsed().as_millis());
-        let mut inner = finish(catalog, &job, outcome);
-        let write = inner.dirty && saved.elapsed() > SAVE_EVERY;
-        if write {
-            inner.dirty = false;
-            inner.store.prune();
-            save(&inner.store);
+        drop(finish(catalog, &job, outcome));
+        catalog.changed();
+        if saved.elapsed() > SAVE_EVERY {
+            persist(catalog, save);
             saved = Instant::now();
         }
-        drop(inner);
-        catalog.changed();
     }
 }
 
@@ -171,6 +183,7 @@ pub(super) fn run(catalog: &Arc<Catalog>) {
 fn finish<'a>(catalog: &'a Catalog, job: &Job, outcome: Result<(), String>) -> std::sync::MutexGuard<'a, Inner> {
     let mut inner = catalog.lock();
     inner.running.remove(job);
+    catalog.wake.notify_one();
     match (job, outcome) {
         (Job::Shelf(key), Err(e)) => { inner.shelf_errors.insert(key.clone(), e); }
         (Job::Tracks(id), Err(e)) => { inner.card_errors.insert(*id, e); inner.card_retry_at.insert(*id, Instant::now()); }
@@ -204,11 +217,20 @@ fn next(catalog: &Catalog) -> (Job, Arc<Mutex<Plugins>>) {
             }
         }
         if inner.dirty {
-            inner.dirty = false;
-            save(&inner.store);
+            drop(inner);
+            persist(catalog, save);
+            inner = catalog.lock();
+            // I recheck work queued during the write before waiting: its
+            // notification may already have arrived while no one was waiting.
+            let plugins_ready = catalog.plugins.lock().unwrap_or_else(|e| e.into_inner()).is_some();
+            if jobs_waiting(&inner, plugins_ready) { continue; }
         }
         inner = catalog.wake.wait_timeout(inner, Duration::from_secs(5)).map(|(g, _)| g).unwrap_or_else(|e| e.into_inner().0);
     }
+}
+
+fn jobs_waiting(inner: &Inner, plugins_ready: bool) -> bool {
+    plugins_ready && (!inner.queue.urgent.is_empty() || !inner.queue.later.is_empty())
 }
 
 fn layout_section(plugins: &Arc<Mutex<Plugins>>, plugin: &str, name: &str) -> Result<crate::source_layout::Section, String> {
@@ -392,5 +414,78 @@ pub(super) fn covers(catalog: &Arc<Catalog>) {
         inner.dirty = true;
         drop(inner);
         catalog.art_rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+#[cfg(test)]
+mod persistence_tests {
+    use super::*;
+    use std::sync::mpsc::channel;
+
+    #[test]
+    fn reads_and_new_work_remain_available_while_a_snapshot_is_written() {
+        let catalog = Catalog::new();
+        {
+            let mut inner = catalog.lock();
+            inner.store.shelves.insert("guest root".into(), Shelf { title: "before".into(), ..Shelf::default() });
+            inner.dirty = true;
+        }
+        let (started, writing) = channel();
+        let (release, released) = channel();
+        let saving = catalog.clone();
+        let writer = std::thread::spawn(move || {
+            persist(&saving, |snapshot| {
+                started.send(snapshot.shelves["guest root"].title.clone()).unwrap();
+                released.recv_timeout(Duration::from_secs(2)).unwrap();
+                assert_eq!(snapshot.shelves["guest root"].title, "before", "the writer owns a stable snapshot");
+                Ok(())
+            });
+        });
+        assert_eq!(writing.recv_timeout(Duration::from_secs(2)).unwrap(), "before");
+        let (read, read_back) = channel();
+        let reading = catalog.clone();
+        let reader = std::thread::spawn(move || {
+            let title = reading.stored_shelf("guest root").unwrap().title;
+            let mut inner = reading.lock();
+            inner.store.shelves.get_mut("guest root").unwrap().title = "after".into();
+            inner.dirty = true;
+            reading.queue(&mut inner, Job::Shelf("guest later".into()), true);
+            read.send(title).unwrap();
+        });
+        let observed = read_back.recv_timeout(Duration::from_millis(500));
+        release.send(()).unwrap();
+        writer.join().unwrap();
+        reader.join().unwrap();
+        assert_eq!(observed.unwrap(), "before", "catalog readers must not wait for disk writes");
+        {
+            let inner = catalog.lock();
+            assert!(inner.dirty, "changes made during persistence still need a write");
+            assert!(jobs_waiting(&inner, true), "work queued during persistence must bypass the idle wait");
+            assert!(!jobs_waiting(&inner, false), "an unavailable host must not spin the catalog thread");
+        }
+        persist(&catalog, |snapshot| {
+            assert_eq!(snapshot.shelves["guest root"].title, "after");
+            Ok(())
+        });
+        assert!(!catalog.lock().dirty);
+    }
+
+    #[test]
+    fn a_failed_write_keeps_the_latest_live_store_dirty_for_retry() {
+        let catalog = Catalog::new();
+        catalog.lock().dirty = true;
+        persist(&catalog, |_| {
+            let mut inner = catalog.lock();
+            inner.store.names.insert("guest".into(), "updated".into());
+            inner.dirty = true;
+            Err(std::io::Error::other("simulated write failure"))
+        });
+        assert!(catalog.lock().dirty);
+        persist(&catalog, |snapshot| {
+            assert_eq!(snapshot.names["guest"], "updated");
+            Ok(())
+        });
+        assert!(!catalog.lock().dirty);
+        persist(&catalog, |_| panic!("a clean store must not be written again"));
     }
 }

@@ -603,9 +603,9 @@ impl Catalog {
         inner.deferred.retain(|d| d.albums.iter().all(|id| cards.contains(id)));
         inner.domains.remove(plugin);
         inner.epochs.remove(plugin);
-        fetch::save(&inner.store);
         inner.dirty = true;
         drop(inner);
+        self.wake.notify_one();
         self.changed();
     }
     /// Forgets the handles a plugin gave out, as when its worker restarts.

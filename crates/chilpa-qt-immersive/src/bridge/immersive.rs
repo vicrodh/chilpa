@@ -72,6 +72,9 @@ pub mod qobject {
         /// The scene over the panels, kept the same way.
         #[qinvokable]
         fn choose_scene(self: Pin<&mut Immersive>, scene: i32);
+        /// Applies the renderer's capability without overwriting a remembered scene.
+        #[qinvokable]
+        fn set_available(self: Pin<&mut Immersive>, available: bool);
         /// The g key: the next shipped scene, and none after the last.
         #[qinvokable]
         fn cycle_scene(self: Pin<&mut Immersive>);
@@ -168,7 +171,7 @@ impl qobject::Immersive {
             self.as_mut().set_scene(view.scene);
             streams.open();
             streams.set_view(view.view_mode, view.mode);
-            streams.set_scene_active(view.scene > 0);
+            streams.set_scene(view.scene);
         } else {
             app::with(|api| api.visualizer()).close();
         }
@@ -208,8 +211,22 @@ impl qobject::Immersive {
         self.as_mut().set_scene(scene);
         app::with(|api| {
             api.remember_immersive_scene(scene);
-            api.visualizer().set_scene_active(scene > 0);
+            api.visualizer().set_scene(scene);
         });
+    }
+
+    pub fn set_available(mut self: Pin<&mut Self>, available: bool) {
+        self.as_mut().set_accelerated(available);
+        if !available {
+            let mode = immersive::focus_mode_for_tier(self.rust().view_mode, self.rust().mode, false);
+            self.as_mut().set_mode(mode);
+            self.as_mut().set_scene(0);
+            app::with(|api| {
+                let streams = api.visualizer();
+                streams.set_scene(0);
+                streams.set_view(self.rust().view_mode, mode);
+            });
+        }
     }
 
     pub fn cycle_scene(self: Pin<&mut Self>) {

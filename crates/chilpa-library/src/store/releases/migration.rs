@@ -15,7 +15,7 @@ fn a_split_three_disc_release_migrates_without_a_rescan() {
         }
     }
     crate::schema::migrate(&db).unwrap();
-    let lib = Library { db, versions: Default::default(), related: Default::default() };
+    let lib = Library { db, versions: Default::default(), related: Default::default(), extra_candidates: Default::default(), candidate_changes: Default::default() };
     lib.assemble_local_releases().unwrap();
     assert_eq!(lib.album_ids(super::super::AlbumSort::Title).unwrap(), [1]);
     assert_eq!(lib.album_tracks(1).unwrap().len(), 31);

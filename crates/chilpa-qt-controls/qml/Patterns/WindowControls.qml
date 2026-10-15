@@ -27,7 +27,6 @@ Item {
     property bool immersiveOpen: false
     signal immersiveAsked()
 
-    readonly property var sidebarTurns: ({ open: "collapsed", collapsed: "closed", closed: "open" })
 
     // A key typed into a field is that field's.
     function typing() {
@@ -35,62 +34,28 @@ Item {
         return item instanceof TextInput || item instanceof TextEdit
     }
 
+    TrackFocus { id: trackFocus; window: controls.window; immersiveOpen: controls.immersiveOpen }
+    function focusedList() { return trackFocus.focusedList() }
+    function restoreFocus(previous) { trackFocus.restoreFocus(previous) }
     function pressed(event) {
         for (let item = window.activeFocusItem; item; item = item.parent) {
             if (item.blocksWindowShortcuts === true && !JSON.parse(Hotkeys.snapshot || "{}").recording)
                 return
+        }
+        if (event.key === Qt.Key_Escape && typing() && JSON.parse(Hotkeys.snapshot || "{}").keymap === "vi") {
+            const list = focusedList()
+            if (list) { list.forceActiveFocus(); event.accepted = true; return }
         }
         const action = Hotkeys.pressedIn(controls.immersiveOpen ? "immersive" : "window", event.key, event.modifiers, event.text, typing())
         if (action === "")
             return
         event.accepted = true
         if (action !== "-")
-            run(action)
+            for (let n = 0; n < Math.max(1, Hotkeys.repeat || 1); n++) run(action)
     }
 
-    function volume(by) {
-        if (!Player.volumeLocked)
-            Player.chooseVolume(Math.max(0, Math.min(100, Player.volume + by)))
-    }
-
-    function run(action) {
-        switch (action) {
-        case "playback.toggle": Player.toggle(); break
-        case "playback.next": Player.next(); break
-        case "playback.prev": Player.previous(); break
-        case "playback.volumeUp": volume(5); break
-        case "playback.volumeDown": volume(-5); break
-        case "playback.mute": if (!Player.volumeLocked) Player.chooseMuted(!Player.muted); break
-        case "playback.shuffle": Player.toggleShuffle(); break
-        case "playback.repeat": Player.cycleRepeat(); break
-        case "playback.favorite": Hotkeys.likePlaying(); Ratings.refresh(); break
-        case "playback.seekForward": Player.nudge(5); break
-        case "playback.seekBack": Player.nudge(-5); break
-        case "nav.back": Navigation.back(); break
-        case "nav.forward": Navigation.forward(); break
-        case "nav.search": Hotkeys.searchAsked(); break
-        case "nav.settings": Navigation.openSection(""); break
-        case "nav.newTab": Navigation.open("library", 0); break
-        case "nav.closeTab": Navigation.close(Navigation.active); break
-        case "nav.nextTab": Navigation.step(1); break
-        case "nav.previousTab": Navigation.step(-1); break
-        case "queue.next": ListenList.command("next", "", ""); Navigation.go("listenlist", 0); break
-        case "queue.previous": ListenList.command("previous", "", ""); Navigation.go("listenlist", 0); break
-        case "nav.quit": controls.requestQuit(); break
-        case "ui.sidebar": SettingsModel.sidebarMode = sidebarTurns[SettingsModel.sidebarMode] || "open"; break
-        case "ui.queue": SettingsModel.queueOpen = !SettingsModel.queueOpen; break
-        case "ui.lyrics": SettingsModel.lyricsOpen = !SettingsModel.lyricsOpen; break
-        case "ui.escape": if (SettingsModel.queueOpen) SettingsModel.queueOpen = false; break
-        case "ui.showShortcuts": sheet.open(); break
-        case "ui.openLink": Hotkeys.linkAsked(); break
-        case "ui.miniPlayer": miniAsked(); break
-        case "ui.focusMode": immersiveAsked(); break
-        case "focus.seekForward": Player.nudge(5); break
-        case "focus.seekBack": Player.nudge(-5); break
-        case "focus.seekForwardLong": Player.nudge(10); break
-        case "focus.seekBackLong": Player.nudge(-10); break
-        }
-    }
+    WindowActions { id: actions; controls: controls; commandBar: commandBar; sheet: sheet; settings: commandSettings }
+    function run(action, args) { actions.run(action, args) }
 
     // The window's own item gets every key nothing inside it took.
     property bool listening: false
@@ -101,17 +66,7 @@ Item {
         window.contentItem.Keys.pressed.connect(pressed)
     }
 
-    // Side buttons need the top pointer target: controls below can take an
-    // exclusive grab before a root-level TapHandler sees the release.
-    // I handle side buttons here without replacing controls' cursors.
-    MouseArea {
-        parent: controls.window ? controls.window.contentItem : null
-        anchors.fill: parent
-        z: Metrics.tooltipLayer + Metrics.gap2
-        acceptedButtons: Qt.BackButton | Qt.ForwardButton
-        cursorShape: undefined
-        onClicked: mouse => mouse.button === Qt.BackButton ? Navigation.back() : Navigation.forward()
-    }
+    NavigationPointer { window: controls.window }
     // The desktop asked Chilpa to quit: the close that follows is not one
     // to hide from.
     property bool quitting: false
@@ -251,6 +206,19 @@ Item {
                 Controls.stopConfirmingQuit()
             controls.finishQuit()
         }
+    }
+
+    SettingsPage { id: commandSettings }
+    CommandBar {
+        id: commandBar
+        parent: controls.window ? controls.window.contentItem : controls
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: Metrics.playerSpace + Metrics.playerBottom
+        z: Metrics.tooltipLayer
+        onDismissed: previous => controls.restoreFocus(previous)
+        onExecute: command => controls.run(command.action, command)
     }
 
     ShortcutsSheet {

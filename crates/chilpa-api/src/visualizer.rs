@@ -20,6 +20,10 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::thread::Thread;
 
+mod linebed;
+mod ribbon;
+pub mod tunnel;
+
 /// Who wants the tap running: the immersive view, and a visualizer in
 /// the player bar when there is one. The producer runs while either does.
 pub const IMMERSIVE: u32 = 0b01;
@@ -43,7 +47,16 @@ struct Shared {
     marshal_all: AtomicBool,
     panel_scopes: AtomicU32,
     scene_active: AtomicBool,
+    scene: AtomicU32,
+    scene_feeds: Mutex<SceneFeeds>,
     pack: Mutex<Pack>,
+}
+
+#[derive(Default)]
+struct SceneFeeds {
+    linebed: linebed::LineBedState,
+    ribbon: ribbon::RibbonState,
+    cursor: (u64, f32),
 }
 
 /// One slot per stream, latest wins: a stalled window drops frames
@@ -69,6 +82,8 @@ pub struct Drained {
     pub goniometer: Option<(Box<[f32; 512]>, f32)>,
     pub oscilloscope: Option<Box<[f32; 512]>>,
     pub pack: Option<String>,
+    pub linebed: Option<Vec<u8>>,
+    pub ribbon: Option<Vec<u8>>,
 }
 
 impl Visualizer {
@@ -83,6 +98,8 @@ impl Visualizer {
             marshal_all: AtomicBool::new(false),
             panel_scopes: AtomicU32::new(0),
             scene_active: AtomicBool::new(false),
+            scene: AtomicU32::new(0),
+            scene_feeds: Mutex::new(SceneFeeds::default()),
             pack: Mutex::new(Pack::default()),
         }))
     }
@@ -132,6 +149,32 @@ impl Visualizer {
         self.apply_scopes();
     }
 
+    /// Selects the only expensive scene feed the drain should build.
+    pub fn set_scene(&self, scene: i32) {
+        self.0.scene.store(scene.max(0) as u32, Ordering::Relaxed);
+        self.set_scene_active(scene > 0);
+    }
+
+    /// A hidden or minimized immersive view releases its claim on the tap.
+    pub fn set_presented(&self, presented: bool) {
+        self.set_source(IMMERSIVE, presented && self.0.marshal_all.load(Ordering::Relaxed));
+    }
+
+    /// Ribbon columns follow playback, with a reset on track changes/seeks.
+    pub fn set_cursor(&self, track: &str, position: f64, duration: f64) {
+        use std::hash::{Hash, Hasher};
+        let mut hash = std::collections::hash_map::DefaultHasher::new();
+        track.hash(&mut hash);
+        let progress = if duration > 0.0 { (position / duration).clamp(0.0, 1.0) as f32 } else { 0.0 };
+        self.0.scene_feeds.lock().unwrap_or_else(|e| e.into_inner()).cursor = (hash.finish(), progress);
+    }
+
+    /// One full spectrogram upload after a renderer is remounted. Ordinary
+    /// frames keep the 532-byte protocol; no large snapshot crosses per tick.
+    pub fn ribbon_snapshot(&self) -> Option<Vec<u8>> {
+        self.0.scene_feeds.lock().unwrap_or_else(|e| e.into_inner()).ribbon.snapshot()
+    }
+
     /// Mirrors the transport: paused, the producer parks instead of
     /// analyzing the same samples again.
     pub fn set_paused(&self, paused: bool) {
@@ -160,6 +203,19 @@ impl Visualizer {
         out.goniometer = cells.goniometer.lock().unwrap_or_else(|e| e.into_inner()).take();
         out.oscilloscope = cells.oscilloscope.lock().unwrap_or_else(|e| e.into_inner()).take();
         let spectral = cells.spectral.lock().unwrap_or_else(|e| e.into_inner()).take();
+        if let Some(bins) = spectral.as_deref() {
+            let scene = self.0.scene.load(Ordering::Relaxed);
+            if scene == 4 || scene == 5 {
+                let mut feeds = self.0.scene_feeds.lock().unwrap_or_else(|e| e.into_inner());
+                if scene == 5 {
+                    feeds.linebed.push(bins);
+                    out.linebed = Some(feeds.linebed.ring_bytes().to_vec());
+                } else {
+                    let cursor = feeds.cursor;
+                    out.ribbon = feeds.ribbon.frame(bins, cursor);
+                }
+            }
+        }
         let transient = cells.transient.lock().unwrap_or_else(|e| e.into_inner()).take();
         // A bars frame comes with every producer frame, so it is the
         // cadence: a wake that found the cells drained must not tick, or
@@ -463,6 +519,44 @@ mod tests {
         let handle = Visualizer::new(Tap::new());
         Latch(handle.0.clone()).submit(Frame::Bars([0.3; BARS]));
         assert_eq!(handle.drain(), Drained::default());
+    }
+
+    #[test]
+    fn scene_feeds_are_built_only_for_the_visible_scene_and_ribbon_seeks_reset() {
+        let handle = Visualizer::new(Tap::new());
+        handle.0.marshal_all.store(true, Ordering::Relaxed);
+        let latch = Latch(handle.0.clone());
+        let bins = vec![0.4; 512];
+        latch.submit(Frame::Spectral(bins.clone()));
+        let off = handle.drain();
+        assert!(off.linebed.is_none() && off.ribbon.is_none());
+
+        handle.set_scene(5);
+        latch.submit(Frame::Spectral(bins.clone()));
+        let bed = handle.drain();
+        assert_eq!(bed.linebed.as_ref().map(Vec::len), Some(256 * 200 * 4));
+        assert!(bed.ribbon.is_none());
+        assert!(handle.drain().linebed.is_none(), "no fresh spectrum means no texture upload");
+
+        handle.set_scene(4);
+        handle.set_cursor("first", 30.0, 120.0);
+        latch.submit(Frame::Spectral(bins.clone()));
+        let ribbon = handle.drain().ribbon.unwrap();
+        assert_eq!(ribbon.len(), ribbon::FRAME_BYTES);
+        assert_eq!(u64::from_le_bytes(ribbon[4..12].try_into().unwrap()), 1);
+        assert_eq!(u32::from_le_bytes(ribbon[..4].try_into().unwrap()), 511);
+        handle.set_cursor("first", 31.0, 120.0);
+        latch.submit(Frame::Spectral(bins.clone()));
+        let next = handle.drain().ribbon.unwrap();
+        assert_eq!(u64::from_le_bytes(next[4..12].try_into().unwrap()), 1);
+        handle.set_cursor("first", 3.0, 120.0);
+        latch.submit(Frame::Spectral(bins.clone()));
+        let sought = handle.drain().ribbon.unwrap();
+        assert_eq!(u64::from_le_bytes(sought[4..12].try_into().unwrap()), 2, "a backward seek advances the epoch");
+        handle.set_cursor("second", 3.0, 120.0);
+        latch.submit(Frame::Spectral(bins));
+        let changed = handle.drain().ribbon.unwrap();
+        assert_eq!(u64::from_le_bytes(changed[4..12].try_into().unwrap()), 3, "a new track advances the epoch");
     }
 
     #[test]

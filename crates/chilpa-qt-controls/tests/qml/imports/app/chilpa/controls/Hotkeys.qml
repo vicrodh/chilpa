@@ -6,7 +6,12 @@ QtObject {
     property string answer: ""
     property var commands: []
     property int liked: 0
+    property int repeat: 1
+    property bool searchActive: false
     signal searchAsked()
+    signal searchCommand(string query, string source)
+    signal searchStepped(int by)
+    signal searchConfirmed()
     signal linkAsked()
     function refresh() {}
     // A modifier pressed alone is no key, as in the facade.

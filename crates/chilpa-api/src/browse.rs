@@ -308,6 +308,13 @@ pub struct AlbumDetail {
 pub struct Reader {
     pub(crate) lib: chilpa_library::Library,
     pub(crate) catalog: Option<std::sync::Arc<crate::source_catalog::Catalog>>,
+    refresh_cache: std::cell::RefCell<RefreshCache>,
+}
+
+#[derive(Default)]
+struct RefreshCache {
+    revision: Option<(i64, u64)>,
+    entries: std::collections::VecDeque<(Filter, TrackOrder, Facets, Snapshot)>,
 }
 
 /// I retain bounded snapshot pages; views can share them across navigation.
@@ -333,7 +340,7 @@ impl<T> PageCache<T> {
 
 impl Reader {
     pub(crate) fn open(path: &std::path::Path) -> Result<Self, String> {
-        chilpa_library::Library::open_read_only(path).map(|lib| Self { lib, catalog: None })
+        chilpa_library::Library::open_read_only(path).map(|lib| Self { lib, catalog: None, refresh_cache: Default::default() })
             .map_err(|e| format!("could not open library reader at {}: {e}", path.display()))
     }
 
@@ -546,23 +553,70 @@ impl Reader {
         chilpa_core::sacd_tracks::expand(&files).iter().map(|p| p.display().to_string()).collect()
     }
 
-    /// The four columns for this filter. Each column is narrowed only by
-    /// the ones to its left, so choosing an artist does not empty the year
-    /// column.
-    pub fn facets(&self, f: &Filter) -> Facets {
-        let mut albums = filter_facets(self.lib.facet_albums(f).unwrap_or_default(), &f.queries[6].trim().to_lowercase());
+    /// I stop superseded work between queries, before it occupies the worker again.
+    pub fn refresh(&self, filter: &Filter, order: TrackOrder, current: impl Fn() -> bool) -> Option<(Facets, Snapshot)> {
+        if !current() { return None; }
+        let before = self.lib.read_revision().ok();
+        {
+            let mut cache = self.refresh_cache.borrow_mut();
+            if cache.revision != before { cache.entries.clear(); cache.revision = before; }
+            if before.is_some() {
+                if let Some((_, _, facets, snapshot)) = cache.entries.iter().find(|(f, o, _, _)| f == filter && *o == order) {
+                    let mut facets = facets.clone();
+                    facets.ratings = facets.ratings.into_iter().map(named_stars).collect();
+                    return Some((facets, snapshot.clone()));
+                }
+            }
+        }
+        let read = || {
+            let facets = self.facets_current(filter, &current)?;
+            if !current() { return None; }
+            let snapshot = self.snapshot(filter, order);
+            current().then_some((facets, snapshot))
+        };
+        let result = self.lib.with_browse_candidates(filter, read).unwrap_or_else(|error| {
+            eprintln!("chilpa-queries: library eligibility failed: {error}");
+            read()
+        });
+        if before.is_some() && self.lib.read_revision().ok() == before {
+            if let Some((facets, snapshot)) = &result {
+                let mut cache = self.refresh_cache.borrow_mut();
+                if cache.entries.len() == 6 { cache.entries.pop_front(); }
+                cache.entries.push_back((filter.clone(), order, facets.clone(), snapshot.clone()));
+            }
+        }
+        result
+    }
+
+    /// Each column keeps the choices to its left, including the extra filters.
+    pub fn facets(&self, filter: &Filter) -> Facets {
+        self.facets_current(filter, &|| true).unwrap_or_default()
+    }
+
+    fn facets_current(&self, f: &Filter, current: &impl Fn() -> bool) -> Option<Facets> {
+        macro_rules! read {
+            ($query:expr) => {{ if !current() { return None; } $query.unwrap_or_default() }};
+        }
+        let mut left = f.clone();
+        left.choose(5, &[]);
+        left.queries[5..].fill(String::new());
+        let left_albums = read!(self.lib.facet_albums(&left));
+        let left_ids: Vec<i64> = left_albums.iter().filter_map(|a| a.key.parse().ok()).collect();
+        let mut albums = if f.artist.is_none() && f.artists.is_empty() && f.queries[5].trim().is_empty() {
+            left_albums
+        } else { read!(self.lib.facet_albums(f)) };
+        albums = filter_facets(albums, &f.queries[6].trim().to_lowercase());
         let ids: Vec<i64> = albums.iter().filter_map(|a| a.key.parse().ok()).collect();
         let chosen: HashSet<i64> = self.lib.grouped_album_ids(&ids).unwrap_or(ids).into_iter().collect();
         albums.retain(|a| a.key.parse().is_ok_and(|id| chosen.contains(&id)));
-        let mut artists = self.lib.facet_artists(f).unwrap_or_default();
+        let mut artists = if left == Filter::default() {
+            read!(self.lib.facet_artists(&left))
+        } else { read!(self.lib.facet_artists_for_albums(&left_ids)) };
         if self.lib.group_album_versions() {
-            let mut left = f.clone();
-            left.choose(5, &[]);
-            left.queries[5..].fill(String::new());
-            let ids = self.lib.facet_albums(&left).unwrap_or_default().iter().filter_map(|a| a.key.parse().ok()).collect::<Vec<_>>();
+            if !current() { return None; }
             if let Ok(catalog) = self.lib.version_catalog() {
                 let mut groups = std::collections::HashMap::<String, HashSet<String>>::new();
-                for id in ids {
+                for id in left_ids {
                     for (artist, _) in catalog.artists.get(&id).into_iter().flatten() {
                         if let Some(version) = catalog.versions.get(&id) {
                             groups.entry(artist.to_lowercase()).or_default().insert(version.group.clone());
@@ -572,13 +626,14 @@ impl Reader {
                 for artist in &mut artists { artist.albums = groups.get(&artist.label.to_lowercase()).map_or(0, HashSet::len); }
             }
         }
-        Facets {
-            sources: self.lib.facet_sources().unwrap_or_default(), years: self.lib.facet_years().unwrap_or_default(),
-            genres: self.lib.facet_genres(f).unwrap_or_default(), labels: self.lib.facet_labels(f).unwrap_or_default(),
-            composers: self.lib.facet_composers(f).unwrap_or_default(),
-            ratings: self.lib.facet_ratings(f).unwrap_or_default().into_iter().map(named_stars).collect(), artists, albums,
-        }
+        Some(Facets {
+            sources: read!(self.lib.facet_sources()), years: read!(self.lib.facet_years()),
+            genres: read!(self.lib.facet_genres(f)), labels: read!(self.lib.facet_labels(f)),
+            composers: read!(self.lib.facet_composers(f)),
+            ratings: read!(self.lib.facet_ratings(f)).into_iter().map(named_stars).collect(), artists, albums,
+        })
     }
+
 }
 
 impl Chilpa {
@@ -1001,7 +1056,7 @@ mod tests {
                     rusqlite::params![source, format!("/{release}/{number}.flac"), artist, credit, id, bits]).unwrap();
             }
         }
-        let reader = Reader { lib, catalog: None };
+        let reader = Reader { lib, catalog: None, refresh_cache: Default::default() };
         for artist in ["Singer A", "Singer B", "歌手 A", "歌手 B"] {
             let mut filter = Filter::default();
             filter.queries[5] = artist.into();
@@ -1030,7 +1085,7 @@ mod tests {
                 VALUES (?1,?2,?3,'Song',1,?4,?5,1)", rusqlite::params![id,source,format!("/{id}.flac"),3 - (id - 1) / 500,id]).unwrap();
         }
         lib.connection().execute_batch("COMMIT").unwrap();
-        let reader = Reader { lib, catalog: None };
+        let reader = Reader { lib, catalog: None, refresh_cache: Default::default() };
         let mut ids: Vec<i64> = (1..=1205).rev().collect();
         ids.insert(2, 9999); ids.push(1); ids.push(1205);
         let paths = reader.paths(&ids);
@@ -1076,8 +1131,12 @@ mod tests {
                 [source],
             )
             .unwrap();
-        let found = Reader { lib, catalog: None }.folder_matches("rock");
+        let found = Reader { lib, catalog: None, refresh_cache: Default::default() }.folder_matches("rock");
         let paths: Vec<_> = found.folders.iter().map(|folder| folder.path.as_str()).collect();
         assert_eq!(paths, ["/music/Rock", "/music/Rock/Album"]);
     }
 }
+
+#[cfg(test)]
+#[path = "browse_refresh_tests.rs"]
+mod refresh_tests;
