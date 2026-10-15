@@ -15,12 +15,15 @@ Item {
     readonly property bool found: lyrics !== null && !!lyrics.document
     readonly property var lines: found ? lyrics.document.lines : []
     readonly property bool hasLines: lines.length > 0
-    readonly property bool synced: Player.lyricsSynced
-    readonly property int current: synced ? Player.lyricsLine : -1
+    readonly property bool timed: found && ["line", "word", "syllable"].includes(lyrics.document.timing)
+    readonly property bool synced: timed && Player.lyricsSynced
+    readonly property int current: synced && !waiting ? Player.lyricsLine : -1
     readonly property bool wordTimed: found && (lyrics.document.timing === "word" || lyrics.document.timing === "syllable")
-    // Before the first line of a synced document there is a line to wait
-    // for; with no lines there is nothing.
-    readonly property bool waiting: synced && hasLines && current < 0
+    // The parser has already applied file offsets to these timestamps.
+    // I wait for the real clock and sync state, independently of follow.
+    readonly property var firstTimedLine: lines.find(line => typeof line.start_ms === "number" && Number.isFinite(line.start_ms)) || null
+    readonly property bool waiting: timed && hasLines && (!synced || Player.lyricsLine < 0
+        || firstTimedLine === null || nowMs < firstTimedLine.start_ms)
     readonly property bool none: !hasLines
     readonly property string currentText: current >= 0 && current < lines.length ? (lines[current].text || "") : ""
     readonly property bool uppercase: SettingsModel.kept("ui.lyrics.uppercase") === "true"

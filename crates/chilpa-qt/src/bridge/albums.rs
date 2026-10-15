@@ -265,6 +265,7 @@ impl qobject::AlbumGridModel {
     }
 
     fn schedule(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().generation = self.rust().generation.wrapping_add(1);
         if self.rust().pending {
             return;
         }
@@ -276,6 +277,18 @@ impl qobject::AlbumGridModel {
         self.as_mut().rust_mut().pending = false;
         let limit = self.rust().limit.max(1) as usize;
         let kind = self.rust().kind.to_string();
+        if matches!(kind.as_str(), "sameArtist" | "related") {
+            let generation = self.rust().generation.wrapping_add(1);
+            self.as_mut().rust_mut().generation = generation;
+            let (thread, id) = (self.qt_thread(), self.rust().key.to_string().parse().unwrap_or_default());
+            worker::submit(move |reader| {
+                let albums = reader.album_shelf(&kind, id, limit);
+                let _ = thread.queue(move |model| {
+                    if model.rust().generation == generation { model.show(Albums::Loaded(albums)); }
+                });
+            });
+            return;
+        }
         if matches!(kind.as_str(), "recentlyPlayed" | "recentlyPlayedEverywhere" | "recentlyAdded") {
             let generation = self.rust().generation.wrapping_add(1);
             self.as_mut().rust_mut().generation = generation;
@@ -308,11 +321,6 @@ impl qobject::AlbumGridModel {
                 if kind == "artistLatest" { records.truncate(1); }
                 records
             }
-            "sameArtist" => {
-                let id = self.rust().key.to_string().parse().unwrap_or_default();
-                app::with(|api| api.same_artist_albums(id, limit))
-            }
-            "related" => app::with(|api| api.related_albums(self.rust().key.to_string().parse().unwrap_or_default(), limit)),
             "source" => {
                 let (mut cards, mut groups) = app::with(|api| api.source_shelf(&self.rust().key.to_string(), &self.rust().order.to_string(), &self.rust().group.to_string(), &self.rust().filter.to_string()));
                 if self.rust().limit > 0 {

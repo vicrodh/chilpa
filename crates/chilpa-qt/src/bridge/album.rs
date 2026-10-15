@@ -25,6 +25,7 @@ pub mod qobject {
         #[qproperty(bool, found)]
         #[qproperty(QString, title)]
         #[qproperty(QString, artist)]
+        #[qproperty(QString, artist_information)]
         #[qproperty(QUrl, art)]
         /// "ALBUM · 2019".
         #[qproperty(QString, kind_line)]
@@ -66,6 +67,7 @@ pub struct AlbumDetailRust {
     found: bool,
     title: QString,
     artist: QString,
+    artist_information: QString,
     art: QUrl,
     kind_line: QString,
     meta: QString,
@@ -146,6 +148,7 @@ impl qobject::AlbumDetailModel {
         };
         self.as_mut().set_title(QString::from(&d.album.title));
         self.as_mut().set_artist(QString::from(&d.album.artist));
+        self.as_mut().set_artist_information(QString::from(&page.artist_information));
         self.as_mut().set_art(art);
         self.as_mut().set_kind_line(QString::from(&lines.kind));
         self.as_mut().set_meta(QString::from(&lines.meta));

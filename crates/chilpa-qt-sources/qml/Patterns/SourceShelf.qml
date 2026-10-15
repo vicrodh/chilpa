@@ -91,7 +91,7 @@ Column {
             // The rail keeps one card row; its width grows by one card and gap per item.
             width: shelf.wrap || list ? rail.width : Metrics.cardRing * 2 + shelf.railCards * shelf.viewportCardWidth + (shelf.railCards - 1) * Metrics.gridGap // derived: one row of the same cards as the library grid
             height: implicitHeight; fitContent: true
-            viewport: shelf.wrap ? shelf.viewport : null
+            viewport: shelf.viewport
             fixedColumns: shelf.wrap || list ? 0 : shelf.railCards
             viewportX: rail.contentX; viewportWidth: rail.width
             round: shelf.section.round === true; roundIds: shelf.section.artist_cards || []; list: !shelf.oneRow && shelf.section.presentation === "ranked"

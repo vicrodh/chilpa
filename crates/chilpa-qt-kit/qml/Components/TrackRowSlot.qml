@@ -5,10 +5,15 @@ import "../Theme"
 Item {
     id: slot
     property bool inViewport: true
+    property bool layoutReady: false
+    // I wait for the view to place the slot before I build its visible contents.
+    function finishLayout() { layoutReady = true }
+    Component.onCompleted: Qt.callLater(finishLayout)
     property bool immediate: true
     property bool header: false
     property bool canRate: false
     property Component content
+    readonly property int contentBuilds: body.builds
     readonly property Item sourceBadge: body.item ? body.item.sourceBadge : null
     readonly property Item end: body.item ? body.item.end : null
     readonly property Text artistLabel: body.item ? body.item.artistLabel : null
@@ -29,5 +34,5 @@ Item {
         return point.x >= 0 && point.x < stars.width && point.y >= 0 && point.y < stars.height
             ? Math.floor(point.x / stars.width * Metrics.ratingMaximum) + 1 : 0
     }
-    Loader { id: body; anchors.fill: parent; active: slot.inViewport; asynchronous: !slot.immediate; sourceComponent: slot.content }
+    Loader { id: body; property int builds: 0; onLoaded: builds++; anchors.fill: parent; active: slot.layoutReady && slot.inViewport; asynchronous: !slot.immediate; sourceComponent: slot.content }
 }

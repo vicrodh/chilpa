@@ -760,25 +760,9 @@ impl Chilpa {
     pub fn same_artist_albums(&mut self, album_id: i64, limit: usize) -> Vec<Album> {
         if album_id < 0 && self.catalog.card(album_id).is_some_and(|card| card.kind != crate::source_catalog::store::CardKind::Album) { return Vec::new(); }
         let Some(album) = self.album(album_id) else { return Vec::new() };
-        let local: Vec<Album> = self.artist_albums(&album.artist).into_iter().filter(|a| a.artist.trim().to_lowercase() == album.artist.trim().to_lowercase()).collect();
-        let mut groups = vec![local];
-        let mut sources = self.natives.ids(); sources.sort();
-        for source in sources.into_iter().filter(|id| self.natives.searches(id)) {
-            let key = format!("{source} matching-artist-v3:{}", album.artist);
-            if let Some(shelf) = self.catalog.shelf(&key) {
-                groups.push(self.catalog.cards(&shelf.cards).iter().map(crate::source_catalog::view::album_of).collect());
-            }
-        }
-        for group in &mut groups {
-            group.retain(|candidate| candidate.id != album_id);
-            group.sort_by_key(|candidate| candidate.id.wrapping_mul(1_103_515_245).wrapping_add(album_id) & 0x7fff_ffff);
-        }
-        let mut result = Vec::new();
-        for at in 0..groups.iter().map(Vec::len).max().unwrap_or(0) {
-            for group in &groups { if let Some(card) = group.get(at) { if result.len() < limit { result.push(card.clone()); } } }
-            if result.len() >= limit { break; }
-        }
-        result
+        let local = self.artist_albums(&album.artist);
+        let sources = self.natives.ids().into_iter().filter(|id| self.natives.searches(id)).collect();
+        crate::album_shelves::same_artist(&album, local, Some(&self.catalog), sources, limit)
     }
 
     /// Metadata-near records from the same source. Tempo and rhythmic

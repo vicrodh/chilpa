@@ -62,6 +62,7 @@ Item {
         }
         AlbumArtistLine {
             width: parent.width; albumId: hero.detail.selectedId; contrasted: hero.contrasted
+            document: JSON.parse(hero.detail.artistInformation || "{}")
             color: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textPrimary
         }
         Text {

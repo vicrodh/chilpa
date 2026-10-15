@@ -41,6 +41,16 @@ TestCase {
         }
         return total
     }
+    function contentBuilds() {
+        let total = 0
+        for (let i = 0; i < tracks.count; i++)
+            total += view().itemAtIndex(i)?.contentBuilds || 0
+        return total
+    }
+    function test_initial_layout_never_builds_visuals_for_every_slot() {
+        tryVerify(() => contentBuilds() > 0)
+        verify(contentBuilds() > 0 && contentBuilds() < 60, "initial placement must not create and discard every row's contents: " + contentBuilds())
+    }
     function test_long_records_keep_exact_slots_and_bound_visual_rows() {
         for (const rich of [false, true]) {
             list.rich = rich

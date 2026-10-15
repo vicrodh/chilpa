@@ -6,6 +6,7 @@ ListModel {
     property double albumId: 0
     property string key: ""
     property int filterRev: 0
+    property int albumPage: 0
     property string playingPath: ""
     property string summary: "3 tracks"
     function listAction(action, row, to) { lastAction = action; lastRow = row }

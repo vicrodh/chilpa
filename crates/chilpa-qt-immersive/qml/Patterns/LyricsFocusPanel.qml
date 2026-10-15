@@ -36,7 +36,7 @@ Item {
         anchors.right: verses.right
         anchors.bottom: verses.bottom
         anchors.bottomMargin: Stage.lyricFollowPad
-        visible: panel.hasLines && verses.synced && !verses.follow
+        visible: panel.hasLines && !panel.feed.waiting && verses.synced && !verses.follow
         text: I18n.tr("Follow lyrics", I18n.rev)
         glyph: Icons.playerPlayFilled
         filled: true

@@ -67,7 +67,7 @@ Item {
                 LyricLines {
                     objectName: "immersiveSplitLyrics"
                     anchors.fill: parent
-                    visible: Immersive.splitPanel === 0
+                    visible: Immersive.splitPanel === 0 && (!split.feed || !split.feed.waiting)
                     lines: split.feed ? split.feed.lines : []
                     synced: split.feed ? split.feed.synced : false
                     current: split.feed ? split.feed.current : -1
@@ -82,6 +82,14 @@ Item {
                     uppercase: split.feed ? split.feed.uppercase : false
                     lite: split.feed ? split.feed.lite : false
                     onSought: (ms) => { if (Player.duration > 0) Player.seek(ms / 1000) }
+                }
+                Icon {
+                    objectName: "immersiveSplitPrelude"
+                    anchors.centerIn: parent
+                    visible: Immersive.splitPanel === 0 && split.feed !== null && split.feed.waiting
+                    glyph: Icons.music
+                    size: Math.round(Stage.noteText / Type.pointsPerPixel)
+                    color: Theme.color.immersiveTextDim
                 }
                 Loader {
                     anchors.fill: parent

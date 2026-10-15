@@ -33,6 +33,7 @@ Window {
     property bool lyricMode: false
     property string lyricTiming: "word"
     property int lyricIndex: 4
+    property real lyricShift: 0
     property real lyricPosition: 12.3
     property real firstProgress: 0
     property var lyricSpot: null
@@ -172,17 +173,20 @@ Window {
     }
     function document() {
         return JSON.stringify({document:{timing:lyricTiming, lines:Array.from({length:14}, (_, i) => ({
-            text:"A verse with room to breathe " + i, start_ms:i * 3000, end_ms:(i + 1) * 3000,
+            text:"A verse with room to breathe " + i,
+            start_ms:lyricTiming === "unsynced" ? undefined : lyricShift + i * 3000,
+            end_ms:lyricTiming === "unsynced" ? undefined : lyricShift + (i + 1) * 3000,
             segments:lyricTiming === "word" ? [
-                {text:"A verse", start_ms:i * 3000, end_ms:i * 3000 + 1400, space_after:true},
-                {text:"with room to breathe " + i, start_ms:i * 3000 + 1400, end_ms:(i + 1) * 3000}
+                {text:"A verse", start_ms:lyricShift + i * 3000, end_ms:lyricShift + i * 3000 + 1400, space_after:true},
+                {text:"with room to breathe " + i, start_ms:lyricShift + i * 3000 + 1400, end_ms:lyricShift + (i + 1) * 3000}
             ] : []
-        }))}})
+        })), layers:[{kind:"translation",language:"es",lines:[{line:0,text:"The translation also waits"}]}]},translation:0})
     }
     function injectLyrics() {
         const value = document()
         if (Player.lyricsJson !== value) Player.lyricsJson = value
-        if (!Player.lyricsSynced) Player.lyricsSynced = true
+        const synced = lyricTiming !== "unsynced"
+        if (Player.lyricsSynced !== synced) Player.lyricsSynced = synced
         if (Player.lyricsLine !== lyricIndex) Player.lyricsLine = lyricIndex
         if (Player.position !== lyricPosition) Player.position = lyricPosition
         if (!Player.paused) Player.paused = true
@@ -252,6 +256,55 @@ Window {
             } else if (window.phase === "stopping") {
                 if (Player.playing || queueRows.count) return
                 window.lyricMode = true
+                // The normalized first timestamp includes the parser's file offset.
+                window.lyricShift = 7000
+                window.lyricIndex = 0
+                window.lyricPosition = 6.999
+                window.injectLyrics()
+                window.enter("lyrics-wait")
+            } else if (window.phase === "lyrics-wait") {
+                if (window.phaseTicks < 6) return
+                const note = window.child(column, "immersiveLyricsPrelude")
+                window.check(lyricFeed.waiting && lyricFeed.current === -1 && column.count === 0 && note && note.visible,
+                    "timed prelude showed lyrics before the real timestamp despite index zero")
+                column.resume()
+                window.check(lyricFeed.waiting && column.count === 0, "manual follow invented synchronization")
+                window.captureLyrics("lyrics-wait", "lyrics-start")
+            } else if (window.phase === "lyrics-start") {
+                window.lyricPosition = 7
+                window.injectLyrics()
+                window.enter("lyrics-started")
+            } else if (window.phase === "lyrics-started") {
+                if (!window.centered() || window.phaseTicks < 6) return
+                window.check(!lyricFeed.waiting && column.count === 14 && column.itemAtIndex(0).active,
+                    "the first verse did not appear at its normalized timestamp")
+                window.lyricPosition = 1
+                window.injectLyrics()
+                window.enter("lyrics-rewind")
+            } else if (window.phase === "lyrics-rewind") {
+                if (window.phaseTicks < 4) return
+                window.check(lyricFeed.waiting && column.count === 0 && window.child(column, "immersiveLyricsPrelude").visible,
+                    "seeking before the start exposed original or translated lyrics")
+                window.lyricTiming = "unsynced"
+                window.lyricIndex = -1
+                window.injectLyrics()
+                window.enter("lyrics-plain")
+            } else if (window.phase === "lyrics-plain") {
+                if (window.phaseTicks < 4) return
+                window.check(!lyricFeed.waiting && !lyricFeed.synced && column.count === 14,
+                    "plain lyrics lost their normal reading view")
+                window.lyricTiming = "line"
+                window.lyricShift = 9000
+                window.lyricIndex = 0
+                window.injectLyrics()
+                window.enter("lyrics-document")
+            } else if (window.phase === "lyrics-document") {
+                if (window.phaseTicks < 4) return
+                window.check(lyricFeed.waiting && column.count === 0, "a replacement timed document leaked its text")
+                window.lyricTiming = "word"
+                window.lyricShift = 0
+                window.lyricIndex = 4
+                window.lyricPosition = 12.3
                 window.injectLyrics()
                 window.enter("lyrics-a")
             } else if (window.phase === "lyrics-a") {
@@ -301,7 +354,9 @@ Window {
                     reset_scope:"Native transport changes queue/history; reset timing is not asserted during animation",
                     next_frames:window.nextSamples,
                     back_frames:window.backSamples, lyrics_context:true, lyrics_centered:true, words_timed:true,
-                    line_timing_no_words:true, lyric_glide:window.sawGlide, injected_document:true, injected_clock:true}))
+                    line_timing_no_words:true, lyric_glide:window.sawGlide, timed_prelude:true, prelude_seek:true,
+                    plain_reading:true, document_replacement:true, translated_prelude:true, normalized_first_ms:7000,
+                    injected_document:true, injected_clock:true}))
                 console.log("SMOKE focus panels completed")
                 Qt.quit()
             }
