@@ -27,6 +27,8 @@ mod pages;
 pub(crate) mod store;
 pub(crate) mod view;
 mod sorting;
+#[cfg(test)]
+mod queue_retention_tests;
 
 use crate::plugins::Plugins;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -83,6 +85,8 @@ struct Inner {
     quality_blocked: HashMap<String, Instant>,
     quality_running: usize,
     store: Store,
+    /// Queue entries stay readable even when no source listing owns them.
+    protected_tracks: HashSet<String>,
     loaded: bool,
     queue: Queue,
     /// Why the last attempt failed, by listing key or by card.
@@ -184,6 +188,11 @@ impl Catalog {
 
     pub fn revisions(&self) -> (i32, i32) {
         (self.content_rev.load(Ordering::Relaxed), self.art_rev.load(Ordering::Relaxed))
+    }
+
+    /// Queue edits replace this set; progress ticks never rebuild it.
+    pub(crate) fn protect_tracks(&self, paths: HashSet<String>) {
+        self.lock().protected_tracks = paths;
     }
 
     pub(crate) fn changed(&self) {

@@ -45,7 +45,8 @@ fn persist(catalog: &Catalog, write: impl FnOnce(&Store) -> std::io::Result<()>)
     let snapshot = {
         let mut inner = catalog.lock();
         if !inner.dirty { return; }
-        inner.store.prune();
+        let Inner { store, protected_tracks, .. } = &mut *inner;
+        store.prune(protected_tracks);
         let snapshot = inner.store.clone();
         inner.dirty = false;
         snapshot
@@ -421,6 +422,44 @@ pub(super) fn covers(catalog: &Arc<Catalog>) {
 mod persistence_tests {
     use super::*;
     use std::sync::mpsc::channel;
+
+    #[test]
+    fn queued_tracks_and_their_albums_survive_repeated_saves_above_the_card_limit() {
+        let catalog = Catalog::new();
+        let (id, album, path) = {
+            let mut inner = catalog.lock();
+            let cards: Vec<_> = (0..6001).map(|n| inner.store.card_id("guest", &format!("listed:{n}"))).collect();
+            inner.store.shelves.insert("guest library".into(), Shelf { cards, ..Default::default() });
+            let id = inner.store.take_item_track("guest", &serde_json::json!({
+                "ref":"queued", "title":"Queued song", "artist":"Queue artist", "album":"Queue album",
+                "album_ref":"queue-album", "duration_ms":248707, "image":"https://example.org/cover.png",
+                "track_number":7, "disc_number":2
+            }), None, 10).unwrap();
+            let track = &inner.store.tracks[&id];
+            (id, track.album_id, track.path.clone())
+        };
+        catalog.protect_tracks([path.clone()].into());
+        for _ in 0..4 {
+            catalog.lock().dirty = true;
+            persist(&catalog, |snapshot| {
+                let track = snapshot.track_by_path(&path).expect("a queued track remains in the saved catalog");
+                assert_eq!((track.id, track.album_id, track.duration_ms, track.number, track.disc), (id, album, 248707, 7, 2));
+                assert_eq!((track.artist.as_str(), track.album.as_str(), track.image.as_str()),
+                    ("Queue artist", "Queue album", "https://example.org/cover.png"));
+                assert!(snapshot.cards.contains_key(&album), "queue album navigation remains resolvable");
+                Ok(())
+            });
+            assert_eq!(catalog.track_by_path(&path).unwrap().0.duration_ms, 248707, "live rows retain the same queue total");
+        }
+        catalog.protect_tracks(Default::default());
+        catalog.lock().dirty = true;
+        persist(&catalog, |snapshot| {
+            assert!(!snapshot.cards.contains_key(&album), "closing the last queue releases the unlisted album");
+            assert!(snapshot.track_by_path(&path).is_none(), "unreferenced tracks can be evicted again");
+            assert_eq!(snapshot.cards.len(), 6001, "referenced library cards retain the existing policy");
+            Ok(())
+        });
+    }
 
     #[test]
     fn reads_and_new_work_remain_available_while_a_snapshot_is_written() {

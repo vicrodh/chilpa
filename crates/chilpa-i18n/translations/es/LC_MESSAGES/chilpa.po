@@ -6294,3 +6294,6 @@ msgstr "{}s"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "“{}” tiene cambios sin guardar. Si abres este disco se pierden."
+
+msgid "Unassigned"
+msgstr "Sin asignar"

@@ -6294,3 +6294,6 @@ msgstr ""
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr ""
+
+msgid "Unassigned"
+msgstr "Unassigned"

@@ -1,5 +1,6 @@
 pragma Singleton
 import QtQuick
+import app.chilpa.kit
 
 // Typography (design/01-tokens.md 2). Sizes are given in pixels and applied
 // as point sizes, because the design uses half pixels (12.5, 11.5, 10.5) and
@@ -9,6 +10,7 @@ import QtQuick
 // quarters of its size there.
 QtObject {
     readonly property real pointsPerPixel: Qt.platform.os === "osx" ? 1 : 0.75
+    readonly property string consoleFamily: ThemeModel.fixedFontFamily()
 
     // A record's, an artist's or a playlist's name at the head of its page.
     readonly property real display: 23 * pointsPerPixel

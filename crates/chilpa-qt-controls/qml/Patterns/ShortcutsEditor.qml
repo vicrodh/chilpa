@@ -28,6 +28,15 @@ Modal {
     closePolicy: recording ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
     onAboutToShow: Hotkeys.refresh()
     onClosed: Hotkeys.command("cancel", "")
+    onRecordingChanged: if (recording) contentItem.forceActiveFocus()
+    Connections {
+        target: editor.contentItem.Keys
+        function onPressed(event) {
+            if (!editor.recording) return
+            Hotkeys.pressedIn("window", event.key, event.modifiers, event.text, false)
+            event.accepted = true
+        }
+    }
 
     Column {
         width: editor.width - Metrics.modalInsets

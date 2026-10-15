@@ -8,13 +8,9 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
 import "../Theme"
 
-// Focus 0, Album Reactive (03-immersive §1.4): the cover breathes with the
-// music. The five energy bands come through one StreamSettle; the mean of
-// the five scales the cover from 1 to 1.25 and lights the halo, the mean
-// of the two bass bands spreads it. The scalars apply at the pulse rate
-// with no animation of their own: the window presents once per pulse.
-// The cover grows from its center by width and height; x and y are plain
-// bindings, so it never drifts.
+// I keep the artwork and effect textures at their layout size. Music only
+// scales their transforms, so a pulse cannot reload the decoded cover or
+// resize an offscreen layer. The shared pulse still drives the halo.
 Item {
     id: panel
     property bool shaders: true
@@ -50,8 +46,9 @@ Item {
                 width: panel.width
                 height: panel.baseArt * Stage.reactiveArtDivisor
                 Rectangle {
-                    width: panel.artSize
-                    height: panel.artSize
+                    width: panel.baseArt
+                    height: panel.baseArt
+                    scale: panel.artScale
                     x: (parent.width - width) / 2 // derived: centered
                     y: (parent.height - height) / 2 + Stage.artShadowDrop // derived: centered, dropped
                     radius: Stage.artRound
@@ -60,8 +57,9 @@ Item {
                     layer.effect: MultiEffect { blurEnabled: true; blurMax: Stage.blurReachArt; blur: 1 }
                 }
                 Rectangle {
-                    width: panel.artSize
-                    height: panel.artSize
+                    width: panel.baseArt
+                    height: panel.baseArt
+                    scale: panel.artScale
                     x: (parent.width - width) / 2 // derived: centered
                     y: (parent.height - height) / 2 // derived: centered
                     radius: Stage.artRound
@@ -71,8 +69,10 @@ Item {
                     layer.effect: MultiEffect { blurEnabled: true; blurMax: Stage.blurReach; blur: Math.min(1, panel.glowSpread / Stage.glowBlurDivisor) }
                 }
                 ArtTile {
-                    width: panel.artSize
-                    height: panel.artSize
+                    // I decode for the largest pulse and scale down at rest.
+                    width: panel.baseArt * Stage.reactiveArtDivisor
+                    height: width
+                    scale: panel.artScale / Stage.reactiveArtDivisor
                     x: (parent.width - width) / 2 // derived: centered
                     y: (parent.height - height) / 2 // derived: centered
                     radius: Stage.artRound

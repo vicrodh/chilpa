@@ -14,15 +14,23 @@ Flickable {
     property var keys: ({})
     property bool editing: false
 
+    function groupsFor(groups) {
+        if (editing) return groups
+        return groups.map(group => ({label:group.label,
+            rows:(group.rows || []).filter(row => (row.shortcut || "") !== "" || (row.command || "") !== "")}))
+            .filter(group => group.rows.length > 0)
+    }
+
     implicitHeight: columns.implicitHeight
     contentHeight: columns.implicitHeight
     clip: true
     boundsBehavior: Flickable.StopAtBounds
-    ScrollBar.vertical: ViewportScrollBar {}
+    ScrollBar.vertical: ViewportScrollBar { id: bar; objectName: "shortcutScrollBar" }
 
     Row {
         id: columns
-        width: view.width
+        objectName: "shortcutColumns"
+        width: Math.max(0, view.width - Metrics.gap24)
         spacing: Metrics.gap24
 
         Repeater {
@@ -35,10 +43,11 @@ Flickable {
                 spacing: Metrics.gap16
 
                 Repeater {
-                    model: column.modelData
+                    model: view.groupsFor(column.modelData)
 
                     Column {
                         id: group
+                        objectName: "shortcutGroup"
                         required property var modelData
                         width: column.width
                         spacing: Metrics.gap6
@@ -59,6 +68,7 @@ Flickable {
                             model: group.modelData.rows
 
                             ShortcutRow {
+                                objectName: "shortcutRow"
                                 required property var modelData
                                 width: group.width
                                 entry: modelData

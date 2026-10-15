@@ -42,9 +42,15 @@ stages = {
     "sources": [python, "scripts/check-source-navigation.py", str(binary), str(output / "sources")],
     "commands": [python, "scripts/check-vi-commands.py", str(binary), str(output / "commands"),
                  "--library", str(library)],
+    "keyboard": [python, "scripts/check-vi-commands.py", str(binary), str(output / "keyboard"),
+                 "--library", str(library), "--keyboard-only"],
     "covers": [python, "scripts/check-immersive-scenes.py", str(binary), str(output / "covers"), "--covers-only"],
     "covers-vulkan": [python, "scripts/check-immersive-scenes.py", str(binary),
                       str(output / "covers-vulkan"), "--covers-only", "--backend", "vulkan"],
+    "reactive-artwork": [python, "scripts/check-immersive-scenes.py", str(binary),
+                         str(output / "reactive-artwork"), "--reactive-only"],
+    "reactive-artwork-vulkan": [python, "scripts/check-immersive-scenes.py", str(binary),
+                                str(output / "reactive-artwork-vulkan"), "--reactive-only", "--backend", "vulkan"],
     "scenes": [python, "scripts/check-immersive-scenes.py", str(binary), str(output / "scenes")],
     "scenes-vulkan": [python, "scripts/check-immersive-scenes.py", str(binary),
                       str(output / "scenes-vulkan"), "--backend", "vulkan"],
@@ -57,6 +63,7 @@ stages = {
 }
 if args.vulkan_host_display:
     stages["covers-vulkan"].append("--host-display")
+    stages["reactive-artwork-vulkan"].append("--host-display")
     stages["scenes-vulkan"].append("--host-display")
     stages["music-views"].append("--host-display")
     stages["music-views-vulkan"].append("--host-display")

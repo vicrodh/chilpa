@@ -23,6 +23,12 @@ extern "C" bool chilpa_use_font(const char *resource)
     return true;
 }
 
+extern "C" const char *chilpa_fixed_font_family()
+{
+    static const QByteArray family = QFontDatabase::systemFont(QFontDatabase::FixedFont).family().toUtf8();
+    return family.constData();
+}
+
 // Whether the system has a desktop entry by that name. Naming the window
 // after one that is not installed -- a build run from the tree -- only gets
 // a refusal from the desktop portal on every start; the platform knows where

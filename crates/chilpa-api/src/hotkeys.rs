@@ -134,7 +134,7 @@ const VI: &str = "Vi";
 const GROUPS: [&str; 6] = [PLAYBACK, NAVIGATION, INTERFACE, MINI, IMMERSIVE, VI];
 
 const ACTIONS: &[Action] = &[
-    action("commands.open", i18n::mark("Command line"), VI, "", ":"),
+    action("commands.open", i18n::mark("Command line"), INTERFACE, ":", ""),
     action("list.down", i18n::mark("Cursor down"), VI, "", "j"),
     action("list.up", i18n::mark("Cursor up"), VI, "", "k"),
     action("list.first", i18n::mark("First track"), VI, "", "gg"),
@@ -235,12 +235,14 @@ pub fn shortcut(key: i32, modifiers: i32, text: &str) -> Option<String> {
     // another sign.
     let (token, keeps_shift) = if let Some(name) = named {
         (name.to_owned(), true)
+    } else if printable().is_some_and(|c| !c.is_alphanumeric()) {
+        (printable()?.to_string(), false)
     } else if (0x41..=0x5a).contains(&key) {
         let letter = key as u8 as char;
         (if shift { letter.to_string() } else { letter.to_ascii_lowercase().to_string() }, true)
     } else if (0x30..=0x39).contains(&key) && (!shift || ctrl) {
         ((key as u8 as char).to_string(), true)
-    } else if ctrl && !shift && (0x21..=0x7e).contains(&key) && printable().is_none() {
+    } else if (0x21..=0x7e).contains(&key) && printable().is_none() && (!ctrl || !shift) {
         ((key as u8 as char).to_string(), false)
     } else {
         (printable()?.to_string(), false)
@@ -546,6 +548,26 @@ mod tests {
         assert_eq!(shown("Ctrl+,"), "Ctrl + ,");
         assert_eq!(shown("Escape"), "Esc");
         assert_eq!(shown(""), "");
+    }
+
+    #[test]
+    fn the_command_line_answers_colon_in_every_keymap_and_keyboard_layout() {
+        for keymap in [Keymap::Default, Keymap::Letters, Keymap::Vi] {
+            let keys = Keys { keymap, ..Keys::default() };
+            for (key, modifiers, text) in [(0x3a, qt::SHIFT, ":"), (0x3b, qt::SHIFT, ":"), (0x4d, qt::SHIFT, ":"), (0x3a, 0, "")] {
+                assert_eq!(shortcut(key, modifiers, text).as_deref(), Some(":"));
+                assert_eq!(keys.pressed_in(Scope::Window, key, modifiers, text, false), Pressed::Run("commands.open"));
+                assert_eq!(keys.pressed_in(Scope::Window, key, modifiers, text, true), Pressed::Pass);
+            }
+            let mut keys = Keys { keymap, recording: "commands.open".into(), ..Keys::default() };
+            assert!(keys.capture(0x3b, qt::SHIFT, ":"));
+            assert!(keys.recording.is_empty());
+            keys.bind("commands.open", "Ctrl+;").unwrap();
+            assert!(keys.action_for(":").is_none());
+            keys.recording = "commands.open".into();
+            assert!(keys.capture(0x3b, qt::SHIFT, ":"));
+            assert_eq!(keys.action_for(":").unwrap().id, "commands.open");
+        }
     }
 
     #[test]
