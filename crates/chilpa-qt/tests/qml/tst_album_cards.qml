@@ -9,12 +9,12 @@ TestCase {
     name: "AlbumCardQualityAndViewport"
     when: windowShown
     visible: true
-    width: 1000; height: 800
+    width: 1000; height: Math.max(800, grid.y + grid.height)
     AlbumCard { id: card; width: 180; height: 230; title: "Record"; qualityInfo: ({tier:3,label:"FLAC 24/96"}) }
     property int albumClicks: 0
     Connections { target: card; function onClicked() { albumClicks++ } }
     AlbumGridModel { id: records }
-    AlbumGrid { id: grid; y: 260; width: 1400; height: 500; fitContent: true; model: records; viewportWidth: 700; viewportX: 320 }
+    AlbumGrid { id: grid; y: 260; width: 1400; height: implicitHeight; fitContent: true; model: records; viewportWidth: 700; viewportX: 320 }
     Component {
         id: distantRail
         Flickable {
@@ -80,6 +80,7 @@ TestCase {
         tryCompare(image, "source", "")
     }
     function test_quick_view_queue_button_opens_all_placements_and_extra_queues() {
+        tryVerify(() => findChild(grid, "albumQuickLoader") !== null)
         records.expanded = 0
         const quick = findChild(grid, "albumQuickLoader")
         tryCompare(quick, "active", true)
@@ -87,6 +88,7 @@ TestCase {
         menu.model.append({title:"Track"})
         const button = findChild(quick.item, "quickQueueActions")
         compare(button.tip, "Queue actions")
+        waitForRendering(button)
         mouseClick(button)
         tryCompare(menu, "visible", true)
         compare(menu.entries.slice(0,3).map(entry => entry.act), ["queue","next","later"])

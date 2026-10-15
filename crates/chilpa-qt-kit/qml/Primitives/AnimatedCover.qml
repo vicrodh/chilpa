@@ -47,7 +47,7 @@ Item {
     Text {
         anchors.centerIn: parent
         width: parent.width - Metrics.gap24
-        text: cover.label
+        text: cover.visible ? cover.label : ""
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.WordWrap
         font.pointSize: Type.titleSmall
