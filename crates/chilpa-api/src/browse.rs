@@ -557,7 +557,7 @@ impl Reader {
     pub fn refresh(&self, filter: &Filter, order: TrackOrder, current: impl Fn() -> bool) -> Option<(Facets, Snapshot)> {
         if !current() { return None; }
         let before = self.lib.read_revision().ok();
-        {
+        let shared = {
             let mut cache = self.refresh_cache.borrow_mut();
             if cache.revision != before { cache.entries.clear(); cache.revision = before; }
             if before.is_some() {
@@ -567,9 +567,10 @@ impl Reader {
                     return Some((facets, snapshot.clone()));
                 }
             }
-        }
+            before.and_then(|_| cache.entries.front().map(|(_, _, facets, _)| (facets.sources.clone(), facets.years.clone())))
+        };
         let read = || {
-            let facets = self.facets_current(filter, &current)?;
+            let facets = self.facets_current(filter, &current, shared.as_ref())?;
             if !current() { return None; }
             let snapshot = self.snapshot(filter, order);
             current().then_some((facets, snapshot))
@@ -590,10 +591,10 @@ impl Reader {
 
     /// Each column keeps the choices to its left, including the extra filters.
     pub fn facets(&self, filter: &Filter) -> Facets {
-        self.facets_current(filter, &|| true).unwrap_or_default()
+        self.facets_current(filter, &|| true, None).unwrap_or_default()
     }
 
-    fn facets_current(&self, f: &Filter, current: &impl Fn() -> bool) -> Option<Facets> {
+    fn facets_current(&self, f: &Filter, current: &impl Fn() -> bool, shared: Option<&(Vec<FacetEntry>, Vec<FacetEntry>)>) -> Option<Facets> {
         macro_rules! read {
             ($query:expr) => {{ if !current() { return None; } $query.unwrap_or_default() }};
         }
@@ -626,8 +627,10 @@ impl Reader {
                 for artist in &mut artists { artist.albums = groups.get(&artist.label.to_lowercase()).map_or(0, HashSet::len); }
             }
         }
+        let sources = read!(match shared { Some((sources, _)) => Ok(sources.clone()), None => self.lib.facet_sources() });
+        let years = read!(match shared { Some((_, years)) => Ok(years.clone()), None => self.lib.facet_years() });
         Some(Facets {
-            sources: read!(self.lib.facet_sources()), years: read!(self.lib.facet_years()),
+            sources, years,
             genres: read!(self.lib.facet_genres(f)), labels: read!(self.lib.facet_labels(f)),
             composers: read!(self.lib.facet_composers(f)),
             ratings: read!(self.lib.facet_ratings(f)).into_iter().map(named_stars).collect(), artists, albums,
