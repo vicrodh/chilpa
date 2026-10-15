@@ -16,6 +16,7 @@ TestCase {
     height: 760
     property var deck: null
     property var lyrics: null
+    property int playingId: -1
     TrackListModel { id: queueRows }
     TrackListModel { id: historyRows }
     QtObject {
@@ -23,10 +24,27 @@ TestCase {
         readonly property int count: queueRows.count
         signal modelReset()
         signal dataChanged()
-        function playingRow() { return queueRows.playingRow() }
+        function playingRow() {
+            if (test.playingId < 0) return queueRows.playingRow()
+            for (let i = 0; i < count; ++i) if (queueRows.get(i).trackId === test.playingId) return i
+            return -1
+        }
         function index(row, column) { return row }
         function data(index, role) { return role === 269 ? queueRows.get(index).trackId : role === 271 ? queueRows.get(index).art : null }
         function play(row) { queueRows.play(row) }
+    }
+    QtObject {
+        id: nativeHistoryRows
+        readonly property int count: historyRows.count
+        signal modelReset()
+        signal dataChanged()
+        function playingRow() {
+            for (let i = 0; i < count; ++i) if (historyRows.get(i).trackId === test.playingId) return i
+            return -1
+        }
+        function index(row, column) { return row }
+        function data(index, role) { return role === 269 ? historyRows.get(index).trackId : role === 271 ? historyRows.get(index).art : null }
+        function play(row) { historyRows.play(row) }
     }
     LyricsFeed { id: lyricFeed; live: false }
     Component { id: deckMaker; CoverFlowDeck { width: test.width; height: 460; ahead: queueRows; behind: historyRows; artSize: 300; currentPath: "/one"; shaders: false } }
@@ -43,6 +61,7 @@ TestCase {
     function cover(id) { return deck.covers().find(c => c.occupied && c.identity === "track:" + id) }
     function init() {
         Motion.reduced = false
+        playingId = -1
         Player.lyricsJson = ""
         Player.lyricsSynced = false
         Player.lyricsLine = -1
@@ -82,6 +101,77 @@ TestCase {
         wait(20)
         compare(cover(4), next)
         tryCompare(next, "offset", 0)
+    }
+    function test_previous_keeps_images_while_the_playing_key_precedes_the_model_reset() {
+        Motion.reduced = true
+        queueRows.clear()
+        historyRows.clear()
+        for (let id = 1; id <= 3; ++id) queueRows.append({trackId:id,art:art(id),playing:id === 1})
+        makeDeck()
+        deck.ahead = nativeRows
+        deck.behind = nativeHistoryRows
+        playingId = 1
+        deck.reconcile()
+        tryVerify(() => [1, 2, 3].every(id => cover(id).ready))
+        const saved = [1, 2, 3].map(id => {
+            const card = cover(id), tile = findChild(card, "flowArtwork")
+            return {id:id,card:card,tile:tile,image:tile.children.find(item => item.sourceSize !== undefined && item.status !== undefined),
+                source:tile.source.toString(),decode:tile.decode}
+        })
+        playingId = 2
+        queueRows.remove(0)
+        queueRows.setProperty(0, "playing", true)
+        historyRows.append({trackId:1,art:art(1),playing:false})
+        deck.currentPath = "/two"
+        deck.reconcile()
+        // The native facade's playing key can change before the queued model
+        // reload: old rows [2,3] no longer contain the new playing key 1.
+        Motion.reduced = false
+        playingId = 1
+        queueRows.setProperty(0, "playing", false)
+        deck.currentPath = "/one"
+        deck.reconcile()
+        compare(cover(1).destination, 0)
+        compare(cover(2).destination, 1)
+        compare(cover(1).offset, -1, "the previous artwork starts at its existing left pose")
+        compare(cover(2).offset, 0, "the outgoing artwork starts at its existing center pose")
+        for (const entry of saved) {
+            compare(entry.card.identity, "track:" + entry.id, "the pending model reset must not recycle the owner of track " + entry.id)
+            compare(deck.covers().find(card => card.identity === "track:" + entry.id), entry.card)
+            compare(entry.tile.source.toString(), entry.source, "a pending model reset must not reload an artwork")
+            compare(entry.tile.children.find(item => item.sourceSize !== undefined && item.status !== undefined), entry.image)
+            compare(entry.tile.decode, entry.decode)
+            verify(entry.tile.ready && entry.image.status === Image.Ready)
+        }
+        wait(60)
+        verify(cover(1).offset > -1 && cover(1).offset < 0)
+        verify(cover(2).offset > 0 && cover(2).offset < 1)
+        const poses = [cover(1).offset, cover(2).offset]
+        queueRows.insert(0, {trackId:1,art:art(1),playing:true})
+        // Both snapshots temporarily contain A; it must not become its own history.
+        deck.reconcile()
+        compare(deck.snapshot().filter(row => row.identity === "track:1").length, 1)
+        historyRows.clear()
+        deck.reconcile()
+        compare([cover(1).offset, cover(2).offset], poses, "model arrival never restarts the pose")
+        for (const entry of saved) {
+            compare(cover(entry.id), entry.card)
+            compare(entry.tile.source.toString(), entry.source)
+        }
+        compare(cover(1).destination, 0)
+        compare(cover(2).destination, 1)
+        compare(cover(3).destination, 2)
+        tryCompare(cover(1), "offset", 0)
+        tryCompare(cover(2), "offset", 1)
+        playingId = 99
+        deck.currentPath = "/external"
+        deck.reconcile()
+        verify(deck.covers().some(card => card.occupied && card.identity === "path:/external" && card.destination === 0),
+            "a real fallback is not frozen when neither model contains the playing key")
+        for (const entry of saved) {
+            compare(entry.card.identity, "track:" + entry.id)
+            compare(entry.tile.source.toString(), entry.source)
+        }
     }
     function test_hidden_and_reduced_motion_stop_the_fan() {
         makeDeck()
