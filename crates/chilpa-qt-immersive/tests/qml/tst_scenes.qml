@@ -79,6 +79,29 @@ TestCase {
         compare(new Float32Array(loaders[0].item.heights)[0], 42)
         verify(!layer.holding)
     }
+    function test_a_paused_ribbon_keeps_its_snapshot_across_late_rows_and_reopening() {
+        Immersive.scene = 4
+        const first = new ArrayBuffer(532)
+        new Uint8Array(first)[20] = 42
+        Visualizer.ribbonFrame = first
+        Pulse.ms += Pulse.period
+        Player.paused = true
+        verify(!layer.holding)
+        compare(new Uint8Array(layer.frozenRibbon)[20], 42)
+        const late = new ArrayBuffer(532)
+        new Uint8Array(late)[20] = 99
+        Visualizer.ribbonFrame = late
+        layer.visible = false
+        wait(1)
+        layer.visible = true
+        wait(1)
+        const loader = layer.children.find(child => child.item !== undefined && child.item !== null)
+        const ribbon = loader.item.children.find(child => child.frame !== undefined)
+        compare(new Uint8Array(ribbon.frame)[20], 42, "a late row does not change the paused picture")
+        layer.visible = false
+        Player.paused = false
+        compare(layer.frozenRibbon, null, "resuming while hidden releases the paused snapshot")
+    }
     function test_audio_pack_applies_on_the_shared_pulse() {
         Visualizer.packJson = JSON.stringify({phase: 4, beat: 0.7, beatAbove: 0.4, level: 0.5,
             levelSmooth: 0.3, transient: 0.8, energyLo: [0.1, 0.2, 0.3, 0.4],

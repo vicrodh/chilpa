@@ -18,6 +18,8 @@ Window {
     property string savedId: ""
     property string savedName: "DSP smoke personal preset"
     property bool stopped: false
+    // I mount the native player poller before waiting for asynchronous plugin startup.
+    readonly property bool playing: Player.playing
 
     Parts.DspControl { id: control }
     Parts.DspPanel { id: panel }
@@ -43,7 +45,7 @@ Window {
     }
     function inactive(state) {
         check(state.active === false && Dsp.active === false, "idle DSP reported active")
-        check(!Player.playing, "the smoke must not start playback")
+        check(!playing, "the smoke must not start playback")
         check(state.output === "file:capture", "the isolated file output was not selected")
         check((state.curve || []).length === 129 && state.curve.every(Number.isFinite), "invalid response curve")
         check(Number.isFinite(state.headroom_db) && state.headroom_db <= 0, "invalid automatic headroom")

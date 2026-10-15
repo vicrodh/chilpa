@@ -44,7 +44,15 @@ Item {
         holding = moving
         holding ? Pulse.hold() : Pulse.release()
     }
-    onMovingChanged: syncPulse()
+    onMovingChanged: {
+        syncPulse()
+        if (active && scene === 4 && !running) {
+            pendingRibbon = null
+            if (ribbonLoader && ribbonLoader.item)
+                ribbonLoader.item.pulseTick(pausedRibbon(), energyHi)
+        }
+    }
+    onRunningChanged: if (running) frozenRibbon = null
     Component.onCompleted: {
         syncPulse()
         try { pendingPack = JSON.parse(feed.packJson) } catch (e) {}
@@ -75,6 +83,13 @@ Item {
     property var pendingPack: null
     property var pendingHeights: null
     property var pendingRibbon: null
+    // Keep one canonical paused image even if the drain delivers a late row.
+    property var frozenRibbon: null
+    function pausedRibbon() {
+        if (frozenRibbon === null)
+            frozenRibbon = feed.ribbonSnapshot()
+        return frozenRibbon
+    }
     property var pendingBars: null
 
     function rhiPack() {
@@ -199,41 +214,33 @@ Item {
     readonly property int renderWidth: Math.max(1, Math.round(width * pixelRatio * renderScale))
     readonly property int renderHeight: Math.max(1, Math.round(height * pixelRatio * renderScale))
 
-    Component {
-        id: linebedScene
-        LineBedScene {
-            fixedColorBufferWidth: root.renderWidth
-            fixedColorBufferHeight: root.renderHeight
-        }
-    }
-
     Loader {
         id: lineBedLoader
         anchors.fill: parent
         active: root.active && root.scene === 5
-        sourceComponent: linebedScene
-        onLoaded: item.pulseTick(root.pendingHeights !== null ? root.pendingHeights : root.feed.linebedHeights)
-    }
-
-    Component {
-        id: plasmaScene
-        PlasmaScene {
+        sourceComponent: LineBedScene {
             fixedColorBufferWidth: root.renderWidth
             fixedColorBufferHeight: root.renderHeight
         }
+        onLoaded: item.pulseTick(root.pendingHeights !== null ? root.pendingHeights : root.feed.linebedHeights)
     }
 
     Loader {
         id: plasmaLoader
         anchors.fill: parent
         active: root.active && root.scene === 1
-        sourceComponent: plasmaScene
+        sourceComponent: PlasmaScene {
+            fixedColorBufferWidth: root.renderWidth
+            fixedColorBufferHeight: root.renderHeight
+        }
         onLoaded: item.pulseTick(root.rhiPack())
     }
 
-    Component {
-        id: ribbonScene
-        Item {
+    Loader {
+        id: ribbonLoader
+        anchors.fill: parent
+        active: root.active && root.scene === 4
+        sourceComponent: Item {
             function pulseTick(f, peak) {
                 ribbonItem.pulseTick(f, peak)
             }
@@ -249,24 +256,9 @@ Item {
                 headerVisible: root.spectralHeaderVisible
             }
         }
-    }
-
-    Loader {
-        id: ribbonLoader
-        anchors.fill: parent
-        active: root.active && root.scene === 4
-        sourceComponent: ribbonScene
         onLoaded: {
-            item.pulseTick(root.feed.ribbonSnapshot(), root.energyHi)
+            item.pulseTick(root.running ? root.feed.ribbonSnapshot() : root.pausedRibbon(), root.energyHi)
             root.pendingRibbon = null
-        }
-    }
-
-    Component {
-        id: tunnelFlowScene
-        TunnelFlowScene {
-            fixedColorBufferWidth: root.renderWidth
-            fixedColorBufferHeight: root.renderHeight
         }
     }
 
@@ -274,7 +266,10 @@ Item {
         id: tunnelFlowLoader
         anchors.fill: parent
         active: root.active && root.scene === 8
-        sourceComponent: tunnelFlowScene
+        sourceComponent: TunnelFlowScene {
+            fixedColorBufferWidth: root.renderWidth
+            fixedColorBufferHeight: root.renderHeight
+        }
         onLoaded: item.pulseTick(root.timeS, root.pendingBars !== null ? root.pendingBars : root.feed.bars)
     }
 }
