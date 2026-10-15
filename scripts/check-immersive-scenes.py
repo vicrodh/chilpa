@@ -64,7 +64,8 @@ def main():
             .replace('"EXPECTED_BACKEND"', json.dumps(arguments.backend)))
         environment = dict(os.environ, XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"),
             XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"),
-            QT_QPA_PLATFORM="xcb", QSG_RHI_BACKEND=arguments.backend, CHILPA_RENDERER=arguments.backend,
+            QT_QPA_PLATFORM="xcb", QT_NO_XDG_DESKTOP_PORTAL="1",
+            QSG_RHI_BACKEND=arguments.backend, CHILPA_RENDERER=arguments.backend,
             CHILPA_QML_SMOKE=str(qml), QT_LOGGING_RULES="qt.qml.connections=false")
         command = ["timeout", "--kill-after=2s", "70s", "dbus-run-session", "--", binary]
         log_path = output / "immersive-scenes.log"
