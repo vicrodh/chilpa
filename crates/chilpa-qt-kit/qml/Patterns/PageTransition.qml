@@ -50,7 +50,7 @@ Item {
         requestedAt = Date.now()
         phase = "acknowledging"
         awaitingFrame = true
-        transition.Window.window?.update()
+        frameFence.arm(generation * 2)
     }
     onRouteChanged: request()
     onSourceComponentChanged: {
@@ -101,7 +101,8 @@ Item {
         current.scroll.enabled = false
         current.sourceComponent = null
         if (!Motion.reduced) reveal.restart()
-        transition.Window.window?.update()
+        if (epoch !== generation) return
+        frameFence.arm(epoch * 2 + 1)
     }
 
     function settleReveal() {
@@ -157,14 +158,17 @@ Item {
             key: second.pageRoute
         }
     }
-    Connections {
-        target: transition.Window.window
-        function onFrameSwapped() {
-            if (transition.phase === "content" && transition.awaitingContentFrame)
-                transition.awaitingContentFrame = false
-            if (!transition.awaitingFrame) return
+    FrameFence {
+        id: frameFence
+        onPresented: token => {
+            const epoch = Math.floor(token / 2)
+            if (epoch !== transition.generation) return
+            if (token % 2) {
+                if (transition.phase === "content") transition.awaitingContentFrame = false
+                return
+            }
+            if (!transition.awaitingFrame || transition.phase !== "acknowledging") return
             transition.awaitingFrame = false
-            const epoch = transition.generation
             transition.acknowledgedFrame(transition.acknowledgedRoute)
             console.info(timing, "navigation: " + transition.acknowledgedRoute.split("\u001f")[1]
                 + " acknowledged in " + (Date.now() - transition.requestedAt) + "ms")

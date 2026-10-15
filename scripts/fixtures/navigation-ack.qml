@@ -21,6 +21,7 @@ Main {
     property double resolvedAt: -1
     property double mountedAt: -1
     property double contentAt: -1
+    property bool rowsArmed: false
     property var oldPage: null
     property bool oldHidden: false
     property bool resolvedAfterFrame: false
@@ -79,10 +80,14 @@ Main {
             if (window.activatedAt >= 0 && window.destination() && host.item) window.mountedAt = Date.now()
         }
     }
+    FrameFence {
+        id: rowsFence
+        onPresented: token => { if (token === 1 && window.rowsArmed) window.contentAt = Date.now() }
+    }
     Connections {
         target: window
         function onFrameSwapped() {
-            if (window.contentAt >= 0 || window.activatedAt < 0 || !window.destination() || !host.item) return
+            if (window.rowsArmed || window.activatedAt < 0 || !window.destination() || !host.item) return
             const view = window.find(host.item, item => item.objectName === "trackListView")
             if (!view || !view.model.ready || !view.model.count) return
             let rows = 0
@@ -91,7 +96,8 @@ Main {
             if (!rows) return
             window.visibleRows = rows
             window.tracks = view.model.count
-            window.contentAt = Date.now()
+            window.rowsArmed = true
+            rowsFence.arm(1)
         }
     }
     TestCase {
@@ -147,7 +153,7 @@ Main {
             check(window.acknowledgedAt >= window.logicalAt, "I present the acknowledgement frame")
             check(window.resolvedAfterFrame, "I resolve the component after the acknowledgement frame")
             check(window.mountedAt >= window.acknowledgedAt, "I mount after acknowledgement")
-            check(window.contentAt >= window.mountedAt, "I measure rows separately from mounting")
+            check(window.contentAt >= window.mountedAt, "I measure confirmed rows separately from mounting")
             check(window.logicalAt - window.injectedAt <= 16, "I acknowledge the injected click logically within 16 ms")
             check(window.acknowledgedAt - window.injectedAt < 150, "I present the click acknowledgement within 150 ms")
             check(window.tracks >= 100 && window.visibleRows > 0, "I present the large record's real rows")
@@ -160,7 +166,7 @@ Main {
                 acknowledged_frame_ms: window.acknowledgedAt - window.activatedAt,
                 component_resolution_ms: window.resolvedAt - window.activatedAt,
                 mounted_ms: window.mountedAt - window.activatedAt,
-                first_rows_frame_ms: window.contentAt - window.activatedAt,
+                confirmed_rows_frame_ms: window.contentAt - window.activatedAt,
                 rows: window.visibleRows, tracks: window.tracks, old_hidden: window.oldHidden,
                 resolved_after_acknowledgement: window.resolvedAfterFrame
             }))

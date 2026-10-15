@@ -7,6 +7,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "qrc:/qt/qml/app/chilpa/folders/qml/Components"
+import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Driving
 import "qrc:/qt/qml/app/chilpa/folders/qml/Patterns"
 
 TitledFlow {
@@ -19,6 +20,7 @@ TitledFlow {
     AlbumDetailModel { id: detail; albumId: added.albumId(0, added.rev) }
     AlbumArtistLine { document: ({artist_html:"<a href=\"0\">Artist</a>",artist_links:[{target:"artist",key:"Artist"}]}) }
     Clipboard {}
+    Driving.FrameSettlement {}
     ShelfSkeleton { width: Metrics.confirmWidth; count: 3 }
     CoverCollage { covers: ["", "", "", ""] }
     QueueProgress { visible: true }

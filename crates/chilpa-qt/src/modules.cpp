@@ -24,9 +24,12 @@ extern const QStaticPlugin qt_static_plugin_app_chilpa_gallery_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_lyrics_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_metadata_plugin();
 
+extern "C" void chilpa_frame_fence_register_qml_type();
+
 extern "C" void chilpa_import_modules()
 {
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_kit_plugin());
+    chilpa_frame_fence_register_qml_type();
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_ambient_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_mini_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_dsp_plugin());
