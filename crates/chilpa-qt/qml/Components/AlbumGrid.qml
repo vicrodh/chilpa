@@ -19,7 +19,20 @@ Item {
     // Grow with the rows instead of scrolling, for a shelf inside a page.
     property bool fitContent: false
     property Flickable viewport: null
-    readonly property real visibleTop: viewport ? viewport.contentY - grid.mapToItem(viewport.contentItem, 0, 0).y : view.contentY
+    readonly property real visibleTop: viewport ? viewport.contentY - mappedTop() : view.contentY
+    function mappedTop() {
+        // I observe each ancestor before mapping through its transforms.
+        for (let item = grid; item && item !== viewport.contentItem; item = item.parent) {
+            item.x
+            item.y
+            item.width
+            item.height
+            item.scale
+            item.rotation
+            item.transformOrigin
+        }
+        return grid.mapToItem(viewport.contentItem, 0, 0).y
+    }
     // How far right of the cards the scrollbar sits: in the middle of the
     // page's margin.
     property real scrollGutter: Metrics.pageGutter

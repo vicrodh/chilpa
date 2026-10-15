@@ -13,6 +13,17 @@ TestCase {
         colors: ["#221725", "#d17655", "#f8dda7"]
         label: "Daily mix"
     }
+    function test_hidden_labels_clear_the_shaped_text_and_restore_the_full_label() {
+        const text = cover.children.find(child => typeof child.text === "string")
+        verify(text)
+        compare(text.text, cover.label)
+        cover.visible = false
+        compare(text.text, "")
+        cover.label = "A complete title with CJK 日本語 and accents áé"
+        compare(text.text, "")
+        cover.visible = true
+        compare(text.text, cover.label)
+    }
     function test_color_moves_only_while_visible() {
         const initial = cover.phase
         tryVerify(() => cover.phase > initial, 500)

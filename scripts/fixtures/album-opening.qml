@@ -94,9 +94,24 @@ ApplicationWindow {
         for (let i = 0; i < view.count; i++) total += view.itemAtIndex(i)?.contentBuilds || 0
         return total
     }
+    function recommendationModels(item, models) {
+        if (!item) return
+        if (item.kind === "related" || item.kind === "sameArtist") models.push(item)
+        const content = item.data
+        if (content && typeof content !== "function")
+            for (let i = 0; i < content.length; i++) recommendationModels(content[i], models)
+    }
     function check() {
         const page = host.item, view = find(page, "trackListView")
         if (phase === 0) {
+            const recommendations = find(page, "albumRecommendationsLoader")
+            const models = []
+            if (recommendations?.status === Loader.Ready) recommendationModels(recommendations.item, models)
+            if (!models.some(model => model.kind === "related") || !models.some(model => model.kind === "sameArtist") || models.some(model => !model.ready)) {
+                console.log("SMOKE album recommendations pending sample=" + sample + " status=" + recommendations?.status + " models=" + models.length)
+                next.restart(); return
+            }
+            console.log("SMOKE album recommendations ready sample=" + sample + " status=" + recommendations.status + " models=" + models.map(model => model.kind + ":" + model.albums).join(","))
             const builds = contentBuilds(view)
             console.log("SMOKE album after-first-frame=" + sample + " worst-gui-gap=" + worstAfter + "ms content-builds=" + builds)
             if (worstAfter > 250) failures.push("record blocked the GUI for " + worstAfter + "ms after its first frame")

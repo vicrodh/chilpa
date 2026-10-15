@@ -38,7 +38,6 @@ crates/chilpa-qt/qml/Components/QueueRow.qml
 crates/chilpa-qt/qml/Components/RatingButton.qml
 crates/chilpa-qt/qml/Components/RatingStars.qml
 crates/chilpa-qt/qml/Components/SearchHit.qml
-crates/chilpa-qt/qml/Components/SectionHeader.qml
 crates/chilpa-qt/qml/Components/SeekBar.qml
 crates/chilpa-qt/qml/Components/SettingsRow.qml
 crates/chilpa-qt/qml/Components/SourceAbout.qml

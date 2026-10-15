@@ -3,6 +3,7 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // A shelf of records inside a page: a title and one row of the same grid as
 // every other, so a record on a shelf has all a record has anywhere: its

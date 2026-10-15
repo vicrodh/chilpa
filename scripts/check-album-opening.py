@@ -15,6 +15,10 @@ with tempfile.TemporaryDirectory(prefix="chilpa-album-opening-") as directory:
     for name in ("config", "cache", "runtime", "data/chilpa"):
         (profile / name).mkdir(parents=True)
     (profile / "runtime").chmod(0o700)
+    data_home = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share")
+    fonts = data_home / "fonts"
+    if fonts.is_dir():
+        (profile / "data/fonts").symlink_to(fonts.resolve(), target_is_directory=True)
     source = sqlite3.connect(Path(sys.argv[2]).resolve().as_uri() + "?mode=ro", uri=True)
     target = sqlite3.connect(profile / "data/chilpa/library.db")
     source.backup(target)
@@ -37,7 +41,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-album-opening-") as directory:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(result.stdout)
     print("\n".join(line for line in result.stdout.splitlines() if "SMOKE" in line or "qrc:" in line or "album-worker" in line))
-    errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "binding loop", "QQmlApplicationEngine failed", "is not a type", "Type ")
+    errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "Binding loop", "QQmlApplicationEngine failed", "is not a type", "Type ", "Expected token", "SyntaxError", "Unable to assign")
     preference = re.search(r"SMOKE album preference persisted album=(\d+) version=(\d+)", result.stdout)
     if preference:
         copied = sqlite3.connect(profile / "data/chilpa/library.db")
@@ -45,5 +49,5 @@ with tempfile.TemporaryDirectory(prefix="chilpa-album-opening-") as directory:
         copied.close()
         if not stored:
             sys.exit("The version preference did not persist after its page was destroyed.")
-    if result.returncode or any(error in result.stdout for error in errors) or "album opening completed samples=6 failures=0" not in result.stdout:
+    if result.returncode or any(error.casefold() in result.stdout.casefold() for error in errors) or "album opening completed samples=6 failures=0" not in result.stdout:
         sys.exit(1)

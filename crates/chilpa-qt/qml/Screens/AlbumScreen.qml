@@ -152,7 +152,9 @@ Flickable {
         }
 
         Loader {
+            objectName: "albumRecommendationsLoader"
             width: parent.width
+            height: item ? item.implicitHeight : 1
             active: page.presented && detail.found
             asynchronous: true
             property double albumId: detail.selectedId
