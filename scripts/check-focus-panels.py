@@ -80,10 +80,12 @@ def verify_images(output, samples):
             raise ValueError(f"{direction}: fewer than three captures during actual motion")
         for frame in frames:
             picture = Image.open(output / frame["file"]).convert("RGB")
-            x, y = round(frame["x"]), round(frame["y"])
+            # The async grab can cross the front-cover handoff after sampling
+            # metadata. The deck center stays covered by a native artwork.
+            x, y = picture.width // 2, picture.height // 2
             probe = picture.crop((x - 3, y - 3, x + 4, y + 4))
             color = ImageStat.Stat(probe).mean
-            channel = frame["channel"]
+            channel = max(range(3), key=lambda index: color[index])
             if color[channel] < 60 or color[channel] - max(color[i] for i in range(3) if i != channel) < 35:
                 raise ValueError(f"{direction}: missing artwork at {frame['file']}: {color}")
         first = Image.open(output / frames[0]["file"]).convert("RGB")
@@ -100,7 +102,12 @@ def verify_images(output, samples):
     for name in ("lyrics-line.png", "lyrics-follow.png"):
         if max(ImageStat.Stat(Image.open(output / name).convert("RGB")).stddev) < 1:
             raise ValueError(f"{name}: empty lyric capture")
-    measurements["lyrics"] = dict(word_progress=progress, captures=4)
+    composed = Image.open(output / "lyrics-word-a-composited.png").convert("RGBA")
+    if composed.getchannel("A").getextrema() != (255, 255):
+        raise ValueError("composed lyric capture is not opaque")
+    if composed.getpixel((0, 0))[:3] != (16, 24, 32):
+        raise ValueError("composed lyric capture has the wrong background")
+    measurements["lyrics"] = dict(word_progress=progress, captures=4, opaque_composition=True)
     return measurements
 
 
@@ -149,6 +156,7 @@ def main():
             print("\n".join(line for line in transcript.splitlines() if "SMOKE" in line or "qrc:" in line))
             capture = profile / "runtime/chilpa-capture.raw"
             report.update(exit_code=result.returncode, captured_bytes=capture.stat().st_size if capture.exists() else 0,
+                          capture_scope="Final sink opening; previous truncates earlier PCM capture",
                           log=str(log_path), fixture_sha256=digest(fixture))
             errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "Binding loop", "Unable to assign", "is not a type",
                       "QQmlApplicationEngine failed", "Failed to build graphics pipeline state", "Failed to link shader program",

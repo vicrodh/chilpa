@@ -23,6 +23,7 @@ Window {
     property string phase: "startup"
     property int ticks: 0
     property int phaseTicks: 0
+    property double segmentStarted: 0
     property var remembered: ({})
     property bool capturing: false
     property int serial: 0
@@ -37,6 +38,7 @@ Window {
     property var lyricSpot: null
     property bool sawGlide: false
 
+    Rectangle { anchors.fill: parent; color: window.color; z: -1 }
     TrackListModel {
         id: queueRows
         kind: "queue"
@@ -90,7 +92,17 @@ Window {
         throw new Error(message)
     }
     function check(value, message) { if (!value) fail(message) }
-    function enter(value) { phase = value; phaseTicks = 0 }
+    function enter(value) { phase = value; phaseTicks = 0; segmentStarted = 0 }
+    function audioReady(index) {
+        if (!Player.playing || Player.paused || Player.path !== trackPaths[index]) {
+            segmentStarted = 0
+            return false
+        }
+        if (!segmentStarted) segmentStarted = Date.now()
+        // Previous reopens and truncates the capture sink. Give every actual
+        // playback segment enough paced PCM, including the final opening.
+        return Date.now() - segmentStarted >= 1250
+    }
     function child(item, name) {
         if (item.objectName === name) return item
         for (const nested of item.children || []) {
@@ -146,8 +158,16 @@ Window {
         capturing = true
         check(column.grabToImage(result => {
             check(result.saveToFile(outputDirectory + "/" + name + ".png"), "cannot save lyric capture")
-            capturing = false
-            enter(nextPhase)
+            if (name === "lyrics-word-a") {
+                check(window.contentItem.grabToImage(composed => {
+                    check(composed.saveToFile(outputDirectory + "/lyrics-word-a-composited.png"), "cannot save composed lyric capture")
+                    capturing = false
+                    enter(nextPhase)
+                }), "cannot request composed lyric capture")
+            } else {
+                capturing = false
+                enter(nextPhase)
+            }
         }), "cannot request lyric capture")
     }
     function document() {
@@ -202,9 +222,8 @@ Window {
                 ListenList.command("play", "1", "")
                 window.enter("playing")
             } else if (window.phase === "playing") {
-                if (!Player.playing || Player.paused || Player.path !== window.trackPaths[0]) return
+                if (!window.audioReady(0)) return
                 if (!window.trackIds.every(id => window.cover(id) && window.cover(id).ready)) return
-                if (window.phaseTicks < 30) return
                 window.remember()
                 window.check(queueRows.count === 3 && historyRows.count === 0, "initial native queue/history mismatch")
                 window.resetBaseline = [window.queueResets, window.historyResets]
@@ -212,6 +231,7 @@ Window {
                 window.enter("next")
             } else if (window.phase === "next" || window.phase === "back") {
                 const forward = window.phase === "next", index = forward ? 1 : 0
+                if (!window.audioReady(index)) return
                 if (Player.path !== window.trackPaths[index] || window.cover(window.trackIds[index]).destination !== 0 || window.moving()) return
                 window.stable()
                 window.check(window.queueResets > window.resetBaseline[0] && window.historyResets > window.resetBaseline[1],
