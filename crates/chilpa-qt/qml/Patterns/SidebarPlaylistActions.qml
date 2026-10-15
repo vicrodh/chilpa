@@ -90,8 +90,8 @@ Item {
                     {text: I18n.tr("Delete", I18n.rev), action: "confirmPlaylist"}, {text: I18n.tr("Cancel", I18n.rev)}]
                 menu.open(); break
             case "confirmPlaylist": Playlists.remove(row.playlistId); break
-            case "open": Playlists.open(row.playlistId); break
-            case "edit": if (row.local) editDialog.show(row.playlistId); else Playlists.open(row.playlistId); break
+            case "open": actions.sidebar.openPlaylist(row.playlistId); break
+            case "edit": if (row.local) editDialog.show(row.playlistId); else actions.sidebar.openPlaylist(row.playlistId); break
             case "hide": Playlists.setVisible(row.playlistId, false); break
             case "moveFolder": folderDialog.move(row); break
             case "editNativeFolder": folderDialog.showNative(row); break

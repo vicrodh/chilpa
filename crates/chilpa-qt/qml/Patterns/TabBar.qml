@@ -17,6 +17,7 @@ import app.chilpa.controls
 // click maximizes it.
 Item {
     id: bar
+    property var openSource: function(action, id, text) { Navigation.goKey("source", id) }
     // The menu's Quit, which the window's controls ask about first.
     signal quitAsked()
 
@@ -96,6 +97,7 @@ Item {
         }
         // The sidebar's destinations, while it is closed.
         NavMenu {
+            openSource: bar.openSource
             visible: SettingsModel.sidebarMode === "closed"
         }
         Rectangle {

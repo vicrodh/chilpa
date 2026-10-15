@@ -18,7 +18,7 @@ Text {
 
     // Which of its artists is at `x`: the first is 0, and between two of
     // them there is none.
-    function placeAt(x) {
+    function placeAt(x, credit = line.credit) {
         const stated = Navigation.creditStops(credit)
         const stops = stated === "" ? [] : stated.split(",").map(Number)
         for (let i = 0; i + 1 < stops.length; i += 2) {
@@ -28,20 +28,27 @@ Text {
         return stops.length === 0 ? 0 : -1
     }
 
+    function openCredit(target, x) {
+        if (target.parentSource !== "") {
+            Sources.command("playing_parent", "", "")
+            Navigation.goKey("source", target.parentSource)
+            return
+        }
+        const route = Sources.artistKey(target.albumId, target.trackPath)
+        if (route) Navigation.goKey("source", route)
+        else if (target.entry !== "") Navigation.goKey("sourceEntry", target.entry)
+        else Navigation.openCredit(target.credit, line.placeAt(x, target.credit))
+    }
+
     text: credit
     elide: Text.ElideRight
 
     FontMetrics { id: metrics; font: line.font }
     HoverHandler { id: hover; enabled: line.credit !== ""; cursorShape: Qt.PointingHandCursor }
     TapHandler { enabled: line.credit !== ""; onTapped: (point) => {
-        if (line.parentSource !== "") {
-            Sources.command("playing_parent", "", "")
-            Navigation.goKey("source", line.parentSource)
-            return
-        }
-        const route = Sources.artistKey(line.albumId, line.trackPath)
-        if (route) Navigation.goKey("source", route)
-        else if (line.entry !== "") Navigation.goKey("sourceEntry", line.entry)
-        else Navigation.openCredit(line.credit, line.placeAt(point.position.x))
+        const target = {parentSource: line.parentSource, albumId: line.albumId, trackPath: line.trackPath, entry: line.entry, credit: line.credit}
+        const window = line.Window.window
+        if (typeof window?.deferNavigation === "function") window.deferNavigation(line.openCredit, target, point.position.x)
+        else line.openCredit(target, point.position.x)
     } }
 }

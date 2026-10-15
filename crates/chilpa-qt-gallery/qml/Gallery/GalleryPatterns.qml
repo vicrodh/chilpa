@@ -5,6 +5,7 @@ import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as QueueTools
+import "qrc:/qt/qml/app/chilpa/controls/qml/Primitives" as Driving
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
@@ -17,11 +18,13 @@ TitledFlow {
     id: section
     title: "Patterns"
 
+    Driving.NavigationTasks {}
     TrackListModel { id: playlistTracks; kind: "mostPlayed"; limit: 3 }
     PlaylistEditDialog { id: playlistEditor }
     PlaylistFolderDialog { id: folderEditor }
     SidebarPlaylistActions { id: playlistActions; sidebar: sampleSidebar }
     ServerSetupDialog { id: serverSetup }
+    QueueTools.SettingsFocus { section: "gallery"; viewport: null; model: null; highlight: null }
     AnalysisUi.AnalysisInventoryDialog { id: inventoryPreview }
     CastPicker { id: castPreview; preview: true }
     StorageSettingsActions { current: false; visible: false }

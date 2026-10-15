@@ -21,23 +21,20 @@ Item {
     readonly property var doc: JSON.parse(MetadataEditor.document(MetadataEditor.rev))
     readonly property real contentWidth: width - Metrics.contentX * 2 // derived: padding on both sides
     property bool saving: false
+    property double albumId: 0
 
     function ensure() {
-        if (Navigation.screen !== "metadata" || Navigation.routeId <= 0)
+        if (albumId <= 0)
             return
-        if (doc.state !== "closed" && doc.album_id === Navigation.routeId)
+        if (doc.state !== "closed" && doc.album_id === page.albumId)
             return
         // One record is open at a time: another with changes asks first.
         if (doc.state === "ready" && doc.dirty)
             switchRecord.open()
         else
-            MetadataEditor.openAlbum(Navigation.routeId, 0)
+            MetadataEditor.openAlbum(page.albumId, 0)
     }
     Component.onCompleted: ensure()
-    Connections {
-        target: Navigation
-        function onRouteIdChanged() { page.ensure() }
-    }
 
     onDocChanged: {
         if (doc.state === "saving")
@@ -71,7 +68,7 @@ Item {
         if (Navigation.canBack)
             Navigation.back()
         else
-            Navigation.go("album", Navigation.routeId)
+            Navigation.go("album", page.albumId)
     }
 
     MetadataHeader {
@@ -101,7 +98,7 @@ Item {
         PillButton {
             visible: page.doc.state === "closed"
             text: I18n.tr("Open it again", I18n.rev)
-            onClicked: MetadataEditor.openAlbum(page.doc.album_id > 0 ? page.doc.album_id : Navigation.routeId, 0)
+            onClicked: MetadataEditor.openAlbum(page.doc.album_id > 0 ? page.doc.album_id : page.albumId, 0)
         }
     }
 
@@ -153,7 +150,7 @@ Item {
         message: I18n.trArgs("“{}” has changes that were not saved. Opening this record loses them.", [(page.doc.album || []).length > 0 ? page.doc.album[0].value : ""], I18n.rev)
         confirmText: I18n.tr("Discard", I18n.rev)
         destructive: true
-        onConfirmed: MetadataEditor.openAlbum(Navigation.routeId, 0)
+        onConfirmed: MetadataEditor.openAlbum(page.albumId, 0)
         onDismissed: Navigation.go("metadata", page.doc.album_id)
     }
     ConfirmDialog {

@@ -23,6 +23,11 @@ Item {
     readonly property bool busy: !!state.busy || !!document.pending
     property bool restored: false
     property string previousPhase: ""
+    function openPlaylist(id) {
+        const window = page.Window.window
+        if (typeof window?.deferNavigation === "function") window.deferNavigation(Playlists.open, id)
+        else Playlists.open(id)
+    }
     onStateChanged: {
         if (!restored && (state.targets || []).length > 0) { selected = state.targets.slice(); restored = true }
         if (state.phase === "done" && previousPhase !== "done") { filter = "unmatched"; offset = 0; send("status", {filter: filter, offset: 0}) }
@@ -124,7 +129,7 @@ Item {
             Column { required property var modelData; width: summary.width; spacing: Metrics.gap4
             Text { width: parent.width; wrapMode: Text.Wrap; color: Theme.color.textPrimary; text: page.destinationName(modelData.target) + ": " + I18n.trArgs("{} written · {} unmatched · {} duplicates", [String(modelData.written), String(modelData.unmatched), String(modelData.duplicates)], I18n.rev) + (modelData.error ? "\n" + modelData.error : "") }
             Flow { width: parent.width; spacing: Metrics.gap8; property var output: parent.modelData
-                Repeater { model: parent.output.parts || []; PillButton { required property var modelData; property var output: parent.output; text: modelData.title; onClicked: { if (output.target === "local" || output.target === "mixed") Playlists.open(Number(modelData.ref)); else Navigation.goKey("source", output.target + " native:" + modelData.ref) } } }
+                Repeater { model: parent.output.parts || []; PillButton { required property var modelData; property var output: parent.output; text: modelData.title; onClicked: { if (output.target === "local" || output.target === "mixed") page.openPlaylist(Number(modelData.ref)); else Navigation.goKey("source", output.target + " native:" + modelData.ref) } } }
             }
             }
         }

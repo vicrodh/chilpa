@@ -15,11 +15,13 @@ TestCase {
         id: host
         anchors.fill: parent
         active: false
-        sourceComponent: MetadataScreen {}
+        property double pageAlbum: 0
+        sourceComponent: MetadataScreen { albumId: host.pageAlbum }
     }
 
     function init() {
         host.active = false
+        host.pageAlbum = 0
         MetadataEditor.opened = []
         MetadataEditor.show({ state: "closed", album_id: 0, dirty: false, error: "" })
         Navigation.page = ""
@@ -28,8 +30,11 @@ TestCase {
     function test_it_opens_the_record_of_its_route() {
         Navigation.screen = "metadata"
         Navigation.routeId = 7
+        host.pageAlbum = 7
         host.active = true
         compare(MetadataEditor.opened, [7])
+        Navigation.routeId = 8
+        compare(MetadataEditor.opened, [7], "I keep the mounted editor on its own record")
     }
 
     function test_on_another_route_it_opens_nothing() {
@@ -42,6 +47,7 @@ TestCase {
     function test_a_save_that_lands_goes_to_the_record() {
         Navigation.screen = "metadata"
         Navigation.routeId = 7
+        host.pageAlbum = 7
         host.active = true
         MetadataEditor.show({ state: "saving", album_id: 7, dirty: true, error: "" })
         MetadataEditor.show({ state: "closed", album_id: 7, dirty: false, error: "" })

@@ -1,7 +1,6 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.controls
-import app.chilpa.folders
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as Driving
 import "qrc:/qt/qml/app/chilpa/ambient/qml/Patterns" as Backdrop
@@ -24,6 +23,7 @@ Window {
     // aside while it is open and come back as they were when it closes,
     // unless one of them is opened in the meantime.
     property bool panelAside: false
+    function deferNavigation(action, ...args) { sidebar.deferNavigation(function() { action.apply(null, args) }) }
 
     // As big as it was left, and maximized if it was (design/04 Window).
     width: WindowPlace.width
@@ -70,6 +70,7 @@ Window {
     }
 
     TabBar {
+        openSource: sidebar.openSource
         x: Metrics.spaceWindow
         width: window.width - Metrics.spaceWindow * 2 // derived: a margin on each side
         controlsRoom: systemControls.room
@@ -91,8 +92,8 @@ Window {
     }
 
     Connections {
-        target: Navigation
-        function onScreenChanged() { window.panelAside = Navigation.screen === "metadata" }
+        target: host
+        function onPreparingRoute() { window.panelAside = Navigation.screen === "metadata" }
     }
 
     PlayerBar {
@@ -132,6 +133,7 @@ Window {
     // Above the content and the tab bar, so its grip is never covered.
     SidebarFrame {
         id: sidebar
+        router: host
         z: 2
         anchors.fill: parent
         window: window
@@ -147,16 +149,10 @@ Window {
     Driving.WindowControls { id: driving; window: window }
     Mini.MiniHost { window: window; controls: driving }
     Overlay.ImmersiveView { anchors.fill: parent; z: 6; window: window; controls: driving }
-
-    // The folders object watches the scans Settings starts, so it exists from
-    // the start and not from the first time its page opens.
-    readonly property int folders: LibraryFolders.count
-
     // Nothing starts with the keyboard: the search field only takes it when
     // it is clicked or asked for.
     Component.onCompleted: {
         contentItem.forceActiveFocus()
-        panelAside = Navigation.screen === "metadata"
         console.info("main window constructed")
     }
 

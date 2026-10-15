@@ -20,6 +20,11 @@ Column {
     readonly property real farthest: Math.max(0, rail.contentWidth - rail.width)
     readonly property real step: CardLayout.columns(width) * (CardLayout.cardWidth + Metrics.gridGap) // derived: one viewport of playlist cards
     spacing: Metrics.gap8
+    function openPlaylist(id) {
+        const window = shelf.Window.window
+        if (typeof window?.deferNavigation === "function") window.deferNavigation(Playlists.open, id)
+        else Playlists.open(id)
+    }
     SectionHeader {
         width: parent.width; title: shelf.entry.title || ""
         paged: shelf.farthest > 0
@@ -59,7 +64,7 @@ Column {
                             anchors.centerIn: parent; visible: !cover.ready && !(modelData.covers || []).length
                             glyph: Icons.playlist; size: Metrics.iconPlay; color: Theme.color.textSecondary
                         }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Playlists.open(modelData.id) }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shelf.openPlaylist(modelData.id) }
                         IconButton {
                             anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: Metrics.gap8
                             round: true; glyph: Icons.playerPlayFilled; filled: true

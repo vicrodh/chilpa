@@ -14,7 +14,8 @@ QtObject {
     function albumLibraries(rev) { return JSON.stringify(state.albumLibraries || []) }
     function trackLibraries(rev) { return JSON.stringify(state.trackLibraries || []) }
     function homeLibraries(rev) { return JSON.stringify(state.homeLibraries || []) }
-    function refresh() {}
+    property int refreshCount: 0
+    function refresh() { refreshCount++ }
     // Pages by key, as a test sets them.
     property var pages: ({})
     function page(key, rev) { return pages[key] || JSON.stringify({ music: false }) }

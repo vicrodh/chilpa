@@ -10,6 +10,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 // them, which lead to their manager.
 Rectangle {
     id: button
+    property var openSource: function(action, id, text) { Navigation.goKey("source", id) }
 
     readonly property var panels: JSON.parse(Sources.snapshot || "{}").panels || []
     readonly property var places: [
@@ -74,8 +75,8 @@ Rectangle {
             const place = button.places[index]
             if (!place.key) Navigation.go(place.screen, 0)
             else {
-                if (!place.music) Sources.command("home", place.key, "")
-                Navigation.goKey(place.screen, place.key)
+                if (!place.music) button.openSource("home", place.key, "")
+                else Navigation.goKey(place.screen, place.key)
             }
         }
     }
