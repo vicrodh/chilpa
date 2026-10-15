@@ -10,8 +10,18 @@ Text {
 
     width: size
     height: size
-    text: glyph
-    font.family: iconFamily !== "" ? iconFamily : filled ? Icons.filled : Icons.outline
+    text: ""
+    readonly property string desiredFamily: iconFamily !== "" ? iconFamily : filled ? Icons.filled : Icons.outline
+    function updateGlyph() {
+        if (desiredFamily === "" || text === glyph && font.family === desiredFamily) return
+        // I change the family without shaping either glyph in the other font.
+        text = ""
+        font.family = desiredFamily
+        text = glyph
+    }
+    onGlyphChanged: Qt.callLater(updateGlyph)
+    onDesiredFamilyChanged: Qt.callLater(updateGlyph)
+    Component.onCompleted: updateGlyph()
     font.pixelSize: size
     color: Theme.color.textSecondary
     horizontalAlignment: Text.AlignHCenter

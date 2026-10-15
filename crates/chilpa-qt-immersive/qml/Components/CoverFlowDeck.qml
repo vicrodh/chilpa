@@ -45,14 +45,22 @@ Item {
     function snapshot() {
         const rows = []
         const playing = ahead ? ahead.playingRow() : -1
-        const cursor = Math.max(0, playing)
-        const center = playing >= 0 ? record(ahead, cursor, 0, false) : null
+        const past = behind && typeof behind.playingRow === "function" ? behind.playingRow() : -1
+        // I can see the current key before either model reloads.
+        // I anchor the same fan in history until the queue catches up.
+        const fromHistory = playing < 0 && past >= 0
+        const cursor = fromHistory ? past : Math.max(0, playing)
+        const center = fromHistory ? record(behind, cursor, 0, true) : playing >= 0 ? record(ahead, cursor, 0, false) : null
         rows.push(center || {identity: "path:" + currentPath, art: currentArt, row: -1, offset: 0, history: false})
         if (rows[0].art.toString() === "" && currentArt.toString() !== "") rows[0].art = currentArt
         for (let i = 1; i <= Stage.flowNeighbours; ++i) {
-            const next = record(ahead, cursor + i, i, false)
+            const next = fromHistory
+                ? i <= cursor ? record(behind, cursor - i, i, true) : record(ahead, i - cursor - 1, i, false)
+                : record(ahead, cursor + i, i, false)
             if (next) rows.push(next)
-            const previous = cursor >= i ? record(ahead, cursor - i, -i, false) : record(behind, i - cursor - 1, -i, true)
+            const previous = fromHistory ? record(behind, cursor + i, -i, true)
+                : cursor >= i ? record(ahead, cursor - i, -i, false)
+                : record(behind, i - cursor - 1 + (past >= 0 ? past + 1 : 0), -i, true)
             if (previous) rows.push(previous)
         }
         return rows
@@ -61,6 +69,11 @@ Item {
         const result = []
         for (let i = 0; i < pool.count; ++i) result.push(pool.itemAt(i))
         return result
+    }
+    function reuseRank(card) {
+        if (card.identity === "") return 0
+        if (!card.occupied) return 1
+        return card.identity.startsWith("path:") ? 2 : 3
     }
     function reconcile() {
         if (!live || !pool.count) return
@@ -72,8 +85,9 @@ Item {
         const matches = rows.map(row => {
             let match = null
             for (const card of cards) {
-                if (!card.occupied || card.identity !== row.identity || used.indexOf(card) >= 0) continue
-                if (!match || Math.abs(card.destination - row.offset - shift) < Math.abs(match.destination - row.offset - shift)) match = card
+                if (card.identity !== row.identity || used.indexOf(card) >= 0) continue
+                if (!match || card.occupied && !match.occupied || card.occupied === match.occupied
+                    && Math.abs(card.destination - row.offset - shift) < Math.abs(match.destination - row.offset - shift)) match = card
             }
             if (match) used.push(match)
             return match
@@ -82,7 +96,7 @@ Item {
             const row = rows[i]
             let card = matches[i]
             if (!card) {
-                card = cards.filter(c => used.indexOf(c) < 0).sort((a, b) => Math.abs(b.offset) - Math.abs(a.offset))[0]
+                card = cards.filter(c => used.indexOf(c) < 0).sort((a, b) => reuseRank(a) - reuseRank(b) || Math.abs(b.offset) - Math.abs(a.offset))[0]
                 used.push(card)
                 card.occupied = false
                 card.identity = row.identity

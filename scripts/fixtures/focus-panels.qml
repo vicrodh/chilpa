@@ -38,6 +38,30 @@ Window {
     property real firstProgress: 0
     property var lyricSpot: null
     property bool sawGlide: false
+    property int mixedFrames: 0
+    property int mixedCaptures: 0
+    property bool replayingSnapshot: false
+    component RetainedRows: QtObject {
+        property var entries: []
+        readonly property int count: entries.length
+        signal modelReset()
+        signal dataChanged()
+        function playingRow() {
+            const id = window.trackIds[window.trackPaths.indexOf(Player.path)]
+            return entries.findIndex(row => row.trackId === id)
+        }
+        function index(row, column) { return row }
+        function data(row, role) { return role === 269 ? entries[row].trackId : entries[row].art }
+        function play(row) { window.fail("the capture fixture does not navigate retained snapshots") }
+    }
+    RetainedRows { id: retainedAhead }
+    RetainedRows { id: retainedBehind }
+    function retainRows(model) {
+        return Array.from({length:model.count}, (_, row) => {
+            const at = model.index(row, 0)
+            return {trackId:model.data(at, 269),art:model.data(at, 271)}
+        })
+    }
 
     Rectangle { anchors.fill: parent; color: window.color; z: -1 }
     TrackListModel {
@@ -126,8 +150,13 @@ Window {
     }
     function stable() {
         for (const id of trackIds) {
-            const before = remembered[id], card = cover(id)
-            check(card === before.card, "model reset replaced the cover instance for " + id)
+            const before = remembered[id], card = deck.covers().find(item => item.identity === "track:" + id)
+            if (card !== before.card) console.log("SMOKE focus identity state " + JSON.stringify({phase:phase,track:id,
+                path:Player.path,playingRow:queueRows.playingRow(),ahead:queueRows.count,behind:historyRows.count,
+                snapshot:deck.snapshot(),cards:deck.covers().map(item => ({identity:item.identity,occupied:item.occupied,offset:item.offset,destination:item.destination}))}))
+            check(before.card.identity === "track:" + id && card === before.card,
+                "model reset recycled the cached cover owner for " + id)
+            check(card.occupied, "a transport frame hid the retained cover for " + id)
             const tile = child(card, "flowArtwork"), decoded = image(tile)
             check(tile === before.tile && decoded === before.image, "model reset replaced an Image for " + id)
             check(tile.ready && decoded.status === Image.Ready, "loaded image blinked or restarted for " + id)
@@ -138,19 +167,24 @@ Window {
     }
     function moving() { return trackIds.some(id => Math.abs(cover(id).offset - cover(id).destination) > 0.01) }
     function sampleMotion() {
-        if (capturing || Date.now() - lastSample < 38) return
+        if (capturing || !replayingSnapshot && Date.now() - lastSample < 38) return
         const cards = trackIds.map(id => cover(id)).sort((a, b) => Math.abs(a.offset) - Math.abs(b.offset))
         const top = cards[0]
         const point = top.mapToItem(deck, top.width / 2, top.height / 2)
         const index = trackIds.findIndex(id => top.identity === "track:" + id)
         const record = {phase:phase, file:phase + "-" + (++serial) + ".png", x:point.x, y:point.y,
-                        channel:index, offset:top.offset, destination:top.destination, identity:top.identity}
+                        channel:index, offset:top.offset, destination:top.destination, identity:top.identity,
+                        moving:window.moving(), playingRow:deck.ahead.playingRow(), historyPlayingRow:deck.behind.playingRow(),
+                        injected_snapshot_gap:window.replayingSnapshot}
         capturing = true
         lastSample = Date.now()
         check(deck.grabToImage(result => {
             check(result.saveToFile(outputDirectory + "/" + record.file), "cannot save animation capture")
-            if (record.phase === "next") ++nextSamples
-            else ++backSamples
+            if (record.injected_snapshot_gap) ++mixedCaptures
+            if (record.moving) {
+                if (record.phase === "next") ++nextSamples
+                else ++backSamples
+            }
             console.log("SMOKE focus sample " + JSON.stringify(record))
             capturing = false
         }), "cannot request animation capture")
@@ -200,9 +234,22 @@ Window {
         running: window.phase === "next" || window.phase === "back"
         onTriggered: {
             window.stable()
-            const target = window.phase === "next" ? window.trackIds[1] : window.trackIds[0]
-            if (window.cover(target).destination !== 0) return
-            if (window.moving()) window.sampleMotion()
+            if (window.replayingSnapshot && Player.path === window.trackPaths[0]) {
+                if (window.mixedFrames === 0) console.log("SMOKE focus replay state " + JSON.stringify({playingRow:deck.ahead.playingRow(),
+                    historyPlayingRow:deck.behind.playingRow(),center:deck.snapshot()[0].identity,injected_snapshot_gap:true}))
+                window.check(deck.ahead.playingRow() === -1 && deck.behind.playingRow() === 0,
+                    "the declared snapshot replay did not reproduce the mixed current key")
+                window.check(deck.snapshot()[0].identity === "track:" + window.trackIds[0], "mixed history did not anchor the existing previous cover")
+                if (++window.mixedFrames >= 8) {
+                    const poses = window.trackIds.map(id => window.cover(id).offset)
+                    deck.ahead = queueRows; deck.behind = historyRows; deck.reconcile()
+                    window.check(window.trackIds.every((id, i) => window.cover(id).offset === poses[i]), "native model arrival jumped a cover pose")
+                    window.replayingSnapshot = false
+                }
+            }
+            // I sample every transport frame, including mixed snapshots before
+            // the new center reaches its destination.
+            window.sampleMotion()
         }
     }
     Timer {
@@ -247,6 +294,12 @@ Window {
                 window.check(window.trackIds.every((id, i) => window.cover(id).destination === i - index), "settled native cover destinations differ")
                 if (forward) {
                     window.resetBaseline = [window.queueResets, window.historyResets]
+                    // I replay real native rows for eight Back frames to make
+                    // delayed delivery deterministic; playback remains native.
+                    retainedAhead.entries = window.retainRows(queueRows)
+                    retainedBehind.entries = window.retainRows(historyRows)
+                    deck.ahead = retainedAhead; deck.behind = retainedBehind
+                    window.replayingSnapshot = true
                     Player.previous()
                     window.enter("back")
                 } else {
@@ -349,7 +402,9 @@ Window {
                 window.check(window.sawGlide, "adjacent lyric change did not glide")
                 window.captureLyrics("lyrics-follow", "done")
             } else if (window.phase === "done") {
-                console.log("SMOKE focus evidence " + JSON.stringify({native_models:true, native_transport:true,
+                window.check(window.mixedFrames === 8 && window.mixedCaptures > 0, "mixed snapshot frames were not captured")
+                console.log("SMOKE focus evidence " + JSON.stringify({native_models:true, native_transport:true, injected_snapshot_gap:true, snapshot_gap_frames:window.mixedFrames,
+                    snapshot_gap_captures:window.mixedCaptures, native_models_scope:"Next and restored Back; first eight Back frames replay real native rows",
                     preserved_images:window.trackIds.length, transition_model_resets:window.transitionResets,
                     reset_scope:"Native transport changes queue/history; reset timing is not asserted during animation",
                     next_frames:window.nextSamples,

@@ -76,7 +76,8 @@ def verify_images(output, samples):
     measurements = {}
     for direction in ("next", "back"):
         frames = [row for row in samples if row["phase"] == direction]
-        if len(frames) < 3:
+        moving = [row for row in frames if row.get("moving")]
+        if len(moving) < 3:
             raise ValueError(f"{direction}: fewer than three captures during actual motion")
         for frame in frames:
             picture = Image.open(output / frame["file"]).convert("RGB")
@@ -88,12 +89,12 @@ def verify_images(output, samples):
             channel = max(range(3), key=lambda index: color[index])
             if color[channel] < 60 or color[channel] - max(color[i] for i in range(3) if i != channel) < 35:
                 raise ValueError(f"{direction}: missing artwork at {frame['file']}: {color}")
-        first = Image.open(output / frames[0]["file"]).convert("RGB")
-        last = Image.open(output / frames[-1]["file"]).convert("RGB")
+        first = Image.open(output / moving[0]["file"]).convert("RGB")
+        last = Image.open(output / moving[-1]["file"]).convert("RGB")
         motion = sum(ImageStat.Stat(ImageChops.difference(first, last)).mean)
         if motion < 0.1:
             raise ValueError(f"{direction}: captures did not move")
-        measurements[direction] = dict(frames=len(frames), motion=motion)
+        measurements[direction] = dict(frames=len(frames), moving_frames=len(moving), motion=motion)
     prelude = Image.open(output / "lyrics-wait.png").convert("RGBA")
     bounds = prelude.getchannel("A").getbbox()
     if bounds is None:
@@ -138,8 +139,8 @@ def main():
     scene_checks = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(scene_checks)
     report = dict(binary=str(binary), sha256=digest(binary), library=str(library), backend=args.backend,
-                  passed=False, lyrics_document_injected=True, lyrics_clock_injected=True,
-                  scope="Native queue/history, decoded PCM capture and GPU artwork; production lyric layout with explicit fixture timing")
+                  passed=False, lyrics_document_injected=True, lyrics_clock_injected=True, injected_snapshot_gap=True,
+                  scope="Native queue/history with an explicit eight-frame Back snapshot replay, decoded PCM and GPU artwork; production lyrics with explicit fixture timing")
     log_path = output / "focus-panels.log"
     try:
         with tempfile.TemporaryDirectory(prefix="chilpa-focus-panels-") as temporary:
@@ -180,6 +181,11 @@ def main():
                         if "SMOKE focus evidence " in line]
             if len(evidence) != 1:
                 raise ValueError("missing final native identity/layout evidence")
+            if evidence[0].get("injected_snapshot_gap") is not True or evidence[0].get("snapshot_gap_frames") != 8:
+                raise ValueError("missing controlled snapshot replay evidence")
+            mixed = [row for row in samples if row.get("injected_snapshot_gap") and row["playingRow"] == -1 and row["historyPlayingRow"] == 0]
+            if not mixed:
+                raise ValueError("no captured frame contains the controlled mixed snapshot")
             for key in ("timed_prelude", "prelude_seek", "plain_reading", "document_replacement", "translated_prelude"):
                 if evidence[0].get(key) is not True:
                     raise ValueError(f"missing lyric prelude assertion: {key}")
