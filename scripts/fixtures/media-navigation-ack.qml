@@ -59,7 +59,10 @@ ApplicationWindow {
             verify(value, message)
         }
         function test_two_real_show_clicks_prepare_the_same_source_route() {
-            tryVerify(() => (window.snapshot.panels || []).some(panel => panel.id === window.pluginId), 15000)
+            tryVerify(function() {
+                Sources.refresh()
+                return (window.snapshot.panels || []).some(panel => panel.id === window.pluginId)
+            }, 15000)
             Sources.command("open", window.pluginId, "")
             tryVerify(function() {
                 Sources.refresh()

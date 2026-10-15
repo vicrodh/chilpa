@@ -28,6 +28,11 @@ Item {
         rows = PlaylistTree.rows(catalog, order, ascending, filter.text, expanded, I18n.tr("Playlists", I18n.rev))
     }
     function toggleFolder(id) { expanded[id] = !expanded[id]; reload() }
+    function openPlaylist(id) {
+        const window = section.Window.window
+        if (typeof window?.deferNavigation === "function") window.deferNavigation(Playlists.open, id)
+        else Playlists.open(id)
+    }
     Component.onCompleted: reload()
     Connections { target: Library; function onRemoteRevChanged() { section.reload() } function onRevChanged() { section.reload() } }
     Connections { target: Playlists; function onRevChanged() { section.reload() } }
@@ -148,7 +153,7 @@ Item {
                     visibleInSidebar: host.visibleInSidebar
                     covers: host.covers
                     active: Navigation.screen === (playlistId < 0 ? "album" : "playlist") && Navigation.routeId === playlistId
-                    onOpened: Playlists.open(playlistId)
+                    onOpened: section.openPlaylist(playlistId)
                     onMenu: (left, top) => {
                         const at = row.mapToItem(section, left, top)
                         actions.row(section.rows[host.index], at.x, at.y)

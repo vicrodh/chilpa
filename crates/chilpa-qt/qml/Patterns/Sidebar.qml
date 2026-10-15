@@ -3,6 +3,7 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
+import "qrc:/qt/qml/app/chilpa/controls/qml/Primitives" as Driving
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
@@ -13,6 +14,9 @@ Rectangle {
     id: side
 
     // Its column of icons. The frame says so while a drag shows it.
+    property var router: null
+    property bool refreshPending: false
+    readonly property alias queuedSource: tasks.queued
     property var expandedSources: ({})
     property bool collapsed: SettingsModel.sidebarMode === "collapsed"
     // The plugins that asked for an entry of their own, once approved.
@@ -20,14 +24,31 @@ Rectangle {
     readonly property var panels: sourceView.panels || []
     readonly property var downloadPlugins: (sourceView.download_plugins || []).filter(plugin => plugin.access === "sidebar")
 
-    Component.onCompleted: Sources.refresh()
-    Timer { interval: Motion.poll; repeat: true; running: side.sourceView.starting === true; onTriggered: Sources.refresh() }
+    Component.onCompleted: refreshSources()
+    Timer { interval: Motion.poll; repeat: true; running: side.sourceView.starting === true; onTriggered: side.refreshSources() }
     Connections {
         target: Navigation
-        function onScreenChanged() { Sources.refresh() }
+        function onPendingChanged() { if (!Navigation.pending) side.refreshSources() }
     }
     // The host is free again each time the catalog finishes asking it.
-    Connections { target: Library; function onRemoteRevChanged() { Sources.refresh() } function onRevChanged() { Sources.refresh() } }
+    Connections { target: Library; function onRemoteRevChanged() { side.refreshSources() } function onRevChanged() { side.refreshSources() } }
+
+    function refreshSources() {
+        if (router?.phase === "acknowledging") { refreshPending = true; return }
+        refreshPending = false
+        Sources.refresh()
+    }
+    function deferNavigation(action) { tasks.deferNavigation(action) }
+    function openSource(action, id, text) {
+        Navigation.goKey("source", id)
+        if (!router) return
+        deferNavigation(function() { Sources.command(action, id, text); side.refreshPending = false })
+    }
+    Driving.NavigationTasks {
+        id: tasks
+        router: side.router
+        onPrepared: if (side.refreshPending) side.refreshSources()
+    }
 
     radius: Metrics.radiusPanel
     // Half alpha over the dynamic background, so the field shows through.
@@ -128,8 +149,8 @@ Rectangle {
                                 else if (group.modelData.download) Navigation.goKey("pluginDownloads", group.modelData.key)
                                 else {
                                     // A tree starts over from its root; music opens its own page.
-                                    if (!group.modelData.music) Sources.command("home", group.modelData.key, "")
-                                    Navigation.goKey(group.modelData.screen, group.modelData.key)
+                                    if (!group.modelData.music) side.openSource("home", group.modelData.key, "")
+                                    else Navigation.goKey(group.modelData.screen, group.modelData.key)
                                 }
                             }
                             onMiddleClicked: group.modelData.key ? clicked() : SettingsModel.middleClickTabs ? Navigation.open(group.modelData.screen, 0) : Navigation.go(group.modelData.screen, 0)
@@ -148,8 +169,7 @@ Rectangle {
                                     : side.sourceView.navigation_id === modelData.id
                                 onClicked: {
                                     if (modelData.route) { Navigation.goKey("source", modelData.route); return }
-                                    Sources.command("child", group.modelData.key, modelData.id)
-                                    Navigation.goKey("source", group.modelData.key)
+                                    side.openSource("child", group.modelData.key, modelData.id)
                                 }
                                 onMiddleClicked: clicked()
                             }

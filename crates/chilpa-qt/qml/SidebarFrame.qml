@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import app.chilpa
+import app.chilpa.folders
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "Patterns"
@@ -14,6 +15,10 @@ Item {
     id: frame
 
     required property Window window
+    property var router: null
+    readonly property int folders: LibraryFolders.count
+    function openSource(action, id, text) { content.openSource(action, id, text) }
+    function deferNavigation(action) { content.deferNavigation(action) }
 
     // The width being dragged, or -1 when nothing is.
     property real dragged: -1
@@ -51,6 +56,8 @@ Item {
     }
 
     Sidebar {
+        id: content
+        router: frame.router
         visible: frame.shown > 0
         collapsed: frame.mode === "collapsed"
         x: Metrics.spaceWindow

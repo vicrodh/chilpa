@@ -75,7 +75,7 @@ PageTransition {
     // The library's artist is drawn by the same page as a source's.
     Component { id: artist; ArtistPage { key: "local artist:" + host.routeKeyOf(parent) } }
     Component { id: artistScene; ArtistScene {} }
-    Component { id: settings; SettingsScreen { purchaseCard: purchaseAlbumCard } }
+    Component { id: settings; SettingsScreen { routeSection: host.routeKeyOf(parent); purchaseCard: purchaseAlbumCard } }
     Component {
         id: pluginDownloads
         Item {
@@ -106,7 +106,7 @@ PageTransition {
     Component { id: playlistImport; PlaylistImportScreen {} }
     Component { id: playlistManager; PlaylistManagerScreen {} }
     Component { id: listenlist; ListenListScreen {} }
-    Component { id: metadata; MetadataScreen {} }
+    Component { id: metadata; MetadataScreen { albumId: host.routeIdOf(parent) } }
     Component { id: stats; StatsScreen {} }
     Component { id: listeningHistory; HistoryScreen {} }
     Component { id: source; SourceScreen { routeKey: host.routeKeyOf(parent) } }

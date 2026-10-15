@@ -7,7 +7,7 @@ import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/qml"
 import "qrc:/qt/qml/app/chilpa/qml/Patterns"
 
-ApplicationWindow {
+Main {
     id: window
     width: 1280; height: 800; visible: true
     property double fixtureAlbum: "FIXTURE_ALBUM"
@@ -27,15 +27,25 @@ ApplicationWindow {
     property bool activatedBeforeNavigation: false
     property int visibleRows: 0
     property int tracks: 0
-    ScreenHost { id: host; anchors.fill: parent }
-    SearchModel { id: search; scope: "albums"; source: "local" }
-    SearchFlyout { id: results; search: search; room: 700; x: 100; y: 30 }
+    property bool captured: false
+    property var host: null
+    property var search: null
+    property var results: null
 
-    function find(item, predicate) {
-        if (!item) return null
+    function find(item, predicate, visited) {
+        if (!item || typeof item !== "object") return null
+        const seen = visited || []
+        if (seen.indexOf(item) >= 0) return null
+        seen.push(item)
         if (predicate(item)) return item
-        for (const child of item.children || []) {
-            const found = find(child, predicate)
+        const descendants = []
+        for (const list of [item.children, item.data]) {
+            if (list && typeof list === "object" && list.length !== undefined)
+                for (let index = 0; index < list.length; index++) descendants.push(list[index])
+        }
+        if (item.contentItem) descendants.push(item.contentItem)
+        for (const child of descendants) {
+            const found = find(child, predicate, seen)
             if (found) return found
         }
         return null
@@ -97,10 +107,22 @@ ApplicationWindow {
             check(Navigation.tabIcons.length === count, "I publish the current number of icons")
             check(Navigation.active >= 0 && Navigation.active < count, "I keep the active tab in range")
         }
+        function initTestCase() {
+            tryVerify(function() {
+                window.host = window.find(window.contentItem, item => item.componentRoute !== undefined && item.acknowledgedRoute !== undefined)
+                window.results = window.find(window.contentItem, item => typeof item.choose === "function" && item.search !== undefined && item.parent?.active === true)
+                window.search = window.results?.search || null
+                return window.host !== null && window.results !== null && window.search !== null
+            }, 10000)
+            check(!!window.host && !!window.search && !!window.results, "I exercise the real Main host and active SearchBox")
+            const sidebar = window.find(window.contentItem, item => item.queuedSource !== undefined && typeof item.openSource === "function")
+            check(sidebar && sidebar.router === window.host, "I wire the real sidebar to the acknowledgement router")
+        }
         function test_actual_search_click_acknowledges_before_mount() {
             Navigation.go("library", 0)
             tryVerify(() => host.phase === "content" && Navigation.screen === "library", 10000)
             window.oldPage = host.item
+            search.scope = "albums"
             search.source = "local"
             search.text = window.fixtureTitle
             results.open()
@@ -143,7 +165,18 @@ ApplicationWindow {
                 resolved_after_acknowledgement: window.resolvedAfterFrame
             }))
             // I capture only after timing ends so readback cannot delay acknowledgement.
-            host.grabToImage(result => result.saveToFile(window.outputDirectory + "/content.png"))
+            host.grabToImage(function(result) {
+                window.captured = result.saveToFile(window.outputDirectory + "/content.png")
+            })
+            tryCompare(window, "captured", true)
+        }
+        function test_deferred_native_invokable_runs_after_a_frame() {
+            window.activatedAt = -1
+            check(Navigation.screen === "album", "I start on the selected album")
+            window.deferNavigation(Navigation.go, "library", 0)
+            check(Navigation.screen === "album" && host.phase === "acknowledging" && !host.item,
+                  "I show the shell before invoking native navigation with captured arguments")
+            tryVerify(() => Navigation.screen === "library" && host.phase === "content", 10000)
         }
         function test_pending_settlement_preserves_the_current_structure() {
             const original = Navigation.tabTitles.length
@@ -171,6 +204,16 @@ ApplicationWindow {
                 check(Navigation.tabIcons[index] !== "" && Navigation.tabIcons[index] !== "dots", "I enrich current tab icons")
             }
             check(Navigation.screen === "library" && Navigation.routeId === 0, "I never publish an obsolete destination")
+        }
+        function test_settings_keep_their_mounted_section_and_search_target() {
+            Navigation.openSection("appearance")
+            tryVerify(() => host.item?.routeSection === "appearance", 10000)
+            const previous = host.item
+            previous.go({section: "library", key: "library.folders"})
+            check(previous.routeSection === "appearance" && !host.item,
+                  "I retain the outgoing settings model while acknowledging the new section")
+            tryVerify(() => host.item?.routeSection === "library" && host.item.focusRow >= 0, 10000)
+            check(host.item.focusKey === "library.folders", "I reveal the search target in the destination settings page")
         }
         function cleanupTestCase() {
             if (qtest_results.failCount > 0) {

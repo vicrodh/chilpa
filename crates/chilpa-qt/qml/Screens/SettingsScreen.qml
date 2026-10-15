@@ -6,6 +6,7 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
+import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as Driving
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "../Components"
@@ -19,42 +20,14 @@ import "qrc:/qt/qml/app/chilpa/stats/qml/Patterns" as AnalysisUi
 Item {
     id: page
     property Component purchaseCard: null
-    readonly property string section: Navigation.section !== "" ? Navigation.section : SettingsModel.sections[0]
-    onSectionChanged: if (section !== "sources" && actions.editingServerKey !== "") { Servers.cancel(); actions.editingServerKey = "" }
-    // Open, reveal and briefly highlight a search result.
-    property string focusKey: ""
-    property int focusRow: -1
-    function go(setting) {
-        search.text = ""
-        page.focusKey = setting.key
-        page.focusRow = -1
-        flash.target = null
-        Navigation.openSection(setting.section)
-        seeking.tries = 0
-        seeking.restart()
-    }
-    // Retry until the section and its delegate have loaded.
-    Timer {
-        id: seeking
-        property int tries: 0
-        interval: Motion.fast
-        repeat: true
-        onTriggered: {
-            tries += 1
-            for (let i = 0; i < list.count && page.focusRow < 0; i++)
-                if (rows.data(rows.index(i, 0), Metrics.settingsKeyRole) === page.focusKey)
-                    page.focusRow = i
-            if (page.focusRow >= 0) {
-                list.positionViewAtIndex(page.focusRow, ListView.Center)
-                flash.target = list.itemAtIndex(page.focusRow)
-            }
-            if (flash.target || tries >= Metrics.settingsSeekTries) {
-                stop()
-                if (flash.target)
-                    fade.restart()
-            }
-        }
-    }
+    property string routeSection: ""
+    property bool leaving: false
+    readonly property string section: routeSection !== "" ? routeSection : SettingsModel.sections[0]
+    onLeavingChanged: if (leaving && Navigation.section !== "sources" && actions.editingServerKey !== "") { Servers.cancel(); actions.editingServerKey = "" }
+    property alias focusKey: seeking.key
+    property alias focusRow: seeking.row
+    function go(setting) { search.text = ""; seeking.go(setting) }
+    Driving.SettingsFocus { id: seeking; section: page.section; leaving: page.leaving; viewport: list; model: rows; highlight: flash; onLocated: fade.restart() }
     SettingsPage {
         id: rows
         section: page.section

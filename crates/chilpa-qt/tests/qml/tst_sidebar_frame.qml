@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import app.chilpa
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../../qml"
 
@@ -14,12 +15,70 @@ TestCase {
     width: 400
     height: 300
 
+    QtObject { id: router; property int generation: 0; property string phase: "content"; property string route: "source-route"; signal preparingRoute(); function request(force) { generation++ } }
+
     Window {
         id: win
         width: 1280
         height: 800
         visible: true
-        SidebarFrame { id: frame; window: win; anchors.fill: parent }
+        SidebarFrame { id: frame; window: win; router: router; anchors.fill: parent }
+    }
+
+    function test_deferred_navigation_waits_for_acknowledgement_and_cancels_old_work() {
+        let calls = 0
+        frame.deferNavigation(function() { calls += 1 })
+        compare(calls, 0)
+        router.generation++
+        router.preparingRoute()
+        compare(calls, 0)
+        frame.deferNavigation(function() { calls += 1 })
+        router.preparingRoute()
+        compare(calls, 1)
+        router.preparingRoute()
+        compare(calls, 1, "I consume deferred navigation before invoking its callback")
+        frame.deferNavigation(function() {
+            calls += 1
+            frame.deferNavigation(function() { calls += 10 })
+        })
+        router.preparingRoute()
+        compare(calls, 2)
+        router.preparingRoute()
+        compare(calls, 12, "I preserve work requested by the callback I am consuming")
+    }
+
+    function test_source_refreshes_coalesce_behind_the_acknowledgement() {
+        const side = frame.children.find(child => typeof child.refreshSources === "function")
+        Sources.refreshCount = 0
+        router.phase = "acknowledging"
+        side.refreshSources()
+        side.refreshSources()
+        compare(Sources.refreshCount, 0)
+        verify(side.refreshPending)
+        router.phase = "resolving"
+        router.preparingRoute()
+        compare(Sources.refreshCount, 1)
+        compare(side.refreshPending, false)
+        router.phase = "content"
+    }
+
+    function test_source_commands_wait_for_preparation_and_cancel_with_the_route() {
+        Sources.asked = []
+        frame.openSource("child", "fixture", "first")
+        compare(Sources.asked.length, 0, "I acknowledge before I ask the source")
+        router.generation++
+        router.preparingRoute()
+        compare(Sources.asked.length, 0, "I discard a superseded source command")
+        frame.openSource("home", "fixture", "")
+        compare(Sources.asked.length, 0)
+        router.preparingRoute()
+        compare(Sources.asked, [["home", "fixture", ""]])
+        router.preparingRoute()
+        compare(Sources.asked.length, 1, "I consume the command before applying it")
+        frame.openSource("child", "fixture", "second")
+        router.route = "another-route"
+        router.preparingRoute()
+        compare(Sources.asked.length, 1, "I match the acknowledged destination as well as its generation")
     }
 
     function handle() {

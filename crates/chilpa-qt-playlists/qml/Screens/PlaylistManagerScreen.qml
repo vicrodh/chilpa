@@ -41,12 +41,17 @@ Item {
     }
     function enterFolder(id, name) { folderId = id; folderName = name; reload() }
     function leaveFolder() { folderId = 0; folderName = ""; reload() }
+    function openPlaylist(id) {
+        const window = page.Window.window
+        if (typeof window?.deferNavigation === "function") window.deferNavigation(Playlists.open, id)
+        else Playlists.open(id)
+    }
     Component.onCompleted: reload()
     Connections { target: Playlists; function onRevChanged() { page.reload() } }
 
     QtObject {
         id: playlistManager
-        function open(index) { const row = page.rows[index]; if (row.rowKind === 1) page.enterFolder(row.entryId, row.name); else Playlists.open(row.entryId) }
+        function open(index) { const row = page.rows[index]; if (row.rowKind === 1) page.enterFolder(row.entryId, row.name); else page.openPlaylist(row.entryId) }
         function createFolder(name, color) { Playlists.createFolder(name, color) }
         function updateFolder(id, name, color) { Playlists.updateFolder(id, name, color) }
         function removeFolder(id) { Playlists.removeFolder(id) }

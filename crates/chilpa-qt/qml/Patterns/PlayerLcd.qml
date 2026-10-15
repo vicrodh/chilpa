@@ -179,8 +179,12 @@ Rectangle {
                     TapHandler {
                         enabled: (lcd.parentSource !== "" || Player.albumId !== 0)
                         onTapped: {
-                            if (lcd.parentSource !== "") { Sources.command("playing_parent", "", ""); Navigation.goKey("source", lcd.parentSource) }
-                            else Navigation.go("album", Player.albumId)
+                            const source = lcd.parentSource
+                            const open = function() { Sources.command("playing_parent", "", ""); Navigation.goKey("source", source) }
+                            const window = lcd.Window.window
+                            if (!source) Navigation.go("album", Player.albumId)
+                            else if (typeof window?.deferNavigation === "function") window.deferNavigation(open)
+                            else open()
                         }
                     }
                 }
