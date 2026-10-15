@@ -11,6 +11,11 @@ pub(super) struct NavigationRoots {
 }
 
 impl Catalog {
+    /// I read routing metadata without looking up artwork on disk or scheduling it.
+    pub(crate) fn navigation_card(&self, id: i64) -> Option<super::store::Card> {
+        self.lock().store.cards.get(&id).cloned()
+    }
+
     pub(crate) fn protect_navigation(&self, routes: &[Route]) {
         let mut roots = NavigationRoots::default();
         for route in routes {

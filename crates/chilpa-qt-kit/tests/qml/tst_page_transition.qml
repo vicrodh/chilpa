@@ -11,6 +11,8 @@ TestCase {
     width: 400
     height: 300
 
+    Item { id: outsideFocus }
+    Component { id: broken; Item { required property string missingInput } }
     Component { id: albums; Rectangle { objectName: "albumsPage"; color: "red" } }
     Component { id: home; Rectangle { objectName: "homePage"; color: "blue" } }
     Component {
@@ -48,6 +50,161 @@ TestCase {
             readonly property string mountedRoute: parent.pageRoute
             contentWidth: width; contentHeight: 1800
         }
+    }
+
+    property bool sawAcknowledgement: false
+    property bool mountedAfterAcknowledgement: false
+    property bool preparedAfterAcknowledgement: false
+    property bool redirectPreparation: false
+    property bool resolvedSupersededPreparation: false
+    property int acknowledgementPixel: -1
+    property bool retainedSkeletonAtMount: false
+    Connections {
+        target: pages
+        function onPhaseChanged() {
+            if (pages.phase === "content" && Motion.reduced)
+                retainedSkeletonAtMount = pages.awaitingContentFrame
+        }
+    }
+    Connections {
+        target: pages
+        function onComponentRouteChanged() {
+            if (pages.componentRoute === "prepare-superseded") resolvedSupersededPreparation = true
+        }
+        function onPreparingRoute() {
+            if (redirectPreparation && pages.acknowledgedRoute === "prepare-superseded") {
+                redirectPreparation = false
+                pages.route = "prepare-final"
+            }
+            if (pages.acknowledgedRoute === "slow-construction")
+                preparedAfterAcknowledgement = sawAcknowledgement && pages.componentRoute !== "slow-construction"
+        }
+        function onAcknowledgedFrame(destination) {
+            if (destination === "slow-construction") {
+                sawAcknowledgement = true
+                acknowledgementPixel = grabImage(stage).red(5, 5)
+            }
+        }
+    }
+    Component {
+        id: slowConstruction
+        Rectangle {
+            Component.onCompleted: {
+                mountedAfterAcknowledgement = sawAcknowledgement
+                const until = Date.now() + 150
+                while (Date.now() < until) {}
+            }
+        }
+    }
+    function test_acknowledgement_precedes_expensive_construction() {
+        Motion.reduced = true
+        pages.sourceComponent = albums
+        pages.route = "before-slow-construction"
+        tryCompare(pages, "committedRoute", pages.route)
+        const previous = pages.item
+        sawAcknowledgement = false
+        mountedAfterAcknowledgement = false
+        preparedAfterAcknowledgement = false
+        pages.sourceComponent = slowConstruction
+        pages.route = "slow-construction"
+        compare(pages.acknowledgedRoute, "slow-construction")
+        compare(pages.item, null)
+        compare(previous.parent.visible, false)
+        compare(previous.parent.enabled, false)
+        compare(sawAcknowledgement, false)
+        tryCompare(pages, "committedRoute", "slow-construction")
+        verify(mountedAfterAcknowledgement, "I present the acknowledgement before construction")
+        verify(preparedAfterAcknowledgement, "I prepare after acknowledgement and before component resolution")
+        compare(acknowledgementPixel, 128, "I paint the opaque destination shell before construction")
+        verify(retainedSkeletonAtMount, "I retain the shell until the destination paints")
+        tryCompare(pages, "awaitingContentFrame", false)
+    }
+
+    function test_a_cancelled_acknowledgement_cannot_mount_its_route() {
+        Motion.reduced = true
+        pages.sourceComponent = scrolling
+        pages.route = "cancel-origin"
+        tryCompare(pages, "committedRoute", pages.route)
+        const previous = pages.item
+        previous.forceActiveFocus()
+        verify(previous.activeFocus)
+        pages.route = "cancel-middle"
+        const cancelled = pages.generation
+        compare(previous.activeFocus, false)
+        pages.route = "cancel-final"
+        pages.begin(cancelled)
+        compare(pages.componentRoute, "cancel-origin")
+        compare(pages.item, null)
+        tryCompare(pages, "committedRoute", "cancel-final")
+        compare(pages.item.mountedRoute, "cancel-final")
+    }
+
+    function test_component_invalidation_uses_a_new_acknowledgement() {
+        Motion.reduced = true
+        pages.sourceComponent = albums
+        pages.route = "invalidate-component"
+        tryCompare(pages, "committedRoute", pages.route)
+        outsideFocus.forceActiveFocus()
+        verify(outsideFocus.activeFocus)
+        pages.sourceComponent = home
+        verify(outsideFocus.activeFocus, "I preserve focus outside the departing page")
+        compare(pages.phase, "acknowledging")
+        compare(pages.item, null)
+        tryCompare(pages, "phase", "content")
+        compare(pages.item.objectName, "homePage")
+    }
+
+    function test_a_loader_error_can_retry() {
+        ignoreWarning(/.*Required property missingInput was not initialized/)
+        pages.sourceComponent = broken
+        pages.route = "broken-page"
+        tryCompare(pages, "phase", "error")
+        compare(pages.item, null)
+        pages.sourceComponent = home
+        pages.request()
+        tryCompare(pages, "phase", "content")
+        compare(pages.item.objectName, "homePage")
+    }
+
+    function test_cancelling_a_loading_page_cannot_present_it() {
+        Motion.reduced = true
+        pages.sourceComponent = albums
+        pages.route = "loading-origin"
+        tryCompare(pages, "committedRoute", pages.route)
+        pages.route = "loading-superseded"
+        pages.awaitingFrame = false
+        pages.begin(pages.generation)
+        compare(pages.phase, "loading")
+        pages.route = "loading-final"
+        compare(pages.item, null)
+        tryCompare(pages, "committedRoute", "loading-final")
+        compare(pages.componentRoute, "loading-final")
+    }
+
+    function test_preparation_can_replace_the_destination_before_resolution() {
+        Motion.reduced = true
+        pages.sourceComponent = home
+        pages.route = "prepare-origin"
+        tryCompare(pages, "committedRoute", pages.route)
+        resolvedSupersededPreparation = false
+        redirectPreparation = true
+        pages.route = "prepare-superseded"
+        tryCompare(pages, "committedRoute", "prepare-final")
+        compare(resolvedSupersededPreparation, false)
+    }
+
+    function test_a_forced_same_route_request_acknowledges_again() {
+        Motion.reduced = true
+        pages.sourceComponent = home
+        pages.route = "same-route-preparation"
+        tryCompare(pages, "committedRoute", pages.route)
+        const previousGeneration = pages.generation
+        pages.request(true)
+        compare(pages.generation, previousGeneration + 1)
+        compare(pages.phase, "acknowledging")
+        compare(pages.item, null)
+        tryCompare(pages, "phase", "content")
+        compare(pages.committedRoute, "same-route-preparation")
     }
 
     function cleanup() {
@@ -153,13 +310,13 @@ TestCase {
 
         pages.sourceComponent = home
         pages.route = "home"
-        compare(pages.item.objectName, "delayedPage", "the old page stays mounted while Home is prepared")
+        compare(pages.item, null, "I hide the old page immediately")
         tryCompare(pages, "committedRoute", "home")
         compare(pages.item.objectName, "homePage")
 
         pages.sourceComponent = albums
         pages.route = "albums"
-        compare(pages.item.objectName, "homePage", "the old page stays mounted on the return trip")
+        compare(pages.item, null, "I acknowledge the return trip immediately")
         tryCompare(pages, "committedRoute", "albums")
         compare(pages.item.objectName, "albumsPage")
     }

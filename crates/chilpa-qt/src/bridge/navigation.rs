@@ -32,10 +32,22 @@ pub mod qobject {
         /// The route's text: the folder, for Folders; the section, for
         /// Settings.
         #[qproperty(QString, route_key)]
+        #[qproperty(bool, pending)]
+        #[qproperty(i32, pending_revision)]
         type Navigation = super::NavigationRust;
+
+        /// I enrich tab labels and persist their routes after the acknowledgement frame.
+        #[qinvokable]
+        fn settle(self: Pin<&mut Navigation>, revision: i32);
+
+        #[qinvokable]
+        fn prepare(self: Pin<&mut Navigation>) -> bool;
 
         #[qinvokable]
         fn go_origin(self: Pin<&mut Navigation>, origin: &QString);
+
+        #[qsignal]
+        fn route_requested(self: Pin<&mut Navigation>);
 
         #[qsignal]
         fn search_origin_requested(self: Pin<&mut Navigation>, query: QString, source: QString);
@@ -97,7 +109,7 @@ pub mod qobject {
 }
 
 use crate::app;
-use chilpa_api::navigation::{Route, Screen, Tabs};
+use chilpa_api::navigation::{PlannedRoute, Route, Screen, Tabs};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QList, QString, QStringList};
 use std::pin::Pin;
@@ -113,36 +125,55 @@ pub struct NavigationRust {
     can_forward: bool,
     section: QString,
     route_key: QString,
+    pending: bool,
+    pending_revision: i32,
+    labels: Vec<(Route, String, String)>,
+    planned: Option<(i32, PlannedRoute)>,
     tabs: Tabs,
 }
 
-fn route(screen: &QString, id: i64) -> Option<Route> {
-    app::with(|api| api.route_to(&screen.to_string(), id))
+fn route(screen: &QString, id: i64) -> Option<PlannedRoute> {
+    app::with(|api| api.plan_route(&screen.to_string(), id))
 }
 
 impl qobject::Navigation {
-    pub fn go_origin(mut self: Pin<&mut Self>, origin: &QString) {
+    pub fn go_origin(self: Pin<&mut Self>, origin: &QString) {
         let Ok(origin) = serde_json::from_str::<chilpa_api::queue_origin::QueueOrigin>(&origin.to_string()) else { return; };
         if origin.screen == "search" {
             self.search_origin_requested(QString::from(&origin.query), QString::from(&origin.source));
-        } else if let Some(route) = app::with(|api| api.route_to_origin(&origin)) {
-            self.as_mut().rust_mut().tabs.go(route);
-            self.publish();
+        } else if let Some(route) = app::with(|api| api.plan_route_to_origin(&origin)) {
+            self.publish_plan(route, false);
         }
     }
 
-    pub fn go(mut self: Pin<&mut Self>, screen: &QString, id: i64) {
+    pub fn go(self: Pin<&mut Self>, screen: &QString, id: i64) {
         if let Some(to) = route(screen, id) {
-            self.as_mut().rust_mut().tabs.go(to);
-            self.publish();
+            self.publish_plan(to, false);
         }
     }
 
-    pub fn open(mut self: Pin<&mut Self>, screen: &QString, id: i64) {
+    pub fn open(self: Pin<&mut Self>, screen: &QString, id: i64) {
         if let Some(to) = route(screen, id) {
-            self.as_mut().rust_mut().tabs.open(to);
-            self.publish();
+            self.publish_plan(to, true);
         }
+    }
+
+    fn publish_plan(mut self: Pin<&mut Self>, plan: PlannedRoute, new_tab: bool) {
+        let revision = self.rust().pending_revision.wrapping_add(1);
+        if new_tab { self.as_mut().rust_mut().tabs.open(plan.route.clone()); }
+        else { self.as_mut().rust_mut().tabs.go(plan.route.clone()); }
+        self.as_mut().publish();
+        if self.rust().pending_revision == revision && self.rust().tabs.current() == plan.route {
+            let prepare = plan.needs_preparation();
+            self.as_mut().rust_mut().planned = Some((revision, plan));
+            if prepare { self.route_requested(); }
+        }
+    }
+
+    pub fn prepare(mut self: Pin<&mut Self>) -> bool {
+        let Some((revision, plan)) = self.as_mut().rust_mut().planned.take() else { return false; };
+        revision == self.rust().pending_revision && self.rust().tabs.current() == plan.route
+            && app::with(|api| api.prepare_planned_route(plan))
     }
 
     pub fn open_section(mut self: Pin<&mut Self>, id: &QString) {
@@ -211,7 +242,7 @@ impl qobject::Navigation {
 
     /// Reads the tabs' titles again: something they name was renamed.
     pub fn refresh_labels(self: Pin<&mut Self>) {
-        self.publish();
+        self.request_settlement();
     }
 
     /// Forgets a place that was deleted, from every tab and history.
@@ -225,15 +256,16 @@ impl qobject::Navigation {
     /// Sets every property from the tabs. The screen goes last: it is what
     /// swaps the page, and by then the route id it reads is the new one.
     fn publish(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().planned = None;
         let tabs = self.rust().tabs.clone();
-        app::with(|api| api.keep_tabs(&tabs));
+        let now = tabs.current();
+        app::with(|api| { api.protect_tabs(&tabs); api.set_browse_route(&now); });
         let (mut titles, mut icons) = (QList::<QString>::default(), QList::<QString>::default());
         for r in tabs.routes() {
-            let (title, icon) = app::with(|api| api.tab_label(&r));
-            titles.append(QString::from(&title));
-            icons.append(QString::from(&icon));
+            let cached = self.rust().labels.iter().find(|(route, _, _)| route == &r);
+            titles.append(QString::from(cached.map_or("…", |(_, title, _)| title.as_str())));
+            icons.append(QString::from(cached.map_or("dots", |(_, _, icon)| icon.as_str())));
         }
-        let now = tabs.current();
         self.as_mut().set_tab_titles(QStringList::from(&titles));
         self.as_mut().set_tab_icons(QStringList::from(&icons));
         self.as_mut().set_active(tabs.active() as i32);
@@ -244,7 +276,36 @@ impl qobject::Navigation {
         self.as_mut().set_section(QString::from(section));
         self.as_mut().set_route_key(QString::from(&now.key));
         self.as_mut().set_screen(QString::from(now.screen.name()));
-        app::with(|api| api.set_browse_route(&now));
+        self.request_settlement();
+    }
+
+    fn request_settlement(mut self: Pin<&mut Self>) {
+        let revision = self.rust().pending_revision.wrapping_add(1);
+        if let Some((planned_revision, _)) = self.as_mut().rust_mut().planned.as_mut() { *planned_revision = revision; }
+        self.as_mut().set_pending(true);
+        self.set_pending_revision(revision);
+    }
+
+    pub fn settle(mut self: Pin<&mut Self>, revision: i32) {
+        if !self.rust().pending || revision != self.rust().pending_revision { return; }
+        self.as_mut().prepare();
+        if revision != self.rust().pending_revision { return; }
+        self.as_mut().set_pending(false);
+        if revision != self.rust().pending_revision { return; }
+        let tabs = self.rust().tabs.clone();
+        let labels: Vec<_> = app::with(|api| {
+            api.keep_tabs(&tabs);
+            tabs.routes().into_iter().map(|route| { let (title, icon) = api.tab_label(&route); (route, title, icon) }).collect()
+        });
+        if revision != self.rust().pending_revision { return; }
+        let (mut titles, mut icons) = (QList::<QString>::default(), QList::<QString>::default());
+        for (_, title, icon) in &labels {
+            titles.append(QString::from(title));
+            icons.append(QString::from(icon));
+        }
+        self.as_mut().rust_mut().labels = labels;
+        self.as_mut().set_tab_titles(QStringList::from(&titles));
+        if revision == self.rust().pending_revision { self.set_tab_icons(QStringList::from(&icons)); }
     }
 }
 

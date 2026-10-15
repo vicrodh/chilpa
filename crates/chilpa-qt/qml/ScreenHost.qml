@@ -14,19 +14,16 @@ import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
-
 // I acknowledge the route before I mount its view (frontend ADR-0014).
 PageTransition {
     id: host
-    property bool resizing: false
-    property real heldWidth: -1
     Binding { target: CardLayout; property: "viewportWidth"; value: host.width }
-    onResizingChanged: if (resizing) heldWidth = width; else heldWidth = -1
+    Connections { target: Navigation; function onRouteRequested() { host.request(true) } }
+    Connections { target: Navigation; function onPendingRevisionChanged() { host.Window.window?.update() } }
+    Connections { target: host.Window.window; function onFrameSwapped() { if (Navigation.pending && host.phase !== "acknowledging") Qt.callLater(Navigation.settle, Navigation.pendingRevision) } }
+    onPreparingRoute: if (Navigation.prepare()) Sources.refresh()
     route: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.routeKey].join("\u001f")
-    function routeKeyOf(loader) { return ((loader?.pageRoute || "").split("\u001f")[3]) || "" }
-    function routeIdOf(loader) { return Number((loader?.pageRoute || "").split("\u001f")[2]) || 0 }
     Connections { target: OpenMedia; function onOpened() { Navigation.go("openMedia", 0) } }
-    // The ratings the screens show follow the library as it changes.
     Connections {
         target: Library
         function onContentRevChanged() { Ratings.refresh() }
@@ -34,12 +31,13 @@ PageTransition {
     }
     readonly property var sourceDocument: JSON.parse(Sources.snapshot || "{}")
     readonly property bool medium: ["radio", "podcasts"].indexOf(sourceDocument.medium) >= 0
-    readonly property var requested: host.route.split("\u001f")
+    readonly property var requested: host.componentRoute.split("\u001f")
     readonly property string screen: requested.length > 1 ? requested[1] : ""
     readonly property string routeKey: requested.length > 3 ? requested[3] : ""
-    readonly property var music: screen === "source" ? JSON.parse(Sources.page(routeKey, Library.remoteRev) || "{}") : ({})
+    readonly property var music: screen === "source" && !(medium && sourceDocument.source === routeKey) ? JSON.parse(Sources.page(routeKey, Library.remoteRev) || "{}") : ({})
 
     sourceComponent: {
+        if (screen === "source" && medium && sourceDocument.source === routeKey) return mediaSource
         if (music.music === true)
             return music.artist === true || / (native:artist:|matching-artist-v[23]:)/.test(routeKey) ? sourceArtist : music.shelves !== undefined ? sourceHome : music.albumsOnly === false ? sourceListing : sourceAlbums
         switch (screen) {
@@ -63,12 +61,11 @@ PageTransition {
         case "listenlist": return listenlist
         case "stats": return stats
         case "listeningHistory": return listeningHistory
-        case "source": return medium && sourceDocument.source === routeKey ? mediaSource : source
+        case "source": return source
         case "sourceEntry": return medium ? mediaDetail : sourceEntry
         default: return pending
         }
     }
-
     Component { id: home; HomeScreen {} }
     Component { id: library; LibraryScreen {} }
     Component { id: album; AlbumScreen { albumId: host.routeIdOf(parent) } }

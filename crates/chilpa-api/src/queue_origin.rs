@@ -21,18 +21,27 @@ impl QueueOrigin {
 
 impl Chilpa {
     pub fn route_to_origin(&mut self, origin: &QueueOrigin) -> Option<Route> {
+        if origin.screen == "source" { self.source_panels(); }
+        let plan = self.plan_route_to_origin(origin)?;
+        let route = plan.route.clone();
+        self.prepare_planned_route(plan);
+        Some(route)
+    }
+
+    /// I restore a typed origin without opening a source or reading its artwork.
+    pub fn plan_route_to_origin(&self, origin: &QueueOrigin) -> Option<crate::navigation::PlannedRoute> {
         if origin.screen == "source" {
             if let Some((plugin, reference)) = origin.key.split_once(" native:") {
-                if reference.contains('|') { return origin.route(); }
+                if reference.contains('|') { return origin.route().map(|route| crate::navigation::PlannedRoute { route, media_parent: None }); }
                 // I resolve saved record identities back to their record screen,
                 // rather than treating album metadata as a page of shelves.
                 let id = self.catalog.card_by_identity(plugin, reference)
                     .filter(|card| matches!(card.kind, crate::source_catalog::store::CardKind::Album | crate::source_catalog::store::CardKind::Playlist))
                     .map(|card| card.id).unwrap_or_else(|| self.native_reference_card(plugin, reference));
-                if id < 0 { return self.route_to("album", id); }
+                if id < 0 { return self.plan_route("album", id); }
             }
         }
-        origin.route()
+        origin.route().map(|route| crate::navigation::PlannedRoute { route, media_parent: None })
     }
 
     pub fn set_browse_route(&mut self, route: &Route) {
@@ -43,10 +52,10 @@ impl Chilpa {
         if matches!(route.screen, Screen::ListenList | Screen::Settings | Screen::Metadata | Screen::PlaylistManager | Screen::PlaylistImport | Screen::Stats | Screen::ListeningHistory) { return None; }
         let mut origin = QueueOrigin { screen: route.screen.name().into(), id: route.id, key: route.key.clone(), ..Default::default() };
         if route.id < 0 && matches!(route.screen, Screen::Album | Screen::Playlist) {
-            let card = self.catalog.card(route.id)?;
+            let (plugin, identity) = self.catalog.identity_of(route.id)?;
             // Runtime catalog IDs are not navigation identities across installations.
             origin.screen = "source".into(); origin.id = 0;
-            origin.key = format!("{} native:{}", card.plugin, card.identity);
+            origin.key = format!("{plugin} native:{identity}");
         }
         Some(origin)
     }
@@ -87,6 +96,11 @@ mod tests {
             let route = app.route_to_origin(&restored).unwrap();
             assert_eq!(route.screen, Screen::Album);
             assert_eq!(route.id, id);
+            app.set_browse_route(&route);
+            let browsing = app.browse_origin().unwrap();
+            assert_eq!(browsing.screen, restored.screen);
+            assert_eq!(browsing.key, restored.key);
+            assert_eq!(browsing.id, 0);
         }
         for key in ["fixture-origin native:artist:42", "fixture-origin native:discover:home", "fixture-origin native:album:opaque-id|related"] {
             let origin = QueueOrigin { screen: "source".into(), key: key.into(), ..Default::default() };

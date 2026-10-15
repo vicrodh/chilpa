@@ -42,9 +42,13 @@ impl Chilpa {
 
     pub(crate) fn source_card_parent(&self, id: i64) -> Option<(String, Entry)> {
         let card = self.catalog.card(id)?;
-        if !self.sources.panels.iter().any(|p| p.id == card.plugin && !p.music) { return None; }
+        self.planned_media_parent(card)
+    }
+
+    pub(crate) fn planned_media_parent(&self, card: crate::source_catalog::store::Card) -> Option<(String, Entry)> {
         let id = card.handle.as_ref().map(|h| h.id.clone())
             .or_else(|| card.identity.strip_prefix("handle:").map(str::to_owned))?;
+        if !self.is_media_panel(&card.plugin) { return None; }
         let known = self.sources.roots.get(&card.plugin).into_iter().flatten().find(|e| e.id == id);
         let found = self.search.replies.iter().filter(|r| r.source == card.plugin)
             .flat_map(|r| &r.results.albums).find(|a| a.external_id == id);
@@ -54,6 +58,15 @@ impl Chilpa {
             kind: EntryKind::Folder, ..Default::default()
         });
         Some((card.plugin, entry))
+    }
+
+    fn is_media_panel(&self, id: &str) -> bool {
+        if let Some(plugins) = self.plugins.as_ref().and_then(|plugins| plugins.try_lock().ok()) {
+            if !plugins.panels().iter().any(|(source, _, _)| source == id) { return false; }
+            let layout = self.natives.layout(id).or_else(|| plugins.layouts.get(id).cloned());
+            return plugins.worker_domains(id).is_none() && layout.is_none_or(|layout| layout.sections.is_empty());
+        }
+        self.sources.panels.iter().any(|panel| panel.id == id && !panel.music)
     }
 
     pub(crate) fn playing_media_parent(&self) -> Option<(String, Entry)> {
@@ -90,6 +103,13 @@ mod tests {
         app.sources.media_kinds.insert("fixture-media".into(), "podcasts".into());
         let row = crate::source_search::RemoteFound { source: "fixture-media".into(), name: "Media".into(), id: "opaque show /?#".into(), title: "A show".into(), detail: "Publisher".into(), art: "https://example.invalid/show.jpg".into(), duration_ms: 0, collection: true, entity: "album".into(), item: None, no_audio: false };
         let crate::Leads::Screen("album", id) = app.act_on_remote_found(&row, "open") else { panic!("missing search destination") };
+        let planned = app.plan_route("album", id).unwrap();
+        assert_eq!(planned.route.screen, crate::navigation::Screen::Source);
+        assert_eq!(planned.route.key, row.source);
+        assert!(planned.needs_preparation());
+        assert!(app.sources.current.is_empty(), "I leave the current source untouched before acknowledgement");
+        assert!(app.sources.trail.is_empty(), "I defer the destination's listing until preparation");
+        assert!(app.prepare_planned_route(planned));
         let route = app.route_to("album", id).unwrap();
         assert_eq!(route.screen, crate::navigation::Screen::Source);
         assert_eq!(route.key, row.source);
@@ -113,6 +133,35 @@ mod tests {
         app.sources.panels[0].music = true;
         assert!(app.source_card_parent(id).is_none());
         assert_eq!(app.route_to("album", id).unwrap().screen, crate::navigation::Screen::Album);
+    }
+
+    #[test]
+    fn planned_music_routes_keep_their_types_without_preparing_a_media_parent() {
+        use crate::navigation::Screen;
+        let app = Chilpa::new();
+        let local = app.plan_route("album", 7).unwrap();
+        assert_eq!(local.route.screen, Screen::Album);
+        assert_eq!(local.route.id, 7);
+        assert!(!local.needs_preparation());
+        for kind in ["album", "playlist", "artist", "label"] {
+            let id = app.catalog.adopt("fixture-music", None, &crate::source_search::RemoteFound {
+                collection: true, item: Some(serde_json::json!({
+                    "kind": kind, "ref": format!("{kind}:opaque /?#"), "title": "Record",
+                    "image": "https://example.invalid/cover.jpg"
+                })), ..Default::default()
+            });
+            let plan = app.plan_route("album", id).unwrap();
+            assert!(!plan.needs_preparation());
+            if matches!(kind, "artist" | "label") {
+                assert_eq!(plan.route.screen, Screen::Source);
+                assert_eq!(plan.route.key, format!("fixture-music card:{id}"));
+            } else {
+                assert_eq!(plan.route.screen, Screen::Album);
+                assert_eq!(plan.route.id, id);
+            }
+        }
+        assert!(app.sources.current.is_empty());
+        assert!(app.sources.trail.is_empty());
     }
 
     #[test]
