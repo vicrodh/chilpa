@@ -9,8 +9,8 @@
       "appearance": "dark",
       "value": {
         "linear-gradient": [
-          "srgb:0.25,0.05,0.06,1",
-          "srgb:0.10,0.02,0.03,1"
+          "srgb:0.29020,0.05098,0.06275,1.00000",
+          "srgb:0.16471,0.02745,0.03529,1.00000"
         ]
       }
     }
@@ -20,13 +20,7 @@
       "layers": [
         {
           "name": "Chilpa",
-          "image-name": "light.png",
-          "image-name-specializations": [
-            {
-              "appearance": "dark",
-              "value": "dark.png"
-            }
-          ],
+          "image-name": "foreground.svg",
           "glass": false
         }
       ],
