@@ -117,6 +117,19 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     subprocess.run([str(args.tools / locked["linuxdeploy"]["asset"]), "--appimage-extract-and-run", "--appdir", str(appdir),
                     "-e", str(bin_dir / "chilpa-qt"), "-d", str(desktop), "-i", str(icon), "--plugin", "qt"],
                    cwd=work, env=environment, check=True)
+    # I deploy Wayland's runtime plugins too: the platform plugin alone cannot
+    # create a window or deliver its icon through the compositor's shell.
+    wayland = []
+    for name in ("wayland-shell-integration", "wayland-graphics-integration-client", "wayland-decoration-client"):
+        origin = plugins / name
+        if origin.is_dir():
+            destination = appdir / "usr/plugins" / name
+            shutil.copytree(origin, destination, dirs_exist_ok=True)
+            wayland.extend(["--deploy-deps-only", str(destination)])
+    if not list((appdir / "usr/plugins/wayland-shell-integration").glob("*xdg-shell*.so")):
+        raise SystemExit("The Wayland XDG shell integration is missing.")
+    subprocess.run([str(args.tools / locked["linuxdeploy"]["asset"]), "--appimage-extract-and-run", "--appdir", str(appdir),
+                    *wayland], cwd=work, env=environment, check=True)
     updater = bin_dir / "chilpa-appimage-updater.AppImage"
     shutil.copy2(args.tools / locked["updater"]["asset"], updater)
     shutil.copy2(root / "packaging/linux/chilpa-restart", bin_dir / "chilpa-restart")
