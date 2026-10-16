@@ -48,7 +48,7 @@ Item {
     }
     Timer { interval: Motion.poll; repeat: true; running: root.visible; onTriggered: search.refresh() }
 
-    Tools.SearchNavigation { search: search }
+    Tools.SearchNavigation { id: searchNavigation; search: search }
     SearchModel {
         id: search
         scope: "immersive"
@@ -80,6 +80,7 @@ Item {
         search.act(row, root.action)
         dismiss()
         root.cleared()
+        searchNavigation.flush()
     }
     function chooseCurrent() {
         if (current < 0)

@@ -85,7 +85,7 @@ ListView {
             id: module
             x: Metrics.contentX
             width: page.width - Metrics.contentX * 2 // derived: padding on both sides
-            entry: Object.assign({}, parent.entry, {id:"native:" + page.key + ":" + parent.entry.id, kind:"shelf", entityKind:parent.entry.kind})
+            entry: Object.assign({}, parent.entry, {id:"native:" + page.key + ":" + (parent.entry.id || parent.entry.key), kind:"shelf", entityKind:parent.entry.kind})
             started: page.presented && !page.leaving
             content: sourceModule
         }

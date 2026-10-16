@@ -132,22 +132,23 @@ Item {
             }
 
             AlbumRow {
+                readonly property bool shown: grid.list && row.nearby
                 readonly property int rev: grid.model ? grid.model.rev : 0
 
-                visible: grid.list && row.nearby
+                visible: shown
                 x: Metrics.cardRing
                 y: row.lead
                 width: grid.layoutWidth
-                albumId: visible ? grid.model.albumId(row.first, rev) : 0
+                albumId: shown ? grid.model.albumId(row.first, rev) : 0
                 sourceInfo: albumId < 0 ? (JSON.parse(AlbumActions.sources(albumId, rev) || "[]")[0] || {}) : albumId > 0 && grid.model.mixed ? ({ icon: "qrc:/qt/qml/app/chilpa/kit/assets/logo.png" }) : ({})
-                title: visible ? grid.model.title(row.first, rev) : ""
-                subtitle: visible ? grid.model.subtitle(row.first, rev) : ""
-                year: visible ? grid.model.year(row.first, rev) : ""
-                art: visible ? grid.model.art(row.first, rev) : ""
+                title: shown ? grid.model.title(row.first, rev) : ""
+                subtitle: shown ? grid.model.subtitle(row.first, rev) : ""
+                year: shown ? grid.model.year(row.first, rev) : ""
+                art: shown ? grid.model.art(row.first, rev) : ""
                 tint: row.first
-                selected: visible && AlbumActions.selected(albumId, AlbumActions.rev)
-                expanded: visible && grid.model.expanded === row.first
-                available: !visible || AlbumActions.available(albumId, rev)
+                selected: shown && AlbumActions.selected(albumId, AlbumActions.rev)
+                expanded: shown && grid.model.expanded === row.first
+                available: !shown || AlbumActions.available(albumId, rev)
                 onClicked: (modifiers) => grid.clicked(row.first, albumId, title, modifiers, available)
                 onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
                 onQuick: grid.toggleQuick(row.first)
@@ -166,21 +167,22 @@ Item {
 
                 AlbumCard {
                     required property int index
+                    readonly property bool occupied: index < row.span
                     readonly property int at: row.first + index
                     readonly property int rev: grid.model ? grid.model.rev : 0
 
                     x: Metrics.cardRing + index * (grid.cardWidth + Metrics.gridGap)
                     y: row.lead
                     width: grid.cardWidth
-                    visible: index < row.span
-                    albumId: visible ? grid.model.albumId(at, rev) : 0
+                    visible: occupied
+                    albumId: occupied ? grid.model.albumId(at, rev) : 0
                     sourceInfo: albumId < 0 ? (JSON.parse(AlbumActions.sources(albumId, rev) || "[]")[0] || {}) : albumId > 0 && grid.model.mixed ? ({ icon: "qrc:/qt/qml/app/chilpa/kit/assets/logo.png" }) : ({})
-                    title: visible ? grid.model.title(at, rev) : ""
-                    subtitle: visible ? grid.model.subtitle(at, rev) : ""
-                    year: visible ? grid.model.year(at, rev) : ""
-                    art: visible ? grid.model.art(at, rev) : ""
-                    artColors: visible && albumId < 0 && String(art) === "" ? JSON.parse(Sources.artColors(albumId, rev) || "[]") : []
-                    qualityInfo: visible && !round ? JSON.parse(AlbumActions.quality(albumId, rev) || "{}") : ({})
+                    title: occupied ? grid.model.title(at, rev) : ""
+                    subtitle: occupied ? grid.model.subtitle(at, rev) : ""
+                    year: occupied ? grid.model.year(at, rev) : ""
+                    art: occupied ? grid.model.art(at, rev) : ""
+                    artColors: occupied && albumId < 0 && String(art) === "" ? JSON.parse(Sources.artColors(albumId, rev) || "[]") : []
+                    qualityInfo: occupied && !round ? JSON.parse(AlbumActions.quality(albumId, rev) || "{}") : ({})
                     tint: at
                     round: grid.isRound(albumId)
                     fresh: grid.model && grid.model.fresh >= 0 && at >= grid.model.fresh
@@ -188,7 +190,7 @@ Item {
                     selected: !round && AlbumActions.selected(albumId, AlbumActions.rev)
                     selecting: !round && AlbumActions.selectedCount > 0
                     expanded: grid.model.expanded === at
-                    available: round || !visible || AlbumActions.available(albumId, rev)
+                    available: round || !occupied || AlbumActions.available(albumId, rev)
                     onClicked: (modifiers) => grid.clicked(at, albumId, title, modifiers, available)
                     // A record that stops playing closes its quick view too.
                     onAvailableChanged: if (!available && expanded) grid.model.expanded = -1

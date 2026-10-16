@@ -11,6 +11,7 @@ Menu {
     objectName: "searchResultMenu"
 
     property SearchModel search
+    property var navigation: null
     property int row: -1
 
     // An entry took the window somewhere else.
@@ -52,6 +53,7 @@ Menu {
             if (!["play", "queue", "next", "later", "favorite", "unfavorite"].includes(entry.act))
                 menu.left()
             search.menuAct(entry.act)
+            if (navigation) navigation.flush()
         }
     }
 

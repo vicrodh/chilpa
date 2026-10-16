@@ -320,6 +320,22 @@ impl Catalog {
         shelf
     }
 
+    /// I read a shelf's rows and completion state from one catalog revision.
+    fn shelf_snapshot(&self, key: &str, membership: &str) -> (Vec<store::Card>, usize, bool, String) {
+        self.shelf(key);
+        let inner = self.lock();
+        let shelf = inner.store.shelves.get(key);
+        let cards = shelf.into_iter().flat_map(|s| &s.cards)
+            .filter(|id| membership.is_empty() || shelf.is_some_and(|s| s.membership.get(*id).is_some_and(|m| m.split(',').any(|m| m == membership))))
+            .filter_map(|id| inner.store.cards.get(id)).cloned()
+            .map(|mut card| { card.art = inner.store.shown_art(&card); card }).collect();
+        let tracks = shelf.map_or(0, |s| s.tracks.len());
+        let job = Job::Shelf(key.to_string());
+        let loading = !inner.loaded || inner.running.contains(&job) || inner.queue.queued.contains(&job);
+        let error = inner.shelf_errors.get(key).cloned().unwrap_or_default();
+        (cards, tracks, loading, error)
+    }
+
     /// How many of the records and tracks these listings hold pass `keep`,
     /// read in place; a listing missing or stale is asked for, as `shelf` does.
     pub(crate) fn count_kept(&self, keys: &[String], keep: impl Fn(&serde_json::Value) -> bool) -> usize {

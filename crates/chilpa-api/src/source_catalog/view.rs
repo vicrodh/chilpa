@@ -6,6 +6,21 @@ use super::split;
 use crate::album_versions::{AlbumSource, AlbumVersion};
 use crate::{Album, Chilpa, TrackRow};
 
+/// I keep the displayed albums and their load state in one snapshot.
+pub struct SourceShelfSnapshot {
+    pub albums: Vec<Album>,
+    pub groups: Vec<(usize, String)>,
+    pub tracks: usize,
+    pub loading: bool,
+    pub error: String,
+}
+
+impl SourceShelfSnapshot {
+    pub fn ready(&self) -> bool {
+        !self.albums.is_empty() || !self.loading || !self.error.is_empty()
+    }
+}
+
 /// How many folders of a discover route become shelves of their own.
 const EXPANDED: usize = 6;
 
@@ -24,6 +39,79 @@ pub(crate) fn album_of(card: &Card) -> Album {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
+    #[test]
+    fn a_delayed_shelf_keeps_its_pending_snapshot_until_rows_arrive() {
+        let mut app = crate::Chilpa::new();
+        let key = "fixture section:albums";
+        app.catalog.lock().loaded = true;
+        let waiting = app.source_shelf_snapshot(key, "", "", "");
+        assert!(waiting.loading);
+        assert!(!waiting.ready());
+        {
+            let mut inner = app.catalog.lock();
+            inner.store.cards.insert(-1, super::Card { id: -1, title: "Record".into(), ..Default::default() });
+            inner.store.shelves.insert(key.into(), super::super::store::Shelf {
+                cards: vec![-1], epoch: 1, read_at: super::super::now(), ..Default::default()
+            });
+            inner.queue.queued.clear();
+        }
+        assert!(!waiting.ready(), "I keep an earlier empty snapshot pending after the worker finishes");
+        let arrived = app.source_shelf_snapshot(key, "", "", "");
+        assert!(arrived.ready());
+        assert!(!arrived.loading);
+        assert_eq!(arrived.albums.len(), 1);
+        app.catalog.lock().running.insert(super::super::Job::Shelf(key.into()));
+        let refreshing = app.source_shelf_snapshot(key, "", "", "");
+        assert!(refreshing.loading);
+        assert!(refreshing.ready(), "I keep populated rows visible during refresh");
+    }
+
+    #[test]
+    fn an_unloaded_or_missing_shelf_waits_and_a_failed_shelf_completes() {
+        let mut app = crate::Chilpa::new();
+        let key = "fixture section:missing";
+        assert!(!app.source_shelf_snapshot(key, "", "", "").ready());
+        {
+            let mut inner = app.catalog.lock();
+            inner.loaded = true;
+            inner.shelf_errors.insert(key.into(), "Unavailable".into());
+        }
+        let failed = app.source_shelf_snapshot(key, "", "", "");
+        assert!(failed.ready());
+        assert!(!failed.loading);
+        assert!(failed.albums.is_empty());
+        assert_eq!(failed.error, "Unavailable");
+    }
+
+    #[test]
+    fn completed_empty_and_filtered_shelves_are_ready() {
+        let mut app = crate::Chilpa::new();
+        let key = "fixture section:albums";
+        {
+            let mut inner = app.catalog.lock();
+            inner.loaded = true;
+            inner.store.shelves.insert(key.into(), super::super::store::Shelf {
+                epoch: 1, read_at: super::super::now(), ..Default::default()
+            });
+        }
+        let empty = app.source_shelf_snapshot(key, "", "", "");
+        assert!(empty.ready());
+        assert!(empty.albums.is_empty());
+        {
+            let mut inner = app.catalog.lock();
+            inner.store.cards.insert(-1, super::Card { id: -1, title: "Record".into(), ..Default::default() });
+            inner.store.shelves.get_mut(key).unwrap().cards.push(-1);
+        }
+        let filtered = app.source_shelf_snapshot(key, "", "", "absent");
+        assert!(filtered.ready());
+        assert!(filtered.albums.is_empty());
+        let membership = app.source_shelf_snapshot(&format!("{key} favorites"), "", "", "");
+        assert!(membership.ready());
+        assert!(membership.albums.is_empty());
+        app.catalog.lock().running.insert(super::super::Job::Shelf(key.into()));
+        assert!(!app.source_shelf_snapshot(key, "", "", "absent").ready());
+    }
+
     #[test]
     fn declared_tabs_keep_their_presentation_before_items_arrive() {
         let mut app = crate::Chilpa::new();
@@ -107,18 +195,23 @@ impl Chilpa {
     /// ones whose title or artist hold every word of `filter`. `key` may end
     /// in a membership ("favorites") after a second space.
     pub fn source_shelf(&mut self, key: &str, order: &str, group: &str, filter: &str) -> (Vec<Album>, Vec<(usize, String)>) {
+        let snapshot = self.source_shelf_snapshot(key, order, group, filter);
+        (snapshot.albums, snapshot.groups)
+    }
+
+    /// I pair filtered rows with the completion state that produced them.
+    pub fn source_shelf_snapshot(&mut self, key: &str, order: &str, group: &str, filter: &str) -> SourceShelfSnapshot {
         let (plugin, rest) = split(key);
         let (address, membership) = if rest.starts_with("matching-artist-") { (rest, "") } else { rest.split_once(' ').unwrap_or((rest, "")) };
         let shelf_key = format!("{plugin} {address}");
-        let Some(shelf) = self.catalog.shelf(&shelf_key) else { return (Vec::new(), Vec::new()) };
+        let (rows, tracks, loading, error) = self.catalog.shelf_snapshot(&shelf_key, membership);
         let needle = words(filter);
-        let mut cards: Vec<Card> = self.catalog.cards(&shelf.cards).into_iter()
-            .filter(|c| membership.is_empty() || shelf.membership.get(&c.id).is_some_and(|m| m.split(',').any(|m| m == membership)))
+        let mut cards: Vec<Card> = rows.into_iter()
             .filter(|c| super::sorting::matches(c, &needle))
             .collect();
         super::sorting::sort_cards(&mut cards, order);
         if !matches!(group, "letter" | "artist" | "year" | "decade") {
-            return (cards.iter().map(album_of).collect(), Vec::new());
+            return SourceShelfSnapshot { albums: cards.iter().map(album_of).collect(), groups: Vec::new(), tracks, loading, error };
         }
         let named = cards.iter().map(|c| {
             let label = match (group, order.split(':').next().unwrap_or_default()) {
@@ -132,7 +225,7 @@ impl Chilpa {
         }).collect();
         let found = crate::albums_view::arrange(named);
         let by_id: std::collections::HashMap<i64, Album> = cards.iter().map(|c| (c.id, album_of(c))).collect();
-        (found.ids.iter().filter_map(|id| by_id.get(id).cloned()).collect(), found.groups)
+        SourceShelfSnapshot { albums: found.ids.iter().filter_map(|id| by_id.get(id).cloned()).collect(), groups: found.groups, tracks, loading, error }
     }
 
     /// The tracks a listing holds, in its order.

@@ -116,6 +116,7 @@ mod source_catalog;
 pub use found::{found_menu, found_rows, FoundRow, Leads};
 pub use found_selection::{FoundSelection, SelectionState};
 pub use source_catalog::SelectionHold;
+pub use source_catalog::view::SourceShelfSnapshot;
 mod track_menu;
 pub use track_menu::{track_can_go, track_menu, TrackMenuContext};
 mod scrobble;
