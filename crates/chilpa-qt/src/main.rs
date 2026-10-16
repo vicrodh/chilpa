@@ -102,6 +102,8 @@ fn main() {
     // Before anything is restored: a start that dies restoring degrades the
     // next one instead of trapping it.
     chilpa_api::startup_chain::arm();
+    // An image installs its entry before Qt looks for one below.
+    chilpa_api::appimage_desktop::integrate();
     let mut app = QGuiApplication::new();
     // Named after its desktop entry only when one is installed: a build run
     // from the tree has none, and the portal refused it on every start.

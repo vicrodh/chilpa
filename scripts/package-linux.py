@@ -68,6 +68,10 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     plain.mkdir()
     shutil.copy2(args.binary, plain / "chilpa-qt")
     shutil.copy2(root / "LICENSE", plain / "LICENSE")
+    shutil.copy2(root / "packaging/linux/app.chilpa.Chilpa.desktop", plain / "app.chilpa.Chilpa.desktop")
+    plain_icons = plain / "icons/hicolor/512x512/apps"
+    plain_icons.mkdir(parents=True)
+    shutil.copy2(root / "assets/logo.png", plain_icons / "app.chilpa.Chilpa.png")
     notices = plain / "licenses"
     shutil.copytree(root / "licenses", notices)
     shutil.copy2(root / "vendor/chilpa-plugin-api/LICENSE", notices / "plugin-protocol-MIT.txt")
