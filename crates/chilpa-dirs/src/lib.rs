@@ -40,10 +40,16 @@ pub fn config_base() -> PathBuf {
 
 /// Where the library, the plugins and anything else that must survive go.
 pub fn data() -> PathBuf {
+    data_base().join(NAME)
+}
+
+/// The directory data goes under, before Chilpa's own folder: where the
+/// desktop looks for application entries and icons too (`applications/` and
+/// `icons/` on Linux). Same bases as [`data`].
+pub fn data_base() -> PathBuf {
     from_env("XDG_DATA_HOME")
         .or_else(platform_data)
         .unwrap_or_else(std::env::temp_dir)
-        .join(NAME)
 }
 
 /// Where what can be thrown away and rebuilt goes: covers, mostly.
@@ -198,6 +204,15 @@ mod tests {
         assert_eq!(config_base(), PathBuf::from("/somewhere/config"));
         assert_eq!(config(), config_base().join("chilpa"));
         std::env::remove_var("XDG_CONFIG_HOME");
+    }
+
+    #[test]
+    fn the_data_is_the_desktops_base_plus_our_folder() {
+        let _looking = LOOKING.lock();
+        std::env::set_var("XDG_DATA_HOME", "/somewhere/share");
+        assert_eq!(data_base(), PathBuf::from("/somewhere/share"));
+        assert_eq!(data(), data_base().join("chilpa"));
+        std::env::remove_var("XDG_DATA_HOME");
     }
 
     #[test]
