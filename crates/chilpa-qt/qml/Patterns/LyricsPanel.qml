@@ -191,6 +191,7 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.Wrap
         text: panel.lyrics !== null && panel.lyrics.status === "searching" ? I18n.tr("Looking for lyrics…", I18n.rev)
+            : panel.lyrics !== null && panel.lyrics.status === "failed" ? I18n.tr("Lyrics could not be retrieved. Try again shortly.", I18n.rev)
             : panel.lyrics !== null || Player.playing ? I18n.tr("No lyrics for this track.", I18n.rev)
             : I18n.tr("Lyrics show here while a track plays.", I18n.rev)
         font.pointSize: Type.body

@@ -111,7 +111,7 @@ pub fn judge(track: &Track, claim: &Claim, doc: &Document) -> Verdict {
     add(1.0, title);
     add(1.0, artist);
     add(0.4, track.album.as_deref().zip(claim.album.as_deref()).map(|(a, b)| similarity(a, b)));
-    add(1.0, length.map(length_score));
+    if doc.timing > Timing::Unsynced { add(1.0, length.map(length_score)); }
     if title.is_none() || artist.is_none() {
         // A candidate that does not say what song it is cannot be trusted
         // on its length alone.
@@ -311,6 +311,14 @@ mod tests {
     fn another_title_by_the_same_band_is_rejected() {
         let v = judge(&track(), &claim("Stranger in a Strange Land", "Iron Maiden", 306_000), &timed());
         assert_eq!(v, Verdict::Rejected, "same artist, same length, another song");
+    }
+
+    #[test]
+    fn plain_words_do_not_depend_on_the_album_or_edit_length() {
+        let mut candidate = claim("Wasted Years", "Iron Maiden", 311_000);
+        candidate.album = Some("Compilation".into());
+        assert!(judge(&track(), &candidate, &lrc::parse("The same words")).accepted());
+        assert_eq!(judge(&track(), &candidate, &timed()), Verdict::Rejected);
     }
 
     #[test]

@@ -127,6 +127,8 @@ pub struct Resolved {
 #[derive(Clone, PartialEq, Debug)]
 pub struct Outcome {
     pub resolved: Option<Resolved>,
+    /// I distinguish a failed lookup from a confirmed absence.
+    pub failed: bool,
     /// What was served came from the cache and is old: look again, without
     /// holding up the screen.
     pub refresh: bool,
@@ -217,7 +219,7 @@ impl Pipeline {
     pub fn resolve(&self, request: &Request, fresh: bool) -> Outcome {
         if let Some(path) = request.path.as_deref() {
             if let Some(found) = crate::local::find(path) {
-                return Outcome { resolved: Some(Resolved { document: found.document, origin: found.origin }), refresh: false };
+                return Outcome { resolved: Some(Resolved { document: found.document, origin: found.origin }), refresh: false, failed: false };
             }
         }
         let track = &request.track;
@@ -264,7 +266,7 @@ impl Pipeline {
         let need_remote = !request.offline && request.allow_remote && request.remote_providers.as_ref().is_none_or(|providers| !providers.is_empty())
             && identity_known.is_none() && named && !source_has && self.remote.is_some();
         if !need_source && !need_remote {
-            return Outcome { resolved: choose(source_known.flatten(), identity_known.flatten()), refresh: stale && !request.offline };
+            return Outcome { resolved: choose(source_known.flatten(), identity_known.flatten()), refresh: stale && !request.offline, failed: false };
         }
 
         let asked = self.ask(request, need_source, need_remote);
@@ -294,7 +296,9 @@ impl Pipeline {
             Some(Ok(None)) if request.remote_providers.is_none() => cache.put_none(track),
             _ => {}
         }
-        Outcome { resolved: choose(from_source, from_remote), refresh: false }
+        let resolved = choose(from_source, from_remote);
+        let failed = resolved.is_none() && (matches!(asked.source, Some(Err(_))) || matches!(asked.remote, Some(Err(_))));
+        Outcome { resolved, refresh: false, failed }
     }
 
     /// Asks the source and the service at once. Each has its own time
@@ -331,6 +335,9 @@ impl Pipeline {
         drop(tx);
 
         let mut asked = Asked::default();
+        if need_remote && remote.is_none() {
+            asked.remote = Some(Err("the lyrics service asked to wait before trying again".into()));
+        }
         while source_until.is_some() || remote_until.is_some() {
             // Whoever ran out of time is no longer waited for.
             let now = Instant::now();
@@ -340,6 +347,7 @@ impl Pipeline {
             }
             if remote_until.is_some_and(|until| until <= now) {
                 remote_until = None;
+                asked.remote = Some(Err("the lyrics service did not answer in time".into()));
             }
             let Some(next) = [source_until, remote_until].into_iter().flatten().min() else { break };
             let Ok(message) = rx.recv_timeout(next.saturating_duration_since(now)) else { continue };
@@ -543,7 +551,9 @@ mod tests {
 
         let empty = Fake::new("service", Answer::None);
         let p = pipeline(empty.clone());
-        assert!(p.resolve(&request(None), false).resolved.is_none());
+        let answer = p.resolve(&request(None), false);
+        assert!(answer.resolved.is_none());
+        assert!(!answer.failed);
         assert!(p.resolve(&selected, false).resolved.is_none());
         assert_eq!(empty.calls(), 2);
     }
@@ -612,7 +622,9 @@ mod tests {
     fn a_service_that_is_late_is_not_waited_for_past_its_time() {
         let p = pipeline(Fake::slow("service", Duration::from_millis(2_000), found(LINES)));
         let started = Instant::now();
-        assert!(p.resolve(&request(None), false).resolved.is_none());
+        let answer = p.resolve(&request(None), false);
+        assert!(answer.resolved.is_none());
+        assert!(answer.failed);
         assert!(started.elapsed() < Duration::from_millis(1_200));
         // It did not say "none": the next play asks again.
         let p = pipeline(Fake::slow("service", Duration::from_millis(2_000), Answer::None));
@@ -635,20 +647,22 @@ mod tests {
     fn answers_are_remembered_and_failures_are_not() {
         let service = Fake::new("service", found(LINES));
         let p = pipeline(service.clone());
-        p.resolve(&request(None), false);
+        assert!(!p.resolve(&request(None), false).failed);
         p.resolve(&request(None), false);
         assert_eq!(service.calls(), 1, "the second time comes from the cache");
 
         let failing = Fake::new("failing", Answer::Failed { retry_after: None, message: "down".into() });
         let p = pipeline(failing.clone());
-        assert!(p.resolve(&request(None), false).resolved.is_none());
+        let answer = p.resolve(&request(None), false);
+        assert!(answer.resolved.is_none());
+        assert!(answer.failed);
         p.resolve(&request(None), false);
         assert_eq!(failing.calls(), 2, "a failure is asked again");
 
         let none = Fake::new("none", Answer::None);
         let p = pipeline(none.clone());
-        p.resolve(&request(None), false);
-        p.resolve(&request(None), false);
+        assert!(!p.resolve(&request(None), false).failed);
+        assert!(!p.resolve(&request(None), false).failed);
         assert_eq!(none.calls(), 1, "\"none\" is believed for a while");
     }
 
@@ -679,8 +693,8 @@ mod tests {
     fn a_service_that_asks_for_a_pause_gets_it() {
         let busy = Fake::new("busy", Answer::Failed { retry_after: Some(Duration::from_secs(60)), message: "429".into() });
         let p = pipeline(busy.clone());
-        p.resolve(&request(None), false);
-        p.resolve(&request(None), false);
+        assert!(p.resolve(&request(None), false).failed);
+        assert!(p.resolve(&request(None), false).failed);
         assert_eq!(busy.calls(), 1, "it is not asked again during its pause");
     }
 

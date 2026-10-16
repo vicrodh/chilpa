@@ -17,7 +17,7 @@
 //! while it is made.
 
 use crate::natives::Natives;
-use chilpa_lyrics::pipeline::{Answer, Limits, Pipeline, Remote, Request, Resolved, Source, Translator};
+use chilpa_lyrics::pipeline::{Answer, Limits, Outcome, Pipeline, Remote, Request, Resolved, Source, Translator};
 use chilpa_lyrics::{wire, Cache, Track};
 use chilpa_plugin::native::NativeError;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -49,6 +49,7 @@ pub(crate) enum State {
     Idle,
     Searching,
     None,
+    Failed,
     Found,
 }
 
@@ -77,14 +78,14 @@ pub(crate) struct LyricsService {
     /// The generation of the last track asked about. Answers for older ones
     /// are dropped.
     wanted: Arc<AtomicU64>,
-    delivered: Arc<Mutex<Option<(u64, Option<Resolved>)>>>,
+    delivered: Arc<Mutex<Option<(u64, Outcome)>>>,
 }
 
 impl LyricsService {
     pub(crate) fn start() -> LyricsService {
         let (jobs, rx) = mpsc::channel::<Job>();
         let wanted = Arc::new(AtomicU64::new(0));
-        let delivered: Arc<Mutex<Option<(u64, Option<Resolved>)>>> = Arc::new(Mutex::new(None));
+        let delivered: Arc<Mutex<Option<(u64, Outcome)>>> = Arc::new(Mutex::new(None));
         let (thread_wanted, thread_delivered) = (wanted.clone(), delivered.clone());
         let spawned = std::thread::Builder::new().name("lyrics".into()).spawn(move || {
             // A cache that cannot open on disk still works in memory: the
@@ -102,12 +103,12 @@ impl LyricsService {
                     continue;
                 }
                 let outcome = pipeline.resolve(&job.request, false);
-                let deliver = |resolved: Option<Resolved>| {
+                let deliver = |answer: Outcome| {
                     if job.generation == thread_wanted.load(Ordering::SeqCst) {
-                        *thread_delivered.lock().unwrap_or_else(|e| e.into_inner()) = Some((job.generation, resolved));
+                        *thread_delivered.lock().unwrap_or_else(|e| e.into_inner()) = Some((job.generation, answer));
                     }
                 };
-                deliver(outcome.resolved.clone());
+                deliver(outcome.clone());
                 // A translation the lyrics lack comes after them, in the
                 // same place. A track that stopped playing meanwhile is not
                 // translated.
@@ -122,7 +123,7 @@ impl LyricsService {
                     Some(Resolved { document, origin: found.origin.clone() })
                 };
                 if let Some(with) = translated(&outcome.resolved) {
-                    deliver(Some(with));
+                    deliver(Outcome { resolved: Some(with), failed: false, refresh: false });
                 }
                 if outcome.refresh && job.generation == thread_wanted.load(Ordering::SeqCst) {
                     // What the cache had is old: it was shown, and now the
@@ -130,9 +131,9 @@ impl LyricsService {
                     // say now replaces it.
                     let again = pipeline.resolve(&job.request, true);
                     if again.resolved.is_some() && again.resolved != outcome.resolved {
-                        deliver(again.resolved.clone());
+                        deliver(again.clone());
                         if let Some(with) = translated(&again.resolved) {
-                            deliver(Some(with));
+                            deliver(Outcome { resolved: Some(with), failed: false, refresh: false });
                         }
                     }
                 }
@@ -162,9 +163,8 @@ impl LyricsService {
         let _ = self.jobs.send(Job { generation, request: Request { track, path, source, language, translate, allow_remote, offline: chilpa_core::network::current().offline, remote_providers } });
     }
 
-    /// The answer for that generation, once, when it has arrived. `Some(None)`
-    /// means it arrived and there are no lyrics.
-    pub(crate) fn take(&self, generation: u64) -> Option<Option<Resolved>> {
+    /// I deliver the result for the current generation, including lookup failures.
+    pub(crate) fn take(&self, generation: u64) -> Option<Outcome> {
         let mut delivered = self.delivered.lock().unwrap_or_else(|e| e.into_inner());
         match delivered.as_ref() {
             Some((g, _)) if *g == generation => delivered.take().map(|(_, r)| r),
@@ -268,10 +268,8 @@ impl crate::Chilpa {
         let Some(service) = &self.lyrics.service else { return };
         let Some(answer) = service.take(self.lyrics.generation) else { return };
         self.now.lyrics_revision += 1;
-        let Some(found) = answer else {
-            // It arrived and there are none: the window stops saying it is
-            // looking.
-            self.lyrics.state = State::None;
+        let Some(found) = answer.resolved else {
+            self.lyrics.state = if answer.failed { State::Failed } else { State::None };
             return;
         };
         self.lyrics.state = State::Found;
@@ -320,6 +318,7 @@ impl crate::Chilpa {
         match (self.lyrics.state, &self.lyrics.document) {
             (State::Idle, _) => String::new(),
             (State::Searching, _) => serde_json::json!({ "status": "searching" }).to_string(),
+            (State::Failed, _) => serde_json::json!({ "status": "failed" }).to_string(),
             (State::Found, Some(document)) => serde_json::json!({
                 "status": "found",
                 "source": self.now.lyrics_source,
@@ -381,6 +380,25 @@ impl Source for NativeSource {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lookup_failures_and_confirmed_absence_stay_distinct_for_the_current_track() {
+        let mut api = crate::Chilpa::new();
+        let (jobs, _received) = mpsc::channel();
+        let delivered = Arc::new(Mutex::new(Some((1, Outcome { resolved: None, failed: true, refresh: false }))));
+        api.lyrics.generation = 1;
+        api.lyrics.service = Some(LyricsService { jobs, wanted: Arc::new(AtomicU64::new(1)), delivered: delivered.clone() });
+        api.advance_lyrics();
+        assert_eq!(serde_json::from_str::<serde_json::Value>(&api.lyrics_json()).unwrap()["status"], "failed");
+        *delivered.lock().unwrap() = Some((1, Outcome { resolved: None, failed: false, refresh: false }));
+        api.advance_lyrics();
+        assert_eq!(serde_json::from_str::<serde_json::Value>(&api.lyrics_json()).unwrap()["status"], "none");
+        api.lyrics.generation = 2;
+        api.lyrics.state = State::Searching;
+        *delivered.lock().unwrap() = Some((1, Outcome { resolved: None, failed: true, refresh: false }));
+        api.advance_lyrics();
+        assert_eq!(api.lyrics.state, State::Searching);
+    }
 
     #[test]
     fn a_pause_asked_for_in_an_error_is_kept() {
