@@ -139,6 +139,20 @@ jobs:
         run: |
           export RUSTFLAGS="--remap-path-prefix=$GITHUB_WORKSPACE=. --remap-path-prefix=$HOME/.cargo=/cargo"
           cargo build --locked --release -p chilpa-qt
+      - name: Check both native icon appearances
+        run: |
+          icon_tool="$(dirname "$(xcode-select -p)")/Applications/Icon Composer.app/Contents/Executables/ictool"
+          for appearance in Default Dark; do
+            "$icon_tool" packaging/macos/AppIcon.icon --export-image \
+              --output-file "$RUNNER_TEMP/icon-$appearance.png" --platform macOS \
+              --rendition "$appearance" --width 512 --height 512 --scale 1
+            sips -s format bmp "$RUNNER_TEMP/icon-$appearance.png" \
+              --out "$RUNNER_TEMP/icon-$appearance.bmp" >/dev/null
+          done
+          if cmp -s "$RUNNER_TEMP/icon-Default.bmp" "$RUNNER_TEMP/icon-Dark.bmp"; then
+            echo 'The native light and dark icons rendered identically.' >&2
+            exit 1
+          fi
       - name: Package the app, light and dark icons, ZIP and DMG
         run: |
           python3 scripts/package-macos.py --binary target/release/chilpa-qt \
