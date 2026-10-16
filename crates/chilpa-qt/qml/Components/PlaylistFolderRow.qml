@@ -1,0 +1,87 @@
+import QtQuick
+import app.chilpa
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+
+// One collapsible playlist folder in the sidebar.
+Item {
+    id: row
+
+    required property int index
+    required property int folderId
+    required property string name
+    required property int tracks
+    required property string folderColor
+    required property bool expanded
+
+    property string sourceIcon: ""
+    signal toggled()
+    signal menu(real x, real y)
+
+    readonly property color tone: !SettingsModel.folderColors ? Theme.color.textSecondary
+        : folderColor === "positive" ? Theme.color.statusPositive
+        : folderColor === "warning" ? Theme.color.statusWarning
+        : folderColor === "negative" ? Theme.color.statusNegative
+        : Theme.color.accent
+
+    implicitHeight: Metrics.playlistRowHeight
+
+    ListRowSurface {
+        anchors.fill: parent
+        rowIndex: row.index
+        listMode: false
+        radius: Metrics.radiusControl
+        hovered: hover.hovered
+    }
+    Icon {
+        id: folderIcon
+        x: Metrics.navItemPadding
+        anchors.verticalCenter: parent.verticalCenter
+        visible: row.sourceIcon === ""
+        glyph: row.expanded ? Icons.folderOpen : Icons.folder
+        size: Metrics.iconMd
+        color: row.tone
+    }
+    SourceIcon {
+        x: folderIcon.x
+        anchors.verticalCenter: parent.verticalCenter
+        width: Metrics.iconMd
+        height: width
+        visible: row.sourceIcon !== ""
+        sourceInfo: ({icon: row.sourceIcon})
+    }
+    Text {
+        anchors.left: folderIcon.right
+        anchors.leftMargin: Metrics.navItemPadding
+        anchors.right: count.left
+        anchors.rightMargin: Metrics.gap6
+        anchors.verticalCenter: parent.verticalCenter
+        text: row.name
+        elide: Text.ElideRight
+        font.pointSize: Type.body
+        font.weight: Type.medium
+        color: Theme.color.textPrimary
+    }
+    Text {
+        id: count
+        anchors.right: chevron.left
+        anchors.rightMargin: Metrics.gap6
+        anchors.verticalCenter: parent.verticalCenter
+        text: row.tracks
+        font.pointSize: Type.small
+        color: Theme.color.textTertiary
+    }
+    Icon {
+        id: chevron
+        anchors.right: parent.right
+        anchors.rightMargin: Metrics.gap6
+        anchors.verticalCenter: parent.verticalCenter
+        glyph: row.expanded ? Icons.chevronUp : Icons.chevronDown
+        size: Metrics.iconSm
+        color: Theme.color.textTertiary
+    }
+    HoverHandler { id: hover }
+    HoverHandler { cursorShape: Qt.PointingHandCursor }
+    TapHandler { acceptedButtons: Qt.LeftButton; onTapped: row.toggled() }
+    TapHandler { acceptedButtons: Qt.RightButton; onTapped: eventPoint => row.menu(eventPoint.position.x, eventPoint.position.y) }
+}

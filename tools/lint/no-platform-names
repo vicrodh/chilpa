@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# ADR-004: ningún servicio de streaming se nombra en este repo.
+# Sin argumentos revisa los archivos rastreados; con --message <archivo> revisa un mensaje de commit.
+set -euo pipefail
+root=$(git rev-parse --show-toplevel)
+list="$root/tools/lint/streaming-names.txt"
+pattern=$(grep -v '^#' "$list" | grep -v '^\s*$' | paste -sd'|' -)
+if [ "${1:-}" = "--message" ]; then
+    if grep -v '^#' "$2" | grep -inwE "$pattern"; then
+        echo "no-platform-names: el mensaje del commit nombra un servicio de streaming (ADR-004)" >&2
+        exit 1
+    fi
+    exit 0
+fi
+hits=$(git -C "$root" grep -inwIE "$pattern" -- ':!tools/lint/streaming-names.txt' || true)
+if [ -n "$hits" ]; then
+    echo "$hits"
+    echo "no-platform-names: hay servicios de streaming nombrados en el repo (ADR-004)" >&2
+    exit 1
+fi

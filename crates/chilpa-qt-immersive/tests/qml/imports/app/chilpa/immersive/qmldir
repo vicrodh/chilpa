@@ -1,0 +1,3 @@
+module app.chilpa.immersive
+singleton Immersive 1.0 Immersive.qml
+singleton Visualizer 1.0 Visualizer.qml

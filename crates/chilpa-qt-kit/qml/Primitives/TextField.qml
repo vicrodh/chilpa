@@ -1,0 +1,68 @@
+import QtQuick
+import "../Theme"
+
+// A one-line input (design/03 TextField): a placeholder while empty, and,
+// for a secret, dots instead of what is typed.
+Rectangle {
+    id: root
+
+    property alias text: input.text
+    property string placeholder
+    property bool secret: false
+    // A cell of a table: no fill and no corners until it has the keyboard.
+    property bool flat: false
+    // True while the field has the keyboard, so a value that changes
+    // underneath is not written over what is being typed.
+    readonly property alias editing: input.activeFocus
+
+    signal accepted()
+    // Enter, or the focus leaving the field.
+    signal editingFinished()
+    // Every change the person types, not the ones set from outside.
+    signal textEdited()
+
+    function focusInput() {
+        input.forceActiveFocus()
+        input.selectAll()
+    }
+
+    implicitWidth: Metrics.selectWidth
+    implicitHeight: Metrics.fieldHeight
+    radius: flat ? 0 : Metrics.radiusControl
+    color: !flat || input.activeFocus ? Theme.color.fillField : "transparent"
+    border.width: input.activeFocus ? (flat ? 1 : Metrics.focusRing) : 0
+    border.color: Theme.color.accent
+
+    TextInput {
+        id: input
+        anchors.fill: parent
+        anchors.leftMargin: Metrics.fieldPadding
+        anchors.rightMargin: Metrics.fieldPadding
+        verticalAlignment: TextInput.AlignVCenter
+        clip: true
+        echoMode: root.secret ? TextInput.Password : TextInput.Normal
+        // In the Tab order as it is drawn; Qt leaves a TextInput out of it.
+        // Losing the keyboard commits (`editingFinished`), as Enter does, and
+        // Escape goes on to whatever holds the field, as QBZ's form fields.
+        activeFocusOnTab: root.enabled
+        font.pointSize: Type.body
+        color: Theme.color.textPrimary
+        selectionColor: Theme.color.rowSelected
+        onAccepted: root.accepted()
+        onEditingFinished: root.editingFinished()
+        onTextEdited: root.textEdited()
+        // A long value set from outside shows its start, not its end.
+        onTextChanged: if (!activeFocus) cursorPosition = 0
+        onActiveFocusChanged: if (!activeFocus) cursorPosition = 0
+
+        Text {
+            anchors.fill: parent
+            verticalAlignment: Text.AlignVCenter
+            visible: input.text === ""
+            text: root.placeholder
+            font: input.font
+            color: Theme.color.textTertiary
+            elide: Text.ElideRight
+        }
+    }
+}

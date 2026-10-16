@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+"""Checks that the engine compiles on every target Chilpa ships to.
+
+ADR-010: a `cfg` for a platform that nobody compiles is a lie with a date on
+it. This is what puts a date on it.
+
+The engine is every crate that is not a platform backend and not a shell. It
+has to compile on Linux, Windows, macOS and Android. What each target *does*
+is a separate question -- there is no audio output outside Linux yet, and
+that is written down as debt -- but it has to build, because a platform that
+stops building is a platform that quietly leaves the workspace.
+
+`cargo check` does not link, so most of this works from one machine. What
+does not is a crate with C in it: `ring` needs a C compiler for the target,
+so a target with no cross toolchain here is reported as such instead of
+being called a pass.
+
+Targets that are not installed are reported, not installed: this does not
+touch the toolchain.
+"""
+import subprocess
+import sys
+
+# Every crate that must not assume a platform.
+ENGINE = [
+    "chilpa-models",
+    "chilpa-audio",
+    "chilpa-tags",
+    "chilpa-lyrics",
+    "chilpa-analysis",
+    "chilpa-i18n",
+    "chilpa-auth",
+    "chilpa-meta",
+    "chilpa-cast",
+    "chilpa-secrets",
+    "chilpa-stream",
+    "chilpa-decode",
+    "chilpa-dsd",
+    "chilpa-sacd",
+    "chilpa-plugin",
+    "chilpa-library",
+    "chilpa-core",
+    "chilpa-api",
+]
+
+# What ships, and what a real runner would be. The host target is checked
+# with the tests; here it is checked the same way as the rest so a failure
+# reads the same wherever it comes from.
+TARGETS = [
+    ("x86_64-unknown-linux-gnu", "Linux"),
+    ("x86_64-pc-windows-gnu", "Windows"),
+    ("aarch64-apple-darwin", "macOS"),
+    ("aarch64-linux-android", "Android"),
+]
+
+
+# A platform's own crate, against the one target it is written for. It has
+# no C in it, so it is checked from here whatever the machine.
+BACKENDS = [
+    ("chilpa-appkit", "aarch64-apple-darwin", "macOS"),
+    ("chilpa-coreaudio", "aarch64-apple-darwin", "macOS"),
+]
+
+
+def installed():
+    out = subprocess.run(
+        ["rustup", "target", "list", "--installed"], capture_output=True, text=True
+    )
+    return set(out.stdout.split())
+
+
+# What a missing cross C compiler looks like, as opposed to Chilpa not
+# compiling. `ring` and `wasmtime` both carry C; on a target this machine has
+# no compiler for, cc-rs hands the host's `cc` flags it does not know. Saying
+# "Chilpa does not compile on macOS" because of that would be false, and this
+# project does not report a failure it has not got.
+NO_COMPILER = "failed to run custom build command"
+NO_COMPILER_TOO = "cc: error: unrecognized"
+
+
+def check(target):
+    """Runs the check. Returns ("ok" | "no-compiler" | "failed", output)."""
+    args = ["cargo", "check", "--quiet", "--target", target]
+    for crate in ENGINE:
+        args += ["-p", crate]
+    done = subprocess.run(args, capture_output=True, text=True)
+    if done.returncode == 0:
+        return "ok", ""
+    if NO_COMPILER in done.stderr and NO_COMPILER_TOO in done.stderr:
+        return "no-compiler", done.stderr
+    return "failed", done.stderr
+
+
+def main():
+    have = installed()
+    missing, failed, toolchain = [], [], []
+    for target, name in TARGETS:
+        if target not in have:
+            missing.append((target, name))
+            print(f"platforms: {name} ({target}) -- the target is not installed, skipped")
+            continue
+        # One at a time, always: this machine freezes when memory runs out.
+        verdict, output = check(target)
+        if verdict == "ok":
+            print(f"platforms: {name} ({target}) -- the engine compiles")
+        elif verdict == "no-compiler":
+            toolchain.append((target, name))
+            print(
+                f"platforms: {name} ({target}) -- no cross C compiler here; "
+                "not checked, and not a failure"
+            )
+        else:
+            failed.append((name, target, output))
+    for crate, target, name in BACKENDS:
+        if target not in have:
+            continue
+        done = subprocess.run(
+            ["cargo", "check", "--quiet", "--target", target, "-p", crate], capture_output=True, text=True
+        )
+        if done.returncode == 0:
+            print(f"platforms: {name} ({target}) -- {crate} compiles")
+        else:
+            failed.append((f"{name}, {crate}", target, done.stderr))
+    for name, target, output in failed:
+        print()
+        print(f"platforms: {name} ({target}) FAILED")
+        print(output.strip()[:4000])
+    if missing:
+        print()
+        print("To check the ones that were skipped:")
+        for target, _ in missing:
+            print(f"  rustup target add {target}")
+    if toolchain:
+        print()
+        print("These need a cross C compiler for their target, because `ring`")
+        print("and `wasmtime` carry C. A real runner has one natively; from here")
+        print("they are unchecked, which is not the same as broken.")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

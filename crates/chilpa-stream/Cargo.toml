@@ -1,0 +1,18 @@
+[package]
+name = "chilpa-stream"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Why a stream could not be opened is read by the user.
+chilpa-i18n.workspace = true
+symphonia = { version = "0.5", default-features = false }
+# A server of mine may carry a certificate from a home CA installed in the
+# system; the platform verifier is what trusts it (ADR-017).
+ureq = { version = "3", default-features = false, features = ["rustls", "platform-verifier"] }
+# It was already in the tree through ureq; here it is for the requests Chilpa
+# makes on a plugin's behalf, which go in and out as JSON.
+serde_json = "1"
+base64 = "0.22"

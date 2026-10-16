@@ -1,0 +1,23 @@
+# cargo-deny para el CI. Los mismos criterios que tools/lint/licencias, que
+# corre sin instalar nada.
+#
+# Chilpa es MIT, así que no se prohíben licencias: se avisa cuáles arrastran
+# copyleft al binario que se distribuye.
+[licenses]
+allow = [
+    "MIT", "MIT-0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Zlib", "0BSD",
+    "CC0-1.0", "Unlicense", "Unicode-3.0", "Unicode-DFS-2016", "BSL-1.0",
+    "MPL-2.0", "CDLA-Permissive-2.0", "Apache-2.0", "Apache-2.0 WITH LLVM-exception",
+    # Copyleft: permitidas, y el binario hereda sus términos.
+    "GPL-2.0", "GPL-2.0-only", "GPL-2.0-or-later",
+    "GPL-3.0", "GPL-3.0-only", "GPL-3.0-or-later",
+    "LGPL-2.1-only", "LGPL-2.1-or-later", "LGPL-3.0-only", "LGPL-3.0-or-later",
+    "AGPL-3.0", "AGPL-3.0-only", "AGPL-3.0-or-later",
+]
+confidence-threshold = 0.9
+
+[bans]
+multiple-versions = "warn"
+
+[advisories]
+yanked = "deny"

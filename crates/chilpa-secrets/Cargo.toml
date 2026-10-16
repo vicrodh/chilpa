@@ -1,0 +1,56 @@
+[package]
+name = "chilpa-secrets"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Where a secret ended up, and why it could not be kept, are read by the user.
+chilpa-i18n.workspace = true
+# AES-256-GCM for the encryption at rest.
+aes-gcm = "0.10"
+# The fallback's derivation, for when there is no keyring.
+hkdf = "0.12"
+sha2 = "0.10"
+# Nonces and the new master key.
+rand = "0.10"
+# The installation's identifier, which is salt and not a secret.
+uuid = { version = "1", features = ["v4"] }
+# The keyring stores text, so the key travels as base64.
+base64 = "0.22"
+thiserror = "2"
+tempfile = "3"
+
+[dev-dependencies]
+
+# The system's store: Secret Service on Linux, Keychain on macOS, Credential
+# Manager on Windows. Each one is turned on by hand, and ADR-010 says by hand
+# for every target, including the ones with nothing to turn on.
+#
+# `keyring` 3.x ships nothing in its `default` feature: every platform reads
+# `not(feature = "…-native")` and exports `mock`, an in-memory store whose
+# writes SUCCEED. Depending on it does not fail loudly: it hands over a master
+# key that dies with the process, and everything encrypted in one run is
+# unreadable in the next while the backend reports itself as "keyring". This
+# is the bug that rotated QBZ's master key on every launch, on Windows and on
+# macOS, in silence. Any other target goes straight to the derived path.
+#
+# `async-secret-service` and not `sync-secret-service`: keyring refuses to
+# have both. `crypto-rust` is what the Secret Service backend asks for.
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", default-features = false, features = [
+  "async-secret-service",
+  "crypto-rust",
+] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["apple-native"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["windows-native"] }
+
+# Android: there is no store to turn on, and the derived path is the answer
+# rather than an accident. Declared so it is a decision and not an omission
+# (ADR-010 M7).
+[target.'cfg(target_os = "android")'.dependencies]

@@ -1,0 +1,13 @@
+[package]
+name = "chilpa-decode"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Why a file could not be decoded is read by the user.
+chilpa-i18n.workspace = true
+chilpa-audio.workspace = true
+chilpa-stream.workspace = true
+symphonia = { version = "0.5", features = ["all"] }

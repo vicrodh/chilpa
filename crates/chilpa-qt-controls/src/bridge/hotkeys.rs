@@ -1,0 +1,111 @@
+//! The keyboard shortcuts: which action a key is, and the sheet and the
+//! editor as the facade writes them.
+#[cxx_qt::bridge]
+pub mod qobject {
+    unsafe extern "C++" {
+        include!("cxx-qt-lib/qstring.h");
+        type QString = cxx_qt_lib::QString;
+    }
+    #[auto_cxx_name]
+    extern "RustQt" {
+        #[qobject]
+        #[qml_element]
+        #[qml_singleton]
+        #[qproperty(QString, snapshot)]
+        #[qproperty(i32, repeat)]
+        #[qproperty(bool, search_active)]
+        type Hotkeys = super::HotkeysRust;
+        #[qinvokable]
+        fn refresh(self: Pin<&mut Hotkeys>);
+        /// The action of a key as Qt names it: empty when it is nobody's,
+        /// "-" when it was taken and there is nothing to run.
+        #[qinvokable]
+        fn pressed(self: Pin<&mut Hotkeys>, key: i32, modifiers: i32, text: &QString, typing: bool) -> QString;
+        /// The same, for a key pressed in a named scope: "window", "mini"
+        /// or "immersive" (the overlay answers the window's keys too).
+        #[qinvokable]
+        fn pressed_in(self: Pin<&mut Hotkeys>, scope: &QString, key: i32, modifiers: i32, text: &QString, typing: bool) -> QString;
+        #[qinvokable]
+        fn command(self: Pin<&mut Hotkeys>, action: &QString, argument: &QString);
+        /// Marks what plays as a favorite, or takes the mark off.
+        #[qinvokable]
+        fn like_playing(self: Pin<&mut Hotkeys>);
+        /// One action's shortcut as the sheet shows it: a menu's hint.
+        #[qinvokable]
+        fn shortcut(self: &Hotkeys, id: &QString) -> QString;
+        /// Runs one of the keyboard's actions without its key: a menu row.
+        #[qinvokable]
+        fn ask(self: Pin<&mut Hotkeys>, action: &QString);
+        /// An action asked for without its key, for the window's controls.
+        #[qsignal]
+        fn asked(self: Pin<&mut Hotkeys>, action: QString);
+        /// The search box is asked to take the keyboard.
+        #[qsignal]
+        fn search_asked(self: Pin<&mut Hotkeys>);
+        /// The music link box is asked for.
+        #[qsignal]
+        fn link_asked(self: Pin<&mut Hotkeys>);
+        #[qsignal]
+        fn search_command(self: Pin<&mut Hotkeys>, query: QString, source: QString);
+        #[qsignal]
+        fn search_stepped(self: Pin<&mut Hotkeys>, by: i32);
+        #[qsignal]
+        fn search_confirmed(self: Pin<&mut Hotkeys>);
+    }
+}
+use chilpa_api::{Pressed, Scope};
+use chilpa_qt_kit::app;
+use cxx_qt_lib::QString;
+use std::pin::Pin;
+
+#[derive(Default)]
+pub struct HotkeysRust {
+    snapshot: QString,
+    repeat: i32,
+    search_active: bool,
+}
+
+impl qobject::Hotkeys {
+    pub fn refresh(self: Pin<&mut Self>) {
+        let snapshot = app::with(|api| api.keys_json());
+        self.set_snapshot(QString::from(&snapshot));
+    }
+
+    pub fn pressed(self: Pin<&mut Self>, key: i32, modifiers: i32, text: &QString, typing: bool) -> QString {
+        self.pressed_in(&QString::from("window"), key, modifiers, text, typing)
+    }
+
+    pub fn pressed_in(mut self: Pin<&mut Self>, scope: &QString, key: i32, modifiers: i32, text: &QString, typing: bool) -> QString {
+        let scope = Scope::named(&scope.to_string());
+        let (pressed, repeat) = app::with(|api| {
+            let pressed = api.key_pressed_in(scope, key, modifiers, &text.to_string(), typing);
+            (pressed, api.key_repeat() as i32)
+        });
+        self.as_mut().set_repeat(repeat);
+        match pressed {
+            Pressed::Pass => QString::default(),
+            Pressed::Taken => {
+                self.as_mut().refresh();
+                QString::from("-")
+            }
+            Pressed::Run(action) => QString::from(action),
+        }
+    }
+
+    pub fn command(mut self: Pin<&mut Self>, action: &QString, argument: &QString) {
+        app::with(|api| api.keys_command(&action.to_string(), &argument.to_string()));
+        self.as_mut().refresh();
+    }
+
+    pub fn like_playing(self: Pin<&mut Self>) {
+        app::with(|api| api.like_playing());
+    }
+
+    pub fn ask(self: Pin<&mut Self>, action: &QString) {
+        self.asked(action.clone());
+    }
+
+    pub fn shortcut(&self, id: &QString) -> QString {
+        QString::from(&app::with(|api| api.shortcut_shown(&id.to_string())))
+    }
+}

@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "plugins": [
+    {
+      "id": "app.chilpa.radio",
+      "name": "Radio",
+      "version": "0.1.2",
+      "description": "Stations from Radio Browser, an open directory kept by its community. It needs no account.",
+      "author": "vicrodh",
+      "category": "radio",
+      "repository": "https://github.com/vicrodh/chilpa-pg-radio",
+      "package": "https://github.com/vicrodh/chilpa-pg-radio/releases/download/v0.1.2/chilpa-pg-radio-0.1.2-wasm.zip",
+      "sha256": "f29c3ca6869393da327117658851010dc7dd00d081d61f12c73d5bb193b30814",
+      "api": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    {
+      "id": "app.chilpa.podcasts",
+      "name": "Podcasts",
+      "version": "0.2.2",
+      "description": "Shows from PodcastIndex, an open index of podcasts: by language and category, with every episode. It needs no account.",
+      "author": "vicrodh",
+      "category": "information",
+      "repository": "https://github.com/vicrodh/chilpa-pg-podcasts",
+      "package": "https://github.com/vicrodh/chilpa-pg-podcasts/releases/download/v0.2.2/chilpa-pg-podcasts-0.2.2-wasm.zip",
+      "sha256": "56b68241a87903437559ae3a833ebeb2b8fb56ec03b0d924f98f1322d0ec90f2",
+      "api": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    {
+      "id": "app.chilpa.playlist-import",
+      "name": "Playlist Importer",
+      "version": "0.1.1",
+      "description": "Import public playlists and playlist files, then match their tracks against your local library and connected sources. Create local, mixed or source-owned playlists and review unmatched tracks. Source accounts remain in their own plugins. (Linux x86_64 only)",
+      "author": "vicrodh",
+      "category": "playlists",
+      "repository": "https://github.com/vicrodh/chilpa-pg-playlist-import",
+      "package": "https://github.com/vicrodh/chilpa-pg-playlist-import/releases/download/v0.1.1/chilpa-pg-playlist-import-0.1.1-linux-x86_64.zip",
+      "sha256": "7ca8ff1a959e72acb083094b46d8b4cf761016b7c8df2adc7c54e451b3d9dd88",
+      "api": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    {
+      "id": "app.chilpa.dsp",
+      "name": "Chilpa DSP",
+      "version": "0.1.1",
+      "description": "Offline equalizer, crossfeed and listening presets. DSP modifies the signal; native DSD and DoP bypass processing.",
+      "author": "vicrodh",
+      "category": "DSP",
+      "repository": "https://github.com/vicrodh/chilpa-pg-dsp",
+      "package": "https://github.com/vicrodh/chilpa-pg-dsp/releases/download/v0.1.1/chilpa-dsp-0.1.1.zip",
+      "sha256": "b675ddc1b0d2a49a4df1fad690a34ca3c976359f035485b18c386b155573b712",
+      "api": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    {
+      "id": "app.chilpa.mood",
+      "name": "Mood",
+      "version": "0.1.2",
+      "description": "Analyze local audio for mood and similarity. Optional models download only after enabling the plugin and permit noncommercial use. Linux x86_64 only.",
+      "author": "vicrodh",
+      "category": "Analysis",
+      "repository": "https://github.com/vicrodh/chilpa-pg-mood",
+      "package": "https://github.com/vicrodh/chilpa-pg-mood/releases/download/v0.1.2/chilpa-pg-mood-0.1.2-linux-x86_64.zip",
+      "sha256": "48ed293576939c441a70010cae0e711f26d6c1a8a436f2eb3ca392393ac421fe",
+      "api": {
+        "min": 1,
+        "max": 1
+      }
+    }
+  ]
+}

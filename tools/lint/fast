@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Los candados baratos: los que corren en cada commit.
+set -e
+root=$(git rev-parse --show-toplevel)
+"$root/tools/lint/no-platform-names"
+"$root/tools/lint/arquitectura"
+# Settings grow by feature, never in the bridge (frontend ADR-0015).
+"$root/tools/lint/settings-bridge"
+"$root/tools/lint/window-files"
+# The frontend's layers, budgets, tokens and rows (frontend ADR-0002).
+"$root/tools/lint/qml-budget"
+"$root/tools/lint/qml-literals"
+"$root/tools/lint/qml-imports"
+"$root/tools/lint/qml-hotpath"
+"$root/tools/lint/qml-cursors"
+"$root/tools/lint/qml-modal-input"
+"$root/tools/lint/qml-names"
+"$root/tools/lint/mac-window"
+"$root/tools/lint/idioma"
+"$root/tools/lint/licencias"
+"$root/tools/i18n/extract" --check

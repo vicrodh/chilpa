@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""What can be clicked shows it: the pointing hand (frontend, 2026-09-27).
+
+A `MouseArea` declares its `cursorShape`. A `TapHandler` cannot show a cursor
+while the pointer only hovers -- its `cursorShape` applies while it is
+pressed -- so it needs a `HoverHandler` with a `cursorShape` beside it, in the
+same item. What is not a control -- a layer that only keeps clicks or the
+wheel from reaching what is beneath, the tab bar's empty space that moves the
+window -- says so on the line before it, with `// no cursor: <why>`.
+
+A handler that only takes the right button opens a menu where the pointer
+already is, and is left alone.
+"""
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from qmllib import QML, files, rel  # noqa: E402
+
+OPEN = re.compile(r"^(\s*)(MouseArea|TapHandler)\s*\{(.*)$")
+
+
+def blocks(lines):
+    """(kind, first line, the block's lines) for every handler."""
+    for i, line in enumerate(lines):
+        m = OPEN.match(line)
+        if not m:
+            continue
+        indent, kind, rest = m.groups()
+        end = i
+        if not rest.strip().endswith("}"):
+            for end in range(i + 1, len(lines)):
+                if re.match(rf"^{re.escape(indent)}\}}", lines[end]):
+                    break
+        yield kind, i, indent, lines[i : end + 1]
+
+
+def siblings(lines, at, indent):
+    """The item the handler lives in: the lines around it at its indentation
+    or deeper."""
+    lo = at
+    while lo > 0 and (not lines[lo - 1].strip() or len(lines[lo - 1]) - len(lines[lo - 1].lstrip()) >= len(indent)):
+        lo -= 1
+    hi = at
+    while hi + 1 < len(lines) and (not lines[hi + 1].strip() or len(lines[hi + 1]) - len(lines[hi + 1].lstrip()) >= len(indent)):
+        hi += 1
+    return "\n".join(lines[lo : hi + 1])
+
+
+def main():
+    errors = []
+    for path in files():
+        name = rel(path)
+        if "/Gallery/" in f"/{name}" or "/Theme/" in f"/{name}":
+            continue
+        lines = path.read_text().split("\n")
+        for kind, at, indent, block in blocks(lines):
+            text = "\n".join(block)
+            if at > 0 and "no cursor:" in lines[at - 1]:
+                continue
+            if "Qt.RightButton" in text and "Qt.LeftButton" not in text:
+                continue
+            if kind == "MouseArea":
+                if "cursorShape" not in text:
+                    errors.append(f"{name}:{at + 1}: a MouseArea with no cursorShape")
+            elif not re.search(r"HoverHandler\s*\{[^}]*cursorShape", siblings(lines, at, indent)):
+                errors.append(f"{name}:{at + 1}: a TapHandler with no HoverHandler showing a cursor beside it")
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        print(f"qml-cursors: {len(errors)} clickable place(s) without a cursor; "
+              "add one, or say why not with `// no cursor: <why>`", file=sys.stderr)
+        sys.exit(1)
+    print(f"qml-cursors: every clickable place in {len(files())} files shows it")
+
+
+if __name__ == "__main__":
+    main()

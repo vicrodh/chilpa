@@ -1,0 +1,16 @@
+{
+  "name": "qt-build-utils",
+  "version": "0.7.3",
+  "source": "registry+https://github.com/rust-lang/crates.io-index",
+  "checksum": "63c7e24653d0b3084180066306b26e532b152470b13a050c2d2960284d4b9f53",
+  "repository": "https://github.com/KDAB/cxx-qt/",
+  "license": "MIT OR Apache-2.0",
+  "selected_license": "Apache-2.0",
+  "original_files_sha256": {
+    "Cargo.toml": "5f62bed336292d1ca9feea0406991ee5def900b877aac4ba95544b11baf6d546",
+    "src/lib.rs": "9350ce30eced971dc1fb629966e483493de70315cc56b3c629d4434154b85994",
+    "src/parse_cflags.rs": "65487d89ed7d28ea65a2f8515c401022b29aff2fb363c76321c85f18666883c1"
+  },
+  "patch": "I preload QtQml/qqmlregistration.h for moc in modules that link Qml, preserving singleton metadata for qmlcachegen.",
+  "placement": "I keep the shared Qt build helper inside the Qt kit frontend boundary; its source counts toward the kit budget."
+}

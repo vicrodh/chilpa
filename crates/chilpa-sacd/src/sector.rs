@@ -1,0 +1,253 @@
+//! The packing inside a sector of the audio area.
+//!
+//! Layout measured in QBZ against a census of 3,066,893 sectors, without a
+//! single exception:
+//!
+//! ```text
+//! byte 0:  packet_count     = (b >> 5) & 0x07
+//!          frame_info_count = (b >> 2) & 0x07
+//!          dst              =  b & 0x01
+//! then packet_count 16-bit descriptors, big endian:
+//!          bit 15     starts a frame
+//!          bits 14-11 data type
+//!          bits 10-0  length IN BYTES       <- ELEVEN bits, not twelve
+//! then frame_info_count records of 4 bytes (DST) or 3 (uncompressed):
+//!          minutes, seconds, 1/75 s frames
+//!          DST only: bits 6-2 how many packets the frame spans,
+//!                    bits 1-0 its channels (10 six, 01 five, else two)
+//! ```
+//!
+//! The eleven bits of the length are the correction that matters. The
+//! version going around gives it twelve, and the first descriptor of the
+//! discs measured is 0x181B: with twelve bits that is 2075, more than the
+//! whole sector. With eleven it is 27, and 5 + 27 + 2016 = 2048 exactly. The
+//! sum `header + Σ lengths == 2048` is what proves the decoding, and here it
+//! is checked on every sector instead of being taken on faith.
+//!
+//! A DST sector is the one exception, and only by zeros: after its last
+//! packet it can carry a few bytes no packet declares, and more when a
+//! compressed frame ends early. QBZ found them on real DST discs; they are
+//! alignment, and a tail that is not all zeros is still refused.
+
+use crate::{SacdError, DATA_TYPE_AUDIO, SECTOR};
+
+/// A packet inside a sector.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Packet {
+    pub frame_start: bool,
+    pub data_type: u16,
+    /// Where the payload starts inside the sector.
+    pub at: usize,
+    pub len: usize,
+    /// The area's timecode, when the packet starts an audio frame.
+    pub timecode: Option<u32>,
+    /// How many packets the DST frame this packet starts spans, this one
+    /// included. Only on a packet that starts a DST frame.
+    pub dst_packets: Option<u8>,
+    /// How many channels that DST frame carries.
+    pub dst_channels: Option<u8>,
+}
+
+impl Packet {
+    pub fn is_audio(&self) -> bool {
+        self.data_type == DATA_TYPE_AUDIO
+    }
+}
+
+/// What is known about a sector of the audio area.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct SectorPackets {
+    /// True when the sector carries DST-compressed frames.
+    pub dst: bool,
+    pub packets: Vec<Packet>,
+}
+
+/// Decodes a sector's packing.
+pub fn parse(sector: &[u8], lsn: u64) -> Result<SectorPackets, SacdError> {
+    if sector.len() != SECTOR {
+        return Err(SacdError::BadSector { lsn, why: chilpa_i18n::mark("it is not 2048 bytes").into() });
+    }
+    let b0 = sector[0];
+    let dst = b0 & 0x01 != 0;
+    let packet_count = ((b0 >> 5) & 0x07) as usize;
+    let frame_info_count = ((b0 >> 2) & 0x07) as usize;
+    let frame_info_size = if dst { 4 } else { 3 };
+    let frame_info_at = 1 + packet_count * 2;
+    let header_len = frame_info_at + frame_info_count * frame_info_size;
+    if packet_count == 0 || header_len > SECTOR {
+        return Err(SacdError::BadSector { lsn, why: chilpa_i18n::mark("impossible packet counts").into() });
+    }
+
+    let mut packets = Vec::with_capacity(packet_count);
+    let mut at = header_len;
+    let mut total = header_len;
+    let mut read_frames = 0usize;
+    for k in 0..packet_count {
+        let w = u16::from_be_bytes([sector[1 + 2 * k], sector[2 + 2 * k]]);
+        let len = (w & 0x07FF) as usize;
+        let frame_start = w & 0x8000 != 0;
+        let data_type = (w >> 11) & 0x07;
+
+        // The frame-info record only exists for packets that start a frame.
+        // In the lead-out there is a filler packet marked as a start with a
+        // sentinel record: it counts, but its timecode means nothing.
+        let (mut timecode, mut dst_packets, mut dst_channels) = (None, None, None);
+        if frame_start {
+            let info = frame_info_at + read_frames * frame_info_size;
+            read_frames += 1;
+            if data_type == DATA_TYPE_AUDIO {
+                let t = sector.get(info..info + frame_info_size).ok_or_else(|| SacdError::BadSector {
+                    lsn,
+                    why: chilpa_i18n::mark("the frame-info table is cut off").into(),
+                })?;
+                if t[1] >= 60 || t[2] >= 75 {
+                    return Err(SacdError::BadSector {
+                        lsn,
+                        why: chilpa_i18n::mark("invalid timecode in frame-info").into(),
+                    });
+                }
+                timecode = Some((u32::from(t[0]) * 60 + u32::from(t[1])) * 75 + u32::from(t[2]));
+                if dst {
+                    dst_packets = Some((t[3] >> 2) & 0x1f);
+                    dst_channels = Some(match (t[3] & 0x02 != 0, t[3] & 0x01 != 0) {
+                        (true, false) => 6,
+                        (false, true) => 5,
+                        _ => 2,
+                    });
+                }
+            }
+        }
+
+        total += len;
+        if total > SECTOR {
+            return Err(SacdError::BadSector {
+                lsn,
+                why: format!("the packets add up to {total} bytes"),
+            });
+        }
+        packets.push(Packet { frame_start, data_type, at, len, timecode, dst_packets, dst_channels });
+        at += len;
+    }
+    if total != SECTOR && !(dst && sector[total..].iter().all(|b| *b == 0)) {
+        return Err(SacdError::BadSector {
+            lsn,
+            why: format!("the packets add up to {total} and not 2048"),
+        });
+    }
+    if read_frames != frame_info_count {
+        return Err(SacdError::BadSector {
+            lsn,
+            why: chilpa_i18n::mark("the frame-info records do not match the frames that start").into(),
+        });
+    }
+    Ok(SectorPackets { dst, packets })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A sector with a single audio packet that starts a frame.
+    fn audio_sector(timecode: [u8; 3]) -> Vec<u8> {
+        let mut s = vec![0u8; SECTOR];
+        // 1 packet, 1 frame-info record, no DST.
+        s[0] = (1 << 5) | (1 << 2);
+        let header_len = 1 + 2 + 3;
+        let len = SECTOR - header_len;
+        let w: u16 = 0x8000 | (DATA_TYPE_AUDIO << 11) | len as u16;
+        s[1..3].copy_from_slice(&w.to_be_bytes());
+        s[3..6].copy_from_slice(&timecode);
+        s
+    }
+
+    #[test]
+    fn an_audio_sector_decodes_and_adds_up_to_2048() {
+        let s = audio_sector([0, 1, 2]);
+        let p = parse(&s, 550).unwrap();
+        assert!(!p.dst);
+        assert_eq!(p.packets.len(), 1);
+        let packet = p.packets[0];
+        assert!(packet.frame_start && packet.is_audio());
+        assert_eq!(packet.at, 6);
+        assert_eq!(packet.at + packet.len, SECTOR);
+        assert_eq!(packet.timecode, Some(75 + 2));
+    }
+
+    #[test]
+    fn a_sector_whose_packets_do_not_add_up_to_2048_is_refused() {
+        let mut s = audio_sector([0, 0, 0]);
+        // One byte is taken off the declared length: the sum no longer adds up.
+        let w = u16::from_be_bytes([s[1], s[2]]) - 1;
+        s[1..3].copy_from_slice(&w.to_be_bytes());
+        assert!(matches!(parse(&s, 1), Err(SacdError::BadSector { .. })));
+    }
+
+    #[test]
+    fn an_impossible_timecode_is_refused() {
+        let s = audio_sector([0, 75, 0]);
+        assert!(matches!(parse(&s, 1), Err(SacdError::BadSector { .. })));
+    }
+
+    /// A DST sector where one frame starts, spanning `packets` packets, with
+    /// `payload` bytes of it in this sector.
+    fn dst_sector(packets: u8, payload: usize) -> Vec<u8> {
+        let mut s = vec![0u8; SECTOR];
+        // 1 packet, 1 frame-info record, DST.
+        s[0] = (1 << 5) | (1 << 2) | 1;
+        let header_len = 1 + 2 + 4;
+        let w: u16 = 0x8000 | (DATA_TYPE_AUDIO << 11) | payload as u16;
+        s[1..3].copy_from_slice(&w.to_be_bytes());
+        s[3..6].copy_from_slice(&[0, 0, 1]);
+        s[6] = packets << 2;
+        for b in &mut s[header_len..header_len + payload] {
+            *b = 0x5A;
+        }
+        s
+    }
+
+    #[test]
+    fn a_dst_frame_says_how_many_packets_it_spans() {
+        let p = parse(&dst_sector(3, SECTOR - 7), 1).unwrap();
+        assert!(p.dst);
+        let packet = p.packets[0];
+        assert_eq!(packet.timecode, Some(1));
+        assert_eq!(packet.dst_packets, Some(3), "bits 6-2 of the record's fourth byte");
+        assert_eq!(packet.dst_channels, Some(2), "no channel bit set is stereo");
+    }
+
+    #[test]
+    fn a_dst_sector_can_end_in_zeros_that_no_packet_declares() {
+        // DST discs leave a few zero bytes after the last packet, and more
+        // when a frame ends early: alignment, not audio.
+        let p = parse(&dst_sector(1, SECTOR - 7 - 6), 1).expect("a zero tail is alignment");
+        assert_eq!(p.packets[0].at + p.packets[0].len, SECTOR - 6, "the tail is not handed over");
+    }
+
+    #[test]
+    fn a_dst_tail_that_is_not_zero_is_refused() {
+        let mut s = dst_sector(1, SECTOR - 7 - 6);
+        s[SECTOR - 1] = 1;
+        assert!(matches!(parse(&s, 1), Err(SacdError::BadSector { .. })));
+    }
+
+    #[test]
+    fn a_frame_info_record_no_packet_starts_is_refused() {
+        // Two records declared, one frame started: the second record belongs
+        // to nothing, and the offsets it moves are not to be trusted.
+        let mut s = vec![0u8; SECTOR];
+        s[0] = (1 << 5) | (2 << 2) | 1;
+        let header_len = 1 + 2 + 2 * 4;
+        let w: u16 = 0x8000 | (DATA_TYPE_AUDIO << 11) | (SECTOR - header_len) as u16;
+        s[1..3].copy_from_slice(&w.to_be_bytes());
+        s[6] = 1 << 2;
+        assert!(matches!(parse(&s, 1), Err(SacdError::BadSector { .. })));
+    }
+
+    #[test]
+    fn the_length_uses_eleven_bits_and_not_twelve() {
+        // 0x181B: with twelve bits that would be 2075, more than the sector.
+        let w = 0x181Bu16;
+        assert_eq!((w & 0x07FF) as usize, 27);
+        assert_eq!(5 + 27 + 2016, SECTOR);
+    }
+}

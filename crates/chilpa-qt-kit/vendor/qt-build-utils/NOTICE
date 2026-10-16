@@ -1,0 +1,9 @@
+qt-build-utils 0.7.3
+Copyright 2022 Klarälvdalens Datakonsult AB, a KDAB Group company.
+Contributor: Be Wilson.
+Contributor: pkg-config crate contributors (src/parse_cflags.rs).
+
+I retain the upstream SPDX notices in both source files and use the
+Apache-2.0 option of the upstream MIT OR Apache-2.0 license.
+I preserve the registry checksum and unmodified file hashes in ORIGIN.json.
+I add one moc include so QML singleton metadata reaches qmlcachegen.

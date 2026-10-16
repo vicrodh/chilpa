@@ -1,0 +1,320 @@
+//! The tabs and where each one is, as QML reads them (frontend ADR-0005).
+//!
+//! The history lives in [`crate::navigation`]; this object only publishes
+//! it. What a tab is called is the facade's to say.
+
+#[cxx_qt::bridge]
+pub mod qobject {
+    unsafe extern "C++" {
+        include!("cxx-qt-lib/qstring.h");
+        type QString = cxx_qt_lib::QString;
+        include!("cxx-qt-lib/qstringlist.h");
+        type QStringList = cxx_qt_lib::QStringList;
+    }
+
+    #[auto_cxx_name]
+    extern "RustQt" {
+        #[qobject]
+        #[qml_element]
+        #[qml_singleton]
+        #[qproperty(QStringList, tab_titles)]
+        /// The name of each tab's icon in `Icons`.
+        #[qproperty(QStringList, tab_icons)]
+        #[qproperty(i32, active)]
+        /// The active tab's screen: "home", "library", "album"...
+        #[qproperty(QString, screen)]
+        /// Which record, when the screen is one.
+        #[qproperty(i64, route_id)]
+        #[qproperty(bool, can_back)]
+        #[qproperty(bool, can_forward)]
+        /// The Settings section on screen, when the screen is Settings.
+        #[qproperty(QString, section)]
+        /// The route's text: the folder, for Folders; the section, for
+        /// Settings.
+        #[qproperty(QString, route_key)]
+        #[qproperty(bool, pending)]
+        #[qproperty(i32, pending_revision)]
+        type Navigation = super::NavigationRust;
+
+        /// I enrich tab labels and persist their routes after the acknowledgement frame.
+        #[qinvokable]
+        fn settle(self: Pin<&mut Navigation>, revision: i32);
+
+        #[qinvokable]
+        fn prepare(self: Pin<&mut Navigation>) -> bool;
+
+        #[qinvokable]
+        fn go_origin(self: Pin<&mut Navigation>, origin: &QString);
+
+        #[qsignal]
+        fn route_requested(self: Pin<&mut Navigation>);
+
+        #[qsignal]
+        fn search_origin_requested(self: Pin<&mut Navigation>, query: QString, source: QString);
+
+        /// Opens a folder in the Folders screen, inside the active tab. An
+        /// empty path is the top: the library's folders.
+        #[qinvokable]
+        fn open_folder(self: Pin<&mut Navigation>, path: &QString);
+
+        /// Goes to a screen that is told apart by a text, like a source by
+        /// its plugin's id.
+        #[qinvokable]
+        fn go_key(self: Pin<&mut Navigation>, screen: &QString, key: &QString);
+
+        /// Opens an artist's page inside the active tab.
+        #[qinvokable]
+        fn open_artist(self: Pin<&mut Navigation>, name: &QString);
+
+        /// Opens the page of one of the artists a credit names: the first
+        /// is 0. A place that is none of them opens nothing.
+        #[qinvokable]
+        fn open_credit(self: Pin<&mut Navigation>, credit: &QString, place: i32);
+
+        /// Where each artist of a credit is inside it, as "0,5,7,22"; empty
+        /// when it names one.
+        #[qinvokable]
+        fn credit_stops(self: &Navigation, credit: &QString) -> QString;
+
+        /// Opens a Settings section inside the active tab.
+        #[qinvokable]
+        fn open_section(self: Pin<&mut Navigation>, id: &QString);
+
+        /// Goes somewhere inside the active tab.
+        #[qinvokable]
+        fn go(self: Pin<&mut Navigation>, screen: &QString, id: i64);
+
+        /// Opens somewhere in a new tab, right of the active one.
+        #[qinvokable]
+        fn open(self: Pin<&mut Navigation>, screen: &QString, id: i64);
+
+        #[qinvokable]
+        fn back(self: Pin<&mut Navigation>);
+
+        #[qinvokable]
+        fn forward(self: Pin<&mut Navigation>);
+
+        #[qinvokable]
+        fn activate(self: Pin<&mut Navigation>, index: i32);
+
+        #[qinvokable]
+        fn step(self: Pin<&mut Navigation>, by: i32);
+
+        #[qinvokable]
+        fn close(self: Pin<&mut Navigation>, index: i32);
+    }
+
+    impl cxx_qt::Threading for Navigation {}
+    impl cxx_qt::Initialize for Navigation {}
+}
+
+use crate::app;
+use chilpa_api::navigation::{PlannedRoute, Route, Screen, Tabs};
+use cxx_qt::{CxxQtType as _, Threading as _};
+use cxx_qt_lib::{QList, QString, QStringList};
+use std::pin::Pin;
+
+#[derive(Default)]
+pub struct NavigationRust {
+    tab_titles: QStringList,
+    tab_icons: QStringList,
+    active: i32,
+    screen: QString,
+    route_id: i64,
+    can_back: bool,
+    can_forward: bool,
+    section: QString,
+    route_key: QString,
+    pending: bool,
+    pending_revision: i32,
+    labels: Vec<(Route, String, String)>,
+    planned: Option<(i32, PlannedRoute)>,
+    tabs: Tabs,
+}
+
+fn route(screen: &QString, id: i64) -> Option<PlannedRoute> {
+    app::with(|api| api.plan_route(&screen.to_string(), id))
+}
+
+impl qobject::Navigation {
+    pub fn go_origin(self: Pin<&mut Self>, origin: &QString) {
+        let Ok(origin) = serde_json::from_str::<chilpa_api::queue_origin::QueueOrigin>(&origin.to_string()) else { return; };
+        if origin.screen == "search" {
+            self.search_origin_requested(QString::from(&origin.query), QString::from(&origin.source));
+        } else if let Some(route) = app::with(|api| api.plan_route_to_origin(&origin)) {
+            self.publish_plan(route, false);
+        }
+    }
+
+    pub fn go(self: Pin<&mut Self>, screen: &QString, id: i64) {
+        if let Some(to) = route(screen, id) {
+            self.publish_plan(to, false);
+        }
+    }
+
+    pub fn open(self: Pin<&mut Self>, screen: &QString, id: i64) {
+        if let Some(to) = route(screen, id) {
+            self.publish_plan(to, true);
+        }
+    }
+
+    fn publish_plan(mut self: Pin<&mut Self>, plan: PlannedRoute, new_tab: bool) {
+        let revision = self.rust().pending_revision.wrapping_add(1);
+        if new_tab { self.as_mut().rust_mut().tabs.open(plan.route.clone()); }
+        else { self.as_mut().rust_mut().tabs.go(plan.route.clone()); }
+        self.as_mut().publish();
+        if self.rust().pending_revision == revision && self.rust().tabs.current() == plan.route {
+            let prepare = plan.needs_preparation();
+            self.as_mut().rust_mut().planned = Some((revision, plan));
+            if prepare { self.route_requested(); }
+        }
+    }
+
+    pub fn prepare(mut self: Pin<&mut Self>) -> bool {
+        let Some((revision, plan)) = self.as_mut().rust_mut().planned.take() else { return false; };
+        revision == self.rust().pending_revision && self.rust().tabs.current() == plan.route
+            && app::with(|api| api.prepare_planned_route(plan))
+    }
+
+    pub fn open_section(mut self: Pin<&mut Self>, id: &QString) {
+        let section = chilpa_api::settings_schema::section(&id.to_string()).id;
+        self.as_mut().rust_mut().tabs.go(Route { screen: Screen::Settings, id: 0, key: section.to_string() });
+        self.publish();
+    }
+
+    pub fn go_key(mut self: Pin<&mut Self>, screen: &QString, key: &QString) {
+        if let Some(screen) = Screen::from_name(&screen.to_string()).filter(|_| !key.is_empty()) {
+            self.as_mut().rust_mut().tabs.go(Route { screen, id: 0, key: key.to_string() });
+            self.publish();
+        }
+    }
+
+    pub fn open_artist(self: Pin<&mut Self>, name: &QString) {
+        self.go_key(&QString::from("artist"), name);
+    }
+
+    pub fn open_credit(self: Pin<&mut Self>, credit: &QString, place: i32) {
+        let names = app::with(|api| api.credit_names(&credit.to_string()));
+        if let Some(name) = usize::try_from(place).ok().and_then(|place| names.get(place)) {
+            self.open_artist(&QString::from(name));
+        }
+    }
+
+    pub fn credit_stops(&self, credit: &QString) -> QString {
+        QString::from(&app::with(|api| api.credit_stops(&credit.to_string())))
+    }
+
+    pub fn open_folder(mut self: Pin<&mut Self>, path: &QString) {
+        let key = path.to_string().trim_end_matches('/').to_string();
+        self.as_mut().rust_mut().tabs.go(Route { screen: Screen::Folders, id: 0, key });
+        self.publish();
+    }
+
+    pub fn back(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().tabs.back();
+        self.publish();
+    }
+
+    pub fn forward(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().tabs.forward();
+        self.publish();
+    }
+
+    pub fn activate(mut self: Pin<&mut Self>, index: i32) {
+        self.as_mut().rust_mut().tabs.activate(index.max(0) as usize);
+        self.publish();
+    }
+
+    pub fn step(mut self: Pin<&mut Self>, by: i32) {
+        self.as_mut().rust_mut().tabs.step(by);
+        self.publish();
+    }
+
+    pub fn close(mut self: Pin<&mut Self>, index: i32) {
+        let routes = self.rust().tabs.routes();
+        if routes.get(index.max(0) as usize).is_some_and(|r| r.screen == Screen::OpenMedia)
+            && routes.iter().filter(|r| r.screen == Screen::OpenMedia).count() == 1 {
+            app::with(|api| api.close_media());
+        }
+        self.as_mut().rust_mut().tabs.close(index.max(0) as usize);
+        self.publish();
+    }
+
+    /// Reads the tabs' titles again: something they name was renamed.
+    pub fn refresh_labels(self: Pin<&mut Self>) {
+        self.request_settlement();
+    }
+
+    /// Forgets a place that was deleted, from every tab and history.
+    pub fn left_behind(mut self: Pin<&mut Self>, screen: &str, id: i64) {
+        if let Some(screen) = Screen::from_name(screen) {
+            self.as_mut().rust_mut().tabs.forget(&Route { screen, id, key: String::new() });
+            self.publish();
+        }
+    }
+
+    /// Sets every property from the tabs. The screen goes last: it is what
+    /// swaps the page, and by then the route id it reads is the new one.
+    fn publish(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().planned = None;
+        let tabs = self.rust().tabs.clone();
+        let now = tabs.current();
+        app::with(|api| { api.protect_tabs(&tabs); api.set_browse_route(&now); });
+        let (mut titles, mut icons) = (QList::<QString>::default(), QList::<QString>::default());
+        for r in tabs.routes() {
+            let cached = self.rust().labels.iter().find(|(route, _, _)| route == &r);
+            titles.append(QString::from(cached.map_or("…", |(_, title, _)| title.as_str())));
+            icons.append(QString::from(cached.map_or("dots", |(_, _, icon)| icon.as_str())));
+        }
+        self.as_mut().set_tab_titles(QStringList::from(&titles));
+        self.as_mut().set_tab_icons(QStringList::from(&icons));
+        self.as_mut().set_active(tabs.active() as i32);
+        self.as_mut().set_can_back(tabs.can_back());
+        self.as_mut().set_can_forward(tabs.can_forward());
+        self.as_mut().set_route_id(now.id);
+        let section = if now.screen == Screen::Settings { now.key.as_str() } else { "" };
+        self.as_mut().set_section(QString::from(section));
+        self.as_mut().set_route_key(QString::from(&now.key));
+        self.as_mut().set_screen(QString::from(now.screen.name()));
+        self.request_settlement();
+    }
+
+    fn request_settlement(mut self: Pin<&mut Self>) {
+        let revision = self.rust().pending_revision.wrapping_add(1);
+        if let Some((planned_revision, _)) = self.as_mut().rust_mut().planned.as_mut() { *planned_revision = revision; }
+        self.as_mut().set_pending(true);
+        self.set_pending_revision(revision);
+    }
+
+    pub fn settle(mut self: Pin<&mut Self>, revision: i32) {
+        if !self.rust().pending || revision != self.rust().pending_revision { return; }
+        self.as_mut().prepare();
+        if revision != self.rust().pending_revision { return; }
+        self.as_mut().set_pending(false);
+        if revision != self.rust().pending_revision { return; }
+        let tabs = self.rust().tabs.clone();
+        let labels: Vec<_> = app::with(|api| {
+            api.keep_tabs(&tabs);
+            tabs.routes().into_iter().map(|route| { let (title, icon) = api.tab_label(&route); (route, title, icon) }).collect()
+        });
+        if revision != self.rust().pending_revision { return; }
+        let (mut titles, mut icons) = (QList::<QString>::default(), QList::<QString>::default());
+        for (_, title, icon) in &labels {
+            titles.append(QString::from(title));
+            icons.append(QString::from(icon));
+        }
+        self.as_mut().rust_mut().labels = labels;
+        self.as_mut().set_tab_titles(QStringList::from(&titles));
+        if revision == self.rust().pending_revision { self.set_tab_icons(QStringList::from(&icons)); }
+    }
+}
+
+impl cxx_qt::Initialize for qobject::Navigation {
+    fn initialize(mut self: Pin<&mut Self>) {
+        crate::registry::register_navigation(self.qt_thread());
+        if let Some(tabs) = app::with(|api| api.restored_tabs()) {
+            self.as_mut().rust_mut().tabs = tabs;
+        }
+        self.publish();
+    }
+}

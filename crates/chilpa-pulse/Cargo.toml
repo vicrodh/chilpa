@@ -1,0 +1,16 @@
+[package]
+name = "chilpa-pulse"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# What a stack cannot promise is read by the user.
+chilpa-i18n.workspace = true
+chilpa-audio.workspace = true
+# The protocol, through its own client library. The crate is MIT; the C
+# library it links is LGPL-2.1, dynamically, which the licence lint notes
+# (ADR-005).
+libpulse-binding = "2"
+libpulse-simple-binding = "2"

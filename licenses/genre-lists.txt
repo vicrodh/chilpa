@@ -1,0 +1,9 @@
+Genre lists (crates/chilpa-library/data)
+
+genres-known.txt is the list of genres of the MusicBrainz database
+(https://musicbrainz.org/genres), taken on 2026-09-29. The genre table is
+part of the database's core data, which is released under CC0.
+
+genres-whole.txt lists genre names that catalogs publish with a separator
+inside them. They are names, used only to tell a tag that states one of
+them from a tag that states several genres.

@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""The window's crate takes no new file.
+
+ADR-001 says the interface is split by view: every view or panel is its own
+module or crate, and the shell only composes. The only lock it had was a
+size cap, and the cap was raised twice instead of splitting, so `chilpa-qt`
+became where everything landed. This is the lock the rule never had.
+
+The files the window's crate held when this was written are listed in
+`window-files.txt`. That list only shrinks: a file that is not in it fails
+here, and so does an entry that no longer exists, so the list never keeps
+a file somebody already moved out. A new view, panel or bridge is born in
+its own shell crate (`chilpa-qt-controls` and `chilpa-qt-lyrics` are the
+model); what several crates share goes to `chilpa-qt-kit`.
+
+Tests are not listed: a test of the window's own files may still be
+written. They do count for the crate's size.
+"""
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True).stdout.strip())
+CRATE = "crates/chilpa-qt"
+WATCHED = (f"{CRATE}/qml/", f"{CRATE}/src/")
+ALLOWED = Path(__file__).resolve().parent / "window-files.txt"
+
+
+def main():
+    tracked = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", CRATE], capture_output=True, text=True, check=True, cwd=ROOT).stdout.split("\n")
+    there = {name for name in tracked if name.startswith(WATCHED) and (ROOT / name).exists()}
+    allowed = {line.strip() for line in ALLOWED.read_text().splitlines() if line.strip() and not line.startswith("#")}
+    errors = [f"{name}: a new file in the window's crate. A view, a panel or a bridge is born in its own shell crate, and what several share in chilpa-qt-kit (ADR-001)." for name in sorted(there - allowed)]
+    errors += [f"{ALLOWED.relative_to(ROOT)}: `{name}` is no longer in the window's crate; take it off the list." for name in sorted(allowed - there)]
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        print(f"window-files: {len(errors)} error(s)", file=sys.stderr)
+        sys.exit(1)
+    print(f"window-files: the window's crate holds {len(there)} files and none is new")
+
+
+if __name__ == "__main__":
+    main()

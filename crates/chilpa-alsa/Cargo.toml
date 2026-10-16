@@ -1,0 +1,26 @@
+[package]
+name = "chilpa-alsa"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+alsa = "0.12"
+alsa-sys = "0.6"
+# Asking the sound server for a card (org.freedesktop.ReserveDevice1), and
+# publishing the reservation object while Chilpa holds it.
+dbus = "0.9"
+dbus-crossroads = "0.5"
+# The thread that feeds the device asks the scheduler to put it first
+# (sched_setscheduler, RLIMIT_RTTIME for RealtimeKit).
+libc = "0.2"
+
+[dependencies]
+# Why a device could not be opened is read by the user.
+chilpa-i18n.workspace = true
+chilpa-audio.workspace = true
+serde = { version = "1", features = ["derive"] }
+log = "0.4"
+serde_json = "1"
+chilpa-dirs.workspace = true

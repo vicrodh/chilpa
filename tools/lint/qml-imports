@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""The QML layers only look down.
+
+Theme -> Primitives -> Components -> Patterns -> Screens -> the window. A
+file imports only directories below its own layer, and uses only types from
+its layer or below. The kit is the tree every other one stands on, so its
+layers sit below the same layers elsewhere: a feature's components may
+import the kit's components, and nothing in the kit imports another tree.
+Two rules on top of that:
+
+- a screen never uses another screen: each one is a route, composed from
+  the layers below;
+- a primitive knows nothing of the domain, so it does not import the Rust
+  module, where the models live.
+
+It also keeps the registry honest: every primitive, component and pattern
+has to appear in the Gallery, which is where each piece is seen in both
+themes and in every state. A piece that is not there does not exist yet.
+"""
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from qmllib import GALLERY, KIT, ORDER, TREES, code_only, files, layer_of, rel, resolve_import, tree_of  # noqa: E402
+
+IMPORT = re.compile(r'^\s*import\s+"([^"]+)"', re.MULTILINE)
+MODULE = re.compile(r"^\s*import\s+([A-Za-z][\w.]*)", re.MULTILINE)
+USE = re.compile(r"\b([A-Z][A-Za-z0-9_]*)\s*\{")
+RUST_MODULE = "app.chilpa"
+# What a primitive may import: Qt only.
+QT_MODULES = re.compile(r"^(QtQuick|QtQml)(\.|$)")
+IN_GALLERY = ("Primitives", "Components", "Patterns")
+
+
+def rank(layer):
+    # The Gallery may use everything a window uses except the routes.
+    return ORDER["Patterns"] + 0.5 if layer == GALLERY else ORDER[layer]
+
+
+def main():
+    errors = []
+    types = {}
+    for path in files():
+        layer = layer_of(path)
+        if layer is None or path.stem == "Main":
+            continue
+        if path.stem in types:
+            errors.append(f"{rel(path)}: {path.stem} is also defined in {types[path.stem][1]}")
+        types[path.stem] = (layer, rel(path))
+
+    gallery_uses = set()
+    for path in files():
+        layer = layer_of(path)
+        if layer is None:
+            continue
+        src = path.read_text()
+        code = code_only(src)
+        name = rel(path)
+        imported_layers = set()
+        for target in IMPORT.findall(src):
+            found = resolve_import(path, target)
+            if found is None:
+                errors.append(f"{name}: imports {target}, outside the QML tree")
+                continue
+            inner = found[1]
+            to = inner.parts[0] if inner.parts else "Main"
+            imported_layers.add(to)
+            if to == GALLERY or to not in ORDER:
+                errors.append(f"{name}: imports {target}, which is not a layer")
+            elif found[0] != KIT and tree_of(path) == KIT:
+                errors.append(f"{name}: the kit imports {target}; it stands under every other tree")
+            elif ORDER[to] > rank(layer) or (layer == GALLERY and to == "Screens"):
+                errors.append(f"{name}: a {layer} file cannot import {to}")
+            elif ORDER[to] == rank(layer) and not (found[0] == KIT and tree_of(path) != KIT):
+                errors.append(f"{name}: a {layer} file cannot import {to}")
+        for module in MODULE.findall(src):
+            if layer == "Primitives" and not QT_MODULES.match(module):
+                errors.append(f"{name}: a primitive imports {module}; primitives only know Qt")
+        for m in USE.finditer(code):
+            used = m[1]
+            if used not in types or used == path.stem:
+                continue
+            if layer == GALLERY:
+                gallery_uses.add(used)
+            to = types[used][0]
+            line = code[: m.start()].count("\n") + 1
+            if to != layer and to not in imported_layers:
+                errors.append(f"{name}:{line}: uses {used} from {to} without importing that layer")
+            if layer == "Screens" and to == "Screens":
+                errors.append(f"{name}:{line}: a screen uses the screen {used}; compose it from the layers below")
+            elif to == GALLERY:
+                if layer != GALLERY:
+                    errors.append(f"{name}:{line}: only the Gallery uses {used}")
+            elif ORDER[to] > rank(layer) or (layer == GALLERY and to == "Screens"):
+                errors.append(f"{name}:{line}: a {layer} file uses {used}, from {to}")
+
+    # A singleton is not instantiated; it is shown by the pieces that use it.
+    singletons = {
+        line.split()[1]
+        for tree in TREES
+        for qmldir in tree.rglob("qmldir")
+        for line in qmldir.read_text().split("\n")
+        if line.startswith("singleton ")
+    }
+    for used, (layer, where) in sorted(types.items()):
+        if layer in IN_GALLERY and used not in gallery_uses and used not in singletons:
+            errors.append(f"{where}: {used} is not shown in the Gallery")
+
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        print(f"qml-imports: {len(errors)} error(s)", file=sys.stderr)
+        sys.exit(1)
+    print(f"qml-imports: {len(types)} types, every layer looks down")
+
+
+if __name__ == "__main__":
+    main()

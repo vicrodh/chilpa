@@ -1,0 +1,2 @@
+module app.chilpa.wizard
+singleton HifiWizard 1.0 HifiWizard.qml

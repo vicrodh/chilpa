@@ -1,0 +1,296 @@
+#!/usr/bin/env python3
+"""Candados del ADR-001: grafo de dependencias, nada de Qt fuera del shell y
+límites de LOC.
+
+La lista permitida vive en este archivo, a propósito: cambiarla se ve en el
+diff y obliga a tocar el ADR en el mismo commit.
+"""
+import re
+import subprocess
+import sys
+import tomllib
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+
+# Lo mismo para chilpa-dirs: dónde van los archivos de Chilpa en cada
+# plataforma es una pregunta que se hace desde muchos lados, y tenerla en un
+# solo lugar es justamente la medida M3 del ADR-010.
+#
+# El catálogo de traducción lo puede usar cualquiera. No depende de nada, así
+# que no puede meter un ciclo ni arrastrar una pila que un crate no quiera; y
+# el texto que lee el usuario tiene que poder escribirse donde se sabe el
+# detalle, no solo en la fachada. Lo que NO se relaja es al revés:
+# chilpa-i18n no depende de nadie.
+ABIERTO = {"chilpa-i18n", "chilpa-dirs"}
+
+# Quién puede depender de quién, dentro del workspace.
+ALLOWED = {
+    "chilpa-models": set(),
+    # Dónde van los archivos de Chilpa, por plataforma. No depende de nadie.
+    "chilpa-dirs": set(),
+    "chilpa-audio": {"chilpa-models"},
+    "chilpa-tags": {"chilpa-models"},
+    # Las letras que vienen con la música. No habla con nadie por la red.
+    "chilpa-lyrics": set(),
+    # Lo que se puede saber de una pista escuchándola. No toca la salida;
+    # usa de chilpa-audio nada más la FFT, para no tener dos.
+    "chilpa-analysis": {"chilpa-audio"},
+    # El host de plugins. No conoce el core ni la biblioteca: lo que un
+    # plugin puede ver se lo pasa la fachada, nunca se lo toma él.
+    # Depende de chilpa-auth solo por el tipo con el que un manifest declara
+    # cómo se conecta una cuenta. Ese crate no conoce la red —quien corre el
+    # flujo le inyecta la petición—, así que el sandbox no acaba enlazando un
+    # cliente HTTP que no tiene por qué existir ahí.
+    # chilpa-plugin-api no es de este workspace: son los tipos del protocolo,
+    # que viven en la rama sdk del repo de plugins para que un plugin se
+    # compile contra la misma definición. Solo depende de serde.
+    "chilpa-plugin": {"chilpa-auth", "chilpa-plugin-api"},
+    # Dónde se guarda un secreto sin dejarlo en claro. No depende de nadie:
+    # no conoce plugins ni biblioteca, solo cierra y abre bytes.
+    "chilpa-secrets": set(),
+    # Conectar una cuenta sin que el plugin toque el token. Solo necesita
+    # salir a la red; no sabe de plugins ni de dónde se guardan los tokens.
+    # No depende de nadie: no sabe de red ni de dónde se guardan los tokens.
+    # Quien la llama le inyecta la petición, y por eso `chilpa-plugin` puede
+    # usar su tipo para leer un manifest sin enlazar un cliente HTTP.
+    "chilpa-auth": set(),
+    # What a record is called elsewhere: release metadata from the network.
+    # It has no network of its own. Whoever calls it hands in the request,
+    # so every test runs without one.
+    "chilpa-meta": set(),
+    # The three protocols of my servers (ADR-017). No network of its own,
+    # like chilpa-meta: the request is handed in. It is the only crate that
+    # names them.
+    "chilpa-servers": set(),
+    "chilpa-cast": set(),
+    # Los catálogos de traducción. No dependen de nada, y viven aparte del
+    # shell a propósito: cambiar de ventana no debe poder romper el idioma.
+    "chilpa-i18n": set(),
+    "chilpa-library": {"chilpa-models", "chilpa-tags"},
+    "chilpa-stream": set(),
+    "chilpa-decode": {"chilpa-audio", "chilpa-stream"},
+    "chilpa-dsd": {"chilpa-audio"},
+    "chilpa-sacd": {"chilpa-dsd"},
+    "chilpa-cd": {"chilpa-audio"},
+    "chilpa-alsa": {"chilpa-audio"},
+    # PipeWire se alcanza por el PCM que él mismo instala, así que escribe
+    # por donde chilpa-alsa ya sabe escribir. No hay una segunda
+    # implementación de mandar muestras a un aparato.
+    "chilpa-pipewire": {"chilpa-audio", "chilpa-alsa"},
+    # El protocolo de PulseAudio, por su propia biblioteca. No pasa por ALSA:
+    # el servidor es el que escribe al aparato.
+    "chilpa-pulse": {"chilpa-audio"},
+    # El grafo de JACK, por su biblioteca de cliente. Hoy suele ser la de
+    # PipeWire y no jack2, y el crate lo dice.
+    "chilpa-jack": {"chilpa-audio"},
+    # El audio propio de una Mac. FFI a mano contra CoreAudio, sin generador.
+    "chilpa-coreaudio": {"chilpa-audio"},
+    "chilpa-wasapi": {"chilpa-audio"},
+    # The window's controls where they are the system's. It knows AppKit and
+    # nothing of Qt: the facade hands it on, so the shell still sees one crate.
+    "chilpa-appkit": set(),
+    "chilpa-bwrap": {"chilpa-plugin"},
+    # A Linux desktop's session bus: MPRIS, the sleep inhibitor and the
+    # one-instance name. It knows nothing of the player.
+    "chilpa-mpris": set(),
+    "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-tags", "chilpa-library", "chilpa-analysis", "chilpa-decode", "chilpa-stream", "chilpa-dsd", "chilpa-sacd", "chilpa-cd", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse", "chilpa-jack", "chilpa-coreaudio", "chilpa-wasapi"},
+    "chilpa-api": {"chilpa-core", "chilpa-cast", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics", "chilpa-plugin", "chilpa-secrets", "chilpa-auth", "chilpa-i18n", "chilpa-meta", "chilpa-servers", "chilpa-appkit", "chilpa-bwrap", "chilpa-mpris"},
+    # El shell solo ve la fachada. Nunca el core ni los modelos.
+    "chilpa-qt": {"chilpa-api", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders", "chilpa-qt-ambient", "chilpa-qt-mini", "chilpa-qt-dsp", "chilpa-qt-immersive", "chilpa-qt-waveform", "chilpa-qt-artwork", "chilpa-qt-about", "chilpa-qt-stats", "chilpa-qt-graphics", "chilpa-qt-link", "chilpa-qt-wizard", "chilpa-qt-playlists"},
+    # La segunda mitad del shell: lo que traen los sources, como su propio
+    # módulo de QML. Cada crate del shell tiene sus propios topes.
+    # What every shell crate stands on: the facade they share, the theme, the
+    # translations and the primitives. It knows nothing of the window.
+    "chilpa-qt-kit": {"chilpa-api"},
+    "chilpa-qt-sources": {"chilpa-api", "chilpa-qt-kit"},
+    # The ways to drive the player besides its own buttons: shortcuts, the
+    # sleep timer, the A-B loop.
+    "chilpa-qt-controls": {"chilpa-api", "chilpa-qt-kit"},
+    # How the lyrics are drawn: the lines and how they fade around the sung one.
+    "chilpa-qt-lyrics": {"chilpa-api"},
+    # Folders: the library's folders, browsing by folder, media opened without importing.
+    "chilpa-qt-folders": {"chilpa-api", "chilpa-qt-kit"},
+    # The second window that shows every piece; for whoever builds Chilpa.
+    "chilpa-qt-gallery": set(),
+    # The metadata editor: its screen and its bridge.
+    "chilpa-qt-metadata": {"chilpa-api", "chilpa-qt-kit"},
+    # The dynamic background: the field, the blurred cover, the wallpaper.
+    "chilpa-qt-ambient": {"chilpa-api", "chilpa-qt-kit"},
+    "chilpa-qt-mini": {"chilpa-api", "chilpa-qt-kit"},
+    "chilpa-qt-dsp": {"chilpa-api", "chilpa-qt-kit"},
+    "chilpa-qt-immersive": {"chilpa-api", "chilpa-qt-kit"},
+    "chilpa-qt-waveform": {"chilpa-api", "chilpa-qt-kit"},
+    "chilpa-qt-artwork": {"chilpa-api", "chilpa-qt-kit"},
+    "chilpa-qt-about": {"chilpa-api", "chilpa-qt-kit"},
+    "chilpa-qt-stats": {"chilpa-api", "chilpa-qt-kit"},
+    "chilpa-qt-link": {"chilpa-api", "chilpa-qt-kit"},
+    # The playlists' own screens: the manager and its bridge.
+    "chilpa-qt-playlists": {"chilpa-api", "chilpa-qt-kit"},
+    "chilpa-qt-wizard": {"chilpa-api", "chilpa-qt-kit"},
+    # The graphics at startup: the probe window, the GPU list, what draws.
+    "chilpa-qt-graphics": {"chilpa-api"},
+}
+
+# Los únicos crates que pueden tener tipos de Qt.
+SHELLS = {"chilpa-qt", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders", "chilpa-qt-ambient", "chilpa-qt-mini", "chilpa-qt-dsp", "chilpa-qt-immersive", "chilpa-qt-waveform", "chilpa-qt-artwork", "chilpa-qt-about", "chilpa-qt-stats", "chilpa-qt-graphics", "chilpa-qt-link", "chilpa-qt-wizard", "chilpa-qt-playlists"}
+QT_RE = re.compile(r"\bcxx[-_]qt\b|\bQString\b|\bQObject\b|\bQVariant\b")
+
+MAX_LOC_FILE = 1500
+
+# El shell se mide por lenguaje, no de corrido, y esa es la diferencia que
+# importa. Un solo número para los dos deja que un puente inflado se disfrace
+# de interfaz grande: crece el Rust, sube el total, y nadie distingue si lo que
+# creció fue la ventana o la lógica que se le escapó al núcleo. Separados, cada
+# número dice una cosa sola.
+#
+# El Rust del shell es el puente y nada más: modelos de Qt, propiedades,
+# despacho. El ADR-004 del frontend pide una docena de modelos y esos, por ser
+# tipos de Qt, no pueden vivir en otro lado. Por eso el tope deja lugar para
+# ellos. Lo que tiene que atrapar es lo otro: filtrar, ordenar, encolar o
+# resolver del lado del shell es lógica que pertenece al núcleo (ADR-001), y
+# eso se ve como crecimiento que no corresponde a un modelo nuevo.
+# A ratchet since the window began to be split into crates (2026-10-06): the
+# cap follows the window down and is never raised again. When a crate nears
+# it, a view leaves for a crate of its own.
+#
+# 5,100 the same day: the folders' three bridges left with their screens.
+MAX_LOC_SHELL_RUST = 5_100
+
+# El QML tiene sus propios presupuestos por archivo, más estrictos que los de
+# aquí, verificados por su propio CI. Este número no los reemplaza: es el techo
+# del conjunto. Sale de sumar los presupuestos del ADR-0002 del frontend --
+# 11,670 si cada archivo llegara a su tope-- más lugar para la Gallery.
+#
+# Subió de 16,000 a 18,000 el 2026-09-30: la pantalla de los sources que se
+# navegan no cabía, y la interfaz de los plugins se va a rehacer con un
+# diseño nuevo. El número se vuelve a derivar cuando ese diseño llegue.
+#
+# Raised from 18,000 to 20,000 on 2026-10-04: native playlists, folders and
+# the playlist importer put the shell at 18,396. The Gallery still lives in
+# this crate and is the first thing to move out of it.
+#
+# Back to 16,000 on 2026-10-06: the kit, the metadata editor, the Gallery,
+# the lyric lines and the controls left for crates of their own and the
+# window stands at 15,701. It only goes down from here: the next stop is
+# the 10,000 that ADR-001 set for a crate of the interface.
+#
+# 15,000 the same day: the plugin manager's pieces went to the sources'
+# crate, where the rest of the plugins' interface already was.
+#
+# 13,800 the same day: Folders, Open media and the library's folders left
+# for a crate of their own.
+MAX_LOC_SHELL_QML = 13_800
+
+CODE_SUFFIXES = {".rs", ".qml", ".cpp", ".h", ".hpp", ".py", ".sh"}
+
+
+def tracked_files():
+    out = subprocess.run(["git", "-C", str(ROOT), "ls-files"], capture_output=True, text=True, check=True)
+    return [ROOT / line for line in out.stdout.split()]
+
+
+def crate_manifests():
+    return sorted((ROOT / "crates").glob("*/Cargo.toml"))
+
+
+def check_deps(errors):
+    for manifest in crate_manifests():
+        data = tomllib.loads(manifest.read_text())
+        name = data["package"]["name"]
+        if name not in ALLOWED:
+            errors.append(f"{manifest.relative_to(ROOT)}: el crate {name} no está en la lista del ADR-001")
+            continue
+        deps = {d for d in data.get("dependencies", {}) if d.startswith("chilpa-")}
+        for dep in sorted(deps - ALLOWED[name] - ABIERTO):
+            errors.append(f"{name}: no puede depender de {dep} (ADR-001)")
+
+
+# Lo que una plataforma da por hecho y otra no. ADR-010 M3: esto vive en
+# chilpa-dirs y en los crates de plataforma, y en ningún otro lado.
+SUPUESTOS = re.compile(r'\bXDG_[A-Z_]+|"/proc/|"/etc/|\bUSERPROFILE\b|\bAPPDATA\b')
+
+# Los crates a los que sí les toca saber de una plataforma.
+PLATAFORMA = {"chilpa-dirs", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse", "chilpa-jack", "chilpa-coreaudio", "chilpa-wasapi", "chilpa-cd", "chilpa-secrets", "chilpa-appkit", "chilpa-bwrap", "chilpa-mpris"}
+
+
+def check_supuestos(errors):
+    """Ningún crate del motor escribe a mano una convención de sistema."""
+    for path in tracked_files():
+        if path.suffix != ".rs" or not path.exists():
+            continue
+        parts = path.relative_to(ROOT).parts
+        if len(parts) < 2 or parts[0] != "crates" or parts[1] in PLATAFORMA:
+            continue
+        # Una prueba puede apuntar XDG_DATA_HOME a un directorio temporal:
+        # es justamente la variable que chilpa-dirs respeta, y ponerla es
+        # cómo una prueba no escribe en la biblioteca de quien la corre.
+        if "tests" in parts or path.name.endswith("_test.rs"):
+            continue
+        for n, line in enumerate(path.read_text().split("\n"), 1):
+            if line.lstrip().startswith("//"):
+                continue
+            if SUPUESTOS.search(line):
+                errors.append(
+                    f"{path.relative_to(ROOT)}:{n}: una convención de sistema escrita a "
+                    "mano; eso vive en chilpa-dirs (ADR-010)"
+                )
+
+
+def check_qt(errors):
+    for path in tracked_files():
+        if path.suffix not in CODE_SUFFIXES or not path.exists():
+            continue
+        crate = path.relative_to(ROOT).parts
+        in_shell = len(crate) > 1 and crate[0] == "crates" and crate[1] in SHELLS
+        if in_shell or path.parts[-2:] == ("lint", "arquitectura"):
+            continue
+        for n, line in enumerate(path.read_text(errors="replace").splitlines(), 1):
+            if QT_RE.search(line):
+                errors.append(f"{path.relative_to(ROOT)}:{n}: tipos de Qt fuera de un shell (ADR-001)")
+
+
+def check_loc(errors):
+    shell_rust = {}
+    shell_qml = {}
+    for path in tracked_files():
+        if path.suffix not in CODE_SUFFIXES or not path.exists():
+            continue
+        loc = len(path.read_text(errors="replace").splitlines())
+        if loc > MAX_LOC_FILE:
+            errors.append(f"{path.relative_to(ROOT)}: {loc} LOC, el máximo es {MAX_LOC_FILE} (ADR-001)")
+        parts = path.relative_to(ROOT).parts
+        if len(parts) > 1 and parts[0] == "crates" and parts[1] in SHELLS:
+            where = shell_qml if path.suffix == ".qml" else shell_rust
+            where[parts[1]] = where.get(parts[1], 0) + loc
+    for crate in sorted(SHELLS):
+        rust = shell_rust.get(crate, 0)
+        if rust > MAX_LOC_SHELL_RUST:
+            errors.append(
+                f"{crate}: {rust} LOC de Rust, el máximo del puente es "
+                f"{MAX_LOC_SHELL_RUST} (ADR-001). Un puente que crece sin un "
+                f"modelo nuevo detrás es lógica que le pertenece al núcleo."
+            )
+        qml = shell_qml.get(crate, 0)
+        if qml > MAX_LOC_SHELL_QML:
+            errors.append(
+                f"{crate}: {qml} LOC de QML, el máximo de la interfaz es "
+                f"{MAX_LOC_SHELL_QML} (ADR-001)"
+            )
+
+
+def main():
+    errors = []
+    check_deps(errors)
+    check_supuestos(errors)
+    check_qt(errors)
+    check_loc(errors)
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        print(f"arquitectura: {len(errors)} error(es)", file=sys.stderr)
+        sys.exit(1)
+    print("arquitectura: todo en orden")
+
+
+if __name__ == "__main__":
+    main()

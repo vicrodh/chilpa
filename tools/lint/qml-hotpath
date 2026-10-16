@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""What a QML file drawn once per row or per card may not carry.
+
+A file opts in by starting with a `// hot-path: <why>` comment: a track
+row, an album card, a cover. Those are instantiated and recycled by the
+hundred while the view scrolls, so anything costly in them is paid again on
+every frame of a flick. The list comes from measuring:
+
+- `clip: true` makes every row a batch root in the scene graph;
+- `layer.enabled`, effects and ShaderEffectSource render to their own
+  texture, and each one is an extra pass;
+- `Behavior` animates at the display rate whenever the value moves;
+- a Popup, Menu or ToolTip per row is built and torn down on every recycle:
+  menus and tooltips live in one host per window;
+- QtQuick.Controls and QtQuick.Layouts make an item several items, and
+  Layouts resolve their geometry in a second pass;
+- a Timer or a Canvas per row is work that runs whether it is seen or not.
+"""
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from qmllib import code_only, files, rel  # noqa: E402
+
+MARK = re.compile(r"^\s*//\s*hot-path:\s*\S", re.MULTILINE)
+FORBIDDEN = [
+    (re.compile(r"^\s*import\s+QtQuick\.(Controls|Layouts|Effects)\b", re.MULTILINE), "imports QtQuick.{0}"),
+    (re.compile(r"\bclip\s*:\s*true\b"), "clip: true"),
+    (re.compile(r"\blayer\.enabled\s*:"), "layer.enabled"),
+    (re.compile(r"\bBehavior\s+on\b"), "a Behavior"),
+    (re.compile(r"\b(Popup|Menu|ToolTip|Dialog|Drawer|Timer|Canvas|MultiEffect|ShaderEffectSource)\s*\{"), "a {0}"),
+]
+
+
+def main():
+    errors = []
+    marked = 0
+    for path in files():
+        src = path.read_text()
+        head = "\n".join(src.split("\n")[:6])
+        if not MARK.search(head):
+            continue
+        marked += 1
+        code = code_only(src)
+        for rx, what in FORBIDDEN:
+            for m in rx.finditer(code):
+                line = code[: m.start()].count("\n") + 1
+                said = what.format(*(m.groups() or ("",)))
+                errors.append(f"{rel(path)}:{line}: {said} in a hot-path file")
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        print(f"qml-hotpath: {len(errors)} error(s)", file=sys.stderr)
+        sys.exit(1)
+    print(f"qml-hotpath: {marked} hot-path files, none carries what a row cannot afford")
+
+
+if __name__ == "__main__":
+    main()

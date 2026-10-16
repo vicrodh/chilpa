@@ -1,0 +1,3 @@
+# I use the system git client for any explicit development git dependencies.
+[net]
+git-fetch-with-cli = true

@@ -1,0 +1,508 @@
+//! Read a file's tags, without reading more into them than they say.
+//!
+//! Two rules that come from the QBZ audit, where the tag editor lost
+//! data:
+//!
+//! 1. **Multi-value fields are kept.** A record with three genres has three
+//!    genres, not one with commas in it. QBZ collapsed them on save.
+//! 2. **The date is kept whole.** If the file says `2019-03-15`, that is what
+//!    there is; QBZ truncated it to the year even when nothing had changed.
+//!
+//! The scan reads through `read`. What the metadata editor reads and writes
+//! is in `edit`.
+
+use chilpa_models::{ArtworkRef, Track, TrackRef};
+use lofty::file::{AudioFile, TaggedFileExt};
+use lofty::prelude::ItemKey;
+use lofty::probe::Probe;
+use lofty::tag::Accessor;
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+
+mod dff;
+mod dsf;
+pub mod edit;
+
+#[derive(Debug)]
+pub enum TagError {
+    Open(std::io::Error),
+    Unreadable(String),
+}
+
+impl std::fmt::Display for TagError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TagError::Open(e) => {
+                write!(f, "{}", chilpa_i18n::t_args("could not open: {}", &[&e.to_string()]))
+            }
+            TagError::Unreadable(s) => {
+                write!(f, "{}", chilpa_i18n::t_args("the tags could not be read: {}", &[s]))
+            }
+        }
+    }
+}
+
+/// What a file says about itself.
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub struct Tags {
+    pub title: Option<String>,
+    /// Every artist it declares, in order.
+    pub artists: Vec<String>,
+    pub album: Option<String>,
+    pub album_artist: Option<String>,
+    /// Every genre, without joining them into one string.
+    pub genres: Vec<String>,
+    /// Who wrote the music, each value as the file keeps it.
+    pub composers: Vec<String>,
+    /// The record label, or the publisher where the file names no label.
+    pub label: Option<String>,
+    /// What the file's parental advisory says: explicit, clean, or nothing.
+    pub explicit: Option<bool>,
+    /// The date as it comes: it may be `2019` or `2019-03-15`.
+    pub date: Option<String>,
+    pub track_number: Option<u16>,
+    pub disc_number: Option<u16>,
+    pub disc_total: Option<u16>,
+    pub disc_subtitle: Option<String>,
+    pub work: Option<String>,
+    pub isrc: Option<String>,
+    pub musicbrainz_recording_id: Option<String>,
+    /// How many covers it carries inside.
+    pub pictures: usize,
+    /// The track's ReplayGain (`REPLAYGAIN_TRACK_GAIN`), in hundredths of a
+    /// dB: what brings it to the reference loudness. Whole numbers, so tags
+    /// stay comparable with `==`.
+    pub replaygain_track_gain: Option<i32>,
+    /// The track's peak (`REPLAYGAIN_TRACK_PEAK`), in millionths of full
+    /// scale.
+    pub replaygain_track_peak: Option<u32>,
+}
+
+impl Tags {
+    /// The ReplayGain in dB and the peak as a fraction of full scale.
+    pub fn replaygain(&self) -> (Option<f32>, Option<f32>) {
+        (
+            self.replaygain_track_gain.map(|g| g as f32 / 100.0),
+            self.replaygain_track_peak.map(|p| p as f32 / 1_000_000.0),
+        )
+    }
+}
+
+impl Tags {
+    /// The year, when the date carries one. Does not touch the stored date.
+    pub fn year(&self) -> Option<u32> {
+        self.date.as_ref()?.get(..4)?.parse().ok()
+    }
+
+    /// The artists on one line, for views that show a single one.
+    pub fn artist_line(&self) -> String {
+        self.artists.join(", ")
+    }
+}
+
+/// What is known about a file: its tags and how long it runs.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct FileInfo {
+    pub tags: Tags,
+    pub duration: Duration,
+    pub sample_rate_hz: Option<u32>,
+    pub bit_depth: Option<u8>,
+    pub channels: Option<u8>,
+}
+
+/// A file opened for its tags: read by lofty, or by this crate for the
+/// formats lofty does not know.
+pub(crate) struct Opened {
+    pub(crate) tag: Option<lofty::tag::Tag>,
+    pub(crate) duration: Duration,
+    pub(crate) sample_rate_hz: Option<u32>,
+    pub(crate) bit_depth: Option<u8>,
+    pub(crate) channels: Option<u8>,
+}
+
+fn open(path: &Path) -> Result<Opened, TagError> {
+    if dsf::is_dsf(path) {
+        return dsf::open(path);
+    }
+    if dff::is_dff(path) {
+        return dff::open(path);
+    }
+    // A tag lofty cannot parse takes the whole file down with it in its
+    // default mode -- a year of four blanks, as KORG AudioGate writes, is
+    // enough -- and the file came in under its name. Read again, relaxed,
+    // the frame that is wrong is left out and the rest is kept.
+    let probe = |mode: lofty::config::ParsingMode| {
+        Probe::open(path)
+            .map_err(|e| TagError::Unreadable(e.to_string()))?
+            .options(lofty::config::ParseOptions::new().parsing_mode(mode))
+            .read()
+            .map_err(|e| TagError::Unreadable(e.to_string()))
+    };
+    let mut file = probe(lofty::config::ParsingMode::BestAttempt)
+        .or_else(|_| probe(lofty::config::ParsingMode::Relaxed))?;
+    let properties = file.properties();
+    let (duration, sample_rate_hz, bit_depth, channels) = (
+        properties.duration(),
+        properties.sample_rate(),
+        properties.bit_depth(),
+        properties.channels(),
+    );
+    // Taken out of the file rather than borrowed from it, so nothing -- a
+    // cover of several megabytes, say -- is copied to be looked at.
+    let primary = file.primary_tag_type();
+    let tag = file.remove(primary).or_else(|| {
+        let first = file.first_tag()?.tag_type();
+        file.remove(first)
+    });
+    Ok(Opened { tag, duration, sample_rate_hz, bit_depth, channels })
+}
+
+/// Reads a file's tags and properties.
+pub fn read(path: &Path) -> Result<FileInfo, TagError> {
+    let opened = open(path)?;
+    let mut info = FileInfo {
+        tags: Tags::default(),
+        duration: opened.duration,
+        sample_rate_hz: opened.sample_rate_hz,
+        bit_depth: opened.bit_depth,
+        channels: opened.channels,
+    };
+
+    let Some(tag) = opened.tag.as_ref() else {
+        return Ok(info);
+    };
+
+    let several = |key: ItemKey| -> Vec<String> {
+        tag.get_strings(key).map(str::to_string).collect()
+    };
+
+    info.tags = Tags {
+        title: tag.title().map(|t| t.to_string()),
+        artists: {
+            let all = several(ItemKey::TrackArtist);
+            if all.is_empty() {
+                tag.artist().map(|a| vec![a.to_string()]).unwrap_or_default()
+            } else {
+                all
+            }
+        },
+        album: tag.album().map(|a| a.to_string()),
+        album_artist: tag.get_string(ItemKey::AlbumArtist).map(str::to_string),
+        genres: {
+            let all = several(ItemKey::Genre);
+            if all.is_empty() {
+                tag.genre().map(|g| vec![g.to_string()]).unwrap_or_default()
+            } else {
+                all
+            }
+        },
+        composers: several(ItemKey::Composer),
+        label: tag
+            .get_string(ItemKey::Label)
+            .or_else(|| tag.get_string(ItemKey::Publisher))
+            .map(str::trim)
+            .filter(|label| !label.is_empty())
+            .map(str::to_string),
+        explicit: tag.get_string(ItemKey::ParentalAdvisory).and_then(advisory),
+        date: tag
+            .get_string(ItemKey::RecordingDate)
+            .or_else(|| tag.get_string(ItemKey::ReleaseDate))
+            .map(str::to_string)
+            .or_else(|| tag.get_string(ItemKey::Year).map(str::to_string)),
+        track_number: tag.track().map(|n| n as u16),
+        disc_number: tag.disk().and_then(disc_index),
+        disc_total: tag.disk_total().and_then(disc_index),
+        disc_subtitle: tag.get_string(ItemKey::SetSubtitle).map(str::trim).filter(|value| !value.is_empty()).map(str::to_string),
+        work: tag.get_string(ItemKey::Work).map(str::trim).filter(|value| !value.is_empty()).map(str::to_string),
+        isrc: tag.get_string(ItemKey::Isrc).map(str::to_string),
+        musicbrainz_recording_id: tag
+            .get_string(ItemKey::MusicBrainzRecordingId)
+            .map(str::to_string),
+        pictures: tag.picture_count() as usize,
+        replaygain_track_gain: tag
+            .get_string(ItemKey::ReplayGainTrackGain)
+            .and_then(number)
+            .map(|db| (db * 100.0).round() as i32),
+        replaygain_track_peak: tag
+            .get_string(ItemKey::ReplayGainTrackPeak)
+            .and_then(number)
+            .filter(|p| *p >= 0.0)
+            .map(|p| (p * 1_000_000.0).round() as u32),
+    };
+    Ok(info)
+}
+
+/// A ReplayGain value as tags write it: "-7.23 dB", "+1.5 dB", "0.987654".
+fn disc_index(value: u32) -> Option<u16> {
+    u16::try_from(value).ok().filter(|value| *value > 0)
+}
+
+fn number(text: &str) -> Option<f32> {
+    let text = text.trim();
+    let text = text.strip_suffix("dB").or_else(|| text.strip_suffix("db")).unwrap_or(text).trim();
+    text.trim_start_matches('+').parse().ok().filter(|v: &f32| v.is_finite())
+}
+
+/// Writes the embedded cover out to a file, so the interface can show it.
+///
+/// Written once per source file: the name comes from the path and its
+/// modification time, so changing the tags produces a different name and the
+/// view is never left holding the old cover.
+pub fn extract_artwork(path: &Path, cache_dir: &Path) -> Result<Option<PathBuf>, TagError> {
+    let opened = open(path)?;
+    let Some(tag) = opened.tag.as_ref() else {
+        return Ok(None);
+    };
+    let Some(cover) = tag.pictures().first() else {
+        return Ok(None);
+    };
+    let extension = match cover.mime_type().map(|m| m.as_str()) {
+        Some("image/png") => "png",
+        _ => "jpg",
+    };
+    let label = std::fs::metadata(path)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let name = format!("{:x}-{label}.{extension}", path_hash(path));
+    std::fs::create_dir_all(cache_dir).map_err(TagError::Open)?;
+    let target = cache_dir.join(name);
+    if !target.exists() {
+        std::fs::write(&target, cover.data()).map_err(TagError::Open)?;
+    }
+    Ok(Some(target))
+}
+
+/// The names a cover goes by when it sits beside the music.
+const COVERS: &[&str] = &[
+    "cover.jpg", "cover.jpeg", "cover.png", "folder.jpg", "folder.jpeg", "folder.png",
+    "front.jpg", "front.png", "album.jpg", "album.png", "Cover.jpg", "Folder.jpg",
+];
+
+/// The cover sitting next to the file, if there is one.
+pub fn cover_beside(path: &Path) -> Option<PathBuf> {
+    let dir = path.parent()?;
+    for name in COVERS {
+        let candidate = dir.join(name);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    // Any loose image, when there is none with a known name.
+    let mut loose: Vec<PathBuf> = std::fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| {
+            p.is_file()
+                && p.extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| matches!(e.to_lowercase().as_str(), "jpg" | "jpeg" | "png"))
+                    .unwrap_or(false)
+        })
+        .collect();
+    loose.sort();
+    loose.into_iter().next()
+}
+
+/// The cover in this folder and no other, as QBZ's `folder_artwork_in_dir`
+/// finds it: a picture with a cover's name ("cover", "folder", "front",
+/// "album", "artwork", "art"), else one whose name holds one of those, else
+/// the folder's only picture. It does not look up to the record's folder: a
+/// box set whose discs each have a cover of their own showed the box's, or
+/// the first disc's, on every one.
+pub fn cover_in(dir: &Path) -> Option<PathBuf> {
+    const NAMES: &[&str] = &["cover", "folder", "front", "album", "artwork", "art"];
+    let mut pictures: Vec<PathBuf> = std::fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.is_file()
+                && path.extension().and_then(|e| e.to_str()).is_some_and(|e| {
+                    matches!(e.to_lowercase().as_str(), "jpg" | "jpeg" | "png" | "webp" | "gif" | "bmp")
+                })
+        })
+        .collect();
+    pictures.sort();
+    let named = |path: &PathBuf| -> u8 {
+        let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or_default().to_lowercase();
+        if NAMES.contains(&stem.as_str()) {
+            2
+        } else if NAMES.iter().any(|name| stem.contains(name)) {
+            1
+        } else {
+            0
+        }
+    };
+    let mut best: Option<(u8, &PathBuf)> = None;
+    for picture in &pictures {
+        let score = named(picture);
+        if score > 0 && best.is_none_or(|(kept, _)| score > kept) {
+            best = Some((score, picture));
+        }
+    }
+    best.map(|(_, path)| path.clone()).or_else(|| (pictures.len() == 1).then(|| pictures[0].clone()))
+}
+
+/// The cover for a track: the one inside the file, or the one beside it.
+///
+/// Both, because a library has both kinds and somebody looking at the window
+/// does not care which. The scan knew this rule and the player did not, so an
+/// album whose cover is a `cover.jpg` in its folder -- which is most of
+/// them -- showed its cover in the grid and "no cover" while it played.
+pub fn artwork_for(path: &Path, cache_dir: &Path) -> Option<PathBuf> {
+    extract_artwork(path, cache_dir).ok().flatten().or_else(|| cover_beside(path))
+}
+
+/// A short, stable hash of the path, to name the cache file.
+fn path_hash(path: &Path) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    path.hash(&mut h);
+    h.finish()
+}
+
+/// Builds a local-library [`Track`] from a file.
+pub fn track_from_file(path: &Path, id: TrackRef) -> Result<Track, TagError> {
+    let info = read(path)?;
+    let title = info.tags.title.clone().unwrap_or_else(|| {
+        path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default()
+    });
+    let mut track = Track::new(id, title);
+    track.duration = info.duration;
+    track.track_number = info.tags.track_number;
+    track.isrc = info.tags.isrc.clone();
+    track.recording_mbid = info.tags.musicbrainz_recording_id.clone();
+    track.artists = info
+        .tags
+        .artists
+        .iter()
+        .map(|name| chilpa_models::ArtistRef::named(name))
+        .collect();
+    track.album = info
+        .tags
+        .album
+        .as_ref()
+        .map(|title| chilpa_models::AlbumRef::titled(title));
+    track.artwork = if info.tags.pictures > 0 {
+        ArtworkRef::Embedded { path: path.to_path_buf(), index: 0 }
+    } else {
+        ArtworkRef::None
+    };
+    Ok(track)
+}
+
+/// An advisory as the stores write it (`ITUNESADVISORY`, MP4's `rtng`):
+/// 1 or 4 is explicit, 2 is clean, and 0 or anything else says nothing.
+pub fn advisory(value: &str) -> Option<bool> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "1" | "4" | "explicit" => Some(true),
+        "2" | "clean" => Some(false),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn a_cover_beside_the_file_counts_as_the_track_s_cover() {
+        // The scan knew this and the player did not: an album whose cover is
+        // a cover.jpg in its folder, which is most of them, showed its cover
+        // in the grid and "no cover" while it played.
+        let dir = std::env::temp_dir().join("chilpa-tags-cover");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let track = dir.join("01.flac");
+        std::fs::write(&track, b"not really a flac").unwrap();
+        let cache = dir.join("cache");
+
+        assert_eq!(artwork_for(&track, &cache), None, "nothing to find yet");
+
+        // A name nobody uses, to prove the loose-image fallback works.
+        let loose = dir.join("scan0001.png");
+        std::fs::write(&loose, b"not really a png").unwrap();
+        assert_eq!(artwork_for(&track, &cache), Some(loose), "any image beside it");
+
+        // And a known name wins over a loose one.
+        let named = dir.join("cover.jpg");
+        std::fs::write(&named, b"not really a jpeg").unwrap();
+        assert_eq!(artwork_for(&track, &cache), Some(named));
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    use super::*;
+
+    #[test]
+    fn a_folder_s_own_cover_goes_by_its_name_or_is_its_only_picture() {
+        let dir = std::env::temp_dir().join("chilpa-tags-cover-in");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        assert_eq!(cover_in(&dir), None, "nothing there");
+        std::fs::write(dir.join("scan0001.png"), b"x").unwrap();
+        assert_eq!(cover_in(&dir), Some(dir.join("scan0001.png")), "the only picture");
+        std::fs::write(dir.join("back.jpg"), b"x").unwrap();
+        assert_eq!(cover_in(&dir), None, "two pictures and neither named");
+        std::fs::write(dir.join("Disc 1 front side.jpg"), b"x").unwrap();
+        assert_eq!(cover_in(&dir), Some(dir.join("Disc 1 front side.jpg")), "a name that holds one");
+        std::fs::write(dir.join("Cover.JPG"), b"x").unwrap();
+        assert_eq!(cover_in(&dir), Some(dir.join("Cover.JPG")), "a cover's own name wins");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn disc_evidence_never_wraps_into_a_different_set() {
+        assert_eq!(disc_index(0), None);
+        assert_eq!(disc_index(65537), None);
+        assert_eq!(disc_index(2), Some(2));
+        assert_eq!(disc_index(65535), Some(65535));
+    }
+
+    #[test]
+    fn replaygain_reads_as_tags_write_it() {
+        assert_eq!(number("-7.23 dB"), Some(-7.23));
+        assert_eq!(number("+1.5 dB"), Some(1.5));
+        assert_eq!(number(" 0.987654 "), Some(0.987654));
+        assert_eq!(number("loud"), None);
+        assert_eq!(number("inf"), None);
+    }
+
+    #[test]
+    fn an_advisory_is_explicit_clean_or_silent() {
+        assert_eq!(advisory("1"), Some(true));
+        assert_eq!(advisory(" 4 "), Some(true));
+        assert_eq!(advisory("Explicit"), Some(true));
+        assert_eq!(advisory("2"), Some(false));
+        assert_eq!(advisory("0"), None);
+        assert_eq!(advisory(""), None);
+    }
+
+    #[test]
+    fn the_year_comes_from_the_date_without_truncating_it() {
+        let tags = Tags { date: Some("2019-03-15".into()), ..Tags::default() };
+        assert_eq!(tags.year(), Some(2019));
+        assert_eq!(tags.date.as_deref(), Some("2019-03-15"), "the date is kept whole");
+    }
+
+    #[test]
+    fn several_artists_show_on_one_line_without_getting_lost() {
+        let tags = Tags { artists: vec!["One".into(), "Two".into()], ..Tags::default() };
+        assert_eq!(tags.artist_line(), "One, Two");
+        assert_eq!(tags.artists.len(), 2, "they are still two, not one string");
+    }
+
+    #[test]
+    fn the_cover_name_changes_when_the_file_changes() {
+        // Two different paths must never share a cache file.
+        assert_ne!(path_hash(Path::new("/a.flac")), path_hash(Path::new("/b.flac")));
+        assert_eq!(path_hash(Path::new("/a.flac")), path_hash(Path::new("/a.flac")));
+    }
+
+    #[test]
+    fn a_file_that_does_not_exist_is_reported() {
+        assert!(read(Path::new("/does/not/exist.flac")).is_err());
+    }
+}

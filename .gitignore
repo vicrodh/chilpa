@@ -1,0 +1,10 @@
+crates/target
+target
+
+# I keep local agent instructions outside the public source tree.
+AGENTS.md
+CLAUDE.md
+
+# Bytecode Python writes next to the lint; it carries the source's mtime and
+# would leave the tree dirty after every checkout.
+__pycache__/

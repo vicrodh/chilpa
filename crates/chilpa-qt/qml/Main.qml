@@ -1,0 +1,163 @@
+import QtQuick
+import app.chilpa
+import app.chilpa.controls
+import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as Driving
+import "qrc:/qt/qml/app/chilpa/ambient/qml/Patterns" as Backdrop
+import "qrc:/qt/qml/app/chilpa/mini/qml/Screens" as Mini
+import "qrc:/qt/qml/app/chilpa/immersive/qml/Screens" as Overlay
+import "qrc:/qt/qml/app/chilpa/about/qml/Components" as AboutUi
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "Patterns"
+
+// The window (design/02): the floating sidebar, the tab bar, the screen of
+// the active tab and the floating player over it.
+Window {
+    id: window
+
+    readonly property int sidebarWidth: sidebar.shown
+    readonly property int contentLeft: sidebarWidth > 0 ? Metrics.spaceWindow * 2 + sidebarWidth : Metrics.spaceWindow // derived: a margin on each side of the sidebar
+    // The metadata editor wants the width: the queue and the lyrics step
+    // aside while it is open and come back as they were when it closes,
+    // unless one of them is opened in the meantime.
+    property bool panelAside: false
+    function deferNavigation(action, ...args) { sidebar.deferNavigation(function() { action.apply(null, args) }) }
+
+    // As big as it was left, and maximized if it was (design/04 Window).
+    width: WindowPlace.width
+    height: WindowPlace.height
+    minimumWidth: WindowPlace.smallestWidth
+    minimumHeight: WindowPlace.smallestHeight
+    visibility: WindowPlace.maximized ? Window.Maximized : Window.Windowed
+    // A Mac's window keeps its frame, and with it the system's controls.
+    flags: systemControls.kept ? Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint
+        : Qt.Window | Qt.FramelessWindowHint
+    color: Theme.color.surfaceWindow
+    // On a Mac the title bar is under the tab bar, and a title there would
+    // sit beside the system's controls. Hiding its text from AppKit alone
+    // does not keep it away, so there is none to draw, as in QBZ.
+    title: systemControls.kept ? "" : "Chilpa"
+
+    // The dynamic background, under everything (design/01 1.6).
+    Backdrop.AppBackground {
+        anchors.fill: parent
+        plane: Qt.rect(host.x, host.y, host.width, host.height)
+    }
+
+    // The screen scrolls under nothing but the player: it is cut at the
+    // tab bar, which stays on top of it.
+    ScreenHost {
+        id: host
+        resizing: sidebar.dragging || right.dragged >= 0
+        x: window.contentLeft
+        y: plan.planeTop
+        width: resizing && heldWidth >= 0 ? heldWidth : (right.visible ? right.x : window.width) - Metrics.spaceWindow - x
+        // Under the dynamic background the plane is a card that ends at the
+        // window's margin, so the screens end there too.
+        height: window.height - y - plan.contentBottom
+        clip: true
+    }
+
+    // The content is a plane like the panels beside it. Under the dynamic
+    // background the field shows through its corners instead.
+    PlaneCorners {
+        visible: !Theme.ambient
+        x: host.x
+        y: host.y
+        width: host.width
+    }
+
+    TabBar {
+        openSource: sidebar.openSource
+        x: Metrics.spaceWindow
+        width: window.width - Metrics.spaceWindow * 2 // derived: a margin on each side
+        controlsRoom: systemControls.room
+        onQuitAsked: driving.requestQuit()
+    }
+
+    SystemControls {
+        id: systemControls
+        window: window
+    }
+
+    RightPanelFrame {
+        id: right
+        z: 2
+        open: (SettingsModel.queueOpen || SettingsModel.lyricsOpen) && !window.panelAside
+        x: window.width - width - Metrics.spaceWindow
+        y: plan.planeTop
+        height: window.height - y - plan.planeBottom
+    }
+
+    Connections {
+        target: host
+        function onPreparingRoute() { window.panelAside = Navigation.screen === "metadata" }
+    }
+
+    PlayerBar {
+        id: player
+        z: 3
+        panelAside: window.panelAside
+        onShowPanel: window.panelAside = false
+        // Floating, the plane's width less the window's gap on each side
+        // (the owner, 2026-10-08 night); docked, the window's (PlayerPlan).
+        width: plan.barWidth
+        x: plan.barX
+        y: plan.barY
+        Behavior on y { NumberAnimation { duration: Motion.panel; easing.type: Easing.OutCubic } }
+    }
+    Driving.PlayerPlan { id: plan; window: window; content: host; tall: player.implicitHeight; away: idle.away }
+
+    PlayerIdle {
+        id: idle
+        target: window.contentItem
+        holding: player.pointed
+    }
+
+    SelectionBar {
+        id: selection
+        z: 4
+        visible: AlbumActions.selectedCount > 0
+        x: host.x + (host.width - width) / 2 // derived: centered over the content
+        y: window.height - height - Metrics.selectionBottom
+    }
+
+    Toast {
+        z: 5
+        x: host.x + (host.width - width) / 2 // derived: centered over the content
+        y: window.height - height - (selection.visible ? Metrics.toastWithSelectionBottom : Metrics.toastBottom)
+    }
+
+    // Above the content and the tab bar, so its grip is never covered.
+    SidebarFrame {
+        id: sidebar
+        router: host
+        z: 2
+        anchors.fill: parent
+        window: window
+    }
+
+    Tooltip { watching: window.contentItem }
+    QueueProgress { anchors.right: parent.right; anchors.rightMargin: Metrics.spaceWindow; y: plan.planeTop + Metrics.gap8; z: 7 }
+    AboutUi.UpdateNotice { anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.rightMargin: Metrics.spaceWindow; anchors.bottomMargin: plan.contentBottom + Metrics.spaceWindow; z: 8 }
+
+    WindowGrips { anchors.fill: parent; window: window }
+    DevHooks { window: window }
+
+    Driving.WindowControls { id: driving; window: window }
+    Mini.MiniHost { window: window; controls: driving }
+    Overlay.ImmersiveView { anchors.fill: parent; z: 6; window: window; controls: driving }
+    // Nothing starts with the keyboard: the search field only takes it when
+    // it is clicked or asked for.
+    Component.onCompleted: {
+        contentItem.forceActiveFocus()
+        console.info("main window constructed")
+    }
+
+    // Over everything while the plugins start.
+    StartupSplash { anchors.fill: parent; z: 1000 }
+    // A press outside the field that has the keyboard, or another view, takes it.
+    FocusRelease { key: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.routeKey].join(" ") }
+}

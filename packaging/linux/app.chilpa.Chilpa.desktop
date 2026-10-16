@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Chilpa
+Comment=Music player
+Exec=/usr/bin/chilpa-qt
+Icon=app.chilpa.Chilpa
+Terminal=false
+Categories=AudioVideo;Audio;Player;Qt;
+StartupWMClass=chilpa-qt
+# KWin hands org_kde_plasma_window_management only to a binary a desktop
+# entry names with this line; the wallpaper background reads the window's
+# place on the screen through it. Without it the crop stays centred.
+X-KDE-Wayland-Interfaces=org_kde_plasma_window_management

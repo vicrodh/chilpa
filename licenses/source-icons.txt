@@ -1,0 +1,7 @@
+Source icons (crates/chilpa-qt/assets/icons/sources.ttf)
+
+Built by tools/icons/build-sources from the drawings in tools/icons/sources.
+I supplied the drawings, and their licenses allow this use.
+
+The marks of the servers and services drawn here belong to their owners, and
+are used only to tell which one a source is.

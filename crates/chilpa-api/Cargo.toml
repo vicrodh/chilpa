@@ -1,0 +1,65 @@
+[package]
+name = "chilpa-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Where the plugins go, per platform (ADR-010 M3).
+chilpa-dirs.workspace = true
+chilpa-core.workspace = true
+chilpa-cast.workspace = true
+chilpa-models.workspace = true
+chilpa-library.workspace = true
+chilpa-tags.workspace = true
+chilpa-lyrics.workspace = true
+chilpa-plugin.workspace = true
+chilpa-secrets.workspace = true
+chilpa-auth.workspace = true
+chilpa-meta.workspace = true
+# My servers' protocols (ADR-017).
+chilpa-servers.workspace = true
+chilpa-i18n.workspace = true
+# The window's controls, where they are the system's.
+chilpa-appkit.workspace = true
+# Approvals are kept as JSON, readable by hand on purpose.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+semver = "1"
+base64 = "0.22"
+# A cover is decoded once and kept at the size it is drawn (frontend
+# ADR-0014, rule 5). JPEG and PNG are what covers come as; nothing else is
+# built in.
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "bmp"] }
+# A new server's instance id, which nobody can guess.
+rand = "0.10"
+tempfile = "3"
+sha1 = "0.10"
+sha2 = "0.10"
+url = "2"
+roxmltree = "0.21"
+zip = { version = "8.6", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+# The test plugins are written in wasm text, so no separate toolchain is
+# needed.
+wat = "1"
+# For putting an ISRC on a scanned track, which is what lets the search
+# match what is local with what a source gives. It is the same rusqlite
+# chilpa-library already uses.
+chilpa-library.workspace = true
+rusqlite = "0.40"
+tiny_http = "0.12"
+native-tls = "0.2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"
+chilpa-bwrap.workspace = true
+# The desktop's media controls and the one-instance name.
+chilpa-mpris.workspace = true
+async-channel = "2"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+[target.'cfg(target_os = "macos")'.dependencies]
+[target.'cfg(target_os = "android")'.dependencies]

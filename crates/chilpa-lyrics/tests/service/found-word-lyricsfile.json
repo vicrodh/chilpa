@@ -1,0 +1,69 @@
+{
+ "request": {
+  "schema": 1,
+  "track": {
+   "title": "Small Hours",
+   "artist": "Example Artist",
+   "album": "Example Album",
+   "duration_ms": 7200,
+   "isrc": "QZES72500001"
+  },
+  "preferences": {
+   "minimum_sync": "unsynced",
+   "language": null
+  }
+ },
+ "status": 200,
+ "response": {
+  "schema": 1,
+  "status": "found",
+  "document": {
+   "schema": 1,
+   "timing": "word",
+   "language": "en",
+   "lines": [
+    {
+     "start_ms": 4200,
+     "end_ms": 6800,
+     "text": "Stay until the morning",
+     "segments": [
+      {
+       "text": "Stay",
+       "start_ms": 4200,
+       "end_ms": 4800,
+       "space_after": true
+      },
+      {
+       "text": "until",
+       "start_ms": 4800,
+       "end_ms": 5400,
+       "space_after": true
+      },
+      {
+       "text": "the",
+       "start_ms": 5400,
+       "end_ms": 5750,
+       "space_after": true
+      },
+      {
+       "text": "morning",
+       "start_ms": 5750,
+       "end_ms": 6800,
+       "space_after": false
+      }
+     ]
+    }
+   ],
+   "source": {
+    "provider": "lrclib",
+    "name": "LRCLIB",
+    "claim": {
+     "title": "Small Hours",
+     "artist": "Example Artist",
+     "album": "Example Album",
+     "duration_ms": 7000
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,25 @@
+# QML strings assigned to a property the user reads, that are deliberately
+# not translated. One per line; the text is compared exactly.
+#
+# The reason has to be that the string is the same in every language: a brand
+# name, a symbol, a format spec. "It is short" is not a reason.
+Plugins
+Bit-perfect
+AutoMix
+http://...
+# The mark on an output that takes samples untouched: the same two letters
+# in every language, like a unit.
+BP
+# The product name, the same in every language.
+Chilpa
+# A typographic separator, with no language-specific reading.
+—
+60
+Chilpa Mini Player
+♪
+✓
+# Parentheses around a work's composer: identical punctuation in both languages.
+(
+)
+# The command prompt is punctuation in every language.
+:

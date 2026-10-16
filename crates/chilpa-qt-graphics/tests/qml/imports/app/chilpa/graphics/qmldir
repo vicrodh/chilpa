@@ -1,0 +1,7 @@
+module app.chilpa.graphics
+singleton Graphics 1.0 Graphics.qml
+PlasmaItem 1.0 SceneItem.qml
+RibbonItem 1.0 SceneItem.qml
+LineBedItem 1.0 SceneItem.qml
+TunnelFlowItem 1.0 SceneItem.qml
+ScopeTraceItem 1.0 SceneItem.qml

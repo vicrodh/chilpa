@@ -1,0 +1,12 @@
+[package]
+name = "chilpa-meta"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# What is found goes to the window as it is.
+serde = { version = "1", features = ["derive"] }
+# The providers answer in JSON.
+serde_json = "1"

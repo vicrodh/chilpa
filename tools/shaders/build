@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Compiles the window's shaders into the .qsb packages Qt loads at run time:
+# one file carrying GLSL, HLSL and Metal, so the same package serves Linux,
+# Windows and macOS. Run it after editing a .frag or a .vert; the .qsb is
+# committed so a build does not need Qt's shader tools.
+#
+# Every shell crate keeps its shaders under assets/shaders/. A shader that
+# needs integers (a uint hash, a bitwise mask) has no GLSL ES 1.00 form and
+# says so with `QSB-SKIP-GLES100` in a comment: that variant is left out of
+# its package, and the component that uses it falls back where the effect
+# cannot load.
+set -e
+root=$(git rev-parse --show-toplevel)
+qsb=$(command -v qsb || echo /usr/lib64/qt6/bin/qsb)
+for src in "$root"/crates/*/assets/shaders/*.frag "$root"/crates/*/assets/shaders/*.vert; do
+    [ -e "$src" ] || continue
+    glsl="100 es,300 es,310 es,320 es,120,150,440"
+    if grep -q 'QSB-SKIP-GLES100' "$src"; then
+        glsl="300 es,310 es,320 es,120,150,440"
+    fi
+    arguments=()
+    if [[ "$src" == *.vert ]] && ! grep -q 'QSB-SKIP-BATCH' "$src"; then
+        arguments+=(-b)
+    fi
+    "$qsb" --glsl "$glsl" --hlsl 50 --msl 12 "${arguments[@]}" -o "$src.qsb" "$src"
+    echo "shaders: ${src#"$root"/crates/}"
+done

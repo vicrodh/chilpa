@@ -1,0 +1,2 @@
+module app.chilpa.ambient
+singleton Ambient 1.0 Ambient.qml
