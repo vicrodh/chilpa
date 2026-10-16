@@ -17,7 +17,7 @@ import "../Components"
 Popup {
     id: flyout
 
-    Tools.SearchNavigation { search: flyout.search }
+    Tools.SearchNavigation { id: searchNavigation; search: flyout.search }
     required property SearchModel search
     property bool ownInput: false
     // The tallest it can be.
@@ -56,6 +56,7 @@ Popup {
         // The rows are built again; the list stays where it was read.
         const at = list.contentY
         search.act(row, "open")
+        searchNavigation.flush()
         if (link) {
             search.refresh()
             list.contentY = at
@@ -203,6 +204,7 @@ Popup {
                 onPlayed: {
                     flyout.close()
                     flyout.search.act(index, "play")
+                    searchNavigation.flush()
                 }
                 onMenu: (left, top) => {
                     const at = mapToItem(list, left, top)
@@ -212,6 +214,7 @@ Popup {
 
             Tools.SearchMenu {
                 id: hitMenu
+                navigation: searchNavigation
                 search: flyout.search
                 onLeft: flyout.close()
             }

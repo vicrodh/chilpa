@@ -171,6 +171,7 @@ pub struct AlbumGridRust {
     max_rows: i32,
     albums: i32,
     ready: bool,
+    source_ready: bool,
     rev: i32,
     content_rev: i32,
     filter: QString,
@@ -265,6 +266,9 @@ impl qobject::AlbumGridModel {
     }
 
     fn schedule(mut self: Pin<&mut Self>) {
+        if self.rust().kind.to_string() == "source" && self.rust().list.len() == 0 {
+            self.as_mut().set_ready(false);
+        }
         self.as_mut().rust_mut().generation = self.rust().generation.wrapping_add(1);
         if self.rust().pending {
             return;
@@ -322,7 +326,11 @@ impl qobject::AlbumGridModel {
                 records
             }
             "source" => {
-                let (mut cards, mut groups) = app::with(|api| api.source_shelf(&self.rust().key.to_string(), &self.rust().order.to_string(), &self.rust().group.to_string(), &self.rust().filter.to_string()));
+                let snapshot = app::with(|api| api.source_shelf_snapshot(&self.rust().key.to_string(), &self.rust().order.to_string(), &self.rust().group.to_string(), &self.rust().filter.to_string()));
+                let ready = snapshot.ready();
+                self.as_mut().rust_mut().source_ready = ready;
+                if !ready { self.as_mut().set_ready(false); }
+                let (mut cards, mut groups) = (snapshot.albums, snapshot.groups);
                 if self.rust().limit > 0 {
                     cards.truncate(limit);
                     groups.retain(|(at, _)| *at < cards.len());
@@ -409,7 +417,8 @@ impl qobject::AlbumGridModel {
         self.as_mut().set_albums(count);
         let next = self.rev().wrapping_add(1);
         self.as_mut().set_rev(next);
-        self.as_mut().set_ready(true);
+        let ready = self.rust().kind.to_string() != "source" || self.rust().source_ready;
+        self.as_mut().set_ready(ready);
     }
 
     /// Appends records without rebuilding the rows already shown.
@@ -437,7 +446,8 @@ impl qobject::AlbumGridModel {
         self.as_mut().set_fresh(from as i32);
         let next = self.rev().wrapping_add(1);
         self.as_mut().set_rev(next);
-        self.as_mut().set_ready(true);
+        let ready = self.rust().kind.to_string() != "source" || self.rust().source_ready;
+        self.as_mut().set_ready(ready);
     }
 
     /// Reflows cached albums without querying their data again.

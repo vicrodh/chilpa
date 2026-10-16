@@ -32,7 +32,12 @@ Window {
     property var peaks: ({wave:0, goniometer:0, oscilloscope:0, linebed:0, level:0})
     readonly property bool playing: Player.playing && !Player.paused
 
-    QtObject { id: controls; property bool immersiveOpen: false; signal immersiveAsked() }
+    QtObject {
+        id: controls
+        property bool immersiveOpen: false
+        signal immersiveAsked()
+        function pressed(event) { event.accepted = false }
+    }
     SettingsPage { id: audio; section: "audio" }
     Views.ImmersiveView { anchors.fill: parent; window: window; controls: controls }
 

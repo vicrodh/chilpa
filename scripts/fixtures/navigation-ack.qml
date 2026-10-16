@@ -15,7 +15,8 @@ Main {
     property int fixtureTracks: "FIXTURE_TRACKS"
     property string outputDirectory: "OUTPUT_DIRECTORY"
     property double injectedAt: -1
-    property double activatedAt: -1
+    property double leadReadyAt: -1
+    property bool hitActivated: false
     property double logicalAt: -1
     property double acknowledgedAt: -1
     property double resolvedAt: -1
@@ -25,7 +26,7 @@ Main {
     property var oldPage: null
     property bool oldHidden: false
     property bool resolvedAfterFrame: false
-    property bool activatedBeforeNavigation: false
+    property bool leadBeforeNavigation: false
     property int visibleRows: 0
     property int tracks: 0
     property bool captured: false
@@ -53,31 +54,39 @@ Main {
     }
     function destination() { return Navigation.screen === "album" && Navigation.routeId === fixtureAlbum }
     Connections {
+        target: window.search
+        function onNavigated(kind, target, id, token) {
+            if (window.injectedAt < 0) return
+            window.leadReadyAt = Date.now()
+            window.leadBeforeNavigation = !window.destination()
+        }
+    }
+    Connections {
         target: host
         function onAcknowledgedRouteChanged() {
-            if (window.activatedAt >= 0 && window.destination()) {
+            if (window.injectedAt >= 0 && window.destination()) {
                 window.logicalAt = Date.now()
                 window.oldHidden = !host.item && window.oldPage && !window.oldPage.parent.visible && !window.oldPage.parent.enabled
             }
         }
         function onPhaseChanged() {
-            if (window.activatedAt >= 0 && window.destination() && host.phase === "acknowledging")
+            if (window.injectedAt >= 0 && window.destination() && host.phase === "acknowledging")
                 window.oldHidden = !host.item && window.oldPage && !window.oldPage.parent.visible && !window.oldPage.parent.enabled
         }
         function onAcknowledgedFrame(route) {
-            if (window.activatedAt >= 0 && window.destination()) {
+            if (window.injectedAt >= 0 && window.destination()) {
                 window.acknowledgedAt = Date.now()
                 window.oldHidden = !host.item && window.oldPage && !window.oldPage.parent.visible && !window.oldPage.parent.enabled
             }
         }
         function onComponentRouteChanged() {
-            if (window.activatedAt >= 0 && window.destination()) {
+            if (window.injectedAt >= 0 && window.destination()) {
                 window.resolvedAt = Date.now()
                 window.resolvedAfterFrame = window.acknowledgedAt >= 0
             }
         }
         function onItemChanged() {
-            if (window.activatedAt >= 0 && window.destination() && host.item) window.mountedAt = Date.now()
+            if (window.injectedAt >= 0 && window.destination() && host.item) window.mountedAt = Date.now()
         }
     }
     FrameFence {
@@ -87,7 +96,7 @@ Main {
     Connections {
         target: window
         function onFrameSwapped() {
-            if (window.rowsArmed || window.activatedAt < 0 || !window.destination() || !host.item) return
+            if (window.rowsArmed || window.injectedAt < 0 || !window.destination() || !host.item) return
             const view = window.find(host.item, item => item.objectName === "trackListView")
             if (!view || !view.model.ready || !view.model.count) return
             let rows = 0
@@ -139,17 +148,27 @@ Main {
                 return hit !== null && hit.visible && hit.width > 0
             }, 10000)
             waitForRendering(hit)
-            hit.activated.connect(function() {
-                window.activatedAt = Date.now()
-                window.activatedBeforeNavigation = !window.destination()
-            })
+            hit.activated.connect(function() { window.hitActivated = true })
             window.injectedAt = Date.now()
             mouseClick(hit, hit.width * 0.3, hit.height * 0.5, Qt.LeftButton, Qt.NoModifier, 0)
-            check(window.activatedAt >= 0, "I activate the real search row with a mouse click")
-            check(window.activatedBeforeNavigation, "I timestamp activation before deferred navigation")
+            check(window.hitActivated, "I activate the real search row with a mouse click")
+            check(window.leadReadyAt >= window.injectedAt && window.leadBeforeNavigation,
+                  "I capture the search lead before navigation without delaying its dispatch")
             tryVerify(() => window.contentAt >= 0, 15000)
+            console.log("SMOKE navigation measurements " + JSON.stringify({
+                injected: window.injectedAt, lead_ready: window.leadReadyAt,
+                click_to_lead_ms: window.leadReadyAt - window.injectedAt,
+                click_to_logical_ms: window.logicalAt - window.injectedAt,
+                lead_to_logical_ms: window.logicalAt - window.leadReadyAt,
+                click_to_acknowledged_frame_ms: window.acknowledgedAt - window.injectedAt,
+                component_resolution_ms: window.resolvedAt - window.injectedAt,
+                mounted_ms: window.mountedAt - window.injectedAt,
+                confirmed_rows_frame_ms: window.contentAt - window.injectedAt,
+                rows: window.visibleRows, tracks: window.tracks, old_hidden: window.oldHidden,
+                resolved_after_acknowledgement: window.resolvedAfterFrame
+            }))
             check(window.oldHidden, "I hide and disable the previous page at acknowledgement")
-            check(window.logicalAt >= window.activatedAt, "I observe the logical acknowledgement")
+            check(window.logicalAt >= window.leadReadyAt, "I observe the logical acknowledgement")
             check(window.acknowledgedAt >= window.logicalAt, "I present the acknowledgement frame")
             check(window.resolvedAfterFrame, "I resolve the component after the acknowledgement frame")
             check(window.mountedAt >= window.acknowledgedAt, "I mount after acknowledgement")
@@ -157,19 +176,6 @@ Main {
             check(window.logicalAt - window.injectedAt <= 16, "I acknowledge the injected click logically within 16 ms")
             check(window.acknowledgedAt - window.injectedAt < 150, "I present the click acknowledgement within 150 ms")
             check(window.tracks >= 100 && window.visibleRows > 0, "I present the large record's real rows")
-            console.log("SMOKE navigation measurements " + JSON.stringify({
-                injected: window.injectedAt, activated: window.activatedAt,
-                click_to_activation_ms: window.activatedAt - window.injectedAt,
-                click_to_logical_ms: window.logicalAt - window.injectedAt,
-                activation_to_logical_ms: window.logicalAt - window.activatedAt,
-                click_to_acknowledged_frame_ms: window.acknowledgedAt - window.injectedAt,
-                acknowledged_frame_ms: window.acknowledgedAt - window.activatedAt,
-                component_resolution_ms: window.resolvedAt - window.activatedAt,
-                mounted_ms: window.mountedAt - window.activatedAt,
-                confirmed_rows_frame_ms: window.contentAt - window.activatedAt,
-                rows: window.visibleRows, tracks: window.tracks, old_hidden: window.oldHidden,
-                resolved_after_acknowledgement: window.resolvedAfterFrame
-            }))
             // I capture only after timing ends so readback cannot delay acknowledgement.
             host.grabToImage(function(result) {
                 window.captured = result.saveToFile(window.outputDirectory + "/content.png")
@@ -177,7 +183,7 @@ Main {
             tryCompare(window, "captured", true)
         }
         function test_deferred_native_invokable_runs_after_a_frame() {
-            window.activatedAt = -1
+            window.injectedAt = -1
             check(Navigation.screen === "album", "I start on the selected album")
             window.deferNavigation(Navigation.go, "library", 0)
             check(Navigation.screen === "album" && host.phase === "acknowledging" && !host.item,
