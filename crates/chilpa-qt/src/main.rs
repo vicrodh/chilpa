@@ -25,15 +25,14 @@ mod bridge;
 mod browse;
 mod registry;
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
-// Only Linux has a desktop file to be named after, and only there is the
-// name what makes the window pick up its icon.
+// On Linux the desktop entry associates the window with its launcher.
 #[cfg(target_os = "linux")]
 use cxx_qt_lib::QString;
 unsafe extern "C" {
     /// Hands the engine the covers' image provider. See `covers.cpp`.
     fn chilpa_install_covers(engine: *mut std::ffi::c_void);
-    /// Registers the QML modules of the other shell crates. See `modules.cpp`.
-    fn chilpa_import_modules();
+    /// Registers the shell modules and sets the window icon. See `modules.cpp`.
+    fn chilpa_install_shell();
 }
 
 #[no_mangle]
@@ -120,9 +119,8 @@ fn main() {
     // Qt's Vulkan devices can be listed now, and no window exists yet.
     chilpa_qt_graphics::apply_gpu_preference();
 
-    // SAFETY: it registers static plugins, once, before the engine exists
-    // and before anything reads their resources: the font is the kit's.
-    unsafe { chilpa_import_modules() };
+    // SAFETY: I register static plugins once, before loading their resources or QML.
+    unsafe { chilpa_install_shell() };
 
     // Inter unless the system's font was chosen: the design needs real
     // weights, and plenty of desktops set a font with one face that Qt does

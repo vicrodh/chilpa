@@ -1,8 +1,8 @@
-// Brings in the QML modules of the other shell crates. cxx-qt links a
-// library crate's module registration only into that crate's own binaries,
-// so the window registers them itself, before any QML is loaded.
+// I register the shell modules and set the bundled icon before creating windows.
 
 #include <QtCore/QtPlugin>
+#include <QtGui/QGuiApplication>
+#include <QtGui/QIcon>
 
 extern const QStaticPlugin qt_static_plugin_app_chilpa_kit_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_ambient_plugin();
@@ -26,7 +26,7 @@ extern const QStaticPlugin qt_static_plugin_app_chilpa_metadata_plugin();
 
 extern "C" void chilpa_frame_fence_register_qml_type();
 
-extern "C" void chilpa_import_modules()
+extern "C" void chilpa_install_shell()
 {
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_kit_plugin());
     chilpa_frame_fence_register_qml_type();
@@ -48,4 +48,5 @@ extern "C" void chilpa_import_modules()
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_gallery_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_lyrics_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_metadata_plugin());
+    QGuiApplication::setWindowIcon(QIcon(QStringLiteral(":/qt/qml/app/chilpa/kit/assets/logo.png")));
 }
