@@ -3,6 +3,9 @@
 I package Linux x86_64 as a binary tarball and an AppImage. The workflow builds
 on Ubuntu 24.04 with Qt 6.11.2 and Rust 1.90.0. The tarball needs system Qt and
 audio libraries; the AppImage includes its Qt Quick and audio runtime.
+I package on Ubuntu 24.04 and check every bundled ELF file against glibc 2.39.
+Checking the application alone misses newer requirements in Qt and its dependencies.
+I use the system graphics stack, including OpenGL, EGL and font libraries.
 
 ## Release workflow
 

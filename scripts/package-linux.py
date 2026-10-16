@@ -13,6 +13,20 @@ import tarfile
 import tempfile
 from release_version import release_version, update_information
 
+
+def check_glibc(path, maximum):
+    if path.is_symlink() or not path.is_file():
+        return
+    with path.open("rb") as stream:
+        if stream.read(4) != b"\x7fELF":
+            return
+    symbols = subprocess.check_output(["readelf", "--version-info", str(path)], text=True)
+    versions = [tuple(map(int, match.split("."))) for match in re.findall(r"GLIBC_(\d+\.\d+)", symbols)]
+    if versions and max(versions) > tuple(map(int, maximum.split("."))):
+        required = ".".join(map(str, max(versions)))
+        raise SystemExit(f"{path.name} requires glibc {required}; the release limit is {maximum}.")
+
+
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument("--binary", type=Path, required=True)
@@ -36,10 +50,7 @@ header = subprocess.check_output(["readelf", "-h", str(args.binary)], text=True)
 if "Advanced Micro Devices X86-64" not in header:
     parser.error("This initial Linux package targets x86_64.")
 if args.glibc_max:
-    symbols = subprocess.check_output(["readelf", "--version-info", str(args.binary)], text=True)
-    versions = [tuple(map(int, match.split("."))) for match in re.findall(r"GLIBC_(\d+\.\d+)", symbols)]
-    if versions and max(versions) > tuple(map(int, args.glibc_max.split("."))):
-        raise SystemExit(f"The binary requires glibc {'.'.join(map(str, max(versions)))}.")
+    check_glibc(args.binary, args.glibc_max)
 locked = json.loads((root / "packaging/linux/tools.lock.json").read_text())
 for tool in locked.values():
     path = args.tools / tool["asset"]
@@ -127,6 +138,9 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
         raise SystemExit("The Wayland platform plugin is missing.")
     if not (bin_dir / "qt.conf").exists() or not list(appdir.rglob("libeffectsplugin.so")):
         raise SystemExit("The deployed Qt Quick runtime is incomplete.")
+    if args.glibc_max:
+        for deployed in sorted(appdir.rglob("*")):
+            check_glibc(deployed, args.glibc_max)
     information = update_information(args.repository, args.version)
     image = args.output / f"Chilpa-{args.version}-x86_64.AppImage"
     subprocess.run([str(args.tools / locked["appimagetool"]["asset"]), "--appimage-extract-and-run", "--no-appstream",
