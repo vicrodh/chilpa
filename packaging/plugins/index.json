@@ -70,7 +70,7 @@
       "category": "Analysis",
       "repository": "https://github.com/vicrodh/chilpa-pg-mood",
       "package": "https://github.com/vicrodh/chilpa-pg-mood/releases/download/v0.1.2/chilpa-pg-mood-0.1.2-linux-x86_64.zip",
-      "sha256": "7e6f8aeb2d25f6c73693c51c2b8b926bde8edbc714b3f6a79928d9fb30f5c73a",
+      "sha256": "48ed293576939c441a70010cae0e711f26d6c1a8a436f2eb3ca392393ac421fe",
       "api": {
         "min": 1,
         "max": 1
