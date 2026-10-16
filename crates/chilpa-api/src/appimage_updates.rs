@@ -128,15 +128,16 @@ fn information(installation: &Installation, tag: &str) -> String {
 }
 
 fn check_image(installation: &Installation, view: &Mutex<Value>, cancel: &AtomicBool) -> Result<&'static str, String> {
-    let address = format!("https://api.github.com/repos/{}/releases/latest", installation.repository);
+    let channel = if installation.version.pre.is_empty() { "releases/latest" } else { "releases?per_page=30" };
+    let address = format!("https://api.github.com/repos/{}/{channel}", installation.repository);
     let response = chilpa_core::call_server(&chilpa_core::Call { method:"GET", url:&address,
         headers:&[("Accept".into(),"application/vnd.github+json".into())], body:None,
         timeout:Duration::from_secs(5), max_bytes:512 * 1024 }).map_err(|_| "The release service is unavailable")?;
     if cancel.load(Ordering::Acquire) { return Err("Update cancelled".into()); }
     if response.status == 404 { return Ok("current"); }
     if response.status != 200 { return Err("The release service is unavailable".into()); }
-    if !new_release(&response.body, &installation.version)? { return Ok("current"); }
     let document: Value = serde_json::from_slice(&response.body).map_err(|_| "Invalid release metadata")?;
+    let Some(document) = select_release(&document, &installation.version) else { return Ok("current"); };
     let tag = document["tag_name"].as_str().ok_or("No release version")?;
     let (hash,size) = release_asset(&document, tag)?;
     let mut selected = installation.clone();
@@ -153,12 +154,19 @@ fn check_image(installation: &Installation, view: &Mutex<Value>, cancel: &Atomic
         _ => Err("The update check failed".into()) }
 }
 
-fn new_release(bytes: &[u8], current: &Version) -> Result<bool, String> {
-    let document: Value = serde_json::from_slice(bytes).map_err(|_| "Invalid release metadata")?;
-    let tag = document["tag_name"].as_str().ok_or("No release version")?;
-    let version = Version::parse(tag.strip_prefix('v').unwrap_or(tag)).map_err(|_| "Invalid release version")?;
-    Ok(document["draft"] == false && document["prerelease"] == false && version.pre.is_empty()
-        && version.cmp_precedence(current).is_gt())
+fn candidate_version(document: &Value, current: &Version) -> Option<Version> {
+    let tag = document["tag_name"].as_str()?;
+    let version = Version::parse(tag.strip_prefix('v').unwrap_or(tag)).ok()?;
+    let prerelease = !version.pre.is_empty();
+    (document["draft"] == false && document["prerelease"] == prerelease
+        && (!current.pre.is_empty() || !prerelease)
+        && version.cmp_precedence(current).is_gt()).then_some(version)
+}
+
+fn select_release<'a>(document: &'a Value, current: &Version) -> Option<&'a Value> {
+    let releases = document.as_array().map(Vec::as_slice).unwrap_or(std::slice::from_ref(document));
+    releases.iter().filter_map(|release| candidate_version(release, current).map(|version| (release, version)))
+        .max_by(|(_, first), (_, second)| first.cmp_precedence(second)).map(|(release, _)| release)
 }
 
 fn release_asset(document: &Value, tag: &str) -> Result<(String,u64), String> {
@@ -300,10 +308,27 @@ mod tests {
         let current = Version::parse("1.9.0").unwrap();
         for tag in ["v1.8.0","v1.9.0","v1.9.0+other","v2.0.0-rc.1"] {
             let document = json!({"tag_name":tag,"draft":false,"prerelease":false});
-            assert!(!new_release(&serde_json::to_vec(&document).unwrap(), &current).unwrap());
+            assert!(select_release(&document, &current).is_none());
         }
-        assert!(new_release(br#"{"tag_name":"v1.10.0","draft":false,"prerelease":false}"#, &current).unwrap());
-        assert!(!new_release(br#"{"tag_name":"v2.0.0","draft":true,"prerelease":false}"#, &current).unwrap());
+        assert!(select_release(&json!({"tag_name":"v1.10.0","draft":false,"prerelease":false}), &current).is_some());
+        assert!(select_release(&json!({"tag_name":"v2.0.0","draft":true,"prerelease":false}), &current).is_none());
+    }
+    #[test]
+    fn beta_checks_select_the_newest_published_version_without_affecting_stable_installations() {
+        let current = Version::parse("0.1.0-beta").unwrap();
+        let mut releases = json!([
+            {"tag_name":"v0.1.0-beta.2","draft":false,"prerelease":true},
+            {"tag_name":"v0.1.0-beta.10","draft":false,"prerelease":true},
+            {"tag_name":"v0.2.0-beta","draft":true,"prerelease":true},
+            {"tag_name":"not-a-version","draft":false,"prerelease":true},
+            {"tag_name":"v0.2.0-beta","draft":false,"prerelease":false}
+        ]);
+        assert_eq!(select_release(&releases, &current).unwrap()["tag_name"], "v0.1.0-beta.10");
+        assert!(select_release(&releases, &Version::new(0, 0, 0)).is_none());
+        releases.as_array_mut().unwrap().push(json!({"tag_name":"v0.1.0","draft":false,"prerelease":false}));
+        assert_eq!(select_release(&releases, &current).unwrap()["tag_name"], "v0.1.0");
+        assert_eq!(select_release(&releases, &Version::new(0, 0, 0)).unwrap()["tag_name"], "v0.1.0");
+        assert!(select_release(&releases, &Version::new(0, 1, 0)).is_none());
     }
     #[test]
     fn an_update_requires_the_selected_platform_delta_and_checksum() {

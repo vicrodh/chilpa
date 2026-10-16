@@ -6,12 +6,14 @@ audio libraries; the AppImage includes its Qt Quick and audio runtime.
 
 ## Release workflow
 
-1. I set `[workspace.package].version` in `Cargo.toml` to `X.Y.Z` and update
-   `Cargo.lock` before tagging the same commit as `vX.Y.Z`.
+1. I set `[workspace.package].version` in `Cargo.toml` to `X.Y.Z` or a prerelease
+   such as `0.1.0-beta` and update `Cargo.lock` before tagging the same commit
+   with a `v` prefix.
 2. The tag starts `.github/workflows/release-linux.yml`. It checks the version,
    runs repository gates and API tests, builds the binary, packages both formats,
    checks AppImage startup and verifies all checksums.
-3. The workflow creates a draft GitHub release. I review and publish the draft.
+3. The workflow creates a draft GitHub release and marks beta tags as prereleases.
+   I review and publish the draft.
    A manual dispatch produces downloadable workflow artifacts without creating
    a release. `source_ref` selects the commit or tag to build.
 
@@ -20,11 +22,12 @@ The assets are:
 - `chilpa-X.Y.Z-linux-x86_64.tar.gz`
 - `Chilpa-X.Y.Z-x86_64.AppImage`
 - `Chilpa-X.Y.Z-x86_64.AppImage.zsync`
-- `MANIFEST.json` and `SHA256SUMS`
+- `MANIFEST.json`, `RELEASE-NOTES.md` and `SHA256SUMS`
 
-I publish the AppImage and its matching `.zsync` together. I keep stable tags and
-prereleases separate: this workflow accepts stable versions only, and the embedded
-update channel resolves the repository's latest published stable release.
+I publish the AppImage and its matching `.zsync` together. Stable installations
+only accept newer stable releases. Beta installations also accept newer published
+prereleases and can advance to a stable release. I order candidates by semantic
+version and reject drafts and mismatched prerelease metadata.
 
 ## AppImage updates
 
@@ -34,7 +37,7 @@ and a manual check. A notice opens the update controls when a newer image exists
 Downloads start when I press Update, with progress and cancellation. Chilpa remains
 usable during the download.
 
-I select a newer stable version and pin its tag for the download. I stage the
+I select a newer version from the installation's channel and pin its tag for the download. I stage the
 download beside the original image, verify its header, size and SHA-256 against
 the selected GitHub release, and replace the file atomically. I retain one
 `<original>.previous` image. Restart waits for the current process to close before
@@ -45,6 +48,9 @@ an AppImage; the tarball stays a manual installation.
 The image needs a writable parent folder. I move it to a user-owned folder before
 updating an image installed in a system-owned directory. The updater uses the
 HTTPS GitHub channel embedded during packaging; I do not embed account credentials.
+I pin the beta image's embedded fallback to its own tag; the host explicitly
+selects newer eligible tags before invoking the updater. A standalone updater
+therefore cannot silently cross from the beta fallback into the stable channel.
 
 ## Local packaging
 

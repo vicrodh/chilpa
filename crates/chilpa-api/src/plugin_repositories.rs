@@ -203,15 +203,27 @@ mod tests {
     #[test]
     fn the_official_catalog_is_available_offline_on_new_and_existing_profiles() {
         let root = tempfile::tempdir().unwrap();
-        for saved in [None, Some(br#"{"native_catalog":"","compatible":[]}"#.as_slice())] {
+        for saved in [None, Some(br#"{"compatible":[]}"#.as_slice()), Some(br#"{"native_catalog":"","compatible":[]}"#.as_slice())] {
             if let Some(saved) = saved { std::fs::write(root.path().join("repositories.json"), saved).unwrap(); }
             let repositories = PluginRepositories::load(root.path().into()).unwrap();
             assert_eq!(repositories.native_catalog(), NATIVE_CATALOG);
             let entries = repositories.cached("native").unwrap();
-            assert_eq!(entries.len(), 3);
+            assert_eq!(entries.len(), 5);
             assert!(entries.iter().all(|entry| entry.problem.is_empty()));
             assert!(repositories.compatible().is_empty());
         }
+    }
+
+    #[test]
+    fn the_default_does_not_replace_a_custom_catalog_or_compatible_repositories() {
+        let root = tempfile::tempdir().unwrap();
+        let saved = br#"{"native_catalog":"https://native.example/index.json","compatible":[{"id":"0123456789abcdef","url":"https://compatible.example/index.json"}]}"#;
+        std::fs::write(root.path().join("repositories.json"), saved).unwrap();
+        let repositories = PluginRepositories::load(root.path().into()).unwrap();
+        assert_eq!(repositories.native_catalog(), "https://native.example/index.json");
+        assert_eq!(repositories.compatible()[0].url, "https://compatible.example/index.json");
+        assert!(repositories.cached("native").unwrap().is_empty());
+        assert_eq!(std::fs::read(root.path().join("repositories.json")).unwrap(), saved);
     }
 
     #[test]
