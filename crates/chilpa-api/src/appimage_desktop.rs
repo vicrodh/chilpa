@@ -1,9 +1,8 @@
 //! I add the running AppImage to the desktop's application menu.
 //!
-//! The image carries its desktop entry and icon, but nothing outside it can
-//! see them: without an integrator the menu has no Chilpa, and Wayland draws
-//! the window without an icon because Qt only names the application after an
-//! installed entry. On every start from an image I write the entry under the
+//! I copy the image's desktop entry and icon outside its temporary mount.
+//! I point the entry directly at the installed icon so menus do not depend
+//! on the current icon theme or its cache. On every start I write it under the
 //! user's data folder with `Exec` on the image itself, so an image that moved
 //! is followed on its next start. An entry I did not write stays as it is,
 //! and so does an image another integrator already added.
@@ -31,7 +30,9 @@ pub fn integrate() {
 }
 
 fn install(image: &Path, bundled: &str, icon: &Path, data: &Path) -> io::Result<Outcome> {
-    let Some(entry) = image.to_str().and_then(|image| render(bundled, image)) else { return Ok(Outcome::BadPath) };
+    let installed = data.join(ICON);
+    let Some(entry) = image.to_str().zip(installed.to_str()).and_then(|(image, icon)| render(bundled, image, icon))
+        else { return Ok(Outcome::BadPath) };
     let applications = data.join("applications");
     let target = applications.join(format!("{ID}.desktop"));
     let existing = fs::read_to_string(&target).ok();
@@ -45,7 +46,6 @@ fn install(image: &Path, bundled: &str, icon: &Path, data: &Path) -> io::Result<
         return Ok(Outcome::Integrated);
     }
     let picture = fs::read(icon)?;
-    let installed = data.join(ICON);
     if fs::read(&installed).ok().as_ref() != Some(&picture) {
         write(&installed, &picture)?;
     }
@@ -57,9 +57,9 @@ fn install(image: &Path, bundled: &str, icon: &Path, data: &Path) -> io::Result<
 }
 
 /// The bundled entry with `Exec` on the image, `TryExec` so the menu hides it
-/// once the image is gone, and my mark. None for a path no entry can hold.
-fn render(bundled: &str, image: &str) -> Option<String> {
-    if image.chars().any(char::is_control) {
+/// once the image is gone, my mark and the installed icon's absolute path.
+fn render(bundled: &str, image: &str, icon: &str) -> Option<String> {
+    if image.chars().chain(icon.chars()).any(char::is_control) {
         return None;
     }
     let mut group = "";
@@ -69,6 +69,10 @@ fn render(bundled: &str, image: &str) -> Option<String> {
             group = line;
         }
         if group == "[Desktop Entry]" && (line.starts_with("TryExec=") || line == MARK) {
+            continue;
+        }
+        if group == "[Desktop Entry]" && line.starts_with("Icon=") {
+            entry.push_str(&format!("Icon={}\n", string(icon)));
             continue;
         }
         let Some(command) = line.strip_prefix("Exec=") else {
@@ -156,7 +160,7 @@ mod tests {
         let entry = fs::read_to_string(data.join("applications/app.chilpa.Chilpa.desktop")).unwrap();
         let path = image.to_str().unwrap();
         assert!(entry.contains(&format!("\nExec={}\nTryExec={}\n{MARK}\n", string(&program(path)), string(path))), "{entry}");
-        assert!(entry.contains("\nIcon=app.chilpa.Chilpa\n"), "{entry}");
+        assert!(entry.contains(&format!("\nIcon={}\n", string(data.join(ICON).to_str().unwrap()))), "{entry}");
         assert_eq!(fs::read(data.join(ICON)).unwrap(), b"image");
         assert_eq!(install(&image, BUNDLED, &icon, &data).unwrap(), Outcome::Current);
     }
@@ -171,6 +175,22 @@ mod tests {
         assert_eq!(install(&moved, BUNDLED, &icon, &data).unwrap(), Outcome::Written);
         let entry = fs::read_to_string(data.join("applications/app.chilpa.Chilpa.desktop")).unwrap();
         assert!(entry.contains("New.AppImage") && !entry.contains("Old.AppImage"), "{entry}");
+    }
+
+    #[test]
+    fn an_older_name_only_icon_is_repaired_without_a_second_entry() {
+        let root = tempfile::tempdir().unwrap();
+        let image = image_in(root.path(), "Chilpa.AppImage");
+        let icon = image_in(root.path(), "icon.png");
+        let data = root.path().join("share");
+        let target = data.join("applications/app.chilpa.Chilpa.desktop");
+        fs::create_dir_all(target.parent().unwrap()).unwrap();
+        fs::write(&target, format!("{BUNDLED}{MARK}\n")).unwrap();
+        assert_eq!(install(&image, BUNDLED, &icon, &data).unwrap(), Outcome::Written);
+        let entry = fs::read_to_string(&target).unwrap();
+        assert!(entry.contains(&format!("Icon={}\n", string(data.join(ICON).to_str().unwrap()))), "{entry}");
+        assert_eq!(fs::read_dir(target.parent().unwrap()).unwrap().count(), 1);
+        assert_eq!(install(&image, BUNDLED, &icon, &data).unwrap(), Outcome::Current);
     }
 
     #[test]
@@ -202,13 +222,15 @@ mod tests {
 
     #[test]
     fn a_path_with_reserved_characters_is_quoted_and_escaped() {
-        let entry = render(BUNDLED, "/home/me/My Apps/Chilpa$1 100%.AppImage").unwrap();
+        let entry = render(BUNDLED, "/home/me/My Apps/Chilpa$1 100%.AppImage", "/home/me/My Icons/logo\\color.png").unwrap();
         assert!(entry.contains("\nExec=\"/home/me/My Apps/Chilpa\\\\$1 100%%.AppImage\"\n"), "{entry}");
         assert!(entry.contains("\nTryExec=/home/me/My Apps/Chilpa$1 100%.AppImage\n"), "{entry}");
+        assert!(entry.contains("\nIcon=/home/me/My Icons/logo\\\\color.png\n"), "{entry}");
     }
 
     #[test]
     fn a_path_no_entry_can_hold_is_not_written() {
-        assert_eq!(render(BUNDLED, "/home/me/two\nlines.AppImage"), None);
+        assert_eq!(render(BUNDLED, "/home/me/two\nlines.AppImage", "/home/me/icon.png"), None);
+        assert_eq!(render(BUNDLED, "/home/me/Chilpa.AppImage", "/home/me/two\nlines.png"), None);
     }
 }
