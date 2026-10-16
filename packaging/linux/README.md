@@ -6,6 +6,8 @@ audio libraries; the AppImage includes its Qt Quick and audio runtime.
 I package on Ubuntu 24.04 and check every bundled ELF file against glibc 2.39.
 Checking the application alone misses newer requirements in Qt and its dependencies.
 I use the system graphics stack, including OpenGL, EGL and font libraries.
+I bundle the Wayland platform, shell and graphics integration plugins together;
+the platform plugin alone cannot open a native Wayland window.
 I install `bubblewrap` for process plugins and run them as a normal user with
 user namespaces available. I extract packaging tools without requiring FUSE.
 
