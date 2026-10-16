@@ -282,6 +282,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             plugins.reload_one(id);
             plugins.forget_credential(id);
             if !plugins.uninstall(id) { return Err("The plugin could not be removed.".into()); }
+            state["settings_loading_id"] = Value::Null;
             export::clear(root, id);
             crate::plugin_access::clear(root, id);
             state["form"] = Value::Null;
@@ -319,7 +320,9 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                 state["pages"] = json!([]);
                 state["settings_id"] = id.into();
             } else if action == "tick" {
-                plugins.call_waiting(id, "tick", b"{}")?;
+                if plugins.enabled(id) && plugins.worker_domains(id).is_some() {
+                    plugins.call_waiting(id, "tick", b"{}")?;
+                }
                 return Ok(());
             } else {
                 if action == "settings" { state["form"] = Value::Null; }
@@ -538,6 +541,35 @@ mod tests {
         assert!(!matches_filter("Guest", "Unrelated", "music", &query));
     }
     #[test]
+    fn maintenance_ignores_wasm_plugins_and_requests_left_after_uninstall() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().join("plugins");
+        let id = "app.test.wasm";
+        let folder = root.join(id);
+        std::fs::create_dir_all(&folder).unwrap();
+        std::fs::write(folder.join("manifest.json"), format!(r#"{{"id":"{id}","name":"WASM","version":"1","api_version":1,"kind":"source","capabilities":[]}}"#)).unwrap();
+        let wasm = wat::parse_str(r#"(module (memory (export "memory") 1)
+            (func (export "chilpa_alloc") (param i32) (result i32) (i32.const 4096))
+            (func (export "chilpa_api_version") (result i32) (i32.const 1)))"#).unwrap();
+        std::fs::write(folder.join("plugin.wasm"), wasm).unwrap();
+        let mut host = Plugins::new(root.clone()).unwrap();
+        host.load_all(); host.approve(id).unwrap(); host.reload_one(id);
+        let host = Arc::new(Mutex::new(host));
+        let center = PluginCenter::start(host.clone(), root);
+        center.command("tick", json!({"id":id}));
+        let view = wait_finished(&center);
+        assert_ne!(view["maintenance_failed"], true, "{view}");
+        assert!(view["error"].as_str().unwrap_or_default().is_empty(), "{view}");
+        assert!(host.lock().unwrap().enabled(id));
+        assert_eq!(host.lock().unwrap().list()[0].state, "fine");
+        center.command("uninstall", json!({"id":id}));
+        assert!(wait(&center)["installed"].as_array().unwrap().is_empty());
+        center.command("tick", json!({"id":id}));
+        let view = wait(&center);
+        assert_ne!(view["maintenance_failed"], true, "{view}");
+        assert!(view["installed"].as_array().unwrap().is_empty());
+    }
+    #[test]
     fn a_catalog_selection_is_inspected_approved_installed_and_opens_settings() {
         let temporary = tempfile::tempdir().unwrap();
         let mut archive = zip::ZipWriter::new(Cursor::new(Vec::new()));
@@ -580,8 +612,10 @@ mod tests {
         assert_eq!(std::fs::read(root.join(id).join("Plugin.pm")).unwrap(), b"original");
         center.command("settings", json!({"id":id})); assert_eq!(wait(&center)["form"]["revision"], 1);
         assert_eq!(view["installed"][0]["enabled"], true);
+        center.command("tick", json!({"id":id})); wait(&center);
         center.command("disable", json!({"id":id}));
         assert_eq!(wait(&center)["installed"][0]["enabled"], false);
+        center.command("tick", json!({"id":id})); wait(&center);
         center.command("review_permissions", json!({"id":id}));
         let revision = wait(&center)["approval"]["revision"].clone();
         center.command("enable", json!({"id":id,"permission_revision":revision}));
@@ -589,6 +623,7 @@ mod tests {
         center.command("uninstall", json!({"id":id}));
         assert!(wait(&center)["installed"].as_array().unwrap().is_empty());
         assert!(!root.join(id).exists());
+        center.command("tick", json!({"id":id})); wait(&center);
         serving.join().unwrap();
     }
     #[test]
