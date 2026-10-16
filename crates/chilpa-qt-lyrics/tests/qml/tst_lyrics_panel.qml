@@ -197,6 +197,8 @@ TestCase {
         compare(state.text, "Looking for lyrics…")
         show(JSON.stringify({ status: "none" }), false, -1)
         compare(state.text, "No lyrics for this track.")
+        show(JSON.stringify({ status: "failed" }), false, -1)
+        compare(state.text, "Lyrics could not be retrieved. Try again shortly.")
         show(lines, true, 0)
         verify(!state.visible, "with lyrics there is nothing else to say")
     }

@@ -2417,6 +2417,9 @@ msgstr ""
 msgid "Lyrics copied"
 msgstr ""
 
+msgid "Lyrics could not be retrieved. Try again shortly."
+msgstr "Lyrics could not be retrieved. Try again shortly."
+
 msgid "Lyrics show here while a track plays."
 msgstr ""
 

@@ -177,7 +177,9 @@ impl Cache {
             }
             self.touch(key, row.seconds, now);
             let origin = Origin { provider: row.provider.unwrap_or_default(), name: row.name.unwrap_or_default() };
-            return Some(Hit::Found { document, origin, stale: age >= FRESH });
+            let text_fallback = document.timing == crate::Timing::Unsynced && track.duration_ms
+                .zip(row.claim.duration_ms.or(document.duration_ms)).is_some_and(|(ours, theirs)| ours.abs_diff(theirs) > matching::TIMED_TOLERANCE_MS);
+            return Some(Hit::Found { document, origin, stale: age >= FRESH || text_fallback });
         }
         None
     }
@@ -400,6 +402,18 @@ mod tests {
         let mut close = track();
         close.duration_ms = Some(307_400);
         assert!(cache.get(&close).is_some(), "a second off is the same recording");
+    }
+
+    #[test]
+    fn text_fallback_is_available_while_better_timing_is_requested_again() {
+        let cache = Cache::in_memory().unwrap();
+        let mut edition = claim();
+        edition.duration_ms = track().duration_ms.map(|length| length + 3_000);
+        let document = lrc::parse("The same words");
+        cache.put(&track(), &edition, &document, &origin(), None);
+        assert!(matches!(cache.get(&track()), Some(Hit::Found { stale: true, .. })));
+        cache.put(&track(), &claim(), &document, &origin(), None);
+        assert!(matches!(cache.get(&track()), Some(Hit::Found { stale: false, .. })));
     }
 
     #[test]
