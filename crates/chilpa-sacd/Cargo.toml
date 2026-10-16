@@ -1,0 +1,18 @@
+[package]
+name = "chilpa-sacd"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Why an image could not be read is read by the user.
+chilpa-i18n.workspace = true
+chilpa-dsd.workspace = true
+# A disc names itself in the character set it declares: ISO-8859-1, and
+# Shift-JIS, EUC-KR, GBK or Big5 on the discs pressed in Asia.
+encoding_rs = "0.8"
+# DST, the lossless compression most SACDs are pressed with. Apache-2.0, a
+# port of the MPEG-4 reference decoder; QBZ played DST discs with it. Pinned:
+# a decoder that changes changes what reaches the DAC.
+dst-decoder = "=0.1.2"

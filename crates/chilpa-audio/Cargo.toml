@@ -1,0 +1,11 @@
+[package]
+name = "chilpa-audio"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# What a backend cannot promise is read by the user.
+chilpa-i18n.workspace = true
+serde = { version = "1", features = ["derive"] }

@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""No color and no measure is written by hand outside `qml/Theme/`.
+
+Colors come from `Theme.color.*`, which Rust fills from the theme file; a
+literal anywhere else is a value no theme can reach. Fails on:
+
+- a string that is a hex color: "#A3161F";
+- Qt.rgba, Qt.hsla, Qt.hsva, Qt.lighter, Qt.darker, Qt.tint: a color built
+  in QML is a derived token, and derived tokens are computed in Rust;
+- a color property set to a named color: `color: "white"`.
+
+Measures come from `Metrics`, `Type` and `Motion`. A number above 1 in a
+size, spacing, padding, margin, radius, font size or duration fails. Zero and
+one pass: they are a border and an absence, not a design decision.
+
+A value that is a formula over tokens can carry a number (a count of rows, a
+half) if the line says so with a trailing `// derived: <why>` comment.
+"""
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from qmllib import KIT, code_only, files, pieces, rel, without_comments  # noqa: E402
+
+HEX = re.compile(r"""^["']#[0-9a-fA-F]{3,8}["']$""")
+BUILT = re.compile(r"\bQt\.(rgba|hsla|hsva|lighter|darker|tint)\s*\(")
+
+MEASURES = (
+    r"(?:\w+\.)?(?:width|height|implicitWidth|implicitHeight|minimumWidth|minimumHeight|"
+    r"maximumWidth|maximumHeight|preferredWidth|preferredHeight|spacing|rowSpacing|columnSpacing|"
+    r"padding|leftPadding|rightPadding|topPadding|bottomPadding|horizontalPadding|verticalPadding|"
+    r"radius|topLeftRadius|topRightRadius|bottomLeftRadius|bottomRightRadius|pixelSize|pointSize|weight|"
+    r"margins|leftMargin|rightMargin|topMargin|bottomMargin|horizontalCenterOffset|verticalCenterOffset|"
+    r"cellWidth|cellHeight|duration|letterSpacing)"
+)
+ASSIGN = re.compile(r"^\s*(?:readonly\s+)?(?:property\s+\w+\s+)?(" + MEASURES + r")\s*:\s*(.+)$")
+# A declared property whose name says it is a measure: `property int size: 28`.
+DECLARED = re.compile(
+    r"^\s*(?:readonly\s+)?property\s+(?:int|real)\s+(\w*(?:[wW]idth|[hH]eight|[sS]ize|[rR]adius|"
+    r"[pP]adding|[sS]pacing|[mM]argin|[gG]ap|[iI]nset|[oO]ffset))\s*:\s*(.+)$"
+)
+NUMBER = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)(?![\w.])")
+NAMED = re.compile(r"""\b\w*[cC]olor\s*:\s*["']([A-Za-z]+)["']""")
+
+SVG_COLORS = set(
+    """aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue
+    blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson
+    cyan darkblue darkcyan darkgoldenrod darkgray darkgreen darkgrey darkkhaki darkmagenta
+    darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen darkslateblue darkslategray
+    darkslategrey darkturquoise darkviolet deeppink deepskyblue dimgray dimgrey dodgerblue firebrick
+    floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray grey green greenyellow
+    honeydew hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon
+    lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgreen lightgrey lightpink
+    lightsalmon lightseagreen lightskyblue lightslategray lightslategrey lightsteelblue lightyellow
+    lime limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid mediumpurple
+    mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue
+    mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid
+    palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru pink plum
+    powderblue purple red rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna
+    silver skyblue slateblue slategray slategrey snow springgreen steelblue tan teal thistle tomato
+    turquoise violet wheat white whitesmoke yellow yellowgreen""".split()
+)
+
+
+def check(path, errors):
+    src = path.read_text()
+    name = rel(path)
+    line_of = lambda offset: src[:offset].count("\n") + 1  # noqa: E731
+    offset = 0
+    for kind, text in pieces(src):
+        if kind == "string" and HEX.match(text):
+            errors.append(f"{name}:{line_of(offset)}: color literal {text}; use Theme.color.*")
+        offset += len(text)
+    code = code_only(src)
+    for m in BUILT.finditer(code):
+        errors.append(f"{name}:{line_of(m.start())}: Qt.{m[1]}() builds a color in QML; derived tokens come from Rust")
+    plain = without_comments(src)
+    for m in NAMED.finditer(plain):
+        if m[1].lower() in SVG_COLORS:
+            errors.append(f"{name}:{line_of(m.start())}: named color \"{m[1]}\"; use Theme.color.*")
+    original = src.split("\n")
+    for n, line in enumerate(code.split("\n"), 1):
+        if "// derived:" in original[n - 1]:
+            continue
+        # `Text { font.pixelSize: 13; width: 40 }` is three statements on
+        # one line, and each one is checked on its own.
+        for part in re.split(r"[;{}]", line):
+            m = ASSIGN.match(part) or DECLARED.match(part)
+            if not m:
+                continue
+            big = [x for x in NUMBER.findall(m[m.lastindex]) if float(x) > 1]
+            if big:
+                errors.append(f"{name}:{n}: {m[1]} uses {', '.join(big)}; measures come from Metrics, Type or Motion")
+
+
+def main():
+    errors = []
+    theme = KIT / "Theme"
+    for path in files():
+        if theme not in path.parents:
+            check(path, errors)
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        print(f"qml-literals: {len(errors)} error(s)", file=sys.stderr)
+        sys.exit(1)
+    print("qml-literals: no color or measure outside the theme")
+
+
+if __name__ == "__main__":
+    main()

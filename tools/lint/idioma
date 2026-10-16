@@ -1,0 +1,448 @@
+#!/usr/bin/env python3
+"""El repo de código va en inglés: identificadores, comentarios y cadenas.
+
+Lo único que se queda en español es lo que lee el usuario final, y eso sale
+de los archivos de traducción, no de aquí (ADR-001).
+
+Este candado mira las tres cosas. Un identificador con una palabra española
+adentro, un comentario escrito en español, y una cadena en español que no
+esté marcada para traducir.
+
+Una palabra se considera española si el inglés la rechaza y el es_MX la
+acepta, o la aceptaría con acentos. Lo segundo hace falta porque un
+identificador no lleva acentos: `titulos` y `razon` no están en ningún
+diccionario, pero `títulos` y `razón` sí, y el corrector las sugiere.
+
+Sin hunspell instalado se usa `palabras-es.txt`, que trae las que ya
+aparecieron en este repo: alcanza para lo de siempre, pero no ve palabras
+nuevas, y por eso el mensaje lo dice.
+
+Lo que no es español y el diccionario marca igual (abreviaturas, jerga de
+audio, nombres de la API de Rust) vive en `permitidas-idioma.txt`.
+
+Tenía tres huecos y los tres están cerrados, cada uno de distinta manera
+porque son de distinta clase:
+
+1. **Los dos diccionarios la aceptan.** `paso`, `pico`, `hasta`, `temporal`:
+   español que el inglés también acepta, así que ningún diccionario los
+   distingue. Van a mano en `ambiguas-idioma.txt`, que es una lista corta de
+   palabras que en este repo se leen en español.
+2. **Los dos la rechazan.** `capturador`, `inodo`, `puntajes`, `remuestrear`:
+   español que no está en el diccionario es_MX, y la regla de arriba no
+   dispara porque pide que es_MX la acepte. Ahora una palabra que ningún
+   diccionario conoce no pasa: se reporta aparte y hay que ponerla en
+   `permitidas-idioma.txt` si no es español. Casi todas no lo son -- nombres
+   de API, abreviaturas, jerga de audio -- y por eso esa lista es larga.
+3. **Identificadores con acento.** Rust acepta Unicode y `creció`, `tamaño` y
+   `año` estaban en el repo. El escáner era ASCII, así que no los partía mal:
+   no los veía, porque `\b` se corta en la `ó` y la ficha no se generaba. El
+   más español de todos era el invisible.
+4. **Las cadenas.** Este archivo decía arriba que las revisaba y no las
+   revisaba: el tokenizador las separaba y `main` las tiraba, 4,364 de ellas.
+   Por ahí vivían `"{} de {} · {}"` en el estado del análisis -- español
+   escrito directo en el fuente y sin traducir, o sea en inglés tampoco -- y
+   `"con ({ptr}, {len})"` en un mensaje de assert. Ahora se revisan, con la
+   misma regla que los comentarios, y un archivo cuyo trabajo es manejar
+   español se exime en `cadenas-es-permitidas.txt` con su razón.
+
+Este candado atrapa la deriva, no la sustituye por leer el diff.
+"""
+import re
+import subprocess
+import sys
+import unicodedata
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+BASE = Path(__file__).resolve().parent
+
+
+def sin_acentos(s):
+    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+
+
+def trozos_rust(src):
+    """(tipo, texto) con tipo en code|comment|string. Reconoce r#"..."# y 'a."""
+    out, i, n, ini = [], 0, len(src), 0
+    while i < n:
+        c = src[i]
+        if c == "/" and src[i : i + 2] == "//":
+            out.append(("code", src[ini:i]))
+            j = src.find("\n", i)
+            j = n if j < 0 else j
+            out.append(("comment", src[i:j]))
+            i = ini = j
+        elif c == "/" and src[i : i + 2] == "/*":
+            out.append(("code", src[ini:i]))
+            depth, j = 1, i + 2
+            while j < n and depth:
+                if src[j : j + 2] == "/*":
+                    depth, j = depth + 1, j + 2
+                elif src[j : j + 2] == "*/":
+                    depth, j = depth - 1, j + 2
+                else:
+                    j += 1
+            out.append(("comment", src[i:j]))
+            i = ini = j
+        elif c in "rb" and (m := re.match(r'(?:b?r|rb)(#*)"', src[i:])):
+            out.append(("code", src[ini:i]))
+            cierra = '"' + m.group(1)
+            j = src.find(cierra, i + m.end())
+            j = n if j < 0 else j + len(cierra)
+            out.append(("string", src[i:j]))
+            i = ini = j
+        elif c == '"':
+            out.append(("code", src[ini:i]))
+            j = i + 1
+            while j < n and src[j] != '"':
+                j += 2 if src[j] == "\\" else 1
+            j = min(j + 1, n)
+            out.append(("string", src[i:j]))
+            i = ini = j
+        elif c == "'":
+            # Un lifetime no es un char.
+            m = re.match(r"'(?:\\.|[^\\'])'", src[i:])
+            if m:
+                out.append(("code", src[ini:i]))
+                out.append(("string", m.group(0)))
+                i = ini = i + m.end()
+            else:
+                i += 1
+        else:
+            i += 1
+    out.append(("code", src[ini:]))
+    return [t for t in out if t[1]]
+
+
+def trozos_qml(src):
+    out, i, n, ini = [], 0, len(src), 0
+    while i < n:
+        c = src[i]
+        if c == "/" and src[i : i + 2] == "//":
+            out.append(("code", src[ini:i]))
+            j = src.find("\n", i)
+            j = n if j < 0 else j
+            out.append(("comment", src[i:j]))
+            i = ini = j
+        elif c == "/" and src[i : i + 2] == "/*":
+            out.append(("code", src[ini:i]))
+            j = src.find("*/", i + 2)
+            j = n if j < 0 else j + 2
+            out.append(("comment", src[i:j]))
+            i = ini = j
+        elif c in "\"'`":
+            out.append(("code", src[ini:i]))
+            q, j = c, i + 1
+            while j < n and src[j] != q:
+                j += 2 if src[j] == "\\" else 1
+            j = min(j + 1, n)
+            out.append(("string", src[i:j]))
+            i = ini = j
+        else:
+            i += 1
+    out.append(("code", src[ini:]))
+    return [t for t in out if t[1]]
+
+
+# Las letras que puede traer un identificador. Rust acepta Unicode, así que
+# `creció` y `tamaño` son identificadores válidos y aparecieron en este repo.
+# Con el rango en ASCII el candado no los partía mal: no los veía. `\b` se
+# corta en la `ó`, no queda boundary, y la ficha no se genera. Un
+# identificador acentuado -- o sea el más español de todos -- pasaba sin que
+# nada lo mirara.
+ACENTOS = "ÁÉÍÓÚÜÑáéíóúüñ"
+# El `\b` que esto reemplaza servía para no entrar en medio de una palabra, y
+# eso hay que conservarlo: sin el lookbehind, `0x181Bu16` da la ficha
+# `x181Bu16` y el candado reporta un literal hexadecimal como si fuera
+# español. Va a mano y no como `\b` porque `\b` es justo lo que se corta en
+# la `ó`.
+# El apóstrofo en el lookbehind saca los lifetimes. `'de` es el de serde, en
+# `for<'de> Deserialize<'de>`, y no es la preposición: un nombre de lifetime lo
+# elige la convención de un crate, no quien escribe aquí.
+IDENT = re.compile(
+    rf"(?<![A-Za-z0-9_'{ACENTOS}])[A-Za-z_{ACENTOS}][A-Za-z0-9_{ACENTOS}]*"
+)
+
+
+def palabras(ident):
+    partes = []
+    for t in ident.split("_"):
+        partes += re.findall(
+            rf"[A-Z{ACENTOS.upper()}]+(?![a-z{ACENTOS.lower()}])"
+            rf"|[A-Z{ACENTOS.upper()}][a-z{ACENTOS.lower()}]+"
+            rf"|[a-z{ACENTOS.lower()}]+",
+            t,
+        )
+    # Dos letras alcanzan para "de" y "la", que es como se colaba
+    # `host_de_url` con sus dos mitades en inglés.
+    return [p.lower() for p in partes if len(p) > 1]
+
+
+def hunspell(dic, tokens):
+    """Los que ESE diccionario rechaza. None si no se puede preguntar."""
+    try:
+        r = subprocess.run(
+            ["hunspell", "-d", dic, "-l"],
+            input="\n".join(tokens),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return set(r.stdout.split())
+
+
+def solo_les_falta_el_acento(tokens):
+    """Los que serían españoles con acentos: `titulos` -> `títulos`.
+
+    Se le pide al corrector qué quiso decir; si alguna sugerencia es la
+    misma palabra con acentos, era español escrito como se escribe un
+    identificador.
+    """
+    if not tokens:
+        return set()
+    try:
+        r = subprocess.run(
+            ["hunspell", "-d", "es_MX", "-a"],
+            input="\n".join(tokens),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return set()
+    out = set()
+    for linea in r.stdout.splitlines():
+        # "& palabra N offset: sug1, sug2, ..."
+        if not linea.startswith("& "):
+            continue
+        cabeza, _, cola = linea.partition(":")
+        palabra = cabeza.split()[1]
+        if any(sin_acentos(s.strip().lower()) == palabra for s in cola.split(",")):
+            out.add(palabra)
+    return out
+
+
+def palabras_de(texto):
+    """Las palabras de un texto, sin lo que va entre acentos graves ni URLs.
+
+    Lo que va en `backticks` es un identificador y ya lo revisa la otra
+    mitad de este candado; contarlo aquí marcaría comentarios en inglés que
+    nombran una función.
+    """
+    texto = re.sub(r"`[^`]*`", " ", texto)
+    texto = re.sub(r"https?://\S+", " ", texto)
+    texto = re.sub(r"\[[^\]]*\]\([^)]*\)", " ", texto)
+    return [w.lower() for w in re.findall(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{3,}", texto)]
+
+
+def sin_acentos_lista(palabras):
+    return [sin_acentos(w) for w in palabras]
+
+
+def lista(nombre):
+    f = BASE / nombre
+    if not f.exists():
+        return set()
+    return {
+        l.strip().lower()
+        for l in f.read_text().splitlines()
+        if l.strip() and not l.startswith("#")
+    }
+
+
+def es_espanol(palabra, no_es, no_en, acentos):
+    """Cierto si esa palabra es española y no inglesa."""
+    if palabra not in no_en:
+        return False
+    return palabra not in no_es or palabra in acentos
+
+
+def trozos_toml(src):
+    """(tipo, texto) con tipo en code|comment. TOML.
+
+    Un `#` dentro de una cadena no abre un comentario, y en un manifest las
+    cadenas traen rutas y URLs con `#` de vez en cuando. Partir por líneas
+    alcanza: un comentario de TOML llega hasta el fin de la línea.
+    """
+    out = []
+    for linea in src.split("\n"):
+        pelada = linea.lstrip()
+        if pelada.startswith("#"):
+            out.append(("comment", linea + "\n"))
+        else:
+            out.append(("code", linea + "\n"))
+    return out
+
+
+def main():
+    permitidas = lista("permitidas-idioma.txt")
+    # Los manifests también: un comentario de Cargo.toml explica por qué está
+    # una dependencia, que es justo lo que un contribuidor necesita leer.
+    archivos = (
+        sorted(ROOT.glob("crates/*/**/*.rs"))
+        + sorted(ROOT.glob("crates/*/qml/**/*.qml"))
+        + sorted(ROOT.glob("crates/*/Cargo.toml"))
+        + [ROOT / "Cargo.toml"]
+    )
+
+    # Identificador -> dónde salió la primera vez, y los comentarios con su
+    # lugar, que es lo que hay que poder señalar.
+    donde = {}
+    comentarios = []
+    cadenas = []
+    for f in archivos:
+        src = f.read_text()
+        if f.suffix == ".qml":
+            piezas = trozos_qml(src)
+        elif f.name == "Cargo.toml":
+            piezas = trozos_toml(src)
+        else:
+            piezas = trozos_rust(src)
+        linea = 1
+        for tipo, texto in piezas:
+            if tipo == "code":
+                for m in IDENT.finditer(texto):
+                    donde.setdefault(
+                        m.group(0),
+                        (f.relative_to(ROOT), linea + texto[: m.start()].count("\n")),
+                    )
+            elif tipo == "comment":
+                comentarios.append((f.relative_to(ROOT), linea, texto))
+            elif tipo == "string":
+                cadenas.append((f.relative_to(ROOT), linea, texto))
+            linea += texto.count("\n")
+
+    de_ids = {p for i in donde for p in palabras(i)}
+    de_prosa = {w for _, _, t in comentarios for w in palabras_de(t)}
+    de_cadenas = {w for _, _, t in cadenas for w in palabras_de(t)}
+    # La lista se compara sin acentos por los dos lados: una palabra
+    # permitida se escribe una vez y vale escrita como se escribe y como se
+    # escribe en un identificador.
+    sin_acento_permitidas = {sin_acentos(w) for w in permitidas}
+    tokens = sorted(
+        t
+        for t in (de_ids | de_prosa | de_cadenas)
+        if sin_acentos(t) not in sin_acento_permitidas
+    )
+
+    no_es = hunspell("es_MX", tokens)
+    no_en = hunspell("en_US", tokens)
+    aviso = None
+    if no_es is None or no_en is None:
+        base = {sin_acentos(w) for w in lista("palabras-es.txt")}
+        no_es = {t for t in tokens if t not in base}
+        no_en = set(tokens)
+        acentos = set()
+        aviso = "idioma: sin hunspell; solo se revisó la lista base"
+    else:
+        # Solo se le pregunta por los que ningún diccionario reconoce:
+        # pedir sugerencias es lo caro de esto.
+        acentos = solo_les_falta_el_acento(sorted(no_es & no_en))
+
+    # Las que en este repo se leen en español aunque el inglés las acepte.
+    ambiguas = {sin_acentos(w) for w in lista("ambiguas-idioma.txt")}
+    espanol = {
+        t
+        for t in tokens
+        if es_espanol(t, no_es, no_en, acentos) or sin_acentos(t) in ambiguas
+    }
+
+    # Las que ningún diccionario conoce. Casi ninguna es español, y por eso no
+    # se reportan como español: se reportan como lo que son, palabras sobre
+    # las que este candado no puede opinar, y se resuelven una vez poniéndolas
+    # en la lista. Lo que se gana es que la siguiente no entre en silencio:
+    # `capturador`, `inodo`, `puntajes` y `remuestrear` vivieron aquí porque
+    # una palabra que nadie reconoce se daba por buena.
+    # Solo de identificadores. Los cuatro casos que se colaron aquí lo eran, y
+    # un comentario en inglés trae palabras que ningún diccionario conoce todo
+    # el tiempo -- un nombre de formato, una sigla, un pedazo de hexadecimal --
+    # así que pedirlas todas convertiría el candado en ruido que nadie lee.
+    desconocidas = (
+        sorted((no_es & no_en & de_ids) - espanol - acentos) if aviso is None else []
+    )
+
+    errores = []
+
+    malos = sorted((donde[i], i) for i in donde if any(p in espanol for p in palabras(i)))
+    if malos:
+        errores.append("el código va en inglés; estos identificadores no lo están:")
+        errores += [f"  {f}:{n}: {i}" for (f, n), i in malos]
+
+    # Un comentario se marca con dos palabras españolas, no con una: en uno
+    # escrito en inglés puede aparecer una prestada, y marcarlo por eso
+    # volvería el candado ruido que nadie lee.
+    prosa = []
+    for f, n, texto in comentarios:
+        hay = sorted({w for w in palabras_de(texto) if w in espanol})
+        if len(hay) >= 2:
+            prosa.append((f, n, hay[:4]))
+    # El trinquete se quitó el 2026-09-23, cuando la cuenta llegó a cero.
+    # Ahora no hay tope: ni un comentario en español.
+    if prosa:
+        errores.append(f"los comentarios también van en inglés; hay {len(prosa)} en español:")
+        errores += [f"  {f}:{n}: {', '.join(w)}…" for f, n, w in prosa[:15]]
+        if len(prosa) > 15:
+            errores.append(f"  … y {len(prosa) - 15} más")
+
+    # Lo mismo que con los comentarios, y con el mismo umbral de dos palabras:
+    # una cadena en inglés puede traer una prestada. Un archivo cuyo trabajo es
+    # manejar español se exime completo, con su razón escrita.
+    eximidos = {
+        l.split("#")[0].strip()
+        for l in (BASE / "cadenas-es-permitidas.txt").read_text().splitlines()
+        if l.strip() and not l.lstrip().startswith("#")
+    }
+    en_espanol = []
+    for f, n, texto in cadenas:
+        if str(f) in eximidos:
+            continue
+        hay_es = sorted({w for w in palabras_de(texto) if w in espanol})
+        if len(hay_es) >= 2:
+            en_espanol.append((f, n, hay_es[:4]))
+    if en_espanol:
+        cuantas = (
+            "esta cadena está"
+            if len(en_espanol) == 1
+            else f"estas {len(en_espanol)} cadenas están"
+        )
+        errores.append(
+            "lo único en español es lo que lee el usuario final, y eso sale del "
+            f"catálogo; {cuantas} en español:"
+        )
+        errores += [f"  {f}:{n}: {', '.join(w)}…" for f, n, w in en_espanol[:15]]
+        if len(en_espanol) > 15:
+            errores.append(f"  … y {len(en_espanol) - 15} más")
+
+    if desconocidas:
+        errores.append(
+            f"ningún diccionario conoce estas {len(desconocidas)} palabras, "
+            "así que no se puede decir en qué idioma están:"
+        )
+        for t in desconocidas[:30]:
+            quien = next((i for i in donde if t in palabras(i)), t)
+            f, n = donde.get(quien, ("", 0))
+            errores.append(f"  {f}:{n}: {quien}")
+        if len(desconocidas) > 30:
+            errores.append(f"  … y {len(desconocidas) - 30} más")
+
+    if errores:
+        print("\n".join(errores))
+        print()
+        print("Si alguna no es español, agrégala a tools/lint/permitidas-idioma.txt;")
+        print("si es español que el inglés también acepta, a ambiguas-idioma.txt.")
+        return 1
+
+    print(
+        f"idioma: {len(donde)} identificadores, {len(comentarios)} comentarios "
+        f"y {len(cadenas)} cadenas, "
+        f"todos en inglés"
+    )
+    if aviso:
+        print(aviso)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

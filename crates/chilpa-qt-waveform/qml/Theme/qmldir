@@ -1,0 +1,2 @@
+module app.chilpa.waveform.Theme
+singleton Bars 1.0 Bars.qml

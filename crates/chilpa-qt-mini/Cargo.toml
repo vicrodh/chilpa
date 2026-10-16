@@ -1,0 +1,18 @@
+[package]
+name = "chilpa-qt-mini"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+# cxx-qt builds a library crate's QML module and links it into the window.
+links = "chilpa_qt_mini"
+
+[dependencies]
+chilpa-api.workspace = true
+chilpa-qt-kit.workspace = true
+cxx = "1"
+cxx-qt = "0.7"
+cxx-qt-lib = { version = "0.7", features = ["qt_full"] }
+
+[build-dependencies]
+cxx-qt-build = "0.7"

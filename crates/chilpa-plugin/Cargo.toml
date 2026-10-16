@@ -1,0 +1,30 @@
+[package]
+name = "chilpa-plugin"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Only for the type a manifest declares how an account connects with. That
+# crate knows nothing of the network: whoever runs the flow injects the
+# request, so the sandbox does not end up linking an HTTP client.
+chilpa-auth.workspace = true
+# Why a plugin did not load is read by the user, in the plugins panel, so
+# it goes through the catalog. The catalog depends on nothing.
+chilpa-i18n.workspace = true
+# The protocol types, shared with every plugin. Re-exported from `messages`.
+chilpa-plugin-api.workspace = true
+# serde and serde_json were already in the tree because of the streams
+# crate, so the message format adds no new dependency. A JSON parser written
+# by hand would be the project's most obvious attack surface.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+quick-xml = { version = "0.38", features = ["serialize"] }
+url = "2"
+wasmtime = { version = "49", default-features = false, features = ["cranelift", "runtime", "std"] }
+
+[dev-dependencies]
+# The test plugins are written in wasm text, so the hostile suite needs no
+# separate toolchain to run.
+wat = "1"

@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""Per-file budgets for the QML tree.
+
+Each layer has a ceiling of effective lines (blank lines and comments do not
+count). Going over means extracting a piece, not squeezing lines together.
+
+The valve: a file may go over when extracting was tried first and the reason
+is written in `qml-budget-exceptions.txt`, with a ceiling and a date. Without
+a written reason the check fails. An exception for a file that is back under
+budget, or that no longer exists, also fails, so the list never keeps an
+excuse nobody needs.
+
+Every QML file has to live in a layer: one that does not is a file nobody
+budgets, and that is how the monolith starts.
+"""
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from qmllib import ROOT, effective_lines, files, layer_of, rel  # noqa: E402
+
+BUDGET = {"Primitives": 150, "Components": 200, "Patterns": 250, "Screens": 250, "Main": 120, "Gallery": 250}
+EXCEPTIONS = Path(__file__).resolve().parent / "qml-budget-exceptions.txt"
+ENTRY = re.compile(r"^(?P<path>\S+)\s*\|\s*(?P<ceiling>\d+)\s*\|\s*(?P<date>\d{4}-\d{2}-\d{2})\s*\|\s*(?P<why>.+\S)\s*$")
+
+
+def exceptions(errors):
+    out = {}
+    for n, line in enumerate(EXCEPTIONS.read_text().split("\n"), 1):
+        if not line.strip() or line.startswith("#"):
+            continue
+        m = ENTRY.match(line)
+        if not m:
+            errors.append(f"{EXCEPTIONS.name}:{n}: expected 'path | ceiling | YYYY-MM-DD | reason'")
+            continue
+        out[m["path"]] = (int(m["ceiling"]), n)
+    return out
+
+
+def main():
+    errors = []
+    allowed = exceptions(errors)
+    used = set()
+    for path in files():
+        layer = layer_of(path)
+        name = rel(path)
+        if layer is None:
+            errors.append(f"{name}: not in a layer; QML lives in Theme, Primitives, Components, Patterns, Screens or Gallery")
+            continue
+        budget = BUDGET.get(layer)
+        if budget is None:
+            continue
+        lines = effective_lines(path.read_text())
+        if lines <= budget:
+            continue
+        if name in allowed:
+            used.add(name)
+            ceiling, n = allowed[name]
+            if lines > ceiling:
+                errors.append(f"{name}: {lines} lines, over its written exception of {ceiling} ({EXCEPTIONS.name}:{n})")
+            continue
+        errors.append(
+            f"{name}: {lines} lines, the {layer} budget is {budget}. Extract a piece; "
+            f"only if that fails, write the reason in {EXCEPTIONS.name}"
+        )
+    for name, (_, n) in allowed.items():
+        if name not in used:
+            errors.append(f"{EXCEPTIONS.name}:{n}: {name} does not need its exception any more; remove it")
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        print(f"qml-budget: {len(errors)} error(s)", file=sys.stderr)
+        sys.exit(1)
+    print(f"qml-budget: {len(files())} files, all within budget")
+
+
+if __name__ == "__main__":
+    main()

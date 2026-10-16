@@ -1,0 +1,183 @@
+import QtQuick
+import QtTest
+import app.chilpa
+import app.chilpa.controls
+import "../../qml/Patterns"
+import "../../qml/Theme"
+
+// The window goes back to where it was left and says where it is once it
+// settles (design/04 Window).
+TestCase {
+    id: test
+    name: "WindowPlace"
+    when: windowShown
+    visible: true
+    width: 400
+    height: 300
+
+    Window { id: other; width: 700; height: 500 }
+    Component { id: maker; WindowControls { window: other } }
+    property var made: null
+
+    function open(left, top, placed) {
+        WindowPlace.left = left
+        WindowPlace.top = top
+        WindowPlace.placed = placed
+        other.x = 5
+        other.y = 5
+        made = maker.createObject(test)
+        other.show()
+        WindowPlace.kept = []
+    }
+    function cleanup() {
+        if (made)
+            made.destroy()
+        made = null
+        Controls.trayClose = false
+        Controls.askQuit = false
+        Controls.stoppedAsking = 0
+        other.hide()
+        other.width = 700
+        other.height = 500
+    }
+
+    function test_it_goes_back_to_where_it_was() {
+        open(40, 30, true)
+        compare(other.x, 40)
+        compare(other.y, 30)
+    }
+
+    function test_a_place_on_no_screen_is_not_gone_back_to() {
+        open(50000, 30, true)
+        compare(other.x, 5)
+        compare(other.y, 5)
+    }
+
+    function test_a_window_never_placed_is_left_to_the_system() {
+        open(40, 30, false)
+        compare(other.x, 5)
+    }
+
+    function test_it_says_its_frame_once_after_it_settles() {
+        open(0, 0, false)
+        other.width = 720
+        other.width = 740
+        other.height = 520
+        compare(WindowPlace.kept.length, 0, "not while it is still moving")
+        tryVerify(() => WindowPlace.kept.length > 0)
+        wait(Sizes.placeSettle)
+        compare(WindowPlace.kept.length, 1)
+        const said = WindowPlace.kept[0]
+        compare(said[0], "floating")
+        compare(said[1], 740)
+        compare(said[2], 520)
+        compare(said[5], true, "this platform tells a window where it is")
+    }
+
+    function test_closing_says_it_at_once() {
+        open(0, 0, false)
+        other.width = 760
+        other.close()
+        compare(WindowPlace.kept.length, 1)
+        compare(WindowPlace.kept[0][1], 760)
+        wait(Sizes.placeSettle)
+        compare(WindowPlace.kept.length, 1, "and not again when the wait ends")
+    }
+
+    // With a tray to go to, closing hides the window instead; the desktop's
+    // own Quit still closes it.
+    property var accepted: null
+    function test_closing_hides_to_the_tray_when_that_is_wanted() {
+        open(0, 0, false)
+        Controls.trayClose = true
+        other.closing.connect(function (close) { test.accepted = close.accepted })
+        other.close()
+        compare(test.accepted, false, "the close was refused")
+        verify(!other.visible, "and the window hid")
+        compare(WindowPlace.kept.length, 1, "its place was kept all the same")
+
+        other.show()
+        test.accepted = null
+        made.quitting = true
+        other.close()
+        compare(test.accepted, true, "a quit is not hidden from")
+    }
+
+    // Quit asked from inside Chilpa goes the desktop's way: the window
+    // closes for real instead of hiding to the tray.
+    function test_quit_from_inside_closes_through_the_tray() {
+        open(0, 0, false)
+        Controls.trayClose = true
+        other.closing.connect(function (close) { test.accepted = close.accepted })
+        test.accepted = null
+        made.run("nav.quit")
+        compare(test.accepted, true, "the window closed")
+    }
+
+    // Behind the mini player a quit goes through it: a quit closes every
+    // window first, and the mini player's refuses while it is open.
+    function test_a_quit_behind_the_mini_player_goes_through_it() {
+        open(0, 0, false)
+        let asked = 0
+        made.quitMini.connect(function () { asked += 1 })
+        made.miniOpen = true
+        other.hide()
+        Player.windowAsked(1)
+        compare(asked, 1, "the mini player was asked to close the app")
+        verify(made.quitting, "and the close that follows is a quit")
+        verify(!other.visible, "the window itself was left alone")
+    }
+
+    // Quitting asks first, as QBZ's does: the window's close when there is
+    // no tray to hide to, the menu's Quit and the tray's. Cancel keeps it.
+    function test_quitting_asks_first_and_cancel_keeps_the_window() {
+        open(0, 0, false)
+        Controls.askQuit = true
+        other.closing.connect(function (close) { test.accepted = close.accepted })
+        test.accepted = null
+        other.close()
+        compare(test.accepted, false, "the close waits for the answer")
+        const keep = findChild(made, "keepOpen")
+        tryVerify(() => keep && keep.visible)
+        mouseClick(keep)
+        verify(other.visible, "Cancel keeps Chilpa open")
+        verify(!made.quitting)
+    }
+
+    function test_quit_answered_closes_and_can_stop_asking() {
+        open(0, 0, false)
+        Controls.askQuit = true
+        other.closing.connect(function (close) { test.accepted = close.accepted })
+        Player.windowAsked(3)
+        const check = findChild(made, "stopAskingQuit")
+        const quit = findChild(made, "quitNow")
+        tryVerify(() => quit && quit.visible, 1000, "the tray's Quit asks")
+        check.checked = true
+        test.accepted = null
+        mouseClick(quit)
+        compare(test.accepted, true, "the window closed")
+        compare(Controls.stoppedAsking, 1, "and it will not ask again")
+    }
+
+    function test_the_desktops_media_controls_quit_without_asking() {
+        open(0, 0, false)
+        Controls.askQuit = true
+        other.closing.connect(function (close) { test.accepted = close.accepted })
+        test.accepted = null
+        Player.windowAsked(1)
+        compare(test.accepted, true)
+        verify(!findChild(made, "quitNow").visible)
+    }
+
+    // The tray icon's click shows a hidden window and hides one in sight.
+    function test_the_tray_toggles_the_window() {
+        open(0, 0, false)
+        verify(other.visible)
+        Player.windowAsked(2)
+        verify(!other.visible)
+        Player.windowAsked(2)
+        verify(other.visible)
+        Player.windowAsked(0)
+        verify(other.visible)
+    }
+}

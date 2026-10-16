@@ -1,0 +1,159 @@
+{
+ "request": {
+  "schema": 1,
+  "track": {
+   "title": "Wasted Years",
+   "artist": "Iron Maiden",
+   "album": "Somewhere in Time",
+   "duration_ms": 306834
+  },
+  "preferences": {
+   "minimum_sync": "unsynced",
+   "language": null
+  }
+ },
+ "status": 200,
+ "response": {
+  "schema": 1,
+  "status": "found",
+  "document": {
+   "schema": 1,
+   "timing": "line",
+   "lines": [
+    {
+     "start_ms": 11520,
+     "text": "Placeholder line 1"
+    },
+    {
+     "start_ms": 15590,
+     "end_ms": 18740,
+     "text": "Placeholder line 2"
+    },
+    {
+     "start_ms": 28060,
+     "text": "Placeholder line 3"
+    },
+    {
+     "start_ms": 34820,
+     "text": "Placeholder line 4"
+    },
+    {
+     "start_ms": 40330,
+     "text": "Placeholder line 5"
+    },
+    {
+     "start_ms": 46250,
+     "text": "Placeholder line 6"
+    },
+    {
+     "start_ms": 53000,
+     "text": "Placeholder line 7"
+    },
+    {
+     "start_ms": 58510,
+     "text": "Placeholder line 8"
+    },
+    {
+     "start_ms": 64750,
+     "text": "Placeholder line 9"
+    },
+    {
+     "start_ms": 71100,
+     "text": "Placeholder line 10"
+    },
+    {
+     "start_ms": 78450,
+     "text": "Placeholder line 11"
+    },
+    {
+     "start_ms": 83420,
+     "text": "Placeholder line 12"
+    },
+    {
+     "start_ms": 90170,
+     "text": "Placeholder line 13"
+    },
+    {
+     "start_ms": 96410,
+     "text": "Placeholder line 14"
+    },
+    {
+     "start_ms": 103230,
+     "text": "Placeholder line 15"
+    },
+    {
+     "start_ms": 108720,
+     "text": "Placeholder line 16"
+    },
+    {
+     "start_ms": 114830,
+     "text": "Placeholder line 17"
+    },
+    {
+     "start_ms": 121010,
+     "text": "Placeholder line 18"
+    },
+    {
+     "start_ms": 127840,
+     "text": "Placeholder line 19"
+    },
+    {
+     "start_ms": 133280,
+     "text": "Placeholder line 20"
+    },
+    {
+     "start_ms": 140300,
+     "text": "Placeholder line 21"
+    },
+    {
+     "start_ms": 145980,
+     "end_ms": 153880,
+     "text": "Placeholder line 22"
+    },
+    {
+     "start_ms": 220980,
+     "text": "Placeholder line 23"
+    },
+    {
+     "start_ms": 226650,
+     "text": "Placeholder line 24"
+    },
+    {
+     "start_ms": 233240,
+     "text": "Placeholder line 25"
+    },
+    {
+     "start_ms": 239290,
+     "text": "Placeholder line 26"
+    },
+    {
+     "start_ms": 245840,
+     "text": "Placeholder line 27"
+    },
+    {
+     "start_ms": 251510,
+     "text": "Placeholder line 28"
+    },
+    {
+     "start_ms": 258390,
+     "text": "Placeholder line 29"
+    },
+    {
+     "start_ms": 264150,
+     "end_ms": 269180,
+     "text": "Placeholder line 30"
+    }
+   ],
+   "source": {
+    "provider": "lrclib",
+    "name": "LRCLIB",
+    "claim": {
+     "title": "Wasted Years",
+     "artist": "Iron Maiden",
+     "album": "Somwere In Time",
+     "duration_ms": 307000
+    }
+   }
+  }
+ }
+}

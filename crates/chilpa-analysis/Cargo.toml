@@ -1,0 +1,9 @@
+[package]
+name = "chilpa-analysis"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+chilpa-audio.workspace = true

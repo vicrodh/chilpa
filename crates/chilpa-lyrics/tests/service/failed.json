@@ -1,0 +1,23 @@
+{
+ "request": {
+  "schema": 1,
+  "track": {
+   "title": "Small Hours",
+   "artist": "Example Artist",
+   "album": "Example Album",
+   "duration_ms": 7200,
+   "isrc": "QZES72500001"
+  },
+  "preferences": {
+   "minimum_sync": "unsynced",
+   "language": null
+  }
+ },
+ "status": 503,
+ "retry_after": "30",
+ "response": {
+  "schema": 1,
+  "error": "The lyrics providers could not be asked",
+  "detail": "lrclib: LRCLIB is busy (503)"
+ }
+}

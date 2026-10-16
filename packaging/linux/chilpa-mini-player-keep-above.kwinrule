@@ -1,0 +1,20 @@
+[General]
+count=1
+rules=chilpa-mini-player-keep-above
+
+[chilpa-mini-player-keep-above]
+Description=Chilpa mini player: keep above other windows
+# The mini player is matched by its window title, a literal the app never
+# translates (crates/chilpa-qt-mini/qml/Patterns/MiniWindow.qml). The main
+# window is titled "Chilpa", so this is an exact match, not a substring.
+title=Chilpa Mini Player
+titlematch=1
+# And by the window class, so no other app's window picks the rule up.
+wmclass=chilpa-qt
+wmclasscomplete=false
+wmclassmatch=1
+# 2 = Force. The window has no say and cannot toggle it off. Import it in
+# System Settings > Window Management > Window Rules; a package never
+# writes a user's kwinrulesrc.
+above=true
+aboverule=2

@@ -1,0 +1,13 @@
+{
+  "id": "app.chilpa.fixture",
+  "name": "Fixture",
+  "version": "0.1.0",
+  "api_version": 1,
+  "kind": "source",
+  "capabilities": [
+    { "type": "network", "domains": ["fixture.test"] },
+    { "type": "storage" },
+    { "type": "register_source" },
+    { "type": "register_panel" }
+  ]
+}

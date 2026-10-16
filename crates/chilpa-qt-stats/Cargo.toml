@@ -1,0 +1,21 @@
+[package]
+name = "chilpa-qt-stats"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+# cxx-qt builds a library crate's QML module and links it into the window.
+links = "chilpa_qt_stats"
+
+[dependencies]
+chilpa-api.workspace = true
+chilpa-qt-kit.workspace = true
+cxx = "1"
+cxx-qt = "0.7"
+cxx-qt-lib = { version = "0.7", features = ["qt_full"] }
+# The system's own save dialog, for the history and the picture.
+rfd = { version = "0.17", default-features = false, features = ["xdg-portal"] }
+pollster = "0.4"
+
+[build-dependencies]
+cxx-qt-build = "0.7"

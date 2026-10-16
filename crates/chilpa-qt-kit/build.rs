@@ -1,0 +1,55 @@
+//! What every shell crate stands on, as its own QML module
+//! (`app.chilpa.kit`): the theme with its fonts, icons and shaders,
+//! the primitives, the translations, and the one facade they all talk to.
+use cxx_qt_build::{CxxQtBuilder, Interface, QmlModule};
+use std::path::{Path, PathBuf};
+
+fn files(dir: &str, keep: &dyn Fn(&Path) -> bool) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut pending = vec![PathBuf::from(dir)];
+    pending.retain(|p| p.is_dir());
+    while let Some(next) = pending.pop() {
+        for entry in std::fs::read_dir(&next).expect("the directory is readable") {
+            let path = entry.expect("the entry is readable").path();
+            if path.is_dir() {
+                pending.push(path);
+            } else if keep(&path) {
+                out.push(path.to_string_lossy().replace('\\', "/"));
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+fn main() {
+    let qml = files("qml", &|p| p.extension().is_some_and(|e| e == "qml"));
+    let bridges = files("src/bridge", &|p| p.extension().is_some_and(|e| e == "rs"));
+    // A layer's `qmldir` declares its singletons, the fonts are the icons
+    // and the .qsb files are compiled shaders. All of them travel in the same
+    // resource tree as the QML.
+    let mut resources = files("qml", &|p| p.file_name().is_some_and(|n| n == "qmldir") || p.extension().is_some_and(|e| e == "js"));
+    resources.extend(files("assets", &|p| p.extension().is_some_and(|e| e == "ttf" || e == "qsb" || e == "svg" || e == "png")));
+    println!("cargo:rerun-if-changed=qml");
+    println!("cargo:rerun-if-changed=src/bridge");
+    println!("cargo:rerun-if-changed=assets");
+    println!("cargo:rerun-if-changed=cxx/fonts.cpp");
+    println!("cargo:rerun-if-changed=cxx/frame_fence.cpp");
+    CxxQtBuilder::library(Interface::default())
+        .qobject_header("cxx/frame_fence.h")
+        .qt_module("Gui")
+        .qt_module("Qml")
+        .qt_module("Quick")
+        .qml_module(QmlModule {
+            uri: "app.chilpa.kit",
+            rust_files: &bridges,
+            qml_files: &qml,
+            qrc_files: &resources,
+            ..Default::default()
+        })
+        .cc_builder(|cc| {
+            cc.file("cxx/fonts.cpp");
+            cc.file("cxx/frame_fence.cpp");
+        })
+        .build();
+}

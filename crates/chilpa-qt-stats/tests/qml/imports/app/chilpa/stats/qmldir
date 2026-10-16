@@ -1,0 +1,2 @@
+module app.chilpa.stats
+singleton Stats 1.0 Stats.qml

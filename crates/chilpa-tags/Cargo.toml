@@ -1,0 +1,12 @@
+[package]
+name = "chilpa-tags"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Why a file's tags could not be read is read by the user.
+chilpa-i18n.workspace = true
+chilpa-models.workspace = true
+lofty = "0.25"

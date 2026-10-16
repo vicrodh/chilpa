@@ -1,0 +1,2 @@
+module app.chilpa.artwork
+singleton Artwork 1.0 Artwork.qml

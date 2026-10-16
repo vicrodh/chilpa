@@ -1,0 +1,117 @@
+[workspace]
+resolver = "2"
+exclude = ["vendor/chilpa-plugin-api", "crates/chilpa-qt-kit/vendor/qt-build-utils"]
+members = [
+    "crates/chilpa-models",
+    "crates/chilpa-dirs",
+    "crates/chilpa-audio",
+    "crates/chilpa-tags",
+    "crates/chilpa-lyrics",
+    "crates/chilpa-analysis",
+    "crates/chilpa-plugin",
+    "crates/chilpa-bwrap",
+    "crates/chilpa-secrets",
+    "crates/chilpa-auth",
+    "crates/chilpa-meta",
+    "crates/chilpa-servers",
+    "crates/chilpa-cast",
+    "crates/chilpa-i18n",
+    "crates/chilpa-library",
+    "crates/chilpa-stream",
+    "crates/chilpa-decode",
+    "crates/chilpa-dsd",
+    "crates/chilpa-sacd",
+    "crates/chilpa-cd",
+    "crates/chilpa-alsa",
+    "crates/chilpa-mpris",
+    "crates/chilpa-pipewire",
+    "crates/chilpa-pulse",
+    "crates/chilpa-jack",
+    "crates/chilpa-coreaudio",
+    "crates/chilpa-appkit",
+    "crates/chilpa-wasapi",
+    "crates/chilpa-core",
+    "crates/chilpa-api",
+    "crates/chilpa-qt-kit",
+    "crates/chilpa-qt-sources",
+    "crates/chilpa-qt-controls",
+    "crates/chilpa-qt-ambient",
+    "crates/chilpa-qt-mini",
+    "crates/chilpa-qt-dsp",
+    "crates/chilpa-qt-immersive",
+    "crates/chilpa-qt-waveform",
+    "crates/chilpa-qt-graphics",
+    "crates/chilpa-qt-link",
+    "crates/chilpa-qt-playlists",
+    "crates/chilpa-qt-wizard",
+    "crates/chilpa-qt-artwork",
+    "crates/chilpa-qt-about",
+    "crates/chilpa-qt-stats",
+    "crates/chilpa-qt-folders",
+    "crates/chilpa-qt-gallery",
+    "crates/chilpa-qt-lyrics",
+    "crates/chilpa-qt-metadata",
+    "crates/chilpa-qt",
+]
+
+[workspace.package]
+version = "0.1.0-beta"
+edition = "2021"
+license = "MIT"
+rust-version = "1.90"
+
+[workspace.dependencies]
+chilpa-models = { path = "crates/chilpa-models" }
+chilpa-dirs = { path = "crates/chilpa-dirs" }
+chilpa-audio = { path = "crates/chilpa-audio" }
+chilpa-tags = { path = "crates/chilpa-tags" }
+chilpa-lyrics = { path = "crates/chilpa-lyrics" }
+chilpa-analysis = { path = "crates/chilpa-analysis" }
+chilpa-plugin = { path = "crates/chilpa-plugin" }
+chilpa-bwrap = { path = "crates/chilpa-bwrap" }
+chilpa-secrets = { path = "crates/chilpa-secrets" }
+chilpa-auth = { path = "crates/chilpa-auth" }
+chilpa-meta = { path = "crates/chilpa-meta" }
+chilpa-cast = { path = "crates/chilpa-cast" }
+chilpa-servers = { path = "crates/chilpa-servers" }
+chilpa-i18n = { path = "crates/chilpa-i18n" }
+chilpa-library = { path = "crates/chilpa-library" }
+chilpa-stream = { path = "crates/chilpa-stream" }
+chilpa-decode = { path = "crates/chilpa-decode" }
+chilpa-dsd = { path = "crates/chilpa-dsd" }
+chilpa-sacd = { path = "crates/chilpa-sacd" }
+chilpa-cd = { path = "crates/chilpa-cd" }
+chilpa-alsa = { path = "crates/chilpa-alsa" }
+chilpa-mpris = { path = "crates/chilpa-mpris" }
+chilpa-pipewire = { path = "crates/chilpa-pipewire" }
+chilpa-pulse = { path = "crates/chilpa-pulse" }
+chilpa-jack = { path = "crates/chilpa-jack" }
+chilpa-coreaudio = { path = "crates/chilpa-coreaudio" }
+chilpa-appkit = { path = "crates/chilpa-appkit" }
+chilpa-wasapi = { path = "crates/chilpa-wasapi" }
+chilpa-core = { path = "crates/chilpa-core" }
+chilpa-api = { path = "crates/chilpa-api" }
+chilpa-qt-kit = { path = "crates/chilpa-qt-kit" }
+chilpa-qt-sources = { path = "crates/chilpa-qt-sources" }
+chilpa-qt-controls = { path = "crates/chilpa-qt-controls" }
+chilpa-qt-ambient = { path = "crates/chilpa-qt-ambient" }
+chilpa-qt-mini = { path = "crates/chilpa-qt-mini" }
+chilpa-qt-dsp = { path = "crates/chilpa-qt-dsp" }
+chilpa-qt-immersive = { path = "crates/chilpa-qt-immersive" }
+chilpa-qt-waveform = { path = "crates/chilpa-qt-waveform" }
+chilpa-qt-graphics = { path = "crates/chilpa-qt-graphics" }
+chilpa-qt-link = { path = "crates/chilpa-qt-link" }
+chilpa-qt-playlists = { path = "crates/chilpa-qt-playlists" }
+chilpa-qt-wizard = { path = "crates/chilpa-qt-wizard" }
+chilpa-qt-artwork = { path = "crates/chilpa-qt-artwork" }
+chilpa-qt-about = { path = "crates/chilpa-qt-about" }
+chilpa-qt-stats = { path = "crates/chilpa-qt-stats" }
+chilpa-qt-folders = { path = "crates/chilpa-qt-folders" }
+chilpa-qt-gallery = { path = "crates/chilpa-qt-gallery" }
+chilpa-qt-lyrics = { path = "crates/chilpa-qt-lyrics" }
+chilpa-qt-metadata = { path = "crates/chilpa-qt-metadata" }
+# I vendor the public protocol snapshot so release builds need no private host.
+chilpa-plugin-api = { path = "vendor/chilpa-plugin-api" }
+
+[patch.crates-io]
+qt-build-utils = { path = "crates/chilpa-qt-kit/vendor/qt-build-utils" }

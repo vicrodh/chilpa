@@ -1,0 +1,219 @@
+//! The spectrum of what goes out.
+//!
+//! A radix-2 FFT written here, about forty lines. For 1024 points ten times
+//! a second no library is needed, and one dependency fewer is one
+//! dependency fewer to audit.
+//!
+//! Three things that make the drawing resemble what is heard:
+//!
+//! 1. **A Hann window before transforming.** Without one, the block's edge
+//!    puts energy into every frequency and the spectrum looks like a
+//!    carpet.
+//! 2. **Bands spread logarithmically.** The ear hears in octaves: spreading
+//!    them linearly gives half the screen to treble nobody tells apart and
+//!    squashes the bass.
+//! 3. **Decibels, not amplitude.** A linear scale leaves everything stuck
+//!    to the floor except the kick drum.
+
+use std::f32::consts::PI;
+
+/// The drawing's floor. Below this it is silence for what matters.
+pub const DB_FLOOR: f32 = -90.0;
+
+/// Spreads the spectrum of `samples` into `bands`, from 0.0 to 1.0.
+///
+/// `sample_rate_hz` decides how far the bands reach: half of it, which is
+/// all an FFT can say about a sampled signal.
+pub fn bands(samples: &[f32], sample_rate_hz: u32, bands: usize) -> Vec<f32> {
+    if samples.is_empty() || bands == 0 || sample_rate_hz == 0 {
+        return Vec::new();
+    }
+    // The last power of two that fits is used: the radix-2 FFT knows no
+    // other sizes, and the last of it is what is being heard.
+    let n = power_of_two(samples.len());
+    if n < 32 {
+        return Vec::new();
+    }
+    let from = samples.len() - n;
+
+    let mut re: Vec<f32> = Vec::with_capacity(n);
+    for (i, m) in samples[from..].iter().enumerate() {
+        // Hann: 0.5 - 0.5 cos(2 pi i / (n-1)).
+        let window = 0.5 - 0.5 * (2.0 * PI * i as f32 / (n as f32 - 1.0)).cos();
+        re.push(m * window);
+    }
+    let mut im = vec![0.0f32; n];
+    fft(&mut re, &mut im);
+
+    // The useful half, in magnitude normalized by the size.
+    let half = n / 2;
+    let magnitudes: Vec<f32> = (0..half)
+        .map(|k| (re[k] * re[k] + im[k] * im[k]).sqrt() * 2.0 / n as f32)
+        .collect();
+
+    // The bands are spread logarithmically between 20 Hz and Nyquist.
+    let nyquist = sample_rate_hz as f32 / 2.0;
+    let per_bin = nyquist / half as f32;
+    let (low, high) = (20.0f32, nyquist.max(40.0));
+    let step = (high / low).ln() / bands as f32;
+
+    let mut output = Vec::with_capacity(bands);
+    for b in 0..bands {
+        let from_hz = low * (step * b as f32).exp();
+        let to_hz = low * (step * (b + 1) as f32).exp();
+        let k0 = ((from_hz / per_bin) as usize).min(half.saturating_sub(1));
+        let k1 = ((to_hz / per_bin).ceil() as usize).clamp(k0 + 1, half);
+        // The band's peak, not its average: a narrow tone must not vanish
+        // because it fell in a wide band.
+        let peak = magnitudes[k0..k1].iter().copied().fold(0.0f32, f32::max);
+        output.push(to_normalized_db(peak));
+    }
+    output
+}
+
+/// A 0..1 magnitude taken to 0..1 in decibels above the floor.
+fn to_normalized_db(magnitude: f32) -> f32 {
+    if magnitude <= 0.0 {
+        return 0.0;
+    }
+    let db = 20.0 * magnitude.log10();
+    ((db - DB_FLOOR) / -DB_FLOOR).clamp(0.0, 1.0)
+}
+
+/// The largest power of two that fits in `n`.
+fn power_of_two(n: usize) -> usize {
+    if n == 0 {
+        return 0;
+    }
+    1usize << (usize::BITS - 1 - n.leading_zeros()) as usize
+}
+
+/// Radix-2 FFT, in place. `re` and `im` have to be the same length and a
+/// power of two.
+///
+/// It is public because key analysis needs it and writing it twice would
+/// mean two FFTs that can drift apart.
+pub fn fft(re: &mut [f32], im: &mut [f32]) {
+    let n = re.len();
+    if n <= 1 {
+        return;
+    }
+    // Reorder by bit reversal.
+    let mut j = 0usize;
+    for i in 1..n {
+        let mut bit = n >> 1;
+        while j & bit != 0 {
+            j ^= bit;
+            bit >>= 1;
+        }
+        j |= bit;
+        if i < j {
+            re.swap(i, j);
+            im.swap(i, j);
+        }
+    }
+    // Butterflies, in pairs, in fours, and so on.
+    let mut span = 2usize;
+    while span <= n {
+        let angle = -2.0 * PI / span as f32;
+        let (wr, wi) = (angle.cos(), angle.sin());
+        for start in (0..n).step_by(span) {
+            let (mut cr, mut ci) = (1.0f32, 0.0f32);
+            for k in 0..span / 2 {
+                let (a, b) = (start + k, start + k + span / 2);
+                let tr = cr * re[b] - ci * im[b];
+                let ti = cr * im[b] + ci * re[b];
+                re[b] = re[a] - tr;
+                im[b] = im[a] - ti;
+                re[a] += tr;
+                im[a] += ti;
+                let new = cr * wr - ci * wi;
+                ci = cr * wi + ci * wr;
+                cr = new;
+            }
+        }
+        span <<= 1;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A sine at that frequency, in mono.
+    fn sine(hz: f32, rate: u32, frames: usize, amplitude: f32) -> Vec<f32> {
+        (0..frames)
+            .map(|i| amplitude * (2.0 * PI * hz * i as f32 / rate as f32).sin())
+            .collect()
+    }
+
+    #[test]
+    fn the_power_of_two_is_the_one_that_fits() {
+        assert_eq!(power_of_two(1024), 1024);
+        assert_eq!(power_of_two(1025), 1024);
+        assert_eq!(power_of_two(1023), 512);
+        assert_eq!(power_of_two(0), 0);
+    }
+
+    #[test]
+    fn a_tone_shows_in_its_band_and_in_no_other() {
+        let rate = 44_100;
+        let data = sine(1_000.0, rate, 4096, 0.9);
+        let bands = bands(&data, rate, 24);
+        assert_eq!(bands.len(), 24);
+
+        let loudest = bands
+            .iter()
+            .enumerate()
+            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .map(|(i, _)| i)
+            .unwrap();
+
+        // The peak's band has to cover 1000 Hz.
+        let step = ((rate as f32 / 2.0) / 20.0).ln() / 24.0;
+        let from = 20.0 * (step * loudest as f32).exp();
+        let to = 20.0 * (step * (loudest + 1) as f32).exp();
+        assert!(
+            (from..=to).contains(&1_000.0),
+            "the peak landed at {from:.0}..{to:.0} Hz, not at 1000"
+        );
+        // And the far bands are well below.
+        let far = bands[(loudest + 8).min(23)];
+        assert!(far < bands[loudest] / 2.0, "it spilled: {far} against {}", bands[loudest]);
+    }
+
+    #[test]
+    fn silence_draws_nothing() {
+        let bands = bands(&vec![0.0; 2048], 44_100, 16);
+        assert!(bands.iter().all(|b| *b == 0.0), "{bands:?}");
+    }
+
+    #[test]
+    fn a_louder_tone_gives_a_taller_band() {
+        let rate = 44_100;
+        let low = bands(&sine(1_000.0, rate, 4096, 0.05), rate, 24);
+        let high = bands(&sine(1_000.0, rate, 4096, 0.9), rate, 24);
+        let peak = |v: &[f32]| v.iter().copied().fold(0.0f32, f32::max);
+        assert!(peak(&high) > peak(&low), "{} contra {}", peak(&high), peak(&low));
+        assert!(peak(&high) <= 1.0, "it never goes past one");
+    }
+
+    #[test]
+    fn too_little_material_invents_no_spectrum() {
+        assert!(bands(&[], 44_100, 16).is_empty());
+        assert!(bands(&[0.1; 8], 44_100, 16).is_empty(), "eight samples are not a spectrum");
+        assert!(bands(&[0.1; 2048], 0, 16).is_empty(), "with no sample rate, nothing");
+        assert!(bands(&[0.1; 2048], 44_100, 0).is_empty());
+    }
+
+    #[test]
+    fn the_fft_of_a_constant_puts_everything_in_bin_zero() {
+        let mut re = vec![1.0f32; 8];
+        let mut im = vec![0.0f32; 8];
+        fft(&mut re, &mut im);
+        assert!((re[0] - 8.0).abs() < 1e-4, "the sum goes in bin 0: {}", re[0]);
+        for k in 1..8 {
+            assert!(re[k].abs() < 1e-4 && im[k].abs() < 1e-4, "bin {k} should have been zero");
+        }
+    }
+}

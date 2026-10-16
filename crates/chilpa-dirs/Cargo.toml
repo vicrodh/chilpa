@@ -1,0 +1,10 @@
+[package]
+name = "chilpa-dirs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+# No dependencies, and that is the point: every crate that needs a directory
+# can have this one without it dragging anything in (ADR-010 M3).
+[dependencies]

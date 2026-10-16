@@ -1,0 +1,40 @@
+[package]
+name = "chilpa-qt"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+chilpa-api.workspace = true
+chilpa-qt-kit.workspace = true
+chilpa-qt-sources.workspace = true
+chilpa-qt-controls.workspace = true
+chilpa-qt-ambient.workspace = true
+chilpa-qt-mini.workspace = true
+chilpa-qt-dsp.workspace = true
+chilpa-qt-immersive.workspace = true
+chilpa-qt-waveform.workspace = true
+chilpa-qt-graphics.workspace = true
+chilpa-qt-link.workspace = true
+chilpa-qt-playlists.workspace = true
+chilpa-qt-wizard.workspace = true
+chilpa-qt-artwork.workspace = true
+chilpa-qt-about.workspace = true
+chilpa-qt-stats.workspace = true
+chilpa-qt-folders.workspace = true
+chilpa-qt-gallery.workspace = true
+chilpa-qt-lyrics.workspace = true
+chilpa-qt-metadata.workspace = true
+cxx = "1"
+cxx-qt = "0.7"
+cxx-qt-lib = { version = "0.7", features = ["qt_full"] }
+serde_json = "1"
+# The system's own file dialogs: the desktop portal on Linux, the native
+# panels on macOS and Windows. Without the GTK backend: the portal is what
+# every Linux desktop answers.
+rfd = { version = "0.17", default-features = false, features = ["xdg-portal"] }
+pollster = "0.4"
+
+[build-dependencies]
+cxx-qt-build = "0.7"

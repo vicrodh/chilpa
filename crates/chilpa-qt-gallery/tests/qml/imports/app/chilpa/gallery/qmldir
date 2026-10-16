@@ -1,0 +1,2 @@
+module app.chilpa.gallery
+singleton GalleryPages 1.0 GalleryPages.qml

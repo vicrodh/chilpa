@@ -1,0 +1,39 @@
+# Lo que tiene que pasar antes de que un cambio entre.
+#
+# Corre cuando haya un runner conectado al Forgejo; mientras no lo haya, este
+# archivo no estorba. Los mismos candados que el hook, más las pruebas y el
+# presupuesto de memoria.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pruebas:
+    runs-on: docker
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependencias del sistema
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential pkg-config libasound2-dev libsqlite3-dev \
+            qt6-base-dev qt6-declarative-dev ffmpeg python3
+
+      - name: Candados
+        run: tools/lint/fast
+
+      - name: Pruebas
+        run: cargo test --workspace
+        env:
+          # Una sola compilación pesada a la vez: la máquina de casa se
+          # congela si se queda sin memoria, y el runner no tiene por qué ser
+          # más generoso.
+          CARGO_BUILD_JOBS: "2"
+
+      - name: Presupuesto de memoria
+        run: |
+          cargo build -p chilpa-qt
+          tools/lint/footprint

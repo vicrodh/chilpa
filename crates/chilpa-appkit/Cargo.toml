@@ -1,0 +1,22 @@
+[package]
+name = "chilpa-appkit"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+
+# The generation the file dialog already brings, so the binary holds one.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSGeometry"] }
+objc2-app-kit = { version = "0.3", default-features = false, features = [
+    "std",
+    "NSApplication",
+    "NSResponder",
+    "NSWindow",
+    "NSButton",
+    "NSControl",
+    "NSView",
+] }

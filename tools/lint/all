@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Todos los candados, incluidos los que cuestan minutos. Esto es lo que corre
+# el CI; el hook de pre-commit usa `fast`.
+set -e
+root=$(git rev-parse --show-toplevel)
+"$root/tools/lint/fast"
+"$root/tools/lint/footprint"
+# ADR-010: el motor compila en los cuatro objetivos, o no compila.
+"$root/tools/ci/platforms"

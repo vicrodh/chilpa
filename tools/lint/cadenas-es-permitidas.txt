@@ -1,0 +1,13 @@
+# Archivos donde una cadena en español es correcta, con la razón.
+#
+# Lo normal es que no lo sea: una cadena en español dentro del repo es o un
+# mensaje que se le escapó al catálogo, o un assert escrito en el idioma en que
+# se estaba platicando. Por ese hueco vivían `"{} de {} · {}"` en el estado del
+# análisis y `"con ({ptr}, {len})"` en un assert.
+#
+# Se exime el archivo, no la cadena, y a propósito: una lista de cadenas
+# literales se rompe cuando alguien le cambia una coma, y entonces el candado
+# manda a editar una lista en lugar de mirar el código. Un archivo cuyo trabajo
+# es manejar español se dice una vez.
+crates/chilpa-i18n/src/po.rs # el parser de catálogos: sus pruebas traen .po en español, que es lo que parsea
+crates/chilpa-core/src/settings.rs # prueba de migración: un settings.conf de antes del barrido trae "Clasico" y "espectro", y el punto es que se sigan abriendo

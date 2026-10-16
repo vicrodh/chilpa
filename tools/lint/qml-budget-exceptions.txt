@@ -1,0 +1,7 @@
+# QML files allowed over their layer's budget, and why.
+#
+# path | ceiling | YYYY-MM-DD | reason
+#
+# An entry is the last resort, after extracting was tried. The reason says
+# what was tried and why splitting the file would hurt more than its size.
+# The check fails on an entry whose file is back under budget.

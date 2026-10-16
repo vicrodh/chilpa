@@ -1,0 +1,19 @@
+# Servicios de streaming que no se nombran en este repo (ADR-004).
+# Uno por línea; se buscan como palabra completa, sin distinguir mayúsculas.
+qobuz
+tidal
+spotify
+deezer
+apple music
+applemusic
+amazon music
+youtube music
+ytmusic
+soundcloud
+bandcamp
+napster
+pandora
+anghami
+kkbox
+jiosaavn
+audiomack
