@@ -6,6 +6,23 @@
 
 <img width="150" height="28" alt="Chilpa" src="https://github.com/user-attachments/assets/66a2ada1-b2dc-4383-8b11-82c95a6228da" />
 
+### Hi-Fi music. Every source. Bit-perfect.
+
+<p>
+  <a href="https://github.com/vicrodh/chilpa/releases"><img src="https://img.shields.io/github/v/release/vicrodh/chilpa?include_prereleases&style=flat-square" alt="Release" /></a>
+  <a href="https://github.com/vicrodh/chilpa"><img src="https://img.shields.io/badge/platform-Linux-0b0b0b?style=flat-square&logo=linux" alt="Platform: Linux" /></a>
+  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/Rust-1.90-0b0b0b?style=flat-square&logo=rust" alt="Rust 1.90" /></a>
+  <a href="https://www.qt.io"><img src="https://img.shields.io/badge/Qt-6.11-0b0b0b?style=flat-square&logo=qt" alt="Qt 6.11" /></a>
+  <a href="https://doc.qt.io/qt-6/qmlapplications.html"><img src="https://img.shields.io/badge/UI-QML-0b0b0b?style=flat-square&logo=qt" alt="QML" /></a>
+  <a href="https://github.com/vicrodh/chilpa-plugins-sdk"><img src="https://img.shields.io/badge/plugins-WebAssembly-0b0b0b?style=flat-square&logo=webassembly" alt="Plugins: WebAssembly" /></a>
+  <a href="https://github.com/vicrodh/chilpa"><img src="https://img.shields.io/badge/audio-ALSA%20%7C%20PipeWire%20%7C%20PulseAudio%20%7C%20JACK-0b0b0b?style=flat-square" alt="Audio: ALSA, PipeWire, PulseAudio, JACK" /></a>
+  <a href="https://www.sqlite.org"><img src="https://img.shields.io/badge/library-SQLite-0b0b0b?style=flat-square&logo=sqlite" alt="Library: SQLite" /></a>
+</p>
+
+<p>
+  <a href="https://techforpalestine.org/learn-more"><img src="https://raw.githubusercontent.com/Safouene1/support-palestine-banner/master/StandWithPalestine.svg" alt="StandWithPalestine" /></a>
+</p>
+
 </div>
 
 # Chilpa
@@ -67,6 +84,14 @@ chmod +x Chilpa-0.1.0-beta-x86_64.AppImage
 The image carries its own Qt and audio runtime. If FUSE is not available,
 run it with `APPIMAGE_EXTRACT_AND_RUN=1`.
 
+On every start Chilpa keeps itself in the application menu: it writes
+`~/.local/share/applications/app.chilpa.Chilpa.desktop` and its icon, with
+`Exec` pointing at the image, so a moved image is followed on its next start.
+If AppImageLauncher, Gear Lever or another tool already added the image,
+Chilpa adds no second entry, and it never replaces an entry it did not write.
+To remove it, delete that file and
+`~/.local/share/icons/hicolor/512x512/apps/app.chilpa.Chilpa.png`.
+
 Keep the image in a folder you own, such as `~/Applications`. Chilpa checks
 for updates once a day; About has the switch for the automatic check and a
 **Check for updates** button. An update downloads beside the image, is
@@ -83,6 +108,18 @@ tar xf chilpa-0.1.0-beta-linux-x86_64.tar.gz
 
 The tarball uses the system libraries: Qt 6.11 or newer with Qt Quick, ALSA,
 PulseAudio, D-Bus, SQLite and OpenSSL 3. It does not update itself.
+
+It includes a desktop entry and its icon. The entry runs
+`/usr/bin/chilpa-qt`, which suits a package; to add Chilpa to your own menu,
+run this from the folder where you extracted it:
+
+```sh
+mkdir -p ~/.local/share/applications
+sed "s|^Exec=.*|Exec=$PWD/chilpa-0.1.0-beta/chilpa-qt|" \
+  chilpa-0.1.0-beta/app.chilpa.Chilpa.desktop \
+  > ~/.local/share/applications/app.chilpa.Chilpa.desktop
+cp -r chilpa-0.1.0-beta/icons ~/.local/share/
+```
 
 ### Your data
 
