@@ -81,12 +81,11 @@ Row {
 
             Repeater {
                 id: repeater
-                model: Navigation.tabTitles
+                model: Navigation.tabTitles.length
 
                 TabButton {
                     required property int index
-                    required property string modelData
-                    title: modelData
+                    title: Navigation.tabTitles[index] || ""
                     glyph: Icons[Navigation.tabIcons[index]] || ""
                     sourceIcon: !Icons[Navigation.tabIcons[index]] ? Navigation.tabIcons[index] || "" : ""
                     active: index === Navigation.active

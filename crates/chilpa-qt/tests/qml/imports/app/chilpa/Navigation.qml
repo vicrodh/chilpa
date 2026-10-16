@@ -9,6 +9,9 @@ QtObject {
     property string screen: "source"
     property string section: ""
     property int active: 0
+    property var tabTitles: []
+    property var tabIcons: []
+    property int closedIndex: -1
     property int backCount: 0
     property int forwardCount: 0
     property int stepCount: 0
@@ -22,5 +25,6 @@ QtObject {
     function back() { backCount++ }
     function forward() { forwardCount++ }
     function step(by) { stepCount += by }
+    function close(index) { closedIndex = index }
     function activate(index) { active = index }
 }
