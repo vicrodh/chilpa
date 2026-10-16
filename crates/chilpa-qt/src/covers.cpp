@@ -11,12 +11,37 @@
 #include <QtGui/QImage>
 #include <QtQml/QQmlEngine>
 #include <QtQuick/QQuickImageProvider>
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkRequest>
+#include <QtQml/QQmlNetworkAccessManagerFactory>
 
 extern "C" bool chilpa_cover(const char *path, unsigned size, char *out, unsigned long capacity);
 extern "C" bool chilpa_contained_cover(const char *path, unsigned size, char *out, unsigned long capacity);
 extern "C" bool chilpa_atmosphere(const char *path, char *out, unsigned long capacity);
+extern "C" bool chilpa_network_allowed(const char *address);
 
 namespace {
+
+class NetworkAccess : public QNetworkAccessManager
+{
+public:
+    using QNetworkAccessManager::QNetworkAccessManager;
+protected:
+    QNetworkReply *createRequest(Operation op, const QNetworkRequest &request, QIODevice *body) override
+    {
+        const QUrl url = request.url();
+        if ((url.scheme() == QStringLiteral("https") || url.scheme() == QStringLiteral("http"))
+            && !chilpa_network_allowed(url.toEncoded().constData()))
+            return QNetworkAccessManager::createRequest(op, QNetworkRequest(QUrl()), body);
+        return QNetworkAccessManager::createRequest(op, request, body);
+    }
+};
+
+class NetworkFactory : public QQmlNetworkAccessManagerFactory
+{
+public:
+    QNetworkAccessManager *create(QObject *parent) override { return new NetworkAccess(parent); }
+};
 
 class CoverResponse : public QQuickImageResponse, public QRunnable
 {
@@ -78,6 +103,8 @@ private:
 
 extern "C" void chilpa_install_covers(void *engine)
 {
+    static NetworkFactory network;
+    static_cast<QQmlEngine *>(engine)->setNetworkAccessManagerFactory(&network);
     static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("cover"), new CoverProvider);
     static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("contained"), new CoverProvider(2));
     static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("atmosphere"), new CoverProvider(1));

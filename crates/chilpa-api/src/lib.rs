@@ -50,6 +50,8 @@ mod outputs;
 mod playlists;
 pub use playlists::PlaylistTarget;
 mod preferences;
+mod privacy;
+pub use privacy::network_allowed;
 mod play_indicator;
 mod playlist_sources;
 mod plugin_broker;
@@ -742,6 +744,7 @@ impl Chilpa {
         // The language is set before anything can speak: a message built
         // during startup has to come out in the same language as the rest.
         let saved = chilpa_core::settings::load();
+        chilpa_core::network::configure(privacy::policy(&saved));
         storage_cache::start(saved.window.get("storage.remoteLimitMb").map(String::as_str));
         #[cfg(not(test))]
         chilpa_i18n::set_language(if saved.language.is_empty() { chilpa_i18n::from_environment() } else { &saved.language });

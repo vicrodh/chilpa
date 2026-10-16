@@ -60,14 +60,14 @@ pub fn fetch(request: &Fetch) -> Result<Fetched, FetchError> {
     if !request.url.starts_with("https://") && !local {
         return Err(FetchError::Scheme);
     }
-    let agent = ureq::Agent::config_builder()
+    let agent = crate::network::agent(ureq::Agent::config_builder()
         .timeout_global(Some(request.timeout))
         .http_status_as_error(false)
         // A redirect to plain http is refused too.
         .https_only(!local)
         .max_redirects(5)
-        .build()
-        .new_agent();
+        .middleware(crate::network::guard)
+        .build());
     let reply = agent
         .get(request.url)
         .header("User-Agent", request.user_agent)

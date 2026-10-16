@@ -40,12 +40,12 @@ impl Default for Patience {
 impl Patience {
     /// A request that gives up when the server does not answer in time.
     pub(crate) fn agent(&self) -> ureq::Agent {
-        ureq::Agent::config_builder()
+        crate::network::agent(ureq::Agent::config_builder()
             .timeout_resolve(Some(self.connect))
             .timeout_connect(Some(self.connect))
             .timeout_recv_response(Some(self.answer))
-            .build()
-            .new_agent()
+            .middleware(crate::network::guard)
+            .build())
     }
 }
 
@@ -72,6 +72,7 @@ impl Watched {
         // consumer is paused the channel is full and the send waits, which
         // holds the socket back the way not reading it did.
         let _ = std::thread::Builder::new().name("chilpa-stream-body".into()).spawn(move || loop {
+            if crate::network::current().offline { break; }
             let mut piece = vec![0u8; PIECE];
             let read = body.read(&mut piece);
             let (message, last) = match read {

@@ -31,7 +31,8 @@ A native music player for local libraries and self-hosted servers, extended
 through optional plugins. The audio engine does not depend on Qt, and every
 source-specific integration lives in its own plugin.
 
-*Chilpatl* is Nahuatl for hornet.
+I took the name **Chilpa** from *chilpatl* (also written *chilpatli*), a
+Classical Nahuatl word for a **red wasp or hornet** (*avispa roja / avispón*).
 
 > **AI usage disclaimer**
 >
@@ -48,9 +49,16 @@ source-specific integration lives in its own plugin.
 
 ## Status
 
-0.1.0-beta is the first public release: a prerelease for Linux x86_64, as an
-AppImage and a binary tarball. macOS, Windows and Android are under
-development, with no binaries for this beta.
+For the initial 0.1.0-beta release, I distribute Linux x86_64 builds as an
+AppImage and a precompiled binary tarball. I plan to add packages for the most
+popular package managers in subsequent releases.
+
+This first release ships in **English and Spanish**. More languages are on
+the way.
+
+I am validating macOS for this beta on a Mac mini; a macOS download will be
+listed here once it has passed testing. Windows and Android remain under
+development.
 
 Downloads are in [Releases](https://github.com/vicrodh/chilpa/releases) and
 progress updates in [Discussions](https://github.com/vicrodh/chilpa/discussions).
@@ -146,7 +154,7 @@ so the list works offline. **Manage > Refresh** fetches the current one.
 | Podcasts | Shows and episodes from PodcastIndex. No account. | WASM |
 | Chilpa DSP | Equalizer, crossfeed and listening presets. | WASM |
 | Playlist Importer | Imports public playlists and playlist files, and matches their tracks against your library and connected sources. | Linux x86_64 process |
-| Mood | Analyzes local audio for mood and similarity. Its models download only after you enable it. | Linux x86_64 process |
+| Mood | **Experimental.** Analyzes local audio for mood and similarity with offline models. No audio or analysis results are uploaded. Models download only after you enable it. | Linux x86_64 process |
 
 Process plugins run inside a sandbox: install `bubblewrap` from your
 distribution, keep unprivileged user namespaces enabled and run Chilpa as a
@@ -161,6 +169,37 @@ is not guaranteed.
 
 To write a plugin, start with the API and authoring contracts in
 [chilpa-plugins-sdk](https://github.com/vicrodh/chilpa-plugins-sdk).
+
+## Privacy and offline use
+
+Chilpa has **no telemetry**. I do not collect information about its users:
+there are no analytics, usage reports or background tracking.
+
+Some optional features use online services. Requests run in the background
+and do not hold up navigation or playback:
+
+- **Chilpa proxy:** metadata searches, artist biographies, podcast discovery
+  and Last.fm integration. Turn it off in **Settings > Integrations > Chilpa proxy**.
+- **Chilpa lyrics API:** lyric searches send track metadata; translation sends
+  the lyric lines and the requested language. Translation is on by default
+  and has its own switch. Turn off **Chilpa lyrics API** to stop hosted lookups and translation,
+  or **Enable lyrics** to stop all lyric lookups and translations, including
+  files and cache, and clear the displayed lyrics.
+- **MusicBrainz:** artist relationships and release metadata. Its switch in
+  **Settings > Integrations** disables these requests.
+
+**Offline mode**, in the same settings section, blocks network access for
+Chilpa and its plugins, including artwork downloads, scrobbling, update checks,
+plugin catalog refreshes, network playback and device discovery. The Artist
+Network panel and its button disappear. Your individual service preferences
+stay saved for when you turn offline mode off.
+
+Local playback, local and cached artwork, DSP and local or cached lyrics work
+without a connection. Mood also works offline once its optional models have
+been downloaded; I do not send audio or analysis results to a model provider.
+Install plugins and download Mood models before going offline. Scrobbling and
+source plugins use their own services when you explicitly connect and enable
+them; offline mode also blocks that traffic.
 
 ## Build from source
 

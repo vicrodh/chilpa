@@ -36,6 +36,11 @@ unsafe extern "C" {
     fn chilpa_import_modules();
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn chilpa_network_allowed(address: *const std::ffi::c_char) -> bool {
+    unsafe { std::ffi::CStr::from_ptr(address) }.to_str().is_ok_and(chilpa_api::network_allowed)
+}
+
 /// Makes a derivative off the UI thread. The C strings are valid and `out`
 /// has room for `capacity` bytes.
 #[no_mangle]

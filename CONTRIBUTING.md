@@ -13,6 +13,10 @@ The QML interface talks only to `chilpa-api`; it does not reach into the
 library or the audio engine. The core and audio crates do not depend on Qt.
 Source-specific integrations live in separate plugin repositories, not here.
 
+For capture tests, I launch the app with `CHILPA_DEV=1` to expose the File
+output. Normal launches hide it from the stack and device pickers. The engine
+keeps direct file capture available to automated tests.
+
 ## Quick rules
 
 - Write clear, concise English (no emojis in code, comments, or commit messages).

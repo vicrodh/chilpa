@@ -705,3 +705,6 @@ decimator
 downmix
 sidechain
 prerelease
+
+# ureq socket-address abbreviation.
+addrs

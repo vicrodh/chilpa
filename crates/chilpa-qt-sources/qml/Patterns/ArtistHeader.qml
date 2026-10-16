@@ -18,6 +18,7 @@ Item {
     id: header
     property var info: ({})
     property bool local: false
+    property bool networkEnabled: true
     property bool networkOpen: false
     // Showing what the listener keeps of the artist in its source.
     property bool inLibrary: false
@@ -158,7 +159,7 @@ Item {
                 }
             }
             IconButton {
-                objectName: "networkAction"; round: true; size: Metrics.button32; glyph: SourceGlyphs.spiderWeb; iconFamily: SourceGlyphs.font; checked: header.networkOpen
+                objectName: "networkAction"; visible: header.networkEnabled; round: true; size: Metrics.button32; glyph: SourceGlyphs.spiderWeb; iconFamily: SourceGlyphs.font; checked: header.networkOpen
                 tip: I18n.tr("Network", I18n.rev); onClicked: header.toggleNetwork()
             }
             // The scene and the artist's own links share the overflow menu.

@@ -35,11 +35,11 @@ fn cache_path() -> std::path::PathBuf {
 /// empty or "auto" for the window's own, else a language code.
 pub(crate) const TRANSLATION_LANGUAGE: &str = "ui.lyrics.translation";
 /// Whether lyrics without a translation in that language are sent to the
-/// service for one. Off unless the reader turned it on.
+/// service for one. Enabled unless the reader turned it off.
 pub(crate) const TRANSLATE: &str = "integrations.lyrics.translate";
 pub(crate) const LYRICS_API: &str = "integrations.lyrics.service";
-pub(crate) const PLUGIN_LYRICS: &str = "integrations.lyrics.plugin";
-const REMOTE_PROVIDERS: &[&str] = &["lrclib", "musixmatch", "amll", "netease", "qq", "kugou"];
+pub(crate) const ENABLED: &str = "integrations.lyrics.enabled";
+pub(crate) const REMOTE_PROVIDERS: &[&str] = &["lrclib", "netease", "qq", "kugou"];
 
 /// Where the lyrics of what plays stand, for the window to say so.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
@@ -124,7 +124,7 @@ impl LyricsService {
                 if let Some(with) = translated(&outcome.resolved) {
                     deliver(Some(with));
                 }
-                if outcome.refresh {
+                if outcome.refresh && job.generation == thread_wanted.load(Ordering::SeqCst) {
                     // What the cache had is old: it was shown, and now the
                     // source and the service are asked again. What they
                     // say now replaces it.
@@ -159,7 +159,7 @@ impl LyricsService {
                 let name = natives.display_name(&id);
                 (Arc::new(NativeSource { natives: natives.clone(), id, name }) as Arc<dyn Source>, reference)
             });
-        let _ = self.jobs.send(Job { generation, request: Request { track, path, source, language, translate, allow_remote, remote_providers } });
+        let _ = self.jobs.send(Job { generation, request: Request { track, path, source, language, translate, allow_remote, offline: chilpa_core::network::current().offline, remote_providers } });
     }
 
     /// The answer for that generation, once, when it has arrived. `Some(None)`
@@ -189,6 +189,11 @@ impl crate::Chilpa {
         self.lyrics.document = None;
         self.lyrics.generation += 1;
         self.lyrics.asked = Some((path.to_path_buf(), length_ms));
+        if let Some(service) = &self.lyrics.service { service.wanted.store(self.lyrics.generation, Ordering::SeqCst); }
+        if !chilpa_core::network::current().lyrics {
+            self.lyrics.state = State::Idle;
+            return;
+        }
         self.lyrics.state = if self.now.live { State::Idle } else { State::Searching };
         if self.now.live {
             return;
@@ -217,21 +222,21 @@ impl crate::Chilpa {
         let file = (source.is_none() && path.is_file()).then(|| path.to_path_buf());
         let language = self.translation_language();
         let translate = self.translating();
-        let allow_source = self.preference(PLUGIN_LYRICS).as_deref() != Some("false");
-        let allow_remote = self.preference(LYRICS_API).as_deref() != Some("false");
+        let policy = chilpa_core::network::current();
+        let allow_remote = policy.lyrics && policy.lyrics_service;
         let selected: Vec<String> = REMOTE_PROVIDERS.iter().filter(|id| {
             self.preference(&format!("integrations.lyrics.provider.{id}")).as_deref() != Some("false")
         }).map(|id| (*id).to_string()).collect();
         let remote_providers = (selected.len() != REMOTE_PROVIDERS.len()).then_some(selected);
         let generation = self.lyrics.generation;
         let service = self.lyrics.service.get_or_insert_with(LyricsService::start);
-        service.request(&self.natives, generation, (track, file, source.filter(|_| allow_source), Some(language), translate, allow_remote, remote_providers));
+        service.request(&self.natives, generation, (track, file, source, Some(language), translate, allow_remote, remote_providers));
     }
 
     /// Whether the reader asked for lyrics without a translation in their
     /// language to be translated.
     fn translating(&self) -> bool {
-        self.preference(TRANSLATE).as_deref() == Some("true")
+        chilpa_core::network::current().lyrics && self.preference(TRANSLATE).as_deref() != Some("false")
     }
 
     /// The language a translation is wanted in: the one chosen for lyrics,
@@ -247,7 +252,7 @@ impl crate::Chilpa {
     /// and the service when translating is on; for any other track it only
     /// changes which translation is offered.
     pub(crate) fn lyrics_preference_changed(&mut self, key: &str) {
-        if !matches!(key, TRANSLATION_LANGUAGE | TRANSLATE | LYRICS_API | PLUGIN_LYRICS)
+        if !matches!(key, TRANSLATION_LANGUAGE | TRANSLATE | LYRICS_API | ENABLED | "integrations.offline")
             && !key.starts_with("integrations.lyrics.provider.") {
             return;
         }
@@ -360,6 +365,8 @@ impl Source for NativeSource {
         &self.name
     }
     fn lyrics(&self, reference: &str, track: &Track, language: Option<&str>, timeout: Duration) -> Answer {
+        let policy = chilpa_core::network::current();
+        if policy.offline || !policy.lyrics { return Answer::None; }
         match self.natives.call_raw(&self.id, "track.lyrics", wire::source_params(reference, language), timeout) {
             Ok(answer) => match wire::read_source(&answer, track) {
                 Ok(Some(candidate)) => Answer::Found(vec![candidate]),

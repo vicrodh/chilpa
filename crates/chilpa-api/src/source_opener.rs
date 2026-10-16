@@ -208,6 +208,7 @@ fn joined(from: &str, to: &str) -> String {
 
 impl RemoteOpener for Openers {
     fn locate(&self, entry: &RemoteEntry) -> Result<Located, String> {
+        if chilpa_core::network::current().offline { return Err(chilpa_core::network::blocked()); }
         if entry.source.provider == PROVIDER {
             if let Some(located) = self.take_ahead(entry) {
                 return Ok(located);

@@ -13,6 +13,18 @@ Column {
     spacing: Metrics.gap12
     onDocumentChanged: values = Object.assign({}, document.values || {})
 
+    Repeater {
+        model: form.document.notices || []
+        Text {
+            required property string modelData
+            width: form.width
+            text: modelData
+            textFormat: Text.PlainText
+            wrapMode: Text.WordWrap
+            color: Theme.color.statusWarning
+            font.pointSize: Type.body
+        }
+    }
     PluginValidation {
         width: form.width
         visible: !!form.document.status
@@ -45,18 +57,6 @@ Column {
             textFormat: Text.PlainText
             wrapMode: Text.WordWrap
             color: Theme.color.textSecondary
-            font.pointSize: Type.body
-        }
-    }
-    Repeater {
-        model: form.document.notices || []
-        Text {
-            required property string modelData
-            width: form.width
-            text: modelData
-            textFormat: Text.PlainText
-            wrapMode: Text.WordWrap
-            color: Theme.color.statusWarning
             font.pointSize: Type.body
         }
     }

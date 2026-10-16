@@ -24,6 +24,13 @@ impl Casting {
     fn advance(&mut self) { self.generation = self.generation.wrapping_add(1); }
 }
 impl Chilpa {
+    pub(crate) fn cast_offline(&mut self) {
+        self.cast_picker(false);
+        if self.casting.active() { self.cast_disconnect(); }
+        if let Some(worker) = self.casting.worker.take() { std::thread::spawn(move || drop(worker)); }
+        self.casting.devices.clear();
+    }
+
     pub(crate) fn shutdown_cast(&mut self) { self.casting.worker.take(); }
 
     pub fn cast_picker(&mut self, open: bool) {
@@ -40,6 +47,7 @@ impl Chilpa {
         }
     }
     pub fn cast_discover(&mut self) {
+        if self.offline() { self.casting.error = chilpa_core::network::blocked(); return; }
         if self.casting.discovery.is_some() { return; }
         let (tx, rx) = mpsc::channel(); self.casting.discovery = Some(rx); self.casting.searched = Some(Instant::now());
         let running = Arc::new(AtomicBool::new(true)); self.casting.discovery_running = Some(running.clone());
@@ -56,6 +64,7 @@ impl Chilpa {
     }
     /// I also accept an explicitly addressed renderer for protocol tests.
     pub fn cast_connect_device(&mut self, device: Device) {
+        if self.offline() { self.casting.error = chilpa_core::network::blocked(); return; }
         if self.casting.selected.as_ref().is_some_and(|selected| selected.id == device.id && selected.kind == device.kind) && self.casting.error.is_empty() { return; }
         self.casting.disconnecting = false; self.casting.local_start = None;
         let transfer = self.now.playing && !self.now.paused;
