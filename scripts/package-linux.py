@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+from release_version import release_version, update_information
 
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
@@ -21,8 +22,10 @@ parser.add_argument("--tools", type=Path, required=True)
 parser.add_argument("--output", type=Path, required=True)
 parser.add_argument("--glibc-max", help="Fail when the binary requires a newer glibc, such as 2.39.")
 args = parser.parse_args()
-if not re.fullmatch(r"\d+\.\d+\.\d+", args.version):
-    parser.error("I require a stable semantic version: X.Y.Z.")
+try:
+    identity = release_version(args.version)
+except ValueError as error:
+    parser.error(str(error))
 if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", args.repository):
     parser.error("I require a repository in owner/name form.")
 args.binary = args.binary.resolve(strict=True)
@@ -45,7 +48,7 @@ for tool in locked.values():
 
 epoch = int(os.environ.get("SOURCE_DATE_EPOCH", subprocess.check_output(["git", "show", "-s", "--format=%ct", "HEAD"], cwd=root, text=True).strip()))
 commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
-manifest = {"version": args.version, "source_commit": commit, "platform": "linux-x86_64", "source_date_epoch": epoch,
+manifest = {"version": args.version, "prerelease": identity["prerelease"], "source_commit": commit, "platform": "linux-x86_64", "source_date_epoch": epoch,
             "plugin_protocol": json.loads((root / "vendor/chilpa-plugin-api/ORIGIN.json").read_text()),
             "binary_sha256": hashlib.file_digest(args.binary.open("rb"), "sha256").hexdigest()}
 with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.parent) as directory:
@@ -55,7 +58,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     shutil.copy2(args.binary, plain / "chilpa-qt")
     shutil.copy2(root / "LICENSE", plain / "LICENSE")
     notices = plain / "licenses"
-    notices.mkdir()
+    shutil.copytree(root / "licenses", notices)
     shutil.copy2(root / "vendor/chilpa-plugin-api/LICENSE", notices / "plugin-protocol-MIT.txt")
     shutil.copy2(root / "packaging/linux/Inter-OFL.txt", notices / "Inter-OFL.txt")
     (plain / "MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n")
@@ -106,7 +109,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     release_data.mkdir(parents=True)
     (release_data / "release.json").write_text(json.dumps({"repository":args.repository,"version":args.version}) + "\n")
     licenses = appdir / "usr/share/licenses/chilpa"
-    licenses.mkdir(parents=True)
+    shutil.copytree(root / "licenses", licenses)
     shutil.copy2(root / "LICENSE", licenses / "LICENSE")
     shutil.copy2(root / "vendor/chilpa-plugin-api/LICENSE", licenses / "plugin-protocol-MIT.txt")
     for name in ("Inter-OFL.txt", "Qt-LGPL-3.0.txt", "Qt-GPL-3.0.txt"):
@@ -124,8 +127,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
         raise SystemExit("The Wayland platform plugin is missing.")
     if not (bin_dir / "qt.conf").exists() or not list(appdir.rglob("libeffectsplugin.so")):
         raise SystemExit("The deployed Qt Quick runtime is incomplete.")
-    owner, repository = args.repository.split("/")
-    information = f"gh-releases-zsync|{owner}|{repository}|latest|Chilpa-*-x86_64.AppImage.zsync"
+    information = update_information(args.repository, args.version)
     image = args.output / f"Chilpa-{args.version}-x86_64.AppImage"
     subprocess.run([str(args.tools / locked["appimagetool"]["asset"]), "--appimage-extract-and-run", "--no-appstream",
                     "--runtime-file", str(args.tools / locked["runtime"]["asset"]),
@@ -138,6 +140,8 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     if embedded != information:
         raise SystemExit("The AppImage update information does not match its release channel.")
     (args.output / "MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n")
-assets = [archive, image, Path(str(image) + ".zsync"), args.output / "MANIFEST.json"]
+notes = args.output / "RELEASE-NOTES.md"
+shutil.copy2(root / "CHANGELOG.md", notes)
+assets = [archive, image, Path(str(image) + ".zsync"), args.output / "MANIFEST.json", notes]
 (args.output / "SHA256SUMS").write_text("".join(f"{hashlib.file_digest(path.open('rb'), 'sha256').hexdigest()}  {path.name}\n" for path in assets))
 print(f"Packaged {archive.name} and {image.name}")

@@ -1,8 +1,7 @@
 crates/target
 target
 
-# Los archivos de agentes no se commitean: viven en chilpa-docs (CHD-0003)
-# y aquí solo se enlazan.
+# I keep local agent instructions outside the public source tree.
 AGENTS.md
 CLAUDE.md
 

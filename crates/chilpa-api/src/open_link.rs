@@ -10,8 +10,7 @@
 //!    (`link.identify`): its kind, its title and its artist. A playlist goes
 //!    to the playlist importer.
 //! 3. With a title and an artist: the library first, its best edition, then
-//!    the sources in the sidebar's order with QBZ's three searches
-//!    (`qobuz_search.rs::search_qobuz_smart`).
+//!    I try the sources in sidebar order with three query variants.
 //!
 //! The work runs on a thread of its own; the window asks how it goes.
 

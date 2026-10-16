@@ -21,6 +21,8 @@ jobs:
   linux:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    outputs:
+      prerelease: ${{ steps.version.outputs.prerelease }}
     env:
       CARGO_BUILD_JOBS: '2'
       QT_VERSION: '6.11.2'
@@ -37,18 +39,7 @@ jobs:
           RELEASE_REF: ${{ github.ref }}
           RELEASE_EVENT: ${{ github.event_name }}
         run: |
-          python3 - <<'PY'
-          import os, re, subprocess, tomllib
-          from pathlib import Path
-          version = tomllib.loads(Path('Cargo.toml').read_text())['workspace']['package']['version']
-          if not re.fullmatch(r'\d+\.\d+\.\d+', version):
-              raise SystemExit('I require a stable workspace version.')
-          if os.environ['RELEASE_EVENT'] == 'push' and os.environ['RELEASE_REF'] != 'refs/tags/v' + version:
-              raise SystemExit('The release tag and workspace version differ.')
-          epoch = subprocess.check_output(['git', 'show', '-s', '--format=%ct', 'HEAD'], text=True).strip()
-          with open(os.environ['GITHUB_ENV'], 'a') as stream:
-              stream.write(f'RELEASE_VERSION={version}\nSOURCE_DATE_EPOCH={epoch}\n')
-          PY
+          python3 scripts/release_version.py --github-env "$GITHUB_ENV" --github-output "$GITHUB_OUTPUT"
       - name: Install build and deployment dependencies
         run: |
           sudo apt-get update
@@ -76,6 +67,7 @@ jobs:
       - name: Check the repository and update worker
         run: |
           tools/lint/fast
+          python3 -m unittest discover -s scripts/tests
           cargo test --locked -q -p chilpa-library --lib
           cargo test --locked -q -p chilpa-core --lib
           cargo test --locked -q -p chilpa-api --lib
@@ -117,6 +109,7 @@ jobs:
       GH_CONFIG_DIR: ${{ runner.temp }}/chilpa-gh
       GH_REPO: ${{ github.repository }}
       RELEASE_TAG: ${{ github.ref_name }}
+      RELEASE_PRERELEASE: ${{ needs.linux.outputs.prerelease }}
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
@@ -124,5 +117,7 @@ jobs:
           path: dist
       - name: Create the draft release
         run: |
-          gh release create "$RELEASE_TAG" dist/* --draft --verify-tag \
-            --title "Chilpa $RELEASE_TAG" --generate-notes
+          flags=()
+          if [[ "$RELEASE_PRERELEASE" == true ]]; then flags+=(--prerelease); fi
+          gh release create "$RELEASE_TAG" dist/* --draft --verify-tag "${flags[@]}" \
+            --title "Chilpa $RELEASE_TAG" --notes-file dist/RELEASE-NOTES.md

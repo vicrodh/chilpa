@@ -1,78 +1,92 @@
-<img src="assets/logo.png" alt="" width="140" align="right">
+<div align="center">
+
+<img width="256" height="256" alt="Chilpa" src="https://github.com/user-attachments/assets/82cf8d2b-f9a3-43bb-9e2d-12314a54ef3f" />
+
+<br>
+
+<img width="150" height="28" alt="Chilpa" src="https://github.com/user-attachments/assets/66a2ada1-b2dc-4383-8b11-82c95a6228da" />
+
+</div>
 
 # Chilpa
 
-*Chilpatl* is Nahuatl for hornet. Chilpa is a music player for the desktop.
+I build Chilpa as a native music player with local libraries, self-hosted
+servers and optional plugins. I keep the audio engine independent of Qt and
+put source-specific integrations in separate plugins.
 
-It is platform-agnostic by design: local files, self-hosted servers and
-third-party plugins are all just sources, and the core never knows which
-services exist. It reuses the audio engine of QBZ, now discontinued, rebuilt
-around what a deep audit of that engine found.
+*Chilpatl* is Nahuatl for hornet.
 
-What it keeps from QBZ:
+## 0.1.0-beta
 
-- Bit-perfect output as a tested invariant, not a checkbox.
-- Wide format support, DSD, SACD, CD playback and secure CD ripping.
-- Self-hosted servers, several accounts of each.
-- Native desktop app: no Electron, no webview, no bundled browser.
+I prepare the first public beta for Linux x86_64 as an AppImage and a binary
+tarball. I mark it as a prerelease; I do not present it as a stable version.
+I keep macOS, Windows and Android development in the workspace, but do not
+provide validated binaries for those platforms in this beta.
 
-What QBZ never got to:
+I publish downloads in [Releases](https://github.com/vicrodh/chilpa/releases)
+and progress updates in [Discussions](https://github.com/vicrodh/chilpa/discussions).
 
-- A plugin system from day one, sandboxed, where a broken plugin cannot take
-  the player down.
-- Listening stats that feed smart lists by mood, rhythm and occasion.
-- Multiple layouts, and views that merge one album across every source.
-- Radio, podcasts, DAP sync, MilkDrop and technical visualizers.
-- A low memory and CPU footprint, measured in CI.
+I include:
 
-## Repository
+- Local music libraries, album editions, CDs and supported disc images.
+- Multiple queues, playlists, search and source-aware library browsing.
+- Audio output that reports its actual format and processing state.
+- Synchronized lyrics, translations and immersive views that react to audio.
+- A command line, configurable keyboard shortcuts and keyboard navigation.
+- Optional DSP presets and graphic EQ, radio, podcasts, playlist import and
+  local mood analysis through the official plugin catalog.
 
-- `crates/` — the workspace. `chilpa-api` is the only surface a frontend may
-  use.
-- `tools/lint/` — the checks that enforce them.
+I keep native DSD and DoP outside DSP processing. Enabling PCM DSP changes the
+signal; I show processed output rather than claiming strict bit-perfect output.
 
-Agent rules, design decisions, plans and internal documents are not part of
-this repository. Public docs for contributors and plugin authors will live
-here once the project opens up.
+## Install
 
-Before working on this repo:
+For the AppImage, I download `Chilpa-0.1.0-beta-x86_64.AppImage`, make it
+executable and run it. I can use `APPIMAGE_EXTRACT_AND_RUN=1` when FUSE is
+unavailable. I keep the image in a writable folder to use in-app updates.
 
+The tarball contains `chilpa-qt` and notices. I install the system Qt and audio
+dependencies before running it. I keep the library, settings and plugins in
+their normal user directories; an application update does not replace them.
+I include SHA-256 checksums with the downloads.
+
+## Official plugins
+
+I configure the [official catalog](https://github.com/vicrodh/chilpa-plugins)
+by default and bundle an initial copy for offline browsing. I use Settings >
+Plugins to refresh it and install individual packages. Each plugin still asks
+for its declared permissions before it is enabled.
+
+I distribute Radio, Podcasts and DSP as WASM packages. Playlist Importer and
+Mood use Linux x86_64 process packages in this beta. Mood downloads optional
+models only after it is enabled; I describe their separate license in its
+package. The core and installer do not include model weights.
+
+I document the API and authoring contracts in
+[chilpa-plugins-sdk](https://github.com/vicrodh/chilpa-plugins-sdk).
+
+## Build
+
+I use Rust 1.90 or newer, Qt 6.11.2 with Qt Quick, a C/C++ toolchain, CMake,
+pkg-config, libclang and NASM. On Linux I also need the development packages
+for ALSA, JACK, PulseAudio, PipeWire, D-Bus and OpenSSL. The Linux release
+workflow lists the exact packages used for the published build.
+
+```sh
+cargo build --locked --release -p chilpa-qt
+./target/release/chilpa-qt
 ```
-git config core.hooksPath hooks
-```
 
-`tools/lint/fast` runs the cheap checks and the pre-commit hook runs it on
-every commit; `tools/lint/all` adds the idle-memory budget, which costs a few
-seconds and needs a built binary.
+I vendor the public plugin protocol snapshot, so building the core needs no
+private repository. I record its upstream revision in
+`vendor/chilpa-plugin-api/ORIGIN.json`.
+
+I describe checks and contributions in [CONTRIBUTING.md](CONTRIBUTING.md) and
+Linux packaging in [packaging/linux/README.md](packaging/linux/README.md).
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
-
-Some optional features link libraries under copyleft licenses. When a build
-includes those, the resulting binary ships under their terms; the source in
-this repository stays MIT either way.
-
-## Legal
-
-- **Your own music.** Chilpa plays the files, discs and disc images you give
-  it. It ships no music, no disc images and no keys.
-- **SACD images.** Chilpa reads the stereo area of Super Audio CD images that
-  are not encrypted. It has no way to decrypt a disc or an image and does not
-  try, and it contains nothing that gets around copy protection. An image it
-  plays is one somebody already made from a disc they have.
-- **DST.** Most SACDs are pressed in DST, a lossless compression, and Chilpa
-  decodes it with `dst-decoder` 0.1.2, under Apache-2.0 and based on the
-  MPEG-4 DST reference implementation. Its
-  [license](licenses/Apache-2.0-dst-decoder.txt), a
-  [note on where it comes from](licenses/dst-decoder-NOTICE.md) and the
-  [notice of the reference implementation's authors](licenses/dst-decoder-upstream-NOTICE.txt)
-  are in `licenses/`. That notice warns that using the module may infringe
-  existing patents; Chilpa does not claim to be clear of them anywhere.
-- **Copying discs.** Ripping a CD, or making an image of a disc, may or may
-  not be allowed where you live, even for your own discs. Checking that is up
-  to you.
-- **Trademarks.** Super Audio CD, SACD, Direct Stream Digital and DSD are
-  trademarks of their respective owners. Chilpa is not affiliated with,
-  endorsed by or certified by them, and uses the names only to say which
-  formats it reads.
+I license this repository under MIT; see [LICENSE](LICENSE). I preserve
+third-party notices in `licenses/` and the licenses of bundled Qt and runtime
+components in the distributed packages. Plugins and optional model downloads
+retain their own notices.
