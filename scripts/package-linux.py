@@ -107,7 +107,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     plugins = Path(subprocess.check_output([qmake, "-query", "QT_INSTALL_PLUGINS"], text=True).strip())
     platforms = [name for name in ("libqoffscreen.so", "libqwayland.so", "libqwayland-generic.so", "libqwayland-egl.so")
                  if (plugins / "platforms" / name).is_file()]
-    environment = dict(os.environ, NO_STRIP="1", QMAKE=qmake, QML_SOURCES_PATHS=str(qml), ARCH="x86_64",
+    environment = dict(os.environ, APPIMAGE_EXTRACT_AND_RUN="1", NO_STRIP="1", QMAKE=qmake, QML_SOURCES_PATHS=str(qml), ARCH="x86_64",
                        EXTRA_PLATFORM_PLUGINS=";".join(platforms))
     environment["PATH"] = str(args.tools) + os.pathsep + environment["PATH"]
     subprocess.run([str(args.tools / locked["linuxdeploy"]["asset"]), "--appimage-extract-and-run", "--appdir", str(appdir),
@@ -150,7 +150,9 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     if not Path(str(image) + ".zsync").is_file():
         raise SystemExit("No delta update metadata was generated.")
     image.chmod(0o755)
-    embedded = subprocess.check_output([str(image), "--appimage-updateinformation"], text=True).strip()
+    runtime_environment = dict(os.environ)
+    runtime_environment.pop("APPIMAGE_EXTRACT_AND_RUN", None)
+    embedded = subprocess.check_output([str(image), "--appimage-updateinformation"], env=runtime_environment, text=True).strip()
     if embedded != information:
         raise SystemExit("The AppImage update information does not match its release channel.")
     (args.output / "MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n")
