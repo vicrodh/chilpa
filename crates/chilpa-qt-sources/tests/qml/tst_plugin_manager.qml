@@ -16,6 +16,44 @@ TestCase {
         function pluginCommand(action, input) { calls = calls.concat([[action, JSON.parse(input)]]) }
     }
     PluginManager { id: manager; width: 600; height: 600; page: backend }
+    function test_maintenance_only_runs_for_enabled_compatibility_settings() {
+        const timer = findChild(manager, "pluginMaintenance")
+        verify(timer !== null)
+        for (const plugin of [
+            {id: "wasm", name: "WASM", native: false, origin: null, enabled: true},
+            {id: "process", name: "Process", native: true, origin: null, enabled: true},
+            {id: "disabled", name: "Disabled", native: false, origin: {}, enabled: false}
+        ]) {
+            backend.state = {installed: [plugin], busy: false, working: false}
+            manager.read(); manager.settings(plugin)
+            tryCompare(manager.detailsView, "opened", true)
+            compare(timer.running, false, plugin.id)
+            manager.detailsView.close()
+            tryCompare(manager, "selected", "")
+        }
+        const plugin = {id: "bridge", name: "Bridge", origin: {}, enabled: true}
+        backend.state = {installed: [plugin], busy: false, working: false}
+        manager.read(); manager.settings(plugin)
+        tryCompare(timer, "running", true)
+        manager.detailsView.tab = "about"
+        tryCompare(timer, "running", false)
+        manager.detailsView.tab = "settings"
+        tryCompare(timer, "running", true)
+        manager.detailsView.close()
+        tryCompare(timer, "running", false)
+    }
+    function test_removing_the_selected_plugin_stops_maintenance() {
+        const plugin = {id: "removed", name: "Removed", origin: {}, enabled: true}
+        backend.state = {installed: [plugin], busy: false, working: false}
+        manager.read(); manager.settings(plugin)
+        const timer = findChild(manager, "pluginMaintenance")
+        tryCompare(timer, "running", true)
+        backend.state = {installed: [], busy: false, working: false}
+        manager.read()
+        tryCompare(timer, "running", false)
+        compare(manager.selected, "")
+        verify(!manager.detailsView.opened)
+    }
     function test_metadata_order_buttons_and_modal_tabs() {
         const plugin = {id: "ordered", name: "Source", version: "2.4", description: "Source description", enabled: true, light: "native", sidebar_position: 1, sidebar_count: 3}
         backend.state = {installed: [plugin], busy: false}

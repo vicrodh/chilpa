@@ -17,6 +17,7 @@ Item {
     property var catalogRows: []
     property var installedRows: []
     property string selected: ""
+    readonly property var selectedPlugin: installedRows.find(p => p.id === selected) || null
     property string downloadsId: ""
     readonly property bool downloadsOpen: downloadsId !== ""
     property string proposalIdentity: ""
@@ -32,7 +33,9 @@ Item {
         if (wasBusy && view.busy === false) Sources.refresh()
         const rows = tab === "installed" ? view.installed_catalog || [] : view.catalog || []
         if (JSON.stringify(catalogRows) !== JSON.stringify(rows)) catalogRows = rows
+        const hadSelection = selectedPlugin !== null
         if (JSON.stringify(installedRows) !== JSON.stringify(view.installed || [])) installedRows = view.installed || []
+        if (hadSelection && selectedPlugin === null) { selected = ""; details.close() }
         if (JSON.stringify(settingsDocument) !== JSON.stringify(view.form || {})) settingsDocument = view.form || ({})
         const identity = (view.proposal || {}).id || ""
         if (identity !== proposalIdentity) {
@@ -82,12 +85,7 @@ Item {
             manager.command("filter", {text: search.text, category: manager.category, tab: manager.tab})
         }
     }
-    Timer {
-        interval: Motion.refresh
-        repeat: true
-        running: manager.visible && manager.selected !== "" && !(manager.view.installed || []).some(p => p.id === manager.selected && p.native === true) && !manager.view.maintenance_failed && !manager.view.working && !manager.view.busy && !manager.filterPending
-        onTriggered: manager.command("tick", {id: manager.selected})
-    }
+    PluginMaintenance { controller: manager }
     Column {
         id: toolbar
         visible: !manager.downloadsOpen && manager.initialDownloadsId === ""

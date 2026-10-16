@@ -78,6 +78,7 @@ TitledFlow {
     PluginSettingsNavigation { width: Metrics.settingsNav }
     PluginDownloadsUnavailable { loading: false }
     PluginManagerDownloads { width: Metrics.settingsMaxWidth; height: Metrics.panesHeight; controller: preview }
+    PluginMaintenance { controller: preview }
     PluginDownloads {
         width: Metrics.settingsMaxWidth; height: Metrics.panesHeight
         plugin: ({name:"Download source",export_folder:"/Music"})
