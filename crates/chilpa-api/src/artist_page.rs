@@ -185,10 +185,10 @@ impl Network {
 
     pub(crate) fn of(&self, name: &str, mbids: &[String], musicbrainz: bool) -> Known {
         let name = name.trim();
-        if name.is_empty() {
+        if name.is_empty() || !chilpa_core::network::current().artist_network() {
             return Known::default();
         }
-        let cache_key = format!("{musicbrainz}:{name}");
+        let cache_key = format!("{musicbrainz}:{}:{name}", chilpa_core::network::current().proxy);
         let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(entry) = known.get(&cache_key) {
             return entry.clone();
@@ -206,7 +206,9 @@ impl Network {
     }
 
     pub(crate) fn json(&self, name: &str, mbids: &[String], has_sources: bool, musicbrainz: bool) -> Value {
-        self.of(name, mbids, musicbrainz).json(has_sources)
+        let mut document = self.of(name, mbids, musicbrainz).json(has_sources);
+        document["enabled"] = json!(chilpa_core::network::current().artist_network());
+        document
     }
 }
 
@@ -235,7 +237,8 @@ fn read(name: &str, mbid: Option<String>, musicbrainz: bool) -> Known {
 
 impl crate::Chilpa {
     pub fn musicbrainz_enabled(&self) -> bool {
-        self.preference("integrations.musicbrainz.enabled").as_deref() != Some("false")
+        let policy = chilpa_core::network::current();
+        !policy.offline && policy.musicbrainz
     }
 
     pub fn set_musicbrainz_enabled(&mut self, enabled: bool) {

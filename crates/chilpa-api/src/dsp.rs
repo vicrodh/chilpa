@@ -143,13 +143,17 @@ impl Chilpa {
             self.dsp.analysis = Some((analysis_key, preamp, curve));
         }
         let providers: Vec<_> = self.dsp.providers.iter().map(|p| json!({"id":p.id,"name":p.name})).collect();
-        let presets: Vec<_> = self.dsp.providers.iter().flat_map(|p| p.catalog.presets.iter().map(move |s| json!({"plugin":p.id,"preset":s})))
+        let presets: Vec<_> = self.dsp.providers.iter().flat_map(|p| p.catalog.presets.iter().map(move |s| json!({"plugin":p.id,"preset":p.catalog.display(s, chilpa_i18n::current_language())})))
             .chain(self.dsp.saved.custom.iter().map(|s| json!({"plugin":selection.plugin,"preset":s}))).collect();
+        let displayed = preset.as_ref().map(|preset| {
+            self.dsp.providers.iter().find(|p| p.id == selection.plugin).filter(|_| selection.edited.is_none())
+                .map_or_else(|| preset.clone(), |p| p.catalog.display(preset, chilpa_i18n::current_language()))
+        });
         let blocked = if self.casting.active() { chilpa_i18n::t("DSP applies to local output. Cast sends the original audio.") }
             else if self.now.playing && self.dsp.passthrough { chilpa_i18n::t("Native DSD and DoP bypass DSP. Select PCM output to process them.") } else { String::new() };
         let control = self.player.as_ref().map(|p| p.dsp());
         json!({"available":!providers.is_empty(),"loading":self.dsp.pending.is_some(),"providers":providers,
-            "presets":presets,"selection":selection,"preset":preset,"output":output,"favorites":self.dsp.saved.favorites,
+            "presets":presets,"selection":selection,"preset":displayed,"output":output,"favorites":self.dsp.saved.favorites,
             "headroom_db":self.dsp.analysis.as_ref().map(|(_, preamp, _)| preamp),
             "curve":self.dsp.analysis.as_ref().map(|(_, _, curve)| curve),
             "graphic":preset.as_ref().is_some_and(graphic::matches),
@@ -197,8 +201,8 @@ impl Chilpa {
             }
             "import" => {
                 let text = input["text"].as_str().ok_or_else(|| chilpa_i18n::t("Paste a parametric EQ profile."))?;
-                let name = input["name"].as_str().unwrap_or("Importado");
-                selection.edited = Some(import::parse(text, name)?); selection.enabled = true;
+                let name = input["name"].as_str().map(str::to_string).unwrap_or_else(|| chilpa_i18n::t("Imported"));
+                selection.edited = Some(import::parse(text, &name)?); selection.enabled = true;
                 selection.graphic_origin = None;
             }
             "save" => {

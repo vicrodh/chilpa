@@ -37,6 +37,7 @@ impl Updates {
             cancel: Arc::new(AtomicBool::new(false)) }
     }
     fn start(&self, download: bool) -> bool {
+        if chilpa_core::network::current().offline { return false; }
         let Some(mut installation) = self.installation.clone() else { return false };
         {
             let mut state = self.view.lock().unwrap();
@@ -80,6 +81,7 @@ fn command(installation: &Installation, image: &Path) -> Command {
 }
 
 fn run(mut process: Command, cancel: &AtomicBool, limit: Duration, mut line: impl FnMut(&str)) -> Result<i32, String> {
+    if chilpa_core::network::current().offline { return Err(chilpa_core::network::blocked()); }
     let mut child = process.spawn().map_err(|error| error.to_string())?;
     let output = child.stdout.take().ok_or("No updater output")?;
     let (sender, receiver) = std::sync::mpsc::sync_channel(32);
@@ -93,7 +95,7 @@ fn run(mut process: Command, cancel: &AtomicBool, limit: Duration, mut line: imp
     let started = Instant::now();
     let mut pending = String::new();
     let result = loop {
-        if cancel.load(Ordering::Acquire) || started.elapsed() > limit {
+        if cancel.load(Ordering::Acquire) || chilpa_core::network::current().offline || started.elapsed() > limit {
             break Err("Update cancelled or timed out".into());
         }
         if let Ok(bytes) = receiver.recv_timeout(Duration::from_millis(50)) {

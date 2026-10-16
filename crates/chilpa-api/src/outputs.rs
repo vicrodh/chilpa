@@ -16,6 +16,9 @@ pub(crate) const HIFI_WIZARD: &str = "audio.hifiWizard";
 #[cfg(target_os = "linux")]
 mod hifi_wizard;
 
+/// File capture is a development output, separate from normal listening devices.
+fn developer_outputs() -> bool { std::env::var_os("CHILPA_DEV").is_some_and(|value| value == "1") }
+
 /// Off Linux the wizard has nothing to set up: its row is hidden, and the
 /// window's calls find a closed document.
 #[cfg(not(target_os = "linux"))]
@@ -216,7 +219,8 @@ impl crate::Chilpa {
     pub fn stacks(&self) -> Vec<OutputStack> {
         chilpa_core::backends::described()
             .into_iter()
-            .filter(|s| !matches!(s.kind, chilpa_core::backends::StackKind::AlsaPlug | chilpa_core::backends::StackKind::AlsaPcm))
+            .filter(|s| !matches!(s.kind, chilpa_core::backends::StackKind::AlsaPlug | chilpa_core::backends::StackKind::AlsaPcm)
+                && (s.kind != chilpa_core::backends::StackKind::File || developer_outputs()))
             .map(|s| OutputStack {
                 key: s.kind.key().to_string(),
                 label: s.label(),
@@ -232,6 +236,7 @@ impl crate::Chilpa {
     /// that is here with nothing plugged into it -- which are different
     /// things, and `stacks` is where they are told apart.
     pub fn stack_outputs(&self, key: &str) -> Vec<Output> {
+        if key == "file" && !developer_outputs() { return Vec::new(); }
         let Some(kind) = chilpa_core::backends::StackKind::from_key(key) else {
             return Vec::new();
         };
@@ -360,6 +365,7 @@ impl crate::Chilpa {
     pub fn outputs(&self) -> Vec<Output> {
         chilpa_core::outputs()
             .into_iter()
+            .filter(|output| !output.id.starts_with("file:") || developer_outputs())
             .map(|o| Output {
                 id: o.id,
                 label: o.label,

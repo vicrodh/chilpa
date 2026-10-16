@@ -49,6 +49,20 @@ struct Known {
 }
 
 impl Natives {
+    /// I replace the processes so existing sockets cannot outlive offline mode.
+    pub(crate) fn network_changed(self: &Arc<Self>, catalog: Arc<crate::source_catalog::Catalog>) {
+        let me = self.clone();
+        let _ = std::thread::Builder::new().name("chilpa-native-network".into()).spawn(move || {
+            let _guard = me.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
+            let clients: Vec<_> = me.live.write().unwrap_or_else(|e| e.into_inner()).drain().map(|(_, client)| client).collect();
+            for client in clients { client.stop(); }
+            let plugins: Vec<_> = me.known.lock().unwrap_or_else(|e| e.into_inner()).values()
+                .map(|known| (known.manifest.clone(), known.folder.clone())).collect();
+            for (manifest, folder) in plugins { let _ = me.start_locked(&manifest, &folder); }
+            catalog.changed();
+        });
+    }
+
     pub(crate) fn history_changed(&self, plugin: &str) { self.personal_changed.lock().unwrap_or_else(|e| e.into_inner()).insert(plugin.into()); }
     pub(crate) fn take_history_changes(&self) -> Vec<String> { self.personal_changed.lock().unwrap_or_else(|e| e.into_inner()).drain().collect() }
 
@@ -227,6 +241,7 @@ impl Natives {
             "data_dir": "/data",
             "cache_dir": "/cache",
             "locale": chilpa_i18n::current_language(),
+            "network": {"enabled": !chilpa_core::network::current().offline},
         }), GREETING).map_err(|e| PluginError::Crashed(e.to_string()))?;
         if greeting.get("protocol").and_then(Value::as_u64) != Some(PROTOCOL as u64) {
             client.stop();
@@ -303,7 +318,7 @@ fn launch(manifest: &Manifest, folder: &Path, natives: std::sync::Weak<Natives>)
         } else { None },
     };
     let name = id.clone();
-    chilpa_bwrap::launch_native(&paths, &id, MEMORY, move |method, params| {
+    chilpa_bwrap::launch_native(&paths, &id, MEMORY, !chilpa_core::network::current().offline && !manifest.allowed_domains().is_empty(), move |method, params| {
         if method == "host.request" {
             if let Some(natives) = natives.upgrade() { crate::plugin_broker::dispatch(&natives, &name, params.clone()); }
         } else if method == "log" {

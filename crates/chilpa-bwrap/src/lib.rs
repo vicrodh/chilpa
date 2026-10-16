@@ -106,6 +106,7 @@ pub fn launch_native(
     paths: &NativePaths,
     name: &str,
     memory_bytes: usize,
+    network: bool,
     notice: impl Fn(&str, &serde_json::Value) + Send + 'static,
 ) -> Result<std::sync::Arc<chilpa_plugin::native::NativeClient>, BridgeError> {
     if unsafe { libc::geteuid() } == 0 || memory_bytes < 64 * 1024 * 1024 {
@@ -122,7 +123,9 @@ pub fn launch_native(
         return Err(BridgeError::Disconnected);
     }
     let mut command = Command::new("/usr/bin/bwrap");
-    command.env_clear().args(["--unshare-all", "--share-net", "--die-with-parent", "--new-session", "--cap-drop", "ALL"])
+    command.env_clear().arg("--unshare-all");
+    if network { command.arg("--share-net"); }
+    command.args(["--die-with-parent", "--new-session", "--cap-drop", "ALL"])
         .args(["--ro-bind", "/usr", "/usr", "--symlink", "usr/lib", "/lib", "--symlink", "usr/lib64", "/lib64",
             "--symlink", "usr/bin", "/bin", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp"]);
     // The loader's cache and configuration too: a native binary links
@@ -246,18 +249,26 @@ while IFS= read -r line; do
   home=false; [ -e /home ] && home=true
   data=false; touch /data/written 2>/dev/null && data=true
   sealed=true; touch /plugin/written 2>/dev/null && sealed=false
+  network=$(readlink /proc/self/ns/net)
   printf 'checked\n' >&2
-  printf '{"jsonrpc":"2.0","id":%s,"result":{"home":%s,"data":%s,"sealed":%s}}\n' "$id" "$home" "$data" "$sealed"
+  printf '{"jsonrpc":"2.0","id":%s,"result":{"home":%s,"data":%s,"sealed":%s,"network":"%s"}}\n' "$id" "$home" "$data" "$sealed" "$network"
 done
 "#;
         std::fs::write(folder.join("plugin"), script).unwrap();
         std::fs::set_permissions(folder.join("plugin"), std::fs::Permissions::from_mode(0o755)).unwrap();
         let paths = NativePaths { folder, data: root.path().join("data"), cache: root.path().join("cache"), export: None };
-        let client = launch_native(&paths, "test", 512 * 1024 * 1024, |_, _| {}).unwrap();
-        assert_eq!(client.call("inspect", json!({}), Duration::from_secs(5)).unwrap(),
-            json!({"home": false, "data": true, "sealed": true}));
+        let client = launch_native(&paths, "test", 512 * 1024 * 1024, false, |_, _| {}).unwrap();
+        let inspected = client.call("inspect", json!({}), Duration::from_secs(5)).unwrap();
+        assert_eq!(inspected["home"], false);
+        assert_eq!(inspected["data"], true);
+        assert_eq!(inspected["sealed"], true);
+        let network = std::fs::read_link("/proc/self/ns/net").unwrap().display().to_string();
+        assert_ne!(inspected["network"], network, "offline processes have their own network namespace");
         assert!(root.path().join("data/written").is_file(), "its data folder is the one Chilpa gave it");
         client.stop();
         assert!(!client.alive());
+        let online = launch_native(&paths, "test", 512 * 1024 * 1024, true, |_, _| {}).unwrap();
+        assert_eq!(online.call("inspect", json!({}), Duration::from_secs(5)).unwrap()["network"], network);
+        online.stop();
     }
 }

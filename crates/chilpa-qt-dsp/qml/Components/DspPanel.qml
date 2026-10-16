@@ -21,6 +21,7 @@ Modal {
     readonly property var favorites: state.favorites || []
     readonly property string selectedKey: (selection.plugin || "") + "/" + (selection.preset || "")
     readonly property var groups: ["all", "favorites"].concat([...new Set(allPresets.map(e => e.preset.category))])
+    onGroupsChanged: if (!groups.includes(group)) group = "all"
     readonly property var shown: allPresets.filter(e => {
         const key = e.plugin + "/" + e.preset.id
         const matches = group === "all" || (group === "favorites" ? favorites.includes(key) : e.preset.category === group)

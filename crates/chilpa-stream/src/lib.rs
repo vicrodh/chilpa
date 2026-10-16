@@ -9,6 +9,7 @@
 //! - **The format the server announces**, to pick the decoder without
 //!   guessing from the extension of a URL that often has none.
 
+pub mod network;
 pub mod icy;
 pub mod patience;
 pub mod request;
@@ -136,6 +137,7 @@ impl HttpStream {
 
 impl Read for HttpStream {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if network::current().offline { return Err(io::Error::new(io::ErrorKind::PermissionDenied, network::blocked())); }
         let n = self.inner.read(buf)?;
         self.position += n as u64;
         Ok(n)

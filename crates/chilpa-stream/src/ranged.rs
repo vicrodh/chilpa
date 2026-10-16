@@ -230,6 +230,7 @@ fn window(agent: &ureq::Agent, request: &RangedRequest, start: u64, size: u64) -
 }
 
 fn get(agent: &ureq::Agent, request: &RangedRequest, start: u64, size: u64) -> Result<Reply, String> {
+    crate::network::check(&request.url)?;
     let mut builder = agent.get(&request.url);
     for (name, value) in &request.headers {
         builder = builder.header(name.as_str(), value.as_str());

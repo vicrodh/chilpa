@@ -49,7 +49,7 @@ pub struct Preset {
 
 impl Default for Preset {
     fn default() -> Self {
-        Self { id: "custom".into(), name: "Personalizado".into(), category: "Personal".into(),
+        Self { id: "custom".into(), name: "Custom".into(), category: "Personal".into(),
             description: String::new(), source: String::new(), source_url: String::new(), preamp_db: 0.0, filters: Vec::new(), crossfeed: 0.0,
             width: 1.0, balance: 0.0, delay_left_ms: 0.0, delay_right_ms: 0.0,
             invert_left: false, invert_right: false, compressor_threshold_db: -20.0, compressor_ratio: 1.0 }
@@ -116,10 +116,32 @@ impl Preset {
     }
 }
 
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Labels { pub name: String, pub category: String, pub description: String, pub source: String }
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Catalog { pub protocol: u32, pub presets: Vec<Preset> }
+pub struct Catalog {
+    pub protocol: u32,
+    pub presets: Vec<Preset>,
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub localizations: std::collections::BTreeMap<String, std::collections::BTreeMap<String, Labels>>,
+}
 impl Catalog {
+    /// I localize a display copy; the processing preset keeps its identity and parameters.
+    pub fn display(&self, preset: &Preset, language: &str) -> Preset {
+        let primary = language.split(['-', '_']).next().unwrap_or(language);
+        let mut display = preset.clone();
+        if let Some(labels) = self.localizations.get(language).or_else(|| self.localizations.get(primary)).and_then(|rows| rows.get(&preset.id)) {
+            if !labels.name.is_empty() { display.name = labels.name.clone(); }
+            if !labels.category.is_empty() { display.category = labels.category.clone(); }
+            if !labels.description.is_empty() { display.description = labels.description.clone(); }
+            if !labels.source.is_empty() { display.source = labels.source.clone(); }
+        }
+        display
+    }
+
     pub fn validate(&self) -> Result<(), String> {
         if self.protocol != PROTOCOL || self.presets.is_empty() || self.presets.len() > MAX_PRESETS {
             return Err(chilpa_i18n::t("Unsupported or empty DSP preset catalog."));
@@ -128,6 +150,15 @@ impl Catalog {
         for preset in &self.presets {
             preset.validate()?;
             if !ids.insert(&preset.id) { return Err(chilpa_i18n::t("Duplicate DSP preset ID.")); }
+        }
+        if self.localizations.len() > 16 { return Err(chilpa_i18n::t("Invalid DSP preset identity.")); }
+        for (language, labels) in &self.localizations {
+            if language.len() > 24 || language.len() < 2 || !language.bytes().all(|b| b.is_ascii_alphabetic() || matches!(b, b'-' | b'_'))
+                || labels.len() > self.presets.len() { return Err(chilpa_i18n::t("Invalid DSP preset identity.")); }
+            for id in labels.keys() {
+                let preset = self.presets.iter().find(|preset| &preset.id == id).ok_or_else(|| chilpa_i18n::t("Invalid DSP preset identity."))?;
+                self.display(preset, language).validate()?;
+            }
         }
         Ok(())
     }

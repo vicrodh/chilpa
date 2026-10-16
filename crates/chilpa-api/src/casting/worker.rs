@@ -61,6 +61,7 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
     let mut failures = 0;
     let mut pending = VecDeque::<Request>::new();
     loop {
+        if chilpa_core::network::current().offline { break; }
         let request = match pending.pop_front() {
             Some(request) => Ok(request),
             None => orders.recv_timeout(Duration::from_millis(50)),
@@ -234,7 +235,9 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
         }
     }
     server.take();
-    if let Some(mut transport) = remote { let _ = transport.disconnect(); }
+    if !chilpa_core::network::current().offline {
+        if let Some(mut transport) = remote { let _ = transport.disconnect(); }
+    }
 }
 
 #[cfg(test)]

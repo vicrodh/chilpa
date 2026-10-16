@@ -29,9 +29,11 @@ impl Chilpa {
         if !key.contains('.') {
             return;
         }
+        let previous = chilpa_core::network::current();
         let mut s = chilpa_core::settings::load();
         s.window.insert(key.to_string(), value.to_string());
         let _ = chilpa_core::settings::save(&s);
+        self.privacy_changed(previous, &s);
         self.lyrics_preference_changed(key);
     }
 

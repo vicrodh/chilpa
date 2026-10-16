@@ -148,7 +148,7 @@ impl Chilpa {
             self.set_musicbrainz_enabled(value == "true");
             return true;
         }
-        if matches!(key, "integrations.lyrics.service" | "integrations.lyrics.plugin" | "integrations.lyrics.translate")
+        if matches!(key, "integrations.offline" | "integrations.proxy.enabled" | "integrations.lyrics.enabled" | "integrations.lyrics.service" | "integrations.lyrics.translate")
             || key.starts_with("integrations.lyrics.provider.") {
             self.remember_preference(key, value);
             return true;
@@ -195,6 +195,11 @@ impl Chilpa {
                 }
                 let mut row = Row { kind: 1, key: s.key.into(), title: chilpa_i18n::t(s.title), description: if s.description.is_empty() { String::new() } else { chilpa_i18n::t(s.description) }, control: s.control.name().into(), action: if s.action.is_empty() { String::new() } else { chilpa_i18n::t(s.action) }, ..Row::default() };
                 self.fill(&mut row, &output, notes);
+                let lyrics_off = self.preference("integrations.lyrics.enabled").as_deref() == Some("false");
+                if (self.offline() && row.key.starts_with("integrations.") && row.key != "integrations.offline" && row.key != "integrations.lyrics.enabled")
+                    || (lyrics_off && row.key.starts_with("integrations.lyrics.") && row.key != "integrations.lyrics.enabled") {
+                    row.control = "fixed".into();
+                }
                 // A row that does not apply to what is chosen is left out.
                 if row.control.is_empty() {
                     continue;
@@ -457,10 +462,10 @@ impl Chilpa {
             }
             "integrations.lastfm.enabled" => row.value = self.lastfm().enabled.to_string(),
             "integrations.musicbrainz.enabled" => row.value = self.musicbrainz_enabled().to_string(),
-            "integrations.lyrics.service" | "integrations.lyrics.plugin" => row.value = self.pref_on(&row.key, true),
-            // Off until asked for: the lines of a track leave the machine.
+            "integrations.offline" => row.value = self.pref_on(&row.key, false),
+            "integrations.proxy.enabled" | "integrations.lyrics.enabled" | "integrations.lyrics.service" => row.value = self.pref_on(&row.key, true),
             "integrations.lyrics.translate" => {
-                row.value = self.pref_on(&row.key, false);
+                row.value = self.pref_on(&row.key, true);
                 if self.preference("integrations.lyrics.service").as_deref() == Some("false") {
                     row.control = "fixed".into();
                 }

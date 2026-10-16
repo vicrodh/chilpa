@@ -27,7 +27,7 @@ pub fn worker_url_allowed(url: &str, domains: &[String]) -> bool {
 /// guest sends its own as headers.
 fn shared_agent() -> &'static ureq::Agent {
     static AGENT: std::sync::OnceLock<ureq::Agent> = std::sync::OnceLock::new();
-    AGENT.get_or_init(|| ureq::Agent::config_builder().max_redirects(0).http_status_as_error(false).build().new_agent())
+    AGENT.get_or_init(|| crate::network::agent(ureq::Agent::config_builder().max_redirects(0).http_status_as_error(false).middleware(crate::network::guard).build()))
 }
 
 pub fn send_worker_request(
@@ -37,7 +37,7 @@ pub fn send_worker_request(
 ) -> Result<Value, WorkerNetworkError> {
     if timeout.is_zero() { return Err(WorkerNetworkError::Timeout); }
     let url = request.get("url").and_then(Value::as_str).ok_or(WorkerNetworkError::Invalid)?;
-    if !worker_url_allowed(url, domains) { return Err(WorkerNetworkError::Denied); }
+    if crate::network::check(url).is_err() || !worker_url_allowed(url, domains) { return Err(WorkerNetworkError::Denied); }
     let method = request.get("method").and_then(Value::as_str).unwrap_or("GET");
     if !matches!(method, "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE") {
         return Err(WorkerNetworkError::Invalid);

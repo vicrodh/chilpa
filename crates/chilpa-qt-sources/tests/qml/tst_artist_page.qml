@@ -78,6 +78,22 @@ TestCase {
         compare(findText(page, "YOU MAY ALSO LIKE") !== null, true)
     }
 
+    function test_offline_hides_the_network_button_and_unloads_the_panel() {
+        const page = createTemporaryObject(pageMaker, this)
+        rendered(page)
+        verify(findChild(page, "networkAction").visible)
+        Sources.networks = { "Maiden": JSON.stringify({ enabled: false, loading: false }) }
+        Library.remoteRev++
+        tryCompare(page, "networkEnabled", false)
+        tryCompare(findChild(page, "networkAction"), "visible", false)
+        tryCompare(findChild(page, "artistNetworkLoader"), "active", false)
+        compare(page.networkOpen, false)
+        Sources.networks = { "Maiden": JSON.stringify({ enabled: true, loading: false }) }
+        Library.remoteRev++
+        tryCompare(page, "networkEnabled", true)
+        tryCompare(findChild(page, "networkAction"), "visible", true)
+    }
+
     // Top right, the library and each installed source with artist pages,
     // each the same artist by name; for a source, its catalog or what the
     // listener keeps of the artist there.

@@ -48,11 +48,11 @@ pub fn send(request_json: &[u8], credential: Option<&str>) -> Vec<u8> {
     // failure of the request: a 401 says the token is dead, a 429 says when
     // to come back, and the body says why. ureq turns them into errors unless
     // told not to, and that hid all of it behind "http status: 401".
-    let agent = ureq::Agent::config_builder()
+    let agent = crate::network::agent(ureq::Agent::config_builder()
         .timeout_global(Some(TIMEOUT))
         .http_status_as_error(false)
-        .build()
-        .new_agent();
+        .middleware(crate::network::guard)
+        .build());
 
     // The headers that really go out. The plugin cannot set its own
     // authorization: Chilpa sets that, on this side.

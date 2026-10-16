@@ -37,15 +37,15 @@ pub struct Call<'a> {
 
 pub(crate) fn agent(response: Duration, body: Duration) -> ureq::Agent {
     let tls = ureq::tls::TlsConfig::builder().root_certs(ureq::tls::RootCerts::PlatformVerifier).build();
-    ureq::Agent::config_builder()
+    crate::network::agent(ureq::Agent::config_builder()
         .http_status_as_error(false)
         .max_redirects(0)
         .timeout_connect(Some(Duration::from_secs(10)))
         .timeout_recv_response(Some(response))
         .timeout_recv_body(Some(body))
         .tls_config(tls)
-        .build()
-        .new_agent()
+        .middleware(crate::network::guard)
+        .build())
 }
 
 /// Why nothing came back, in words that name no address.

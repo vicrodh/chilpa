@@ -39,6 +39,7 @@ impl LyricsServiceClient {
     /// `Retry-After` and the body. `Err` is no reply at all: the network,
     /// not the service.
     fn post(&self, path: &str, body: &Value) -> Result<(u16, Option<String>, String), String> {
+        if !chilpa_core::network::current().lyrics_online() { return Err(chilpa_core::network::blocked()); }
         let request = json!({
             "url": format!("{}{path}", self.origin),
             "method": "POST",
@@ -67,7 +68,10 @@ impl Remote for LyricsServiceClient {
     }
 
     fn resolve(&self, track: &Track, language: Option<&str>, providers: Option<&[String]>, _timeout: Duration) -> Answer {
-        match self.post(service::RESOLVE_PATH, &service::request_with_providers(track, Timing::Unsynced, language, providers)) {
+        let allowed = crate::lyrics_service::REMOTE_PROVIDERS;
+        let selected: Vec<String> = providers.map_or_else(|| allowed.iter().map(|id| (*id).to_string()).collect(),
+            |ids| ids.iter().filter(|id| allowed.contains(&id.as_str())).cloned().collect());
+        match self.post(service::RESOLVE_PATH, &service::request_with_providers(track, Timing::Unsynced, language, Some(&selected))) {
             Ok((status, retry_after, body)) => service::read(status, retry_after.as_deref(), &body),
             Err(message) => Answer::Failed { retry_after: None, message },
         }
@@ -137,7 +141,9 @@ mod tests {
         assert_eq!(line, "POST /v1/lyrics/resolve");
         assert!(agent.starts_with("Chilpa"), "the service only serves Chilpa: {agent}");
         let golden: Value = serde_json::from_str(WORDS).unwrap();
-        assert_eq!(body, golden["request"], "the question is the contract's");
+        let mut expected = golden["request"].clone();
+        expected["preferences"]["providers"] = json!(["lrclib", "netease", "qq", "kugou"]);
+        assert_eq!(body, expected, "the contract question carries an explicit provider selection");
         let Answer::Found(found) = answer else { panic!("{answer:?}") };
         assert_eq!(found[0].document.timing, Timing::Word);
         assert_eq!(json!(found[0].document.source.as_ref().unwrap().name), golden["response"]["document"]["source"]["name"]);

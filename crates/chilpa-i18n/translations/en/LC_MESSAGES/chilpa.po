@@ -330,7 +330,7 @@ msgstr ""
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr ""
 
-msgid "Allow a plugin to supply lyrics for its own tracks and prefer them over Chilpa's lyrics API."
+msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
 msgstr ""
 
 msgid "Allow results from KuGou."
@@ -339,16 +339,10 @@ msgstr ""
 msgid "Allow results from LRCLIB through Chilpa's lyrics API."
 msgstr ""
 
-msgid "Allow results from Musixmatch when the lyrics service has access to it."
-msgstr ""
-
 msgid "Allow results from NetEase."
 msgstr ""
 
 msgid "Allow results from QQ Music."
-msgstr ""
-
-msgid "Allow word-timed lyrics from AMLL."
 msgstr ""
 
 msgid "Allowed network domains, separated by commas"
@@ -477,7 +471,7 @@ msgstr ""
 msgid "Artwork, generated images, plugin data and other temporary files."
 msgstr ""
 
-msgid "Ask Chilpa's lyrics API to translate lyrics that carry no translation in your language. The lines of the track are sent to it. Off by default."
+msgid "Ask Chilpa's lyrics API to translate lyrics that carry no translation in your language. The lines of the track are sent to it. On by default; you can turn it off."
 msgstr ""
 
 msgid "Ask before quitting"
@@ -586,6 +580,9 @@ msgid "Bit perfect"
 msgstr ""
 
 msgid "Bit-perfect"
+msgstr ""
+
+msgid "Block network access, including plugins, online artwork, updates and scrobbling. Local playback, cached content and installed Mood models stay available. Artist Network is hidden."
 msgstr ""
 
 msgid "Blurred art"
@@ -783,6 +780,9 @@ msgid "Chilpa opens with the tabs it had when it closed."
 msgstr ""
 
 msgid "Chilpa plugins"
+msgstr ""
+
+msgid "Chilpa proxy"
 msgstr ""
 
 msgid "Chilpa requesting {} · {}-bit"
@@ -1519,6 +1519,9 @@ msgstr ""
 
 msgid "Enable audio processing; turn off for bypass"
 msgstr "Enable audio processing; turn off for bypass"
+
+msgid "Enable lyrics"
+msgstr ""
 
 msgid "Enable the optional Mood plugin and manage its model download."
 msgstr ""
@@ -2660,6 +2663,9 @@ msgstr ""
 msgid "Network"
 msgstr ""
 
+msgid "Network access is disabled in Settings > Integrations."
+msgstr ""
+
 msgid "Network access, including authentication, artwork and audio servers discovered by the plugin"
 msgstr ""
 
@@ -2934,6 +2940,9 @@ msgid "October"
 msgstr ""
 
 msgid "Off"
+msgstr ""
+
+msgid "Offline mode"
 msgstr ""
 
 msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
@@ -3269,9 +3278,6 @@ msgstr "Plugin initialized successfully"
 msgid "Plugin integration"
 msgstr "Plugin integration"
 
-msgid "Plugin lyrics"
-msgstr ""
-
 msgid "Plugin repository URL"
 msgstr "Plugin repository URL"
 
@@ -3342,6 +3348,9 @@ msgid "Previous tab"
 msgstr ""
 
 msgid "Previously saved"
+msgstr ""
+
+msgid "Privacy & network"
 msgstr ""
 
 msgid "Processed"
@@ -3995,6 +4004,9 @@ msgid "Show in folder"
 msgstr ""
 
 msgid "Show in sidebar"
+msgstr ""
+
+msgid "Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."
 msgstr ""
 
 msgid "Show playlist only from the same source as the track"

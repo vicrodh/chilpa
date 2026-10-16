@@ -188,7 +188,7 @@ fn found(question: &Value) -> Value {
     json!({"schema": 1, "status": "found", "document": {
         "schema": 1, "timing": "line",
         "lines": [{"start_ms": 50, "text": format!("From the service for {}", track["title"].as_str().unwrap_or_default())}],
-        "source": {"provider": "fixture", "name": "Fixture Lyrics",
+        "source": {"provider": "lrclib", "name": "Fixture Lyrics",
             "claim": {"title": track["title"], "artist": track["artist"], "duration_ms": track["duration_ms"]}},
     }})
 }
@@ -228,6 +228,13 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
     let said = |chilpa: &chilpa_api::Chilpa| serde_json::from_str::<Value>(&chilpa.lyrics_json()).unwrap_or_default();
     assert_eq!(chilpa.lyrics_json(), "", "with nothing playing there is nothing to say about lyrics");
 
+    let rows = chilpa.settings_rows("integrations", &Default::default()).0;
+    assert!(!rows.iter().any(|row| row.key == "integrations.lyrics.plugin"));
+    assert_eq!(rows.iter().find(|row| row.key == "integrations.lyrics.translate").unwrap().value, "true");
+    assert!(!rows.iter().any(|row| matches!(row.key.as_str(), "integrations.lyrics.provider.musixmatch" | "integrations.lyrics.provider.amll")));
+    // I test lookups independently, then enable translation below.
+    assert!(chilpa.adjust("integrations.lyrics.translate", "false"));
+
     // What came with the file wins, and nobody is asked.
     let local = song(&music, "Local Song");
     std::fs::write(music.join("Local Song.lrc"), "[00:00.05]From next door\n").unwrap();
@@ -243,6 +250,7 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
     assert_eq!(source, "Fixture Lyrics", "the screen says who the service says gave them");
     assert_eq!(service.asked_about("Remote Song"), 1);
     let question = service.question_about("Remote Song");
+    assert_eq!(question["preferences"]["providers"], json!(["lrclib", "netease", "qq", "kugou"]));
     assert_eq!(question["track"]["artist"], "Someone");
     assert_eq!(question["track"]["duration_ms"], 100, "the length goes with the names");
     assert!(question["preferences"]["language"].is_string(), "and the language a translation is wanted in");
@@ -253,12 +261,12 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
     lyrics_of(&mut chilpa, &remote, "Remote Song", long).expect("still there");
     assert_eq!(service.asked_about("Remote Song"), 1, "found lyrics are remembered");
 
-    // Translating is off until asked for. On, lyrics that carry none in the
+    // I disabled translation above. On, lyrics that carry none in the
     // reader's language are sent to the service for one; it arrives after
     // the lyrics, in the same place, and is remembered with them.
     assert_eq!(service.translations_asked(), 0);
     let translate_row = |chilpa: &mut chilpa_api::Chilpa| chilpa.settings_rows("integrations", &Default::default()).0.into_iter().find(|row| row.key == "integrations.lyrics.translate").expect("the toggle is in Settings");
-    assert_eq!(translate_row(&mut chilpa).value, "false", "off until asked for");
+    assert_eq!(translate_row(&mut chilpa).value, "false", "the explicit opt-out is kept");
     assert!(chilpa.adjust("integrations.lyrics.translate", "true"), "the toggle takes its value from Settings");
     assert_eq!(translate_row(&mut chilpa).value, "true");
     let deadline = Instant::now() + long;
@@ -286,6 +294,34 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
     assert_eq!(service.translations_asked(), 1, "a translation is remembered");
     assert!(chilpa.adjust("integrations.lyrics.translate", "false"));
     assert_eq!(translate_row(&mut chilpa).value, "false");
+
+    // I can opt out completely, including the file and the cache.
+    assert!(chilpa.adjust("integrations.lyrics.enabled", "false"));
+    assert_eq!(chilpa.lyrics_json(), "");
+    assert!(lyrics_of(&mut chilpa, &local, "Local Song", Duration::from_millis(200)).is_none());
+    assert_eq!(chilpa.lyrics_json(), "");
+    assert!(chilpa.poll().lyrics.is_empty());
+    assert!(chilpa.adjust("integrations.lyrics.enabled", "true"));
+    lyrics_of(&mut chilpa, &local, "Local Song", long).expect("local lyrics return after opting back in");
+    assert!(chilpa.adjust("integrations.offline", "true"));
+    assert!(!chilpa_api::network_allowed(&service.origin));
+    assert!(lyrics_of(&mut chilpa, &local, "Local Song", long).is_some(), "local playback and lyrics work offline");
+    assert!(lyrics_of(&mut chilpa, &remote, "Remote Song", long).is_some(), "cached lyrics work offline");
+    assert_eq!(service.asked_about("Remote Song"), 1);
+    let network: Value = serde_json::from_str(&chilpa.artist_network("Offline Artist")).unwrap();
+    assert_eq!(network["enabled"], false);
+    chilpa.cast_picker(true);
+    assert_eq!(serde_json::from_str::<Value>(&chilpa.cast_json()).unwrap()["searching"], false);
+    assert!(chilpa.adjust("integrations.offline", "false"));
+    assert!(chilpa_api::network_allowed(&service.origin));
+    assert!(chilpa.adjust("integrations.proxy.enabled", "false"));
+    assert!(!chilpa_api::network_allowed("https://api.chilpa.app/lastfm"));
+    assert!(chilpa.adjust("integrations.musicbrainz.enabled", "false"));
+    assert!(!chilpa_api::network_allowed("https://musicbrainz.org/ws/2"));
+    assert!(chilpa_api::network_allowed("https://example.org/music"));
+    assert_eq!(serde_json::from_str::<Value>(&chilpa.artist_network("Offline Artist")).unwrap()["enabled"], false);
+    assert!(chilpa.adjust("integrations.proxy.enabled", "true"));
+    assert!(chilpa.adjust("integrations.musicbrainz.enabled", "true"));
 
     // Clearing the cache from Settings forgets them, and what plays is
     // looked up again at once.

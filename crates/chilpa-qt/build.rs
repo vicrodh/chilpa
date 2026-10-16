@@ -42,6 +42,7 @@ fn main() {
 
     CxxQtBuilder::new()
         .qt_module("Gui")
+        .qt_module("Network")
         .qt_module("Qml")
         .qt_module("Quick")
         .qt_module("QuickControls2")

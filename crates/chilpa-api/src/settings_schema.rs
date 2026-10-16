@@ -305,6 +305,10 @@ pub const SECTIONS: &[Section] = &[
         label: Chilpa::mark("Integrations"),
         icon: "broadcast",
         groups: &[
+            Group { title: Chilpa::mark("Privacy & network"), settings: &[
+                setting("integrations.offline", Chilpa::mark("Offline mode"), Chilpa::mark("Block network access, including plugins, online artwork, updates and scrobbling. Local playback, cached content and installed Mood models stay available. Artist Network is hidden."), Control::Toggle),
+                setting("integrations.proxy.enabled", Chilpa::mark("Chilpa proxy"), Chilpa::mark("Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."), Control::Toggle),
+            ] },
             Group {
                 title: Chilpa::mark("Scrobbling"),
                 settings: &[
@@ -318,12 +322,10 @@ pub const SECTIONS: &[Section] = &[
                 setting("integrations.musicbrainz.enabled", Chilpa::mark("Use MusicBrainz"), Chilpa::mark("Chilpa sends no telemetry. When enabled, artist and release searches make one-way requests to MusicBrainz for results. Turning it off disables MusicBrainz features in Artist Network."), Control::Toggle),
             ] },
             Group { title: Chilpa::mark("Lyrics"), settings: &[
+                setting("integrations.lyrics.enabled", Chilpa::mark("Enable lyrics"), Chilpa::mark("Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."), Control::Toggle),
                 setting("integrations.lyrics.service", Chilpa::mark("Chilpa lyrics API"), Chilpa::mark("Look up lyrics through Chilpa's lyrics service when the file and its source have none."), Control::Toggle),
-                setting("integrations.lyrics.plugin", Chilpa::mark("Plugin lyrics"), Chilpa::mark("Allow a plugin to supply lyrics for its own tracks and prefer them over Chilpa's lyrics API."), Control::Toggle),
-                setting("integrations.lyrics.translate", Chilpa::mark("Translate lyrics"), Chilpa::mark("Ask Chilpa's lyrics API to translate lyrics that carry no translation in your language. The lines of the track are sent to it. Off by default."), Control::Toggle),
+                setting("integrations.lyrics.translate", Chilpa::mark("Translate lyrics"), Chilpa::mark("Ask Chilpa's lyrics API to translate lyrics that carry no translation in your language. The lines of the track are sent to it. On by default; you can turn it off."), Control::Toggle),
                 setting("integrations.lyrics.provider.lrclib", "LRCLIB", Chilpa::mark("Allow results from LRCLIB through Chilpa's lyrics API."), Control::Toggle),
-                setting("integrations.lyrics.provider.musixmatch", "Musixmatch", Chilpa::mark("Allow results from Musixmatch when the lyrics service has access to it."), Control::Toggle),
-                setting("integrations.lyrics.provider.amll", "AMLL", Chilpa::mark("Allow word-timed lyrics from AMLL."), Control::Toggle),
                 setting("integrations.lyrics.provider.netease", "NetEase", Chilpa::mark("Allow results from NetEase."), Control::Toggle),
                 setting("integrations.lyrics.provider.qq", "QQ Music", Chilpa::mark("Allow results from QQ Music."), Control::Toggle),
                 setting("integrations.lyrics.provider.kugou", "KuGou", Chilpa::mark("Allow results from KuGou."), Control::Toggle),

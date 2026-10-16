@@ -330,8 +330,8 @@ msgstr "Todo"
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Permite a Chilpa en Last.fm; esto se actualiza solo."
 
-msgid "Allow a plugin to supply lyrics for its own tracks and prefer them over Chilpa's lyrics API."
-msgstr "Permite que un plugin proporcione letras para sus propias pistas y dales prioridad sobre la API de letras de Chilpa."
+msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
+msgstr "Permite consultas opcionales de metadatos, biografías, podcasts y Last.fm mediante el proxy de Chilpa. Sin telemetría. Las consultas se ejecutan en segundo plano."
 
 msgid "Allow results from KuGou."
 msgstr "Permitir resultados de KuGou."
@@ -339,17 +339,11 @@ msgstr "Permitir resultados de KuGou."
 msgid "Allow results from LRCLIB through Chilpa's lyrics API."
 msgstr "Permitir resultados de LRCLIB a través de la API de letras de Chilpa."
 
-msgid "Allow results from Musixmatch when the lyrics service has access to it."
-msgstr "Permitir resultados de Musixmatch cuando el servicio de letras tenga acceso."
-
 msgid "Allow results from NetEase."
 msgstr "Permitir resultados de NetEase."
 
 msgid "Allow results from QQ Music."
 msgstr "Permitir resultados de QQ Music."
-
-msgid "Allow word-timed lyrics from AMLL."
-msgstr "Permitir letras sincronizadas por palabra de AMLL."
 
 msgid "Allowed network domains, separated by commas"
 msgstr "Dominios de red permitidos, separados por comas"
@@ -477,8 +471,8 @@ msgstr "Vista de portada"
 msgid "Artwork, generated images, plugin data and other temporary files."
 msgstr "Portadas, imágenes generadas, datos de plugins y otros archivos temporales."
 
-msgid "Ask Chilpa's lyrics API to translate lyrics that carry no translation in your language. The lines of the track are sent to it. Off by default."
-msgstr ""
+msgid "Ask Chilpa's lyrics API to translate lyrics that carry no translation in your language. The lines of the track are sent to it. On by default; you can turn it off."
+msgstr "Solicita a la API de letras de Chilpa traducir las letras que no tienen traducción en tu idioma. Se envían las líneas de la canción. Activado por defecto; puedes desactivarlo."
 
 msgid "Ask before quitting"
 msgstr "Preguntar antes de salir"
@@ -587,6 +581,9 @@ msgstr "Bit perfect"
 
 msgid "Bit-perfect"
 msgstr "Bit-perfect"
+
+msgid "Block network access, including plugins, online artwork, updates and scrobbling. Local playback, cached content and installed Mood models stay available. Artist Network is hidden."
+msgstr "Bloquea el acceso a la red, incluidos plugins, imágenes online, actualizaciones y scrobbling. La reproducción local, el contenido en caché y los modelos de Mood instalados siguen disponibles. Se oculta Artist Network."
 
 msgid "Blurred art"
 msgstr "Portada difuminada"
@@ -784,6 +781,9 @@ msgstr "Chilpa abre con las pestañas que tenía al cerrarse."
 
 msgid "Chilpa plugins"
 msgstr "Plugins de Chilpa"
+
+msgid "Chilpa proxy"
+msgstr "Proxy de Chilpa"
 
 msgid "Chilpa requesting {} · {}-bit"
 msgstr "Chilpa pide {} · {} bits"
@@ -1519,6 +1519,9 @@ msgstr "Activa primero un plugin DSP."
 
 msgid "Enable audio processing; turn off for bypass"
 msgstr "Activar el procesamiento; desactívalo para escuchar la señal original"
+
+msgid "Enable lyrics"
+msgstr "Activar letras"
 
 msgid "Enable the optional Mood plugin and manage its model download."
 msgstr "Activa el plugin opcional Mood y gestiona la descarga de sus modelos."
@@ -2660,6 +2663,9 @@ msgstr "Requiere actualización"
 msgid "Network"
 msgstr "Red"
 
+msgid "Network access is disabled in Settings > Integrations."
+msgstr "El acceso a la red está desactivado en Ajustes > Integraciones."
+
 msgid "Network access, including authentication, artwork and audio servers discovered by the plugin"
 msgstr "Acceso a la red, incluidos los servidores de autenticación, imágenes y audio que descubra el plugin"
 
@@ -2935,6 +2941,9 @@ msgstr "octubre"
 
 msgid "Off"
 msgstr "Apagado"
+
+msgid "Offline mode"
+msgstr "Modo offline"
 
 msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
 msgstr "Las imágenes temporales más antiguas se borran en segundo plano. Se conservan las portadas que usa tu biblioteca."
@@ -3269,9 +3278,6 @@ msgstr "El plugin se inició correctamente"
 msgid "Plugin integration"
 msgstr "Integración del plugin"
 
-msgid "Plugin lyrics"
-msgstr "Letras de plugins"
-
 msgid "Plugin repository URL"
 msgstr "URL del repositorio de plugins"
 
@@ -3343,6 +3349,9 @@ msgstr "Pestaña anterior"
 
 msgid "Previously saved"
 msgstr "Guardados previamente"
+
+msgid "Privacy & network"
+msgstr "Privacidad y red"
 
 msgid "Processed"
 msgstr "Procesado"
@@ -3996,6 +4005,9 @@ msgstr "Mostrar en la carpeta"
 
 msgid "Show in sidebar"
 msgstr "Mostrar en el sidebar"
+
+msgid "Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."
+msgstr "Muestra letras de archivos, caché y servicios online. Desactívalo para detener todas las consultas y traducciones y borrar la letra actual."
 
 msgid "Show playlist only from the same source as the track"
 msgstr "Mostrar solo playlists de la misma fuente que la pista"

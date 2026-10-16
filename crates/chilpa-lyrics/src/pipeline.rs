@@ -110,6 +110,8 @@ pub struct Request {
     pub translate: bool,
     /// Whether the configured remote service may answer this request.
     pub allow_remote: bool,
+    /// I keep cached results available without asking a source or service.
+    pub offline: bool,
     /// Remote provider ids selected by the listener; `None` allows all.
     pub remote_providers: Option<Vec<String>>,
 }
@@ -175,6 +177,7 @@ impl Pipeline {
             Some(TranslationHit::None) => return None,
             None => {}
         }
+        if request.offline || !request.allow_remote { return None; }
         let translator = self.translator.as_ref()?;
         if self.translator_cooling.lock().unwrap_or_else(|e| e.into_inner()).is_some_and(|until| until > Instant::now()) {
             return None;
@@ -251,17 +254,17 @@ impl Pipeline {
                 _ => {}
             }
         }
-        let need_source = request.source.is_some() && source_known.is_none();
+        let need_source = !request.offline && request.source.is_some() && source_known.is_none();
         // A track that does not say what song it is cannot be looked up by
         // name: every answer would be a guess.
         let named = !track.title.trim().is_empty() && !track.artist.trim().is_empty();
         // The source's lyrics win: when the cache already has them, the
         // service has nothing to add.
         let source_has = matches!(source_known, Some(Some(_)));
-        let need_remote = request.allow_remote && request.remote_providers.as_ref().is_none_or(|providers| !providers.is_empty())
+        let need_remote = !request.offline && request.allow_remote && request.remote_providers.as_ref().is_none_or(|providers| !providers.is_empty())
             && identity_known.is_none() && named && !source_has && self.remote.is_some();
         if !need_source && !need_remote {
-            return Outcome { resolved: choose(source_known.flatten(), identity_known.flatten()), refresh: stale };
+            return Outcome { resolved: choose(source_known.flatten(), identity_known.flatten()), refresh: stale && !request.offline };
         }
 
         let asked = self.ask(request, need_source, need_remote);
@@ -503,7 +506,7 @@ mod tests {
     }
 
     fn request(source: Option<Arc<Fake>>) -> Request {
-        Request { track: track(), path: None, source: source.map(|s| (s as Arc<dyn Source>, "track:1".to_string())), language: None, translate: false, allow_remote: true, remote_providers: None }
+        Request { track: track(), path: None, source: source.map(|s| (s as Arc<dyn Source>, "track:1".to_string())), language: None, translate: false, allow_remote: true, offline: false, remote_providers: None }
     }
 
     fn origin(outcome: &Outcome) -> &str {
@@ -708,7 +711,7 @@ mod tests {
         std::fs::write(dir.join("song.lrc"), "Plain words next door\n").unwrap();
         let service = Fake::new("service", found(WORDS));
         let p = pipeline(service.clone());
-        let outcome = p.resolve(&Request { track: track(), path: Some(file), source: None, language: None, translate: false, allow_remote: true, remote_providers: None }, false);
+        let outcome = p.resolve(&Request { track: track(), path: Some(file), source: None, language: None, translate: false, allow_remote: true, offline: false, remote_providers: None }, false);
         assert_eq!(origin(&outcome), "file");
         assert_eq!(service.calls(), 0, "nobody is asked when the file has lyrics, however fine the service's are");
         let _ = std::fs::remove_dir_all(dir);
@@ -767,6 +770,34 @@ mod tests {
         let document = lrc::parse(LINES);
         assert_eq!(p.translate(&wanting("es"), &document), Some(layer("es")));
         assert_eq!(p.translate(&wanting("es"), &document), Some(layer("es")), "the second time from the cache");
+        assert_eq!(translator.calls(), 1);
+    }
+
+    #[test]
+    fn offline_keeps_cached_lyrics_and_translations_without_asking_any_provider() {
+        let remote = Fake::new("service", found(LINES));
+        let p = pipeline(remote.clone());
+        let online = request(None);
+        let expected = p.resolve(&online, false).resolved;
+        let offline = Request { offline: true, ..online };
+        assert_eq!(p.resolve(&offline, false).resolved, expected);
+        assert_eq!(remote.calls(), 1);
+        let source = Fake::new("source", found(WORDS));
+        let missing = Request { offline: true, ..request(Some(source.clone())) };
+        assert!(p.resolve(&missing, true).resolved.is_none());
+        assert_eq!(source.calls(), 0);
+        assert_eq!(remote.calls(), 1);
+
+        let (p, translator) = translating(vec![Translation::Found(layer("es"))]);
+        let document = lrc::parse(LINES);
+        let mut translation = wanting("es");
+        translation.offline = true;
+        assert_eq!(p.translate(&translation, &document), None);
+        assert_eq!(translator.calls(), 0);
+        translation.offline = false;
+        assert_eq!(p.translate(&translation, &document), Some(layer("es")));
+        translation.offline = true;
+        assert_eq!(p.translate(&translation, &document), Some(layer("es")));
         assert_eq!(translator.calls(), 1);
     }
 

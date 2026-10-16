@@ -1,6 +1,29 @@
 use super::*;
 use crate::format::{SampleFormat, StreamFormat};
 
+#[test]
+fn catalog_localization_changes_only_display_text_and_validates_the_labels() {
+    let original = Preset { id: "soundbar".into(), name: "Clear voices".into(), category: "Soundbars".into(),
+        description: "Generic adjustment".into(), ..preset() };
+    let labels = Labels { name: "Localized vocals".into(), description: "Localized description".into(), ..Labels::default() };
+    let mut catalog = Catalog { protocol: 1, presets: vec![original],
+        localizations: std::collections::BTreeMap::from([("es".into(),
+            std::collections::BTreeMap::from([("soundbar".into(), labels)]))]) };
+    catalog.validate().unwrap();
+    let original = catalog.presets[0].clone();
+    let spanish = catalog.display(&original, "es-MX");
+    assert_eq!(spanish.name, "Localized vocals");
+    assert_eq!(spanish.description, "Localized description");
+    assert_eq!(spanish.filters, original.filters);
+    assert_eq!(spanish.id, original.id);
+    assert_eq!(spanish.preamp_db, original.preamp_db);
+    assert_eq!(catalog.presets[0], original);
+    assert_eq!(catalog.display(&original, "en"), original);
+    assert_eq!(catalog.display(&original, "fr"), original);
+    catalog.localizations.get_mut("es").unwrap().get_mut("soundbar").unwrap().name = "x".repeat(161);
+    assert!(catalog.validate().is_err());
+}
+
 fn preset() -> Preset {
     Preset { filters: vec![Filter { shape: Shape::Peak, frequency: 1000.0, gain_db: 6.0, q: 1.0 }], ..Preset::default() }
 }

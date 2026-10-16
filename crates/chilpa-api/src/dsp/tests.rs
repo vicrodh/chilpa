@@ -2,7 +2,7 @@ use super::*;
 
 fn state() -> Dsp {
     Dsp { providers: vec![Provider { id: "test.dsp".into(), name: "Test".into(),
-        catalog: Catalog { protocol: 1, presets: vec![Preset::default()] } }], ..Default::default() }
+        catalog: Catalog { protocol: 1, presets: vec![Preset::default()], localizations: Default::default() } }], ..Default::default() }
 }
 #[test]
 fn selections_are_scoped_to_output_and_disabled_providers_supply_no_parameters() {
@@ -60,7 +60,7 @@ fn graphic_backups_reject_invalid_parameters_and_old_settings_still_load() {
 }
 #[test]
 fn invalid_catalogs_and_duplicate_ids_are_rejected_as_a_whole() {
-    let mut catalog = Catalog { protocol: 1, presets: vec![Preset::default()] };
+    let mut catalog = Catalog { protocol: 1, presets: vec![Preset::default()], localizations: Default::default() };
     catalog.validate().unwrap();
     catalog.presets.push(Preset::default()); assert!(catalog.validate().is_err());
     catalog.presets.pop(); catalog.protocol = 2; assert!(catalog.validate().is_err());
