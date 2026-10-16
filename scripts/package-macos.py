@@ -30,6 +30,7 @@ def iconset(source, destination):
 
 def check_dependencies(app):
     checked = 0
+    frameworks = app / "Contents/Frameworks"
     for path in app.rglob("*"):
         if path.is_symlink() or not path.is_file():
             continue
@@ -38,6 +39,11 @@ def check_dependencies(app):
         if magic not in (b"\xcf\xfa\xed\xfe", b"\xce\xfa\xed\xfe", b"\xca\xfe\xba\xbe", b"\xca\xfe\xba\xbf"):
             continue
         checked += 1
+        # I relocate indirect libraries whose own install names macdeployqt leaves behind.
+        if path.is_relative_to(frameworks):
+            identifiers = subprocess.check_output(["otool", "-D", str(path)], text=True).splitlines()
+            if any(line.startswith("/") and not line.endswith(":") for line in identifiers):
+                subprocess.run(["install_name_tool", "-id", "@rpath/" + str(path.relative_to(frameworks)), str(path)], check=True)
         dependencies = subprocess.check_output(["otool", "-L", str(path)], text=True).splitlines()[1:]
         for line in dependencies:
             dependency = line.strip().split(" (", 1)[0]
