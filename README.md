@@ -61,6 +61,8 @@ I distribute Radio, Podcasts and DSP as WASM packages. Playlist Importer and
 Mood use Linux x86_64 process packages in this beta. Mood downloads optional
 models only after it is enabled; I describe their separate license in its
 package. The core and installer do not include model weights.
+I install `bubblewrap` and enable user namespaces for process plugins on Linux.
+I run Chilpa as a normal user; its process sandbox refuses root.
 
 I document the API and authoring contracts in
 [chilpa-plugins-sdk](https://github.com/vicrodh/chilpa-plugins-sdk).
