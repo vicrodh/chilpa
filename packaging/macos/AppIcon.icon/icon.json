@@ -1,0 +1,46 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "solid": "srgb:0.99216,0.95686,0.90588,1.00000"
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "linear-gradient": [
+          "srgb:0.25,0.05,0.06,1",
+          "srgb:0.10,0.02,0.03,1"
+        ]
+      }
+    }
+  ],
+  "groups": [
+    {
+      "layers": [
+        {
+          "name": "Chilpa",
+          "image-name": "light.png",
+          "image-name-specializations": [
+            {
+              "appearance": "dark",
+              "value": "dark.png"
+            }
+          ],
+          "glass": false
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0
+      },
+      "translucency": {
+        "enabled": false,
+        "value": 0
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}

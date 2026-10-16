@@ -1,4 +1,4 @@
-name: Linux release
+name: Desktop release
 
 on:
   push:
@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: linux-release-${{ github.ref }}
+  group: desktop-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -100,9 +100,66 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  macos:
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      CARGO_BUILD_JOBS: '2'
+      QT_VERSION: '6.11.2'
+      MACOSX_DEPLOYMENT_TARGET: '14.0'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source_ref || github.ref }}
+          persist-credentials: false
+      - name: Validate release identity
+        env:
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_EVENT: ${{ github.event_name }}
+        run: python3 scripts/release_version.py --github-env "$GITHUB_ENV"
+      - name: Install macOS build and deployment dependencies
+        run: |
+          brew install pkg-config cmake
+          python3 -m venv "$RUNNER_TEMP/qt-installer"
+          "$RUNNER_TEMP/qt-installer/bin/python" -m pip install aqtinstall==3.3.0
+          "$RUNNER_TEMP/qt-installer/bin/python" -m aqt install-qt mac desktop "$QT_VERSION" clang_64 \
+            --outputdir "$RUNNER_TEMP/Qt"
+          echo "$RUNNER_TEMP/Qt/$QT_VERSION/macos/bin" >> "$GITHUB_PATH"
+          echo "CMAKE_PREFIX_PATH=$RUNNER_TEMP/Qt/$QT_VERSION/macos" >> "$GITHUB_ENV"
+          xcrun --find actool
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+        with:
+          toolchain: '1.90.0'
+      - name: Check release tooling and the macOS engine
+        run: |
+          python3 -m unittest discover -s scripts/tests
+          cargo test --locked -q -p chilpa-core --lib
+          cargo test --locked -q -p chilpa-api --lib
+      - name: Build macOS binary
+        run: |
+          export RUSTFLAGS="--remap-path-prefix=$GITHUB_WORKSPACE=. --remap-path-prefix=$HOME/.cargo=/cargo"
+          cargo build --locked --release -p chilpa-qt
+      - name: Package the app, light and dark icons, ZIP and DMG
+        run: |
+          python3 scripts/package-macos.py --binary target/release/chilpa-qt \
+            --version "$RELEASE_VERSION" --output dist --require-native-icon
+          python3 scripts/check-macos-package.py dist/Chilpa.app --report "$RUNNER_TEMP/macos-smoke.json"
+          cd dist
+          shasum -a 256 --check SHA256SUMS-macos-aarch64
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: chilpa-macos-aarch64
+          path: |
+            dist/*.zip
+            dist/*.dmg
+            dist/MANIFEST-macos-aarch64.json
+            dist/SHA256SUMS-macos-aarch64
+          if-no-files-found: error
+          retention-days: 14
+
   draft:
     if: github.event_name == 'push'
-    needs: linux
+    needs: [linux, macos]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -115,12 +172,16 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: chilpa-linux-x86_64
-          path: dist
+          path: dist/linux
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: chilpa-macos-aarch64
+          path: dist/macos
       - name: Create the draft release
         env:
           GH_CONFIG_DIR: ${{ runner.temp }}/chilpa-gh
         run: |
           flags=()
           if [[ "$RELEASE_PRERELEASE" == true ]]; then flags+=(--prerelease); fi
-          gh release create "$RELEASE_TAG" dist/* --draft --verify-tag "${flags[@]}" \
-            --title "Chilpa $RELEASE_TAG" --notes-file dist/RELEASE-NOTES.md
+          gh release create "$RELEASE_TAG" dist/linux/* dist/macos/* --draft --verify-tag "${flags[@]}" \
+            --title "Chilpa $RELEASE_TAG" --notes-file dist/linux/RELEASE-NOTES.md

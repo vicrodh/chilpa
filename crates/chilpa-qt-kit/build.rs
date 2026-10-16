@@ -34,6 +34,7 @@ fn main() {
     println!("cargo:rerun-if-changed=src/bridge");
     println!("cargo:rerun-if-changed=assets");
     println!("cargo:rerun-if-changed=cxx/fonts.cpp");
+    println!("cargo:rerun-if-changed=cxx/application_icon.cpp");
     println!("cargo:rerun-if-changed=cxx/frame_fence.cpp");
     CxxQtBuilder::library(Interface::default())
         .qobject_header("cxx/frame_fence.h")
@@ -49,6 +50,7 @@ fn main() {
         })
         .cc_builder(|cc| {
             cc.file("cxx/fonts.cpp");
+            cc.file("cxx/application_icon.cpp");
             cc.file("cxx/frame_fence.cpp");
         })
         .build();

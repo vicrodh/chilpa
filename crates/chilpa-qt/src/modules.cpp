@@ -1,8 +1,6 @@
 // I register the shell modules and set the bundled icon before creating windows.
 
 #include <QtCore/QtPlugin>
-#include <QtGui/QGuiApplication>
-#include <QtGui/QIcon>
 
 extern const QStaticPlugin qt_static_plugin_app_chilpa_kit_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_ambient_plugin();
@@ -25,6 +23,7 @@ extern const QStaticPlugin qt_static_plugin_app_chilpa_lyrics_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_metadata_plugin();
 
 extern "C" void chilpa_frame_fence_register_qml_type();
+extern "C" void chilpa_install_application_icon();
 
 extern "C" void chilpa_install_shell()
 {
@@ -48,5 +47,5 @@ extern "C" void chilpa_install_shell()
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_gallery_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_lyrics_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_metadata_plugin());
-    QGuiApplication::setWindowIcon(QIcon(QStringLiteral(":/qt/qml/app/chilpa/kit/assets/logo.png")));
+    chilpa_install_application_icon();
 }
