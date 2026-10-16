@@ -27,7 +27,6 @@ jobs:
       CARGO_BUILD_JOBS: '2'
       QT_VERSION: '6.11.2'
       GH_TOKEN: ${{ github.token }}
-      GH_CONFIG_DIR: ${{ runner.temp }}/chilpa-gh
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -58,9 +57,12 @@ jobs:
           "$RUNNER_TEMP/qt-installer/bin/python" -m aqt install-qt linux desktop "$QT_VERSION" linux_gcc_64 \
             --outputdir "$RUNNER_TEMP/Qt"
           echo "$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/bin" >> "$GITHUB_PATH"
-          echo "CMAKE_PREFIX_PATH=$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64" >> "$GITHUB_ENV"
-          echo "LD_LIBRARY_PATH=$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/lib" >> "$GITHUB_ENV"
-          echo "QMAKE=$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/bin/qmake" >> "$GITHUB_ENV"
+          {
+            echo "CMAKE_PREFIX_PATH=$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64"
+            echo "LD_LIBRARY_PATH=$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/lib"
+            echo "QMAKE=$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/bin/qmake"
+            echo "GH_CONFIG_DIR=$RUNNER_TEMP/chilpa-gh"
+          } >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
           toolchain: '1.90.0'
@@ -106,7 +108,6 @@ jobs:
       contents: write
     env:
       GH_TOKEN: ${{ github.token }}
-      GH_CONFIG_DIR: ${{ runner.temp }}/chilpa-gh
       GH_REPO: ${{ github.repository }}
       RELEASE_TAG: ${{ github.ref_name }}
       RELEASE_PRERELEASE: ${{ needs.linux.outputs.prerelease }}
@@ -116,6 +117,8 @@ jobs:
           name: chilpa-linux-x86_64
           path: dist
       - name: Create the draft release
+        env:
+          GH_CONFIG_DIR: ${{ runner.temp }}/chilpa-gh
         run: |
           flags=()
           if [[ "$RELEASE_PRERELEASE" == true ]]; then flags+=(--prerelease); fi
