@@ -154,6 +154,20 @@ TestCase {
         verify(!card.backdropOn, "no background means the opaque theme is back")
     }
 
+    function test_closed_artwork_surfaces_release_and_reopen_data() {
+        return [{ tag: "compact", surface: 1 }, { tag: "artwork", surface: 2 }]
+    }
+    function test_closed_artwork_surfaces_release_and_reopen(data) {
+        Mini.surface = data.surface
+        tryVerify(() => findChild(card, "miniMetadata") !== null)
+        Mini.open = false
+        tryCompare(card, "backdropMounted", false)
+        tryVerify(() => findChild(card, "miniMetadata") === null, 1000, "hidden mini must release its cover surface")
+        Player.title = "A new track"
+        Mini.open = true
+        tryVerify(() => findChild(card, "miniMetadata") !== null)
+    }
+
     // Closing the window from the desktop leaves the mini player; once it
     // has been left, the close is the app quitting and goes through.
     function test_closing_the_window_leaves_the_mini_player_and_a_quit_goes_through() {

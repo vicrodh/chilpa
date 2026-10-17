@@ -13,6 +13,7 @@ Item {
 
     property int number: 0
     property bool playing: false
+    property bool inViewport: true
     property bool selected: false
     property bool selectionMode: false
     property bool reorder: false
@@ -39,7 +40,7 @@ Item {
         x: lead.width - Metrics.gap8 - width
         anchors.verticalCenter: parent.verticalCenter
         visible: !lead.selectionMode && lead.playing
-        running: Player.playing && !Player.paused
+        running: lead.inViewport && Player.playing && !Player.paused
     }
 
     Icon {

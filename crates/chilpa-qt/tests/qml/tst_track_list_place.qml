@@ -91,4 +91,22 @@ TestCase {
         view.positionViewAtBeginning()
         tryCompare(Pulse, "held", 1, 1000, "back on the screen it moves again")
     }
+
+    function test_a_clipped_cached_row_stops_moving_data() {
+        return [{ tag: "above", above: true }, { tag: "below", above: false }]
+    }
+    function test_a_clipped_cached_row_stops_moving(data) {
+        const index = 30
+        Prefs.animatedIndicator = true
+        tracks.setProperty(index, "playing", true)
+        view.positionViewAtIndex(index, ListView.Center)
+        tryCompare(Pulse, "held", 1)
+        const row = view.itemAtIndex(index)
+        verify(row !== null)
+        view.contentY = data.above ? row.y + row.height + 1 : row.y - view.height - 1
+        verify(view.itemAtIndex(index) === row && row.visible, "the cached row is clipped, not pooled or hidden")
+        tryCompare(Pulse, "held", 0, 1000, "a clipped cached mark must not schedule frames")
+        view.contentY += data.above ? -2 : 2
+        tryCompare(Pulse, "held", 1, 1000, "even a partially visible mark resumes")
+    }
 }

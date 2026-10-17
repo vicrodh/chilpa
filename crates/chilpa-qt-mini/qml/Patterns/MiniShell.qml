@@ -126,9 +126,8 @@ Rectangle {
     }
 
     // The surface area: absent in micro, where the footer is the card.
-    // Each surface is its own loader; the queue and the lyrics also wait
-    // for the mini player to be open, since the window is never destroyed
-    // and both would otherwise keep reading while it is away.
+    // I release every surface while the retained window is closed, so its
+    // covers and data bindings do not follow playback while it is away.
     Item {
         id: surfaceArea
         anchors.left: parent.left
@@ -140,12 +139,12 @@ Rectangle {
 
         Loader {
             anchors.fill: parent
-            active: card.surfaceId === 1
+            active: Mini.open && card.surfaceId === 1
             sourceComponent: MiniCompactSurface { backdropActive: card.backdropOn }
         }
         Loader {
             anchors.fill: parent
-            active: card.surfaceId === 2
+            active: Mini.open && card.surfaceId === 2
             sourceComponent: MiniArtworkSurface { backdropActive: card.backdropOn }
         }
         Loader {

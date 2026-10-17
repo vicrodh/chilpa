@@ -68,15 +68,35 @@ impl Chilpa {
     pub(crate) fn search_origin(&self) -> Option<QueueOrigin> {
         (!self.search.text.is_empty()).then(|| QueueOrigin { screen: "search".into(), query: self.search.text.clone(), source: self.search.source.clone(), ..Default::default() })
     }
-    pub fn playing_origin_json(&self) -> String {
+    pub fn playing_origin(&self) -> Option<&QueueOrigin> {
         self.queue_origins.get(self.now.index).and_then(Option::as_ref)
-            .and_then(|origin| serde_json::to_string(origin).ok()).unwrap_or_default()
+    }
+    pub fn playing_origin_json(&self) -> String {
+        self.playing_origin().and_then(|origin| serde_json::to_string(origin).ok()).unwrap_or_default()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn playing_origin_tracks_same_path_replacement_and_occurrence_changes() {
+        let mut app = Chilpa::new();
+        app.now = crate::NowPlaying::default();
+        app.queue = vec!["duplicate".into(), "duplicate".into()];
+        app.queue_origins = [1, 2].into_iter().map(|id| Some(QueueOrigin { id, ..Default::default() })).collect();
+        let first = app.playing_origin().cloned();
+        app.now.index = 1;
+        assert_ne!(app.playing_origin(), first.as_ref());
+        let second = app.playing_origin().cloned();
+        app.queue_origins[1].as_mut().unwrap().key = "replacement".into();
+        assert_ne!(app.playing_origin(), second.as_ref());
+        assert_eq!(serde_json::from_str::<QueueOrigin>(&app.playing_origin_json()).unwrap().key, "replacement");
+        app.queue_origins.clear();
+        assert!(app.playing_origin().is_none());
+        assert!(app.playing_origin_json().is_empty());
+    }
 
     #[test]
     fn saved_record_origins_resolve_to_records_and_keep_other_pages() {
