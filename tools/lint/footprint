@@ -1,84 +1,188 @@
 #!/usr/bin/env python3
-"""Mide cuánta memoria ocupa Chilpa sin hacer nada (ADR-001).
+"""I enforce the clean Linux shell's 250 MiB RSS budget on a private bus.
 
-Arranca la ventana con la plataforma `offscreen` de Qt, la deja reposar unos
-segundos y lee su RSS. Si pasa del presupuesto, falla.
-
-El número no es un capricho: QBZ terminó decodificando pistas completas en
-memoria (2.7 GB por una hora a 24/96), y el plan de Chilpa dice que el
-footprint se mide, no se supone. Este candado mide lo barato —la app quieta—
-y deja para después lo caro: reproducir una biblioteca grande.
-
-Se salta solo si el binario no está compilado; nunca pasa por no medir.
+I measure the real Main.qml, with an empty disposable profile and software
+rendering. Native rendering, populated libraries and playback need separate
+matched measurements; this baseline does not stand in for those workloads.
 """
+import argparse
+import hashlib
+import json
 import os
+from pathlib import Path
+import re
+import shutil
+import signal
 import subprocess
 import sys
+import tempfile
 import time
-from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-# Presupuesto de la ventana en reposo. Una app de Qt Quick con su pila
-# gráfica no baja de ~100 MB; el margen está para notar una fuga, no para
-# tolerarla.
-BUDGET_MB = 250
+BUDGET_MIB = 250
+STARTUP_SECONDS = 12
 SETTLE_SECONDS = 6
+INTERVAL_SECONDS = 0.25
+READY = "main window constructed"
+QML_ERRORS = re.compile(r"QQmlApplicationEngine failed to load component|Type .* unavailable|is not a type")
 
 
-def binario() -> Path | None:
-    for perfil in ("release", "debug"):
-        for base in (Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target")), ROOT / "target"):
-            ruta = Path(base) / perfil / "chilpa-qt"
-            if ruta.is_file():
-                return ruta
-    return None
+def binary_path():
+    for base in (Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target")), ROOT / "target"):
+        path = base / "release/chilpa-qt"
+        if path.is_file():
+            return path
+    raise RuntimeError("no release binary; build it or pass --binary (nothing measured)")
 
 
-def rss_mb(pid: int) -> float | None:
+def identity(pid):
     try:
-        for linea in Path(f"/proc/{pid}/status").read_text().splitlines():
-            if linea.startswith("VmRSS:"):
-                return int(linea.split()[1]) / 1024
-    except OSError:
+        return Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[19]
+    except (OSError, IndexError):
         return None
-    return None
 
 
-def main() -> None:
-    app = binario()
-    if app is None:
-        print("footprint: no hay binario compilado; se salta")
-        return
-
-    entorno = dict(os.environ, QT_QPA_PLATFORM="offscreen")
-    proceso = subprocess.Popen(
-        [str(app)], env=entorno, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-    )
+def rss_mib(pid, started):
+    if started is None or identity(pid) != started:
+        raise RuntimeError("the measured process disappeared or changed identity")
     try:
-        pico = 0.0
-        for _ in range(SETTLE_SECONDS * 2):
-            time.sleep(0.5)
-            if proceso.poll() is not None:
-                print("footprint: la ventana se salió sola; nada que medir", file=sys.stderr)
-                sys.exit(1)
-            actual = rss_mb(proceso.pid)
-            if actual is not None:
-                pico = max(pico, actual)
-    finally:
-        proceso.terminate()
-        try:
-            proceso.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            proceso.kill()
+        lines = Path(f"/proc/{pid}/status").read_text().splitlines()
+        rss = next(int(line.split()[1]) for line in lines if line.startswith("VmRSS:"))
+    except (OSError, ValueError, StopIteration) as error:
+        raise RuntimeError("RSS could not be read (nothing measured)") from error
+    if rss <= 0:
+        raise RuntimeError("RSS is zero (nothing measured)")
+    return rss / 1024
 
-    if pico > BUDGET_MB:
-        print(
-            f"footprint: la ventana en reposo usa {pico:.0f} MB, el presupuesto es {BUDGET_MB} MB",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    print(f"footprint: {pico:.0f} MB en reposo, de {BUDGET_MB} MB")
+
+def descendants(pid):
+    # The per-thread children file is absent on kernels without checkpoint support.
+    parents = {}
+    for path in Path("/proc").glob("[0-9]*/stat"):
+        try:
+            fields = path.read_text().rsplit(")", 1)[1].split()
+            parents.setdefault(int(fields[1]), []).append(int(path.parent.name))
+        except (OSError, ValueError, IndexError):
+            continue
+    found, pending = [], [pid]
+    while pending:
+        children = parents.get(pending.pop(), [])
+        found.extend(children)
+        pending.extend(children)
+    return found
+
+
+def stop_owned(process, owned):
+    # I signal only descendants whose start time still matches my launch.
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        for pid, started in reversed(list(owned.items())):
+            if started is not None and identity(pid) == started:
+                try:
+                    os.kill(pid, sig)
+                except ProcessLookupError:
+                    pass
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            continue
+    process.wait(timeout=2)
+
+
+def isolated_environment(profile, inherited):
+    # I measure the shipped defaults, without inherited smoke or profiling overrides.
+    env = {key: value for key, value in inherited.items()
+           if not key.startswith(("CHILPA_", "QT_", "QSG_", "MALLOC_", "MEMUSAGE_"))
+           and key not in ("LD_PRELOAD", "GLIBC_TUNABLES", "QML_IMPORT_PATH", "QML2_IMPORT_PATH",
+                          "APPIMAGE", "APPDIR", "DBUS_STARTER_ADDRESS", "DBUS_STARTER_BUS_TYPE")}
+    env.update(XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"),
+               XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"),
+               QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software", CHILPA_RENDERER="software",
+               QT_NO_XDG_DESKTOP_PORTAL="1", QT_MESSAGE_PATTERN="%{message}")
+    return env
+
+
+def digest(path):
+    result = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            result.update(chunk)
+    return result.hexdigest()
+
+
+def measure(binary, profile):
+    for name in ("config", "data", "cache", "runtime"):
+        (profile / name).mkdir(mode=0o700)
+    # No service directories: the private bus cannot activate desktop services.
+    bus = profile / "dbus.conf"
+    bus.write_text('<busconfig><type>session</type><listen>unix:tmpdir=' + str(profile / "runtime") +
+                   '</listen><auth>EXTERNAL</auth><policy context="default">' +
+                   '<allow send_destination="*"/><allow receive_sender="*"/>' +
+                   '<allow own="*"/></policy></busconfig>')
+    env = isolated_environment(profile, os.environ)
+    owned, samples, target, ready_at = {}, [], None, None
+    started_at = time.monotonic()
+    binary_sha256 = digest(binary)
+    log_path = profile / "run.log"
+    with log_path.open("w") as log:
+        process = subprocess.Popen(["dbus-run-session", "--config-file=" + str(bus), "--", str(binary)],
+                                   env=env, stdout=log, stderr=subprocess.STDOUT)
+        owned[process.pid] = identity(process.pid)
+        try:
+            while True:
+                if process.poll() is not None:
+                    raise RuntimeError(f"the application exited before measurement completed (exit {process.returncode})")
+                for pid in descendants(process.pid):
+                    owned.setdefault(pid, identity(pid))
+                    try:
+                        if Path(f"/proc/{pid}/exe").resolve(strict=True) == binary:
+                            target = pid
+                    except OSError:
+                        pass
+                contents = log_path.read_text(errors="replace")
+                if QML_ERRORS.search(contents):
+                    raise RuntimeError("Main.qml reported a type or construction error")
+                now = time.monotonic()
+                if READY in contents and ready_at is None:
+                    ready_at = now
+                if target is not None:
+                    if Path(f"/proc/{target}/exe").resolve(strict=True) != binary:
+                        raise RuntimeError("the measured executable changed")
+                    samples.append(rss_mib(target, owned[target]))
+                if ready_at is None and now - started_at >= STARTUP_SECONDS:
+                    raise RuntimeError("Main.qml did not confirm construction before the startup deadline")
+                if ready_at is not None and now - ready_at >= SETTLE_SECONDS:
+                    if not samples or target is None:
+                        raise RuntimeError("no application RSS samples (nothing measured)")
+                    break
+                time.sleep(INTERVAL_SECONDS)
+        finally:
+            stop_owned(process, owned)
+    if digest(binary) != binary_sha256:
+        raise RuntimeError("the binary changed during measurement")
+    return dict(binary_sha256=binary_sha256, scenario="clean-main-offscreen-software",
+                budget_mib=BUDGET_MIB, peak_rss_mib=max(samples), last_rss_mib=samples[-1],
+                samples=len(samples), seconds_after_main=SETTLE_SECONDS, main_constructed=True)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--binary", type=Path, help="release executable to measure")
+    args = parser.parse_args()
+    try:
+        if not sys.platform.startswith("linux") or not shutil.which("dbus-run-session"):
+            raise RuntimeError("I require Linux /proc and dbus-run-session (nothing measured)")
+        binary = (args.binary or binary_path()).resolve(strict=True)
+        if not os.access(binary, os.X_OK):
+            raise RuntimeError("the binary is not executable (nothing measured)")
+        with tempfile.TemporaryDirectory(prefix="chilpa-footprint-") as directory:
+            result = measure(binary, Path(directory))
+        result["passed"] = result["peak_rss_mib"] <= BUDGET_MIB
+        print("footprint: " + json.dumps(result, sort_keys=True))
+        return 0 if result["passed"] else 1
+    except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+        print(f"footprint: FAIL: {error}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
