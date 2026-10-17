@@ -5,6 +5,7 @@ import hashlib
 import json
 import platform
 import plistlib
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -28,8 +29,28 @@ def iconset(source, destination):
                 check=True, stdout=subprocess.DEVNULL)
 
 
+def deployment_version(value):
+    return tuple(int(part) for part in value.split("."))
+
+
+def deployment_minimum(load_commands):
+    versions = []
+    for command in re.split(r"Load command \d+\n", load_commands):
+        if re.search(r"^\s*cmd LC_BUILD_VERSION\s*$", command, re.MULTILINE):
+            field = "minos"
+        elif re.search(r"^\s*cmd LC_VERSION_MIN_MACOSX\s*$", command, re.MULTILINE):
+            field = "version"
+        else:
+            continue
+        match = re.search(r"^\s*" + field + r"\s+(\d+(?:\.\d+)*)\s*$", command, re.MULTILINE)
+        if match:
+            versions.append(match.group(1))
+    return max(versions, key=deployment_version) if versions else None
+
+
 def check_dependencies(app):
     checked = 0
+    minimum = "0.0"
     frameworks = app / "Contents/Frameworks"
     for path in app.rglob("*"):
         if path.is_symlink() or not path.is_file():
@@ -39,6 +60,9 @@ def check_dependencies(app):
         if magic not in (b"\xcf\xfa\xed\xfe", b"\xce\xfa\xed\xfe", b"\xca\xfe\xba\xbe", b"\xca\xfe\xba\xbf"):
             continue
         checked += 1
+        target = deployment_minimum(subprocess.check_output(["otool", "-l", str(path)], text=True))
+        if target:
+            minimum = max((minimum, target), key=deployment_version)
         # I relocate indirect libraries whose own install names macdeployqt leaves behind.
         if path.is_relative_to(frameworks):
             identifiers = subprocess.check_output(["otool", "-D", str(path)], text=True).splitlines()
@@ -49,7 +73,7 @@ def check_dependencies(app):
             dependency = line.strip().split(" (", 1)[0]
             if dependency.startswith("/") and not dependency.startswith(("/System/Library/", "/usr/lib/")):
                 raise SystemExit(f"I found an undeployed dependency in {path.name}: {dependency}")
-    return checked
+    return checked, minimum
 
 
 def main():
@@ -57,7 +81,7 @@ def main():
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--minimum-macos", default="14.0")
+    parser.add_argument("--minimum-macos", default="14.0", help="Requested floor; deployed libraries can require a newer macOS.")
     parser.add_argument("--require-native-icon", action="store_true", help="Require Xcode's asset compiler for system-selected icon appearances.")
     args = parser.parse_args()
     if platform.system() != "Darwin":
@@ -137,11 +161,16 @@ def main():
         shutil.copy2(root / "packaging/linux" / name, licenses / name)
     qt_version = subprocess.check_output(["qmake", "-query", "QT_VERSION"], text=True).strip()
     (licenses / "Qt-source.txt").write_text(f"Qt runtime source and notices: https://code.qt.io/\nQt version: {qt_version}\n")
-    dependencies = check_dependencies(app)
+    dependencies, runtime_minimum = check_dependencies(app)
+    minimum = max((args.minimum_macos, runtime_minimum), key=deployment_version)
+    info["LSMinimumSystemVersion"] = minimum
+    (contents / "Info.plist").write_bytes(plistlib.dumps(info))
+    if minimum != args.minimum_macos:
+        print(f"The deployed runtime requires macOS {minimum}; I record that minimum in the bundle.")
     subprocess.run(["codesign", "--force", "--deep", "--sign", "-", str(app)], check=True)
     subprocess.run(["codesign", "--verify", "--deep", "--strict", str(app)], check=True)
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
-    manifest = dict(version=args.version, source_commit=commit, platform="macos-aarch64", minimum_macos=args.minimum_macos,
+    manifest = dict(version=args.version, source_commit=commit, platform="macos-aarch64", minimum_macos=minimum, requested_minimum_macos=args.minimum_macos,
         source_binary_sha256=digest(binary), packaged_binary_sha256=digest(executable), qt_version=qt_version,
         native_icon_catalog=native, icon_appearances=["light", "dark"], signing="ad-hoc", notarized=False,
         checked_macho_dependencies=dependencies)
