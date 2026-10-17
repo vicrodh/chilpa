@@ -620,12 +620,13 @@ fn play(
             if let Some(entry) = crate::remote::entry(path) {
                 // Its tags are on the server; the library's copy of them
                 // stands in, and the length comes from the decoder.
+                let bits = about.bits;
                 let (about, frames) = crate::remote::describe(path, &entry);
                 let _ = events.send(PlayerEvent::Started {
                     path: path.to_path_buf(),
                     opened: delivery.opened,
                     channels: delivery.requested.channels,
-                    bits: delivery.bits_carried(),
+                    bits,
                     bit_perfect,
                     total_frames: frames,
                     tags: Some(about.tags),
@@ -652,7 +653,7 @@ fn play(
                 path: path.to_path_buf(),
                 opened: delivery.opened,
                 channels: delivery.requested.channels,
-                bits: if dsd.is_some() { Some(1) } else { delivery.bits_carried() },
+                bits: if dsd.is_some() { Some(1) } else { about.bits },
                 bit_perfect,
                 total_frames,
                 tags: about.tags.clone(),
@@ -724,7 +725,7 @@ fn play_stream(
         ..chilpa_tags::Tags::default()
     };
 
-    let played = crate::playback::play_stream(
+    let played = crate::playback::play_stream_told(
         stream,
         caps,
         policy,
@@ -732,12 +733,12 @@ fn play_stream(
         pause,
         Some(dsp.clone()),
         |format| open(device, format, exclusive),
-        &mut |delivery| {
+        &mut |delivery, bits| {
             let _ = events.send(PlayerEvent::Started {
                 path: path.clone(),
                 opened: delivery.opened,
                 channels: delivery.requested.channels,
-                bits: delivery.bits_carried(),
+                bits,
                 bit_perfect: delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery) && !dsp.requested(),
                 total_frames: None,
                 tags: Some(tag.clone()),

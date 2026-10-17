@@ -1,0 +1,22 @@
+{
+  "license": "CC0-1.0",
+  "origin": "Generated test tones; no recorded music or user audio.",
+  "generator": "PCM24: 0.53*sin(2*pi*(997+173*c)*i/rate) + 0.19*sin(2*pi*(2203+37*c)*i/rate); amplitude 0.00005 between rate/3 and rate/2; rounded at 8388607 full scale.",
+  "encoder": "ffmpeg -map_metadata -1 -c:a libvorbis -q:a 6",
+  "fixtures": [
+    {
+      "file": "vorbis-44100-stereo.ogg",
+      "rate_hz": 44100,
+      "channels": 2,
+      "source_frames": 44223,
+      "sha256": "e20d2c080e6808ad4ce69a2a9ff7aa7d6f5338de4d82c7354fe7cdde8b30facc"
+    },
+    {
+      "file": "vorbis-48000-mono.ogg",
+      "rate_hz": 48000,
+      "channels": 1,
+      "source_frames": 48123,
+      "sha256": "3dc8ead38649de92bf54af9ae880f7ef8f402b5b3eeb4b738a4dd2cadf5f6ebc"
+    }
+  ]
+}

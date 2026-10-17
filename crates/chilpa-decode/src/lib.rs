@@ -4,7 +4,10 @@
 //! integers, integers come out. Converting to `f32` and scaling back is what
 //! moved an LSB in QBZ, so this crate hands over
 //! [`chilpa_audio::Samples::Int`] whenever the codec allows it, and only
-//! uses floats when the source really is float.
+//! uses floats when the source really is float. Vorbis has a fixed signed
+//! 32-bit PCM output reference; its conversion boundary is in `vorbis`.
+
+mod vorbis;
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use std::fs::File;
@@ -359,7 +362,7 @@ impl Decoded {
         // integers: negotiation opened a 16 bit word with nothing to report,
         // the packing scaled the floats into it, and the verdict called an
         // MP3 bit-perfect.
-        let first = first_block(&mut *format, &mut *decoder, track_id, declared_bits);
+        let first = first_block(&mut *format, &mut *decoder, track_id, declared_bits, codec);
         let (sample_rate_hz, channels, pending) = match (declared, first) {
             ((Some(rate), Some(channels)), Ok((_, _, block))) => (rate, channels, Some(block)),
             (_, Ok((rate, channels, block))) => (rate, channels, Some(block)),
@@ -369,6 +372,7 @@ impl Decoded {
             (_, Err(e)) => return Err(e),
         };
         let sample_format = match &pending {
+            Some(Block::Int { .. }) if codec == "vorbis" => SampleFormat::S32,
             Some(Block::Float(_)) => SampleFormat::F32,
             _ => integers,
         };
@@ -412,14 +416,18 @@ impl Decoded {
     /// earlier, and those frames are decoded and dropped.
     pub fn seek_to_frame(&mut self, frame: u64) -> Result<chilpa_audio::seek::SeekPlan, DecodeError> {
         self.pending = None;
-        let to = SeekTo::TimeStamp { ts: frame, track_id: self.track_id };
+        let ts = if self.codec == "vorbis" { frame.saturating_sub(vorbis::SEEK_WINDOW) } else { frame };
+        let to = SeekTo::TimeStamp { ts, track_id: self.track_id };
         let landed = self
             .format
             .seek(SeekMode::Accurate, to)
             .map_err(|e| DecodeError::Corrupt(e.to_string()))?;
         // The decoder carries state from where it was.
         self.decoder.reset();
-        Ok(chilpa_audio::seek::SeekPlan::after_landing(frame, landed.actual_ts))
+        let actual = if self.codec == "vorbis" {
+            vorbis::prime_after_seek(&mut *self.format, &mut *self.decoder, self.track_id)?
+        } else { landed.actual_ts };
+        Ok(chilpa_audio::seek::SeekPlan::after_landing(frame, actual))
     }
 
     /// The format this file wants the device opened at.
@@ -445,7 +453,7 @@ impl Decoded {
                 continue;
             }
             match self.decoder.decode(&packet) {
-                Ok(buffer) => return Ok(Some(interleave(&buffer, self.declared_bits))),
+                Ok(buffer) => return Ok(Some(interleave(&buffer, self.declared_bits, self.codec))),
                 // A damaged packet does not bring the track down: it is skipped.
                 Err(SymphoniaError::DecodeError(_)) => continue,
                 Err(e) => return Err(DecodeError::Corrupt(e.to_string())),
@@ -473,6 +481,7 @@ fn first_block(
     decoder: &mut dyn Decoder,
     track_id: u32,
     declared_bits: Option<u8>,
+    codec: &str,
 ) -> Result<(u32, u16, Block), DecodeError> {
     loop {
         let packet = match format.next_packet() {
@@ -488,7 +497,7 @@ fn first_block(
                 return Ok((
                     spec.rate,
                     spec.channels.count() as u16,
-                    interleave(&buffer, declared_bits),
+                    interleave(&buffer, declared_bits, codec),
                 ));
             }
             Err(SymphoniaError::DecodeError(_)) => continue,
@@ -499,7 +508,7 @@ fn first_block(
 
 /// Turns a planar symphonia buffer into interleaved samples, keeping the
 /// original type.
-fn interleave(buffer: &AudioBufferRef<'_>, declared_bits: Option<u8>) -> Block {
+fn interleave(buffer: &AudioBufferRef<'_>, declared_bits: Option<u8>, codec: &str) -> Block {
     // The decoder lays the samples out left-justified inside the buffer: a
     // 16-bit FLAC arrives in a 32-bit buffer with the sample shifted 16
     // places. It is moved down to where it belongs, which is exact because
@@ -525,6 +534,7 @@ fn interleave(buffer: &AudioBufferRef<'_>, declared_bits: Option<u8>) -> Block {
         AudioBufferRef::S24(b) => ints!(b, 24, |v: symphonia::core::sample::i24| v.inner()),
         AudioBufferRef::S32(b) => ints!(b, 32, |v: i32| v),
         AudioBufferRef::U8(b) => ints!(b, 8, |v: u8| i32::from(v) - 128),
+        AudioBufferRef::F32(b) if codec == "vorbis" => vorbis::pcm_reference(b),
         AudioBufferRef::F32(b) => {
             let frames = b.frames();
             let channels = b.spec().channels.count();

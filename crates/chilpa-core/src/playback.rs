@@ -6,7 +6,7 @@
 
 use chilpa_audio::format::StreamFormat;
 use chilpa_audio::negotiate::{negotiate, Delivery, NegotiationError, Policy};
-use chilpa_audio::pack::{duplicate_mono, pack, PackError, Samples};
+use chilpa_audio::pack::{duplicate_mono, pack, pack_pcm_reference, PackError, Samples};
 use chilpa_audio::render::{FrameSource, Outcome};
 use chilpa_audio::sink::{AudioSink, SinkError, StopSignal};
 use chilpa_decode::{Block, DecodeError, Decoded};
@@ -100,6 +100,28 @@ struct Frames<'a> {
     error: Option<PackError>,
 }
 
+pub(crate) fn negotiate_decoded(decoded: &Decoded, caps: &chilpa_audio::negotiate::DeviceCaps, policy: Policy) -> Result<Delivery, NegotiationError> {
+    match negotiate(decoded.stream_format(), caps, policy) {
+        Err(NegotiationError::Unsupported { .. }) if decoded.codec() == "vorbis" && policy == Policy::BitPerfect => {
+            // A narrow or float-only output still plays, with its conversion
+            // recorded against the fixed signed 32-bit decoder reference.
+            negotiate(decoded.stream_format(), caps, Policy::AllowAnything)
+        }
+        other => other,
+    }
+}
+
+pub(crate) fn pack_decoded(decoded: &Decoded, samples: &Samples<'_>, to: chilpa_audio::format::SampleFormat, out: &mut Vec<u8>) -> Result<(), PackError> {
+    if decoded.codec() == "vorbis" { pack_pcm_reference(samples, to, out) }
+    else { pack(samples, to, out) }
+}
+
+pub(crate) fn signal_bits(decoded: &Decoded, delivery: &Delivery) -> Option<u8> {
+    // A Vorbis output reference has 32 bits, but the encoded source has no
+    // integer depth. The wire verdict still checks all reference bits.
+    if decoded.codec() == "vorbis" { None } else { delivery.bits_carried() }
+}
+
 impl FrameSource for Frames<'_> {
     fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
         loop {
@@ -118,7 +140,7 @@ impl FrameSource for Frames<'_> {
                 Block::Float(data) => Samples::Float(data),
             };
             let mut bytes = Vec::new();
-            match pack(&samples, self.opened.sample_format, &mut bytes) {
+            match pack_decoded(self.decoded, &samples, self.opened.sample_format, &mut bytes) {
                 Ok(()) if bytes.is_empty() => continue,
                 Ok(()) => return Ok(Some(bytes)),
                 Err(e) => {
@@ -162,10 +184,30 @@ where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
+    play_stream_told(stream, caps, policy, stop, pause, dsp, open_sink,
+        &mut |delivery, _| on_delivery(delivery), on_progress)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn play_stream_told<F, K>(
+    stream: chilpa_stream::HttpStream,
+    caps: &chilpa_audio::negotiate::DeviceCaps,
+    policy: Policy,
+    stop: &StopSignal,
+    pause: &chilpa_audio::sink::PauseSignal,
+    dsp: Option<chilpa_audio::dsp::Control>,
+    open_sink: F,
+    on_delivery: &mut dyn FnMut(&Delivery, Option<u8>),
+    on_progress: &mut dyn FnMut(u64),
+) -> Result<Played, PlayError>
+where
+    F: FnOnce(StreamFormat) -> Result<K, SinkError>,
+    K: AudioSink,
+{
     let mut decoded = Decoded::open_stream(stream).map_err(PlayError::Decode)?;
     let delivery =
-        negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
-    on_delivery(&delivery);
+        negotiate_decoded(&decoded, caps, policy).map_err(PlayError::Negotiation)?;
+    on_delivery(&delivery, signal_bits(&decoded, &delivery));
     let mut sink = open_sink(delivery.opened).map_err(PlayError::Sink)?;
     let mut frames = Frames {
         decoded: &mut decoded,
@@ -222,7 +264,7 @@ where
     let mut decoded = Decoded::open(path).map_err(PlayError::Decode)?;
     let total_frames = decoded.frame_count();
     let delivery =
-        negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
+        negotiate_decoded(&decoded, caps, policy).map_err(PlayError::Negotiation)?;
     let mut sink = open_sink(delivery.opened).map_err(PlayError::Sink)?;
     let mut frames = Frames {
         decoded: &mut decoded,

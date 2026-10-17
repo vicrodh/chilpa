@@ -63,7 +63,7 @@ pub enum Transform {
     Narrowed { from_bits: u8, to_bits: u8 },
     /// It went through floats: the device converts.
     Floated,
-    /// A source that decodes to floats -- MP3, AAC, Vorbis -- was rounded
+    /// A source delivered as floats -- MP3 or AAC -- was rounded
     /// into integers of this width. It never had integer samples, so there
     /// was nothing exact to keep; it is said because it is not bit-perfect.
     Quantized { to_bits: u8 },
@@ -225,7 +225,7 @@ pub fn negotiate(
         }
     }
 
-    // A source that decodes to floats -- MP3, AAC, Vorbis -- never had
+    // A source delivered as floats -- MP3 or AAC -- never had
     // integer samples, so no word keeps them. Refusing it would silence every
     // lossy track and every radio with the switch on; letting it through
     // with nothing to report is what this used to do, and the verdict called

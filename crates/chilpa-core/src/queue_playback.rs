@@ -43,6 +43,8 @@ pub struct TrackAbout {
     pub artwork: Option<PathBuf>,
     /// How many frames the decoder counts, at the file's own rate.
     pub frames: Option<u64>,
+    /// Encoded signal depth to announce, excluding a lossy PCM reference.
+    pub bits: Option<u8>,
     /// What a DSD file is: its rate and its length in one-bit samples.
     pub dsd: Option<chilpa_dsd::DsdInfo>,
 }
@@ -78,11 +80,11 @@ pub(crate) fn open_track(
         let dsd = Some(reader.info().clone());
         let (tags, artwork) = said_by(path);
         let (source, delivery) = dsd_track(reader, caps, dsd_mode, direct_dsd)?;
-        return Ok(Opened { source, delivery, about: TrackAbout { tags, artwork, frames: None, dsd } });
+        return Ok(Opened { source, delivery, about: TrackAbout { tags, artwork, frames: None, dsd, bits: Some(1) } });
     }
     // A track on a server: the original bytes, read by windows, decoded
     // here like a file on disk (ADR-017).
-    let (decoded, observer, normalization, about) = match crate::remote::entry(path) {
+    let (decoded, observer, normalization, mut about) = match crate::remote::entry(path) {
         Some(entry) => {
             let (decoded, observer, normalization) = crate::remote::open(path, &entry).map_err(unreadable)?;
             (decoded, observer, normalization, TrackAbout::default())
@@ -90,11 +92,12 @@ pub(crate) fn open_track(
         None => {
             let decoded = Decoded::open(path).map_err(PlayError::Decode)?;
             let (tags, artwork) = said_by(path);
-            let about = TrackAbout { tags, artwork, frames: decoded.frame_count(), dsd: None };
+            let about = TrackAbout { tags, artwork, frames: decoded.frame_count(), dsd: None, bits: None };
             (decoded, None, None, about)
         }
     };
-    let delivery = negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
+    let delivery = crate::playback::negotiate_decoded(&decoded, caps, policy).map_err(PlayError::Negotiation)?;
+    about.bits = crate::playback::signal_bits(&decoded, &delivery);
     Ok(Opened { source: Source::Pcm(decoded, observer, normalization), delivery, about })
 }
 
@@ -758,7 +761,7 @@ impl FrameSource for TrackFrames<'_> {
                     let frames = if self.spread { duplicate_mono(&frames) } else { frames };
                     let mut bytes = Vec::new();
                     let samples = Samples::Int { data: &frames, bits };
-                    pack(&samples, self.opened.sample_format, &mut bytes)
+                    crate::playback::pack_decoded(self.decoded, &samples, self.opened.sample_format, &mut bytes)
                         .map_err(|e| PlayError::Pack(e).to_string())?;
                     bytes
                 }

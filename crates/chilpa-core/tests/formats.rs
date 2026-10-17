@@ -135,6 +135,24 @@ fn check_lossless_seek(path: &Path, bits: u16) {
     }
 }
 
+fn check_vorbis_seek(path: &Path, reference: &[i32]) {
+    let mut decoded = Decoded::open(path).unwrap();
+    for target in [0, 1, RATE as usize + 101, FRAMES as usize - 1] {
+        let mut discard = decoded.seek_to_frame(target as u64).unwrap().discard as usize;
+        let mut actual = Vec::new();
+        while let Some(block) = decoded.next_block().unwrap() {
+            let Block::Int { data, bits: 32 } = block else { panic!("Vorbis reference changed format") };
+            let frames = data.len() / 2;
+            let dropped = discard.min(frames);
+            discard -= dropped;
+            actual.extend(data[dropped * 2..].iter().step_by(2).copied());
+        }
+        let expected = &reference[target..];
+        assert_eq!(actual.len(), expected.len(), "Vorbis suffix after frame {target}");
+        assert_eq!(actual.iter().zip(expected).position(|(a, b)| a != b), None, "first changed sample after seeking to {target}");
+    }
+}
+
 #[test]
 fn lossless_formats_come_out_identical_and_in_blocks() {
     if !have_ffmpeg() {
@@ -153,6 +171,7 @@ fn lossless_formats_come_out_identical_and_in_blocks() {
     let cases: &[(&str, &Path, &[&str], &Vec<i32>, u8)] = &[
         ("flac16.flac", &wav16, &["-c:a", "flac"], &expected16, 16),
         ("flac24.flac", &wav24, &["-c:a", "flac"], &expected24, 24),
+        ("flac-in-ogg.oga", &wav24, &["-c:a", "flac", "-f", "ogg"], &expected24, 24),
         ("alac16.m4a", &wav16, &["-c:a", "alac"], &expected16, 16),
         ("alac24.m4a", &wav24, &["-c:a", "alac"], &expected24, 24),
         ("pcm24.wav", &wav24, &["-c:a", "pcm_s24le"], &expected24, 24),
@@ -207,6 +226,7 @@ fn lossy_formats_decode_in_blocks() {
         }
         let (came_out, largest, _) = decode(&target);
         assert!(!came_out.is_empty(), "{name}: no audio came out");
+        if name.ends_with(".ogg") { check_vorbis_seek(&target, &came_out); }
         // With lossy the duration moves a little because of encoder padding;
         // close enough is enough.
         let difference = (came_out.len() as i64 - FRAMES as i64).abs();
@@ -252,7 +272,7 @@ fn a_raw_aac_file_is_scanned_with_its_audio_properties() {
 }
 
 #[test]
-fn a_lossy_file_announces_the_floats_it_decodes_to() {
+fn float_codecs_announce_their_samples_and_vorbis_announces_its_pcm_reference() {
     // A lossy codec declares no bit depth, and the fallback announced 16 bit
     // integers. Negotiation then opened a 16 bit word with nothing to report,
     // the packing scaled the floats into it, and the verdict called an MP3
@@ -272,10 +292,16 @@ fn a_lossy_file_announces_the_floats_it_decodes_to() {
         }
         let mut decoded = Decoded::open(&target).unwrap();
         let first = decoded.next_block().unwrap().expect("there is audio");
-        assert!(matches!(first, Block::Float(_)), "{name} decodes to floats");
+        let sample_format = if name.ends_with(".ogg") {
+            assert!(matches!(first, Block::Int { bits: 32, .. }), "Vorbis PCM reference");
+            chilpa_audio::format::SampleFormat::S32
+        } else {
+            assert!(matches!(first, Block::Float(_)), "{name} decodes to floats");
+            chilpa_audio::format::SampleFormat::F32
+        };
         assert_eq!(
             decoded.stream_format().sample_format,
-            chilpa_audio::format::SampleFormat::F32,
+            sample_format,
             "{name} says so"
         );
         let _ = std::fs::remove_file(target);
