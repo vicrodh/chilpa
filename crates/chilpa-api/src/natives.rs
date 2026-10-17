@@ -233,13 +233,13 @@ impl Natives {
         self.start_locked(manifest, folder)
     }
     fn start_locked(self: &Arc<Self>, manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, PluginError> {
-        let client = launch(manifest, folder, Arc::downgrade(self))?;
+        let (client, data, cache) = launch(manifest, folder, Arc::downgrade(self))?;
         let greeting = client.call("initialize", json!({
             "protocol": PROTOCOL,
             "playback_events": 1,
             "host": {"name": "chilpa", "version": env!("CARGO_PKG_VERSION")},
-            "data_dir": "/data",
-            "cache_dir": "/cache",
+            "data_dir": data,
+            "cache_dir": cache,
             "locale": chilpa_i18n::current_language(),
             "network": {"enabled": !chilpa_core::network::current().offline},
         }), GREETING).map_err(|e| PluginError::Crashed(e.to_string()))?;
@@ -306,8 +306,10 @@ pub(crate) fn install(
     })
 }
 
-#[cfg(target_os = "linux")]
-fn launch(manifest: &Manifest, folder: &Path, natives: std::sync::Weak<Natives>) -> Result<Arc<NativeClient>, PluginError> {
+type Launched = (Arc<NativeClient>, PathBuf, PathBuf);
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn launch(manifest: &Manifest, folder: &Path, natives: std::sync::Weak<Natives>) -> Result<Launched, PluginError> {
     let id = manifest.id.clone();
     let paths = chilpa_bwrap::NativePaths {
         folder: folder.to_path_buf(),
@@ -318,20 +320,21 @@ fn launch(manifest: &Manifest, folder: &Path, natives: std::sync::Weak<Natives>)
         } else { None },
     };
     let name = id.clone();
-    chilpa_bwrap::launch_native(&paths, &id, MEMORY, !chilpa_core::network::current().offline && !manifest.allowed_domains().is_empty(), move |method, params| {
+    let client = chilpa_bwrap::launch_native(&paths, &id, MEMORY, !chilpa_core::network::current().offline && !manifest.allowed_domains().is_empty(), move |method, params| {
         if method == "host.request" {
             if let Some(natives) = natives.upgrade() { crate::plugin_broker::dispatch(&natives, &name, params.clone()); }
         } else if method == "log" {
             eprintln!("plugin[{name}]: {}", params.get("message").and_then(Value::as_str).unwrap_or(""));
         }
     })
-    .map_err(|_| PluginError::Crashed("the plugin's sandbox could not start".into()))
+    .map_err(|_| PluginError::Crashed("the plugin's sandbox could not start".into()))?;
+    let (data, cache) = paths.guest_directories().map_err(|_| PluginError::Crashed("the plugin's private folders are unavailable".into()))?;
+    Ok((client, data, cache))
 }
 
-/// Native plugins run only inside the Linux sandbox for now; elsewhere they
-/// are listed with the reason and never started (ADR-010 debt).
-#[cfg(not(target_os = "linux"))]
-fn launch(_: &Manifest, _: &Path, _: std::sync::Weak<Natives>) -> Result<Arc<NativeClient>, PluginError> {
+/// Platforms without process isolation list a reason and never start a worker.
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+fn launch(_: &Manifest, _: &Path, _: std::sync::Weak<Natives>) -> Result<Launched, PluginError> {
     Err(PluginError::NotAllowed("native plugins need a sandbox this system does not have yet".into()))
 }
 

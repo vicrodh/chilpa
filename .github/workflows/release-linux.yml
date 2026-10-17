@@ -133,6 +133,7 @@ jobs:
       - name: Check release tooling and the macOS engine
         run: |
           python3 -m unittest discover -s scripts/tests
+          cargo test --locked -q -p chilpa-bwrap --lib
           cargo test --locked -q -p chilpa-core --lib
           cargo test --locked -q -p chilpa-api --lib
       - name: Build macOS binary

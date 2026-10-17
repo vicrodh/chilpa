@@ -708,3 +708,9 @@ prerelease
 
 # ureq socket-address abbreviation.
 addrs
+
+# Darwin process resource APIs and kernel structure fields.
+nofile
+ri
+rusage
+setpgid
