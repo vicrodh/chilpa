@@ -1,4 +1,6 @@
 module app.chilpa
+PlaylistEditDialog 1.0 qrc:/qt/qml/app/chilpa/qml/Patterns/PlaylistEditDialog.qml
+PlaylistFolderDialog 1.0 qrc:/qt/qml/app/chilpa/qml/Patterns/PlaylistFolderDialog.qml
 singleton Playlists 1.0 Playlists.qml
 TrackListModel 1.0 TrackListModel.qml
 singleton SettingsModel 1.0 SettingsModel.qml

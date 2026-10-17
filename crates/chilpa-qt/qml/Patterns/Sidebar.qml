@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/controls/qml/Primitives" as Driving
+import app.chilpa.playlists as Lists
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
@@ -180,7 +181,7 @@ Rectangle {
         }
 
         // Whatever height is left, down to the sidebar's bottom padding.
-        SidebarPlaylists {
+        Lists.SidebarPlaylists {
             visible: !side.collapsed
             width: parent.width
             height: Math.max(0, parent.height - y - Metrics.sidebarPadV) // derived: the rest of the column

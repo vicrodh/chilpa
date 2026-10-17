@@ -2,9 +2,10 @@ import QtQuick
 import QtTest
 import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
-import "../../qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
 
 TestCase {
+    id: test
     name: "SidebarPlaylistOrganization"
     when: windowShown
     visible: true
@@ -26,6 +27,67 @@ TestCase {
                     artwork_path: "", covers: [], custom_position: 1, updated_at: 2}]}
         sidebar.expanded = ({2: true})
         sidebar.setOrder("custom")
+    }
+    function longCatalog() {
+        Playlists.catalog = {folders: [], playlists: Array.from({length: 40}, (_, index) => ({
+            id: 100 + index, name: "List " + String(index).padStart(2, "0"), source: "", provider: "Local", mixed: true,
+            folder_id: 0, visible_sidebar: true, track_count: index, artwork_path: "", covers: [], custom_position: index
+        }))}
+        sidebar.reload()
+        const view = findChild(sidebar, "sidebarPlaylistList")
+        tryCompare(view, "count", 40)
+        view.positionViewAtIndex(12, ListView.Beginning)
+        tryVerify(() => !!view.itemAtIndex(12)?.item)
+        return view
+    }
+    function editing(view) {
+        const host = view.itemAtIndex(12), row = host.item
+        row.editing = true
+        const input = test.Window.window.activeFocusItem
+        verify(input && input.text !== undefined)
+        input.text = "Uncommitted name"
+        verify(row.editing)
+        return {host: host, row: row, input: input, y: view.contentY}
+    }
+    function unchanged(view, kept) {
+        compare(view.itemAtIndex(12), kept.host, "I retain the mounted delegate")
+        compare(kept.host.item, kept.row, "I retain the playlist body")
+        verify(kept.row.editing)
+        compare(kept.input.text, "Uncommitted name")
+        compare(test.Window.window.activeFocusItem, kept.input)
+        fuzzyCompare(view.contentY, kept.y, 0.1)
+    }
+    function test_identical_remote_status_updates_keep_rename_focus_and_scroll() {
+        const view = longCatalog(), kept = editing(view)
+        for (let index = 0; index < 5; index++) {
+            Library.remoteRev++
+            Library.rev++
+            Playlists.rev++
+            wait(20)
+            unchanged(view, kept)
+        }
+    }
+    function test_another_playlist_update_patches_its_mounted_row() {
+        const view = longCatalog(), kept = editing(view)
+        tryVerify(() => !!view.itemAtIndex(13)?.item)
+        const other = view.itemAtIndex(13), body = other.item
+        Playlists.catalog = Object.assign({}, Playlists.catalog, {playlists: Playlists.catalog.playlists.map(row =>
+            row.id === 113 ? Object.assign({}, row, {track_count: 99}) : row)})
+        Library.remoteRev++
+        tryCompare(body, "tracks", 99)
+        compare(view.itemAtIndex(13), other)
+        compare(other.item, body)
+        unchanged(view, kept)
+    }
+    function test_custom_order_moves_existing_playlist_bodies_by_identity() {
+        const view = longCatalog(), kept = editing(view)
+        Playlists.catalog = Object.assign({}, Playlists.catalog, {playlists: Playlists.catalog.playlists.map(row =>
+            Object.assign({}, row, {custom_position: row.id === 112 ? 13 : row.id === 113 ? 12 : row.custom_position}))})
+        Library.remoteRev++
+        tryVerify(() => view.itemAtIndex(13) === kept.host)
+        compare(kept.host.item, kept.row)
+        compare(test.Window.window.activeFocusItem, kept.input)
+        compare(kept.input.text, "Uncommitted name")
     }
     function test_empty_folders_and_mixed_children_share_the_tree() {
         compare(sidebar.rows.length, 4)

@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import app.chilpa
+import app.chilpa.playlists
 import "qrc:/qt/qml/app/chilpa/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/qml/Components/PlaylistTree.js" as Tree
 

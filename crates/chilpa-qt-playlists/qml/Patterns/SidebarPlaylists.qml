@@ -4,9 +4,9 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import "../Components"
+import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
-import "../Components/PlaylistTree.js" as PlaylistTree
+import "qrc:/qt/qml/app/chilpa/qml/Components/PlaylistTree.js" as PlaylistTree
 
 // The sidebar's playlists (design/02 2, item 6): the label with a button to
 // make one, a filter, and the list, which scrolls in whatever height is
@@ -22,6 +22,7 @@ Item {
     function setOrder(value) { order = value; ascending = true; SettingsModel.keep("ui.playlists.order", value); SettingsModel.keep("ui.playlists.ascending", "true"); reload() }
     function reverseOrder() { ascending = !ascending; SettingsModel.keep("ui.playlists.ascending", String(ascending)); reload() }
     property var rows: []
+    KeyedModel { id: stableRows; items: section.rows }
     property var expanded: ({})
     function reload() {
         const catalog = JSON.parse(Playlists.catalogJson(filter.text))
@@ -80,57 +81,43 @@ Item {
 
     ListView {
         id: view
+        objectName: "sidebarPlaylistList"
         anchors.top: filter.bottom
         anchors.topMargin: Metrics.gap6
         anchors.bottom: parent.bottom
         width: parent.width
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        model: section.rows
+        model: stableRows
         ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
 
         delegate: Loader {
             id: host
             required property int index
-            required property int depth
-            required property int rowKind
-            required property int playlistId
-            required property string name
-            required property int tracks
-            required property string source
-            required property string sourceName
-            required property bool local
-            required property string artwork
-            required property int folderId
-            required property bool visibleInSidebar
-            required property var covers
-            required property string folderColor
-            required property bool expanded
-            required property string sourceIcon
-            required property bool showSourceBadge
+            required property var entry
 
-            x: depth * Metrics.gap8 // derived: one small inset per folder depth
+            x: entry.depth * Metrics.gap8 // derived: one small inset per folder depth
             width: ListView.view.width - x
             height: Metrics.playlistRowHeight
-            sourceComponent: rowKind === 2 ? groupDelegate : rowKind === 1 ? folderDelegate : playlistDelegate
-            Component { id: groupDelegate; PlaylistGroupHeader { title:host.name; sourceName:host.sourceName; sourceIcon:host.sourceIcon } }
+            sourceComponent: entry.rowKind === 2 ? groupDelegate : entry.rowKind === 1 ? folderDelegate : playlistDelegate
+            Component { id: groupDelegate; PlaylistGroupHeader { title:host.entry.name; sourceName:host.entry.sourceName; sourceIcon:host.entry.sourceIcon } }
 
             Component {
                 id: folderDelegate
                 PlaylistFolderRow {
                     width: host.width
                     index: host.index
-                    folderId: host.folderId
-                    name: host.name
-                    tracks: host.tracks
-                    folderColor: host.folderColor
-                    sourceIcon: host.sourceIcon
-                    expanded: host.expanded
-                    onToggled: section.toggleFolder(section.rows[host.index].expandKey || folderId)
+                    folderId: host.entry.folderId
+                    name: host.entry.name
+                    tracks: host.entry.tracks
+                    folderColor: host.entry.folderColor
+                    sourceIcon: host.entry.sourceIcon
+                    expanded: host.entry.expanded
+                    onToggled: section.toggleFolder(host.entry.expandKey || folderId)
                     onMenu: (left, top) => {
-                        if (host.folderId < 0 && !section.rows[host.index].nativeRef) return
+                        if (host.entry.folderId < 0 && !host.entry.nativeRef) return
                         const at = mapToItem(section, left, top)
-                        actions.row(section.rows[host.index], at.x, at.y)
+                        actions.row(host.entry, at.x, at.y)
                     }
                 }
             }
@@ -140,23 +127,23 @@ Item {
                     id: row
                     width: host.width
                     index: host.index
-                    playlistId: host.playlistId
-                    name: host.name
-                    tracks: host.tracks
-                    source: host.source
-                    sourceName: host.sourceName
-                    sourceIcon: host.sourceIcon
-                    showSourceBadge: host.showSourceBadge
-                    local: host.local
-                    artwork: host.artwork
-                    folderId: host.folderId
-                    visibleInSidebar: host.visibleInSidebar
-                    covers: host.covers
+                    playlistId: host.entry.playlistId
+                    name: host.entry.name
+                    tracks: host.entry.tracks
+                    source: host.entry.source
+                    sourceName: host.entry.sourceName
+                    sourceIcon: host.entry.sourceIcon
+                    showSourceBadge: host.entry.showSourceBadge
+                    local: host.entry.local
+                    artwork: host.entry.artwork
+                    folderId: host.entry.folderId
+                    visibleInSidebar: host.entry.visibleInSidebar
+                    covers: host.entry.covers
                     active: Navigation.screen === (playlistId < 0 ? "album" : "playlist") && Navigation.routeId === playlistId
                     onOpened: section.openPlaylist(playlistId)
                     onMenu: (left, top) => {
                         const at = row.mapToItem(section, left, top)
-                        actions.row(section.rows[host.index], at.x, at.y)
+                        actions.row(host.entry, at.x, at.y)
                     }
                     onRenamed: (text) => {
                         if (local)
