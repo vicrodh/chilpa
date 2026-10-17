@@ -27,7 +27,8 @@ pub const GPU_IDENTITY: &str = "appearance.gpuIdentity";
 /// One physical GPU in this launch's Qt Vulkan instance.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GpuInfo {
-    /// `QT_VK_PHYSICAL_DEVICE_INDEX` for this process only.
+    /// The originating Qt instance's index. Only a local inventory may
+    /// supply this process's `QT_VK_PHYSICAL_DEVICE_INDEX`.
     pub index: u32,
     pub name: String,
     pub vendor_id: u32,
@@ -88,14 +89,39 @@ fn inventory_from_raw(raw: Vec<QtGpuJson>) -> Vec<GpuInfo> {
     out
 }
 
-static GPUS: OnceLock<Vec<GpuInfo>> = OnceLock::new();
+struct Inventory {
+    devices: Vec<GpuInfo>,
+    local: bool,
+}
+
+impl Inventory {
+    fn selection(&self) -> Option<&[GpuInfo]> {
+        self.local.then_some(self.devices.as_slice())
+    }
+}
+
+static GPUS: OnceLock<Inventory> = OnceLock::new();
+
+pub(super) fn parse_inventory_json(json: &str) -> Result<Vec<GpuInfo>, serde_json::Error> {
+    serde_json::from_str::<Vec<QtGpuJson>>(json).map(inventory_from_raw)
+}
 
 /// The devices Qt listed, as the window's crate hands them over: a JSON
 /// array of `{index, name, vendor, device, type, uuid}`. Once per process;
 /// an unreadable list is no devices, never a reason not to start.
 pub fn set_inventory_json(json: &str) {
-    let list = match serde_json::from_str::<Vec<QtGpuJson>>(json) {
-        Ok(raw) => inventory_from_raw(raw),
+    set_inventory(json, true);
+}
+
+/// A child's inventory supplies Settings rows, never a device index for
+/// this process's Qt instance.
+pub(super) fn set_child_inventory_json(json: &str) {
+    set_inventory(json, false);
+}
+
+fn set_inventory(json: &str, local: bool) {
+    let list = match parse_inventory_json(json) {
+        Ok(list) => list,
         Err(error) => {
             eprintln!("gpu: Qt's Vulkan inventory was not readable: {error}");
             Vec::new()
@@ -110,13 +136,13 @@ pub fn set_inventory_json(json: &str) {
             gpu.index, gpu.name, if gpu.discrete { "discrete" } else { "integrated" }, gpu.vendor_id, gpu.device_id
         );
     }
-    let _ = GPUS.set(list);
+    let _ = GPUS.set(Inventory { devices: list, local });
 }
 
-/// The devices in the order this process's Qt Vulkan backend sees them;
-/// empty before the window's crate lists them, or where there is no Vulkan.
+/// The devices available to Settings. Indices from an inventory child
+/// belong only to that child and cannot select this process's adapter.
 pub fn gpus() -> &'static [GpuInfo] {
-    GPUS.get().map(Vec::as_slice).unwrap_or(&[])
+    GPUS.get().map(|inventory| inventory.devices.as_slice()).unwrap_or(&[])
 }
 
 /// The one device the predicate names, or none when it names two.
@@ -258,6 +284,22 @@ fn renderer_blocks_preflight() -> bool {
     renderer_choice_blocks(&from_env.unwrap_or_else(|| super::pref(super::RENDERER, "auto")))
 }
 
+fn needs_parent_inventory(linux: bool, approved: bool, device_override: bool, renderer_override: bool) -> bool {
+    linux && approved && !device_override && !renderer_override
+}
+
+/// Only a saved GPU that passed presentation and can still be applied
+/// needs this process's Qt device order. Auto and explicit backend choices
+/// can obtain Settings rows without loading Vulkan drivers here.
+pub fn needs_local_inventory() -> bool {
+    needs_parent_inventory(
+        cfg!(target_os = "linux"),
+        any_approved(),
+        override_env().is_some(),
+        super::env_overrides(super::RHI_ENV) || super::env_overrides(super::QUICK_ENV),
+    )
+}
+
 /// A kept GPU is proved in a disposable child before this process builds
 /// anything: a compositor that rejects the device's buffers kills only the
 /// child, and this process keeps Auto and starts as usual.
@@ -318,7 +360,9 @@ pub fn run_child(present: impl FnOnce() -> i32) -> i32 {
     if !cfg!(target_os = "linux") {
         return preflight::GPU_NOT_SELECTABLE;
     }
-    let list = gpus();
+    let Some(list) = GPUS.get().and_then(Inventory::selection) else {
+        return preflight::GPU_NOT_SELECTABLE;
+    };
     if list.len() < 2 {
         eprintln!("gpu preflight: fewer than two selectable devices -> Auto");
         return preflight::GPU_NOT_SELECTABLE;
@@ -363,7 +407,10 @@ pub fn apply_preference() {
         eprintln!("gpu: '{name}' asked for, but this session exposes fewer than two selectable GPUs -> Auto");
         return;
     }
-    let Some(gpu) = resolve_in(gpus(), &name, &identity) else {
+    let Some(list) = GPUS.get().and_then(Inventory::selection) else {
+        return reject_saved("this process has no local Qt device inventory");
+    };
+    let Some(gpu) = resolve_in(list, &name, &identity) else {
         super::disarm(&sentinel());
         eprintln!("gpu: the kept device '{name}' ({identity}) is not in Qt's inventory -> Auto");
         return;
@@ -440,6 +487,28 @@ mod tests {
         for choice in ["auto", "wgpu", "gpu", "hardware", "hw", "unknown"] {
             assert!(!renderer_choice_blocks(choice), "{choice}");
         }
+    }
+
+    #[test]
+    fn auto_and_explicit_backend_choices_do_not_need_parent_vulkan_inventory() {
+        assert!(!needs_parent_inventory(true, false, false, false), "Auto has no approved GPU");
+        assert!(needs_parent_inventory(true, true, false, false), "a saved GPU needs the parent's Qt order");
+        assert!(!needs_parent_inventory(true, true, true, false), "an explicit device overrides the saved GPU");
+        assert!(!needs_parent_inventory(true, true, false, true), "an explicit Qt backend overrides the saved GPU");
+        assert!(!needs_parent_inventory(false, true, false, false), "GPU selection remains Linux-only");
+    }
+
+    #[test]
+    fn child_indices_cannot_select_a_parent_device() {
+        let child = Inventory { devices: vec![info(0, "Discrete", "vk:discrete", true)], local: false };
+        let parent = Inventory {
+            devices: vec![info(0, "Integrated", "vk:integrated", false), info(1, "Discrete", "vk:discrete", true)],
+            local: true,
+        };
+        assert_eq!(resolve_in(&child.devices, "Discrete", "vk:discrete").unwrap().index, 0);
+        assert!(child.selection().is_none(), "a Settings inventory is never a selection inventory");
+        let selected = resolve_in(parent.selection().unwrap(), "Discrete", "vk:discrete").unwrap();
+        assert_eq!(selected.index, 1, "a saved identity resolves against the parent's own instance order");
     }
 
     #[test]

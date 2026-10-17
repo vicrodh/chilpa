@@ -569,6 +569,13 @@ impl Plugins {
             .is_some_and(|manifest| self.approvals.covers(manifest))
     }
 
+    /// I distinguish explicitly disabled installed plugins from sources
+    /// whose registry entry has not been scanned or has no valid manifest.
+    pub(crate) fn catalog_states(&self) -> Vec<(String, bool)> {
+        self.registry.installed().filter(|plugin| plugin.manifest.is_some())
+            .map(|plugin| (plugin.id.clone(), self.enabled(&plugin.id))).collect()
+    }
+
     pub fn approve(&mut self, id: &str) -> Result<(), String> {
         let manifest = self
             .registry

@@ -25,6 +25,7 @@ impl<K: Ord, V: Clone> SharedMap<K, V> {
     }
     pub fn contains_key<Q: Ord + ?Sized>(&self, key: &Q) -> bool where K: Borrow<Q> { self.0.contains_key(key) }
     pub fn insert(&mut self, key: K, value: V) { self.0.insert(key, Arc::new(value)); }
+    pub fn insert_shared(&mut self, key: K, value: Arc<V>) { self.0.insert(key, value); }
     pub fn remove<Q: Ord + ?Sized>(&mut self, key: &Q) where K: Borrow<Q> { self.0.remove(key); }
     pub fn retain(&mut self, mut keep: impl FnMut(&K, &V) -> bool) { self.0.retain(|key, value| keep(key, value)); }
     pub fn keys(&self) -> impl Iterator<Item = &K> { self.0.keys() }

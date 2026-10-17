@@ -31,6 +31,7 @@ pub(crate) mod view;
 mod sorting;
 mod selection;
 mod navigation;
+mod residency;
 pub use selection::SelectionHold;
 #[cfg(test)]
 mod queue_retention_tests;
@@ -102,6 +103,7 @@ struct Inner {
     selections: HashMap<u64, selection::SelectionRoots>,
     selection_serial: u64,
     navigation: navigation::NavigationRoots,
+    residency: residency::State,
     loaded: bool,
     queue: Queue,
     /// Why the last attempt failed, by listing key or by card.
@@ -181,6 +183,10 @@ impl Catalog {
     /// time: one that reads the disk and then asks plugins, and the cover
     /// fetchers.
     pub fn attach(self: &Arc<Self>, plugins: Option<Arc<Mutex<Plugins>>>, natives: Arc<crate::natives::Natives>) {
+        if let Some(host) = &plugins {
+            let states = host.lock().unwrap_or_else(|e| e.into_inner()).catalog_states();
+            self.set_source_states(states);
+        }
         *self.plugins.lock().unwrap_or_else(|e| e.into_inner()) = plugins;
         *self.natives.lock().unwrap_or_else(|e| e.into_inner()) = Some(natives);
         self.wake.notify_all();
@@ -208,7 +214,12 @@ impl Catalog {
 
     /// Queue edits replace this set; progress ticks never rebuild it.
     pub(crate) fn protect_tracks(&self, paths: HashSet<String>) {
-        self.lock().protected_tracks = paths;
+        let mut inner = self.lock();
+        if inner.protected_tracks != paths {
+            inner.protected_tracks = paths;
+            inner.residency.changed();
+            self.wake.notify_one();
+        }
     }
 
     pub(crate) fn changed(&self) {
@@ -248,6 +259,7 @@ impl Catalog {
     }
 
     fn queue(&self, inner: &mut Inner, job: Job, urgent: bool) {
+        if residency::blocked(inner, &job) { return; }
         if matches!(&job, Job::Tracks(id) if inner.card_errors.contains_key(id) && inner.card_retry_at.get(id).is_none_or(|at| at.elapsed() < std::time::Duration::from_secs(30))) || inner.running.contains(&job) {
             return;
         }
@@ -281,6 +293,11 @@ impl Catalog {
         if image.is_empty() || inner.queue.covers_queued.contains(image)
             || inner.queue.covers_failed.get(image).is_some_and(|at| at.elapsed() < Duration::from_secs(30)) {
             return;
+        }
+        if inner.art_received.contains(image) {
+            if crate::pictures::kept(image).is_some() { return; }
+            // I retry a received picture when cache maintenance removed its file.
+            inner.art_received.remove(image);
         }
         inner.queue.covers_failed.remove(image);
         inner.queue.covers_queued.insert(image.to_string());
@@ -539,6 +556,7 @@ impl Catalog {
     pub fn defer(&self, albums: Vec<i64>, act: &str, shuffled: bool, origin: Option<crate::queue_origin::QueueOrigin>) {
         let mut inner = self.lock();
         for id in &albums {
+            if inner.store.cold_sources.values().any(|source| source.cards.contains_key(id)) { inner.card_errors.remove(id); }
             if inner.store.cards.get(id).is_some_and(|c| c.tracks.is_none()) {
                 inner.card_errors.remove(id);
                 self.queue(&mut inner, Job::Tracks(*id), true);
@@ -546,6 +564,8 @@ impl Catalog {
         }
         inner.deferred.retain(|d| d.act != act || d.albums != albums);
         inner.deferred.push(Deferred { albums, act: act.into(), shuffled, origin, asked: Instant::now() });
+        inner.residency.changed();
+        self.wake.notify_one();
     }
 
     /// The deferred actions whose records are all read now. Those that
@@ -556,7 +576,8 @@ impl Catalog {
         let mut ready = Vec::new();
         for d in deferred {
             let read = d.albums.iter().all(|id| *id >= 0 || inner.store.cards.get(id).is_some_and(|c| c.tracks.is_some()));
-            let failed = d.albums.iter().any(|id| inner.card_errors.contains_key(id) || (*id < 0 && !inner.store.cards.contains_key(id)));
+            let failed = d.albums.iter().any(|id| inner.card_errors.contains_key(id)
+                || (*id < 0 && !inner.store.cards.contains_key(id) && !inner.store.cold_sources.values().any(|source| source.cards.contains_key(id))));
             if read {
                 ready.push(d);
             } else if !failed && d.asked.elapsed() < ACTION_PATIENCE {
@@ -579,15 +600,18 @@ impl Catalog {
         self.tracks_by_ids(&ids)
     }
 
-    pub fn saved_playlist_cards(&self) -> Vec<store::Card> {
+    pub(crate) fn saved_playlist_summaries(&self) -> Vec<store::PlaylistSummary> {
         let inner = self.lock();
-        let mut cards = Vec::new();
-        for (key, shelf) in &inner.store.shelves {
-            if key.ends_with(" section:playlists") {
-                cards.extend(shelf.cards.iter().filter_map(|id| inner.store.cards.get(id)).cloned());
-            }
+        let live = inner.store.playlist_summaries();
+        let mut rows = Vec::new();
+        for archived in inner.store.cold_sources.values().flat_map(|source| &source.playlists) {
+            if rows.iter().any(|row: &store::PlaylistSummary| row.plugin == archived.plugin && row.identity == archived.identity) { continue; }
+            rows.push(live.iter().find(|row| row.plugin == archived.plugin && row.identity == archived.identity).unwrap_or(archived).clone());
         }
-        cards
+        for row in live {
+            if !rows.iter().any(|previous| previous.plugin == row.plugin && previous.identity == row.identity) { rows.push(row); }
+        }
+        rows
     }
 
     pub(crate) fn record_playlist_play(&self, id: i64) {
@@ -639,6 +663,7 @@ impl Catalog {
 
     pub fn forget_plugin(&self, plugin: &str) {
         let mut inner = self.lock();
+        inner.residency.forget(plugin);
         inner.store.forget_plugin(plugin);
         let cards: HashSet<_> = inner.store.cards.keys().copied().collect();
         let belongs = |job: &Job| match job {

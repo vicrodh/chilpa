@@ -236,6 +236,9 @@ fn native_of(catalog: &Catalog, job: &Job) -> Option<Arc<crate::natives::Natives
 fn next(catalog: &Catalog, saved: &mut Instant) -> (Job, Arc<Mutex<Plugins>>) {
     let mut inner = catalog.lock();
     loop {
+        drop(inner);
+        catalog.maintain_residency();
+        inner = catalog.lock();
         let plugins = catalog.plugins.lock().unwrap_or_else(|e| e.into_inner()).clone();
         if let Some(plugins) = plugins {
             let natives = catalog.natives();
@@ -437,9 +440,7 @@ pub(super) fn covers(catalog: &Arc<Catalog>) {
             let mut inner = catalog.lock();
             loop {
                 if let Some(image) = inner.queue.covers.pop_front() {
-                    let plugin = inner.store.cards.values().find(|c| c.image == image).map(|c| c.plugin.clone())
-                        .or_else(|| inner.store.tracks.values().find(|t| t.image == image).map(|t| t.plugin.clone()))
-                        .or_else(|| inner.images.get(&image).cloned());
+                    let plugin = super::residency::cover_source(&inner, &image);
                     let Some(plugin) = plugin else {
                         inner.queue.covers_queued.remove(&image);
                         continue;
@@ -464,31 +465,105 @@ pub(super) fn covers(catalog: &Arc<Catalog>) {
                     inner.queue.covers_queued.remove(&image);
                     continue;
                 };
-                inner.domains.insert(plugin, domains.clone());
+                if super::residency::source_inactive(&inner, &plugin) {
+                    inner.queue.covers_queued.remove(&image);
+                    continue;
+                }
+                inner.domains.insert(plugin.clone(), domains.clone());
                 domains
             }
         };
+        {
+            let mut inner = catalog.lock();
+            if super::residency::source_inactive(&inner, &plugin) {
+                inner.queue.covers_queued.remove(&image);
+                continue;
+            }
+        }
         let kept = crate::pictures::keep_approved(&image, &domains);
         let mut inner = catalog.lock();
         inner.queue.covers_queued.remove(&image);
+        if super::residency::source_inactive(&inner, &plugin) { continue; }
         let Some(path) = kept else {
             inner.queue.covers_failed.insert(image, Instant::now());
             continue;
         };
-        for card in inner.store.cards.values_mut_where(|c| c.image == image) {
-            card.art = path.clone();
-        }
-        inner.art_received.insert(image);
-        inner.dirty = true;
+        let changed = receive_cover(&mut inner, image, &path);
         drop(inner);
-        catalog.art_rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        if changed { catalog.art_rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed); }
     }
+}
+
+// I persist changed card paths; a track-only receipt is transient artwork state.
+fn receive_cover(inner: &mut Inner, image: String, path: &str) -> bool {
+    let mut changed = false;
+    for card in inner.store.cards.values_mut_where(|card| card.image == image && card.art != path) {
+        card.art = path.to_string();
+        changed = true;
+    }
+    inner.dirty |= changed;
+    inner.art_received.insert(image) || changed
 }
 
 #[cfg(test)]
 mod persistence_tests {
     use super::*;
     use std::sync::mpsc::channel;
+
+    #[test]
+    fn polling_received_artwork_keeps_the_catalog_clean_and_the_payload_shared() {
+        let catalog = Catalog::new();
+        let image = "https://example.invalid/cover.jpg";
+        let id = catalog.lock().store.take_item("fixture", &serde_json::json!({
+            "kind":"album","ref":"album:1","title":"Record","image":image}), 1).unwrap();
+        let initial = catalog.entity_revision(id);
+        {
+            let mut inner = catalog.lock();
+            assert!(receive_cover(&mut inner, image.into(), "cover.jpg"));
+            assert!(inner.dirty);
+        }
+        let received = catalog.entity_revision(id);
+        assert_eq!(initial.0, received.0);
+        assert_ne!(initial.1, received.1);
+        persist(&catalog, |_| Ok(()));
+        let payload = catalog.lock().store.cards.shared(&id).unwrap();
+        for _ in 0..32 {
+            assert!(!receive_cover(&mut catalog.lock(), image.into(), "cover.jpg"));
+            assert_eq!(catalog.entity_revision(id), received);
+            assert!(!catalog.lock().dirty);
+            persist(&catalog, |_| panic!("received artwork must not rewrite the catalog"));
+        }
+        assert!(Arc::ptr_eq(&payload, &catalog.lock().store.cards.shared(&id).unwrap()));
+        assert!(receive_cover(&mut catalog.lock(), image.into(), "replacement.jpg"));
+        assert!(catalog.lock().dirty);
+        assert_ne!(catalog.entity_revision(id).1, received.1);
+    }
+
+    #[test]
+    fn a_received_cover_removed_from_disk_can_queue_and_notify_again() {
+        let catalog = Catalog::new();
+        let image = "https://example.invalid/removed-cover-for-catalog-retry-test.png";
+        let mut inner = catalog.lock();
+        inner.art_received.insert(image.into());
+        catalog.want_cover(&mut inner, image);
+        assert!(inner.queue.covers_queued.contains(image));
+        assert_eq!(inner.queue.covers.front().map(String::as_str), Some(image));
+        assert!(!inner.art_received.contains(image), "a new download must notify even if its path stays the same");
+        assert!(receive_cover(&mut inner, image.into(), "same-path.png"));
+        assert!(!inner.dirty, "a transient receipt does not change stored metadata");
+    }
+
+    #[test]
+    fn track_only_artwork_notifies_once_without_rewriting_persistent_metadata() {
+        let mut inner = Inner::default();
+        let image = "https://example.invalid/track.jpg";
+        let id = inner.store.take_item_track("fixture", &serde_json::json!({"ref":"track:1","image":image}), None, 1).unwrap();
+        let payload = inner.store.tracks.shared(&id).unwrap();
+        assert!(receive_cover(&mut inner, image.into(), "track.jpg"));
+        assert!(!inner.dirty);
+        assert!(!receive_cover(&mut inner, image.into(), "track.jpg"));
+        assert!(Arc::ptr_eq(&payload, &inner.store.tracks.shared(&id).unwrap()));
+    }
 
     #[test]
     fn queued_tracks_and_their_albums_survive_repeated_saves_above_the_card_limit() {

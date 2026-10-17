@@ -11,7 +11,7 @@ use super::shared_map::SharedMap;
 use chilpa_plugin::messages::{Entry, EntryKind};
 use chilpa_plugin::presentation::{Entity, Presentation, SourceDocument};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// Above this many cards the ones seen longest ago go, with their tracks.
 const CARDS_KEPT: usize = 6000;
@@ -165,6 +165,29 @@ pub(crate) struct Shelf {
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
+pub(crate) struct PlaylistSummary {
+    pub id: i64,
+    pub plugin: String,
+    pub identity: String,
+    pub title: String,
+    pub description: String,
+    pub art: String,
+    pub track_count: usize,
+    pub updated_at: Option<i64>,
+    pub editable: bool,
+    pub membership: String,
+}
+
+#[derive(Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub(crate) struct ColdSource {
+    pub cards: BTreeMap<i64, String>,
+    pub tracks: BTreeMap<i64, String>,
+    pub playlists: Vec<PlaylistSummary>,
+}
+
+#[derive(Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub(crate) struct Store {
     next_card: i64,
     next_track: i64,
@@ -176,6 +199,9 @@ pub(crate) struct Store {
     /// before the plugins have started.
     pub drawn: BTreeMap<String, bool>,
     pub names: BTreeMap<String, String>,
+    /// I reserve archived identities without retaining their payloads or
+    /// duplicating the source prefix of every track's queue entry.
+    pub cold_sources: BTreeMap<String, ColdSource>,
     #[serde(skip)]
     card_ids: HashMap<(String, String), i64>,
     #[serde(skip)]
@@ -246,12 +272,15 @@ impl Store {
         self.track_ids.retain(|_, id| self.tracks.contains_key(id));
         self.drawn.remove(plugin);
         self.names.remove(plugin);
+        self.cold_sources.remove(plugin);
     }
 
     /// Rebuilds what is not written down: the indexes by identity.
     pub fn index(&mut self) {
         self.card_ids = self.cards.values().map(|c| ((c.plugin.clone(), c.identity.clone()), c.id)).collect();
         self.track_ids = self.tracks.values().map(|t| (t.path.clone(), t.id)).collect();
+        self.next_card = self.next_card.min(self.card_ids.values().copied().chain(self.cold_sources.values().flat_map(|source| source.cards.keys().copied())).min().unwrap_or(0));
+        self.next_track = self.next_track.min(self.tracks.keys().copied().chain(self.cold_sources.values().flat_map(|source| source.tracks.keys().copied())).min().unwrap_or(0));
     }
 
     pub fn card_id(&mut self, plugin: &str, identity: &str) -> i64 {
@@ -260,8 +289,8 @@ impl Store {
             if !self.cards.contains_key(&id) { self.cards.insert(id, Card { id, plugin: plugin.into(), identity: identity.into(), ..Card::default() }); }
             return id;
         }
-        self.next_card -= 1;
-        let id = self.next_card;
+        let id = self.cold_sources.get(plugin).and_then(|source| source.cards.iter().find(|(_, reference)| reference.as_str() == identity).map(|(id, _)| *id))
+            .unwrap_or_else(|| { self.next_card -= 1; self.next_card });
         self.card_ids.insert((plugin.to_string(), identity.to_string()), id);
         self.cards.insert(id, Card { id, plugin: plugin.into(), identity: identity.into(), ..Card::default() });
         id
@@ -273,8 +302,9 @@ impl Store {
             if !self.tracks.contains_key(&id) { self.tracks.insert(id, Track { id, path: path.into(), ..Track::default() }); }
             return id;
         }
-        self.next_track -= 1;
-        let id = self.next_track;
+        let id = crate::source_opener::of_plugin(path).and_then(|(plugin, reference)| self.cold_sources.get(&plugin)
+            .and_then(|source| source.tracks.iter().find(|(_, found)| found.as_str() == reference.as_str()).map(|(id, _)| *id)))
+            .unwrap_or_else(|| { self.next_track -= 1; self.next_track });
         self.track_ids.insert(path.to_string(), id);
         self.tracks.insert(id, Track { id, path: path.into(), ..Track::default() });
         id
@@ -294,7 +324,87 @@ impl Store {
     pub(super) fn snapshot(&self) -> Self {
         Self { next_card: self.next_card, next_track: self.next_track,
             cards: self.cards.clone(), tracks: self.tracks.clone(), shelves: self.shelves.clone(),
-            drawn: self.drawn.clone(), names: self.names.clone(), ..Self::default() }
+            drawn: self.drawn.clone(), names: self.names.clone(), cold_sources: self.cold_sources.clone(), ..Self::default() }
+    }
+
+    pub(super) fn source_snapshot(&self, plugin: &str) -> Self {
+        let mut snapshot = self.snapshot();
+        snapshot.cards.retain(|_, card| card.plugin == plugin);
+        snapshot.tracks.retain(|_, track| track.plugin == plugin);
+        snapshot.shelves.retain(|key, _| super::split(key).0 == plugin);
+        snapshot.drawn.retain(|id, _| id == plugin);
+        snapshot.names.retain(|id, _| id == plugin);
+        snapshot.cold_sources.clear();
+        snapshot
+    }
+
+    pub(super) fn playlist_summaries(&self) -> Vec<PlaylistSummary> {
+        self.shelves.iter().filter(|(key, _)| key.ends_with(" section:playlists")).flat_map(|(_, shelf)| {
+            shelf.cards.iter().filter_map(|id| self.cards.get(id)).filter(|card| card.metadata["kind"] == "playlist" && card.metadata["ref"].as_str().is_some())
+                .map(move |card| PlaylistSummary {
+                    id:card.id, plugin:card.plugin.clone(), identity:card.identity.clone(), title:card.title.clone(),
+                    description:card.metadata["description"].as_str().unwrap_or_default().into(), art:card.art.clone(),
+                    track_count:card.metadata["tracks"].as_u64().unwrap_or_default() as usize, updated_at:card.metadata["updated_at"].as_i64(),
+                    editable:card.metadata["editable"] == true, membership:shelf.membership.get(&card.id).cloned().unwrap_or_default(),
+                })
+        }).collect()
+    }
+
+    /// I reject a stale disk write before detaching any newer live rows.
+    pub(super) fn same_source(&self, snapshot: &Self, plugin: &str) -> bool {
+        self.cards.iter().filter(|(_, card)| card.plugin == plugin).count() == snapshot.cards.len()
+            && self.tracks.iter().filter(|(_, track)| track.plugin == plugin).count() == snapshot.tracks.len()
+            && self.shelves.iter().filter(|(key, _)| super::split(key).0 == plugin).count() == snapshot.shelves.len()
+            && snapshot.cards.iter().all(|(id, card)| self.cards.get(id) == Some(card))
+            && snapshot.tracks.iter().all(|(id, track)| self.tracks.get(id) == Some(track))
+            && snapshot.shelves.iter().all(|(key, shelf)| self.shelves.get(key) == Some(shelf))
+    }
+
+    /// I merge existing ids before rebuilding indexes. Newer resident rows
+    /// win over archived metadata; an unopened card can recover its rows.
+    pub(super) fn merge_source(&mut self, source: &Self) -> std::io::Result<()> {
+        if source.cards.iter().any(|(id, card)| self.cards.get(id).is_some_and(|live| live.plugin != card.plugin || live.identity != card.identity))
+            || source.tracks.iter().any(|(id, track)| self.tracks.get(id).is_some_and(|live| live.plugin != track.plugin || live.path != track.path)) {
+            return Err(std::io::Error::other("Archived catalog ids conflict with live entries"));
+        }
+        self.next_card = self.next_card.min(source.next_card);
+        self.next_track = self.next_track.min(source.next_track);
+        for (id, card) in &source.cards {
+            if let Some(live) = self.cards.get_mut(id) {
+                if live.title.is_empty() { *live = card.clone(); }
+                else if live.tracks.is_none() && card.tracks.is_some() && live.metadata == card.metadata {
+                    live.tracks = card.tracks.clone();
+                    live.read_at = live.read_at.min(card.read_at);
+                }
+            } else { self.cards.insert_shared(*id, source.cards.shared(id).expect("archived card exists")); }
+        }
+        for (id, _) in &source.tracks { if !self.tracks.contains_key(id) { self.tracks.insert_shared(*id, source.tracks.shared(id).expect("archived track exists")); } }
+        for (key, _) in &source.shelves { if !self.shelves.contains_key(key) { self.shelves.insert_shared(key.clone(), source.shelves.shared(key).expect("archived shelf exists")); } }
+        for (id, drawn) in &source.drawn { self.drawn.entry(id.clone()).or_insert(*drawn); }
+        for (id, name) in &source.names { self.names.entry(id.clone()).or_insert_with(|| name.clone()); }
+        self.index();
+        Ok(())
+    }
+
+    /// I keep the complete graph reachable from queue entries, open pages,
+    /// and active selections, including each track's album navigation.
+    pub(super) fn retain_source_roots(&mut self, plugin: &str, tracks: &HashSet<String>, cards: &HashSet<i64>, shelves: &HashSet<String>) {
+        let families: HashSet<_> = shelves.iter().map(|key| key.split('|').next().unwrap_or(key)).collect();
+        let mut kept_cards = cards.clone();
+        let mut kept_tracks: HashSet<_> = self.tracks.values().filter(|track| tracks.contains(&track.path)).map(|track| track.id).collect();
+        for (key, shelf) in &self.shelves {
+            if families.contains(key.split('|').next().unwrap_or(key)) { kept_cards.extend(&shelf.cards); kept_tracks.extend(&shelf.tracks); }
+        }
+        loop {
+            let before = (kept_cards.len(), kept_tracks.len());
+            kept_tracks.extend(kept_cards.iter().filter_map(|id| self.cards.get(id)).flat_map(|card| card.tracks.iter().flatten()).copied());
+            kept_cards.extend(kept_tracks.iter().filter_map(|id| self.tracks.get(id)).map(|track| track.album_id).filter(|id| *id < 0));
+            if before == (kept_cards.len(), kept_tracks.len()) { break; }
+        }
+        self.shelves.retain(|key, _| super::split(key).0 != plugin || families.contains(key.split('|').next().unwrap_or(key)));
+        self.cards.retain(|id, card| card.plugin != plugin || kept_cards.contains(id));
+        self.tracks.retain(|id, track| track.plugin != plugin || kept_tracks.contains(id));
+        self.index();
     }
 
     /// Takes in one page of a listing: what it lists is interned and what it

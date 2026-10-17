@@ -17,7 +17,7 @@ pub(crate) struct PluginCenter {
 }
 
 impl PluginCenter {
-    fn start(plugins: Arc<Mutex<Plugins>>, root: PathBuf) -> Self {
+    fn start(plugins: Arc<Mutex<Plugins>>, root: PathBuf, catalog: Arc<crate::source_catalog::Catalog>) -> Self {
         let (sender, receiver) = mpsc::sync_channel::<(String, Value)>(2);
         let commands = Arc::new(sender);
         let view = Arc::new(Mutex::new(json!({})));
@@ -97,6 +97,10 @@ impl PluginCenter {
                 }
                 let started = std::time::Instant::now();
                 let result = run(&action, &input, &root, &plugins, &mut pending, &mut state, &mut evidence);
+                if result.is_ok() && matches!(action.as_str(), "enable" | "disable" | "install" | "install_native" | "install_local" | "restart" | "grant_network") {
+                    let states = plugins.lock().ok().map(|host| host.catalog_states());
+                    if let Some(states) = states { catalog.set_source_states(states); }
+                }
                 if result.is_ok() && matches!(action.as_str(), "submit" | "integration" | "enable" | "restart" | "grant_network") { if let Some(id) = input["id"].as_str() { reload.lock().unwrap().push(id.to_string()); } }
                 if result.is_ok() && action == "uninstall" { if let Some(id) = input["id"].as_str() { deleted.lock().unwrap().push(id.to_string()); } }
                 if result.is_ok() && matches!(action.as_str(), "library_visibility" | "integration" | "sidebar_position" | "download_access" | "enable" | "disable" | "restart" | "grant_network" | "uninstall" | "tint" | "icon") { changed.store(true, Ordering::Release); }
@@ -156,7 +160,7 @@ impl Chilpa {
         if self.plugin_center.is_none() {
             if self.plugins.is_none() { self.start_plugins(); }
             if let Some(plugins) = &self.plugins {
-                let center = PluginCenter::start(plugins.clone(), Self::plugins_dir());
+                let center = PluginCenter::start(plugins.clone(), Self::plugins_dir(), self.catalog.clone());
                 center.command("refresh", json!({"initial":true}));
                 self.plugin_center = Some(center);
             }
@@ -557,7 +561,7 @@ mod tests {
         let mut host = Plugins::new(root.clone()).unwrap();
         host.load_all(); host.approve(id).unwrap(); host.reload_one(id);
         let host = Arc::new(Mutex::new(host));
-        let center = PluginCenter::start(host.clone(), root);
+        let center = PluginCenter::start(host.clone(), root, crate::source_catalog::Catalog::new());
         center.command("tick", json!({"id":id}));
         let view = wait_finished(&center);
         assert_ne!(view["maintenance_failed"], true, "{view}");
@@ -596,7 +600,7 @@ mod tests {
         let mut plugins = Plugins::new(temporary.path().join("plugins")).unwrap();
         plugins.set_worker_launcher(Arc::new(Launcher));
         let root = temporary.path().join("plugins");
-        let center = PluginCenter::start(Arc::new(Mutex::new(plugins)), root.clone());
+        let center = PluginCenter::start(Arc::new(Mutex::new(plugins)), root.clone(), crate::source_catalog::Catalog::new());
         center.command("add", json!({"url":format!("http://{address}/catalog.xml")}));
         let view = wait(&center); let repository = view["repositories"][0]["id"].clone();
         assert_eq!(view["catalog"].as_array().unwrap().len(), 1);
@@ -633,7 +637,7 @@ mod tests {
         let temporary = tempfile::tempdir().unwrap();
         let root = temporary.path().join("plugins");
         let host = Arc::new(Mutex::new(Plugins::new(root.clone()).unwrap()));
-        let center = PluginCenter::start(host.clone(), root.clone());
+        let center = PluginCenter::start(host.clone(), root.clone(), crate::source_catalog::Catalog::new());
         let manifest = r#"{"id":"app.test.local","name":"Local","version":"1.0","api_version":1,"kind":"source","runtime":"process","capabilities":[{"type":"register_source"}]}"#;
         let mut archive = zip::ZipWriter::new(Cursor::new(Vec::new()));
         for (name, bytes) in [("wrapper/manifest.json", manifest.as_bytes()), ("wrapper/plugin", b"must not run".as_slice())] {

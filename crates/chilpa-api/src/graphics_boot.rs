@@ -27,6 +27,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 pub mod gpu;
+pub mod inventory;
 pub mod preflight;
 
 /// Settings > Appearance > Renderer.

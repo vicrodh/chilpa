@@ -37,6 +37,7 @@ impl Watcher {
         let (outbox, looked) = channel::<Look>();
         let _ = std::thread::Builder::new().name("chilpa-reach".into()).spawn(move || {
             let mut wait = Duration::from_secs(2);
+            let mut library = None;
             loop {
                 match inbox.recv_timeout(wait) {
                     Ok(()) | Err(RecvTimeoutError::Timeout) => {}
@@ -44,8 +45,10 @@ impl Watcher {
                 }
                 // Several asks while it was busy are one look.
                 while inbox.try_recv().is_ok() {}
-                if let Ok(lib) = chilpa_core::open_library() {
-                    let _ = outbox.send(look(&lib, &Network, &keys));
+                // I keep this worker's connection instead of repeating library maintenance.
+                if library.is_none() { library = chilpa_core::open_library().ok(); }
+                if let Some(lib) = &library {
+                    let _ = outbox.send(look(lib, &Network, &keys));
                 }
                 wait = EVERY;
             }
@@ -104,4 +107,36 @@ pub(crate) fn look(lib: &chilpa_library::Library, net: &dyn chilpa_servers::Net,
         changed |= lib.set_source_reachable(stored.source_id, answers).unwrap_or(false);
     }
     Look { changed, refused }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chilpa_library::Library;
+
+    #[test]
+    fn a_reused_connection_sees_external_root_edits_and_mount_changes() {
+        let directory = tempfile::tempdir().unwrap();
+        let database = directory.path().join("library.db");
+        let writer = Library::open(&database).unwrap();
+        let watcher = Library::open_existing(&database).unwrap();
+        let keys = Keys::derived(directory.path().join("keys"));
+        assert!(!look(&watcher, &Network, &keys).changed);
+
+        let source = writer.source_id("local", "default").unwrap();
+        let folder = directory.path().join("music");
+        let root = writer.root_id(source, &folder).unwrap();
+        assert!(look(&watcher, &Network, &keys).changed);
+        assert!(!watcher.roots().unwrap()[0].reachable);
+        assert!(!look(&watcher, &Network, &keys).changed);
+
+        std::fs::create_dir(&folder).unwrap();
+        assert!(look(&watcher, &Network, &keys).changed);
+        assert!(watcher.roots().unwrap()[0].reachable);
+        assert!(!look(&watcher, &Network, &keys).changed);
+
+        writer.forget_root(root).unwrap();
+        assert!(!look(&watcher, &Network, &keys).changed);
+        assert!(watcher.roots().unwrap().is_empty());
+    }
 }

@@ -47,6 +47,15 @@ fn kind(bytes: &[u8]) -> Option<&'static str> {
     }
 }
 
+fn validate(bytes: &[u8]) -> Option<()> {
+    let reader = image::ImageReader::new(std::io::Cursor::new(bytes)).with_guessed_format().ok()?;
+    let mut limits = image::Limits::default();
+    limits.max_image_width = Some(4096);
+    limits.max_image_height = Some(4096);
+    limits.max_alloc = Some(32 * 1024 * 1024);
+    crate::covers::with_decoded(reader, limits, |_| ())
+}
+
 fn name_of(address: &str) -> String {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     address.hash(&mut hasher);
@@ -93,7 +102,7 @@ pub(crate) fn keep(address: &str) -> Option<String> {
     };
     let got = chilpa_core::fetch(&asked).ok().filter(|reply| reply.status == 200)?;
     let extension = kind(&got.body)?;
-    image::load_from_memory(&got.body).ok()?;
+    validate(&got.body)?;
     store(address, extension, &got.body)
 }
 
@@ -114,13 +123,7 @@ pub(crate) fn keep_approved(address: &str, domains: &[String]) -> Option<String>
         }
         if reply.status != 200 { return None; }
         let extension = kind(&reply.body)?;
-        let mut reader = image::ImageReader::new(std::io::Cursor::new(&reply.body)).with_guessed_format().ok()?;
-        let mut limits = image::Limits::default();
-        limits.max_image_width = Some(4096);
-        limits.max_image_height = Some(4096);
-        limits.max_alloc = Some(32 * 1024 * 1024);
-        reader.limits(limits);
-        reader.decode().ok()?;
+        validate(&reply.body)?;
         return store(address, extension, &reply.body);
     }
     None
@@ -153,7 +156,28 @@ mod tests {
         let mut bytes = std::io::Cursor::new(Vec::new());
         picture.write_to(&mut bytes, image::ImageFormat::WebP).unwrap();
         assert_eq!(kind(bytes.get_ref()), Some("webp"));
-        assert!(image::load_from_memory(bytes.get_ref()).is_ok());
+        assert!(validate(bytes.get_ref()).is_some());
+    }
+
+    #[test]
+    fn remote_pictures_keep_dimension_and_raster_limits() {
+        for (width, height) in [(4097u32, 1u32), (3072, 3072)] {
+            let mut bytes = std::io::Cursor::new(Vec::new());
+            image::DynamicImage::new_rgba8(width, height).write_to(&mut bytes, image::ImageFormat::Png).unwrap();
+            assert_eq!(kind(bytes.get_ref()), Some("png"));
+            assert_eq!(image::ImageReader::new(std::io::Cursor::new(bytes.get_ref()))
+                .with_guessed_format().unwrap().into_dimensions().unwrap(), (width, height));
+            assert!(validate(bytes.get_ref()).is_none());
+        }
+    }
+
+    #[test]
+    fn a_recognized_but_truncated_picture_is_not_validated() {
+        let mut bytes = std::io::Cursor::new(Vec::new());
+        image::DynamicImage::new_rgb8(32, 32).write_to(&mut bytes, image::ImageFormat::Png).unwrap();
+        bytes.get_mut().truncate(40);
+        assert_eq!(kind(bytes.get_ref()), Some("png"));
+        assert!(validate(bytes.get_ref()).is_none());
     }
 
     #[test]
