@@ -37,11 +37,21 @@ pub fn pack(samples: &Samples<'_>, to: SampleFormat, out: &mut Vec<u8>) -> Resul
         return Err(PackError::NativeDsdNeedsDsdSource);
     }
     match samples {
-        Samples::Int { data, bits } => pack_int(data, *bits, to, out),
+        Samples::Int { data, bits } => pack_int(data, *bits, to, out, false),
         Samples::Float(data) => {
             pack_float(data, to, out);
             Ok(())
         }
+    }
+}
+
+/// Packs a decoded PCM reference, allowing a narrower output to keep playing.
+/// The caller must negotiate and report `Transform::Narrowed` when bits do
+/// not fit. Original integer sources continue to use the strict `pack` path.
+pub fn pack_pcm_reference(samples: &Samples<'_>, to: SampleFormat, out: &mut Vec<u8>) -> Result<(), PackError> {
+    match samples {
+        Samples::Int { data, bits } => pack_int(data, *bits, to, out, true),
+        Samples::Float(_) => pack(samples, to, out),
     }
 }
 
@@ -51,7 +61,7 @@ pub fn duplicate_mono<T: Copy>(samples: &[T]) -> Vec<T> {
     samples.iter().flat_map(|&s| [s, s]).collect()
 }
 
-fn pack_int(data: &[i32], bits: u8, to: SampleFormat, out: &mut Vec<u8>) -> Result<(), PackError> {
+fn pack_int(data: &[i32], bits: u8, to: SampleFormat, out: &mut Vec<u8>, allow_narrow: bool) -> Result<(), PackError> {
     if to.is_dsd() {
         return Err(PackError::NativeDsdNeedsDsdSource);
     }
@@ -66,13 +76,18 @@ fn pack_int(data: &[i32], bits: u8, to: SampleFormat, out: &mut Vec<u8>) -> Resu
         return Ok(());
     }
     let target = to.valid_bits();
-    if bits > target {
+    if bits > target && !allow_narrow {
         return Err(PackError::WouldTruncate { from_bits: bits, to_bits: target });
     }
-    let shift = target - bits;
+    let shift = target.saturating_sub(bits);
     out.reserve(data.len() * to.bytes());
     for &v in data {
-        let v = v << shift;
+        let v = if bits > target {
+            let drop = bits - target;
+            let rounded = (i64::from(v) + (1i64 << (drop - 1))) >> drop;
+            let bound = 1i64 << (target - 1);
+            rounded.clamp(-bound, bound - 1) as i32
+        } else { v << shift };
         match to {
             SampleFormat::S16 => out.extend_from_slice(&(v as i16).to_le_bytes()),
             SampleFormat::S24Packed => out.extend_from_slice(&v.to_le_bytes()[..3]),
@@ -167,6 +182,31 @@ mod tests {
         let mut out = Vec::new();
         let r = pack(&Samples::Int { data: &[1], bits: 24 }, SampleFormat::S16, &mut out);
         assert_eq!(r, Err(PackError::WouldTruncate { from_bits: 24, to_bits: 16 }));
+        assert!(out.is_empty());
+    }
+
+    #[test]
+    fn a_pcm_reference_clips_and_rounds_when_the_device_has_fewer_bits() {
+        let values = [i32::MIN, -65_536, -32_769, -32_768, -1, 0, 32_767, 32_768, 65_536, i32::MAX];
+        let samples = Samples::Int { data: &values, bits: 32 };
+        let mut out = Vec::new();
+        pack_pcm_reference(&samples, SampleFormat::S16, &mut out).unwrap();
+        let words: Vec<_> = out.chunks_exact(2).map(|b| i16::from_le_bytes(b.try_into().unwrap())).collect();
+        assert_eq!(words, [-32_768, -1, -1, 0, 0, 0, 0, 1, 1, 32_767]);
+        out.clear();
+        assert_eq!(pack(&samples, SampleFormat::S16, &mut out), Err(PackError::WouldTruncate { from_bits: 32, to_bits: 16 }));
+        assert!(out.is_empty(), "original integer packing stays strict");
+    }
+
+    #[test]
+    fn a_pcm_reference_keeps_all_32_bits_and_refuses_native_dsd() {
+        let values = [i32::MIN, -1, 0, 1, i32::MAX];
+        let samples = Samples::Int { data: &values, bits: 32 };
+        let mut out = Vec::new();
+        pack_pcm_reference(&samples, SampleFormat::S32, &mut out).unwrap();
+        assert_eq!(out, values.iter().flat_map(|v| v.to_le_bytes()).collect::<Vec<_>>());
+        out.clear();
+        assert_eq!(pack_pcm_reference(&samples, SampleFormat::DsdU32Le, &mut out), Err(PackError::NativeDsdNeedsDsdSource));
         assert!(out.is_empty());
     }
 }

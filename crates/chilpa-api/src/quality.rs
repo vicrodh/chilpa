@@ -209,6 +209,18 @@ mod tests {
     }
 
     #[test]
+    fn a_vorbis_pcm_reference_does_not_turn_the_source_into_hi_res() {
+        for q in [
+            Quality::of_file("track.ogg", Some(32), Some(96_000)),
+            Quality::of_file("track.oga", Some(32), Some(44_100)),
+            Quality::of_codec("vorbis", Some(32), Some(48_000)),
+        ] {
+            assert_eq!((q.tier, q.bits), (Tier::Lossy, None));
+            assert_eq!(q.short(), "Ogg");
+        }
+    }
+
+    #[test]
     fn the_same_container_is_alac_with_bits_and_aac_without() {
         assert_eq!(Quality::of_file("a.m4a", Some(24), Some(96_000)).short(), "ALAC 24/96");
         let aac = Quality::of_file("a.m4a", None, Some(44_100));

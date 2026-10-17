@@ -563,6 +563,7 @@ dependencies = [
  "ebur128",
  "roxmltree",
  "rusqlite",
+ "symphonia",
  "tempfile",
 ]
 

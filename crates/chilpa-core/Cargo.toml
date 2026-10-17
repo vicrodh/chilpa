@@ -25,6 +25,9 @@ chilpa-sacd.workspace = true
 roxmltree = "0.21"
 tempfile = "3"
 
+[dev-dependencies]
+symphonia = { version = "0.5", features = ["all"] }
+
 [target.'cfg(target_os = "linux")'.dependencies.chilpa-cd]
 workspace = true
 
