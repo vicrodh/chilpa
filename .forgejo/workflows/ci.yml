@@ -20,7 +20,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends \
             build-essential pkg-config libasound2-dev libsqlite3-dev \
-            qt6-base-dev qt6-declarative-dev ffmpeg python3
+            qt6-base-dev qt6-declarative-dev ffmpeg python3 dbus-daemon
 
       - name: Candados
         run: tools/lint/fast
@@ -33,7 +33,7 @@ jobs:
           # más generoso.
           CARGO_BUILD_JOBS: "2"
 
-      - name: Presupuesto de memoria
+      - name: Release memory budget
         run: |
-          cargo build -p chilpa-qt
-          tools/lint/footprint
+          cargo build --release -p chilpa-qt
+          tools/lint/footprint --binary target/release/chilpa-qt
