@@ -45,10 +45,7 @@ fn reference_with_gapless(path: &Path, gapless: bool) -> (StreamFormat, Vec<i32>
         .format(
             &Hint::new(),
             source,
-            &symphonia::core::formats::FormatOptions {
-                enable_gapless: gapless,
-                ..Default::default()
-            },
+            &Default::default(),
             &Default::default(),
         )
         .unwrap()
@@ -68,6 +65,8 @@ fn reference_with_gapless(path: &Path, gapless: bool) -> (StreamFormat, Vec<i32>
         track.codec_params.channels.unwrap().count() as u16,
     );
     let track_id = track.id;
+    let leading = track.codec_params.delay.unwrap_or(0) as usize * usize::from(stream.channels);
+    let trailing = track.codec_params.padding.unwrap_or(0) as usize * usize::from(stream.channels);
     let mut decoder = symphonia::default::get_codecs()
         .make(&track.codec_params, &DecoderOptions::default())
         .unwrap();
@@ -93,6 +92,13 @@ fn reference_with_gapless(path: &Path, gapless: bool) -> (StreamFormat, Vec<i32>
         samples.extend_from_slice(pcm.samples());
     }
     assert!(!samples.is_empty());
+    if gapless {
+        // Trim container-declared padding independently of the queue's block
+        // trimmer. The demuxer stays untrimmed so it cannot apply it twice.
+        assert!(samples.len() > leading + trailing);
+        samples.truncate(samples.len() - trailing);
+        samples.drain(..leading);
+    }
     (stream, samples)
 }
 
@@ -273,8 +279,8 @@ fn mono_duplication_keeps_each_reference_word_in_both_channels() {
 #[test]
 fn queue_delivery_keeps_the_reference_and_reports_gain_or_dsp() {
     let path = fixture("vorbis-44100-stereo.ogg");
-    // The independent demuxer trims encoder padding itself. The queue's
-    // trimmer must produce the same music, including its last frame.
+    // The reference removes container-declared padding independently. The
+    // queue's block trimmer must keep the same music through its last frame.
     let (stream, expected) = reference_with_gapless(&path, true);
     assert_eq!(expected.len(), 44_223 * 2);
     for processing in ["bypass", "volume", "dsp"] {
@@ -580,9 +586,17 @@ fn a_vorbis_stream_reports_dsp_in_the_delivery_result() {
 #[test]
 fn the_file_backend_stores_every_reference_word() {
     use chilpa_audio::{backend::OutputBackend, capture::FileBackend};
-    for name in ["vorbis-44100-stereo.ogg", "vorbis-48000-mono.ogg"] {
+    for (name, music_samples) in [
+        ("vorbis-44100-stereo.ogg", 44_223 * 2),
+        ("vorbis-48000-mono.ogg", 48_123),
+    ] {
         let path = fixture(name);
         let (_, expected) = reference_with_gapless(&path, true);
+        assert_eq!(
+            expected.len(),
+            music_samples,
+            "fixture's original frame count"
+        );
         let directory = tempfile::tempdir().unwrap();
         let output = directory.path().join("captured.pcm");
         let probe = FileBackend::new(output.clone());
