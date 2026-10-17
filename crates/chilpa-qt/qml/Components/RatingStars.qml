@@ -2,7 +2,8 @@ import QtQuick
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // Five stars without five controls: two glyph runs and one hit target keep
-// the rating cheap enough for every visible track row.
+// the rating cheap enough for every visible track row. I draw only the filled
+// prefix so each row can batch its glyphs without a separate clip.
 Item {
     id: root
 
@@ -30,18 +31,12 @@ Item {
         font.pixelSize: root.size
         color: root.baseColor
     }
-    Item {
-        width: parent.width * root.preview / Metrics.ratingMaximum
-        height: parent.height
-        clip: true
-        Text {
-            width: root.width
-            height: root.height
-            text: root.fullStars
-            font.family: Icons.filled
-            font.pixelSize: root.size
-            color: Theme.color.accent
-        }
+    Text {
+        anchors.fill: parent
+        text: root.fullStars.slice(0, Math.max(0, root.preview))
+        font.family: Icons.filled
+        font.pixelSize: root.size
+        color: Theme.color.accent
     }
     MouseArea {
         id: area

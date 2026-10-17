@@ -4,6 +4,7 @@ import app.chilpa
 import "../../qml/Components"
 
 TestCase {
+    id: test
     name: "Ratings"
     when: windowShown
     visible: true
@@ -18,7 +19,11 @@ TestCase {
         value: Ratings.stars("album", albumId, Ratings.rev)
         onRated: (stars) => Ratings.rate("album", albumId, stars)
     }
+    RatingStars { id: passiveStars; y: 340; interactive: false }
     function init() {
+        mouseMove(test, 900, 380)
+        passiveStars.value = 0
+        passiveStars.pointerPreview = 0
         Ratings.tracks = ({}); Ratings.albums = ({}); Ratings.fail = false; ++Ratings.rev
         albumStars.albumId = 1
         list.rich = true
@@ -58,6 +63,27 @@ TestCase {
         Ratings.rate("track", 43, 5)
         tryCompare(item, "rating", 5)
         compare(Ratings.stars("track", 42, 0), 1)
+    }
+    function test_external_previews_fill_only_the_requested_star_cells() {
+        waitForRendering(passiveStars)
+        const empty = grabImage(passiveStars)
+        for (let stars = 1; stars <= 5; ++stars) {
+            passiveStars.pointerPreview = stars
+            compare(passiveStars.value, 0, "an external preview does not persist a rating")
+            waitForRendering(passiveStars)
+            const preview = grabImage(passiveStars)
+            for (let cell = 0; cell < 5; ++cell) {
+                let changed = 0
+                for (let x = cell * passiveStars.size; x < (cell + 1) * passiveStars.size; ++x)
+                    for (let y = 0; y < preview.height; ++y)
+                        if (!Qt.colorEqual(empty.pixel(x, y), preview.pixel(x, y))) changed++
+                compare(changed > 0, cell < stars, "only the requested prefix receives filled glyphs")
+            }
+        }
+        passiveStars.pointerPreview = 0
+        waitForRendering(passiveStars)
+        const cleared = grabImage(passiveStars)
+        verify(empty.equals(cleared), "clearing the preview restores all five outlines")
     }
     function test_album_binding_survives_clicks_version_changes_and_errors() {
         mouseClick(albumStars, albumStars.width / 2, albumStars.height / 2)
