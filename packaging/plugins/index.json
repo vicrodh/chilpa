@@ -35,7 +35,7 @@
       "id": "app.chilpa.playlist-import",
       "name": "Playlist Importer",
       "version": "0.1.1",
-      "description": "Import public playlists and playlist files, then match their tracks against your local library and connected sources. Create local, mixed or source-owned playlists and review unmatched tracks. Source accounts remain in their own plugins. (Linux x86_64 only)",
+      "description": "Import public playlists and playlist files, then match their tracks against your local library and connected sources. Create local, mixed or source-owned playlists and review unmatched tracks. Source accounts remain in their own plugins. (Linux x86_64 and macOS Apple Silicon)",
       "author": "vicrodh",
       "category": "playlists",
       "repository": "https://github.com/vicrodh/chilpa-pg-playlist-import",
@@ -44,6 +44,16 @@
       "api": {
         "min": 1,
         "max": 1
+      },
+      "packages": {
+        "linux-x86_64": {
+          "package": "https://github.com/vicrodh/chilpa-pg-playlist-import/releases/download/v0.1.1/chilpa-pg-playlist-import-0.1.1-linux-x86_64.zip",
+          "sha256": "7ca8ff1a959e72acb083094b46d8b4cf761016b7c8df2adc7c54e451b3d9dd88"
+        },
+        "macos-aarch64": {
+          "package": "https://github.com/vicrodh/chilpa-pg-playlist-import/releases/download/v0.1.1/chilpa-pg-playlist-import-0.1.1-macos-aarch64.zip",
+          "sha256": "0f59abdba4e08adf4f4ace9734201046870318e5a71ac8224d046cee824c1841"
+        }
       }
     },
     {

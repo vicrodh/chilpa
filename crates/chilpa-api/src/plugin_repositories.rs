@@ -155,7 +155,9 @@ impl PluginRepositories {
         self.saved.compatible.iter().find(|repository| repository.id == id).map(|repository| repository.url.as_str())
             .ok_or_else(|| "The plugin repository is not configured.".into())
     }
-    fn cache_path(&self, id: &str) -> PathBuf { self.root.join("catalogs").join(format!("{id}.json")) }
+    fn cache_path(&self, id: &str) -> PathBuf {
+        self.root.join("catalogs").join(format!("{id}-{}-{}.json", std::env::consts::OS, std::env::consts::ARCH))
+    }
     fn persist(&self) -> Result<(), String> {
         let bytes = serde_json::to_vec_pretty(&self.saved).map_err(|_| "The repository list could not be saved.")?;
         atomic_write(&self.root.join("repositories.json"), &bytes).map_err(|_| "The repository list could not be saved.".into())

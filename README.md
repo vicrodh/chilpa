@@ -153,13 +153,13 @@ so the list works offline. **Manage > Refresh** fetches the current one.
 | Radio | Stations from Radio Browser. No account. | WASM |
 | Podcasts | Shows and episodes from PodcastIndex. No account. | WASM |
 | Chilpa DSP | Equalizer, crossfeed and listening presets. | WASM |
-| Playlist Importer | Imports public playlists and playlist files, and matches their tracks against your library and connected sources. | Linux x86_64 process |
+| Playlist Importer | Imports public playlists and playlist files, and matches their tracks against your library and connected sources. | Linux x86_64 / macOS Apple Silicon process |
 | Mood | **Experimental.** Analyzes local audio for mood and similarity with offline models. No audio or analysis results are uploaded. Models download only after you enable it. | Linux x86_64 process |
 
-Process plugins run inside a sandbox: install `bubblewrap` from your
-distribution, keep unprivileged user namespaces enabled and run Chilpa as a
-normal user. The sandbox refuses to start as root. WASM plugins need nothing
-extra.
+Process plugins run inside a sandbox. On Linux I install `bubblewrap` and keep
+unprivileged user namespaces enabled; macOS uses the system's Seatbelt sandbox.
+I run Chilpa as a normal user: the sandbox refuses to start as root. The catalog
+selects each platform's package and checksum. WASM plugins need nothing extra.
 
 **Install from ZIP…** installs a package downloaded by hand. To use another
 catalog, paste its URL into **Plugin repository URL** and press **Add**.

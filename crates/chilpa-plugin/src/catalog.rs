@@ -87,17 +87,33 @@ struct NativeEntry {
     #[serde(default)] description: String,
     #[serde(default)] author: String,
     #[serde(default)] category: String,
+    #[serde(default)] packages: std::collections::BTreeMap<String, NativePackage>,
 }
 
+#[derive(Deserialize)]
+struct NativePackage { package: String, sha256: String }
+
 fn read_native(text: &str) -> Result<Vec<CatalogEntry>, CatalogError> {
+    read_native_for_platform(text, &format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH))
+}
+
+fn read_native_for_platform(text: &str, platform: &str) -> Result<Vec<CatalogEntry>, CatalogError> {
     let catalog: NativeCatalog = serde_json::from_str(text).map_err(|_| CatalogError::Invalid)?;
     if catalog.version != 1 { return Err(CatalogError::Unsupported); }
-    Ok(catalog.plugins.into_iter().map(|entry| CatalogEntry {
-        id: entry.id, name: entry.name, version: entry.version, description: entry.description,
-        author: entry.author, category: entry.category, repository: entry.repository, package: entry.package,
-        digest: Digest { algorithm: "sha256".into(), value: entry.sha256 }, adapter: "native".into(),
-        problem: if entry.api.min <= crate::API_VERSION && entry.api.max >= crate::API_VERSION { String::new() }
-            else { "This plugin requires another version of the plugin API.".into() },
+    Ok(catalog.plugins.into_iter().map(|mut entry| {
+        let mut problem = if entry.api.min <= crate::API_VERSION && entry.api.max >= crate::API_VERSION { String::new() }
+            else { "This plugin requires another version of the plugin API.".into() };
+        if !entry.packages.is_empty() {
+            match entry.packages.remove(platform) {
+                Some(package) => { entry.package = package.package; entry.sha256 = package.sha256; }
+                None => problem = "This plugin has no package for this platform.".into(),
+            }
+        }
+        CatalogEntry {
+            id: entry.id, name: entry.name, version: entry.version, description: entry.description,
+            author: entry.author, category: entry.category, repository: entry.repository, package: entry.package,
+            digest: Digest { algorithm: "sha256".into(), value: entry.sha256 }, adapter: "native".into(), problem,
+        }
     }).collect())
 }
 
@@ -207,5 +223,37 @@ mod tests {
         assert!(repository_url("https://user:password@example.org/repo").is_err());
         assert!(repository_url("file:///plugins.json").is_err());
         assert_eq!(repository_url(" https://EXAMPLE.org/repo#part ").unwrap(), "https://example.org/repo");
+    }
+
+    #[test]
+    fn a_platform_package_has_its_own_url_and_checksum() {
+        let catalog = serde_json::json!({"version":1,"plugins":[{
+            "id":"app.example.worker","name":"Worker","repository":"https://example.org/source",
+            "package":"https://example.org/legacy.zip","sha256":"a".repeat(64),"api":{"min":1,"max":1},
+            "packages":{
+                "linux-x86_64":{"package":"https://example.org/linux.zip","sha256":"b".repeat(64)},
+                "macos-aarch64":{"package":"https://example.org/macos.zip","sha256":"c".repeat(64)}
+            }
+        }]}).to_string();
+        let linux = read_native_for_platform(&catalog, "linux-x86_64").unwrap().remove(0);
+        assert_eq!(linux.package, "https://example.org/linux.zip");
+        assert_eq!(linux.digest.value, "b".repeat(64));
+        let mac = read_native_for_platform(&catalog, "macos-aarch64").unwrap().remove(0);
+        assert_eq!(mac.package, "https://example.org/macos.zip");
+        assert_eq!(mac.digest.value, "c".repeat(64));
+        assert!(validate_entry(mac).problem.is_empty());
+        let missing = read_native_for_platform(&catalog, "windows-x86_64").unwrap().remove(0);
+        assert_eq!(validate_entry(missing).problem, "This plugin has no package for this platform.");
+    }
+
+    #[test]
+    fn a_platform_package_does_not_bypass_integrity_checks() {
+        let catalog = serde_json::json!({"version":1,"plugins":[{
+            "id":"app.example.worker","name":"Worker","repository":"https://example.org/source",
+            "package":"https://example.org/legacy.zip","sha256":"a".repeat(64),"api":{"min":1,"max":1},
+            "packages":{"macos-aarch64":{"package":"https://example.org/macos.zip","sha256":"invalid"}}
+        }]}).to_string();
+        let entry = read_native_for_platform(&catalog, "macos-aarch64").unwrap().remove(0);
+        assert!(validate_entry(entry).problem.contains("checksum"));
     }
 }

@@ -62,4 +62,5 @@ async-channel = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 [target.'cfg(target_os = "macos")'.dependencies]
+chilpa-bwrap.workspace = true
 [target.'cfg(target_os = "android")'.dependencies]
