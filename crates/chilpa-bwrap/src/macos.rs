@@ -7,6 +7,8 @@ use std::os::unix::process::CommandExt;
 const POLICY: &str = include_str!("macos.sb");
 
 fn directory(path: &Path) -> Result<PathBuf, BridgeError> {
+    let metadata = std::fs::symlink_metadata(path).map_err(|_| BridgeError::Disconnected)?;
+    if !metadata.file_type().is_dir() { return Err(BridgeError::Denied); }
     let path = path.canonicalize().map_err(|_| BridgeError::Disconnected)?;
     path.is_dir().then_some(path).ok_or(BridgeError::Denied)
 }

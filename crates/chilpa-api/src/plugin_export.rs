@@ -10,7 +10,7 @@ pub(crate) fn read(root: &Path, id: &str) -> Option<PathBuf> {
     if !valid_id(id) { return None; }
     let path: String = serde_json::from_slice(&std::fs::read(file(root, id)).ok()?).ok()?;
     let path = PathBuf::from(path);
-    path.is_dir().then(|| path.canonicalize().ok()).flatten()
+    std::fs::symlink_metadata(&path).ok()?.file_type().is_dir().then(|| path.canonicalize().ok()).flatten()
 }
 
 pub(crate) fn enabled(root: &Path, id: &str) -> bool {
@@ -42,6 +42,22 @@ pub(crate) fn clear(root: &Path, id: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn a_replaced_export_directory_loses_its_grant() {
+        let root = tempfile::tempdir().unwrap();
+        let selected = root.path().join("selected");
+        let outside = root.path().join("outside");
+        std::fs::create_dir(&selected).unwrap();
+        std::fs::create_dir(&outside).unwrap();
+        std::fs::create_dir(root.path().join(".exports")).unwrap();
+        std::fs::write(file(root.path(), "test.export"), serde_json::to_vec(&selected.to_string_lossy()).unwrap()).unwrap();
+        assert_eq!(read(root.path(), "test.export"), Some(selected.canonicalize().unwrap()));
+        std::fs::remove_dir(&selected).unwrap();
+        std::os::unix::fs::symlink(&outside, &selected).unwrap();
+        assert_eq!(read(root.path(), "test.export"), None);
+    }
 
     #[test]
     fn a_plugin_needs_the_folder_permission_and_a_selected_directory() {

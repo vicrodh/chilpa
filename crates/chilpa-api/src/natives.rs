@@ -282,6 +282,11 @@ impl Natives {
             std::thread::sleep(Duration::from_secs(wait));
             let _guard = me.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
             if !me.known.lock().unwrap_or_else(|e| e.into_inner()).contains_key(&id) { return; }
+            me.broker.revoke(&id);
+            let previous = me.live.read().unwrap_or_else(|e| e.into_inner()).get(&id).cloned();
+            // A closed protocol pipe can leave its worker alive. I reap it
+            // before granting the replacement access to the same folders.
+            if let Some(client) = previous { client.stop(); }
             let started = me.start_locked(&manifest, &folder);
             eprintln!("native: plugin={id} restarted ok={}", started.is_ok());
             if let Some(k) = me.known.lock().unwrap_or_else(|e| e.into_inner()).get_mut(&id) {
