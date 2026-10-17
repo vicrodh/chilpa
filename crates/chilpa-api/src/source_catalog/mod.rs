@@ -22,6 +22,8 @@
 //! listing's key is the plugin's id and its address, with a space.
 
 mod fetch;
+mod shared_map;
+mod revisions;
 mod native;
 mod pages;
 pub(crate) mod store;
@@ -32,6 +34,8 @@ mod navigation;
 pub use selection::SelectionHold;
 #[cfg(test)]
 mod queue_retention_tests;
+#[cfg(test)]
+mod retention_tests;
 
 use crate::plugins::Plugins;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -56,6 +60,7 @@ const ACTION_PATIENCE: std::time::Duration = std::time::Duration::from_secs(60);
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 enum Job {
     Shelf(String),
+    Append(String),
     Tracks(i64),
     /// One track by its queue entry: a list holds it, but no page of its
     /// source was ever read, so the catalog knows nothing of it.
@@ -88,6 +93,10 @@ struct Inner {
     quality_blocked: HashMap<String, Instant>,
     quality_running: usize,
     store: Store,
+    published: Store,
+    entity_revisions: HashMap<i64, revisions::EntityRevision>,
+    entity_revision_clock: i32,
+    art_received: HashSet<String>,
     /// Queue entries stay readable even when no source listing owns them.
     protected_tracks: HashSet<String>,
     selections: HashMap<u64, selection::SelectionRoots>,
@@ -103,6 +112,7 @@ struct Inner {
     track_failed_at: HashMap<String, Instant>,
     /// What is being read right now, so it is not queued twice.
     running: HashSet<Job>,
+    native_running: HashMap<Job, String>,
     deferred: Vec<Deferred>,
     /// Each plugin's approved domains, which its covers are fetched within.
     domains: HashMap<String, Vec<String>>,
@@ -359,14 +369,14 @@ impl Catalog {
     /// fresh.
     pub fn expire_personal_pages(&self, plugin: &str) {
         let mut inner = self.lock();
-        for (key,shelf) in &mut inner.store.shelves { if key.starts_with(&format!("{plugin} native:")) && shelf.document["personal"] == true { shelf.read_at = 1; } }
+        for (_, shelf) in inner.store.shelves.iter_mut_where(|key, shelf| key.starts_with(&format!("{plugin} native:")) && shelf.document["personal"] == true) { shelf.read_at = 1; }
         inner.dirty = true;
         self.changed();
     }
 
     pub fn expire_native_pages(&self, plugin: &str) {
         let mut inner = self.lock();
-        for (key,shelf) in &mut inner.store.shelves { if key.starts_with(&format!("{plugin} native:")) { shelf.read_at = 0; } }
+        for (_, shelf) in inner.store.shelves.iter_mut_where(|key, _| key.starts_with(&format!("{plugin} native:"))) { shelf.read_at = 0; }
         inner.dirty = true;
         self.changed();
     }
@@ -374,12 +384,14 @@ impl Catalog {
     pub fn invalidate_native_cards(&self, plugin: &str, references: &[serde_json::Value]) {
         let mut inner = self.lock();
         let mut changed = Vec::new();
-        for card in inner.store.cards.values_mut().filter(|c| c.plugin == plugin && references.iter().any(|r| r.as_str() == Some(c.identity.as_str()))) {
-            card.tracks = None;
+        for card in inner.store.cards.values_mut_where(|c| c.plugin == plugin && references.iter().any(|r| r.as_str() == Some(c.identity.as_str()))) {
             card.read_at = 0;
             changed.push(card.id);
         }
-        for id in changed { inner.card_errors.remove(&id); inner.card_retry_at.remove(&id); }
+        for id in changed {
+            inner.card_errors.remove(&id); inner.card_retry_at.remove(&id);
+            self.queue(&mut inner, Job::Tracks(id), true);
+        }
         inner.dirty = true;
         self.changed();
     }
@@ -416,6 +428,7 @@ impl Catalog {
         let inner = self.lock();
         let job = Job::Shelf(key.to_string());
         !inner.loaded || inner.running.contains(&job) || inner.queue.queued.contains(&job)
+            || inner.running.contains(&Job::Append(key.into())) || inner.queue.queued.contains(&Job::Append(key.into()))
     }
 
     /// I map transient display ids to stable identities without requesting the network.
@@ -459,7 +472,7 @@ impl Catalog {
         let card = inner.store.cards.get(&id)?.clone();
         let old = card.tracks.is_none() || now().saturating_sub(card.read_at) > TRACKS_FRESH;
         if old && readable(&card, self.natives().as_deref()) {
-            self.queue(&mut inner, Job::Tracks(id), card.tracks.is_none());
+            self.queue(&mut inner, Job::Tracks(id), true);
         }
         let ids = card.tracks?;
         Some(ids.iter().filter_map(|t| inner.store.tracks.get(t).cloned()).collect())
@@ -629,7 +642,7 @@ impl Catalog {
         inner.store.forget_plugin(plugin);
         let cards: HashSet<_> = inner.store.cards.keys().copied().collect();
         let belongs = |job: &Job| match job {
-            Job::Shelf(key) => key.starts_with(&format!("{plugin} ")),
+            Job::Shelf(key) | Job::Append(key) => key.starts_with(&format!("{plugin} ")),
             Job::Tracks(id) => !cards.contains(id),
             Job::Track(path) => crate::source_opener::of_plugin(path).is_some_and(|(p, _)| p == plugin),
         };
@@ -648,11 +661,11 @@ impl Catalog {
     /// What was read stays; it is only asked again.
     pub fn forget_handles(&self, plugin: &str) {
         let mut inner = self.lock();
-        for card in inner.store.cards.values_mut().filter(|c| c.plugin == plugin) {
+        for card in inner.store.cards.values_mut_where(|c| c.plugin == plugin) {
             card.handle = None;
         }
         let prefix = format!("{plugin} ");
-        for (_, shelf) in inner.store.shelves.iter_mut().filter(|(k, _)| k.starts_with(&prefix)) {
+        for (_, shelf) in inner.store.shelves.iter_mut_where(|key, _| key.starts_with(&prefix)) {
             shelf.folders.clear();
             shelf.read_at = 0;
         }

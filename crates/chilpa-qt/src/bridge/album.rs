@@ -1,8 +1,4 @@
-//! A record's header, as its page shows it.
-//!
-//! Every line the header carries is built here, so the page only places
-//! them: "ALBUM · 2019", "Alternative · 11 songs · 55 min · FLAC · 24-bit /
-//! 192 kHz", "2 discs". The tracks are a `TrackListModel` of their own.
+//! I publish a record's header and share its committed track page.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -12,7 +8,6 @@ pub mod qobject {
         include!("cxx-qt-lib/qurl.h");
         type QUrl = cxx_qt_lib::QUrl;
     }
-
     #[auto_cxx_name]
     extern "RustQt" {
         #[qobject]
@@ -20,6 +15,7 @@ pub mod qobject {
         #[qproperty(i64, album_id)]
         #[qproperty(i64, selected_id)]
         #[qproperty(i32, content_rev)]
+        #[qproperty(i32, remote_rev)]
         #[qproperty(i32, tracks_rev)]
         #[qproperty(QString, versions)]
         #[qproperty(bool, found)]
@@ -42,7 +38,6 @@ pub mod qobject {
         type AlbumDetailModel = super::AlbumDetailRust;
         #[qinvokable] fn select_version(self: Pin<&mut AlbumDetailModel>, value: &QString);
     }
-
     impl cxx_qt::Initialize for AlbumDetailModel {}
     impl cxx_qt::Threading for AlbumDetailModel {}
 }
@@ -58,6 +53,8 @@ pub struct AlbumDetailRust {
     album_id: i64,
     selected_id: i64,
     content_rev: i32,
+    remote_rev: i32,
+    source_revision: Option<(i32, i32)>,
     tracks_rev: i32,
     generation: album_pages::Generation,
     pending: bool,
@@ -108,7 +105,6 @@ impl qobject::AlbumDetailModel {
         self.as_mut().rust_mut().pending = true;
         let _ = self.qt_thread().queue(|model| model.load());
     }
-
     fn load(mut self: Pin<&mut Self>) {
         self.as_mut().rust_mut().pending = false;
         let original = self.rust().album_id;
@@ -117,7 +113,9 @@ impl qobject::AlbumDetailModel {
         let retain = crate::browse::read(|state| state.filter.extra_filtered() && state.snapshot.album_ids.contains(&original));
         let ticket = self.rust().generation.next();
         if id <= 0 {
-            self.apply(app::with(|api| api.cached_album_page(id)));
+            let (revision, page) = app::with(|api| (api.source_entity_revision(id), api.cached_album_page(id)));
+            self.as_mut().rust_mut().source_revision = Some(revision);
+            self.apply(page);
             return;
         }
         let thread = self.qt_thread();
@@ -127,7 +125,6 @@ impl qobject::AlbumDetailModel {
             let _ = thread.queue(move |model| { if ticket.current() { model.apply(page); } });
         });
     }
-
     fn apply(mut self: Pin<&mut Self>, page: Option<chilpa_api::AlbumPage>) {
         let Some(page) = page else {
             self.as_mut().rust_mut().page = None;
@@ -135,6 +132,7 @@ impl qobject::AlbumDetailModel {
             self.as_mut().set_selected_id(0);
             return;
         };
+        if self.rust().page.as_deref() == Some(&page) { return; }
         let (token, page) = album_pages::keep(page);
         self.as_mut().rust_mut().page = Some(page.clone());
         let (d, lines) = (&page.detail, &page.heading);
@@ -159,16 +157,20 @@ impl qobject::AlbumDetailModel {
         self.as_mut().set_found(true);
     }
 }
-
 impl cxx_qt::Initialize for qobject::AlbumDetailModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().on_album_id_changed(|mut model| {
             model.as_mut().rust_mut().requested_id = 0;
             model.as_mut().rust_mut().page = None;
+            model.as_mut().rust_mut().source_revision = None;
             model.as_mut().set_found(false);
             model.as_mut().set_selected_id(0);
             model.schedule();
         }).release();
         self.as_mut().on_content_rev_changed(|model| model.schedule()).release();
+        self.as_mut().on_remote_rev_changed(|model| {
+            let id = model.rust().album_id;
+            if id < 0 && model.rust().source_revision != Some(app::with(|api| api.source_entity_revision(id))) { model.schedule(); }
+        }).release();
     }
 }

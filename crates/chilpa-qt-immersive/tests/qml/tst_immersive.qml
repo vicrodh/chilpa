@@ -44,6 +44,7 @@ TestCase {
         Immersive.scene = 0
         Immersive.views = []
         Player.path = "/test.wav"
+        Player.art = ""
         Player.playing = true
         Player.paused = false
         Player.toggles = 0
@@ -62,6 +63,20 @@ TestCase {
         compare(controls.immersiveOpen, false)
     }
 
+    function test_closing_releases_content_and_reopening_keeps_the_selected_view() {
+        Immersive.viewMode = 0
+        Immersive.mode = 1
+        Immersive.open = false
+        compare(view.content, null, "I release the whole visual tree")
+        tryVerify(() => findChild(view, "immersiveBar") === null)
+        Player.art = "qrc:/qt/qml/app/chilpa/kit/assets/logo.png"
+        compare(view.content, null, "a cover change cannot recreate hidden content")
+        Immersive.open = true
+        verify(view.content !== null)
+        compare(Immersive.viewMode, 0)
+        compare(Immersive.mode, 1, "I reopen the selected panel")
+    }
+
     function test_escape_leaves_the_view() {
         view.forceActiveFocus()
         keyClick(Qt.Key_Escape)
@@ -69,11 +84,11 @@ TestCase {
     }
 
     function test_the_chrome_hides_after_a_rest_and_wakes_on_a_move() {
-        verify(view.chromeVisible)
-        view.chromeVisible = false
+        verify(view.content.chromeVisible)
+        view.content.chromeVisible = false
         mouseMove(view, 300, 300)
         mouseMove(view, 320, 310)
-        verify(view.chromeVisible, "a real move wakes it")
+        verify(view.content.chromeVisible, "a real move wakes it")
     }
 
     function test_the_bar_plays_and_seeks() {
@@ -100,13 +115,15 @@ TestCase {
         verify(row.height > 0, "the row has a height to click: " + row.height)
         mouseClick(row, row.width / 2, row.height / 2)
         compare(Immersive.open, false, "Exit Immersive leaves")
-        tryVerify(() => !menu.visible, 1000, "and the menu goes with the view")
+        tryVerify(() => findChild(view, "immersiveExitMenu") === null, 1000, "the menu goes with the view")
         Immersive.open = true
         waitForRendering(view)
-        mouseClick(more, more.width / 2, more.height / 2)
-        tryVerify(() => menu.opened, 1000)
+        const reopenedMore = findChild(view, "immersiveMore")
+        const reopenedMenu = findChild(view, "immersiveExitMenu")
+        mouseClick(reopenedMore, reopenedMore.width / 2, reopenedMore.height / 2)
+        tryVerify(() => reopenedMenu.opened, 1000)
         Immersive.open = false
-        tryVerify(() => !menu.visible, 1000, "an Escape-style exit closes it too")
+        tryVerify(() => findChild(view, "immersiveExitMenu") === null, 1000, "an Escape-style exit releases it too")
     }
 
     function test_the_corner_button_leaves_the_view_beside_the_bar() {
@@ -117,9 +134,9 @@ TestCase {
         const middle = leave.mapToItem(view, 0, leave.height / 2).y
         const barMiddle = bar.mapToItem(view, 0, bar.height / 2).y
         verify(Math.abs(middle - barMiddle) <= 1, "level with the bar: " + middle + " against " + barMiddle)
-        view.chromeVisible = false
+        view.content.chromeVisible = false
         verify(!leave.enabled, "it hides with the chrome")
-        view.chromeVisible = true
+        view.content.chromeVisible = true
         mouseClick(leave, leave.width / 2, leave.height / 2)
         compare(Immersive.open, false, "it leaves the view")
     }

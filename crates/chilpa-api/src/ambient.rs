@@ -52,25 +52,36 @@ impl Default for Triad {
 pub const GLOW_DEFAULT: &str = "#6464ff59";
 
 /// The last cover read, so a track played again costs nothing.
-static LAST: Mutex<Option<(PathBuf, Option<SystemTime>, Triad)>> = Mutex::new(None);
+static LAST: Mutex<Option<(PathBuf, Option<SystemTime>, CoverColors)>> = Mutex::new(None);
 
 /// The colors of the cover at `path`, read off a 16 by 16 sample of it.
 /// `None` for a file that is not an image. Slow: call it off the window's
 /// thread.
 pub fn triad_of(path: &Path) -> Option<Triad> {
+    colors_of(path).map(|colors| colors.triad)
+}
+
+#[derive(Clone)]
+pub struct CoverColors {
+    pub triad: Triad,
+    pub tunnel: String,
+}
+
+/// I decode once and share bounded samples between every cover-color consumer.
+pub fn colors_of(path: &Path) -> Option<CoverColors> {
     let modified = std::fs::metadata(path).ok().and_then(|m| m.modified().ok());
-    if let Some((last, at, triad)) = LAST.lock().unwrap_or_else(|e| e.into_inner()).as_ref() {
-        if last == path && *at == modified {
-            return Some(triad.clone());
-        }
+    if let Some((last, at, colors)) = LAST.lock().unwrap_or_else(|e| e.into_inner()).as_ref() {
+        if last == path && *at == modified { return Some(colors.clone()); }
     }
-    let source = image::ImageReader::open(path).ok()?.with_guessed_format().ok()?.decode().ok()?.into_rgba8();
-    let tiny = image::imageops::resize(&source, 16, 16, image::imageops::FilterType::Triangle);
+    let source = image::ImageReader::open(path).ok()?.with_guessed_format().ok()?.decode().ok()?;
+    let sample = |size| source.resize_exact(size, size, image::imageops::FilterType::Triangle).into_rgba8();
+    let tiny = sample(16);
     let (primary, secondary) = spectrum_colors(&tiny);
-    let halo = image::imageops::resize(&source, 8, 8, image::imageops::FilterType::Triangle);
-    let triad = Triad { primary: hex(primary), secondary: hex(secondary), accent: hex(lyrics_accent_color(&tiny)), glow: glow_hex(glow_color(&halo)) };
-    *LAST.lock().unwrap_or_else(|e| e.into_inner()) = Some((path.to_path_buf(), modified, triad.clone()));
-    Some(triad)
+    let triad = Triad { primary: hex(primary), secondary: hex(secondary), accent: hex(lyrics_accent_color(&tiny)), glow: glow_hex(glow_color(&sample(8))) };
+    let tunnel = crate::visualizer::tunnel::line_palette_json(&crate::visualizer::tunnel::line_palette(&sample(crate::visualizer::tunnel::SAMPLE_SIZE)));
+    let colors = CoverColors { triad, tunnel };
+    *LAST.lock().unwrap_or_else(|e| e.into_inner()) = Some((path.to_path_buf(), modified, colors.clone()));
+    Some(colors)
 }
 
 pub(crate) fn rgb_to_hsl(r: u8, g: u8, b: u8) -> (f32, f32, f32) {
@@ -305,6 +316,21 @@ mod tests {
             *pixel = image::Rgba([r, g, b, 255]);
         }
         img
+    }
+
+    #[test]
+    fn a_shared_cover_decode_preserves_the_field_halo_and_tunnel_colors() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("cover.png");
+        image::RgbaImage::from_pixel(600, 600, image::Rgba([200, 30, 30, 255])).save(&path).unwrap();
+        let colors = colors_of(&path).unwrap();
+        assert_eq!(colors.triad, Triad {
+            primary: "#ef5039".into(), secondary: "#c71d05".into(),
+            accent: "#4cdcf0".into(), glow: "#c81e1e59".into(),
+        });
+        assert_eq!(colors.tunnel, "[\"#c81e1e\",\"#c81e1e\",\"#c81e1e\",\"#c81e1e\"]");
+        assert!(colors_of(&directory.path().join("missing.png")).is_none());
+        assert_eq!(colors_of(&path).unwrap().triad, colors.triad, "a failed cover keeps the cached palette usable");
     }
 
     #[test]

@@ -92,7 +92,8 @@ Item {
     Image {
         id: bitmap
         visible: false
-        source: field.source
+        source: field.visible ? field.source : ""
+        sourceSize: Qt.size(128, 128)
         retainWhileLoading: true
         smooth: true
     }
@@ -120,7 +121,7 @@ Item {
 
     AtmosphereLayers {
         anchors.fill: parent
-        shown: !field.shaderOk || !field.ready
+        shown: field.visible && (!field.shaderOk || !field.ready)
         source: field.source
         fallbackSource: field.fallbackSource
         dim: field.dim

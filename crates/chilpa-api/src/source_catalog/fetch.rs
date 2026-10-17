@@ -23,19 +23,21 @@ fn file() -> std::path::PathBuf {
 }
 
 fn load() -> Store {
-    let mut store: Store = std::fs::read(file()).ok().and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or_default();
+    let mut store: Store = std::fs::File::open(file()).ok().and_then(|file| serde_json::from_reader(std::io::BufReader::new(file)).ok()).unwrap_or_default();
     store.index();
     store
 }
 
 fn save(store: &Store) -> std::io::Result<()> {
-    let text = serde_json::to_vec(store).map_err(std::io::Error::other)?;
     let path = file();
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir)?;
     }
     let temporary = path.with_extension("json.tmp");
-    std::fs::write(&temporary, text)?;
+    let mut writer = std::io::BufWriter::new(std::fs::File::create(&temporary)?);
+    serde_json::to_writer(&mut writer, store).map_err(std::io::Error::other)?;
+    std::io::Write::flush(&mut writer)?;
+    drop(writer);
     std::fs::rename(&temporary, &path)
 }
 
@@ -46,8 +48,25 @@ fn persist(catalog: &Catalog, write: impl FnOnce(&Store) -> std::io::Result<()>)
         let mut inner = catalog.lock();
         if !inner.dirty { return; }
         let (protected_tracks, protected_cards) = inner.protection();
-        inner.store.prune(&protected_tracks, &protected_cards);
-        let snapshot = inner.store.clone();
+        let protected_shelves = inner.protected_shelves();
+        inner.store.prune_with_shelves(&protected_tracks, &protected_cards, &protected_shelves);
+        let live_cards: std::collections::HashSet<_> = inner.store.cards.keys().copied().collect();
+        let live_tracks: std::collections::HashSet<_> = inner.store.tracks.keys().copied().collect();
+        {
+            let Inner { store, entity_revisions, .. } = &mut *inner;
+            entity_revisions.retain(|id, revision| revision.retains_current_cache(*id, store));
+        }
+        let live_images: std::collections::HashSet<_> = inner.store.cards.values().map(|card| card.image.clone())
+            .chain(inner.store.tracks.values().map(|track| track.image.clone())).collect();
+        inner.art_received.retain(|image| live_images.contains(image));
+        inner.images.retain(|image, _| live_images.contains(image));
+        inner.card_errors.retain(|id, _| live_cards.contains(id));
+        inner.card_retry_at.retain(|id, _| live_cards.contains(id));
+        inner.published.cards.retain(|id, _| live_cards.contains(id));
+        let live_shelves: std::collections::HashSet<_> = inner.store.shelves.keys().cloned().collect();
+        inner.published.tracks.retain(|id, _| live_tracks.contains(id));
+        inner.published.shelves.retain(|key, _| live_shelves.contains(key));
+        let snapshot = inner.store.snapshot();
         inner.dirty = false;
         snapshot
     };
@@ -138,6 +157,10 @@ pub(super) fn run(catalog: &Arc<Catalog>) {
     {
         let mut inner = catalog.lock();
         inner.store = read;
+        let (tracks, cards) = inner.protection();
+        let shelves = inner.protected_shelves();
+        inner.store.prune_with_shelves(&tracks, &cards, &shelves);
+        inner.dirty = true;
         inner.loaded = true;
     }
     catalog.changed();
@@ -145,22 +168,25 @@ pub(super) fn run(catalog: &Arc<Catalog>) {
     let mut pages = Pages::default();
     let mut saved = Instant::now();
     loop {
-        let (job, plugins) = next(catalog);
+        let (job, plugins) = next(catalog, &mut saved);
         // A process plugin is asked on a thread of its own: it answers many
         // at once, and nothing of it waits behind a compatibility worker.
         if let Some(natives) = native_of(catalog, &job) {
-            let (catalog, job) = (catalog.clone(), job.clone());
-            let _ = std::thread::Builder::new().name("chilpa-catalog-native".into()).spawn(move || {
+            let (worker_catalog, worker_job) = (catalog.clone(), job.clone());
+            let spawned = std::thread::Builder::new().name("chilpa-catalog-native".into()).spawn(move || {
+                let (catalog, job) = (worker_catalog, worker_job);
                 let started = Instant::now();
                 let outcome = match &job {
                     Job::Shelf(key) => super::native::read_shelf(&catalog, &natives, key),
+                    Job::Append(key) => super::pages::append(&catalog, &natives, key),
                     Job::Tracks(id) => super::native::read_tracks(&catalog, &natives, *id),
                     Job::Track(path) => super::native::read_track(&catalog, &natives, path),
                 };
                 eprintln!("source-catalog: job={job:?} native ok={} elapsed_ms={}", outcome.is_ok(), started.elapsed().as_millis());
-                drop(finish(&catalog, &job, outcome));
-                catalog.changed();
+                finish(&catalog, &job, outcome);
             });
+            if let Err(error) = spawned { finish(catalog, &job, Err(error.to_string())); }
+            if saved.elapsed() > SAVE_EVERY { persist(catalog, save); saved = Instant::now(); }
             continue;
         }
         let started = Instant::now();
@@ -168,11 +194,10 @@ pub(super) fn run(catalog: &Arc<Catalog>) {
             Job::Shelf(key) => read_shelf(catalog, &plugins, &mut pages, key, 0),
             Job::Tracks(id) => read_tracks(catalog, &plugins, &mut pages, *id),
             // Only a process plugin answers for one track.
-            Job::Track(_) => Ok(()),
+            Job::Track(_) | Job::Append(_) => Ok(()),
         };
         eprintln!("source-catalog: job={job:?} ok={} elapsed_ms={}", outcome.is_ok(), started.elapsed().as_millis());
-        drop(finish(catalog, &job, outcome));
-        catalog.changed();
+        finish(catalog, &job, outcome);
         if saved.elapsed() > SAVE_EVERY {
             persist(catalog, save);
             saved = Instant::now();
@@ -181,23 +206,26 @@ pub(super) fn run(catalog: &Arc<Catalog>) {
 }
 
 /// The job is done: it is no longer running, and what failed says why.
-fn finish<'a>(catalog: &'a Catalog, job: &Job, outcome: Result<(), String>) -> std::sync::MutexGuard<'a, Inner> {
+fn finish(catalog: &Catalog, job: &Job, outcome: Result<(), String>) {
     let mut inner = catalog.lock();
     inner.running.remove(job);
+    inner.native_running.remove(job);
     catalog.wake.notify_one();
     match (job, outcome) {
-        (Job::Shelf(key), Err(e)) => { inner.shelf_errors.insert(key.clone(), e); }
+        (Job::Shelf(key) | Job::Append(key), Err(e)) => { inner.shelf_errors.insert(key.clone(), e); }
         (Job::Tracks(id), Err(e)) => { inner.card_errors.insert(*id, e); inner.card_retry_at.insert(*id, Instant::now()); }
         (Job::Track(path), Err(_)) => { inner.track_failed_at.insert(path.clone(), Instant::now()); }
         _ => {}
     }
-    inner
+    drop(inner);
+    // I publish completion even when cached content is unchanged, so loading and errors settle.
+    catalog.publish(true);
 }
 
 /// The process plugins, when the job is one of theirs.
 fn native_of(catalog: &Catalog, job: &Job) -> Option<Arc<crate::natives::Natives>> {
     let plugin = match job {
-        Job::Shelf(key) => split(key).0.to_string(),
+        Job::Shelf(key) | Job::Append(key) => split(key).0.to_string(),
         Job::Tracks(id) => catalog.lock().store.cards.get(id)?.plugin.clone(),
         Job::Track(path) => crate::source_opener::of_plugin(path)?.0,
     };
@@ -205,29 +233,67 @@ fn native_of(catalog: &Catalog, job: &Job) -> Option<Arc<crate::natives::Natives
 }
 
 /// Waits for a job and for a host to ask. Writes the disk while idle.
-fn next(catalog: &Catalog) -> (Job, Arc<Mutex<Plugins>>) {
+fn next(catalog: &Catalog, saved: &mut Instant) -> (Job, Arc<Mutex<Plugins>>) {
     let mut inner = catalog.lock();
     loop {
         let plugins = catalog.plugins.lock().unwrap_or_else(|e| e.into_inner()).clone();
         if let Some(plugins) = plugins {
-            let job = inner.queue.urgent.pop_front().or_else(|| inner.queue.later.pop_front());
-            if let Some(job) = job {
+            let natives = catalog.natives();
+            if let Some(job) = take_runnable(&mut inner, natives.as_deref()) {
                 inner.queue.queued.remove(&job);
                 inner.running.insert(job.clone());
                 return (job, plugins);
             }
         }
-        if inner.dirty {
+        if inner.dirty && saved.elapsed() >= SAVE_EVERY {
             drop(inner);
             persist(catalog, save);
+            *saved = Instant::now();
             inner = catalog.lock();
             // I recheck work queued during the write before waiting: its
             // notification may already have arrived while no one was waiting.
             let plugins_ready = catalog.plugins.lock().unwrap_or_else(|e| e.into_inner()).is_some();
             if jobs_waiting(&inner, plugins_ready) { continue; }
         }
-        inner = catalog.wake.wait_timeout(inner, Duration::from_secs(5)).map(|(g, _)| g).unwrap_or_else(|e| e.into_inner().0);
+        let timeout = if inner.dirty { SAVE_EVERY.saturating_sub(saved.elapsed()) } else { Duration::from_secs(5) };
+        inner = catalog.wake.wait_timeout(inner, timeout).map(|(g, _)| g).unwrap_or_else(|e| e.into_inner().0);
     }
+}
+
+const NATIVE_JOBS: usize = 4;
+const NATIVE_PER_PLUGIN: usize = 2;
+
+fn job_plugin(inner: &Inner, job: &Job) -> Option<String> {
+    match job {
+        Job::Shelf(key) | Job::Append(key) => Some(split(key).0.to_string()),
+        Job::Tracks(id) => inner.store.cards.get(id).map(|card| card.plugin.clone()),
+        Job::Track(path) => crate::source_opener::of_plugin(path).map(|(plugin, _)| plugin),
+    }
+}
+
+fn take_runnable(inner: &mut Inner, natives: Option<&crate::natives::Natives>) -> Option<Job> {
+    take_runnable_with(inner, |plugin| natives.is_some_and(|natives| natives.is_native(plugin)))
+}
+
+fn take_runnable_with(inner: &mut Inner, is_native: impl Fn(&str) -> bool) -> Option<Job> {
+    for urgent in [true, false] {
+        let queue = if urgent { &inner.queue.urgent } else { &inner.queue.later };
+        let found = queue.iter().position(|job| {
+            let Some(plugin) = job_plugin(inner, job) else { return true; };
+            if !is_native(&plugin) { return true; }
+            let global = if urgent { NATIVE_JOBS } else { NATIVE_JOBS - 1 };
+            let per_plugin = if urgent { NATIVE_PER_PLUGIN } else { NATIVE_PER_PLUGIN - 1 };
+            inner.native_running.len() < global && inner.native_running.values().filter(|running| **running == plugin).count() < per_plugin
+        });
+        if let Some(index) = found {
+            let job = if urgent { inner.queue.urgent.remove(index)? } else { inner.queue.later.remove(index)? };
+            if let Some(plugin) = job_plugin(inner, &job).filter(|plugin| is_native(plugin)) {
+                inner.native_running.insert(job.clone(), plugin);
+            }
+            return Some(job);
+        }
+    }
+    None
 }
 
 fn jobs_waiting(inner: &Inner, plugins_ready: bool) -> bool {
@@ -409,9 +475,10 @@ pub(super) fn covers(catalog: &Arc<Catalog>) {
             inner.queue.covers_failed.insert(image, Instant::now());
             continue;
         };
-        for card in inner.store.cards.values_mut().filter(|c| c.image == image) {
+        for card in inner.store.cards.values_mut_where(|c| c.image == image) {
             card.art = path.clone();
         }
+        inner.art_received.insert(image);
         inner.dirty = true;
         drop(inner);
         catalog.art_rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -560,6 +627,59 @@ mod persistence_tests {
     }
 
     #[test]
+    fn persistence_releases_evicted_rows_held_by_entity_observations() {
+        let catalog = Catalog::new();
+        let (old, recent, weak) = {
+            let mut inner = catalog.lock();
+            let old = inner.store.card_id("fixture", "list:old");
+            let recent = inner.store.card_id("fixture", "list:recent");
+            inner.store.shelves.insert("fixture section:playlists".into(), Shelf { cards:vec![old, recent], ..Default::default() });
+            for number in 1..=40_000 {
+                inner.store.tracks.insert(-number, super::super::store::Track { id:-number, path:format!("track:{number}"), ..Default::default() });
+            }
+            for (id, first, last, stamp) in [(old, 1, 20_000, 1), (recent, 20_001, 40_000, 2)] {
+                let card = inner.store.cards.get_mut(&id).unwrap();
+                card.tracks = Some((first..=last).map(|number| -number).collect()); card.read_at = stamp;
+            }
+            (old, recent, Arc::downgrade(&inner.store.tracks.shared(&-1).unwrap()))
+        };
+        catalog.publish(false);
+        catalog.entity_revision(old);
+        catalog.lock().dirty = true;
+        persist(&catalog, |_| Ok(()));
+        let inner = catalog.lock();
+        assert!(inner.store.cards[&old].tracks.is_none());
+        assert!(inner.store.cards[&recent].tracks.is_some());
+        assert!(!inner.entity_revisions.contains_key(&old));
+        assert!(weak.upgrade().is_none(), "neither published nor observed snapshots retain evicted row payloads");
+    }
+
+    #[test]
+    fn persistence_releases_retired_rows_shared_by_observed_playlists() {
+        let catalog = Catalog::new();
+        let (first, second, track) = {
+            let mut inner = catalog.lock();
+            let first = inner.store.card_id("fixture", "list:first");
+            let second = inner.store.card_id("fixture", "list:second");
+            let track = inner.store.take_item_track("fixture", &serde_json::json!({"kind":"track","ref":"track:shared","title":"Before"}), None, 1).unwrap();
+            for id in [first, second] { inner.store.cards.get_mut(&id).unwrap().tracks = Some(vec![track]); }
+            (first, second, track)
+        };
+        for title in ["Before", "After"] {
+            catalog.publish(false);
+            catalog.entity_revision(first); catalog.entity_revision(second);
+            let weak = Arc::downgrade(&catalog.lock().store.tracks.shared(&track).unwrap());
+            catalog.lock().store.tracks.get_mut(&track).unwrap().title = title.into();
+            catalog.publish(false);
+            assert!(weak.upgrade().is_some(), "the observations still hold the retired payload before maintenance");
+            catalog.lock().dirty = true;
+            persist(&catalog, |_| Ok(()));
+            assert_eq!(catalog.lock().store.tracks[&track].title, title);
+            assert!(weak.upgrade().is_none(), "overlapping observations must release equal and changed retired payloads");
+        }
+    }
+
+    #[test]
     fn a_failed_write_keeps_the_latest_live_store_dirty_for_retry() {
         let catalog = Catalog::new();
         catalog.lock().dirty = true;
@@ -576,5 +696,86 @@ mod persistence_tests {
         });
         assert!(!catalog.lock().dirty);
         persist(&catalog, |_| panic!("a clean store must not be written again"));
+    }
+}
+
+#[cfg(test)]
+mod scheduler_tests {
+    use super::*;
+
+    #[test]
+    fn native_work_has_global_and_plugin_caps_and_leaves_room_for_visible_pages() {
+        let mut inner = Inner::default();
+        for plugin in ["first", "first", "second", "third", "fourth"] {
+            let key = format!("{plugin} native:{}", inner.queue.later.len());
+            inner.queue.later.push_back(Job::Shelf(key));
+        }
+        let first = take_runnable_with(&mut inner, |_| true).unwrap();
+        assert_eq!(inner.native_running.len(), 1);
+        assert!(take_runnable_with(&mut inner, |_| true).is_some());
+        assert!(take_runnable_with(&mut inner, |_| true).is_some());
+        assert!(take_runnable_with(&mut inner, |_| true).is_none(), "background work reserves one global slot");
+        let visible = Job::Shelf("first native:visible".into());
+        inner.queue.urgent.push_back(visible.clone());
+        assert_eq!(take_runnable_with(&mut inner, |_| true), Some(visible));
+        assert_eq!(inner.native_running.len(), NATIVE_JOBS);
+        inner.queue.urgent.push_back(Job::Shelf("first native:blocked".into()));
+        assert!(take_runnable_with(&mut inner, |_| true).is_none());
+        inner.native_running.remove(&first);
+        assert!(take_runnable_with(&mut inner, |_| true).is_some());
+        assert!(inner.native_running.values().filter(|plugin| *plugin == "first").count() <= NATIVE_PER_PLUGIN);
+    }
+
+    #[test]
+    fn a_saturated_plugin_does_not_hold_up_another_plugins_visible_page() {
+        let mut inner = Inner::default();
+        inner.native_running.insert(Job::Shelf("first native:one".into()), "first".into());
+        inner.native_running.insert(Job::Shelf("first native:two".into()), "first".into());
+        inner.queue.urgent.push_back(Job::Shelf("first native:blocked".into()));
+        let ready = Job::Append("second native:home|albums".into());
+        inner.queue.urgent.push_back(ready.clone());
+        assert_eq!(take_runnable_with(&mut inner, |_| true), Some(ready));
+        assert_eq!(inner.queue.urgent.len(), 1);
+    }
+}
+
+#[cfg(test)]
+mod append_failure_tests {
+    use super::*;
+    use serde_json::json;
+    #[test]
+    fn identical_success_notifies_completion_without_changing_the_entity_revision() {
+        let catalog = Catalog::new();
+        let key = "fixture native:home|albums";
+        super::super::pages::ingest_document(&catalog, "fixture", "home", &json!({"shelves":[{"id":"albums","items":[
+            {"kind":"album","ref":"album:1","title":"One"}]}]}));
+        catalog.lock().loaded = true;
+        catalog.publish(false);
+        let id = catalog.stored_shelf(key).unwrap().cards[0];
+        let entity = catalog.entity_revision(id);
+        let before = catalog.revisions();
+        let job = Job::Shelf(key.into());
+        catalog.lock().running.insert(job.clone());
+        assert!(catalog.loading(key));
+        finish(&catalog, &job, Ok(()));
+        assert!(!catalog.loading(key));
+        assert_ne!(catalog.revisions(), before, "the UI receives completion even when rows do not change");
+        assert_eq!(catalog.entity_revision(id), entity, "an identical completion does not rebuild the album");
+    }
+
+    #[test]
+    fn a_failed_append_keeps_the_cached_items_and_reports_the_child_error() {
+        let catalog = Catalog::new();
+        let key = "fixture native:home|albums";
+        super::super::pages::ingest_document(&catalog, "fixture", "home", &json!({"shelves":[{"id":"albums","items":[
+            {"kind":"album","ref":"album:1","title":"One"}],"more":"next"}]}));
+        let before = catalog.stored_shelf(key).unwrap();
+        let job = Job::Append(key.into());
+        catalog.lock().running.insert(job.clone());
+        finish(&catalog, &job, Err("Source failed".into()));
+        assert_eq!(catalog.stored_shelf(key).unwrap().cards, before.cards);
+        assert_eq!(catalog.stored_shelf(key).unwrap().document["items"], before.document["items"]);
+        assert_eq!(catalog.shelf_error(key).as_deref(), Some("Source failed"));
+        assert!(!catalog.lock().running.contains(&job));
     }
 }

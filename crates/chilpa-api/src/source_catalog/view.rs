@@ -410,6 +410,10 @@ impl Chilpa {
         drawn
     }
 
+    pub fn source_entity_revision(&self, id: i64) -> (i32, i32) {
+        self.catalog.entity_revision(id)
+    }
+
     pub fn source_revisions(&self) -> (i32, i32) {
         self.catalog.revisions()
     }

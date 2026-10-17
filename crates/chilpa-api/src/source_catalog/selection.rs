@@ -51,6 +51,12 @@ impl Catalog {
 }
 
 impl Inner {
+    pub(super) fn protected_shelves(&self) -> HashSet<String> {
+        self.navigation.shelves.iter().cloned().chain(self.running.iter().chain(self.queue.queued.iter()).filter_map(|job| match job {
+            super::Job::Shelf(key) | super::Job::Append(key) => Some(key.clone()), _ => None,
+        })).collect()
+    }
+
     pub(super) fn protection(&self) -> (HashSet<String>, HashSet<i64>) {
         let mut tracks = self.protected_tracks.clone();
         let identities: HashSet<_> = self.selections.values().flat_map(|roots| roots.cards.iter().cloned())
@@ -58,6 +64,7 @@ impl Inner {
         tracks.extend(self.selections.values().flat_map(|roots| roots.tracks.iter().cloned()));
         let cards = self.store.cards.values().filter(|card| !identities.is_empty() && identities.contains(&(card.plugin.clone(), card.identity.clone()))).map(|card| card.id)
             .chain(self.navigation.cards.iter().copied())
+            .chain(self.running.iter().chain(self.queue.queued.iter()).filter_map(|job| match job { super::Job::Tracks(id) => Some(*id), _ => None }))
             .chain(self.deferred.iter().flat_map(|action| action.albums.iter().copied()).filter(|id| *id < 0)).collect();
         (tracks, cards)
     }
@@ -65,7 +72,6 @@ impl Inner {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::{Chilpa, FoundRow, SelectionState};
     use crate::source_search::RemoteFound;
     use serde_json::json;
@@ -97,6 +103,13 @@ mod tests {
         drop(request);
         let mut inner = api.catalog.lock();
         assert!(inner.selections.is_empty(), "cancel or failure releases all request roots");
+        let pending = super::super::Job::Tracks(selected);
+        assert!(inner.queue.queued.contains(&pending));
+        assert!(inner.protection().1.contains(&selected), "shared queued work still owns a separate root");
+        inner.queue.urgent.retain(|job| *job != pending);
+        inner.queue.later.retain(|job| *job != pending);
+        inner.queue.queued.remove(&pending);
+        assert!(!inner.protection().1.contains(&selected), "completed work releases the last independent root");
         let newest = inner.store.card_id("extra", "album:last");
         inner.store.cards.get_mut(&newest).unwrap().seen_at = u64::MAX;
         let (tracks, cards) = inner.protection();
@@ -106,7 +119,7 @@ mod tests {
 
     #[test]
     fn deferred_collections_and_ready_picker_tracks_remain_roots() {
-        let mut api = Chilpa::new();
+        let api = Chilpa::new();
         let remote = row("source-a");
         let FoundRow::Remote(remote) = &remote else { unreachable!() };
         let id = api.catalog.adopt("source-a", None, remote);
@@ -123,7 +136,17 @@ mod tests {
         assert!(ready_hold.is_some());
         assert!(api.catalog.lock().protection().1.contains(&id), "ready actions keep roots after leaving the deferred list");
         drop(ready_hold);
-        assert!(!api.catalog.lock().protection().1.contains(&id));
+        {
+            let mut inner = api.catalog.lock();
+            assert!(inner.selections.is_empty(), "the ready action released its selection hold");
+            let pending = super::super::Job::Tracks(id);
+            assert!(inner.queue.queued.contains(&pending));
+            assert!(inner.protection().1.contains(&id), "queued work outlives the ready action");
+            inner.queue.urgent.retain(|job| *job != pending);
+            inner.queue.later.retain(|job| *job != pending);
+            inner.queue.queued.remove(&pending);
+            assert!(!inner.protection().1.contains(&id), "finishing the queued job releases its root");
+        }
         let hold = api.hold_playlist_tracks(&[track]);
         let path = crate::source_opener::entry_of("source-a", "track:1");
         assert!(api.catalog.lock().protection().0.contains(&path));

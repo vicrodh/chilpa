@@ -7,6 +7,7 @@ use std::collections::HashSet;
 #[derive(Default)]
 pub(super) struct NavigationRoots {
     pub cards: HashSet<i64>,
+    pub shelves: HashSet<String>,
     pub identities: HashSet<(String, String)>,
 }
 
@@ -22,6 +23,7 @@ impl Catalog {
             match route.screen {
                 Screen::Album | Screen::Playlist if route.id < 0 => { roots.cards.insert(route.id); }
                 Screen::Source => {
+                    roots.shelves.insert(route.key.clone());
                     let (plugin, address) = super::split(&route.key);
                     if plugin.is_empty() { continue; }
                     if let Some(reference) = address.strip_prefix("native:").filter(|reference| !reference.is_empty()) {
@@ -33,7 +35,20 @@ impl Catalog {
                 _ => {}
             }
         }
-        self.lock().navigation = roots;
+        let mut inner = self.lock();
+        let removed: HashSet<_> = inner.navigation.shelves.difference(&roots.shelves).map(|key| key.split('|').next().unwrap_or(key).to_string()).collect();
+        let kept: HashSet<_> = roots.shelves.iter().map(|key| key.split('|').next().unwrap_or(key).to_string()).collect();
+        let cancelled: HashSet<_> = inner.queue.queued.iter().filter(|job| match job {
+            super::Job::Shelf(key) | super::Job::Append(key) => {
+                let family = key.split('|').next().unwrap_or(key);
+                removed.contains(family) && !kept.contains(family)
+            }
+            _ => false,
+        }).cloned().collect();
+        inner.queue.urgent.retain(|job| !cancelled.contains(job));
+        inner.queue.later.retain(|job| !cancelled.contains(job));
+        inner.queue.queued.retain(|job| !cancelled.contains(job));
+        inner.navigation = roots;
     }
 }
 

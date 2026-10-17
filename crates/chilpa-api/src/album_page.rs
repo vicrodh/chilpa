@@ -2,7 +2,7 @@
 
 use crate::{AlbumDetail, AlbumVersion, Chilpa, Reader, TrackEntry, TrackRow};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AlbumPage {
     pub detail: AlbumDetail,
     pub heading: crate::album_versions::AlbumHeading,

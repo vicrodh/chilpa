@@ -24,7 +24,7 @@ chilpa-i18n.workspace = true
 # The window's controls, where they are the system's.
 chilpa-appkit.workspace = true
 # Approvals are kept as JSON, readable by hand on purpose.
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
 semver = "1"
 base64 = "0.22"

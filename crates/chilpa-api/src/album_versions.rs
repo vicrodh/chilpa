@@ -30,7 +30,7 @@ pub(crate) fn release_label(raw: &str) -> String {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AlbumHeading {
     pub kind: String,
     pub meta: String,
@@ -39,7 +39,7 @@ pub struct AlbumHeading {
     pub summary: String,
 }
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
 pub struct AlbumSource {
     pub key: String,
     pub label: String,
@@ -121,7 +121,7 @@ impl AlbumSource {
     }
 }
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
 pub struct AlbumVersion {
     pub id: i64,
     pub label: String,

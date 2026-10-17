@@ -65,7 +65,6 @@ impl Store {
         let id = self.card_id(plugin, &reference);
         let card = self.cards.get_mut(&id).expect("interned");
         if kind == CardKind::Playlist && ["updated_at", "tracks", "editable"].iter().any(|key| item.get(key).is_some_and(|value| card.metadata.get(key) != Some(value))) {
-            card.tracks = None;
             card.read_at = 0;
         }
         card.kind = kind;
@@ -449,11 +448,13 @@ mod tests {
         assert!(store.cards[&id].tracks.is_some(), "an unchanged listing keeps the tracks");
         item["updated_at"] = json!(11);
         assert_eq!(store.take_item("fixture", &item, 3), Some(id));
-        assert!(store.cards[&id].tracks.is_none());
+        assert_eq!(store.cards[&id].tracks.as_deref(), Some(&[-2, -3][..]));
+        assert_eq!(store.cards[&id].read_at, 0);
         store.cards.get_mut(&id).unwrap().tracks = Some(vec![-2,-3]);
         item["editable"] = json!(true);
         store.take_item("fixture", &item, 4);
-        assert!(store.cards[&id].tracks.is_none(), "new editing metadata refreshes old membership rows");
+        assert_eq!(store.cards[&id].tracks.as_deref(), Some(&[-2, -3][..]), "I retain visible rows until the refresh answers");
+        assert_eq!(store.cards[&id].read_at, 0);
     }
 
     #[test]

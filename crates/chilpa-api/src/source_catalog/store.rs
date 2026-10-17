@@ -1,15 +1,13 @@
 //! What the catalog knows of a source's music, kept between runs.
 //!
-//! Every record, playlist and artist a source lists gets a negative id the
-//! first time it is seen, and keeps it: the album page, a tab, a restored
-//! route and the player all name it by that id, the same way they name a
-//! record of the library by its positive one. A track gets one too, so a
-//! list can select it. The ids are interned by what the source says the
-//! thing is, so seeing it again in another listing finds the same id.
+//! I assign negative ids to source records, playlists, artists and tracks.
+//! Retained entries and live roots keep their ids across listings and runs.
+//! An evicted identity may receive a new id when it returns; monotonically
+//! decreasing counters prevent an old id from naming a different entry.
 //!
-//! What a source answered stays on disk. The next run draws a shelf or a
-//! record from it at once, and asks again only when it is stale.
+//! I restore retained shelves from disk and refresh stale source answers.
 
+use super::shared_map::SharedMap;
 use chilpa_plugin::messages::{Entry, EntryKind};
 use chilpa_plugin::presentation::{Entity, Presentation, SourceDocument};
 use serde::{Deserialize, Serialize};
@@ -79,7 +77,7 @@ impl Format {
     }
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct Card {
     pub id: i64,
@@ -118,7 +116,7 @@ impl Card {
     }
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct Track {
     pub id: i64,
@@ -140,7 +138,7 @@ pub(crate) struct Track {
 }
 
 /// A folder of the source's tree that is neither a record nor a list.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub(crate) struct Folder {
     pub id: String,
     pub title: String,
@@ -148,7 +146,7 @@ pub(crate) struct Folder {
 
 /// One listing, as the catalog keeps it: what records, tracks and folders
 /// it holds, in its order.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct Shelf {
     pub document: serde_json::Value,
@@ -170,10 +168,10 @@ pub(crate) struct Shelf {
 pub(crate) struct Store {
     next_card: i64,
     next_track: i64,
-    pub cards: BTreeMap<i64, Card>,
-    pub tracks: BTreeMap<i64, Track>,
+    pub cards: SharedMap<i64, Card>,
+    pub tracks: SharedMap<i64, Track>,
     #[serde(serialize_with = "lasting")]
-    pub shelves: BTreeMap<String, Shelf>,
+    pub shelves: SharedMap<String, Shelf>,
     /// Whether each plugin is drawn as records, so a restored page knows
     /// before the plugins have started.
     pub drawn: BTreeMap<String, bool>,
@@ -200,7 +198,7 @@ pub(crate) struct Read {
 
 /// Only listings that can be found again are written down: a folder's
 /// handle dies with its worker.
-fn lasting<S: serde::Serializer>(shelves: &BTreeMap<String, Shelf>, to: S) -> Result<S::Ok, S::Error> {
+fn lasting<S: serde::Serializer>(shelves: &SharedMap<String, Shelf>, to: S) -> Result<S::Ok, S::Error> {
     use serde::ser::SerializeMap;
     let kept: Vec<_> = shelves.iter().filter(|(key, _)| !super::split(key).1.starts_with("at:")).collect();
     let mut map = to.serialize_map(Some(kept.len()))?;
@@ -258,7 +256,9 @@ impl Store {
 
     pub fn card_id(&mut self, plugin: &str, identity: &str) -> i64 {
         if let Some(id) = self.card_ids.get(&(plugin.to_string(), identity.to_string())) {
-            return *id;
+            let id = *id;
+            if !self.cards.contains_key(&id) { self.cards.insert(id, Card { id, plugin: plugin.into(), identity: identity.into(), ..Card::default() }); }
+            return id;
         }
         self.next_card -= 1;
         let id = self.next_card;
@@ -269,7 +269,9 @@ impl Store {
 
     pub(super) fn track_id(&mut self, path: &str) -> i64 {
         if let Some(id) = self.track_ids.get(path) {
-            return *id;
+            let id = *id;
+            if !self.tracks.contains_key(&id) { self.tracks.insert(id, Track { id, path: path.into(), ..Track::default() }); }
+            return id;
         }
         self.next_track -= 1;
         let id = self.next_track;
@@ -285,7 +287,14 @@ impl Store {
     }
 
     pub fn track_by_path(&self, path: &str) -> Option<&Track> {
-        self.tracks.get(self.track_ids.get(path)?)
+        self.track_ids.get(path).and_then(|id| self.tracks.get(id))
+            .or_else(|| self.tracks.values().find(|track| track.path == path))
+    }
+
+    pub(super) fn snapshot(&self) -> Self {
+        Self { next_card: self.next_card, next_track: self.next_track,
+            cards: self.cards.clone(), tracks: self.tracks.clone(), shelves: self.shelves.clone(),
+            drawn: self.drawn.clone(), names: self.names.clone(), ..Self::default() }
     }
 
     /// Takes in one page of a listing: what it lists is interned and what it
@@ -377,25 +386,109 @@ impl Store {
             .or_else(|| crate::pictures::kept(&track.image)).unwrap_or_default()
     }
 
-    /// Keeps what fits: cards no kept listing names, seen longest ago, go
-    /// first, and the tracks only they held go with them.
+    /// I keep collection membership and live roots, then evict historical pages first.
     pub fn prune(&mut self, protected: &std::collections::HashSet<String>, protected_cards: &std::collections::HashSet<i64>) {
-        if self.cards.len() <= CARDS_KEPT {
-            return;
-        }
-        let pinned: std::collections::HashSet<i64> = protected.iter().filter_map(|path| self.track_ids.get(path).copied()).collect();
-        let listed: std::collections::HashSet<i64> = self.shelves.values().flat_map(|s| s.cards.iter().copied())
-            .chain(pinned.iter().filter_map(|id| self.tracks.get(id)).map(|track| track.album_id)).chain(protected_cards.iter().copied()).collect();
-        let mut old: Vec<(u64, i64)> = self.cards.values().filter(|c| !listed.contains(&c.id)).map(|c| (c.seen_at, c.id)).collect();
-        old.sort();
-        for (_, id) in old.into_iter().take(self.cards.len() - CARDS_KEPT) {
-            self.cards.remove(&id);
-        }
-        let held: std::collections::HashSet<i64> = self.cards.values().flat_map(|c| c.tracks.iter().flatten().copied())
-            .chain(self.shelves.values().flat_map(|s| s.tracks.iter().copied())).chain(pinned).collect();
-        self.tracks.retain(|id, _| held.contains(id));
-        self.index();
+        self.prune_with_shelves(protected, protected_cards, &Default::default());
     }
+
+    pub(super) fn prune_with_shelves(&mut self, protected: &std::collections::HashSet<String>, protected_cards: &std::collections::HashSet<i64>, protected_shelves: &std::collections::HashSet<String>) {
+        use std::collections::HashSet;
+        const SHELVES_KEPT: usize = 64;
+        const DOCUMENT_BYTES: usize = 8 * 1024 * 1024;
+        fn family(key: &str) -> &str { key.split('|').next().unwrap_or(key) }
+        fn collection(key: &str) -> bool { super::split(key).1.starts_with("section:") || super::split(key).1 == "library" }
+        fn weight(value: &serde_json::Value) -> usize {
+            match value {
+                serde_json::Value::String(text) => text.len() + 32,
+                serde_json::Value::Array(values) => values.iter().map(weight).sum::<usize>() + values.len() * 32,
+                serde_json::Value::Object(fields) => fields.iter().map(|(key, value)| key.len() + weight(value) + 64).sum(),
+                _ => 16,
+            }
+        }
+        let protected_families: HashSet<_> = protected_shelves.iter().map(|key| family(key).to_string()).collect();
+        let live = |key: &str| collection(key) || protected_families.contains(family(key));
+        let mut families: HashMap<String, (u64, usize, usize)> = HashMap::new();
+        for (key, shelf) in &self.shelves {
+            if live(key) { continue; }
+            let item = families.entry(family(key).to_string()).or_default();
+            item.0 = item.0.max(shelf.read_at);
+            item.1 += 1;
+            item.2 += weight(&shelf.document);
+        }
+        let mut count: usize = families.values().map(|entry| entry.1).sum();
+        let mut bytes: usize = families.values().map(|entry| entry.2).sum();
+        let mut oldest: Vec<_> = families.into_iter().collect();
+        oldest.sort_by(|(first_key, first), (second_key, second)| (first.0, first_key).cmp(&(second.0, second_key)));
+        let mut removed = HashSet::new();
+        for (key, (_, shelves, size)) in oldest {
+            if count <= SHELVES_KEPT && bytes <= DOCUMENT_BYTES { break; }
+            removed.insert(key); count -= shelves; bytes -= size;
+        }
+        self.shelves.retain(|key, _| !removed.contains(family(key)));
+        let pinned: HashSet<i64> = protected.iter().filter_map(|path| self.track_ids.get(path).copied()).collect();
+        let mut roots: HashSet<i64> = self.shelves.iter().filter(|(key, _)| live(key)).flat_map(|(_, shelf)| shelf.cards.iter().copied())
+            .chain(protected_cards.iter().copied()).collect();
+        roots.extend(pinned.iter().filter_map(|id| self.tracks.get(id)).map(|track| track.album_id));
+        // Loose tracks in an open page also keep their album navigation alive.
+        roots.extend(self.shelves.iter().filter(|(key, _)| live(key)).flat_map(|(_, shelf)| shelf.tracks.iter())
+            .filter_map(|id| self.tracks.get(id)).map(|track| track.album_id));
+        let related: Vec<_> = roots.iter().filter_map(|id| self.cards.get(id)).flat_map(|card| card.tracks.iter().flatten())
+            .filter_map(|id| self.tracks.get(id)).map(|track| track.album_id).filter(|id| *id < 0).collect();
+        roots.extend(related);
+        let mut old: Vec<_> = self.cards.values().filter(|card| !roots.contains(&card.id)).map(|card| (card.seen_at, card.id)).collect();
+        old.sort();
+        for (_, id) in old.into_iter().take(self.cards.len().saturating_sub(CARDS_KEPT)) { self.cards.remove(&id); }
+        let kept_cards: HashSet<_> = self.cards.keys().copied().collect();
+        let stale: HashSet<_> = self.shelves.iter().filter(|(key, shelf)| !live(key) && shelf.cards.iter().any(|id| !kept_cards.contains(id)))
+            .map(|(key, _)| family(key).to_string()).collect();
+        self.shelves.retain(|key, _| !stale.contains(family(key)));
+        const TRACKS_KEPT: usize = 30_000;
+        let mut references: HashMap<i64, usize> = HashMap::new();
+        for id in self.cards.values().flat_map(|card| card.tracks.iter().flatten().copied())
+            .chain(self.shelves.values().flat_map(|shelf| shelf.tracks.iter().copied())).chain(pinned.iter().copied()) {
+            if self.tracks.contains_key(&id) { *references.entry(id).or_default() += 1; }
+        }
+        // I keep collection cards, but only active card consumers retain their full row lists.
+        let protected_rows: HashSet<_> = self.cards.values().filter(|card| protected_cards.contains(&card.id)).flat_map(|card| card.tracks.iter().flatten().copied())
+            .chain(self.shelves.iter().filter(|(key, _)| live(key)).flat_map(|(_, shelf)| shelf.tracks.iter().copied()))
+            .chain(pinned).filter(|id| self.tracks.contains_key(id)).collect();
+        let track_limit = TRACKS_KEPT.max(protected_rows.len());
+        fn release(references: &mut HashMap<i64, usize>, ids: impl IntoIterator<Item = i64>) {
+            for id in ids {
+                if let Some(count) = references.get_mut(&id) {
+                    *count -= 1;
+                    if *count == 0 { references.remove(&id); }
+                }
+            }
+        }
+        if references.len() > track_limit {
+            let mut cached: Vec<_> = self.cards.values().filter(|card| !protected_cards.contains(&card.id) && card.tracks.is_some())
+                .map(|card| (card.read_at, card.id)).collect();
+            cached.sort();
+            for (_, id) in cached {
+                if references.len() <= track_limit { break; }
+                if let Some(card) = self.cards.get_mut(&id) {
+                    release(&mut references, card.tracks.take().unwrap_or_default());
+                    card.read_at = 0;
+                }
+            }
+        }
+        // Historical loose-track pages also share this budget; live collections stay complete.
+        if references.len() > track_limit {
+            let mut cached: Vec<_> = self.shelves.iter().filter(|(key, _)| !live(key))
+                .map(|(key, shelf)| (shelf.read_at, key.clone())).collect();
+            cached.sort();
+            for (_, key) in cached {
+                if references.len() <= track_limit { break; }
+                if let Some(shelf) = self.shelves.get(&key) { release(&mut references, shelf.tracks.iter().copied()); }
+                self.shelves.remove(&key);
+            }
+        }
+        self.tracks.retain(|id, _| references.contains_key(id));
+        self.card_ids.retain(|_, id| self.cards.contains_key(id));
+        self.track_ids.retain(|_, id| self.tracks.contains_key(id));
+    }
+
 }
 
 #[cfg(test)]

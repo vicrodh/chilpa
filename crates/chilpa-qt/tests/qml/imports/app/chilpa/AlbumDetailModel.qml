@@ -1,6 +1,7 @@
 import QtQuick
 QtObject {
     property int albumId: 0
+    property int remoteRev: 0
     property int contentRev: 0
     property int tracksRev: 0
     property int selectedId: 0

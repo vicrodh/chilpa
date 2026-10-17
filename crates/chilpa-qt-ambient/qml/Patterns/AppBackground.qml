@@ -19,6 +19,7 @@ Item {
 
     // The content's rectangle, in the window's coordinates: the frosted
     // plane under the screens.
+    property string paletteConsumer: "main"
     property rect plane: Qt.rect(0, 0, 0, 0)
 
     readonly property bool hasTrack: Player.path !== ""
@@ -46,16 +47,12 @@ Item {
     onOnChanged: Ambient.on = on
     Component.onCompleted: {
         Ambient.on = on
-        Ambient.follow(Player.art)
         if (mode >= 3)
             Ambient.refreshWallpaper()
     }
     onModeChanged: if (mode >= 3) Ambient.refreshWallpaper()
 
-    Connections {
-        target: Player
-        function onArtChanged() { Ambient.follow(Player.art) }
-    }
+    CoverColors { consumer: root.paletteConsumer; active: root.painting && root.mode === 1 }
     Connections {
         target: Prefs
         function onRevChanged() { Ambient.reload() }
