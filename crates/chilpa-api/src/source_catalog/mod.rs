@@ -24,6 +24,7 @@
 mod fetch;
 mod shared_map;
 mod revisions;
+mod revalidation;
 mod native;
 mod pages;
 pub(crate) mod store;
@@ -114,6 +115,8 @@ struct Inner {
     track_failed_at: HashMap<String, Instant>,
     /// What is being read right now, so it is not queued twice.
     running: HashSet<Job>,
+    /// Complete cached personal shelves checked without foreground loading.
+    revalidating: HashSet<Job>,
     native_running: HashMap<Job, String>,
     deferred: Vec<Deferred>,
     /// Each plugin's approved domains, which its covers are fetched within.
@@ -245,7 +248,7 @@ impl Catalog {
             let (plugin, section) = split(key);
             natives.is_native(plugin) && matches!(section, "section:albums" | "section:tracks" | "section:playlists")
         }).cloned().collect();
-        for key in keys { self.queue(&mut inner, Job::Shelf(key), false); }
+        for key in keys { revalidation::queue(self, &mut inner, key); }
     }
 
     /// What the source calls each track of a listing.
@@ -259,6 +262,7 @@ impl Catalog {
     }
 
     fn queue(&self, inner: &mut Inner, job: Job, urgent: bool) {
+        if urgent { inner.revalidating.remove(&job); }
         if residency::blocked(inner, &job) { return; }
         if matches!(&job, Job::Tracks(id) if inner.card_errors.contains_key(id) && inner.card_retry_at.get(id).is_none_or(|at| at.elapsed() < std::time::Duration::from_secs(30))) || inner.running.contains(&job) {
             return;
@@ -273,6 +277,7 @@ impl Catalog {
             }
             return;
         }
+        inner.revalidating.remove(&job);
         inner.queue.queued.insert(job.clone());
         if urgent {
             inner.queue.urgent.push_back(job);
@@ -283,6 +288,7 @@ impl Catalog {
             while inner.queue.later.len() > BACKGROUND_JOBS {
                 if let Some(old) = inner.queue.later.pop_front() {
                     inner.queue.queued.remove(&old);
+                    inner.revalidating.remove(&old);
                 }
             }
         }
@@ -357,8 +363,7 @@ impl Catalog {
             .filter_map(|id| inner.store.cards.get(id)).cloned()
             .map(|mut card| { card.art = inner.store.shown_art(&card); card }).collect();
         let tracks = shelf.map_or(0, |s| s.tracks.len());
-        let job = Job::Shelf(key.to_string());
-        let loading = !inner.loaded || inner.running.contains(&job) || inner.queue.queued.contains(&job);
+        let loading = revalidation::loading(&inner, key);
         let error = inner.shelf_errors.get(key).cloned().unwrap_or_default();
         (cards, tracks, loading, error)
     }
@@ -443,8 +448,7 @@ impl Catalog {
 
     pub fn loading(&self, key: &str) -> bool {
         let inner = self.lock();
-        let job = Job::Shelf(key.to_string());
-        !inner.loaded || inner.running.contains(&job) || inner.queue.queued.contains(&job)
+        revalidation::loading(&inner, key)
             || inner.running.contains(&Job::Append(key.into())) || inner.queue.queued.contains(&Job::Append(key.into()))
     }
 
@@ -674,6 +678,7 @@ impl Catalog {
         inner.queue.urgent.retain(|job| !belongs(job));
         inner.queue.later.retain(|job| !belongs(job));
         inner.queue.queued.retain(|job| !belongs(job));
+        inner.revalidating.retain(|job| !belongs(job));
         inner.deferred.retain(|d| d.albums.iter().all(|id| cards.contains(id)));
         inner.domains.remove(plugin);
         inner.epochs.remove(plugin);

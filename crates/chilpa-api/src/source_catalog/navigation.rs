@@ -58,6 +58,7 @@ impl Catalog {
         inner.queue.urgent.retain(|job| !cancelled.contains(job));
         inner.queue.later.retain(|job| !cancelled.contains(job));
         inner.queue.queued.retain(|job| !cancelled.contains(job));
+        inner.revalidating.retain(|job| !cancelled.contains(job));
         if inner.navigation != roots {
             inner.navigation = roots;
             inner.residency.changed();

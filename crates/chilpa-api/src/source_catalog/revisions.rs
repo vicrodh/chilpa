@@ -15,6 +15,13 @@ fn same_shelf(a: &Shelf, b: &Shelf) -> bool {
         && a.folders == b.folders && a.membership == b.membership
 }
 
+/// I exclude freshness stamps while retaining durable library rows and ownership.
+pub(super) fn library_changed(after: &super::store::Store, before: &super::store::Store) -> bool {
+    !after.cards.changed_keys(&before.cards, |a, b| same_card(a, b) && a.art == b.art && a.seen_in == b.seen_in).is_empty()
+        || !after.tracks.changed_keys(&before.tracks, |a, b| a == b).is_empty()
+        || !after.shelves.changed_keys(&before.shelves, same_shelf).is_empty()
+}
+
 #[derive(Default)]
 pub(super) struct EntityRevision {
     card: Option<Arc<Card>>,
