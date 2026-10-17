@@ -18,7 +18,7 @@ fn overflow(catalog: &Catalog, count: u64) {
 
 #[test]
 fn a_new_route_retains_its_record_before_tab_persistence() {
-    let api = crate::Chilpa::new();
+    let mut api = crate::Chilpa::new();
     let menu = api.catalog.hold([("guest".into(), "album:pending".into())], []);
     let id = api.catalog.lock().store.card_id("guest", "album:pending");
     let mut tabs = Tabs::default();
@@ -30,6 +30,63 @@ fn a_new_route_retains_its_record_before_tab_persistence() {
     api.protect_tabs(&Tabs::default());
     overflow(&api.catalog, 1);
     assert!(api.catalog.card(id).is_none(), "I release the destination when its live route is replaced");
+}
+
+#[test]
+fn stored_playlist_roots_follow_edits_inactive_tabs_and_duplicate_tabs() {
+    let mut api = crate::Chilpa::new();
+    api.catalog.protect_tracks(Default::default());
+    api.library = Some(chilpa_library::Library::in_memory().unwrap());
+    let first = api.create_playlist("First").unwrap();
+    let second = api.create_playlist("Second").unwrap();
+    let path = |reference| crate::source_opener::entry_of("fixture", reference);
+    api.add_to_playlist(first, &[path("one"), "local.flac".into()]);
+    api.add_to_playlist(second, &[path("shared")]);
+    let mut tabs = Tabs::default();
+    tabs.go(record(Screen::Playlist, first));
+    tabs.open(record(Screen::Playlist, first));
+    tabs.open(record(Screen::Playlist, second));
+    api.protect_tabs(&tabs);
+    assert_eq!(api.catalog.lock().protection().0, [path("one"), path("shared")].into());
+    api.add_to_playlist(first, &[path("two")]);
+    assert_eq!(api.catalog.lock().protection().0, [path("one"), path("two"), path("shared")].into(), "I update inactive open tabs before their next model reload");
+    assert!(api.remove_from_playlist(first, 0));
+    assert_eq!(api.catalog.lock().protection().0, [path("two"), path("shared")].into());
+    tabs.close(0);
+    api.protect_tabs(&tabs);
+    assert_eq!(api.catalog.lock().protection().0, [path("two"), path("shared")].into(), "another tab still owns the same playlist");
+    tabs.close(0);
+    api.protect_tabs(&tabs);
+    assert_eq!(api.catalog.lock().protection().0, [path("shared")].into(), "the last matching tab releases its membership paths");
+    api.delete_playlist(second);
+    assert!(api.catalog.lock().protection().0.is_empty(), "deleting an open playlist releases its member roots");
+    api.add_to_playlist(first, &[path("closed")]);
+    assert!(api.catalog.lock().protection().0.is_empty(), "editing a closed playlist cannot reopen its cache roots");
+}
+
+#[test]
+fn restored_stored_playlist_roots_use_a_reader_before_the_main_library_opens() {
+    const CHILD: &str = "CHILPA_TEST_STORED_PLAYLIST_STARTUP_ROOTS";
+    if std::env::var(CHILD).as_deref() != Ok("1") {
+        let profile = tempfile::tempdir().unwrap();
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "source_catalog::navigation::tests::restored_stored_playlist_roots_use_a_reader_before_the_main_library_opens", "--nocapture"])
+            .env(CHILD, "1").envs(chilpa_dirs::profile_environment(profile.path())).output().unwrap();
+        assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+        return;
+    }
+    let path = crate::source_opener::entry_of("fixture", "track:restored");
+    let mut seed = crate::Chilpa::new();
+    let playlist = seed.create_playlist("Restored").unwrap();
+    assert_eq!(seed.add_to_playlist(playlist, &[path.clone()]), 1);
+    let mut tabs = Tabs::default();
+    tabs.go(record(Screen::Playlist, playlist));
+    seed.keep_tabs(&tabs);
+    drop(seed);
+    let restored = crate::Chilpa::new();
+    assert!(restored.library.is_none(), "I read member identities without eager migrations or library maintenance");
+    assert_eq!(restored.catalog.lock().protection().0, [path].into(), "I register restored members before a view or catalog worker starts");
+    assert!(!restored.catalog.lock().loaded);
 }
 
 #[test]

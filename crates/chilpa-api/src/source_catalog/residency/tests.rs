@@ -239,6 +239,68 @@ fn a_stale_track_selection_reuses_the_archived_id_without_decoding_on_the_ui_thr
 }
 
 #[test]
+fn a_stored_playlist_keeps_only_selected_tracks_and_album_navigation_in_a_cold_source() {
+    let root = tempfile::tempdir().unwrap();
+    let (catalog, first, _, path) = fixture();
+    let (track, album, sibling) = {
+        let mut inner = catalog.lock();
+        let track = inner.store.track_by_path(&path).unwrap().id;
+        let album = inner.store.tracks[&track].album_id;
+        let sibling = inner.store.take_item_track("fixture", &json!({"kind":"track","ref":"track:sibling","title":"Sibling",
+            "album_ref":"album:one","album":"one"}), None, 10).unwrap();
+        let card = inner.store.cards.get_mut(&album).unwrap();
+        card.tracks = Some(vec![track, sibling]);
+        card.read_at = 10;
+        (track, album, sibling)
+    };
+    let route = crate::navigation::Route { screen:crate::navigation::Screen::Playlist, id:78, key:String::new() };
+    catalog.protect_navigation_with_tracks(&[route], [(78, [path.clone()].into())].into());
+    catalog.set_source_states([("fixture".into(), false)]);
+    maintain(&catalog, root.path());
+    {
+        let inner = catalog.lock();
+        assert!(inner.store.tracks.contains_key(&track));
+        assert!(!inner.store.tracks.contains_key(&sibling), "a stored playlist member does not hydrate the whole source album");
+        assert!(!inner.store.cards.contains_key(&first));
+        let record = &inner.store.cards[&album];
+        assert!(record.tracks.is_none(), "album navigation is not a partial full-album row cache");
+        assert_eq!(record.read_at, 0);
+        assert_eq!(record.title, "one");
+    }
+    let route = crate::navigation::Route { screen:crate::navigation::Screen::Album, id:album, key:String::new() };
+    catalog.protect_navigation(&[route]);
+    maintain(&catalog, root.path());
+    assert_eq!(catalog.lock().store.cards[&album].tracks, Some(vec![track, sibling]), "opening the source album restores its complete archived rows");
+    assert!(catalog.lock().store.tracks.contains_key(&sibling));
+    catalog.protect_navigation(&[]);
+    maintain(&catalog, root.path());
+    assert!(catalog.lock().store.tracks.values().all(|row| row.plugin != "fixture"));
+}
+
+#[test]
+fn releasing_a_full_cold_album_clears_its_rows_even_when_payload_counts_stay_equal() {
+    let root = tempfile::tempdir().unwrap();
+    let (catalog, _, _, path) = fixture();
+    let album = {
+        let mut inner = catalog.lock();
+        let track = inner.store.track_by_path(&path).unwrap().id;
+        let album = inner.store.tracks[&track].album_id;
+        inner.store.cards.get_mut(&album).unwrap().tracks = Some(vec![track]);
+        inner.store.cards.get_mut(&album).unwrap().read_at = 9;
+        album
+    };
+    catalog.protect_navigation(&[crate::navigation::Route { screen:crate::navigation::Screen::Album, id:album, key:String::new() }]);
+    catalog.set_source_states([("fixture".into(), false)]);
+    maintain(&catalog, root.path());
+    assert!(catalog.lock().store.cards[&album].tracks.is_some());
+    catalog.protect_tracks([path].into());
+    catalog.protect_navigation(&[]);
+    maintain(&catalog, root.path());
+    assert_eq!(catalog.lock().store.tracks.len(), 1);
+    assert!(catalog.lock().store.cards[&album].tracks.is_none(), "I compare payload changes as well as retained entry counts");
+}
+
+#[test]
 fn disabling_cancels_queued_work_and_rejects_stale_queue_requests() {
     let (catalog, first, _, path) = fixture();
     {

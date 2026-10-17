@@ -13,7 +13,7 @@ Rectangle {
     color: Theme.color.surfaceRaised
     border.color: Theme.color.strokeHairline
     visible: QueueActivity.busy
-    Timer { interval: 100; running: true; repeat: true; triggeredOnStart: true; onTriggered: QueueActivity.refresh() }
+    Timer { interval: 100; running: QueueActivity.busy; repeat: true; onTriggered: QueueActivity.refresh() }
     Row {
         id: contents
         anchors.centerIn: parent

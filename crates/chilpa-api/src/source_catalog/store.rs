@@ -386,23 +386,23 @@ impl Store {
         Ok(())
     }
 
-    /// I keep the complete graph reachable from queue entries, open pages,
-    /// and active selections, including each track's album navigation.
+    /// I keep open card rows and individual track roots, with their album navigation.
     pub(super) fn retain_source_roots(&mut self, plugin: &str, tracks: &HashSet<String>, cards: &HashSet<i64>, shelves: &HashSet<String>) {
         let families: HashSet<_> = shelves.iter().map(|key| key.split('|').next().unwrap_or(key)).collect();
-        let mut kept_cards = cards.clone();
+        let mut full_cards = cards.clone();
         let mut kept_tracks: HashSet<_> = self.tracks.values().filter(|track| tracks.contains(&track.path)).map(|track| track.id).collect();
         for (key, shelf) in &self.shelves {
-            if families.contains(key.split('|').next().unwrap_or(key)) { kept_cards.extend(&shelf.cards); kept_tracks.extend(&shelf.tracks); }
+            if families.contains(key.split('|').next().unwrap_or(key)) { full_cards.extend(&shelf.cards); kept_tracks.extend(&shelf.tracks); }
         }
-        loop {
-            let before = (kept_cards.len(), kept_tracks.len());
-            kept_tracks.extend(kept_cards.iter().filter_map(|id| self.cards.get(id)).flat_map(|card| card.tracks.iter().flatten()).copied());
-            kept_cards.extend(kept_tracks.iter().filter_map(|id| self.tracks.get(id)).map(|track| track.album_id).filter(|id| *id < 0));
-            if before == (kept_cards.len(), kept_tracks.len()) { break; }
-        }
+        kept_tracks.extend(full_cards.iter().filter_map(|id| self.cards.get(id)).flat_map(|card| card.tracks.iter().flatten()).copied());
+        let mut kept_cards = full_cards.clone();
+        kept_cards.extend(kept_tracks.iter().filter_map(|id| self.tracks.get(id)).map(|track| track.album_id).filter(|id| *id < 0));
         self.shelves.retain(|key, _| super::split(key).0 != plugin || families.contains(key.split('|').next().unwrap_or(key)));
         self.cards.retain(|id, card| card.plugin != plugin || kept_cards.contains(id));
+        for card in self.cards.values_mut_where(|card| card.plugin == plugin && !full_cards.contains(&card.id) && (card.tracks.is_some() || card.read_at != 0)) {
+            card.tracks = None;
+            card.read_at = 0;
+        }
         self.tracks.retain(|id, track| track.plugin != plugin || kept_tracks.contains(id));
         self.index();
     }

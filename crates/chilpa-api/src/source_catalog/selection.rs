@@ -67,6 +67,7 @@ impl Inner {
 
     pub(super) fn protection(&self) -> (HashSet<String>, HashSet<i64>) {
         let mut tracks = self.protected_tracks.clone();
+        tracks.extend(self.navigation.playlists.values().flat_map(|paths| paths.iter().cloned()));
         let identities: HashSet<_> = self.selections.values().flat_map(|roots| roots.cards.iter().cloned())
             .chain(self.navigation.identities.iter().cloned()).collect();
         tracks.extend(self.selections.values().flat_map(|roots| roots.tracks.iter().cloned()));

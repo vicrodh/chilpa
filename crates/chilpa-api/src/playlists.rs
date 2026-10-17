@@ -235,6 +235,7 @@ impl Chilpa {
                 return 0;
             }
         };
+        let mut refreshed = None;
         if let Some(lib) = self.library() {
             if let Ok(source_id) = lib.source_id(source, "default") {
                 let playlist_id = lib.playlists().unwrap_or_default().into_iter().find(|playlist| playlist.source_id == source_id && playlist.external_id == external_id).map(|playlist| playlist.id).or_else(|| lib.create_playlist(source_id, external_id, external_id).ok());
@@ -258,9 +259,11 @@ impl Chilpa {
                         })
                         .collect();
                     let _ = lib.sync_source_playlist_tracks(source_id, playlist_id, &tracks);
+                    refreshed = Some(playlist_id);
                 }
             }
         }
+        if let Some(id) = refreshed { self.refresh_playlist_roots(id); }
         let plays = self.plugins.as_ref().and_then(|p| p.lock().ok()).is_none_or(|p| p.delivers_audio(source));
         let hits: Vec<search::Hit> = reply.tracks.into_iter().map(|t| search::Hit::remote(t, source, &name, plays)).collect();
         let found = hits.len();
@@ -350,7 +353,9 @@ impl Chilpa {
             return 0;
         };
         let entries: Vec<chilpa_library::PlaylistEntry> = paths.iter().map(|r| entry_of(lib, source, r)).collect();
-        lib.append_to_playlist(playlist_id, &entries).unwrap_or(0)
+        let added = lib.append_to_playlist(playlist_id, &entries).unwrap_or(0);
+        if added > 0 { self.refresh_playlist_roots(playlist_id); }
+        added
     }
 
     /// Picker targets for a library selection, including exact and fuzzy
@@ -437,6 +442,7 @@ impl Chilpa {
         let Ok(added) = appended else {
             return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
         };
+        if added > 0 { self.refresh_playlist_roots(playlist_id); }
         PlaylistAddResult { added, exact: membership.exact, similar: membership.similar, rejected: false }
     }
 
@@ -444,7 +450,9 @@ impl Chilpa {
         if !self.playlist(playlist_id).is_some_and(|playlist| playlist.mixed) {
             return 0;
         }
-        self.library().and_then(|lib| lib.remove_tracks_from_playlist(playlist_id, track_ids).ok()).unwrap_or(0)
+        let removed = self.library().and_then(|lib| lib.remove_tracks_from_playlist(playlist_id, track_ids).ok()).unwrap_or(0);
+        if removed > 0 { self.refresh_playlist_roots(playlist_id); }
+        removed
     }
 
     pub fn set_tracks_favorite(&mut self, track_ids: &[i64], favorite: bool) -> bool {
@@ -482,7 +490,9 @@ impl Chilpa {
         if !self.playlist(playlist_id).is_some_and(|playlist| playlist.mixed) {
             return false;
         }
-        self.library().is_some_and(|lib| lib.remove_from_playlist(playlist_id, position).unwrap_or(false))
+        let removed = self.library().is_some_and(|lib| lib.remove_from_playlist(playlist_id, position).unwrap_or(false));
+        if removed { self.refresh_playlist_roots(playlist_id); }
+        removed
     }
 
     /// Our own lists, newest first, without asking any source for theirs.
@@ -525,6 +535,7 @@ impl Chilpa {
         if let Some(lib) = self.library() {
             let _ = lib.delete_playlist(playlist_id);
         }
+        self.refresh_playlist_roots(playlist_id);
     }
 
     /// Renames a list.

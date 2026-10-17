@@ -339,7 +339,8 @@ impl qobject::Player {
     /// Collects the engine's events. The tick thread queues it.
     fn tick(mut self: Pin<&mut Self>) {
         self.as_mut().set_origin(QString::from(&app::with(|api| api.playing_origin_json())));
-        let (now, changed, casting, remote) = app::with(|api| (api.poll().clone(), api.library_changed(), api.cast_destination().is_some(), api.source_revisions()));
+        let (now, changed, casting, remote, queue_busy) = app::with(|api| (api.poll().clone(), api.library_changed(), api.cast_destination().is_some(), api.source_revisions(), api.queue_busy()));
+        chilpa_qt_kit::bridge::queue_activity::publish(queue_busy);
         let listening = app::with(|api| api.listening_revision());
         crate::registry::library(move |mut l| { l.as_mut().set_listening_rev(listening); l.as_mut().set_remote_rev(remote.0); l.set_remote_art_rev(remote.1); });
         if let Some(asked) = app::with(|api| api.window_request()) {

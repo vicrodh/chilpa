@@ -13,6 +13,7 @@ TestCase {
     height: 400
     PlayerLcd { id: lcd; width: 780; y: 300 }
     QualityTooltip { id: tip; visible: lcd.qualityHovered }
+    Component { id: playerBar; PlayerBar { width: 780 } }
 
     function init() {
         Sources.show({playing_parent: "", onAir: ""})
@@ -20,6 +21,7 @@ TestCase {
         Cast.active = false
         Cast.destination = "Test receiver"
         Cast.snapshot = "{}"
+        Cast.nextActive = null
         Player.position = 9
         Player.duration = 30
         Player.sought = -1
@@ -106,6 +108,22 @@ TestCase {
         compare(Player.sought, -1)
         mouseRelease(seek, seek.width * 3 / 4, seek.height / 2)
         verify(Math.abs(Player.sought - 135) < 1)
+    }
+    function test_closed_picker_sleeps_until_cast_starts_and_observes_disconnect() {
+        const bar = createTemporaryObject(playerBar, this)
+        verify(bar)
+        const idle = Cast.refreshes
+        wait(1150)
+        compare(Cast.refreshes, idle, "a disconnected player does not poll Cast")
+        Cast.connectDevice("receiver")
+        const connected = Cast.refreshes
+        tryVerify(() => Cast.refreshes > connected, 1500)
+        Cast.nextActive = false
+        tryCompare(Cast, "active", false, 1500)
+        compare(findChild(bar, "playbackIndicator").glyph, Icons.waveSquare)
+        const disconnected = Cast.refreshes
+        wait(1150)
+        compare(Cast.refreshes, disconnected, "disconnect stops the player timer with the picker closed")
     }
 
 }
