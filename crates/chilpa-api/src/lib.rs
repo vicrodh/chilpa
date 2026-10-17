@@ -822,6 +822,9 @@ impl Chilpa {
             credits_read_at: (0, 0),
             artwork: Default::default(),
         };
+        if let Some(tabs) = chilpa.restored_tabs() {
+            chilpa.protect_tabs(&tabs);
+        }
         // Two starts in a row died before the window was shown: the kept
         // queue is left on disk for a start that reaches the window.
         if crate::startup_chain::level() >= 3 {
