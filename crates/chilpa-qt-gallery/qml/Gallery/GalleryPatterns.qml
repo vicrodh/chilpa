@@ -2,7 +2,7 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import QtQuick
 import app.chilpa
-import app.chilpa.playlists
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Components"
 import app.chilpa.kit
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as QueueTools

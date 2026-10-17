@@ -4,9 +4,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/app/chilpa/qml/Components"
-import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
-import "qrc:/qt/qml/app/chilpa/qml/Components/PlaylistTree.js" as PlaylistTree
+import app.chilpa.playlists
 
 // The sidebar's playlists (design/02 2, item 6): the label with a button to
 // make one, a filter, and the list, which scrolls in whatever height is
@@ -14,19 +12,18 @@ import "qrc:/qt/qml/app/chilpa/qml/Components/PlaylistTree.js" as PlaylistTree
 Item {
     id: section; objectName: "sidebarPlaylists"
 
-    PlaylistPicker { id: createPicker }
-
     property string order: SettingsModel.kept("ui.playlists.order") || "name"
     property bool ascending: SettingsModel.kept("ui.playlists.ascending") !== "false"
     // A new order comes its own way round.
     function setOrder(value) { order = value; ascending = true; SettingsModel.keep("ui.playlists.order", value); SettingsModel.keep("ui.playlists.ascending", "true"); reload() }
     function reverseOrder() { ascending = !ascending; SettingsModel.keep("ui.playlists.ascending", String(ascending)); reload() }
     property var rows: []
+    PlaylistTree { id: playlistTree }
     KeyedModel { id: stableRows; items: section.rows }
     property var expanded: ({})
     function reload() {
         const catalog = JSON.parse(Playlists.catalogJson(filter.text))
-        rows = PlaylistTree.rows(catalog, order, ascending, filter.text, expanded, I18n.tr("Playlists", I18n.rev))
+        rows = playlistTree.rows(catalog, order, ascending, filter.text, expanded, I18n.tr("Playlists", I18n.rev))
     }
     function toggleFolder(id) { expanded[id] = !expanded[id]; reload() }
     function openPlaylist(id) {
@@ -57,7 +54,7 @@ Item {
             size: Metrics.button24
             glyph: Icons.plus
             tip: I18n.tr("New playlist", I18n.rev)
-            onClicked: createPicker.beginCreate()
+            onClicked: AddToPlaylist.show("[]")
         }
         IconButton {
             anchors.right: addButton.left
@@ -169,6 +166,6 @@ Item {
     SidebarPlaylistActions {
         id: actions
         sidebar: section
-        onCreatePlaylist: createPicker.beginCreate()
+        onCreatePlaylist: AddToPlaylist.show("[]")
     }
 }

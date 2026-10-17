@@ -1,12 +1,12 @@
 import QtQuick
 import QtTest
 import app.chilpa
-import app.chilpa.playlists
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Patterns"
-import "qrc:/qt/qml/app/chilpa/qml/Components/PlaylistTree.js" as Tree
 
 TestCase {
     name: "PlaylistTree"; when: windowShown; visible: true; width: 400; height: 1000
+    PlaylistTree { id: tree }
     Component { id: sidebarMaker; SidebarPlaylists { width: 300; height: 1000 } }
     function fixture(separateSources) {
         const providers = ["q", "t", "a"].map((id,index) => ({id:id,name:"Source " + id,icon:id + ".svg",position:index,separate:separateSources.includes(id)}))
@@ -21,7 +21,7 @@ TestCase {
         return {folders:[{id:1,name:"Folder 1"},{id:2,name:"Folder 2"}],native_folders:native,folder_sources:providers,playlists:playlists}
     }
     function test_all_integrated_interleave_folders_then_playlists_by_name_and_origin() {
-        const rows = Tree.rows(fixture([]), "name", true, "", {})
+        const rows = tree.rows(fixture([]), "name", true, "", {})
         compare(rows.filter(r => r.rowKind === 2).length, 0)
         compare(rows.slice(0,7).map(r => r.name + ":" + r.source),
             ["Folder 1:","Folder 1:q","Folder 1:t","Folder 1:a","Folder 2:","Folder 2:t","Folder 2:a"])
@@ -31,7 +31,7 @@ TestCase {
         verify(rows.filter(r => r.rowKind === 0).every(r => r.showSourceBadge))
     }
     function test_partial_integration_keeps_other_sources_in_their_own_groups() {
-        const rows = Tree.rows(fixture(["t", "a"]), "name", true, "", {})
+        const rows = tree.rows(fixture(["t", "a"]), "name", true, "", {})
         const groups = rows.filter(r => r.rowKind === 2)
         compare(groups.map(r => r.source), ["t", "a"])
         const t = rows.indexOf(groups[0]), a = rows.indexOf(groups[1])
@@ -60,7 +60,7 @@ TestCase {
         const catalog = {folder_sources:[{id:"source",name:"Catalog",separate:false}],
             native_folders:[{source:"source",ref:"folder:empty",name:"Empty"}],
             playlists:[{id:-1,source:"source",name:"Orphan",native_folder:"folder:missing",separate:false}]}
-        compare(Tree.rows(catalog,"name",true,"",{}).map(r => r.name), ["Empty","Orphan"])
+        compare(tree.rows(catalog,"name",true,"",{}).map(r => r.name), ["Empty","Orphan"])
     }
     function test_native_hierarchy_remains_separate_from_local_folders() {
         const catalog = {folders:[{id:1,name:"Local",playlist_count:1,color:"accent",position:0}],
@@ -68,7 +68,7 @@ TestCase {
             native_folders:[{source:"source",ref:"folder:p",name:"Parent",parent:"",source_icon:"source.svg",folder_icon:"folder.svg"},{source:"source",ref:"folder:c",name:"Child",parent:"folder:p"}],
             playlists:[{id:-1,name:"Inside",source:"source",provider:"Cloud",native_ref:"playlist:1",native_folder:"folder:c",folder_id:0,separate:true,mixed:false},
                 {id:-2,name:"Locally organized",source:"source",provider:"Cloud",native_folder:"folder:c",folder_id:1,separate:true,mixed:false}]}
-        const rows = Tree.rows(catalog,"name",true,"",{1:true,"source local:1":true,"source:source":true,"source folder:p":true,"source folder:c":true})
+        const rows = tree.rows(catalog,"name",true,"",{1:true,"source local:1":true,"source:source":true,"source folder:p":true,"source folder:c":true})
         compare(rows.map(r=>r.name),["Local","Playlists","Local","Locally organized","Parent","Child","Inside"])
         compare(rows[4].sourceIcon,"folder.svg")
         compare(rows[5].sourceIcon,"")
@@ -80,7 +80,7 @@ TestCase {
         verify(rows[6].showSourceBadge)
     }
     function test_empty_native_folder_stays_visible_and_expandable() {
-        const rows = Tree.rows({folder_sources:[{id:"source",name:"Cloud"}],native_folders:[{source:"source",ref:"folder:e",name:"Empty"}]},"name",true,"",{"source:source":true})
+        const rows = tree.rows({folder_sources:[{id:"source",name:"Cloud"}],native_folders:[{source:"source",ref:"folder:e",name:"Empty"}]},"name",true,"",{"source:source":true})
         compare(rows.length,2)
         compare(rows[1].name,"Empty")
         compare(rows[1].tracks,0)
@@ -91,7 +91,7 @@ TestCase {
             native_folders:[{source:"source",ref:"folder:e",name:"Favorites",parent:"",folder_icon:"folder.svg"}],
             playlists:[{id:-1,name:"Loose",source:"source",provider:"Cloud",separate:false,mixed:false},
                 {id:-2,name:"Nested",source:"source",provider:"Cloud",native_folder:"folder:e",separate:false,mixed:false}]}
-        const rows = Tree.rows(catalog,"name",true,"",{"source folder:e":true})
+        const rows = tree.rows(catalog,"name",true,"",{"source folder:e":true})
         compare(rows.map(r=>r.name),["Favorites","Nested","Loose"])
         compare(rows[0].depth,0)
         compare(rows[1].depth,1)

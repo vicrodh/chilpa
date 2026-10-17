@@ -26,12 +26,17 @@ Item {
         function removeFolder(id) {}
     }
     PlaylistPickerModal {}
+    PlaylistTree { id: playlistTree }
 
     Column {
         id: pieces
         x: Metrics.contentX
         y: Metrics.contentX
         spacing: Metrics.gap16
+        Text {
+            text: "Playlist tree rows: " + playlistTree.rows({playlists:[gallery.ours.playlist, gallery.theirs.playlist]}, "name", true, "", {}).length
+            font.pointSize: Type.body; color: Theme.color.textPrimary
+        }
         Row {
             spacing: Metrics.gap8
             PillButton { text: "Add to playlist modal"; onClicked: AddToPlaylist.show("[1,2,3]") }
