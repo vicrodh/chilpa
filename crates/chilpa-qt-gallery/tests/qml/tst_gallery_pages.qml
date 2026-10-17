@@ -14,6 +14,7 @@ TestCase {
         "../../qml/Gallery/GalleryPatterns.qml",
         "../../../chilpa-qt-metadata/qml/Gallery/GalleryMetadata.qml",
         "../../../chilpa-qt-sources/qml/Gallery/GalleryPlugins.qml",
+        "../../../chilpa-qt-playlists/qml/Gallery/GalleryPlaylists.qml",
         "../../../chilpa-qt-controls/qml/Gallery/GalleryControls.qml",
         "../../../chilpa-qt-lyrics/qml/Gallery/GalleryLyrics.qml"
     ]

@@ -1,3 +1,4 @@
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Components"
 import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa

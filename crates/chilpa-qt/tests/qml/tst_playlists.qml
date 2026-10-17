@@ -3,7 +3,7 @@ import QtQuick.Controls.Basic
 import QtTest
 import app.chilpa
 import "../../qml/Components"
-import "../../qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Components"
 
 TestCase {
     name: "PlaylistDialogs"

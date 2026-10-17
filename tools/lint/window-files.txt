@@ -23,15 +23,10 @@ crates/chilpa-qt/qml/Components/OptionRow.qml
 crates/chilpa-qt/qml/Components/PageHero.qml
 crates/chilpa-qt/qml/Components/PaneColumn.qml
 crates/chilpa-qt/qml/Components/PaneRow.qml
-crates/chilpa-qt/qml/Components/PlaylistCollage.qml
-crates/chilpa-qt/qml/Components/PlaylistFolderRow.qml
-crates/chilpa-qt/qml/Components/PlaylistForm.qml
 crates/chilpa-qt/qml/Components/PlaylistNotice.qml
 crates/chilpa-qt/qml/Components/PlaylistPicker.qml
-crates/chilpa-qt/qml/Components/PlaylistRow.qml
 crates/chilpa-qt/qml/Components/PlaylistSourceChooser.qml
 crates/chilpa-qt/qml/Components/PlaylistSourceWrite.qml
-crates/chilpa-qt/qml/Components/PlaylistTree.js
 crates/chilpa-qt/qml/Components/QualityIcon.qml
 crates/chilpa-qt/qml/Components/QueueMenu.qml
 crates/chilpa-qt/qml/Components/QueueRow.qml
@@ -66,8 +61,6 @@ crates/chilpa-qt/qml/Patterns/NavMenu.qml
 crates/chilpa-qt/qml/Patterns/PlaybackOptions.qml
 crates/chilpa-qt/qml/Patterns/PlayerBar.qml
 crates/chilpa-qt/qml/Patterns/PlayerLcd.qml
-crates/chilpa-qt/qml/Patterns/PlaylistEditDialog.qml
-crates/chilpa-qt/qml/Patterns/PlaylistFolderDialog.qml
 crates/chilpa-qt/qml/Patterns/PlaylistSelectionBar.qml
 crates/chilpa-qt/qml/Patterns/QualityTooltip.qml
 crates/chilpa-qt/qml/Patterns/QueuePanel.qml

@@ -1,5 +1,3 @@
 module app.chilpa.playlists
-SidebarPlaylists 1.0 qrc:/qt/qml/app/chilpa/playlists/qml/Patterns/SidebarPlaylists.qml
-SidebarPlaylistActions 1.0 qrc:/qt/qml/app/chilpa/playlists/qml/Patterns/SidebarPlaylistActions.qml
 singleton PlaylistManager 1.0 PlaylistManager.qml
 singleton AddToPlaylist 1.0 AddToPlaylist.qml

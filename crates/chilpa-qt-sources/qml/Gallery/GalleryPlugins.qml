@@ -1,4 +1,6 @@
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Components"
 import QtQuick
+import app.chilpa
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -31,7 +33,7 @@ TitledFlow {
     SourcesPopover {}
     LibraryColumnChoices { width: Metrics.confirmWidth; selected: ["year", "artist", "album"]; onToggled: column => selected = selected.includes(column) ? selected.filter(value => value !== column) : selected.concat([column]) }
     SourcePlaylistEditor {}
-    SourceFolderEditor {}
+    PlaylistFolderDialog {}
     SourcePlaylistRows { width: Metrics.confirmWidth; rows: [{title:"Song",artist:"Artist",member:"1"}] }
     SourcePageHeader { width: Metrics.confirmWidth; info: ({title:"Artist",description:"Biography"}) }
     ArtistHeader { width: Metrics.confirmWidth; info: ({title:"Artist",description:"Biography",roles:["Composer"],radio_id:-1}) }

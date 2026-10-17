@@ -3,7 +3,6 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import app.chilpa as Shell
 
 Item {
     id: actions
@@ -108,6 +107,6 @@ Item {
             }
         }
     }
-    Shell.PlaylistFolderDialog { id: folderDialog }
-    Shell.PlaylistEditDialog { id: editDialog }
+    PlaylistFolderDialog { id: folderDialog }
+    PlaylistEditDialog { id: editDialog }
 }

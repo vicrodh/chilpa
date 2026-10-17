@@ -2,7 +2,7 @@ import QtQuick
 import QtTest
 import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Components"
 
 TestCase {
     id: test

@@ -2,11 +2,11 @@ import QtQuick
 import QtTest
 import app.chilpa
 import app.chilpa.sources
-import "../../qml/Components"
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Components"
 
 TestCase {
     name: "SourceFolders"; when:windowShown; visible:true; width:960; height:600
-    SourceFolderEditor { id: editor }
+    PlaylistFolderDialog { id: editor }
     function init() {
         Playlists.fail=false; Playlists.created=[]; Sources.asked=[]
         Sources.show({native_actions:{}})
