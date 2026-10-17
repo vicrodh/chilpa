@@ -1,7 +1,11 @@
 # macOS packages
 
-I build this beta for Apple Silicon on macOS 14 or later. I require Rust,
+I build this beta for Apple Silicon. I require Rust,
 Qt 6.11 with `qmake` and `macdeployqt` on PATH, and Python 3.11 or later.
+I request macOS 14 as the deployment target, then raise the bundle's minimum
+to the strictest requirement of its deployed libraries. I record the actual
+minimum in `Info.plist` and the package manifest; the local Homebrew Qt build
+requires macOS 26.
 
 ```sh
 NORUN=1 ./scripts/qt-run.sh
