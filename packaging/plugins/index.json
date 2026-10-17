@@ -84,6 +84,12 @@
       "api": {
         "min": 1,
         "max": 1
+      },
+      "packages": {
+        "linux-x86_64": {
+          "package": "https://github.com/vicrodh/chilpa-pg-mood/releases/download/v0.1.2/chilpa-pg-mood-0.1.2-linux-x86_64.zip",
+          "sha256": "a4dd97eb66a1718206b458d89299ccc359d880da1c2b1f6ea37e8d57febb759d"
+        }
       }
     }
   ]

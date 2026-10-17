@@ -410,6 +410,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         row["update"] = installed.is_some().into();
         native_catalog.push(row);
     }
+    let compatibility_available = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.compatibility_launcher().is_some();
     for repository in repositories.compatible() {
         for entry in repositories.cached(&repository.id)? {
             // A native plugin is offered in its own section, to install or
@@ -423,6 +424,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                 native_catalog.push(row);
                 continue;
             }
+            if !compatibility_available { continue; }
             let category = if entry.category.is_empty() { "uncategorized" } else { &entry.category };
             categories.insert(category.to_owned());
             if installed_ids.iter().any(|origin| origin["repository"] == repository.id && origin["catalog_entry"]["id"] == entry.id) { continue; }
