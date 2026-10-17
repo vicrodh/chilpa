@@ -13,7 +13,10 @@ use std::time::{Duration, Instant};
 /// A plugin in bash: each line is answered on its own subshell, so `slow`
 /// (3 s) and `echo` are in flight at the same time.
 const PLUGIN: &str = r#"#!/usr/bin/bash
+exec 9>/data/worker.lock
+flock -n 9 || exit 1
 while IFS= read -r line; do
+  if [[ "$line" == *'"method":"disconnect"'* ]]; then exec 1>&-; continue; fi
   (
     id=$(printf '%s' "$line" | sed -E 's/.*"id":([0-9]+).*/\1/')
     case "$line" in
@@ -297,6 +300,18 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
         let refreshed: serde_json::Value = serde_json::from_str(&chilpa.sidebar_playlists("")).unwrap();
         if refreshed["playlists"].as_array().unwrap().iter().any(|p| p["id"] == remote_id && p["name"] == "Updated cloud list") { break; }
         assert!(Instant::now() < deadline, "explicit refresh did not replace fresh cached playlist metadata");
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    // The worker keeps running after closing stdout, and holds its state lock.
+    // Its replacement can initialize only after the host reaps that worker.
+    assert!(caller.call("com.test.native", "disconnect", json!({}), Duration::from_secs(2)).is_err());
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        if let Ok(reply) = caller.call("com.test.native", "echo", json!({}), Duration::from_secs(1)) {
+            assert_eq!(reply, json!("fast"));
+            break;
+        }
+        assert!(Instant::now() < deadline, "a disconnected worker retained its state lock across restart");
         std::thread::sleep(Duration::from_millis(20));
     }
     std::fs::create_dir_all(&data).unwrap(); std::fs::create_dir_all(&cache).unwrap();

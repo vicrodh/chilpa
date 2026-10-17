@@ -75,6 +75,21 @@ fn an_executable_symlink_cannot_escape_the_package() {
 }
 
 #[test]
+fn replaced_private_roots_cannot_redirect_a_later_launch() {
+    for name in ["data", "cache", "export"] {
+        let root = tempfile::tempdir().unwrap();
+        let mut paths = paths(root.path(), "/bin/bash");
+        let outside = root.path().join("outside");
+        std::fs::create_dir(&outside).unwrap();
+        let replaced = root.path().join(name);
+        std::os::unix::fs::symlink(&outside, &replaced).unwrap();
+        if name == "export" { paths.export = Some(replaced); }
+        assert!(matches!(command(&paths, false), Err(BridgeError::Denied)), "replaced {name} root");
+        assert_eq!(std::fs::read_dir(&outside).unwrap().count(), 0);
+    }
+}
+
+#[test]
 fn offline_workers_cannot_connect_to_external_addresses() {
     let root = tempfile::tempdir().unwrap();
     let paths = paths(root.path(), "/usr/bin/curl");
