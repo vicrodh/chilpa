@@ -124,6 +124,7 @@ Flickable {
             height: implicitHeight
             visible: tracks.count > 0
             fitContent: true
+            viewport: page
             model: tracks
             sortable: false
             order: page.order
