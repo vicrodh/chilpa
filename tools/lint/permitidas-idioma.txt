@@ -652,6 +652,7 @@ writability
 snd
 elem
 malloc
+mallopt
 db
 millibels
 schn

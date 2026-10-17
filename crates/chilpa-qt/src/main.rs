@@ -82,8 +82,25 @@ const DESKTOP_ENTRY: &std::ffi::CStr = c"app.chilpa.Chilpa";
 /// Where Inter lives in the resources.
 const INTER: &std::ffi::CStr = c":/qt/qml/app/chilpa/kit/assets/fonts/Inter.ttf";
 
+/// I bound glibc's retained worker heaps before starting Qt or app threads.
+#[cfg(all(target_os = "linux", target_env = "gnu"))]
+fn cap_heap_arenas() {
+    let explicit_tunable = std::env::var_os("GLIBC_TUNABLES").is_some_and(|value| {
+        value.to_string_lossy().split(':').any(|entry| {
+            entry.split_once('=').is_some_and(|(key, _)| key == "glibc.malloc.arena_max")
+        })
+    });
+    if std::env::var_os("MALLOC_ARENA_MAX").is_some() || explicit_tunable { return; }
+    // SAFETY: I apply this at the beginning of main, before Qt and my workers.
+    if unsafe { libc::mallopt(libc::M_ARENA_MAX, 2) } != 1 {
+        eprintln!("memory: could not limit glibc malloc arenas");
+    }
+}
+
 fn main() {
     use chilpa_api::graphics_boot;
+    #[cfg(all(target_os = "linux", target_env = "gnu"))]
+    cap_heap_arenas();
     // The interface size, before any Qt object; the startup children
     // inherit it. QBZ's order from here to the window.
     graphics_boot::apply_interface_size();
