@@ -80,27 +80,7 @@ pub(crate) fn request_scan() {
     }
     let spawned = std::thread::Builder::new().name("chilpa-cache-usage".into()).spawn(|| {
         let root = chilpa_dirs::cache();
-        let mut usage = Usage { ready: true, ..Usage::default() };
-        let remote = root.join("artwork").join("remote");
-        let pinned = chilpa_core::open_library().ok()
-            .and_then(|library| library.protected_cache_artwork(&remote).ok()).unwrap_or_default();
-        visit(&root, &mut |path, bytes, _| {
-            let relative = path.strip_prefix(&root).unwrap_or(path);
-            let mut parts = relative.components();
-            let first = parts.next().map(|part| part.as_os_str().to_string_lossy());
-            let category = match first.as_deref() {
-                Some("artwork") if parts.next().is_some_and(|part| part.as_os_str() == "remote") => &mut usage.remote,
-                Some("artwork") => &mut usage.embedded,
-                Some("covers" | "contained-covers" | "atmosphere") => &mut usage.derivatives,
-                _ => &mut usage.other,
-            };
-            category.files += 1;
-            category.bytes += bytes;
-            if pinned.contains(path) {
-                usage.pinned.files += 1;
-                usage.pinned.bytes += bytes;
-            }
-        });
+        let usage = scan_usage(&root, &chilpa_library::Library::default_path());
         if let Ok(mut state) = USAGE.get_or_init(|| Mutex::new(Usage::default())).lock() {
             *state = usage;
         }
@@ -118,12 +98,7 @@ pub(crate) fn trim_later() {
     let spawned = std::thread::Builder::new().name("chilpa-cache-trim".into()).spawn(|| {
         if let Ok(_guard) = MAINTENANCE.lock() {
             let root = chilpa_dirs::cache();
-            if let Ok(library) = chilpa_core::open_library() {
-                let remote = root.join("artwork").join("remote");
-                if let Ok(pinned) = library.protected_cache_artwork(&remote) {
-                    prune(&[remote], REMOTE_MB.load(Ordering::Relaxed) * 1024 * 1024, &pinned);
-                }
-            }
+            trim_remote(&root, &chilpa_library::Library::default_path(), REMOTE_MB.load(Ordering::Relaxed) * 1024 * 1024);
             prune(&derivative_dirs(&root), DERIVATIVE_BYTES, &Default::default());
         }
         WORKING.store(false, Ordering::Release);
@@ -140,18 +115,48 @@ pub(crate) fn clear(kind: &str) -> bool {
         if let Ok(_guard) = MAINTENANCE.lock() {
             let root = chilpa_dirs::cache();
             if kind == "remote" {
-                let remote = root.join("artwork").join("remote");
-                if let Ok(library) = chilpa_core::open_library() {
-                    if let Ok(pinned) = library.protected_cache_artwork(&remote) {
-                        prune(&[remote], 0, &pinned);
-                    }
-                }
+                trim_remote(&root, &chilpa_library::Library::default_path(), 0);
             } else {
                 prune(&derivative_dirs(&root), 0, &Default::default());
             }
         }
         request_scan();
     }).is_ok()
+}
+
+/// I read pins without running library migrations or whole-library release assembly.
+fn pinned_artwork(database: &Path, remote: &Path) -> Option<std::collections::HashSet<PathBuf>> {
+    chilpa_library::Library::open_read_only(database).ok()?.protected_cache_artwork(remote).ok()
+}
+
+fn scan_usage(root: &Path, database: &Path) -> Usage {
+    let mut usage = Usage { ready: true, ..Usage::default() };
+    let pinned = pinned_artwork(database, &root.join("artwork").join("remote")).unwrap_or_default();
+    visit(root, &mut |path, bytes, _| {
+        let relative = path.strip_prefix(root).unwrap_or(path);
+        let mut parts = relative.components();
+        let first = parts.next().map(|part| part.as_os_str().to_string_lossy());
+        let category = match first.as_deref() {
+            Some("artwork") if parts.next().is_some_and(|part| part.as_os_str() == "remote") => &mut usage.remote,
+            Some("artwork") => &mut usage.embedded,
+            Some("covers" | "contained-covers" | "atmosphere") => &mut usage.derivatives,
+            _ => &mut usage.other,
+        };
+        category.files += 1;
+        category.bytes += bytes;
+        if pinned.contains(path) {
+            usage.pinned.files += 1;
+            usage.pinned.bytes += bytes;
+        }
+    });
+    usage
+}
+
+fn trim_remote(root: &Path, database: &Path, limit: u64) {
+    let remote = root.join("artwork").join("remote");
+    // An unavailable or older library cannot supply its pins. I leave its
+    // remote files alone until the primary connection initializes it.
+    if let Some(pinned) = pinned_artwork(database, &remote) { prune(&[remote], limit, &pinned); }
 }
 
 fn derivative_dirs(root: &Path) -> [PathBuf; 3] {
@@ -199,6 +204,63 @@ fn prune(roots: &[PathBuf], limit: u64, pinned: &std::collections::HashSet<PathB
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn usage_and_trimming_read_pins_without_assembling_local_releases() {
+        let dir = tempfile::tempdir().unwrap();
+        let database = dir.path().join("library.db");
+        let cache = dir.path().join("cache");
+        let remote = cache.join("artwork").join("remote");
+        std::fs::create_dir_all(&remote).unwrap();
+        let pinned = remote.join("pinned.jpg");
+        let disposable = remote.join("disposable.jpg");
+        std::fs::write(&pinned, [1_u8; 10]).unwrap();
+        std::fs::write(&disposable, [2_u8; 10]).unwrap();
+        let library = chilpa_library::Library::open(&database).unwrap();
+        let source = library.source_id("local", "default").unwrap();
+        library.connection().execute("INSERT INTO albums(id, title, album_artist) VALUES (1, 'Record', 'Artist')", []).unwrap();
+        library.connection().execute("INSERT INTO tracks(id, source_id, external_id, title, artist, album_credit, album_id, added_at)
+            VALUES (1, ?1, ?2, 'Song', 'Artist', 'Artist', 1, 1)",
+            rusqlite::params![source, dir.path().join("music").join("song.flac").display().to_string()]).unwrap();
+        library.set_remote_artwork("fixture", "record", Some(pinned.to_str().unwrap())).unwrap();
+        drop(library);
+        let release_part = || {
+            chilpa_library::Library::open_read_only(&database).unwrap().connection()
+                .query_row("SELECT release_part FROM tracks WHERE id = 1", [], |row| row.get::<_, String>(0)).unwrap()
+        };
+        assert_eq!(release_part(), "", "the fixture needs primary library maintenance");
+        let usage = scan_usage(&cache, &database);
+        assert_eq!((usage.remote.files, usage.remote.bytes, usage.pinned.files, usage.pinned.bytes), (2, 20, 1, 10));
+        assert_eq!(release_part(), "", "a usage scan must not assemble releases");
+        trim_remote(&cache, &database, 0);
+        assert!(pinned.exists());
+        assert!(!disposable.exists());
+        assert_eq!(release_part(), "", "cache trimming must not assemble releases");
+        drop(chilpa_library::Library::open(&database).unwrap());
+        assert!(!release_part().is_empty(), "the primary opener still assembles releases");
+    }
+
+    #[test]
+    fn unavailable_or_older_libraries_never_authorize_remote_cache_deletion() {
+        let dir = tempfile::tempdir().unwrap();
+        let database = dir.path().join("library.db");
+        let cache = dir.path().join("cache");
+        let remote = cache.join("artwork").join("remote");
+        std::fs::create_dir_all(&remote).unwrap();
+        let art = remote.join("unknown.jpg");
+        std::fs::write(&art, [1_u8; 10]).unwrap();
+        trim_remote(&cache, &database, 0);
+        assert!(art.exists());
+        assert!(!database.exists(), "cache work must not initialize the primary library");
+        let older = rusqlite::Connection::open(&database).unwrap();
+        older.pragma_update(None, "user_version", 1).unwrap();
+        drop(older);
+        trim_remote(&cache, &database, 0);
+        assert!(art.exists());
+        let version: i64 = rusqlite::Connection::open(&database).unwrap()
+            .query_row("PRAGMA user_version", [], |row| row.get(0)).unwrap();
+        assert_eq!(version, 1, "cache work must not migrate an older library");
+    }
 
     #[test]
     fn pruning_keeps_pinned_files_and_removes_oldest_recoverable_files() {
