@@ -17,6 +17,8 @@ TestCase {
 
     PlayingIndicator { id: mark; objectName: "mark" }
     ListRowSurface { id: surface; y: 40; width: 200; height: 40 }
+    Component { id: barsFactory; PlayingBars { active: false } }
+    Component { id: stageFactory; Rectangle { x: 80; color: "black" } }
 
 
     function cleanup() {
@@ -52,6 +54,108 @@ TestCase {
         mark.running = true
         mark.visible = false
         compare(mark.children[0].item, null)
+        compare(Pulse.held, 0)
+    }
+
+    function test_renderer_api_policy() {
+        const bars = createTemporaryObject(barsFactory, test)
+        for (const api of [GraphicsInfo.Unknown, GraphicsInfo.Null, GraphicsInfo.Software])
+            compare(bars.supportsShaders(api), false)
+        for (const api of [GraphicsInfo.OpenGL, GraphicsInfo.Vulkan, GraphicsInfo.Metal, GraphicsInfo.Direct3D11, GraphicsInfo.Direct3D12])
+            compare(bars.supportsShaders(api), true)
+        const renderer = findChild(bars, "playingBarsRenderer")
+        compare(renderer.item.objectName, bars.supportsShaders(GraphicsInfo.api) ? "playingBarsShaderRenderer" : "playingBarsRectangles")
+    }
+
+    function test_rectangle_fallback_keeps_wave_geometry_and_single_pulse() {
+        const bars = createTemporaryObject(barsFactory, test, {barScale: 1.5, tint: Qt.rgba(0.3, 0.6, 0.8, 0.5), shaderFailed: true})
+        const renderer = findChild(bars, "playingBarsRenderer")
+        compare(renderer.item.objectName, "playingBarsRectangles")
+        compare(findChild(bars, "playingBarsShader"), null)
+        compare(renderer.item.children.length, 4)
+        const amplitudes = [0.6, 1, 0.4, 0.8], phases = [0, 0.25, 0.125, 0.375]
+        for (const t of [0, 0.125, 0.25, 0.5, 0.875]) {
+            bars.t = t
+            for (let i = 0; i < 4; ++i) {
+                const bar = renderer.item.children[i]
+                fuzzyCompare(bar.height, bars.height * amplitudes[i] * bars.wave(phases[i]), 0.00001)
+                fuzzyCompare(bar.y + bar.height, bars.height, 0.00001)
+                compare(bar.width, Metrics.eqBar * bars.barScale)
+                compare(bar.radius, bars.barScale)
+                compare(bar.color, bars.tint)
+            }
+        }
+        compare(Pulse.held, 0)
+        bars.active = true
+        compare(Pulse.held, 1)
+        const before = bars.t
+        tryVerify(() => bars.t !== before, 500)
+        bars.visible = false
+        compare(Pulse.held, 0)
+        bars.visible = true
+        compare(Pulse.held, 1)
+        bars.active = false
+        compare(Pulse.held, 0)
+    }
+
+    function test_shader_phase_keeps_quad_geometry_fixed() {
+        const stage = createTemporaryObject(stageFactory, test, {width: Metrics.eqWide * 1.5, height: Metrics.eqTall * 1.5})
+        const bars = createTemporaryObject(barsFactory, stage, {barScale: 1.5, tint: "white"})
+        if (!bars.supportsShaders(GraphicsInfo.api)) skip("The renderer uses the rectangle fallback")
+        const effect = findChild(bars, "playingBarsShader")
+        verify(effect !== null)
+        compare(findChild(bars, "playingBarsRectangles"), null)
+        // A cached QSB can render while Qt reports Uncompiled; I verify pixels.
+        verify(waitForRendering(bars))
+        // QtTest captures the window crop, so I provide an explicit black backdrop.
+        const first = grabImage(stage)
+        const sx = first.width / bars.width, sy = first.height / bars.height
+        const amplitudes = [0.6, 1, 0.4, 0.8], phases = [0, 0.25, 0.125, 0.375]
+        for (let i = 0; i < 4; ++i) {
+            const x = (Metrics.eqStep * i + Metrics.eqBar / 2) * bars.barScale
+            const h = bars.height * amplitudes[i] * bars.wave(phases[i])
+            verify(first.red(Math.floor(x * sx), Math.floor((bars.height - h / 2) * sy)) > 128,
+                "Every bar must render visible coverage")
+            if (i < 3) {
+                const gap = (Metrics.eqStep * i + (Metrics.eqBar + Metrics.eqStep) / 2) * bars.barScale
+                verify(first.red(Math.floor(gap * sx), Math.floor((bars.height - bars.barScale) * sy)) < 32,
+                    "The gaps between bars must show the black backdrop")
+            }
+        }
+        bars.t = 0.5
+        verify(waitForRendering(bars))
+        const next = grabImage(stage)
+        let changed = 0
+        for (let y = 0; y < first.height; ++y)
+            for (let x = 0; x < first.width; ++x)
+                if (first.red(x, y) !== next.red(x, y)) ++changed
+        verify(changed > 0, "A new phase must change the rendered bars")
+        compare(bars.shaderFailed, false)
+        verify(effect.status !== ShaderEffect.Error)
+        const geometry = [effect.x, effect.y, effect.width, effect.height]
+        compare(effect.width, bars.width + 2 * bars.barScale)
+        compare(effect.height, bars.height + 2 * bars.barScale)
+        for (const t of [0, 0.125, 0.25, 0.5, 0.875]) {
+            bars.t = t
+            compare(effect.phase, t)
+            compare([effect.x, effect.y, effect.width, effect.height], geometry)
+        }
+    }
+
+    function test_shader_error_switches_to_rectangles_without_stopping_motion() {
+        const bars = createTemporaryObject(barsFactory, test)
+        if (!bars.supportsShaders(GraphicsInfo.api)) skip("A shader renderer is required to report a shader error")
+        bars.active = true
+        compare(Pulse.held, 1)
+        findChild(bars, "playingBarsShader").fragmentShader = Qt.resolvedUrl("missing-playing-bars.frag.qsb")
+        tryCompare(bars, "shaderFailed", true)
+        compare(findChild(bars, "playingBarsRenderer").item.objectName, "playingBarsRectangles")
+        // The Loader releases its previous item through deferred deletion.
+        tryVerify(() => findChild(bars, "playingBarsShader") === null)
+        compare(Pulse.held, 1)
+        const before = bars.t
+        tryVerify(() => bars.t !== before, 500)
+        bars.active = false
         compare(Pulse.held, 0)
     }
 
