@@ -30,8 +30,11 @@ fn context_card(catalog: &Catalog, plugin: &str, key: &str, shelf: &mut Value) {
 }
 pub(super) fn read(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, reference: &str) -> Result<(), String> {
     let parent = reference.split('|').next().unwrap_or(reference);
-    let reading = catalog.page_reads.lock().unwrap_or_else(|e| e.into_inner())
-        .entry(format!("{plugin} native:{parent}")).or_default().clone();
+    let reading = {
+        let mut reading = catalog.page_reads.lock().unwrap_or_else(|e| e.into_inner());
+        if reading.len() >= 64 { reading.retain(|_, lock| Arc::strong_count(lock) > 1); }
+        reading.entry(format!("{plugin} native:{parent}")).or_default().clone()
+    };
     let _one = reading.lock().unwrap_or_else(|e| e.into_inner());
     let current = catalog.stored_shelf(&format!("{plugin} native:{reference}"));
     if current.as_ref().is_some_and(|s| s.epoch > 0 && s.read_at > 0 && now().saturating_sub(s.read_at) < 30) { return Ok(()); }
@@ -92,6 +95,34 @@ pub(super) fn ingest_document(catalog: &Catalog, plugin: &str, reference: &str, 
     }
     ingest(catalog, plugin, &key, &document);
  }
+pub(super) fn append(catalog: &Catalog, natives: &Arc<Natives>, key: &str) -> Result<(), String> {
+    let (plugin, reference) = super::split(key);
+    let Some((parent, section)) = reference.strip_prefix("native:").and_then(|reference| reference.split_once('|')) else { return Ok(()); };
+    let Some(current) = catalog.stored_shelf(key) else { return Ok(()); };
+    let Some(more) = current.document["more"].as_str() else { return Ok(()); };
+    let answer = natives.call(plugin, "page.get", json!({"ref":more}), Duration::from_secs(60))?;
+    if !natives.is_native(plugin) { return Err("The plugin was disabled.".into()); }
+    let child = appended(&current.document, &answer);
+    ingest(catalog, plugin, key, &child);
+    let mut inner = catalog.lock();
+    if let Some(page) = inner.store.shelves.get_mut(&format!("{plugin} native:{parent}")) {
+        if let Some(row) = page.document["shelves"].as_array_mut().into_iter().flatten().find(|row| row["id"] == section) {
+            row["items"] = child["items"].clone(); row["more"] = child["more"].clone(); row["error"] = child["error"].clone();
+        }
+    }
+    inner.dirty = true;
+    Ok(())
+}
+
+fn appended(current: &Value, answer: &Value) -> Value {
+    let mut child = current.clone();
+    let mut items = child["items"].as_array().cloned().unwrap_or_default();
+    let mut seen: std::collections::HashSet<_> = items.iter().filter_map(|value| value["ref"].as_str().map(str::to_string)).collect();
+    items.extend(answer["items"].as_array().into_iter().flatten().filter(|value| value["ref"].as_str().is_some_and(|reference| seen.insert(reference.into()))).cloned());
+    child["items"] = json!(items); child["more"] = answer["next"].clone(); child["error"] = json!("");
+    child
+}
+
 fn decorate_header(catalog: &Catalog, plugin: &str, value: &mut Value) {
     if !value.is_object() { return; }
     value["plugin"] = json!(plugin);
@@ -139,7 +170,8 @@ fn page_shelves(catalog: &Catalog, plugin: &str, reference: &str, header: &mut V
         let child = format!("{page_key}|{}", shelf["id"].as_str().unwrap_or_default());
         context_card(catalog, plugin, &child, &mut shelf);
         shelf["artist_cards"] = json!(artist_cards(catalog, &child));
-        shelf["loading"] = json!(catalog.lock().running.contains(&super::Job::Shelf(child)));
+        shelf["loading"] = json!(catalog.loading(&child));
+        if let Some(error) = catalog.shelf_error(&child) { shelf["error"] = json!(error); }
         let items = shelf["items"].as_array();
         if items.is_some_and(|items| items.len() == 1 && items[0]["ref"] == radio) {
             if let Some(card) = catalog.lock().store.cards.values().find(|card| card.plugin == plugin && card.identity == radio) {
@@ -167,47 +199,10 @@ const LIBRARY_PREVIEW: usize = 10;
 impl crate::Chilpa {
     pub(crate) fn append_native_section(&self, key: &str) {
         let (plugin, reference) = super::split(key);
-        let Some(reference) = reference.strip_prefix("native:") else { return };
-        let Some((parent, section)) = reference.split_once('|') else { return };
-        if !self.natives.has_pages(plugin) { return; }
-        let job = super::Job::Shelf(key.into());
-        let current = {
-            let mut inner = self.catalog.lock();
-            if inner.running.contains(&job) { return; }
-            let Some(current) = inner.store.shelves.get(key).cloned() else { return };
-            if current.document["more"].as_str().is_none() { return; }
-            inner.running.insert(job.clone());
-            current
-        };
-        let (catalog, natives, plugin, key, parent, section) = (self.catalog.clone(), self.natives.clone(), plugin.to_string(), key.to_string(), parent.to_string(), section.to_string());
-        std::thread::spawn(move || {
-            let result = natives.call(&plugin, "page.get", json!({"ref":current.document["more"]}), Duration::from_secs(60));
-            let mut child = current.document;
-            let outcome = match result {
-                Ok(answer) if natives.is_native(&plugin) => {
-                    let mut items = child["items"].as_array().cloned().unwrap_or_default();
-                    let mut seen: std::collections::HashSet<_> = items.iter().filter_map(|v| v["ref"].as_str().map(str::to_string)).collect();
-                    items.extend(answer["items"].as_array().into_iter().flatten().filter(|v| v["ref"].as_str().is_some_and(|r| seen.insert(r.into()))).cloned());
-                    child["items"] = json!(items); child["more"] = answer["next"].clone(); child["error"] = json!("");
-                    ingest(&catalog, &plugin, &key, &child);
-                    Ok(())
-                },
-                Ok(_) => Err("The plugin was disabled.".to_string()),
-                Err(error) => Err(error.to_string()),
-            };
-            let mut inner = catalog.lock();
-            inner.running.remove(&job);
-            if let Err(error) = outcome { child["error"] = json!(error); }
-            if let Some(page) = inner.store.shelves.get_mut(&format!("{plugin} native:{parent}")) {
-                if let Some(rows) = page.document["shelves"].as_array_mut() {
-                    if let Some(row) = rows.iter_mut().find(|row| row["id"] == section) {
-                        row["items"] = child["items"].clone(); row["more"] = child["more"].clone(); row["error"] = child["error"].clone();
-                    }
-                }
-            }
-            inner.dirty = true;
-            drop(inner); catalog.changed();
-        });
+        if !self.natives.has_pages(plugin) || !reference.starts_with("native:") || !reference.contains('|') { return; }
+        let mut inner = self.catalog.lock();
+        if inner.store.shelves.get(key).is_none_or(|shelf| !shelf.document["more"].is_string()) { return; }
+        self.catalog.queue(&mut inner, super::Job::Append(key.into()), true);
     }
 
     pub fn native_reference_card(&self, plugin: &str, reference: &str) -> i64 {
@@ -355,6 +350,19 @@ impl crate::Chilpa {
 mod tests {
     use super::*;
     #[test]
+    fn paging_reuses_occurrences_and_decorates_failures_without_losing_rows() {
+        let original = json!({"id":"albums","items":[{"ref":"one"},{"ref":"two"}],"more":"next"});
+        let next = appended(&original, &json!({"items":[{"ref":"two"},{"ref":"three"}],"next":"later"}));
+        assert_eq!(next["items"].as_array().unwrap().len(), 3);
+        assert_eq!(next["more"], "later");
+        let catalog = Catalog::new();
+        catalog.lock().loaded = true;
+        catalog.lock().shelf_errors.insert("fixture native:home|albums".into(), "Source failed".into());
+        let displayed = page_shelves(&catalog, "fixture", "home", &mut json!({}), &json!([original.clone()]), false);
+        assert_eq!(displayed[0]["error"], "Source failed");
+        assert_eq!(displayed[0]["items"], original["items"]);
+    }
+    #[test]
     fn card_artist_links_keep_source_identity_without_opening_the_record() {
         let mut api = crate::Chilpa::new();
         let id = api.catalog.lock().store.take_item("fixture", &json!({"kind":"album","ref":"album:1","title":"Record",
@@ -495,6 +503,7 @@ mod tests {
     #[test]
     fn a_shelf_keeps_what_it_loaded_across_a_rereading() {
         let catalog = Catalog::new();
+        catalog.lock().loaded = true;
         let record = |n: u32| json!({"kind":"album","ref":format!("album:{n}"),"title":format!("Record {n}")});
         let first = json!({"shelves":[{"id":"album","kind":"album","items":[record(1),record(2)],"more":"artist:7:album:2"}]});
         ingest_document(&catalog,"fixture","artist:7",&first);
@@ -518,9 +527,20 @@ mod tests {
         let mut header = json!({"ref":"artist:7"});
         let rows = page_shelves(&catalog,"fixture","artist:7",&mut header,&changed["shelves"],false);
         assert_eq!(rows[0]["loading"], false);
-        catalog.lock().running.insert(super::super::Job::Shelf(child.into()));
+        let job = super::super::Job::Append(child.into());
+        catalog.queue(&mut catalog.lock(), job.clone(), true);
         let rows = page_shelves(&catalog,"fixture","artist:7",&mut header,&changed["shelves"],false);
-        assert_eq!(rows[0]["loading"], true, "its load more is on its way");
+        assert_eq!(rows[0]["loading"], true, "queued pagination waits for worker capacity");
+        {
+            let mut inner = catalog.lock();
+            inner.queue.urgent.clear(); inner.queue.queued.remove(&job);
+            inner.running.insert(job.clone());
+        }
+        let rows = page_shelves(&catalog,"fixture","artist:7",&mut header,&changed["shelves"],false);
+        assert_eq!(rows[0]["loading"], true, "running pagination stays loading");
+        catalog.lock().running.remove(&job);
+        let rows = page_shelves(&catalog,"fixture","artist:7",&mut header,&changed["shelves"],false);
+        assert_eq!(rows[0]["loading"], false, "completed pagination releases its loading state");
     }
 
     #[test]
@@ -557,7 +577,7 @@ mod tests {
             id
         }).collect();
         catalog.invalidate_native_cards("first", &[json!("list:1")]);
-        assert!(catalog.card(ids[0]).unwrap().tracks.is_none());
+        assert!(catalog.card(ids[0]).unwrap().tracks.is_some(), "I retain visible rows during refresh");
         assert_eq!(catalog.card(ids[0]).unwrap().read_at, 0);
         assert!(catalog.card(ids[1]).unwrap().tracks.is_some());
         assert_eq!(catalog.card(ids[1]).unwrap().read_at, 42);

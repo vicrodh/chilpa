@@ -23,7 +23,8 @@ Item {
         Image {
             required property int index
             required property var modelData
-            source: layers.source
+            source: layers.shown ? layers.source : ""
+            sourceSize: Qt.size(128, 128)
             retainWhileLoading: true
             fillMode: Image.PreserveAspectCrop
             width: layers.width + modelData.grow.width
@@ -37,7 +38,8 @@ Item {
     // The plain cover, oversized and quiet, until the bitmap exists.
     Image {
         visible: layers.shown && !layers.ready && layers.fallbackSource.toString() !== ""
-        source: layers.fallbackSource
+        source: visible ? layers.fallbackSource : ""
+        sourceSize: Qt.size(Math.ceil(width), Math.ceil(height))
         fillMode: Image.PreserveAspectCrop
         width: layers.width + Field.staticGrow
         height: layers.height + Field.staticGrow

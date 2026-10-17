@@ -47,7 +47,8 @@ Flickable {
     AlbumDetailModel {
         id: detail
         albumId: page.albumId
-        contentRev: Library.contentRev + I18n.rev + (page.albumId < 0 ? Library.remoteRev + Library.remoteArtRev : 0)
+        contentRev: Library.contentRev + I18n.rev
+        remoteRev: Library.remoteRev + Library.remoteArtRev
     }
     TrackListModel {
         id: tracks

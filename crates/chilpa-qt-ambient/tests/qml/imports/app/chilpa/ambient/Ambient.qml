@@ -24,7 +24,15 @@ QtObject {
     property int tracks: 0
     function reload() { reloads += 1 }
     function choose(index) { mode = index }
-    function follow(art) { followed.push(art.toString()) }
+    property var demands: ({})
+    function watch(consumer, art, active) {
+        const next = Object.assign({}, demands)
+        if (active) {
+            if (next[consumer] !== art.toString()) followed.push(art.toString())
+            next[consumer] = art.toString()
+        } else { delete next[consumer] }
+        demands = next
+    }
     function refreshWallpaper() { refreshes += 1 }
     function trackWindowPosition() { tracks += 1 }
 }

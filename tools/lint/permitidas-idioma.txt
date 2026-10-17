@@ -714,3 +714,6 @@ nofile
 ri
 rusage
 setpgid
+
+# Standard Rust collection module.
+btree

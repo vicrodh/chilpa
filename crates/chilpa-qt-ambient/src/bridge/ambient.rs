@@ -65,10 +65,10 @@ pub mod qobject {
         #[qinvokable]
         fn choose(self: Pin<&mut Ambient>, mode: i32);
 
-        /// The cover that plays changed: its colors are read off the
-        /// window's thread and published when they are ready.
+        /// I retain a surface's demand and read its cover off the window's
+        /// thread, sharing one worker and ignoring retired requests.
         #[qinvokable]
-        fn follow(self: Pin<&mut Ambient>, art: &QUrl);
+        fn watch(self: Pin<&mut Ambient>, consumer: &QString, art: &QUrl, active: bool);
 
         /// Resolves the wallpaper again: the window came back to the front,
         /// the mode changed, an image was chosen.
@@ -101,6 +101,7 @@ use cxx_qt_lib::{QColor, QString, QUrl};
 use std::pin::Pin;
 
 pub struct AmbientRust {
+    demand: crate::demand::Demand,
     mode: i32,
     on: bool,
     primary: QColor,
@@ -131,6 +132,7 @@ impl Default for AmbientRust {
     fn default() -> Self {
         let triad = Triad::default();
         Self {
+            demand: crate::demand::Demand::default(),
             mode: 0,
             on: false,
             primary: qcolor(&triad.primary),
@@ -179,26 +181,32 @@ impl qobject::Ambient {
         chilpa_qt_kit::bridge::theme::ask(move |theme| theme.set_ambient(on));
     }
 
-    pub fn follow(self: Pin<&mut Self>, art: &QUrl) {
+    pub fn watch(mut self: Pin<&mut Self>, consumer: &QString, art: &QUrl, active: bool) {
         let path = art.to_local_file().map(|p| p.to_string()).unwrap_or_default();
-        if path.is_empty() {
-            return;
-        }
+        self.as_mut().rust_mut().demand.watch(consumer.to_string(), path, active);
+        self.start_colors();
+    }
+
+    fn start_colors(mut self: Pin<&mut Self>) {
+        let Some(job) = self.as_mut().rust_mut().demand.next() else { return };
         let thread = self.qt_thread();
         std::thread::spawn(move || {
-            let Some(triad) = ambient::triad_of(std::path::Path::new(&path)) else { return };
-            let tunnel = chilpa_api::visualizer::tunnel::palette_of(std::path::Path::new(&path));
+            let colors = ambient::colors_of(std::path::Path::new(&job.path));
             let _ = thread.queue(move |mut this| {
-                this.as_mut().set_primary(qcolor(&triad.primary));
-                this.as_mut().set_secondary(qcolor(&triad.secondary));
-                this.as_mut().set_accent(qcolor(&triad.accent));
-                this.as_mut().set_glow(qcolor(&triad.glow));
-                this.as_mut().set_lifted(qcolor(&chilpa_api::immersive::lifted_accent(&triad.primary)));
-                this.as_mut().set_brightest(qcolor(&chilpa_api::immersive::brightest([&triad.primary, &triad.secondary, &triad.accent])));
-                this.as_mut().set_ring_ramp_json(palette_json(&triad));
-                if let Some(palette) = tunnel {
-                    this.as_mut().set_tunnel_palette_json(QString::from(&palette));
+                if this.as_mut().rust_mut().demand.finish(&job) {
+                    if let Some(colors) = colors {
+                        let triad = colors.triad;
+                        this.as_mut().set_primary(qcolor(&triad.primary));
+                        this.as_mut().set_secondary(qcolor(&triad.secondary));
+                        this.as_mut().set_accent(qcolor(&triad.accent));
+                        this.as_mut().set_glow(qcolor(&triad.glow));
+                        this.as_mut().set_lifted(qcolor(&chilpa_api::immersive::lifted_accent(&triad.primary)));
+                        this.as_mut().set_brightest(qcolor(&chilpa_api::immersive::brightest([&triad.primary, &triad.secondary, &triad.accent])));
+                        this.as_mut().set_ring_ramp_json(palette_json(&triad));
+                        this.as_mut().set_tunnel_palette_json(QString::from(&colors.tunnel));
+                    }
                 }
+                this.start_colors();
             });
         });
     }

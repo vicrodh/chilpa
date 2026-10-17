@@ -38,12 +38,12 @@ Item {
             readonly property url atmosphere: Player.art.toString().startsWith("file:") ? "image://atmosphere/" + encodeURIComponent(Player.art.toString()) : ""
             Loader {
                 anchors.fill: parent
-                active: Theme.ambient && !Mini.backgroundBlur
-                sourceComponent: Backdrop.AppBackground { plane: Qt.rect(0, 0, 0, 0) }
+                active: Mini.open && Theme.ambient && !Mini.backgroundBlur
+                sourceComponent: Backdrop.AppBackground { paletteConsumer: "mini"; plane: Qt.rect(0, 0, 0, 0) }
             }
             Loader {
                 anchors.fill: parent
-                active: Mini.backgroundBlur && Player.path !== ""
+                active: Mini.open && Mini.backgroundBlur && Player.path !== ""
                 sourceComponent: Fields.AtmosphereField {
                     source: parent.atmosphere
                     fallbackSource: Player.art

@@ -35,7 +35,9 @@ TestCase {
         Pulse.held = 0
         Pulse.ms = 0
         ThemeModel.dark = true
+        Player.art = ""
         Ambient.followed = []
+        Ambient.demands = ({})
         Ambient.refreshes = 0
         Ambient.reloads = 0
     }
@@ -69,7 +71,44 @@ TestCase {
         compare(Ambient.on, true, "the theme is told")
         verify(field("AmbientField").visible)
         verify(field("AmbientField").running)
-        compare(Ambient.followed.length, 1, "the cover's colors were asked for once, on mount")
+        compare(Ambient.followed.length, 1, "I request colors when the field gains a track")
+    }
+
+    function test_off_and_blurred_backgrounds_do_not_extract_cover_colors() {
+        mount(0, "/a.flac")
+        Player.art = "file:///first.png"
+        compare(Ambient.followed.length, 0)
+        Ambient.mode = 2
+        Player.art = "file:///second.png"
+        compare(Ambient.followed.length, 0)
+        Ambient.mode = 1
+        compare(Ambient.followed.length, 1)
+        compare(Ambient.demands.main, "file:///second.png")
+        made.visible = false
+        compare(Ambient.demands.main, undefined)
+    }
+
+    Component { id: layerMaker; AtmosphereLayers { width: 640; height: 400; shown: false; fallbackSource: "qrc:/qt/qml/app/chilpa/kit/assets/logo.png" } }
+    function test_hidden_atmosphere_releases_its_fallback_image() {
+        const layers = createTemporaryObject(layerMaker, test)
+        const fallback = layers.children.find(item => item.sourceSize !== undefined)
+        verify(fallback !== undefined)
+        compare(fallback.source.toString(), "")
+        layers.shown = true
+        verify(fallback.source.toString() !== "")
+        verify(fallback.sourceSize.width <= layers.width + Field.staticGrow)
+        layers.shown = false
+        compare(fallback.source.toString(), "", "I release the decoded fallback when hidden")
+    }
+
+    Component { id: miniColors; CoverColors { consumer: "mini"; active: true; art: "file:///mini.png" } }
+    function test_the_mini_keeps_its_colors_with_the_main_background_off() {
+        mount(0, "/a.flac")
+        const mini = createTemporaryObject(miniColors, test)
+        compare(Ambient.demands.main, undefined)
+        compare(Ambient.demands.mini, "file:///mini.png")
+        mini.active = false
+        compare(Ambient.demands.mini, undefined)
     }
 
     function test_the_wallpaper_modes_do_not_wait() {

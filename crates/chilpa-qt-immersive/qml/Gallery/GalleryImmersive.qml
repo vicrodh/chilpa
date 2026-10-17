@@ -52,6 +52,7 @@ Rectangle {
         x: Stage.edge
         y: Stage.edge
         spacing: Stage.edge
+        ImmersiveContent { width: gallery.sampleWide; height: gallery.sampleTall; visible: true }
         Row {
             spacing: Stage.menuRowPad
             GhostButton { glyph: Icons.heart }
