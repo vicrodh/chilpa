@@ -140,3 +140,65 @@ fn disabling_tab_restore_still_protects_current_navigation_and_closing_releases_
     api.keep_tabs(&tabs);
     assert!(!api.catalog.lock().protection().1.contains(&-71));
 }
+
+#[test]
+fn restored_tabs_protect_the_disk_catalog_before_workers_or_views_start() {
+    const CHILD: &str = "CHILPA_TEST_STARTUP_NAVIGATION_ROOTS";
+    if std::env::var(CHILD).as_deref() != Ok("1") {
+        let profile = tempfile::tempdir().unwrap();
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "source_catalog::navigation::tests::restored_tabs_protect_the_disk_catalog_before_workers_or_views_start", "--nocapture"])
+            .env(CHILD, "1").envs(chilpa_dirs::profile_environment(profile.path())).output().unwrap();
+        assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+        return;
+    }
+    let mut seed = crate::Chilpa::new();
+    let (album, native, unrelated, bytes) = {
+        let mut inner = seed.catalog.lock();
+        let album = inner.store.card_id("guest", "album:restored");
+        let native = inner.store.card_id("guest", "album:native");
+        let unrelated = inner.store.card_id("guest", "album:unrelated");
+        inner.store.shelves.insert("guest native:album:native".into(), super::super::store::Shelf { cards:vec![native], ..Default::default() });
+        for number in 0..6001 {
+            let id = inner.store.card_id("extra", &format!("album:{number}"));
+            inner.store.cards.get_mut(&id).unwrap().seen_at = number + 1;
+        }
+        (album, native, unrelated, serde_json::to_vec(&inner.store).unwrap())
+    };
+    let mut tabs = Tabs::default();
+    tabs.go(record(Screen::Album, album));
+    tabs.open(Route { screen: Screen::Source, id:0, key:"guest native:album:native".into() });
+    seed.keep_tabs(&tabs);
+    let saved_tabs = seed.preference("ui.tabs");
+    drop(seed);
+
+    let mut restarted = crate::Chilpa::new();
+    {
+        let mut inner = restarted.catalog.lock();
+        assert!(!inner.loaded, "I install restored roots before a worker can load the catalog");
+        assert!(inner.navigation.cards.contains(&album));
+        assert!(inner.navigation.identities.contains(&("guest".into(), "album:native".into())));
+        inner.store = serde_json::from_slice(&bytes).unwrap();
+        inner.store.index();
+        let (tracks, cards) = inner.protection();
+        let shelves = inner.protected_shelves();
+        inner.store.prune_with_shelves(&tracks, &cards, &shelves);
+        assert!(inner.store.cards.contains_key(&album), "startup pruning retains the restored numeric route");
+        assert!(inner.store.cards.contains_key(&native), "startup pruning retains the restored native identity");
+        assert!(!inner.store.cards.contains_key(&unrelated), "an unrooted old card remains evictable");
+        assert!(inner.store.shelves.contains_key("guest native:album:native"));
+    }
+    restarted.remember_preference("navigation.restoreTabs", "false");
+    let disabled = crate::Chilpa::new();
+    assert!(disabled.catalog.lock().navigation.cards.is_empty());
+    assert!(disabled.catalog.lock().navigation.identities.is_empty());
+    assert_eq!(disabled.preference("ui.tabs"), saved_tabs, "disabling restore leaves saved tabs intact");
+    restarted.remember_preference("navigation.restoreTabs", "true");
+    crate::startup_chain::arm();
+    crate::startup_chain::arm();
+    assert_eq!(crate::startup_chain::level(), 2);
+    let bypassed = crate::Chilpa::new();
+    assert!(bypassed.catalog.lock().navigation.cards.is_empty());
+    assert!(bypassed.catalog.lock().navigation.identities.is_empty());
+    assert_eq!(bypassed.preference("ui.tabs"), saved_tabs, "the crash chain bypass leaves saved tabs intact");
+}
