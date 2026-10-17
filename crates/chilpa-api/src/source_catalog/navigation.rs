@@ -2,13 +2,14 @@
 
 use super::Catalog;
 use crate::navigation::{Route, Screen};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Default, PartialEq, Eq)]
 pub(super) struct NavigationRoots {
     pub cards: HashSet<i64>,
     pub shelves: HashSet<String>,
     pub identities: HashSet<(String, String)>,
+    pub playlists: HashMap<i64, HashSet<String>>,
 }
 
 impl Catalog {
@@ -17,11 +18,21 @@ impl Catalog {
         self.lock().store.cards.get(&id).cloned()
     }
 
+    #[cfg(test)]
     pub(crate) fn protect_navigation(&self, routes: &[Route]) {
+        self.protect_navigation_with_tracks(routes, HashMap::new());
+    }
+
+    pub(crate) fn protect_navigation_with_tracks(&self, routes: &[Route], playlists: HashMap<i64, HashSet<String>>) {
+        let mut inner = self.lock();
         let mut roots = NavigationRoots::default();
         for route in routes {
             match route.screen {
                 Screen::Album | Screen::Playlist if route.id < 0 => { roots.cards.insert(route.id); }
+                Screen::Playlist if route.id > 0 => {
+                    let paths = playlists.get(&route.id).cloned().or_else(|| inner.navigation.playlists.get(&route.id).cloned()).unwrap_or_default();
+                    roots.playlists.insert(route.id, paths);
+                }
                 Screen::Source => {
                     roots.shelves.insert(route.key.clone());
                     let (plugin, address) = super::split(&route.key);
@@ -35,7 +46,6 @@ impl Catalog {
                 _ => {}
             }
         }
-        let mut inner = self.lock();
         let removed: HashSet<_> = inner.navigation.shelves.difference(&roots.shelves).map(|key| key.split('|').next().unwrap_or(key).to_string()).collect();
         let kept: HashSet<_> = roots.shelves.iter().map(|key| key.split('|').next().unwrap_or(key).to_string()).collect();
         let cancelled: HashSet<_> = inner.queue.queued.iter().filter(|job| match job {
@@ -50,6 +60,20 @@ impl Catalog {
         inner.queue.queued.retain(|job| !cancelled.contains(job));
         if inner.navigation != roots {
             inner.navigation = roots;
+            inner.residency.changed();
+            self.wake.notify_one();
+        }
+    }
+
+    pub(crate) fn open_playlists(&self) -> Vec<i64> {
+        self.lock().navigation.playlists.keys().copied().collect()
+    }
+
+    pub(crate) fn protect_playlist_tracks(&self, id: i64, paths: HashSet<String>) {
+        let mut inner = self.lock();
+        let Some(kept) = inner.navigation.playlists.get_mut(&id) else { return; };
+        if *kept != paths {
+            *kept = paths;
             inner.residency.changed();
             self.wake.notify_one();
         }

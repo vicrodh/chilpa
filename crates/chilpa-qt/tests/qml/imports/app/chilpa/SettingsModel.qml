@@ -12,6 +12,8 @@ QtObject {
     function placeSidebar(mode, width, windowWidth) { placed = [mode, width, windowWidth] }
     property bool quickViewClick: false
     property bool lyricsOpen: false
+    property bool queueOpen: false
+    property bool extraControls: false
     property string albumHeader: "off"
     property string density: "compact"
     property bool playlistCollage: false

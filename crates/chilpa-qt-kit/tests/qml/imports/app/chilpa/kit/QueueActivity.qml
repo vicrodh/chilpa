@@ -2,5 +2,7 @@ pragma Singleton
 import QtQuick
 QtObject {
     property bool busy: false
-    function refresh() {}
+    property bool pending: false
+    property int refreshes: 0
+    function refresh() { ++refreshes; busy = pending }
 }

@@ -10,6 +10,9 @@ QtObject {
     signal windowAsked(int what)
     function quit() { windowAsked(1) }
     property bool paused: false
+    property bool gapless: true
+    property bool normalize: false
+    property bool normalizeApplies: false
     property bool bitPerfect: false
     property string title: "Fixture track"
     property string artist: "Fixture artist"

@@ -708,6 +708,7 @@ impl Chilpa {
                 None => file_row(&e.external_id),
             })
             .collect();
+        self.catalog.protect_playlist_tracks(playlist_id, rows.iter().filter(|row| crate::source_opener::of_plugin(&row.path).is_some()).map(|row| row.path.clone()).collect());
         for row in &mut rows {
             if let Some((plugin, _)) = crate::source_opener::of_plugin(&row.path) {
                 row.available = self.natives.is_native(&plugin) || active_sources.contains(&plugin);

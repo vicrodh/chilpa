@@ -36,7 +36,7 @@ Item {
     }
 
     CastPicker { id: castPicker }
-    Timer { interval: Motion.refresh; repeat: true; running: true; triggeredOnStart: true; onTriggered: Cast.refresh() }
+    Timer { interval: Motion.refresh; repeat: true; running: Cast.active; triggeredOnStart: true; onTriggered: Cast.refresh() }
     // Standing tall with the waveform seek in a band above everything else,
     // which stays where it was (the owner, 2026-10-09).
     readonly property bool tall: Waveform.open

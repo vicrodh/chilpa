@@ -511,6 +511,83 @@ mod persistence_tests {
     use std::sync::mpsc::channel;
 
     #[test]
+    fn open_stored_playlists_keep_source_rows_and_artwork_through_unrelated_saves() {
+        use crate::navigation::{Route, Screen, Tabs};
+        use chilpa_library::{Library, PlaylistEntry, PlaylistTrackMetadata};
+        let mut api = crate::Chilpa::new();
+        api.catalog.protect_tracks(Default::default());
+        api.library = Some(Library::in_memory().unwrap());
+        let first = crate::source_opener::entry_of("fixture", "track:first");
+        let second = crate::source_opener::entry_of("fixture", "track:second");
+        let playlist = {
+            let library = api.library.as_ref().unwrap();
+            let local = library.source_id("local", "default").unwrap();
+            let source = library.source_id(crate::source_opener::PROVIDER, "fixture").unwrap();
+            let playlist = library.create_playlist(local, "Open", "").unwrap();
+            let mut entries = library.cache_playlist_tracks(source, &[PlaylistTrackMetadata {
+                external_id:first.clone(), title:"First".into(), album:"Album".into(), duration_ms:123_000,
+                artwork_path:Some("library-cover.png".into()), ..Default::default()
+            }]).unwrap();
+            entries[0].external_id = "legacy membership identity".into();
+            entries.push(PlaylistEntry { track_id:None, source_id:Some(source), external_id:second.clone() });
+            library.set_playlist_entries(playlist, &entries).unwrap();
+            playlist
+        };
+        let art = tempfile::NamedTempFile::new().unwrap();
+        let art_path = art.path().to_string_lossy().into_owned();
+        let expected = {
+            let mut inner = api.catalog.lock();
+            ["first", "second"].into_iter().map(|reference| {
+                let id = inner.store.take_item_track("fixture", &serde_json::json!({"ref":format!("track:{reference}"),
+                    "title":reference,"album":"Album","album_ref":"album:one","track_number":7,"disc_number":2,
+                    "quality":{"codec":"flac","bits":24,"rate":96000},"image":"https://example.invalid/album.png"}), None, 1).unwrap();
+                let album = inner.store.tracks[&id].album_id;
+                inner.store.cards.get_mut(&album).unwrap().art = art_path.clone();
+                (id, album)
+            }).collect::<Vec<_>>()
+        };
+        let mut tabs = Tabs::default();
+        tabs.go(Route { screen:Screen::Playlist, id:playlist, key:String::new() });
+        api.protect_tabs(&tabs);
+        assert_eq!(api.catalog.lock().protection().0, [first.clone(), second.clone()].into(), "I resolve track-id members before their page mounts");
+        let before = api.playlist_rows(playlist);
+        assert_eq!(before.len(), 2);
+        assert!(before.iter().all(|row| row.artwork_path == art_path));
+        api.catalog.protect_tracks([first.clone()].into());
+        for stamp in 2..5 {
+            {
+                let mut inner = api.catalog.lock();
+                inner.store.take_item("unrelated", &serde_json::json!({"kind":"album","ref":"album:refresh","title":"Changed"}), stamp);
+                inner.dirty = true;
+            }
+            persist(&api.catalog, |snapshot| {
+                for (path, (id, album)) in [&first, &second].into_iter().zip(&expected) {
+                    let track = snapshot.track_by_path(path).expect("an open stored playlist retains loose source rows");
+                    assert_eq!((track.id, track.album_id, track.disc, track.number), (*id, *album, 2, 7));
+                    assert_eq!(snapshot.art_of(track), art_path);
+                }
+                Ok(())
+            });
+            assert_eq!(api.playlist_rows(playlist), before, "unrelated saves cannot expose library fallback metadata or artwork");
+            assert!(!api.catalog.lock().queue.queued.iter().any(|job| matches!(job, Job::Track(_))));
+        }
+        api.protect_tabs(&Tabs::default());
+        assert_eq!(api.catalog.lock().protected_tracks, [first.clone()].into(), "closing a playlist cannot replace independent queue roots");
+        api.catalog.lock().dirty = true;
+        persist(&api.catalog, |snapshot| {
+            assert!(snapshot.track_by_path(&first).is_some(), "the queue still owns the shared member");
+            assert!(snapshot.track_by_path(&second).is_none(), "closing the page releases playlist-only source payloads");
+            Ok(())
+        });
+        api.catalog.protect_tracks(Default::default());
+        api.catalog.lock().dirty = true;
+        persist(&api.catalog, |snapshot| {
+            assert!(snapshot.track_by_path(&first).is_none(), "the last independent owner releases its payload");
+            Ok(())
+        });
+    }
+
+    #[test]
     fn polling_received_artwork_keeps_the_catalog_clean_and_the_payload_shared() {
         let catalog = Catalog::new();
         let image = "https://example.invalid/cover.jpg";

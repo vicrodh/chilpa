@@ -333,8 +333,26 @@ impl crate::Chilpa {
     }
 
     /// I protect live routes without reading labels or writing preferences.
-    pub fn protect_tabs(&self, tabs: &Tabs) {
-        self.catalog.protect_navigation(&tabs.routes());
+    pub fn protect_tabs(&mut self, tabs: &Tabs) {
+        let routes = tabs.routes();
+        let ids: Vec<_> = routes.iter().filter(|route| route.screen == Screen::Playlist && route.id > 0).map(|route| route.id).collect();
+        let mut playlists = std::collections::HashMap::new();
+        if !ids.is_empty() {
+            // I read only member identities before the catalog worker can prune them.
+            let reader = if self.library.is_none() { chilpa_library::Library::open_read_only(&chilpa_library::Library::default_path()).ok() } else { None };
+            let library = if let Some(library) = reader.as_ref() { Some(library) } else { self.library() };
+            if let Some(library) = library {
+                for id in ids { if let Some(paths) = playlist_paths(library, id) { playlists.insert(id, paths); } }
+            }
+        }
+        self.catalog.protect_navigation_with_tracks(&routes, playlists);
+    }
+
+    pub(crate) fn refresh_playlist_roots(&mut self, id: i64) {
+        if !self.catalog.open_playlists().contains(&id) { return; }
+        if let Some(library) = self.library() {
+            if let Some(paths) = playlist_paths(library, id) { self.catalog.protect_playlist_tracks(id, paths); }
+        }
     }
 
     /// I protect live routes before optionally saving the open tabs for the next run.
@@ -344,6 +362,14 @@ impl crate::Chilpa {
             self.remember_preference(TABS_KEY, &tabs.save().replace('\n', "\\n"));
         }
     }
+}
+
+fn playlist_paths(library: &chilpa_library::Library, id: i64) -> Option<std::collections::HashSet<String>> {
+    let entries = library.playlist_entries(id).ok()?;
+    let ids: Vec<_> = entries.iter().filter_map(|entry| entry.track_id).collect();
+    let known = library.track_paths(&ids).ok()?;
+    Some(entries.into_iter().map(|entry| entry.track_id.and_then(|id| known.get(&id).cloned()).unwrap_or(entry.external_id))
+        .filter(|path| crate::source_opener::of_plugin(path).is_some()).collect())
 }
 
 #[cfg(test)]

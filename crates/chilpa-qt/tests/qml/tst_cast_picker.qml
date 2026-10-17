@@ -13,6 +13,8 @@ TestCase {
     CastPicker { id: picker }
 
     function init() {
+        Cast.active = false
+        Cast.nextActive = null
         Cast.selected = ""
         Cast.disconnected = false
         Cast.snapshot = JSON.stringify({ entries: picker.previewEntries })

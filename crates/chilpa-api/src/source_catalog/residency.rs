@@ -200,7 +200,7 @@ impl Catalog {
                 let (tracks, cards, shelves) = roots(&inner);
                 let mut kept = resident.snapshot();
                 kept.retain_source_roots(plugin, &tracks, &cards, &shelves);
-                if kept.cards.len() == resident.cards.len() && kept.tracks.len() == resident.tracks.len() && kept.shelves.len() == resident.shelves.len() { return Ok(()); }
+                if kept.same_source(&resident, plugin) { return Ok(()); }
             }
             if !archived && resident.cards.is_empty() && resident.tracks.is_empty() && resident.shelves.is_empty() { return Ok(()); }
             (resident, inner.residency.revision, enabled, archived, hydrate)
