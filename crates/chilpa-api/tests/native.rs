@@ -16,7 +16,7 @@ const PLUGIN: &str = r#"#!/usr/bin/bash
 exec 9>/data/worker.lock
 flock -n 9 || exit 1
 while IFS= read -r line; do
-  if [[ "$line" == *'"method":"disconnect"'* ]]; then exec 1>&-; continue; fi
+  if [[ "$line" == *'"method":"disconnect"'* ]]; then printf '%*s' OVERSIZED_WIDTH ''; continue; fi
   (
     id=$(printf '%s' "$line" | sed -E 's/.*"id":([0-9]+).*/\1/')
     case "$line" in
@@ -71,7 +71,7 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     std::fs::create_dir_all(&folder).unwrap();
     std::fs::write(folder.join("manifest.json"), r#"{"id": "com.test.native", "name": "Native", "version": "0.1.0",
         "api_version": 1, "kind": "source", "runtime": "process", "capabilities": [{"type":"register_source"},{"type":"register_panel"}]}"#).unwrap();
-    std::fs::write(folder.join("plugin"), PLUGIN).unwrap();
+    std::fs::write(folder.join("plugin"), PLUGIN.replace("OVERSIZED_WIDTH", &(chilpa_plugin::native::MAX_LINE + 1).to_string())).unwrap();
     std::fs::set_permissions(folder.join("plugin"), std::fs::Permissions::from_mode(0o755)).unwrap();
 
     let mut chilpa = chilpa_api::Chilpa::new();
@@ -302,7 +302,7 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
         assert!(Instant::now() < deadline, "explicit refresh did not replace fresh cached playlist metadata");
         std::thread::sleep(Duration::from_millis(20));
     }
-    // The worker keeps running after closing stdout, and holds its state lock.
+    // A rejected oversized reply closes the channel while the worker holds its state lock.
     // Its replacement can initialize only after the host reaps that worker.
     assert!(caller.call("com.test.native", "disconnect", json!({}), Duration::from_secs(2)).is_err());
     let deadline = Instant::now() + Duration::from_secs(10);
