@@ -156,7 +156,7 @@ impl PluginRepositories {
             .ok_or_else(|| "The plugin repository is not configured.".into())
     }
     fn cache_path(&self, id: &str) -> PathBuf {
-        self.root.join("catalogs").join(format!("{id}-{}-{}.json", std::env::consts::OS, std::env::consts::ARCH))
+        self.root.join("catalogs").join(format!("{id}-v2-{}-{}.json", std::env::consts::OS, std::env::consts::ARCH))
     }
     fn persist(&self) -> Result<(), String> {
         let bytes = serde_json::to_vec_pretty(&self.saved).map_err(|_| "The repository list could not be saved.")?;
@@ -210,7 +210,9 @@ mod tests {
             let repositories = PluginRepositories::load(root.path().into()).unwrap();
             assert_eq!(repositories.native_catalog(), NATIVE_CATALOG);
             let entries = repositories.cached("native").unwrap();
-            assert_eq!(entries.len(), 5);
+            let workers = if cfg!(all(target_os = "linux", target_arch = "x86_64")) { 2 }
+                else if cfg!(all(target_os = "macos", target_arch = "aarch64")) { 1 } else { 0 };
+            assert_eq!(entries.len(), 3 + workers);
             assert!(entries.iter().all(|entry| entry.problem.is_empty()));
             assert!(repositories.compatible().is_empty());
         }
@@ -256,6 +258,32 @@ mod tests {
         assert!(restored.cached(&added.id).is_err());
         assert!(PluginRepositories::load(root.path().into()).unwrap().compatible().is_empty());
         assert_eq!(restored.native_catalog(), "https://native.example/index.json");
+    }
+
+    #[test]
+    fn an_added_native_repository_does_not_cache_or_stage_an_unsupported_worker() {
+        let root = tempfile::tempdir().unwrap();
+        let server = tiny_http::Server::http("127.0.0.1:0").unwrap();
+        let mut repositories = PluginRepositories::load(root.path().into()).unwrap();
+        let added = repositories.add(&format!("http://{}/index.json", server.server_addr())).unwrap();
+        let portable = serde_json::json!({"id":"app.example.portable","name":"Portable",
+            "repository":"https://example.org/source","package":"https://example.org/portable.zip",
+            "sha256":"a".repeat(64),"api":{"min":1,"max":1}});
+        let mut worker = portable.clone();
+        worker["id"] = "app.example.worker".into();
+        worker["packages"] = serde_json::json!({"unsupported-unknown":{
+            "package":"https://example.org/worker.zip","sha256":"b".repeat(64)}});
+        let document = serde_json::json!({"version":1,"plugins":[worker,portable]}).to_string();
+        let thread = std::thread::spawn(move || {
+            let request = server.recv_timeout(Duration::from_secs(3)).unwrap().unwrap();
+            request.respond(tiny_http::Response::from_string(document)).unwrap();
+        });
+        let entries = repositories.refresh(&added.id, "EN").unwrap();
+        thread.join().unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].id, "app.example.portable");
+        assert_eq!(repositories.cached(&added.id).unwrap(), entries);
+        assert!(repositories.stage(&added.id, "app.example.worker").is_err());
     }
 
     #[test]

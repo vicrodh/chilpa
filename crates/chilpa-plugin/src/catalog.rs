@@ -100,20 +100,21 @@ fn read_native(text: &str) -> Result<Vec<CatalogEntry>, CatalogError> {
 fn read_native_for_platform(text: &str, platform: &str) -> Result<Vec<CatalogEntry>, CatalogError> {
     let catalog: NativeCatalog = serde_json::from_str(text).map_err(|_| CatalogError::Invalid)?;
     if catalog.version != 1 { return Err(CatalogError::Unsupported); }
-    Ok(catalog.plugins.into_iter().map(|mut entry| {
-        let mut problem = if entry.api.min <= crate::API_VERSION && entry.api.max >= crate::API_VERSION { String::new() }
+    if catalog.plugins.len() > MAX_CATALOG_ENTRIES { return Err(CatalogError::TooLarge); }
+    Ok(catalog.plugins.into_iter().filter_map(|mut entry| {
+        let problem = if entry.api.min <= crate::API_VERSION && entry.api.max >= crate::API_VERSION { String::new() }
             else { "This plugin requires another version of the plugin API.".into() };
         if !entry.packages.is_empty() {
             match entry.packages.remove(platform) {
                 Some(package) => { entry.package = package.package; entry.sha256 = package.sha256; }
-                None => problem = "This plugin has no package for this platform.".into(),
+                None => return None,
             }
         }
-        CatalogEntry {
+        Some(CatalogEntry {
             id: entry.id, name: entry.name, version: entry.version, description: entry.description,
             author: entry.author, category: entry.category, repository: entry.repository, package: entry.package,
             digest: Digest { algorithm: "sha256".into(), value: entry.sha256 }, adapter: "native".into(), problem,
-        }
+        })
     }).collect())
 }
 
@@ -242,8 +243,27 @@ mod tests {
         assert_eq!(mac.package, "https://example.org/macos.zip");
         assert_eq!(mac.digest.value, "c".repeat(64));
         assert!(validate_entry(mac).problem.is_empty());
-        let missing = read_native_for_platform(&catalog, "windows-x86_64").unwrap().remove(0);
-        assert_eq!(validate_entry(missing).problem, "This plugin has no package for this platform.");
+        for platform in ["windows-x86_64", "macos-x86_64", "linux-aarch64"] {
+            assert!(read_native_for_platform(&catalog, platform).unwrap().is_empty());
+        }
+    }
+
+    #[test]
+    fn portable_packages_remain_visible_when_native_packages_have_no_matching_target() {
+        let portable = serde_json::json!({"id":"app.example.portable","name":"Portable",
+            "repository":"https://example.org/source","package":"https://example.org/plugin.wasm.zip",
+            "sha256":"a".repeat(64),"api":{"min":1,"max":1}});
+        let mut worker = portable.clone();
+        worker["id"] = "app.example.worker".into();
+        worker["packages"] = serde_json::json!({"linux-x86_64":{
+            "package":"https://example.org/linux.zip","sha256":"b".repeat(64)}});
+        let catalog = serde_json::json!({"version":1,"plugins":[worker,portable]}).to_string();
+        for platform in ["macos-aarch64", "macos-x86_64", "linux-aarch64", "windows-x86_64"] {
+            let entries = read_native_for_platform(&catalog, platform).unwrap();
+            assert_eq!(entries.len(), 1);
+            assert_eq!(entries[0].id, "app.example.portable");
+        }
+        assert_eq!(read_native_for_platform(&catalog, "linux-x86_64").unwrap().len(), 2);
     }
 
     #[test]
