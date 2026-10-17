@@ -27,6 +27,9 @@ use std::time::Duration;
 
 use crate::server;
 
+mod diagnostics;
+use diagnostics::MemoryTrace;
+
 /// The most a request asks for: a few seconds of hi-res.
 pub const WINDOW: u64 = 4 * 1024 * 1024;
 
@@ -76,6 +79,7 @@ pub struct Ranged {
     /// The next window, already asked for: where it starts, and where it
     /// will arrive.
     ahead: Option<(u64, Mutex<Receiver<Window>>)>,
+    trace: MemoryTrace,
 }
 
 /// How long a window may take. It is a few seconds of music; ten times that
@@ -87,7 +91,8 @@ impl Ranged {
     /// Asks for the first window, and with it the length and the type.
     pub fn open(request: RangedRequest) -> Result<Self, RangedError> {
         let agent = server::agent(Duration::from_secs(20), PER_WINDOW);
-        let reply = get(&agent, &request, 0, FIRST).map_err(RangedError::Refused)?;
+        let trace = MemoryTrace::open();
+        let reply = get(&agent, &request, 0, FIRST, trace).map_err(RangedError::Refused)?;
         let Reply { status, total, content_type, body, chunked } = reply;
         if !(200..300).contains(&status) {
             return Err(RangedError::Refused(chilpa_i18n::t_args("the server answered {}", &[&status.to_string()])));
@@ -108,7 +113,7 @@ impl Ranged {
         if looks_like_a_message(&body) {
             return Err(RangedError::NotAudio(chilpa_i18n::t("the server answered with a message instead of the file")));
         }
-        let mut ranged = Self { agent, request, len, content_type, position: 0, start: 0, bytes: body, ahead: None };
+        let mut ranged = Self { agent, request, len, content_type, position: 0, start: 0, bytes: body, ahead: None, trace };
         ranged.ask_ahead();
         Ok(ranged)
     }
@@ -135,8 +140,9 @@ impl Ranged {
         let size = (self.bytes.len() as u64 * 2).clamp(FIRST, WINDOW);
         let (tx, rx) = channel();
         let (agent, request) = (self.agent.clone(), self.request.clone());
+        let trace = self.trace;
         let _ = std::thread::Builder::new().name("chilpa-window".into()).spawn(move || {
-            let _ = tx.send(window(&agent, &request, next, size));
+            let _ = tx.send(window(&agent, &request, next, size, trace));
         });
         self.ahead = Some((next, Mutex::new(rx)));
     }
@@ -150,7 +156,7 @@ impl Ranged {
                 .recv()
                 .map_err(|_| chilpa_i18n::t("the connection failed: interrupted"))
                 .and_then(|w| w),
-            _ => window(&self.agent, &self.request, position, FIRST),
+            _ => window(&self.agent, &self.request, position, FIRST, self.trace),
         };
         let (start, bytes) = arrived.map_err(io::Error::other)?;
         if bytes.is_empty() {
@@ -160,6 +166,12 @@ impl Ranged {
         self.bytes = bytes;
         self.ask_ahead();
         Ok(())
+    }
+}
+
+impl Drop for Ranged {
+    fn drop(&mut self) {
+        self.trace.close(self.bytes.len(), self.bytes.capacity(), self.ahead.is_some());
     }
 }
 
@@ -214,8 +226,8 @@ struct Reply {
     chunked: bool,
 }
 
-fn window(agent: &ureq::Agent, request: &RangedRequest, start: u64, size: u64) -> Window {
-    let reply = get(agent, request, start, size)?;
+fn window(agent: &ureq::Agent, request: &RangedRequest, start: u64, size: u64, trace: MemoryTrace) -> Window {
+    let reply = get(agent, request, start, size, trace)?;
     if reply.status == 206 {
         return Ok((start, reply.body));
     }
@@ -229,7 +241,7 @@ fn window(agent: &ureq::Agent, request: &RangedRequest, start: u64, size: u64) -
     Err(chilpa_i18n::t_args("the server answered {}", &[&reply.status.to_string()]))
 }
 
-fn get(agent: &ureq::Agent, request: &RangedRequest, start: u64, size: u64) -> Result<Reply, String> {
+fn get(agent: &ureq::Agent, request: &RangedRequest, start: u64, size: u64, trace: MemoryTrace) -> Result<Reply, String> {
     crate::network::check(&request.url)?;
     let mut builder = agent.get(&request.url);
     for (name, value) in &request.headers {
@@ -268,6 +280,7 @@ fn get(agent: &ureq::Agent, request: &RangedRequest, start: u64, size: u64) -> R
     // One past: ureq's limit fails the read that finds the end right after
     // the last allowed byte.
     let body = body.with_config().limit(limit + 1).read_to_vec().map_err(|e| server::describe(&e))?;
+    trace.response(status, start, size, total, body.len(), body.capacity());
     Ok(Reply { status, total, content_type, body, chunked })
 }
 
