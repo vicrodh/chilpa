@@ -10,6 +10,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 Popup {
     id: lightbox
     property url source
+    onClosed: source = ""
     function show(picture) {
         lightbox.source = picture
         open()
@@ -43,6 +44,7 @@ Popup {
             width: Math.min(stage.roomWide, stage.roomHigh * stage.ratio)
             height: Math.min(stage.roomHigh, stage.roomWide / stage.ratio)
             source: lightbox.source
+            cache: false
             asynchronous: true
             fillMode: Image.PreserveAspectFit
             sourceSize: Qt.size(Math.round(stage.roomWide), Math.round(stage.roomHigh))

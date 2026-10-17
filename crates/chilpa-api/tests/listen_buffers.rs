@@ -130,40 +130,53 @@ fn buffers_keep_occurrences_and_only_the_activated_one_reaches_the_player() {
 #[test]
 fn a_session_comes_back_on_the_track_it_was_closed_on() {
     let _env = ENV.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-    let dir = std::env::temp_dir().join(format!("chilpa-listen-last-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
-    std::env::set_var("XDG_DATA_HOME", dir.join("data"));
-    std::env::set_var("XDG_CONFIG_HOME", dir.join("config"));
-    std::env::set_var("XDG_CACHE_HOME", dir.join("cache"));
-    let paths: Vec<_> = ["a.wav", "b.wav", "c.wav"].into_iter().map(|name| {
-        let path = dir.join(name); wave(&path); path.to_string_lossy().into_owned()
-    }).collect();
-    let cover = dir.join("cover.jpg");
-    std::fs::write(&cover, b"not decoded, only found").unwrap();
-    let mut api = Chilpa::new();
-    api.use_output("file:capture", false);
-    api.play_tracks(&paths, "file:capture", false);
-    wait(&mut api, |api| api.now_playing().path == paths[0] && api.now_playing().total_seconds > 0.0);
-    api.next_track();
-    wait(&mut api, |api| api.now_playing().index == 1);
-    api.next_track();
-    wait(&mut api, |api| api.now_playing().index == 2);
-    api.seek(4.0);
-    wait(&mut api, |api| api.now_playing().seconds >= 4.0);
-    api.set_paused(true);
-    let closed_at = api.now_playing().seconds;
-    // Killed, not closed: a process that dies never reaches `Drop`.
-    std::mem::forget(api);
-    let restored = Chilpa::new();
-    let now = restored.now_playing();
-    assert_eq!(now.path, paths[2], "the player bar shows the track the session closed on");
-    assert_eq!(now.index, 2);
-    assert!((now.seconds - closed_at).abs() < 1.0, "the position comes back: {} vs {closed_at}", now.seconds);
-    assert_eq!(now.artwork_path, cover.display().to_string(), "the restored track shows its cover before it plays");
-    assert_eq!(now.title, "c.wav");
-    assert!(now.total_seconds > 29.0, "the bar knows the length before it plays");
-    drop(restored);
-    std::fs::remove_dir_all(dir).unwrap();
+    const PHASE: &str = "CHILPA_TEST_LISTEN_SESSION_PHASE";
+    const ROOT: &str = "CHILPA_TEST_LISTEN_SESSION_ROOT";
+    if let Ok(phase) = std::env::var(PHASE) {
+        let dir = std::path::PathBuf::from(std::env::var_os(ROOT).unwrap());
+        let paths: Vec<_> = ["a.wav", "b.wav", "c.wav"].into_iter()
+            .map(|name| dir.join(name).to_string_lossy().into_owned()).collect();
+        if phase == "record" {
+            let mut api = Chilpa::new();
+            api.use_output("file:capture", false);
+            api.play_tracks(&paths, "file:capture", false);
+            wait(&mut api, |api| api.now_playing().path == paths[0] && api.now_playing().total_seconds > 0.0);
+            api.next_track();
+            wait(&mut api, |api| api.now_playing().index == 1);
+            api.next_track();
+            wait(&mut api, |api| api.now_playing().index == 2);
+            api.seek(4.0);
+            wait(&mut api, |api| api.now_playing().seconds >= 4.0);
+            api.set_paused(true);
+            std::fs::write(dir.join("closed-at"), api.now_playing().seconds.to_string()).unwrap();
+            // I end the process without Drop, including its background writers.
+            std::process::exit(0);
+        }
+        assert_eq!(phase, "restore");
+        let closed_at: f64 = std::fs::read_to_string(dir.join("closed-at")).unwrap().parse().unwrap();
+        let restored = Chilpa::new();
+        let now = restored.now_playing();
+        assert_eq!(now.path, paths[2], "the player bar shows the track the session closed on");
+        assert_eq!(now.index, 2);
+        assert!((now.seconds - closed_at).abs() < 1.0, "the position comes back: {} vs {closed_at}", now.seconds);
+        assert_eq!(now.artwork_path, dir.join("cover.jpg").display().to_string(), "the restored track shows its cover before it plays");
+        assert_eq!(now.title, "c.wav");
+        assert!(now.total_seconds > 29.0, "the bar knows the length before it plays");
+        drop(restored);
+        // I wait for process exit before the parent removes this profile.
+        std::process::exit(0);
+    }
+    let dir = tempfile::tempdir().unwrap();
+    for name in ["a.wav", "b.wav", "c.wav"] { wave(&dir.path().join(name)); }
+    std::fs::write(dir.path().join("cover.jpg"), b"not decoded, only found").unwrap();
+    for phase in ["record", "restore"] {
+        let status = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "a_session_comes_back_on_the_track_it_was_closed_on", "--nocapture"])
+            .envs(chilpa_dirs::profile_environment(dir.path()))
+            .env(PHASE, phase).env(ROOT, dir.path()).status().unwrap();
+        assert!(status.success(), "session {phase} child failed: {status}");
+    }
+    std::fs::remove_dir_all(dir.path()).unwrap();
 }
 
 #[test]

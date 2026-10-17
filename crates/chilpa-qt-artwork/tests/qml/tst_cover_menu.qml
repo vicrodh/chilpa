@@ -58,8 +58,11 @@ TestCase {
         verify(lightbox.visible, "a click on the picture keeps it open")
         keyClick(Qt.Key_Escape)
         tryCompare(lightbox, "visible", false)
+        tryCompare(picture, "status", Image.Null)
+        compare(lightbox.source.toString(), "", "closing releases the display-sized image")
         lightbox.show(Qt.resolvedUrl("../../../chilpa-qt-kit/assets/logo.png"))
         tryCompare(lightbox, "opened", true)
+        tryCompare(picture, "status", Image.Ready, 1000, "the same cover can be reopened")
         mouseClick(findChild(lightbox.contentItem, "lightboxVeil"), 4, 4)
         tryCompare(lightbox, "visible", false)
     }

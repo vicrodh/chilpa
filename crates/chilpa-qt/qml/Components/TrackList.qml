@@ -141,7 +141,7 @@ Item {
 
         delegate: TrackRow {
             required property var model
-            immediate: !list.viewport || y + height >= list.visibleTop && y < list.visibleTop + list.viewport.height
+            immediate: y + height > list.visibleTop && y < list.visibleTop + (list.viewport ? list.viewport.height : view.height)
             inViewport: !list.viewport || immediate || list.prefetch && y + height >= list.visibleTop - list.viewport.height && y < list.visibleTop + list.viewport.height * 2
             sourceName: model.sourceName || ""
             composer: model.composer || ""

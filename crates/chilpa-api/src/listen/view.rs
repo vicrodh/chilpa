@@ -20,20 +20,20 @@ impl Chilpa {
     pub fn listen_json(&self) -> String {
         let mut hash = std::collections::hash_map::DefaultHasher::new();
         let tabs: Vec<_> = self.listen.buffers.iter().filter_map(|item| {
-            let mut b = self.buffer_snapshot(item.id)?;
+            let mut b = self.buffer_view(item.id)?;
             b.seconds = 0.0;
-            serde_json::to_string(&b).unwrap_or_default().hash(&mut hash);
-            Some(json!({"id": b.id.to_string(), "name": self.buffer_name(&b),
+            super::snapshot::hash_buffer(&b, &mut hash);
+            Some(json!({"id": b.id.to_string(), "name": if self.listen.buffers.len() == 1 && !b.renamed { chilpa_i18n::t("Now playing") } else { b.name.to_string() },
                 "count": b.order.iter().filter(|&&i| b.live(i)).count(),
                 "playing": b.id == self.listen.active && self.now.playing,
                 "paused": self.now.paused}))
         }).collect();
         self.now.playing.hash(&mut hash); self.now.paused.hash(&mut hash);
-        let b = self.buffer_snapshot(self.listen.selected);
+        let b = self.listen.buffers.iter().find(|b| b.id == self.listen.selected);
         json!({"tabs": tabs, "selected": self.listen.selected.to_string(),
             "language": self.language(),
             "active": self.listen.active.to_string(), "revision": hash.finish().to_string(),
-            "name": b.as_ref().map(|b| self.buffer_name(b)), "undo": self.listen.undo.is_some(),
+            "name": b.map(|b| self.buffer_name(b)), "undo": self.listen.undo.is_some(),
             "pending": self.listen.pending.is_some(), "error": self.now.error}).to_string()
     }
     pub fn listen_rows(&mut self, id: u64, query: &str, full: bool) -> (Vec<TrackEntry>, Vec<String>) {
@@ -70,7 +70,7 @@ impl Chilpa {
     /// It adds up the lengths its rows were last listed with, so the tick
     /// that asks for it reads nothing.
     pub fn listen_footer(&self) -> String {
-        let Some(b) = self.buffer_snapshot(self.listen.selected) else { return "{}".into() };
+        let Some(b) = self.buffer_view(self.listen.selected) else { return "{}".into() };
         let Some((_, lengths)) = self.listen.lengths.as_ref().filter(|(id, _)| *id == b.id) else { return "{}".into() };
         let order: Vec<usize> = b.order.iter().copied().filter(|&i| b.live(i)).collect();
         let (songs, total, left) = queue_left(&order, b.cursor, b.seconds, lengths);

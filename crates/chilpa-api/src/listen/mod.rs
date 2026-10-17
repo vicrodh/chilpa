@@ -2,6 +2,9 @@
 mod storage;
 mod view;
 mod operations;
+mod snapshot;
+#[cfg(test)]
+mod snapshot_tests;
 
 use crate::{Chilpa, NowPlaying, QueueGroup, QueuePlacement, Repeat};
 use serde::{Deserialize, Serialize};

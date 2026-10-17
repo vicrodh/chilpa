@@ -171,6 +171,7 @@ pub struct PlayerRust {
     artist: QString,
     album: QString,
     origin: QString,
+    origin_seen: Option<chilpa_api::queue_origin::QueueOrigin>,
     album_id: i64,
     art: QUrl,
     path: QString,
@@ -338,8 +339,18 @@ impl qobject::Player {
 
     /// Collects the engine's events. The tick thread queues it.
     fn tick(mut self: Pin<&mut Self>) {
-        self.as_mut().set_origin(QString::from(&app::with(|api| api.playing_origin_json())));
-        let (now, changed, casting, remote, queue_busy) = app::with(|api| (api.poll().clone(), api.library_changed(), api.cast_destination().is_some(), api.source_revisions(), api.queue_busy()));
+        let lyrics_shown = self.rust().lyrics_shown;
+        let origin_seen = &self.rust().origin_seen;
+        let (now, origin, changed, casting, remote, queue_busy) = app::with(|api| {
+            let now = chilpa_api::playback_view::PlaybackView::read(api.poll(), lyrics_shown);
+            let origin = (api.playing_origin() != origin_seen.as_ref())
+                .then(|| (api.playing_origin().cloned(), api.playing_origin_json()));
+            (now, origin, api.library_changed(), api.cast_destination().is_some(), api.source_revisions(), api.queue_busy())
+        });
+        if let Some((seen, json)) = origin {
+            self.as_mut().rust_mut().origin_seen = seen;
+            self.as_mut().set_origin(QString::from(&json));
+        }
         chilpa_qt_kit::bridge::queue_activity::publish(queue_busy);
         let listening = app::with(|api| api.listening_revision());
         crate::registry::library(move |mut l| { l.as_mut().set_listening_rev(listening); l.as_mut().set_remote_rev(remote.0); l.set_remote_art_rev(remote.1); });

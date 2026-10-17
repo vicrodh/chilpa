@@ -16,28 +16,13 @@ impl Chilpa {
         // A start that bypassed the restore (the crash chain) and built no
         // queue of its own leaves the good copy on disk alone.
         if crate::startup_chain::level() >= 3 && self.listen.buffers.iter().all(|b| b.paths.is_empty()) { return; }
-        let mut saved = self.listen.clone();
-        if let Some(b) = self.buffer_snapshot(saved.active) {
-            if let Some(at) = saved.buffers.iter_mut().find(|v| v.id == b.id) { *at = b; }
-        }
-        if let Some(media) = &self.media {
-            saved.buffers.retain(|b| b.id != media.buffer);
-            if saved.active == media.buffer { saved.active = 0; }
-            if saved.buffers.is_empty() { saved.buffers.push(Buffer::empty(saved.next)); saved.next += 1; }
-            if saved.selected == media.buffer { saved.selected = saved.buffers[0].id; }
-        }
-        let Ok(bytes) = serde_json::to_vec(&saved) else { return };
-        let path = file();
-        let Some(parent) = path.parent() else { return };
-        if std::fs::create_dir_all(parent).is_err() { return; }
-        let temporary = path.with_extension("tmp");
-        if std::fs::write(&temporary, bytes).is_ok() {
-            // I retain the previous snapshot if replacement fails.
-            if let Err(error) = std::fs::rename(&temporary, &path) {
-                chilpa_core::trace_playback("queue", "save_failed", format_args!("{error}"));
-            }
+        let fallback = Buffer::empty(self.listen.next);
+        let saved = self.workspace_view(&fallback);
+        if let Err(error) = write_snapshot(&file(), &saved) {
+            chilpa_core::trace_playback("queue", "save_failed", format_args!("{error}"));
         }
     }
+
     /// Writes the session down while it plays, not only on a clean close: a
     /// killed process (a closed terminal, a logout, a crash) never reaches
     /// `Drop`, and came back to whatever the last queue edit had saved.
@@ -79,6 +64,18 @@ impl Chilpa {
     }
 }
 
+fn write_snapshot(path: &std::path::Path, saved: &impl Serialize) -> std::io::Result<()> {
+    use std::io::Write;
+    if let Some(parent) = path.parent() { std::fs::create_dir_all(parent)?; }
+    let temporary = path.with_extension("tmp");
+    let mut writer = std::io::BufWriter::new(std::fs::File::create(&temporary)?);
+    serde_json::to_writer(&mut writer, saved).map_err(std::io::Error::other)?;
+    writer.flush()?;
+    drop(writer);
+    // I replace the session only after the entire temporary snapshot is written.
+    std::fs::rename(temporary, path)
+}
+
 fn catalog_paths(queue: &[String], workspace: &Workspace) -> std::collections::HashSet<String> {
     queue.iter().chain(workspace.buffers.iter().filter(|buffer| buffer.id != workspace.active)
         .flat_map(|buffer| buffer.paths.iter()))
@@ -88,6 +85,28 @@ fn catalog_paths(queue: &[String], workspace: &Workspace) -> std::collections::H
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn streaming_session_save_replaces_only_a_complete_snapshot() {
+        struct Broken;
+        impl Serialize for Broken {
+            fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                use serde::ser::SerializeSeq;
+                let mut sequence = serializer.serialize_seq(None)?;
+                sequence.serialize_element("partial")?;
+                Err(serde::ser::Error::custom("interrupted snapshot"))
+            }
+        }
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("session.json");
+        std::fs::write(&path, b"previous session").unwrap();
+        assert!(write_snapshot(&path, &Broken).is_err());
+        assert_eq!(std::fs::read(&path).unwrap(), b"previous session");
+        let workspace = Workspace::default();
+        write_snapshot(&path, &workspace).unwrap();
+        assert_eq!(std::fs::read(&path).unwrap(), serde_json::to_vec(&workspace).unwrap());
+        assert!(!path.with_extension("tmp").exists());
+    }
 
     #[test]
     fn catalog_protection_uses_the_live_queue_and_every_inactive_buffer() {

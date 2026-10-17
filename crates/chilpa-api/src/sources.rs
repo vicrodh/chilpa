@@ -15,6 +15,7 @@
 //! survives the plugin being reinstalled and lists with the network down.
 
 mod collection;
+mod ahead;
 mod navigation;
 mod parents;
 mod view;
@@ -1460,33 +1461,6 @@ impl Chilpa {
         let openers = std::sync::Arc::new(crate::source_opener::Openers::new(self.sources.servers_opener.clone(), self.plugins.clone(), self.catalog.clone()));
         self.sources.openers = Some(openers.clone());
         chilpa_core::remote::install(openers);
-    }
-
-    /// Near the end of a track, resolves the next one when it is a plugin's,
-    /// in queue order. With shuffle on the next one is the player's to pick.
-    pub(crate) fn resolve_next_ahead(&mut self) {
-        let left = self.now.total_seconds - self.now.seconds;
-        if !self.now.playing || self.shuffle || self.now.total_seconds <= 0.0 {
-            return;
-        }
-        let Some(at) = self.queue_paths().iter().position(|p| *p == self.now.path) else { return };
-        let Some(next) = self.queue_paths().get(at + 1).filter(|p| of_plugin(p).is_some()).cloned() else { return };
-        // With gapless on, the player opens the next track itself, and over
-        // the network once this one has played a while; asking here too was a
-        // second resolve of the same track at the same moment, which a
-        // plugin serving this one's stream answered at its expense (the
-        // owner's trace, 2026-10-09). Without gapless it is asked near the
-        // end, for every source.
-        if self.gapless() || left > 30.0 {
-            return;
-        }
-        if self.sources.ahead_asked == next {
-            return;
-        }
-        self.sources.ahead_asked = next.clone();
-        if let Some(openers) = &self.sources.openers {
-            openers.resolve_ahead(next);
-        }
     }
 
     /// The name of the station that is on, when what plays is a live entry

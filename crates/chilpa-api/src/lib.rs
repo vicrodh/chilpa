@@ -44,6 +44,7 @@ pub mod listening;
 mod metadata;
 pub mod navigation;
 pub mod queue_origin;
+pub mod playback_view;
 mod queue_activity;
 pub use queue_activity::{QueueWork, AlbumQueueWork};
 mod outputs;

@@ -94,6 +94,7 @@ TrackRowSlot {
                 stacked: row.rich
                 number: row.number
                 playing: row.playing
+                inViewport: row.immediate
                 selected: row.selected
                 selectionMode: row.selectionMode
                 reorder: row.cols.reorder && row.available
