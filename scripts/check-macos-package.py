@@ -57,7 +57,7 @@ errors = ("QQmlApplicationEngine failed to load component", "is not a type", "Re
     "Failed to build graphics pipeline state", "Failed to link shader program", "Library not loaded:")
 passed = stayed_alive and "main window constructed" in transcript and not any(error in transcript for error in errors)
 report = dict(passed=passed, app=str(app), stayed_alive_seconds=12 if stayed_alive else 0, log=str(log_path),
-    physical_audio_used=False, real_profile_modified=False, native_icon_catalog=(resources / "Assets.car").is_file())
+    physical_audio_used=False, real_profile_modified=False, native_icon_catalog=(resources / "Assets.car").is_file(), minimum_macos=info["LSMinimumSystemVersion"])
 args.report.write_text(json.dumps(report, indent=2) + "\n")
 print(json.dumps(report, indent=2))
 if not passed:
