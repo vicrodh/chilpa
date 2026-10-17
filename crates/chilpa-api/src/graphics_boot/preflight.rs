@@ -47,7 +47,7 @@ pub fn gpu_child_requested() -> bool {
 /// This process is one of the children, which never open the log of their
 /// own nor touch anything of the parent's.
 pub fn child_requested() -> bool {
-    auto_child_requested() || gpu_child_requested()
+    auto_child_requested() || gpu_child_requested() || super::inventory::child_requested()
 }
 
 /// The managed-Auto child's half: `present` opens the probe window on Qt's
@@ -107,7 +107,7 @@ pub(super) fn output_tail(output: &Output) -> String {
 /// files, not pipes: a driver that talks a lot must not block the child
 /// before it can report. Past the budget the child is killed and reaped;
 /// the second value says it was.
-fn run_child(command: &mut Command, budget: Duration) -> Result<(Output, bool), String> {
+pub(super) fn run_child(command: &mut Command, budget: Duration) -> Result<(Output, bool), String> {
     use std::io::{Read, Seek, SeekFrom};
     let mut stdout = tempfile::tempfile().map_err(|e| format!("child stdout: {e}"))?;
     let mut stderr = tempfile::tempfile().map_err(|e| format!("child stderr: {e}"))?;

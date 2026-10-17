@@ -30,8 +30,10 @@ fn main() {
     let resources = files("qml", &|p| p.file_name().is_some_and(|n| n == "qmldir"));
     println!("cargo:rerun-if-changed=qml");
     println!("cargo:rerun-if-changed=src/bridge");
+    println!("cargo:rerun-if-changed=src/covers.cpp");
     CxxQtBuilder::library(Interface::default())
         .qt_module("Gui")
+        .qt_module("Network")
         .qt_module("Qml")
         .qt_module("Quick")
         .qml_module(QmlModule {
@@ -41,5 +43,6 @@ fn main() {
             qrc_files: &resources,
             ..Default::default()
         })
+        .cc_builder(|cc| { cc.file("src/covers.cpp"); })
         .build();
 }

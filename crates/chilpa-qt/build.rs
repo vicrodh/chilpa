@@ -37,7 +37,6 @@ fn main() {
     println!("cargo:rerun-if-changed=qml");
     println!("cargo:rerun-if-changed=src/bridge");
 
-    println!("cargo:rerun-if-changed=src/covers.cpp");
     println!("cargo:rerun-if-changed=src/modules.cpp");
 
     CxxQtBuilder::new()
@@ -54,7 +53,6 @@ fn main() {
             ..Default::default()
         })
         .cc_builder(|cc| {
-            cc.file("src/covers.cpp");
             cc.file("src/modules.cpp");
         })
         .build();

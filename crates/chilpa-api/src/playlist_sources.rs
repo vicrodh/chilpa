@@ -59,8 +59,7 @@ impl Chilpa {
                 self.catalog.shelf(&format!("{plugin} section:playlists"));
             }
         }
-        let cards: Vec<_> = self.catalog.saved_playlist_cards().into_iter()
-            .filter(|c| c.metadata["kind"] == "playlist" && c.metadata["ref"].as_str().is_some()).collect();
+        let cards = self.catalog.saved_playlist_summaries();
         let Some(lib) = self.library() else { return Vec::new() };
         let mut stored = lib.playlists().unwrap_or_default();
         let mut inserted = false;
@@ -75,17 +74,17 @@ impl Chilpa {
         for card in cards {
             let plugin = card.plugin.clone();
             let name = self.catalog.name(&plugin).unwrap_or_else(|| plugin.clone());
-            let writable = self.natives.edits_playlists(&plugin) && card.metadata["editable"] == true;
+            let writable = self.natives.edits_playlists(&plugin) && card.editable;
             let Some(stored) = stored.iter().find(|p| p.provider == crate::source_opener::PROVIDER && p.instance == plugin && p.external_id == card.identity).cloned() else { continue };
             let mut row = crate::playlists::playlist_of(stored);
             row.id = card.id;
             row.source = plugin;
             row.provider = name;
             row.name = card.title;
-            row.description = card.metadata["description"].as_str().unwrap_or_default().into();
+            row.description = card.description;
             row.artwork_path = card.art;
-            row.track_count = card.metadata["tracks"].as_u64().unwrap_or_default() as usize;
-            row.updated_at = card.metadata["updated_at"].as_i64().unwrap_or(row.updated_at);
+            row.track_count = card.track_count;
+            row.updated_at = card.updated_at.unwrap_or(row.updated_at);
             row.writable = writable;
             rows.push(row);
         }
@@ -94,10 +93,9 @@ impl Chilpa {
 
     pub(crate) fn playlist_storage_id(&mut self, id: i64) -> Option<i64> {
         if id > 0 { return Some(id); }
-        let card = self.catalog.card(id)?;
-        self.native_playlist_rows();
+        let row = self.native_playlist_rows().into_iter().find(|row| row.id == id)?;
         self.library()?.playlists().ok()?.into_iter()
-            .find(|p| p.provider == crate::source_opener::PROVIDER && p.instance == card.plugin && p.external_id == card.identity).map(|p| p.id)
+            .find(|p| p.provider == crate::source_opener::PROVIDER && p.instance == row.source && p.external_id == row.external_id).map(|p| p.id)
     }
 
     pub(crate) fn mixed_playlist_entries(&mut self, ids: &[i64], persist: bool) -> Option<Vec<chilpa_library::PlaylistEntry>> {

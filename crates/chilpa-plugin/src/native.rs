@@ -20,6 +20,8 @@ pub const MAX_LINE: usize = 32 * 1024 * 1024;
 /// Lines waiting to be written. A plugin that stops reading fills this, and
 /// the next call fails at once instead of blocking whoever asked.
 const OUT_QUEUE: usize = 256;
+const READ_BUFFER_CAPACITY: usize = 8 * 1024;
+const MAX_RETAINED_LINE_CAPACITY: usize = 64 * 1024;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum NativeError {
@@ -45,6 +47,47 @@ impl std::fmt::Display for NativeError {
 }
 
 type Waiter = Sender<Result<Value, NativeError>>;
+
+// I reuse small lines, but do not retain a catalog-sized reply while idle.
+fn read_message(reader: &mut impl BufRead, line: &mut Vec<u8>) -> std::io::Result<Option<Value>> {
+    loop {
+        line.clear();
+        match reader.by_ref().take(MAX_LINE as u64 + 1).read_until(b'\n', line)? {
+            0 => return Ok(None),
+            _ if line.len() > MAX_LINE => return Ok(None),
+            _ => {}
+        }
+        let message = serde_json::from_slice::<Value>(line);
+        if line.capacity() > MAX_RETAINED_LINE_CAPACITY {
+            *line = Vec::with_capacity(READ_BUFFER_CAPACITY);
+        } else {
+            line.clear();
+        }
+        if let Ok(message) = message { return Ok(Some(message)); }
+    }
+}
+
+fn dispatch(mut message: Value, waiting: &Mutex<HashMap<u64, Waiter>>, notice: &impl Fn(&str, &Value)) {
+    match message.get("id").and_then(Value::as_u64) {
+        Some(id) if message.get("method").is_none() => {
+            let answer = match message.get_mut("error") {
+                Some(error) => Err(NativeError::Rpc {
+                    code: error.get("code").and_then(Value::as_i64).unwrap_or(-32000),
+                    message: error.get("message").and_then(Value::as_str).unwrap_or("").to_string(),
+                    data: error.get_mut("data").map(Value::take),
+                }),
+                None => Ok(message.get_mut("result").map(Value::take).unwrap_or(Value::Null)),
+            };
+            let waiter = waiting.lock().unwrap_or_else(|e| e.into_inner()).remove(&id);
+            if let Some(waiter) = waiter { let _ = waiter.send(answer); }
+        }
+        _ => {
+            if let Some(method) = message.get("method").and_then(Value::as_str) {
+                notice(method, message.get("params").unwrap_or(&Value::Null));
+            }
+        }
+    }
+}
 
 pub struct NativeClient {
     out: SyncSender<Vec<u8>>,
@@ -83,36 +126,9 @@ impl NativeClient {
 
         let _ = std::thread::Builder::new().name("chilpa-native-in".into()).spawn(move || {
             let mut reader = BufReader::new(output);
-            let mut line = Vec::new();
-            loop {
-                line.clear();
-                match reader.by_ref().take(MAX_LINE as u64 + 1).read_until(b'\n', &mut line) {
-                    Ok(0) | Err(_) => break,
-                    Ok(_) if line.len() > MAX_LINE => break,
-                    Ok(_) => {}
-                }
-                let Ok(message) = serde_json::from_slice::<Value>(&line) else { continue };
-                match message.get("id").and_then(Value::as_u64) {
-                    Some(id) if message.get("method").is_none() => {
-                        let answer = match message.get("error") {
-                            Some(error) => Err(NativeError::Rpc {
-                                code: error.get("code").and_then(Value::as_i64).unwrap_or(-32000),
-                                message: error.get("message").and_then(Value::as_str).unwrap_or("").to_string(),
-                                data: error.get("data").cloned(),
-                            }),
-                            None => Ok(message.get("result").cloned().unwrap_or(Value::Null)),
-                        };
-                        let waiter = waiting.lock().unwrap_or_else(|e| e.into_inner()).remove(&id);
-                        if let Some(waiter) = waiter {
-                            let _ = waiter.send(answer);
-                        }
-                    }
-                    _ => {
-                        if let Some(method) = message.get("method").and_then(Value::as_str) {
-                            notice(method, message.get("params").unwrap_or(&Value::Null));
-                        }
-                    }
-                }
+            let mut line = Vec::with_capacity(READ_BUFFER_CAPACITY);
+            while let Ok(Some(message)) = read_message(&mut reader, &mut line) {
+                dispatch(message, &waiting, &notice);
             }
             closed.store(true, Ordering::SeqCst);
             // Whoever still waits learns now, not at their timeout.
@@ -215,6 +231,53 @@ impl crate::RuntimePlugin for NativePlugin {
 
     fn alive(&self) -> bool {
         self.client.alive()
+    }
+}
+
+#[cfg(test)]
+mod reader_tests {
+    use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    fn large_then_small_replies_release_the_line_and_route_each_message() {
+        let large = "x".repeat(MAX_RETAINED_LINE_CAPACITY * 4);
+        let bytes = format!("{}\ninvalid json\n{}\n{}\n{}\n",
+            json!({"id":7,"result":{"payload":large}}),
+            json!({"id":8,"method":"progress","params":{"step":1}}),
+            json!({"id":8,"error":{"code":17,"message":"retry","data":{"delay":9}}}),
+            json!({"id":9,"result":"small"}));
+        let mut reader = Cursor::new(bytes);
+        let mut line = Vec::with_capacity(READ_BUFFER_CAPACITY);
+        let waiting = Mutex::new(HashMap::new());
+        let (tx, rx) = mpsc::channel();
+        for id in [7, 8, 9] { waiting.lock().unwrap().insert(id, tx.clone()); }
+        let (notice_tx, notice_rx) = mpsc::channel();
+        let notice = |method: &str, params: &Value| { notice_tx.send((method.to_string(), params.clone())).unwrap(); };
+        let message = read_message(&mut reader, &mut line).unwrap().unwrap();
+        assert_eq!(line.capacity(), READ_BUFFER_CAPACITY, "I release the large wire buffer before dispatch");
+        let payload = message["result"]["payload"].as_str().unwrap().as_ptr();
+        dispatch(message, &waiting, &notice);
+        let received = rx.recv().unwrap().unwrap();
+        assert_eq!(received["payload"].as_str().unwrap(), large);
+        assert_eq!(received["payload"].as_str().unwrap().as_ptr(), payload, "I move the result's allocation");
+        dispatch(read_message(&mut reader, &mut line).unwrap().unwrap(), &waiting, &notice);
+        assert_eq!(notice_rx.recv().unwrap(), ("progress".into(), json!({"step":1})));
+        assert!(waiting.lock().unwrap().contains_key(&8), "a notification with an id does not consume its waiter");
+        dispatch(read_message(&mut reader, &mut line).unwrap().unwrap(), &waiting, &notice);
+        assert_eq!(rx.recv().unwrap(), Err(NativeError::Rpc { code:17, message:"retry".into(), data:Some(json!({"delay":9})) }));
+        dispatch(read_message(&mut reader, &mut line).unwrap().unwrap(), &waiting, &notice);
+        assert_eq!(rx.recv().unwrap(), Ok(json!("small")));
+        assert!(line.capacity() <= MAX_RETAINED_LINE_CAPACITY);
+        assert!(waiting.lock().unwrap().is_empty());
+        assert!(read_message(&mut reader, &mut line).unwrap().is_none());
+    }
+
+    #[test]
+    fn an_oversized_line_ends_reading_without_dispatching_a_partial_reply() {
+        let mut reader = Cursor::new(vec![b'x'; MAX_LINE + 1]);
+        let mut line = Vec::new();
+        assert!(read_message(&mut reader, &mut line).unwrap().is_none());
     }
 }
 

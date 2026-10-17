@@ -4,7 +4,7 @@ use super::Catalog;
 use crate::navigation::{Route, Screen};
 use std::collections::HashSet;
 
-#[derive(Default)]
+#[derive(Default, PartialEq, Eq)]
 pub(super) struct NavigationRoots {
     pub cards: HashSet<i64>,
     pub shelves: HashSet<String>,
@@ -48,7 +48,11 @@ impl Catalog {
         inner.queue.urgent.retain(|job| !cancelled.contains(job));
         inner.queue.later.retain(|job| !cancelled.contains(job));
         inner.queue.queued.retain(|job| !cancelled.contains(job));
-        inner.navigation = roots;
+        if inner.navigation != roots {
+            inner.navigation = roots;
+            inner.residency.changed();
+            self.wake.notify_one();
+        }
     }
 }
 

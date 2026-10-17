@@ -13,9 +13,83 @@
 //! while it does.
 
 use std::path::{Path, PathBuf};
+use std::sync::{Condvar, Mutex};
+use image::ImageDecoder;
 
 /// JPEG quality of a derivative: indistinguishable at the size it is drawn.
 const QUALITY: u8 = 88;
+// I limit encoded originals separately: the JPEG decoder buffers its input.
+const ENCODED_BYTES: u64 = 128 * 1024 * 1024;
+const DECODE_BYTES: u64 = 128 * 1024 * 1024;
+const DECODE_JOBS: usize = 2;
+static DECODE_BUDGET: DecodeBudget = DecodeBudget::new();
+
+struct DecodeBudget { used: Mutex<(usize, u64)>, wake: Condvar }
+
+impl DecodeBudget {
+    const fn new() -> Self { Self { used: Mutex::new((0, 0)), wake: Condvar::new() } }
+
+    fn acquire(&self) -> DecodePermit<'_> {
+        let mut used = self.used.lock().unwrap_or_else(|error| error.into_inner());
+        while used.0 >= DECODE_JOBS {
+            used = self.wake.wait(used).unwrap_or_else(|error| error.into_inner());
+        }
+        used.0 += 1;
+        DecodePermit { budget: self, bytes: 0 }
+    }
+}
+
+struct DecodePermit<'a> { budget: &'a DecodeBudget, bytes: u64 }
+
+impl DecodePermit<'_> {
+    fn reserve(&mut self, bytes: u64) -> Option<()> {
+        if bytes > DECODE_BYTES { return None; }
+        let mut used = self.budget.used.lock().unwrap_or_else(|error| error.into_inner());
+        while bytes > DECODE_BYTES - used.1 {
+            used = self.budget.wake.wait(used).unwrap_or_else(|error| error.into_inner());
+        }
+        used.1 += bytes;
+        self.bytes = bytes;
+        Some(())
+    }
+}
+
+impl Drop for DecodePermit<'_> {
+    fn drop(&mut self) {
+        let mut used = self.budget.used.lock().unwrap_or_else(|error| error.into_inner());
+        used.0 -= 1;
+        used.1 -= self.bytes;
+        self.budget.wake.notify_all();
+    }
+}
+
+/// I keep the raster permit through validation or resizing. Decoder scratch
+/// buffers and the small resized output sit outside this raw-pixel budget.
+pub(crate) fn with_decoded<R: std::io::BufRead + std::io::Seek, T>(
+    mut reader: image::ImageReader<R>, mut limits: image::Limits,
+    use_picture: impl FnOnce(image::DynamicImage) -> T,
+) -> Option<T> {
+    let mut permit = DECODE_BUDGET.acquire();
+    reader.limits(limits.clone());
+    let mut decoder = reader.into_decoder().ok()?;
+    let bytes = decoder.total_bytes();
+    limits.reserve(bytes).ok()?;
+    permit.reserve(bytes)?;
+    decoder.set_limits(limits).ok()?;
+    let picture = image::DynamicImage::from_decoder(decoder).ok()?;
+    Some(use_picture(picture))
+}
+
+fn with_cover<T>(path: &Path, use_picture: impl FnOnce(image::DynamicImage) -> T) -> Option<T> {
+    let file = std::fs::File::open(path).ok()?;
+    if file.metadata().ok()?.len() > ENCODED_BYTES { return None; }
+    let reader = image::ImageReader::new(std::io::BufReader::new(file)).with_guessed_format().ok()?;
+    let mut limits = image::Limits::default();
+    limits.max_image_width = Some(8192);
+    limits.max_image_height = Some(8192);
+    limits.max_alloc = Some(DECODE_BYTES);
+    with_decoded(reader, limits, use_picture)
+}
 
 /// The cover at `path`, `size` pixels on its longer side, from the cache;
 /// made the first time it is asked for. `None` if it cannot be read.
@@ -36,8 +110,7 @@ pub fn contained_cover(path: &Path, size: u32) -> Option<PathBuf> {
     let directory = chilpa_dirs::cache().join("contained-covers");
     let output = directory.join(small.file_name()?);
     if output.is_file() { return Some(output); }
-    let art = image::open(&small).ok()?.to_rgb8();
-    let field = contain_image(&art, size);
+    let field = with_cover(&small, |art| contain_image(&art.into_rgb8(), size))?;
     std::fs::create_dir_all(directory).ok()?;
     let mut file = tempfile::NamedTempFile::new_in(output.parent()?).ok()?;
     image::codecs::jpeg::JpegEncoder::new_with_quality(&mut file, QUALITY).encode_image(&field).ok()?;
@@ -84,11 +157,12 @@ fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBuf> {
     if out.exists() {
         return Some(out);
     }
-    let cover = image::ImageReader::open(path).ok()?.with_guessed_format().ok()?.decode().ok()?;
     // A cover smaller than asked is kept at its size: making it bigger
     // only makes it blurrier and heavier.
-    let small = if cover.width().max(cover.height()) > size { cover.thumbnail(size, size) } else { cover };
-    let pixels = small.into_rgb8();
+    let pixels = with_cover(path, |cover| {
+        let small = if cover.width().max(cover.height()) > size { cover.thumbnail(size, size) } else { cover };
+        small.into_rgb8()
+    })?;
     std::fs::create_dir_all(dir).ok()?;
     // Written beside and moved over: a half-written file is never loaded.
     let next = out.with_extension("jpg.new");
@@ -105,8 +179,7 @@ fn atmosphere_in(dir: &Path, path: &Path) -> Option<PathBuf> {
     let modified = std::fs::metadata(path).and_then(|m| m.modified()).ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map_or(0, |d| d.as_secs());
     let out = dir.join(format!("{:016x}.png", key(path, modified)));
     if out.exists() { return Some(out) }
-    let source = image::ImageReader::open(path).ok()?.with_guessed_format().ok()?.decode().ok()?.into_rgba8();
-    let tiny = image::imageops::resize(&source, 8, 8, image::imageops::FilterType::Triangle);
+    let tiny = with_cover(path, |source| source.resize_exact(8, 8, image::imageops::FilterType::Triangle).into_rgba8())?;
     let large = image::imageops::resize(&tiny, 128, 128, image::imageops::FilterType::CatmullRom);
     let mut field = image::imageops::blur(&large, 16.0);
     color_field(&mut field);
@@ -213,6 +286,75 @@ mod tests {
         assert!(derivative_in(&dir.join("cache"), &dir.join("cover.jpg"), 256).is_none());
         assert!(derivative_in(&dir.join("cache"), &dir.join("missing.jpg"), 256).is_none());
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_large_legitimate_cover_keeps_its_color_at_display_size() {
+        let dir = tempfile::tempdir().unwrap();
+        let original = dir.path().join("large.png");
+        image::RgbaImage::from_pixel(5670, 5670, image::Rgba([180, 60, 90, 255]))
+            .save(&original).unwrap();
+        let result = derivative_in(&dir.path().join("cache"), &original, 64).unwrap();
+        let small = image::open(result).unwrap().into_rgb8();
+        assert_eq!(small.dimensions(), (64, 64));
+        for (actual, expected) in small.get_pixel(32, 32).0.into_iter().zip([180u8, 60, 90]) {
+            assert!(actual.abs_diff(expected) <= 3, "a derivative keeps the cover's color");
+        }
+    }
+
+    #[test]
+    fn excessive_dimensions_and_raster_bytes_do_not_make_derivatives() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut original = std::io::Cursor::new(Vec::new());
+        image::DynamicImage::new_rgb8(1, 1).write_to(&mut original, image::ImageFormat::Bmp).unwrap();
+        for (width, height) in [(8193u32, 1u32), (8192, 8192)] {
+            let mut bytes = original.get_ref().clone();
+            bytes[18..22].copy_from_slice(&width.to_le_bytes());
+            bytes[22..26].copy_from_slice(&height.to_le_bytes());
+            let dimensions = image::ImageReader::new(std::io::Cursor::new(&bytes))
+                .with_guessed_format().unwrap().into_dimensions().unwrap();
+            assert_eq!(dimensions, (width, height));
+            let path = dir.path().join(format!("{width}-{height}.bmp"));
+            std::fs::write(&path, bytes).unwrap();
+            assert!(derivative_in(&dir.path().join("cache"), &path, 64).is_none());
+            assert!(atmosphere_in(&dir.path().join("atmosphere"), &path).is_none());
+        }
+        assert!(!dir.path().join("cache").exists());
+    }
+
+    #[test]
+    fn an_oversized_encoded_original_is_rejected_before_decode() {
+        let dir = tempfile::tempdir().unwrap();
+        let original = cover(dir.path(), "padded.png", 1);
+        std::fs::OpenOptions::new().write(true).open(&original).unwrap()
+            .set_len(ENCODED_BYTES + 1).unwrap();
+        assert_eq!(image::ImageReader::open(&original).unwrap().with_guessed_format().unwrap()
+            .into_dimensions().unwrap(), (1, 1));
+        assert!(derivative_in(&dir.path().join("cache"), &original, 64).is_none());
+        assert!(atmosphere_in(&dir.path().join("atmosphere"), &original).is_none());
+    }
+
+    #[test]
+    fn a_large_raster_waits_for_the_shared_byte_budget() {
+        let budget = DecodeBudget::new();
+        let mut large = budget.acquire();
+        large.reserve(96 * 1024 * 1024).unwrap();
+        std::thread::scope(|scope| {
+            let (sender, receiver) = std::sync::mpsc::channel();
+            let shared = &budget;
+            let waiting = scope.spawn(move || {
+                let mut next = shared.acquire();
+                sender.send(false).unwrap();
+                next.reserve(64 * 1024 * 1024).unwrap();
+                sender.send(true).unwrap();
+            });
+            assert!(!receiver.recv_timeout(std::time::Duration::from_secs(5)).unwrap());
+            assert!(receiver.recv_timeout(std::time::Duration::from_millis(50)).is_err());
+            drop(large);
+            assert!(receiver.recv_timeout(std::time::Duration::from_secs(5)).unwrap());
+            waiting.join().unwrap();
+        });
+        assert_eq!(*budget.used.lock().unwrap(), (0, 0));
     }
 
     #[test]

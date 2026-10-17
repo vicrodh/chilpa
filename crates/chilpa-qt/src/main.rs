@@ -29,7 +29,7 @@ use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 #[cfg(target_os = "linux")]
 use cxx_qt_lib::QString;
 unsafe extern "C" {
-    /// Hands the engine the covers' image provider. See `covers.cpp`.
+    /// Hands the engine the covers' image provider. See `chilpa-qt-artwork/src/covers.cpp`.
     fn chilpa_install_covers(engine: *mut std::ffi::c_void);
     /// Registers the shell modules and sets the window icon. See `modules.cpp`.
     fn chilpa_install_shell();

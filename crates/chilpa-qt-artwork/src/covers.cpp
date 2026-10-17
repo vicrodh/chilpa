@@ -1,10 +1,8 @@
 // The window's covers, at the size they are drawn (frontend ADR-0014,
 // rule 5): an image provider behind `image://cover/<size>/<path>`.
 //
-// Each request runs on a pool of its own, not the global one: making a
-// derivative of a big cover takes a fifth of a second and a hundred MB, and
-// the global pool has a thread per core. Rust makes or finds the derivative
-// on disk (`chilpa_cover`); this only loads the small file it names.
+// I share two workers between all three providers. Rust makes or finds the
+// derivative on disk (`chilpa_cover`); this only loads the small file it names.
 
 #include <QtCore/QThreadPool>
 #include <QtCore/QUrl>
@@ -14,6 +12,8 @@
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkRequest>
 #include <QtQml/QQmlNetworkAccessManagerFactory>
+#include <atomic>
+#include <memory>
 
 extern "C" bool chilpa_cover(const char *path, unsigned size, char *out, unsigned long capacity);
 extern "C" bool chilpa_contained_cover(const char *path, unsigned size, char *out, unsigned long capacity);
@@ -50,6 +50,10 @@ public:
 
     void run() override
     {
+        if (m_cancelled.load(std::memory_order_relaxed)) {
+            emit finished();
+            return;
+        }
         const qsizetype slash = m_atmosphere == 1 ? -1 : m_id.indexOf(QLatin1Char('/'));
         const unsigned size = m_atmosphere == 1 ? 0 : m_id.left(slash).toUInt();
         const QString rest = m_atmosphere == 1 ? m_id : m_id.mid(slash + 1);
@@ -61,9 +65,15 @@ public:
         const bool made = m_atmosphere == 1 ? chilpa_atmosphere(path.constData(), out.data(), out.size())
                                        : m_atmosphere == 2 ? chilpa_contained_cover(path.constData(), size, out.data(), out.size())
                                        : slash > 0 && size > 0 && chilpa_cover(path.constData(), size, out.data(), out.size());
-        if (made)
+        if (made && !m_cancelled.load(std::memory_order_relaxed))
             m_image = QImage(QString::fromUtf8(out.constData()));
         emit finished();
+    }
+
+    void cancel() override
+    {
+        // I leave completion to run(): Qt may delete me after finished().
+        m_cancelled.store(true, std::memory_order_relaxed);
     }
 
     QQuickTextureFactory *textureFactory() const override
@@ -80,22 +90,24 @@ private:
     QString m_id;
     int m_atmosphere;
     QImage m_image;
+    std::atomic_bool m_cancelled{false};
 };
 
 class CoverProvider : public QQuickAsyncImageProvider
 {
 public:
-    CoverProvider(int atmosphere = 0) : m_atmosphere(atmosphere) { m_pool.setMaxThreadCount(3); }
+    CoverProvider(std::shared_ptr<QThreadPool> pool, int atmosphere = 0)
+        : m_pool(std::move(pool)), m_atmosphere(atmosphere) {}
 
     QQuickImageResponse *requestImageResponse(const QString &id, const QSize &) override
     {
         auto *response = new CoverResponse(id, m_atmosphere);
-        m_pool.start(response);
+        m_pool->start(response);
         return response;
     }
 
 private:
-    QThreadPool m_pool;
+    std::shared_ptr<QThreadPool> m_pool;
     int m_atmosphere;
 };
 
@@ -104,8 +116,10 @@ private:
 extern "C" void chilpa_install_covers(void *engine)
 {
     static NetworkFactory network;
+    auto pool = std::make_shared<QThreadPool>();
+    pool->setMaxThreadCount(2);
     static_cast<QQmlEngine *>(engine)->setNetworkAccessManagerFactory(&network);
-    static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("cover"), new CoverProvider);
-    static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("contained"), new CoverProvider(2));
-    static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("atmosphere"), new CoverProvider(1));
+    static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("cover"), new CoverProvider(pool));
+    static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("contained"), new CoverProvider(pool, 2));
+    static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("atmosphere"), new CoverProvider(pool, 1));
 }

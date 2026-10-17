@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 #[derive(Default)]
 pub(super) struct SelectionRoots {
-    cards: HashSet<(String, String)>,
-    tracks: HashSet<String>,
+    pub(super) cards: HashSet<(String, String)>,
+    pub(super) tracks: HashSet<String>,
 }
 
 /// I release a menu's catalog roots when its request or picker closes.
@@ -17,15 +17,21 @@ pub struct SelectionHold {
 
 impl SelectionHold {
     pub(crate) fn add_tracks(&self, paths: impl IntoIterator<Item = String>) {
-        if let Some(roots) = self.catalog.lock().selections.get_mut(&self.id) {
+        let mut inner = self.catalog.lock();
+        if let Some(roots) = inner.selections.get_mut(&self.id) {
             roots.tracks.extend(paths);
+            inner.residency.changed();
+            self.catalog.wake.notify_one();
         }
     }
 }
 
 impl Drop for SelectionHold {
     fn drop(&mut self) {
-        self.catalog.lock().selections.remove(&self.id);
+        let mut inner = self.catalog.lock();
+        inner.selections.remove(&self.id);
+        inner.residency.changed();
+        self.catalog.wake.notify_one();
     }
 }
 
@@ -38,6 +44,8 @@ impl Catalog {
         inner.selection_serial = inner.selection_serial.checked_add(1).expect("selection identifiers exhausted");
         let id = inner.selection_serial;
         inner.selections.insert(id, SelectionRoots { cards: cards.into_iter().collect(), tracks: tracks.into_iter().collect() });
+        inner.residency.changed();
+        self.wake.notify_one();
         SelectionHold { catalog: self.clone(), id }
     }
 
