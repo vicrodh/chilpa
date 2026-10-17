@@ -205,8 +205,11 @@ where
     K: AudioSink,
 {
     let mut decoded = Decoded::open_stream(stream).map_err(PlayError::Decode)?;
-    let delivery =
+    let mut delivery =
         negotiate_decoded(&decoded, caps, policy).map_err(PlayError::Negotiation)?;
+    if dsp.as_ref().is_some_and(|control| control.requested()) {
+        delivery.transforms.push(chilpa_audio::negotiate::Transform::DspApplied);
+    }
     on_delivery(&delivery, signal_bits(&decoded, &delivery));
     let mut sink = open_sink(delivery.opened).map_err(PlayError::Sink)?;
     let mut frames = Frames {
