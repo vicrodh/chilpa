@@ -517,3 +517,91 @@ fn seeking_keeps_the_reference_format_and_exact_music_position() {
         );
     }
 }
+
+#[test]
+fn a_vorbis_stream_reports_dsp_in_the_delivery_result() {
+    let path = fixture("vorbis-44100-stereo.ogg");
+    let (stream, expected) = reference(&path);
+    for processed in [false, true] {
+        let input = chilpa_stream::HttpStream::new(
+            Box::new(std::io::Cursor::new(std::fs::read(&path).unwrap())),
+            chilpa_stream::StreamInfo {
+                content_type: Some("audio/ogg".into()),
+                ..Default::default()
+            },
+            chilpa_stream::NowPlaying::new(),
+        );
+        let dsp = chilpa_audio::dsp::Control::default();
+        if processed {
+            dsp.set(Some(chilpa_audio::dsp::Preset {
+                preamp_db: -6.0,
+                ..Default::default()
+            }))
+            .unwrap();
+        }
+        let bytes = Arc::new(Mutex::new(Vec::new()));
+        let mut announced = None;
+        let played = chilpa_core::playback::play_stream(
+            input,
+            &caps(stream),
+            Policy::BitPerfect,
+            &StopSignal::new(),
+            &chilpa_audio::sink::PauseSignal::default(),
+            Some(dsp),
+            |stream| {
+                Ok(Keep {
+                    stream,
+                    bytes: bytes.clone(),
+                })
+            },
+            &mut |delivery| announced = Some(delivery.nothing_was_converted()),
+            &mut |_| {},
+        )
+        .unwrap();
+        assert_eq!(announced, Some(!processed));
+        assert_eq!(played.delivery.nothing_was_converted(), !processed);
+        assert_eq!(
+            played.delivery.transforms.contains(&Transform::DspApplied),
+            processed
+        );
+        let actual = signed_words(&bytes.lock().unwrap());
+        if processed {
+            assert_eq!(actual.len(), expected.len());
+            assert!(
+                actual.iter().zip(&expected).any(|(a, b)| a != b),
+                "the DSP changed actual samples"
+            );
+        } else {
+            identical(&actual, &expected);
+        }
+    }
+}
+
+#[test]
+fn the_file_backend_stores_every_reference_word() {
+    use chilpa_audio::{backend::OutputBackend, capture::FileBackend};
+    for name in ["vorbis-44100-stereo.ogg", "vorbis-48000-mono.ogg"] {
+        let path = fixture(name);
+        let (_, expected) = reference_with_gapless(&path, true);
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("captured.pcm");
+        let probe = FileBackend::new(output.clone());
+        let backend = FileBackend::new(output.clone());
+        let player = Player::spawn(
+            Box::new(move |_| probe.caps("capture")),
+            Box::new(move |_, stream, exclusive| backend.open("capture", stream, exclusive)),
+        );
+        player.play(&path, "file:capture");
+        let events = finished(&player);
+        assert!(events.iter().any(|event| matches!(
+            event,
+            PlayerEvent::Started {
+                bit_perfect: true,
+                bits: None,
+                ..
+            }
+        )));
+        drop(player);
+        identical(&signed_words(&std::fs::read(output).unwrap()), &expected);
+    }
+}
