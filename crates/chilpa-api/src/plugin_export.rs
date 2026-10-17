@@ -56,6 +56,6 @@ mod tests {
         std::fs::write(plugin.join("manifest.json"), manifest("folder_write")).unwrap();
         assert!(set(root.path(), "app.example.download", root.path().join("missing").as_path()).is_err());
         set(root.path(), "app.example.download", &destination).unwrap();
-        assert_eq!(read(root.path(), "app.example.download"), Some(destination));
+        assert_eq!(read(root.path(), "app.example.download"), Some(destination.canonicalize().unwrap()));
     }
 }
