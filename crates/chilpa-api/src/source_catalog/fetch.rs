@@ -43,7 +43,7 @@ fn save(store: &Store) -> std::io::Result<()> {
 
 // I write snapshots only on the catalog thread, in capture order. Readers
 // keep using the live store while serialization and disk writes run here.
-fn persist(catalog: &Catalog, write: impl FnOnce(&Store) -> std::io::Result<()>) {
+pub(super) fn persist(catalog: &Catalog, write: impl FnOnce(&Store) -> std::io::Result<()>) {
     let snapshot = {
         let mut inner = catalog.lock();
         if !inner.dirty { return; }
@@ -206,8 +206,10 @@ pub(super) fn run(catalog: &Arc<Catalog>) {
 }
 
 /// The job is done: it is no longer running, and what failed says why.
-fn finish(catalog: &Catalog, job: &Job, outcome: Result<(), String>) {
+pub(super) fn finish(catalog: &Catalog, job: &Job, outcome: Result<(), String>) {
     let mut inner = catalog.lock();
+    let quiet = inner.revalidating.remove(job);
+    let failed = outcome.is_err();
     inner.running.remove(job);
     inner.native_running.remove(job);
     catalog.wake.notify_one();
@@ -218,8 +220,8 @@ fn finish(catalog: &Catalog, job: &Job, outcome: Result<(), String>) {
         _ => {}
     }
     drop(inner);
-    // I publish completion even when cached content is unchanged, so loading and errors settle.
-    catalog.publish(true);
+    // I settle foreground loading and failures; quiet success publishes only changed content.
+    catalog.publish(!quiet || failed);
 }
 
 /// The process plugins, when the job is one of theirs.

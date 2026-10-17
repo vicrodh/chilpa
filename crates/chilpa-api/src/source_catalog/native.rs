@@ -179,7 +179,8 @@ pub(super) fn read_shelf(catalog: &Catalog, natives: &Arc<Natives>, key: &str) -
         return read_home(catalog, natives, plugin);
     }
     if let Some(kind) = address.strip_prefix("section:") {
-        return read_library(catalog, natives, plugin, key, kind);
+        return read_library(catalog, plugin, key, kind,
+            |request| natives.call(plugin, "library.list", request, ASKED), || natives.is_native(plugin));
     }
     if let Some(card) = address.strip_prefix("card:") {
         return read_artist(catalog, natives, plugin, key, card.parse().unwrap_or_default());
@@ -234,18 +235,21 @@ fn read_home(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str) -> Result<
 
 /// One tab of the library, every page of it: albums, tracks, artists or
 /// playlists the listener keeps in the service.
-fn read_library(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, key: &str, kind: &str) -> Result<(), String> {
+pub(super) fn read_library(catalog: &Catalog, plugin: &str, key: &str, kind: &str,
+    mut ask: impl FnMut(Value) -> Result<Value, String>, active: impl FnOnce() -> bool) -> Result<(), String> {
     let kind = if kind == "library" { "albums" } else { kind };
     let refresh = catalog.stored_shelf(key).is_some_and(|shelf| shelf.read_at == 0);
-    let (items, folders) = library_items(|page| natives.call(plugin, "library.list",
-        json!({"kind":kind,"offset":page * PAGE,"limit":PAGE,"refresh":refresh && page == 0}), ASKED))?;
+    let (items, folders) = library_items(|page| ask(
+        json!({"kind":kind,"offset":page * PAGE,"limit":PAGE,"refresh":refresh && page == 0})))?;
     let stamp = now();
     let mut inner = catalog.lock();
-    if !natives.is_native(&plugin) { return Err("The plugin was disabled.".into()); }
+    if !active() { return Err("The plugin was disabled.".into()); }
+    let before = inner.store.snapshot();
     let shelf = library_shelf(&mut inner.store, plugin, key, kind, items, folders, stamp);
     inner.shelf_errors.remove(key);
     inner.store.shelves.insert(key.to_string(), shelf);
-    inner.dirty = true;
+    let changed = super::revisions::library_changed(&inner.store, &before);
+    inner.dirty |= changed;
     Ok(())
 }
 

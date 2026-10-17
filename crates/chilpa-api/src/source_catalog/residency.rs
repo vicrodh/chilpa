@@ -151,6 +151,7 @@ impl Catalog {
         inner.queue.urgent.retain(|job| !cancelled.contains(job));
         inner.queue.later.retain(|job| !cancelled.contains(job));
         inner.queue.queued.retain(|job| !cancelled.contains(job));
+        inner.revalidating.retain(|job| !cancelled.contains(job));
         drop(inner);
         self.wake.notify_one();
     }
