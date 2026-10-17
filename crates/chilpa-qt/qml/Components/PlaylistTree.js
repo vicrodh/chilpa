@@ -24,11 +24,11 @@ function rows(catalog, order, ascending, query, expanded, groupTitle) {
     const base = {rowKind:1,playlistId:0,tracks:0,source:"",sourceName:"",local:false,artwork:"",visibleInSidebar:true,covers:[],folderColor:"",sourceIcon:"",showSourceBadge:false,depth:0,nativeRef:"",expandKey:""}
     function open(key) { return query !== "" || !!expanded[key] }
     function folder(value, key, children) {
-        result.push(Object.assign({}, base, value, {expanded:open(key),expandKey:key}))
+        result.push(Object.assign({}, base, value, {id:"folder:" + key,expanded:open(key),expandKey:key}))
         if (open(key)) children()
     }
     function playlist(p, depth) {
-        return {rowKind:0,playlistId:p.id,name:p.name,tracks:p.track_count,source:p.source || "",sourceName:p.provider || "",local:p.mixed === true,
+        return {id:"playlist:" + (p.source || "") + ":" + p.id,rowKind:0,playlistId:p.id,name:p.name,tracks:p.track_count,source:p.source || "",sourceName:p.provider || "",local:p.mixed === true,
             sourceIcon:p.mixed ? "qrc:/qt/qml/app/chilpa/kit/assets/logo.png" : p.source_icon || "",showSourceBadge:true,artwork:p.artwork_path || "",
             folderId:p.folder_id || 0,visibleInSidebar:p.visible_sidebar !== false,covers:p.covers || [],folderColor:"",expanded:false,
             depth:depth,nativeRef:p.native_ref || "",nativeFolder:p.native_folder || "",containArt:p.contain_art === true}
@@ -77,7 +77,7 @@ function rows(catalog, order, ascending, query, expanded, groupTitle) {
     for (const source of sourceIds.filter(separate)) {
         if (!playlists.some(p => p.source === source) && !native.some(f => f.source === source)) continue
         const first = playlists.find(p => p.source === source), info = provider(source)
-        result.push(Object.assign({}, base, {rowKind:2,name:groupTitle || "Playlists",source:source,sourceName:info.name || first?.provider || source,
+        result.push(Object.assign({}, base, {id:"source:" + source,rowKind:2,name:groupTitle || "Playlists",source:source,sourceName:info.name || first?.provider || source,
             sourceIcon:info.icon || first?.source_icon || "",folderId:nextFolderId--}))
         branch(source, "", 0)
     }
