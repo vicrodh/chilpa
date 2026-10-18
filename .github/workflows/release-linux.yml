@@ -49,7 +49,7 @@ jobs:
             libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxcb-shape0 \
             libxcb-randr0 libxcb-sync1 libxcb-xfixes0 libxcb-glx0 \
             patchelf file binutils dbus-daemon desktop-file-utils zsync python3-venv \
-            ripgrep hunspell hunspell-en-us hunspell-es
+            ripgrep hunspell
           python3 -m venv "$RUNNER_TEMP/qt-installer"
           "$RUNNER_TEMP/qt-installer/bin/python" -m pip install aqtinstall==3.3.0
           "$RUNNER_TEMP/qt-installer/bin/python" -m aqt install-qt linux desktop "$QT_VERSION" linux_gcc_64 \
@@ -64,6 +64,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
           toolchain: '1.96.0'
+      - name: Fetch the language lint dictionaries
+        run: |
+          python3 scripts/fetch-lint-dictionaries.py "$RUNNER_TEMP/dictionaries"
+          echo "DICPATH=$RUNNER_TEMP/dictionaries" >> "$GITHUB_ENV"
       - name: Check the repository and update worker
         run: |
           tools/lint/fast

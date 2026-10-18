@@ -67,7 +67,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential pkg-config libgl1-mesa-dev libegl1-mesa-dev \
-            libxkbcommon-dev libdbus-1-3 libxcb-cursor0 python3-venv ripgrep hunspell hunspell-en-us hunspell-es
+            libxkbcommon-dev libdbus-1-3 libxcb-cursor0 python3-venv ripgrep hunspell
           python3 -m venv "$RUNNER_TEMP/qt-installer"
           "$RUNNER_TEMP/qt-installer/bin/python" -m pip install aqtinstall==3.3.0
       - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
@@ -77,6 +77,10 @@ jobs:
           key: qml-linux-qt-${{ env.QT_VERSION }}
       - if: steps.qt-cache.outputs.cache-hit != 'true'
         run: '"$RUNNER_TEMP/qt-installer/bin/python" -m aqt install-qt linux desktop "$QT_VERSION" linux_gcc_64 --outputdir "$RUNNER_TEMP/Qt"'
+      - name: Fetch the language lint dictionaries
+        run: |
+          python3 scripts/fetch-lint-dictionaries.py "$RUNNER_TEMP/dictionaries"
+          echo "DICPATH=$RUNNER_TEMP/dictionaries" >> "$GITHUB_ENV"
       - name: Check interface and repository rules
         run: |
           export QT_BIN_DIR="$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/bin"

@@ -1,0 +1,10 @@
+{
+  "en_US": {
+    "url": "https://extensions.libreoffice.org/assets/downloads/41/1788231883/dict-en-20260901.oxt",
+    "sha256": "da9aa9a2cb7907be3bc4c97edefb387f1604eac231ab3cc7577173b0cdc3dd8f"
+  },
+  "es_MX": {
+    "url": "https://github.com/sbosio/rla-es/releases/download/v2.9/es_MX.oxt",
+    "sha256": "8cb7b24f5797eb4749648e7808ce3fcaa80bc668add7894242a4edf2be4a6726"
+  }
+}
