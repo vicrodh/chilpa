@@ -58,7 +58,7 @@ members = [
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-rust-version = "1.90"
+rust-version = "1.96"
 
 [workspace.dependencies]
 chilpa-models = { path = "crates/chilpa-models" }
