@@ -217,6 +217,8 @@ mod tests {
     use super::*;
     use chilpa_audio::format::SampleFormat;
     use chilpa_cd::{TocEntry, SECTOR_BYTES};
+    use std::sync::atomic::AtomicBool;
+    use std::time::{Duration, Instant};
 
     /// Two tracks of 100 sectors, silence, and a sector that fails if asked.
     struct Disc {
@@ -332,21 +334,59 @@ mod tests {
         assert_eq!(sink.flushes, 0, "and nothing is thrown away on the way");
     }
 
+    /// A first track of four reads whose third waits until Next is asked.
+    /// The sink takes everything at once, so without the wait the read-ahead
+    /// can reach the track's end before the first progress, and Next lands
+    /// on the second track.
+    struct Long {
+        asked: Arc<AtomicBool>,
+    }
+
+    impl CdDevice for Long {
+        fn read_toc(&mut self) -> Result<(Vec<TocEntry>, u32), CdError> {
+            Ok((
+                vec![
+                    TocEntry { number: 1, start_lsn: 0, is_audio: true, session: 1 },
+                    TocEntry { number: 2, start_lsn: 300, is_audio: true, session: 1 },
+                ],
+                400,
+            ))
+        }
+        fn read_audio(&mut self, lsn: u32, sectors: u32, out: &mut Vec<u8>) -> Result<(), CdError> {
+            let waiting = Instant::now();
+            while (150..300).contains(&lsn)
+                && !self.asked.load(Ordering::Acquire)
+                && waiting.elapsed() < Duration::from_secs(5)
+            {
+                std::thread::sleep(Duration::from_millis(1));
+            }
+            out.clear();
+            out.resize(sectors as usize * SECTOR_BYTES, 0);
+            Ok(())
+        }
+    }
+
     #[test]
     fn next_moves_to_the_next_track_while_one_plays() {
         // "Next" was dropped until the track ended by itself.
         let controls = Controls::new();
-        let asked = controls.skip.clone();
+        let skip = controls.skip.clone();
+        let asked = Arc::new(AtomicBool::new(false));
         let mut sink = counting();
         let mut first = Vec::new();
-        let (started, _, _) = play(&mut Disc { fail_at: None }, &mut sink, &controls, &mut |index, progress| {
+        let mut disc = Long { asked: Arc::clone(&asked) };
+        let (started, _, _) = play(&mut disc, &mut sink, &controls, &mut |index, progress| {
             if index == 0 {
                 first.push(progress.delivered);
-                asked.skip();
+                // Once: a second Next would be the second track's.
+                if !asked.load(Ordering::Acquire) {
+                    skip.skip();
+                    asked.store(true, Ordering::Release);
+                }
             }
         });
         assert_eq!(started, [0, 1]);
-        assert!(first.last().is_some_and(|f| *f < 100 * 588), "the first track stopped short: {:?}", first.last());
+        assert!(first.last().is_some_and(|f| *f < 300 * 588), "the first track stopped short: {:?}", first.last());
         assert_eq!(sink.frames, first.last().unwrap() + 100 * 588, "and the second played whole");
         assert_eq!(sink.flushes, 1, "what was left of the first did not play ahead of the second");
     }
