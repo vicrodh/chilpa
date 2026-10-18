@@ -114,11 +114,12 @@ TestCase {
         compare(Playlists.refreshes,1)
         compare(sidebar.rows.filter(row=>row.rowKind === 0).map(row=>row.playlistId),[7])
     }
-    function test_the_heads_actions_carry_their_glyphs_and_its_orders_none() {
+    function test_the_heads_actions_carry_their_glyphs_and_its_checks_none() {
         sidebar.setOrder("name")
         actions.head(0, 0)
         const menu = findChild(actions, "playlistsMenu")
-        compare(menu.entries.filter(e => !e.separator && !e.accent && (e.action === "sort") === !!e.glyph).map(e => e.text), [])
+        // An order or the grouping toggle shows its check; an action, its glyph.
+        compare(menu.entries.filter(e => !e.separator && !e.accent && ("checked" in e) === !!e.glyph).map(e => e.text), [])
         compare(menu.entries.filter(e => e.accent).map(e => e.glyph), [Icons.chevronUp], "the order in use, its own way")
         menu.chosen(menu.entries.findIndex(e => e.accent))
         verify(!sidebar.ascending, "chosen again, it turns around")
