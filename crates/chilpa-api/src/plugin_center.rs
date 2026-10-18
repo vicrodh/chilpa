@@ -59,15 +59,18 @@ impl PluginCenter {
                     Err(mpsc::RecvTimeoutError::Disconnected) => break,
                 };
                 if action.starts_with("updates_") {
+                    let previous_revision = updates.revision();
+                    let mut manager_changed = false;
                     let result = (|| {
                         let repositories = PluginRepositories::load(root.join(".repositories"))?;
                         if matches!(action.as_str(), "updates_automatic" | "updates_read" | "updates_apply" | "updates_app_read") {
                             updates.action(&action, &input, &root.join(".repositories"))?;
                         }
-                        let checked = action == "updates_check" || updates.due();
+                        let checked = (action == "updates_check" || updates.due()) && !chilpa_core::network::current().offline;
                         if checked { let _ = updates.check(&root, &plugins, &repositories); }
                         let applied = updates.apply(&root, &plugins, &repositories, &playing, &mut state)?;
                         if checked || applied {
+                            manager_changed = true;
                             run("filter", &json!({}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing)?;
                             let states = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.catalog_states();
                             catalog.set_source_states(states);
@@ -75,9 +78,9 @@ impl PluginCenter {
                         }
                         Ok::<(), String>(())
                     })();
-                    *notifications.lock().unwrap() = updates.clone();
-                    if let Err(error) = result { state["error"] = error.into(); }
-                    *shared.lock().unwrap() = state.clone();
+                    if updates.revision() != previous_revision { *notifications.lock().unwrap() = updates.clone(); }
+                    if let Err(error) = result { state["error"] = error.into(); manager_changed = true; }
+                    if manager_changed { *shared.lock().unwrap() = state.clone(); }
                     if action != "updates_tick" {
                         current.lock().unwrap().clear(); visible.store(false, Ordering::Release);
                     }
