@@ -33,6 +33,6 @@ The name **Chilpa** comes from it.
 
 **Coming soon.**
 
-I'll be using the [Discussions](https://github.com/vicrodh/chilpa/discussions) section of the repository to keep you updated on the app progress. If you want to know what's happening behind the scenes, that's the place to go. 
+Follow development updates in [Discussions](https://github.com/vicrodh/chilpa/discussions).
 
 </div>
