@@ -172,7 +172,8 @@ TestCase {
         const grid = findChild(manager, "purchaseGrid")
         tryCompare(grid, "count", 220)
         verify(grid.visible)
-        verify(grid.contentHeight > grid.height)
+        // The grid sizes its content when it lays the rows out, after the count.
+        tryVerify(() => grid.contentHeight > grid.height, 3000)
         manager.settings(plugin)
         const tabs = findChild(manager.detailsView, "pluginTabs")
         verify(!Array.from(tabs.children).some(item => item.objectName === "pluginTab_integration"))
