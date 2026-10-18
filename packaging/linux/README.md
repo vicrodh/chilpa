@@ -14,12 +14,12 @@ user namespaces available. Packaging tools extract without requiring FUSE.
 ## Release workflow
 
 1. Set `[workspace.package].version` in `Cargo.toml` to `X.Y.Z` or a prerelease
-   such as `0.1.0-beta` and update `Cargo.lock` before tagging the same commit
+   such as `0.1.0-rc.1` and update `Cargo.lock` before tagging the same commit
    with a `v` prefix.
 2. The tag starts `.github/workflows/release-linux.yml`. It checks the version,
    runs repository gates and API tests, builds the binary, packages both formats,
    checks AppImage startup and verifies all checksums.
-3. The workflow creates a draft GitHub release and marks beta tags as prereleases.
+3. The workflow creates a draft GitHub release and marks prerelease tags accordingly.
    Review and publish the draft.
    A manual dispatch produces downloadable workflow artifacts without creating
    a release. `source_ref` selects the commit or tag to build.
@@ -32,7 +32,7 @@ The assets are:
 - `MANIFEST.json`, `RELEASE-NOTES.md` and `SHA256SUMS`
 
 Publish the AppImage and its matching `.zsync` together. Stable installations
-only accept newer stable releases. Beta installations also accept newer published
+only accept newer stable releases. Prerelease installations also accept newer published
 prereleases and can advance to a stable release. Candidate selection uses semantic version order and rejects drafts and
 mismatched prerelease metadata.
 
@@ -55,9 +55,9 @@ an AppImage; the tarball stays a manual installation.
 The image needs a writable parent folder. Move it to a user-owned folder before
 updating an image installed in a system-owned directory. The updater uses the
 HTTPS GitHub channel embedded during packaging, without account credentials.
-The beta image's embedded fallback is pinned to its own tag; the host explicitly
+A prerelease image's embedded fallback is pinned to its own tag; the host explicitly
 selects newer eligible tags before invoking the updater. A standalone updater
-therefore cannot silently cross from the beta fallback into the stable channel.
+therefore cannot silently cross from the prerelease fallback into the stable channel.
 
 ## Local packaging
 

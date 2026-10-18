@@ -1,4 +1,4 @@
-"""I share release identity and update channels between packaging and CI."""
+"""Release identity and update channels shared by packaging and CI."""
 import argparse
 import json
 import os
@@ -25,7 +25,7 @@ def update_information(repository, version):
         raise ValueError("I require a repository in owner/name form.")
     identity = release_version(version)
     owner, name = repository.split("/")
-    # I pin the beta's fallback; the host selects newer releases explicitly.
+    # Prerelease fallbacks stay pinned; the host selects newer releases explicitly.
     channel = identity["tag"] if identity["prerelease"] else "latest"
     return f"gh-releases-zsync|{owner}|{name}|{channel}|Chilpa-*-x86_64.AppImage.zsync"
 

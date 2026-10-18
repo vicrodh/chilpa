@@ -1,6 +1,6 @@
 # macOS packages
 
-This beta targets Apple Silicon. Build requirements are Rust,
+The initial release targets Apple Silicon. Build requirements are Rust,
 Qt 6.11 with `qmake` and `macdeployqt` on PATH, and Python 3.11 or later.
 Packaging requests macOS 14 as the deployment target, then raises the bundle's
 minimum to the strictest requirement of its deployed libraries. The actual
@@ -10,7 +10,7 @@ requires macOS 26.
 ```sh
 NORUN=1 ./scripts/qt-run.sh
 python3 scripts/package-macos.py --binary target/release/chilpa-qt \
-  --version 0.1.0-beta --output dist --require-native-icon
+  --version 0.1.0 --output dist --require-native-icon
 python3 scripts/check-macos-package.py dist/Chilpa.app --report dist/macos-smoke.json
 ```
 

@@ -49,16 +49,14 @@ Classical Nahuatl word for a **red wasp or hornet** (*avispa roja / avispón*).
 
 ## Status
 
-The initial 0.1.0-beta release provides Linux x86_64 builds as an AppImage
-and a precompiled binary tarball. Packages for popular package managers are
+Chilpa 0.1.0 provides Linux x86_64 builds as an AppImage and a precompiled
+binary tarball, plus ZIP and DMG packages for macOS on Apple Silicon. Packages for popular package managers are
 planned for subsequent releases.
 
 This first release ships in **English and Spanish**. More languages are on
 the way.
 
-macOS validation for this beta is in progress on a Mac mini. A macOS
-download will be listed here after testing. Windows and Android remain under
-development.
+Windows and Android remain under development.
 
 Downloads are in [Releases](https://github.com/vicrodh/chilpa/releases) and
 progress updates in [Discussions](https://github.com/vicrodh/chilpa/discussions).
@@ -80,13 +78,13 @@ then reports the output as processed instead of bit-perfect.
 
 ### AppImage
 
-Download `Chilpa-0.1.0-beta-x86_64.AppImage` and `SHA256SUMS` from the
+Download `Chilpa-0.1.0-x86_64.AppImage` and `SHA256SUMS` from the
 release, then:
 
 ```sh
 sha256sum --check --ignore-missing SHA256SUMS
-chmod +x Chilpa-0.1.0-beta-x86_64.AppImage
-./Chilpa-0.1.0-beta-x86_64.AppImage
+chmod +x Chilpa-0.1.0-x86_64.AppImage
+./Chilpa-0.1.0-x86_64.AppImage
 ```
 
 The image carries its own Qt and audio runtime. If FUSE is not available,
@@ -104,14 +102,14 @@ Keep the image in a folder you own, such as `~/Applications`. Chilpa checks
 for updates once a day; About has the switch for the automatic check and a
 **Check for updates** button. An update downloads beside the image, is
 verified against the release checksum and replaces the file in place, keeping
-the previous image as `<name>.previous`. A beta installation also receives
-newer betas and the next stable release.
+the previous image as `<name>.previous`. Version 0.1.0 uses the stable
+update channel.
 
 ### Tarball
 
 ```sh
-tar xf chilpa-0.1.0-beta-linux-x86_64.tar.gz
-./chilpa-0.1.0-beta/chilpa-qt
+tar xf chilpa-0.1.0-linux-x86_64.tar.gz
+./chilpa-0.1.0/chilpa-qt
 ```
 
 The tarball uses the system libraries: Qt 6.11 or newer with Qt Quick, ALSA,
@@ -123,11 +121,23 @@ run this from the folder where you extracted it:
 
 ```sh
 mkdir -p ~/.local/share/applications
-sed "s|^Exec=.*|Exec=$PWD/chilpa-0.1.0-beta/chilpa-qt|" \
-  chilpa-0.1.0-beta/app.chilpa.Chilpa.desktop \
+sed "s|^Exec=.*|Exec=$PWD/chilpa-0.1.0/chilpa-qt|" \
+  chilpa-0.1.0/app.chilpa.Chilpa.desktop \
   > ~/.local/share/applications/app.chilpa.Chilpa.desktop
-cp -r chilpa-0.1.0-beta/icons ~/.local/share/
+cp -r chilpa-0.1.0/icons ~/.local/share/
 ```
+
+### macOS
+
+Download `Chilpa-0.1.0-macos-aarch64.dmg` or
+`Chilpa-0.1.0-macos-aarch64.zip` from the release. Open the DMG and drag
+Chilpa to Applications, or extract the ZIP and move `Chilpa.app` there.
+The packages target Apple Silicon and include Qt. The release manifest
+records the minimum macOS version required by the deployed runtime.
+
+The app is signed ad hoc and is not notarized with an Apple Developer
+identity. macOS may require approving it in Privacy & Security after the
+first attempt to open it. Updates on macOS are installed manually.
 
 ### Your data
 

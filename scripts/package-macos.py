@@ -94,7 +94,7 @@ def main():
     binary = args.binary.resolve(strict=True)
     architecture = subprocess.check_output(["lipo", "-archs", str(binary)], text=True).strip()
     if architecture != "arm64":
-        parser.error("This macOS beta package targets Apple Silicon (arm64).")
+        parser.error("This macOS package targets Apple Silicon (arm64).")
     if not shutil.which("macdeployqt"):
         parser.error("I require Qt's macdeployqt on PATH.")
     output = args.output.resolve()
