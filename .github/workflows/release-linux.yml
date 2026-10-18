@@ -65,7 +65,7 @@ jobs:
           } >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
-          toolchain: '1.90.0'
+          toolchain: '1.96.0'
       - name: Check the repository and update worker
         run: |
           tools/lint/fast
@@ -130,7 +130,7 @@ jobs:
           xcrun --find actool
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
-          toolchain: '1.90.0'
+          toolchain: '1.96.0'
       - name: Check release tooling and the macOS engine
         run: |
           python3 -m unittest discover -s scripts/tests

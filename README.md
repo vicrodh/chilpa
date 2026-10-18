@@ -9,9 +9,9 @@
 ### Hi-Fi music. Every source. Bit-perfect.
 
 <p>
-  <a href="https://github.com/vicrodh/chilpa/releases"><img src="https://img.shields.io/github/v/release/vicrodh/chilpa?include_prereleases&style=flat-square" alt="Release" /></a>
-  <a href="https://github.com/vicrodh/chilpa"><img src="https://img.shields.io/badge/platform-Linux-0b0b0b?style=flat-square&logo=linux" alt="Platform: Linux" /></a>
-  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/Rust-1.90-0b0b0b?style=flat-square&logo=rust" alt="Rust 1.90" /></a>
+  <a href="https://github.com/vicrodh/chilpa/releases"><img src="https://img.shields.io/github/v/release/vicrodh/chilpa?style=flat-square" alt="Release" /></a>
+  <a href="https://github.com/vicrodh/chilpa"><img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-0b0b0b?style=flat-square&logo=linux" alt="Platforms: Linux and macOS" /></a>
+  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/Rust-1.96-0b0b0b?style=flat-square&logo=rust" alt="Rust 1.96" /></a>
   <a href="https://www.qt.io"><img src="https://img.shields.io/badge/Qt-6.11-0b0b0b?style=flat-square&logo=qt" alt="Qt 6.11" /></a>
   <a href="https://doc.qt.io/qt-6/qmlapplications.html"><img src="https://img.shields.io/badge/UI-QML-0b0b0b?style=flat-square&logo=qt" alt="QML" /></a>
   <a href="https://github.com/vicrodh/chilpa-plugins-sdk"><img src="https://img.shields.io/badge/plugins-WebAssembly-0b0b0b?style=flat-square&logo=webassembly" alt="Plugins: WebAssembly" /></a>
@@ -50,8 +50,8 @@ Classical Nahuatl word for a **red wasp or hornet** (*avispa roja / avispón*).
 ## Status
 
 Chilpa 0.1.0 provides Linux x86_64 builds as an AppImage and a precompiled
-binary tarball, plus ZIP and DMG packages for macOS on Apple Silicon. Packages for popular package managers are
-planned for subsequent releases.
+binary tarball, plus ZIP and DMG packages for macOS on Apple Silicon.
+Packages for popular package managers are planned for subsequent releases.
 
 This first release ships in **English and Spanish**. More languages are on
 the way.
@@ -218,7 +218,7 @@ them; offline mode also blocks that traffic.
 
 ### Requirements
 
-- Rust 1.90 or newer.
+- Rust 1.96 or newer.
 - Qt 6.11 or newer with Qt Quick. Release builds use 6.11.2.
 - A C/C++ toolchain, CMake, pkg-config, libclang and NASM.
 - Development packages for ALSA, JACK, PulseAudio, PipeWire, D-Bus, OpenSSL,

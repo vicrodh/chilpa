@@ -1,7 +1,7 @@
 # Linux releases
 
 Linux x86_64 releases provide a binary tarball and an AppImage. The workflow builds
-on Ubuntu 24.04 with Qt 6.11.2 and Rust 1.90.0. The tarball needs system Qt and
+on Ubuntu 24.04 with Qt 6.11.2 and Rust 1.96.0. The tarball needs system Qt and
 audio libraries; the AppImage includes its Qt Quick and audio runtime.
 Packaging runs on Ubuntu 24.04 and checks every bundled ELF file against glibc 2.39.
 Checking the application alone misses newer requirements in Qt and its dependencies.
