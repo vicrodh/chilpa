@@ -22,6 +22,9 @@ ListModel {
         const section = (page.shelves || []).find(row => row.id === parts[1])
         const wanted = section ? (section.items || []).length : 18
         albums = limit > 0 ? Math.min(limit, wanted) : wanted
+        // As the bridge does: a source shelf is ready once it has records, stopped loading or failed.
+        const state = JSON.parse(Sources.page(key, 0) || "{}")
+        ready = albums > 0 || state.loading !== true || !!state.error
         const size = Math.max(1, columns)
         const shown = maxRows > 0 ? Math.min(albums, size * maxRows) : albums
         for (let first = 0; first < shown; first += size)
