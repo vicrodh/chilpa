@@ -67,6 +67,8 @@ TestCase {
                                       { source: "Another source", title: "Song", artist: "Band" }])
         const choices = findChild(modal.contentItem, "linkChoices")
         tryCompare(choices, "visible", true)
+        // The list sizes its scroll area to the rows on its next polish.
+        waitForRendering(modal.contentItem)
         const first = findChild(modal.contentItem, "linkChoice")
         verify(first)
         mouseClick(first)
