@@ -3,6 +3,7 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "../Components"
 
 // The command line shares window actions and keeps an invalid line editable.
 Rectangle {
@@ -16,6 +17,7 @@ Rectangle {
     property var history: []
     property int historyAt: 0
     property string draft: ""
+    property var helpLines: []
     readonly property alias input: field
     signal execute(var command)
     signal dismissed(var previous)
@@ -27,6 +29,7 @@ Rectangle {
         returnFocus = previous
         opened = true
         error = ""
+        helpLines = []
         history = JSON.parse(CommandLine.history() || "[]")
         historyAt = history.length
         field.text = initial
@@ -60,13 +63,19 @@ Rectangle {
     function submit() {
         const command = JSON.parse(CommandLine.prepare(field.text) || "{}")
         if (command.error) { error = command.error; return }
+        if (command.action === "commands.help") {
+            helpLines = command.lines || []
+            suggestions = []
+            field.text = ""
+            return
+        }
         dismiss()
         execute(command)
     }
     Column {
         anchors.bottom: parent.top
         width: parent.width
-        visible: bar.opened && bar.suggestions.length > 0 && bar.error === ""
+        visible: bar.opened && bar.suggestions.length > 0 && bar.error === "" && !bar.helpLines.length
         Repeater {
             model: bar.suggestions.slice(0, 6)
             Rectangle {
@@ -87,6 +96,12 @@ Rectangle {
                 TapHandler { onTapped: { field.text = modelData; field.forceActiveFocus() } }
             }
         }
+    }
+    Loader {
+        anchors.bottom: parent.top
+        width: parent.width
+        active: bar.opened && bar.helpLines.length > 0
+        sourceComponent: CommandHelp { lines: bar.helpLines; room: Math.max(0, bar.y) }
     }
     Text {
         anchors.left: parent.left
@@ -114,7 +129,7 @@ Rectangle {
         selectByMouse: true
         onTextEdited: { bar.updateSuggestions(); bar.historyAt = bar.history.length }
         Keys.onPressed: event => {
-            if (event.key === Qt.Key_Escape) bar.dismiss()
+            if (event.key === Qt.Key_Escape) { if (bar.helpLines.length) bar.helpLines = []; else bar.dismiss() }
             else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) bar.submit()
             else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) bar.complete(event.modifiers & Qt.ShiftModifier || event.key === Qt.Key_Backtab ? -1 : 1)
             else if (event.key === Qt.Key_Up) bar.recall(-1)

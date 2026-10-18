@@ -208,6 +208,7 @@ impl Chilpa {
         start_at: Option<std::time::Duration>,
         why: Relaunch,
     ) {
+        self.plugin_update_activity(true);
         // What is playing is about to be left: an episode keeps its place.
         self.keep_place(true);
         if self.casting.disconnecting {

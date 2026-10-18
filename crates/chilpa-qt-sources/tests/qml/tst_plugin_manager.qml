@@ -16,6 +16,26 @@ TestCase {
         function pluginCommand(action, input) { calls = calls.concat([[action, JSON.parse(input)]]) }
     }
     PluginManager { id: manager; width: 600; height: 600; page: backend }
+    function test_account_setup_polls_only_while_waiting() {
+        const plugin = {id: "account", name: "Account", native: true, settings: true, enabled: true}
+        backend.state = {installed: [plugin], settings_id: plugin.id, busy: false}
+        manager.read(); manager.settings(plugin)
+        const timer = findChild(manager, "accountSetupPoll")
+        verify(timer !== null)
+        for (const fixture of [
+            ["ready", undefined, false], ["failed", undefined, false],
+            ["expired", true, false], ["pending", false, false],
+            ["pending", true, true], ["pending", undefined, true], ["running", true, true]
+        ]) {
+            backend.state = {installed: [plugin], settings_id: plugin.id, busy: false,
+                form: {revision: 1, status: {phase: fixture[0]}, wizard: {waiting: fixture[1]},
+                    values: {}, form: {fields: [], actions: []}}}
+            manager.read()
+            tryCompare(timer, "running", fixture[2])
+        }
+        manager.detailsView.close()
+        tryCompare(timer, "running", false)
+    }
     function test_maintenance_only_runs_for_enabled_compatibility_settings() {
         const timer = findChild(manager, "pluginMaintenance")
         verify(timer !== null)

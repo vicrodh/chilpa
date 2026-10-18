@@ -20,6 +20,7 @@ pub(crate) const fn command(
     }
 }
 fn registry() -> impl Iterator<Item = &'static Command> {
+    const HELP: &[Command] = &[command("help", "commands.help", "[command]")];
     crate::queue::COMMANDS
         .iter()
         .chain(crate::ab_loop::COMMANDS)
@@ -27,6 +28,7 @@ fn registry() -> impl Iterator<Item = &'static Command> {
         .chain(crate::navigation::COMMANDS)
         .chain(crate::preferences::COMMANDS)
         .chain(crate::hotkeys::COMMANDS)
+        .chain(HELP)
 }
 pub(crate) fn for_action(id: &str) -> String {
     registry()
@@ -49,6 +51,7 @@ fn validate(line: &parser::Line) -> Result<(), String> {
     let arg = line.argument.as_str();
     let valid = match line.name.as_str() {
         "search" => !arg.is_empty(),
+        "help" => arg.is_empty() || registry().any(|command| command.name == arg),
         "seek" | "vol" => {
             let (n, relative) = parser::number(arg, line.name == "seek")?;
             line.name == "seek" || relative || (0.0..=100.0).contains(&n)
@@ -153,6 +156,12 @@ impl Chilpa {
             ));
         }
         let arg = line.argument.trim();
+        if line.name == "help" {
+            let lines: Vec<_> = registry().filter(|command| arg.is_empty() || command.name == arg)
+                .map(|command| json!({"usage":format!(":{}{}{}", command.name, if command.usage.is_empty() { "" } else { " " }, command.usage),
+                    "description":crate::hotkeys::command_label(command.action)})).collect();
+            return Ok(json!({"action":"commands.help","lines":lines}));
+        }
         if line.name == "set" {
             let (key, value) = arg.split_once(char::is_whitespace).unwrap();
             if key == "keymap" || key == "ui.keys.keymap" {
@@ -256,7 +265,7 @@ mod tests {
         let mut names = std::collections::HashSet::new();
         for c in registry() {
             assert!(names.insert(c.name));
-            assert!(crate::hotkeys::has_action(c.action), "{}", c.action);
+            assert!(c.action == "commands.help" || crate::hotkeys::has_action(c.action), "{}", c.action);
         }
     }
     #[test]
@@ -284,5 +293,15 @@ mod tests {
         ] {
             assert!(validate(&parser::parse(input).unwrap()).is_ok(), "{input}");
         }
+    }
+    #[test]
+    fn help_returns_console_content_and_can_select_one_command() {
+        let mut api = Chilpa::new();
+        let help = api.prepare_command(":help").unwrap();
+        assert_eq!(help["action"], "commands.help");
+        assert!(help["lines"].as_array().unwrap().iter().any(|line| line["usage"].as_str().unwrap().starts_with(":seek ")));
+        let topic = api.prepare_command(":help seek").unwrap();
+        assert_eq!(topic["lines"].as_array().unwrap().len(), 1);
+        assert!(api.prepare_command(":help unknown").is_err());
     }
 }

@@ -67,14 +67,6 @@ Rectangle {
             }
         }
         Text {
-            visible: !row.editing && (row.entry.command || "") !== ""
-            anchors.right: parent.right
-            text: row.entry.command || ""
-            font.family: Type.consoleFamily
-            font.pointSize: Type.meta
-            color: Theme.color.textTertiary
-        }
-        Text {
             objectName: "conflict"
             visible: row.recording && row.takenBy !== ""
             anchors.right: parent.right

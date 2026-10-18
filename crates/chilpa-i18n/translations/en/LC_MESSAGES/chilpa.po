@@ -345,6 +345,9 @@ msgstr ""
 msgid "Allow results from QQ Music."
 msgstr ""
 
+msgid "Allow updates with the same permissions while playback is stopped. Updates that need more permissions wait for review. Your accounts and settings are kept."
+msgstr "Allow updates with the same permissions while playback is stopped. Updates that need more permissions wait for review. Your accounts and settings are kept."
+
 msgid "Allowed network domains, separated by commas"
 msgstr "Allowed network domains, separated by commas"
 
@@ -425,6 +428,9 @@ msgstr ""
 
 msgid "Apply system tint to the icon"
 msgstr ""
+
+msgid "Apply the same grouping to every source. Turn this off to show one combined playlist list."
+msgstr "Apply the same grouping to every source. Turn this off to show one combined playlist list."
 
 msgid "Apply to the form"
 msgstr ""
@@ -530,6 +536,9 @@ msgstr "Automatic headroom lowers gain to leave room for EQ boosts."
 
 msgid "Automatic headroom only reduces gain. Compression has no makeup gain; ratio 1 disables it."
 msgstr ""
+
+msgid "Automatically update plugins"
+msgstr "Automatically update plugins"
 
 msgid "Awaiting approval"
 msgstr ""
@@ -742,6 +751,9 @@ msgstr ""
 
 msgid "Checking {source}…"
 msgstr ""
+
+msgid "Chilpa"
+msgstr "Chilpa"
 
 msgid "Chilpa Native Plugins"
 msgstr "Chilpa Native Plugins"
@@ -994,6 +1006,12 @@ msgstr ""
 
 msgid "Combined queue"
 msgstr ""
+
+msgid "Command help"
+msgstr "Command help"
+
+msgid "Command help · :help command for details · Esc to close"
+msgstr "Command help · :help command for details · Esc to close"
 
 msgid "Command line"
 msgstr ""
@@ -1858,6 +1876,9 @@ msgstr ""
 
 msgid "Group collections"
 msgstr ""
+
+msgid "Group playlists by source"
+msgstr "Group playlists by source"
 
 msgid "Group: A-Z"
 msgstr ""
@@ -2804,6 +2825,9 @@ msgstr ""
 msgid "No plugin catalog match for this artist"
 msgstr ""
 
+msgid "No plugin updates available."
+msgstr "No plugin updates available."
+
 msgid "No plugins installed"
 msgstr ""
 
@@ -3134,6 +3158,9 @@ msgstr ""
 msgid "Performers"
 msgstr ""
 
+msgid "Permission review required"
+msgstr "Permission review required"
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr ""
 
@@ -3286,6 +3313,9 @@ msgstr "Plugin repository URL"
 
 msgid "Plugin results were not included for this scene"
 msgstr "Plugin results were not included for this scene"
+
+msgid "Plugin updates"
+msgstr "Plugin updates"
 
 msgid "Plugin-reported quality"
 msgstr "Plugin-reported quality"
@@ -3951,9 +3981,6 @@ msgstr ""
 
 msgid "Sep"
 msgstr ""
-
-msgid "Separate source playlists"
-msgstr "Separate source playlists"
 
 msgid "September"
 msgstr ""
@@ -4749,11 +4776,23 @@ msgstr ""
 msgid "Update"
 msgstr ""
 
+msgid "Update all"
+msgstr "Update all"
+
+msgid "Update available"
+msgstr "Update available"
+
 msgid "Update cancelled."
 msgstr ""
 
+msgid "Update failed; the previous version is kept"
+msgstr "Update failed; the previous version is kept"
+
 msgid "Update ready"
 msgstr ""
+
+msgid "Updated"
+msgstr "Updated"
 
 msgid "Updated {}"
 msgstr ""
@@ -4847,6 +4886,9 @@ msgstr ""
 
 msgid "Wait for the queue to finish switching."
 msgstr ""
+
+msgid "Waiting for playback to stop"
+msgstr "Waiting for playback to stop"
 
 msgid "Waiting for the DAC to start playing…"
 msgstr ""

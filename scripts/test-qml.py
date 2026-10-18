@@ -11,7 +11,12 @@ import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
 test = Path(sys.argv[1]).resolve()
-qt = Path("/usr/lib64/qt6/bin")
+qtpaths = os.environ.get("QT_BIN_DIR")
+if qtpaths:
+    qt = Path(qtpaths)
+else:
+    executable = shutil.which("qtpaths6") or shutil.which("qtpaths")
+    qt = Path(executable).resolve().parent if executable else Path("/usr/lib64/qt6/bin")
 libexec = Path(subprocess.check_output([str(qt / "qtpaths"), "--query", "QT_INSTALL_LIBEXECS"], text=True).strip())
 with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
     temporary = Path(directory)

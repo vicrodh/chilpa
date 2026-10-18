@@ -232,7 +232,9 @@ P.Modal {
                 visible: details.mode === "permissions"
                 text: I18n.tr("Accept permissions and enable", I18n.rev)
                 enabled: !details.manager.view.busy && !!details.plugin.revision
-                onClicked: details.manager.command("enable", {id: details.plugin.id, permission_revision: details.plugin.revision})
+                onClicked: details.manager.command(details.plugin.local_update ? "install_local" : details.plugin.update ? "install_native" : "enable", details.plugin.update
+                    ? {id: details.plugin.id, repository: details.plugin.repository, path: details.plugin.path, permission_revision: details.plugin.revision}
+                    : {id: details.plugin.id, permission_revision: details.plugin.revision})
             }
         }
         P.PillButton { id: close; anchors.right: parent.right; text: I18n.tr("Close", I18n.rev); onClicked: details.close() }

@@ -63,8 +63,8 @@ TestCase {
             }
         }
         collect(sheet.contentItem)
-        verify(rows.every(row => (row.entry.shortcut || "") !== "" || (row.entry.command || "") !== ""))
-        verify(rows.some(row => row.entry.command === ":play"), "command-only actions stay in the guide")
+        verify(rows.every(row => (row.entry.shortcut || "") !== ""))
+        verify(!rows.some(row => row.entry.command === ":play"), "command-only actions belong to console help")
         verify(!rows.some(row => row.entry.id === "playback.2"))
         verify(groups.every(group => group.modelData.rows.length > 0))
         verify(!groups.some(group => group.modelData.label === "Vi"), "inactive groups leave no empty headings")

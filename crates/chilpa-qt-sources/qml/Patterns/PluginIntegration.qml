@@ -29,14 +29,6 @@ Column {
         Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Apply system tint to the icon", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
     }
     Row {
-        spacing: Metrics.gap12
-        Toggle {
-            checked: (integration.plugin.integration || {}).separate_playlists === true
-            onToggled: (on) => integration.command("integration", {id: integration.plugin.id, field: "separate_playlists", enabled: on})
-        }
-        Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Separate source playlists", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
-    }
-    Row {
         visible: (integration.plugin.library_kinds || []).indexOf("albums") >= 0
         spacing: Metrics.gap12
         Toggle {

@@ -15,4 +15,5 @@ QtObject {
     readonly property int updateWidth: Metrics.menuMaxWidth
     readonly property int updateDelay: 15000
     readonly property int updateInterval: 86400000
+    readonly property int notificationDot: 6
 }

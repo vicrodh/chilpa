@@ -9,6 +9,7 @@ QtObject {
     // A row of the sheet, and the least a key cap is wide in the editor.
     readonly property int keyRow: 36
     readonly property int keycapMin: 120
+    readonly property int shortcutCell: 280
     // The countdown of the timer is read again this often.
     readonly property int second: 1000
     // The window is still this long before its place is written down.

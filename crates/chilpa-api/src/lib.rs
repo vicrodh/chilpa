@@ -79,6 +79,9 @@ mod plugin_access;
 mod svg_icon;
 mod plugin_library;
 mod plugin_center;
+mod plugin_replacement;
+mod plugin_updates;
+mod plugin_notifications;
 mod source_integration;
 mod plugin_evidence;
 mod plugin_domains;
@@ -1231,6 +1234,7 @@ impl Chilpa {
         self.advance_desktop();
         self.advance_source_favorites();
         self.advance_plugins();
+        self.plugin_update_activity(self.now.playing || self.now.paused || self.listen.pending.is_some());
         self.advance_dsp();
         self.advance_search();
         self.advance_sources();

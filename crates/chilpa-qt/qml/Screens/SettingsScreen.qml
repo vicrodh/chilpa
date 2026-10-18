@@ -33,6 +33,7 @@ Item {
         section: page.section
     }
     Connections { target: I18n; function onRevChanged() { rows.refresh() } }
+    Connections { target: Prefs; function onRevChanged() { if (page.visible && page.section === "navigation") rows.refresh() } }
     Text {
         id: title
         x: Metrics.contentX

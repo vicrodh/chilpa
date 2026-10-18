@@ -7,7 +7,6 @@ use std::path::Path;
 #[derive(Default, Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct Preferences {
-    pub separate_playlists: bool,
     pub integrate_albums: bool,
     pub integrate_tracks: bool,
     pub integrate_home: bool,
@@ -68,7 +67,6 @@ pub(crate) fn save(root: &Path, id: &str, field: &str, enabled: bool) -> Result<
         || !root.join(id).join("manifest.json").is_file() { return Err("The plugin is not installed.".into()); }
     let mut preferences = read(root, id);
     match field {
-        "separate_playlists" => preferences.separate_playlists = enabled,
         "integrate_albums" => preferences.integrate_albums = enabled,
         "integrate_tracks" => preferences.integrate_tracks = enabled,
         "integrate_home" => preferences.integrate_home = enabled,
@@ -84,7 +82,17 @@ pub(crate) fn save(root: &Path, id: &str, field: &str, enabled: bool) -> Result<
     Ok(())
 }
 
+pub(crate) const GROUP_PLAYLISTS: &str = "navigation.groupSourcePlaylists";
+
 impl Chilpa {
+    pub fn group_playlists_by_source(&mut self, grouped: bool) {
+        self.remember_preference(GROUP_PLAYLISTS, if grouped { "true" } else { "false" });
+    }
+    pub(crate) fn playlist_grouping_setting(&mut self, key: &str, value: &str) -> bool {
+        if key != GROUP_PLAYLISTS || !matches!(value, "true" | "false") { return false; }
+        self.remember_preference(key, value);
+        true
+    }
     pub fn request_track_quality(&self, id: i64, path: &str) {
         if id < 0 { self.catalog.want_quality(id); }
         else if crate::source_opener::of_plugin(path).is_some() {
@@ -163,6 +171,7 @@ impl Chilpa {
         let servers: std::collections::HashSet<_> = self.library().and_then(|lib| lib.servers().ok()).unwrap_or_default()
             .into_iter().filter(|server| server.enabled).map(|server| server.source_id).collect();
         let root = Self::plugins_dir();
+        let group_sources = self.preference(GROUP_PLAYLISTS).as_deref() == Some("true");
         let mut playlists: Vec<Value> = self.playlists().into_iter().filter(|p| {
             if p.id < 0 { self.natives.is_native(&p.source) }
             else { p.mixed || active.contains(&p.source) || servers.contains(&p.source_id) }
@@ -174,7 +183,6 @@ impl Chilpa {
                 row["native_folder"] = card.metadata["native_folder"].clone();
             }
             row["source_icon"] = crate::plugin_icons::image_url(&root, &p.source).into();
-            row["separate"] = read(&root, &p.source).separate_playlists.into();
             row
         }).collect();
         let words: Vec<_> = query.to_lowercase().split_whitespace().map(str::to_owned).collect();
@@ -186,13 +194,13 @@ impl Chilpa {
             let folder_icon = crate::plugin_icons::folder_image_url(&root, &source);
             let editable = self.natives.edits_folders(&source);
             folder_sources.push(json!({"id":source,"name":name,"icon":icon,"folder_icon":folder_icon,
-                "separate":read(&root, &source).separate_playlists,"position":position,"editable":editable}));
+                "position":position,"editable":editable}));
             if let Some(shelf) = self.catalog.stored_shelf(&format!("{source} section:playlists")) {
                 if let Some(folders) = shelf.document["folders"].as_array() {
                     native_folders.extend(folders.iter().map(|folder| { let mut folder = folder.clone(); folder["source"] = source.clone().into(); folder["source_name"] = name.clone().into(); folder["source_icon"] = icon.clone().into(); folder["folder_icon"] = folder_icon.clone().into(); folder["editable"] = editable.into(); folder }));
                 }
             }
         }
-        json!({"playlists":playlists,"folders":self.playlist_folders(),"native_folders":native_folders,"folder_sources":folder_sources}).to_string()
+        json!({"group_sources":group_sources,"playlists":playlists,"folders":self.playlist_folders(),"native_folders":native_folders,"folder_sources":folder_sources}).to_string()
     }
 }

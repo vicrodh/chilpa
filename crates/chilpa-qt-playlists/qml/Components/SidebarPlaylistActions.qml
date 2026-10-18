@@ -25,6 +25,8 @@ Item {
             {text: I18n.tr("New folder", I18n.rev), action: "folder", glyph: Icons.folderPlus},
             {text: I18n.tr("Import playlist", I18n.rev), action: "import", glyph: Lucide.importGlyph, family: Lucide.font},
             {separator: true},
+            {text: I18n.tr("Group playlists by source", I18n.rev), action: "group", checked: actions.sidebar.grouped},
+            {separator: true},
             order("name", I18n.tr("Name", I18n.rev), false),
             order("recent", I18n.tr("Recent", I18n.rev), true),
             order("tracks", I18n.tr("Number of tracks", I18n.rev), true),
@@ -79,6 +81,7 @@ Item {
             case "create": actions.createPlaylist(); break
             case "import": Navigation.go("playlistImport", 0); break
             case "folder": folderDialog.show(0, "", "accent"); break
+            case "group": actions.sidebar.setGrouped(!actions.sidebar.grouped); break
             case "sort": if (item.value === actions.sidebar.order && item.value !== "custom") actions.sidebar.reverseOrder(); else actions.sidebar.setOrder(item.value); break
             case "refresh": Playlists.refresh(); break
             case "manage": Navigation.go("playlistManager", 0); break

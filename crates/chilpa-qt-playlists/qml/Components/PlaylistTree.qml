@@ -1,20 +1,14 @@
 import QtQml
 
 QtObject {
-    // I interleave integrated origins by name and keep each separate source together.
+    // One global preference controls source groups; folder membership stays unchanged.
     function rows(catalog, order, ascending, query, expanded, groupTitle) {
         const playlists = (catalog.playlists || []).slice(), folders = catalog.folders || []
         const native = catalog.native_folders || [], providers = catalog.folder_sources || []
         const direction = ascending ? 1 : -1, result = [], visited = new Set()
         const sourceIds = [...new Set(providers.map(p => p.id).concat(playlists.map(p => p.source), native.map(f => f.source)))].filter(Boolean)
         function provider(source) { return providers.find(p => p.id === source) || ({}) }
-        function separate(source) {
-            if (!source) return false
-            const info = provider(source)
-            if (typeof info.separate === "boolean") return info.separate
-            const rows = playlists.filter(p => p.source === source)
-            return rows.length ? rows.some(p => p.separate) : true
-        }
+        function separate(source) { return !!source && catalog.group_sources === true }
         function originRank(source) { return !source ? -1 : provider(source).position ?? sourceIds.indexOf(source) }
         function nameOrder(a, b) { return direction * a.name.localeCompare(b.name) || originRank(a.source) - originRank(b.source) || String(a.id || a.ref).localeCompare(String(b.id || b.ref)) }
         function playlistOrder(a, b) {
@@ -44,6 +38,7 @@ QtObject {
                 for (const f of folders) {
                     const children = chosen.filter(p => p.folder_id === f.id)
                     if (scope !== null && !children.length) continue
+                    if (catalog.group_sources && scope === null && !children.length && playlists.some(p => p.folder_id === f.id)) continue
                     if (query && !children.length && !f.name.toLowerCase().includes(query.toLowerCase())) continue
                     entries.push({id:f.id,name:f.name,source:scope || "",localFolder:f,children:children})
                 }
@@ -75,14 +70,22 @@ QtObject {
                 if (nativeParent === parent || !parent && orphan) result.push(playlist(p, depth))
             }
         }
-        branch(null, "", 0)
+        if (!catalog.group_sources) branch(null, "", 0)
+        else if (playlists.some(p => !p.source) || folders.some(f => !playlists.some(p => p.folder_id === f.id) || playlists.some(p => !p.source && p.folder_id === f.id))) {
+            const key = "source:local", isOpen = query !== "" || expanded[key] !== false
+            result.push(Object.assign({}, base, {id:key,rowKind:2,name:groupTitle || "Playlists",expandKey:key,expanded:isOpen,
+                tracks:playlists.filter(p => !p.source).length}))
+            if (isOpen) branch(null, "", 1)
+        }
         sourceIds.sort((a,b) => originRank(a) - originRank(b) || a.localeCompare(b))
         for (const source of sourceIds.filter(separate)) {
             if (!playlists.some(p => p.source === source) && !native.some(f => f.source === source)) continue
             const first = playlists.find(p => p.source === source), info = provider(source)
-            result.push(Object.assign({}, base, {id:"source:" + source,rowKind:2,name:groupTitle || "Playlists",source:source,sourceName:info.name || first?.provider || source,
-                sourceIcon:info.icon || first?.source_icon || "",folderId:nextFolderId--}))
-            branch(source, "", 0)
+            const key = "source:" + source, isOpen = query !== "" || expanded[key] !== false
+            result.push(Object.assign({}, base, {id:key,rowKind:2,name:info.name || first?.provider || source,source:source,sourceName:info.name || first?.provider || source,
+                sourceIcon:info.icon || first?.source_icon || "",folderId:nextFolderId--,expandKey:key,expanded:isOpen,
+                tracks:playlists.filter(p => p.source === source).length}))
+            if (isOpen) branch(source, "", 1)
         }
         return result
     }

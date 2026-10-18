@@ -5,4 +5,5 @@
 pub mod bridge {
     pub mod about;
     pub mod updates;
+    pub mod plugin_updates;
 }

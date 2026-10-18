@@ -59,13 +59,23 @@ impl PreparedPlugin {
     /// replacement so a running worker never observes partially changed code.
     /// The registry will still mark this installation as awaiting approval.
     pub fn install_new(self, plugins: &Path) -> Result<String, String> {
+        let id = self.manifest.id.clone();
+        self.place(plugins, false)?.commit()?;
+        Ok(id)
+    }
+
+    pub(crate) fn replace(self, plugins: &Path) -> Result<crate::plugin_replacement::Replacement, String> {
+        self.place(plugins, true)
+    }
+
+    fn place(self, plugins: &Path, replacing: bool) -> Result<crate::plugin_replacement::Replacement, String> {
         // Revalidate because callers may edit the permission proposal.
         let encoded = serde_json::to_vec_pretty(&self.manifest).map_err(|_| "The plugin descriptor is invalid.")?;
         let manifest = Manifest::parse_for_runtime(std::str::from_utf8(&encoded).map_err(|_| "The plugin descriptor is invalid.")?, Runtime::Bridge)
             .map_err(|error| error.to_string())?;
         std::fs::create_dir_all(plugins).map_err(|_| "The plugin directory could not be created.")?;
         let target = plugins.join(&manifest.id);
-        if target.symlink_metadata().is_ok() { return Err("This plugin is already installed.".into()); }
+        if !replacing && target.symlink_metadata().is_ok() { return Err("This plugin is already installed.".into()); }
         let temporary = tempfile::Builder::new().prefix(".install-").tempdir_in(plugins)
             .map_err(|_| "The installation could not be prepared.")?;
         for path in self.package.files() {
@@ -79,9 +89,8 @@ impl PreparedPlugin {
         write_new(&temporary.path().join("origin.json"), &serde_json::to_vec_pretty(&self.origin).map_err(|_| "The package origin could not be saved.")?)?;
         write_new(&temporary.path().join("manifest.json"), &encoded)?;
         if let Some(icon) = &self.icon { write_new(&temporary.path().join(format!(".host-icon.{}", icon.extension)), &icon.bytes)?; }
-        if target.symlink_metadata().is_ok() { return Err("This plugin is already installed.".into()); }
-        std::fs::rename(temporary.path(), &target).map_err(|_| "The installation could not be committed.")?;
-        Ok(manifest.id)
+        if !replacing && target.symlink_metadata().is_ok() { return Err("This plugin is already installed.".into()); }
+        crate::plugin_replacement::Replacement::begin(plugins, &manifest.id, temporary.path())
     }
 }
 
