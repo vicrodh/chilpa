@@ -150,6 +150,11 @@ TestCase {
         const page = createTemporaryObject(pageMaker, this)
         rendered(page)
         const row = findText(page, "Saxon")
+        const above = findText(page, "EMI")
+        verify(row && above)
+        // The sidebar places its rows on a later polish; a click before it
+        // lands on the label row above.
+        tryVerify(() => row.mapToItem(page, 0, 0).y >= above.mapToItem(page, 0, 0).y + above.height, 3000)
         mouseClick(row)
         compare(Navigation.went, ["source", "fixture native:artist:2"])
         mouseClick(findText(page, "Judas Priest"))
