@@ -213,6 +213,7 @@ pub const SECTIONS: &[Section] = &[
                 title: Chilpa::mark("Playlists"),
                 settings: &[
                     setting("navigation.playlistArtwork", Chilpa::mark("Playlist artwork in the sidebar"), Chilpa::mark("Use the playlist icon or a cover collage."), Control::Segmented),
+                    setting(crate::source_integration::GROUP_PLAYLISTS, Chilpa::mark("Group playlists by source"), Chilpa::mark("Apply the same grouping to every source. Turn this off to show one combined playlist list."), Control::Toggle),
                     setting("navigation.folderColors", Chilpa::mark("Folder colors in the sidebar"), Chilpa::mark("Show each playlist folder in its chosen color."), Control::Toggle),
                 ],
             },

@@ -345,6 +345,9 @@ msgstr "Permitir resultados de NetEase."
 msgid "Allow results from QQ Music."
 msgstr "Permitir resultados de QQ Music."
 
+msgid "Allow updates with the same permissions while playback is stopped. Updates that need more permissions wait for review. Your accounts and settings are kept."
+msgstr "Permite actualizar plugins con los mismos permisos cuando la reproducción está detenida. Los permisos adicionales requieren revisión. Se conservan tus cuentas y ajustes."
+
 msgid "Allowed network domains, separated by commas"
 msgstr "Dominios de red permitidos, separados por comas"
 
@@ -425,6 +428,9 @@ msgstr "Aplicar perfil"
 
 msgid "Apply system tint to the icon"
 msgstr "Aplicar el color del sistema al icono"
+
+msgid "Apply the same grouping to every source. Turn this off to show one combined playlist list."
+msgstr "Aplica la misma agrupación a todas las fuentes. Desactívala para mostrar una sola lista de playlists."
 
 msgid "Apply to the form"
 msgstr "Aplicar al formulario"
@@ -530,6 +536,9 @@ msgstr "La reducción automática baja la ganancia para dejar margen a los realc
 
 msgid "Automatic headroom only reduces gain. Compression has no makeup gain; ratio 1 disables it."
 msgstr "El margen automático solo reduce ganancia. La compresión no añade ganancia de compensación; una relación de 1 la desactiva."
+
+msgid "Automatically update plugins"
+msgstr "Actualizar plugins automáticamente"
 
 msgid "Awaiting approval"
 msgstr "Espera aprobación"
@@ -742,6 +751,9 @@ msgstr "La búsqueda en las fuentes seleccionadas puede tardar unos minutos."
 
 msgid "Checking {source}…"
 msgstr "Consultando {source}…"
+
+msgid "Chilpa"
+msgstr "Chilpa"
 
 msgid "Chilpa Native Plugins"
 msgstr "Plugins nativos de Chilpa"
@@ -994,6 +1006,12 @@ msgstr "Combinar colas"
 
 msgid "Combined queue"
 msgstr "Cola combinada"
+
+msgid "Command help"
+msgstr "Ayuda de comandos"
+
+msgid "Command help · :help command for details · Esc to close"
+msgstr "Ayuda de comandos · :help comando para ver detalles · Esc para cerrar"
 
 msgid "Command line"
 msgstr "Línea de comandos"
@@ -1858,6 +1876,9 @@ msgstr "Agrupar versiones de un álbum"
 
 msgid "Group collections"
 msgstr "Agrupar colecciones"
+
+msgid "Group playlists by source"
+msgstr "Agrupar playlists por fuente"
 
 msgid "Group: A-Z"
 msgstr "Agrupar: A-Z"
@@ -2804,6 +2825,9 @@ msgstr "Todavía no hay playlists."
 msgid "No plugin catalog match for this artist"
 msgstr "Este artista no aparece en el catálogo de ningún plugin"
 
+msgid "No plugin updates available."
+msgstr "No hay actualizaciones de plugins disponibles."
+
 msgid "No plugins installed"
 msgstr "No hay plugins instalados"
 
@@ -3134,6 +3158,9 @@ msgstr "Bit-perfect por aplicación (cliente de PipeWire)"
 msgid "Performers"
 msgstr "Intérpretes"
 
+msgid "Permission review required"
+msgstr "Requiere revisar los permisos"
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "Fijar el DAC y sus frecuencias (WirePlumber)"
 
@@ -3286,6 +3313,9 @@ msgstr "URL del repositorio de plugins"
 
 msgid "Plugin results were not included for this scene"
 msgstr "No se incluyeron resultados de plugins en esta escena"
+
+msgid "Plugin updates"
+msgstr "Actualizaciones de plugins"
 
 msgid "Plugin-reported quality"
 msgstr "Calidad declarada por el plugin"
@@ -3951,9 +3981,6 @@ msgstr "Enviar a ListenBrainz"
 
 msgid "Sep"
 msgstr "septiembre"
-
-msgid "Separate source playlists"
-msgstr "Separar las playlists de esta fuente"
 
 msgid "September"
 msgstr "septiembre"
@@ -4749,11 +4776,23 @@ msgstr "Próximos"
 msgid "Update"
 msgstr "Actualizar"
 
+msgid "Update all"
+msgstr "Actualizar todos"
+
+msgid "Update available"
+msgstr "Actualización disponible"
+
 msgid "Update cancelled."
 msgstr "Actualización cancelada."
 
+msgid "Update failed; the previous version is kept"
+msgstr "La actualización falló; se conserva la versión anterior"
+
 msgid "Update ready"
 msgstr "Actualización lista"
+
+msgid "Updated"
+msgstr "Actualizado"
 
 msgid "Updated {}"
 msgstr "Actualizado {}"
@@ -4847,6 +4886,9 @@ msgstr "Volumen {}%"
 
 msgid "Wait for the queue to finish switching."
 msgstr "Espera a que termine el cambio de cola."
+
+msgid "Waiting for playback to stop"
+msgstr "Esperando a que se detenga la reproducción"
 
 msgid "Waiting for the DAC to start playing…"
 msgstr "Esperando a que el DAC empiece a sonar…"

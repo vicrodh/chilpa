@@ -18,11 +18,29 @@ Item {
     function setOrder(value) { order = value; ascending = true; SettingsModel.keep("ui.playlists.order", value); SettingsModel.keep("ui.playlists.ascending", "true"); reload() }
     function reverseOrder() { ascending = !ascending; SettingsModel.keep("ui.playlists.ascending", String(ascending)); reload() }
     property var rows: []
+    property bool grouped: false
+    function setGrouped(value) { PlaylistManager.groupSources(value); reload() }
     PlaylistTree { id: playlistTree }
     KeyedModel { id: stableRows; items: section.rows }
-    property var expanded: ({})
+    property var expanded: restoredGroups()
+    function restoredGroups() {
+        try {
+            const keys = JSON.parse(SettingsModel.kept("ui.playlists.collapsedSources") || "[]")
+            const result = {}
+            if (Array.isArray(keys)) for (const key of keys.slice(0, 128))
+                if (typeof key === "string" && key.startsWith("source:") && key.length <= 256) result[key] = false
+            return result
+        } catch (e) { return ({}) }
+    }
+    function toggleGroup(key) {
+        expanded[key] = expanded[key] === false
+        const closed = Object.keys(expanded).filter(k => k.startsWith("source:") && expanded[k] === false).slice(0, 128)
+        SettingsModel.keep("ui.playlists.collapsedSources", JSON.stringify(closed))
+        reload()
+    }
     function reload() {
         const catalog = JSON.parse(Playlists.catalogJson(filter.text))
+        grouped = catalog.group_sources === true
         rows = playlistTree.rows(catalog, order, ascending, filter.text, expanded, I18n.tr("Playlists", I18n.rev))
     }
     function toggleFolder(id) { expanded[id] = !expanded[id]; reload() }
@@ -34,11 +52,13 @@ Item {
     Component.onCompleted: reload()
     Connections { target: Library; function onRemoteRevChanged() { section.reload() } function onRevChanged() { section.reload() } }
     Connections { target: Playlists; function onRevChanged() { section.reload() } }
+    Connections { target: Prefs; function onRevChanged() { section.reload() } }
 
     Item {
         id: head
         width: parent.width
         height: Metrics.button24
+        TapHandler { acceptedButtons: Qt.RightButton; onTapped: event => actions.head(event.position.x, head.height) }
 
         Text {
             x: Metrics.navItemPadding
@@ -97,7 +117,19 @@ Item {
             width: ListView.view.width - x
             height: Metrics.playlistRowHeight
             sourceComponent: entry.rowKind === 2 ? groupDelegate : entry.rowKind === 1 ? folderDelegate : playlistDelegate
-            Component { id: groupDelegate; PlaylistGroupHeader { title:host.entry.name; sourceName:host.entry.sourceName; sourceIcon:host.entry.sourceIcon } }
+            Component {
+                id: groupDelegate
+                PlaylistGroupHeader {
+                    width: host.width
+                    height: host.height
+                    title: host.entry.name
+                    sourceName: host.entry.sourceName
+                    sourceIcon: host.entry.sourceIcon
+                    count: host.entry.tracks
+                    expanded: host.entry.expanded
+                    onToggled: section.toggleGroup(host.entry.expandKey)
+                }
+            }
 
             Component {
                 id: folderDelegate

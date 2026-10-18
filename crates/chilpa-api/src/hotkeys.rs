@@ -11,7 +11,6 @@
 
 pub(crate) const COMMANDS: &[crate::commands::Command] = &[
     crate::commands::command("like", "playback.favorite", ""),
-    crate::commands::command("help", "ui.showShortcuts", ""),
 ];
 
 use crate::Chilpa;
@@ -204,6 +203,9 @@ const ACTIONS: &[Action] = &[
 const THROUGH_TEXT: [&str; 7] = ["nav.search", "nav.settings", "ui.openLink", "nav.nextTab", "nav.previousTab", "queue.next", "queue.previous"];
 
 pub(crate) fn has_action(id: &str) -> bool { known(id).is_some() }
+pub(crate) fn command_label(id: &str) -> String {
+    known(id).map(|action| i18n::t(action.label)).unwrap_or_else(|| i18n::t("Command help"))
+}
 
 fn known(id: &str) -> Option<&'static Action> {
     ACTIONS.iter().find(|a| a.id == id)

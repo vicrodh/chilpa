@@ -1,0 +1,86 @@
+name: Checks
+
+on:
+  push:
+    branches: [pre-release]
+  pull_request:
+    branches: [pre-release, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-26]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pkg-config clang libclang-dev cmake nasm \
+            libasound2-dev libjack-jackd2-dev libpulse-dev libpipewire-0.3-dev libdbus-1-dev libssl-dev
+      - if: runner.os == 'macOS'
+        run: brew install pkg-config cmake
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: '1.96.0'
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: engine-${{ runner.os }}-rust196-${{ hashFiles('Cargo.lock') }}
+      - name: Test engine and release tooling
+        run: |
+          python3 -m unittest discover -s scripts/tests
+          cargo test --locked -q -p chilpa-library --lib
+          cargo test --locked -q -p chilpa-core --lib
+          cargo test --locked -q -p chilpa-api --lib
+          cargo test --locked -q -p chilpa-bwrap --lib
+
+  interface:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      QT_VERSION: '6.11.2'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install Qt test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config libgl1-mesa-dev libegl1-mesa-dev \
+            libxkbcommon-dev libdbus-1-3 libxcb-cursor0 python3-venv ripgrep hunspell hunspell-en-us hunspell-es
+          python3 -m venv "$RUNNER_TEMP/qt-installer"
+          "$RUNNER_TEMP/qt-installer/bin/python" -m pip install aqtinstall==3.3.0
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        id: qt-cache
+        with:
+          path: ${{ runner.temp }}/Qt
+          key: qml-linux-qt-${{ env.QT_VERSION }}
+      - if: steps.qt-cache.outputs.cache-hit != 'true'
+        run: '"$RUNNER_TEMP/qt-installer/bin/python" -m aqt install-qt linux desktop "$QT_VERSION" linux_gcc_64 --outputdir "$RUNNER_TEMP/Qt"'
+      - name: Check interface and repository rules
+        run: |
+          export QT_BIN_DIR="$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/bin"
+          export LD_LIBRARY_PATH="$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          export PKG_CONFIG_PATH="$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+          tools/lint/fast
+          while IFS= read -r test; do python3 scripts/test-qml.py "$test"; done < <(rg --files crates -g 'tst_*.qml' | sort)

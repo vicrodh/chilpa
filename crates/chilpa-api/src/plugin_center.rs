@@ -14,6 +14,8 @@ pub(crate) struct PluginCenter {
     operation: Arc<Mutex<String>>,
     removed: Arc<Mutex<Vec<String>>>,
     refreshed: Arc<Mutex<Vec<String>>>,
+    inbox: Arc<Mutex<crate::plugin_notifications::Inbox>>,
+    playback: Arc<AtomicBool>,
 }
 
 impl PluginCenter {
@@ -34,6 +36,10 @@ impl PluginCenter {
         let deleted = removed.clone();
         let refreshed = Arc::new(Mutex::new(Vec::new()));
         let reload = refreshed.clone();
+        let inbox = Arc::new(Mutex::new(crate::plugin_notifications::Inbox::default()));
+        let notifications = inbox.clone();
+        let playback = Arc::new(AtomicBool::new(true));
+        let playing = playback.clone();
         let completions = Arc::downgrade(&commands);
         std::thread::spawn(move || {
             let launcher = plugins.lock().ok().and_then(|host| host.compatibility_launcher());
@@ -41,7 +47,43 @@ impl PluginCenter {
                 launcher.and_then(|launcher| launcher.inspection_revision()));
             let mut pending: Option<PreparedPlugin> = None;
             let mut state = json!({"repositories":[],"catalog":[],"installed":[],"form":null,"proposal":null});
-            for (action, input) in receiver {
+            let mut updates = crate::plugin_notifications::Inbox::load(&root.join(".repositories"));
+            *notifications.lock().unwrap() = updates.clone();
+            loop {
+                let (action, input) = match receiver.recv_timeout(std::time::Duration::from_secs(60)) {
+                    Ok(command) => command,
+                    Err(mpsc::RecvTimeoutError::Timeout) => {
+                        if active.compare_exchange(0, 1, Ordering::AcqRel, Ordering::Acquire).is_err() { continue; }
+                        ("updates_tick".to_string(), json!({}))
+                    }
+                    Err(mpsc::RecvTimeoutError::Disconnected) => break,
+                };
+                if action.starts_with("updates_") {
+                    let result = (|| {
+                        let repositories = PluginRepositories::load(root.join(".repositories"))?;
+                        if matches!(action.as_str(), "updates_automatic" | "updates_read" | "updates_apply" | "updates_app_read") {
+                            updates.action(&action, &input, &root.join(".repositories"))?;
+                        }
+                        let checked = action == "updates_check" || updates.due();
+                        if checked { let _ = updates.check(&root, &plugins, &repositories); }
+                        let applied = updates.apply(&root, &plugins, &repositories, &playing, &mut state)?;
+                        if checked || applied {
+                            run("filter", &json!({}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing)?;
+                            let states = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.catalog_states();
+                            catalog.set_source_states(states);
+                            changed.store(true, Ordering::Release);
+                        }
+                        Ok::<(), String>(())
+                    })();
+                    *notifications.lock().unwrap() = updates.clone();
+                    if let Err(error) = result { state["error"] = error.into(); }
+                    *shared.lock().unwrap() = state.clone();
+                    if action != "updates_tick" {
+                        current.lock().unwrap().clear(); visible.store(false, Ordering::Release);
+                    }
+                    active.fetch_sub(1, Ordering::AcqRel);
+                    continue;
+                }
                 if action == "native_settings_result" {
                     crate::plugin_evidence::log_event(&root.join(".repositories"), input["action"].as_str().unwrap_or("settings"),
                         input.get("form").is_some(), std::time::Duration::from_millis(input["elapsed_ms"].as_u64().unwrap_or(0)));
@@ -96,7 +138,7 @@ impl PluginCenter {
                     state["settings_loading_id"] = Value::Null;
                 }
                 let started = std::time::Instant::now();
-                let result = run(&action, &input, &root, &plugins, &mut pending, &mut state, &mut evidence);
+                let result = run(&action, &input, &root, &plugins, &mut pending, &mut state, &mut evidence, &playing);
                 if result.is_ok() && matches!(action.as_str(), "enable" | "disable" | "install" | "install_native" | "install_local" | "restart" | "grant_network") {
                     let states = plugins.lock().ok().map(|host| host.catalog_states());
                     if let Some(states) = states { catalog.set_source_states(states); }
@@ -127,10 +169,10 @@ impl PluginCenter {
                 active.fetch_sub(1, Ordering::AcqRel);
             }
         });
-        Self { commands, view, busy, foreground, operation, library_dirty, removed, refreshed }
+        Self { commands, view, busy, foreground, operation, library_dirty, removed, refreshed, inbox, playback }
     }
     fn command(&self, action: &str, input: Value) {
-        let background = matches!(action, "tick" | "downloads_tick");
+        let background = matches!(action, "tick" | "downloads_tick" | "updates_tick");
         if background {
             if self.foreground.load(Ordering::Acquire) || self.busy.compare_exchange(0, 1, Ordering::AcqRel, Ordering::Acquire).is_err() { return; }
         } else {
@@ -155,8 +197,15 @@ impl PluginCenter {
 }
 
 impl Chilpa {
-    pub fn plugin_center_json(&mut self) -> String {
-        self.advance_plugins();
+    pub fn plugin_notifications(&mut self, revision: u64) -> Option<(u64, String)> {
+        self.ensure_plugin_center();
+        self.plugin_center.as_ref()?.inbox.lock().ok()?.snapshot(revision)
+    }
+    pub fn plugin_updates_command(&mut self, action: &str, input: &str) {
+        self.ensure_plugin_center();
+        self.plugin_center_command(action, input);
+    }
+    fn ensure_plugin_center(&mut self) {
         if self.plugin_center.is_none() {
             if self.plugins.is_none() { self.start_plugins(); }
             if let Some(plugins) = &self.plugins {
@@ -165,6 +214,13 @@ impl Chilpa {
                 self.plugin_center = Some(center);
             }
         }
+    }
+    pub(crate) fn plugin_update_activity(&self, playing: bool) {
+        if let Some(center) = &self.plugin_center { center.playback.store(playing, Ordering::Release); }
+    }
+    pub fn plugin_center_json(&mut self) -> String {
+        self.advance_plugins();
+        self.ensure_plugin_center();
         self.advance_plugin_changes();
         self.plugin_center.as_ref().map(|center| center.snapshot().to_string()).unwrap_or_else(|| "{}".into())
     }
@@ -190,7 +246,7 @@ impl Chilpa {
 }
 
 fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<Plugins>>,
-    pending: &mut Option<PreparedPlugin>, state: &mut Value, evidence: &mut crate::plugin_evidence::Evidence) -> Result<(), String> {
+    pending: &mut Option<PreparedPlugin>, state: &mut Value, evidence: &mut crate::plugin_evidence::Evidence, playing: &AtomicBool) -> Result<(), String> {
     let mut repositories = PluginRepositories::load(root.join(".repositories"))?;
     let id = input["id"].as_str().unwrap_or("");
     let mut failure = None;
@@ -223,34 +279,18 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         }
         "install" => {
             let prepared = pending.take().ok_or("Inspect a package before installing it.")?;
-            let id = prepared.install_new(root)?;
-            let mut plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
-            plugins.reload_one(&id);
-            plugins.approve(&id)?;
-            plugins.reload_one(&id);
+            if root.join(&prepared.manifest().id).exists() && playing.load(Ordering::Acquire) { return Err("Stop playback before updating a plugin.".into()); }
+            let mut host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
+            crate::plugin_updates::compatible(root, &mut host, prepared, true)?;
             state["proposal"] = Value::Null;
         }
-        "install_native" => {
-            // Downloaded and checked against the catalog's SHA-256, then put in
-            // place switched off: turning it on is where it is approved.
-            let repo = input["repository"].as_str().unwrap_or("");
-            let entry = repositories.cached(repo)?.into_iter().find(|entry| entry.id == id && entry.adapter == "native")
-                .ok_or("The catalog entry is missing.")?;
-            let package = repositories.stage(repo, id)?;
-            crate::native_install::check(&package, &entry)?;
-            let mut host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
-            host.revoke(&entry.id)?;
-            host.reload_one(&entry.id);
-            let installed = crate::native_install::install(root, &package, &entry, repo)?;
-            host.reload_one(&installed);
-            state["approval"] = permission_review(root, &installed)?;
-        }
+        "install_native" => crate::plugin_updates::native(root, plugins, &repositories, input, state, false, playing)?,
         "install_local" => {
             let address = input["path"].as_str().unwrap_or("");
             let path = url::Url::parse(address).ok().and_then(|url| url.to_file_path().ok())
                 .ok_or_else(|| chilpa_i18n::t("Choose a local ZIP file."))?;
             let package = crate::StagedPackage::local(&root.join(".repositories/staging"), &path)?;
-            let (_, manifest) = crate::native_install::inspect(&package)?;
+            let (package_root, manifest) = crate::native_install::inspect(&package)?;
             let entry = chilpa_plugin::catalog::CatalogEntry {
                 id: manifest.id.clone(), name: manifest.name.clone(), version: manifest.version.clone(),
                 description: manifest.description.clone(), category: String::new(), author: String::new(),
@@ -259,12 +299,24 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                 adapter: "native".into(), problem: String::new(),
             };
             let mut host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
-            // A local replacement needs approval again, even with the same manifest.
-            host.revoke(&manifest.id)?;
-            host.reload_one(&manifest.id);
-            let installed = crate::native_install::install(root, &package, &entry, "local")?;
-            host.reload_one(&installed);
-            state["approval"] = permission_review(root, &installed)?;
+            let installed = crate::native_install::installed_version(root, &manifest.id);
+            if installed.as_ref().is_some_and(|version| !crate::plugin_updates::newer(&manifest.version, version)) {
+                return Err("Choose a newer plugin version.".into());
+            }
+            if installed.is_some() && playing.load(Ordering::Acquire) { return Err("Stop playback before updating a plugin.".into()); }
+            let needs_review = installed.is_some() && !host.covers_update(&manifest);
+            use sha2::Digest;
+            let revision = format!("{:x}", sha2::Sha256::digest(std::fs::read(package_root.join("manifest.json")).map_err(|_| "The manifest could not be read.")?));
+            let reviewed = input["permission_revision"].as_str() == Some(revision.as_str());
+            if needs_review && !reviewed {
+                state["approval"] = json!({"id":manifest.id,"name":manifest.name,"description":manifest.description,"version":manifest.version,
+                    "permissions":manifest.capabilities.iter().map(|cap|cap.describe()).collect::<Vec<_>>(),"revision":revision,
+                    "update":true,"local_update":true,"path":address});
+            } else {
+                let enabled = host.enabled(&manifest.id);
+                crate::plugin_updates::activate_native(root, &mut host, &package, &entry, "local", needs_review && reviewed, enabled)?;
+                state["approval"] = if installed.is_none() { permission_review(root, &manifest.id)? } else { Value::Null };
+            }
             state["form"] = Value::Null;
         }
         "restart" => {
@@ -278,6 +330,16 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             let mut plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
             if action == "enable" { plugins.approve(id)?; state["approval"] = Value::Null; } else { plugins.revoke(id)?; }
             plugins.reload_one(id);
+            if action == "enable" && !plugins.update_healthy(id, true) {
+                plugins.stop_for_update(id);
+                if crate::plugin_replacement::rollback_previous(root, id)? {
+                    plugins.restore_update(id);
+                    return Err("The plugin could not start. The previous version was restored.".into());
+                }
+                plugins.revoke(id)?;
+                plugins.reload_one(id);
+                return Err("The plugin could not start.".into());
+            }
             state["form"] = Value::Null;
         }
         "uninstall" => {
@@ -408,7 +470,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     for entry in repositories.cached("native")? {
         if entry.adapter != "native" { continue; }
         let installed = crate::native_install::installed_version(root, &entry.id);
-        if installed.as_deref() == Some(entry.version.as_str()) { continue; }
+        if installed.as_ref().is_some_and(|version| !crate::plugin_updates::newer(&entry.version, version)) { continue; }
         let mut row = json!(entry);
         row["repository_id"] = "native".into();
         row["update"] = installed.is_some().into();
@@ -421,7 +483,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             // to update when the repository has a newer version.
             if entry.adapter == "native" {
                 let installed = crate::native_install::installed_version(root, &entry.id);
-                if installed.as_deref() == Some(entry.version.as_str()) { continue; }
+                if installed.as_ref().is_some_and(|version| !crate::plugin_updates::newer(&entry.version, version)) { continue; }
                 let mut row = json!(entry);
                 row["repository_id"] = repository.id.clone().into();
                 row["update"] = installed.is_some().into();
@@ -431,7 +493,8 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             if !compatibility_available { continue; }
             let category = if entry.category.is_empty() { "uncategorized" } else { &entry.category };
             categories.insert(category.to_owned());
-            if installed_ids.iter().any(|origin| origin["repository"] == repository.id && origin["catalog_entry"]["id"] == entry.id) { continue; }
+            if installed_ids.iter().any(|origin| origin["repository"] == repository.id && origin["catalog_entry"]["id"] == entry.id
+                && !crate::plugin_updates::newer(&entry.version, origin["catalog_entry"]["version"].as_str().unwrap_or(""))) { continue; }
             let inspection = evidence.get(&repository.id, &entry);
             let tab = if !entry.problem.is_empty() || inspection.is_some_and(|record| record["valid"] == false) { "incompatible" }
                 else if inspection.is_some_and(|record| record["valid"] == true) { "valid" } else { "uninspected" };
@@ -528,7 +591,7 @@ mod tests {
         let (commands, received) = mpsc::sync_channel(2);
         let center = PluginCenter { commands: Arc::new(commands), view: Arc::new(Mutex::new(json!({}))),
             busy: Arc::new(AtomicUsize::new(0)), foreground: Arc::new(AtomicBool::new(false)), library_dirty: Arc::new(AtomicBool::new(false)), removed: Arc::new(Mutex::new(Vec::new())), refreshed: Arc::new(Mutex::new(Vec::new())),
-            operation: Arc::new(Mutex::new(String::new())) };
+            operation: Arc::new(Mutex::new(String::new())), inbox: Arc::new(Mutex::new(Default::default())), playback: Arc::new(AtomicBool::new(false)) };
         center.command("tick", json!({"id":"guest"}));
         assert_eq!(center.snapshot()["busy"], false);
         assert_eq!(center.snapshot()["working"], true);
@@ -676,7 +739,7 @@ mod tests {
 
 }
 
-fn permission_review(root: &std::path::Path, id: &str) -> Result<Value, String> {
+pub(crate) fn permission_review(root: &std::path::Path, id: &str) -> Result<Value, String> {
     if id.is_empty() || id.contains("..") || !id.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'.' | b'-')) { return Err("Invalid plugin id.".into()); }
     let bytes = std::fs::read(root.join(id).join("manifest.json")).map_err(|e| e.to_string())?;
     let value: Value = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;

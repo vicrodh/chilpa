@@ -54,6 +54,23 @@ TestCase {
         compare(executed.value, 40)
         compare(dismissed, previous)
     }
+    function test_help_stays_in_the_console_and_escape_returns_to_the_prompt() {
+        CommandLine.answer = JSON.stringify({action:"commands.help",lines:[{usage:":seek seconds",description:"Seek"}]})
+        bar.input.text = "help seek"
+        keyClick(Qt.Key_Return)
+        verify(bar.opened && bar.input.activeFocus)
+        compare(executed, null)
+        compare(dismissed, null)
+        const help = findChild(bar, "commandHelpLines")
+        verify(help !== null)
+        compare(help.count, 1)
+        keyClick(Qt.Key_Escape)
+        verify(bar.opened && bar.input.activeFocus)
+        compare(bar.helpLines.length, 0)
+        keyClick(Qt.Key_Escape)
+        verify(!bar.opened)
+        compare(dismissed, previous)
+    }
     function test_history_preserves_the_unsubmitted_draft() {
         typeText("search draft")
         keyClick(Qt.Key_Up)

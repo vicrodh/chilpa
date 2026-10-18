@@ -18,6 +18,8 @@ Item {
         PillButton { text: "About"; onClicked: about.open() }
         AboutBody { width: gallery.sampleWide; doc: ({ version: "0.0.0", build: "2026-10-09 (405e25a54)", platform: "Linux (Qt)", links: [{ label: "Website", url: "https://chilpa.app" }] }) }
         UpdatesPanel { width: gallery.sampleWide }
+        PluginUpdatesPanel { width: gallery.sampleWide }
+        UpdatesIndicator {}
         UpdateNotice {}
     }
     AboutModal { id: about }

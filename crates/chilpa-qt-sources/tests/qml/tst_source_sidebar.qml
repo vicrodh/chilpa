@@ -10,7 +10,15 @@ TestCase {
     width: 960
     height: 600
     visible: true
-    Sidebar { id: sidebar; width: 240; height: 600; collapsed: false }
+    QtObject {
+        id: navigationRouterFixture
+        property string phase: "ready"
+        property int generation: 0
+        property string route: "source:radio"
+        signal preparingRoute()
+        function request(force) { generation++ }
+    }
+    Sidebar { id: sidebar; width: 240; height: 600; collapsed: false; router: navigationRouterFixture }
 
     function init() {
         Navigation.screen = "source"
@@ -23,7 +31,7 @@ TestCase {
         wait(30)
     }
 
-    function test_playlists_mix_by_default_and_separate_without_badges() {
+    function test_global_playlist_grouping_can_collapse_and_return_to_one_list() {
         const list = {id: -2, name: "Cloud", track_count: 8, source: "radio", provider: "Source", mixed: false, artwork_path: "", folder_id: null, visible_sidebar: true, covers: [], source_icon: "", separate: false}
         Playlists.catalog = {folders: [], playlists: [list]}
         Playlists.rev++
@@ -31,14 +39,19 @@ TestCase {
         const section = findChild(sidebar, "sidebarPlaylists")
         compare(section.rows.length, 1)
         verify(section.rows[0].showSourceBadge)
-        list.separate = true
-        Playlists.catalog = {folders: [], playlists: [list]}
+        Playlists.catalog = {group_sources:true,folders: [], playlists: [list]}
         Playlists.rev++
         wait(20)
-        compare(section.rows[0].rowKind, 1)
-        section.toggleFolder(section.rows[0].expandKey)
+        compare(section.rows[0].rowKind, 2)
         compare(section.rows.length, 2)
-        verify(!section.rows[1].showSourceBadge)
+        section.toggleGroup(section.rows[0].expandKey)
+        compare(section.rows.length, 1)
+        Playlists.catalog = {group_sources:false,folders:[],playlists:[list]}
+        Playlists.rev++
+        wait(20)
+        compare(section.rows.length,1)
+        compare(section.rows[0].rowKind,0)
+        verify(section.rows[0].showSourceBadge)
         Playlists.catalog = {folders: [], playlists: []}
         Playlists.rev++
     }
@@ -47,6 +60,8 @@ TestCase {
         verify(child.visible)
         verify(child.active)
         mouseClick(child)
+        compare(Sources.asked.length, 0, "source work waits for the navigation acknowledgement")
+        navigationRouterFixture.preparingRoute()
         compare(Sources.asked[Sources.asked.length - 1], ["child", "radio", "collection"])
         compare(Navigation.went, ["source", "radio"])
     }

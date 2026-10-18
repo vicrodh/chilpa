@@ -30,6 +30,9 @@ pub(crate) fn check(package: &StagedPackage, entry: &CatalogEntry) -> Result<(Pa
     if manifest.id != entry.id {
         return Err("The package is a different plugin than the catalog says.".into());
     }
+    if manifest.version != entry.version {
+        return Err("The package version does not match the catalog.".into());
+    }
     Ok((root, manifest))
 }
 
@@ -49,14 +52,19 @@ pub(crate) fn inspect(package: &StagedPackage) -> Result<(PathBuf, Manifest), St
 
 /// Puts a checked package in the plugins folder, in place of any earlier
 /// version, and notes where it came from. Returns the plugin's id.
+#[cfg(test)]
 pub(crate) fn install(plugins_dir: &Path, package: &StagedPackage, entry: &CatalogEntry, repository: &str) -> Result<String, String> {
+    let transaction = replace(plugins_dir, package, entry, repository)?;
+    transaction.commit()?;
+    Ok(entry.id.clone())
+}
+
+pub(crate) fn replace(plugins_dir: &Path, package: &StagedPackage, entry: &CatalogEntry, repository: &str) -> Result<crate::plugin_replacement::Replacement, String> {
     let (root, manifest) = check(package, entry)?;
     let id = manifest.id.clone();
-    let target = plugins_dir.join(&id);
-    let incoming = plugins_dir.join(format!(".incoming-{id}"));
-    let outgoing = plugins_dir.join(format!(".outgoing-{id}"));
-    let _ = std::fs::remove_dir_all(&incoming);
-    let _ = std::fs::remove_dir_all(&outgoing);
+    std::fs::create_dir_all(plugins_dir).map_err(|_| "The plugin directory could not be created.")?;
+    let temporary = tempfile::Builder::new().prefix(".incoming-").tempdir_in(plugins_dir).map_err(|_| "The plugin update could not be prepared.")?;
+    let incoming = temporary.path();
     copy_tree(&root, &incoming).map_err(|_| "The plugin could not be copied into place.")?;
     if let Some(icon) = crate::plugin_icons::included(&incoming, &manifest.folder_icon) {
         std::fs::write(incoming.join(crate::plugin_icons::INCLUDED_FOLDER_ICON).with_extension(icon.extension), icon.bytes)
@@ -75,17 +83,7 @@ pub(crate) fn install(plugins_dir: &Path, package: &StagedPackage, entry: &Catal
     let source = json!({"repository": repository, "package": entry.package, "version": manifest.version, "sha256": package.sha256});
     std::fs::write(incoming.join("source.json"), serde_json::to_vec_pretty(&source).unwrap_or_default())
         .map_err(|_| "The plugin could not be copied into place.")?;
-    // The earlier version leaves whole, and only then the new one enters:
-    // the loader never sees a folder half of one and half of the other.
-    if target.exists() {
-        std::fs::rename(&target, &outgoing).map_err(|_| "The earlier version could not be replaced.")?;
-    }
-    if std::fs::rename(&incoming, &target).is_err() {
-        let _ = std::fs::rename(&outgoing, &target);
-        return Err("The plugin could not be put in place.".into());
-    }
-    let _ = std::fs::remove_dir_all(&outgoing);
-    Ok(id)
+    crate::plugin_replacement::Replacement::begin(plugins_dir, &id, incoming)
 }
 
 /// The version installed of a plugin, when it is installed.
@@ -146,7 +144,9 @@ mod tests {
         let plugins = dir.path().join("plugins");
         std::fs::create_dir_all(&plugins).unwrap();
         let first = package(&[("one/manifest.json", manifest("app.test.one", "0.1.0").as_bytes()), ("one/plugin", b"v1")], &dir.path().join("staging"));
-        assert_eq!(install(&plugins, &first, &entry("app.test.one"), "repo").unwrap(), "app.test.one");
+        let mut first_entry = entry("app.test.one");
+        first_entry.version = "0.1.0".into();
+        assert_eq!(install(&plugins, &first, &first_entry, "repo").unwrap(), "app.test.one");
         assert_eq!(installed_version(&plugins, "app.test.one").as_deref(), Some("0.1.0"));
         #[cfg(unix)]
         {
@@ -158,7 +158,8 @@ mod tests {
         assert_eq!(std::fs::read(plugins.join("app.test.one/plugin")).unwrap(), b"v2");
         assert_eq!(installed_version(&plugins, "app.test.one").as_deref(), Some("0.2.0"));
         assert!(plugins.join("app.test.one/source.json").is_file(), "where it came from is noted");
-        assert_eq!(std::fs::read_dir(&plugins).unwrap().count(), 1, "nothing is left behind");
+        assert_eq!(std::fs::read_dir(&plugins).unwrap().filter(|entry| !entry.as_ref().unwrap().file_name().to_string_lossy().starts_with('.')).count(), 1);
+        assert!(plugins.join(".previous-app.test.one/previous/plugin").exists(), "one previous package is retained");
     }
 
     #[test]
@@ -167,6 +168,8 @@ mod tests {
         let staging = dir.path().join("staging");
         let other = package(&[("manifest.json", manifest("app.test.other", "0.1.0").as_bytes()), ("plugin", b"x")], &staging);
         assert!(check(&other, &entry("app.test.one")).is_err(), "another plugin's id");
+        let wrong_version = package(&[("manifest.json", manifest("app.test.one", "0.1.0").as_bytes()), ("plugin", b"x")], &staging);
+        assert!(check(&wrong_version, &entry("app.test.one")).is_err(), "the catalog and package versions must agree");
         let empty = package(&[("manifest.json", manifest("app.test.one", "0.1.0").as_bytes())], &staging);
         assert!(check(&empty, &entry("app.test.one")).is_err(), "no program in it");
         let none = package(&[("plugin", b"x")], &staging);

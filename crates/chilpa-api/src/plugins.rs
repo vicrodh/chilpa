@@ -351,6 +351,17 @@ impl Plugins {
     pub(crate) fn reload_one(&mut self, id: &str) {
         if valid_id(id) { self.natives.stop(id); self.load_one(&self.root.join(id)); self.remember_auth(); }
     }
+    pub(crate) fn stop_for_update(&mut self, id: &str) {
+        self.natives.stop(id);
+        self.registry.remove(id);
+    }
+    pub(crate) fn restore_update(&mut self, id: &str) {
+        self.approvals = Approvals::load(&self.root);
+        self.reload_one(id);
+    }
+    pub(crate) fn approve_update(&mut self, manifest: &chilpa_plugin::Manifest) -> Result<(), String> {
+        self.approvals.approve(manifest).map_err(|error| error.to_string())
+    }
     pub(crate) fn grant_network(&mut self, id: &str, domain: &str) -> Result<(), String> {
         let mut manifest = self.registry.installed().find(|plugin| plugin.id == id)
             .and_then(|plugin| plugin.manifest.clone()).ok_or("The plugin is not installed.")?;
@@ -381,6 +392,11 @@ impl Plugins {
     /// The same, saying before each one how many there are, how many are
     /// loaded and which comes next, for a start that shows its progress.
     pub fn load_all_with(&mut self, mut step: impl FnMut(usize, usize, &str)) -> usize {
+        if let Err(error) = crate::plugin_replacement::recover_all(&self.root) {
+            eprintln!("plugin-recovery: {error}");
+            return 0;
+        }
+        self.approvals = Approvals::load(&self.root);
         let Ok(entries) = std::fs::read_dir(&self.root) else { return 0 };
         let dirs: Vec<_> = entries.flatten().filter(|entry| !entry.file_name().to_string_lossy().starts_with('.'))
             .map(|entry| entry.path()).filter(|dir| dir.is_dir()).collect();
@@ -569,6 +585,17 @@ impl Plugins {
             .is_some_and(|manifest| self.approvals.covers(manifest))
     }
 
+    pub(crate) fn covers_update(&self, manifest: &chilpa_plugin::Manifest) -> bool {
+        self.registry.installed().find(|plugin| plugin.id == manifest.id)
+            .and_then(|plugin| plugin.manifest.as_ref())
+            .is_some_and(|before| manifest.asks_for().beyond(&before.asks_for()).is_empty())
+    }
+
+    pub(crate) fn update_healthy(&self, id: &str, was_enabled: bool) -> bool {
+        self.list().iter().any(|plugin| plugin.id == id && plugin.problem.is_empty()
+            && if was_enabled { plugin.state == "fine" } else { plugin.state == "awaiting approval" })
+    }
+
     /// I distinguish explicitly disabled installed plugins from sources
     /// whose registry entry has not been scanned or has no valid manifest.
     pub(crate) fn catalog_states(&self) -> Vec<(String, bool)> {
@@ -603,7 +630,7 @@ impl Plugins {
         self.natives.stop(id);
         self.natives.forget_reports(id);
         self.forget_credential(id);
-        for path in [dir, chilpa_dirs::data().join("plugin-data").join(id), chilpa_dirs::cache().join("plugins").join(id), self.root.join(".worker-private").join(id)] {
+        for path in [dir, self.root.join(format!(".previous-{id}")), chilpa_dirs::data().join("plugin-data").join(id), chilpa_dirs::cache().join("plugins").join(id), self.root.join(".worker-private").join(id)] {
             if path.exists() && std::fs::remove_dir_all(path).is_err() { return false; }
         }
         for path in [self.root.join(".integration").join(format!("{id}.json")), self.root.join(".icons").join(format!("{id}.png")),

@@ -26,6 +26,8 @@ Item {
         else if (act === "folders") Navigation.go("libraryFolders", 0)
         else if (act === "stats") Navigation.go("stats", 0)
         else if (act === "about") about.open()
+        else if (act === "appUpdates") updateInbox.openApp()
+        else if (act === "pluginUpdates") updateInbox.openPlugins()
         else if (act === "documentation" || act === "issue") Qt.openUrlExternally(About.link(act))
         else if (act === "close") bar.Window.window.close()
         else if (act === "quit") bar.quitAsked()
@@ -160,7 +162,13 @@ Item {
             glyph: Icons.menu2
             onClicked: mainMenu.open()
 
-            Menu {
+            UpdatesIndicator {
+                id: updateInbox
+                anchors.top: parent.top
+                anchors.right: parent.right
+                review: function() { Navigation.openSection("plugins") }
+            }
+            CascadingMenu {
                 id: mainMenu
                 y: more.height + Metrics.gap4
                 x: more.width - width
@@ -174,6 +182,10 @@ Item {
                     { act: "ui.showShortcuts", text: I18n.tr("Keyboard shortcuts", I18n.rev), glyph: Lucide.keyboard, family: Lucide.font, hint: Hotkeys.shortcut("ui.showShortcuts") },
                     { act: "documentation", text: I18n.tr("Documentation", I18n.rev), glyph: Lucide.bookOpen, family: Lucide.font },
                     { act: "issue", text: I18n.tr("Report an issue", I18n.rev), glyph: Lucide.bug, family: Lucide.font },
+                    { text: I18n.tr("Updates", I18n.rev), submenu: true, mark: updateInbox.unread ? "•" : "", children: [
+                        { act: "appUpdates", text: I18n.tr("Chilpa", I18n.rev), detail: updateInbox.appState.version || "", enabled: updateInbox.appState.supported === true },
+                        { act: "pluginUpdates", text: I18n.tr("Plugins", I18n.rev), detail: String(updateInbox.pluginState.unread || "") }
+                    ] },
                     { act: "about", text: I18n.tr("About Chilpa", I18n.rev), glyph: Lucide.info, family: Lucide.font },
                     { separator: true },
                     // Close is the window's (the tray keeps Chilpa, or it asks
@@ -181,7 +193,7 @@ Item {
                     { act: "close", text: I18n.tr("Close", I18n.rev), glyph: Lucide.x, family: Lucide.font },
                     { act: "quit", text: I18n.tr("Quit", I18n.rev), glyph: Lucide.power, family: Lucide.font, hint: Hotkeys.shortcut("nav.quit") }
                 ]
-                onChosen: (index) => bar.menuChosen(entries[index].act)
+                onActionChosen: entry => bar.menuChosen(entry.act)
             }
             AboutModal { id: about }
             LinkUi.LinkModal {}
