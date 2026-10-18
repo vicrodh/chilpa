@@ -48,6 +48,7 @@ impl Inbox {
             "checked":self.checked,"error":self.error,"seen_app":self.seen_app,"unread":self.notices.iter().filter(|notice|!notice.read).count(),"items":self.notices}).to_string()))
     }
     pub(crate) fn due(&self) -> bool { now().saturating_sub(self.checked) >= CHECK_INTERVAL }
+    pub(crate) fn revision(&self) -> u64 { self.revision }
     pub(crate) fn action(&mut self, action: &str, input: &Value, root: &Path) -> Result<(), String> {
         match action {
             "updates_automatic" => self.automatic = input["enabled"].as_bool().ok_or("Invalid update preference.")?,
