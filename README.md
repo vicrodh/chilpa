@@ -49,15 +49,15 @@ Classical Nahuatl word for a **red wasp or hornet** (*avispa roja / avispón*).
 
 ## Status
 
-For the initial 0.1.0-beta release, I distribute Linux x86_64 builds as an
-AppImage and a precompiled binary tarball. I plan to add packages for the most
-popular package managers in subsequent releases.
+The initial 0.1.0-beta release provides Linux x86_64 builds as an AppImage
+and a precompiled binary tarball. Packages for popular package managers are
+planned for subsequent releases.
 
 This first release ships in **English and Spanish**. More languages are on
 the way.
 
-I am validating macOS for this beta on a Mac mini; a macOS download will be
-listed here once it has passed testing. Windows and Android remain under
+macOS validation for this beta is in progress on a Mac mini. A macOS
+download will be listed here after testing. Windows and Android remain under
 development.
 
 Downloads are in [Releases](https://github.com/vicrodh/chilpa/releases) and
@@ -156,9 +156,9 @@ so the list works offline. **Manage > Refresh** fetches the current one.
 | Playlist Importer | Imports public playlists and playlist files, and matches their tracks against your library and connected sources. | Linux x86_64 / macOS Apple Silicon process |
 | Mood | **Experimental.** Analyzes local audio for mood and similarity with offline models. No audio or analysis results are uploaded. Models download only after you enable it. | Linux x86_64 process |
 
-Process plugins run inside a sandbox. On Linux I install `bubblewrap` and keep
+Process plugins run inside a sandbox. On Linux, install `bubblewrap` and keep
 unprivileged user namespaces enabled; macOS uses the system's Seatbelt sandbox.
-I run Chilpa as a normal user: the sandbox refuses to start as root. The catalog
+Run Chilpa as a normal user: the sandbox refuses to start as root. The catalog
 selects each platform's package and checksum. WASM plugins need nothing extra.
 
 **Install from ZIP…** installs a package downloaded by hand. To use another
@@ -196,7 +196,7 @@ stay saved for when you turn offline mode off.
 
 Local playback, local and cached artwork, DSP and local or cached lyrics work
 without a connection. Mood also works offline once its optional models have
-been downloaded; I do not send audio or analysis results to a model provider.
+been downloaded; no audio or analysis results are sent to a model provider.
 Install plugins and download Mood models before going offline. Scrobbling and
 source plugins use their own services when you explicitly connect and enable
 them; offline mode also blocks that traffic.

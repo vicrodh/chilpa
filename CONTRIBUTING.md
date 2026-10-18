@@ -1,6 +1,6 @@
 # Contributing to Chilpa
 
-This project is actively evolving. Contributions are welcome, but we have a few rules to keep releases stable and avoid regressions (especially around audio output).
+This project is actively evolving. Contributions are welcome. The rules below protect release stability and audio output.
 
 ## Where the code lives
 
@@ -13,13 +13,16 @@ The QML interface talks only to `chilpa-api`; it does not reach into the
 library or the audio engine. The core and audio crates do not depend on Qt.
 Source-specific integrations live in separate plugin repositories, not here.
 
-For capture tests, I launch the app with `CHILPA_DEV=1` to expose the File
+For capture tests, launch the app with `CHILPA_DEV=1` to expose the File
 output. Normal launches hide it from the stack and device pickers. The engine
 keeps direct file capture available to automated tests.
 
 ## Quick rules
 
 - Write clear, concise English (no emojis in code, comments, or commit messages).
+- Describe the software and give direct instructions. Use first-person singular
+  for personal decisions, attribution or responsibility; avoid repetitive
+  "I implement"/"I use" narration and project-wide "we", "us" or "our".
 - Keep PRs focused and small when possible.
 - Disclose every LLM model used and its role in the PR body; see below.
 - Do not change app branding or legal disclaimers without discussing it first.
@@ -27,7 +30,7 @@ keeps direct file capture available to automated tests.
 
 ## Branch naming
 
-We use a consistent branch naming scheme:
+Branch names use this scheme:
 
 `<type>/<origin>/<branch_name>`
 
@@ -45,7 +48,7 @@ Examples:
 
 ## Branch workflow
 
-We use a **pre-release integration branch** to keep `main` stable and release-ready at all times.
+The **pre-release integration branch** keeps feature integration separate from `main`.
 
 ```
 feature/xyz ──┐
