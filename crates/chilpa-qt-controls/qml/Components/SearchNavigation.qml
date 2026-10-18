@@ -2,6 +2,7 @@ import QtQuick
 import app.chilpa
 
 // I capture the lead in the signal and flush after its model invokable returns.
+// Each hold is released right after its own destination, not after the batch.
 Connections {
     required property var search
     property var pending: []
@@ -10,19 +11,26 @@ Connections {
     function flush() {
         const ready = pending
         pending = []
+        let next = 0
         try {
-            for (const lead of ready) {
-                switch (lead.kind) {
-                case "screen": Navigation.go(lead.target, lead.id); break
-                case "tab": Navigation.open(lead.target, lead.id); break
-                case "artist": Navigation.openArtist(lead.target); break
-                case "credit": Navigation.openCredit(lead.target, lead.id); break
-                case "folder": Navigation.openFolder(lead.target); break
-                case "source": Navigation.goKey("source", lead.target); break
+            while (next < ready.length) {
+                const lead = ready[next++]
+                try {
+                    switch (lead.kind) {
+                    case "screen": Navigation.go(lead.target, lead.id); break
+                    case "tab": Navigation.open(lead.target, lead.id); break
+                    case "artist": Navigation.openArtist(lead.target); break
+                    case "credit": Navigation.openCredit(lead.target, lead.id); break
+                    case "folder": Navigation.openFolder(lead.target); break
+                    case "source": Navigation.goKey("source", lead.target); break
+                    }
+                } finally {
+                    if (lead.model) lead.model.releaseNavigation(lead.token)
                 }
             }
         } finally {
-            for (const lead of ready)
+            // A destination that threw leaves the ones after it unvisited, never held.
+            for (const lead of ready.slice(next))
                 if (lead.model) lead.model.releaseNavigation(lead.token)
         }
     }
