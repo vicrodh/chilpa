@@ -64,6 +64,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
           toolchain: '1.96.0'
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ runner.temp }}/dictionaries
+          key: lint-dictionaries-${{ hashFiles('tools/lint/dictionaries.lock.json') }}
       - name: Fetch the language lint dictionaries
         run: |
           python3 scripts/fetch-lint-dictionaries.py "$RUNNER_TEMP/dictionaries"
