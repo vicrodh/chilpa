@@ -68,8 +68,11 @@ def check_dependencies(app):
             identifiers = subprocess.check_output(["otool", "-D", str(path)], text=True).splitlines()
             if any(line.startswith("/") and not line.endswith(":") for line in identifiers):
                 subprocess.run(["install_name_tool", "-id", "@rpath/" + str(path.relative_to(frameworks)), str(path)], check=True)
-        dependencies = subprocess.check_output(["otool", "-L", str(path)], text=True).splitlines()[1:]
+        dependencies = subprocess.check_output(["otool", "-L", str(path)], text=True).splitlines()
         for line in dependencies:
+            # A universal binary heads each architecture's list with its own path.
+            if not line.startswith("\t"):
+                continue
             dependency = line.strip().split(" (", 1)[0]
             if dependency.startswith("/") and not dependency.startswith(("/System/Library/", "/usr/lib/")):
                 raise SystemExit(f"I found an undeployed dependency in {path.name}: {dependency}")
@@ -149,6 +152,10 @@ def main():
         shutil.copy2(plugins / "platforms/libqoffscreen.dylib", offscreen)
         subprocess.run(["macdeployqt", str(app), "-qmldir=" + str(qml), "-executable=" + str(offscreen),
             "-no-strip", "-no-codesign"], check=True)
+        # I keep SQLite for QML LocalStorage; the other SQL drivers need client libraries I do not ship.
+        for driver in (contents / "PlugIns/sqldrivers").glob("*.dylib"):
+            if driver.name != "libqsqlite.dylib":
+                driver.unlink()
     if not (contents / "PlugIns/platforms/libqcocoa.dylib").is_file():
         raise SystemExit("I could not deploy Qt's Cocoa platform plugin.")
     if not list((contents / "Resources/qml").rglob("*effectsplugin*")):
