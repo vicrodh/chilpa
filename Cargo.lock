@@ -408,7 +408,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-alsa"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "alsa",
  "alsa-sys",
@@ -425,14 +425,14 @@ dependencies = [
 
 [[package]]
 name = "chilpa-analysis"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-audio",
 ]
 
 [[package]]
 name = "chilpa-api"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "async-channel",
  "base64 0.22.1",
@@ -472,7 +472,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-appkit"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -481,7 +481,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-audio"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-i18n",
  "serde",
@@ -489,7 +489,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-auth"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "chilpa-i18n",
@@ -503,7 +503,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-bwrap"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-plugin",
  "libc",
@@ -514,7 +514,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-cast"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-i18n",
  "getrandom 0.4.3",
@@ -531,7 +531,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-cd"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-audio",
  "chilpa-i18n",
@@ -540,7 +540,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-core"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-alsa",
  "chilpa-analysis",
@@ -569,7 +569,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-coreaudio"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-audio",
  "chilpa-i18n",
@@ -577,7 +577,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-decode"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-audio",
  "chilpa-i18n",
@@ -587,11 +587,11 @@ dependencies = [
 
 [[package]]
 name = "chilpa-dirs"
-version = "0.1.0-beta"
+version = "0.1.0"
 
 [[package]]
 name = "chilpa-dsd"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-audio",
  "chilpa-i18n",
@@ -599,11 +599,11 @@ dependencies = [
 
 [[package]]
 name = "chilpa-i18n"
-version = "0.1.0-beta"
+version = "0.1.0"
 
 [[package]]
 name = "chilpa-jack"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-audio",
  "chilpa-i18n",
@@ -613,7 +613,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-library"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-dirs",
  "chilpa-i18n",
@@ -626,7 +626,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-lyrics"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "lofty",
  "roxmltree",
@@ -637,7 +637,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-meta"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -645,11 +645,11 @@ dependencies = [
 
 [[package]]
 name = "chilpa-models"
-version = "0.1.0-beta"
+version = "0.1.0"
 
 [[package]]
 name = "chilpa-mpris"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "async-channel",
  "image",
@@ -664,7 +664,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-pipewire"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-alsa",
  "chilpa-audio",
@@ -674,7 +674,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-plugin"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-auth",
  "chilpa-i18n",
@@ -696,7 +696,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-pulse"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-audio",
  "chilpa-i18n",
@@ -706,7 +706,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-about",
@@ -740,7 +740,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-about"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -752,7 +752,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-ambient"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -764,7 +764,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-artwork"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -778,7 +778,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-controls"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -791,7 +791,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-dsp"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -804,7 +804,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-folders"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -818,7 +818,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-gallery"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "cxx",
  "cxx-qt",
@@ -828,7 +828,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-graphics"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "cc",
  "chilpa-api",
@@ -841,7 +841,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-immersive"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -853,7 +853,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-kit"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "cxx",
@@ -864,7 +864,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-link"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -877,7 +877,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-lyrics"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "cxx",
@@ -888,7 +888,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-metadata"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -903,7 +903,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-mini"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -915,7 +915,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-playlists"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -928,7 +928,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-sources"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -943,7 +943,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-stats"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -957,7 +957,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-waveform"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -969,7 +969,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-wizard"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-kit",
@@ -981,7 +981,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-sacd"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-dsd",
  "chilpa-i18n",
@@ -991,7 +991,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-secrets"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",
@@ -1007,7 +1007,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-servers"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-i18n",
  "md-5",
@@ -1018,7 +1018,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-stream"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "chilpa-i18n",
@@ -1029,7 +1029,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-tags"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-i18n",
  "chilpa-models",
@@ -1038,7 +1038,7 @@ dependencies = [
 
 [[package]]
 name = "chilpa-wasapi"
-version = "0.1.0-beta"
+version = "0.1.0"
 dependencies = [
  "chilpa-audio",
  "chilpa-i18n",

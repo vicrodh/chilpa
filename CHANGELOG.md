@@ -1,6 +1,6 @@
-# 0.1.0-beta
+# 0.1.0
 
-First public Chilpa beta for Linux x86_64.
+Initial public release for Linux x86_64 and macOS on Apple Silicon.
 
 - Local libraries and connected sources in one native Qt interface.
 - Destination skeletons appear before content loads to keep navigation responsive.
@@ -8,13 +8,13 @@ First public Chilpa beta for Linux x86_64.
 - Synchronized lyrics and translations, with immersive audio visualizations.
 - Official plugin catalog configured on first start, including an offline snapshot.
 - Radio, Podcasts, Playlist Importer, DSP and Mood as separate official plugins.
-- AppImage and binary tarball with checksums, provenance and third-party notices.
-- Separate beta and stable update channels, with verification before replacing an AppImage.
+- Linux AppImage and binary tarball, plus macOS ZIP and DMG packages, with checksums, provenance and third-party notices.
+- Stable AppImage updates, with verification before replacing the installed image.
 
 Third-party playback plugins and model weights are not included. Mood downloads
 optional models only after it is enabled; their separate license is documented
-in the plugin package. This beta ships Linux x86_64 process plugins;
-macOS, Windows and Android binaries are outside this release.
+in the plugin package. Native plugin packages are selected by platform.
+Windows and Android application binaries are outside this release.
 
 Physical DAC behavior and signed-in external sources need testing on each
-listener's own setup during the beta.
+listener's own setup.
