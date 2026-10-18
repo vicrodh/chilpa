@@ -33,7 +33,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pkg-config clang libclang-dev cmake nasm \
-            libasound2-dev libjack-jackd2-dev libpulse-dev libpipewire-0.3-dev libdbus-1-dev libssl-dev
+            libasound2-dev libjack-jackd2-dev libpulse-dev libpipewire-0.3-dev libdbus-1-dev libssl-dev bubblewrap
+          # Ubuntu 24.04 confines unprivileged user namespaces, and the plugin sandbox tests need them.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - if: runner.os == 'macOS'
         run: brew install pkg-config cmake
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
