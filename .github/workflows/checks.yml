@@ -79,6 +79,10 @@ jobs:
           key: qml-linux-qt-${{ env.QT_VERSION }}
       - if: steps.qt-cache.outputs.cache-hit != 'true'
         run: '"$RUNNER_TEMP/qt-installer/bin/python" -m aqt install-qt linux desktop "$QT_VERSION" linux_gcc_64 --outputdir "$RUNNER_TEMP/Qt"'
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ runner.temp }}/dictionaries
+          key: lint-dictionaries-${{ hashFiles('tools/lint/dictionaries.lock.json') }}
       - name: Fetch the language lint dictionaries
         run: |
           python3 scripts/fetch-lint-dictionaries.py "$RUNNER_TEMP/dictionaries"
