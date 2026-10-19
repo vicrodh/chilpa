@@ -232,7 +232,10 @@ fn decide(mut probe: impl FnMut(bool) -> Result<(Output, bool), String>) -> Resu
         return Ok(false);
     }
     match auto_proof(&auto) {
-        Ok(()) => Ok(false),
+        Ok(()) => {
+            eprintln!("renderer: Auto presentation proved");
+            Ok(false)
+        }
         Err(reason) => {
             eprintln!("renderer: Auto presentation failed: {reason}; trying software once");
             let software = probe(true)?;
@@ -241,6 +244,7 @@ fn decide(mut probe: impl FnMut(bool) -> Result<(Output, bool), String>) -> Resu
                 return Ok(true);
             }
             auto_proof(&software).map_err(|reason| format!("software presentation also failed: {reason}"))?;
+            eprintln!("renderer: software presentation proved");
             Ok(true)
         }
     }
@@ -287,9 +291,9 @@ pub fn auto_at_boot() -> Result<(), String> {
     if software {
         std::env::set_var(super::QUICK_ENV, "software");
         SOFTWARE_NOTICE.store(true, Ordering::SeqCst);
-        eprintln!("renderer: software presentation proved; rescue for this launch only ({} ms)", start.elapsed().as_millis());
+        eprintln!("renderer: software as a rescue for this launch only ({} ms)", start.elapsed().as_millis());
     } else {
-        eprintln!("renderer: Auto presentation proved; Qt's default backend kept ({} ms)", start.elapsed().as_millis());
+        eprintln!("renderer: Qt's default backend kept ({} ms)", start.elapsed().as_millis());
     }
     Ok(())
 }
