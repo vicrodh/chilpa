@@ -402,12 +402,15 @@ pub fn apply_preference() {
         super::disarm(&sentinel());
         return;
     }
-    if !selectable() {
+    // Only this process's own inventory selects. Settings' inventory may
+    // still be on its way, and its indices are another process's.
+    let local = GPUS.get().and_then(Inventory::selection);
+    if !cfg!(target_os = "linux") || local.is_some_and(|list| list.len() < 2) {
         super::disarm(&sentinel());
         eprintln!("gpu: '{name}' asked for, but this session exposes fewer than two selectable GPUs -> Auto");
         return;
     }
-    let Some(list) = GPUS.get().and_then(Inventory::selection) else {
+    let Some(list) = local else {
         return reject_saved("this process has no local Qt device inventory");
     };
     let Some(gpu) = resolve_in(list, &name, &identity) else {

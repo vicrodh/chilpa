@@ -46,6 +46,20 @@ fn read_inventory(output: Output, timed_out: bool) -> Result<String, String> {
     Ok(json.to_string())
 }
 
+fn settle(inventory: Result<String, String>) {
+    match inventory {
+        Ok(json) => gpu::set_child_inventory_json(&json),
+        Err(error) => {
+            eprintln!("gpu: {error}; Auto stays in control");
+            gpu::set_child_inventory_json("[]");
+        }
+    }
+}
+
+/// Settings' rows, collected off the way to the window: the child starts
+/// here and a thread waits for it. QBZ lists the devices when it publishes
+/// Settings, after the window; waiting here held every Auto start 230 to
+/// 330 ms. Until it lands the row is not shown, as with one device.
 /// Failure leaves an empty Settings inventory. Auto and backend precedence
 /// stay unchanged; no preference or startup sentinel is touched here.
 pub fn collect() {
@@ -53,19 +67,18 @@ pub fn collect() {
         gpu::set_child_inventory_json("[]");
         return;
     }
-    let inventory = (|| {
-        let executable = std::env::current_exe().map_err(|error| format!("cannot resolve the inventory executable: {error}"))?;
-        let mut command = Command::new(executable);
-        command.env(CHILD_ENV, "1");
-        let (output, timed_out) = preflight::run_child(&mut command, WATCHDOG)?;
-        read_inventory(output, timed_out)
-    })();
-    match inventory {
-        Ok(json) => gpu::set_child_inventory_json(&json),
-        Err(error) => {
-            eprintln!("gpu: {error}; Auto stays in control");
-            gpu::set_child_inventory_json("[]");
-        }
+    let started = std::env::current_exe()
+        .map_err(|error| format!("cannot resolve the inventory executable: {error}"))
+        .and_then(|executable| preflight::start_child(Command::new(executable).env(CHILD_ENV, "1")));
+    let started = match started {
+        Ok(started) => started,
+        Err(error) => return settle(Err(error)),
+    };
+    let waiting = std::thread::Builder::new()
+        .name("gpu-inventory".into())
+        .spawn(move || settle(started.finish(WATCHDOG).and_then(|(output, timed_out)| read_inventory(output, timed_out))));
+    if let Err(error) = waiting {
+        settle(Err(format!("cannot wait for the inventory child: {error}")));
     }
 }
 
