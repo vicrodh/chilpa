@@ -2499,7 +2499,7 @@ msgid "Lyrics view"
 msgstr "Vista de letras"
 
 msgid "Lyrics without one are sent to Chilpa's lyrics API."
-msgstr ""
+msgstr "Las letras sin traducción se envían a la API de letras de Chilpa."
 
 msgid "Magazine"
 msgstr "Revista"
@@ -4750,7 +4750,7 @@ msgid "Transcript"
 msgstr "Transcripción"
 
 msgid "Translate lyrics"
-msgstr ""
+msgstr "Traducir letras"
 
 msgid "Translation"
 msgstr "Traducción"
@@ -4960,7 +4960,7 @@ msgid "View tracks"
 msgstr "Ver pistas"
 
 msgid "Volume"
-msgstr ""
+msgstr "Volumen"
 
 msgid "Volume Down"
 msgstr "Bajar volumen"
