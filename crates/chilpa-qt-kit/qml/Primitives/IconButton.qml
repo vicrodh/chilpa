@@ -17,6 +17,8 @@ Item {
     // "secondary", "primary", "accent", "solid" (the icon on the accent)
     // or "overlay" (on a cover: light, the accent when checked).
     property string tone: "secondary"
+    // A favorite's heart: checked, it takes the theme's favorite colour.
+    property bool heart: false
 
     signal clicked()
 
@@ -41,6 +43,7 @@ Item {
         size: root.iconSize
         color: !root.enabled ? Theme.color.textTertiary
              : root.tone === "solid" ? Theme.color.textOnAccent
+             : root.heart && root.checked ? Theme.color.favorite
              : root.tone === "overlay" ? (root.checked ? Theme.color.accent : Theme.color.overlayInk)
              : root.checked || root.tone === "accent" ? Theme.color.accent
              : root.tone === "primary" ? Theme.color.textPrimary : Theme.color.textSecondary
