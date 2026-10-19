@@ -6213,6 +6213,9 @@ msgstr "deine Quellen"
 msgid "{1} {2}"
 msgstr "{1}. {2}"
 
+msgid "{1}–{2} {3} {4}"
+msgstr "{1}.–{2}. {3} {4}"
+
 msgid "{} (split)"
 msgstr "{} (geteilt)"
 

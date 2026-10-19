@@ -6213,6 +6213,9 @@ msgstr "suas fontes"
 msgid "{1} {2}"
 msgstr "{1} de {2}"
 
+msgid "{1}–{2} {3} {4}"
+msgstr "{1}–{2} de {3} de {4}"
+
 msgid "{} (split)"
 msgstr "{} (dividida)"
 

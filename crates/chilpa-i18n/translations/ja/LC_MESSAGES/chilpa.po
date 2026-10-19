@@ -6209,6 +6209,9 @@ msgstr "あなたのソース"
 msgid "{1} {2}"
 msgstr "{2}{1}日"
 
+msgid "{1}–{2} {3} {4}"
+msgstr "{4}年{3}{1}日–{2}日"
+
 msgid "{} (split)"
 msgstr "{}（分割）"
 
