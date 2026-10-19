@@ -101,12 +101,59 @@ def read_po(path):
     return header, entries
 
 
+def plural_forms(header):
+    """How many msgstr[n] a plural entry carries, from `nplurals=` in the
+    header: Japanese has one, Russian three."""
+    m = re.search(r"nplurals\s*=\s*(\d+)", header[0] if header else "")
+    return int(m.group(1)) if m else 2
+
+
+# A hole that `chilpa_i18n::fill` fills: `{}` takes the next argument and
+# `{n}` takes argument n.
+HOLE = re.compile(r"\{(\d*)\}")
+
+
+# A token QML fills by name with `String.replace`, such as `{source}`; the
+# translation carries it as it is.
+NAMED = re.compile(r"\{[A-Za-z_][A-Za-z0-9_]*\}")
+
+
+def holes(text):
+    """Which arguments a string uses, and how many times each, plus its
+    named tokens."""
+    used, following = {}, 0
+    for m in HOLE.finditer(text):
+        if m.group(1):
+            n = int(m.group(1))
+        else:
+            following += 1
+            n = following
+        used[n] = used.get(n, 0) + 1
+    for token in NAMED.findall(text):
+        used[token] = used.get(token, 0) + 1
+    return used
+
+
+def broken_holes(language, wanted, old):
+    """Translations that would fill other arguments than their msgid does.
+    A lost hole drops a name or a number from the window; an extra one
+    shows a raw `{}`."""
+    out = []
+    for msgid, plural in wanted.items():
+        said = old.get(msgid, (None, []))[1]
+        expected = [holes(msgid)] if plural is None else [holes(msgid), holes(plural)]
+        for text in said:
+            if text and holes(text) not in expected:
+                out.append(f"{language}: {msgid!r} -> {text!r}")
+    return out
+
+
 def write_po(path, header, wanted, old):
     out = ['msgid ""', 'msgstr ""']
     for line in (header[0].split("\n") if header else []):
         if line:
             out.append(f'"{escape(line)}\\n"')
-    forms = 2
+    forms = plural_forms(header)
     for msgid, plural in wanted.items():
         previous = old.get(msgid, (None, []))[1]
         out.append("")
@@ -160,6 +207,10 @@ def main():
         header, old = read_po(path)
         missing = [m for m in wanted if m not in old]
         extra = [m for m in old if m not in wanted]
+        broken = broken_holes(language, wanted, old)
+        if broken:
+            problems.append(f"{language}: {len(broken)} translations fill other holes than their msgid:")
+            problems += [f"  {b}" for b in broken[:10]]
         if check:
             if missing or extra:
                 problems.append("Run tools/i18n/extract to bring the catalogs up to date.")
