@@ -52,7 +52,7 @@ Item {
         wrapMode: Text.WordWrap
         font.pointSize: Type.titleSmall
         font.weight: Type.bold
-        color: Theme.color.textOnAccent
+        color: Theme.color.backdropText
         style: Text.Outline
         styleColor: Theme.color.overlayScrim
     }

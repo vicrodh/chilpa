@@ -75,7 +75,7 @@ Column {
                     Text {
                         anchors.top: parent.top; anchors.left: parent.left; anchors.margins: Metrics.overlayPad
                         text: shelf.showPlays ? I18n.tr("Plays", I18n.rev) + ": " + card.model.plays : card.model.duration || ""
-                        color: Theme.color.textOnAccent; font.pointSize: Type.meta
+                        color: Theme.color.backdropText; font.pointSize: Type.meta
                     }
                     Item {
                         anchors.left: parent.left; anchors.right: parent.right

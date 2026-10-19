@@ -113,6 +113,8 @@ impl Theme {
             ("text.tertiary", colors.text_muted),
             // The selector replaces it; the palette's own stays underneath.
             ("text.onAccent", colors.accent_text),
+            // The toggle's knob, on the accent and off it (`QbzToggle.qml:50`).
+            ("toggle.knob", colors.text_primary),
             ("stroke.hairline", colors.border_subtle),
             // The wizard's steps (`DacWizardModal.qml:342`).
             ("stroke.frame", colors.border_muted),
@@ -273,6 +275,23 @@ mod tests {
         let theme = Theme::from_palette("rose-pine-dawn", &palette(ThemeId::RosePineDawn));
         let on = theme.color("text.onAccent").unwrap();
         assert!(on.r == 0.0 && on.g == 0.0 && on.b == 0.0);
+    }
+
+    #[test]
+    fn the_ink_on_a_dark_backdrop_is_white_whatever_the_accent() {
+        // Tokyo Night's text on the accent is its dark navy: the album
+        // header and the cover overlays must not take it (QBZ paints them
+        // #ffffff, AlbumView.qml:299).
+        let white = Rgba { r: 1.0, g: 1.0, b: 1.0, a: 1.0 };
+        for theme in [Theme::from_palette("tokyo-night", &palette(ThemeId::TokyoNight)), Theme::built_in("breeze-light"), Theme::built_in("dark-oled")] {
+            assert!(close(theme.color("backdrop.text").unwrap(), white), "{}", theme.id());
+            assert!((theme.color("backdrop.textMuted").unwrap().a - 0.82).abs() < 0.002, "{}", theme.id());
+        }
+        let tokyo = palette(ThemeId::TokyoNight);
+        let theme = Theme::from_palette("tokyo-night", &tokyo);
+        assert!(!close(theme.color("text.onAccent").unwrap(), white));
+        assert!(close(theme.color("toggle.knob").unwrap(), wide(tokyo.text_primary)), "QbzToggle.qml:50");
+        assert!(close(Theme::built_in("breeze-light").color("toggle.knob").unwrap(), white), "Chilpa's own stays white");
     }
 
     #[test]

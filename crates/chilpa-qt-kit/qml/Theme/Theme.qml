@@ -33,6 +33,12 @@ QtObject {
         readonly property color textTertiary: ThemeModel.color("text.tertiary", theme.rev)
         readonly property color textOnAccentMuted: ThemeModel.color("text.onAccentMuted", theme.rev)
         readonly property color textOnAccent: ThemeModel.color("text.onAccent", theme.rev)
+        // Text and glyphs on a dark backdrop -- a cover's scrim, the album
+        // header -- white in every theme, as QBZ paints them
+        // (`AlbumView.qml:299`, `hdrStrong` / `hdrBody`).
+        readonly property color backdropText: ThemeModel.color("backdrop.text", theme.rev)
+        readonly property color backdropTextMuted: ThemeModel.color("backdrop.textMuted", theme.rev)
+        readonly property color toggleKnob: ThemeModel.color("toggle.knob", theme.rev)
         readonly property color strokeHairline: ThemeModel.color("stroke.hairline", theme.rev)
         readonly property color strokeFrame: ThemeModel.color("stroke.frame", theme.rev)
         readonly property color stateHover: ThemeModel.color("state.hover", theme.rev)
