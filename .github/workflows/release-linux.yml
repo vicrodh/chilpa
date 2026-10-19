@@ -71,6 +71,11 @@ jobs:
           RELEASE_EVENT: ${{ github.event_name }}
         run: |
           python3 scripts/release_version.py --github-env "$GITHUB_ENV" --github-output "$GITHUB_OUTPUT"
+      # I use Python's corrected ZIP detection for Qt's ARM64 7z archives.
+      # https://github.com/miurahr/aqtinstall/issues/1042
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
       - name: Install build and deployment dependencies
         run: |
           sudo apt-get update
