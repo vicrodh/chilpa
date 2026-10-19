@@ -4,6 +4,7 @@ import app.chilpa.kit
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 Item {
     id: row
     required property int rowKind
@@ -34,7 +35,7 @@ Item {
         font.letterSpacing: Type.labelTracking
         color: Theme.color.textTertiary
     }
-    Column {
+    SettingText {
         id: texts
         visible: !row.group
         anchors.left: parent.left
@@ -42,23 +43,9 @@ Item {
         anchors.right: controls.left
         anchors.rightMargin: Metrics.gap16
         y: (row.baseHeight - height) / 2
-        spacing: Metrics.gap2
-        Text {
-            width: parent.width
-            text: row.title
-            wrapMode: Text.Wrap
-            font.pointSize: row.line ? Type.row : Type.bodyLarge
-            font.weight: row.line ? Type.regular : Type.medium
-            color: Theme.color.textPrimary
-        }
-        Text {
-            width: parent.width
-            visible: row.description !== ""
-            text: row.description
-            wrapMode: Text.Wrap
-            font.pointSize: Type.meta
-            color: Theme.color.textSecondary
-        }
+        title: row.title
+        description: row.description
+        line: row.line
     }
     // Only the row's own control is built.
     Loader {
