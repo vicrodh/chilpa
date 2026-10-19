@@ -1,0 +1,6443 @@
+msgid ""
+msgstr ""
+"Language: ja\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "\"{}\" brings nothing today"
+msgstr "「{}」には今日は何もありません"
+
+msgid "\"{}\" does not say how an account connects"
+msgstr "「{}」にはアカウントの接続方法が指定されていません"
+
+msgid "\"{}\" does not work as an id: it is used as a folder name, so it goes in lowercase, with dots, dashes or digits, and no slashes and no double dots"
+msgstr "「{}」はIDとして使えません。フォルダー名として使われるため、小文字、ドット、ハイフン、数字のみで、スラッシュと連続したドットは使えません"
+
+msgid "\"{}\" is not a domain permission can be given to"
+msgstr "「{}」は権限を付与できるドメインではありません"
+
+msgid "\"{}\" would not be given to Chilpa alone ({}); turn exclusive mode off to share it"
+msgstr "「{}」をChilpa専用にできませんでした（{}）。共有するには排他モードをオフにしてください"
+
+msgid "\"{}\" would not be given to Chilpa alone; turn exclusive mode off to share it"
+msgstr "「{}」をChilpa専用にできませんでした。共有するには排他モードをオフにしてください"
+
+msgid "\"{}\" would not open ({} {})"
+msgstr "「{}」を開けませんでした（{} {}）"
+
+msgid "\"{}\" would not start ({})"
+msgstr "「{}」を開始できませんでした（{}）"
+
+msgid "(Re)start the PipeWire audio services"
+msgstr "PipeWireオーディオサービスを（再）起動"
+
+msgid "(unreadable manifest)"
+msgstr "（読み取れないマニフェスト）"
+
+msgid "+ Create new playlist"
+msgstr "＋新規プレイリストを作成"
+
+msgid "-11 LUFS · Loud"
+msgstr "-11 LUFS · 大きめ"
+
+msgid "-14 LUFS · Streaming (default)"
+msgstr "-14 LUFS · ストリーミング（既定）"
+
+msgid "-16 LUFS"
+msgstr "-16 LUFS"
+
+msgid "-18 LUFS · ReplayGain"
+msgstr "-18 LUFS · ReplayGain"
+
+msgid "-23 LUFS · Broadcast (EBU R128)"
+msgstr "-23 LUFS · 放送（EBU R128）"
+
+msgid "1 hr"
+msgstr "1時間"
+
+msgid "1. Back up your current PipeWire/WirePlumber config"
+msgstr "1. 現在のPipeWire/WirePlumber設定をバックアップします"
+
+msgid "1. Find your DAC under 'Audio > Sinks' and note its number"
+msgstr "1. 「Audio > Sinks」でDACを見つけて番号をメモします"
+
+msgid "1. Origin"
+msgstr "1. 取り込み元"
+
+msgid "16 bit"
+msgstr "16 bit"
+
+msgid "2 hr"
+msgstr "2時間"
+
+msgid "2. Destinations"
+msgstr "2. 取り込み先"
+
+msgid "2. Run with that number to read the node.name"
+msgstr "2. その番号で実行してnode.nameを読み取ります"
+
+msgid "24 bit in 3 bytes"
+msgstr "24 bit（3バイト）"
+
+msgid "24 bit in 32"
+msgstr "24 bit（32 bit内）"
+
+msgid "3 hr"
+msgstr "3時間"
+
+msgid "3. Restart the audio services to load the config"
+msgstr "3. オーディオサービスを再起動して設定を読み込みます"
+
+msgid "3. Review"
+msgstr "3. 確認"
+
+msgid "30 min"
+msgstr "30分"
+
+msgid "32 bit"
+msgstr "32 bit"
+
+msgid "32 bit float"
+msgstr "32 bit float"
+
+msgid "4. Summary"
+msgstr "4. まとめ"
+
+msgid "5 hr"
+msgstr "5時間"
+
+msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
+msgstr "JACKグラフは1つのレートで動作し、その中のすべてのプログラムが同じレートで動きます。このグラフは{} Hzです。ほかのレートで録音されたトラックは、Chilpaが関与する前にリサンプリングされ、ここの設定では変更できません。JACKはプログラム間のオーディオルーティング用です。ファイルを加工せずDACに届けたい場合は、カードそのものを選んでください。"
+
+msgid "A click on a record opens"
+msgstr "アルバムをクリックしたときに開くもの"
+
+msgid "A new version of Chilpa is available."
+msgstr "Chilpaの新しいバージョンがあります。"
+
+msgid "A secure cast URL could not be created."
+msgstr "安全なキャストURLを作成できませんでした。"
+
+msgid "A selected queue is no longer available."
+msgstr "選択したキューは利用できなくなりました。"
+
+msgid "A sidecar sets this, not the file"
+msgstr "この値はファイルではなくサイドカーファイルで設定されています"
+
+msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
+msgstr "トラックは半分または4分再生された時点で1回として数えられます。オフラインでの再生は後で送信されます。"
+
+msgid "A-B loop"
+msgstr "ABループ"
+
+msgid "ACCENT"
+msgstr "アクセント"
+
+msgid "ALSA direct"
+msgstr "ALSAダイレクト"
+
+msgid "ALSA plugin"
+msgstr "ALSAプラグイン"
+
+msgid "API key"
+msgstr "APIキー"
+
+msgid "About"
+msgstr "概要"
+
+msgid "About Chilpa"
+msgstr "Chilpaについて"
+
+msgid "Accent"
+msgstr "アクセント"
+
+msgid "Accept permissions and enable"
+msgstr "権限を承認して有効にする"
+
+msgid "Access to downloader"
+msgstr "ダウンローダーへのアクセス"
+
+msgid "Account"
+msgstr "アカウント"
+
+msgid "Account connected."
+msgstr "アカウントに接続しました。"
+
+msgid "Account not connected."
+msgstr "アカウントに接続されていません。"
+
+msgid "Acknowledgments"
+msgstr "謝辞"
+
+msgid "Active"
+msgstr "有効"
+
+msgid "Active modules"
+msgstr "有効なモジュール"
+
+msgid "Add"
+msgstr "追加"
+
+msgid "Add a folder"
+msgstr "フォルダーを追加"
+
+msgid "Add a folder to the library"
+msgstr "ライブラリにフォルダーを追加"
+
+msgid "Add a server"
+msgstr "サーバーを追加"
+
+msgid "Add all to playlist…"
+msgstr "すべてをプレイリストに追加…"
+
+msgid "Add all to queue"
+msgstr "すべてをキューに追加"
+
+msgid "Add all tracks"
+msgstr "すべてのトラックを追加"
+
+msgid "Add cover"
+msgstr "カバーを追加"
+
+msgid "Add filter"
+msgstr "フィルターを追加"
+
+msgid "Add folder to library"
+msgstr "ライブラリにフォルダーを追加"
+
+msgid "Add image"
+msgstr "画像を追加"
+
+msgid "Add only new tracks"
+msgstr "新しいトラックのみ追加"
+
+msgid "Add server"
+msgstr "サーバーを追加"
+
+msgid "Add to favorites"
+msgstr "お気に入りに追加"
+
+msgid "Add to library"
+msgstr "ライブラリに追加"
+
+msgid "Add to playlist"
+msgstr "プレイリストに追加"
+
+msgid "Add to playlist…"
+msgstr "プレイリストに追加…"
+
+msgid "Add to queue"
+msgstr "キューに追加"
+
+msgid "Add to queue {}"
+msgstr "キュー「{}」に追加"
+
+msgid "Add tracks from a track menu to this queue."
+msgstr "トラックメニューからこのキューにトラックを追加します。"
+
+msgid "Added this month"
+msgstr "今月追加"
+
+msgid "Adding to queue…"
+msgstr "キューに追加中…"
+
+msgid "Adding tracks…"
+msgstr "トラックを追加中…"
+
+msgid "Adding {} track"
+msgid_plural "Adding {} tracks"
+msgstr[0] "{}トラックを追加中"
+
+msgid "Adding..."
+msgstr "追加中..."
+
+msgid "Add…"
+msgstr "追加…"
+
+msgid "Advanced"
+msgstr "詳細"
+
+msgid "Album"
+msgstr "アルバム"
+
+msgid "Album Reactive"
+msgstr "アルバム連動"
+
+msgid "Album actions"
+msgstr "アルバムの操作"
+
+msgid "Album artist"
+msgstr "アルバムアーティスト"
+
+msgid "Album artists"
+msgstr "アルバムアーティスト"
+
+msgid "Album header"
+msgstr "アルバムヘッダー"
+
+msgid "Album page"
+msgstr "アルバムページ"
+
+msgid "Album radio"
+msgstr "アルバムラジオ"
+
+msgid "Albums"
+msgstr "アルバム"
+
+msgid "Albums ({})"
+msgstr "アルバム（{}）"
+
+msgid "All"
+msgstr "すべて"
+
+msgid "All ({})"
+msgstr "すべて（{}）"
+
+msgid "All artists"
+msgstr "すべてのアーティスト"
+
+msgid "All categories"
+msgstr "すべてのカテゴリ"
+
+msgid "All discs"
+msgstr "すべてのディスク"
+
+msgid "All episode types"
+msgstr "すべてのエピソードタイプ"
+
+msgid "All groups"
+msgstr "すべてのグループ"
+
+msgid "All music"
+msgstr "すべての音楽"
+
+msgid "All qualities"
+msgstr "すべての音質"
+
+msgid "All saved results"
+msgstr "保存済みの結果すべて"
+
+msgid "All seasons"
+msgstr "すべてのシーズン"
+
+msgid "All set"
+msgstr "準備完了"
+
+msgid "All sources"
+msgstr "すべてのソース"
+
+msgid "All themes"
+msgstr "すべてのテーマ"
+
+msgid "All time"
+msgstr "全期間"
+
+msgid "Allow Chilpa on Last.fm; this updates by itself."
+msgstr "Last.fmでChilpaを許可してください。この表示は自動で更新されます。"
+
+msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
+msgstr "任意のメタデータ、アーティストの紹介文、ポッドキャストの検索、Last.fmへのリクエストを、Chilpaのプロキシ経由で許可します。テレメトリーはありません。リクエストはバックグラウンドで実行されます。"
+
+msgid "Allow results from KuGou."
+msgstr "KuGouの結果を許可します。"
+
+msgid "Allow results from LRCLIB through Chilpa's lyrics API."
+msgstr "Chilpaの歌詞API経由でLRCLIBの結果を許可します。"
+
+msgid "Allow results from NetEase."
+msgstr "NetEaseの結果を許可します。"
+
+msgid "Allow results from QQ Music."
+msgstr "QQ Musicの結果を許可します。"
+
+msgid "Allow updates with the same permissions while playback is stopped. Updates that need more permissions wait for review. Your accounts and settings are kept."
+msgstr "再生が停止している間、同じ権限のアップデートを許可します。より多くの権限が必要なアップデートは確認を待ちます。アカウントと設定は保持されます。"
+
+msgid "Allowed network domains, separated by commas"
+msgstr "許可するネットワークドメイン（カンマ区切り）"
+
+msgid "Alphabetical"
+msgstr "アルファベット順"
+
+msgid "Already in"
+msgstr "追加済み"
+
+msgid "Already used by {}"
+msgstr "{}で使用済み"
+
+msgid "Also write the other tag layers"
+msgstr "ほかのタグレイヤーにも書き込む"
+
+msgid "Ambient"
+msgstr "アンビエント"
+
+msgid "An EQ value is missing or invalid."
+msgstr "EQの値が見つからないか、無効です。"
+
+msgid "An active EQ filter is missing Q."
+msgstr "有効なEQフィルターにQがありません。"
+
+msgid "Analysis"
+msgstr "解析"
+
+msgid "Analysis history"
+msgstr "解析履歴"
+
+msgid "Analysis inventory"
+msgstr "解析一覧"
+
+msgid "Analyze"
+msgstr "解析"
+
+msgid "Analyze the library"
+msgstr "ライブラリを解析"
+
+msgid "Analyze the new music too?"
+msgstr "新しい音楽も解析しますか？"
+
+msgid "Analyzes local files and puts the results in Playlists > Mood."
+msgstr "ローカルファイルを解析し、結果をプレイリスト > ムードに表示します。"
+
+msgid "Analyzing"
+msgstr "解析中"
+
+msgid "Analyzing Mood"
+msgstr "ムードを解析中"
+
+msgid "Analyzing {} of {} tracks"
+msgstr "{}/{}トラックを解析中"
+
+msgid "Animate the playing track's mark with equalizer bars. Off by default: a still mark with an accent edge, lighter on the CPU."
+msgstr "再生中のトラックのマークをイコライザーバーでアニメーション表示します。既定ではオフで、アクセント色の縁取りがある静止マークになり、CPU負荷が軽くなります。"
+
+msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
+msgstr "アプリ全体の背後にアルバムアートのアニメーション背景を表示します。リソース使用量が多く、GPUアクセラレーションを使います。"
+
+msgid "Any quality"
+msgstr "すべての音質"
+
+msgid "Any source — best quality (local mixed playlist)"
+msgstr "すべてのソース — 最高音質（ローカルのミックスプレイリスト）"
+
+msgid "Appearance"
+msgstr "外観"
+
+msgid "Appears On"
+msgstr "参加作品"
+
+msgid "Apply"
+msgstr "適用"
+
+msgid "Apply import"
+msgstr "インポートを適用"
+
+msgid "Apply system tint to the icon"
+msgstr "アイコンにシステムの色調を適用する"
+
+msgid "Apply the same grouping to every source. Turn this off to show one combined playlist list."
+msgstr "同じグループ分けをすべてのソースに適用します。オフにすると、1つにまとめたプレイリスト一覧を表示します。"
+
+msgid "Apply to the form"
+msgstr "フォームに適用"
+
+msgid "Approve"
+msgstr "承認"
+
+msgid "Approve network permission"
+msgstr "ネットワーク権限を承認"
+
+msgid "Approve new access"
+msgstr "新しいアクセスを承認"
+
+msgid "Approve permissions and install"
+msgstr "権限を承認してインストール"
+
+msgid "Apr"
+msgstr "4月"
+
+msgid "April"
+msgstr "4月"
+
+msgid "Artist"
+msgstr "アーティスト"
+
+msgid "Artist mix"
+msgstr "アーティストミックス"
+
+msgid "Artist radio"
+msgstr "アーティストラジオ"
+
+msgid "Artists"
+msgstr "アーティスト"
+
+msgid "Artists from this scene"
+msgstr "このシーンのアーティスト"
+
+msgid "Artwork"
+msgstr "アートワーク"
+
+msgid "Artwork view"
+msgstr "アートワーク表示"
+
+msgid "Artwork, generated images, plugin data and other temporary files."
+msgstr "アートワーク、生成された画像、プラグインのデータ、その他の一時ファイル。"
+
+msgid "Ask Chilpa's lyrics API to translate lyrics that carry no translation in your language. The lines of the track are sent to it. On by default; you can turn it off."
+msgstr "お使いの言語の翻訳がない歌詞を、Chilpaの歌詞APIに翻訳させます。トラックの歌詞の行が送信されます。既定ではオンで、オフにもできます。"
+
+msgid "Ask before quitting"
+msgstr "終了前に確認"
+
+msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
+msgstr "Chilpaが再生している間、PipeWireまたはPulseAudioにカードの解放を要求し、Chilpaが停止または長時間一時停止したときに返します。"
+
+msgid "Audio"
+msgstr "オーディオ"
+
+msgid "Audio CD"
+msgstr "オーディオCD"
+
+msgid "Audio stack"
+msgstr "オーディオスタック"
+
+msgid "Audio stack ready"
+msgstr "オーディオスタックの準備完了"
+
+msgid "Aug"
+msgstr "8月"
+
+msgid "August"
+msgstr "8月"
+
+msgid "Aurora"
+msgstr "Aurora"
+
+msgid "Author: {}"
+msgstr "作者: {}"
+
+msgid "Auto"
+msgstr "自動"
+
+msgid "Auto (app language)"
+msgstr "自動（アプリの言語）"
+
+msgid "Auto (dynamic)"
+msgstr "自動（動的）"
+
+msgid "Auto (recommended)"
+msgstr "自動（推奨）"
+
+msgid "Auto follows the desktop's colours: the light glyph on a dark panel, the dark one on a light panel."
+msgstr "「自動」はデスクトップの色に従います。暗いパネルでは明るいグリフ、明るいパネルでは暗いグリフを使います。"
+
+msgid "Auto picks the best renderer for your graphics hardware. Only change this if the app feels slow or renders incorrectly (requires restart)"
+msgstr "「自動」はグラフィックハードウェアに最適なレンダラーを選択します。動作が遅い、または表示が乱れる場合のみ変更してください（再起動が必要）"
+
+msgid "Auto-detect your DACs and set up bit-perfect playback, step by step."
+msgstr "DACを自動検出し、ビットパーフェクト再生をステップごとに設定します。"
+
+msgid "Auto-follow"
+msgstr "自動追従"
+
+msgid "Automatic headroom lowers gain to leave room for EQ boosts."
+msgstr "自動ヘッドルームは、EQでブーストする余裕を確保するためにゲインを下げます。"
+
+msgid "Automatic headroom only reduces gain. Compression has no makeup gain; ratio 1 disables it."
+msgstr "自動ヘッドルームはゲインを下げるだけです。コンプレッサーにメイクアップゲインはありません。レシオを1にすると無効になります。"
+
+msgid "Automatically update plugins"
+msgstr "プラグインを自動更新"
+
+msgid "Awaiting approval"
+msgstr "承認待ち"
+
+msgid "BORN"
+msgstr "生年月日"
+
+msgid "BORN IN"
+msgstr "出身地"
+
+msgid "BP"
+msgstr "BP"
+
+msgid "BP marks an output that takes the samples untouched."
+msgstr "BPは、サンプルを加工せずに受け取る出力を示します。"
+
+msgid "Back"
+msgstr "戻る"
+
+msgid "Back 10 seconds"
+msgstr "10秒戻る"
+
+msgid "Back to plugins"
+msgstr "プラグインに戻る"
+
+msgid "Back to purchases"
+msgstr "購入に戻る"
+
+msgid "Background"
+msgstr "背景"
+
+msgid "Background image"
+msgstr "背景画像"
+
+msgid "Balance · −100 left / +100 right"
+msgstr "バランス · −100（左）/ +100（右）"
+
+msgid "Based on {artist} · {genres}"
+msgstr "{artist} · {genres}に基づく"
+
+msgid "Bass"
+msgstr "低音"
+
+msgid "Between tracks"
+msgstr "トラック間"
+
+msgid "Bit perfect"
+msgstr "ビットパーフェクト"
+
+msgid "Bit-perfect"
+msgstr "ビットパーフェクト"
+
+msgid "Block network access, including plugins, online artwork, updates and scrobbling. Local playback, cached content and installed Mood models stay available. Artist Network is hidden."
+msgstr "プラグイン、オンラインのアートワーク、アップデート、スクロブルを含むネットワークアクセスをブロックします。ローカル再生、キャッシュ済みコンテンツ、インストール済みのムードモデルは引き続き使えます。アーティストの「ネットワーク」は非表示になります。"
+
+msgid "Blurred art"
+msgstr "ぼかしアートワーク"
+
+msgid "Bonus"
+msgstr "ボーナス"
+
+msgid "Booklet"
+msgstr "ブックレット"
+
+msgid "Border"
+msgstr "境界線"
+
+msgid "Browse for a music folder, or type its full path."
+msgstr "音楽フォルダーを参照するか、フルパスを入力してください。"
+
+msgid "Browse view"
+msgstr "ブラウズ表示"
+
+msgid "Browse…"
+msgstr "参照…"
+
+msgid "Build"
+msgstr "ビルド"
+
+msgid "Build info"
+msgstr "ビルド情報"
+
+msgid "Built with Rust and Qt, and powered by Symphonia and Lofty. With thanks to MusicBrainz, Last.fm, LRCLIB, Tabler Icons, Lucide and Inter."
+msgstr "RustとQtで構築され、SymphoniaとLoftyを使用しています。MusicBrainz、Last.fm、LRCLIB、Tabler Icons、Lucide、Interに感謝します。"
+
+msgid "Busiest day"
+msgstr "最も再生した日"
+
+msgid "Busiest day, {} play"
+msgid_plural "Busiest day, {} plays"
+msgstr[0] "最も再生した日、{}回再生"
+
+msgid "Buttons to go back or forward ten seconds, and the A-B loop."
+msgstr "10秒戻る・進むボタンと、ABループ。"
+
+msgid "By album"
+msgstr "アルバム別"
+
+msgid "By artist"
+msgstr "アーティスト別"
+
+msgid "By decade"
+msgstr "年代別"
+
+msgid "By letter"
+msgstr "頭文字別"
+
+msgid "By name"
+msgstr "名前別"
+
+msgid "By year"
+msgstr "年別"
+
+msgid "Bypass · original samples"
+msgstr "バイパス · 元のサンプル"
+
+msgid "CD in {}"
+msgstr "{}内のCD"
+
+msgid "CDs are not read outside Linux yet"
+msgstr "Linux以外ではまだCDを読み取れません"
+
+msgid "Cache folder"
+msgstr "キャッシュフォルダー"
+
+msgid "Cache used"
+msgstr "キャッシュ使用量"
+
+msgid "Calculated gain"
+msgstr "計算されたゲイン"
+
+msgid "Calculating…"
+msgstr "計算中…"
+
+msgid "Calm"
+msgstr "穏やか"
+
+msgid "Can't see your DAC?"
+msgstr "DACが見つかりませんか？"
+
+msgid "Cancel"
+msgstr "キャンセル"
+
+msgid "Cancel Timer"
+msgstr "タイマーをキャンセル"
+
+msgid "Cancel download"
+msgstr "ダウンロードをキャンセル"
+
+msgid "Cancel stop after this track"
+msgstr "このトラックの後で停止をキャンセル"
+
+msgid "Cancelled"
+msgstr "キャンセル済み"
+
+msgid "Cancelling update…"
+msgstr "アップデートをキャンセル中…"
+
+msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
+msgstr "最大ピークがフルスケールを超えないようブーストを制限します。オフにすると、ピークがクリップしても静かなトラックが目標に達します。"
+
+msgid "Casting needs an original file with a known size and byte ranges."
+msgstr "キャストには、サイズとバイト範囲がわかる元のファイルが必要です。"
+
+msgid "Catalog error"
+msgstr "カタログエラー"
+
+msgid "Catalog number"
+msgstr "カタログ番号"
+
+msgid "Categories"
+msgstr "カテゴリ"
+
+msgid "Change cover"
+msgstr "カバーを変更"
+
+msgid "Change image"
+msgstr "画像を変更"
+
+msgid "Change sign-in"
+msgstr "ログイン情報を変更"
+
+msgid "Chapters"
+msgstr "チャプター"
+
+msgid "Check"
+msgstr "チェック"
+
+msgid "Check Audio Stack"
+msgstr "オーディオスタックをチェック"
+
+msgid "Check for a newer version of Chilpa."
+msgstr "Chilpaの新しいバージョンを確認します。"
+
+msgid "Check for updates"
+msgstr "アップデートを確認"
+
+msgid "Check for updates automatically"
+msgstr "アップデートを自動で確認"
+
+msgid "Checking for updates…"
+msgstr "アップデートを確認中…"
+
+msgid "Checking the account…"
+msgstr "アカウントを確認中…"
+
+msgid "Checking your audio stack…"
+msgstr "オーディオスタックを確認中…"
+
+msgid "Checking your selected sources can take a few minutes."
+msgstr "選択したソースの確認には数分かかることがあります。"
+
+msgid "Checking {source}…"
+msgstr "{source}を確認中…"
+
+msgid "Chilpa"
+msgstr "Chilpa"
+
+msgid "Chilpa Native Plugins"
+msgstr "Chilpaネイティブプラグイン"
+
+msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
+msgstr "Chilpaはレート、シンク、排他モードを実行時にすでに固定しています。これらのファイルが変更するのはシステム全体の動作のみです。必要な場合は、ご自身でコピーして実行してください。事前にバックアップしてください。"
+
+msgid "Chilpa can also read the tempo, musical key and loudness of what this folder holds. It takes much longer than reading the folder: it starts when the scan is done, runs in the background, and can be stopped in Settings > Library > Analysis."
+msgstr "Chilpaは、このフォルダーにあるもののテンポ、キー、ラウドネスも読み取れます。フォルダーの読み取りよりはるかに時間がかかります。スキャンの完了後に開始してバックグラウンドで実行され、設定 > ライブラリ > 解析で停止できます。"
+
+msgid "Chilpa can run some plugins made for other platforms. Add a plugin catalog you use. Compatibility is not guaranteed; Chilpa is not responsible for these plugins' behavior."
+msgstr "Chilpaは、ほかのプラットフォーム向けに作られた一部のプラグインを実行できます。お使いのプラグインカタログを追加してください。互換性は保証されません。Chilpaはこれらのプラグインの動作について責任を負いません。"
+
+msgid "Chilpa can see this machine's outputs but cannot play through them yet"
+msgstr "Chilpaはこのマシンの出力を認識していますが、まだそれらを通して再生できません"
+
+msgid "Chilpa cannot read this link"
+msgstr "Chilpaはこのリンクを読み取れません"
+
+msgid "Chilpa could not release the exclusive output. Stop playback and try the diagnosis again."
+msgstr "Chilpaは排他出力を解放できませんでした。再生を停止して、もう一度診断してください。"
+
+msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
+msgstr "ChilpaはFlatpak/Snapとしてパッケージされているため、ホストのオーディオスタックを調べられません。すでに再生できている場合は問題ありません。下でディストリビューションとinitシステムを選ぶと、適切なセットアップコマンドが表示されます。"
+
+msgid "Chilpa is up to date."
+msgstr "Chilpaは最新です。"
+
+msgid "Chilpa lyrics API"
+msgstr "Chilpaの歌詞API"
+
+msgid "Chilpa never writes these files"
+msgstr "Chilpaはこれらのファイルを書き込みません"
+
+msgid "Chilpa opens with the tabs it had when it closed."
+msgstr "Chilpaは、前回閉じたときのタブで開きます。"
+
+msgid "Chilpa plugins"
+msgstr "Chilpaプラグイン"
+
+msgid "Chilpa proxy"
+msgstr "Chilpaプロキシ"
+
+msgid "Chilpa requesting {} · {}-bit"
+msgstr "Chilpaがリクエスト中: {} · {}ビット"
+
+msgid "Chilpa sends no telemetry. When enabled, artist and release searches make one-way requests to MusicBrainz for results. Turning it off disables MusicBrainz features in Artist Network."
+msgstr "Chilpaはテレメトリーを送信しません。有効にすると、アーティストとリリースの検索でMusicBrainzに一方向のリクエストを送り、結果を取得します。オフにすると、アーティストの「ネットワーク」でMusicBrainzの機能が無効になります。"
+
+msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
+msgstr "Chilpaはデバイスを各トラックのレートに設定します。排他モードがオンの間は、トラックの再生中デバイスがChilpaだけのものになり、Mac上のほかのものは使えません。共有するには排他モードをオフにしてください。Macはほかの再生音もミックスします。"
+
+msgid "Chilpa update available"
+msgstr "Chilpaのアップデートがあります"
+
+msgid "Chilpa will make smaller covers and backgrounds again when needed."
+msgstr "必要になったとき、Chilpaは小さいカバーと背景をもう一度作成します。"
+
+msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
+msgstr "パネル上のChilpaのアイコン: クリックでウィンドウの表示と非表示、中ボタンで再生と一時停止、ホイールで音量を調整します。"
+
+msgid "Chilpatl is Nahuatl for hornet. Chilpa is a music player for the desktop, where local files, self-hosted servers and plugins are all just sources."
+msgstr "Chilpatlはナワトル語でスズメバチのことです。Chilpaはデスクトップ向けの音楽プレーヤーで、ローカルファイル、セルフホストのサーバー、プラグインがすべて単なるソースとして扱われます。"
+
+msgid "Chinese"
+msgstr "中国語"
+
+msgid "Choose"
+msgstr "選択"
+
+msgid "Choose DSP on or bypass."
+msgstr "DSPのオンまたはバイパスを選択してください。"
+
+msgid "Choose a DSP favorite."
+msgstr "DSPのお気に入りを選択してください。"
+
+msgid "Choose a DSP plugin."
+msgstr "DSPプラグインを選択してください。"
+
+msgid "Choose a DSP preset."
+msgstr "DSPプリセットを選択してください。"
+
+msgid "Choose a cover"
+msgstr "カバーを選択"
+
+msgid "Choose a download folder before downloading."
+msgstr "ダウンロードの前にダウンロードフォルダーを選択してください。"
+
+msgid "Choose a file…"
+msgstr "ファイルを選択…"
+
+msgid "Choose a keymap: default, letters or vi."
+msgstr "キーマップを選択してください: default、letters、vi。"
+
+msgid "Choose a local ZIP file."
+msgstr "ローカルのZIPファイルを選択してください。"
+
+msgid "Choose a playback control"
+msgstr "再生コントロールを選択"
+
+msgid "Choose a preset."
+msgstr "プリセットを選択してください。"
+
+msgid "Choose a renderer on your local network. The queue stays in Chilpa."
+msgstr "ローカルネットワーク上のレンダラーを選択してください。キューはChilpaに残ります。"
+
+msgid "Choose an image"
+msgstr "画像を選択"
+
+msgid "Choose at least two different queues."
+msgstr "異なるキューを2つ以上選択してください。"
+
+msgid "Choose device"
+msgstr "デバイスを選択"
+
+msgid "Choose download folder"
+msgstr "ダウンロードフォルダーを選択"
+
+msgid "Choose download folder…"
+msgstr "ダウンロードフォルダーを選択…"
+
+msgid "Choose file…"
+msgstr "ファイルを選択…"
+
+msgid "Choose image"
+msgstr "画像を選択"
+
+msgid "Choose image…"
+msgstr "画像を選択…"
+
+msgid "Choose playlist"
+msgstr "プレイリストを選択"
+
+msgid "Choose playlist artwork"
+msgstr "プレイリストのアートワークを選択"
+
+msgid "Choose playlist file"
+msgstr "プレイリストファイルを選択"
+
+msgid "Choose plugin icon"
+msgstr "プラグインのアイコンを選択"
+
+msgid "Choose queues and arrange their order. Repeated tracks are kept."
+msgstr "キューを選択して順序を並べ替えます。重複したトラックはそのまま残ります。"
+
+msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
+msgstr "この出力に対応する再生ミキサー要素を選択してください。Chilpaは保存前に確認します。"
+
+msgid "Clear"
+msgstr "クリア"
+
+msgid "Clear after this track"
+msgstr "このトラックの後でクリア"
+
+msgid "Clear filter"
+msgstr "フィルターをクリア"
+
+msgid "Clear generated images"
+msgstr "生成された画像をクリア"
+
+msgid "Clear generated images?"
+msgstr "生成された画像をクリアしますか？"
+
+msgid "Clear loop"
+msgstr "ループを解除"
+
+msgid "Clear lyrics cache"
+msgstr "歌詞キャッシュをクリア"
+
+msgid "Clear queue"
+msgstr "キューをクリア"
+
+msgid "Clear temporary remote artwork"
+msgstr "一時的なリモートアートワークをクリア"
+
+msgid "Clear temporary remote images?"
+msgstr "一時的なリモート画像をクリアしますか？"
+
+msgid "Clear the selection"
+msgstr "選択を解除"
+
+msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
+msgstr "クリアしました。{}件の歌詞を削除しました。トラックの再生時にもう一度検索されます。"
+
+msgid "Clearing in the background…"
+msgstr "バックグラウンドでクリア中…"
+
+msgid "Clear…"
+msgstr "クリア…"
+
+msgid "Click tracks to select them; Shift selects a range."
+msgstr "トラックをクリックして選択します。Shiftで範囲を選択します。"
+
+msgid "Clipped samples"
+msgstr "クリップしたサンプル"
+
+msgid "Close"
+msgstr "閉じる"
+
+msgid "Close / Dismiss"
+msgstr "閉じる / 非表示"
+
+msgid "Close Tab"
+msgstr "タブを閉じる"
+
+msgid "Close media"
+msgstr "メディアを閉じる"
+
+msgid "Close search"
+msgstr "検索を閉じる"
+
+msgid "Close tab"
+msgstr "タブを閉じる"
+
+msgid "Close the quotation marks."
+msgstr "引用符を閉じてください。"
+
+msgid "Close to tray"
+msgstr "閉じてトレイに格納"
+
+msgid "Closing the window keeps Chilpa playing in the tray instead of quitting."
+msgstr "ウィンドウを閉じても、終了せずにChilpaがトレイで再生を続けます。"
+
+msgid "Collaborators"
+msgstr "共演者"
+
+msgid "Collapse"
+msgstr "折りたたむ"
+
+msgid "Collapse all"
+msgstr "すべて折りたたむ"
+
+msgid "Collapse sidebar"
+msgstr "サイドバーを折りたたむ"
+
+msgid "Color"
+msgstr "カラー"
+
+msgid "Colors"
+msgstr "色"
+
+msgid "Columns"
+msgstr "列"
+
+msgid "Combine"
+msgstr "結合"
+
+msgid "Combine queues"
+msgstr "キューを結合"
+
+msgid "Combined queue"
+msgstr "結合したキュー"
+
+msgid "Command help"
+msgstr "コマンドヘルプ"
+
+msgid "Command help · :help command for details · Esc to close"
+msgstr "コマンドヘルプ · 詳細は :help コマンド名 · Escで閉じる"
+
+msgid "Command line"
+msgstr "コマンドライン"
+
+msgid "Compact"
+msgstr "コンパクト"
+
+msgid "Compact rows"
+msgstr "コンパクトな行"
+
+msgid "Compact rows like a spreadsheet, or rich rows with the cover."
+msgstr "スプレッドシートのようなコンパクトな行か、カバー付きのリッチな行を選べます。"
+
+msgid "Compact view"
+msgstr "コンパクト表示"
+
+msgid "Compatibility is not fully verified"
+msgstr "互換性は完全には確認されていません"
+
+msgid "Compatible plugins"
+msgstr "互換性のあるプラグイン"
+
+msgid "Compilation"
+msgstr "コンピレーション"
+
+msgid "Compilation (various artists)"
+msgstr "コンピレーション（Various Artists）"
+
+msgid "Compilations"
+msgstr "コンピレーション"
+
+msgid "Completed"
+msgstr "完了"
+
+msgid "Composer"
+msgstr "作曲者"
+
+msgid "Composers"
+msgstr "作曲者"
+
+msgid "Compressor ratio · 1–6"
+msgstr "コンプレッサーのレシオ · 1–6"
+
+msgid "Compressor threshold · −60–0 dB"
+msgstr "コンプレッサーのスレッショルド · −60–0 dB"
+
+msgid "Config files you can create:"
+msgstr "作成できる設定ファイル："
+
+msgid "Configure"
+msgstr "設定"
+
+msgid "Connect"
+msgstr "接続"
+
+msgid "Connect on {}"
+msgstr "{}で接続"
+
+msgid "Connect {}"
+msgstr "{}に接続"
+
+msgid "Connected"
+msgstr "接続済み"
+
+msgid "Connected as {}"
+msgstr "{}として接続済み"
+
+msgid "Connecting…"
+msgstr "接続中…"
+
+msgid "Connection error"
+msgstr "接続エラー"
+
+msgid "Continue"
+msgstr "続ける"
+
+msgid "Continue listening"
+msgstr "続きを再生"
+
+msgid "Convert to PCM"
+msgstr "PCMに変換"
+
+msgid "Copy"
+msgstr "コピー"
+
+msgid "Copy URL to clipboard"
+msgstr "URLをクリップボードにコピー"
+
+msgid "Copy album and artist"
+msgstr "アルバムとアーティストをコピー"
+
+msgid "Copy full information"
+msgstr "すべての情報をコピー"
+
+msgid "Copy lyrics"
+msgstr "歌詞をコピー"
+
+msgid "Copy playlist"
+msgstr "プレイリストをコピー"
+
+msgid "Copy preset JSON"
+msgstr "プリセットのJSONをコピー"
+
+msgid "Copy the colors of the currently applied theme into the editor as a starting point."
+msgstr "現在適用中のテーマの色を出発点としてエディターにコピーします。"
+
+msgid "CoreAudio reports no device that can play"
+msgstr "CoreAudioは再生可能なデバイスを検出していません"
+
+msgid "Could not add tracks to this playlist."
+msgstr "このプレイリストにトラックを追加できませんでした。"
+
+msgid "Could not create the playlist. Please try again."
+msgstr "プレイリストを作成できませんでした。もう一度お試しください。"
+
+msgid "Could not load the image"
+msgstr "画像を読み込めませんでした"
+
+msgid "Could not move the playlist."
+msgstr "プレイリストを移動できませんでした。"
+
+msgid "Could not read the analysis inventory."
+msgstr "解析一覧を読み取れませんでした。"
+
+msgid "Could not save the folder. Please try again."
+msgstr "フォルダーを保存できませんでした。もう一度お試しください。"
+
+msgid "Could not save the playlist. Please try again."
+msgstr "プレイリストを保存できませんでした。もう一度お試しください。"
+
+msgid "Couldn't load the test tracks"
+msgstr "テストトラックを読み込めませんでした"
+
+msgid "Counting tracks…"
+msgstr "トラックを数えています…"
+
+msgid "Countries"
+msgstr "国"
+
+msgid "Cover collage"
+msgstr "カバーコラージュ"
+
+msgid "Coverflow"
+msgstr "カバーフロー"
+
+msgid "Create & Add"
+msgstr "作成して追加"
+
+msgid "Create graphic EQ"
+msgstr "グラフィックEQを作成"
+
+msgid "Create playlist"
+msgstr "プレイリストを作成"
+
+msgid "Create playlists"
+msgstr "プレイリストを作成"
+
+msgid "Creating playlists…"
+msgstr "プレイリストを作成中…"
+
+msgid "Credits"
+msgstr "クレジット"
+
+msgid "Critics' Picks"
+msgstr "評論家のおすすめ"
+
+msgid "Crossfeed · 0–50%"
+msgstr "クロスフィード · 0–50%"
+
+msgid "Cursor down"
+msgstr "カーソルを下へ"
+
+msgid "Cursor up"
+msgstr "カーソルを上へ"
+
+msgid "Custom"
+msgstr "カスタム"
+
+msgid "Custom Image"
+msgstr "カスタム画像"
+
+msgid "Custom image"
+msgstr "カスタム画像"
+
+msgid "Customize"
+msgstr "カスタマイズ"
+
+msgid "Customize Shortcuts"
+msgstr "ショートカットをカスタマイズ"
+
+msgid "Custom…"
+msgstr "カスタム…"
+
+msgid "Cycle Repeat"
+msgstr "リピート切り替え"
+
+msgid "DAC passthrough"
+msgstr "DACパススルー"
+
+msgid "DAC: {} · {} · {} ch"
+msgstr "DAC：{} · {} · {} ch"
+
+msgid "DACs"
+msgstr "DAC"
+
+msgid "DIED"
+msgstr "没年"
+
+msgid "DISBANDED"
+msgstr "解散"
+
+msgid "DLNA / UPnP and Chromecast"
+msgstr "DLNA / UPnPとChromecast"
+
+msgid "DSD files keep their changes in a sidecar"
+msgstr "DSDファイルの変更はサイドカーファイルに保存されます"
+
+msgid "DSD not supported: {}"
+msgstr "DSDには対応していません: {}"
+
+msgid "DSD over PCM (DoP)"
+msgstr "DSD over PCM (DoP)"
+
+msgid "DSD playback"
+msgstr "DSD再生"
+
+msgid "DSD through PipeWire"
+msgstr "PipeWire経由のDSD"
+
+msgid "DSD128 over DoP"
+msgstr "DoP経由のDSD128"
+
+msgid "DSD64 over DoP"
+msgstr "DoP経由のDSD64"
+
+msgid "DSDIFF compressed with DST"
+msgstr "DSTで圧縮されたDSDIFF"
+
+msgid "DSD{} · DoP at {} Hz · {}"
+msgstr "DSD{} · DoP {} Hz · {}"
+
+msgid "DSD{} · Native at {} Hz · {}"
+msgstr "DSD{} · ネイティブ {} Hz · {}"
+
+msgid "DSD{} · PCM at {} Hz · {}"
+msgstr "DSD{} · PCM {} Hz · {}"
+
+msgid "DSP active"
+msgstr "DSP有効"
+
+msgid "DSP applies to local output. Cast sends the original audio."
+msgstr "DSPはローカル出力に適用されます。キャストでは元の音声を送信します。"
+
+msgid "DSP catalog is too large."
+msgstr "DSPカタログが大きすぎます。"
+
+msgid "DSP changes the signal and breaks strict bit-perfect playback."
+msgstr "DSPは信号を変更するため、厳密なビットパーフェクト再生ではなくなります。"
+
+msgid "DSP control is unavailable."
+msgstr "DSPコントロールは利用できません。"
+
+msgid "DSP filters need 10–24000 Hz, −24–18 dB and Q 0.1–12."
+msgstr "DSPフィルターには、10–24000 Hz、−24–18 dB、Q 0.1–12が必要です。"
+
+msgid "DSP host is unavailable."
+msgstr "DSPホストは利用できません。"
+
+msgid "DSP input is too large."
+msgstr "DSPの入力が大きすぎます。"
+
+msgid "DSP preset is unavailable."
+msgstr "DSPプリセットは利用できません。"
+
+msgid "DSP · Equalizer and presets"
+msgstr "DSP · イコライザーとプリセット"
+
+msgid "Danger"
+msgstr "危険"
+
+msgid "Dark"
+msgstr "ダーク"
+
+msgid "Dark OLED"
+msgstr "ダークOLED"
+
+msgid "Dark theme"
+msgstr "ダークテーマ"
+
+msgid "Dark themes"
+msgstr "ダークテーマ"
+
+msgid "Date"
+msgstr "日付"
+
+msgid "Date added"
+msgstr "追加日"
+
+msgid "Date updated"
+msgstr "更新日"
+
+msgid "Day"
+msgstr "日"
+
+msgid "Days of the week"
+msgstr "曜日"
+
+msgid "Dec"
+msgstr "12月"
+
+msgid "Decades"
+msgstr "年代"
+
+msgid "December"
+msgstr "12月"
+
+msgid "Default"
+msgstr "既定"
+
+msgid "Delete"
+msgstr "削除"
+
+msgid "Delete folder"
+msgstr "フォルダーを削除"
+
+msgid "Delete folder…"
+msgstr "フォルダーを削除…"
+
+msgid "Delete playlist"
+msgstr "プレイリストを削除"
+
+msgid "Delete preset"
+msgstr "プリセットを削除"
+
+msgid "Delete “{}”?"
+msgstr "「{}」を削除しますか？"
+
+msgid "Delete…"
+msgstr "削除…"
+
+msgid "Description"
+msgstr "説明"
+
+msgid "Description not provided yet."
+msgstr "説明はまだありません。"
+
+msgid "Desktop"
+msgstr "デスクトップ"
+
+msgid "Destinations"
+msgstr "取り込み先"
+
+msgid "Detected: "
+msgstr "検出: "
+
+msgid "Detecting your DACs…"
+msgstr "DACを検出中…"
+
+msgid "Device"
+msgstr "デバイス"
+
+msgid "Device discovery"
+msgstr "デバイスの検出"
+
+msgid "Devices & cast"
+msgstr "デバイスとキャスト"
+
+msgid "Diagnose"
+msgstr "診断"
+
+msgid "Diagnose the output"
+msgstr "出力を診断"
+
+msgid "Diagnosis"
+msgstr "診断"
+
+msgid "Dimming"
+msgstr "減光"
+
+msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Audio."
+msgstr "ALSAダイレクトはサンプルをスケールしません。DACまたはアンプで調整するか、設定 › オーディオでハードウェア音量を有効にしてください。"
+
+msgid "Disable"
+msgstr "無効にする"
+
+msgid "Disabled"
+msgstr "無効"
+
+msgid "Disabled. Its records stay in the library and its sign-in is saved."
+msgstr "無効です。アルバムはライブラリに残り、ログイン情報は保存されます。"
+
+msgid "Disc"
+msgstr "ディスク"
+
+msgid "Disc subtitle"
+msgstr "ディスクのサブタイトル"
+
+msgid "Disc {}"
+msgstr "ディスク {}"
+
+msgid "Discard"
+msgstr "破棄"
+
+msgid "Discard the changes to the other record?"
+msgstr "もう一方のアルバムの変更を破棄しますか？"
+
+msgid "Discard the changes?"
+msgstr "変更を破棄しますか？"
+
+msgid "Discogs release"
+msgstr "Discogsリリース"
+
+msgid "Disconnect"
+msgstr "接続を解除"
+
+msgid "Disconnect account"
+msgstr "アカウントの接続を解除"
+
+msgid "Disconnected"
+msgstr "切断済み"
+
+msgid "Discover"
+msgstr "見つける"
+
+msgid "Discs"
+msgstr "ディスク"
+
+msgid "Dismiss"
+msgstr "閉じる"
+
+msgid "Display settings"
+msgstr "表示設定"
+
+msgid "Documentation"
+msgstr "ドキュメント"
+
+msgid "Does not answer. Its records stay listed and cannot be played."
+msgstr "応答がありません。アルバムは一覧に残りますが、再生できません。"
+
+msgid "Don't ask again"
+msgstr "今後は確認しない"
+
+msgid "Done"
+msgstr "完了"
+
+msgid "Done. You can close this tab and go back to Chilpa."
+msgstr "完了しました。このタブを閉じてChilpaに戻れます。"
+
+msgid "Download"
+msgstr "ダウンロード"
+
+msgid "Download again"
+msgstr "もう一度ダウンロード"
+
+msgid "Download album"
+msgstr "アルバムをダウンロード"
+
+msgid "Download track"
+msgstr "トラックをダウンロード"
+
+msgid "Downloaded"
+msgstr "ダウンロード済み"
+
+msgid "Downloading update…"
+msgstr "アップデートをダウンロード中…"
+
+msgid "Downloading {} of {}"
+msgstr "{}/{}をダウンロード中"
+
+msgid "Downloads"
+msgstr "ダウンロード"
+
+msgid "Drag or use ↑↓ to keep a custom order."
+msgstr "ドラッグするか↑↓を使って、カスタムの順序を維持します。"
+
+msgid "Duplicate DSP preset ID."
+msgstr "DSPプリセットのIDが重複しています。"
+
+msgid "Duration"
+msgstr "再生時間"
+
+msgid "Dutch"
+msgstr "オランダ語"
+
+msgid "Dynamic background"
+msgstr "ダイナミック背景"
+
+msgid "EPs & Singles"
+msgstr "EPとシングル"
+
+msgid "EQ response · 20 Hz–20 kHz · ±18 dB · before preamp"
+msgstr "EQ応答 · 20 Hz–20 kHz · ±18 dB · プリアンプ前"
+
+msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
+msgstr "各ファイルをコピーし、そのコピーに書き込んで読み戻したうえで、元のファイルを置き換えます。アルバムと同じ大きさの空き容量が必要です。書き込んだ内容は元に戻せません。"
+
+msgid "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
+msgstr "選択した取り込み先ごとに、それぞれプレイリストが作成されます。ミックスプレイリストはChilpa内に残り、接続したすべてのソースのトラックを含められます。"
+
+msgid "Earlier"
+msgstr "前の期間"
+
+msgid "Earlier tabs"
+msgstr "以前のタブ"
+
+msgid "Edit"
+msgstr "編集"
+
+msgid "Edit folder"
+msgstr "フォルダーを編集"
+
+msgid "Edit metadata"
+msgstr "メタデータを編集"
+
+msgid "Edit metadata…"
+msgstr "メタデータを編集…"
+
+msgid "Edit playlist"
+msgstr "プレイリストを編集"
+
+msgid "Edit…"
+msgstr "編集…"
+
+msgid "Elevated"
+msgstr "浮き出し"
+
+msgid "Embedded tags only"
+msgstr "埋め込みタグのみ"
+
+msgid "Empty folders"
+msgstr "空のフォルダー"
+
+msgid "Empty. Add tracks from any list with a right click."
+msgstr "空です。右クリックでどの一覧からでもトラックを追加できます。"
+
+msgid "Enable"
+msgstr "有効にする"
+
+msgid "Enable PipeWire in your NixOS configuration"
+msgstr "NixOS構成でPipeWireを有効にしてください"
+
+msgid "Enable a DSP plugin first."
+msgstr "先にDSPプラグインを有効にしてください。"
+
+msgid "Enable audio processing; turn off for bypass"
+msgstr "音声処理を有効にします。バイパスにするにはオフにします"
+
+msgid "Enable lyrics"
+msgstr "歌詞を有効にする"
+
+msgid "Enable the optional Mood plugin and manage its model download."
+msgstr "オプションのムードプラグインを有効にして、そのモデルのダウンロードを管理します。"
+
+msgid "Enable {} in Settings › Sources to play this record."
+msgstr "このアルバムを再生するには、設定 › ソースで{}を有効にしてください。"
+
+msgid "Ends at {}"
+msgstr "終了予定 {}"
+
+msgid "English"
+msgstr "英語"
+
+msgid "Enter"
+msgstr "Enter"
+
+msgid "Enter a valid command; :help lists the commands."
+msgstr "有効なコマンドを入力してください。:help でコマンド一覧を表示できます。"
+
+msgid "Enter a valid number or time."
+msgstr "有効な数値または時間を入力してください。"
+
+msgid "Enter a valid number."
+msgstr "有効な数値を入力してください。"
+
+msgid "Episode notes"
+msgstr "エピソードのノート"
+
+msgid "Equalizer"
+msgstr "イコライザー"
+
+msgid "Errors"
+msgstr "エラー"
+
+msgid "Everyone who plays on a track"
+msgstr "トラックで演奏するすべての人"
+
+msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect and exclusive mode off to share it and let Windows mix and resample."
+msgstr "ここでの「Exact」は、トラックの再生中デバイスがChilpaだけのものになり、通知音も含めてマシン上のほかのものが使えないことを意味します。共有してWindowsにミックスとリサンプリングを任せるには、ビットパーフェクトと排他モードをオフにしてください。"
+
+msgid "Exclusive mode"
+msgstr "排他モード"
+
+msgid "Exit Immersive"
+msgstr "没入表示を終了"
+
+msgid "Expand"
+msgstr "展開"
+
+msgid "Experimental: theme may not match your system exactly."
+msgstr "実験的: テーマがシステムと完全に一致しない場合があります。"
+
+msgid "Explore"
+msgstr "探索"
+
+msgid "Export"
+msgstr "エクスポート"
+
+msgid "Export listening history"
+msgstr "再生履歴をエクスポート"
+
+msgid "Extra controls"
+msgstr "追加コントロール"
+
+msgid "Extra large"
+msgstr "特大"
+
+msgid "Extra queues"
+msgstr "追加のキュー"
+
+msgid "Extra small"
+msgstr "極小"
+
+msgid "Extracted from your music files and kept while the library refers to it."
+msgstr "音楽ファイルから抽出され、ライブラリが参照している間は保持されます。"
+
+msgid "FOCUS"
+msgstr "フォーカス"
+
+msgid "FOUNDED"
+msgstr "結成"
+
+msgid "FOUNDED IN"
+msgstr "結成地"
+
+msgid "Failed"
+msgstr "失敗"
+
+msgid "Failed in this run"
+msgstr "今回の実行で失敗"
+
+msgid "Failed to load albums"
+msgstr "アルバムを読み込めませんでした"
+
+msgid "Favorite"
+msgstr "お気に入り"
+
+msgid "Favorite preset"
+msgstr "お気に入りのプリセット"
+
+msgid "Favorites"
+msgstr "お気に入り"
+
+msgid "Feb"
+msgstr "2月"
+
+msgid "February"
+msgstr "2月"
+
+msgid "Fetching the cover…"
+msgstr "カバーを取得中…"
+
+msgid "File"
+msgstr "ファイル"
+
+msgid "Files"
+msgstr "ファイル"
+
+msgid "Filter"
+msgstr "フィルター"
+
+msgid "Filter albums"
+msgstr "アルバムを絞り込む"
+
+msgid "Filter artists"
+msgstr "アーティストを絞り込む"
+
+msgid "Filter by genre"
+msgstr "ジャンルで絞り込む"
+
+msgid "Filter playlists"
+msgstr "プレイリストを絞り込む"
+
+msgid "Filter tracks"
+msgstr "トラックを絞り込む"
+
+msgid "Filter, Enter to search, or a stream URL"
+msgstr "絞り込み、Enterで検索、またはストリームURL"
+
+msgid "Find a preset or device"
+msgstr "プリセットまたはデバイスを検索"
+
+msgid "Find covers"
+msgstr "カバーを探す"
+
+msgid "Find matches"
+msgstr "一致を探す"
+
+msgid "Find playlists"
+msgstr "プレイリストを探す"
+
+msgid "Find your DAC's PipeWire node name and paste it here:"
+msgstr "DACのPipeWireノード名を見つけてここに貼り付けてください："
+
+msgid "Finding matches…"
+msgstr "一致を探しています…"
+
+msgid "Finish"
+msgstr "完了"
+
+msgid "Finish or cancel the current analysis first."
+msgstr "現在の解析を終えるか、キャンセルしてください。"
+
+msgid "Finish selecting"
+msgstr "選択を終了"
+
+msgid "First track"
+msgstr "最初のトラック"
+
+msgid "Flat"
+msgstr "フラット"
+
+msgid "Floating"
+msgstr "フローティング"
+
+msgid "Floating over the content, or spanning the window at the top or bottom."
+msgstr "コンテンツの上に浮かせるか、ウィンドウの上端または下端に全幅で表示します。"
+
+msgid "Focus on playing"
+msgstr "再生中のトラックへ移動"
+
+msgid "Folder colors in the sidebar"
+msgstr "サイドバーのフォルダーの色"
+
+msgid "Folder name"
+msgstr "フォルダー名"
+
+msgid "Folders"
+msgstr "フォルダー"
+
+msgid "Follow"
+msgstr "フォロー"
+
+msgid "Follow lyrics"
+msgstr "歌詞を追従"
+
+msgid "Font"
+msgstr "フォント"
+
+msgid "For a long while"
+msgstr "じっくり長く"
+
+msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
+msgstr "これまでに見つかった歌詞と、歌詞がないと判明したトラックを消去します。トラックの再生時にもう一度検索されます。"
+
+msgid "Format"
+msgstr "フォーマット"
+
+msgid "Forward"
+msgstr "進む"
+
+msgid "Forward 10 seconds"
+msgstr "10秒進む"
+
+msgid "French"
+msgstr "フランス語"
+
+msgid "Frequency · Hz   /   Gain · dB   /   ±12 dB"
+msgstr "周波数 · Hz   /   ゲイン · dB   /   ±12 dB"
+
+msgid "Fri"
+msgstr "金"
+
+msgid "From catalog"
+msgstr "カタログから"
+
+msgid "From main sidebar"
+msgstr "メインのサイドバーから"
+
+msgid "From plugin"
+msgstr "プラグインから"
+
+msgid "From same artist"
+msgstr "同じアーティストのアルバム"
+
+msgid "From settings menu"
+msgstr "設定メニューから"
+
+msgid "From this week"
+msgstr "今週"
+
+msgid "Full"
+msgstr "フル"
+
+msgid "Full atmosphere, artwork colors only, or no derived background."
+msgstr "フルアトモスフィア、アートワークの色のみ、または背景なしから選べます。"
+
+msgid "Full details"
+msgstr "詳細をすべて表示"
+
+msgid "Full episodes"
+msgstr "フルエピソード"
+
+msgid "Full width, bottom"
+msgstr "全幅、下"
+
+msgid "Full width, top"
+msgstr "全幅、上"
+
+msgid "GPU"
+msgstr "GPU"
+
+msgid "GPU (compatibility)"
+msgstr "GPU（互換）"
+
+msgid "Gain in decibels. Use arrow keys to adjust; Home and End reach the limits."
+msgstr "ゲイン（デシベル）。矢印キーで調整し、HomeとEndで上限と下限に移動します。"
+
+msgid "Gapless"
+msgstr "ギャップレス"
+
+msgid "Generate"
+msgstr "生成"
+
+msgid "Generate Mood playlists"
+msgstr "ムードプレイリストを生成"
+
+msgid "Generate a color theme from your system wallpaper or a custom image"
+msgstr "システムの壁紙またはカスタム画像からカラーテーマを生成します"
+
+msgid "Generated images"
+msgstr "生成された画像"
+
+msgid "Generated test signal"
+msgstr "生成されたテスト信号"
+
+msgid "Genre"
+msgstr "ジャンル"
+
+msgid "Genres"
+msgstr "ジャンル"
+
+msgid "German"
+msgstr "ドイツ語"
+
+msgid "Go"
+msgstr "移動"
+
+msgid "Go Back"
+msgstr "戻る"
+
+msgid "Go Forward"
+msgstr "進む"
+
+msgid "Go to"
+msgstr "移動先"
+
+msgid "Go to album"
+msgstr "アルバムへ移動"
+
+msgid "Go to artist"
+msgstr "アーティストへ移動"
+
+msgid "Go to podcast"
+msgstr "ポッドキャストへ移動"
+
+msgid "Go to source"
+msgstr "ソースへ移動"
+
+msgid "Go to top"
+msgstr "一番上へ"
+
+msgid "Go to {}"
+msgstr "{}へ移動"
+
+msgid "Goniometer"
+msgstr "ゴニオメーター"
+
+msgid "Graphic EQ"
+msgstr "グラフィックEQ"
+
+msgid "Graphic equalizer"
+msgstr "グラフィックイコライザー"
+
+msgid "Grid"
+msgstr "グリッド"
+
+msgid "Grid view"
+msgstr "グリッド表示"
+
+msgid "Group album versions"
+msgstr "アルバムのバージョンをまとめる"
+
+msgid "Group collections"
+msgstr "コレクションをまとめる"
+
+msgid "Group playlists by source"
+msgstr "プレイリストをソース別にまとめる"
+
+msgid "Group: A-Z"
+msgstr "グループ:A-Z"
+
+msgid "Group: Off"
+msgstr "グループ:オフ"
+
+msgid "Guided DAC Setup"
+msgstr "ガイド付きDACセットアップ"
+
+msgid "Half page down"
+msgstr "半ページ下へ"
+
+msgid "Half page up"
+msgstr "半ページ上へ"
+
+msgid "Hardware"
+msgstr "ハードウェア"
+
+msgid "Hardware volume"
+msgstr "ハードウェア音量"
+
+msgid "Hardware volume control"
+msgstr "ハードウェア音量コントロール"
+
+msgid "Heard"
+msgstr "再生済み"
+
+msgid "Heard {} of {}"
+msgstr "{}/{}を再生済み"
+
+msgid "Hi-Res"
+msgstr "ハイレゾ"
+
+msgid "Hi-Res Lossless"
+msgstr "ハイレゾロスレス"
+
+msgid "Hi-Res only"
+msgstr "ハイレゾのみ"
+
+msgid "HiFi Wizard"
+msgstr "HiFiウィザード"
+
+msgid "HiFi Wizard — DAC Setup"
+msgstr "HiFiウィザード — DACセットアップ"
+
+msgid "Hide"
+msgstr "非表示"
+
+msgid "Hide explicit"
+msgstr "露骨な表現を非表示"
+
+msgid "Hide from sidebar"
+msgstr "サイドバーから非表示"
+
+msgid "Hide manual entry"
+msgstr "手動入力を非表示"
+
+msgid "Hide sidebar"
+msgstr "サイドバーを非表示"
+
+msgid "Hide the columns"
+msgstr "列を非表示"
+
+msgid "Hide token"
+msgstr "トークンを非表示"
+
+msgid "Hide translation"
+msgstr "翻訳を非表示"
+
+msgid "Hide unavailable"
+msgstr "利用不可を非表示"
+
+msgid "Hide when idle"
+msgstr "操作がないときは非表示"
+
+msgid "High 24/176.4"
+msgstr "ハイ 24/176.4"
+
+msgid "High 24/192"
+msgstr "ハイ 24/192"
+
+msgid "High 24/88.2"
+msgstr "ハイ 24/88.2"
+
+msgid "High 24/96"
+msgstr "ハイ 24/96"
+
+msgid "High pass"
+msgstr "ハイパス"
+
+msgid "High resolution"
+msgstr "ハイレゾ音質"
+
+msgid "High shelf"
+msgstr "ハイシェルフ"
+
+msgid "History"
+msgstr "履歴"
+
+msgid "Home"
+msgstr "ホーム"
+
+msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
+msgstr "ウィンドウの背後に見える壁紙のぼかしの強さ。0%でくっきり、100%で最も強くぼかします。"
+
+msgid "I created a backup"
+msgstr "バックアップを作成しました"
+
+msgid "I created the configuration files"
+msgstr "設定ファイルを作成しました"
+
+msgid "I did not find a CD drive"
+msgstr "CDドライブが見つかりませんでした"
+
+msgid "I did not understand that request."
+msgstr "リクエストを理解できませんでした。"
+
+msgid "I do not know the list \"{}\""
+msgstr "リスト「{}」は見つかりません"
+
+msgid "I restarted the audio services"
+msgstr "オーディオサービスを再起動しました"
+
+msgid "I understand and accept these terms"
+msgstr "これらの規約を理解し、同意します"
+
+msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
+msgstr "アンインストールしましたが、アカウントはプラグイン自身が管理しており、削除を依頼しても応答がありませんでした。認証情報がプラグインの保存先に残っている可能性があります"
+
+msgid "INFLUENCES"
+msgstr "影響を受けたアーティスト"
+
+msgid "Icon"
+msgstr "アイコン"
+
+msgid "Image"
+msgstr "画像"
+
+msgid "Image saved"
+msgstr "画像を保存しました"
+
+msgid "Images"
+msgstr "画像"
+
+msgid "Images from sources and plugins will download again when needed. Artwork saved in your library stays."
+msgstr "ソースとプラグインの画像は、必要になったときにもう一度ダウンロードされます。ライブラリに保存したアートワークは残ります。"
+
+msgid "Images from sources and plugins. Covers saved in your library stay protected."
+msgstr "ソースとプラグインの画像です。ライブラリに保存したカバーは保護されます。"
+
+msgid "Immersive"
+msgstr "没入"
+
+msgid "Immersive default view"
+msgstr "没入表示の既定のビュー"
+
+msgid "Immersive search"
+msgstr "没入表示の検索"
+
+msgid "Immersive view"
+msgstr "没入表示"
+
+msgid "Import / export"
+msgstr "インポート / エクスポート"
+
+msgid "Import cancelled"
+msgstr "インポートをキャンセルしました"
+
+msgid "Import complete"
+msgstr "インポート完了"
+
+msgid "Import playlist"
+msgstr "プレイリストをインポート"
+
+msgid "Imported"
+msgstr "インポート済み"
+
+msgid "In library"
+msgstr "ライブラリ内"
+
+msgid "In progress"
+msgstr "進行中"
+
+msgid "Include matches from your plugins?"
+msgstr "プラグインの一致も含めますか？"
+
+msgid "Include plugins"
+msgstr "プラグインを含める"
+
+msgid "Include source albums in Albums"
+msgstr "「アルバム」にソースのアルバムを含める"
+
+msgid "Includes downloaded plugin models, waveform data and server caches."
+msgstr "ダウンロード済みのプラグインモデル、波形データ、サーバーのキャッシュを含みます。"
+
+msgid "Influences"
+msgstr "影響を受けたアーティスト"
+
+msgid "Info: Embedded tags"
+msgstr "情報: 埋め込みタグ"
+
+msgid "Info: {}"
+msgstr "情報: {}"
+
+msgid "Information"
+msgstr "情報"
+
+msgid "Init system (service commands)"
+msgstr "Initシステム（サービスコマンド）"
+
+msgid "Inspect"
+msgstr "検査"
+
+msgid "Inspecting plugin…"
+msgstr "プラグインを検査中…"
+
+msgid "Inspection failed"
+msgstr "検査に失敗しました"
+
+msgid "Inspection passed"
+msgstr "検査に合格しました"
+
+msgid "Install"
+msgstr "インストール"
+
+msgid "Install and enable a playlist importer in Settings → Plugins."
+msgstr "設定 → プラグインで、プレイリストインポーターをインストールして有効にしてください。"
+
+msgid "Install and enable the Mood plugin first."
+msgstr "先にムードプラグインをインストールして有効にしてください。"
+
+msgid "Install from ZIP…"
+msgstr "ZIPからインストール…"
+
+msgid "Install plugin from ZIP"
+msgstr "ZIPからプラグインをインストール"
+
+msgid "Install the ALSA bridge so playback can reach PipeWire"
+msgstr "再生がPipeWireに届くようにALSAブリッジをインストール"
+
+msgid "Install the PipeWire audio stack"
+msgstr "PipeWireオーディオスタックをインストール"
+
+msgid "Install the PipeWire tools (pw-dump)"
+msgstr "PipeWireツール（pw-dump）をインストール"
+
+msgid "Install the Pulse compatibility tools (optional fallback)"
+msgstr "Pulse互換ツールをインストール（任意のフォールバック）"
+
+msgid "Installed"
+msgstr "インストール済み"
+
+msgid "Installing plugin…"
+msgstr "プラグインをインストール中…"
+
+msgid "Integrations"
+msgstr "連携"
+
+msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
+msgstr "InterはChilpaに同梱されており、デザインで使うすべてのウェイトを備えています。次回Chilpaを起動したときに反映されます。"
+
+msgid "Interface"
+msgstr "インターフェース"
+
+msgid "Interface size"
+msgstr "インターフェースのサイズ"
+
+msgid "Interrupted"
+msgstr "中断"
+
+msgid "Invalid DSP catalog."
+msgstr "DSPカタログが無効です。"
+
+msgid "Invalid DSP gain, stereo, delay or dynamics settings."
+msgstr "DSPのゲイン、ステレオ、ディレイ、ダイナミクスの設定が無効です。"
+
+msgid "Invalid DSP input."
+msgstr "DSPの入力が無効です。"
+
+msgid "Invalid DSP parameters."
+msgstr "DSPのパラメーターが無効です。"
+
+msgid "Invalid DSP preset JSON."
+msgstr "DSPプリセットのJSONが無効です。"
+
+msgid "Invalid DSP preset identity."
+msgstr "DSPプリセットの識別情報が無効です。"
+
+msgid "Invalid EQ preamp line."
+msgstr "EQのプリアンプ行が無効です。"
+
+msgid "Invalid arguments; :help shows the syntax."
+msgstr "引数が無効です。:help で構文を表示できます。"
+
+msgid "Invalid preference value; check its choices in Settings."
+msgstr "環境設定の値が無効です。設定で選択肢を確認してください。"
+
+msgid "Invalid — should contain alsa_output or alsa_input"
+msgstr "無効 — alsa_outputまたはalsa_inputを含む必要があります"
+
+msgid "Invert left polarity"
+msgstr "左の極性を反転"
+
+msgid "Invert right polarity"
+msgstr "右の極性を反転"
+
+msgid "Italian"
+msgstr "イタリア語"
+
+msgid "Its music is being read; it appears in the library as it arrives."
+msgstr "音楽を読み取り中です。届いた順にライブラリに表示されます。"
+
+msgid "Its music joins your library, listed with your own files."
+msgstr "音楽はライブラリに追加され、お持ちのファイルと一緒に一覧表示されます。"
+
+msgid "Its page, or its quick view under the row."
+msgstr "そのページ、または行の下のクイックビュー。"
+
+msgid "JUMP TO"
+msgstr "ジャンプ"
+
+msgid "Jan"
+msgstr "1月"
+
+msgid "January"
+msgstr "1月"
+
+msgid "Japanese"
+msgstr "日本語"
+
+msgid "Jul"
+msgstr "7月"
+
+msgid "July"
+msgstr "7月"
+
+msgid "Jun"
+msgstr "6月"
+
+msgid "June"
+msgstr "6月"
+
+msgid "Keep at most 64 personal presets."
+msgstr "個人用プリセットは最大64個まで保持できます。"
+
+msgid "Keep original queues"
+msgstr "元のキューを残す"
+
+msgid "Keep the current one"
+msgstr "現在のものを残す"
+
+msgid "Keep the queue between sessions"
+msgstr "セッション間でキューを保持"
+
+msgid "Keyboard Shortcuts"
+msgstr "キーボードショートカット"
+
+msgid "Keyboard shortcuts"
+msgstr "キーボードショートカット"
+
+msgid "Keymap"
+msgstr "キーマップ"
+
+msgid "LABELS"
+msgstr "レーベル"
+
+msgid "Label"
+msgstr "レーベル"
+
+msgid "Labels"
+msgstr "レーベル"
+
+msgid "Language"
+msgstr "言語"
+
+msgid "Large"
+msgstr "大"
+
+msgid "Last playlist"
+msgstr "前回のプレイリスト"
+
+msgid "Last track"
+msgstr "最後のトラック"
+
+msgid "Last.fm account"
+msgstr "Last.fmアカウント"
+
+msgid "Last.fm opens in the browser to allow Chilpa."
+msgstr "ブラウザーでLast.fmが開きます。そこでChilpaを許可してください。"
+
+msgid "Later"
+msgstr "次の期間"
+
+msgid "Later tabs"
+msgstr "以降のタブ"
+
+msgid "Latest release"
+msgstr "最新リリース"
+
+msgid "Latest run"
+msgstr "直近の実行"
+
+msgid "Left delay · 0–30 ms"
+msgstr "左ディレイ · 0–30 ms"
+
+msgid "Length"
+msgstr "長さ"
+
+msgid "Letters"
+msgstr "Letters"
+
+msgid "Level loudness across tracks. This breaks strict bit perfect."
+msgstr "トラック間のラウドネスをそろえます。厳密なビットパーフェクトではなくなります。"
+
+msgid "Library"
+msgstr "ライブラリ"
+
+msgid "Library folders"
+msgstr "ライブラリフォルダー"
+
+msgid "Library integration"
+msgstr "ライブラリ連携"
+
+msgid "Library scanning"
+msgstr "ライブラリのスキャン"
+
+msgid "Library selection"
+msgstr "ライブラリの選択"
+
+msgid "Light"
+msgstr "ライト"
+
+msgid "Light themes"
+msgstr "ライトテーマ"
+
+msgid "Like Track"
+msgstr "お気に入りに追加"
+
+msgid "Like cursor track"
+msgstr "カーソル位置のトラックをお気に入りに追加"
+
+msgid "Limits and cleanup"
+msgstr "上限とクリーンアップ"
+
+msgid "Line Bed"
+msgstr "Line Bed"
+
+msgid "List"
+msgstr "リスト"
+
+msgid "Listen live"
+msgstr "ライブで聴く"
+
+msgid "ListenBrainz account"
+msgstr "ListenBrainzアカウント"
+
+msgid "Listening clock"
+msgstr "再生時間帯"
+
+msgid "Listening history"
+msgstr "再生履歴"
+
+msgid "Listening history (CSV)"
+msgstr "再生履歴（CSV）"
+
+msgid "Listening stats"
+msgstr "再生統計"
+
+msgid "Listening time"
+msgstr "再生時間"
+
+msgid "Lite fill"
+msgstr "簡易塗りつぶし"
+
+msgid "Live"
+msgstr "ライブ"
+
+msgid "Load more"
+msgstr "さらに読み込む"
+
+msgid "Loading albums…"
+msgstr "アルバムを読み込み中…"
+
+msgid "Loading purchases…"
+msgstr "購入履歴を読み込み中…"
+
+msgid "Loading the release…"
+msgstr "リリースを読み込み中…"
+
+msgid "Loading…"
+msgstr "読み込み中…"
+
+msgid "Local"
+msgstr "ローカル"
+
+msgid "Local artwork"
+msgstr "ローカルのアートワーク"
+
+msgid "Local folders organize this sidebar. Native folders are saved in your service account."
+msgstr "ローカルフォルダーでこのサイドバーを整理します。ネイティブフォルダーはソースのアカウントに保存されます。"
+
+msgid "Local library"
+msgstr "ローカルライブラリ"
+
+msgid "Local only"
+msgstr "ローカルのみ"
+
+msgid "Local tracks"
+msgstr "ローカルトラック"
+
+msgid "Local — Chilpa"
+msgstr "ローカル — Chilpa"
+
+msgid "Local — No folder"
+msgstr "ローカル — フォルダーなし"
+
+msgid "Local — supports mixed sources"
+msgstr "ローカル — 複数ソースの混在に対応"
+
+msgid "Local — {}"
+msgstr "ローカル — {}"
+
+msgid "Look"
+msgstr "見た目"
+
+msgid "Look records up in"
+msgstr "アルバム情報の検索先"
+
+msgid "Look up"
+msgstr "検索"
+
+msgid "Look up lyrics through Chilpa's lyrics service when the file and its source have none."
+msgstr "ファイルとそのソースに歌詞がない場合、Chilpaの歌詞サービスで歌詞を検索します。"
+
+msgid "Looking for files…"
+msgstr "ファイルを探しています…"
+
+msgid "Looking for lyrics…"
+msgstr "歌詞を探しています…"
+
+msgid "Lossless"
+msgstr "ロスレス"
+
+msgid "Lossless only"
+msgstr "ロスレスのみ"
+
+msgid "Lossy"
+msgstr "ロッシー"
+
+msgid "Low pass"
+msgstr "ローパス"
+
+msgid "Low shelf"
+msgstr "ローシェルフ"
+
+msgid "Lower the overall level without changing the EQ. Zero adds no attenuation."
+msgstr "EQを変えずに全体のレベルを下げます。0にすると減衰しません。"
+
+msgid "Lyrics"
+msgstr "歌詞"
+
+msgid "Lyrics copied"
+msgstr "歌詞をコピーしました"
+
+msgid "Lyrics could not be retrieved. Try again shortly."
+msgstr "歌詞を取得できませんでした。しばらくしてからもう一度お試しください。"
+
+msgid "Lyrics show here while a track plays."
+msgstr "トラックの再生中にここに歌詞が表示されます。"
+
+msgid "Lyrics source:"
+msgstr "歌詞のソース:"
+
+msgid "Lyrics view"
+msgstr "歌詞表示"
+
+msgid "Lyrics without one are sent to Chilpa's lyrics API."
+msgstr "翻訳のない歌詞は、Chilpaの歌詞APIに送信されます。"
+
+msgid "Magazine"
+msgstr "マガジン"
+
+msgid "Maintenance"
+msgstr "メンテナンス"
+
+msgid "Manage"
+msgstr "管理"
+
+msgid "Manage playlists"
+msgstr "プレイリストを管理"
+
+msgid "Mar"
+msgstr "3月"
+
+msgid "March"
+msgstr "3月"
+
+msgid "Mark as heard"
+msgstr "再生済みにする"
+
+msgid "Mark as unplayed"
+msgstr "未再生にする"
+
+msgid "Mark the start first with :loop a."
+msgstr "先に :loop a で開始点を指定してください。"
+
+msgid "Matched"
+msgstr "一致"
+
+msgid "Maximize"
+msgstr "最大化"
+
+msgid "Maximum 32/384"
+msgstr "最大 32/384"
+
+msgid "May"
+msgstr "5月"
+
+msgid "Member Of"
+msgstr "所属"
+
+msgid "Members & Former"
+msgstr "メンバー・元メンバー"
+
+msgid "Menu"
+msgstr "メニュー"
+
+msgid "Metadata"
+msgstr "メタデータ"
+
+msgid "Micro"
+msgstr "マイクロ"
+
+msgid "Micro view"
+msgstr "マイクロ表示"
+
+msgid "Middle click opens a new tab"
+msgstr "中クリックで新しいタブを開く"
+
+msgid "Mids"
+msgstr "中音域"
+
+msgid "Mini player"
+msgstr "ミニプレーヤー"
+
+msgid "Mini player default view"
+msgstr "ミニプレーヤーの既定の表示"
+
+msgid "Minimize"
+msgstr "最小化"
+
+msgid "Missing"
+msgstr "見つかりません"
+
+msgid "Mixed"
+msgstr "混在"
+
+msgid "Mon"
+msgstr "月"
+
+msgid "Mono dark"
+msgstr "モノ・ダーク"
+
+msgid "Mono light"
+msgstr "モノ・ライト"
+
+msgid "Month"
+msgstr "月"
+
+msgid "Mood"
+msgstr "ムード"
+
+msgid "Mood analysis cancelled."
+msgstr "ムードの解析をキャンセルしました。"
+
+msgid "Mood analysis stopped: {}"
+msgstr "ムードの解析が停止しました: {}"
+
+msgid "Mood done"
+msgstr "ムード完了"
+
+msgid "Mood is off. Enable it in Mood models."
+msgstr "ムードはオフです。ムードモデルで有効にしてください。"
+
+msgid "Mood models"
+msgstr "ムードモデル"
+
+msgid "Mood pending"
+msgstr "ムード未処理"
+
+msgid "Mood stored"
+msgstr "ムード保存済み"
+
+msgid "Mood: {} tracks analyzed, {} playlists updated"
+msgstr "ムード: {}トラックを解析し、{}件のプレイリストを更新しました"
+
+msgid "More"
+msgstr "その他"
+
+msgid "More actions"
+msgstr "その他の操作"
+
+msgid "Most at {}:00"
+msgstr "{}:00が最多"
+
+msgid "Most played"
+msgstr "再生回数順"
+
+msgid "Move"
+msgstr "移動"
+
+msgid "Move down"
+msgstr "下に移動"
+
+msgid "Move the output's own volume from the player bar when the selected ALSA control supports safe playback volume."
+msgstr "選択したALSAコントロールが安全な再生音量に対応している場合、出力自体の音量をプレーヤーバーから操作します。"
+
+msgid "Move this AppImage to a writable folder, then try again."
+msgstr "このAppImageを書き込み可能なフォルダーに移動してから、もう一度お試しください。"
+
+msgid "Move to folder"
+msgstr "フォルダーに移動"
+
+msgid "Move to folder…"
+msgstr "フォルダーに移動…"
+
+msgid "Move to root"
+msgstr "ルートへ移動"
+
+msgid "Move up"
+msgstr "上に移動"
+
+msgid "Music player\nNothing playing"
+msgstr "ミュージックプレーヤー\n再生していません"
+
+msgid "Music services"
+msgstr "音楽サービス"
+
+msgid "MusicBrainz album artists"
+msgstr "MusicBrainzのアルバムアーティスト"
+
+msgid "MusicBrainz artists"
+msgstr "MusicBrainzのアーティスト"
+
+msgid "MusicBrainz is turned off in Integrations"
+msgstr "MusicBrainzは連携でオフになっています"
+
+msgid "MusicBrainz recording"
+msgstr "MusicBrainzのレコーディング"
+
+msgid "MusicBrainz release"
+msgstr "MusicBrainzのリリース"
+
+msgid "MusicBrainz release group"
+msgstr "MusicBrainzのリリースグループ"
+
+msgid "MusicBrainz track"
+msgstr "MusicBrainzのトラック"
+
+msgid "Mute"
+msgstr "ミュート"
+
+msgid "Mute / Unmute"
+msgstr "ミュート / 解除"
+
+msgid "My Playlist"
+msgstr "マイプレイリスト"
+
+msgid "My library"
+msgstr "マイライブラリ"
+
+msgid "My stations"
+msgstr "マイステーション"
+
+msgid "NOW PLAYING"
+msgstr "再生中"
+
+msgid "Name"
+msgstr "名前"
+
+msgid "Name a personal preset"
+msgstr "個人用プリセットに名前を付ける"
+
+msgid "Name this preset."
+msgstr "このプリセットに名前を付けてください。"
+
+msgid "Native DSD"
+msgstr "ネイティブDSD"
+
+msgid "Native DSD and DoP bypass DSP. Select PCM output to process them."
+msgstr "ネイティブDSDとDoPはDSPをバイパスします。処理するにはPCM出力を選択してください。"
+
+msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."
+msgstr "ネイティブはALSAのDSD_U32フォーマットを使います。DoPは同じ1ビットストリームをマーク付きのPCMワードに載せて伝送します。PCMはDSDを変換するため、どの出力でも再生できます。"
+
+msgid "Native — {}"
+msgstr "ネイティブ — {}"
+
+msgid "Native — {} — No folder"
+msgstr "ネイティブ — {} — フォルダーなし"
+
+msgid "Native — {} — {}"
+msgstr "ネイティブ — {} — {}"
+
+msgid "Navigation"
+msgstr "ナビゲーション"
+
+msgid "Needs update"
+msgstr "更新が必要"
+
+msgid "Network"
+msgstr "ネットワーク"
+
+msgid "Network access is disabled in Settings > Integrations."
+msgstr "ネットワークアクセスは設定 > 連携で無効になっています。"
+
+msgid "Network access, including authentication, artwork and audio servers discovered by the plugin"
+msgstr "ネットワークアクセス（認証、アートワーク、プラグインが検出するオーディオサーバーを含む）"
+
+msgid "Network playback"
+msgstr "ネットワーク再生"
+
+msgid "Never played"
+msgstr "未再生"
+
+msgid "New Tab"
+msgstr "新しいタブ"
+
+msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
+msgstr "新しい解析の実行がここに表示されます。保存済みのトラックの結果は「トラック」で確認できます。"
+
+msgid "New folder"
+msgstr "新規フォルダー"
+
+msgid "New import"
+msgstr "新規インポート"
+
+msgid "New playlist"
+msgstr "新規プレイリスト"
+
+msgid "New queue"
+msgstr "新規キュー"
+
+msgid "New tab"
+msgstr "新しいタブ"
+
+msgid "New, saved with the next save"
+msgstr "新規、次回の保存時に保存されます"
+
+msgid "Newest first"
+msgstr "新しい順"
+
+msgid "Next"
+msgstr "次へ"
+
+msgid "Next Track"
+msgstr "次のトラック"
+
+msgid "Next month"
+msgstr "次の月"
+
+msgid "Next page"
+msgstr "次のページ"
+
+msgid "Next queue"
+msgstr "次のキュー"
+
+msgid "Next search result"
+msgstr "次の検索結果"
+
+msgid "Next tab"
+msgstr "次のタブ"
+
+msgid "No"
+msgstr "いいえ"
+
+msgid "No Home modules are available for this source."
+msgstr "このソースで使えるホームのモジュールはありません。"
+
+msgid "No active parametric EQ filters were found."
+msgstr "有効なパラメトリックEQフィルターが見つかりませんでした。"
+
+msgid "No albums found"
+msgstr "アルバムが見つかりません"
+
+msgid "No artists from this scene were found."
+msgstr "このシーンのアーティストは見つかりませんでした。"
+
+msgid "No artists from your selected plugins were found in this scene."
+msgstr "選択したプラグインのアーティストは、このシーンで見つかりませんでした。"
+
+msgid "No cover"
+msgstr "カバーなし"
+
+msgid "No credits available"
+msgstr "クレジットはありません"
+
+msgid "No devices found"
+msgstr "デバイスが見つかりません"
+
+msgid "No download folder selected"
+msgstr "ダウンロードフォルダーが選択されていません"
+
+msgid "No folder"
+msgstr "フォルダーなし"
+
+msgid "No folders in your local library yet."
+msgstr "ローカルライブラリにフォルダーはまだありません。"
+
+msgid "No folders match your search."
+msgstr "検索に一致するフォルダーはありません。"
+
+msgid "No genres in this period."
+msgstr "この期間にジャンルはありません。"
+
+msgid "No grouping"
+msgstr "グループ化なし"
+
+msgid "No label info"
+msgstr "レーベル情報なし"
+
+msgid "No listens match."
+msgstr "一致する再生はありません。"
+
+msgid "No lyrics"
+msgstr "歌詞なし"
+
+msgid "No lyrics for this track."
+msgstr "このトラックの歌詞はありません。"
+
+msgid "No matches"
+msgstr "一致なし"
+
+msgid "No matching plugins"
+msgstr "一致するプラグインはありません"
+
+msgid "No playable tracks found."
+msgstr "再生できるトラックが見つかりません。"
+
+msgid "No playable tracks were found."
+msgstr "再生できるトラックが見つかりませんでした。"
+
+msgid "No playlists found"
+msgstr "プレイリストが見つかりません"
+
+msgid "No playlists yet."
+msgstr "プレイリストはまだありません。"
+
+msgid "No plugin catalog match for this artist"
+msgstr "このアーティストに一致するプラグインのカタログはありません"
+
+msgid "No plugin updates available."
+msgstr "利用できるプラグインのアップデートはありません。"
+
+msgid "No plugins installed"
+msgstr "インストール済みのプラグインはありません"
+
+msgid "No presets match this search."
+msgstr "この検索に一致するプリセットはありません。"
+
+msgid "No purchases match the current view."
+msgstr "現在の表示に一致する購入はありません。"
+
+msgid "No results for"
+msgstr "検索結果なし:"
+
+msgid "No results found"
+msgstr "結果が見つかりません"
+
+msgid "No results found."
+msgstr "結果が見つかりません。"
+
+msgid "No review available"
+msgstr "レビューはありません"
+
+msgid "No setting says that"
+msgstr "該当する設定はありません"
+
+msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
+msgstr "シンクが検出されません — ALSA UCMプロファイルを再インストールして再起動してください"
+
+msgid "No stories for this artist"
+msgstr "このアーティストのストーリーはありません"
+
+msgid "No track playing"
+msgstr "再生中のトラックがありません"
+
+msgid "No tracks have been processed in this run yet."
+msgstr "この実行ではまだ処理されたトラックがありません。"
+
+msgid "No tracks in the selected libraries yet."
+msgstr "選択したライブラリにはまだトラックがありません。"
+
+msgid "No tracks match this filter."
+msgstr "このフィルターに一致するトラックはありません。"
+
+msgid "No tracks match your search."
+msgstr "検索に一致するトラックはありません。"
+
+msgid "Not answering"
+msgstr "応答なし"
+
+msgid "Not compatible"
+msgstr "互換性なし"
+
+msgid "Not for me"
+msgstr "興味なし"
+
+msgid "Not heard first"
+msgstr "未再生を先に"
+
+msgid "Not in the library: this is the folder as it is on disk."
+msgstr "ライブラリにはありません。ディスク上のフォルダーそのままの表示です。"
+
+msgid "Not in your library or in your sources"
+msgstr "ライブラリにもソースにもありません"
+
+msgid "Not inspected"
+msgstr "未検査"
+
+msgid "Not now"
+msgstr "今はしない"
+
+msgid "Not rated"
+msgstr "未評価"
+
+msgid "Not specified"
+msgstr "未指定"
+
+msgid "Not through this stack: it mixes by design."
+msgstr "このスタックでは利用できません。設計上、ミックスされます。"
+
+msgid "Notch"
+msgstr "ノッチ"
+
+msgid "Nothing found for “{}”"
+msgstr "「{}」は見つかりませんでした"
+
+msgid "Nothing has been saved. Closing the editor loses what was changed."
+msgstr "何も保存されていません。エディターを閉じると変更が失われます。"
+
+msgid "Nothing here matches."
+msgstr "一致するものはありません。"
+
+msgid "Nothing here yet: add a folder to the library and its records show up here."
+msgstr "まだ何もありません。ライブラリにフォルダーを追加すると、そのアルバムがここに表示されます。"
+
+msgid "Nothing here."
+msgstr "ここには何もありません。"
+
+msgid "Nothing in this period."
+msgstr "この期間には何もありません。"
+
+msgid "Nothing played yet"
+msgstr "まだ再生履歴がありません"
+
+msgid "Nothing played yet."
+msgstr "まだ再生履歴がありません。"
+
+msgid "Nothing playing"
+msgstr "再生していません"
+
+msgid "Nothing queued."
+msgstr "キューは空です。"
+
+msgid "Nothing saved yet."
+msgstr "まだ何も保存されていません。"
+
+msgid "Nov"
+msgstr "11月"
+
+msgid "November"
+msgstr "11月"
+
+msgid "Now Playing"
+msgstr "再生中"
+
+msgid "Now playing"
+msgstr "再生中"
+
+msgid "Now playing: {}"
+msgstr "再生中: {}"
+
+msgid "Number of tracks"
+msgstr "トラック数"
+
+msgid "OTHER"
+msgstr "その他"
+
+msgid "Oct"
+msgstr "10月"
+
+msgid "October"
+msgstr "10月"
+
+msgid "Off"
+msgstr "オフ"
+
+msgid "Offline mode"
+msgstr "オフラインモード"
+
+msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
+msgstr "古い一時画像はバックグラウンドで削除されます。ライブラリが参照しているアートワークは残ります。"
+
+msgid "Oldest first"
+msgstr "古い順"
+
+msgid "On air"
+msgstr "放送中"
+
+msgid "On the sidebar's destinations."
+msgstr "サイドバーの各項目で有効です。"
+
+msgid "One row"
+msgstr "1行"
+
+msgid "One track straight into the next."
+msgstr "トラックから次のトラックへ途切れなくつなぎます。"
+
+msgid "One track straight into the next. Off, the device plays out and opens again."
+msgstr "トラックから次のトラックへ途切れなくつなぎます。オフの場合、デバイスは再生を終えてからもう一度開かれます。"
+
+msgid "Only personal presets can be deleted."
+msgstr "削除できるのは個人用プリセットのみです。"
+
+msgid "Only tracks from this source"
+msgstr "このソースのトラックのみ"
+
+msgid "Only with exclusive mode on."
+msgstr "排他モードがオンの場合のみ。"
+
+msgid "Open"
+msgstr "開く"
+
+msgid "Open Last.fm"
+msgstr "Last.fmを開く"
+
+msgid "Open ListenList"
+msgstr "ListenListを開く"
+
+msgid "Open Music Link"
+msgstr "音楽リンクを開く"
+
+msgid "Open SACD…"
+msgstr "SACDを開く…"
+
+msgid "Open Wizard"
+msgstr "ウィザードを開く"
+
+msgid "Open a collection in the source and choose Add collection to library. Imported music appears in Albums and Tracks with its source."
+msgstr "ソースでコレクションを開き、「ライブラリにコレクションを追加」を選択します。インポートした音楽は、ソース名とともに「アルバム」と「トラック」に表示されます。"
+
+msgid "Open a folder…"
+msgstr "フォルダーを開く…"
+
+msgid "Open account page"
+msgstr "アカウントのページを開く"
+
+msgid "Open album"
+msgstr "アルバムを開く"
+
+msgid "Open artist"
+msgstr "アーティストを開く"
+
+msgid "Open audio CD"
+msgstr "オーディオCDを開く"
+
+msgid "Open downloads"
+msgstr "ダウンロードを開く"
+
+msgid "Open in"
+msgstr "開く先"
+
+msgid "Open in browser"
+msgstr "ブラウザーで開く"
+
+msgid "Open in new queue"
+msgstr "新しいキューで開く"
+
+msgid "Open in new tab"
+msgstr "新しいタブで開く"
+
+msgid "Open it again"
+msgstr "もう一度開く"
+
+msgid "Open its page"
+msgstr "ページを開く"
+
+msgid "Open media"
+msgstr "メディアを開く"
+
+msgid "Open media without adding it to your library."
+msgstr "ライブラリに追加せずにメディアを開きます。"
+
+msgid "Open music link"
+msgstr "音楽リンクを開く"
+
+msgid "Open playlist"
+msgstr "プレイリストを開く"
+
+msgid "Open playlist importer"
+msgstr "プレイリストインポーターを開く"
+
+msgid "Open plex.tv/link"
+msgstr "plex.tv/linkを開く"
+
+msgid "Open the folder used for disposable files."
+msgstr "使い捨てファイルに使うフォルダーを開きます。"
+
+msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
+msgstr "OpenSubsonic（Navidrome、gonic…）、Jellyfin、Plex。その音楽はライブラリに追加されます。"
+
+msgid "Opens the device and says which formats reach it untouched."
+msgstr "デバイスを開き、加工されずに届くフォーマットを表示します。"
+
+msgid "Optional access token for private playlists"
+msgstr "非公開プレイリスト用の任意のアクセストークン"
+
+msgid "Original bytes"
+msgstr "元のバイト列"
+
+msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
+msgstr "元のバイト列 · Chilpaによるトランスコードなし · レシーバー側の処理は不明"
+
+msgid "Original files"
+msgstr "元のファイル"
+
+msgid "Oscilloscope"
+msgstr "オシロスコープ"
+
+msgid "Other"
+msgstr "その他"
+
+msgid "Other / unknown"
+msgstr "その他 / 不明"
+
+msgid "Other cache"
+msgstr "その他のキャッシュ"
+
+msgid "Output"
+msgstr "出力"
+
+msgid "Output device"
+msgstr "出力デバイス"
+
+msgid "PCM samples cannot be written to a native DSD stream"
+msgstr "PCMサンプルはネイティブDSDストリームに書き込めません"
+
+msgid "Password"
+msgstr "パスワード"
+
+msgid "Paste EQ filter settings here"
+msgstr "EQフィルター設定をここに貼り付け"
+
+msgid "Paste a link from one of your sources or from another service"
+msgstr "お使いのソースまたはほかのサービスのリンクを貼り付けてください"
+
+msgid "Paste a parametric EQ profile or a Chilpa preset JSON. Active unsupported filters reject the whole import."
+msgstr "パラメトリックEQプロファイルまたはChilpaプリセットのJSONを貼り付けてください。有効で未対応のフィルターがあると、インポート全体が拒否されます。"
+
+msgid "Paste a parametric EQ profile."
+msgstr "パラメトリックEQプロファイルを貼り付けてください。"
+
+msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
+msgstr "ソースから提供されたトークンを貼り付けてください。Chilpaは暗号化して保持し、プラグインには見えません。"
+
+msgid "Paste the user token from listenbrainz.org/settings."
+msgstr "listenbrainz.org/settings のユーザートークンを貼り付けてください。"
+
+msgid "Pause"
+msgstr "一時停止"
+
+msgid "Paused"
+msgstr "一時停止中"
+
+msgid "Peak"
+msgstr "ピーク"
+
+msgid "Pending"
+msgstr "未処理"
+
+msgid "Per-app bit-perfect (PipeWire client)"
+msgstr "アプリごとのビットパーフェクト（PipeWireクライアント）"
+
+msgid "Performers"
+msgstr "演奏者"
+
+msgid "Permission review required"
+msgstr "権限の確認が必要です"
+
+msgid "Pin the DAC + rates (WirePlumber)"
+msgstr "DACとレートを固定（WirePlumber）"
+
+msgid "PipeWire has no output called \"{}\" any more"
+msgstr "PipeWireに「{}」という出力はもうありません"
+
+msgid "PipeWire passes the samples through untouched only when it hands the output over to one program at a time. Chilpa asks for that whenever bit-perfect or exclusive mode is on. With both off the graph mixes this with everything else and resamples the result to whatever rate it is running at."
+msgstr "PipeWireがサンプルをそのまま通すのは、出力を一度に1つのプログラムにだけ渡しているときに限られます。ビットパーフェクトまたは排他モードがオンのとき、Chilpaはこの状態を要求します。両方ともオフの場合、グラフはこの出力を他の音声とミックスし、グラフが動作しているレートにリサンプリングします。"
+
+msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
+msgstr "PipeWireのグラフは{} Hzでしか動作しないため、{} Hzはリサンプリングされます。default.clock.allowed-ratesに追加するか、カード自体を選んでください"
+
+msgid "Plain seek bar"
+msgstr "シンプルなシークバー"
+
+msgid "Plasma"
+msgstr "Plasma"
+
+msgid "Platform"
+msgstr "プラットフォーム"
+
+msgid "Play"
+msgstr "再生"
+
+msgid "Play / Pause"
+msgstr "再生 / 一時停止"
+
+msgid "Play all"
+msgstr "すべて再生"
+
+msgid "Play all later"
+msgstr "すべて後で再生"
+
+msgid "Play all next"
+msgstr "すべて次に再生"
+
+msgid "Play an album or track to get started"
+msgstr "アルバムやトラックを再生して始めましょう"
+
+msgid "Play count"
+msgstr "再生回数"
+
+msgid "Play cursor track"
+msgstr "カーソル位置のトラックを再生"
+
+msgid "Play indicator animation"
+msgstr "再生インジケーターのアニメーション"
+
+msgid "Play later"
+msgstr "後で再生"
+
+msgid "Play next"
+msgstr "次に再生"
+
+msgid "Play now"
+msgstr "今すぐ再生"
+
+msgid "Play on"
+msgstr "再生先"
+
+msgid "Play random"
+msgstr "ランダム再生"
+
+msgid "Play test"
+msgstr "テストを再生"
+
+msgid "Play this group"
+msgstr "このグループを再生"
+
+msgid "Play/Pause"
+msgstr "再生／一時停止"
+
+msgid "Playback"
+msgstr "再生"
+
+msgid "Playback options"
+msgstr "再生オプション"
+
+msgid "Playback stops and the window closes."
+msgstr "再生が停止し、ウィンドウが閉じます。"
+
+msgid "Player"
+msgstr "プレーヤー"
+
+msgid "Player bar"
+msgstr "プレーヤーバー"
+
+msgid "Player bar position"
+msgstr "プレーヤーバーの位置"
+
+msgid "Playing"
+msgstr "再生中"
+
+msgid "Playlist"
+msgstr "プレイリスト"
+
+msgid "Playlist Name"
+msgstr "プレイリスト名"
+
+msgid "Playlist artwork in the sidebar"
+msgstr "サイドバーのプレイリストアートワーク"
+
+msgid "Playlist icon"
+msgstr "プレイリストアイコン"
+
+msgid "Playlist manager"
+msgstr "プレイリストマネージャー"
+
+msgid "Playlist name"
+msgstr "プレイリスト名"
+
+msgid "Playlist options"
+msgstr "プレイリストのオプション"
+
+msgid "Playlist origin"
+msgstr "プレイリストの取り込み元"
+
+msgid "Playlist preview"
+msgstr "プレイリストのプレビュー"
+
+msgid "Playlists"
+msgstr "プレイリスト"
+
+msgid "Playlists will be kept at the root."
+msgstr "プレイリストはルートに残ります。"
+
+msgid "Plays"
+msgstr "再生回数"
+
+msgid "Plays a day"
+msgstr "1日の再生回数"
+
+msgid "Plays four tracks at different bit-depths and sample rates through the selected DAC. Watch your DAC's display switch rates — and confirm it below."
+msgstr "選択したDACで、ビット深度とサンプルレートが異なる4つのトラックを再生します。DACの表示がレートに合わせて切り替わるか確認し、結果を下で選んでください。"
+
+msgid "Plex did not accept the session; sign in again"
+msgstr "Plexがセッションを受け付けませんでした。もう一度ログインしてください"
+
+msgid "Plugin Settings"
+msgstr "プラグイン設定"
+
+msgid "Plugin initialized successfully"
+msgstr "プラグインを初期化しました"
+
+msgid "Plugin integration"
+msgstr "プラグイン連携"
+
+msgid "Plugin repository URL"
+msgstr "プラグインリポジトリのURL"
+
+msgid "Plugin results were not included for this scene"
+msgstr "このシーンではプラグインの結果は含まれていません"
+
+msgid "Plugin updates"
+msgstr "プラグインのアップデート"
+
+msgid "Plugin-reported quality"
+msgstr "プラグインが報告した音質"
+
+msgid "Plugins"
+msgstr "プラグイン"
+
+msgid "Popular Tracks"
+msgstr "人気のトラック"
+
+msgid "Portuguese"
+msgstr "ポルトガル語"
+
+msgid "Position in Streaming"
+msgstr "ストリーミングでの位置"
+
+msgid "Preamp"
+msgstr "プリアンプ"
+
+msgid "Precise filters"
+msgstr "精密フィルター"
+
+msgid "Preferred GPU"
+msgstr "優先GPU"
+
+msgid "Preparing Mood analysis"
+msgstr "ムード解析を準備しています"
+
+msgid "Preparing analysis…"
+msgstr "解析を準備しています…"
+
+msgid "Preparing results…"
+msgstr "結果を準備しています…"
+
+msgid "Preparing the updated AppImage…"
+msgstr "更新したAppImageを準備しています…"
+
+msgid "Press keys…"
+msgstr "キーを押してください…"
+
+msgid "Prevent clipping"
+msgstr "クリッピングを防止"
+
+msgid "Previous"
+msgstr "前へ"
+
+msgid "Previous Track"
+msgstr "前のトラック"
+
+msgid "Previous month"
+msgstr "前の月"
+
+msgid "Previous page"
+msgstr "前のページ"
+
+msgid "Previous queue"
+msgstr "前のキュー"
+
+msgid "Previous search result"
+msgstr "前の検索結果"
+
+msgid "Previous tab"
+msgstr "前のタブ"
+
+msgid "Previously saved"
+msgstr "以前に保存済み"
+
+msgid "Privacy & network"
+msgstr "プライバシーとネットワーク"
+
+msgid "Processed"
+msgstr "処理後"
+
+msgid "Profile name"
+msgstr "プロファイル名"
+
+msgid "Provider identifiers"
+msgstr "プロバイダー識別子"
+
+msgid "Public playlist"
+msgstr "公開プレイリスト"
+
+msgid "Public remote playlists"
+msgstr "公開リモートプレイリスト"
+
+msgid "Purchase date"
+msgstr "購入日"
+
+msgid "Purchases"
+msgstr "購入"
+
+msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
+msgstr "プラグインのフォルダーをChilpaのプラグインディレクトリに置き、アプリを開き直してください。"
+
+msgid "Quality"
+msgstr "音質"
+
+msgid "Quality unknown"
+msgstr "音質不明"
+
+msgid "Quality, format and source filters"
+msgstr "音質、フォーマット、ソースのフィルター"
+
+msgid "Quality, format, source and rating filters"
+msgstr "音質、フォーマット、ソース、評価のフィルター"
+
+msgid "Quarantined"
+msgstr "隔離済み"
+
+msgid "Queue"
+msgstr "キュー"
+
+msgid "Queue actions"
+msgstr "キューの操作"
+
+msgid "Queue and playlist actions"
+msgstr "キューとプレイリストの操作"
+
+msgid "Queue cursor track"
+msgstr "カーソル位置のトラックをキューに追加"
+
+msgid "Queue is empty"
+msgstr "キューは空です"
+
+msgid "Queue options"
+msgstr "キューのオプション"
+
+msgid "Queue this group"
+msgstr "このグループをキューに追加"
+
+msgid "Queue view"
+msgstr "キュー表示"
+
+msgid "Queue {}"
+msgstr "キュー{}"
+
+msgid "Queue · {}"
+msgstr "キュー · {}"
+
+msgid "Queues"
+msgstr "キュー"
+
+msgid "Quick Connect is turned off on that server"
+msgstr "そのサーバーではQuick Connectがオフになっています"
+
+msgid "Quick view"
+msgstr "クイックビュー"
+
+msgid "Quit"
+msgstr "終了"
+
+msgid "Quit Chilpa"
+msgstr "Chilpaを終了"
+
+msgid "Quit Chilpa?"
+msgstr "Chilpaを終了しますか？"
+
+msgid "Quitting from the window, its menu, Ctrl+Q or the tray asks first."
+msgstr "ウィンドウ、そのメニュー、Ctrl+Q、トレイから終了するときは、先に確認します。"
+
+msgid "RECENTLY PLAYED"
+msgstr "最近再生した項目"
+
+msgid "RELATIONSHIPS"
+msgstr "関係"
+
+msgid "Radio"
+msgstr "ラジオ"
+
+msgid "Rate"
+msgstr "評価する"
+
+msgid "Rating"
+msgstr "評価"
+
+msgid "Reactivate"
+msgstr "再有効化"
+
+msgid "Reactive Rings"
+msgstr "Reactive Rings"
+
+msgid "Read a playlist, choose destinations, review matches, then create your playlists."
+msgstr "プレイリストを読み取り、取り込み先を選び、一致を確認してから、プレイリストを作成します。"
+
+msgid "Read less"
+msgstr "閉じる"
+
+msgid "Read more"
+msgstr "続きを読む"
+
+msgid "Read playlist"
+msgstr "プレイリストを読み取り"
+
+msgid "Read the current size of the cache folders in the background."
+msgstr "キャッシュフォルダーの現在のサイズをバックグラウンドで読み取ります。"
+
+msgid "Reading it from {}…"
+msgstr "{}から読み取っています…"
+
+msgid "Reading playlist…"
+msgstr "プレイリストを読み取っています…"
+
+msgid "Reading selected tracks…"
+msgstr "選択したトラックを読み取っています…"
+
+msgid "Reading the files…"
+msgstr "ファイルを読み取っています…"
+
+msgid "Reading the selected tracks timed out. Please try again."
+msgstr "選択したトラックの読み取りがタイムアウトしました。もう一度お試しください。"
+
+msgid "Reading {} of {} files"
+msgstr "{} / {}個のファイルを読み取り中"
+
+msgid "Reads every folder again. What did not change is not read twice."
+msgstr "すべてのフォルダーを再度読み取ります。変更のないものは二重に読み取りません。"
+
+msgid "Reads tempo, musical key and loudness in the background. AutoMix appears when enough tracks have tempo."
+msgstr "テンポ、キー、ラウドネスをバックグラウンドで読み取ります。十分な数のトラックにテンポがあると、AutoMixが表示されます。"
+
+msgid "Ready for local PCM playback"
+msgstr "ローカルPCM再生の準備ができました"
+
+msgid "Ready to review"
+msgstr "確認の準備完了"
+
+msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
+msgstr "トラックと再生ログから件数と検索インデックスを再構築します。失われるものはありません。"
+
+msgid "Recalculate usage"
+msgstr "使用量を再計算"
+
+msgid "Receiver processing unknown"
+msgstr "レシーバーの処理は不明"
+
+msgid "Receiver volume"
+msgstr "レシーバーの音量"
+
+msgid "Recent"
+msgstr "最近"
+
+msgid "Recently added"
+msgstr "最近追加した順"
+
+msgid "Recently listened playlists"
+msgstr "最近聴いたプレイリスト"
+
+msgid "Recently listened playlists, all sources"
+msgstr "最近聴いたプレイリスト（すべてのソース）"
+
+msgid "Recently played"
+msgstr "最近再生"
+
+msgid "Recently played, all sources"
+msgstr "最近再生（すべてのソース）"
+
+msgid "Records"
+msgstr "アルバム"
+
+msgid "Refresh"
+msgstr "更新"
+
+msgid "Refresh mix"
+msgstr "ミックスを更新"
+
+msgid "Refresh purchases"
+msgstr "購入を更新"
+
+msgid "Refresh settings"
+msgstr "設定を更新"
+
+msgid "Refused the sign-in. Its records stay listed and cannot be played."
+msgstr "ログインが拒否されました。アルバムは一覧に残りますが、再生できません。"
+
+msgid "Regenerate"
+msgstr "再生成"
+
+msgid "Release"
+msgstr "リリース"
+
+msgid "Release date"
+msgstr "リリース日"
+
+msgid "Releases"
+msgstr "リリース"
+
+msgid "Remember"
+msgstr "前回のまま"
+
+msgid "Remote artwork"
+msgstr "リモートのアートワーク"
+
+msgid "Remote image limit"
+msgstr "リモート画像の上限"
+
+msgid "Remove"
+msgstr "削除"
+
+msgid "Remove cover"
+msgstr "カバーを削除"
+
+msgid "Remove filter"
+msgstr "フィルターを削除"
+
+msgid "Remove from favorites"
+msgstr "お気に入りから削除"
+
+msgid "Remove from library"
+msgstr "ライブラリから削除"
+
+msgid "Remove from playlist"
+msgstr "プレイリストから削除"
+
+msgid "Remove from queue"
+msgstr "キューから削除"
+
+msgid "Remove from saved"
+msgstr "保存済みから削除"
+
+msgid "Remove from the library"
+msgstr "ライブラリから削除"
+
+msgid "Remove image"
+msgstr "画像を削除"
+
+msgid "Remove original queues"
+msgstr "元のキューを削除"
+
+msgid "Remove smaller covers and backgrounds. Chilpa makes them again as needed."
+msgstr "小さいカバーと背景を削除します。必要に応じてChilpaが再作成します。"
+
+msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
+msgstr "このプラグインと、そのアカウント、設定、キャッシュしたライブラリをChilpaから削除しますか？ソース側のアカウントやプレイリストは削除されません。"
+
+msgid "Remove this server?"
+msgstr "このサーバーを削除しますか？"
+
+msgid "Remove unreferenced images from sources and plugins. Needed images download again."
+msgstr "ソースやプラグインから参照されていない画像を削除します。必要な画像は再度ダウンロードされます。"
+
+msgid "Remove…"
+msgstr "削除…"
+
+msgid "Rename"
+msgstr "名前を変更"
+
+msgid "Renderer"
+msgstr "レンダラー"
+
+msgid "Renderer switched automatically — the previous renderer failed to start"
+msgstr "レンダラーを自動的に切り替えました — 前のレンダラーは起動できませんでした"
+
+msgid "Rendering backend"
+msgstr "レンダリングバックエンド"
+
+msgid "Reopens the upcoming queue paused, at the place where you left it."
+msgstr "次に再生するキューを、中断した位置で一時停止した状態で再び開きます。"
+
+msgid "Repair"
+msgstr "修復"
+
+msgid "Repair the library"
+msgstr "ライブラリを修復"
+
+msgid "Repaired. Nothing was lost."
+msgstr "修復しました。失われたものはありません。"
+
+msgid "Repeat"
+msgstr "リピート"
+
+msgid "Replace current queue"
+msgstr "現在のキューを置き換え"
+
+msgid "Replace queue {}"
+msgstr "キュー「{}」を置き換え"
+
+msgid "Report an issue"
+msgstr "問題を報告"
+
+msgid "Requests: {}"
+msgstr "要求: {}"
+
+msgid "Rescan"
+msgstr "再スキャン"
+
+msgid "Reset"
+msgstr "リセット"
+
+msgid "Reset All to Defaults"
+msgstr "すべて既定値に戻す"
+
+msgid "Reset EQ"
+msgstr "EQをリセット"
+
+msgid "Reset counter"
+msgstr "カウンターをリセット"
+
+msgid "Resolving…"
+msgstr "確認中…"
+
+msgid "Restart Chilpa"
+msgstr "Chilpaを再起動"
+
+msgid "Restart plugin"
+msgstr "プラグインを再起動"
+
+msgid "Restore default"
+msgstr "既定値に戻す"
+
+msgid "Restore defaults"
+msgstr "既定値に戻す"
+
+msgid "Restore previous EQ"
+msgstr "以前のEQに戻す"
+
+msgid "Restore tabs"
+msgstr "タブを復元"
+
+msgid "Results are saved after every track. Run Analyze again to continue the pending tracks."
+msgstr "結果はトラックごとに保存されます。未処理のトラックを続けるには、もう一度「解析」を実行してください。"
+
+msgid "Resume"
+msgstr "再開"
+
+msgid "Retry"
+msgstr "再試行"
+
+msgid "Revert"
+msgstr "元に戻す"
+
+msgid "Review"
+msgstr "確認"
+
+msgid "Review & Apply"
+msgstr "確認して適用"
+
+msgid "Review the requested permissions before installing."
+msgstr "インストールする前に、要求された権限を確認してください。"
+
+msgid "Rich"
+msgstr "リッチ"
+
+msgid "Rich rows"
+msgstr "リッチな行"
+
+msgid "Right delay · 0–30 ms"
+msgstr "右ディレイ · 0–30 ms"
+
+msgid "Route"
+msgstr "経路"
+
+msgid "Russian"
+msgstr "ロシア語"
+
+msgid "SACD XML"
+msgstr "SACD XML"
+
+msgid "SACDMTOC was not found"
+msgstr "SACDMTOCが見つかりませんでした"
+
+msgid "SACDTRL1 is missing"
+msgstr "SACDTRL1がありません"
+
+msgid "SACDTRL2 is missing"
+msgstr "SACDTRL2がありません"
+
+msgid "SIMILAR ARTISTS"
+msgstr "類似アーティスト"
+
+msgid "SPLIT"
+msgstr "分割"
+
+msgid "STATUS"
+msgstr "ステータス"
+
+msgid "SURFACES"
+msgstr "サーフェス"
+
+msgid "Sample-rate switching (PipeWire)"
+msgstr "サンプルレート切り替え（PipeWire）"
+
+msgid "Sandboxed — host check unavailable"
+msgstr "サンドボックス環境 — ホストのチェックは利用できません"
+
+msgid "Sat"
+msgstr "土"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Save as an image"
+msgstr "画像として保存"
+
+msgid "Save as playlist"
+msgstr "プレイリストとして保存"
+
+msgid "Save as…"
+msgstr "名前を付けて保存…"
+
+msgid "Save changes"
+msgstr "変更を保存"
+
+msgid "Save preset"
+msgstr "プリセットを保存"
+
+msgid "Save stations to find them here."
+msgstr "ステーションを保存すると、ここに表示されます。"
+
+msgid "Save the cover"
+msgstr "カバーを保存"
+
+msgid "Save the image"
+msgstr "画像を保存"
+
+msgid "Save to"
+msgstr "保存先"
+
+msgid "Saved"
+msgstr "保存済み"
+
+msgid "Saved position"
+msgstr "保存した位置"
+
+msgid "Saved results remain available between sessions."
+msgstr "保存した結果は、セッションをまたいで利用できます。"
+
+msgid "Saving..."
+msgstr "保存中..."
+
+msgid "Saving…"
+msgstr "保存中…"
+
+msgid "Saving… {} of {} files"
+msgstr "保存中… {} / {}個のファイル"
+
+msgid "Scales the whole interface, like browser zoom. Small fits more content on screen, Large and Extra large improve readability (requires restart)"
+msgstr "ブラウザーのズームのようにインターフェース全体を拡大縮小します。「小」は画面により多くのコンテンツを表示し、「大」と「特大」は読みやすさを向上させます（再起動が必要）"
+
+msgid "Scan again"
+msgstr "もう一度スキャン"
+
+msgid "Scan every folder again"
+msgstr "すべてのフォルダーをもう一度スキャン"
+
+msgid "Scanning…"
+msgstr "スキャン中…"
+
+msgid "Scrobbling"
+msgstr "スクロブル"
+
+msgid "Scroll to adjust volume"
+msgstr "スクロールで音量を調整"
+
+msgid "Search"
+msgstr "検索"
+
+msgid "Search artists"
+msgstr "アーティストを検索"
+
+msgid "Search folders"
+msgstr "フォルダーを検索"
+
+msgid "Search listens"
+msgstr "再生履歴を検索"
+
+msgid "Search only while the picker is open. Disconnecting stops the receiver and leaves local playback stopped."
+msgstr "ピッカーを開いている間だけ検索します。接続を解除するとレシーバーが停止し、ローカル再生は停止したままになります。"
+
+msgid "Search playlists and folders"
+msgstr "プレイリストとフォルダーを検索"
+
+msgid "Search playlists..."
+msgstr "プレイリストを検索..."
+
+msgid "Search plugins"
+msgstr "プラグインを検索"
+
+msgid "Search purchases"
+msgstr "購入を検索"
+
+msgid "Search queue"
+msgstr "キューを検索"
+
+msgid "Search results"
+msgstr "検索結果"
+
+msgid "Search settings"
+msgstr "設定を検索"
+
+msgid "Search shows"
+msgstr "番組を検索"
+
+msgid "Search stations by name"
+msgstr "名前でステーションを検索"
+
+msgid "Search these episodes"
+msgstr "これらのエピソードを検索"
+
+msgid "Search this page…"
+msgstr "このページを検索…"
+
+msgid "Search title, artist or album"
+msgstr "タイトル、アーティスト、アルバムで検索"
+
+msgid "Searching MusicBrainz for {genre} artists…"
+msgstr "MusicBrainzで{genre}のアーティストを検索しています…"
+
+msgid "Searching for devices…"
+msgstr "デバイスを検索しています…"
+
+msgid "Searching…"
+msgstr "検索中…"
+
+msgid "Search…"
+msgstr "検索…"
+
+msgid "Secondary text"
+msgstr "セカンダリテキスト"
+
+msgid "See all"
+msgstr "すべて表示"
+
+msgid "See which local tracks have analysis results and which are pending."
+msgstr "どのローカルトラックに解析結果があり、どれが未処理かを確認できます。"
+
+msgid "See {} more"
+msgid_plural "See {} more"
+msgstr[0] "他{}件を表示"
+
+msgid "Seek"
+msgstr "シーク"
+
+msgid "Seek Back"
+msgstr "巻き戻し"
+
+msgid "Seek Back 10 s"
+msgstr "10秒戻る"
+
+msgid "Seek Back 5 s"
+msgstr "5秒戻る"
+
+msgid "Seek Forward"
+msgstr "早送り"
+
+msgid "Seek Forward 10 s"
+msgstr "10秒進む"
+
+msgid "Seek Forward 5 s"
+msgstr "5秒進む"
+
+msgid "Select"
+msgstr "選択"
+
+msgid "Select Image..."
+msgstr "画像を選択..."
+
+msgid "Select a folder to see its contents."
+msgstr "フォルダーを選択して内容を表示します。"
+
+msgid "Select an artist to see their albums"
+msgstr "アーティストを選択してアルバムを表示します"
+
+msgid "Select folders"
+msgstr "フォルダーを選択"
+
+msgid "Select tracks"
+msgstr "トラックを選択"
+
+msgid "Selected GPU is unavailable in this display session — using Auto"
+msgstr "選択したGPUはこのディスプレイセッションでは利用できないため、自動設定を使用します"
+
+msgid "Send to Last.fm"
+msgstr "Last.fmに送信"
+
+msgid "Send to ListenBrainz"
+msgstr "ListenBrainzに送信"
+
+msgid "Sep"
+msgstr "9月"
+
+msgid "September"
+msgstr "9月"
+
+msgid "Server added"
+msgstr "サーバーを追加しました"
+
+msgid "Server address"
+msgstr "サーバーアドレス"
+
+msgid "Server name"
+msgstr "サーバー名"
+
+msgid "Servers"
+msgstr "サーバー"
+
+msgid "Set Timer"
+msgstr "タイマーを設定"
+
+msgid "Set loop end (B)"
+msgstr "ループの終了点を設定 (B)"
+
+msgid "Set loop start (A)"
+msgstr "ループの開始点を設定 (A)"
+
+msgid "Set preference"
+msgstr "設定を変更"
+
+msgid "Set the overall light or dark polarity. Affects derived shades, borders and overlays."
+msgstr "全体の明暗の極性を設定します。派生する陰影、境界線、オーバーレイに影響します。"
+
+msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
+msgstr "Chilpaが出力を単独で使用している間、PipeWireのグラフを各トラックのレートに合わせ、DACがファイル本来のレートを受け取れるようにします。Chilpaが停止するとレートは元に戻ります。"
+
+msgid "Settings"
+msgstr "設定"
+
+msgid "Shape the sound: raise a band to hear more, lower it to hear less."
+msgstr "音を整えます。帯域を上げるとその音が強まり、下げると弱まります。"
+
+msgid "Show"
+msgstr "表示"
+
+msgid "Show Shortcuts"
+msgstr "ショートカットを表示"
+
+msgid "Show each playlist folder in its chosen color."
+msgstr "各プレイリストフォルダーを、選んだ色で表示します。"
+
+msgid "Show imported albums and tracks"
+msgstr "インポートしたアルバムとトラックを表示"
+
+msgid "Show in folder"
+msgstr "フォルダーで表示"
+
+msgid "Show in sidebar"
+msgstr "サイドバーに表示"
+
+msgid "Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."
+msgstr "ファイル、キャッシュ、オンラインから歌詞を表示します。オフにすると、すべての歌詞の検索と翻訳を止め、現在の歌詞を消去します。"
+
+msgid "Show playlist only from the same source as the track"
+msgstr "トラックと同じソースのプレイリストのみ表示"
+
+msgid "Show saved releases in Albums"
+msgstr "保存したリリースを「アルバム」に表示"
+
+msgid "Show saved tracks in Tracks"
+msgstr "保存したトラックを「トラック」に表示"
+
+msgid "Show source recommendations by default in Home"
+msgstr "ホームにソースのおすすめを既定で表示"
+
+msgid "Show the columns"
+msgstr "列を表示"
+
+msgid "Show the sidebar"
+msgstr "サイドバーを表示"
+
+msgid "Show token"
+msgstr "トークンを表示"
+
+msgid "Show translation"
+msgstr "翻訳を表示"
+
+msgid "Show/Hide Window"
+msgstr "ウィンドウを表示／非表示"
+
+msgid "Showing"
+msgstr "表示中"
+
+msgid "Shuffle"
+msgstr "シャッフル"
+
+msgid "Shuffle all"
+msgstr "すべてシャッフル"
+
+msgid "Sidecar"
+msgstr "サイドカー"
+
+msgid "Sign in"
+msgstr "ログイン"
+
+msgid "Sign in from Account to see your purchases."
+msgstr "購入を確認するには、アカウントからログインしてください。"
+
+msgid "Sign in with an API key"
+msgstr "APIキーでログイン"
+
+msgid "Signed out"
+msgstr "ログアウト済み"
+
+msgid "Similar albums"
+msgstr "類似アルバム"
+
+msgid "Similar artists"
+msgstr "類似アーティスト"
+
+msgid "Since {}"
+msgstr "{}から"
+
+msgid "Size"
+msgstr "サイズ"
+
+msgid "Skipped"
+msgstr "スキップ済み"
+
+msgid "Skips"
+msgstr "スキップ"
+
+msgid "Sleep timer"
+msgstr "スリープタイマー"
+
+msgid "Small"
+msgstr "小"
+
+msgid "Smaller covers and background images; Chilpa can make these again."
+msgstr "小さいカバーと背景画像。Chilpaが再作成できます。"
+
+msgid "Soft"
+msgstr "弱"
+
+msgid "Software"
+msgstr "ソフトウェア"
+
+msgid "Some of these tracks were already added"
+msgstr "これらのトラックの一部はすでに追加されています"
+
+msgid "Some packages are missing"
+msgstr "一部のパッケージがありません"
+
+msgid "Songs"
+msgstr "トラック"
+
+msgid "Source"
+msgstr "ソース"
+
+msgid "Source: {}"
+msgstr "ソース: {}"
+
+msgid "Sources"
+msgstr "ソース"
+
+msgid "Sources and quality"
+msgstr "ソースと音質"
+
+msgid "Spanish"
+msgstr "スペイン語"
+
+msgid "Spectral Ribbon"
+msgstr "Spectral Ribbon"
+
+msgid "Spectrum"
+msgstr "スペクトラム"
+
+msgid "Split queue before this track"
+msgstr "このトラックの前でキューを分割"
+
+msgid "Standard analysis"
+msgstr "標準解析"
+
+msgid "Standard done"
+msgstr "標準: 完了"
+
+msgid "Standard pending"
+msgstr "標準: 未処理"
+
+msgid "Standard processed"
+msgstr "標準: 処理済み"
+
+msgid "Start"
+msgstr "開始"
+
+msgid "Start from current theme"
+msgstr "現在のテーマから開始"
+
+msgid "Starting plugins…"
+msgstr "プラグインを起動しています…"
+
+msgid "Starting {}…"
+msgstr "{}を起動しています…"
+
+msgid "Starting…"
+msgstr "開始中…"
+
+msgid "Starts when the scan is done"
+msgstr "スキャンが終わったら開始します"
+
+msgid "Static"
+msgstr "静止"
+
+msgid "Stations"
+msgstr "ステーション"
+
+msgid "Stats generated by Chilpa"
+msgstr "Chilpaが生成した統計"
+
+msgid "Status"
+msgstr "ステータス"
+
+msgid "Stereo and dynamics"
+msgstr "ステレオとダイナミクス"
+
+msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
+msgstr "ステレオ設定は2チャンネルのPCMに適用されます。EQとリンクしたコンプレッションはすべてのチャンネルに適用されます。"
+
+msgid "Stereo width · 0–100%"
+msgstr "ステレオ幅 · 0–100%"
+
+msgid "Stop"
+msgstr "停止"
+
+msgid "Stop after this track"
+msgstr "このトラックの後で停止"
+
+msgid "Stop and diagnose"
+msgstr "停止して診断"
+
+msgid "Stop playback after:"
+msgstr "再生を停止する時間："
+
+msgid "Stop playback to diagnose?"
+msgstr "再生を停止して診断しますか？"
+
+msgid "Stops in"
+msgstr "停止まで"
+
+msgid "Stops in {}"
+msgstr "{}後に停止"
+
+msgid "Storage"
+msgstr "ストレージ"
+
+msgid "Stream address"
+msgstr "ストリームアドレス"
+
+msgid "Streaming"
+msgstr "ストリーミング"
+
+msgid "Streaming libraries"
+msgstr "ストリーミングライブラリ"
+
+msgid "Strong"
+msgstr "強"
+
+msgid "Studio 24/48"
+msgstr "Studio 24/48"
+
+msgid "Stumbling"
+msgstr "不安定"
+
+msgid "Subscribe"
+msgstr "購読"
+
+msgid "Subscribe to a show to find it here."
+msgstr "番組を購読すると、ここに表示されます。"
+
+msgid "Subscribed"
+msgstr "購読中"
+
+msgid "Subscriptions"
+msgstr "購読"
+
+msgid "Success"
+msgstr "成功"
+
+msgid "Sun"
+msgstr "日"
+
+msgid "Sung line"
+msgstr "歌っている行"
+
+msgid "Surface"
+msgstr "サーフェス"
+
+msgid "Sync now"
+msgstr "今すぐ同期"
+
+msgid "Syncing"
+msgstr "同期中"
+
+msgid "Syncing: {} track read"
+msgid_plural "Syncing: {} tracks read"
+msgstr[0] "同期中: {}トラックを読み取り済み"
+
+msgid "Syncing…"
+msgstr "同期中…"
+
+msgid "System"
+msgstr "システム"
+
+msgid "System Colors"
+msgstr "システムカラー"
+
+msgid "TEXT"
+msgstr "テキスト"
+
+msgid "Tabs"
+msgstr "タブ"
+
+msgid "Tags, separated by commas"
+msgstr "タグ（コンマ区切り）"
+
+msgid "Tags: {}"
+msgstr "タグ: {}"
+
+msgid "Take the card from the sound server"
+msgstr "サウンドサーバーからカードを取得します"
+
+msgid "Target loudness"
+msgstr "目標ラウドネス"
+
+msgid "Test"
+msgstr "テスト"
+
+msgid "Test Playback"
+msgstr "再生をテスト"
+
+msgid "Text"
+msgstr "テキスト"
+
+msgid "That answer does not belong to this window."
+msgstr "その応答はこのウィンドウのものではありません。"
+
+msgid "That file is not a JPEG, PNG or WebP image"
+msgstr "そのファイルはJPEG、PNG、WebPのいずれの画像でもありません"
+
+msgid "The EQ profile is too large."
+msgstr "EQプロファイルが大きすぎます。"
+
+msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
+msgstr "ISOは変更されません。対応するメタデータはXMLに書き込まれ、それ以外のフィールドとカバーはChilpaのサイドカーファイルに保存されます。"
+
+msgid "The ISO stays untouched; fields without an XML place and cover art use a sidecar."
+msgstr "ISOは変更されません。XMLに置き場所のないフィールドとカバーはサイドカーファイルを使います。"
+
+msgid "The Mood models are not ready. Finish the download in Mood models first."
+msgstr "ムードモデルの準備ができていません。先にムードモデルでダウンロードを完了してください。"
+
+msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."
+msgstr "PulseAudioプロトコルはすべてのプログラムの音をミックスし、結果を1つのレートにリサンプリングするため、トラックがファイルのままデバイスに届くことはありません。ここで変更できる設定はありません。どこでも動作する方式です。サンプルをそのまま届けるには、カード自体かPipeWireを選んでください。"
+
+msgid "The account did not connect. You can close this tab."
+msgstr "アカウントに接続できませんでした。このタブは閉じて構いません。"
+
+msgid "The account expired; connect it again."
+msgstr "アカウントの有効期限が切れました。もう一度接続してください。"
+
+msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
+msgstr "内蔵テストは、ビット深度とサンプルレートが異なる4つのトラック（16/44.1、24/44.1、24/96、24/192）を再生し、DACの切り替わりを確認できます。各トラックは、ライブラリでそのフォーマットの最も再生回数が多いトラックで、ない場合は生成したテスト信号です。自分のキューを使いたい場合は、すべてのレートが試されるように、先に各種類のトラックを1つずつ追加してください。"
+
+msgid "The connection is not encrypted."
+msgstr "接続は暗号化されていません。"
+
+msgid "The current track has no such destination."
+msgstr "現在のトラックにはそのような移動先がありません。"
+
+msgid "The download view is unavailable."
+msgstr "ダウンロード表示は利用できません。"
+
+msgid "The filter has no ON/OFF state."
+msgstr "このフィルターにはON/OFFの状態がありません。"
+
+msgid "The first is the theme's own accent; the others replace it in every theme but Custom."
+msgstr "最初はテーマ自体のアクセントで、他のものは「カスタム」以外のすべてのテーマでそれを置き換えます。"
+
+msgid "The floating player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
+msgstr "フローティングのプレーヤーバーは、マウスが10秒間動かないと退き、動かすと戻ります。"
+
+msgid "The image could not be kept"
+msgstr "画像を保持できませんでした"
+
+msgid "The image could not be read"
+msgstr "画像を読み取れませんでした"
+
+msgid "The image could not be saved"
+msgstr "画像を保存できませんでした"
+
+msgid "The image is too large"
+msgstr "画像が大きすぎます"
+
+msgid "The line being sung stays in view."
+msgstr "歌っている行が常に表示されます。"
+
+msgid "The listening history could not be saved"
+msgstr "再生履歴を保存できませんでした"
+
+msgid "The loop cannot be marked here; its end needs at least two seconds."
+msgstr "ここではループを設定できません。終了点は2秒以上後にしてください。"
+
+msgid "The loudness every track is aligned to. -14 LUFS matches streaming services, -18 LUFS is the ReplayGain reference."
+msgstr "各トラックを揃えるラウドネス。-14 LUFSはストリーミングサービスの基準、-18 LUFSはReplayGainの基準です。"
+
+msgid "The lyrics cache could not be opened."
+msgstr "歌詞キャッシュを開けませんでした。"
+
+msgid "The output is playing in exclusive mode. Diagnosis needs to open it directly, so playback must stop first."
+msgstr "出力は排他モードで再生中です。診断には直接開く必要があるため、先に再生を停止する必要があります。"
+
+msgid "The output is still playing"
+msgstr "出力はまだ再生中です"
+
+msgid "The output plays only Chilpa. Other programs wait until it lets go."
+msgstr "この出力ではChilpaだけが再生されます。他のプログラムは、解放されるまで待ちます。"
+
+msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
+msgstr "プレイリストは作成されましたが、一部のトラックを追加できませんでした。再試行する前に開いて確認してください。"
+
+msgid "The plugin ZIP could not be opened."
+msgstr "プラグインのZIPを開けませんでした。"
+
+msgid "The plugin ZIP could not be read."
+msgstr "プラグインのZIPを読み取れませんでした。"
+
+msgid "The plugin did not answer within 15 seconds. Its account status is unknown."
+msgstr "プラグインが15秒以内に応答しませんでした。アカウントの状態は不明です。"
+
+msgid "The queues exceed the session limit of 100,000 tracks."
+msgstr "キューがセッションの上限である100,000トラックを超えています。"
+
+msgid "The record is not open in the editor."
+msgstr "そのアルバムはエディターで開かれていません。"
+
+msgid "The record's cover"
+msgstr "アルバムのカバー"
+
+msgid "The renderer description could not be read."
+msgstr "レンダラーの説明を読み取れませんでした。"
+
+msgid "The renderer did not answer. Check its connection."
+msgstr "レンダラーが応答しませんでした。接続を確認してください。"
+
+msgid "The renderer does not support this format or control. Chilpa does not transcode."
+msgstr "レンダラーはこのフォーマットまたは操作に対応していません。Chilpaはトランスコードしません。"
+
+msgid "The renderer refused the command."
+msgstr "レンダラーがコマンドを拒否しました。"
+
+msgid "The same rule as ListenBrainz: half of a track, or four minutes."
+msgstr "ListenBrainzと同じルールで、トラックの半分、または4分です。"
+
+msgid "The saved sign-in could not be opened."
+msgstr "保存されたログイン情報を開けませんでした。"
+
+msgid "The selected hardware volume control is gone."
+msgstr "選択したハードウェア音量コントロールがなくなりました。"
+
+msgid "The selected queues are empty."
+msgstr "選択したキューは空です。"
+
+msgid "The selected tracks could not be read."
+msgstr "選択したトラックを読み取れませんでした。"
+
+msgid "The service sent no code."
+msgstr "プロバイダーがコードを送信しませんでした。"
+
+msgid "The service's answer is missing."
+msgstr "プロバイダーの応答がありません。"
+
+msgid "The source disconnected. Check the playlist before retrying."
+msgstr "ソースの接続が切れました。再試行する前にプレイリストを確認してください。"
+
+msgid "The sung line lights up whole. Saves CPU."
+msgstr "歌っている行が丸ごと点灯します。CPUを節約できます。"
+
+msgid "The system wallpaper. Choose an image of your own instead."
+msgstr "システムの壁紙。代わりに自分の画像を選ぶこともできます。"
+
+msgid "The temporary media queue cannot be combined."
+msgstr "一時的なメディアキューは結合できません。"
+
+msgid "The update could not be completed. Your current AppImage is safe. Try again later."
+msgstr "アップデートを完了できませんでした。現在のAppImageは安全です。後でもう一度お試しください。"
+
+msgid "The update is ready. Restart Chilpa to use it."
+msgstr "アップデートの準備ができました。使用するにはChilpaを再起動してください。"
+
+msgid "The view the immersive view opens with. Remember keeps the one it was last on."
+msgstr "没入表示が開くときの表示です。「前回のまま」を選ぶと、最後に表示していたものが維持されます。"
+
+msgid "The view the mini player opens with. Remember keeps the one it was last on."
+msgstr "ミニプレーヤーが開くときの表示です。「前回のまま」を選ぶと、最後に表示していたものが維持されます。"
+
+msgid "Theme"
+msgstr "テーマ"
+
+msgid "There is no previous EQ to restore."
+msgstr "復元できる以前のEQがありません。"
+
+msgid "This address belongs to a different server."
+msgstr "このアドレスは別のサーバーのものです。"
+
+msgid "This can take a few minutes when MusicBrainz is busy."
+msgstr "MusicBrainzが混雑している場合、数分かかることがあります。"
+
+msgid "This chapter format is not supported."
+msgstr "このチャプター形式には対応していません。"
+
+msgid "This collection exceeds the current page limit."
+msgstr "このコレクションは現在のページ上限を超えています。"
+
+msgid "This computer"
+msgstr "このコンピューター"
+
+msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
+msgstr "この直接出力にはハードウェア音量コントロールがありません。DACまたはアンプを使ってください。"
+
+msgid "This entry is no longer at hand. Open it again from its source."
+msgstr "この項目はもう利用できません。ソースからもう一度開いてください。"
+
+msgid "This episode material could not be loaded."
+msgstr "このエピソードの資料を読み込めませんでした。"
+
+msgid "This folder has no tracks."
+msgstr "このフォルダーにトラックはありません。"
+
+msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
+msgstr "通常より時間がかかっています。MusicBrainzが混雑している可能性があります。しばらくしてからもう一度お試しください。"
+
+msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
+msgstr "システムがすでに音を送っている先なので、サンプルがどうなるかはその設定次第です。通常は他の音とミックスされ、結果がリサンプリングされます。必ず動作します。サンプルをそのまま届けるには、カード自体を選んでください。"
+
+msgid "This looks like a playlist."
+msgstr "これはプレイリストのようです。"
+
+msgid "This month vs Last month"
+msgstr "今月 vs 先月"
+
+msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
+msgstr "これは音を出しません。デバイスに送られるはずだったものをファイルに書き出すので、元のトラックと比較できます。ビットパーフェクトは主張するのではなく、これで証明できます。"
+
+msgid "This output has no hardware mute switch."
+msgstr "この出力にはハードウェアのミュートスイッチがありません。"
+
+msgid "This output has no unambiguous, safe playback volume control."
+msgstr "この出力には、曖昧さがなく安全な再生音量コントロールがありません。"
+
+msgid "This output is always Chilpa's alone."
+msgstr "この出力は常にChilpaだけのものです。"
+
+msgid "This output takes DSD converted to PCM. DoP needs exclusive mode, and a DAC that decodes it."
+msgstr "この出力はDSDをPCMに変換して受け取ります。DoPには排他モードと、それをデコードするDACが必要です。"
+
+msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
+msgstr "この出力はDSDをPCMに変換して受け取ります。そのまま受け取るのはhwのカードだけです。カードに選んだ設定は保持されます。"
+
+msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
+msgstr "このプレイリストには、追加する{2}トラックのうち{1}トラックがすでに含まれています。新しいものだけを追加するか、重複を含めてすべて追加してください。"
+
+msgid "This preset uses precise filters. Keep them as they are, or create a separate graphic EQ. You can restore your previous EQ."
+msgstr "このプリセットは精密フィルターを使っています。そのまま保持するか、別にグラフィックEQを作成してください。以前のEQに戻すこともできます。"
+
+msgid "This purchase is unavailable for download."
+msgstr "この購入はダウンロードできません。"
+
+msgid "This record cannot be played now."
+msgstr "このアルバムは現在再生できません。"
+
+msgid "This removes {} from your library."
+msgstr "ライブラリから{}を削除します。"
+
+msgid "This screen is not built yet."
+msgstr "この画面はまだ作成されていません。"
+
+msgid "This section is not built yet."
+msgstr "このセクションはまだ作成されていません。"
+
+msgid "This server is no longer available."
+msgstr "このサーバーは利用できなくなりました。"
+
+msgid "This source cannot accept these tracks right now."
+msgstr "このソースは現在これらのトラックを受け付けられません。"
+
+msgid "This source owns the order."
+msgstr "このソースが順序を管理します。"
+
+msgid "This source's folders are read-only. Choose a local folder to organize its playlists in Chilpa."
+msgstr "このソースのフォルダーは読み取り専用です。Chilpaでプレイリストを整理するには、ローカルフォルダーを選んでください。"
+
+msgid "This track has no album to open"
+msgstr "このトラックには開けるアルバムがありません"
+
+msgid "This transcript format is not supported."
+msgstr "この文字起こし形式には対応していません。"
+
+msgid "This update asks for additional access."
+msgstr "このアップデートは追加のアクセスを要求しています。"
+
+msgid "This view as an image (PNG)"
+msgstr "この表示を画像（PNG）で書き出し"
+
+msgid "This week vs Last week"
+msgstr "今週 vs 先週"
+
+msgid "This wizard helps you configure your DAC for bit-perfect playback on Linux. Chilpa never changes your system automatically — it auto-detects your DACs, shows you the exact commands and config to copy, and lets you test playback right here."
+msgstr "このウィザードは、Linuxでビットパーフェクト再生を行うためのDACの設定をお手伝いします。Chilpaがシステムを自動的に変更することはありません。DACを自動検出し、コピーするコマンドと設定をそのまま示し、ここで再生テストを行えます。"
+
+msgid "This wizard tests PCM rates. Chilpa currently converts DSD to PCM on PipeWire; exclusive mode and rate switching alone cannot verify an untouched DoP stream. For a DAC that supports DSD, use ALSA direct (hw) and choose a supported DSD mode in Audio settings."
+msgstr "このウィザードはPCMのレートをテストします。ChilpaはPipeWireでは現在DSDをPCMに変換するため、排他モードとレート切り替えだけでは、手を加えていないDoPストリームを検証できません。DSD対応のDACでは、ALSAダイレクト（hw）を使い、オーディオ設定で対応しているDSDモードを選んでください。"
+
+msgid "This year vs Last year"
+msgstr "今年 vs 昨年"
+
+msgid "Thu"
+msgstr "木"
+
+msgid "Time"
+msgstr "時間"
+
+msgid "Time is out of range."
+msgstr "時間が範囲外です。"
+
+msgid "Title"
+msgstr "タイトル"
+
+msgid "To move to"
+msgstr "動きたいときに"
+
+msgid "Today"
+msgstr "今日"
+
+msgid "Today vs Yesterday"
+msgstr "今日 vs 昨日"
+
+msgid "Toggle Immersive View"
+msgstr "没入表示の切り替え"
+
+msgid "Toggle Mini Player"
+msgstr "ミニプレーヤーの表示切り替え"
+
+msgid "Toggle Shuffle"
+msgstr "シャッフル切り替え"
+
+msgid "Toggle Sidebar"
+msgstr "サイドバーの表示切り替え"
+
+msgid "Token"
+msgstr "トークン"
+
+msgid "Tools"
+msgstr "ツール"
+
+msgid "Top result"
+msgstr "トップ結果"
+
+msgid "Track"
+msgstr "トラック"
+
+msgid "Track count"
+msgstr "トラック数"
+
+msgid "Track details · {}"
+msgstr "トラックの詳細 · {}"
+
+msgid "Track lists"
+msgstr "トラック一覧"
+
+msgid "Track menu"
+msgstr "トラックメニュー"
+
+msgid "Track review"
+msgstr "トラックの確認"
+
+msgid "Track {}"
+msgstr "トラック {}"
+
+msgid "Tracks"
+msgstr "トラック"
+
+msgid "Tracks ({})"
+msgstr "トラック（{}）"
+
+msgid "Tracks you play will appear here"
+msgstr "再生したトラックがここに表示されます"
+
+msgid "Trailers"
+msgstr "予告編"
+
+msgid "Transcript"
+msgstr "文字起こし"
+
+msgid "Translate lyrics"
+msgstr "歌詞を翻訳"
+
+msgid "Translation"
+msgstr "翻訳"
+
+msgid "Tray icon"
+msgstr "トレイアイコン"
+
+msgid "Tray icon style"
+msgstr "トレイアイコンのスタイル"
+
+msgid "Treble"
+msgstr "高音"
+
+msgid "Tree"
+msgstr "ツリー"
+
+msgid "Trending shows"
+msgstr "トレンドの番組"
+
+msgid "Try again"
+msgstr "もう一度試す"
+
+msgid "Tue"
+msgstr "火"
+
+msgid "Tunnel"
+msgstr "Tunnel"
+
+msgid "Tunnel Flow"
+msgstr "Tunnel Flow"
+
+msgid "Type this code at plex.tv/link, signed in to your Plex account."
+msgstr "Plexアカウントにログインした状態で、plex.tv/linkでこのコードを入力してください。"
+
+msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
+msgstr "ログイン済みのJellyfinのQuick Connectで、このコードを入力してください。"
+
+msgid "UP NEXT"
+msgstr "次に再生"
+
+msgid "Unassigned"
+msgstr "未割り当て"
+
+msgid "Unavailable"
+msgstr "利用不可"
+
+msgid "Uncategorized"
+msgstr "未分類"
+
+msgid "Undo queue edit"
+msgstr "キューの編集を元に戻す"
+
+msgid "Unfollow"
+msgstr "フォロー解除"
+
+msgid "Uninstall"
+msgstr "アンインストール"
+
+msgid "Uninstall plugin"
+msgstr "プラグインをアンインストール"
+
+msgid "Uninstall plugin and remove account data"
+msgstr "プラグインをアンインストールしてアカウントデータを削除"
+
+msgid "Unknown DSP action."
+msgstr "不明なDSP操作です。"
+
+msgid "Unknown command; enter :help."
+msgstr "不明なコマンドです。:helpを入力してください。"
+
+msgid "Unknown preference."
+msgstr "不明な設定です。"
+
+msgid "Unknown quality"
+msgstr "音質不明"
+
+msgid "Unknown target; use Tab to complete the source."
+msgstr "不明な宛先です。Tabキーでソースを補完してください。"
+
+msgid "Unmatched"
+msgstr "未一致"
+
+msgid "Unmute"
+msgstr "ミュート解除"
+
+msgid "Unplayed"
+msgstr "未再生"
+
+msgid "Unrated"
+msgstr "未評価"
+
+msgid "Unsupported EQ directive. Paste parametric filters without channel routing or other commands."
+msgstr "サポートされていないEQディレクティブです。チャンネルのルーティングやその他のコマンドを含めずに、パラメトリックフィルターを貼り付けてください。"
+
+msgid "Unsupported EQ filter syntax or frequency unit."
+msgstr "サポートされていないEQフィルターの構文または周波数の単位です。"
+
+msgid "Unsupported active EQ filter. Use PK, LS, HS, LP, HP or NO."
+msgstr "サポートされていない有効なEQフィルターです。PK、LS、HS、LP、HP、NOのいずれかを使ってください。"
+
+msgid "Unsupported or empty DSP preset catalog."
+msgstr "サポートされていない、または空のDSPプリセットカタログです。"
+
+msgid "Up next"
+msgstr "次に再生"
+
+msgid "Upcoming"
+msgstr "近日公開"
+
+msgid "Update"
+msgstr "更新"
+
+msgid "Update all"
+msgstr "すべて更新"
+
+msgid "Update available"
+msgstr "アップデートあり"
+
+msgid "Update cancelled."
+msgstr "アップデートをキャンセルしました。"
+
+msgid "Update failed; the previous version is kept"
+msgstr "アップデートに失敗しました。以前のバージョンは保持されます"
+
+msgid "Update ready"
+msgstr "アップデートの準備完了"
+
+msgid "Updated"
+msgstr "更新済み"
+
+msgid "Updated {}"
+msgstr "{}に更新"
+
+msgid "Updates"
+msgstr "アップデート"
+
+msgid "Updates keep your library, settings and plugins. One previous AppImage is kept beside the new one."
+msgstr "アップデートしてもライブラリ、設定、プラグインは保持されます。以前のAppImageが1つ、新しいものの隣に残ります。"
+
+msgid "Updating Chilpa…"
+msgstr "Chilpaを更新しています…"
+
+msgid "Updating usage…"
+msgstr "使用量を更新しています…"
+
+msgid "Uppercase"
+msgstr "大文字"
+
+msgid "Usage"
+msgstr "使用量"
+
+msgid "Use MusicBrainz"
+msgstr "MusicBrainzを使用"
+
+msgid "Use Quick Connect"
+msgstr "Quick Connectを使用"
+
+msgid "Use at most 10 DSP filters."
+msgstr "DSPフィルターは最大10個までです。"
+
+msgid "Use current colors"
+msgstr "現在の色を使用"
+
+msgid "Use my current queue"
+msgstr "現在のキューを使用"
+
+msgid "Use the default"
+msgstr "既定値を使用"
+
+msgid "Use the playlist icon or a cover collage."
+msgstr "プレイリストアイコンまたはカバーのコラージュを使用します。"
+
+msgid "Use the system language or choose a language."
+msgstr "システムの言語を使うか、言語を選びます。"
+
+msgid "User"
+msgstr "ユーザー"
+
+msgid "Valid"
+msgstr "検査合格"
+
+msgid "Valid node name"
+msgstr "有効なノード名"
+
+msgid "Version"
+msgstr "バージョン"
+
+msgid "Version: {}"
+msgstr "バージョン: {}"
+
+msgid "View"
+msgstr "表示"
+
+msgid "View cover"
+msgstr "カバーを表示"
+
+msgid "View image"
+msgstr "画像を表示"
+
+msgid "View less"
+msgstr "表示を減らす"
+
+msgid "View precise filters"
+msgstr "精密フィルターを表示"
+
+msgid "View tracks"
+msgstr "トラックを表示"
+
+msgid "Volume"
+msgstr "音量"
+
+msgid "Volume Down"
+msgstr "音量を下げる"
+
+msgid "Volume Up"
+msgstr "音量を上げる"
+
+msgid "Volume normalization"
+msgstr "音量ノーマライズ"
+
+msgid "Volume {}%"
+msgstr "音量 {}%"
+
+msgid "Wait for the queue to finish switching."
+msgstr "キューの切り替えが終わるまでお待ちください。"
+
+msgid "Waiting for playback to stop"
+msgstr "再生の停止を待っています"
+
+msgid "Waiting for the DAC to start playing…"
+msgstr "DACの再生開始を待っています…"
+
+msgid "Wallpaper"
+msgstr "壁紙"
+
+msgid "Wallpaper Sync"
+msgstr "壁紙と同期"
+
+msgid "Wallpaper blur"
+msgstr "壁紙のぼかし"
+
+msgid "Wallpaper, blurred"
+msgstr "ぼかし壁紙"
+
+msgid "Warning"
+msgstr "警告"
+
+msgid "Wave Bed"
+msgstr "Wave Bed"
+
+msgid "Waveform"
+msgstr "波形"
+
+msgid "Website"
+msgstr "ウェブサイト"
+
+msgid "Wed"
+msgstr "水"
+
+msgid "Week"
+msgstr "週"
+
+msgid "Welcome"
+msgstr "ようこそ"
+
+msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
+msgstr "没入表示の検索結果でEnterキーを押したときの動作です。「無効」にすると検索がオフになります。"
+
+msgid "What should happen to the original queues?"
+msgstr "元のキューをどうしますか？"
+
+msgid "What to test with"
+msgstr "テストに使うもの"
+
+msgid "What you play most"
+msgstr "最もよく再生するもの"
+
+msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
+msgstr "メタデータエディターが最初に検索する場所です。「埋め込みタグのみ」の場合、ネットワークには一切接続しません。"
+
+msgid "Where the samples go: straight to the device, or through a sound server."
+msgstr "サンプルの送り先です。デバイスに直接送るか、サウンドサーバーを経由します。"
+
+msgid "Wherever the system is sending sound"
+msgstr "システムが音を送っている先"
+
+msgid "Which DACs do you want to configure?"
+msgstr "設定するDACを選択してください"
+
+msgid "Which GPU renders the app. Only the GPUs actually present are listed. Choosing one other than the default also switches the renderer to Vulkan — the only backend Qt can select a GPU on (requires restart)"
+msgstr "アプリを描画するGPU。実際に存在するGPUのみを表示します。既定以外を選ぶとレンダラーもVulkanに切り替わります — QtがGPUを選択できる唯一のバックエンドです（再起動が必要）"
+
+msgid "Which of its libraries come in?"
+msgstr "どのライブラリを取り込みますか？"
+
+msgid "Who the records are credited to"
+msgstr "アルバムのクレジット先"
+
+msgid "Windows audio would not answer ({})"
+msgstr "Windowsのオーディオが応答しませんでした（{}）"
+
+msgid "Windows reports no playback device"
+msgstr "Windowsが再生デバイスを報告していません"
+
+msgid "Windows would not say what \"{}\" accepts ({})"
+msgstr "Windowsが「{}」の対応内容を返しませんでした（{}）"
+
+msgid "Withdraw approval"
+msgstr "承認を取り消す"
+
+msgid "Without plugins"
+msgstr "プラグインなし"
+
+msgid "Work"
+msgstr "作品"
+
+msgid "Working…"
+msgstr "処理中…"
+
+msgid "Write XML"
+msgstr "XMLを書き込み"
+
+msgid "Write into the audio files?"
+msgstr "オーディオファイルに書き込みますか？"
+
+msgid "Write into the files"
+msgstr "ファイルに書き込む"
+
+msgid "Write the external SACD XML?"
+msgstr "外部のSACD XMLを書き込みますか？"
+
+msgid "Write to a file"
+msgstr "ファイルに書き出す"
+
+msgid "XML can be edited only for SACD images"
+msgstr "XMLを編集できるのはSACDイメージのみです"
+
+msgid "YOU MAY ALSO LIKE"
+msgstr "こちらもおすすめ"
+
+msgid "Year"
+msgstr "年"
+
+msgid "Yes"
+msgstr "はい"
+
+msgid "Yesterday"
+msgstr "昨日"
+
+msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
+msgstr "バックアップはご自身の責任で行ってください。これは補助ツールであり、システム復旧ツールではありません。"
+
+msgid "Your DAC is ready for bit-perfect playback. If you applied the config files, restart the audio services (or log out and back in) for them to take effect."
+msgstr "DACはビットパーフェクト再生の準備ができています。設定ファイルを適用した場合は、有効にするためにオーディオサービスを再起動（またはログアウトして再ログイン）してください。"
+
+msgid "Your account reaches more than one server. Which one?"
+msgstr "アカウントから複数のサーバーに接続できます。どれにしますか？"
+
+msgid "Your audio stack is ready for bit-perfect playback."
+msgstr "オーディオスタックはビットパーフェクト再生の準備ができています。"
+
+msgid "Your distribution"
+msgstr "お使いのディストリビューション"
+
+msgid "Your queue is empty"
+msgstr "キューは空です"
+
+msgid "Your queue is empty — add some tracks first, or press Play test."
+msgstr "キューが空です — まずトラックを追加するか、「テストを再生」を押してください。"
+
+msgid "Your selected sources are taking longer than usual. Try again in a moment."
+msgstr "選択したソースの応答に通常より時間がかかっています。しばらくしてからもう一度お試しください。"
+
+msgid "Your shows"
+msgstr "あなたの番組"
+
+msgid "a DASH manifest, which Chilpa cannot read yet"
+msgstr "DASHマニフェスト（Chilpaはまだ読み取れません）"
+
+msgid "a DST frame decoded to {} bytes and not 9408"
+msgstr "DSTフレームが{}バイトにデコードされました（9408バイトではありません）"
+
+msgid "a DST frame does not decode: {}"
+msgstr "DSTフレームをデコードできません: {}"
+
+msgid "a DST frame ends before all its packets came"
+msgstr "DSTフレームがすべてのパケットが届く前に終わっています"
+
+msgid "a DST frame has no timecode"
+msgstr "DSTフレームにタイムコードがありません"
+
+msgid "a DST frame is larger than 64 KiB"
+msgstr "DSTフレームが64 KiBを超えています"
+
+msgid "a DST frame says it spans no packets"
+msgstr "DSTフレームがパケットを含まないと宣言しています"
+
+msgid "a DST packet belongs to no frame"
+msgstr "どのフレームにも属さないDSTパケットがあります"
+
+msgid "a Mac's outputs take PCM, not native DSD"
+msgstr "Macの出力はPCMを受け取り、ネイティブDSDは受け取りません"
+
+msgid "a date is a year, a year and a month, or a full day: 1984, 1984-09, 1984-09-03"
+msgstr "日付は年、年と月、または完全な日付で指定します: 1984、1984-09、1984-09-03"
+
+msgid "a direct URL"
+msgstr "直接URL"
+
+msgid "a frame of the stereo area is not stereo"
+msgstr "ステレオ領域のフレームの1つがステレオではありません"
+
+msgid "a list needs a name"
+msgstr "リストには名前が必要です"
+
+msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
+msgstr "このサイドカーファイルはより新しいChilpaで書き込まれました。変更するにはChilpaを更新してください"
+
+msgid "a number from 1 to 9999, or nothing"
+msgstr "1から9999までの数字、または空欄"
+
+msgid "a rating must be between 0 and 5 stars"
+msgstr "評価は0から5つ星の間でなければなりません"
+
+msgid "a scan is already running"
+msgstr "スキャンはすでに実行中です"
+
+msgid "a scan is running; save when it is done"
+msgstr "スキャン中です。終わってから保存してください"
+
+msgid "a stream cannot be rewound"
+msgstr "ストリームは巻き戻せません"
+
+msgid "a track has no artist"
+msgstr "トラックにアーティストがありません"
+
+msgid "a track has no title"
+msgstr "トラックにタイトルがありません"
+
+msgid "add a command you trigger"
+msgstr "あなたが実行するコマンドを追加する"
+
+msgid "aggregate"
+msgstr "アグリゲート"
+
+msgid "almost nothing in the queue has an analysed tempo"
+msgstr "キュー内にテンポを解析済みのトラックがほとんどありません"
+
+msgid "an HLS manifest, which Chilpa cannot read yet"
+msgstr "HLSマニフェスト（Chilpaはまだ読み取れません）"
+
+msgid "an analysis is already running"
+msgstr "解析はすでに実行中です"
+
+msgid "another program has \"{}\" to itself; close it, or turn exclusive mode off to share it"
+msgstr "別のプログラムが「{}」を占有しています。そのプログラムを閉じるか、排他モードをオフにして共有してください"
+
+msgid "another program is using \"{}\"; close it, or turn bit-perfect and exclusive mode off to share it ({})"
+msgstr "別のプログラムが「{}」を使用しています。閉じるか、ビットパーフェクトと排他モードをオフにして共有してください（{}）"
+
+msgid "awaiting approval"
+msgstr "承認待ち"
+
+msgid "be a plugin of another kind: {}"
+msgstr "別の種類のプラグインになる: {}"
+
+msgid "bring catalogue: search for and fetch music"
+msgstr "カタログを提供する: 音楽を検索して取得する"
+
+msgid "by {}"
+msgstr "{}による"
+
+msgid "calling \"{}\", which did not load"
+msgstr "「{}」を呼び出していますが、読み込まれていません"
+
+msgid "calling \"{}\", which is in quarantine"
+msgstr "「{}」を呼び出していますが、隔離されています"
+
+msgid "calling \"{}\", which is not installed"
+msgstr "「{}」を呼び出していますが、インストールされていません"
+
+msgid "calling \"{}\", which nobody has approved"
+msgstr "「{}」を呼び出していますが、誰も承認していません"
+
+msgid "cannot be done"
+msgstr "非対応"
+
+msgid "choose at least one library"
+msgstr "ライブラリを1つ以上選んでください"
+
+msgid "converted to {}"
+msgstr "{}に変換"
+
+msgid "could not open the stream: {}"
+msgstr "ストリームを開けませんでした: {}"
+
+msgid "could not open: {}"
+msgstr "開けませんでした: {}"
+
+msgid "could not: {}"
+msgstr "できませんでした: {}"
+
+msgid "create playlists in destinations you select for an import"
+msgstr "インポート用に選択した取り込み先にプレイリストを作成する"
+
+msgid "damaged DSD file: {}"
+msgstr "破損したDSDファイル: {}"
+
+msgid "damaged file: {}"
+msgstr "破損したファイル: {}"
+
+msgid "default"
+msgstr "既定"
+
+msgid "device: {}"
+msgstr "デバイス: {}"
+
+msgid "digital"
+msgstr "デジタル"
+
+msgid "direct"
+msgstr "直接"
+
+msgid "discrete"
+msgstr "ディスクリート"
+
+msgid "display"
+msgstr "ディスプレイ"
+
+msgid "encrypted and tied to this machine (there is no system keyring)"
+msgstr "暗号化され、このコンピューターに紐づけられています（システムのキーリングがありません）"
+
+msgid "exclusive"
+msgstr "排他"
+
+msgid "file"
+msgstr "ファイル"
+
+msgid "fine"
+msgstr "良好"
+
+msgid "format not supported: {}"
+msgstr "サポートされていないフォーマット: {}"
+
+msgid "from a file"
+msgstr "ファイルから"
+
+msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
+msgstr "アカウントをChilpaの外部で自分で管理する: 認証情報をシステムのキーリングに独自の名前で保存すると主張しています。Chilpaはそれを確認できず、削除もできず、これらのいずれも検証できません"
+
+msgid "handle your account itself, outside Chilpa: your credential ends up wherever it decides, which may be a plaintext file. Chilpa does not see it, cannot delete it and cannot check any of this"
+msgstr "アカウントをChilpaの外部で自分で管理する: 認証情報の保存先はプラグイン次第で、平文ファイルの可能性があります。Chilpaはそれを確認できず、削除もできず、これらのいずれも検証できません"
+
+msgid "handset"
+msgstr "ハンドセット"
+
+msgid "headphones"
+msgstr "ヘッドホン"
+
+msgid "headset"
+msgstr "ヘッドセット"
+
+msgid "how the account connects does not work: {}"
+msgstr "アカウントの接続方法が機能しません: {}"
+
+msgid "hw plays the samples untouched or refuses them. plughw converts what the card refuses. pcm is the card as ALSA sets it up, shared with other programs. Only hw can be bit-perfect."
+msgstr "hwはサンプルをそのまま再生するか、拒否します。plughwはカードが拒否するものを変換します。pcmはALSAが設定したままのカードで、他のプログラムと共有されます。ビットパーフェクトにできるのはhwだけです。"
+
+msgid "hw: the card alone"
+msgstr "hw: カード単独"
+
+msgid "impossible packet counts"
+msgstr "パケット数が不正です"
+
+msgid "in the system keyring"
+msgstr "システムのキーリング内"
+
+msgid "integrated"
+msgstr "内蔵"
+
+msgid "internal"
+msgstr "内部"
+
+msgid "invalid table of contents: {}"
+msgstr "目次が無効です: {}"
+
+msgid "invalid timecode in frame-info"
+msgstr "frame-infoのタイムコードが無効です"
+
+msgid "it answered an address not in its memory"
+msgstr "メモリにないアドレスを返しました"
+
+msgid "it answered nothing"
+msgstr "何も返しませんでした"
+
+msgid "it answered something that is not JSON"
+msgstr "JSONではないものを返しました"
+
+msgid "it answered something that is not an http address"
+msgstr "httpアドレスではないものを返しました"
+
+msgid "it answered something that is not understood: {}"
+msgstr "理解できないものを返しました: {}"
+
+msgid "it asked for more memory than it is allowed"
+msgstr "許可された量を超えるメモリを要求しました"
+
+msgid "it asked for {}, which its manifest did not declare"
+msgstr "マニフェストで宣言されていない{}を要求しました"
+
+msgid "it asks for API version {} and this Chilpa understands {}; it does not load"
+msgstr "APIバージョン{}を要求していますが、このChilpaが対応しているのは{}です。読み込まれません"
+
+msgid "it asks for the {} runtime, which does not exist yet"
+msgstr "まだ存在しない{}ランタイムを要求しています"
+
+msgid "it blew up inside: {}"
+msgstr "内部でクラッシュしました: {}"
+
+msgid "it cannot be written to"
+msgstr "書き込めません"
+
+msgid "it cannot take tags"
+msgstr "タグを付けられません"
+
+msgid "it comes in several parts, which cannot be read as one file"
+msgstr "複数のパートに分かれており、1つのファイルとして読み取れません"
+
+msgid "it could not be saved"
+msgstr "保存できませんでした"
+
+msgid "it delivers {}"
+msgstr "{}を返します"
+
+msgid "it did not answer in {} and was stopped"
+msgstr "{}以内に応答せず、停止されました"
+
+msgid "it does not export \"{}\", which every plugin has to export"
+msgstr "すべてのプラグインが公開する必要のある「{}」を公開していません"
+
+msgid "it does not start with the DSD chunk"
+msgstr "DSDチャンクで始まっていません"
+
+msgid "it does not start with the FRM8 chunk"
+msgstr "FRM8チャンクで始まっていません"
+
+msgid "it failed {} times in a row; the last one: {}"
+msgstr "{}回連続で失敗しました。最後のエラー: {}"
+
+msgid "it is a DSD file"
+msgstr "DSDファイルです"
+
+msgid "it is not 2048 bytes"
+msgstr "2048バイトではありません"
+
+msgid "it is not installed"
+msgstr "インストールされていません"
+
+msgid "it is not where it was"
+msgstr "元の場所にありません"
+
+msgid "it says it handles its own account, but only a separate process plugin can do that: in WASM there are no sockets and no disk of its own"
+msgstr "自分のアカウントを自分で扱うと宣言していますが、それができるのは独立したプロセスのプラグインだけです。WASMにはソケットも専用のディスクもありません"
+
+msgid "it went over the compute it was allowed and was stopped"
+msgstr "許可された計算量を超えたため停止されました"
+
+msgid "keep a credential of yours"
+msgstr "あなたの認証情報を保持する"
+
+msgid "keep things of its own on disk"
+msgstr "専用のデータをディスクに保持する"
+
+msgid "let this plugin handle its own sign-in secrets, encrypted on disk and separate from other plugins"
+msgstr "このプラグインにログイン用の秘密情報を自分で扱わせる（ディスク上で暗号化され、他のプラグインとは分離されます）"
+
+msgid "looking records up is turned off in Settings"
+msgstr "アルバム情報の検索は設定でオフになっています"
+
+msgid "metadata is being saved; scan when it is done"
+msgstr "メタデータを保存中です。終わってからスキャンしてください"
+
+msgid "microphone"
+msgstr "マイク"
+
+msgid "min"
+msgstr "分"
+
+msgid "mono"
+msgstr "モノラル"
+
+msgid "nearby"
+msgstr "近く"
+
+msgid "network"
+msgstr "ネットワーク"
+
+msgid "no JACK graph is running"
+msgstr "JACKグラフが動作していません"
+
+msgid "no JACK graph is running; start one, or install pipewire-jack to have PipeWire answer for it"
+msgstr "JACKグラフが動作していません。起動するか、pipewire-jackをインストールしてPipeWireに代行させてください"
+
+msgid "no covers were found"
+msgstr "カバーが見つかりませんでした"
+
+msgid "no pulse"
+msgstr "ビートなし"
+
+msgid "no server is answering the PulseAudio protocol"
+msgstr "PulseAudioプロトコルに応答するサーバーがありません"
+
+msgid "no sound card is listed in /proc/asound"
+msgstr "/proc/asoundにサウンドカードが一覧されていません"
+
+msgid "no sound server answered; install pipewire and pipewire-pulse"
+msgstr "応答したサウンドサーバーがありません。pipewireとpipewire-pulseをインストールしてください"
+
+msgid "none of that can be played now: its folder is not mounted or its server does not answer"
+msgstr "現在どれも再生できません。フォルダーがマウントされていないか、サーバーが応答しません"
+
+msgid "none of that record's files are here now"
+msgstr "そのアルバムのファイルは現在どれもここにありません"
+
+msgid "none of that server's addresses answers from here"
+msgstr "そのサーバーのアドレスはここからどれも応答しません"
+
+msgid "not supported: {}"
+msgstr "サポートされていません: {}"
+
+msgid "nothing was found"
+msgstr "見つかりませんでした"
+
+msgid "now at {}"
+msgstr "現在{}"
+
+msgid "one or more SACD images have no matching external XML"
+msgstr "1つ以上のSACDイメージに対応する外部XMLがありません"
+
+msgid "one or more files are not where they were"
+msgstr "1つ以上のファイルが元の場所にありません"
+
+msgid "one or more files cannot be written to"
+msgstr "1つ以上のファイルに書き込めません"
+
+msgid "one or more files cannot take tags"
+msgstr "1つ以上のファイルにタグを付けられません"
+
+msgid "open it again from where it is listed"
+msgstr "一覧された場所からもう一度開いてください"
+
+msgid "outside the image"
+msgstr "イメージの外です"
+
+msgid "pcm is the card as ALSA's own configuration sets it up: usually mixed with dmix, so other programs can play at the same time, and converted to whatever rate the mix runs at. It shares the card, and for the same reason it cannot promise the samples arrive as they left."
+msgstr "pcmはALSA自身の設定どおりのカードです。通常はdmixでミックスされるため、他のプログラムが同時に再生でき、ミックスのレートに変換されます。カードを共有するので、同じ理由でサンプルがそのまま届くことは約束できません。"
+
+msgid "pcm: shared, as ALSA sets it up"
+msgstr "pcm: ALSAの設定どおりに共有"
+
+msgid "plughw converts whatever the card does not take -- the rate, the sample format, the channels -- without saying so. It plays what the card alone would refuse, and for the same reason it cannot promise the samples arrive as they left."
+msgstr "plughwは、カードが受け付けないもの（レート、サンプル形式、チャンネル）を、通知せずに変換します。カード単独では拒否するものも再生できますが、同じ理由でサンプルがそのまま届くことは約束できません。"
+
+msgid "plughw: converts what it refuses"
+msgstr "plughw: 拒否されるものを変換"
+
+msgid "present"
+msgstr "現在"
+
+msgid "process PCM audio with equalization and stereo controls"
+msgstr "イコライゼーションとステレオ設定でPCMオーディオを処理する"
+
+msgid "put a panel of its own in the window"
+msgstr "ウィンドウに専用のパネルを置く"
+
+msgid "quarantined"
+msgstr "隔離済み"
+
+msgid "ratings could not be loaded: {}"
+msgstr "評価を読み込めませんでした: {}"
+
+msgid "reach the internet, only {}"
+msgstr "インターネットに接続する（{}のみ）"
+
+msgid "read catalogs from other enabled plugins, without accessing their credentials"
+msgstr "有効な他のプラグインのカタログを、その認証情報にアクセスせずに読み取る"
+
+msgid "read your library, without being able to change it"
+msgstr "ライブラリを読み取る（変更はできません）"
+
+msgid "results"
+msgstr "件の結果"
+
+msgid "run through a different plugin runtime"
+msgstr "別のプラグインランタイムで実行する"
+
+msgid "sector {} could not be read: {}"
+msgstr "セクター{}を読み取れませんでした: {}"
+
+msgid "sector {} is invalid: {}"
+msgstr "セクター{}が無効です: {}"
+
+msgid "send you to grant permission at {}"
+msgstr "{}で権限を付与するよう誘導する"
+
+msgid "servers are not started"
+msgstr "サーバーは起動していません"
+
+msgid "shared"
+msgstr "共有"
+
+msgid "shared at {}"
+msgstr "{}で共有"
+
+msgid "shared with you"
+msgstr "あなたと共有"
+
+msgid "sign in to {} again"
+msgstr "{}にもう一度ログインしてください"
+
+msgid "stereo"
+msgstr "ステレオ"
+
+msgid "stop using the account it had"
+msgstr "これまでのアカウントの使用をやめる"
+
+msgid "stop what is playing before writing to its file, or save to a sidecar"
+msgstr "再生中のものを停止してからファイルに書き込むか、サイドカーファイルに保存してください"
+
+msgid "stumbling"
+msgstr "不安定"
+
+msgid "tags"
+msgstr "タグ"
+
+msgid "that Plex account reaches no server"
+msgstr "そのPlexアカウントではどのサーバーにも接続できません"
+
+msgid "that address does not answer like a Jellyfin server (HTTP {})"
+msgstr "そのアドレスはJellyfinサーバーのようには応答しません（HTTP {}）"
+
+msgid "that address does not answer like a Plex server (HTTP {})"
+msgstr "そのアドレスはPlexサーバーのようには応答しません（HTTP {}）"
+
+msgid "that address does not answer like a Subsonic server (HTTP {})"
+msgstr "そのアドレスはSubsonicサーバーのようには応答しません（HTTP {}）"
+
+msgid "that album has no playable tracks"
+msgstr "そのアルバムには再生可能なトラックがありません"
+
+msgid "that cover could not be fetched"
+msgstr "そのカバーを取得できませんでした"
+
+msgid "that does not look like a stream address"
+msgstr "ストリームのアドレスには見えません"
+
+msgid "that domain is not among the ones the plugin declared"
+msgstr "そのドメインはプラグインが宣言したものに含まれていません"
+
+msgid "that file is not an image"
+msgstr "そのファイルは画像ではありません"
+
+msgid "that id does not work as a folder"
+msgstr "そのIDはフォルダーとして使えません"
+
+msgid "that is an Emby server, and Chilpa does not speak Emby"
+msgstr "それはEmbyサーバーで、ChilpaはEmbyに対応していません"
+
+msgid "that is longer than {} characters"
+msgstr "{}文字を超えています"
+
+msgid "that is more than {} values"
+msgstr "{}個の値を超えています"
+
+msgid "that is not a Discogs release number"
+msgstr "Discogsのリリース番号ではありません"
+
+msgid "that is not a MusicBrainz id"
+msgstr "MusicBrainz IDではありません"
+
+msgid "that is not a server address"
+msgstr "サーバーアドレスではありません"
+
+msgid "that is not something {} can be asked for"
+msgstr "{}に問い合わせられるものではありません"
+
+msgid "that list is empty"
+msgstr "そのリストは空です"
+
+msgid "that server has no music library"
+msgstr "そのサーバーには音楽ライブラリがありません"
+
+msgid "that server is already in the library"
+msgstr "そのサーバーはすでにライブラリにあります"
+
+msgid "that server is disabled"
+msgstr "そのサーバーは無効です"
+
+msgid "that server is no longer in the library"
+msgstr "そのサーバーはもうライブラリにありません"
+
+msgid "that server name does not resolve"
+msgstr "そのサーバー名を解決できません"
+
+msgid "that source does not use OAuth"
+msgstr "そのソースはOAuthを使いません"
+
+msgid "that track is no longer in the library"
+msgstr "そのトラックはもうライブラリにありません"
+
+msgid "the CHNL chunk is missing"
+msgstr "CHNLチャンクがありません"
+
+msgid "the DSD channel count changed while playing"
+msgstr "再生中にDSDのチャンネル数が変わりました"
+
+msgid "the DSD chunk is missing"
+msgstr "DSDチャンクがありません"
+
+msgid "the DST frames jump from {} to {}"
+msgstr "DSTフレームが{}から{}に飛んでいます"
+
+msgid "the FRM8 chunk does not hold DSD"
+msgstr "FRM8チャンクにDSDが含まれていません"
+
+msgid "the FS chunk is missing"
+msgstr "FSチャンクがありません"
+
+msgid "the JACK graph did not answer in time"
+msgstr "JACKグラフが時間内に応答しませんでした"
+
+msgid "the JACK graph runs at {} Hz and this track is {} Hz; JACK cannot play it untouched"
+msgstr "JACKグラフは{} Hzで動作していますが、このトラックは{} Hzです。JACKではそのまま再生できません"
+
+msgid "the PROP chunk is not of sound"
+msgstr "PROPチャンクが音声のものではありません"
+
+msgid "the PulseAudio protocol does not carry this format"
+msgstr "PulseAudioプロトコルはこのフォーマットに対応していません"
+
+msgid "the PulseAudio protocol does not carry {} Hz with {} channels"
+msgstr "PulseAudioプロトコルは{} Hz・{}チャンネルに対応していません"
+
+msgid "the SACD XML could not be written: {}"
+msgstr "SACD XMLを書き込めませんでした: {}"
+
+msgid "the URL has to be http or https"
+msgstr "URLはhttpまたはhttpsである必要があります"
+
+msgid "the account connected but could not be saved: {}"
+msgstr "アカウントは接続しましたが、保存できませんでした: {}"
+
+msgid "the account could not be kept for next time"
+msgstr "次回のためにアカウントを保持できませんでした"
+
+msgid "the account did not connect: {}"
+msgstr "アカウントに接続できませんでした: {}"
+
+msgid "the address has to be https"
+msgstr "アドレスはhttpsである必要があります"
+
+msgid "the analysis stopped: {}"
+msgstr "解析が停止しました: {}"
+
+msgid "the approval could not be saved: {}"
+msgstr "承認を保存できませんでした: {}"
+
+msgid "the approval could not be withdrawn: {}"
+msgstr "承認を取り消せませんでした: {}"
+
+msgid "the area declares no tracks"
+msgstr "この領域にはトラックが宣言されていません"
+
+msgid "the audio area falls outside the image"
+msgstr "オーディオ領域がイメージの外にあります"
+
+msgid "the changes were saved"
+msgstr "変更を保存しました"
+
+msgid "the client_id came in empty"
+msgstr "client_idが空でした"
+
+msgid "the code expired; start again"
+msgstr "コードの有効期限が切れました。最初からやり直してください"
+
+msgid "the connection failed: interrupted"
+msgstr "接続に失敗しました: 中断されました"
+
+msgid "the connection failed: {}"
+msgstr "接続に失敗しました: {}"
+
+msgid "the cover could not be kept: {}"
+msgstr "カバーを保持できませんでした: {}"
+
+msgid "the cover could not be read: {}"
+msgstr "カバーを読み取れませんでした: {}"
+
+msgid "the cover has to be a JPEG or a PNG"
+msgstr "カバーはJPEGまたはPNGである必要があります"
+
+msgid "the cover has to be an image of up to 25 MiB"
+msgstr "カバーは25 MiB以下の画像である必要があります"
+
+msgid "the cover is larger than 12,000 pixels on a side"
+msgstr "カバーの一辺が12,000ピクセルを超えています"
+
+msgid "the covers of {} could not be deleted from {}"
+msgstr "{}のカバーを{}から削除できませんでした"
+
+msgid "the credential could not be kept safely on this system"
+msgstr "認証情報をこのシステムに安全に保持できませんでした"
+
+msgid "the credential could not be saved: {}"
+msgstr "認証情報を保存できませんでした: {}"
+
+msgid "the credential of {} could not be deleted; nothing was removed"
+msgstr "{}の認証情報を削除できませんでした。何も削除されていません"
+
+msgid "the data chunk is missing"
+msgstr "dataチャンクがありません"
+
+msgid "the device could not be measured; nothing below is verified"
+msgstr "デバイスを測定できませんでした。以下はいずれも検証されていません"
+
+msgid "the device could not be opened: {}"
+msgstr "デバイスを開けませんでした: {}"
+
+msgid "the device did not answer in {} ms"
+msgstr "デバイスが{} ms以内に応答しませんでした"
+
+msgid "the device does not accept {} Hz, which is what this DSD over DoP asks for"
+msgstr "デバイスは{} Hzに対応していません。これはDoP経由のこのDSDが要求するレートです"
+
+msgid "the device does not accept {} at {} Hz, and the policy does not allow converting"
+msgstr "デバイスは{}（{} Hz）に対応しておらず、ポリシーでは変換が許可されていません"
+
+msgid "the device does not play {} Hz (it plays {}), and Chilpa does not convert rates"
+msgstr "デバイスは{} Hzを再生できず（再生できるのは{}）、Chilpaはレートを変換しません"
+
+msgid "the device failed after {} frames: {}"
+msgstr "{}フレーム後にデバイスが失敗しました: {}"
+
+msgid "the device is gone: unplugged, turned off or taken by another program"
+msgstr "デバイスがなくなりました。取り外された、電源が切れた、または別のプログラムに使われています"
+
+msgid "the device opened {} Hz and {} channels, not {} Hz and {}"
+msgstr "デバイスは{} Hz、{}チャンネルで開きました（要求は{} Hz、{}チャンネル）"
+
+msgid "the device ran out of samples"
+msgstr "デバイスのサンプルが不足しました"
+
+msgid "the device takes {} channels and this track has {}"
+msgstr "デバイスは{}チャンネルを受け付けますが、このトラックは{}チャンネルです"
+
+msgid "the device was already closed"
+msgstr "デバイスはすでに閉じられていました"
+
+msgid "the device was not measured; without that bit-perfect is not promised"
+msgstr "デバイスが測定されていません。測定しないと、ビットパーフェクトは保証されません"
+
+msgid "the disc carries no audio tracks"
+msgstr "ディスクにオーディオトラックがありません"
+
+msgid "the drive does not answer: {}"
+msgstr "ドライブが応答しません: {}"
+
+msgid "the drive is missing"
+msgstr "ドライブがありません"
+
+msgid "the editor could not be started"
+msgstr "エディターを起動できませんでした"
+
+msgid "the favorite could not be saved: {}"
+msgstr "お気に入りを保存できませんでした: {}"
+
+msgid "the file carries no tracks"
+msgstr "ファイルにトラックがありません"
+
+msgid "the file carries {} bits and the device only takes {}"
+msgstr "ファイルは{}ビットですが、デバイスが受け付けるのは{}ビットまでです"
+
+msgid "the fmt chunk is missing"
+msgstr "fmtチャンクがありません"
+
+msgid "the folder could not be forgotten: {}"
+msgstr "フォルダーを解除できませんでした: {}"
+
+msgid "the folder for \"{}\" could not be deleted"
+msgstr "「{}」のフォルダーを削除できませんでした"
+
+msgid "the frame-info records do not match the frames that start"
+msgstr "frame-infoのレコードが、開始するフレームと一致しません"
+
+msgid "the frame-info table is cut off"
+msgstr "frame-infoテーブルが途中で切れています"
+
+msgid "the graph runs at {} Hz"
+msgstr "グラフは{} Hzで動作しています"
+
+msgid "the host could not serve it"
+msgstr "ホストが処理できませんでした"
+
+msgid "the image could not be read: {}"
+msgstr "画像を読み取れませんでした: {}"
+
+msgid "the image ends {} frames before the track does"
+msgstr "イメージはトラックより{}フレーム早く終わっています"
+
+msgid "the image has no track {}"
+msgstr "イメージにトラック{}がありません"
+
+msgid "the image is shorter than its master table"
+msgstr "イメージがマスターテーブルより短いです"
+
+msgid "the image reads as both a 2048 and a 2064-byte dump"
+msgstr "イメージが2048バイトと2064バイトの両方のダンプに見えます"
+
+msgid "the length of the track is not known"
+msgstr "トラックの長さが不明です"
+
+msgid "the library could not be checked: {}"
+msgstr "ライブラリを確認できませんでした: {}"
+
+msgid "the library could not be opened"
+msgstr "ライブラリを開けませんでした"
+
+msgid "the library could not be opened: {}"
+msgstr "ライブラリを開けませんでした: {}"
+
+msgid "the library could not be repaired: {}"
+msgstr "ライブラリを修復できませんでした: {}"
+
+msgid "the library could not be written"
+msgstr "ライブラリに書き込めませんでした"
+
+msgid "the library is unavailable"
+msgstr "ライブラリを利用できません"
+
+msgid "the link it gave has already expired"
+msgstr "提供されたリンクはすでに期限切れです"
+
+msgid "the list carries no tracks"
+msgstr "リストにトラックがありません"
+
+msgid "the list could not be read: {}"
+msgstr "リストを読み取れませんでした: {}"
+
+msgid "the list could not be saved: {}"
+msgstr "リストを保存できませんでした: {}"
+
+msgid "the listen could not be saved: {}"
+msgstr "再生記録を保存できませんでした: {}"
+
+msgid "the manifest is not understood: {}"
+msgstr "マニフェストを理解できません: {}"
+
+msgid "the manifest says API {} and the module answers {}; it does not load"
+msgstr "マニフェストのAPIは{}ですが、モジュールは{}と答えています。読み込まれません"
+
+msgid "the module could not be loaded: {}"
+msgstr "モジュールを読み込めませんでした: {}"
+
+msgid "the mute would not move ({})"
+msgstr "ミュートを切り替えられませんでした（{}）"
+
+msgid "the name"
+msgstr "名前"
+
+msgid "the next part of the track could not be opened: {}"
+msgstr "トラックの次のパートを開けませんでした: {}"
+
+msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
+msgstr "出力が、CDの16 bit・44,100 Hzに対応していません"
+
+msgid "the plugin could not be asked"
+msgstr "プラグインに問い合わせられませんでした"
+
+msgid "the plugin is not running"
+msgstr "プラグインは実行されていません"
+
+msgid "the plugin sandbox could not be started"
+msgstr "プラグインのサンドボックスを起動できませんでした"
+
+msgid "the plugin sandbox is not started"
+msgstr "プラグインのサンドボックスが起動していません"
+
+msgid "the queue is empty"
+msgstr "キューが空です"
+
+msgid "the rates PipeWire's graph may run at could not be read, so nothing can be promised untouched"
+msgstr "PipeWireのグラフが動作できるレートを読み取れなかったため、そのまま届くことは保証できません"
+
+msgid "the rating could not be saved: {}"
+msgstr "評価を保存できませんでした: {}"
+
+msgid "the read-ahead thread could not start"
+msgstr "先読みスレッドを開始できませんでした"
+
+msgid "the record has no artist"
+msgstr "アルバムにアーティストがありません"
+
+msgid "the record has no title"
+msgstr "アルバムにタイトルがありません"
+
+msgid "the reply could not be built"
+msgstr "応答を構築できませんでした"
+
+msgid "the reply could not be read: {}"
+msgstr "応答を読み取れませんでした: {}"
+
+msgid "the reply does not fit"
+msgstr "応答が収まりません"
+
+msgid "the request carries no URL that can be understood"
+msgstr "リクエストに、解釈できるURLがありません"
+
+msgid "the request carries no url"
+msgstr "リクエストにURLがありません"
+
+msgid "the request is not JSON: {}"
+msgstr "リクエストがJSONではありません: {}"
+
+msgid "the scan failed: {}"
+msgstr "スキャンに失敗しました: {}"
+
+msgid "the sector is not encoded the way its area says"
+msgstr "セクターが、その領域が示す方式でエンコードされていません"
+
+msgid "the server answered with a message instead of the file"
+msgstr "サーバーがファイルではなくメッセージを返しました"
+
+msgid "the server answered with something that is not HTTP"
+msgstr "サーバーがHTTPではないものを返しました"
+
+msgid "the server answered {}"
+msgstr "サーバーの応答: {}"
+
+msgid "the server answering is {}, not PipeWire"
+msgstr "応答しているサーバーは{}で、PipeWireではありません"
+
+msgid "the server cannot send part of a file, and this one is too big to take whole"
+msgstr "サーバーはファイルの一部を送れず、このファイルは丸ごと受け取るには大きすぎます"
+
+msgid "the server could not be reached"
+msgstr "サーバーに接続できませんでした"
+
+msgid "the server did not accept the session; sign in again"
+msgstr "サーバーがセッションを受け付けませんでした。もう一度ログインしてください"
+
+msgid "the server did not accept the user or the password"
+msgstr "サーバーがユーザーまたはパスワードを受け付けませんでした"
+
+msgid "the server did not describe every track it listed; nothing was taken out, sync again"
+msgstr "サーバーが、一覧したトラックの一部について情報を返しませんでした。何も削除されていません。もう一度同期してください"
+
+msgid "the server did not say how long the file is"
+msgstr "サーバーがファイルの長さを返しませんでした"
+
+msgid "the server does not accept this way of signing in"
+msgstr "サーバーはこのログイン方法に対応していません"
+
+msgid "the server is converting the file instead of sending it as it is"
+msgstr "サーバーがファイルをそのまま送らず、変換しています"
+
+msgid "the server is reading its own library; sync again when it finishes"
+msgstr "サーバーが自分のライブラリを読み取り中です。終わったらもう一度同期してください"
+
+msgid "the server is starting; try again in a moment"
+msgstr "サーバーが起動中です。しばらくしてからもう一度お試しください"
+
+msgid "the server listed {} of its {} tracks; nothing was taken out, sync again"
+msgstr "サーバーは全{2}トラックのうち{1}トラックしか一覧しませんでした。何も削除されていません。もう一度同期してください"
+
+msgid "the server moved to {}; use that address"
+msgstr "サーバーは{}に移動しました。そのアドレスを使ってください"
+
+msgid "the server no longer has it"
+msgstr "サーバーにはもうありません"
+
+msgid "the server said: {}"
+msgstr "サーバーの応答: {}"
+
+msgid "the server sent more than was asked for"
+msgstr "サーバーが要求を超える量を送ってきました"
+
+msgid "the server sent no audio: {}"
+msgstr "サーバーが音声を送りませんでした: {}"
+
+msgid "the server stopped sending the file"
+msgstr "サーバーがファイルの送信を止めました"
+
+msgid "the server took too long to answer"
+msgstr "サーバーの応答に時間がかかりすぎました"
+
+msgid "the server's certificate is not trusted by this system"
+msgstr "サーバーの証明書がこのシステムで信頼されていません"
+
+msgid "the sidecar could not be written: {}"
+msgstr "サイドカーファイルを書き込めませんでした: {}"
+
+msgid "the sound server would not let go of card {}"
+msgstr "サウンドサーバーがカード{}を手放しませんでした"
+
+msgid "the source"
+msgstr "ソース"
+
+msgid "the source gave no address to play"
+msgstr "ソースが再生用のアドレスを返しませんでした"
+
+msgid "the source no longer lists it"
+msgstr "ソースの一覧にもうありません"
+
+msgid "the stereo area (TWOCHTOC) was not found"
+msgstr "ステレオ領域（TWOCHTOC）が見つかりませんでした"
+
+msgid "the stream needs a network domain that this plugin was not granted"
+msgstr "ストリームには、このプラグインに許可されていないネットワークドメインが必要です"
+
+msgid "the stream went quiet"
+msgstr "ストリームが途絶えました"
+
+msgid "the sync lost its place; start it again"
+msgstr "同期の位置を見失いました。最初からやり直してください"
+
+msgid "the sync was stopped"
+msgstr "同期は停止されました"
+
+msgid "the tags could not be read: {}"
+msgstr "タグを読み取れませんでした: {}"
+
+msgid "the token_url is not https"
+msgstr "token_urlがhttpsではありません"
+
+msgid "the track on {} could not be read: {}"
+msgstr "{}のトラックを読み取れませんでした: {}"
+
+msgid "the track's number is its place inside the disc image"
+msgstr "トラック番号は、ディスクイメージ内での位置です"
+
+msgid "the version"
+msgstr "バージョン"
+
+msgid "the volume would not move ({})"
+msgstr "音量を変更できませんでした（{}）"
+
+msgid "the wait ran out"
+msgstr "待機がタイムアウトしました"
+
+msgid "there is no audio output on this platform yet"
+msgstr "このプラットフォームには、まだオーディオ出力がありません"
+
+msgid "there is no connection to {}"
+msgstr "{}への接続がありません"
+
+msgid "there is no disc in the drive"
+msgstr "ドライブにディスクがありません"
+
+msgid "there is no folder in the library yet"
+msgstr "ライブラリにはまだフォルダーがありません"
+
+msgid "there is no output called \"{}\" on this machine"
+msgstr "このコンピューターに「{}」という出力はありません"
+
+msgid "there is no part to open"
+msgstr "開くパートがありません"
+
+msgid "there is no plugin \"{}\" with a manifest to approve"
+msgstr "承認するマニフェストを持つ「{}」というプラグインはありません"
+
+msgid "there is no queue to save"
+msgstr "保存するキューがありません"
+
+msgid "there is not enough queue to mix"
+msgstr "ミックスするだけのキューがありません"
+
+msgid "there is nothing Chilpa can play in {}"
+msgstr "{}にはChilpaで再生できるものがありません"
+
+msgid "there is nothing to save"
+msgstr "保存するものがありません"
+
+msgid "there is nothing under {}"
+msgstr "{}の下には何もありません"
+
+msgid "there is nowhere to keep a secret on this machine"
+msgstr "このコンピューターには秘密情報を保管する場所がありません"
+
+msgid "this Mac has no output called \"{}\" any more"
+msgstr "このMacに「{}」という出力はもうありません"
+
+msgid "this cannot be played"
+msgstr "これは再生できません"
+
+msgid "this device delivers bit-perfect in no common format"
+msgstr "このデバイスは、共通のどのフォーマットでもビットパーフェクトで再生できません"
+
+msgid "this library is version {} and this Chilpa understands up to {}; update Chilpa instead of opening it with an old one"
+msgstr "このライブラリはバージョン{}ですが、このChilpaが対応しているのは{}までです。古いバージョンで開かずに、Chilpaを更新してください"
+
+msgid "this output cannot be muted"
+msgstr "この出力はミュートできません"
+
+msgid "this output has no volume control of its own"
+msgstr "この出力には専用の音量コントロールがありません"
+
+msgid "this output is not there any more"
+msgstr "この出力はもうありません"
+
+msgid "this output would not take DSD untouched, so none was sent; choose Convert to PCM for DSD playback"
+msgstr "この出力はDSDをそのまま受け付けないため、何も送信されませんでした。DSDを再生するには「PCMに変換」を選んでください"
+
+msgid "this part of the source is not there now"
+msgstr "ソースのこの部分は現在ありません"
+
+msgid "this plugin declared no network permission"
+msgstr "このプラグインはネットワーク権限を宣言していません"
+
+msgid "this track is on a server, and servers are not connected"
+msgstr "このトラックはサーバー上にあり、サーバーは接続されていません"
+
+msgid "this user may not do that on the server"
+msgstr "このユーザーには、サーバー上でその操作は許可されていません"
+
+msgid "through {}"
+msgstr "{}経由"
+
+msgid "track {}: {}"
+msgstr "トラック{}: {}"
+
+msgid "tracks inside a disc image keep their changes in a sidecar"
+msgstr "ディスクイメージ内のトラックは、変更をサイドカーファイルに保存します"
+
+msgid "type a title, an artist or a catalog number to search"
+msgstr "検索するには、タイトル、アーティスト、またはカタログ番号を入力してください"
+
+msgid "up to {} bits"
+msgstr "最大{}ビット"
+
+msgid "virtual"
+msgstr "仮想"
+
+msgid "vs {}"
+msgstr "vs {}"
+
+msgid "what was saved could not be written down in the library: {}; rescan to see it"
+msgstr "保存した内容をライブラリに記録できませんでした: {}。再スキャンして確認してください"
+
+msgid "write downloaded files into the folder you select for this plugin"
+msgstr "このプラグイン用に選んだフォルダーにダウンロードしたファイルを書き込む"
+
+msgid "write the address alone: no user, password or query in it"
+msgstr "アドレスのみを書いてください。ユーザー、パスワード、クエリは含めないでください"
+
+msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
+msgstr "ライブラリの更新が必要ですが、先に{}にコピーを保持できませんでした: {}。そこに空き容量を作るか、空きのある場所にライブラリを移動して、Chilpaをもう一度開いてください"
+
+msgid "your sources"
+msgstr "あなたのソース"
+
+msgid "{1} {2}"
+msgstr "{2}{1}日"
+
+msgid "{} (split)"
+msgstr "{}（分割）"
+
+msgid "{} / {} artists"
+msgstr "{} / {}アーティスト"
+
+msgid "{} album"
+msgid_plural "{} albums"
+msgstr[0] "{}アルバム"
+
+msgid "{} analyzed, {} without pulse, {} unreadable"
+msgstr "解析済み{}件、ビートなし{}件、読み取り不可{}件"
+
+msgid "{} and its files are not touched."
+msgstr "{}とそのファイルには手を加えません。"
+
+msgid "{} answered something Chilpa did not expect: {}"
+msgstr "{}がChilpaの想定外の応答を返しました: {}"
+
+msgid "{} are not available. The record will open when they are back."
+msgstr "{}は利用できません。戻り次第、アルバムが開きます。"
+
+msgid "{} artist"
+msgid_plural "{} artists"
+msgstr[0] "{}アーティスト"
+
+msgid "{} artists"
+msgstr "{}アーティスト"
+
+msgid "{} bit at {} Hz, {}"
+msgstr "{}ビット・{} Hz、{}"
+
+msgid "{} came out with different audio; nothing was replaced"
+msgstr "{}は異なる音声で出力されました。何も置き換えられていません"
+
+msgid "{} channel"
+msgid_plural "{} channels"
+msgstr[0] "{}チャンネル"
+
+msgid "{} could not be copied: {}"
+msgstr "{}をコピーできませんでした: {}"
+
+msgid "{} could not be reached; try again"
+msgstr "{}に接続できませんでした。もう一度お試しください"
+
+msgid "{} could not be replaced: {}"
+msgstr "{}を置き換えられませんでした: {}"
+
+msgid "{} could not be written: {}"
+msgstr "{}を書き込めませんでした: {}"
+
+msgid "{} did not accept the account"
+msgstr "{}がアカウントを受け付けませんでした"
+
+msgid "{} disc"
+msgid_plural "{} discs"
+msgstr[0] "{}ディスク"
+
+msgid "{} does not answer. The record will open when it is back."
+msgstr "{}が応答しません。戻り次第、アルバムが開きます。"
+
+msgid "{} file whose tags disagree"
+msgid_plural "{} files whose tags disagree"
+msgstr[0] "タグが一致しないファイル{}個"
+
+msgid "{} files"
+msgstr "{}個のファイル"
+
+msgid "{} folder"
+msgid_plural "{} folders"
+msgstr[0] "{}フォルダー"
+
+msgid "{} has no place for \"{}\""
+msgstr "{}に「{}」の置き場所がありません"
+
+msgid "{} has to be https (or a loopback): sending someone to grant permission over http leaves their session on the road"
+msgstr "{}はhttps（またはループバック）である必要があります。httpで誰かを権限付与に誘導すると、そのセッションが無防備になります"
+
+msgid "{} hr"
+msgid_plural "{} hrs"
+msgstr[0] "{}時間"
+
+msgid "{} is busy; try again in {} seconds"
+msgstr "{}はビジー状態です。{}秒後にもう一度お試しください"
+
+msgid "{} is missing"
+msgstr "{}がありません"
+
+msgid "{} is not a direct device; only hw: is opened (no plughw and no default)"
+msgstr "{}は直接デバイスではありません。開けるのはhw:のみです（plughwとdefaultは不可）"
+
+msgid "{} is not a sidecar Chilpa can read; move it away or fix it"
+msgstr "{}はChilpaが読み取れるサイドカーファイルではありません。移動するか修正してください"
+
+msgid "{} is not available yet: {}"
+msgstr "{}はまだ利用できません: {}"
+
+msgid "{} is not available. The record will open when it is back."
+msgstr "{}は利用できません。戻り次第、アルバムが開きます。"
+
+msgid "{} item needs attention before bit-perfect playback will work."
+msgid_plural "{} items need attention before bit-perfect playback will work."
+msgstr[0] "ビットパーフェクト再生を有効にするには{}項目の対応が必要です。"
+
+msgid "{} label"
+msgid_plural "{} labels"
+msgstr[0] "{}レーベル"
+
+msgid "{} listen"
+msgid_plural "{} listens"
+msgstr[0] "{}回の再生"
+
+msgid "{} listen saved"
+msgid_plural "{} listens saved"
+msgstr[0] "{}件の再生記録を保存しました"
+
+msgid "{} listen waiting to be sent"
+msgid_plural "{} listens waiting to be sent"
+msgstr[0] "{}件の再生記録が送信待ちです"
+
+msgid "{} min"
+msgstr "{}分"
+
+msgid "{} modified"
+msgstr "{}件を変更済み"
+
+msgid "{} more playlist..."
+msgid_plural "{} more playlists..."
+msgstr[0] "他{}件のプレイリスト..."
+
+msgid "{} no longer accepts the account; connect again"
+msgstr "{}はアカウントを受け付けなくなりました。もう一度接続してください"
+
+msgid "{} of its tracks leave {} of your playlists."
+msgstr "このうち{}トラックが、{}個のプレイリストから削除されます。"
+
+msgid "{} of the list's tracks are gone"
+msgstr "リストの{}トラックがなくなっています"
+
+msgid "{} of {}"
+msgstr "{} / {}"
+
+msgid "{} of {} files were changed before it failed: {}"
+msgstr "失敗するまでに{} / {}個のファイルが変更されました: {}"
+
+msgid "{} of {} formats come out untouched"
+msgstr "{} / {}個のフォーマットがそのまま出力されます"
+
+msgid "{} of {} tracks match this release"
+msgstr "{} / {}トラックがこのリリースに一致します"
+
+msgid "{} play"
+msgid_plural "{} plays"
+msgstr[0] "{}回再生"
+
+msgid "{} playlist"
+msgid_plural "{} playlists"
+msgstr[0] "{}プレイリスト"
+
+msgid "{} protected by the library"
+msgstr "{}はライブラリによって保護されています"
+
+msgid "{} queues · {} tracks"
+msgstr "{}キュー · {}トラック"
+
+msgid "{} rating"
+msgid_plural "{} ratings"
+msgstr[0] "{}件の評価"
+
+msgid "{} read, {} unchanged, {} missing"
+msgstr "{}個を読み取り、{}個は変更なし、{}個は見つかりません"
+
+msgid "{} record"
+msgid_plural "{} records"
+msgstr[0] "{}アルバム"
+
+msgid "{} sel"
+msgstr "{}選択"
+
+msgid "{} shown"
+msgstr "{}件を表示"
+
+msgid "{} song"
+msgid_plural "{} songs"
+msgstr[0] "{}トラック"
+
+msgid "{} star"
+msgid_plural "{} stars"
+msgstr[0] "{}つ星"
+
+msgid "{} track"
+msgid_plural "{} tracks"
+msgstr[0] "{}トラック"
+
+msgid "{} tracks"
+msgstr "{}トラック"
+
+msgid "{} tracks in {} records"
+msgstr "{}トラック（{}アルバム）"
+
+msgid "{} tracks match disc {}"
+msgstr "{}トラックがディスク{}に一致します"
+
+msgid "{} was not allowed in time; connect again"
+msgstr "{}が時間内に許可されませんでした。もう一度接続してください"
+
+msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
+msgstr "{}は書き込まれましたが、「{}」の内容が正しくありません。何も置き換えられていません"
+
+msgid "{} written · {} unmatched · {} duplicates"
+msgstr "{}件を書き込み · {}件が未一致 · {}件が重複"
+
+msgid "{} {}"
+msgstr "{2}年{1}"
+
+msgid "{} {} {}"
+msgstr "{3}年{2}{1}日"
+
+msgid "{} {}, {}"
+msgstr "{3}年{1}{2}日"
+
+msgid "{} · {}"
+msgstr "{} · {}"
+
+msgid "{}-bit / {}"
+msgstr "{}ビット / {}"
+
+msgid "{}s"
+msgstr "{}年代"
+
+msgid "“{}” has changes that were not saved. Opening this record loses them."
+msgstr "「{}」には保存されていない変更があります。このアルバムを開くと失われます。"
