@@ -77,7 +77,7 @@ Flickable {
             width: parent.width
             detail: detail
             selecting: page.selectionMode
-            contrasted: SettingsModel.albumHeader !== "off" && detail.art.toString() !== ""
+            contrasted: (SettingsModel.albumHeader !== "off" && detail.art.toString() !== "") || Theme.ambient
             onPlay: tracks.playAll(false)
             onShuffle: tracks.playAll(true)
             onSelectToggle: page.toggleSelection()

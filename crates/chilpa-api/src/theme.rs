@@ -55,7 +55,7 @@ pub struct Theme {
 pub const TOKENS: &[&str] = &[
     "surface.window", "surface.sidebar", "surface.raised", "surface.panel", "surface.pane",
     "surface.player", "surface.lcd", "text.primary", "text.secondary", "text.tertiary",
-    "text.onAccent", "text.onAccentMuted", "stroke.hairline", "stroke.frame", "state.hover", "state.selected",
+    "text.onAccent", "text.onAccentMuted", "backdrop.text", "backdrop.textMuted", "toggle.knob", "stroke.hairline", "stroke.frame", "state.hover", "state.selected",
     "state.stripe", "fill.field", "fill.count", "fill.countActive", "row.playing", "row.selected", "accent", "accent.hover",
     "accent.pressed", "favorite", "status.positive", "status.warning", "status.negative", "overlay.scrim", "lightbox.scrim", "stats.hero", "stats.artists", "stats.albums", "stats.tracks", "stats.previous",
     "overlay.button", "overlay.ink", "casting",

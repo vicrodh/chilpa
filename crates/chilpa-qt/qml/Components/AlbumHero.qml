@@ -48,7 +48,7 @@ Item {
             font.pointSize: Type.micro
             font.weight: Type.semibold
             font.letterSpacing: Type.labelTracking
-            color: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary
+            color: hero.contrasted ? Theme.color.backdropText : Theme.color.textSecondary
             opacity: hero.contrasted ? 0.78 : 1
         }
         Text {
@@ -58,19 +58,19 @@ Item {
             font.pointSize: Type.display
             font.weight: Type.bold
             font.letterSpacing: Type.displayTracking
-            color: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textPrimary
+            color: hero.contrasted ? Theme.color.backdropText : Theme.color.textPrimary
         }
         AlbumArtistLine {
             width: parent.width; albumId: hero.detail.selectedId; contrasted: hero.contrasted
             document: JSON.parse(hero.detail.artistInformation || "{}")
-            color: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textPrimary
+            color: hero.contrasted ? Theme.color.backdropText : Theme.color.textPrimary
         }
         Text {
             width: parent.width
             text: hero.detail.meta
             elide: Text.ElideRight
             font.pointSize: Type.row
-            color: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary
+            color: hero.contrasted ? Theme.color.backdropText : Theme.color.textSecondary
             opacity: hero.contrasted ? 0.82 : 1
         }
 
