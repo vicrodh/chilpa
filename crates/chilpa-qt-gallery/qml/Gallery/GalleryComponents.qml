@@ -25,6 +25,7 @@ TitledFlow {
     ShelfSkeleton { width: Metrics.confirmWidth; count: 3 }
     CoverCollage { covers: ["", "", "", ""] }
     QueueProgress { visible: true }
+    SettingText { width: Metrics.confirmWidth; title: "Exclusive mode"; description: "The output plays only Chilpa." }
 
     Column {
         width: section.width

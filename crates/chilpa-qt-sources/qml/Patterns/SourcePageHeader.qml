@@ -69,24 +69,24 @@ Column {
             Row {
                 spacing: Metrics.gap6
                 SourceIcon { sourceInfo: ({icon: header.sourceInfo.icon_image || header.sourceInfo.icon || ""}) }
-                Text { text: header.sourceInfo.name || ""; textFormat: Text.PlainText; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary; font.pointSize: Type.meta }
+                Text { text: header.sourceInfo.name || ""; textFormat: Text.PlainText; color: header.contrasted ? Theme.color.backdropText : Theme.color.textSecondary; font.pointSize: Type.meta }
             }
-            Text { width: parent.width; text: header.info.title || ""; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pointSize: Type.display; font.weight: Type.bold; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textPrimary }
-            AlbumArtistLine { width: parent.width; visible: header.cardId !== 0; albumId: header.cardId; document: header.record && header.record.artistInformation !== undefined ? JSON.parse(header.record.artistInformation || "{}") : (albumId ? JSON.parse(AlbumActions.artistInformation(albumId, Library.contentRev + Library.remoteRev) || "{}") : ({})); contrasted: header.contrasted; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary }
+            Text { width: parent.width; text: header.info.title || ""; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pointSize: Type.display; font.weight: Type.bold; color: header.contrasted ? Theme.color.backdropText : Theme.color.textPrimary }
+            AlbumArtistLine { width: parent.width; visible: header.cardId !== 0; albumId: header.cardId; document: header.record && header.record.artistInformation !== undefined ? JSON.parse(header.record.artistInformation || "{}") : (albumId ? JSON.parse(AlbumActions.artistInformation(albumId, Library.contentRev + Library.remoteRev) || "{}") : ({})); contrasted: header.contrasted; color: header.contrasted ? Theme.color.backdropText : Theme.color.textSecondary }
             Text {
                 visible: header.cardId === 0 && !!header.info.artist; text: header.info.artist || ""; textFormat: Text.PlainText
-                color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary; font.pointSize: Type.body
+                color: header.contrasted ? Theme.color.backdropText : Theme.color.textSecondary; font.pointSize: Type.body
                 HoverHandler { cursorShape: header.info.artist_ref ? Qt.PointingHandCursor : Qt.ArrowCursor }
                 TapHandler { enabled: !!header.info.artist_ref; onTapped: header.follow(header.info.artist_ref) }
             }
-            Text { width: parent.width; text: [header.info.released || header.info.release_date || "", header.playbackModel.summary || "", header.info.genre || ""].filter(Boolean).join(" · "); wrapMode: Text.Wrap; font.pointSize: Type.meta; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary }
+            Text { width: parent.width; text: [header.info.released || header.info.release_date || "", header.playbackModel.summary || "", header.info.genre || ""].filter(Boolean).join(" · "); wrapMode: Text.Wrap; font.pointSize: Type.meta; color: header.contrasted ? Theme.color.backdropText : Theme.color.textSecondary }
             FontMetrics { id: descriptionFont; font: description.font }
-            Text { id: description; width: parent.width; height: Math.min(implicitHeight, descriptionFont.height * 3); clip: true; visible: !!header.info.description; text: TextLinks.render(header.info.description, hoveredLink, color, header.contrasted ? color : Theme.color.accentHover); textFormat: Text.RichText; wrapMode: Text.WordWrap; maximumLineCount: 3; elide: Text.ElideRight; font.pointSize: Type.body; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary; onLinkActivated: link => header.follow(link) } // derived: cap the preview at three font lines
-            PillButton { visible: description.implicitHeight > description.height; text: I18n.tr("Read more", I18n.rev); kind: header.contrasted ? "secondary" : "ghost"; onClicked: header.externalInformation ? header.information() : biography.open() }
+            Text { id: description; width: parent.width; height: Math.min(implicitHeight, descriptionFont.height * 3); clip: true; visible: !!header.info.description; text: TextLinks.render(header.info.description, hoveredLink, color, header.contrasted ? color : Theme.color.accentHover); textFormat: Text.RichText; wrapMode: Text.WordWrap; maximumLineCount: 3; elide: Text.ElideRight; font.pointSize: Type.body; color: header.contrasted ? Theme.color.backdropText : Theme.color.textSecondary; onLinkActivated: link => header.follow(link) } // derived: cap the preview at three font lines
+            PillButton { visible: description.implicitHeight > description.height; text: I18n.tr("Read more", I18n.rev); kind: header.contrasted ? "backdrop" : "ghost"; onClicked: header.externalInformation ? header.information() : biography.open() }
             Row {
                 visible: !!header.info.quality_label; spacing: Metrics.gap6
                 QualityIcon { tier: header.info.quality_tier || 0; anchors.verticalCenter: parent.verticalCenter }
-                Text { text: header.info.quality_label || ""; font.pointSize: Type.meta; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary }
+                Text { text: header.info.quality_label || ""; font.pointSize: Type.meta; color: header.contrasted ? Theme.color.backdropText : Theme.color.textSecondary }
             }
             Flow {
                 width: parent.width; spacing: Metrics.gap8

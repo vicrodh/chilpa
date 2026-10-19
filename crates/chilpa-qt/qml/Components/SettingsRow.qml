@@ -4,6 +4,7 @@ import app.chilpa.kit
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 Item {
     id: row
     required property int rowKind
@@ -18,12 +19,16 @@ Item {
     required property var marks
     property var page
     property Component serverEditor
+    // The theme's picker, and the options of the auto or custom theme under it.
+    property Component themePicker
+    property Component themeOptions
+    readonly property bool themeBox: control === "theme" && (value === "auto" || value === "custom")
     readonly property bool group: rowKind === 0
     readonly property bool line: rowKind === 2
     readonly property bool editingServer: page && page.editingServerKey === key && key.startsWith("sources.server/")
     readonly property real baseHeight: group ? Metrics.settingsGroup : Math.max(line ? Metrics.menuItem : Metrics.settingsRow, texts.implicitHeight + Metrics.gap12)
     opacity: control === "fixed" ? Metrics.disabledOpacity : 1
-    implicitHeight: baseHeight + (editingServer ? editor.implicitHeight + Metrics.gap12 : 0)
+    implicitHeight: baseHeight + (editingServer ? editor.implicitHeight + Metrics.gap12 : 0) + (themeBox ? options.implicitHeight + Metrics.gap12 : 0)
     Text {
         visible: row.group
         anchors.bottom: parent.bottom
@@ -34,7 +39,7 @@ Item {
         font.letterSpacing: Type.labelTracking
         color: Theme.color.textTertiary
     }
-    Column {
+    SettingText {
         id: texts
         visible: !row.group
         anchors.left: parent.left
@@ -42,23 +47,9 @@ Item {
         anchors.right: controls.left
         anchors.rightMargin: Metrics.gap16
         y: (row.baseHeight - height) / 2
-        spacing: Metrics.gap2
-        Text {
-            width: parent.width
-            text: row.title
-            wrapMode: Text.Wrap
-            font.pointSize: row.line ? Type.row : Type.bodyLarge
-            font.weight: row.line ? Type.regular : Type.medium
-            color: Theme.color.textPrimary
-        }
-        Text {
-            width: parent.width
-            visible: row.description !== ""
-            text: row.description
-            wrapMode: Text.Wrap
-            font.pointSize: Type.meta
-            color: Theme.color.textSecondary
-        }
+        title: row.title
+        description: row.description
+        line: row.line
     }
     // Only the row's own control is built.
     Loader {
@@ -78,11 +69,14 @@ Item {
             : row.control === "status" ? status
             : row.control === "slider" ? slider
             : row.control === "file" ? file
+            : row.control === "theme" ? row.themePicker
             : null
     }
 
     Loader { id: editor; active: row.editingServer; width: parent.width; y: row.baseHeight + Metrics.gap12
         sourceComponent: row.serverEditor }
+    Loader { id: options; active: row.themeBox; width: parent.width; y: row.baseHeight + Metrics.gap12
+        sourceComponent: row.themeOptions }
 
     Component {
         id: toggle

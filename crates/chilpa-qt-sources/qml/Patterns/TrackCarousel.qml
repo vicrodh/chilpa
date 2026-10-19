@@ -75,7 +75,7 @@ Column {
                     Text {
                         anchors.top: parent.top; anchors.left: parent.left; anchors.margins: Metrics.overlayPad
                         text: shelf.showPlays ? I18n.tr("Plays", I18n.rev) + ": " + card.model.plays : card.model.duration || ""
-                        color: Theme.color.textOnAccent; font.pointSize: Type.meta
+                        color: Theme.color.backdropText; font.pointSize: Type.meta
                     }
                     Item {
                         anchors.left: parent.left; anchors.right: parent.right
@@ -99,7 +99,7 @@ Column {
                                 visible: Ratings.markable("track", card.model.trackId, Ratings.rev)
                                 round: true; tone: "overlay"; size: Metrics.overlayButton
                                 readonly property bool favorite: Ratings.favorite("track", card.model.trackId, Ratings.rev)
-                                filled: favorite; checked: favorite; iconSize: Metrics.overlayIcon
+                                filled: favorite; checked: favorite; heart: true; iconSize: Metrics.overlayIcon
                                 glyph: favorite ? Icons.heartFilled : Icons.heart
                                 tip: favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev)
                                 onClicked: Ratings.setFavorite("track", card.model.trackId, !favorite)

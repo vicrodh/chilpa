@@ -35,7 +35,7 @@ Rectangle {
         width: toggle.compact ? Metrics.toggleCompactKnob : Metrics.toggleKnob
         height: width
         radius: width / 2 // derived: a circle
-        color: Theme.color.textOnAccent
+        color: Theme.color.toggleKnob
 
         Behavior on x { NumberAnimation { duration: Motion.base; easing.type: Easing.OutCubic } }
     }

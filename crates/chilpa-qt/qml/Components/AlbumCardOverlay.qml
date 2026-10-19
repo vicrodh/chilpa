@@ -50,7 +50,7 @@ Rectangle {
             text: overlay.released
             font.pointSize: Type.meta
             font.weight: Type.semibold
-            color: Theme.color.textOnAccent
+            color: Theme.color.backdropText
         }
         Text {
             width: parent.width
@@ -61,7 +61,7 @@ Rectangle {
             maximumLineCount: 2
             elide: Text.ElideRight
             font.pointSize: Type.meta
-            color: Theme.color.textOnAccent
+            color: Theme.color.backdropText
         }
     }
 
@@ -78,7 +78,7 @@ Rectangle {
             glyph: overlay.selected ? Icons.circleCheckFilled : Icons.circle
             filled: overlay.selected
             size: Metrics.overlayCheckIcon
-            color: Theme.color.textOnAccent
+            color: Theme.color.backdropText
         }
         MouseArea {
             cursorShape: Qt.PointingHandCursor
@@ -102,7 +102,7 @@ Rectangle {
             SourceIcon {
                 required property var modelData
                 sourceInfo: modelData
-                color: Theme.color.textOnAccent
+                color: Theme.color.backdropText
                 HoverHandler {
                     onHoveredChanged: hovered ? TipState.show(parent.sourceInfo.label, parent) : TipState.hide(parent)
                 }
@@ -168,6 +168,7 @@ Rectangle {
                 round: true
                 tone: "overlay"
                 checked: overlay.favorite
+                heart: true
                 glyph: overlay.favorite ? Icons.heartFilled : Icons.heart
                 filled: overlay.favorite
                 tip: overlay.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev)

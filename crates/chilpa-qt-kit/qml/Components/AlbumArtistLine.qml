@@ -9,7 +9,7 @@ Text {
     property double albumId: 0
     property var document: albumId ? JSON.parse(AlbumActions.artistInformation(albumId, Library.contentRev + Library.remoteRev) || "{}") : ({})
     property bool contrasted: false
-    readonly property color restingColor: contrasted ? Theme.color.textOnAccentMuted : color
+    readonly property color restingColor: contrasted ? Theme.color.backdropTextMuted : color
     readonly property color activeColor: contrasted ? color : Theme.color.accentHover
     signal followed()
     text: TextLinks.render(document.artist_html, hoveredLink, restingColor, activeColor)
