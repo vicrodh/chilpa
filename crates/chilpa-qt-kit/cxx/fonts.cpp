@@ -9,20 +9,28 @@
 #include <QtGui/QGuiApplication>
 #include <QtCore/QChar>
 #include <QtCore/QHash>
+#include <QtCore/QResource>
 #include <QtCore/QStandardPaths>
 
 namespace {
 
 // The family a font of the resources registers as, adding the file once: the
-// main font and the Japanese fallback can be the same face, and every
-// registration keeps its own copy of the file in memory.
+// main font and the Japanese fallback can be the same face, and a second
+// registration would be a second face in the font database.
 QString registeredFamily(const char *resource)
 {
     static QHash<QString, QString> registered;
     const QString path = QString::fromUtf8(resource);
     if (const auto known = registered.constFind(path); known != registered.constEnd())
         return *known;
-    const int id = QFontDatabase::addApplicationFont(path);
+    // An uncompressed font of the resources is read where it lies in the
+    // binary: loading it by name first copies the whole file to the heap,
+    // 3.6 MB for the Japanese face.
+    const QResource file(path);
+    const int id = file.isValid() && file.compressionAlgorithm() == QResource::NoCompression
+        ? QFontDatabase::addApplicationFontFromData(
+              QByteArray::fromRawData(reinterpret_cast<const char *>(file.data()), qsizetype(file.size())))
+        : QFontDatabase::addApplicationFont(path);
     const QStringList families = id < 0 ? QStringList() : QFontDatabase::applicationFontFamilies(id);
     if (families.isEmpty())
         return QString();
