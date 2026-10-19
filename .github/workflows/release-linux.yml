@@ -1,6 +1,8 @@
 name: Desktop release
 
 on:
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       source_ref:
@@ -16,11 +18,43 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  linux:
+  identity:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
     outputs:
+      commit: ${{ steps.source.outputs.commit }}
+      version: ${{ steps.version.outputs.version }}
       prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.source_ref || github.ref }}
+          persist-credentials: false
+      - id: source
+        run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - id: version
+        env:
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_EVENT: ${{ github.event_name }}
+        run: python3 scripts/release_version.py --github-output "$GITHUB_OUTPUT"
+
+  linux:
+    needs: identity
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+            qt_host: linux
+            qt_arch: linux_gcc_64
+            qt_dir: gcc_64
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+            qt_host: linux_arm64
+            qt_arch: linux_gcc_arm64
+            qt_dir: gcc_arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
     env:
       CARGO_BUILD_JOBS: '2'
       QT_VERSION: '6.11.2'
@@ -28,7 +62,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ inputs.source_ref || github.ref }}
+          ref: ${{ needs.identity.outputs.commit }}
           persist-credentials: false
       - name: Validate release identity
         id: version
@@ -43,22 +77,23 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential pkg-config cmake clang libclang-dev nasm \
             libasound2-dev libjack-jackd2-dev libpulse-dev libpipewire-0.3-dev \
-            libdbus-1-dev libssl-dev libgl1-mesa-dev libegl1-mesa-dev \
+            libdbus-1-dev libssl-dev bubblewrap libgl1-mesa-dev libegl1-mesa-dev \
             libxkbcommon-dev libwayland-dev libxkbcommon-x11-0 \
             libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
             libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxcb-shape0 \
             libxcb-randr0 libxcb-sync1 libxcb-xfixes0 libxcb-glx0 \
             patchelf file binutils dbus-daemon desktop-file-utils zsync python3-venv \
-            ripgrep hunspell
+            ripgrep hunspell rpm rpm2cpio cpio
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           python3 -m venv "$RUNNER_TEMP/qt-installer"
           "$RUNNER_TEMP/qt-installer/bin/python" -m pip install aqtinstall==3.3.0
-          "$RUNNER_TEMP/qt-installer/bin/python" -m aqt install-qt linux desktop "$QT_VERSION" linux_gcc_64 \
+          "$RUNNER_TEMP/qt-installer/bin/python" -m aqt install-qt "${{ matrix.qt_host }}" desktop "$QT_VERSION" "${{ matrix.qt_arch }}" \
             --outputdir "$RUNNER_TEMP/Qt"
-          echo "$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/bin" >> "$GITHUB_PATH"
+          echo "$RUNNER_TEMP/Qt/$QT_VERSION/${{ matrix.qt_dir }}/bin" >> "$GITHUB_PATH"
           {
-            echo "CMAKE_PREFIX_PATH=$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64"
-            echo "LD_LIBRARY_PATH=$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/lib"
-            echo "QMAKE=$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/bin/qmake"
+            echo "CMAKE_PREFIX_PATH=$RUNNER_TEMP/Qt/$QT_VERSION/${{ matrix.qt_dir }}"
+            echo "LD_LIBRARY_PATH=$RUNNER_TEMP/Qt/$QT_VERSION/${{ matrix.qt_dir }}/lib"
+            echo "QMAKE=$RUNNER_TEMP/Qt/$QT_VERSION/${{ matrix.qt_dir }}/bin/qmake"
             echo "GH_CONFIG_DIR=$RUNNER_TEMP/chilpa-gh"
           } >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
@@ -72,6 +107,14 @@ jobs:
         run: |
           python3 scripts/fetch-lint-dictionaries.py "$RUNNER_TEMP/dictionaries"
           echo "DICPATH=$RUNNER_TEMP/dictionaries" >> "$GITHUB_ENV"
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        id: rust-cache
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: desktop-${{ runner.os }}-${{ runner.arch }}-rust196-qt6112-${{ hashFiles('Cargo.lock') }}
       - name: Check the repository and update worker
         run: |
           tools/lint/fast
@@ -86,29 +129,49 @@ jobs:
           scripts/check-qml-startup.sh "$GITHUB_WORKSPACE/target/release/chilpa-qt"
           tools/lint/footprint --binary "$GITHUB_WORKSPACE/target/release/chilpa-qt"
           python3 scripts/check-analysis-inventory.py target/release/chilpa-qt
+      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        if: steps.rust-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ steps.rust-cache.outputs.cache-primary-key }}
       - name: Fetch verified packaging tools
         run: python3 scripts/fetch-release-tools.py "$RUNNER_TEMP/release-tools"
-      - name: Package Linux tarball and AppImage
+      - name: Package Linux tarball, DEB, RPM and AppImage
         run: |
           python3 scripts/package-linux.py \
             --binary target/release/chilpa-qt --version "$RELEASE_VERSION" \
-            --repository "$GITHUB_REPOSITORY" --tools "$RUNNER_TEMP/release-tools" \
+            --repository "$GITHUB_REPOSITORY" --tools "$RUNNER_TEMP/release-tools" --arch "${{ matrix.arch }}" \
             --output dist --glibc-max 2.39
       - name: Smoke the AppImage in an isolated profile
         run: |
           export APPIMAGE_EXTRACT_AND_RUN=1
-          scripts/check-qml-startup.sh "$GITHUB_WORKSPACE/dist/Chilpa-$RELEASE_VERSION-x86_64.AppImage"
+          scripts/check-qml-startup.sh "$GITHUB_WORKSPACE/dist/Chilpa-$RELEASE_VERSION-${{ matrix.arch }}.AppImage"
           cd dist
-          sha256sum --check SHA256SUMS
+          sha256sum --check "SHA256SUMS-linux-${{ matrix.arch }}"
+      - name: Check native package payloads
+        run: |
+          python3 scripts/check-linux-packages.py --dist dist --version "$RELEASE_VERSION" --arch "${{ matrix.arch }}"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: chilpa-linux-x86_64
+          name: chilpa-linux-${{ matrix.arch }}
           path: dist/*
           if-no-files-found: error
           retention-days: 14
 
   macos:
-    runs-on: macos-26
+    needs: identity
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            runner: macos-26
+          - arch: x86_64
+            runner: macos-26-intel
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
     env:
       CARGO_BUILD_JOBS: '2'
@@ -117,7 +180,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ inputs.source_ref || github.ref }}
+          ref: ${{ needs.identity.outputs.commit }}
           persist-credentials: false
       - name: Validate release identity
         env:
@@ -137,6 +200,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
           toolchain: '1.96.0'
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        id: rust-cache
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: desktop-${{ runner.os }}-${{ runner.arch }}-rust196-qt6112-${{ hashFiles('Cargo.lock') }}
       - name: Check release tooling and the macOS engine
         run: |
           python3 -m unittest discover -s scripts/tests
@@ -147,6 +218,14 @@ jobs:
         run: |
           export RUSTFLAGS="--remap-path-prefix=$GITHUB_WORKSPACE=. --remap-path-prefix=$HOME/.cargo=/cargo"
           cargo build --locked --release -p chilpa-qt
+      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        if: steps.rust-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ steps.rust-cache.outputs.cache-primary-key }}
       - name: Check both native icon appearances
         run: |
           icon_tool="$(dirname "$(xcode-select -p)")/Applications/Icon Composer.app/Contents/Executables/ictool"
@@ -164,17 +243,67 @@ jobs:
       - name: Package the app, light and dark icons, ZIP and DMG
         run: |
           python3 scripts/package-macos.py --binary target/release/chilpa-qt \
-            --version "$RELEASE_VERSION" --output dist --require-native-icon
+            --version "$RELEASE_VERSION" --output dist --arch "${{ matrix.arch }}" --require-native-icon
           python3 scripts/check-macos-package.py dist/Chilpa.app --report "$RUNNER_TEMP/macos-smoke.json"
           cd dist
-          shasum -a 256 --check SHA256SUMS-macos-aarch64
+          shasum -a 256 --check SHA256SUMS-macos-${{ matrix.arch }}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: chilpa-macos-aarch64
+          name: chilpa-macos-${{ matrix.arch }}
           path: |
             dist/*.zip
             dist/*.dmg
-            dist/MANIFEST-macos-aarch64.json
-            dist/SHA256SUMS-macos-aarch64
+            dist/MANIFEST-macos-${{ matrix.arch }}.json
+            dist/SHA256SUMS-macos-${{ matrix.arch }}
           if-no-files-found: error
           retention-days: 14
+
+
+  assemble:
+    needs: [identity, linux, macos]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ needs.identity.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: chilpa-*
+          path: downloaded
+      - name: Verify the complete release and assemble checksums
+        env:
+          RELEASE_VERSION: ${{ needs.identity.outputs.version }}
+          RELEASE_COMMIT: ${{ needs.identity.outputs.commit }}
+        run: python3 scripts/assemble-release.py --input downloaded --output dist --version "$RELEASE_VERSION" --commit "$RELEASE_COMMIT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: chilpa-release
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  draft:
+    if: github.event_name == 'push'
+    needs: [identity, assemble]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ github.ref_name }}
+      RELEASE_PRERELEASE: ${{ needs.identity.outputs.prerelease }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: chilpa-release
+          path: dist
+      - name: Create the draft release
+        env:
+          GH_CONFIG_DIR: ${{ runner.temp }}/chilpa-gh
+        run: |
+          flags=()
+          if [[ "$RELEASE_PRERELEASE" == true ]]; then flags+=(--prerelease); fi
+          gh release create "$RELEASE_TAG" dist/* --draft --verify-tag "${flags[@]}" \
+            --title "Chilpa $RELEASE_TAG" --notes-file dist/RELEASE-NOTES.md

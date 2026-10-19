@@ -20,14 +20,16 @@ def release_version(version):
     return {"version": version, "tag": "v" + version, "prerelease": "-" in version}
 
 
-def update_information(repository, version):
+def update_information(repository, version, architecture="x86_64"):
     if not _REPOSITORY.fullmatch(repository):
         raise ValueError("I require a repository in owner/name form.")
     identity = release_version(version)
+    if architecture not in ("x86_64", "aarch64"):
+        raise ValueError("Unsupported AppImage architecture.")
     owner, name = repository.split("/")
     # Prerelease fallbacks stay pinned; the host selects newer releases explicitly.
     channel = identity["tag"] if identity["prerelease"] else "latest"
-    return f"gh-releases-zsync|{owner}|{name}|{channel}|Chilpa-*-x86_64.AppImage.zsync"
+    return f"gh-releases-zsync|{owner}|{name}|{channel}|Chilpa-*-{architecture}.AppImage.zsync"
 
 
 def main():

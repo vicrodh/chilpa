@@ -49,9 +49,10 @@ Classical Nahuatl word for a **red wasp or hornet** (*avispa roja / avispón*).
 
 ## Status
 
-Chilpa 0.1.0 provides Linux x86_64 builds as an AppImage and a precompiled
-binary tarball, plus ZIP and DMG packages for macOS on Apple Silicon.
-Packages for popular package managers are planned for subsequent releases.
+I build Linux tarballs, DEB, RPM and AppImage packages, plus macOS ZIP and
+DMG packages, for both x86_64 and arm64/aarch64. The DEB, RPM, AppImage and
+macOS packages include Qt; the Linux tarball uses system Qt and provides
+the binary payload for AUR and Gentoo packaging.
 
 This first release ships in **English and Spanish**. More languages are on
 the way.
@@ -75,6 +76,37 @@ Native DSD and DoP bypass DSP. Enabling DSP changes a PCM signal, and Chilpa
 then reports the output as processed instead of bit-perfect.
 
 ## Install
+
+### Install or update with one command
+
+```sh
+curl -fsSL --proto '=https' https://github.com/vicrodh/chilpa/releases/latest/download/install.sh | bash
+```
+
+I install into `~/.local/opt/chilpa` on Linux and `~/Applications/Chilpa.app`
+on macOS. Close Chilpa and run the same command again to update. The script
+checks the release's SHA-256 digest and size before replacing an installation
+it owns. It preserves installations from other package managers.
+Linux requires glibc 2.39 or newer. The script needs curl and either Python 3
+or jq on Linux; macOS uses the system JavaScript runtime.
+
+To inspect the selected package, append `-s -- --check` to `bash`. To select
+an existing prerelease, download `install.sh` from that release and run
+`bash install.sh --version=X.Y.Z-beta.N`.
+
+### DEB and RPM
+
+Download the package for your CPU from Releases, then install it through
+your package manager:
+
+```sh
+sudo apt install ./chilpa_0.1.0_amd64.deb
+# Fedora:
+sudo dnf install ./chilpa-0.1.0-1.x86_64.rpm
+```
+
+Use `arm64.deb` or `aarch64.rpm` for Linux on ARM64. These packages include
+the Qt runtime under `/opt/chilpa`. Update them through the package manager.
 
 ### AppImage
 

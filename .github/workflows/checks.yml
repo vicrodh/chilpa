@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-26]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-26, macos-26-intel]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     env:
@@ -47,7 +47,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: engine-${{ runner.os }}-rust196-${{ hashFiles('Cargo.lock') }}
+          key: engine-${{ runner.os }}-${{ runner.arch }}-rust196-${{ hashFiles('Cargo.lock') }}
       - name: Test engine and release tooling
         run: |
           python3 -m unittest discover -s scripts/tests

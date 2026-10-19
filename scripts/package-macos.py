@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 
 from release_version import release_version
+from release_platform import architecture as release_architecture
 
 
 def digest(path):
@@ -84,6 +85,7 @@ def main():
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--arch", choices=("x86_64", "aarch64"), help="Expected binary architecture.")
     parser.add_argument("--minimum-macos", default="14.0", help="Requested floor; deployed libraries can require a newer macOS.")
     parser.add_argument("--require-native-icon", action="store_true", help="Require Xcode's asset compiler for system-selected icon appearances.")
     args = parser.parse_args()
@@ -96,8 +98,11 @@ def main():
     root = Path(__file__).resolve().parents[1]
     binary = args.binary.resolve(strict=True)
     architecture = subprocess.check_output(["lipo", "-archs", str(binary)], text=True).strip()
-    if architecture != "arm64":
-        parser.error("This macOS package targets Apple Silicon (arm64).")
+    if architecture not in ("arm64", "x86_64"):
+        parser.error("I require a single arm64 or x86_64 macOS executable.")
+    arch = release_architecture(architecture)
+    if args.arch and args.arch != arch:
+        parser.error("The executable architecture differs from the requested package.")
     if not shutil.which("macdeployqt"):
         parser.error("I require Qt's macdeployqt on PATH.")
     output = args.output.resolve()
@@ -177,21 +182,21 @@ def main():
     subprocess.run(["codesign", "--force", "--deep", "--sign", "-", str(app)], check=True)
     subprocess.run(["codesign", "--verify", "--deep", "--strict", str(app)], check=True)
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
-    manifest = dict(version=args.version, source_commit=commit, platform="macos-aarch64", minimum_macos=minimum, requested_minimum_macos=args.minimum_macos,
+    manifest = dict(version=args.version, source_commit=commit, platform=f"macos-{arch}", minimum_macos=minimum, requested_minimum_macos=args.minimum_macos,
         source_binary_sha256=digest(binary), packaged_binary_sha256=digest(executable), qt_version=qt_version,
         native_icon_catalog=native, icon_appearances=["light", "dark"], signing="ad-hoc", notarized=False,
         checked_macho_dependencies=dependencies)
-    manifest_path = output / "MANIFEST-macos-aarch64.json"
+    manifest_path = output / f"MANIFEST-macos-{arch}.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
-    archive = output / f"Chilpa-{args.version}-macos-aarch64.zip"
+    archive = output / f"Chilpa-{args.version}-macos-{arch}.zip"
     subprocess.run(["ditto", "-c", "-k", "--sequesterRsrc", "--keepParent", str(app), str(archive)], check=True)
-    image = output / f"Chilpa-{args.version}-macos-aarch64.dmg"
+    image = output / f"Chilpa-{args.version}-macos-{arch}.dmg"
     with tempfile.TemporaryDirectory(prefix="chilpa-dmg-") as directory:
         payload = Path(directory)
         shutil.copytree(app, payload / app.name, symlinks=True)
         (payload / "Applications").symlink_to("/Applications")
         subprocess.run(["hdiutil", "create", "-volname", "Chilpa", "-srcfolder", str(payload), "-ov", "-format", "UDZO", str(image)], check=True)
-    (output / "SHA256SUMS-macos-aarch64").write_text("".join(f"{digest(path)}  {path.name}\n" for path in (archive, image, manifest_path)))
+    (output / f"SHA256SUMS-macos-{arch}").write_text("".join(f"{digest(path)}  {path.name}\n" for path in (archive, image, manifest_path)))
     print(json.dumps(manifest, indent=2))
     print(f"I packaged {app}, {archive.name} and {image.name}.")
 

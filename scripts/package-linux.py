@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""I package one Linux binary as a tarball and a self-contained, updateable AppImage."""
+"""I package one Linux binary as a tarball, DEB, RPM and updateable AppImage."""
 import argparse
 import hashlib
 import gzip
@@ -12,6 +12,8 @@ import subprocess
 import tarfile
 import tempfile
 from release_version import release_version, update_information
+from release_platform import architecture
+from package_native import package_native
 
 
 def check_glibc(path, maximum):
@@ -34,6 +36,7 @@ parser.add_argument("--version", required=True)
 parser.add_argument("--repository", required=True)
 parser.add_argument("--tools", type=Path, required=True)
 parser.add_argument("--output", type=Path, required=True)
+parser.add_argument("--arch", choices=("x86_64", "aarch64"), default=architecture())
 parser.add_argument("--glibc-max", help="Fail when the binary requires a newer glibc, such as 2.39.")
 args = parser.parse_args()
 try:
@@ -47,19 +50,27 @@ args.tools = args.tools.resolve(strict=True)
 args.output = args.output.resolve()
 args.output.mkdir(parents=True, exist_ok=True)
 header = subprocess.check_output(["readelf", "-h", str(args.binary)], text=True)
-if "Advanced Micro Devices X86-64" not in header:
-    parser.error("This initial Linux package targets x86_64.")
+machine = "Advanced Micro Devices X86-64" if args.arch == "x86_64" else "AArch64"
+if machine not in header:
+    parser.error("The executable architecture differs from the requested package.")
 if args.glibc_max:
     check_glibc(args.binary, args.glibc_max)
-locked = json.loads((root / "packaging/linux/tools.lock.json").read_text())
+locked = json.loads((root / "packaging/linux/tools.lock.json").read_text())[args.arch]
 for tool in locked.values():
     path = args.tools / tool["asset"]
     if hashlib.file_digest(path.open("rb"), "sha256").hexdigest() != tool["sha256"]:
         raise SystemExit(f"Unverified packaging tool: {path.name}")
+    if "executable" in tool:
+        with tarfile.open(path) as archive:
+            with archive.extractfile(tool["executable"]) as source:
+                expected = hashlib.file_digest(source, "sha256").hexdigest()
+        executable = args.tools / tool["executable"]
+        if hashlib.file_digest(executable.open("rb"), "sha256").hexdigest() != expected:
+            raise SystemExit(f"Unverified extracted executable: {executable.name}")
 
 epoch = int(os.environ.get("SOURCE_DATE_EPOCH", subprocess.check_output(["git", "show", "-s", "--format=%ct", "HEAD"], cwd=root, text=True).strip()))
 commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
-manifest = {"version": args.version, "prerelease": identity["prerelease"], "source_commit": commit, "platform": "linux-x86_64", "source_date_epoch": epoch,
+manifest = {"version": args.version, "prerelease": identity["prerelease"], "source_commit": commit, "platform": f"linux-{args.arch}", "source_date_epoch": epoch,
             "plugin_protocol": json.loads((root / "vendor/chilpa-plugin-api/ORIGIN.json").read_text()),
             "binary_sha256": hashlib.file_digest(args.binary.open("rb"), "sha256").hexdigest()}
 with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.parent) as directory:
@@ -80,7 +91,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     runtime = args.binary.parent / "compat-runtime"
     if runtime.is_dir():
         shutil.copytree(runtime, plain / "compat-runtime")
-    archive = args.output / f"chilpa-{args.version}-linux-x86_64.tar.gz"
+    archive = args.output / f"chilpa-{args.version}-linux-{args.arch}.tar.gz"
     def normalize(info):
         info.uid = info.gid = 0
         info.uname = info.gname = "root"
@@ -111,7 +122,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     plugins = Path(subprocess.check_output([qmake, "-query", "QT_INSTALL_PLUGINS"], text=True).strip())
     platforms = [name for name in ("libqoffscreen.so", "libqwayland.so", "libqwayland-generic.so", "libqwayland-egl.so")
                  if (plugins / "platforms" / name).is_file()]
-    environment = dict(os.environ, APPIMAGE_EXTRACT_AND_RUN="1", NO_STRIP="1", QMAKE=qmake, QML_SOURCES_PATHS=str(qml), ARCH="x86_64",
+    environment = dict(os.environ, APPIMAGE_EXTRACT_AND_RUN="1", NO_STRIP="1", QMAKE=qmake, QML_SOURCES_PATHS=str(qml), ARCH=args.arch,
                        EXTRA_PLATFORM_PLUGINS=";".join(platforms))
     environment["PATH"] = str(args.tools) + os.pathsep + environment["PATH"]
     subprocess.run([str(args.tools / locked["linuxdeploy"]["asset"]), "--appimage-extract-and-run", "--appdir", str(appdir),
@@ -158,8 +169,9 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     if args.glibc_max:
         for deployed in sorted(appdir.rglob("*")):
             check_glibc(deployed, args.glibc_max)
-    information = update_information(args.repository, args.version)
-    image = args.output / f"Chilpa-{args.version}-x86_64.AppImage"
+    native = package_native(appdir, root, args.tools / "nfpm", args.output, args.version, args.arch, args.glibc_max or "2.39")
+    information = update_information(args.repository, args.version, args.arch)
+    image = args.output / f"Chilpa-{args.version}-{args.arch}.AppImage"
     subprocess.run([str(args.tools / locked["appimagetool"]["asset"]), "--appimage-extract-and-run", "--no-appstream",
                     "--runtime-file", str(args.tools / locked["runtime"]["asset"]),
                     "--mksquashfs-opt", "-processors", "--mksquashfs-opt", "2",
@@ -172,9 +184,10 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     embedded = subprocess.check_output([str(image), "--appimage-updateinformation"], env=runtime_environment, text=True).strip()
     if embedded != information:
         raise SystemExit("The AppImage update information does not match its release channel.")
-    (args.output / "MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    manifest_path = args.output / f"MANIFEST-linux-{args.arch}.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
 notes = args.output / "RELEASE-NOTES.md"
 shutil.copy2(root / "CHANGELOG.md", notes)
-assets = [archive, image, Path(str(image) + ".zsync"), args.output / "MANIFEST.json", notes]
-(args.output / "SHA256SUMS").write_text("".join(f"{hashlib.file_digest(path.open('rb'), 'sha256').hexdigest()}  {path.name}\n" for path in assets))
-print(f"Packaged {archive.name} and {image.name}")
+assets = [archive, *native, image, Path(str(image) + ".zsync"), manifest_path, notes]
+(args.output / f"SHA256SUMS-linux-{args.arch}").write_text("".join(f"{hashlib.file_digest(path.open('rb'), 'sha256').hexdigest()}  {path.name}\n" for path in assets))
+print("Packaged " + ", ".join(path.name for path in assets))
