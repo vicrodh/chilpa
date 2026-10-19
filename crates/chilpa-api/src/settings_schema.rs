@@ -147,7 +147,7 @@ pub const SECTIONS: &[Section] = &[
             settings: &[
                 setting("appearance.language", Chilpa::mark("Language"), Chilpa::mark("Use the system language or choose a language."), Control::Select),
                 setting("appearance.theme", Chilpa::mark("Theme"), "", Control::Theme),
-                setting("appearance.accent", Chilpa::mark("Accent"), Chilpa::mark("The first follows the theme: crimson in light, red in dark."), Control::Swatches),
+                setting("appearance.accent", Chilpa::mark("Accent"), Chilpa::mark("The first is the theme's own accent; the others replace it in every theme but Custom."), Control::Swatches),
                 setting("appearance.density", Chilpa::mark("Track lists"), Chilpa::mark("Compact rows like a spreadsheet, or rich rows with the cover."), Control::Segmented),
                 setting("appearance.font", Chilpa::mark("Font"), Chilpa::mark("Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."), Control::Segmented),
                 setting("appearance.albumHeader", Chilpa::mark("Album header"), Chilpa::mark("Full atmosphere, artwork colors only, or no derived background."), Control::Segmented),

@@ -4404,8 +4404,8 @@ msgstr "La vista de descargas no está disponible."
 msgid "The filter has no ON/OFF state."
 msgstr "El filtro no indica su estado ON/OFF."
 
-msgid "The first follows the theme: crimson in light, red in dark."
-msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."
+msgid "The first is the theme's own accent; the others replace it in every theme but Custom."
+msgstr "El primero es el acento del propio tema; los demás lo reemplazan en todos los temas menos en Personalizado."
 
 msgid "The floating player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
 msgstr "La barra flotante se aparta tras diez segundos sin mover el mouse; cualquier movimiento la trae de vuelta."
