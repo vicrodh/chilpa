@@ -19,17 +19,23 @@ use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::OnceLock;
 
 /// The languages that ship, by the index stored in [`CURRENT`].
-const LANGUAGES: [&str; 2] = ["en", "es"];
+const LANGUAGES: [&str; 8] = ["en", "es", "de", "fr", "pt", "ru", "ja", "nl"];
 
 /// The catalogs, owned by this crate. Keeping them here and not next to a
 /// frontend means replacing the window cannot break the translations.
-const PO: [&str; 2] = [
+const PO: [&str; 8] = [
     include_str!("../translations/en/LC_MESSAGES/chilpa.po"),
     include_str!("../translations/es/LC_MESSAGES/chilpa.po"),
+    include_str!("../translations/de/LC_MESSAGES/chilpa.po"),
+    include_str!("../translations/fr/LC_MESSAGES/chilpa.po"),
+    include_str!("../translations/pt/LC_MESSAGES/chilpa.po"),
+    include_str!("../translations/ru/LC_MESSAGES/chilpa.po"),
+    include_str!("../translations/ja/LC_MESSAGES/chilpa.po"),
+    include_str!("../translations/nl/LC_MESSAGES/chilpa.po"),
 ];
 
 static CURRENT: AtomicU8 = AtomicU8::new(0);
-static CATALOGS: [OnceLock<Catalog>; 2] = [OnceLock::new(), OnceLock::new()];
+static CATALOGS: [OnceLock<Catalog>; 8] = [const { OnceLock::new() }; 8];
 
 fn index_of(language: &str) -> Option<u8> {
     LANGUAGES.iter().position(|l| *l == language).map(|i| i as u8)
@@ -162,6 +168,28 @@ mod tests {
         assert_eq!(tf("{} track", "{} tracks", 4, &["4"]), "4 pistas");
         set_language("en");
         assert_eq!(t("Search"), "Search");
+    }
+
+    #[test]
+    fn every_shipped_language_speaks_its_own_words() {
+        // A catalog whose msgstrs shipped empty parses fine and still shows
+        // English everywhere; only asking it for a word catches that.
+        let _speaking = SPEAKING.lock();
+        for language in &LANGUAGES[1..] {
+            set_language(language);
+            assert_ne!(t("Search"), "Search", "{language}");
+            assert_ne!(t("Settings"), "Settings", "{language}");
+        }
+        set_language("en");
+    }
+
+    #[test]
+    fn a_slavic_count_takes_one_of_three_forms() {
+        let _speaking = SPEAKING.lock();
+        set_language("ru");
+        let forms = [1, 3, 5].map(|n| tf("{} track", "{} tracks", n, &[&n.to_string()]));
+        set_language("en");
+        assert!(forms[0] != forms[1] && forms[1] != forms[2] && forms[0] != forms[2], "{forms:?}");
     }
 
     #[test]

@@ -47,7 +47,19 @@ pub(crate) fn fixed(key: &str) -> Vec<(&'static str, String)> {
     // Each label is spelled out as a `chilpa_i18n::t` call so the extractor
     // finds it.
     match key {
-        "appearance.language" => vec![("", chilpa_i18n::t("System")), ("en", "English".into()), ("es", "Español".into())],
+        // Each language is named in itself, so whoever cannot read the
+        // current one still finds their own.
+        "appearance.language" => vec![
+            ("", chilpa_i18n::t("System")),
+            ("en", "English".into()),
+            ("es", "Español".into()),
+            ("fr", "Français".into()),
+            ("de", "Deutsch".into()),
+            ("pt", "Português".into()),
+            ("ru", "Русский".into()),
+            ("ja", "日本語".into()),
+            ("nl", "Nederlands".into()),
+        ],
         crate::ambient::MODE => vec![
             ("off", chilpa_i18n::t("Off")),
             ("ambient", chilpa_i18n::t("Ambient")),
