@@ -1,5 +1,6 @@
 import QtQuick
 import app.chilpa.graphics
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // QBZ's renderer probe and frame-liveness watchdog (Main.qml:300-354).
 //
@@ -35,6 +36,11 @@ Item {
     }
     onApiChanged: report()
     Component.onCompleted: report()
+
+    // Without the GPU tier every animation takes the reduced cadence, as QBZ
+    // composes it from the same report (renderer_qt.rs, reduce_motion): a
+    // rasterizer repaints the window for every frame of a fade.
+    Binding { target: Motion; property: "reduced"; value: !Graphics.gpuTier }
 
     property int frames: 0
     property bool reported: false
