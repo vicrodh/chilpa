@@ -16,6 +16,11 @@ QtObject {
     readonly property int base: reduced ? 0 : 150
     readonly property int panel: reduced ? 0 : 200
     readonly property int page: reduced ? 0 : 300
+    // A placeholder dissolving into what replaces it (QBZ's QbzSkeleton).
+    readonly property int handover: reduced ? 0 : 180
+    // How long a page may wait for its reveal before it is shown whole
+    // (QBZ's ContentRouter fadeGuard). Not motion: never reduced.
+    readonly property int revealGuard: 1500
     readonly property int ambient: reduced ? 0 : 600
     readonly property int toast: 2200
     // How often a view reads again what moves on another thread: a setup

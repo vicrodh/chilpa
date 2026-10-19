@@ -15,6 +15,8 @@ TestCase {
     Component { id: broken; Item { required property string missingInput } }
     Component { id: albums; Rectangle { objectName: "albumsPage"; color: "red" } }
     Component { id: home; Rectangle { objectName: "homePage"; color: "blue" } }
+    // A page that draws only a corner and is transparent everywhere else.
+    Component { id: sparse; Item { Rectangle { x: 300; y: 200; width: 50; height: 50; color: "red" } } }
     Component {
         id: delayed
         Rectangle {
@@ -57,13 +59,14 @@ TestCase {
     property bool preparedAfterAcknowledgement: false
     property bool redirectPreparation: false
     property bool resolvedSupersededPreparation: false
-    property int acknowledgementPixel: -1
-    property bool retainedSkeletonAtMount: false
+    property int acknowledgementSkeletonPixel: -1
+    property int acknowledgementPlanePixel: -1
+    property bool skeletonAtMount: false
     Connections {
         target: pages
         function onPhaseChanged() {
-            if (pages.phase === "content" && Motion.reduced)
-                retainedSkeletonAtMount = pages.awaitingContentFrame
+            if (pages.phase === "content")
+                skeletonAtMount = findChild(pages, "acknowledgementSkeleton").visible
         }
     }
     Connections {
@@ -82,7 +85,9 @@ TestCase {
         function onAcknowledgedFrame(destination) {
             if (destination === "slow-construction") {
                 sawAcknowledgement = true
-                acknowledgementPixel = grabImage(stage).red(5, 5)
+                const frame = grabImage(stage)
+                acknowledgementSkeletonPixel = frame.red(68, 36)
+                acknowledgementPlanePixel = frame.red(5, 5)
             }
         }
     }
@@ -115,8 +120,9 @@ TestCase {
         tryCompare(pages, "committedRoute", "slow-construction")
         verify(mountedAfterAcknowledgement, "I present the acknowledgement before construction")
         verify(preparedAfterAcknowledgement, "I prepare after acknowledgement and before component resolution")
-        compare(acknowledgementPixel, 128, "I paint the opaque destination shell before construction")
-        verify(retainedSkeletonAtMount, "I retain the shell until the destination paints")
+        compare(acknowledgementSkeletonPixel, 128, "I paint the destination skeleton before construction")
+        compare(acknowledgementPlanePixel, 0, "I leave the plane's own background around the skeleton")
+        compare(skeletonAtMount, false, "with reduced motion the skeleton leaves on the frame that shows the page")
         tryCompare(pages, "awaitingContentFrame", false)
     }
 
@@ -227,6 +233,12 @@ TestCase {
         tryCompare(pages.item.parent, "opacity", 1)
     }
 
+    // The software renderer keeps an eased reveal's last step when it is
+    // within float tolerance of 1 (QSGSoftwareRenderableNode::setOpacity
+    // compares with qFuzzyCompare), so a settled page reads 254 or 255 here.
+    // The scene graph's own opacity node compares exactly.
+    function settled(red) { return red >= 254 }
+
     function test_reveal_changes_pixels_and_settles() {
         pages.sourceComponent = albums
         pages.route = "visible-reveal"
@@ -234,7 +246,30 @@ TestCase {
         const arriving = grabImage(stage).red(100, 100)
         verify(arriving < 255, "the render thread reveals the page: " + arriving)
         tryCompare(pages.item.parent, "opacity", 1)
-        compare(grabImage(stage).red(100, 100), 255)
+        tryVerify(() => settled(grabImage(stage).red(100, 100)), 1000, "the page ends opaque")
+    }
+
+    function test_the_skeleton_dissolves_into_the_mounted_page() {
+        // A page is transparent wherever it draws nothing, so the skeleton
+        // under it shows there until it is gone. It starts leaving with the
+        // mount and fades out, never staying whole behind the arriving page
+        // and leaving it in one step.
+        pages.sourceComponent = sparse
+        pages.route = "skeleton-dissolves"
+        const skeleton = findChild(pages, "acknowledgementSkeleton")
+        tryCompare(pages, "committedRoute", pages.route)
+        verify(skeletonAtMount, "the skeleton is still there on the frame the page mounts")
+        const bar = []
+        for (let shot = 0; shot < 60 && skeleton.visible; shot++) {
+            bar.push(grabImage(stage).red(68, 36))
+            wait(5)
+        }
+        verify(!skeleton.visible, "the skeleton leaves")
+        verify(pages.item.parent.opacity < 1, "the skeleton is gone before the page has finished arriving")
+        verify(bar.some(red => red > 0 && red < 128), "the skeleton fades instead of leaving in one step: " + bar)
+        compare(grabImage(stage).red(68, 36), 0, "nothing of the skeleton stays under the page")
+        tryCompare(pages.item.parent, "opacity", 1)
+        tryVerify(() => settled(grabImage(stage).red(320, 220)), 1000, "the page ends opaque")
     }
 
     function test_rapid_routes_replace_the_reveal_and_restore_scroll() {
