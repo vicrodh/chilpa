@@ -86,6 +86,7 @@ Item {
                 onClicked: hero.play()
             }
             PillButton {
+                kind: hero.contrasted ? "backdrop" : "secondary"
                 glyph: Icons.arrowsShuffle
                 text: I18n.tr("Shuffle", I18n.rev)
                 onClicked: hero.shuffle()

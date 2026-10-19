@@ -38,6 +38,8 @@ QtObject {
         // (`AlbumView.qml:299`, `hdrStrong` / `hdrBody`).
         readonly property color backdropText: ThemeModel.color("backdrop.text", theme.rev)
         readonly property color backdropTextMuted: ThemeModel.color("backdrop.textMuted", theme.rev)
+        readonly property color backdropFill: ThemeModel.color("backdrop.fill", theme.rev)
+        readonly property color backdropFillHover: ThemeModel.color("backdrop.fillHover", theme.rev)
         readonly property color toggleKnob: ThemeModel.color("toggle.knob", theme.rev)
         readonly property color strokeHairline: ThemeModel.color("stroke.hairline", theme.rev)
         readonly property color strokeFrame: ThemeModel.color("stroke.frame", theme.rev)
