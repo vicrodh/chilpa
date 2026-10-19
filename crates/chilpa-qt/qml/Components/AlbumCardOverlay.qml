@@ -168,6 +168,7 @@ Rectangle {
                 round: true
                 tone: "overlay"
                 checked: overlay.favorite
+                heart: true
                 glyph: overlay.favorite ? Icons.heartFilled : Icons.heart
                 filled: overlay.favorite
                 tip: overlay.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev)
