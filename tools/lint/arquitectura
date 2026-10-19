@@ -29,6 +29,9 @@ ALLOWED = {
     "chilpa-models": set(),
     # Dónde van los archivos de Chilpa, por plataforma. No depende de nadie.
     "chilpa-dirs": set(),
+    # The theme palettes ported from QBZ and their colour math. It reads the
+    # desktop's colours through chilpa-dirs and nothing else.
+    "chilpa-theme": set(),
     "chilpa-audio": {"chilpa-models"},
     "chilpa-tags": {"chilpa-models"},
     # Las letras que vienen con la música. No habla con nadie por la red.

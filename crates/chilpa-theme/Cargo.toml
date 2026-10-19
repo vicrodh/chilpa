@@ -1,0 +1,18 @@
+[package]
+name = "chilpa-theme"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+# The theme palettes and their colour math, ported from QBZ 2.1.2's
+# qbz-theme. Nothing heavy: serde for the custom theme's file, image for the
+# auto theme's palette extraction (the same formats chilpa-api decodes), and
+# chilpa-dirs for where the desktop keeps its colours.
+[dependencies]
+chilpa-dirs.workspace = true
+serde = { version = "1", features = ["derive"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "bmp"] }
+
+[dev-dependencies]
+serde_json = "1"
