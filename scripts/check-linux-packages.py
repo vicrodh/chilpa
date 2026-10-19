@@ -47,6 +47,8 @@ for kind, package in (("deb", deb), ("rpm", rpm)):
         binary = payload / "opt/chilpa/bin/chilpa-qt"
         assert os.readlink(payload / "usr/bin/chilpa-qt") == "/opt/chilpa/bin/chilpa-qt"
         assert (binary.parent / "qt.conf").is_file()
+        assert not (binary.parent / "chilpa-appimage-updater.AppImage").exists()
+        assert not (payload / "opt/chilpa/share/chilpa/release.json").exists()
         assert (payload / "usr/share/applications/app.chilpa.Chilpa.desktop").is_file()
         assert (payload / "usr/share/icons/hicolor/512x512/apps/app.chilpa.Chilpa.png").is_file()
         environment = dict(os.environ)
