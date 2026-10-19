@@ -1,6 +1,6 @@
 # macOS packages
 
-The initial release targets Apple Silicon. Build requirements are Rust,
+I build releases natively for Apple Silicon and Intel. Build requirements are Rust,
 Qt 6.11 with `qmake` and `macdeployqt` on PATH, and Python 3.11 or later.
 Packaging requests macOS 14 as the deployment target, then raises the bundle's
 minimum to the strictest requirement of its deployed libraries. The actual
@@ -24,5 +24,11 @@ Mach-O dependencies do not reference a build machine, and produces ZIP and
 DMG downloads with SHA-256 checksums. These packages are signed ad hoc and are
 not notarized with an Apple Developer identity.
 
-The same GitHub Actions release workflow builds Linux and macOS assets. A manual run uploads artifacts; a version tag waits for both
-platforms and creates one draft release.
+The same GitHub Actions release workflow builds Linux and macOS assets. A manual run uploads artifacts; a version tag waits for all four
+platform/architecture jobs and creates one draft release.
+
+I publish `Chilpa-X.Y.Z-macos-{x86_64,aarch64}.zip` and `.dmg`, a manifest
+for each architecture, and one combined `SHA256SUMS`. The install/update script
+selects a native ZIP bundle, including from a Rosetta terminal, verifies the
+release digest and ad hoc code signature, then installs into `~/Applications`.
+Running the command again updates the installation it owns.

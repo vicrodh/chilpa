@@ -126,7 +126,8 @@ fn run(mut process: Command, cancel: &AtomicBool, limit: Duration, mut line: imp
 fn information(installation: &Installation, tag: &str) -> String {
     let (owner, repository) = installation.repository.split_once('/').unwrap();
     let version = tag.strip_prefix('v').unwrap_or(tag);
-    format!("gh-releases-zsync|{owner}|{repository}|{tag}|Chilpa-{version}-x86_64.AppImage.zsync")
+    let architecture = std::env::consts::ARCH;
+    format!("gh-releases-zsync|{owner}|{repository}|{tag}|Chilpa-{version}-{architecture}.AppImage.zsync")
 }
 
 fn check_image(installation: &Installation, view: &Mutex<Value>, cancel: &AtomicBool) -> Result<&'static str, String> {
@@ -172,7 +173,7 @@ fn select_release<'a>(document: &'a Value, current: &Version) -> Option<&'a Valu
 }
 
 fn release_asset(document: &Value, tag: &str) -> Result<(String,u64), String> {
-    let name = format!("Chilpa-{}-x86_64.AppImage", tag.strip_prefix('v').unwrap_or(tag));
+    let name = format!("Chilpa-{}-{}.AppImage", tag.strip_prefix('v').unwrap_or(tag), std::env::consts::ARCH);
     let assets = document["assets"].as_array().ok_or("No release assets")?;
     let mut images = assets.iter().filter(|asset| asset["name"] == name);
     let asset = images.next().ok_or("No AppImage for this platform")?;
@@ -335,12 +336,24 @@ mod tests {
     #[test]
     fn an_update_requires_the_selected_platform_delta_and_checksum() {
         let hash = "a".repeat(64);
-        let mut document = json!({"assets":[{"name":"Chilpa-1.10.0-x86_64.AppImage","size":1024,"digest":format!("sha256:{hash}")},
-            {"name":"Chilpa-1.10.0-x86_64.AppImage.zsync"}]});
+        let name = format!("Chilpa-1.10.0-{}.AppImage", std::env::consts::ARCH);
+        let mut document = json!({"assets":[{"name":name,"size":1024,"digest":format!("sha256:{hash}")},
+            {"name":format!("{name}.zsync")}]});
         assert_eq!(release_asset(&document,"v1.10.0").unwrap(), (hash,1024));
         assert!(release_asset(&document,"v1.9.0").is_err());
         document["assets"][0]["digest"] = Value::Null;
         assert!(release_asset(&document,"v1.10.0").is_err());
+    }
+    #[test]
+    fn updates_never_select_another_architecture() {
+        let other = if std::env::consts::ARCH == "aarch64" { "x86_64" } else { "aarch64" };
+        let name = format!("Chilpa-1.10.0-{other}.AppImage");
+        let document = json!({"assets":[{"name":name,"size":1024,"digest":format!("sha256:{}", "a".repeat(64))},
+            {"name":format!("{name}.zsync")}]});
+        assert!(release_asset(&document,"v1.10.0").is_err());
+        let installation = Installation { image:PathBuf::new(), helper:PathBuf::new(), restart:PathBuf::new(),
+            repository:"example/fixture".into(), version:Version::new(1,0,0), information:None, expected:None };
+        assert!(information(&installation,"v1.10.0").ends_with(&format!("-{}.AppImage.zsync", std::env::consts::ARCH)));
     }
     #[cfg(target_os = "linux")]
     #[test]

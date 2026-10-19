@@ -1,8 +1,9 @@
 # Linux releases
 
-Linux x86_64 releases provide a binary tarball and an AppImage. The workflow builds
+I build Linux x86_64 and aarch64 releases as a binary tarball, DEB, RPM and AppImage. The workflow builds
 on Ubuntu 24.04 with Qt 6.11.2 and Rust 1.96.0. The tarball needs system Qt and
-audio libraries; the AppImage includes its Qt Quick and audio runtime.
+audio libraries; DEB, RPM and AppImage include the same deployed Qt Quick and audio runtime.
+I install that runtime under `/opt/chilpa` in DEB/RPM, with a symlink at `/usr/bin/chilpa-qt`.
 Packaging runs on Ubuntu 24.04 and checks every bundled ELF file against glibc 2.39.
 Checking the application alone misses newer requirements in Qt and its dependencies.
 The AppImage uses the system graphics stack, including OpenGL, EGL and font libraries.
@@ -17,7 +18,7 @@ user namespaces available. Packaging tools extract without requiring FUSE.
    such as `0.1.0-rc.1` and update `Cargo.lock` before tagging the same commit
    with a `v` prefix.
 2. The tag starts `.github/workflows/release-linux.yml`. It checks the version,
-   runs repository gates and API tests, builds the binary, packages both formats,
+   runs repository gates and API tests, builds one binary per architecture, packages all four formats,
    checks AppImage startup and verifies all checksums.
 3. The workflow creates a draft GitHub release and marks prerelease tags accordingly.
    Review and publish the draft.
@@ -26,10 +27,18 @@ user namespaces available. Packaging tools extract without requiring FUSE.
 
 The assets are:
 
-- `chilpa-X.Y.Z-linux-x86_64.tar.gz`
-- `Chilpa-X.Y.Z-x86_64.AppImage`
-- `Chilpa-X.Y.Z-x86_64.AppImage.zsync`
-- `MANIFEST.json`, `RELEASE-NOTES.md` and `SHA256SUMS`
+- `chilpa-X.Y.Z-linux-{x86_64,aarch64}.tar.gz`
+- `chilpa_X.Y.Z_{amd64,arm64}.deb`
+- `chilpa-X.Y.Z-1.{x86_64,aarch64}.rpm`
+- `Chilpa-X.Y.Z-{x86_64,aarch64}.AppImage` and matching `.zsync`
+- `MANIFEST-linux-{x86_64,aarch64}.json`
+- `install.sh`, `RELEASE-NOTES.md` and combined `SHA256SUMS`
+
+I keep the bare tarball layout at `chilpa-X.Y.Z/{chilpa-qt,LICENSE,licenses,icons,...}`
+for binary packaging in AUR and Gentoo. Those packages provide their own system Qt.
+The install/update command in the README selects the AppImage on Linux and the
+ZIP bundle on macOS. Running it again updates its own installation after verifying
+the download; it preserves the user's library, settings and plugins.
 
 Publish the AppImage and its matching `.zsync` together. Stable installations
 only accept newer stable releases. Prerelease installations also accept newer published
