@@ -133,7 +133,7 @@ static int presentationPreflight(bool autoBackend)
     deadline.setSingleShot(true);
 
     int frames = 0;
-    int result = 76; // the deadline passed: no usable presentation
+    int result = 76; // the deadline passed on screen: no usable presentation
 
     QObject::connect(&pulse, &QTimer::timeout, &window, &QQuickWindow::update);
     QObject::connect(&window, &QQuickWindow::frameSwapped, &loop, [&] {
@@ -153,14 +153,19 @@ static int presentationPreflight(bool autoBackend)
         result = 74;
         loop.quit();
     });
+    // A window the compositor does not show (a locked screen, another
+    // desktop) gets no frame callback, and Qt then takes it for unexposed:
+    // missing frames say nothing about the backend there, so the answer is
+    // 77, not a failure.
+    const auto missing = [&](int failure) { return window.isExposed() ? failure : 77; };
     QObject::connect(&settle, &QTimer::timeout, &loop, [&] {
         // Two swaps and a grace: long enough for an asynchronous import
         // error from the compositor to arrive.
-        result = frames >= 2 ? 0 : 75;
+        result = frames >= 2 ? 0 : missing(75);
         loop.quit();
     });
     QObject::connect(&deadline, &QTimer::timeout, &loop, [&] {
-        result = 76;
+        result = missing(76);
         loop.quit();
     });
 

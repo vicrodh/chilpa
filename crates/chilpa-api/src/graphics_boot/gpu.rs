@@ -224,6 +224,9 @@ pub(super) fn sentinel() -> std::path::PathBuf {
 
 static APPROVED: Mutex<Option<String>> = Mutex::new(None);
 static FALLBACK_NOTICE: AtomicBool = AtomicBool::new(false);
+/// The child's window was never shown: no proof, and no reason to drop the
+/// choice either.
+static PROBE_HIDDEN: AtomicBool = AtomicBool::new(false);
 
 fn set_approved(identity: Option<String>) {
     *APPROVED.lock().unwrap_or_else(|e| e.into_inner()) = identity;
@@ -305,6 +308,7 @@ pub fn needs_local_inventory() -> bool {
 /// child, and this process keeps Auto and starts as usual.
 pub fn preflight_saved_gpu_at_boot() {
     set_approved(None);
+    PROBE_HIDDEN.store(false, Ordering::SeqCst);
     if !cfg!(target_os = "linux") {
         return;
     }
@@ -341,6 +345,13 @@ pub fn preflight_saved_gpu_at_boot() {
             }
             None => reject_saved("the child ended well without proving an identity"),
         }
+        return;
+    }
+    if preflight::not_shown(&output, timed_out) {
+        // Behind a locked screen nothing is proved either way: this start
+        // goes without the device and the choice waits for the next one.
+        PROBE_HIDDEN.store(true, Ordering::SeqCst);
+        eprintln!("gpu preflight: the compositor did not show the probe; Auto for this launch, '{name}' kept");
         return;
     }
     let detail = preflight::output_tail(&output);
@@ -400,6 +411,11 @@ pub fn apply_preference() {
     let (name, identity) = if reverted { ("auto".to_string(), String::new()) } else { saved() };
     if name.trim().is_empty() || name == "auto" {
         super::disarm(&sentinel());
+        return;
+    }
+    if PROBE_HIDDEN.load(Ordering::SeqCst) {
+        super::disarm(&sentinel());
+        eprintln!("gpu: '{name}' could not be proved at this start; Auto for this launch, the choice kept");
         return;
     }
     // Only this process's own inventory selects. Settings' inventory may
