@@ -71,6 +71,9 @@ def unescape(s):
     # that follows, exactly as rustc does; otherwise the msgid in the catalog
     # would carry the source file's layout.
     s = re.sub(r"\\\n\s*", "", s)
+    # `\u{2013}` is one character to rustc, so it is one in the msgid too;
+    # left as text, the catalog would carry a key nothing ever asks for.
+    s = re.sub(r"\\u\{([0-9a-fA-F]{1,6})\}", lambda m: chr(int(m.group(1), 16)), s)
     return s.replace('\\"', '"').replace("\\n", "\n").replace("\\t", "\t").replace("\\\\", "\\")
 
 
