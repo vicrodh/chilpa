@@ -6210,6 +6210,9 @@ msgstr "tu biblioteca necesita actualizarse y no se pudo guardar una copia antes
 msgid "your sources"
 msgstr "tus fuentes"
 
+msgid "{1} {2}"
+msgstr "{1} de {2}"
+
 msgid "{} (split)"
 msgstr "{} (dividida)"
 

@@ -67,7 +67,10 @@ fn date(day: &str, with_year: bool) -> String {
     if with_year {
         i18n::t_args(i18n::mark("{} {} {}"), &[&date.to_string(), &month_name(month), &year.to_string()])
     } else {
-        i18n::t_args(i18n::mark("{} {}"), &[&date.to_string(), &month_name(month)])
+        // Its own msgid: "{} {}" is a month and its year, and a language
+        // that orders those two apart from a day and its month ("Mai 1990",
+        // "4. Okt.") needs one entry for each.
+        i18n::t_args(i18n::mark("{1} {2}"), &[&date.to_string(), &month_name(month)])
     }
 }
 
