@@ -21,6 +21,8 @@ const GPU_NAME_ENV: &str = "CHILPA_INTERNAL_GPU_PREFLIGHT_NAME";
 const GPU_PROOF: &str = "CHILPA_GPU_PREFLIGHT_OK=";
 pub(super) const GPU_NOT_FOUND: i32 = 41;
 pub(super) const GPU_NOT_SELECTABLE: i32 = 42;
+/// A probe window the compositor never showed: no verdict on the backend.
+const NOT_SHOWN: i32 = 77;
 /// How long a child has before it is killed and reaped.
 const WATCHDOG: Duration = Duration::from_secs(8);
 /// Qt's switch that keeps it from asking the desktop portal anything.
@@ -213,15 +215,32 @@ fn auto_proof(result: &(Output, bool)) -> Result<(), String> {
     Err(format!("child status {}; presentation not proved; {}", output.status, output_tail(output)))
 }
 
+/// The child's window was never shown by the compositor (`probe.cpp`).
+pub(super) fn not_shown(output: &Output, timed_out: bool) -> bool {
+    !timed_out && output.status.code() == Some(NOT_SHOWN)
+}
+
 /// Auto, then software once at most. A child that cannot be started or
 /// watched is a problem of the machinery, not a proof of bad graphics: it
-/// is reported and nothing is rewritten. `true` means software.
+/// is reported and nothing is rewritten. Neither is a probe the compositor
+/// never showed, behind a locked screen for one: Auto is kept, or software
+/// when Auto already failed. `true` means software.
 fn decide(mut probe: impl FnMut(bool) -> Result<(Output, bool), String>) -> Result<bool, String> {
-    match auto_proof(&probe(false)?) {
+    let auto = probe(false)?;
+    if not_shown(&auto.0, auto.1) {
+        eprintln!("renderer: the compositor did not show the Auto probe (a locked screen, a hidden window); nothing failed, Qt's default backend kept");
+        return Ok(false);
+    }
+    match auto_proof(&auto) {
         Ok(()) => Ok(false),
         Err(reason) => {
             eprintln!("renderer: Auto presentation failed: {reason}; trying software once");
-            auto_proof(&probe(true)?).map_err(|reason| format!("software presentation also failed: {reason}"))?;
+            let software = probe(true)?;
+            if not_shown(&software.0, software.1) {
+                eprintln!("renderer: the compositor did not show the software probe; software kept for this launch, Auto having failed");
+                return Ok(true);
+            }
+            auto_proof(&software).map_err(|reason| format!("software presentation also failed: {reason}"))?;
             Ok(true)
         }
     }
@@ -310,6 +329,30 @@ mod tests {
         })
         .is_err());
         assert_eq!(attempts, [false, true], "software is tried once, never more");
+    }
+
+    fn exited(code: i32) -> (Output, bool) {
+        (Output { status: std::process::ExitStatus::from_raw(code << 8), stdout: Vec::new(), stderr: Vec::new() }, false)
+    }
+
+    #[test]
+    fn a_probe_the_compositor_never_showed_is_no_verdict() {
+        let mut attempts = Vec::new();
+        assert!(!decide(|soft| {
+            attempts.push(soft);
+            Ok(exited(NOT_SHOWN))
+        })
+        .unwrap(), "behind a locked screen Auto is kept, and the start goes on");
+        assert_eq!(attempts, [false], "no software rescue for a backend nothing proved wrong");
+        attempts.clear();
+        assert!(decide(|soft| {
+            attempts.push(soft);
+            Ok(if soft { exited(NOT_SHOWN) } else { exited(74) })
+        })
+        .unwrap(), "Auto failed on screen: software, even unshown");
+        assert_eq!(attempts, [false, true]);
+        assert!(!not_shown(&exited(NOT_SHOWN).0, true), "a child killed by the watchdog proved nothing either way");
+        assert!(!not_shown(&exited(76).0, false));
     }
 
     #[test]
