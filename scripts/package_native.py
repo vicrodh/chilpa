@@ -1,6 +1,8 @@
 """I install the deployed Qt runtime under /opt/chilpa in DEB and RPM packages."""
 import json
+import os
 from pathlib import Path
+import shutil
 import subprocess
 
 
@@ -39,8 +41,13 @@ def native_recipe(appdir, root, version, arch, glibc):
 
 def package_native(appdir, root, nfpm, output, version, arch, glibc):
     # I reuse the same deployed libraries and qt.conf as the AppImage.
+    native = appdir.parent / "native-package"
+    shutil.copytree(appdir / "usr", native / "usr", symlinks=True, copy_function=os.link,
+                    ignore=shutil.ignore_patterns("chilpa-appimage-updater.AppImage", "chilpa-restart"))
+    # I leave AppImage updates with the image; native packages use their package manager.
+    (native / "usr/share/chilpa/release.json").unlink(missing_ok=True)
     config = appdir.parent / "nfpm.json"
-    config.write_text(json.dumps(native_recipe(appdir, root, version, arch, glibc), indent=2) + "\n")
+    config.write_text(json.dumps(native_recipe(native, root, version, arch, glibc), indent=2) + "\n")
     deb_arch = "amd64" if arch == "x86_64" else "arm64"
     packages = [output / f"chilpa_{version}_{deb_arch}.deb", output / f"chilpa-{version}-1.{arch}.rpm"]
     for kind, path in zip(("deb", "rpm"), packages):
