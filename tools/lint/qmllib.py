@@ -26,7 +26,8 @@ TREES = [KIT, QML, ROOT / "crates/chilpa-qt-sources/qml", ROOT / "crates/chilpa-
          ROOT / "crates/chilpa-qt-immersive/qml", ROOT / "crates/chilpa-qt-waveform/qml",
          ROOT / "crates/chilpa-qt-artwork/qml", ROOT / "crates/chilpa-qt-about/qml",
          ROOT / "crates/chilpa-qt-stats/qml", ROOT / "crates/chilpa-qt-graphics/qml",
-         ROOT / "crates/chilpa-qt-link/qml", ROOT / "crates/chilpa-qt-wizard/qml", ROOT / "crates/chilpa-qt-playlists/qml", ROOT / "crates/chilpa-qt-dsp/qml"]
+         ROOT / "crates/chilpa-qt-link/qml", ROOT / "crates/chilpa-qt-wizard/qml", ROOT / "crates/chilpa-qt-playlists/qml", ROOT / "crates/chilpa-qt-dsp/qml",
+         ROOT / "crates/chilpa-qt-themes/qml"]
 # Where each tree sits in the binary's resources, for imports across them.
 RESOURCES = {"qrc:/qt/qml/app/chilpa/kit/qml/": TREES[0], "qrc:/qt/qml/app/chilpa/qml/": TREES[1],
              "qrc:/qt/qml/app/chilpa/sources/qml/": TREES[2], "qrc:/qt/qml/app/chilpa/controls/qml/": TREES[3],
@@ -42,7 +43,8 @@ RESOURCES = {"qrc:/qt/qml/app/chilpa/kit/qml/": TREES[0], "qrc:/qt/qml/app/chilp
              "qrc:/qt/qml/app/chilpa/graphics/qml/": TREES[15],
              "qrc:/qt/qml/app/chilpa/link/qml/": TREES[16],
              "qrc:/qt/qml/app/chilpa/wizard/qml/": TREES[17],
-             "qrc:/qt/qml/app/chilpa/playlists/qml/": TREES[18], "qrc:/qt/qml/app/chilpa/dsp/qml/": TREES[19]}
+             "qrc:/qt/qml/app/chilpa/playlists/qml/": TREES[18], "qrc:/qt/qml/app/chilpa/dsp/qml/": TREES[19],
+             "qrc:/qt/qml/app/chilpa/themes/qml/": TREES[20]}
 
 ORDER = {"Theme": 0, "Primitives": 1, "Components": 2, "Patterns": 3, "Screens": 4, "Main": 5}
 # The Gallery is a second window that shows every piece; it sits beside the

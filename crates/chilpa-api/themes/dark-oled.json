@@ -28,6 +28,7 @@
     "accent": "#D8323A",
     "accent.hover": "derive:accent+L0.06",
     "accent.pressed": "derive:accent-L0.08",
+    "favorite": "derive:accent@1.0",
     "status.positive": "#3FAE6A",
     "status.warning": "#FBBF24",
     "status.negative": "#EF4444",

@@ -23,7 +23,7 @@ pub mod qobject {
 use cxx_qt_lib::{QList, QString, QStringList};
 
 /// The module of each crate that has a page, and the page's file.
-const PAGES: [(&str, &str); 16] = [
+const PAGES: [(&str, &str); 17] = [
     ("dsp", "GalleryDsp"),
     ("metadata", "GalleryMetadata"),
     ("sources", "GalleryPlugins"),
@@ -40,6 +40,7 @@ const PAGES: [(&str, &str); 16] = [
     ("link", "GalleryLink"),
     ("playlists", "GalleryPlaylists"),
     ("wizard", "GalleryWizard"),
+    ("themes", "GalleryThemes"),
 ];
 
 #[derive(Default)]

@@ -41,6 +41,7 @@ members = [
     "crates/chilpa-qt-dsp",
     "crates/chilpa-qt-immersive",
     "crates/chilpa-qt-waveform",
+    "crates/chilpa-qt-themes",
     "crates/chilpa-qt-graphics",
     "crates/chilpa-qt-link",
     "crates/chilpa-qt-playlists",
@@ -101,6 +102,7 @@ chilpa-qt-mini = { path = "crates/chilpa-qt-mini" }
 chilpa-qt-dsp = { path = "crates/chilpa-qt-dsp" }
 chilpa-qt-immersive = { path = "crates/chilpa-qt-immersive" }
 chilpa-qt-waveform = { path = "crates/chilpa-qt-waveform" }
+chilpa-qt-themes = { path = "crates/chilpa-qt-themes" }
 chilpa-qt-graphics = { path = "crates/chilpa-qt-graphics" }
 chilpa-qt-link = { path = "crates/chilpa-qt-link" }
 chilpa-qt-playlists = { path = "crates/chilpa-qt-playlists" }

@@ -50,6 +50,9 @@ QtObject {
         readonly property color accentBase: ThemeModel.color("accent.base", theme.rev)
         readonly property color accentHover: ThemeModel.color("accent.hover", theme.rev)
         readonly property color accentPressed: ThemeModel.color("accent.pressed", theme.rev)
+        // A favorite's heart: the accent in Chilpa's own themes, the
+        // palette's favorite in QBZ's and the custom one.
+        readonly property color favorite: ThemeModel.color("favorite", theme.rev)
         readonly property color statusPositive: ThemeModel.color("status.positive", theme.rev)
         readonly property color statusWarning: ThemeModel.color("status.warning", theme.rev)
         readonly property color statusNegative: ThemeModel.color("status.negative", theme.rev)

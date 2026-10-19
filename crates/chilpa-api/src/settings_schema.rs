@@ -37,6 +37,9 @@ pub enum Control {
     /// A file chosen from a dialog, and a way to choose none again: its
     /// label is the setting's `action`.
     File,
+    /// The theme's picker: the list with its light/dark filter, and under
+    /// it the options of the auto and the custom themes.
+    Theme,
 }
 
 impl Control {
@@ -54,6 +57,7 @@ impl Control {
             Control::Status => "status",
             Control::Slider => "slider",
             Control::File => "file",
+            Control::Theme => "theme",
         }
     }
 }
@@ -142,7 +146,7 @@ pub const SECTIONS: &[Section] = &[
             title: Chilpa::mark("Look"),
             settings: &[
                 setting("appearance.language", Chilpa::mark("Language"), Chilpa::mark("Use the system language or choose a language."), Control::Select),
-                setting("appearance.theme", Chilpa::mark("Theme"), "", Control::Select),
+                setting("appearance.theme", Chilpa::mark("Theme"), "", Control::Theme),
                 setting("appearance.accent", Chilpa::mark("Accent"), Chilpa::mark("The first follows the theme: crimson in light, red in dark."), Control::Swatches),
                 setting("appearance.density", Chilpa::mark("Track lists"), Chilpa::mark("Compact rows like a spreadsheet, or rich rows with the cover."), Control::Segmented),
                 setting("appearance.font", Chilpa::mark("Font"), Chilpa::mark("Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."), Control::Segmented),
