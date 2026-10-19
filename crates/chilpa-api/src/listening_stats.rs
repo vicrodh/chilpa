@@ -94,7 +94,12 @@ fn month_label(key: &str) -> String {
 /// "10 Oct 2025 – 9 Oct 2026".
 fn range_label(first: &str, last: &str) -> String {
     match (civil(first), civil(last)) {
-        (Some((y1, m1, d1)), Some((y2, m2, _))) if y1 == y2 && m1 == m2 => format!("{d1}\u{2013}{}", date(last, true)),
+        // One msgid for the whole range: a language that writes the year
+        // first still keeps the two days together ("2026年10月3日–9日").
+        (Some((y1, m1, d1)), Some((y2, m2, d2))) if y1 == y2 && m1 == m2 => i18n::t_args(
+            i18n::mark("{1}–{2} {3} {4}"),
+            &[&d1.to_string(), &d2.to_string(), &month_name(m2), &y2.to_string()],
+        ),
         (Some((y1, ..)), Some((y2, ..))) if y1 == y2 => format!("{} \u{2013} {}", date(first, false), date(last, true)),
         _ => format!("{} \u{2013} {}", date(first, true), date(last, true)),
     }
