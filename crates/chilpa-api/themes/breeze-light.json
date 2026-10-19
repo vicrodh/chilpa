@@ -16,6 +16,8 @@
     "text.onAccent": "#FFFFFF",
     "backdrop.text": "#FFFFFF",
     "backdrop.textMuted": "derive:backdrop.text@0.82",
+    "backdrop.fill": "rgba(255,255,255,0.08)",
+    "backdrop.fillHover": "rgba(255,255,255,0.10)",
     "toggle.knob": "#FFFFFF",
     "stroke.hairline": "rgba(35,38,41,0.10)",
     "stroke.frame": "rgba(35,38,41,0.16)",
