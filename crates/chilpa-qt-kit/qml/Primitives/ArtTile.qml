@@ -32,6 +32,10 @@ Item {
     // True once there is a picture to draw, so whoever uses the tile can
     // put something of its own over the placeholder.
     readonly property bool ready: image.status === Image.Ready
+    // Qt's software rasterizer, the renderer a start falls back to, draws no
+    // shader: there the cover shows as it is, square, rather than not at
+    // all. QBZ rounds it on a Canvas, which a cover cannot carry here.
+    readonly property bool shaded: GraphicsInfo.api !== GraphicsInfo.Software && GraphicsInfo.api !== GraphicsInfo.Null
     readonly property bool local: root.source.toString().startsWith("file://")
     readonly property int decode: Math.ceil(Math.max(width, height) * Screen.devicePixelRatio / Metrics.artDecodeStep) * Metrics.artDecodeStep
 
@@ -48,7 +52,7 @@ Item {
     Image {
         id: image
         anchors.fill: parent
-        visible: false
+        visible: !root.shaded && status === Image.Ready
         // A file comes through the covers' provider, made the size it is
         // drawn; anything else as it is.
         source: root.local ? (root.contain ? "image://contained/" : "image://cover/") + root.decode + "/" + encodeURIComponent(root.source.toString()) : root.source
@@ -64,7 +68,7 @@ Item {
 
     ShaderEffect {
         anchors.fill: parent
-        visible: image.status === Image.Ready
+        visible: root.shaded && image.status === Image.Ready
         property variant source: image
         property size dims: Qt.size(width, height)
         property vector4d corners: root.corners
