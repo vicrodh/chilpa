@@ -44,6 +44,7 @@ Item {
             if (ancestor === current) { focus.focus = false; break }
         }
         generation += 1
+        settleSkeleton()
         awaitingContentFrame = false
         acknowledgedRoute = route
         pendingRoute = route
@@ -92,6 +93,8 @@ Item {
         frontA = next === first
         committedRoute = pendingRoute
         if (epoch !== generation) return
+        // Before the phase changes, so the skeleton is never hidden at the mount.
+        if (!Motion.reduced) retire.restart()
         awaitingContentFrame = true
         phase = "content"
         if (epoch !== generation) return
@@ -100,15 +103,25 @@ Item {
         pendingRoute = ""
         current.scroll.enabled = false
         current.sourceComponent = null
-        if (!Motion.reduced) reveal.restart()
+        if (!Motion.reduced) {
+            reveal.restart()
+            revealGuard.restart()
+        }
         if (epoch !== generation) return
         frameFence.arm(epoch * 2 + 1)
     }
 
     function settleReveal() {
+        revealGuard.stop()
         reveal.stop()
         first.opacity = 1
         second.opacity = 1
+        settleSkeleton()
+    }
+
+    function settleSkeleton() {
+        retire.stop()
+        skeleton.opacity = 1
     }
 
     OpacityAnimator {
@@ -118,6 +131,25 @@ Item {
         to: 1
         duration: Motion.page
         easing.type: Easing.OutCubic
+    }
+    // The skeleton dissolves into the page from the frame the page is
+    // mounted, as QBZ retires a placeholder at handover. It runs on the
+    // render thread like the reveal: the mount keeps the window's thread
+    // busy, and a fade driven from there would hold the bars still behind
+    // the arriving page and drop them at once.
+    OpacityAnimator {
+        id: retire
+        target: skeleton
+        from: 1
+        to: 0
+        duration: Motion.handover
+    }
+    // The reveal only advances while frames are drawn. A page must never
+    // stay invisible because they stopped.
+    Timer {
+        id: revealGuard
+        interval: Motion.revealGuard
+        onTriggered: transition.settleReveal()
     }
     Connections {
         target: Motion
@@ -175,12 +207,6 @@ Item {
             Qt.callLater(transition.begin, epoch)
         }
     }
-    Rectangle {
-        anchors.fill: parent
-        color: Theme.color.surfaceWindow
-        visible: transition.phase !== "content" || transition.awaitingContentFrame || reveal.running
-        z: -1
-    }
     Text {
         anchors.centerIn: parent
         visible: transition.phase === "error"
@@ -188,13 +214,20 @@ Item {
         color: Theme.color.textPrimary
         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: transition.request() }
     }
+    // The skeleton holds the destination's place from the acknowledgement
+    // until its page is mounted. Nothing opaque goes under it: the page fades
+    // in over the plane's own background, as QBZ's does. An opaque shell
+    // there covered the dynamic background for the whole navigation and left
+    // in one step when the reveal ended.
     Column {
+        id: skeleton
+        objectName: "acknowledgementSkeleton"
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: Metrics.contentX
         spacing: Metrics.gap16
-        visible: transition.phase !== "error" && (transition.phase !== "content" || transition.awaitingContentFrame || reveal.running)
+        visible: transition.phase !== "error" && (transition.phase !== "content" || retire.running)
         z: -1
         Rectangle { width: parent.width * 0.36; height: Metrics.gap16; radius: Metrics.gap8; color: Theme.color.stateHover }
         Repeater {
