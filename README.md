@@ -228,7 +228,7 @@ On Ubuntu 24.04:
 
 ```sh
 sudo apt-get install -y --no-install-recommends \
-  build-essential pkg-config cmake clang libclang-dev nasm \
+  build-essential pkg-config cmake clang cargo libclang-dev nasm \
   libasound2-dev libjack-jackd2-dev libpulse-dev libpipewire-0.3-dev \
   libdbus-1-dev libssl-dev libgl1-mesa-dev libegl1-mesa-dev \
   libxkbcommon-dev libwayland-dev libxkbcommon-x11-0 libxcb-cursor0 \
