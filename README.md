@@ -162,14 +162,17 @@ cp -r chilpa-0.1.0/icons ~/.local/share/
 ### macOS
 
 Download `Chilpa-0.1.0-macos-aarch64.dmg` or
-`Chilpa-0.1.0-macos-aarch64.zip` from the release. Open the DMG and drag
+`Chilpa-0.1.0-macos-aarch64.zip` for Apple Silicon; use the `macos-x86_64`
+packages for Intel. Open the DMG and drag
 Chilpa to Applications, or extract the ZIP and move `Chilpa.app` there.
-The packages target Apple Silicon and include Qt. The release manifest
+Both architectures include Qt. The release manifest
 records the minimum macOS version required by the deployed runtime.
 
 The app is signed ad hoc and is not notarized with an Apple Developer
 identity. macOS may require approving it in Privacy & Security after the
-first attempt to open it. Updates on macOS are installed manually.
+first attempt to open it. I update installations made with the one-line
+command by running it again. For a manually installed bundle, replace it
+with the new download.
 
 ### Your data
 

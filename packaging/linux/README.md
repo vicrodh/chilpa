@@ -79,9 +79,10 @@ python3 scripts/package-linux.py \
   --repository OWNER/REPOSITORY --tools /tmp/chilpa-release-tools --output dist
 ```
 
-`tools.lock.json` pins every packaging executable by SHA-256. Update the lock
-when adopting a different upstream payload, including changes to a continuous
-release. The plugin protocol is an unmodified, vendored public SDK snapshot;
+`tools.lock.json` pins every packaging executable by release tag and SHA-256.
+I use appimagetool 1.9.1 and the dated 20251108 runtime so upstream continuous
+builds cannot change those downloads between releases. Update the lock when
+adopting a different upstream payload. The plugin protocol is an unmodified, vendored public SDK snapshot;
 `vendor/chilpa-plugin-api/ORIGIN.json` records its tag and revision. No private
 repository is needed to compile.
 
