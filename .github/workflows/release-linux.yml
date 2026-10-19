@@ -147,8 +147,8 @@ jobs:
             --output dist --glibc-max 2.39
       - name: Smoke the AppImage in an isolated profile
         run: |
-          export APPIMAGE_EXTRACT_AND_RUN=1
-          scripts/check-qml-startup.sh "$GITHUB_WORKSPACE/dist/Chilpa-$RELEASE_VERSION-${{ matrix.arch }}.AppImage"
+          env -u LD_LIBRARY_PATH -u QT_PLUGIN_PATH -u QML_IMPORT_PATH -u QML2_IMPORT_PATH \
+            APPIMAGE_EXTRACT_AND_RUN=1 scripts/check-qml-startup.sh "$GITHUB_WORKSPACE/dist/Chilpa-$RELEASE_VERSION-${{ matrix.arch }}.AppImage"
           cd dist
           sha256sum --check "SHA256SUMS-linux-${{ matrix.arch }}"
       - name: Check native package payloads
