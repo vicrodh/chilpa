@@ -1,0 +1,2 @@
+module app.chilpa.themes
+singleton ThemeEditor 1.0 ThemeEditor.qml

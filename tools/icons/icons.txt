@@ -134,3 +134,6 @@ cloud-download
 chart-bar
 history
 pencil
+sun
+moon
+sun-moon

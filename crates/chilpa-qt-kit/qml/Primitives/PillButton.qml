@@ -3,7 +3,10 @@ import "../Theme"
 
 // A button with text: "primary" in the accent, "secondary" on a field, or
 // "ghost": no fill until the pointer is over it, 28 high, as a panel's
-// footer has them (design/03 QueueFooter).
+// footer has them (design/03 QueueFooter). "backdrop" is "secondary" on a
+// dark backdrop, the album header's: white ink on a faint white field in
+// every theme, as QBZ switches its header actions off the theme there
+// (`AlbumView.qml:304`, `hdrOverlay`).
 Rectangle {
     id: root
 
@@ -12,19 +15,23 @@ Rectangle {
     property string iconFamily
     // A glyph from the filled font: play, pause, a filled heart.
     property bool filled: false
-    // "primary", "secondary" or "ghost".
+    // "primary", "secondary", "ghost" or "backdrop".
     property string kind: "secondary"
 
     signal clicked()
 
     readonly property bool primary: kind === "primary"
     readonly property bool ghost: kind === "ghost"
+    readonly property bool backdrop: kind === "backdrop"
+    readonly property color ink: primary ? Theme.color.textOnAccent : backdrop ? Theme.color.backdropText
+        : ghost ? Theme.color.textSecondary : Theme.color.textPrimary
 
     implicitWidth: row.implicitWidth + (ghost ? Metrics.gap8 : Metrics.pillPadding) * 2 // derived: padding on both sides
     implicitHeight: ghost ? Metrics.button28 : Metrics.pillHeight
     opacity: enabled ? 1 : Metrics.disabledOpacity
     radius: ghost ? Metrics.radiusControl : height / 2 // derived: a pill
     color: ghost ? (area.containsMouse ? Theme.color.stateHover : "transparent")
+         : backdrop ? (area.containsMouse ? Theme.color.backdropFillHover : Theme.color.backdropFill)
          : !primary ? (area.containsMouse ? Theme.color.stateSelected : Theme.color.fillField)
          : area.pressed ? Theme.color.accentPressed
          : area.containsMouse ? Theme.color.accentHover : Theme.color.accent
@@ -41,7 +48,7 @@ Rectangle {
             filled: root.filled
             iconFamily: root.iconFamily
             size: Metrics.iconSm
-            color: root.primary ? Theme.color.textOnAccent : root.ghost ? Theme.color.textSecondary : Theme.color.textPrimary
+            color: root.ink
         }
 
         Text {
@@ -49,7 +56,7 @@ Rectangle {
             text: root.text
             font.pointSize: root.ghost ? Type.small : Type.body
             font.weight: root.primary ? Type.semibold : Type.medium
-            color: root.primary ? Theme.color.textOnAccent : root.ghost ? Theme.color.textSecondary : Theme.color.textPrimary
+            color: root.ink
         }
     }
 

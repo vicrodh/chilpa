@@ -27,6 +27,7 @@ Row {
         glyph: marks.favorite ? Icons.heartFilled : Icons.heart
         filled: marks.favorite
         checked: marks.favorite
+        heart: true
         tone: marks.contrasted ? "overlay" : marks.favorite ? "accent" : "secondary"
         tip: marks.favorite ? I18n.tr("Remove from favorites", I18n.rev)
                             : I18n.tr("Add to favorites", I18n.rev)

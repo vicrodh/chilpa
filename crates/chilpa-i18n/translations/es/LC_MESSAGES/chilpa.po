@@ -130,6 +130,9 @@ msgstr "Una pista cuenta cuando se reprodujo la mitad, o cuatro minutos. Lo que 
 msgid "A-B loop"
 msgstr "Loop A-B"
 
+msgid "ACCENT"
+msgstr "ACENTO"
+
 msgid "ALSA direct"
 msgstr "ALSA directo"
 
@@ -324,6 +327,9 @@ msgstr "Todo listo"
 msgid "All sources"
 msgstr "Todas las fuentes"
 
+msgid "All themes"
+msgstr "Todos los temas"
+
 msgid "All time"
 msgstr "Todo"
 
@@ -516,6 +522,9 @@ msgstr "Automático"
 msgid "Auto (app language)"
 msgstr "Automático (idioma de la app)"
 
+msgid "Auto (dynamic)"
+msgstr "Automático (dinámico)"
+
 msgid "Auto (recommended)"
 msgstr "Automático (recomendado)"
 
@@ -602,6 +611,9 @@ msgstr "Extras"
 
 msgid "Booklet"
 msgstr "Libreto"
+
+msgid "Border"
+msgstr "Borde"
 
 msgid "Browse for a music folder, or type its full path."
 msgstr "Busca una carpeta de música o escribe su ruta completa."
@@ -1115,6 +1127,9 @@ msgstr "Copiar playlist"
 msgid "Copy preset JSON"
 msgstr "Copiar preset JSON"
 
+msgid "Copy the colors of the currently applied theme into the editor as a starting point."
+msgstr "Copia los colores del tema aplicado al editor como punto de partida."
+
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio no reporta ningún aparato que pueda reproducir"
 
@@ -1186,6 +1201,9 @@ msgstr "Cursor arriba"
 
 msgid "Custom"
 msgstr "Personalizado"
+
+msgid "Custom Image"
+msgstr "Imagen personalizada"
 
 msgid "Custom image"
 msgstr "Imagen personalizada"
@@ -1283,11 +1301,20 @@ msgstr "El preset DSP no está disponible."
 msgid "DSP · Equalizer and presets"
 msgstr "DSP · Ecualizador y presets"
 
+msgid "Danger"
+msgstr "Peligro"
+
 msgid "Dark"
 msgstr "Oscuro"
 
 msgid "Dark OLED"
 msgstr "Oscuro OLED"
+
+msgid "Dark theme"
+msgstr "Tema oscuro"
+
+msgid "Dark themes"
+msgstr "Temas oscuros"
 
 msgid "Date"
 msgstr "Fecha"
@@ -1348,6 +1375,9 @@ msgstr "Escritorio"
 
 msgid "Destinations"
 msgstr "Destinos"
+
+msgid "Detected: "
+msgstr "Detectado: "
 
 msgid "Detecting your DACs…"
 msgstr "Detectando tus DACs…"
@@ -1517,6 +1547,9 @@ msgstr "Editar playlist"
 msgid "Edit…"
 msgstr "Editar…"
 
+msgid "Elevated"
+msgstr "Elevado"
+
 msgid "Embedded tags only"
 msgstr "Solo tags incrustados"
 
@@ -1589,6 +1622,9 @@ msgstr "Salir del modo inmersivo"
 msgid "Expand"
 msgstr "Expandir"
 
+msgid "Experimental: theme may not match your system exactly."
+msgstr "Experimental: el tema puede no coincidir exactamente con tu sistema."
+
 msgid "Explore"
 msgstr "Explorar"
 
@@ -1630,6 +1666,9 @@ msgstr "Fallaron en esta sesión"
 
 msgid "Failed to load albums"
 msgstr "No se pudieron cargar los álbumes"
+
+msgid "Favorite"
+msgstr "Favorito"
 
 msgid "Favorite preset"
 msgstr "Preset favorito"
@@ -1810,6 +1849,9 @@ msgstr "Generar"
 
 msgid "Generate Mood playlists"
 msgstr "Generar playlists Mood"
+
+msgid "Generate a color theme from your system wallpaper or a custom image"
+msgstr "Genera un tema de colores a partir del fondo de pantalla del sistema o de una imagen personalizada"
 
 msgid "Generated images"
 msgstr "Imágenes generadas"
@@ -2014,6 +2056,9 @@ msgstr "INFLUENCIAS"
 
 msgid "Icon"
 msgstr "Icono"
+
+msgid "Image"
+msgstr "Imagen"
 
 msgid "Image saved"
 msgstr "Imagen guardada"
@@ -2308,6 +2353,9 @@ msgstr "Selección de la biblioteca"
 
 msgid "Light"
 msgstr "Claro"
+
+msgid "Light themes"
+msgstr "Temas claros"
 
 msgid "Like Track"
 msgstr "Marcar como favorita"
@@ -2960,6 +3008,9 @@ msgstr "Suena ahora: {}"
 msgid "Number of tracks"
 msgstr "Cantidad de pistas"
 
+msgid "OTHER"
+msgstr "OTROS"
+
 msgid "Oct"
 msgstr "octubre"
 
@@ -3590,6 +3641,9 @@ msgstr "Actualizar ajustes"
 msgid "Refused the sign-in. Its records stay listed and cannot be played."
 msgstr "Rechazó el inicio de sesión. Sus discos siguen en la lista y no se pueden reproducir."
 
+msgid "Regenerate"
+msgstr "Regenerar"
+
 msgid "Release"
 msgstr "Lanzamiento"
 
@@ -3785,6 +3839,12 @@ msgstr "ARTISTAS SIMILARES"
 msgid "SPLIT"
 msgstr "DIVIDIDO"
 
+msgid "STATUS"
+msgstr "ESTADO"
+
+msgid "SURFACES"
+msgstr "SUPERFICIES"
+
 msgid "Sample-rate switching (PipeWire)"
 msgstr "Cambio de frecuencia (PipeWire)"
 
@@ -3923,6 +3983,9 @@ msgstr "Buscando…"
 msgid "Search…"
 msgstr "Buscar…"
 
+msgid "Secondary text"
+msgstr "Texto secundario"
+
 msgid "See all"
 msgstr "Ver todo"
 
@@ -3957,6 +4020,9 @@ msgstr "Adelantar 5 s"
 
 msgid "Select"
 msgstr "Seleccionar"
+
+msgid "Select Image..."
+msgstr "Seleccionar imagen..."
 
 msgid "Select a folder to see its contents."
 msgstr "Elige una carpeta para ver su contenido."
@@ -4008,6 +4074,9 @@ msgstr "Marcar inicio (A)"
 
 msgid "Set preference"
 msgstr "Cambiar preferencia"
+
+msgid "Set the overall light or dark polarity. Affects derived shades, borders and overlays."
+msgstr "Define la polaridad general, clara u oscura. Afecta los tonos derivados, los bordes y las superposiciones."
 
 msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
 msgstr "Pone el grafo de PipeWire a la frecuencia de cada pista mientras Chilpa tiene la salida para él solo, así el DAC recibe la frecuencia que trae el archivo. La frecuencia regresa cuando Chilpa se detiene."
@@ -4171,6 +4240,9 @@ msgstr "Procesadas con análisis estándar"
 msgid "Start"
 msgstr "Empezar"
 
+msgid "Start from current theme"
+msgstr "Partir del tema actual"
+
 msgid "Starting plugins…"
 msgstr "Iniciando plugins…"
 
@@ -4258,11 +4330,17 @@ msgstr "Suscrito"
 msgid "Subscriptions"
 msgstr "Suscripciones"
 
+msgid "Success"
+msgstr "Éxito"
+
 msgid "Sun"
 msgstr "dom"
 
 msgid "Sung line"
 msgstr "Línea cantada"
+
+msgid "Surface"
+msgstr "Superficie"
 
 msgid "Sync now"
 msgstr "Sincronizar ahora"
@@ -4280,6 +4358,12 @@ msgstr "Sincronizando…"
 
 msgid "System"
 msgstr "Sistema"
+
+msgid "System Colors"
+msgstr "Colores del sistema"
+
+msgid "TEXT"
+msgstr "TEXTO"
 
 msgid "Tabs"
 msgstr "Pestañas"
@@ -4301,6 +4385,9 @@ msgstr "Prueba"
 
 msgid "Test Playback"
 msgstr "Probar la reproducción"
+
+msgid "Text"
+msgstr "Texto"
 
 msgid "That answer does not belong to this window."
 msgstr "Esa respuesta no corresponde a esta ventana."
@@ -4344,8 +4431,8 @@ msgstr "La vista de descargas no está disponible."
 msgid "The filter has no ON/OFF state."
 msgstr "El filtro no indica su estado ON/OFF."
 
-msgid "The first follows the theme: crimson in light, red in dark."
-msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."
+msgid "The first is the theme's own accent; the others replace it in every theme but Custom."
+msgstr "El primero es el acento del propio tema; los demás lo reemplazan en todos los temas menos en Personalizado."
 
 msgid "The floating player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
 msgstr "La barra flotante se aparta tras diez segundos sin mover el mouse; cualquier movimiento la trae de vuelta."
@@ -4824,6 +4911,9 @@ msgstr "Usar Quick Connect"
 msgid "Use at most 10 DSP filters."
 msgstr "Puedes usar hasta 10 filtros DSP."
 
+msgid "Use current colors"
+msgstr "Usar los colores actuales"
+
 msgid "Use my current queue"
 msgstr "Usar mi cola actual"
 
@@ -4896,11 +4986,17 @@ msgstr "Esperando a que el DAC empiece a sonar…"
 msgid "Wallpaper"
 msgstr "Fondo de pantalla"
 
+msgid "Wallpaper Sync"
+msgstr "Sincronizar con el fondo de pantalla"
+
 msgid "Wallpaper blur"
 msgstr "Desenfoque del fondo"
 
 msgid "Wallpaper, blurred"
 msgstr "Fondo de pantalla, difuminado"
+
+msgid "Warning"
+msgstr "Advertencia"
 
 msgid "Wave Bed"
 msgstr "Lecho de ondas"

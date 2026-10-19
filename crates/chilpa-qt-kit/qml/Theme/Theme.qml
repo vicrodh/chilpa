@@ -33,6 +33,14 @@ QtObject {
         readonly property color textTertiary: ThemeModel.color("text.tertiary", theme.rev)
         readonly property color textOnAccentMuted: ThemeModel.color("text.onAccentMuted", theme.rev)
         readonly property color textOnAccent: ThemeModel.color("text.onAccent", theme.rev)
+        // Text and glyphs on a dark backdrop -- a cover's scrim, the album
+        // header -- white in every theme, as QBZ paints them
+        // (`AlbumView.qml:299`, `hdrStrong` / `hdrBody`).
+        readonly property color backdropText: ThemeModel.color("backdrop.text", theme.rev)
+        readonly property color backdropTextMuted: ThemeModel.color("backdrop.textMuted", theme.rev)
+        readonly property color backdropFill: ThemeModel.color("backdrop.fill", theme.rev)
+        readonly property color backdropFillHover: ThemeModel.color("backdrop.fillHover", theme.rev)
+        readonly property color toggleKnob: ThemeModel.color("toggle.knob", theme.rev)
         readonly property color strokeHairline: ThemeModel.color("stroke.hairline", theme.rev)
         readonly property color strokeFrame: ThemeModel.color("stroke.frame", theme.rev)
         readonly property color stateHover: ThemeModel.color("state.hover", theme.rev)
@@ -50,6 +58,9 @@ QtObject {
         readonly property color accentBase: ThemeModel.color("accent.base", theme.rev)
         readonly property color accentHover: ThemeModel.color("accent.hover", theme.rev)
         readonly property color accentPressed: ThemeModel.color("accent.pressed", theme.rev)
+        // A favorite's heart: the accent in Chilpa's own themes, the
+        // palette's favorite in QBZ's and the custom one.
+        readonly property color favorite: ThemeModel.color("favorite", theme.rev)
         readonly property color statusPositive: ThemeModel.color("status.positive", theme.rev)
         readonly property color statusWarning: ThemeModel.color("status.warning", theme.rev)
         readonly property color statusNegative: ThemeModel.color("status.negative", theme.rev)

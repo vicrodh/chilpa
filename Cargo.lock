@@ -452,6 +452,7 @@ dependencies = [
  "chilpa-secrets",
  "chilpa-servers",
  "chilpa-tags",
+ "chilpa-theme",
  "image",
  "libc",
  "native-tls",
@@ -726,6 +727,7 @@ dependencies = [
  "chilpa-qt-playlists",
  "chilpa-qt-sources",
  "chilpa-qt-stats",
+ "chilpa-qt-themes",
  "chilpa-qt-waveform",
  "chilpa-qt-wizard",
  "cxx",
@@ -956,6 +958,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "chilpa-qt-themes"
+version = "0.1.0"
+dependencies = [
+ "chilpa-api",
+ "chilpa-qt-kit",
+ "cxx",
+ "cxx-qt",
+ "cxx-qt-build",
+ "cxx-qt-lib",
+]
+
+[[package]]
 name = "chilpa-qt-waveform"
 version = "0.1.0"
 dependencies = [
@@ -1034,6 +1048,16 @@ dependencies = [
  "chilpa-i18n",
  "chilpa-models",
  "lofty",
+]
+
+[[package]]
+name = "chilpa-theme"
+version = "0.1.0"
+dependencies = [
+ "chilpa-dirs",
+ "image",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

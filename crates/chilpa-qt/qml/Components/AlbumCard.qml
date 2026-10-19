@@ -97,7 +97,7 @@ Item {
             glyph: card.selected ? Icons.circleCheckFilled : Icons.circle
             filled: card.selected
             size: Metrics.overlayCheckIcon
-            color: Theme.color.textOnAccent
+            color: Theme.color.backdropText
         }
     }
 

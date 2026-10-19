@@ -78,6 +78,14 @@ pub fn activation_variables() -> [&'static str; 2] {
     ["XDG_ACTIVATION_TOKEN", "DESKTOP_STARTUP_ID"]
 }
 
+/// What a Linux session calls its desktop, in the order QBZ's auto theme
+/// asks: `XDG_CURRENT_DESKTOP`, `XDG_SESSION_DESKTOP`, `DESKTOP_SESSION`.
+/// Each is `None` when unset or empty; elsewhere all three usually are.
+pub fn desktop_names() -> [Option<String>; 3] {
+    ["XDG_CURRENT_DESKTOP", "XDG_SESSION_DESKTOP", "DESKTOP_SESSION"]
+        .map(|name| std::env::var(name).ok().filter(|v| !v.is_empty()))
+}
+
 /// The original image outside its read-only runtime mount, on Linux only.
 pub fn appimage() -> Option<PathBuf> {
     if !cfg!(target_os = "linux") { return None; }

@@ -16,6 +16,7 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Components" as SourceParts
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components/SettingsActions.js" as SettingsActions
 import "qrc:/qt/qml/app/chilpa/wizard/qml/Patterns" as WizardPatterns
 import "qrc:/qt/qml/app/chilpa/stats/qml/Patterns" as AnalysisUi
+import "qrc:/qt/qml/app/chilpa/themes/qml/Patterns" as Themes
 // Settings rows follow the facade schema.
 Item {
     id: page
@@ -159,6 +160,8 @@ Item {
         delegate: SettingsRow {
             id: settingRow; width: ListView.view.width - Metrics.gap12; page: actions
             serverEditor: Component { SourceParts.ServerEditForm { onClosed: actions.set(settingRow.key, "close-edit") } }
+            themePicker: Component { Themes.ThemePicker { options: settingRow.options; values: settingRow.optionValues; value: settingRow.value; onPicked: (slug) => actions.set(settingRow.key, slug) } }
+            themeOptions: Component { Themes.ThemeOptionsPanel {} }
         }
     }
 

@@ -75,7 +75,7 @@ Item {
                 glyph: !cell.heart ? Icons.dots : end.favorite ? Icons.heartFilled : Icons.heart
                 filled: cell.heart && end.favorite
                 size: Metrics.iconSm
-                color: cell.heart && end.favorite ? Theme.color.accent
+                color: cell.heart && end.favorite ? Theme.color.favorite
                      : cell.pointed ? Theme.color.textPrimary : Theme.color.textTertiary
             }
         }

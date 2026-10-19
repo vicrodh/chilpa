@@ -3,6 +3,7 @@ import QtQuick
 
 QtObject {
     property int rev: 0
+    property string mode: "system"
     property bool dark: true
     property bool systemDark: true
     property bool ambient: false

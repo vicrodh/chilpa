@@ -8,6 +8,14 @@
 //! literal check fails on `Qt.rgba`, `Qt.lighter` and friends).
 //!
 //! Overriding the accent re-derives everything that hangs off it.
+//!
+//! The themes ported from QBZ are not files: each is a palette
+//! (`chilpa-theme`) turned into the same tokens (`generated`). So are the
+//! auto theme and the one the user edits (`choice`).
+
+pub mod choice;
+mod generated;
+mod settings;
 
 use std::collections::HashMap;
 
@@ -38,6 +46,8 @@ pub struct Theme {
     placeholders: Vec<Rgba>,
     shadows: HashMap<String, Vec<Shadow>>,
     accent: Option<Rgba>,
+    /// The palette a generated theme was built from; `None` for a file.
+    palette: Option<chilpa_theme::ThemeColors>,
 }
 
 /// Every token a theme has to define. A theme that lacks one is refused at
@@ -45,9 +55,9 @@ pub struct Theme {
 pub const TOKENS: &[&str] = &[
     "surface.window", "surface.sidebar", "surface.raised", "surface.panel", "surface.pane",
     "surface.player", "surface.lcd", "text.primary", "text.secondary", "text.tertiary",
-    "text.onAccent", "text.onAccentMuted", "stroke.hairline", "stroke.frame", "state.hover", "state.selected",
+    "text.onAccent", "text.onAccentMuted", "backdrop.text", "backdrop.textMuted", "backdrop.fill", "backdrop.fillHover", "toggle.knob", "stroke.hairline", "stroke.frame", "state.hover", "state.selected",
     "state.stripe", "fill.field", "fill.count", "fill.countActive", "row.playing", "row.selected", "accent", "accent.hover",
-    "accent.pressed", "status.positive", "status.warning", "status.negative", "overlay.scrim", "lightbox.scrim", "stats.hero", "stats.artists", "stats.albums", "stats.tracks", "stats.previous",
+    "accent.pressed", "favorite", "status.positive", "status.warning", "status.negative", "overlay.scrim", "lightbox.scrim", "stats.hero", "stats.artists", "stats.albums", "stats.tracks", "stats.previous",
     "overlay.button", "overlay.ink", "casting",
     "albumHeader.base", "albumHeader.dim", "albumHeader.top", "albumHeader.bottom",
     "ambient.sidebar", "ambient.playerBase", "ambient.player", "ambient.content", "ambient.raised", "ambient.frost", "ambient.veil", "ambient.bar", "ambient.panel",
@@ -134,6 +144,7 @@ impl Theme {
             placeholders,
             shadows,
             accent: None,
+            palette: None,
         };
         for token in TOKENS {
             theme.color(token).ok_or(format!("{} does not resolve {token}", theme.id))?;
@@ -180,14 +191,21 @@ impl Theme {
                 return Some(accent);
             }
         }
-        // The theme's own accent, whatever replaced it: what "follow the
-        // theme" looks like among the accents to choose from.
-        let token = if token == "accent.base" { "accent" } else { token };
         // A rule that points at itself, directly or not, is a broken file.
         if depth > 4 {
             return None;
         }
-        let spec = self.specs.get(token)?;
+        if let Some(color) = self.resolve_generated(token, depth) {
+            return Some(color);
+        }
+        // The theme's own accent, whatever replaced it: what "follow the
+        // theme" looks like among the accents to choose from.
+        let token = if token == "accent.base" { "accent" } else { token };
+        self.resolve_spec(self.specs.get(token)?, depth)
+    }
+
+    /// A color as written, or a `derive:` rule worked out.
+    fn resolve_spec(&self, spec: &str, depth: u8) -> Option<Rgba> {
         let Some(rule) = spec.strip_prefix("derive:") else {
             return parse_color(spec);
         };

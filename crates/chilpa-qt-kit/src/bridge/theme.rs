@@ -22,7 +22,8 @@ pub mod qobject {
         #[qproperty(i32, rev)]
         /// True when the theme in use is a dark one.
         #[qproperty(bool, dark)]
-        /// "light", "dark" or "system", as chosen.
+        /// The theme chosen: Chilpa's "light", "dark", "oled" or "system",
+        /// a theme of QBZ's list, "auto" or "custom".
         #[qproperty(QString, mode, READ = mode, WRITE = choose_mode, NOTIFY = mode_changed)]
         /// What the desktop asks for; QML binds it to the style hints.
         #[qproperty(bool, system_dark, READ = system_dark, WRITE = follow_system, NOTIFY = system_dark_changed)]
@@ -55,6 +56,11 @@ pub mod qobject {
         #[qinvokable]
         fn choose_accent(self: Pin<&mut ThemeModel>, hex: &QString);
 
+        /// Reads the chosen theme again: the custom one was edited, or the
+        /// auto one generated.
+        #[qinvokable]
+        fn refresh(self: Pin<&mut ThemeModel>);
+
         #[cxx_name = "mode"]
         fn mode(self: &ThemeModel) -> QString;
         #[cxx_name = "setMode"]
@@ -85,13 +91,11 @@ pub mod qobject {
 }
 
 use crate::app;
-use chilpa_api::theme::{for_choice, parse_color, Rgba, Theme};
+use chilpa_api::theme::choice::{self, auto, custom};
+use chilpa_api::theme::{Rgba, Theme};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QColor, QString};
 use std::pin::Pin;
-
-const MODE_KEY: &str = "appearance.theme";
-const ACCENT_KEY: &str = "appearance.accent";
 
 pub struct ThemeModelRust {
     rev: i32,
@@ -104,10 +108,8 @@ pub struct ThemeModelRust {
 
 impl Default for ThemeModelRust {
     fn default() -> Self {
-        let (mode, accent) = app::with(|api| (api.preference(MODE_KEY), api.preference(ACCENT_KEY)));
+        let (mode, theme) = app::with(|api| (api.preference(choice::THEME), api.theme(false)));
         let mode = mode.unwrap_or_else(|| "system".to_string());
-        let mut theme = Theme::built_in(for_choice(&mode, false));
-        theme.set_accent(accent.as_deref().and_then(parse_color));
         Self { rev: 0, dark: theme.dark, mode: QString::from(&mode), system_dark: false, ambient: false, theme }
     }
 }
@@ -159,26 +161,52 @@ impl qobject::ThemeModel {
         self.theme.shadow(&name.to_string(), layer).map(|s| qcolor(s.color)).unwrap_or_default()
     }
 
-    pub fn choose_accent(mut self: Pin<&mut Self>, hex: &QString) {
+    pub fn choose_accent(self: Pin<&mut Self>, hex: &QString) {
         let hex = hex.to_string();
-        app::with(|api| api.remember_preference(ACCENT_KEY, &hex));
-        self.as_mut().rust_mut().theme.set_accent(parse_color(&hex));
-        self.bump();
+        app::with(|api| api.remember_preference(choice::ACCENT, &hex));
+        self.refresh();
     }
 
     pub fn mode(&self) -> QString {
         self.rust().mode.clone()
     }
 
+    /// QBZ's `theme_set`: choosing Custom reads its file again, and the
+    /// first time, before there is one, seeds it from the theme on screen,
+    /// so Custom starts from what is shown and not from black. Choosing
+    /// Auto generates it again.
     pub fn choose_mode(mut self: Pin<&mut Self>, mode: QString) {
         if mode == self.rust().mode {
             return;
         }
         let text = mode.to_string();
-        app::with(|api| api.remember_preference(MODE_KEY, &text));
+        if text == choice::CUSTOM {
+            custom::forget();
+            if !custom::exists() {
+                custom::seed(self.rust().theme.seed_base());
+            }
+        }
+        app::with(|api| api.remember_preference(choice::THEME, &text));
         self.as_mut().rust_mut().mode = mode;
         self.as_mut().mode_changed();
-        self.apply();
+        self.as_mut().refresh();
+        if text == choice::AUTO {
+            self.regenerate();
+        }
+    }
+
+    /// "Use current colors": the custom theme takes the colours on screen.
+    pub fn seed_custom(self: Pin<&mut Self>) {
+        custom::seed(self.rust().theme.seed_base());
+        self.refresh();
+    }
+
+    /// Generates the auto theme off this thread; it is read again when done.
+    pub fn regenerate(self: Pin<&mut Self>) {
+        let thread = self.qt_thread();
+        auto::regenerate(move || {
+            let _ = thread.queue(|theme| theme.refresh());
+        });
     }
 
     pub fn system_dark(&self) -> bool {
@@ -191,18 +219,13 @@ impl qobject::ThemeModel {
         }
         self.as_mut().rust_mut().system_dark = dark;
         self.as_mut().system_dark_changed();
-        self.apply();
+        self.refresh();
     }
 
-    /// Loads the theme the mode and the system ask for, keeping the accent.
-    fn apply(mut self: Pin<&mut Self>) {
-        let id = for_choice(&self.rust().mode.to_string(), self.rust().system_dark);
-        if id == self.rust().theme.id() {
-            return;
-        }
-        let accent = app::with(|api| api.preference(ACCENT_KEY));
-        let mut theme = Theme::built_in(id);
-        theme.set_accent(accent.as_deref().and_then(parse_color));
+    /// Loads the theme the mode and the system ask for, with the accent.
+    pub fn refresh(mut self: Pin<&mut Self>) {
+        let system_dark = self.rust().system_dark;
+        let theme = app::with(|api| api.theme(system_dark));
         let dark = theme.dark;
         self.as_mut().rust_mut().theme = theme;
         self.as_mut().set_dark(dark);
@@ -216,9 +239,14 @@ impl qobject::ThemeModel {
 }
 
 impl cxx_qt::Initialize for qobject::ThemeModel {
+    /// The auto theme starts from the colours the cache kept and is
+    /// generated again behind them, as QBZ generates it at every start.
     fn initialize(self: Pin<&mut Self>) {
         let thread = self.qt_thread();
         THREAD.with(|slot| *slot.borrow_mut() = Some(thread));
+        if self.rust().mode == QString::from(choice::AUTO) {
+            self.regenerate();
+        }
     }
 }
 
