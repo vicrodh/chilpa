@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run QML tests with the application's real resource paths and test bridges."""
+import argparse
 import os
 from pathlib import Path
 import shlex
@@ -10,7 +11,9 @@ import tempfile
 import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
-test = Path(sys.argv[1]).resolve()
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("tests", type=Path, nargs="+")
+tests = [path.resolve(strict=True) for path in parser.parse_args().tests]
 qtpaths = os.environ.get("QT_BIN_DIR")
 if qtpaths:
     qt = Path(qtpaths)
@@ -51,5 +54,12 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
                     shutil.copytree(module, imports / "app/chilpa" / module.name, dirs_exist_ok=True)
     environment = dict(os.environ, QT_QPA_PLATFORM="offscreen", CHILPA_QML_RESOURCES=str(temporary / "resources.rcc"),
                        LD_PRELOAD=str(temporary / "loader.so"))
-    result = subprocess.run([str(qt / "qmltestrunner"), "-import", str(imports), "-input", str(test)], env=environment)
-    sys.exit(result.returncode)
+    failed = []
+    for test in tests:
+        # I share the prepared files, while each suite keeps its own Qt process.
+        result = subprocess.run([str(qt / "qmltestrunner"), "-import", str(imports), "-input", str(test)], env=environment)
+        if result.returncode:
+            failed.append(str(test))
+    if failed:
+        print("Failed QML suites:\n" + "\n".join(failed), file=sys.stderr)
+    sys.exit(1 if failed else 0)

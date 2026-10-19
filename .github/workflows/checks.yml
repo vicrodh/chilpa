@@ -93,4 +93,5 @@ jobs:
           export LD_LIBRARY_PATH="$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
           export PKG_CONFIG_PATH="$RUNNER_TEMP/Qt/$QT_VERSION/gcc_64/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
           tools/lint/fast
-          while IFS= read -r test; do python3 scripts/test-qml.py "$test"; done < <(rg --files crates -g 'tst_*.qml' | sort)
+          mapfile -t tests < <(rg --files crates -g 'tst_*.qml' | sort)
+          python3 scripts/test-qml.py "${tests[@]}"
