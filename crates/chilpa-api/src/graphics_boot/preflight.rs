@@ -23,6 +23,8 @@ pub(super) const GPU_NOT_FOUND: i32 = 41;
 pub(super) const GPU_NOT_SELECTABLE: i32 = 42;
 /// How long a child has before it is killed and reaped.
 const WATCHDOG: Duration = Duration::from_secs(8);
+/// Qt's switch that keeps it from asking the desktop portal anything.
+const PORTAL_ENV: &str = "QT_NO_XDG_DESKTOP_PORTAL";
 
 static SOFTWARE_NOTICE: AtomicBool = AtomicBool::new(false);
 
@@ -125,6 +127,11 @@ pub(super) fn start_child(command: &mut Command) -> Result<Started, String> {
     for variable in chilpa_dirs::activation_variables() {
         command.env_remove(variable);
     }
+    // A probe needs no desktop portal. Starting one costs its first child
+    // over a second (measured in a fresh session bus), and a portal that
+    // hangs held every child until its watchdog, Auto and software alike,
+    // and the start ended without a window.
+    command.env(PORTAL_ENV, "1");
     let at = std::time::Instant::now();
     let child = command
         .stdin(std::process::Stdio::null())
@@ -337,7 +344,7 @@ mod tests {
     }
 
     #[test]
-    fn a_child_gets_no_arguments_no_token_and_a_watchdog() {
+    fn a_child_gets_no_arguments_no_token_no_portal_and_a_watchdog() {
         use std::os::unix::fs::symlink;
         let dir = tempfile::Builder::new().prefix("chilpa preflight ").tempdir().unwrap();
         let shell = which_sh();
@@ -346,7 +353,8 @@ mod tests {
         let mut command = auto_command(&executable, false);
         assert_eq!(command.get_args().count(), 0, "the parent's link never reaches the child");
         let tokens = chilpa_dirs::activation_variables();
-        let check = tokens.iter().map(|t| format!("test -z \"${t}\"")).collect::<Vec<_>>().join(" && ");
+        let check = tokens.iter().map(|t| format!("test -z \"${t}\"")).collect::<Vec<_>>().join(" && ")
+            + &format!(" && test \"${PORTAL_ENV}\" = 1");
         command
             .env(tokens[0], "a token")
             .args(["-c", &format!("{check} || exit 9; head -c 131072 /dev/zero >&2; echo {AUTO_PROOF}")]);
