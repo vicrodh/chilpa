@@ -91,7 +91,7 @@ pub(crate) fn fixed(key: &str) -> Vec<(&'static str, String)> {
             ("queue", chilpa_i18n::t("Add to queue")),
         ],
         "appearance.density" => vec![("compact", chilpa_i18n::t("Compact")), ("rich", chilpa_i18n::t("Rich"))],
-        "appearance.font" => vec![("inter", "Inter".to_string()), ("system", chilpa_i18n::t("System"))],
+        "appearance.font" => vec![("inter", "Inter".to_string()), ("line-seed-jp", "LINE Seed JP".to_string()), ("system", chilpa_i18n::t("System"))],
         "appearance.albumHeader" => vec![("full", chilpa_i18n::t("Full")), ("colors", chilpa_i18n::t("Colors")), ("off", chilpa_i18n::t("Off"))],
         "navigation.albumClick" => vec![("page", chilpa_i18n::t("Album page")), ("quick", chilpa_i18n::t("Quick view"))],
         "navigation.playerLayout" => vec![("floating", chilpa_i18n::t("Floating")), ("bottom", chilpa_i18n::t("Full width, bottom")), ("top", chilpa_i18n::t("Full width, top"))],

@@ -17,6 +17,7 @@ pub mod bridge {
 
 unsafe extern "C" {
     fn chilpa_use_font(resource: *const std::ffi::c_char) -> bool;
+    fn chilpa_use_japanese_fallback(resource: *const std::ffi::c_char) -> bool;
     #[cfg(target_os = "linux")]
     fn chilpa_has_desktop_entry(name: *const std::ffi::c_char) -> bool;
 }
@@ -27,6 +28,13 @@ pub fn use_font(resource: &std::ffi::CStr) -> bool {
     // SAFETY: a NUL-terminated string that outlives the call, on the GUI
     // thread once the application object exists.
     unsafe { chilpa_use_font(resource.as_ptr()) }
+}
+
+/// Makes a font of the resources the one Japanese falls back to, whatever
+/// the main font (`cxx/fonts.cpp`). Needs the application object.
+pub fn use_japanese_fallback(resource: &std::ffi::CStr) -> bool {
+    // SAFETY: as above.
+    unsafe { chilpa_use_japanese_fallback(resource.as_ptr()) }
 }
 
 /// Whether the system has a desktop entry by that name (`cxx/fonts.cpp`).

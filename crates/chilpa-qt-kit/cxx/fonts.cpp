@@ -7,19 +7,53 @@
 #include <QtGui/QCursor>
 #include <QtGui/QFontDatabase>
 #include <QtGui/QGuiApplication>
+#include <QtCore/QChar>
+#include <QtCore/QHash>
 #include <QtCore/QStandardPaths>
+
+namespace {
+
+// The family a font of the resources registers as, adding the file once: the
+// main font and the Japanese fallback can be the same face, and every
+// registration keeps its own copy of the file in memory.
+QString registeredFamily(const char *resource)
+{
+    static QHash<QString, QString> registered;
+    const QString path = QString::fromUtf8(resource);
+    if (const auto known = registered.constFind(path); known != registered.constEnd())
+        return *known;
+    const int id = QFontDatabase::addApplicationFont(path);
+    const QStringList families = id < 0 ? QStringList() : QFontDatabase::applicationFontFamilies(id);
+    if (families.isEmpty())
+        return QString();
+    registered.insert(path, families.first());
+    return families.first();
+}
+
+} // namespace
 
 extern "C" bool chilpa_use_font(const char *resource)
 {
-    const int id = QFontDatabase::addApplicationFont(QString::fromUtf8(resource));
-    if (id < 0)
-        return false;
-    const QStringList families = QFontDatabase::applicationFontFamilies(id);
-    if (families.isEmpty())
+    const QString family = registeredFamily(resource);
+    if (family.isEmpty())
         return false;
     QFont font = QGuiApplication::font();
-    font.setFamilies({families.first()});
+    font.setFamilies({family});
     QGuiApplication::setFont(font);
+    return true;
+}
+
+// Makes a font of the resources the one Qt falls back to for Japanese, under
+// any main font. Without it Qt takes the first face fontconfig says covers
+// the script, and a face that claims Japanese without carrying the glyphs
+// draws every kana as an empty box.
+extern "C" bool chilpa_use_japanese_fallback(const char *resource)
+{
+    const QString family = registeredFamily(resource);
+    if (family.isEmpty())
+        return false;
+    for (const auto script : {QChar::Script_Han, QChar::Script_Hiragana, QChar::Script_Katakana})
+        QFontDatabase::addApplicationFallbackFontFamily(script, family);
     return true;
 }
 
