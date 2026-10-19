@@ -83,6 +83,9 @@ const DESKTOP_ENTRY: &std::ffi::CStr = c"app.chilpa.Chilpa";
 /// Where Inter lives in the resources.
 const INTER: &std::ffi::CStr = c":/qt/qml/app/chilpa/kit/assets/fonts/Inter.ttf";
 
+/// The face Japanese falls back to, whatever font is chosen.
+const LINE_SEED_JP: &std::ffi::CStr = c":/qt/qml/app/chilpa/kit/assets/fonts/LINESeedJP-Regular.ttf";
+
 /// I bound glibc's retained worker heaps before starting Qt or app threads.
 #[cfg(all(target_os = "linux", target_env = "gnu"))]
 fn cap_heap_arenas() {
@@ -140,11 +143,16 @@ fn main() {
     // SAFETY: I register static plugins once, before loading their resources or QML.
     unsafe { chilpa_install_shell() };
 
-    // Inter unless the system's font was chosen: the design needs real
+    // Japanese falls back to LINE Seed JP under any font. The window draws
+    // with Inter, LINE Seed JP or the system's font: the design needs real
     // weights, and plenty of desktops set a font with one face that Qt does
     // not embolden.
+    if !chilpa_qt_kit::use_japanese_fallback(LINE_SEED_JP) {
+        eprintln!("chilpa: the bundled Japanese font could not be loaded; Japanese falls back to the system's");
+    }
     let font = app::with(|api| api.preference("appearance.font"));
-    if font.as_deref() != Some("system") && !chilpa_qt_kit::use_font(INTER) {
+    let face = if font.as_deref() == Some("line-seed-jp") { LINE_SEED_JP } else { INTER };
+    if font.as_deref() != Some("system") && !chilpa_qt_kit::use_font(face) {
         eprintln!("chilpa: the bundled font could not be loaded; using the system's");
     }
 
