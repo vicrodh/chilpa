@@ -103,14 +103,21 @@ pub(super) fn output_tail(output: &Output) -> String {
     tail.chars().take(1200).collect()
 }
 
-/// Runs a child under the watchdog. Its output goes to anonymous temporary
-/// files, not pipes: a driver that talks a lot must not block the child
-/// before it can report. Past the budget the child is killed and reaped;
-/// the second value says it was.
-pub(super) fn run_child(command: &mut Command, budget: Duration) -> Result<(Output, bool), String> {
-    use std::io::{Read, Seek, SeekFrom};
-    let mut stdout = tempfile::tempfile().map_err(|e| format!("child stdout: {e}"))?;
-    let mut stderr = tempfile::tempfile().map_err(|e| format!("child stderr: {e}"))?;
+/// A child already started, its output going to anonymous temporary files,
+/// not pipes: a driver that talks a lot must not block the child before it
+/// can report.
+pub(super) struct Started {
+    child: std::process::Child,
+    stdout: std::fs::File,
+    stderr: std::fs::File,
+    at: std::time::Instant,
+}
+
+/// Starts a child. It happens on the thread that owns the environment, so
+/// nothing can change a variable while the child copies it.
+pub(super) fn start_child(command: &mut Command) -> Result<Started, String> {
+    let stdout = tempfile::tempfile().map_err(|e| format!("child stdout: {e}"))?;
+    let stderr = tempfile::tempfile().map_err(|e| format!("child stderr: {e}"))?;
     let out = stdout.try_clone().map_err(|e| e.to_string())?;
     let err = stderr.try_clone().map_err(|e| e.to_string())?;
     // A desktop's activation token is single-use: the invisible probe must
@@ -118,39 +125,53 @@ pub(super) fn run_child(command: &mut Command, budget: Duration) -> Result<(Outp
     for variable in chilpa_dirs::activation_variables() {
         command.env_remove(variable);
     }
-    let started = std::time::Instant::now();
-    let mut child = command
+    let at = std::time::Instant::now();
+    let child = command
         .stdin(std::process::Stdio::null())
         .stdout(out)
         .stderr(err)
         .spawn()
         .map_err(|error| format!("cannot spawn the child: {error}"))?;
-    let mut timed_out = false;
-    loop {
-        match child.try_wait() {
-            Ok(Some(_)) => break,
-            Ok(None) if started.elapsed() < budget => std::thread::sleep(Duration::from_millis(25)),
-            Ok(None) => {
-                timed_out = true;
-                let _ = child.kill();
-                break;
-            }
-            Err(error) => {
-                let _ = child.kill();
-                let _ = child.wait();
-                return Err(format!("cannot watch the child: {error}"));
+    Ok(Started { child, stdout, stderr, at })
+}
+
+impl Started {
+    /// Waits for the child under the watchdog. Past the budget it is killed
+    /// and reaped; the second value says it was.
+    pub(super) fn finish(mut self, budget: Duration) -> Result<(Output, bool), String> {
+        use std::io::{Read, Seek, SeekFrom};
+        let mut timed_out = false;
+        loop {
+            match self.child.try_wait() {
+                Ok(Some(_)) => break,
+                Ok(None) if self.at.elapsed() < budget => std::thread::sleep(Duration::from_millis(25)),
+                Ok(None) => {
+                    timed_out = true;
+                    let _ = self.child.kill();
+                    break;
+                }
+                Err(error) => {
+                    let _ = self.child.kill();
+                    let _ = self.child.wait();
+                    return Err(format!("cannot watch the child: {error}"));
+                }
             }
         }
+        let status = self.child.wait().map_err(|error| format!("cannot collect the child: {error}"))?;
+        fn tail(file: &mut std::fs::File) -> Result<Vec<u8>, String> {
+            let length = file.metadata().map_err(|e| e.to_string())?.len();
+            file.seek(SeekFrom::Start(length.saturating_sub(65536))).map_err(|e| e.to_string())?;
+            let mut bytes = Vec::new();
+            file.take(65536).read_to_end(&mut bytes).map_err(|e| e.to_string())?;
+            Ok(bytes)
+        }
+        Ok((Output { status, stdout: tail(&mut self.stdout)?, stderr: tail(&mut self.stderr)? }, timed_out))
     }
-    let status = child.wait().map_err(|error| format!("cannot collect the child: {error}"))?;
-    fn tail(file: &mut std::fs::File) -> Result<Vec<u8>, String> {
-        let length = file.metadata().map_err(|e| e.to_string())?.len();
-        file.seek(SeekFrom::Start(length.saturating_sub(65536))).map_err(|e| e.to_string())?;
-        let mut bytes = Vec::new();
-        file.take(65536).read_to_end(&mut bytes).map_err(|e| e.to_string())?;
-        Ok(bytes)
-    }
-    Ok((Output { status, stdout: tail(&mut stdout)?, stderr: tail(&mut stderr)? }, timed_out))
+}
+
+/// Runs a child under the watchdog and waits for it.
+pub(super) fn run_child(command: &mut Command, budget: Duration) -> Result<(Output, bool), String> {
+    start_child(command)?.finish(budget)
 }
 
 fn this_executable() -> Result<std::path::PathBuf, String> {
