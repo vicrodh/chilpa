@@ -115,6 +115,15 @@ PY
     [ "$(json_get draft)" = false ] || fail 'Draft releases cannot be installed.'
     if [ -z "$requested" ]; then
         [ "$(json_get prerelease)" = false ] && [[ "$version" != *-* ]] || fail 'The latest release is not stable.'
+        if [ -n "$installed" ]; then
+            [[ "$installed" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]] || fail 'Invalid installer receipt.'
+            local old_major old_minor old_patch new_major new_minor new_patch
+            IFS=. read -r old_major old_minor old_patch <<< "${installed%%-*}"
+            IFS=. read -r new_major new_minor new_patch <<< "$version"
+            if (( old_major > new_major || (old_major == new_major && old_minor > new_minor) || (old_major == new_major && old_minor == new_minor && old_patch > new_patch) )); then
+                fail 'The installed version is newer. Use --version only to request an explicit downgrade.'
+            fi
+        fi
     else
         [ "$version" = "$requested" ] || fail 'The response differs from the requested version.'
     fi

@@ -67,6 +67,9 @@ shutil.copyfile(source, args[args.index("--output")+1])
     def test_install_and_update_owned_image_on_both_linux_architectures(self):
         for arch in ("x86_64", "aarch64"):
             with self.subTest(arch=arch):
+                self.user = self.root / f"user with spaces {arch}"
+                self.user.mkdir()
+                self.env["HOME"] = str(self.user)
                 self.env["TEST_ARCH"] = arch
                 self.metadata("1.2.3", arch)
                 result = self.run_installer()
@@ -126,3 +129,14 @@ shutil.copyfile(source, args[args.index("--output")+1])
         self.env["TEST_RUNNING"] = "1"
         self.assertNotEqual(self.run_installer().returncode, 0)
         self.assertEqual(self.destination.read_bytes(), before)
+
+    def test_default_updates_never_downgrade_a_newer_installation(self):
+        self.metadata("2.0.0-beta.1")
+        self.assertEqual(self.run_installer("--version=2.0.0-beta.1").returncode, 0)
+        before = self.destination.read_bytes()
+        self.metadata("1.2.4")
+        result = self.run_installer()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("installed version is newer", result.stderr)
+        self.assertEqual(self.destination.read_bytes(), before)
+        self.assertEqual(self.run_installer("--version=1.2.4").returncode, 0)
