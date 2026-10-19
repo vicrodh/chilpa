@@ -11,6 +11,7 @@ use chilpa_qt_mini as _;
 use chilpa_qt_dsp as _;
 use chilpa_qt_immersive as _;
 use chilpa_qt_waveform as _;
+use chilpa_qt_themes as _;
 use chilpa_qt_artwork as _;
 use chilpa_qt_about as _;
 use chilpa_qt_stats as _;

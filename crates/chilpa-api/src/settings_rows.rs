@@ -48,9 +48,6 @@ pub(crate) fn fixed(key: &str) -> Vec<(&'static str, String)> {
     // finds it.
     match key {
         "appearance.language" => vec![("", chilpa_i18n::t("System")), ("en", "English".into()), ("es", "Español".into())],
-        "appearance.theme" => {
-            vec![("light", chilpa_i18n::t("Light")), ("dark", chilpa_i18n::t("Dark")), ("oled", chilpa_i18n::t("Dark OLED")), ("system", chilpa_i18n::t("System"))]
-        }
         crate::ambient::MODE => vec![
             ("off", chilpa_i18n::t("Off")),
             ("ambient", chilpa_i18n::t("Ambient")),
@@ -98,10 +95,7 @@ pub(crate) fn fixed(key: &str) -> Vec<(&'static str, String)> {
 }
 
 
-/// The accents offered (design/05): the theme's own, then four.
-const ACCENTS: &[&str] = &["", "#A3161F", "#D8323A", "#3DAEE9", "#5C6166"];
-
-const DEFAULTS: &[(&str, &str)] = &[("appearance.theme", "system"), ("appearance.density", "compact"), ("appearance.font", "inter"), ("appearance.albumHeader", "full"), (crate::ambient::MODE, "off"), (crate::mini::DEFAULT_VIEW, "remember"), (crate::immersive::DEFAULT_VIEW, "remember"), (crate::immersive::SEARCH_ACTION, "replace"), ("navigation.albumClick", "page"), ("navigation.playlistArtwork", "icon"), ("library.metaSrc", "musicbrainz")];
+const DEFAULTS: &[(&str, &str)] = &[("appearance.density", "compact"), ("appearance.font", "inter"), ("appearance.albumHeader", "full"), (crate::ambient::MODE, "off"), (crate::mini::DEFAULT_VIEW, "remember"), (crate::immersive::DEFAULT_VIEW, "remember"), (crate::immersive::SEARCH_ACTION, "replace"), ("navigation.albumClick", "page"), ("navigation.playlistArtwork", "icon"), ("library.metaSrc", "musicbrainz")];
 
 impl Chilpa {
     /// Does what a button of Settings asks for, whole, and answers what its
@@ -220,7 +214,7 @@ impl Chilpa {
 
     /// The value, the options and anything the row says about its state.
     fn fill(&mut self, row: &mut Row, output: &str, notes: &RowNotes) {
-        if self.graphics_row(row) || self.normalization_row(row) || self.wizard_row(row) {
+        if self.graphics_row(row) || self.normalization_row(row) || self.wizard_row(row) || self.theme_row(row) {
             return;
         }
         match row.key.as_str() {
@@ -427,13 +421,6 @@ impl Chilpa {
             "integrations.listenbrainz.account" => {
                 let status = self.listenbrainz();
                 account(row, &status);
-            }
-            "appearance.accent" => {
-                // The theme's own first -- drawn by the window, which knows
-                // which theme is on -- then the design's four.
-                row.values = ACCENTS.iter().map(|a| a.to_string()).collect();
-                row.options = row.values.clone();
-                row.value = self.preference("appearance.accent").unwrap_or_default();
             }
             "navigation.extraControls" => row.value = self.pref_on("playback.extra", true),
             crate::play_indicator::ANIMATED => row.value = self.play_indicator_animated().to_string(),
