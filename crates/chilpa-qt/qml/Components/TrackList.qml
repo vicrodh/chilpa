@@ -91,6 +91,7 @@ Item {
         showPlays: list.showPlays
         showRating: list.showRating
         reorder: list.reorderable && !list.selectionMode
+        rows: list.model ? list.model.count : 0
     }
 
     TrackHeader {
@@ -127,8 +128,12 @@ Item {
         // Off the screen a current row and a pooled one stay alive: the playing mark would move there (QBZ).
         currentIndex: -1
         // A growing list retains its slots; the outer viewport windows their
-        // contents. A standalone list caches one screen on each side.
-        cacheBuffer: list.fitContent ? Metrics.fitContentBuffer : Math.max(0, height)
+        // contents. A standalone list caches one screen on each side, unless
+        // it has section bands: then the view places far rows by an
+        // estimate the bands throw off (4% on 22,000 tracks grouped by
+        // name), and with a cache a jump drew its rows where the estimate
+        // put them, off the screen, leaving it blank.
+        cacheBuffer: list.fitContent ? Metrics.fitContentBuffer : view.section.property !== "" ? 0 : Math.max(0, height)
         bottomMargin: list.bottomInset
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar {
