@@ -28,11 +28,31 @@ TestCase {
         surface.edge = false
     }
 
+    SignalSpy { id: toggled; target: mark; signalName: "toggled" }
+
     function test_still_by_default() {
         mark.running = true
         compare(mark.moving, false)
         compare(mark.children[0].item, null, "no moving bars while the option is off")
         compare(Pulse.held, 0)
+    }
+
+    function test_the_still_mark_is_circle_play_and_pause_under_the_pointer() {
+        toggled.clear()
+        mark.running = true
+        const still = findChild(mark, "playingMarkStill")
+        verify(still !== null)
+        compare(still.glyph, Lucide.circlePlay)
+        compare(still.font.family, Lucide.font)
+        mouseMove(still, still.width / 2, still.height / 2)
+        tryCompare(still, "glyph", Lucide.circlePause)
+        mouseClick(still)
+        compare(toggled.count, 1, "a click asks to pause")
+        mark.running = false
+        compare(still.glyph, Lucide.circlePlay, "a paused track offers play")
+        mouseMove(test, 190, 90)
+        mark.visible = false
+        tryVerify(() => findChild(mark, "playingMarkStill") === null, 1000, "a hidden mark builds nothing")
     }
 
     function test_moves_only_while_running() {

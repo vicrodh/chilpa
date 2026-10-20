@@ -31,3 +31,5 @@ arrow-right
 undo-2
 rotate-ccw-clock
 list-video
+circle-play
+circle-pause
