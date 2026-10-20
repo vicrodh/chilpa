@@ -138,14 +138,11 @@ Item {
                     y: filterButton.height + Metrics.gap6
                 }
             }
-            IconButton {
-                objectName: "listColumnsButton"
+            AlbumColumnsGear {
                 visible: page.rows
                 anchors.verticalCenter: parent.verticalCenter
-                tip: I18n.tr("Columns", I18n.rev)
-                glyph: Icons.settings
-                round: true
-                onClicked: columnsChooser.open()
+                shown: page.listColumns
+                onChosen: (columns) => { page.listColumns = columns; SettingsModel.keep("ui.albums.listColumns", columns.join(",") || "-") }
             }
             SegmentedControl {
                 id: views
@@ -208,11 +205,6 @@ Item {
         round: page.about.round === true
         model: all
         onOpen: (albumId) => Navigation.go("album", albumId)
-    }
-    AlbumColumnsModal {
-        id: columnsChooser
-        shown: page.listColumns
-        onChosen: (columns) => { page.listColumns = columns; SettingsModel.keep("ui.albums.listColumns", columns.join(",") || "-") }
     }
 
     SourceState {

@@ -198,12 +198,8 @@ Item {
         x: head.x
         width: head.width
         tracks: tracks
-        onColumnsAsked: columnsChooser.open()
-    }
-    AlbumColumnsModal {
-        id: columnsChooser
-        shown: page.listColumns
-        onChosen: (columns) => { page.listColumns = columns; SettingsModel.keep("ui.library.listColumns", columns.join(",") || "-") }
+        columns: page.listColumns
+        onColumnsChosen: (columns) => { page.listColumns = columns; SettingsModel.keep("ui.library.listColumns", columns.join(",") || "-") }
     }
 
     // The records the columns leave, as cards or as rows.
