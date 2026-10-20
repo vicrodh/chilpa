@@ -2298,6 +2298,12 @@ msgstr "言語"
 msgid "Large"
 msgstr "大"
 
+msgid "Last 12 months"
+msgstr "過去12か月"
+
+msgid "Last 3 months"
+msgstr "過去3か月"
+
 msgid "Last playlist"
 msgstr "前回のプレイリスト"
 
@@ -2811,6 +2817,9 @@ msgstr "このシーンのアーティストは見つかりませんでした。
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "選択したプラグインのアーティストは、このシーンで見つかりませんでした。"
 
+msgid "No composer"
+msgstr "作曲者なし"
+
 msgid "No cover"
 msgstr "カバーなし"
 
@@ -2832,11 +2841,17 @@ msgstr "ローカルライブラリにフォルダーはまだありません。
 msgid "No folders match your search."
 msgstr "検索に一致するフォルダーはありません。"
 
+msgid "No genre"
+msgstr "ジャンルなし"
+
 msgid "No genres in this period."
 msgstr "この期間にジャンルはありません。"
 
 msgid "No grouping"
 msgstr "グループ化なし"
+
+msgid "No label"
+msgstr "レーベルなし"
 
 msgid "No label info"
 msgstr "レーベル情報なし"
@@ -4108,11 +4123,14 @@ msgstr "ファイル、キャッシュ、オンラインから歌詞を表示し
 msgid "Show playlist only from the same source as the track"
 msgstr "トラックと同じソースのプレイリストのみ表示"
 
-msgid "Show saved releases in Albums"
-msgstr "保存したリリースを「アルバム」に表示"
+msgid "Show saved releases in Albums and Library"
+msgstr "保存したリリースを「アルバム」と「ライブラリ」に表示"
 
 msgid "Show saved tracks in Tracks"
 msgstr "保存したトラックを「トラック」に表示"
+
+msgid "Show saved tracks in Tracks and Library"
+msgstr "保存したトラックを「トラック」と「ライブラリ」に表示"
 
 msgid "Show source recommendations by default in Home"
 msgstr "ホームにソースのおすすめを既定で表示"
@@ -4589,6 +4607,9 @@ msgstr "システムがすでに音を送っている先なので、サンプル
 msgid "This looks like a playlist."
 msgstr "これはプレイリストのようです。"
 
+msgid "This month"
+msgstr "今月"
+
 msgid "This month vs Last month"
 msgstr "今月 vs 先月"
 
@@ -4654,6 +4675,9 @@ msgstr "このアップデートは追加のアクセスを要求しています
 
 msgid "This view as an image (PNG)"
 msgstr "この表示を画像（PNG）で書き出し"
+
+msgid "This week"
+msgstr "今週"
 
 msgid "This week vs Last week"
 msgstr "今週 vs 先週"
@@ -4814,8 +4838,14 @@ msgstr "プラグインをアンインストールしてアカウントデータ
 msgid "Unknown DSP action."
 msgstr "不明なDSP操作です。"
 
+msgid "Unknown artist"
+msgstr "不明なアーティスト"
+
 msgid "Unknown command; enter :help."
 msgstr "不明なコマンドです。:helpを入力してください。"
+
+msgid "Unknown date"
+msgstr "日付不明"
 
 msgid "Unknown preference."
 msgstr "不明な設定です。"
@@ -4823,8 +4853,14 @@ msgstr "不明な設定です。"
 msgid "Unknown quality"
 msgstr "音質不明"
 
+msgid "Unknown source"
+msgstr "ソース不明"
+
 msgid "Unknown target; use Tab to complete the source."
 msgstr "不明な宛先です。Tabキーでソースを補完してください。"
+
+msgid "Unknown year"
+msgstr "年不明"
 
 msgid "Unmatched"
 msgstr "未一致"

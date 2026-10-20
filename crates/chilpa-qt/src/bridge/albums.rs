@@ -311,10 +311,9 @@ impl qobject::AlbumGridModel {
                 self.as_mut().rust_mut().generation = generation;
                 let (order, group, text) = (self.rust().order.to_string(), self.rust().group.to_string(), self.rust().filter.to_string());
                 let extras = crate::browse::read(|s| s.filter.clone());
-                let remote = app::with(|api| api.integrated_albums(&text, &extras));
                 let thread = self.qt_thread();
                 worker::submit(move |reader| {
-                    let found = reader.albums_view_with_sources(&order, &group, &text, &extras, remote);
+                    let found = reader.albums_view(&order, &group, &text, &extras);
                     let _ = thread.queue(move |model| model.arrive(generation, found));
                 });
                 return;
@@ -353,8 +352,15 @@ impl qobject::AlbumGridModel {
             "library" => {
                 // Unlike the facet, this includes the album choice itself
                 // and follows the result's requested order.
-                let (ids, pages) = crate::browse::read(|s| (s.snapshot.album_ids.clone(), s.album_pages.clone()));
-                return self.show(Albums::Snapshot { ids, pages });
+                let (ids, pages, order) = crate::browse::read(|s| (s.snapshot.album_ids.clone(), s.album_pages.clone(), s.order));
+                let group = self.rust().group.to_string();
+                if group.is_empty() { self.as_mut().rust_mut().groups.clear(); return self.show(Albums::Snapshot { ids, pages }); }
+                let (generation, thread) = (self.rust().generation, self.qt_thread());
+                worker::submit(move |reader| {
+                    let found = reader.library_album_groups(ids, &group, order);
+                    let _ = thread.queue(move |model| model.arrive(generation, found));
+                });
+                return;
             }
             "folder" => {
                 let ids = chilpa_qt_folders::bridge::folder_view::album_ids();

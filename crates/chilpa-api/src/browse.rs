@@ -122,7 +122,7 @@ pub struct Facets {
 }
 
 /// A rating column's entry named for the window: its stars, or none.
-fn named_stars(mut entry: FacetEntry) -> FacetEntry {
+pub(crate) fn named_stars(mut entry: FacetEntry) -> FacetEntry {
     let stars: i64 = entry.key.parse().unwrap_or(0);
     entry.label = if stars == 0 {
         chilpa_i18n::t("Unrated")
@@ -309,11 +309,15 @@ pub struct Reader {
     pub(crate) lib: chilpa_library::Library,
     pub(crate) catalog: Option<std::sync::Arc<crate::source_catalog::Catalog>>,
     refresh_cache: std::cell::RefCell<RefreshCache>,
+    /// What the listener integrated from the sources, while the catalog and
+    /// the choice of what to integrate stay as they were.
+    pub(crate) sources: std::cell::RefCell<Option<(crate::library_sources::Stamp, std::rc::Rc<crate::library_sources::SourceIndex>)>>,
 }
 
 #[derive(Default)]
 struct RefreshCache {
     revision: Option<(i64, u64)>,
+    sources: crate::library_sources::Stamp,
     entries: std::collections::VecDeque<(Filter, TrackOrder, Facets, Snapshot)>,
 }
 
@@ -339,8 +343,19 @@ impl<T> PageCache<T> {
 }
 
 impl Reader {
+    #[cfg(test)]
+    pub(crate) fn of(lib: chilpa_library::Library) -> Self {
+        Self { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() }
+    }
+
+    /// Forgets the answers kept for repeated filters, so a measurement reads.
+    #[cfg(test)]
+    pub(crate) fn forget_refreshes(&self) {
+        self.refresh_cache.borrow_mut().entries.clear();
+    }
+
     pub(crate) fn open(path: &std::path::Path) -> Result<Self, String> {
-        chilpa_library::Library::open_read_only(path).map(|lib| Self { lib, catalog: None, refresh_cache: Default::default() })
+        chilpa_library::Library::open_read_only(path).map(|lib| Self { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() })
             .map_err(|e| format!("could not open library reader at {}: {e}", path.display()))
     }
 
@@ -556,10 +571,16 @@ impl Reader {
     /// I stop superseded work between queries, before it occupies the worker again.
     pub fn refresh(&self, filter: &Filter, order: TrackOrder, current: impl Fn() -> bool) -> Option<(Facets, Snapshot)> {
         if !current() { return None; }
+        self.refresh_using(filter, order, current, self.source_index())
+    }
+
+    /// The same, with the integrated sources given.
+    pub(crate) fn refresh_using(&self, filter: &Filter, order: TrackOrder, current: impl Fn() -> bool,
+        (stamp, index): (crate::library_sources::Stamp, std::rc::Rc<crate::library_sources::SourceIndex>)) -> Option<(Facets, Snapshot)> {
         let before = self.lib.read_revision().ok();
         let shared = {
             let mut cache = self.refresh_cache.borrow_mut();
-            if cache.revision != before { cache.entries.clear(); cache.revision = before; }
+            if cache.revision != before || cache.sources != stamp { cache.entries.clear(); cache.revision = before; cache.sources = stamp; }
             if before.is_some() {
                 if let Some((_, _, facets, snapshot)) = cache.entries.iter().find(|(f, o, _, _)| f == filter && *o == order) {
                     let mut facets = facets.clone();
@@ -567,12 +588,22 @@ impl Reader {
                     return Some((facets, snapshot.clone()));
                 }
             }
-            before.and_then(|_| cache.entries.front().map(|(_, _, facets, _)| (facets.sources.clone(), facets.years.clone())))
+            // The integrated sources join these two, so a shared copy would
+            // count them twice.
+            before.filter(|_| index.items.is_empty()).and_then(|_| cache.entries.front().map(|(_, _, facets, _)| (facets.sources.clone(), facets.years.clone())))
         };
         let read = || {
-            let facets = self.facets_current(filter, &current, shared.as_ref())?;
+            let mut facets = self.facets_current(filter, &current, shared.as_ref())?;
             if !current() { return None; }
-            let snapshot = self.snapshot(filter, order);
+            let snapshot = if index.items.is_empty() { self.snapshot(filter, order) } else {
+                let stars = crate::library_sources::Stars::read(&self.lib, &index);
+                crate::library_sources::merge_facets(&mut facets, filter, &index, &stars);
+                let (local, keys) = self.lib.keyed_snapshot(filter, order).unwrap_or_else(|e| {
+                    eprintln!("chilpa-queries: library snapshot failed: {e}");
+                    Default::default()
+                });
+                crate::library_sources::merge_snapshot(local, keys, filter, order, &index, &stars, crate::library_sources::Scope::Library).0
+            };
             current().then_some((facets, snapshot))
         };
         let result = self.lib.with_browse_candidates(filter, read).unwrap_or_else(|error| {
@@ -1023,7 +1054,7 @@ mod tests {
                     rusqlite::params![source, format!("/{release}/{number}.flac"), artist, credit, id, bits]).unwrap();
             }
         }
-        let reader = Reader { lib, catalog: None, refresh_cache: Default::default() };
+        let reader = Reader { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() };
         for artist in ["Singer A", "Singer B", "歌手 A", "歌手 B"] {
             let mut filter = Filter::default();
             filter.queries[5] = artist.into();
@@ -1052,7 +1083,7 @@ mod tests {
                 VALUES (?1,?2,?3,'Song',1,?4,?5,1)", rusqlite::params![id,source,format!("/{id}.flac"),3 - (id - 1) / 500,id]).unwrap();
         }
         lib.connection().execute_batch("COMMIT").unwrap();
-        let reader = Reader { lib, catalog: None, refresh_cache: Default::default() };
+        let reader = Reader { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() };
         let mut ids: Vec<i64> = (1..=1205).rev().collect();
         ids.insert(2, 9999); ids.push(1); ids.push(1205);
         let paths = reader.paths(&ids);
@@ -1098,7 +1129,7 @@ mod tests {
                 [source],
             )
             .unwrap();
-        let found = Reader { lib, catalog: None, refresh_cache: Default::default() }.folder_matches("rock");
+        let found = Reader { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() }.folder_matches("rock");
         let paths: Vec<_> = found.folders.iter().map(|folder| folder.path.as_str()).collect();
         assert_eq!(paths, ["/music/Rock", "/music/Rock/Album"]);
     }

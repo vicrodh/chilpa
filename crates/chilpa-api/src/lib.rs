@@ -21,6 +21,7 @@ mod desktop;
 pub use desktop::WindowRequest;
 mod tracks_view;
 mod albums_view;
+mod library_sources;
 pub use albums_view::{artist_cards, grid_rows, mixes_sources, AlbumsFound, GridRow};
 pub use tracks_view::{group_of, FoundTracks, TracksQuery};
 mod queries;

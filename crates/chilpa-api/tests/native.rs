@@ -30,8 +30,8 @@ while IFS= read -r line; do
           if [[ -f /data/playlist-title ]]; then IFS= read -r title < /data/playlist-title; fi
           printf '{"jsonrpc":"2.0","id":%s,"result":{"items":[{"kind":"playlist","ref":"playlist:1","title":"%s","tracks":1,"editable":true,"native_folder":"folder:a"}],"folders":[{"ref":"folder:a","name":"Remote folder","parent":""}],"total":1}}\n' "$id" "$title"
         elif [[ "$line" == *'"kind":"tracks"'* ]]; then
-          printf '{"jsonrpc":"2.0","id":%s,"result":{"items":[{"kind":"track","ref":"track:7","title":"Remote song","artist":"Band","duration_ms":120000,"quality":{"codec":"flac"}}],"total":1}}\n' "$id"
-        else printf '{"jsonrpc":"2.0","id":%s,"result":{"items":[{"kind":"album","ref":"album:1","title":"Record","artist":"Band"}],"total":1}}\n' "$id"; fi ;;
+          printf '{"jsonrpc":"2.0","id":%s,"result":{"items":[{"kind":"track","ref":"track:7","title":"Remote song","artist":"Band","duration_ms":120000,"quality":{"codec":"flac"},"year":2001,"genres":["Rock"],"composers":["Writer"]}],"total":1}}\n' "$id"
+        else printf '{"jsonrpc":"2.0","id":%s,"result":{"items":[{"kind":"album","ref":"album:1","title":"Record","artist":"Band","release_date":"1999-02-01","genres":["Rock"],"label":"House"}],"total":1}}\n' "$id"; fi ;;
       *'"method":"playlist.get"'*) printf '{"jsonrpc":"2.0","id":%s,"result":{"playlist":{"kind":"playlist","ref":"playlist:1","title":"Cloud list","editable":true},"tracks":[{"kind":"track","ref":"track:7","title":"Remote song","artist":"Band","duration_ms":120000}]}}\n' "$id" ;;
       *'"method":"track.quality"'*) printf '{"jsonrpc":"2.0","id":%s,"result":{"ref":"track:7","quality":{"codec":"wav","bits":24,"rate":96000}}}\n' "$id" ;;
       *'"method":"page.action"'*)
@@ -229,9 +229,14 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     }
     let reader = chilpa.reader().unwrap();
     assert!(reader.tracks("",&Default::default()).snapshot.ids.iter().all(|id| *id > 0));
+    let rock = { let mut f = chilpa_api::Filter::default(); f.choose(1, &["rock".into()]); f };
+    let (facets, library) = reader.refresh(&rock, chilpa_api::TrackOrder::Artist, || true).unwrap();
+    assert!(library.album_ids.iter().any(|id| *id < 0), "a saved record of the source is in Library under its genre");
+    assert!(facets.genres.iter().any(|g| g.label == "Rock") && facets.labels.iter().any(|l| l.label == "House"));
+    assert!(facets.years.iter().any(|y| y.year == Some(1999)), "the year comes from the release date");
+    let (_, jazz) = reader.refresh(&{ let mut f = chilpa_api::Filter::default(); f.choose(1, &["Jazz".into()]); f }, chilpa_api::TrackOrder::Artist, || true).unwrap();
+    assert!(jazz.album_ids.iter().all(|id| *id > 0), "and out of it under another");
     chilpa.sources_command("track_library","com.test.native","true");
-    assert_eq!(reader.local_tracks("", &Default::default()).snapshot.ids, vec![1],
-        "Tracks must be able to show local rows before the source merge finishes");
     let deadline = Instant::now() + Duration::from_secs(10);
     loop {
         let found = reader.tracks("",&Default::default());
@@ -244,9 +249,12 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     }
     let mut stages = Vec::new();
     reader.tracks_progressive("", &Default::default(), |found| stages.push(found.snapshot.ids));
-    assert_eq!(stages.len(), 2);
-    assert_eq!(stages[0], vec![1]);
-    assert!(stages[1].contains(&1) && stages[1].contains(&track.id));
+    assert_eq!(stages.len(), 1, "the merge reads nothing of the library again, so it answers once");
+    assert!(stages[0].contains(&1) && stages[0].contains(&track.id));
+    let mut written = chilpa_api::Filter::default();
+    written.choose(3, &["Writer".into()]);
+    assert!(reader.refresh(&written, chilpa_api::TrackOrder::Artist, || true).unwrap().1.ids.contains(&track.id),
+        "a saved track is in Library under its composer");
     assert_eq!(reader.paths(&[track.id]),vec![track.path.clone()]);
     let filter = chilpa_api::Filter { excluded_sources:vec!["plugin:com.test.native".into()], ..Default::default() };
     assert!(!reader.tracks("",&filter).snapshot.ids.contains(&track.id));

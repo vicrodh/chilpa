@@ -289,6 +289,9 @@ impl cxx_qt::Initialize for qobject::Library {
         self.as_mut().rust_mut().order = QString::from(&name);
         let albums = app::with(|api| api.album_order());
         self.as_mut().rust_mut().album_order = QString::from(&albums);
+        // What a source integrated into the library brings arrives with the
+        // catalog; an unchanged one is answered from the reader's cache.
+        self.as_mut().on_remote_rev_changed(|m| m.refresh()).release();
         self.as_mut()
             .on_album_order_changed(|m| {
                 let order = m.album_order().to_string();

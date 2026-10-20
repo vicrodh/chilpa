@@ -796,3 +796,5 @@ wp
 xn
 yn
 zn
+nocase
+peekable

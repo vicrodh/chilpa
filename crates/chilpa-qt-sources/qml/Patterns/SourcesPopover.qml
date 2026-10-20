@@ -144,7 +144,8 @@ Popup {
                 }
 
                 Rectangle { width: parent.width; height: Metrics.focusRing; color: Theme.color.strokeHairline }
-                SourceAlbumLibraries { width: parent.width; tracks: popover.showTrackLibraries; active: popover.opened && (popover.showAlbumLibraries || popover.showTrackLibraries) }
+                SourceAlbumLibraries { width: parent.width; active: popover.opened && popover.showAlbumLibraries }
+                SourceAlbumLibraries { width: parent.width; tracks: true; titled: !popover.showAlbumLibraries; active: popover.opened && popover.showTrackLibraries }
             }
             Column {
                 width: popover.half

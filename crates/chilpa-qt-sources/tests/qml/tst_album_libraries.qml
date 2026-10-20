@@ -10,6 +10,8 @@ TestCase {
     width: 400
     height: 250
     SourceAlbumLibraries { id: controls; active: true; width: 360 }
+    // Library shows both lists, one heading over the two.
+    SourceAlbumLibraries { id: saved; active: true; tracks: true; titled: false; width: 360 }
     function init() {
         controls.tracks = false
         Sources.asked = []
@@ -41,6 +43,17 @@ TestCase {
         mouseClick(toggle)
         compare(Sources.asked[0],["track_library","fixture.one","true"])
         compare(toggle.checked,false)
+    }
+    function test_two_lists_together_share_one_heading_and_keep_their_own_libraries() {
+        Sources.show({albumLibraries:[{id:"fixture.one",name:"First library",enabled:false,icon:""}],trackLibraries:[{id:"fixture.two",name:"Second library",enabled:true,icon:""}]})
+        wait(20)
+        verify(findChild(controls, "streamingLibrariesHeading").visible)
+        verify(!findChild(saved, "streamingLibrariesHeading").visible)
+        verify(findChild(controls, "albumLibraryToggle-fixture.one") && !findChild(controls, "albumLibraryToggle-fixture.two"))
+        const track = findChild(saved, "albumLibraryToggle-fixture.two")
+        verify(track && track.checked)
+        mouseClick(track)
+        compare(Sources.asked[0], ["track_library", "fixture.two", "false"])
     }
     function test_no_controls_without_an_available_album_library() {
         Sources.show({albumLibraries:[]})
