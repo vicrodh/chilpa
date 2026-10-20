@@ -27,6 +27,11 @@ Item {
     function focusSearch() { field.focusInput() }
     function releaseSearch() { field.release() }
     function cycle(by) { menu.cycle(by) }
+    // On a Mac the band's left corner is the system's window controls, so
+    // the view picker sits at the right, beside the capsule, keeping the
+    // room the capsule takes open so it never slides when that one grows
+    // (QBZ, ImmersiveHeader.qml:76-98). Elsewhere it stays at the left.
+    property bool pickerTrailing: Qt.platform.os === "osx"
 
     MouseArea {
         anchors.fill: parent
@@ -50,6 +55,8 @@ Item {
 
     ViewTrigger {
         id: trigger
+        objectName: "immersiveViewTrigger"
+        x: header.pickerTrailing ? header.width - capsule.openWide - Stage.triggerApart - width : 0
         anchors.verticalCenter: parent.verticalCenter
         onPrevious: menu.cycle(-1)
         onNext: menu.cycle(1)
@@ -79,6 +86,7 @@ Item {
     }
 
     WindowCapsule {
+        id: capsule
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         hostWindow: header.hostWindow

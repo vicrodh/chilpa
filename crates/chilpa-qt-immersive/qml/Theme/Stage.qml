@@ -39,6 +39,8 @@ QtObject {
     readonly property int triggerArrow: 38
     readonly property int triggerMiddle: 46
     readonly property int triggerIcon: 16
+    // Between the view picker and the capsule, on a Mac (QBZ's 12).
+    readonly property int triggerApart: 12
     readonly property int menuWide: 660
     readonly property int menuRound: 16
     readonly property int menuPad: 12
