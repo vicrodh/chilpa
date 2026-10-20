@@ -214,7 +214,7 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     };
     let cloud = lists["playlists"].as_array().unwrap().iter().find(|p| p["name"] == "Cloud list").unwrap();
     assert_eq!(cloud["track_count"], 1);
-    assert_eq!(cloud["separate"], false);
+    assert_eq!(lists["group_sources"], false, "grouping lists by source is one choice for every source");
     let libraries: serde_json::Value = serde_json::from_str(&chilpa.album_libraries()).unwrap();
     assert_eq!(libraries[0]["id"], "com.test.native");
     assert_eq!(libraries[0]["enabled"], false);
@@ -255,10 +255,9 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     chilpa.sources_command("album_library", "com.test.native", "false");
     assert!(chilpa.integrated_albums("", &Default::default()).is_empty());
     assert_eq!(serde_json::from_str::<serde_json::Value>(&chilpa.album_libraries()).unwrap()[0]["enabled"], false);
-    chilpa.plugin_center_command("integration", r#"{"id":"com.test.native","field":"separate_playlists","enabled":true}"#);
-    assert_success(&wait_center(&mut chilpa));
+    chilpa.group_playlists_by_source(true);
     let lists: serde_json::Value = serde_json::from_str(&chilpa.sidebar_playlists("")).unwrap();
-    assert_eq!(lists["playlists"].as_array().unwrap().iter().find(|p| p["name"] == "Cloud list").unwrap()["separate"], true);
+    assert_eq!(lists["group_sources"], true);
     chilpa.plugin_center_command("tint", r#"{"id":"com.test.native","enabled":true}"#);
     assert_success(&wait_center(&mut chilpa));
     assert!(chilpa.source_panels().iter().find(|p| p.id == "com.test.native").unwrap().icon_tint);
