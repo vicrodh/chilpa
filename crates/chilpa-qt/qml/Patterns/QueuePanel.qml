@@ -74,9 +74,10 @@ Item {
             x: Metrics.gap4
             ListView.onPooled: visible = false; ListView.onReused: visible = true
             onPlay: queue.play(index)
+            // `menu` here is the row's own signal: the panel's menu has its own name.
             onMenu: (x, y) => {
                 const p = mapToItem(panel, x, y)
-                menu.show(index, p.x, p.y)
+                rowMenu.show(index, p.x, p.y)
             }
         }
     }
@@ -103,7 +104,8 @@ Item {
     Parts.SleepTimer { id: sleep; parent: foot; anchors.centerIn: undefined; x: foot.width - width - Metrics.gap6; y: -height - Metrics.gap6 }
 
     TrackMenu {
-        id: menu
+        id: rowMenu
+        objectName: "queueRowMenu"
         model: queue
     }
 }
