@@ -21,6 +21,10 @@ pub(crate) struct Index {
     stamp: Stamp,
     clusters: Clusters,
     library: Arc<VersionCatalog>,
+    /// Every integrated record as a copy, as the grids read them: the saved
+    /// ones and the ones of saved tracks.
+    sources: HashMap<i64, SourceVersion>,
+    /// What the catalog says of the records it holds whole.
     records: HashMap<i64, SourceRecord>,
 }
 
@@ -58,12 +62,15 @@ impl Chilpa {
             return Some(index.clone());
         }
         let integrated = crate::library_sources::integrated_now(&self.natives);
+        let listed = |albums: bool| integrated.iter().filter(|(_, a, t)| if albums { *a } else { *t }).map(|(id, ..)| id.clone()).collect::<Vec<_>>();
+        let items = self.catalog.integrated_items(&listed(true), &listed(false));
         let records: HashMap<i64, SourceRecord> = self.catalog.integrated_records(&integrated).into_iter().map(|r| (r.id, r)).collect();
-        let sources: HashMap<i64, SourceVersion> = records.iter().map(|(id, record)| (*id, record.version())).collect();
+        let mut sources = crate::library_sources::SourceIndex::versions(&items);
+        sources.extend(records.iter().map(|(id, record)| (*id, record.version())));
         let copies = crate::library_sources::copies(library.versions.keys().copied().chain(sources.keys().copied()), &library, &sources);
         let clusters = Clusters::build(&copies, versions);
         drop(copies);
-        let index = Arc::new(Index { stamp, clusters, library, records });
+        let index = Arc::new(Index { stamp, clusters, library, sources, records });
         self.copies.index = Some(index.clone());
         Some(index)
     }
@@ -73,7 +80,7 @@ impl Chilpa {
         let Some(index) = self.copy_index() else { return own };
         for member in index.clusters.members_of(id).iter().copied().filter(|m| *m != id) {
             let source = if member > 0 { index.library.versions.get(&member).map(AlbumSource::of) }
-                else { index.records.get(&member).map(|record| self.source_of(&record.plugin)) };
+                else { index.sources.get(&member).map(|copy| self.source_of(&copy.plugin)) };
             if let Some(source) = source.filter(|s| !own.iter().any(|held| held.key == s.key)) { own.push(source); }
         }
         own
@@ -87,11 +94,12 @@ impl Chilpa {
             if versions.iter().any(|v| v.id == member) { continue; }
             if member > 0 {
                 versions.extend(index.library.versions.get(&member).cloned().map(|v| crate::album_versions::version_labels(vec![v])).into_iter().flatten());
-            } else if let Some(record) = index.records.get(&member) {
-                let source = self.source_of(&record.plugin);
+            } else if let Some(copy) = index.sources.get(&member) {
+                let source = self.source_of(&copy.plugin);
                 let join = |a: &str, b: &str| if b.is_empty() { a.to_string() } else { format!("{a} · {b}") };
-                versions.push(AlbumVersion { id: member, label: join(&source.label, &record.quality.long()),
-                    brief: join(&source.label, &record.quality.brief()), detail: record.title.clone(), source });
+                let (long, brief, title) = index.records.get(&member)
+                    .map(|r| (r.quality.long(), r.quality.brief(), r.title.clone())).unwrap_or_default();
+                versions.push(AlbumVersion { id: member, label: join(&source.label, &long), brief: join(&source.label, &brief), detail: title, source });
             }
         }
         versions
@@ -101,12 +109,11 @@ impl Chilpa {
     /// one of the library's, none of the sources'.
     pub fn choose_album_copy(&mut self, version: i64) {
         let Some(index) = self.copy_index() else { return };
-        let key = |record: &SourceRecord| SourceVersion::key_of(&record.plugin, &record.identity);
         let mut chosen = crate::library_sources::chosen_copies();
         for member in index.clusters.members_of(version) {
-            if let Some(record) = index.records.get(member) { chosen.remove(&key(record)); }
+            if let Some(copy) = index.sources.get(member) { chosen.remove(&copy.key); }
         }
-        chosen.extend(index.records.get(&version).map(key));
+        chosen.extend(index.sources.get(&version).map(|copy| copy.key.clone()));
         let mut chosen: Vec<String> = chosen.into_iter().collect();
         chosen.sort();
         self.remember_preference(crate::library_sources::CHOSEN_COPIES, &serde_json::to_string(&chosen).unwrap_or_default());
