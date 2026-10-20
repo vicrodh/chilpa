@@ -13,6 +13,7 @@ TestCase {
     property var executed: null
     property var dismissed: null
     Item { id: previous; width: 10; height: 10 }
+    Item { id: other; width: 10; height: 10; activeFocusOnTab: true }
     FontMetrics { id: commandFont; font: bar.input.font }
     CommandBar {
         id: bar
@@ -78,6 +79,15 @@ TestCase {
         // restore does when the console was opened from nowhere in particular.
         test.Window.window.contentItem.forceActiveFocus()
         verify(!bar.input.activeFocus, "the next colon opens the console again")
+    }
+    function test_the_console_closes_when_something_else_takes_the_keys() {
+        verify(bar.opened && bar.input.activeFocus)
+        // A search result chosen with Enter, a click elsewhere: the keys
+        // went somewhere else, and the console does not stay open without them.
+        other.forceActiveFocus()
+        tryCompare(bar, "opened", false)
+        verify(other.activeFocus, "the keys stay where they went")
+        compare(dismissed, null, "and are not pulled back to where the console was opened")
     }
     function test_examples_sit_under_their_command() {
         CommandLine.answer = JSON.stringify({action:"commands.help",lines:[{usage:":filter [query]",description:"Filter"},
