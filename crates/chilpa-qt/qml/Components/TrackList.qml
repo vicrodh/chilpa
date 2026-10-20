@@ -182,6 +182,7 @@ Item {
             artistHovered: index === view.artistHovered
             selectionMode: list.selectionMode
             groupActionsEnabled: list.groupActionsEnabled
+            groupStart: ListView.section !== "" && ListView.section !== ListView.previousSection
             ListView.onPooled: visible = false; ListView.onReused: visible = true
         }
 
