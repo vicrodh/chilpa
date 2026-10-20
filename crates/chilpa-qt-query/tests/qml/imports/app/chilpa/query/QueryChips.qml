@@ -8,6 +8,19 @@ QtObject {
     function read(query) { return query === "" ? "{\"any\":false,\"chips\":[]}" : chipsOf }
     function without(query, at) { return "without:" + at }
     function flipped(query, at) { return "flipped:" + at }
-    function joined(query, any) { return "joined:" + any }
+    function joined(query, any) { lastJoin = [query, any]; return focusTesting ? joinedText : "joined:" + any }
     function excluding(query, column, value) { return "excluding:" + column + ":" + value }
+    property bool focusTesting: false
+    property string joinedText: ""
+    property var lastJoin: []
+    property var focusOf: ({})
+    property string editedText: ""
+    property var lastEdit: ({})
+    property string lastQuery: ""
+    property var facets: ({})
+    property int liveFacets: 0
+    function focusRows(query) {
+        return JSON.stringify(focusOf[query] || { any: false, advanced: false, text: query, rows: [] })
+    }
+    function edit(query, change) { lastQuery = query; lastEdit = JSON.parse(change); return editedText }
 }

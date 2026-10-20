@@ -67,9 +67,16 @@ fn tokens(text: &str) -> Result<Vec<(usize, Token)>, ParseError> {
             let c = chars[at];
             if c == '"' {
                 quoted = true;
+                word.push(c);
                 at += 1;
-                while at < chars.len() && chars[at] != '"' { word.push(chars[at]); at += 1; }
+                while at < chars.len() && chars[at] != '"' {
+                    if chars[at] == '\\' && chars.get(at + 1).is_some_and(|c| matches!(c, '"' | '\\')) {
+                        word.push(chars[at]); at += 1;
+                    }
+                    word.push(chars[at]); at += 1;
+                }
                 if at == chars.len() { return Err(ParseError { at: start, what: chilpa_i18n::mark("a quote is not closed") }); }
+                word.push('"');
                 at += 1;
                 continue;
             }
@@ -171,7 +178,7 @@ fn leaf(word: &str, quoted: bool, at: usize) -> Result<Node, ParseError> {
         Field::NAMES.iter().find(|(known, _)| *known == name).map(|(_, field)| (*field, rest))
     });
     let Some((field, rest)) = field else {
-        return Ok(Node::Is(Field::Text, Values::Any(vec![word.to_string()])));
+        return Ok(Node::Is(Field::Text, Values::Any(vec![unquote(word)])));
     };
     if rest.is_empty() { return Err(ParseError { at, what: chilpa_i18n::mark("a field needs a value") }); }
     if !quoted && rest.eq_ignore_ascii_case("none") {
@@ -180,13 +187,14 @@ fn leaf(word: &str, quoted: bool, at: usize) -> Result<Node, ParseError> {
             _ => Err(ParseError { at, what: chilpa_i18n::mark("that field is never empty") }),
         };
     }
+    let scalar = unquote(rest);
     match field {
-        Field::Added => within(rest).map(|seconds| Node::Is(field, Values::Within(seconds)))
-            .or_else(|| range(rest).map(|(from, to)| Node::Is(field, Values::Range(from, to))))
+        Field::Added => within(&scalar).map(|seconds| Node::Is(field, Values::Within(seconds)))
+            .or_else(|| range(&scalar).map(|(from, to)| Node::Is(field, Values::Range(from, to))))
             .ok_or(ParseError { at, what: chilpa_i18n::mark("added takes a span like 30d, 6w, 3m or 1y") }),
         Field::Year | Field::Rating => {
-            if let Some((from, to)) = range(rest) { return Ok(Node::Is(field, Values::Range(from, to))); }
-            let numbers: Vec<String> = rest.split(',').map(str::trim).filter(|v| !v.is_empty()).map(String::from).collect();
+            if let Some((from, to)) = range(&scalar) { return Ok(Node::Is(field, Values::Range(from, to))); }
+            let numbers: Vec<String> = scalar.split(',').map(str::trim).filter(|v| !v.is_empty()).map(String::from).collect();
             if numbers.is_empty() || numbers.iter().any(|n| n.parse::<i64>().is_err()) {
                 return Err(ParseError { at, what: chilpa_i18n::mark("a year or a rating is a number") });
             }
@@ -195,14 +203,35 @@ fn leaf(word: &str, quoted: bool, at: usize) -> Result<Node, ParseError> {
             }
             Ok(Node::Is(field, Values::Any(numbers)))
         }
-        Field::Album | Field::Title => Ok(Node::Is(field, Values::Any(rest.split_whitespace().map(String::from).collect()))),
+        Field::Title => Ok(Node::Is(field, Values::Any(unquote(rest).split_whitespace().map(String::from).collect()))),
         _ => {
-            let names: Vec<String> = if quoted && !rest.contains(',') { vec![rest.to_string()] }
-                else { rest.split(',').map(str::trim).filter(|v| !v.is_empty()).map(String::from).collect() };
+            let names = names(rest);
             if names.is_empty() { return Err(ParseError { at, what: chilpa_i18n::mark("a field needs a value") }); }
             Ok(Node::Is(field, Values::Any(names)))
         }
     }
+}
+
+// I keep commas inside quotes and decode only the two printed escapes.
+fn names(text: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut current = String::new();
+    let mut quoted = false;
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' if quoted && chars.peek().is_some_and(|c| matches!(c, '"' | '\\')) => current.push(chars.next().expect("escape")),
+            '"' => quoted = !quoted,
+            ',' if !quoted => { if !current.trim().is_empty() { out.push(current.trim().into()); } current.clear(); }
+            _ => current.push(c),
+        }
+    }
+    if !current.trim().is_empty() { out.push(current.trim().into()); }
+    out
+}
+
+fn unquote(text: &str) -> String {
+    names(text).join(",")
 }
 
 /// `1990..1999`, `..1999`, `1990..`.
@@ -218,7 +247,7 @@ fn within(text: &str) -> Option<i64> {
     let unit = text.chars().last()?;
     let count: i64 = text[..text.len() - unit.len_utf8()].parse().ok().filter(|n| *n > 0)?;
     let day = 86_400;
-    Some(count * match unit { 'd' => day, 'w' => 7 * day, 'm' => 30 * day, 'y' => 365 * day, _ => return None })
+    count.checked_mul(match unit { 'd' => day, 'w' => 7 * day, 'm' => 30 * day, 'y' => 365 * day, _ => return None })
 }
 
 /// One level of a group holds no group of the same kind, and a group of
@@ -247,8 +276,9 @@ fn simplify(node: Node) -> Node {
 /// A value as the text would take it back: quoted when it holds a space, a
 /// comma or a parenthesis.
 fn written(value: &str) -> String {
-    if value.is_empty() || value.chars().any(|c| c.is_whitespace() || matches!(c, ',' | '(' | ')' | '|' | '"' | ':')) {
-        format!("\"{}\"", value.replace('"', ""))
+    if value.is_empty() || value.eq_ignore_ascii_case("none") || matches!(value, "OR" | "AND" | "NOT")
+        || value.starts_with('-') || value.chars().any(|c| c.is_whitespace() || matches!(c, ',' | '(' | ')' | '|' | '"' | ':' | '\\')) {
+        format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
     } else {
         value.to_string()
     }
@@ -282,7 +312,7 @@ impl fmt::Display for Node {
             Node::Is(field, values) => {
                 let name = field.name();
                 match values {
-                    Values::Any(list) if matches!(field, Field::Album | Field::Title) => write!(f, "{name}:{}", written(&list.join(" "))),
+                    Values::Any(list) if matches!(field, Field::Title) => write!(f, "{name}:{}", written(&list.join(" "))),
                     Values::Any(list) => write!(f, "{name}:{}", list.iter().map(|v| written(v)).collect::<Vec<_>>().join(",")),
                     Values::Range(from, to) => write!(f, "{name}:{}..{}", from.map(|n| n.to_string()).unwrap_or_default(), to.map(|n| n.to_string()).unwrap_or_default()),
                     Values::Within(seconds) => {
