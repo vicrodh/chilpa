@@ -156,6 +156,7 @@ pub use browse::{filter_facets, select_facets, select_tracks, AlbumDetail, Facet
 pub use browse::PageCache;
 mod album_versions;
 mod album_copies;
+pub mod library_query;
 mod album_page;
 mod album_shelves;
 pub use album_page::AlbumPage;

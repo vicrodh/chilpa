@@ -312,6 +312,9 @@ msgstr "Alle Gruppen"
 msgid "All music"
 msgstr "Alle Musik"
 
+msgid "All of"
+msgstr "Alle"
+
 msgid "All qualities"
 msgstr "Alle Qualitäten"
 
@@ -413,6 +416,9 @@ msgstr "Markiert den laufenden Titel mit animierten Equalizer-Balken. Standardm�
 
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Animierter Hintergrund aus dem Albumcover hinter der ganzen App. Hoher Ressourcenverbrauch: GPU-beschleunigt."
+
+msgid "Any of"
+msgstr "Beliebige"
 
 msgid "Any quality"
 msgstr "Beliebige Qualität"
@@ -1730,6 +1736,9 @@ msgstr "Nach Genre filtern"
 msgid "Filter playlists"
 msgstr "Playlists filtern"
 
+msgid "Filter the library"
+msgstr "Bibliothek filtern"
+
 msgid "Filter tracks"
 msgstr "Titel filtern"
 
@@ -2729,6 +2738,9 @@ msgstr "Meine Bibliothek"
 msgid "My stations"
 msgstr "Meine Sender"
 
+msgid "NOT needs a condition after it"
+msgstr "NOT braucht danach eine Bedingung"
+
 msgid "NOW PLAYING"
 msgstr "AKTUELLE WIEDERGABE"
 
@@ -2963,6 +2975,9 @@ msgstr "Keine Titel passen zu diesem Filter."
 msgid "No tracks match your search."
 msgstr "Keine Titel entsprechen deiner Suche."
 
+msgid "None"
+msgstr "Keine"
+
 msgid "Not answering"
 msgstr "Antwortet nicht"
 
@@ -3049,6 +3064,9 @@ msgstr "Aktuelle Wiedergabe: {}"
 
 msgid "Number of tracks"
 msgstr "Anzahl der Titel"
+
+msgid "OR needs a condition on each side"
+msgstr "OR braucht auf beiden Seiten eine Bedingung"
 
 msgid "OTHER"
 msgstr "SONSTIGES"
@@ -4476,6 +4494,9 @@ msgstr "Der aktuelle Titel hat kein solches Ziel."
 msgid "The download view is unavailable."
 msgstr "Die Download-Ansicht ist nicht verfügbar."
 
+msgid "The filter cannot be read: {}"
+msgstr "Der Filter kann nicht gelesen werden: {}"
+
 msgid "The filter has no ON/OFF state."
 msgstr "Der Filter hat keinen ON/OFF-Zustand."
 
@@ -5220,11 +5241,20 @@ msgstr "ein DST-Paket gehört zu keinem Frame"
 msgid "a Mac's outputs take PCM, not native DSD"
 msgstr "die Ausgaben eines Mac nehmen PCM an, kein natives DSD"
 
+msgid "a closing parenthesis has nothing to close"
+msgstr "eine schließende Klammer hat nichts zu schließen"
+
+msgid "a condition is missing"
+msgstr "eine Bedingung fehlt"
+
 msgid "a date is a year, a year and a month, or a full day: 1984, 1984-09, 1984-09-03"
 msgstr "ein Datum ist ein Jahr, ein Jahr und ein Monat oder ein ganzer Tag: 1984, 1984-09, 1984-09-03"
 
 msgid "a direct URL"
 msgstr "eine direkte URL"
+
+msgid "a field needs a value"
+msgstr "ein Feld braucht einen Wert"
 
 msgid "a frame of the stereo area is not stereo"
 msgstr "ein Frame des Stereobereichs ist nicht stereo"
@@ -5237,6 +5267,15 @@ msgstr "eine neuere Chilpa-Version hat diese Begleitdatei geschrieben; aktualisi
 
 msgid "a number from 1 to 9999, or nothing"
 msgstr "eine Zahl von 1 bis 9999 oder nichts"
+
+msgid "a parenthesis is not closed"
+msgstr "eine Klammer ist nicht geschlossen"
+
+msgid "a quote is not closed"
+msgstr "ein Anführungszeichen ist nicht geschlossen"
+
+msgid "a rating goes from 0 to 5"
+msgstr "eine Bewertung geht von 0 bis 5"
 
 msgid "a rating must be between 0 and 5 stars"
 msgstr "eine Bewertung muss zwischen 0 und 5 Sternen liegen"
@@ -5256,8 +5295,14 @@ msgstr "ein Titel hat keinen Künstler"
 msgid "a track has no title"
 msgstr "ein Titel hat keinen Titelnamen"
 
+msgid "a year or a rating is a number"
+msgstr "ein Jahr oder eine Bewertung ist eine Zahl"
+
 msgid "add a command you trigger"
 msgstr "einen Befehl hinzufügen, den du auslöst"
+
+msgid "added takes a span like 30d, 6w, 3m or 1y"
+msgstr "added braucht einen Zeitraum wie 30d, 6w, 3m oder 1y"
 
 msgid "aggregate"
 msgstr "Aggregat"
@@ -5490,6 +5535,11 @@ msgstr "Zugangsdaten von dir speichern"
 msgid "keep things of its own on disk"
 msgstr "eigene Daten auf dem Datenträger ablegen"
 
+msgid "last {} day"
+msgid_plural "last {} days"
+msgstr[0] "letzter {} Tag"
+msgstr[1] "letzte {} Tage"
+
 msgid "let this plugin handle its own sign-in secrets, encrypted on disk and separate from other plugins"
 msgstr "dieses Plugin seine eigenen Anmeldegeheimnisse verwalten lassen, auf dem Datenträger verschlüsselt und von anderen Plugins getrennt"
 
@@ -5675,6 +5725,9 @@ msgstr "das sieht nicht nach einer Stream-Adresse aus"
 
 msgid "that domain is not among the ones the plugin declared"
 msgstr "diese Domain gehört nicht zu den vom Plugin deklarierten"
+
+msgid "that field is never empty"
+msgstr "dieses Feld ist nie leer"
 
 msgid "that file is not an image"
 msgstr "diese Datei ist kein Bild"
@@ -5916,6 +5969,9 @@ msgstr "die Frame-Info-Tabelle ist abgeschnitten"
 msgid "the graph runs at {} Hz"
 msgstr "der Graph läuft mit {} Hz"
 
+msgid "the groups go too deep"
+msgstr "die Gruppen sind zu tief verschachtelt"
+
 msgid "the host could not serve it"
 msgstr "der Host konnte es nicht bereitstellen"
 
@@ -6002,6 +6058,9 @@ msgstr "die Plugin-Sandbox konnte nicht gestartet werden"
 
 msgid "the plugin sandbox is not started"
 msgstr "die Plugin-Sandbox ist nicht gestartet"
+
+msgid "the query has too many conditions"
+msgstr "die Abfrage hat zu viele Bedingungen"
 
 msgid "the queue is empty"
 msgstr "die Warteschlange ist leer"

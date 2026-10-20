@@ -154,6 +154,7 @@ const ACTIONS: &[Action] = &[
     action("playback.loop", i18n::mark("A-B loop"), PLAYBACK, "", ""),
     action("nav.go", i18n::mark("Go to"), PLAYBACK, "", ""),
     action("settings.set", i18n::mark("Set preference"), PLAYBACK, "", ""),
+    action("library.filter", i18n::mark("Filter the library"), PLAYBACK, "", ""),
 
     reaching(Scope::Both, action("playback.toggle", i18n::mark("Play / Pause"), PLAYBACK, "Space", "")),
     reaching(Scope::Both, action("playback.next", i18n::mark("Next Track"), PLAYBACK, "Ctrl+ArrowRight", "n")),

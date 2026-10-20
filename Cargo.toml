@@ -44,6 +44,7 @@ members = [
     "crates/chilpa-qt-themes",
     "crates/chilpa-qt-graphics",
     "crates/chilpa-qt-link",
+    "crates/chilpa-qt-query",
     "crates/chilpa-qt-playlists",
     "crates/chilpa-qt-wizard",
     "crates/chilpa-qt-artwork",
@@ -105,6 +106,7 @@ chilpa-qt-waveform = { path = "crates/chilpa-qt-waveform" }
 chilpa-qt-themes = { path = "crates/chilpa-qt-themes" }
 chilpa-qt-graphics = { path = "crates/chilpa-qt-graphics" }
 chilpa-qt-link = { path = "crates/chilpa-qt-link" }
+chilpa-qt-query = { path = "crates/chilpa-qt-query" }
 chilpa-qt-playlists = { path = "crates/chilpa-qt-playlists" }
 chilpa-qt-wizard = { path = "crates/chilpa-qt-wizard" }
 chilpa-qt-artwork = { path = "crates/chilpa-qt-artwork" }

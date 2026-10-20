@@ -58,6 +58,9 @@ pub struct Filter {
     /// title's letter) or nothing. The groups come in their order, and the
     /// order asked for is the order inside each one.
     pub grouped_by: String,
+    /// Conditions stacked beyond the columns, with AND, OR and NOT
+    /// (`store::query`): every column's choices hold inside them.
+    pub query: Option<super::query::Node>,
 }
 
 impl Filter {
@@ -427,6 +430,12 @@ pub(super) fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
         sql.push_str(" AND t.id IN (SELECT track_id FROM album_members
             WHERE artist = ? COLLATE NOCASE)");
         args.push(Box::new(name.clone()));
+    }
+    if let Some(query) = &f.query {
+        let (condition, values) = query.compile(super::now_unix());
+        sql.push_str(" AND ");
+        sql.push_str(&condition);
+        args.extend(values);
     }
     (sql, args)
 }

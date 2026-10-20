@@ -54,6 +54,23 @@ TestCase {
         list.model.clear()
     }
 
+    // Alt+click keeps a value out as a chip; the "All" entry cannot be kept out.
+    function test_alt_click_keeps_a_value_out() {
+        panes.shown = ["year", "genre", "artist", "album"]
+        waitForRendering(panes)
+        const list = Array.from(shown()[1].children).find(c => c.contentItem !== undefined)
+        list.model.append({ key: "", label: "All", meta: "9", selected: true, all: true })
+        list.model.append({ key: "Pop", label: "Pop", meta: "3", selected: false, all: false })
+        tryVerify(() => list.itemAtIndex(1) !== null)
+        Library.queryText = ""
+        mouseClick(list.itemAtIndex(0), 10, 5, Qt.LeftButton, Qt.AltModifier)
+        compare(Library.queryText, "", "All keeps nothing out")
+        mouseClick(list.itemAtIndex(1), 10, 5, Qt.LeftButton, Qt.AltModifier)
+        compare(Library.queryText, "excluding:genre:Pop")
+        Library.queryText = ""
+        list.model.clear()
+    }
+
     function test_every_column_can_be_turned_off() {
         panes.shown = []
         waitForRendering(panes)

@@ -37,7 +37,7 @@ pub mod qobject {
         #[qproperty(bool, group_versions)]
         #[qproperty(bool, group_sources)]
         #[qproperty(bool, artist_group_versions)]
-        #[qproperty(QStringList, queries)]
+        #[qproperty(QStringList, queries)] #[qproperty(QString, query_text)]
         /// How the tracks are ordered: "artist", "album", "year", "added",
         /// "title", "plays" or "duration".
         #[qproperty(QString, order, READ = order, WRITE = choose_order, NOTIFY = order_changed)]
@@ -67,6 +67,8 @@ pub mod qobject {
         #[qinvokable] fn reset_extra(self: Pin<&mut Library>);
         #[qinvokable] fn group_albums(self: Pin<&mut Library>, on: bool);
         #[qinvokable] fn group_copies(self: Pin<&mut Library>, on: bool);
+        /// Stacks conditions beyond the columns; says why a text cannot be read.
+        #[qinvokable] fn apply_query(self: Pin<&mut Library>, text: &QString) -> QString;
         #[qinvokable] fn group_artist_albums(self: Pin<&mut Library>, on: bool);
         #[qinvokable] fn search_column(self: Pin<&mut Library>, column: &QString, query: &QString);
     }
@@ -103,6 +105,7 @@ pub struct LibraryRust {
     extra_filtered: bool,
     group_versions: bool,
     group_sources: bool,
+    query_text: QString,
     artist_group_versions: bool,
     queries: QStringList,
     order: QString,
@@ -128,6 +131,18 @@ impl qobject::Library {
         if app::with(|api| api.set_group_artist_versions(on)) {
             self.as_mut().set_artist_group_versions(on);
             self.content_changed();
+        }
+    }
+
+    pub fn apply_query(mut self: Pin<&mut Self>, text: &QString) -> QString {
+        match chilpa_api::library_query::read(&text.to_string()) {
+            Err(error) => QString::from(&error),
+            Ok(query) => {
+                self.as_mut().set_query_text(QString::from(&query.as_ref().map(ToString::to_string).unwrap_or_default()));
+                browse::write(|s| s.filter.query = query);
+                self.refresh();
+                QString::default()
+            }
         }
     }
 
@@ -177,6 +192,7 @@ impl qobject::Library {
 
     pub fn clear(mut self: Pin<&mut Self>) {
         browse::write(|s| s.filter = Filter::default());
+        self.as_mut().set_query_text(QString::default());
         self.as_mut().set_queries(strings(vec![String::new(); ORDER.len()]));
         for set in Self::SETTERS {
             set(self.as_mut(), QString::default());

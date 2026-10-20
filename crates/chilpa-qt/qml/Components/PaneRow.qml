@@ -15,6 +15,7 @@ Item {
     property bool stars: false
     readonly property bool drawn: stars && !all && key !== "0"
 
+    // 1 for Ctrl or Cmd, 2 for Shift, 4 for Alt, which keeps the value out.
     signal chosen(int modifiers)
 
     height: Metrics.paneRow
@@ -65,7 +66,7 @@ Item {
         id: tap
         onTapped: {
             const held = tap.point.modifiers
-            row.chosen((held & (Qt.ControlModifier | Qt.MetaModifier) ? 1 : 0) | (held & Qt.ShiftModifier ? 2 : 0))
+            row.chosen((held & (Qt.ControlModifier | Qt.MetaModifier) ? 1 : 0) | (held & Qt.ShiftModifier ? 2 : 0) | (held & Qt.AltModifier ? 4 : 0))
         }
     }
 }

@@ -590,6 +590,19 @@ impl Reader {
     /// The same, with the integrated sources given.
     pub(crate) fn refresh_using(&self, filter: &Filter, order: TrackOrder, current: impl Fn() -> bool,
         (stamp, index): (crate::library_sources::Stamp, std::rc::Rc<crate::library_sources::SourceIndex>)) -> Option<(Facets, Snapshot)> {
+        // A genre typed close to one there is reads as that one too.
+        let widened;
+        let filter = match &filter.query {
+            Some(query) if crate::library_query::names_genres(query) => {
+                let mut known: Vec<String> = self.lib.genres().unwrap_or_default().into_iter().map(|(name, _)| name).collect();
+                known.extend(index.items.iter().flat_map(|item| item.genres.iter().cloned()));
+                known.sort();
+                known.dedup();
+                widened = Filter { query: Some(crate::library_query::widen_genres(query, &known)), ..filter.clone() };
+                &widened
+            }
+            _ => filter,
+        };
         let before = self.lib.read_revision().ok();
         let shared = {
             let mut cache = self.refresh_cache.borrow_mut();

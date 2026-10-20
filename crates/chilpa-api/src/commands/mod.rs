@@ -25,6 +25,7 @@ fn registry() -> impl Iterator<Item = &'static Command> {
         .iter()
         .chain(crate::ab_loop::COMMANDS)
         .chain(crate::search::COMMANDS)
+        .chain(crate::library_query::COMMANDS)
         .chain(crate::navigation::COMMANDS)
         .chain(crate::preferences::COMMANDS)
         .chain(crate::hotkeys::COMMANDS)
@@ -51,6 +52,7 @@ fn validate(line: &parser::Line) -> Result<(), String> {
     let arg = line.argument.as_str();
     let valid = match line.name.as_str() {
         "search" => !arg.is_empty(),
+        "filter" => return crate::library_query::read(arg).map(drop),
         "help" => arg.is_empty() || registry().any(|command| command.name == arg),
         "seek" | "vol" => {
             let (n, relative) = parser::number(arg, line.name == "seek")?;
@@ -280,6 +282,7 @@ mod tests {
             "vol 101",
             "seek NaN",
             "set key",
+            "filter genre:(",
         ] {
             assert!(validate(&parser::parse(input).unwrap()).is_err(), "{input}");
         }
@@ -290,6 +293,8 @@ mod tests {
             "sleep off",
             "set keymap vi",
             "go album",
+            "filter genre:jazz -label:verve",
+            "filter",
         ] {
             assert!(validate(&parser::parse(input).unwrap()).is_ok(), "{input}");
         }

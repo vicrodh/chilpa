@@ -14,6 +14,7 @@
 mod facets;
 mod groups;
 mod merge;
+mod query;
 mod versions;
 #[cfg(test)]
 mod tests;
@@ -241,6 +242,10 @@ pub(crate) struct Prepared {
     qualities: Vec<String>,
     formats: Vec<String>,
     words: Vec<String>,
+    /// The conditions stacked beyond the columns, and the time a relative
+    /// date counts back from.
+    query: Option<chilpa_library::store::query::Node>,
+    now: i64,
 }
 
 fn folded(values: impl IntoIterator<Item = String>) -> Vec<String> {
@@ -266,6 +271,8 @@ impl Prepared {
             qualities: f.qualities.clone(),
             formats: folded(f.formats.iter().cloned()),
             words: f.text.to_lowercase().split_whitespace().map(String::from).collect(),
+            query: f.query.clone(),
+            now: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs() as i64),
         }
     }
 
@@ -297,6 +304,7 @@ impl Prepared {
         if !self.qualities.is_empty() && !self.qualities.iter().any(|q| q == item.tier) { return false; }
         if !self.formats.is_empty() && !self.formats.iter().any(|q| q == item.format) { return false; }
         self.words.iter().all(|word| names.text.contains(word.as_str()))
+            && self.query.as_ref().is_none_or(|node| query::holds(node, item, stars, self.now))
     }
 }
 

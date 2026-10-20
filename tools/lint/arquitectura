@@ -100,7 +100,7 @@ ALLOWED = {
     "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-tags", "chilpa-library", "chilpa-analysis", "chilpa-decode", "chilpa-stream", "chilpa-dsd", "chilpa-sacd", "chilpa-cd", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse", "chilpa-jack", "chilpa-coreaudio", "chilpa-wasapi"},
     "chilpa-api": {"chilpa-core", "chilpa-theme", "chilpa-cast", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics", "chilpa-plugin", "chilpa-secrets", "chilpa-auth", "chilpa-i18n", "chilpa-meta", "chilpa-servers", "chilpa-appkit", "chilpa-bwrap", "chilpa-mpris"},
     # El shell solo ve la fachada. Nunca el core ni los modelos.
-    "chilpa-qt": {"chilpa-api", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders", "chilpa-qt-ambient", "chilpa-qt-mini", "chilpa-qt-dsp", "chilpa-qt-immersive", "chilpa-qt-waveform", "chilpa-qt-artwork", "chilpa-qt-about", "chilpa-qt-stats", "chilpa-qt-graphics", "chilpa-qt-link", "chilpa-qt-wizard", "chilpa-qt-playlists", "chilpa-qt-themes"},
+    "chilpa-qt": {"chilpa-api", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders", "chilpa-qt-ambient", "chilpa-qt-mini", "chilpa-qt-dsp", "chilpa-qt-immersive", "chilpa-qt-waveform", "chilpa-qt-artwork", "chilpa-qt-about", "chilpa-qt-stats", "chilpa-qt-graphics", "chilpa-qt-link", "chilpa-qt-query", "chilpa-qt-wizard", "chilpa-qt-playlists", "chilpa-qt-themes"},
     # La segunda mitad del shell: lo que traen los sources, como su propio
     # módulo de QML. Cada crate del shell tiene sus propios topes.
     # What every shell crate stands on: the facade they share, the theme, the
@@ -128,6 +128,7 @@ ALLOWED = {
     "chilpa-qt-about": {"chilpa-api", "chilpa-qt-kit"},
     "chilpa-qt-stats": {"chilpa-api", "chilpa-qt-kit"},
     "chilpa-qt-link": {"chilpa-api", "chilpa-qt-kit"},
+    "chilpa-qt-query": {"chilpa-api"},
     # The playlists' own screens: the manager and its bridge.
     "chilpa-qt-playlists": {"chilpa-api", "chilpa-qt-kit"},
     "chilpa-qt-wizard": {"chilpa-api", "chilpa-qt-kit"},
@@ -138,7 +139,7 @@ ALLOWED = {
 }
 
 # Los únicos crates que pueden tener tipos de Qt.
-SHELLS = {"chilpa-qt", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders", "chilpa-qt-ambient", "chilpa-qt-mini", "chilpa-qt-dsp", "chilpa-qt-immersive", "chilpa-qt-waveform", "chilpa-qt-artwork", "chilpa-qt-about", "chilpa-qt-stats", "chilpa-qt-graphics", "chilpa-qt-link", "chilpa-qt-wizard", "chilpa-qt-playlists", "chilpa-qt-themes"}
+SHELLS = {"chilpa-qt", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders", "chilpa-qt-ambient", "chilpa-qt-mini", "chilpa-qt-dsp", "chilpa-qt-immersive", "chilpa-qt-waveform", "chilpa-qt-artwork", "chilpa-qt-about", "chilpa-qt-stats", "chilpa-qt-graphics", "chilpa-qt-link", "chilpa-qt-query", "chilpa-qt-wizard", "chilpa-qt-playlists", "chilpa-qt-themes"}
 QT_RE = re.compile(r"\bcxx[-_]qt\b|\bQString\b|\bQObject\b|\bQVariant\b")
 
 MAX_LOC_FILE = 1500

@@ -14,4 +14,8 @@ QtObject {
     function toggleFilter(kind, key) {}
     function resetExtra() {}
     function groupAlbums(on) { groupVersions = on }
+    property bool groupSources: true
+    function groupCopies(on) { groupSources = on }
+    property string queryText: ""
+    function applyQuery(text) { queryText = text; return "" }
 }

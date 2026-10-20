@@ -5,13 +5,18 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // The Library breadcrumb: "All music", then one crumb per chosen column,
-// each with an x that clears it, and "Clear filters" on the right.
+// each with an x that clears it. The screen sets the conditions stacked
+// beyond the columns right after `used`.
 Item {
     id: crumbs
 
-    readonly property bool filtered: Library.year !== "" || Library.genre !== "" || Library.label !== "" || Library.composer !== "" || Library.rating !== "" || Library.artist !== "" || Library.album !== "" || Library.extraFiltered
+    readonly property bool filtered: Library.year !== "" || Library.genre !== "" || Library.label !== "" || Library.composer !== "" || Library.rating !== "" || Library.artist !== "" || Library.album !== "" || Library.extraFiltered || Library.queryText !== ""
+
+    // How much of the width the crumbs take.
+    readonly property real used: line.width
 
     Row {
+        id: line
         anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap8
 

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
+import app.chilpa.query
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
@@ -114,7 +115,10 @@ Rectangle {
             required property int index
             width: ListView.view.width
             stars: pane.column === "rating"
-            onChosen: (modifiers) => facets.choose(index, modifiers)
+            // Alt keeps the value out of the Library, as a chip.
+            onChosen: (modifiers) => modifiers & 4
+                ? (!all && Library.applyQuery(QueryChips.excluding(Library.queryText, pane.column, key)))
+                : facets.choose(index, modifiers)
         }
     }
 }
