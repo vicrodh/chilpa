@@ -845,20 +845,22 @@ impl qobject::TrackListModel {
         if kind == "album" && id != 0 {
             let asked = self.rust().asked.wrapping_add(1);
             self.as_mut().rust_mut().asked = asked;
+            // For a record, `key` is what is typed to find its rows (`entries_matching`).
+            let typed = self.rust().key.to_string();
             if let Some(page) = chilpa_qt_kit::album_pages::get(self.rust().album_page, id) {
-                self.show(kind, Rows::Loaded(page.entries.clone()), Some(page.detail.duration_ms));
+                self.show(kind, Rows::Loaded(chilpa_api::entries_matching(page.entries.clone(), &typed)), Some(page.detail.duration_ms));
             } else if id > 0 {
                 let thread = self.qt_thread();
                 worker::submit_album(move |reader| {
                     let page = reader.album_page(id, true);
                     let _ = thread.queue(move |model| {
                         if model.rust().asked == asked && model.rust().album_id == id && model.rust().kind.to_string() == "album" {
-                            if let Some(page) = page { model.show("album".into(), Rows::Loaded(page.entries), Some(page.detail.duration_ms)); }
+                            if let Some(page) = page { model.show("album".into(), Rows::Loaded(chilpa_api::entries_matching(page.entries, &typed)), Some(page.detail.duration_ms)); }
                         }
                     });
                 });
             } else if let Some(page) = app::with(|api| api.cached_album_page(id)) {
-                self.show(kind, Rows::Loaded(page.entries), Some(page.detail.duration_ms));
+                self.show(kind, Rows::Loaded(chilpa_api::entries_matching(page.entries, &typed)), Some(page.detail.duration_ms));
             }
             return;
         }

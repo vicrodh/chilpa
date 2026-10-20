@@ -159,7 +159,7 @@ mod album_copies;
 pub mod library_query;
 mod album_page;
 mod album_shelves;
-pub use album_page::AlbumPage;
+pub use album_page::{entries_matching, AlbumPage};
 mod album_information;
 pub use album_versions::{AlbumSource, AlbumVersion};
 pub use covers::{contained_cover, cover_derivative, header_atmosphere};

@@ -52,11 +52,16 @@ Flickable {
     }
     TrackListModel {
         id: tracks
+        objectName: "albumTracks"
         kind: "album"
         albumId: detail.selectedId
         albumPage: detail.tracksRev
         playingPath: Player.path
+        // What is typed finds the record's rows here, with nothing asked of
+        // the library or the source.
+        key: find.typed
     }
+    onAlbumIdChanged: find.clear()
     AlbumHeaderBackground {
         width: page.width
         height: Metrics.contentTop + (sourceDetails.visible ? sourceDetails.heroHeight : hero.height) + Metrics.gap16
@@ -109,7 +114,7 @@ Flickable {
 
         Item {
             width: parent.width
-            height: Metrics.gap16
+            height: Math.max(Metrics.gap16, find.height)
 
             Row {
                 anchors.verticalCenter: parent.verticalCenter
@@ -128,7 +133,16 @@ Flickable {
                 }
             }
 
+            SettledSearchField {
+                id: find
+                objectName: "albumTrackSearch"
+                anchors.right: summaryText.left
+                anchors.rightMargin: Metrics.gap16
+                anchors.verticalCenter: parent.verticalCenter
+                width: Metrics.screenSearch
+            }
             Text {
+                id: summaryText
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 text: detail.summary

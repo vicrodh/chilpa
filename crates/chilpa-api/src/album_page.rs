@@ -94,5 +94,37 @@ pub(crate) fn entries(rows: Vec<TrackRow>, said: Vec<chilpa_library::AlbumDisc>,
     entries
 }
 
+/// The rows of a record that hold every word typed, in their title, artist,
+/// composer or work, or in the disc or work they stand under; a header stays
+/// when a row under it does. The rows are the ones the page already has:
+/// nothing is asked of the library or the source.
+pub fn entries_matching(entries: Vec<TrackEntry>, typed: &str) -> Vec<TrackEntry> {
+    use crate::settings_schema::folded;
+    let words: Vec<String> = folded(typed).split_whitespace().map(str::to_string).collect();
+    if words.is_empty() { return entries; }
+    let (mut kept, mut pending) = (Vec::new(), Vec::new());
+    let (mut disc, mut work) = (String::new(), String::new());
+    for entry in entries {
+        if let TrackEntry::Header(head) = &entry {
+            if head.work {
+                pending.retain(|held| !matches!(held, TrackEntry::Header(h) if h.work));
+                work = folded(&format!("{} {}", head.label, head.composer));
+            } else {
+                pending.clear();
+                (disc, work) = (folded(&head.label), String::new());
+            }
+            pending.push(entry);
+            continue;
+        }
+        let TrackEntry::Track(row) = &entry else { continue };
+        let text = folded(&[row.title.as_str(), &row.artist, &row.composer, &row.work, &disc, &work].join(" "));
+        if words.iter().all(|word| text.contains(word.as_str())) {
+            kept.append(&mut pending);
+            kept.push(entry);
+        }
+    }
+    kept
+}
+
 #[cfg(test)]
 mod tests;
