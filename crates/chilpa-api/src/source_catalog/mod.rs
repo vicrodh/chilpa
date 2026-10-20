@@ -498,19 +498,38 @@ impl Catalog {
         })).collect()
     }
 
+    /// A card as every accessor hands it out: with its filled genres and the
+    /// cover on disk, its own or, for a record known only through its tracks,
+    /// theirs; with `ask`, the cover is fetched when it is not there yet. No
+    /// card leaves the catalog with its stored `art` as it is: a path whose
+    /// file is gone, or none, drew an empty card (Home, 2026-10-20).
+    fn shown(&self, inner: &mut Inner, card: store::Card, ask: bool) -> store::Card {
+        let mut card = inner.genres.card(card, now());
+        card.art = inner.store.shown_art(&card);
+        if card.art.is_empty() {
+            let image = if card.image.is_empty() {
+                card.tracks.iter().flatten().filter_map(|id| inner.store.tracks.get(id)).map(|track| track.image.clone()).find(|image| !image.is_empty()).unwrap_or_default()
+            } else { card.image.clone() };
+            match crate::pictures::kept(&image) {
+                Some(kept) => card.art = kept,
+                None if ask => self.want_cover(inner, &image),
+                None => {}
+            }
+        }
+        card
+    }
+
+    /// A card by what its source calls it, as `card` gives it: with the cover
+    /// on disk, asked for when it is not there yet.
     pub(crate) fn card_by_identity(&self, plugin: &str, reference: &str) -> Option<store::Card> {
-        let inner = self.lock();
-        let card = inner.store.cards.values().find(|card| card.plugin == plugin && card.identity == reference).cloned()?;
-        Some(inner.genres.card(card, now()))
+        let id = self.lock().store.cards.values().find(|card| card.plugin == plugin && card.identity == reference)?.id;
+        self.card(id)
     }
 
     pub fn card(&self, id: i64) -> Option<store::Card> {
         let mut inner = self.lock();
-        let mut card = inner.genres.card(inner.store.cards.get(&id).cloned()?, now());
-        card.art = inner.store.shown_art(&card);
-        if card.art.is_empty() {
-            self.want_cover(&mut inner, &card.image);
-        }
+        let card = inner.store.cards.get(&id).cloned()?;
+        let card = self.shown(&mut inner, card, true);
         drop(inner);
         if card.kind == store::CardKind::Label && card.image.is_empty() && self.natives().is_some_and(|natives| natives.has_pages(&card.plugin)) {
             self.shelf(&format!("{} native:{}", card.plugin, card.identity));
@@ -669,8 +688,9 @@ impl Catalog {
     }
 
     pub fn cards(&self, ids: &[i64]) -> Vec<store::Card> {
-        let inner = self.lock();
-        ids.iter().filter_map(|id| inner.store.cards.get(id).cloned()).map(|card| { let mut card = inner.genres.card(card, now()); card.art = inner.store.shown_art(&card); card }).collect()
+        let mut inner = self.lock();
+        let found: Vec<_> = ids.iter().filter_map(|id| inner.store.cards.get(id).cloned()).collect();
+        found.into_iter().map(|card| self.shown(&mut inner, card, false)).collect()
     }
 
     /// Shows these covers the listener chose over the fetched ones, by
@@ -862,6 +882,24 @@ impl Catalog {
 #[cfg(test)]
 mod retry_tests {
     use super::*;
+    #[test]
+    fn a_card_found_by_its_identity_shows_its_cover_as_one_found_by_id() {
+        let catalog = Catalog::new();
+        let dir = tempfile::tempdir().unwrap();
+        let cover = dir.path().join("cover.jpg");
+        std::fs::write(&cover, b"jpeg").unwrap();
+        let id = catalog.lock().store.take_item("fixture", &serde_json::json!({"kind":"album","ref":"album:1","title":"Record"}), 1).unwrap();
+        catalog.lock().store.cards.get_mut(&id).unwrap().art = cover.display().to_string();
+        let found = catalog.card_by_identity("fixture", "album:1").unwrap();
+        assert_eq!(found.art, catalog.card(id).unwrap().art);
+        assert_eq!(found.art, cover.display().to_string(), "the cover on disk, not an empty card");
+        assert_eq!(catalog.cards(&[id])[0].art, found.art, "every accessor hands the same cover");
+        std::fs::remove_file(&cover).unwrap();
+        for card in [catalog.card(id).unwrap(), catalog.card_by_identity("fixture", "album:1").unwrap(), catalog.cards(&[id]).remove(0)] {
+            assert_eq!(card.art, "", "a stored path whose file is gone is no cover, in no accessor");
+        }
+    }
+
     #[test]
     fn the_listeners_libraries_are_read_every_five_minutes_or_on_coming_back() {
         let seconds = Duration::from_secs;
