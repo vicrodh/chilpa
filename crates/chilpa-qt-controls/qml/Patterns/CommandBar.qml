@@ -45,6 +45,16 @@ Rectangle {
         opened = false
         dismissed(returnFocus)
     }
+    // While it is open the console holds the keys, so Escape always reaches
+    // it; when something else takes them (a search result chosen with
+    // Enter, a click elsewhere) it closes and leaves them there. A window
+    // that only stops being the active one keeps it open.
+    function lost() {
+        if (!opened || field.activeFocus || !bar.Window.active) return
+        field.focus = false
+        opened = false
+        helpLines = []
+    }
     function updateSuggestions() {
         error = ""
         suggestion = -1
@@ -132,6 +142,7 @@ Rectangle {
         clip: true
         selectByMouse: true
         onTextEdited: { bar.updateSuggestions(); bar.historyAt = bar.history.length }
+        onActiveFocusChanged: if (!activeFocus) Qt.callLater(bar.lost)
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) { if (bar.helpLines.length) bar.helpLines = []; else bar.dismiss() }
             else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) bar.submit()
