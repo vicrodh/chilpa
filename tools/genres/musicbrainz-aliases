@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""Writes crates/chilpa-api/data/genre-aliases.tsv from MusicBrainz's genres.
+
+Each line is a genre that goes by other names: its name, then each alias, a
+tab apart. The Library's filter reads it so that a genre typed by one of its
+names finds the library's genre under another ("dnb" finds "Drum & Bass").
+
+The web service lists the genres but gives no genre's aliases, even when
+asked for them; each genre's alias page on the site does. The pages are
+read one every 2.1 s, as the site's robots.txt asks: about eighty minutes
+for the whole list. `--from genres.jsonl` writes the table from an earlier
+download instead (one JSON object per line: id, name, aliases).
+"""
+import argparse
+import html
+import json
+import pathlib
+import re
+import time
+import urllib.request
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+TABLE = ROOT / "crates/chilpa-api/data/genre-aliases.tsv"
+AGENT = "Chilpa/0.1 ( https://github.com/vicrodh/chilpa )"
+
+
+def get(url, page=False):
+    for attempt in range(6):
+        try:
+            request = urllib.request.Request(url, headers={"User-Agent": AGENT, "Accept": "text/html" if page else "application/json"})
+            with urllib.request.urlopen(request, timeout=30) as response:
+                return response.read().decode() if page else json.load(response)
+        except OSError as error:
+            print("again:", url, error, flush=True)
+            time.sleep(5 * (attempt + 1))
+    raise SystemExit(f"MusicBrainz did not answer: {url}")
+
+
+def download():
+    genres, offset = [], 0
+    while True:
+        page = get(f"https://musicbrainz.org/ws/2/genre/all?limit=100&offset={offset}&fmt=json")
+        genres += page["genres"]
+        offset += 100
+        time.sleep(1.1)
+        if offset >= page["genre-count"]:
+            break
+    for at, genre in enumerate(genres):
+        genre["aliases"] = aliases(get(f"https://musicbrainz.org/genre/{genre['id']}/aliases", page=True))
+        if at % 100 == 0:
+            print(f"{at} of {len(genres)}", flush=True)
+        time.sleep(2.1)
+    return genres
+
+
+def aliases(page):
+    """The names in the first cell of each row of a genre's alias table."""
+    names = []
+    for row in re.findall(r"<tr[^>]*>(.*?)</tr>", page, re.S):
+        cells = re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)
+        name = html.unescape(re.sub(r"<[^>]+>", "", cells[0])).strip() if cells else ""
+        if name:
+            names.append(name)
+    return names
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--from", dest="source", type=pathlib.Path)
+    source = parser.parse_args().source
+    genres = [json.loads(line) for line in source.read_text().splitlines() if line.strip()] if source else download()
+    lines = []
+    for genre in sorted(genres, key=lambda g: g["name"].lower()):
+        names = [genre["name"]] + sorted({a for a in genre.get("aliases", []) if a.lower() != genre["name"].lower()})
+        if len(names) > 1 and not any("\t" in name or "\n" in name for name in names):
+            lines.append("\t".join(names))
+    TABLE.write_text("\n".join(lines) + "\n")
+    print(f"{len(lines)} genres with other names in {TABLE.relative_to(ROOT)}")
+
+
+if __name__ == "__main__":
+    main()
