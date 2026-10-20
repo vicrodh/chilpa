@@ -405,6 +405,22 @@ impl Catalog {
         self.changed();
     }
 
+    /// A heart given or taken on a source's record, artist or list: its
+    /// cards and the header of its own page say so at once, and no page is
+    /// read again for it (the page around the card stays as it is).
+    pub fn mark_native_favorite(&self, plugin: &str, reference: &str, on: bool) {
+        let mut inner = self.lock();
+        for card in inner.store.cards.values_mut_where(|c| c.plugin == plugin && c.identity == reference && !c.metadata.is_array()) {
+            card.metadata["favorite"] = serde_json::json!(on);
+        }
+        let pages = format!("{plugin} native:");
+        for (_, shelf) in inner.store.shelves.iter_mut_where(|key, shelf| key.starts_with(&pages) && shelf.document["header"]["ref"] == reference) {
+            shelf.document["header"]["favorite"] = serde_json::json!(on);
+        }
+        inner.dirty = true;
+        self.changed();
+    }
+
     pub fn invalidate_native_cards(&self, plugin: &str, references: &[serde_json::Value]) {
         let mut inner = self.lock();
         let mut changed = Vec::new();
