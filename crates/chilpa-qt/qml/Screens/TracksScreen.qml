@@ -122,6 +122,7 @@ Item {
                 }
             }
             SortButton {
+                objectName: "tracksGrouping"
                 anchors.verticalCenter: parent.verticalCenter
                 glyph: Icons.stack2
                 directed: false
@@ -130,7 +131,12 @@ Item {
                     { value: "off", text: I18n.tr("No grouping", I18n.rev) },
                     { value: "album", text: I18n.tr("By album", I18n.rev) },
                     { value: "artist", text: I18n.tr("By artist", I18n.rev) },
-                    { value: "name", text: I18n.tr("By name", I18n.rev) }
+                    { value: "name", text: I18n.tr("By name", I18n.rev) },
+                    { value: "year", text: I18n.tr("By year", I18n.rev) },
+                    { value: "decade", text: I18n.tr("By decade", I18n.rev) },
+                    { value: "genre", text: I18n.tr("By genre", I18n.rev) },
+                    { value: "label", text: I18n.tr("By label", I18n.rev) },
+                    { value: "composer", text: I18n.tr("By composer", I18n.rev) }
                 ]
                 onPicked: (value) => {
                     page.group = value
@@ -174,13 +180,7 @@ Item {
     // the rows made the view misjudge far rows, and the first scroll after
     // a far jump leapt hundreds of rows. Each group's first row carries a
     // divider instead.
-    readonly property string currentGroup: {
-        if (!grouped)
-            return ""
-        const view = list.rows
-        const item = view.count > 0 ? view.itemAt(Metrics.gap2, view.contentY + 1) : null
-        return item && item.model ? String(item.model.group || "") : ""
-    }
+    readonly property string currentGroup: grouped ? list.rows.currentSection : ""
     Text {
         id: groupName
         objectName: "tracksGroupName"
@@ -228,7 +228,8 @@ Item {
 
     AlphaStrip {
         id: strip
-        visible: page.grouped && tracks.count > 0
+        objectName: "tracksLetters"
+        visible: page.grouped && tracks.count > 0 && page.letters.length > 0
         anchors.top: list.top
         anchors.bottom: list.bottom
         anchors.bottomMargin: Metrics.contentBottom

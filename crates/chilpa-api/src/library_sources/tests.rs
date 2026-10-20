@@ -111,6 +111,83 @@ fn tracks_takes_the_saved_tracks_only_and_says_where_each_letter_starts() {
 }
 
 #[test]
+fn source_track_metadata_names_every_new_group() {
+    let item = SourceItem { year: Some(1999), genres: vec!["Zulu".into(), "alpha".into()],
+        label: " House ".into(), composers: vec!["Writer, Z".into(), "author".into()], ..Default::default() };
+    let key = merge::key_of(&item);
+    for (by, expected) in [("year", "1999"), ("decade", "1990s"), ("genre", "alpha"), ("label", "House"), ("composer", "author")] {
+        assert_eq!(merge::group_label(&key, by), expected, "{by}");
+    }
+    for year in [None, Some(0), Some(-1)] {
+        let key = merge::key_of(&SourceItem { year, ..Default::default() });
+        for (by, missing) in [("year", "Unknown year"), ("decade", "Unknown year"), ("genre", "No genre"), ("label", "No label"), ("composer", "No composer")] {
+            assert_eq!(merge::group_label(&key, by), chilpa_i18n::t(missing), "{by}");
+        }
+    }
+}
+
+#[test]
+fn saved_tracks_join_their_genre_and_the_missing_genre_group() {
+    let (reader, mut index) = fixture();
+    index.items[2].genres = vec!["Zulu".into(), "jazz".into()];
+    index.items.push(SourceItem { track: -3, title: "A missing genre".into(), saved_track: true, ..Default::default() });
+    reader.lib.set_track_genres(20, &[]).unwrap();
+    let index = SourceIndex::new(index.items, index.sources);
+    let found = reader.tracks_using("title\u{1f}genre\u{1f}", &Filter::default(), &index);
+    assert_eq!(found.snapshot.ids, [10, 11, -2, -3, 20]);
+    assert_eq!(found.sections, [(0, "Jazz".into()), (3, chilpa_i18n::t("No genre"))]);
+    assert_eq!(crate::section_at(&found.sections, 2), Some("Jazz"), "case variants share one section");
+    let descending = reader.tracks_using("title-desc\u{1f}genre\u{1f}", &Filter::default(), &index);
+    assert_eq!(descending.snapshot.ids, [-2, 11, 10, 20, -3], "only the tracks inside each group reverse");
+    assert_eq!(descending.sections.len(), 2);
+}
+
+#[test]
+fn saved_tracks_merge_into_dates_labels_and_composers() {
+    let (reader, index) = fixture();
+    for (by, expected, sections) in [
+        ("year", vec![20, -2, 10, 11], vec![(0, "1959".to_string()), (2, "1958".into())]),
+        ("decade", vec![10, 20, 11, -2], vec![(0, "1950s".into())]),
+        ("label", vec![10, 20, 11, -2], vec![(0, "Blue Note".into()), (3, "Impulse!".into())]),
+        ("composer", vec![-2, 10, 20, 11], vec![(0, "John Coltrane".into()), (1, chilpa_i18n::t("No composer"))]),
+    ] {
+        let found = reader.tracks_using(&format!("title\u{1f}{by}\u{1f}"), &Filter::default(), &index);
+        assert_eq!(found.snapshot.ids, expected, "{by}");
+        assert_eq!(found.sections, sections, "{by}");
+    }
+}
+
+/// I measure the complete Tracks answer on a read-only library copy.
+#[test]
+#[ignore]
+fn measure_tracks_groups_on_a_library_copy() {
+    let path = std::env::var("CHILPA_LIBRARY_COPY").expect("set CHILPA_LIBRARY_COPY to a library copy");
+    let reader = Reader::of(chilpa_library::Library::open_read_only(std::path::Path::new(&path)).unwrap());
+    let index = SourceIndex::default();
+    let groups = ["off", "year", "decade", "genre", "label", "composer"];
+    let mut samples = vec![Vec::new(); groups.len()];
+    let mut counts = vec![0; groups.len()];
+    for round in 0..4 {
+        for offset in 0..groups.len() {
+            let at = if round % 2 == 0 { offset } else { groups.len() - 1 - offset };
+            let query = format!("album\u{1f}{}\u{1f}", groups[at]);
+            let start = std::time::Instant::now();
+            let found = reader.tracks_using(&query, &Filter::default(), &index);
+            let ms = start.elapsed().as_secs_f64() * 1000.0;
+            assert!(!found.snapshot.ids.is_empty(), "the query must return tracks");
+            counts[at] = found.snapshot.ids.len();
+            if round > 0 { samples[at].push(ms); }
+        }
+    }
+    assert!(counts.iter().all(|count| *count == counts[0]));
+    for (at, group) in groups.iter().enumerate() {
+        let mut sorted = samples[at].clone();
+        sorted.sort_by(f64::total_cmp);
+        println!("Tracks {group:8}: {} rows, best {:.2} ms, median {:.2} ms, samples {:?} ms", counts[at], sorted[0], sorted[1], samples[at]);
+    }
+}
+
+#[test]
 fn albums_merges_the_saved_records_in_its_order_and_groups_them_with_the_library() {
     let (reader, index) = fixture();
     let found = reader.albums_view_using("year", "", "", &Filter::default(), &index);
