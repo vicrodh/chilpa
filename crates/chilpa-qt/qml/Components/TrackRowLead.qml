@@ -41,7 +41,7 @@ Item {
         x: lead.width - Metrics.gap8 - width
         anchors.verticalCenter: parent.verticalCenter
         visible: !lead.selectionMode && lead.playing
-        running: lead.inViewport && Player.playing && !Player.paused
+        running: lead.inViewport && Player.playing && !Player.paused; onToggled: Player.toggle()
     }
 
     Icon {

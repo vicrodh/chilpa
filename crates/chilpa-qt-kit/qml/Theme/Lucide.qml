@@ -14,6 +14,8 @@ QtObject {
     readonly property string chevronDown: "\ue06d"
     readonly property string chevronRight: "\ue06f"
     readonly property string circleCheckBig: "\ue07c"
+    readonly property string circlePause: "\ue07f"
+    readonly property string circlePlay: "\ue080"
     readonly property string copy: "\ue09e"
     readonly property string eject: "\ue733"
     readonly property string folder: "\ue0d7"

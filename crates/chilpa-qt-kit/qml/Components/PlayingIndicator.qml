@@ -2,41 +2,38 @@
 import QtQuick
 import app.chilpa.kit
 import "../Theme"
+import "../Primitives"
 
-// Three bars in the accent (design/03 PlayingIndicator), or, when
-// Appearance asks for it, the moving bars while the track runs. Only a
-// shown mark of a running track builds them, so a list holds one at most
-// and nothing ticks while it is paused or the option is off (QBZ 2.1.2).
+// The playing row's mark: Lucide's circle-play, circle-pause under the
+// pointer while the track runs, and a click asks to pause or resume. When
+// Appearance asks for it, the moving bars take its place while the track
+// runs. Only a shown mark builds either, so a list holds one at most and
+// nothing ticks while it is paused or the option is off (QBZ 2.1.2).
 Item {
     id: mark
     // The track runs: neither paused nor stopped.
     property bool running: false
     readonly property bool moving: Prefs.animatedIndicator && running && visible
-    width: moving ? Metrics.eqWide : Metrics.playingBox
-    height: moving ? Metrics.eqTall : Metrics.playingBox
+    signal toggled()
+    width: moving ? Metrics.eqWide : Metrics.iconMd
+    height: moving ? Metrics.eqTall : Metrics.iconMd
 
     Loader {
         active: mark.moving
         anchors.fill: parent
         sourceComponent: PlayingBars {}
     }
-    Row {
-        visible: !mark.moving
-        anchors.bottom: parent.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Metrics.gap2
-
-        Repeater {
-            model: [0.67, 0.92, 0.5]
-
-            Rectangle {
-                required property real modelData
-                anchors.bottom: parent.bottom
-                width: Metrics.playingBarWidth
-                height: Metrics.playingBox * modelData
-                radius: 1
-                color: Theme.color.accent
-            }
+    Loader {
+        active: !mark.moving && mark.visible
+        anchors.fill: parent
+        sourceComponent: Icon {
+            objectName: "playingMarkStill"
+            glyph: mark.running && hover.hovered ? Lucide.circlePause : Lucide.circlePlay
+            iconFamily: Lucide.font
+            size: Metrics.iconMd
+            color: Theme.color.accent
+            HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
+            TapHandler { gesturePolicy: TapHandler.ReleaseWithinBounds; onTapped: mark.toggled() }
         }
     }
 }

@@ -88,7 +88,7 @@ Item {
         anchors.rightMargin: Metrics.gap10
         anchors.verticalCenter: parent.verticalCenter
         visible: row.playing
-        running: Player.playing && !Player.paused
+        running: Player.playing && !Player.paused; onToggled: Player.toggle()
     }
 
     IconButton {
