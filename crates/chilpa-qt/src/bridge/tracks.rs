@@ -210,6 +210,7 @@ pub struct TrackListRust {
     /// Tracks grouping, letter boundaries and latest query generation.
     group: String,
     letters: String,
+    sections: Vec<(usize, String)>,
     asked: u64,
     queue_keys: Vec<String>,
     queue_numbers: Vec<i32>,
@@ -368,7 +369,9 @@ fn summary(tracks: usize, ms: u64) -> String {
 
 impl qobject::TrackListModel {
     pub fn data(&self, index: &QModelIndex, role: i32) -> QVariant {
-        role_value(self.rust(), index.row().max(0) as usize, role)
+        // A group's name is known without reading the row's page.
+        let section = (role == USER_ROLE + 17).then(|| chilpa_api::section_at(&self.rust().sections, index.row().max(0) as usize)).flatten();
+        section.map_or_else(|| role_value(self.rust(), index.row().max(0) as usize, role), |name| QVariant::from(&QString::from(name)))
     }
 
     pub fn role_names(&self) -> QHash<QHashPair_i32_QByteArray> {
@@ -832,7 +835,7 @@ impl qobject::TrackListModel {
                 let _ = thread.queue(move |mut model| {
                     if model.rust().asked == asked {
                         let ms = found.snapshot.totals.duration_ms;
-                        (model.as_mut().rust_mut().group, model.as_mut().rust_mut().letters) = (found.group, found.letters);
+                        (model.as_mut().rust_mut().group, model.as_mut().rust_mut().letters, model.as_mut().rust_mut().sections) = (found.group, found.letters, found.sections);
                         model.show("tracks".into(), Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms));
                     }
                 });

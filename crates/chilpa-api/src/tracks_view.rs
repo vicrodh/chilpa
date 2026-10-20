@@ -43,6 +43,24 @@ pub struct FoundTracks {
     pub snapshot: Snapshot,
     pub letters: String,
     pub group: String,
+    /// Where each group starts and what it is called, in row order.
+    pub sections: Vec<(usize, String)>,
+}
+
+/// The group a row is in, from where the groups start: what a view asks of
+/// every row between two far places, answered without reading one.
+pub fn section_at(sections: &[(usize, String)], row: usize) -> Option<&str> {
+    sections.partition_point(|(at, _)| *at <= row).checked_sub(1).map(|at| sections[at].1.as_str())
+}
+
+/// Where each letter first starts, from where the groups start.
+fn letters_of(sections: &[(usize, String)], by: &str) -> String {
+    let mut letters: Vec<(String, usize)> = Vec::new();
+    for (at, name) in sections {
+        let letter = if by == "title" { name.clone() } else { chilpa_library::letter_of(name) };
+        if !letters.iter().any(|(seen, _)| *seen == letter) { letters.push((letter, *at)); }
+    }
+    serde_json::to_string(&letters).unwrap_or_default()
 }
 
 /// The group a row belongs to, which is what its header says.
@@ -75,20 +93,18 @@ impl Reader {
             ..Filter::default()
         };
         let by = if query.group == "name" { "title" } else { query.group.as_str() };
-        if !index.items.iter().any(|item| item.saved_track) {
-            let snapshot = self.snapshot(&filter, query.order());
-            let letters = if query.grouped() { serde_json::to_string(&self.letters(&snapshot.ids, by)).unwrap_or_default() } else { String::new() };
-            return FoundTracks { snapshot, letters, group: query.group };
+        if !index.items.iter().any(|item| item.saved_track) && !query.grouped() {
+            return FoundTracks { snapshot: self.snapshot(&filter, query.order()), group: query.group, ..Default::default() };
         }
         let (local, keys) = self.lib.keyed_snapshot(&filter, query.order()).unwrap_or_else(|e| {
             eprintln!("chilpa-queries: library snapshot failed: {e}");
             Default::default()
         });
         let stars = crate::library_sources::Stars::read(&self.lib, index);
-        let (snapshot, letters) = crate::library_sources::merge_snapshot(local, keys, &filter, query.order(), index, &stars,
+        let (snapshot, sections) = crate::library_sources::merge_snapshot(local, keys, &filter, query.order(), index, &stars,
             crate::library_sources::Scope::Tracks, query.grouped().then_some(by), None);
-        let letters = if query.grouped() { serde_json::to_string(&letters).unwrap_or_default() } else { String::new() };
-        FoundTracks { snapshot, letters, group: query.group }
+        let letters = if query.grouped() { letters_of(&sections, by) } else { String::new() };
+        FoundTracks { snapshot, letters, group: query.group, sections }
     }
 
     /// The same, handed over once: the merge reads nothing of the library
@@ -109,6 +125,14 @@ mod tests {
         assert_eq!(asked("title-desc\u{1f}artist\u{1f}"), TrackOrder::TitleDescending, "a grouping orders the groups, not what is in them");
         assert_eq!(asked(""), TrackOrder::Album, "nothing asked is the order of the records");
         assert_eq!(TracksQuery::parse("added\u{1f}album\u{1f}two words").text, "two words");
+    }
+
+    #[test]
+    fn a_row_s_group_is_read_from_where_the_groups_start() {
+        let sections = vec![(0, "A".to_string()), (3, "B".to_string()), (9, "Z".to_string())];
+        assert_eq!([0, 2, 3, 8, 9, 20_000].map(|row| section_at(&sections, row)), [Some("A"), Some("A"), Some("B"), Some("B"), Some("Z"), Some("Z")]);
+        assert_eq!(section_at(&[], 4), None, "an ungrouped list says nothing");
+        assert_eq!(letters_of(&[(0, "Abbey Road".into()), (12, "Animals".into()), (30, "Blue".into())], "album"), r#"[["A",0],["B",30]]"#);
     }
 
     #[test]

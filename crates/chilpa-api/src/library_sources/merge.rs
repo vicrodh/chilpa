@@ -42,18 +42,18 @@ pub(crate) fn key_of(item: &SourceItem) -> OrderKey {
     }
 }
 
-/// The letter a merged row is filed under for `by` ("album", "artist", or
-/// the title), as `Library::letters` says it for the library's own.
-fn letter(key: &OrderKey, by: &str) -> String {
-    chilpa_library::letter_of(match by { "album" => &key.album, "artist" => &key.artist, _ => &key.title })
+/// The group a row is in for `by` ("album", "artist", or the title's
+/// letter), as `tracks_view::group_of` names it from the row.
+pub(crate) fn group_label(key: &OrderKey, by: &str) -> String {
+    match by { "album" => key.album.clone(), "artist" => key.artist.clone(), _ => chilpa_library::letter_of(&key.title) }
 }
 
 /// The library's snapshot with what the filter leaves of the index merged
-/// in. With `letters_by`, also where each letter starts among the tracks.
+/// in. With `letters_by`, also where each group starts among the tracks.
 /// With `grouping`, a record the library and a source both keep counts once.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn snapshot(mut local: Snapshot, mut keys: Vec<OrderKey>, f: &Filter, order: TrackOrder, index: &SourceIndex, stars: &Stars, scope: Scope, letters_by: Option<&str>, grouping: Option<Grouping>)
-    -> (Snapshot, Vec<(String, usize)>) {
+    -> (Snapshot, Vec<(usize, String)>) {
     let filter = Prepared::new(f);
     let mut extra: Vec<(&OrderKey, &SourceItem)> = index.keys.iter().zip(&index.items)
         .filter(|(_, item)| scope.takes(item) && filter.passes(item, stars)).collect();
@@ -75,14 +75,14 @@ pub(crate) fn snapshot(mut local: Snapshot, mut keys: Vec<OrderKey>, f: &Filter,
         }
     }
     let group = f.grouped_by.as_str();
-    let mut letters: Vec<(String, usize)> = Vec::new();
+    let mut sections: Vec<(usize, String)> = Vec::new();
     let mut note = |key: &OrderKey, at: usize| if let Some(by) = letters_by {
-        let found = letter(key, by);
-        if !letters.iter().any(|(seen, _)| *seen == found) { letters.push((found, at)); }
+        let found = group_label(key, by);
+        if sections.last().is_none_or(|(_, last)| *last != found) { sections.push((at, found)); }
     };
     if extra.is_empty() {
         for (at, key) in keys.iter().enumerate() { note(key, at); }
-        return (local, letters);
+        return (local, sections);
     }
     extra.sort_by(|a, b| order.compare(group, a.0, b.0));
     let mut ids = Vec::with_capacity(local.ids.len() + extra.len());
@@ -124,5 +124,5 @@ pub(crate) fn snapshot(mut local: Snapshot, mut keys: Vec<OrderKey>, f: &Filter,
     }
     album_ids.extend(inserts.map(|(_, id)| id));
     let totals = crate::Totals { tracks: ids.len() + tracks, albums: album_ids.len(), duration_ms: duration };
-    (Snapshot { ids, album_ids, totals }, letters)
+    (Snapshot { ids, album_ids, totals }, sections)
 }
