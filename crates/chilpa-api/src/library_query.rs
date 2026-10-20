@@ -10,6 +10,10 @@
 //! MusicBrainz knows a genre by finds the genre under its other names
 //! ("dnb" finds "Drum & Bass"), from a table generated from its genres.
 
+mod focus;
+pub(crate) use focus::facet_filter;
+pub use focus::{focus_rows, with_minimum, with_missing, with_range, with_value, with_within, FocusRow, FocusRows, ValueState};
+
 use chilpa_i18n as i18n;
 use chilpa_library::store::query::{parse, Field, Node, Values};
 use std::collections::HashMap;

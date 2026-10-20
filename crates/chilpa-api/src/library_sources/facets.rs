@@ -10,7 +10,8 @@ use std::collections::{HashMap, HashSet};
 /// The filter a column is counted under: the choices to its left, with its
 /// own and those to its right cleared, as `Library::facet_*` builds it.
 fn left_of(f: &Filter, column: usize) -> Filter {
-    let mut left = f.clone();
+    let name = ["year", "genre", "label", "composer", "rating", "artist", "album"][column];
+    let mut left = crate::library_query::facet_filter(f, name);
     left.choose(column, &[]);
     left.queries[column..].fill(String::new());
     left

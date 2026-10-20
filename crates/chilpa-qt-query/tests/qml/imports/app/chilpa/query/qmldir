@@ -1,2 +1,3 @@
 module app.chilpa.query
 singleton QueryChips 1.0 QueryChips.qml
+FocusTestFacet 1.0 FocusTestFacet.qml

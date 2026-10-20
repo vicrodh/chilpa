@@ -235,6 +235,9 @@ msgstr "Ajouter à la file {}"
 msgid "Add tracks from a track menu to this queue."
 msgstr "Ajoutez des pistes à cette file d'attente depuis le menu d'une piste."
 
+msgid "Added"
+msgstr "Date d’ajout"
+
 msgid "Added this month"
 msgstr "Ajoutées ce mois-ci"
 
@@ -497,6 +500,11 @@ msgstr "Demander avant de quitter"
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Demande à PipeWire ou PulseAudio de libérer la carte pendant que Chilpa l'utilise, et la rend quand Chilpa s'arrête ou reste longtemps en pause."
+
+msgid "At least {} star"
+msgid_plural "At least {} stars"
+msgstr[0] "Au moins {} étoile"
+msgstr[1] "Au moins {} étoiles"
 
 msgid "Audio"
 msgstr "Audio"
@@ -1574,6 +1582,9 @@ msgstr "Modifier les métadonnées…"
 msgid "Edit playlist"
 msgstr "Modifier la playlist"
 
+msgid "Edit with :filter"
+msgstr "Modifier avec :filter"
+
 msgid "Edit…"
 msgstr "Modifier…"
 
@@ -1789,6 +1800,9 @@ msgstr "Flottante"
 
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr "Flottante au-dessus du contenu, ou sur toute la largeur de la fenêtre, en haut ou en bas."
+
+msgid "Focus"
+msgstr "Focus"
 
 msgid "Focus on playing"
 msgstr "Afficher la piste en lecture"
@@ -2023,9 +2037,6 @@ msgstr "Masquer la saisie manuelle"
 
 msgid "Hide sidebar"
 msgstr "Masquer la barre latérale"
-
-msgid "Hide the columns"
-msgstr "Masquer les colonnes"
 
 msgid "Hide token"
 msgstr "Masquer le jeton"
@@ -2354,6 +2365,9 @@ msgstr "Dernière playlist"
 msgid "Last track"
 msgstr "Dernière piste"
 
+msgid "Last {} days"
+msgstr "{} derniers jours"
+
 msgid "Last.fm account"
 msgstr "Compte Last.fm"
 
@@ -2575,6 +2589,12 @@ msgstr "Marquer comme non écouté"
 
 msgid "Mark the start first with :loop a."
 msgstr "Marquez d'abord le début avec :loop a."
+
+msgid "Match all"
+msgstr "Tout satisfaire"
+
+msgid "Match any"
+msgstr "Au moins un critère"
 
 msgid "Matched"
 msgstr "Associé"
@@ -2945,6 +2965,9 @@ msgstr "Aucun préréglage ne correspond à cette recherche."
 msgid "No purchases match the current view."
 msgstr "Aucun achat ne correspond à la vue actuelle."
 
+msgid "No results"
+msgstr "Aucun résultat"
+
 msgid "No results for"
 msgstr "Aucun résultat pour"
 
@@ -2980,6 +3003,9 @@ msgstr "Aucune piste ne correspond à ce filtre."
 
 msgid "No tracks match your search."
 msgstr "Aucune piste ne correspond à votre recherche."
+
+msgid "No year"
+msgstr "Sans année"
 
 msgid "None"
 msgstr "Aucun"
@@ -4182,9 +4208,6 @@ msgstr "Afficher les pistes enregistrées dans Pistes"
 
 msgid "Show source recommendations by default in Home"
 msgstr "Afficher par défaut les recommandations de la source sur l'accueil"
-
-msgid "Show the columns"
-msgstr "Afficher les colonnes"
 
 msgid "Show the sidebar"
 msgstr "Afficher la barre latérale"
@@ -5588,6 +5611,9 @@ msgstr "aucune carte son n'est listée dans /proc/asound"
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr "aucun serveur audio n'a répondu ; installez pipewire et pipewire-pulse"
 
+msgid "none of"
+msgstr "aucun de"
+
 msgid "none of that can be played now: its folder is not mounted or its server does not answer"
 msgstr "rien de cela ne peut être lu maintenant : son dossier n'est pas monté ou son serveur ne répond pas"
 
@@ -5620,6 +5646,9 @@ msgstr "un ou plusieurs fichiers ne peuvent pas recevoir d'étiquettes"
 
 msgid "open it again from where it is listed"
 msgstr "rouvrez-le depuis l'endroit où il est listé"
+
+msgid "or"
+msgstr "ou"
 
 msgid "outside the image"
 msgstr "en dehors de l'image"

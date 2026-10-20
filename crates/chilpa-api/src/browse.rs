@@ -694,14 +694,15 @@ impl Reader {
         macro_rules! read {
             ($query:expr) => {{ if !current() { return None; } $query.unwrap_or_default() }};
         }
-        let mut left = f.clone();
+        let mut left = crate::library_query::facet_filter(f, "artist");
+        let album_filter = crate::library_query::facet_filter(f, "album");
         left.choose(5, &[]);
         left.queries[5..].fill(String::new());
         let left_albums = read!(self.lib.facet_albums(&left));
         let left_ids: Vec<i64> = left_albums.iter().filter_map(|a| a.key.parse().ok()).collect();
-        let mut albums = if f.artist.is_none() && f.artists.is_empty() && f.queries[5].trim().is_empty() {
+        let mut albums = if f.artist.is_none() && f.artists.is_empty() && f.queries[5].trim().is_empty() && left.query == album_filter.query {
             left_albums
-        } else { read!(self.lib.facet_albums(f)) };
+        } else { read!(self.lib.facet_albums(&album_filter)) };
         albums = filter_facets(albums, &f.queries[6].trim().to_lowercase());
         let ids: Vec<i64> = albums.iter().filter_map(|a| a.key.parse().ok()).collect();
         let chosen: HashSet<i64> = self.lib.grouped_album_ids(&ids).unwrap_or(ids).into_iter().collect();
@@ -727,9 +728,9 @@ impl Reader {
         let years = read!(match shared { Some((_, years)) => Ok(years.clone()), None => self.lib.facet_years() });
         Some(Facets {
             sources, years,
-            genres: read!(self.lib.facet_genres(f)), labels: read!(self.lib.facet_labels(f)),
-            composers: read!(self.lib.facet_composers(f)),
-            ratings: read!(self.lib.facet_ratings(f)).into_iter().map(named_stars).collect(), artists, albums,
+            genres: read!(self.lib.facet_genres(&crate::library_query::facet_filter(f, "genre"))), labels: read!(self.lib.facet_labels(&crate::library_query::facet_filter(f, "label"))),
+            composers: read!(self.lib.facet_composers(&crate::library_query::facet_filter(f, "composer"))),
+            ratings: read!(self.lib.facet_ratings(&crate::library_query::facet_filter(f, "rating"))).into_iter().map(named_stars).collect(), artists, albums,
         })
     }
 

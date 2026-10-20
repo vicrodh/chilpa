@@ -276,3 +276,26 @@ fn measured_on_a_real_library() {
     let albums = median(&|| { let _ = reader.albums_view_using("artist", "genre", "", &Filter::default(), &index); });
     println!("albums view grouped by genre with sources {albums:.1} ms");
 }
+
+#[test]
+fn focus_keeps_alternatives_in_the_edited_category_for_local_and_source_records() {
+    let (reader, index) = fixture();
+    let filter = Filter { query: crate::library_query::read("genre:Jazz").unwrap(), ..Default::default() };
+    let (facets, snapshot) = refresh(&reader, index, &filter, TrackOrder::Artist);
+    assert_eq!(labels(&facets.genres), [("Free Jazz", 1), ("Hard Bop", 1), ("Jazz", 2), ("Modal", 1)]);
+    assert_eq!(labels(&facets.labels), [("Blue Note", 1), ("Impulse!", 1)], "other fields keep the genre condition");
+    assert_eq!(snapshot.ids, [10, 11, -1]);
+    let text = crate::library_query::with_value("genre:Jazz", "genre", "Modal", crate::library_query::ValueState::Include);
+    let filter = Filter { query: crate::library_query::read(&text).unwrap(), ..Default::default() };
+    let (_, snapshot) = refresh(&reader, fixture().1, &filter, TrackOrder::Artist);
+    assert!(snapshot.ids.contains(&-2), "the second genre joins the first");
+}
+
+#[test]
+fn focus_album_alternatives_match_local_and_source_titles() {
+    let (reader, index) = fixture();
+    let filter = Filter { query: crate::library_query::read("album:\"Blue Train\",\"Kind of Blue\"").unwrap(), ..Default::default() };
+    let (facets, snapshot) = refresh(&reader, index, &filter, TrackOrder::Artist);
+    assert_eq!(facets.albums.len(), 5, "I can still add another album");
+    assert_eq!(snapshot.ids, [10, 11, -2]);
+}

@@ -235,6 +235,9 @@ msgstr "Добавить в очередь: {}"
 msgid "Add tracks from a track menu to this queue."
 msgstr "Добавляйте треки в эту очередь через меню трека."
 
+msgid "Added"
+msgstr "Дата добавления"
+
 msgid "Added this month"
 msgstr "Добавлено в этом месяце"
 
@@ -498,6 +501,12 @@ msgstr "Спрашивать перед выходом"
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Просит PipeWire или PulseAudio освободить карту, пока на ней играет Chilpa, и возвращает её, когда Chilpa останавливается или надолго ставит воспроизведение на паузу."
+
+msgid "At least {} star"
+msgid_plural "At least {} stars"
+msgstr[0] "Не менее {} звезды"
+msgstr[1] "Не менее {} звёзд"
+msgstr[2] "Не менее {} звёзд"
 
 msgid "Audio"
 msgstr "Аудио"
@@ -1576,6 +1585,9 @@ msgstr "Изменить метаданные…"
 msgid "Edit playlist"
 msgstr "Изменить плейлист"
 
+msgid "Edit with :filter"
+msgstr "Изменить через :filter"
+
 msgid "Edit…"
 msgstr "Изменить…"
 
@@ -1791,6 +1803,9 @@ msgstr "Плавающая"
 
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr "Плавает над содержимым либо занимает всю ширину окна сверху или снизу."
+
+msgid "Focus"
+msgstr "Фокус"
 
 msgid "Focus on playing"
 msgstr "Следовать за воспроизведением"
@@ -2025,9 +2040,6 @@ msgstr "Скрыть ручной ввод"
 
 msgid "Hide sidebar"
 msgstr "Скрыть боковую панель"
-
-msgid "Hide the columns"
-msgstr "Скрыть столбцы"
 
 msgid "Hide token"
 msgstr "Скрыть токен"
@@ -2356,6 +2368,9 @@ msgstr "Последний плейлист"
 msgid "Last track"
 msgstr "Последний трек"
 
+msgid "Last {} days"
+msgstr "За последние {} дней"
+
 msgid "Last.fm account"
 msgstr "Учётная запись Last.fm"
 
@@ -2577,6 +2592,12 @@ msgstr "Отметить как непрослушанное"
 
 msgid "Mark the start first with :loop a."
 msgstr "Сначала отметьте начало командой :loop a."
+
+msgid "Match all"
+msgstr "Все условия"
+
+msgid "Match any"
+msgstr "Любое условие"
 
 msgid "Matched"
 msgstr "Совпало"
@@ -2947,6 +2968,9 @@ msgstr "Нет пресетов по этому запросу."
 msgid "No purchases match the current view."
 msgstr "Нет покупок для текущего вида."
 
+msgid "No results"
+msgstr "Нет результатов"
+
 msgid "No results for"
 msgstr "Ничего не найдено по запросу"
 
@@ -2982,6 +3006,9 @@ msgstr "Нет треков под этот фильтр."
 
 msgid "No tracks match your search."
 msgstr "Нет треков по вашему запросу."
+
+msgid "No year"
+msgstr "Без года"
 
 msgid "None"
 msgstr "Нет"
@@ -4185,9 +4212,6 @@ msgstr "Показывать сохранённые треки в «Треках
 
 msgid "Show source recommendations by default in Home"
 msgstr "Показывать рекомендации источников на главной по умолчанию"
-
-msgid "Show the columns"
-msgstr "Показать столбцы"
 
 msgid "Show the sidebar"
 msgstr "Показать боковую панель"
@@ -5593,6 +5617,9 @@ msgstr "в /proc/asound нет ни одной звуковой карты"
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr "ни один звуковой сервер не ответил; установите pipewire и pipewire-pulse"
 
+msgid "none of"
+msgstr "кроме"
+
 msgid "none of that can be played now: its folder is not mounted or its server does not answer"
 msgstr "ничего из этого сейчас нельзя воспроизвести: папка не подключена или сервер не отвечает"
 
@@ -5625,6 +5652,9 @@ msgstr "в один или несколько файлов нельзя запи
 
 msgid "open it again from where it is listed"
 msgstr "откройте это снова из списка, где оно показано"
+
+msgid "or"
+msgstr "или"
 
 msgid "outside the image"
 msgstr "за пределами образа"
