@@ -32,6 +32,19 @@ TestCase {
         tryVerify(() => findChild(page, "artistHeaderLoader")?.status === Loader.Ready
             && findChild(page, "artistNetworkLoader")?.status === Loader.Ready, 3000)
     }
+    function test_a_portrait_that_arrives_after_the_page_shows_without_reading_it_again() {
+        const doc = JSON.parse(document())
+        doc.header.image = "https://images.example/portrait.jpg"
+        Sources.pages = { "fixture native:artist:1": JSON.stringify(doc) }
+        Sources.arrived = {}
+        const page = createTemporaryObject(pageMaker, this)
+        rendered(page)
+        compare(page.header.art || "", "", "not there yet")
+        Sources.arrived = { "https://images.example/portrait.jpg": "file:///covers/portrait.jpg" }
+        Library.remoteArtRev += 1
+        tryCompare(page.header, "art", "file:///covers/portrait.jpg")
+        Sources.arrived = {}
+    }
     function test_the_biography_is_built_when_its_action_is_pressed() {
         const page = createTemporaryObject(pageMaker, this)
         rendered(page)

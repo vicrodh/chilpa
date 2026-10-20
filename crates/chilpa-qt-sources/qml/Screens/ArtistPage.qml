@@ -30,7 +30,14 @@ Item {
     property string libraryKey
     readonly property string document: Sources.page(inLibrary && libraryKey !== "" ? libraryKey : key, Library.remoteRev) || "{}"
     readonly property var about: JSON.parse(document)
-    readonly property var header: about.header || ({title:key.includes("matching-artist-") ? key.slice(key.indexOf(":") + 1) : ""})
+    // The portrait the source names but had not fetched when the page was
+    // read comes in when it arrives, as a search's cards take theirs.
+    readonly property var header: portrayed(about.header || ({title:key.includes("matching-artist-") ? key.slice(key.indexOf(":") + 1) : ""}), Library.remoteArtRev)
+    function portrayed(info, rev) {
+        if (info.art || !info.plugin || !info.image) return info
+        const art = Sources.art(info.plugin, info.image, rev).toString()
+        return art ? Object.assign({}, info, { art: art }) : info
+    }
     readonly property bool local: about.local === true
     readonly property string name: header.title || ""
     readonly property var network: name !== "" ? JSON.parse(Sources.network(name, Library.remoteRev) || "{}") : ({})

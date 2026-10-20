@@ -6,7 +6,9 @@ QtObject {
     property var state: ({ panels: [{ id: "radio", name: "Radio", icon: "broadcast" }], source: "radio", name: "Radio", crumbs: [], entries: [], searchable: true, loading: false, more: false, error: "" })
     property var asked: []
     readonly property string snapshot: JSON.stringify(state)
-    function art(plugin, image, rev) { return "" }
+    // A cover a test says arrived, by its address.
+    property var arrived: ({})
+    function art(plugin, image, rev) { return arrived[image] || "" }
     function artistKey(id, path) { return "" }
     function artistLink(id, name) { return JSON.stringify(AlbumActions.artistDestination.key ? AlbumActions.artistDestination : {target:"artist",key:name}) }
     function card(id, rev) { return JSON.stringify((state.cards || {})[id] || {}) }
