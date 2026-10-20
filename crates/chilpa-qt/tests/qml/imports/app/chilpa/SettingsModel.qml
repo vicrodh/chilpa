@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 QtObject {
     property var preferences: ({})
+    property string libraryView: "grid"
     function kept(key) { return preferences[key] || "" }
     function keep(key, value) { preferences[key] = value }
     function panelWidthAt(width, windowWidth) { return width }
