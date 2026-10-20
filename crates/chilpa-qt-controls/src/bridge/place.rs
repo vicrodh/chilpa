@@ -29,6 +29,10 @@ pub mod qobject {
         /// the system tells the window where it is.
         #[qinvokable]
         fn keep(self: Pin<&mut WindowPlace>, frame: &QString, width: i32, height: i32, left: i32, top: i32, placed: bool);
+        /// The window is shown (not hidden nor minimized) and active: what
+        /// the facade reads again in the background waits while it is not.
+        #[qinvokable]
+        fn seen(self: &WindowPlace, shown: bool, active: bool);
     }
 }
 use chilpa_api::window_place::Frame;
@@ -62,5 +66,8 @@ impl qobject::WindowPlace {
     pub fn keep(self: Pin<&mut Self>, frame: &QString, width: i32, height: i32, left: i32, top: i32, placed: bool) {
         let frame = Frame::named(&frame.to_string());
         app::with(|api| api.keep_window_place(frame, width, height, placed.then_some((left, top))));
+    }
+    pub fn seen(&self, shown: bool, active: bool) {
+        app::with(|api| api.set_window_state(shown, active));
     }
 }

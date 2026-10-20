@@ -124,6 +124,30 @@ impl Chilpa {
             let _ = chilpa_core::settings::save(&settings);
         }
     }
+
+    /// Whether the window is shown (not hidden nor minimized) and active.
+    /// Becoming both after not being both is coming back to it.
+    pub fn set_window_state(&mut self, shown: bool, active: bool) {
+        let back = shown && active && !(self.window.0 && self.window.1);
+        self.window = (shown, active, self.window.2 || back);
+    }
+}
+
+#[cfg(test)]
+mod state_tests {
+    #[test]
+    fn coming_back_to_the_window_is_said_once() {
+        let mut api = crate::Chilpa::new();
+        api.set_window_state(true, false);
+        assert_eq!(api.window, (true, false, false), "losing the focus is not coming back");
+        api.set_window_state(true, true);
+        assert_eq!(api.window, (true, true, true));
+        api.set_window_state(true, true);
+        assert_eq!(api.window.2, true, "said until it is read");
+        api.window.2 = false;
+        api.set_window_state(false, false);
+        assert_eq!(api.window, (false, false, false), "a minimized window reads nothing again");
+    }
 }
 
 #[cfg(test)]
