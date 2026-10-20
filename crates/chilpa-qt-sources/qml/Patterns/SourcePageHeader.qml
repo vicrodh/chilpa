@@ -111,10 +111,12 @@ Column {
                     id: actions; visible: !!header.record; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.dots; tip: I18n.tr("Album actions", I18n.rev)
                     onClicked: { const at = actions.mapToItem(header, actions.width - Metrics.menuWidth, actions.height + Metrics.gap4); header.context(at.x, at.y) }
                 }
-                // Shown when the record has more than one copy: `active`, since a
-                // child of a hidden loader always reads `visible` false.
+                MarkButtons { objectName: "recordMarks"; visible: header.cardId !== 0; kind: "album"; contrasted: header.contrasted; key: String(header.cardId) }
+                // The round buttons together, then the copies, as the library's
+                // record page has them. Shown when the record has more than one
+                // copy: `active`, since a child of a hidden loader always reads
+                // `visible` false.
                 Loader { objectName: "recordVersions"; visible: !!item && item.active; active: !!header.record; sourceComponent: Component { AlbumVersionSelect { detail: header.record } } }
-                MarkButtons { visible: header.cardId !== 0; kind: "album"; contrasted: header.contrasted; key: String(header.cardId) }
             }
         }
     }

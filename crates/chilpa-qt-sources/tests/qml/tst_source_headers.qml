@@ -40,6 +40,11 @@ TestCase {
             { id: -7, label: "Source · FLAC", brief: "Source", detail: "", source: { local: false } },
             { id: 9, label: "Local library · FLAC", brief: "Local", detail: "", source: { local: true } }]), selectVersion: function(value) {} }
         tryCompare(versions, "visible", true)
+        header.cardId = 7
+        const marks = findChild(header, "recordMarks")
+        tryCompare(marks, "visible", true)
+        tryVerify(() => marks.y === versions.y && marks.x < versions.x, 1000, "the heart and the stars stand with the round buttons, the copies last: " + marks.x + "," + marks.y + " " + versions.x + "," + versions.y)
+        header.cardId = 0
         header.record = { title: "Album", art: "", selectedId: -7, versions: JSON.stringify([{ id: -7, label: "Source", brief: "", detail: "", source: {} }]), selectVersion: function(value) {} }
         tryCompare(versions, "visible", false, 1000, "one copy offers no choice")
         header.record = undefined
