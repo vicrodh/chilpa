@@ -674,6 +674,9 @@ msgstr "Op naam"
 msgid "By quality"
 msgstr "Op kwaliteit"
 
+msgid "By release type"
+msgstr "Op soort uitgave"
+
 msgid "By source"
 msgstr "Op bron"
 
@@ -1528,6 +1531,9 @@ msgstr "Nederlands"
 
 msgid "Dynamic background"
 msgstr "Dynamische achtergrond"
+
+msgid "EPs"
+msgstr "EP's"
 
 msgid "EPs & Singles"
 msgstr "EP's en singles"
@@ -4203,6 +4209,9 @@ msgstr "Vergelijkbare artiesten"
 
 msgid "Since {}"
 msgstr "Sinds {}"
+
+msgid "Singles"
+msgstr "Singles"
 
 msgid "Size"
 msgstr "Grootte"

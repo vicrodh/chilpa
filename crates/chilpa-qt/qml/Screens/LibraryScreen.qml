@@ -130,7 +130,8 @@ Item {
                     { value: "composer", text: I18n.tr("By composer", I18n.rev) },
                     { value: "quality", text: I18n.tr("By quality", I18n.rev) },
                     { value: "source", text: I18n.tr("By source", I18n.rev) },
-                    { value: "added", text: I18n.tr("By date added", I18n.rev) }
+                    { value: "added", text: I18n.tr("By date added", I18n.rev) },
+                    { value: "type", text: I18n.tr("By release type", I18n.rev) }
                 ]
                 onPicked: (value) => { page.group = value; SettingsModel.keep("ui.library.group", value) }
             }
