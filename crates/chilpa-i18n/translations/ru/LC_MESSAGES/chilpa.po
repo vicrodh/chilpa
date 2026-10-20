@@ -652,14 +652,32 @@ msgstr "По альбому"
 msgid "By artist"
 msgstr "По исполнителю"
 
+msgid "By composer"
+msgstr "По композитору"
+
+msgid "By date added"
+msgstr "По дате добавления"
+
 msgid "By decade"
 msgstr "По десятилетию"
+
+msgid "By genre"
+msgstr "По жанру"
+
+msgid "By label"
+msgstr "По лейблу"
 
 msgid "By letter"
 msgstr "По букве"
 
 msgid "By name"
 msgstr "По названию"
+
+msgid "By quality"
+msgstr "По качеству"
+
+msgid "By source"
+msgstr "По источнику"
 
 msgid "By year"
 msgstr "По году"

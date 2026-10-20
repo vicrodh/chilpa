@@ -648,14 +648,32 @@ msgstr "アルバム別"
 msgid "By artist"
 msgstr "アーティスト別"
 
+msgid "By composer"
+msgstr "作曲者別"
+
+msgid "By date added"
+msgstr "追加日別"
+
 msgid "By decade"
 msgstr "年代別"
+
+msgid "By genre"
+msgstr "ジャンル別"
+
+msgid "By label"
+msgstr "レーベル別"
 
 msgid "By letter"
 msgstr "頭文字別"
 
 msgid "By name"
 msgstr "名前別"
+
+msgid "By quality"
+msgstr "音質別"
+
+msgid "By source"
+msgstr "ソース別"
 
 msgid "By year"
 msgstr "年別"

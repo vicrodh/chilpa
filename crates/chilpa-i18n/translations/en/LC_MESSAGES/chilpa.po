@@ -650,13 +650,31 @@ msgstr ""
 msgid "By artist"
 msgstr ""
 
+msgid "By composer"
+msgstr ""
+
+msgid "By date added"
+msgstr ""
+
 msgid "By decade"
 msgstr "By decade"
+
+msgid "By genre"
+msgstr ""
+
+msgid "By label"
+msgstr ""
 
 msgid "By letter"
 msgstr ""
 
 msgid "By name"
+msgstr ""
+
+msgid "By quality"
+msgstr ""
+
+msgid "By source"
 msgstr ""
 
 msgid "By year"
