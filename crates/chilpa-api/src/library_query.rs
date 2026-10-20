@@ -5,11 +5,54 @@
 //! with "any" one is enough.
 //!
 //! A genre typed close to one the library has is read as that one too:
-//! "hiphop", "Hip Hop" and "hip-hop" are one name, and a long name one or
-//! two letters off ("Electronika") finds the one that is there.
+//! "hiphop", "Hip Hop" and "hip-hop" are one name, a long name one or two
+//! letters off ("Electronika") finds the one that is there, and a name
+//! MusicBrainz knows a genre by finds the genre under its other names
+//! ("dnb" finds "Drum & Bass"), from a table generated from its genres.
 
 use chilpa_i18n as i18n;
 use chilpa_library::store::query::{parse, Field, Node, Values};
+use std::collections::HashMap;
+
+/// MusicBrainz's genres that go by other names: the name, then each alias,
+/// a tab apart. Written by `tools/genres/musicbrainz-aliases`.
+const ALIASES: &str = include_str!("../data/genre-aliases.tsv");
+
+/// The names each genre goes by, as keys, and which genre a key is.
+pub(crate) struct Aliases {
+    genre_of: HashMap<String, usize>,
+    names: Vec<Vec<String>>,
+}
+
+impl Aliases {
+    pub(crate) fn read(text: &str) -> Self {
+        let mut aliases = Self { genre_of: HashMap::new(), names: Vec::new() };
+        for line in text.lines() {
+            let mut keys: Vec<String> = line.split('\t').map(genre_key).filter(|key| !key.is_empty()).collect();
+            // "hip hop" and "hip-hop" are one key already.
+            let mut seen = std::collections::HashSet::new();
+            keys.retain(|key| seen.insert(key.clone()));
+            if keys.len() < 2 { continue; }
+            let at = aliases.names.len();
+            for key in &keys { aliases.genre_of.entry(key.clone()).or_insert(at); }
+            aliases.names.push(keys);
+        }
+        aliases
+    }
+
+    /// Every name the genre of `key` goes by, `key` among them.
+    fn names_of<'a>(&'a self, key: &'a str) -> Vec<&'a str> {
+        match self.genre_of.get(key) {
+            Some(at) => self.names[*at].iter().map(String::as_str).collect(),
+            None => vec![key],
+        }
+    }
+}
+
+fn bundled() -> &'static Aliases {
+    static BUNDLED: std::sync::OnceLock<Aliases> = std::sync::OnceLock::new();
+    BUNDLED.get_or_init(|| Aliases::read(ALIASES))
+}
 
 /// `:filter genre:jazz -label:verve` stacks conditions on the Library;
 /// `:filter` alone takes them away.
@@ -165,19 +208,26 @@ pub(crate) fn names_genres(node: &Node) -> bool {
 /// The query with every genre it names that `known` does not have read
 /// also as the known ones close to it.
 pub(crate) fn widen_genres(node: &Node, known: &[String]) -> Node {
+    widen_genres_with(node, known, bundled())
+}
+
+pub(crate) fn widen_genres_with(node: &Node, known: &[String], aliases: &Aliases) -> Node {
     match node {
-        Node::All(nodes) => Node::All(nodes.iter().map(|n| widen_genres(n, known)).collect()),
-        Node::Any(nodes) => Node::Any(nodes.iter().map(|n| widen_genres(n, known)).collect()),
-        Node::Not(inner) => Node::Not(Box::new(widen_genres(inner, known))),
+        Node::All(nodes) => Node::All(nodes.iter().map(|n| widen_genres_with(n, known, aliases)).collect()),
+        Node::Any(nodes) => Node::Any(nodes.iter().map(|n| widen_genres_with(n, known, aliases)).collect()),
+        Node::Not(inner) => Node::Not(Box::new(widen_genres_with(inner, known, aliases))),
         Node::Is(Field::Genre, Values::Any(names)) => {
             let mut widened = names.clone();
             for name in names.iter().filter(|name| !known.iter().any(|k| k.eq_ignore_ascii_case(name))) {
-                let key: Vec<char> = genre_key(name).chars().collect();
-                if key.len() < 3 { continue; }
+                let typed = genre_key(name);
+                let same = aliases.names_of(&typed);
+                let key: Vec<char> = typed.chars().collect();
                 let most = if key.len() > 6 { 2 } else { 1 };
                 for candidate in known {
-                    let other: Vec<char> = genre_key(candidate).chars().collect();
-                    if other.len() >= 3 && distance(&key, &other, most) <= most && !widened.contains(candidate) {
+                    let theirs = genre_key(candidate);
+                    let other: Vec<char> = theirs.chars().collect();
+                    let close = key.len() >= 3 && other.len() >= 3 && distance(&key, &other, most) <= most;
+                    if (same.contains(&theirs.as_str()) || close) && !widened.contains(candidate) {
                         widened.push(candidate.clone());
                     }
                 }
@@ -229,5 +279,22 @@ mod tests {
         assert_eq!(widened("r and b"), ["r and b", "R&B"]);
         assert_eq!(widened("pop"), ["pop"], "a genre that is there is only itself");
         assert_eq!(widened("Polka"), ["Polka"], "nothing close, nothing added");
+    }
+
+    #[test]
+    fn a_name_musicbrainz_knows_a_genre_by_finds_the_genre() {
+        let aliases = Aliases::read("drum and bass\tdnb\td&b\tdrum n bass\nhip hop\thip-hop\trap music\nlonely\n");
+        let known: Vec<String> = ["Drum & Bass", "Hip Hop", "Jungle"].map(String::from).to_vec();
+        let widened = |name: &str| match widen_genres_with(&Node::Is(Field::Genre, Values::Any(vec![name.into()])), &known, &aliases) {
+            Node::Is(_, Values::Any(list)) => list,
+            other => panic!("{other:?}"),
+        };
+        assert_eq!(widened("dnb"), ["dnb", "Drum & Bass"]);
+        assert_eq!(widened("Drum n Bass"), ["Drum n Bass", "Drum & Bass"]);
+        assert_eq!(widened("rap music"), ["rap music", "Hip Hop"]);
+        assert_eq!(widened("jungle"), ["jungle"], "a genre that is there is only itself");
+        assert!(Aliases::read("2 tone\t2-tone\ttwo-tone\n").names == [["2tone", "twotone"]], "names that fold alike are one");
+        assert!(Aliases::read("ska\tSKA\n").names.is_empty(), "a genre whose aliases fold to its name adds nothing");
+        assert!(bundled().names.iter().all(|names| names.len() >= 2), "the bundled table reads");
     }
 }
