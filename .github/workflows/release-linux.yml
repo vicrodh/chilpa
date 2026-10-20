@@ -159,6 +159,10 @@ jobs:
       - name: Check native package payloads
         run: |
           python3 scripts/check-linux-packages.py --dist dist --version "$RELEASE_VERSION" --arch "${{ matrix.arch }}"
+      - name: Check installation and updates with the packaged AppImage
+        run: |
+          python3 scripts/check-installer.py --package "dist/Chilpa-$RELEASE_VERSION-${{ matrix.arch }}.AppImage" \
+            --version "$RELEASE_VERSION" --arch "${{ matrix.arch }}"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: chilpa-linux-${{ matrix.arch }}
@@ -252,6 +256,10 @@ jobs:
           python3 scripts/check-macos-package.py dist/Chilpa.app --report "$RUNNER_TEMP/macos-smoke.json"
           cd dist
           shasum -a 256 --check SHA256SUMS-macos-${{ matrix.arch }}
+      - name: Check installation and updates with the packaged ZIP
+        run: |
+          python3 scripts/check-installer.py --package "dist/Chilpa-$RELEASE_VERSION-macos-${{ matrix.arch }}.zip" \
+            --version "$RELEASE_VERSION" --arch "${{ matrix.arch }}"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: chilpa-macos-${{ matrix.arch }}
