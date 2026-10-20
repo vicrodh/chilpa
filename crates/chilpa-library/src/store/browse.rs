@@ -643,15 +643,22 @@ impl Library {
 
     /// runs it off its own thread.
     pub fn browse_ids(&self, f: &Filter, order: TrackOrder) -> rusqlite::Result<Snapshot> {
+        self.browse_rows(f, order, false).map(|(snapshot, _)| snapshot)
+    }
+
+    /// The same snapshot, and with `keyed` what each track is ordered by,
+    /// aligned with its ids: what a merge with rows from outside needs.
+    pub fn browse_rows(&self, f: &Filter, order: TrackOrder, keyed: bool) -> rusqlite::Result<(Snapshot, Vec<super::order_keys::OrderKey>)> {
         let (filter, args) = self.browse_clause(f);
         let (from, plays) = if matches!(order, TrackOrder::Plays | TrackOrder::PlaysAscending) {
             (FROM, ", COALESCE(r.plays, 0) AS plays")
-        } else { (FACET_FROM, "") };
+        } else { (FACET_FROM, ", 0") };
+        let keys = if keyed { super::order_keys::COLUMNS } else { "" };
         // The groups follow an order about what they are named: Artist
         // from Z puts the artists from Z.
         let turned = |on: bool| if on { " DESC" } else { "" };
         let sql = format!(
-            "SELECT t.id, t.album_id, t.duration_ms{plays}
+            "SELECT t.id, t.album_id, t.duration_ms{plays}{keys}
              {from} {filter} ORDER BY {}{}",
             match f.grouped_by.as_str() {
                 "album" => format!("a.title COLLATE NOCASE{}, a.id, ", turned(order == TrackOrder::AlbumDescending)),
@@ -664,6 +671,7 @@ impl Library {
         let mut stmt = self.db.prepare(&sql)?;
         let mut rows = stmt.query(params_from_iter(args.iter()))?;
         let mut out = Snapshot::default();
+        let mut keys = Vec::new();
         let mut albums = std::collections::HashSet::new();
         while let Some(r) = rows.next()? {
             out.ids.push(r.get(0)?);
@@ -673,21 +681,11 @@ impl Library {
                 }
             }
             out.totals.duration_ms += r.get::<_, i64>(2)? as u64;
+            if keyed { keys.push(super::order_keys::OrderKey::read(r)?); }
         }
         out.totals.tracks = out.ids.len();
         out.totals.albums = albums.len();
-        Ok(out)
-    }
-
-    /// Dates needed to merge a local snapshot with source library rows.
-    pub fn track_dates(&self, ids: &[i64]) -> rusqlite::Result<std::collections::HashMap<i64, (i32, i64)>> {
-        let mut dates = std::collections::HashMap::new();
-        for chunk in ids.chunks(500) {
-            let marks = vec!["?"; chunk.len()].join(",");
-            let mut stmt = self.db.prepare(&format!("SELECT t.id, COALESCE(a.year, 0), t.added_at FROM tracks t LEFT JOIN albums a ON a.id=t.album_id WHERE t.id IN ({marks})"))?;
-            for row in stmt.query_map(params_from_iter(chunk.iter()), |r| Ok((r.get(0)?, (r.get(1)?,r.get(2)?))))? { let (id, pair) = row?; dates.insert(id, pair); }
-        }
-        Ok(dates)
+        Ok((out, keys))
     }
 
     /// The rows of those ids, in the order given. By primary key, so it

@@ -40,7 +40,7 @@ pub(crate) struct CachedVersions {
 pub struct VersionCatalog {
     pub versions: HashMap<i64, AlbumVersion>,
     pub artists: HashMap<i64, Vec<(String, usize)>>,
-    tracks: HashMap<i64, (i64, u64)>,
+    pub(crate) tracks: HashMap<i64, (i64, u64)>,
     groups: HashMap<String, Vec<i64>>,
     preferred: HashMap<String, i64>,
 }
