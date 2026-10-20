@@ -25,6 +25,7 @@ Item {
     property bool stacked: false
 
     Text {
+        objectName: "trackNumber"
         x: lead.gutter
         width: lead.width - lead.gutter - Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter

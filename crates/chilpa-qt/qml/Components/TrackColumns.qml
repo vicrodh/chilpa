@@ -20,7 +20,10 @@ QtObject {
     property bool reorder: false
 
     readonly property int pad: rich ? Metrics.rowPadRich : Metrics.rowPadCompact
-    readonly property int index: rich ? Metrics.colIndexRich : Metrics.colIndexCompact
+    // How many rows the list has: past three digits, the number column
+    // grows a digit's width for each one more, so 10308 is not cut to 0308.
+    property int rows: 0
+    readonly property int index: (rich ? Metrics.colIndexRich : Metrics.colIndexCompact) + Math.max(0, String(rows).length - 3) * Metrics.gap8
     readonly property int move: !reorder ? 0 : rich ? Metrics.colMoveRich : Metrics.colMoveCompact
     readonly property real fromAlbum: Math.min(move, unit * albumShare)
     readonly property int art: rich && showArt ? Metrics.colArt : 0
