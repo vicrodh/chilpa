@@ -26,7 +26,7 @@ TestCase {
         shell.visible = true
         grid.list = false
         records.clear()
-        records.append({first:0, span:1, group:""})
+        records.append({first:0, span:1, group:"", revision:0})
     }
     function test_hiding_a_mounted_grid_retains_its_occupied_card_snapshot() {
         let card = null

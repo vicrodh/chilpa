@@ -35,7 +35,7 @@ Column {
     readonly property real viewportCardWidth: CardLayout.cardWidth
     readonly property int railCards: Math.max(1, Math.min(section.size || (oneRow ? viewportColumns : Metrics.shelfItems), cards.albums))
     readonly property real step: viewportColumns * (viewportCardWidth + Metrics.gridGap) // derived: whole library-sized cards and their gaps
-    readonly property var horizontalView: trackSection && oneRow ? trackContent.item?.scrollView || null : rail
+    readonly property var horizontalView: trackSection && oneRow ? trackContent.item?.scrollView || null : oneRow ? grid.scrollView : rail
     readonly property real farthest: horizontalView ? Math.max(0, horizontalView.contentWidth - horizontalView.width) : 0
     visible: shown
     AlbumGridModel { id: cards; kind: shelf.trackSection ? "" : shelf.modelKind; key: shelf.modelKey; limit: shelf.wrap ? 0 : shelf.section.size || Metrics.shelfItems; maxRows: shelf.oneRow ? 1 : 0; columns: grid.columns; order: sorting.sort; group: shelf.oneRow ? "" : sorting.grouping; filter: shelf.filter; contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev }
@@ -81,7 +81,7 @@ Column {
     }
     Flickable {
         id: rail
-        objectName: "sourceShelfRail"
+        objectName: shelf.oneRow ? "sourceShelfContainer" : "sourceShelfRail"
         width: parent.width
         height: Math.max(grid.list ? Metrics.rowRich : CardLayout.cardHeight + Metrics.cardRing * 2, grid.implicitHeight) + Metrics.gap8 // derived: reserve the card or ranked row before its view is polished
         visible: !shelf.trackSection && cards.albums > 0; contentWidth: grid.width; contentHeight: height
@@ -89,13 +89,14 @@ Column {
         ScrollBar.horizontal: ViewportScrollBar {}
         AlbumGrid {
             id: grid
-            // The rail keeps one card row; its width grows by one card and gap per item.
-            width: shelf.wrap || list ? rail.width : Metrics.cardRing * 2 + shelf.railCards * shelf.viewportCardWidth + (shelf.railCards - 1) * Metrics.gridGap // derived: one row of the same cards as the library grid
+            // I keep a one-row shelf inside its horizontal viewport.
+            width: shelf.oneRow || shelf.wrap || list ? rail.width : Metrics.cardRing * 2 + shelf.railCards * shelf.viewportCardWidth + (shelf.railCards - 1) * Metrics.gridGap // derived: one row of the same cards as the library grid
             height: implicitHeight; fitContent: true
             viewport: shelf.viewport
-            fixedColumns: shelf.wrap || list ? 0 : shelf.railCards
+            fixedColumns: shelf.wrap || list ? 0 : shelf.oneRow ? shelf.section.size || shelf.viewportColumns : shelf.railCards
             viewportX: rail.contentX; viewportWidth: rail.width
             round: shelf.section.round === true; roundIds: shelf.section.artist_cards || []; list: !shelf.oneRow && shelf.section.presentation === "ranked"
+            Binding { target: grid.scrollView; property: "objectName"; value: shelf.oneRow ? "sourceShelfRail" : "albumGridView" }
             model: cards; onOpen: albumId => Navigation.go("album", albumId)
         }
     }
@@ -110,7 +111,7 @@ Column {
         width: parent.width
         active: tracks.count > 0
         sourceComponent: shelf.oneRow ? trackRail : trackRows
-        Component { id: trackRail; TrackCarousel { width: parent.width; model: tracks } }
+        Component { id: trackRail; TrackCarousel { viewport: shelf.viewport; width: parent.width; model: tracks } }
         Component { id: trackRows; TrackList { width: parent.width; height: implicitHeight; fitContent: true; viewport: shelf.viewport; model: tracks } }
     }
     // More of the shelf comes in under what is there; while it is on its

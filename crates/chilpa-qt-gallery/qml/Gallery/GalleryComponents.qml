@@ -14,6 +14,18 @@ import "qrc:/qt/qml/app/chilpa/folders/qml/Patterns"
 TitledFlow {
     id: section
     title: "Components"
+    Column {
+        width: Metrics.sidebarWidth
+        PillButton { text: "Insert row"; enabled: motionRows.count < 50; onClicked: motionRows.insert(0, {title: "New row"}) }
+        PillButton { text: "Move row"; onClicked: { if (motionRows.count > 1) motionRows.move(0, motionRows.count - 1, 1) } }
+        PillButton { text: "Remove row"; onClicked: { if (motionRows.count) motionRows.remove(0) } }
+        MotionListView {
+            width: parent.width; height: Metrics.queueMin; clip: true
+            model: ListModel { id: motionRows; ListElement { title: "First row" } ListElement { title: "Second row" } }
+            delegate: Text { required property string title; width: ListView.view.width; height: Metrics.rowRich; text: title; color: Theme.color.textPrimary }
+        }
+    }
+
 
     TrackListModel { id: most; kind: "mostPlayed"; limit: 3; playingPath: Player.path }
     AlbumGridModel { id: added; kind: "recentlyAdded"; limit: 6; maxRows: 1; columns: grid.columns }

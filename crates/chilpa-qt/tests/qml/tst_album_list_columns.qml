@@ -26,7 +26,7 @@ TestCase {
     function initTestCase() {
         AlbumActions.factsOf = {1: {tracks: 12, duration_ms: 3725000, genre: "Heavy Metal"}}
         Ratings.albums = {1: 4}
-        records.append({first: 0, span: 1, group: ""})
+        records.append({first: 0, span: 1, group: "", revision:0})
     }
 
     function init() { tryVerify(() => findChild(grid, "tracksCell") !== null) }
