@@ -10,8 +10,9 @@ Item {
     id: bar
 
     property TrackListModel tracks
-    // The gear beside the switch: which columns the list of records shows.
-    signal columnsAsked()
+    // The columns the list of records shows, and the ones chosen at the gear.
+    property var columns: []
+    signal columnsChosen(var columns)
 
     implicitHeight: Metrics.pillHeight
 
@@ -55,16 +56,13 @@ Item {
         laterLabel: I18n.tr("Library selection", I18n.rev)
     }
 
-    IconButton {
-        objectName: "listColumnsButton"
+    AlbumColumnsGear {
         visible: SettingsModel.libraryView !== "grid"
         anchors.right: views.left
         anchors.rightMargin: Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
-        tip: I18n.tr("Columns", I18n.rev)
-        glyph: Icons.settings
-        round: true
-        onClicked: bar.columnsAsked()
+        shown: bar.columns
+        onChosen: (columns) => bar.columnsChosen(columns)
     }
     SegmentedControl {
         id: views
