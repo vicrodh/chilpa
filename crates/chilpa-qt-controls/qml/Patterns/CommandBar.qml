@@ -38,6 +38,10 @@ Rectangle {
         updateSuggestions()
     }
     function dismiss() {
+        // The line lets go before the bar hides: the window's root is a focus
+        // scope and would hand the keys back to it, and the next colon would
+        // be typed into a line nobody sees.
+        field.focus = false
         opened = false
         dismissed(returnFocus)
     }

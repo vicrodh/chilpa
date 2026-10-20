@@ -71,6 +71,14 @@ TestCase {
         verify(!bar.opened)
         compare(dismissed, previous)
     }
+    function test_a_closed_console_keeps_no_keys_when_the_root_takes_them_back() {
+        keyClick(Qt.Key_Escape)
+        verify(!bar.opened)
+        // The window hands the keys to its root, a focus scope, as the window's
+        // restore does when the console was opened from nowhere in particular.
+        test.Window.window.contentItem.forceActiveFocus()
+        verify(!bar.input.activeFocus, "the next colon opens the console again")
+    }
     function test_history_preserves_the_unsubmitted_draft() {
         typeText("search draft")
         keyClick(Qt.Key_Up)
