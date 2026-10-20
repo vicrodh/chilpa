@@ -583,6 +583,20 @@ impl Reader {
         chilpa_core::sacd_tracks::expand(&files).iter().map(|p| p.display().to_string()).collect()
     }
 
+    /// The names a query's words may be: the artists, composers, genres and
+    /// labels of the library and of the integrated sources.
+    fn known_names(&self, index: &crate::library_sources::SourceIndex) -> Vec<(chilpa_library::store::query::Field, Vec<String>)> {
+        let mut known = crate::library_query::library_names(&self.lib);
+        for item in &index.items {
+            known[0].1.extend(item.artists.iter().cloned());
+            known[1].1.extend(item.composers.iter().cloned());
+            known[2].1.extend(item.genres.iter().cloned());
+            if !item.label.is_empty() { known[3].1.push(item.label.clone()); }
+        }
+        for (_, names) in &mut known { names.sort(); names.dedup(); }
+        known
+    }
+
     /// I stop superseded work between queries, before it occupies the worker again.
     pub fn refresh(&self, filter: &Filter, order: TrackOrder, current: impl Fn() -> bool) -> Option<(Facets, Snapshot)> {
         if !current() { return None; }
@@ -592,15 +606,23 @@ impl Reader {
     /// The same, with the integrated sources given.
     pub(crate) fn refresh_using(&self, filter: &Filter, order: TrackOrder, current: impl Fn() -> bool,
         (stamp, index): (crate::library_sources::Stamp, std::rc::Rc<crate::library_sources::SourceIndex>)) -> Option<(Facets, Snapshot)> {
-        // A genre typed close to one there is reads as that one too.
+        // A genre typed close to one there is reads as that one too, and
+        // words that are a name the library has read as that name.
         let widened;
         let filter = match &filter.query {
-            Some(query) if crate::library_query::names_genres(query) => {
-                let mut known: Vec<String> = self.lib.genres().unwrap_or_default().into_iter().map(|(name, _)| name).collect();
-                known.extend(index.items.iter().flat_map(|item| item.genres.iter().cloned()));
-                known.sort();
-                known.dedup();
-                widened = Filter { query: Some(crate::library_query::widen_genres(query, &known)), ..filter.clone() };
+            Some(query) if crate::library_query::names_genres(query) || crate::library_query::names_words(query) => {
+                let mut query = query.clone();
+                if crate::library_query::names_words(&query) {
+                    query = crate::library_query::resolve_names(&query, &self.known_names(&index));
+                }
+                if crate::library_query::names_genres(&query) {
+                    let mut known: Vec<String> = self.lib.genres().unwrap_or_default().into_iter().map(|(name, _)| name).collect();
+                    known.extend(index.items.iter().flat_map(|item| item.genres.iter().cloned()));
+                    known.sort();
+                    known.dedup();
+                    query = crate::library_query::widen_genres(&query, &known);
+                }
+                widened = Filter { query: Some(query), ..filter.clone() };
                 &widened
             }
             _ => filter,

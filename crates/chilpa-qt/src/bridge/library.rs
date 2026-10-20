@@ -135,7 +135,7 @@ impl qobject::Library {
     }
 
     pub fn apply_query(mut self: Pin<&mut Self>, text: &QString) -> QString {
-        match chilpa_api::library_query::read(&text.to_string()) {
+        match chilpa_api::library_query::read(&app::with(|api| api.query_with_names(&text.to_string()))) {
             Err(error) => QString::from(&error),
             Ok(query) => {
                 self.as_mut().set_query_text(QString::from(&query.as_ref().map(ToString::to_string).unwrap_or_default()));
