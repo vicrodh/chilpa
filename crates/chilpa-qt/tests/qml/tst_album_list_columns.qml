@@ -3,10 +3,9 @@ import QtTest
 import app.chilpa
 import app.chilpa.sources
 import "../../qml/Components"
-import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
-// A list of records shows the columns asked for, in their order, and a
-// switch in the gear's modal turns one on or off.
+// A list of records shows the columns asked for, in their order; the
+// gear's switches are the kit's (`tst_album_columns`).
 TestCase {
     name: "AlbumListColumns"
     when: windowShown
@@ -21,11 +20,8 @@ TestCase {
         model: records
         listColumns: ["year", "tracks", "duration", "rating", "source"]
     }
-    AlbumColumnsModal {
-        id: chooser
-        shown: grid.listColumns
-        onChosen: (columns) => grid.listColumns = columns
-    }
+    TrackListModel { id: toolbarTracks }
+    LibraryToolbar { id: toolbar; y: 420; width: 1100; tracks: toolbarTracks; columns: grid.listColumns }
 
     function initTestCase() {
         AlbumActions.factsOf = {1: {tracks: 12, duration_ms: 3725000, genre: "Heavy Metal"}}
@@ -35,7 +31,6 @@ TestCase {
 
     function init() { tryVerify(() => findChild(grid, "tracksCell") !== null) }
     function cleanup() {
-        chooser.close()
         records.mixed = false
         AlbumActions.sourcesOf = {}
         grid.listColumns = ["year", "tracks", "duration", "rating", "source"]
@@ -53,19 +48,21 @@ TestCase {
             verify(cells[at].x > cells[at - 1].x, "the columns stand in their order")
     }
 
-    function test_a_switch_turns_a_column_on_and_off() {
-        chooser.open()
-        tryVerify(() => chooser.opened)
-        waitForRendering(chooser.contentItem)
-        const genre = findChild(chooser.contentItem, "column-genre")
-        verify(genre)
-        compare(genre.checked, false)
-        mouseClick(genre)
-        tryCompare(grid, "listColumns", ["year", "tracks", "duration", "genre", "rating", "source"])
+    function test_a_column_turned_on_shows_and_one_turned_off_goes() {
+        grid.listColumns = ["year", "duration", "genre", "rating", "source"]
         tryCompare(findChild(grid, "genreCell"), "visible", true)
         compare(findChild(grid, "genreCell").text, "Heavy Metal")
-        mouseClick(findChild(chooser.contentItem, "column-tracks"))
-        tryCompare(findChild(grid, "tracksCell"), "visible", false)
+        compare(findChild(grid, "tracksCell").visible, false)
+    }
+
+    function test_the_library_toolbar_carries_the_gear_in_list_mode() {
+        SettingsModel.libraryView = "tracks"
+        const gear = findChild(toolbar, "listColumnsButton")
+        verify(gear, "the toolbar builds with the kit's gear")
+        tryCompare(gear, "visible", true)
+        compare(gear.shown, grid.listColumns)
+        SettingsModel.libraryView = "grid"
+        tryCompare(gear, "visible", false, 1000, "the columns are the list's, not the grid's")
     }
 
     function test_a_mixed_list_shows_every_source_the_record_is_on() {

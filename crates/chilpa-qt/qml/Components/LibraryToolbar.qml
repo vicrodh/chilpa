@@ -3,6 +3,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // Under the Library's columns: play, shuffle or queue what the filter
 // leaves, how much it is, and tracks or records.
