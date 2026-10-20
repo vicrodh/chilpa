@@ -36,8 +36,10 @@ fn main() {
     println!("cargo:rerun-if-changed=cxx/fonts.cpp");
     println!("cargo:rerun-if-changed=cxx/application_icon.cpp");
     println!("cargo:rerun-if-changed=cxx/frame_fence.cpp");
+    println!("cargo:rerun-if-changed=cxx/playing_surface.cpp");
     CxxQtBuilder::library(Interface::default())
         .qobject_header("cxx/frame_fence.h")
+        .qobject_header("cxx/playing_surface.h")
         .qt_module("Gui")
         .qt_module("Qml")
         .qt_module("Quick")
@@ -52,6 +54,7 @@ fn main() {
             cc.file("cxx/fonts.cpp");
             cc.file("cxx/application_icon.cpp");
             cc.file("cxx/frame_fence.cpp");
+            cc.file("cxx/playing_surface.cpp");
         })
         .build();
 }

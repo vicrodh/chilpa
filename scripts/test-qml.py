@@ -41,8 +41,11 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
     fence_header = fence.with_suffix(".h")
     fence_moc = temporary / "moc_frame_fence.cpp"
     subprocess.run([str(libexec / "moc"), str(fence_header), "-o", str(fence_moc)], check=True)
+    surface = root / "crates/chilpa-qt-kit/cxx/playing_surface.cpp"
+    surface_moc = temporary / "moc_playing_surface.cpp"
+    subprocess.run([str(libexec / "moc"), str(surface.with_suffix(".h")), "-o", str(surface_moc)], check=True)
     flags = shlex.split(subprocess.check_output(["pkg-config", "--cflags", "--libs", "Qt6Quick", "Qt6Qml"], text=True))
-    subprocess.run(["c++", "-std=c++17", "-shared", "-fPIC", str(loader), str(fence), str(fence_moc),
+    subprocess.run(["c++", "-std=c++17", "-shared", "-fPIC", str(loader), str(fence), str(fence_moc), str(surface), str(surface_moc),
                     "-o", str(temporary / "loader.so"), *flags], check=True)
     imports = temporary / "imports"
     shutil.copytree(root / "crates/chilpa-qt/tests/qml/imports", imports)
