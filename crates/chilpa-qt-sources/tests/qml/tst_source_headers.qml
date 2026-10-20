@@ -33,6 +33,17 @@ TestCase {
         compare(AlbumActions.playedId, -43)
         header.info = {kind:"album",title:"Album",quality_label:"WAV 24/96",quality_tier:3}
     }
+    // A record kept by the library and by sources offers its copies here too.
+    function test_a_record_with_copies_offers_them() {
+        const versions = findChild(header, "recordVersions")
+        header.record = { title: "Album", art: "", selectedId: -7, versions: JSON.stringify([
+            { id: -7, label: "Source · FLAC", brief: "Source", detail: "", source: { local: false } },
+            { id: 9, label: "Local library · FLAC", brief: "Local", detail: "", source: { local: true } }]), selectVersion: function(value) {} }
+        tryCompare(versions, "visible", true)
+        header.record = { title: "Album", art: "", selectedId: -7, versions: JSON.stringify([{ id: -7, label: "Source", brief: "", detail: "", source: {} }]), selectVersion: function(value) {} }
+        tryCompare(versions, "visible", false, 1000, "one copy offers no choice")
+        header.record = undefined
+    }
     function test_technical_quality_is_visible_before_playback() {
         const label=findText(header,"WAV 24/96")
         verify(label); verify(label.visible)
