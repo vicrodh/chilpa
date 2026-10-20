@@ -650,14 +650,32 @@ msgstr "Op album"
 msgid "By artist"
 msgstr "Op artiest"
 
+msgid "By composer"
+msgstr "Op componist"
+
+msgid "By date added"
+msgstr "Op datum toegevoegd"
+
 msgid "By decade"
 msgstr "Op decennium"
+
+msgid "By genre"
+msgstr "Op genre"
+
+msgid "By label"
+msgstr "Op label"
 
 msgid "By letter"
 msgstr "Op letter"
 
 msgid "By name"
 msgstr "Op naam"
+
+msgid "By quality"
+msgstr "Op kwaliteit"
+
+msgid "By source"
+msgstr "Op bron"
 
 msgid "By year"
 msgstr "Op jaar"

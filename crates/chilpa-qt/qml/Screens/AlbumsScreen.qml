@@ -106,7 +106,15 @@ Item {
                 options: [
                     { value: "", text: I18n.tr("No grouping", I18n.rev) },
                     { value: "letter", text: I18n.tr("By letter", I18n.rev) },
-                    { value: "artist", text: I18n.tr("By artist", I18n.rev) }
+                    { value: "artist", text: I18n.tr("By artist", I18n.rev) },
+                    { value: "year", text: I18n.tr("By year", I18n.rev) },
+                    { value: "decade", text: I18n.tr("By decade", I18n.rev) },
+                    { value: "genre", text: I18n.tr("By genre", I18n.rev) },
+                    { value: "label", text: I18n.tr("By label", I18n.rev) },
+                    { value: "composer", text: I18n.tr("By composer", I18n.rev) },
+                    { value: "quality", text: I18n.tr("By quality", I18n.rev) },
+                    { value: "source", text: I18n.tr("By source", I18n.rev) },
+                    { value: "added", text: I18n.tr("By date added", I18n.rev) }
                 ]
                 onPicked: (value) => { page.group = value; SettingsModel.keep("ui.albums.group", value) }
             }

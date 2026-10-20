@@ -650,14 +650,32 @@ msgstr "Nach Album"
 msgid "By artist"
 msgstr "Nach Künstler"
 
+msgid "By composer"
+msgstr "Nach Komponist"
+
+msgid "By date added"
+msgstr "Nach Hinzufügedatum"
+
 msgid "By decade"
 msgstr "Nach Jahrzehnt"
+
+msgid "By genre"
+msgstr "Nach Genre"
+
+msgid "By label"
+msgstr "Nach Label"
 
 msgid "By letter"
 msgstr "Nach Buchstabe"
 
 msgid "By name"
 msgstr "Nach Name"
+
+msgid "By quality"
+msgstr "Nach Qualität"
+
+msgid "By source"
+msgstr "Nach Quelle"
 
 msgid "By year"
 msgstr "Nach Jahr"
