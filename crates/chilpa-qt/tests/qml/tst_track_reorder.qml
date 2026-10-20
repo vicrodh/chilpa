@@ -27,11 +27,13 @@ TestCase {
         page.visible = false; page.contentY = 0
         list.visible = true; plain.visible = true
         list.rich = false
+        list.model = plain.model = paged.model = null // I reset the fixture before testing actions.
         tracks.clear()
         for (let i = 1; i <= 3; ++i)
             tracks.append({ trackId: 40 + i, rowKind: 0, number: i, title: "Track " + i, artist: "Band",
                 album: "Album", sourceName: "Remote source", duration: "3:00", plays: 0, quality: "FLAC", tier: 2,
                 available: true, playing: false, selected: false, headerLabel: "", headerMeta: "", art: "" })
+        list.model = plain.model = paged.model = tracks
         tracks.lastAction = ""; tracks.lastRow = -1; tracks.steps = 0; tracks.selectedCount = 0; tracks.movedTo = -1
         wait(30)
     }

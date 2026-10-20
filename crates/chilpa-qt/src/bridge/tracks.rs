@@ -125,6 +125,24 @@ pub mod qobject {
         #[cxx_name = "endResetModel"]
         unsafe fn end_reset_model(self: Pin<&mut TrackListModel>);
         #[inherit]
+        #[cxx_name = "beginRemoveRows"]
+        unsafe fn begin_remove_rows(self: Pin<&mut TrackListModel>, parent: &QModelIndex, first: i32, last: i32);
+        #[inherit]
+        #[cxx_name = "endRemoveRows"]
+        unsafe fn end_remove_rows(self: Pin<&mut TrackListModel>);
+        #[inherit]
+        #[cxx_name = "beginMoveRows"]
+        unsafe fn begin_move_rows(self: Pin<&mut TrackListModel>, parent: &QModelIndex, first: i32, last: i32, destination: &QModelIndex, child: i32) -> bool;
+        #[inherit]
+        #[cxx_name = "endMoveRows"]
+        unsafe fn end_move_rows(self: Pin<&mut TrackListModel>);
+        #[inherit]
+        #[cxx_name = "beginInsertRows"]
+        unsafe fn begin_insert_rows(self: Pin<&mut TrackListModel>, parent: &QModelIndex, first: i32, last: i32);
+        #[inherit]
+        #[cxx_name = "endInsertRows"]
+        unsafe fn end_insert_rows(self: Pin<&mut TrackListModel>);
+        #[inherit]
         #[qsignal]
         #[cxx_name = "dataChanged"]
         fn data_changed(self: Pin<&mut TrackListModel>, top_left: &QModelIndex, bottom_right: &QModelIndex, roles: &QVector_i32);
@@ -153,10 +171,11 @@ pub mod qobject {
 use crate::{app, browse, format, registry, worker};
 use chilpa_api::{TrackEntry as Entry, TrackOrder, TrackRow};
 use cxx_qt::{CxxQtType as _, Threading as _};
-use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant, QVector};
+use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QVariant, QVector};
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::pin::Pin;
+use chilpa_api::list_changes::{self, Step};
 use std::rc::Rc;
 use chilpa_qt_kit::bridge::queue_activity;
 
@@ -303,52 +322,15 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
         // A divider is kind 1; a header that stands for a record, with
         // its cover and its artist, is kind 2.
         At::Header(header) => {
-            return match role - USER_ROLE {
-                0 => QVariant::from(&if header.record { 2i32 } else { 1i32 }),
-                3 => QVariant::from(&QString::from(&header.artist)),
-                11 => QVariant::from(&QString::from(&header.label)),
-                12 => QVariant::from(&QString::from(&header.meta)),
-                13 => QVariant::from(&0i64),
-                15 => QVariant::from(&if header.art.is_empty() { QUrl::default() } else { QUrl::from_local_file(&QString::from(&header.art)) }),
-                16 => QVariant::from(&true),
-                21 => QVariant::from(&header.work),
-                22 => QVariant::from(&QString::from(&header.composer)),
-                23 => QVariant::from(&QString::from(&header.composer_target)),
-                _ => QVariant::default(),
-            };
+            return chilpa_qt_kit::track_roles::header(header, role);
         }
         At::Track(page, i) => &page[*i],
         At::Loaded(t) => *t,
     };
-    let text = |s: &str| QVariant::from(&QString::from(s));
-    match role - USER_ROLE {
-        0 => QVariant::from(&0i32),
-        1 => {
-            let n = if list.by_track_number { i32::from(track.number) } else { list.queue_numbers.get(row).copied().unwrap_or(row as i32 + 1) };
-            QVariant::from(&n)
-        }
-        2 => text(&track.title),
-        3 => text(&track.artist),
-        4 => text(&track.album),
-        5 => text(&format::clock(track.duration_ms)),
-        6 => QVariant::from(&(track.plays as i32)),
-        7 => { app::with(|api| api.request_track_quality(track.id, &track.path)); text(&track.quality.short()) },
-        8 => QVariant::from(&track.quality.tier.rank()),
-        9 => QVariant::from(&if let Some(key) = list.queue_keys.get(row) { app::with(|api| api.listen_is_playing(key)) } else { !list.playing.is_empty() && track.path == list.playing }),
-        10 => QVariant::from(&(if list.queue_keys.is_empty() { list.selected.contains(&track.id) } else { list.anchor == Some(row) })),
-        13 => QVariant::from(&track.id),
-        14 => QVariant::from(&track.album_id),
-        15 => {
-            let url = if track.artwork_path.is_empty() { QUrl::default() } else { QUrl::from_local_file(&QString::from(&track.artwork_path)) };
-            QVariant::from(&url)
-        }
-        16 => QVariant::from(&track.available),
-        17 => text(&chilpa_api::group_of(&list.group, track)),
-        18 => text(&app::with(|api| api.track_source_name(&track.path))),
-        19 => text(&app::with(|api| api.track_source_badge(&track.path))),
-        20 => text(&track.composer),
-        _ => QVariant::default(),
-    }
+    let number = if list.by_track_number { i32::from(track.number) } else { list.queue_numbers.get(row).copied().unwrap_or(row as i32 + 1) };
+    let playing = role == ROLE_PLAYING && if let Some(key) = list.queue_keys.get(row) { app::with(|api| api.listen_is_playing(key)) } else { !list.playing.is_empty() && track.path == list.playing };
+    let selected = if list.queue_keys.is_empty() { list.selected.contains(&track.id) } else { list.anchor == Some(row) };
+    chilpa_qt_kit::track_roles::track(track, role, number, playing, selected, &list.group)
 }
 
 /// Adds files to the end of the queue, on the output in use.
@@ -803,14 +785,13 @@ impl qobject::TrackListModel {
     fn home_arrived(self: Pin<&mut Self>, asked: u64, rows: chilpa_api::HomeRows) {
         if asked == self.rust().asked {
             if let chilpa_api::HomeRows::Tracks(tracks) = rows {
-                self.show("mostPlayed".into(), Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), None);
+                self.show("mostPlayed".into(), Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), None, Vec::new());
             }
         }
     }
 
     fn reload(mut self: Pin<&mut Self>) {
-        self.as_mut().rust_mut().queue_keys.clear();
-        self.as_mut().rust_mut().queue_numbers.clear();
+        let mut queue_keys = Vec::new();
         self.as_mut().rust_mut().pending = false;
         let (id, limit) = (self.rust().album_id, self.rust().limit.max(1) as usize);
         let kind = self.rust().kind.to_string();
@@ -836,7 +817,7 @@ impl qobject::TrackListModel {
                     if model.rust().asked == asked {
                         let ms = found.snapshot.totals.duration_ms;
                         (model.as_mut().rust_mut().group, model.as_mut().rust_mut().letters, model.as_mut().rust_mut().sections) = (found.group, found.letters, found.sections);
-                        model.show("tracks".into(), Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms));
+                        model.show("tracks".into(), Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms), Vec::new());
                     }
                 });
             }));
@@ -848,19 +829,19 @@ impl qobject::TrackListModel {
             // For a record, `key` is what is typed to find its rows (`entries_matching`).
             let typed = self.rust().key.to_string();
             if let Some(page) = chilpa_qt_kit::album_pages::get(self.rust().album_page, id) {
-                self.show(kind, Rows::Loaded(chilpa_api::entries_matching(page.entries.clone(), &typed)), Some(page.detail.duration_ms));
+                self.show(kind, Rows::Loaded(chilpa_api::entries_matching(page.entries.clone(), &typed)), Some(page.detail.duration_ms), Vec::new());
             } else if id > 0 {
                 let thread = self.qt_thread();
                 worker::submit_album(move |reader| {
                     let page = reader.album_page(id, true);
                     let _ = thread.queue(move |model| {
                         if model.rust().asked == asked && model.rust().album_id == id && model.rust().kind.to_string() == "album" {
-                            if let Some(page) = page { model.show("album".into(), Rows::Loaded(chilpa_api::entries_matching(page.entries, &typed)), Some(page.detail.duration_ms)); }
+                            if let Some(page) = page { model.show("album".into(), Rows::Loaded(chilpa_api::entries_matching(page.entries, &typed)), Some(page.detail.duration_ms), Vec::new()); }
                         }
                     });
                 });
             } else if let Some(page) = app::with(|api| api.cached_album_page(id)) {
-                self.show(kind, Rows::Loaded(chilpa_api::entries_matching(page.entries, &typed)), Some(page.detail.duration_ms));
+                self.show(kind, Rows::Loaded(chilpa_api::entries_matching(page.entries, &typed)), Some(page.detail.duration_ms), Vec::new());
             }
             return;
         }
@@ -895,18 +876,13 @@ impl qobject::TrackListModel {
             }
             "openMedia" => {
                 let (rows, keys) = app::with(|api| api.media_rows(&self.rust().key.to_string()));
-                // Each disc counts from one: a header is the row with no key.
-                let mut number = 0;
-                self.as_mut().rust_mut().queue_numbers = keys.iter().map(|key| { number = if key.is_empty() { 0 } else { number + 1 }; number }).collect();
-                self.as_mut().rust_mut().queue_keys = keys;
+                queue_keys = keys;
                 (Rows::Loaded(rows), None)
             }
             "queue" | "listenlist" | "history" => {
                 let query = self.rust().key.to_string();
                 let (entries, keys) = app::with(|api| if kind == "history" { api.listen_history(&query) } else { api.listen_rows(id as u64, &query, kind == "listenlist") });
-                let mut number = 0;
-                self.as_mut().rust_mut().queue_numbers = keys.iter().map(|key| { if !key.is_empty() { number += 1; } number }).collect();
-                self.as_mut().rust_mut().queue_keys = keys;
+                queue_keys = keys;
                 let ms = entries.iter().filter_map(|e| if let Entry::Track(t) = e { Some(t.duration_ms) } else { None }).sum();
                 (Rows::Loaded(entries), Some(ms))
             }
@@ -917,10 +893,10 @@ impl qobject::TrackListModel {
             }
             _ => (Rows::default(), None),
         };
-        self.show(kind, rows, length);
+        self.show(kind, rows, length, queue_keys);
     }
 
-    fn show(mut self: Pin<&mut Self>, kind: String, rows: Rows, length: Option<u64>) {
+    fn show(mut self: Pin<&mut Self>, kind: String, rows: Rows, length: Option<u64>, keys: Vec<String>) {
         let id = self.rust().album_id;
         // I preserve selection when refreshing the same list.
         let identity = (kind.clone(), id, self.rust().key.to_string());
@@ -939,37 +915,57 @@ impl qobject::TrackListModel {
                 }
             }
         }
-        // Read again and unchanged, it is left as it is: a reset would flash.
-        if same && matches!((&self.rust().rows, &rows), (Rows::Loaded(a), Rows::Loaded(b)) if a == b) { return; }
-        if same {
-            if let (Rows::Loaded(old), Rows::Loaded(new)) = (&self.rust().rows, &rows) {
-                if old.len() == new.len() && old.iter().zip(new).all(|(a, b)| a.same_row(b)) {
-                    let changed: Vec<_> = old.iter().zip(new).enumerate().filter_map(|(i, (a, b))| (a != b).then_some(i)).collect();
-                    self.as_mut().rust_mut().rows = rows;
-                    for row in changed { let at = self.index(row as i32, 0, &QModelIndex::default()); self.as_mut().data_changed(&at, &at, &QVector::<i32>::default()); }
-                    if let Some(ms) = length { let count = *self.count() as usize; self.as_mut().set_summary(QString::from(&summary(count, ms))); }
-                    return;
+        if same && self.rust().queue_keys == keys && matches!((&self.rust().rows, &rows), (Rows::Loaded(a), Rows::Loaded(b)) if a == b) { return; }
+        let plan = if same && self.rust().len() > 0 { match (&self.rust().rows, &rows) {
+            (Rows::Loaded(old), Rows::Loaded(new)) => list_changes::tracks(old, new, &self.rust().queue_keys, &keys),
+            _ => None,
+        } } else { None };
+        if let Some(plan) = plan {
+            let Rows::Loaded(new) = &rows else { unreachable!() };
+            let parent = QModelIndex::default();
+            for step in plan.steps {
+                // SAFETY: each valid edit brackets its storage mutation.
+                unsafe { match step {
+                    Step::Remove(at) => self.as_mut().begin_remove_rows(&parent, at as i32, at as i32),
+                    Step::Insert(at) => self.as_mut().begin_insert_rows(&parent, at as i32, at as i32),
+                    Step::Move { from, .. } => { self.as_mut().begin_move_rows(&parent, from as i32, from as i32, &parent, step.destination() as i32); }
+                } }
+                { let mut this = self.as_mut().rust_mut();
+                    if let Rows::Loaded(old) = &mut this.rows { step.apply(old, new); }
+                    if !keys.is_empty() || !this.queue_keys.is_empty() { step.apply(&mut this.queue_keys, &keys); }
+                    this.anchor = step.remap(this.anchor);
+                    this.queue_numbers = list_changes::numbers(&this.queue_keys, kind == "openMedia");
                 }
+                unsafe { match step {
+                    Step::Remove(_) => self.as_mut().end_remove_rows(), Step::Insert(_) => self.as_mut().end_insert_rows(), Step::Move { .. } => self.as_mut().end_move_rows(),
+                } }
+            }
+            self.as_mut().rust_mut().rows = rows;
+            for row in plan.changed { let at = self.index(row as i32, 0, &parent); self.as_mut().data_changed(&at, &at, &QVector::<i32>::default()); }
+        } else {
+            // SAFETY: the reset is begun and ended around the swap, as Qt asks.
+            unsafe { self.as_mut().begin_reset_model() };
+            {
+                let mut this = self.as_mut().rust_mut();
+                if same { if let (Rows::Loaded(old), Rows::Loaded(new)) = (&this.rows, &rows) {
+                    this.anchor = list_changes::track_anchor(old, new, &this.queue_keys, &keys, this.anchor);
+                } }
+                this.rows = rows;
+                this.queue_numbers = list_changes::numbers(&keys, kind == "openMedia");
+                this.queue_keys = keys;
+                this.by_track_number = kind == "album";
+                if !same { this.selected.clear(); this.anchor = None; }
+                this.loaded = Some(identity);
+            }
+            unsafe { self.as_mut().end_reset_model() };
+        }
+        { let mut this = self.as_mut().rust_mut();
+            if let Rows::Loaded(entries) = &this.rows {
+                let there: HashSet<_> = entries.iter().filter_map(|e| if let Entry::Track(t) = e { Some(t.id) } else { None }).collect();
+                this.selected.retain(|id| there.contains(id));
+                if !this.queue_keys.is_empty() && this.anchor.is_none() { this.selected.clear(); }
             }
         }
-        // SAFETY: the reset is begun and ended around the swap, as Qt asks.
-        unsafe { self.as_mut().begin_reset_model() };
-        {
-            let mut this = self.as_mut().rust_mut();
-            this.rows = rows;
-            this.by_track_number = kind == "album";
-            if same {
-                let there: HashSet<i64> = this.loaded_tracks().iter().map(|t| t.id).collect();
-                if matches!(this.rows, Rows::Loaded(_)) {
-                    this.selected.retain(|id| there.contains(id));
-                }
-            } else {
-                this.selected.clear();
-                this.anchor = None;
-            }
-            this.loaded = Some(identity);
-        }
-        unsafe { self.as_mut().end_reset_model() };
         let chosen = self.rust().selected.len() as i32;
         self.as_mut().set_selected_count(chosen);
         let tracks = match &self.rust().rows {

@@ -42,6 +42,7 @@ mod listening_export;
 mod listening_period;
 mod listening_stats;
 pub mod listening;
+pub mod list_changes;
 mod metadata;
 pub mod navigation;
 pub mod queue_origin;

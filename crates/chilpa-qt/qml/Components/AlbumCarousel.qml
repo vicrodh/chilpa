@@ -21,8 +21,7 @@ Column {
     property int size: 0
     property string sourceIcon: ""
     readonly property int viewportColumns: CardLayout.columns(width)
-    readonly property int cardCount: Math.max(1, Math.min(model ? model.albums : 0, size || viewportColumns))
-    readonly property real farthest: Math.max(0, rail.contentWidth - rail.width)
+    readonly property real farthest: Math.max(0, grid.scrollView.contentWidth - grid.scrollView.width)
     readonly property real step: viewportColumns * (CardLayout.cardWidth + Metrics.gridGap) // derived: a page of library-sized cards
 
     signal linkClicked()
@@ -36,34 +35,22 @@ Column {
         link: root.link
         sourceIcon: root.sourceIcon
         paged: root.farthest > 0
-        canBack: rail.contentX > 1
-        canForward: rail.contentX < root.farthest - 1
-        onBack: rail.contentX = Math.max(0, rail.contentX - root.step)
-        onForward: rail.contentX = Math.min(root.farthest, rail.contentX + root.step)
+        canBack: grid.scrollView.contentX > 1
+        canForward: grid.scrollView.contentX < root.farthest - 1
+        onBack: grid.scrollView.contentX = Math.max(0, grid.scrollView.contentX - root.step)
+        onForward: grid.scrollView.contentX = Math.min(root.farthest, grid.scrollView.contentX + root.step)
         onLinkClicked: root.linkClicked()
     }
-    Flickable {
-        id: rail
-        objectName: "albumCarouselRail"
+    AlbumGrid {
+        id: grid
+        Component.onCompleted: scrollView.objectName = "albumCarouselRail"
         width: parent.width
-        height: Math.max(CardLayout.cardHeight + Metrics.cardRing * 2, grid.implicitHeight) + Metrics.gap8 // derived: a full cover row before ListView's first polish
-        contentWidth: grid.width; contentHeight: height
-        interactive: contentWidth > width
-        flickableDirection: Flickable.HorizontalFlick
-        boundsBehavior: Flickable.StopAtBounds
-        clip: true
-        ScrollBar.horizontal: ViewportScrollBar {}
-        AlbumGrid {
-            id: grid
-            width: Metrics.cardRing * 2 + root.cardCount * CardLayout.cardWidth + (root.cardCount - 1) * Metrics.gridGap // derived: one row and its selection rings
-            height: implicitHeight
-            fitContent: true; fixedColumns: root.cardCount
-            viewportX: rail.contentX; viewportWidth: rail.width
-            round: root.round
-            viewport: root.viewport
-            model: root.model
-            onOpen: (albumId) => Navigation.go("album", albumId)
-        }
+        height: implicitHeight + Metrics.gap8
+        fitContent: true; fixedColumns: root.size || root.viewportColumns
+        round: root.round
+        viewport: root.viewport
+        model: root.model
+        onOpen: (albumId) => Navigation.go("album", albumId)
     }
     // One row: as many records as fit across.
     Binding {

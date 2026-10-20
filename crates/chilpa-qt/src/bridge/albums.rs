@@ -87,6 +87,18 @@ pub mod qobject {
         #[cxx_name = "endInsertRows"]
         unsafe fn end_insert_rows(self: Pin<&mut AlbumGridModel>);
         #[inherit]
+        #[cxx_name = "beginRemoveRows"]
+        unsafe fn begin_remove_rows(self: Pin<&mut AlbumGridModel>, parent: &QModelIndex, first: i32, last: i32);
+        #[inherit]
+        #[cxx_name = "endRemoveRows"]
+        unsafe fn end_remove_rows(self: Pin<&mut AlbumGridModel>);
+        #[inherit]
+        #[cxx_name = "beginMoveRows"]
+        unsafe fn begin_move_rows(self: Pin<&mut AlbumGridModel>, parent: &QModelIndex, first: i32, last: i32, destination: &QModelIndex, child: i32) -> bool;
+        #[inherit]
+        #[cxx_name = "endMoveRows"]
+        unsafe fn end_move_rows(self: Pin<&mut AlbumGridModel>);
+        #[inherit]
         #[qsignal]
         #[cxx_name = "dataChanged"]
         fn data_changed(self: Pin<&mut AlbumGridModel>, top_left: &QModelIndex, bottom_right: &QModelIndex, roles: &QVector_i32);
@@ -111,55 +123,14 @@ pub mod qobject {
 }
 use crate::{app, registry, worker};
 use chilpa_api::Album;
-use std::cell::RefCell;
 use std::rc::Rc;
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant, QVector};
 use std::pin::Pin;
+use chilpa_api::list_changes::{self, Step};
 
 const USER_ROLE: i32 = 256;
-const PAGE: usize = 128;
-const PAGES_KEPT: usize = 24;
-enum Albums {
-    Loaded(Vec<Album>),
-    Snapshot { ids: Vec<i64>, pages: Rc<RefCell<chilpa_api::PageCache<Album>>> },
-}
-impl Default for Albums {
-    fn default() -> Self {
-        Albums::Loaded(Vec::new())
-    }
-}
-impl Albums {
-    fn mixed(&self) -> bool {
-        match self {
-            Albums::Loaded(v) => chilpa_api::mixes_sources(v.iter().map(|a| a.id)),
-            Albums::Snapshot { ids, .. } => chilpa_api::mixes_sources(ids.iter().copied()),
-        }
-    }
-    fn len(&self) -> usize {
-        match self {
-            Albums::Loaded(v) => v.len(),
-            Albums::Snapshot { ids, .. } => ids.len(),
-        }
-    }
-    /// Reads one bounded page by id on a miss; any page costs the same.
-    fn with<R>(&self, index: usize, f: impl FnOnce(&Album) -> R) -> Option<R> {
-        match self {
-            Albums::Loaded(v) => v.get(index).map(f),
-            Albums::Snapshot { ids, pages } => {
-                if index >= ids.len() {
-                    return None;
-                }
-                let page = index / PAGE;
-                let rows = pages.borrow_mut().read(page, PAGES_KEPT, || {
-                    let end = ((page + 1) * PAGE).min(ids.len());
-                    app::with(|api| api.albums_by_ids(&ids[page * PAGE..end]))
-                });
-                rows.get(index % PAGE).map(f)
-            }
-        }
-    }
-}
+use chilpa_qt_kit::album_rows::Albums;
 #[derive(Default)]
 pub struct AlbumGridRust {
     kind: QString,
@@ -187,6 +158,7 @@ pub struct AlbumGridRust {
     rows: Vec<chilpa_api::GridRow>,
     pending: bool,
     generation: u64,
+    loaded: Option<(String, String, String, String, String)>,
 }
 
 impl AlbumGridRust {
@@ -195,7 +167,7 @@ impl AlbumGridRust {
     }
 
     fn laid_out(&self) -> Vec<chilpa_api::GridRow> {
-        chilpa_api::grid_rows(self.list.len(), self.columns.max(0) as usize, self.max_rows.max(0) as usize, &self.groups)
+        list_changes::album_rows(self.list.len(), self.columns.max(0) as usize, self.max_rows.max(0) as usize, &self.groups)
     }
 }
 
@@ -253,12 +225,13 @@ impl qobject::AlbumGridModel {
             0 => QVariant::from(&(row.first as i32)),
             1 => QVariant::from(&(row.span as i32)),
             2 => QVariant::from(&QString::from(&row.label)),
+            3 => QVariant::from(&self.rust().rev),
             _ => QVariant::default(),
         }
     }
 
     pub fn role_names(&self) -> QHash<QHashPair_i32_QByteArray> {
-        crate::format::roles(USER_ROLE, &["first", "span", "group"])
+        crate::format::roles(USER_ROLE, &["first", "span", "group", "revision"])
     }
 
     pub fn row_count(&self, _parent: &QModelIndex) -> i32 {
@@ -398,14 +371,17 @@ impl qobject::AlbumGridModel {
         }
     }
 
-    fn show(mut self: Pin<&mut Self>, list: Albums) {
-        // I append a shelf's next page without moving its existing rows.
-        if let (Albums::Loaded(old), Albums::Loaded(new)) = (&self.rust().list, &list) {
-            if new.len() > old.len() && self.rust().groups.is_empty() && old.iter().zip(new).all(|(a, b)| a.id == b.id) {
-                let from = old.len();
-                return self.grow(list, from);
-            }
-        }
+    fn show(mut self: Pin<&mut Self>, mut list: Albums) {
+        let identity = (self.kind().to_string(), self.key().to_string(), self.order().to_string(), self.group().to_string(), self.filter().to_string());
+        let same = self.rust().loaded.as_ref() == Some(&identity);
+        let rows = list_changes::album_rows(list.len(), self.rust().columns.max(0) as usize, self.rust().max_rows.max(0) as usize, &self.rust().groups);
+        let next = self.rev().wrapping_add(1);
+        self.as_mut().set_rev(next);
+        if same && rows == self.rust().rows && matches!((&self.rust().list, &list), (Albums::Loaded(a), Albums::Loaded(b)) if a == b) { let ready = self.rust().kind.to_string() != "source" || self.rust().source_ready; self.as_mut().set_ready(ready); return; }
+        let plan = if same && !self.rust().rows.is_empty() { match (&self.rust().list, &list) {
+            (Albums::Loaded(old), Albums::Loaded(new)) => list_changes::albums(old, new, &self.rust().rows, &rows),
+            _ => None,
+        } } else { None };
         self.as_mut().set_fresh(-1);
         let opened = self.rust().get(self.rust().expanded, |a| a.id)
             .map(|id| app::with(|api| api.selected_album_version(id)));
@@ -416,42 +392,42 @@ impl qobject::AlbumGridModel {
         }.map(|at| at as i32).unwrap_or(-1);
         let count = list.len() as i32;
         self.as_mut().set_mixed(list.mixed());
+        let anchor = self.rust().anchor.and_then(|at| self.rust().get(at, |a| a.id));
+        self.as_mut().rust_mut().anchor = anchor.and_then(|id| list.position(id)).map(|at| at as i32);
+        let offset = list.stage(&mut self.as_mut().rust_mut().list, plan.as_ref());
         self.as_mut().rust_mut().list = list;
-        self.as_mut().rust_mut().anchor = None;
         self.as_mut().set_expanded(expanded);
-        self.as_mut().split_rows();
-        self.as_mut().set_albums(count);
-        let next = self.rev().wrapping_add(1);
-        self.as_mut().set_rev(next);
-        let ready = self.rust().kind.to_string() != "source" || self.rust().source_ready;
-        self.as_mut().set_ready(ready);
-    }
-
-    /// Appends records without rebuilding the rows already shown.
-    fn grow(mut self: Pin<&mut Self>, list: Albums, from: usize) {
-        let count = list.len() as i32;
-        self.as_mut().set_mixed(list.mixed());
-        self.as_mut().rust_mut().list = list;
-        let rows = self.rust().laid_out();
-        let before = self.rust().rows.len();
-        let filled = before > 0 && rows.get(before - 1).map(|row| row.span) != self.rust().rows.get(before - 1).map(|row| row.span);
-        let parent = QModelIndex::default();
-        if rows.len() > before {
-            // SAFETY: the insertion is begun and ended around the swap, as Qt asks.
-            unsafe { self.as_mut().begin_insert_rows(&parent, before as i32, rows.len() as i32 - 1) };
+        if let Some(plan) = plan {
+            let parent = QModelIndex::default();
+            let staged: Vec<_> = rows.iter().cloned().map(|mut row| { row.first += offset; row }).collect();
+            for &step in &plan.steps {
+                // SAFETY: each planned edit brackets its storage mutation.
+                unsafe { match step {
+                    Step::Remove(at) => self.as_mut().begin_remove_rows(&parent, at as i32, at as i32),
+                    Step::Insert(at) => self.as_mut().begin_insert_rows(&parent, at as i32, at as i32),
+                    Step::Move { from, .. } => { self.as_mut().begin_move_rows(&parent, from as i32, from as i32, &parent, step.destination() as i32); }
+                } }
+                step.apply(&mut self.as_mut().rust_mut().rows, &staged);
+                unsafe { match step {
+                    Step::Remove(_) => self.as_mut().end_remove_rows(), Step::Insert(_) => self.as_mut().end_insert_rows(), Step::Move { .. } => self.as_mut().end_move_rows(),
+                } }
+            }
+            self.as_mut().rust_mut().list.finish(offset);
             self.as_mut().rust_mut().rows = rows;
-            unsafe { self.as_mut().end_insert_rows() };
+            for row in plan.published() { let at = self.index(row as i32, 0, &parent); self.as_mut().data_changed(&at, &at, &QVector::<i32>::default()); }
+        } else if same && rows == self.rust().rows && matches!(self.rust().list, Albums::Snapshot { .. }) {
+            if !rows.is_empty() {
+                let (first, last) = (self.index(0, 0, &QModelIndex::default()), self.index(rows.len() as i32 - 1, 0, &QModelIndex::default()));
+                self.as_mut().data_changed(&first, &last, &QVector::<i32>::default());
+            }
         } else {
+            // SAFETY: a new context or a large edit replaces all rows at once.
+            unsafe { self.as_mut().begin_reset_model() };
             self.as_mut().rust_mut().rows = rows;
+            unsafe { self.as_mut().end_reset_model() };
         }
-        if filled {
-            let last = self.index(before as i32 - 1, 0, &parent);
-            self.as_mut().data_changed(&last, &last, &QVector::<i32>::default());
-        }
+        self.as_mut().rust_mut().loaded = Some(identity);
         self.as_mut().set_albums(count);
-        self.as_mut().set_fresh(from as i32);
-        let next = self.rev().wrapping_add(1);
-        self.as_mut().set_rev(next);
         let ready = self.rust().kind.to_string() != "source" || self.rust().source_ready;
         self.as_mut().set_ready(ready);
     }
