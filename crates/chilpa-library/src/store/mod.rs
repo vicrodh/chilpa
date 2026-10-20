@@ -24,10 +24,12 @@ macro_rules! track_art {
 }
 
 pub mod albums;
+mod album_groups;
 pub mod artwork;
 pub mod advisory;
 pub mod artists;
 pub mod browse;
+pub mod order_keys;
 mod browse_candidates;
 pub mod credits;
 pub mod edit;
