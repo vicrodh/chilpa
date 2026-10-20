@@ -91,6 +91,25 @@ impl<'a> Net<'a> {
     }
 }
 
+#[cfg(test)]
+mod pacing_tests {
+    use super::*;
+
+    #[test]
+    fn musicbrainz_callers_share_the_same_1100_millisecond_pace() {
+        let http = super::testing::Canned::new();
+        let first = Net::musicbrainz(&http);
+        let second = Net::musicbrainz(&http);
+        assert!(std::ptr::eq(first.pace, second.pace));
+        assert_eq!(first.pace.every, Duration::from_millis(1_100));
+        let pace = Pace::new(Duration::from_millis(1_100));
+        pace.wait();
+        let start = pace.last.lock().unwrap().unwrap();
+        pace.wait();
+        assert!(start.elapsed() >= Duration::from_millis(1_100));
+    }
+}
+
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Failure {
     /// The network. Try again.

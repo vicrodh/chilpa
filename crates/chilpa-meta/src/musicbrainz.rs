@@ -17,6 +17,33 @@ const ROWS: usize = 12;
 const TIMEOUT: Duration = Duration::from_secs(6);
 const LARGEST: usize = 4 * 1024 * 1024;
 
+/// I keep digits only and share a key between UPC-A and its zero-prefixed EAN.
+pub fn barcode_key(barcode: &str) -> Option<String> {
+    let digits: String = barcode.chars().filter(char::is_ascii_digit).collect();
+    if !(8..=14).contains(&digits.len()) { return None; }
+    Some(if digits.len() == 13 && digits.starts_with('0') { digits[1..].to_string() } else { digits })
+}
+
+pub fn barcode_url(barcode: &str) -> Option<String> {
+    barcode_key(barcode)?;
+    let digits: String = barcode.chars().filter(char::is_ascii_digit).collect();
+    Some(format!("{API}/release?query=barcode:{digits}&fmt=json&limit=5"))
+}
+
+/// I send only the barcode, then read the matching release with the same pace.
+pub fn genres_by_barcode(net: &Net, barcode: &str) -> Result<Vec<String>, Failure> {
+    let Some(key) = barcode_key(barcode) else { return Ok(Vec::new()); };
+    let answer = get(net, &barcode_url(barcode).ok_or(Failure::BadId)?)?;
+    let releases = answer["releases"].as_array().ok_or_else(|| Failure::Unexpected("no releases in the answer".into()))?;
+    let id = releases.iter().take(5).find(|value| {
+        value["barcode"].as_str().and_then(barcode_key).as_ref() == Some(&key)
+    }).and_then(|value| value["id"].as_str());
+    match id {
+        Some(id) => Ok(release(net, id)?.genres),
+        None => Ok(Vec::new()),
+    }
+}
+
 /// The address of a search, built from what there is. `None` when there is
 /// nothing to search for.
 pub fn search_url(title: &str, artist: &str, catalog_number: &str, limit: usize) -> Option<String> {
@@ -270,6 +297,43 @@ pub fn release(net: &Net, id: &str) -> Result<Release, Failure> {
 mod tests {
     use super::*;
     use crate::http::testing::Canned;
+
+    #[test]
+    fn barcodes_send_only_digits_and_match_upc_and_ean_in_either_direction() {
+        assert_eq!(barcode_url("0 12345-6789012").unwrap(), format!("{API}/release?query=barcode:0123456789012&fmt=json&limit=5"));
+        assert!(barcode_url("none").is_none());
+        for (asked, returned) in [("123456789012", "123456789012"), ("123456789012", "0123456789012"), ("0123456789012", "123456789012")] {
+            let answer = serde_json::json!({"releases":[
+                {"id":"00000000-0000-4000-8000-000000000099","barcode":"999999999999"},
+                {"id":ID,"barcode":returned}
+            ]}).to_string();
+            let http = Canned::new().json(&answer).json(WHOLE);
+            assert_eq!(genres_by_barcode(&Net::free(&http), asked).unwrap(), ["heavy metal", "metal"]);
+            assert_eq!(http.asked(), [barcode_url(asked).unwrap(), release_url(ID).unwrap()]);
+        }
+    }
+
+    #[test]
+    fn an_unmatched_barcode_never_reads_a_release_or_searches_by_name() {
+        for returned in ["999999999999", "00123456789012", "1234567890123", ""] {
+            let answer = serde_json::json!({"releases":[{"id":ID,"barcode":returned}]}).to_string();
+            let http = Canned::new().json(&answer);
+            assert!(genres_by_barcode(&Net::free(&http), "123456789012").unwrap().is_empty());
+            assert_eq!(http.asked().len(), 1);
+        }
+        let http = Canned::new();
+        assert!(genres_by_barcode(&Net::free(&http), "").unwrap().is_empty());
+        assert!(http.asked().is_empty());
+    }
+
+    #[test]
+    fn barcode_lookup_keeps_the_release_genres_ahead_of_the_group() {
+        let http = Canned::new().json(FOUND).json(&serde_json::json!({
+            "id":ID,"genres":[{"name":"jazz","count":3},{"name":"pop","count":1}],
+            "release-group":{"genres":[{"name":"rock","count":9}]}
+        }).to_string());
+        assert_eq!(genres_by_barcode(&Net::free(&http), "881034121523").unwrap(), ["jazz"]);
+    }
 
     /// What MusicBrainz answered on 2026-09-26 to a search for "Powerslave"
     /// by "Iron Maiden", cut down to its first row and the keys read here.

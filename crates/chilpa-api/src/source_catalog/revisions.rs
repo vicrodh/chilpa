@@ -27,6 +27,7 @@ pub(super) struct EntityRevision {
     card: Option<Arc<Card>>,
     tracks: Vec<Arc<Track>>,
     content: i32,
+    genres: u64,
     error: Option<String>,
     art: i32,
     art_signature: u64,
@@ -79,12 +80,14 @@ impl Catalog {
             (None, None) => true,
             _ => false,
         };
-        let content_changed = !same || old.is_some_and(|revision| revision.error != error) || old.is_none_or(|revision| revision.tracks.len() != tracks.len()
+        let content_changed = !same || old.is_some_and(|revision| revision.genres != inner.genres.revision) || old.is_some_and(|revision| revision.error != error) || old.is_none_or(|revision| revision.tracks.len() != tracks.len()
             || revision.tracks.iter().zip(&tracks).any(|(a, b)| !Arc::ptr_eq(a, b) && a != b));
         let art_changed = old.is_none_or(|revision| revision.art_signature != artwork);
         if content_changed || art_changed { inner.entity_revision_clock = inner.entity_revision_clock.wrapping_add(1); }
         let clock = inner.entity_revision_clock;
+        let genres = inner.genres.revision;
         let revision = inner.entity_revisions.entry(id).or_default();
+        revision.genres = genres;
         if content_changed { revision.content = clock; }
         if art_changed { revision.art = clock; revision.art_signature = artwork; }
         revision.error = error;

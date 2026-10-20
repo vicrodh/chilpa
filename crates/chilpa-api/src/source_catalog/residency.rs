@@ -141,6 +141,11 @@ impl Catalog {
     /// I enqueue only registry entries that are known. An absent or not-yet
     /// scanned source never becomes disabled by inference.
     pub(crate) fn set_source_states(&self, states: impl IntoIterator<Item = (String, bool)>) {
+        let states: Vec<_> = states.into_iter().collect();
+        let root = crate::Chilpa::plugins_dir();
+        for (plugin, enabled) in &states {
+            self.genre_source(plugin, *enabled && crate::source_integration::read(&root, plugin).genres_from_musicbrainz);
+        }
         let mut inner = self.lock();
         for (plugin, enabled) in states {
             if !enabled { inner.domains.remove(&plugin); }

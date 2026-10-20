@@ -142,12 +142,16 @@ impl PluginCenter {
                 }
                 let started = std::time::Instant::now();
                 let result = run(&action, &input, &root, &plugins, &mut pending, &mut state, &mut evidence, &playing);
+                if result.is_ok() && action == "integration" && input["field"] == "genres_from_musicbrainz" {
+                    let states = plugins.lock().ok().map(|host| host.catalog_states());
+                    if let Some(states) = states { catalog.set_source_states(states); }
+                }
                 if result.is_ok() && matches!(action.as_str(), "enable" | "disable" | "install" | "install_native" | "install_local" | "restart" | "grant_network") {
                     let states = plugins.lock().ok().map(|host| host.catalog_states());
                     if let Some(states) = states { catalog.set_source_states(states); }
                 }
                 if result.is_ok() && matches!(action.as_str(), "submit" | "integration" | "enable" | "restart" | "grant_network") { if let Some(id) = input["id"].as_str() { reload.lock().unwrap().push(id.to_string()); } }
-                if result.is_ok() && action == "uninstall" { if let Some(id) = input["id"].as_str() { deleted.lock().unwrap().push(id.to_string()); } }
+                if result.is_ok() && action == "uninstall" { if let Some(id) = input["id"].as_str() { catalog.genre_source(id, false); deleted.lock().unwrap().push(id.to_string()); } }
                 if result.is_ok() && matches!(action.as_str(), "library_visibility" | "integration" | "sidebar_position" | "download_access" | "enable" | "disable" | "restart" | "grant_network" | "uninstall" | "tint" | "icon") { changed.store(true, Ordering::Release); }
                 if action == "prepare" {
                     state["validation"] = json!({"id":input["id"],"repository_id":input["repository"],

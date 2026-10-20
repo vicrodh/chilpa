@@ -45,9 +45,7 @@ impl Chilpa {
             let Some(card) = self.catalog.card(id) else { return "{}".into() };
             let read = card.tracks.as_deref().map(|ids| self.catalog.tracks_by_ids(ids)).unwrap_or_default();
             let summed: u64 = read.iter().map(|(track, _)| track.duration_ms).sum();
-            let genre = card.metadata["genres"][0].as_str()
-                .or_else(|| card.metadata["genre"].as_str().and_then(|all| all.split(", ").next()))
-                .unwrap_or_default().to_string();
+            let genre = crate::source_catalog::genres::own_genres(&card.metadata, &card.genre).into_iter().next().unwrap_or_default();
             let duration = if summed > 0 { summed } else { card.metadata["duration_ms"].as_u64().unwrap_or_default() };
             (crate::source_catalog::view::album_of(&card).track_count, duration as i64, genre)
         } else {
