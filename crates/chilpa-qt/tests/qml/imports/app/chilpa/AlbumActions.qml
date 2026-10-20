@@ -12,6 +12,9 @@ QtObject {
     function sources(id, revision) { return JSON.stringify(sourcesOf[id] || []) }
     function quality(id, revision) { return '{"tier":3,"label":"FLAC 24/96"}' }
     function available(id, revision) { return true }
+    // What a test says a record holds, for a list's columns, by its id.
+    property var factsOf: ({})
+    function facts(id, revision) { return JSON.stringify(factsOf[id] || {}) }
     function selected(id, revision) { return false }
     property double playedId: 0
     function play(id, shuffled) { playedId = id }

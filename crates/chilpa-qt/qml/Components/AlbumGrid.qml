@@ -4,6 +4,7 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/Viewport.js" as Viewport
 // Every grid of records in the window (frontend ADR-0002 4): a list of
 // rows, each laying out a fixed number of cards, so recycling a row only
 // rebinds its cards. `columns` follows the width with the design's formula;
@@ -19,20 +20,7 @@ Item {
     // Grow with the rows instead of scrolling, for a shelf inside a page.
     property bool fitContent: false
     property Flickable viewport: null
-    readonly property real visibleTop: viewport ? viewport.contentY - mappedTop() : view.contentY
-    function mappedTop() {
-        // I observe each ancestor before mapping through its transforms.
-        for (let item = grid; item && item !== viewport.contentItem; item = item.parent) {
-            item.x
-            item.y
-            item.width
-            item.height
-            item.scale
-            item.rotation
-            item.transformOrigin
-        }
-        return grid.mapToItem(viewport.contentItem, 0, 0).y
-    }
+    readonly property real visibleTop: viewport ? viewport.contentY - Viewport.topIn(grid, viewport.contentItem) : view.contentY
     // How far right of the cards the scrollbar sits: in the middle of the
     // page's margin.
     property real scrollGutter: Metrics.pageGutter
@@ -60,6 +48,8 @@ Item {
     property string artistPage
     // Records as rows, one under another, instead of cards side by side.
     property bool list: false
+    // The columns of those rows (`AlbumRow.columns`).
+    property var listColumns: ["year"]
     property real viewportX: 0
     property real viewportWidth: width
     // A horizontal shelf fixes its one-row column count while keeping the
@@ -147,18 +137,20 @@ Item {
 
             AlbumRow {
                 readonly property bool shown: grid.list && row.nearby
-                readonly property int rev: grid.model ? grid.model.rev : 0
 
                 visible: shown
                 x: Metrics.cardRing
                 y: row.lead
                 width: grid.layoutWidth
+                rev: grid.model ? grid.model.rev : 0
                 albumId: shown ? grid.model.albumId(row.first, rev) : 0
-                sourceInfo: grid.badges(albumId, rev)[0] || ({})
                 title: shown ? grid.model.title(row.first, rev) : ""
                 subtitle: shown ? grid.model.subtitle(row.first, rev) : ""
                 year: shown ? grid.model.year(row.first, rev) : ""
                 art: shown ? grid.model.art(row.first, rev) : ""
+                columns: grid.listColumns
+                sources: shown && grid.listColumns.indexOf("source") >= 0 ? grid.badges(albumId, rev) : []
+                mixed: !!grid.model && grid.model.mixed
                 tint: row.first
                 selected: shown && AlbumActions.selected(albumId, AlbumActions.rev)
                 expanded: shown && grid.model.expanded === row.first

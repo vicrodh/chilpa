@@ -4,6 +4,7 @@
 //! whole library, run only when a grid asks for that grouping.
 
 use super::Library;
+use rusqlite::OptionalExtension;
 use std::collections::HashMap;
 
 impl Library {
@@ -32,6 +33,19 @@ impl Library {
             }
         }
         Ok(best.into_iter().map(|(album, (name, _))| (album, name)).collect())
+    }
+
+    /// One record's present tracks, how long they last and the genre most
+    /// of them carry (a tie to the first name): what a list of records
+    /// shows beside its title. By the record's index, cheap enough per row.
+    pub fn album_facts(&self, album: i64) -> rusqlite::Result<(usize, i64, String)> {
+        let (tracks, duration) = self.db.prepare_cached("SELECT count(*), coalesce(sum(duration_ms), 0) FROM tracks
+            WHERE album_id = ?1 AND present = 1")?.query_row([album], |r| Ok((r.get::<_, i64>(0)? as usize, r.get(1)?)))?;
+        let genre = self.db.prepare_cached("SELECT g.name FROM tracks t JOIN track_genres tg ON tg.track_id = t.id
+            JOIN genres g ON g.id = tg.genre_id WHERE t.album_id = ?1 AND t.present = 1
+            GROUP BY g.name ORDER BY count(*) DESC, g.name COLLATE NOCASE LIMIT 1")?
+            .query_row([album], |r| r.get(0)).optional()?.unwrap_or_default();
+        Ok((tracks, duration, genre))
     }
 
     /// How many present tracks each record holds and how long they last:
@@ -76,6 +90,10 @@ mod tests {
         assert!(lib.album_primaries("anything").unwrap().is_empty());
         assert_eq!(lib.album_files().unwrap().iter().filter(|(album, ..)| *album == 1).count(), 3);
         assert_eq!(lib.album_sizes().unwrap().get(&1), Some(&(3, 3000)));
+        let (tracks, duration, genre) = lib.album_facts(1).unwrap();
+        assert_eq!((tracks, duration), (3, 3000));
+        assert_eq!(Some(genre), lib.album_primaries("genre").unwrap().get(&1).cloned(), "the genre the genre grouping files it under");
+        assert_eq!(lib.album_facts(9_999).unwrap(), (0, 0, String::new()), "a record that is not there says nothing");
     }
 
     #[test]

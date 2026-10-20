@@ -20,7 +20,7 @@ Item {
     function initialPanes() {
         const saved = SettingsModel.kept("ui.library.columns")
         if (saved) { try { const columns = JSON.parse(saved); if (Array.isArray(columns)) return columns } catch (_) {} }
-        return (SettingsModel.kept("ui.library.panes") || "year,genre").split(",").filter(c => c !== "").concat(["artist", "album"])
+        return (SettingsModel.kept("ui.library.panes") || "year,genre").split(",").filter(c => c !== "" && c !== "-").concat(["artist", "album"])
     }
     function togglePane(column) {
         const on = page.panes.indexOf(column) < 0
@@ -42,6 +42,8 @@ Item {
         : SettingsModel.panesHeight > 0 ? SettingsModel.panesHeight : Metrics.panesHeight
     readonly property bool grid: SettingsModel.libraryView === "grid"
     property string group: SettingsModel.kept("ui.library.group")
+    // The list's columns; genre stays off until asked for.
+    property var listColumns: (SettingsModel.kept("ui.library.listColumns") || "year,tracks,duration,rating,source").split(",").filter(c => c !== "" && c !== "-")
 
     TrackListModel {
         id: tracks
@@ -196,6 +198,12 @@ Item {
         x: head.x
         width: head.width
         tracks: tracks
+        onColumnsAsked: columnsChooser.open()
+    }
+    AlbumColumnsModal {
+        id: columnsChooser
+        shown: page.listColumns
+        onChosen: (columns) => { page.listColumns = columns; SettingsModel.keep("ui.library.listColumns", columns.join(",") || "-") }
     }
 
     // The records the columns leave, as cards or as rows.
@@ -209,6 +217,7 @@ Item {
         width: head.width
         bottomInset: Metrics.contentBottom
         list: !page.grid
+        listColumns: page.listColumns
         model: records
         onOpen: (albumId) => Navigation.go("album", albumId)
     }

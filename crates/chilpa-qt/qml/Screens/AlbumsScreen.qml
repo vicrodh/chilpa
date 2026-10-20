@@ -23,6 +23,8 @@ Item {
     property string membership
     readonly property var about: source ? JSON.parse(Sources.page(source, Library.remoteRev) || "{}") : ({})
     property bool rows: SettingsModel.kept("ui.albums.view") === "list"
+    // The list's columns; genre stays off until asked for.
+    property var listColumns: (SettingsModel.kept("ui.albums.listColumns") || "year,tracks,duration,rating,source").split(",").filter(c => c !== "" && c !== "-")
     property string group: SettingsModel.kept("ui.albums.group")
 
     AlbumGridModel {
@@ -136,6 +138,15 @@ Item {
                     y: filterButton.height + Metrics.gap6
                 }
             }
+            IconButton {
+                objectName: "listColumnsButton"
+                visible: page.rows
+                anchors.verticalCenter: parent.verticalCenter
+                tip: I18n.tr("Columns", I18n.rev)
+                glyph: Icons.settings
+                round: true
+                onClicked: columnsChooser.open()
+            }
             SegmentedControl {
                 id: views
                 anchors.verticalCenter: parent.verticalCenter
@@ -193,9 +204,15 @@ Item {
         width: head.width
         bottomInset: Metrics.contentBottom
         list: page.rows
+        listColumns: page.listColumns
         round: page.about.round === true
         model: all
         onOpen: (albumId) => Navigation.go("album", albumId)
+    }
+    AlbumColumnsModal {
+        id: columnsChooser
+        shown: page.listColumns
+        onChosen: (columns) => { page.listColumns = columns; SettingsModel.keep("ui.albums.listColumns", columns.join(",") || "-") }
     }
 
     SourceState {
