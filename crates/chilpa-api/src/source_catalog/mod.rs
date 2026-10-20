@@ -27,6 +27,7 @@ mod revisions;
 mod revalidation;
 mod native;
 mod library_index;
+pub(crate) mod genres;
 pub(crate) use library_index::SourceRecord;
 mod pages;
 pub(crate) mod store;
@@ -96,6 +97,7 @@ struct Queue {
 
 #[derive(Default)]
 struct Inner {
+    genres: genres::State,
     quality_requested: HashMap<i64, Instant>,
     quality_blocked: HashMap<String, Instant>,
     quality_running: usize,
@@ -373,7 +375,7 @@ impl Catalog {
         let cards = shelf.into_iter().flat_map(|s| &s.cards)
             .filter(|id| membership.is_empty() || shelf.is_some_and(|s| s.membership.get(*id).is_some_and(|m| m.split(',').any(|m| m == membership))))
             .filter_map(|id| inner.store.cards.get(id)).cloned()
-            .map(|mut card| { card.art = inner.store.shown_art(&card); card }).collect();
+            .map(|card| { let mut card = inner.genres.card(card, now()); card.art = inner.store.shown_art(&card); card }).collect();
         let tracks = shelf.map_or(0, |s| s.tracks.len());
         let loading = revalidation::loading(&inner, key);
         let error = inner.shelf_errors.get(key).cloned().unwrap_or_default();
@@ -497,12 +499,14 @@ impl Catalog {
     }
 
     pub(crate) fn card_by_identity(&self, plugin: &str, reference: &str) -> Option<store::Card> {
-        self.lock().store.cards.values().find(|card| card.plugin == plugin && card.identity == reference).cloned()
+        let inner = self.lock();
+        let card = inner.store.cards.values().find(|card| card.plugin == plugin && card.identity == reference).cloned()?;
+        Some(inner.genres.card(card, now()))
     }
 
     pub fn card(&self, id: i64) -> Option<store::Card> {
         let mut inner = self.lock();
-        let mut card = inner.store.cards.get(&id).cloned()?;
+        let mut card = inner.genres.card(inner.store.cards.get(&id).cloned()?, now());
         card.art = inner.store.shown_art(&card);
         if card.art.is_empty() {
             self.want_cover(&mut inner, &card.image);
@@ -524,7 +528,7 @@ impl Catalog {
             self.queue(&mut inner, Job::Tracks(id), true);
         }
         let ids = card.tracks?;
-        Some(ids.iter().filter_map(|t| inner.store.tracks.get(t).cloned()).collect())
+        Some(ids.iter().filter_map(|t| inner.store.tracks.get(t).cloned()).map(|track| inner.genres.track(track, &inner.store, now())).collect())
     }
 
     pub fn card_error(&self, id: i64) -> Option<String> {
@@ -533,14 +537,14 @@ impl Catalog {
 
     pub fn track_by_path(&self, path: &str) -> Option<(store::Track, String)> {
         let inner = self.lock();
-        let track = inner.store.track_by_path(path)?.clone();
+        let track = inner.genres.track(inner.store.track_by_path(path)?.clone(), &inner.store, now());
         let art = inner.store.art_of(&track);
         Some((track, art))
     }
 
     pub fn tracks_by_ids(&self, ids: &[i64]) -> Vec<(store::Track, String)> {
         let inner = self.lock();
-        ids.iter().filter_map(|id| inner.store.tracks.get(id)).map(|t| (t.clone(), inner.store.art_of(t))).collect()
+        ids.iter().filter_map(|id| inner.store.tracks.get(id)).map(|t| (inner.genres.track(t.clone(), &inner.store, now()), inner.store.art_of(t))).collect()
     }
 
     pub fn art_of_card(&self, id: i64) -> String {
@@ -666,7 +670,7 @@ impl Catalog {
 
     pub fn cards(&self, ids: &[i64]) -> Vec<store::Card> {
         let inner = self.lock();
-        ids.iter().filter_map(|id| inner.store.cards.get(id).cloned()).map(|mut card| { card.art = inner.store.shown_art(&card); card }).collect()
+        ids.iter().filter_map(|id| inner.store.cards.get(id).cloned()).map(|card| { let mut card = inner.genres.card(card, now()); card.art = inner.store.shown_art(&card); card }).collect()
     }
 
     /// Shows these covers the listener chose over the fetched ones, by

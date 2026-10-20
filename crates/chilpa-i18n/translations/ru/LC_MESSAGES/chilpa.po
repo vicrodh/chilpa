@@ -6618,3 +6618,9 @@ msgstr "{}-е"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "В «{}» есть несохранённые изменения. При открытии этой записи они будут потеряны."
+
+msgid "Fill missing genres from MusicBrainz"
+msgstr "Дополнять недостающие жанры из MusicBrainz"
+
+msgid "These records' barcodes are sent to MusicBrainz."
+msgstr "Штрихкоды этих альбомов отправляются в MusicBrainz."

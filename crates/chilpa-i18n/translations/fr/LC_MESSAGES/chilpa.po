@@ -6593,3 +6593,9 @@ msgstr "{}s"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "« {} » contient des modifications non enregistrées. Si vous ouvrez ce disque, elles seront perdues."
+
+msgid "Fill missing genres from MusicBrainz"
+msgstr "Compléter les genres manquants depuis MusicBrainz"
+
+msgid "These records' barcodes are sent to MusicBrainz."
+msgstr "Les codes-barres de ces disques sont envoyés à MusicBrainz."

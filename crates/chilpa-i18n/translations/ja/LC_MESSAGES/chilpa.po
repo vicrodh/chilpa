@@ -6568,3 +6568,9 @@ msgstr "{}年代"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "「{}」には保存されていない変更があります。このアルバムを開くと失われます。"
+
+msgid "Fill missing genres from MusicBrainz"
+msgstr "MusicBrainzから不足しているジャンルを補完する"
+
+msgid "These records' barcodes are sent to MusicBrainz."
+msgstr "これらのアルバムのバーコードがMusicBrainzに送信されます。"

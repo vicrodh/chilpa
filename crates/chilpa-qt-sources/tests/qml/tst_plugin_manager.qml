@@ -16,6 +16,24 @@ TestCase {
         function pluginCommand(action, input) { calls = calls.concat([[action, JSON.parse(input)]]) }
     }
     PluginManager { id: manager; width: 600; height: 600; page: backend }
+    function test_missing_genres_switch_defaults_off_and_uses_the_integration_command() {
+        let plugin = {id: "fixture", name: "Source", native: true, enabled: true, integration_available: true, library_kinds: ["albums"]}
+        backend.state = {installed: [plugin], busy: false}
+        manager.read(); manager.settings(plugin)
+        manager.detailsView.tab = "integration"
+        let toggle = findChild(manager, "genresFromMusicBrainz")
+        verify(toggle !== null)
+        compare(toggle.checked, false)
+        toggle.toggled(true)
+        compare(backend.calls[backend.calls.length - 1], ["integration", {id: "fixture", field: "genres_from_musicbrainz", enabled: true}])
+        plugin.integration = {genres_from_musicbrainz: true}
+        backend.state = {installed: [plugin], busy: false}
+        manager.read()
+        tryCompare(toggle, "checked", true)
+        toggle.toggled(false)
+        compare(backend.calls[backend.calls.length - 1][1].enabled, false)
+        manager.detailsView.close()
+    }
     function test_account_setup_polls_only_while_waiting() {
         const plugin = {id: "account", name: "Account", native: true, settings: true, enabled: true}
         backend.state = {installed: [plugin], settings_id: plugin.id, busy: false}

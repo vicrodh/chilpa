@@ -6593,3 +6593,9 @@ msgstr "{}s"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "“{}” tiene cambios sin guardar. Si abres este disco se pierden."
+
+msgid "Fill missing genres from MusicBrainz"
+msgstr "Completar desde MusicBrainz los géneros que falten"
+
+msgid "These records' barcodes are sent to MusicBrainz."
+msgstr "Se envían a MusicBrainz los códigos de barras de esos discos."

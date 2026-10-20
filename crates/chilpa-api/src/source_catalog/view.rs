@@ -450,7 +450,7 @@ impl Chilpa {
             duration_ms: rows.iter().map(|r| r.duration_ms).sum(),
             discs: discs.len().max(1),
             quality: best,
-            genre: card.genre.clone(),
+            genre: super::genres::own_genres(&card.metadata, &card.genre).join(", "),
             label: String::new(),
             album: album_of(&card),
         })
@@ -563,6 +563,7 @@ impl Chilpa {
     /// Runs what waited for a record's tracks, and puts a cover that came
     /// late on what plays. Called from `poll`.
     pub(crate) fn advance_catalog(&mut self) {
+        self.catalog.advance_genres();
         let (ready, _hold) = self.catalog.ready();
         for deferred in ready {
             self.with_queue_origin(deferred.origin, |app| match deferred.act.as_str() {
