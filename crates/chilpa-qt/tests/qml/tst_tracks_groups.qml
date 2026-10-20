@@ -48,6 +48,13 @@ TestCase {
         compare(page.scrollView.section.property, "")
     }
 
+    function test_tracks_sort_by_record_both_ways() {
+        const order = findChild(page, "tracksGrouping").parent.children.find(c => c.options && c.options.some(o => o.value === "duration"))
+        const at = order.options.findIndex(option => option.value === "album")
+        findChild(order, "sortMenu").chosen(at); compare(page.order, "album")
+        findChild(order, "sortMenu").chosen(at); compare(page.order, "album-desc", "a second pick turns it around")
+        order.picked("default")
+    }
     function test_header_follows_the_visible_group_after_scrolling() {
         findChild(page, "tracksGrouping").picked("genre")
         fill("Jazz")
