@@ -23,6 +23,8 @@ pub enum AlbumGroup {
     Quality,
     Source,
     Added,
+    /// Album, EP, single, live or compilation.
+    Kind,
 }
 
 impl AlbumGroup {
@@ -38,6 +40,7 @@ impl AlbumGroup {
             "quality" => Self::Quality,
             "source" => Self::Source,
             "added" => Self::Added,
+            "type" => Self::Kind,
             _ => Self::None,
         }
     }
@@ -98,6 +101,45 @@ fn added(at: i64, now: i64) -> Filed {
     Filed { rank: (0, 10_000 - year, String::new()), label: year.to_string() }
 }
 
+/// What kind of release a record is: what its source says, else what its
+/// artist, title and size say. A stand-in artist ("Various Artists") is a
+/// compilation; a title that says EP, single or live is that; up to three
+/// tracks is a single and up to six in under half an hour an EP.
+pub(crate) fn release_kind(stated: &str, title: &str, artist: &str, tracks: usize, duration_ms: i64) -> &'static str {
+    match stated {
+        "album" => return "album", "ep" => return "ep", "single" => return "single",
+        "live" => return "live", "compilation" => return "compilation", _ => {}
+    }
+    if chilpa_library::is_various(artist) { return "compilation"; }
+    let lowered = title.to_lowercase();
+    // A whole word, not part of one: "Liveforever" says nothing.
+    let word = |phrase: &str| lowered.match_indices(phrase).any(|(at, _)| {
+        lowered[..at].chars().next_back().is_none_or(|c| !c.is_alphanumeric())
+            && lowered[at + phrase.len()..].chars().next().is_none_or(|c| !c.is_alphanumeric())
+    });
+    // Set apart as a version: "(Live ...)", "[EP]", "- Single".
+    let tagged = |name: &str| word(name) && ["(", "[", "- "].iter().any(|open| lowered.contains(&format!("{open}{name}")));
+    if tagged("ep") || (word("ep") && lowered.ends_with(" ep")) { return "ep"; }
+    if tagged("single") { return "single"; }
+    if tagged("live") || word("live at") || word("live in") || word("unplugged") { return "live"; }
+    match tracks {
+        1..=3 => "single",
+        4..=6 if duration_ms > 0 && duration_ms < 30 * 60 * 1000 => "ep",
+        _ => "album",
+    }
+}
+
+fn kind(kind: &str) -> Filed {
+    let (rank, label) = match kind {
+        "ep" => (1, chilpa_i18n::t("EPs")),
+        "single" => (2, chilpa_i18n::t("Singles")),
+        "live" => (3, chilpa_i18n::t("Live")),
+        "compilation" => (4, chilpa_i18n::t("Compilations")),
+        _ => (0, chilpa_i18n::t("Albums")),
+    };
+    Filed { rank: (0, rank, String::new()), label }
+}
+
 /// What each record is known by, for the groupings that read the records.
 #[derive(Default)]
 pub(crate) struct RecordFacts {
@@ -110,6 +152,8 @@ pub(crate) struct RecordFacts {
     pub quality: i32,
     pub source: String,
     pub added_at: i64,
+    /// "album", "ep", "single", "live" or "compilation".
+    pub kind: &'static str,
 }
 
 /// The integrated records' facts, from their items: the most common value
@@ -121,12 +165,17 @@ pub(crate) fn source_facts(index: &SourceIndex, names: &HashMap<String, String>)
         counts.into_iter().next().map(|(name, _)| name).unwrap_or_default()
     }
     let mut votes: HashMap<i64, [HashMap<String, usize>; 3]> = HashMap::new();
+    let mut sizes: HashMap<i64, (usize, i64, &str)> = HashMap::new();
     let mut facts: HashMap<i64, RecordFacts> = HashMap::new();
     for item in index.items.iter().filter(|item| item.album != 0) {
         let fact = facts.entry(item.album).or_insert_with(|| RecordFacts {
             title: item.album_title.clone(), artist: item.album_artist.clone(), year: item.year,
             source: names.get(&item.source_key()).cloned().unwrap_or_else(|| item.plugin.clone()), ..RecordFacts::default()
         });
+        let size = sizes.entry(item.album).or_insert((0, 0, ""));
+        size.0 += item.tracks;
+        size.1 += item.duration_ms as i64;
+        if !item.release_type.is_empty() { size.2 = item.release_type.as_str(); }
         let rank = match item.tier { "dsd" => 4, "hires" => 3, "lossless" => 2, "lossy" => 1, _ => 0 };
         fact.quality = fact.quality.max(rank);
         fact.added_at = fact.added_at.max(item.added_at);
@@ -134,6 +183,9 @@ pub(crate) fn source_facts(index: &SourceIndex, names: &HashMap<String, String>)
         for (at, value) in [item.genres.first(), Some(&item.label), item.composers.first()].into_iter().enumerate() {
             if let Some(value) = value.filter(|v| !v.trim().is_empty()) { *vote[at].entry(value.clone()).or_default() += 1; }
         }
+    }
+    for (album, (tracks, duration, stated)) in sizes {
+        if let Some(fact) = facts.get_mut(&album) { fact.kind = release_kind(stated, &fact.title, &fact.artist, tracks, duration); }
     }
     for (album, [genres, labels, composers]) in votes {
         if let Some(fact) = facts.get_mut(&album) {
@@ -161,6 +213,7 @@ pub(crate) fn file(group: AlbumGroup, facts: &RecordFacts, by_artist: bool, now:
         AlbumGroup::Quality => quality(facts.quality),
         AlbumGroup::Source => named(&facts.source, chilpa_i18n::t("Unknown source")),
         AlbumGroup::Added => added(facts.added_at, now),
+        AlbumGroup::Kind => kind(facts.kind),
         AlbumGroup::None => Filed { rank: (0, 0, String::new()), label: String::new() },
     }
 }
@@ -207,6 +260,7 @@ impl crate::Reader {
             AlbumGroup::Source => self.lib.album_primaries("source"),
             _ => Ok(HashMap::new()),
         }.unwrap_or_default();
+        let sizes = if group == AlbumGroup::Kind { self.lib.album_sizes().unwrap_or_default() } else { HashMap::new() };
         let mut best: HashMap<i64, i32> = HashMap::new();
         if group == AlbumGroup::Quality {
             for (album, path, codec, bits, rate) in self.lib.album_files().unwrap_or_default() {
@@ -217,7 +271,9 @@ impl crate::Reader {
         }
         for (id, key) in keys {
             let value = primaries.get(&id).cloned().unwrap_or_default();
+            let (tracks, duration) = sizes.get(&id).copied().unwrap_or((0, 0));
             facts.insert(id, RecordFacts {
+                kind: release_kind("", &key.title, &key.artist, tracks, duration),
                 title: key.title, artist: key.artist, year: key.year, added_at: key.added_at,
                 quality: best.get(&id).copied().unwrap_or(0),
                 genre: if group == AlbumGroup::Genre { value.clone() } else { String::new() },
@@ -260,6 +316,29 @@ mod tests {
         let tiers = arrange(records.iter().map(|(id, f)| (file(AlbumGroup::Quality, f, false, 0), *id)).collect(), AlbumGroup::Quality, false);
         assert_eq!(tiers.ids, [2, 3, 1, 4]);
         assert_eq!(tiers.groups.iter().map(|(_, l)| l.as_str()).collect::<Vec<_>>(), ["DSD", "Hi-Res", "Lossless", "Unknown quality"]);
+    }
+
+    #[test]
+    fn a_release_is_what_its_source_says_else_what_its_title_and_size_say() {
+        let minutes = |m: i64| m * 60 * 1000;
+        assert_eq!(release_kind("live", "Anything", "Band", 12, minutes(60)), "live", "the source's word stands");
+        assert_eq!(release_kind("", "Hits", "Various Artists", 20, minutes(70)), "compilation");
+        assert_eq!(release_kind("", "Blue Room - EP", "Band", 4, minutes(18)), "ep");
+        assert_eq!(release_kind("", "Hey Ya! - Single", "Band", 2, minutes(8)), "single");
+        assert_eq!(release_kind("", "Alive (Live at Wembley)", "Band", 14, minutes(80)), "live");
+        assert_eq!(release_kind("", "One More Time", "Band", 1, minutes(5)), "single", "three tracks or fewer");
+        assert_eq!(release_kind("", "Five Songs", "Band", 5, minutes(21)), "ep");
+        assert_eq!(release_kind("", "Five Long Songs", "Band", 5, minutes(48)), "album", "an EP is short");
+        assert_eq!(release_kind("", "Steppenwolf", "Band", 11, minutes(45)), "album");
+        assert_eq!(release_kind("", "Liveforever", "Band", 11, minutes(45)), "album", "a word that starts with live is not live");
+        assert_eq!(release_kind("", "Live Through This", "Band", 12, minutes(38)), "album", "live in a title is not a live record");
+        assert_eq!(release_kind("", "Live at Leeds", "Band", 6, minutes(37)), "live");
+        assert_eq!(release_kind("", "Single Ladies", "Band", 9, minutes(40)), "album");
+        assert_eq!(release_kind("", "Deep Purple in Rock", "Band", 7, minutes(43)), "album", "no EP inside a word");
+        let records = [(1, RecordFacts { kind: "single", ..facts("A", None, "", 0, 0) }), (2, RecordFacts { kind: "album", ..facts("B", None, "", 0, 0) }),
+            (3, RecordFacts { kind: "compilation", ..facts("C", None, "", 0, 0) }), (4, RecordFacts { kind: "ep", ..facts("D", None, "", 0, 0) })];
+        let found = arrange(records.iter().map(|(id, f)| (file(AlbumGroup::Kind, f, false, 0), *id)).collect(), AlbumGroup::Kind, false);
+        assert_eq!(found.ids, [2, 4, 1, 3], "albums, EPs, singles, live, compilations");
     }
 
     #[test]

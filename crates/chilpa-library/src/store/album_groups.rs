@@ -34,6 +34,15 @@ impl Library {
         Ok(best.into_iter().map(|(album, (name, _))| (album, name)).collect())
     }
 
+    /// How many present tracks each record holds and how long they last:
+    /// what tells a single or an EP from an album when no tag says it.
+    pub fn album_sizes(&self) -> rusqlite::Result<HashMap<i64, (usize, i64)>> {
+        let mut stmt = self.db.prepare("SELECT album_id, count(*), coalesce(sum(duration_ms), 0) FROM tracks
+            WHERE present = 1 AND album_id IS NOT NULL GROUP BY album_id")?;
+        let rows = stmt.query_map([], |r| Ok((r.get::<_, i64>(0)?, (r.get::<_, i64>(1)? as usize, r.get::<_, i64>(2)?))))?;
+        rows.collect()
+    }
+
     /// Each present track's record, address, codec, bits and rate: what a
     /// record's best quality is worked out from.
     pub fn album_files(&self) -> rusqlite::Result<Vec<(i64, String, Option<String>, Option<u8>, Option<u32>)>> {
@@ -66,6 +75,7 @@ mod tests {
         assert_eq!(lib.album_primaries("source").unwrap().get(&1).map(String::as_str), Some("local:default"));
         assert!(lib.album_primaries("anything").unwrap().is_empty());
         assert_eq!(lib.album_files().unwrap().iter().filter(|(album, ..)| *album == 1).count(), 3);
+        assert_eq!(lib.album_sizes().unwrap().get(&1), Some(&(3, 3000)));
     }
 
     #[test]

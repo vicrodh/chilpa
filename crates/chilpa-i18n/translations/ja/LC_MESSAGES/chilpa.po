@@ -672,6 +672,9 @@ msgstr "名前別"
 msgid "By quality"
 msgstr "音質別"
 
+msgid "By release type"
+msgstr "リリース種別"
+
 msgid "By source"
 msgstr "ソース別"
 
@@ -1526,6 +1529,9 @@ msgstr "オランダ語"
 
 msgid "Dynamic background"
 msgstr "ダイナミック背景"
+
+msgid "EPs"
+msgstr "EP"
 
 msgid "EPs & Singles"
 msgstr "EPとシングル"
@@ -4200,6 +4206,9 @@ msgstr "類似アーティスト"
 
 msgid "Since {}"
 msgstr "{}から"
+
+msgid "Singles"
+msgstr "シングル"
 
 msgid "Size"
 msgstr "サイズ"

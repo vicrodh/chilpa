@@ -676,6 +676,9 @@ msgstr "По названию"
 msgid "By quality"
 msgstr "По качеству"
 
+msgid "By release type"
+msgstr "По типу релиза"
+
 msgid "By source"
 msgstr "По источнику"
 
@@ -1530,6 +1533,9 @@ msgstr "Нидерландский"
 
 msgid "Dynamic background"
 msgstr "Динамический фон"
+
+msgid "EPs"
+msgstr "EP"
 
 msgid "EPs & Singles"
 msgstr "Мини-альбомы и синглы"
@@ -4206,6 +4212,9 @@ msgstr "Похожие исполнители"
 
 msgid "Since {}"
 msgstr "С {}"
+
+msgid "Singles"
+msgstr "Синглы"
 
 msgid "Size"
 msgstr "Размер"
