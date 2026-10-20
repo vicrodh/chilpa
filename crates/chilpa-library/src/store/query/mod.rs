@@ -163,9 +163,14 @@ fn set(field: Field, values: &Values, now: i64, args: &mut Args) -> String {
             // milliseconds what LIKE '%word%' reads every track for.
             let columns = match field { Field::Album => "album", Field::Title => "title", _ => "title artist album" };
             let words: Vec<String> = words.iter().map(|w| w.trim()).filter(|w| !w.is_empty())
-                .map(|w| format!("\"{}\"*", w.replace('"', "\"\""))).collect();
+                .map(|w| {
+                    let quote = |word: &str| format!("\"{}\"*", word.replace('"', "\"\""));
+                    if field == Field::Album { format!("({})", w.split_whitespace().map(quote).collect::<Vec<_>>().join(" ")) }
+                    else { quote(w) }
+                }).collect();
             if words.is_empty() { return format!("{tracks} 1"); }
-            args.push(Box::new(format!("{{{columns}}} : ({})", words.join(" "))));
+            let join = if field == Field::Album { " OR " } else { " " };
+            args.push(Box::new(format!("{{{columns}}} : ({})", words.join(join))));
             "SELECT rowid FROM track_search WHERE track_search MATCH ?".into()
         }
         (Field::Year, Values::Any(years)) => {

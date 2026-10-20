@@ -235,6 +235,9 @@ msgstr "Aan wachtrij {} toevoegen"
 msgid "Add tracks from a track menu to this queue."
 msgstr "Voeg nummers uit een nummermenu toe aan deze wachtrij."
 
+msgid "Added"
+msgstr "Toegevoegd"
+
 msgid "Added this month"
 msgstr "Deze maand toegevoegd"
 
@@ -497,6 +500,11 @@ msgstr "Vragen vóór afsluiten"
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Vraagt PipeWire of PulseAudio de kaart los te laten zolang Chilpa erop afspeelt, en geeft hem terug wanneer Chilpa stopt of lang pauzeert."
+
+msgid "At least {} star"
+msgid_plural "At least {} stars"
+msgstr[0] "Minstens {} ster"
+msgstr[1] "Minstens {} sterren"
 
 msgid "Audio"
 msgstr "Audio"
@@ -1574,6 +1582,9 @@ msgstr "Metadata bewerken…"
 msgid "Edit playlist"
 msgstr "Afspeellijst bewerken"
 
+msgid "Edit with :filter"
+msgstr "Bewerken met :filter"
+
 msgid "Edit…"
 msgstr "Bewerken…"
 
@@ -1789,6 +1800,9 @@ msgstr "Zwevend"
 
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr "Zwevend boven de inhoud, of over de volledige breedte van het venster bovenaan of onderaan."
+
+msgid "Focus"
+msgstr "Focus"
 
 msgid "Focus on playing"
 msgstr "Afspelen volgen"
@@ -2023,9 +2037,6 @@ msgstr "Handmatige invoer verbergen"
 
 msgid "Hide sidebar"
 msgstr "Zijbalk verbergen"
-
-msgid "Hide the columns"
-msgstr "De kolommen verbergen"
 
 msgid "Hide token"
 msgstr "Token verbergen"
@@ -2354,6 +2365,9 @@ msgstr "Laatste afspeellijst"
 msgid "Last track"
 msgstr "Laatste nummer"
 
+msgid "Last {} days"
+msgstr "Afgelopen {} dagen"
+
 msgid "Last.fm account"
 msgstr "Last.fm-account"
 
@@ -2575,6 +2589,12 @@ msgstr "Markeren als niet afgespeeld"
 
 msgid "Mark the start first with :loop a."
 msgstr "Markeer eerst het begin met :loop a."
+
+msgid "Match all"
+msgstr "Aan alles voldoen"
+
+msgid "Match any"
+msgstr "Aan één voldoen"
 
 msgid "Matched"
 msgstr "Gevonden"
@@ -2945,6 +2965,9 @@ msgstr "Geen presets komen overeen met deze zoekopdracht."
 msgid "No purchases match the current view."
 msgstr "Geen aankopen komen overeen met de huidige weergave."
 
+msgid "No results"
+msgstr "Geen resultaten"
+
 msgid "No results for"
 msgstr "Geen resultaten voor"
 
@@ -2980,6 +3003,9 @@ msgstr "Geen nummers komen overeen met dit filter."
 
 msgid "No tracks match your search."
 msgstr "Geen nummers komen overeen met je zoekopdracht."
+
+msgid "No year"
+msgstr "Geen jaar"
 
 msgid "None"
 msgstr "Geen"
@@ -4182,9 +4208,6 @@ msgstr "Opgeslagen nummers tonen in Nummers"
 
 msgid "Show source recommendations by default in Home"
 msgstr "Aanbevelingen van bronnen standaard tonen op de startpagina"
-
-msgid "Show the columns"
-msgstr "De kolommen tonen"
 
 msgid "Show the sidebar"
 msgstr "De zijbalk tonen"
@@ -5588,6 +5611,9 @@ msgstr "er staat geen geluidskaart in /proc/asound"
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr "geen geluidsserver antwoordde; installeer pipewire en pipewire-pulse"
 
+msgid "none of"
+msgstr "geen van"
+
 msgid "none of that can be played now: its folder is not mounted or its server does not answer"
 msgstr "niets daarvan kan nu worden afgespeeld: de map is niet gekoppeld of de server antwoordt niet"
 
@@ -5620,6 +5646,9 @@ msgstr "een of meer bestanden kunnen geen tags opslaan"
 
 msgid "open it again from where it is listed"
 msgstr "open het opnieuw vanuit de plek waar het staat"
+
+msgid "or"
+msgstr "of"
 
 msgid "outside the image"
 msgstr "buiten de image"
