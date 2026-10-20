@@ -86,7 +86,7 @@ impl Reader {
         });
         let stars = crate::library_sources::Stars::read(&self.lib, index);
         let (snapshot, letters) = crate::library_sources::merge_snapshot(local, keys, &filter, query.order(), index, &stars,
-            crate::library_sources::Scope::Tracks, query.grouped().then_some(by));
+            crate::library_sources::Scope::Tracks, query.grouped().then_some(by), None);
         let letters = if query.grouped() { serde_json::to_string(&letters).unwrap_or_default() } else { String::new() };
         FoundTracks { snapshot, letters, group: query.group }
     }

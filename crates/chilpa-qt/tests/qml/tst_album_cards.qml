@@ -73,11 +73,27 @@ TestCase {
     // Beside a source's records the library's own wear the player's badge; alone, none.
     function test_the_records_of_the_library_wear_the_players_badge_beside_a_source() {
         tryVerify(() => findChild(grid, "albumAnimatedCover") !== null, 1000, "the grid laid its cards out")
-        const image = findChild(findChild(grid, "albumAnimatedCover").parent, "sourceImage")
+        const first = findChild(grid, "albumAnimatedCover").parent
         records.kind = ""; records.mixed = true; records.rev++
-        tryCompare(image, "source", "qrc:/qt/qml/app/chilpa/kit/assets/logo.png")
+        tryVerify(() => findChild(first, "sourceImage") !== null)
+        tryCompare(findChild(first, "sourceImage"), "source", "qrc:/qt/qml/app/chilpa/kit/assets/logo.png")
         records.mixed = false; records.rev++
-        tryCompare(image, "source", "")
+        tryVerify(() => findChild(first, "sourceImage") === null, 1000, "a grid of the library alone wears no badge")
+    }
+    function test_a_record_kept_by_several_sources_wears_each_one_inline() {
+        tryVerify(() => findChild(grid, "albumAnimatedCover") !== null, 1000, "the grid laid its cards out")
+        const first = findChild(grid, "albumAnimatedCover").parent
+        AlbumActions.sourcesOf = {[first.albumId]: [{key: "local:default", local: true},
+            {key: "one", icon: "qrc:/qt/qml/app/chilpa/kit/assets/logo.png?one", local: false},
+            {key: "two", icon: "qrc:/qt/qml/app/chilpa/kit/assets/logo.png?two", local: false}]}
+        records.rev++
+        const badges = findChild(first, "sourceBadges")
+        tryCompare(badges, "visible", true)
+        tryCompare(first.sources, "length", 3, 1000, "the library's own and each source's, side by side")
+        compare(first.sources[0].icon, "qrc:/qt/qml/app/chilpa/kit/assets/logo.png", "the library's own first, as the player's logo")
+        AlbumActions.sourcesOf = {}
+        records.rev++
+        tryCompare(first.sources, "length", 0)
     }
     function test_quick_view_queue_button_opens_all_placements_and_extra_queues() {
         tryVerify(() => findChild(grid, "albumQuickLoader") !== null)

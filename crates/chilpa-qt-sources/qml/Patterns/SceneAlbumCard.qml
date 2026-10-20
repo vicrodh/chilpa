@@ -20,7 +20,7 @@ AlbumCard {
     artistDestination: artistName && plugin ? ({target:"source",key:plugin + " " + (album.artist_ref ? "native:" + album.artist_ref : "matching-artist-v3:" + artistName)}) : ({})
     year: String(album.year || "")
     art: plugin && album.image ? Sources.art(plugin, album.image, Library.remoteArtRev) : ""
-    sourceInfo: albumId ? (JSON.parse(AlbumActions.sources(albumId, Library.remoteRev) || "[]")[0] || {}) : ({})
+    sources: albumId ? JSON.parse(AlbumActions.sources(albumId, Library.remoteRev) || "[]") : []
     qualityInfo: albumId ? JSON.parse(AlbumActions.quality(albumId, Library.remoteRev) || "{}") : ({})
     available: albumId !== 0 && AlbumActions.available(albumId, Library.remoteRev)
     canExpand: false

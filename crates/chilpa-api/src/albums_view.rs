@@ -139,6 +139,11 @@ impl Reader {
                 if first { merged.extend(local.next()); } else { merged.extend(remote.next().map(|(id, _)| id)); }
             }
             ids = merged;
+            if let Some((library, versions, chosen)) = self.copy_grouping() {
+                let grouping = crate::library_sources::Grouping { library: &library, versions, chosen: &chosen };
+                let dropped = crate::library_sources::dropped_copies(&ids, grouping, &index.versions);
+                ids.retain(|id| !dropped.contains(id));
+            }
         }
         if turned {
             ids.reverse();

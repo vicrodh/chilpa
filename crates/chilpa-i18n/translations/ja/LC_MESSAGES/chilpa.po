@@ -1944,6 +1944,9 @@ msgstr "コレクションをまとめる"
 msgid "Group playlists by source"
 msgstr "プレイリストをソース別にまとめる"
 
+msgid "Group same album from different sources"
+msgstr "異なるソースの同じアルバムをまとめる"
+
 msgid "Group: A-Z"
 msgstr "グループ:A-Z"
 

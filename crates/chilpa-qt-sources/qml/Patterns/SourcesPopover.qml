@@ -89,6 +89,32 @@ Popup {
                         onToggled: Library.groupAlbums(!Library.groupVersions)
                     }
                 }
+                // One card for a record that several sources keep, wearing
+                // each source's icon.
+                Item {
+                    visible: popover.showAlbumGrouping
+                    width: parent.width
+                    height: visible ? Metrics.sourceFilterRow : 0
+                    Text {
+                        anchors.left: parent.left
+                        anchors.right: copies.left
+                        anchors.rightMargin: Metrics.gap8
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: I18n.tr("Group same album from different sources", I18n.rev)
+                        font.pointSize: Type.body
+                        elide: Text.ElideRight
+                        color: Theme.color.textPrimary
+                    }
+                    Toggle {
+                        id: copies
+                        objectName: "groupCopies"
+                        compact: true
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        checked: Library.groupSources
+                        onToggled: Library.groupCopies(!Library.groupSources)
+                    }
+                }
 
                 Text {
                     text: I18n.tr("Sources", I18n.rev)

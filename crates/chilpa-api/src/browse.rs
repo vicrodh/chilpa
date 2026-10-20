@@ -314,11 +314,24 @@ pub struct Reader {
     pub(crate) sources: std::cell::RefCell<Option<(crate::library_sources::Stamp, std::rc::Rc<crate::library_sources::SourceIndex>)>>,
 }
 
+/// The library's editions, whether editions are one card, and the copies
+/// the listener chose: what a grid groups a record kept by several sources by.
+pub(crate) type CopyGrouping = (std::sync::Arc<chilpa_library::store::versions::VersionCatalog>, bool, std::collections::HashSet<String>);
+
 #[derive(Default)]
 struct RefreshCache {
     revision: Option<(i64, u64)>,
     sources: crate::library_sources::Stamp,
+    /// Grouping across sources, and the copies chosen, as preferences say.
+    copies: (bool, Vec<String>),
     entries: std::collections::VecDeque<(Filter, TrackOrder, Facets, Snapshot)>,
+}
+
+/// The preferences a merged grid's grouping reads, as a cache compares them.
+fn copy_preferences() -> (bool, Vec<String>) {
+    let mut chosen: Vec<String> = crate::library_sources::chosen_copies().into_iter().collect();
+    chosen.sort();
+    (crate::library_sources::grouping_sources(), chosen)
 }
 
 /// I retain bounded snapshot pages; views can share them across navigation.
@@ -580,7 +593,11 @@ impl Reader {
         let before = self.lib.read_revision().ok();
         let shared = {
             let mut cache = self.refresh_cache.borrow_mut();
-            if cache.revision != before || cache.sources != stamp { cache.entries.clear(); cache.revision = before; cache.sources = stamp; }
+            let copies = if index.items.is_empty() { Default::default() } else { copy_preferences() };
+            if cache.revision != before || cache.sources != stamp || cache.copies != copies {
+                cache.entries.clear();
+                (cache.revision, cache.sources, cache.copies) = (before, stamp, copies);
+            }
             if before.is_some() {
                 if let Some((_, _, facets, snapshot)) = cache.entries.iter().find(|(f, o, _, _)| f == filter && *o == order) {
                     let mut facets = facets.clone();
@@ -597,12 +614,14 @@ impl Reader {
             if !current() { return None; }
             let snapshot = if index.items.is_empty() { self.snapshot(filter, order) } else {
                 let stars = crate::library_sources::Stars::read(&self.lib, &index);
-                crate::library_sources::merge_facets(&mut facets, filter, &index, &stars);
+                let held = self.copy_grouping();
+                let grouping = held.as_ref().map(|(library, versions, chosen)| crate::library_sources::Grouping { library, versions: *versions, chosen });
+                crate::library_sources::merge_facets(&mut facets, filter, &index, &stars, grouping);
                 let (local, keys) = self.lib.keyed_snapshot(filter, order).unwrap_or_else(|e| {
                     eprintln!("chilpa-queries: library snapshot failed: {e}");
                     Default::default()
                 });
-                crate::library_sources::merge_snapshot(local, keys, filter, order, &index, &stars, crate::library_sources::Scope::Library, None).0
+                crate::library_sources::merge_snapshot(local, keys, filter, order, &index, &stars, crate::library_sources::Scope::Library, None, grouping).0
             };
             current().then_some((facets, snapshot))
         };
@@ -618,6 +637,15 @@ impl Reader {
             }
         }
         result
+    }
+
+    /// What grids group a record kept by several sources by, when they do:
+    /// the library's editions, whether editions are one card, and the
+    /// copies the listener chose.
+    pub(crate) fn copy_grouping(&self) -> Option<CopyGrouping> {
+        if !crate::library_sources::grouping_sources() { return None; }
+        let library = self.lib.version_catalog().ok()?;
+        Some((library, self.lib.group_album_versions(), crate::library_sources::chosen_copies()))
     }
 
     /// Each column keeps the choices to its left, including the extra filters.

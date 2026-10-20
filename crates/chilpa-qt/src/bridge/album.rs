@@ -76,14 +76,24 @@ pub struct AlbumDetailRust {
 
 impl qobject::AlbumDetailModel {
     pub fn select_version(mut self: Pin<&mut Self>, value: &QString) {
-        let Ok(version) = value.to_string().parse() else { return };
-        let album = self.rust().album_id;
-        if album <= 0 { return; }
+        let Ok(version) = value.to_string().parse::<i64>() else { return };
         let valid = self.rust().page.as_ref().is_some_and(|page| page.versions.iter().any(|choice| choice.id == version));
         if !valid { return; }
+        let library = crate::registry::library_thread();
+        // A source's copy, or the library's in place of one: the card's
+        // choice among the sources is the facade's to keep.
+        if version < 0 || self.rust().selected_id < 0 {
+            app::with(|api| api.choose_album_copy(version));
+            if let Some(library) = &library { let _ = library.queue(|library| library.content_changed()); }
+        }
         self.as_mut().rust_mut().requested_id = version;
+        if version < 0 {
+            self.schedule();
+            return;
+        }
+        let album = version;
         let ticket = self.rust().generation.next();
-        let (thread, library) = (self.qt_thread(), crate::registry::library_thread());
+        let thread = self.qt_thread();
         worker::submit_album(move |reader| {
             // Explicit choices persist even if a refresh or navigation cancels presentation.
             let accepted = reader.select_album_version(album, version);
@@ -126,12 +136,14 @@ impl qobject::AlbumDetailModel {
         });
     }
     fn apply(mut self: Pin<&mut Self>, page: Option<chilpa_api::AlbumPage>) {
-        let Some(page) = page else {
+        let Some(mut page) = page else {
             self.as_mut().rust_mut().page = None;
             self.as_mut().set_found(false);
             self.as_mut().set_selected_id(0);
             return;
         };
+        let versions = std::mem::take(&mut page.versions);
+        page.versions = app::with(|api| api.album_copies(page.detail.album.id, versions));
         if self.rust().page.as_deref() == Some(&page) { return; }
         let (token, page) = album_pages::keep(page);
         self.as_mut().rust_mut().page = Some(page.clone());

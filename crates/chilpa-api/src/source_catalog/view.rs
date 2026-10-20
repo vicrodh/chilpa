@@ -179,7 +179,7 @@ fn words(text: &str) -> Vec<String> {
 
 impl Chilpa {
     /// The source and its icon, as a record's version selector shows it.
-    fn source_of(&mut self, plugin: &str) -> AlbumSource {
+    pub(crate) fn source_of(&mut self, plugin: &str) -> AlbumSource {
         self.source_panels();
         let name = self.source_name(plugin);
         AlbumSource {

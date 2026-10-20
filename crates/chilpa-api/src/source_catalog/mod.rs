@@ -27,6 +27,7 @@ mod revisions;
 mod revalidation;
 mod native;
 mod library_index;
+pub(crate) use library_index::SourceRecord;
 mod pages;
 pub(crate) mod store;
 pub(crate) mod view;

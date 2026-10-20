@@ -14,8 +14,12 @@
 mod facets;
 mod groups;
 mod merge;
+mod versions;
 #[cfg(test)]
 mod tests;
+
+pub(crate) use versions::{chosen as chosen_copies, copies, dropped as dropped_copies, grouping_sources, words, Clusters, Grouping, SourceVersion,
+    CHOSEN as CHOSEN_COPIES, GROUP_SOURCES};
 
 pub use groups::AlbumGroup;
 pub(crate) use facets::merge as merge_facets;
@@ -95,6 +99,8 @@ pub(crate) struct SourceIndex {
     pub items: Vec<SourceItem>,
     /// What each item is ordered by, aligned with `items`.
     pub keys: Vec<chilpa_library::OrderKey>,
+    /// Each integrated record as a copy among the library's, by its id.
+    pub versions: std::collections::HashMap<i64, SourceVersion>,
     /// Each source with something in the index, as the Sources list shows it.
     pub sources: Vec<FacetEntry>,
 }
@@ -114,7 +120,8 @@ impl SourceIndex {
             item
         }).collect();
         let keys = items.iter().map(merge::key_of).collect();
-        Self { items, keys, sources }
+        let versions = Self::versions(&items);
+        Self { items, keys, versions, sources }
     }
 }
 
@@ -166,6 +173,7 @@ impl SourceIndex {
             catalog.shelf(&key);
         }
         let items = catalog.integrated_items(&albums, &tracks);
+        let records = catalog.integrated_records(chosen);
         let mut sources: Vec<FacetEntry> = Vec::new();
         for item in &items {
             let key = item.source_key();
@@ -178,8 +186,16 @@ impl SourceIndex {
                 }),
             }
         }
-        Self::new(items, sources)
+        let mut index = Self::new(items, sources);
+        index.versions.extend(records.into_iter().map(|record| (record.id, record.version())));
+        index
     }
+}
+
+/// Which plugins have their saved albums and which their saved tracks in the
+/// library now.
+pub(crate) fn integrated_now(natives: &crate::natives::Natives) -> Vec<(String, bool, bool)> {
+    integrated(natives)
 }
 
 /// What a refresh reads the index with: its stars, by catalog id.

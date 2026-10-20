@@ -114,7 +114,7 @@ mod tests {
 }
 
 impl AlbumSource {
-    fn of(v: &chilpa_library::store::versions::AlbumVersion) -> Self {
+    pub(crate) fn of(v: &chilpa_library::store::versions::AlbumVersion) -> Self {
         let label = if !v.source_label.is_empty() { v.source_label.clone() }
             else if v.local { chilpa_i18n::t("Local library") } else { v.source.clone() };
         Self { key: v.source.clone(), label, icon: v.source_icon.clone(), local: v.local, contain_art: false }
@@ -228,10 +228,14 @@ impl Chilpa {
         version_labels(versions)
     }
 
+    /// The sources a card stands for: its own copy's, and with grouping
+    /// across sources, every other copy's of its record.
     pub fn album_sources(&mut self, album: i64) -> Vec<AlbumSource> {
-        if album < 0 {
-            return self.source_album_sources(album);
-        }
+        let own = if album < 0 { self.source_album_sources(album) } else { self.library_album_sources(album) };
+        self.copy_sources(album, own)
+    }
+
+    fn library_album_sources(&mut self, album: i64) -> Vec<AlbumSource> {
         let Some(lib) = self.library() else { return Vec::new() };
         let Ok(catalog) = lib.version_catalog() else { return Vec::new() };
         let versions = if lib.group_album_versions() { catalog.choices(album) }

@@ -124,12 +124,14 @@ impl Chilpa {
     pub(crate) fn show_album_library(&mut self, id: &str, enabled: bool) {
         if !self.natives.library_kinds(id).iter().any(|kind| kind == "albums") { return; }
         if let Err(error) = save(&Self::plugins_dir(), id, "integrate_albums", enabled) { self.now.error = error; return; }
+        self.copies.forget();
         if enabled { self.catalog.retry(&format!("{id} section:albums")); }
         self.mark_library_changed();
     }
     pub(crate) fn show_track_library(&mut self, id: &str, enabled: bool) {
         if !self.natives.library_kinds(id).iter().any(|kind| kind == "tracks") { return; }
         if let Err(error) = save(&Self::plugins_dir(), id, "integrate_tracks", enabled) { self.now.error = error; return; }
+        self.copies.forget();
         if enabled { self.catalog.retry(&format!("{id} section:tracks")); }
         self.mark_library_changed();
     }
