@@ -8,7 +8,7 @@ use crate::{Filter, Reader, Snapshot, TrackOrder, TrackRow};
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TracksQuery {
     pub order: String,
-    /// "off", "album", "artist" or "name".
+    /// I accept album, artist, name, year, decade, genre, label and composer.
     pub group: String,
     pub text: String,
     /// A track's own stars to keep, 0 for none, written "5,0"; empty keeps
@@ -32,7 +32,7 @@ impl TracksQuery {
     }
 
     pub fn grouped(&self) -> bool {
-        matches!(self.group.as_str(), "album" | "artist" | "name")
+        matches!(self.group.as_str(), "album" | "artist" | "name" | "year" | "decade" | "genre" | "label" | "composer")
     }
 }
 
@@ -55,6 +55,7 @@ pub fn section_at(sections: &[(usize, String)], row: usize) -> Option<&str> {
 
 /// Where each letter first starts, from where the groups start.
 fn letters_of(sections: &[(usize, String)], by: &str) -> String {
+    if matches!(by, "year" | "decade") { return "[]".into(); }
     let mut letters: Vec<(String, usize)> = Vec::new();
     for (at, name) in sections {
         let letter = if by == "title" { name.clone() } else { chilpa_library::letter_of(name) };
@@ -63,12 +64,42 @@ fn letters_of(sections: &[(usize, String)], by: &str) -> String {
     serde_json::to_string(&letters).unwrap_or_default()
 }
 
+/// I keep source metadata with loaded rows; local snapshots carry sections.
+/// This allocation lives only as long as its catalog row or cached page.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct TrackGroups {
+    pub year: Option<i32>,
+    pub genre: String,
+    pub label: String,
+    pub composer: String,
+}
+
+pub(crate) fn metadata_group(by: &str, year: Option<i32>, genre: &str, label: &str, composer: &str) -> String {
+    let named = |name: &str, missing: &str| if name.is_empty() { chilpa_i18n::t(missing) } else { name.to_string() };
+    match by {
+        "year" | "decade" => match year.filter(|y| *y > 0) {
+            Some(y) if by == "decade" => format!("{}s", y / 10 * 10),
+            Some(y) => y.to_string(),
+            None => chilpa_i18n::t("Unknown year"),
+        },
+        "genre" => named(genre, "No genre"),
+        "label" => named(label, "No label"),
+        "composer" => named(composer, "No composer"),
+        _ => String::new(),
+    }
+}
+
 /// The group a row belongs to, which is what its header says.
 pub fn group_of(group: &str, row: &TrackRow) -> String {
     match group {
         "album" => row.album.clone(),
         "artist" => row.artist.clone(),
         "name" => chilpa_library::letter_of(&row.title),
+        "year" | "decade" | "genre" | "label" | "composer" => {
+            let empty = TrackGroups::default();
+            let groups = row.groups.as_deref().unwrap_or(&empty);
+            metadata_group(group, groups.year, &groups.genre, &groups.label, &groups.composer)
+        }
         _ => String::new(),
     }
 }
@@ -125,6 +156,22 @@ mod tests {
         assert_eq!(asked("title-desc\u{1f}artist\u{1f}"), TrackOrder::TitleDescending, "a grouping orders the groups, not what is in them");
         assert_eq!(asked(""), TrackOrder::Album, "nothing asked is the order of the records");
         assert_eq!(TracksQuery::parse("added\u{1f}album\u{1f}two words").text, "two words");
+        for group in ["year", "decade", "genre", "label", "composer"] {
+            let query = TracksQuery::parse(&format!("title-desc\u{1f}{group}\u{1f}"));
+            assert!(query.grouped(), "{group}");
+            assert_eq!(query.order(), TrackOrder::TitleDescending);
+        }
+    }
+
+    #[test]
+    fn metadata_names_have_letters_and_dates_have_no_letter_strip() {
+        for by in ["genre", "label", "composer"] {
+            assert_eq!(letters_of(&[(0, "Alpha".into()), (3, "another".into()), (9, "Beta".into()), (12, "Écho".into()), (15, "3 names".into())], by),
+                r##"[["A",0],["B",9],["E",12],["#",15]]"##, "{by}");
+        }
+        for by in ["year", "decade"] {
+            assert_eq!(letters_of(&[(0, "2001".into()), (3, "1999".into()), (9, chilpa_i18n::t("Unknown year"))], by), "[]");
+        }
     }
 
     #[test]

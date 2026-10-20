@@ -56,6 +56,7 @@ ListModel {
     function selectAll() {}
     function clearSelection() {}
     function selectedTrackIdsJson() { return "[42,43]" }
+    function letters(rev) { return "[]" }
     // A key that ends in "|tracks" (a page's tracks shelf) holds eight
     // rows, cut to `limit`.
     onKeyChanged: fill()
