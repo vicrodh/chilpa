@@ -586,7 +586,9 @@ impl Chilpa {
                 let request = input["request_id"].clone();
                 self.sources.native_action_serial = self.sources.native_action_serial.wrapping_add(1);
                 let serial = self.sources.native_action_serial;
-                self.sources.native_actions.insert(id.into(), serde_json::json!({"request_id":request,"pending":true,"serial":serial}));
+                // A heart changes one thing: its answer marks it, it reads no page again.
+                let heart = (input["action"] == "favorite").then(|| serde_json::json!({"ref":input["ref"],"on":input["on"] == true}));
+                self.sources.native_actions.insert(id.into(), serde_json::json!({"request_id":request,"pending":true,"serial":serial,"favorite":heart}));
                 let (natives, source, tx) = (self.natives.clone(), id.to_string(), self.sources.tx.clone());
                 std::thread::spawn(move || {
                     let result = crate::playlist_sources::execute(&natives, &source, input);
@@ -1138,12 +1140,16 @@ impl Chilpa {
                 Answer::Native { source, serial, request, result } => {
                     if !self.sources.native_actions.get(&source).is_some_and(|s| s["pending"] == true && s["serial"] == serial) { continue; }
                     if !self.natives.is_native(&source) { self.sources.native_actions.remove(&source); continue; }
+                    let heart = self.sources.native_actions[&source]["favorite"].clone();
                     let state = match result {
                         Err(error) => { self.now.error = error.clone(); serde_json::json!({"request_id":request,"pending":false,"error":error}) }
                         Ok(value) => {
                             if value["read_only"] != true {
-                                if let Some(refs) = value["changed_refs"].as_array() { self.catalog.invalidate_native_cards(&source, refs); }
-                                self.catalog.expire_native_pages(&source);
+                                if let Some(reference) = heart["ref"].as_str() { self.catalog.mark_native_favorite(&source, reference, heart["on"] == true); }
+                                else {
+                                    if let Some(refs) = value["changed_refs"].as_array() { self.catalog.invalidate_native_cards(&source, refs); }
+                                    self.catalog.expire_native_pages(&source);
+                                }
                                 for kind in self.natives.library_kinds(&source) { self.catalog.retry(&format!("{source} section:{kind}")); }
                                 self.mark_library_changed();
                             }

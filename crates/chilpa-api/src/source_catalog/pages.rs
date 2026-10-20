@@ -467,6 +467,24 @@ mod tests {
     }
 
     #[test]
+    fn a_heart_marks_its_record_where_it_shows_and_reads_no_page_again() {
+        let catalog = Catalog::new();
+        ingest_document(&catalog, "fixture", "album:1", &json!({"header":{"kind":"album","ref":"album:1","title":"Record","favorite":false},"shelves":[]}));
+        ingest_document(&catalog, "fixture", "artist:9", &json!({"header":{"kind":"artist","ref":"artist:9","title":"Band"},
+            "shelves":[{"id":"albums","kind":"album","items":[{"kind":"album","ref":"album:1","title":"Record","artist":"Band","favorite":false}]}]}));
+        let card = catalog.cards(&catalog.shelf("fixture native:artist:9|albums").unwrap().cards)[0].id;
+        catalog.mark_native_favorite("fixture", "album:1", true);
+        assert_eq!(catalog.card(card).unwrap().metadata["favorite"], true, "the card the artist's page shows wears the heart");
+        assert_eq!(catalog.shelf("fixture native:album:1").unwrap().document["header"]["favorite"], true, "and so does the record's own page");
+        for key in ["fixture native:album:1", "fixture native:artist:9", "fixture native:artist:9|albums"] {
+            assert!(catalog.shelf(key).unwrap().read_at > 0, "{key} is not read again for a heart");
+        }
+        catalog.mark_native_favorite("fixture", "album:1", false);
+        assert_eq!(catalog.card(card).unwrap().metadata["favorite"], false);
+        assert_eq!(catalog.shelf("fixture native:artist:9").unwrap().document["header"]["favorite"], Value::Null, "another page's header is not that record");
+    }
+
+    #[test]
     fn overlapping_home_reads_reuse_the_document_without_a_live_plugin() {
         let catalog = Catalog::new();
         let natives = Arc::new(Natives::default());
