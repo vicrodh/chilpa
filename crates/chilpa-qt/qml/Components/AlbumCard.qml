@@ -135,7 +135,9 @@ Item {
             objectName: "sourceBadges"
             spacing: Metrics.gap4
             Repeater {
-                model: card.sources.slice(0, 4)
+                objectName: "sourceBadgeIcons"
+                // Every source the record is on, as many as fit the cover.
+                model: card.sources.slice(0, Math.max(1, Math.floor((cover.width - Metrics.gap8) / (Metrics.iconSm + Metrics.gap8))))
                 SourceIcon {
                     required property var modelData
                     width: Metrics.iconSm + Metrics.gap4; height: width
