@@ -154,7 +154,6 @@ Item {
 
                 SourcesPopover {
                     id: filters
-                    showTrackLibraries: true
                     showAlbumGrouping: false
                     ratings: page.ratings
                     onRatingsChosen: (chosen) => page.ratings = chosen

@@ -1723,6 +1723,9 @@ msgstr "Файл"
 msgid "Files"
 msgstr "Файлы"
 
+msgid "Fill missing genres from MusicBrainz"
+msgstr "Дополнять недостающие жанры из MusicBrainz"
+
 msgid "Filter"
 msgstr "Фильтр"
 
@@ -4174,14 +4177,8 @@ msgstr "Показывает тексты песен из файлов, кэша
 msgid "Show playlist only from the same source as the track"
 msgstr "Показывать только плейлисты из того же источника, что и трек"
 
-msgid "Show saved releases in Albums and Library"
-msgstr "Показывать сохранённые релизы в «Альбомах» и «Библиотеке»"
-
 msgid "Show saved tracks in Tracks"
 msgstr "Показывать сохранённые треки в «Треках»"
-
-msgid "Show saved tracks in Tracks and Library"
-msgstr "Показывать сохранённые треки в «Треках» и «Библиотеке»"
 
 msgid "Show source recommendations by default in Home"
 msgstr "Показывать рекомендации источников на главной по умолчанию"
@@ -4374,9 +4371,6 @@ msgstr "Адрес потока"
 
 msgid "Streaming"
 msgstr "Стриминг"
-
-msgid "Streaming libraries"
-msgstr "Стриминговые библиотеки"
 
 msgid "Strong"
 msgstr "Сильное"
@@ -4629,6 +4623,9 @@ msgstr "Тема"
 
 msgid "There is no previous EQ to restore."
 msgstr "Нет прежнего EQ для восстановления."
+
+msgid "These records' barcodes are sent to MusicBrainz."
+msgstr "Штрихкоды этих альбомов отправляются в MusicBrainz."
 
 msgid "This address belongs to a different server."
 msgstr "Этот адрес принадлежит другому серверу."
@@ -6618,9 +6615,3 @@ msgstr "{}-е"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "В «{}» есть несохранённые изменения. При открытии этой записи они будут потеряны."
-
-msgid "Fill missing genres from MusicBrainz"
-msgstr "Дополнять недостающие жанры из MusicBrainz"
-
-msgid "These records' barcodes are sent to MusicBrainz."
-msgstr "Штрихкоды этих альбомов отправляются в MusicBrainz."

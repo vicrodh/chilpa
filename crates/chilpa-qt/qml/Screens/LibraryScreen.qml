@@ -96,8 +96,6 @@ Item {
 
                 SourcesPopover {
                     id: sources
-                    showAlbumLibraries: true
-                    showTrackLibraries: true
                     x: sourceButton.width - width
                     y: sourceButton.height + Metrics.gap6
                     panes: page.panes

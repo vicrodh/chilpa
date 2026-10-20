@@ -9,8 +9,6 @@ import "../Components"
 
 Popup {
     id: popover
-    property bool showAlbumLibraries: false
-    property bool showTrackLibraries: false
     property bool showAlbumGrouping: true
     // The Library screen's filter columns that are on, or null where the
     // screen has none; a toggle asks the screen to turn one on or off.
@@ -116,62 +114,7 @@ Popup {
                     }
                 }
 
-                Text {
-                    text: I18n.tr("Sources", I18n.rev)
-                    font.pointSize: Type.small
-                    font.weight: Type.semibold
-                    color: Theme.color.textTertiary
-                }
-                Repeater {
-                    model: Library.sourceKeys.length
-
-                    Item {
-                        required property int index
-                        width: parent.width
-                        height: Metrics.sourceFilterRow
-                        readonly property string sourceKey: Library.sourceKeys[index]
-
-                        SourceIcon {
-                            id: sourceIcon
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: Metrics.iconNav
-                            height: Metrics.iconNav
-                            sourceInfo: ({ icon: Library.sourceIcons[index] || "", local: sourceKey === "local:default" })
-                        }
-                        Column {
-                            anchors.left: sourceIcon.right
-                            anchors.leftMargin: Metrics.gap10
-                            anchors.right: sourceToggle.left
-                            anchors.rightMargin: Metrics.gap10
-                            anchors.verticalCenter: parent.verticalCenter
-                            Text {
-                                width: parent.width
-                                text: sourceKey === "local:default" ? I18n.tr("Local library", I18n.rev) : (Library.sourceLabels[index] || "")
-                                elide: Text.ElideRight
-                                font.pointSize: Type.body
-                                color: Theme.color.textPrimary
-                            }
-                            Text {
-                                text: I18n.trCount("{} track", "{} tracks", Number(Library.sourceCounts[index]), I18n.rev)
-                                font.pointSize: Type.micro
-                                color: Theme.color.textTertiary
-                            }
-                        }
-                        Toggle {
-                            id: sourceToggle
-                            compact: true
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            checked: Library.excludedSources.indexOf(sourceKey) < 0
-                            onToggled: Library.toggleFilter("source", sourceKey)
-                        }
-                    }
-                }
-
-                Rectangle { width: parent.width; height: Metrics.focusRing; color: Theme.color.strokeHairline }
-                SourceAlbumLibraries { width: parent.width; active: popover.opened && popover.showAlbumLibraries }
-                SourceAlbumLibraries { width: parent.width; tracks: true; titled: !popover.showAlbumLibraries; active: popover.opened && popover.showTrackLibraries }
+                SourceSwitches { width: parent.width; active: popover.opened }
             }
             Column {
                 width: popover.half
