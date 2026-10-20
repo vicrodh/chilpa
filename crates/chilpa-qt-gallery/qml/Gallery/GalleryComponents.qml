@@ -61,6 +61,12 @@ TitledFlow {
         LibraryToolbar { width: parent.width; tracks: most }
         SortButton { value: "artist"; options: [{ value: "artist", text: "Artist" }, { value: "year", text: "Year" }] }
         AlbumRow { width: parent.width; albumId: 1; title: "Low Orbit"; subtitle: "Mora Vale"; year: "2019"; art: "" }
+        AlbumRow {
+            width: parent.width; albumId: 2; title: "Low Orbit"; subtitle: "Mora Vale"; year: "2019"; art: ""
+            columns: ["year", "tracks", "duration", "genre", "rating"]; tracks: 9; durationMs: 2712000; genre: "Ambient"; stars: 4
+        }
+        PillButton { text: "List columns"; onClicked: columnsSample.open() }
+        AlbumColumnsModal { id: columnsSample; shown: ["year", "tracks", "duration", "rating", "source"] }
         AlbumArtistText { text: "Mora Vale"; albumId: 1 }
         AlphaStrip { height: Metrics.folderTreeWidth; letters: [["A", 0], ["M", 40], ["Z", 90]] }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; model: most }

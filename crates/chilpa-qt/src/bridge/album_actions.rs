@@ -58,6 +58,9 @@ pub mod qobject {
         /// Whether the record opens: some track of it plays now (ADR-017).
         #[qinvokable]
         fn available(self: &AlbumActions, id: i64, rev: i32) -> bool;
+        /// Tracks, length and genre for a list's columns (`album_list_facts`).
+        #[qinvokable]
+        fn facts(self: &AlbumActions, id: i64, rev: i32) -> QString;
         /// Says why it does not, where the window shows problems.
         #[qinvokable]
         fn explain(self: &AlbumActions, id: i64);
@@ -99,6 +102,7 @@ impl qobject::AlbumActions {
     pub fn available(&self, id: i64, _rev: i32) -> bool {
         app::with(|api| api.album_available(id))
     }
+    pub fn facts(&self, id: i64, _rev: i32) -> cxx_qt_lib::QString { cxx_qt_lib::QString::from(app::with(|api| api.album_list_facts(id))) }
 
     pub fn explain(&self, id: i64) {
         app::with(|api| api.explain_unavailable_album(id));

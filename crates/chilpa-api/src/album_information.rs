@@ -37,6 +37,25 @@ impl Chilpa {
             |path| catalog.track_by_path(path).map(|(track, _)| track.metadata).unwrap_or(Value::Null))
     }
 
+    /// What a list of records shows beside a record's title, as
+    /// `{"tracks", "duration_ms", "genre"}`. A source's record says what its
+    /// card and its tracks already read say; nothing is asked of the source.
+    pub fn album_list_facts(&mut self, id: i64) -> String {
+        let (tracks, duration_ms, genre) = if id < 0 {
+            let Some(card) = self.catalog.card(id) else { return "{}".into() };
+            let read = card.tracks.as_deref().map(|ids| self.catalog.tracks_by_ids(ids)).unwrap_or_default();
+            let summed: u64 = read.iter().map(|(track, _)| track.duration_ms).sum();
+            let genre = card.metadata["genres"][0].as_str()
+                .or_else(|| card.metadata["genre"].as_str().and_then(|all| all.split(", ").next()))
+                .unwrap_or_default().to_string();
+            let duration = if summed > 0 { summed } else { card.metadata["duration_ms"].as_u64().unwrap_or_default() };
+            (crate::source_catalog::view::album_of(&card).track_count, duration as i64, genre)
+        } else {
+            self.library().and_then(|lib| lib.album_facts(id).ok()).unwrap_or_default()
+        };
+        json!({"tracks": tracks, "duration_ms": duration_ms, "genre": genre}).to_string()
+    }
+
     pub fn album_information(&mut self, id: i64) -> String {
         let Some(detail) = self.album_detail(id) else { return "{}".into(); };
         let mut info = self.catalog.card(id).map(|card| {
