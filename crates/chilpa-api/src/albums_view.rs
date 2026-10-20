@@ -160,13 +160,15 @@ impl Reader {
 /// their title or artist and pass the extras, each once, in grid order keys.
 fn saved_records(index: &crate::library_sources::SourceIndex, text: &str, extras: &Filter) -> Vec<(i64, chilpa_library::AlbumKey)> {
     let words: Vec<String> = text.to_lowercase().split_whitespace().map(String::from).collect();
-    let through = Filter { excluded_sources: extras.excluded_sources.clone(), qualities: extras.qualities.clone(), formats: extras.formats.clone(), ..Filter::default() };
+    let through = crate::library_sources::Prepared::new(&Filter {
+        excluded_sources: extras.excluded_sources.clone(), qualities: extras.qualities.clone(), formats: extras.formats.clone(), ..Filter::default()
+    });
     let stars = crate::library_sources::Stars::default();
     let mut records: std::collections::HashMap<i64, chilpa_library::AlbumKey> = std::collections::HashMap::new();
     let mut order = Vec::new();
     for item in index.items.iter().filter(|item| item.saved_album && item.album != 0) {
-        let named = format!("{} {} {}", item.album_title, item.album_artist, item.artists.join(" ")).to_lowercase();
-        if !words.iter().all(|word| named.contains(word.as_str())) || !crate::library_sources::passes(item, &through, &stars) { continue; }
+        let named = |word: &String| item.folded.album_title.contains(word.as_str()) || item.folded.artists.iter().any(|a| a.contains(word.as_str()));
+        if !words.iter().all(named) || !through.passes(item, &stars) { continue; }
         let key = records.entry(item.album).or_insert_with(|| {
             order.push(item.album);
             chilpa_library::AlbumKey { title: item.album_title.clone(), artist: item.album_artist.clone(), year: item.year, ..Default::default() }

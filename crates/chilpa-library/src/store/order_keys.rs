@@ -10,9 +10,26 @@ use super::browse::{letter_of, TrackOrder};
 use super::Library;
 use std::cmp::Ordering;
 
-/// The columns `OrderKey::read` takes, after id, album, duration and plays.
-pub(super) const COLUMNS: &str = ", a.album_artist, a.title, a.year, coalesce(t.release_disc, t.disc_number),
-    t.track_number, t.title, t.artist, t.added_at";
+/// The columns `OrderKey::read` takes, after id, album, duration and plays:
+/// the ones the order and the grouping compare, NULL for the rest, so a
+/// snapshot of the whole library reads no text it does not order by.
+pub(super) fn columns(order: TrackOrder, grouped_by: &str) -> String {
+    use TrackOrder::*;
+    let record = matches!(order, Artist | ArtistDescending | Album | AlbumDescending | Year | YearDescending | Performer) || grouped_by == "album";
+    let place = !matches!(order, Title | TitleDescending | Plays | PlaysAscending | Duration | DurationDescending);
+    let title = matches!(order, Title | TitleDescending | Plays | PlaysAscending | Duration | DurationDescending | Disc | Performer) || grouped_by == "name";
+    let pick = |on: bool, column: &str| if on { column.to_string() } else { "NULL".to_string() };
+    [
+        pick(matches!(order, Artist | ArtistDescending), "a.album_artist"),
+        pick(record, "a.title"),
+        pick(matches!(order, Artist | ArtistDescending | Year | YearDescending), "a.year"),
+        pick(place, "coalesce(t.release_disc, t.disc_number)"),
+        pick(place, "t.track_number"),
+        pick(title, "t.title"),
+        pick(order == Performer || grouped_by == "artist", "t.artist"),
+        pick(matches!(order, Added | AddedAscending), "t.added_at"),
+    ].iter().fold(String::new(), |all, column| all + ", " + column)
+}
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct OrderKey {
@@ -40,9 +57,9 @@ impl OrderKey {
             year: r.get(6)?,
             disc: r.get(7)?,
             number: r.get(8)?,
-            title: r.get(9)?,
-            artist: r.get(10)?,
-            added_at: r.get(11)?,
+            title: r.get::<_, Option<String>>(9)?.unwrap_or_default(),
+            artist: r.get::<_, Option<String>>(10)?.unwrap_or_default(),
+            added_at: r.get::<_, Option<i64>>(11)?.unwrap_or(0),
         })
     }
 }

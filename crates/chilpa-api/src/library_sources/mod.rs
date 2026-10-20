@@ -19,7 +19,7 @@ mod tests;
 
 pub use groups::AlbumGroup;
 pub(crate) use facets::merge as merge_facets;
-pub(crate) use merge::{letters as merged_letters, snapshot as merge_snapshot, Scope};
+pub(crate) use merge::{snapshot as merge_snapshot, Scope};
 
 use crate::{FacetEntry, Filter};
 
@@ -33,6 +33,8 @@ pub(crate) struct SourceItem {
     pub plugin: String,
     /// What the source calls it, which its stars are kept under.
     pub identity: String,
+    /// What the source calls its record, which the record's stars are kept under.
+    pub album_identity: String,
     pub album_artist: String,
     pub album_title: String,
     pub title: String,
@@ -60,6 +62,20 @@ pub(crate) struct SourceItem {
     /// How many tracks it stands for: one, or a record's count.
     pub tracks: usize,
     pub playable: bool,
+    /// Its names in lower case, for the filters; set by `SourceIndex::new`.
+    pub folded: Folded,
+}
+
+/// What a filter compares an item by, folded once when the index is read.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct Folded {
+    pub genres: Vec<String>,
+    pub label: String,
+    pub composers: Vec<String>,
+    pub artists: Vec<String>,
+    pub album_title: String,
+    /// Title, artists and record, where typed words are looked for.
+    pub text: String,
 }
 
 impl SourceItem {
@@ -77,8 +93,29 @@ impl SourceItem {
 #[derive(Debug, Default)]
 pub(crate) struct SourceIndex {
     pub items: Vec<SourceItem>,
+    /// What each item is ordered by, aligned with `items`.
+    pub keys: Vec<chilpa_library::OrderKey>,
     /// Each source with something in the index, as the Sources list shows it.
     pub sources: Vec<FacetEntry>,
+}
+
+impl SourceIndex {
+    /// The items with their names folded and their order keys made, once.
+    pub(crate) fn new(items: Vec<SourceItem>, sources: Vec<FacetEntry>) -> Self {
+        let items: Vec<SourceItem> = items.into_iter().map(|mut item| {
+            item.folded = Folded {
+                genres: folded(item.genres.iter().cloned()),
+                label: item.label.to_lowercase(),
+                composers: folded(item.composers.iter().cloned()),
+                artists: folded(item.artists.iter().cloned()),
+                album_title: item.album_title.to_lowercase(),
+                text: format!("{} {} {}", item.title, item.artists.join(" "), item.album_title).to_lowercase(),
+            };
+            item
+        }).collect();
+        let keys = items.iter().map(merge::key_of).collect();
+        Self { items, keys, sources }
+    }
 }
 
 /// What the integrated listings hold and what is integrated from which
@@ -141,7 +178,7 @@ impl SourceIndex {
                 }),
             }
         }
-        Self { items, sources }
+        Self::new(items, sources)
     }
 }
 
@@ -156,68 +193,99 @@ impl Stars {
     pub(crate) fn read(lib: &chilpa_library::Library, index: &SourceIndex) -> Self {
         let kept = lib.external_ratings().unwrap_or_default();
         if kept.is_empty() { return Self::default(); }
+        let kept: std::collections::HashMap<(&str, &str, &str), u8> = kept.iter().map(|((source, kind, id), n)| ((source.as_str(), kind.as_str(), id.as_str()), *n)).collect();
         let mut stars = Self::default();
         for item in &index.items {
             if item.track != 0 {
-                if let Some(n) = kept.get(&(item.plugin.clone(), "track".into(), item.identity.clone())) { stars.tracks.insert(item.track, *n); }
-            } else if let Some(n) = kept.get(&(item.plugin.clone(), "album".into(), item.identity.clone())) {
-                stars.albums.insert(item.album, *n);
+                if let Some(n) = kept.get(&(item.plugin.as_str(), "track", item.identity.as_str())) { stars.tracks.insert(item.track, *n); }
+            }
+            if item.album != 0 && !stars.albums.contains_key(&item.album) {
+                if let Some(n) = kept.get(&(item.plugin.as_str(), "album", item.album_identity.as_str())) { stars.albums.insert(item.album, *n); }
             }
         }
         stars
     }
 }
 
-fn holds(values: &[String], query: &str) -> bool {
-    values.iter().any(|value| value.to_lowercase().contains(query))
+/// A filter read once for a pass over the index: its names folded, its
+/// lists joined with their single choices, so an item costs comparisons and
+/// no allocation.
+pub(crate) struct Prepared {
+    off: bool,
+    queries: Vec<(usize, String)>,
+    years: Vec<i32>,
+    genres: Vec<String>,
+    labels: Vec<String>,
+    composers: Vec<String>,
+    artists: Vec<String>,
+    albums: Vec<i64>,
+    ratings: Vec<u8>,
+    track_ratings: Vec<u8>,
+    excluded: Vec<String>,
+    qualities: Vec<String>,
+    formats: Vec<String>,
+    words: Vec<String>,
 }
 
-fn among(values: &[String], chosen: &[String]) -> bool {
-    values.iter().any(|value| chosen.iter().any(|c| c.to_lowercase() == value.to_lowercase()))
+fn folded(values: impl IntoIterator<Item = String>) -> Vec<String> {
+    values.into_iter().map(|value| value.to_lowercase()).collect()
 }
 
-/// Whether an item passes a filter as the database's `WHERE` would pass a
-/// track of its own: the same columns, chosen keys and extras.
+impl Prepared {
+    pub(crate) fn new(f: &Filter) -> Self {
+        let excluded = f.excluded_sources.iter()
+            .filter_map(|key| key.strip_prefix(crate::source_opener::PROVIDER).and_then(|rest| rest.strip_prefix(':')).map(String::from)).collect();
+        Self {
+            off: f.performer.is_some(),
+            queries: f.queries.iter().enumerate().map(|(at, q)| (at, q.trim().to_lowercase())).filter(|(at, q)| *at != 4 && !q.is_empty()).collect(),
+            years: f.years.iter().copied().chain(f.year).collect(),
+            genres: folded(f.genres.iter().chain(&f.genre).cloned()),
+            labels: folded(f.labels.iter().cloned()),
+            composers: folded(f.composers.iter().cloned()),
+            artists: folded(f.artists.iter().chain(&f.artist).cloned()),
+            albums: f.albums.iter().copied().chain(f.album).collect(),
+            ratings: f.ratings.clone(),
+            track_ratings: f.track_ratings.clone(),
+            excluded,
+            qualities: f.qualities.clone(),
+            formats: folded(f.formats.iter().cloned()),
+            words: f.text.to_lowercase().split_whitespace().map(String::from).collect(),
+        }
+    }
+
+    /// Whether an item passes, as the database's `WHERE` would pass a track
+    /// of its own: the same columns, chosen keys and extras.
+    pub(crate) fn passes(&self, item: &SourceItem, stars: &Stars) -> bool {
+        if self.off { return false; }
+        let names = &item.folded;
+        let holds = |values: &[String], query: &str| values.iter().any(|value| value.contains(query));
+        for (column, query) in &self.queries {
+            let found = match column {
+                0 => item.year.is_some_and(|y| y.to_string().contains(query.as_str())),
+                1 => holds(&names.genres, query),
+                2 => names.label.contains(query.as_str()),
+                3 => holds(&names.composers, query),
+                5 => holds(&names.artists, query),
+                _ => names.album_title.contains(query.as_str()),
+            };
+            if !found { return false; }
+        }
+        let among = |values: &[String], chosen: &[String]| chosen.is_empty() || values.iter().any(|v| chosen.contains(v));
+        if !self.years.is_empty() && !item.year.is_some_and(|y| self.years.contains(&y)) { return false; }
+        if !among(&names.genres, &self.genres) || !among(std::slice::from_ref(&names.label), &self.labels)
+            || !among(&names.composers, &self.composers) || !among(&names.artists, &self.artists) { return false; }
+        if !self.ratings.is_empty() && !self.ratings.contains(&stars.albums.get(&item.album).copied().unwrap_or(0)) { return false; }
+        if !self.track_ratings.is_empty() && !self.track_ratings.contains(&stars.tracks.get(&item.track).copied().unwrap_or(0)) { return false; }
+        if !self.albums.is_empty() && !self.albums.contains(&item.record()) { return false; }
+        if self.excluded.contains(&item.plugin) { return false; }
+        if !self.qualities.is_empty() && !self.qualities.iter().any(|q| q == item.tier) { return false; }
+        if !self.formats.is_empty() && !self.formats.iter().any(|q| q == item.format) { return false; }
+        self.words.iter().all(|word| names.text.contains(word.as_str()))
+    }
+}
+
+/// The same, for one item.
+#[cfg(test)]
 pub(crate) fn passes(item: &SourceItem, f: &Filter, stars: &Stars) -> bool {
-    if f.performer.is_some() { return false; }
-    for (column, query) in f.queries.iter().enumerate() {
-        let query = query.trim().to_lowercase();
-        if query.is_empty() { continue; }
-        let found = match column {
-            0 => item.year.is_some_and(|y| y.to_string().contains(&query)),
-            1 => holds(&item.genres, &query),
-            2 => item.label.to_lowercase().contains(&query),
-            3 => holds(&item.composers, &query),
-            4 => true,
-            5 => holds(&item.artists, &query),
-            _ => item.album_title.to_lowercase().contains(&query),
-        };
-        if !found { return false; }
-    }
-    let mut years = f.years.clone();
-    years.extend(f.year);
-    if !years.is_empty() && !item.year.is_some_and(|y| years.contains(&y)) { return false; }
-    let mut genres = f.genres.clone();
-    genres.extend(f.genre.clone());
-    if !genres.is_empty() && !among(&item.genres, &genres) { return false; }
-    if !f.labels.is_empty() && !f.labels.iter().any(|l| l.to_lowercase() == item.label.to_lowercase()) { return false; }
-    if !f.composers.is_empty() && !among(&item.composers, &f.composers) { return false; }
-    let album_stars = || stars.albums.get(&item.album).copied().unwrap_or(0);
-    if !f.ratings.is_empty() && !f.ratings.contains(&album_stars()) { return false; }
-    if !f.track_ratings.is_empty() && !f.track_ratings.contains(&stars.tracks.get(&item.track).copied().unwrap_or(0)) { return false; }
-    let mut artists = f.artists.clone();
-    artists.extend(f.artist.clone());
-    if !artists.is_empty() && !among(&item.artists, &artists) { return false; }
-    let mut albums = f.albums.clone();
-    albums.extend(f.album);
-    if !albums.is_empty() && !albums.contains(&item.record()) { return false; }
-    if f.excluded_sources.contains(&item.source_key()) { return false; }
-    if !f.qualities.is_empty() && !f.qualities.iter().any(|q| q == item.tier) { return false; }
-    if !f.formats.is_empty() && !f.formats.iter().any(|q| q.eq_ignore_ascii_case(item.format)) { return false; }
-    let words: Vec<String> = f.text.to_lowercase().split_whitespace().map(String::from).collect();
-    if !words.is_empty() {
-        let text = format!("{} {} {}", item.title, item.artists.join(" "), item.album_title).to_lowercase();
-        if !words.iter().all(|word| text.contains(word.as_str())) { return false; }
-    }
-    true
+    Prepared::new(f).passes(item, stars)
 }

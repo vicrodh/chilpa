@@ -20,19 +20,17 @@ fn fixture() -> (Reader, SourceIndex) {
     }
     let reader = Reader::of(lib);
     let item = |track: i64, album: i64, title: &str, artist: &str, record: &str, year: i32, genre: &str| SourceItem {
-        track, album, plugin: "guest".into(), identity: format!("ref:{track}:{album}"), album_artist: artist.into(), album_title: record.into(),
+        track, album, plugin: "guest".into(), identity: format!("ref:{track}:{album}"), album_identity: format!("album:{album}"), album_artist: artist.into(), album_title: record.into(),
         title: title.into(), artists: vec![artist.into()], year: Some(year), genres: vec![genre.into()], label: "Impulse!".into(),
         composers: vec!["John Coltrane".into()], tier: "hires", format: "flac", tracks: 1, playable: true, number: Some(1),
         duration_ms: 2000, ..SourceItem::default()
     };
-    let index = SourceIndex {
-        items: vec![
+    let index = SourceIndex::new(vec![
             SourceItem { saved_album: true, ..item(-1, -10, "Acknowledgement", "Coltrane", "A Love Supreme", 1965, "jazz") },
             SourceItem { saved_album: true, track: 0, tracks: 6, ..item(0, -11, "Ascension", "Coltrane", "Ascension", 1966, "Free Jazz") },
             SourceItem { saved_track: true, ..item(-2, -12, "So What", "Davis", "Kind of Blue", 1959, "Modal") },
         ],
-        sources: vec![FacetEntry { key: "plugin:guest".into(), label: "Guest".into(), albums: 8, year: None, icon: String::new() }],
-    };
+        vec![FacetEntry { key: "plugin:guest".into(), label: "Guest".into(), albums: 8, year: None, icon: String::new() }]);
     (reader, index)
 }
 
@@ -124,6 +122,19 @@ fn albums_merges_the_saved_records_in_its_order_and_groups_them_with_the_library
 }
 
 #[test]
+fn a_record_keeps_its_stars_whether_or_not_its_tracks_were_read() {
+    let (reader, index) = fixture();
+    reader.lib.rate_external("guest", "album", "album:-10", 4).unwrap();
+    reader.lib.rate_external("guest", "album", "album:-11", 2).unwrap();
+    reader.lib.rate_external("guest", "track", "ref:-2:-12", 5).unwrap();
+    let stars = Stars::read(&reader.lib, &index);
+    assert_eq!((stars.albums.get(&-10), stars.albums.get(&-11), stars.tracks.get(&-2)), (Some(&4), Some(&2), Some(&5)));
+    let mut four = Filter::default();
+    four.choose(4, &["4".into()]);
+    assert_eq!(refresh(&reader, index, &four, TrackOrder::Artist).1.album_ids, [-10], "a record read track by track keeps its own stars");
+}
+
+#[test]
 fn a_filter_reads_an_item_as_it_reads_a_track() {
     let (_, index) = fixture();
     let stars = Stars { albums: [(-10, 4)].into_iter().collect(), tracks: Default::default() };
@@ -162,7 +173,7 @@ fn measured_on_a_real_library() {
         label: format!("Label {}", n % 90), composers: vec![format!("Writer {}", n % 300)], tier: "lossless", format: "flac",
         tracks: if n % 3 == 0 { 10 } else { 1 }, saved_track: n % 2 == 0, saved_album: n % 2 == 1, playable: true, ..SourceItem::default()
     }).collect();
-    let index = Rc::new(SourceIndex { items, sources: Vec::new() });
+    let index = Rc::new(SourceIndex::new(items, Vec::new()));
     let median = |run: &dyn Fn() -> ()| {
         let mut times: Vec<u128> = (0..5).map(|_| { let t = std::time::Instant::now(); run(); t.elapsed().as_micros() }).collect();
         times.sort();
@@ -180,7 +191,9 @@ fn measured_on_a_real_library() {
     }
     let all = reader.lib.browse_ids(&Filter::default(), TrackOrder::Artist).unwrap();
     let rows = median(&|| { let _ = all.ids.chunks(500).flat_map(|ids| reader.lib.tracks_by_ids(ids).unwrap()).count(); });
+    let plain = median(&|| { let _ = reader.lib.grouped_snapshot(&Filter::default(), TrackOrder::Artist).unwrap(); });
     let keyed = median(&|| { let _ = reader.lib.keyed_snapshot(&Filter::default(), TrackOrder::Artist).unwrap(); });
+    println!("snapshot of the whole library: plain {plain:.1} ms, with keys {keyed:.1} ms");
     let tracks = median(&|| { let _ = reader.tracks_using("artist\u{1f}off\u{1f}", &Filter::default(), &index); });
     println!("tracks merge: reading every row {rows:.1} ms (before); keyed snapshot {keyed:.1} ms; whole Tracks answer {tracks:.1} ms ({} tracks)", all.ids.len());
     let albums = median(&|| { let _ = reader.albums_view_using("artist", "genre", "", &Filter::default(), &index); });
