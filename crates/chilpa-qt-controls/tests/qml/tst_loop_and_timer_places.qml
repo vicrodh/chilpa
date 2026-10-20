@@ -41,6 +41,31 @@ TestCase {
         bar.loopEnd = -1
     }
 
+    function test_a_queue_row_opens_its_menu() {
+        const list = (function seek(item) {
+            if (item instanceof ListView) return item
+            for (const child of item.children) { const found = seek(child); if (found) return found }
+            return null
+        })(panel)
+        // Tall enough that the second row is not under the foot.
+        panel.height = 420
+        list.model.clear()
+        list.model.append({ title: "First", artist: "Band", duration: "3:00", playing: true, art: "" })
+        list.model.append({ title: "Second", artist: "Band", duration: "4:00", playing: false, art: "" })
+        tryVerify(() => list.itemAtIndex(1) !== null)
+        const row = list.itemAtIndex(1)
+        const menu = findChild(panel, "queueRowMenu")
+        verify(menu)
+        waitForRendering(list)
+        wait(Qt.styleHints.mouseDoubleClickInterval)
+        mouseClick(row, row.width / 3, row.height / 2, Qt.RightButton)
+        tryCompare(menu, "opened", true, 1000, "a right click on a row opens its menu, the same the Queues screen shows")
+        compare(menu.row, 1)
+        menu.close()
+        list.model.clear()
+        panel.height = 200
+    }
+
     function test_the_queue_panel_reads_the_timer_and_opens_it_over_its_foot() {
         const button = findChild(panel, "queueTimer")
         Controls.sleepLeft = "12m"
