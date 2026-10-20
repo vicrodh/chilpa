@@ -50,7 +50,10 @@ use store::Store;
 
 /// A listing younger than this is not asked for again.
 const SHELF_FRESH: u64 = 300;
-const PERSONAL_REFRESH: Duration = Duration::from_secs(90);
+/// How often the listener's own libraries in the sources are read again
+/// while the window is seen, and the least gap when the window comes back.
+const PERSONAL_REFRESH: Duration = Duration::from_secs(300);
+const PERSONAL_RETURN: Duration = Duration::from_secs(90);
 /// A record's tracks younger than this are not read again.
 const TRACKS_FRESH: u64 = 6 * 3600;
 const BACKGROUND_JOBS: usize = 8;
@@ -159,6 +162,12 @@ fn readable(card: &store::Card, natives: Option<&crate::natives::Natives>) -> bo
     card.handle.is_some() || natives.is_some_and(|natives| natives.is_native(&card.plugin))
 }
 
+/// Whether the listener's libraries are read again: every five minutes, or
+/// on coming back to the window when the last read is a minute and a half old.
+fn personal_refresh_due(since: Duration, returned: bool) -> bool {
+    since >= if returned { PERSONAL_RETURN } else { PERSONAL_REFRESH }
+}
+
 /// The plugin and the address of a listing key.
 pub(crate) fn split(key: &str) -> (&str, &str) {
     key.split_once(' ').unwrap_or((key, ""))
@@ -238,9 +247,10 @@ impl Catalog {
 
     /// Recheck personal library shelves already opened in this session.
     /// This also discovers edits made in another client without a local action.
-    pub(crate) fn refresh_personal_libraries(&self) {
+    /// `returned`: the window was just come back to, which asks sooner.
+    pub(crate) fn refresh_personal_libraries(&self, returned: bool) {
         let mut last = self.last_personal_refresh.lock().unwrap_or_else(|e| e.into_inner());
-        if last.elapsed() < PERSONAL_REFRESH { return; }
+        if !personal_refresh_due(last.elapsed(), returned) { return; }
         *last = Instant::now();
         drop(last);
         let Some(natives) = self.natives() else { return; };
@@ -848,6 +858,15 @@ impl Catalog {
 #[cfg(test)]
 mod retry_tests {
     use super::*;
+    #[test]
+    fn the_listeners_libraries_are_read_every_five_minutes_or_on_coming_back() {
+        let seconds = Duration::from_secs;
+        assert!(!personal_refresh_due(seconds(120), false), "two minutes is not yet");
+        assert!(personal_refresh_due(seconds(300), false));
+        assert!(personal_refresh_due(seconds(120), true), "coming back reads what is two minutes old");
+        assert!(!personal_refresh_due(seconds(30), true), "but not what was just read");
+    }
+
     #[test]
     fn opening_a_prefetched_home_promotes_one_job_and_keeps_cached_content() {
         let catalog = Catalog::new();

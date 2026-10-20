@@ -16,6 +16,13 @@ Item {
 
     // The window whose keys these are.
     required property var window
+    // Shown and active or not: what the facade reads again in the
+    // background waits while the window is hidden or minimized (ADR-018),
+    // and coming back to it asks sooner.
+    readonly property bool seen: !!window && window.visible && window.visibility !== Window.Minimized
+    readonly property bool windowActive: !!window && window.active
+    onSeenChanged: WindowPlace.seen(seen, windowActive)
+    onWindowActiveChanged: WindowPlace.seen(seen, windowActive)
     // The mini player, when the window has one: its key opens and closes
     // it, and the desktop's asks for the window go to it while it is up.
     property bool miniOpen: false

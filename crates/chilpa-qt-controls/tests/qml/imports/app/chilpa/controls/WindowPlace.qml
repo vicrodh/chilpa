@@ -14,6 +14,8 @@ QtObject {
     property int smallestHeight: 600
     property var kept: []
 
+    property var seenAs: []
+    function seen(shown, active) { seenAs = [shown, active] }
     function keep(frame, width, height, left, top, placed) {
         kept.push([frame, width, height, left, top, placed])
         keptChanged()
