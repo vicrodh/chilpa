@@ -7,6 +7,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/query/qml/Components"
 
 // Library (design/02 9, design/06): the filter columns in cascade and
 // the records they leave, as cards or as rows. A fixed layout with no scroll of
@@ -144,6 +145,13 @@ Item {
         x: head.x
         width: head.width - toggle.width - Metrics.gap8
         height: Metrics.breadcrumb
+    }
+    // The conditions beyond the columns (`:filter`, Alt+click on a value),
+    // after the crumbs.
+    QueryChipRow {
+        anchors.verticalCenter: crumbs.verticalCenter
+        x: crumbs.x + crumbs.used + Metrics.gap8
+        onEdited: (query) => Library.applyQuery(query)
     }
     IconButton {
         id: toggle

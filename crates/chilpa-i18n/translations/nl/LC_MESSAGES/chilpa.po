@@ -312,6 +312,9 @@ msgstr "Alle groepen"
 msgid "All music"
 msgstr "Alle muziek"
 
+msgid "All of"
+msgstr "Alle"
+
 msgid "All qualities"
 msgstr "Alle kwaliteiten"
 
@@ -413,6 +416,9 @@ msgstr "Animeer de markering van het huidige nummer met equalizerbalken. Standaa
 
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Geanimeerde achtergrond met albumhoes achter de hele app. Hoog resourcegebruik: GPU-versneld."
+
+msgid "Any of"
+msgstr "Een van"
 
 msgid "Any quality"
 msgstr "Elke kwaliteit"
@@ -1730,6 +1736,9 @@ msgstr "Filteren op genre"
 msgid "Filter playlists"
 msgstr "Afspeellijsten filteren"
 
+msgid "Filter the library"
+msgstr "Bibliotheek filteren"
+
 msgid "Filter tracks"
 msgstr "Nummers filteren"
 
@@ -2729,6 +2738,9 @@ msgstr "Mijn bibliotheek"
 msgid "My stations"
 msgstr "Mijn zenders"
 
+msgid "NOT needs a condition after it"
+msgstr "NOT heeft erna een voorwaarde nodig"
+
 msgid "NOW PLAYING"
 msgstr "NU AAN HET AFSPELEN"
 
@@ -2963,6 +2975,9 @@ msgstr "Geen nummers komen overeen met dit filter."
 msgid "No tracks match your search."
 msgstr "Geen nummers komen overeen met je zoekopdracht."
 
+msgid "None"
+msgstr "Geen"
+
 msgid "Not answering"
 msgstr "Reageert niet"
 
@@ -3049,6 +3064,9 @@ msgstr "Nu aan het afspelen: {}"
 
 msgid "Number of tracks"
 msgstr "Aantal nummers"
+
+msgid "OR needs a condition on each side"
+msgstr "OR heeft aan beide kanten een voorwaarde nodig"
 
 msgid "OTHER"
 msgstr "OVERIGE"
@@ -4476,6 +4494,9 @@ msgstr "Het huidige nummer heeft zo'n bestemming niet."
 msgid "The download view is unavailable."
 msgstr "De downloadweergave is niet beschikbaar."
 
+msgid "The filter cannot be read: {}"
+msgstr "Het filter kan niet worden gelezen: {}"
+
 msgid "The filter has no ON/OFF state."
 msgstr "Het filter heeft geen AAN/UIT-status."
 
@@ -5220,11 +5241,20 @@ msgstr "een DST-pakket hoort bij geen enkel frame"
 msgid "a Mac's outputs take PCM, not native DSD"
 msgstr "de uitvoer van een Mac accepteert PCM, geen native DSD"
 
+msgid "a closing parenthesis has nothing to close"
+msgstr "een sluithaakje heeft niets om te sluiten"
+
+msgid "a condition is missing"
+msgstr "er ontbreekt een voorwaarde"
+
 msgid "a date is a year, a year and a month, or a full day: 1984, 1984-09, 1984-09-03"
 msgstr "een datum is een jaar, een jaar en een maand, of een volledige dag: 1984, 1984-09, 1984-09-03"
 
 msgid "a direct URL"
 msgstr "een directe URL"
+
+msgid "a field needs a value"
+msgstr "een veld heeft een waarde nodig"
 
 msgid "a frame of the stereo area is not stereo"
 msgstr "een frame van het stereogebied is geen stereo"
@@ -5237,6 +5267,15 @@ msgstr "een nieuwere Chilpa heeft dit sidecar-bestand geschreven; werk Chilpa bi
 
 msgid "a number from 1 to 9999, or nothing"
 msgstr "een getal van 1 tot 9999, of niets"
+
+msgid "a parenthesis is not closed"
+msgstr "een haakje is niet gesloten"
+
+msgid "a quote is not closed"
+msgstr "een aanhalingsteken is niet gesloten"
+
+msgid "a rating goes from 0 to 5"
+msgstr "een waardering loopt van 0 tot 5"
 
 msgid "a rating must be between 0 and 5 stars"
 msgstr "een waardering moet tussen 0 en 5 sterren liggen"
@@ -5256,8 +5295,14 @@ msgstr "een nummer heeft geen artiest"
 msgid "a track has no title"
 msgstr "een nummer heeft geen titel"
 
+msgid "a year or a rating is a number"
+msgstr "een jaar of waardering is een getal"
+
 msgid "add a command you trigger"
 msgstr "een opdracht toevoegen die je zelf activeert"
+
+msgid "added takes a span like 30d, 6w, 3m or 1y"
+msgstr "added neemt een periode zoals 30d, 6w, 3m of 1y"
 
 msgid "aggregate"
 msgstr "samengesteld"
@@ -5490,6 +5535,11 @@ msgstr "een van je inloggegevens bewaren"
 msgid "keep things of its own on disk"
 msgstr "eigen gegevens op schijf bewaren"
 
+msgid "last {} day"
+msgid_plural "last {} days"
+msgstr[0] "afgelopen {} dag"
+msgstr[1] "afgelopen {} dagen"
+
 msgid "let this plugin handle its own sign-in secrets, encrypted on disk and separate from other plugins"
 msgstr "deze plug-in zijn eigen inloggeheimen laten beheren, versleuteld op schijf en gescheiden van andere plug-ins"
 
@@ -5675,6 +5725,9 @@ msgstr "dat lijkt niet op een streamadres"
 
 msgid "that domain is not among the ones the plugin declared"
 msgstr "dat domein staat niet tussen de domeinen die de plug-in heeft opgegeven"
+
+msgid "that field is never empty"
+msgstr "dat veld is nooit leeg"
 
 msgid "that file is not an image"
 msgstr "dat bestand is geen afbeelding"
@@ -5916,6 +5969,9 @@ msgstr "de frame-infotabel is afgekapt"
 msgid "the graph runs at {} Hz"
 msgstr "de graph draait op {} Hz"
 
+msgid "the groups go too deep"
+msgstr "de groepen zijn te diep genest"
+
 msgid "the host could not serve it"
 msgstr "de host kon het niet aanbieden"
 
@@ -6002,6 +6058,9 @@ msgstr "de plug-in-sandbox kon niet worden gestart"
 
 msgid "the plugin sandbox is not started"
 msgstr "de plug-in-sandbox is niet gestart"
+
+msgid "the query has too many conditions"
+msgstr "de zoekopdracht heeft te veel voorwaarden"
 
 msgid "the queue is empty"
 msgstr "de wachtrij is leeg"

@@ -313,6 +313,9 @@ msgstr "Все группы"
 msgid "All music"
 msgstr "Вся музыка"
 
+msgid "All of"
+msgstr "Все"
+
 msgid "All qualities"
 msgstr "Все качества"
 
@@ -414,6 +417,9 @@ msgstr "Анимировать значок воспроизводимого т�
 
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Анимированный фон из обложки альбома за всем приложением. Высокое потребление ресурсов: ускоряется на GPU."
+
+msgid "Any of"
+msgstr "Любое"
 
 msgid "Any quality"
 msgstr "Любое качество"
@@ -1732,6 +1738,9 @@ msgstr "Фильтр по жанру"
 msgid "Filter playlists"
 msgstr "Фильтр плейлистов"
 
+msgid "Filter the library"
+msgstr "Фильтровать библиотеку"
+
 msgid "Filter tracks"
 msgstr "Фильтр треков"
 
@@ -2731,6 +2740,9 @@ msgstr "Моя библиотека"
 msgid "My stations"
 msgstr "Мои станции"
 
+msgid "NOT needs a condition after it"
+msgstr "после NOT нужно условие"
+
 msgid "NOW PLAYING"
 msgstr "СЕЙЧАС ИГРАЕТ"
 
@@ -2965,6 +2977,9 @@ msgstr "Нет треков под этот фильтр."
 msgid "No tracks match your search."
 msgstr "Нет треков по вашему запросу."
 
+msgid "None"
+msgstr "Нет"
+
 msgid "Not answering"
 msgstr "Не отвечает"
 
@@ -3051,6 +3066,9 @@ msgstr "Сейчас играет: {}"
 
 msgid "Number of tracks"
 msgstr "Количество треков"
+
+msgid "OR needs a condition on each side"
+msgstr "с обеих сторон OR нужно условие"
 
 msgid "OTHER"
 msgstr "ДРУГОЕ"
@@ -4480,6 +4498,9 @@ msgstr "У текущего трека нет такого назначения.
 msgid "The download view is unavailable."
 msgstr "Просмотр загрузок недоступен."
 
+msgid "The filter cannot be read: {}"
+msgstr "Не удаётся прочитать фильтр: {}"
+
 msgid "The filter has no ON/OFF state."
 msgstr "У фильтра не указано состояние ON/OFF."
 
@@ -5224,11 +5245,20 @@ msgstr "пакет DST не принадлежит ни одному кадру"
 msgid "a Mac's outputs take PCM, not native DSD"
 msgstr "выходы Mac принимают PCM, а не нативный DSD"
 
+msgid "a closing parenthesis has nothing to close"
+msgstr "лишняя закрывающая скобка"
+
+msgid "a condition is missing"
+msgstr "не хватает условия"
+
 msgid "a date is a year, a year and a month, or a full day: 1984, 1984-09, 1984-09-03"
 msgstr "дата — это год, год и месяц или полный день: 1984, 1984-09, 1984-09-03"
 
 msgid "a direct URL"
 msgstr "прямой URL"
+
+msgid "a field needs a value"
+msgstr "у поля должно быть значение"
 
 msgid "a frame of the stereo area is not stereo"
 msgstr "кадр стереообласти не является стерео"
@@ -5241,6 +5271,15 @@ msgstr "этот вспомогательный файл записан боле
 
 msgid "a number from 1 to 9999, or nothing"
 msgstr "число от 1 до 9999 или пусто"
+
+msgid "a parenthesis is not closed"
+msgstr "скобка не закрыта"
+
+msgid "a quote is not closed"
+msgstr "кавычки не закрыты"
+
+msgid "a rating goes from 0 to 5"
+msgstr "рейтинг — от 0 до 5"
 
 msgid "a rating must be between 0 and 5 stars"
 msgstr "рейтинг должен быть от 0 до 5 звёзд"
@@ -5260,8 +5299,14 @@ msgstr "у трека нет исполнителя"
 msgid "a track has no title"
 msgstr "у трека нет названия"
 
+msgid "a year or a rating is a number"
+msgstr "год и рейтинг — это числа"
+
 msgid "add a command you trigger"
 msgstr "добавлять команду, которую вы запускаете"
+
+msgid "added takes a span like 30d, 6w, 3m or 1y"
+msgstr "added принимает период вида 30d, 6w, 3m или 1y"
 
 msgid "aggregate"
 msgstr "агрегатный"
@@ -5494,6 +5539,12 @@ msgstr "хранить ваши учётные данные"
 msgid "keep things of its own on disk"
 msgstr "хранить свои данные на диске"
 
+msgid "last {} day"
+msgid_plural "last {} days"
+msgstr[0] "последний {} день"
+msgstr[1] "последние {} дня"
+msgstr[2] "последние {} дней"
+
 msgid "let this plugin handle its own sign-in secrets, encrypted on disk and separate from other plugins"
 msgstr "позволить этому плагину самому управлять секретами входа, зашифрованными на диске и отдельными от других плагинов"
 
@@ -5679,6 +5730,9 @@ msgstr "это не похоже на адрес потока"
 
 msgid "that domain is not among the ones the plugin declared"
 msgstr "этого домена нет среди объявленных плагином"
+
+msgid "that field is never empty"
+msgstr "это поле никогда не бывает пустым"
 
 msgid "that file is not an image"
 msgstr "этот файл не является изображением"
@@ -5920,6 +5974,9 @@ msgstr "таблица frame-info обрезана"
 msgid "the graph runs at {} Hz"
 msgstr "граф работает на {} Hz"
 
+msgid "the groups go too deep"
+msgstr "слишком глубокая вложенность групп"
+
 msgid "the host could not serve it"
 msgstr "хост не смог это обслужить"
 
@@ -6006,6 +6063,9 @@ msgstr "не удалось запустить песочницу плагина
 
 msgid "the plugin sandbox is not started"
 msgstr "песочница плагина не запущена"
+
+msgid "the query has too many conditions"
+msgstr "в запросе слишком много условий"
 
 msgid "the queue is empty"
 msgstr "очередь пуста"

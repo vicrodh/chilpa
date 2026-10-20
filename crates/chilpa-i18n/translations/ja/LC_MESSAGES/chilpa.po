@@ -311,6 +311,9 @@ msgstr "すべてのグループ"
 msgid "All music"
 msgstr "すべての音楽"
 
+msgid "All of"
+msgstr "すべて"
+
 msgid "All qualities"
 msgstr "すべての音質"
 
@@ -412,6 +415,9 @@ msgstr "再生中のトラックのマークをイコライザーバーでアニ
 
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "アプリ全体の背後にアルバムアートのアニメーション背景を表示します。リソース使用量が多く、GPUアクセラレーションを使います。"
+
+msgid "Any of"
+msgstr "いずれか"
 
 msgid "Any quality"
 msgstr "すべての音質"
@@ -1728,6 +1734,9 @@ msgstr "ジャンルで絞り込む"
 msgid "Filter playlists"
 msgstr "プレイリストを絞り込む"
 
+msgid "Filter the library"
+msgstr "ライブラリを絞り込む"
+
 msgid "Filter tracks"
 msgstr "トラックを絞り込む"
 
@@ -2727,6 +2736,9 @@ msgstr "マイライブラリ"
 msgid "My stations"
 msgstr "マイステーション"
 
+msgid "NOT needs a condition after it"
+msgstr "NOT の後に条件が必要です"
+
 msgid "NOW PLAYING"
 msgstr "再生中"
 
@@ -2961,6 +2973,9 @@ msgstr "このフィルターに一致するトラックはありません。"
 msgid "No tracks match your search."
 msgstr "検索に一致するトラックはありません。"
 
+msgid "None"
+msgstr "なし"
+
 msgid "Not answering"
 msgstr "応答なし"
 
@@ -3047,6 +3062,9 @@ msgstr "再生中: {}"
 
 msgid "Number of tracks"
 msgstr "トラック数"
+
+msgid "OR needs a condition on each side"
+msgstr "OR の両側に条件が必要です"
 
 msgid "OTHER"
 msgstr "その他"
@@ -4472,6 +4490,9 @@ msgstr "現在のトラックにはそのような移動先がありません。
 msgid "The download view is unavailable."
 msgstr "ダウンロード表示は利用できません。"
 
+msgid "The filter cannot be read: {}"
+msgstr "フィルターを読み取れません: {}"
+
 msgid "The filter has no ON/OFF state."
 msgstr "このフィルターにはON/OFFの状態がありません。"
 
@@ -5216,11 +5237,20 @@ msgstr "どのフレームにも属さないDSTパケットがあります"
 msgid "a Mac's outputs take PCM, not native DSD"
 msgstr "Macの出力はPCMを受け取り、ネイティブDSDは受け取りません"
 
+msgid "a closing parenthesis has nothing to close"
+msgstr "閉じ括弧に対応する開き括弧がありません"
+
+msgid "a condition is missing"
+msgstr "条件がありません"
+
 msgid "a date is a year, a year and a month, or a full day: 1984, 1984-09, 1984-09-03"
 msgstr "日付は年、年と月、または完全な日付で指定します: 1984、1984-09、1984-09-03"
 
 msgid "a direct URL"
 msgstr "直接URL"
+
+msgid "a field needs a value"
+msgstr "フィールドには値が必要です"
 
 msgid "a frame of the stereo area is not stereo"
 msgstr "ステレオ領域のフレームの1つがステレオではありません"
@@ -5233,6 +5263,15 @@ msgstr "このサイドカーファイルはより新しいChilpaで書き込ま
 
 msgid "a number from 1 to 9999, or nothing"
 msgstr "1から9999までの数字、または空欄"
+
+msgid "a parenthesis is not closed"
+msgstr "括弧が閉じられていません"
+
+msgid "a quote is not closed"
+msgstr "引用符が閉じられていません"
+
+msgid "a rating goes from 0 to 5"
+msgstr "評価は 0 から 5 です"
 
 msgid "a rating must be between 0 and 5 stars"
 msgstr "評価は0から5つ星の間でなければなりません"
@@ -5252,8 +5291,14 @@ msgstr "トラックにアーティストがありません"
 msgid "a track has no title"
 msgstr "トラックにタイトルがありません"
 
+msgid "a year or a rating is a number"
+msgstr "年と評価は数値です"
+
 msgid "add a command you trigger"
 msgstr "あなたが実行するコマンドを追加する"
+
+msgid "added takes a span like 30d, 6w, 3m or 1y"
+msgstr "added には 30d、6w、3m、1y のような期間を指定します"
 
 msgid "aggregate"
 msgstr "アグリゲート"
@@ -5486,6 +5531,10 @@ msgstr "あなたの認証情報を保持する"
 msgid "keep things of its own on disk"
 msgstr "専用のデータをディスクに保持する"
 
+msgid "last {} day"
+msgid_plural "last {} days"
+msgstr[0] "過去 {} 日"
+
 msgid "let this plugin handle its own sign-in secrets, encrypted on disk and separate from other plugins"
 msgstr "このプラグインにログイン用の秘密情報を自分で扱わせる（ディスク上で暗号化され、他のプラグインとは分離されます）"
 
@@ -5671,6 +5720,9 @@ msgstr "ストリームのアドレスには見えません"
 
 msgid "that domain is not among the ones the plugin declared"
 msgstr "そのドメインはプラグインが宣言したものに含まれていません"
+
+msgid "that field is never empty"
+msgstr "このフィールドが空になることはありません"
 
 msgid "that file is not an image"
 msgstr "そのファイルは画像ではありません"
@@ -5912,6 +5964,9 @@ msgstr "frame-infoテーブルが途中で切れています"
 msgid "the graph runs at {} Hz"
 msgstr "グラフは{} Hzで動作しています"
 
+msgid "the groups go too deep"
+msgstr "グループの入れ子が深すぎます"
+
 msgid "the host could not serve it"
 msgstr "ホストが処理できませんでした"
 
@@ -5998,6 +6053,9 @@ msgstr "プラグインのサンドボックスを起動できませんでした
 
 msgid "the plugin sandbox is not started"
 msgstr "プラグインのサンドボックスが起動していません"
+
+msgid "the query has too many conditions"
+msgstr "条件が多すぎます"
 
 msgid "the queue is empty"
 msgstr "キューが空です"

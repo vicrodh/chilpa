@@ -30,6 +30,7 @@ pub mod advisory;
 pub mod artists;
 pub mod browse;
 pub mod order_keys;
+pub mod query;
 mod browse_candidates;
 pub mod credits;
 pub mod edit;

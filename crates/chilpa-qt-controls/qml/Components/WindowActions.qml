@@ -38,6 +38,7 @@ QtObject {
         case "playback.sleep": Controls.sleepIn(args.argument === "off" ? 0 : Number(args.argument)); break
         case "playback.loop": Controls.refresh(); break
         case "settings.set": settings.set(args.key, args.argument); break
+        case "library.filter": Library.applyQuery(args.argument || ""); Navigation.go("library", 0); break
         case "nav.go":
             if (args.argument === "album") { if (Player.albumId !== 0) Navigation.go("album", Player.albumId) }
             else if (args.argument === "artist") Navigation.openCredit(Player.artist, -1)

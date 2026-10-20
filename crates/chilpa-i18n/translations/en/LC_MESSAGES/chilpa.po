@@ -312,6 +312,9 @@ msgstr ""
 msgid "All music"
 msgstr ""
 
+msgid "All of"
+msgstr ""
+
 msgid "All qualities"
 msgstr "All qualities"
 
@@ -412,6 +415,9 @@ msgid "Animate the playing track's mark with equalizer bars. Off by default: a s
 msgstr ""
 
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
+msgstr ""
+
+msgid "Any of"
 msgstr ""
 
 msgid "Any quality"
@@ -1730,6 +1736,9 @@ msgstr ""
 msgid "Filter playlists"
 msgstr ""
 
+msgid "Filter the library"
+msgstr ""
+
 msgid "Filter tracks"
 msgstr "Filter tracks"
 
@@ -2729,6 +2738,9 @@ msgstr ""
 msgid "My stations"
 msgstr ""
 
+msgid "NOT needs a condition after it"
+msgstr ""
+
 msgid "NOW PLAYING"
 msgstr ""
 
@@ -2963,6 +2975,9 @@ msgstr ""
 msgid "No tracks match your search."
 msgstr ""
 
+msgid "None"
+msgstr ""
+
 msgid "Not answering"
 msgstr ""
 
@@ -3048,6 +3063,9 @@ msgid "Now playing: {}"
 msgstr ""
 
 msgid "Number of tracks"
+msgstr ""
+
+msgid "OR needs a condition on each side"
 msgstr ""
 
 msgid "OTHER"
@@ -4476,6 +4494,9 @@ msgstr ""
 msgid "The download view is unavailable."
 msgstr "The download view is unavailable."
 
+msgid "The filter cannot be read: {}"
+msgstr ""
+
 msgid "The filter has no ON/OFF state."
 msgstr ""
 
@@ -5220,10 +5241,19 @@ msgstr ""
 msgid "a Mac's outputs take PCM, not native DSD"
 msgstr ""
 
+msgid "a closing parenthesis has nothing to close"
+msgstr ""
+
+msgid "a condition is missing"
+msgstr ""
+
 msgid "a date is a year, a year and a month, or a full day: 1984, 1984-09, 1984-09-03"
 msgstr ""
 
 msgid "a direct URL"
+msgstr ""
+
+msgid "a field needs a value"
 msgstr ""
 
 msgid "a frame of the stereo area is not stereo"
@@ -5236,6 +5266,15 @@ msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
 msgstr ""
 
 msgid "a number from 1 to 9999, or nothing"
+msgstr ""
+
+msgid "a parenthesis is not closed"
+msgstr ""
+
+msgid "a quote is not closed"
+msgstr ""
+
+msgid "a rating goes from 0 to 5"
 msgstr ""
 
 msgid "a rating must be between 0 and 5 stars"
@@ -5256,7 +5295,13 @@ msgstr ""
 msgid "a track has no title"
 msgstr ""
 
+msgid "a year or a rating is a number"
+msgstr ""
+
 msgid "add a command you trigger"
+msgstr ""
+
+msgid "added takes a span like 30d, 6w, 3m or 1y"
 msgstr ""
 
 msgid "aggregate"
@@ -5490,6 +5535,11 @@ msgstr ""
 msgid "keep things of its own on disk"
 msgstr ""
 
+msgid "last {} day"
+msgid_plural "last {} days"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "let this plugin handle its own sign-in secrets, encrypted on disk and separate from other plugins"
 msgstr ""
 
@@ -5674,6 +5724,9 @@ msgid "that does not look like a stream address"
 msgstr ""
 
 msgid "that domain is not among the ones the plugin declared"
+msgstr ""
+
+msgid "that field is never empty"
 msgstr ""
 
 msgid "that file is not an image"
@@ -5916,6 +5969,9 @@ msgstr ""
 msgid "the graph runs at {} Hz"
 msgstr ""
 
+msgid "the groups go too deep"
+msgstr ""
+
 msgid "the host could not serve it"
 msgstr ""
 
@@ -6001,6 +6057,9 @@ msgid "the plugin sandbox could not be started"
 msgstr ""
 
 msgid "the plugin sandbox is not started"
+msgstr ""
+
+msgid "the query has too many conditions"
 msgstr ""
 
 msgid "the queue is empty"

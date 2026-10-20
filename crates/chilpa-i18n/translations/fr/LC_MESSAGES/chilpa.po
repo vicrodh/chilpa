@@ -312,6 +312,9 @@ msgstr "Tous les groupes"
 msgid "All music"
 msgstr "Toute la musique"
 
+msgid "All of"
+msgstr "Toutes"
+
 msgid "All qualities"
 msgstr "Toutes les qualités"
 
@@ -413,6 +416,9 @@ msgstr "Anime la marque de la piste en lecture avec des barres d'égaliseur. Dé
 
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Arrière-plan animé à partir de la pochette, derrière toute l'application. Forte consommation de ressources : accélération par GPU."
+
+msgid "Any of"
+msgstr "N'importe laquelle"
 
 msgid "Any quality"
 msgstr "Toute qualité"
@@ -1730,6 +1736,9 @@ msgstr "Filtrer par genre"
 msgid "Filter playlists"
 msgstr "Filtrer les playlists"
 
+msgid "Filter the library"
+msgstr "Filtrer la bibliothèque"
+
 msgid "Filter tracks"
 msgstr "Filtrer les pistes"
 
@@ -2729,6 +2738,9 @@ msgstr "Ma bibliothèque"
 msgid "My stations"
 msgstr "Mes stations"
 
+msgid "NOT needs a condition after it"
+msgstr "NOT doit être suivi d'une condition"
+
 msgid "NOW PLAYING"
 msgstr "EN LECTURE"
 
@@ -2963,6 +2975,9 @@ msgstr "Aucune piste ne correspond à ce filtre."
 msgid "No tracks match your search."
 msgstr "Aucune piste ne correspond à votre recherche."
 
+msgid "None"
+msgstr "Aucun"
+
 msgid "Not answering"
 msgstr "Ne répond pas"
 
@@ -3049,6 +3064,9 @@ msgstr "En lecture : {}"
 
 msgid "Number of tracks"
 msgstr "Nombre de pistes"
+
+msgid "OR needs a condition on each side"
+msgstr "OR doit avoir une condition de chaque côté"
 
 msgid "OTHER"
 msgstr "AUTRES"
@@ -4476,6 +4494,9 @@ msgstr "La piste en cours n'a pas cette destination."
 msgid "The download view is unavailable."
 msgstr "La vue des téléchargements n'est pas disponible."
 
+msgid "The filter cannot be read: {}"
+msgstr "Le filtre est illisible : {}"
+
 msgid "The filter has no ON/OFF state."
 msgstr "Le filtre n'a pas d'état ON/OFF."
 
@@ -5220,11 +5241,20 @@ msgstr "un paquet DST n'appartient à aucune trame"
 msgid "a Mac's outputs take PCM, not native DSD"
 msgstr "les sorties d'un Mac acceptent du PCM, pas du DSD natif"
 
+msgid "a closing parenthesis has nothing to close"
+msgstr "une parenthèse fermante n'a rien à fermer"
+
+msgid "a condition is missing"
+msgstr "il manque une condition"
+
 msgid "a date is a year, a year and a month, or a full day: 1984, 1984-09, 1984-09-03"
 msgstr "une date est une année, une année et un mois, ou un jour complet : 1984, 1984-09, 1984-09-03"
 
 msgid "a direct URL"
 msgstr "une URL directe"
+
+msgid "a field needs a value"
+msgstr "un champ doit avoir une valeur"
 
 msgid "a frame of the stereo area is not stereo"
 msgstr "une trame de la zone stéréo n'est pas stéréo"
@@ -5237,6 +5267,15 @@ msgstr "un Chilpa plus récent a écrit ce fichier annexe ; mettez Chilpa à jo
 
 msgid "a number from 1 to 9999, or nothing"
 msgstr "un nombre de 1 à 9999, ou rien"
+
+msgid "a parenthesis is not closed"
+msgstr "une parenthèse n'est pas fermée"
+
+msgid "a quote is not closed"
+msgstr "un guillemet n'est pas fermé"
+
+msgid "a rating goes from 0 to 5"
+msgstr "une note va de 0 à 5"
 
 msgid "a rating must be between 0 and 5 stars"
 msgstr "une note doit être comprise entre 0 et 5 étoiles"
@@ -5256,8 +5295,14 @@ msgstr "une piste n'a pas d'artiste"
 msgid "a track has no title"
 msgstr "une piste n'a pas de titre"
 
+msgid "a year or a rating is a number"
+msgstr "une année ou une note est un nombre"
+
 msgid "add a command you trigger"
 msgstr "ajouter une commande que vous déclenchez"
+
+msgid "added takes a span like 30d, 6w, 3m or 1y"
+msgstr "added attend une durée comme 30d, 6w, 3m ou 1y"
 
 msgid "aggregate"
 msgstr "agrégé"
@@ -5490,6 +5535,11 @@ msgstr "conserver un identifiant vous appartenant"
 msgid "keep things of its own on disk"
 msgstr "conserver ses propres données sur le disque"
 
+msgid "last {} day"
+msgid_plural "last {} days"
+msgstr[0] "dernier {} jour"
+msgstr[1] "derniers {} jours"
+
 msgid "let this plugin handle its own sign-in secrets, encrypted on disk and separate from other plugins"
 msgstr "laisser ce plugin gérer ses propres secrets de connexion, chiffrés sur le disque et séparés des autres plugins"
 
@@ -5675,6 +5725,9 @@ msgstr "cela ne ressemble pas à une adresse de flux"
 
 msgid "that domain is not among the ones the plugin declared"
 msgstr "ce domaine ne fait pas partie de ceux que le plugin a déclarés"
+
+msgid "that field is never empty"
+msgstr "ce champ n'est jamais vide"
 
 msgid "that file is not an image"
 msgstr "ce fichier n'est pas une image"
@@ -5916,6 +5969,9 @@ msgstr "la table frame-info est tronquée"
 msgid "the graph runs at {} Hz"
 msgstr "le graphe tourne à {} Hz"
 
+msgid "the groups go too deep"
+msgstr "les groupes sont trop imbriqués"
+
 msgid "the host could not serve it"
 msgstr "l'hôte n'a pas pu le fournir"
 
@@ -6002,6 +6058,9 @@ msgstr "le bac à sable des plugins n'a pas pu être démarré"
 
 msgid "the plugin sandbox is not started"
 msgstr "le bac à sable des plugins n'est pas démarré"
+
+msgid "the query has too many conditions"
+msgstr "la requête a trop de conditions"
 
 msgid "the queue is empty"
 msgstr "la file d'attente est vide"
