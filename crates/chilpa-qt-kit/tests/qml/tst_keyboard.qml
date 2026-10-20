@@ -24,6 +24,7 @@ TestCase {
         SegmentedControl { id: segments; objectName: "segments"; options: [{ text: "A" }, { text: "B" }]; onActivated: (i) => current = i }
         SearchField { id: search; objectName: "search"; width: 200 }
     }
+    Item { id: hider; y: 460; width: 200; height: 30; TextField { id: hidden; objectName: "hidden"; width: 200 } }
     Item { id: blank; y: 500; width: 600; height: 200 }
     FocusRelease { id: release }
 
@@ -80,6 +81,18 @@ TestCase {
         name.focusInput()
         mouseClick(name, 10, name.height / 2)
         verify(name.editing, "a press on the field itself keeps it")
+    }
+
+    function test_a_field_hidden_while_it_has_the_keyboard_lets_go_for_good() {
+        hidden.focusInput()
+        verify(hidden.editing)
+        hider.visible = false
+        // The window gives the keys back to its root, a focus scope: it must
+        // not hand them to the field nobody sees (the console's trap).
+        test.Window.window.contentItem.forceActiveFocus()
+        verify(!hidden.editing, "a hidden field holds no keys")
+        hider.visible = true
+        verify(!hidden.editing, "and does not take them back when it shows again")
     }
 
     function test_escape_empties_a_search_and_gives_the_keyboard_back() {

@@ -23,6 +23,27 @@ Item {
             item.focus = false
     }
     onKeyChanged: release()
+    // A field that stops being seen while it has the keyboard lets go of it
+    // for good: the root is a focus scope, and the next time it takes the
+    // keyboard it would hand it straight back to the hidden field.
+    property Item held: null
+    Connections {
+        target: watch.Window.window
+        function onActiveFocusItemChanged() {
+            const item = watch.typing()
+            if (item)
+                watch.held = item
+        }
+    }
+    Connections {
+        target: watch.held
+        function onVisibleChanged() {
+            if (watch.held && !watch.held.visible) {
+                watch.held.focus = false
+                watch.held = null
+            }
+        }
+    }
     PointHandler {
         target: null
         acceptedButtons: Qt.LeftButton
