@@ -212,3 +212,38 @@ fn a_failed_request_is_not_cached_as_an_absent_genre_and_waits_before_retrying()
     assert!(!inner.genres.running);
     assert!(!path.exists());
 }
+
+#[test]
+fn a_genre_result_refreshes_only_pages_whose_displayed_genres_changed() {
+    let catalog = Catalog::new();
+    let changed = album(&catalog, "album:changed", "123456789012", "");
+    let untouched = album(&catalog, "album:untouched", "223456789012", "");
+    let own = album(&catalog, "album:own", "123456789012", "Soul");
+    let playlist = {
+        let mut inner = catalog.lock();
+        let playlist = inner.store.take_item("fixture", &json!({"kind":"playlist","ref":"playlist:1","title":"List"}), 1).unwrap();
+        let track = inner.store.track_id("plugin:fixture:track:1");
+        inner.store.tracks.get_mut(&track).unwrap().plugin = "fixture".into();
+        inner.store.tracks.get_mut(&track).unwrap().album_id = changed;
+        inner.store.cards.get_mut(&playlist).unwrap().tracks = Some(vec![track]);
+        playlist
+    };
+    catalog.genre_source("fixture", true);
+    let before = [changed, untouched, own, playlist].map(|id| catalog.entity_revision(id));
+    let http = Fixture::new(vec![
+        json!({"releases":[{"id":"00000000-0000-4000-8000-000000000001","barcode":"123456789012"}]}),
+        json!({"id":"00000000-0000-4000-8000-000000000001","genres":[{"name":"Jazz","count":2}]}),
+    ]);
+    let directory = tempfile::tempdir().unwrap();
+    catalog.genre_pass(&[("fixture".into(), "123456789012".into())], &http, &directory.path().join("genres.json"), false);
+    let after = [changed, untouched, own, playlist].map(|id| catalog.entity_revision(id));
+    assert_ne!(before[0], after[0]);
+    assert_eq!(before[1], after[1]);
+    assert_eq!(before[2], after[2]);
+    assert_ne!(before[3], after[3]);
+    catalog.genre_source("fixture", false);
+    assert_ne!(catalog.entity_revision(changed), after[0]);
+    assert_eq!(catalog.entity_revision(untouched), after[1]);
+    assert_eq!(catalog.entity_revision(own), after[2]);
+    assert_ne!(catalog.entity_revision(playlist), after[3]);
+}
