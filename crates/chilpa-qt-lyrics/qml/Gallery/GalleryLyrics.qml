@@ -3,6 +3,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Components"
+import "../Primitives"
 
 TitledFlow {
     title: "Lyrics"
@@ -12,4 +13,6 @@ TitledFlow {
     LyricLine { width: Metrics.rightPanel; synced: true; position: 4; current: 2; size: Type.lyricSmall; uppercase: true; line: ({ text: "Rivers run under the bridge", start_ms: 4000 }) }
     LyricLines { id: lines; width: Metrics.rightPanel; height: Metrics.queueMin; synced: true; current: 1; lines: [{ text: "What went by", start_ms: 0 }, { text: "What is sung", start_ms: 1000 }, { text: "What comes", start_ms: 2000 }, { text: "And after it", start_ms: 3000 }] }
     LyricTracker { view: lines; current: 1; following: false }
+    // Not drawn: it reads the translation the lines above show.
+    LyricTranslation { lyrics: ({ translation: 0, document: { layers: [{ kind: "translation", lines: [{ line: 0, text: "The same line, translated" }] }] } }) }
 }

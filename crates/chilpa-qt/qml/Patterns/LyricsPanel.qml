@@ -6,6 +6,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 import "qrc:/qt/qml/app/chilpa/lyrics/qml/Components" as Lines
+import "qrc:/qt/qml/app/chilpa/lyrics/qml/Primitives" as LyricData
 
 // The lyrics of what plays. The header says the track and opens how they
 // are read; the body says where the search stands or shows the lines; the
@@ -37,7 +38,8 @@ Item {
     // The translation on offer, as the text for each line's position, or
     // null when the lyrics carry none. It is shown when asked for, and put
     // away with its track.
-    readonly property var translation: found ? translated(lyrics.document.layers, lyrics.translation) : null
+    readonly property var translation: found ? offered.lines : null
+    LyricData.LyricTranslation { id: offered; lyrics: panel.lyrics }
     property bool translating: false
     onFoundChanged: if (!found) translating = false
 
@@ -55,16 +57,6 @@ Item {
         } catch (e) {
             return null
         }
-    }
-
-    function translated(layers, at) {
-        const layer = at === null || at === undefined ? null : (layers || [])[at]
-        if (!layer)
-            return null
-        const texts = {}
-        for (const entry of layer.lines)
-            texts[entry.line] = texts[entry.line] === undefined ? entry.text : texts[entry.line] + "\n" + entry.text
-        return texts
     }
 
     // Where a line stops being sung when its source did not say: where the

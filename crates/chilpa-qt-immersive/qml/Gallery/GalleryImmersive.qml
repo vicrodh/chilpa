@@ -69,6 +69,8 @@ Rectangle {
         ViewTrigger {}
         WindowCapsule {}
         LeaveButton {}
+        // The translate disc as it shows over lyrics that carry a translation.
+        TranslateButton { feed: LyricsFeed { live: false } }
         ImmersivePlayerBar { viewportWide: gallery.sampleWide }
         Item { width: gallery.sampleWide; height: Stage.headerTall; ImmersiveHeader { anchors.fill: parent } }
         TrackMeta { width: gallery.sampleWide / 2 } // derived: half the sample
