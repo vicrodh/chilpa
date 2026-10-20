@@ -364,7 +364,7 @@ pub struct FoundSetting {
 
 /// A text as it is matched: lower case, without the accents of the
 /// languages Chilpa speaks, so "naive" finds "Naïve".
-fn folded(text: &str) -> String {
+pub(crate) fn folded(text: &str) -> String {
     text.chars().flat_map(char::to_lowercase).map(|c| match c {
         'á' | 'à' | 'ä' | 'â' | 'ã' => 'a',
         'é' | 'è' | 'ë' | 'ê' => 'e',

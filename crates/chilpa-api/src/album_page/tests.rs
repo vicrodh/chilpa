@@ -109,3 +109,25 @@ fn page_artist_links_preserve_compilation_credit_parts_and_metadata_updates() {
     api.library.as_ref().unwrap().connection().execute("UPDATE tracks SET artist = 'Replacement' WHERE album_id = ?1", [album]).unwrap();
     assert_eq!(reader.album_page(album, true).unwrap().artist_information, api.album_artist_information(album));
 }
+
+#[test]
+fn a_record_s_rows_are_found_by_what_is_typed_with_the_headers_they_stand_under() {
+    let row = |id: i64, title: &str, work: &str| TrackRow {
+        id, path: String::new(), title: title.into(), artist: "Haydn Trio Eisenstadt".into(), album: "Songs".into(), album_id: 1,
+        disc: 1, number: id as u16, duration_ms: 1000, plays: 0, quality: crate::quality::Quality::default(), artwork_path: String::new(),
+        available: true, composer: "Joseph Haydn".into(), disc_subtitle: String::new(), work: work.into(), composer_target: String::new(), groups: None,
+    };
+    let header = |label: &str, work: bool| TrackEntry::Header(crate::GroupHeader { label: label.into(), work, ..Default::default() });
+    let entries = vec![header("Disc 1", false), header("Scottish Songs", true), TrackEntry::Track(row(1, "Lizae Baillie", "Scottish Songs")),
+        TrackEntry::Track(row(2, "The Birks of Abergeldie", "Scottish Songs")), header("Welsh Songs", true),
+        TrackEntry::Track(row(3, "Ar Hyd y Nos", "Welsh Songs")), header("Disc 2", false), TrackEntry::Track(row(4, "Jenny's Bawbee", ""))];
+    let titles = |typed: &str| entries_matching(entries.clone(), typed).iter().map(|entry| match entry {
+        TrackEntry::Header(head) => format!("[{}]", head.label), TrackEntry::Track(row) => row.title.clone(),
+    }).collect::<Vec<_>>();
+    assert_eq!(titles("birks"), ["[Disc 1]", "[Scottish Songs]", "The Birks of Abergeldie"]);
+    assert_eq!(titles("welsh"), ["[Disc 1]", "[Welsh Songs]", "Ar Hyd y Nos"], "a work's name finds its rows");
+    assert_eq!(titles("JENNY'S disc"), ["[Disc 2]", "Jenny's Bawbee"], "every word, in any case");
+    assert_eq!(titles("ábergeldie"), ["[Disc 1]", "[Scottish Songs]", "The Birks of Abergeldie"], "accents fold");
+    assert!(titles("mozart").is_empty());
+    assert_eq!(titles("  ").len(), entries.len(), "nothing typed is every row");
+}
