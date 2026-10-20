@@ -222,7 +222,7 @@ Item {
         anchors.bottomMargin: Metrics.contentBottom
         anchors.right: head.right
         letters: page.letters
-        onJumped: (row) => list.rows.positionViewAtIndex(row, ListView.Beginning)
+        onJumped: (row) => list.jumpTo(row)
     }
 
     Text {

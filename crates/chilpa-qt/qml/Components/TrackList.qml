@@ -67,6 +67,20 @@ Item {
         view.forceLayout()
         view.positionViewAtIndex(row, mode)
     }
+    // Goes to `row` with the view started again from the top. Through
+    // section bands, a jump from far away held the window for 5 to 9 s and
+    // landed short: the view walked the bands it had only estimated. The
+    // rows it lets go are not pooled, or the top one came back showing a
+    // row from below.
+    function jumpTo(row) {
+        place = null
+        view.reuseItems = false
+        view.model = null
+        view.model = Qt.binding(() => list.model)
+        view.forceLayout()
+        view.positionViewAtIndex(row, ListView.Beginning)
+        view.reuseItems = true
+    }
     function identity() { return keptViewport.identity() }
     function keepPlace() { keptViewport.keep() }
     function restorePlace() { keptViewport.restore() }

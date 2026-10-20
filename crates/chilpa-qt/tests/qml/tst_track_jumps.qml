@@ -73,6 +73,22 @@ TestCase {
         verify(number, "the row draws its number")
         verify(number.contentWidth <= number.width + 1, "14616 fits: " + number.contentWidth + " in " + number.width)
     }
+    // The strip's jump starts the view again: each row draws its own content,
+    // the top included, and the list keeps its model.
+    function test_a_jump_from_far_away_draws_its_own_rows() {
+        list.rows.section.property = "group"
+        list.jumpTo(19230)
+        tryVerify(() => shown() > 5, 2000)
+        list.jumpTo(0)
+        tryVerify(() => shown() > 5, 2000)
+        const top = list.rows.itemAtIndex(0)
+        verify(top, "the first row is built")
+        compare(top.title, "Track 0", "the top row shows itself, not a row recycled from below")
+        compare(list.rows.model, tracks, "the list keeps its model")
+        list.jumpTo(12307)
+        tryVerify(() => shown() > 5, 2000)
+        compare(list.rows.itemAtIndex(12307).title, "Track 12307")
+    }
     function test_a_fast_sweep_keeps_rows_drawn() {
         list.rows.section.property = "group"
         const v = view()
