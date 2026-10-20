@@ -8,7 +8,7 @@ use crate::library_sources::SourceItem;
 use serde_json::Value;
 
 /// Names a field holds as a list, or as one text when the list is absent.
-fn names(metadata: &Value, list: &str, single: &str) -> Vec<String> {
+pub(super) fn names(metadata: &Value, list: &str, single: &str) -> Vec<String> {
     let clean = |text: &str| Some(text.trim().to_string()).filter(|t| !t.is_empty());
     let found: Vec<String> = match metadata.get(list).and_then(Value::as_array) {
         Some(values) => values.iter().filter_map(Value::as_str).filter_map(clean).collect(),
@@ -42,7 +42,7 @@ pub(super) fn track_groups(track: &Track) -> Option<Box<crate::TrackGroups>> {
         year: year(&track.metadata),
         genre: chilpa_library::first_name(&genres(&track.metadata, "")),
         label: text(&track.metadata, "label"),
-        composer: chilpa_library::first_name(&names(&track.metadata, "composers", "composer")),
+        composer: chilpa_library::first_name(&super::composers::own_composers(&track.metadata)),
     };
     (groups != crate::TrackGroups::default()).then(|| Box::new(groups))
 }
@@ -91,7 +91,7 @@ fn record(card: &Card, enrichment: &super::genres::State) -> SourceItem {
 }
 
 /// A track, with what its record says of what the track does not.
-fn song(track: &Track, card: Option<&Card>, saved: bool, enrichment: &super::genres::State) -> SourceItem {
+fn song(track: &Track, card: Option<&Card>, saved: bool, enrichment: &super::genres::State, credits: &super::composers::State) -> SourceItem {
     let album = card.map(|card| record(card, enrichment));
     let (tier, format) = quality(track.format.as_ref().or(card.and_then(|c| c.format.as_ref())));
     let mut artists: Vec<String> = [track.artist.clone()].into_iter().filter(|a| !a.trim().is_empty()).collect();
@@ -103,7 +103,7 @@ fn song(track: &Track, card: Option<&Card>, saved: bool, enrichment: &super::gen
     let identity = track.metadata["ref"].as_str().filter(|_| track.metadata["kind"] == "track")
         .map(|reference| reference.split_once("@playlist:").map_or(reference, |(song, _)| song).to_string())
         .unwrap_or_else(|| track.path.clone());
-    let mut composers = names(&track.metadata, "composers", "composer");
+    let mut composers = credits.of_track(track, super::now());
     if composers.is_empty() { composers = album.as_ref().map(|a| a.composers.clone()).unwrap_or_default(); }
     SourceItem {
         track: track.id,
@@ -132,7 +132,7 @@ fn song(track: &Track, card: Option<&Card>, saved: bool, enrichment: &super::gen
     }
 }
 
-fn items_of(store: &Store, albums: &[String], tracks: &[String], enrichment: &super::genres::State) -> Vec<SourceItem> {
+fn items_of(store: &Store, albums: &[String], tracks: &[String], enrichment: &super::genres::State, credits: &super::composers::State) -> Vec<SourceItem> {
     let mut items = Vec::new();
     let mut at = std::collections::HashMap::new();
     for plugin in albums {
@@ -143,7 +143,7 @@ fn items_of(store: &Store, albums: &[String], tracks: &[String], enrichment: &su
                     for track in ids.iter().filter_map(|id| store.tracks.get(id)) {
                         if at.contains_key(&track.id) { continue; }
                         at.insert(track.id, items.len());
-                        items.push(SourceItem { saved_album: true, ..song(track, Some(card), false, enrichment) });
+                        items.push(SourceItem { saved_album: true, ..song(track, Some(card), false, enrichment, credits) });
                     }
                 }
                 _ => items.push(SourceItem { saved_album: true, ..record(card, enrichment) }),
@@ -159,7 +159,7 @@ fn items_of(store: &Store, albums: &[String], tracks: &[String], enrichment: &su
             }
             at.insert(track.id, items.len());
             let card = store.cards.get(&track.album_id).filter(|c| c.kind == CardKind::Album);
-            items.push(song(track, card, true, enrichment));
+            items.push(song(track, card, true, enrichment, credits));
         }
     }
     items
@@ -230,6 +230,7 @@ impl Catalog {
         let inner = self.lock();
         let mut hash = std::collections::hash_map::DefaultHasher::new();
         inner.genres.revision.hash(&mut hash);
+        inner.composers.revision.hash(&mut hash);
         for (plugin, albums, tracks) in chosen {
             for section in [albums.then_some("albums"), tracks.then_some("tracks")].into_iter().flatten() {
                 let Some(shelf) = inner.store.shelves.get(&format!("{plugin} section:{section}")) else { 0_u8.hash(&mut hash); continue };
@@ -247,7 +248,7 @@ impl Catalog {
     /// caller, never here.
     pub(crate) fn integrated_items(&self, albums: &[String], tracks: &[String]) -> Vec<SourceItem> {
         let inner = self.lock();
-        items_of(&inner.store, albums, tracks, &inner.genres)
+        items_of(&inner.store, albums, tracks, &inner.genres, &inner.composers)
     }
 }
 
@@ -278,7 +279,7 @@ mod tests {
         }
         store.cards.get_mut(&read).unwrap().tracks = Some(vec![song_id]);
         store.shelves.insert("guest section:albums".into(), super::super::store::Shelf { cards: vec![read, unread], ..Default::default() });
-        let items = items_of(&store, &["guest".into()], &[], &Default::default());
+        let items = items_of(&store, &["guest".into()], &[], &Default::default(), &Default::default());
         assert_eq!(items.len(), 2);
         let song = &items[0];
         assert!(song.saved_album);
@@ -300,7 +301,7 @@ mod tests {
         store.cards.get_mut(&album).unwrap().tracks = Some(vec![id]);
         store.shelves.insert("guest section:albums".into(), super::super::store::Shelf { cards: vec![album], ..Default::default() });
         store.shelves.insert("guest section:tracks".into(), super::super::store::Shelf { tracks: vec![id], ..Default::default() });
-        let items = items_of(&store, &["guest".into()], &["guest".into()], &Default::default());
+        let items = items_of(&store, &["guest".into()], &["guest".into()], &Default::default(), &Default::default());
         assert_eq!(items.len(), 1);
         assert!(items[0].saved_track && items[0].saved_album, "Tracks shows it, and Albums its record");
     }
@@ -309,9 +310,9 @@ mod tests {
     fn a_track_uses_its_record_year_then_its_own() {
         let track = Track { metadata: json!({"year": 1999}), ..Default::default() };
         let card = Card { year: Some(1985), ..Default::default() };
-        assert_eq!(song(&track, Some(&card), true, &Default::default()).year, Some(1985));
-        assert_eq!(song(&track, Some(&Card::default()), true, &Default::default()).year, Some(1999));
-        assert_eq!(song(&track, None, true, &Default::default()).year, Some(1999));
+        assert_eq!(song(&track, Some(&card), true, &Default::default(), &Default::default()).year, Some(1985));
+        assert_eq!(song(&track, Some(&Card::default()), true, &Default::default(), &Default::default()).year, Some(1999));
+        assert_eq!(song(&track, None, true, &Default::default(), &Default::default()).year, Some(1999));
     }
 
     #[test]

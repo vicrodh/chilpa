@@ -28,6 +28,7 @@ mod revalidation;
 mod native;
 mod library_index;
 pub(crate) mod genres;
+mod composers;
 pub(crate) use library_index::SourceRecord;
 mod pages;
 pub(crate) mod store;
@@ -98,6 +99,7 @@ struct Queue {
 #[derive(Default)]
 struct Inner {
     genres: genres::State,
+    composers: composers::State,
     quality_requested: HashMap<i64, Instant>,
     quality_blocked: HashMap<String, Instant>,
     quality_running: usize,
@@ -547,7 +549,7 @@ impl Catalog {
             self.queue(&mut inner, Job::Tracks(id), true);
         }
         let ids = card.tracks?;
-        Some(ids.iter().filter_map(|t| inner.store.tracks.get(t).cloned()).map(|track| inner.genres.track(track, &inner.store, now())).collect())
+        Some(ids.iter().filter_map(|t| inner.store.tracks.get(t).cloned()).map(|track| inner.composers.track(inner.genres.track(track, &inner.store, now()), now())).collect())
     }
 
     pub fn card_error(&self, id: i64) -> Option<String> {
@@ -556,14 +558,14 @@ impl Catalog {
 
     pub fn track_by_path(&self, path: &str) -> Option<(store::Track, String)> {
         let inner = self.lock();
-        let track = inner.genres.track(inner.store.track_by_path(path)?.clone(), &inner.store, now());
+        let track = inner.composers.track(inner.genres.track(inner.store.track_by_path(path)?.clone(), &inner.store, now()), now());
         let art = inner.store.art_of(&track);
         Some((track, art))
     }
 
     pub fn tracks_by_ids(&self, ids: &[i64]) -> Vec<(store::Track, String)> {
         let inner = self.lock();
-        ids.iter().filter_map(|id| inner.store.tracks.get(id)).map(|t| (inner.genres.track(t.clone(), &inner.store, now()), inner.store.art_of(t))).collect()
+        ids.iter().filter_map(|id| inner.store.tracks.get(id)).map(|t| (inner.composers.track(inner.genres.track(t.clone(), &inner.store, now()), now()), inner.store.art_of(t))).collect()
     }
 
     pub fn art_of_card(&self, id: i64) -> String {
