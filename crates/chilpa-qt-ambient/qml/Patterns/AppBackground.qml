@@ -115,10 +115,26 @@ Item {
         opacity: root.veilStrength
     }
 
+    // Under the plane, the panels' own tone: QBZ's pane is the child of a
+    // frame painted as its sidebar (`AppShell.qml:395-419`), so the content
+    // composites at 0.22 over 0.50 and reads darker than the panels beside
+    // it. Over the bare field it came out brighter than them, and a light
+    // cover washed out the weak text.
+    Rectangle {
+        objectName: "planeBase"
+        visible: root.painting
+        x: root.plane.x
+        y: root.plane.y
+        width: root.plane.width
+        height: root.plane.height
+        radius: Metrics.radiusPanel
+        color: Theme.color.ambientSidebar
+    }
     // The frosted content plane where the screens draw: a card with its
     // hairline and all four corners, ending at the window's margin like the
     // panels beside it (the owner, 2026-10-08, second pass).
     Rectangle {
+        objectName: "plane"
         visible: root.painting
         x: root.plane.x
         y: root.plane.y

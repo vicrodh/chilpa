@@ -55,6 +55,20 @@ TestCase {
         return found
     }
 
+    function test_the_plane_sits_on_the_panels_tone_and_reads_darker_than_them() {
+        mount(1, "/a.flac")
+        const base = findChild(made, "planeBase"), plane = findChild(made, "plane")
+        verify(base.visible && plane.visible)
+        compare(base.color, Theme.color.ambientSidebar, "the panels' tone at their alpha, as QBZ's frame")
+        compare(Qt.rect(base.x, base.y, base.width, base.height), Qt.rect(plane.x, plane.y, plane.width, plane.height))
+        let under = -1, over = -1
+        for (let i = 0; i < made.children.length; ++i) {
+            if (made.children[i] === base) under = i
+            if (made.children[i] === plane) over = i
+        }
+        verify(under >= 0 && under < over, "the content's tint lies over the panels' tone, not beside it")
+    }
+
     function test_off_mounts_nothing_and_says_so() {
         mount(0, "/a.flac")
         compare(made.on, false)
