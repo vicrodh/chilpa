@@ -75,6 +75,26 @@ Column {
             font.pointSize: Type.small
         }
     }
+    Column {
+        width: parent.width
+        spacing: Metrics.gap8
+        Row {
+            spacing: Metrics.gap12
+            Toggle {
+                objectName: "composersFromMusicBrainz"
+                checked: (integration.plugin.integration || {}).composers_from_musicbrainz === true
+                onToggled: on => integration.command("integration", {id: integration.plugin.id, field: "composers_from_musicbrainz", enabled: on})
+            }
+            Text { text: I18n.tr("Fill missing composers from MusicBrainz", I18n.rev); anchors.verticalCenter: parent.verticalCenter; font.pointSize: Type.body; color: Theme.color.textPrimary }
+        }
+        Text {
+            width: parent.width
+            text: I18n.tr("These tracks' ISRCs are sent to MusicBrainz.", I18n.rev)
+            wrapMode: Text.WordWrap
+            color: Theme.color.textSecondary
+            font.pointSize: Type.small
+        }
+    }
     Text { visible: integration.plugin.native !== true; text: I18n.tr("Library integration", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
     Text {
         width: parent.width

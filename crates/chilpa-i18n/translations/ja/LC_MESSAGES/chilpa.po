@@ -1719,6 +1719,9 @@ msgstr "ファイル"
 msgid "Files"
 msgstr "ファイル"
 
+msgid "Fill missing composers from MusicBrainz"
+msgstr "不足している作曲者情報をMusicBrainzから補完"
+
 msgid "Fill missing genres from MusicBrainz"
 msgstr "MusicBrainzから不足しているジャンルを補完する"
 
@@ -4618,6 +4621,9 @@ msgstr "復元できる以前のEQがありません。"
 
 msgid "These records' barcodes are sent to MusicBrainz."
 msgstr "これらのアルバムのバーコードがMusicBrainzに送信されます。"
+
+msgid "These tracks' ISRCs are sent to MusicBrainz."
+msgstr "これらの曲のISRCがMusicBrainzに送信されます。"
 
 msgid "This address belongs to a different server."
 msgstr "このアドレスは別のサーバーのものです。"

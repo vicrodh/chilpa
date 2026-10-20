@@ -1721,6 +1721,9 @@ msgstr "Datei"
 msgid "Files"
 msgstr "Dateien"
 
+msgid "Fill missing composers from MusicBrainz"
+msgstr "Fehlende Komponisten aus MusicBrainz ergänzen"
+
 msgid "Fill missing genres from MusicBrainz"
 msgstr "Fehlende Genres aus MusicBrainz ergänzen"
 
@@ -4622,6 +4625,9 @@ msgstr "Es gibt keinen vorherigen EQ zum Wiederherstellen."
 
 msgid "These records' barcodes are sent to MusicBrainz."
 msgstr "Die Barcodes dieser Alben werden an MusicBrainz gesendet."
+
+msgid "These tracks' ISRCs are sent to MusicBrainz."
+msgstr "Die ISRCs dieser Titel werden an MusicBrainz gesendet."
 
 msgid "This address belongs to a different server."
 msgstr "Diese Adresse gehört zu einem anderen Server."

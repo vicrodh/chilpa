@@ -144,7 +144,9 @@ impl Catalog {
         let states: Vec<_> = states.into_iter().collect();
         let root = crate::Chilpa::plugins_dir();
         for (plugin, enabled) in &states {
-            self.genre_source(plugin, *enabled && crate::source_integration::read(&root, plugin).genres_from_musicbrainz);
+            let preferences = crate::source_integration::read(&root, plugin);
+            self.genre_source(plugin, *enabled && preferences.genres_from_musicbrainz);
+            self.composer_source(plugin, *enabled && preferences.composers_from_musicbrainz);
         }
         let mut inner = self.lock();
         for (plugin, enabled) in states {

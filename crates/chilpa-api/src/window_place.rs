@@ -131,6 +131,7 @@ impl Chilpa {
         let back = shown && active && !(self.window.0 && self.window.1);
         self.window = (shown, active, self.window.2 || back);
         self.catalog.genre_window(shown);
+        self.catalog.composer_window(shown);
     }
 }
 
