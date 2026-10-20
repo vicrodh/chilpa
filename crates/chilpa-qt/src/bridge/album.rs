@@ -181,7 +181,8 @@ impl cxx_qt::Initialize for qobject::AlbumDetailModel {
         }).release();
         self.as_mut().on_content_rev_changed(|model| model.schedule()).release();
         self.as_mut().on_remote_rev_changed(|model| {
-            let id = model.rust().album_id;
+            // The copy shown, which a grouped record may have chosen among sources.
+            let id = if model.rust().selected_id != 0 { model.rust().selected_id } else { model.rust().album_id };
             if id < 0 && model.rust().source_revision != Some(app::with(|api| api.source_entity_revision(id))) { model.schedule(); }
         }).release();
     }
