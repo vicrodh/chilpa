@@ -31,7 +31,7 @@ Item {
             id: entry
             required property string key
             required property string label
-            required property string meta
+            required property string albums
             required property bool all
             width: ListView.view.width
             height: all ? 0 : Metrics.paneRow
@@ -48,9 +48,10 @@ Item {
             }
             Text {
                 id: count
+                objectName: "focusCount"
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: picker.field === "album" && entry.meta ? I18n.tr("Year", I18n.rev) + ": " + entry.meta : entry.meta
+                text: entry.albums
                 font.pointSize: Type.meta
                 color: Theme.color.textSecondary
             }

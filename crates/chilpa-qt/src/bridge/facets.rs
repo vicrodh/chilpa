@@ -79,7 +79,7 @@ use cxx_qt::CxxQtType as _;
 use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QVariant, QVector};
 use std::pin::Pin;
 
-const ROLES: &[&str] = &["key", "label", "meta", "selected", "all"];
+const ROLES: &[&str] = &["key", "label", "meta", "selected", "all", "albums"];
 const USER_ROLE: i32 = 256;
 
 #[derive(Default)]
@@ -120,6 +120,7 @@ impl qobject::FacetModel {
             },
             3 => QVariant::from(&this.chosen.contains(&e.key)),
             4 => QVariant::from(&false),
+            5 => text(&e.albums.to_string()),
             _ => QVariant::default(),
         }
     }
