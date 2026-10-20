@@ -79,7 +79,7 @@ TestCase {
         verify(list)
         tryVerify(() => list.itemAtIndex(1) !== null)
         compare(QueryChips.liveFacets, before + 1)
-        compare(list.model.get(1).meta, "12")
+        compare(findChild(list.itemAtIndex(1), "focusCount").text, "12")
         expectEdit("genre:Jazz")
         mouseClick(list.itemAtIndex(1))
         compare(QueryChips.lastEdit, { kind: "value", field: "genre", value: "Jazz", state: "include" })

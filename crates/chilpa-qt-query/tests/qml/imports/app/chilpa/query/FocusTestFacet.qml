@@ -12,7 +12,7 @@ ListModel {
         clear()
         const rows = QueryChips.facets[column] || []
         for (const row of rows)
-            if (row.all || row.label.toLowerCase().includes(query.toLowerCase())) append(Object.assign({ selected: false }, row))
+            if (row.all || row.label.toLowerCase().includes(query.toLowerCase())) append(Object.assign({ selected: false, albums: row.all ? "" : column === "album" ? "1" : row.meta }, row))
     }
     onColumnChanged: reload()
     onQueryChanged: reload()
