@@ -40,6 +40,8 @@ TrackRowSlot {
     property string composer: ""
     property var sourceInfo: ({})
     property bool selectionMode: false
+    // The first row of a group in a list whose group names stay at the top.
+    property bool groupStart: false
     property bool groupActionsEnabled: false
     property int rating: 0
     property int ratingPreview: 0
@@ -71,6 +73,7 @@ TrackRowSlot {
         readonly property Item groupActionArea: groupHeader.actionArea
         function groupActionAt(from, x, y) { return groupHeader.actionAt(from, x, y) }
 
+        Rectangle { objectName: "groupStart"; visible: row.groupStart; width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline; z: 1 } // derived: over the row's surface
         ListRowSurface {
             anchors.fill: parent
             rowIndex: row.index

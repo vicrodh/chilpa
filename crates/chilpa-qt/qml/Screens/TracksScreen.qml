@@ -170,10 +170,38 @@ Item {
         }
     }
 
-    TrackList {
-        id: list
+    // The group the first row shown is in, above the rows: bands between
+    // the rows made the view misjudge far rows, and the first scroll after
+    // a far jump leapt hundreds of rows. Each group's first row carries a
+    // divider instead.
+    readonly property string currentGroup: {
+        if (!grouped)
+            return ""
+        const view = list.rows
+        const item = view.count > 0 ? view.itemAt(Metrics.gap2, view.contentY + 1) : null
+        return item && item.model ? String(item.model.group || "") : ""
+    }
+    Text {
+        id: groupName
+        objectName: "tracksGroupName"
         anchors.top: head.bottom
         anchors.topMargin: Metrics.gap12
+        x: head.x
+        width: list.width
+        height: page.grouped ? Metrics.rowGroup : 0
+        visible: page.grouped
+        leftPadding: Metrics.gap2
+        text: page.currentGroup
+        elide: Text.ElideRight
+        verticalAlignment: Text.AlignVCenter
+        font.pointSize: Type.meta
+        font.weight: Type.semibold
+        color: Theme.color.textSecondary
+    }
+
+    TrackList {
+        id: list
+        anchors.top: groupName.bottom
         anchors.bottom: parent.bottom
         x: head.x
         width: head.width - (strip.visible ? strip.width + Metrics.gap8 : 0)
@@ -185,7 +213,6 @@ Item {
         showAlbum: !page.grouped || page.group !== "album"
         selectionMode: page.selectionMode
         model: tracks
-        Component.onCompleted: rows.section.delegate = band
     }
     Connections {
         target: tracks
@@ -197,21 +224,6 @@ Item {
         target: list.rows.section
         property: "property"
         value: page.grouped ? "group" : ""
-    }
-    Component {
-        id: band
-        Text {
-            required property string section
-            width: list.width
-            height: Metrics.rowGroup
-            leftPadding: Metrics.gap2
-            text: section
-            elide: Text.ElideRight
-            verticalAlignment: Text.AlignVCenter
-            font.pointSize: Type.meta
-            font.weight: Type.semibold
-            color: Theme.color.textSecondary
-        }
     }
 
     AlphaStrip {
