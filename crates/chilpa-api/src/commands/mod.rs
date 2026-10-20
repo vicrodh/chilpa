@@ -157,7 +157,8 @@ impl Chilpa {
                 "Unknown target; use Tab to complete the source.",
             ));
         }
-        let arg = line.argument.trim();
+        // A query reads its own quotes: `:filter "A. Smith"` is one name.
+        let arg = if declaration.usage == "[query]" { line.raw.trim() } else { line.argument.trim() };
         if line.name == "help" {
             let lines: Vec<_> = registry().filter(|command| arg.is_empty() || command.name == arg)
                 .map(|command| json!({"usage":format!(":{}{}{}", command.name, if command.usage.is_empty() { "" } else { " " }, command.usage),
@@ -298,6 +299,13 @@ mod tests {
         ] {
             assert!(validate(&parser::parse(input).unwrap()).is_ok(), "{input}");
         }
+    }
+    #[test]
+    fn a_query_keeps_its_quotes_and_other_arguments_lose_them() {
+        let mut api = Chilpa::new();
+        assert_eq!(api.prepare_command(":filter \"A. Smith\"").unwrap()["argument"], "\"A. Smith\"", "one name, not two words");
+        assert_eq!(api.prepare_command(":filter A. Smith").unwrap()["argument"], "A. Smith");
+        assert_eq!(parser::parse(":seek \"1:20\"").unwrap().argument, "1:20");
     }
     #[test]
     fn help_returns_console_content_and_can_select_one_command() {

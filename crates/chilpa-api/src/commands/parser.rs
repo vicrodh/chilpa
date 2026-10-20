@@ -4,6 +4,8 @@ pub struct Line {
     pub name: String,
     pub target: String,
     pub argument: String,
+    /// The argument as typed, quotes and all: what a query reads.
+    pub raw: String,
 }
 
 pub fn parse(input: &str) -> Result<Line, String> {
@@ -20,6 +22,7 @@ pub fn parse(input: &str) -> Result<Line, String> {
         ));
     }
     let argument = argument.trim();
+    let raw = argument.to_string();
     let argument = if argument.starts_with(['\'', '"']) {
         let quote = argument.chars().next().unwrap();
         if argument.len() < 2 || !argument.ends_with(quote) {
@@ -33,6 +36,7 @@ pub fn parse(input: &str) -> Result<Line, String> {
         name: name.to_ascii_lowercase(),
         target: target.into(),
         argument: argument.into(),
+        raw,
     })
 }
 

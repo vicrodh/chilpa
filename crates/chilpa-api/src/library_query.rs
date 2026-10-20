@@ -238,6 +238,74 @@ pub(crate) fn widen_genres_with(node: &Node, known: &[String], aliases: &Aliases
     }
 }
 
+/// Whether the query has words to look for anywhere.
+pub(crate) fn names_words(node: &Node) -> bool {
+    match node {
+        Node::All(nodes) | Node::Any(nodes) => nodes.iter().any(names_words),
+        Node::Not(inner) => names_words(inner),
+        Node::Is(field, _) => *field == Field::Text,
+    }
+}
+
+/// Words that, together, are a name the library has, for an artist, a
+/// composer, a genre or a label, are read as that name, the way a click on
+/// it in its column picks it: `A. Smith` finds the composer "A. Smith" and
+/// "A Smith". Words that name nothing stay words.
+pub(crate) fn resolve_names(node: &Node, known: &[(Field, Vec<String>)]) -> Node {
+    match node {
+        Node::All(nodes) => {
+            let words: Vec<&Node> = nodes.iter().filter(|n| matches!(n, Node::Is(Field::Text, Values::Any(_)))).collect();
+            match named(&words, known) {
+                Some(name) => Node::All(nodes.iter().filter(|n| !matches!(n, Node::Is(Field::Text, Values::Any(_))))
+                    .map(|n| resolve_names(n, known)).chain([name]).collect()),
+                None => Node::All(nodes.iter().map(|n| resolve_names(n, known)).collect()),
+            }
+        }
+        Node::Any(nodes) => Node::Any(nodes.iter().map(|n| resolve_names(n, known)).collect()),
+        Node::Not(inner) => Node::Not(Box::new(resolve_names(inner, known))),
+        leaf @ Node::Is(Field::Text, Values::Any(_)) => named(&[leaf], known).unwrap_or_else(|| leaf.clone()),
+        other => other.clone(),
+    }
+}
+
+/// The names a query's words may be in the library: its artists,
+/// composers, genres and labels, as their columns take them.
+pub(crate) fn library_names(lib: &chilpa_library::Library) -> Vec<(Field, Vec<String>)> {
+    fn keys<E>(entries: Result<Vec<chilpa_library::FacetEntry>, E>) -> Vec<String> {
+        entries.map(|entries| entries.into_iter().map(|entry| entry.key).collect()).unwrap_or_default()
+    }
+    let all = chilpa_library::Filter::default();
+    vec![(Field::Artist, keys(lib.facet_artists(&all))), (Field::Composer, keys(lib.facet_composers(&all))),
+        (Field::Genre, keys(lib.facet_genres(&all))), (Field::Label, keys(lib.facet_labels(&all)))]
+}
+
+impl crate::Chilpa {
+    /// The query as typed, with its words that are a name the library has
+    /// written as that name: what the chips then say (`A. Smith` becomes
+    /// `composer:"A Smith","A. Smith"`).
+    pub fn query_with_names(&mut self, text: &str) -> String {
+        let Ok(Some(node)) = read(text) else { return text.to_string() };
+        if !names_words(&node) { return text.to_string(); }
+        let Some(lib) = self.library() else { return text.to_string() };
+        resolve_names(&node, &library_names(lib)).to_string()
+    }
+}
+
+/// The names `words` say together, in each field that has them.
+fn named(words: &[&Node], known: &[(Field, Vec<String>)]) -> Option<Node> {
+    let phrase: Vec<&str> = words.iter().flat_map(|node| match node {
+        Node::Is(_, Values::Any(words)) => words.iter().map(String::as_str).collect(),
+        _ => Vec::new(),
+    }).collect();
+    let key = genre_key(&phrase.join(" "));
+    if key.is_empty() { return None; }
+    let mut found: Vec<Node> = known.iter().filter_map(|(field, names)| {
+        let same: Vec<String> = names.iter().filter(|name| genre_key(name) == key).cloned().collect();
+        (!same.is_empty()).then(|| Node::Is(*field, Values::Any(same)))
+    }).collect();
+    match found.len() { 0 => None, 1 => found.pop(), _ => Some(Node::Any(found)) }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -279,6 +347,38 @@ mod tests {
         assert_eq!(widened("r and b"), ["r and b", "R&B"]);
         assert_eq!(widened("pop"), ["pop"], "a genre that is there is only itself");
         assert_eq!(widened("Polka"), ["Polka"], "nothing close, nothing added");
+    }
+
+    #[test]
+    fn words_that_are_a_name_the_library_has_are_read_as_that_name() {
+        let known = vec![(Field::Composer, vec!["A Smith".to_string(), "A. Smith".into(), "Adrian Smith".into()]),
+            (Field::Artist, vec!["Iron Maiden".to_string()]), (Field::Genre, vec!["Heavy Metal".to_string()])];
+        let resolved = |text: &str| resolve_names(&read(text).unwrap().unwrap(), &known).to_string();
+        assert_eq!(resolved("A. Smith"), "composer:\"A Smith\",\"A. Smith\"", "both spellings, as the column picks them");
+        assert_eq!(resolved("\"A. Smith\""), "composer:\"A Smith\",\"A. Smith\"");
+        assert_eq!(resolved("year:1990..1999 iron maiden"), "year:1990..1999 artist:\"Iron Maiden\"");
+        assert_eq!(resolved("heavy metal | jazz"), "genre:\"Heavy Metal\" | jazz", "each side of an or on its own");
+        assert_eq!(resolved("smith"), "smith", "a part of a name stays words");
+        assert!(names_words(&read("genre:jazz smith").unwrap().unwrap()));
+        assert!(!names_words(&read("genre:jazz").unwrap().unwrap()));
+    }
+
+    #[test]
+    fn a_query_applied_says_the_names_its_words_are() {
+        let lib = chilpa_library::Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        let album = lib.source_edition(source, "record", "Record", "Band", Some(2000)).unwrap();
+        for (id, title) in [(1, "One"), (2, "Two")] {
+            lib.connection().execute("INSERT INTO tracks(id, source_id, external_id, title, artist, album_id, duration_ms, added_at)
+                VALUES (?1, ?2, ?3, ?4, 'Band', ?5, 1000, 1)", rusqlite::params![id, source, format!("/{id}.flac"), title, album]).unwrap();
+        }
+        lib.set_track_composers(1, &["A. Smith".to_string()]).unwrap();
+        lib.set_track_composers(2, &["A Smith".to_string()]).unwrap();
+        let mut api = crate::Chilpa::new();
+        api.library = Some(lib);
+        assert_eq!(api.query_with_names("A. Smith"), "composer:\"A Smith\",\"A. Smith\"");
+        assert_eq!(api.query_with_names("genre:jazz"), "genre:jazz", "no words, nothing to read");
+        assert_eq!(api.query_with_names("(genre:"), "(genre:", "what cannot be read is left to say why");
     }
 
     #[test]
