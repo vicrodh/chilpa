@@ -23,12 +23,14 @@ TestCase {
     }
     function init() {
         page.contentY = 0; list.rich = false
+        list.model = null // I load a populated model, like the bridge's initial reset.
         tracks.clear()
         for (let i = 0; i < 247; i++)
             tracks.append({ trackId: i + 1, rowKind: i === 80 ? 1 : i === 160 ? 2 : 0, number: i + 1,
                 title: "Track " + i, artist: "Band", album: "Record", sourceName: "", sourceInfo: "{}", composer: "",
                 duration: "3:00", plays: 0, quality: "FLAC", tier: 2, available: true, playing: false, selected: false,
                 headerLabel: "Disc 2", headerMeta: "80 songs", art: "" })
+        list.model = tracks
         tracks.lastAction = ""; tracks.lastRow = -1
         wait(50)
     }

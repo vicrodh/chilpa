@@ -16,7 +16,7 @@ TestCase {
             width: 900; height: 500; contentHeight: 4000
             property alias ancestor: ancestor
             property alias grid: grid
-            AlbumGridModel { id: records; albums: 6; Component.onCompleted: append({first:0,span:6,group:""}) }
+            AlbumGridModel { id: records; albums: 6; Component.onCompleted: append({first:0,span:6,group:"", revision:0}) }
             Item {
                 id: ancestor
                 width: viewport.width; height: grid.height

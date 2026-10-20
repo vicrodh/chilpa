@@ -62,11 +62,13 @@ ListModel {
     onKeyChanged: fill()
     onLimitChanged: fill()
     Component.onCompleted: fill()
+    property string filledKey: ""
     function fill() {
         const wanted = key.endsWith("|tracks") ? 8 : 0
         const count = limit > 0 ? Math.min(limit, wanted) : wanted
-        clear()
-        for (let i = 0; i < count; i++)
+        if (filledKey !== key) { clear(); filledKey = key }
+        while (this.count > count) remove(this.count - 1)
+        for (let i = this.count; i < count; i++)
             append({ trackId: i + 1, rowKind: 0, number: i + 1, title: "Track " + i, artist: "Band", album: "Record", sourceName: "", duration: "3:00", plays: 0,
                 quality: "FLAC", tier: 2, available: true, playing: false, selected: false, headerLabel: "", headerMeta: "", art: "" })
     }

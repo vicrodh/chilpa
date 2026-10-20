@@ -118,8 +118,9 @@ Item {
         onSortRequested: (order) => list.sortRequested(order)
     }
 
-    ListView {
+    Tools.MotionListView {
         id: view
+        motionViewport: list.viewport
         objectName: "trackListView"
 
         property int hovered: -1

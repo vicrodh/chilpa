@@ -11,6 +11,7 @@ import "qrc:/qt/qml/app/chilpa/qml/Components"
 Column {
     id: shelf
     property TrackListModel model
+    property Flickable viewport: null
     property string title: ""
     property string sourceIcon: ""
     property bool showPlays: false
@@ -26,8 +27,9 @@ Column {
         onBack: rail.contentX = Math.max(0, rail.contentX - shelf.step)
         onForward: rail.contentX = Math.min(shelf.farthest, rail.contentX + shelf.step)
     }
-    ListView {
+    MotionListView {
         id: rail
+        motionViewport: shelf.viewport
         objectName: "trackCarouselRail"
         width: parent.width; height: CardLayout.cardHeight + Metrics.gap8
         contentHeight: height
@@ -45,7 +47,8 @@ Column {
             required property var model
             readonly property bool available: model.available !== false
             width: CardLayout.cardWidth; height: CardLayout.cardHeight
-            opacity: available ? 1 : Metrics.disabledOpacity
+            readonly property real motionOpacity: available ? 1 : Metrics.disabledOpacity
+            opacity: motionOpacity
             ArtTile { id: cover; width: parent.width; height: width; source: card.model.art || ""; tint: card.index }
             TapHandler {
                 acceptedButtons: Qt.LeftButton | Qt.RightButton

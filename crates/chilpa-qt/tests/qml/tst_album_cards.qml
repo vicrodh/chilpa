@@ -20,7 +20,7 @@ TestCase {
         Flickable {
             id: railPage
             width: 900; height: 500; contentHeight: 3000
-            AlbumGridModel { id: shelfRecords; albums: 6; Component.onCompleted: append({first:0,span:6,group:""}) }
+            AlbumGridModel { id: shelfRecords; albums: 6; Component.onCompleted: append({first:0,span:6,group:"", revision:0}) }
             AlbumCarousel { id: shelf; y: 1800; width: parent.width; viewport: railPage; title: "More records"; model: shelfRecords }
             property alias shelf: shelf
         }
@@ -36,7 +36,7 @@ TestCase {
         tryVerify(() => findChild(page, "albumAnimatedCover") !== null)
         compare(page.shelf.height, height, "I keep the shelf's scroll geometry while its cards load")
     }
-    function initTestCase() { records.append({first:0,span:6,group:""}) }
+    function initTestCase() { records.append({first:0,span:6,group:"", revision:0}) }
     function test_artist_name_opens_the_source_artist_without_opening_the_album() {
         card.albumId = -7; card.subtitle = "Band"
         AlbumActions.artistDestination = {target:"source",key:"fixture native:artist:7"}
