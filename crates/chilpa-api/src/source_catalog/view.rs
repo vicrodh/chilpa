@@ -164,7 +164,7 @@ pub(crate) fn row_of(track: &Track, art: String) -> TrackRow {
         quality: track.format.as_ref().map(|f| f.quality()).unwrap_or_default(),
         artwork_path: art,
         available: track.playable,
-        composer: track.metadata["composer"].as_str().unwrap_or_default().to_string(),
+        composer: super::composers::own_composers(&track.metadata).join(", "),
         disc_subtitle: track.metadata["disc_subtitle"].as_str().unwrap_or_default().to_string(),
         work: track.metadata["work"].as_str().unwrap_or_default().to_string(),
         composer_target: track.metadata["composer_ref"].as_str()
@@ -564,6 +564,7 @@ impl Chilpa {
     /// late on what plays. Called from `poll`.
     pub(crate) fn advance_catalog(&mut self) {
         self.catalog.advance_genres();
+        self.catalog.advance_composers();
         let (ready, _hold) = self.catalog.ready();
         for deferred in ready {
             self.with_queue_origin(deferred.origin, |app| match deferred.act.as_str() {

@@ -11,6 +11,7 @@ pub(crate) struct Preferences {
     pub integrate_tracks: bool,
     pub integrate_home: bool,
     pub genres_from_musicbrainz: bool,
+    pub composers_from_musicbrainz: bool,
 }
 
 #[cfg(test)]
@@ -31,6 +32,23 @@ mod tests {
         assert!(restored.genres_from_musicbrainz && restored.integrate_albums && restored.integrate_tracks);
         save(directory.path(), id, "genres_from_musicbrainz", false).unwrap();
         assert!(!read(directory.path(), id).genres_from_musicbrainz);
+    }
+
+    #[test]
+    fn missing_composers_are_opt_in_and_the_choice_survives_other_switches() {
+        let directory = tempfile::tempdir().unwrap();
+        let id = "fixture";
+        assert!(!read(directory.path(), id).composers_from_musicbrainz);
+        std::fs::create_dir(directory.path().join(id)).unwrap();
+        std::fs::write(directory.path().join(id).join("manifest.json"), "{}").unwrap();
+        save(directory.path(), id, "integrate_albums", true).unwrap();
+        assert!(!read(directory.path(), id).composers_from_musicbrainz);
+        save(directory.path(), id, "composers_from_musicbrainz", true).unwrap();
+        save(directory.path(), id, "integrate_tracks", true).unwrap();
+        let restored = read(directory.path(), id);
+        assert!(restored.composers_from_musicbrainz && restored.integrate_albums && restored.integrate_tracks);
+        save(directory.path(), id, "composers_from_musicbrainz", false).unwrap();
+        assert!(!read(directory.path(), id).composers_from_musicbrainz);
     }
 
     #[test]
@@ -89,6 +107,7 @@ pub(crate) fn save(root: &Path, id: &str, field: &str, enabled: bool) -> Result<
         "integrate_tracks" => preferences.integrate_tracks = enabled,
         "integrate_home" => preferences.integrate_home = enabled,
         "genres_from_musicbrainz" => preferences.genres_from_musicbrainz = enabled,
+        "composers_from_musicbrainz" => preferences.composers_from_musicbrainz = enabled,
         _ => return Err("Unknown integration preference.".into()),
     }
     let directory = root.join(".integration");
