@@ -157,7 +157,10 @@ TestCase {
         tryVerify(() => row.mapToItem(page, 0, 0).y >= above.mapToItem(page, 0, 0).y + above.height, 3000)
         mouseClick(row)
         compare(Navigation.went, ["source", "fixture native:artist:2"])
-        mouseClick(findText(page, "Judas Priest"))
+        // The network's rows below are placed on a polish of their own.
+        const network = findText(page, "Judas Priest")
+        tryVerify(() => network.mapToItem(page, 0, 0).y >= row.mapToItem(page, 0, 0).y + row.height, 3000)
+        mouseClick(network)
         compare(Navigation.went, ["source", "fixture matching-artist-v3:Judas Priest"])
     }
 
