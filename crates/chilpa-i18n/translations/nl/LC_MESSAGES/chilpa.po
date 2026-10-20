@@ -1721,6 +1721,9 @@ msgstr "Bestand"
 msgid "Files"
 msgstr "Bestanden"
 
+msgid "Fill missing genres from MusicBrainz"
+msgstr "Ontbrekende genres aanvullen vanuit MusicBrainz"
+
 msgid "Filter"
 msgstr "Filter"
 
@@ -4171,14 +4174,8 @@ msgstr "Toon songteksten uit bestanden, de cache en onlinediensten. Zet uit om a
 msgid "Show playlist only from the same source as the track"
 msgstr "Toon alleen afspeellijsten van dezelfde bron als het nummer"
 
-msgid "Show saved releases in Albums and Library"
-msgstr "Opgeslagen uitgaven tonen in Albums en Bibliotheek"
-
 msgid "Show saved tracks in Tracks"
 msgstr "Opgeslagen nummers tonen in Nummers"
-
-msgid "Show saved tracks in Tracks and Library"
-msgstr "Opgeslagen nummers tonen in Nummers en Bibliotheek"
 
 msgid "Show source recommendations by default in Home"
 msgstr "Aanbevelingen van bronnen standaard tonen op de startpagina"
@@ -4371,9 +4368,6 @@ msgstr "Streamadres"
 
 msgid "Streaming"
 msgstr "Streaming"
-
-msgid "Streaming libraries"
-msgstr "Streamingbibliotheken"
 
 msgid "Strong"
 msgstr "Sterk"
@@ -4625,6 +4619,9 @@ msgstr "Thema"
 
 msgid "There is no previous EQ to restore."
 msgstr "Er is geen vorige EQ om te herstellen."
+
+msgid "These records' barcodes are sent to MusicBrainz."
+msgstr "De barcodes van deze albums worden naar MusicBrainz verzonden."
 
 msgid "This address belongs to a different server."
 msgstr "Dit adres hoort bij een andere server."
@@ -6593,9 +6590,3 @@ msgstr "{}s"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "‘{}' heeft niet-opgeslagen wijzigingen. Als je dit album opent, gaan ze verloren."
-
-msgid "Fill missing genres from MusicBrainz"
-msgstr "Ontbrekende genres aanvullen vanuit MusicBrainz"
-
-msgid "These records' barcodes are sent to MusicBrainz."
-msgstr "De barcodes van deze albums worden naar MusicBrainz verzonden."

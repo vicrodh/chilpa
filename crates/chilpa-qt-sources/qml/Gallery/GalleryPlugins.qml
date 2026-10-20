@@ -29,7 +29,7 @@ TitledFlow {
     AlbumInfoModal {}
     AlbumCreditRow { width: Metrics.confirmWidth; credit: ({title:"Song",artist:"Artist",performers:"Player, Guitar"}) }
     SourceRecordDetails { width: Metrics.confirmWidth }
-    SourceAlbumLibraries { width: Metrics.confirmWidth; model: [{id:"preview",name:"Streaming library",enabled:false,icon:""}] }
+    SourceSwitches { width: Metrics.confirmWidth; active: true }
     SourcesPopover {}
     LibraryColumnChoices { width: Metrics.confirmWidth; selected: ["year", "artist", "album"]; onToggled: column => selected = selected.includes(column) ? selected.filter(value => value !== column) : selected.concat([column]) }
     SourcePlaylistEditor {}

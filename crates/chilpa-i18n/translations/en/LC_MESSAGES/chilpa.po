@@ -1721,6 +1721,9 @@ msgstr ""
 msgid "Files"
 msgstr ""
 
+msgid "Fill missing genres from MusicBrainz"
+msgstr "Fill missing genres from MusicBrainz"
+
 msgid "Filter"
 msgstr ""
 
@@ -4171,13 +4174,7 @@ msgstr ""
 msgid "Show playlist only from the same source as the track"
 msgstr ""
 
-msgid "Show saved releases in Albums and Library"
-msgstr ""
-
 msgid "Show saved tracks in Tracks"
-msgstr ""
-
-msgid "Show saved tracks in Tracks and Library"
 msgstr ""
 
 msgid "Show source recommendations by default in Home"
@@ -4371,9 +4368,6 @@ msgstr ""
 
 msgid "Streaming"
 msgstr "Streaming"
-
-msgid "Streaming libraries"
-msgstr "Streaming libraries"
 
 msgid "Strong"
 msgstr ""
@@ -4625,6 +4619,9 @@ msgstr ""
 
 msgid "There is no previous EQ to restore."
 msgstr "There is no previous EQ to restore."
+
+msgid "These records' barcodes are sent to MusicBrainz."
+msgstr "These records' barcodes are sent to MusicBrainz."
 
 msgid "This address belongs to a different server."
 msgstr ""
@@ -6593,9 +6590,3 @@ msgstr ""
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr ""
-
-msgid "Fill missing genres from MusicBrainz"
-msgstr "Fill missing genres from MusicBrainz"
-
-msgid "These records' barcodes are sent to MusicBrainz."
-msgstr "These records' barcodes are sent to MusicBrainz."

@@ -1719,6 +1719,9 @@ msgstr "ファイル"
 msgid "Files"
 msgstr "ファイル"
 
+msgid "Fill missing genres from MusicBrainz"
+msgstr "MusicBrainzから不足しているジャンルを補完する"
+
 msgid "Filter"
 msgstr "フィルター"
 
@@ -4168,14 +4171,8 @@ msgstr "ファイル、キャッシュ、オンラインから歌詞を表示し
 msgid "Show playlist only from the same source as the track"
 msgstr "トラックと同じソースのプレイリストのみ表示"
 
-msgid "Show saved releases in Albums and Library"
-msgstr "保存したリリースを「アルバム」と「ライブラリ」に表示"
-
 msgid "Show saved tracks in Tracks"
 msgstr "保存したトラックを「トラック」に表示"
-
-msgid "Show saved tracks in Tracks and Library"
-msgstr "保存したトラックを「トラック」と「ライブラリ」に表示"
 
 msgid "Show source recommendations by default in Home"
 msgstr "ホームにソースのおすすめを既定で表示"
@@ -4368,9 +4365,6 @@ msgstr "ストリームアドレス"
 
 msgid "Streaming"
 msgstr "ストリーミング"
-
-msgid "Streaming libraries"
-msgstr "ストリーミングライブラリ"
 
 msgid "Strong"
 msgstr "強"
@@ -4621,6 +4615,9 @@ msgstr "テーマ"
 
 msgid "There is no previous EQ to restore."
 msgstr "復元できる以前のEQがありません。"
+
+msgid "These records' barcodes are sent to MusicBrainz."
+msgstr "これらのアルバムのバーコードがMusicBrainzに送信されます。"
 
 msgid "This address belongs to a different server."
 msgstr "このアドレスは別のサーバーのものです。"
@@ -6568,9 +6565,3 @@ msgstr "{}年代"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "「{}」には保存されていない変更があります。このアルバムを開くと失われます。"
-
-msgid "Fill missing genres from MusicBrainz"
-msgstr "MusicBrainzから不足しているジャンルを補完する"
-
-msgid "These records' barcodes are sent to MusicBrainz."
-msgstr "これらのアルバムのバーコードがMusicBrainzに送信されます。"

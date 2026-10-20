@@ -1721,6 +1721,9 @@ msgstr "Archivo"
 msgid "Files"
 msgstr "Archivos"
 
+msgid "Fill missing genres from MusicBrainz"
+msgstr "Completar desde MusicBrainz los géneros que falten"
+
 msgid "Filter"
 msgstr "Filtro"
 
@@ -4171,14 +4174,8 @@ msgstr "Muestra letras de archivos, caché y servicios online. Desactívalo para
 msgid "Show playlist only from the same source as the track"
 msgstr "Mostrar solo playlists de la misma fuente que la pista"
 
-msgid "Show saved releases in Albums and Library"
-msgstr "Mostrar los lanzamientos guardados en Álbumes y Biblioteca"
-
 msgid "Show saved tracks in Tracks"
 msgstr "Mostrar canciones guardadas en Canciones"
-
-msgid "Show saved tracks in Tracks and Library"
-msgstr "Mostrar las pistas guardadas en Pistas y Biblioteca"
 
 msgid "Show source recommendations by default in Home"
 msgstr "Mostrar las recomendaciones de esta fuente por defecto en Inicio"
@@ -4371,9 +4368,6 @@ msgstr "Dirección de stream"
 
 msgid "Streaming"
 msgstr "Streaming"
-
-msgid "Streaming libraries"
-msgstr "Bibliotecas de streaming"
 
 msgid "Strong"
 msgstr "Fuerte"
@@ -4625,6 +4619,9 @@ msgstr "Tema"
 
 msgid "There is no previous EQ to restore."
 msgstr "No hay un EQ anterior que recuperar."
+
+msgid "These records' barcodes are sent to MusicBrainz."
+msgstr "Se envían a MusicBrainz los códigos de barras de esos discos."
 
 msgid "This address belongs to a different server."
 msgstr "Esta dirección pertenece a otro servidor."
@@ -6593,9 +6590,3 @@ msgstr "{}s"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "“{}” tiene cambios sin guardar. Si abres este disco se pierden."
-
-msgid "Fill missing genres from MusicBrainz"
-msgstr "Completar desde MusicBrainz los géneros que falten"
-
-msgid "These records' barcodes are sent to MusicBrainz."
-msgstr "Se envían a MusicBrainz los códigos de barras de esos discos."

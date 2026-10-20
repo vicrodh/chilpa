@@ -11,7 +11,8 @@ QtObject {
     property var chosen: []
     function choose(column, key, label) { chosen.push([column, key]) }
     function searchColumn(column, text) {}
-    function toggleFilter(kind, key) {}
+    property var asked: []
+    function toggleFilter(kind, key) { asked = asked.concat([[kind, key]]) }
     function resetExtra() {}
     function groupAlbums(on) { groupVersions = on }
     property bool groupSources: true
