@@ -17,10 +17,12 @@ Rectangle {
     property bool pinned: false
     readonly property bool anyHover: body.containsMouse || minimize.hovered || maximize.hovered || fullscreen.hovered || exitButton.hovered
     readonly property bool expanded: pinned || anyHover
+    // Its width open, whatever it is now.
+    readonly property int openWide: Stage.capsuleBase + Stage.capsuleStep * slots
     readonly property bool fullScreen: hostWindow !== null && hostWindow.visibility === Window.FullScreen
     readonly property bool maximized: hostWindow !== null && hostWindow.visibility === Window.Maximized
 
-    width: expanded ? Stage.capsuleBase + Stage.capsuleStep * slots : Stage.capsuleIdle
+    width: expanded ? openWide : Stage.capsuleIdle
     height: Stage.headerTall
     radius: Stage.capsuleRound
     color: Theme.color.immersiveGlass

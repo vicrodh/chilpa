@@ -165,6 +165,18 @@ TestCase {
     }
     Component { id: settleMaker; StreamSettle {} }
 
+    function test_the_view_picker_moves_right_only_on_a_mac() {
+        const header = findChild(view, "immersiveHeader")
+        const trigger = findChild(header, "immersiveViewTrigger")
+        header.pickerTrailing = false
+        compare(trigger.x, 0)
+        header.pickerTrailing = true
+        // The capsule's open width is kept free, so the picker never slides.
+        verify(trigger.x + trigger.width < header.width - 40 - 36 * 2, "clear of the capsule however wide it opens")
+        compare(trigger.x, header.width - findChild(header, "immersiveViewTrigger").parent.children.find(c => c.openWide !== undefined).openWide - 12 - trigger.width)
+        header.pickerTrailing = Qt.platform.os === "osx"
+    }
+
     function test_the_focus_lyrics_say_when_there_are_none() {
         Player.lyricsJson = ""
         Immersive.setView(0, 4, 0)
