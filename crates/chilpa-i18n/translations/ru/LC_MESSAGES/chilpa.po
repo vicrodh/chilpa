@@ -2302,6 +2302,12 @@ msgstr "Язык"
 msgid "Large"
 msgstr "Большой"
 
+msgid "Last 12 months"
+msgstr "Последние 12 месяцев"
+
+msgid "Last 3 months"
+msgstr "Последние 3 месяца"
+
 msgid "Last playlist"
 msgstr "Последний плейлист"
 
@@ -2815,6 +2821,9 @@ msgstr "Исполнители этой сцены не найдены."
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "Исполнители из выбранных плагинов в этой сцене не найдены."
 
+msgid "No composer"
+msgstr "Без композитора"
+
 msgid "No cover"
 msgstr "Без обложки"
 
@@ -2836,11 +2845,17 @@ msgstr "В локальной библиотеке пока нет папок."
 msgid "No folders match your search."
 msgstr "Нет папок по вашему запросу."
 
+msgid "No genre"
+msgstr "Без жанра"
+
 msgid "No genres in this period."
 msgstr "Нет жанров за этот период."
 
 msgid "No grouping"
 msgstr "Без группировки"
+
+msgid "No label"
+msgstr "Без лейбла"
 
 msgid "No label info"
 msgstr "Нет информации о лейбле"
@@ -4114,11 +4129,14 @@ msgstr "Показывает тексты песен из файлов, кэша
 msgid "Show playlist only from the same source as the track"
 msgstr "Показывать только плейлисты из того же источника, что и трек"
 
-msgid "Show saved releases in Albums"
-msgstr "Показывать сохранённые релизы в «Альбомах»"
+msgid "Show saved releases in Albums and Library"
+msgstr "Показывать сохранённые релизы в «Альбомах» и «Библиотеке»"
 
 msgid "Show saved tracks in Tracks"
 msgstr "Показывать сохранённые треки в «Треках»"
+
+msgid "Show saved tracks in Tracks and Library"
+msgstr "Показывать сохранённые треки в «Треках» и «Библиотеке»"
 
 msgid "Show source recommendations by default in Home"
 msgstr "Показывать рекомендации источников на главной по умолчанию"
@@ -4597,6 +4615,9 @@ msgstr "Это то, куда система уже отправляет зву�
 msgid "This looks like a playlist."
 msgstr "Похоже, это плейлист."
 
+msgid "This month"
+msgstr "В этом месяце"
+
 msgid "This month vs Last month"
 msgstr "Этот месяц и прошлый"
 
@@ -4662,6 +4683,9 @@ msgstr "Это обновление запрашивает дополнител�
 
 msgid "This view as an image (PNG)"
 msgstr "Этот вид как изображение (PNG)"
+
+msgid "This week"
+msgstr "На этой неделе"
 
 msgid "This week vs Last week"
 msgstr "Эта неделя и прошлая"
@@ -4822,8 +4846,14 @@ msgstr "Удалить плагин и данные учётной записи"
 msgid "Unknown DSP action."
 msgstr "Неизвестное действие DSP."
 
+msgid "Unknown artist"
+msgstr "Неизвестный исполнитель"
+
 msgid "Unknown command; enter :help."
 msgstr "Неизвестная команда; введите :help."
+
+msgid "Unknown date"
+msgstr "Дата неизвестна"
 
 msgid "Unknown preference."
 msgstr "Неизвестный параметр."
@@ -4831,8 +4861,14 @@ msgstr "Неизвестный параметр."
 msgid "Unknown quality"
 msgstr "Качество неизвестно"
 
+msgid "Unknown source"
+msgstr "Источник неизвестен"
+
 msgid "Unknown target; use Tab to complete the source."
 msgstr "Неизвестная цель; нажмите Tab, чтобы дополнить источник."
+
+msgid "Unknown year"
+msgstr "Год неизвестен"
 
 msgid "Unmatched"
 msgstr "Без совпадений"

@@ -99,34 +99,17 @@ pub fn artist_cards(artists: &[crate::Artist], filter: &str) -> Vec<crate::Album
 }
 
 impl Reader {
-    /// Merge source album identities into the same order and groups as local albums.
-    pub fn albums_view_with_sources(&self, order: &str, group: &str, text: &str, extras: &Filter, remote: Vec<crate::Album>) -> AlbumsFound {
-        if remote.is_empty() { return self.albums_view(order, group, text, extras); }
-        let (order, turned) = turned_order(order);
-        let local = self.albums_view(order, "", text, extras);
-        let mut rows: Vec<_> = local.ids.chunks(500).flat_map(|ids| self.lib.albums_by_ids(ids).unwrap_or_default()).map(crate::browse::album_of).collect();
-        rows.extend(remote);
-        match order {
-            "title" => rows.sort_by_cached_key(|a| a.title.to_lowercase()),
-            "year" => rows.sort_by_key(|a| std::cmp::Reverse(a.year)),
-            "played" => rows.sort_by_key(|a| std::cmp::Reverse(a.play_count)),
-            "added" | "last_played" => {},
-            _ => rows.sort_by_cached_key(|a| (a.artist.to_lowercase(), a.year, a.title.to_lowercase())),
-        }
-        if turned { rows.reverse(); }
-        if !matches!(group, "letter" | "artist") { return AlbumsFound { ids: rows.iter().map(|a| a.id).collect(), groups: Vec::new() }; }
-        arrange_toward(rows.iter().map(|a| (match (group, order) {
-            ("artist", _) => a.artist.trim().into(), (_, "artist") => chilpa_library::letter_of(&a.artist), _ => chilpa_library::letter_of(&a.title),
-        }, a.id)).collect(), turned)
+    /// The records of the Albums screen: the library's that hold every word
+    /// of `text`, through the sources, qualities and formats `extras` leaves
+    /// (the Library screen shares them), and the integrated sources' saved
+    /// records, merged in the order asked for and grouped by `group`.
+    pub fn albums_view(&self, order: &str, group: &str, text: &str, extras: &Filter) -> AlbumsFound {
+        self.albums_view_using(order, group, text, extras, &self.source_index().1)
     }
 
-    /// The records of the Albums screen. `group` is "letter", "artist" or
-    /// nothing. The groups come in their order, and the order asked for is
-    /// the order inside each one. The sources, qualities and formats left
-    /// out come from `extras`, which the Library screen shares.
-    pub fn albums_view(&self, order: &str, group: &str, text: &str, extras: &Filter) -> AlbumsFound {
-        let (order, turned) = turned_order(order);
-        let order = AlbumSort::from_name(order);
+    pub(crate) fn albums_view_using(&self, order: &str, group: &str, text: &str, extras: &Filter, index: &crate::library_sources::SourceIndex) -> AlbumsFound {
+        let (name, turned) = turned_order(order);
+        let order = AlbumSort::from_name(name);
         let mut ids = self.lib.album_ids_matching(order, text).unwrap_or_default();
         if !extras.excluded_sources.is_empty() || !extras.qualities.is_empty() || !extras.formats.is_empty() {
             let through = Filter {
@@ -139,28 +122,58 @@ impl Reader {
             ids.retain(|id| left.contains(id));
         }
         let mut ids = self.lib.grouped_album_ids(&ids).unwrap_or(ids);
+        let mut remote = saved_records(index, text, extras);
+        if !remote.is_empty() {
+            remote.sort_by(|a, b| order.compare(&a.1, &b.1));
+            let keys = self.lib.album_keys(&ids).unwrap_or_default();
+            let blank = chilpa_library::AlbumKey::default();
+            let mut merged = Vec::with_capacity(ids.len() + remote.len());
+            let mut local = ids.into_iter().peekable();
+            let mut remote = remote.into_iter().peekable();
+            while local.peek().is_some() || remote.peek().is_some() {
+                let first = match (local.peek(), remote.peek()) {
+                    (Some(id), Some((_, key))) => order.compare(keys.get(id).unwrap_or(&blank), key).is_le(),
+                    (Some(_), None) => true,
+                    _ => false,
+                };
+                if first { merged.extend(local.next()); } else { merged.extend(remote.next().map(|(id, _)| id)); }
+            }
+            ids = merged;
+        }
         if turned {
             ids.reverse();
         }
-        if !matches!(group, "letter" | "artist") {
-            return AlbumsFound { ids, groups: Vec::new() };
-        }
-        // Each record with the group it is in. A letter is the artist's when
-        // the records are ordered by artist, and the title's otherwise.
-        let by_artist = order == AlbumSort::Artist;
-        let mut named: Vec<(String, i64)> = Vec::with_capacity(ids.len());
-        for chunk in ids.chunks(500) {
-            for (album, _) in self.lib.albums_by_ids(chunk).unwrap_or_default() {
-                let label = match (group, by_artist) {
-                    ("artist", _) => album.album_artist.trim().to_string(),
-                    (_, true) => chilpa_library::letter_of(&album.album_artist),
-                    _ => chilpa_library::letter_of(&album.title),
-                };
-                named.push((label, album.id));
-            }
-        }
-        arrange_toward(named, turned)
+        let group = crate::library_sources::AlbumGroup::from_name(group);
+        self.album_groups(ids, group, order == AlbumSort::Artist, turned, index)
     }
+
+    /// The Library grid's records grouped by `group`, in the order they came.
+    pub fn library_album_groups(&self, ids: Vec<i64>, group: &str, order: TrackOrder) -> AlbumsFound {
+        let (_, index) = self.source_index();
+        let by_artist = matches!(order, TrackOrder::Artist | TrackOrder::ArtistDescending);
+        let turned = matches!(order, TrackOrder::ArtistDescending | TrackOrder::AlbumDescending | TrackOrder::TitleDescending);
+        self.album_groups(ids, crate::library_sources::AlbumGroup::from_name(group), by_artist, turned, &index)
+    }
+}
+
+/// The integrated sources' saved records that hold every word of `text` in
+/// their title or artist and pass the extras, each once, in grid order keys.
+fn saved_records(index: &crate::library_sources::SourceIndex, text: &str, extras: &Filter) -> Vec<(i64, chilpa_library::AlbumKey)> {
+    let words: Vec<String> = text.to_lowercase().split_whitespace().map(String::from).collect();
+    let through = Filter { excluded_sources: extras.excluded_sources.clone(), qualities: extras.qualities.clone(), formats: extras.formats.clone(), ..Filter::default() };
+    let stars = crate::library_sources::Stars::default();
+    let mut records: std::collections::HashMap<i64, chilpa_library::AlbumKey> = std::collections::HashMap::new();
+    let mut order = Vec::new();
+    for item in index.items.iter().filter(|item| item.saved_album && item.album != 0) {
+        let named = format!("{} {} {}", item.album_title, item.album_artist, item.artists.join(" ")).to_lowercase();
+        if !words.iter().all(|word| named.contains(word.as_str())) || !crate::library_sources::passes(item, &through, &stars) { continue; }
+        let key = records.entry(item.album).or_insert_with(|| {
+            order.push(item.album);
+            chilpa_library::AlbumKey { title: item.album_title.clone(), artist: item.album_artist.clone(), year: item.year, ..Default::default() }
+        });
+        key.added_at = key.added_at.max(item.added_at);
+    }
+    order.into_iter().filter_map(|id| records.remove(&id).map(|key| (id, key))).collect()
 }
 
 /// Records that came in the order asked for, put in groups: the groups by

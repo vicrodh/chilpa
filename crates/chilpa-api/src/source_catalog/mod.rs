@@ -26,6 +26,7 @@ mod shared_map;
 mod revisions;
 mod revalidation;
 mod native;
+mod library_index;
 mod pages;
 pub(crate) mod store;
 pub(crate) mod view;

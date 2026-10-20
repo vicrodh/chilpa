@@ -7,7 +7,7 @@ fn reader() -> Reader {
         INSERT INTO albums(id, title, album_artist, year) VALUES (1, 'First', 'Artist', 2000), (2, 'Second', 'Other', 2001);
         INSERT INTO tracks(id, source_id, external_id, title, album_id, added_at, bit_depth, sample_rate_hz)
         VALUES (1, 1, '/first.dsf', 'First', 1, 1, 1, 2822400), (2, 1, '/second.flac', 'Second', 2, 1, 24, 96000);").unwrap();
-    Reader { lib, catalog: None, refresh_cache: Default::default() }
+    Reader { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() }
 }
 
 #[test]

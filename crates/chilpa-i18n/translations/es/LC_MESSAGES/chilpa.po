@@ -2300,6 +2300,12 @@ msgstr "Idioma"
 msgid "Large"
 msgstr "Grande"
 
+msgid "Last 12 months"
+msgstr "Últimos 12 meses"
+
+msgid "Last 3 months"
+msgstr "Últimos 3 meses"
+
 msgid "Last playlist"
 msgstr "Última playlist"
 
@@ -2813,6 +2819,9 @@ msgstr "No se encontraron artistas de esta escena."
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "No se encontraron artistas de esta escena en los plugins seleccionados."
 
+msgid "No composer"
+msgstr "Sin compositor"
+
 msgid "No cover"
 msgstr "Sin carátula"
 
@@ -2834,11 +2843,17 @@ msgstr "Todavía no hay carpetas en tu biblioteca local."
 msgid "No folders match your search."
 msgstr "Ninguna carpeta coincide con tu búsqueda."
 
+msgid "No genre"
+msgstr "Sin género"
+
 msgid "No genres in this period."
 msgstr "No hay géneros en este periodo."
 
 msgid "No grouping"
 msgstr "Sin agrupar"
+
+msgid "No label"
+msgstr "Sin sello"
 
 msgid "No label info"
 msgstr "Sin datos de sello"
@@ -4111,11 +4126,14 @@ msgstr "Muestra letras de archivos, caché y servicios online. Desactívalo para
 msgid "Show playlist only from the same source as the track"
 msgstr "Mostrar solo playlists de la misma fuente que la pista"
 
-msgid "Show saved releases in Albums"
-msgstr "Mostrar los releases guardados en Álbumes"
+msgid "Show saved releases in Albums and Library"
+msgstr "Mostrar los lanzamientos guardados en Álbumes y Biblioteca"
 
 msgid "Show saved tracks in Tracks"
 msgstr "Mostrar canciones guardadas en Canciones"
+
+msgid "Show saved tracks in Tracks and Library"
+msgstr "Mostrar las pistas guardadas en Pistas y Biblioteca"
 
 msgid "Show source recommendations by default in Home"
 msgstr "Mostrar las recomendaciones de esta fuente por defecto en Inicio"
@@ -4593,6 +4611,9 @@ msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les 
 msgid "This looks like a playlist."
 msgstr "Parece una playlist."
 
+msgid "This month"
+msgstr "Este mes"
+
 msgid "This month vs Last month"
 msgstr "Este mes vs el mes pasado"
 
@@ -4658,6 +4679,9 @@ msgstr "Esta actualización solicita acceso adicional."
 
 msgid "This view as an image (PNG)"
 msgstr "Esta vista como imagen (PNG)"
+
+msgid "This week"
+msgstr "Esta semana"
 
 msgid "This week vs Last week"
 msgstr "Esta semana vs la semana pasada"
@@ -4818,8 +4842,14 @@ msgstr "Desinstalar plugin y eliminar datos de la cuenta"
 msgid "Unknown DSP action."
 msgstr "La acción DSP no se reconoce."
 
+msgid "Unknown artist"
+msgstr "Artista desconocido"
+
 msgid "Unknown command; enter :help."
 msgstr "Comando desconocido; escribe :help."
+
+msgid "Unknown date"
+msgstr "Fecha desconocida"
 
 msgid "Unknown preference."
 msgstr "Preferencia desconocida."
@@ -4827,8 +4857,14 @@ msgstr "Preferencia desconocida."
 msgid "Unknown quality"
 msgstr "Calidad desconocida"
 
+msgid "Unknown source"
+msgstr "Fuente desconocida"
+
 msgid "Unknown target; use Tab to complete the source."
 msgstr "Destino desconocido; usa Tab para completar la fuente."
+
+msgid "Unknown year"
+msgstr "Año desconocido"
 
 msgid "Unmatched"
 msgstr "Sin coincidencia"

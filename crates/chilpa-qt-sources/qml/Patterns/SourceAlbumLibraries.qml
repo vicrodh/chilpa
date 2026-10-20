@@ -9,10 +9,14 @@ Column {
     id: libraries
     property bool active: false
     property bool tracks: false
+    // The heading, left to the first of two lists shown together.
+    property bool titled: true
     property var model: active ? JSON.parse((tracks ? Sources.trackLibraries(Library.remoteRev + Library.rev + Sources.revision) : Sources.albumLibraries(Library.remoteRev + Library.rev + Sources.revision)) || "[]") : []
     visible: model.length > 0
     spacing: Metrics.gap8
     Text {
+        objectName: "streamingLibrariesHeading"
+        visible: libraries.titled
         text: I18n.tr("Streaming libraries", I18n.rev)
         font.pointSize: Type.small
         font.weight: Type.semibold
@@ -20,7 +24,7 @@ Column {
     }
     Text {
         width: parent.width
-        text: libraries.tracks ? I18n.tr("Show saved tracks in Tracks", I18n.rev) : I18n.tr("Show saved releases in Albums", I18n.rev)
+        text: libraries.tracks ? I18n.tr("Show saved tracks in Tracks and Library", I18n.rev) : I18n.tr("Show saved releases in Albums and Library", I18n.rev)
         font.pointSize: Type.small
         color: Theme.color.textSecondary
         wrapMode: Text.WordWrap

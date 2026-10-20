@@ -2300,6 +2300,12 @@ msgstr "Langue"
 msgid "Large"
 msgstr "Grand"
 
+msgid "Last 12 months"
+msgstr "12 derniers mois"
+
+msgid "Last 3 months"
+msgstr "3 derniers mois"
+
 msgid "Last playlist"
 msgstr "Dernière playlist"
 
@@ -2813,6 +2819,9 @@ msgstr "Aucun artiste de cette scène n'a été trouvé."
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "Aucun artiste de vos plugins sélectionnés n'a été trouvé dans cette scène."
 
+msgid "No composer"
+msgstr "Sans compositeur"
+
 msgid "No cover"
 msgstr "Aucune pochette"
 
@@ -2834,11 +2843,17 @@ msgstr "Aucun dossier dans votre bibliothèque locale pour le moment."
 msgid "No folders match your search."
 msgstr "Aucun dossier ne correspond à votre recherche."
 
+msgid "No genre"
+msgstr "Sans genre"
+
 msgid "No genres in this period."
 msgstr "Aucun genre sur cette période."
 
 msgid "No grouping"
 msgstr "Aucun regroupement"
+
+msgid "No label"
+msgstr "Sans label"
 
 msgid "No label info"
 msgstr "Aucune information sur le label"
@@ -4111,11 +4126,14 @@ msgstr "Affiche les paroles des fichiers, du cache et des services en ligne. Dé
 msgid "Show playlist only from the same source as the track"
 msgstr "Afficher uniquement les playlists de la même source que la piste"
 
-msgid "Show saved releases in Albums"
-msgstr "Afficher les sorties enregistrées dans Albums"
+msgid "Show saved releases in Albums and Library"
+msgstr "Afficher les sorties enregistrées dans Albums et Bibliothèque"
 
 msgid "Show saved tracks in Tracks"
 msgstr "Afficher les pistes enregistrées dans Pistes"
+
+msgid "Show saved tracks in Tracks and Library"
+msgstr "Afficher les pistes enregistrées dans Pistes et Bibliothèque"
 
 msgid "Show source recommendations by default in Home"
 msgstr "Afficher par défaut les recommandations de la source sur l'accueil"
@@ -4593,6 +4611,9 @@ msgstr "C'est l'endroit où la machine envoie déjà le son, donc ce qui arrive 
 msgid "This looks like a playlist."
 msgstr "Cela ressemble à une playlist."
 
+msgid "This month"
+msgstr "Ce mois-ci"
+
 msgid "This month vs Last month"
 msgstr "Ce mois-ci vs le mois dernier"
 
@@ -4658,6 +4679,9 @@ msgstr "Cette mise à jour demande un accès supplémentaire."
 
 msgid "This view as an image (PNG)"
 msgstr "Cette vue comme image (PNG)"
+
+msgid "This week"
+msgstr "Cette semaine"
 
 msgid "This week vs Last week"
 msgstr "Cette semaine vs la semaine dernière"
@@ -4818,8 +4842,14 @@ msgstr "Désinstaller le plugin et supprimer les données du compte"
 msgid "Unknown DSP action."
 msgstr "Action DSP inconnue."
 
+msgid "Unknown artist"
+msgstr "Artiste inconnu"
+
 msgid "Unknown command; enter :help."
 msgstr "Commande inconnue ; saisissez :help."
+
+msgid "Unknown date"
+msgstr "Date inconnue"
 
 msgid "Unknown preference."
 msgstr "Préférence inconnue."
@@ -4827,8 +4857,14 @@ msgstr "Préférence inconnue."
 msgid "Unknown quality"
 msgstr "Qualité inconnue"
 
+msgid "Unknown source"
+msgstr "Source inconnue"
+
 msgid "Unknown target; use Tab to complete the source."
 msgstr "Cible inconnue ; utilisez Tab pour compléter la source."
+
+msgid "Unknown year"
+msgstr "Année inconnue"
 
 msgid "Unmatched"
 msgstr "Sans correspondance"

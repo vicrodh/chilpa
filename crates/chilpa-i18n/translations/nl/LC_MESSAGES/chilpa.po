@@ -2300,6 +2300,12 @@ msgstr "Taal"
 msgid "Large"
 msgstr "Groot"
 
+msgid "Last 12 months"
+msgstr "Afgelopen 12 maanden"
+
+msgid "Last 3 months"
+msgstr "Afgelopen 3 maanden"
+
 msgid "Last playlist"
 msgstr "Laatste afspeellijst"
 
@@ -2813,6 +2819,9 @@ msgstr "Er zijn geen artiesten uit deze scène gevonden."
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "Er zijn in deze scène geen artiesten van je geselecteerde plug-ins gevonden."
 
+msgid "No composer"
+msgstr "Geen componist"
+
 msgid "No cover"
 msgstr "Geen hoes"
 
@@ -2834,11 +2843,17 @@ msgstr "Nog geen mappen in je lokale bibliotheek."
 msgid "No folders match your search."
 msgstr "Geen mappen komen overeen met je zoekopdracht."
 
+msgid "No genre"
+msgstr "Geen genre"
+
 msgid "No genres in this period."
 msgstr "Geen genres in deze periode."
 
 msgid "No grouping"
 msgstr "Geen groepering"
+
+msgid "No label"
+msgstr "Geen label"
 
 msgid "No label info"
 msgstr "Geen labelinformatie"
@@ -4111,11 +4126,14 @@ msgstr "Toon songteksten uit bestanden, de cache en onlinediensten. Zet uit om a
 msgid "Show playlist only from the same source as the track"
 msgstr "Toon alleen afspeellijsten van dezelfde bron als het nummer"
 
-msgid "Show saved releases in Albums"
-msgstr "Opgeslagen uitgaven tonen in Albums"
+msgid "Show saved releases in Albums and Library"
+msgstr "Opgeslagen uitgaven tonen in Albums en Bibliotheek"
 
 msgid "Show saved tracks in Tracks"
 msgstr "Opgeslagen nummers tonen in Nummers"
+
+msgid "Show saved tracks in Tracks and Library"
+msgstr "Opgeslagen nummers tonen in Nummers en Bibliotheek"
 
 msgid "Show source recommendations by default in Home"
 msgstr "Aanbevelingen van bronnen standaard tonen op de startpagina"
@@ -4593,6 +4611,9 @@ msgstr "Dit is waar de machine al geluid naartoe stuurt, dus wat er met de sampl
 msgid "This looks like a playlist."
 msgstr "Dit lijkt een afspeellijst te zijn."
 
+msgid "This month"
+msgstr "Deze maand"
+
 msgid "This month vs Last month"
 msgstr "Deze maand vs vorige maand"
 
@@ -4658,6 +4679,9 @@ msgstr "Deze update vraagt om extra toegang."
 
 msgid "This view as an image (PNG)"
 msgstr "Deze weergave als afbeelding (PNG)"
+
+msgid "This week"
+msgstr "Deze week"
 
 msgid "This week vs Last week"
 msgstr "Deze week vs vorige week"
@@ -4818,8 +4842,14 @@ msgstr "Plug-in verwijderen en accountgegevens wissen"
 msgid "Unknown DSP action."
 msgstr "Onbekende DSP-actie."
 
+msgid "Unknown artist"
+msgstr "Onbekende artiest"
+
 msgid "Unknown command; enter :help."
 msgstr "Onbekende opdracht; voer :help in."
+
+msgid "Unknown date"
+msgstr "Datum onbekend"
 
 msgid "Unknown preference."
 msgstr "Onbekende voorkeur."
@@ -4827,8 +4857,14 @@ msgstr "Onbekende voorkeur."
 msgid "Unknown quality"
 msgstr "Kwaliteit onbekend"
 
+msgid "Unknown source"
+msgstr "Bron onbekend"
+
 msgid "Unknown target; use Tab to complete the source."
 msgstr "Onbekend doel; gebruik Tab om de bron aan te vullen."
+
+msgid "Unknown year"
+msgstr "Jaar onbekend"
 
 msgid "Unmatched"
 msgstr "Niet gevonden"

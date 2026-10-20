@@ -2300,6 +2300,12 @@ msgstr ""
 msgid "Large"
 msgstr ""
 
+msgid "Last 12 months"
+msgstr ""
+
+msgid "Last 3 months"
+msgstr ""
+
 msgid "Last playlist"
 msgstr ""
 
@@ -2813,6 +2819,9 @@ msgstr ""
 msgid "No artists from your selected plugins were found in this scene."
 msgstr ""
 
+msgid "No composer"
+msgstr ""
+
 msgid "No cover"
 msgstr ""
 
@@ -2834,10 +2843,16 @@ msgstr ""
 msgid "No folders match your search."
 msgstr ""
 
+msgid "No genre"
+msgstr ""
+
 msgid "No genres in this period."
 msgstr ""
 
 msgid "No grouping"
+msgstr ""
+
+msgid "No label"
 msgstr ""
 
 msgid "No label info"
@@ -4111,10 +4126,13 @@ msgstr ""
 msgid "Show playlist only from the same source as the track"
 msgstr ""
 
-msgid "Show saved releases in Albums"
-msgstr "Show saved releases in Albums"
+msgid "Show saved releases in Albums and Library"
+msgstr ""
 
 msgid "Show saved tracks in Tracks"
+msgstr ""
+
+msgid "Show saved tracks in Tracks and Library"
 msgstr ""
 
 msgid "Show source recommendations by default in Home"
@@ -4593,6 +4611,9 @@ msgstr ""
 msgid "This looks like a playlist."
 msgstr ""
 
+msgid "This month"
+msgstr ""
+
 msgid "This month vs Last month"
 msgstr ""
 
@@ -4657,6 +4678,9 @@ msgid "This update asks for additional access."
 msgstr ""
 
 msgid "This view as an image (PNG)"
+msgstr ""
+
+msgid "This week"
 msgstr ""
 
 msgid "This week vs Last week"
@@ -4818,7 +4842,13 @@ msgstr ""
 msgid "Unknown DSP action."
 msgstr ""
 
+msgid "Unknown artist"
+msgstr ""
+
 msgid "Unknown command; enter :help."
+msgstr ""
+
+msgid "Unknown date"
 msgstr ""
 
 msgid "Unknown preference."
@@ -4827,7 +4857,13 @@ msgstr ""
 msgid "Unknown quality"
 msgstr ""
 
+msgid "Unknown source"
+msgstr ""
+
 msgid "Unknown target; use Tab to complete the source."
+msgstr ""
+
+msgid "Unknown year"
 msgstr ""
 
 msgid "Unmatched"
