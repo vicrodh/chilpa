@@ -43,7 +43,7 @@ Item {
         }
     }
 
-    ListView {
+    MotionListView {
         id: list
         anchors.top: head.bottom
         anchors.bottom: foot.top

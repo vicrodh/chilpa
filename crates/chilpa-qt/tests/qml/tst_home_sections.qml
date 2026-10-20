@@ -98,6 +98,8 @@ TestCase {
         walk(home.contentItem)
         const added = loaders.find(l => l.entry.id === "library.recentlyAdded")
         tryVerify(() => added.visible && added.height > 0, 1000, "the records added show")
+        tryVerify(() => findChild(added, "albumCarouselRail") !== null)
+        compare(findChild(added, "albumCarouselRail").motionViewport, home)
         tryVerify(() => loaders.find(l => l.entry.id === "library.recentlyPlayed").height === 0, 1000, "nothing played, nothing shown")
     }
 
@@ -120,6 +122,8 @@ TestCase {
         const walk = item => { for (const child of item.children) { if (child.objectName === "homeModuleLoader" && child.item) mounted++; walk(child) } }
         walk(home.contentItem)
         verify(mounted < 16, "forty modules must not construct forty card rails")
+        tryVerify(() => findChild(home.contentItem, "sourceShelfRail") !== null)
+        compare(findChild(home.contentItem, "sourceShelfRail").motionViewport, home)
     }
 
     function test_switching_customizer_source_keeps_the_modal_open() {

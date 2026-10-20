@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.sources
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as Tools
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/Viewport.js" as Viewport
 // Every grid of records in the window (frontend ADR-0002 4): a list of
@@ -14,9 +15,8 @@ Item {
 
     property AlbumGridModel model
     readonly property alias scrollView: view
-    // When the model last grew at the end: the cards that came then fade in.
-    property real freshAt: 0
-    Connections { target: grid.model; function onFreshChanged() { if (grid.model.fresh >= 0) grid.freshAt = Date.now() } }
+    readonly property int detailsRev: model ? model.rev : 0
+    readonly property bool shelf: !!model && model.maxRows === 1
     // Grow with the rows instead of scrolling, for a shelf inside a page.
     property bool fitContent: false
     property Flickable viewport: null
@@ -86,16 +86,20 @@ Item {
         grid.model.expanded = grid.model.expanded === at ? -1 : at
     }
 
-    implicitHeight: view.contentHeight
+    implicitHeight: shelf ? Math.max(rowHeight, view.contentItem.childrenRect.height) + Metrics.cardRing * 2 : view.contentHeight // derived: the shelf keeps both selection rings
 
-    ListView {
+    Tools.MotionListView {
         id: view
+        motionViewport: grid.viewport
 
         anchors.fill: parent
-        interactive: !grid.fitContent
+        orientation: grid.shelf ? ListView.Horizontal : ListView.Vertical
+        interactive: grid.shelf ? contentWidth > width : !grid.fitContent
         // Scrolled rows stay inside the grid, not over what sits above it.
-        clip: !grid.fitContent
+        clip: grid.shelf || !grid.fitContent
         model: grid.model
+        leftMargin: grid.shelf ? Metrics.cardRing : 0
+        rightMargin: grid.shelf ? Metrics.cardRing : 0
         spacing: grid.list ? Metrics.gap2 : Metrics.gridGap
         reuseItems: true
         cacheBuffer: grid.rowHeight * 2 // derived: two rows ready on each side
@@ -107,6 +111,7 @@ Item {
             gutter: grid.scrollGutter
             viewportHovered: viewHover.hovered
         }
+        ScrollBar.horizontal: ViewportScrollBar { policy: grid.shelf ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
         HoverHandler { id: viewHover; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad }
 
         delegate: Item {
@@ -114,12 +119,13 @@ Item {
 
             required property int first
             required property int span
+            required property int revision
             // The group this row opens, if it opens one.
             required property string group
             readonly property real lead: group !== "" ? Metrics.rowGroup : 0
             readonly property bool nearby: !grid.viewport || y + height >= grid.visibleTop - grid.viewport.height && y < grid.visibleTop + grid.viewport.height * 2
 
-            width: grid.width
+            width: grid.shelf ? grid.cardWidth : grid.width
             height: lead + grid.rowHeight + (quick.active ? Metrics.gap8 + quick.height : 0)
 
             Text {
@@ -142,12 +148,12 @@ Item {
                 x: Metrics.cardRing
                 y: row.lead
                 width: grid.layoutWidth
-                rev: grid.model ? grid.model.rev : 0
-                albumId: shown ? grid.model.albumId(row.first, rev) : 0
-                title: shown ? grid.model.title(row.first, rev) : ""
-                subtitle: shown ? grid.model.subtitle(row.first, rev) : ""
-                year: shown ? grid.model.year(row.first, rev) : ""
-                art: shown ? grid.model.art(row.first, rev) : ""
+                rev: grid.detailsRev
+                albumId: shown ? grid.model.albumId(row.first, row.revision) : 0
+                title: shown ? grid.model.title(row.first, row.revision) : ""
+                subtitle: shown ? grid.model.subtitle(row.first, row.revision) : ""
+                year: shown ? grid.model.year(row.first, row.revision) : ""
+                art: shown ? grid.model.art(row.first, row.revision) : ""
                 columns: grid.listColumns
                 sources: shown && grid.listColumns.indexOf("source") >= 0 ? grid.badges(albumId, rev) : []
                 mixed: !!grid.model && grid.model.mixed
@@ -169,34 +175,32 @@ Item {
             Repeater {
                 // A fixed count: a recycled row keeps its cards and only
                 // rebinds them.
-                model: grid.list || !row.nearby ? 0 : grid.columns
+                model: grid.list || !row.nearby ? 0 : grid.shelf ? 1 : grid.columns
 
                 AlbumCard {
                     required property int index
                     readonly property bool occupied: index < row.span
                     readonly property int at: row.first + index
-                    readonly property int rev: grid.model ? grid.model.rev : 0
+                    readonly property int rev: row.revision
 
                     x: Metrics.cardRing + index * (grid.cardWidth + Metrics.gridGap)
                     y: row.lead
                     width: grid.cardWidth
                     visible: occupied
                     albumId: occupied ? grid.model.albumId(at, rev) : 0
-                    sources: occupied ? grid.badges(albumId, rev) : []
+                    sources: occupied ? grid.badges(albumId, grid.detailsRev) : []
                     title: occupied ? grid.model.title(at, rev) : ""
                     subtitle: occupied ? grid.model.subtitle(at, rev) : ""
                     year: occupied ? grid.model.year(at, rev) : ""
                     art: occupied ? grid.model.art(at, rev) : ""
-                    artColors: occupied && albumId < 0 && String(art) === "" ? JSON.parse(Sources.artColors(albumId, rev) || "[]") : []
-                    qualityInfo: occupied && !round ? JSON.parse(AlbumActions.quality(albumId, rev) || "{}") : ({})
+                    artColors: occupied && albumId < 0 && String(art) === "" ? JSON.parse(Sources.artColors(albumId, grid.detailsRev) || "[]") : []
+                    qualityInfo: occupied && !round ? JSON.parse(AlbumActions.quality(albumId, grid.detailsRev) || "{}") : ({})
                     tint: at
                     round: grid.isRound(albumId)
-                    fresh: grid.model && grid.model.fresh >= 0 && at >= grid.model.fresh
-                    freshAt: grid.freshAt
                     selected: !round && AlbumActions.selected(albumId, AlbumActions.rev)
                     selecting: !round && AlbumActions.selectedCount > 0
                     expanded: grid.model.expanded === at
-                    available: round || !occupied || AlbumActions.available(albumId, rev)
+                    available: round || !occupied || AlbumActions.available(albumId, grid.detailsRev)
                     onClicked: (modifiers) => grid.clicked(at, albumId, title, modifiers, available)
                     // A record that stops playing closes its quick view too.
                     onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
@@ -215,7 +219,7 @@ Item {
                 objectName: "albumQuickLoader"
 
                 y: row.lead + grid.rowHeight + Metrics.gap8
-                x: grid.viewportX + Metrics.cardRing
+                x: (grid.shelf ? view.contentX - row.x : grid.viewportX) + Metrics.cardRing
                 width: Math.max(0, grid.viewportWidth - Metrics.cardRing * 2) // derived: the visible content area
                 active: grid.model.expanded >= row.first && grid.model.expanded < row.first + row.span
                 sourceComponent: AlbumQuickView {

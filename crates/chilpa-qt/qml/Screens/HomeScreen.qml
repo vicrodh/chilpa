@@ -74,6 +74,7 @@ ListView {
     // I keep one row when a chosen count makes the shelf wider than its viewport.
     component AlbumShelf: AlbumCarousel {
         id: shelf
+        viewport: page
         property var entry: ({})
         readonly property bool ready: records.ready
         readonly property bool shown: records.albums > 0
@@ -85,6 +86,7 @@ ListView {
     }
     component TrackShelf: TrackCarousel {
         id: tracks
+        viewport: page
         property var entry: ({})
         readonly property bool ready: most.ready
         readonly property bool shown: most.count > 0
@@ -96,6 +98,7 @@ ListView {
     component PlaylistShelf: HomePlaylistShelf {}
     // A source's shelf, cut to the size chosen.
     component SourceRail: SourceShelf {
+        viewport: page
         property var entry: ({})
         oneRow: true
         section: Object.assign({}, entry, { kind: entry.entityKind || "album", items: (entry.items || []).slice(0, entry.size || undefined) })

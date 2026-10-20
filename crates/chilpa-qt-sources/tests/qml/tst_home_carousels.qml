@@ -50,12 +50,12 @@ TestCase {
     function test_album_count_grows_horizontally_and_keeps_card_height() {
         const shelf = createTemporaryObject(albumShelf, test)
         const rail = findChild(shelf,"albumCarouselRail")
-        tryVerify(() => rail.height > 0 && shelf.model.count === 1)
+        tryVerify(() => rail.height > 0 && shelf.model.count === shelf.model.columns)
         const height = shelf.height
         verify(!rail.interactive)
         shelf.size = 24
         tryVerify(() => rail.contentWidth > rail.width && rail.interactive)
-        compare(shelf.model.count, 1)
+        compare(shelf.model.count, 24)
         compare(shelf.height, height)
         const next = findChild(shelf,"shelfForward")
         verify(next.visible && next.enabled)
