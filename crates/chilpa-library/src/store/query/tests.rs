@@ -117,3 +117,14 @@ fn a_name_condition_reads_its_index_instead_of_every_track() {
     assert!(plan.contains("UNION"), "either set, read once each:\n{plan}");
     assert!(!plan.contains("SCAN tg") && !plan.contains("SCAN tc"), "no pass over every genre or composer row:\n{plan}");
 }
+
+#[test]
+fn quoted_values_and_album_alternatives_keep_their_meaning() {
+    for field in [Field::Genre, Field::Artist, Field::Album] {
+        let tree = Node::Is(field, Values::Any(vec!["None".into(), "Davis, Miles".into(), "The \"Band\"".into(), "C:\\Music".into()]));
+        assert_eq!(parse(&tree.to_string()).unwrap(), tree);
+    }
+    let lib = library();
+    assert_eq!(found(&lib, "album:\"Kind of Blue\",\"Monk's Dream\""), [1, 2, 3]);
+    assert!(parse("added:9223372036854775807y").is_err());
+}

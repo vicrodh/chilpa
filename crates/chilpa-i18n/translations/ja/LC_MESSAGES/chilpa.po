@@ -235,6 +235,9 @@ msgstr "キュー「{}」に追加"
 msgid "Add tracks from a track menu to this queue."
 msgstr "トラックメニューからこのキューにトラックを追加します。"
 
+msgid "Added"
+msgstr "追加日"
+
 msgid "Added this month"
 msgstr "今月追加"
 
@@ -496,6 +499,10 @@ msgstr "終了前に確認"
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Chilpaが再生している間、PipeWireまたはPulseAudioにカードの解放を要求し、Chilpaが停止または長時間一時停止したときに返します。"
+
+msgid "At least {} star"
+msgid_plural "At least {} stars"
+msgstr[0] "星{}以上"
 
 msgid "Audio"
 msgstr "オーディオ"
@@ -1572,6 +1579,9 @@ msgstr "メタデータを編集…"
 msgid "Edit playlist"
 msgstr "プレイリストを編集"
 
+msgid "Edit with :filter"
+msgstr ":filterで編集"
+
 msgid "Edit…"
 msgstr "編集…"
 
@@ -1784,6 +1794,9 @@ msgstr "フローティング"
 
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr "コンテンツの上に浮かせるか、ウィンドウの上端または下端に全幅で表示します。"
+
+msgid "Focus"
+msgstr "フォーカス"
 
 msgid "Focus on playing"
 msgstr "再生中のトラックへ移動"
@@ -2018,9 +2031,6 @@ msgstr "手動入力を非表示"
 
 msgid "Hide sidebar"
 msgstr "サイドバーを非表示"
-
-msgid "Hide the columns"
-msgstr "列を非表示"
 
 msgid "Hide token"
 msgstr "トークンを非表示"
@@ -2349,6 +2359,9 @@ msgstr "前回のプレイリスト"
 msgid "Last track"
 msgstr "最後のトラック"
 
+msgid "Last {} days"
+msgstr "過去{}日間"
+
 msgid "Last.fm account"
 msgstr "Last.fmアカウント"
 
@@ -2570,6 +2583,12 @@ msgstr "未再生にする"
 
 msgid "Mark the start first with :loop a."
 msgstr "先に :loop a で開始点を指定してください。"
+
+msgid "Match all"
+msgstr "すべてに一致"
+
+msgid "Match any"
+msgstr "いずれかに一致"
 
 msgid "Matched"
 msgstr "一致"
@@ -2940,6 +2959,9 @@ msgstr "この検索に一致するプリセットはありません。"
 msgid "No purchases match the current view."
 msgstr "現在の表示に一致する購入はありません。"
 
+msgid "No results"
+msgstr "結果なし"
+
 msgid "No results for"
 msgstr "検索結果なし:"
 
@@ -2975,6 +2997,9 @@ msgstr "このフィルターに一致するトラックはありません。"
 
 msgid "No tracks match your search."
 msgstr "検索に一致するトラックはありません。"
+
+msgid "No year"
+msgstr "年なし"
 
 msgid "None"
 msgstr "なし"
@@ -4176,9 +4201,6 @@ msgstr "保存したトラックを「トラック」に表示"
 
 msgid "Show source recommendations by default in Home"
 msgstr "ホームにソースのおすすめを既定で表示"
-
-msgid "Show the columns"
-msgstr "列を表示"
 
 msgid "Show the sidebar"
 msgstr "サイドバーを表示"
@@ -5577,6 +5599,9 @@ msgstr "/proc/asoundにサウンドカードが一覧されていません"
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr "応答したサウンドサーバーがありません。pipewireとpipewire-pulseをインストールしてください"
 
+msgid "none of"
+msgstr "次を除く"
+
 msgid "none of that can be played now: its folder is not mounted or its server does not answer"
 msgstr "現在どれも再生できません。フォルダーがマウントされていないか、サーバーが応答しません"
 
@@ -5609,6 +5634,9 @@ msgstr "1つ以上のファイルにタグを付けられません"
 
 msgid "open it again from where it is listed"
 msgstr "一覧された場所からもう一度開いてください"
+
+msgid "or"
+msgstr "または"
 
 msgid "outside the image"
 msgstr "イメージの外です"

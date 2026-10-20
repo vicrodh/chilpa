@@ -1,6 +1,8 @@
 pragma Singleton
 import QtQuick
 QtObject {
+    property bool panesOpen: true
+    property int panesHeight: 240
     property var preferences: ({})
     property string libraryView: "grid"
     function kept(key) { return preferences[key] || "" }

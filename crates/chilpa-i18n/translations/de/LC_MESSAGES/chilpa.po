@@ -235,6 +235,9 @@ msgstr "Zur Warteschlange {} hinzufügen"
 msgid "Add tracks from a track menu to this queue."
 msgstr "Füge über das Titelmenü Titel zu dieser Warteschlange hinzu."
 
+msgid "Added"
+msgstr "Hinzugefügt"
+
 msgid "Added this month"
 msgstr "Diesen Monat hinzugefügt"
 
@@ -497,6 +500,11 @@ msgstr "Vor dem Beenden fragen"
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Bittet PipeWire oder PulseAudio, die Karte freizugeben, solange Chilpa darauf wiedergibt, und gibt sie zurück, wenn Chilpa stoppt oder lange pausiert."
+
+msgid "At least {} star"
+msgid_plural "At least {} stars"
+msgstr[0] "Mindestens {} Stern"
+msgstr[1] "Mindestens {} Sterne"
 
 msgid "Audio"
 msgstr "Audio"
@@ -1574,6 +1582,9 @@ msgstr "Metadaten bearbeiten…"
 msgid "Edit playlist"
 msgstr "Playlist bearbeiten"
 
+msgid "Edit with :filter"
+msgstr "Mit :filter bearbeiten"
+
 msgid "Edit…"
 msgstr "Bearbeiten…"
 
@@ -1786,6 +1797,9 @@ msgstr "Schwebend"
 
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr "Schwebend über dem Inhalt oder über die volle Fensterbreite oben oder unten."
+
+msgid "Focus"
+msgstr "Fokus"
 
 msgid "Focus on playing"
 msgstr "Dem laufenden Titel folgen"
@@ -2020,9 +2034,6 @@ msgstr "Manuelle Eingabe ausblenden"
 
 msgid "Hide sidebar"
 msgstr "Seitenleiste ausblenden"
-
-msgid "Hide the columns"
-msgstr "Spalten ausblenden"
 
 msgid "Hide token"
 msgstr "Token ausblenden"
@@ -2351,6 +2362,9 @@ msgstr "Letzte Playlist"
 msgid "Last track"
 msgstr "Letzter Titel"
 
+msgid "Last {} days"
+msgstr "Letzte {} Tage"
+
 msgid "Last.fm account"
 msgstr "Last.fm-Konto"
 
@@ -2572,6 +2586,12 @@ msgstr "Als nicht gespielt markieren"
 
 msgid "Mark the start first with :loop a."
 msgstr "Markiere zuerst den Anfang mit :loop a."
+
+msgid "Match all"
+msgstr "Alle erfüllen"
+
+msgid "Match any"
+msgstr "Mindestens eines erfüllen"
 
 msgid "Matched"
 msgstr "Zugeordnet"
@@ -2942,6 +2962,9 @@ msgstr "Kein Preset passt zu dieser Suche."
 msgid "No purchases match the current view."
 msgstr "Keine Käufe passen zur aktuellen Ansicht."
 
+msgid "No results"
+msgstr "Keine Ergebnisse"
+
 msgid "No results for"
 msgstr "Keine Ergebnisse für"
 
@@ -2977,6 +3000,9 @@ msgstr "Keine Titel passen zu diesem Filter."
 
 msgid "No tracks match your search."
 msgstr "Keine Titel entsprechen deiner Suche."
+
+msgid "No year"
+msgstr "Ohne Jahr"
 
 msgid "None"
 msgstr "Keine"
@@ -4179,9 +4205,6 @@ msgstr "Gespeicherte Titel unter Titel anzeigen"
 
 msgid "Show source recommendations by default in Home"
 msgstr "Empfehlungen der Quelle standardmäßig auf der Startseite anzeigen"
-
-msgid "Show the columns"
-msgstr "Spalten anzeigen"
 
 msgid "Show the sidebar"
 msgstr "Seitenleiste anzeigen"
@@ -5582,6 +5605,9 @@ msgstr "in /proc/asound ist keine Soundkarte aufgeführt"
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr "kein Soundserver hat geantwortet; installiere pipewire und pipewire-pulse"
 
+msgid "none of"
+msgstr "keines von"
+
 msgid "none of that can be played now: its folder is not mounted or its server does not answer"
 msgstr "nichts davon lässt sich jetzt wiedergeben: Der Ordner ist nicht eingehängt oder der Server antwortet nicht"
 
@@ -5614,6 +5640,9 @@ msgstr "eine oder mehrere Dateien können keine Tags aufnehmen"
 
 msgid "open it again from where it is listed"
 msgstr "öffne es erneut dort, wo es aufgeführt ist"
+
+msgid "or"
+msgstr "oder"
 
 msgid "outside the image"
 msgstr "außerhalb des Images"

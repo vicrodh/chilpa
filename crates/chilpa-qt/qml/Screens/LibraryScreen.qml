@@ -8,6 +8,7 @@ import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/query/qml/Components"
+import "qrc:/qt/qml/app/chilpa/query/qml/Patterns"
 
 // Library (design/02 9, design/06): the filter columns in cascade and
 // the records they leave, as cards or as rows. A fixed layout with no scroll of
@@ -36,7 +37,7 @@ Item {
     property real dragged: -1
     // The columns' height when the grip was pressed.
     property real grabbed: 0
-    readonly property bool panesShown: SettingsModel.panesOpen && page.panes.length > 0
+    readonly property bool panesShown: SettingsModel.panesOpen && (toggle.focusMode || page.panes.length > 0)
     readonly property real panesHeight: !panesShown ? 0
         : dragged >= 0 ? dragged
         : SettingsModel.panesHeight > 0 ? SettingsModel.panesHeight : Metrics.panesHeight
@@ -151,26 +152,25 @@ Item {
     QueryChipRow {
         anchors.verticalCenter: crumbs.verticalCenter
         x: crumbs.x + crumbs.used + Metrics.gap8
+        width: Math.max(0, toggle.x - x - Metrics.gap8)
+        clip: true
         onEdited: (query) => Library.applyQuery(query)
     }
-    IconButton {
+    FocusSwitch {
         id: toggle
         anchors.right: head.right
         anchors.verticalCenter: crumbs.verticalCenter
-        tip: SettingsModel.panesOpen ? I18n.tr("Hide the columns", I18n.rev) : I18n.tr("Show the columns", I18n.rev)
-        glyph: Icons.columns3
-        checked: SettingsModel.panesOpen
-        onClicked: SettingsModel.panesOpen = !SettingsModel.panesOpen
     }
 
-    LibraryPanes {
+    FocusArea {
         id: panes
         anchors.top: crumbs.bottom
         x: head.x
         width: head.width
         height: page.panesHeight
         visible: page.panesShown
-        shown: page.panes
+        focusMode: toggle.focusMode
+        columns: Component { LibraryPanes { shown: page.panes } }
     }
 
     ResizeHandle {

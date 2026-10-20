@@ -35,7 +35,7 @@ fn leaf(field: Field, values: &Values, item: &SourceItem, stars: &Stars, now: i6
         (Field::Composer, Values::Any(want)) => named(&folded.composers, want),
         (Field::Label, Values::Any(want)) => named(std::slice::from_ref(&folded.label), want),
         (Field::Artist, Values::Any(want)) => named(&folded.artists, want),
-        (Field::Album, Values::Any(want)) => worded(&folded.album_title, want),
+        (Field::Album, Values::Any(want)) => want.iter().any(|name| worded(&folded.album_title, &name.split_whitespace().map(String::from).collect::<Vec<_>>())),
         (Field::Title, Values::Any(want)) => worded(&item.title.to_lowercase(), want),
         (Field::Text, Values::Any(want)) => worded(&folded.text, want),
         (Field::Year, Values::Any(want)) => item.year.is_some_and(|year| want.iter().any(|w| number(w) == Some(i64::from(year)))),

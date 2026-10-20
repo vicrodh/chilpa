@@ -200,7 +200,7 @@ msgid "Add cover"
 msgstr ""
 
 msgid "Add filter"
-msgstr ""
+msgstr "Add filter"
 
 msgid "Add folder to library"
 msgstr "Add folder to library"
@@ -234,6 +234,9 @@ msgstr ""
 
 msgid "Add tracks from a track menu to this queue."
 msgstr ""
+
+msgid "Added"
+msgstr "Added"
 
 msgid "Added this month"
 msgstr ""
@@ -497,6 +500,11 @@ msgstr ""
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr ""
+
+msgid "At least {} star"
+msgid_plural "At least {} stars"
+msgstr[0] "At least {} star"
+msgstr[1] "At least {} stars"
 
 msgid "Audio"
 msgstr ""
@@ -990,7 +998,7 @@ msgid "Clipped samples"
 msgstr ""
 
 msgid "Close"
-msgstr ""
+msgstr "Close"
 
 msgid "Close / Dismiss"
 msgstr ""
@@ -1035,7 +1043,7 @@ msgid "Colors"
 msgstr ""
 
 msgid "Columns"
-msgstr ""
+msgstr "Columns"
 
 msgid "Combine"
 msgstr ""
@@ -1574,6 +1582,9 @@ msgstr ""
 msgid "Edit playlist"
 msgstr ""
 
+msgid "Edit with :filter"
+msgstr "Edit with :filter"
+
 msgid "Edit…"
 msgstr ""
 
@@ -1786,6 +1797,9 @@ msgstr ""
 
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr ""
+
+msgid "Focus"
+msgstr "Focus"
 
 msgid "Focus on playing"
 msgstr ""
@@ -2019,9 +2033,6 @@ msgid "Hide manual entry"
 msgstr ""
 
 msgid "Hide sidebar"
-msgstr ""
-
-msgid "Hide the columns"
 msgstr ""
 
 msgid "Hide token"
@@ -2351,6 +2362,9 @@ msgstr ""
 msgid "Last track"
 msgstr ""
 
+msgid "Last {} days"
+msgstr "Last {} days"
+
 msgid "Last.fm account"
 msgstr ""
 
@@ -2572,6 +2586,12 @@ msgstr ""
 
 msgid "Mark the start first with :loop a."
 msgstr ""
+
+msgid "Match all"
+msgstr "Match all"
+
+msgid "Match any"
+msgstr "Match any"
 
 msgid "Matched"
 msgstr "Matched"
@@ -2862,7 +2882,7 @@ msgid "No artists from your selected plugins were found in this scene."
 msgstr ""
 
 msgid "No composer"
-msgstr ""
+msgstr "No composer"
 
 msgid "No cover"
 msgstr ""
@@ -2886,7 +2906,7 @@ msgid "No folders match your search."
 msgstr ""
 
 msgid "No genre"
-msgstr ""
+msgstr "No genre"
 
 msgid "No genres in this period."
 msgstr ""
@@ -2895,7 +2915,7 @@ msgid "No grouping"
 msgstr ""
 
 msgid "No label"
-msgstr ""
+msgstr "No label"
 
 msgid "No label info"
 msgstr ""
@@ -2942,6 +2962,9 @@ msgstr ""
 msgid "No purchases match the current view."
 msgstr "No purchases match the current view."
 
+msgid "No results"
+msgstr "No results"
+
 msgid "No results for"
 msgstr ""
 
@@ -2977,6 +3000,9 @@ msgstr ""
 
 msgid "No tracks match your search."
 msgstr ""
+
+msgid "No year"
+msgstr "No year"
 
 msgid "None"
 msgstr ""
@@ -3726,7 +3752,7 @@ msgid "Remote image limit"
 msgstr ""
 
 msgid "Remove"
-msgstr ""
+msgstr "Remove"
 
 msgid "Remove cover"
 msgstr ""
@@ -3984,7 +4010,7 @@ msgid "Scroll to adjust volume"
 msgstr ""
 
 msgid "Search"
-msgstr ""
+msgstr "Search"
 
 msgid "Search artists"
 msgstr ""
@@ -4178,9 +4204,6 @@ msgid "Show saved tracks in Tracks"
 msgstr ""
 
 msgid "Show source recommendations by default in Home"
-msgstr ""
-
-msgid "Show the columns"
 msgstr ""
 
 msgid "Show the sidebar"
@@ -5582,6 +5605,9 @@ msgstr ""
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr ""
 
+msgid "none of"
+msgstr "none of"
+
 msgid "none of that can be played now: its folder is not mounted or its server does not answer"
 msgstr ""
 
@@ -5614,6 +5640,9 @@ msgstr ""
 
 msgid "open it again from where it is listed"
 msgstr ""
+
+msgid "or"
+msgstr "or"
 
 msgid "outside the image"
 msgstr ""
