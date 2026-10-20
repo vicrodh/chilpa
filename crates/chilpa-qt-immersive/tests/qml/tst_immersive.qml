@@ -165,6 +165,31 @@ TestCase {
     }
     Component { id: settleMaker; StreamSettle {} }
 
+    readonly property string translated: JSON.stringify({ status: "found", source: "Somewhere", translation: 0, document: { schema: 1, timing: "line", lines: [
+        { start_ms: 1000, text: "One two three" }, { start_ms: 5000, text: "Four" } ], layers: [
+        { kind: "translation", language: "es", lines: [{ line: 0, text: "Uno dos tres" }, { line: 1, text: "Cuatro" }] } ] } })
+
+    function test_the_lyrics_offer_their_translation_where_they_show() {
+        Player.lyricsJson = translated
+        Player.lyricsSynced = true
+        Player.lyricsLine = 1
+        Immersive.setView(1, 0, 0)
+        waitForRendering(view)
+        const split = findChild(view, "immersiveSplitTranslate")
+        verify(split !== null && split.visible, "the split's lyrics offer it at their bottom right")
+        compare(findChild(view, "immersiveSplitLyrics").translation, null, "and wait to be asked")
+        mouseClick(split)
+        compare(findChild(view, "immersiveSplitLyrics").translation[1], "Cuatro")
+        Immersive.setView(1, 0, 5)
+        waitForRendering(view)
+        const card = findChild(view, "immersiveCardTranslate")
+        verify(card !== null && card.visible && card.on, "the card's line keeps the same choice")
+        mouseClick(card)
+        verify(!card.on)
+        Player.lyricsJson = JSON.stringify({ status: "searching" })
+        verify(!card.visible, "lyrics without a translation offer none")
+    }
+
     function test_the_view_picker_moves_right_only_on_a_mac() {
         const header = findChild(view, "immersiveHeader")
         const trigger = findChild(header, "immersiveViewTrigger")

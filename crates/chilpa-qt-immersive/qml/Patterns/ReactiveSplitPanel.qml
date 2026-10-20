@@ -228,6 +228,7 @@ Item {
                     current: panel.feed ? panel.feed.current : -1
                     nowMs: panel.feed ? panel.feed.nowMs : 0
                     endMs: panel.feed ? panel.feed.currentEnd : 0
+                    translation: panel.feed && panel.feed.translating ? (panel.feed.translation[panel.feed.current] || "") : ""
                     size: Math.max(Stage.cineLineMin, Math.min(Stage.cineLineMax, card.height * Stage.cineTitleShare)) * Type.pointsPerPixel // derived: pixels to points
                     sungColor: Theme.color.immersiveTextStrong
                     dimColor: Theme.color.immersiveLyricInactive
@@ -241,5 +242,13 @@ Item {
             }
         }
         Rectangle { anchors.fill: parent; radius: Stage.cineCardRound; color: "transparent"; border.width: Metrics.hairline; border.color: Theme.color.immersiveCardEdge }
+        TranslateButton {
+            objectName: "immersiveCardTranslate"
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.margins: Stage.lyricFollowPad
+            feed: panel.feed
+            shown: panel.lyricsMode
+        }
     }
 }

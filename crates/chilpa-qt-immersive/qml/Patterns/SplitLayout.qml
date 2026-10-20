@@ -73,7 +73,7 @@ Item {
                     current: split.feed ? split.feed.current : -1
                     nowMs: split.feed ? split.feed.nowMs : 0
                     sungEnd: split.feed ? split.feed.currentEnd : 0
-                    translation: null
+                    translation: split.feed && split.feed.translating ? split.feed.translation : null
                     size: Math.round(Math.max(Stage.splitLineMin, Math.min(split.width * Stage.splitLineShare, Stage.splitLineMax))) * Type.pointsPerPixel // derived: QBZ's pixels to points
                     sungColor: Theme.color.immersiveTextStrong
                     dimColor: Theme.color.immersiveLyricInactive
@@ -97,6 +97,14 @@ Item {
                     visible: active
                     sourceComponent: QueueTabsPanel { centered: true }
                 }
+            }
+            TranslateButton {
+                objectName: "immersiveSplitTranslate"
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: Stage.splitPlatePad
+                feed: split.feed
+                shown: Immersive.splitPanel === 0
             }
         }
     }

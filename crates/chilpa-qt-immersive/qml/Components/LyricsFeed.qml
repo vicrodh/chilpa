@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Window
 import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/lyrics/qml/Primitives"
 
 // The lyrics of what plays as the immersive surfaces read them: the
 // panel's document, which line is current, where it ends, and the moment
@@ -25,6 +26,12 @@ Item {
     readonly property bool waiting: timed && hasLines && (!synced || Player.lyricsLine < 0
         || firstTimedLine === null || nowMs < firstTimedLine.start_ms)
     readonly property bool none: !hasLines
+    // The translation the lyrics carry, by line, and whether it shows: asked
+    // for from a corner of the lyric surface, put away with its track.
+    readonly property var translation: found ? offered.lines : null
+    property bool translating: false
+    onFoundChanged: if (!found) translating = false
+    LyricTranslation { id: offered; lyrics: feed.lyrics }
     readonly property string currentText: current >= 0 && current < lines.length ? (lines[current].text || "") : ""
     readonly property bool uppercase: SettingsModel.kept("ui.lyrics.uppercase") === "true"
     readonly property string dimming: SettingsModel.kept("ui.lyrics.dimming") || "strong"
