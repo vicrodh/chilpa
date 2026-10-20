@@ -602,7 +602,7 @@ impl Reader {
                     eprintln!("chilpa-queries: library snapshot failed: {e}");
                     Default::default()
                 });
-                crate::library_sources::merge_snapshot(local, keys, filter, order, &index, &stars, crate::library_sources::Scope::Library).0
+                crate::library_sources::merge_snapshot(local, keys, filter, order, &index, &stars, crate::library_sources::Scope::Library, None).0
             };
             current().then_some((facets, snapshot))
         };

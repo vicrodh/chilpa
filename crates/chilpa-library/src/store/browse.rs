@@ -653,7 +653,7 @@ impl Library {
         let (from, plays) = if matches!(order, TrackOrder::Plays | TrackOrder::PlaysAscending) {
             (FROM, ", COALESCE(r.plays, 0) AS plays")
         } else { (FACET_FROM, ", 0") };
-        let keys = if keyed { super::order_keys::COLUMNS } else { "" };
+        let keys = if keyed { super::order_keys::columns(order, &f.grouped_by) } else { String::new() };
         // The groups follow an order about what they are named: Artist
         // from Z puts the artists from Z.
         let turned = |on: bool| if on { " DESC" } else { "" };
