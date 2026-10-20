@@ -109,6 +109,9 @@ msgstr "5 h"
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Um grafo JACK roda a uma única taxa e todos os programas nele rodam a essa taxa -- este está a {} Hz. Uma faixa gravada em qualquer outra taxa é reamostrada antes que o Chilpa possa opinar, e nenhuma configuração aqui muda isso. O JACK serve para rotear áudio entre programas; para entregar um arquivo ao DAC sem alterações, escolha a própria placa."
 
+msgid "A bar or OR: either is enough"
+msgstr "Uma barra ou OR: basta uma"
+
 msgid "A click on a record opens"
 msgstr "Um clique em um disco abre"
 
@@ -237,6 +240,9 @@ msgstr "Adicione faixas a esta fila pelo menu de uma faixa."
 
 msgid "Added"
 msgstr "Data de adição"
+
+msgid "Added in the last 30 days: d, w, m or y"
+msgstr "Adicionados nos últimos 30 dias: d, w, m ou y"
 
 msgid "Added this month"
 msgstr "Adicionadas este mês"
@@ -422,6 +428,9 @@ msgstr "Plano de fundo animado com a capa do álbum atrás de todo o app. Alto u
 
 msgid "Any of"
 msgstr "Qualquer uma"
+
+msgid "Any of those years"
+msgstr "Qualquer um desses anos"
 
 msgid "Any quality"
 msgstr "Qualquer qualidade"
@@ -978,6 +987,9 @@ msgstr "Limpar capas remotas temporárias"
 
 msgid "Clear temporary remote images?"
 msgstr "Limpar imagens remotas temporárias?"
+
+msgid "Clear the filter"
+msgstr "Remover o filtro"
 
 msgid "Clear the selection"
 msgstr "Limpar a seleção"
@@ -1588,6 +1600,9 @@ msgstr "Editar com :filter"
 msgid "Edit…"
 msgstr "Editar…"
 
+msgid "Either genre: a comma means or"
+msgstr "Um ou outro gênero: a vírgula significa “ou”"
+
 msgid "Elevated"
 msgstr "Elevado"
 
@@ -1840,6 +1855,9 @@ msgstr "Avançar"
 msgid "Forward 10 seconds"
 msgstr "Avançar 10 segundos"
 
+msgid "Four stars or more; rating:0 has none"
+msgstr "Quatro estrelas ou mais; rating:0 é sem estrelas"
+
 msgid "French"
 msgstr "Francês"
 
@@ -1855,6 +1873,9 @@ msgstr "Do catálogo"
 msgid "From main sidebar"
 msgstr "Da barra lateral principal"
 
+msgid "From one year to another, both included"
+msgstr "De um ano a outro, os dois incluídos"
+
 msgid "From plugin"
 msgstr "Do plugin"
 
@@ -1863,6 +1884,9 @@ msgstr "Do mesmo artista"
 
 msgid "From settings menu"
 msgstr "Do menu de configurações"
+
+msgid "From that year on"
+msgstr "Desse ano em diante"
 
 msgid "From this week"
 msgstr "Desta semana"
@@ -2385,6 +2409,9 @@ msgstr "Lançamento mais recente"
 
 msgid "Latest run"
 msgstr "Última execução"
+
+msgid "Leave a label out: a minus means not"
+msgstr "Deixar uma gravadora de fora: o menos significa “não”"
 
 msgid "Left delay · 0–30 ms"
 msgstr "Atraso esquerdo · 0–30 ms"
@@ -3007,6 +3034,9 @@ msgstr "Nenhuma faixa corresponde à sua busca."
 msgid "No year"
 msgstr "Sem ano"
 
+msgid "No year; genre, label and composer take none too"
+msgstr "Sem ano; gênero, gravadora e compositor também aceitam none"
+
 msgid "None"
 msgstr "Nenhum"
 
@@ -3261,6 +3291,9 @@ msgstr "Dispositivo de saída"
 
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "Amostras PCM não podem ser gravadas em um fluxo DSD nativo"
+
+msgid "Parentheses group; NOT works like the minus"
+msgstr "Parênteses agrupam; NOT funciona como o menos"
 
 msgid "Password"
 msgstr "Senha"
@@ -3619,6 +3652,9 @@ msgstr "Sair do Chilpa?"
 msgid "Quitting from the window, its menu, Ctrl+Q or the tray asks first."
 msgstr "Sair pela janela, pelo menu, por Ctrl+Q ou pela bandeja pede confirmação antes."
 
+msgid "Quotes keep a name with spaces or commas whole"
+msgstr "As aspas mantêm inteiro um nome com espaços ou vírgulas"
+
 msgid "RECENTLY PLAYED"
 msgstr "REPRODUZIDO RECENTEMENTE"
 
@@ -3717,6 +3753,15 @@ msgstr "Reproduzidos recentemente, todas as fontes"
 
 msgid "Records"
 msgstr "Discos"
+
+msgid "Records from that year"
+msgstr "Álbuns desse ano"
+
+msgid "Records of that genre"
+msgstr "Álbuns desse gênero"
+
+msgid "Records with that composer"
+msgstr "Álbuns com esse compositor"
 
 msgid "Refresh"
 msgstr "Atualizar"
@@ -4179,6 +4224,9 @@ msgstr "Configurações"
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "Molde o som: aumente uma banda para ouvir mais, diminua para ouvir menos."
 
+msgid "Short names: y g l c a al t r"
+msgstr "Nomes curtos: y g l c a al t r"
+
 msgid "Show"
 msgstr "Mostrar"
 
@@ -4229,6 +4277,9 @@ msgstr "Aleatório"
 
 msgid "Shuffle all"
 msgstr "Reproduzir tudo em ordem aleatória"
+
+msgid "Side by side, all must hold"
+msgstr "Lado a lado, todas precisam valer"
 
 msgid "Sidecar"
 msgstr "Arquivo auxiliar"
@@ -4970,6 +5021,9 @@ msgstr "Catálogo de presets de DSP não compatível ou vazio."
 msgid "Up next"
 msgstr "A seguir"
 
+msgid "Up to that year"
+msgstr "Até esse ano"
+
 msgid "Upcoming"
 msgstr "Em breve"
 
@@ -5176,6 +5230,12 @@ msgstr "Retirar aprovação"
 
 msgid "Without plugins"
 msgstr "Sem plugins"
+
+msgid "Words alone look in titles, artists and records"
+msgstr "Palavras soltas buscam em títulos, artistas e álbuns"
+
+msgid "Words in the record title and in the track title"
+msgstr "Palavras no título do álbum e no da faixa"
 
 msgid "Work"
 msgstr "Obra"

@@ -109,6 +109,9 @@ msgstr "5 Std."
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Ein JACK-Graph läuft mit einer einzigen Abtastrate, und jedes Programm darin läuft mit dieser Rate – hier sind es {} Hz. Ein Titel mit einer anderen Rate wird per Resampling umgerechnet, bevor Chilpa mitreden kann, und keine Einstellung hier ändert das. JACK dient dazu, Audio zwischen Programmen zu routen; für eine Datei, die unverändert beim DAC ankommen soll, wähle die Karte selbst."
 
+msgid "A bar or OR: either is enough"
+msgstr "Ein Strich oder OR: eines genügt"
+
 msgid "A click on a record opens"
 msgstr "Ein Klick auf ein Album öffnet"
 
@@ -237,6 +240,9 @@ msgstr "Füge über das Titelmenü Titel zu dieser Warteschlange hinzu."
 
 msgid "Added"
 msgstr "Hinzugefügt"
+
+msgid "Added in the last 30 days: d, w, m or y"
+msgstr "In den letzten 30 Tagen hinzugefügt: d, w, m oder y"
 
 msgid "Added this month"
 msgstr "Diesen Monat hinzugefügt"
@@ -422,6 +428,9 @@ msgstr "Animierter Hintergrund aus dem Albumcover hinter der ganzen App. Hoher R
 
 msgid "Any of"
 msgstr "Beliebige"
+
+msgid "Any of those years"
+msgstr "Eines dieser Jahre"
 
 msgid "Any quality"
 msgstr "Beliebige Qualität"
@@ -978,6 +987,9 @@ msgstr "Temporäres Remote-Artwork löschen"
 
 msgid "Clear temporary remote images?"
 msgstr "Temporäre Remote-Bilder löschen?"
+
+msgid "Clear the filter"
+msgstr "Den Filter entfernen"
 
 msgid "Clear the selection"
 msgstr "Auswahl aufheben"
@@ -1588,6 +1600,9 @@ msgstr "Mit :filter bearbeiten"
 msgid "Edit…"
 msgstr "Bearbeiten…"
 
+msgid "Either genre: a comma means or"
+msgstr "Eines der beiden Genres: ein Komma heißt „oder“"
+
 msgid "Elevated"
 msgstr "Erhöht"
 
@@ -1840,6 +1855,9 @@ msgstr "Vorwärts"
 msgid "Forward 10 seconds"
 msgstr "10 Sekunden vor"
 
+msgid "Four stars or more; rating:0 has none"
+msgstr "Vier Sterne oder mehr; rating:0 heißt ohne Sterne"
+
 msgid "French"
 msgstr "Französisch"
 
@@ -1855,6 +1873,9 @@ msgstr "Aus dem Katalog"
 msgid "From main sidebar"
 msgstr "Aus der Hauptseitenleiste"
 
+msgid "From one year to another, both included"
+msgstr "Von einem Jahr bis zu einem anderen, beide eingeschlossen"
+
 msgid "From plugin"
 msgstr "Vom Plugin"
 
@@ -1863,6 +1884,9 @@ msgstr "Vom selben Künstler"
 
 msgid "From settings menu"
 msgstr "Aus dem Einstellungsmenü"
+
+msgid "From that year on"
+msgstr "Ab diesem Jahr"
 
 msgid "From this week"
 msgstr "Aus dieser Woche"
@@ -2385,6 +2409,9 @@ msgstr "Neueste Veröffentlichung"
 
 msgid "Latest run"
 msgstr "Letzter Durchlauf"
+
+msgid "Leave a label out: a minus means not"
+msgstr "Ein Label ausschließen: ein Minus heißt „nicht“"
 
 msgid "Left delay · 0–30 ms"
 msgstr "Verzögerung links · 0–30 ms"
@@ -3007,6 +3034,9 @@ msgstr "Keine Titel entsprechen deiner Suche."
 msgid "No year"
 msgstr "Ohne Jahr"
 
+msgid "No year; genre, label and composer take none too"
+msgstr "Ohne Jahr; auch Genre, Label und Komponist kennen none"
+
 msgid "None"
 msgstr "Keine"
 
@@ -3261,6 +3291,9 @@ msgstr "Ausgabegerät"
 
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "PCM-Samples können nicht in einen nativen DSD-Stream geschrieben werden"
+
+msgid "Parentheses group; NOT works like the minus"
+msgstr "Klammern gruppieren; NOT wirkt wie das Minus"
 
 msgid "Password"
 msgstr "Passwort"
@@ -3619,6 +3652,9 @@ msgstr "Chilpa beenden?"
 msgid "Quitting from the window, its menu, Ctrl+Q or the tray asks first."
 msgstr "Beim Beenden über das Fenster, sein Menü, Strg+Q oder das Tray-Symbol wird zuerst nachgefragt."
 
+msgid "Quotes keep a name with spaces or commas whole"
+msgstr "Anführungszeichen halten einen Namen mit Leerzeichen oder Kommas zusammen"
+
 msgid "RECENTLY PLAYED"
 msgstr "ZULETZT GESPIELT"
 
@@ -3717,6 +3753,15 @@ msgstr "Zuletzt gespielt, alle Quellen"
 
 msgid "Records"
 msgstr "Alben"
+
+msgid "Records from that year"
+msgstr "Alben aus diesem Jahr"
+
+msgid "Records of that genre"
+msgstr "Alben dieses Genres"
+
+msgid "Records with that composer"
+msgstr "Alben mit diesem Komponisten"
 
 msgid "Refresh"
 msgstr "Aktualisieren"
@@ -4179,6 +4224,9 @@ msgstr "Einstellungen"
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "Forme den Klang: Hebe ein Band an, um mehr zu hören, und senke es ab, um weniger zu hören."
 
+msgid "Short names: y g l c a al t r"
+msgstr "Kurznamen: y g l c a al t r"
+
 msgid "Show"
 msgstr "Anzeigen"
 
@@ -4229,6 +4277,9 @@ msgstr "Zufallswiedergabe"
 
 msgid "Shuffle all"
 msgstr "Alle zufällig wiedergeben"
+
+msgid "Side by side, all must hold"
+msgstr "Nebeneinander müssen alle zutreffen"
 
 msgid "Sidecar"
 msgstr "Begleitdatei"
@@ -4970,6 +5021,9 @@ msgstr "Nicht unterstützter oder leerer DSP-Preset-Katalog."
 msgid "Up next"
 msgstr "Als Nächstes"
 
+msgid "Up to that year"
+msgstr "Bis zu diesem Jahr"
+
 msgid "Upcoming"
 msgstr "Demnächst"
 
@@ -5176,6 +5230,12 @@ msgstr "Genehmigung widerrufen"
 
 msgid "Without plugins"
 msgstr "Ohne Plugins"
+
+msgid "Words alone look in titles, artists and records"
+msgstr "Wörter ohne Feld suchen in Titeln, Interpreten und Alben"
+
+msgid "Words in the record title and in the track title"
+msgstr "Wörter im Albumtitel und im Namen des Titels"
 
 msgid "Work"
 msgstr "Werk"

@@ -109,6 +109,9 @@ msgstr ""
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr ""
 
+msgid "A bar or OR: either is enough"
+msgstr ""
+
 msgid "A click on a record opens"
 msgstr ""
 
@@ -237,6 +240,9 @@ msgstr ""
 
 msgid "Added"
 msgstr "Added"
+
+msgid "Added in the last 30 days: d, w, m or y"
+msgstr ""
 
 msgid "Added this month"
 msgstr ""
@@ -421,6 +427,9 @@ msgid "Animated album-art background behind the whole app. High resource use: GP
 msgstr ""
 
 msgid "Any of"
+msgstr ""
+
+msgid "Any of those years"
 msgstr ""
 
 msgid "Any quality"
@@ -977,6 +986,9 @@ msgid "Clear temporary remote artwork"
 msgstr ""
 
 msgid "Clear temporary remote images?"
+msgstr ""
+
+msgid "Clear the filter"
 msgstr ""
 
 msgid "Clear the selection"
@@ -1588,6 +1600,9 @@ msgstr "Edit with :filter"
 msgid "Edit…"
 msgstr ""
 
+msgid "Either genre: a comma means or"
+msgstr ""
+
 msgid "Elevated"
 msgstr ""
 
@@ -1840,6 +1855,9 @@ msgstr ""
 msgid "Forward 10 seconds"
 msgstr ""
 
+msgid "Four stars or more; rating:0 has none"
+msgstr ""
+
 msgid "French"
 msgstr ""
 
@@ -1855,6 +1873,9 @@ msgstr ""
 msgid "From main sidebar"
 msgstr "From main sidebar"
 
+msgid "From one year to another, both included"
+msgstr ""
+
 msgid "From plugin"
 msgstr "From plugin"
 
@@ -1863,6 +1884,9 @@ msgstr ""
 
 msgid "From settings menu"
 msgstr "From settings menu"
+
+msgid "From that year on"
+msgstr ""
 
 msgid "From this week"
 msgstr ""
@@ -2384,6 +2408,9 @@ msgid "Latest release"
 msgstr ""
 
 msgid "Latest run"
+msgstr ""
+
+msgid "Leave a label out: a minus means not"
 msgstr ""
 
 msgid "Left delay · 0–30 ms"
@@ -3007,6 +3034,9 @@ msgstr ""
 msgid "No year"
 msgstr "No year"
 
+msgid "No year; genre, label and composer take none too"
+msgstr ""
+
 msgid "None"
 msgstr ""
 
@@ -3260,6 +3290,9 @@ msgid "Output device"
 msgstr ""
 
 msgid "PCM samples cannot be written to a native DSD stream"
+msgstr ""
+
+msgid "Parentheses group; NOT works like the minus"
 msgstr ""
 
 msgid "Password"
@@ -3619,6 +3652,9 @@ msgstr ""
 msgid "Quitting from the window, its menu, Ctrl+Q or the tray asks first."
 msgstr ""
 
+msgid "Quotes keep a name with spaces or commas whole"
+msgstr ""
+
 msgid "RECENTLY PLAYED"
 msgstr ""
 
@@ -3716,6 +3752,15 @@ msgid "Recently played, all sources"
 msgstr ""
 
 msgid "Records"
+msgstr ""
+
+msgid "Records from that year"
+msgstr ""
+
+msgid "Records of that genre"
+msgstr ""
+
+msgid "Records with that composer"
 msgstr ""
 
 msgid "Refresh"
@@ -4179,6 +4224,9 @@ msgstr ""
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "Shape the sound: raise a band to hear more, lower it to hear less."
 
+msgid "Short names: y g l c a al t r"
+msgstr ""
+
 msgid "Show"
 msgstr ""
 
@@ -4228,6 +4276,9 @@ msgid "Shuffle"
 msgstr ""
 
 msgid "Shuffle all"
+msgstr ""
+
+msgid "Side by side, all must hold"
 msgstr ""
 
 msgid "Sidecar"
@@ -4970,6 +5021,9 @@ msgstr ""
 msgid "Up next"
 msgstr ""
 
+msgid "Up to that year"
+msgstr ""
+
 msgid "Upcoming"
 msgstr ""
 
@@ -5175,6 +5229,12 @@ msgid "Withdraw approval"
 msgstr ""
 
 msgid "Without plugins"
+msgstr ""
+
+msgid "Words alone look in titles, artists and records"
+msgstr ""
+
+msgid "Words in the record title and in the track title"
 msgstr ""
 
 msgid "Work"

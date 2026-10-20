@@ -109,6 +109,9 @@ msgstr "5 ч"
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Граф JACK работает на одной частоте, и все программы в нём работают на ней же — сейчас это {} Hz. Трек, записанный на любой другой частоте, ресемплируется ещё до того, как Chilpa что-либо решит, и никакая настройка здесь этого не меняет. JACK предназначен для маршрутизации звука между программами; чтобы файл дошёл до DAC без изменений, выберите саму карту."
 
+msgid "A bar or OR: either is enough"
+msgstr "Черта или OR: достаточно одного"
+
 msgid "A click on a record opens"
 msgstr "Щелчок по альбому открывает"
 
@@ -237,6 +240,9 @@ msgstr "Добавляйте треки в эту очередь через ме
 
 msgid "Added"
 msgstr "Дата добавления"
+
+msgid "Added in the last 30 days: d, w, m or y"
+msgstr "Добавлены за последние 30 дней: d, w, m или y"
 
 msgid "Added this month"
 msgstr "Добавлено в этом месяце"
@@ -423,6 +429,9 @@ msgstr "Анимированный фон из обложки альбома з�
 
 msgid "Any of"
 msgstr "Любое"
+
+msgid "Any of those years"
+msgstr "Любой из этих годов"
 
 msgid "Any quality"
 msgstr "Любое качество"
@@ -981,6 +990,9 @@ msgstr "Очистить временные удалённые обложки"
 
 msgid "Clear temporary remote images?"
 msgstr "Очистить временные удалённые изображения?"
+
+msgid "Clear the filter"
+msgstr "Убрать фильтр"
 
 msgid "Clear the selection"
 msgstr "Снять выделение"
@@ -1591,6 +1603,9 @@ msgstr "Изменить через :filter"
 msgid "Edit…"
 msgstr "Изменить…"
 
+msgid "Either genre: a comma means or"
+msgstr "Любой из двух жанров: запятая значит «или»"
+
 msgid "Elevated"
 msgstr "Приподнятый"
 
@@ -1843,6 +1858,9 @@ msgstr "Вперёд"
 msgid "Forward 10 seconds"
 msgstr "Вперёд на 10 секунд"
 
+msgid "Four stars or more; rating:0 has none"
+msgstr "Четыре звезды и больше; rating:0 — без звёзд"
+
 msgid "French"
 msgstr "Французский"
 
@@ -1858,6 +1876,9 @@ msgstr "Из каталога"
 msgid "From main sidebar"
 msgstr "Из основной боковой панели"
 
+msgid "From one year to another, both included"
+msgstr "С одного года по другой, оба включительно"
+
 msgid "From plugin"
 msgstr "Из плагина"
 
@@ -1866,6 +1887,9 @@ msgstr "От того же исполнителя"
 
 msgid "From settings menu"
 msgstr "Из меню настроек"
+
+msgid "From that year on"
+msgstr "С этого года и позже"
 
 msgid "From this week"
 msgstr "За эту неделю"
@@ -2388,6 +2412,9 @@ msgstr "Последний релиз"
 
 msgid "Latest run"
 msgstr "Последний запуск"
+
+msgid "Leave a label out: a minus means not"
+msgstr "Исключить лейбл: минус значит «не»"
 
 msgid "Left delay · 0–30 ms"
 msgstr "Задержка слева · 0–30 ms"
@@ -3010,6 +3037,9 @@ msgstr "Нет треков по вашему запросу."
 msgid "No year"
 msgstr "Без года"
 
+msgid "No year; genre, label and composer take none too"
+msgstr "Без года; жанр, лейбл и композитор тоже принимают none"
+
 msgid "None"
 msgstr "Нет"
 
@@ -3264,6 +3294,9 @@ msgstr "Устройство вывода"
 
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "Сэмплы PCM нельзя записать в нативный поток DSD"
+
+msgid "Parentheses group; NOT works like the minus"
+msgstr "Скобки группируют; NOT работает как минус"
 
 msgid "Password"
 msgstr "Пароль"
@@ -3622,6 +3655,9 @@ msgstr "Выйти из Chilpa?"
 msgid "Quitting from the window, its menu, Ctrl+Q or the tray asks first."
 msgstr "Перед выходом через окно, его меню, Ctrl+Q или трей Chilpa спросит подтверждение."
 
+msgid "Quotes keep a name with spaces or commas whole"
+msgstr "Кавычки сохраняют имя с пробелами или запятыми целым"
+
 msgid "RECENTLY PLAYED"
 msgstr "НЕДАВНО ПРОСЛУШАННОЕ"
 
@@ -3720,6 +3756,15 @@ msgstr "Недавно воспроизведённые, все источник
 
 msgid "Records"
 msgstr "Альбомы"
+
+msgid "Records from that year"
+msgstr "Альбомы этого года"
+
+msgid "Records of that genre"
+msgstr "Альбомы этого жанра"
+
+msgid "Records with that composer"
+msgstr "Альбомы с этим композитором"
 
 msgid "Refresh"
 msgstr "Обновить"
@@ -4183,6 +4228,9 @@ msgstr "Настройки"
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "Формируйте звук: поднимите полосу, чтобы слышать больше, опустите, чтобы слышать меньше."
 
+msgid "Short names: y g l c a al t r"
+msgstr "Короткие имена: y g l c a al t r"
+
 msgid "Show"
 msgstr "Показать"
 
@@ -4233,6 +4281,9 @@ msgstr "Перемешать"
 
 msgid "Shuffle all"
 msgstr "Перемешать все"
+
+msgid "Side by side, all must hold"
+msgstr "Рядом стоящие условия должны выполняться все"
 
 msgid "Sidecar"
 msgstr "Вспомогательный файл"
@@ -4975,6 +5026,9 @@ msgstr "Каталог пресетов DSP не поддерживается и
 msgid "Up next"
 msgstr "Далее"
 
+msgid "Up to that year"
+msgstr "До этого года включительно"
+
 msgid "Upcoming"
 msgstr "Скоро"
 
@@ -5181,6 +5235,12 @@ msgstr "Отозвать одобрение"
 
 msgid "Without plugins"
 msgstr "Без плагинов"
+
+msgid "Words alone look in titles, artists and records"
+msgstr "Слова без поля ищутся в названиях, исполнителях и альбомах"
+
+msgid "Words in the record title and in the track title"
+msgstr "Слова в названии альбома и в названии трека"
 
 msgid "Work"
 msgstr "Произведение"
