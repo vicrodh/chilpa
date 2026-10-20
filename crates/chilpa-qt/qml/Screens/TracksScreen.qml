@@ -112,6 +112,7 @@ Item {
                     { value: "default", text: I18n.tr("Default", I18n.rev), fixed: true },
                     { value: "artist", text: I18n.tr("Artist", I18n.rev) },
                     { value: "title", text: I18n.tr("Title", I18n.rev) },
+                    { value: "album", text: I18n.tr("Album", I18n.rev) },
                     { value: "year", text: I18n.tr("Year", I18n.rev) },
                     { value: "added", text: I18n.tr("Date added", I18n.rev), descending: true },
                     { value: "duration", text: I18n.tr("Duration", I18n.rev) }
