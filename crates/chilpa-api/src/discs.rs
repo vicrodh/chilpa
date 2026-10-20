@@ -159,6 +159,7 @@ mod tests {
             quality: Quality::default(), artwork_path: String::new(), available: true,
             composer: composer.to_string(), disc_subtitle: String::new(), work: work.to_string(),
             composer_target: String::new(),
+            groups: None,
         }
     }
 

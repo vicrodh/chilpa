@@ -170,6 +170,7 @@ pub(crate) fn row_of(track: &Track, art: String) -> TrackRow {
         composer_target: track.metadata["composer_ref"].as_str()
             .filter(|reference| reference.starts_with("artist:") && !track.plugin.is_empty())
             .map(|reference| format!("{} native:{reference}", track.plugin)).unwrap_or_default(),
+        groups: super::library_index::track_groups(track),
     }
 }
 
