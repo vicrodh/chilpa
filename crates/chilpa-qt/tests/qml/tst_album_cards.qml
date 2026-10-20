@@ -91,6 +91,10 @@ TestCase {
         tryCompare(badges, "visible", true)
         tryCompare(first.sources, "length", 3, 1000, "the library's own and each source's, side by side")
         compare(first.sources[0].icon, "qrc:/qt/qml/app/chilpa/kit/assets/logo.png", "the library's own first, as the player's logo")
+        AlbumActions.sourcesOf = {[first.albumId]: ["local:default", "one", "two", "three", "four", "five"].map(key =>
+            ({key: key, icon: "qrc:/qt/qml/app/chilpa/kit/assets/logo.png?" + key, local: key === "local:default"}))}
+        records.rev++
+        tryCompare(findChild(first, "sourceBadgeIcons"), "count", 6, 1000, "every source the record is on, not four of them")
         AlbumActions.sourcesOf = {}
         records.rev++
         tryCompare(first.sources, "length", 0)

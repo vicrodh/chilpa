@@ -89,13 +89,17 @@ fn parts(group: &str) -> (&str, &str) {
     if rest.is_char_boundary(len) { rest.split_at(len) } else { ("", rest) }
 }
 
-/// Whether two titles of one artist name the same record: equal, or the
-/// longer one going on from the shorter in an edition's words.
-fn same_record(a: &str, b: &str) -> bool {
+/// Whether two titles of one artist, with their track counts, name the
+/// same record: equal, the longer one going on from the shorter in an
+/// edition's words, or in a lone "live" when both hold as many tracks
+/// ("Flight 666 - The Original Soundtrack" and "Flight 666: The Original
+/// Soundtrack (Live)"; a studio record and its live one rarely do).
+fn same_record((a, a_tracks): (&str, usize), (b, b_tracks): (&str, usize)) -> bool {
     let (short, long) = if a.len() <= b.len() { (a, b) } else { (b, a) };
     if short == long { return true; }
     let Some(rest) = long.strip_prefix(short).and_then(|rest| rest.strip_prefix(' ')) else { return false };
-    !short.is_empty() && rest.split_whitespace().next().is_some_and(|word| EDITION.contains(&word))
+    !short.is_empty() && (rest.split_whitespace().next().is_some_and(|word| EDITION.contains(&word))
+        || (rest == "live" && a_tracks != 0 && a_tracks == b_tracks))
 }
 
 /// One copy of a record, of the library or of a source.
@@ -115,7 +119,10 @@ pub(crate) struct RecordCopy<'a> {
 impl RecordCopy<'_> {
     fn same_edition(&self, other: &RecordCopy) -> bool {
         let known = |a: usize, b: usize| a == 0 || b == 0 || a == b;
-        self.edition == other.edition && known(self.tracks, other.tracks)
+        // A source that adds "(Live)" to a live record's title names the
+        // same edition.
+        let bare = |edition: &str| edition.strip_suffix(" live").unwrap_or(edition).to_string();
+        bare(&self.edition) == bare(&other.edition) && known(self.tracks, other.tracks)
             && (self.explicit.is_none() || other.explicit.is_none() || self.explicit == other.explicit)
     }
 }
@@ -149,10 +156,10 @@ impl Clusters {
         for (_, mut copies) in by_artist {
             copies.sort_by_key(|c| (parts(c.group).1.len(), c.id < 0, std::cmp::Reverse(c.tier)));
             // Each record joins the first one with a title it shares.
-            let mut records: Vec<(Vec<&str>, Vec<&RecordCopy>)> = Vec::new();
+            let mut records: Vec<(Vec<(&str, usize)>, Vec<&RecordCopy>)> = Vec::new();
             for copy in copies {
-                let title = parts(copy.group).1;
-                match records.iter_mut().find(|(titles, _)| titles.iter().any(|t| same_record(t, title))) {
+                let title = (parts(copy.group).1, copy.tracks);
+                match records.iter_mut().find(|(titles, _)| titles.iter().any(|t| same_record(*t, title))) {
                     Some((titles, members)) => { titles.push(title); members.push(copy); }
                     None => records.push((vec![title], vec![copy])),
                 }
@@ -276,6 +283,25 @@ mod tests {
         assert_eq!(records.members_of(-3), [-3], "a numbered sequel is another record");
         let editions = Clusters::build(&all, false);
         assert_eq!(editions.members_of(-1), [-1], "without versions grouped, another edition is another card");
+    }
+
+    #[test]
+    fn a_source_s_live_suffix_and_another_separator_are_the_same_record() {
+        let library = VersionCatalog::default();
+        let mut sources: HashMap<i64, SourceVersion> = [
+            (-1, version("Flight 666 - The Original Soundtrack", "one", 2, None)),
+            (-2, version("Flight 666: The Original Soundtrack (Live)", "two", 2, None)),
+            (-3, version("Somewhere in Time", "one", 2, None)), (-4, version("Somewhere in Time (Live)", "two", 2, None)),
+        ].into_iter().collect();
+        sources.get_mut(&-4).unwrap().tracks = 9;
+        let all = copies([-1, -2, -3, -4], &library, &sources);
+        let mut flight = Clusters::build(&all, false).members_of(-1).to_vec();
+        flight.sort();
+        assert_eq!(flight, [-2, -1], "one card, even with editions apart");
+        assert_eq!(Clusters::build(&all, true).members_of(-3), [-3], "a live record with other tracks is another record");
+        sources.get_mut(&-2).unwrap().tracks = 0;
+        let unknown = copies([-1, -2], &library, &sources);
+        assert_eq!(Clusters::build(&unknown, true).members_of(-1), [-1], "without both counts, a live title stays apart");
     }
 
     #[test]
