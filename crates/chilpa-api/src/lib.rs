@@ -1476,7 +1476,7 @@ impl Chilpa {
 
 impl Drop for Chilpa {
     fn drop(&mut self) {
-        self.catalog.genre_window(false);
+        self.catalog.genre_window(false); self.catalog.composer_window(false);
         self.appimage_updates.take();
         self.persist_queue_session();
         if let Some(player) = self.player.as_mut() { player.shutdown(); }

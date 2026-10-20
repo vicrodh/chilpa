@@ -29,6 +29,7 @@ pub(super) struct EntityRevision {
     content: i32,
     genres: u64,
     genres_revision: u64,
+    composers_revision: u64,
     error: Option<String>,
     art: i32,
     art_signature: u64,
@@ -83,13 +84,15 @@ impl Catalog {
         };
         let content_changed = !same || old.is_some_and(|revision| revision.error != error) || old.is_none_or(|revision| revision.tracks.len() != tracks.len()
             || revision.tracks.iter().zip(&tracks).any(|(a, b)| !Arc::ptr_eq(a, b) && a != b));
-        // I compare displayed genres only when content or the cache changed.
-        let genres = old.filter(|revision| !content_changed && revision.genres_revision == inner.genres.revision)
+        // I compare displayed metadata only when content or either cache changed.
+        let genres = old.filter(|revision| !content_changed && revision.genres_revision == inner.genres.revision
+                && revision.composers_revision == inner.composers.revision)
             .map(|revision| revision.genres).unwrap_or_else(|| {
                 let mut hash = std::collections::hash_map::DefaultHasher::new();
                 let now = super::now();
                 if let Some(card) = &card { inner.genres.of_card(card, now).hash(&mut hash); }
                 for track in &tracks {
+                    inner.composers.of_track(track, now).hash(&mut hash);
                     let own = super::genres::own_genres(&track.metadata, "");
                     if !own.is_empty() { own.hash(&mut hash); }
                     else if let Some(parent) = inner.store.cards.get(&track.album_id) { inner.genres.of_card(parent, now).hash(&mut hash); }
@@ -101,9 +104,11 @@ impl Catalog {
         if content_changed || art_changed { inner.entity_revision_clock = inner.entity_revision_clock.wrapping_add(1); }
         let clock = inner.entity_revision_clock;
         let genres_revision = inner.genres.revision;
+        let composers_revision = inner.composers.revision;
         let revision = inner.entity_revisions.entry(id).or_default();
         revision.genres = genres;
         revision.genres_revision = genres_revision;
+        revision.composers_revision = composers_revision;
         if content_changed { revision.content = clock; }
         if art_changed { revision.art = clock; revision.art_signature = artwork; }
         revision.error = error;

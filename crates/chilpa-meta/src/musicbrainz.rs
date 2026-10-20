@@ -17,6 +17,106 @@ const ROWS: usize = 12;
 const TIMEOUT: Duration = Duration::from_secs(6);
 const LARGEST: usize = 4 * 1024 * 1024;
 
+#[cfg(test)]
+#[path = "musicbrainz/composer_tests.rs"]
+mod composer_tests;
+
+/// I accept the twelve ISRC characters, folding ASCII letters to uppercase.
+pub fn isrc_key(isrc: &str) -> Option<String> {
+    let bytes = isrc.as_bytes();
+    (bytes.len() == 12 && bytes[..2].iter().all(u8::is_ascii_alphabetic)
+        && bytes[2..5].iter().all(u8::is_ascii_alphanumeric)
+        && bytes[5..].iter().all(u8::is_ascii_digit)).then(|| isrc.to_ascii_uppercase())
+}
+
+pub fn isrc_url(isrc: &str) -> Option<String> {
+    Some(format!("{API}/isrc/{}?inc=recordings&fmt=json", isrc_key(isrc)?))
+}
+
+fn relation_url(entity: &str, id: &str, include: &str) -> Result<String, Failure> {
+    if !is_uuid(id) { return Err(Failure::BadId); }
+    Ok(format!("{API}/{entity}/{id}?inc={include}&fmt=json"))
+}
+
+/// I bound one lookup's names without returning a truncated credit.
+pub const COMPOSER_BYTES: usize = 64 * 1024;
+
+/// I share work reads across a pass, retaining at most 512 works and 2 MiB.
+/// The caller drops this cache when its worker exits.
+#[derive(Default)]
+pub struct WorkCache {
+    entries: std::collections::BTreeMap<String, Vec<String>>,
+    bytes: usize,
+}
+
+impl WorkCache {
+    fn insert(&mut self, id: &str, names: Vec<String>) {
+        let bytes = credit_bytes(&names) + 128;
+        if self.entries.len() >= 512 || self.bytes + bytes > 2 * 1024 * 1024 {
+            self.entries.clear();
+            self.bytes = 0;
+        }
+        self.bytes += bytes;
+        self.entries.insert(id.to_string(), names);
+    }
+}
+
+/// I include string storage and worst-case JSON escaping in the byte budget.
+pub fn credit_bytes(names: &[String]) -> usize {
+    names.iter().map(|name| 32 + name.len() * 6).sum()
+}
+
+fn work_composers(work: &Value) -> Result<Vec<String>, Failure> {
+    let relations = work["relations"].as_array().ok_or_else(|| Failure::Unexpected("no work relations".into()))?;
+    let kind = if relations.iter().any(|r| r["type"] == "composer") { "composer" } else { "writer" };
+    let mut credited: Vec<_> = relations.iter().filter(|r| r["type"] == kind).collect();
+    credited.sort_by_key(|r| r["ordering-key"].as_u64().unwrap_or(0));
+    let mut seen = std::collections::HashSet::new();
+    let mut artists = std::collections::HashSet::new();
+    let mut names = Vec::new();
+    for relation in credited {
+        let name = relation["target-credit"].as_str().filter(|s| !s.trim().is_empty())
+            .or_else(|| relation["artist"]["name"].as_str()).unwrap_or_default().trim();
+        let id = relation["artist"]["id"].as_str().filter(|id| !id.is_empty());
+        if name.is_empty() || !seen.insert(name.to_lowercase()) || id.is_some_and(|id| !artists.insert(id)) { continue; }
+        names.push(name.to_string());
+    }
+    if credit_bytes(&names) > COMPOSER_BYTES { return Err(Failure::Unexpected("work credits exceed the byte budget".into())); }
+    Ok(names)
+}
+
+/// I follow every recording's performed works, using writers only on works
+/// without a composer. Every read and retry goes through the caller's Net.
+pub fn composers_by_isrc(net: &Net, isrc: &str, works: &mut WorkCache) -> Result<Vec<String>, Failure> {
+    let Some(url) = isrc_url(isrc) else { return Ok(Vec::new()); };
+    let answer = match get(net, &url) {
+        Err(Failure::Unexpected(reason)) if reason == "not found" => return Ok(Vec::new()),
+        result => result?,
+    };
+    let recordings = answer["recordings"].as_array().ok_or_else(|| Failure::Unexpected("no recordings in the answer".into()))?;
+    let mut seen_recordings = std::collections::HashSet::new();
+    let mut seen_names = std::collections::HashSet::new();
+    let mut names = Vec::new();
+    for recording in recordings {
+        let id = recording["id"].as_str().ok_or(Failure::BadId)?;
+        if !seen_recordings.insert(id) { continue; }
+        let recording = get(net, &relation_url("recording", id, "work-rels")?)?;
+        let relations = recording["relations"].as_array().ok_or_else(|| Failure::Unexpected("no recording relations".into()))?;
+        for relation in relations.iter().filter(|r| r["type"] == "performance") {
+            let id = relation["work"]["id"].as_str().ok_or(Failure::BadId)?;
+            if !works.entries.contains_key(id) {
+                let work = get(net, &relation_url("work", id, "artist-rels")?)?;
+                works.insert(id, work_composers(&work)?);
+            }
+            for name in &works.entries[id] {
+                if seen_names.insert(name.to_lowercase()) { names.push(name.clone()); }
+            }
+            if credit_bytes(&names) > COMPOSER_BYTES { return Err(Failure::Unexpected("track credits exceed the byte budget".into())); }
+        }
+    }
+    Ok(names)
+}
+
 /// I keep digits only and share a key between UPC-A and its zero-prefixed EAN.
 pub fn barcode_key(barcode: &str) -> Option<String> {
     let digits: String = barcode.chars().filter(char::is_ascii_digit).collect();
