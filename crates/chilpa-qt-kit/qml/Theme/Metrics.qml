@@ -345,6 +345,7 @@ QtObject {
     readonly property int eqBar: 3
     readonly property int eqStep: 5
     readonly property int eqLoop: 800
+    readonly property int eqFrame: 100
     // Enough to build every row of a list that grows instead of scrolling.
     readonly property int fitContentBuffer: 100000
 

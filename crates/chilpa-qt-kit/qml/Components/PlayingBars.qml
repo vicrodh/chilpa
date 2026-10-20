@@ -8,8 +8,9 @@ import "../Theme"
 // 40 and 80 % sweeping 0.3 to 1.0 on an 800 ms loop with phases 0, 0.25,
 // 0.125 and 0.375. The loop advances on the shared pulse, which the bars
 // hold only while active and visible: an inactive one disconnects instead
-// of waking a handler just to return. A fixed shader quad changes only its
-// phase uniform; software rendering and shader errors use the same rectangles.
+// of waking a handler just to return. I sample eight poses per loop on shared
+// pulse edges. An exposed mark paints a small native surface; covered or clipped
+// marks keep the fixed shader quad, with rectangles for software or shader errors.
 Item {
     id: bars
     property color tint: Theme.color.accent
@@ -21,25 +22,38 @@ Item {
     implicitWidth: width
     implicitHeight: height
 
-    readonly property bool moving: active && visible
+    readonly property bool windowShowing: !Window.window
+        || (Window.window.visibility !== Window.Hidden && Window.window.visibility !== Window.Minimized)
+    readonly property bool moving: active && visible && windowShowing
+    property int elapsed: 0
+    property int previousMs: Pulse.ms
+    readonly property int stride: Math.max(1, Math.round(Metrics.eqFrame / Pulse.period))
     property bool holding: false
     function sync() {
         if (moving === holding)
             return
         holding = moving
+        elapsed = 0
+        previousMs = Pulse.ms
         if (holding)
-            Pulse.hold()
+            Pulse.holdSlow()
         else
-            Pulse.release()
+            Pulse.releaseSlow()
     }
     onMovingChanged: sync()
     Component.onCompleted: sync()
-    Component.onDestruction: if (holding) Pulse.release()
+    Component.onDestruction: if (holding) Pulse.releaseSlow()
 
     Connections {
         target: bars.moving ? Pulse : null
         function onMsChanged() {
-            bars.t = (bars.t + Pulse.period / Metrics.eqLoop) % 1
+            const delta = Pulse.ms - bars.previousMs
+            bars.elapsed += delta >= 0 ? delta : Pulse.period
+            bars.previousMs = Pulse.ms
+            if (Math.floor(Pulse.ms / Pulse.period) % bars.stride !== 0)
+                return
+            bars.t = (bars.t + bars.elapsed / Metrics.eqLoop) % 1
+            bars.elapsed = 0
         }
     }
     function wave(phase) {
@@ -53,9 +67,21 @@ Item {
             || api === GraphicsInfo.Metal || api === GraphicsInfo.Direct3D11
             || api === GraphicsInfo.Direct3D12
     }
+    PlayingSurface {
+        id: native
+        objectName: "playingBarsSurface"
+        x: -bars.barScale; y: -bars.barScale
+        width: bars.width + 2 * bars.barScale // derived: coverage beyond both horizontal edges
+        height: bars.height + 2 * bars.barScale // derived: coverage beyond both vertical edges
+        active: bars.moving && bars.supportsShaders(GraphicsInfo.api) && !bars.shaderFailed
+        phase: bars.t
+        barScale: bars.barScale
+        tint: bars.tint
+    }
     Loader {
         objectName: "playingBarsRenderer"
         anchors.fill: parent
+        active: !native.surface
         sourceComponent: bars.supportsShaders(GraphicsInfo.api) && !bars.shaderFailed ? shaded : rectangles
     }
     Component {

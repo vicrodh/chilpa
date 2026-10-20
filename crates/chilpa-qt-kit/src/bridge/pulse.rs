@@ -11,6 +11,8 @@
 //! The clock sleeps when nobody holds it: a consumer calls `hold()` when it
 //! starts moving and `release()` when it stops or is hidden, and with no
 //! holder the thread waits. A still window costs no wakeups at all.
+//! Slow holders share roughly 100 ms edges until a normal holder needs the
+//! producer's period. I do not wake the GUI between those sparse frames.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -33,6 +35,14 @@ pub mod qobject {
         /// One consumer stopped. With none left the clock sleeps.
         #[qinvokable]
         fn release(self: Pin<&mut Pulse>);
+
+        /// I need only one edge near every 100 ms, unless another consumer needs more.
+        #[qinvokable]
+        fn hold_slow(self: Pin<&mut Pulse>);
+
+        /// I no longer need the sparse edges.
+        #[qinvokable]
+        fn release_slow(self: Pin<&mut Pulse>);
     }
 
     impl cxx_qt::Threading for Pulse {}
@@ -60,73 +70,109 @@ fn period_ms() -> i32 {
 /// How many consumers want the clock. Never below zero: a release with
 /// nothing held is a consumer that forgot its hold, not a debt.
 #[derive(Default)]
-struct Claims(u32);
+struct Claims {
+    normal: u32,
+    slow: u32,
+}
 
 impl Claims {
     fn hold(&mut self) -> u32 {
-        self.0 += 1;
-        self.0
+        self.normal += 1;
+        self.count()
     }
 
     fn release(&mut self) -> u32 {
-        self.0 = self.0.saturating_sub(1);
-        self.0
+        self.normal = self.normal.saturating_sub(1);
+        self.count()
+    }
+
+    fn hold_slow(&mut self) { self.slow += 1; }
+    fn release_slow(&mut self) { self.slow = self.slow.saturating_sub(1); }
+    fn count(&self) -> u32 { self.normal + self.slow }
+    fn period(&self, base: i32) -> i32 {
+        if self.normal == 0 && self.slow > 0 { base * ((100 + base / 2) / base).max(1) } else { base }
     }
 }
 
 /// What the thread waits on: the number of holders, and the signal that
 /// it changed.
-static GATE: (Mutex<u32>, Condvar) = (Mutex::new(0), Condvar::new());
+static GATE: (Mutex<(u32, i32)>, Condvar) = (Mutex::new((0, PERIOD_MS)), Condvar::new());
 static STARTED: OnceLock<()> = OnceLock::new();
 
 pub struct PulseRust {
     ms: i32,
     period: i32,
+    base_period: i32,
     claims: Claims,
 }
 
 impl Default for PulseRust {
     fn default() -> Self {
-        Self { ms: 0, period: period_ms(), claims: Claims::default() }
+        let period = period_ms();
+        Self { ms: 0, period, base_period: period, claims: Claims::default() }
     }
 }
 
-fn tell(holders: u32) {
+fn tell(holders: u32, period: i32) {
     let (count, changed) = &GATE;
-    *count.lock().unwrap_or_else(|e| e.into_inner()) = holders;
-    changed.notify_all();
+    let mut demand = count.lock().unwrap_or_else(|e| e.into_inner());
+    let wake = (demand.0 == 0) != (holders == 0) || demand.1 != period;
+    *demand = (holders, period);
+    if wake { changed.notify_all(); }
 }
 
 impl qobject::Pulse {
     pub fn hold(mut self: Pin<&mut Self>) {
-        let holders = self.as_mut().rust_mut().claims.hold();
-        tell(holders);
+        self.as_mut().rust_mut().claims.hold();
+        self.as_mut().refresh();
         self.start();
     }
 
     pub fn release(mut self: Pin<&mut Self>) {
-        let holders = self.as_mut().rust_mut().claims.release();
-        tell(holders);
+        self.as_mut().rust_mut().claims.release();
+        self.refresh();
+    }
+
+    pub fn hold_slow(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().claims.hold_slow();
+        self.as_mut().refresh();
+        self.start();
+    }
+
+    pub fn release_slow(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().claims.release_slow();
+        self.refresh();
+    }
+
+    fn refresh(mut self: Pin<&mut Self>) {
+        let period = self.rust().claims.period(self.rust().base_period);
+        let holders = self.rust().claims.count();
+        self.as_mut().set_period(period);
+        tell(holders, period);
     }
 
     /// The thread, once: it sleeps while nobody holds the clock, and while
     /// somebody does it bumps `ms` every period on the window's thread.
     fn start(self: Pin<&mut Self>) {
         let thread = self.qt_thread();
-        let period = *self.period();
         STARTED.get_or_init(|| {
             std::thread::Builder::new()
                 .name("chilpa-pulse".into())
                 .spawn(move || loop {
-                    {
+                    let period = {
                         let (count, changed) = &GATE;
-                        let mut holders = count.lock().unwrap_or_else(|e| e.into_inner());
-                        while *holders == 0 {
-                            holders = changed.wait(holders).unwrap_or_else(|e| e.into_inner());
+                        let mut demand = count.lock().unwrap_or_else(|e| e.into_inner());
+                        while demand.0 == 0 {
+                            demand = changed.wait(demand).unwrap_or_else(|e| e.into_inner());
                         }
-                    }
-                    std::thread::sleep(Duration::from_millis(period as u64));
+                        let period = demand.1;
+                        let (_demand, timeout) = changed.wait_timeout(demand, Duration::from_millis(period as u64))
+                            .unwrap_or_else(|e| e.into_inner());
+                        if !timeout.timed_out() { continue; }
+                        period
+                    };
                     if thread.queue(move |mut pulse| {
+                        if pulse.rust().claims.count() == 0 { return; }
                         let next = (*pulse.ms() + period) % WRAP_MS;
                         pulse.as_mut().set_ms(next);
                     }).is_err() {
@@ -168,5 +214,27 @@ mod tests {
         assert_eq!(period_ms(), PERIOD_MS);
         std::env::remove_var("CHILPA_PULSE_MS");
         assert_eq!(period_ms(), PERIOD_MS);
+    }
+
+    #[test]
+    fn slow_holders_yield_to_producers_and_release_independently() {
+        let mut claims = Claims::default();
+        claims.hold_slow();
+        claims.hold_slow();
+        assert_eq!(claims.count(), 2);
+        for (base, slow) in [(10, 100), (33, 99), (100, 100), (200, 200)] {
+            assert_eq!(claims.period(base), slow);
+            claims.hold();
+            assert_eq!(claims.period(base), base, "a producer always keeps its cadence");
+            claims.release();
+        }
+        claims.release_slow();
+        assert_eq!(claims.period(33), 99);
+        claims.hold();
+        claims.release_slow();
+        claims.release_slow();
+        assert_eq!(claims.count(), 1, "a slow release cannot release a producer");
+        assert_eq!(claims.period(33), 33);
+        assert_eq!(claims.release(), 0);
     }
 }
