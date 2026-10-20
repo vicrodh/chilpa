@@ -19,13 +19,16 @@ TestCase {
     ListRowSurface { id: surface; y: 40; width: 200; height: 40 }
     Component { id: barsFactory; PlayingBars { active: false } }
     Component { id: stageFactory; Rectangle { x: 80; color: "black" } }
-
+    Component { id: windowFactory; Window { width: 200; height: 100; visible: true } }
+    Component { id: rowFactory; Row { x: 20; y: 10; Rectangle { width: 20; height: 20; color: "black" } } }
 
     function cleanup() {
         Prefs.animatedIndicator = false
         mark.running = false
         mark.visible = true
         surface.edge = false
+        Pulse.automatic = true
+        Pulse.period = 33
     }
 
     function test_still_by_default() {
@@ -55,6 +58,148 @@ TestCase {
         mark.visible = false
         compare(mark.children[0].item, null)
         compare(Pulse.held, 0)
+    }
+
+    function test_sampling_preserves_elapsed_phase_and_shared_edges() {
+        Pulse.automatic = false
+        Pulse.ms = 0
+        const first = createTemporaryObject(barsFactory, test, {active: true})
+        Pulse.ms += Pulse.period
+        compare(first.t, 0)
+        const second = createTemporaryObject(barsFactory, test, {active: true})
+        Pulse.ms += Pulse.period
+        compare(first.t, 0)
+        compare(second.t, 0)
+        Pulse.ms += Pulse.period
+        fuzzyCompare(first.t, 99 / Metrics.eqLoop, 0.00001)
+        fuzzyCompare(second.t, 66 / Metrics.eqLoop, 0.00001)
+        for (let i = 0; i < 24; ++i) Pulse.ms += Pulse.period
+        fuzzyCompare(first.t, (27 * Pulse.period / Metrics.eqLoop) % 1, 0.00001)
+        first.visible = false
+        second.active = false
+        compare(Pulse.held, 0)
+        const stopped = first.t
+        Pulse.ms += Pulse.period
+        compare(first.t, stopped)
+        first.visible = true
+        Pulse.ms += Pulse.period
+        Pulse.ms += Pulse.period
+        fuzzyCompare(first.t, (stopped + 66 / Metrics.eqLoop) % 1, 0.00001)
+    }
+
+    function test_sampling_adapts_to_the_shared_period() {
+        Pulse.automatic = false
+        for (const period of [10, 33, 100, 200]) {
+            Pulse.period = period
+            Pulse.ms = 0
+            const bars = createTemporaryObject(barsFactory, test, {active: true})
+            const steps = Math.max(1, Math.round(Metrics.eqFrame / period))
+            for (let i = 1; i < steps; ++i) {
+                Pulse.ms += period
+                compare(bars.t, 0)
+            }
+            Pulse.ms += period
+            fuzzyCompare(bars.t, steps * period / Metrics.eqLoop, 0.00001)
+            bars.active = false
+            compare(Pulse.held, 0)
+        }
+    }
+
+    function test_period_changes_preserve_an_already_queued_edge() {
+        Pulse.automatic = false
+        Pulse.ms = 0
+        const bars = createTemporaryObject(barsFactory, test, {active: true})
+        Pulse.ms = 33
+        Pulse.period = 99
+        Pulse.ms = 66
+        fuzzyCompare(bars.t, 66 / Metrics.eqLoop, 0.00001)
+        Pulse.ms = 165
+        fuzzyCompare(bars.t, 165 / Metrics.eqLoop, 0.00001)
+        bars.active = false
+        Pulse.ms = 86399973
+        Pulse.period = 33
+        bars.active = true
+        Pulse.ms = 6
+        fuzzyCompare(bars.t, 198 / Metrics.eqLoop, 0.00001)
+    }
+
+    function test_native_surface_yields_to_stacking_clipping_and_opacity() {
+        const stage = createTemporaryObject(stageFactory, test, {x: 40, y: 20, width: 100, height: 60})
+        const bars = createTemporaryObject(barsFactory, stage, {x: 10, y: 10, active: true})
+        if (!bars.supportsShaders(GraphicsInfo.api)) skip("The renderer uses the rectangle fallback")
+        const native = findChild(bars, "playingBarsSurface")
+        tryVerify(() => native.surface !== null, 2000)
+        const cover = createTemporaryObject(stageFactory, stage, {x: 8, y: 8, width: 24, height: 20, z: 1, color: "green"})
+        tryCompare(native, "surface", null)
+        verify(findChild(bars, "playingBarsShader") !== null)
+        compare(Pulse.held, 1)
+        cover.visible = false
+        tryVerify(() => native.surface !== null)
+        stage.clip = true
+        bars.x = -1
+        tryCompare(native, "surface", null)
+        bars.x = 10
+        tryVerify(() => native.surface !== null)
+        stage.opacity = 0.5
+        tryCompare(native, "surface", null)
+        stage.opacity = 1
+        tryVerify(() => native.surface !== null)
+        stage.scale = 1.1
+        tryCompare(native, "surface", null)
+        stage.scale = 1
+        tryVerify(() => native.surface !== null)
+        stage.layer.enabled = true
+        tryCompare(native, "surface", null)
+        stage.layer.enabled = false
+        tryVerify(() => native.surface !== null)
+        stage.x += 5
+        tryCompare(native.surface, "x", stage.x + bars.x - bars.barScale)
+        bars.active = false
+        compare(native.surface, null)
+        compare(Pulse.held, 0)
+    }
+
+    function test_native_surfaces_are_bounded_and_released() {
+        const stage = createTemporaryObject(stageFactory, test, {x: 0, width: 180, height: 30})
+        const marks = []
+        for (let i = 0; i < 5; ++i)
+            marks.push(createTemporaryObject(barsFactory, stage, {x: 4 + 32 * i, y: 4, active: true}))
+        if (!marks[0].supportsShaders(GraphicsInfo.api)) skip("The renderer uses the rectangle fallback")
+        const native = marks.map(item => findChild(item, "playingBarsSurface"))
+        tryVerify(() => native.filter(item => item.surface !== null).length === 4)
+        const fallback = native.findIndex(item => item.surface === null)
+        const first = native.findIndex(item => item.surface !== null)
+        marks[first].active = false
+        tryVerify(() => native[fallback].surface !== null)
+        marks[fallback].barScale = 5
+        tryCompare(native[fallback], "surface", null)
+        for (const item of marks) item.active = false
+        compare(Pulse.held, 0)
+    }
+
+    function test_hidden_window_releases_the_pulse() {
+        const window = createTemporaryObject(windowFactory, test)
+        const bars = createTemporaryObject(barsFactory, window.contentItem, {x: 20, y: 20, active: true})
+        tryCompare(bars, "holding", true)
+        window.hide()
+        tryCompare(bars, "holding", false)
+        compare(Pulse.held, 0)
+        compare(findChild(bars, "playingBarsSurface").surface, null)
+        window.show()
+        tryCompare(bars, "holding", true)
+        bars.active = false
+    }
+
+    function test_native_surface_follows_positioner_polish() {
+        const row = createTemporaryObject(rowFactory, test)
+        const bars = createTemporaryObject(barsFactory, row, {active: true})
+        if (!bars.supportsShaders(GraphicsInfo.api)) skip("The renderer uses the rectangle fallback")
+        const native = findChild(bars, "playingBarsSurface")
+        tryVerify(() => native.surface !== null)
+        tryCompare(native.surface, "x", row.x + 20 - bars.barScale)
+        row.children[0].width = 60
+        tryCompare(bars, "x", 60)
+        tryCompare(native.surface, "x", row.x + 60 - bars.barScale)
     }
 
     function test_renderer_api_policy() {
