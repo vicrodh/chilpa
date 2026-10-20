@@ -330,9 +330,9 @@ pub(super) fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
         let pattern = format!("%{}%", query.trim().replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_"));
         sql.push_str(match column {
             0 => " AND CAST(a.year AS TEXT) LIKE ? ESCAPE '\\'",
-            1 => " AND EXISTS (SELECT 1 FROM track_genres tq JOIN genres gq ON gq.id = tq.genre_id WHERE tq.track_id = t.id AND gq.name LIKE ? ESCAPE '\\')",
+            1 => " AND t.id IN (SELECT tq.track_id FROM track_genres tq JOIN genres gq ON gq.id = tq.genre_id WHERE gq.name LIKE ? ESCAPE '\\')",
             2 => " AND t.label LIKE ? ESCAPE '\\'",
-            3 => " AND EXISTS (SELECT 1 FROM track_composers cq JOIN composers cc ON cc.id = cq.composer_id WHERE cq.track_id = t.id AND cc.name LIKE ? ESCAPE '\\')",
+            3 => " AND t.id IN (SELECT cq.track_id FROM track_composers cq JOIN composers cc ON cc.id = cq.composer_id WHERE cc.name LIKE ? ESCAPE '\\')",
             // A rating's header search narrows its column, not the tracks.
             4 => continue,
             5 => " AND a.id IN (SELECT album_id FROM album_artist_rollup
@@ -351,7 +351,9 @@ pub(super) fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
     let mut genres = f.genres.clone();
     if let Some(genre) = f.genre.as_ref().filter(|genre| !genres.contains(genre)) { genres.push(genre.clone()); }
     if !genres.is_empty() {
-        sql.push_str(&format!(" AND EXISTS (SELECT 1 FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id AND g.name IN ({}))", marks(genres.len())));
+        // A set of ids from the genre's index, not a lookup per track: on
+        // 34,000 tracks one genre was 125 ms as EXISTS and 20 ms as IN.
+        sql.push_str(&format!(" AND t.id IN (SELECT tg.track_id FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE g.name IN ({}))", marks(genres.len())));
         args.extend(genres.into_iter().map(|v| Box::new(v) as Box<dyn ToSql>));
     }
     if !f.labels.is_empty() {
@@ -359,7 +361,7 @@ pub(super) fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
         args.extend(f.labels.iter().cloned().map(|v| Box::new(v) as Box<dyn ToSql>));
     }
     if !f.composers.is_empty() {
-        sql.push_str(&format!(" AND EXISTS (SELECT 1 FROM track_composers tcf JOIN composers cf ON cf.id = tcf.composer_id WHERE tcf.track_id = t.id AND cf.name IN ({}))", marks(f.composers.len())));
+        sql.push_str(&format!(" AND t.id IN (SELECT tcf.track_id FROM track_composers tcf JOIN composers cf ON cf.id = tcf.composer_id WHERE cf.name IN ({}))", marks(f.composers.len())));
         args.extend(f.composers.iter().cloned().map(|v| Box::new(v) as Box<dyn ToSql>));
     }
     let stars = |list: &Vec<u8>| list.iter().map(|v| Box::new(*v) as Box<dyn ToSql>).collect::<Vec<_>>();
