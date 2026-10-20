@@ -10,6 +10,19 @@ use super::browse::{letter_of, TrackOrder};
 use super::Library;
 use std::cmp::Ordering;
 
+pub(super) const GROUP_YEAR: &str = "coalesce(CASE WHEN a.year > 0 THEN a.year END, CASE WHEN t.release_year > 0 THEN t.release_year END)";
+pub(super) const GROUP_LABEL: &str = "nullif(trim(t.label), '')";
+
+pub(super) fn group_join(group: &str) -> &'static str {
+    match group {
+        "genre" => "LEFT JOIN (SELECT tg.track_id, min(g.name) AS name FROM track_genres tg
+            JOIN genres g ON g.id = tg.genre_id GROUP BY tg.track_id) track_group ON track_group.track_id = t.id",
+        "composer" => "LEFT JOIN (SELECT tc.track_id, min(c.name) AS name FROM track_composers tc
+            JOIN composers c ON c.id = tc.composer_id GROUP BY tc.track_id) track_group ON track_group.track_id = t.id",
+        _ => "",
+    }
+}
+
 /// The columns `OrderKey::read` takes, after id, album, duration and plays:
 /// the ones the order and the grouping compare, NULL for the rest, so a
 /// snapshot of the whole library reads no text it does not order by.
@@ -28,6 +41,10 @@ pub(super) fn columns(order: TrackOrder, grouped_by: &str) -> String {
         pick(title, "t.title"),
         pick(order == Performer || grouped_by == "artist", "t.artist"),
         pick(matches!(order, Added | AddedAscending), "t.added_at"),
+        pick(matches!(grouped_by, "year" | "decade"), GROUP_YEAR),
+        pick(grouped_by == "genre", "track_group.name"),
+        pick(grouped_by == "label", GROUP_LABEL),
+        pick(grouped_by == "composer", "track_group.name"),
     ].iter().fold(String::new(), |all, column| all + ", " + column)
 }
 
@@ -44,6 +61,10 @@ pub struct OrderKey {
     pub added_at: i64,
     pub duration_ms: i64,
     pub plays: i64,
+    pub group_year: Option<i32>,
+    pub genre: String,
+    pub label: String,
+    pub composer: String,
 }
 
 impl OrderKey {
@@ -60,6 +81,10 @@ impl OrderKey {
             title: r.get::<_, Option<String>>(9)?.unwrap_or_default(),
             artist: r.get::<_, Option<String>>(10)?.unwrap_or_default(),
             added_at: r.get::<_, Option<i64>>(11)?.unwrap_or(0),
+            group_year: r.get(12)?,
+            genre: r.get::<_, Option<String>>(13)?.unwrap_or_default(),
+            label: r.get::<_, Option<String>>(14)?.unwrap_or_default(),
+            composer: r.get::<_, Option<String>>(15)?.unwrap_or_default(),
         })
     }
 }
@@ -67,6 +92,12 @@ impl OrderKey {
 /// SQLite's NOCASE: ASCII letters fold, everything else compares as bytes.
 pub fn nocase(a: &str, b: &str) -> Ordering {
     a.bytes().map(|c| c.to_ascii_lowercase()).cmp(b.bytes().map(|c| c.to_ascii_lowercase()))
+}
+
+/// I select the same name as SQLite's `min(name)` on a NOCASE column.
+pub fn first_name(names: &[String]) -> String {
+    names.iter().filter(|name| !name.is_empty())
+        .min_by(|a, b| nocase(a, b).then(a.cmp(b))).cloned().unwrap_or_default()
 }
 
 /// `ltrim`, which takes spaces only.
@@ -77,15 +108,25 @@ fn trimmed(text: &str) -> &str {
 impl TrackOrder {
     /// The order the snapshot query gives, with `grouped_by` in front as it
     /// puts it there.
+    pub fn compare_group(self, grouped_by: &str, a: &OrderKey, b: &OrderKey) -> Ordering {
+        let turned = |on: bool, o: Ordering| if on { o.reverse() } else { o };
+        let named = |a: &str, b: &str| a.is_empty().cmp(&b.is_empty()).then_with(|| nocase(a, b));
+        match grouped_by {
+            "album" => turned(self == Self::AlbumDescending, nocase(&a.album, &b.album)).then(a.album_id.cmp(&b.album_id)),
+            "artist" => turned(self == Self::ArtistDescending, nocase(&a.artist, &b.artist)),
+            "name" => turned(self == Self::TitleDescending, letter_of(trimmed(&a.title)).cmp(&letter_of(trimmed(&b.title)))),
+            "year" => b.group_year.cmp(&a.group_year),
+            "decade" => b.group_year.map(|y| y / 10).cmp(&a.group_year.map(|y| y / 10)),
+            "genre" => named(&a.genre, &b.genre),
+            "label" => named(&a.label, &b.label),
+            "composer" => named(&a.composer, &b.composer),
+            _ => Ordering::Equal,
+        }
+    }
+
     pub fn compare(self, grouped_by: &str, a: &OrderKey, b: &OrderKey) -> Ordering {
         use TrackOrder::*;
-        let turned = |on: bool, o: Ordering| if on { o.reverse() } else { o };
-        let group = match grouped_by {
-            "album" => turned(self == AlbumDescending, nocase(&a.album, &b.album)).then(a.album_id.cmp(&b.album_id)),
-            "artist" => turned(self == ArtistDescending, nocase(&a.artist, &b.artist)),
-            "name" => turned(self == TitleDescending, letter_of(trimmed(&a.title)).cmp(&letter_of(trimmed(&b.title)))),
-            _ => Ordering::Equal,
-        };
+        let group = self.compare_group(grouped_by, a, b);
         let record = || nocase(&a.album, &b.album).then(a.disc.cmp(&b.disc)).then(a.number.cmp(&b.number));
         let place = || a.disc.cmp(&b.disc).then(a.number.cmp(&b.number));
         let title = || nocase(trimmed(&a.title), trimmed(&b.title));
@@ -199,7 +240,8 @@ mod tests {
     fn library() -> Library {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
-        for (id, title, artist, year) in [(1, "beta", "Zed", Some(1999)), (2, "Alpha", "zed", None), (3, "Ñandú", "Ana", Some(2001)), (4, "alpha", "Bob", Some(1999))] {
+        for (id, title, artist, year) in [(1, "beta", "Zed", Some(1999)), (2, "Alpha", "zed", None), (3, "Ñandú", "Ana", Some(2001)),
+            (4, "alpha", "Bob", Some(1999)), (5, "Later", "Ana", Some(2009)), (6, "Zero", "Bob", Some(0)), (7, "Invalid", "Bob", Some(-1))] {
             lib.connection().execute("INSERT INTO albums(id, title, album_artist, year) VALUES (?1, ?2, ?3, ?4)", params![id, title, artist, year]).unwrap();
         }
         let tracks = [
@@ -209,10 +251,32 @@ mod tests {
             (4, 3, Some(2), None, "Zulu", "Ana", 40, 2000),
             (5, 3, Some(1), Some(1), "zulu", "ana", 40, 5000),
             (6, 4, Some(1), Some(1), "Mango", "Bob", 5, 4000),
+            (7, 5, Some(1), Some(1), "Another", "Ana", 5, 4000),
+            (8, 6, None, None, "Alone", "Bob", 5, 4000),
+            (9, 7, None, None, "Unknown", "Bob", 5, 4000),
+            (10, 2, None, None, "Orphan", "Bob", 5, 4000),
+            (11, 2, None, None, "Missing", "Bob", 5, 4000),
+            (12, 2, None, None, "Mystery", "Bob", 5, 4000),
         ];
         for (id, album, disc, number, title, artist, added, ms) in tracks {
             lib.connection().execute("INSERT INTO tracks(id, source_id, external_id, title, artist, album_id, disc_number, track_number, added_at, duration_ms)
                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)", params![id, source, format!("/{id}.flac"), title, artist, album, disc, number, added, ms]).unwrap();
+        }
+        lib.connection().execute_batch("UPDATE tracks SET release_year = 1984 WHERE id IN (1, 3);
+            UPDATE tracks SET release_year = 1991 WHERE id = 8;
+            UPDATE tracks SET release_year = 2012 WHERE id = 10;
+            UPDATE tracks SET release_year = 0 WHERE id = 11;").unwrap();
+        for (id, label, names) in [
+            (1, Some("  beta  "), vec!["Zulu", "alpha"]), (2, Some("Beta"), vec!["alpha"]),
+            (3, Some("Alpha"), vec!["jazz"]), (4, Some("Écho"), vec!["Électro"]),
+            (5, Some("alpha"), vec!["Jazz"]), (6, None, vec![]),
+            (7, Some(""), vec!["Blues"]), (8, Some(" "), vec![]),
+            (10, Some("No label"), vec!["No genre"]),
+        ] {
+            lib.connection().execute("UPDATE tracks SET label = ?1 WHERE id = ?2", params![label, id]).unwrap();
+            let names: Vec<String> = names.into_iter().map(String::from).collect();
+            lib.set_track_genres(id, &names).unwrap();
+            lib.set_track_composers(id, &names).unwrap();
         }
         lib.log_play(Some(5), Some(source), 1, 1000, 1000, false, None, None, true).unwrap();
         lib
@@ -223,18 +287,46 @@ mod tests {
         let lib = library();
         let orders = ["artist", "album", "year", "added", "title", "plays", "duration", "duration-desc", "disc",
             "artist-desc", "title-desc", "year-desc", "performer", "album-desc", "added-asc", "plays-asc"];
-        for group in ["", "album", "artist", "name"] {
+        for group in ["", "album", "artist", "name", "year", "decade", "genre", "label", "composer"] {
             for name in orders {
                 let order = TrackOrder::from_name(name);
                 let filter = Filter { grouped_by: group.into(), ..Filter::default() };
                 let (snapshot, keys) = lib.browse_rows(&filter, order, true).unwrap();
                 assert_eq!(snapshot, lib.browse_ids(&filter, order).unwrap(), "{name} {group}: the keyed read is the same snapshot");
                 let mut sorted: Vec<(i64, OrderKey)> = snapshot.ids.iter().copied().zip(keys).collect();
+                let expected = sorted.clone();
+                sorted.reverse();
                 sorted.sort_by(|a, b| order.compare(group, &a.1, &b.1));
-                let ids: Vec<i64> = sorted.into_iter().map(|(id, _)| id).collect();
-                assert_eq!(ids, snapshot.ids, "{name} grouped by '{group}'");
+                for (actual, expected) in sorted.iter().zip(&expected) {
+                    assert_eq!(order.compare(group, &actual.1, &expected.1), Ordering::Equal, "{name} grouped by '{group}': {} vs {}", actual.0, expected.0);
+                }
             }
         }
+    }
+
+    #[test]
+    fn metadata_groups_keep_missing_values_last_and_read_only_the_selected_key() {
+        let lib = library();
+        for (group, expected) in [
+            ("year", vec![10, 7, 4, 5, 6, 1, 2, 8, 3, 11, 12, 9]),
+            ("decade", vec![10, 7, 4, 5, 8, 6, 1, 2, 3, 11, 12, 9]),
+            ("genre", vec![1, 2, 7, 3, 5, 10, 4, 8, 6, 11, 12, 9]),
+            ("composer", vec![1, 2, 7, 3, 5, 10, 4, 8, 6, 11, 12, 9]),
+            ("label", vec![3, 5, 1, 2, 10, 4, 8, 7, 6, 11, 12, 9]),
+        ] {
+            let filter = Filter { grouped_by: group.into(), ..Default::default() };
+            let (snapshot, keys) = lib.browse_rows(&filter, TrackOrder::Title, true).unwrap();
+            assert_eq!(snapshot.ids, expected, "{group}");
+            for key in keys {
+                assert!(key.year.is_none(), "title order does not read the album's sort year");
+                if !matches!(group, "year" | "decade") { assert!(key.group_year.is_none()); }
+                if group != "genre" { assert!(key.genre.is_empty()); }
+                if group != "label" { assert!(key.label.is_empty()); }
+                if group != "composer" { assert!(key.composer.is_empty()); }
+            }
+        }
+        let (_, keys) = lib.browse_rows(&Filter::default(), TrackOrder::Title, true).unwrap();
+        assert!(keys.iter().all(|key| key.group_year.is_none() && key.genre.is_empty() && key.label.is_empty() && key.composer.is_empty()));
     }
 
     #[test]

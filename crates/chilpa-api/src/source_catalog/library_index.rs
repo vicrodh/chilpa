@@ -37,6 +37,16 @@ fn genres(metadata: &Value, card_genre: &str) -> Vec<String> {
     found
 }
 
+pub(super) fn track_groups(track: &Track) -> Option<Box<crate::TrackGroups>> {
+    let groups = crate::TrackGroups {
+        year: year(&track.metadata),
+        genre: chilpa_library::first_name(&genres(&track.metadata, "")),
+        label: text(&track.metadata, "label"),
+        composer: chilpa_library::first_name(&names(&track.metadata, "composers", "composer")),
+    };
+    (groups != crate::TrackGroups::default()).then(|| Box::new(groups))
+}
+
 fn release_type(metadata: &Value) -> String {
     let kind = text(metadata, "release_type").to_lowercase();
     if matches!(kind.as_str(), "album" | "ep" | "single" | "compilation" | "live") { kind } else { String::new() }
@@ -105,7 +115,7 @@ fn song(track: &Track, card: Option<&Card>, saved: bool) -> SourceItem {
         album_title: album.as_ref().map(|a| a.album_title.clone()).unwrap_or_else(|| track.album.clone()),
         title: track.title.clone(),
         artists,
-        year: year(&track.metadata).or(album.as_ref().and_then(|a| a.year)),
+        year: album.as_ref().and_then(|a| a.year).filter(|y| *y > 0).or_else(|| year(&track.metadata)),
         genres: if own_genres.is_empty() { album.as_ref().map(|a| a.genres.clone()).unwrap_or_default() } else { own_genres },
         label: if own_label.is_empty() { album.as_ref().map(|a| a.label.clone()).unwrap_or_default() } else { own_label },
         composers,
@@ -263,7 +273,7 @@ mod tests {
             track.plugin = "guest".into();
             track.album_id = read;
             track.title = "Song".into();
-            track.metadata = json!({"kind": "track", "ref": "track:1@playlist:9", "composers": ["Writer"]});
+            track.metadata = json!({"kind": "track", "ref": "track:1@playlist:9", "composers": ["Writer"], "year": 2005});
         }
         store.cards.get_mut(&read).unwrap().tracks = Some(vec![song_id]);
         store.shelves.insert("guest section:albums".into(), super::super::store::Shelf { cards: vec![read, unread], ..Default::default() });
@@ -292,5 +302,28 @@ mod tests {
         let items = items_of(&store, &["guest".into()], &["guest".into()]);
         assert_eq!(items.len(), 1);
         assert!(items[0].saved_track && items[0].saved_album, "Tracks shows it, and Albums its record");
+    }
+
+    #[test]
+    fn a_track_uses_its_record_year_then_its_own() {
+        let track = Track { metadata: json!({"year": 1999}), ..Default::default() };
+        let card = Card { year: Some(1985), ..Default::default() };
+        assert_eq!(song(&track, Some(&card), true).year, Some(1985));
+        assert_eq!(song(&track, Some(&Card::default()), true).year, Some(1999));
+        assert_eq!(song(&track, None, true).year, Some(1999));
+    }
+
+    #[test]
+    fn loaded_source_rows_name_the_same_metadata_groups_as_the_index() {
+        let track = Track { metadata: json!({"year":1999, "genres":["Zulu", "alpha"], "label":"House", "composers":["Writer, Z", "author"]}), ..Default::default() };
+        let row = super::super::view::row_of(&track, String::new());
+        for (group, label) in [("year", "1999"), ("decade", "1990s"), ("genre", "alpha"), ("label", "House"), ("composer", "author")] {
+            assert_eq!(crate::group_of(group, &row), label);
+        }
+        let row = super::super::view::row_of(&Track::default(), String::new());
+        assert!(row.groups.is_none());
+        for (group, label) in [("year", "Unknown year"), ("decade", "Unknown year"), ("genre", "No genre"), ("label", "No label"), ("composer", "No composer")] {
+            assert_eq!(crate::group_of(group, &row), chilpa_i18n::t(label));
+        }
     }
 }

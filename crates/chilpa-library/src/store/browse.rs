@@ -54,9 +54,8 @@ pub struct Filter {
     /// What was typed to find tracks: every word of it has to be in the
     /// title, the artist or the record.
     pub text: String,
-    /// What a list of tracks is grouped by: "album", "artist", "name" (the
-    /// title's letter) or nothing. The groups come in their order, and the
-    /// order asked for is the order inside each one.
+    /// I group tracks by album, artist, name, year, decade, genre, label or
+    /// composer, then apply the requested order inside each group.
     pub grouped_by: String,
     /// Conditions stacked beyond the columns, with AND, OR and NOT
     /// (`store::query`): every column's choices hold inside them.
@@ -658,21 +657,27 @@ impl Library {
     /// The same snapshot, and with `keyed` what each track is ordered by,
     /// aligned with its ids: what a merge with rows from outside needs.
     pub fn browse_rows(&self, f: &Filter, order: TrackOrder, keyed: bool) -> rusqlite::Result<(Snapshot, Vec<super::order_keys::OrderKey>)> {
+        use super::order_keys::{group_join, GROUP_LABEL, GROUP_YEAR};
         let (filter, args) = self.browse_clause(f);
         let (from, plays) = if matches!(order, TrackOrder::Plays | TrackOrder::PlaysAscending) {
             (FROM, ", COALESCE(r.plays, 0) AS plays")
         } else { (FACET_FROM, ", 0") };
         let keys = if keyed { super::order_keys::columns(order, &f.grouped_by) } else { String::new() };
+        let join = group_join(&f.grouped_by);
         // The groups follow an order about what they are named: Artist
         // from Z puts the artists from Z.
         let turned = |on: bool| if on { " DESC" } else { "" };
         let sql = format!(
             "SELECT t.id, t.album_id, t.duration_ms{plays}{keys}
-             {from} {filter} ORDER BY {}{}",
+             {from} {join} {filter} ORDER BY {}{}",
             match f.grouped_by.as_str() {
                 "album" => format!("a.title COLLATE NOCASE{}, a.id, ", turned(order == TrackOrder::AlbumDescending)),
                 "artist" => format!("t.artist COLLATE NOCASE{}, ", turned(order == TrackOrder::ArtistDescending)),
                 "name" => format!("{}{}, ", letter_in_sql("t.title"), turned(order == TrackOrder::TitleDescending)),
+                "year" => format!("{GROUP_YEAR} DESC, "),
+                "decade" => format!("({GROUP_YEAR}) / 10 DESC, "),
+                "genre" | "composer" => "track_group.name IS NULL, track_group.name COLLATE NOCASE, ".into(),
+                "label" => format!("{GROUP_LABEL} IS NULL, {GROUP_LABEL} COLLATE NOCASE, "),
                 _ => String::new(),
             },
             order.keys()

@@ -39,13 +39,22 @@ pub(crate) fn key_of(item: &SourceItem) -> OrderKey {
         added_at: item.added_at,
         duration_ms: item.duration_ms as i64,
         plays: 0,
+        group_year: item.year.filter(|y| *y > 0),
+        genre: chilpa_library::first_name(&item.genres),
+        label: item.label.trim_matches(' ').to_string(),
+        composer: chilpa_library::first_name(&item.composers),
     }
 }
 
-/// The group a row is in for `by` ("album", "artist", or the title's
-/// letter), as `tracks_view::group_of` names it from the row.
+/// I name snapshot sections and loaded rows with the same labels.
 pub(crate) fn group_label(key: &OrderKey, by: &str) -> String {
-    match by { "album" => key.album.clone(), "artist" => key.artist.clone(), _ => chilpa_library::letter_of(&key.title) }
+    match by {
+        "album" => key.album.clone(),
+        "artist" => key.artist.clone(),
+        "year" | "decade" | "genre" | "label" | "composer" =>
+            crate::tracks_view::metadata_group(by, key.group_year, &key.genre, &key.label, &key.composer),
+        _ => chilpa_library::letter_of(&key.title),
+    }
 }
 
 /// The library's snapshot with what the filter leaves of the index merged
@@ -76,9 +85,12 @@ pub(crate) fn snapshot(mut local: Snapshot, mut keys: Vec<OrderKey>, f: &Filter,
     }
     let group = f.grouped_by.as_str();
     let mut sections: Vec<(usize, String)> = Vec::new();
-    let mut note = |key: &OrderKey, at: usize| if let Some(by) = letters_by {
-        let found = group_label(key, by);
-        if sections.last().is_none_or(|(_, last)| *last != found) { sections.push((at, found)); }
+    let mut previous: Option<&OrderKey> = None;
+    let mut note = |key, at: usize| if let Some(by) = letters_by {
+        if previous.is_none_or(|last| order.compare_group(group, last, key) != Ordering::Equal) {
+            sections.push((at, group_label(key, by)));
+        }
+        previous = Some(key);
     };
     if extra.is_empty() {
         for (at, key) in keys.iter().enumerate() { note(key, at); }
