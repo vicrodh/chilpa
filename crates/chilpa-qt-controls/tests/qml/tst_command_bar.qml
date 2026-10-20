@@ -79,6 +79,18 @@ TestCase {
         test.Window.window.contentItem.forceActiveFocus()
         verify(!bar.input.activeFocus, "the next colon opens the console again")
     }
+    function test_examples_sit_under_their_command() {
+        CommandLine.answer = JSON.stringify({action:"commands.help",lines:[{usage:":filter [query]",description:"Filter"},
+            {usage:":filter year:1980..1989",description:"From one year to another",example:true}]})
+        bar.input.text = "help filter"
+        keyClick(Qt.Key_Return)
+        const help = findChild(bar, "commandHelpLines")
+        tryCompare(help, "count", 2)
+        verify(help.itemAtIndex(1).text.startsWith("  :filter year:1980..1989"), "an example is indented under its command")
+        verify(help.itemAtIndex(0).text.startsWith(":filter [query]"))
+        keyClick(Qt.Key_Escape)
+        keyClick(Qt.Key_Escape)
+    }
     function test_history_preserves_the_unsubmitted_draft() {
         typeText("search draft")
         keyClick(Qt.Key_Up)

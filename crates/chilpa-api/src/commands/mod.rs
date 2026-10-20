@@ -160,9 +160,15 @@ impl Chilpa {
         // A query reads its own quotes: `:filter "A. Smith"` is one name.
         let arg = if declaration.usage == "[query]" { line.raw.trim() } else { line.argument.trim() };
         if line.name == "help" {
-            let lines: Vec<_> = registry().filter(|command| arg.is_empty() || command.name == arg)
+            let mut lines: Vec<_> = registry().filter(|command| arg.is_empty() || command.name == arg)
                 .map(|command| json!({"usage":format!(":{}{}{}", command.name, if command.usage.is_empty() { "" } else { " " }, command.usage),
                     "description":crate::hotkeys::command_label(command.action)})).collect();
+            if arg == "filter" {
+                // The console's font is monospaced: the descriptions line up.
+                let wide = crate::library_query::EXAMPLES.iter().map(|(example, _)| example.chars().count()).max().unwrap_or(0);
+                lines.extend(crate::library_query::EXAMPLES.iter().map(|(example, what)|
+                    json!({"usage":format!("{example:<wide$}"), "description":chilpa_i18n::t(what), "example":true})));
+            }
             return Ok(json!({"action":"commands.help","lines":lines}));
         }
         if line.name == "set" {
@@ -315,6 +321,13 @@ mod tests {
         assert!(help["lines"].as_array().unwrap().iter().any(|line| line["usage"].as_str().unwrap().starts_with(":seek ")));
         let topic = api.prepare_command(":help seek").unwrap();
         assert_eq!(topic["lines"].as_array().unwrap().len(), 1);
+        let filter = api.prepare_command(":help filter").unwrap();
+        let examples: Vec<_> = filter["lines"].as_array().unwrap().iter().filter(|line| line["example"] == true).collect();
+        assert_eq!(examples.len(), crate::library_query::EXAMPLES.len(), "every example is shown");
+        for (example, _) in crate::library_query::EXAMPLES {
+            let query = example.trim_start_matches(":filter").trim();
+            assert!(crate::library_query::read(query).is_ok(), "the example {example} is a query the console takes");
+        }
         assert!(api.prepare_command(":help unknown").is_err());
     }
 }

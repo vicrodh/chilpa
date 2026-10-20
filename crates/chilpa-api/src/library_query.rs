@@ -64,6 +64,31 @@ pub(crate) const COMMANDS: &[crate::commands::Command] = &[
     crate::commands::command("filter", "library.filter", "[query]"),
 ];
 
+/// What `:help filter` shows under its usage: one line for each thing a
+/// query can say, in the order a listener learns them.
+pub(crate) const EXAMPLES: &[(&str, &str)] = &[
+    (":filter genre:jazz", chilpa_i18n::mark("Records of that genre")),
+    (":filter genre:jazz,soul", chilpa_i18n::mark("Either genre: a comma means or")),
+    (":filter -label:\"Blue Note\"", chilpa_i18n::mark("Leave a label out: a minus means not")),
+    (":filter year:1985", chilpa_i18n::mark("Records from that year")),
+    (":filter year:1980,1985,1990", chilpa_i18n::mark("Any of those years")),
+    (":filter year:1980..1989", chilpa_i18n::mark("From one year to another, both included")),
+    (":filter year:1990..", chilpa_i18n::mark("From that year on")),
+    (":filter year:..1969", chilpa_i18n::mark("Up to that year")),
+    (":filter year:none", chilpa_i18n::mark("No year; genre, label and composer take none too")),
+    (":filter artist:\"Bill Evans\"", chilpa_i18n::mark("Quotes keep a name with spaces or commas whole")),
+    (":filter composer:monk", chilpa_i18n::mark("Records with that composer")),
+    (":filter album:blue title:train", chilpa_i18n::mark("Words in the record title and in the track title")),
+    (":filter rating:4..", chilpa_i18n::mark("Four stars or more; rating:0 has none")),
+    (":filter added:30d", chilpa_i18n::mark("Added in the last 30 days: d, w, m or y")),
+    (":filter genre:rock year:1970..1979", chilpa_i18n::mark("Side by side, all must hold")),
+    (":filter genre:jazz | composer:monk", chilpa_i18n::mark("A bar or OR: either is enough")),
+    (":filter (genre:jazz | genre:blues) -year:1990..", chilpa_i18n::mark("Parentheses group; NOT works like the minus")),
+    (":filter y:1960..1969 g:soul", chilpa_i18n::mark("Short names: y g l c a al t r")),
+    (":filter iron maiden", chilpa_i18n::mark("Words alone look in titles, artists and records")),
+    (":filter", chilpa_i18n::mark("Clear the filter")),
+];
+
 /// One condition of the stack, as a chip.
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
 pub struct QueryChip {

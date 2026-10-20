@@ -37,9 +37,11 @@ Rectangle {
             delegate: Text {
                 required property var modelData
                 width: ListView.view.width - Metrics.gap12
-                text: modelData.usage + "  " + modelData.description
+                // An example sits under its command, indented, and reads brighter.
+                text: (modelData.example ? "  " : "") + modelData.usage + "  " + modelData.description
                 wrapMode: Text.WordWrap
-                color: Theme.color.textSecondary; font.pointSize: Type.body; font.family: Type.consoleFamily
+                color: modelData.example ? Theme.color.textPrimary : Theme.color.textSecondary
+                font.pointSize: Type.body; font.family: Type.consoleFamily
             }
         }
     }

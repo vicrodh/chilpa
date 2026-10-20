@@ -109,6 +109,9 @@ msgstr "5時間"
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "JACKグラフは1つのレートで動作し、その中のすべてのプログラムが同じレートで動きます。このグラフは{} Hzです。ほかのレートで録音されたトラックは、Chilpaが関与する前にリサンプリングされ、ここの設定では変更できません。JACKはプログラム間のオーディオルーティング用です。ファイルを加工せずDACに届けたい場合は、カードそのものを選んでください。"
 
+msgid "A bar or OR: either is enough"
+msgstr "縦棒または OR：どちらか一方で十分です"
+
 msgid "A click on a record opens"
 msgstr "アルバムをクリックしたときに開くもの"
 
@@ -237,6 +240,9 @@ msgstr "トラックメニューからこのキューにトラックを追加し
 
 msgid "Added"
 msgstr "追加日"
+
+msgid "Added in the last 30 days: d, w, m or y"
+msgstr "過去30日に追加：d、w、m、y"
 
 msgid "Added this month"
 msgstr "今月追加"
@@ -421,6 +427,9 @@ msgstr "アプリ全体の背後にアルバムアートのアニメーション
 
 msgid "Any of"
 msgstr "いずれか"
+
+msgid "Any of those years"
+msgstr "いずれかの年"
 
 msgid "Any quality"
 msgstr "すべての音質"
@@ -975,6 +984,9 @@ msgstr "一時的なリモートアートワークをクリア"
 
 msgid "Clear temporary remote images?"
 msgstr "一時的なリモート画像をクリアしますか？"
+
+msgid "Clear the filter"
+msgstr "フィルターを解除"
 
 msgid "Clear the selection"
 msgstr "選択を解除"
@@ -1585,6 +1597,9 @@ msgstr ":filterで編集"
 msgid "Edit…"
 msgstr "編集…"
 
+msgid "Either genre: a comma means or"
+msgstr "どちらかのジャンル：カンマは「または」"
+
 msgid "Elevated"
 msgstr "浮き出し"
 
@@ -1837,6 +1852,9 @@ msgstr "進む"
 msgid "Forward 10 seconds"
 msgstr "10秒進む"
 
+msgid "Four stars or more; rating:0 has none"
+msgstr "星4つ以上。rating:0 は星なし"
+
 msgid "French"
 msgstr "フランス語"
 
@@ -1852,6 +1870,9 @@ msgstr "カタログから"
 msgid "From main sidebar"
 msgstr "メインのサイドバーから"
 
+msgid "From one year to another, both included"
+msgstr "ある年から別の年まで（両端を含む）"
+
 msgid "From plugin"
 msgstr "プラグインから"
 
@@ -1860,6 +1881,9 @@ msgstr "同じアーティストのアルバム"
 
 msgid "From settings menu"
 msgstr "設定メニューから"
+
+msgid "From that year on"
+msgstr "その年以降"
 
 msgid "From this week"
 msgstr "今週"
@@ -2382,6 +2406,9 @@ msgstr "最新リリース"
 
 msgid "Latest run"
 msgstr "直近の実行"
+
+msgid "Leave a label out: a minus means not"
+msgstr "レーベルを除外：マイナスは「以外」"
 
 msgid "Left delay · 0–30 ms"
 msgstr "左ディレイ · 0–30 ms"
@@ -3004,6 +3031,9 @@ msgstr "検索に一致するトラックはありません。"
 msgid "No year"
 msgstr "年なし"
 
+msgid "No year; genre, label and composer take none too"
+msgstr "年なし。ジャンル・レーベル・作曲者にも none が使えます"
+
 msgid "None"
 msgstr "なし"
 
@@ -3258,6 +3288,9 @@ msgstr "出力デバイス"
 
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "PCMサンプルはネイティブDSDストリームに書き込めません"
+
+msgid "Parentheses group; NOT works like the minus"
+msgstr "括弧でまとめます。NOT はマイナスと同じです"
 
 msgid "Password"
 msgstr "パスワード"
@@ -3616,6 +3649,9 @@ msgstr "Chilpaを終了しますか？"
 msgid "Quitting from the window, its menu, Ctrl+Q or the tray asks first."
 msgstr "ウィンドウ、そのメニュー、Ctrl+Q、トレイから終了するときは、先に確認します。"
 
+msgid "Quotes keep a name with spaces or commas whole"
+msgstr "引用符で、スペースやカンマを含む名前をひとまとまりにします"
+
 msgid "RECENTLY PLAYED"
 msgstr "最近再生した項目"
 
@@ -3714,6 +3750,15 @@ msgstr "最近再生（すべてのソース）"
 
 msgid "Records"
 msgstr "アルバム"
+
+msgid "Records from that year"
+msgstr "その年のアルバム"
+
+msgid "Records of that genre"
+msgstr "そのジャンルのアルバム"
+
+msgid "Records with that composer"
+msgstr "その作曲者のアルバム"
 
 msgid "Refresh"
 msgstr "更新"
@@ -4175,6 +4220,9 @@ msgstr "設定"
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "音を整えます。帯域を上げるとその音が強まり、下げると弱まります。"
 
+msgid "Short names: y g l c a al t r"
+msgstr "短い名前：y g l c a al t r"
+
 msgid "Show"
 msgstr "表示"
 
@@ -4225,6 +4273,9 @@ msgstr "シャッフル"
 
 msgid "Shuffle all"
 msgstr "すべてシャッフル"
+
+msgid "Side by side, all must hold"
+msgstr "並べた条件はすべて満たす必要があります"
 
 msgid "Sidecar"
 msgstr "サイドカー"
@@ -4965,6 +5016,9 @@ msgstr "サポートされていない、または空のDSPプリセットカタ
 msgid "Up next"
 msgstr "次に再生"
 
+msgid "Up to that year"
+msgstr "その年まで"
+
 msgid "Upcoming"
 msgstr "近日公開"
 
@@ -5171,6 +5225,12 @@ msgstr "承認を取り消す"
 
 msgid "Without plugins"
 msgstr "プラグインなし"
+
+msgid "Words alone look in titles, artists and records"
+msgstr "フィールドなしの語は、タイトル・アーティスト・アルバムを検索します"
+
+msgid "Words in the record title and in the track title"
+msgstr "アルバム名とトラック名に含まれる語"
 
 msgid "Work"
 msgstr "作品"

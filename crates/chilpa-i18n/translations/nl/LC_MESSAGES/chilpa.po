@@ -109,6 +109,9 @@ msgstr "5 uur"
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Een JACK-graph draait op één samplefrequentie en elk programma erin draait op die frequentie -- deze staat op {} Hz. Een nummer dat met een andere frequentie is opgenomen, wordt geresampled voordat Chilpa er iets over te zeggen heeft, en geen enkele instelling hier verandert dat. JACK is bedoeld om audio tussen programma's te routeren; kies voor een bestand dat ongewijzigd naar een DAC gaat de geluidskaart zelf."
 
+msgid "A bar or OR: either is enough"
+msgstr "Een streep of OR: één is genoeg"
+
 msgid "A click on a record opens"
 msgstr "Een klik op een album opent"
 
@@ -237,6 +240,9 @@ msgstr "Voeg nummers uit een nummermenu toe aan deze wachtrij."
 
 msgid "Added"
 msgstr "Toegevoegd"
+
+msgid "Added in the last 30 days: d, w, m or y"
+msgstr "Toegevoegd in de laatste 30 dagen: d, w, m of y"
 
 msgid "Added this month"
 msgstr "Deze maand toegevoegd"
@@ -422,6 +428,9 @@ msgstr "Geanimeerde achtergrond met albumhoes achter de hele app. Hoog resourceg
 
 msgid "Any of"
 msgstr "Een van"
+
+msgid "Any of those years"
+msgstr "Een van die jaren"
 
 msgid "Any quality"
 msgstr "Elke kwaliteit"
@@ -978,6 +987,9 @@ msgstr "Tijdelijke externe albumhoezen wissen"
 
 msgid "Clear temporary remote images?"
 msgstr "Tijdelijke externe afbeeldingen wissen?"
+
+msgid "Clear the filter"
+msgstr "Het filter wissen"
 
 msgid "Clear the selection"
 msgstr "Selectie wissen"
@@ -1588,6 +1600,9 @@ msgstr "Bewerken met :filter"
 msgid "Edit…"
 msgstr "Bewerken…"
 
+msgid "Either genre: a comma means or"
+msgstr "Een van beide genres: een komma betekent ‘of’"
+
 msgid "Elevated"
 msgstr "Verhoogd"
 
@@ -1840,6 +1855,9 @@ msgstr "Vooruit"
 msgid "Forward 10 seconds"
 msgstr "10 seconden vooruit"
 
+msgid "Four stars or more; rating:0 has none"
+msgstr "Vier sterren of meer; rating:0 is zonder sterren"
+
 msgid "French"
 msgstr "Frans"
 
@@ -1855,6 +1873,9 @@ msgstr "Uit catalogus"
 msgid "From main sidebar"
 msgstr "Vanuit hoofdzijbalk"
 
+msgid "From one year to another, both included"
+msgstr "Van het ene jaar tot het andere, beide inbegrepen"
+
 msgid "From plugin"
 msgstr "Vanuit plug-in"
 
@@ -1863,6 +1884,9 @@ msgstr "Van dezelfde artiest"
 
 msgid "From settings menu"
 msgstr "Vanuit instellingenmenu"
+
+msgid "From that year on"
+msgstr "Vanaf dat jaar"
 
 msgid "From this week"
 msgstr "Van deze week"
@@ -2385,6 +2409,9 @@ msgstr "Nieuwste uitgave"
 
 msgid "Latest run"
 msgstr "Laatste uitvoering"
+
+msgid "Leave a label out: a minus means not"
+msgstr "Een label uitsluiten: een min betekent ‘niet’"
 
 msgid "Left delay · 0–30 ms"
 msgstr "Linkervertraging · 0–30 ms"
@@ -3007,6 +3034,9 @@ msgstr "Geen nummers komen overeen met je zoekopdracht."
 msgid "No year"
 msgstr "Geen jaar"
 
+msgid "No year; genre, label and composer take none too"
+msgstr "Zonder jaar; genre, label en componist kennen ook none"
+
 msgid "None"
 msgstr "Geen"
 
@@ -3261,6 +3291,9 @@ msgstr "Uitvoerapparaat"
 
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "PCM-samples kunnen niet naar een native DSD-stream worden geschreven"
+
+msgid "Parentheses group; NOT works like the minus"
+msgstr "Haakjes groeperen; NOT werkt als de min"
 
 msgid "Password"
 msgstr "Wachtwoord"
@@ -3619,6 +3652,9 @@ msgstr "Chilpa afsluiten?"
 msgid "Quitting from the window, its menu, Ctrl+Q or the tray asks first."
 msgstr "Afsluiten via het venster, het menu, Ctrl+Q of het systeemvak vraagt eerst om bevestiging."
 
+msgid "Quotes keep a name with spaces or commas whole"
+msgstr "Aanhalingstekens houden een naam met spaties of komma’s heel"
+
 msgid "RECENTLY PLAYED"
 msgstr "ONLANGS AFGESPEELD"
 
@@ -3717,6 +3753,15 @@ msgstr "Onlangs afgespeeld, alle bronnen"
 
 msgid "Records"
 msgstr "Albums"
+
+msgid "Records from that year"
+msgstr "Albums uit dat jaar"
+
+msgid "Records of that genre"
+msgstr "Albums van dat genre"
+
+msgid "Records with that composer"
+msgstr "Albums met die componist"
 
 msgid "Refresh"
 msgstr "Vernieuwen"
@@ -4179,6 +4224,9 @@ msgstr "Instellingen"
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "Vorm het geluid: verhoog een band om meer te horen, verlaag hem om minder te horen."
 
+msgid "Short names: y g l c a al t r"
+msgstr "Korte namen: y g l c a al t r"
+
 msgid "Show"
 msgstr "Tonen"
 
@@ -4229,6 +4277,9 @@ msgstr "Shuffle"
 
 msgid "Shuffle all"
 msgstr "Alles shuffelen"
+
+msgid "Side by side, all must hold"
+msgstr "Naast elkaar moeten ze allemaal gelden"
 
 msgid "Sidecar"
 msgstr "Sidecar"
@@ -4970,6 +5021,9 @@ msgstr "Niet-ondersteunde of lege DSP-presetcatalogus."
 msgid "Up next"
 msgstr "Hierna"
 
+msgid "Up to that year"
+msgstr "Tot en met dat jaar"
+
 msgid "Upcoming"
 msgstr "Aankomend"
 
@@ -5176,6 +5230,12 @@ msgstr "Goedkeuring intrekken"
 
 msgid "Without plugins"
 msgstr "Zonder plug-ins"
+
+msgid "Words alone look in titles, artists and records"
+msgstr "Losse woorden zoeken in titels, artiesten en albums"
+
+msgid "Words in the record title and in the track title"
+msgstr "Woorden in de albumtitel en in de titel van het nummer"
 
 msgid "Work"
 msgstr "Werk"
