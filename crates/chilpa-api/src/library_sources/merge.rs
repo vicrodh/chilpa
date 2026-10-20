@@ -2,7 +2,7 @@
 //! library's own tracks: both sides are ordered by the same keys and merged,
 //! so nothing of the library is read again to place them.
 
-use super::{Prepared, SourceIndex, SourceItem, Stars};
+use super::{Grouping, Prepared, SourceIndex, SourceItem, Stars};
 use crate::{Filter, Snapshot, TrackOrder};
 use chilpa_library::OrderKey;
 use std::cmp::Ordering;
@@ -50,12 +50,30 @@ fn letter(key: &OrderKey, by: &str) -> String {
 
 /// The library's snapshot with what the filter leaves of the index merged
 /// in. With `letters_by`, also where each letter starts among the tracks.
+/// With `grouping`, a record the library and a source both keep counts once.
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn snapshot(local: Snapshot, keys: Vec<OrderKey>, f: &Filter, order: TrackOrder, index: &SourceIndex, stars: &Stars, scope: Scope, letters_by: Option<&str>)
+pub(crate) fn snapshot(mut local: Snapshot, mut keys: Vec<OrderKey>, f: &Filter, order: TrackOrder, index: &SourceIndex, stars: &Stars, scope: Scope, letters_by: Option<&str>, grouping: Option<Grouping>)
     -> (Snapshot, Vec<(String, usize)>) {
     let filter = Prepared::new(f);
     let mut extra: Vec<(&OrderKey, &SourceItem)> = index.keys.iter().zip(&index.items)
         .filter(|(_, item)| scope.takes(item) && filter.passes(item, stars)).collect();
+    if let Some(grouping) = grouping.filter(|_| !extra.is_empty()) {
+        let mut albums = local.album_ids.clone();
+        albums.extend(extra.iter().map(|(_, item)| item.album).filter(|id| *id != 0));
+        let dropped = super::dropped_copies(&albums, grouping, &index.versions);
+        if !dropped.is_empty() {
+            extra.retain(|(_, item)| !dropped.contains(&item.album));
+            let mut gone_ms = 0;
+            let (mut ids, mut kept) = (Vec::with_capacity(local.ids.len()), Vec::with_capacity(keys.len()));
+            for (id, key) in local.ids.into_iter().zip(keys) {
+                if dropped.contains(&key.album_id) { gone_ms += key.duration_ms.max(0) as u64; } else { ids.push(id); kept.push(key); }
+            }
+            local.album_ids.retain(|id| !dropped.contains(id));
+            local.totals = crate::Totals { tracks: ids.len(), albums: local.album_ids.len(), duration_ms: local.totals.duration_ms.saturating_sub(gone_ms) };
+            local.ids = ids;
+            keys = kept;
+        }
+    }
     let group = f.grouped_by.as_str();
     let mut letters: Vec<(String, usize)> = Vec::new();
     let mut note = |key: &OrderKey, at: usize| if let Some(by) = letters_by {

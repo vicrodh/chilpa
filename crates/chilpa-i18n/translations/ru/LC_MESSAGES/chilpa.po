@@ -1948,6 +1948,9 @@ msgstr "Группировать коллекции"
 msgid "Group playlists by source"
 msgstr "Группировать плейлисты по источнику"
 
+msgid "Group same album from different sources"
+msgstr "Группировать один альбом из разных источников"
+
 msgid "Group: A-Z"
 msgstr "Группировка: А–Я"
 

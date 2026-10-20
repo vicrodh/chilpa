@@ -14,7 +14,10 @@ Item {
     id: card
     implicitWidth: CardLayout.cardWidth
 
-    property var sourceInfo: ({})
+    // Every source that keeps the record, its own first: one card can stand
+    // for the copies several sources keep.
+    property var sources: []
+    readonly property var sourceInfo: sources.length > 0 ? sources[0] : ({})
     property var qualityInfo: ({})
     property int albumId
     property string title
@@ -117,21 +120,29 @@ Item {
     }
 
     Item {
-        width: Metrics.iconSm + Metrics.gap4; height: width
+        width: badges.width; height: badges.height
         anchors.right: cover.right; anchors.bottom: cover.bottom; anchors.margins: Metrics.gap4
-        visible: !!card.sourceInfo.icon
+        visible: card.sources.length > 0
         Rectangle {
-            anchors.fill: sourceBadge
+            anchors.fill: badges
             anchors.margins: -Metrics.gap2
             radius: Metrics.radiusCard
             color: Theme.color.shadowElevatedKey
             opacity: 0.7
         }
-        SourceIcon {
-            id: sourceBadge
-            anchors.fill: parent
-            sourceInfo: card.sourceInfo
-            opacity: 0.84
+        Row {
+            id: badges
+            objectName: "sourceBadges"
+            spacing: Metrics.gap4
+            Repeater {
+                model: card.sources.slice(0, 4)
+                SourceIcon {
+                    required property var modelData
+                    width: Metrics.iconSm + Metrics.gap4; height: width
+                    sourceInfo: modelData
+                    opacity: 0.84
+                }
+            }
         }
     }
     Column {

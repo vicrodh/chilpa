@@ -20,7 +20,6 @@ Rectangle {
     readonly property var nativeInfo: albumId < 0 ? JSON.parse(Sources.card(albumId, Library.remoteRev) || "{}") : ({})
     readonly property bool favoriteSupported: albumId > 0 || !!nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")
     readonly property bool favorite: nativeInfo.plugin ? nativeInfo.favorite === true : Ratings.favorite("album", albumId, Ratings.rev)
-    readonly property var sources: JSON.parse(AlbumActions.sources(albumId, Library.contentRev) || "[]")
     readonly property var information: JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}")
     readonly property string genre: (Array.isArray(information.genres) && typeof information.genres[0] === "string"
         ? information.genres[0] : information.genre || "").split(/[,;]+/)[0].trim()
@@ -86,27 +85,6 @@ Rectangle {
             hoverEnabled: true
             onClicked: overlay.select()
             onContainsMouseChanged: containsMouse ? TipState.show(I18n.tr("Select", I18n.rev), selector) : TipState.hide(selector)
-        }
-    }
-
-    Row {
-        id: marks
-        visible: overlay.sources.length > 1
-        anchors.right: parent.right
-        anchors.rightMargin: Metrics.overlayPad
-        anchors.bottom: actions.top
-        anchors.bottomMargin: Metrics.gap6
-        spacing: Metrics.gap4
-        Repeater {
-            model: overlay.sources.slice(0, 4)
-            SourceIcon {
-                required property var modelData
-                sourceInfo: modelData
-                color: Theme.color.backdropText
-                HoverHandler {
-                    onHoveredChanged: hovered ? TipState.show(parent.sourceInfo.label, parent) : TipState.hide(parent)
-                }
-            }
         }
     }
 

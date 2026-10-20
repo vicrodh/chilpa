@@ -1946,6 +1946,9 @@ msgstr ""
 msgid "Group playlists by source"
 msgstr "Group playlists by source"
 
+msgid "Group same album from different sources"
+msgstr ""
+
 msgid "Group: A-Z"
 msgstr ""
 

@@ -7,7 +7,9 @@ QtObject {
     function information(id, revision) { return JSON.stringify(informationDocument) }
     function artistInformation(id, revision) { return JSON.stringify(informationDocument) }
     property var artistDestination: ({})
-    function sources(id, revision) { return "[]" }
+    // What a test says a record's card stands for, by its id.
+    property var sourcesOf: ({})
+    function sources(id, revision) { return JSON.stringify(sourcesOf[id] || []) }
     function quality(id, revision) { return '{"tier":3,"label":"FLAC 24/96"}' }
     function available(id, revision) { return true }
     function selected(id, revision) { return false }

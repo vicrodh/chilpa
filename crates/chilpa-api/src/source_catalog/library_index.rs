@@ -155,7 +155,64 @@ fn items_of(store: &Store, albums: &[String], tracks: &[String]) -> Vec<SourceIt
     items
 }
 
+/// A record an integrated listing keeps, as a version among the library's:
+/// what its page's version choice says of it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct SourceRecord {
+    pub id: i64,
+    pub plugin: String,
+    pub identity: String,
+    pub group: String,
+    pub title: String,
+    pub quality: crate::quality::Quality,
+    /// What the source says: explicit, clean, or nothing.
+    pub explicit: Option<bool>,
+    pub tracks: usize,
+}
+
+impl SourceRecord {
+    pub(crate) fn version(&self) -> crate::library_sources::SourceVersion {
+        crate::library_sources::SourceVersion {
+            group: self.group.clone(), edition: crate::library_sources::words(&self.title), tracks: self.tracks,
+            explicit: self.explicit, tier: self.quality.tier.rank().clamp(0, 4) as u8, plugin: self.plugin.clone(),
+            key: crate::library_sources::SourceVersion::key_of(&self.plugin, &self.identity),
+        }
+    }
+}
+
+fn source_record(store: &Store, card: &Card) -> SourceRecord {
+    let read = card.tracks.iter().flatten().filter_map(|id| store.tracks.get(id)).filter_map(|t| t.format.as_ref()).map(|f| f.quality());
+    let quality = read.chain(card.format.as_ref().map(|f| f.quality()))
+        .max_by_key(|q| (q.tier.rank(), q.bits, q.rate_hz)).unwrap_or_default();
+    SourceRecord {
+        id: card.id, plugin: card.plugin.clone(), identity: card.identity.clone(),
+        group: chilpa_library::store::versions::album_group(&card.title, &card.artist),
+        title: card.title.clone(), quality,
+        explicit: card.metadata["explicit"].as_bool(),
+        tracks: card.tracks.as_ref().map_or_else(|| card.metadata["tracks"].as_u64().unwrap_or_default() as usize, Vec::len),
+    }
+}
+
 impl Catalog {
+    /// The records the integrated listings keep, saved ones and those of
+    /// saved tracks, each once.
+    pub(crate) fn integrated_records(&self, chosen: &[(String, bool, bool)]) -> Vec<SourceRecord> {
+        let inner = self.lock();
+        let store = &inner.store;
+        let mut seen = std::collections::HashSet::new();
+        let mut records = Vec::new();
+        for (plugin, albums, tracks) in chosen {
+            let cards: Vec<i64> = [albums.then_some("albums"), tracks.then_some("tracks")].into_iter().flatten()
+                .filter_map(|section| store.shelves.get(&format!("{plugin} section:{section}")))
+                .flat_map(|shelf| shelf.cards.iter().copied().chain(shelf.tracks.iter().filter_map(|id| store.tracks.get(id)).map(|t| t.album_id)))
+                .collect();
+            for card in cards.into_iter().filter_map(|id| store.cards.get(&id)).filter(|c| c.kind == CardKind::Album) {
+                if seen.insert(card.id) { records.push(source_record(store, card)); }
+            }
+        }
+        records
+    }
+
     /// What changes when an integrated listing or one of its records is read
     /// again, and nothing else: a source browsed elsewhere leaves it alone.
     pub(crate) fn integrated_signature(&self, chosen: &[(String, bool, bool)]) -> u64 {

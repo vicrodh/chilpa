@@ -100,6 +100,13 @@ pub fn local_location(path: &str) -> String {
     super::releases::location(path)
 }
 
+impl AlbumVersion {
+    /// Its tier as a grid ranks it: 4 DSD, 3 hi-res, 2 lossless, 1 lossy.
+    pub fn tier(&self) -> u8 {
+        self.rank.0
+    }
+}
+
 impl VersionCatalog {
     pub fn choices(&self, id: i64) -> Vec<AlbumVersion> {
         self.versions.get(&id).and_then(|v| self.groups.get(&v.group))

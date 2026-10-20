@@ -51,8 +51,9 @@ fn add_named(entries: &mut Vec<FacetEntry>, found: Vec<(String, usize)>) {
     if added { entries.sort_by(|a, b| nocase(&a.label, &b.label)); }
 }
 
-/// Counts the index into every column the database already counted.
-pub(crate) fn merge(facets: &mut Facets, f: &Filter, index: &SourceIndex, stars: &Stars) {
+/// Counts the index into every column the database already counted. With
+/// `grouping`, the records column lists a record kept twice once.
+pub(crate) fn merge(facets: &mut Facets, f: &Filter, index: &SourceIndex, stars: &Stars, grouping: Option<super::Grouping>) {
     if index.items.is_empty() { return; }
     facets.sources.extend(index.sources.iter().cloned());
     let left = |column: usize| { let filter = Prepared::new(&left_of(f, column)); move |item: &&SourceItem| filter.passes(item, stars) };
@@ -94,6 +95,11 @@ pub(crate) fn merge(facets: &mut Facets, f: &Filter, index: &SourceIndex, stars:
     }
     if !albums.is_empty() {
         facets.albums.extend(albums);
+        if let Some(grouping) = grouping {
+            let ids: Vec<i64> = facets.albums.iter().filter_map(|entry| entry.key.parse().ok()).collect();
+            let dropped = super::dropped_copies(&ids, grouping, &index.versions);
+            facets.albums.retain(|entry| entry.key.parse().is_ok_and(|id: i64| !dropped.contains(&id)));
+        }
         facets.albums.sort_by(|a, b| nocase(&a.label, &b.label));
     }
 }

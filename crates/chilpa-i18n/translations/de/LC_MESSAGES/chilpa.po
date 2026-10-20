@@ -1946,6 +1946,9 @@ msgstr "Sammlungen gruppieren"
 msgid "Group playlists by source"
 msgstr "Playlists nach Quelle gruppieren"
 
+msgid "Group same album from different sources"
+msgstr "Gleiches Album aus verschiedenen Quellen gruppieren"
+
 msgid "Group: A-Z"
 msgstr "Gruppierung: A-Z"
 

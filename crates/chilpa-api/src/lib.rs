@@ -155,6 +155,7 @@ pub use metadata::view::MetadataView;
 pub use browse::{filter_facets, select_facets, select_tracks, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, GroupHeader, Reader, Snapshot, Totals, TrackEntry, TrackOrder, TrackRow};
 pub use browse::PageCache;
 mod album_versions;
+mod album_copies;
 mod album_page;
 mod album_shelves;
 pub use album_page::AlbumPage;
@@ -724,6 +725,8 @@ pub struct Chilpa {
     credits_read_at: (i64, u64),
     /// The covers and pictures the listener chose, and the one over what plays.
     artwork: chosen_artwork::State,
+    /// Every copy of a record the library and the sources keep, as cards.
+    copies: album_copies::Held,
 }
 
 /// Why the player was told to stop, when it was us who told it.
@@ -826,6 +829,7 @@ impl Chilpa {
             credits: Default::default(),
             credits_read_at: (0, 0),
             artwork: Default::default(),
+            copies: Default::default(),
         };
         if let Some(tabs) = chilpa.restored_tabs() {
             chilpa.protect_tabs(&tabs);
