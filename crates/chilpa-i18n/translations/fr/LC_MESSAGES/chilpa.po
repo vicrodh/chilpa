@@ -3077,6 +3077,9 @@ msgstr "Aucun paramètre ne correspond"
 msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
 msgstr "Aucune sortie détectée — réinstallez les profils UCM ALSA, puis redémarrez"
 
+msgid "No sources"
+msgstr "Aucune source"
+
 msgid "No stories for this artist"
 msgstr "Aucun article sur cet artiste"
 
@@ -3217,6 +3220,9 @@ msgstr "Les anciennes images temporaires sont supprimées en arrière-plan. Les 
 
 msgid "Oldest first"
 msgstr "Plus anciens d'abord"
+
+msgid "On"
+msgstr "Activé"
 
 msgid "On air"
 msgstr "À l'antenne"
@@ -4465,6 +4471,9 @@ msgstr "Sources"
 msgid "Sources and quality"
 msgstr "Sources et qualité"
 
+msgid "Sources decide what is in the Library. Refine narrows inside them."
+msgstr "Les sources décident de ce qui est dans la bibliothèque. Affiner restreint à l’intérieur."
+
 msgid "Spanish"
 msgstr "Espagnol"
 
@@ -5351,6 +5360,9 @@ msgstr "Quel GPU affiche l'application. Seuls les GPU réellement présents sont
 
 msgid "Which of its libraries come in?"
 msgstr "Lesquelles de ses bibliothèques importer ?"
+
+msgid "Which sources count"
+msgstr "Sources prises en compte"
 
 msgid "Who the records are credited to"
 msgstr "À qui les disques sont attribués"
