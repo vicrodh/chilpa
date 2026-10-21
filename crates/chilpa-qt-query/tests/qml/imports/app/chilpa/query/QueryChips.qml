@@ -23,4 +23,10 @@ QtObject {
         return JSON.stringify(focusOf[query] || { any: false, advanced: false, text: query, rows: [] })
     }
     function edit(query, change) { lastQuery = query; lastEdit = JSON.parse(change); return editedText }
+    // Refine's reading and edits (the facade's JSON), by query text.
+    property var refineOf: ({})
+    property var lastRefineEdit: ({})
+    property string refinedText: ""
+    function refine(query) { return JSON.stringify(refineOf[query] || { mode: "all", rows: [], complex: null }) }
+    function refineEdit(query, change) { lastQuery = query; lastRefineEdit = JSON.parse(change); return refinedText }
 }

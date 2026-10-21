@@ -37,6 +37,9 @@ msgstr "(manifeste illisible)"
 msgid "+ Create new playlist"
 msgstr "+ Créer une nouvelle playlist"
 
+msgid "+{} more"
+msgstr "+{} de plus"
+
 msgid "-11 LUFS · Loud"
 msgstr "-11 LUFS · Fort"
 
@@ -321,8 +324,8 @@ msgstr "Tous les groupes"
 msgid "All music"
 msgstr "Toute la musique"
 
-msgid "All of"
-msgstr "Toutes"
+msgid "All of these"
+msgstr "Toutes celles-ci"
 
 msgid "All qualities"
 msgstr "Toutes les qualités"
@@ -426,8 +429,8 @@ msgstr "Anime la marque de la piste en lecture avec des barres d'égaliseur. Dé
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Arrière-plan animé à partir de la pochette, derrière toute l'application. Forte consommation de ressources : accélération par GPU."
 
-msgid "Any of"
-msgstr "N'importe laquelle"
+msgid "Any of these"
+msgstr "Au moins l’une d’elles"
 
 msgid "Any of those years"
 msgstr "L’une de ces années"
@@ -1815,9 +1818,6 @@ msgstr "Flottante"
 
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr "Flottante au-dessus du contenu, ou sur toute la largeur de la fenêtre, en haut ou en bas."
-
-msgid "Focus"
-msgstr "Focus"
 
 msgid "Focus on playing"
 msgstr "Afficher la piste en lecture"
@@ -3769,6 +3769,9 @@ msgstr "Les albums de ce genre"
 msgid "Records with that composer"
 msgstr "Les albums de ce compositeur"
 
+msgid "Refine"
+msgstr "Affiner"
+
 msgid "Refresh"
 msgstr "Actualiser"
 
@@ -4949,6 +4952,9 @@ msgstr "Tunnel"
 msgid "Tunnel Flow"
 msgstr "Tunnel Flow"
 
+msgid "Type"
+msgstr "Type"
+
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr "Saisissez ce code sur plex.tv/link, connecté à votre compte Plex."
 
@@ -5249,6 +5255,9 @@ msgstr "Retirer l'approbation"
 msgid "Without plugins"
 msgstr "Sans plugins"
 
+msgid "Words"
+msgstr "Mots"
+
 msgid "Words alone look in titles, artists and records"
 msgstr "Des mots seuls cherchent dans les titres, les artistes et les albums"
 
@@ -5522,6 +5531,9 @@ msgstr "gérer votre compte lui-même, en dehors de Chilpa : votre identifiant 
 msgid "handset"
 msgstr "combiné"
 
+msgid "has none"
+msgstr "n’en a aucun"
+
 msgid "headphones"
 msgstr "casque"
 
@@ -5539,6 +5551,9 @@ msgstr "hw : la carte seule"
 
 msgid "impossible packet counts"
 msgstr "nombres de paquets impossibles"
+
+msgid "in the last"
+msgstr "il y a moins de"
 
 msgid "in the system keyring"
 msgstr "dans le trousseau de clés système"
@@ -6430,6 +6445,9 @@ msgstr "saisissez un titre, un artiste ou un numéro de catalogue pour recherche
 msgid "type takes album, single, ep, compilation, live or soundtrack"
 msgstr "type accepte album, single, ep, compilation, live ou soundtrack"
 
+msgid "unrated"
+msgstr "sans note"
+
 msgid "up to {} bits"
 msgstr "jusqu'à {} bits"
 
@@ -6502,6 +6520,11 @@ msgid_plural "{} channels"
 msgstr[0] "{} canal"
 msgstr[1] "{} canaux"
 
+msgid "{} condition"
+msgid_plural "{} conditions"
+msgstr[0] "{} condition"
+msgstr[1] "{} conditions"
+
 msgid "{} could not be copied: {}"
 msgstr "{} n'a pas pu être copié : {}"
 
@@ -6513,6 +6536,11 @@ msgstr "{} n'a pas pu être remplacé : {}"
 
 msgid "{} could not be written: {}"
 msgstr "{} n'a pas pu être écrit : {}"
+
+msgid "{} day"
+msgid_plural "{} days"
+msgstr[0] "{} jour"
+msgstr[1] "{} jours"
 
 msgid "{} did not accept the account"
 msgstr "{} n'a pas accepté le compte"
@@ -6597,6 +6625,11 @@ msgstr "{} min"
 
 msgid "{} modified"
 msgstr "{} modifiés"
+
+msgid "{} month"
+msgid_plural "{} months"
+msgstr[0] "{} mois"
+msgstr[1] "{} mois"
 
 msgid "{} more playlist..."
 msgid_plural "{} more playlists..."
@@ -6689,8 +6722,18 @@ msgstr "{} n'a pas été autorisé à temps ; reconnectez-vous"
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr "{} a été écrit et n'indique pas ce qu'il devrait dans « {} » ; rien n'a été remplacé"
 
+msgid "{} week"
+msgid_plural "{} weeks"
+msgstr[0] "{} semaine"
+msgstr[1] "{} semaines"
+
 msgid "{} written · {} unmatched · {} duplicates"
 msgstr "{} écrites · {} sans correspondance · {} doublons"
+
+msgid "{} year"
+msgid_plural "{} years"
+msgstr[0] "{} an"
+msgstr[1] "{} ans"
 
 msgid "{} {}"
 msgstr "{} {}"

@@ -2,14 +2,24 @@ import QtQuick
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../Components"
 import "../Patterns"
+import "../Primitives"
 
 Column {
     id: gallery
     property string sample: "genre:jazz,soul -label:\"blue note\" year:1955..1965"
     width: Metrics.menuMaxWidth * 2 // derived: room for rows and the picker
     spacing: Metrics.gap12
-    QueryChipRow { query: gallery.sample; onEdited: (query) => gallery.sample = query }
-    FocusSwitch {}
+    QueryChipRow { width: gallery.width; query: gallery.sample; onEdited: (query) => gallery.sample = query }
+    RefineSwitch {}
+    SummaryChip { row: ({ field: "genre", kind: "list", negated: true, values: ["Smooth Jazz"] }) }
+    Row {
+        spacing: Metrics.gap8
+        SquareButton { tip: "Undo"; glyph: Icons.arrowBackUp }
+        SquareButton { tip: "Console"; glyph: Icons.terminal2; checked: true }
+        SquareButton { tip: "Remove"; glyph: Icons.trash; small: true }
+        RemoveDot { tip: "Remove" }
+        Segments { options: [{ text: "all" }, { text: "any" }]; current: 0 }
+    }
     FocusPanel { width: gallery.width; height: Metrics.panesHeight }
     FocusArea { width: gallery.width; height: Metrics.panesHeight; focusMode: true }
     FocusCondition {

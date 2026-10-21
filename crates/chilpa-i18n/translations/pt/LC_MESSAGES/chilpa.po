@@ -37,6 +37,9 @@ msgstr "(manifesto ilegível)"
 msgid "+ Create new playlist"
 msgstr "+ Criar nova playlist"
 
+msgid "+{} more"
+msgstr "+{} mais"
+
 msgid "-11 LUFS · Loud"
 msgstr "-11 LUFS · Alto"
 
@@ -321,8 +324,8 @@ msgstr "Todos os grupos"
 msgid "All music"
 msgstr "Toda a música"
 
-msgid "All of"
-msgstr "Todas"
+msgid "All of these"
+msgstr "Todas estas"
 
 msgid "All qualities"
 msgstr "Todas as qualidades"
@@ -426,8 +429,8 @@ msgstr "Anima a marca da faixa que está tocando com barras de equalizador. Desa
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Plano de fundo animado com a capa do álbum atrás de todo o app. Alto uso de recursos: acelerado por GPU."
 
-msgid "Any of"
-msgstr "Qualquer uma"
+msgid "Any of these"
+msgstr "Qualquer uma destas"
 
 msgid "Any of those years"
 msgstr "Qualquer um desses anos"
@@ -1815,9 +1818,6 @@ msgstr "Flutuante"
 
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr "Flutuando sobre o conteúdo, ou ocupando a largura da janela no topo ou na base."
-
-msgid "Focus"
-msgstr "Foco"
 
 msgid "Focus on playing"
 msgstr "Focar na faixa em reprodução"
@@ -3769,6 +3769,9 @@ msgstr "Álbuns desse gênero"
 msgid "Records with that composer"
 msgstr "Álbuns com esse compositor"
 
+msgid "Refine"
+msgstr "Refinar"
+
 msgid "Refresh"
 msgstr "Atualizar"
 
@@ -4949,6 +4952,9 @@ msgstr "Tunnel"
 msgid "Tunnel Flow"
 msgstr "Tunnel Flow"
 
+msgid "Type"
+msgstr "Tipo"
+
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr "Digite este código em plex.tv/link, conectado à sua conta do Plex."
 
@@ -5249,6 +5255,9 @@ msgstr "Retirar aprovação"
 msgid "Without plugins"
 msgstr "Sem plugins"
 
+msgid "Words"
+msgstr "Palavras"
+
 msgid "Words alone look in titles, artists and records"
 msgstr "Palavras soltas buscam em títulos, artistas e álbuns"
 
@@ -5522,6 +5531,9 @@ msgstr "gerenciar sua conta por conta própria, fora do Chilpa: sua credencial v
 msgid "handset"
 msgstr "monofone"
 
+msgid "has none"
+msgstr "não tem"
+
 msgid "headphones"
 msgstr "fones de ouvido"
 
@@ -5539,6 +5551,9 @@ msgstr "hw: só a placa"
 
 msgid "impossible packet counts"
 msgstr "contagens de pacotes impossíveis"
+
+msgid "in the last"
+msgstr "há menos de"
 
 msgid "in the system keyring"
 msgstr "no chaveiro do sistema"
@@ -6430,6 +6445,9 @@ msgstr "digite um título, um artista ou um número de catálogo para buscar"
 msgid "type takes album, single, ep, compilation, live or soundtrack"
 msgstr "type aceita album, single, ep, compilation, live ou soundtrack"
 
+msgid "unrated"
+msgstr "sem estrelas"
+
 msgid "up to {} bits"
 msgstr "até {} bits"
 
@@ -6502,6 +6520,11 @@ msgid_plural "{} channels"
 msgstr[0] "{} canal"
 msgstr[1] "{} canais"
 
+msgid "{} condition"
+msgid_plural "{} conditions"
+msgstr[0] "{} condição"
+msgstr[1] "{} condições"
+
 msgid "{} could not be copied: {}"
 msgstr "não foi possível copiar {}: {}"
 
@@ -6513,6 +6536,11 @@ msgstr "não foi possível substituir {}: {}"
 
 msgid "{} could not be written: {}"
 msgstr "não foi possível gravar {}: {}"
+
+msgid "{} day"
+msgid_plural "{} days"
+msgstr[0] "{} dia"
+msgstr[1] "{} dias"
 
 msgid "{} did not accept the account"
 msgstr "{} não aceitou a conta"
@@ -6597,6 +6625,11 @@ msgstr "{} min"
 
 msgid "{} modified"
 msgstr "{} modificados"
+
+msgid "{} month"
+msgid_plural "{} months"
+msgstr[0] "{} mês"
+msgstr[1] "{} meses"
 
 msgid "{} more playlist..."
 msgid_plural "{} more playlists..."
@@ -6689,8 +6722,18 @@ msgstr "{} não foi autorizado a tempo; conecte novamente"
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr "{} foi gravado e não diz o que deveria em “{}”; nada foi substituído"
 
+msgid "{} week"
+msgid_plural "{} weeks"
+msgstr[0] "{} semana"
+msgstr[1] "{} semanas"
+
 msgid "{} written · {} unmatched · {} duplicates"
 msgstr "{} gravadas · {} sem correspondência · {} duplicadas"
+
+msgid "{} year"
+msgid_plural "{} years"
+msgstr[0] "{} ano"
+msgstr[1] "{} anos"
 
 msgid "{} {}"
 msgstr "{} de {}"

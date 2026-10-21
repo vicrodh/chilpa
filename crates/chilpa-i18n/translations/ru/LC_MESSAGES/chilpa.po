@@ -37,6 +37,9 @@ msgstr "(манифест не читается)"
 msgid "+ Create new playlist"
 msgstr "+ Создать новый плейлист"
 
+msgid "+{} more"
+msgstr "ещё {}"
+
 msgid "-11 LUFS · Loud"
 msgstr "-11 LUFS · Громко"
 
@@ -322,8 +325,8 @@ msgstr "Все группы"
 msgid "All music"
 msgstr "Вся музыка"
 
-msgid "All of"
-msgstr "Все"
+msgid "All of these"
+msgstr "Все эти"
 
 msgid "All qualities"
 msgstr "Все качества"
@@ -427,8 +430,8 @@ msgstr "Анимировать значок воспроизводимого т�
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Анимированный фон из обложки альбома за всем приложением. Высокое потребление ресурсов: ускоряется на GPU."
 
-msgid "Any of"
-msgstr "Любое"
+msgid "Any of these"
+msgstr "Хотя бы одно из этих"
 
 msgid "Any of those years"
 msgstr "Любой из этих годов"
@@ -1818,9 +1821,6 @@ msgstr "Плавающая"
 
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr "Плавает над содержимым либо занимает всю ширину окна сверху или снизу."
-
-msgid "Focus"
-msgstr "Фокус"
 
 msgid "Focus on playing"
 msgstr "Следовать за воспроизведением"
@@ -3772,6 +3772,9 @@ msgstr "Альбомы этого жанра"
 msgid "Records with that composer"
 msgstr "Альбомы с этим композитором"
 
+msgid "Refine"
+msgstr "Уточнить"
+
 msgid "Refresh"
 msgstr "Обновить"
 
@@ -4954,6 +4957,9 @@ msgstr "Tunnel"
 msgid "Tunnel Flow"
 msgstr "Tunnel Flow"
 
+msgid "Type"
+msgstr "Тип"
+
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr "Введите этот код на plex.tv/link, войдя в свою учётную запись Plex."
 
@@ -5254,6 +5260,9 @@ msgstr "Отозвать одобрение"
 msgid "Without plugins"
 msgstr "Без плагинов"
 
+msgid "Words"
+msgstr "Слова"
+
 msgid "Words alone look in titles, artists and records"
 msgstr "Слова без поля ищутся в названиях, исполнителях и альбомах"
 
@@ -5527,6 +5536,9 @@ msgstr "самостоятельно управлять вашей учётно�
 msgid "handset"
 msgstr "телефонная трубка"
 
+msgid "has none"
+msgstr "нет"
+
 msgid "headphones"
 msgstr "наушники"
 
@@ -5544,6 +5556,9 @@ msgstr "hw: только карта"
 
 msgid "impossible packet counts"
 msgstr "невозможное число пакетов"
+
+msgid "in the last"
+msgstr "за последние"
 
 msgid "in the system keyring"
 msgstr "в системной связке ключей"
@@ -6436,6 +6451,9 @@ msgstr "введите название, исполнителя или ката�
 msgid "type takes album, single, ep, compilation, live or soundtrack"
 msgstr "type принимает album, single, ep, compilation, live или soundtrack"
 
+msgid "unrated"
+msgstr "без оценки"
+
 msgid "up to {} bits"
 msgstr "до {} бит"
 
@@ -6511,6 +6529,12 @@ msgstr[0] "{} канал"
 msgstr[1] "{} канала"
 msgstr[2] "{} каналов"
 
+msgid "{} condition"
+msgid_plural "{} conditions"
+msgstr[0] "{} условие"
+msgstr[1] "{} условия"
+msgstr[2] "{} условий"
+
 msgid "{} could not be copied: {}"
 msgstr "не удалось скопировать {}: {}"
 
@@ -6522,6 +6546,12 @@ msgstr "не удалось заменить {}: {}"
 
 msgid "{} could not be written: {}"
 msgstr "не удалось записать {}: {}"
+
+msgid "{} day"
+msgid_plural "{} days"
+msgstr[0] "{} день"
+msgstr[1] "{} дня"
+msgstr[2] "{} дней"
 
 msgid "{} did not accept the account"
 msgstr "источник «{}» не принял учётную запись"
@@ -6615,6 +6645,12 @@ msgstr "{} мин"
 
 msgid "{} modified"
 msgstr "Изменено: {}"
+
+msgid "{} month"
+msgid_plural "{} months"
+msgstr[0] "{} месяц"
+msgstr[1] "{} месяца"
+msgstr[2] "{} месяцев"
 
 msgid "{} more playlist..."
 msgid_plural "{} more playlists..."
@@ -6715,8 +6751,20 @@ msgstr "{}: разрешение не получено вовремя; подк�
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr "После записи {} содержимое «{}» не совпало с ожидаемым; ничего не заменено"
 
+msgid "{} week"
+msgid_plural "{} weeks"
+msgstr[0] "{} неделю"
+msgstr[1] "{} недели"
+msgstr[2] "{} недель"
+
 msgid "{} written · {} unmatched · {} duplicates"
 msgstr "Записано: {} · без совпадений: {} · дубликатов: {}"
+
+msgid "{} year"
+msgid_plural "{} years"
+msgstr[0] "{} год"
+msgstr[1] "{} года"
+msgstr[2] "{} лет"
 
 msgid "{} {}"
 msgstr "{} {}"
