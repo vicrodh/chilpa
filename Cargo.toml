@@ -25,6 +25,7 @@ members = [
     "crates/chilpa-cd",
     "crates/chilpa-alsa",
     "crates/chilpa-mpris",
+    "crates/chilpa-web-sign-in",
     "crates/chilpa-pipewire",
     "crates/chilpa-pulse",
     "crates/chilpa-jack",
