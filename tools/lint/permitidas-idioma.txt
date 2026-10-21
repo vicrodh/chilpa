@@ -809,3 +809,4 @@ webkit
 mediasource
 webaudio
 webrtc
+ipc

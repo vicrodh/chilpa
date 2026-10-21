@@ -323,6 +323,9 @@ pub const SECTIONS: &[Section] = &[
                     setting("integrations.lastfm.enabled", Chilpa::mark("Send to Last.fm"), Chilpa::mark("The same rule as ListenBrainz: half of a track, or four minutes."), Control::Toggle),
                 ],
             },
+            Group { title: "Discord", settings: &[
+                setting("integrations.discord.enabled", Chilpa::mark("Discord Rich Presence"), Chilpa::mark("Show what you're listening to as your Discord status. Opt-in — Discord must be running."), Control::Toggle),
+            ] },
             Group { title: "MusicBrainz", settings: &[
                 setting("integrations.musicbrainz.enabled", Chilpa::mark("Use MusicBrainz"), Chilpa::mark("Chilpa sends no telemetry. When enabled, artist and release searches make one-way requests to MusicBrainz for results. Turning it off disables MusicBrainz features in Artist Network."), Control::Toggle),
             ] },

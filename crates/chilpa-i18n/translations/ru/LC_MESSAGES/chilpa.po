@@ -1519,6 +1519,9 @@ msgstr "Отключить учётную запись"
 msgid "Disconnected"
 msgstr "Отключено"
 
+msgid "Discord Rich Presence"
+msgstr "Discord Rich Presence"
+
 msgid "Discover"
 msgstr "Обзор"
 
@@ -4389,6 +4392,9 @@ msgstr "Показать токен"
 
 msgid "Show translation"
 msgstr "Показать перевод"
+
+msgid "Show what you're listening to as your Discord status. Opt-in — Discord must be running."
+msgstr "Показывать, что вы слушаете, в статусе Discord. По желанию — Discord должен быть запущен."
 
 msgid "Show/Hide Window"
 msgstr "Показать/Скрыть окно"

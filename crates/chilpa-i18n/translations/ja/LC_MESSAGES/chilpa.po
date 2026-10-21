@@ -1515,6 +1515,9 @@ msgstr "アカウントの接続を解除"
 msgid "Disconnected"
 msgstr "切断済み"
 
+msgid "Discord Rich Presence"
+msgstr "Discordリッチプレゼンス"
+
 msgid "Discover"
 msgstr "見つける"
 
@@ -4383,6 +4386,9 @@ msgstr "トークンを表示"
 
 msgid "Show translation"
 msgstr "翻訳を表示"
+
+msgid "Show what you're listening to as your Discord status. Opt-in — Discord must be running."
+msgstr "聴いている曲をDiscordのステータスとして表示します。オプトイン制で、Discordが起動している必要があります。"
 
 msgid "Show/Hide Window"
 msgstr "ウィンドウを表示／非表示"
