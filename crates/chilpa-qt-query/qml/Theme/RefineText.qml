@@ -68,6 +68,15 @@ QtObject {
         }
         return String(v)
     }
+    // "Has none" as a value's row says it.
+    function noneLabel(name) {
+        switch (name) {
+        case "genre": return I18n.tr("No genre", I18n.rev)
+        case "year": return I18n.tr("No year", I18n.rev)
+        case "composer": return I18n.tr("No composer", I18n.rev)
+        default: return I18n.tr("No label", I18n.rev)
+        }
+    }
     function unit(n, unit) {
         switch (unit) {
         case "d": return I18n.trCount("{} day", "{} days", n, I18n.rev)

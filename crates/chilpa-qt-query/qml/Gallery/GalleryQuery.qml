@@ -33,12 +33,16 @@ Column {
         RemoveDot { tip: "Remove" }
         Segments { options: [{ text: "all" }, { text: "any" }]; current: 0 }
     }
-    FocusPanel { width: gallery.width; height: Metrics.panesHeight }
     RefineArea { width: gallery.width; height: Metrics.panesHeight; refineMode: true }
-    FocusCondition {
-        row: ({ field: "genre", label: "Genre", include: ["Jazz"], exclude: ["Pop"], range: null, within: null, minimum: null, missing: false })
-    }
-    FocusValue { text: "Jazz"; excluded: true }
-    FocusValues { field: "genre"; width: gallery.width; height: Metrics.panesHeight }
-    FocusYears { width: gallery.width; range: [1960, 1979] }
+    ValuePicker { width: gallery.width; field: "genre" }
+    ValuePicker { width: gallery.width; field: "year" }
+    ValuePicker { width: gallery.width; field: "rating"; narrow: true }
+    PickRow { width: gallery.width; text: "Jazz"; count: "1,940"; mark: "include" }
+    Pill { text: "1960s"; on: true }
+    SuggestionList { width: gallery.width; typed: "monk" }
+    PickValues { width: gallery.width; field: "label" }
+    PickYears { width: gallery.width; range: ({ from: 1960, to: 1969 }) }
+    PickRatings { width: gallery.width }
+    PickPresets { width: gallery.width; lead: "in the last"; choices: [{ text: "30 days", on: true }, { text: "1 year", on: false }] }
+    PickWords { width: gallery.width; field: "title" }
 }

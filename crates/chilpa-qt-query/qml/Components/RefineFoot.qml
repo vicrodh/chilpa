@@ -11,20 +11,21 @@ import "../Theme"
 // "Group" once there is something to group, and narrow a single "Fields"
 // in their place (F7). Under it, whatever the panel opens: suggestions or
 // a field's values.
-Column {
+Item {
     id: foot
     property string picking: ""
     property bool narrow: false
     property bool canGroup: false
     property alias typed: input.text
     property alias extra: below.sourceComponent
+    readonly property alias extraItem: below.item
     signal fieldChosen(string field)
     signal fieldsAsked()
     signal groupAsked()
     signal accepted(bool exclude)
     signal escaped()
 
-    spacing: Refine.footApart
+    implicitHeight: line.height + (below.item ? Refine.footApart + below.height : 0)
 
     function focusInput() { input.forceActiveFocus() }
 
@@ -129,7 +130,8 @@ Column {
     }
     Loader {
         id: below
+        anchors.top: line.bottom
+        anchors.topMargin: Refine.footApart
         width: parent.width
-        active: sourceComponent !== null
     }
 }

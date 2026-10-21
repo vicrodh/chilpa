@@ -294,6 +294,9 @@ msgstr "Album-Interpret"
 msgid "Album artists"
 msgstr "Album-Interpreten"
 
+msgid "Album contains"
+msgstr "Album enthält"
+
 msgid "Album header"
 msgstr "Album-Kopfbereich"
 
@@ -447,8 +450,14 @@ msgstr "Eines dieser Jahre"
 msgid "Any quality"
 msgstr "Beliebige Qualität"
 
+msgid "Any rating"
+msgstr "Beliebige Bewertung"
+
 msgid "Any source — best quality (local mixed playlist)"
 msgstr "Beliebige Quelle – beste Qualität (lokale gemischte Playlist)"
+
+msgid "Any time"
+msgstr "Beliebig"
 
 msgid "Appearance"
 msgstr "Erscheinungsbild"
@@ -521,11 +530,6 @@ msgstr "Vor dem Beenden fragen"
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Bittet PipeWire oder PulseAudio, die Karte freizugeben, solange Chilpa darauf wiedergibt, und gibt sie zurück, wenn Chilpa stoppt oder lange pausiert."
-
-msgid "At least {} star"
-msgid_plural "At least {} stars"
-msgstr[0] "Mindestens {} Stern"
-msgstr[1] "Mindestens {} Sterne"
 
 msgid "Audio"
 msgstr "Audio"
@@ -1017,6 +1021,9 @@ msgstr "Wird im Hintergrund gelöscht…"
 
 msgid "Clear…"
 msgstr "Löschen…"
+
+msgid "Click a value to include it, − to exclude it. Counts already apply everything else."
+msgstr "Klicke einen Wert an, um ihn einzuschließen, − um ihn auszuschließen. Die Anzahlen berücksichtigen schon alles andere."
 
 msgid "Click tracks to select them; Shift selects a range."
 msgstr "Klicke auf Titel, um sie auszuwählen; mit Shift wählst du einen Bereich."
@@ -1609,9 +1616,6 @@ msgstr "Metadaten bearbeiten…"
 msgid "Edit playlist"
 msgstr "Playlist bearbeiten"
 
-msgid "Edit with :filter"
-msgstr "Mit :filter bearbeiten"
-
 msgid "Edit…"
 msgstr "Bearbeiten…"
 
@@ -1672,6 +1676,9 @@ msgstr "Gib eine gültige Zahl oder Zeit ein."
 msgid "Enter a valid number."
 msgstr "Gib eine gültige Zahl ein."
 
+msgid "Enter includes the first match · Shift+Enter excludes it"
+msgstr "Eingabe schließt den ersten Treffer ein · Umschalt+Eingabe schließt ihn aus"
+
 msgid "Episode notes"
 msgstr "Folgennotizen"
 
@@ -1686,6 +1693,9 @@ msgstr "Alle, die bei einem Titel mitspielen"
 
 msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect and exclusive mode off to share it and let Windows mix and resample."
 msgstr "Exakt bedeutet hier, dass das Gerät allein Chilpa gehört, solange ein Titel läuft: Nichts anderes auf dem Rechner kann es nutzen, nicht einmal eine Benachrichtigung. Schalte Bit-perfect und den Exklusivmodus aus, um es zu teilen und Windows Mischen und Resampling zu überlassen."
+
+msgid "Exclude"
+msgstr "Ausschließen"
 
 msgid "Exclusive mode"
 msgstr "Exklusivmodus"
@@ -1884,6 +1894,9 @@ msgstr "Frequenz · Hz   /   Gain · dB   /   ±12 dB"
 
 msgid "Fri"
 msgstr "Fr"
+
+msgid "From"
+msgstr "Von"
 
 msgid "From catalog"
 msgstr "Aus dem Katalog"
@@ -2209,6 +2222,9 @@ msgstr "In der Bibliothek"
 msgid "In progress"
 msgstr "Begonnen"
 
+msgid "Include"
+msgstr "Einschließen"
+
 msgid "Include matches from your plugins?"
 msgstr "Treffer aus deinen Plugins einbeziehen?"
 
@@ -2419,9 +2435,6 @@ msgstr "Letzte Playlist"
 msgid "Last track"
 msgstr "Letzter Titel"
 
-msgid "Last {} days"
-msgstr "Letzte {} Tage"
-
 msgid "Last.fm account"
 msgstr "Last.fm-Konto"
 
@@ -2442,6 +2455,9 @@ msgstr "Letzter Durchlauf"
 
 msgid "Leave a label out: a minus means not"
 msgstr "Ein Label ausschließen: ein Minus heißt „nicht“"
+
+msgid "Leave one empty for an open end. Both ends included."
+msgstr "Ein Feld leer lassen für ein offenes Ende. Beide Enden zählen mit."
 
 msgid "Left delay · 0–30 ms"
 msgstr "Verzögerung links · 0–30 ms"
@@ -2652,12 +2668,6 @@ msgstr "Markiere zuerst den Anfang mit :loop a."
 
 msgid "Match"
 msgstr "Treffer bei"
-
-msgid "Match all"
-msgstr "Alle erfüllen"
-
-msgid "Match any"
-msgstr "Mindestens eines erfüllen"
 
 msgid "Matched"
 msgstr "Zugeordnet"
@@ -3036,9 +3046,6 @@ msgstr "Kein Preset passt zu dieser Suche."
 
 msgid "No purchases match the current view."
 msgstr "Keine Käufe passen zur aktuellen Ansicht."
-
-msgid "No results"
-msgstr "Keine Ergebnisse"
 
 msgid "No results for"
 msgstr "Keine Ergebnisse für"
@@ -3465,6 +3472,12 @@ msgstr "Wiedergabeoptionen"
 
 msgid "Playback stops and the window closes."
 msgstr "Die Wiedergabe stoppt und das Fenster schließt sich."
+
+msgid "Played"
+msgstr "Gespielt"
+
+msgid "Played 10 times or more"
+msgstr "10-mal oder öfter gespielt"
 
 msgid "Player"
 msgstr "Player"
@@ -4889,6 +4902,9 @@ msgstr "Dieser Assistent hilft dir, deinen DAC für die Bit-perfect-Wiedergabe u
 msgid "This wizard tests PCM rates. Chilpa currently converts DSD to PCM on PipeWire; exclusive mode and rate switching alone cannot verify an untouched DoP stream. For a DAC that supports DSD, use ALSA direct (hw) and choose a supported DSD mode in Audio settings."
 msgstr "Dieser Assistent testet PCM-Raten. Chilpa wandelt DSD derzeit unter PipeWire in PCM um; Exklusivmodus und Ratenumschaltung allein können einen unveränderten DoP-Stream nicht bestätigen. Nutze für einen DAC mit DSD-Unterstützung direktes ALSA (hw) und wähle in den Audio-Einstellungen einen unterstützten DSD-Modus."
 
+msgid "This year"
+msgstr "Dieses Jahr"
+
 msgid "This year vs Last year"
 msgstr "Dieses Jahr vs. letztes Jahr"
 
@@ -4903,6 +4919,12 @@ msgstr "Die Zeit liegt außerhalb des Bereichs."
 
 msgid "Title"
 msgstr "Titel"
+
+msgid "Title contains"
+msgstr "Titel enthält"
+
+msgid "To"
+msgstr "Bis"
 
 msgid "To move to"
 msgstr "Zum Bewegen"
@@ -5011,6 +5033,9 @@ msgstr "Gib diesen Code unter plex.tv/link ein, angemeldet bei deinem Plex-Konto
 
 msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
 msgstr "Gib diesen Code bei Quick Connect in einem Jellyfin ein, bei dem du angemeldet bist."
+
+msgid "Type words and press Enter"
+msgstr "Wörter eingeben und Eingabe drücken"
 
 msgid "UP NEXT"
 msgstr "ALS NÄCHSTES"
@@ -5636,6 +5661,9 @@ msgstr "in den letzten"
 msgid "in the system keyring"
 msgstr "im System-Schlüsselbund"
 
+msgid "in title, artist or record"
+msgstr "in Titel, Interpret oder Album"
+
 msgid "integrated"
 msgstr "integriert"
 
@@ -5794,9 +5822,6 @@ msgstr "in /proc/asound ist keine Soundkarte aufgeführt"
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr "kein Soundserver hat geantwortet; installiere pipewire und pipewire-pulse"
 
-msgid "none of"
-msgstr "keines von"
-
 msgid "none of that can be played now: its folder is not mounted or its server does not answer"
 msgstr "nichts davon lässt sich jetzt wiedergeben: Der Ordner ist nicht eingehängt oder der Server antwortet nicht"
 
@@ -5829,9 +5854,6 @@ msgstr "eine oder mehrere Dateien können keine Tags aufnehmen"
 
 msgid "open it again from where it is listed"
 msgstr "öffne es erneut dort, wo es aufgeführt ist"
-
-msgid "or"
-msgstr "oder"
 
 msgid "outside the image"
 msgstr "außerhalb des Images"

@@ -169,7 +169,7 @@ Item {
         anchors.top: crumbs.bottom
         x: head.x
         width: head.width
-        height: toggle.refineMode ? Math.min(page.panesHeight, wanted) : page.panesHeight
+        height: toggle.refineMode ? fit(page.panesHeight) : page.panesHeight
         visible: page.panesShown
         refineMode: toggle.refineMode
         summary: tracks.summary
