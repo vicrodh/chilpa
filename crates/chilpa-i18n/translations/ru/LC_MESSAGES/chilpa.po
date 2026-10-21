@@ -2122,6 +2122,9 @@ msgstr "Запрос не распознан."
 msgid "I do not know the list \"{}\""
 msgstr "Список «{}» неизвестен"
 
+msgid "I keep this filter applied; edit its text to change it."
+msgstr "Я сохраняю этот фильтр; отредактируйте его текст, чтобы изменить его."
+
 msgid "I restarted the audio services"
 msgstr "Аудиослужбы перезапущены"
 
@@ -2355,6 +2358,9 @@ msgstr "Оставить текущую"
 
 msgid "Keep the queue between sessions"
 msgstr "Сохранять очередь между сеансами"
+
+msgid "Keep words literal and match a genre without expanding it"
+msgstr "Искать слова буквально и жанр без расширения"
 
 msgid "Keyboard Shortcuts"
 msgstr "Сочетания клавиш"

@@ -2119,6 +2119,9 @@ msgstr "Não entendi esse pedido."
 msgid "I do not know the list \"{}\""
 msgstr "Não conheço a lista “{}”"
 
+msgid "I keep this filter applied; edit its text to change it."
+msgstr "Mantenho este filtro aplicado; edite o texto para alterá-lo."
+
 msgid "I restarted the audio services"
 msgstr "Reiniciei os serviços de áudio"
 
@@ -2352,6 +2355,9 @@ msgstr "Manter a atual"
 
 msgid "Keep the queue between sessions"
 msgstr "Manter a fila entre sessões"
+
+msgid "Keep words literal and match a genre without expanding it"
+msgstr "Ler as palavras literalmente e buscar o gênero sem ampliá-lo"
 
 msgid "Keyboard Shortcuts"
 msgstr "Atalhos de teclado"

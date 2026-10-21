@@ -2119,6 +2119,9 @@ msgstr ""
 msgid "I do not know the list \"{}\""
 msgstr ""
 
+msgid "I keep this filter applied; edit its text to change it."
+msgstr "I keep this filter applied; edit its text to change it."
+
 msgid "I restarted the audio services"
 msgstr ""
 
@@ -2352,6 +2355,9 @@ msgstr ""
 
 msgid "Keep the queue between sessions"
 msgstr ""
+
+msgid "Keep words literal and match a genre without expanding it"
+msgstr "Keep words literal and match a genre without expanding it"
 
 msgid "Keyboard Shortcuts"
 msgstr ""

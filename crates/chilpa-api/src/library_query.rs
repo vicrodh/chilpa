@@ -11,11 +11,15 @@
 //! ("dnb" finds "Drum & Bass"), from a table generated from its genres.
 
 mod focus;
+pub(crate) mod refine;
+mod notes;
+pub use notes::EngineNote;
+pub use refine::{check, refine, refine_edit};
 pub(crate) use focus::facet_filter;
 pub use focus::{focus_rows, with_minimum, with_missing, with_range, with_value, with_within, FocusRow, FocusRows, ValueState};
 
 use chilpa_i18n as i18n;
-use chilpa_library::store::query::{parse, Field, Node, Values};
+use chilpa_library::store::query::{parse_grouped as parse, Field, Node, Values};
 use std::collections::HashMap;
 
 /// MusicBrainz's genres that go by other names: the name, then each alias,
@@ -89,6 +93,7 @@ pub(crate) const EXAMPLES: &[(&str, &str)] = &[
     (":filter (genre:jazz | genre:blues) -year:1990..", chilpa_i18n::mark("Parentheses group; NOT works like the minus")),
     (":filter y:1960..1969 g:soul", chilpa_i18n::mark("Short names: y g l c a al t r p ty q")),
     (":filter iron maiden", chilpa_i18n::mark("Words alone look in titles, artists and records")),
+    (r#":filter words:"A. Smith" genre=:dnb"#, chilpa_i18n::mark("Keep words literal and match a genre without expanding it")),
     (":filter", chilpa_i18n::mark("Clear the filter")),
 ];
 
@@ -128,9 +133,9 @@ fn join(any: bool, mut chips: Vec<Node>) -> String {
 
 fn field_label(field: Field) -> String {
     i18n::t(match field {
-        Field::Year => "Year", Field::Genre => "Genre", Field::Label => "Label", Field::Composer => "Composer",
+        Field::Year => "Year", Field::Genre | Field::ExactGenre => "Genre", Field::Label => "Label", Field::Composer => "Composer",
         Field::Artist => "Artist", Field::Album => "Album", Field::Title => "Title", Field::Rating => "Rating",
-        Field::Added => "Added", Field::Text => "Words",
+        Field::Added => "Added", Field::Text | Field::Words => "Words",
         Field::Plays => i18n::mark("Plays"), Field::Type => i18n::mark("Release type"), Field::Quality => i18n::mark("Quality"),
     })
 }
@@ -233,7 +238,7 @@ fn distance(a: &[char], b: &[char], most: usize) -> usize {
 pub(crate) fn names_genres(node: &Node) -> bool {
     match node {
         Node::All(nodes) | Node::Any(nodes) => nodes.iter().any(names_genres),
-        Node::Not(inner) => names_genres(inner),
+        Node::Not(inner) | Node::Group(inner) => names_genres(inner),
         Node::Is(field, values) => *field == Field::Genre && matches!(values, Values::Any(_)),
     }
 }
@@ -245,37 +250,14 @@ pub(crate) fn widen_genres(node: &Node, known: &[String]) -> Node {
 }
 
 pub(crate) fn widen_genres_with(node: &Node, known: &[String], aliases: &Aliases) -> Node {
-    match node {
-        Node::All(nodes) => Node::All(nodes.iter().map(|n| widen_genres_with(n, known, aliases)).collect()),
-        Node::Any(nodes) => Node::Any(nodes.iter().map(|n| widen_genres_with(n, known, aliases)).collect()),
-        Node::Not(inner) => Node::Not(Box::new(widen_genres_with(inner, known, aliases))),
-        Node::Is(Field::Genre, Values::Any(names)) => {
-            let mut widened = names.clone();
-            for name in names.iter().filter(|name| !known.iter().any(|k| k.eq_ignore_ascii_case(name))) {
-                let typed = genre_key(name);
-                let same = aliases.names_of(&typed);
-                let key: Vec<char> = typed.chars().collect();
-                let most = if key.len() > 6 { 2 } else { 1 };
-                for candidate in known {
-                    let theirs = genre_key(candidate);
-                    let other: Vec<char> = theirs.chars().collect();
-                    let close = key.len() >= 3 && other.len() >= 3 && distance(&key, &other, most) <= most;
-                    if (same.contains(&theirs.as_str()) || close) && !widened.contains(candidate) {
-                        widened.push(candidate.clone());
-                    }
-                }
-            }
-            Node::Is(Field::Genre, Values::Any(widened))
-        }
-        other => other.clone(),
-    }
+    notes::widen(node, known, aliases, &mut Vec::new(), &[])
 }
 
 /// Whether the query has words to look for anywhere.
 pub(crate) fn names_words(node: &Node) -> bool {
     match node {
         Node::All(nodes) | Node::Any(nodes) => nodes.iter().any(names_words),
-        Node::Not(inner) => names_words(inner),
+        Node::Not(inner) | Node::Group(inner) => names_words(inner),
         Node::Is(field, _) => *field == Field::Text,
     }
 }
@@ -285,20 +267,7 @@ pub(crate) fn names_words(node: &Node) -> bool {
 /// it in its column picks it: `A. Smith` finds the composer "A. Smith" and
 /// "A Smith". Words that name nothing stay words.
 pub(crate) fn resolve_names(node: &Node, known: &[(Field, Vec<String>)]) -> Node {
-    match node {
-        Node::All(nodes) => {
-            let words: Vec<&Node> = nodes.iter().filter(|n| matches!(n, Node::Is(Field::Text, Values::Any(_)))).collect();
-            match named(&words, known) {
-                Some(name) => Node::All(nodes.iter().filter(|n| !matches!(n, Node::Is(Field::Text, Values::Any(_))))
-                    .map(|n| resolve_names(n, known)).chain([name]).collect()),
-                None => Node::All(nodes.iter().map(|n| resolve_names(n, known)).collect()),
-            }
-        }
-        Node::Any(nodes) => Node::Any(nodes.iter().map(|n| resolve_names(n, known)).collect()),
-        Node::Not(inner) => Node::Not(Box::new(resolve_names(inner, known))),
-        leaf @ Node::Is(Field::Text, Values::Any(_)) => named(&[leaf], known).unwrap_or_else(|| leaf.clone()),
-        other => other.clone(),
-    }
+    notes::resolve(node, known, &mut Vec::new(), &[])
 }
 
 /// The names a query's words may be in the library: its artists,
@@ -313,15 +282,9 @@ pub(crate) fn library_names(lib: &chilpa_library::Library) -> Vec<(Field, Vec<St
 }
 
 impl crate::Chilpa {
-    /// The query as typed, with its words that are a name the library has
-    /// written as that name: what the chips then say (`A. Smith` becomes
-    /// `composer:"A Smith","A. Smith"`).
-    pub fn query_with_names(&mut self, text: &str) -> String {
-        let Ok(Some(node)) = read(text) else { return text.to_string() };
-        if !names_words(&node) { return text.to_string(); }
-        let Some(lib) = self.library() else { return text.to_string() };
-        resolve_names(&node, &library_names(lib)).to_string()
-    }
+    /// I retain the typed words so Refine can explain and undo name resolution.
+    /// Reader resolves them when applying the query, using the same vocabulary.
+    pub fn query_with_names(&mut self, text: &str) -> String { text.to_string() }
 }
 
 /// The names `words` say together, in each field that has them.
@@ -397,7 +360,7 @@ mod tests {
     }
 
     #[test]
-    fn a_query_applied_says_the_names_its_words_are() {
+    fn an_applied_query_keeps_the_words_its_notes_explain() {
         let lib = chilpa_library::Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
         let album = lib.source_edition(source, "record", "Record", "Band", Some(2000)).unwrap();
@@ -409,7 +372,12 @@ mod tests {
         lib.set_track_composers(2, &["A Smith".to_string()]).unwrap();
         let mut api = crate::Chilpa::new();
         api.library = Some(lib);
-        assert_eq!(api.query_with_names("A. Smith"), "composer:\"A Smith\",\"A. Smith\"");
+        let text=api.query_with_names("A. Smith");
+        assert_eq!(text,"A. Smith");
+        let reader=crate::Reader::of(api.library.take().unwrap());
+        assert_eq!(reader.refine_notes(&text).len(),1);
+        let filter=chilpa_library::Filter {query:read(&text).unwrap(),..Default::default()};
+        assert_eq!(reader.refresh(&filter,crate::TrackOrder::Artist,|| true).unwrap().1.totals.tracks,2);
         assert_eq!(api.query_with_names("genre:jazz"), "genre:jazz", "no words, nothing to read");
         assert_eq!(api.query_with_names("(genre:"), "(genre:", "what cannot be read is left to say why");
     }

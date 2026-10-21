@@ -15,11 +15,13 @@
 
 mod parse;
 mod buckets;
+mod fold;
+pub use fold::fold;
 pub(crate) use buckets::register;
 #[cfg(test)]
 mod tests;
 
-pub use parse::{parse, ParseError};
+pub use parse::{parse, parse_grouped, ParseError};
 
 use rusqlite::types::ToSql;
 
@@ -48,6 +50,10 @@ pub enum Field {
     Added,
     /// Words anywhere in the title, the artist or the record.
     Text,
+    /// Explicit words, never resolved to a library name.
+    Words,
+    /// A genre without alias or spelling expansion.
+    ExactGenre,
 }
 
 impl Field {
@@ -58,6 +64,7 @@ impl Field {
         ("title", Field::Title), ("t", Field::Title), ("rating", Field::Rating), ("r", Field::Rating),
         ("added", Field::Added), ("plays", Field::Plays), ("p", Field::Plays),
         ("type", Field::Type), ("ty", Field::Type), ("quality", Field::Quality), ("q", Field::Quality),
+        ("words", Field::Words), ("genre=", Field::ExactGenre),
     ];
 
     /// The name a query is printed with.
@@ -66,6 +73,7 @@ impl Field {
             Field::Year => "year", Field::Genre => "genre", Field::Label => "label", Field::Composer => "composer",
             Field::Artist => "artist", Field::Album => "album", Field::Title => "title", Field::Rating => "rating",
             Field::Added => "added", Field::Text => "",
+            Field::Words => "words", Field::ExactGenre => "genre=",
             Field::Plays => "plays", Field::Type => "type", Field::Quality => "quality",
         }
     }
@@ -86,6 +94,8 @@ pub enum Values {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Node {
+    /// Explicit parentheses retained for editors; evaluation ignores them.
+    Group(Box<Node>),
     All(Vec<Node>),
     Any(Vec<Node>),
     Not(Box<Node>),
@@ -106,17 +116,21 @@ fn marks(n: usize) -> String {
 const ALBUM_STARS: &str = "COALESCE((SELECT stars FROM album_ratings WHERE album_id = a.id), 0)";
 
 impl Node {
+    /// I execute the same simplified tree with either parser entry.
+    pub fn ungrouped(&self) -> Node { parse::simplify(self.clone()) }
+
     /// The `WHERE` condition this tree makes over `t` (tracks) and `a`
     /// (albums), with its parameters in order; `now` is the Unix time a
     /// relative date counts back from.
     pub fn compile(&self, now: i64) -> (String, Args) {
         let mut args = Args::new();
-        let sql = self.predicate(now, &mut args);
+        let sql = self.ungrouped().predicate(now, &mut args);
         (sql, args)
     }
 
     fn predicate(&self, now: i64, args: &mut Args) -> String {
         match self {
+            Node::Group(node) => node.predicate(now, args),
             Node::All(nodes) if nodes.is_empty() => "1".into(),
             Node::Any(nodes) if nodes.is_empty() => "0".into(),
             Node::All(nodes) => format!("({})", nodes.iter().map(|n| n.predicate(now, args)).collect::<Vec<_>>().join(" AND ")),
@@ -133,6 +147,7 @@ impl Node {
     /// How many leaves and how many levels the tree has.
     pub fn size(&self) -> (usize, usize) {
         match self {
+            Node::Group(node) => { let (n, d) = node.size(); (n, d + 1) }
             Node::Is(..) => (1, 1),
             Node::Not(node) => { let (n, d) = node.size(); (n, d + 1) }
             Node::All(nodes) | Node::Any(nodes) => {
@@ -149,11 +164,11 @@ fn set(field: Field, values: &Values, now: i64, args: &mut Args) -> String {
     match (field, values) {
         (Field::Plays, Values::Any(_) | Values::Range(..)) => buckets::plays(values, args),
         (Field::Type | Field::Quality, Values::Any(names)) => buckets::records(field, names, args),
-        (Field::Genre, Values::Missing) => "SELECT id FROM tracks WHERE id NOT IN (SELECT track_id FROM track_genres)".into(),
+        (Field::Genre | Field::ExactGenre, Values::Missing) => "SELECT id FROM tracks WHERE id NOT IN (SELECT track_id FROM track_genres)".into(),
         (Field::Composer, Values::Missing) => "SELECT id FROM tracks WHERE id NOT IN (SELECT track_id FROM track_composers)".into(),
         (Field::Label, Values::Missing) => "SELECT id FROM tracks WHERE coalesce(label, '') = ''".into(),
         (Field::Year, Values::Missing) => format!("{tracks} a.year IS NULL"),
-        (Field::Genre, Values::Any(names)) => {
+        (Field::Genre | Field::ExactGenre, Values::Any(names)) => {
             args.extend(names.iter().map(|n| Box::new(n.clone()) as Box<dyn ToSql>));
             format!("SELECT tg.track_id FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE g.name COLLATE NOCASE IN ({})", marks(names.len()))
         }
@@ -169,7 +184,7 @@ fn set(field: Field, values: &Values, now: i64, args: &mut Args) -> String {
             args.extend(names.iter().map(|n| Box::new(n.clone()) as Box<dyn ToSql>));
             format!("SELECT id FROM tracks WHERE album_id IN (SELECT album_id FROM album_artist_rollup WHERE artist COLLATE NOCASE IN ({}))", marks(names.len()))
         }
-        (Field::Album | Field::Title | Field::Text, Values::Any(words)) => {
+        (Field::Album | Field::Title | Field::Text | Field::Words, Values::Any(words)) => {
             // Every word starts a word of the title, the artist or the
             // record, accents aside: the full-text index answers in a few
             // milliseconds what LIKE '%word%' reads every track for.
