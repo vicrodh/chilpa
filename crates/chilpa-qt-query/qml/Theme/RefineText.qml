@@ -45,6 +45,29 @@ QtObject {
         default: return Icons.letterCase
         }
     }
+    // A value as the library shows it: release types and quality buckets
+    // are the engine's keys, named as their groupings name them.
+    function value(field, v) {
+        if (field === "type") {
+            switch (v) {
+            case "album": return I18n.tr("Albums", I18n.rev)
+            case "ep": return I18n.tr("EPs", I18n.rev)
+            case "single": return I18n.tr("Singles", I18n.rev)
+            case "live": return I18n.tr("Live", I18n.rev)
+            case "compilation": return I18n.tr("Compilations", I18n.rev)
+            case "soundtrack": return I18n.tr("Soundtracks", I18n.rev)
+            }
+        }
+        if (field === "quality") {
+            switch (v) {
+            case "lossy": return I18n.tr("Lossy", I18n.rev)
+            case "cd": return I18n.tr("Lossless", I18n.rev)
+            case "hires": return I18n.tr("Hi-Res", I18n.rev)
+            case "dsd": return "DSD"
+            }
+        }
+        return String(v)
+    }
     function unit(n, unit) {
         switch (unit) {
         case "d": return I18n.trCount("{} day", "{} days", n, I18n.rev)
@@ -72,7 +95,7 @@ QtObject {
         case "rating": return row.max === 5 && row.min > 0 && row.min < 5 ? "≥ " + stars(row) : stars(row)
         case "added": return I18n.tr("in the last", I18n.rev) + " " + unit(row.n, row.unit)
         case "words": return row.values.map(v => "“" + v + "”").join(", ")
-        default: return row.values.join(", ")
+        default: return row.values.map(v => value(row.field, v)).join(", ")
         }
     }
     // The operators a row can switch between, and the one it has
@@ -109,7 +132,7 @@ QtObject {
     // The values a row shows in its joined block: [{label, sub, removable}].
     function tokens(row) {
         switch (row.kind) {
-        case "list": return row.values.map(v => ({ label: v, value: v, sub: "", removable: true }))
+        case "list": return row.values.map(v => ({ label: value(row.field, v), value: v, sub: "", removable: true }))
         case "words": return row.values.map(v => ({ label: "“" + v + "”", value: v, sub: "", removable: true }))
         case "range": {
             const decade = row.from && row.to && row.from % 10 === 0 && row.to === row.from + 9

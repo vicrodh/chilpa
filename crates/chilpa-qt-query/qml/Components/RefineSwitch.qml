@@ -33,6 +33,13 @@ Segments {
         { text: I18n.tr("Columns", I18n.rev), glyph: Icons.columns3 },
         { text: I18n.tr("Refine", I18n.rev), glyph: Icons.adjustmentsHorizontal, badge: refineShown ? 0 : conditions }
     ]
+    // Undo walks back whatever changed the query: the panel, the columns or
+    // the console. The switch lives as long as the Library screen does.
+    Connections {
+        target: Library
+        function onQueryTextChanged() { QueryChips.observe(Library.queryText) }
+    }
+    Component.onCompleted: QueryChips.observe(Library.queryText)
     function show(refine) {
         refineMode = refine
         SettingsModel.keep("ui.library.focus", refine ? "true" : "false")
