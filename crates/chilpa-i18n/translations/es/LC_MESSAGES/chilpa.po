@@ -2557,6 +2557,9 @@ msgstr "Sin pérdida"
 msgid "Lossless only"
 msgstr "Solo lossless"
 
+msgid "Lossless or Hi-Res records; quality also takes lossy or dsd"
+msgstr "Discos sin pérdida o de alta resolución; quality también acepta lossy o dsd"
+
 msgid "Lossy"
 msgstr "Con pérdida"
 
@@ -2844,6 +2847,9 @@ msgstr "Reproducción en red"
 
 msgid "Never played"
 msgstr "Nunca escuchadas"
+
+msgid "Never played; plays:1.. means played at least once"
+msgstr "Nunca reproducida; plays:1.. significa reproducida al menos una vez"
 
 msgid "New Tab"
 msgstr "Nueva pestaña"
@@ -3787,6 +3793,9 @@ msgstr "Lanzamiento"
 msgid "Release date"
 msgstr "Fecha de lanzamiento"
 
+msgid "Release type"
+msgstr "Tipo de lanzamiento"
+
 msgid "Releases"
 msgstr "Lanzamientos"
 
@@ -4224,8 +4233,8 @@ msgstr "Ajustes"
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "Ajusta el sonido: sube una banda para resaltarla o bájala para atenuarla."
 
-msgid "Short names: y g l c a al t r"
-msgstr "Nombres cortos: y g l c a al t r"
+msgid "Short names: y g l c a al t r p ty q"
+msgstr "Nombres cortos: y g l c a al t r p ty q"
 
 msgid "Show"
 msgstr "Mostrar"
@@ -4308,6 +4317,9 @@ msgstr "Desde {}"
 msgid "Singles"
 msgstr "Sencillos"
 
+msgid "Singles or EPs, using the release type grouping"
+msgstr "Sencillos o EP, según la agrupación por tipo de lanzamiento"
+
 msgid "Size"
 msgstr "Tamaño"
 
@@ -4340,6 +4352,9 @@ msgstr "Faltan algunos paquetes"
 
 msgid "Songs"
 msgstr "Canciones"
+
+msgid "Soundtracks"
+msgstr "Bandas sonoras"
 
 msgid "Source"
 msgstr "Fuente"
@@ -4984,6 +4999,9 @@ msgstr "Preferencia desconocida."
 
 msgid "Unknown quality"
 msgstr "Calidad desconocida"
+
+msgid "Unknown release type"
+msgstr "Tipo de lanzamiento desconocido"
 
 msgid "Unknown source"
 msgstr "Fuente desconocida"
@@ -5719,6 +5737,9 @@ msgstr "pcm es la tarjeta como la configura ALSA: casi siempre mezclada con dmix
 msgid "pcm: shared, as ALSA sets it up"
 msgstr "pcm: compartida, como la configura ALSA"
 
+msgid "plays takes non-negative whole numbers or a range with the lower bound first"
+msgstr "plays acepta enteros no negativos o un rango con el límite inferior primero"
+
 msgid "plughw converts whatever the card does not take -- the rate, the sample format, the channels -- without saying so. It plays what the card alone would refuse, and for the same reason it cannot promise the samples arrive as they left."
 msgstr "plughw convierte lo que la tarjeta no acepta —la frecuencia, el formato de muestra, los canales— sin avisar. Toca lo que la tarjeta sola rechazaría, y por lo mismo no puede prometer que las muestras lleguen como salieron."
 
@@ -5733,6 +5754,9 @@ msgstr "procesar audio PCM con ecualización y controles estéreo"
 
 msgid "put a panel of its own in the window"
 msgstr "poner un panel suyo en la ventana"
+
+msgid "quality takes lossy, cd, hires or dsd"
+msgstr "quality acepta lossy, cd, hires o dsd"
 
 msgid "quarantined"
 msgstr "en cuarentena"
@@ -6402,6 +6426,9 @@ msgstr "las pistas que viven dentro de una imagen de disco guardan sus cambios e
 
 msgid "type a title, an artist or a catalog number to search"
 msgstr "escribe un título, un artista o un número de catálogo para buscar"
+
+msgid "type takes album, single, ep, compilation, live or soundtrack"
+msgstr "type acepta album, single, ep, compilation, live o soundtrack"
 
 msgid "up to {} bits"
 msgstr "hasta {} bits"

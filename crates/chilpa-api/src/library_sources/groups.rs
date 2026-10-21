@@ -8,6 +8,7 @@
 use super::SourceIndex;
 use crate::albums_view::AlbumsFound;
 use std::collections::HashMap;
+use chilpa_library::release_kind::release_kind;
 
 /// What a grid of records is grouped by.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -23,7 +24,7 @@ pub enum AlbumGroup {
     Quality,
     Source,
     Added,
-    /// Album, EP, single, live or compilation.
+    /// Album, EP, single, live, compilation or soundtrack.
     Kind,
 }
 
@@ -101,41 +102,42 @@ fn added(at: i64, now: i64) -> Filed {
     Filed { rank: (0, 10_000 - year, String::new()), label: year.to_string() }
 }
 
-/// What kind of release a record is: what its source says, else what its
-/// artist, title and size say. A stand-in artist ("Various Artists") is a
-/// compilation; a title that says EP, single or live is that; up to three
-/// tracks is a single and up to six in under half an hour an EP.
-pub(crate) fn release_kind(stated: &str, title: &str, artist: &str, tracks: usize, duration_ms: i64) -> &'static str {
-    match stated {
-        "album" => return "album", "ep" => return "ep", "single" => return "single",
-        "live" => return "live", "compilation" => return "compilation", _ => {}
+/// I keep two bucket keys per item for the index's lifetime. The temporary
+/// map has one entry per record or standalone track and is dropped here.
+pub(super) fn classify(items: &mut [super::SourceItem]) {
+    let key = |item: &super::SourceItem| (item.album, if item.album == 0 { item.track } else { 0 });
+    let mut records: HashMap<(i64, i64), (usize, i64, usize, usize, i32)> = HashMap::new();
+    for (at, item) in items.iter().enumerate() {
+        let rank = match item.tier { "dsd" => 4, "hires" => 3, "lossless" => 2, "lossy" => 1, _ => 0 };
+        let record = records.entry(key(item)).or_insert((0, 0, at, at, 0));
+        record.0 += item.tracks;
+        record.1 += item.duration_ms as i64;
+        if !item.release_type.is_empty() { record.3 = at; }
+        record.4 = record.4.max(rank);
     }
-    if chilpa_library::is_various(artist) { return "compilation"; }
-    let lowered = title.to_lowercase();
-    // A whole word, not part of one: "Liveforever" says nothing.
-    let word = |phrase: &str| lowered.match_indices(phrase).any(|(at, _)| {
-        lowered[..at].chars().next_back().is_none_or(|c| !c.is_alphanumeric())
-            && lowered[at + phrase.len()..].chars().next().is_none_or(|c| !c.is_alphanumeric())
-    });
-    // Set apart as a version: "(Live ...)", "[EP]", "- Single".
-    let tagged = |name: &str| word(name) && ["(", "[", "- "].iter().any(|open| lowered.contains(&format!("{open}{name}")));
-    if tagged("ep") || (word("ep") && lowered.ends_with(" ep")) { return "ep"; }
-    if tagged("single") { return "single"; }
-    if tagged("live") || word("live at") || word("live in") || word("unplugged") { return "live"; }
-    match tracks {
-        1..=3 => "single",
-        4..=6 if duration_ms > 0 && duration_ms < 30 * 60 * 1000 => "ep",
-        _ => "album",
+    let kinds: HashMap<(i64, i64), (&'static str, i32)> = records.into_iter().map(|(id, (tracks, duration, first, stated, rank))| {
+        let item = &items[first];
+        let stated = &items[stated].release_type;
+        let kind = if stated.is_empty() && item.album_title.is_empty() && (item.album == 0 || tracks == 0) { "" }
+            else { release_kind(stated, &item.album_title, &item.album_artist, tracks, duration) };
+        (id, (kind, rank))
+    }).collect();
+    for item in items {
+        let (kind, rank) = kinds[&key(item)];
+        item.folded.release_kind = kind;
+        item.folded.quality = rank;
     }
 }
 
 fn kind(kind: &str) -> Filed {
     let (rank, label) = match kind {
+        "album" => (0, chilpa_i18n::t("Albums")),
         "ep" => (1, chilpa_i18n::t("EPs")),
         "single" => (2, chilpa_i18n::t("Singles")),
         "live" => (3, chilpa_i18n::t("Live")),
         "compilation" => (4, chilpa_i18n::t("Compilations")),
-        _ => (0, chilpa_i18n::t("Albums")),
+        "soundtrack" => (5, chilpa_i18n::t("Soundtracks")),
+        _ => return Filed { rank: (1, 0, String::new()), label: chilpa_i18n::t("Unknown release type") },
     };
     Filed { rank: (0, rank, String::new()), label }
 }
@@ -152,7 +154,7 @@ pub(crate) struct RecordFacts {
     pub quality: i32,
     pub source: String,
     pub added_at: i64,
-    /// "album", "ep", "single", "live" or "compilation".
+    /// I use the shared release kind, or an empty key without record data.
     pub kind: &'static str,
 }
 
@@ -165,27 +167,20 @@ pub(crate) fn source_facts(index: &SourceIndex, names: &HashMap<String, String>)
         counts.into_iter().next().map(|(name, _)| name).unwrap_or_default()
     }
     let mut votes: HashMap<i64, [HashMap<String, usize>; 3]> = HashMap::new();
-    let mut sizes: HashMap<i64, (usize, i64, &str)> = HashMap::new();
+
     let mut facts: HashMap<i64, RecordFacts> = HashMap::new();
     for item in index.items.iter().filter(|item| item.album != 0) {
         let fact = facts.entry(item.album).or_insert_with(|| RecordFacts {
             title: item.album_title.clone(), artist: item.album_artist.clone(), year: item.year,
             source: names.get(&item.source_key()).cloned().unwrap_or_else(|| item.plugin.clone()), ..RecordFacts::default()
         });
-        let size = sizes.entry(item.album).or_insert((0, 0, ""));
-        size.0 += item.tracks;
-        size.1 += item.duration_ms as i64;
-        if !item.release_type.is_empty() { size.2 = item.release_type.as_str(); }
-        let rank = match item.tier { "dsd" => 4, "hires" => 3, "lossless" => 2, "lossy" => 1, _ => 0 };
-        fact.quality = fact.quality.max(rank);
+        fact.kind = item.folded.release_kind;
+        fact.quality = item.folded.quality;
         fact.added_at = fact.added_at.max(item.added_at);
         let vote = votes.entry(item.album).or_default();
         for (at, value) in [item.genres.first(), Some(&item.label), item.composers.first()].into_iter().enumerate() {
             if let Some(value) = value.filter(|v| !v.trim().is_empty()) { *vote[at].entry(value.clone()).or_default() += 1; }
         }
-    }
-    for (album, (tracks, duration, stated)) in sizes {
-        if let Some(fact) = facts.get_mut(&album) { fact.kind = release_kind(stated, &fact.title, &fact.artist, tracks, duration); }
     }
     for (album, [genres, labels, composers]) in votes {
         if let Some(fact) = facts.get_mut(&album) {
@@ -352,3 +347,6 @@ mod tests {
         assert_eq!(found.groups[2].1, "2025");
     }
 }
+
+#[cfg(test)]
+mod query_tests;
