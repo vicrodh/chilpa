@@ -218,6 +218,7 @@ Item {
         model: records
         onOpen: (albumId) => Navigation.go("album", albumId)
     }
+    ZeroResults { anchors.top: toolbar.bottom; x: head.x; active: records.albums === 0 && Library.queryText !== "" && !Library.busy }
     ShelfSkeleton {
         anchors.fill: result
         visible: Library.busy && records.albums === 0

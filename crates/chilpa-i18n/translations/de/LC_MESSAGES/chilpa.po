@@ -1604,6 +1604,9 @@ msgstr "Frühere Tabs"
 msgid "Edit"
 msgstr "Bearbeiten"
 
+msgid "Edit as text"
+msgstr "Als Text bearbeiten"
+
 msgid "Edit folder"
 msgstr "Ordner bearbeiten"
 
@@ -2669,6 +2672,9 @@ msgstr "Markiere zuerst den Anfang mit :loop a."
 msgid "Match"
 msgstr "Treffer bei"
 
+msgid "Match {} exactly"
+msgstr "{} genau suchen"
+
 msgid "Matched"
 msgstr "Zugeordnet"
 
@@ -3076,6 +3082,9 @@ msgstr "In diesem Durchlauf wurden noch keine Titel verarbeitet."
 
 msgid "No tracks in the selected libraries yet."
 msgstr "Noch keine Titel in den ausgewählten Bibliotheken."
+
+msgid "No tracks match all of these"
+msgstr "Kein Titel erfüllt alle diese Bedingungen"
 
 msgid "No tracks match this filter."
 msgstr "Keine Titel passen zu diesem Filter."
@@ -3740,6 +3749,9 @@ msgstr "Reactive Rings"
 msgid "Read a playlist, choose destinations, review matches, then create your playlists."
 msgstr "Lies eine Playlist ein, wähle Ziele, prüfe die Treffer und erstelle dann deine Playlists."
 
+msgid "Read as"
+msgstr "Gelesen als"
+
 msgid "Read less"
 msgstr "Weniger anzeigen"
 
@@ -3751,6 +3763,9 @@ msgstr "Playlist einlesen"
 
 msgid "Read the current size of the cache folders in the background."
 msgstr "Liest im Hintergrund die aktuelle Größe der Cache-Ordner aus."
+
+msgid "Read “{}” as words instead"
+msgstr "„{}“ stattdessen als Wörter lesen"
 
 msgid "Reading it from {}…"
 msgstr "Wird von {} gelesen…"
@@ -3901,6 +3916,9 @@ msgstr "Gruppe entfernen"
 
 msgid "Remove image"
 msgstr "Bild entfernen"
+
+msgid "Remove one condition to get results:"
+msgstr "Entferne eine Bedingung, um Ergebnisse zu erhalten:"
 
 msgid "Remove original queues"
 msgstr "Ursprüngliche Warteschlangen entfernen"
@@ -4854,6 +4872,9 @@ msgstr "Dieses Preset verwendet präzise Filter. Behalte sie unverändert oder e
 msgid "This purchase is unavailable for download."
 msgstr "Dieser Kauf steht nicht zum Download bereit."
 
+msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
+msgstr "Diese Abfrage verschachtelt Gruppen drei Ebenen tief. Zeilen zeigen zwei, daher bleibt sie hier als Text. Sie gilt trotzdem."
+
 msgid "This record cannot be played now."
 msgstr "Dieses Album kann gerade nicht wiedergegeben werden."
 
@@ -5336,6 +5357,9 @@ msgstr "Genehmigung widerrufen"
 
 msgid "Without plugins"
 msgstr "Ohne Plugins"
+
+msgid "Without {}"
+msgstr "Ohne {}"
 
 msgid "Words"
 msgstr "Wörter"

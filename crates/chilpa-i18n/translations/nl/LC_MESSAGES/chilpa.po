@@ -1604,6 +1604,9 @@ msgstr "Eerdere tabbladen"
 msgid "Edit"
 msgstr "Bewerken"
 
+msgid "Edit as text"
+msgstr "Als tekst bewerken"
+
 msgid "Edit folder"
 msgstr "Map bewerken"
 
@@ -2669,6 +2672,9 @@ msgstr "Markeer eerst het begin met :loop a."
 msgid "Match"
 msgstr "Voldoen aan"
 
+msgid "Match {} exactly"
+msgstr "{} precies zoeken"
+
 msgid "Matched"
 msgstr "Gevonden"
 
@@ -3076,6 +3082,9 @@ msgstr "In deze uitvoering zijn nog geen nummers verwerkt."
 
 msgid "No tracks in the selected libraries yet."
 msgstr "Nog geen nummers in de geselecteerde bibliotheken."
+
+msgid "No tracks match all of these"
+msgstr "Geen nummers voldoen aan al deze voorwaarden"
 
 msgid "No tracks match this filter."
 msgstr "Geen nummers komen overeen met dit filter."
@@ -3740,6 +3749,9 @@ msgstr "Reactieve ringen"
 msgid "Read a playlist, choose destinations, review matches, then create your playlists."
 msgstr "Lees een afspeellijst, kies bestemmingen, controleer de overeenkomsten en maak dan je afspeellijsten aan."
 
+msgid "Read as"
+msgstr "Gelezen als"
+
 msgid "Read less"
 msgstr "Minder lezen"
 
@@ -3751,6 +3763,9 @@ msgstr "Afspeellijst lezen"
 
 msgid "Read the current size of the cache folders in the background."
 msgstr "Lees de huidige grootte van de cachemappen op de achtergrond."
+
+msgid "Read “{}” as words instead"
+msgstr "„{}” als woorden lezen"
 
 msgid "Reading it from {}…"
 msgstr "Wordt gelezen van {}…"
@@ -3901,6 +3916,9 @@ msgstr "Groep verwijderen"
 
 msgid "Remove image"
 msgstr "Afbeelding verwijderen"
+
+msgid "Remove one condition to get results:"
+msgstr "Verwijder één voorwaarde om resultaten te krijgen:"
 
 msgid "Remove original queues"
 msgstr "Originele wachtrijen verwijderen"
@@ -4854,6 +4872,9 @@ msgstr "Deze preset gebruikt nauwkeurige filters. Laat ze zoals ze zijn, of maak
 msgid "This purchase is unavailable for download."
 msgstr "Deze aankoop kan niet worden gedownload."
 
+msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
+msgstr "Deze zoekopdracht nest groepen drie niveaus diep. Rijen tonen er twee, dus hier blijft hij tekst. Hij geldt nog steeds."
+
 msgid "This record cannot be played now."
 msgstr "Dit item kan nu niet worden afgespeeld."
 
@@ -5336,6 +5357,9 @@ msgstr "Goedkeuring intrekken"
 
 msgid "Without plugins"
 msgstr "Zonder plug-ins"
+
+msgid "Without {}"
+msgstr "Zonder {}"
 
 msgid "Words"
 msgstr "Woorden"

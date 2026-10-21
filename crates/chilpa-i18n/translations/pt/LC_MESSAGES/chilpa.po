@@ -1604,6 +1604,9 @@ msgstr "Abas anteriores"
 msgid "Edit"
 msgstr "Editar"
 
+msgid "Edit as text"
+msgstr "Editar como texto"
+
 msgid "Edit folder"
 msgstr "Editar pasta"
 
@@ -2669,6 +2672,9 @@ msgstr "Marque primeiro o início com :loop a."
 msgid "Match"
 msgstr "Corresponder a"
 
+msgid "Match {} exactly"
+msgstr "Buscar {} exatamente"
+
 msgid "Matched"
 msgstr "Com correspondência"
 
@@ -3076,6 +3082,9 @@ msgstr "Nenhuma faixa foi processada nesta execução ainda."
 
 msgid "No tracks in the selected libraries yet."
 msgstr "Ainda não há faixas nas bibliotecas selecionadas."
+
+msgid "No tracks match all of these"
+msgstr "Nenhuma faixa atende a todas estas"
 
 msgid "No tracks match this filter."
 msgstr "Nenhuma faixa corresponde a este filtro."
@@ -3740,6 +3749,9 @@ msgstr "Reactive Rings"
 msgid "Read a playlist, choose destinations, review matches, then create your playlists."
 msgstr "Leia uma playlist, escolha os destinos, revise as correspondências e depois crie suas playlists."
 
+msgid "Read as"
+msgstr "Lido como"
+
 msgid "Read less"
 msgstr "Ler menos"
 
@@ -3751,6 +3763,9 @@ msgstr "Ler playlist"
 
 msgid "Read the current size of the cache folders in the background."
 msgstr "Lê em segundo plano o tamanho atual das pastas de cache."
+
+msgid "Read “{}” as words instead"
+msgstr "Ler “{}” como palavras"
 
 msgid "Reading it from {}…"
 msgstr "Lendo de {}…"
@@ -3901,6 +3916,9 @@ msgstr "Remover grupo"
 
 msgid "Remove image"
 msgstr "Remover imagem"
+
+msgid "Remove one condition to get results:"
+msgstr "Remova uma condição para obter resultados:"
 
 msgid "Remove original queues"
 msgstr "Remover as filas originais"
@@ -4854,6 +4872,9 @@ msgstr "Este preset usa filtros precisos. Mantenha-os como estão ou crie um EQ 
 msgid "This purchase is unavailable for download."
 msgstr "Esta compra não está disponível para download."
 
+msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
+msgstr "Esta consulta aninha grupos em três níveis. As linhas mostram dois, então aqui fica como texto. Ela continua aplicada."
+
 msgid "This record cannot be played now."
 msgstr "Este disco não pode ser reproduzido agora."
 
@@ -5336,6 +5357,9 @@ msgstr "Retirar aprovação"
 
 msgid "Without plugins"
 msgstr "Sem plugins"
+
+msgid "Without {}"
+msgstr "Sem {}"
 
 msgid "Words"
 msgstr "Palavras"

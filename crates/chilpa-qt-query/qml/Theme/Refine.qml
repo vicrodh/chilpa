@@ -179,4 +179,6 @@ QtObject {
     readonly property int zeroRow: 32
     readonly property int zeroRound: 8
     readonly property int zeroPad: 12
+    readonly property int zeroTop: 28
+    readonly property real zeroTitle: 16 * Type.pointsPerPixel
 }

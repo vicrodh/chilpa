@@ -1604,6 +1604,9 @@ msgstr "Onglets précédents"
 msgid "Edit"
 msgstr "Modifier"
 
+msgid "Edit as text"
+msgstr "Modifier comme texte"
+
 msgid "Edit folder"
 msgstr "Modifier le dossier"
 
@@ -2669,6 +2672,9 @@ msgstr "Marquez d'abord le début avec :loop a."
 msgid "Match"
 msgstr "Correspondre à"
 
+msgid "Match {} exactly"
+msgstr "Chercher {} exactement"
+
 msgid "Matched"
 msgstr "Associé"
 
@@ -3076,6 +3082,9 @@ msgstr "Aucune piste n'a encore été traitée lors de cette exécution."
 
 msgid "No tracks in the selected libraries yet."
 msgstr "Aucune piste dans les bibliothèques sélectionnées pour le moment."
+
+msgid "No tracks match all of these"
+msgstr "Aucune piste ne remplit toutes ces conditions"
 
 msgid "No tracks match this filter."
 msgstr "Aucune piste ne correspond à ce filtre."
@@ -3740,6 +3749,9 @@ msgstr "Anneaux réactifs"
 msgid "Read a playlist, choose destinations, review matches, then create your playlists."
 msgstr "Chargez une playlist, choisissez les destinations, vérifiez les correspondances, puis créez vos playlists."
 
+msgid "Read as"
+msgstr "Lu comme"
+
 msgid "Read less"
 msgstr "Afficher moins"
 
@@ -3751,6 +3763,9 @@ msgstr "Charger la playlist"
 
 msgid "Read the current size of the cache folders in the background."
 msgstr "Lit en arrière-plan la taille actuelle des dossiers de cache."
+
+msgid "Read “{}” as words instead"
+msgstr "Lire « {} » comme des mots"
 
 msgid "Reading it from {}…"
 msgstr "Chargement depuis {}…"
@@ -3901,6 +3916,9 @@ msgstr "Retirer le groupe"
 
 msgid "Remove image"
 msgstr "Supprimer l'image"
+
+msgid "Remove one condition to get results:"
+msgstr "Retirez une condition pour obtenir des résultats :"
 
 msgid "Remove original queues"
 msgstr "Supprimer les files d'attente d'origine"
@@ -4854,6 +4872,9 @@ msgstr "Ce préréglage utilise des filtres précis. Conservez-les tels quels, o
 msgid "This purchase is unavailable for download."
 msgstr "Cet achat n'est pas disponible au téléchargement."
 
+msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
+msgstr "Cette requête imbrique des groupes sur trois niveaux. Les lignes en montrent deux, elle reste donc en texte ici. Elle s’applique quand même."
+
 msgid "This record cannot be played now."
 msgstr "Ce disque ne peut pas être lu pour le moment."
 
@@ -5336,6 +5357,9 @@ msgstr "Retirer l'approbation"
 
 msgid "Without plugins"
 msgstr "Sans plugins"
+
+msgid "Without {}"
+msgstr "Sans {}"
 
 msgid "Words"
 msgstr "Mots"
