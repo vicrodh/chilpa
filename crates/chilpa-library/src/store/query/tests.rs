@@ -1,3 +1,5 @@
+mod fields;
+
 use super::*;
 use crate::Library;
 use rusqlite::params;

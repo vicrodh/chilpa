@@ -2554,6 +2554,9 @@ msgstr "ロスレス"
 msgid "Lossless only"
 msgstr "ロスレスのみ"
 
+msgid "Lossless or Hi-Res records; quality also takes lossy or dsd"
+msgstr "ロスレスまたはハイレゾのアルバム。quality には lossy または dsd も指定できます"
+
 msgid "Lossy"
 msgstr "ロッシー"
 
@@ -2841,6 +2844,9 @@ msgstr "ネットワーク再生"
 
 msgid "Never played"
 msgstr "未再生"
+
+msgid "Never played; plays:1.. means played at least once"
+msgstr "未再生。plays:1.. は1回以上再生した曲を表します"
 
 msgid "New Tab"
 msgstr "新しいタブ"
@@ -3784,6 +3790,9 @@ msgstr "リリース"
 msgid "Release date"
 msgstr "リリース日"
 
+msgid "Release type"
+msgstr "リリース種別"
+
 msgid "Releases"
 msgstr "リリース"
 
@@ -4220,8 +4229,8 @@ msgstr "設定"
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "音を整えます。帯域を上げるとその音が強まり、下げると弱まります。"
 
-msgid "Short names: y g l c a al t r"
-msgstr "短い名前：y g l c a al t r"
+msgid "Short names: y g l c a al t r p ty q"
+msgstr "短縮名：y g l c a al t r p ty q"
 
 msgid "Show"
 msgstr "表示"
@@ -4304,6 +4313,9 @@ msgstr "{}から"
 msgid "Singles"
 msgstr "シングル"
 
+msgid "Singles or EPs, using the release type grouping"
+msgstr "リリース種別によるグループ分けに従ったシングルまたはEP"
+
 msgid "Size"
 msgstr "サイズ"
 
@@ -4336,6 +4348,9 @@ msgstr "一部のパッケージがありません"
 
 msgid "Songs"
 msgstr "トラック"
+
+msgid "Soundtracks"
+msgstr "サウンドトラック"
 
 msgid "Source"
 msgstr "ソース"
@@ -4979,6 +4994,9 @@ msgstr "不明な設定です。"
 
 msgid "Unknown quality"
 msgstr "音質不明"
+
+msgid "Unknown release type"
+msgstr "リリース種別不明"
 
 msgid "Unknown source"
 msgstr "ソース不明"
@@ -5713,6 +5731,9 @@ msgstr "pcmはALSA自身の設定どおりのカードです。通常はdmixで�
 msgid "pcm: shared, as ALSA sets it up"
 msgstr "pcm: ALSAの設定どおりに共有"
 
+msgid "plays takes non-negative whole numbers or a range with the lower bound first"
+msgstr "plays には0以上の整数、または下限を先にした範囲を指定します"
+
 msgid "plughw converts whatever the card does not take -- the rate, the sample format, the channels -- without saying so. It plays what the card alone would refuse, and for the same reason it cannot promise the samples arrive as they left."
 msgstr "plughwは、カードが受け付けないもの（レート、サンプル形式、チャンネル）を、通知せずに変換します。カード単独では拒否するものも再生できますが、同じ理由でサンプルがそのまま届くことは約束できません。"
 
@@ -5727,6 +5748,9 @@ msgstr "イコライゼーションとステレオ設定でPCMオーディオを
 
 msgid "put a panel of its own in the window"
 msgstr "ウィンドウに専用のパネルを置く"
+
+msgid "quality takes lossy, cd, hires or dsd"
+msgstr "quality には lossy、cd、hires、dsd を指定します"
 
 msgid "quarantined"
 msgstr "隔離済み"
@@ -6396,6 +6420,9 @@ msgstr "ディスクイメージ内のトラックは、変更をサイドカー
 
 msgid "type a title, an artist or a catalog number to search"
 msgstr "検索するには、タイトル、アーティスト、またはカタログ番号を入力してください"
+
+msgid "type takes album, single, ep, compilation, live or soundtrack"
+msgstr "type には album、single、ep、compilation、live、soundtrack を指定します"
 
 msgid "up to {} bits"
 msgstr "最大{}ビット"

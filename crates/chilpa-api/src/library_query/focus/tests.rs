@@ -104,3 +104,13 @@ fn facet_names_round_trip_without_splitting_or_losing_quotes() {
         }
     }
 }
+
+#[test]
+fn play_counts_release_types_and_quality_stay_as_advanced_text() {
+    for text in ["plays:0", "-plays:1..", "type:single,ep", "-type:live", "quality:cd,hires", "genre:jazz q:dsd"] {
+        let rows = focus_rows(text);
+        assert!(rows.advanced, "{text}");
+        assert!(rows.rows.is_empty(), "{text}");
+        assert_eq!(rows.text, parse(text).unwrap().to_string());
+    }
+}

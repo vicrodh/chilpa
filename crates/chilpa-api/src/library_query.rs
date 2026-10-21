@@ -80,11 +80,14 @@ pub(crate) const EXAMPLES: &[(&str, &str)] = &[
     (":filter composer:monk", chilpa_i18n::mark("Records with that composer")),
     (":filter album:blue title:train", chilpa_i18n::mark("Words in the record title and in the track title")),
     (":filter rating:4..", chilpa_i18n::mark("Four stars or more; rating:0 has none")),
+    (":filter plays:0", chilpa_i18n::mark("Never played; plays:1.. means played at least once")),
+    (":filter type:single,ep", chilpa_i18n::mark("Singles or EPs, using the release type grouping")),
+    (":filter quality:cd,hires", chilpa_i18n::mark("Lossless or Hi-Res records; quality also takes lossy or dsd")),
     (":filter added:30d", chilpa_i18n::mark("Added in the last 30 days: d, w, m or y")),
     (":filter genre:rock year:1970..1979", chilpa_i18n::mark("Side by side, all must hold")),
     (":filter genre:jazz | composer:monk", chilpa_i18n::mark("A bar or OR: either is enough")),
     (":filter (genre:jazz | genre:blues) -year:1990..", chilpa_i18n::mark("Parentheses group; NOT works like the minus")),
-    (":filter y:1960..1969 g:soul", chilpa_i18n::mark("Short names: y g l c a al t r")),
+    (":filter y:1960..1969 g:soul", chilpa_i18n::mark("Short names: y g l c a al t r p ty q")),
     (":filter iron maiden", chilpa_i18n::mark("Words alone look in titles, artists and records")),
     (":filter", chilpa_i18n::mark("Clear the filter")),
 ];
@@ -128,6 +131,7 @@ fn field_label(field: Field) -> String {
         Field::Year => "Year", Field::Genre => "Genre", Field::Label => "Label", Field::Composer => "Composer",
         Field::Artist => "Artist", Field::Album => "Album", Field::Title => "Title", Field::Rating => "Rating",
         Field::Added => "Added", Field::Text => "Words",
+        Field::Plays => i18n::mark("Plays"), Field::Type => i18n::mark("Release type"), Field::Quality => i18n::mark("Quality"),
     })
 }
 

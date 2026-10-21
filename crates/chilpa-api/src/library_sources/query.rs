@@ -40,11 +40,19 @@ fn leaf(field: Field, values: &Values, item: &SourceItem, stars: &Stars, now: i6
         (Field::Text, Values::Any(want)) => worded(&folded.text, want),
         (Field::Year, Values::Any(want)) => item.year.is_some_and(|year| want.iter().any(|w| number(w) == Some(i64::from(year)))),
         (Field::Rating, Values::Any(want)) => want.iter().any(|w| number(w) == Some(record_stars)),
-        (Field::Year | Field::Rating | Field::Added, Values::Range(from, to)) => {
-            let value = match field { Field::Year => item.year.map(i64::from), Field::Rating => Some(record_stars), _ => Some(item.added_at) };
+        (Field::Plays, Values::Any(want)) => item.plays.is_some_and(|n| want.iter().any(|w| number(w) == Some(n))),
+        (Field::Type, Values::Any(want)) => !folded.release_kind.is_empty() && want.iter().any(|w| w == folded.release_kind),
+        (Field::Quality, Values::Any(want)) => want.iter().any(|w| match w.as_str() {
+            "lossy" => folded.quality == 1, "cd" => folded.quality == 2, "hires" => folded.quality == 3, "dsd" => folded.quality == 4, _ => false,
+        }),
+        (Field::Year | Field::Rating | Field::Added | Field::Plays, Values::Range(from, to)) => {
+            let value = match field { Field::Year => item.year.map(i64::from), Field::Rating => Some(record_stars), Field::Plays => item.plays, _ => Some(item.added_at) };
             value.is_some_and(|v| from.is_none_or(|from| v >= from) && to.is_none_or(|to| v <= to))
         }
         (Field::Added, Values::Within(seconds)) => item.added_at > 0 && item.added_at >= now - seconds,
         _ => false,
     }
 }
+
+#[cfg(test)]
+mod tests;

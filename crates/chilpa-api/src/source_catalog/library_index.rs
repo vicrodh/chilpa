@@ -48,8 +48,7 @@ pub(super) fn track_groups(track: &Track) -> Option<Box<crate::TrackGroups>> {
 }
 
 fn release_type(metadata: &Value) -> String {
-    let kind = text(metadata, "release_type").to_lowercase();
-    if matches!(kind.as_str(), "album" | "ep" | "single" | "compilation" | "live") { kind } else { String::new() }
+    chilpa_library::release_kind::normalize(&text(metadata, "release_type")).unwrap_or_default().to_string()
 }
 
 /// The library's names for a quality tier and a format.
@@ -107,6 +106,7 @@ fn song(track: &Track, card: Option<&Card>, saved: bool, enrichment: &super::gen
     if composers.is_empty() { composers = album.as_ref().map(|a| a.composers.clone()).unwrap_or_default(); }
     SourceItem {
         track: track.id,
+        plays: track.metadata["plays"].as_i64().filter(|n| *n >= 0),
         album: if track.album_id < 0 { track.album_id } else { 0 },
         plugin: track.plugin.clone(),
         identity,
@@ -256,6 +256,18 @@ impl Catalog {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn source_play_counts_are_optional_and_belong_to_tracks() {
+        for (metadata, expected) in [(json!({"plays": 0}), Some(0)), (json!({"plays": 12}), Some(12)),
+            (json!({"plays": -1}), None), (json!({}), None)] {
+            let track = Track { metadata, ..Default::default() };
+            let card = Card { metadata: json!({"plays": 99}), ..Default::default() };
+            assert_eq!(song(&track, Some(&card), true, &Default::default(), &Default::default()).plays, expected);
+            assert_eq!(record(&card, &Default::default()).plays, None);
+        }
+        assert_eq!(release_type(&json!({"release_type": " Soundtrack "})), "soundtrack");
+    }
 
     #[test]
     fn a_track_takes_from_its_record_what_it_does_not_say_and_a_record_without_tracks_stands_alone() {

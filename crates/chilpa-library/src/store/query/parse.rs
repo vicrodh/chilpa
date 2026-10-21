@@ -181,7 +181,7 @@ fn leaf(word: &str, quoted: bool, at: usize) -> Result<Node, ParseError> {
         return Ok(Node::Is(Field::Text, Values::Any(vec![unquote(word)])));
     };
     if rest.is_empty() { return Err(ParseError { at, what: chilpa_i18n::mark("a field needs a value") }); }
-    if !quoted && rest.eq_ignore_ascii_case("none") {
+    if !quoted && rest.eq_ignore_ascii_case("none") && !matches!(field, Field::Type | Field::Quality) {
         return match field {
             Field::Year | Field::Genre | Field::Label | Field::Composer => Ok(Node::Is(field, Values::Missing)),
             _ => Err(ParseError { at, what: chilpa_i18n::mark("that field is never empty") }),
@@ -189,6 +189,31 @@ fn leaf(word: &str, quoted: bool, at: usize) -> Result<Node, ParseError> {
     }
     let scalar = unquote(rest);
     match field {
+        Field::Plays => {
+            let error = ParseError { at, what: chilpa_i18n::mark("plays takes non-negative whole numbers or a range with the lower bound first") };
+            if let Some((from, to)) = range(&scalar) {
+                if from.is_some_and(|n| n < 0) || to.is_some_and(|n| n < 0) || from.zip(to).is_some_and(|(a, b)| a > b) { return Err(error); }
+                return Ok(Node::Is(field, Values::Range(from, to)));
+            }
+            let numbers: Option<Vec<String>> = scalar.split(',').map(|n| n.trim().parse::<i64>().ok()
+                .filter(|n| *n >= 0).map(|n| n.to_string())).collect();
+            numbers.map(|n| Node::Is(field, Values::Any(n))).ok_or(error)
+        }
+        Field::Type | Field::Quality => {
+            let error = ParseError { at, what: if field == Field::Type {
+                chilpa_i18n::mark("type takes album, single, ep, compilation, live or soundtrack")
+            } else { chilpa_i18n::mark("quality takes lossy, cd, hires or dsd") } };
+            let names = names(rest);
+            if names.is_empty() { return Err(error); }
+            let names: Option<Vec<String>> = names.iter().map(|name| {
+                if field == Field::Type { crate::release_kind::normalize(name).map(String::from) }
+                else {
+                    let name = name.to_lowercase();
+                    matches!(name.as_str(), "lossy" | "cd" | "hires" | "dsd").then_some(name)
+                }
+            }).collect();
+            names.map(|names| Node::Is(field, Values::Any(names))).ok_or(error)
+        }
         Field::Added => within(&scalar).map(|seconds| Node::Is(field, Values::Within(seconds)))
             .or_else(|| range(&scalar).map(|(from, to)| Node::Is(field, Values::Range(from, to))))
             .ok_or(ParseError { at, what: chilpa_i18n::mark("added takes a span like 30d, 6w, 3m or 1y") }),
