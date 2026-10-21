@@ -588,6 +588,9 @@ msgstr "Automatische headroom verlaagt alleen de versterking. Compressie heeft g
 msgid "Automatically update plugins"
 msgstr "Plug-ins automatisch bijwerken"
 
+msgid "Available"
+msgstr "Beschikbaar"
+
 msgid "Awaiting approval"
 msgstr "Wacht op goedkeuring"
 
@@ -829,9 +832,6 @@ msgstr "{source} controleren…"
 
 msgid "Chilpa"
 msgstr "Chilpa"
-
-msgid "Chilpa Native Plugins"
-msgstr "Native plug-ins voor Chilpa"
 
 msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
 msgstr "Chilpa legt frequentie, sink en exclusieve modus tijdens het afspelen al vast. Deze bestanden veranderen alleen gedrag voor het hele systeem — kopieer en voer ze zelf uit als je ze wilt. Maak eerst een back-up."
@@ -2873,6 +2873,9 @@ msgstr "Native DSD"
 msgid "Native DSD and DoP bypass DSP. Select PCM output to process them."
 msgstr "Native DSD en DoP omzeilen DSP. Selecteer PCM-uitvoer om ze te verwerken."
 
+msgid "Native plugins"
+msgstr "Native plug-ins"
+
 msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."
 msgstr "Native gebruikt het DSD_U32-formaat van ALSA. DoP draagt dezelfde eenbitsstream in gemarkeerde PCM-woorden. PCM converteert DSD zodat elke uitvoer het kan afspelen."
 
@@ -3992,6 +3995,9 @@ msgstr "Wachtrij {} vervangen"
 msgid "Report an issue"
 msgstr "Probleem melden"
 
+msgid "Repositories"
+msgstr "Repository's"
+
 msgid "Requests: {}"
 msgstr "Vraagt om: {}"
 
@@ -4826,6 +4832,9 @@ msgstr "De barcodes van deze albums worden naar MusicBrainz verzonden."
 
 msgid "These tracks' ISRCs are sent to MusicBrainz."
 msgstr "De ISRC's van deze nummers worden naar MusicBrainz verzonden."
+
+msgid "Third-party plugins"
+msgstr "Plug-ins van derden"
 
 msgid "This address belongs to a different server."
 msgstr "Dit adres hoort bij een andere server."

@@ -588,6 +588,9 @@ msgstr "La marge de niveau automatique ne fait que réduire le gain. La compress
 msgid "Automatically update plugins"
 msgstr "Mettre à jour automatiquement les plugins"
 
+msgid "Available"
+msgstr "Disponibles"
+
 msgid "Awaiting approval"
 msgstr "En attente d'approbation"
 
@@ -829,9 +832,6 @@ msgstr "Vérification de {source}…"
 
 msgid "Chilpa"
 msgstr "Chilpa"
-
-msgid "Chilpa Native Plugins"
-msgstr "Plugins natifs de Chilpa"
 
 msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
 msgstr "Chilpa fixe déjà la fréquence, la sortie et le mode exclusif à l'exécution. Ces fichiers ne modifient que le comportement à l'échelle du système : copiez-les et exécutez-les vous-même si vous les voulez. Sauvegardez d'abord."
@@ -2873,6 +2873,9 @@ msgstr "DSD natif"
 msgid "Native DSD and DoP bypass DSP. Select PCM output to process them."
 msgstr "Le DSD natif et le DoP contournent le DSP. Sélectionnez la sortie PCM pour les traiter."
 
+msgid "Native plugins"
+msgstr "Plugins natifs"
+
 msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."
 msgstr "Natif utilise le format DSD_U32 d'ALSA. Le DoP transporte le même flux à un bit dans des mots PCM marqués. PCM convertit le DSD afin que toute sortie puisse le lire."
 
@@ -3992,6 +3995,9 @@ msgstr "Remplacer la file d'attente {}"
 msgid "Report an issue"
 msgstr "Signaler un problème"
 
+msgid "Repositories"
+msgstr "Dépôts"
+
 msgid "Requests: {}"
 msgstr "Demande : {}"
 
@@ -4826,6 +4832,9 @@ msgstr "Les codes-barres de ces disques sont envoyés à MusicBrainz."
 
 msgid "These tracks' ISRCs are sent to MusicBrainz."
 msgstr "Les ISRC de ces pistes sont envoyés à MusicBrainz."
+
+msgid "Third-party plugins"
+msgstr "Plugins tiers"
 
 msgid "This address belongs to a different server."
 msgstr "Cette adresse appartient à un autre serveur."

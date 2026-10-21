@@ -114,8 +114,8 @@ TestCase {
         const plugin = {id: "ordered", name: "Source", version: "2.4", description: "Source description", enabled: true, light: "native", sidebar_position: 1, sidebar_count: 3}
         backend.state = {installed: [plugin], busy: false}
         manager.read()
-        const list = findChild(manager, "installedNativePlugins")
-        tryCompare(list, "count", 1)
+        tryCompare(findChild(manager, "installedNativePlugins"), "count", 1)
+        const list = findChild(manager, "nativePluginsTab")
         waitForRendering(list)
         const help = findChild(list, "pluginHelp")
         verify(help.text.includes("2.4") && help.text.includes("Source description"))
@@ -243,11 +243,56 @@ TestCase {
         compare(button.text, "Update", "a newer version is offered as an update")
         button.clicked()
         compare(backend.calls[backend.calls.length - 1], ["install_native", {repository: "repo", id: "app.test.one"}])
-        const installed = findChild(manager, "installedNativePlugins")
-        tryCompare(installed, "count", 3)
-        installed.positionViewAtEnd()
-        waitForRendering(installed)
-        verify(installed.contentHeight >= installed.height)
+        tryCompare(findChild(manager, "installedNativePlugins"), "count", 3)
+    }
+    function test_native_plugins_scroll_with_their_section_and_not_inside_it() {
+        const many = []
+        for (let i = 0; i < 20; ++i) many.push({id: "plugin" + i, name: "Plugin " + i, state: "fine", enabled: true})
+        backend.state = {installed: many, busy: false, native_catalog: [{id: "app.test.two", name: "Two", version: "1.0.0", description: "", repository_id: "third-party"}]}
+        manager.section = "native"
+        manager.read()
+        const tab = findChild(manager, "nativePluginsTab")
+        tryCompare(findChild(manager, "installedNativePlugins"), "count", 20)
+        tryVerify(() => tab.contentHeight > tab.height, 2000, "the section is one scroll")
+        tab.contentY = tab.contentHeight - tab.height
+        waitForRendering(tab)
+        const offer = findChild(tab, "nativeCatalogRow")
+        verify(offer !== null, "what a repository offers follows the installed ones in the same scroll")
+        tab.contentY = 0
+    }
+    function test_sections_split_native_and_compatible_plugins() {
+        backend.state = {busy: false, installed: [], catalog: [{id: "entry", name: "Guest", light: "unknown", repository_id: "repo"}]}
+        manager.section = "native"
+        manager.read()
+        const sections = findChild(manager, "pluginSections")
+        const native = findChild(manager, "nativePluginsTab")
+        verify(native.visible && !manager.catalogView.parent.visible)
+        verify(findChild(manager, "installLocalPlugin").visible, "a ZIP holds a native plugin")
+        sections.activated(1)
+        compare(manager.section, "compatible")
+        verify(!native.visible && manager.catalogView.parent.visible)
+        verify(!findChild(manager, "installLocalPlugin").visible)
+        sections.activated(0)
+        compare(manager.section, "native")
+    }
+    function test_a_repository_is_added_from_its_dialog() {
+        backend.state = {busy: false, third_party_repository: "https://example.org/third.json",
+            repositories: [{id: "0123456789abcdef", url: "https://example.org/mine.json"}]}
+        backend.calls = []
+        manager.read()
+        findChild(manager, "managePluginRepositories").clicked()
+        const dialog = findChild(manager, "pluginRepositories")
+        verify(dialog !== null && dialog.opened !== false)
+        verify(findChild(dialog, "thirdPartyRepository").visible, "the third-party catalog is offered without being added")
+        const address = findChild(dialog, "pluginRepositoryAddress")
+        const add = findChild(dialog, "addPluginRepository")
+        verify(!add.enabled, "nothing typed, nothing to add")
+        address.text = "https://example.org/added.json"
+        verify(add.enabled)
+        add.clicked()
+        compare(backend.calls[backend.calls.length - 1], ["add", {url: "https://example.org/added.json"}])
+        compare(address.text, "")
+        dialog.close()
     }
     function test_catalog_command_keeps_repository_identity() {
         manager.command("prepare", {repository: "repo", id: "entry"})
@@ -265,6 +310,7 @@ TestCase {
         compare(manager.settingsDocument.revision, 2)
     }
     function test_large_catalog_only_creates_visible_rows() {
+        manager.section = "compatible"
         const entries = []
         for (let i = 0; i < 220; ++i) entries.push({id: "entry" + i, name: "Guest " + i, light: "unknown", repository_id: "repo"})
         backend.state = {catalog: entries, installed: [], repositories: [], busy: false}
@@ -276,6 +322,7 @@ TestCase {
         for (let child of manager.catalogView.contentItem.children) if (child.objectName === "catalogPluginRow") ++rows
         verify(rows > 0 && rows < 40, "Only visible and pooled catalog rows should exist; got " + rows)
         manager.catalogView.positionViewAtBeginning()
+        manager.section = "native"
     }
 
     function test_live_search_keeps_latest_text_while_busy() {

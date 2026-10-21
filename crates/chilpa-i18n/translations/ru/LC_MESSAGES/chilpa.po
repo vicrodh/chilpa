@@ -589,6 +589,9 @@ msgstr "Автоматический запас по уровню только �
 msgid "Automatically update plugins"
 msgstr "Обновлять плагины автоматически"
 
+msgid "Available"
+msgstr "Доступные"
+
 msgid "Awaiting approval"
 msgstr "Ожидает одобрения"
 
@@ -831,9 +834,6 @@ msgstr "Проверка: {source}…"
 
 msgid "Chilpa"
 msgstr "Chilpa"
-
-msgid "Chilpa Native Plugins"
-msgstr "Нативные плагины Chilpa"
 
 msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
 msgstr "Chilpa уже задаёт частоту, устройство вывода и эксклюзивный режим во время работы. Эти файлы меняют только поведение всей системы: скопируйте и запустите их сами, если они вам нужны. Сначала сделайте резервную копию."
@@ -2875,6 +2875,9 @@ msgstr "Нативный DSD"
 msgid "Native DSD and DoP bypass DSP. Select PCM output to process them."
 msgstr "Нативный DSD и DoP обходят DSP. Выберите вывод PCM, чтобы их обрабатывать."
 
+msgid "Native plugins"
+msgstr "Нативные плагины"
+
 msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."
 msgstr "Нативный DSD использует формат ALSA DSD_U32. DoP переносит тот же однобитный поток в помеченных словах PCM. PCM преобразует DSD, чтобы его мог воспроизвести любой вывод."
 
@@ -3994,6 +3997,9 @@ msgstr "Заменить очередь: {}"
 msgid "Report an issue"
 msgstr "Сообщить о проблеме"
 
+msgid "Repositories"
+msgstr "Репозитории"
+
 msgid "Requests: {}"
 msgstr "Запрашивает: {}"
 
@@ -4830,6 +4836,9 @@ msgstr "Штрихкоды этих альбомов отправляются в
 
 msgid "These tracks' ISRCs are sent to MusicBrainz."
 msgstr "ISRC этих треков отправляются в MusicBrainz."
+
+msgid "Third-party plugins"
+msgstr "Сторонние плагины"
 
 msgid "This address belongs to a different server."
 msgstr "Этот адрес принадлежит другому серверу."

@@ -104,5 +104,7 @@ TitledFlow {
     PluginIntegration { width: Metrics.confirmWidth; plugin: ({id: "guest", tint: false}) }
     PluginDetails { manager: preview }
     PluginRepositories { manager: preview }
+    PluginNativeTab { width: Metrics.settingsMaxWidth; height: Metrics.panesHeight; controller: preview }
+    PluginCompatibleTab { width: Metrics.settingsMaxWidth; height: Metrics.panesHeight; controller: preview }
     PluginManager { id: preview; width: Metrics.confirmWidth; height: Metrics.panesHeight; page: sample }
 }
