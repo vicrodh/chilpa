@@ -7,8 +7,15 @@ ListModel {
     property var items: []
     property string keyField: "id"
     dynamicRoles: true
-    onItemsChanged: Qt.callLater(reconcile)
+    // A deferred reconcile must not outlive the model: Qt.callLater still
+    // ran it after a Loader dropped the model in the same tick, and get()
+    // on the dead ListModel crashed the window. The guard is plain JS, so
+    // it can still be read once the model is gone.
+    readonly property var guard: ({ alive: true })
+    Component.onDestruction: guard.alive = false
+    onItemsChanged: Qt.callLater(rows.later, guard)
     Component.onCompleted: reconcile()
+    function later(guard) { if (guard.alive) reconcile() }
     function reconcile() {
         for (let index = 0; index < items.length; index++) {
             const item = items[index]

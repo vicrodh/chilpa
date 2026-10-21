@@ -53,4 +53,22 @@ TestCase {
         tryVerify(() => windows().length === 0, 2000)
         tryVerify(() => findChild(area.item, "refineDetach") !== null, 2000)
     }
+
+    function test_docking_and_closing_in_one_tick() {
+        const rows = []
+        for (let i = 0; i < 8; ++i) rows.push({ id: String(i), field: "genre", kind: "list", negated: false, values: ["Value " + i] })
+        QueryChips.refineOf = { many: { mode: "all", complex: null, rows: rows } }
+        Library.queryText = "many"
+        area.visible = true
+        tryVerify(() => findChild(area.item, "refineDetach") !== null, 2000)
+        mouseClick(findChild(area.item, "refineDetach"))
+        tryCompare(windows(), "length", 1)
+        windows()[0].dockAsked()
+        area.visible = false
+        wait(100)
+        area.visible = true
+        Library.queryText = "jazz"
+        wait(100)
+        tryVerify(() => findChild(area.item, "refineDetach") !== null, 2000)
+    }
 }
