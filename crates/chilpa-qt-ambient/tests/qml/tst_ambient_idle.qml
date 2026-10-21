@@ -19,7 +19,8 @@ TestCase {
         }
     }
     SignalSpy { id: frames; signalName: "frameSwapped" }
-    function test_paused_and_hidden_surfaces_present_nothing() {
+    // Paused, only the field moves, as in QBZ; hidden, nothing presents.
+    function test_paused_only_the_field_moves_and_hidden_presents_nothing() {
         Pulse.automatic = false
         Ambient.mode = 1
         Prefs.animatedIndicator = true
@@ -34,11 +35,7 @@ TestCase {
         verify(frames.count > 0)
         Player.paused = true
         wait(150)
-        compare(Pulse.held, 0)
-        frames.clear()
-        Pulse.ms += 99
-        wait(200)
-        compare(frames.count, 0)
+        compare(Pulse.held, 1, "the bars let go and the field keeps moving")
         Player.paused = false
         window.hide()
         wait(150)

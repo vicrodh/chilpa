@@ -160,20 +160,21 @@ TestCase {
         compare(Pulse.held, 0, "no track, no field, no pulse")
     }
 
-    function test_the_field_keeps_its_last_pose_when_paused_or_hidden() {
+    // QBZ's schedule (shell/AmbientField.qml, tickMs 33): one period of the
+    // pulse per edge, paused or not (its AppBackground runs mode 1 whenever
+    // it paints); only a field nobody can see keeps its pose.
+    function test_the_field_moves_a_period_per_edge_and_rests_only_hidden() {
         mount(1, "/a.flac")
         const ambient = field("AmbientField")
         const before = ambient.t
         Pulse.ms += 99
-        fuzzyCompare(ambient.t - before, 0.099, 0.00001)
+        fuzzyCompare(ambient.t - before, Pulse.period / 1000, 0.00001)
         Player.paused = true
-        compare(Pulse.held, 0)
-        const held = ambient.t
-        Pulse.ms += 330
-        compare(ambient.t, held)
+        compare(Pulse.held, 1, "a paused track still moves the field")
+        const paused = ambient.t
+        Pulse.ms += 33
+        fuzzyCompare(ambient.t - paused, Pulse.period / 1000, 0.00001)
         Player.paused = false
-        Pulse.ms += 99
-        fuzzyCompare(ambient.t - held, 0.099, 0.00001)
         made.visible = false
         compare(Pulse.held, 0)
         const hidden = ambient.t

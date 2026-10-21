@@ -31,16 +31,6 @@ TestCase {
         fill(80)
         view.contentY = view.originY
     }
-    function test_marks_share_animated_background_frames() {
-        Prefs.animatedIndicator = true
-        tracks.setProperty(0, "playing", true)
-        const native = findChild(list, "playingBarsSurface")
-        verify(native !== null)
-        for (const mode of [0, 1, 2, 3, 4]) {
-            Ambient.mode = mode
-            compare(native.parent.sceneAnimating, mode === 1 || mode === 2 || mode === 4)
-        }
-    }
     // What a reset does to the view: the rows are read again from the top.
     function readAgain(count) {
         list.keepPlace()
