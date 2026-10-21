@@ -510,10 +510,16 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             } else if repositories.cached("native")?.is_empty() {
                 let _ = repositories.refresh("native", "EN");
             }
+            // The third-party catalog has nothing bundled: it is read the first time.
+            let third_party = crate::plugin_repositories::THIRD_PARTY;
+            if !repositories.third_party_catalog().is_empty() && repositories.cached(third_party)?.is_empty() {
+                let _ = repositories.refresh(third_party, "EN");
+            }
         },
         _ => return Err("Unknown plugin operation.".into()),
     }
     state["repositories"] = json!(repositories.compatible());
+    state["third_party_repository"] = repositories.third_party_catalog().into();
     state["native_repository"] = repositories.native_catalog().into();
     let mut catalog = Vec::new();
     let mut categories = std::collections::BTreeSet::new();
@@ -532,7 +538,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         native_catalog.push(row);
     }
     let compatibility_available = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.compatibility_launcher().is_some();
-    for repository in repositories.compatible() {
+    for repository in repositories.sources() {
         for entry in repositories.cached(&repository.id)? {
             // A native plugin is offered in its own section, to install or
             // to update when the repository has a newer version.
