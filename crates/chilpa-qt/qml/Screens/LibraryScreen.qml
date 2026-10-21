@@ -40,6 +40,7 @@ Item {
     readonly property bool panesShown: SettingsModel.panesOpen && (toggle.refineMode || page.panes.length > 0)
     readonly property real panesHeight: !panesShown ? 0
         : dragged >= 0 ? dragged
+        : toggle.refineMode ? Number(SettingsModel.kept("ui.library.refineHeight")) || panes.gripStart
         : SettingsModel.panesHeight > 0 ? SettingsModel.panesHeight : Metrics.panesHeight
     readonly property bool grid: SettingsModel.libraryView === "grid"
     property string group: SettingsModel.kept("ui.library.group")
@@ -169,6 +170,7 @@ Item {
 
     RefineArea {
         id: panes
+        objectName: "panesArea"
         anchors.top: crumbs.bottom
         x: head.x
         width: head.width
@@ -181,15 +183,19 @@ Item {
 
     ResizeHandle {
         id: grip
+        objectName: "panesGrip"
         visible: page.panesShown
         vertical: false
         anchors.top: panes.bottom
         anchors.horizontalCenter: panes.horizontalCenter
         width: head.width
-        onStarted: page.grabbed = page.panesHeight
-        onMoved: (delta) => page.dragged = Math.max(Metrics.panesMin, Math.min(Metrics.panesMax, page.grabbed + delta))
+        onStarted: page.grabbed = toggle.refineMode ? panes.height : page.panesHeight
+        onMoved: (delta) => page.dragged = toggle.refineMode ? panes.gripClamp(page.grabbed + delta, page.height)
+            : Math.max(Metrics.panesMin, Math.min(Metrics.panesMax, page.grabbed + delta))
         onReleased: {
-            if (page.dragged >= 0)
+            if (page.dragged >= 0 && toggle.refineMode)
+                SettingsModel.keep("ui.library.refineHeight", String(Math.round(page.dragged)))
+            else if (page.dragged >= 0)
                 SettingsModel.panesHeight = Math.round(page.dragged)
             page.dragged = -1
         }

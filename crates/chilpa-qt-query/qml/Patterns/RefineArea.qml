@@ -17,6 +17,9 @@ Loader {
     // the grip's height, as far as the design's 1000.
     readonly property bool opened: refineMode && !!item && !detached && (item.picking !== "" || item.typing)
     function fit(grip) { return detached ? Refine.dockedTall : Math.min(opened ? Refine.pickGrow : grip, wanted) }
+    // Refine's own grip height, kept apart from the columns' height.
+    readonly property int gripStart: Refine.gripStart
+    function gripClamp(height, room) { return Math.max(Refine.gripLeast, Math.min(room - Refine.gripRoom, height)) }
     // Refine in its own window; the area keeps a line to dock it back.
     property bool detached: false
     active: visible

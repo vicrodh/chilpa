@@ -155,6 +155,11 @@ QtObject {
     readonly property int suggestMax: 300
     readonly property int suggestPad: 4
     readonly property int suggestHead: 24
+    // Refine's grip, apart from the columns': where it starts, the least it
+    // takes, and the room it leaves under it on the screen.
+    readonly property int gripStart: 400
+    readonly property int gripLeast: 150
+    readonly property int gripRoom: 300
     // How far past the panel the rows are built: a query people type.
     readonly property int rowsBuilt: 100000
     // Below this width the panel stacks its labels and folds its fields (F7).
