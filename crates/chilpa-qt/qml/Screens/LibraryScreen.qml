@@ -30,7 +30,7 @@ Item {
         // A column turned off does not narrow what it no longer shows.
         if (!on) {
             Library.searchColumn(column, "")
-            Library.choose(column, "", "")
+            Library.clearColumn(column)
         }
     }
     // The columns' height while their grip is dragged, or -1.

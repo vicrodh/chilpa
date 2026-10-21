@@ -59,7 +59,7 @@ pub(crate) fn merge(facets: &mut Facets, f: &Filter, index: &SourceIndex, stars:
     facets.sources.extend(index.sources.iter().cloned());
     let left = |column: usize| { let filter = Prepared::new(&left_of(f, column)); move |item: &&SourceItem| filter.passes(item, stars) };
     let mut years: HashMap<i32, HashSet<i64>> = HashMap::new();
-    for item in &index.items {
+    for item in index.items.iter().filter(left(0)) {
         if let Some(year) = item.year { years.entry(year).or_default().insert(item.record()); }
     }
     for (year, records) in years {

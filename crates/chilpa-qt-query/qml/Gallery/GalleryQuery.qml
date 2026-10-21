@@ -10,6 +10,8 @@ Column {
     width: Metrics.menuMaxWidth * 2 // derived: room for rows and the picker
     spacing: Metrics.gap12
     QueryChipRow { width: gallery.width; query: gallery.sample; onEdited: (query) => gallery.sample = query }
+    LibraryPanes { width: gallery.width; height: Metrics.panesHeight }
+    PaneColumn { width: Metrics.sidebarWidth; height: Metrics.panesHeight; title: "Genre"; column: "genre" }
     RefineSwitch {}
     SummaryChip { row: ({ field: "genre", kind: "list", negated: true, values: ["Smooth Jazz"] }) }
     RefinePanel { width: gallery.width; height: Metrics.panesHeight; summary: "256 songs · 18 h" }

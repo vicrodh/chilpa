@@ -179,6 +179,11 @@ QtObject {
     readonly property int gripWide: 30
     readonly property int gripThick: 3
 
+    // Column exclusion controls (F8).
+    readonly property int columnExclude: 20
+    readonly property int columnExcludeCorner: 4
+    readonly property int columnExcludeIcon: 12
+
     // Zero results.
     readonly property int zeroRow: 32
     readonly property int zeroRound: 8

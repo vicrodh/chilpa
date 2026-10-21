@@ -1,9 +1,9 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
-import app.chilpa.query
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/qml/Components"
 
 // One of the Library screen's filter columns (design/03 PaneColumn):
 // a header with its count, "All (n)" first, then the entries.
@@ -20,6 +20,7 @@ Rectangle {
         id: facets
         column: pane.column
         rev: Library.rev
+        appliedQuery: Library.queryText
         query: input.text
     }
 
@@ -115,10 +116,8 @@ Rectangle {
             required property int index
             width: ListView.view.width
             stars: pane.column === "rating"
-            // Alt keeps the value out of the Library, as a chip.
-            onChosen: (modifiers) => modifiers & 4
-                ? (!all && Library.applyQuery(QueryChips.excluding(Library.queryText, pane.column, key)))
-                : facets.choose(index, modifiers)
+            onChosen: (modifiers) => facets.choose(index, modifiers)
+            onExclusionChosen: facets.exclude(index)
         }
     }
 }

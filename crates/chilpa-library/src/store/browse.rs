@@ -462,24 +462,22 @@ impl Library {
         rows.collect()
     }
 
-    /// The years, newest first, with how many albums each holds. The first
-    /// column has nothing to its left, so it always offers every year.
-    pub fn facet_years(&self) -> rusqlite::Result<Vec<FacetEntry>> {
-        let sql = format!(
-            "SELECT a.year, count(*) {ALBUMS} AND a.year IS NOT NULL GROUP BY a.year ORDER BY a.year DESC"
-        );
+    /// I count years under the other fields' conditions.
+    pub fn facet_years_matching(&self, filter: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
+        let (filter, args) = self.browse_clause(filter);
+        let sql = format!("SELECT a.year, count(DISTINCT a.id) {FACET_FROM} {filter}
+            AND a.year IS NOT NULL GROUP BY a.year ORDER BY a.year DESC");
         let mut stmt = self.db.prepare(&sql)?;
-        let rows = stmt.query_map([], |r| {
+        let rows = stmt.query_map(params_from_iter(args.iter()), |r| {
             let year: i32 = r.get(0)?;
-            Ok(FacetEntry {
-                key: year.to_string(),
-                label: year.to_string(),
-                albums: r.get::<_, i64>(1)? as usize,
-                year: Some(year),
-                icon: String::new(),
-            })
+            Ok(FacetEntry { key: year.to_string(), label: year.to_string(),
+                albums: r.get::<_, i64>(1)? as usize, year: Some(year), icon: String::new() })
         })?;
         rows.collect()
+    }
+
+    pub fn facet_years(&self) -> rusqlite::Result<Vec<FacetEntry>> {
+        self.facet_years_matching(&Filter::default())
     }
 
     /// The genres the chosen year leaves, by name.
@@ -961,6 +959,16 @@ mod tests {
         assert_eq!(labels(lib.facet_artists(&Filter { genres: vec!["Alternative".into()], ..Filter::default() }).unwrap()), ["Mora Vale"]);
         let f = Filter { artist: Some("Mora Vale".into()), ..Filter::default() };
         assert_eq!(labels(lib.facet_albums(&f).unwrap()), ["Low Orbit", "Northbound"], "by name");
+    }
+
+    #[test]
+    fn year_counts_apply_query_and_scope_conditions_once_per_record() {
+        let lib = shelf();
+        let filter = Filter { query: Some(super::super::query::parse("genre:Alternative").unwrap()), ..Default::default() };
+        let years = lib.facet_years_matching(&filter).unwrap();
+        assert_eq!(years.iter().map(|e| (e.key.as_str(),e.albums)).collect::<Vec<_>>(), [("2019",1),("2018",1)]);
+        let excluded = Filter { excluded_sources: vec!["local:default".into()], ..filter };
+        assert!(lib.facet_years_matching(&excluded).unwrap().is_empty());
     }
 
     #[test]

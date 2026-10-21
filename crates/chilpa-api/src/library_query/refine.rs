@@ -10,6 +10,7 @@ use chilpa_library::store::query::{Field, Node, Values};
 use serde_json::{json, Value};
 
 pub use edits::refine_edit;
+pub(crate) use data::{cofactor, has_field};
 
 pub(crate) fn field(name: &str) -> Option<Field> {
     Some(match name {
@@ -83,7 +84,7 @@ fn row(node: &Node, id: String, nested: bool) -> Option<Value> {
         (Field::Text | Field::Words | Field::Album | Field::Title, Values::Any(values)) if !negated => {
             out["kind"] = json!("words"); out["values"] = json!(values);
         }
-        (Field::Rating, _) if !negated => {
+        (Field::Rating, values) if !negated && rating(values).is_some() => {
             let (min, max) = rating(values)?;
             out["kind"] = json!("rating"); out["min"] = json!(min); out["max"] = json!(max);
         }
@@ -98,7 +99,7 @@ fn row(node: &Node, id: String, nested: bool) -> Option<Value> {
             out["kind"] = json!("added"); out["n"] = json!(n); out["unit"] = json!(unit);
         }
         (_, Values::Missing) if !negated => { out["kind"] = json!("none"); }
-        (Field::Genre | Field::ExactGenre | Field::Artist | Field::Composer | Field::Label | Field::Year | Field::Plays | Field::Type | Field::Quality, Values::Any(values)) => {
+        (Field::Genre | Field::ExactGenre | Field::Artist | Field::Composer | Field::Label | Field::Year | Field::Album | Field::Rating | Field::Plays | Field::Type | Field::Quality, Values::Any(values)) => {
             out["kind"] = json!("list"); out["negated"] = json!(negated);
             out["values"] = if *f == Field::Plays { json!(values.iter().map(|s| s.parse::<i64>()).collect::<Result<Vec<_>,_>>().ok()?) } else { json!(values) };
         }
@@ -142,12 +143,13 @@ pub fn check(text: &str) -> Value {
 
 pub(crate) fn state(node: &Node, f: Field, value: &str) -> ValueState {
     match node {
-        Node::All(nodes) | Node::Any(nodes) => nodes.iter().map(|n| state(n, f, value)).find(|s| *s != ValueState::None).unwrap_or(ValueState::None),
+        Node::All(nodes) | Node::Any(nodes) => nodes.iter().map(|n| state(n, f, value)).max_by_key(|s| match s { ValueState::None => 0, ValueState::Include => 1, ValueState::Exclude => 2 }).unwrap_or(ValueState::None),
         Node::Group(inner) => state(inner, f, value),
         Node::Not(inner) => match state(inner, f, value) {
             ValueState::Include => ValueState::Exclude, ValueState::Exclude => ValueState::Include, other => other,
         },
         Node::Is(other, Values::Any(values)) if field_name(*other) == field_name(f) && values.iter().any(|v| v.to_lowercase() == value.to_lowercase()) => ValueState::Include,
+        Node::Is(other, Values::Range(from, to)) if *other == f && value.parse::<i64>().is_ok_and(|v| from.is_none_or(|a| v >= a) && to.is_none_or(|b| v <= b)) => ValueState::Include,
         _ => ValueState::None,
     }
 }

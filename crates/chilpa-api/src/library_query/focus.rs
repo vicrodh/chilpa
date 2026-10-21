@@ -165,24 +165,7 @@ mod tests;
 /// I keep the other conditions when offering alternatives for this field.
 pub(crate) fn facet_filter(filter: &crate::Filter, name: &str) -> crate::Filter {
     let mut out = filter.clone();
-    out.query = out.query.map(|node| node.ungrouped());
     let Some(f) = field(name) else { return out };
-    let keeps = |node: &Node| match node {
-        Node::Is(other, _) => super::refine::field_name(*other) != super::refine::field_name(f),
-        Node::Not(inner) => !matches!(inner.as_ref(), Node::Is(other, _) if super::refine::field_name(*other) == super::refine::field_name(f)),
-        _ => true,
-    };
-    out.query = match out.query {
-        Some(Node::All(mut nodes)) => {
-            nodes.retain(keeps);
-            if nodes.is_empty() { None } else { Some(Node::All(nodes)) }
-        }
-        Some(Node::Any(mut nodes)) => {
-            // An alternative in this field can match outside every other branch.
-            if nodes.iter().any(|node| !keeps(node)) { None } else { Some(Node::Any(std::mem::take(&mut nodes))) }
-        }
-        Some(node) if !keeps(&node) => None,
-        other => other,
-    };
+    out.query = out.query.as_ref().map(|node| super::refine::cofactor(node, f, true));
     out
 }
