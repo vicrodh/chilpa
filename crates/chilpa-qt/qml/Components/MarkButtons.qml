@@ -23,6 +23,7 @@ Row {
     visible: key !== "" && key !== "0"
 
     FavoriteButton {
+        clock: Pulse
         visible: marks.kind === "artist" || Number(marks.key) > 0
         round: true
         glyph: marks.favorite ? Icons.heartFilled : Icons.heart

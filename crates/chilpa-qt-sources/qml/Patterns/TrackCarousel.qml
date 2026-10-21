@@ -97,6 +97,7 @@ Column {
                             anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
                             spacing: Metrics.gap6
                             FavoriteButton {
+                                clock: Pulse
                                 objectName: "trackCarouselFavorite"
                                 anchors.verticalCenter: parent.verticalCenter
                                 visible: Ratings.markable("track", card.model.trackId, Ratings.rev)

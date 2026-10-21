@@ -14,6 +14,7 @@ Rectangle {
     property bool active: false
     property bool able: true
     property bool busy: false
+    property QtObject clock: null
     property bool animationActive: true
     signal clicked()
     width: Stage.ghostSide
@@ -33,7 +34,7 @@ Rectangle {
     Loader {
         anchors.centerIn: parent
         active: ghost.busy && ghost.visible && ghost.animationActive
-        sourceComponent: BusyMark { size: Stage.ghostIcon; color: Theme.color.immersiveTextStrong }
+        sourceComponent: BusyMark { clock: ghost.clock; size: Stage.ghostIcon; color: Theme.color.immersiveTextStrong }
     }
     MouseArea {
         id: area

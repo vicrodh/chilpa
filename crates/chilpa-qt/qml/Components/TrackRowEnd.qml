@@ -84,7 +84,7 @@ Item {
             Loader {
                 anchors.centerIn: parent
                 active: cell.heart && end.busy && end.inViewport && end.visible
-                sourceComponent: BusyMark { size: Metrics.iconSm; color: Theme.color.accent }
+                sourceComponent: BusyMark { clock: Pulse; size: Metrics.iconSm; color: Theme.color.accent }
             }
         }
     }

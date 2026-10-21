@@ -139,6 +139,7 @@ Item {
         Flow {
             width: parent.width; spacing: Metrics.gap12
             FavoriteButton {
+                clock: Pulse
                 objectName: "followAction"; round: true; size: Metrics.button32; glyph: header.favorite ? Icons.heartFilled : Icons.heart; filled: header.favorite; checked: header.favorite; heart: true
                 enabled: header.local || !!header.info.ref
                 busy: !header.local && Sources.favoritePending(header.info.plugin || "", header.info.ref || "", Sources.revision)

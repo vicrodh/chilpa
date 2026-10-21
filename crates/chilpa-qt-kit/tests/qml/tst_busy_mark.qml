@@ -12,11 +12,11 @@ TestCase {
     when: windowShown
     visible: true
     width: 200; height: 100
-    FavoriteButton { id: button; tip: "Favorite"; glyph: Icons.heartFilled }
+    FavoriteButton { id: button; clock: Pulse; tip: "Favorite"; glyph: Icons.heartFilled }
     SignalSpy { id: clicks; target: button; signalName: "clicked" }
     Component {
         id: pendingWindow
-        Window { visible: true; width: 100; height: 100; BusyMark {} }
+        Window { visible: true; width: 100; height: 100; BusyMark { clock: Pulse } }
     }
     function cleanup() { button.busy = false; button.visible = true; Motion.reduced = false; clicks.clear() }
     function test_the_filled_heart_always_selects_the_filled_font() {

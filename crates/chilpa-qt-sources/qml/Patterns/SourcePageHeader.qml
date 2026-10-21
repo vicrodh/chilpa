@@ -94,6 +94,7 @@ Column {
                 IconButton { visible: header.playbackModel.count > 0; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.arrowsShuffle; tip: I18n.tr("Shuffle", I18n.rev); onClicked: header.playbackModel.playAll(true) }
                 IconButton { objectName: "radioAction"; visible: !!header.info.radio_id; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Lucide.radio; iconFamily: Lucide.font; tip: header.artist ? I18n.tr("Artist radio", I18n.rev) : I18n.tr("Album radio", I18n.rev); onClicked: AlbumActions.play(header.info.radio_id, false) }
                 FavoriteButton {
+                    clock: Pulse
                     objectName: "sourceFavorite"
                     visible: !!header.info.ref && header.info.editable !== true && header.info.favorite_supported !== false
                     round: true; tone: header.contrasted ? "overlay" : "secondary"

@@ -5,6 +5,7 @@ import "../Primitives"
 // I keep progress resources on favorite controls and only animate an active write.
 IconButton {
     id: button
+    required property QtObject clock
     heart: true
     readonly property Item progressMark: progress.item
     Loader {
@@ -12,6 +13,7 @@ IconButton {
         anchors.centerIn: parent
         active: button.busy && button.visible
         sourceComponent: BusyMark {
+            clock: button.clock
             size: button.iconSize
             color: !button.enabled ? Theme.color.textTertiary
                  : button.tone === "solid" ? Theme.color.textOnAccent

@@ -6,9 +6,9 @@ import "../Theme"
 Icon {
     id: mark
     property bool active: true
-    readonly property QtObject clock: Motion.sharedClock()
+    required property QtObject clock
     readonly property bool windowPresented: !!Window.window && Window.window.visible && Window.window.visibility !== Window.Minimized
-    readonly property bool moving: active && visible && windowPresented && opacity > 0 && !Motion.reduced
+    readonly property bool moving: !!clock && active && visible && windowPresented && opacity > 0 && !Motion.reduced
     property bool holding: false
     property real phase: 0
     glyph: Icons.refresh
