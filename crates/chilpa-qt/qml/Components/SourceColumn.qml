@@ -87,6 +87,8 @@ Rectangle {
             label: modelData.label
             meta: modelData.meta
             selected: modelData.selected
+            excluded: false
+            canExclude: false
             all: modelData.all
             onChosen: pane.picked(modelData.key)
         }

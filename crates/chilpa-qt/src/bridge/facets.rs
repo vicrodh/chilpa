@@ -26,14 +26,16 @@ pub mod qobject {
         #[qproperty(QString, column)]
         /// Bound to `Library.rev`.
         #[qproperty(i32, rev)]
+        #[qproperty(QString, applied_query)]
         /// Text typed in this column's header.
         #[qproperty(QString, query)]
         /// Entries, "All" excluded: the number in the column's header.
         #[qproperty(i32, total)]
         type FacetModel = super::FacetRust;
 
-        /// Plain, Ctrl/Cmd-toggle or Shift-range selection.
+        /// Toggle inclusion, or select a Shift range. Alt toggles exclusion.
         #[qinvokable] fn choose(self: Pin<&mut FacetModel>, row: i32, modifiers: i32);
+        #[qinvokable] fn exclude(self: Pin<&mut FacetModel>, row: i32);
     }
 
     unsafe extern "RustQt" {
@@ -74,23 +76,23 @@ pub mod qobject {
 }
 
 use crate::{app, browse};
-use chilpa_api::FacetEntry;
+use chilpa_api::{FacetEntry, library_query::columns::{self, ColumnSelection}};
 use cxx_qt::CxxQtType as _;
 use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QVariant, QVector};
 use std::pin::Pin;
 
-const ROLES: &[&str] = &["key", "label", "meta", "selected", "all", "albums"];
+const ROLES: &[&str] = &["key", "label", "meta", "selected", "all", "albums", "excluded"];
 const USER_ROLE: i32 = 256;
 
 #[derive(Default)]
 pub struct FacetRust {
     column: QString,
     rev: i32,
+    applied_query: QString,
     query: QString,
     total: i32,
     entries: Vec<FacetEntry>,
-    /// The keys chosen in this column; empty is "All".
-    chosen: Vec<String>, anchor: Option<usize>,
+    selection: ColumnSelection, anchor: Option<usize>,
     all_label: String,
 }
 
@@ -103,8 +105,9 @@ impl qobject::FacetModel {
             return match role - USER_ROLE {
                 0 => text(""),
                 1 => text(&this.all_label),
-                3 => QVariant::from(&this.chosen.is_empty()),
+                3 => QVariant::from(&!this.selection.active),
                 4 => QVariant::from(&true),
+                6 => QVariant::from(&false),
                 _ => text(""),
             };
         }
@@ -118,9 +121,10 @@ impl qobject::FacetModel {
                 ("artist", _) => text(&e.albums.to_string()),
                 _ => text(""),
             },
-            3 => QVariant::from(&this.chosen.contains(&e.key)),
+            3 => QVariant::from(&this.selection.included.contains(&e.key)),
             4 => QVariant::from(&false),
             5 => text(&e.albums.to_string()),
+            6 => QVariant::from(&this.selection.excluded.contains(&e.key)),
             _ => QVariant::default(),
         }
     }
@@ -136,21 +140,11 @@ impl qobject::FacetModel {
     fn reload(mut self: Pin<&mut Self>) {
         let column = self.rust().column.to_string();
         let query = self.rust().query.to_string().trim().to_lowercase();
-        let (entries, chosen) = browse::read(|s| {
-            let f = &s.filter;
-            let pick = |list: &Vec<FacetEntry>| list.clone();
-            match column.as_str() {
-                "year" => (pick(&s.facets.years), f.years.iter().map(ToString::to_string).collect()),
-                "genre" => (pick(&s.facets.genres), f.genres.clone()),
-                "label" => (pick(&s.facets.labels), f.labels.clone()),
-                "composer" => (pick(&s.facets.composers), f.composers.clone()),
-                "rating" => (pick(&s.facets.ratings), f.ratings.iter().map(ToString::to_string).collect()),
-                "artist" => (pick(&s.facets.artists), f.artists.clone()),
-                "album" => (pick(&s.facets.albums), f.albums.iter().map(ToString::to_string).collect()),
-                _ => (Vec::new(), Vec::new()),
-            }
+        let (entries, selection) = browse::read(|s| {
+            let entries = chilpa_api::filter_facets(columns::entries(&s.facets, &column), &query);
+            let selection = columns::selection(&s.filter, &column, &entries);
+            (entries, selection)
         });
-        let entries = chilpa_api::filter_facets(entries, &query);
         let n = entries.len().to_string();
         let all = app::with(|api| api.t_args("All ({})", &[&n]));
         if entries == self.rust().entries {
@@ -158,7 +152,7 @@ impl qobject::FacetModel {
             // its scroll position.
             {
                 let mut this = self.as_mut().rust_mut();
-                this.chosen = chosen;
+                this.selection = selection;
                 this.all_label = all;
             }
             self.as_mut().set_total(entries.len() as i32);
@@ -168,6 +162,7 @@ impl qobject::FacetModel {
             let mut roles = QVector::<i32>::default();
             roles.append(USER_ROLE + 1);
             roles.append(USER_ROLE + 3);
+            roles.append(USER_ROLE + 6);
             self.as_mut().data_changed(&top, &bottom, &roles);
             return;
         }
@@ -176,7 +171,7 @@ impl qobject::FacetModel {
         {
             let mut this = self.as_mut().rust_mut();
             this.entries = entries;
-            this.chosen = chosen;
+            this.selection = selection;
             this.all_label = all;
             this.anchor = None;
         }
@@ -186,21 +181,21 @@ impl qobject::FacetModel {
     }
 
     pub fn choose(mut self: Pin<&mut Self>, row: i32, modifiers: i32) {
-        let row = row.max(0) as usize;
-        let (chosen, anchor) = chilpa_api::select_facets(&self.rust().entries, &self.rust().chosen, self.rust().anchor, row, modifiers);
-        self.as_mut().rust_mut().chosen = chosen;
-        self.as_mut().rust_mut().anchor = anchor;
+        if row < 0 { return; }
         let column = self.rust().column.to_string();
-        let keys = self.rust().chosen.clone();
-        let labels = self.rust().entries.iter().filter(|e| keys.contains(&e.key)).map(|e| e.label.clone()).collect();
-        let at = ["year", "genre", "label", "composer", "rating", "artist", "album"].iter().position(|name| *name == column).unwrap_or(0);
-        crate::registry::library(move |library| library.choose_keys(keys, labels, at));
+        let anchor = browse::write(|s| columns::choose(&mut s.filter, &column, &self.rust().entries, self.rust().anchor, row as usize, modifiers));
+        self.as_mut().rust_mut().anchor = anchor;
+        crate::registry::library(|library| library.query_changed());
     }
+
+    pub fn exclude(self: Pin<&mut Self>, row: i32) { self.choose(row, 4); }
+
 }
 
 impl cxx_qt::Initialize for qobject::FacetModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().on_rev_changed(|m| m.reload()).release();
+        self.as_mut().on_applied_query_changed(|m| m.reload()).release();
         self.as_mut().on_column_changed(|m| m.reload()).release();
         self.as_mut().on_query_changed(|m| m.reload()).release();
     }

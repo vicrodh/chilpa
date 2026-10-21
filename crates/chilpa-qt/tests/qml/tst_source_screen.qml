@@ -101,6 +101,7 @@ TestCase {
         verify(pane)
         const rows = findChild(pane, "sourceColumnList")
         compare(rows.count, 3, "All, then its two entries")
+        verify(!findChild(rows.itemAtIndex(2), "paneExclude").visible)
         mouseClick(rows.itemAtIndex(2), 30, 8)
         compare(last(), ["pick", "country", "mx"])
 

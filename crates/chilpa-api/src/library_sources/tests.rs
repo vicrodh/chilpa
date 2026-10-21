@@ -43,6 +43,22 @@ fn refresh(reader: &Reader, index: SourceIndex, filter: &Filter, order: TrackOrd
 }
 
 #[test]
+fn query_columns_count_other_fields_across_local_and_integrated_records() {
+    let (reader,index) = fixture();
+    let filter = Filter { query: crate::library_query::read("genre=:Jazz year:1959").unwrap(), ..Default::default() };
+    let (facets,snapshot) = refresh(&reader,index,&filter,TrackOrder::Artist);
+    assert!(snapshot.album_ids.is_empty());
+    assert_eq!(labels(&facets.years), [("1965",1),("1958",1)]);
+    assert_eq!(labels(&facets.genres), [("Hard Bop",1),("Modal",1)]);
+    let (reader,index) = fixture();
+    let filter = Filter { query: crate::library_query::read("-genre=:Jazz year:1965").unwrap(), ..Default::default() };
+    let (facets,snapshot) = refresh(&reader,index,&filter,TrackOrder::Artist);
+    assert!(snapshot.album_ids.is_empty());
+    assert_eq!(labels(&facets.genres), [("jazz",1)]);
+    assert_eq!(labels(&facets.years), [("1966",1),("1959",2)]);
+}
+
+#[test]
 fn the_columns_count_the_sources_with_the_library_and_names_meet_whatever_their_case() {
     let (reader, index) = fixture();
     let (facets, _) = refresh(&reader, index, &Filter::default(), TrackOrder::Artist);

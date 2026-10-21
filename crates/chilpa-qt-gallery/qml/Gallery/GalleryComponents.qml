@@ -10,6 +10,7 @@ import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "qrc:/qt/qml/app/chilpa/folders/qml/Components"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Driving
 import "qrc:/qt/qml/app/chilpa/folders/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/query/qml/Patterns"
 
 TitledFlow {
     id: section
@@ -109,7 +110,7 @@ TitledFlow {
         Row {
             height: Metrics.panesHeight
             PaneColumn { width: Metrics.sidebarWidth; height: parent.height; title: "Genre"; column: "genre" }
-            PaneRow { width: Metrics.sidebarWidth; key: ""; label: "A selected entry"; meta: "8"; selected: true; all: false }
+            PaneRow { width: Metrics.sidebarWidth; key: ""; label: "A selected entry"; meta: "8"; selected: true; excluded: false; all: false }
         }
         TrackRowSlot { width: section.width; height: Metrics.rowCompact; inViewport: false }
         TrackColumns { id: rowCols; width: section.width }
