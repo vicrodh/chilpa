@@ -708,6 +708,9 @@ msgstr "頭文字別"
 msgid "By name"
 msgstr "名前別"
 
+msgid "By plays"
+msgstr "再生回数別"
+
 msgid "By quality"
 msgstr "音質別"
 

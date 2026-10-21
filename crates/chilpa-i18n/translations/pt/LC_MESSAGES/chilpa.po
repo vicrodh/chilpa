@@ -710,6 +710,9 @@ msgstr "Por letra"
 msgid "By name"
 msgstr "Por nome"
 
+msgid "By plays"
+msgstr "Por reproduções"
+
 msgid "By quality"
 msgstr "Por qualidade"
 
