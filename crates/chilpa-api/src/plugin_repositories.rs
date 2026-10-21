@@ -7,6 +7,14 @@ use std::{io::{Read, Write}, path::{Path, PathBuf}, time::Duration};
 const MAX_REPOSITORIES: usize = 128;
 const MAX_CACHE: usize = 4 * 1024 * 1024;
 const NATIVE_CATALOG: &str = "https://raw.githubusercontent.com/vicrodh/chilpa-plugins/main/index.json";
+/// The catalog of native plugins that others publish, offered in every
+/// profile beside the ones the listener adds. It is not saved in the list.
+/// Tests point it at a closed local port: they never reach the network.
+#[cfg(not(test))]
+const THIRD_PARTY_CATALOG: &str = "https://raw.githubusercontent.com/vicrodh/chilpa-3rd-party-plugins/main/index.json";
+#[cfg(test)]
+const THIRD_PARTY_CATALOG: &str = "http://127.0.0.1:9/index.json";
+pub(crate) const THIRD_PARTY: &str = "third-party";
 const BUNDLED_CATALOG: &[u8] = include_bytes!("../../../packaging/plugins/index.json");
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -58,6 +66,18 @@ impl PluginRepositories {
     }
 
     pub fn compatible(&self) -> &[PluginRepository] { &self.saved.compatible }
+    /// The third-party catalog's address, empty when the listener added it
+    /// by hand and it is offered as one of theirs.
+    pub fn third_party_catalog(&self) -> &str {
+        if self.saved.compatible.iter().any(|repository| repository.url == THIRD_PARTY_CATALOG) { "" } else { THIRD_PARTY_CATALOG }
+    }
+    /// Every repository whose plugins are offered: the third-party catalog,
+    /// unless the listener added it by hand, and the ones added.
+    pub fn sources(&self) -> Vec<PluginRepository> {
+        let offered = (!self.third_party_catalog().is_empty())
+            .then(|| PluginRepository { id: THIRD_PARTY.into(), url: THIRD_PARTY_CATALOG.into() });
+        offered.into_iter().chain(self.saved.compatible.iter().cloned()).collect()
+    }
     pub fn native_catalog(&self) -> &str { &self.saved.native_catalog }
 
     /// A local index may be loaded for offline development. Compatible
@@ -152,6 +172,7 @@ impl PluginRepositories {
 
     fn source(&self, id: &str) -> Result<&str, String> {
         if id == "native" && !self.saved.native_catalog.is_empty() { return Ok(&self.saved.native_catalog); }
+        if id == THIRD_PARTY { return Ok(THIRD_PARTY_CATALOG); }
         self.saved.compatible.iter().find(|repository| repository.id == id).map(|repository| repository.url.as_str())
             .ok_or_else(|| "The plugin repository is not configured.".into())
     }
@@ -216,6 +237,23 @@ mod tests {
             assert!(entries.iter().all(|entry| entry.problem.is_empty()));
             assert!(repositories.compatible().is_empty());
         }
+    }
+
+    #[test]
+    fn the_third_party_catalog_is_offered_once_and_never_saved() {
+        let root = tempfile::tempdir().unwrap();
+        let mut repositories = PluginRepositories::load(root.path().into()).unwrap();
+        assert_eq!(repositories.sources(), [PluginRepository { id: THIRD_PARTY.into(), url: THIRD_PARTY_CATALOG.into() }]);
+        assert!(repositories.cached(THIRD_PARTY).unwrap().is_empty(), "nothing is offered before it is read");
+        assert!(repositories.remove(THIRD_PARTY).is_err(), "it cannot be removed");
+        let added = repositories.add("https://example.org/repo.xml").unwrap();
+        assert_eq!(repositories.sources().len(), 2);
+        assert_eq!(repositories.compatible(), &[added]);
+        repositories.add(THIRD_PARTY_CATALOG).unwrap();
+        let sources = repositories.sources();
+        assert_eq!(sources.len(), 2, "added by hand, it is offered once");
+        assert!(sources.iter().all(|repository| repository.id != THIRD_PARTY));
+        assert_eq!(repositories.third_party_catalog(), "");
     }
 
     #[test]
