@@ -20,8 +20,9 @@ TestCase {
     Component { id: switchFactory; RefineSwitch {} }
     Component { id: areaFactory; RefineArea { width: 1100; height: 400; columns: Component { Item { objectName: "testColumns" } } } }
 
-    function initTestCase() { failOnWarning(/.*/) }
     function init() {
+        // Per test function: set in initTestCase it only guards initTestCase.
+        failOnWarning(/.*/)
         Library.queryText = ""
         SettingsModel.preferences = ({})
         SettingsModel.panesOpen = false

@@ -11,7 +11,8 @@ Loader {
     property Component columns
     property string summary: ""
     property bool narrow: width < Refine.narrowBelow
-    readonly property real wanted: refineMode && item ? item.implicitHeight : height
+    // Never the area's own height: that is fit(), which reads this.
+    readonly property real wanted: refineMode && item ? item.implicitHeight : 0
     // While a field's values or the suggestions are open the panel may pass
     // the grip's height, as far as the design's 1000.
     readonly property bool opened: refineMode && !!item && !detached && (item.picking !== "" || item.typing)
