@@ -37,6 +37,9 @@ msgstr "(onleesbaar manifest)"
 msgid "+ Create new playlist"
 msgstr "+ Nieuwe afspeellijst maken"
 
+msgid "+{} more"
+msgstr "+{} meer"
+
 msgid "-11 LUFS · Loud"
 msgstr "-11 LUFS · Luid"
 
@@ -321,8 +324,8 @@ msgstr "Alle groepen"
 msgid "All music"
 msgstr "Alle muziek"
 
-msgid "All of"
-msgstr "Alle"
+msgid "All of these"
+msgstr "Al deze"
 
 msgid "All qualities"
 msgstr "Alle kwaliteiten"
@@ -426,8 +429,8 @@ msgstr "Animeer de markering van het huidige nummer met equalizerbalken. Standaa
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Geanimeerde achtergrond met albumhoes achter de hele app. Hoog resourcegebruik: GPU-versneld."
 
-msgid "Any of"
-msgstr "Een van"
+msgid "Any of these"
+msgstr "Minstens één hiervan"
 
 msgid "Any of those years"
 msgstr "Een van die jaren"
@@ -1815,9 +1818,6 @@ msgstr "Zwevend"
 
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr "Zwevend boven de inhoud, of over de volledige breedte van het venster bovenaan of onderaan."
-
-msgid "Focus"
-msgstr "Focus"
 
 msgid "Focus on playing"
 msgstr "Afspelen volgen"
@@ -3769,6 +3769,9 @@ msgstr "Albums van dat genre"
 msgid "Records with that composer"
 msgstr "Albums met die componist"
 
+msgid "Refine"
+msgstr "Verfijnen"
+
 msgid "Refresh"
 msgstr "Vernieuwen"
 
@@ -4949,6 +4952,9 @@ msgstr "Tunnel"
 msgid "Tunnel Flow"
 msgstr "Tunnel Flow"
 
+msgid "Type"
+msgstr "Type"
+
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr "Typ deze code op plex.tv/link, ingelogd bij je Plex-account."
 
@@ -5249,6 +5255,9 @@ msgstr "Goedkeuring intrekken"
 msgid "Without plugins"
 msgstr "Zonder plug-ins"
 
+msgid "Words"
+msgstr "Woorden"
+
 msgid "Words alone look in titles, artists and records"
 msgstr "Losse woorden zoeken in titels, artiesten en albums"
 
@@ -5522,6 +5531,9 @@ msgstr "je account zelf afhandelen, buiten Chilpa: je inloggegevens komen terech
 msgid "handset"
 msgstr "telefoonhoorn"
 
+msgid "has none"
+msgstr "heeft geen"
+
 msgid "headphones"
 msgstr "hoofdtelefoon"
 
@@ -5539,6 +5551,9 @@ msgstr "hw: alleen de kaart"
 
 msgid "impossible packet counts"
 msgstr "onmogelijke pakketaantallen"
+
+msgid "in the last"
+msgstr "in de afgelopen"
 
 msgid "in the system keyring"
 msgstr "in de systeemsleutelhanger"
@@ -6430,6 +6445,9 @@ msgstr "typ een titel, een artiest of een catalogusnummer om te zoeken"
 msgid "type takes album, single, ep, compilation, live or soundtrack"
 msgstr "type accepteert album, single, ep, compilation, live of soundtrack"
 
+msgid "unrated"
+msgstr "zonder sterren"
+
 msgid "up to {} bits"
 msgstr "tot {} bits"
 
@@ -6502,6 +6520,11 @@ msgid_plural "{} channels"
 msgstr[0] "{} kanaal"
 msgstr[1] "{} kanalen"
 
+msgid "{} condition"
+msgid_plural "{} conditions"
+msgstr[0] "{} voorwaarde"
+msgstr[1] "{} voorwaarden"
+
 msgid "{} could not be copied: {}"
 msgstr "{} kon niet worden gekopieerd: {}"
 
@@ -6513,6 +6536,11 @@ msgstr "{} kon niet worden vervangen: {}"
 
 msgid "{} could not be written: {}"
 msgstr "{} kon niet worden geschreven: {}"
+
+msgid "{} day"
+msgid_plural "{} days"
+msgstr[0] "{} dag"
+msgstr[1] "{} dagen"
 
 msgid "{} did not accept the account"
 msgstr "{} heeft het account niet geaccepteerd"
@@ -6597,6 +6625,11 @@ msgstr "{} min"
 
 msgid "{} modified"
 msgstr "{} gewijzigd"
+
+msgid "{} month"
+msgid_plural "{} months"
+msgstr[0] "{} maand"
+msgstr[1] "{} maanden"
 
 msgid "{} more playlist..."
 msgid_plural "{} more playlists..."
@@ -6689,8 +6722,18 @@ msgstr "er is bij {} niet op tijd toestemming gegeven; verbind opnieuw"
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr "{} is geschreven maar zegt in ‘{}' niet wat het zou moeten; er is niets vervangen"
 
+msgid "{} week"
+msgid_plural "{} weeks"
+msgstr[0] "{} week"
+msgstr[1] "{} weken"
+
 msgid "{} written · {} unmatched · {} duplicates"
 msgstr "{} geschreven · {} niet gevonden · {} duplicaten"
+
+msgid "{} year"
+msgid_plural "{} years"
+msgstr[0] "{} jaar"
+msgstr[1] "{} jaar"
 
 msgid "{} {}"
 msgstr "{} {}"

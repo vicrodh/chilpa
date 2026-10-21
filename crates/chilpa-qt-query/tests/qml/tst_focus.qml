@@ -16,7 +16,7 @@ TestCase {
     property var panel
     Component { id: panelFactory; FocusPanel { width: 1100; height: 500 } }
     Component { id: screenFactory; LibraryScreen { width: 1100; height: 650 } }
-    Component { id: switchFactory; FocusSwitch {} }
+    Component { id: switchFactory; RefineSwitch {} }
     Component { id: areaFactory; FocusArea { width: 1100; height: 400; columns: Component { Item { objectName: "testColumns" } } } }
 
     function row(field, values) {
@@ -56,7 +56,7 @@ TestCase {
         panel.destroy()
         const control = createTemporaryObject(switchFactory, test)
         const area = createTemporaryObject(areaFactory, test, { y: 80 })
-        area.focusMode = Qt.binding(() => control.focusMode)
+        area.focusMode = Qt.binding(() => control.refineMode)
         area.visible = Qt.binding(() => SettingsModel.panesOpen)
         compare(area.item, null)
         mouseClick(control, control.width / 4, control.height / 2)
@@ -65,7 +65,7 @@ TestCase {
         tryVerify(() => area.item && area.item.objectName === "focusPanel")
         compare(SettingsModel.kept("ui.library.focus"), "true")
         const restored = createTemporaryObject(switchFactory, test, { y: 40 })
-        compare(restored.focusMode, true)
+        compare(restored.refineMode, true)
         mouseClick(control, control.width * 3 / 4, control.height / 2)
         tryCompare(area, "item", null)
         compare(SettingsModel.panesOpen, false)
@@ -218,7 +218,7 @@ TestCase {
         const screen = createTemporaryObject(screenFactory, test)
         verify(screen)
         tryVerify(() => findChild(screen, "focusPanel") !== null)
-        const control = findChild(screen, "focusSwitch")
+        const control = findChild(screen, "refineSwitch")
         mouseClick(control, control.width / 4, control.height / 2)
         tryVerify(() => findChild(screen, "focusPanel") === null)
     }

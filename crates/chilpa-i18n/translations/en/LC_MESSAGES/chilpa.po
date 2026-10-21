@@ -37,6 +37,9 @@ msgstr ""
 msgid "+ Create new playlist"
 msgstr ""
 
+msgid "+{} more"
+msgstr ""
+
 msgid "-11 LUFS · Loud"
 msgstr ""
 
@@ -321,7 +324,7 @@ msgstr ""
 msgid "All music"
 msgstr ""
 
-msgid "All of"
+msgid "All of these"
 msgstr ""
 
 msgid "All qualities"
@@ -426,7 +429,7 @@ msgstr ""
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr ""
 
-msgid "Any of"
+msgid "Any of these"
 msgstr ""
 
 msgid "Any of those years"
@@ -1815,9 +1818,6 @@ msgstr ""
 
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr ""
-
-msgid "Focus"
-msgstr "Focus"
 
 msgid "Focus on playing"
 msgstr ""
@@ -3769,6 +3769,9 @@ msgstr ""
 msgid "Records with that composer"
 msgstr ""
 
+msgid "Refine"
+msgstr ""
+
 msgid "Refresh"
 msgstr "Refresh"
 
@@ -4949,6 +4952,9 @@ msgstr ""
 msgid "Tunnel Flow"
 msgstr ""
 
+msgid "Type"
+msgstr ""
+
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr ""
 
@@ -5249,6 +5255,9 @@ msgstr ""
 msgid "Without plugins"
 msgstr ""
 
+msgid "Words"
+msgstr ""
+
 msgid "Words alone look in titles, artists and records"
 msgstr ""
 
@@ -5522,6 +5531,9 @@ msgstr ""
 msgid "handset"
 msgstr ""
 
+msgid "has none"
+msgstr ""
+
 msgid "headphones"
 msgstr ""
 
@@ -5538,6 +5550,9 @@ msgid "hw: the card alone"
 msgstr ""
 
 msgid "impossible packet counts"
+msgstr ""
+
+msgid "in the last"
 msgstr ""
 
 msgid "in the system keyring"
@@ -6430,6 +6445,9 @@ msgstr ""
 msgid "type takes album, single, ep, compilation, live or soundtrack"
 msgstr "type takes album, single, ep, compilation, live or soundtrack"
 
+msgid "unrated"
+msgstr ""
+
 msgid "up to {} bits"
 msgstr ""
 
@@ -6502,6 +6520,11 @@ msgid_plural "{} channels"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "{} condition"
+msgid_plural "{} conditions"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} could not be copied: {}"
 msgstr ""
 
@@ -6513,6 +6536,11 @@ msgstr ""
 
 msgid "{} could not be written: {}"
 msgstr ""
+
+msgid "{} day"
+msgid_plural "{} days"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} did not accept the account"
 msgstr ""
@@ -6597,6 +6625,11 @@ msgstr ""
 
 msgid "{} modified"
 msgstr ""
+
+msgid "{} month"
+msgid_plural "{} months"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} more playlist..."
 msgid_plural "{} more playlists..."
@@ -6689,8 +6722,18 @@ msgstr ""
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr ""
 
+msgid "{} week"
+msgid_plural "{} weeks"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} written · {} unmatched · {} duplicates"
 msgstr "{} written · {} unmatched · {} duplicates"
+
+msgid "{} year"
+msgid_plural "{} years"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} {}"
 msgstr ""

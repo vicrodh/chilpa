@@ -37,6 +37,9 @@ msgstr "（読み取れないマニフェスト）"
 msgid "+ Create new playlist"
 msgstr "＋新規プレイリストを作成"
 
+msgid "+{} more"
+msgstr "ほか {} 件"
+
 msgid "-11 LUFS · Loud"
 msgstr "-11 LUFS · 大きめ"
 
@@ -320,8 +323,8 @@ msgstr "すべてのグループ"
 msgid "All music"
 msgstr "すべての音楽"
 
-msgid "All of"
-msgstr "すべて"
+msgid "All of these"
+msgstr "すべてに一致"
 
 msgid "All qualities"
 msgstr "すべての音質"
@@ -425,8 +428,8 @@ msgstr "再生中のトラックのマークをイコライザーバーでアニ
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "アプリ全体の背後にアルバムアートのアニメーション背景を表示します。リソース使用量が多く、GPUアクセラレーションを使います。"
 
-msgid "Any of"
-msgstr "いずれか"
+msgid "Any of these"
+msgstr "いずれかに一致"
 
 msgid "Any of those years"
 msgstr "いずれかの年"
@@ -1812,9 +1815,6 @@ msgstr "フローティング"
 
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr "コンテンツの上に浮かせるか、ウィンドウの上端または下端に全幅で表示します。"
-
-msgid "Focus"
-msgstr "フォーカス"
 
 msgid "Focus on playing"
 msgstr "再生中のトラックへ移動"
@@ -3766,6 +3766,9 @@ msgstr "そのジャンルのアルバム"
 msgid "Records with that composer"
 msgstr "その作曲者のアルバム"
 
+msgid "Refine"
+msgstr "絞り込み"
+
 msgid "Refresh"
 msgstr "更新"
 
@@ -4944,6 +4947,9 @@ msgstr "Tunnel"
 msgid "Tunnel Flow"
 msgstr "Tunnel Flow"
 
+msgid "Type"
+msgstr "種類"
+
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr "Plexアカウントにログインした状態で、plex.tv/linkでこのコードを入力してください。"
 
@@ -5244,6 +5250,9 @@ msgstr "承認を取り消す"
 msgid "Without plugins"
 msgstr "プラグインなし"
 
+msgid "Words"
+msgstr "キーワード"
+
 msgid "Words alone look in titles, artists and records"
 msgstr "フィールドなしの語は、タイトル・アーティスト・アルバムを検索します"
 
@@ -5517,6 +5526,9 @@ msgstr "アカウントをChilpaの外部で自分で管理する: 認証情報�
 msgid "handset"
 msgstr "ハンドセット"
 
+msgid "has none"
+msgstr "なし"
+
 msgid "headphones"
 msgstr "ヘッドホン"
 
@@ -5534,6 +5546,9 @@ msgstr "hw: カード単独"
 
 msgid "impossible packet counts"
 msgstr "パケット数が不正です"
+
+msgid "in the last"
+msgstr "過去"
 
 msgid "in the system keyring"
 msgstr "システムのキーリング内"
@@ -6424,6 +6439,9 @@ msgstr "検索するには、タイトル、アーティスト、またはカタ
 msgid "type takes album, single, ep, compilation, live or soundtrack"
 msgstr "type には album、single、ep、compilation、live、soundtrack を指定します"
 
+msgid "unrated"
+msgstr "未評価"
+
 msgid "up to {} bits"
 msgstr "最大{}ビット"
 
@@ -6493,6 +6511,10 @@ msgid "{} channel"
 msgid_plural "{} channels"
 msgstr[0] "{}チャンネル"
 
+msgid "{} condition"
+msgid_plural "{} conditions"
+msgstr[0] "{} 件の条件"
+
 msgid "{} could not be copied: {}"
 msgstr "{}をコピーできませんでした: {}"
 
@@ -6504,6 +6526,10 @@ msgstr "{}を置き換えられませんでした: {}"
 
 msgid "{} could not be written: {}"
 msgstr "{}を書き込めませんでした: {}"
+
+msgid "{} day"
+msgid_plural "{} days"
+msgstr[0] "{}日"
 
 msgid "{} did not accept the account"
 msgstr "{}がアカウントを受け付けませんでした"
@@ -6579,6 +6605,10 @@ msgstr "{}分"
 
 msgid "{} modified"
 msgstr "{}件を変更済み"
+
+msgid "{} month"
+msgid_plural "{} months"
+msgstr[0] "{}か月"
 
 msgid "{} more playlist..."
 msgid_plural "{} more playlists..."
@@ -6663,8 +6693,16 @@ msgstr "{}が時間内に許可されませんでした。もう一度接続し�
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr "{}は書き込まれましたが、「{}」の内容が正しくありません。何も置き換えられていません"
 
+msgid "{} week"
+msgid_plural "{} weeks"
+msgstr[0] "{}週間"
+
 msgid "{} written · {} unmatched · {} duplicates"
 msgstr "{}件を書き込み · {}件が未一致 · {}件が重複"
+
+msgid "{} year"
+msgid_plural "{} years"
+msgstr[0] "{}年"
 
 msgid "{} {}"
 msgstr "{2}年{1}"

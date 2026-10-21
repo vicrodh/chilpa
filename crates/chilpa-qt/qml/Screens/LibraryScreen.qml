@@ -37,7 +37,7 @@ Item {
     property real dragged: -1
     // The columns' height when the grip was pressed.
     property real grabbed: 0
-    readonly property bool panesShown: SettingsModel.panesOpen && (toggle.focusMode || page.panes.length > 0)
+    readonly property bool panesShown: SettingsModel.panesOpen && (toggle.refineMode || page.panes.length > 0)
     readonly property real panesHeight: !panesShown ? 0
         : dragged >= 0 ? dragged
         : SettingsModel.panesHeight > 0 ? SettingsModel.panesHeight : Metrics.panesHeight
@@ -154,9 +154,11 @@ Item {
         x: crumbs.x + crumbs.used + Metrics.gap8
         width: Math.max(0, toggle.x - x - Metrics.gap8)
         clip: true
+        suppressed: toggle.refineShown
         onEdited: (query) => Library.applyQuery(query)
+        onOpenAsked: toggle.show(true)
     }
-    FocusSwitch {
+    RefineSwitch {
         id: toggle
         anchors.right: head.right
         anchors.verticalCenter: crumbs.verticalCenter
@@ -169,7 +171,7 @@ Item {
         width: head.width
         height: page.panesHeight
         visible: page.panesShown
-        focusMode: toggle.focusMode
+        focusMode: toggle.refineMode
         columns: Component { LibraryPanes { shown: page.panes } }
     }
 
