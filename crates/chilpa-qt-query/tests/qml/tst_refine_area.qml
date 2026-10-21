@@ -67,4 +67,25 @@ TestCase {
         screen.width = 1100
         tryVerify(() => !findChild(screen, "refinePanel").narrow)
     }
+
+    // Refine keeps a grip height of its own (the design's 400 to start, at
+    // least 150), apart from the columns' 212.
+    function test_refine_has_its_own_grip_height() {
+        const rows = []
+        for (let i = 0; i < 24; ++i) rows.push({ id: String(i), field: "genre", kind: "list", negated: false, values: ["Value " + i] })
+        QueryChips.refineOf = { many: { mode: "all", complex: null, rows: rows } }
+        Library.queryText = "many"
+        SettingsModel.keep("ui.library.focus", "true")
+        SettingsModel.panesOpen = true
+        const screen = createTemporaryObject(screenFactory, test, { height: 900 })
+        const area = findChild(screen, "panesArea")
+        tryCompare(area, "height", 400, 2000)
+        const grip = findChild(screen, "panesGrip")
+        grip.started()
+        grip.moved(-300)
+        compare(area.height, 150, "at least 150")
+        grip.released()
+        compare(SettingsModel.kept("ui.library.refineHeight"), "150")
+        compare(SettingsModel.panesHeight, 240, "the columns keep their own height")
+    }
 }
