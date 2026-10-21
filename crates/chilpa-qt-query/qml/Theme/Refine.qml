@@ -126,6 +126,7 @@ QtObject {
 
     // Pickers and suggestions.
     readonly property int pickRound: 10
+    readonly property int pickGrow: 1000
     readonly property int pickPad: 8
     readonly property int pickApart: 10
     readonly property int pickFieldsWide: 158
@@ -146,6 +147,7 @@ QtObject {
     readonly property int pillTall: 26
     readonly property int pillRound: 13
     readonly property int pillPad: 11
+    readonly property int ratingColumnsApart: 12
     readonly property int yearField: 64
     readonly property int yearFieldTall: 28
     readonly property int wordsTall: 30

@@ -293,6 +293,9 @@ msgstr "アルバムアーティスト"
 msgid "Album artists"
 msgstr "アルバムアーティスト"
 
+msgid "Album contains"
+msgstr "アルバム名に含む"
+
 msgid "Album header"
 msgstr "アルバムヘッダー"
 
@@ -446,8 +449,14 @@ msgstr "いずれかの年"
 msgid "Any quality"
 msgstr "すべての音質"
 
+msgid "Any rating"
+msgstr "評価を問わない"
+
 msgid "Any source — best quality (local mixed playlist)"
 msgstr "すべてのソース — 最高音質（ローカルのミックスプレイリスト）"
+
+msgid "Any time"
+msgstr "期間を問わない"
 
 msgid "Appearance"
 msgstr "外観"
@@ -520,10 +529,6 @@ msgstr "終了前に確認"
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Chilpaが再生している間、PipeWireまたはPulseAudioにカードの解放を要求し、Chilpaが停止または長時間一時停止したときに返します。"
-
-msgid "At least {} star"
-msgid_plural "At least {} stars"
-msgstr[0] "星{}以上"
 
 msgid "Audio"
 msgstr "オーディオ"
@@ -1014,6 +1019,9 @@ msgstr "バックグラウンドでクリア中…"
 
 msgid "Clear…"
 msgstr "クリア…"
+
+msgid "Click a value to include it, − to exclude it. Counts already apply everything else."
+msgstr "値をクリックで含め、− で除外します。件数にはほかの条件がすでに反映されています。"
 
 msgid "Click tracks to select them; Shift selects a range."
 msgstr "トラックをクリックして選択します。Shiftで範囲を選択します。"
@@ -1606,9 +1614,6 @@ msgstr "メタデータを編集…"
 msgid "Edit playlist"
 msgstr "プレイリストを編集"
 
-msgid "Edit with :filter"
-msgstr ":filterで編集"
-
 msgid "Edit…"
 msgstr "編集…"
 
@@ -1669,6 +1674,9 @@ msgstr "有効な数値または時間を入力してください。"
 msgid "Enter a valid number."
 msgstr "有効な数値を入力してください。"
 
+msgid "Enter includes the first match · Shift+Enter excludes it"
+msgstr "Enter で最初の候補を含める・Shift+Enter で除外"
+
 msgid "Episode notes"
 msgstr "エピソードのノート"
 
@@ -1683,6 +1691,9 @@ msgstr "トラックで演奏するすべての人"
 
 msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect and exclusive mode off to share it and let Windows mix and resample."
 msgstr "ここでの「Exact」は、トラックの再生中デバイスがChilpaだけのものになり、通知音も含めてマシン上のほかのものが使えないことを意味します。共有してWindowsにミックスとリサンプリングを任せるには、ビットパーフェクトと排他モードをオフにしてください。"
+
+msgid "Exclude"
+msgstr "除外"
 
 msgid "Exclusive mode"
 msgstr "排他モード"
@@ -1881,6 +1892,9 @@ msgstr "周波数 · Hz   /   ゲイン · dB   /   ±12 dB"
 
 msgid "Fri"
 msgstr "金"
+
+msgid "From"
+msgstr "開始"
 
 msgid "From catalog"
 msgstr "カタログから"
@@ -2206,6 +2220,9 @@ msgstr "ライブラリ内"
 msgid "In progress"
 msgstr "進行中"
 
+msgid "Include"
+msgstr "含める"
+
 msgid "Include matches from your plugins?"
 msgstr "プラグインの一致も含めますか？"
 
@@ -2416,9 +2433,6 @@ msgstr "前回のプレイリスト"
 msgid "Last track"
 msgstr "最後のトラック"
 
-msgid "Last {} days"
-msgstr "過去{}日間"
-
 msgid "Last.fm account"
 msgstr "Last.fmアカウント"
 
@@ -2439,6 +2453,9 @@ msgstr "直近の実行"
 
 msgid "Leave a label out: a minus means not"
 msgstr "レーベルを除外：マイナスは「以外」"
+
+msgid "Leave one empty for an open end. Both ends included."
+msgstr "片方を空にすると上限・下限なし。両端を含みます。"
 
 msgid "Left delay · 0–30 ms"
 msgstr "左ディレイ · 0–30 ms"
@@ -2649,12 +2666,6 @@ msgstr "先に :loop a で開始点を指定してください。"
 
 msgid "Match"
 msgstr "一致条件"
-
-msgid "Match all"
-msgstr "すべてに一致"
-
-msgid "Match any"
-msgstr "いずれかに一致"
 
 msgid "Matched"
 msgstr "一致"
@@ -3033,9 +3044,6 @@ msgstr "この検索に一致するプリセットはありません。"
 
 msgid "No purchases match the current view."
 msgstr "現在の表示に一致する購入はありません。"
-
-msgid "No results"
-msgstr "結果なし"
 
 msgid "No results for"
 msgstr "検索結果なし:"
@@ -3462,6 +3470,12 @@ msgstr "再生オプション"
 
 msgid "Playback stops and the window closes."
 msgstr "再生が停止し、ウィンドウが閉じます。"
+
+msgid "Played"
+msgstr "再生済み"
+
+msgid "Played 10 times or more"
+msgstr "10 回以上再生"
 
 msgid "Player"
 msgstr "プレーヤー"
@@ -4884,6 +4898,9 @@ msgstr "このウィザードは、Linuxでビットパーフェクト再生を�
 msgid "This wizard tests PCM rates. Chilpa currently converts DSD to PCM on PipeWire; exclusive mode and rate switching alone cannot verify an untouched DoP stream. For a DAC that supports DSD, use ALSA direct (hw) and choose a supported DSD mode in Audio settings."
 msgstr "このウィザードはPCMのレートをテストします。ChilpaはPipeWireでは現在DSDをPCMに変換するため、排他モードとレート切り替えだけでは、手を加えていないDoPストリームを検証できません。DSD対応のDACでは、ALSAダイレクト（hw）を使い、オーディオ設定で対応しているDSDモードを選んでください。"
 
+msgid "This year"
+msgstr "今年"
+
 msgid "This year vs Last year"
 msgstr "今年 vs 昨年"
 
@@ -4898,6 +4915,12 @@ msgstr "時間が範囲外です。"
 
 msgid "Title"
 msgstr "タイトル"
+
+msgid "Title contains"
+msgstr "曲名に含む"
+
+msgid "To"
+msgstr "終了"
 
 msgid "To move to"
 msgstr "動きたいときに"
@@ -5006,6 +5029,9 @@ msgstr "Plexアカウントにログインした状態で、plex.tv/linkでこ�
 
 msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
 msgstr "ログイン済みのJellyfinのQuick Connectで、このコードを入力してください。"
+
+msgid "Type words and press Enter"
+msgstr "語を入力して Enter"
 
 msgid "UP NEXT"
 msgstr "次に再生"
@@ -5631,6 +5657,9 @@ msgstr "過去"
 msgid "in the system keyring"
 msgstr "システムのキーリング内"
 
+msgid "in title, artist or record"
+msgstr "曲名・アーティスト・アルバムで"
+
 msgid "integrated"
 msgstr "内蔵"
 
@@ -5788,9 +5817,6 @@ msgstr "/proc/asoundにサウンドカードが一覧されていません"
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr "応答したサウンドサーバーがありません。pipewireとpipewire-pulseをインストールしてください"
 
-msgid "none of"
-msgstr "次を除く"
-
 msgid "none of that can be played now: its folder is not mounted or its server does not answer"
 msgstr "現在どれも再生できません。フォルダーがマウントされていないか、サーバーが応答しません"
 
@@ -5823,9 +5849,6 @@ msgstr "1つ以上のファイルにタグを付けられません"
 
 msgid "open it again from where it is listed"
 msgstr "一覧された場所からもう一度開いてください"
-
-msgid "or"
-msgstr "または"
 
 msgid "outside the image"
 msgstr "イメージの外です"

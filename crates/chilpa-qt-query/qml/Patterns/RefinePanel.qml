@@ -30,6 +30,7 @@ Rectangle {
     // The group new conditions go into: its id, "new" while it is still empty.
     property string target: ""
     signal detachAsked()
+    readonly property bool typing: foot.typed.trim() !== ""
 
     readonly property var reading: {
         I18n.rev
@@ -144,5 +145,33 @@ Rectangle {
         canGroup: panel.rows.length > 0 && !panel.reading.complex
         onFieldChosen: (field) => panel.picking = panel.picking === field ? "" : field
         onGroupAsked: panel.target = "new"
+        onFieldsAsked: panel.picking = panel.picking === "" ? RefineText.order[0] : ""
+        onAccepted: (exclude) => { if (foot.extraItem && foot.extraItem.first) foot.extraItem.first(exclude) }
+        onEscaped: panel.picking = ""
+        extra: panel.picking !== "" ? valuePicker : foot.typed.trim() !== "" ? suggestions : null
+    }
+    // The conditions a picker reads its marks from: the group new ones go
+    // into, or the top level.
+    readonly property var container: {
+        const group = panel.rows.find(r => r.group && r.id === panel.target)
+        return group ? group.rows : panel.rows.filter(r => !r.group)
+    }
+    Component {
+        id: valuePicker
+        ValuePicker {
+            field: panel.picking
+            narrow: panel.narrow
+            rows: panel.container
+            onEdit: (change) => panel.edit(change)
+            onFieldChosen: (field) => panel.picking = field
+            onClosed: panel.picking = ""
+        }
+    }
+    Component {
+        id: suggestions
+        SuggestionList {
+            typed: foot.typed
+            onEdit: (change) => { panel.edit(change); foot.typed = "" }
+        }
     }
 }

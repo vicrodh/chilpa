@@ -34,4 +34,7 @@ QtObject {
     function undo() { return undoneText }
     property var observed: []
     function observe(text) { observed = observed.concat([text]) }
+    property var suggestions: ({ groups: [], words: {} })
+    property string lastTyped: ""
+    function suggest(query, typed) { lastTyped = typed; return JSON.stringify(suggestions) }
 }

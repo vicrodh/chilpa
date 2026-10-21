@@ -295,6 +295,9 @@ msgstr "Исполнитель альбома"
 msgid "Album artists"
 msgstr "Исполнители альбома"
 
+msgid "Album contains"
+msgstr "Альбом содержит"
+
 msgid "Album header"
 msgstr "Заголовок альбома"
 
@@ -448,8 +451,14 @@ msgstr "Любой из этих годов"
 msgid "Any quality"
 msgstr "Любое качество"
 
+msgid "Any rating"
+msgstr "Любая оценка"
+
 msgid "Any source — best quality (local mixed playlist)"
 msgstr "Любой источник — лучшее качество (локальный смешанный плейлист)"
+
+msgid "Any time"
+msgstr "За всё время"
 
 msgid "Appearance"
 msgstr "Внешний вид"
@@ -522,12 +531,6 @@ msgstr "Спрашивать перед выходом"
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Просит PipeWire или PulseAudio освободить карту, пока на ней играет Chilpa, и возвращает её, когда Chilpa останавливается или надолго ставит воспроизведение на паузу."
-
-msgid "At least {} star"
-msgid_plural "At least {} stars"
-msgstr[0] "Не менее {} звезды"
-msgstr[1] "Не менее {} звёзд"
-msgstr[2] "Не менее {} звёзд"
 
 msgid "Audio"
 msgstr "Аудио"
@@ -1020,6 +1023,9 @@ msgstr "Очистка в фоновом режиме…"
 
 msgid "Clear…"
 msgstr "Очистить…"
+
+msgid "Click a value to include it, − to exclude it. Counts already apply everything else."
+msgstr "Нажмите на значение, чтобы включить его, − чтобы исключить. Числа уже учитывают остальное."
 
 msgid "Click tracks to select them; Shift selects a range."
 msgstr "Щёлкайте по трекам, чтобы выбрать их; Shift выделяет диапазон."
@@ -1612,9 +1618,6 @@ msgstr "Изменить метаданные…"
 msgid "Edit playlist"
 msgstr "Изменить плейлист"
 
-msgid "Edit with :filter"
-msgstr "Изменить через :filter"
-
 msgid "Edit…"
 msgstr "Изменить…"
 
@@ -1675,6 +1678,9 @@ msgstr "Введите допустимое число или время."
 msgid "Enter a valid number."
 msgstr "Введите допустимое число."
 
+msgid "Enter includes the first match · Shift+Enter excludes it"
+msgstr "Enter включает первое совпадение · Shift+Enter исключает его"
+
 msgid "Episode notes"
 msgstr "Заметки к выпуску"
 
@@ -1689,6 +1695,9 @@ msgstr "Все, кто играет в треке"
 
 msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect and exclusive mode off to share it and let Windows mix and resample."
 msgstr "Точная передача здесь означает, что устройство принадлежит только Chilpa, пока играет трек: ничто другое на компьютере не может его использовать, даже уведомление. Выключите bit-perfect и эксклюзивный режим, чтобы использовать устройство совместно и позволить Windows микшировать и ресемплировать звук."
+
+msgid "Exclude"
+msgstr "Исключить"
 
 msgid "Exclusive mode"
 msgstr "Эксклюзивный режим"
@@ -1887,6 +1896,9 @@ msgstr "Частота · Hz   /   Усиление · dB   /   ±12 dB"
 
 msgid "Fri"
 msgstr "Пт"
+
+msgid "From"
+msgstr "С"
 
 msgid "From catalog"
 msgstr "Из каталога"
@@ -2212,6 +2224,9 @@ msgstr "В библиотеке"
 msgid "In progress"
 msgstr "В процессе"
 
+msgid "Include"
+msgstr "Включить"
+
 msgid "Include matches from your plugins?"
 msgstr "Включить результаты из ваших плагинов?"
 
@@ -2422,9 +2437,6 @@ msgstr "Последний плейлист"
 msgid "Last track"
 msgstr "Последний трек"
 
-msgid "Last {} days"
-msgstr "За последние {} дней"
-
 msgid "Last.fm account"
 msgstr "Учётная запись Last.fm"
 
@@ -2445,6 +2457,9 @@ msgstr "Последний запуск"
 
 msgid "Leave a label out: a minus means not"
 msgstr "Исключить лейбл: минус значит «не»"
+
+msgid "Leave one empty for an open end. Both ends included."
+msgstr "Оставьте одно поле пустым для открытой границы. Обе границы включены."
 
 msgid "Left delay · 0–30 ms"
 msgstr "Задержка слева · 0–30 ms"
@@ -2655,12 +2670,6 @@ msgstr "Сначала отметьте начало командой :loop a."
 
 msgid "Match"
 msgstr "Совпадение"
-
-msgid "Match all"
-msgstr "Все условия"
-
-msgid "Match any"
-msgstr "Любое условие"
 
 msgid "Matched"
 msgstr "Совпало"
@@ -3039,9 +3048,6 @@ msgstr "Нет пресетов по этому запросу."
 
 msgid "No purchases match the current view."
 msgstr "Нет покупок для текущего вида."
-
-msgid "No results"
-msgstr "Нет результатов"
 
 msgid "No results for"
 msgstr "Ничего не найдено по запросу"
@@ -3468,6 +3474,12 @@ msgstr "Параметры воспроизведения"
 
 msgid "Playback stops and the window closes."
 msgstr "Воспроизведение остановится, окно закроется."
+
+msgid "Played"
+msgstr "Прослушанные"
+
+msgid "Played 10 times or more"
+msgstr "Прослушанные 10 раз и больше"
 
 msgid "Player"
 msgstr "Плеер"
@@ -4894,6 +4906,9 @@ msgstr "Этот мастер поможет настроить DAC для во�
 msgid "This wizard tests PCM rates. Chilpa currently converts DSD to PCM on PipeWire; exclusive mode and rate switching alone cannot verify an untouched DoP stream. For a DAC that supports DSD, use ALSA direct (hw) and choose a supported DSD mode in Audio settings."
 msgstr "Этот мастер проверяет частоты PCM. Сейчас Chilpa преобразует DSD в PCM в PipeWire; эксклюзивный режим и переключение частоты сами по себе не могут подтвердить, что поток DoP остался нетронутым. Для DAC с поддержкой DSD используйте «ALSA напрямую» (hw) и выберите поддерживаемый режим DSD в настройках звука."
 
+msgid "This year"
+msgstr "Этот год"
+
 msgid "This year vs Last year"
 msgstr "Этот год и прошлый"
 
@@ -4908,6 +4923,12 @@ msgstr "Время вне допустимого диапазона."
 
 msgid "Title"
 msgstr "Название"
+
+msgid "Title contains"
+msgstr "Название содержит"
+
+msgid "To"
+msgstr "По"
 
 msgid "To move to"
 msgstr "Для движения"
@@ -5016,6 +5037,9 @@ msgstr "Введите этот код на plex.tv/link, войдя в свою
 
 msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
 msgstr "Введите этот код в Quick Connect в Jellyfin, в который вы вошли."
+
+msgid "Type words and press Enter"
+msgstr "Введите слова и нажмите Enter"
 
 msgid "UP NEXT"
 msgstr "ДАЛЕЕ"
@@ -5641,6 +5665,9 @@ msgstr "за последние"
 msgid "in the system keyring"
 msgstr "в системной связке ключей"
 
+msgid "in title, artist or record"
+msgstr "в названии, исполнителе или альбоме"
+
 msgid "integrated"
 msgstr "встроенный"
 
@@ -5800,9 +5827,6 @@ msgstr "в /proc/asound нет ни одной звуковой карты"
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr "ни один звуковой сервер не ответил; установите pipewire и pipewire-pulse"
 
-msgid "none of"
-msgstr "кроме"
-
 msgid "none of that can be played now: its folder is not mounted or its server does not answer"
 msgstr "ничего из этого сейчас нельзя воспроизвести: папка не подключена или сервер не отвечает"
 
@@ -5835,9 +5859,6 @@ msgstr "в один или несколько файлов нельзя запи
 
 msgid "open it again from where it is listed"
 msgstr "откройте это снова из списка, где оно показано"
-
-msgid "or"
-msgstr "или"
 
 msgid "outside the image"
 msgstr "за пределами образа"

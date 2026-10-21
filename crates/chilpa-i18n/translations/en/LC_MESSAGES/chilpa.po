@@ -294,6 +294,9 @@ msgstr ""
 msgid "Album artists"
 msgstr ""
 
+msgid "Album contains"
+msgstr ""
+
 msgid "Album header"
 msgstr ""
 
@@ -447,8 +450,14 @@ msgstr ""
 msgid "Any quality"
 msgstr "Any quality"
 
+msgid "Any rating"
+msgstr ""
+
 msgid "Any source — best quality (local mixed playlist)"
 msgstr "Any source — best quality (local mixed playlist)"
+
+msgid "Any time"
+msgstr ""
 
 msgid "Appearance"
 msgstr ""
@@ -521,11 +530,6 @@ msgstr ""
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr ""
-
-msgid "At least {} star"
-msgid_plural "At least {} stars"
-msgstr[0] "At least {} star"
-msgstr[1] "At least {} stars"
 
 msgid "Audio"
 msgstr ""
@@ -1016,6 +1020,9 @@ msgid "Clearing in the background…"
 msgstr ""
 
 msgid "Clear…"
+msgstr ""
+
+msgid "Click a value to include it, − to exclude it. Counts already apply everything else."
 msgstr ""
 
 msgid "Click tracks to select them; Shift selects a range."
@@ -1609,9 +1616,6 @@ msgstr ""
 msgid "Edit playlist"
 msgstr ""
 
-msgid "Edit with :filter"
-msgstr "Edit with :filter"
-
 msgid "Edit…"
 msgstr ""
 
@@ -1672,6 +1676,9 @@ msgstr ""
 msgid "Enter a valid number."
 msgstr ""
 
+msgid "Enter includes the first match · Shift+Enter excludes it"
+msgstr ""
+
 msgid "Episode notes"
 msgstr ""
 
@@ -1685,6 +1692,9 @@ msgid "Everyone who plays on a track"
 msgstr ""
 
 msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect and exclusive mode off to share it and let Windows mix and resample."
+msgstr ""
+
+msgid "Exclude"
 msgstr ""
 
 msgid "Exclusive mode"
@@ -1883,6 +1893,9 @@ msgid "Frequency · Hz   /   Gain · dB   /   ±12 dB"
 msgstr "Frequency · Hz   /   Gain · dB   /   ±12 dB"
 
 msgid "Fri"
+msgstr ""
+
+msgid "From"
 msgstr ""
 
 msgid "From catalog"
@@ -2209,6 +2222,9 @@ msgstr ""
 msgid "In progress"
 msgstr ""
 
+msgid "Include"
+msgstr ""
+
 msgid "Include matches from your plugins?"
 msgstr ""
 
@@ -2419,9 +2435,6 @@ msgstr ""
 msgid "Last track"
 msgstr ""
 
-msgid "Last {} days"
-msgstr "Last {} days"
-
 msgid "Last.fm account"
 msgstr ""
 
@@ -2441,6 +2454,9 @@ msgid "Latest run"
 msgstr ""
 
 msgid "Leave a label out: a minus means not"
+msgstr ""
+
+msgid "Leave one empty for an open end. Both ends included."
 msgstr ""
 
 msgid "Left delay · 0–30 ms"
@@ -2652,12 +2668,6 @@ msgstr ""
 
 msgid "Match"
 msgstr ""
-
-msgid "Match all"
-msgstr "Match all"
-
-msgid "Match any"
-msgstr "Match any"
 
 msgid "Matched"
 msgstr "Matched"
@@ -3036,9 +3046,6 @@ msgstr ""
 
 msgid "No purchases match the current view."
 msgstr "No purchases match the current view."
-
-msgid "No results"
-msgstr "No results"
 
 msgid "No results for"
 msgstr ""
@@ -3464,6 +3471,12 @@ msgid "Playback options"
 msgstr ""
 
 msgid "Playback stops and the window closes."
+msgstr ""
+
+msgid "Played"
+msgstr ""
+
+msgid "Played 10 times or more"
 msgstr ""
 
 msgid "Player"
@@ -4889,6 +4902,9 @@ msgstr ""
 msgid "This wizard tests PCM rates. Chilpa currently converts DSD to PCM on PipeWire; exclusive mode and rate switching alone cannot verify an untouched DoP stream. For a DAC that supports DSD, use ALSA direct (hw) and choose a supported DSD mode in Audio settings."
 msgstr ""
 
+msgid "This year"
+msgstr ""
+
 msgid "This year vs Last year"
 msgstr ""
 
@@ -4902,6 +4918,12 @@ msgid "Time is out of range."
 msgstr ""
 
 msgid "Title"
+msgstr ""
+
+msgid "Title contains"
+msgstr ""
+
+msgid "To"
 msgstr ""
 
 msgid "To move to"
@@ -5010,6 +5032,9 @@ msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr ""
 
 msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
+msgstr ""
+
+msgid "Type words and press Enter"
 msgstr ""
 
 msgid "UP NEXT"
@@ -5636,6 +5661,9 @@ msgstr ""
 msgid "in the system keyring"
 msgstr ""
 
+msgid "in title, artist or record"
+msgstr ""
+
 msgid "integrated"
 msgstr ""
 
@@ -5794,9 +5822,6 @@ msgstr ""
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr ""
 
-msgid "none of"
-msgstr "none of"
-
 msgid "none of that can be played now: its folder is not mounted or its server does not answer"
 msgstr ""
 
@@ -5829,9 +5854,6 @@ msgstr ""
 
 msgid "open it again from where it is listed"
 msgstr ""
-
-msgid "or"
-msgstr "or"
 
 msgid "outside the image"
 msgstr ""
