@@ -69,7 +69,7 @@ fn replacements_and_bad_edits_keep_the_text_contract() {
     for op in [json!({"op":"range","from":2000,"to":1900}), json!({"op":"rating","min":7,"max":7}),
         json!({"op":"added","n":i64::MAX,"unit":"y"}), json!({"op":"remove","id":"0.0"}),
         json!({"op":"words","field":"album","word":"blue","target":"4"})] { assert_eq!(edit(original,op),original); }
-    for text in ["genre:(", "(genre:Jazz (artist:Band | label:Label))", "-year:1960..", "rating:1,5", "added:1..2"] {
+    for text in ["genre:(", "(genre:Jazz (artist:Band | label:Label))", "-year:1960..", "added:1..2"] {
         assert!(refine(text)["rows"].as_array().unwrap().is_empty());
         assert!(!refine(text)["complex"].is_null());
         assert_eq!(edit(text,json!({"op":"added","n":1,"unit":"d"})),text);

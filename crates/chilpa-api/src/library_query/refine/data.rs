@@ -8,7 +8,7 @@ fn weight(item: &crate::library_sources::SourceItem) -> usize { if item.track==0
 
 fn constant(value: bool) -> Node { if value {Node::All(vec![])} else {Node::Any(vec![])} }
 
-fn cofactor(node: &Node, f: Field, value: bool) -> Node {
+pub(crate) fn cofactor(node: &Node, f: Field, value: bool) -> Node {
     match node {
         Node::Is(other,_) if field_name(*other)==field_name(f) => constant(value),
         Node::Not(inner) if matches!(inner.as_ref(), Node::Is(other,_) if field_name(*other)==field_name(f)) => constant(value),
@@ -19,7 +19,7 @@ fn cofactor(node: &Node, f: Field, value: bool) -> Node {
         other => other.clone(),
     }
 }
-fn has_field(node: &Node,f: Field) -> bool {
+pub(crate) fn has_field(node: &Node,f: Field) -> bool {
     match node {
         Node::Is(other,_) => field_name(*other)==field_name(f),
         Node::All(nodes) | Node::Any(nodes) => nodes.iter().any(|n| has_field(n,f)),

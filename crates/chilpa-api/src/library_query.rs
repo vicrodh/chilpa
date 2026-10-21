@@ -16,6 +16,7 @@ mod notes;
 pub use notes::EngineNote;
 pub use refine::{check, refine, refine_edit};
 pub(crate) use focus::facet_filter;
+pub mod columns;
 pub use focus::{focus_rows, with_minimum, with_missing, with_range, with_value, with_within, FocusRow, FocusRows, ValueState};
 
 use chilpa_i18n as i18n;

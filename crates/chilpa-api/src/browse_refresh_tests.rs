@@ -74,7 +74,7 @@ fn an_existing_reader_invalidates_cached_filters_after_an_external_commit() {
 }
 
 #[test]
-fn different_filters_and_orders_reuse_only_committed_source_and_year_facets() {
+fn different_filters_and_orders_reuse_sources_but_recount_years() {
     let reader = reader();
     let all = Filter::default();
     reader.refresh(&all, TrackOrder::Album, || true).unwrap();
@@ -89,7 +89,8 @@ fn different_filters_and_orders_reuse_only_committed_source_and_year_facets() {
     let narrowed = reader.refresh(&flac, TrackOrder::Title, || true).unwrap();
     assert_eq!(narrowed.1.ids, [2]);
     assert_eq!(narrowed.0.sources[0].label, "Cached source");
-    assert_eq!(narrowed.0.years[0].label, "Cached year");
+    assert_eq!(narrowed.0.years[0].label, "2001");
+    assert_eq!(narrowed.0.years.len(), 1);
     assert_eq!(narrowed.0.sources[0].albums, 2, "source counts remain independent of the selected format");
     assert_ne!(reader.facets(&flac).sources[0].label, "Cached source", "the public facet read never takes refresh cache entries");
     assert_ne!(reader.facets(&flac).years[0].label, "Cached year");
@@ -105,7 +106,7 @@ fn own_metadata_writes_invalidate_shared_source_and_year_facets() {
         UPDATE albums SET year = 2002 WHERE id = 2;").unwrap();
     let changed = reader.refresh(&flac, TrackOrder::Album, || true).unwrap();
     assert_eq!(changed.0.sources[0].label, "Updated source");
-    assert_eq!(changed.0.years.iter().map(|year| year.key.as_str()).collect::<Vec<_>>(), ["2002", "2000"]);
+    assert_eq!(changed.0.years.iter().map(|year| year.key.as_str()).collect::<Vec<_>>(), ["2002"]);
     reader.lib.connection().execute("UPDATE sources SET enabled = 0", []).unwrap();
     let disabled = reader.refresh(&flac, TrackOrder::Title, || true).unwrap();
     assert!(disabled.0.sources.is_empty());
@@ -128,7 +129,7 @@ fn a_transaction_and_its_rollback_never_share_uncommitted_invariant_facets() {
     reader.lib.connection().execute_batch("ROLLBACK;").unwrap();
     let restored = reader.refresh(&flac, TrackOrder::Album, || true).unwrap().0;
     assert_eq!(restored.sources, committed.sources);
-    assert_eq!(restored.years, committed.years);
+    assert_eq!(restored.years, committed.years[..1]);
 }
 
 #[test]
