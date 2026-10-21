@@ -1526,6 +1526,12 @@ msgstr "Cerrar"
 msgid "Display settings"
 msgstr "Opciones de visualización"
 
+msgid "Dock"
+msgstr "Acoplar"
+
+msgid "Dock back into the Library"
+msgstr "Volver a acoplar en la biblioteca"
+
 msgid "Documentation"
 msgstr "Documentación"
 
@@ -3842,6 +3848,9 @@ msgstr "Discos con ese compositor"
 msgid "Refine"
 msgstr "Refinar"
 
+msgid "Refine is in its own window"
+msgstr "Refinar está en su propia ventana"
+
 msgid "Refresh"
 msgstr "Actualizar"
 
@@ -4000,6 +4009,9 @@ msgstr "Reiniciar Chilpa"
 
 msgid "Restart plugin"
 msgstr "Reiniciar plugin"
+
+msgid "Restore"
+msgstr "Restaurar"
 
 msgid "Restore default"
 msgstr "Restaurar predeterminado"

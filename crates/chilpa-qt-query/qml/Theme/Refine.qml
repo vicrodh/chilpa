@@ -169,6 +169,8 @@ QtObject {
     readonly property int windowWide: 520
     readonly property int windowBar: 34
     readonly property int windowButton: 26
+    readonly property int windowButtonRound: 6
+    readonly property int windowRoom: 140
     readonly property int dockedTall: 34
     readonly property int dockedRound: 10
     readonly property int gripTall: 12

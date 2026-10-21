@@ -1524,6 +1524,12 @@ msgstr "閉じる"
 msgid "Display settings"
 msgstr "表示設定"
 
+msgid "Dock"
+msgstr "ドッキング"
+
+msgid "Dock back into the Library"
+msgstr "ライブラリに戻す"
+
 msgid "Documentation"
 msgstr "ドキュメント"
 
@@ -3840,6 +3846,9 @@ msgstr "その作曲者のアルバム"
 msgid "Refine"
 msgstr "絞り込み"
 
+msgid "Refine is in its own window"
+msgstr "絞り込みは別ウィンドウで開いています"
+
 msgid "Refresh"
 msgstr "更新"
 
@@ -3998,6 +4007,9 @@ msgstr "Chilpaを再起動"
 
 msgid "Restart plugin"
 msgstr "プラグインを再起動"
+
+msgid "Restore"
+msgstr "元に戻す"
 
 msgid "Restore default"
 msgstr "既定値に戻す"
