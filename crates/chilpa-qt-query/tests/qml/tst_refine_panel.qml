@@ -106,8 +106,12 @@ TestCase {
     }
 
     function test_group_opens_an_empty_box_new_conditions_go_into() {
-        tryVerify(() => findChild(panel, "groupChip").visible)
-        mouseClick(findChild(panel, "groupChip"))
+        const chip = findChild(panel, "groupChip")
+        tryVerify(() => chip.visible)
+        // Under load the rows may still be sliding in and moving the chip.
+        let last = -1
+        tryVerify(() => { const y = chip.mapToItem(null, 0, 0).y; const still = y === last; last = y; return still }, 3000, "the chip stays put")
+        mouseClick(chip)
         compare(panel.target, "new")
         tryVerify(() => all("groupMatch").length === 1, 2000)
         panel.edit({ op: "value", field: "genre", value: "Jazz", state: "include" })
