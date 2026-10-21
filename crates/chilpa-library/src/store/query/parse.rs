@@ -104,12 +104,17 @@ struct Parser {
 
 /// Reads a query. An empty text is the query that keeps everything.
 pub fn parse(text: &str) -> Result<Node, ParseError> {
+    parse_grouped(text).map(simplify)
+}
+
+/// I retain explicit parentheses for editors without changing evaluation.
+pub fn parse_grouped(text: &str) -> Result<Node, ParseError> {
     let mut parser = Parser { tokens: tokens(text)?, at: 0, end: text.chars().count(), leaves: 0 };
     let node = parser.any(0)?;
     if let Some((at, _)) = parser.tokens.get(parser.at) {
         return Err(ParseError { at: *at, what: chilpa_i18n::mark("a closing parenthesis has nothing to close") });
     }
-    Ok(simplify(node))
+    Ok(node)
 }
 
 impl Parser {
@@ -158,7 +163,7 @@ impl Parser {
                 let node = self.any(depth + 1)?;
                 if self.peek() != Some(&Token::Close) { return Err(ParseError { at, what: chilpa_i18n::mark("a parenthesis is not closed") }); }
                 self.at += 1;
-                Ok(node)
+                Ok(Node::Group(Box::new(node)))
             }
             Some(Token::Word(word, quoted)) => {
                 self.at += 1;
@@ -183,7 +188,7 @@ fn leaf(word: &str, quoted: bool, at: usize) -> Result<Node, ParseError> {
     if rest.is_empty() { return Err(ParseError { at, what: chilpa_i18n::mark("a field needs a value") }); }
     if !quoted && rest.eq_ignore_ascii_case("none") && !matches!(field, Field::Type | Field::Quality) {
         return match field {
-            Field::Year | Field::Genre | Field::Label | Field::Composer => Ok(Node::Is(field, Values::Missing)),
+            Field::Year | Field::Genre | Field::ExactGenre | Field::Label | Field::Composer => Ok(Node::Is(field, Values::Missing)),
             _ => Err(ParseError { at, what: chilpa_i18n::mark("that field is never empty") }),
         };
     }
@@ -277,8 +282,9 @@ fn within(text: &str) -> Option<i64> {
 
 /// One level of a group holds no group of the same kind, and a group of
 /// one is that one.
-fn simplify(node: Node) -> Node {
+pub(super) fn simplify(node: Node) -> Node {
     match node {
+        Node::Group(inner) => simplify(*inner),
         Node::All(nodes) => {
             let mut flat = Vec::new();
             for node in nodes.into_iter().map(simplify) {
@@ -318,6 +324,7 @@ impl fmt::Display for Node {
             }
         }
         match self {
+            Node::Group(node) => write!(f, "({node})"),
             Node::All(nodes) => {
                 for (at, node) in nodes.iter().enumerate() {
                     if at > 0 { write!(f, " ")?; }

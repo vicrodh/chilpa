@@ -767,6 +767,7 @@ impl Chilpa {
         chilpa_core::backends::set_forcing_rate(on(outputs::FORCE_RATE));
         chilpa_core::backends::warm_up();
         let catalog = source_catalog::Catalog::new();
+        library_query::refine::access::attach(&catalog);
         let tap = chilpa_core::tap::Tap::new();
         let mut chilpa = Self {
             core: chilpa_core::Core::new(),

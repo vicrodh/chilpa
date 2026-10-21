@@ -10,6 +10,7 @@ pub(crate) fn holds(node: &Node, item: &SourceItem, stars: &Stars, now: i64) -> 
     match node {
         Node::All(nodes) => nodes.iter().all(|node| holds(node, item, stars, now)),
         Node::Any(nodes) => nodes.iter().any(|node| holds(node, item, stars, now)),
+        Node::Group(node) => holds(node, item, stars, now),
         Node::Not(node) => !holds(node, item, stars, now),
         Node::Is(field, values) => leaf(*field, values, item, stars, now),
     }
@@ -27,17 +28,17 @@ fn leaf(field: Field, values: &Values, item: &SourceItem, stars: &Stars, now: i6
     let number = |text: &str| text.trim().parse::<i64>().ok();
     let record_stars = i64::from(stars.albums.get(&item.album).copied().unwrap_or(0));
     match (field, values) {
-        (Field::Genre, Values::Missing) => folded.genres.is_empty(),
+        (Field::Genre | Field::ExactGenre, Values::Missing) => folded.genres.is_empty(),
         (Field::Composer, Values::Missing) => folded.composers.is_empty(),
         (Field::Label, Values::Missing) => folded.label.is_empty(),
         (Field::Year, Values::Missing) => item.year.is_none(),
-        (Field::Genre, Values::Any(want)) => named(&folded.genres, want),
+        (Field::Genre | Field::ExactGenre, Values::Any(want)) => named(&folded.genres, want),
         (Field::Composer, Values::Any(want)) => named(&folded.composers, want),
         (Field::Label, Values::Any(want)) => named(std::slice::from_ref(&folded.label), want),
         (Field::Artist, Values::Any(want)) => named(&folded.artists, want),
         (Field::Album, Values::Any(want)) => want.iter().any(|name| worded(&folded.album_title, &name.split_whitespace().map(String::from).collect::<Vec<_>>())),
         (Field::Title, Values::Any(want)) => worded(&item.title.to_lowercase(), want),
-        (Field::Text, Values::Any(want)) => worded(&folded.text, want),
+        (Field::Text | Field::Words, Values::Any(want)) => worded(&folded.text, want),
         (Field::Year, Values::Any(want)) => item.year.is_some_and(|year| want.iter().any(|w| number(w) == Some(i64::from(year)))),
         (Field::Rating, Values::Any(want)) => want.iter().any(|w| number(w) == Some(record_stars)),
         (Field::Plays, Values::Any(want)) => item.plays.is_some_and(|n| want.iter().any(|w| number(w) == Some(n))),
