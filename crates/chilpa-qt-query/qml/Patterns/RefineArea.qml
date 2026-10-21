@@ -16,7 +16,9 @@ Loader {
     // While a field's values or the suggestions are open the panel may pass
     // the grip's height, as far as the design's 1000.
     readonly property bool opened: refineMode && !!item && !detached && (item.picking !== "" || item.typing)
-    function fit(grip) { return detached ? Refine.dockedTall : Math.min(opened ? Refine.pickGrow : grip, wanted) }
+    function fit(grip) { return detached ? Refine.dockedTall : Math.min(opened ? Math.min(Refine.pickGrow, room) : grip, wanted) }
+    // How much the screen has under the area's top, above what floats on it.
+    property real room: Refine.pickGrow
     // Refine's own grip height, kept apart from the columns' height.
     readonly property int gripStart: Refine.gripStart
     function gripClamp(height, room) { return Math.max(Refine.gripLeast, Math.min(room - Refine.gripRoom, height)) }
