@@ -64,38 +64,81 @@ fn replace(nodes: &mut Vec<Node>, f: Field, accepts: impl Fn(&Values) -> bool, n
     if let Some(v) = new { nodes.insert(at.min(nodes.len()), Node::Is(f,v)); }
 }
 
+fn remove_value(node: Node, f: Field, v: &str, state: ValueState) -> Option<Node> {
+    match node {
+        Node::All(nodes) => tree(false, nodes.into_iter().filter_map(|n| remove_value(n,f,v,state)).collect()),
+        Node::Any(nodes) => tree(true, nodes.into_iter().filter_map(|n| remove_value(n,f,v,state)).collect()),
+        Node::Group(inner) => remove_value(*inner,f,v,state).map(|n| Node::Group(Box::new(n))),
+        Node::Not(inner) => remove_value(*inner,f,v,state).map(|n| Node::Not(Box::new(n))),
+        Node::Is(other, values) if field_name(other) == field_name(f) => match values {
+            Values::Any(mut list) => {
+                list.retain(|s| s.to_lowercase() != v.to_lowercase());
+                (!list.is_empty()).then_some(Node::Is(other,Values::Any(list)))
+            }
+            Values::Missing if state != ValueState::None => None,
+            Values::Range(from,to) if v.parse::<i64>().is_ok_and(|n| from.is_none_or(|a| n>=a) && to.is_none_or(|b| n<=b)) => {
+                let n=v.parse::<i64>().ok()?;
+                let mut sides=Vec::new();
+                if from.is_none_or(|a| a<n) {
+                    if let Some(end)=n.checked_sub(1) { sides.push(Node::Is(other,Values::Range(from,Some(end)))); }
+                }
+                if to.is_none_or(|b| b>n) {
+                    if let Some(start)=n.checked_add(1) { sides.push(Node::Is(other,Values::Range(Some(start),to))); }
+                }
+                if sides.len()>1 { grouped(true,sides) } else { tree(true,sides) }
+            }
+            values => Some(Node::Is(other,values)),
+        },
+        other => Some(other),
+    }
+}
+
+fn value_condition(node: &Node, f: Field) -> bool {
+    match node {
+        Node::Is(other, Values::Any(_) | Values::Range(..)) => *other == f,
+        Node::Group(inner) => value_condition(inner,f),
+        Node::Any(nodes) => nodes.iter().all(|n| value_condition(n,f)),
+        _ => false,
+    }
+}
+
+fn value_terms(node: Node, terms: &mut Vec<Node>) {
+    match node {
+        Node::Group(inner) => value_terms(*inner,terms),
+        Node::Any(nodes) => { for n in nodes { value_terms(n,terms); } }
+        other => terms.push(other),
+    }
+}
+
 fn set_value(nodes: &mut Vec<Node>, f: Field, v: String, state: ValueState) -> Option<()> {
-    if !matches!(f, Field::Year | Field::Genre | Field::Label | Field::Composer | Field::Artist | Field::Plays | Field::Type | Field::Quality) { return None; }
+    if !matches!(f, Field::Year | Field::Genre | Field::Label | Field::Composer | Field::Artist | Field::Album | Field::Rating | Field::Plays | Field::Type | Field::Quality) { return None; }
     let same = |s: &str| s.to_lowercase() == v.to_lowercase();
     let f = if f==Field::Genre && nodes.iter().any(|n| {
         let inner=if let Node::Not(inner)=n {inner.as_ref()} else {n};
         matches!(inner,Node::Is(Field::ExactGenre,Values::Any(values)) if values.iter().any(|s| same(s)))
     }) {Field::ExactGenre} else {f};
     let holds = |negated| nodes.iter().any(|n| {
-        let inner=match (negated,n) { (true,Node::Not(inner))=>inner.as_ref(), (false,Node::Is(..))=>n, _=>return false };
-        matches!(inner,Node::Is(other,Values::Any(values)) if field_name(*other)==field_name(f) && values.iter().any(|v| same(v)))
+        let inner=match (negated,n) { (true,Node::Not(inner))=>inner.as_ref(), (false,Node::Not(_))=>return false, (false,_)=>n, _=>return false };
+        value_condition(inner,f) && super::state(inner,f,&v)==ValueState::Include
     });
     if state!=ValueState::None && holds(state==ValueState::Exclude) && !holds(state!=ValueState::Exclude) { return Some(()); }
 
-    nodes.retain_mut(|n| {
-        if let Some((other, values)) = leaf(n) {
-            if field_name(*other) == field_name(f) {
-                match values {
-                    Values::Any(list) => { list.retain(|s| !same(s)); return !list.is_empty(); }
-                    Values::Missing if state != ValueState::None => return false,
-                    _ => {}
-                }
-            }
-        }
-        true
-    });
+    *nodes = nodes.drain(..).filter_map(|n| remove_value(n, f, &v, state)).collect();
     if state == ValueState::None { return Some(()); }
     let negated = state == ValueState::Exclude;
     for n in nodes.iter_mut() {
         if matches!(n, Node::Not(_)) != negated { continue; }
-        if let Some((other, Values::Any(list))) = leaf(n) {
-            if *other == f { list.push(v); return Some(()); }
+        let inner = match n { Node::Not(inner) => inner.as_mut(), n => n };
+        if !value_condition(inner,f) { continue; }
+        if let Node::Is(_,Values::Any(list)) = inner { list.push(v); }
+        else {
+            let extra = Node::Is(f,Values::Any(vec![v]));
+            let mut terms = Vec::new();
+            value_terms(std::mem::replace(inner,extra.clone()),&mut terms);
+            terms.push(extra);
+            *inner = Node::Group(Box::new(Node::Any(terms)));
         }
+        return Some(());
     }
     let n = Node::Is(f, Values::Any(vec![v]));
     nodes.push(if negated { Node::Not(Box::new(n)) } else { n });
@@ -108,7 +151,7 @@ fn operator(nodes: &mut Vec<Node>, at: usize, to: &str) -> Option<()> {
     let new = match to {
         "include" | "exclude" => {
             if matches!(values, Values::Missing) { nodes.remove(at); return Some(()); }
-            if !matches!(values, Values::Any(_)) || matches!(f, Field::Text | Field::Words | Field::Title | Field::Album | Field::Rating) { return None; }
+            if !matches!(values, Values::Any(_)) || matches!(f, Field::Text | Field::Words | Field::Title) { return None; }
             let node = Node::Is(f, values);
             if to == "exclude" { Node::Not(Box::new(node)) } else { node }
         }
@@ -213,11 +256,12 @@ fn apply(any: &mut bool, nodes: &mut Vec<Node>, edit: Edit) -> Option<()> {
 /// Invalid edits and unsupported shapes leave the original query untouched.
 pub fn refine_edit(text: &str, edit: &str) -> String {
     let Ok(edit) = serde_json::from_str::<Edit>(edit) else { return text.into() };
-    if !refine(text)["complex"].is_null() { return text.into(); }
+    let value_edit = matches!(edit, Edit::Value { .. });
+    if read(text).is_err() || (!value_edit && !refine(text)["complex"].is_null()) { return text.into(); }
     let (mut any, mut nodes) = parts(read(text).ok().flatten());
     if apply(&mut any,&mut nodes,edit).is_none() { return text.into(); }
     let written = printed(any,nodes);
-    if read(&written).is_err() || !refine(&written)["complex"].is_null() { return text.into(); }
+    if read(&written).is_err() || (!value_edit && !refine(&written)["complex"].is_null()) { return text.into(); }
     written
 }
 

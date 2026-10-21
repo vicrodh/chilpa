@@ -642,9 +642,8 @@ impl Reader {
                     return Some((facets, snapshot.clone()));
                 }
             }
-            // The integrated sources join these two, so a shared copy would
-            // count them twice.
-            before.filter(|_| index.items.is_empty()).and_then(|_| cache.entries.front().map(|(_, _, facets, _)| (facets.sources.clone(), facets.years.clone())))
+            // I share the source list; every field count depends on the query.
+            before.filter(|_| index.items.is_empty()).and_then(|_| cache.entries.front().map(|(_, _, facets, _)| facets.sources.clone()))
         };
         let read = || {
             let mut facets = self.facets_current(filter, &current, shared.as_ref())?;
@@ -690,7 +689,7 @@ impl Reader {
         self.facets_current(filter, &|| true, None).unwrap_or_default()
     }
 
-    fn facets_current(&self, f: &Filter, current: &impl Fn() -> bool, shared: Option<&(Vec<FacetEntry>, Vec<FacetEntry>)>) -> Option<Facets> {
+    fn facets_current(&self, f: &Filter, current: &impl Fn() -> bool, shared: Option<&Vec<FacetEntry>>) -> Option<Facets> {
         macro_rules! read {
             ($query:expr) => {{ if !current() { return None; } $query.unwrap_or_default() }};
         }
@@ -724,8 +723,8 @@ impl Reader {
                 for artist in &mut artists { artist.albums = groups.get(&artist.label.to_lowercase()).map_or(0, HashSet::len); }
             }
         }
-        let sources = read!(match shared { Some((sources, _)) => Ok(sources.clone()), None => self.lib.facet_sources() });
-        let years = read!(match shared { Some((_, years)) => Ok(years.clone()), None => self.lib.facet_years() });
+        let sources = read!(match shared { Some(sources) => Ok(sources.clone()), None => self.lib.facet_sources() });
+        let years = read!(self.lib.facet_years_matching(&crate::library_query::facet_filter(f, "year")));
         Some(Facets {
             sources, years,
             genres: read!(self.lib.facet_genres(&crate::library_query::facet_filter(f, "genre"))), labels: read!(self.lib.facet_labels(&crate::library_query::facet_filter(f, "label"))),
