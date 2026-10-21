@@ -37,8 +37,10 @@ impl Default for SourceFavorites {
 }
 
 impl SourceFavorites {
+    pub(crate) fn has_pending(&self) -> bool { !self.changed.is_empty() }
+
     pub(crate) fn pending(&self, plugin: &str, identity: &str) -> bool {
-        !self.changed.is_empty() && self.changed.contains_key(&(plugin.into(), identity.into()))
+        self.has_pending() && self.changed.contains_key(&(plugin.into(), identity.into()))
     }
 }
 
