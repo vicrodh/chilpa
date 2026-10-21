@@ -159,7 +159,7 @@ impl Chilpa {
             self.remember_preference(key, value);
             return true;
         }
-        self.playlist_grouping_setting(key, value) || self.tray_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value)
+        self.playlist_grouping_setting(key, value) || self.tray_setting(key, value) || self.discord_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value)
     }
 
     /// A toggle's value from its preference, "true" or "false".
@@ -462,7 +462,7 @@ impl Chilpa {
             }
             "integrations.lastfm.enabled" => row.value = self.lastfm().enabled.to_string(),
             "integrations.musicbrainz.enabled" => row.value = self.musicbrainz_enabled().to_string(),
-            "integrations.offline" => row.value = self.pref_on(&row.key, false),
+            "integrations.offline" | crate::discord::ENABLED => row.value = self.pref_on(&row.key, false),
             "integrations.proxy.enabled" | "integrations.lyrics.enabled" | "integrations.lyrics.service" => row.value = self.pref_on(&row.key, true),
             "integrations.lyrics.translate" => {
                 row.value = self.pref_on(&row.key, true);

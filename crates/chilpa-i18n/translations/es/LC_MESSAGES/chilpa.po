@@ -1517,6 +1517,9 @@ msgstr "Desconectar la cuenta"
 msgid "Disconnected"
 msgstr "Desconectado"
 
+msgid "Discord Rich Presence"
+msgstr "Discord Rich Presence"
+
 msgid "Discover"
 msgstr "Descubrir"
 
@@ -4386,6 +4389,9 @@ msgstr "Mostrar token"
 
 msgid "Show translation"
 msgstr "Mostrar traducción"
+
+msgid "Show what you're listening to as your Discord status. Opt-in — Discord must be running."
+msgstr "Muestra lo que estás escuchando como tu estado de Discord. Opcional: Discord debe estar abierto."
 
 msgid "Show/Hide Window"
 msgstr "Mostrar/Ocultar ventana"

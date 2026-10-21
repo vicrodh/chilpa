@@ -18,6 +18,7 @@ mod approvals;
 mod browse;
 mod credits;
 mod desktop;
+mod discord;
 pub use desktop::WindowRequest;
 mod tracks_view;
 mod albums_view;
@@ -663,6 +664,7 @@ pub struct Chilpa {
     /// The lyrics of what is playing, and the thread that finds them.
     lyrics: lyrics_service::Lyrics,
     desktop: desktop::Desktop,
+    discord: discord::Discord,
     ab_loop: Option<ab_loop::AbLoop>,
     keys: Option<hotkeys::Keys>,
     source_favorites: source_favorites::SourceFavorites,
@@ -797,6 +799,7 @@ impl Chilpa {
             sleep_until: None,
             lyrics: Default::default(),
             desktop: Default::default(),
+            discord: Default::default(),
             ab_loop: None,
             keys: None,
             source_favorites: Default::default(),
@@ -1244,6 +1247,7 @@ impl Chilpa {
         }
         self.advance_ab();
         self.advance_desktop();
+        self.advance_discord();
         self.advance_source_favorites();
         self.advance_plugins();
         self.plugin_update_activity(self.now.playing || self.now.paused || self.listen.pending.is_some());

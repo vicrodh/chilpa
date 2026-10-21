@@ -1517,6 +1517,9 @@ msgstr "Konto trennen"
 msgid "Disconnected"
 msgstr "Getrennt"
 
+msgid "Discord Rich Presence"
+msgstr "Discord Rich Presence"
+
 msgid "Discover"
 msgstr "Entdecken"
 
@@ -4386,6 +4389,9 @@ msgstr "Token anzeigen"
 
 msgid "Show translation"
 msgstr "Übersetzung anzeigen"
+
+msgid "Show what you're listening to as your Discord status. Opt-in — Discord must be running."
+msgstr "Zeigt, was du gerade hörst, als Discord-Status an. Opt-in – Discord muss laufen."
 
 msgid "Show/Hide Window"
 msgstr "Fenster ein-/ausblenden"

@@ -1517,6 +1517,9 @@ msgstr "Account loskoppelen"
 msgid "Disconnected"
 msgstr "Verbinding verbroken"
 
+msgid "Discord Rich Presence"
+msgstr "Discord Rich Presence"
+
 msgid "Discover"
 msgstr "Ontdekken"
 
@@ -4386,6 +4389,9 @@ msgstr "Token tonen"
 
 msgid "Show translation"
 msgstr "Vertaling tonen"
+
+msgid "Show what you're listening to as your Discord status. Opt-in — Discord must be running."
+msgstr "Toon wat je aan het luisteren bent als je Discord-status. Opt-in — Discord moet actief zijn."
 
 msgid "Show/Hide Window"
 msgstr "Venster tonen/verbergen"
