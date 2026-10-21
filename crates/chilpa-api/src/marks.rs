@@ -123,6 +123,7 @@ impl Chilpa {
     }
 
     pub fn playing_favorite_pending(&self) -> bool {
+        if self.source_favorites.changed.is_empty() || self.now.path.is_empty() { return false; }
         self.catalog.track_by_path(&self.now.path).is_some_and(|(track, _)| {
             let reference = track.metadata["ref"].as_str().unwrap_or(&track.path);
             let song = reference.split_once("@playlist:").map_or(reference, |(song, _)| song);
