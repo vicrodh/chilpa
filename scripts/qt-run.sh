@@ -85,8 +85,19 @@ say "building chilpa-qt profile=${profile}"
 say "target=${target_dir}"
 build_started="$(date +%s)"
 cargo build -p chilpa-qt "${profile_args[@]}"
-build_seconds="$(( $(date +%s) - build_started ))"
 [[ -x "${binary}" ]] || die "Cargo succeeded but ${binary} is missing"
+# The sign-in window for plugins whose browser sign-in ends on an address only
+# their own application receives (crates/chilpa-web-sign-in). It is built only
+# where the web engine is installed; without it the link opens the browser.
+sign_in="${target_dir}/${profile}/chilpa-web-sign-in"
+rm -f "${sign_in}"
+if [[ "$(uname -s)" == Linux ]] && pkg-config --exists webkitgtk-6.0 gtk4 2>/dev/null; then
+  say "building chilpa-web-sign-in"
+  cargo build -p chilpa-web-sign-in --features webkit "${profile_args[@]}"
+else
+  warn "webkitgtk-6.0 or gtk4 not found: plugin sign-in pages open in the browser"
+fi
+build_seconds="$(( $(date +%s) - build_started ))"
 say "build finished in ${build_seconds}s"
 say "binary=${binary}"
 
@@ -112,12 +123,16 @@ if [[ "${profile}" == release ]]; then
   artifact="${artifact_dir}/chilpa-qt"
   mkdir -p "${artifact_dir}"
   install -m 0755 "${binary}" "${artifact}"
+  [[ -x "${sign_in}" ]] && install -m 0755 "${sign_in}" "${artifact_dir}/chilpa-web-sign-in"
   if [[ -d "${repo_root}/target/compat-runtime" ]]; then
     "${repo_root}/scripts/package-compat.sh" "${repo_root}/target/compat-runtime" "${artifact_dir}"
     "${repo_root}/scripts/package-compat.sh" "${repo_root}/target/compat-runtime" "$(dirname "${binary}")"
   fi
   artifact_sha256="$(sha256_file "${artifact}")"
   printf '%s  %s\n' "${artifact_sha256}" chilpa-qt > "${artifact_dir}/SHA256SUMS"
+  if [[ -x "${artifact_dir}/chilpa-web-sign-in" ]]; then
+    printf '%s  %s\n' "$(sha256_file "${artifact_dir}/chilpa-web-sign-in")" chilpa-web-sign-in >> "${artifact_dir}/SHA256SUMS"
+  fi
   printf 'source_commit=%s\nsource_state=%s\nprofile=%s\nbuilt_at=%s\n' \
     "${source_commit}" "${source_state}" "${profile}" "$(date --iso-8601=seconds 2>/dev/null || date '+%Y-%m-%dT%H:%M:%S%z')" \
     > "${artifact_dir}/MANIFEST.txt"
