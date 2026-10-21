@@ -2140,6 +2140,9 @@ msgstr "リクエストを理解できませんでした。"
 msgid "I do not know the list \"{}\""
 msgstr "リスト「{}」は見つかりません"
 
+msgid "I keep this filter applied; edit its text to change it."
+msgstr "このフィルターを適用したままにします。変更するにはテキストを編集してください。"
+
 msgid "I restarted the audio services"
 msgstr "オーディオサービスを再起動しました"
 
@@ -2373,6 +2376,9 @@ msgstr "現在のものを残す"
 
 msgid "Keep the queue between sessions"
 msgstr "セッション間でキューを保持"
+
+msgid "Keep words literal and match a genre without expanding it"
+msgstr "語句をそのまま読み、ジャンルを拡張せずに検索する"
 
 msgid "Keyboard Shortcuts"
 msgstr "キーボードショートカット"

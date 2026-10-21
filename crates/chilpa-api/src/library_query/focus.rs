@@ -1,5 +1,5 @@
 //! I edit the top-level conditions without keeping a second query state.
-use super::{field_label, join, read, split};
+use super::{field_label, join, read};
 use chilpa_library::store::query::{Field, Node, Values};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize)]
@@ -32,6 +32,14 @@ fn field(name: &str) -> Option<Field> {
         "composer" => Field::Composer, "artist" => Field::Artist, "album" => Field::Album,
         "rating" => Field::Rating, "added" => Field::Added, _ => return None,
     })
+}
+
+// I keep the legacy Focus view's flattened groups until its callers migrate.
+fn split(text: &str) -> (bool, Vec<Node>) {
+    match read(text).ok().flatten().map(|node| node.ungrouped()) {
+        Some(Node::All(nodes)) => (false,nodes), Some(Node::Any(nodes)) => (true,nodes),
+        Some(node) => (false,vec![node]), None => (false,vec![]),
+    }
 }
 
 /// Groups or repeated conditions whose meaning a row would change stay as text.
@@ -157,10 +165,11 @@ mod tests;
 /// I keep the other conditions when offering alternatives for this field.
 pub(crate) fn facet_filter(filter: &crate::Filter, name: &str) -> crate::Filter {
     let mut out = filter.clone();
+    out.query = out.query.map(|node| node.ungrouped());
     let Some(f) = field(name) else { return out };
     let keeps = |node: &Node| match node {
-        Node::Is(other, _) => *other != f,
-        Node::Not(inner) => !matches!(inner.as_ref(), Node::Is(other, _) if *other == f),
+        Node::Is(other, _) => super::refine::field_name(*other) != super::refine::field_name(f),
+        Node::Not(inner) => !matches!(inner.as_ref(), Node::Is(other, _) if super::refine::field_name(*other) == super::refine::field_name(f)),
         _ => true,
     };
     out.query = match out.query {

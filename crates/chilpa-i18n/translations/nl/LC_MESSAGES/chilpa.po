@@ -2143,6 +2143,9 @@ msgstr "Ik heb dat verzoek niet begrepen."
 msgid "I do not know the list \"{}\""
 msgstr "Ik ken de lijst ‘{}' niet"
 
+msgid "I keep this filter applied; edit its text to change it."
+msgstr "Ik houd dit filter actief; bewerk de tekst om het te wijzigen."
+
 msgid "I restarted the audio services"
 msgstr "Ik heb de audioservices herstart"
 
@@ -2376,6 +2379,9 @@ msgstr "De huidige behouden"
 
 msgid "Keep the queue between sessions"
 msgstr "De wachtrij tussen sessies bewaren"
+
+msgid "Keep words literal and match a genre without expanding it"
+msgstr "Woorden letterlijk lezen en een genre zonder uitbreiding zoeken"
 
 msgid "Keyboard Shortcuts"
 msgstr "Sneltoetsen"
