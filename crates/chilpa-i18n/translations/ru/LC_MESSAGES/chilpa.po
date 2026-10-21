@@ -184,6 +184,12 @@ msgstr "Активные модули"
 msgid "Add"
 msgstr "Добавить"
 
+msgid "Add a condition: type a genre, artist, year…"
+msgstr "Добавить условие: введите жанр, исполнителя, год…"
+
+msgid "Add a condition…"
+msgstr "Добавить условие…"
+
 msgid "Add a folder"
 msgstr "Добавить папку"
 
@@ -240,6 +246,9 @@ msgstr "Добавить в очередь: {}"
 
 msgid "Add tracks from a track menu to this queue."
 msgstr "Добавляйте треки в эту очередь через меню трека."
+
+msgid "Add values"
+msgstr "Добавить значения"
 
 msgid "Added"
 msgstr "Дата добавления"
@@ -970,6 +979,9 @@ msgstr "Очистить"
 msgid "Clear after this track"
 msgstr "Очистить после этого трека"
 
+msgid "Clear all"
+msgstr "Очистить всё"
+
 msgid "Clear filter"
 msgstr "Сбросить фильтр"
 
@@ -1618,6 +1630,9 @@ msgstr "Только встроенные теги"
 msgid "Empty folders"
 msgstr "Пустые папки"
 
+msgid "Empty group. Conditions you add now go here."
+msgstr "Пустая группа. Новые условия попадут сюда."
+
 msgid "Empty. Add tracks from any list with a right click."
 msgstr "Пусто. Добавляйте треки из любого списка правым щелчком."
 
@@ -1746,6 +1761,9 @@ msgstr "февраля"
 
 msgid "Fetching the cover…"
 msgstr "Получение обложки…"
+
+msgid "Fields"
+msgstr "Поля"
 
 msgid "File"
 msgstr "Файл"
@@ -1993,6 +2011,9 @@ msgstr "Сетка"
 msgid "Grid view"
 msgstr "Режим сетки"
 
+msgid "Group"
+msgstr "Группа"
+
 msgid "Group album versions"
 msgstr "Группировать версии альбома"
 
@@ -2064,6 +2085,9 @@ msgstr "Скрыть ручной ввод"
 
 msgid "Hide sidebar"
 msgstr "Скрыть боковую панель"
+
+msgid "Hide the console line"
+msgstr "Скрыть строку консоли"
 
 msgid "Hide token"
 msgstr "Скрыть токен"
@@ -2623,6 +2647,9 @@ msgstr "Отметить как непрослушанное"
 msgid "Mark the start first with :loop a."
 msgstr "Сначала отметьте начало командой :loop a."
 
+msgid "Match"
+msgstr "Совпадение"
+
 msgid "Match all"
 msgstr "Все условия"
 
@@ -2860,6 +2887,9 @@ msgstr "Новая вкладка"
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
 msgstr "Новые запуски анализа появятся здесь. Сохранённые результаты по трекам доступны в разделе «Треки»."
 
+msgid "New conditions go into this group"
+msgstr "Новые условия попадают в эту группу"
+
 msgid "New folder"
 msgstr "Новая папка"
 
@@ -2922,6 +2952,9 @@ msgstr "Исполнители из выбранных плагинов в эт�
 
 msgid "No composer"
 msgstr "Без композитора"
+
+msgid "No conditions yet. Add one below, or click values in Columns."
+msgstr "Условий пока нет. Добавьте ниже или нажмите на значения в «Столбцах»."
 
 msgid "No cover"
 msgstr "Без обложки"
@@ -3195,6 +3228,9 @@ msgstr "Открыть ListenList"
 
 msgid "Open Music Link"
 msgstr "Открыть музыкальную ссылку"
+
+msgid "Open Refine in its own window"
+msgstr "Открыть «Уточнить» в отдельном окне"
 
 msgid "Open SACD…"
 msgstr "Открыть SACD…"
@@ -3817,6 +3853,9 @@ msgstr "Лимит удалённых изображений"
 msgid "Remove"
 msgstr "Удалить"
 
+msgid "Remove condition"
+msgstr "Удалить условие"
+
 msgid "Remove cover"
 msgstr "Удалить обложку"
 
@@ -3840,6 +3879,9 @@ msgstr "Удалить из сохранённого"
 
 msgid "Remove from the library"
 msgstr "Удалить из библиотеки"
+
+msgid "Remove group"
+msgstr "Удалить группу"
 
 msgid "Remove image"
 msgstr "Удалить изображение"
@@ -4272,6 +4314,9 @@ msgstr "Показывать сохранённые треки в «Треках
 
 msgid "Show source recommendations by default in Home"
 msgstr "Показывать рекомендации источников на главной по умолчанию"
+
+msgid "Show the query as console text"
+msgstr "Показать запрос как текст консоли"
 
 msgid "Show the sidebar"
 msgstr "Показать боковую панель"
@@ -4978,11 +5023,17 @@ msgstr "Недоступно"
 msgid "Uncategorized"
 msgstr "Без категории"
 
+msgid "Undo"
+msgstr "Отменить"
+
 msgid "Undo queue edit"
 msgstr "Отменить изменение очереди"
 
 msgid "Unfollow"
 msgstr "Отписаться"
+
+msgid "Ungroup"
+msgstr "Разгруппировать"
 
 msgid "Uninstall"
 msgstr "Удалить"
@@ -5425,6 +5476,9 @@ msgstr "added принимает период вида 30d, 6w, 3m или 1y"
 msgid "aggregate"
 msgstr "агрегатный"
 
+msgid "all"
+msgstr "все"
+
 msgid "almost nothing in the queue has an analysed tempo"
 msgstr "почти у всех треков в очереди нет проанализированного темпа"
 
@@ -5440,11 +5494,20 @@ msgstr "другая программа единолично используе�
 msgid "another program is using \"{}\"; close it, or turn bit-perfect and exclusive mode off to share it ({})"
 msgstr "другая программа использует «{}»; закройте её или выключите bit-perfect и эксклюзивный режим, чтобы использовать устройство совместно ({})"
 
+msgid "any"
+msgstr "любое"
+
+msgid "at least"
+msgstr "не менее"
+
 msgid "awaiting approval"
 msgstr "ожидает одобрения"
 
 msgid "be a plugin of another kind: {}"
 msgstr "быть плагином другого вида: {}"
+
+msgid "between"
+msgstr "между"
 
 msgid "bring catalogue: search for and fetch music"
 msgstr "предоставлять каталог: искать и получать музыку"
@@ -5469,6 +5532,9 @@ msgstr "невозможно"
 
 msgid "choose at least one library"
 msgstr "выберите хотя бы одну библиотеку"
+
+msgid "contains"
+msgstr "содержит"
 
 msgid "converted to {}"
 msgstr "преобразовано в {}"
@@ -5512,6 +5578,9 @@ msgstr "дисплей"
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr "зашифровано и привязано к этому компьютеру (системной связки ключей нет)"
 
+msgid "exactly"
+msgstr "ровно"
+
 msgid "exclusive"
 msgstr "эксклюзивный"
 
@@ -5523,6 +5592,9 @@ msgstr "в порядке"
 
 msgid "format not supported: {}"
 msgstr "формат не поддерживается: {}"
+
+msgid "from"
+msgstr "с"
 
 msgid "from a file"
 msgstr "из файла"
@@ -5574,6 +5646,18 @@ msgstr "недопустимое оглавление: {}"
 
 msgid "invalid timecode in frame-info"
 msgstr "недопустимый временной код в frame-info"
+
+msgid "is"
+msgstr "—"
+
+msgid "is any of"
+msgstr "любое из"
+
+msgid "is none of"
+msgstr "ни одно из"
+
+msgid "is not"
+msgstr "не"
 
 msgid "it answered an address not in its memory"
 msgstr "ответил адресом, которого нет в его памяти"
@@ -6454,6 +6538,9 @@ msgstr "type принимает album, single, ep, compilation, live или soun
 msgid "unrated"
 msgstr "без оценки"
 
+msgid "up to"
+msgstr "по"
+
 msgid "up to {} bits"
 msgstr "до {} бит"
 
@@ -6729,6 +6816,9 @@ msgid_plural "{} stars"
 msgstr[0] "{} звезда"
 msgstr[1] "{} звезды"
 msgstr[2] "{} звёзд"
+
+msgid "{} still loading · counts may grow"
+msgstr "{} ещё загружается · числа могут вырасти"
 
 msgid "{} track"
 msgid_plural "{} tracks"

@@ -184,6 +184,12 @@ msgstr "有効なモジュール"
 msgid "Add"
 msgstr "追加"
 
+msgid "Add a condition: type a genre, artist, year…"
+msgstr "条件を追加：ジャンル、アーティスト、年を入力…"
+
+msgid "Add a condition…"
+msgstr "条件を追加…"
+
 msgid "Add a folder"
 msgstr "フォルダーを追加"
 
@@ -240,6 +246,9 @@ msgstr "キュー「{}」に追加"
 
 msgid "Add tracks from a track menu to this queue."
 msgstr "トラックメニューからこのキューにトラックを追加します。"
+
+msgid "Add values"
+msgstr "値を追加"
 
 msgid "Added"
 msgstr "追加日"
@@ -964,6 +973,9 @@ msgstr "クリア"
 msgid "Clear after this track"
 msgstr "このトラックの後でクリア"
 
+msgid "Clear all"
+msgstr "すべて解除"
+
 msgid "Clear filter"
 msgstr "フィルターをクリア"
 
@@ -1612,6 +1624,9 @@ msgstr "埋め込みタグのみ"
 msgid "Empty folders"
 msgstr "空のフォルダー"
 
+msgid "Empty group. Conditions you add now go here."
+msgstr "空のグループです。今追加する条件はここに入ります。"
+
 msgid "Empty. Add tracks from any list with a right click."
 msgstr "空です。右クリックでどの一覧からでもトラックを追加できます。"
 
@@ -1740,6 +1755,9 @@ msgstr "2月"
 
 msgid "Fetching the cover…"
 msgstr "カバーを取得中…"
+
+msgid "Fields"
+msgstr "項目"
 
 msgid "File"
 msgstr "ファイル"
@@ -1987,6 +2005,9 @@ msgstr "グリッド"
 msgid "Grid view"
 msgstr "グリッド表示"
 
+msgid "Group"
+msgstr "グループ"
+
 msgid "Group album versions"
 msgstr "アルバムのバージョンをまとめる"
 
@@ -2058,6 +2079,9 @@ msgstr "手動入力を非表示"
 
 msgid "Hide sidebar"
 msgstr "サイドバーを非表示"
+
+msgid "Hide the console line"
+msgstr "コンソール行を隠す"
 
 msgid "Hide token"
 msgstr "トークンを非表示"
@@ -2617,6 +2641,9 @@ msgstr "未再生にする"
 msgid "Mark the start first with :loop a."
 msgstr "先に :loop a で開始点を指定してください。"
 
+msgid "Match"
+msgstr "一致条件"
+
 msgid "Match all"
 msgstr "すべてに一致"
 
@@ -2854,6 +2881,9 @@ msgstr "新しいタブ"
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
 msgstr "新しい解析の実行がここに表示されます。保存済みのトラックの結果は「トラック」で確認できます。"
 
+msgid "New conditions go into this group"
+msgstr "新しい条件はこのグループに入ります"
+
 msgid "New folder"
 msgstr "新規フォルダー"
 
@@ -2916,6 +2946,9 @@ msgstr "選択したプラグインのアーティストは、このシーンで
 
 msgid "No composer"
 msgstr "作曲者なし"
+
+msgid "No conditions yet. Add one below, or click values in Columns."
+msgstr "条件はまだありません。下で追加するか、列で値をクリックしてください。"
 
 msgid "No cover"
 msgstr "カバーなし"
@@ -3189,6 +3222,9 @@ msgstr "ListenListを開く"
 
 msgid "Open Music Link"
 msgstr "音楽リンクを開く"
+
+msgid "Open Refine in its own window"
+msgstr "絞り込みを別ウィンドウで開く"
 
 msgid "Open SACD…"
 msgstr "SACDを開く…"
@@ -3811,6 +3847,9 @@ msgstr "リモート画像の上限"
 msgid "Remove"
 msgstr "削除"
 
+msgid "Remove condition"
+msgstr "条件を削除"
+
 msgid "Remove cover"
 msgstr "カバーを削除"
 
@@ -3834,6 +3873,9 @@ msgstr "保存済みから削除"
 
 msgid "Remove from the library"
 msgstr "ライブラリから削除"
+
+msgid "Remove group"
+msgstr "グループを削除"
 
 msgid "Remove image"
 msgstr "画像を削除"
@@ -4264,6 +4306,9 @@ msgstr "保存したトラックを「トラック」に表示"
 
 msgid "Show source recommendations by default in Home"
 msgstr "ホームにソースのおすすめを既定で表示"
+
+msgid "Show the query as console text"
+msgstr "クエリをコンソールのテキストで表示"
 
 msgid "Show the sidebar"
 msgstr "サイドバーを表示"
@@ -4968,11 +5013,17 @@ msgstr "利用不可"
 msgid "Uncategorized"
 msgstr "未分類"
 
+msgid "Undo"
+msgstr "元に戻す"
+
 msgid "Undo queue edit"
 msgstr "キューの編集を元に戻す"
 
 msgid "Unfollow"
 msgstr "フォロー解除"
+
+msgid "Ungroup"
+msgstr "グループを解除"
 
 msgid "Uninstall"
 msgstr "アンインストール"
@@ -5415,6 +5466,9 @@ msgstr "added には 30d、6w、3m、1y のような期間を指定します"
 msgid "aggregate"
 msgstr "アグリゲート"
 
+msgid "all"
+msgstr "すべて"
+
 msgid "almost nothing in the queue has an analysed tempo"
 msgstr "キュー内にテンポを解析済みのトラックがほとんどありません"
 
@@ -5430,11 +5484,20 @@ msgstr "別のプログラムが「{}」を占有しています。そのプロ�
 msgid "another program is using \"{}\"; close it, or turn bit-perfect and exclusive mode off to share it ({})"
 msgstr "別のプログラムが「{}」を使用しています。閉じるか、ビットパーフェクトと排他モードをオフにして共有してください（{}）"
 
+msgid "any"
+msgstr "いずれか"
+
+msgid "at least"
+msgstr "以上"
+
 msgid "awaiting approval"
 msgstr "承認待ち"
 
 msgid "be a plugin of another kind: {}"
 msgstr "別の種類のプラグインになる: {}"
+
+msgid "between"
+msgstr "範囲"
 
 msgid "bring catalogue: search for and fetch music"
 msgstr "カタログを提供する: 音楽を検索して取得する"
@@ -5459,6 +5522,9 @@ msgstr "非対応"
 
 msgid "choose at least one library"
 msgstr "ライブラリを1つ以上選んでください"
+
+msgid "contains"
+msgstr "含む"
 
 msgid "converted to {}"
 msgstr "{}に変換"
@@ -5502,6 +5568,9 @@ msgstr "ディスプレイ"
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr "暗号化され、このコンピューターに紐づけられています（システムのキーリングがありません）"
 
+msgid "exactly"
+msgstr "ちょうど"
+
 msgid "exclusive"
 msgstr "排他"
 
@@ -5513,6 +5582,9 @@ msgstr "良好"
 
 msgid "format not supported: {}"
 msgstr "サポートされていないフォーマット: {}"
+
+msgid "from"
+msgstr "以降"
 
 msgid "from a file"
 msgstr "ファイルから"
@@ -5564,6 +5636,18 @@ msgstr "目次が無効です: {}"
 
 msgid "invalid timecode in frame-info"
 msgstr "frame-infoのタイムコードが無効です"
+
+msgid "is"
+msgstr "＝"
+
+msgid "is any of"
+msgstr "いずれか"
+
+msgid "is none of"
+msgstr "いずれでもない"
+
+msgid "is not"
+msgstr "≠"
 
 msgid "it answered an address not in its memory"
 msgstr "メモリにないアドレスを返しました"
@@ -6442,6 +6526,9 @@ msgstr "type には album、single、ep、compilation、live、soundtrack を指
 msgid "unrated"
 msgstr "未評価"
 
+msgid "up to"
+msgstr "以前"
+
 msgid "up to {} bits"
 msgstr "最大{}ビット"
 
@@ -6673,6 +6760,9 @@ msgstr[0] "{}トラック"
 msgid "{} star"
 msgid_plural "{} stars"
 msgstr[0] "{}つ星"
+
+msgid "{} still loading · counts may grow"
+msgstr "{} 読み込み中・件数は増える場合があります"
 
 msgid "{} track"
 msgid_plural "{} tracks"

@@ -29,4 +29,7 @@ QtObject {
     property string refinedText: ""
     function refine(query) { return JSON.stringify(refineOf[query] || { mode: "all", rows: [], complex: null }) }
     function refineEdit(query, change) { lastQuery = query; lastRefineEdit = JSON.parse(change); return refinedText }
+    property bool canUndo: false
+    property string undoneText: ""
+    function undo() { return undoneText }
 }
