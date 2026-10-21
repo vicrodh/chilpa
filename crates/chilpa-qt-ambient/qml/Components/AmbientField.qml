@@ -40,24 +40,26 @@ Item {
     // One hold on the pulse while moving, let go when not: the same call
     // whether the change comes while the item is built or later.
     property bool holding: false
+    property int previousMs: Pulse.ms
     function sync() {
         if (moving === holding)
             return
         holding = moving
-        holding ? Pulse.hold() : Pulse.release()
+        previousMs = Pulse.ms
+        holding ? Pulse.holdSlow() : Pulse.releaseSlow()
     }
     onMovingChanged: sync()
     Component.onCompleted: sync()
-    Component.onDestruction: if (holding) Pulse.release()
+    Component.onDestruction: if (holding) Pulse.releaseSlow()
 
     // The GPU arm needs nothing but the clock bump: `effect.time` binds `t`, so
     // this alone dirties the shader. A pulse while frozen writes nothing.
     Connections {
-        target: Pulse
+        target: field.moving ? Pulse : null
         function onMsChanged() {
-            if (!field.moving)
-                return
-            field.t += Field.tickSeconds
+            const delta = Pulse.ms - field.previousMs
+            field.previousMs = Pulse.ms
+            field.t += (delta >= 0 ? delta : Pulse.period) / 1000
             if (!field.shaderOk)
                 canvas.requestPaint()
         }
