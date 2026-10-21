@@ -11,7 +11,7 @@ Text {
     width: size
     height: size
     text: ""
-    readonly property string desiredFamily: iconFamily !== "" ? iconFamily : filled ? Icons.filled : Icons.outline
+    readonly property string desiredFamily: iconFamily !== "" ? iconFamily : filled || glyph === Icons.heartFilled ? Icons.filled : Icons.outline
     function updateGlyph() {
         if (desiredFamily === "" || text === glyph && font.family === desiredFamily) return
         // I change the family without shaping either glyph in the other font.
