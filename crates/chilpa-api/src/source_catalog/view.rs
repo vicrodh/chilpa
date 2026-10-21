@@ -139,13 +139,15 @@ mod work_tests {
     fn source_track_keeps_work_and_the_composer_artist_route() {
         let track = Track {
             plugin: "fixture".into(),
-            metadata: serde_json::json!({"work":"Das Rheingold", "composer":"Richard Wagner", "composer_ref":"artist:42"}),
+            metadata: serde_json::json!({"work":"Das Rheingold", "composer":"Richard Wagner", "composer_ref":"artist:42", "plays":9}),
             ..Track::default()
         };
         let row = row_of(&track, String::new());
         assert_eq!(row.work, "Das Rheingold");
         assert_eq!(row.composer, "Richard Wagner");
         assert_eq!(row.composer_target, "fixture native:artist:42");
+        assert_eq!(row.plays, 9);
+        assert_eq!(crate::tracks_view::group_of("plays", &row), chilpa_i18n::t("Played"));
     }
 }
 
@@ -160,7 +162,7 @@ pub(crate) fn row_of(track: &Track, art: String) -> TrackRow {
         disc: track.disc,
         number: track.number,
         duration_ms: track.duration_ms,
-        plays: 0,
+        plays: track.metadata["plays"].as_i64().filter(|n| *n >= 0).unwrap_or(0) as usize,
         quality: track.format.as_ref().map(|f| f.quality()).unwrap_or_default(),
         artwork_path: art,
         available: track.playable,

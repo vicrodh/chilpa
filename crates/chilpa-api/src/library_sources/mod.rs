@@ -14,6 +14,7 @@
 mod facets;
 mod groups;
 mod merge;
+pub(crate) mod plays;
 mod query;
 mod versions;
 #[cfg(test)]
