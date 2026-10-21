@@ -69,7 +69,6 @@ TitledFlow {
         SectionHeader { width: parent.width; title: "Section header"; link: "See all" }
         AnimatedCover { width: Metrics.heroArt; height: width; colors: [Theme.color.surfacePanel, Theme.color.accent, Theme.color.statusWarning]; label: "Daily mix" }
         ScrollMemory { key: "gallery" }
-        LibraryCrumbs { width: parent.width; height: Metrics.breadcrumb }
         LibraryPanes { width: parent.width; height: Metrics.panesHeight }
         LibraryToolbar { width: parent.width; tracks: most }
         SortButton { value: "artist"; options: [{ value: "artist", text: "Artist" }, { value: "year", text: "Year" }] }
