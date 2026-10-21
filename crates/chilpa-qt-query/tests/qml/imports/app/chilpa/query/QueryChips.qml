@@ -32,4 +32,6 @@ QtObject {
     property bool canUndo: false
     property string undoneText: ""
     function undo() { return undoneText }
+    property var observed: []
+    function observe(text) { observed = observed.concat([text]) }
 }
