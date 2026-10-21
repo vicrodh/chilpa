@@ -710,6 +710,9 @@ msgstr "Op letter"
 msgid "By name"
 msgstr "Op naam"
 
+msgid "By plays"
+msgstr "Op aantal keer afgespeeld"
+
 msgid "By quality"
 msgstr "Op kwaliteit"
 

@@ -138,7 +138,7 @@ Item {
                     { value: "genre", text: I18n.tr("By genre", I18n.rev) },
                     { value: "label", text: I18n.tr("By label", I18n.rev) },
                     { value: "composer", text: I18n.tr("By composer", I18n.rev) },
-                    { value: "plays", text: I18n.tr("Plays", I18n.rev) }
+                    { value: "plays", text: I18n.tr("By plays", I18n.rev) }
                 ]
                 onPicked: (value) => {
                     page.group = value

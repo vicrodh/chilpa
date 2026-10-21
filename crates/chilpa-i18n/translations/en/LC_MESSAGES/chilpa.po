@@ -710,6 +710,9 @@ msgstr ""
 msgid "By name"
 msgstr ""
 
+msgid "By plays"
+msgstr ""
+
 msgid "By quality"
 msgstr ""
 

@@ -119,7 +119,7 @@ Item {
                     { value: "source", text: I18n.tr("By source", I18n.rev) },
                     { value: "added", text: I18n.tr("By date added", I18n.rev) },
                     { value: "type", text: I18n.tr("By release type", I18n.rev) },
-                    { value: "plays", text: I18n.tr("Plays", I18n.rev) }
+                    { value: "plays", text: I18n.tr("By plays", I18n.rev) }
                 ]
                 onPicked: (value) => { page.group = value; SettingsModel.keep("ui.albums.group", value) }
             }
