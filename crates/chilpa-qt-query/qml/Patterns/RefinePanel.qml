@@ -109,6 +109,10 @@ Rectangle {
         width: parent.width - Refine.rowsSide * 2 // derived: the rows' inset on both sides
         height: Math.max(0, Math.min(contentHeight, panel.height - head.height - (complex.visible ? complex.height + Refine.rowsBottom : 0) - panel.below))
         clip: true
+        // Every row is built whatever the height: the panel's height comes
+        // from contentHeight, which a ListView estimates from the rows it
+        // built, and a group is far taller than a condition.
+        cacheBuffer: Refine.rowsBuilt
         interactive: contentHeight > height
         boundsBehavior: Flickable.StopAtBounds
         spacing: Refine.rowsApart

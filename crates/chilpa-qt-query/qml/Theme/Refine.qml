@@ -155,6 +155,8 @@ QtObject {
     readonly property int suggestMax: 300
     readonly property int suggestPad: 4
     readonly property int suggestHead: 24
+    // How far past the panel the rows are built: a query people type.
+    readonly property int rowsBuilt: 100000
     // Below this width the panel stacks its labels and folds its fields (F7).
     readonly property int narrowBelow: 640
     readonly property int narrowChipTall: 24
