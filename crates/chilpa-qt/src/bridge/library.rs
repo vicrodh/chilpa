@@ -1,4 +1,4 @@
-//! Library filtering and its worker. Column choices invalidate their right;
+//! Library filtering and its worker. Columns edit the shared query;
 //! generation tags discard stale answers. State survives navigation.
 
 #[cxx_qt::bridge]
@@ -23,12 +23,6 @@ pub mod qobject {
         #[qproperty(i32, remote_art_rev)]
         #[qproperty(bool, busy)]
         #[qproperty(QString, summary)]
-        #[qproperty(QString, year)]
-        #[qproperty(QString, genre)]
-        #[qproperty(QString, label)] #[qproperty(QString, composer)]
-        #[qproperty(QString, rating)]
-        #[qproperty(QString, artist)]
-        #[qproperty(QString, album)]
         #[qproperty(QStringList, source_keys)] #[qproperty(QStringList, source_labels)]
         #[qproperty(QStringList, source_counts)] #[qproperty(QStringList, excluded_sources)]
         #[qproperty(QStringList, source_icons)]
@@ -54,10 +48,7 @@ pub mod qobject {
         #[cxx_name = "orderChanged"]
         fn order_changed(self: Pin<&mut Library>);
 
-        /// Chooses in a column ("year", "genre", "rating", "artist", ...) and
-        /// clears the ones to its right. An empty key is "All".
-        #[qinvokable]
-        fn choose(self: Pin<&mut Library>, column: &QString, key: &QString, label: &QString);
+        #[qinvokable] fn clear_column(self: Pin<&mut Library>, column: &QString);
 
         /// Clears every column.
         #[qinvokable]
@@ -93,13 +84,6 @@ pub struct LibraryRust {
     remote_art_rev: i32,
     busy: bool,
     summary: QString,
-    year: QString,
-    genre: QString,
-    label: QString,
-    composer: QString,
-    rating: QString,
-    artist: QString,
-    album: QString,
     source_keys: QStringList, source_labels: QStringList, source_counts: QStringList, source_icons: QStringList,
     excluded_sources: QStringList, qualities: QStringList, formats: QStringList,
     extra_filtered: bool,
@@ -125,8 +109,6 @@ fn strings(items: impl IntoIterator<Item = String>) -> QStringList {
 }
 
 impl qobject::Library {
-    const SETTERS: [fn(Pin<&mut Self>, QString); 7] = [Self::set_year, Self::set_genre, Self::set_label, Self::set_composer, Self::set_rating, Self::set_artist, Self::set_album];
-
     pub fn group_artist_albums(mut self: Pin<&mut Self>, on: bool) {
         if app::with(|api| api.set_group_artist_versions(on)) {
             self.as_mut().set_artist_group_versions(on);
@@ -134,13 +116,12 @@ impl qobject::Library {
         }
     }
 
-    pub fn apply_query(mut self: Pin<&mut Self>, text: &QString) -> QString {
+    pub fn apply_query(self: Pin<&mut Self>, text: &QString) -> QString {
         match chilpa_api::library_query::read(&app::with(|api| api.query_with_names(&text.to_string()))) {
             Err(error) => QString::from(&error),
             Ok(query) => {
-                self.as_mut().set_query_text(QString::from(&query.as_ref().map(ToString::to_string).unwrap_or_default()));
                 browse::write(|s| s.filter.query = query);
-                self.refresh();
+                self.query_changed();
                 QString::default()
             }
         }
@@ -170,23 +151,14 @@ impl qobject::Library {
         self.refresh();
     }
 
-    pub fn choose(mut self: Pin<&mut Self>, column: &QString, key: &QString, label: &QString) {
-        let column = column.to_string();
-        let Some(at) = ORDER.iter().position(|c| *c == column) else { return };
-        let key = key.to_string();
-        let keys: Vec<String> = (!key.is_empty()).then_some(key).into_iter().collect();
-        let labels = if keys.is_empty() { Vec::new() } else { vec![label.to_string()] };
-        self.as_mut().choose_keys(keys, labels, at);
+    pub fn clear_column(mut self: Pin<&mut Self>, column: &QString) {
+        browse::write(|s| chilpa_api::library_query::columns::clear(&mut s.filter, &column.to_string()));
+        self.as_mut().query_changed();
     }
 
-    /// Applies one column's Excel-style selection and clears its right side.
-    pub fn choose_keys(mut self: Pin<&mut Self>, keys: Vec<String>, labels: Vec<String>, at: usize) {
-        browse::write(|state| state.filter.choose(at, &keys));
-        let shown = QString::from(&labels.join(", "));
-        // The column chosen shows its choice; every one to its right is cleared.
-        for (column, set) in Self::SETTERS.iter().enumerate().skip(at.min(Self::SETTERS.len() - 1)) {
-            set(self.as_mut(), if column == at { shown.clone() } else { QString::default() });
-        }
+    pub fn query_changed(mut self: Pin<&mut Self>) {
+        let text = browse::read(|s| s.filter.query.as_ref().map(ToString::to_string).unwrap_or_default());
+        self.as_mut().set_query_text(QString::from(&text));
         self.refresh();
     }
 
@@ -194,14 +166,11 @@ impl qobject::Library {
         browse::write(|s| s.filter = Filter::default());
         self.as_mut().set_query_text(QString::default());
         self.as_mut().set_queries(strings(vec![String::new(); ORDER.len()]));
-        for set in Self::SETTERS {
-            set(self.as_mut(), QString::default());
-        }
         self.as_mut().set_excluded_sources(QStringList::default());
         self.as_mut().set_qualities(QStringList::default());
         self.as_mut().set_formats(QStringList::default());
         self.as_mut().set_extra_filtered(false);
-        self.refresh();
+        self.query_changed();
     }
 
     pub fn toggle_filter(mut self: Pin<&mut Self>, kind: &QString, key: &QString) {
