@@ -2560,6 +2560,9 @@ msgstr "Lossless"
 msgid "Lossless only"
 msgstr "Только Lossless"
 
+msgid "Lossless or Hi-Res records; quality also takes lossy or dsd"
+msgstr "Альбомы без потерь или в высоком разрешении; quality также принимает lossy или dsd"
+
 msgid "Lossy"
 msgstr "С потерями"
 
@@ -2847,6 +2850,9 @@ msgstr "Сетевое воспроизведение"
 
 msgid "Never played"
 msgstr "Непрослушанное"
+
+msgid "Never played; plays:1.. means played at least once"
+msgstr "Ни разу не воспроизводились; plays:1.. означает хотя бы одно воспроизведение"
 
 msgid "New Tab"
 msgstr "Новая вкладка"
@@ -3790,6 +3796,9 @@ msgstr "Релиз"
 msgid "Release date"
 msgstr "Дата релиза"
 
+msgid "Release type"
+msgstr "Тип релиза"
+
 msgid "Releases"
 msgstr "Релизы"
 
@@ -4228,8 +4237,8 @@ msgstr "Настройки"
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "Формируйте звук: поднимите полосу, чтобы слышать больше, опустите, чтобы слышать меньше."
 
-msgid "Short names: y g l c a al t r"
-msgstr "Короткие имена: y g l c a al t r"
+msgid "Short names: y g l c a al t r p ty q"
+msgstr "Короткие имена: y g l c a al t r p ty q"
 
 msgid "Show"
 msgstr "Показать"
@@ -4312,6 +4321,9 @@ msgstr "С {}"
 msgid "Singles"
 msgstr "Синглы"
 
+msgid "Singles or EPs, using the release type grouping"
+msgstr "Синглы или EP, согласно группировке по типу релиза"
+
 msgid "Size"
 msgstr "Размер"
 
@@ -4344,6 +4356,9 @@ msgstr "Некоторые пакеты отсутствуют"
 
 msgid "Songs"
 msgstr "Песни"
+
+msgid "Soundtracks"
+msgstr "Саундтреки"
 
 msgid "Source"
 msgstr "Источник"
@@ -4989,6 +5004,9 @@ msgstr "Неизвестный параметр."
 
 msgid "Unknown quality"
 msgstr "Качество неизвестно"
+
+msgid "Unknown release type"
+msgstr "Неизвестный тип релиза"
 
 msgid "Unknown source"
 msgstr "Источник неизвестен"
@@ -5725,6 +5743,9 @@ msgstr "pcm — карта в том виде, как её настраивае�
 msgid "pcm: shared, as ALSA sets it up"
 msgstr "pcm: общий, как настраивает ALSA"
 
+msgid "plays takes non-negative whole numbers or a range with the lower bound first"
+msgstr "plays принимает неотрицательные целые числа или диапазон с нижней границей в начале"
+
 msgid "plughw converts whatever the card does not take -- the rate, the sample format, the channels -- without saying so. It plays what the card alone would refuse, and for the same reason it cannot promise the samples arrive as they left."
 msgstr "plughw без предупреждения преобразует всё, что карта не принимает, — частоту, формат сэмплов, каналы. Он воспроизводит то, от чего карта сама отказалась бы, и по той же причине нельзя обещать, что сэмплы придут в том виде, в каком были в файле."
 
@@ -5739,6 +5760,9 @@ msgstr "обрабатывать звук PCM с помощью эквализа
 
 msgid "put a panel of its own in the window"
 msgstr "поместить в окно собственную панель"
+
+msgid "quality takes lossy, cd, hires or dsd"
+msgstr "quality принимает lossy, cd, hires или dsd"
 
 msgid "quarantined"
 msgstr "в карантине"
@@ -6408,6 +6432,9 @@ msgstr "изменения треков внутри образа диска х�
 
 msgid "type a title, an artist or a catalog number to search"
 msgstr "введите название, исполнителя или каталожный номер для поиска"
+
+msgid "type takes album, single, ep, compilation, live or soundtrack"
+msgstr "type принимает album, single, ep, compilation, live или soundtrack"
 
 msgid "up to {} bits"
 msgstr "до {} бит"

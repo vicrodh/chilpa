@@ -2557,6 +2557,9 @@ msgstr ""
 msgid "Lossless only"
 msgstr "Lossless only"
 
+msgid "Lossless or Hi-Res records; quality also takes lossy or dsd"
+msgstr "Lossless or Hi-Res records; quality also takes lossy or dsd"
+
 msgid "Lossy"
 msgstr ""
 
@@ -2844,6 +2847,9 @@ msgstr ""
 
 msgid "Never played"
 msgstr ""
+
+msgid "Never played; plays:1.. means played at least once"
+msgstr "Never played; plays:1.. means played at least once"
 
 msgid "New Tab"
 msgstr ""
@@ -3787,6 +3793,9 @@ msgstr "Release"
 msgid "Release date"
 msgstr "Release date"
 
+msgid "Release type"
+msgstr "Release type"
+
 msgid "Releases"
 msgstr ""
 
@@ -4224,8 +4233,8 @@ msgstr ""
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "Shape the sound: raise a band to hear more, lower it to hear less."
 
-msgid "Short names: y g l c a al t r"
-msgstr ""
+msgid "Short names: y g l c a al t r p ty q"
+msgstr "Short names: y g l c a al t r p ty q"
 
 msgid "Show"
 msgstr ""
@@ -4308,6 +4317,9 @@ msgstr ""
 msgid "Singles"
 msgstr ""
 
+msgid "Singles or EPs, using the release type grouping"
+msgstr "Singles or EPs, using the release type grouping"
+
 msgid "Size"
 msgstr ""
 
@@ -4340,6 +4352,9 @@ msgstr ""
 
 msgid "Songs"
 msgstr ""
+
+msgid "Soundtracks"
+msgstr "Soundtracks"
 
 msgid "Source"
 msgstr ""
@@ -4984,6 +4999,9 @@ msgstr ""
 
 msgid "Unknown quality"
 msgstr ""
+
+msgid "Unknown release type"
+msgstr "Unknown release type"
 
 msgid "Unknown source"
 msgstr ""
@@ -5719,6 +5737,9 @@ msgstr ""
 msgid "pcm: shared, as ALSA sets it up"
 msgstr ""
 
+msgid "plays takes non-negative whole numbers or a range with the lower bound first"
+msgstr "plays takes non-negative whole numbers or a range with the lower bound first"
+
 msgid "plughw converts whatever the card does not take -- the rate, the sample format, the channels -- without saying so. It plays what the card alone would refuse, and for the same reason it cannot promise the samples arrive as they left."
 msgstr ""
 
@@ -5733,6 +5754,9 @@ msgstr ""
 
 msgid "put a panel of its own in the window"
 msgstr ""
+
+msgid "quality takes lossy, cd, hires or dsd"
+msgstr "quality takes lossy, cd, hires or dsd"
 
 msgid "quarantined"
 msgstr ""
@@ -6402,6 +6426,9 @@ msgstr ""
 
 msgid "type a title, an artist or a catalog number to search"
 msgstr ""
+
+msgid "type takes album, single, ep, compilation, live or soundtrack"
+msgstr "type takes album, single, ep, compilation, live or soundtrack"
 
 msgid "up to {} bits"
 msgstr ""

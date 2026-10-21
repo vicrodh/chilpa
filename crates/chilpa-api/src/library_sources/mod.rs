@@ -51,8 +51,10 @@ pub(crate) struct SourceItem {
     pub composers: Vec<String>,
     /// When the listener saved it, in Unix seconds; zero when unknown.
     pub added_at: i64,
-    /// "album", "ep", "single", "compilation", "live" or empty.
+    /// I keep a normalized release kind, or an empty string when unknown.
     pub release_type: String,
+    /// I keep a count only when the source supplies it for this track.
+    pub plays: Option<i64>,
     pub disc: Option<i64>,
     pub number: Option<i64>,
     pub duration_ms: u64,
@@ -74,6 +76,8 @@ pub(crate) struct SourceItem {
 /// What a filter compares an item by, folded once when the index is read.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct Folded {
+    pub release_kind: &'static str,
+    pub quality: i32,
     pub genres: Vec<String>,
     pub label: String,
     pub composers: Vec<String>,
@@ -109,7 +113,7 @@ pub(crate) struct SourceIndex {
 impl SourceIndex {
     /// The items with their names folded and their order keys made, once.
     pub(crate) fn new(items: Vec<SourceItem>, sources: Vec<FacetEntry>) -> Self {
-        let items: Vec<SourceItem> = items.into_iter().map(|mut item| {
+        let mut items: Vec<SourceItem> = items.into_iter().map(|mut item| {
             item.folded = Folded {
                 genres: folded(item.genres.iter().cloned()),
                 label: item.label.to_lowercase(),
@@ -117,9 +121,11 @@ impl SourceIndex {
                 artists: folded(item.artists.iter().cloned()),
                 album_title: item.album_title.to_lowercase(),
                 text: format!("{} {} {}", item.title, item.artists.join(" "), item.album_title).to_lowercase(),
+                ..Folded::default()
             };
             item
         }).collect();
+        groups::classify(&mut items);
         let keys = items.iter().map(merge::key_of).collect();
         let versions = Self::versions(&items);
         Self { items, keys, versions, sources }

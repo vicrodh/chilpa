@@ -406,3 +406,6 @@ fn a_keystroke_of_search_answers_before_the_next_one() {
         within(&format!("search \"{text}\""), t, Duration::from_millis(50));
     }
 }
+
+#[path = "scale/query_fields.rs"]
+mod query_fields;

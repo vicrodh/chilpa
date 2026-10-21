@@ -9,6 +9,8 @@
 pub mod album_folder;
 pub mod from_path;
 pub mod playlist;
+pub mod quality;
+pub mod release_kind;
 pub mod scan;
 mod scan_sidecar;
 pub mod scan_job;

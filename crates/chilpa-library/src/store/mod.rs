@@ -153,6 +153,7 @@ impl Library {
             let _ = std::fs::create_dir_all(dir);
         }
         let db = Connection::open(path)?;
+        query::register(&db)?;
         schema::apply_pragmas(&db)?;
         // Before the shape of the file changes, and only when it is going to.
         schema::back_up_before_upgrading(&db, path)?;
@@ -182,6 +183,7 @@ impl Library {
     /// upgrade a read transaction to a write while another writer runs.
     pub fn open_read_only(path: &Path) -> rusqlite::Result<Self> {
         let db = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+        query::register(&db)?;
         db.busy_timeout(std::time::Duration::from_secs(5))?;
         let version: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
         if version != schema::VERSION {
@@ -210,6 +212,7 @@ impl Library {
     /// A background writer for an already initialized library, without migrations.
     pub fn open_existing(path: &Path) -> rusqlite::Result<Self> {
         let db = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE)?;
+        query::register(&db)?;
         schema::apply_pragmas(&db)?;
         let version: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
         if version != schema::VERSION { return Err(rusqlite::Error::InvalidQuery); }
@@ -226,6 +229,7 @@ impl Library {
     /// not testing the real thing.
     pub fn in_memory() -> rusqlite::Result<Self> {
         let db = Connection::open_in_memory()?;
+        query::register(&db)?;
         schema::apply_pragmas(&db)?;
         schema::migrate(&db)?;
         Ok(Self { db, versions: Default::default(), related: Default::default(), extra_candidates: Default::default(), candidate_changes: Default::default() })
