@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Window
 import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/lyrics/qml/Primitives"
 
 // The lyrics of what plays as the immersive surfaces read them: the
@@ -75,7 +76,7 @@ Item {
             feed.nowMs = Player.position * 1000
         }
     }
-    FrameAnimation {
+    PulseClock {
         running: feed.live && feed.windowShowing && feed.wordTimed && !feed.lite && Player.playing && !Player.paused
         onTriggered: feed.nowMs = Player.position * 1000 + Math.min(Date.now() - feed.anchoredAt, Motion.lyricCarry)
     }

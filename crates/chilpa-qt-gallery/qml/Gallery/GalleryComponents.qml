@@ -14,6 +14,16 @@ import "qrc:/qt/qml/app/chilpa/folders/qml/Patterns"
 TitledFlow {
     id: section
     title: "Components"
+    Text {
+        id: pulsePreview
+        property int ticks: 0
+        text: "PulseClock: " + ticks
+        color: Theme.color.textPrimary
+        PulseClock {
+            running: section.visible && (!section.Window.window || section.Window.window.visible && section.Window.window.visibility !== Window.Minimized)
+            onTriggered: pulsePreview.ticks++
+        }
+    }
     Column {
         width: Metrics.sidebarWidth
         PillButton { text: "Insert row"; enabled: motionRows.count < 50; onClicked: motionRows.insert(0, {title: "New row"}) }
