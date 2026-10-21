@@ -46,7 +46,8 @@ impl PluginCenter {
             let mut evidence = crate::plugin_evidence::Evidence::load(&root.join(".repositories"),
                 launcher.and_then(|launcher| launcher.inspection_revision()));
             let mut pending: Option<PreparedPlugin> = None;
-            let mut state = json!({"repositories":[],"catalog":[],"installed":[],"form":null,"proposal":null});
+            let mut state = json!({"repositories":[],"catalog":[],"installed":[],"form":null,"proposal":null,
+                "web_sign_in":crate::web_sign_in::executable().is_some()});
             let mut updates = crate::plugin_notifications::Inbox::load(&root.join(".repositories"));
             *notifications.lock().unwrap() = updates.clone();
             loop {
@@ -88,6 +89,9 @@ impl PluginCenter {
                     continue;
                 }
                 if action == "native_settings_result" {
+                    // A sign-in window that cannot open stays off until the next start: the
+                    // link then opens the browser, as without one.
+                    if input["web_sign_in_failed"] == true { state["web_sign_in"] = false.into(); }
                     crate::plugin_evidence::log_event(&root.join(".repositories"), input["action"].as_str().unwrap_or("settings"),
                         input.get("form").is_some(), std::time::Duration::from_millis(input["elapsed_ms"].as_u64().unwrap_or(0)));
                     if state["settings_loading_id"] == input["id"] {
@@ -105,6 +109,50 @@ impl PluginCenter {
                         }
                         if let Ok(mut output) = shared.lock() { *output = state.clone(); }
                     }
+                    continue;
+                }
+                if action == "web_sign_in" {
+                    let id = input["id"].as_str().unwrap_or("").to_string();
+                    let native = plugins.lock().ok().and_then(|host| host.natives.is_native(&id).then(|| (host.natives.clone(),
+                        host.list().into_iter().find(|plugin| plugin.id == id).map(|plugin| plugin.name).unwrap_or_default())));
+                    let capture = crate::web_sign_in::Capture::from_link(&input["url"], &input["capture"]);
+                    if let (Some((natives, name)), Some(capture), Some(window), Some(sender)) =
+                        (native, capture, crate::web_sign_in::executable(), completions.upgrade()) {
+                        state["settings_loading_id"] = id.clone().into();
+                        state["settings_id"] = id.clone().into();
+                        state["error"] = Value::Null;
+                        if let Ok(mut output) = shared.lock() { *output = state.clone(); }
+                        let revision = input["revision"].clone();
+                        std::thread::spawn(move || {
+                            let started = std::time::Instant::now();
+                            let outcome = crate::web_sign_in::run(&window, &capture, &name);
+                            let failed = matches!(outcome, crate::web_sign_in::Outcome::Failed(_));
+                            // The reached address goes back as the plugin's own action; a
+                            // closed or failed window only refreshes its page.
+                            let (completed, result) = match outcome {
+                                crate::web_sign_in::Outcome::Reached(address) => {
+                                    let mut values = serde_json::Map::new();
+                                    values.insert(capture.field.clone(), address.into());
+                                    ("submit", natives.call(&id, "settings.submit",
+                                        json!({"revision":revision,"action":capture.action,"values":values}), std::time::Duration::from_secs(15)))
+                                }
+                                _ => ("settings", natives.call(&id, "settings.open", json!({}), std::time::Duration::from_secs(15))),
+                            };
+                            let mut result_input = json!({"id":id,"action":completed,"elapsed_ms":started.elapsed().as_millis() as u64,
+                                "web_sign_in_failed":failed});
+                            match result {
+                                Ok(form) => result_input["form"] = form,
+                                Err(error) => result_input["error"] = error.into(),
+                            }
+                            let _ = sender.send(("native_settings_result".into(), result_input));
+                        });
+                    } else {
+                        state["web_sign_in"] = false.into();
+                        if let Ok(mut output) = shared.lock() { *output = state.clone(); }
+                    }
+                    if let Ok(mut operation) = current.lock() { operation.clear(); }
+                    visible.store(false, Ordering::Release);
+                    active.fetch_sub(1, Ordering::AcqRel);
                     continue;
                 }
                 if matches!(action.as_str(), "settings" | "submit") {
