@@ -106,7 +106,8 @@ Item {
                     color: Theme.color.fillField
                     Icon { id: lens; x: Refine.pickPad; anchors.verticalCenter: parent.verticalCenter; glyph: Icons.search; size: Refine.fieldChipIcon; color: Theme.color.textTertiary }
                     TextInput {
-                        id: search
+                        // Not "search": PickValues has a property by that name.
+                        id: typed
                         objectName: "pickSearch"
                         anchors.left: lens.right
                         anchors.leftMargin: Refine.innerApart
@@ -115,7 +116,7 @@ Item {
                         clip: true
                         font.pointSize: Type.row
                         color: Theme.color.textPrimary
-                        Text { anchors.fill: parent; visible: search.text === ""; text: RefineText.field(picker.field) + "…"; font: search.font; color: Theme.color.textTertiary }
+                        Text { anchors.fill: parent; visible: typed.text === ""; text: RefineText.field(picker.field) + "…"; font: typed.font; color: Theme.color.textTertiary }
                     }
                 }
                 SquareButton { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; small: true; glyph: Icons.x; tip: I18n.tr("Done", I18n.rev); onClicked: picker.closed() }
@@ -143,7 +144,7 @@ Item {
             }
         }
     }
-    Component { id: listBody; PickValues { field: picker.field; search: search.text; included: picker.included; excluded: picker.excluded; none: picker.none; onEdit: (change) => picker.edit(change) } }
+    Component { id: listBody; PickValues { field: picker.field; search: typed.text; included: picker.included; excluded: picker.excluded; none: picker.none; onEdit: (change) => picker.edit(change) } }
     Component { id: yearBody; PickYears { range: picker.find("range"); none: picker.none; onEdit: (change) => picker.edit(change) } }
     Component { id: ratingBody; PickRatings { rating: picker.find("rating"); onEdit: (change) => picker.edit(change) } }
     Component {

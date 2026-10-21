@@ -116,4 +116,16 @@ TestCase {
         mouseClick(words)
         compare(QueryChips.lastRefineEdit, { op: "words", field: "words", word: "monk" })
     }
+
+    // The search above a field's values narrows them; it once reached
+    // PickValues as undefined, its own property shadowing the field's id.
+    function test_the_search_narrows_a_fields_values() {
+        failOnWarning(/.*/)
+        panel.picking = "genre"
+        tryVerify(() => findValue("Jazz") !== null, 2000)
+        const search = findChild(panel, "pickSearch")
+        search.forceActiveFocus()
+        search.text = "so"
+        tryVerify(() => findValue("Soul") !== null && findValue("Jazz") === null, 2000)
+    }
 }
