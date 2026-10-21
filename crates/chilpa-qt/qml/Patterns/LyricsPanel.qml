@@ -73,9 +73,7 @@ Item {
         return line.start_ms + Motion.lyricLastLine
     }
 
-    // The moment of the track. The position arrives four times a second; in
-    // between it is carried forward by the frame clock, never further than
-    // the next arrival could correct.
+    // I carry the position between transport updates on the shared pulse.
     property real nowMs: Player.position * 1000
     property double anchoredAt: Date.now()
     Connections {
@@ -85,8 +83,9 @@ Item {
             panel.nowMs = Player.position * 1000
         }
     }
-    FrameAnimation {
-        running: panel.visible && panel.wordTimed && !options.lite && Player.playing && !Player.paused
+    PulseClock {
+        running: panel.visible && (!panel.Window.window || panel.Window.window.visible && panel.Window.window.visibility !== Window.Minimized)
+            && panel.wordTimed && !options.lite && Player.playing && !Player.paused
         onTriggered: panel.nowMs = Player.position * 1000 + Math.min(Date.now() - panel.anchoredAt, Motion.lyricCarry)
     }
 
