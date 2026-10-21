@@ -164,14 +164,15 @@ Item {
         anchors.verticalCenter: crumbs.verticalCenter
     }
 
-    FocusArea {
+    RefineArea {
         id: panes
         anchors.top: crumbs.bottom
         x: head.x
         width: head.width
-        height: page.panesHeight
+        height: toggle.refineMode ? Math.min(page.panesHeight, wanted) : page.panesHeight
         visible: page.panesShown
-        focusMode: toggle.refineMode
+        refineMode: toggle.refineMode
+        summary: tracks.summary
         columns: Component { LibraryPanes { shown: page.panes } }
     }
 

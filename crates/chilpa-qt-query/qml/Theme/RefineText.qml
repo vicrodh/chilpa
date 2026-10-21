@@ -75,6 +75,51 @@ QtObject {
         default: return row.values.join(", ")
         }
     }
+    // The operators a row can switch between, and the one it has
+    // (`opsFor` and `opKey` in the handoff's source).
+    readonly property var noneFields: ["genre", "year", "composer", "label"]
+    function operators(row) {
+        const many = (row.values || []).length > 1
+        if (row.kind === "list" || row.kind === "none") {
+            const out = [{ key: "include", text: many ? I18n.tr("is any of", I18n.rev) : I18n.tr("is", I18n.rev) },
+                         { key: "exclude", text: many ? I18n.tr("is none of", I18n.rev) : I18n.tr("is not", I18n.rev) }]
+            if (noneFields.indexOf(row.field) >= 0) out.push({ key: "none", text: I18n.tr("has none", I18n.rev) })
+            return out
+        }
+        if (row.kind === "range") return [{ key: "between", text: I18n.tr("between", I18n.rev) }, { key: "from", text: I18n.tr("from", I18n.rev) }, { key: "upTo", text: I18n.tr("up to", I18n.rev) }]
+        if (row.kind === "rating") return [{ key: "atLeast", text: I18n.tr("at least", I18n.rev) }, { key: "exactly", text: I18n.tr("exactly", I18n.rev) },
+                                           { key: "ratingBetween", text: I18n.tr("between", I18n.rev) }, { key: "unrated", text: I18n.tr("unrated", I18n.rev) }]
+        return []
+    }
+    function operator(row) {
+        switch (row.kind) {
+        case "list": return row.negated ? "exclude" : "include"
+        case "none": return "none"
+        case "range": return row.from && row.to ? "between" : row.from ? "from" : "upTo"
+        case "rating": return row.min === 0 && row.max === 0 ? "unrated" : row.min === row.max ? "exactly" : row.max === 5 ? "atLeast" : "ratingBetween"
+        default: return ""
+        }
+    }
+    function operatorText(row) {
+        const key = operator(row)
+        const found = operators(row).find(o => o.key === key)
+        if (found) return found.text
+        return row.kind === "added" ? I18n.tr("in the last", I18n.rev) : I18n.tr("contains", I18n.rev)
+    }
+    // The values a row shows in its joined block: [{label, sub, removable}].
+    function tokens(row) {
+        switch (row.kind) {
+        case "list": return row.values.map(v => ({ label: v, value: v, sub: "", removable: true }))
+        case "words": return row.values.map(v => ({ label: "“" + v + "”", value: v, sub: "", removable: true }))
+        case "range": {
+            const decade = row.from && row.to && row.from % 10 === 0 && row.to === row.from + 9
+            return [{ label: decade ? row.from + "s" : range(row).replace(/^[≥≤] /, ""), sub: decade ? row.from + " – " + row.to : "", removable: false }]
+        }
+        case "rating": return row.min === 0 && row.max === 0 ? [] : [{ label: stars(row), sub: "", removable: false }]
+        case "added": return [{ label: unit(row.n, row.unit), sub: "", removable: false }]
+        default: return []
+        }
+    }
     // The key a summary chip starts with.
     function key(row) {
         if (row.group) return row.mode === "any" ? I18n.tr("Any of these", I18n.rev) : I18n.tr("All of these", I18n.rev)

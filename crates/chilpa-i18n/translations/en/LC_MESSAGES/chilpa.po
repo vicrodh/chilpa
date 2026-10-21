@@ -184,6 +184,12 @@ msgstr ""
 msgid "Add"
 msgstr ""
 
+msgid "Add a condition: type a genre, artist, year…"
+msgstr ""
+
+msgid "Add a condition…"
+msgstr ""
+
 msgid "Add a folder"
 msgstr ""
 
@@ -239,6 +245,9 @@ msgid "Add to queue {}"
 msgstr ""
 
 msgid "Add tracks from a track menu to this queue."
+msgstr ""
+
+msgid "Add values"
 msgstr ""
 
 msgid "Added"
@@ -967,6 +976,9 @@ msgstr ""
 msgid "Clear after this track"
 msgstr ""
 
+msgid "Clear all"
+msgstr ""
+
 msgid "Clear filter"
 msgstr ""
 
@@ -1615,6 +1627,9 @@ msgstr ""
 msgid "Empty folders"
 msgstr ""
 
+msgid "Empty group. Conditions you add now go here."
+msgstr ""
+
 msgid "Empty. Add tracks from any list with a right click."
 msgstr ""
 
@@ -1742,6 +1757,9 @@ msgid "February"
 msgstr ""
 
 msgid "Fetching the cover…"
+msgstr ""
+
+msgid "Fields"
 msgstr ""
 
 msgid "File"
@@ -1990,6 +2008,9 @@ msgstr ""
 msgid "Grid view"
 msgstr ""
 
+msgid "Group"
+msgstr ""
+
 msgid "Group album versions"
 msgstr ""
 
@@ -2060,6 +2081,9 @@ msgid "Hide manual entry"
 msgstr ""
 
 msgid "Hide sidebar"
+msgstr ""
+
+msgid "Hide the console line"
 msgstr ""
 
 msgid "Hide token"
@@ -2620,6 +2644,9 @@ msgstr ""
 msgid "Mark the start first with :loop a."
 msgstr ""
 
+msgid "Match"
+msgstr ""
+
 msgid "Match all"
 msgstr "Match all"
 
@@ -2857,6 +2884,9 @@ msgstr ""
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
 msgstr ""
 
+msgid "New conditions go into this group"
+msgstr ""
+
 msgid "New folder"
 msgstr ""
 
@@ -2919,6 +2949,9 @@ msgstr ""
 
 msgid "No composer"
 msgstr "No composer"
+
+msgid "No conditions yet. Add one below, or click values in Columns."
+msgstr ""
 
 msgid "No cover"
 msgstr ""
@@ -3191,6 +3224,9 @@ msgid "Open ListenList"
 msgstr ""
 
 msgid "Open Music Link"
+msgstr ""
+
+msgid "Open Refine in its own window"
 msgstr ""
 
 msgid "Open SACD…"
@@ -3814,6 +3850,9 @@ msgstr ""
 msgid "Remove"
 msgstr "Remove"
 
+msgid "Remove condition"
+msgstr ""
+
 msgid "Remove cover"
 msgstr ""
 
@@ -3836,6 +3875,9 @@ msgid "Remove from saved"
 msgstr ""
 
 msgid "Remove from the library"
+msgstr ""
+
+msgid "Remove group"
 msgstr ""
 
 msgid "Remove image"
@@ -4267,6 +4309,9 @@ msgid "Show saved tracks in Tracks"
 msgstr ""
 
 msgid "Show source recommendations by default in Home"
+msgstr ""
+
+msgid "Show the query as console text"
 msgstr ""
 
 msgid "Show the sidebar"
@@ -4973,10 +5018,16 @@ msgstr ""
 msgid "Uncategorized"
 msgstr "Uncategorized"
 
+msgid "Undo"
+msgstr ""
+
 msgid "Undo queue edit"
 msgstr ""
 
 msgid "Unfollow"
+msgstr ""
+
+msgid "Ungroup"
 msgstr ""
 
 msgid "Uninstall"
@@ -5420,6 +5471,9 @@ msgstr ""
 msgid "aggregate"
 msgstr ""
 
+msgid "all"
+msgstr ""
+
 msgid "almost nothing in the queue has an analysed tempo"
 msgstr ""
 
@@ -5435,10 +5489,19 @@ msgstr ""
 msgid "another program is using \"{}\"; close it, or turn bit-perfect and exclusive mode off to share it ({})"
 msgstr ""
 
+msgid "any"
+msgstr ""
+
+msgid "at least"
+msgstr ""
+
 msgid "awaiting approval"
 msgstr ""
 
 msgid "be a plugin of another kind: {}"
+msgstr ""
+
+msgid "between"
 msgstr ""
 
 msgid "bring catalogue: search for and fetch music"
@@ -5463,6 +5526,9 @@ msgid "cannot be done"
 msgstr ""
 
 msgid "choose at least one library"
+msgstr ""
+
+msgid "contains"
 msgstr ""
 
 msgid "converted to {}"
@@ -5507,6 +5573,9 @@ msgstr ""
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr ""
 
+msgid "exactly"
+msgstr ""
+
 msgid "exclusive"
 msgstr ""
 
@@ -5517,6 +5586,9 @@ msgid "fine"
 msgstr ""
 
 msgid "format not supported: {}"
+msgstr ""
+
+msgid "from"
 msgstr ""
 
 msgid "from a file"
@@ -5568,6 +5640,18 @@ msgid "invalid table of contents: {}"
 msgstr ""
 
 msgid "invalid timecode in frame-info"
+msgstr ""
+
+msgid "is"
+msgstr ""
+
+msgid "is any of"
+msgstr ""
+
+msgid "is none of"
+msgstr ""
+
+msgid "is not"
 msgstr ""
 
 msgid "it answered an address not in its memory"
@@ -6448,6 +6532,9 @@ msgstr "type takes album, single, ep, compilation, live or soundtrack"
 msgid "unrated"
 msgstr ""
 
+msgid "up to"
+msgstr ""
+
 msgid "up to {} bits"
 msgstr ""
 
@@ -6701,6 +6788,9 @@ msgid "{} star"
 msgid_plural "{} stars"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "{} still loading · counts may grow"
+msgstr ""
 
 msgid "{} track"
 msgid_plural "{} tracks"

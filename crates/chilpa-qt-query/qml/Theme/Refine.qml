@@ -111,6 +111,19 @@ QtObject {
     readonly property int addMinWide: 240
     readonly property int addClear: 20
 
+    // A group box (F5) and the add field's ring while it is used.
+    readonly property int groupRound: 10
+    readonly property int groupAround: 3
+    readonly property int groupPadTop: 4
+    readonly property int groupPadRight: 4
+    readonly property int groupPadBottom: 6
+    readonly property int groupPadLeft: 8
+    readonly property int groupHead: 30
+    readonly property int groupHeadLeft: 2
+    readonly property real targetRing: 1.5
+    readonly property int addRing: 2
+    readonly property int emptyGroupPad: 6
+
     // Pickers and suggestions.
     readonly property int pickRound: 10
     readonly property int pickPad: 8

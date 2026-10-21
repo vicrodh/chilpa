@@ -184,6 +184,12 @@ msgstr "Módulos activos"
 msgid "Add"
 msgstr "Agregar"
 
+msgid "Add a condition: type a genre, artist, year…"
+msgstr "Agrega una condición: escribe un género, artista, año…"
+
+msgid "Add a condition…"
+msgstr "Agrega una condición…"
+
 msgid "Add a folder"
 msgstr "Agregar una carpeta"
 
@@ -240,6 +246,9 @@ msgstr "Agregar a la queue {}"
 
 msgid "Add tracks from a track menu to this queue."
 msgstr "Agrega pistas a esta queue desde el menú de una pista."
+
+msgid "Add values"
+msgstr "Agregar valores"
 
 msgid "Added"
 msgstr "Fecha de alta"
@@ -967,6 +976,9 @@ msgstr "Vaciar"
 msgid "Clear after this track"
 msgstr "Vaciar después de esta pista"
 
+msgid "Clear all"
+msgstr "Quitar todo"
+
 msgid "Clear filter"
 msgstr "Limpiar filtro"
 
@@ -1615,6 +1627,9 @@ msgstr "Solo tags incrustados"
 msgid "Empty folders"
 msgstr "Folders vacíos"
 
+msgid "Empty group. Conditions you add now go here."
+msgstr "Grupo vacío. Las condiciones que agregues ahora van aquí."
+
 msgid "Empty. Add tracks from any list with a right click."
 msgstr "Vacía. Agrega pistas desde cualquier lista con clic derecho."
 
@@ -1743,6 +1758,9 @@ msgstr "febrero"
 
 msgid "Fetching the cover…"
 msgstr "Bajando la carátula…"
+
+msgid "Fields"
+msgstr "Campos"
 
 msgid "File"
 msgstr "Archivo"
@@ -1990,6 +2008,9 @@ msgstr "Cuadrícula"
 msgid "Grid view"
 msgstr "Vista de cuadrícula"
 
+msgid "Group"
+msgstr "Grupo"
+
 msgid "Group album versions"
 msgstr "Agrupar versiones de un álbum"
 
@@ -2061,6 +2082,9 @@ msgstr "Ocultar la captura manual"
 
 msgid "Hide sidebar"
 msgstr "Ocultar barra lateral"
+
+msgid "Hide the console line"
+msgstr "Ocultar la línea de consola"
 
 msgid "Hide token"
 msgstr "Ocultar token"
@@ -2620,6 +2644,9 @@ msgstr "Marcar como no escuchado"
 msgid "Mark the start first with :loop a."
 msgstr "Marca primero el inicio con :loop a."
 
+msgid "Match"
+msgstr "Coincidir con"
+
 msgid "Match all"
 msgstr "Cumplir todos"
 
@@ -2857,6 +2884,9 @@ msgstr "Nueva pestaña"
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
 msgstr "Las nuevas sesiones de análisis aparecerán aquí. Los resultados guardados están disponibles en Pistas."
 
+msgid "New conditions go into this group"
+msgstr "Las condiciones nuevas entran en este grupo"
+
 msgid "New folder"
 msgstr "Nuevo folder"
 
@@ -2919,6 +2949,9 @@ msgstr "No se encontraron artistas de esta escena en los plugins seleccionados."
 
 msgid "No composer"
 msgstr "Sin compositor"
+
+msgid "No conditions yet. Add one below, or click values in Columns."
+msgstr "Aún no hay condiciones. Agrega una abajo o haz clic en valores en Columnas."
 
 msgid "No cover"
 msgstr "Sin carátula"
@@ -3192,6 +3225,9 @@ msgstr "Abrir ListenList"
 
 msgid "Open Music Link"
 msgstr "Abrir enlace de música"
+
+msgid "Open Refine in its own window"
+msgstr "Abrir Refinar en su propia ventana"
 
 msgid "Open SACD…"
 msgstr "Abrir SACD…"
@@ -3814,6 +3850,9 @@ msgstr "Límite de imágenes remotas"
 msgid "Remove"
 msgstr "Quitar"
 
+msgid "Remove condition"
+msgstr "Quitar condición"
+
 msgid "Remove cover"
 msgstr "Quitar carátula"
 
@@ -3837,6 +3876,9 @@ msgstr "Quitar de guardadas"
 
 msgid "Remove from the library"
 msgstr "Quitar de la biblioteca"
+
+msgid "Remove group"
+msgstr "Quitar grupo"
 
 msgid "Remove image"
 msgstr "Quitar imagen"
@@ -4268,6 +4310,9 @@ msgstr "Mostrar canciones guardadas en Canciones"
 
 msgid "Show source recommendations by default in Home"
 msgstr "Mostrar las recomendaciones de esta fuente por defecto en Inicio"
+
+msgid "Show the query as console text"
+msgstr "Mostrar la consulta como texto de consola"
 
 msgid "Show the sidebar"
 msgstr "Mostrar la barra lateral"
@@ -4973,11 +5018,17 @@ msgstr "No disponible"
 msgid "Uncategorized"
 msgstr "Sin categoría"
 
+msgid "Undo"
+msgstr "Deshacer"
+
 msgid "Undo queue edit"
 msgstr "Deshacer edición de cola"
 
 msgid "Unfollow"
 msgstr "Dejar de seguir"
+
+msgid "Ungroup"
+msgstr "Desagrupar"
 
 msgid "Uninstall"
 msgstr "Desinstalar"
@@ -5420,6 +5471,9 @@ msgstr "added lleva un periodo como 30d, 6w, 3m o 1y"
 msgid "aggregate"
 msgstr "agregado"
 
+msgid "all"
+msgstr "todas"
+
 msgid "almost nothing in the queue has an analysed tempo"
 msgstr "casi nada de la cola tiene tempo analizado"
 
@@ -5435,11 +5489,20 @@ msgstr "otro programa tiene \"{}\" para él solo; ciérralo, o apaga el modo exc
 msgid "another program is using \"{}\"; close it, or turn bit-perfect and exclusive mode off to share it ({})"
 msgstr "otro programa está usando \"{}\"; ciérralo, o apaga bit-perfect y el modo exclusivo para compartirla ({})"
 
+msgid "any"
+msgstr "cualquiera"
+
+msgid "at least"
+msgstr "al menos"
+
 msgid "awaiting approval"
 msgstr "pendiente de aprobación"
 
 msgid "be a plugin of another kind: {}"
 msgstr "ser un plugin de otro tipo: {}"
+
+msgid "between"
+msgstr "entre"
 
 msgid "bring catalogue: search for and fetch music"
 msgstr "aportar catálogo: buscar y traer música"
@@ -5464,6 +5527,9 @@ msgstr "no se puede"
 
 msgid "choose at least one library"
 msgstr "elige al menos una biblioteca"
+
+msgid "contains"
+msgstr "contiene"
 
 msgid "converted to {}"
 msgstr "convertido a {}"
@@ -5507,6 +5573,9 @@ msgstr "pantalla"
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr "cifrado y atado a este equipo (no hay llavero del sistema)"
 
+msgid "exactly"
+msgstr "exactamente"
+
 msgid "exclusive"
 msgstr "exclusivo"
 
@@ -5518,6 +5587,9 @@ msgstr "bien"
 
 msgid "format not supported: {}"
 msgstr "formato no soportado: {}"
+
+msgid "from"
+msgstr "desde"
 
 msgid "from a file"
 msgstr "de un archivo"
@@ -5569,6 +5641,18 @@ msgstr "tabla de contenido inválida: {}"
 
 msgid "invalid timecode in frame-info"
 msgstr "código de tiempo inválido en frame-info"
+
+msgid "is"
+msgstr "es"
+
+msgid "is any of"
+msgstr "es alguno de"
+
+msgid "is none of"
+msgstr "no es ninguno de"
+
+msgid "is not"
+msgstr "no es"
 
 msgid "it answered an address not in its memory"
 msgstr "contestó una dirección que no está en su memoria"
@@ -6448,6 +6532,9 @@ msgstr "type acepta album, single, ep, compilation, live o soundtrack"
 msgid "unrated"
 msgstr "sin estrellas"
 
+msgid "up to"
+msgstr "hasta"
+
 msgid "up to {} bits"
 msgstr "hasta {} bits"
 
@@ -6701,6 +6788,9 @@ msgid "{} star"
 msgid_plural "{} stars"
 msgstr[0] "{} estrella"
 msgstr[1] "{} estrellas"
+
+msgid "{} still loading · counts may grow"
+msgstr "{} sigue cargando · las cuentas pueden crecer"
 
 msgid "{} track"
 msgid_plural "{} tracks"

@@ -17,7 +17,7 @@ TestCase {
     Component { id: panelFactory; FocusPanel { width: 1100; height: 500 } }
     Component { id: screenFactory; LibraryScreen { width: 1100; height: 650 } }
     Component { id: switchFactory; RefineSwitch {} }
-    Component { id: areaFactory; FocusArea { width: 1100; height: 400; columns: Component { Item { objectName: "testColumns" } } } }
+    Component { id: areaFactory; RefineArea { width: 1100; height: 400; columns: Component { Item { objectName: "testColumns" } } } }
 
     function row(field, values) {
         return Object.assign({ field: field, label: field, include: [], exclude: [], range: null, within: null, missing: false, minimum: null }, values || {})
@@ -56,13 +56,13 @@ TestCase {
         panel.destroy()
         const control = createTemporaryObject(switchFactory, test)
         const area = createTemporaryObject(areaFactory, test, { y: 80 })
-        area.focusMode = Qt.binding(() => control.refineMode)
+        area.refineMode = Qt.binding(() => control.refineMode)
         area.visible = Qt.binding(() => SettingsModel.panesOpen)
         compare(area.item, null)
         mouseClick(control, control.width / 4, control.height / 2)
         tryVerify(() => area.item && area.item.objectName === "testColumns")
         mouseClick(control, control.width * 3 / 4, control.height / 2)
-        tryVerify(() => area.item && area.item.objectName === "focusPanel")
+        tryVerify(() => area.item && area.item.objectName === "refinePanel")
         compare(SettingsModel.kept("ui.library.focus"), "true")
         const restored = createTemporaryObject(switchFactory, test, { y: 40 })
         compare(restored.refineMode, true)
@@ -217,9 +217,9 @@ TestCase {
         SettingsModel.panesOpen = true
         const screen = createTemporaryObject(screenFactory, test)
         verify(screen)
-        tryVerify(() => findChild(screen, "focusPanel") !== null)
+        tryVerify(() => findChild(screen, "refinePanel") !== null)
         const control = findChild(screen, "refineSwitch")
         mouseClick(control, control.width / 4, control.height / 2)
-        tryVerify(() => findChild(screen, "focusPanel") === null)
+        tryVerify(() => findChild(screen, "refinePanel") === null)
     }
 }

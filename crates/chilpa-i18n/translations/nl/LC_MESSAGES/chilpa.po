@@ -184,6 +184,12 @@ msgstr "Actieve modules"
 msgid "Add"
 msgstr "Toevoegen"
 
+msgid "Add a condition: type a genre, artist, year…"
+msgstr "Voorwaarde toevoegen: typ een genre, artiest, jaar…"
+
+msgid "Add a condition…"
+msgstr "Voorwaarde toevoegen…"
+
 msgid "Add a folder"
 msgstr "Een map toevoegen"
 
@@ -240,6 +246,9 @@ msgstr "Aan wachtrij {} toevoegen"
 
 msgid "Add tracks from a track menu to this queue."
 msgstr "Voeg nummers uit een nummermenu toe aan deze wachtrij."
+
+msgid "Add values"
+msgstr "Waarden toevoegen"
 
 msgid "Added"
 msgstr "Toegevoegd"
@@ -967,6 +976,9 @@ msgstr "Wissen"
 msgid "Clear after this track"
 msgstr "Wissen na dit nummer"
 
+msgid "Clear all"
+msgstr "Alles wissen"
+
 msgid "Clear filter"
 msgstr "Filter wissen"
 
@@ -1615,6 +1627,9 @@ msgstr "Alleen ingebedde tags"
 msgid "Empty folders"
 msgstr "Lege mappen"
 
+msgid "Empty group. Conditions you add now go here."
+msgstr "Lege groep. Voorwaarden die je nu toevoegt, komen hier."
+
 msgid "Empty. Add tracks from any list with a right click."
 msgstr "Leeg. Voeg nummers uit een lijst toe met een rechtsklik."
 
@@ -1743,6 +1758,9 @@ msgstr "februari"
 
 msgid "Fetching the cover…"
 msgstr "De hoes ophalen…"
+
+msgid "Fields"
+msgstr "Velden"
 
 msgid "File"
 msgstr "Bestand"
@@ -1990,6 +2008,9 @@ msgstr "Raster"
 msgid "Grid view"
 msgstr "Rasterweergave"
 
+msgid "Group"
+msgstr "Groep"
+
 msgid "Group album versions"
 msgstr "Albumversies groeperen"
 
@@ -2061,6 +2082,9 @@ msgstr "Handmatige invoer verbergen"
 
 msgid "Hide sidebar"
 msgstr "Zijbalk verbergen"
+
+msgid "Hide the console line"
+msgstr "Consoleregel verbergen"
 
 msgid "Hide token"
 msgstr "Token verbergen"
@@ -2620,6 +2644,9 @@ msgstr "Markeren als niet afgespeeld"
 msgid "Mark the start first with :loop a."
 msgstr "Markeer eerst het begin met :loop a."
 
+msgid "Match"
+msgstr "Voldoen aan"
+
 msgid "Match all"
 msgstr "Aan alles voldoen"
 
@@ -2857,6 +2884,9 @@ msgstr "Nieuw tabblad"
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
 msgstr "Nieuwe analyses verschijnen hier. Je opgeslagen nummerresultaten vind je onder Nummers."
 
+msgid "New conditions go into this group"
+msgstr "Nieuwe voorwaarden komen in deze groep"
+
 msgid "New folder"
 msgstr "Nieuwe map"
 
@@ -2919,6 +2949,9 @@ msgstr "Er zijn in deze scène geen artiesten van je geselecteerde plug-ins gevo
 
 msgid "No composer"
 msgstr "Geen componist"
+
+msgid "No conditions yet. Add one below, or click values in Columns."
+msgstr "Nog geen voorwaarden. Voeg er hieronder een toe, of klik op waarden in Kolommen."
 
 msgid "No cover"
 msgstr "Geen hoes"
@@ -3192,6 +3225,9 @@ msgstr "ListenList openen"
 
 msgid "Open Music Link"
 msgstr "Muzieklink openen"
+
+msgid "Open Refine in its own window"
+msgstr "Verfijnen in een eigen venster openen"
 
 msgid "Open SACD…"
 msgstr "SACD openen…"
@@ -3814,6 +3850,9 @@ msgstr "Limiet voor externe afbeeldingen"
 msgid "Remove"
 msgstr "Verwijderen"
 
+msgid "Remove condition"
+msgstr "Voorwaarde verwijderen"
+
 msgid "Remove cover"
 msgstr "Hoes verwijderen"
 
@@ -3837,6 +3876,9 @@ msgstr "Uit opgeslagen verwijderen"
 
 msgid "Remove from the library"
 msgstr "Uit de bibliotheek verwijderen"
+
+msgid "Remove group"
+msgstr "Groep verwijderen"
 
 msgid "Remove image"
 msgstr "Afbeelding verwijderen"
@@ -4268,6 +4310,9 @@ msgstr "Opgeslagen nummers tonen in Nummers"
 
 msgid "Show source recommendations by default in Home"
 msgstr "Aanbevelingen van bronnen standaard tonen op de startpagina"
+
+msgid "Show the query as console text"
+msgstr "De zoekopdracht als consoletekst tonen"
 
 msgid "Show the sidebar"
 msgstr "De zijbalk tonen"
@@ -4973,11 +5018,17 @@ msgstr "Niet beschikbaar"
 msgid "Uncategorized"
 msgstr "Zonder categorie"
 
+msgid "Undo"
+msgstr "Ongedaan maken"
+
 msgid "Undo queue edit"
 msgstr "Wachtrijbewerking ongedaan maken"
 
 msgid "Unfollow"
 msgstr "Ontvolgen"
+
+msgid "Ungroup"
+msgstr "Groep opheffen"
 
 msgid "Uninstall"
 msgstr "Verwijderen"
@@ -5420,6 +5471,9 @@ msgstr "added neemt een periode zoals 30d, 6w, 3m of 1y"
 msgid "aggregate"
 msgstr "samengesteld"
 
+msgid "all"
+msgstr "alle"
+
 msgid "almost nothing in the queue has an analysed tempo"
 msgstr "bijna niets in de wachtrij heeft een geanalyseerd tempo"
 
@@ -5435,11 +5489,20 @@ msgstr "een ander programma heeft ‘{}' voor zichzelf; sluit het, of zet de exc
 msgid "another program is using \"{}\"; close it, or turn bit-perfect and exclusive mode off to share it ({})"
 msgstr "een ander programma gebruikt ‘{}'; sluit het, of zet bit-perfect en de exclusieve modus uit om het te delen ({})"
 
+msgid "any"
+msgstr "één"
+
+msgid "at least"
+msgstr "minstens"
+
 msgid "awaiting approval"
 msgstr "wacht op goedkeuring"
 
 msgid "be a plugin of another kind: {}"
 msgstr "een plug-in van een andere soort zijn: {}"
+
+msgid "between"
+msgstr "tussen"
 
 msgid "bring catalogue: search for and fetch music"
 msgstr "een catalogus meebrengen: muziek zoeken en ophalen"
@@ -5464,6 +5527,9 @@ msgstr "kan niet"
 
 msgid "choose at least one library"
 msgstr "kies minstens één bibliotheek"
+
+msgid "contains"
+msgstr "bevat"
 
 msgid "converted to {}"
 msgstr "omgezet naar {}"
@@ -5507,6 +5573,9 @@ msgstr "beeldscherm"
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr "versleuteld en gekoppeld aan deze machine (er is geen systeemsleutelhanger)"
 
+msgid "exactly"
+msgstr "precies"
+
 msgid "exclusive"
 msgstr "exclusief"
 
@@ -5518,6 +5587,9 @@ msgstr "in orde"
 
 msgid "format not supported: {}"
 msgstr "formaat niet ondersteund: {}"
+
+msgid "from"
+msgstr "vanaf"
 
 msgid "from a file"
 msgstr "uit een bestand"
@@ -5569,6 +5641,18 @@ msgstr "ongeldige inhoudsopgave: {}"
 
 msgid "invalid timecode in frame-info"
 msgstr "ongeldige timecode in frame-info"
+
+msgid "is"
+msgstr "is"
+
+msgid "is any of"
+msgstr "is een van"
+
+msgid "is none of"
+msgstr "is geen van"
+
+msgid "is not"
+msgstr "is niet"
 
 msgid "it answered an address not in its memory"
 msgstr "het antwoordde met een adres dat niet in zijn geheugen ligt"
@@ -6448,6 +6532,9 @@ msgstr "type accepteert album, single, ep, compilation, live of soundtrack"
 msgid "unrated"
 msgstr "zonder sterren"
 
+msgid "up to"
+msgstr "tot en met"
+
 msgid "up to {} bits"
 msgstr "tot {} bits"
 
@@ -6701,6 +6788,9 @@ msgid "{} star"
 msgid_plural "{} stars"
 msgstr[0] "{} ster"
 msgstr[1] "{} sterren"
+
+msgid "{} still loading · counts may grow"
+msgstr "{} laadt nog · aantallen kunnen stijgen"
 
 msgid "{} track"
 msgid_plural "{} tracks"
