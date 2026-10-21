@@ -14,6 +14,8 @@
 //! go to the full-text index: "love" in 5.5 ms, against 121 ms as LIKE.
 
 mod parse;
+mod buckets;
+pub(crate) use buckets::register;
 #[cfg(test)]
 mod tests;
 
@@ -36,6 +38,12 @@ pub enum Field {
     Title,
     /// The record's own stars, 0 for none.
     Rating,
+    /// Completed listens, as the track list counts them.
+    Plays,
+    /// The record's release kind.
+    Type,
+    /// The record's best quality tier.
+    Quality,
     /// When the track came into the library.
     Added,
     /// Words anywhere in the title, the artist or the record.
@@ -48,7 +56,8 @@ impl Field {
         ("label", Field::Label), ("l", Field::Label), ("composer", Field::Composer), ("c", Field::Composer),
         ("artist", Field::Artist), ("a", Field::Artist), ("album", Field::Album), ("al", Field::Album),
         ("title", Field::Title), ("t", Field::Title), ("rating", Field::Rating), ("r", Field::Rating),
-        ("added", Field::Added),
+        ("added", Field::Added), ("plays", Field::Plays), ("p", Field::Plays),
+        ("type", Field::Type), ("ty", Field::Type), ("quality", Field::Quality), ("q", Field::Quality),
     ];
 
     /// The name a query is printed with.
@@ -57,6 +66,7 @@ impl Field {
             Field::Year => "year", Field::Genre => "genre", Field::Label => "label", Field::Composer => "composer",
             Field::Artist => "artist", Field::Album => "album", Field::Title => "title", Field::Rating => "rating",
             Field::Added => "added", Field::Text => "",
+            Field::Plays => "plays", Field::Type => "type", Field::Quality => "quality",
         }
     }
 }
@@ -137,6 +147,8 @@ impl Node {
 fn set(field: Field, values: &Values, now: i64, args: &mut Args) -> String {
     let tracks = "SELECT t.id FROM tracks t JOIN albums a ON a.id = t.album_id WHERE";
     match (field, values) {
+        (Field::Plays, Values::Any(_) | Values::Range(..)) => buckets::plays(values, args),
+        (Field::Type | Field::Quality, Values::Any(names)) => buckets::records(field, names, args),
         (Field::Genre, Values::Missing) => "SELECT id FROM tracks WHERE id NOT IN (SELECT track_id FROM track_genres)".into(),
         (Field::Composer, Values::Missing) => "SELECT id FROM tracks WHERE id NOT IN (SELECT track_id FROM track_composers)".into(),
         (Field::Label, Values::Missing) => "SELECT id FROM tracks WHERE coalesce(label, '') = ''".into(),

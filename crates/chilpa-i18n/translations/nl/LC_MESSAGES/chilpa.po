@@ -2557,6 +2557,9 @@ msgstr "Lossless"
 msgid "Lossless only"
 msgstr "Alleen lossless"
 
+msgid "Lossless or Hi-Res records; quality also takes lossy or dsd"
+msgstr "Lossless- of hi-resalbums; quality accepteert ook lossy of dsd"
+
 msgid "Lossy"
 msgstr "Lossy"
 
@@ -2844,6 +2847,9 @@ msgstr "Netwerkweergave"
 
 msgid "Never played"
 msgstr "Nooit afgespeeld"
+
+msgid "Never played; plays:1.. means played at least once"
+msgstr "Nooit afgespeeld; plays:1.. betekent minstens één keer afgespeeld"
 
 msgid "New Tab"
 msgstr "Nieuw tabblad"
@@ -3787,6 +3793,9 @@ msgstr "Uitgave"
 msgid "Release date"
 msgstr "Uitgavedatum"
 
+msgid "Release type"
+msgstr "Soort uitgave"
+
 msgid "Releases"
 msgstr "Uitgaven"
 
@@ -4224,8 +4233,8 @@ msgstr "Instellingen"
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "Vorm het geluid: verhoog een band om meer te horen, verlaag hem om minder te horen."
 
-msgid "Short names: y g l c a al t r"
-msgstr "Korte namen: y g l c a al t r"
+msgid "Short names: y g l c a al t r p ty q"
+msgstr "Korte namen: y g l c a al t r p ty q"
 
 msgid "Show"
 msgstr "Tonen"
@@ -4308,6 +4317,9 @@ msgstr "Sinds {}"
 msgid "Singles"
 msgstr "Singles"
 
+msgid "Singles or EPs, using the release type grouping"
+msgstr "Singles of EP's, volgens de groepering op soort uitgave"
+
 msgid "Size"
 msgstr "Grootte"
 
@@ -4340,6 +4352,9 @@ msgstr "Sommige pakketten ontbreken"
 
 msgid "Songs"
 msgstr "Nummers"
+
+msgid "Soundtracks"
+msgstr "Soundtracks"
 
 msgid "Source"
 msgstr "Bron"
@@ -4984,6 +4999,9 @@ msgstr "Onbekende voorkeur."
 
 msgid "Unknown quality"
 msgstr "Kwaliteit onbekend"
+
+msgid "Unknown release type"
+msgstr "Onbekende soort uitgave"
 
 msgid "Unknown source"
 msgstr "Bron onbekend"
@@ -5719,6 +5737,9 @@ msgstr "pcm is de kaart zoals de eigen configuratie van ALSA die instelt: meesta
 msgid "pcm: shared, as ALSA sets it up"
 msgstr "pcm: gedeeld, zoals ALSA het instelt"
 
+msgid "plays takes non-negative whole numbers or a range with the lower bound first"
+msgstr "plays accepteert niet-negatieve gehele getallen of een bereik met de ondergrens eerst"
+
 msgid "plughw converts whatever the card does not take -- the rate, the sample format, the channels -- without saying so. It plays what the card alone would refuse, and for the same reason it cannot promise the samples arrive as they left."
 msgstr "plughw zet alles om wat de kaart niet accepteert -- de samplefrequentie, het sampleformaat, de kanalen -- zonder dat te melden. Het speelt af wat de kaart alleen zou weigeren en kan daarom niet beloven dat de samples aankomen zoals ze waren."
 
@@ -5733,6 +5754,9 @@ msgstr "PCM-audio verwerken met equalizer en stereoregelaars"
 
 msgid "put a panel of its own in the window"
 msgstr "een eigen paneel in het venster plaatsen"
+
+msgid "quality takes lossy, cd, hires or dsd"
+msgstr "quality accepteert lossy, cd, hires of dsd"
 
 msgid "quarantined"
 msgstr "in quarantaine"
@@ -6402,6 +6426,9 @@ msgstr "nummers in een discimage bewaren hun wijzigingen in een sidecar-bestand"
 
 msgid "type a title, an artist or a catalog number to search"
 msgstr "typ een titel, een artiest of een catalogusnummer om te zoeken"
+
+msgid "type takes album, single, ep, compilation, live or soundtrack"
+msgstr "type accepteert album, single, ep, compilation, live of soundtrack"
 
 msgid "up to {} bits"
 msgstr "tot {} bits"
