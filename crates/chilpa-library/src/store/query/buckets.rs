@@ -5,6 +5,7 @@ use rusqlite::{functions::FunctionFlags, types::ToSql, Connection};
 
 pub(crate) fn register(db: &Connection) -> rusqlite::Result<()> {
     let flags = FunctionFlags::SQLITE_UTF8 | FunctionFlags::SQLITE_DETERMINISTIC;
+    db.create_scalar_function("chilpa_fold", 1, flags, |ctx| Ok(super::fold(&ctx.get::<String>(0)?)))?;
     db.create_scalar_function("chilpa_release_kind", 4, flags, |ctx| {
         Ok(crate::release_kind::release_kind("", &ctx.get::<String>(0)?, &ctx.get::<String>(1)?,
             ctx.get::<i64>(2)? as usize, ctx.get(3)?).to_string())

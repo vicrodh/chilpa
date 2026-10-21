@@ -130,3 +130,18 @@ fn quoted_values_and_album_alternatives_keep_their_meaning() {
     assert_eq!(found(&lib, "album:\"Kind of Blue\",\"Monk's Dream\""), [1, 2, 3]);
     assert!(parse("added:9223372036854775807y").is_err());
 }
+
+#[test]
+fn literal_fields_execute_like_the_original_fields() {
+    let lib=library();
+    for (plain,literal) in [("blue", "words:blue"),("genre:Jazz","genre=:Jazz"),("-genre:Jazz","-genre=:Jazz")] {
+        assert_eq!(found(&lib,plain),found(&lib,literal));
+        let tree=parse(literal).unwrap(); assert_eq!(parse(&tree.to_string()).unwrap(),tree);
+    }
+    for text in ["(genre:Jazz)","(genre:Jazz genre:Modal)","(genre:Jazz | genre:Modal) year:1959"] {
+        let grouped=parse_grouped(text).unwrap(); assert_eq!(grouped.to_string(),text);
+        assert_eq!(grouped.ungrouped(),parse(text).unwrap());
+        let (sql,args)=grouped.compile(10_000); let (plain,plain_args)=parse(text).unwrap().compile(10_000);
+        assert_eq!(sql,plain); assert_eq!(args.len(),plain_args.len());
+    }
+}
