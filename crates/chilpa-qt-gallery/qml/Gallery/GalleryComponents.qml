@@ -19,8 +19,10 @@ TitledFlow {
         property int ticks: 0
         text: "PulseClock: " + ticks
         color: Theme.color.textPrimary
+        // It ticks only while held, so an idle Gallery runs no clock.
+        MouseArea { id: hold; anchors.fill: parent; cursorShape: Qt.PointingHandCursor }
         PulseClock {
-            running: section.visible && (!section.Window.window || section.Window.window.visible && section.Window.window.visibility !== Window.Minimized)
+            running: hold.pressed
             onTriggered: pulsePreview.ticks++
         }
     }
