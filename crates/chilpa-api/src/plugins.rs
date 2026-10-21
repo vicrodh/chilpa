@@ -519,13 +519,12 @@ impl Plugins {
     /// Takes it out of quarantine. Only the user calls it.
     pub fn reactivate(&mut self, id: &str) {
         self.registry.reactivate(id);
-        let worker = self.registry.installed().find(|plugin| plugin.id == id)
+        let process = self.registry.installed().find(|plugin| plugin.id == id)
             .and_then(|plugin| plugin.manifest.as_ref())
-            .is_some_and(|manifest| manifest.runtime == chilpa_plugin::Runtime::Bridge);
-        if worker {
-            // A revoked transport is intentionally terminal. Reactivating
-            // creates a fresh isolated worker with the current approvals.
-            self.load_one(&self.root.join(id));
+            .is_some_and(|manifest| matches!(manifest.runtime, chilpa_plugin::Runtime::Bridge | chilpa_plugin::Runtime::Process));
+        if process {
+            // I reload a process whose failed launch left no live instance.
+            self.reload_one(id);
         }
     }
 
@@ -1144,6 +1143,22 @@ impl NativeCaller {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn restarting_a_process_reloads_the_installed_package() {
+        let root = tempfile::tempdir().unwrap();
+        let id = "app.example.process";
+        let folder = root.path().join(id);
+        std::fs::create_dir(&folder).unwrap();
+        std::fs::write(folder.join("manifest.json"),
+            r#"{"id":"app.example.process","name":"Process","version":"1.0.0","api_version":1,"kind":"source","runtime":"process","capabilities":[{"type":"register_source"}]}"#).unwrap();
+        let mut host = Plugins::new(root.path().into()).unwrap();
+        host.load_all();
+        let before = host.epoch(id);
+        assert!(before > 0);
+        host.reactivate(id);
+        assert_eq!(host.epoch(id), before + 1);
+    }
 
     #[test]
     fn a_key_with_slashes_or_dot_dots_never_becomes_a_file() {
