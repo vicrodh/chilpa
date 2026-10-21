@@ -2,17 +2,13 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.ambient
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
-// A track in the side queue (design/03 QueueRow): the grid
-// 12 | 36 | 1fr | auto | 20 -- grip, cover, title and artist, time and the
-// item's menu. The grip's column is kept and its glyph is not drawn until
-// the queue can be reordered by dragging. The one that plays is 48 high,
-// raised, with the playing bars where the time goes; its words keep their
-// colours, as in QBZ, so they read over the dynamic background. A double click
-// plays from here; the menu, or a right click, has the rest.
+// I show each queued track with a grip, cover, title, time and menu.
+// The playing row is raised and puts its bars where the time was.
 Item {
     id: row
 
@@ -84,6 +80,7 @@ Item {
     }
 
     PlayingIndicator {
+        sceneAnimating: Ambient.mode === 1 || Ambient.mode === 2 || Ambient.mode === 4
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap10
         anchors.verticalCenter: parent.verticalCenter
