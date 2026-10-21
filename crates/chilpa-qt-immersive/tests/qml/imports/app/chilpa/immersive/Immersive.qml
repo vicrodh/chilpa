@@ -33,4 +33,5 @@ QtObject {
     function reload() {}
     function likePlaying() { likes += 1; favorite = !favorite }
     function refreshFavorite() {}
+    property bool favoritePending: false
 }
