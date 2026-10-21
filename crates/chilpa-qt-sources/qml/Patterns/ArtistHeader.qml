@@ -7,6 +7,7 @@ import app.chilpa.sources
 import app.chilpa.artwork
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/artwork/qml/Components"
 import "../Components"
 
@@ -137,9 +138,11 @@ Item {
         }
         Flow {
             width: parent.width; spacing: Metrics.gap12
-            IconButton {
+            FavoriteButton {
+                clock: Pulse
                 objectName: "followAction"; round: true; size: Metrics.button32; glyph: header.favorite ? Icons.heartFilled : Icons.heart; filled: header.favorite; checked: header.favorite; heart: true
                 enabled: header.local || !!header.info.ref
+                busy: !header.local && Sources.favoritePending(header.info.plugin || "", header.info.ref || "", Sources.revision)
                 tip: header.favorite ? I18n.tr("Unfollow", I18n.rev) : I18n.tr("Follow", I18n.rev)
                 onClicked: header.local ? Ratings.setFavorite("artist", header.info.title || "", !header.favorite)
                     : Sources.command("native", header.info.plugin, JSON.stringify({action:"favorite",ref:header.info.ref,on:!header.favorite}))

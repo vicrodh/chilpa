@@ -12,6 +12,10 @@ QtObject {
     function artistKey(id, path) { return "" }
     function artistLink(id, name) { return JSON.stringify(AlbumActions.artistDestination.key ? AlbumActions.artistDestination : {target:"artist",key:name}) }
     function card(id, rev) { return JSON.stringify((state.cards || {})[id] || {}) }
+    function favoritePending(plugin, reference, rev) {
+        const action = (state.native_actions || {})[plugin] || {}
+        return action.pending === true && action.favorite?.ref === reference
+    }
     function artColors(id, rev) { return JSON.stringify((state.artColors || {})[id] || []) }
     function albumLibraries(rev) { return JSON.stringify(state.albumLibraries || []) }
     function trackLibraries(rev) { return JSON.stringify(state.trackLibraries || []) }

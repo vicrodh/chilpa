@@ -3,6 +3,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // The listener's marks on what a page is about: the heart that makes it a
 // favorite and, where it takes stars, the button that rates it.
@@ -21,13 +22,15 @@ Row {
     spacing: Metrics.gap8
     visible: key !== "" && key !== "0"
 
-    IconButton {
+    FavoriteButton {
+        clock: Pulse
         visible: marks.kind === "artist" || Number(marks.key) > 0
         round: true
         glyph: marks.favorite ? Icons.heartFilled : Icons.heart
         filled: marks.favorite
         checked: marks.favorite
         heart: true
+        busy: Ratings.pending(marks.kind, marks.key, Ratings.rev)
         tone: marks.contrasted ? "overlay" : marks.favorite ? "accent" : "secondary"
         tip: marks.favorite ? I18n.tr("Remove from favorites", I18n.rev)
                             : I18n.tr("Add to favorites", I18n.rev)
