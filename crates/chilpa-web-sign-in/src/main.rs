@@ -89,7 +89,7 @@ mod window {
         application.connect_activate(move |application| {
             let settings = webkit6::Settings::new();
             if let Some(agent) = &agent {
-                settings.set_user_agent(Some(agent));
+                settings.set_user_agent(Some(agent.as_str()));
             }
             // Nothing of this sign-in outlives the window: no cookies, no cache.
             let session = webkit6::NetworkSession::new_ephemeral();
@@ -107,7 +107,7 @@ mod window {
                     return false;
                 }
                 let Some(navigation) = decision.downcast_ref::<webkit6::NavigationPolicyDecision>() else { return false };
-                let address = navigation.navigation_action().and_then(|mut action| action.request()).and_then(|request| request.uri());
+                let address = navigation.navigation_action().and_then(|action| action.request()).and_then(|request| request.uri());
                 let Some(address) = address else { return false };
                 let reached = Request { url: String::new(), until: until.to_string(), user_agent: None, title: String::new() }.reaches(&address);
                 if !reached {

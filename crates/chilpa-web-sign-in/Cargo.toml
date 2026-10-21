@@ -16,5 +16,6 @@ path = "src/main.rs"
 webkit = ["dep:gtk", "dep:webkit6"]
 
 [target.'cfg(target_os = "linux")'.dependencies]
-gtk = { package = "gtk4", version = "0.11", optional = true }
+# v4_10 exposes Accessible, which the WebKit bindings implement.
+gtk = { package = "gtk4", version = "0.11", optional = true, features = ["v4_10"] }
 webkit6 = { version = "0.6", optional = true }
