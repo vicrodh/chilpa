@@ -24,7 +24,9 @@ Item {
     property string tab: "uninspected"
     property string category: ""
     property bool filterPending: false
-    property alias catalogView: catalog
+    property string section: "native"
+    readonly property bool listing: !downloadsOpen && initialDownloadsId === ""
+    property alias catalogView: compatibleTab.catalogView
     property alias detailsView: details
     function read() {
         const wasBusy = view.busy === true
@@ -84,167 +86,68 @@ Item {
         onTriggered: {
             if (manager.view.busy) { manager.filterPending = true; return }
             manager.filterPending = false
-            manager.command("filter", {text: search.text, category: manager.category, tab: manager.tab})
+            manager.command("filter", {text: compatibleTab.searchText, category: manager.category, tab: manager.tab})
         }
     }
     PluginMaintenance { controller: manager }
-    Column {
-        id: toolbar
-        visible: !manager.downloadsOpen && manager.initialDownloadsId === ""
+    // Two sections, each one scroll: the native plugins, and the compatible
+    // ones Chilpa can run from other platforms. A repository serves either.
+    Item {
+        id: header
+        visible: manager.listing
         width: parent.width
-        spacing: Metrics.gap12
-        // A repository serves either section: native plugins, or a catalog
-        // of compatible ones; Chilpa tells them apart.
+        height: sections.height
+        P.SegmentedControl {
+            id: sections
+            objectName: "pluginSections"
+            options: [{text: I18n.tr("Native plugins", I18n.rev)}, {text: I18n.tr("Compatible plugins", I18n.rev)}]
+            current: manager.section === "compatible" ? 1 : 0
+            onActivated: (index) => manager.section = index === 1 ? "compatible" : "native"
+        }
         Row {
-            width: parent.width
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
             spacing: Metrics.gap8
-            P.TextField {
-                id: repository
-                width: Math.max(0, parent.width - add.width - manage.width - Metrics.gap8 * 2) // derived: two buttons and two gaps
-                placeholder: I18n.tr("Plugin repository URL", I18n.rev)
-            }
-            P.PillButton { id: add; text: I18n.tr("Add", I18n.rev); enabled: !manager.view.busy; onClicked: manager.command("add", {url: repository.text}) }
-            P.PillButton { id: manage; text: I18n.tr("Manage", I18n.rev); onClicked: repositories.open() }
-        }
-        P.PillButton {
-            objectName: "installLocalPlugin"
-            text: I18n.tr("Install from ZIP…", I18n.rev)
-            enabled: !manager.view.busy
-            onClicked: manager.command("choose_package", {})
-        }
-        Text { text: I18n.tr("Chilpa Native Plugins", I18n.rev); font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
-        ListView {
-            id: nativePlugins
-            objectName: "installedNativePlugins"
-            width: parent.width
-            height: Math.min(contentHeight, manager.height / 3) // derived: reserve room for catalog controls and results
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: P.ViewportScrollBar {}
-            model: manager.installedRows.filter(p => !p.origin)
-            delegate: PluginRow {
-                required property var modelData
-                width: toolbar.width - Metrics.gap12
-                plugin: modelData
-                installed: true
+            P.PillButton {
+                objectName: "installLocalPlugin"
+                visible: manager.section === "native"
+                text: I18n.tr("Install from ZIP…", I18n.rev)
                 enabled: !manager.view.busy
-                onMoved: position => manager.command("sidebar_position", {id: modelData.id, position: position})
-                onSettings: manager.settings(modelData)
-                onOpened: Navigation.goKey("pluginDownloads", modelData.id)
-                onSwitched: (on) => manager.command(on ? "review_permissions" : "disable", {id: modelData.id})
+                onClicked: manager.command("choose_package", {})
             }
-        }
-        // What the added repositories offer that is not installed, or is
-        // newer than what is. Installed, it waits switched off.
-        Repeater {
-            model: manager.view.native_catalog || []
-            delegate: Item {
-                required property var modelData
-                objectName: "nativeCatalogRow"
-                width: toolbar.width - Metrics.gap12
-                height: Metrics.settingsRow
-                Column {
-                    anchors.left: parent.left
-                    anchors.right: get.left
-                    anchors.rightMargin: Metrics.gap12
-                    anchors.verticalCenter: parent.verticalCenter
-                    Text { width: parent.width; text: modelData.name + "  " + modelData.version; elide: Text.ElideRight; color: Theme.color.textPrimary; font.pointSize: Type.body }
-                    Text { width: parent.width; text: modelData.problem || modelData.description; elide: Text.ElideRight; color: modelData.problem ? Theme.color.statusWarning : Theme.color.textSecondary; font.pointSize: Type.meta }
-                }
-                P.PillButton {
-                    id: get
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: modelData.update ? I18n.tr("Update", I18n.rev) : I18n.tr("Install", I18n.rev)
-                    enabled: !manager.view.busy && !modelData.problem
-                    onClicked: manager.command("install_native", {repository: modelData.repository_id, id: modelData.id})
-                }
-            }
-        }
-        Text { text: I18n.tr("Compatible plugins", I18n.rev); font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
-        Text {
-            width: parent.width
-            text: I18n.tr("Chilpa can run some plugins made for other platforms. Add a plugin catalog you use. Compatibility is not guaranteed; Chilpa is not responsible for these plugins' behavior.", I18n.rev)
-            wrapMode: Text.WordWrap
-            color: Theme.color.textSecondary
-            font.pointSize: Type.body
-        }
-        Flow {
-            width: parent.width
-            spacing: Metrics.gap8
-            Repeater {
-                model: [{id: "installed", label: I18n.tr("Installed", I18n.rev)}, {id: "valid", label: I18n.tr("Valid", I18n.rev)}, {id: "uninspected", label: I18n.tr("Not inspected", I18n.rev)}, {id: "incompatible", label: I18n.tr("Not compatible", I18n.rev)}]
-                P.PillButton {
-                    required property var modelData
-                    text: modelData.label + " (" + ((manager.view.counts || {})[modelData.id] || 0) + ")"
-                    kind: manager.tab === modelData.id ? "primary" : "secondary"
-                    onClicked: { manager.tab = modelData.id; manager.filter() }
-                }
-            }
-        }
-        Row {
-            width: parent.width
-            spacing: Metrics.gap8
-            P.TextField {
-                id: search
-                objectName: "pluginSearch"
-                width: Math.max(0, parent.width - categories.width - Metrics.gap8)
-                placeholder: I18n.tr("Search plugins", I18n.rev)
-                onTextEdited: manager.filter()
-                onAccepted: manager.filter()
-            }
-            P.SelectField {
-                id: categories
-                width: Math.min(Metrics.selectWidth, parent.width / 2) // derived: reserve at least half for search
-                options: [I18n.tr("All categories", I18n.rev)].concat((manager.view.categories || []).map(c => manager.categoryLabel(c)))
-                values: [""].concat(manager.view.categories || [])
-                value: manager.category
-                onPicked: (value) => { manager.category = value; manager.filter() }
-            }
-        }
-        Text {
-            width: parent.width
-            text: manager.view.busy ? I18n.tr("Loading…", I18n.rev) : manager.view.error || ""
-            height: Metrics.fieldHeightLarge
-            wrapMode: Text.WordWrap
-            maximumLineCount: 2
-            elide: Text.ElideRight
-            color: Theme.color.statusWarning
-            font.pointSize: Type.body
+            P.PillButton { objectName: "managePluginRepositories"; text: I18n.tr("Repositories", I18n.rev); onClicked: repositories.open() }
         }
     }
-    ListView {
-        id: catalog
-        visible: !manager.downloadsOpen && manager.initialDownloadsId === ""
-        anchors.top: toolbar.bottom
-        anchors.topMargin: Metrics.gap12
+    Text {
+        id: status
+        visible: manager.listing
+        anchors.top: header.bottom
+        anchors.topMargin: Metrics.gap8
+        width: parent.width
+        height: Metrics.fieldHeight
+        text: manager.view.busy ? I18n.tr("Loading…", I18n.rev) : manager.view.error || ""
+        verticalAlignment: Text.AlignVCenter
+        elide: Text.ElideRight
+        color: Theme.color.statusWarning
+        font.pointSize: Type.body
+    }
+    PluginNativeTab {
+        id: nativeTab
+        controller: manager
+        visible: manager.listing && manager.section === "native"
+        anchors.top: status.bottom
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        clip: true
-        reuseItems: true
-        model: manager.catalogRows
-        ScrollBar.vertical: P.ViewportScrollBar { gutter: -Metrics.gap8;}
-        delegate: PluginRow {
-            required property var modelData
-            objectName: "catalogPluginRow"
-            width: catalog.width - Metrics.gap12
-            plugin: modelData
-            installed: manager.tab === "installed"
-            enabled: !manager.view.busy && !manager.filterPending
-            onMoved: position => manager.command("sidebar_position", {id: modelData.id, position: position})
-            onInspected: manager.inspect(modelData)
-            onSettings: manager.settings(modelData)
-            onOpened: Navigation.goKey("pluginDownloads", modelData.id)
-            onSwitched: (on) => manager.command(on ? "review_permissions" : "disable", {id: modelData.id})
-        }
-        Text {
-            anchors.centerIn: parent
-            visible: catalog.count === 0 && !manager.view.busy
-            text: I18n.tr("No matching plugins", I18n.rev)
-            color: Theme.color.textSecondary
-            font.pointSize: Type.body
-        }
+    }
+    PluginCompatibleTab {
+        id: compatibleTab
+        controller: manager
+        visible: manager.listing && manager.section === "compatible"
+        anchors.top: status.bottom
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
     }
     PluginManagerDownloads { anchors.fill: parent; controller: manager }
     PluginDownloadsUnavailable { anchors.centerIn: parent; visible: manager.initialDownloadsId !== "" && !manager.downloadsOpen; loading: manager.view.installed === undefined || manager.view.working === true; onBack: Navigation.goKey("settings", "plugins") }

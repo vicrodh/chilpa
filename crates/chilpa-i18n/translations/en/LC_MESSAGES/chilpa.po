@@ -588,6 +588,9 @@ msgstr ""
 msgid "Automatically update plugins"
 msgstr "Automatically update plugins"
 
+msgid "Available"
+msgstr "Available"
+
 msgid "Awaiting approval"
 msgstr ""
 
@@ -829,9 +832,6 @@ msgstr ""
 
 msgid "Chilpa"
 msgstr "Chilpa"
-
-msgid "Chilpa Native Plugins"
-msgstr "Chilpa Native Plugins"
 
 msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
 msgstr ""
@@ -2873,6 +2873,9 @@ msgstr ""
 msgid "Native DSD and DoP bypass DSP. Select PCM output to process them."
 msgstr ""
 
+msgid "Native plugins"
+msgstr "Native plugins"
+
 msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."
 msgstr ""
 
@@ -3992,6 +3995,9 @@ msgstr ""
 msgid "Report an issue"
 msgstr ""
 
+msgid "Repositories"
+msgstr "Repositories"
+
 msgid "Requests: {}"
 msgstr ""
 
@@ -4826,6 +4832,9 @@ msgstr "These records' barcodes are sent to MusicBrainz."
 
 msgid "These tracks' ISRCs are sent to MusicBrainz."
 msgstr "These tracks' ISRCs are sent to MusicBrainz."
+
+msgid "Third-party plugins"
+msgstr "Third-party plugins"
 
 msgid "This address belongs to a different server."
 msgstr ""

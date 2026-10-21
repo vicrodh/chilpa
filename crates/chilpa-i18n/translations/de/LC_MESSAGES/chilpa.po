@@ -588,6 +588,9 @@ msgstr "Automatischer Headroom senkt nur den Gain. Die Kompression hat keinen Ma
 msgid "Automatically update plugins"
 msgstr "Plugins automatisch aktualisieren"
 
+msgid "Available"
+msgstr "Verfügbar"
+
 msgid "Awaiting approval"
 msgstr "Wartet auf Genehmigung"
 
@@ -829,9 +832,6 @@ msgstr "{source} wird geprüft…"
 
 msgid "Chilpa"
 msgstr "Chilpa"
-
-msgid "Chilpa Native Plugins"
-msgstr "Native Chilpa-Plugins"
 
 msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
 msgstr "Chilpa legt Rate, Sink und Exklusivmodus zur Laufzeit bereits fest. Diese Dateien ändern nur das systemweite Verhalten – kopiere und starte sie selbst, wenn du sie willst. Erstelle vorher eine Sicherung."
@@ -2873,6 +2873,9 @@ msgstr "Natives DSD"
 msgid "Native DSD and DoP bypass DSP. Select PCM output to process them."
 msgstr "Natives DSD und DoP umgehen DSP. Wähle die PCM-Ausgabe, um sie zu verarbeiten."
 
+msgid "Native plugins"
+msgstr "Native Plugins"
+
 msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."
 msgstr "Nativ nutzt das DSD_U32-Format von ALSA. DoP überträgt denselben Ein-Bit-Strom in markierten PCM-Wörtern. PCM wandelt DSD um, damit jede Ausgabe es wiedergeben kann."
 
@@ -3992,6 +3995,9 @@ msgstr "Warteschlange {} ersetzen"
 msgid "Report an issue"
 msgstr "Problem melden"
 
+msgid "Repositories"
+msgstr "Repositorys"
+
 msgid "Requests: {}"
 msgstr "Fordert an: {}"
 
@@ -4826,6 +4832,9 @@ msgstr "Die Barcodes dieser Alben werden an MusicBrainz gesendet."
 
 msgid "These tracks' ISRCs are sent to MusicBrainz."
 msgstr "Die ISRCs dieser Titel werden an MusicBrainz gesendet."
+
+msgid "Third-party plugins"
+msgstr "Plugins von Drittanbietern"
 
 msgid "This address belongs to a different server."
 msgstr "Diese Adresse gehört zu einem anderen Server."

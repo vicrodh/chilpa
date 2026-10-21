@@ -587,6 +587,9 @@ msgstr "自動ヘッドルームはゲインを下げるだけです。コンプ
 msgid "Automatically update plugins"
 msgstr "プラグインを自動更新"
 
+msgid "Available"
+msgstr "利用可能"
+
 msgid "Awaiting approval"
 msgstr "承認待ち"
 
@@ -827,9 +830,6 @@ msgstr "{source}を確認中…"
 
 msgid "Chilpa"
 msgstr "Chilpa"
-
-msgid "Chilpa Native Plugins"
-msgstr "Chilpaネイティブプラグイン"
 
 msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
 msgstr "Chilpaはレート、シンク、排他モードを実行時にすでに固定しています。これらのファイルが変更するのはシステム全体の動作のみです。必要な場合は、ご自身でコピーして実行してください。事前にバックアップしてください。"
@@ -2871,6 +2871,9 @@ msgstr "ネイティブDSD"
 msgid "Native DSD and DoP bypass DSP. Select PCM output to process them."
 msgstr "ネイティブDSDとDoPはDSPをバイパスします。処理するにはPCM出力を選択してください。"
 
+msgid "Native plugins"
+msgstr "ネイティブプラグイン"
+
 msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."
 msgstr "ネイティブはALSAのDSD_U32フォーマットを使います。DoPは同じ1ビットストリームをマーク付きのPCMワードに載せて伝送します。PCMはDSDを変換するため、どの出力でも再生できます。"
 
@@ -3990,6 +3993,9 @@ msgstr "キュー「{}」を置き換え"
 msgid "Report an issue"
 msgstr "問題を報告"
 
+msgid "Repositories"
+msgstr "リポジトリ"
+
 msgid "Requests: {}"
 msgstr "要求: {}"
 
@@ -4822,6 +4828,9 @@ msgstr "これらのアルバムのバーコードがMusicBrainzに送信され�
 
 msgid "These tracks' ISRCs are sent to MusicBrainz."
 msgstr "これらの曲のISRCがMusicBrainzに送信されます。"
+
+msgid "Third-party plugins"
+msgstr "サードパーティ製プラグイン"
 
 msgid "This address belongs to a different server."
 msgstr "このアドレスは別のサーバーのものです。"
