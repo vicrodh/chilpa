@@ -206,6 +206,7 @@ TrackRowSlot {
                 visible: row.available
                 trackId: row.trackId
                 favorite: row.favorite
+                inViewport: row.immediate
                 hovered: row.actionHovered
             }
 

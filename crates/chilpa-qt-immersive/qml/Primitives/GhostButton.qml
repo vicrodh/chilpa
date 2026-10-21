@@ -1,5 +1,6 @@
 import QtQuick
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
 
 // A quiet round button of the immersive bar (03-immersive §1.3): a 28 px
@@ -12,6 +13,8 @@ Rectangle {
     property bool filled: false
     property bool active: false
     property bool able: true
+    property bool busy: false
+    property bool animationActive: true
     signal clicked()
     width: Stage.ghostSide
     height: Stage.ghostSide
@@ -19,6 +22,7 @@ Rectangle {
     opacity: able ? 1 : Stage.disabledOpacity
     color: active ? Theme.color.immersiveFill : "transparent"
     Text {
+        visible: !ghost.busy
         anchors.centerIn: parent
         text: ghost.glyph
         font.family: ghost.filled ? Icons.filled : Icons.outline
@@ -26,12 +30,17 @@ Rectangle {
         color: Theme.color.immersiveTextStrong
         opacity: ghost.active || area.containsMouse ? 1 : Stage.idleGlyph
     }
+    Loader {
+        anchors.centerIn: parent
+        active: ghost.busy && ghost.visible && ghost.animationActive
+        sourceComponent: BusyMark { size: Stage.ghostIcon; color: Theme.color.immersiveTextStrong }
+    }
     MouseArea {
         id: area
         anchors.fill: parent
         enabled: ghost.able
         hoverEnabled: true
         cursorShape: ghost.able ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onClicked: ghost.clicked()
+        onClicked: if (!ghost.busy) ghost.clicked()
     }
 }

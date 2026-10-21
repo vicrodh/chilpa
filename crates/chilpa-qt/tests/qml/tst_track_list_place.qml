@@ -47,6 +47,24 @@ TestCase {
         readAgain(80)
         compare(view.contentY - view.originY, at, "the same row at the top, as far into it")
     }
+    function test_pending_favorites_stop_outside_the_viewport_and_recover_on_the_same_row() {
+        view.positionViewAtIndex(30, ListView.Center)
+        tryVerify(() => view.itemAtIndex(30) && view.itemAtIndex(30).end)
+        const row = view.itemAtIndex(30)
+        Ratings.pendingTracks = {"31":true}; Ratings.rev++
+        compare(row.end.busy, true)
+        compare(Pulse.held, 1)
+        view.contentY = row.y + row.height + 1
+        verify(view.itemAtIndex(30) === row && row.visible)
+        tryCompare(row, "immediate", false)
+        compare(Pulse.held, 0)
+        view.contentY -= 2
+        tryCompare(row, "immediate", true)
+        compare(Pulse.held, 1)
+        Ratings.pendingTracks = ({}); Ratings.rev++
+        compare(row.end.busy, false)
+        compare(Pulse.held, 0)
+    }
 
     function test_the_end_can_be_reached_and_kept() {
         view.positionViewAtEnd()

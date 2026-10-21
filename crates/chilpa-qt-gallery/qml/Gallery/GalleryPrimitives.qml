@@ -21,11 +21,13 @@ TitledFlow {
         Icon { glyph: Icons.home; color: Theme.color.accent }
         Icon { glyph: Icons.heartFilled; filled: true; color: Theme.color.accent }
         Icon { glyph: Icons.waveSquare }
+        BusyMark {}
     }
 
     Row {
         spacing: Metrics.gap8
         IconButton { tip: "Resting"; glyph: Icons.list }
+        FavoriteButton { tip: "Saving favorite"; glyph: Icons.heartFilled; busy: true }
         IconButton { tip: "Checked"; glyph: Icons.list; checked: true }
         IconButton { tip: "Accent"; glyph: Icons.arrowsShuffle; tone: "accent" }
         IconButton { tip: "Disabled"; glyph: Icons.chevronLeft; enabled: false }

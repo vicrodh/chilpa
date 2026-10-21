@@ -13,7 +13,7 @@ pub struct Marks {
     ratings: Ratings,
     favorites: Favorites,
     /// The tracks of sources that can be marked, and the ones that are.
-    source_tracks: (std::collections::HashSet<i64>, std::collections::HashSet<i64>),
+    source_tracks: (std::collections::HashSet<i64>, std::collections::HashSet<i64>, std::collections::HashSet<i64>),
 }
 
 fn rated(kind: &str, id: i64) -> Option<RatingTarget> {
@@ -37,6 +37,10 @@ fn marked<'a>(kind: &str, key: &'a str) -> Option<FavoriteTarget<'a>> {
 }
 
 impl Marks {
+    pub fn pending(&self, kind: &str, key: &str) -> bool {
+        kind == "track" && key.parse::<i64>().is_ok_and(|id| self.source_tracks.2.contains(&id))
+    }
+
     pub fn stars(&self, kind: &str, id: i64) -> i32 {
         rated(kind, id).map(|target| self.ratings.get(target).into()).unwrap_or(0)
     }
@@ -116,6 +120,14 @@ impl Chilpa {
         let key = id.to_string();
         let Some(marks) = self.marks().filter(|marks| marks.markable("track", &key)) else { return false };
         self.set_tracks_favorite(&[id], !marks.favorite("track", &key))
+    }
+
+    pub fn playing_favorite_pending(&self) -> bool {
+        self.catalog.track_by_path(&self.now.path).is_some_and(|(track, _)| {
+            let reference = track.metadata["ref"].as_str().unwrap_or(&track.path);
+            let song = reference.split_once("@playlist:").map_or(reference, |(song, _)| song);
+            self.source_favorites.pending(&track.plugin, song)
+        })
     }
 
     /// False when the kind is unknown or the mark could not be kept.

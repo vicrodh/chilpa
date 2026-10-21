@@ -55,6 +55,30 @@ TestCase {
         header.info=Object.assign({},header.info,{quality_label:"WAV 16/44.1",quality_tier:2})
         verify(findText(header,"WAV 16/44.1").visible)
     }
+    function test_favorites_are_filled_and_wait_for_the_matching_source_reply() {
+        header.info = {kind:"album",title:"Album",plugin:"fixture",ref:"album:seed",favorite:true}
+        const button = findChild(header, "sourceFavorite")
+        compare(button.glyph, Icons.heartFilled)
+        compare(button.filled, true)
+        Sources.show({native_actions:{fixture:{pending:true,favorite:{ref:"album:other",on:true}}}})
+        compare(button.busy, false)
+        Sources.show({native_actions:{fixture:{pending:true,favorite:{ref:"album:seed",on:true}}}})
+        compare(button.busy, true)
+        waitForRendering(header)
+        const count = Sources.asked.length
+        mouseClick(button)
+        compare(Sources.asked.length, count)
+        Sources.show({native_actions:{fixture:{pending:false,error:"Write failed"}}})
+        compare(button.busy, false)
+        compare(button.glyph, Icons.heartFilled)
+        Sources.show({native_actions:{fixture:{pending:true,favorite:{ref:"album:seed",on:true}}}})
+        Sources.show({native_actions:{fixture:{pending:false,result:{}}}})
+        header.info = Object.assign({}, header.info, {favorite:false})
+        compare(button.busy, false)
+        compare(button.glyph, Icons.heart)
+        compare(button.filled, false)
+        Sources.show({native_actions:{}})
+    }
     function test_more_is_below_the_content_and_centered() {
         const button=findText(shelf,"Load more")
         verify(button)
