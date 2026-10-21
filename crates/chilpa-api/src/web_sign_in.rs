@@ -64,7 +64,11 @@ pub(crate) fn executable() -> Option<PathBuf> {
 /// Opens the window and waits until the address is reached or it is closed.
 pub(crate) fn run(executable: &Path, capture: &Capture, title: &str) -> Outcome {
     let mut command = Command::new(executable);
+    // The window keeps its website data between sign-ins, as a browser does, so a
+    // bot check the person passed once is not asked again.
+    let (data, cache) = (chilpa_dirs::data().join("web-sign-in"), chilpa_dirs::cache().join("web-sign-in"));
     command.args(["--url", &capture.url, "--until", &capture.until, "--title", title])
+        .arg("--data-dir").arg(&data).arg("--cache-dir").arg(&cache)
         .stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::null());
     if let Some(agent) = &capture.user_agent {
         command.args(["--user-agent", agent]);

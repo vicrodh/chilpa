@@ -806,3 +806,6 @@ gio
 gtk
 src
 webkit
+mediasource
+webaudio
+webrtc
