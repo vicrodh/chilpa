@@ -633,6 +633,8 @@ pub struct Chilpa {
     queue_work: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     queue_origins: Vec<Option<queue_origin::QueueOrigin>>,
     browse_origin: Option<queue_origin::QueueOrigin>,
+    /// The page shown, to tell a change of page from a redraw.
+    browse_route: Option<navigation::Route>,
     listen: listen::Workspace,
     media: Option<open_media::Session>,
     /// Which position of `queue` was the first one handed to the player.
@@ -658,8 +660,6 @@ pub struct Chilpa {
     stop_after: Option<usize>,
     /// A wall-clock deadline that asks the player to stop from `poll`.
     sleep_until: Option<std::time::Instant>,
-    /// The window is shown and active, and was just come back to.
-    window: (bool, bool, bool),
     /// The lyrics of what is playing, and the thread that finds them.
     lyrics: lyrics_service::Lyrics,
     desktop: desktop::Desktop,
@@ -779,6 +779,7 @@ impl Chilpa {
             queue_work: Default::default(),
             queue_origins: Vec::new(),
             browse_origin: None,
+            browse_route: None,
             listen: listen::Workspace::default(),
             media: None,
             base: 0,
@@ -794,7 +795,6 @@ impl Chilpa {
             restored_at: None,
             stop_after: None,
             sleep_until: None,
-            window: (true, true, false),
             lyrics: Default::default(),
             desktop: Default::default(),
             ab_loop: None,
@@ -1251,8 +1251,6 @@ impl Chilpa {
         self.advance_search();
         self.advance_sources();
         self.advance_catalog();
-        // Hidden or minimized, nothing is read again (ADR-018).
-        if self.window.0 { self.catalog.refresh_personal_libraries(std::mem::take(&mut self.window.2)); }
         self.advance_lyrics();
         self.resolve_next_ahead();
         self.keep_place(false);

@@ -45,18 +45,19 @@ mod retention_tests;
 
 use crate::plugins::Plugins;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::atomic::{AtomicI32, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 use store::Store;
 
-/// A listing younger than this is not asked for again.
+/// A listing younger than this when the page last changed is not asked
+/// for again.
 const SHELF_FRESH: u64 = 300;
-/// How often the listener's own libraries in the sources are read again
-/// while the window is seen, and the least gap when the window comes back.
+/// The least gap between two checks of the listener's own libraries in the
+/// sources, which happen when the page changes.
 const PERSONAL_REFRESH: Duration = Duration::from_secs(300);
-const PERSONAL_RETURN: Duration = Duration::from_secs(90);
-/// A record's tracks younger than this are not read again.
+/// A record's tracks younger than this when the page last changed are not
+/// read again.
 const TRACKS_FRESH: u64 = 6 * 3600;
 const BACKGROUND_JOBS: usize = 8;
 /// How many of a listing's loose tracks have their covers fetched.
@@ -154,6 +155,10 @@ pub(crate) struct Catalog {
     started: Mutex<bool>,
     page_reads: Mutex<HashMap<String, Arc<Mutex<()>>>>,
     last_personal_refresh: Mutex<Instant>,
+    /// When the listener last changed page, in Unix seconds. What is read
+    /// again is judged old against it, so an open page reads nothing again
+    /// while it stays open (ADR-018).
+    paged_at: AtomicU64,
 }
 
 fn now() -> u64 {
@@ -164,12 +169,6 @@ fn now() -> u64 {
 /// needs a live handle, a process plugin's only its identity.
 fn readable(card: &store::Card, natives: Option<&crate::natives::Natives>) -> bool {
     card.handle.is_some() || natives.is_some_and(|natives| natives.is_native(&card.plugin))
-}
-
-/// Whether the listener's libraries are read again: every five minutes, or
-/// on coming back to the window when the last read is a minute and a half old.
-fn personal_refresh_due(since: Duration, returned: bool) -> bool {
-    since >= if returned { PERSONAL_RETURN } else { PERSONAL_REFRESH }
 }
 
 /// The plugin and the address of a listing key.
@@ -190,6 +189,7 @@ impl Catalog {
             started: Mutex::new(false),
             page_reads: Mutex::new(HashMap::new()),
             last_personal_refresh: Mutex::new(Instant::now()),
+            paged_at: AtomicU64::new(now()),
         })
     }
 
@@ -249,12 +249,25 @@ impl Catalog {
         self.changed();
     }
 
-    /// Recheck personal library shelves already opened in this session.
-    /// This also discovers edits made in another client without a local action.
-    /// `returned`: the window was just come back to, which asks sooner.
-    pub(crate) fn refresh_personal_libraries(&self, returned: bool) {
+    /// The listener changed page: what the new page asks for is judged old
+    /// against now, and the libraries opened in this session are checked.
+    pub(crate) fn page_changed(&self) {
+        self.paged_at.store(now(), Ordering::Relaxed);
+        self.refresh_personal_libraries();
+    }
+
+    /// Whether something read at `read_at` was older than `fresh` seconds
+    /// when the page last changed.
+    fn old_at_page_change(&self, read_at: u64, fresh: u64) -> bool {
+        self.paged_at.load(Ordering::Relaxed).saturating_sub(read_at) > fresh
+    }
+
+    /// Recheck personal library shelves already opened in this session, at
+    /// most every five minutes. This also discovers edits made in another
+    /// client without a local action.
+    fn refresh_personal_libraries(&self) {
         let mut last = self.last_personal_refresh.lock().unwrap_or_else(|e| e.into_inner());
-        if !personal_refresh_due(last.elapsed(), returned) { return; }
+        if last.elapsed() < PERSONAL_REFRESH { return; }
         *last = Instant::now();
         drop(last);
         let Some(natives) = self.natives() else { return; };
@@ -264,7 +277,7 @@ impl Catalog {
             let (plugin, section) = split(key);
             natives.is_native(plugin) && matches!(section, "section:albums" | "section:tracks" | "section:playlists")
         }).cloned().collect();
-        for key in keys { revalidation::queue(self, &mut inner, key); }
+        for key in keys { revalidation::queue(self, &mut inner, key, false); }
     }
 
     /// What the source calls each track of a listing.
@@ -340,10 +353,20 @@ impl Catalog {
     /// I warm homes behind pages the listener has already opened.
     pub(super) fn prefetch_shelf(&self, key: &str) {
         let mut inner = self.lock();
-        if inner.loaded && inner.store.shelves.get(key).is_none_or(|s| s.epoch == 0 || now().saturating_sub(s.read_at) > SHELF_FRESH)
-            && !inner.shelf_errors.contains_key(key) {
-            self.queue(&mut inner, Job::Shelf(key.to_string()), false);
-        }
+        self.ask_if_old(&mut inner, key, false);
+    }
+
+    /// A listing is asked for when it is missing, came from an earlier run,
+    /// or was already old when the page last changed. Rows read in this run
+    /// stay drawn while they are checked, and only a change reaches the
+    /// window (ADR-018).
+    fn ask_if_old(&self, inner: &mut Inner, key: &str, urgent: bool) {
+        let shelf = inner.store.shelves.get(key);
+        let cached = shelf.is_some_and(|s| s.epoch > 0);
+        let old = shelf.is_none_or(|s| s.epoch == 0 || self.old_at_page_change(s.read_at, SHELF_FRESH));
+        if !old || !inner.loaded || inner.shelf_errors.contains_key(key) { return; }
+        if cached { revalidation::queue(self, inner, key.to_string(), urgent); }
+        else { self.queue(inner, Job::Shelf(key.to_string()), urgent); }
     }
 
     /// A listing as it is known now, asking for it when it is missing or stale.
@@ -352,10 +375,7 @@ impl Catalog {
         let mut inner = self.lock();
         let shelf = inner.store.shelves.get(key).cloned();
         // What an earlier run read is drawn at once and asked for again once.
-        let stale = shelf.as_ref().is_none_or(|s| s.epoch == 0 || now().saturating_sub(s.read_at) > SHELF_FRESH);
-        if stale && inner.loaded && !inner.shelf_errors.contains_key(key) {
-            self.queue(&mut inner, Job::Shelf(key.to_string()), true);
-        }
+        self.ask_if_old(&mut inner, key, true);
         if let Some(shelf) = &shelf {
             let images: Vec<String> = shelf.cards.iter().filter_map(|id| inner.store.cards.get(id))
                 .filter(|c| c.art.is_empty() || !std::path::Path::new(&c.art).is_file()).map(|c| c.image.clone())
@@ -391,14 +411,11 @@ impl Catalog {
         let mut count = 0;
         for key in keys {
             let shelf = inner.store.shelves.get(key);
-            let stale = shelf.is_none_or(|s| s.epoch == 0 || now().saturating_sub(s.read_at) > SHELF_FRESH);
             count += shelf.map_or(0, |shelf| {
                 shelf.cards.iter().filter_map(|id| inner.store.cards.get(id)).filter(|c| keep(&c.metadata)).count()
                     + shelf.tracks.iter().filter_map(|id| inner.store.tracks.get(id)).filter(|t| keep(&t.metadata)).count()
             });
-            if stale && inner.loaded && !inner.shelf_errors.contains_key(key) {
-                self.queue(&mut inner, Job::Shelf(key.clone()), true);
-            }
+            self.ask_if_old(&mut inner, key, true);
         }
         count
     }
@@ -544,7 +561,7 @@ impl Catalog {
     pub fn tracks(&self, id: i64) -> Option<Vec<store::Track>> {
         let mut inner = self.lock();
         let card = inner.store.cards.get(&id)?.clone();
-        let old = card.tracks.is_none() || now().saturating_sub(card.read_at) > TRACKS_FRESH;
+        let old = card.tracks.is_none() || self.old_at_page_change(card.read_at, TRACKS_FRESH);
         if old && readable(&card, self.natives().as_deref()) {
             self.queue(&mut inner, Job::Tracks(id), true);
         }
@@ -903,12 +920,32 @@ mod retry_tests {
     }
 
     #[test]
-    fn the_listeners_libraries_are_read_every_five_minutes_or_on_coming_back() {
-        let seconds = Duration::from_secs;
-        assert!(!personal_refresh_due(seconds(120), false), "two minutes is not yet");
-        assert!(personal_refresh_due(seconds(300), false));
-        assert!(personal_refresh_due(seconds(120), true), "coming back reads what is two minutes old");
-        assert!(!personal_refresh_due(seconds(30), true), "but not what was just read");
+    fn an_open_page_reads_nothing_again_until_the_page_changes() {
+        let catalog = Catalog::new();
+        let (key, job) = ("fixture section:albums", Job::Shelf("fixture section:albums".into()));
+        catalog.lock().loaded = true;
+        catalog.lock().store.shelves.insert(key.into(), store::Shelf { read_at: 1_000, epoch: 1, ..Default::default() });
+        // The page opened a minute after the listing was read, long ago.
+        catalog.paged_at.store(1_060, Ordering::Relaxed);
+        for _ in 0..3 { catalog.shelf(key); catalog.count_kept(&[key.into()], |_| true); }
+        assert!(catalog.lock().queue.queued.is_empty(), "the page that stays open asks for nothing");
+        catalog.page_changed();
+        catalog.shelf(key);
+        assert!(catalog.lock().queue.urgent.contains(&job), "the next page asks first");
+        assert!(catalog.lock().revalidating.contains(&job), "and the rows it has stay drawn");
+        assert!(!catalog.loading(key));
+    }
+
+    #[test]
+    fn the_listeners_libraries_are_checked_on_a_page_change_at_most_every_five_minutes() {
+        let catalog = Catalog::new();
+        let long_ago = Instant::now() - PERSONAL_REFRESH;
+        *catalog.last_personal_refresh.lock().unwrap() = long_ago;
+        catalog.page_changed();
+        let checked = *catalog.last_personal_refresh.lock().unwrap();
+        assert!(checked > long_ago, "a page change five minutes later checks them");
+        catalog.page_changed();
+        assert_eq!(*catalog.last_personal_refresh.lock().unwrap(), checked, "the next page does not");
     }
 
     #[test]

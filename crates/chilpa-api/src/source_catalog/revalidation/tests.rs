@@ -31,7 +31,7 @@ fn seed(kind: &str) -> std::sync::Arc<Catalog> {
 
 fn periodic(catalog: &Catalog, key: &str) -> Job {
     let mut inner = catalog.lock();
-    super::queue(catalog, &mut inner, key.into());
+    super::queue(catalog, &mut inner, key.into(), false);
     let job = Job::Shelf(key.into());
     assert!(inner.queue.queued.contains(&job));
     inner.queue.queued.remove(&job);
@@ -136,12 +136,12 @@ fn foreground_empty_results_and_existing_work_keep_their_loading_contract() {
     {
         let mut inner = catalog.lock();
         catalog.queue(&mut inner, job.clone(), true);
-        super::queue(&catalog, &mut inner, key.into());
+        super::queue(&catalog, &mut inner, key.into(), false);
         assert!(!inner.revalidating.contains(&job));
         inner.queue.queued.remove(&job);
         inner.queue.urgent.clear();
         inner.running.insert(job.clone());
-        super::queue(&catalog, &mut inner, key.into());
+        super::queue(&catalog, &mut inner, key.into(), false);
         assert!(!inner.revalidating.contains(&job));
     }
     assert!(catalog.loading(key));
@@ -165,14 +165,14 @@ fn identical_ingest_preserves_unrelated_dirty_work_and_disabled_sources_stay_blo
     assert_eq!(writes, 1);
     {
         let mut inner = catalog.lock();
-        super::queue(&catalog, &mut inner, key.into());
+        super::queue(&catalog, &mut inner, key.into(), false);
         assert!(!inner.revalidating.is_empty());
     }
     catalog.set_source_states([("fixture".into(), false)]);
     assert!(catalog.lock().revalidating.is_empty());
     {
         let mut inner = catalog.lock();
-        super::queue(&catalog, &mut inner, key.into());
+        super::queue(&catalog, &mut inner, key.into(), false);
         assert!(inner.queue.queued.is_empty());
         assert!(inner.revalidating.is_empty());
     }
@@ -188,7 +188,7 @@ fn navigation_cancellation_and_plugin_removal_release_quiet_job_markers() {
     }]);
     {
         let mut inner = catalog.lock();
-        super::queue(&catalog, &mut inner, key.into());
+        super::queue(&catalog, &mut inner, key.into(), false);
         assert!(inner.revalidating.contains(&job));
     }
     catalog.protect_navigation(&[]);
@@ -196,7 +196,7 @@ fn navigation_cancellation_and_plugin_removal_release_quiet_job_markers() {
     assert!(!catalog.lock().revalidating.contains(&job));
     {
         let mut inner = catalog.lock();
-        super::queue(&catalog, &mut inner, key.into());
+        super::queue(&catalog, &mut inner, key.into(), false);
         assert!(inner.revalidating.contains(&job));
     }
     catalog.forget_plugin("fixture");
