@@ -12,6 +12,7 @@ Item {
     property int size: Metrics.button28
     property int iconSize: size <= Metrics.button26 ? Metrics.iconSm : Metrics.iconMd
     property bool checked: false
+    property bool busy: false
     // A circle on a filled background, for window controls and overlays.
     property bool round: false
     // "secondary", "primary", "accent", "solid" (the icon on the accent)
@@ -37,6 +38,7 @@ Item {
 
     Icon {
         anchors.centerIn: parent
+        visible: !root.busy
         glyph: root.glyph
         filled: root.filled
         iconFamily: root.iconFamily
@@ -51,10 +53,10 @@ Item {
 
     MouseArea {
         id: area
-        cursorShape: Qt.PointingHandCursor
+        cursorShape: root.busy ? Qt.BusyCursor : Qt.PointingHandCursor
         anchors.fill: parent
         hoverEnabled: true
-        onClicked: root.clicked()
+        onClicked: if (!root.busy) root.clicked()
         onContainsMouseChanged: containsMouse && root.tip !== "" ? TipState.show(root.tip, root) : TipState.hide(root)
     }
 
