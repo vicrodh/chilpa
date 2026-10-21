@@ -139,6 +139,7 @@ Rectangle {
                 onClicked: overlay.quick()
             }
             FavoriteButton {
+                clock: Pulse
                 // A source's record is a favorite of the service, not of the library.
                 objectName: "albumFavorite"
                 visible: overlay.favoriteSupported

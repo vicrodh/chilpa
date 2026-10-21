@@ -1,11 +1,9 @@
 pragma Singleton
 import QtQuick
-import app.chilpa.kit
 
 // Durations (design/01-tokens.md 5). With reduced motion every one is zero,
 // so nothing has to ask for itself whether to animate.
 QtObject {
-    function sharedClock() { return Pulse }
     readonly property int busyLoop: 1000
     readonly property int menuLeave: 350
     readonly property int listenRefresh: 400
