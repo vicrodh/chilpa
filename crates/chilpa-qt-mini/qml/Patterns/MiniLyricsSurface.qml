@@ -3,6 +3,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/lyrics/qml/Components" as Lines
 import "../Theme"
 
@@ -65,7 +66,7 @@ Item {
             surface.nowMs = Player.position * 1000
         }
     }
-    FrameAnimation {
+    PulseClock {
         running: surface.visible && surface.windowShowing && surface.wordTimed && !surface.lite && Player.playing && !Player.paused
         onTriggered: surface.nowMs = Player.position * 1000 + Math.min(Date.now() - surface.anchoredAt, Motion.lyricCarry)
     }

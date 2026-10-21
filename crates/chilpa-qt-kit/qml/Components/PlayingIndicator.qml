@@ -13,6 +13,7 @@ Item {
     id: mark
     // The track runs: neither paused nor stopped.
     property bool running: false
+    property bool sceneAnimating: false
     readonly property bool moving: Prefs.animatedIndicator && running && visible
     signal toggled()
     width: moving ? Metrics.eqWide : Metrics.iconMd
@@ -21,7 +22,7 @@ Item {
     Loader {
         active: mark.moving
         anchors.fill: parent
-        sourceComponent: PlayingBars {}
+        sourceComponent: PlayingBars { sceneAnimating: mark.sceneAnimating }
     }
     Loader {
         active: !mark.moving && mark.visible

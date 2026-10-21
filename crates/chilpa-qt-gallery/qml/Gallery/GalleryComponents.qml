@@ -15,6 +15,18 @@ import "qrc:/qt/qml/app/chilpa/query/qml/Patterns"
 TitledFlow {
     id: section
     title: "Components"
+    Text {
+        id: pulsePreview
+        property int ticks: 0
+        text: "PulseClock: " + ticks
+        color: Theme.color.textPrimary
+        // It ticks only while held, so an idle Gallery runs no clock.
+        MouseArea { id: hold; anchors.fill: parent; cursorShape: Qt.PointingHandCursor }
+        PulseClock {
+            running: hold.pressed
+            onTriggered: pulsePreview.ticks++
+        }
+    }
     Column {
         width: Metrics.sidebarWidth
         PillButton { text: "Insert row"; enabled: motionRows.count < 50; onClicked: motionRows.insert(0, {title: "New row"}) }
