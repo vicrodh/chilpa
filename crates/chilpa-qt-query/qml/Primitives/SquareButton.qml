@@ -15,6 +15,7 @@ Item {
     property bool quiet: false
     // The glyph's own colour when it is neither on nor quiet.
     property color tint: Theme.color.textSecondary
+    property int round: Refine.buttonRound
     signal clicked()
 
     implicitWidth: small ? Refine.rowButton : Refine.button
@@ -22,7 +23,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: Refine.buttonRound
+        radius: button.round
         color: button.checked ? Theme.color.stateSelected : area.containsMouse && !button.quiet ? Theme.color.stateHover : "transparent"
     }
     Icon {

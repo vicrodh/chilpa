@@ -1528,6 +1528,12 @@ msgstr "Скрыть"
 msgid "Display settings"
 msgstr "Настройки отображения"
 
+msgid "Dock"
+msgstr "Закрепить"
+
+msgid "Dock back into the Library"
+msgstr "Вернуть в библиотеку"
+
 msgid "Documentation"
 msgstr "Документация"
 
@@ -3844,6 +3850,9 @@ msgstr "Альбомы с этим композитором"
 msgid "Refine"
 msgstr "Уточнить"
 
+msgid "Refine is in its own window"
+msgstr "Панель «Уточнить» открыта в отдельном окне"
+
 msgid "Refresh"
 msgstr "Обновить"
 
@@ -4002,6 +4011,9 @@ msgstr "Перезапустить Chilpa"
 
 msgid "Restart plugin"
 msgstr "Перезапустить плагин"
+
+msgid "Restore"
+msgstr "Восстановить"
 
 msgid "Restore default"
 msgstr "Восстановить по умолчанию"

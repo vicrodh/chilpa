@@ -49,4 +49,6 @@ Column {
     ConsoleLine { width: gallery.width; query: "genre:jazz year:1960..1969" }
     ComplexQuery { width: gallery.width; text: ":filter (genre:jazz | (composer:monk (label:riverside)))" }
     ZeroResults { width: gallery.width }
+    DockedNote { width: gallery.width }
+    RefineWindow { visible: false; summary: "256 songs · 18 h" }
 }

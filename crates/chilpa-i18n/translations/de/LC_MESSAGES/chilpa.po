@@ -1526,6 +1526,12 @@ msgstr "Ausblenden"
 msgid "Display settings"
 msgstr "Anzeigeeinstellungen"
 
+msgid "Dock"
+msgstr "Andocken"
+
+msgid "Dock back into the Library"
+msgstr "Wieder in die Bibliothek andocken"
+
 msgid "Documentation"
 msgstr "Dokumentation"
 
@@ -3842,6 +3848,9 @@ msgstr "Alben mit diesem Komponisten"
 msgid "Refine"
 msgstr "Verfeinern"
 
+msgid "Refine is in its own window"
+msgstr "Verfeinern ist in einem eigenen Fenster"
+
 msgid "Refresh"
 msgstr "Aktualisieren"
 
@@ -4000,6 +4009,9 @@ msgstr "Chilpa neu starten"
 
 msgid "Restart plugin"
 msgstr "Plugin neu starten"
+
+msgid "Restore"
+msgstr "Wiederherstellen"
 
 msgid "Restore default"
 msgstr "Standard wiederherstellen"

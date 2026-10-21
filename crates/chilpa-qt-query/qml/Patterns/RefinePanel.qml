@@ -30,6 +30,9 @@ Rectangle {
     // The group new conditions go into: its id, "new" while it is still empty.
     property string target: ""
     signal detachAsked()
+    // Inside its own window the panel has no edge of its own.
+    property bool bare: false
+    property bool detached: false
     readonly property bool typing: foot.typed.trim() !== ""
 
     readonly property var reading: {
@@ -62,8 +65,8 @@ Rectangle {
         + (engineNotes.visible ? engineNotes.implicitHeight : 0) + (consoleLine.visible ? consoleLine.implicitHeight : 0)
     implicitHeight: head.implicitHeight + (complex.visible ? complex.implicitHeight + Refine.rowsBottom : 0) + list.contentHeight + below
     color: Theme.ambient ? Theme.color.ambientRaised : Theme.color.surfacePane
-    radius: Refine.panelRound
-    border.width: Metrics.hairline
+    radius: bare ? 0 : Refine.panelRound
+    border.width: bare ? 0 : Metrics.hairline
     border.color: Theme.color.strokeHairline
     clip: true
 
@@ -76,7 +79,7 @@ Rectangle {
         loading: panel.loading
         consoleShown: panel.consoleOpen
         canUndo: QueryChips.canUndo
-        canDetach: !panel.narrow
+        canDetach: !panel.narrow && !panel.detached
         onModeChosen: (mode) => panel.edit({ op: "mode", mode: mode })
         onUndoAsked: Library.applyQuery(QueryChips.undo())
         onClearAsked: { panel.target = ""; Library.applyQuery("") }

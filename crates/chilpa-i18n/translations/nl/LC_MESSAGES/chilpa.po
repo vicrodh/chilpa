@@ -1526,6 +1526,12 @@ msgstr "Negeren"
 msgid "Display settings"
 msgstr "Weergave-instellingen"
 
+msgid "Dock"
+msgstr "Vastzetten"
+
+msgid "Dock back into the Library"
+msgstr "Terugzetten in de bibliotheek"
+
 msgid "Documentation"
 msgstr "Documentatie"
 
@@ -3842,6 +3848,9 @@ msgstr "Albums met die componist"
 msgid "Refine"
 msgstr "Verfijnen"
 
+msgid "Refine is in its own window"
+msgstr "Verfijnen staat in een eigen venster"
+
 msgid "Refresh"
 msgstr "Vernieuwen"
 
@@ -4000,6 +4009,9 @@ msgstr "Chilpa herstarten"
 
 msgid "Restart plugin"
 msgstr "Plug-in herstarten"
+
+msgid "Restore"
+msgstr "Herstellen"
 
 msgid "Restore default"
 msgstr "Standaard herstellen"

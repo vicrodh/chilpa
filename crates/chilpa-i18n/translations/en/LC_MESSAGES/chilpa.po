@@ -1526,6 +1526,12 @@ msgstr ""
 msgid "Display settings"
 msgstr ""
 
+msgid "Dock"
+msgstr ""
+
+msgid "Dock back into the Library"
+msgstr ""
+
 msgid "Documentation"
 msgstr ""
 
@@ -3842,6 +3848,9 @@ msgstr ""
 msgid "Refine"
 msgstr ""
 
+msgid "Refine is in its own window"
+msgstr ""
+
 msgid "Refresh"
 msgstr "Refresh"
 
@@ -3999,6 +4008,9 @@ msgid "Restart Chilpa"
 msgstr ""
 
 msgid "Restart plugin"
+msgstr ""
+
+msgid "Restore"
 msgstr ""
 
 msgid "Restore default"
