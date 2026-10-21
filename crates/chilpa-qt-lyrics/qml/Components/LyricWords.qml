@@ -153,7 +153,7 @@ Item {
             }
 
             SequentialAnimation on lit {
-                running: !words.timed
+                running: !words.timed && words.visible && (!words.Window.window || (words.Window.window.visible && words.Window.window.visibility !== Window.Minimized))
                 PauseAnimation { duration: word.index * Motion.lyricStagger }
                 NumberAnimation { to: 1; duration: Motion.base }
             }

@@ -4,9 +4,7 @@ import QtQuick
 // The numbers of the dynamic background, as QBZ's Qt shell draws it. The
 // window's theme does not name them: they belong to these fields alone.
 QtObject {
-    // The field's clock: seconds per pulse, and the span of the seed that
-    // keeps two launches from opening on the same pose.
-    readonly property real tickSeconds: 0.033
+    // I seed the field so two launches open on different poses.
     readonly property real seedSpan: 40
     // What the shader paints where no lobe dominates, times the master
     // brightness: the base the Canvas arm starts from. Never black.

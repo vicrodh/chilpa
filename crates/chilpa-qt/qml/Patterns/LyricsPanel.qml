@@ -8,17 +8,8 @@ import "../Components"
 import "qrc:/qt/qml/app/chilpa/lyrics/qml/Components" as Lines
 import "qrc:/qt/qml/app/chilpa/lyrics/qml/Primitives" as LyricData
 
-// The lyrics of what plays. The header says the track and opens how they
-// are read; the body says where the search stands or shows the lines; the
-// foot says who gave them.
-//
-// Synced lyrics keep the line being sung in the middle and lit, with the
-// lines around it fading the further they are, and a click on a line goes
-// to it. The sung line is drawn word by word: timed words fill as
-// they are sung, and a line timed as a whole lights up word after word.
-// Every other line is one plain text, so a long song costs one item per
-// line. A translation, when the lyrics carry one, is offered by a button
-// over the lines and shown under each.
+// I center the sung line with timed word fill, optional translation,
+// source credit and display controls. Clicking a timed line seeks to it.
 Item {
     id: panel
 
@@ -73,9 +64,7 @@ Item {
         return line.start_ms + Motion.lyricLastLine
     }
 
-    // The moment of the track. The position arrives four times a second; in
-    // between it is carried forward by the frame clock, never further than
-    // the next arrival could correct.
+    // I carry the position between transport updates on the shared pulse.
     property real nowMs: Player.position * 1000
     property double anchoredAt: Date.now()
     Connections {
@@ -85,8 +74,9 @@ Item {
             panel.nowMs = Player.position * 1000
         }
     }
-    FrameAnimation {
-        running: panel.visible && panel.wordTimed && !options.lite && Player.playing && !Player.paused
+    PulseClock {
+        running: panel.visible && (!panel.Window.window || panel.Window.window.visible && panel.Window.window.visibility !== Window.Minimized)
+            && panel.wordTimed && !options.lite && Player.playing && !Player.paused
         onTriggered: panel.nowMs = Player.position * 1000 + Math.min(Date.now() - panel.anchoredAt, Motion.lyricCarry)
     }
 
