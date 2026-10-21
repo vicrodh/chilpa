@@ -11,6 +11,24 @@ TestCase {
     height: 800
 
     TracksScreen { id: page; width: 1200; height: 800 }
+    Component { id: albumsPage; AlbumsScreen {} }
+    Component { id: libraryPage; LibraryScreen {} }
+
+    function test_record_menus_offer_and_keep_plays_data() {
+        return [{tag: "Albums", factory: albumsPage, key: "albums"},
+                {tag: "Library", factory: libraryPage, key: "library"}]
+    }
+    function test_record_menus_offer_and_keep_plays(data) {
+        const screen = createTemporaryObject(data.factory, this, {width: 1200, height: 800})
+        verify(screen)
+        const grouping = findChild(screen, data.key + "Grouping")
+        const at = grouping.options.findIndex(option => option.value === "plays")
+        verify(at >= 0)
+        findChild(grouping, "sortMenu").chosen(at)
+        compare(screen.group, "plays")
+        compare(SettingsModel.kept("ui." + data.key + ".group"), "plays")
+        grouping.picked("")
+    }
 
     function fill(label) {
         const model = page.scrollView.model
@@ -28,8 +46,8 @@ TestCase {
     function test_menu_keeps_each_group_and_displays_the_current_header() {
         const grouping = findChild(page, "tracksGrouping")
         compare(grouping.options.map(option => option.value),
-                ["off", "album", "artist", "name", "year", "decade", "genre", "label", "composer"])
-        const labels = ["1999", "1990s", "Jazz", "House", "Writer"]
+                ["off", "album", "artist", "name", "year", "decade", "genre", "label", "composer", "plays"])
+        const labels = ["1999", "1990s", "Jazz", "House", "Writer", "Never played"]
         for (let i = 4; i < grouping.options.length; ++i) {
             const group = grouping.options[i].value
             findChild(grouping, "sortMenu").chosen(i)
@@ -38,8 +56,8 @@ TestCase {
             compare(page.scrollView.model.key.split("\u001f")[1], group)
             fill(labels[i - 4])
             tryCompare(findChild(page, "tracksGroupName"), "text", labels[i - 4])
-            page.letters = i < 6 ? [] : [[labels[i - 4][0], 0]]
-            compare(findChild(page, "tracksLetters").visible, i >= 6)
+            page.letters = i < 6 || group === "plays" ? [] : [[labels[i - 4][0], 0]]
+            compare(findChild(page, "tracksLetters").visible, i >= 6 && group !== "plays")
             compare(page.scrollView.section.property, "group")
         }
         grouping.picked("off")

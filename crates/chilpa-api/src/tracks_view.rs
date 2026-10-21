@@ -8,7 +8,7 @@ use crate::{Filter, Reader, Snapshot, TrackOrder, TrackRow};
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TracksQuery {
     pub order: String,
-    /// I accept album, artist, name, year, decade, genre, label and composer.
+    /// I accept album, artist, name, year, decade, genre, label, composer and plays.
     pub group: String,
     pub text: String,
     /// A track's own stars to keep, 0 for none, written "5,0"; empty keeps
@@ -32,7 +32,7 @@ impl TracksQuery {
     }
 
     pub fn grouped(&self) -> bool {
-        matches!(self.group.as_str(), "album" | "artist" | "name" | "year" | "decade" | "genre" | "label" | "composer")
+        matches!(self.group.as_str(), "album" | "artist" | "name" | "year" | "decade" | "genre" | "label" | "composer" | "plays")
     }
 }
 
@@ -55,7 +55,7 @@ pub fn section_at(sections: &[(usize, String)], row: usize) -> Option<&str> {
 
 /// Where each letter first starts, from where the groups start.
 fn letters_of(sections: &[(usize, String)], by: &str) -> String {
-    if matches!(by, "year" | "decade") { return "[]".into(); }
+    if matches!(by, "year" | "decade" | "plays") { return "[]".into(); }
     let mut letters: Vec<(String, usize)> = Vec::new();
     for (at, name) in sections {
         let letter = if by == "title" { name.clone() } else { chilpa_library::letter_of(name) };
@@ -95,6 +95,7 @@ pub fn group_of(group: &str, row: &TrackRow) -> String {
         "album" => row.album.clone(),
         "artist" => row.artist.clone(),
         "name" => chilpa_library::letter_of(&row.title),
+        "plays" => crate::library_sources::plays::label(row.plays as i64),
         "year" | "decade" | "genre" | "label" | "composer" => {
             let empty = TrackGroups::default();
             let groups = row.groups.as_deref().unwrap_or(&empty);
@@ -120,7 +121,7 @@ impl Reader {
             qualities: extras.qualities.clone(),
             formats: extras.formats.clone(),
             track_ratings: query.ratings.clone(),
-            grouped_by: if query.grouped() { query.group.clone() } else { String::new() },
+            grouped_by: if query.grouped() && query.group != "plays" { query.group.clone() } else { String::new() },
             ..Filter::default()
         };
         let by = if query.group == "name" { "title" } else { query.group.as_str() };
@@ -132,8 +133,13 @@ impl Reader {
             Default::default()
         });
         let stars = crate::library_sources::Stars::read(&self.lib, index);
-        let (snapshot, sections) = crate::library_sources::merge_snapshot(local, keys, &filter, query.order(), index, &stars,
-            crate::library_sources::Scope::Tracks, query.grouped().then_some(by), None);
+        let (mut snapshot, mut sections) = crate::library_sources::merge_snapshot(local, keys, &filter, query.order(), index, &stars,
+            crate::library_sources::Scope::Tracks, (!filter.grouped_by.is_empty()).then_some(by), None);
+        if query.group == "plays" {
+            let grouped = crate::library_sources::plays::tracks(&self.lib, snapshot.ids, index);
+            snapshot.ids = grouped.ids;
+            sections = grouped.groups;
+        }
         let letters = if query.grouped() { letters_of(&sections, by) } else { String::new() };
         FoundTracks { snapshot, letters, group: query.group, sections }
     }
