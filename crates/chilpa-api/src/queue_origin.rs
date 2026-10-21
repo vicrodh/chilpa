@@ -46,6 +46,11 @@ impl Chilpa {
 
     pub fn set_browse_route(&mut self, route: &Route) {
         self.browse_origin = self.origin_for_route(route);
+        // What a page shows is read again when the page changes, never while it stays open.
+        if self.browse_route.as_ref() != Some(route) {
+            self.browse_route = Some(route.clone());
+            self.catalog.page_changed();
+        }
     }
     pub fn browse_origin(&self) -> Option<QueueOrigin> { self.browse_origin.clone() }
     fn origin_for_route(&self, route: &Route) -> Option<QueueOrigin> {
