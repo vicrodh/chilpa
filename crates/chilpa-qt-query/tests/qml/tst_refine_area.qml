@@ -55,4 +55,15 @@ TestCase {
         mouseClick(control, control.width / 4, control.height / 2)
         tryVerify(() => findChild(screen, "refinePanel") === null)
     }
+
+    function test_a_narrow_library_stacks_the_panel_and_quiets_the_switch() {
+        SettingsModel.keep("ui.library.focus", "true")
+        SettingsModel.panesOpen = true
+        const screen = createTemporaryObject(screenFactory, test, { width: 680 })
+        tryVerify(() => findChild(screen, "refinePanel") !== null)
+        verify(findChild(screen, "refinePanel").narrow, "under 640 of content the labels go above the values")
+        verify(findChild(screen, "refineSwitch").narrow, "and the switch loses its words")
+        screen.width = 1100
+        tryVerify(() => !findChild(screen, "refinePanel").narrow)
+    }
 }

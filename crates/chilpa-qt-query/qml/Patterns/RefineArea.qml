@@ -10,7 +10,7 @@ Loader {
     property bool refineMode: false
     property Component columns
     property string summary: ""
-    property bool narrow: false
+    property bool narrow: width < Refine.narrowBelow
     readonly property real wanted: refineMode && item ? item.implicitHeight : height
     // While a field's values or the suggestions are open the panel may pass
     // the grip's height, as far as the design's 1000.

@@ -160,6 +160,7 @@ Item {
     }
     RefineSwitch {
         id: toggle
+        narrow: panes.narrow
         anchors.right: head.right
         anchors.verticalCenter: crumbs.verticalCenter
     }
