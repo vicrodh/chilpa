@@ -3077,6 +3077,9 @@ msgstr "Keine passende Einstellung"
 msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
 msgstr "Keine Sinks erkannt – installiere die ALSA-UCM-Profile neu und starte dann neu"
 
+msgid "No sources"
+msgstr "Keine Quellen"
+
 msgid "No stories for this artist"
 msgstr "Keine Geschichten für diesen Künstler"
 
@@ -3217,6 +3220,9 @@ msgstr "Ältere temporäre Bilder werden im Hintergrund entfernt. Von deiner Bib
 
 msgid "Oldest first"
 msgstr "Älteste zuerst"
+
+msgid "On"
+msgstr "An"
 
 msgid "On air"
 msgstr "Auf Sendung"
@@ -4465,6 +4471,9 @@ msgstr "Quellen"
 msgid "Sources and quality"
 msgstr "Quellen und Qualität"
 
+msgid "Sources decide what is in the Library. Refine narrows inside them."
+msgstr "Quellen bestimmen, was in der Bibliothek ist. Verfeinern grenzt darin ein."
+
 msgid "Spanish"
 msgstr "Spanisch"
 
@@ -5351,6 +5360,9 @@ msgstr "Welche GPU die App rendert. Es werden nur tatsächlich vorhandene GPUs a
 
 msgid "Which of its libraries come in?"
 msgstr "Welche seiner Bibliotheken sollen hinzukommen?"
+
+msgid "Which sources count"
+msgstr "Welche Quellen zählen"
 
 msgid "Who the records are credited to"
 msgstr "Wem die Alben zugeschrieben werden"

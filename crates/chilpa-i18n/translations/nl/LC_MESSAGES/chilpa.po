@@ -3077,6 +3077,9 @@ msgstr "Geen instelling zegt dat"
 msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
 msgstr "Geen sinks gedetecteerd — herinstalleer de ALSA UCM-profielen en herstart daarna"
 
+msgid "No sources"
+msgstr "Geen bronnen"
+
 msgid "No stories for this artist"
 msgstr "Geen verhalen voor deze artiest"
 
@@ -3217,6 +3220,9 @@ msgstr "Oudere tijdelijke afbeeldingen worden op de achtergrond verwijderd. Hoez
 
 msgid "Oldest first"
 msgstr "Oudste eerst"
+
+msgid "On"
+msgstr "Aan"
 
 msgid "On air"
 msgstr "Nu live"
@@ -4465,6 +4471,9 @@ msgstr "Bronnen"
 msgid "Sources and quality"
 msgstr "Bronnen en kwaliteit"
 
+msgid "Sources decide what is in the Library. Refine narrows inside them."
+msgstr "Bronnen bepalen wat in de bibliotheek staat. Verfijnen werkt daarbinnen."
+
 msgid "Spanish"
 msgstr "Spaans"
 
@@ -5351,6 +5360,9 @@ msgstr "Welke GPU de app rendert. Alleen daadwerkelijk aanwezige GPU's worden ge
 
 msgid "Which of its libraries come in?"
 msgstr "Welke van de bibliotheken worden opgenomen?"
+
+msgid "Which sources count"
+msgstr "Welke bronnen meetellen"
 
 msgid "Who the records are credited to"
 msgstr "Aan wie de albums worden toegeschreven"

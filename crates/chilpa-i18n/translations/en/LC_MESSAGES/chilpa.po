@@ -3077,6 +3077,9 @@ msgstr ""
 msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
 msgstr ""
 
+msgid "No sources"
+msgstr ""
+
 msgid "No stories for this artist"
 msgstr ""
 
@@ -3216,6 +3219,9 @@ msgid "Older temporary images are removed in the background. Artwork referenced 
 msgstr ""
 
 msgid "Oldest first"
+msgstr ""
+
+msgid "On"
 msgstr ""
 
 msgid "On air"
@@ -4465,6 +4471,9 @@ msgstr ""
 msgid "Sources and quality"
 msgstr ""
 
+msgid "Sources decide what is in the Library. Refine narrows inside them."
+msgstr ""
+
 msgid "Spanish"
 msgstr ""
 
@@ -5350,6 +5359,9 @@ msgid "Which GPU renders the app. Only the GPUs actually present are listed. Cho
 msgstr ""
 
 msgid "Which of its libraries come in?"
+msgstr ""
+
+msgid "Which sources count"
 msgstr ""
 
 msgid "Who the records are credited to"

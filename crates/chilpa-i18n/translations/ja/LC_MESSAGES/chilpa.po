@@ -3075,6 +3075,9 @@ msgstr "該当する設定はありません"
 msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
 msgstr "シンクが検出されません — ALSA UCMプロファイルを再インストールして再起動してください"
 
+msgid "No sources"
+msgstr "ソースなし"
+
 msgid "No stories for this artist"
 msgstr "このアーティストのストーリーはありません"
 
@@ -3215,6 +3218,9 @@ msgstr "古い一時画像はバックグラウンドで削除されます。ラ
 
 msgid "Oldest first"
 msgstr "古い順"
+
+msgid "On"
+msgstr "オン"
 
 msgid "On air"
 msgstr "放送中"
@@ -4462,6 +4468,9 @@ msgstr "ソース"
 msgid "Sources and quality"
 msgstr "ソースと音質"
 
+msgid "Sources decide what is in the Library. Refine narrows inside them."
+msgstr "ライブラリに何が入るかはソースで決まります。絞り込みはその中で行います。"
+
 msgid "Spanish"
 msgstr "スペイン語"
 
@@ -5347,6 +5356,9 @@ msgstr "アプリを描画するGPU。実際に存在するGPUのみを表示し
 
 msgid "Which of its libraries come in?"
 msgstr "どのライブラリを取り込みますか？"
+
+msgid "Which sources count"
+msgstr "対象にするソース"
 
 msgid "Who the records are credited to"
 msgstr "アルバムのクレジット先"

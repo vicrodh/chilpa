@@ -3079,6 +3079,9 @@ msgstr "Такой настройки нет"
 msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
 msgstr "Устройства вывода не обнаружены — переустановите профили ALSA UCM и перезагрузитесь"
 
+msgid "No sources"
+msgstr "Нет источников"
+
 msgid "No stories for this artist"
 msgstr "Нет историй об этом исполнителе"
 
@@ -3219,6 +3222,9 @@ msgstr "Более старые временные изображения уда
 
 msgid "Oldest first"
 msgstr "Сначала старые"
+
+msgid "On"
+msgstr "Вкл."
 
 msgid "On air"
 msgstr "В эфире"
@@ -4468,6 +4474,9 @@ msgstr "Источники"
 msgid "Sources and quality"
 msgstr "Источники и качество"
 
+msgid "Sources decide what is in the Library. Refine narrows inside them."
+msgstr "Источники определяют, что есть в библиотеке. «Уточнить» сужает выбор внутри них."
+
 msgid "Spanish"
 msgstr "Испанский"
 
@@ -5355,6 +5364,9 @@ msgstr "Какой GPU отрисовывает приложение. Переч
 
 msgid "Which of its libraries come in?"
 msgstr "Какие из его библиотек добавить?"
+
+msgid "Which sources count"
+msgstr "Какие источники учитывать"
 
 msgid "Who the records are credited to"
 msgstr "Кому приписаны записи"

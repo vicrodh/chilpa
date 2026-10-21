@@ -419,6 +419,9 @@ QtObject {
     readonly property int screenSearch: 200
     readonly property int sourcesPopoverWidth: 640
     readonly property int sourceFilterRow: 44
+    // Sources in the Library's crumb line: the popover and its rows.
+    readonly property int sourcesScopeWidth: 300
+    readonly property int sourcesScopeChevron: 12
     readonly property int playlistModalWidth: 420
     readonly property int linkModal: 520
     readonly property int playlistModalHeight: 520
