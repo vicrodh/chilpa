@@ -37,7 +37,6 @@ Item {
     }
 
     PlayingIndicator {
-        sceneAnimating: Ambient.mode === 1 || Ambient.mode === 2 || Ambient.mode === 4
         x: lead.width - Metrics.gap8 - width
         anchors.verticalCenter: parent.verticalCenter
         visible: !lead.selectionMode && lead.playing

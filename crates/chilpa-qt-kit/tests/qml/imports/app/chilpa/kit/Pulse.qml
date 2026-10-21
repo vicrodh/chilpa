@@ -9,8 +9,10 @@ QtObject {
     property bool automatic: true
     function hold() { held += 1 }
     function release() { held = Math.max(0, held - 1) }
-    function holdSlow() { hold() }
-    function releaseSlow() { release() }
+    // The slow holds are counted apart too, so a test can tell them.
+    property int slowHeld: 0
+    function holdSlow() { slowHeld += 1; hold() }
+    function releaseSlow() { slowHeld = Math.max(0, slowHeld - 1); release() }
     readonly property Timer clock: Timer {
         interval: period
         repeat: true

@@ -72,7 +72,7 @@ Item {
     AmbientField {
         anchors.fill: parent
         visible: root.painting && root.mode === 1
-        running: visible && root.playing
+        running: visible
         primary: Ambient.primary
         secondary: Ambient.secondary
         accent: Ambient.accent

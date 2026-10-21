@@ -80,7 +80,6 @@ Item {
     }
 
     PlayingIndicator {
-        sceneAnimating: Ambient.mode === 1 || Ambient.mode === 2 || Ambient.mode === 4
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap10
         anchors.verticalCenter: parent.verticalCenter
