@@ -712,6 +712,9 @@ msgstr "По букве"
 msgid "By name"
 msgstr "По названию"
 
+msgid "By plays"
+msgstr "По прослушиваниям"
+
 msgid "By quality"
 msgstr "По качеству"
 

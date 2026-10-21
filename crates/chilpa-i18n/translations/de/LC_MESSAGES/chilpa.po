@@ -710,6 +710,9 @@ msgstr "Nach Buchstabe"
 msgid "By name"
 msgstr "Nach Name"
 
+msgid "By plays"
+msgstr "Nach Wiedergaben"
+
 msgid "By quality"
 msgstr "Nach Qualität"
 

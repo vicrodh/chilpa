@@ -710,6 +710,9 @@ msgstr "Par lettre"
 msgid "By name"
 msgstr "Par nom"
 
+msgid "By plays"
+msgstr "Par écoutes"
+
 msgid "By quality"
 msgstr "Par qualité"
 
