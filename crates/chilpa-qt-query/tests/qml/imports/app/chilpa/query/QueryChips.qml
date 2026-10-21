@@ -37,4 +37,10 @@ QtObject {
     property var suggestions: ({ groups: [], words: {} })
     property string lastTyped: ""
     function suggest(query, typed) { lastTyped = typed; return JSON.stringify(suggestions) }
+    property var notesOf: ({})
+    function notes(query) { return JSON.stringify(notesOf[query] || []) }
+    property var withoutOf: ({})
+    function withoutEach(query) { return JSON.stringify(withoutOf[query] || []) }
+    property var checks: ({})
+    function check(text) { return JSON.stringify(checks[text] || { ok: true }) }
 }

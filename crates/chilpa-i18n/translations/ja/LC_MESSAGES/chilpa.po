@@ -1602,6 +1602,9 @@ msgstr "以前のタブ"
 msgid "Edit"
 msgstr "編集"
 
+msgid "Edit as text"
+msgstr "テキストで編集"
+
 msgid "Edit folder"
 msgstr "フォルダーを編集"
 
@@ -2667,6 +2670,9 @@ msgstr "先に :loop a で開始点を指定してください。"
 msgid "Match"
 msgstr "一致条件"
 
+msgid "Match {} exactly"
+msgstr "{} に完全一致"
+
 msgid "Matched"
 msgstr "一致"
 
@@ -3074,6 +3080,9 @@ msgstr "この実行ではまだ処理されたトラックがありません。
 
 msgid "No tracks in the selected libraries yet."
 msgstr "選択したライブラリにはまだトラックがありません。"
+
+msgid "No tracks match all of these"
+msgstr "すべてに一致するトラックはありません"
 
 msgid "No tracks match this filter."
 msgstr "このフィルターに一致するトラックはありません。"
@@ -3738,6 +3747,9 @@ msgstr "Reactive Rings"
 msgid "Read a playlist, choose destinations, review matches, then create your playlists."
 msgstr "プレイリストを読み取り、取り込み先を選び、一致を確認してから、プレイリストを作成します。"
 
+msgid "Read as"
+msgstr "解釈"
+
 msgid "Read less"
 msgstr "閉じる"
 
@@ -3749,6 +3761,9 @@ msgstr "プレイリストを読み取り"
 
 msgid "Read the current size of the cache folders in the background."
 msgstr "キャッシュフォルダーの現在のサイズをバックグラウンドで読み取ります。"
+
+msgid "Read “{}” as words instead"
+msgstr "「{}」を語として扱う"
 
 msgid "Reading it from {}…"
 msgstr "{}から読み取っています…"
@@ -3899,6 +3914,9 @@ msgstr "グループを削除"
 
 msgid "Remove image"
 msgstr "画像を削除"
+
+msgid "Remove one condition to get results:"
+msgstr "条件を 1 つ外すと結果が出ます："
 
 msgid "Remove original queues"
 msgstr "元のキューを削除"
@@ -4850,6 +4868,9 @@ msgstr "このプリセットは精密フィルターを使っています。そ
 msgid "This purchase is unavailable for download."
 msgstr "この購入はダウンロードできません。"
 
+msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
+msgstr "このクエリはグループを 3 段まで入れ子にしています。行では 2 段まで表示できるため、ここではテキストのまま表示します。条件は適用されています。"
+
 msgid "This record cannot be played now."
 msgstr "このアルバムは現在再生できません。"
 
@@ -5332,6 +5353,9 @@ msgstr "承認を取り消す"
 
 msgid "Without plugins"
 msgstr "プラグインなし"
+
+msgid "Without {}"
+msgstr "{} なし"
 
 msgid "Words"
 msgstr "キーワード"

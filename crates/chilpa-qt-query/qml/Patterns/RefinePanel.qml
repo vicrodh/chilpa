@@ -55,7 +55,12 @@ Rectangle {
         Library.applyQuery(QueryChips.refineEdit(panel.query, JSON.stringify(change)))
     }
 
-    implicitHeight: head.implicitHeight + list.contentHeight + Refine.rowsBottom + Refine.footTop + foot.implicitHeight + Refine.footBottom
+    readonly property var notes: { I18n.rev; return JSON.parse(QueryChips.notes(panel.query) || "[]") }
+    // The console opens on its own for a query too deep for rows.
+    readonly property bool consoleOpen: consoleShown || !!reading.complex || consoleLine.editing
+    readonly property real below: Refine.rowsBottom + Refine.footTop + foot.implicitHeight + Refine.footBottom
+        + (engineNotes.visible ? engineNotes.implicitHeight : 0) + (consoleLine.visible ? consoleLine.implicitHeight : 0)
+    implicitHeight: head.implicitHeight + (complex.visible ? complex.implicitHeight + Refine.rowsBottom : 0) + list.contentHeight + below
     color: Theme.ambient ? Theme.color.ambientRaised : Theme.color.surfacePane
     radius: Refine.panelRound
     border.width: Metrics.hairline
@@ -69,7 +74,7 @@ Rectangle {
         mode: panel.reading.mode || "all"
         summary: panel.summary
         loading: panel.loading
-        consoleShown: panel.consoleShown
+        consoleShown: panel.consoleOpen
         canUndo: QueryChips.canUndo
         canDetach: !panel.narrow
         onModeChosen: (mode) => panel.edit({ op: "mode", mode: mode })
@@ -83,13 +88,23 @@ Rectangle {
         keyField: "key"
         items: panel.items
     }
-    MotionListView {
-        id: list
-        objectName: "refineRows"
+    ComplexQuery {
+        id: complex
+        visible: !!panel.reading.complex
         anchors.top: head.bottom
         x: Refine.rowsSide
         width: parent.width - Refine.rowsSide * 2 // derived: the rows' inset on both sides
-        height: Math.max(0, Math.min(contentHeight, panel.height - head.height - Refine.rowsBottom - Refine.footTop - foot.height - Refine.footBottom))
+        text: panel.reading.complex ? ":filter " + panel.reading.complex.text : ""
+        onEditAsked: consoleLine.edit()
+    }
+    MotionListView {
+        id: list
+        objectName: "refineRows"
+        anchors.top: complex.visible ? complex.bottom : head.bottom
+        anchors.topMargin: complex.visible ? Refine.rowsBottom : 0
+        x: Refine.rowsSide
+        width: parent.width - Refine.rowsSide * 2 // derived: the rows' inset on both sides
+        height: Math.max(0, Math.min(contentHeight, panel.height - head.height - (complex.visible ? complex.height + Refine.rowsBottom : 0) - panel.below))
         clip: true
         interactive: contentHeight > height
         boundsBehavior: Flickable.StopAtBounds
@@ -149,6 +164,24 @@ Rectangle {
         onAccepted: (exclude) => { if (foot.extraItem && foot.extraItem.first) foot.extraItem.first(exclude) }
         onEscaped: panel.picking = ""
         extra: panel.picking !== "" ? valuePicker : foot.typed.trim() !== "" ? suggestions : null
+    }
+    EngineNotes {
+        id: engineNotes
+        anchors.top: foot.bottom
+        anchors.topMargin: Refine.footBottom
+        width: parent.width
+        notes: panel.notes
+        onUndone: (index) => panel.edit({ op: "literal", note: index })
+    }
+    ConsoleLine {
+        id: consoleLine
+        objectName: "refineConsole"
+        visible: panel.consoleOpen
+        anchors.top: engineNotes.visible ? engineNotes.bottom : foot.bottom
+        anchors.topMargin: engineNotes.visible ? 0 : Refine.footBottom
+        width: parent.width
+        query: panel.reading.complex ? panel.reading.complex.text : panel.query
+        onApplied: (text) => Library.applyQuery(text)
     }
     // The conditions a picker reads its marks from: the group new ones go
     // into, or the top level.

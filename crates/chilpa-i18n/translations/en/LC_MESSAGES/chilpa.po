@@ -1604,6 +1604,9 @@ msgstr ""
 msgid "Edit"
 msgstr ""
 
+msgid "Edit as text"
+msgstr ""
+
 msgid "Edit folder"
 msgstr ""
 
@@ -2669,6 +2672,9 @@ msgstr ""
 msgid "Match"
 msgstr ""
 
+msgid "Match {} exactly"
+msgstr ""
+
 msgid "Matched"
 msgstr "Matched"
 
@@ -3075,6 +3081,9 @@ msgid "No tracks have been processed in this run yet."
 msgstr ""
 
 msgid "No tracks in the selected libraries yet."
+msgstr ""
+
+msgid "No tracks match all of these"
 msgstr ""
 
 msgid "No tracks match this filter."
@@ -3740,6 +3749,9 @@ msgstr ""
 msgid "Read a playlist, choose destinations, review matches, then create your playlists."
 msgstr "Read a playlist, choose destinations, review matches, then create your playlists."
 
+msgid "Read as"
+msgstr ""
+
 msgid "Read less"
 msgstr ""
 
@@ -3750,6 +3762,9 @@ msgid "Read playlist"
 msgstr "Read playlist"
 
 msgid "Read the current size of the cache folders in the background."
+msgstr ""
+
+msgid "Read “{}” as words instead"
 msgstr ""
 
 msgid "Reading it from {}…"
@@ -3900,6 +3915,9 @@ msgid "Remove group"
 msgstr ""
 
 msgid "Remove image"
+msgstr ""
+
+msgid "Remove one condition to get results:"
 msgstr ""
 
 msgid "Remove original queues"
@@ -4854,6 +4872,9 @@ msgstr "This preset uses precise filters. Keep them as they are, or create a sep
 msgid "This purchase is unavailable for download."
 msgstr "This purchase is unavailable for download."
 
+msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
+msgstr ""
+
 msgid "This record cannot be played now."
 msgstr ""
 
@@ -5335,6 +5356,9 @@ msgid "Withdraw approval"
 msgstr ""
 
 msgid "Without plugins"
+msgstr ""
+
+msgid "Without {}"
 msgstr ""
 
 msgid "Words"

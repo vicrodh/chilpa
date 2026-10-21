@@ -1606,6 +1606,9 @@ msgstr "Предыдущие вкладки"
 msgid "Edit"
 msgstr "Редактировать"
 
+msgid "Edit as text"
+msgstr "Редактировать как текст"
+
 msgid "Edit folder"
 msgstr "Изменить папку"
 
@@ -2671,6 +2674,9 @@ msgstr "Сначала отметьте начало командой :loop a."
 msgid "Match"
 msgstr "Совпадение"
 
+msgid "Match {} exactly"
+msgstr "Искать {} точно"
+
 msgid "Matched"
 msgstr "Совпало"
 
@@ -3078,6 +3084,9 @@ msgstr "В этом запуске пока не обработано ни од�
 
 msgid "No tracks in the selected libraries yet."
 msgstr "В выбранных библиотеках пока нет треков."
+
+msgid "No tracks match all of these"
+msgstr "Нет треков, подходящих под все условия"
 
 msgid "No tracks match this filter."
 msgstr "Нет треков под этот фильтр."
@@ -3742,6 +3751,9 @@ msgstr "Reactive Rings"
 msgid "Read a playlist, choose destinations, review matches, then create your playlists."
 msgstr "Прочитайте плейлист, выберите места назначения, проверьте совпадения, затем создайте плейлисты."
 
+msgid "Read as"
+msgstr "Прочитано как"
+
 msgid "Read less"
 msgstr "Свернуть"
 
@@ -3753,6 +3765,9 @@ msgstr "Прочитать плейлист"
 
 msgid "Read the current size of the cache folders in the background."
 msgstr "Считывает текущий размер папок кэша в фоновом режиме."
+
+msgid "Read “{}” as words instead"
+msgstr "Читать «{}» как слова"
 
 msgid "Reading it from {}…"
 msgstr "Чтение из источника «{}»…"
@@ -3903,6 +3918,9 @@ msgstr "Удалить группу"
 
 msgid "Remove image"
 msgstr "Удалить изображение"
+
+msgid "Remove one condition to get results:"
+msgstr "Уберите одно условие, чтобы получить результаты:"
 
 msgid "Remove original queues"
 msgstr "Удалить исходные очереди"
@@ -4858,6 +4876,9 @@ msgstr "В этом пресете используются точные фил�
 msgid "This purchase is unavailable for download."
 msgstr "Эту покупку нельзя скачать."
 
+msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
+msgstr "Этот запрос вкладывает группы на три уровня. Строки показывают два, поэтому здесь он остаётся текстом. Он всё равно применяется."
+
 msgid "This record cannot be played now."
 msgstr "Эту запись сейчас нельзя воспроизвести."
 
@@ -5340,6 +5361,9 @@ msgstr "Отозвать одобрение"
 
 msgid "Without plugins"
 msgstr "Без плагинов"
+
+msgid "Without {}"
+msgstr "Без {}"
 
 msgid "Words"
 msgstr "Слова"

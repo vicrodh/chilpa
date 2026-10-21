@@ -45,4 +45,8 @@ Column {
     PickRatings { width: gallery.width }
     PickPresets { width: gallery.width; lead: "in the last"; choices: [{ text: "30 days", on: true }, { text: "1 year", on: false }] }
     PickWords { width: gallery.width; field: "title" }
+    EngineNotes { width: gallery.width; notes: [{ from: "A. Smith", field: "composer", to: "A Smith", kind: "name" }, { from: "rock", field: "genre", to: "Rock & Roll", kind: "near" }] }
+    ConsoleLine { width: gallery.width; query: "genre:jazz year:1960..1969" }
+    ComplexQuery { width: gallery.width; text: ":filter (genre:jazz | (composer:monk (label:riverside)))" }
+    ZeroResults { width: gallery.width }
 }
