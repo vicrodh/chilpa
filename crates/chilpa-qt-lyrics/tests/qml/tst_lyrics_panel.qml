@@ -36,6 +36,8 @@ TestCase {
         Player.lyrics = said && said.document ? said.document.lines.map(l => l.text) : []
         Player.lyricsSynced = synced
         Player.lyricsLine = line
+        if (synced && line >= 0 && said && said.document)
+            Player.position = (said.document.lines[line].start_ms || 0) / 1000
     }
 
     function options() {

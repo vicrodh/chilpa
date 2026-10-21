@@ -83,18 +83,18 @@ TestCase {
     function test_sampling_preserves_elapsed_phase_and_shared_edges() {
         Pulse.automatic = false
         Pulse.ms = 0
-        const first = createTemporaryObject(barsFactory, test, {active: true})
+        const first = createTemporaryObject(barsFactory, test, {active: true, shaderFailed: true})
         Pulse.ms += Pulse.period
         compare(first.t, 0)
-        const second = createTemporaryObject(barsFactory, test, {active: true})
+        const second = createTemporaryObject(barsFactory, test, {active: true, shaderFailed: true})
         Pulse.ms += Pulse.period
         compare(first.t, 0)
         compare(second.t, 0)
-        Pulse.ms += Pulse.period
-        fuzzyCompare(first.t, 99 / Metrics.eqLoop, 0.00001)
-        fuzzyCompare(second.t, 66 / Metrics.eqLoop, 0.00001)
+        for (let i = 0; i < 6; ++i) Pulse.ms += Pulse.period
+        fuzzyCompare(first.t, 264 / Metrics.eqLoop, 0.00001)
+        fuzzyCompare(second.t, 231 / Metrics.eqLoop, 0.00001)
         for (let i = 0; i < 24; ++i) Pulse.ms += Pulse.period
-        fuzzyCompare(first.t, (27 * Pulse.period / Metrics.eqLoop) % 1, 0.00001)
+        fuzzyCompare(first.t, (32 * Pulse.period / Metrics.eqLoop) % 1, 0.00001)
         first.visible = false
         second.active = false
         compare(Pulse.held, 0)
@@ -102,9 +102,28 @@ TestCase {
         Pulse.ms += Pulse.period
         compare(first.t, stopped)
         first.visible = true
-        Pulse.ms += Pulse.period
-        Pulse.ms += Pulse.period
-        fuzzyCompare(first.t, (stopped + 66 / Metrics.eqLoop) % 1, 0.00001)
+        for (let i = 0; i < 8; ++i) Pulse.ms += Pulse.period
+        fuzzyCompare(first.t, (stopped + 231 / Metrics.eqLoop) % 1, 0.00001)
+    }
+
+    function test_fallback_never_exceeds_four_scene_updates_a_second() {
+        Pulse.automatic = false
+        for (const period of [10, 33, 99, 100, 200]) {
+            Pulse.period = period
+            Pulse.ms = 0
+            const bars = createTemporaryObject(barsFactory, test, {active: true, shaderFailed: true})
+            let changes = 0
+            for (let elapsed = period; elapsed <= 3000; elapsed += period) {
+                const before = bars.t
+                Pulse.ms += period
+                if (before !== bars.t) changes++
+            }
+            verify(changes > 0 && changes <= 12)
+            bars.active = false
+            const held = bars.t
+            Pulse.ms += period
+            compare(bars.t, held)
+        }
     }
 
     function test_sampling_adapts_to_the_shared_period() {
@@ -112,8 +131,8 @@ TestCase {
         for (const period of [10, 33, 100, 200]) {
             Pulse.period = period
             Pulse.ms = 0
-            const bars = createTemporaryObject(barsFactory, test, {active: true})
-            const steps = Math.max(1, Math.round(Metrics.eqFrame / period))
+            const bars = createTemporaryObject(barsFactory, test, {active: true, shaderFailed: true})
+            const steps = Math.max(1, Math.ceil(Metrics.eqSceneFrame / period))
             for (let i = 1; i < steps; ++i) {
                 Pulse.ms += period
                 compare(bars.t, 0)
@@ -128,19 +147,21 @@ TestCase {
     function test_period_changes_preserve_an_already_queued_edge() {
         Pulse.automatic = false
         Pulse.ms = 0
-        const bars = createTemporaryObject(barsFactory, test, {active: true})
+        const bars = createTemporaryObject(barsFactory, test, {active: true, shaderFailed: true})
         Pulse.ms = 33
         Pulse.period = 99
         Pulse.ms = 66
         fuzzyCompare(bars.t, 66 / Metrics.eqLoop, 0.00001)
         Pulse.ms = 165
-        fuzzyCompare(bars.t, 165 / Metrics.eqLoop, 0.00001)
+        fuzzyCompare(bars.t, 66 / Metrics.eqLoop, 0.00001)
+        Pulse.ms = 297
+        fuzzyCompare(bars.t, 297 / Metrics.eqLoop, 0.00001)
         bars.active = false
         Pulse.ms = 86399973
         Pulse.period = 33
         bars.active = true
         Pulse.ms = 6
-        fuzzyCompare(bars.t, 198 / Metrics.eqLoop, 0.00001)
+        fuzzyCompare(bars.t, 330 / Metrics.eqLoop, 0.00001)
     }
 
     function test_native_surface_yields_to_stacking_clipping_and_opacity() {
@@ -220,6 +241,22 @@ TestCase {
         row.children[0].width = 60
         tryCompare(bars, "x", 60)
         tryCompare(native.surface, "x", row.x + 60 - bars.barScale)
+    }
+
+    function test_an_animated_scene_releases_the_native_surface() {
+        const stage = createTemporaryObject(stageFactory, test, {width: 50, height: 30})
+        const bars = createTemporaryObject(barsFactory, stage, {x: 4, y: 4, active: true})
+        const native = findChild(bars, "playingBarsSurface")
+        if (bars.supportsShaders(GraphicsInfo.api)) tryVerify(() => native.surface !== null)
+        bars.sceneAnimating = true
+        compare(native.active, false)
+        compare(native.surface, null)
+        verify(findChild(bars, "playingBarsRenderer").active)
+        compare(Pulse.held, 1)
+        bars.sceneAnimating = false
+        if (bars.supportsShaders(GraphicsInfo.api)) tryVerify(() => native.surface !== null)
+        bars.active = false
+        compare(Pulse.held, 0)
     }
 
     function test_renderer_api_policy() {

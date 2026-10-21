@@ -83,8 +83,8 @@ ListView {
         line: modelData
         synced: view.synced
         position: index
-        current: view.current
-        nowMs: sung ? view.nowMs : 0
+        current: view.live ? view.current : -1
+        nowMs: sung && view.live ? view.nowMs : 0
         endMs: sung ? view.sungEnd : 0
         translation: view.translation ? (view.translation[index] || "") : ""
         size: view.size

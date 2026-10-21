@@ -8,14 +8,15 @@ import "../Theme"
 // 40 and 80 % sweeping 0.3 to 1.0 on an 800 ms loop with phases 0, 0.25,
 // 0.125 and 0.375. The loop advances on the shared pulse, which the bars
 // hold only while active and visible: an inactive one disconnects instead
-// of waking a handler just to return. I sample eight poses per loop on shared
-// pulse edges. An exposed mark paints a small native surface; covered or clipped
-// marks keep the fixed shader quad, with rectangles for software or shader errors.
+// of waking a handler just to return. I share animated scenes and limit scene
+// marks to four updates a second. Otherwise I sample eight poses per loop
+// on an exposed mark's small native surface.
 Item {
     id: bars
     property color tint: Theme.color.accent
     property real barScale: 1
     property bool active: true
+    property bool sceneAnimating: false
     property real t: 0
     width: Metrics.eqWide * barScale
     height: Metrics.eqTall * barScale
@@ -27,7 +28,8 @@ Item {
     readonly property bool moving: active && visible && windowShowing
     property int elapsed: 0
     property int previousMs: Pulse.ms
-    readonly property int stride: Math.max(1, Math.round(Metrics.eqFrame / Pulse.period))
+    readonly property int stride: native.surface ? Math.max(1, Math.round(Metrics.eqFrame / Pulse.period))
+        : Math.max(1, Math.ceil(Metrics.eqSceneFrame / Pulse.period))
     property bool holding: false
     function sync() {
         if (moving === holding)
@@ -73,7 +75,7 @@ Item {
         x: -bars.barScale; y: -bars.barScale
         width: bars.width + 2 * bars.barScale // derived: coverage beyond both horizontal edges
         height: bars.height + 2 * bars.barScale // derived: coverage beyond both vertical edges
-        active: bars.moving && bars.supportsShaders(GraphicsInfo.api) && !bars.shaderFailed
+        active: bars.moving && !bars.sceneAnimating && bars.supportsShaders(GraphicsInfo.api) && !bars.shaderFailed
         phase: bars.t
         barScale: bars.barScale
         tint: bars.tint

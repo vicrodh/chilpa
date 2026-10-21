@@ -20,6 +20,7 @@ TestCase {
 
     Component { id: maker; AppBackground { anchors.fill: parent; plane: Qt.rect(100, 40, 400, 360) } }
     property var made: null
+    function init() { Player.playing = true; Player.paused = false; Pulse.automatic = false }
 
     function mount(mode, path) {
         Ambient.mode = mode
@@ -34,6 +35,7 @@ TestCase {
         made = null
         Pulse.held = 0
         Pulse.ms = 0
+        Pulse.automatic = true
         ThemeModel.dark = true
         Player.art = ""
         Ambient.followed = []
@@ -156,6 +158,27 @@ TestCase {
         compare(Pulse.held, 1)
         Player.path = ""
         compare(Pulse.held, 0, "no track, no field, no pulse")
+    }
+
+    function test_the_field_keeps_its_last_pose_when_paused_or_hidden() {
+        mount(1, "/a.flac")
+        const ambient = field("AmbientField")
+        const before = ambient.t
+        Pulse.ms += 99
+        fuzzyCompare(ambient.t - before, 0.099, 0.00001)
+        Player.paused = true
+        compare(Pulse.held, 0)
+        const held = ambient.t
+        Pulse.ms += 330
+        compare(ambient.t, held)
+        Player.paused = false
+        Pulse.ms += 99
+        fuzzyCompare(ambient.t - held, 0.099, 0.00001)
+        made.visible = false
+        compare(Pulse.held, 0)
+        const hidden = ambient.t
+        Pulse.ms += 99
+        compare(ambient.t, hidden)
     }
 
     function test_the_atmosphere_drifts_on_the_pulse_and_rests_at_zero() {
