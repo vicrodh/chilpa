@@ -14,7 +14,6 @@ crates/chilpa-qt/qml/Components/ChoiceRow.qml
 crates/chilpa-qt/qml/Components/CreditLine.qml
 crates/chilpa-qt/qml/Components/DragGhost.qml
 crates/chilpa-qt/qml/Components/FilterCrumb.qml
-crates/chilpa-qt/qml/Components/LibraryCrumbs.qml
 crates/chilpa-qt/qml/Components/LibraryToolbar.qml
 crates/chilpa-qt/qml/Components/MarkButtons.qml
 crates/chilpa-qt/qml/Components/NavItem.qml

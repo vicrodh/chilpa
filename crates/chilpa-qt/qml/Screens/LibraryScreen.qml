@@ -140,18 +140,20 @@ Item {
         }
     }
 
-    LibraryCrumbs {
+    // Which sources count, then the query's conditions after a rule.
+    Item {
         id: crumbs
         anchors.top: head.bottom
         x: head.x
         width: head.width - toggle.width - Metrics.gap8
         height: Metrics.breadcrumb
+        SourcesScope { id: scope; anchors.verticalCenter: parent.verticalCenter }
+        Rectangle { visible: chips.visible; x: scope.width + Metrics.gap8; anchors.verticalCenter: parent.verticalCenter; width: Metrics.hairline; height: Metrics.sourcesScopeRule; color: Theme.color.strokeHairline }
     }
-    // The conditions beyond the columns (`:filter`, Alt+click on a value),
-    // after the crumbs.
     QueryChipRow {
+        id: chips
         anchors.verticalCenter: crumbs.verticalCenter
-        x: crumbs.x + crumbs.used + Metrics.gap8
+        x: crumbs.x + scope.width + Metrics.gap8 * 2 + Metrics.hairline // derived: the rule and its gaps
         width: Math.max(0, toggle.x - x - Metrics.gap8)
         clip: true
         suppressed: toggle.refineShown

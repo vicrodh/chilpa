@@ -85,18 +85,6 @@ TestCase {
         list.model.clear()
     }
 
-    Component { id: crumbsComponent; LibraryCrumbs { width: 600; height: 30 } }
-    function test_crumbs_keep_only_the_scope_control() {
-        Library.queryText = "genre:Jazz -year:1980"
-        const crumbs = createTemporaryObject(crumbsComponent, test)
-        verify(crumbs.filtered)
-        const line = crumbs.children[0]
-        compare(line.children.length, 1, "column crumbs are gone")
-        compare(line.children[0].children[1].text, "All music")
-        mouseClick(line.children[0].children[1])
-        compare(Library.queryText, "")
-    }
-
     function test_every_column_can_be_turned_off() {
         panes.shown = []
         waitForRendering(panes)
