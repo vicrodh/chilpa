@@ -4,6 +4,7 @@ import QtQuick
 // Durations (design/01-tokens.md 5). With reduced motion every one is zero,
 // so nothing has to ask for itself whether to animate.
 QtObject {
+    readonly property int busyLoop: 1000
     readonly property int menuLeave: 350
     readonly property int listenRefresh: 400
     // Cards that came with a "Load more" fade in while they are this fresh.

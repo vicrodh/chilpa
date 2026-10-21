@@ -36,6 +36,14 @@ impl Default for SourceFavorites {
     }
 }
 
+impl SourceFavorites {
+    pub(crate) fn has_pending(&self) -> bool { !self.changed.is_empty() }
+
+    pub(crate) fn pending(&self, plugin: &str, identity: &str) -> bool {
+        self.has_pending() && self.changed.contains_key(&(plugin.into(), identity.into()))
+    }
+}
+
 /// The tab of a source's library that lists the listener's tracks.
 fn listing(plugin: &str) -> String {
     format!("{plugin} section:tracks")
@@ -62,7 +70,7 @@ impl Chilpa {
 
     /// The source tracks that can be marked, and the ones that are, by the
     /// id each has here. The lists are asked for when missing or stale.
-    pub(crate) fn source_track_marks(&self) -> (HashSet<i64>, HashSet<i64>) {
+    pub(crate) fn source_track_marks(&self) -> (HashSet<i64>, HashSet<i64>, HashSet<i64>) {
         let sources: Vec<String> = self.natives.ids().into_iter().filter(|plugin| self.keeps_favorite_tracks(plugin)).collect();
         if sources.is_empty() {
             return Default::default();
@@ -79,7 +87,13 @@ impl Chilpa {
             listed.extend(kept.into_iter().map(|identity| (plugin.clone(), identity)));
         }
         let marked = favorites_among(&known, &listed, &self.source_favorites.changed);
-        (known.into_iter().map(|(id, ..)| id).collect(), marked)
+        let pending = if self.source_favorites.changed.is_empty() { HashSet::new() }
+            else { known.iter().filter(|(_, plugin, identity)| self.source_favorites.pending(plugin, identity)).map(|(id, ..)| *id).collect() };
+        (known.into_iter().map(|(id, ..)| id).collect(), marked, pending)
+    }
+
+    pub fn source_favorite_pending(&self, plugin: &str, reference: &str) -> bool {
+        self.sources.native_actions.get(plugin).is_some_and(|state| state["pending"] == true && state["favorite"]["ref"] == reference)
     }
 
     /// Marks those source tracks, or takes the mark off. Shown at once; the
@@ -90,6 +104,7 @@ impl Chilpa {
             .map(|(_, _, plugin, identity)| (plugin, identity))
             .collect::<HashSet<_>>().into_iter().collect();
         for (plugin, identity) in chosen {
+            if self.source_favorites.changed.contains_key(&(plugin.clone(), identity.clone())) { continue; }
             self.source_favorites.changed.insert((plugin.clone(), identity.clone()), on);
             let (natives, tx) = (self.natives.clone(), self.source_favorites.tx.clone());
             std::thread::spawn(move || {
@@ -138,5 +153,34 @@ mod tests {
         changed.insert(key("one", "track:11"), true);
         changed.insert(key("one", "track:10"), false);
         assert_eq!(favorites_among(&known, &listed, &changed), [-3].into(), "what was changed here goes over the list");
+    }
+
+    #[test]
+    fn a_finished_track_write_clears_only_its_pending_identity_on_success_or_failure() {
+        for result in [Ok(()), Err("Write failed".into())] {
+            let mut api = Chilpa::new();
+            let previous_error = api.now.error.clone();
+            api.source_favorites.changed.insert(key("one", "track:10"), true);
+            api.source_favorites.changed.insert(key("two", "track:10"), false);
+            assert!(api.source_favorites.pending("one", "track:10"));
+            let failed = result.is_err();
+            api.source_favorites.tx.send(Answer { plugin:"one".into(), identity:"track:10".into(), result }).unwrap();
+            api.advance_source_favorites();
+            assert!(!api.source_favorites.pending("one", "track:10"));
+            assert!(api.source_favorites.pending("two", "track:10"));
+            if failed { assert!(api.now.error.contains("Write failed")); }
+            else { assert_eq!(api.now.error, previous_error); }
+        }
+    }
+
+    #[test]
+    fn pending_page_favorites_match_the_source_action_and_reference() {
+        let mut api = Chilpa::new();
+        api.sources.native_actions.insert("one".into(), json!({"pending":true,"favorite":{"ref":"album:10","on":true}}));
+        assert!(api.source_favorite_pending("one", "album:10"));
+        assert!(!api.source_favorite_pending("two", "album:10"));
+        assert!(!api.source_favorite_pending("one", "album:11"));
+        api.sources.native_actions.insert("one".into(), json!({"pending":false,"error":"Write failed"}));
+        assert!(!api.source_favorite_pending("one", "album:10"));
     }
 }

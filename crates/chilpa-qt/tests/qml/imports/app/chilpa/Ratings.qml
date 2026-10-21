@@ -6,6 +6,8 @@ QtObject {
     property var albums: ({})
     property var favorites: ({})
     property bool fail: false
+    property var pendingTracks: ({})
+    function pending(kind, key, unused) { return kind === "track" && !!pendingTracks[key] }
     function stars(kind, id, unused) { return (kind === "track" ? tracks[id] : albums[id]) || 0 }
     function rate(kind, id, stars) { if (!fail) { (kind === "track" ? tracks : albums)[id] = stars; ++rev } }
     function refresh() {}

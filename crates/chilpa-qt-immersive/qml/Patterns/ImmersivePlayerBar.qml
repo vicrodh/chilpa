@@ -90,6 +90,9 @@ Item {
             filled: Immersive.favorite
             active: Immersive.favorite
             able: Immersive.markable
+            busy: Immersive.favoritePending
+            clock: Pulse
+            animationActive: root.opacity > 0
             onClicked: Immersive.likePlaying()
         }
         GhostButton {

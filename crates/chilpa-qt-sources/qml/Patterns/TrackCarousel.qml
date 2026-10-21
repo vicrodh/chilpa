@@ -96,13 +96,15 @@ Column {
                         Row {
                             anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
                             spacing: Metrics.gap6
-                            IconButton {
+                            FavoriteButton {
+                                clock: Pulse
                                 objectName: "trackCarouselFavorite"
                                 anchors.verticalCenter: parent.verticalCenter
                                 visible: Ratings.markable("track", card.model.trackId, Ratings.rev)
                                 round: true; tone: "overlay"; size: Metrics.overlayButton
                                 readonly property bool favorite: Ratings.favorite("track", card.model.trackId, Ratings.rev)
                                 filled: favorite; checked: favorite; heart: true; iconSize: Metrics.overlayIcon
+                                busy: Ratings.pending("track", card.model.trackId, Ratings.rev)
                                 glyph: favorite ? Icons.heartFilled : Icons.heart
                                 tip: favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev)
                                 onClicked: Ratings.setFavorite("track", card.model.trackId, !favorite)

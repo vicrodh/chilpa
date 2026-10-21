@@ -52,6 +52,7 @@ pub mod qobject {
         /// is: read again on `refreshFavorite`.
         #[qproperty(bool, markable)]
         #[qproperty(bool, favorite)]
+        #[qproperty(bool, favorite_pending)]
         type Immersive = super::ImmersiveRust;
 
         /// Shift+I: flips the overlay without touching the view.
@@ -123,6 +124,7 @@ pub struct ImmersiveRust {
     bar_blur: bool,
     markable: bool,
     favorite: bool,
+    favorite_pending: bool,
 }
 
 /// A number from the environment, or the default when unset or unreadable.
@@ -146,6 +148,7 @@ impl Default for ImmersiveRust {
             bar_blur: std::env::var("CHILPA_IMMERSIVE_BAR_BLUR").map_or(true, |v| v.trim() != "0"),
             markable: false,
             favorite: false,
+            favorite_pending: false,
         }
     }
 }
@@ -252,9 +255,13 @@ impl qobject::Immersive {
     }
 
     pub fn refresh_favorite(mut self: Pin<&mut Self>) {
-        let (markable, favorite) = app::with(|api| api.playing_favorite());
+        let (markable, favorite, pending) = app::with(|api| {
+            let (markable, favorite) = api.playing_favorite();
+            (markable, favorite, api.playing_favorite_pending())
+        });
         self.as_mut().set_markable(markable);
         self.as_mut().set_favorite(favorite);
+        self.as_mut().set_favorite_pending(pending);
     }
 }
 

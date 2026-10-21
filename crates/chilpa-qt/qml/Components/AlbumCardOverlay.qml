@@ -4,6 +4,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // What a card shows under the pointer (design/03 AlbumCard): the scrim, the
 // check that selects it, its favorite, play, its quick view and its menu.
@@ -137,7 +138,8 @@ Rectangle {
                 tip: I18n.tr("Quick view", I18n.rev)
                 onClicked: overlay.quick()
             }
-            IconButton {
+            FavoriteButton {
+                clock: Pulse
                 // A source's record is a favorite of the service, not of the library.
                 objectName: "albumFavorite"
                 visible: overlay.favoriteSupported
@@ -147,6 +149,7 @@ Rectangle {
                 tone: "overlay"
                 checked: overlay.favorite
                 heart: true
+                busy: !!overlay.nativeInfo.plugin && Sources.favoritePending(overlay.nativeInfo.plugin, overlay.nativeInfo.ref || "", Sources.revision)
                 glyph: overlay.favorite ? Icons.heartFilled : Icons.heart
                 filled: overlay.favorite
                 tip: overlay.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev)

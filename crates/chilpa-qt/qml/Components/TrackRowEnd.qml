@@ -15,6 +15,8 @@ Item {
 
     property double trackId: 0
     property bool favorite: false
+    property bool inViewport: true
+    readonly property bool busy: Ratings.pending("track", trackId, Ratings.rev)
     // 1 the heart, 2 the menu button, 0 neither: the one under the pointer.
     property int hovered: 0
 
@@ -28,7 +30,7 @@ Item {
         return cell === 0 && canMark ? 1 : cell === 1 ? 2 : 0
     }
     function act() {
-        if (hovered === 1)
+        if (hovered === 1 && !busy)
             Ratings.setFavorite("track", trackId, !favorite)
     }
     // Where the menu opens, in `item`: under the button, ending with it.
@@ -71,12 +73,18 @@ Item {
                 color: Theme.color.stateHover
             }
             Icon {
+                visible: !cell.heart || !end.busy
                 anchors.centerIn: parent
                 glyph: !cell.heart ? Icons.dots : end.favorite ? Icons.heartFilled : Icons.heart
                 filled: cell.heart && end.favorite
                 size: Metrics.iconSm
                 color: cell.heart && end.favorite ? Theme.color.favorite
                      : cell.pointed ? Theme.color.textPrimary : Theme.color.textTertiary
+            }
+            Loader {
+                anchors.centerIn: parent
+                active: cell.heart && end.busy && end.inViewport && end.visible
+                sourceComponent: BusyMark { clock: Pulse; size: Metrics.iconSm; color: Theme.color.accent }
             }
         }
     }

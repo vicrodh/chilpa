@@ -1,0 +1,21 @@
+[package]
+name = "chilpa-web-sign-in"
+description = "A window that opens a plugin's sign-in page and stops at its return address"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "chilpa-web-sign-in"
+path = "src/main.rs"
+
+[features]
+# The window itself. Off by default: building the workspace needs no web
+# engine, and a build without it answers that it is unavailable.
+webkit = ["dep:gtk", "dep:webkit6"]
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# v4_10 exposes Accessible, which the WebKit bindings implement.
+gtk = { package = "gtk4", version = "0.11", optional = true, features = ["v4_10"] }
+webkit6 = { version = "0.6", optional = true }
