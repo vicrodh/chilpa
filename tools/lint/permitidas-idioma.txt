@@ -801,3 +801,8 @@ peekable
 ean
 ttls
 navbar
+dep
+gio
+gtk
+src
+webkit

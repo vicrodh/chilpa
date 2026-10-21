@@ -162,10 +162,10 @@ P.Modal {
                     document: details.manager.settingsDocument
                     enabled: !details.manager.view.busy && !details.settingsLoading
                     onSubmitted: (action, values) => details.manager.command("submit", {id: details.plugin.id, submission: {revision: details.manager.view.form.revision, action: action, values: values}})
-                    onLinked: (url) => {
-                        if (/^https?:\/\//i.test(url)) Qt.openUrlExternally(url)
-                        else details.manager.command("settings", {id: details.plugin.id, page: url.replace(/^\//, "")})
-                    }
+                    captures: details.manager.view.web_sign_in === true
+                    onLinked: (url) => /^https?:\/\//i.test(url) ? Qt.openUrlExternally(url) : details.manager.command("settings", {id: details.plugin.id, page: url.replace(/^\//, "")})
+                    onCaptured: (link) => details.manager.command("web_sign_in", {id: details.plugin.id, url: link.url, capture: link.capture,
+                        revision: details.manager.view.form.revision})
                 }
                 Text {
                     visible: details.plugin.downloads === true

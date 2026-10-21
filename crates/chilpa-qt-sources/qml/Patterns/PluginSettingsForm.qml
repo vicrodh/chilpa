@@ -9,7 +9,10 @@ Column {
     required property var document
     property var values: ({})
     signal submitted(string action, var values)
+    // Whether a sign-in window can open a link that declares a return address.
+    property bool captures: false
     signal linked(string url)
+    signal captured(var link)
     spacing: Metrics.gap12
     onDocumentChanged: values = Object.assign({}, document.values || {})
 
@@ -115,7 +118,7 @@ Column {
             text: modelData.label || modelData.url
             kind: modelData.primary === true ? "primary" : "secondary"
             glyph: Icons.arrowUpRight
-            onClicked: form.linked(modelData.url)
+            onClicked: modelData.capture && form.captures ? form.captured(modelData) : form.linked(modelData.url)
         }
     }
     Flow {
