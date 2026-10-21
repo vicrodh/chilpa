@@ -26,6 +26,7 @@ pub enum AlbumGroup {
     Added,
     /// Album, EP, single, live, compilation or soundtrack.
     Kind,
+    Plays,
 }
 
 impl AlbumGroup {
@@ -42,6 +43,7 @@ impl AlbumGroup {
             "source" => Self::Source,
             "added" => Self::Added,
             "type" => Self::Kind,
+            "plays" => Self::Plays,
             _ => Self::None,
         }
     }
@@ -154,6 +156,7 @@ pub(crate) struct RecordFacts {
     pub quality: i32,
     pub source: String,
     pub added_at: i64,
+    pub plays: i64,
     /// I use the shared release kind, or an empty key without record data.
     pub kind: &'static str,
 }
@@ -209,6 +212,7 @@ pub(crate) fn file(group: AlbumGroup, facts: &RecordFacts, by_artist: bool, now:
         AlbumGroup::Source => named(&facts.source, chilpa_i18n::t("Unknown source")),
         AlbumGroup::Added => added(facts.added_at, now),
         AlbumGroup::Kind => kind(facts.kind),
+        AlbumGroup::Plays => super::plays::file(facts.plays),
         AlbumGroup::None => Filed { rank: (0, 0, String::new()), label: String::new() },
     }
 }
@@ -242,6 +246,7 @@ impl crate::Reader {
     /// for what the grouping needs; the integrated ones come with the index.
     pub(crate) fn album_groups(&self, ids: Vec<i64>, group: AlbumGroup, by_artist: bool, turned: bool, index: &SourceIndex) -> AlbumsFound {
         if group == AlbumGroup::None { return AlbumsFound { ids, groups: Vec::new() }; }
+        if group == AlbumGroup::Plays { return super::plays::albums(&self.lib, ids, index); }
         let mut names: HashMap<String, String> = self.lib.facet_sources().unwrap_or_default().into_iter().map(|s| (s.key, s.label)).collect();
         names.insert("local:default".into(), chilpa_i18n::t("Local library"));
         names.extend(index.sources.iter().map(|s| (s.key.clone(), s.label.clone())));
@@ -271,6 +276,7 @@ impl crate::Reader {
                 kind: release_kind("", &key.title, &key.artist, tracks, duration),
                 title: key.title, artist: key.artist, year: key.year, added_at: key.added_at,
                 quality: best.get(&id).copied().unwrap_or(0),
+                plays: 0,
                 genre: if group == AlbumGroup::Genre { value.clone() } else { String::new() },
                 label: if group == AlbumGroup::Label { value.clone() } else { String::new() },
                 composer: if group == AlbumGroup::Composer { value.clone() } else { String::new() },

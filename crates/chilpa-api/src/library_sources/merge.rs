@@ -38,7 +38,7 @@ pub(crate) fn key_of(item: &SourceItem) -> OrderKey {
         artist: item.artists.first().cloned().unwrap_or_default(),
         added_at: item.added_at,
         duration_ms: item.duration_ms as i64,
-        plays: 0,
+        plays: item.plays.unwrap_or(0),
         group_year: item.year.filter(|y| *y > 0),
         genre: chilpa_library::first_name(&item.genres),
         label: item.label.trim_matches(' ').to_string(),

@@ -188,6 +188,22 @@ impl Library {
         rows.collect()
     }
 
+    /// I read the same counts as `plays:`, once for the whole grouping.
+    pub fn track_play_counts(&self) -> rusqlite::Result<std::collections::HashMap<i64, i64>> {
+        let mut statement = self.db.prepare("SELECT track_id, plays FROM track_rollup")?;
+        let rows = statement.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+        rows.collect()
+    }
+
+    /// I sum those track counts per record in one query, including absent tracks.
+    pub fn album_play_counts(&self) -> rusqlite::Result<std::collections::HashMap<i64, i64>> {
+        let mut statement = self.db.prepare("SELECT t.album_id, sum(r.plays)
+            FROM track_rollup r JOIN tracks t ON t.id = r.track_id
+            WHERE t.album_id IS NOT NULL GROUP BY t.album_id")?;
+        let rows = statement.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+        rows.collect()
+    }
+
     /// How many times a track has been played, counting only what played more
     /// than halfway. It is the definition the stats use.
     pub fn play_count(&self, track_id: i64) -> rusqlite::Result<usize> {
