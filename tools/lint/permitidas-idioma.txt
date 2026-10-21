@@ -800,3 +800,4 @@ nocase
 peekable
 ean
 ttls
+navbar
