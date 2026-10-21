@@ -41,6 +41,8 @@ Column {
     property color shadowColor: "transparent"
     // How lit it is, from 0 to 1.
     readonly property real lit: LyricsView.dim(dimming, synced, position, current)
+    readonly property bool live: visible && (!Window.window || (Window.window.visible && Window.window.visibility !== Window.Minimized))
+    onLiveChanged: if (!live) { wordsFade.complete(); translationFade.complete() }
 
     signal sought(real ms)
 
@@ -56,7 +58,7 @@ Column {
         opacity: row.lit
         sourceComponent: row.sung && row.wordByWord && !row.whole ? words : plain
 
-        Behavior on opacity { NumberAnimation { duration: Motion.lyricDim; easing.type: Easing.OutQuad } }
+        Behavior on opacity { enabled: row.live; NumberAnimation { id: wordsFade; duration: Motion.lyricDim; easing.type: Easing.OutQuad } }
 
         Component {
             id: plain
@@ -102,7 +104,7 @@ Column {
         font.pointSize: row.size * Type.lyricTranslation // derived: a share of the line's size
         color: row.past ? row.pastColor : row.dimColor
 
-        Behavior on opacity { NumberAnimation { duration: Motion.lyricDim; easing.type: Easing.OutQuad } }
+        Behavior on opacity { enabled: row.live; NumberAnimation { id: translationFade; duration: Motion.lyricDim; easing.type: Easing.OutQuad } }
     }
 
     HoverHandler { enabled: row.timed; cursorShape: Qt.PointingHandCursor }
