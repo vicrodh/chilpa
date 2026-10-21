@@ -88,4 +88,21 @@ TestCase {
         compare(SettingsModel.kept("ui.library.refineHeight"), "150")
         compare(SettingsModel.panesHeight, 240, "the columns keep their own height")
     }
+
+    // With a field's values open the panel may pass its grip, but not the
+    // screen: it stops above the player.
+    function test_an_open_picker_stays_on_the_screen() {
+        const rows = []
+        for (let i = 0; i < 7; ++i) rows.push({ id: String(i), field: "genre", kind: "list", negated: false, values: ["Value " + i] })
+        QueryChips.refineOf = { seven: { mode: "all", complex: null, rows: rows } }
+        Library.queryText = "seven"
+        SettingsModel.keep("ui.library.focus", "true")
+        SettingsModel.panesOpen = true
+        const screen = createTemporaryObject(screenFactory, test, { height: 800 })
+        const area = findChild(screen, "panesArea")
+        tryVerify(() => area.item && area.item.objectName === "refinePanel", 2000)
+        area.item.picking = "genre"
+        tryVerify(() => area.opened, 2000)
+        tryVerify(() => area.y + area.height <= screen.height - 120, 2000, "above the player")
+    }
 }

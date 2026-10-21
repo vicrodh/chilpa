@@ -131,6 +131,7 @@ QtObject {
     readonly property int pickApart: 10
     readonly property int pickFieldsWide: 158
     readonly property int pickFieldRow: 28
+    readonly property int pickFieldsShown: 9
     readonly property int pickFieldRound: 6
     readonly property int pickFieldIcon: 14
     readonly property int pickTitleIcon: 16

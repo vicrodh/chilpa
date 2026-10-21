@@ -33,35 +33,44 @@ Item {
     Rectangle {
         id: box
         width: parent.width
-        implicitHeight: Math.max(fields.visible ? fields.implicitHeight : 0, side.implicitHeight) + Refine.pickPad * 2 // derived: padding above and below
+        implicitHeight: Math.max(fieldsView.visible ? fieldsView.height : 0, side.implicitHeight) + Refine.pickPad * 2 // derived: padding above and below
         radius: Refine.pickRound
         color: Theme.color.surfaceRaised
         border.width: Metrics.hairline
         border.color: Theme.color.strokeHairline
 
-        Column {
-            id: fields
+        // As tall as the design's nine fields; the ones after them scroll.
+        Flickable {
+            id: fieldsView
             visible: !picker.narrow
             x: Refine.pickPad
             y: Refine.pickPad
             width: Refine.pickFieldsWide
-            spacing: Metrics.hairline
-            Repeater {
-                model: RefineText.order
-                Rectangle {
-                    required property string modelData
-                    width: fields.width - Refine.pickPad
-                    height: Refine.pickFieldRow
-                    radius: Refine.pickFieldRound
-                    color: modelData === picker.field ? Theme.color.stateSelected : fieldArea.containsMouse ? Theme.color.stateHover : "transparent"
-                    Row {
-                        x: Refine.pickPad
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: Refine.pickPad
-                        Icon { anchors.verticalCenter: parent.verticalCenter; glyph: RefineText.glyph(modelData); size: Refine.pickFieldIcon; color: Theme.color.textSecondary }
-                        Text { anchors.verticalCenter: parent.verticalCenter; text: RefineText.field(modelData); font.pointSize: Type.row; font.weight: modelData === picker.field ? Type.semibold : Type.regular; color: Theme.color.textPrimary }
+            height: Math.min(fields.implicitHeight, (Refine.pickFieldRow + Metrics.hairline) * Refine.pickFieldsShown)
+            contentHeight: fields.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            Column {
+                id: fields
+                width: parent.width
+                spacing: Metrics.hairline
+                Repeater {
+                    model: RefineText.order
+                    Rectangle {
+                        required property string modelData
+                        width: fields.width - Refine.pickPad
+                        height: Refine.pickFieldRow
+                        radius: Refine.pickFieldRound
+                        color: modelData === picker.field ? Theme.color.stateSelected : fieldArea.containsMouse ? Theme.color.stateHover : "transparent"
+                        Row {
+                            x: Refine.pickPad
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: Refine.pickPad
+                            Icon { anchors.verticalCenter: parent.verticalCenter; glyph: RefineText.glyph(modelData); size: Refine.pickFieldIcon; color: Theme.color.textSecondary }
+                            Text { anchors.verticalCenter: parent.verticalCenter; text: RefineText.field(modelData); font.pointSize: Type.row; font.weight: modelData === picker.field ? Type.semibold : Type.regular; color: Theme.color.textPrimary }
+                        }
+                        MouseArea { id: fieldArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: picker.fieldChosen(modelData) }
                     }
-                    MouseArea { id: fieldArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: picker.fieldChosen(modelData) }
                 }
             }
         }

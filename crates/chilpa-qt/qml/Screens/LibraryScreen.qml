@@ -177,6 +177,7 @@ Item {
         height: toggle.refineMode ? fit(page.panesHeight) : page.panesHeight
         visible: page.panesShown
         refineMode: toggle.refineMode
+        room: page.height - y - Metrics.contentBottom
         summary: tracks.summary
         columns: Component { LibraryPanes { shown: page.panes } }
     }
