@@ -16,7 +16,11 @@ Item {
     property var selectedGenres: []
     property bool filtering: false
     readonly property var sections: SectionChoices.order((about.shelves || []).map(s => Object.assign({}, s, {size:0})), preferences)
-    readonly property var shown: sections.filter(s => s.enabled !== false)
+    // A section the source sent empty has nothing to draw, so the page gives
+    // it no slot: no skeleton shows and then folds away. Customize still
+    // lists it.
+    readonly property var shown: sections.filter(s => s.enabled !== false
+        && ((s.items || []).length > 0 || (s.extra_tracks || []).length > 0 || !!s.error))
     implicitWidth: buttons.implicitWidth
     implicitHeight: buttons.implicitHeight
     function restore() {

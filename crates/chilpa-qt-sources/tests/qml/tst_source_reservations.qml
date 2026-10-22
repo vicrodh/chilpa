@@ -28,6 +28,7 @@ TestCase {
         }
     }
     Component { id: pageComponent; SourceHome { width: 900; height: 700; leaving: true } }
+    Component { id: discoverComponent; SourceHome { width: 900; height: 700; key: "fixture native:discover:home" } }
 
     function test_a_delayed_offscreen_completion_keeps_the_reserved_height() {
         const slot = createTemporaryObject(slotComponent, this, {y:1000})
@@ -54,6 +55,20 @@ TestCase {
         loader.item.ready = true
         tryCompare(slot, "height", 0)
         tryVerify(() => Visit.recall("home.module.empty-fixture", null)?.height === 0)
+    }
+
+    // A section the source sent empty has nothing to draw: it gets no slot,
+    // so no skeleton shows on Discover and then folds away.
+    function test_an_empty_discover_section_reserves_no_slot() {
+        Sources.pages = {"fixture native:discover:home": JSON.stringify({plugin:"fixture", tab:"home", title:"Source", shelves:[
+            {id:"recent", kind:"album", title:"Recently played", key:"fixture native:discover:home|recent", items:[{ref:"album:1"}]},
+            {id:"recent_playlists", kind:"playlist", title:"Recently played playlists", key:"fixture native:discover:home|recent_playlists", items:[], enabled:true},
+            {id:"release_watch", kind:"album", title:"Release watch", key:"fixture native:discover:home|release_watch", items:[], error:"Release watch could not be loaded."},
+            {id:"spotlight", kind:"album", title:"Artist spotlight", key:"fixture native:discover:home|spotlight", items:[], extra_tracks:[{ref:"track:1"}]}
+        ]})}
+        const page = createTemporaryObject(discoverComponent, this)
+        tryCompare(page, "count", 3)
+        compare(page.shelves.map(shelf => shelf.id), ["recent", "release_watch", "spotlight"])
     }
 
     function test_section_keys_keep_distinct_footprints_without_ids() {
