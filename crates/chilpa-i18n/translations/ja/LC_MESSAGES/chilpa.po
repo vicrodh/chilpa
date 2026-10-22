@@ -4853,6 +4853,9 @@ msgstr "これらのアルバムのバーコードがMusicBrainzに送信され�
 msgid "These tracks' ISRCs are sent to MusicBrainz."
 msgstr "これらの曲のISRCがMusicBrainzに送信されます。"
 
+msgid "Third-party"
+msgstr "サードパーティ製"
+
 msgid "Third-party plugins"
 msgstr "サードパーティ製プラグイン"
 

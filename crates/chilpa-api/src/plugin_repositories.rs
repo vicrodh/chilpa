@@ -79,6 +79,13 @@ impl PluginRepositories {
         offered.into_iter().chain(self.saved.compatible.iter().cloned()).collect()
     }
     pub fn native_catalog(&self) -> &str { &self.saved.native_catalog }
+    /// The plugins the third-party catalog offers, however it is offered. A
+    /// plugin with one of these names is a third party's, installed from
+    /// the catalog or from a ZIP of it.
+    pub fn third_party_ids(&self) -> std::collections::HashSet<String> {
+        let id = self.saved.compatible.iter().find(|repository| repository.url == THIRD_PARTY_CATALOG).map_or(THIRD_PARTY, |repository| repository.id.as_str());
+        self.cached(id).unwrap_or_default().into_iter().map(|entry| entry.id).collect()
+    }
 
     /// A local index may be loaded for offline development. Compatible
     /// repositories cannot select this path or import native entries.
@@ -254,6 +261,21 @@ mod tests {
         assert_eq!(sources.len(), 2, "added by hand, it is offered once");
         assert!(sources.iter().all(|repository| repository.id != THIRD_PARTY));
         assert_eq!(repositories.third_party_catalog(), "");
+    }
+
+    #[test]
+    fn the_third_party_catalog_names_its_plugins_however_it_is_offered() {
+        let root = tempfile::tempdir().unwrap();
+        let mut repositories = PluginRepositories::load(root.path().into()).unwrap();
+        let entry = |id: &str| CatalogEntry { id: id.into(), name: id.into(), version: "1.0.0".into(), description: String::new(),
+            category: String::new(), author: String::new(), repository: String::new(), package: "https://example.org/one.zip".into(),
+            digest: chilpa_plugin::catalog::Digest { algorithm: "sha256".into(), value: "00".repeat(32) }, adapter: "native".into(), problem: String::new() };
+        assert!(repositories.third_party_ids().is_empty(), "nothing is named before it is read");
+        repositories.cache(THIRD_PARTY, &[entry("app.example.stream")]).unwrap();
+        assert!(repositories.third_party_ids().contains("app.example.stream"));
+        let added = repositories.add(THIRD_PARTY_CATALOG).unwrap();
+        repositories.cache(&added.id, &[entry("app.example.other")]).unwrap();
+        assert_eq!(repositories.third_party_ids(), ["app.example.other".to_string()].into(), "added by hand, its own copy names them");
     }
 
     #[test]

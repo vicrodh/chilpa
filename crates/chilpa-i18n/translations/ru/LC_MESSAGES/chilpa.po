@@ -4861,6 +4861,9 @@ msgstr "Штрихкоды этих альбомов отправляются в
 msgid "These tracks' ISRCs are sent to MusicBrainz."
 msgstr "ISRC этих треков отправляются в MusicBrainz."
 
+msgid "Third-party"
+msgstr "Сторонний"
+
 msgid "Third-party plugins"
 msgstr "Сторонние плагины"
 

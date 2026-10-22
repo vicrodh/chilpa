@@ -528,6 +528,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         .filter_map(|bytes| serde_json::from_slice::<Value>(&bytes).ok()).collect::<Vec<_>>();
     let mut counts = json!({"installed":0,"valid":0,"uninspected":0,"incompatible":0});
     let mut native_catalog = Vec::new();
+    let third_party = repositories.third_party_ids();
     for entry in repositories.cached("native")? {
         if entry.adapter != "native" { continue; }
         let installed = crate::native_install::installed_version(root, &entry.id);
@@ -535,6 +536,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         let mut row = json!(entry);
         row["repository_id"] = "native".into();
         row["update"] = installed.is_some().into();
+        row["third_party"] = third_party.contains(&entry.id).into();
         native_catalog.push(row);
     }
     let compatibility_available = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.compatibility_launcher().is_some();
@@ -548,6 +550,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                 let mut row = json!(entry);
                 row["repository_id"] = repository.id.clone().into();
                 row["update"] = installed.is_some().into();
+                row["third_party"] = third_party.contains(&entry.id).into();
                 native_catalog.push(row);
                 continue;
             }
@@ -585,7 +588,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         let integration = library.as_ref().and_then(|lib| lib.find_source(crate::source_opener::PROVIDER, &plugin.id).ok().flatten()
             .and_then(|source| lib.imported_source_state(source).ok())).unwrap_or_default();
         json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"downloads":downloads,"download_access":crate::plugin_access::read(root,&plugin.id),"integration_available":sidebar_order.contains(&plugin.id) || !library_kinds.is_empty(),"integration":crate::source_integration::read(root, &plugin.id),"native":native,"limited_network":limited_network,"enabled":enabled,"folder_write":export::enabled(root,&plugin.id),"export_folder":export::read(root,&plugin.id).map(|p|p.display().to_string()),"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
-            "problem":plugin.problem,"permissions":plugin.asks,"origin":origin,
+            "problem":plugin.problem,"permissions":plugin.asks,"origin":origin,"third_party":third_party.contains(&plugin.id),
             "icon":crate::plugin_icons::image_url(root, &plugin.id),"tint":crate::plugin_icons::tint(root, &plugin.id),
             "settings":native_settings || origin["inspection"]["settings_pages"].as_array().is_some_and(|pages| !pages.is_empty()),
             "light":if !plugin.problem.is_empty() {"red"} else if origin.is_null() {"native"} else if plugin.state == "fine" {"green"} else {"yellow"}})

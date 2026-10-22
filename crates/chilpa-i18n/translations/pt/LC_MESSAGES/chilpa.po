@@ -4857,6 +4857,9 @@ msgstr "Os códigos de barras desses discos são enviados ao MusicBrainz."
 msgid "These tracks' ISRCs are sent to MusicBrainz."
 msgstr "Os ISRCs dessas faixas são enviados ao MusicBrainz."
 
+msgid "Third-party"
+msgstr "De terceiros"
+
 msgid "Third-party plugins"
 msgstr "Plugins de terceiros"
 
