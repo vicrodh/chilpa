@@ -1,6 +1,7 @@
 import QtQuick
 import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
     // Hover and clicks are resolved once for the whole list.

@@ -13,6 +13,16 @@ ListModel {
     property string summary: "3 tracks"
     property bool playlistEditable: false
     function selectedRow() { return -1 }
+    // The longest texts of each column, as the bridge gives them, when a
+    // test asks for them; otherwise nothing, and the proportions stand.
+    property bool measures: false
+    function widest(rev) {
+        if (!measures) return ""
+        const rows = [], longest = key => rows.map(key).sort((a, b) => String(b).length - String(a).length).slice(0, 3)
+        for (let i = 0; i < count; ++i) if (get(i).rowKind === 0) rows.push(get(i))
+        return JSON.stringify({title: rows.map(row => [row.title, row.composer || ""]).sort((a, b) => (b[0] + b[1]).length - (a[0] + a[1]).length).slice(0, 3),
+            artist: longest(row => row.artist), album: longest(row => row.album)})
+    }
     function listAction(action, row, to) { lastAction = action; lastRow = row }
     property string lastAction: ""
     property int lastRow: -1

@@ -1213,3 +1213,5 @@ mod tests {
 #[cfg(test)]
 #[path = "browse_refresh_tests.rs"]
 mod refresh_tests;
+#[path = "widest.rs"]
+mod widest;

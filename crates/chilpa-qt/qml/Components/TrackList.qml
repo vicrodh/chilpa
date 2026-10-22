@@ -54,6 +54,7 @@ Item {
     readonly property alias contentHeight: view.contentHeight
     // The list itself, for a screen that groups its rows or jumps in them.
     readonly property alias rows: view
+    readonly property alias columns: columns
 
     implicitHeight: fitContent ? (header ? Metrics.rowHeader : 0) + view.contentHeight : 0
 
@@ -89,14 +90,20 @@ Item {
         function onModelAboutToBeReset() { list.keepPlace() }
         // After the view has taken the reset in.
         function onModelReset() {
+            list.rowsRev++
             if (list.cursorRow >= view.count) list.cursorRow = -1
             Qt.callLater(list.restorePlace)
         }
     }
 
-    TrackColumns {
+    // The rows' reset, for the columns to read their widest texts again.
+    property int rowsRev: 0
+
+    Tools.TrackColumns {
         id: columns
         width: list.width
+        widest: !list.rich && list.model && typeof list.model.widest === "function"
+            ? JSON.parse(list.model.widest(list.rowsRev + (list.model.count || 0)) || "{}") : ({})
         rich: list.rich
         showArtist: list.showArtist
         showAlbum: list.showAlbum
