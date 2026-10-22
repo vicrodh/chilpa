@@ -374,6 +374,7 @@ impl qobject::TrackListModel {
         if self.rust().track(row).is_some_and(|t| !t.available) {
             return;
         }
+        self.playlist_started();
         match &self.rust().rows {
             Rows::Loaded(entries) => {
                 // A header row plays the first track under it.
@@ -449,7 +450,16 @@ impl qobject::TrackListModel {
     }
 
     pub fn play_all(self: Pin<&mut Self>, shuffled: bool) {
+        self.playlist_started();
         self.with_all_paths(move |api, paths| api.play_list(paths, shuffled));
+    }
+
+    /// A playlist's own list that starts playing is a listen of the playlist.
+    fn playlist_started(&self) {
+        let id = self.rust().album_id;
+        if self.rust().kind.to_string() == "playlist" && id != 0 {
+            app::with(|api| api.playlist_started(id));
+        }
     }
 
     pub fn select(mut self: Pin<&mut Self>, row: i32, modifiers: i32) {
@@ -477,6 +487,7 @@ impl qobject::TrackListModel {
             self.play(row);
             return;
         }
+        self.playlist_started();
         self.with_selection(|api, paths| api.play_from(paths, 0));
     }
 

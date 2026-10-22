@@ -598,6 +598,15 @@ impl Chilpa {
         self.library().is_some_and(|lib| lib.set_playlist_custom_order(&ids).is_ok())
     }
 
+    /// A playlist that starts playing from its own list, a source's as well
+    /// as ours: Home's recently listened playlists take it.
+    pub fn playlist_started(&mut self, id: i64) {
+        if id < 0 && self.catalog.card(id).is_some_and(|card| card.kind == crate::source_catalog::store::CardKind::Playlist) {
+            self.catalog.record_playlist_play(id);
+        }
+        self.count_playlist_play(id);
+    }
+
     pub fn count_playlist_play(&mut self, id: i64) {
         if let Some(id) = self.playlist_storage_id(id) {
             if let Some(lib) = self.library() { let _ = lib.record_playlist_play(id); }
@@ -688,7 +697,20 @@ mod group_tests {
     use super::*;
 
     #[test]
-    fn recent_playlists_keep_local_and_all_sources_separate() {
+    fn a_playlist_started_from_its_own_list_is_recently_listened() {
+        let lib = chilpa_library::Library::in_memory().unwrap();
+        let local = lib.source_id("local", "default").unwrap();
+        let id = lib.create_playlist(local, "Local list", "").unwrap();
+        let mut api = crate::Chilpa::new();
+        api.library = Some(lib);
+        api.playlist_started(id);
+        let local: serde_json::Value = serde_json::from_str(&api.recently_listened_playlists(false, 10)).unwrap();
+        assert_eq!(local[0]["name"], "Local list");
+        assert_eq!(local[0]["play_count"], 1);
+    }
+
+    #[test]
+        fn recent_playlists_keep_local_and_all_sources_separate() {
         let lib = chilpa_library::Library::in_memory().unwrap();
         let local = lib.source_id("local", "default").unwrap();
         let remote = lib.source_id("fixture", "account").unwrap();
