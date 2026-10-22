@@ -123,7 +123,7 @@ Flickable {
             name: modelData.title || ""
             art: modelData.art || ""
             origin: page.origin(modelData)
-            owner: page.owner(modelData)
+            detail: page.owner(modelData)
             onActivated: page.open(modelData.at)
             onPlayed: { results.act(modelData.at, "play"); navigation.flush() }
             onMenuAsked: (x, y) => page.menu(modelData.at, list, x, y)

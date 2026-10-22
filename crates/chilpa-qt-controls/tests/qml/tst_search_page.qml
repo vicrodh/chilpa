@@ -114,8 +114,8 @@ TestCase {
         const artist = shown(node => node.objectName === "sceneArtistCard")[0]
         compare(artist.artist.title, "Mora")
         verify(artist.artist.sources[0].chilpa === true)
-        const lists = shown(node => node.hasOwnProperty("owner") && node.hasOwnProperty("covers"))
-        compare(lists.map(list => list.owner), ["Chilpa", "Fixture"])
+        const lists = shown(node => node.hasOwnProperty("folderColor") && node.hasOwnProperty("covers"))
+        compare(lists.map(list => list.detail), ["Chilpa", "Fixture"])
         verify(lists[0].origin.chilpa === true)
         compare(lists[1].origin.icon, "broadcast")
     }

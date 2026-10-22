@@ -134,6 +134,7 @@ pub fn playlist_manager_entries(mut playlists: Vec<Playlist>, mut folders: Vec<P
             play_count: 0,
             folder_id: None,
             local: true,
+            writable: true,
             visible_sidebar: true,
         }));
     }
@@ -152,10 +153,19 @@ pub fn playlist_manager_entries(mut playlists: Vec<Playlist>, mut folders: Vec<P
             play_count: playlist.play_count,
             folder_id: playlist.folder_id,
             local: playlist.mixed,
+            writable: playlist.writable,
             visible_sidebar: playlist.visible_sidebar,
         }));
     }
     rows
+}
+
+/// What a source's plugin is asked to take a playlist away: its delete when
+/// the playlist is the listener's, its heart off when it is only followed.
+fn source_removal(owned: bool, reference: &str, id: i64) -> serde_json::Value {
+    let request = format!("remove:{id}");
+    if owned { serde_json::json!({"action":"playlist.delete","ref":reference,"request_id":request}) }
+    else { serde_json::json!({"action":"favorite","ref":reference,"on":false,"request_id":request}) }
 }
 
 /// Where each playlist's chosen track order is kept: one preference, a map
@@ -559,12 +569,26 @@ impl Chilpa {
         self.library().map(|lib| lib.playlist_covers(playlist_id, 4).unwrap_or_default()).unwrap_or_default()
     }
 
-    /// Deletes a list. The tracks are not touched.
+    /// Deletes a list. The tracks are not touched. A source's list goes from
+    /// the listener's account through its plugin, as its page's Delete does.
     pub fn delete_playlist(&mut self, playlist_id: i64) {
+        if playlist_id < 0 {
+            self.remove_source_playlist(playlist_id);
+            return;
+        }
         if let Some(lib) = self.library() {
             let _ = lib.delete_playlist(playlist_id);
         }
         self.refresh_playlist_roots(playlist_id);
+    }
+
+    /// Takes a source's playlist from the listener's account: deleted when it
+    /// is theirs at a source that edits playlists, no longer followed when it
+    /// is someone else's. The source's answer reads its library again.
+    fn remove_source_playlist(&mut self, id: i64) {
+        let Some(card) = self.catalog.card(id) else { return };
+        let owned = self.natives.edits_playlists(&card.plugin) && card.metadata["editable"] == true;
+        self.sources_command("native", &card.plugin, &source_removal(owned, &card.identity, id).to_string());
     }
 
     /// Renames a list.
@@ -772,12 +796,22 @@ mod group_tests {
     }
 
     #[test]
+    fn a_source_s_playlist_is_deleted_when_theirs_and_unfollowed_otherwise() {
+        let owned = source_removal(true, "playlist:7", -3);
+        assert_eq!((owned["action"].as_str(), owned["ref"].as_str()), (Some("playlist.delete"), Some("playlist:7")));
+        let followed = source_removal(false, "playlist:8", -4);
+        assert_eq!((followed["action"].as_str(), followed["on"].as_bool()), (Some("favorite"), Some(false)), "someone else's is only no longer followed");
+    }
+
+    #[test]
     fn the_manager_lists_one_source_s_playlists_or_the_library_s_own() {
         let playlists = vec![listed(1, ""), listed(2, "fixture"), listed(3, "other"), listed(4, "fixture")];
         let ids = |source: &str| playlist_manager_entries(playlists.clone(), Vec::new(), "", "all", source, "custom", true, None).iter().map(|row| row.id).collect::<Vec<_>>();
         assert_eq!(ids(""), [1, 2, 3, 4]);
         assert_eq!(ids("local"), [1], "the library's own, whatever their tracks' sources");
         assert_eq!(ids("fixture"), [2, 4]);
+        let rows = playlist_manager_entries(playlists.clone(), Vec::new(), "", "all", "", "custom", true, None);
+        assert_eq!(rows.iter().map(|row| row.writable).collect::<Vec<_>>(), [true, false, false, false], "only what the listener may change says so");
         assert_eq!(playlist_manager_sources(&playlists), ["local", "fixture", "other"], "the library's own first, then each source once");
         assert_eq!(playlist_manager_sources(&playlists[1..]), ["fixture", "other"]);
     }

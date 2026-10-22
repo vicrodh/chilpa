@@ -24,6 +24,7 @@ Item {
         function setVisible(id, visible) {}
         function moveToFolder(id, folder) {}
         function removeFolder(id) {}
+        function folderColor(name) { return Theme.color.accent }
     }
     PlaylistPickerModal {}
     PlaylistsFlyout {}
@@ -47,8 +48,13 @@ Item {
         Row {
             spacing: Metrics.gap12
             PlaylistSortButton { playlistId: 1 }
-            PlaylistManagerRow { width: Metrics.playlistManagerCardWidth; index: 0; rowKind: 1; entryId: 1; name: "Road music"; detail: ""; source: ""; sourceName: "Local"; artwork: ""; cover1: ""; cover2: ""; cover3: ""; cover4: ""; colorName: "warning"; tracks: 4; plays: 0; folderId: 0; local: true; visibleInSidebar: true; manager: playlistManager }
-            PlaylistManagerRow { width: Metrics.playlistManagerCardWidth; index: 1; rowKind: 0; entryId: 2; name: "Late Night"; detail: "Quiet records"; source: "demo"; sourceName: "Example source"; artwork: ""; cover1: ""; cover2: ""; cover3: ""; cover4: ""; colorName: ""; tracks: 18; plays: 9; folderId: 0; local: false; visibleInSidebar: true; manager: playlistManager }
+            Column {
+                width: Metrics.confirmWidth
+                PlaylistManagerRow { width: parent.width; index: 0; rowKind: 1; entryId: 1; name: "Road music"; artwork: ""; colorName: "warning"; tracks: 4; local: true; source: ""; sourceName: ""; manager: playlistManager }
+                PlaylistManagerRow { width: parent.width; index: 1; rowKind: 0; entryId: 2; name: "Late Night"; artwork: ""; colorName: ""; tracks: 18; local: false; source: "demo"; sourceName: "Example source"; manager: playlistManager }
+            }
+            PlaylistManagerActions { manager: playlistManager }
+            PlaylistManagerTools { width: Metrics.settingsMaxWidth; sources: ["local", "demo"] }
         }
         Row {
             spacing: Metrics.gap16

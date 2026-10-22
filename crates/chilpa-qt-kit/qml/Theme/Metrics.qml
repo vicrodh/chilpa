@@ -451,12 +451,7 @@ QtObject {
     readonly property int playlistChoiceList: 322
     readonly property int playlistChoiceRows: 8
     readonly property int playlistManagerSearch: 250
-    readonly property int playlistManagerCardWidth: 176
-    readonly property int playlistManagerCard: 210
     readonly property int playlistManagerListRow: 58
-    readonly property int playlistManagerArt: 112
-    readonly property int playlistManagerFolderIcon: 60
-    readonly property int playlistManagerTextY: 134
     readonly property int playlistManagerBack: 110
     readonly property int playlistFolderDialog: 360
     readonly property int colorSwatch: 28

@@ -4,7 +4,9 @@ import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
-// One folder or playlist in either manager presentation.
+// One folder or playlist in the manager's list: its cover or folder, its
+// name, whose it is and how much it holds, and the order's arrows and its
+// menu at the end. The grid draws the same rows as cards (PlaylistCard).
 Rectangle {
     id: row
 
@@ -12,107 +14,67 @@ Rectangle {
     required property int rowKind
     required property int entryId
     required property string name
-    required property string detail
-    required property string source
-    required property string sourceName
-    required property url artwork
-    required property url cover1
-    required property url cover2
-    required property url cover3
-    required property url cover4
+    required property string artwork
     required property string colorName
     required property int tracks
-    required property int plays
-    required property int folderId
     required property bool local
-    required property bool visibleInSidebar
+    required property string source
+    required property string sourceName
 
     property var manager
-    // The sources' panels, for a source playlist's icon and name.
+    // The sources' panels, for a source playlist's name.
     property var panels: []
-    readonly property var panel: panels.find(panel => panel.id === source) || ({})
-    // Whose it is: the library's own wear Chilpa's mark, a source's its icon.
-    readonly property var origin: folder ? ({}) : local ? ({chilpa: true}) : ({icon: panel.icon_image || panel.icon || ""})
-    readonly property string owner: local ? "Chilpa" : panel.name || sourceName
-    property bool grid: true
+    readonly property string owner: local ? "Chilpa" : (panels.find(panel => panel.id === source) || {}).name || sourceName
     property bool custom: false
-    signal editFolder(int id, string name, string colorName)
-    signal editPlaylist(int id)
+    signal menuAsked(real x, real y)
 
     readonly property bool folder: rowKind === 1
-    readonly property color folderColor: !SettingsModel.folderColors ? Theme.color.textSecondary
-        : colorName === "positive" ? Theme.color.statusPositive
-        : colorName === "warning" ? Theme.color.statusWarning
-        : colorName === "negative" ? Theme.color.statusNegative
-        : Theme.color.accent
 
-    implicitHeight: grid ? Metrics.playlistManagerCard : Metrics.playlistManagerListRow
+    implicitHeight: Metrics.playlistManagerListRow
     radius: Metrics.radiusCard
     color: "transparent"
-    border.width: grid ? 1 : 0
-    border.color: Theme.color.strokeHairline
 
     ListRowSurface {
         anchors.fill: parent
         rowIndex: row.index
-        listMode: !row.grid && !row.folder
+        listMode: !row.folder
         hovered: hover.hovered
-        restColor: row.grid ? Theme.color.surfacePanel : "transparent"
+        restColor: "transparent"
         radius: row.radius
     }
 
     Icon {
         visible: row.folder
-        anchors.horizontalCenter: row.grid ? parent.horizontalCenter : undefined
-        x: row.grid ? 0 : Metrics.gap12
-        y: row.grid ? Metrics.gap16 : (parent.height - height) / 2
+        x: Metrics.gap12
+        anchors.verticalCenter: parent.verticalCenter
         glyph: Icons.folder
-        size: row.grid ? Metrics.playlistManagerFolderIcon : Metrics.iconMd
-        color: row.folderColor
+        size: Metrics.iconMd
+        color: row.manager ? row.manager.folderColor(row.colorName) : Theme.color.textSecondary
     }
 
     ArtTile {
         id: art
         visible: !row.folder
-        width: row.grid ? Metrics.playlistManagerArt : Metrics.folderArt
-        height: width
-        x: row.grid ? (parent.width - width) / 2 : Metrics.gap12
-        y: row.grid ? Metrics.gap12 : (parent.height - height) / 2
+        width: Metrics.folderArt; height: width
+        x: Metrics.gap12
+        anchors.verticalCenter: parent.verticalCenter
         radius: Metrics.radiusArtSmall
-        source: row.artwork.toString() !== "" ? row.artwork : row.cover1
+        source: !row.artwork ? "" : row.artwork.indexOf("://") >= 0 ? row.artwork : "file://" + row.artwork.split("/").map(encodeURIComponent).join("/")
         tint: row.index
-    }
-    // On a card, whose it is reads on its cover (QBZ's PmLocalBadge).
-    Rectangle {
-        objectName: "playlistOrigin"
-        visible: row.grid && !row.folder && (row.origin.chilpa === true || (row.origin.icon || "") !== "")
-        anchors.right: art.right
-        anchors.bottom: art.bottom
-        anchors.margins: Metrics.gap4
-        width: Metrics.iconSm + Metrics.gap8; height: width // derived: the icon and a ring around it
-        radius: width / 2 // derived: a disc
-        color: Theme.color.overlayScrim
-        SourceIcon {
-            anchors.centerIn: parent
-            width: Metrics.iconSm; height: Metrics.iconSm
-            sourceInfo: row.origin
-            color: Theme.color.backdropText
-        }
     }
 
     Column {
-        anchors.left: row.grid ? parent.left : art.right
-        anchors.leftMargin: row.grid ? Metrics.gap10 : Metrics.gap12
+        anchors.left: art.right
+        anchors.leftMargin: Metrics.gap12
         anchors.right: controls.left
         anchors.rightMargin: Metrics.gap8
-        y: row.grid ? Metrics.playlistManagerTextY : (parent.height - height) / 2
+        anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap2
 
         Text {
             width: parent.width
             text: row.name
             elide: Text.ElideRight
-            horizontalAlignment: row.grid ? Text.AlignHCenter : Text.AlignLeft
             font.pointSize: Type.body
             font.weight: Type.semibold
             color: Theme.color.textPrimary
@@ -123,7 +85,6 @@ Rectangle {
                 ? I18n.trCount("{} playlist", "{} playlists", row.tracks, I18n.rev)
                 : row.owner + " · " + I18n.trCount("{} track", "{} tracks", row.tracks, I18n.rev)
             elide: Text.ElideRight
-            horizontalAlignment: row.grid ? Text.AlignHCenter : Text.AlignLeft
             font.pointSize: Type.small
             color: Theme.color.textTertiary
         }
@@ -133,9 +94,7 @@ Rectangle {
         id: controls
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap8
-        anchors.bottom: row.grid ? parent.bottom : undefined
-        anchors.bottomMargin: row.grid ? Metrics.gap8 : 0
-        anchors.verticalCenter: row.grid ? undefined : parent.verticalCenter
+        anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap2
 
         IconButton {
@@ -158,58 +117,12 @@ Rectangle {
             size: Metrics.button24
             glyph: Icons.dotsVertical
             tip: I18n.tr("More actions", I18n.rev)
-            onClicked: actions.show()
+            onClicked: { const at = moreButton.mapToItem(row, moreButton.width - Metrics.menuWidth, moreButton.height + Metrics.gap4); row.menuAsked(at.x, at.y) }
         }
     }
 
     HoverHandler { id: hover }
     HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler { onDoubleTapped: row.manager.open(row.index) }
-
-    Menu {
-        id: actions
-        objectName: "playlistActions"
-
-        function show() {
-            const base = row.folder ? [
-                {text: I18n.tr("Open", I18n.rev), act: "open"},
-                {text: I18n.tr("Edit", I18n.rev), act: "edit"},
-                {text: I18n.tr("Delete", I18n.rev), act: "delete"}
-            ] : [
-                {text: I18n.tr("Open", I18n.rev), act: "open"},
-                {text: I18n.tr("Edit", I18n.rev), act: "edit-playlist", when: row.local},
-                {text: row.visibleInSidebar ? I18n.tr("Hide from sidebar", I18n.rev)
-                                                : I18n.tr("Show in sidebar", I18n.rev), act: "visible"},
-                {separator: true},
-                {text: I18n.tr("Move to root", I18n.rev), act: "folder", id: 0}
-            ]
-            if (!row.folder) {
-                const ids = row.manager.folderIds()
-                const names = row.manager.folderNames()
-                for (let i = 0; i < ids.length; ++i)
-                    base.push({text: names[i], act: "folder", id: Number(ids[i])})
-                if (row.local)
-                    base.push({separator: true}, {text: I18n.tr("Delete", I18n.rev), act: "delete"})
-            }
-            entries = base.filter(e => e.when === undefined || e.when)
-            const at = moreButton.mapToItem(row, moreButton.width - Metrics.menuWidth,
-                                             moreButton.height + Metrics.gap4)
-            x = at.x
-            y = at.y
-            open()
-        }
-
-        onChosen: (at) => {
-            const action = entries[at]
-            if (action.act === "open") row.manager.open(row.index)
-            else if (action.act === "edit") row.editFolder(row.entryId, row.name, row.colorName)
-            else if (action.act === "edit-playlist") row.editPlaylist(row.entryId)
-            else if (action.act === "visible") row.manager.setVisible(row.entryId, !row.visibleInSidebar)
-            else if (action.act === "folder") row.manager.moveToFolder(row.entryId, action.id)
-            else if (action.act === "delete") {
-                if (row.folder) row.manager.removeFolder(row.entryId)
-                else Playlists.remove(row.entryId)
-            }
-        }
-    }
+    TapHandler { acceptedButtons: Qt.RightButton; onTapped: point => row.menuAsked(point.position.x, point.position.y) }
 }
