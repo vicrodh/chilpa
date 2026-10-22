@@ -1,7 +1,8 @@
 //! The Artists screen: the library's artists and those of the integrated
-//! sources' saved records, through the same sources, qualities and formats
-//! as Albums, each wearing the sources that hold records of theirs, as
-//! Artist Scene's cards do.
+//! sources' saved records, through the sources Albums leaves out, each
+//! wearing the sources that hold records of theirs, as Artist Scene's cards
+//! do. Qualities and formats are a record's, not an artist's: they do not
+//! filter here.
 
 use crate::library_sources::{Prepared, SourceIndex, Stars};
 use crate::{Artist, Filter, Reader};
@@ -22,8 +23,9 @@ pub struct ListedArtist {
 impl Reader {
     /// The artists of the Artists screen, by name: who a record is credited
     /// to, or with `role` "all" everyone who plays on a track, among the
-    /// records `extras` lets through.
+    /// records of the sources `extras` does not leave out.
     pub fn listed_artists(&self, role: &str, extras: &Filter) -> Vec<ListedArtist> {
+        let extras = &Filter { excluded_sources: extras.excluded_sources.clone(), ..Filter::default() };
         let pictures = self.lib.artist_pictures().unwrap_or_default();
         let within = self.passing_album_ids(extras);
         let library = self.lib.artists_by_role_within(chilpa_library::ArtistRole::from_name(role), within.as_ref())
@@ -37,9 +39,7 @@ impl Reader {
 /// by name. A source's artist is the library's when their names match the
 /// way the library keys its own.
 fn listed(library: Vec<Artist>, index: &SourceIndex, extras: &Filter, everyone: bool, image: impl Fn(i64) -> String) -> Vec<ListedArtist> {
-    let through = Prepared::new(&Filter {
-        excluded_sources: extras.excluded_sources.clone(), qualities: extras.qualities.clone(), formats: extras.formats.clone(), ..Filter::default()
-    });
+    let through = Prepared::new(&Filter { excluded_sources: extras.excluded_sources.clone(), ..Filter::default() });
     let stars = Stars::default();
     // By the library's key, then by plugin: the source's spelling and records.
     let mut found: BTreeMap<String, BTreeMap<String, (String, Vec<i64>)>> = BTreeMap::new();
@@ -161,8 +161,8 @@ mod tests {
         assert_eq!(names(&listed(vec![], &index(), &without, false, |_| String::new())), ["MORA VALE"]);
         let everyone = listed(vec![], &index(), &Filter::default(), true, |_| String::new());
         assert_eq!(names(&everyone), ["Band", "Guest", "MORA VALE", "Various Artists"], "the stand-in only on its own compilation");
-        let lossy = Filter { qualities: vec!["lossy".into()], ..Filter::default() };
-        assert!(listed(vec![], &index(), &lossy, false, |_| String::new()).is_empty());
+        let lossy = Filter { qualities: vec!["lossy".into()], formats: vec!["mp3".into()], ..Filter::default() };
+        assert_eq!(listed(vec![], &index(), &lossy, false, |_| String::new()).len(), 3, "a record's quality and format do not filter artists");
     }
 
     #[test]

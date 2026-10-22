@@ -10,6 +10,9 @@ import "../Components"
 Popup {
     id: popover
     property bool showAlbumGrouping: true
+    // Only which sources: no library columns, qualities, formats or stars,
+    // and no Reset, which would clear those too.
+    property bool sourcesOnly: false
     // The Library screen's filter columns that are on, or null where the
     // screen has none; a toggle asks the screen to turn one on or off.
     property var panes: null
@@ -18,14 +21,14 @@ Popup {
     property var ratings: null
     signal ratingsChosen(var ratings)
     readonly property bool starred: ratings !== null && ratings.length > 0
-    readonly property real half: (popover.availableWidth - Metrics.gap16) / 2 // derived: two columns and the gap between
+    readonly property real half: sourcesOnly ? popover.availableWidth : (popover.availableWidth - Metrics.gap16) / 2 // derived: two columns and the gap between
 
     // A click outside closes it and is nothing else: it is not also a click
     // on what is there.
     modal: true
     dim: false
 
-    width: Metrics.sourcesPopoverWidth
+    width: sourcesOnly ? Metrics.sourcesPopoverWidth / 2 : Metrics.sourcesPopoverWidth // derived: the one column of the two
     padding: Metrics.gap12
     margins: Metrics.gap10
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
@@ -117,6 +120,7 @@ Popup {
                 SourceSwitches { width: parent.width; active: popover.opened }
             }
             Column {
+                visible: !popover.sourcesOnly
                 width: popover.half
                 spacing: Metrics.gap8
                 LibraryColumnChoices {
@@ -195,6 +199,7 @@ Popup {
 
             PillButton {
                 objectName: "ratingsReset"
+                visible: !popover.sourcesOnly
                 enabled: Library.extraFiltered || popover.starred
                 text: I18n.tr("Reset", I18n.rev)
                 onClicked: { Library.resetExtra(); if (popover.starred) popover.ratingsChosen([]) }
