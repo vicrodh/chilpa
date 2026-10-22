@@ -103,6 +103,28 @@ TestCase {
         tryVerify(() => loaders.find(l => l.entry.id === "library.recentlyPlayed").height === 0, 1000, "nothing played, nothing shown")
     }
 
+    function shelfOf(id) {
+        const found = []
+        const walk = item => { for (const child of item.children) { if (child.objectName === "homeShelf") found.push(child); walk(child) } }
+        walk(home.contentItem)
+        return found.find(shelf => shelf.entry.id === id)
+    }
+    function slimRowsOf(item) {
+        const found = []
+        const walk = node => { if (node.hasOwnProperty("subtitle") && node.hasOwnProperty("count") && node.visible) found.push(node); for (const child of node.children || []) walk(child) }
+        walk(item)
+        return found
+    }
+
+    // The grid's own count of placed rows once shared its name with the
+    // module's "has anything", and Most played drew its first track only.
+    function test_most_played_as_a_grid_shows_every_track_it_places() {
+        const most = shelfOf("library.mostPlayed")
+        tryVerify(() => most.height > 0, 1000, "the tracks played show")
+        tryVerify(() => slimRowsOf(most).length === 24, 1000, "two pages of twelve")
+        compare(slimRowsOf(most)[1].title, "Track 1")
+    }
+
     function test_customize_lists_every_shelf() {
         findChild(home, "homeCustomize").clicked()
         const list = findChild(home, "customizeSourceChoices")

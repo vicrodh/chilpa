@@ -19,7 +19,7 @@ SlimGrid {
             id: cell
             required property int index
             required property var model
-            visible: index < tracks.shown
+            visible: index < tracks.placed
             x: tracks.cellX(index); y: tracks.cellY(index)
             width: tracks.cellWidth; height: Metrics.slimRow
             SlimRow {
