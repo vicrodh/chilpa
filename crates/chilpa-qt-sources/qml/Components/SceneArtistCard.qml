@@ -10,9 +10,13 @@ Rectangle {
     id: card
     objectName: "sceneArtistCard"
     property var artist: ({})
+    // A portrait already at hand, as the search page has; otherwise the
+    // first source's.
+    property url art
     property bool selected: false
     signal activated()
     signal sourceActivated(var source)
+    signal menuAsked(real x, real y)
     width: Metrics.sceneCardWidth; height: Metrics.sceneCardHeight
     radius: Metrics.radiusCard
     color: selected ? Theme.color.rowSelected : hover.hovered ? Theme.color.stateHover : Theme.color.surfacePanel
@@ -25,7 +29,7 @@ Rectangle {
         x: Metrics.gap8; y: Metrics.gap8
         width: parent.width - Metrics.gap16; height: width
         radius: width / Metrics.gap2
-        source: card.firstSource.local ? card.firstSource.image || "" : card.firstSource.plugin && card.firstSource.image
+        source: card.art.toString() !== "" ? card.art : card.firstSource.local ? card.firstSource.image || "" : card.firstSource.plugin && card.firstSource.image
             ? Sources.art(card.firstSource.plugin, card.firstSource.image, Library.remoteArtRev) : ""
     }
     Icon { anchors.centerIn: portrait; visible: !portrait.ready; glyph: SourceGlyphs.musicArtist; iconFamily: SourceGlyphs.font; size: Metrics.iconPlay; color: Theme.color.textTertiary }
@@ -39,6 +43,7 @@ Rectangle {
     }
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
     TapHandler { onTapped: point => { if (point.position.y < sourceButtons.y || !sourceButtons.visible) card.activated() } }
+    TapHandler { acceptedButtons: Qt.RightButton; onTapped: point => card.menuAsked(point.position.x, point.position.y) }
     Row {
         id: sourceButtons
         visible: (card.artist.sources || []).length > 0
@@ -53,7 +58,7 @@ Rectangle {
                 size: Metrics.button24; round: true
                 tip: modelData.name || modelData.plugin || "Chilpa"
                 onClicked: card.sourceActivated(modelData)
-                SourceIcon { anchors.centerIn: parent; width: Metrics.iconSm; height: width; sourceInfo: ({icon:modelData.icon || "",local:modelData.local === true}) }
+                SourceIcon { anchors.centerIn: parent; width: Metrics.iconSm; height: width; sourceInfo: ({icon:modelData.icon || "",local:modelData.local === true,chilpa:modelData.chilpa === true}) }
             }
         }
     }

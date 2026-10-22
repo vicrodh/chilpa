@@ -4,9 +4,9 @@ import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
-// One record, playlist or artist of the results page, at the library's card
-// size: its cover, round for an artist, what it is called and what it is,
-// with the icon of the source it comes from.
+// The top result of the results page, at the library's card size: its
+// cover, round for an artist, what it is called and what it is, with the
+// icon of the source it comes from or Chilpa's mark for the library's own.
 Item {
     id: card
     property var row: ({})
@@ -25,11 +25,19 @@ Item {
         path: (card.row.art || "").startsWith("https://") ? "" : card.row.art || ""
         source: (card.row.art || "").startsWith("https://") ? card.row.art : path === "" ? "" : "file://" + path.split("/").map(encodeURIComponent).join("/")
     }
-    SourceIcon {
-        visible: !card.person && (card.row.sourceIcon || "") !== ""
+    // Whose it is: the source's icon, or Chilpa's mark for the library's own.
+    Rectangle {
+        objectName: "resultOrigin"
         anchors.right: cover.right; anchors.bottom: cover.bottom; anchors.margins: Metrics.overlayPad
-        width: Metrics.iconSm; height: Metrics.iconSm
-        sourceInfo: ({icon: card.row.sourceIcon || ""})
+        width: Metrics.iconSm + Metrics.gap8; height: width // derived: the icon and a ring around it
+        radius: width / 2 // derived: a disc
+        color: Theme.color.overlayScrim
+        SourceIcon {
+            anchors.centerIn: parent
+            width: Metrics.iconSm; height: Metrics.iconSm
+            sourceInfo: (card.row.sourceIcon || "") !== "" ? ({icon: card.row.sourceIcon}) : ({chilpa: true})
+            color: Theme.color.backdropText
+        }
     }
     Text {
         anchors.top: cover.bottom; anchors.topMargin: Metrics.cardTextGap

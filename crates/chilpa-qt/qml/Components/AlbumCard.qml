@@ -133,6 +133,7 @@ Item {
                     required property var modelData
                     width: Metrics.iconSm + Metrics.gap4; height: width
                     sourceInfo: modelData
+                    color: Theme.color.backdropText
                     opacity: 0.84
                 }
             }

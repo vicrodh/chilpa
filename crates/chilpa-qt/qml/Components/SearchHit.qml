@@ -23,6 +23,9 @@ Item {
     property bool current: false
     property string sourceIcon: ""
     property string sourceName: ""
+    // Where results of every source mix, the library's own wear Chilpa's mark.
+    property bool markOwn: false
+    readonly property bool own: markOwn && sourceName === "" && !header && !link
     // What the row is, drawn over the placeholder while it has no cover.
     property string glyph
     // The button at its end: the menu's, unless the list gives it another.
@@ -123,8 +126,9 @@ Item {
         SourceIcon {
             id: source
             anchors.right: more.left; anchors.rightMargin: Metrics.gap6; anchors.verticalCenter: parent.verticalCenter
-            sourceInfo: ({icon: hit.sourceIcon, label: hit.sourceName})
-            visible: hit.sourceName !== ""
+            objectName: "hitOrigin"
+            sourceInfo: hit.own ? ({chilpa: true}) : ({icon: hit.sourceIcon, label: hit.sourceName})
+            visible: hit.sourceName !== "" || hit.own
         }
         Text {
             id: time

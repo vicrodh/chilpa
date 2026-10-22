@@ -7,13 +7,18 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "../Components"
 import "../Patterns"
 
 // The results page, as QBZ's (SearchView): what a search found, whole, by
-// tab. All has the top result beside the artists, then records, six songs
-// and playlists; each other tab lists its own, twenty more at a time. The
-// sources and quality are the flyout's, and so is the switch that brings
+// tab. All has the top result beside the artists, then records in pages of
+// up to three rows, six songs and more on request, and playlists; each other
+// tab lists its own, twenty more at a time. Records, artists and playlists
+// are drawn with the cards they have everywhere else, and every result says
+// whose it is: its source's icon, or Chilpa's mark for the library's own.
+// The sources and quality are the flyout's, and so is the switch that brings
 // the results back under the search box.
 Flickable {
     id: page
@@ -21,6 +26,8 @@ Flickable {
     property string query
     property string tab: "all"
     property int shown: Metrics.searchPage
+    // How many songs All lists, six until more are asked for.
+    property int songsShown: Metrics.searchSongs
     property var rows: []
     // What finds the rows, for whoever drives the page.
     readonly property alias search: results
@@ -37,8 +44,12 @@ Flickable {
     function read() { rows = JSON.parse(results.rowsJson() || "[]") }
     function open(at) { results.act(at, "open"); navigation.flush() }
     function menu(at, item, x, y) { const point = item.mapToItem(column, x, y); hitMenu.show(at, point.x, point.y) }
-    function show(id) { tab = id; shown = Metrics.searchPage; contentY = 0 }
+    function show(id) { tab = id; shown = Metrics.searchPage; songsShown = Metrics.searchSongs; contentY = 0 }
     function artUrl(art) { return !art ? "" : art.startsWith("https://") ? art : "file://" + art.split("/").map(encodeURIComponent).join("/") }
+    // Whose a row is: a source names itself, and the library's own are Chilpa's.
+    function mine(row) { return (row.sourceName || "") === "" }
+    function origin(row) { return mine(row) ? ({chilpa: true}) : ({icon: row.sourceIcon || ""}) }
+    function owner(row) { return mine(row) ? "Chilpa" : row.sourceName }
     onQueryChanged: show("all")
 
     contentWidth: width
@@ -72,11 +83,50 @@ Flickable {
                     title: parent.modelData.title; detail: parent.modelData.detail
                     art: page.artUrl(parent.modelData.art); duration: parent.modelData.duration
                     sourceIcon: parent.modelData.sourceIcon; sourceName: parent.modelData.sourceName
+                    markOwn: true
                     onActivated: page.open(index)
                     onPlayed: { results.act(index, "play"); navigation.flush() }
                     onMenu: (left, top) => page.menu(index, hit, left, top)
                 }
             }
+        }
+    }
+
+    Component {
+        id: recordCard
+        SearchRecordCard {
+            id: record
+            required property var modelData
+            row: modelData
+            onClicked: page.open(modelData.at)
+            onMenu: (x, y) => page.menu(modelData.at, record, x, y)
+        }
+    }
+    Component {
+        id: artistCard
+        SceneArtistCard {
+            id: person
+            required property var modelData
+            artist: ({title: modelData.title, sources: [{local: page.mine(modelData), chilpa: page.mine(modelData), plugin: page.mine(modelData) ? "" : modelData.sourceName,
+                icon: modelData.sourceIcon || "", name: page.owner(modelData)}]})
+            art: page.artUrl(modelData.art)
+            onActivated: page.open(modelData.at)
+            onSourceActivated: page.open(modelData.at)
+            onMenuAsked: (x, y) => page.menu(modelData.at, person, x, y)
+        }
+    }
+    Component {
+        id: playlistCard
+        PlaylistCard {
+            id: list
+            required property var modelData
+            name: modelData.title || ""
+            art: modelData.art || ""
+            origin: page.origin(modelData)
+            owner: page.owner(modelData)
+            onActivated: page.open(modelData.at)
+            onPlayed: { results.act(modelData.at, "play"); navigation.flush() }
+            onMenuAsked: (x, y) => page.menu(modelData.at, list, x, y)
         }
     }
 
@@ -134,19 +184,21 @@ Flickable {
                 width: parent.width - (page.sections.top.length > 0 ? hero.width + parent.spacing : 0)
                 title: I18n.tr("Artists", I18n.rev)
                 rows: page.sections.artists.slice(0, Metrics.searchRail)
-                onActivated: at => page.open(at)
-                onMenuAsked: (at, x, y) => page.menu(at, artistsRail, x, y)
+                card: artistCard
+                cellWidth: Metrics.sceneCardWidth
+                cellHeight: Metrics.sceneCardHeight
                 onViewAll: page.show("artists")
             }
         }
         SearchRail {
             id: albumsRail
+            objectName: "searchAlbumsRail"
             visible: page.tab === "all" && rows.length > 0
             width: parent.width
             title: I18n.tr("Albums", I18n.rev)
             rows: page.sections.albums.slice(0, Metrics.searchRail)
-            onActivated: at => page.open(at)
-            onMenuAsked: (at, x, y) => page.menu(at, albumsRail, x, y)
+            lines: Metrics.searchRecordRows
+            card: recordCard
             onViewAll: page.show("albums")
         }
         Column {
@@ -159,7 +211,14 @@ Flickable {
                 link: page.sections.songs.length > Metrics.searchSongs ? I18n.tr("See all", I18n.rev) : ""
                 onLinkClicked: page.show("songs")
             }
-            Hits { rows: page.sections.songs.slice(0, Metrics.searchSongs) }
+            Hits { rows: page.sections.songs.slice(0, page.songsShown) }
+            PillButton {
+                objectName: "searchSongsMore"
+                visible: page.sections.songs.length > page.songsShown
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: I18n.tr("Load more", I18n.rev) + " (" + page.songsShown + " / " + page.sections.songs.length + ")"
+                onClicked: page.songsShown += Metrics.searchPage
+            }
         }
         SearchRail {
             id: playlistsRail
@@ -167,8 +226,7 @@ Flickable {
             width: parent.width
             title: I18n.tr("Playlists", I18n.rev)
             rows: page.sections.playlists.slice(0, Metrics.searchRail)
-            onActivated: at => page.open(at)
-            onMenuAsked: (at, x, y) => page.menu(at, playlistsRail, x, y)
+            card: playlistCard
             onViewAll: page.show("playlists")
         }
 
@@ -178,13 +236,7 @@ Flickable {
             spacing: Metrics.gridGap
             Repeater {
                 model: page.listed.slice(0, page.shown)
-                SearchResultCard {
-                    id: card
-                    required property var modelData
-                    row: modelData
-                    onActivated: page.open(modelData.at)
-                    onMenuAsked: (x, y) => page.menu(modelData.at, card, x, y)
-                }
+                delegate: page.tab === "artists" ? artistCard : page.tab === "playlists" ? playlistCard : recordCard
             }
         }
         Hits { visible: page.tab === "songs"; rows: page.tab === "songs" ? page.listed.slice(0, page.shown) : [] }

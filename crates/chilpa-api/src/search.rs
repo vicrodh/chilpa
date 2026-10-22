@@ -372,6 +372,10 @@ pub(crate) struct SearchState {
     /// start and finish between two ticks, and the last source to answer
     /// would go undrawn.
     pub changed: bool,
+    /// The catalog id of each record a source found, by source and reference:
+    /// taken when its answer arrives, so its card plays, marks and shows its
+    /// quality as any record's does.
+    pub records: HashMap<(String, String), i64>,
 }
 
 impl Chilpa {
@@ -411,6 +415,7 @@ impl Chilpa {
             fingerprints,
             hits: Vec::new(),
             changed: false,
+            records: HashMap::new(),
             // What is already playing goes on playing even if something else
             // is searched for, so its card is kept.
             playing: self.search.playing.take(),
@@ -555,6 +560,7 @@ impl Chilpa {
                 self.search.replies.push(r);
             }
             self.rebuild_hits();
+            self.take_found_records();
         }
 
         if self.search.text.is_empty() || self.search.source == LOCAL {

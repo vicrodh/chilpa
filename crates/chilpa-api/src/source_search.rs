@@ -18,6 +18,41 @@ impl Chilpa {
             last_query: self.search.last_query, playing: self.search.playing.take(), ..Default::default()
         };
     }
+    /// Takes each record a source found into the catalog when its answer
+    /// arrives, as a listing of the source's own pages is, so the results page
+    /// draws it as the record card it is everywhere else. A record keeps its
+    /// id by its reference, and one taken already is not taken again.
+    pub(crate) fn take_found_records(&mut self) {
+        let records: Vec<RemoteFound> = self.source_found_rows("albums").into_iter().filter_map(|row| match row {
+            FoundRow::Remote(row) if row.collection && row.entity == "album" && !self.search.records.contains_key(&(row.source.clone(), row.id.clone()))
+                && !row.item.as_ref().is_some_and(|item| item["available"] == false) => Some(row),
+            _ => None,
+        }).collect();
+        for row in records {
+            let epoch = self.plugins.as_ref().and_then(|p| p.try_lock().ok().map(|p| p.epoch(&row.source)));
+            let id = self.catalog.adopt(&row.source, epoch, &row);
+            if id != 0 { self.search.records.insert((row.source, row.id), id); }
+        }
+    }
+
+    /// What a record's card shows of a row of the results; see `FoundRecord`.
+    pub fn found_record(&self, row: &FoundRow) -> crate::FoundRecord {
+        match row {
+            FoundRow::Album(album) => crate::FoundRecord { id: album.id, artist: album.artist.clone(), year: album.year },
+            FoundRow::Remote(row) if row.collection && row.entity == "album" => {
+                let id = self.search.records.get(&(row.source.clone(), row.id.clone())).copied().unwrap_or_default();
+                match (id != 0).then(|| self.catalog.card(id)).flatten() {
+                    Some(card) => {
+                        let (artist, said) = crate::source_catalog::store::split_year(&card.artist);
+                        crate::FoundRecord { id, artist, year: card.year.or(said) }
+                    }
+                    None => crate::FoundRecord { id, ..Default::default() },
+                }
+            }
+            _ => crate::FoundRecord::default(),
+        }
+    }
+
     /// Remote entities retain source identity while sharing the local sections.
     pub fn source_found_rows(&self, scope: &str) -> Vec<FoundRow> {
         let mut rows = Vec::new();
@@ -342,6 +377,23 @@ mod tests {
         let expanded = api.unified_found_rows(&crate::Found::default(), "all");
         assert_eq!(expanded.iter().filter(|row| row.kind() == 2).count(), 12);
         assert_eq!(expanded.iter().filter(|row| row.title() == "Band 0").count(), 1);
+    }
+    #[test]
+    fn a_record_a_source_found_is_taken_once_and_drawn_as_a_record() {
+        let mut api = Chilpa::new();
+        api.search.replies.push(crate::search::SourceReply { source: "source-a".into(), source_name: "A".into(), results: Default::default(), problem: String::new(), delivers_audio: true,
+            entities: vec![json!({"kind":"album","ref":"album:2","title":"Release","artist":"Band","year":1999}),json!({"kind":"track","ref":"track:1","title":"Song"})] });
+        api.take_found_records();
+        let rows = api.source_found_rows("all");
+        let record = api.found_record(&rows[0]);
+        assert!(record.id < 0, "a catalog id, as a record of the source's pages has: {record:?}");
+        assert_eq!((record.artist.as_str(), record.year), ("Band", Some(1999)));
+        assert_eq!(api.found_record(&rows[1]), crate::FoundRecord::default(), "a song is not a record");
+        api.take_found_records();
+        assert_eq!(api.search.records.len(), 1, "taken once");
+        assert_eq!(api.act_on_remote_found(match &rows[0] { FoundRow::Remote(row) => row, _ => unreachable!() }, "open"), Leads::Screen("album", record.id), "it opens as the record its card is");
+        let local = crate::Album { id: 7, title: "Own".into(), artist: "Here".into(), year: Some(2001), track_count: 1, artwork_path: String::new(), play_count: 0 };
+        assert_eq!(api.found_record(&FoundRow::Album(local)), crate::FoundRecord { id: 7, artist: "Here".into(), year: Some(2001) });
     }
     #[test]
     fn local_and_remote_playlists_share_a_section_and_obey_source_selection() {

@@ -24,6 +24,16 @@ pub enum FoundRow {
     More(String, usize),
 }
 
+/// What a record's card shows of a row of the results: its id, the
+/// library's, or the catalog's once its source's answer was taken (zero for
+/// a row that is not a record), its artist and its year.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct FoundRecord {
+    pub id: i64,
+    pub artist: String,
+    pub year: Option<i32>,
+}
+
 /// The section each row stands in, by the label it comes under: "top",
 /// "artists", "albums", "songs", "playlists", or empty under another (a
 /// source's problem). The results page lays each section out its own way.

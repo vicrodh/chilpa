@@ -244,9 +244,11 @@ impl qobject::SearchModel {
 
     pub fn rows_json(&self) -> QString {
         let rows = &self.rust().rows;
-        json(rows.iter().zip(chilpa_api::found_sections(rows)).map(|(row, section)| serde_json::json!({
+        let records: Vec<chilpa_api::FoundRecord> = app::with(|api| rows.iter().map(|row| api.found_record(row)).collect());
+        json(rows.iter().zip(chilpa_api::found_sections(rows)).zip(records).map(|((row, section), record)| serde_json::json!({
             "kind": row.kind(), "title": row.title(), "detail": row.detail(), "art": row.artwork(),
             "duration": row.duration(), "sourceIcon": row.source_icon(), "sourceName": row.source_name(), "section": section,
+            "albumId": record.id, "artist": record.artist, "year": record.year.map(|year| year.to_string()).unwrap_or_default(),
         })).collect())
     }
 
