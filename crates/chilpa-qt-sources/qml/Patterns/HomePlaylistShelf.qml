@@ -52,7 +52,8 @@ Column {
                     art: modelData.artwork_path || ""
                     covers: modelData.covers || []
                     origin: modelData.mixed ? ({chilpa: true}) : ({icon: panel.icon_image || panel.icon || ""})
-                    owner: modelData.mixed ? "Chilpa" : modelData.provider || ""
+                    detail: modelData.mixed ? "Chilpa" : modelData.provider || ""
+                    hasMenu: false
                     onActivated: shelf.openPlaylist(modelData.id)
                     onPlayed: Playlists.play(modelData.id, false)
                 }

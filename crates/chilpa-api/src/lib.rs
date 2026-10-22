@@ -487,6 +487,9 @@ pub struct PlaylistManagerEntry {
     pub play_count: u64,
     pub folder_id: Option<i64>,
     pub local: bool,
+    /// The listener may change it: the library's own, or a source's that
+    /// is theirs at a source that edits playlists.
+    pub writable: bool,
     pub visible_sidebar: bool,
 }
 

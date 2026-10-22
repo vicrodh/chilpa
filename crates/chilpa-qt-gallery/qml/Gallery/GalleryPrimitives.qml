@@ -61,7 +61,7 @@ TitledFlow {
     SearchField { width: Metrics.sidebarWidth; placeholder: "Search"; shortcut: "Ctrl K" }
 
     Column {
-        width: Metrics.playlistManagerCardWidth
+        width: Metrics.confirmWidth
         ListRowSurface { width: parent.width; height: Metrics.rowCompact; rowIndex: 0 }
         ListRowSurface { width: parent.width; height: Metrics.rowCompact; rowIndex: 1 }
     }

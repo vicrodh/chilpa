@@ -63,7 +63,8 @@ TitledFlow {
     SourceShelf { width: Metrics.confirmWidth; section: ({title:"Releases",error:"Unavailable",key:""}) }
     SourceContextCard { width: Metrics.confirmWidth; key: "preview native:home|context-header" }
     HomePlaylistShelf { width: Metrics.confirmWidth; entry: ({title:"Recently listened playlists"}) }
-    PlaylistCard { name: "Playlist"; owner: "Chilpa"; origin: ({chilpa: true}) }
+    PlaylistCard { name: "Playlist"; detail: "Chilpa · 12 tracks"; origin: ({chilpa: true}) }
+    PlaylistCard { name: "Folder"; detail: "3 playlists"; folder: true }
     TrackCarousel { width: Metrics.confirmWidth; title:"Most played"; showPlays:true; model: TrackListModel { kind:"mostPlayed"; limit:6 } }
     PlaylistGroupHeader { width: Metrics.sidebarWidth; height: Metrics.playlistRowHeight; title: "Playlists" }
     SourceHomeSections { width: Metrics.confirmWidth }
