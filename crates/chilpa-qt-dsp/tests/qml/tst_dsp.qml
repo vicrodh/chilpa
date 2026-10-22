@@ -85,13 +85,22 @@ TestCase {
         compare(lastAction().input.preamp_db, -4)
         compare(lastAction().input.balance, 0.2)
     }
-    function test_precise_preset_conversion_requires_an_explicit_action() {
+    function test_a_precise_preset_shows_its_levels_and_converts_only_on_request() {
         const state = JSON.parse(Dsp.snapshot)
         state.preset.filters = [{shape: "low_shelf", frequency: 90, gain_db: 3, q: 0.7}]
+        state.levels = [3, 2.5, 1.5, 0.5, 0, 0, 0, 0, 0, -1]
         Dsp.snapshot = JSON.stringify(state)
         panel.open()
         compare(Dsp.actions.length, 0)
-        verify(!visualNamed(panel.contentItem, "dspGraphicBand0").visible)
+        const band = visualNamed(panel.contentItem, "dspGraphicBand0")
+        verify(band.visible, "the preset's shape shows without a click")
+        compare(band.value, 3)
+        compare(visualNamed(panel.contentItem, "dspGraphicBand9").value, -1)
+        verify(!band.enabled, "its bands are read, not moved")
+        band.forceActiveFocus()
+        keyClick(Qt.Key_Up)
+        compare(Dsp.actions.length, 0)
+        verify(!findChild(panel, "dspResetGraphic").visible)
         const start = findChild(panel, "dspStartGraphic")
         verify(start.visible)
         start.forceActiveFocus()

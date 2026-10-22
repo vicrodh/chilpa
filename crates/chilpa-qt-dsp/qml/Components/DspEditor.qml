@@ -38,6 +38,7 @@ Column {
         visible: editor.tab === 0
         draft: editor.draft
         graphic: !!editor.state.graphic
+        levels: editor.state.levels || []
         onBandChanged: (index, gain) => editor.changeGraphicBand(index, gain)
         onStartRequested: editor.command("graphic_start", {})
         onAdvancedRequested: { editor.advancedTab = 0; editor.tabRequested(1) }

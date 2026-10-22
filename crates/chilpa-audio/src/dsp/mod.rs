@@ -107,9 +107,15 @@ impl Preset {
 
     /// Display-only EQ response, before the automatic preamp and stereo tools.
     pub fn curve(&self, rate: u32) -> Vec<f64> {
+        let grid: Vec<f64> = (0..=128).map(|i| 20.0 * 1000_f64.powf(i as f64/128.0)).collect();
+        self.response_db(&grid, rate)
+    }
+
+    /// The same display-only response at the given frequencies; 0 dB from
+    /// just below Nyquist up.
+    pub fn response_db(&self, frequencies: &[f64], rate: u32) -> Vec<f64> {
         let filters: Vec<_> = self.filters.iter().map(|f| biquad::Biquad::new(f, rate.max(1000))).collect();
-        (0..=128).map(|i| {
-            let hz = 20.0 * 1000_f64.powf(i as f64/128.0);
+        frequencies.iter().map(|&hz| {
             if hz >= f64::from(rate)*0.49 { return 0.0; }
             filters.iter().map(|f| f.magnitude_db(hz, rate)).sum::<f64>()
         }).collect()

@@ -63,6 +63,18 @@ fn raw_native_dsd_is_never_processed() {
 }
 
 #[test]
+fn the_response_at_chosen_frequencies_is_the_curve_at_them() {
+    let shelf = Preset { filters: vec![Filter { shape: Shape::LowShelf, frequency: 110.0, gain_db: 6.0, q: 0.707 }], ..Preset::default() };
+    let curve = shelf.curve(48_000);
+    let grid: Vec<f64> = (0..=128).map(|i| 20.0 * 1000_f64.powf(i as f64/128.0)).collect();
+    assert_eq!(shelf.response_db(&grid, 48_000), curve);
+    let levels = shelf.response_db(&[31.25, 16_000.0, 30_000.0], 48_000);
+    assert!(levels[0] > 5.0, "a low shelf lifts the lowest band: {}", levels[0]);
+    assert!(levels[1].abs() < 0.1, "and leaves the highest flat: {}", levels[1]);
+    assert_eq!(levels[2], 0.0, "nothing is read past Nyquist");
+}
+
+#[test]
 fn peak_filter_matches_its_center_gain() {
     for gain_db in [-24.0, -12.0, -3.0, 0.0, 6.0, 12.0, 18.0] {
         let mut filter = biquad::Biquad::new(&Filter { shape: Shape::Peak, frequency: 1000.0, gain_db, q: 1.0 }, 48_000);

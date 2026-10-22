@@ -33,7 +33,8 @@ pub(crate) struct Dsp {
     next_scan: Option<Instant>,
     applied: Option<String>,
     error: String,
-    analysis: Option<(String, f64, Vec<f64>)>,
+    /// The preset's preamp, response curve and graphic band levels, by rate and preset.
+    analysis: Option<(String, f64, Vec<f64>, Vec<f64>)>,
     pub(crate) passthrough: bool,
 }
 
@@ -138,9 +139,9 @@ impl Chilpa {
         let preset = self.dsp.preset(&selection);
         let rate = if self.sample_rate == 0 { 48_000 } else { self.sample_rate };
         let analysis_key = format!("{rate}:{}", serde_json::to_string(&preset).unwrap_or_default());
-        if self.dsp.analysis.as_ref().is_none_or(|(key, _, _)| *key != analysis_key) {
-            let (preamp, curve) = preset.as_ref().map(|p| (p.preamp_for_rate(rate), p.curve(rate))).unwrap_or_default();
-            self.dsp.analysis = Some((analysis_key, preamp, curve));
+        if self.dsp.analysis.as_ref().is_none_or(|(key, ..)| *key != analysis_key) {
+            let (preamp, curve, levels) = preset.as_ref().map(|p| (p.preamp_for_rate(rate), p.curve(rate), graphic::levels(p, rate))).unwrap_or_default();
+            self.dsp.analysis = Some((analysis_key, preamp, curve, levels));
         }
         let providers: Vec<_> = self.dsp.providers.iter().map(|p| json!({"id":p.id,"name":p.name})).collect();
         let presets: Vec<_> = self.dsp.providers.iter().flat_map(|p| p.catalog.presets.iter().map(move |s| json!({"plugin":p.id,"preset":p.catalog.display(s, chilpa_i18n::current_language())})))
@@ -154,8 +155,9 @@ impl Chilpa {
         let control = self.player.as_ref().map(|p| p.dsp());
         json!({"available":!providers.is_empty(),"loading":self.dsp.pending.is_some(),"providers":providers,
             "presets":presets,"selection":selection,"preset":displayed,"output":output,"favorites":self.dsp.saved.favorites,
-            "headroom_db":self.dsp.analysis.as_ref().map(|(_, preamp, _)| preamp),
-            "curve":self.dsp.analysis.as_ref().map(|(_, _, curve)| curve),
+            "headroom_db":self.dsp.analysis.as_ref().map(|(_, preamp, ..)| preamp),
+            "curve":self.dsp.analysis.as_ref().map(|(_, _, curve, _)| curve),
+            "levels":self.dsp.analysis.as_ref().map(|(.., levels)| levels),
             "graphic":preset.as_ref().is_some_and(graphic::matches),
             "active":preset.is_some() && blocked.is_empty() && control.as_ref().is_some_and(|c| c.active()),
             "clipped":control.as_ref().map_or(0, |c| c.clipped_samples()),"blocked":blocked,"error":self.dsp.error}).to_string()

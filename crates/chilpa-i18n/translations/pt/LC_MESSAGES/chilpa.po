@@ -4905,8 +4905,8 @@ msgstr "Esta saída recebe DSD convertido para PCM. Só uma placa em hw o recebe
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "Esta playlist já contém {} das {} faixas que você está adicionando. Adicione apenas as novas ou tudo, incluindo as duplicadas."
 
-msgid "This preset uses precise filters. Keep them as they are, or create a separate graphic EQ. You can restore your previous EQ."
-msgstr "Este preset usa filtros precisos. Mantenha-os como estão ou crie um EQ gráfico separado. Você pode restaurar seu EQ anterior."
+msgid "This preset uses precise filters; each band shows its level. To move the bands, create a separate graphic EQ. You can restore your previous EQ."
+msgstr "Este preset usa filtros precisos; cada banda mostra seu nível. Para mover as bandas, crie um EQ gráfico separado. Você pode restaurar seu EQ anterior."
 
 msgid "This purchase is unavailable for download."
 msgstr "Esta compra não está disponível para download."

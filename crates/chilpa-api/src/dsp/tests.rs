@@ -66,3 +66,14 @@ fn invalid_catalogs_and_duplicate_ids_are_rejected_as_a_whole() {
     catalog.presets.pop(); catalog.protocol = 2; assert!(catalog.validate().is_err());
     assert!(serde_json::from_str::<Catalog>(r#"{"protocol":1,"presets":[],"script":"run"}"#).is_err());
 }
+
+#[test]
+fn a_preset_of_precise_filters_shows_its_level_on_each_graphic_band() {
+    use chilpa_core::dsp::{Filter, Shape};
+    let desktop = Preset { filters: vec![Filter { shape: Shape::HighPass, frequency: 45.0, gain_db: 0.0, q: 0.707 }], ..Preset::default() };
+    let levels = graphic::levels(&desktop, 48_000);
+    assert_eq!(levels.len(), 10, "one level per band");
+    assert!(levels[0] < -3.0, "a high-pass at 45 Hz reads low on the 31 Hz band: {}", levels[0]);
+    assert!(levels[5].abs() < 0.1, "and flat at 1 kHz: {}", levels[5]);
+    assert!(graphic::levels(&Preset::default(), 48_000).iter().all(|level| *level == 0.0), "a flat preset reads flat");
+}
