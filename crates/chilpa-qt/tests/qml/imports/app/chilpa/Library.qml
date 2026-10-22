@@ -16,6 +16,9 @@ QtObject {
     function toggleFilter(kind, key) { asked = asked.concat([[kind, key]]) }
     function resetExtra() {}
     function groupAlbums(on) { groupVersions = on }
+    property var apart: ({}); property var keptApart: []
+    function albumApart(id) { return apart[id] === undefined ? -1 : apart[id] }
+    function keepAlbumApart(id, on) { keptApart = keptApart.concat([[id, on]]) }
     property bool groupSources: true
     function groupCopies(on) { groupSources = on }
     property string queryText: ""

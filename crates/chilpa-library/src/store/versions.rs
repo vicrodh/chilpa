@@ -36,12 +36,21 @@ pub(crate) struct CachedVersions {
     catalog: Arc<VersionCatalog>,
 }
 
+/// What a remembered choice's group key starts with when it marks a record
+/// kept apart from the other editions of its name. Such a record is a group
+/// of its own, and the row says its edition is itself; being a remembered
+/// choice, it follows the record when a scan renumbers it and goes with it.
+pub(crate) const APART: &str = "apart:";
+
 #[derive(Default)]
 pub struct VersionCatalog {
     pub versions: HashMap<i64, AlbumVersion>,
     pub artists: HashMap<i64, Vec<(String, usize)>>,
     pub(crate) tracks: HashMap<i64, (i64, u64)>,
     groups: HashMap<String, Vec<i64>>,
+    /// Every edition under the group its name gives, kept apart or not: a
+    /// link asks for a record by name.
+    named: HashMap<String, Vec<i64>>,
     preferred: HashMap<String, i64>,
 }
 
@@ -124,7 +133,7 @@ impl VersionCatalog {
     /// play. A remembered choice does not count here: a link asks for the
     /// record, and the record sounds best in this edition.
     pub fn best_of(&self, title: &str, artist: &str) -> Option<i64> {
-        self.groups.get(&album_group(title, artist))?.first().copied()
+        self.named.get(&album_group(title, artist))?.first().copied()
     }
 
     /// The remembered edition while it can play, or while nothing else can;
@@ -222,6 +231,39 @@ impl Library {
         Ok(self.version_catalog()?.collapse(ids))
     }
 
+    /// Whether a record is kept apart from the other editions of its name:
+    /// `Some(true)` kept apart, `Some(false)` grouped with another, `None`
+    /// when it has none to be grouped with.
+    pub fn album_apart(&self, album: i64) -> rusqlite::Result<Option<bool>> {
+        let catalog = self.version_catalog()?;
+        let Some(version) = catalog.versions.get(&album) else { return Ok(None) };
+        if version.group.starts_with(APART) { return Ok(Some(true)); }
+        Ok((catalog.groups.get(&version.group).map_or(0, Vec::len) > 1).then_some(false))
+    }
+
+    /// Keeps a record apart from the other editions of its name, or groups
+    /// it with them again. Returns whether anything changed.
+    pub fn set_album_apart(&self, album: i64, apart: bool) -> rusqlite::Result<bool> {
+        let marked = format!("album_id = ?1 AND group_key LIKE '{APART}%'");
+        if !apart {
+            return Ok(self.db.execute(&format!("DELETE FROM album_preferences WHERE {marked}"), [album])? > 0);
+        }
+        if self.db.query_row(&format!("SELECT count(*) FROM album_preferences WHERE {marked}"), [album], |r| r.get::<_, i64>(0))? > 0 {
+            return Ok(false);
+        }
+        // A record a scan renumbered keeps the key it was marked with, which
+        // may be this record's id.
+        let taken = |key: &str| self.db.query_row("SELECT count(*) FROM album_preferences WHERE group_key = ?1", [key], |r| r.get::<_, i64>(0));
+        let mut key = format!("{APART}{album}");
+        let mut again = 0;
+        while taken(&key)? > 0 {
+            again += 1;
+            key = format!("{APART}{album}.{again}");
+        }
+        self.db.execute("INSERT INTO album_preferences(group_key, album_id) VALUES (?1, ?2)", params![key, album])?;
+        Ok(true)
+    }
+
     /// I rebuild only when catalog inputs change, shared by every read on a connection.
     /// Scroll-page reads never scan the library again.
     pub fn version_catalog(&self) -> rusqlite::Result<Arc<VersionCatalog>> {
@@ -231,6 +273,8 @@ impl Library {
             return Ok(Arc::clone(&cache.catalog));
         }
         let mut catalog = VersionCatalog::default();
+        let apart: HashSet<i64> = self.db.prepare(&format!("SELECT album_id FROM album_preferences WHERE group_key LIKE '{APART}%'"))?
+            .query_map([], |r| r.get(0))?.collect::<rusqlite::Result<_>>()?;
         let mut stmt = self.db.prepare("SELECT a.id, a.title, a.album_artist, a.folder,
             s.provider || ':' || s.instance, t.external_id, t.bit_depth, t.sample_rate_hz, t.id, t.duration_ms,
             s.label, s.icon, s.provider = 'local', t.reachable, coalesce(t.codec, ''), s.kind = 'server'
@@ -271,10 +315,12 @@ impl Library {
             }
             v.rank.3 = v.tracks;
         }
-        for version in catalog.versions.values() {
+        for version in catalog.versions.values_mut() {
+            catalog.named.entry(version.group.clone()).or_default().push(version.id);
+            if apart.contains(&version.id) { version.group = format!("{APART}{}", version.id); }
             catalog.groups.entry(version.group.clone()).or_default().push(version.id);
         }
-        for ids in catalog.groups.values_mut() {
+        for ids in catalog.groups.values_mut().chain(catalog.named.values_mut()) {
             ids.sort_by_key(|id| (!catalog.versions[id].reachable, std::cmp::Reverse(catalog.versions[id].rank), *id));
         }
         let mut stmt = self.db.prepare("SELECT group_key, album_id FROM album_preferences")?;

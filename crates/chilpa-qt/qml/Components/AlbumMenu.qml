@@ -9,7 +9,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 // it, now, next, later or in an extra queue -- or the whole selection when
 // it is part of one -- add it to a playlist, open it here or in a new tab,
 // its quick view where a grid can open one, its artist unless that is the
-// page it is on, and its favorite.
+// page it is on, whether it groups with the other versions of its name,
+// and its favorite.
 CascadingMenu {
     id: menu
 
@@ -21,6 +22,8 @@ CascadingMenu {
     property string artistPage
     property var actions: []
     property var nativeInfo: ({})
+    // 1 kept apart from its other versions, 0 grouped with one, -1 neither.
+    property int apart: -1
 
     signal quick(int at)
 
@@ -32,6 +35,7 @@ CascadingMenu {
         title = one ? albumTitle : ""
         nativeInfo = id < 0 ? JSON.parse(Sources.card(id, Library.remoteRev) || "{}") : ({})
         const favorite = nativeInfo.plugin ? nativeInfo.favorite : Ratings.favorite("album", id, Ratings.rev)
+        apart = one && id > 0 ? Library.albumApart(id) : -1
         const all = [
             { text: I18n.trCount("{} record", "{} records", AlbumActions.selectedCount, I18n.rev), note: true, when: !one },
             { text: I18n.tr("Play now", I18n.rev), act: "play", glyph: Icons.playerPlayFilled, filled: true },
@@ -46,6 +50,8 @@ CascadingMenu {
             { text: I18n.tr("Quick view", I18n.rev), act: "quick", when: one && canExpand },
             { text: I18n.tr("Go to artist", I18n.rev), act: "artist", when: one && artist !== "" && artist !== artistPage },
             { text: I18n.tr("Edit metadata…", I18n.rev), act: "metadata", when: one && id > 0 },
+            { text: apart === 1 ? I18n.tr("Group with other versions", I18n.rev) : I18n.tr("Don't group with other versions", I18n.rev),
+              act: "apart", when: apart >= 0 },
             { separator: true, when: one && id > 0 },
             { text: favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev),
               act: favorite ? "unfavorite" : "favorite", when: one && (id > 0 || nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")) }
@@ -72,6 +78,7 @@ CascadingMenu {
         case "quick": menu.quick(at); break
         case "artist": { const key = Sources.artistKey(albumId, ""); if (key) Navigation.goKey("source", key); else Navigation.openArtist(artist); break }
         case "metadata": Navigation.go("metadata", albumId); break
+        case "apart": Library.keepAlbumApart(albumId, apart === 0); break
         case "favorite":
         case "unfavorite":
             if (nativeInfo.plugin) Sources.command("native", nativeInfo.plugin, JSON.stringify({action:"favorite",ref:nativeInfo.ref,on:act === "favorite"}))

@@ -1562,6 +1562,9 @@ msgstr "Ne répond pas. Ses disques restent listés et ne peuvent pas être lus.
 msgid "Don't ask again"
 msgstr "Ne plus demander"
 
+msgid "Don't group with other versions"
+msgstr "Ne pas grouper avec les autres versions"
+
 msgid "Done"
 msgstr "Terminé"
 
@@ -2065,6 +2068,9 @@ msgstr "Grouper les playlists par source"
 
 msgid "Group same album from different sources"
 msgstr "Regrouper le même album de sources différentes"
+
+msgid "Group with other versions"
+msgstr "Grouper avec les autres versions"
 
 msgid "Group: A-Z"
 msgstr "Grouper : A-Z"

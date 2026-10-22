@@ -143,6 +143,20 @@ TestCase {
         compare(AlbumActions.lastAction, "buffer:add:2:7")
         menu.close()
     }
+    // A record grouped with other versions of its name can be kept apart,
+    // one kept apart grouped again, and one alone offers neither.
+    function test_a_record_can_be_kept_apart_from_its_other_versions() {
+        const menu = findChild(grid, "albumMenu")
+        const apart = () => menu.entries.find(entry => entry.act === "apart")
+        for (const [state, text, asked] of [[-1, "", null], [0, "Don't group with other versions", true], [1, "Group with other versions", false]]) {
+            Library.apart = state < 0 ? ({}) : ({7: state})
+            menu.show(7, "Record", "Artist", 0, 10, 10)
+            compare(apart() ? apart().text : "", text)
+            if (apart()) { menu.actionChosen(apart()); compare(Library.keptApart[Library.keptApart.length - 1], [7, asked]) }
+            menu.close()
+        }
+        Library.apart = ({})
+    }
     // A name the card cuts short says itself whole on hover; one that fits asks for nothing.
     function test_a_name_cut_short_shows_whole_in_a_tooltip() {
         const name = findChild(card, "albumTitle")

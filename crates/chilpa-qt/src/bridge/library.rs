@@ -58,6 +58,10 @@ pub mod qobject {
         #[qinvokable] fn reset_extra(self: Pin<&mut Library>);
         #[qinvokable] fn group_albums(self: Pin<&mut Library>, on: bool);
         #[qinvokable] fn group_copies(self: Pin<&mut Library>, on: bool);
+        /// 1 when a record is kept apart from the other editions of its name,
+        /// 0 when grouped with one, -1 when it has none to group with.
+        #[qinvokable] fn album_apart(self: &Library, id: i64) -> i32;
+        #[qinvokable] fn keep_album_apart(self: Pin<&mut Library>, id: i64, apart: bool);
         /// Stacks conditions beyond the columns; says why a text cannot be read.
         #[qinvokable] fn apply_query(self: Pin<&mut Library>, text: &QString) -> QString;
         #[qinvokable] fn group_artist_albums(self: Pin<&mut Library>, on: bool);
@@ -137,6 +141,16 @@ impl qobject::Library {
     pub fn group_albums(mut self: Pin<&mut Self>, on: bool) {
         if app::with(|api| api.set_group_album_versions(on)) {
             self.as_mut().set_group_versions(on);
+            self.content_changed();
+        }
+    }
+
+    pub fn album_apart(&self, id: i64) -> i32 {
+        app::with(|api| api.album_apart(id)).map_or(-1, i32::from)
+    }
+
+    pub fn keep_album_apart(self: Pin<&mut Self>, id: i64, apart: bool) {
+        if app::with(|api| api.set_album_apart(id, apart)) {
             self.content_changed();
         }
     }
