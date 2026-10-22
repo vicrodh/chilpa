@@ -62,11 +62,15 @@ Column {
                     id: band
                     required property int index
                     required property real modelData
+                    readonly property real level: editor.ready ? gainSlider.value : editor.gain(band.index)
                     width: parent.width / editor.frequencies.length
                     spacing: Metrics.gap6
+                    // Over its neighbours while it shows its value beside them.
+                    z: valueTip.visible ? 1 : 0
+                    HoverHandler { id: hover }
                     Text {
                         width: parent.width
-                        text: editor.decibels(editor.ready ? gainSlider.value : editor.gain(band.index))
+                        text: editor.decibels(band.level)
                         horizontalAlignment: Text.AlignHCenter
                         color: Theme.color.textPrimary
                         font.pointSize: Type.small
@@ -132,6 +136,30 @@ Column {
                             color: !gainSlider.enabled ? Theme.color.textSecondary : gainSlider.pressed ? Theme.color.accent : Theme.color.textPrimary
                             border.width: gainSlider.activeFocus ? Metrics.focusRing : 0
                             border.color: Theme.color.accent
+                        }
+                        // The value beside the handle, to its left where the
+                        // editor has room, while it is pointed at, dragged
+                        // or moved with the keys.
+                        Rectangle {
+                            id: valueTip
+                            objectName: "dspGraphicValue" + band.index
+                            readonly property real leftward: gainSlider.handle.x - width - Metrics.gap6
+                            visible: hover.hovered || gainSlider.pressed || gainSlider.visualFocus
+                            x: band.x + gainSlider.x + leftward >= 0 ? leftward : gainSlider.handle.x + gainSlider.handle.width + Metrics.gap6
+                            y: gainSlider.handle.y + (gainSlider.handle.height - height) / 2 // derived: centered on the handle
+                            width: valueText.implicitWidth + Metrics.gap16
+                            height: valueText.implicitHeight + Metrics.gap10
+                            radius: Metrics.radiusMenu
+                            color: Theme.color.surfaceRaised
+                            Edge {}
+                            Text {
+                                id: valueText
+                                objectName: "dspGraphicValueText" + band.index
+                                anchors.centerIn: parent
+                                text: editor.decibels(band.level) + " dB"
+                                font.pointSize: Type.small
+                                color: Theme.color.textPrimary
+                            }
                         }
                     }
                     Text {
