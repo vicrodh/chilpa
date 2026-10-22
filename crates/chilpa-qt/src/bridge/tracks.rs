@@ -884,9 +884,10 @@ impl qobject::TrackListModel {
             "playlist" => {
                 let order = self.rust().order.to_string();
                 let ascending = self.rust().ascending;
-                let tracks = app::with(|api| api.playlist_rows_sorted(id, &order, ascending));
-                let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
-                (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), Some(ms))
+                // What is typed above the list finds its rows, as on a record's page.
+                let rows = chilpa_api::entries_matching(app::with(|api| api.playlist_rows_sorted(id, &order, ascending)).into_iter().map(Entry::Track).collect(), &self.rust().key.to_string());
+                let ms = rows.iter().map(|e| if let Entry::Track(t) = e { t.duration_ms } else { 0 }).sum::<u64>();
+                (Rows::Loaded(rows), Some(ms))
             }
             "openMedia" => {
                 let (rows, keys) = app::with(|api| api.media_rows(&self.rust().key.to_string()));
