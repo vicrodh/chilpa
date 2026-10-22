@@ -73,6 +73,27 @@ TestCase {
         compare(lastAction().action, "edit")
         verify(lastAction().input.filters[5].gain_db > 0)
     }
+    function test_a_band_shows_its_value_beside_the_handle_while_it_is_moved() {
+        const state = graphicState()
+        state.preset.filters[4].gain_db = 3.5
+        Dsp.snapshot = JSON.stringify(state)
+        panel.open()
+        const slider = visualNamed(panel.contentItem, "dspGraphicBand4")
+        const tip = visualNamed(panel.contentItem, "dspGraphicValue4")
+        verify(!tip.visible, "nothing beside it until it is used")
+        mouseMove(panel.contentItem, 0, 0)
+        mousePress(slider, slider.width / 2, slider.handle.y + slider.handle.height / 2)
+        verify(tip.visible)
+        verify(visualNamed(tip, "dspGraphicValueText4") !== null)
+        compare(visualNamed(tip, "dspGraphicValueText4").text, "+3.5 dB")
+        verify(tip.x + tip.width <= slider.handle.x, "to the left of the handle")
+        mouseRelease(slider, slider.width / 2, slider.handle.y + slider.handle.height / 2)
+        const first = visualNamed(panel.contentItem, "dspGraphicBand0")
+        first.forceActiveFocus(Qt.TabFocusReason)
+        const firstTip = visualNamed(panel.contentItem, "dspGraphicValue0")
+        verify(firstTip.visible, "the keys show it too")
+        verify(firstTip.x >= first.handle.x + first.handle.width, "the first band has no room on its left")
+    }
     function test_graphic_reset_zeroes_bands_without_changing_preamp_or_stereo() {
         const state = graphicState()
         state.preset.filters[0].gain_db = 6
