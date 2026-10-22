@@ -24,17 +24,8 @@ Popup {
     property int room: 0
     // The row Up and Down move to, which Enter opens.
     property int current: -1
-    // The sources a search asks, kept between runs: Local alone to begin with.
-    readonly property var chosen: search.source.split(",").filter(s => s !== "")
-    Component.onCompleted: search.source = SettingsModel.kept("ui.search.sources") || "all"
-    function toggle(id) {
-        let now = id === "all" ? (chosen.indexOf("all") >= 0 ? ["local"] : ["all"])
-            : chosen.filter(s => s !== "all")
-        if (id !== "all")
-            now = now.indexOf(id) >= 0 ? now.filter(s => s !== id) : now.concat([id])
-        search.source = (now.length > 0 ? now : ["local"]).join(",")
-        SettingsModel.keep("ui.search.sources", search.source)
-    }
+    // Everything found, on the results page.
+    signal allAsked()
     Timer { interval: Motion.poll; repeat: true; running: flyout.visible; onTriggered: flyout.search.refresh() }
 
     // Moves to the next result up or down, over the section labels.
@@ -62,12 +53,12 @@ Popup {
             list.contentY = at
         }
     }
-    // Enter: the row the keyboard is on, or the first result.
+    // Enter: the row the keyboard is on, or everything on the results page, as QBZ.
     function chooseCurrent() {
-        if (current < 0)
-            step(1)
         if (current >= 0)
             choose(current)
+        else
+            allAsked()
     }
 
     width: Metrics.searchFlyout
@@ -124,25 +115,7 @@ Popup {
             onEscaped: flyout.close()
         }
 
-        Flickable {
-            width: parent.width
-            height: Metrics.chipHeight + Metrics.gap8
-            contentWidth: sources.width
-            clip: true; ScrollBar.horizontal: ViewportScrollBar {}
-            Row {
-                id: sources
-                spacing: Metrics.gap6
-                Repeater {
-                    model: [{id: "all", name: I18n.tr("All sources", I18n.rev)}, {id: "local", name: I18n.tr("Local", I18n.rev)}].concat(JSON.parse(Sources.snapshot || "{}").panels || [])
-                    Chip {
-                        required property var modelData
-                        text: modelData.name
-                        active: flyout.chosen.indexOf(modelData.id) >= 0 || (modelData.id !== "all" && flyout.chosen.indexOf("all") >= 0)
-                        onClicked: flyout.toggle(modelData.id)
-                    }
-                }
-            }
-        }
+        Tools.SearchFilters { width: parent.width; search: flyout.search }
         Row {
             spacing: Metrics.gap6
 
@@ -164,32 +137,10 @@ Popup {
             }
         }
 
-        Row {
-            spacing: Metrics.gap6
-            Repeater {
-                model: [{value: "", label: I18n.tr("Any quality", I18n.rev)},
-                    {value: "lossless", label: I18n.tr("Lossless only", I18n.rev)},
-                    {value: "hi_res", label: I18n.tr("Hi-Res only", I18n.rev)}]
-                Chip {
-                    required property var modelData
-                    text: modelData.label
-                    active: flyout.search.qualityFilter === modelData.value
-                    onClicked: flyout.search.qualityFilter = modelData.value
-                }
-            }
-            // What a file's advisory or a source calls explicit, left out.
-            Chip {
-                objectName: "hideExplicit"
-                text: I18n.tr("Hide explicit", I18n.rev)
-                active: flyout.search.hideExplicit
-                onClicked: flyout.search.hideExplicit = !flyout.search.hideExplicit
-            }
-        }
-
         ListView {
             id: list
             width: parent.width
-            height: Math.min(contentHeight, Math.max(0, flyout.room - list.y - flyout.padding * 2)) // derived: the room left under the chips
+            height: Math.min(contentHeight, Math.max(0, flyout.room - list.y - flyout.padding * 2 - footer.height - Metrics.gap8)) // derived: the room left under the chips and over the footer
             interactive: contentHeight > height
             clip: true; ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8 }
             boundsBehavior: Flickable.StopAtBounds
@@ -226,6 +177,17 @@ Popup {
             text: I18n.trArgs("Nothing found for “{}”", [flyout.search.text], I18n.rev)
             font.pointSize: Type.body
             color: Theme.color.textSecondary
+        }
+        Item {
+            id: footer
+            width: parent.width; height: Metrics.button32
+            Tools.SearchPreviewSwitch { anchors.verticalCenter: parent.verticalCenter; search: flyout.search }
+            PillButton {
+                objectName: "searchAllResults"
+                anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                text: I18n.tr("All results", I18n.rev)
+                onClicked: flyout.allAsked()
+            }
         }
     }
 }

@@ -342,6 +342,9 @@ msgstr ""
 msgid "All qualities"
 msgstr "All qualities"
 
+msgid "All results"
+msgstr "All results"
+
 msgid "All saved results"
 msgstr ""
 
@@ -4205,6 +4208,9 @@ msgstr ""
 msgid "Search plugins"
 msgstr "Search plugins"
 
+msgid "Search preview"
+msgstr "Search preview"
+
 msgid "Search purchases"
 msgstr "Search purchases"
 
@@ -4401,6 +4407,9 @@ msgstr ""
 
 msgid "Showing"
 msgstr ""
+
+msgid "Shows results under the search box as you type. Off, typing opens the results page."
+msgstr "Shows results under the search box as you type. Off, typing opens the results page."
 
 msgid "Shuffle"
 msgstr ""

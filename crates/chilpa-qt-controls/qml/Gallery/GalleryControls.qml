@@ -14,6 +14,10 @@ TitledFlow {
     SearchMenu { search: previewSearch }
     SearchSelection { search: previewSearch }
     SearchNavigation { search: previewSearch }
+    SearchFilters { width: Metrics.confirmWidth; search: previewSearch }
+    SearchPreviewSwitch { search: previewSearch }
+    SearchResultCard { row: ({kind: 3, title: "Record", detail: "Album · Artist", art: ""}) }
+    SearchRail { width: Metrics.confirmWidth; title: "Albums"; rows: [{at: 0, kind: 3, title: "Record", detail: "Album · Artist", art: ""}] }
     Keycap { text: "Ctrl + ▶" }
     Keycap { text: "Press keys…"; button: true; recording: true }
     ShortcutRow { width: Metrics.confirmWidth; entry: ({ id: "playback.next", label: "Next Track", shortcut: "Ctrl + ▶", modified: false }) }

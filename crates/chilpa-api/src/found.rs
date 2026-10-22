@@ -24,6 +24,21 @@ pub enum FoundRow {
     More(String, usize),
 }
 
+/// The section each row stands in, by the label it comes under: "top",
+/// "artists", "albums", "songs", "playlists", or empty under another (a
+/// source's problem). The results page lays each section out its own way.
+pub fn found_sections(rows: &[FoundRow]) -> Vec<&'static str> {
+    let names: Vec<(String, &'static str)> = [("Top result", "top"), ("Artists", "artists"), ("Albums", "albums"), ("Songs", "songs"), ("Playlists", "playlists")]
+        .into_iter().map(|(name, key)| (i18n::t(name), key)).collect();
+    let mut section = "";
+    rows.iter().map(|row| {
+        if let FoundRow::Header(title) = row {
+            section = names.iter().find(|(name, _)| name == title).map_or("", |(_, key)| *key);
+        }
+        section
+    }).collect()
+}
+
 /// Where an action takes the window, when it takes it anywhere.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Leads {

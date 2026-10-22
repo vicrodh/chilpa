@@ -55,6 +55,10 @@ impl Chilpa {
     pub fn browse_origin(&self) -> Option<QueueOrigin> { self.browse_origin.clone() }
     fn origin_for_route(&self, route: &Route) -> Option<QueueOrigin> {
         if matches!(route.screen, Screen::ListenList | Screen::Settings | Screen::Metadata | Screen::PlaylistManager | Screen::PlaylistImport | Screen::Stats | Screen::ListeningHistory) { return None; }
+        // What plays from the results page came from that search.
+        if route.screen == Screen::Search {
+            return Some(QueueOrigin { screen: "search".into(), query: route.key.clone(), source: self.search.source.clone(), ..Default::default() });
+        }
         let mut origin = QueueOrigin { screen: route.screen.name().into(), id: route.id, key: route.key.clone(), ..Default::default() };
         if route.id < 0 && matches!(route.screen, Screen::Album | Screen::Playlist) {
             let (plugin, identity) = self.catalog.identity_of(route.id)?;

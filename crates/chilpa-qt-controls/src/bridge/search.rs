@@ -35,6 +35,11 @@ pub mod qobject {
         fn menu_json(self: Pin<&mut SearchModel>, row: i32) -> QString;
         #[qinvokable]
         fn track_ids_json(self: &SearchModel, row: i32) -> QString;
+        /// Every row by its place and section, as the results page lays them out.
+        #[qinvokable]
+        fn rows_json(self: &SearchModel) -> QString;
+        #[qinvokable]
+        fn keep_preview(self: &SearchModel, on: bool);
         #[qinvokable]
         fn refresh(self: Pin<&mut SearchModel>);
         #[qinvokable]
@@ -235,6 +240,21 @@ impl qobject::SearchModel {
         self.as_mut().rust_mut().selection = None;
         self.as_mut().set_selection_pending(false);
         self.set_selection_error(QString::default());
+    }
+
+    pub fn rows_json(&self) -> QString {
+        let rows = &self.rust().rows;
+        json(rows.iter().zip(chilpa_api::found_sections(rows)).map(|(row, section)| serde_json::json!({
+            "kind": row.kind(), "title": row.title(), "detail": row.detail(), "art": row.artwork(),
+            "duration": row.duration(), "sourceIcon": row.source_icon(), "sourceName": row.source_name(), "section": section,
+        })).collect())
+    }
+
+    /// Keeps whether results show under the box as you type, wherever the
+    /// switch is: Settings, the flyout or the results page.
+    pub fn keep_preview(&self, on: bool) {
+        app::with(|api| api.adjust("navigation.searchPreview", if on { "true" } else { "false" }));
+        chilpa_qt_kit::bridge::prefs::changed();
     }
 
     pub fn track_ids_json(&self, row: i32) -> QString {

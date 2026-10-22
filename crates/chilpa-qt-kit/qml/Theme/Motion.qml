@@ -27,6 +27,8 @@ QtObject {
     // How often a view reads again what moves on another thread: a setup
     // being waited for, a sync. Not motion: never reduced.
     readonly property int poll: 300
+    // How long typing pauses before the results page opens, as QBZ's.
+    readonly property int searchLive: 300
     readonly property int refresh: 1000
     // Yield a frame between independent Home modules.
     readonly property int moduleStart: 16

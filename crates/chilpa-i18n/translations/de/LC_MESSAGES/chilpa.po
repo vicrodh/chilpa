@@ -342,6 +342,9 @@ msgstr "Alle davon"
 msgid "All qualities"
 msgstr "Alle Qualitäten"
 
+msgid "All results"
+msgstr "Alle Ergebnisse"
+
 msgid "All saved results"
 msgstr "Alle gespeicherten Ergebnisse"
 
@@ -4205,6 +4208,9 @@ msgstr "Playlists suchen..."
 msgid "Search plugins"
 msgstr "Plugins suchen"
 
+msgid "Search preview"
+msgstr "Suchvorschau"
+
 msgid "Search purchases"
 msgstr "Käufe suchen"
 
@@ -4401,6 +4407,9 @@ msgstr "Fenster ein-/ausblenden"
 
 msgid "Showing"
 msgstr "Angezeigt"
+
+msgid "Shows results under the search box as you type. Off, typing opens the results page."
+msgstr "Zeigt beim Tippen Ergebnisse unter dem Suchfeld. Ausgeschaltet öffnet das Tippen die Ergebnisseite."
 
 msgid "Shuffle"
 msgstr "Zufallswiedergabe"

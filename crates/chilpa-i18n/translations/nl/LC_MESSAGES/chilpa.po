@@ -342,6 +342,9 @@ msgstr "Al deze"
 msgid "All qualities"
 msgstr "Alle kwaliteiten"
 
+msgid "All results"
+msgstr "Alle resultaten"
+
 msgid "All saved results"
 msgstr "Alle opgeslagen resultaten"
 
@@ -4205,6 +4208,9 @@ msgstr "Afspeellijsten zoeken..."
 msgid "Search plugins"
 msgstr "Plug-ins zoeken"
 
+msgid "Search preview"
+msgstr "Zoekvoorbeeld"
+
 msgid "Search purchases"
 msgstr "Aankopen zoeken"
 
@@ -4401,6 +4407,9 @@ msgstr "Venster tonen/verbergen"
 
 msgid "Showing"
 msgstr "Weergegeven"
+
+msgid "Shows results under the search box as you type. Off, typing opens the results page."
+msgstr "Toont resultaten onder het zoekvak terwijl je typt. Uit: typen opent de resultatenpagina."
 
 msgid "Shuffle"
 msgstr "Shuffle"
