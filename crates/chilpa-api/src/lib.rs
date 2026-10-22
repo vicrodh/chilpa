@@ -141,6 +141,7 @@ pub mod graphics_boot;
 pub mod startup_chain;
 pub mod settings_schema;
 mod artist_page;
+mod now_about;
 mod artist_library;
 mod artist_scene;
 mod scene_catalog;

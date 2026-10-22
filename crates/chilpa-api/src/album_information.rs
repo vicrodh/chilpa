@@ -165,7 +165,7 @@ fn role_label(role: &str) -> String {
     }
     label
 }
-fn participants(value: &Value, info: &Value) -> Vec<Value> {
+pub(crate) fn participants(value: &Value, info: &Value) -> Vec<Value> {
     let entries: Vec<Value> = if let Some(text) = value.as_str() {
         text.lines().flat_map(|line| line.split(" - ")).filter_map(|entry| {
             let mut parts = entry.split(", ");

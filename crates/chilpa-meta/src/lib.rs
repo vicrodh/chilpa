@@ -10,6 +10,7 @@
 
 pub mod artist;
 pub mod cover_art;
+pub mod credits;
 pub mod discogs;
 pub mod http;
 pub mod musicbrainz;

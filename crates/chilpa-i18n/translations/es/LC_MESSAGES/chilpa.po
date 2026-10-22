@@ -630,6 +630,9 @@ msgstr "Imagen de fondo"
 msgid "Balance · −100 left / +100 right"
 msgstr "Balance · −100 izquierda / +100 derecha"
 
+msgid "Barcode"
+msgstr "Código de barras"
+
 msgid "Based on {artist} · {genres}"
 msgstr "Basado en {artist} · {genres}"
 
@@ -1208,6 +1211,9 @@ msgstr "Copiar preset JSON"
 msgid "Copy the colors of the currently applied theme into the editor as a starting point."
 msgstr "Copia los colores del tema aplicado al editor como punto de partida."
 
+msgid "Copyright"
+msgstr "Copyright"
+
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio no reporta ningún aparato que pueda reproducir"
 
@@ -1240,6 +1246,9 @@ msgstr "Contando pistas…"
 
 msgid "Countries"
 msgstr "Países"
+
+msgid "Country"
+msgstr "País"
 
 msgid "Cover collage"
 msgstr "Collage de portadas"
@@ -2639,6 +2648,9 @@ msgstr "Estante de graves"
 msgid "Lower the overall level without changing the EQ. Zero adds no attenuation."
 msgstr "Reduce el nivel general sin cambiar el EQ. Cero no añade atenuación."
 
+msgid "Lyricist"
+msgstr "Letrista"
+
 msgid "Lyrics"
 msgstr "Letra"
 
@@ -3181,6 +3193,9 @@ msgstr "Aquí no hay nada."
 
 msgid "Nothing in this period."
 msgstr "Nada en este periodo."
+
+msgid "Nothing more is known about it."
+msgstr "No se sabe nada más de esto."
 
 msgid "Nothing played yet"
 msgstr "Todavía no ha sonado nada"

@@ -7,6 +7,7 @@ pub mod bridge {
     pub mod controls;
     pub mod commands;
     pub mod hotkeys;
+    pub mod now_about;
     pub mod queues;
     pub mod place;
     pub mod player_layout;

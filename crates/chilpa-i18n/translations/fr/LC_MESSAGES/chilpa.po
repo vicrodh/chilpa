@@ -630,6 +630,9 @@ msgstr "Image de fond"
 msgid "Balance · −100 left / +100 right"
 msgstr "Balance · −100 gauche / +100 droite"
 
+msgid "Barcode"
+msgstr "Code-barres"
+
 msgid "Based on {artist} · {genres}"
 msgstr "D'après {artist} · {genres}"
 
@@ -1208,6 +1211,9 @@ msgstr "Copier le JSON du préréglage"
 msgid "Copy the colors of the currently applied theme into the editor as a starting point."
 msgstr "Copie les couleurs du thème actuellement appliqué dans l'éditeur comme point de départ."
 
+msgid "Copyright"
+msgstr "Copyright"
+
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio ne signale aucun périphérique capable de lire"
 
@@ -1239,6 +1245,9 @@ msgid "Counting tracks…"
 msgstr "Comptage des pistes…"
 
 msgid "Countries"
+msgstr "Pays"
+
+msgid "Country"
 msgstr "Pays"
 
 msgid "Cover collage"
@@ -2639,6 +2648,9 @@ msgstr "Plateau bas"
 msgid "Lower the overall level without changing the EQ. Zero adds no attenuation."
 msgstr "Réduit le niveau global sans modifier l'EQ. Zéro n'ajoute aucune atténuation."
 
+msgid "Lyricist"
+msgstr "Parolier"
+
 msgid "Lyrics"
 msgstr "Paroles"
 
@@ -3181,6 +3193,9 @@ msgstr "Rien ici."
 
 msgid "Nothing in this period."
 msgstr "Rien sur cette période."
+
+msgid "Nothing more is known about it."
+msgstr "On n’en sait pas plus."
 
 msgid "Nothing played yet"
 msgstr "Rien n'a encore été lu"
