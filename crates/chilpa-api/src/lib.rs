@@ -23,7 +23,7 @@ pub use desktop::WindowRequest;
 mod tracks_view;
 mod albums_view;
 mod library_sources;
-pub use albums_view::{artist_cards, grid_rows, mixes_sources, AlbumsFound, GridRow};
+pub use albums_view::{artist_cards, grid_rows, mixes_sources, AlbumsFound, GridRow, ListedArtist};
 pub use tracks_view::{group_of, section_at, FoundTracks, TrackGroups, TracksQuery};
 mod queries;
 pub use queries::QueryWorker;

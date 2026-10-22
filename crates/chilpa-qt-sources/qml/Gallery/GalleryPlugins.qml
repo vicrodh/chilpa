@@ -43,6 +43,7 @@ TitledFlow {
     ArtistTracks { width: Metrics.confirmWidth; section: ({title:"Popular Tracks",role:"popular",key:""}) }
     ArtistNetwork { width: Metrics.networkPanel; height: Metrics.panesHeight; document: ({header:{title:"Artist"},shelves:[{role:"labels",items:[{title:"Label"}]},{role:"similar",items:[{title:"Another"}]}]}); network: ({origin:{person:false,begin:"1975",place:"Leyton"},relationships:{any:true,members:[{name:"Member"}]},similar:["Alike"]}) }
     SceneArtistCard { artist: ({title:"Scene artist",genres:["rock"],sources:[]}) }
+    ArtistCardGrid { width: Metrics.confirmWidth; height: Metrics.sceneCardHeight; artists: AlbumGridModel { kind: "artists"; key: "album" } }
     SceneHero { width: Metrics.confirmWidth; title: "United Kingdom"; artistName: "Scene seed"; genres: "art rock" }
     SceneAlphaRail { activeKeys: ["A", "B"] }
     SceneGenreFilter { width: Metrics.sceneGenreWidth; genres: ["rock", "post-punk", "shoegaze"]; selected: ["post-punk"] }

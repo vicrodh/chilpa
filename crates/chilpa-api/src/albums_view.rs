@@ -6,6 +6,9 @@ use crate::{Filter, Reader, TrackOrder};
 use chilpa_library::AlbumSort;
 use std::collections::HashSet;
 
+mod artists;
+pub use artists::{artist_cards, ListedArtist};
+
 /// The records a question leaves, and where each group starts among them.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct AlbumsFound {
@@ -75,29 +78,6 @@ pub fn mixes_sources(ids: impl IntoIterator<Item = i64>) -> bool {
     false
 }
 
-/// Artists drawn as record cards: the name where a title goes and how
-/// many records stand under it. Only those whose name holds every word of
-/// `filter` stay.
-pub fn artist_cards(artists: &[crate::Artist], filter: &str) -> Vec<crate::Album> {
-    let words: Vec<String> = filter.to_lowercase().split_whitespace().map(String::from).collect();
-    artists
-        .iter()
-        .filter(|a| {
-            let name = a.name.to_lowercase();
-            words.iter().all(|w| name.contains(w.as_str()))
-        })
-        .map(|a| crate::Album {
-            id: 0,
-            artist: chilpa_i18n::tf("{} record", "{} records", a.album_count as i64, &[&a.album_count.to_string()]),
-            title: a.name.clone(),
-            year: None,
-            track_count: a.track_count,
-            artwork_path: a.artwork_path.clone(),
-            play_count: 0,
-        })
-        .collect()
-}
-
 impl Reader {
     /// The records of the Albums screen: the library's that hold every word
     /// of `text`, through the sources, qualities and formats `extras` leaves
@@ -111,14 +91,7 @@ impl Reader {
         let (name, turned) = turned_order(order);
         let order = AlbumSort::from_name(name);
         let mut ids = self.lib.album_ids_matching(order, text).unwrap_or_default();
-        if !extras.excluded_sources.is_empty() || !extras.qualities.is_empty() || !extras.formats.is_empty() {
-            let through = Filter {
-                excluded_sources: extras.excluded_sources.clone(),
-                qualities: extras.qualities.clone(),
-                formats: extras.formats.clone(),
-                ..Filter::default()
-            };
-            let left: HashSet<i64> = self.lib.browse_ids(&through, TrackOrder::Album).map(|s| s.album_ids).unwrap_or_default().into_iter().collect();
+        if let Some(left) = self.passing_album_ids(extras) {
             ids.retain(|id| left.contains(id));
         }
         let mut ids = self.lib.grouped_album_ids(&ids).unwrap_or(ids);
@@ -150,6 +123,21 @@ impl Reader {
         }
         let group = crate::library_sources::AlbumGroup::from_name(group);
         self.album_groups(ids, group, order == AlbumSort::Artist, turned, index)
+    }
+
+    /// The library's records the sources, qualities and formats of `extras`
+    /// let through, or `None` when they let every record through.
+    pub(crate) fn passing_album_ids(&self, extras: &Filter) -> Option<HashSet<i64>> {
+        if extras.excluded_sources.is_empty() && extras.qualities.is_empty() && extras.formats.is_empty() {
+            return None;
+        }
+        let through = Filter {
+            excluded_sources: extras.excluded_sources.clone(),
+            qualities: extras.qualities.clone(),
+            formats: extras.formats.clone(),
+            ..Filter::default()
+        };
+        Some(self.lib.browse_ids(&through, TrackOrder::Album).map(|s| s.album_ids).unwrap_or_default().into_iter().collect())
     }
 
     /// The Library grid's records grouped by `group`, in the order they came.
@@ -232,17 +220,6 @@ mod tests {
         assert!(!mixes_sources([-1, -2]), "a source alone");
         assert!(!mixes_sources([0, 0, -1]), "an artist is no record");
         assert!(!mixes_sources([]));
-    }
-
-    #[test]
-    fn artists_become_cards_and_the_filter_keeps_every_word() {
-        let artist = |name: &str, albums| crate::Artist { name: name.into(), album_count: albums, track_count: 3, artwork_path: String::new() };
-        let artists = [artist("Mora Vale", 2), artist("Vale Mora Trio", 1), artist("Band", 1)];
-        let cards = artist_cards(&artists, "vale MORA");
-        assert_eq!(cards.iter().map(|c| c.title.as_str()).collect::<Vec<_>>(), ["Mora Vale", "Vale Mora Trio"]);
-        assert_eq!((cards[0].artist.as_str(), cards[1].artist.as_str()), ("2 records", "1 record"));
-        assert_eq!((cards[0].id, cards[0].track_count), (0, 3));
-        assert_eq!(artist_cards(&artists, " ").len(), 3, "no words keep everyone");
     }
 
     #[test]
