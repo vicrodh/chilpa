@@ -32,6 +32,24 @@ TestCase {
         Immersive.open = false
         lcd.y = 0
     }
+    // With the bar along the window's top there is no room above the
+    // cover: the preview opens under it, never over it, and stays open.
+    function test_at_the_top_the_preview_opens_under_the_cover_and_holds() {
+        lcd.width = 700
+        lcd.y = 0
+        waitForRendering(lcd)
+        const cover = findChild(lcd, "playerCover")
+        const preview = findChild(lcd, "playerCoverPreview")
+        mouseMove(cover, cover.width / 2, cover.height / 2)
+        tryVerify(() => preview.visible, 1000, "hovered, the cover grows")
+        let closed = 0
+        for (let frame = 0; frame < 20; ++frame) { wait(16); if (!preview.visible) closed++ }
+        compare(closed, 0, "it does not blink")
+        const top = preview.contentItem.mapToItem(cover, 0, 0).y - preview.padding
+        verify(top >= cover.height, "under the cover, not over it: " + top)
+        mouseMove(lcd, lcd.width - 4, lcd.height / 2)
+        tryVerify(() => !preview.visible, 1000)
+    }
     LyricsPanel { id: lyrics; width: 260; height: 400; y: 80 }
     function test_origin_aligns_with_both_context_labels() {
         for (const width of [400, 700]) {
