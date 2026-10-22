@@ -44,6 +44,7 @@ TitledFlow {
     ArtistNetwork { width: Metrics.networkPanel; height: Metrics.panesHeight; document: ({header:{title:"Artist"},shelves:[{role:"labels",items:[{title:"Label"}]},{role:"similar",items:[{title:"Another"}]}]}); network: ({origin:{person:false,begin:"1975",place:"Leyton"},relationships:{any:true,members:[{name:"Member"}]},similar:["Alike"]}) }
     SceneArtistCard { artist: ({title:"Scene artist",genres:["rock"],sources:[]}) }
     ArtistCardGrid { width: Metrics.confirmWidth; height: Metrics.sceneCardHeight; artists: AlbumGridModel { kind: "artists"; key: "album" } }
+    PurchaseAlbumCard { record: ({title: "Record", artist: "Artist", year: "2026"}) }
     SlimRow { width: Metrics.confirmWidth; height: Metrics.slimRow; title: "Compact row"; subtitle: "Artist"; count: "12" }
     SlimGrid { id: gallerySlim; width: Metrics.confirmWidth; title: "Compact grid"; total: 2; cells: Repeater { model: 2; SlimRow { required property int index; x: gallerySlim.cellX(index); y: gallerySlim.cellY(index); width: gallerySlim.cellWidth; height: Metrics.slimRow; title: "Row " + index; subtitle: "Artist" } } }
     HomeTrackGrid { width: Metrics.confirmWidth; title: "Most played"; showPlays: true; model: TrackListModel { kind: "mostPlayed"; limit: 4 } }

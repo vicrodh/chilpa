@@ -75,6 +75,10 @@ impl Chilpa {
         if scope == "immersive" {
             return self.immersive_found_rows(found);
         }
+        // The results page reads everything "all" finds, each section whole:
+        // it cuts its own rails.
+        let page = scope == "page";
+        let scope = if page { "all" } else { scope };
         let filter = self.search.quality_filter.clone();
         let mut found = found.clone();
         if !filter.is_empty() {
@@ -134,7 +138,7 @@ impl Chilpa {
             if !section.is_empty() {
                 rows.push(FoundRow::Header(chilpa_i18n::t(name)));
                 let expansion = format!("section:{key}");
-                let limit = if scope != "all" || self.search.expanded.contains(&expansion) { usize::MAX }
+                let limit = if page || scope != "all" || self.search.expanded.contains(&expansion) { usize::MAX }
                     else { (match kind { 2 => 2, 6 => 3, _ => 4 }).max(represented) };
                 let more = section.len().saturating_sub(limit);
                 rows.extend(section.into_iter().take(limit));

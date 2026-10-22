@@ -19,6 +19,11 @@ Item {
     property real flyoutX: 0
     property real flyoutY: 0
     property int room: 0
+    // Results under the box as you type; off, typing opens the results page.
+    readonly property bool preview: Prefs.rev >= 0 && SettingsModel.kept("navigation.searchPreview") !== "false"
+    function openPage(text) {
+        if (text.trim().length >= 2) Navigation.goKey("search", text.trim())
+    }
 
     function focusSearch() {
         if (compact) {
@@ -43,6 +48,7 @@ Item {
         target: Navigation
         function onSearchOriginRequested(query, source) {
             if (!box.active) return
+            if (!box.preview) { box.openPage(query); return }
             search.source = source || "all"
             search.text = query
             field.text = query
@@ -59,19 +65,25 @@ Item {
         shortcut: Qt.platform.os === "osx" ? "⌘K" : "Ctrl K"
         onTextChanged: {
             search.text = text
-            text !== "" ? flyout.open() : flyout.close()
+            if (box.preview) text !== "" ? flyout.open() : flyout.close()
+            else text.trim().length >= 2 ? live.restart() : live.stop()
         }
-        onEditingChanged: if (editing && text !== "") flyout.open()
+        onEditingChanged: if (editing && text !== "" && box.preview) flyout.open()
         onStepped: (by) => flyout.step(by)
-        onAccepted: flyout.chooseCurrent()
+        // Without the preview, Enter opens the page and clears the box, as QBZ.
+        onAccepted: if (box.preview) flyout.chooseCurrent(); else { live.stop(); box.openPage(text); text = "" }
         onEscaped: {
             flyout.close()
             release()
         }
     }
 
+    // A pause in typing opens the page, without the preview.
+    Timer { id: live; interval: Motion.searchLive; onTriggered: box.openPage(field.text) }
+
     SearchFlyout {
         id: flyout
+        onAllAsked: { close(); box.openPage(search.text) }
         search: search
         x: box.flyoutX
         y: box.flyoutY

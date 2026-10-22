@@ -341,6 +341,9 @@ msgstr "すべてに一致"
 msgid "All qualities"
 msgstr "すべての音質"
 
+msgid "All results"
+msgstr "すべての結果"
+
 msgid "All saved results"
 msgstr "保存済みの結果すべて"
 
@@ -4203,6 +4206,9 @@ msgstr "プレイリストを検索..."
 msgid "Search plugins"
 msgstr "プラグインを検索"
 
+msgid "Search preview"
+msgstr "検索プレビュー"
+
 msgid "Search purchases"
 msgstr "購入を検索"
 
@@ -4398,6 +4404,9 @@ msgstr "ウィンドウを表示／非表示"
 
 msgid "Showing"
 msgstr "表示中"
+
+msgid "Shows results under the search box as you type. Off, typing opens the results page."
+msgstr "入力中に検索ボックスの下へ結果を表示します。オフにすると、入力で結果ページが開きます。"
 
 msgid "Shuffle"
 msgstr "シャッフル"

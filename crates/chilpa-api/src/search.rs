@@ -35,6 +35,18 @@ pub const SOURCE_COOLDOWN: Duration = Duration::from_millis(800);
 /// How many results each source is asked for.
 const PER_SOURCE: usize = 50;
 
+/// Whether the search box shows what it finds under it as you type; off,
+/// typing opens the results page (Settings > Navigation > Search).
+pub(crate) const SEARCH_PREVIEW: &str = "navigation.searchPreview";
+
+impl Chilpa {
+    pub(crate) fn search_preview_setting(&mut self, key: &str, value: &str) -> bool {
+        if key != SEARCH_PREVIEW || !matches!(value, "true" | "false") { return false; }
+        self.remember_preference(key, value);
+        true
+    }
+}
+
 /// Where a result already on disk came from.
 const LOCAL: &str = "local";
 

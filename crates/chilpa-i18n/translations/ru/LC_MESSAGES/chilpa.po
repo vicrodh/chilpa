@@ -343,6 +343,9 @@ msgstr "Все эти"
 msgid "All qualities"
 msgstr "Все качества"
 
+msgid "All results"
+msgstr "Все результаты"
+
 msgid "All saved results"
 msgstr "Все сохранённые результаты"
 
@@ -4207,6 +4210,9 @@ msgstr "Поиск плейлистов..."
 msgid "Search plugins"
 msgstr "Поиск плагинов"
 
+msgid "Search preview"
+msgstr "Предпросмотр поиска"
+
 msgid "Search purchases"
 msgstr "Поиск покупок"
 
@@ -4404,6 +4410,9 @@ msgstr "Показать/Скрыть окно"
 
 msgid "Showing"
 msgstr "Показано"
+
+msgid "Shows results under the search box as you type. Off, typing opens the results page."
+msgstr "Показывает результаты под строкой поиска, пока вы печатаете. Если выключено, ввод открывает страницу результатов."
 
 msgid "Shuffle"
 msgstr "Перемешать"

@@ -59,6 +59,7 @@ PageTransition {
         case "playlistImport": return playlistImport
         case "metadata": return metadata
         case "listenlist": return listenlist
+        case "search": return searchResults
         case "stats": return stats
         case "listeningHistory": return listeningHistory
         case "source": return source
@@ -84,21 +85,7 @@ PageTransition {
             PluginManager { anchors.fill: parent; page: backend; initialDownloadsId: parent.pluginId; purchaseCard: purchaseAlbumCard }
         }
     }
-    Component {
-        id: purchaseAlbumCard
-        AlbumCard {
-            property var record: ({})
-            signal opened()
-            purchaseMode: true
-            title: record.title || ""
-            subtitle: record.artist || ""
-            artistDestination: record.artist && record.plugin ? ({target:"source",key:record.plugin + " " + (record.artist_ref ? "native:" + record.artist_ref : "matching-artist-v3:" + record.artist)}) : ({})
-            year: record.year || ""
-            art: record.image || ""
-            available: record.downloadable !== false
-            onClicked: opened()
-        }
-    }
+    Component { id: purchaseAlbumCard; PurchaseAlbumCard {} }
     Component { id: libraryFolders; LibraryFoldersScreen {} }
     Component { id: folders; FoldersScreen { routeKey: host.routeKeyOf(parent) } }
     Component { id: openMedia; OpenMediaScreen {} }
@@ -106,6 +93,7 @@ PageTransition {
     Component { id: playlistImport; PlaylistImportScreen {} }
     Component { id: playlistManager; PlaylistManagerScreen {} }
     Component { id: listenlist; ListenListScreen {} }
+    Component { id: searchResults; SearchScreen { query: host.routeKeyOf(parent) } }
     Component { id: metadata; MetadataScreen { albumId: host.routeIdOf(parent) } }
     Component { id: stats; StatsScreen {} }
     Component { id: listeningHistory; HistoryScreen {} }

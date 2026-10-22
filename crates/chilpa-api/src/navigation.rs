@@ -35,6 +35,8 @@ pub enum Screen {
     Playlist,
     PlaylistManager,
     PlaylistImport,
+    /// What a search found, whole; the key is what was typed.
+    Search,
     /// The metadata editor, on one record.
     Metadata,
     ListenList,
@@ -71,13 +73,14 @@ impl Screen {
             Screen::ListenList => "listenlist",
             Screen::Stats => "stats",
             Screen::ListeningHistory => "listeningHistory",
+            Screen::Search => "search",
             Screen::Source => "source",
             Screen::SourceEntry => "sourceEntry",
         }
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -174,6 +177,12 @@ impl Tabs {
     pub fn go(&mut self, to: Route) {
         let tab = &mut self.tabs[self.active];
         if tab.route == to {
+            return;
+        }
+        // A new search on the results page takes the page's place, as QBZ:
+        // going back leaves the page, not each search typed on it.
+        if tab.route.screen == Screen::Search && to.screen == Screen::Search {
+            tab.route = to;
             return;
         }
         let was = std::mem::replace(&mut tab.route, to);
@@ -298,6 +307,7 @@ impl crate::Chilpa {
             Screen::Metadata => (self.t("Edit metadata"), "listDetails"),
             Screen::Stats => (self.t("Listening stats"), "chartBar"),
             Screen::ListeningHistory => (self.t("Listening history"), "history"),
+            Screen::Search => (r.key.clone(), "search"),
             Screen::Source | Screen::SourceEntry => {
                 let (plugin, entry) = r.key.split_once(' ').unwrap_or((r.key.as_str(), ""));
                 let panel = self.source_panels().into_iter().find(|p| p.id == plugin).unwrap_or_default();
@@ -401,6 +411,21 @@ mod tests {
         assert_eq!(back.active(), 1);
         assert_eq!(Tabs::restore("").routes(), [Route::of(Screen::Home)], "nothing kept, Home");
         assert_eq!(Tabs::restore("9\nnowhere\t0\t").routes(), [Route::of(Screen::Home)], "nothing usable, Home");
+    }
+
+    #[test]
+    fn a_new_search_takes_the_results_page_s_place() {
+        let search = |text: &str| Route { screen: Screen::Search, id: 0, key: text.into() };
+        assert_eq!(Screen::from_name("search"), Some(Screen::Search));
+        let mut tabs = Tabs::default();
+        tabs.go(album(7));
+        tabs.go(search("mora"));
+        tabs.go(search("mora vale"));
+        assert_eq!(tabs.current(), search("mora vale"));
+        tabs.back();
+        assert_eq!(tabs.current(), album(7), "back leaves the page, not each search typed on it");
+        tabs.forward();
+        assert_eq!(tabs.current(), search("mora vale"));
     }
 
     #[test]

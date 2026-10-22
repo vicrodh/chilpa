@@ -204,6 +204,10 @@ pub const SECTIONS: &[Section] = &[
                     setting("navigation.restoreTabs", Chilpa::mark("Restore tabs"), Chilpa::mark("Chilpa opens with the tabs it had when it closed."), Control::Toggle),
                 ],
             },
+            Group {
+                title: Chilpa::mark("Search"),
+                settings: &[setting(crate::search::SEARCH_PREVIEW, Chilpa::mark("Search preview"), Chilpa::mark("Shows results under the search box as you type. Off, typing opens the results page."), Control::Toggle)],
+            },
             Group { title: Chilpa::mark("Records"), settings: &[setting("navigation.albumClick", Chilpa::mark("A click on a record opens"), Chilpa::mark("Its page, or its quick view under the row."), Control::Segmented)] },
             Group {
                 title: Chilpa::mark("Player bar"),
