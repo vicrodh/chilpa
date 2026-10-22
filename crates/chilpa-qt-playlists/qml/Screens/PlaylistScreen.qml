@@ -64,7 +64,8 @@ Flickable {
             id: hero
             width: parent.width
             name: page.playlistName
-            sourceName: Playlists.sourceName(page.playlistId, Playlists.rev)
+            // The library's own lists are Chilpa's, as the Home's cards name them.
+            sourceName: page.editable ? "Chilpa" : Playlists.sourceName(page.playlistId, Playlists.rev)
             sourceIcon: page.editable ? "qrc:/qt/qml/app/chilpa/kit/assets/logo.png" : ""
             covers: page.covers
             meta: tracks.count > 0 || find.typed !== "" ? tracks.summary : I18n.tr("Empty. Add tracks from any list with a right click.", I18n.rev)
