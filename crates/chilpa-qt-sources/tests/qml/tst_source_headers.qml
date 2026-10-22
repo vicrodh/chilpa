@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import app.chilpa
 import app.chilpa.sources
+import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../../qml/Patterns"
 import "../../qml/Screens"
@@ -10,6 +11,7 @@ TestCase {
     name: "SourceHeaders"; when:windowShown; visible:true; width:1100; height:800
     SourcePageHeader { id:header; width:parent.width; info:({kind:"album",title:"Album",quality_label:"WAV 24/96",quality_tier:3}) }
     SourceShelf { id:shelf; y:header.height; width:parent.width; wrap:true; section:({title:"Releases",key:"fixture native:artist:1|albums",more:"page:2",error:"Loading"}) }
+    SourceRecordDetails { id:details; y:600; width:900; cardId:-5; record:({title:"List",art:"file:///covers/list.jpg"}) }
     function init() { header.info = {kind:"album",title:"Album",quality_label:"WAV 24/96",quality_tier:3} }
     function findText(item,text) {
         if(item.text===text) return item
@@ -32,6 +34,21 @@ TestCase {
         mouseClick(button)
         compare(AlbumActions.playedId, -43)
         header.info = {kind:"album",title:"Album",quality_label:"WAV 24/96",quality_tier:3}
+    }
+    // A record's header stays white on the dynamic background, as QBZ's album
+    // page; a playlist's reads in the theme's colors, as QBZ's playlist page.
+    function test_on_the_dynamic_background_only_a_record_s_header_stays_white() {
+        const kept = Sources.state
+        SettingsModel.albumHeader = "full"
+        Sources.state = Object.assign({}, kept, {cards: {"-5": {plugin: "fixture", kind: "playlist", ref: "playlist:1"}}})
+        verify(details.contrasted, "white over the cover's field")
+        ThemeModel.ambient = true
+        verify(!details.contrasted, "a playlist in the theme's colors")
+        Sources.state = Object.assign({}, kept, {cards: {"-5": {plugin: "fixture", kind: "album", ref: "album:1"}}})
+        verify(details.contrasted, "a record stays white")
+        ThemeModel.ambient = false
+        SettingsModel.albumHeader = "off"
+        Sources.state = kept
     }
     // A record kept by the library and by sources offers its copies here too.
     function test_a_record_with_copies_offers_them() {

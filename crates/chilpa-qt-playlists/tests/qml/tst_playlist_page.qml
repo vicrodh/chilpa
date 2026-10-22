@@ -1,6 +1,8 @@
 import QtQuick
 import QtTest
 import app.chilpa
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../../qml/Screens"
 import "../../qml/Patterns"
 
@@ -28,6 +30,21 @@ TestCase {
         const four = tiles(findChild(several, "playlistHeaderCover"))
         compare(four.length, 4)
         compare(String(four[1].source), "file:///covers/two.jpg")
+    }
+
+    // White over the cover's darkened field; on the dynamic background the
+    // header reads in the theme's colors, as QBZ's playlist page.
+    function test_on_the_dynamic_background_the_header_reads_in_the_theme_s_colors() {
+        Playlists.coverRows = {[screen.playlistId]: ["file:///covers/one.jpg"]}
+        SettingsModel.albumHeader = "full"
+        const header = findChild(screen, "playlistHeaderCover").parent
+        verify(screen.contrasted, "white over the cover's field")
+        ThemeModel.ambient = true
+        verify(!screen.contrasted)
+        compare(header.ink, Theme.color.textSecondary)
+        ThemeModel.ambient = false
+        SettingsModel.albumHeader = "off"
+        Playlists.coverRows = {}
     }
 
     function test_it_is_headed_and_searched_as_a_source_s_playlist() {

@@ -25,7 +25,9 @@ Flickable {
     readonly property string order: sort.order
     readonly property bool ascending: sort.ascending
     property bool selectionMode: false
-    readonly property bool contrasted: (SettingsModel.albumHeader !== "off" && page.covers.length > 0) || Theme.ambient
+    // White only over the cover's darkened field. On the dynamic background a
+    // playlist reads in the theme's own colors, as QBZ's playlist page does.
+    readonly property bool contrasted: SettingsModel.albumHeader !== "off" && page.covers.length > 0 && !Theme.ambient
 
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom

@@ -18,6 +18,12 @@ Column {
     property var record
     readonly property var info: cardId < 0 ? JSON.parse(Sources.card(cardId, Library.remoteRev) || "{}") : ({})
     readonly property bool canFavorite: /^(album|playlist|artist):/.test(info.ref || "") && info.editable !== true
+    readonly property bool playlist: info.kind === "playlist" || /^playlist:/.test(info.ref || "")
+    // The header's text is white over the cover's darkened field. On the
+    // dynamic background a record keeps it white, as QBZ's album page does,
+    // and a playlist reads in the theme's own colors, as QBZ's playlist page.
+    readonly property bool field: SettingsModel.albumHeader !== "off" && !!record && String(record.art) !== "" && !Theme.ambient
+    readonly property bool contrasted: field || (Theme.ambient && !playlist)
     signal information()
     readonly property real heroHeight: heading.height
     visible: cardId < 0 && !!info.plugin
@@ -25,7 +31,7 @@ Column {
     function open(reference) { heading.follow(reference) }
     onInfoChanged: if (playlistEditor.visible) playlistEditor.info = info
     SourcePlaylistEditor { id: playlistEditor }
-    SourcePageHeader { id: heading; record: details.record; selecting: details.selecting; onArtwork: details.artwork(); onArtworkMenu: (left, top) => { const at = heading.mapToItem(details, left, top); details.artworkMenu(at.x, at.y) }; onSelectToggle: details.selectToggle(); onContext: (left, top) => details.context(left, top); width: parent.width; currentPage: true; externalInformation: true; onInformation: details.information(); contrasted: (SettingsModel.albumHeader !== "off" && !!details.record && String(details.record.art) !== "") || Theme.ambient; cardId: details.cardId; playbackModel: details.trackModel || ({count:0,summary:""}); info: Object.assign({}, details.info, {title: details.record ? details.record.title : details.info.title, art: details.record ? details.record.art : details.info.art}) }
+    SourcePageHeader { id: heading; record: details.record; selecting: details.selecting; onArtwork: details.artwork(); onArtworkMenu: (left, top) => { const at = heading.mapToItem(details, left, top); details.artworkMenu(at.x, at.y) }; onSelectToggle: details.selectToggle(); onContext: (left, top) => details.context(left, top); width: parent.width; currentPage: true; externalInformation: true; onInformation: details.information(); contrasted: details.contrasted; cardId: details.cardId; playbackModel: details.trackModel || ({count:0,summary:""}); info: Object.assign({}, details.info, {title: details.record ? details.record.title : details.info.title, art: details.record ? details.record.art : details.info.art}) }
     Flow {
         width: parent.width
         spacing: Metrics.gap8
