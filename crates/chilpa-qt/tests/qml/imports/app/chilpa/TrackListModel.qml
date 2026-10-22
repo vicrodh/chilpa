@@ -8,6 +8,8 @@ ListModel {
     property int filterRev: 0
     property int albumPage: 0
     property string playingPath: ""
+    property string order: "custom"
+    property bool ascending: true
     property string summary: "3 tracks"
     function listAction(action, row, to) { lastAction = action; lastRow = row }
     property string lastAction: ""

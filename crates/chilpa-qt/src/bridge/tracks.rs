@@ -839,8 +839,10 @@ impl qobject::TrackListModel {
             self.as_mut().rust_mut().asked = asked;
             // For a record, `key` is what is typed to find its rows (`entries_matching`).
             let typed = self.rust().key.to_string();
+            // A source playlist's page shows its rows in the order chosen for it.
+            let (order, ascending) = (self.rust().order.to_string(), self.rust().ascending);
             if let Some(page) = chilpa_qt_kit::album_pages::get(self.rust().album_page, id) {
-                self.show(kind, Rows::Loaded(chilpa_api::entries_matching(page.entries.clone(), &typed)), Some(page.detail.duration_ms), Vec::new());
+                self.show(kind, Rows::Loaded(chilpa_api::ordered_entries(chilpa_api::entries_matching(page.entries.clone(), &typed), &order, ascending)), Some(page.detail.duration_ms), Vec::new());
             } else if id > 0 {
                 let thread = self.qt_thread();
                 worker::submit_album(move |reader| {
@@ -852,7 +854,7 @@ impl qobject::TrackListModel {
                     });
                 });
             } else if let Some(page) = app::with(|api| api.cached_album_page(id)) {
-                self.show(kind, Rows::Loaded(chilpa_api::entries_matching(page.entries, &typed)), Some(page.detail.duration_ms), Vec::new());
+                self.show(kind, Rows::Loaded(chilpa_api::ordered_entries(chilpa_api::entries_matching(page.entries, &typed), &order, ascending)), Some(page.detail.duration_ms), Vec::new());
             }
             return;
         }

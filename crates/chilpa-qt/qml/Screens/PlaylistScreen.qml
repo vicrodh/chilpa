@@ -7,6 +7,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 import "../Patterns"
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Components" as Lists
 
 // A playlist (design/06 Playlist): a mosaic of its first records, its name
 // and length, play, shuffle or queue it, and its tracks in its order. A
@@ -17,8 +18,9 @@ Flickable {
     property int playlistId: Navigation.routeId
     readonly property string playlistName: Playlists.name(playlistId, Playlists.rev)
     readonly property bool editable: Playlists.editable(playlistId, Playlists.rev)
-    property string order: "custom"
-    property bool ascending: true
+    // The order the playlist keeps for its tracks, chosen with its sort button.
+    readonly property string order: sort.order
+    readonly property bool ascending: sort.ascending
     property bool selectionMode: false
 
     contentWidth: width
@@ -83,19 +85,7 @@ Flickable {
 
         Row {
             spacing: Metrics.gap8
-            SortButton {
-                id: sort
-                value: page.ascending ? page.order : turned(page.order)
-                options: [
-                    {value: "custom", text: I18n.tr("Custom", I18n.rev), fixed: true},
-                    {value: "title", text: I18n.tr("Title", I18n.rev)},
-                    {value: "artist", text: I18n.tr("Artist", I18n.rev)},
-                    {value: "album", text: I18n.tr("Album", I18n.rev)},
-                    {value: "duration", text: I18n.tr("Duration", I18n.rev)},
-                    {value: "plays", text: I18n.tr("Most played", I18n.rev), descending: true}
-                ]
-                onPicked: (value) => { page.order = baseOf(value); page.ascending = value === page.order }
-            }
+            Lists.PlaylistSortButton { id: sort; playlistId: page.playlistId }
             Text {
                 visible: page.order === "custom" && page.editable
                 anchors.verticalCenter: parent.verticalCenter

@@ -11,6 +11,7 @@ import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/artwork/qml/Components"
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Components" as Lists
 
 // A record (design/06 Album): its header, the bar with discs and where the
 // information comes from, and its tracks with a header per disc.
@@ -60,6 +61,9 @@ Flickable {
         // What is typed finds the record's rows here, with nothing asked of
         // the library or the source.
         key: find.typed
+        // A source's playlist shows its tracks in the order kept for it.
+        order: playlistSort.visible ? playlistSort.order : "custom"
+        ascending: playlistSort.ascending
     }
     onAlbumIdChanged: find.clear()
     AlbumHeaderBackground {
@@ -133,6 +137,14 @@ Flickable {
                 }
             }
 
+            Lists.PlaylistSortButton {
+                id: playlistSort
+                visible: sourceDetails.info.kind === "playlist"
+                playlistId: visible ? detail.selectedId : 0
+                anchors.right: find.left
+                anchors.rightMargin: Metrics.gap8
+                anchors.verticalCenter: parent.verticalCenter
+            }
             SettledSearchField {
                 id: find
                 objectName: "albumTrackSearch"

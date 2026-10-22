@@ -126,5 +126,15 @@ pub fn entries_matching(entries: Vec<TrackEntry>, typed: &str) -> Vec<TrackEntry
     kept
 }
 
+/// A source playlist's rows on its page in the order asked for, as a
+/// playlist of the library sorts its own: past its own order, the headers a
+/// record page groups its rows under go.
+pub fn ordered_entries(entries: Vec<TrackEntry>, order: &str, ascending: bool) -> Vec<TrackEntry> {
+    if order.is_empty() || order == "custom" { return entries; }
+    let mut rows: Vec<TrackRow> = entries.into_iter().filter_map(|entry| match entry { TrackEntry::Track(row) => Some(row), TrackEntry::Header(_) => None }).collect();
+    crate::browse::sort_playlist_rows(&mut rows, order, ascending);
+    rows.into_iter().map(TrackEntry::Track).collect()
+}
+
 #[cfg(test)]
 mod tests;
