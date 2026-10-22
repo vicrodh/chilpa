@@ -219,6 +219,26 @@ pub struct Found {
     pub tracks: Vec<TrackRow>,
 }
 
+/// A playlist's rows, given in its own order, in the order asked for: its
+/// own (`custom`), by a field, the last to come in first (`added`), or the
+/// most played first. `ascending` is each order's own way; the other way
+/// round turns the whole list. A playlist keeps no date for an entry, so
+/// when each came in is its place in the list, as QBZ reads it.
+pub fn sort_playlist_rows(rows: &mut [TrackRow], order: &str, ascending: bool) {
+    match order {
+        "title" => rows.sort_by_key(|row| row.title.to_lowercase()),
+        "artist" => rows.sort_by_key(|row| (row.artist.to_lowercase(), row.title.to_lowercase())),
+        "album" => rows.sort_by_key(|row| (row.album.to_lowercase(), row.number, row.title.to_lowercase())),
+        "duration" => rows.sort_by_key(|row| row.duration_ms),
+        "plays" => rows.sort_by_key(|row| (std::cmp::Reverse(row.plays), row.title.to_lowercase())),
+        "added" => rows.reverse(),
+        _ => {}
+    }
+    if !ascending && order != "custom" {
+        rows.reverse();
+    }
+}
+
 /// An artist's row, with the picture the listener chose for them if there
 /// is one, over the cover of a record of theirs.
 pub(crate) fn artist_of(a: chilpa_library::StoredArtist, pictures: &chilpa_library::store::artwork::ArtistPictures) -> crate::Artist {
@@ -832,17 +852,7 @@ impl Chilpa {
     /// persisted order and is the only order that may be edited.
     pub fn playlist_rows_sorted(&mut self, playlist_id: i64, order: &str, ascending: bool) -> Vec<TrackRow> {
         let mut rows = self.playlist_rows(playlist_id);
-        match order {
-            "title" => rows.sort_by_key(|row| row.title.to_lowercase()),
-            "artist" => rows.sort_by_key(|row| (row.artist.to_lowercase(), row.title.to_lowercase())),
-            "album" => rows.sort_by_key(|row| (row.album.to_lowercase(), row.number, row.title.to_lowercase())),
-            "duration" => rows.sort_by_key(|row| row.duration_ms),
-            "plays" => rows.sort_by_key(|row| (std::cmp::Reverse(row.plays), row.title.to_lowercase())),
-            _ => {}
-        }
-        if !ascending && order != "custom" {
-            rows.reverse();
-        }
+        sort_playlist_rows(&mut rows, order, ascending);
         rows
     }
 

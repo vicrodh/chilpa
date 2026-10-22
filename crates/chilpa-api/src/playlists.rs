@@ -141,6 +141,13 @@ pub fn playlist_manager_entries(mut playlists: Vec<Playlist>, mut folders: Vec<P
     rows
 }
 
+/// Where each playlist's chosen track order is kept: one preference, a map
+/// from the playlist to its order.
+const TRACK_ORDERS: &str = "playlists.trackOrders";
+const TRACK_ORDER_NAMES: [&str; 7] = ["custom", "title", "artist", "album", "duration", "added", "plays"];
+/// How many playlists keep a chosen order; past it, one is forgotten.
+const TRACK_ORDERS_KEPT: usize = 512;
+
 impl Chilpa {
     /// A manager projection ready for thin frontends.
     pub fn managed_playlists(&mut self, query: &str, filter: &str, sort: &str, ascending: bool, folder_id: Option<i64>) -> Vec<PlaylistManagerEntry> {
@@ -598,6 +605,43 @@ impl Chilpa {
         self.library().is_some_and(|lib| lib.set_playlist_custom_order(&ids).is_ok())
     }
 
+    /// A playlist's key across sessions: a source's by its identity there,
+    /// since a catalog id lasts a session; one of the library's by its id.
+    fn playlist_order_key(&self, id: i64) -> Option<String> {
+        if id < 0 {
+            return self.catalog.identity_of(id).map(|(plugin, identity)| format!("{plugin} {identity}"));
+        }
+        (id > 0).then(|| format!("library {id}"))
+    }
+
+    fn kept_track_orders(&self) -> serde_json::Map<String, serde_json::Value> {
+        self.preference(TRACK_ORDERS).and_then(|text| serde_json::from_str(&text).ok()).unwrap_or_default()
+    }
+
+    /// The order a playlist's tracks were last shown in, as the sort button
+    /// names it ("title", "added-asc"): its own order until one is chosen.
+    pub fn playlist_track_order(&self, id: i64) -> String {
+        let kept = self.kept_track_orders();
+        self.playlist_order_key(id).and_then(|key| kept.get(&key)?.as_str().map(str::to_string)).unwrap_or_else(|| "custom".into())
+    }
+
+    /// Keeps the order chosen for a playlist's tracks, for the next time it opens.
+    pub fn set_playlist_track_order(&mut self, id: i64, order: &str) {
+        let named = order.strip_suffix("-desc").or_else(|| order.strip_suffix("-asc")).unwrap_or(order);
+        if !TRACK_ORDER_NAMES.contains(&named) { return; }
+        let Some(key) = self.playlist_order_key(id) else { return };
+        let mut kept = self.kept_track_orders();
+        kept.remove(&key);
+        if order != "custom" {
+            while kept.len() >= TRACK_ORDERS_KEPT {
+                let Some(first) = kept.keys().next().cloned() else { break };
+                kept.remove(&first);
+            }
+            kept.insert(key, serde_json::json!(order));
+        }
+        self.remember_preference(TRACK_ORDERS, &serde_json::Value::Object(kept).to_string());
+    }
+
     /// A playlist that starts playing from its own list, a source's as well
     /// as ours: Home's recently listened playlists take it.
     pub fn playlist_started(&mut self, id: i64) {
@@ -695,6 +739,33 @@ fn refresh_source_playlists(library: Option<&chilpa_library::Library>, host: &mu
 #[cfg(test)]
 mod group_tests {
     use super::*;
+
+    #[test]
+    fn each_playlist_keeps_the_order_chosen_for_it() {
+        let mut api = crate::Chilpa::new();
+        assert_eq!(api.playlist_track_order(7), "custom", "its own order until one is chosen");
+        api.set_playlist_track_order(7, "added-asc");
+        api.set_playlist_track_order(8, "title");
+        assert_eq!((api.playlist_track_order(7).as_str(), api.playlist_track_order(8).as_str()), ("added-asc", "title"));
+        api.set_playlist_track_order(7, "custom");
+        assert_eq!(api.playlist_track_order(7), "custom");
+        api.set_playlist_track_order(8, "colour");
+        assert_eq!(api.playlist_track_order(8), "title", "an order nobody offers is not kept");
+    }
+
+    #[test]
+    fn date_added_puts_the_last_to_come_in_first() {
+        let row = |title: &str| { let mut row = crate::browse::file_row("/music/a.flac"); row.title = title.into(); row };
+        let mut rows = vec![row("first"), row("second"), row("third")];
+        crate::browse::sort_playlist_rows(&mut rows, "added", true);
+        assert_eq!(rows.iter().map(|r| r.title.as_str()).collect::<Vec<_>>(), ["third", "second", "first"]);
+        let mut rows = vec![row("first"), row("second"), row("third")];
+        crate::browse::sort_playlist_rows(&mut rows, "added", false);
+        assert_eq!(rows[0].title, "first", "the other way round, the first to come in first");
+        let entries = vec![crate::TrackEntry::Track(row("b")), crate::TrackEntry::Track(row("a"))];
+        let sorted = crate::ordered_entries(entries, "title", true);
+        assert!(matches!(&sorted[0], crate::TrackEntry::Track(t) if t.title == "a"));
+    }
 
     #[test]
     fn a_playlist_started_from_its_own_list_is_recently_listened() {
