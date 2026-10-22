@@ -455,9 +455,10 @@ impl qobject::TrackListModel {
     }
 
     /// A playlist's own list that starts playing is a listen of the playlist.
+    /// A source's playlist is shown as a record's list.
     fn playlist_started(&self) {
-        let id = self.rust().album_id;
-        if self.rust().kind.to_string() == "playlist" && id != 0 {
+        let (id, kind) = (self.rust().album_id, self.rust().kind.to_string());
+        if (kind == "playlist" && id != 0) || (kind == "album" && id < 0) {
             app::with(|api| api.playlist_started(id));
         }
     }

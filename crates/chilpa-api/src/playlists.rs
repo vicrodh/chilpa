@@ -643,9 +643,12 @@ impl Chilpa {
     }
 
     /// A playlist that starts playing from its own list, a source's as well
-    /// as ours: Home's recently listened playlists take it.
+    /// as ours: Home's recently listened playlists take it. A source's
+    /// playlist opens on the page of a record, so a record's id comes here
+    /// too, and a record is not a playlist: it is left alone.
     pub fn playlist_started(&mut self, id: i64) {
-        if id < 0 && self.catalog.card(id).is_some_and(|card| card.kind == crate::source_catalog::store::CardKind::Playlist) {
+        if id < 0 {
+            if !self.catalog.card(id).is_some_and(|card| card.kind == crate::source_catalog::store::CardKind::Playlist) { return; }
             self.catalog.record_playlist_play(id);
         }
         self.count_playlist_play(id);

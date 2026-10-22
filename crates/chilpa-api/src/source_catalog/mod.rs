@@ -902,6 +902,19 @@ impl Catalog {
 mod retry_tests {
     use super::*;
     #[test]
+    fn a_source_playlist_started_from_its_page_is_recently_played_and_a_record_is_not() {
+        let mut api = crate::Chilpa::new();
+        let playlist = api.catalog.lock().store.take_item("fixture", &serde_json::json!({"kind":"playlist","ref":"playlist:1","title":"Mix"}), 1).unwrap();
+        let record = api.catalog.lock().store.take_item("fixture", &serde_json::json!({"kind":"album","ref":"album:1","title":"Record"}), 1).unwrap();
+        api.playlist_started(record);
+        assert!(api.catalog.played_playlist_cards().is_empty(), "a record's page is no playlist");
+        api.playlist_started(playlist);
+        let played = api.catalog.played_playlist_cards();
+        assert_eq!(played.len(), 1);
+        assert_eq!(played[0].id, playlist);
+    }
+
+    #[test]
     fn a_card_found_by_its_identity_shows_its_cover_as_one_found_by_id() {
         let catalog = Catalog::new();
         let dir = tempfile::tempdir().unwrap();
