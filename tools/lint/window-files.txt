@@ -51,7 +51,6 @@ crates/chilpa-qt/qml/Components/VolumeControl.qml
 crates/chilpa-qt/qml/Main.qml
 crates/chilpa-qt/qml/Patterns/CastPicker.qml
 crates/chilpa-qt/qml/Patterns/DevHooks.qml
-crates/chilpa-qt/qml/Patterns/ListenNow.qml
 crates/chilpa-qt/qml/Patterns/LyricsOptions.qml
 crates/chilpa-qt/qml/Patterns/LyricsPanel.qml
 crates/chilpa-qt/qml/Patterns/NavMenu.qml

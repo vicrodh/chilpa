@@ -631,6 +631,9 @@ msgstr "Фоновое изображение"
 msgid "Balance · −100 left / +100 right"
 msgstr "Баланс · −100 влево / +100 вправо"
 
+msgid "Barcode"
+msgstr "Штрихкод"
+
 msgid "Based on {artist} · {genres}"
 msgstr "На основе: {artist} · {genres}"
 
@@ -1210,6 +1213,9 @@ msgstr "Копировать JSON пресета"
 msgid "Copy the colors of the currently applied theme into the editor as a starting point."
 msgstr "Копирует цвета текущей темы в редактор как отправную точку."
 
+msgid "Copyright"
+msgstr "Авторские права"
+
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio не сообщает об устройствах, способных воспроизводить звук"
 
@@ -1242,6 +1248,9 @@ msgstr "Подсчёт треков…"
 
 msgid "Countries"
 msgstr "Страны"
+
+msgid "Country"
+msgstr "Страна"
 
 msgid "Cover collage"
 msgstr "Коллаж из обложек"
@@ -2641,6 +2650,9 @@ msgstr "Низкочастотная полка"
 msgid "Lower the overall level without changing the EQ. Zero adds no attenuation."
 msgstr "Снижает общий уровень, не меняя EQ. При нуле ослабления нет."
 
+msgid "Lyricist"
+msgstr "Автор текста"
+
 msgid "Lyrics"
 msgstr "Текст песни"
 
@@ -3183,6 +3195,9 @@ msgstr "Здесь ничего нет."
 
 msgid "Nothing in this period."
 msgstr "За этот период ничего нет."
+
+msgid "Nothing more is known about it."
+msgstr "Больше об этом ничего не известно."
 
 msgid "Nothing played yet"
 msgstr "Пока ничего не воспроизводилось"

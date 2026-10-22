@@ -630,6 +630,9 @@ msgstr ""
 msgid "Balance · −100 left / +100 right"
 msgstr ""
 
+msgid "Barcode"
+msgstr "Barcode"
+
 msgid "Based on {artist} · {genres}"
 msgstr ""
 
@@ -1208,6 +1211,9 @@ msgstr ""
 msgid "Copy the colors of the currently applied theme into the editor as a starting point."
 msgstr ""
 
+msgid "Copyright"
+msgstr "Copyright"
+
 msgid "CoreAudio reports no device that can play"
 msgstr ""
 
@@ -1240,6 +1246,9 @@ msgstr ""
 
 msgid "Countries"
 msgstr ""
+
+msgid "Country"
+msgstr "Country"
 
 msgid "Cover collage"
 msgstr ""
@@ -2639,6 +2648,9 @@ msgstr ""
 msgid "Lower the overall level without changing the EQ. Zero adds no attenuation."
 msgstr "Lower the overall level without changing the EQ. Zero adds no attenuation."
 
+msgid "Lyricist"
+msgstr "Lyricist"
+
 msgid "Lyrics"
 msgstr ""
 
@@ -3181,6 +3193,9 @@ msgstr ""
 
 msgid "Nothing in this period."
 msgstr ""
+
+msgid "Nothing more is known about it."
+msgstr "Nothing more is known about it."
 
 msgid "Nothing played yet"
 msgstr ""

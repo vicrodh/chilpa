@@ -629,6 +629,9 @@ msgstr "背景画像"
 msgid "Balance · −100 left / +100 right"
 msgstr "バランス · −100（左）/ +100（右）"
 
+msgid "Barcode"
+msgstr "バーコード"
+
 msgid "Based on {artist} · {genres}"
 msgstr "{artist} · {genres}に基づく"
 
@@ -1206,6 +1209,9 @@ msgstr "プリセットのJSONをコピー"
 msgid "Copy the colors of the currently applied theme into the editor as a starting point."
 msgstr "現在適用中のテーマの色を出発点としてエディターにコピーします。"
 
+msgid "Copyright"
+msgstr "著作権"
+
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudioは再生可能なデバイスを検出していません"
 
@@ -1237,6 +1243,9 @@ msgid "Counting tracks…"
 msgstr "トラックを数えています…"
 
 msgid "Countries"
+msgstr "国"
+
+msgid "Country"
 msgstr "国"
 
 msgid "Cover collage"
@@ -2637,6 +2646,9 @@ msgstr "ローシェルフ"
 msgid "Lower the overall level without changing the EQ. Zero adds no attenuation."
 msgstr "EQを変えずに全体のレベルを下げます。0にすると減衰しません。"
 
+msgid "Lyricist"
+msgstr "作詞"
+
 msgid "Lyrics"
 msgstr "歌詞"
 
@@ -3179,6 +3191,9 @@ msgstr "ここには何もありません。"
 
 msgid "Nothing in this period."
 msgstr "この期間には何もありません。"
+
+msgid "Nothing more is known about it."
+msgstr "これ以上の情報はありません。"
 
 msgid "Nothing played yet"
 msgstr "まだ再生履歴がありません"

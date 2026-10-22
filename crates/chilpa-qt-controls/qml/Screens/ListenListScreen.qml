@@ -79,11 +79,13 @@ Item {
         function onQueueRevChanged() { Qt.callLater(page.refreshPlayingRow) }
         function onPlayingChanged() { Qt.callLater(page.refreshPlayingRow) }
     }
-    ListenNow {
+    Tools.ListenNow {
         id: now
+        lyrics: Component { LyricsPanel { closable: false } }
         x: Metrics.contentX
         y: Metrics.contentTop
         width: Metrics.listenArt
+        height: content.height
         visible: page.width >= Metrics.listenWide
     }
     Item {
@@ -100,14 +102,15 @@ Item {
         Tools.ListenBuffers {
             id: tabs
             anchors.top: parent.top
-            width: parent.width
+            width: list.width
             document: page.document
         }
+        // The tools end where the rows do, left of the viewport's buttons.
         Item {
             id: tools
             anchors.top: tabs.bottom
             anchors.topMargin: Metrics.gap8
-            width: parent.width
+            width: list.width
             readonly property bool wrapped: width < actions.width + Metrics.gap12 + Metrics.queueSearchMin + (ends.visible ? Metrics.gap12 + ends.implicitWidth : 0)
             height: wrapped ? actions.height + Metrics.gap8 + lookup.height : Math.max(actions.height, lookup.height)
             Row {
@@ -147,6 +150,7 @@ Item {
                 }
                 SearchField {
                     id: find
+                    objectName: "queueSearch"
                     width: Math.min(Metrics.screenSearch, Math.max(Metrics.queueSearchMin, tools.width - (tools.wrapped ? 0 : actions.width + Metrics.gap12) - (ends.visible ? ends.implicitWidth + Metrics.gap12 : 0)))
                     placeholder: I18n.tr("Search queue", I18n.rev)
                     onTextChanged: { page.typed = text; if (text !== "") page.cancelFollow() }
@@ -155,6 +159,7 @@ Item {
         }
         TrackList {
             id: list
+            objectName: "queueList"
             anchors.top: tools.bottom
             anchors.topMargin: Metrics.gap8
             anchors.bottom: parent.bottom

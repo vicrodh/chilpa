@@ -630,6 +630,9 @@ msgstr "Achtergrondafbeelding"
 msgid "Balance · −100 left / +100 right"
 msgstr "Balans · −100 links / +100 rechts"
 
+msgid "Barcode"
+msgstr "Streepjescode"
+
 msgid "Based on {artist} · {genres}"
 msgstr "Gebaseerd op {artist} · {genres}"
 
@@ -1208,6 +1211,9 @@ msgstr "Preset-JSON kopiëren"
 msgid "Copy the colors of the currently applied theme into the editor as a starting point."
 msgstr "Kopieer de kleuren van het momenteel toegepaste thema naar de editor als startpunt."
 
+msgid "Copyright"
+msgstr "Copyright"
+
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio meldt geen apparaat dat kan afspelen"
 
@@ -1240,6 +1246,9 @@ msgstr "Nummers tellen…"
 
 msgid "Countries"
 msgstr "Landen"
+
+msgid "Country"
+msgstr "Land"
 
 msgid "Cover collage"
 msgstr "Hoescollage"
@@ -2639,6 +2648,9 @@ msgstr "Lage shelf"
 msgid "Lower the overall level without changing the EQ. Zero adds no attenuation."
 msgstr "Verlaag het totale niveau zonder de EQ te wijzigen. Nul voegt geen demping toe."
 
+msgid "Lyricist"
+msgstr "Tekstschrijver"
+
 msgid "Lyrics"
 msgstr "Songteksten"
 
@@ -3181,6 +3193,9 @@ msgstr "Hier is niets."
 
 msgid "Nothing in this period."
 msgstr "Niets in deze periode."
+
+msgid "Nothing more is known about it."
+msgstr "Meer is er niet over bekend."
 
 msgid "Nothing played yet"
 msgstr "Nog niets afgespeeld"

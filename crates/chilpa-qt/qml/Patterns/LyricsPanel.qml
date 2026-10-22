@@ -14,6 +14,8 @@ Item {
     id: panel
 
     signal closed()
+    // Under the queue's art it is a tab, with nothing to close.
+    property bool closable: true
 
     // What is said about the lyrics of what plays: nothing, that they are
     // being looked for, that there are none, or the lyrics with who gave
@@ -95,6 +97,7 @@ Item {
             onClicked: options.opened ? options.close() : options.open()
         }
         IconButton {
+            visible: panel.closable
             tip: I18n.tr("Close", I18n.rev)
             glyph: Icons.x
             size: Metrics.button26
