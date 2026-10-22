@@ -34,13 +34,28 @@ Item {
     property bool expanded: false
     implicitHeight: Math.max(cover.height, body.height)
 
-    CoverCollage {
+    // One cover whole, or a mosaic of four once there are two.
+    Item {
         id: cover
         objectName: "playlistHeaderCover"
         width: Math.min(Metrics.heroArt, header.width / 3); height: width // derived: keep room for the text on narrow windows
-        covers: header.covers
-        // With no cover yet, the empty tile a source's playlist shows.
-        ArtTile { anchors.fill: parent; visible: header.covers.length === 0; radius: Metrics.radiusCard }
+        readonly property bool mosaic: header.covers.length > 1
+        ArtTile { anchors.fill: parent; visible: !cover.mosaic; radius: Metrics.radiusCard; source: header.covers.length === 1 ? header.covers[0] : "" }
+        Grid {
+            anchors.fill: parent
+            visible: cover.mosaic
+            columns: 2
+            Repeater {
+                model: cover.mosaic ? 4 : 0
+                ArtTile {
+                    required property int index
+                    width: cover.width / 2; height: width // derived: two to a side
+                    radius: 0
+                    tint: index
+                    source: header.covers[index] || ""
+                }
+            }
+        }
     }
     Column {
         id: body
