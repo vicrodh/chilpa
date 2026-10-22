@@ -53,6 +53,7 @@ Item {
             PlaylistChoiceList { width: Metrics.playlistPickerWidth - Metrics.playlistAlreadyIn - Metrics.modalInsets; rows: [gallery.theirs]; lastUsed: gallery.ours }
             PlaylistAlreadyIn { width: Metrics.playlistAlreadyIn; rows: [gallery.ours]; trackCount: 3 }
         }
+        PlaylistHeader { width: Metrics.settingsMaxWidth; name: "Evening music"; sourceName: "Local"; meta: "12 tracks · 48 min"; description: "What plays after dinner."; markKey: "1"; canSelect: true }
         PlaylistTargetRow { width: Metrics.playlistModalWidth; target: gallery.ours }
         PlaylistRepeats { width: Metrics.playlistModalWidth; height: Metrics.playlistModalHeight / 3; repeated: 2; trackCount: 3 } // derived: a third of a modal
     }

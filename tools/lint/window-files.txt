@@ -80,7 +80,6 @@ crates/chilpa-qt/qml/Screens/ArtistsScreen.qml
 crates/chilpa-qt/qml/Screens/HomeScreen.qml
 crates/chilpa-qt/qml/Screens/LibraryScreen.qml
 crates/chilpa-qt/qml/Screens/PendingScreen.qml
-crates/chilpa-qt/qml/Screens/PlaylistScreen.qml
 crates/chilpa-qt/qml/Screens/SettingsScreen.qml
 crates/chilpa-qt/qml/Screens/SourceEntryScreen.qml
 crates/chilpa-qt/qml/Screens/SourceScreen.qml

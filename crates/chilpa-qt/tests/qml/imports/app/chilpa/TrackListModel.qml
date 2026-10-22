@@ -11,6 +11,8 @@ ListModel {
     property string order: "custom"
     property bool ascending: true
     property string summary: "3 tracks"
+    property bool playlistEditable: false
+    function selectedRow() { return -1 }
     function listAction(action, row, to) { lastAction = action; lastRow = row }
     property string lastAction: ""
     property int lastRow: -1
