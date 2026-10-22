@@ -2795,6 +2795,9 @@ msgstr "Meest om {}:00"
 msgid "Most played"
 msgstr "Meest afgespeeld"
 
+msgid "Most played tracks"
+msgstr "Meest afgespeelde nummers"
+
 msgid "Move"
 msgstr "Verplaatsen"
 
@@ -3839,20 +3842,23 @@ msgstr "Volume van ontvanger"
 msgid "Recent"
 msgstr "Recent"
 
-msgid "Recently added"
-msgstr "Recent toegevoegd"
-
-msgid "Recently listened playlists"
-msgstr "Onlangs beluisterde afspeellijsten"
-
-msgid "Recently listened playlists, all sources"
-msgstr "Onlangs beluisterde afspeellijsten, alle bronnen"
+msgid "Recently added albums"
+msgstr "Recent toegevoegde albums"
 
 msgid "Recently played"
 msgstr "Onlangs afgespeeld"
 
-msgid "Recently played, all sources"
-msgstr "Onlangs afgespeeld, alle bronnen"
+msgid "Recently played albums"
+msgstr "Onlangs afgespeelde albums"
+
+msgid "Recently played albums in the library"
+msgstr "Onlangs afgespeelde albums in de bibliotheek"
+
+msgid "Recently played playlists"
+msgstr "Onlangs afgespeelde afspeellijsten"
+
+msgid "Recently played playlists in the library"
+msgstr "Onlangs afgespeelde afspeellijsten in de bibliotheek"
 
 msgid "Records"
 msgstr "Albums"

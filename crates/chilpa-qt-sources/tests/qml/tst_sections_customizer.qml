@@ -81,4 +81,17 @@ TestCase {
         compare(at("activeCount_c"), at("activeCount_a"))
         verify(!findChild(customizer.contentItem, "activeMode_c").visible, "a shelf without a grid offers no layout")
     }
+
+    // A shelf that can be a grid shows the same rows as cards, so its count
+    // starts at the grid's two pages and has no "One row".
+    function test_a_grid_s_count_is_a_number_of_rows() {
+        customizer.sections = [{id: "grid", title: "Grid", compact: true}, {id: "rail", title: "Rail"}]
+        customizer.open()
+        tryVerify(() => customizer.opened)
+        tryVerify(() => findChild(customizer.contentItem, "activeCount_grid") !== null && findChild(customizer.contentItem, "activeCount_rail") !== null)
+        const grid = findChild(customizer.contentItem, "activeCount_grid")
+        compare(grid.value, "24")
+        verify(!grid.options.some(option => option.value === "0"))
+        compare(findChild(customizer.contentItem, "activeCount_rail").value, "0", "a rail still starts at one row")
+    }
 }

@@ -125,6 +125,19 @@ TestCase {
         compare(slimRowsOf(most)[1].title, "Track 1")
     }
 
+    // Compact or Cards is only how a shelf is drawn: both hold the same rows.
+    function test_most_played_as_cards_holds_the_rows_of_its_grid() {
+        home.change(home.sections.findIndex(section => section.id === "library.mostPlayed"), "mode", "cards")
+        const most = shelfOf("library.mostPlayed")
+        tryVerify(() => findChild(most, "trackCarouselRail") !== null, 1000, "drawn as cards")
+        tryCompare(findChild(most, "trackCarouselRail"), "count", 24)
+    }
+
+    function test_no_two_shelves_share_a_name() {
+        const titles = home.sections.map(section => section.title)
+        compare(new Set(titles).size, titles.length, titles.join(" / "))
+    }
+
     function test_customize_lists_every_shelf() {
         findChild(home, "homeCustomize").clicked()
         const list = findChild(home, "customizeSourceChoices")

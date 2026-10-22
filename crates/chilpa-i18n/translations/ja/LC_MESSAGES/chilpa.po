@@ -2793,6 +2793,9 @@ msgstr "{}:00が最多"
 msgid "Most played"
 msgstr "再生回数順"
 
+msgid "Most played tracks"
+msgstr "最も再生したトラック"
+
 msgid "Move"
 msgstr "移動"
 
@@ -3837,20 +3840,23 @@ msgstr "レシーバーの音量"
 msgid "Recent"
 msgstr "最近"
 
-msgid "Recently added"
-msgstr "最近追加した順"
-
-msgid "Recently listened playlists"
-msgstr "最近聴いたプレイリスト"
-
-msgid "Recently listened playlists, all sources"
-msgstr "最近聴いたプレイリスト（すべてのソース）"
+msgid "Recently added albums"
+msgstr "最近追加したアルバム"
 
 msgid "Recently played"
 msgstr "最近再生"
 
-msgid "Recently played, all sources"
-msgstr "最近再生（すべてのソース）"
+msgid "Recently played albums"
+msgstr "最近再生したアルバム"
+
+msgid "Recently played albums in the library"
+msgstr "ライブラリで最近再生したアルバム"
+
+msgid "Recently played playlists"
+msgstr "最近再生したプレイリスト"
+
+msgid "Recently played playlists in the library"
+msgstr "ライブラリで最近再生したプレイリスト"
 
 msgid "Records"
 msgstr "アルバム"
