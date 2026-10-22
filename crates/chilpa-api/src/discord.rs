@@ -14,10 +14,11 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 pub(crate) const ENABLED: &str = "integrations.discord.enabled";
-/// Public Discord application ID, not a secret. It is QBZ's until Chilpa
-/// has an application of its own.
-const APPLICATION_ID: &str = "1501835855587708988";
-const HOMEPAGE: &str = "https://github.com/vicrodh/chilpa";
+/// Chilpa's public Discord application ID, not a secret. Its art assets
+/// are "icon", the small badge, and "cover", the large image of a track
+/// whose cover has no web address.
+const APPLICATION_ID: &str = "1562851627461910589";
+const HOMEPAGE: &str = "https://chilpa.app";
 /// How long a failed IPC connect keeps the integration quiet. A change
 /// inside the window pushes nothing; the first one after it retries.
 const CONNECT_RETRY_AFTER: Duration = Duration::from_secs(300);
