@@ -160,11 +160,11 @@ pub fn playlist_manager_entries(mut playlists: Vec<Playlist>, mut folders: Vec<P
     rows
 }
 
-/// What a source's plugin is asked to take a playlist away: its delete when
-/// the playlist is the listener's, its heart off when it is only followed.
-fn source_removal(owned: bool, reference: &str, id: i64) -> serde_json::Value {
+/// What a source's plugin is asked to take a playlist away: its delete, or
+/// its heart off for one only followed.
+fn source_removal(deletes: bool, reference: &str, id: i64) -> serde_json::Value {
     let request = format!("remove:{id}");
-    if owned { serde_json::json!({"action":"playlist.delete","ref":reference,"request_id":request}) }
+    if deletes { serde_json::json!({"action":"playlist.delete","ref":reference,"request_id":request}) }
     else { serde_json::json!({"action":"favorite","ref":reference,"on":false,"request_id":request}) }
 }
 
@@ -583,12 +583,14 @@ impl Chilpa {
     }
 
     /// Takes a source's playlist from the listener's account: deleted when it
-    /// is theirs at a source that edits playlists, no longer followed when it
-    /// is someone else's. The source's answer reads its library again.
+    /// is theirs at a source that edits playlists, or at a source that keeps
+    /// saved playlists in a library; no longer followed otherwise. The
+    /// source's answer reads its library again.
     fn remove_source_playlist(&mut self, id: i64) {
         let Some(card) = self.catalog.card(id) else { return };
         let owned = self.natives.edits_playlists(&card.plugin) && card.metadata["editable"] == true;
-        self.sources_command("native", &card.plugin, &source_removal(owned, &card.identity, id).to_string());
+        let deletes = owned || self.natives.removes_playlists(&card.plugin);
+        self.sources_command("native", &card.plugin, &source_removal(deletes, &card.identity, id).to_string());
     }
 
     /// Renames a list.
