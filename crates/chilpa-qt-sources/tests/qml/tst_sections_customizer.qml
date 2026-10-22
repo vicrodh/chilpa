@@ -22,7 +22,9 @@ TestCase {
                    {id: "source", title: "Source", sourceId: "fixture", enabled: true}]
     }
 
-    function cleanup() { customizer.close(); backgroundClicks = 0 }
+    readonly property var twoSections: [{id: "local", title: "Local", enabled: true},
+                                        {id: "source", title: "Source", sourceId: "fixture", enabled: true}]
+    function cleanup() { customizer.close(); customizer.sections = twoSections; backgroundClicks = 0 }
 
     function test_source_tab_keeps_dialog_open_without_clicking_the_page() {
         customizer.open()
@@ -61,5 +63,22 @@ TestCase {
         tryVerify(() => findChild(customizer.contentItem, "sourceModule_source") !== null)
         verify(findChild(customizer.contentItem, "activeModule_local") !== null)
         compare(backgroundClicks, 0)
+    }
+
+    // Whatever a row shows (Cards or Compact, One row or 12, or no layout
+    // at all), its buttons stand in the same columns as every other row's.
+    function test_every_row_keeps_its_buttons_in_the_same_columns() {
+        customizer.sections = [{id: "a", title: "A", compact: true, mode: "cards", size: 12},
+                               {id: "b", title: "B", compact: true},
+                               {id: "c", title: "C"}]
+        customizer.open()
+        tryVerify(() => customizer.opened)
+        tryVerify(() => ["a", "b", "c"].every(id => findChild(customizer.contentItem, "activeMoveUp_" + id) !== null))
+        const at = name => { const item = findChild(customizer.contentItem, name); return item.mapToItem(null, 0, 0).x }
+        compare(at("activeMoveUp_b"), at("activeMoveUp_a"))
+        compare(at("activeMoveUp_c"), at("activeMoveUp_a"))
+        compare(at("activeCount_b"), at("activeCount_a"))
+        compare(at("activeCount_c"), at("activeCount_a"))
+        verify(!findChild(customizer.contentItem, "activeMode_c").visible, "a shelf without a grid offers no layout")
     }
 }
