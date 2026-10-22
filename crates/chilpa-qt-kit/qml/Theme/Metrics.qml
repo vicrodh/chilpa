@@ -315,10 +315,12 @@ QtObject {
     readonly property int slimRows: 3
     readonly property int slimPages: 2
     // The results page, as QBZ's (SearchView): a rail of thirty at most, six
-    // songs on All, and twenty more at a time on a tab of its own.
+    // songs on All, and twenty more at a time on a tab of its own. Records
+    // page up to three rows at a time.
     readonly property int searchRail: 30
     readonly property int searchSongs: 6
     readonly property int searchPage: 20
+    readonly property int searchRecordRows: 3
     readonly property int rowPadCompact: 10
     readonly property int rowPadRich: 8
     readonly property int colGrip: 18

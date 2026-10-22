@@ -18,15 +18,30 @@ TestCase {
 
     SearchScreen { id: page; width: 1200; height: 900; query: "mora" }
 
-    function row(kind, section, title) { return {kind: kind, section: section, title: title, detail: "", art: "", duration: "", sourceIcon: "", sourceName: ""} }
+    function row(kind, section, title) { return {kind: kind, section: section, title: title, detail: "", art: "", duration: "", sourceIcon: "", sourceName: "", albumId: 0, artist: "", year: ""} }
+    // Even records are the library's own, odd ones a source's, with a catalog id.
+    function record(i) {
+        const theirs = i % 2 === 1
+        return Object.assign(row(3, "albums", "Record " + i), {albumId: theirs ? -(i + 1) : i + 1, artist: "Band", year: "1999", sourceIcon: theirs ? "broadcast" : "", sourceName: theirs ? "Fixture" : ""})
+    }
     function found(albums) {
         let rows = [row(0, "top", "Top result"), row(1, "top", "Mora Vale"), row(0, "artists", "Artists"), row(2, "artists", "Mora")]
         rows.push(row(0, "albums", "Albums"))
-        for (let i = 0; i < albums; i++) rows.push(row(3, "albums", "Record " + i))
+        for (let i = 0; i < albums; i++) rows.push(record(i))
         rows.push(row(0, "songs", "Songs"))
         for (let i = 0; i < 8; i++) rows.push(row(4, "songs", "Song " + i))
+        rows.push(row(0, "playlists", "Playlists"))
+        rows.push(row(6, "playlists", "Own list"))
+        rows.push(Object.assign(row(6, "playlists", "Their list"), {sourceIcon: "broadcast", sourceName: "Fixture"}))
         return rows
     }
+    function shown(prefixTest) {
+        let out = []
+        const walk = node => { if (node.visible && prefixTest(node)) out.push(node); for (const child of node.children || []) walk(child) }
+        walk(page.contentItem)
+        return out
+    }
+    function records() { return shown(node => node.hasOwnProperty("albumId") && node.hasOwnProperty("qualityInfo")) }
     function named(item, prefix) {
         let out = []
         const walk = node => { if ((node.objectName || "").startsWith(prefix)) out.push(node); for (const child of node.children || []) walk(child) }
@@ -34,9 +49,72 @@ TestCase {
         return out
     }
     function init() {
+        AlbumActions.sourcesOf = ({})
         page.show("all")
         page.search.rowsJsonText = JSON.stringify(found(25))
         page.read()
+    }
+
+    // A record is drawn as it is everywhere else, and says whose it is.
+    function test_records_are_drawn_as_records_are_everywhere_else() {
+        AlbumActions.sourcesOf = ({[-2]: [{icon: "broadcast", name: "Fixture"}]})
+        page.read()
+        tryVerify(() => records().length === 25)
+        const own = records().find(card => card.title === "Record 0"), theirs = records().find(card => card.title === "Record 1")
+        compare(own.albumId, 1)
+        compare(own.subtitle, "Band")
+        compare(own.qualityInfo.tier, 3, "the record's quality, as a library card shows it")
+        verify(own.sources[0].chilpa === true, "the library's own wear Chilpa's mark")
+        compare(theirs.albumId, -2)
+        compare(theirs.sources[0].icon, "broadcast")
+        verify(own.available && !own.canExpand)
+    }
+
+    // Records page three rows at a time, read across and down, by the arrows.
+    function test_records_page_up_to_three_rows() {
+        const rail = findChild(page.contentItem, "searchAlbumsRail")
+        const pages = findChild(rail, "searchRailPages")
+        compare(rail.used, 3)
+        verify(rail.pageCount > 1, "twenty-five records need a second page: " + rail.perPage)
+        tryVerify(() => records().length === 25)
+        const at = index => records().find(card => card.title === "Record " + index)
+        compare(at(1).y, at(0).y, "across first")
+        compare(at(rail.columns).x, at(0).x, "then down")
+        compare(at(rail.columns).y, at(0).y + rail.cellHeight + Metrics.gridGap)
+        compare(at(rail.perPage).x, at(0).x + rail.step, "the next page")
+        const header = rail.children[0]
+        verify(header.canForward && !header.canBack)
+        header.forward()
+        compare(pages.contentX, rail.step)
+        page.search.rowsJsonText = JSON.stringify(found(2))
+        page.read()
+        compare(rail.used, 1, "two records fill one row, not three")
+    }
+
+    function test_all_loads_more_songs() {
+        const more = findChild(page.contentItem, "searchSongsMore")
+        verify(more.visible)
+        compare(more.text, "Load more (6 / 8)")
+        more.clicked()
+        compare(shown(node => node.hasOwnProperty("best")).length, 8)
+        verify(!more.visible)
+    }
+
+    // Artists and playlists have their own cards, and say whose they are.
+    function test_artists_and_playlists_say_whose_they_are() {
+        const artist = shown(node => node.objectName === "sceneArtistCard")[0]
+        compare(artist.artist.title, "Mora")
+        verify(artist.artist.sources[0].chilpa === true)
+        const lists = shown(node => node.hasOwnProperty("owner") && node.hasOwnProperty("covers"))
+        compare(lists.map(list => list.owner), ["Chilpa", "Fixture"])
+        verify(lists[0].origin.chilpa === true)
+        compare(lists[1].origin.icon, "broadcast")
+    }
+
+    function test_a_song_of_the_library_wears_chilpa_s_mark() {
+        const marks = shown(node => node.objectName === "hitOrigin")
+        compare(marks.length, 6)
+        verify(marks[0].sourceInfo.chilpa === true)
     }
 
     function test_all_lays_out_each_section_and_six_songs() {

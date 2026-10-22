@@ -17,7 +17,8 @@ TitledFlow {
     SearchFilters { width: Metrics.confirmWidth; search: previewSearch }
     SearchPreviewSwitch { search: previewSearch }
     SearchResultCard { row: ({kind: 3, title: "Record", detail: "Album · Artist", art: ""}) }
-    SearchRail { width: Metrics.confirmWidth; title: "Albums"; rows: [{at: 0, kind: 3, title: "Record", detail: "Album · Artist", art: ""}] }
+    SearchRail { width: Metrics.confirmWidth; title: "Albums"; rows: [{at: 0, kind: 3, title: "Record", detail: "Album · Artist", art: ""}]; card: Component { SearchResultCard { required property var modelData; row: modelData } } }
+    SearchRecordCard { row: ({at: 0, kind: 3, title: "Record", artist: "Artist", year: "1999", art: "", albumId: 0, sourceIcon: "", sourceName: ""}) }
     Keycap { text: "Ctrl + ▶" }
     Keycap { text: "Press keys…"; button: true; recording: true }
     ShortcutRow { width: Metrics.confirmWidth; entry: ({ id: "playback.next", label: "Next Track", shortcut: "Ctrl + ▶", modified: false }) }

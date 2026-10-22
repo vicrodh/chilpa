@@ -124,7 +124,7 @@ mod found_selection;
 mod source_search;
 mod source_layout;
 mod source_catalog;
-pub use found::{found_menu, found_rows, found_sections, FoundRow, Leads};
+pub use found::{found_menu, found_rows, found_sections, FoundRecord, FoundRow, Leads};
 pub use found_selection::{FoundSelection, SelectionState};
 pub use source_catalog::SelectionHold;
 pub use source_catalog::view::SourceShelfSnapshot;

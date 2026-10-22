@@ -45,47 +45,16 @@ Column {
             id: cards; spacing: Metrics.gridGap
             Repeater {
                 model: shelf.shownLists
-                Column {
+                PlaylistCard {
                     required property var modelData
-                    width: CardLayout.cardWidth; spacing: Metrics.gap4
-                    height: CardLayout.cardHeight
-                    Item {
-                        width: parent.width; height: width
-                        ArtTile {
-                            id: cover; anchors.fill: parent
-                            source: modelData.artwork_path ? modelData.artwork_path.indexOf("://") >= 0
-                                ? modelData.artwork_path
-                                : "file://" + modelData.artwork_path.split("/").map(encodeURIComponent).join("/") : ""
-                        }
-                        PlaylistCollage {
-                            anchors.fill: parent; visible: !cover.ready && (modelData.covers || []).length > 0
-                            covers: modelData.covers || []
-                        }
-                        Icon {
-                            anchors.centerIn: parent; visible: !cover.ready && !(modelData.covers || []).length
-                            glyph: Icons.playlist; size: Metrics.iconPlay; color: Theme.color.textSecondary
-                        }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shelf.openPlaylist(modelData.id) }
-                        IconButton {
-                            anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: Metrics.gap8
-                            round: true; glyph: Icons.playerPlayFilled; filled: true
-                            tip: I18n.tr("Play", I18n.rev)
-                            onClicked: Playlists.play(modelData.id, false)
-                        }
-                    }
-                    Text { width: parent.width; text: modelData.name || ""; elide: Text.ElideRight; font.pointSize: Type.body; color: Theme.color.textPrimary }
-                    Row {
-                        id: sourceLabel
-                        width: parent.width; spacing: Metrics.gap4
-                        SourceIcon {
-                            id: providerIcon
-                            readonly property var panel: shelf.panels.find(panel => panel.id === modelData.source) || ({})
-                            visible: !!modelData.source
-                            sourceInfo: ({icon: panel.icon_image || panel.icon || ""})
-                            width: visible ? Metrics.iconSm : 0; height: Metrics.iconSm
-                        }
-                        Text { width: sourceLabel.width - providerIcon.width - sourceLabel.spacing; text: modelData.mixed ? "Chilpa" : modelData.provider || ""; elide: Text.ElideRight; font.pointSize: Type.meta; color: Theme.color.textSecondary }
-                    }
+                    readonly property var panel: shelf.panels.find(panel => panel.id === modelData.source) || ({})
+                    name: modelData.name || ""
+                    art: modelData.artwork_path || ""
+                    covers: modelData.covers || []
+                    origin: modelData.mixed ? ({chilpa: true}) : ({icon: panel.icon_image || panel.icon || ""})
+                    owner: modelData.mixed ? "Chilpa" : modelData.provider || ""
+                    onActivated: shelf.openPlaylist(modelData.id)
+                    onPlayed: Playlists.play(modelData.id, false)
                 }
             }
         }
