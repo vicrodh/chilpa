@@ -776,6 +776,9 @@ msgstr ""
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr ""
 
+msgid "Cards"
+msgstr "Cards"
+
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr ""
 

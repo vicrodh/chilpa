@@ -776,6 +776,9 @@ msgstr "Update annuleren…"
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "Begrenst de versterking zodat de luidste piek onder volle schaal blijft. Uit: stille nummers bereiken het doel, ook als hun pieken clippen."
 
+msgid "Cards"
+msgstr "Kaarten"
+
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr "Casten vereist een origineel bestand met een bekende grootte en byte-bereiken."
 

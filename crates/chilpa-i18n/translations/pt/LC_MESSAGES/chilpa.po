@@ -776,6 +776,9 @@ msgstr "Cancelando atualização…"
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "Limita o ganho para que o pico mais alto fique abaixo da escala completa. Desativado, as faixas baixas atingem o alvo mesmo que os picos sofram clipping."
 
+msgid "Cards"
+msgstr "Cartões"
+
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr "A transmissão exige um arquivo original com tamanho conhecido e intervalos de bytes."
 

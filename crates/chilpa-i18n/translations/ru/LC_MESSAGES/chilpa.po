@@ -778,6 +778,9 @@ msgstr "Отмена обновления…"
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "Ограничивает усиление, чтобы самый громкий пик оставался ниже полной шкалы. Если выключено, тихие треки достигают целевой громкости, даже если их пики клиппируют."
 
+msgid "Cards"
+msgstr "Карточки"
+
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr "Для трансляции нужен исходный файл с известным размером и поддержкой диапазонов байтов."
 

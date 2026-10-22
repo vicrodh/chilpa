@@ -774,6 +774,9 @@ msgstr "アップデートをキャンセル中…"
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "最大ピークがフルスケールを超えないようブーストを制限します。オフにすると、ピークがクリップしても静かなトラックが目標に達します。"
 
+msgid "Cards"
+msgstr "カード"
+
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr "キャストには、サイズとバイト範囲がわかる元のファイルが必要です。"
 
