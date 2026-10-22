@@ -12,14 +12,16 @@ Item {
     readonly property string named: badge.sourceInfo.icon || ""
     readonly property bool drawing: named.indexOf("/") >= 0
     readonly property string own: drawing ? "" : SourceGlyphs.of(named)
+    // The library's own: Chilpa's monochrome mark, in the badge's color.
+    readonly property bool chilpa: badge.sourceInfo.chilpa === true
     implicitWidth: Metrics.iconSm
     implicitHeight: Metrics.iconSm
 
     ControlsImpl.ColorImage {
         id: image; objectName: "sourceImage"
         anchors.fill: parent
-        color: badge.monochrome || badge.named.indexOf("monochrome=1") >= 0 ? badge.color : "transparent"
-        source: badge.drawing ? badge.named : ""
+        color: badge.chilpa || badge.monochrome || badge.named.indexOf("monochrome=1") >= 0 ? badge.color : "transparent"
+        source: badge.chilpa ? "../../assets/chilpa-mono.svg" : badge.drawing ? badge.named : ""
         visible: status === Image.Ready
         sourceSize.width: width; sourceSize.height: height
         fillMode: Image.PreserveAspectFit; asynchronous: true

@@ -400,7 +400,7 @@ fn compact_cached_playlists_preserve_public_rows_and_local_organization_across_r
     assert_eq!(api.playlist(first), Some(expected.clone()));
     assert_eq!(api.playlist_storage_id(first), Some(storage));
     assert!(api.playlist_targets(&[], "").iter().any(|target| target.playlist == expected && !target.accepts));
-    assert!(api.managed_playlists("One", "playlists", "custom", true, Some(folder)).iter().any(|row| row.id == first));
+    assert!(api.managed_playlists("One", "playlists", "", "custom", true, Some(folder)).iter().any(|row| row.id == first));
     api.catalog = restart(&catalog);
     assert_eq!(api.cached_playlists(), before);
     assert_eq!(api.playlist(first), Some(expected));

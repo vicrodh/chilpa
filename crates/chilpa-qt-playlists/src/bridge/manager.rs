@@ -13,10 +13,13 @@ pub mod qobject {
         #[qml_singleton]
         type PlaylistManager = super::PlaylistManagerRust;
 
-        /// The folders and playlists a search and a filter leave, in an
-        /// order, inside a folder or at the top: as JSON.
+        /// The folders and playlists a search, a filter and a source leave,
+        /// in an order, inside a folder or at the top: as JSON.
         #[qinvokable]
-        fn json(self: &PlaylistManager, query: &QString, filter: &QString, order: &QString, ascending: bool, folder_id: i64) -> QString;
+        fn json(self: &PlaylistManager, query: &QString, filter: &QString, source: &QString, order: &QString, ascending: bool, folder_id: i64) -> QString;
+        /// The sources the playlists come from, for the source filter.
+        #[qinvokable]
+        fn sources_json(self: &PlaylistManager) -> QString;
         #[qinvokable]
         fn group_sources(self: &PlaylistManager, grouped: bool);
         /// The order a playlist's tracks were last shown in, and keeping a new one.
@@ -44,8 +47,11 @@ impl qobject::PlaylistManager {
     pub fn set_track_order(&self, id: i64, order: &QString) {
         app::with(|api| api.set_playlist_track_order(id, &order.to_string()));
     }
-    pub fn json(&self, query: &QString, filter: &QString, order: &QString, ascending: bool, folder_id: i64) -> QString {
-        let rows = app::with(|api| api.managed_playlists(&query.to_string(), &filter.to_string(), &order.to_string(), ascending, (folder_id > 0).then_some(folder_id)));
+    pub fn json(&self, query: &QString, filter: &QString, source: &QString, order: &QString, ascending: bool, folder_id: i64) -> QString {
+        let rows = app::with(|api| api.managed_playlists(&query.to_string(), &filter.to_string(), &source.to_string(), &order.to_string(), ascending, (folder_id > 0).then_some(folder_id)));
         QString::from(&serde_json::to_string(&rows).unwrap_or_else(|_| "[]".into()))
+    }
+    pub fn sources_json(&self) -> QString {
+        QString::from(&serde_json::to_string(&app::with(|api| api.managed_playlist_sources())).unwrap_or_else(|_| "[]".into()))
     }
 }

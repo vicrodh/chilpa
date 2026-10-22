@@ -74,16 +74,33 @@ pub(crate) fn playlist_of(p: chilpa_library::StoredPlaylist) -> Playlist {
     }
 }
 
-/// Applies the playlist manager's search, scope and ordering in Rust so every
-/// frontend presents the same rows.
-pub fn playlist_manager_entries(mut playlists: Vec<Playlist>, mut folders: Vec<PlaylistFolder>, query: &str, filter: &str, sort: &str, ascending: bool, folder_id: Option<i64>) -> Vec<PlaylistManagerEntry> {
+/// Whether a playlist is one of `source`'s: empty takes every one, "local"
+/// the library's own, and a plugin's id that plugin's.
+fn from_source(playlist: &Playlist, source: &str) -> bool {
+    source.is_empty() || if source == "local" { playlist.mixed } else { playlist.source == source }
+}
+
+/// The sources the manager's playlists come from, for its filter: the
+/// library's own first, as "local", then each plugin's id once.
+pub fn playlist_manager_sources(playlists: &[Playlist]) -> Vec<String> {
+    let mut sources: Vec<String> = playlists.iter().any(|playlist| playlist.mixed).then(|| "local".to_string()).into_iter().collect();
+    for playlist in playlists.iter().filter(|playlist| !playlist.mixed && !playlist.source.is_empty()) {
+        if !sources.contains(&playlist.source) { sources.push(playlist.source.clone()); }
+    }
+    sources
+}
+
+/// Applies the playlist manager's search, scope, source and ordering in Rust
+/// so every frontend presents the same rows.
+#[allow(clippy::too_many_arguments)]
+pub fn playlist_manager_entries(mut playlists: Vec<Playlist>, mut folders: Vec<PlaylistFolder>, query: &str, filter: &str, source: &str, sort: &str, ascending: bool, folder_id: Option<i64>) -> Vec<PlaylistManagerEntry> {
     let words: Vec<String> = query.to_lowercase().split_whitespace().map(str::to_string).collect();
     let matches = |text: String| words.iter().all(|word| text.contains(word));
     folders.retain(|folder| folder_id.is_none() && matches(folder.name.to_lowercase()) && (filter != "empty" || folder.playlist_count == 0));
     playlists.retain(|playlist| {
         let in_folder = !words.is_empty() || playlist.folder_id == folder_id;
         let text = format!("{} {} {} {}", playlist.name, playlist.description, playlist.provider, playlist.tags.join(" ")).to_lowercase();
-        in_folder && matches(text)
+        in_folder && matches(text) && from_source(playlist, source)
     });
     match sort {
         "recent" => playlists.sort_by_key(|playlist| std::cmp::Reverse(playlist.updated_at)),
@@ -150,10 +167,15 @@ const TRACK_ORDERS_KEPT: usize = 512;
 
 impl Chilpa {
     /// A manager projection ready for thin frontends.
-    pub fn managed_playlists(&mut self, query: &str, filter: &str, sort: &str, ascending: bool, folder_id: Option<i64>) -> Vec<PlaylistManagerEntry> {
+    pub fn managed_playlists(&mut self, query: &str, filter: &str, source: &str, sort: &str, ascending: bool, folder_id: Option<i64>) -> Vec<PlaylistManagerEntry> {
         let playlists = self.playlists();
         let folders = self.playlist_folders();
-        playlist_manager_entries(playlists, folders, query, filter, sort, ascending, folder_id)
+        playlist_manager_entries(playlists, folders, query, filter, source, sort, ascending, folder_id)
+    }
+
+    /// The sources of the manager's filter, as `playlist_manager_sources`.
+    pub fn managed_playlist_sources(&mut self) -> Vec<String> {
+        playlist_manager_sources(&self.playlists())
     }
 
     /// Starts a genre playing, shuffled.
@@ -742,6 +764,23 @@ fn refresh_source_playlists(library: Option<&chilpa_library::Library>, host: &mu
 #[cfg(test)]
 mod group_tests {
     use super::*;
+
+    fn listed(id: i64, source: &str) -> Playlist {
+        Playlist { id, source_id: 0, name: format!("List {id}"), description: String::new(), artwork_path: String::new(), covers: Vec::new(), tags: Vec::new(),
+            provider: if source.is_empty() { "local".into() } else { source.into() }, instance: String::new(), track_count: 1, play_count: 0, last_played_at: None,
+            folder_id: None, custom_position: id, visible_sidebar: true, updated_at: 0, writable: source.is_empty(), mixed: source.is_empty(), source: source.into(), external_id: String::new() }
+    }
+
+    #[test]
+    fn the_manager_lists_one_source_s_playlists_or_the_library_s_own() {
+        let playlists = vec![listed(1, ""), listed(2, "fixture"), listed(3, "other"), listed(4, "fixture")];
+        let ids = |source: &str| playlist_manager_entries(playlists.clone(), Vec::new(), "", "all", source, "custom", true, None).iter().map(|row| row.id).collect::<Vec<_>>();
+        assert_eq!(ids(""), [1, 2, 3, 4]);
+        assert_eq!(ids("local"), [1], "the library's own, whatever their tracks' sources");
+        assert_eq!(ids("fixture"), [2, 4]);
+        assert_eq!(playlist_manager_sources(&playlists), ["local", "fixture", "other"], "the library's own first, then each source once");
+        assert_eq!(playlist_manager_sources(&playlists[1..]), ["fixture", "other"]);
+    }
 
     #[test]
     fn each_playlist_keeps_the_order_chosen_for_it() {
