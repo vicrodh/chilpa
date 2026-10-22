@@ -128,4 +128,51 @@ TestCase {
         menu.chosen(menu.entries.findIndex(e => e.value === "recent"))
         verify(sidebar.ascending, "another order comes its own way")
     }
+
+    PlaylistsFlyout { id: flyout; x: 400 }
+
+    // The whole section folds to its label and stays folded, as QBZ's.
+    function test_the_section_folds_to_its_label_and_stays_so() {
+        const fold = findChild(sidebar, "sidebarPlaylistsFold")
+        const list = findChild(sidebar, "sidebarPlaylistList")
+        verify(fold.visible && !sidebar.folded && list.visible)
+        fold.clicked()
+        verify(sidebar.folded)
+        verify(!list.visible, "nothing under the label")
+        compare(SettingsModel.kept("ui.playlists.collapsed"), "true", "kept for the next run")
+        compare(fold.glyph, Icons.chevronRight)
+        fold.clicked()
+        verify(!sidebar.folded && list.visible)
+        compare(SettingsModel.kept("ui.playlists.collapsed"), "false")
+    }
+
+    // The list's bar stands two pixels further right than a page's, off the
+    // rows' chevrons.
+    function test_the_bar_stands_clear_of_the_rows_chevrons() {
+        const list = findChild(sidebar, "sidebarPlaylistList")
+        const bar = list.children.find(child => child.hasOwnProperty("gutter"))
+        verify(bar !== undefined)
+        compare(bar.gutter, -Metrics.gap6)
+        tryVerify(() => bar.x + bar.width / 2 === list.width - Metrics.gap6, 1000, "centered six pixels in: " + bar.x)
+    }
+
+    // With the sidebar closed, the header's flyout lists the same playlists
+    // with their filter; it does not fold, and a playlist opened closes it.
+    function test_the_flyout_lists_the_playlists_and_closes_on_one() {
+        flyout.open()
+        tryCompare(flyout, "opened", true)
+        const lists = findChild(flyout.contentItem, "sidebarPlaylists")
+        verify(!findChild(lists, "sidebarPlaylistsFold").visible, "nothing to fold in a flyout")
+        tryVerify(() => findChild(lists, "sidebarPlaylistList").count > 0)
+        const rows = Math.min(6, lists.rows.length)
+        compare(lists.height, Metrics.button24 + Metrics.playlistFilter + Metrics.gap6 * 2 + Metrics.playlistRowHeight * rows, "as tall as its rows, no empty band")
+        lists.openPlaylist(7)
+        compare(Playlists.opened, 7)
+        tryCompare(flyout, "opened", false)
+        flyout.open()
+        tryCompare(flyout, "opened", true)
+        findChild(flyout.contentItem, "playlistsFlyoutManage").chosen()
+        compare(Navigation.page, "playlistManager")
+        tryCompare(flyout, "opened", false)
+    }
 }

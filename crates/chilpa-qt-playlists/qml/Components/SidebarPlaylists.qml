@@ -9,8 +9,17 @@ import app.chilpa.playlists
 // The sidebar's playlists (design/02 2, item 6): the label with a button to
 // make one, a filter, and the list, which scrolls in whatever height is
 // left. A right click offers the playlist's menu; a double click renames it.
+// Its chevron folds the whole section to its label and keeps it so, as
+// QBZ's (Sidebar.qml:1571).
 Item {
     id: section; objectName: "sidebarPlaylists"
+
+    // The header's flyout shows the same section, which does not fold there.
+    property bool collapsible: true
+    property bool folded: collapsible && SettingsModel.kept("ui.playlists.collapsed") === "true"
+    function fold(value) { folded = value; SettingsModel.keep("ui.playlists.collapsed", String(value)) }
+    function clearFilter() { filter.text = "" }
+    signal playlistOpened()
 
     property string order: SettingsModel.kept("ui.playlists.order") || "name"
     property bool ascending: SettingsModel.kept("ui.playlists.ascending") !== "false"
@@ -48,45 +57,25 @@ Item {
         const window = section.Window.window
         if (typeof window?.deferNavigation === "function") window.deferNavigation(Playlists.open, id)
         else Playlists.open(id)
+        playlistOpened()
     }
     Component.onCompleted: reload()
     Connections { target: Library; function onRemoteRevChanged() { section.reload() } function onRevChanged() { section.reload() } }
     Connections { target: Playlists; function onRevChanged() { section.reload() } }
     Connections { target: Prefs; function onRevChanged() { section.reload() } }
 
-    Item {
+    SidebarPlaylistsHead {
         id: head
         width: parent.width
-        height: Metrics.button24
-        TapHandler { acceptedButtons: Qt.RightButton; onTapped: event => actions.head(event.position.x, head.height) }
-
-        Text {
-            x: Metrics.navItemPadding
-            anchors.verticalCenter: parent.verticalCenter
-            text: I18n.tr("Playlists", I18n.rev)
-            font.pointSize: Type.small
-            font.weight: Type.semibold
-            color: Theme.color.textTertiary
-        }
-        IconButton {
-            id: addButton
-            anchors.right: parent.right
-            size: Metrics.button24
-            glyph: Icons.plus
-            tip: I18n.tr("New playlist", I18n.rev)
-            onClicked: AddToPlaylist.show("[]")
-        }
-        IconButton {
-            anchors.right: addButton.left
-            size: Metrics.button24
-            glyph: Icons.dots
-            tip: I18n.tr("Playlist options", I18n.rev)
-            onClicked: actions.head(x, head.height)
-        }
+        foldable: section.collapsible
+        folded: section.folded
+        onFold: (value) => section.fold(value)
+        onOptions: (left, top) => actions.head(left, top)
     }
 
     TextField {
         id: filter
+        visible: !section.folded
         anchors.top: head.bottom
         anchors.topMargin: Metrics.gap6
         width: parent.width
@@ -99,6 +88,7 @@ Item {
     ListView {
         id: view
         objectName: "sidebarPlaylistList"
+        visible: !section.folded
         anchors.top: filter.bottom
         anchors.topMargin: Metrics.gap6
         anchors.bottom: parent.bottom
@@ -106,7 +96,8 @@ Item {
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         model: stableRows
-        ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
+        // Two pixels further right than a page's, off the rows' chevrons.
+        ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap6 }
 
         delegate: Loader {
             id: host
@@ -184,7 +175,7 @@ Item {
     }
 
     Text {
-        visible: section.rows.length === 0 && filter.text === ""
+        visible: !section.folded && section.rows.length === 0 && filter.text === ""
         anchors.top: filter.bottom
         anchors.topMargin: Metrics.gap10
         x: Metrics.navItemPadding
