@@ -86,8 +86,10 @@ impl Library {
                 params![id, format!("pending:{id}:{key}"), key])? > 0;
         }
         for (id, title, artist, folder, key, artwork, year) in metadata {
-            changed |= tx.prepare_cached("INSERT OR IGNORE INTO album_preferences(group_key, album_id)
-                SELECT ?1, ?2 WHERE EXISTS (SELECT 1 FROM album_preferences WHERE album_id = ?2)")?.execute(
+            // A record kept apart is no other group's remembered choice.
+            changed |= tx.prepare_cached(&format!("INSERT OR IGNORE INTO album_preferences(group_key, album_id)
+                SELECT ?1, ?2 WHERE EXISTS (SELECT 1 FROM album_preferences WHERE album_id = ?2 AND group_key NOT LIKE '{}%')",
+                super::versions::APART))?.execute(
                 params![super::versions::album_group(&title, &artist), id])? > 0;
             changed |= tx.prepare_cached("UPDATE albums SET title = ?2, album_artist = ?3, folder = ?4,
                 version_key = ?5, artwork_path = ?6, year = ?7 WHERE id = ?1 AND

@@ -85,6 +85,59 @@ fn the_best_of_a_record_is_its_best_edition_that_plays() {
 }
 
 #[test]
+fn a_record_kept_apart_is_its_own_group_and_the_others_stay_grouped() {
+    let lib = Library::in_memory().unwrap();
+    let source = lib.source_id("local", "default").unwrap();
+    for (id, year) in [(1, 1971), (2, 1979), (3, 1985)] {
+        album(&lib, id, "Band", "Band");
+        track(&lib, id, id, source, &format!("/{year}/1.flac"), 16, 44100);
+    }
+    assert_eq!(lib.grouped_album_ids(&[1, 2, 3]).unwrap().len(), 1, "same name, one card");
+    assert_eq!(lib.album_apart(1).unwrap(), Some(false));
+    assert!(lib.select_album_version(1, 1).unwrap());
+
+    assert!(lib.set_album_apart(1, true).unwrap());
+    assert!(!lib.set_album_apart(1, true).unwrap(), "marked once");
+    assert_eq!(lib.album_apart(1).unwrap(), Some(true));
+    assert_eq!(lib.version_catalog().unwrap().choices(1).len(), 1, "no other edition to pick");
+    assert_eq!(lib.version_catalog().unwrap().choices(2).len(), 2);
+    let mut shown = lib.grouped_album_ids(&[1, 2, 3]).unwrap();
+    shown.sort();
+    assert_eq!(shown, [1, 2], "the one kept apart, and one card for the other two");
+    assert_eq!(lib.version_catalog().unwrap().best_of("Band", "Band"), Some(1),
+        "a link by name still finds the best edition");
+
+    assert!(lib.set_album_apart(2, true).unwrap());
+    assert_eq!(lib.album_apart(3).unwrap(), None, "alone now: nothing to group with");
+    assert_eq!(lib.grouped_album_ids(&[1, 2, 3]).unwrap().len(), 3);
+
+    assert!(lib.set_album_apart(1, false).unwrap());
+    assert_eq!(lib.album_apart(1).unwrap(), Some(false), "grouped again");
+    assert_eq!(lib.grouped_album_ids(&[1, 3]).unwrap(), [1], "with its remembered choice");
+}
+
+#[test]
+fn a_mark_follows_its_record_and_a_new_one_takes_a_free_key() {
+    let lib = Library::in_memory().unwrap();
+    let source = lib.source_id("local", "default").unwrap();
+    for id in 1..=3 {
+        album(&lib, id, "Same", "Band");
+        track(&lib, id, id, source, &format!("/{id}/1.flac"), 16, 44100);
+    }
+    assert!(lib.set_album_apart(1, true).unwrap());
+    // What a scan does when it renumbers a record: its remembered choices follow it.
+    lib.connection().execute("UPDATE album_preferences SET album_id = 3 WHERE album_id = 1", []).unwrap();
+    assert_eq!(lib.album_apart(3).unwrap(), Some(true));
+    assert_eq!(lib.album_apart(1).unwrap(), Some(false));
+    assert!(lib.set_album_apart(1, true).unwrap(), "its old key is held by record 3");
+    assert_eq!((lib.album_apart(1).unwrap(), lib.album_apart(3).unwrap()), (Some(true), Some(true)));
+    lib.connection().execute("DELETE FROM tracks WHERE album_id = 3", []).unwrap();
+    lib.connection().execute("DELETE FROM albums WHERE id = 3", []).unwrap();
+    assert_eq!(lib.connection().query_row("SELECT count(*) FROM album_preferences WHERE album_id = 3", [], |r| r.get::<_, i64>(0)).unwrap(), 0,
+        "the mark goes with its record");
+}
+
+#[test]
 fn header_search_all_means_only_matching_albums_and_tracks() {
     let lib = Library::in_memory().unwrap();
     let source = lib.source_id("local", "default").unwrap();

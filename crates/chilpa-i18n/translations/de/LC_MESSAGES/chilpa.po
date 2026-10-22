@@ -1562,6 +1562,9 @@ msgstr "Antwortet nicht. Seine Alben bleiben aufgelistet und lassen sich nicht w
 msgid "Don't ask again"
 msgstr "Nicht mehr fragen"
 
+msgid "Don't group with other versions"
+msgstr "Nicht mit anderen Versionen gruppieren"
+
 msgid "Done"
 msgstr "Fertig"
 
@@ -2065,6 +2068,9 @@ msgstr "Playlists nach Quelle gruppieren"
 
 msgid "Group same album from different sources"
 msgstr "Gleiches Album aus verschiedenen Quellen gruppieren"
+
+msgid "Group with other versions"
+msgstr "Mit anderen Versionen gruppieren"
 
 msgid "Group: A-Z"
 msgstr "Gruppierung: A-Z"

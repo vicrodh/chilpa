@@ -1560,6 +1560,9 @@ msgstr "応答がありません。アルバムは一覧に残りますが、再
 msgid "Don't ask again"
 msgstr "今後は確認しない"
 
+msgid "Don't group with other versions"
+msgstr "他のバージョンとまとめない"
+
 msgid "Done"
 msgstr "完了"
 
@@ -2063,6 +2066,9 @@ msgstr "プレイリストをソース別にまとめる"
 
 msgid "Group same album from different sources"
 msgstr "異なるソースの同じアルバムをまとめる"
+
+msgid "Group with other versions"
+msgstr "他のバージョンとまとめる"
 
 msgid "Group: A-Z"
 msgstr "グループ:A-Z"

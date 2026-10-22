@@ -201,6 +201,28 @@ impl Chilpa {
         }
     }
 
+    /// Whether a library record is kept apart from the other editions of its
+    /// name: `Some(true)` apart, `Some(false)` grouped with another, `None`
+    /// when it has none to be grouped with or versions are not grouped.
+    pub fn album_apart(&mut self, album: i64) -> Option<bool> {
+        let lib = self.library().filter(|_| album > 0)?;
+        if !lib.group_album_versions() { return None; }
+        lib.album_apart(album).ok().flatten()
+    }
+
+    /// Keeps a library record apart from the other editions of its name, or
+    /// groups it with them again. True when something changed.
+    pub fn set_album_apart(&mut self, album: i64, apart: bool) -> bool {
+        if album <= 0 {
+            return false;
+        }
+        match self.library().map(|lib| lib.set_album_apart(album, apart)) {
+            Some(Ok(changed)) => changed,
+            Some(Err(error)) => { self.now.error = error.to_string(); false }
+            None => false,
+        }
+    }
+
     pub fn selected_album_version(&mut self, id: i64) -> i64 {
         if id < 0 {
             return id;
