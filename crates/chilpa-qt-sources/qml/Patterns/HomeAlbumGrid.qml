@@ -12,7 +12,7 @@ SlimGrid {
     property AlbumGridModel model
     total: model ? model.albums : 0
     cells: Repeater {
-        model: albums.shown
+        model: albums.placed
         SlimRow {
             required property int index
             readonly property int revision: albums.model.rev

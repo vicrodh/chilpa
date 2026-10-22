@@ -10,12 +10,13 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 Column {
     id: grid
     property string title
-    // How many rows the rail has.
+    // How many rows the rail has, and how many of them it places. Not
+    // `shown`: the Home's modules say with that whether they have anything.
     property int total: 0
     property alias cells: pages.flickableData
     readonly property int perPage: Metrics.slimColumns * Metrics.slimRows
-    readonly property int shown: Math.min(total, Metrics.slimPages * perPage)
-    readonly property int pageCount: Math.max(1, Math.ceil(shown / perPage))
+    readonly property int placed: Math.min(total, Metrics.slimPages * perPage)
+    readonly property int pageCount: Math.max(1, Math.ceil(placed / perPage))
     readonly property real maxScroll: (pageCount - 1) * pages.width
     readonly property real cellWidth: (width - (Metrics.slimColumns - 1) * Metrics.gap8) / Metrics.slimColumns // derived: four columns and the gaps between
     function cellX(index) { return Math.floor(index / perPage) * pages.width + (index % perPage % Metrics.slimColumns) * (cellWidth + Metrics.gap8) }

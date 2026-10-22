@@ -60,18 +60,19 @@ ListModel {
     function selectedTrackIdsJson() { return "[42,43]" }
     function letters(rev) { return "[]" }
     // A key that ends in "|tracks" (a page's tracks shelf) holds eight
-    // rows, cut to `limit`.
+    // rows and Most played thirty, cut to `limit`.
     onKeyChanged: fill()
+    onKindChanged: fill()
     onLimitChanged: fill()
     Component.onCompleted: fill()
     property string filledKey: ""
     function fill() {
-        const wanted = key.endsWith("|tracks") ? 8 : 0
+        const wanted = key.endsWith("|tracks") ? 8 : kind === "mostPlayed" ? 30 : 0
         const count = limit > 0 ? Math.min(limit, wanted) : wanted
         if (filledKey !== key) { clear(); filledKey = key }
         while (this.count > count) remove(this.count - 1)
         for (let i = this.count; i < count; i++)
-            append({ trackId: i + 1, rowKind: 0, number: i + 1, title: "Track " + i, artist: "Band", album: "Record", sourceName: "", duration: "3:00", plays: 0,
+            append({ trackId: i + 1, rowKind: 0, number: i + 1, title: "Track " + i, artist: "Band", album: "Record", sourceName: "", duration: "3:00", plays: kind === "mostPlayed" ? 30 - i : 0,
                 quality: "FLAC", tier: 2, available: true, playing: false, selected: false, headerLabel: "", headerMeta: "", art: "" })
     }
 }
