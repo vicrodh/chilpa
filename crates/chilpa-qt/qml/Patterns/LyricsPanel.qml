@@ -14,8 +14,12 @@ Item {
     id: panel
 
     signal closed()
-    // Under the queue's art it is a tab, with nothing to close.
+    // Under the queue's art it is a tab: nothing to close, no header (the
+    // tabs hold its settings), lines from edge to edge, a size of its own.
     property bool closable: true
+    readonly property real inset: closable ? Metrics.gap16 : 0
+    readonly property bool optionsOpen: options.opened
+    function toggleOptions() { options.opened ? options.close() : options.open() }
 
     // What is said about the lyrics of what plays: nothing, that they are
     // being looked for, that there are none, or the lyrics with who gave
@@ -84,7 +88,9 @@ Item {
 
     PanelHeader {
         id: head
+        visible: panel.closable
         width: parent.width
+        height: visible ? implicitHeight : 0
         title: I18n.tr("Lyrics", I18n.rev)
         detail: panel.playing
 
@@ -94,7 +100,7 @@ Item {
             glyph: Icons.adjustmentsHorizontal
             size: Metrics.button26
             checked: options.opened
-            onClicked: options.opened ? options.close() : options.open()
+            onClicked: panel.toggleOptions()
         }
         IconButton {
             visible: panel.closable
@@ -109,6 +115,8 @@ Item {
         id: options
         x: panel.width - width - Metrics.gap6
         y: head.height
+        sizeKey: panel.closable ? "size" : "size.queue"
+        sizeFirst: panel.closable ? "m" : "s"
         text: panel.found ? Player.lyrics.join("\n") : ""
         onCopied: {
             notice.text = I18n.tr("Lyrics copied", I18n.rev)
@@ -124,8 +132,8 @@ Item {
         anchors.bottom: foot.top
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.leftMargin: Metrics.gap16
-        anchors.rightMargin: Metrics.gap16
+        anchors.leftMargin: panel.inset
+        anchors.rightMargin: panel.inset
         lines: panel.lines.length > 0 ? panel.lines : Player.lyrics
         synced: Player.lyricsSynced
         current: Player.lyricsSynced ? Player.lyricsLine : -1
@@ -188,8 +196,8 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.leftMargin: Metrics.gap16
-        anchors.rightMargin: Metrics.gap16
+        anchors.leftMargin: panel.inset
+        anchors.rightMargin: panel.inset
         topPadding: source.visible || notice.visible ? Metrics.gap6 : 0
         bottomPadding: source.visible || notice.visible ? Metrics.gap8 : 0
         spacing: Metrics.gap4

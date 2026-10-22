@@ -15,7 +15,7 @@ TestCase {
     ListenListScreen { id: page; anchors.fill: parent }
 
     function cleanup() { panel().show("playing"); NowAbout.trackAnswer = ({}); NowAbout.albumAnswer = ({}) }
-    function panel() { return findChild(page, "queuePanelTabs").parent.parent }
+    function panel() { return findChild(page, "listenNow") }
     function shown(item, name) {
         let found = []
         const walk = node => { if (node.objectName === name && node.visible) found.push(node); for (const child of node.children || []) walk(child) }
@@ -44,6 +44,27 @@ TestCase {
         compare(SettingsModel.kept("ui.queue.panel"), "about")
         tryVerify(() => findChild(page, "queuePanelAbout").item !== null)
         verify(!findChild(page, "queuePanelLyrics").active)
+    }
+
+    // The lyrics fill the column with no header, keep a size of their own,
+    // Small at first, and have their settings at the end of the tabs' row.
+    function test_the_lyrics_tab_is_only_the_lines_with_its_settings_by_the_tabs() {
+        const button = findChild(page, "queueLyricsOptions")
+        verify(!button.visible, "only beside the lyrics")
+        findChild(page, "queuePanelTabs").activated(1)
+        let lyrics = null
+        tryVerify(() => { lyrics = findChild(page, "queuePanelLyrics").item; return lyrics !== null && button.visible })
+        compare(findChild(lyrics, "lyricsList").width, lyrics.width, "edge to edge")
+        verify(!findChild(lyrics, "lyricsOptionsButton").visible, "no header saying the track a third time")
+        const options = findChild(lyrics, "lyricsOptions")
+        compare(options.size, "s")
+        options.choose("size", "l")
+        compare([SettingsModel.kept("ui.lyrics.size.queue"), SettingsModel.kept("ui.lyrics.size") || ""], ["l", ""], "the sidebar's size is not touched")
+        mouseClick(button)
+        tryVerify(() => lyrics.optionsOpen && button.checked)
+        lyrics.toggleOptions()
+        tryVerify(() => !lyrics.optionsOpen)
+        options.choose("size", "s")
     }
 
     // The track by default, the record on request; who said it, and where.

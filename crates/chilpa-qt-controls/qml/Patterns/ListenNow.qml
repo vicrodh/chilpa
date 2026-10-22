@@ -8,10 +8,11 @@ import "../Components"
 
 // The live player stays visible while another buffer is being edited: the
 // art, what plays, and under it three tabs -- its progress and quality, its
-// lyrics as the player bar opens them, and what is known about it. The tab
-// in view is kept between visits.
+// lyrics from edge to edge with their settings at the end of the tabs'
+// row, and what is known about it. The tab in view is kept between visits.
 Item {
     id: card
+    objectName: "listenNow"
     property string tab: ["playing", "lyrics", "about"].indexOf(SettingsModel.kept("ui.queue.panel")) >= 0 ? SettingsModel.kept("ui.queue.panel") : "playing"
     readonly property var tabs: ["playing", "lyrics", "about"]
     function show(name) { tab = name; SettingsModel.keep("ui.queue.panel", name) }
@@ -49,12 +50,29 @@ Item {
             font.pointSize: Type.meta
             color: Theme.color.textSecondary
         }
-        SegmentedControl {
-            objectName: "queuePanelTabs"
-            options: [{glyph: Icons.waveSine, tip: I18n.tr("Now playing", I18n.rev)}, {glyph: Icons.quote, tip: I18n.tr("Lyrics", I18n.rev)},
-                {glyph: Icons.infoCircle, tip: I18n.tr("About", I18n.rev)}]
-            current: card.tabs.indexOf(card.tab)
-            onActivated: (index) => card.show(card.tabs[index])
+        Item {
+            width: parent.width
+            height: tabs.height
+            SegmentedControl {
+                id: tabs
+                objectName: "queuePanelTabs"
+                options: [{glyph: Icons.waveSine, tip: I18n.tr("Now playing", I18n.rev)}, {glyph: Icons.quote, tip: I18n.tr("Lyrics", I18n.rev)},
+                    {glyph: Icons.infoCircle, tip: I18n.tr("About", I18n.rev)}]
+                current: card.tabs.indexOf(card.tab)
+                onActivated: (index) => card.show(card.tabs[index])
+            }
+            // The lyrics' display settings, at the far end of their tab's row.
+            IconButton {
+                objectName: "queueLyricsOptions"
+                visible: lyricsTab.item !== null
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                tip: I18n.tr("Display settings", I18n.rev)
+                glyph: Icons.adjustmentsHorizontal
+                size: Metrics.button26
+                checked: visible && lyricsTab.item.optionsOpen
+                onClicked: lyricsTab.item.toggleOptions()
+            }
         }
     }
 
@@ -91,6 +109,7 @@ Item {
         }
         // Only the tab in view is built: lyrics follow the song while shown.
         Loader {
+            id: lyricsTab
             objectName: "queuePanelLyrics"
             anchors.fill: parent
             active: card.tab === "lyrics"
