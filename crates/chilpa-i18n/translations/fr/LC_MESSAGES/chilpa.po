@@ -2795,6 +2795,9 @@ msgstr "Surtout à {}:00"
 msgid "Most played"
 msgstr "Les plus lus"
 
+msgid "Most played tracks"
+msgstr "Pistes les plus écoutées"
+
 msgid "Move"
 msgstr "Déplacer"
 
@@ -3839,20 +3842,23 @@ msgstr "Volume du récepteur"
 msgid "Recent"
 msgstr "Récent"
 
-msgid "Recently added"
-msgstr "Ajoutés récemment"
-
-msgid "Recently listened playlists"
-msgstr "Playlists écoutées récemment"
-
-msgid "Recently listened playlists, all sources"
-msgstr "Playlists écoutées récemment, toutes sources"
+msgid "Recently added albums"
+msgstr "Albums ajoutés récemment"
 
 msgid "Recently played"
 msgstr "Lus récemment"
 
-msgid "Recently played, all sources"
-msgstr "Lus récemment, toutes sources"
+msgid "Recently played albums"
+msgstr "Albums écoutés récemment"
+
+msgid "Recently played albums in the library"
+msgstr "Albums écoutés récemment dans la bibliothèque"
+
+msgid "Recently played playlists"
+msgstr "Playlists écoutées récemment"
+
+msgid "Recently played playlists in the library"
+msgstr "Playlists écoutées récemment dans la bibliothèque"
 
 msgid "Records"
 msgstr "Disques"

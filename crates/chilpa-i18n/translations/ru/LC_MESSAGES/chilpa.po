@@ -2797,6 +2797,9 @@ msgstr "Пик в {}:00"
 msgid "Most played"
 msgstr "Самые прослушиваемые"
 
+msgid "Most played tracks"
+msgstr "Самые прослушиваемые треки"
+
 msgid "Move"
 msgstr "Переместить"
 
@@ -3841,20 +3844,23 @@ msgstr "Громкость ресивера"
 msgid "Recent"
 msgstr "Недавние"
 
-msgid "Recently added"
-msgstr "Недавно добавленные"
-
-msgid "Recently listened playlists"
-msgstr "Недавно прослушанные плейлисты"
-
-msgid "Recently listened playlists, all sources"
-msgstr "Недавно прослушанные плейлисты, все источники"
+msgid "Recently added albums"
+msgstr "Недавно добавленные альбомы"
 
 msgid "Recently played"
 msgstr "Недавно воспроизведённые"
 
-msgid "Recently played, all sources"
-msgstr "Недавно воспроизведённые, все источники"
+msgid "Recently played albums"
+msgstr "Недавно прослушанные альбомы"
+
+msgid "Recently played albums in the library"
+msgstr "Недавно прослушанные альбомы в библиотеке"
+
+msgid "Recently played playlists"
+msgstr "Недавно прослушанные плейлисты"
+
+msgid "Recently played playlists in the library"
+msgstr "Недавно прослушанные плейлисты в библиотеке"
 
 msgid "Records"
 msgstr "Альбомы"

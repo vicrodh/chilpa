@@ -2795,6 +2795,9 @@ msgstr ""
 msgid "Most played"
 msgstr ""
 
+msgid "Most played tracks"
+msgstr ""
+
 msgid "Move"
 msgstr ""
 
@@ -3839,19 +3842,22 @@ msgstr ""
 msgid "Recent"
 msgstr ""
 
-msgid "Recently added"
-msgstr ""
-
-msgid "Recently listened playlists"
-msgstr ""
-
-msgid "Recently listened playlists, all sources"
+msgid "Recently added albums"
 msgstr ""
 
 msgid "Recently played"
 msgstr ""
 
-msgid "Recently played, all sources"
+msgid "Recently played albums"
+msgstr ""
+
+msgid "Recently played albums in the library"
+msgstr ""
+
+msgid "Recently played playlists"
+msgstr ""
+
+msgid "Recently played playlists in the library"
 msgstr ""
 
 msgid "Records"

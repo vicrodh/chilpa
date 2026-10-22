@@ -20,8 +20,12 @@ Modal {
     property var sections: []
     property var groupSources: []
     property var sizes: [{value: "0", text: I18n.tr("One row", I18n.rev)}, {value: "6", text: "6"}, {value: "12", text: "12"}, {value: "18", text: "18"}, {value: "24", text: "24"}]
-    // How a shelf that can be a compact grid is drawn (the Home's).
+    // How a shelf that can be a compact grid is drawn (the Home's). Drawn
+    // either way it holds the same rows, a grid's two pages until a count is
+    // chosen, so "One row" is no count for it.
     readonly property var modes: [{value: "compact", text: I18n.tr("Compact", I18n.rev)}, {value: "cards", text: I18n.tr("Cards", I18n.rev)}]
+    readonly property var gridSizes: sizes.filter(size => size.value !== "0")
+    readonly property int gridRows: Metrics.slimColumns * Metrics.slimRows * Metrics.slimPages
     property bool grouped: false
     property string activeGroup: "chilpa"
     readonly property var groups: {
@@ -196,8 +200,8 @@ Modal {
                                 width: customization.sizeSlot; height: activeCount.height
                                 SortButton {
                                     id: activeCount; objectName: "activeCount_" + modelData.id
-                                    directed: false; value: String(modelData.size || customization.defaultSize)
-                                    options: customization.sizes
+                                    directed: false; value: String(modelData.size || (modelData.compact === true ? customization.gridRows : customization.defaultSize))
+                                    options: modelData.compact === true ? customization.gridSizes : customization.sizes
                                     onPicked: value => customization.sized(sectionIndex, Number(value))
                                 }
                             }

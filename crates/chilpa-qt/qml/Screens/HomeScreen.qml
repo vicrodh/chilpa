@@ -29,12 +29,14 @@ ListView {
     function restore() { try { kept = JSON.parse(SettingsModel.kept(preference) || "[]") } catch (_) { kept = [] } }
     Component.onCompleted: restore()
     readonly property var available: [
-        { id: "library.recentlyPlayed", title: I18n.tr("Recently played", I18n.rev), kind: "albums", source: "recentlyPlayed", compact: true },
-        { id: "everywhere.recentlyPlayed", title: I18n.tr("Recently played", I18n.rev), configTitle: I18n.tr("Recently played, all sources", I18n.rev), kind: "albums", source: "recentlyPlayedEverywhere", compact: true },
-        { id: "library.recentPlaylists", title: I18n.tr("Recently listened playlists", I18n.rev), kind: "playlists", allSources: false },
-        { id: "everywhere.recentPlaylists", title: I18n.tr("Recently listened playlists", I18n.rev), configTitle: I18n.tr("Recently listened playlists, all sources", I18n.rev), kind: "playlists", allSources: true },
-        { id: "library.recentlyAdded", title: I18n.tr("Recently added", I18n.rev), kind: "albums", source: "recentlyAdded" },
-        { id: "library.mostPlayed", title: I18n.tr("Most played", I18n.rev), kind: "tracks", compact: true }
+        // One name each, here and in Customize, saying what the shelf holds
+        // and, for the library's own, where from.
+        { id: "library.recentlyPlayed", title: I18n.tr("Recently played albums in the library", I18n.rev), kind: "albums", source: "recentlyPlayed", compact: true },
+        { id: "everywhere.recentlyPlayed", title: I18n.tr("Recently played albums", I18n.rev), kind: "albums", source: "recentlyPlayedEverywhere", compact: true },
+        { id: "library.recentPlaylists", title: I18n.tr("Recently played playlists in the library", I18n.rev), kind: "playlists", allSources: false },
+        { id: "everywhere.recentPlaylists", title: I18n.tr("Recently played playlists", I18n.rev), kind: "playlists", allSources: true },
+        { id: "library.recentlyAdded", title: I18n.tr("Recently added albums", I18n.rev), kind: "albums", source: "recentlyAdded" },
+        { id: "library.mostPlayed", title: I18n.tr("Most played tracks", I18n.rev), kind: "tracks", compact: true }
     ].concat(remote.sections.map(section => Object.assign({}, section, { id: "source:" + section.homeId, entityKind: section.kind, kind: "shelf",
         previous_ids: (section.previous_ids || []).map(id => "source:" + section.sourceId + ":" + id) })))
     // The kept choice over what there is today: a shelf that went is left
@@ -44,10 +46,13 @@ ListView {
     // shelves already on screen. Replacing a JS array model discarded them.
     KeyedModel {
         id: visibleSections
-        // A section that can be a compact grid is one until Cards is chosen.
+        // A section that can be a compact grid is one until Cards is chosen,
+        // and both show the same rows: the count chosen, or the grid's two
+        // pages. Only the drawing changes.
         items: page.sections.filter(section => section.enabled !== false
             && (section.kind !== "shelf" || (section.items || []).length > 0))
-            .map(section => Object.assign({}, section, { grid: section.compact === true && section.mode !== "cards" }))
+            .map(section => Object.assign({}, section, { grid: section.compact === true && section.mode !== "cards",
+                count: section.size || (section.compact === true ? Metrics.slimColumns * Metrics.slimRows * Metrics.slimPages : 0) }))
     }
     function change(index, field, value) {
         const rows = sections.map(s => ({ id: s.id, enabled: s.enabled !== false, size: s.size || 0, mode: s.mode || "" }))
@@ -81,10 +86,10 @@ ListView {
         readonly property bool ready: records.ready
         readonly property bool shown: records.albums > 0
         title: entry.title || ""
-        size: entry.size || 0
+        size: entry.count || 0
         model: records
         spacing: Metrics.gap8
-        AlbumGridModel { id: records; kind: shelf.entry.source || ""; contentRev: Library.contentRev + (kind === "recentlyAdded" ? 0 : Library.listeningRev + Library.remoteRev + Library.remoteArtRev); limit: shelf.entry.size || Metrics.shelfLimit }
+        AlbumGridModel { id: records; kind: shelf.entry.source || ""; contentRev: Library.contentRev + (kind === "recentlyAdded" ? 0 : Library.listeningRev + Library.remoteRev + Library.remoteArtRev); limit: shelf.entry.count || Metrics.shelfLimit }
     }
     component TrackShelf: TrackCarousel {
         id: tracks
@@ -95,7 +100,7 @@ ListView {
         title: entry.title || ""
         showPlays: true
         model: most
-        TrackListModel { id: most; kind: "mostPlayed"; filterRev: Library.contentRev + Library.listeningRev; limit: tracks.entry.size || CardLayout.columns(tracks.width); playingPath: Player.path }
+        TrackListModel { id: most; kind: "mostPlayed"; filterRev: Library.contentRev + Library.listeningRev; limit: tracks.entry.count || CardLayout.columns(tracks.width); playingPath: Player.path }
     }
     // QBZ's compact grid: up to two pages of twelve.
     component CompactAlbums: HomeAlbumGrid {
@@ -105,7 +110,7 @@ ListView {
         readonly property bool shown: compactRecords.albums > 0
         title: entry.title || ""
         model: compactRecords
-        AlbumGridModel { id: compactRecords; kind: compactShelf.entry.source || ""; columns: Metrics.slimColumns; contentRev: Library.contentRev + Library.listeningRev + Library.remoteRev + Library.remoteArtRev; limit: compactShelf.entry.size || Metrics.slimColumns * Metrics.slimRows * Metrics.slimPages }
+        AlbumGridModel { id: compactRecords; kind: compactShelf.entry.source || ""; columns: Metrics.slimColumns; contentRev: Library.contentRev + Library.listeningRev + Library.remoteRev + Library.remoteArtRev; limit: compactShelf.entry.count }
     }
     component CompactTracks: HomeTrackGrid {
         id: compactTrackShelf
@@ -115,7 +120,7 @@ ListView {
         title: entry.title || ""
         showPlays: true
         model: compactMost
-        TrackListModel { id: compactMost; kind: "mostPlayed"; filterRev: Library.contentRev + Library.listeningRev; limit: compactTrackShelf.entry.size || Metrics.slimColumns * Metrics.slimRows * Metrics.slimPages; playingPath: Player.path }
+        TrackListModel { id: compactMost; kind: "mostPlayed"; filterRev: Library.contentRev + Library.listeningRev; limit: compactTrackShelf.entry.count; playingPath: Player.path }
     }
     component PlaylistShelf: HomePlaylistShelf {}
     // A source's shelf, cut to the size chosen.
