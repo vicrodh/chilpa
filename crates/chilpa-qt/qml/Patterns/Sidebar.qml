@@ -87,8 +87,9 @@ Rectangle {
         Flickable {
             objectName: "sidebarNavigation"
             width: parent.width
-            // Reserve two playlist rows below navigation when it grows.
-            height: Math.min(contentHeight, Math.max(0, parent.height - y - Metrics.navItemHeight * 2 - Metrics.sidebarGap)) // derived: two rows and their gap
+            // Reserve two playlist rows below navigation when it grows, or
+            // the playlists' label while they are folded.
+            height: Math.min(contentHeight, Math.max(0, parent.height - y - (playlists.folded ? Metrics.button24 : Metrics.navItemHeight * 2) - Metrics.sidebarGap)) // derived: the rows or the label, and their gap
             contentWidth: width
             contentHeight: navigation.height
             clip: true
@@ -182,6 +183,7 @@ Rectangle {
 
         // Whatever height is left, down to the sidebar's bottom padding.
         Lists.SidebarPlaylists {
+            id: playlists
             visible: !side.collapsed
             width: parent.width
             height: Math.max(0, parent.height - y - Metrics.sidebarPadV) // derived: the rest of the column

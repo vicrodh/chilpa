@@ -26,6 +26,8 @@ Item {
         function removeFolder(id) {}
     }
     PlaylistPickerModal {}
+    PlaylistsFlyout {}
+    SidebarPlaylistsHead { width: Metrics.sidebarWidth }
     PlaylistTree { id: playlistTree }
 
     Column {

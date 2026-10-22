@@ -7,6 +7,7 @@ import "../Components"
 import "qrc:/qt/qml/app/chilpa/about/qml/Components"
 import "qrc:/qt/qml/app/chilpa/link/qml/Components" as LinkUi
 import "qrc:/qt/qml/app/chilpa/wizard/qml/Components" as WizardUi
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Components" as Lists
 import app.chilpa.about
 import app.chilpa.controls
 
@@ -97,10 +98,20 @@ Item {
             glyph: bar.turn.glyph
             onClicked: SettingsModel.sidebarMode = bar.turn.next
         }
-        // The sidebar's destinations, while it is closed.
+        // The sidebar's destinations and its playlists, while it is closed
+        // (QBZ's HeaderBar.qml:627).
         NavMenu {
             openSource: bar.openSource
             visible: SettingsModel.sidebarMode === "closed"
+        }
+        IconButton {
+            objectName: "playlistsFlyoutButton"
+            visible: SettingsModel.sidebarMode === "closed"
+            tip: I18n.tr("Playlists", I18n.rev)
+            glyph: Icons.playlist
+            checked: playlistsFlyout.opened
+            onClicked: playlistsFlyout.opened ? playlistsFlyout.close() : playlistsFlyout.open()
+            Lists.PlaylistsFlyout { id: playlistsFlyout; y: parent.height + Metrics.gap4 }
         }
         Rectangle {
             visible: SettingsModel.sidebarMode === "closed"

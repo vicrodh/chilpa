@@ -34,6 +34,9 @@ QtObject {
     function folderId(id, revision) { return 4 }
     function name(id, revision) { return "Stored playlist" }
     function editable(id, revision) { return id > 0 }
+    // The playlist a test asked to open.
+    property double opened: 0
+    function open(id) { opened = id }
     property var coverRows: ({})
     function covers(id, revision) { return coverRows[id] || [] }
     function sourceName(id, revision) { return "Local" }
