@@ -20,6 +20,7 @@ TestCase {
     SourcesPopover { id: without }
     property var stars: []
     SourcesPopover { id: forTracks; ratings: test.stars; onRatingsChosen: (chosen) => test.stars = chosen }
+    SourcesPopover { id: sourcesOnly; sourcesOnly: true; showAlbumGrouping: false }
 
     function init() { test.asked = [] }
 
@@ -44,6 +45,22 @@ TestCase {
         }
         compare(test.asked.join(","), "artist,album")
         withPanes.close()
+    }
+
+    // Artists: which sources and nothing of a record's quality or format.
+    function test_a_screen_of_artists_chooses_only_sources() {
+        sourcesOnly.open()
+        tryVerify(() => sourcesOnly.opened)
+        compare(sourcesOnly.width, without.width / 2, "one column")
+        const qualityChip = findText(sourcesOnly.contentItem, "Hi-Res")
+        verify(qualityChip !== null && !qualityChip.visible, "no quality chips")
+        verify(!findChild(sourcesOnly.contentItem, "ratingsReset").visible, "no Reset that would clear Albums' qualities")
+        sourcesOnly.close()
+    }
+    function findText(item, text) {
+        if (item.text === text) return item
+        for (const child of item.children || []) { const found = findText(child, text); if (found) return found }
+        return null
     }
 
     function test_no_toggles_where_the_screen_has_no_columns() {

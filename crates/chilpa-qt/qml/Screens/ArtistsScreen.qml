@@ -6,9 +6,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // Artists (design/06): who the records are credited to, or everyone who
-// plays on a track, through the sources, qualities and formats Albums
-// filters by, as Artist Scene's cards with the icon of each source that
-// holds their records.
+// plays on a track, through the sources Albums filters by, as Artist
+// Scene's cards with the icon of each source that holds their records.
 Item {
     id: page
 
@@ -82,12 +81,12 @@ Item {
                 id: filterButton
                 objectName: "artistsFilters"
                 anchors.verticalCenter: parent.verticalCenter
-                tip: I18n.tr("Quality, format and source filters", I18n.rev)
+                tip: I18n.tr("Sources", I18n.rev)
                 glyph: Icons.filter
                 round: true
-                checked: Library.extraFiltered || filters.opened
+                checked: Library.excludedSources.length > 0 || filters.opened
                 onClicked: filters.opened ? filters.close() : filters.open()
-                SourcesPopover { id: filters; showAlbumGrouping: false; x: filterButton.width - width; y: filterButton.height + Metrics.gap6 }
+                SourcesPopover { id: filters; showAlbumGrouping: false; sourcesOnly: true; x: filterButton.width - width; y: filterButton.height + Metrics.gap6 }
             }
         }
     }
