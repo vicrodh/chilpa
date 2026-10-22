@@ -5,8 +5,10 @@ import "../Theme"
 import "../Primitives"
 
 // A cover at a size the eye can read, over the small one it grew from:
-// centered above `target`, kept inside the window, and shown while `shown`
-// holds. It takes no pointer, so it never steals the hover that opened it.
+// centered above `target`, or under it when the window has no room above
+// (a bar along the top), kept inside the window, and shown while `shown`
+// holds. It is never drawn over `target`: there it would take the hover
+// that keeps it open, close, give the hover back and open again.
 Popup {
     id: preview
     property Item target: null
@@ -22,7 +24,8 @@ Popup {
     width: Metrics.artPreview + Metrics.artPreviewFrame * 2 // derived: the image and its frame
     height: width
     x: target ? (target.width - width) / 2 : 0 // derived: centered over the target
-    y: -height - Metrics.gap8
+    readonly property bool under: shown && target !== null && target.mapToItem(null, 0, 0).y < height + Metrics.gap8 * 2 // derived: the gap and the window's margin
+    y: under ? target.height + Metrics.gap8 : -height - Metrics.gap8
 
     background: Item {
         RectangularShadow {
