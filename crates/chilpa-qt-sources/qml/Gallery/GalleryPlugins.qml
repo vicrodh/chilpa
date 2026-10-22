@@ -78,6 +78,8 @@ TitledFlow {
     StartupSplash { width: Metrics.confirmWidth; height: Metrics.panesHeight }
     PluginValidation { width: Metrics.confirmWidth; phase: "passed" }
     PluginRow { width: Metrics.confirmWidth; plugin: ({name: "Catalog source", light: "yellow"}) }
+    PluginRow { width: Metrics.confirmWidth; plugin: ({name: "Third-party source", light: "native", third_party: true}) }
+    ThirdPartyTag {}
     PluginSettingsForm {
         width: Metrics.confirmWidth
         document: ({status: {phase: "failed", label: "Session expired", description: "Reconnect your account to continue playback."},

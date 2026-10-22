@@ -294,6 +294,38 @@ TestCase {
         compare(address.text, "")
         dialog.close()
     }
+    // The dialog grows with what it lists and scrolls past the window: the
+    // repositories never run under Close. It was 212 tall and they did.
+    function test_the_repositories_dialog_keeps_what_it_lists_above_close() {
+        backend.state = {busy: false, native_repository: "https://example.org/native.json", third_party_repository: "https://example.org/third.json",
+            repositories: [{id: "a", url: "https://example.org/a.json"}, {id: "b", url: "https://example.org/b.json"}]}
+        manager.read()
+        findChild(manager, "managePluginRepositories").clicked()
+        const dialog = findChild(manager, "pluginRepositories")
+        tryVerify(() => dialog.opened)
+        const close = findChild(dialog, "closePluginRepositories") || findChild(dialog.contentItem, "closePluginRepositories")
+        const third = findChild(dialog, "thirdPartyRepository")
+        tryVerify(() => third.height > 0)
+        verify(third.mapToItem(close.parent, 0, third.height).y <= close.y, "the third-party catalog ends above Close")
+        const body = findChild(dialog, "pluginRepositoriesBody")
+        verify(body.height >= body.contentHeight, "the window has room for all of it: " + body.height + " of " + body.contentHeight)
+        dialog.close()
+    }
+    // A third party's plugin says so, installed or offered.
+    function test_a_third_party_plugin_says_so() {
+        backend.state = {busy: false, repositories: [],
+            installed: [{id: "app.example.stream", name: "Stream", version: "1.0.0", light: "native", third_party: true},
+                        {id: "app.example.own", name: "Own", version: "1.0.0", light: "native"}],
+            native_catalog: [{id: "app.example.other", name: "Other", version: "1.0.0", description: "", repository_id: "third-party", third_party: true}]}
+        manager.read()
+        const tab = findChild(manager, "nativePluginsTab")
+        tryVerify(() => findChild(tab, "nativeCatalogRow") !== null)
+        const rows = findChild(tab, "installedNativePlugins")
+        tryVerify(() => rows.count === 2)
+        verify(findChild(rows.itemAt(0), "pluginThirdParty").visible, "installed from the third-party catalog")
+        verify(!findChild(rows.itemAt(1), "pluginThirdParty").visible, "Chilpa's own says nothing")
+        verify(findChild(findChild(tab, "nativeCatalogRow"), "pluginThirdParty").visible, "offered by the third-party catalog")
+    }
     function test_catalog_command_keeps_repository_identity() {
         manager.command("prepare", {repository: "repo", id: "entry"})
         compare(backend.calls[backend.calls.length - 1], ["prepare", {repository: "repo", id: "entry"}])

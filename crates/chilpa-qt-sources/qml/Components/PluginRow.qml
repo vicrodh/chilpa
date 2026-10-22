@@ -21,13 +21,18 @@ Item {
         anchors.rightMargin: Metrics.gap12
         anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap4
-        Text {
+        Row {
             width: parent.width
-            text: row.plugin.name || ""
-            textFormat: Text.PlainText
-            wrapMode: Text.WordWrap
-            color: Theme.color.textPrimary
-            font.pointSize: Type.body
+            spacing: Metrics.gap8
+            Text {
+                width: Math.min(implicitWidth, parent.width - (thirdParty.visible ? thirdParty.width + parent.spacing : 0))
+                text: row.plugin.name || ""
+                textFormat: Text.PlainText
+                wrapMode: Text.WordWrap
+                color: Theme.color.textPrimary
+                font.pointSize: Type.body
+            }
+            ThirdPartyTag { id: thirdParty; anchors.verticalCenter: parent.verticalCenter; visible: row.plugin.third_party === true }
         }
         Text {
             objectName: "pluginHelp"
