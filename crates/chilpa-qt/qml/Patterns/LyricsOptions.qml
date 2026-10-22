@@ -27,7 +27,11 @@ Popup {
     readonly property bool canCopy: text !== ""
 
     property bool follow: kept("follow", "true") === "true"
-    property string size: kept("size", "m")
+    // Where the size is kept and what it starts at: the queue's column is
+    // narrow, so under its art the size is its own, Small at first.
+    property string sizeKey: "size"
+    property string sizeFirst: "m"
+    property string size: kept(sizeKey, sizeFirst)
     property string translation: kept("translation", "auto")
     property string color: kept("color", "")
     property bool uppercase: kept("uppercase", "false") === "true"
@@ -39,7 +43,7 @@ Popup {
     // The lyrics went to the clipboard.
     signal copied()
 
-    readonly property var first: ({ follow: true, size: "m", translation: "auto", color: "", uppercase: false, lite: false, dimming: "strong" })
+    readonly property var first: ({ follow: true, size: sizeFirst, translation: "auto", color: "", uppercase: false, lite: false, dimming: "strong" })
     readonly property var sizes: ["s", "m", "l", "xl"]
     readonly property var dimmingLevels: ["off", "soft", "strong"]
     readonly property var languages: ["auto", "en", "es", "fr", "de", "it", "pt", "nl", "ja", "zh", "ru"]
@@ -50,7 +54,7 @@ Popup {
 
     function choose(name, value) {
         flyout[name] = value
-        store.keep("ui.lyrics." + name, String(value))
+        store.keep("ui.lyrics." + (name === "size" ? sizeKey : name), String(value))
     }
 
     function translating(on) {
