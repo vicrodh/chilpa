@@ -14,7 +14,7 @@ import "../Patterns"
 
 // The results page, as QBZ's (SearchView): what a search found, whole, by
 // tab. All has the top result beside the artists, then records in pages of
-// up to three rows, six songs and more on request, and playlists; each other
+// up to three rows, six songs and six more at a time, and playlists; each other
 // tab lists its own, twenty more at a time. Records, artists and playlists
 // are drawn with the cards they have everywhere else, and every result says
 // whose it is: its source's icon, or Chilpa's mark for the library's own.
@@ -217,7 +217,8 @@ Flickable {
                 visible: page.sections.songs.length > page.songsShown
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: I18n.tr("Load more", I18n.rev) + " (" + page.songsShown + " / " + page.sections.songs.length + ")"
-                onClicked: page.songsShown += Metrics.searchPage
+                // A few more where they are; "See all" is the tab with every one.
+                onClicked: page.songsShown += Metrics.searchSongs
             }
         }
         SearchRail {

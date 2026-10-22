@@ -91,12 +91,21 @@ TestCase {
         compare(rail.used, 1, "two records fill one row, not three")
     }
 
-    function test_all_loads_more_songs() {
+    // Load more adds a few songs where they are; See all is their own tab.
+    function test_all_loads_six_more_songs_at_a_time() {
+        page.search.rowsJsonText = JSON.stringify(found(25).concat(Array.from({length: 12}, (_, i) => row(4, "songs", "More " + i))))
+        page.read()
+        const songs = () => shown(node => node.hasOwnProperty("best")).length
         const more = findChild(page.contentItem, "searchSongsMore")
         verify(more.visible)
-        compare(more.text, "Load more (6 / 8)")
+        compare(more.text, "Load more (6 / 20)")
         more.clicked()
-        compare(shown(node => node.hasOwnProperty("best")).length, 8)
+        compare(songs(), 12)
+        compare(page.tab, "all", "still on All")
+        more.clicked()
+        compare(songs(), 18)
+        more.clicked()
+        compare(songs(), 20)
         verify(!more.visible)
     }
 
