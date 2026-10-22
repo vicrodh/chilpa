@@ -4909,8 +4909,8 @@ msgstr "Этот вывод принимает DSD, преобразованны
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "В этом плейлисте уже есть часть добавляемых треков: {} из {}. Можно добавить только новые или все, включая дубликаты."
 
-msgid "This preset uses precise filters. Keep them as they are, or create a separate graphic EQ. You can restore your previous EQ."
-msgstr "В этом пресете используются точные фильтры. Оставьте их как есть или создайте отдельный графический EQ. Прежний EQ можно восстановить."
+msgid "This preset uses precise filters; each band shows its level. To move the bands, create a separate graphic EQ. You can restore your previous EQ."
+msgstr "В этом пресете используются точные фильтры; каждая полоса показывает свой уровень. Чтобы двигать полосы, создайте отдельный графический EQ. Прежний EQ можно восстановить."
 
 msgid "This purchase is unavailable for download."
 msgstr "Эту покупку нельзя скачать."

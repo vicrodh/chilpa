@@ -8,6 +8,9 @@ Column {
     id: editor
     property var draft: ({})
     property bool graphic: false
+    // The preset's level at each band, from the facade: what a preset of
+    // precise filters shows here, read-only.
+    property var levels: []
     readonly property bool ready: graphic || (draft.filters || []).length === 0
     readonly property var frequencies: [31.25, 62.5, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
     readonly property var labels: ["31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"]
@@ -17,11 +20,12 @@ Column {
     signal resetRequested()
     spacing: Metrics.gap10
 
-    function gain(index) { return graphic ? Number(draft.filters?.[index]?.gain_db || 0) : 0 }
+    function gain(index) { return graphic ? Number(draft.filters?.[index]?.gain_db || 0) : Number(levels[index] || 0) }
+    function decibels(value) { const rounded = Math.round(value * 10) / 10 || 0; return (rounded > 0 ? "+" : "") + rounded.toFixed(1) }
     Text {
         width: parent.width
         text: editor.ready ? I18n.tr("Shape the sound: raise a band to hear more, lower it to hear less.", I18n.rev)
-                           : I18n.tr("This preset uses precise filters. Keep them as they are, or create a separate graphic EQ. You can restore your previous EQ.", I18n.rev)
+                           : I18n.tr("This preset uses precise filters; each band shows its level. To move the bands, create a separate graphic EQ. You can restore your previous EQ.", I18n.rev)
         wrapMode: Text.WordWrap
         font.pointSize: Type.body
         color: Theme.color.textSecondary
@@ -35,7 +39,6 @@ Column {
     }
     Column {
         width: parent.width
-        visible: editor.ready
         spacing: Metrics.gap8
         Row {
             width: parent.width
@@ -63,7 +66,7 @@ Column {
                     spacing: Metrics.gap6
                     Text {
                         width: parent.width
-                        text: (gainSlider.value > 0 ? "+" : "") + gainSlider.value.toFixed(1)
+                        text: editor.decibels(editor.ready ? gainSlider.value : editor.gain(band.index))
                         horizontalAlignment: Text.AlignHCenter
                         color: Theme.color.textPrimary
                         font.pointSize: Type.small
@@ -79,6 +82,7 @@ Column {
                         to: 12
                         stepSize: 0.5
                         snapMode: Controls.Slider.SnapAlways
+                        enabled: editor.ready
                         wheelEnabled: activeFocus
                         value: editor.gain(band.index)
                         property bool changedWhilePressed: false
@@ -125,7 +129,7 @@ Column {
                             width: Metrics.dspSliderHandle
                             height: Metrics.dspSliderHandle
                             radius: width / 2 // derived: a circular handle or rounded track
-                            color: gainSlider.pressed ? Theme.color.accent : Theme.color.textPrimary
+                            color: !gainSlider.enabled ? Theme.color.textSecondary : gainSlider.pressed ? Theme.color.accent : Theme.color.textPrimary
                             border.width: gainSlider.activeFocus ? Metrics.focusRing : 0
                             border.color: Theme.color.accent
                         }
@@ -143,13 +147,13 @@ Column {
         Row {
             width: parent.width
             Text {
-                width: parent.width - resetButton.width
+                width: parent.width - (resetButton.visible ? resetButton.width : 0)
                 text: I18n.tr("Frequency · Hz   /   Gain · dB   /   ±12 dB", I18n.rev)
                 anchors.verticalCenter: parent.verticalCenter
                 font.pointSize: Type.small
                 color: Theme.color.textTertiary
             }
-            PillButton { id: resetButton; objectName: "dspResetGraphic"; text: I18n.tr("Reset EQ", I18n.rev); onClicked: editor.resetRequested() }
+            PillButton { id: resetButton; objectName: "dspResetGraphic"; visible: editor.ready; text: I18n.tr("Reset EQ", I18n.rev); onClicked: editor.resetRequested() }
         }
     }
 }

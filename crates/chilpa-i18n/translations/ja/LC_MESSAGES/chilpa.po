@@ -4901,8 +4901,8 @@ msgstr "この出力はDSDをPCMに変換して受け取ります。そのまま
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "このプレイリストには、追加する{2}トラックのうち{1}トラックがすでに含まれています。新しいものだけを追加するか、重複を含めてすべて追加してください。"
 
-msgid "This preset uses precise filters. Keep them as they are, or create a separate graphic EQ. You can restore your previous EQ."
-msgstr "このプリセットは精密フィルターを使っています。そのまま保持するか、別にグラフィックEQを作成してください。以前のEQに戻すこともできます。"
+msgid "This preset uses precise filters; each band shows its level. To move the bands, create a separate graphic EQ. You can restore your previous EQ."
+msgstr "このプリセットは精密フィルターを使っています。各バンドにそのレベルを表示しています。バンドを動かすには、別にグラフィックEQを作成してください。以前のEQに戻すこともできます。"
 
 msgid "This purchase is unavailable for download."
 msgstr "この購入はダウンロードできません。"

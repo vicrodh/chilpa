@@ -20,6 +20,13 @@ impl Origin {
     }
 }
 
+/// What each band of the graphic editor reads for any preset: its combined
+/// response at the band's frequency, so a preset of precise filters shows its
+/// shape there too.
+pub(super) fn levels(preset: &Preset, rate: u32) -> Vec<f64> {
+    preset.response_db(&FREQUENCIES, rate)
+}
+
 pub(super) fn matches(preset: &Preset) -> bool {
     preset.filters.len() == FREQUENCIES.len()
         && preset.filters.iter().zip(FREQUENCIES).all(|(filter, frequency)| {
