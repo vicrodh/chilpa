@@ -133,7 +133,7 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     let playlist_folder = chilpa.create_playlist_folder("Every source", "accent").unwrap();
     assert!(chilpa.move_playlist_to_folder(remote_id, Some(playlist_folder)));
     assert_eq!(chilpa.playlist(remote_id).unwrap().folder_id, Some(playlist_folder));
-    assert!(chilpa.managed_playlists("", "all", "name", true, Some(playlist_folder)).iter().any(|p| p.id == remote_id));
+    assert!(chilpa.managed_playlists("", "all", "", "name", true, Some(playlist_folder)).iter().any(|p| p.id == remote_id));
     let track = loop {
         if let Some(track) = chilpa.album_track_rows(remote_id).into_iter().next() { break track; }
         assert!(Instant::now() < deadline, "native playlist tracks did not load");

@@ -463,7 +463,7 @@ impl Reader {
     }
 
     pub fn playlist_manager(&self, query: &str, filter: &str, sort: &str, ascending: bool, folder_id: Option<i64>) -> Vec<crate::PlaylistManagerEntry> {
-        crate::playlists::playlist_manager_entries(self.playlists(), self.playlist_folders(), query, filter, sort, ascending, folder_id)
+        crate::playlists::playlist_manager_entries(self.playlists(), self.playlist_folders(), query, filter, "", sort, ascending, folder_id)
     }
 
     /// Every album with something present, in that order.

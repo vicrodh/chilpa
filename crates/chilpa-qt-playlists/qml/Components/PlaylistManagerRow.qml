@@ -28,6 +28,12 @@ Rectangle {
     required property bool visibleInSidebar
 
     property var manager
+    // The sources' panels, for a source playlist's icon and name.
+    property var panels: []
+    readonly property var panel: panels.find(panel => panel.id === source) || ({})
+    // Whose it is: the library's own wear Chilpa's mark, a source's its icon.
+    readonly property var origin: folder ? ({}) : local ? ({chilpa: true}) : ({icon: panel.icon_image || panel.icon || ""})
+    readonly property string owner: local ? "Chilpa" : panel.name || sourceName
     property bool grid: true
     property bool custom: false
     signal editFolder(int id, string name, string colorName)
@@ -76,6 +82,23 @@ Rectangle {
         source: row.artwork.toString() !== "" ? row.artwork : row.cover1
         tint: row.index
     }
+    // On a card, whose it is reads on its cover (QBZ's PmLocalBadge).
+    Rectangle {
+        objectName: "playlistOrigin"
+        visible: row.grid && !row.folder && (row.origin.chilpa === true || (row.origin.icon || "") !== "")
+        anchors.right: art.right
+        anchors.bottom: art.bottom
+        anchors.margins: Metrics.gap4
+        width: Metrics.iconSm + Metrics.gap8; height: width // derived: the icon and a ring around it
+        radius: width / 2 // derived: a disc
+        color: Theme.color.overlayScrim
+        SourceIcon {
+            anchors.centerIn: parent
+            width: Metrics.iconSm; height: Metrics.iconSm
+            sourceInfo: row.origin
+            color: Theme.color.backdropText
+        }
+    }
 
     Column {
         anchors.left: row.grid ? parent.left : art.right
@@ -98,7 +121,7 @@ Rectangle {
             width: parent.width
             text: row.folder
                 ? I18n.trCount("{} playlist", "{} playlists", row.tracks, I18n.rev)
-                : row.sourceName + " · " + I18n.trCount("{} track", "{} tracks", row.tracks, I18n.rev)
+                : row.owner + " · " + I18n.trCount("{} track", "{} tracks", row.tracks, I18n.rev)
             elide: Text.ElideRight
             horizontalAlignment: row.grid ? Text.AlignHCenter : Text.AlignLeft
             font.pointSize: Type.small

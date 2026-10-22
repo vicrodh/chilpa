@@ -6,6 +6,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import app.chilpa.playlists
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Patterns"
 import "../Components"
@@ -19,6 +20,14 @@ Item {
     property int folderId: 0
     property string folderName: ""
     property var rows: []
+    // Whose playlists it lists: every source's, "local" for the library's
+    // own, or one plugin's. Kept between visits, as the Artists screen keeps
+    // its own choice.
+    property string source: SettingsModel.kept("ui.playlists.source") || ""
+    property var sources: []
+    readonly property var panels: JSON.parse(Sources.snapshot || "{}").panels || []
+    function sourceLabel(id) { return id === "local" ? "Chilpa" : (panels.find(panel => panel.id === id) || {}).name || id }
+    onSourceChanged: reload()
     readonly property int folderCount: rows.filter(row => row.rowKind === 1).length
     readonly property int playlistCount: rows.length - folderCount
     PlaylistPicker { id: createPicker }
@@ -27,7 +36,10 @@ Item {
         return !value || value.indexOf("://") >= 0 ? (value || "") : "file://" + value
     }
     function reload() {
-        const raw = JSON.parse(PlaylistManager.json(search.text, filterButton.value,
+        sources = JSON.parse(PlaylistManager.sourcesJson() || "[]")
+        // A source no longer there lists every one, not nothing.
+        const from = sources.indexOf(source) >= 0 ? source : ""
+        const raw = JSON.parse(PlaylistManager.json(search.text, filterButton.value, from,
                                                      sort.base, sort.value === sort.base, folderId))
         rows = raw.map(entry => ({rowKind: entry.kind === "Folder" ? 1 : 0,
             entryId: entry.id, name: entry.name, detail: entry.detail,
@@ -144,6 +156,24 @@ Item {
                     onClosed: page.reload()
                 }
             }
+            PillButton {
+                id: sourceButton
+                objectName: "playlistSourceFilter"
+                visible: page.sources.length > 1
+                glyph: Icons.server
+                text: page.sources.indexOf(page.source) >= 0 ? page.sourceLabel(page.source) : I18n.tr("All sources", I18n.rev)
+                onClicked: sourceMenu.open()
+                Menu {
+                    id: sourceMenu
+                    objectName: "playlistSourceMenu"
+                    y: parent.height + Metrics.gap4
+                    entries: [{text: I18n.tr("All sources", I18n.rev), value: ""}].concat(page.sources.map(id => ({text: page.sourceLabel(id), value: id})))
+                    onChosen: (index) => {
+                        page.source = entries[index].value
+                        SettingsModel.keep("ui.playlists.source", page.source)
+                    }
+                }
+            }
             SortButton {
                 id: sort
                 value: "name"
@@ -198,6 +228,7 @@ Item {
             delegate: PlaylistManagerRow {
                 width: GridView.view.cellWidth - Metrics.gap12
                 grid: true
+                panels: page.panels
                 manager: playlistManager
                 custom: sort.base === "custom"
                 onEditFolder: (id, name, color) => folderDialog.show(id, name, color)
@@ -220,6 +251,7 @@ Item {
             delegate: PlaylistManagerRow {
                 width: ListView.view.width - Metrics.contentHorizontalMargins
                 grid: false
+                panels: page.panels
                 manager: playlistManager
                 custom: sort.base === "custom"
                 onEditFolder: (id, name, color) => folderDialog.show(id, name, color)
