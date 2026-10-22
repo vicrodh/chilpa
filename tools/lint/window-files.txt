@@ -36,7 +36,6 @@ crates/chilpa-qt/qml/Components/SourceAbout.qml
 crates/chilpa-qt/qml/Components/SourceColumn.qml
 crates/chilpa-qt/qml/Components/SourceCrumbs.qml
 crates/chilpa-qt/qml/Components/TabButton.qml
-crates/chilpa-qt/qml/Components/TrackColumns.qml
 crates/chilpa-qt/qml/Components/TrackGroupActions.qml
 crates/chilpa-qt/qml/Components/TrackHeader.qml
 crates/chilpa-qt/qml/Components/TrackListPointer.qml

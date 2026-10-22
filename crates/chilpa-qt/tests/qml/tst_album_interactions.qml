@@ -1,8 +1,8 @@
 import QtQuick
 import QtTest
 import "../../qml/Components"
-import "../../../chilpa-qt-kit/qml/Primitives"
-import "../../../chilpa-qt-kit/qml/Components"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../../../chilpa-qt-kit/qml/Theme"
 
 TestCase {

@@ -154,6 +154,10 @@ pub mod qobject {
         #[qinvokable]
         #[cxx_override]
         fn data(self: &TrackListModel, index: &QModelIndex, role: i32) -> QVariant;
+        /// The longest texts of each column in the rows it holds, as JSON;
+        /// `rev` only asks again when the rows change.
+        #[qinvokable]
+        fn widest(self: &TrackListModel, rev: i32) -> QString;
         #[qinvokable]
         #[cxx_override]
         #[cxx_name = "roleNames"]
@@ -354,6 +358,10 @@ impl qobject::TrackListModel {
         // A group's name is known without reading the row's page.
         let section = (role == USER_ROLE + 17).then(|| chilpa_api::section_at(&self.rust().sections, index.row().max(0) as usize)).flatten();
         section.map_or_else(|| role_value(self.rust(), index.row().max(0) as usize, role), |name| QVariant::from(&QString::from(name)))
+    }
+
+    pub fn widest(&self, _rev: i32) -> QString {
+        QString::from(&app::with(|api| api.widest_texts(&self.rust().loaded_tracks())).to_string())
     }
 
     pub fn role_names(&self) -> QHash<QHashPair_i32_QByteArray> {
