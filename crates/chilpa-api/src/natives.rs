@@ -131,6 +131,12 @@ impl Natives {
     pub(crate) fn edits_playlists(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["playlist_edit"] == true)
     }
+    /// Whether the plugin takes a saved playlist away when asked to delete
+    /// it, though the playlist is not the listener's to edit: one that keeps
+    /// saved playlists in a library, not behind a heart.
+    pub(crate) fn removes_playlists(&self, id: &str) -> bool {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["playlist_remove"] == true)
+    }
     pub(crate) fn edits_folders(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p|
             p.capabilities["folder_edit"].as_bool().unwrap_or(p.capabilities["playlist_edit"] == true))
@@ -358,5 +364,15 @@ mod tests {
             assert_eq!(reply.delivers_audio, audio, "even a failed search retains its declared capability");
         }
         assert!(!natives.delivers_audio("unknown"));
+    }
+
+    #[test]
+    fn a_plugin_says_it_removes_saved_playlists_apart_from_editing_them() {
+        let natives = Natives::default();
+        let manifest: Manifest = serde_json::from_value(json!({"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source"})).unwrap();
+        for (capabilities, edits, removes) in [(json!({}), false, false), (json!({"playlist_remove":true}), false, true), (json!({"playlist_edit":true}), true, false)] {
+            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest: manifest.clone(), folder:PathBuf::new(), capabilities, discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now() });
+            assert_eq!((natives.edits_playlists("test.source"), natives.removes_playlists("test.source")), (edits, removes));
+        }
     }
 }
