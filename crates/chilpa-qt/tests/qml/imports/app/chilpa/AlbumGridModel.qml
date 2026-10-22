@@ -1,7 +1,7 @@
 import QtQuick
 import app.chilpa.sources
 ListModel {
-    property int limit: 0; property string kind; property string key; property string order; property string group; property string filter; property int contentRev; property int albums: kind === "recentlyAdded" ? 2 : 0; property int columns: 0; property int maxRows: 0
+    property int limit: 0; property string kind; property string key; property string order; property string group; property string filter; property int contentRev; property int albums: kind === "recentlyAdded" ? 2 : kind === "artists" ? 3 : 0; property int columns: 0; property int maxRows: 0
     property int rev: 0
     property bool publishRowsOnRevision: true
     onRevChanged: { if (publishRowsOnRevision) for (let row = 0; row < count; row++) setProperty(row, "revision", rev) }
@@ -14,6 +14,12 @@ ListModel {
     function subtitle(index, revision) { return "Artist" }
     function year(index, revision) { return "2026" }
     function art(index, revision) { return "" }
+    // An artist's card, as Artist Scene reads it: the library and one source.
+    function artist(index, revision) {
+        const name = "Artist " + index
+        return JSON.stringify({title: name, sources: [{local: true, name: "Chilpa", key: name, icon: ""},
+            {plugin: "fixture", name: "Fixture", key: "fixture matching-artist-v3:" + name, icon: ""}]})
+    }
     function prepareOpen(index) {}
     function select(index, modifiers) {}
     function fillSource() {

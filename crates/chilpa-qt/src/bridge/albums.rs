@@ -65,6 +65,9 @@ pub mod qobject {
         fn art(self: &AlbumGridModel, index: i32, rev: i32) -> QUrl;
         #[qinvokable]
         fn album_id(self: &AlbumGridModel, index: i32, rev: i32) -> i64;
+        /// An artist's card of "artists": its name and the sources that hold its records.
+        #[qinvokable]
+        fn artist(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
         #[qinvokable]
         fn prepare_open(self: &AlbumGridModel, index: i32);
 
@@ -151,7 +154,9 @@ pub struct AlbumGridRust {
     mixed: bool,
     anchor: Option<i32>,
     /// The artists of "artists", kept so the filter needs no query.
-    artists: Vec<chilpa_api::Artist>,
+    artists: Vec<chilpa_api::ListedArtist>,
+    /// The card of each artist the filter leaves, in the order of `list`.
+    artist_cards: Vec<String>,
     list: Albums,
     /// Where each group starts, and the rows that leaves at this width.
     groups: Vec<(usize, String)>,
@@ -200,6 +205,9 @@ impl qobject::AlbumGridModel {
                 }
             })
             .unwrap_or_default()
+    }
+    pub fn artist(&self, index: i32, _rev: i32) -> QString {
+        self.rust().artist_cards.get(index.max(0) as usize).map(QString::from).unwrap_or_default()
     }
     pub fn album_id(&self, index: i32, _rev: i32) -> i64 {
         self.rust().get(index, |a| a.id).unwrap_or(0)
@@ -315,9 +323,10 @@ impl qobject::AlbumGridModel {
                 let generation = self.rust().generation + 1;
                 self.as_mut().rust_mut().generation = generation;
                 let role = self.rust().key.to_string();
+                let extras = crate::browse::read(|s| s.filter.clone());
                 let thread = self.qt_thread();
                 worker::submit(move |reader| {
-                    let artists = reader.artists(&role);
+                    let artists = reader.listed_artists(&role, &extras);
                     let _ = thread.queue(move |model| model.arrive_artists(generation, artists));
                 });
                 return;
@@ -350,7 +359,7 @@ impl qobject::AlbumGridModel {
         }
     }
 
-    fn arrive_artists(mut self: Pin<&mut Self>, generation: u64, artists: Vec<chilpa_api::Artist>) {
+    fn arrive_artists(mut self: Pin<&mut Self>, generation: u64, artists: Vec<chilpa_api::ListedArtist>) {
         if generation != self.rust().generation {
             return;
         }
@@ -359,8 +368,9 @@ impl qobject::AlbumGridModel {
     }
 
     /// The artists the filter leaves, as cards.
-    fn show_artists(self: Pin<&mut Self>) {
-        let cards = chilpa_api::artist_cards(&self.rust().artists, &self.rust().filter.to_string());
+    fn show_artists(mut self: Pin<&mut Self>) {
+        let (cards, shown) = chilpa_api::artist_cards(&self.rust().artists, &self.rust().filter.to_string());
+        self.as_mut().rust_mut().artist_cards = shown;
         self.show(Albums::Loaded(cards));
     }
 

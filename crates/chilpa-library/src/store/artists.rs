@@ -67,6 +67,12 @@ impl Library {
     ///
     /// A record in several editions counts once while editions are grouped.
     pub fn artists_by_role(&self, role: ArtistRole) -> rusqlite::Result<Vec<StoredArtist>> {
+        self.artists_by_role_within(role, None)
+    }
+
+    /// The same, from only the records in `within` when it is given: those a
+    /// filter of sources, qualities or formats leaves.
+    pub fn artists_by_role_within(&self, role: ArtistRole, within: Option<&HashSet<i64>>) -> rusqlite::Result<Vec<StoredArtist>> {
         let sql = match role {
             ArtistRole::Album => {
                 concat!("SELECT a.id, coalesce(p.name, trim(a.album_artist)), r.present_tracks, ", album_art!("a"), ", a.album_artist
@@ -93,6 +99,9 @@ impl Library {
         let rows = stmt.query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get::<_, i64>(2)? as usize, r.get::<_, Option<String>>(3)?, r.get::<_, String>(4)?)))?;
         for row in rows {
             let (album, name, tracks, artwork, credited) = row?;
+            if within.is_some_and(|within| !within.contains(&album)) {
+                continue;
+            }
             let various = is_various(&name);
             if various && !is_various(&credited) {
                 continue;
@@ -161,6 +170,16 @@ mod tests {
 
     fn listed(lib: &Library, role: ArtistRole) -> Vec<(String, usize, usize)> {
         lib.artists_by_role(role).unwrap().into_iter().map(|a| (a.name, a.album_count, a.track_count)).collect()
+    }
+
+    #[test]
+    fn a_filter_leaves_the_artists_of_the_records_it_lets_through() {
+        let lib = shelf();
+        let within: HashSet<i64> = [1].into();
+        let names = |role| -> Vec<String> { lib.artists_by_role_within(role, Some(&within)).unwrap().into_iter().map(|a| a.name).collect() };
+        assert_eq!(names(ArtistRole::Album), ["Aimer"], "the compilations were filtered out");
+        assert_eq!(names(ArtistRole::Any), ["Aimer"]);
+        assert!(lib.artists_by_role_within(ArtistRole::Album, Some(&HashSet::new())).unwrap().is_empty());
     }
 
     #[test]
