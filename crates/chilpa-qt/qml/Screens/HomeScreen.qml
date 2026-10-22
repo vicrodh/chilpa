@@ -29,12 +29,12 @@ ListView {
     function restore() { try { kept = JSON.parse(SettingsModel.kept(preference) || "[]") } catch (_) { kept = [] } }
     Component.onCompleted: restore()
     readonly property var available: [
-        { id: "library.recentlyPlayed", title: I18n.tr("Recently played", I18n.rev), kind: "albums", source: "recentlyPlayed" },
-        { id: "everywhere.recentlyPlayed", title: I18n.tr("Recently played", I18n.rev), configTitle: I18n.tr("Recently played, all sources", I18n.rev), kind: "albums", source: "recentlyPlayedEverywhere" },
+        { id: "library.recentlyPlayed", title: I18n.tr("Recently played", I18n.rev), kind: "albums", source: "recentlyPlayed", compact: true },
+        { id: "everywhere.recentlyPlayed", title: I18n.tr("Recently played", I18n.rev), configTitle: I18n.tr("Recently played, all sources", I18n.rev), kind: "albums", source: "recentlyPlayedEverywhere", compact: true },
         { id: "library.recentPlaylists", title: I18n.tr("Recently listened playlists", I18n.rev), kind: "playlists", allSources: false },
         { id: "everywhere.recentPlaylists", title: I18n.tr("Recently listened playlists", I18n.rev), configTitle: I18n.tr("Recently listened playlists, all sources", I18n.rev), kind: "playlists", allSources: true },
         { id: "library.recentlyAdded", title: I18n.tr("Recently added", I18n.rev), kind: "albums", source: "recentlyAdded" },
-        { id: "library.mostPlayed", title: I18n.tr("Most played", I18n.rev), kind: "tracks" }
+        { id: "library.mostPlayed", title: I18n.tr("Most played", I18n.rev), kind: "tracks", compact: true }
     ].concat(remote.sections.map(section => Object.assign({}, section, { id: "source:" + section.homeId, entityKind: section.kind, kind: "shelf",
         previous_ids: (section.previous_ids || []).map(id => "source:" + section.sourceId + ":" + id) })))
     // The kept choice over what there is today: a shelf that went is left
@@ -44,16 +44,18 @@ ListView {
     // shelves already on screen. Replacing a JS array model discarded them.
     KeyedModel {
         id: visibleSections
+        // A section that can be a compact grid is one until Cards is chosen.
         items: page.sections.filter(section => section.enabled !== false
             && (section.kind !== "shelf" || (section.items || []).length > 0))
+            .map(section => Object.assign({}, section, { grid: section.compact === true && section.mode !== "cards" }))
     }
     function change(index, field, value) {
-        const rows = sections.map(s => ({ id: s.id, enabled: s.enabled !== false, size: s.size || 0 }))
+        const rows = sections.map(s => ({ id: s.id, enabled: s.enabled !== false, size: s.size || 0, mode: s.mode || "" }))
         rows[index][field] = value
         keep(rows)
     }
     function move(index, delta) {
-        const rows = sections.map(s => ({ id: s.id, enabled: s.enabled !== false, size: s.size || 0 }))
+        const rows = sections.map(s => ({ id: s.id, enabled: s.enabled !== false, size: s.size || 0, mode: s.mode || "" }))
         const other = index + delta
         if (other < 0 || other >= rows.length)
             return
@@ -94,6 +96,26 @@ ListView {
         showPlays: true
         model: most
         TrackListModel { id: most; kind: "mostPlayed"; filterRev: Library.contentRev + Library.listeningRev; limit: tracks.entry.size || CardLayout.columns(tracks.width); playingPath: Player.path }
+    }
+    // QBZ's compact grid: up to two pages of twelve.
+    component CompactAlbums: HomeAlbumGrid {
+        id: compactShelf
+        property var entry: ({})
+        readonly property bool ready: compactRecords.ready
+        readonly property bool shown: compactRecords.albums > 0
+        title: entry.title || ""
+        model: compactRecords
+        AlbumGridModel { id: compactRecords; kind: compactShelf.entry.source || ""; columns: Metrics.slimColumns; contentRev: Library.contentRev + Library.listeningRev + Library.remoteRev + Library.remoteArtRev; limit: compactShelf.entry.size || Metrics.slimColumns * Metrics.slimRows * Metrics.slimPages }
+    }
+    component CompactTracks: HomeTrackGrid {
+        id: compactTrackShelf
+        property var entry: ({})
+        readonly property bool ready: compactMost.ready
+        readonly property bool shown: compactMost.count > 0
+        title: entry.title || ""
+        showPlays: true
+        model: compactMost
+        TrackListModel { id: compactMost; kind: "mostPlayed"; filterRev: Library.contentRev + Library.listeningRev; limit: compactTrackShelf.entry.size || Metrics.slimColumns * Metrics.slimRows * Metrics.slimPages; playingPath: Player.path }
     }
     component PlaylistShelf: HomePlaylistShelf {}
     // A source's shelf, cut to the size chosen.
@@ -165,13 +187,16 @@ ListView {
             width: page.width - Metrics.contentX * 2 // derived: padding on both sides
             entry: parent.entry
             started: !page.leaving && (entry.kind !== "shelf" || page.presented)
-            content: entry.kind === "albums" ? albumShelf : entry.kind === "playlists" ? playlistShelf : entry.kind === "tracks" ? trackShelf : sourceRail
+            content: entry.kind === "albums" ? (entry.grid ? compactAlbums : albumShelf) : entry.kind === "playlists" ? playlistShelf
+                : entry.kind === "tracks" ? (entry.grid ? compactTracks : trackShelf) : sourceRail
         }
     }
     SourceHomeSections { id: remote; active: page.presented; refresh: page.homeRefresh; rendered: false }
     Component { id: albumShelf; AlbumShelf { entry: parent.entry; width: parent ? parent.width : 0 } }
     Component { id: trackShelf; TrackShelf { entry: parent.entry; width: parent ? parent.width : 0 } }
     Component { id: playlistShelf; PlaylistShelf { entry: parent.entry; width: parent ? parent.width : 0 } }
+    Component { id: compactAlbums; CompactAlbums { entry: parent.entry; width: parent ? parent.width : 0 } }
+    Component { id: compactTracks; CompactTracks { entry: parent.entry; width: parent ? parent.width : 0 } }
     Component { id: sourceRail; SourceRail { entry: parent.entry; width: parent ? parent.width : 0 } }
 
     Loader {
@@ -184,6 +209,7 @@ ListView {
             groupSources: remote.sources
             onToggled: (index, on) => page.change(index, "enabled", on)
             onSized: (index, size) => page.change(index, "size", size)
+            onLaidOut: (index, mode) => page.change(index, "mode", mode)
             onMoved: (index, delta) => page.move(index, delta)
             onRestored: page.keep([])
         }

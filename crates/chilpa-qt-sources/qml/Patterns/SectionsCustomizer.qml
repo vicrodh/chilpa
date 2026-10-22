@@ -20,6 +20,8 @@ Modal {
     property var sections: []
     property var groupSources: []
     property var sizes: [{value: "0", text: I18n.tr("One row", I18n.rev)}, {value: "6", text: "6"}, {value: "12", text: "12"}, {value: "18", text: "18"}, {value: "24", text: "24"}]
+    // How a shelf that can be a compact grid is drawn (the Home's).
+    readonly property var modes: [{value: "compact", text: I18n.tr("Compact", I18n.rev)}, {value: "cards", text: I18n.tr("Cards", I18n.rev)}]
     property bool grouped: false
     property string activeGroup: "chilpa"
     readonly property var groups: {
@@ -43,6 +45,7 @@ Modal {
 
     signal toggled(int index, bool on)
     signal sized(int index, int size)
+    signal laidOut(int index, string mode)
     signal moved(int index, int delta)
     signal restored()
 
@@ -143,7 +146,7 @@ Modal {
                             width: visible ? Metrics.iconSm : 0; height: Metrics.iconSm
                         }
                         Text {
-                            width: parent.width - activeLogo.width - activeUp.width - activeDown.width - activeCount.width - parent.spacing * 4 // derived: four gaps between five controls
+                            width: parent.width - activeLogo.width - activeUp.width - activeDown.width - activeCount.width - parent.spacing * 4 - (activeMode.visible ? activeMode.width + parent.spacing : 0) // derived: the gaps between the controls
                             height: activeCount.height; verticalAlignment: Text.AlignVCenter
                             text: modelData.configTitle || modelData.title || ""
                             elide: Text.ElideRight; color: Theme.color.textPrimary; font.pointSize: Type.body
@@ -159,6 +162,13 @@ Modal {
                             glyph: Icons.chevronDown; tip: I18n.tr("Move down", I18n.rev)
                             enabled: index < customization.activeRows.length - 1
                             onClicked: customization.moved(sectionIndex, customization.activeRows[index + 1].sectionIndex - sectionIndex)
+                        }
+                        SortButton {
+                            id: activeMode; objectName: "activeMode_" + modelData.id
+                            visible: modelData.compact === true
+                            directed: false; glyph: Icons.layoutGrid; value: modelData.mode || "compact"
+                            options: customization.modes
+                            onPicked: value => customization.laidOut(sectionIndex, value)
                         }
                         SortButton {
                             id: activeCount; objectName: "activeCount_" + modelData.id

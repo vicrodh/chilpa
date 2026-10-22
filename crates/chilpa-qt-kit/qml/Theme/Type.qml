@@ -24,6 +24,8 @@ QtObject {
     readonly property real bestResult: 15 * pointsPerPixel
     readonly property real body: 13 * pointsPerPixel
     readonly property real bodyLarge: 13.5 * pointsPerPixel
+    // A compact grid row's title (QBZ's fontLink).
+    readonly property real slimTitle: 14 * pointsPerPixel
     readonly property real row: 12.5 * pointsPerPixel
     readonly property real meta: 12 * pointsPerPixel
     readonly property real small: 11.5 * pointsPerPixel

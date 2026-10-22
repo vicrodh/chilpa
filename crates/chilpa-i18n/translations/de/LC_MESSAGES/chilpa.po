@@ -776,6 +776,9 @@ msgstr "Update wird abgebrochen…"
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "Begrenzt die Anhebung, damit der lauteste Pegel unter der Vollaussteuerung bleibt. Aus: leise Titel erreichen das Ziel, auch wenn ihre Spitzen übersteuern."
 
+msgid "Cards"
+msgstr "Karten"
+
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr "Casting braucht eine Originaldatei mit bekannter Größe und Byte-Bereichen."
 

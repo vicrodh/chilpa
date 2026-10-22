@@ -51,7 +51,14 @@ Item {
             width: Metrics.sceneSearchWidth; height: Metrics.button32
             radius: Metrics.radiusControl; color: Theme.color.stateHover
         }
+        // A compact grid's three rows.
+        Item {
+            visible: slot.entry.grid === true
+            width: parent.width
+            height: Metrics.slimRows * Metrics.slimRow + (Metrics.slimRows - 1) * Metrics.gap8 // derived: three rows and the gaps between
+        }
         ShelfSkeleton {
+            visible: slot.entry.grid !== true
             width: parent.width
             implicitHeight: CardLayout.cardHeight + Metrics.gap8 + (slot.entry.kind === "tracks" || slot.entry.tracks === true || !!slot.entry.tracks_key || slot.entry.kind === "playlists" ? 0 : Metrics.cardRing * 2) // derived: the rail's card height, ring and scrollbar space
             round: slot.entry.round === true

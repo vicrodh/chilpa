@@ -306,6 +306,14 @@ QtObject {
     readonly property int artRecord: 56
     // The cover a disc's divider carries when its box gives each its own.
     readonly property int artGroup: 28
+    // The Home's compact grid, as QBZ's (SlimCarousel and TrackSlimRow):
+    // rows of a small cover and two lines, four across and three down, a
+    // page of twelve, two pages at most.
+    readonly property int slimRow: 60
+    readonly property int slimArt: 44
+    readonly property int slimColumns: 4
+    readonly property int slimRows: 3
+    readonly property int slimPages: 2
     readonly property int rowPadCompact: 10
     readonly property int rowPadRich: 8
     readonly property int colGrip: 18
