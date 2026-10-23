@@ -52,10 +52,8 @@ DMG packages, for both x86_64 and arm64/aarch64. The DEB, RPM, AppImage and
 macOS packages include Qt; the Linux tarball uses system Qt and provides
 the binary payload for AUR and Gentoo packaging.
 
-This first release ships in **English and Spanish**. More languages are on
-the way.
-
-Windows and Android remain under development.
+Chilpa speaks **English, Spanish, German, French, Dutch, Portuguese, Russian
+and Japanese**. Corrections from native speakers are welcome.
 
 Downloads are in [Releases](https://github.com/vicrodh/chilpa/releases) and
 progress updates in [Discussions](https://github.com/vicrodh/chilpa/discussions).
@@ -350,6 +348,20 @@ has the exact packages used for published builds, and
 AppImage and the tarball are made.
 
 </details>
+
+## Roadmap
+
+I have a clear path to take Chilpa where I want it to be. There is a lot of
+work ahead: these are the main tasks, alongside the feedback the community
+sends. Please open an [issue](https://github.com/vicrodh/chilpa/issues) for
+any bug you find, feature you want or idea you have.
+
+- [ ] A control API, with its documentation
+- [ ] Windows release
+- [ ] Sync and support for DAPs and other MTP devices
+- [ ] Daemon mode
+- [ ] Mobile versions (iOS and Android)
+- [ ] Hive mode: control any Chilpa instance from any other
 
 ## Contributing
 
