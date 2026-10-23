@@ -60,6 +60,7 @@ pub fn palette(id: ThemeId) -> ThemeColors {
         ThemeId::System => dark(),
         ThemeId::Light => light(),
         // --- Dark (branded / community) ---
+        ThemeId::ChilpaDark => chilpa_dark(),
         ThemeId::Warm => warm(),
         ThemeId::Nord => nord(),
         ThemeId::Dracula => dracula(),

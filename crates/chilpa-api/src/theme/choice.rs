@@ -48,8 +48,8 @@ pub struct Entry {
     pub light: bool,
 }
 
-/// Every theme Settings offers, in QBZ's order: its 36, Chilpa's own four in
-/// the place of QBZ's core four, then Auto and Custom.
+/// Every theme Settings offers, in QBZ's order: its 36 and Chilpa Dark,
+/// Chilpa's own four in the place of QBZ's core four, then Auto and Custom.
 pub fn entries() -> Vec<Entry> {
     let mut out: Vec<Entry> = chilpa_theme::theme_list()
         .into_iter()
