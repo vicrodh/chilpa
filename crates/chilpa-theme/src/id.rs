@@ -36,6 +36,7 @@ pub enum ThemeId {
     Light,
     System, // P1 — meta (OS-following; resolved in the frontend)
     // --- Dark (branded / community) ---
+    ChilpaDark, // Chilpa's own, from the colors of its banner
     Warm,
     Nord,
     Dracula,
@@ -78,6 +79,7 @@ pub const ALL: &[ThemeId] = &[
     ThemeId::Oled,
     ThemeId::Light,
     ThemeId::System,
+    ThemeId::ChilpaDark,
     ThemeId::Warm,
     ThemeId::Nord,
     ThemeId::Dracula,
@@ -130,6 +132,7 @@ impl ThemeId {
             ThemeId::Oled => "oled",
             ThemeId::Light => "light",
             ThemeId::System => "system",
+            ThemeId::ChilpaDark => "chilpa-dark",
             ThemeId::Warm => "warm",
             ThemeId::Nord => "nord",
             ThemeId::Dracula => "dracula",
@@ -180,6 +183,7 @@ impl ThemeId {
             ThemeId::Oled => "OLED Black",
             ThemeId::Light => "Light",
             ThemeId::System => "System",
+            ThemeId::ChilpaDark => "Chilpa Dark",
             ThemeId::Warm => "Warm",
             ThemeId::Nord => "Nord",
             ThemeId::Dracula => "Dracula",
@@ -221,7 +225,7 @@ impl ThemeId {
         use ThemeId::*;
         match self {
             Dark | Oled | Light | System => ThemeCategory::Core,
-            Warm | Nord | Dracula | TokyoNight | CatppuccinMocha | CatppuccinFrappe
+            ChilpaDark | Warm | Nord | Dracula | TokyoNight | CatppuccinMocha | CatppuccinFrappe
             | CatppuccinMacchiato | BreezeDark | AdwaitaDark
             | Aurora | Ikari | Ayanami | Iscariot | Stratego | Rumi | Zoey | Mira | Frost
             | Langley => ThemeCategory::Dark,
