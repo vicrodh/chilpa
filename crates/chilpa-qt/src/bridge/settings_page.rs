@@ -209,12 +209,6 @@ impl qobject::SettingsPage {
                 "revoke" => {
                     app::with(|api| api.revoke_plugin(id));
                 }
-                "uninstall" => {
-                    if !app::with(|api| api.uninstall_plugin(id)) {
-                        let said = app::with(|api| api.now_playing().error.clone());
-                        self.as_mut().rust_mut().said = Some((key.clone(), said));
-                    }
-                }
                 _ => return,
             }
             self.reload();

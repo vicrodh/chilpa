@@ -325,7 +325,11 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     std::fs::write(data.join("account.json"), b"fixture").unwrap();
     std::fs::write(cache.join("catalog.json"), b"fixture").unwrap();
     chilpa.remember_preference("ui.source.com.test.native section:albums.order", "title");
-    chilpa.plugin_center_command("uninstall", r#"{"id":"com.test.native"}"#);
+    let lyrics = chilpa_lyrics::cache::Cache::open(&chilpa_dirs::cache().join("lyrics").join("v1.db")).unwrap();
+    let song = chilpa_lyrics::matching::Track { title: "Remote song".into(), artist: "Artist".into(), duration_ms: Some(180_000), ..Default::default() };
+    lyrics.put_none_from_source("com.test.native", "track:1", &song);
+    assert!(lyrics.get_from_source("com.test.native", "track:1", &song).is_some(), "the fixture lyric is kept");
+    chilpa.plugin_center_command("uninstall", r#"{"id":"com.test.native","lyrics":true}"#);
     let removed = wait_center(&mut chilpa);
     assert_success(&removed);
     assert!(removed["installed"].as_array().unwrap().is_empty());
@@ -336,6 +340,7 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     assert!(!folder.exists() && !data.exists() && !cache.exists());
     assert_eq!(chilpa.preference("ui.source.com.test.native section:albums.order"), None);
     assert!(!chilpa_api::Chilpa::plugins_dir().join(".integration/com.test.native.json").exists());
+    assert!(lyrics.get_from_source("com.test.native", "track:1", &song).is_none(), "asked to, uninstalling forgets the plugin's lyrics");
     assert!(caller.call("com.test.native", "echo", json!({}), Duration::from_secs(1)).is_err());
     let _ = std::fs::remove_dir_all(dir);
 }

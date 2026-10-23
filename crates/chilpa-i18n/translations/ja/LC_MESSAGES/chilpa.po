@@ -395,6 +395,9 @@ msgstr "追加済み"
 msgid "Already used by {}"
 msgstr "{}で使用済み"
 
+msgid "Also delete the lyrics saved for this plugin's tracks"
+msgstr "このプラグインのトラックに保存された歌詞も削除する"
+
 msgid "Also write the other tag layers"
 msgstr "ほかのタグレイヤーにも書き込む"
 
@@ -2198,9 +2201,6 @@ msgstr "オーディオサービスを再起動しました"
 
 msgid "I understand and accept these terms"
 msgstr "これらの規約を理解し、同意します"
-
-msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
-msgstr "アンインストールしましたが、アカウントはプラグイン自身が管理しており、削除を依頼しても応答がありませんでした。認証情報がプラグインの保存先に残っている可能性があります"
 
 msgid "INFLUENCES"
 msgstr "影響を受けたアーティスト"
@@ -6302,9 +6302,6 @@ msgstr "fmtチャンクがありません"
 
 msgid "the folder could not be forgotten: {}"
 msgstr "フォルダーを解除できませんでした: {}"
-
-msgid "the folder for \"{}\" could not be deleted"
-msgstr "「{}」のフォルダーを削除できませんでした"
 
 msgid "the frame-info records do not match the frames that start"
 msgstr "frame-infoのレコードが、開始するフレームと一致しません"

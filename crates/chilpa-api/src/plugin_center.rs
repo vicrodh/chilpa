@@ -398,14 +398,8 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             state["form"] = Value::Null;
         }
         "uninstall" => {
-            let mut plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
-            plugins.revoke(id)?;
-            plugins.reload_one(id);
-            plugins.forget_credential(id);
-            if !plugins.uninstall(id) { return Err("The plugin could not be removed.".into()); }
+            plugins.lock().map_err(|_| "The plugin host is unavailable.")?.remove(id, input["lyrics"] == true)?;
             state["settings_loading_id"] = Value::Null;
-            export::clear(root, id);
-            crate::plugin_access::clear(root, id);
             state["form"] = Value::Null;
             state["settings_id"] = Value::Null;
             state["approval"] = Value::Null;

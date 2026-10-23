@@ -590,8 +590,6 @@ impl Chilpa {
             row.values.push("revoke".into());
             row.options.push(chilpa_i18n::t("Withdraw approval"));
         }
-        row.values.push("uninstall".into());
-        row.options.push(chilpa_i18n::t("Uninstall"));
         if let Some((id, url)) = notes.plugin_link {
             if id == &plugin.id {
                 row.value = url.clone();
