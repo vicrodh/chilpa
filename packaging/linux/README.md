@@ -16,7 +16,8 @@ user namespaces available. Packaging tools extract without requiring FUSE.
 
 1. Set `[workspace.package].version` in `Cargo.toml` to `X.Y.Z` or a prerelease
    such as `0.1.0-rc.1` and update `Cargo.lock` before tagging the same commit
-   with a `v` prefix.
+   with a `v` prefix. Releases come only from `main`: the tagged commit must
+   already be on `main`, or the workflow stops before building.
 2. The tag starts `.github/workflows/release-linux.yml`. It checks the version,
    runs repository gates and API tests, builds one binary per architecture, packages all four formats,
    checks AppImage startup and verifies all checksums.
