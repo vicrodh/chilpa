@@ -121,6 +121,9 @@ msgstr "Um clique em um disco abre"
 msgid "A new version of Chilpa is available."
 msgstr "Há uma nova versão do Chilpa disponível."
 
+msgid "A player for your own music"
+msgstr "Um player para a sua própria música"
+
 msgid "A secure cast URL could not be created."
 msgstr "Não foi possível criar uma URL segura de transmissão."
 
@@ -225,6 +228,9 @@ msgstr "Adicionar apenas as faixas novas"
 
 msgid "Add server"
 msgstr "Adicionar servidor"
+
+msgid "Add the folders where your music lives. Chilpa reads their tags and covers and builds your library from them."
+msgstr "Adicione as pastas onde está a sua música. O Chilpa lê as tags e as capas e monta a sua biblioteca a partir delas."
 
 msgid "Add to favorites"
 msgstr "Adicionar aos favoritos"
@@ -877,6 +883,9 @@ msgstr "O Chilpa nunca grava estes arquivos"
 
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr "O Chilpa abre com as abas que tinha ao fechar."
+
+msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
+msgstr "O Chilpa reproduz os arquivos dos seus discos e os servidores que você mantém, e os plugins adicionam mais fontes. Ele diz com clareza se o que chega ao seu DAC é bit-perfect."
 
 msgid "Chilpa plugins"
 msgstr "Plugins do Chilpa"
@@ -2012,6 +2021,12 @@ msgstr "Gêneros"
 msgid "German"
 msgstr "Alemão"
 
+msgid "Get started"
+msgstr "Começar"
+
+msgid "Getting started"
+msgstr "Primeiros passos"
+
 msgid "Go"
 msgstr "Ir"
 
@@ -2684,6 +2699,9 @@ msgstr "Revista"
 msgid "Maintenance"
 msgstr "Manutenção"
 
+msgid "Make it yours"
+msgstr "Deixe do seu jeito"
+
 msgid "Manage"
 msgstr "Gerenciar"
 
@@ -2956,6 +2974,9 @@ msgstr "Nova pasta"
 
 msgid "New import"
 msgstr "Nova importação"
+
+msgid "New in {}"
+msgstr "Novo em {}"
 
 msgid "New playlist"
 msgstr "Nova playlist"
@@ -3326,6 +3347,9 @@ msgstr "Abrir a página da conta"
 msgid "Open album"
 msgstr "Abrir álbum"
 
+msgid "Open appearance"
+msgstr "Abrir aparência"
+
 msgid "Open artist"
 msgstr "Abrir artista"
 
@@ -3370,6 +3394,12 @@ msgstr "Abrir importador de playlists"
 
 msgid "Open plex.tv/link"
 msgstr "Abrir plex.tv/link"
+
+msgid "Open plugins"
+msgstr "Abrir plugins"
+
+msgid "Open the HiFi Wizard"
+msgstr "Abrir o Assistente HiFi"
 
 msgid "Open the folder used for disposable files."
 msgstr "Abre a pasta usada para arquivos descartáveis."
@@ -3458,6 +3488,9 @@ msgstr "Intérpretes"
 msgid "Permission review required"
 msgstr "Revisão de permissões necessária"
 
+msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
+msgstr "Escolha um tema ou mantenha Sistema para seguir a sua área de trabalho, escolha o seu idioma e pressione : para abrir a linha de comando."
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "Fixar o DAC + taxas (WirePlumber)"
 
@@ -3502,6 +3535,9 @@ msgstr "Reproduções"
 
 msgid "Play cursor track"
 msgstr "Reproduzir a faixa sob o cursor"
+
+msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
+msgstr "Reproduza dos servidores que você mantém e adicione fontes e recursos com plugins do catálogo oficial ou do catálogo de terceiros."
 
 msgid "Play indicator animation"
 msgstr "Animação do indicador de reprodução"
@@ -3928,6 +3964,12 @@ msgstr "Lançamento"
 
 msgid "Release date"
 msgstr "Data de lançamento"
+
+msgid "Release notes"
+msgstr "Notas da versão"
+
+msgid "Release notes are not available."
+msgstr "As notas da versão não estão disponíveis."
 
 msgid "Release type"
 msgstr "Tipo de lançamento"
@@ -4363,6 +4405,9 @@ msgstr "Nome do servidor"
 msgid "Servers"
 msgstr "Servidores"
 
+msgid "Servers and plugins"
+msgstr "Servidores e plugins"
+
 msgid "Set Timer"
 msgstr "Definir timer"
 
@@ -4715,6 +4760,9 @@ msgstr "Esse arquivo não é uma imagem JPEG, PNG ou WebP"
 
 msgid "The EQ profile is too large."
 msgstr "O perfil de EQ é grande demais."
+
+msgid "The HiFi Wizard checks your audio stack, finds your DAC and helps you set it up for bit-perfect playback."
+msgstr "O Assistente HiFi verifica a sua pilha de áudio, encontra o seu DAC e ajuda você a configurá-lo para reprodução bit-perfect."
 
 msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
 msgstr "A ISO permanece intacta. Os metadados compatíveis vão para o XML; os outros campos e a capa usam um arquivo auxiliar do Chilpa."
@@ -5397,6 +5445,9 @@ msgstr "Semana"
 msgid "Welcome"
 msgstr "Boas-vindas"
 
+msgid "Welcome to Chilpa"
+msgstr "Boas-vindas ao Chilpa"
+
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "O que a tecla Enter faz com um resultado da busca da visualização imersiva. Desativada desliga a busca."
 
@@ -5408,6 +5459,12 @@ msgstr "Com o que testar"
 
 msgid "What you play most"
 msgstr "O que você mais reproduz"
+
+msgid "What's new"
+msgstr "Novidades"
+
+msgid "What's new in v{}"
+msgstr "Novidades da v{}"
 
 msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
 msgstr "Onde o editor de metadados busca primeiro. “Somente tags embutidas” nunca acessa a rede."
@@ -5499,6 +5556,9 @@ msgstr "Ontem"
 msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
 msgstr "Você é responsável pelos seus próprios backups. Isto é uma ajuda, não uma ferramenta de recuperação do sistema."
 
+msgid "Your DAC"
+msgstr "Seu DAC"
+
 msgid "Your DAC is ready for bit-perfect playback. If you applied the config files, restart the audio services (or log out and back in) for them to take effect."
 msgstr "Seu DAC está pronto para a reprodução bit-perfect. Se você aplicou os arquivos de configuração, reinicie os serviços de áudio (ou saia da sessão e entre novamente) para que tenham efeito."
 
@@ -5510,6 +5570,9 @@ msgstr "Sua pilha de áudio está pronta para a reprodução bit-perfect."
 
 msgid "Your distribution"
 msgstr "Sua distribuição"
+
+msgid "Your music"
+msgstr "Sua música"
 
 msgid "Your queue is empty"
 msgstr "Sua fila está vazia"

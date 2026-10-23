@@ -3,6 +3,9 @@
 
 use serde_json::json;
 
+#[path = "onboarding.rs"]
+pub(crate) mod onboarding;
+
 /// The project's wiki, the menu's Documentation.
 pub const DOCUMENTATION: &str = "https://github.com/vicrodh/chilpa/wiki";
 /// A new issue on the project, the menu's Report an issue.
