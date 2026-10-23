@@ -1,6 +1,6 @@
 # 0.1.0
 
-Initial public release for Linux x86_64 and macOS on Apple Silicon.
+Initial public release for Linux and macOS, each on x86_64 and ARM64 (Apple Silicon).
 
 - Local libraries and connected sources in one native Qt interface.
 - Destination skeletons appear before content loads to keep navigation responsive.
@@ -8,7 +8,7 @@ Initial public release for Linux x86_64 and macOS on Apple Silicon.
 - Synchronized lyrics and translations, with immersive audio visualizations.
 - Official plugin catalog configured on first start, including an offline snapshot.
 - Radio, Podcasts, Playlist Importer, DSP and Mood as separate official plugins.
-- Linux AppImage and binary tarball, plus macOS ZIP and DMG packages, with checksums, provenance and third-party notices.
+- Linux AppImage, tarball, DEB and RPM packages, plus macOS ZIP and DMG packages, with checksums, provenance and third-party notices.
 - Stable AppImage updates, with verification before replacing the installed image.
 
 Third-party playback plugins and model weights are not included. Mood downloads
