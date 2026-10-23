@@ -117,6 +117,39 @@ impl Chilpa {
         Ok(FoundSelection { catalog, hold, load, started: Instant::now() })
     }
 
+    /// The songs chosen on the results page, for a playlist to take, in the
+    /// order they are listed; a source's that cannot sound are left out.
+    pub fn found_songs_selection(&mut self, songs: &[FoundRow]) -> Result<FoundSelection, String> {
+        let catalog = self.catalog.clone();
+        let playable = |row: &FoundRow| match row {
+            FoundRow::Track(_) => true,
+            FoundRow::Remote(found) => row.kind() == 4 && !found.no_audio && !found.id.is_empty() && !found.source.is_empty()
+                && !found.item.as_ref().is_some_and(|item| item["available"] == false),
+            _ => false,
+        };
+        let identity = |found: &crate::source_search::RemoteFound| found.item.as_ref().and_then(|item| item["ref"].as_str()).map_or_else(|| found.id.clone(), str::to_string);
+        let songs: Vec<&FoundRow> = songs.iter().filter(|row| playable(row)).collect();
+        let hold = catalog.hold([], songs.iter().filter_map(|row| match row {
+            FoundRow::Remote(found) => Some(crate::source_opener::entry_of(&found.source, &identity(found))),
+            FoundRow::Track(track) => Some(track.path.clone()),
+            _ => None,
+        }));
+        let mut targets = Vec::with_capacity(songs.len());
+        for row in songs {
+            let id = match row {
+                FoundRow::Remote(found) => {
+                    let epoch = self.plugins.as_ref().and_then(|plugins| plugins.try_lock().ok().map(|plugins| plugins.epoch(&found.source)));
+                    catalog.adopt(&found.source, epoch, found)
+                }
+                FoundRow::Track(track) => track.id,
+                _ => 0,
+            };
+            if id != 0 { targets.push(Target::Id(id)); }
+        }
+        if targets.is_empty() { return Err(failed()); }
+        Ok(FoundSelection { catalog, hold, load: Load::Tracks(targets), started: Instant::now() })
+    }
+
     pub fn hold_found_menu(&self, row: &FoundRow) -> SelectionHold {
         let mut cards = Vec::new();
         let mut tracks = Vec::new();

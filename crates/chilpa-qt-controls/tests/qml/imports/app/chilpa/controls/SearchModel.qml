@@ -26,4 +26,9 @@ ListModel {
     property string qualityFilter: ""
     property bool hideExplicit: false
     function act(index, action) {}
+    // What the bar of chosen songs asked for, as the bridge would take it.
+    property var actedSongs: null
+    property var pickedSongs: []
+    function actSongs(keys, action, label) { actedSongs = {keys: JSON.parse(keys), act: action, label: label} }
+    function pickSongs(keys) { pickedSongs = JSON.parse(keys) }
 }

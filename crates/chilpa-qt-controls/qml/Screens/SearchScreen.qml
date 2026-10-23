@@ -43,8 +43,9 @@ Flickable {
     readonly property var listed: tab === "all" ? [] : sections[tab] || []
     function read() { rows = JSON.parse(results.rowsJson() || "[]") }
     function open(at) { results.act(at, "open"); navigation.flush() }
+    function play(at) { results.act(at, "play"); navigation.flush() }
     function menu(at, item, x, y) { const point = item.mapToItem(column, x, y); hitMenu.show(at, point.x, point.y) }
-    function show(id) { tab = id; shown = Metrics.searchPage; songsShown = Metrics.searchSongs; contentY = 0 }
+    function show(id) { tab = id; shown = Metrics.searchPage; songsShown = Metrics.searchSongs; contentY = 0; chosen.stop() }
     function artUrl(art) { return !art ? "" : art.startsWith("https://") ? art : "file://" + art.split("/").map(encodeURIComponent).join("/") }
     // Whose a row is: a source names itself, and the library's own are Chilpa's.
     function mine(row) { return (row.sourceName || "") === "" }
@@ -66,31 +67,6 @@ Flickable {
     Connections { target: results; function onModelReset() { page.read() } }
     Timer { interval: Motion.poll; repeat: true; running: page.visible; onTriggered: results.refresh() }
     SearchNavigation { id: navigation; search: results }
-
-    component Hits: Column {
-        id: hits
-        property var rows: []
-        width: parent ? parent.width : 0
-        Repeater {
-            model: hits.rows
-            Item {
-                required property var modelData
-                width: hits.width; height: hit.height
-                SearchHit {
-                    id: hit
-                    width: parent.width
-                    index: parent.modelData.at; kind: parent.modelData.kind
-                    title: parent.modelData.title; detail: parent.modelData.detail
-                    art: page.artUrl(parent.modelData.art); duration: parent.modelData.duration
-                    sourceIcon: parent.modelData.sourceIcon; sourceName: parent.modelData.sourceName
-                    markOwn: true
-                    onActivated: page.open(index)
-                    onPlayed: { results.act(index, "play"); navigation.flush() }
-                    onMenu: (left, top) => page.menu(index, hit, left, top)
-                }
-            }
-        }
-    }
 
     Component {
         id: recordCard
@@ -147,26 +123,13 @@ Flickable {
             SearchPreviewSwitch { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; search: results }
         }
         SearchFilters { width: parent.width; search: results }
-        Row {
-            objectName: "searchTabs"
-            spacing: Metrics.gap24
-            Repeater {
-                model: page.tabs
-                Column {
-                    required property var modelData
-                    readonly property bool active: page.tab === modelData.id
-                    objectName: "searchTab_" + modelData.id
-                    spacing: Metrics.gap4
-                    Text {
-                        text: parent.modelData.text
-                        font.pointSize: Type.body; font.weight: parent.active ? Type.bold : Type.regular
-                        color: parent.active ? Theme.color.textPrimary : Theme.color.textSecondary
-                        HoverHandler { cursorShape: Qt.PointingHandCursor }
-                        TapHandler { onTapped: page.show(parent.parent.modelData.id) }
-                    }
-                    Rectangle { visible: parent.active; width: parent.width; height: Metrics.gap2; radius: height / 2; color: Theme.color.accent } // derived: a rounded underline
-                }
-            }
+        SearchTabs {
+            width: parent.width
+            tabs: page.tabs; tab: page.tab
+            selectable: page.tab === "songs" && page.listed.length > 0
+            selecting: chosen.selecting; chosenAny: chosen.keys.length > 0
+            onPicked: (id) => page.show(id)
+            onSelectToggled: chosen.selecting ? chosen.stop() : chosen.selecting = true
         }
 
         Row {
@@ -211,7 +174,7 @@ Flickable {
                 link: page.sections.songs.length > Metrics.searchSongs ? I18n.tr("See all", I18n.rev) : ""
                 onLinkClicked: page.show("songs")
             }
-            Hits { rows: page.sections.songs.slice(0, page.songsShown) }
+            SearchSongs { width: parent.width; rows: page.sections.songs.slice(0, page.songsShown); artUrl: page.artUrl; onActivated: (at) => page.open(at); onPlayed: (at) => page.play(at); onMenuAsked: (at, item, x, y) => page.menu(at, item, x, y) }
             PillButton {
                 objectName: "searchSongsMore"
                 visible: page.sections.songs.length > page.songsShown
@@ -240,7 +203,16 @@ Flickable {
                 delegate: page.tab === "artists" ? artistCard : page.tab === "playlists" ? playlistCard : recordCard
             }
         }
-        Hits { visible: page.tab === "songs"; rows: page.tab === "songs" ? page.listed.slice(0, page.shown) : [] }
+        SearchSongs {
+            visible: page.tab === "songs"
+            width: parent.width
+            rows: chosen.rows
+            chosen: chosen
+            artUrl: page.artUrl
+            onActivated: (at) => page.open(at)
+            onPlayed: (at) => page.play(at)
+            onMenuAsked: (at, item, x, y) => page.menu(at, item, x, y)
+        }
         PillButton {
             objectName: "searchLoadMore"
             visible: page.listed.length > page.shown
@@ -255,5 +227,14 @@ Flickable {
             color: Theme.color.textSecondary
         }
         SearchMenu { id: hitMenu; navigation: navigation; search: results }
+    }
+    SearchChosenSongs {
+        id: chosen
+        z: 2
+        search: results
+        active: page.visible && page.tab === "songs"
+        rows: page.tab === "songs" ? page.listed.slice(0, page.shown) : []
+        x: (page.width - width) / 2
+        y: page.contentY + page.height - height - Metrics.selectionBottom
     }
 }
