@@ -2,9 +2,9 @@ name: Checks
 
 on:
   push:
-    branches: [pre-release]
+    branches: [pre-launch]
   pull_request:
-    branches: [pre-release, main]
+    branches: [pre-launch, main]
   workflow_dispatch:
 
 permissions:
