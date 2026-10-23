@@ -47,7 +47,7 @@ impl ChilpaServices {
         if !valid_key(key) || !valid_id(plugin) {
             return None;
         }
-        Some(self.root.join(plugin).join("store").join(key))
+        Some(self.root.join(plugin).join(crate::plugin_replacement::STORE).join(key))
     }
 
     /// The credential kept for a plugin, if there is one.
@@ -163,7 +163,7 @@ fn post(url: &str, body: &str) -> Result<(u16, String), String> {
 /// The id is checked before it becomes a path, just like a store key:
 /// one with slashes would escape its folder.
 fn credential_file(root: &Path, plugin: &str) -> Option<PathBuf> {
-    valid_id(plugin).then(|| root.join(plugin).join("credential.sealed"))
+    valid_id(plugin).then(|| root.join(plugin).join(crate::plugin_replacement::CREDENTIAL))
 }
 
 impl ChilpaServices {
