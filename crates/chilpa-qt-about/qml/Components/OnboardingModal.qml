@@ -134,7 +134,8 @@ Modal {
                     objectName: "deckCard"
                     anchors.fill: parent
                     visible: !modal.showingNotes
-                    model: modal.card
+                    // Closed, the deck holds no card and so no decoded art.
+                    model: modal.visible ? modal.card : null
                     eyebrow: modal.welcome ? I18n.tr("Getting started", I18n.rev)
                                            : I18n.tr("New in {}", I18n.rev).replace("{}", modal.doc.version || "")
                     onActionChosen: action => modal.follow(action)
