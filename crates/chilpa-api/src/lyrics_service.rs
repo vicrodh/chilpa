@@ -31,6 +31,13 @@ fn cache_path() -> std::path::PathBuf {
     chilpa_dirs::cache().join("lyrics").join("v1.db")
 }
 
+/// Forgets the lyrics kept for a plugin's tracks and the ones it gave, when
+/// the listener asks for it while uninstalling. Answers how many.
+pub(crate) fn forget_plugin_lyrics(plugin: &str) -> usize {
+    // A connection of its own: the lyrics thread keeps the other.
+    Cache::open(&cache_path()).map(|cache| cache.forget_provider(plugin)).unwrap_or(0)
+}
+
 /// The preference that says which language a translation is wanted in:
 /// empty or "auto" for the window's own, else a language code.
 pub(crate) const TRANSLATION_LANGUAGE: &str = "ui.lyrics.translation";

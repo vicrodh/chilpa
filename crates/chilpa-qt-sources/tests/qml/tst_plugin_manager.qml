@@ -153,8 +153,22 @@ TestCase {
         verify(confirmation.opened)
         confirmation.confirmed()
         confirmation.close()
-        compare(backend.calls[backend.calls.length - 1], ["uninstall", {id: "guest"}])
+        compare(backend.calls[backend.calls.length - 1], ["uninstall", {id: "guest", lyrics: false}])
         compare(manager.selected, "")
+    }
+    function test_uninstalling_asks_before_forgetting_the_plugin_lyrics() {
+        const plugin = {id: "guest", name: "Guest", origin: {}, state: "fine", enabled: true}
+        backend.state = {installed: [plugin], busy: false}
+        manager.read(); manager.settings(plugin)
+        findChild(manager.detailsView, "uninstallPlugin").clicked()
+        const confirmation = findChild(manager.detailsView, "confirmPluginRemoval")
+        const option = findChild(confirmation, "confirmOption")
+        verify(option.visible, "the lyrics question is asked")
+        verify(!option.checked, "keeping the lyrics is the default")
+        option.toggle()
+        confirmation.confirmed()
+        confirmation.close()
+        compare(backend.calls[backend.calls.length - 1], ["uninstall", {id: "guest", lyrics: true}])
     }
     function test_permissions_require_explicit_acceptance() {
         backend.calls = []

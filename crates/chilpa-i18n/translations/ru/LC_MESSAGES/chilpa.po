@@ -397,6 +397,9 @@ msgstr "Уже в плейлистах"
 msgid "Already used by {}"
 msgstr "Уже используется: {}"
 
+msgid "Also delete the lyrics saved for this plugin's tracks"
+msgstr "Также удалить сохранённые тексты песен для треков этого плагина"
+
 msgid "Also write the other tag layers"
 msgstr "Записывать также в другие слои тегов"
 
@@ -2202,9 +2205,6 @@ msgstr "Аудиослужбы перезапущены"
 
 msgid "I understand and accept these terms"
 msgstr "Я понимаю и принимаю эти условия"
-
-msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
-msgstr "Плагин удалён, но он сам управлял своей учётной записью и не ответил на просьбу удалить её: учётные данные могут по-прежнему храниться там, куда он их поместил"
 
 msgid "INFLUENCES"
 msgstr "ВЛИЯНИЯ"
@@ -6312,9 +6312,6 @@ msgstr "отсутствует блок fmt"
 
 msgid "the folder could not be forgotten: {}"
 msgstr "не удалось забыть папку: {}"
-
-msgid "the folder for \"{}\" could not be deleted"
-msgstr "не удалось удалить папку для «{}»"
 
 msgid "the frame-info records do not match the frames that start"
 msgstr "записи frame-info не совпадают с начинающимися кадрами"

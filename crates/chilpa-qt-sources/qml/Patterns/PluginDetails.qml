@@ -240,12 +240,12 @@ P.Modal {
         P.PillButton { id: close; anchors.right: parent.right; text: I18n.tr("Close", I18n.rev); onClicked: details.close() }
     }
     ConfirmDialog {
-        id: removal
-        objectName: "confirmPluginRemoval"
+        id: removal; objectName: "confirmPluginRemoval"
         title: I18n.tr("Uninstall plugin", I18n.rev)
         message: I18n.tr("Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source.", I18n.rev)
         confirmText: I18n.tr("Uninstall", I18n.rev)
+        option: I18n.tr("Also delete the lyrics saved for this plugin's tracks", I18n.rev)
         destructive: true
-        onConfirmed: { details.manager.command("uninstall", {id: details.plugin.id}); details.close() }
+        onConfirmed: { details.manager.command("uninstall", {id: details.plugin.id, lyrics: removal.optionChecked}); details.close() }
     }
 }
