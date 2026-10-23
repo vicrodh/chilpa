@@ -2,3 +2,4 @@ module app.chilpa.about
 singleton About 1.0 About.qml
 singleton Updates 1.0 Updates.qml
 singleton PluginUpdates 1.0 PluginUpdates.qml
+singleton Onboarding 1.0 Onboarding.qml

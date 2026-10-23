@@ -121,6 +121,9 @@ msgstr ""
 msgid "A new version of Chilpa is available."
 msgstr ""
 
+msgid "A player for your own music"
+msgstr "A player for your own music"
+
 msgid "A secure cast URL could not be created."
 msgstr ""
 
@@ -225,6 +228,9 @@ msgstr ""
 
 msgid "Add server"
 msgstr ""
+
+msgid "Add the folders where your music lives. Chilpa reads their tags and covers and builds your library from them."
+msgstr "Add the folders where your music lives. Chilpa reads their tags and covers and builds your library from them."
 
 msgid "Add to favorites"
 msgstr ""
@@ -877,6 +883,9 @@ msgstr ""
 
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr ""
+
+msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
+msgstr "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
 
 msgid "Chilpa plugins"
 msgstr ""
@@ -2012,6 +2021,12 @@ msgstr ""
 msgid "German"
 msgstr ""
 
+msgid "Get started"
+msgstr "Get started"
+
+msgid "Getting started"
+msgstr "Getting started"
+
 msgid "Go"
 msgstr ""
 
@@ -2684,6 +2699,9 @@ msgstr ""
 msgid "Maintenance"
 msgstr ""
 
+msgid "Make it yours"
+msgstr "Make it yours"
+
 msgid "Manage"
 msgstr ""
 
@@ -2956,6 +2974,9 @@ msgstr ""
 
 msgid "New import"
 msgstr "New import"
+
+msgid "New in {}"
+msgstr "New in {}"
 
 msgid "New playlist"
 msgstr ""
@@ -3326,6 +3347,9 @@ msgstr ""
 msgid "Open album"
 msgstr ""
 
+msgid "Open appearance"
+msgstr "Open appearance"
+
 msgid "Open artist"
 msgstr ""
 
@@ -3370,6 +3394,12 @@ msgstr ""
 
 msgid "Open plex.tv/link"
 msgstr ""
+
+msgid "Open plugins"
+msgstr "Open plugins"
+
+msgid "Open the HiFi Wizard"
+msgstr "Open the HiFi Wizard"
 
 msgid "Open the folder used for disposable files."
 msgstr ""
@@ -3458,6 +3488,9 @@ msgstr ""
 msgid "Permission review required"
 msgstr "Permission review required"
 
+msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
+msgstr "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr ""
 
@@ -3502,6 +3535,9 @@ msgstr ""
 
 msgid "Play cursor track"
 msgstr ""
+
+msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
+msgstr "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
 
 msgid "Play indicator animation"
 msgstr ""
@@ -3928,6 +3964,12 @@ msgstr "Release"
 
 msgid "Release date"
 msgstr "Release date"
+
+msgid "Release notes"
+msgstr "Release notes"
+
+msgid "Release notes are not available."
+msgstr "Release notes are not available."
 
 msgid "Release type"
 msgstr "Release type"
@@ -4363,6 +4405,9 @@ msgstr ""
 msgid "Servers"
 msgstr ""
 
+msgid "Servers and plugins"
+msgstr "Servers and plugins"
+
 msgid "Set Timer"
 msgstr ""
 
@@ -4715,6 +4760,9 @@ msgstr ""
 
 msgid "The EQ profile is too large."
 msgstr ""
+
+msgid "The HiFi Wizard checks your audio stack, finds your DAC and helps you set it up for bit-perfect playback."
+msgstr "The HiFi Wizard checks your audio stack, finds your DAC and helps you set it up for bit-perfect playback."
 
 msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
 msgstr ""
@@ -5397,6 +5445,9 @@ msgstr ""
 msgid "Welcome"
 msgstr ""
 
+msgid "Welcome to Chilpa"
+msgstr "Welcome to Chilpa"
+
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr ""
 
@@ -5408,6 +5459,12 @@ msgstr ""
 
 msgid "What you play most"
 msgstr ""
+
+msgid "What's new"
+msgstr "What's new"
+
+msgid "What's new in v{}"
+msgstr "What's new in v{}"
 
 msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
 msgstr ""
@@ -5499,6 +5556,9 @@ msgstr ""
 msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
 msgstr ""
 
+msgid "Your DAC"
+msgstr "Your DAC"
+
 msgid "Your DAC is ready for bit-perfect playback. If you applied the config files, restart the audio services (or log out and back in) for them to take effect."
 msgstr ""
 
@@ -5510,6 +5570,9 @@ msgstr ""
 
 msgid "Your distribution"
 msgstr ""
+
+msgid "Your music"
+msgstr "Your music"
 
 msgid "Your queue is empty"
 msgstr ""

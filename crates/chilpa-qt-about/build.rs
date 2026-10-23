@@ -72,9 +72,12 @@ fn main() {
     stamp();
     let qml = files("qml", &|p| p.extension().is_some_and(|e| e == "qml"));
     let bridges = files("src/bridge", &|p| p.extension().is_some_and(|e| e == "rs"));
-    // A layer's `qmldir` declares its singletons.
-    let resources = files("qml", &|p| p.file_name().is_some_and(|n| n == "qmldir"));
+    // A layer's `qmldir` declares its singletons; the deck's card art ships
+    // inside the binary, as QBZ's did.
+    let mut resources = files("qml", &|p| p.file_name().is_some_and(|n| n == "qmldir"));
+    resources.extend(files("assets", &|p| p.extension().is_some_and(|e| e == "png")));
     println!("cargo:rerun-if-changed=qml");
+    println!("cargo:rerun-if-changed=assets");
     println!("cargo:rerun-if-changed=src/bridge");
     CxxQtBuilder::library(Interface::default())
         .qt_module("Gui")

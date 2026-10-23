@@ -76,6 +76,7 @@ pub const TOKENS: &[&str] = &[
     "immersive.searchPanel", "immersive.searchEdge", "immersive.axis", "immersive.axisBox", "immersive.ribbonBase",
     "immersive.glowDefault", "immersive.separator",
     "mini.rowActive", "mini.danger", "mini.onBackdrop", "mini.glyphOnBackdrop", "mini.seekOnBackdrop", "mini.footer",
+    "onboarding.artFrom", "onboarding.artMiddle", "onboarding.artTo",
 ];
 
 /// How far the two weaker text tokens move toward `text.primary` while the
