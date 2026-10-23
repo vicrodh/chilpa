@@ -2960,11 +2960,17 @@ msgstr "Nueva importación"
 msgid "New playlist"
 msgstr "Nueva playlist"
 
+msgid "New plugin"
+msgstr "Plugin nuevo"
+
 msgid "New queue"
 msgstr "Nueva queue"
 
 msgid "New tab"
 msgstr "Nueva pestaña"
+
+msgid "New third-party plugin"
+msgstr "Plugin nuevo de terceros"
 
 msgid "New, saved with the next save"
 msgstr "Nueva, se guarda con el siguiente guardado"
