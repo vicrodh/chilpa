@@ -29,8 +29,8 @@ A native music player for local libraries and self-hosted servers, extended
 through optional plugins. The audio engine does not depend on Qt, and every
 source-specific integration lives in its own plugin.
 
-I took the name **Chilpa** from *chilpatl* (also written *chilpatli*), a
-Classical Nahuatl word for a **red wasp or hornet** (*avispa roja / avispón*).
+I took the name **Chilpa** from *chilpatl*, a Classical Nahuatl word for a
+**red wasp or hornet** (*avispa roja / avispón*).
 
 ## Features
 
@@ -46,7 +46,7 @@ Classical Nahuatl word for a **red wasp or hornet** (*avispa roja / avispón*).
 - Synchronized lyrics, translations and immersive views that react to audio.
 - **Plugins** add sources and features: radio, podcasts, DSP presets and a
   graphic EQ, playlist import and local mood analysis, from the official
-  catalog or any other. See [Plugins](#plugins).
+  catalog, the third-party catalog or any other. See [Plugins](#plugins).
 - **A command line**, as if Vim and the Quake console had a child. Press `:`
   to open it. Try it :)
 - Configurable keyboard shortcuts and keyboard navigation.
@@ -222,8 +222,14 @@ Plugins add sources and features. They are installed from
 2. Turn on its switch, review the permissions it declares and approve them.
 3. Open the plugin's details for its settings and account, if it has one.
 
-The official catalog is configured by default, and Chilpa ships a copy of it
-so the list works offline. **Manage > Refresh** fetches the current one.
+The [official catalog](https://github.com/vicrodh/chilpa-plugins) is configured by default, and
+Chilpa ships a copy of it so the list works offline. **Manage > Refresh**
+fetches the current one.
+
+Chilpa also offers the [third-party catalog](https://github.com/vicrodh/chilpa-3rd-party-plugins) by
+default. It lists plugins published by independent authors, checked and
+validated before they are listed, and they carry a **Third-party** tag in the
+list. Its README names them and the rules a plugin follows to be listed.
 
 | Plugin | What it does | Package |
 | --- | --- | --- |
@@ -245,7 +251,8 @@ catalogs; those appear under **Compatible plugins**, and their compatibility
 is not guaranteed.
 
 To write a plugin, start with the API and authoring contracts in
-[chilpa-plugins-sdk](https://github.com/vicrodh/chilpa-plugins-sdk).
+[chilpa-plugins-sdk](https://github.com/vicrodh/chilpa-plugins-sdk). To list it in the third-party
+catalog, follow [its rules](https://github.com/vicrodh/chilpa-3rd-party-plugins/blob/main/CONTRIBUTING.md).
 
 ## Privacy and offline use
 
