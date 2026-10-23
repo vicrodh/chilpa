@@ -23,11 +23,13 @@ Rectangle {
     Image {
         anchors.fill: parent
         source: card.model ? OnboardingFrame.art + card.model.image : ""
-        // Decoded at the painted size, not at the file's.
+        // Decoded at the painted size, not at the file's, and not kept in
+        // the image cache: a card is seen once, and its pixels go with it.
         sourceSize.width: Math.round(width * Screen.devicePixelRatio)
         sourceSize.height: Math.round(height * Screen.devicePixelRatio)
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
+        cache: false
     }
 
     Rectangle {
