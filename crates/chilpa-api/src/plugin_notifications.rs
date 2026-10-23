@@ -2,10 +2,14 @@
 use crate::{plugins::Plugins, PluginRepositories};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::{io::{Read, Write}, path::Path, sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}}};
+use chilpa_plugin::catalog::CatalogEntry;
+use std::{collections::{BTreeMap, BTreeSet}, io::{Read, Write}, path::Path, sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}}};
 
 const MAX_NOTICES: usize = 128;
 const CHECK_INTERVAL: u64 = 86400;
+/// A catalog listing more than this is not watched for new plugins: its ids
+/// would crowd the inbox file.
+const MAX_WATCHED: usize = 1024;
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub(crate) struct Inbox {
@@ -14,6 +18,8 @@ pub(crate) struct Inbox {
     #[serde(default)] notices: Vec<Notice>,
     #[serde(default)] error: String,
     #[serde(default)] seen_app: String,
+    /// What each catalog Chilpa offers listed at its last reading.
+    #[serde(default)] catalogs: BTreeMap<String, BTreeSet<String>>,
     #[serde(skip)] revision: u64,
 }
 #[derive(Clone, Serialize, Deserialize)]
@@ -21,6 +27,7 @@ struct Notice {
     id: String, repository: String, name: String, version: String, adapter: String,
     phase: String, message: String, read: bool,
     #[serde(default)] requested: bool,
+    #[serde(default)] third_party: bool,
 }
 
 fn now() -> u64 { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs() }
@@ -62,7 +69,8 @@ impl Inbox {
     pub(crate) fn check(&mut self, root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &PluginRepositories) -> Result<(), String> {
         if chilpa_core::network::current().offline { return Ok(()); }
         let installed = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.list();
-        let mut sources = std::collections::BTreeSet::new();
+        let installed_ids: Vec<String> = installed.iter().map(|plugin| plugin.id.clone()).collect();
+        let mut sources = BTreeSet::new();
         let mut origins = Vec::new();
         for plugin in installed {
             for file in ["source.json", "origin.json"] {
@@ -74,21 +82,47 @@ impl Inbox {
             }
         }
         let mut failure = None;
-        for repo in sources {
-            if let Err(error) = repositories.refresh(&repo, "EN") { failure = Some(error); continue; }
-            for entry in repositories.cached(&repo)? {
+        // The catalogs Chilpa offers on its own are read for new plugins even
+        // when nothing installed comes from them; not reaching one of those is
+        // not an update failure.
+        let third_party = repositories.third_party_id();
+        let offered = ["native".to_string(), third_party.clone()];
+        for repo in sources.iter().chain(offered.iter().filter(|repo| !sources.contains(*repo))) {
+            if let Err(error) = repositories.refresh(repo, "EN") { if sources.contains(repo) { failure = Some(error); } continue; }
+            let entries = repositories.cached(repo)?;
+            if offered.contains(repo) { self.note_new(repo, &entries, &installed_ids, *repo == third_party); }
+            let repo = repo.clone();
+            for entry in entries {
                 let Some((id, _, _, _)) = origins.iter().find(|(_, source, catalog_id, version)| source == &repo && catalog_id == &entry.id && crate::plugin_updates::newer(&entry.version, version)) else { continue };
                 if self.notices.iter().any(|notice| notice.id == *id && notice.repository == repo && notice.version == entry.version) { continue; }
                 self.notices.retain(|notice| notice.id != *id);
                 if self.notices.len() == MAX_NOTICES { self.notices.remove(0); }
                 self.notices.push(Notice { id:id.clone(), repository:repo.clone(), name:entry.name.chars().take(128).collect(), version:entry.version.chars().take(64).collect(), adapter:entry.adapter,
-                    phase:"available".into(), message:String::new(), read:false, requested:false });
+                    phase:"available".into(), message:String::new(), read:false, requested:false, third_party:false });
             }
         }
         self.checked = now();
         self.error = failure.clone().unwrap_or_default();
         self.save(&root.join(".repositories"))?;
         failure.map_or(Ok(()), Err)
+    }
+    /// Announces what a catalog lists that it did not list before. The first
+    /// reading only learns it, so a new profile or an upgrade does not
+    /// announce every plugin at once; only what this Chilpa can install and
+    /// does not have is announced, and installing it takes the notice away.
+    fn note_new(&mut self, catalog: &str, entries: &[CatalogEntry], installed: &[String], third_party: bool) {
+        self.notices.retain(|notice| notice.phase != "new" || !installed.contains(&notice.id));
+        let listed: BTreeSet<String> = entries.iter().map(|entry| entry.id.clone()).collect();
+        if listed.len() > MAX_WATCHED { return; }
+        if let Some(known) = self.catalogs.get(catalog) {
+            for entry in entries.iter().filter(|entry| !known.contains(&entry.id) && entry.adapter == "native" && entry.problem.is_empty() && !installed.contains(&entry.id)) {
+                if self.notices.iter().any(|notice| notice.id == entry.id && notice.phase == "new") { continue; }
+                if self.notices.len() == MAX_NOTICES { self.notices.remove(0); }
+                self.notices.push(Notice { id:entry.id.clone(), repository:catalog.into(), name:entry.name.chars().take(128).collect(), version:entry.version.chars().take(64).collect(),
+                    adapter:entry.adapter.clone(), phase:"new".into(), message:String::new(), read:false, requested:false, third_party });
+            }
+        }
+        self.catalogs.insert(catalog.into(), listed);
     }
     pub(crate) fn apply(&mut self, root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &PluginRepositories,
         active: &AtomicBool, state: &mut Value) -> Result<bool, String> {
@@ -136,6 +170,26 @@ fn update_compatible(root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn entry(id: &str, problem: &str) -> chilpa_plugin::catalog::CatalogEntry {
+        serde_json::from_value(json!({"id":id,"name":id,"version":"1.0.0","description":"","author":"","repository":"","package":"",
+            "digest":{"algorithm":"sha256","value":""},"adapter":"native","problem":problem})).unwrap()
+    }
+    #[test]
+    fn a_catalog_is_learned_first_and_only_later_additions_are_announced() {
+        let mut inbox = Inbox::default();
+        inbox.note_new("native", &[entry("app.test.a", "")], &[], false);
+        inbox.note_new("third-party", &[entry("app.test.outside", "")], &[], true);
+        assert!(inbox.notices.is_empty(), "the first reading of a catalog only learns it");
+        let mine = ["app.test.mine".to_string()];
+        inbox.note_new("native", &[entry("app.test.a", ""), entry("app.test.b", ""), entry("app.test.mine", ""),
+            entry("app.test.old", "This plugin requires another version of the plugin API.")], &mine, false);
+        let announced: Vec<_> = inbox.notices.iter().map(|n| (n.id.as_str(), n.repository.as_str(), n.phase.as_str(), n.read)).collect();
+        assert_eq!(announced, [("app.test.b", "native", "new", false)], "only what this Chilpa can install and does not have");
+        inbox.note_new("native", &[entry("app.test.a", ""), entry("app.test.b", "")], &[], false);
+        assert_eq!(inbox.notices.len(), 1, "a plugin is announced once");
+        inbox.note_new("native", &[entry("app.test.a", ""), entry("app.test.b", "")], &["app.test.b".to_string()], false);
+        assert!(inbox.notices.is_empty(), "installing it takes the announcement away");
+    }
     #[test]
     fn authorization_and_read_state_survive_restart_without_repeated_snapshots() {
         let dir = tempfile::tempdir().unwrap();
@@ -144,7 +198,7 @@ mod tests {
         let (revision, _) = inbox.snapshot(0).unwrap();
         assert!(inbox.snapshot(revision).is_none());
         inbox.action("updates_automatic", &json!({"enabled":true}), dir.path()).unwrap();
-        inbox.notices.push(Notice {id:"app.test.one".into(),repository:"native".into(),name:"One".into(),version:"2.0.0".into(),adapter:"native".into(),phase:"available".into(),message:String::new(),read:false,requested:false});
+        inbox.notices.push(Notice {id:"app.test.one".into(),repository:"native".into(),name:"One".into(),version:"2.0.0".into(),adapter:"native".into(),phase:"available".into(),message:String::new(),read:false,requested:false,third_party:false});
         inbox.action("updates_read", &json!({}), dir.path()).unwrap();
         let loaded = Inbox::load(dir.path());
         assert!(loaded.automatic && loaded.notices[0].read);
@@ -156,7 +210,7 @@ mod tests {
         let root = dir.path().join("plugins");
         let mut inbox = Inbox::default();
         inbox.automatic = true;
-        inbox.notices.push(Notice {id:"app.test.one".into(),repository:"native".into(),name:"One".into(),version:"2.0.0".into(),adapter:"native".into(),phase:"available".into(),message:String::new(),read:false,requested:false});
+        inbox.notices.push(Notice {id:"app.test.one".into(),repository:"native".into(),name:"One".into(),version:"2.0.0".into(),adapter:"native".into(),phase:"available".into(),message:String::new(),read:false,requested:false,third_party:false});
         let host = Arc::new(Mutex::new(Plugins::new(root.clone()).unwrap()));
         let repositories = PluginRepositories::load(root.join(".repositories")).unwrap();
         let active = AtomicBool::new(true);

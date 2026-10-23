@@ -34,6 +34,25 @@ TestCase {
         toggle.toggled(true)
         compare(PluginUpdates.calls[2], ["updates_automatic",{enabled:true}])
     }
+    function test_a_new_plugin_is_announced_and_leads_to_the_plugin_list() {
+        let reviewed = 0
+        panel.review = function() { reviewed += 1 }
+        PluginUpdates.snapshot = JSON.stringify({items:[
+            {name:"Fresh",version:"1.0.0",phase:"new",third_party:false,message:""},
+            {name:"Outside",version:"0.3.0",phase:"new",third_party:true,message:""}]})
+        const list = findChild(panel,"pluginUpdateInbox")
+        tryCompare(list,"count",2)
+        verify(!findChild(panel,"applyPluginUpdates").enabled, "a new plugin is not an update")
+        tryVerify(() => list.itemAtIndex(1) !== null, 2000, "both rows are built")
+        const first = list.itemAtIndex(0), second = list.itemAtIndex(1)
+        compare(findChild(first,"pluginNoticeStatus").text, "New plugin")
+        compare(findChild(second,"pluginNoticeStatus").text, "New third-party plugin")
+        const open = findChild(first,"openNewPlugin")
+        verify(open.visible)
+        mouseClick(open)
+        compare(reviewed, 1)
+        panel.review = function() {}
+    }
     function test_large_inbox_uses_a_bounded_viewport() {
         const items = Array.from({length:128}, (_, i) => ({name:"Plugin " + i,version:"2.0.0",phase:"available",message:""}))
         PluginUpdates.snapshot = JSON.stringify({items:items})

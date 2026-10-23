@@ -83,8 +83,11 @@ impl PluginRepositories {
     /// plugin with one of these names is a third party's, installed from
     /// the catalog or from a ZIP of it.
     pub fn third_party_ids(&self) -> std::collections::HashSet<String> {
-        let id = self.saved.compatible.iter().find(|repository| repository.url == THIRD_PARTY_CATALOG).map_or(THIRD_PARTY, |repository| repository.id.as_str());
-        self.cached(id).unwrap_or_default().into_iter().map(|entry| entry.id).collect()
+        self.cached(&self.third_party_id()).unwrap_or_default().into_iter().map(|entry| entry.id).collect()
+    }
+    /// The id the third-party catalog is read under, however it is offered.
+    pub(crate) fn third_party_id(&self) -> String {
+        self.saved.compatible.iter().find(|repository| repository.url == THIRD_PARTY_CATALOG).map_or(THIRD_PARTY.into(), |repository| repository.id.clone())
     }
 
     /// A local index may be loaded for offline development. Compatible

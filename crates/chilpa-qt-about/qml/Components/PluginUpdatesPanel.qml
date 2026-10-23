@@ -41,8 +41,10 @@ Column {
             spacing: Metrics.gap4
             Text { width: parent.width; elide: Text.ElideRight; text: modelData.name + " · " + modelData.version; color: Theme.color.textPrimary; font.pointSize: Type.body }
             Text {
+                objectName: "pluginNoticeStatus"
                 width: parent.width; wrapMode: Text.WordWrap; color: Theme.color.textSecondary; font.pointSize: Type.small
-                text: modelData.phase === "updated" ? I18n.tr("Updated", I18n.rev)
+                text: modelData.phase === "new" ? modelData.third_party === true ? I18n.tr("New third-party plugin", I18n.rev) : I18n.tr("New plugin", I18n.rev)
+                    : modelData.phase === "updated" ? I18n.tr("Updated", I18n.rev)
                     : modelData.phase === "deferred" ? I18n.tr("Waiting for playback to stop", I18n.rev)
                     : modelData.phase === "review" ? I18n.tr("Permission review required", I18n.rev)
                     : modelData.phase === "failed" ? I18n.tr("Update failed; the previous version is kept", I18n.rev)
@@ -50,6 +52,7 @@ Column {
             }
             Text { visible: !!modelData.message; width: parent.width; wrapMode: Text.WordWrap; text: modelData.message; color: Theme.color.textSecondary; font.pointSize: Type.small }
             P.PillButton { visible: modelData.phase === "review"; text: I18n.tr("Review", I18n.rev); onClicked: panel.review() }
+            P.PillButton { objectName: "openNewPlugin"; visible: modelData.phase === "new"; text: I18n.tr("View", I18n.rev); onClicked: panel.review() }
         }
     }
     Component.onCompleted: PluginUpdates.refresh()

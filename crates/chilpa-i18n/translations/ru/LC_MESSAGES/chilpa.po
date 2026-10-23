@@ -2962,11 +2962,17 @@ msgstr "Новый импорт"
 msgid "New playlist"
 msgstr "Новый плейлист"
 
+msgid "New plugin"
+msgstr "Новый плагин"
+
 msgid "New queue"
 msgstr "Новая очередь"
 
 msgid "New tab"
 msgstr "Новая вкладка"
+
+msgid "New third-party plugin"
+msgstr "Новый сторонний плагин"
 
 msgid "New, saved with the next save"
 msgstr "Новая, сохранится при следующем сохранении"
