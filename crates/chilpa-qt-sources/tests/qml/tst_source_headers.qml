@@ -35,8 +35,9 @@ TestCase {
         compare(AlbumActions.playedId, -43)
         header.info = {kind:"album",title:"Album",quality_label:"WAV 24/96",quality_tier:3}
     }
-    // A record's header stays white on the dynamic background, as QBZ's album
-    // page; a playlist's reads in the theme's colors, as QBZ's playlist page.
+    // A record's header stays white on the dynamic background of a dark theme,
+    // as QBZ's album page; a playlist's, and any over a light theme's light
+    // veil, reads in the theme's colors.
     function test_on_the_dynamic_background_only_a_record_s_header_stays_white() {
         const kept = Sources.state
         SettingsModel.albumHeader = "full"
@@ -46,6 +47,9 @@ TestCase {
         verify(!details.contrasted, "a playlist in the theme's colors")
         Sources.state = Object.assign({}, kept, {cards: {"-5": {plugin: "fixture", kind: "album", ref: "album:1"}}})
         verify(details.contrasted, "a record stays white")
+        ThemeModel.dark = false
+        verify(!details.contrasted, "over a light theme's light veil, the theme's colors")
+        ThemeModel.dark = true
         ThemeModel.ambient = false
         SettingsModel.albumHeader = "off"
         Sources.state = kept

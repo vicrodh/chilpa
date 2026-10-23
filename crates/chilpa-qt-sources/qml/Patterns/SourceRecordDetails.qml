@@ -20,10 +20,11 @@ Column {
     readonly property bool canFavorite: /^(album|playlist|artist):/.test(info.ref || "") && info.editable !== true
     readonly property bool playlist: info.kind === "playlist" || /^playlist:/.test(info.ref || "")
     // The header's text is white over the cover's darkened field. On the
-    // dynamic background a record keeps it white, as QBZ's album page does,
-    // and a playlist reads in the theme's own colors, as QBZ's playlist page.
+    // dynamic background a record keeps it white where the veil is dark, as
+    // QBZ's album page does; over a light theme's light veil, and always for
+    // a playlist, as QBZ's playlist page, it reads in the theme's own colors.
     readonly property bool field: SettingsModel.albumHeader !== "off" && !!record && String(record.art) !== "" && !Theme.ambient
-    readonly property bool contrasted: field || (Theme.ambient && !playlist)
+    readonly property bool contrasted: field || (Theme.ambient && Theme.dark && !playlist)
     signal information()
     readonly property real heroHeight: heading.height
     visible: cardId < 0 && !!info.plugin
