@@ -86,7 +86,8 @@ Flickable {
             width: parent.width
             detail: detail
             selecting: page.selectionMode
-            contrasted: (SettingsModel.albumHeader !== "off" && detail.art.toString() !== "") || Theme.ambient
+            // White over the cover's darkened field, or over the ambient veil only where that veil is dark.
+            contrasted: Theme.ambient ? Theme.dark : SettingsModel.albumHeader !== "off" && detail.art.toString() !== ""
             onPlay: tracks.playAll(false)
             onShuffle: tracks.playAll(true)
             onSelectToggle: page.toggleSelection()
