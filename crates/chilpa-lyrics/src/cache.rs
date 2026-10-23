@@ -248,9 +248,9 @@ impl Cache {
     }
 
     /// Forgets everything a plugin gave, for when it is removed or its
-    /// account is closed.
-    pub fn forget_provider(&self, plugin: &str) {
-        let _ = self.db.execute("DELETE FROM lyrics WHERE provider = ?1 OR key LIKE ?2", params![plugin, format!("source:{plugin}:%")]);
+    /// account is closed. Answers how many lyrics went.
+    pub fn forget_provider(&self, plugin: &str) -> usize {
+        self.db.execute("DELETE FROM lyrics WHERE provider = ?1 OR key LIKE ?2", params![plugin, format!("source:{plugin}:%")]).unwrap_or(0)
     }
 
     fn write(&self, key: &str, track: &Track, found: Option<(&Claim, &Document, &Origin)>, raw: Option<(&str, &str)>) {

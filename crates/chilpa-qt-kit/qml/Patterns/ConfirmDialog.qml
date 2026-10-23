@@ -16,13 +16,17 @@ Modal {
     // The confirming button in the accent, or as the other one when what it
     // does loses something.
     property bool destructive: false
+    // A second question the confirmation carries, as a check that starts
+    // off every time; empty, none is shown.
+    property string option
+    property alias optionChecked: optionBox.checked
 
     signal confirmed()
     // Cancel, Esc or a click outside: every way out that is not confirming.
     signal dismissed()
 
     property bool answered: false
-    onOpened: answered = false
+    onOpened: { answered = false; optionBox.checked = false }
     onClosed: if (!answered) dismissed()
 
     width: Metrics.confirmWidth
@@ -45,6 +49,13 @@ Modal {
             wrapMode: Text.WordWrap
             font.pointSize: Type.body
             color: Theme.color.textSecondary
+        }
+        CircleCheck {
+            id: optionBox
+            objectName: "confirmOption"
+            visible: dialog.option !== ""
+            width: parent.width
+            text: dialog.option
         }
         Row {
             anchors.right: parent.right

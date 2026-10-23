@@ -623,6 +623,25 @@ impl Plugins {
         self.registry.installed().find(|i| i.id == id)?.manifest.as_ref()?.auth.clone()
     }
 
+    /// Uninstalls a plugin: the one way the plugin list takes one out.
+    ///
+    /// It is told first, while it can still run, so a plugin that signed
+    /// in on its own can close that session; not answering stops nothing,
+    /// because what it could write on this machine lives in its own data
+    /// and cache folders, and those go with it. Then its approval, its
+    /// credential, its folders and its files in the plugins directory.
+    /// Lyrics kept for its tracks go only when the listener said so.
+    /// Answers how many lyrics were forgotten.
+    pub fn remove(&mut self, id: &str, lyrics: bool) -> Result<usize, String> {
+        let _ = self.call_short(id, chilpa_plugin::messages::op::REVOKE, b"{}");
+        self.revoke(id)?;
+        self.reload_one(id);
+        if !self.uninstall(id) { return Err("The plugin could not be removed.".into()); }
+        crate::plugin_center::export::clear(&self.root, id);
+        crate::plugin_access::clear(&self.root, id);
+        Ok(if lyrics { crate::lyrics_service::forget_plugin_lyrics(id) } else { 0 })
+    }
+
     /// Takes the plugin's folder away. Returns true if it is gone.
     pub fn uninstall(&mut self, id: &str) -> bool {
         let Some(dir) = valid_id(id).then(|| self.root.join(id)) else { return false };
@@ -645,21 +664,6 @@ impl Plugins {
         self.layouts.remove(id);
         if let Ok(mut requests) = self.network_requests.lock() { requests.remove(id); }
         true
-    }
-
-    /// True if that plugin said it handles its own account.
-    pub fn manages_own_account(&self, id: &str) -> bool {
-        self.registry
-            .installed()
-            .find(|i| i.id == id)
-            .and_then(|i| i.manifest.as_ref())
-            .is_some_and(|m| {
-                m.capabilities
-                    .iter()
-                    .any(|c| {
-                        matches!(c, chilpa_plugin::manifest::Capability::OwnAccount { .. })
-                    })
-            })
     }
 
     /// True if that source says it can deliver audio.
@@ -1060,48 +1064,6 @@ impl Chilpa {
             .and_then(|p| p.secrets_backend())
             .map(|b| b.describe().to_string())
             .unwrap_or_default()
-    }
-
-    /// Uninstalls it: asks it to delete what is its own, withdraws its
-    /// permission and takes its folder away.
-    ///
-    /// The order matters. It is told first, **while it can still run**: a
-    /// plugin that handles its own account kept its credential somewhere
-    /// Chilpa cannot reach, and the only way for it to go is for the plugin
-    /// to delete it. Withdrawing permission first would leave it unable to.
-    ///
-    /// It not answering stops nothing: it is uninstalled anyway and what
-    /// was left uncleaned is stated, because keeping quiet would leave the
-    /// user believing everything went with it.
-    pub fn uninstall_plugin(&mut self, id: &str) -> bool {
-        let Some(shared) = self.plugins.clone() else { return false };
-        let Ok(mut p) = shared.lock() else { return false };
-
-        let own = p.manages_own_account(id);
-        let told = p
-            .call_short(id, chilpa_plugin::messages::op::REVOKE, b"{}")
-            .is_ok();
-        p.forget_credential(id);
-        let _ = p.revoke(id);
-        p.forget();
-        let gone = p.uninstall(id);
-        p.load_all();
-        drop(p);
-        self.invalidate_source_menus();
-
-        if !gone {
-            self.now.error = chilpa_i18n::t_args("the folder for \"{}\" could not be deleted", &[id]);
-            return false;
-        }
-        if own && !told {
-            self.now.error = chilpa_i18n::t(
-                    "I uninstalled it, but it handled its account on its own and did not \
-                     answer when I asked it to delete it: your credential may still be \
-                     kept wherever it put it",
-                )
-                .into();
-        }
-        true
     }
 
     /// Takes a plugin out of quarantine.

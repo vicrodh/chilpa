@@ -396,6 +396,9 @@ msgstr ""
 msgid "Already used by {}"
 msgstr ""
 
+msgid "Also delete the lyrics saved for this plugin's tracks"
+msgstr "Also delete the lyrics saved for this plugin's tracks"
+
 msgid "Also write the other tag layers"
 msgstr ""
 
@@ -2199,9 +2202,6 @@ msgid "I restarted the audio services"
 msgstr ""
 
 msgid "I understand and accept these terms"
-msgstr ""
-
-msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
 msgstr ""
 
 msgid "INFLUENCES"
@@ -6306,9 +6306,6 @@ msgid "the fmt chunk is missing"
 msgstr ""
 
 msgid "the folder could not be forgotten: {}"
-msgstr ""
-
-msgid "the folder for \"{}\" could not be deleted"
 msgstr ""
 
 msgid "the frame-info records do not match the frames that start"
