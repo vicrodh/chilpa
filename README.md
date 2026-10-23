@@ -51,6 +51,10 @@ Classical Nahuatl word for a **red wasp or hornet** (*avispa roja / avispón*).
 - Multiple queues, playlists, search and source-aware library browsing.
 - **Refine**: narrow the library with conditions on artist, genre, year,
   composer, label, rating, quality and more.
+- **Listening stats**, computed on your computer and never sent anywhere:
+  what you played today, this week, this month or in any period you pick,
+  with charts of your top artists, albums, tracks and genres, decades and a
+  listening clock, and export to CSV or a PNG image.
 - Audio output that reports its actual format and processing state.
 - Synchronized lyrics, translations and immersive views that react to audio.
 - **Plugins** add sources and features: radio, podcasts, DSP presets and a
@@ -258,7 +262,7 @@ To write a plugin, start with the API and authoring contracts in
 
 ## Privacy and offline use
 
-Chilpa has **no telemetry**. I do not collect information about its users:
+Chilpa has **no telemetry**. No information about its users is collected:
 there are no analytics, usage reports or background tracking.
 
 Some optional features use online services. Requests run in the background
