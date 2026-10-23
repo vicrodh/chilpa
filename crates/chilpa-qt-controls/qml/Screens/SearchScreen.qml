@@ -34,12 +34,18 @@ Flickable {
     readonly property var tabs: [{id: "all", scope: "page", text: I18n.tr("All", I18n.rev)}, {id: "albums", scope: "albums", text: I18n.tr("Albums", I18n.rev)},
         {id: "songs", scope: "songs", text: I18n.tr("Tracks", I18n.rev)}, {id: "artists", scope: "artists", text: I18n.tr("Artists", I18n.rev)},
         {id: "playlists", scope: "playlists", text: I18n.tr("Playlists", I18n.rev)}]
+    // What the page's own field narrows the results to, without asking the
+    // sources again: every word typed, in what a row says of itself.
+    readonly property var words: fold(narrow.typed).split(" ").filter(word => word !== "")
+    function fold(text) { return String(text || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") }
+    function kept(row) { const text = fold([row.title, row.detail, row.artist, row.sourceName].join(" ")); return words.every(word => text.includes(word)) }
     // The rows by section, each with its place in the model.
     readonly property var sections: {
         const out = {top: [], artists: [], albums: [], songs: [], playlists: []}
-        rows.forEach((row, at) => { if (row.kind > 0 && row.kind !== 5 && out[row.section]) out[row.section].push(Object.assign({at: at}, row)) })
+        rows.forEach((row, at) => { if (row.kind > 0 && row.kind !== 5 && out[row.section] && kept(row)) out[row.section].push(Object.assign({at: at}, row)) })
         return out
     }
+    readonly property bool narrowedAway: words.length > 0 && Object.values(sections).every(rows => rows.length === 0)
     readonly property var listed: tab === "all" ? [] : sections[tab] || []
     function read() { rows = JSON.parse(results.rowsJson() || "[]") }
     function open(at) { results.act(at, "open"); navigation.flush() }
@@ -51,7 +57,7 @@ Flickable {
     function mine(row) { return (row.sourceName || "") === "" }
     function origin(row) { return mine(row) ? ({chilpa: true}) : ({icon: row.sourceIcon || ""}) }
     function owner(row) { return mine(row) ? "Chilpa" : row.sourceName }
-    onQueryChanged: show("all")
+    onQueryChanged: { narrow.clear(); show("all") }
 
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
@@ -120,7 +126,15 @@ Flickable {
                 font.pointSize: Type.title; font.weight: Type.bold; font.letterSpacing: Type.titleTracking
                 color: Theme.color.textPrimary
             }
-            SearchPreviewSwitch { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; search: results }
+            SettledSearchField {
+                id: narrow
+                objectName: "searchNarrow"
+                anchors.right: previewSwitch.left; anchors.rightMargin: Metrics.gap16; anchors.verticalCenter: parent.verticalCenter
+                width: Metrics.screenSearch
+                placeholder: ({all: I18n.tr("Filter", I18n.rev), albums: I18n.tr("Filter albums", I18n.rev), songs: I18n.tr("Filter tracks", I18n.rev),
+                    artists: I18n.tr("Filter artists", I18n.rev), playlists: I18n.tr("Filter playlists", I18n.rev)})[page.tab]
+            }
+            SearchPreviewSwitch { id: previewSwitch; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; search: results }
         }
         SearchFilters { width: parent.width; search: results }
         SearchTabs {
@@ -221,8 +235,8 @@ Flickable {
             onClicked: page.shown += Metrics.searchPage
         }
         Text {
-            visible: results.count === 0 && page.query.trim() !== ""
-            text: I18n.trArgs("Nothing found for “{}”", [page.query], I18n.rev)
+            visible: page.query.trim() !== "" && (results.count === 0 || page.narrowedAway)
+            text: I18n.trArgs("Nothing found for “{}”", [page.narrowedAway ? narrow.typed : page.query], I18n.rev)
             font.pointSize: Type.body
             color: Theme.color.textSecondary
         }

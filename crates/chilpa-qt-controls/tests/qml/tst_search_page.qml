@@ -50,6 +50,7 @@ TestCase {
     }
     function init() {
         AlbumActions.sourcesOf = ({})
+        findChild(page.contentItem, "searchNarrow").clear()
         page.show("all")
         page.search.rowsJsonText = JSON.stringify(found(25))
         page.read()
@@ -179,6 +180,25 @@ TestCase {
         mouseClick(rows[0])
         page.show("albums")
         verify(!chosen.selecting && chosen.keys.length === 0, "another tab lets the choice go")
+    }
+
+    // The page's own field narrows what was found, every word, accents
+    // aside, without asking the sources again.
+    function test_the_page_field_narrows_the_results() {
+        const narrow = findChild(page.contentItem, "searchNarrow")
+        compare(narrow.placeholder, "Filter")
+        narrow.text = "récord 1"
+        tryVerify(() => page.sections.albums.length === 12, 2000, "Record 1, 10 to 19 and 21")
+        compare(page.sections.songs.length + page.sections.artists.length + page.sections.playlists.length, 0)
+        page.show("songs")
+        compare(narrow.placeholder, "Filter tracks")
+        compare(narrow.typed, "récord 1", "a tab keeps what is typed")
+        narrow.text = "nothing like it"
+        tryVerify(() => page.narrowedAway, 2000)
+        verify(shown(node => node.text === "Nothing found for “nothing like it”").length === 1)
+        page.query = "vale"
+        compare(narrow.text, "", "a new search starts unfiltered")
+        page.query = "mora"
     }
 
     function test_the_switch_keeps_the_preference_settings_shows() {
