@@ -29,7 +29,7 @@ TestCase {
         rows.push(row(0, "albums", "Albums"))
         for (let i = 0; i < albums; i++) rows.push(record(i))
         rows.push(row(0, "songs", "Songs"))
-        for (let i = 0; i < 8; i++) rows.push(row(4, "songs", "Song " + i))
+        for (let i = 0; i < 8; i++) rows.push(Object.assign(row(4, "songs", "Song " + i), {key: "track:" + i}))
         rows.push(row(0, "playlists", "Playlists"))
         rows.push(row(6, "playlists", "Own list"))
         rows.push(Object.assign(row(6, "playlists", "Their list"), {sourceIcon: "broadcast", sourceName: "Fixture"}))
@@ -146,6 +146,39 @@ TestCase {
         verify(!more.visible)
         page.show("all")
         compare(page.search.scope, "page", "All asks for every section whole")
+    }
+
+    // On the Tracks tab songs are chosen a click each, a range with Shift or
+    // all with Ctrl+A, and the bar acts on them in the order they are listed.
+    function test_songs_are_chosen_and_acted_on_together() {
+        page.show("songs")
+        const toggle = findChild(page.contentItem, "searchSelectSongs")
+        verify(toggle.visible)
+        toggle.clicked()
+        waitForRendering(page)
+        const chosen = page.contentItem.children.find(item => item.hasOwnProperty("picked"))
+        const rows = named(page.contentItem, "searchSongChoice").filter(item => item.visible)
+        compare(rows.length, 8)
+        mouseClick(rows[1])
+        mouseClick(rows[3], 5, 5, Qt.LeftButton, Qt.ShiftModifier)
+        compare(chosen.keys, ["track:1", "track:2", "track:3"])
+        mouseClick(rows[2])
+        compare(chosen.keys, ["track:1", "track:3"], "a second click lets a song go")
+        const bar = findChild(page, "searchChosenBar")
+        verify(bar.visible)
+        compare(findChild(bar, "searchChosenCount").text, "2 tracks")
+        findChild(bar, "searchChosenQueue").clicked()
+        compare(page.search.actedSongs, {keys: ["track:1", "track:3"], act: "queue", label: "Search"})
+        findChild(bar, "searchChosenPlaylist").clicked()
+        compare(page.search.pickedSongs, ["track:1", "track:3"])
+        keyClick(Qt.Key_A, Qt.ControlModifier)
+        compare(chosen.keys.length, 8, "every song shown")
+        keyClick(Qt.Key_Escape)
+        verify(!chosen.selecting && chosen.keys.length === 0 && !bar.visible)
+        toggle.clicked()
+        mouseClick(rows[0])
+        page.show("albums")
+        verify(!chosen.selecting && chosen.keys.length === 0, "another tab lets the choice go")
     }
 
     function test_the_switch_keeps_the_preference_settings_shows() {

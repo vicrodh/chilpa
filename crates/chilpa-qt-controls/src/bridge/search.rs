@@ -49,6 +49,10 @@ pub mod qobject {
         #[qinvokable]
         fn pick_menu(self: Pin<&mut SearchModel>);
         #[qinvokable]
+        fn act_songs(self: &SearchModel, keys: &QString, act: &QString, label: &QString);
+        #[qinvokable]
+        fn pick_songs(self: Pin<&mut SearchModel>, keys: &QString);
+        #[qinvokable]
         fn poll_selection(self: Pin<&mut SearchModel>);
         #[qinvokable]
         fn cancel_selection(self: Pin<&mut SearchModel>);
@@ -204,9 +208,30 @@ impl qobject::SearchModel {
         if let Some((lead, hold)) = result { self.publish_lead(lead, hold); }
     }
 
-    pub fn pick_menu(mut self: Pin<&mut Self>) {
+    pub fn pick_menu(self: Pin<&mut Self>) {
         let result = self.rust().menu.as_ref().and_then(|(rows, at)| rows.get(*at))
             .map(|row| app::with(|api| api.found_selection(row)));
+        self.select(result);
+    }
+
+    /// The songs listed now whose keys `keys` (a JSON list) names, in their order.
+    fn songs(&self, keys: &QString) -> Vec<FoundRow> {
+        let keys: std::collections::HashSet<String> = serde_json::from_str(&keys.to_string()).unwrap_or_default();
+        self.rust().rows.iter().filter(|row| { let key = row.song_key(); !key.is_empty() && keys.contains(&key) }).cloned().collect()
+    }
+
+    pub fn act_songs(&self, keys: &QString, act: &QString, label: &QString) {
+        let songs = self.songs(keys);
+        app::with(|api| api.act_on_found_songs(&songs, &act.to_string(), &label.to_string()));
+    }
+
+    pub fn pick_songs(self: Pin<&mut Self>, keys: &QString) {
+        let songs = self.songs(keys);
+        let result = (!songs.is_empty()).then(|| app::with(|api| api.found_songs_selection(&songs)));
+        self.select(result);
+    }
+
+    fn select(mut self: Pin<&mut Self>, result: Option<Result<FoundSelection, String>>) {
         self.as_mut().cancel_selection();
         match result {
             Some(Ok(selection)) => {
@@ -249,6 +274,7 @@ impl qobject::SearchModel {
             "kind": row.kind(), "title": row.title(), "detail": row.detail(), "art": row.artwork(),
             "duration": row.duration(), "sourceIcon": row.source_icon(), "sourceName": row.source_name(), "section": section,
             "albumId": record.id, "artist": record.artist, "year": record.year.map(|year| year.to_string()).unwrap_or_default(),
+            "key": row.song_key(),
         })).collect())
     }
 

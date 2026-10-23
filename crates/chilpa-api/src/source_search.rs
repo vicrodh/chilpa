@@ -227,9 +227,7 @@ impl Chilpa {
             }
         } else if matches!(action, "open" | "play" | "queue" | "next" | "later") {
             if row.no_audio { return Leads::Nowhere; }
-            let card = chilpa_library::store::progress::Heard { external_id: row.id.clone(), title: row.title.clone(), subtitle: row.detail.clone(), image_url: row.art.clone(), duration_ms: row.duration_ms, ..Default::default() };
-            if let Some(library) = self.library() { let _ = library.remember_heard(&row.source, &card); }
-            let path = crate::source_opener::entry_of(&row.source, &row.id);
+            let path = self.heard_entry(row);
             match action {
                 "queue" => self.enqueue_here(&[path]),
                 "next" => self.play_next_here(&[path]),
@@ -238,6 +236,22 @@ impl Chilpa {
             }
         }
         Leads::Nowhere
+    }
+
+    /// A song a source found, as the queue takes it, remembered as heard.
+    fn heard_entry(&mut self, row: &RemoteFound) -> String {
+        let card = chilpa_library::store::progress::Heard { external_id: row.id.clone(), title: row.title.clone(), subtitle: row.detail.clone(), image_url: row.art.clone(), duration_ms: row.duration_ms, ..Default::default() };
+        if let Some(library) = self.library() { let _ = library.remember_heard(&row.source, &card); }
+        crate::source_opener::entry_of(&row.source, &row.id)
+    }
+
+    /// The same for a song chosen among others, taken into the catalog as
+    /// its own action takes it; none when it cannot sound.
+    pub(crate) fn found_song_entry(&mut self, row: &RemoteFound) -> Option<String> {
+        if row.no_audio || row.item.as_ref().is_some_and(|item| item["available"] == false) { return None; }
+        let epoch = self.plugins.as_ref().and_then(|p| p.try_lock().ok().map(|p| p.epoch(&row.source)));
+        self.catalog.adopt(&row.source, epoch, row);
+        Some(self.heard_entry(row))
     }
 }
 

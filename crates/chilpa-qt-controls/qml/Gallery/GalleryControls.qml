@@ -20,6 +20,9 @@ TitledFlow {
     SearchRail { width: Metrics.confirmWidth; title: "Albums"; rows: [{at: 0, kind: 3, title: "Record", detail: "Album · Artist", art: ""}]; card: Component { SearchResultCard { required property var modelData; row: modelData } } }
     QueueAbout { width: Metrics.listenArt; height: Metrics.listenArt }
     ListenNow { width: Metrics.listenArt; height: Metrics.listenArt * 2 } // derived: the art and room for a tab under it
+    SearchTabs { width: Metrics.confirmWidth; tabs: [{id: "all", text: "All"}, {id: "songs", text: "Tracks"}]; tab: "songs"; selectable: true; selecting: true }
+    SearchSongs { width: Metrics.confirmWidth; rows: previewChosen.rows; chosen: previewChosen }
+    SearchChosenSongs { id: previewChosen; search: previewSearch; selecting: true; picked: ({"track:1": true}); rows: [{at: 0, kind: 4, title: "Song", detail: "Artist — Record", art: "", duration: "3:00", sourceIcon: "", sourceName: "", key: "track:1"}] }
     SearchRecordCard { row: ({at: 0, kind: 3, title: "Record", artist: "Artist", year: "1999", art: "", albumId: 0, sourceIcon: "", sourceName: ""}) }
     Keycap { text: "Ctrl + ▶" }
     Keycap { text: "Press keys…"; button: true; recording: true }

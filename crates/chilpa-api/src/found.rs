@@ -128,6 +128,16 @@ impl FoundRow {
         }
     }
 
+    /// What a song is known by while the results change around it, empty
+    /// for a row that is not a song: a selection of songs is kept by it.
+    pub fn song_key(&self) -> String {
+        match self {
+            FoundRow::Track(t) => format!("track:{}", t.id),
+            FoundRow::Remote(row) if self.kind() == 4 => format!("source:{}:{}", row.source, row.id),
+            _ => String::new(),
+        }
+    }
+
     /// A song's length, and nothing for the rest.
     pub fn duration(&self) -> String {
         match self {
@@ -347,6 +357,37 @@ impl Chilpa {
         }
         Leads::Nowhere
     }
+
+    /// Plays, queues or keeps for later the songs chosen on the results
+    /// page, in the order they are listed; `label` names them in the queue.
+    pub fn act_on_found_songs(&mut self, songs: &[FoundRow], act: &str, label: &str) {
+        self.with_queue_origin(self.search_origin(), |app| {
+            let (paths, _holds) = app.found_song_paths(songs);
+            if paths.is_empty() { return; }
+            match act {
+                "play" => app.play_from(&paths, 0),
+                "queue" => app.enqueue_here(&paths),
+                "next" => app.play_next_here(&paths),
+                "later" => { app.play_later_here(&paths, label); }
+                _ => {}
+            }
+        })
+    }
+
+    /// The songs among `songs` that can sound, as the queue takes them,
+    /// with what keeps a source's in the catalog meanwhile.
+    fn found_song_paths(&mut self, songs: &[FoundRow]) -> (Vec<String>, Vec<crate::SelectionHold>) {
+        let mut holds = Vec::new();
+        let paths = songs.iter().filter_map(|row| match row {
+            FoundRow::Track(t) => Some(t.path.clone()),
+            FoundRow::Remote(found) if row.kind() == 4 => {
+                holds.push(self.hold_found_menu(row));
+                self.found_song_entry(found)
+            }
+            _ => None,
+        }).collect();
+        (paths, holds)
+    }
 }
 
 #[cfg(test)]
@@ -386,6 +427,27 @@ mod tests {
         assert_eq!(acts(&menu), ["play", "queue", "next", "later", "pick", "open", "mark"]);
         assert_eq!(menu.last().unwrap()["on"].as_bool(), Some(false), "a favorite offers to stop being one");
         assert!(found_menu(&FoundRow::Header("Songs".into()), Vec::new(), false).is_empty());
+    }
+
+    #[test]
+    fn songs_chosen_among_the_results_keep_their_order_and_leave_out_what_cannot_sound() {
+        let mut api = Chilpa::new();
+        let song = |id: &str, available: bool| FoundRow::Remote(crate::source_search::RemoteFound { source: "source-a".into(), name: "Source A".into(),
+            id: id.into(), title: "Song".into(), entity: "track".into(), item: Some(json!({"kind": "track", "ref": id, "title": "Song", "available": available})), ..Default::default() });
+        let own = FoundRow::Track(TrackRow { id: 5, ..crate::browse::file_row("/music/own.flac") });
+        let rows = [song("track:1", true), FoundRow::Header("Songs".into()), own, song("track:2", false), FoundRow::Album(album(7, "A"))];
+        assert_eq!(rows.iter().map(FoundRow::song_key).collect::<Vec<_>>(), ["source:source-a:track:1", "", "track:5", "source:source-a:track:2", ""]);
+
+        let (paths, holds) = api.found_song_paths(&rows);
+        assert_eq!(paths, [crate::source_opener::entry_of("source-a", "track:1"), "/music/own.flac".to_string()]);
+        assert_eq!(holds.len(), 2, "a source's songs stay in the catalog while they are acted on");
+
+        let mut picked = api.found_songs_selection(&rows).unwrap();
+        let crate::SelectionState::Ready(ids) = picked.poll() else { panic!("the chosen songs are ready at once") };
+        assert_eq!(ids.len(), 2);
+        assert!(ids[0] < 0, "a source's song by its catalog id, first as it is listed");
+        assert_eq!(ids[1], 5);
+        assert!(api.found_songs_selection(&rows[3..]).is_err(), "nothing that can sound is nothing to add");
     }
 
     #[test]
