@@ -1,10 +1,6 @@
 <div align="center">
 
-<img width="256" height="256" alt="Chilpa" src="https://github.com/user-attachments/assets/82cf8d2b-f9a3-43bb-9e2d-12314a54ef3f" />
-
-<br>
-
-<img width="150" height="28" alt="Chilpa" src="https://github.com/user-attachments/assets/66a2ada1-b2dc-4383-8b11-82c95a6228da" />
+<img width="100%" alt="Chilpa, Hi-Fi music player" src="assets/banner.png" />
 
 ### Hi-Fi music. Every source. Bit-perfect.
 
@@ -22,6 +18,8 @@
 <p>
   <a href="https://techforpalestine.org/learn-more"><img src="https://raw.githubusercontent.com/Safouene1/support-palestine-banner/master/StandWithPalestine.svg" alt="StandWithPalestine" /></a>
 </p>
+
+<img width="100%" alt="Chilpa's Home, in the dark theme on the left and the light theme on the right" src="assets/captures/01_home.png" />
 
 </div>
 
@@ -74,6 +72,56 @@ progress updates in [Discussions](https://github.com/vicrodh/chilpa/discussions)
 
 Native DSD and DoP bypass DSP. Enabling DSP changes a PCM signal, and Chilpa
 then reports the output as processed instead of bit-perfect.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/captures/02_bit-perfect_dark.png" />
+        <img alt="A queue with the route of the current track" src="assets/captures/02_bit-perfect_light.png" />
+      </picture>
+      Queues, and the route of the current track: DSD256 played natively through ALSA, bit-perfect.
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/captures/03_hifi_wizard_dark.png" />
+        <img alt="The HiFi Wizard reviewing a DAC's configuration" src="assets/captures/03_hifi_wizard_light.png" />
+      </picture>
+      The HiFi Wizard prepares the PipeWire and WirePlumber files for a DAC. Chilpa never writes them; you review and apply them.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/captures/04_artist_page_dark.png" />
+        <img alt="An artist page" src="assets/captures/04_artist_page_light.png" />
+      </picture>
+      An artist page: popular tracks with their format, the latest release, labels and similar artists.
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/captures/05_refine_dark.png" />
+        <img alt="The library narrowed with Refine" src="assets/captures/05_refine_light.png" />
+      </picture>
+      Refine narrows the library by artist, genre, year, composer, label, rating, quality and more.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img alt="The immersive view with synchronized lyrics" src="assets/captures/06_immersive_lyrics.png" />
+      The immersive view with synchronized lyrics.
+    </td>
+    <td width="50%">
+      <img alt="Offline mode in Settings" src="assets/captures/07_offline_mode.png" />
+      Offline mode blocks every network request; local playback and cached content keep working.
+    </td>
+  </tr>
+</table>
+
+The screenshots of queues, the HiFi Wizard, the artist page and Refine follow
+your GitHub theme, light or dark.
 
 ## Install
 
