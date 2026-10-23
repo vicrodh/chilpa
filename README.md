@@ -362,6 +362,7 @@ any bug you find, feature you want or idea you have.
 - [ ] Daemon mode
 - [ ] Mobile versions (iOS and Android)
 - [ ] Hive mode: control any Chilpa instance from any other
+- [ ] Better documentation for the SDK and plugins
 
 ## Contributing
 
