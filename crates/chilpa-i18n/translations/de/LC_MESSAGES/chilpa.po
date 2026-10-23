@@ -396,6 +396,9 @@ msgstr "Bereits in"
 msgid "Already used by {}"
 msgstr "Bereits belegt von {}"
 
+msgid "Also delete the lyrics saved for this plugin's tracks"
+msgstr "Auch die gespeicherten Songtexte zu den Titeln dieses Plugins löschen"
+
 msgid "Also write the other tag layers"
 msgstr "Auch die anderen Tag-Ebenen schreiben"
 
@@ -2200,9 +2203,6 @@ msgstr "Ich habe die Audiodienste neu gestartet"
 
 msgid "I understand and accept these terms"
 msgstr "Ich verstehe und akzeptiere diese Bedingungen"
-
-msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
-msgstr "Ich habe es deinstalliert, aber es hat sein Konto selbst verwaltet und nicht geantwortet, als ich es bat, es zu löschen: Deine Zugangsdaten werden möglicherweise noch dort aufbewahrt, wo es sie abgelegt hat"
 
 msgid "INFLUENCES"
 msgstr "EINFLÜSSE"
@@ -6307,9 +6307,6 @@ msgstr "der fmt-Chunk fehlt"
 
 msgid "the folder could not be forgotten: {}"
 msgstr "der Ordner konnte nicht vergessen werden: {}"
-
-msgid "the folder for \"{}\" could not be deleted"
-msgstr "der Ordner für „{}“ konnte nicht gelöscht werden"
 
 msgid "the frame-info records do not match the frames that start"
 msgstr "die Frame-Info-Einträge passen nicht zu den Frames, die beginnen"

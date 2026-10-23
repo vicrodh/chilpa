@@ -396,6 +396,9 @@ msgstr "Já está em"
 msgid "Already used by {}"
 msgstr "Já usado por {}"
 
+msgid "Also delete the lyrics saved for this plugin's tracks"
+msgstr "Excluir também as letras salvas das faixas deste plugin"
+
 msgid "Also write the other tag layers"
 msgstr "Gravar também as outras camadas de tags"
 
@@ -2200,9 +2203,6 @@ msgstr "Reiniciei os serviços de áudio"
 
 msgid "I understand and accept these terms"
 msgstr "Entendo e aceito estes termos"
-
-msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
-msgstr "Desinstalei, mas ele cuidou da própria conta e não respondeu quando pedi que a excluísse: sua credencial ainda pode estar guardada onde ele a colocou"
 
 msgid "INFLUENCES"
 msgstr "INFLUÊNCIAS"
@@ -6307,9 +6307,6 @@ msgstr "o bloco fmt está ausente"
 
 msgid "the folder could not be forgotten: {}"
 msgstr "não foi possível esquecer a pasta: {}"
-
-msgid "the folder for \"{}\" could not be deleted"
-msgstr "não foi possível excluir a pasta de “{}”"
 
 msgid "the frame-info records do not match the frames that start"
 msgstr "os registros de informações de quadro não correspondem aos quadros que começam"

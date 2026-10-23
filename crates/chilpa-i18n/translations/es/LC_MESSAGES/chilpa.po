@@ -396,6 +396,9 @@ msgstr "Ya está en"
 msgid "Already used by {}"
 msgstr "Ya lo usa {}"
 
+msgid "Also delete the lyrics saved for this plugin's tracks"
+msgstr "Borrar también las letras guardadas de las pistas de este plugin"
+
 msgid "Also write the other tag layers"
 msgstr "Escribir también en las otras capas de tags"
 
@@ -2200,9 +2203,6 @@ msgstr "Ya reinicié los servicios de audio"
 
 msgid "I understand and accept these terms"
 msgstr "Entiendo y acepto estos términos"
-
-msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
-msgstr "lo desinstalé, pero manejaba su cuenta por su lado y no contestó cuando le pedí borrarla: puede que tu credencial siga guardada donde él la haya puesto"
 
 msgid "INFLUENCES"
 msgstr "INFLUENCIAS"
@@ -6307,9 +6307,6 @@ msgstr "falta el chunk fmt"
 
 msgid "the folder could not be forgotten: {}"
 msgstr "no se pudo olvidar la carpeta: {}"
-
-msgid "the folder for \"{}\" could not be deleted"
-msgstr "no se pudo borrar la carpeta de \"{}\""
 
 msgid "the frame-info records do not match the frames that start"
 msgstr "los registros de frame-info no coinciden con los frames que empiezan"

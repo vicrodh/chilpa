@@ -396,6 +396,9 @@ msgstr "Al in"
 msgid "Already used by {}"
 msgstr "Al in gebruik door {}"
 
+msgid "Also delete the lyrics saved for this plugin's tracks"
+msgstr "Ook de opgeslagen songteksten van de nummers van deze plug-in verwijderen"
+
 msgid "Also write the other tag layers"
 msgstr "Schrijf ook de andere taglagen"
 
@@ -2200,9 +2203,6 @@ msgstr "Ik heb de audioservices herstart"
 
 msgid "I understand and accept these terms"
 msgstr "Ik begrijp en accepteer deze voorwaarden"
-
-msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
-msgstr "Ik heb het verwijderd, maar het beheerde zijn account zelf en antwoordde niet toen ik vroeg het te verwijderen: je inloggegevens worden mogelijk nog bewaard op de plek waar het ze heeft opgeslagen"
 
 msgid "INFLUENCES"
 msgstr "INVLOEDEN"
@@ -6307,9 +6307,6 @@ msgstr "de fmt-chunk ontbreekt"
 
 msgid "the folder could not be forgotten: {}"
 msgstr "de map kon niet worden vergeten: {}"
-
-msgid "the folder for \"{}\" could not be deleted"
-msgstr "de map voor ‘{}' kon niet worden verwijderd"
 
 msgid "the frame-info records do not match the frames that start"
 msgstr "de frame-info-records komen niet overeen met de frames die beginnen"

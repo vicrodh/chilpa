@@ -108,10 +108,25 @@ fn a_plugin_does_not_run_until_the_user_approves_what_it_asks() {
         .expect_err("there is no instance any more");
     assert!(e.contains("approved"), "{e}");
 
-    // And uninstalling takes its whole folder, not just the permission.
-    assert!(other.uninstall_plugin("com.test.one"), "{}", other.now_playing().error);
+    // And uninstalling takes its whole folder, not just the permission. The
+    // plugin list reads the center before it sends anything, which starts it.
+    idle(&mut other);
+    other.plugin_center_command("uninstall", r#"{"id":"com.test.one"}"#);
+    let view = idle(&mut other);
+    assert!(view["error"].is_null() || view["error"] == "", "{view}");
     assert!(!root.join("com.test.one").exists(), "the folder is gone");
     assert!(other.plugins().is_empty(), "and it is not listed any more");
 
     let _ = std::fs::remove_dir_all(dir);
+}
+
+/// The plugin center's view once nothing is left running.
+fn idle(chilpa: &mut chilpa_api::Chilpa) -> serde_json::Value {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    loop {
+        let view: serde_json::Value = serde_json::from_str(&chilpa.plugin_center_json()).unwrap();
+        if view["working"] == false { return view; }
+        assert!(std::time::Instant::now() < deadline, "the plugin center timed out");
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
 }
