@@ -40,8 +40,11 @@ Connections {
     // Connections signal handlers can run without the component's id scope.
     // Bound methods retain it for focus ownership and result navigation.
     function onSearchCommand(query, source) { this.openCommand(query, source) }
+    // Without the preview a command search opens the results page, and
+    // there is no row to step to.
     function openCommand(query, source) {
         if (!active) return
+        if (route.host.preview === false) { route.host.openPage(query); return }
         if (!route.commandFocus) route.origin = route.host.Window.window.activeFocusItem
         route.commandFocus = true
         search.source = source
@@ -54,7 +57,7 @@ Connections {
     }
     function onSearchStepped(by) { this.stepSearch(by) }
     function stepSearch(by) {
-        if (!active || search.text === "") return
+        if (!active || search.text === "" || route.host.preview === false) return
         if (!route.commandFocus) route.origin = route.host.Window.window.activeFocusItem
         route.commandFocus = true
         flyout.ownInput = host.compact

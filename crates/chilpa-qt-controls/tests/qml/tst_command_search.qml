@@ -16,7 +16,7 @@ TestCase {
     height: 700
     WindowControls { id: controls; window: test.Window.window }
     Item { id: origin; width: 10; height: 10 }
-    Item { id: host; property bool compact: false }
+    Item { id: host; property bool compact: false; property bool preview: true; property var opened: []; function openPage(text) { opened = opened.concat([text]) } }
     TextInput { id: field; y: 650; width: 300; height: 30 }
     SearchModel {
         id: model
@@ -62,6 +62,20 @@ TestCase {
         compare(model.source, "local")
         verify(Hotkeys.searchActive)
     }
+    // Without the preview a command search opens the results page, and a
+    // step to the next result opens nothing.
+    function test_without_the_preview_a_command_search_opens_the_page() {
+        host.preview = false
+        Hotkeys.searchCommand("Album", "local")
+        compare(host.opened, ["Album"])
+        model.text = "Album"
+        Hotkeys.searchStepped(1)
+        wait(50)
+        verify(!flyout.opened && !flyout.visible, "the flyout stays closed")
+        host.preview = true
+        host.opened = []
+    }
+
     function test_command_results_take_arrows_and_enter_data() {
         return [{tag:"colon", opener:"colon"}, {tag:"slash", opener:"slash"}]
     }

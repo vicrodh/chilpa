@@ -36,7 +36,7 @@ Item {
 
     implicitHeight: Metrics.fieldHeight
 
-    SearchModel { id: search }
+    SearchModel { id: search; onTextChanged: if (!box.preview && flyout.ownInput) text.trim().length >= 2 ? live.restart() : live.stop() }
     Tools.SearchCommands { active: box.active; host: box; search: search; field: field; flyout: flyout }
 
     Connections {
@@ -78,13 +78,13 @@ Item {
         }
     }
 
-    // A pause in typing opens the page, without the preview.
-    Timer { id: live; interval: Motion.searchLive; onTriggered: box.openPage(field.text) }
+    // A pause in typing opens the page, without the preview, in either field.
+    Timer { id: live; interval: Motion.searchLive; onTriggered: box.openPage(search.text) }
 
     SearchFlyout {
         id: flyout
         onAllAsked: { close(); box.openPage(search.text) }
-        search: search
+        search: search; preview: box.preview
         x: box.flyoutX
         y: box.flyoutY
         room: box.room
