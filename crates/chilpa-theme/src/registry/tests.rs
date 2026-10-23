@@ -186,6 +186,7 @@ mod rows {
     #[test]
     fn dark_themes_use_white_alpha_base() {
         for id in [
+            ThemeId::ChilpaDark,
             ThemeId::Warm,
             ThemeId::Nord,
             ThemeId::Dracula,
@@ -256,6 +257,25 @@ mod a11y_contrast {
         let a = fg.a as f64 / 255.0;
         let mix = |f: u8, b: u8| ((f as f64 * a) + (b as f64 * (1.0 - a))).round() as u8;
         Rgba::rgb(mix(fg.r, bg.r), mix(fg.g, bg.g), mix(fg.b, bg.b))
+    }
+
+    // ---- chilpa-dark: the banner's colors, readable on every surface -----
+    #[test]
+    fn chilpa_dark_takes_the_banner_and_stays_readable() {
+        let c = palette(ThemeId::ChilpaDark);
+        // The banner's cream lettering and its wings' red.
+        assert_eq!(c.text_primary, Rgba::rgb(0xfa, 0xf4, 0xea));
+        assert_eq!(c.accent_pressed, Rgba::rgb(0xb7, 0x0f, 0x18));
+        assert_eq!(c.favorite, c.accent);
+        for bg in [c.surface_main, c.surface_card, c.surface_elevated] {
+            assert!(contrast_ratio(c.text_primary, bg) >= AAA_BODY);
+            assert!(contrast_ratio(c.text_secondary, bg) >= AAA_BODY);
+            assert!(contrast_ratio(c.text_muted, bg) >= AA_NORMAL);
+            assert!(contrast_ratio(c.accent, bg) >= NON_TEXT);
+        }
+        assert!(contrast_ratio(c.accent_text, c.accent) >= NON_TEXT);
+        assert!(contrast_ratio(c.danger, c.surface_main) >= AA_NORMAL);
+        assert!(contrast_ratio(c.warning, c.surface_main) >= AA_NORMAL);
     }
 
     // ---- wcag-light: body text AAA, accent AAA, status AAA ----------------
@@ -526,14 +546,14 @@ mod a11y_contrast {
         // Count: the registry holds every ThemeId variant. The plan's prose
         // says "32 themes" but counts inconsistently (it variously treats the
         // System meta-entry as in/out). The enum is the source of truth: 4 Core
-        // + 19 Dark + 8 Light + 5 Accessibility = 36 rows. Assert the concrete
+        // + 20 Dark + 8 Light + 5 Accessibility = 37 rows. Assert the concrete
         // breakdown so a future add/remove can't silently drop a row.
         let n_a11y = ALL
             .iter()
             .filter(|id| id.category() == crate::id::ThemeCategory::Accessibility)
             .count();
         assert_eq!(n_a11y, 5, "exactly 5 accessibility themes (P3)");
-        assert_eq!(ALL.len(), 36, "registry must hold every ThemeId row");
+        assert_eq!(ALL.len(), 37, "registry must hold every ThemeId row");
     }
 }
 

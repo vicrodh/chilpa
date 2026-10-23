@@ -4,6 +4,35 @@ use super::*;
 // Dark (branded / community) themes
 // ---------------------------------------------------------------------------
 
+/// Chilpa Dark: the colors of Chilpa's banner (`assets/banner.png`). The
+/// surfaces climb its wine-black background (`#130303` to `#4b060a`), the
+/// text is its cream lettering (`#faf4ea`), the accent sits between the
+/// wings' red (`#b70f18`, the pressed state) and the logo's (`#e21117`), and a
+/// favorite's heart takes the accent, as in Chilpa's own themes. Danger is a
+/// coral so a destructive action does not read as the accent.
+pub(super) fn chilpa_dark() -> ThemeColors {
+    let s = StdSpec {
+        bg_primary: Rgba::rgb(0x1a, 0x05, 0x07),
+        bg_secondary: Rgba::rgb(0x26, 0x07, 0x09),
+        bg_tertiary: Rgba::rgb(0x34, 0x09, 0x0d),
+        bg_hover: Rgba::rgb(0x44, 0x0b, 0x10),
+        text_primary: Rgba::rgb(0xfa, 0xf4, 0xea),
+        text_secondary: Rgba::rgb(0xd9, 0xc8, 0xc1),
+        text_muted: Rgba::rgb(0xa8, 0x90, 0x8b),
+        text_disabled: Rgba::rgb(0x6a, 0x40, 0x44),
+        accent: Rgba::rgb(0xdc, 0x2a, 0x32),
+        accent_hover: Rgba::rgb(0xe8, 0x43, 0x4a),
+        accent_pressed: Rgba::rgb(0xb7, 0x0f, 0x18),
+        accent_text: Rgba::rgb(0xfa, 0xf4, 0xea),
+        danger: Rgba::rgb(0xff, 0x5a, 0x5f),
+        warning: Rgba::rgb(0xf0, 0xb0, 0x4a),
+        border_subtle: Rgba::rgb(0x34, 0x09, 0x0d),
+        border_strong: Rgba::rgb(0x5a, 0x14, 0x1b),
+        ..Default::default()
+    };
+    ThemeColors { favorite: s.accent, ..s.build(bg_is_light(s.bg_primary)) }
+}
+
 pub(super) fn warm() -> ThemeColors {
     let s = StdSpec {
         bg_primary: Rgba::rgb(0x2b, 0x1a, 0x14),
