@@ -106,6 +106,7 @@ then reports the output as processed instead of bit-perfect.
         <img alt="The library narrowed with Refine" src="assets/captures/05_refine_light.png" />
       </picture>
       Refine narrows the library by artist, genre, year, composer, label, rating, quality and more.
+      Full size: <a href="assets/captures/05_refine_dark.png">dark</a> · <a href="assets/captures/05_refine_light.png">light</a>.
     </td>
   </tr>
   <tr>
