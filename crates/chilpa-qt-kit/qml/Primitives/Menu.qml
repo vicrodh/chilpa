@@ -106,8 +106,13 @@ Controls.Popup {
         }
         ListView {
             id: list
+            objectName: "menuOptions"
             width: parent.width
-            implicitHeight: Math.min(contentHeight, menu.heightLimit, (menu.Controls.Overlay.overlay ? menu.Controls.Overlay.overlay.height : Metrics.menuMaxWidth) - Metrics.fieldHeightLarge * 3) // derived: space for search and popup margins
+            readonly property real room: menu.Controls.Overlay.overlay ? menu.Controls.Overlay.overlay.height : Metrics.menuMaxWidth
+            // A select, the menu with a search, takes at most half the window
+            // with its search, and never fewer than five rows.
+            readonly property real selectRoom: Math.max(Metrics.menuItem * 5, room / 2 - search.height - parent.spacing - menu.padding * 2) // derived: half the window, less the search and the panel's padding
+            implicitHeight: Math.min(contentHeight, menu.heightLimit, room - Metrics.fieldHeightLarge * 3, menu.searchable ? selectRoom : Infinity) // derived: space for search and popup margins
             model: menu.shown
             clip: true
             boundsBehavior: Flickable.StopAtBounds
