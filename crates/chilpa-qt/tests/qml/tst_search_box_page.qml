@@ -5,7 +5,7 @@ import app.chilpa.kit
 import "../../qml/Patterns"
 
 // The search box and the results page: without the preview, a pause in
-// typing opens the page; with it, Enter with no row chosen does.
+// typing opens the page, in either field; with it, Enter on no row does.
 TestCase {
     name: "SearchBoxPage"
     when: windowShown
@@ -23,7 +23,15 @@ TestCase {
         field().text = ""
         SettingsModel.keep("navigation.searchPreview", "true")
         Prefs.changed()
-        Navigation.went = []
+        Navigation.went = []; box.compact = false
+    }
+
+    function test_collapsed_without_the_preview_the_flyout_shows_no_results_and_a_pause_opens_the_page() {
+        SettingsModel.keep("navigation.searchPreview", "false"); Prefs.changed(); box.compact = true; box.focusSearch()
+        const flyout = box.data.find(item => item.hasOwnProperty("ownInput"))
+        tryVerify(() => flyout.opened); flyout.search.text = "mora vale"
+        compare(flyout.contentItem.children.filter(item => item.visible && item.height > 0).length, 2, "its own field and its footer")
+        tryCompare(Navigation, "went", ["search", "mora vale"], 2000); flyout.close()
     }
 
     function test_without_the_preview_a_pause_in_typing_opens_the_page() {

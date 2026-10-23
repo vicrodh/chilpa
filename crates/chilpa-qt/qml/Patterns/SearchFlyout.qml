@@ -20,6 +20,7 @@ Popup {
     Tools.SearchNavigation { id: searchNavigation; search: flyout.search }
     required property SearchModel search
     property bool ownInput: false
+    property bool preview: true // false: its own field only takes the words, for the results page
     // The tallest it can be.
     property int room: 0
     // The row Up and Down move to, which Enter opens.
@@ -55,7 +56,7 @@ Popup {
     }
     // Enter: the row the keyboard is on, or everything on the results page, as QBZ.
     function chooseCurrent() {
-        if (current >= 0)
+        if (current >= 0 && preview)
             choose(current)
         else
             allAsked()
@@ -115,9 +116,9 @@ Popup {
             onEscaped: flyout.close()
         }
 
-        Tools.SearchFilters { width: parent.width; search: flyout.search }
+        Tools.SearchFilters { width: parent.width; search: flyout.search; visible: flyout.preview }
         Row {
-            spacing: Metrics.gap6
+            spacing: Metrics.gap6; visible: flyout.preview
 
             Repeater {
                 model: [
@@ -143,7 +144,7 @@ Popup {
             height: Math.min(contentHeight, Math.max(0, flyout.room - list.y - flyout.padding * 2 - footer.height - Metrics.gap8)) // derived: the room left under the chips and over the footer
             interactive: contentHeight > height
             clip: true; ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8 }
-            boundsBehavior: Flickable.StopAtBounds
+            boundsBehavior: Flickable.StopAtBounds; visible: flyout.preview
             model: flyout.search
 
             delegate: SearchHit {
@@ -173,7 +174,7 @@ Popup {
         }
 
         Text {
-            visible: flyout.search.count === 0 && flyout.search.text.trim() !== ""
+            visible: flyout.preview && flyout.search.count === 0 && flyout.search.text.trim() !== ""
             leftPadding: Metrics.gap8
             text: I18n.trArgs("Nothing found for “{}”", [flyout.search.text], I18n.rev)
             font.pointSize: Type.body
