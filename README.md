@@ -45,28 +45,22 @@ Classical Nahuatl word for a **red wasp or hornet** (*avispa roja / avispón*).
 > entire application. If you are not comfortable using software built this
 > way, I do not recommend using Chilpa.
 
-## Status
-
-I build Linux tarballs, DEB, RPM and AppImage packages, plus macOS ZIP and
-DMG packages, for both x86_64 and arm64/aarch64. The DEB, RPM, AppImage and
-macOS packages include Qt; the Linux tarball uses system Qt and provides
-the binary payload for AUR and Gentoo packaging.
-
-Chilpa speaks **English, Spanish, German, French, Dutch, Portuguese, Russian
-and Japanese**. Corrections from native speakers are welcome.
-
-Downloads are in [Releases](https://github.com/vicrodh/chilpa/releases) and
-progress updates in [Discussions](https://github.com/vicrodh/chilpa/discussions).
-
 ## Features
 
 - Local music libraries, album editions, CDs and supported disc images.
 - Multiple queues, playlists, search and source-aware library browsing.
+- **Refine**: narrow the library with conditions on artist, genre, year,
+  composer, label, rating, quality and more.
 - Audio output that reports its actual format and processing state.
 - Synchronized lyrics, translations and immersive views that react to audio.
-- A command line, configurable keyboard shortcuts and keyboard navigation.
-- Optional DSP presets and graphic EQ, radio, podcasts, playlist import and
-  local mood analysis through the official plugin catalog.
+- **Plugins** add sources and features: radio, podcasts, DSP presets and a
+  graphic EQ, playlist import and local mood analysis, from the official
+  catalog or any other. See [Plugins](#plugins).
+- **A command line**, as if Vim and the Quake console had a child. Press `:`
+  to open it. Try it :)
+- Configurable keyboard shortcuts and keyboard navigation.
+- English, Spanish, German, French, Dutch, Portuguese, Russian and Japanese.
+  Corrections from native speakers are welcome.
 
 Native DSD and DoP bypass DSP. Enabling DSP changes a PCM signal, and Chilpa
 then reports the output as processed instead of bit-perfect.
@@ -130,12 +124,12 @@ your GitHub theme, light or dark.
 curl -fsSL --proto '=https' https://github.com/vicrodh/chilpa/releases/latest/download/install.sh | bash
 ```
 
-I install into `~/.local/opt/chilpa` on Linux and `~/Applications/Chilpa.app`
-on macOS. Close Chilpa and run the same command again to update. The script
-checks the release's SHA-256 digest and size before replacing an installation
-it owns. It preserves installations from other package managers.
-Linux requires glibc 2.39 or newer. The script needs curl and either Python 3
-or jq on Linux; macOS uses the system JavaScript runtime.
+The script installs Chilpa in `~/.local/opt/chilpa` on Linux and in
+`~/Applications/Chilpa.app` on macOS. To update, close Chilpa and run the
+same command again. Before replacing an installation it made, the script
+checks the release's SHA-256 digest and size; installations from package
+managers are left alone. On Linux it needs glibc 2.39 or newer, curl, and
+Python 3 or jq; on macOS it uses the system's JavaScript runtime.
 
 To inspect the selected package, append `-s -- --check` to `bash`. To select
 an existing prerelease, download `install.sh` from that release and run
@@ -217,9 +211,9 @@ records the minimum macOS version required by the deployed runtime.
 
 The app is signed ad hoc and is not notarized with an Apple Developer
 identity. macOS may require approving it in Privacy & Security after the
-first attempt to open it. I update installations made with the one-line
-command by running it again. For a manually installed bundle, replace it
-with the new download.
+first attempt to open it. An installation made with the one-line command
+updates by running that command again; a bundle installed by hand is
+replaced with the new download.
 
 ### Your data
 
