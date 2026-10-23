@@ -28,9 +28,18 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ inputs.source_ref || github.ref }}
+          fetch-depth: 0
           persist-credentials: false
       - id: source
         run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      # Releases come only from main. A manual dispatch builds any ref and publishes nothing.
+      - name: Require the tagged commit on main
+        if: github.event_name == 'push'
+        run: |
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "I release only commits that main already holds; promote them to main before tagging." >&2
+            exit 1
+          fi
       - id: version
         env:
           RELEASE_REF: ${{ github.ref }}
