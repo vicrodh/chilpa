@@ -2958,11 +2958,17 @@ msgstr "新規インポート"
 msgid "New playlist"
 msgstr "新規プレイリスト"
 
+msgid "New plugin"
+msgstr "新しいプラグイン"
+
 msgid "New queue"
 msgstr "新規キュー"
 
 msgid "New tab"
 msgstr "新しいタブ"
+
+msgid "New third-party plugin"
+msgstr "新しいサードパーティ製プラグイン"
 
 msgid "New, saved with the next save"
 msgstr "新規、次回の保存時に保存されます"
