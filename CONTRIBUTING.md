@@ -48,38 +48,38 @@ Examples:
 
 ## Branch workflow
 
-The **pre-release integration branch** keeps feature integration separate from `main`.
+The **pre-launch integration branch** keeps work under test separate from `main`.
 
 ```
 feature/xyz ──┐
-bugfix/abc  ──┼──> pre-release ──> main (tagged release)
+bugfix/abc  ──┼──> pre-launch ──> main (tagged release)
 hotfix/123  ──┘
 ```
 
 ### Branch hierarchy
 
-1. **`main`** - Releases ONLY. Protected branch. Merging here triggers a tagged release.
-2. **`pre-release`** - Integration branch. All features and fixes merge here first.
+1. **`main`** - Releases only. It moves forward to a tested `pre-launch` commit when a release is cut, and the release workflow builds only tags on commits that `main` holds.
+2. **`pre-launch`** - Integration branch. All features and fixes merge here first; code here is still under test.
 3. **`feature/*`, `bugfix/*`, etc.** - Individual work branches.
 
 ### For contributors
 
-**All PRs must target `pre-release`, not `main`.**
+**All PRs must target `pre-launch`, not `main`.**
 
-PRs targeting `main` will be closed and asked to retarget to `pre-release`.
+PRs targeting `main` will be closed and asked to retarget to `pre-launch`.
 
 ### Procedure (maintainer)
 
 1. **Triage**
    - Confirm scope and that it does not touch protected areas (audio routing/backends, credential storage, etc.) unless requested.
-   - Verify PR targets `pre-release` (not `main`).
+   - Verify PR targets `pre-launch` (not `main`).
 2. **Check out the PR**
    - `gh pr checkout <PR_NUMBER>`
 3. **Rename the checked-out branch (local)**
    - Use an `external` branch name so it's obvious these commits are third-party authored:
    - `git branch -m <type>/external/<topic>`
-4. **Merge to pre-release**
-   - `git checkout pre-release`
+4. **Merge to pre-launch**
+   - `git checkout pre-launch`
    - `git merge --no-ff <type>/external/<topic>`
 5. **Run checks**
    - Test or check each touched core crate from `crates/`.
@@ -89,21 +89,23 @@ PRs targeting `main` will be closed and asked to retarget to `pre-release`.
      build the desktop application.
    - Run `tools/lint/fast`. Enable the repository hook after cloning
      (`git config core.hooksPath hooks`) and it runs on every commit.
-6. **Push pre-release**
-   - `git push origin pre-release`
-7. **Close the PR with a comment** explaining it was merged to `pre-release`.
+6. **Push pre-launch**
+   - `git push origin pre-launch`
+7. **Close the PR with a comment** explaining it was merged to `pre-launch`.
 
 ### Releasing to main
 
-When ready to release:
+When a tested `pre-launch` commit is ready, `main` fast-forwards to it and the
+same commit gets a signed tag:
 
 ```bash
-git checkout main
-git merge pre-release
-git push origin main
-git tag vX.Y.Z
+git push origin <tested-commit>:refs/heads/main
+git tag -s vX.Y.Z -m "Chilpa X.Y.Z" <tested-commit>
 git push origin vX.Y.Z
 ```
+
+The tag builds the packages and creates a draft release. A tag on a commit
+outside `main` stops the workflow before it builds.
 
 This is done exclusively by maintainers.
 
