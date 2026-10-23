@@ -34,6 +34,16 @@ Rectangle {
         width: Metrics.confirmWidth
         spacing: Metrics.gap12
 
+        // The one place the logo shows by itself: the cover the window wears
+        // while it starts.
+        Image {
+            objectName: "splashLogo"
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: Metrics.artRecord * 2; height: width // derived: twice a record's art
+            source: "qrc:/qt/qml/app/chilpa/kit/assets/logo.png"
+            sourceSize: Qt.size(width * 2, height * 2) // derived: sharp at twice the density
+            fillMode: Image.PreserveAspectFit
+        }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "Chilpa"
