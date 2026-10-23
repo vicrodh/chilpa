@@ -3,6 +3,13 @@ use std::path::{Path, PathBuf};
 use std::{collections::BTreeMap, io::Write};
 use chilpa_plugin::manifest::Asked;
 
+/// What the host keeps for the listener inside a plugin's folder, apart
+/// from the package: the WASM store and the sealed credential. A swap hands
+/// them to whichever package ends up in place, and never leaves a copy.
+pub(crate) const STORE: &str = "store";
+pub(crate) const CREDENTIAL: &str = "credential.sealed";
+const HOST_STATE: [&str; 2] = [STORE, CREDENTIAL];
+
 #[derive(serde::Serialize, serde::Deserialize)]
 struct Permissions { existed: bool, granted: Option<Asked> }
 
@@ -37,6 +44,14 @@ impl Replacement {
         }
         let transaction = Self { root: root.into(), id: id.into(), committed: false };
         std::fs::rename(incoming, &target).map_err(|_| "The plugin could not be put in place.")?;
+        let previous = backup.join("previous");
+        for name in HOST_STATE {
+            let (from, to) = (previous.join(name), target.join(name));
+            if from.symlink_metadata().is_err() { continue; }
+            // The listener's state wins over anything a package ships under these names.
+            if to.is_dir() { let _ = std::fs::remove_dir_all(&to); } else { let _ = std::fs::remove_file(&to); }
+            std::fs::rename(from, to).map_err(|_| "The plugin's saved data could not be kept.")?;
+        }
         Ok(transaction)
     }
 
@@ -67,6 +82,14 @@ fn recover(root: &Path, id: &str) -> Result<(), String> {
     let previous = backup.join("previous");
     let target = root.join(id);
     if previous.exists() || backup.join("new").exists() {
+        // State the swap already handed over goes back; what the previous
+        // package still holds was never moved and stays.
+        for name in HOST_STATE {
+            let (from, to) = (target.join(name), previous.join(name));
+            if previous.exists() && from.symlink_metadata().is_ok() && to.symlink_metadata().is_err() {
+                std::fs::rename(from, to).map_err(|_| "The plugin's saved data could not be restored.")?;
+            }
+        }
         if target.exists() { std::fs::remove_dir_all(&target).map_err(|_| "The failed plugin could not be removed.")?; }
         if previous.exists() { std::fs::rename(previous, target).map_err(|_| "The previous plugin could not be restored.")?; }
     }
@@ -133,5 +156,53 @@ mod tests {
         Replacement::begin(root, "app.test.one", &incoming).unwrap().commit().unwrap();
         recover_all(root).unwrap();
         assert_eq!(std::fs::read_to_string(target.join("plugin")).unwrap(), "good");
+    }
+
+    /// A plugin folder with an old package, a store key and a sealed credential.
+    fn installed_with_state(root: &Path) -> PathBuf {
+        let target = root.join("app.test.one");
+        std::fs::create_dir_all(target.join("store")).unwrap();
+        std::fs::write(target.join("plugin.wasm"), "old").unwrap();
+        std::fs::write(target.join("store").join("cursor"), "kept").unwrap();
+        std::fs::write(target.join("credential.sealed"), "sealed").unwrap();
+        target
+    }
+
+    fn incoming(root: &Path, program: &str) -> PathBuf {
+        let incoming = root.join("incoming");
+        std::fs::create_dir(&incoming).unwrap();
+        std::fs::write(incoming.join("plugin.wasm"), program).unwrap();
+        incoming
+    }
+
+    fn assert_state(target: &Path, program: &str) {
+        assert_eq!(std::fs::read_to_string(target.join("plugin.wasm")).unwrap(), program);
+        assert_eq!(std::fs::read_to_string(target.join("store").join("cursor")).unwrap(), "kept", "the plugin's store was lost");
+        assert_eq!(std::fs::read_to_string(target.join("credential.sealed")).unwrap(), "sealed", "the sealed credential was lost");
+    }
+
+    #[test]
+    fn an_update_keeps_the_store_and_the_sealed_credential_and_leaves_no_copy_behind() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let target = installed_with_state(root);
+        Replacement::begin(root, "app.test.one", &incoming(root, "new")).unwrap().commit().unwrap();
+        assert_state(&target, "new");
+        let kept = root.join(".previous-app.test.one").join("previous");
+        assert!(kept.join("plugin.wasm").exists(), "the previous package stays for a rollback");
+        assert!(!kept.join("credential.sealed").exists() && !kept.join("store").exists(),
+            "a second copy would outlive disconnecting the account");
+    }
+
+    #[test]
+    fn a_failed_update_and_a_rollback_hand_the_state_back_to_the_previous_package() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let target = installed_with_state(root);
+        drop(Replacement::begin(root, "app.test.one", &incoming(root, "broken")).unwrap());
+        assert_state(&target, "old");
+        Replacement::begin(root, "app.test.one", &incoming(root, "new")).unwrap().commit().unwrap();
+        assert!(rollback_previous(root, "app.test.one").unwrap());
+        assert_state(&target, "old");
     }
 }
