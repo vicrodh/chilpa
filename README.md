@@ -185,7 +185,7 @@ run this from the folder where you extracted it:
 
 ```sh
 mkdir -p ~/.local/share/applications
-sed "s|^Exec=.*|Exec=$PWD/chilpa-0.1.0/chilpa-qt|" \
+sed "s|^Exec=.*|Exec=$PWD/chilpa-0.1.0/chilpa-qt %U|" \
   chilpa-0.1.0/app.chilpa.Chilpa.desktop \
   > ~/.local/share/applications/app.chilpa.Chilpa.desktop
 cp -r chilpa-0.1.0/icons ~/.local/share/

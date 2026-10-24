@@ -25,9 +25,27 @@ fn cover_in(folder: PathBuf, seen: &mut BTreeMap<PathBuf, String>) -> String {
     }).clone()
 }
 
+/// What a launch's paths play: a folder gives its audio files, an audio
+/// file itself, an SACD image itself. Anything else is not music.
+fn launched_files(paths: &[PathBuf]) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    for path in paths {
+        if path.is_dir() {
+            files.extend(crate::folders::audio_files_in(path));
+        } else if crate::folders::is_audio(path) {
+            files.push(path.clone());
+        }
+    }
+    files
+}
+
 /// Read metadata away from the GUI thread without importing anything.
+///
+/// The kind `launch` takes one path per line, as a file manager's "Open
+/// with" brings them: files and folders, mixed.
 pub fn read(kind: &str, path: &str) -> Result<OpenedMedia, String> {
-    let path = Path::new(path);
+    let launch_paths: Vec<PathBuf> = if kind == "launch" { path.lines().map(PathBuf::from).collect() } else { Vec::new() };
+    let path = if kind == "launch" { launch_paths.first().map(PathBuf::as_path).unwrap_or(Path::new("")) } else { Path::new(path) };
     let mut found: Vec<(TrackRow, About)> = if kind == "cd" {
         if path.as_os_str().is_empty() { return Err(chilpa_i18n::t("I did not find a CD drive")); }
         let mut row = crate::browse::file_row("");
@@ -37,7 +55,11 @@ pub fn read(kind: &str, path: &str) -> Result<OpenedMedia, String> {
         row.quality = crate::Quality::of_file("disc.wav", Some(16), Some(44_100));
         vec![(row, About::default())]
     } else {
-        let files = if kind == "sacd" { vec![path.to_path_buf()] } else { crate::folders::audio_files_in(path) };
+        let files = match kind {
+            "sacd" => vec![path.to_path_buf()],
+            "launch" => launched_files(&launch_paths),
+            _ => crate::folders::audio_files_in(path),
+        };
         let mut rows = Vec::new();
         let mut covers = BTreeMap::new();
         for file in files {

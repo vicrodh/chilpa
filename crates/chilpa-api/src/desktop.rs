@@ -12,6 +12,8 @@ use crate::NowPlaying;
 #[cfg(target_os = "linux")]
 use chilpa_mpris::{MediaEvent, PlaybackStatus, TrackMeta};
 use std::collections::VecDeque;
+
+mod launch;
 #[cfg(target_os = "linux")]
 use std::time::Duration;
 
@@ -26,6 +28,9 @@ pub enum WindowRequest {
     Quit,
     /// Quit, asking first when that is wanted: the tray's Quit.
     QuitAsked,
+    /// A launch brought paths to open as temporary media: come to the
+    /// front, and `take_open_request` has them.
+    Open,
 }
 
 #[derive(Default)]
@@ -46,6 +51,8 @@ pub(crate) struct Desktop {
     /// A jump the desktop has not heard of yet, in seconds.
     pub(crate) seeked: Option<f64>,
     requests: VecDeque<WindowRequest>,
+    /// Paths a launch asked to open, until the window takes them.
+    opening: Vec<String>,
 }
 
 /// The cover as an address the desktop can open.
@@ -78,7 +85,7 @@ impl Chilpa {
     /// it opens anything.
     pub fn only_instance() -> bool {
         #[cfg(target_os = "linux")]
-        return chilpa_mpris::instance::acquire();
+        return chilpa_mpris::instance::acquire(&launch::paths_from(std::env::args_os().skip(1)));
         #[cfg(not(target_os = "linux"))]
         true
     }
@@ -154,10 +161,24 @@ impl Chilpa {
     /// What the desktop asks of the window, one request at a time.
     pub fn window_request(&mut self) -> Option<WindowRequest> {
         #[cfg(target_os = "linux")]
-        if chilpa_mpris::instance::take_present() {
-            self.desktop.requests.push_back(WindowRequest::Raise);
+        {
+            let opened = chilpa_mpris::instance::take_opened();
+            if !opened.is_empty() {
+                self.desktop.opening.extend(opened);
+                self.desktop.requests.push_back(WindowRequest::Open);
+            }
+            if chilpa_mpris::instance::take_present() {
+                self.desktop.requests.push_back(WindowRequest::Raise);
+            }
         }
         self.desktop.requests.pop_front()
+    }
+
+    /// The paths a launch asked to open, as `open_media::read` takes them
+    /// under the kind `launch`: one per line. Said once.
+    pub fn take_open_request(&mut self) -> Option<String> {
+        let paths = std::mem::take(&mut self.desktop.opening);
+        (!paths.is_empty()).then(|| paths.join("\n"))
     }
 
     /// Does what the desktop asked and tells it what plays now.

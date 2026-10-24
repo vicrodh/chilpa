@@ -356,7 +356,7 @@ impl qobject::Player {
         crate::registry::library(move |mut l| { l.as_mut().set_listening_rev(listening); l.as_mut().set_remote_rev(remote.0); l.set_remote_art_rev(remote.1); });
         if let Some(asked) = app::with(|api| api.window_request()) {
             use chilpa_api::WindowRequest;
-            self.as_mut().window_asked(match asked { WindowRequest::Raise => 0, WindowRequest::Quit => 1, WindowRequest::Toggle => 2, WindowRequest::QuitAsked => 3 });
+            self.as_mut().window_asked(match asked { WindowRequest::Raise => 0, WindowRequest::Quit => 1, WindowRequest::Toggle => 2, WindowRequest::QuitAsked => 3, WindowRequest::Open => 4 });
         }
         if casting || casting != self.rust().casting { self.as_mut().read_volume(); }
         self.as_mut().rust_mut().casting = casting;
