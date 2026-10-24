@@ -1,4 +1,4 @@
-# 0.1.0
+# Chilpa 0.1.0
 
 Initial public release for Linux and macOS, each on x86_64 and ARM64 (Apple Silicon).
 
