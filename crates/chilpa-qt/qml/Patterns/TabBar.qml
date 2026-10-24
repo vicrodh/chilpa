@@ -27,8 +27,7 @@ Item {
         else if (act === "folders") Navigation.go("libraryFolders", 0)
         else if (act === "stats") Navigation.go("stats", 0)
         else if (act === "about") about.open()
-        else if (act === "appUpdates") updateInbox.openApp()
-        else if (act === "pluginUpdates") updateInbox.openPlugins()
+        else if (["appUpdates", "pluginUpdates", "whatsNew"].includes(act)) updateInbox.open(act)
         else if (act === "documentation" || act === "issue") Qt.openUrlExternally(About.link(act))
         else if (act === "close") bar.Window.window.close()
         else if (act === "quit") bar.quitAsked()
@@ -177,7 +176,7 @@ Item {
                 id: updateInbox
                 anchors.top: parent.top
                 anchors.right: parent.right
-                review: function() { Navigation.openSection("plugins") }
+                review: function(target) { target === "libraryFolders" ? Navigation.go(target, 0) : Navigation.openSection(target || "plugins") }
             }
             CascadingMenu {
                 id: mainMenu
@@ -197,6 +196,7 @@ Item {
                         { act: "appUpdates", text: I18n.tr("Chilpa", I18n.rev), detail: updateInbox.appState.version || "", enabled: updateInbox.appState.supported === true },
                         { act: "pluginUpdates", text: I18n.tr("Plugins", I18n.rev), detail: String(updateInbox.pluginState.unread || "") }
                     ] },
+                    { act: "whatsNew", text: I18n.tr("What's new", I18n.rev), glyph: Icons.star },
                     { act: "about", text: I18n.tr("About Chilpa", I18n.rev), glyph: Lucide.info, family: Lucide.font },
                     { separator: true },
                     // Close is the window's (the tray keeps Chilpa, or it asks

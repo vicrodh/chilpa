@@ -16,9 +16,13 @@ Item {
     width: Frame.notificationDot; height: Frame.notificationDot
     function openApp() { PluginUpdates.command("updates_app_read", JSON.stringify({identity:appIdentity})); appDetails.open() }
     function openPlugins() { PluginUpdates.command("updates_read", "{}"); pluginDetails.open() }
+    // The menu's Chilpa and Plugins updates and its What's new.
+    function open(what) { what === "appUpdates" ? openApp() : what === "pluginUpdates" ? openPlugins() : Onboarding.command("whatsNew") }
     Rectangle { objectName: "updatesNotificationDot"; anchors.fill: parent; radius: width / 2; color: Theme.color.statusNegative; visible: inbox.unread } // derived: a circular dot
     Timer { interval: Motion.accountCheck; repeat: true; running: inbox.Window.window && inbox.Window.window.visible; onTriggered: PluginUpdates.refresh() }
     Component.onCompleted: PluginUpdates.refresh()
+    // The Welcome and What's new; a card's button goes where `review` leads.
+    OnboardingModal { onActionChosen: action => inbox.review(action) }
     Modal {
         id: appDetails
         width: Frame.updateWidth + Metrics.modalInsets
