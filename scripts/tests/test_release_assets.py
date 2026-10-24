@@ -38,7 +38,11 @@ class ReleaseAssetsTests(unittest.TestCase):
                 (folder / f"SHA256SUMS-{system}-{arch}").write_text("".join(sums))
 
     def assemble(self, commit="abc123"):
-        release.assemble(self.source, self.output, "1.2.3", commit)
+        notes = Path(self.directory.name) / "notes" / "docs" / "v1.2.3"
+        notes.mkdir(parents=True, exist_ok=True)
+        (notes / "TAG_DETAILS.md").write_text("# 1.2.3 - Details\n\nWelcome.\n")
+        (notes / "CHANGELOG.md").write_text("# Chilpa 1.2.3\n\n- A change.\n")
+        release.assemble(self.source, self.output, "1.2.3", commit, Path(self.directory.name) / "notes")
 
     def test_complete_release_has_all_formats_and_one_checksum_file(self):
         self.assemble()
@@ -46,6 +50,10 @@ class ReleaseAssetsTests(unittest.TestCase):
         for record in (self.output / "SHA256SUMS").read_text().splitlines():
             digest, name = record.split("  ")
             self.assertEqual(hashlib.sha256((self.output / name).read_bytes()).hexdigest(), digest)
+
+    def test_release_notes_are_the_tag_details_then_the_changelog_without_its_title(self):
+        self.assemble()
+        self.assertEqual((self.output / "RELEASE-NOTES.md").read_text(), "# 1.2.3 - Details\n\nWelcome.\n\n- A change.\n")
 
     def test_missing_rpm_blocks_the_entire_release(self):
         (self.source / "chilpa-linux-aarch64/chilpa-1.2.3-1.aarch64.rpm").unlink()

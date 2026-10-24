@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
-from release_version import release_version, update_information
+from release_version import release_notes, release_version, update_information
 from release_platform import architecture
 from package_native import package_native
 
@@ -187,7 +187,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     manifest_path = args.output / f"MANIFEST-linux-{args.arch}.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
 notes = args.output / "RELEASE-NOTES.md"
-shutil.copy2(root / "CHANGELOG.md", notes)
+notes.write_text(release_notes(root, args.version))
 assets = [archive, *native, image, Path(str(image) + ".zsync"), manifest_path, notes]
 (args.output / f"SHA256SUMS-linux-{args.arch}").write_text("".join(f"{hashlib.file_digest(path.open('rb'), 'sha256').hexdigest()}  {path.name}\n" for path in assets))
 print("Packaged " + ", ".join(path.name for path in assets))
