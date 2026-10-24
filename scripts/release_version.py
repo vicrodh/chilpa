@@ -20,6 +20,15 @@ def release_version(version):
     return {"version": version, "tag": "v" + version, "prerelease": "-" in version}
 
 
+def release_notes(root, version):
+    """The release page text: the tag details, then the changelog without its title."""
+    release_version(version)
+    folder = Path(root) / "docs" / ("v" + version)
+    details = (folder / "TAG_DETAILS.md").read_text().rstrip("\n")
+    changes = (folder / "CHANGELOG.md").read_text().split("\n", 1)[1].strip("\n")
+    return f"{details}\n\n{changes}\n"
+
+
 def update_information(repository, version, architecture="x86_64"):
     if not _REPOSITORY.fullmatch(repository):
         raise ValueError("I require a repository in owner/name form.")
