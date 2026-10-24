@@ -121,6 +121,9 @@ msgstr "Щелчок по альбому открывает"
 msgid "A new version of Chilpa is available."
 msgstr "Доступна новая версия Chilpa."
 
+msgid "A player for your own music"
+msgstr "Плеер для вашей собственной музыки"
+
 msgid "A secure cast URL could not be created."
 msgstr "Не удалось создать защищённый URL для трансляции."
 
@@ -225,6 +228,9 @@ msgstr "Добавить только новые треки"
 
 msgid "Add server"
 msgstr "Добавить сервер"
+
+msgid "Add the folders where your music lives. Chilpa reads their tags and covers and builds your library from them."
+msgstr "Добавьте папки, где хранится ваша музыка. Chilpa прочитает их теги и обложки и соберёт из них вашу библиотеку."
 
 msgid "Add to favorites"
 msgstr "Добавить в избранное"
@@ -879,6 +885,9 @@ msgstr "Chilpa никогда не записывает эти файлы"
 
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr "Chilpa открывается с теми вкладками, которые были при закрытии."
+
+msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
+msgstr "Chilpa воспроизводит файлы с ваших дисков и ваших собственных серверов, а плагины добавляют новые источники. Он прямо говорит, доходит ли звук до вашего DAC в режиме bit-perfect."
 
 msgid "Chilpa plugins"
 msgstr "Плагины Chilpa"
@@ -2014,6 +2023,12 @@ msgstr "Жанры"
 msgid "German"
 msgstr "Немецкий"
 
+msgid "Get started"
+msgstr "Начать"
+
+msgid "Getting started"
+msgstr "Первые шаги"
+
 msgid "Go"
 msgstr "Перейти"
 
@@ -2686,6 +2701,9 @@ msgstr "Журнал"
 msgid "Maintenance"
 msgstr "Обслуживание"
 
+msgid "Make it yours"
+msgstr "Настройте под себя"
+
 msgid "Manage"
 msgstr "Управление"
 
@@ -2958,6 +2976,9 @@ msgstr "Новая папка"
 
 msgid "New import"
 msgstr "Новый импорт"
+
+msgid "New in {}"
+msgstr "Новое в {}"
 
 msgid "New playlist"
 msgstr "Новый плейлист"
@@ -3328,6 +3349,9 @@ msgstr "Открыть страницу учётной записи"
 msgid "Open album"
 msgstr "Открыть альбом"
 
+msgid "Open appearance"
+msgstr "Открыть внешний вид"
+
 msgid "Open artist"
 msgstr "Открыть исполнителя"
 
@@ -3372,6 +3396,12 @@ msgstr "Открыть импортёр плейлистов"
 
 msgid "Open plex.tv/link"
 msgstr "Открыть plex.tv/link"
+
+msgid "Open plugins"
+msgstr "Открыть плагины"
+
+msgid "Open the HiFi Wizard"
+msgstr "Открыть мастер HiFi"
 
 msgid "Open the folder used for disposable files."
 msgstr "Открыть папку для временных файлов."
@@ -3460,6 +3490,9 @@ msgstr "Исполнители партий"
 msgid "Permission review required"
 msgstr "Требуется проверка разрешений"
 
+msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
+msgstr "Выберите тему или оставьте «Системный», чтобы следовать рабочему столу, выберите язык и нажмите :, чтобы открыть командную строку."
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "Закрепить DAC и частоты (WirePlumber)"
 
@@ -3504,6 +3537,9 @@ msgstr "Число воспроизведений"
 
 msgid "Play cursor track"
 msgstr "Воспроизвести трек под курсором"
+
+msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
+msgstr "Воспроизводите музыку с собственных серверов и добавляйте источники и функции плагинами из официального или стороннего каталога."
 
 msgid "Play indicator animation"
 msgstr "Анимация индикатора воспроизведения"
@@ -3930,6 +3966,12 @@ msgstr "Релиз"
 
 msgid "Release date"
 msgstr "Дата релиза"
+
+msgid "Release notes"
+msgstr "Примечания к выпуску"
+
+msgid "Release notes are not available."
+msgstr "Примечания к выпуску недоступны."
 
 msgid "Release type"
 msgstr "Тип релиза"
@@ -4366,6 +4408,9 @@ msgstr "Имя сервера"
 msgid "Servers"
 msgstr "Серверы"
 
+msgid "Servers and plugins"
+msgstr "Серверы и плагины"
+
 msgid "Set Timer"
 msgstr "Установить таймер"
 
@@ -4719,6 +4764,9 @@ msgstr "Этот файл не является изображением JPEG, P
 
 msgid "The EQ profile is too large."
 msgstr "Профиль EQ слишком большой."
+
+msgid "The HiFi Wizard checks your audio stack, finds your DAC and helps you set it up for bit-perfect playback."
+msgstr "Мастер HiFi проверит ваш аудиостек, найдёт ваш DAC и поможет настроить его для воспроизведения bit-perfect."
 
 msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
 msgstr "ISO остаётся нетронутым. Поддерживаемые метаданные записываются в XML; остальные поля и обложка сохраняются во вспомогательном файле Chilpa."
@@ -5401,6 +5449,9 @@ msgstr "Неделя"
 msgid "Welcome"
 msgstr "Добро пожаловать"
 
+msgid "Welcome to Chilpa"
+msgstr "Добро пожаловать в Chilpa"
+
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "Что делает Enter с результатом поиска в иммерсивном режиме. «Отключено» выключает поиск."
 
@@ -5412,6 +5463,12 @@ msgstr "На чём тестировать"
 
 msgid "What you play most"
 msgstr "Что вы слушаете чаще всего"
+
+msgid "What's new"
+msgstr "Что нового"
+
+msgid "What's new in v{}"
+msgstr "Что нового в v{}"
 
 msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
 msgstr "Где редактор метаданных ищет в первую очередь. «Только встроенные теги» никогда не обращается к сети."
@@ -5503,6 +5560,9 @@ msgstr "Вчера"
 msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
 msgstr "Вы сами отвечаете за резервные копии. Это помощник, а не средство восстановления системы."
 
+msgid "Your DAC"
+msgstr "Ваш DAC"
+
 msgid "Your DAC is ready for bit-perfect playback. If you applied the config files, restart the audio services (or log out and back in) for them to take effect."
 msgstr "Ваш DAC готов к воспроизведению bit-perfect. Если вы применили файлы конфигурации, перезапустите аудиослужбы (или выйдите и снова войдите), чтобы изменения вступили в силу."
 
@@ -5514,6 +5574,9 @@ msgstr "Ваш аудиостек готов к воспроизведению b
 
 msgid "Your distribution"
 msgstr "Ваш дистрибутив"
+
+msgid "Your music"
+msgstr "Ваша музыка"
 
 msgid "Your queue is empty"
 msgstr "Очередь пуста"

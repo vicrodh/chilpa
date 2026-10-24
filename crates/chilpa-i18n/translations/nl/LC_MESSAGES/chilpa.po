@@ -121,6 +121,9 @@ msgstr "Een klik op een album opent"
 msgid "A new version of Chilpa is available."
 msgstr "Er is een nieuwe versie van Chilpa beschikbaar."
 
+msgid "A player for your own music"
+msgstr "Een speler voor je eigen muziek"
+
 msgid "A secure cast URL could not be created."
 msgstr "Er kon geen beveiligde cast-URL worden gemaakt."
 
@@ -225,6 +228,9 @@ msgstr "Alleen nieuwe nummers toevoegen"
 
 msgid "Add server"
 msgstr "Server toevoegen"
+
+msgid "Add the folders where your music lives. Chilpa reads their tags and covers and builds your library from them."
+msgstr "Voeg de mappen toe waarin je muziek staat. Chilpa leest hun tags en hoezen en bouwt daarmee je bibliotheek op."
 
 msgid "Add to favorites"
 msgstr "Aan favorieten toevoegen"
@@ -877,6 +883,9 @@ msgstr "Chilpa schrijft deze bestanden nooit"
 
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr "Chilpa opent met de tabbladen die het had toen het sloot."
+
+msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
+msgstr "Chilpa speelt de bestanden op je schijven en de servers die je zelf draait, en plug-ins voegen meer bronnen toe. Het vertelt je duidelijk of wat je DAC bereikt bit-perfect is."
 
 msgid "Chilpa plugins"
 msgstr "Chilpa-plug-ins"
@@ -2012,6 +2021,12 @@ msgstr "Genres"
 msgid "German"
 msgstr "Duits"
 
+msgid "Get started"
+msgstr "Aan de slag"
+
+msgid "Getting started"
+msgstr "Eerste stappen"
+
 msgid "Go"
 msgstr "Ga"
 
@@ -2684,6 +2699,9 @@ msgstr "Magazine"
 msgid "Maintenance"
 msgstr "Onderhoud"
 
+msgid "Make it yours"
+msgstr "Maak het van jou"
+
 msgid "Manage"
 msgstr "Beheren"
 
@@ -2956,6 +2974,9 @@ msgstr "Nieuwe map"
 
 msgid "New import"
 msgstr "Nieuwe import"
+
+msgid "New in {}"
+msgstr "Nieuw in {}"
 
 msgid "New playlist"
 msgstr "Nieuwe afspeellijst"
@@ -3326,6 +3347,9 @@ msgstr "Accountpagina openen"
 msgid "Open album"
 msgstr "Album openen"
 
+msgid "Open appearance"
+msgstr "Uiterlijk openen"
+
 msgid "Open artist"
 msgstr "Artiest openen"
 
@@ -3370,6 +3394,12 @@ msgstr "Afspeellijstimporter openen"
 
 msgid "Open plex.tv/link"
 msgstr "plex.tv/link openen"
+
+msgid "Open plugins"
+msgstr "Plug-ins openen"
+
+msgid "Open the HiFi Wizard"
+msgstr "HiFi-wizard openen"
 
 msgid "Open the folder used for disposable files."
 msgstr "Open de map voor wegwerpbestanden."
@@ -3458,6 +3488,9 @@ msgstr "Uitvoerenden"
 msgid "Permission review required"
 msgstr "Beoordeling van toestemmingen vereist"
 
+msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
+msgstr "Kies een thema of houd Systeem aan om je bureaublad te volgen, kies je taal en druk op : om de opdrachtregel te openen."
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "DAC + frequenties vastzetten (WirePlumber)"
 
@@ -3502,6 +3535,9 @@ msgstr "Aantal keer afgespeeld"
 
 msgid "Play cursor track"
 msgstr "Nummer onder cursor afspelen"
+
+msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
+msgstr "Speel af vanaf de servers die je zelf draait en voeg bronnen en functies toe met plug-ins uit de officiële catalogus of die van derden."
 
 msgid "Play indicator animation"
 msgstr "Animatie van afspeelindicator"
@@ -3928,6 +3964,12 @@ msgstr "Uitgave"
 
 msgid "Release date"
 msgstr "Uitgavedatum"
+
+msgid "Release notes"
+msgstr "Releaseopmerkingen"
+
+msgid "Release notes are not available."
+msgstr "De releaseopmerkingen zijn niet beschikbaar."
 
 msgid "Release type"
 msgstr "Soort uitgave"
@@ -4363,6 +4405,9 @@ msgstr "Servernaam"
 msgid "Servers"
 msgstr "Servers"
 
+msgid "Servers and plugins"
+msgstr "Servers en plug-ins"
+
 msgid "Set Timer"
 msgstr "Timer instellen"
 
@@ -4715,6 +4760,9 @@ msgstr "Dat bestand is geen JPEG-, PNG- of WebP-afbeelding"
 
 msgid "The EQ profile is too large."
 msgstr "Het EQ-profiel is te groot."
+
+msgid "The HiFi Wizard checks your audio stack, finds your DAC and helps you set it up for bit-perfect playback."
+msgstr "De HiFi-wizard controleert je audiostack, vindt je DAC en helpt je die in te stellen voor bit-perfect afspelen."
 
 msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
 msgstr "De ISO blijft ongewijzigd. Ondersteunde metadata gaat in de XML; andere velden en hoezen gebruiken een Chilpa-sidecar."
@@ -5397,6 +5445,9 @@ msgstr "Week"
 msgid "Welcome"
 msgstr "Welkom"
 
+msgid "Welcome to Chilpa"
+msgstr "Welkom bij Chilpa"
+
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "Wat Enter doet met een resultaat van het zoeken in de immersieve weergave. Uitgeschakeld zet het zoeken uit."
 
@@ -5408,6 +5459,12 @@ msgstr "Waarmee te testen"
 
 msgid "What you play most"
 msgstr "Wat je het meest afspeelt"
+
+msgid "What's new"
+msgstr "Wat is er nieuw"
+
+msgid "What's new in v{}"
+msgstr "Nieuw in v{}"
 
 msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
 msgstr "Waar de metadata-editor eerst zoekt. ‘Alleen ingebedde tags' gaat nooit het netwerk op."
@@ -5499,6 +5556,9 @@ msgstr "Gisteren"
 msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
 msgstr "Je bent zelf verantwoordelijk voor je back-ups. Dit is een hulpmiddel, geen systeemhersteltool."
 
+msgid "Your DAC"
+msgstr "Je DAC"
+
 msgid "Your DAC is ready for bit-perfect playback. If you applied the config files, restart the audio services (or log out and back in) for them to take effect."
 msgstr "Je DAC is klaar voor bit-perfecte weergave. Als je de configuratiebestanden hebt toegepast, herstart dan de audioservices (of log uit en weer in) om ze van kracht te laten worden."
 
@@ -5510,6 +5570,9 @@ msgstr "Je audiostack is klaar voor bit-perfecte weergave."
 
 msgid "Your distribution"
 msgstr "Je distributie"
+
+msgid "Your music"
+msgstr "Je muziek"
 
 msgid "Your queue is empty"
 msgstr "Je wachtrij is leeg"

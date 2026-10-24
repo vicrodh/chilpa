@@ -121,6 +121,9 @@ msgstr "アルバムをクリックしたときに開くもの"
 msgid "A new version of Chilpa is available."
 msgstr "Chilpaの新しいバージョンがあります。"
 
+msgid "A player for your own music"
+msgstr "あなた自身の音楽のためのプレーヤー"
+
 msgid "A secure cast URL could not be created."
 msgstr "安全なキャストURLを作成できませんでした。"
 
@@ -225,6 +228,9 @@ msgstr "新しいトラックのみ追加"
 
 msgid "Add server"
 msgstr "サーバーを追加"
+
+msgid "Add the folders where your music lives. Chilpa reads their tags and covers and builds your library from them."
+msgstr "音楽を保存しているフォルダーを追加してください。Chilpaはタグとカバーを読み取り、そこからライブラリを作ります。"
 
 msgid "Add to favorites"
 msgstr "お気に入りに追加"
@@ -875,6 +881,9 @@ msgstr "Chilpaはこれらのファイルを書き込みません"
 
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr "Chilpaは、前回閉じたときのタブで開きます。"
+
+msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
+msgstr "Chilpaはディスク上のファイルと自分で運用するサーバーを再生し、プラグインでソースを追加できます。DACに届く音がビットパーフェクトかどうかをはっきり伝えます。"
 
 msgid "Chilpa plugins"
 msgstr "Chilpaプラグイン"
@@ -2010,6 +2019,12 @@ msgstr "ジャンル"
 msgid "German"
 msgstr "ドイツ語"
 
+msgid "Get started"
+msgstr "はじめる"
+
+msgid "Getting started"
+msgstr "はじめに"
+
 msgid "Go"
 msgstr "移動"
 
@@ -2682,6 +2697,9 @@ msgstr "マガジン"
 msgid "Maintenance"
 msgstr "メンテナンス"
 
+msgid "Make it yours"
+msgstr "自分好みに"
+
 msgid "Manage"
 msgstr "管理"
 
@@ -2954,6 +2972,9 @@ msgstr "新規フォルダー"
 
 msgid "New import"
 msgstr "新規インポート"
+
+msgid "New in {}"
+msgstr "{} の新機能"
 
 msgid "New playlist"
 msgstr "新規プレイリスト"
@@ -3324,6 +3345,9 @@ msgstr "アカウントのページを開く"
 msgid "Open album"
 msgstr "アルバムを開く"
 
+msgid "Open appearance"
+msgstr "外観を開く"
+
 msgid "Open artist"
 msgstr "アーティストを開く"
 
@@ -3368,6 +3392,12 @@ msgstr "プレイリストインポーターを開く"
 
 msgid "Open plex.tv/link"
 msgstr "plex.tv/linkを開く"
+
+msgid "Open plugins"
+msgstr "プラグインを開く"
+
+msgid "Open the HiFi Wizard"
+msgstr "HiFiウィザードを開く"
 
 msgid "Open the folder used for disposable files."
 msgstr "使い捨てファイルに使うフォルダーを開きます。"
@@ -3456,6 +3486,9 @@ msgstr "演奏者"
 msgid "Permission review required"
 msgstr "権限の確認が必要です"
 
+msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
+msgstr "テーマを選ぶか、「システム」のままにしてデスクトップに合わせます。言語を選び、: を押すとコマンドラインが開きます。"
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "DACとレートを固定（WirePlumber）"
 
@@ -3500,6 +3533,9 @@ msgstr "再生回数"
 
 msgid "Play cursor track"
 msgstr "カーソル位置のトラックを再生"
+
+msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
+msgstr "自分で運用するサーバーから再生し、公式カタログやサードパーティ製カタログのプラグインでソースや機能を追加できます。"
 
 msgid "Play indicator animation"
 msgstr "再生インジケーターのアニメーション"
@@ -3926,6 +3962,12 @@ msgstr "リリース"
 
 msgid "Release date"
 msgstr "リリース日"
+
+msgid "Release notes"
+msgstr "リリースノート"
+
+msgid "Release notes are not available."
+msgstr "リリースノートはありません。"
 
 msgid "Release type"
 msgstr "リリース種別"
@@ -4360,6 +4402,9 @@ msgstr "サーバー名"
 msgid "Servers"
 msgstr "サーバー"
 
+msgid "Servers and plugins"
+msgstr "サーバーとプラグイン"
+
 msgid "Set Timer"
 msgstr "タイマーを設定"
 
@@ -4711,6 +4756,9 @@ msgstr "そのファイルはJPEG、PNG、WebPのいずれの画像でもあり�
 
 msgid "The EQ profile is too large."
 msgstr "EQプロファイルが大きすぎます。"
+
+msgid "The HiFi Wizard checks your audio stack, finds your DAC and helps you set it up for bit-perfect playback."
+msgstr "HiFiウィザードはオーディオスタックを確認し、DACを見つけて、ビットパーフェクト再生の設定を手伝います。"
 
 msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
 msgstr "ISOは変更されません。対応するメタデータはXMLに書き込まれ、それ以外のフィールドとカバーはChilpaのサイドカーファイルに保存されます。"
@@ -5393,6 +5441,9 @@ msgstr "週"
 msgid "Welcome"
 msgstr "ようこそ"
 
+msgid "Welcome to Chilpa"
+msgstr "Chilpaへようこそ"
+
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "没入表示の検索結果でEnterキーを押したときの動作です。「無効」にすると検索がオフになります。"
 
@@ -5404,6 +5455,12 @@ msgstr "テストに使うもの"
 
 msgid "What you play most"
 msgstr "最もよく再生するもの"
+
+msgid "What's new"
+msgstr "新機能"
+
+msgid "What's new in v{}"
+msgstr "v{} の新機能"
 
 msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
 msgstr "メタデータエディターが最初に検索する場所です。「埋め込みタグのみ」の場合、ネットワークには一切接続しません。"
@@ -5495,6 +5552,9 @@ msgstr "昨日"
 msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
 msgstr "バックアップはご自身の責任で行ってください。これは補助ツールであり、システム復旧ツールではありません。"
 
+msgid "Your DAC"
+msgstr "あなたのDAC"
+
 msgid "Your DAC is ready for bit-perfect playback. If you applied the config files, restart the audio services (or log out and back in) for them to take effect."
 msgstr "DACはビットパーフェクト再生の準備ができています。設定ファイルを適用した場合は、有効にするためにオーディオサービスを再起動（またはログアウトして再ログイン）してください。"
 
@@ -5506,6 +5566,9 @@ msgstr "オーディオスタックはビットパーフェクト再生の準備
 
 msgid "Your distribution"
 msgstr "お使いのディストリビューション"
+
+msgid "Your music"
+msgstr "あなたの音楽"
 
 msgid "Your queue is empty"
 msgstr "キューは空です"
