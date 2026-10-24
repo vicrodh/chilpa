@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 
 from release_platform import linux_assets, macos_assets
-from release_version import release_version
+from release_version import release_notes, release_version
 
 
 def digest(path):
@@ -15,7 +15,7 @@ def digest(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-def assemble(source, output, version, commit):
+def assemble(source, output, version, commit, notes_root=None):
     release_version(version)
     expected = []
     for system, assets in (("linux", linux_assets), ("macos", macos_assets)):
@@ -42,7 +42,7 @@ def assemble(source, output, version, commit):
         shutil.copy2(path, output / path.name)
     root = Path(__file__).resolve().parents[1]
     shutil.copy2(root / "scripts/install.sh", output / "install.sh")
-    shutil.copy2(root / "CHANGELOG.md", output / "RELEASE-NOTES.md")
+    (output / "RELEASE-NOTES.md").write_text(release_notes(notes_root or root, version))
     (output / "SHA256SUMS").write_text("".join(f"{digest(path)}  {path.name}\n" for path in sorted(output.iterdir()) if path.name != "SHA256SUMS"))
     print(f"I verified {len(expected)} platform assets from {commit}.")
 
