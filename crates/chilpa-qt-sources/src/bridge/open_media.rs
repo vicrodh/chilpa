@@ -21,6 +21,8 @@ pub mod qobject {
         #[qinvokable]
         fn open_path(self: Pin<&mut OpenMedia>, kind: &QString, path: &QString);
         #[qinvokable]
+        fn open_requested(self: Pin<&mut OpenMedia>);
+        #[qinvokable]
         fn close(self: Pin<&mut OpenMedia>);
         #[qinvokable]
         fn refresh(self: Pin<&mut OpenMedia>);
@@ -77,6 +79,13 @@ impl qobject::OpenMedia {
                 }
             });
         });
+    }
+    /// Opens what a launch asked for: the files and folders a file manager
+    /// handed over, as one temporary media.
+    pub fn open_requested(self: Pin<&mut Self>) {
+        if let Some(paths) = crate::app::with(|api| api.take_open_request()) {
+            self.open_path(&QString::from("launch"), &QString::from(paths));
+        }
     }
     pub fn pick(mut self: Pin<&mut Self>, kind: &QString) {
         if self.rust().loading { return; }
