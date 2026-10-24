@@ -33,7 +33,7 @@ pub fn audio_files_in(folder: &std::path::Path) -> Vec<std::path::PathBuf> {
 }
 
 /// A file Chilpa knows how to open, by its extension.
-fn is_audio(path: &std::path::Path) -> bool {
+pub(crate) fn is_audio(path: &std::path::Path) -> bool {
     path.is_file()
         && path
             .extension()

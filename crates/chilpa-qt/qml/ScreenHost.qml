@@ -24,6 +24,7 @@ PageTransition {
     onPreparingRoute: if (Navigation.prepare()) Sources.refresh()
     route: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.routeKey].join("\u001f")
     Connections { target: OpenMedia; function onOpened() { Navigation.go("openMedia", 0) } }
+    Connections { target: Player; function onWindowAsked(what) { if (what === 4) OpenMedia.openRequested() } }
     Connections {
         target: Library
         function onContentRevChanged() { Ratings.refresh() }

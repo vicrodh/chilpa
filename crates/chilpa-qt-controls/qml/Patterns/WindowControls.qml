@@ -148,7 +148,8 @@ Item {
         target: Player
         // The desktop's media controls, Chilpa launched again, or the tray:
         // 0 come to the front, 1 quit, 2 show if hidden and hide if in sight,
-        // 3 quit after asking (the tray's Quit).
+        // 3 quit after asking (the tray's Quit), 4 come to the front for the files
+        // a file manager opened with Chilpa (the screen host opens them).
         function onWindowAsked(what) {
             if (what === 1)
                 return controls.finishQuit()
