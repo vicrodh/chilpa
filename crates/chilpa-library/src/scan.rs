@@ -37,6 +37,10 @@ pub struct ScanReport {
     pub sidecars_unreadable: usize,
     /// True when the root could not be read; then nothing was touched.
     pub unreachable: bool,
+    /// I stopped before reconciliation; completed batches remain available.
+    pub interrupted: bool,
+    /// Availability, paths or derived records changed without rereading tags.
+    pub changed: bool,
 }
 
 /// A track that lives inside another file, with a path of its own and what
@@ -86,12 +90,12 @@ pub fn scan_root_with_cache(
     root: &Path,
     cache: Option<&Path>,
 ) -> rusqlite::Result<ScanReport> {
-    scan(lib, root, cache, &|_| {}, &NoContainers)
+    scan_root_with(lib, root, cache, &|_| {}, &NoContainers)
 }
 
 /// Scans a folder and its subfolders.
 pub fn scan_root(lib: &Library, root: &Path) -> rusqlite::Result<ScanReport> {
-    scan(lib, root, None, &|_| {}, &NoContainers)
+    scan_root_with(lib, root, None, &|_| {}, &NoContainers)
 }
 
 /// The same, reporting how many files it has looked at.
@@ -101,7 +105,7 @@ pub fn scan_root_reporting(
     cache: Option<&Path>,
     on_progress: &dyn Fn(usize),
 ) -> rusqlite::Result<ScanReport> {
-    scan(lib, root, cache, on_progress, &NoContainers)
+    scan_root_with(lib, root, cache, on_progress, &NoContainers)
 }
 
 /// The same, with files that hold several tracks read by `containers`.
@@ -112,7 +116,7 @@ pub fn scan_root_with(
     on_progress: &dyn Fn(usize),
     containers: &dyn Containers,
 ) -> rusqlite::Result<ScanReport> {
-    scan(lib, root, cache, on_progress, containers)
+    scan_controlled(lib, root, cache, on_progress, containers, &ScanControl::default(), &|| {})
 }
 
 /// How many audio files live under a folder. It does not touch the database.
@@ -125,33 +129,29 @@ pub fn count_files(root: &Path, containers: &dyn Containers) -> usize {
     walk(root, containers).0.len()
 }
 
-fn scan(
+pub fn scan_controlled(
     lib: &Library,
     root: &Path,
     cache: Option<&Path>,
     on_progress: &dyn Fn(usize),
     containers: &dyn Containers,
+    control: &ScanControl,
+    on_finalizing: &dyn Fn(),
 ) -> rusqlite::Result<ScanReport> {
     let mut report = ScanReport { root: root.to_path_buf(), ..ScanReport::default() };
+    if control.stopped() { report.interrupted = true; return Ok(report); }
     let source = lib.source_id("local", "default")?;
     let root_id = lib.root_id(source, root)?;
 
     if !crate::store::reach::root_answers(lib, root_id, root)? {
-        lib.set_root_reachable(root_id, false)?;
+        report.changed |= lib.set_root_reachable(root_id, false)?;
         report.unreachable = true;
         return Ok(report);
     }
-    lib.set_root_reachable(root_id, true)?;
-    // The scan is what says which of the folder's tracks can be read: all of
-    // them, until a subfolder it cannot open says otherwise.
-    lib.db.execute(
-        "UPDATE tracks SET reachable = 1 WHERE reachable = 0 AND id IN
-         (SELECT track_id FROM scanned_files WHERE root_id = ?1 AND track_id IS NOT NULL)",
-        params![root_id],
-    )?;
-
+    report.changed |= lib.set_root_reachable(root_id, true)?;
     let now = now_unix();
-    let (files, blocked) = walk(root, containers);
+    let (files, blocked) = walk_controlled(root, containers, control);
+    if control.stopped() { report.interrupted = true; return Ok(report); }
     // The tracks whose record was named by their folder this time.
     let mut from_place: Vec<i64> = Vec::new();
 
@@ -180,6 +180,11 @@ fn scan(
     let mut homes = Homes::new();
 
     for (examined, file) in files.iter().enumerate() {
+        if control.stopped() {
+            tx.commit()?;
+            report.interrupted = true;
+            return Ok(report);
+        }
         // Reported every 25 files: one by one floods the channel without the
         // interface being able to draw any faster.
         if examined % 25 == 0 {
@@ -228,6 +233,10 @@ fn scan(
             .ok();
 
         if let Some((m, s, track)) = &known {
+            report.changed |= lib.db.execute(
+                "UPDATE tracks SET present = 1, reachable = 1 WHERE id = ?1 AND (present <> 1 OR reachable <> 1)",
+                params![track],
+            )? > 0;
             // A sidecar that changed makes its folder's files worth reading
             // again, though none of them did.
             // A track that came in without a record is read again, when its
@@ -236,10 +245,6 @@ fn scan(
             if *m == mtime && *s == size && track.is_some() && !stale && evidence_read(lib, *track) && settled {
                 // Same as last time: neither read nor rewritten.
                 report.unchanged += 1;
-                lib.db.execute(
-                    "UPDATE tracks SET present = 1 WHERE id = ?1",
-                    params![track.unwrap()],
-                )?;
                 continue;
             }
         }
@@ -263,7 +268,7 @@ fn scan(
         if known.is_none() {
             if let Some(moved) = moved_here(lib, root_id, mtime, size, inode(&meta))? {
                 lib.db.execute(
-                    "UPDATE tracks SET external_id = ?2, present = 1 WHERE id = ?1",
+                    "UPDATE tracks SET external_id = ?2, present = 1, reachable = 1 WHERE id = ?1",
                     params![moved.track_id, path],
                 )?;
                 lib.db.execute(
@@ -271,6 +276,7 @@ fn scan(
                     params![moved.row_id, path, now],
                 )?;
                 report.unchanged += 1;
+                report.changed = true;
                 continue;
             }
         }
@@ -292,10 +298,13 @@ fn scan(
 
     tx.commit()?;
     on_progress(files.len());
+    if control.stopped() { report.interrupted = true; return Ok(report); }
+    on_finalizing();
 
     // What was there and is not, or is there and cannot be read: marked
     // missing, never deleted.
     report.sidecars_unreadable = homes.record(lib, now)?;
+    let before_reconcile = lib.db.total_changes();
     report.missing = mark_missing(lib, root_id, &readable, &blocked)?;
     join_tagged_neighbours(lib, &from_place)?;
     lib.assemble_local_releases()?;
@@ -303,6 +312,7 @@ fn scan(
     own_disc_covers(lib, root, cache)?;
     // What came in can be the artist a joined credit was waiting for.
     lib.match_credits()?;
+    report.changed |= lib.db.total_changes() != before_reconcile;
     lib.db
         .execute("UPDATE roots SET last_scan = ?2 WHERE id = ?1", params![root_id, now])?;
     // A scan is the only thing that changes the size of the library, so it is
@@ -364,7 +374,7 @@ impl Found<'_> {
             .collect::<rusqlite::Result<_>>()?;
         if !stale && !known.is_empty() && known.iter().all(|(_, m, s, t)| *m == mtime && *s == size && t.is_some() && evidence_read(lib, *t)) {
             for (path, _, _, track) in &known {
-                lib.db.execute("UPDATE tracks SET present = 1 WHERE id = ?1", params![track])?;
+                report.changed |= lib.db.execute("UPDATE tracks SET present = 1, reachable = 1 WHERE id = ?1 AND (present <> 1 OR reachable <> 1)", params![track])? > 0;
                 readable.insert(path.clone());
             }
             report.seen += known.len();
@@ -787,12 +797,12 @@ fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>, blocked: &[
         }
         if blocked.iter().any(|dir| Path::new(&path).starts_with(dir)) {
             if let Some(id) = track {
-                lib.db.execute("UPDATE tracks SET reachable = 0 WHERE id = ?1", params![id])?;
+                lib.db.execute("UPDATE tracks SET reachable = 0 WHERE id = ?1 AND reachable <> 0", params![id])?;
             }
             continue;
         }
         if let Some(id) = track {
-            lib.db.execute("UPDATE tracks SET present = 0 WHERE id = ?1", params![id])?;
+            lib.db.execute("UPDATE tracks SET present = 0 WHERE id = ?1 AND present <> 0", params![id])?;
         }
         lib.db.execute("DELETE FROM scanned_files WHERE path = ?1", params![path])?;
         missing += 1;
@@ -802,11 +812,31 @@ fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>, blocked: &[
 
 /// Every audio file under a folder, and the subfolders that could not be
 /// opened.
+/// I cancel between filesystem operations and complete records, never in a
+/// transaction statement. A blocked filesystem read must return first.
+#[derive(Clone, Default)]
+pub struct ScanControl(std::sync::Arc<std::sync::atomic::AtomicBool>);
+
+impl ScanControl {
+    pub fn stop(&self) { self.0.store(true, std::sync::atomic::Ordering::Relaxed); }
+    pub fn stopped(&self) -> bool { self.0.load(std::sync::atomic::Ordering::Relaxed) }
+}
+
+pub fn count_controlled(root: &Path, containers: &dyn Containers, control: &ScanControl) -> Option<usize> {
+    let count = walk_controlled(root, containers, control).0.len();
+    (!control.stopped()).then_some(count)
+}
+
 fn walk(root: &Path, containers: &dyn Containers) -> (Vec<PathBuf>, Vec<PathBuf>) {
+    walk_controlled(root, containers, &ScanControl::default())
+}
+
+fn walk_controlled(root: &Path, containers: &dyn Containers, control: &ScanControl) -> (Vec<PathBuf>, Vec<PathBuf>) {
     let mut output = Vec::new();
     let mut blocked = Vec::new();
     let mut pending = vec![root.to_path_buf()];
     while let Some(dir) = pending.pop() {
+        if control.stopped() { break; }
         let Ok(entries) = std::fs::read_dir(&dir) else {
             // An unreadable subfolder neither cancels the scan nor disables the
             // prune for the rest: in QBZ a lost+found disabled it forever. What
@@ -815,6 +845,7 @@ fn walk(root: &Path, containers: &dyn Containers) -> (Vec<PathBuf>, Vec<PathBuf>
             continue;
         };
         for entry in entries.flatten() {
+            if control.stopped() { break; }
             let path = entry.path();
             if path.is_dir() {
                 pending.push(path);
@@ -823,7 +854,7 @@ fn walk(root: &Path, containers: &dyn Containers) -> (Vec<PathBuf>, Vec<PathBuf>
             }
         }
     }
-    output.sort();
+    if !control.stopped() { output.sort(); }
     (output, blocked)
 }
 

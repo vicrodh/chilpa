@@ -119,7 +119,7 @@ Item {
         sizeFirst: panel.closable ? "m" : "s"
         text: panel.found ? Player.lyrics.join("\n") : ""
         onCopied: {
-            notice.text = I18n.tr("Lyrics copied", I18n.rev)
+            foot.notice = I18n.tr("Lyrics copied", I18n.rev)
             fade.restart()
         }
     }
@@ -161,19 +161,15 @@ Item {
         visible: panel.waitingForLyrics
     }
 
-    // Over the lines, only while the lyrics carry a translation.
-    IconButton {
-        objectName: "translateButton"
-        visible: panel.translation !== null
+    Lines.LyricsActions {
         anchors.right: parent.right
         anchors.bottom: foot.top
         anchors.rightMargin: Metrics.gap12
         anchors.bottomMargin: Metrics.gap8
-        tip: panel.translating ? I18n.tr("Hide translation", I18n.rev) : I18n.tr("Show translation", I18n.rev)
-        glyph: Icons.language
-        round: true
-        checked: panel.translating
-        onClicked: panel.translating = !panel.translating
+        lyrics: panel.lyrics
+        translationAvailable: panel.translation !== null
+        translating: panel.translating
+        onTranslationToggled: panel.translating = !panel.translating
     }
 
     Text {
@@ -191,50 +187,18 @@ Item {
         color: Theme.color.textTertiary
     }
 
-    Column {
+    Lines.LyricsFooter {
         id: foot
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.leftMargin: panel.inset
         anchors.rightMargin: panel.inset
-        topPadding: source.visible || notice.visible ? Metrics.gap6 : 0
-        bottomPadding: source.visible || notice.visible ? Metrics.gap8 : 0
-        spacing: Metrics.gap4
-
-        // What was just done from the options, said for a moment.
-        Text {
-            id: notice
-            objectName: "lyricsNotice"
-            visible: text !== ""
-            width: parent.width
-            wrapMode: Text.Wrap
-            font.pointSize: Type.small
-            color: Theme.color.textSecondary
-        }
-        Row {
-            id: source
-            objectName: "lyricsSource"
-            visible: panel.found && panel.lyrics.source !== ""
-            spacing: Metrics.gap4
-
-            Text {
-                text: I18n.tr("Lyrics source:", I18n.rev)
-                font.pointSize: Type.small
-                color: Theme.color.textTertiary
-            }
-            Text {
-                objectName: "lyricsSourceName"
-                text: panel.found ? panel.lyrics.source : ""
-                font.pointSize: Type.small
-                font.weight: Type.semibold
-                color: Theme.color.accent
-            }
-        }
+        lyrics: panel.lyrics
     }
     Timer {
         id: fade
         interval: Motion.toast
-        onTriggered: notice.text = ""
+        onTriggered: foot.notice = ""
     }
 }

@@ -72,12 +72,30 @@ pub(crate) struct Lyrics {
     /// What the last lookup was for, to look again when the language of
     /// the translation changes.
     asked: Option<(std::path::PathBuf, Option<u32>)>,
+    track: Option<Track>,
+    origin: Option<chilpa_lyrics::Origin>,
+    feedback: Option<Feedback>,
+    alternative: Option<String>,
+    notice: String,
+}
+
+#[derive(Clone)]
+pub(crate) struct Feedback {
+    track: Track,
+    provider: String,
+    fingerprint: String,
+    remote: bool,
 }
 
 struct Job {
     generation: u64,
     request: Request,
+    feedback: Option<Feedback>,
 }
+
+#[derive(Clone, Copy)]
+enum FeedbackStatus { Recorded, LocalOnly, Failed }
+type Delivery = (u64, Outcome, Option<FeedbackStatus>);
 
 /// The lyrics thread, seen from the facade.
 pub(crate) struct LyricsService {
@@ -85,14 +103,14 @@ pub(crate) struct LyricsService {
     /// The generation of the last track asked about. Answers for older ones
     /// are dropped.
     wanted: Arc<AtomicU64>,
-    delivered: Arc<Mutex<Option<(u64, Outcome)>>>,
+    delivered: Arc<Mutex<Option<Delivery>>>,
 }
 
 impl LyricsService {
     pub(crate) fn start() -> LyricsService {
         let (jobs, rx) = mpsc::channel::<Job>();
         let wanted = Arc::new(AtomicU64::new(0));
-        let delivered: Arc<Mutex<Option<(u64, Outcome)>>> = Arc::new(Mutex::new(None));
+        let delivered: Arc<Mutex<Option<Delivery>>> = Arc::new(Mutex::new(None));
         let (thread_wanted, thread_delivered) = (wanted.clone(), delivered.clone());
         let spawned = std::thread::Builder::new().name("lyrics".into()).spawn(move || {
             // A cache that cannot open on disk still works in memory: the
@@ -101,10 +119,30 @@ impl LyricsService {
             // The lyrics service, asked for what neither the file nor its
             // source has, and for the translation of what is shown.
             let service = Arc::new(crate::lyrics_client::LyricsServiceClient::new());
-            let pipeline = Pipeline::new(cache, Some(service.clone() as Arc<dyn Remote>), Limits::default()).with_translator(service as Arc<dyn Translator>);
+            let pipeline = Pipeline::new(cache, Some(service.clone() as Arc<dyn Remote>), Limits::default()).with_translator(service.clone() as Arc<dyn Translator>);
             while let Ok(mut job) = rx.recv() {
-                while let Ok(newer) = rx.try_recv() {
+                let mut feedback = Vec::new();
+                if let Some(report) = job.feedback.take() { feedback.push((job.generation, report)); }
+                while let Ok(mut newer) = rx.try_recv() {
+                    if let Some(report) = newer.feedback.take() { feedback.push((newer.generation, report)); }
                     job = newer;
+                }
+                // Feedback is explicit user data, including for a track
+                // skipped meanwhile. Coalescing lookups never discards it.
+                let mut reported = None;
+                let mut local_failed = false;
+                for (generation, report) in feedback {
+                    let kept = pipeline.reject_result(&report.track, &report.provider, &report.fingerprint).is_ok();
+                    let sent = kept && (!report.remote || service.reject(&report.track, &report.provider, &report.fingerprint).is_ok());
+                    if generation == job.generation { reported = Some(if !kept { FeedbackStatus::Failed } else if sent { FeedbackStatus::Recorded } else { FeedbackStatus::LocalOnly }); }
+                    if !kept && generation == job.generation {
+                        local_failed = true;
+                    }
+                }
+                if local_failed {
+                    *thread_delivered.lock().unwrap_or_else(|e| e.into_inner()) = Some((job.generation,
+                        Outcome { resolved: None, failed: true, refresh: false }, Some(FeedbackStatus::Failed)));
+                    continue;
                 }
                 if job.generation != thread_wanted.load(Ordering::SeqCst) {
                     continue;
@@ -112,7 +150,7 @@ impl LyricsService {
                 let outcome = pipeline.resolve(&job.request, false);
                 let deliver = |answer: Outcome| {
                     if job.generation == thread_wanted.load(Ordering::SeqCst) {
-                        *thread_delivered.lock().unwrap_or_else(|e| e.into_inner()) = Some((job.generation, answer));
+                        *thread_delivered.lock().unwrap_or_else(|e| e.into_inner()) = Some((job.generation, answer, reported));
                     }
                 };
                 deliver(outcome.clone());
@@ -158,7 +196,7 @@ impl LyricsService {
     /// The plugins are the ones running now, handed in with every request:
     /// the first track can start before they do, and whoever kept the
     /// plugins of that moment would never ask a source for its lyrics.
-    pub(crate) fn request(&self, natives: &Arc<Natives>, generation: u64, request: (Track, Option<std::path::PathBuf>, Option<(String, String)>, Option<String>, bool, bool, Option<Vec<String>>)) {
+    pub(crate) fn request(&self, natives: &Arc<Natives>, generation: u64, request: (Track, Option<std::path::PathBuf>, Option<(String, String)>, Option<String>, bool, bool, Option<Vec<String>>), feedback: Option<Feedback>) {
         let (track, path, source, language, translate, allow_remote, remote_providers) = request;
         self.wanted.store(generation, Ordering::SeqCst);
         let source = source
@@ -167,14 +205,14 @@ impl LyricsService {
                 let name = natives.display_name(&id);
                 (Arc::new(NativeSource { natives: natives.clone(), id, name }) as Arc<dyn Source>, reference)
             });
-        let _ = self.jobs.send(Job { generation, request: Request { track, path, source, language, translate, allow_remote, offline: chilpa_core::network::current().offline, remote_providers } });
+        let _ = self.jobs.send(Job { generation, feedback, request: Request { track, path, source, language, translate, allow_remote, offline: chilpa_core::network::current().offline, remote_providers } });
     }
 
     /// I deliver the result for the current generation, including lookup failures.
-    pub(crate) fn take(&self, generation: u64) -> Option<Outcome> {
+    fn take(&self, generation: u64) -> Option<(Outcome, Option<FeedbackStatus>)> {
         let mut delivered = self.delivered.lock().unwrap_or_else(|e| e.into_inner());
         match delivered.as_ref() {
-            Some((g, _)) if *g == generation => delivered.take().map(|(_, r)| r),
+            Some((g, _, _)) if *g == generation => delivered.take().map(|(_, r, reported)| (r, reported)),
             _ => None,
         }
     }
@@ -188,12 +226,15 @@ impl crate::Chilpa {
     /// lyrics service. Playback does not wait; they show when they arrive.
     /// A station has no lyrics to look for.
     pub(crate) fn load_lyrics(&mut self, path: &std::path::Path, length_ms: Option<u32>) {
+        let alternative = self.lyrics.alternative.take();
         self.now.lyrics.clear();
         self.now.lyrics_synced = false;
         self.now.lyrics_source.clear();
         self.now.lyrics_line = -1;
         self.now.lyrics_revision += 1;
         self.lyrics.document = None;
+        self.lyrics.origin = None;
+        self.lyrics.notice.clear();
         self.lyrics.generation += 1;
         self.lyrics.asked = Some((path.to_path_buf(), length_ms));
         if let Some(service) = &self.lyrics.service { service.wanted.store(self.lyrics.generation, Ordering::SeqCst); }
@@ -226,18 +267,57 @@ impl crate::Chilpa {
             isrc,
             mbid,
         };
-        let file = (source.is_none() && path.is_file()).then(|| path.to_path_buf());
+        let file = (alternative.is_none() && source.is_none() && path.is_file()).then(|| path.to_path_buf());
+        let source = source.filter(|_| alternative.is_none());
         let language = self.translation_language();
         let translate = self.translating();
         let policy = chilpa_core::network::current();
         let allow_remote = policy.lyrics && policy.lyrics_service;
+        let feedback = self.lyrics.feedback.take();
         let selected: Vec<String> = REMOTE_PROVIDERS.iter().filter(|id| {
             self.preference(&format!("integrations.lyrics.provider.{id}")).as_deref() != Some("false")
+                && feedback.as_ref().is_none_or(|report| report.provider != **id)
+                && alternative.as_ref().is_none_or(|provider| provider != **id)
         }).map(|id| (*id).to_string()).collect();
         let remote_providers = (selected.len() != REMOTE_PROVIDERS.len()).then_some(selected);
         let generation = self.lyrics.generation;
+        self.lyrics.track = Some(track.clone());
         let service = self.lyrics.service.get_or_insert_with(LyricsService::start);
-        service.request(&self.natives, generation, (track, file, source, Some(language), translate, allow_remote, remote_providers));
+        service.request(&self.natives, generation, (track, file, source, Some(language), translate, allow_remote, remote_providers), feedback);
+    }
+
+    /// Rejects only the document still shown, then asks another source.
+    pub fn reject_lyrics(&mut self, revision: &str) -> bool {
+        if revision.parse::<u64>().ok() != Some(self.now.lyrics_revision) { return false; }
+        let Some(document) = self.lyrics.document.as_ref() else { return false; };
+        let Some(origin) = self.lyrics.origin.as_ref() else { return false; };
+        let Some(track) = self.lyrics.track.clone() else { return false; };
+        let Some((path, length)) = self.lyrics.asked.clone() else { return false; };
+        self.lyrics.feedback = Some(Feedback { track, provider: origin.provider.clone(),
+            fingerprint: chilpa_lyrics::cache::result_id(document),
+            remote: REMOTE_PROVIDERS.contains(&origin.provider.as_str()) });
+        self.load_lyrics(&path, length);
+        true
+    }
+
+    /// I offer another remote provider only while its lookup is allowed.
+    fn can_change_lyrics_source(&self) -> bool {
+        let policy = chilpa_core::network::current();
+        let Some(origin) = &self.lyrics.origin else { return false; };
+        let Some(track) = &self.lyrics.track else { return false; };
+        self.lyrics.document.is_some() && !track.title.trim().is_empty() && !track.artist.trim().is_empty()
+            && policy.lyrics && policy.lyrics_service && !policy.offline
+            && REMOTE_PROVIDERS.iter().any(|id| *id != origin.provider.as_str()
+                && self.preference(&format!("integrations.lyrics.provider.{id}")).as_deref() != Some("false"))
+    }
+
+    /// I skip this source for one lookup without reporting or rejecting it.
+    pub fn change_lyrics_source(&mut self, revision: &str) -> bool {
+        if revision.parse::<u64>().ok() != Some(self.now.lyrics_revision) || !self.can_change_lyrics_source() { return false; }
+        let Some((path, length)) = self.lyrics.asked.clone() else { return false; };
+        self.lyrics.alternative = self.lyrics.origin.as_ref().map(|origin| origin.provider.clone());
+        self.load_lyrics(&path, length);
+        true
     }
 
     /// Whether the reader asked for lyrics without a translation in their
@@ -273,13 +353,19 @@ impl crate::Chilpa {
     /// Shows the lyrics the lyrics thread found for what is playing.
     pub(crate) fn advance_lyrics(&mut self) {
         let Some(service) = &self.lyrics.service else { return };
-        let Some(answer) = service.take(self.lyrics.generation) else { return };
+        let Some((answer, reported)) = service.take(self.lyrics.generation) else { return };
+        match reported {
+            Some(FeedbackStatus::LocalOnly) => self.lyrics.notice = chilpa_i18n::t("The lyrics API could not save the report. This result is excluded on this device."),
+            Some(FeedbackStatus::Failed) => self.lyrics.notice = chilpa_i18n::t("The incorrect lyrics could not be excluded. Try again."),
+            _ => {}
+        }
         self.now.lyrics_revision += 1;
         let Some(found) = answer.resolved else {
             self.lyrics.state = if answer.failed { State::Failed } else { State::None };
             return;
         };
         self.lyrics.state = State::Found;
+        self.lyrics.origin = Some(found.origin.clone());
         self.now.lyrics = found.document.lines.iter().map(|l| l.text.clone()).collect();
         self.now.lyrics_synced = found.document.timing > chilpa_lyrics::Timing::Unsynced;
         self.now.lyrics_source = match found.origin.provider.as_str() {
@@ -325,15 +411,18 @@ impl crate::Chilpa {
         match (self.lyrics.state, &self.lyrics.document) {
             (State::Idle, _) => String::new(),
             (State::Searching, _) => serde_json::json!({ "status": "searching" }).to_string(),
-            (State::Failed, _) => serde_json::json!({ "status": "failed" }).to_string(),
+            (State::Failed, _) => serde_json::json!({ "status": "failed", "notice": self.lyrics.notice }).to_string(),
             (State::Found, Some(document)) => serde_json::json!({
                 "status": "found",
                 "source": self.now.lyrics_source,
                 "document": document,
                 "translation": document.translation_for(&self.translation_language()),
+                "revision": self.now.lyrics_revision.to_string(),
+                "can_change_source": self.can_change_lyrics_source(),
+                "notice": self.lyrics.notice,
             })
             .to_string(),
-            (State::None | State::Found, _) => serde_json::json!({ "status": "none" }).to_string(),
+            (State::None | State::Found, _) => serde_json::json!({ "status": "none", "notice": self.lyrics.notice }).to_string(),
         }
     }
 }
@@ -389,20 +478,84 @@ mod tests {
     use super::*;
 
     #[test]
+    fn rejecting_the_visible_lyrics_clears_them_and_cannot_target_a_newer_track() {
+        const CHILD: &str = "CHILPA_TEST_LYRICS_REJECTION";
+        if std::env::var(CHILD).as_deref() != Ok("1") {
+            let profile = tempfile::tempdir().unwrap();
+            let result = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "lyrics_service::tests::rejecting_the_visible_lyrics_clears_them_and_cannot_target_a_newer_track", "--nocapture"])
+                .env(CHILD, "1").envs(chilpa_dirs::profile_environment(profile.path())).output().unwrap();
+            assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+            assert!(String::from_utf8_lossy(&result.stdout).contains("1 passed; 0 failed"));
+            return;
+        }
+        let mut api = crate::Chilpa::new();
+        let (jobs, received) = mpsc::channel();
+        let delivered = Arc::new(Mutex::new(None));
+        api.lyrics.service = Some(LyricsService { jobs, wanted: Arc::new(AtomicU64::new(4)), delivered: delivered.clone() });
+        api.now.title = "Song".into();
+        api.now.artist = "Artist".into();
+        api.now.lyrics_revision = 20;
+        api.lyrics.generation = 4;
+        api.lyrics.state = State::Found;
+        let folder = tempfile::tempdir().unwrap();
+        let path = folder.path().join("song.wav");
+        std::fs::write(&path, []).unwrap();
+        api.now.path = path.display().to_string();
+        api.lyrics.asked = Some((path, Some(200_000)));
+        api.lyrics.track = Some(Track { title: "Song".into(), artist: "Artist".into(), duration_ms: Some(200_000), ..Default::default() });
+        let wrong = chilpa_lyrics::lrc::parse("An incorrect answer");
+        api.lyrics.document = Some(wrong.clone());
+        api.lyrics.origin = Some(chilpa_lyrics::Origin { provider: "kugou".into(), name: "Kugou".into() });
+        let policy = chilpa_core::network::current();
+        chilpa_core::network::configure(chilpa_core::network::Policy { offline: true, ..policy });
+        assert!(!api.can_change_lyrics_source());
+        assert!(!api.change_lyrics_source("20"));
+        chilpa_core::network::configure(chilpa_core::network::Policy { lyrics_service: false, ..policy });
+        assert!(!api.can_change_lyrics_source());
+        chilpa_core::network::configure(policy);
+        assert!(api.can_change_lyrics_source());
+        assert!(!api.change_lyrics_source("19"));
+        assert!(api.change_lyrics_source("20"));
+        let switched = received.try_recv().unwrap();
+        assert!(switched.feedback.is_none(), "a source change sends no rejection");
+        assert!(switched.request.path.is_none() && switched.request.source.is_none(), "I bypass the current local or plugin source for this lookup");
+        assert!(!switched.request.remote_providers.unwrap().contains(&"kugou".to_string()));
+        api.lyrics.document = Some(wrong.clone());
+        api.lyrics.origin = Some(chilpa_lyrics::Origin { provider: "kugou".into(), name: "Kugou".into() });
+        let revision = api.now.lyrics_revision.to_string();
+        assert!(!api.reject_lyrics("19"), "a stale panel cannot reject a newer result");
+        assert!(received.try_recv().is_err());
+        assert!(api.reject_lyrics(&revision));
+        assert!(api.lyrics.document.is_none() && api.now.lyrics.is_empty());
+        assert_eq!(api.lyrics.state, State::Searching);
+        let job = received.try_recv().unwrap();
+        assert!(!job.request.remote_providers.unwrap().contains(&"kugou".to_string()));
+        let report = job.feedback.unwrap();
+        assert_eq!(report.track.title, "Song");
+        assert_eq!(report.provider, "kugou");
+        assert_eq!(report.fingerprint, chilpa_lyrics::cache::result_id(&wrong));
+        *delivered.lock().unwrap() = Some((4, Outcome { resolved: Some(Resolved { document: wrong,
+            origin: chilpa_lyrics::Origin { provider: "kugou".into(), name: "Kugou".into() } }), failed: false, refresh: false }, None));
+        api.advance_lyrics();
+        assert_eq!(api.lyrics.state, State::Searching, "the old answer cannot resurrect the rejected text");
+    }
+
+    #[test]
     fn lookup_failures_and_confirmed_absence_stay_distinct_for_the_current_track() {
         let mut api = crate::Chilpa::new();
         let (jobs, _received) = mpsc::channel();
-        let delivered = Arc::new(Mutex::new(Some((1, Outcome { resolved: None, failed: true, refresh: false }))));
+        let delivered = Arc::new(Mutex::new(Some((1, Outcome { resolved: None, failed: true, refresh: false }, None))));
         api.lyrics.generation = 1;
         api.lyrics.service = Some(LyricsService { jobs, wanted: Arc::new(AtomicU64::new(1)), delivered: delivered.clone() });
         api.advance_lyrics();
         assert_eq!(serde_json::from_str::<serde_json::Value>(&api.lyrics_json()).unwrap()["status"], "failed");
-        *delivered.lock().unwrap() = Some((1, Outcome { resolved: None, failed: false, refresh: false }));
+        *delivered.lock().unwrap() = Some((1, Outcome { resolved: None, failed: false, refresh: false }, None));
         api.advance_lyrics();
         assert_eq!(serde_json::from_str::<serde_json::Value>(&api.lyrics_json()).unwrap()["status"], "none");
         api.lyrics.generation = 2;
         api.lyrics.state = State::Searching;
-        *delivered.lock().unwrap() = Some((1, Outcome { resolved: None, failed: true, refresh: false }));
+        *delivered.lock().unwrap() = Some((1, Outcome { resolved: None, failed: true, refresh: false }, None));
         api.advance_lyrics();
         assert_eq!(api.lyrics.state, State::Searching);
     }

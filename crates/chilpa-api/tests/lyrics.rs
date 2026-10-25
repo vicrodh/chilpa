@@ -102,6 +102,7 @@ struct Service {
     asked: Arc<Mutex<Vec<Value>>>,
     /// The translations asked for, as they came.
     translated: Arc<Mutex<Vec<Value>>>,
+    rejected: Arc<Mutex<Vec<Value>>>,
 }
 
 impl Service {
@@ -131,9 +132,10 @@ fn serve() -> Service {
     let origin = format!("http://{}", server.server_addr().to_ip().unwrap());
     let asked = Arc::new(Mutex::new(Vec::new()));
     let translated = Arc::new(Mutex::new(Vec::new()));
+    let rejected = Arc::new(Mutex::new(Vec::new()));
     let audio = Arc::new(wave("", ""));
     for _ in 0..4 {
-        let (server, asked, translated, audio) = (server.clone(), asked.clone(), translated.clone(), audio.clone());
+        let (server, asked, translated, rejected, audio) = (server.clone(), asked.clone(), translated.clone(), rejected.clone(), audio.clone());
         std::thread::spawn(move || {
             while let Ok(mut request) = server.recv() {
                 if request.method() == &tiny_http::Method::Get {
@@ -150,6 +152,11 @@ fn serve() -> Service {
                 let mut body = String::new();
                 let _ = request.as_reader().read_to_string(&mut body);
                 let question: Value = serde_json::from_str(&body).unwrap_or_default();
+                if request.url().ends_with("/v1/lyrics/reject") {
+                    rejected.lock().unwrap().push(question);
+                    let _ = request.respond(tiny_http::Response::from_string(r#"{"schema":1,"status":"rejected"}"#));
+                    continue;
+                }
                 if request.url().ends_with("/v1/lyrics/translate") {
                     translated.lock().unwrap().push(question.clone());
                     let lines: Vec<Value> = question["lines"]
@@ -180,15 +187,18 @@ fn serve() -> Service {
             }
         });
     }
-    Service { origin, asked, translated }
+    Service { origin, asked, translated, rejected }
 }
 
 fn found(question: &Value) -> Value {
     let track = &question["track"];
+    let alternate = question["preferences"]["providers"].as_array().is_some_and(|providers| !providers.iter().any(|p| p == "lrclib"));
+    let text = format!("{} for {}", if alternate { "Another answer" } else { "From the service" }, track["title"].as_str().unwrap_or_default());
+    let fingerprint = chilpa_lyrics::cache::result_id(&chilpa_lyrics::lrc::parse(&text));
     json!({"schema": 1, "status": "found", "document": {
         "schema": 1, "timing": "line",
-        "lines": [{"start_ms": 50, "text": format!("From the service for {}", track["title"].as_str().unwrap_or_default())}],
-        "source": {"provider": "lrclib", "name": "Fixture Lyrics",
+        "lines": [{"start_ms": 50, "text": text}],
+        "source": {"provider": if alternate { "qq" } else { "lrclib" }, "name": "Fixture Lyrics", "result_id":fingerprint,
             "claim": {"title": track["title"], "artist": track["artist"], "duration_ms": track["duration_ms"]}},
     }})
 }
@@ -356,13 +366,60 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
         std::thread::sleep(Duration::from_millis(20));
     }
 
+    // I can try another provider and then return to the first without a report.
+    let changing = song(&music, "Changing Song");
+    lyrics_of(&mut chilpa, &changing, "Changing Song", long).unwrap();
+    let reports_before = service.rejected.lock().unwrap().len();
+    for provider in ["qq", "lrclib"] {
+        let before = said(&chilpa);
+        assert_eq!(before["can_change_source"], true);
+        assert!(chilpa.change_lyrics_source(before["revision"].as_str().unwrap()));
+        let deadline = Instant::now() + long;
+        loop {
+            chilpa.poll();
+            if said(&chilpa)["status"] == "found" { break; }
+            assert!(Instant::now() < deadline, "the requested source did not arrive: {}", said(&chilpa));
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        assert_eq!(said(&chilpa)["document"]["source"]["provider"], provider);
+        assert_eq!(service.rejected.lock().unwrap().len(), reports_before);
+    }
+
+    // Rejecting visible lyrics clears them, reports the original result
+    // and requests another provider without changing saved preferences.
+    let rejected = song(&music, "Rejected Song");
+    lyrics_of(&mut chilpa, &rejected, "Rejected Song", long).unwrap();
+    let original = said(&chilpa);
+    assert!(chilpa.reject_lyrics(original["revision"].as_str().unwrap()));
+    assert_eq!(said(&chilpa)["status"], "searching");
+    assert!(chilpa.poll().lyrics.is_empty());
+    let deadline = Instant::now() + long;
+    loop {
+        chilpa.poll();
+        if said(&chilpa)["status"] == "found" { break; }
+        assert!(Instant::now() < deadline, "the alternative lyrics never arrived: {}", said(&chilpa));
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    let alternative = said(&chilpa);
+    assert_eq!(alternative["document"]["lines"][0]["text"], "Another answer for Rejected Song");
+    assert_eq!(alternative["document"]["source"]["provider"], "qq");
+    let report = service.rejected.lock().unwrap()[0].clone();
+    assert_eq!(report["track"]["title"], "Rejected Song");
+    assert_eq!(report["provider"], "lrclib");
+    assert_eq!(report["fingerprint"], original["document"]["source"]["result_id"]);
+    assert!(report.get("document").is_none(), "the report sends no lyric text");
+    assert!(!chilpa.reject_lyrics(original["revision"].as_str().unwrap()), "the old panel cannot reject its replacement");
+    lyrics_of(&mut chilpa, &rejected, "Rejected Song", long).unwrap();
+    assert_eq!(service.asked_about("Rejected Song"), 2, "the alternative is cached");
+
     // "None" is remembered; a failure is asked again.
     for (title, twice) in [("Missing Song", 1), ("Broken Song", 2)] {
         let path = song(&music, title);
         for expected in [1, twice] {
             assert!(lyrics_of(&mut chilpa, &path, title, Duration::from_millis(900)).is_none(), "{title} has no lyrics to show");
             assert_eq!(service.asked_about(title), expected, "{title}");
-            assert_eq!(said(&chilpa)["status"], "none", "{title}: the window is told the search ended with nothing");
+            let status = if title == "Broken Song" { "failed" } else { "none" };
+            assert_eq!(said(&chilpa)["status"], status, "{title}: a failed lookup stays distinct from confirmed absence");
         }
     }
 
@@ -400,6 +457,23 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
     assert_eq!(text, "From the source");
     assert_eq!(source, "Sung Source");
     assert_eq!(said(&chilpa)["translation"], Value::Null);
+
+    // I can temporarily bypass a plugin's own lyrics without flagging them.
+    let reports_before = service.rejected.lock().unwrap().len();
+    let revision = said(&chilpa)["revision"].as_str().unwrap().to_string();
+    assert!(chilpa.change_lyrics_source(&revision));
+    let deadline = Instant::now() + long;
+    loop {
+        chilpa.poll();
+        let now = said(&chilpa);
+        if now["status"] == "found" {
+            assert_eq!(now["source"], "Fixture Lyrics");
+            break;
+        }
+        assert!(Instant::now() < deadline, "the alternative to the plugin did not arrive: {now}");
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert_eq!(service.rejected.lock().unwrap().len(), reports_before);
 
     // Another language for the translation asks the source again, and the
     // translation it gives is the one offered.

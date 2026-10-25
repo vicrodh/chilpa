@@ -124,6 +124,15 @@ msgstr "Er is een nieuwe versie van Chilpa beschikbaar."
 msgid "A player for your own music"
 msgstr "Een speler voor je eigen muziek"
 
+msgid "A saved query already has that name."
+msgstr "Er bestaat al een opgeslagen zoekopdracht met die naam."
+
+msgid "A saved query may use at most 16 KiB."
+msgstr "Een opgeslagen zoekopdracht mag maximaal 16 KiB groot zijn."
+
+msgid "A scan supports up to 256 folders and 64 KiB of saved paths."
+msgstr "Een scan ondersteunt maximaal 256 mappen en 64 KiB aan opgeslagen paden."
+
 msgid "A secure cast URL could not be created."
 msgstr "Er kon geen beveiligde cast-URL worden gemaakt."
 
@@ -186,6 +195,9 @@ msgstr "Actieve modules"
 
 msgid "Add"
 msgstr "Toevoegen"
+
+msgid "Add a condition before saving a query."
+msgstr "Voeg een voorwaarde toe voordat u opslaat."
 
 msgid "Add a condition: type a genre, artist, year…"
 msgstr "Voorwaarde toevoegen: typ een genre, artiest, jaar…"
@@ -510,6 +522,9 @@ msgstr "apr"
 msgid "April"
 msgstr "april"
 
+msgid "Arranger"
+msgstr "Arrangeur"
+
 msgid "Artist"
 msgstr "Artiest"
 
@@ -591,6 +606,9 @@ msgstr "Detecteer automatisch je DAC's en stel stap voor stap bit-perfecte weerg
 msgid "Auto-follow"
 msgstr "Automatisch volgen"
 
+msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
+msgstr "Automatische controles zijn gepauzeerd totdat u deze scan hervat of sluit. Reeds toegevoegde bestanden blijven behouden."
+
 msgid "Automatic headroom lowers gain to leave room for EQ boosts."
 msgstr "Automatische headroom verlaagt de versterking om ruimte te laten voor EQ-verhogingen."
 
@@ -656,6 +674,9 @@ msgstr "Bit-perfect"
 
 msgid "Bit-perfect"
 msgstr "Bit-perfect"
+
+msgid "Bits"
+msgstr "Bits"
 
 msgid "Block network access, including plugins, online artwork, updates and scrobbling. Local playback, cached content and installed Mood models stay available. Artist Network is hidden."
 msgstr "Blokkeer netwerktoegang, inclusief plug-ins, online albumhoezen, updates en scrobbling. Lokale weergave, gecachete inhoud en geïnstalleerde stemmingsmodellen blijven beschikbaar. Het artiestennetwerk wordt verborgen."
@@ -815,6 +836,12 @@ msgstr "Afbeelding wijzigen"
 msgid "Change sign-in"
 msgstr "Inloggegevens wijzigen"
 
+msgid "Change source"
+msgstr "Andere bron"
+
+msgid "Channels"
+msgstr "Kanalen"
+
 msgid "Chapters"
 msgstr "Hoofdstukken"
 
@@ -824,8 +851,14 @@ msgstr "Controleren"
 msgid "Check Audio Stack"
 msgstr "Audiostack controleren"
 
+msgid "Check all folders"
+msgstr "Alle mappen controleren"
+
 msgid "Check for a newer version of Chilpa."
 msgstr "Controleer of er een nieuwere versie van Chilpa is."
+
+msgid "Check for new additions"
+msgstr "Nieuwe toevoegingen zoeken"
 
 msgid "Check for updates"
 msgstr "Op updates controleren"
@@ -835,6 +868,9 @@ msgstr "Automatisch op updates controleren"
 
 msgid "Checking for updates…"
 msgstr "Op updates controleren…"
+
+msgid "Checking library folders…"
+msgstr "Bibliotheekmappen controleren…"
 
 msgid "Checking the account…"
 msgstr "Het account controleren…"
@@ -1079,8 +1115,14 @@ msgstr "Sluit de aanhalingstekens."
 msgid "Close to tray"
 msgstr "Sluiten naar systeemvak"
 
+msgid "Closing stops a scan. Saved progress can be continued here after reopening."
+msgstr "Sluiten stopt de scan. Na het opnieuw openen kunt u hier de opgeslagen voortgang hervatten."
+
 msgid "Closing the window keeps Chilpa playing in the tray instead of quitting."
 msgstr "Als je het venster sluit, blijft Chilpa afspelen in het systeemvak in plaats van af te sluiten."
+
+msgid "Codec"
+msgstr "Codec"
 
 msgid "Collaborators"
 msgstr "Samenwerkingen"
@@ -1151,6 +1193,9 @@ msgstr "Compilaties"
 msgid "Completed"
 msgstr "Voltooid"
 
+msgid "Completed work is saved. Continue checks the folder again and skips unchanged files."
+msgstr "Voltooid werk is opgeslagen. Doorgaan controleert de map opnieuw en slaat ongewijzigde bestanden over."
+
 msgid "Composer"
 msgstr "Componist"
 
@@ -1190,11 +1235,17 @@ msgstr "Verbinden…"
 msgid "Connection error"
 msgstr "Verbindingsfout"
 
+msgid "Container"
+msgstr "Container"
+
 msgid "Continue"
 msgstr "Doorgaan"
 
 msgid "Continue listening"
 msgstr "Verder luisteren"
+
+msgid "Continue or dismiss the interrupted scan before starting another."
+msgstr "Hervat of sluit de onderbroken scan voordat u een andere start."
 
 msgid "Convert to PCM"
 msgstr "Naar PCM converteren"
@@ -1457,6 +1508,12 @@ msgstr "Afspeellijst verwijderen"
 msgid "Delete preset"
 msgstr "Preset verwijderen"
 
+msgid "Delete saved query"
+msgstr "Opgeslagen zoekopdracht verwijderen"
+
+msgid "Delete the saved query “{}”?"
+msgstr "Opgeslagen zoekopdracht ‘{}’ verwijderen?"
+
 msgid "Delete “{}”?"
 msgstr "‘{}' verwijderen?"
 
@@ -1555,6 +1612,9 @@ msgstr "Schijven"
 
 msgid "Dismiss"
 msgstr "Negeren"
+
+msgid "Dismiss scan"
+msgstr "Scan sluiten"
 
 msgid "Display settings"
 msgstr "Weergave-instellingen"
@@ -1706,6 +1766,9 @@ msgstr "Schakel {} in bij Instellingen › Bronnen om dit item af te spelen."
 msgid "Ends at {}"
 msgstr "Eindigt om {}"
 
+msgid "Engineer"
+msgstr "Geluidstechnicus"
+
 msgid "English"
 msgstr "Engels"
 
@@ -1732,6 +1795,15 @@ msgstr "Equalizer"
 
 msgid "Errors"
 msgstr "Fouten"
+
+msgid "Every 12 hours"
+msgstr "Elke 12 uur"
+
+msgid "Every 24 hours"
+msgstr "Elke 24 uur"
+
+msgid "Every week"
+msgstr "Elke week"
 
 msgid "Everyone who plays on a track"
 msgstr "Iedereen die op een nummer meespeelt"
@@ -1820,6 +1892,9 @@ msgstr "Velden"
 msgid "File"
 msgstr "Bestand"
 
+msgid "File size"
+msgstr "Bestandsgrootte"
+
 msgid "Files"
 msgstr "Bestanden"
 
@@ -1901,8 +1976,14 @@ msgstr "Mapkleuren in de zijbalk"
 msgid "Folder name"
 msgstr "Mapnaam"
 
+msgid "Folder path"
+msgstr "Mappad"
+
 msgid "Folders"
 msgstr "Mappen"
+
+msgid "Folders are unavailable. Their existing tracks remain in the library."
+msgstr "Mappen zijn niet beschikbaar. Hun bestaande nummers blijven in de bibliotheek."
 
 msgid "Follow"
 msgstr "Volgen"
@@ -2216,6 +2297,9 @@ msgstr "Ik houd dit filter actief; bewerk de tekst om het te wijzigen."
 msgid "I restarted the audio services"
 msgstr "Ik heb de audioservices herstart"
 
+msgid "I save only the conditions. Opening a query uses the currently selected sources and keeps the queue."
+msgstr "Ik sla alleen de voorwaarden op. Bij openen gebruik ik de geselecteerde bronnen en behoud ik de wachtrij."
+
 msgid "I understand and accept these terms"
 msgstr "Ik begrijp en accepteer deze voorwaarden"
 
@@ -2300,6 +2384,9 @@ msgstr "Info: {}"
 msgid "Information"
 msgstr "Informatie"
 
+msgid "Information could not be retrieved. Try again shortly."
+msgstr "De informatie kon niet worden opgehaald. Probeer het zo opnieuw."
+
 msgid "Init system (service commands)"
 msgstr "Init-systeem (servicecommando's)"
 
@@ -2347,6 +2434,9 @@ msgstr "Geïnstalleerd"
 
 msgid "Installing plugin…"
 msgstr "Plug-in installeren…"
+
+msgid "Instrument"
+msgstr "Instrument"
 
 msgid "Integrations"
 msgstr "Integraties"
@@ -2525,6 +2615,15 @@ msgstr "Maakt de luidheid van nummers gelijk. Dit maakt strikt bit-perfecte weer
 msgid "Library"
 msgstr "Bibliotheek"
 
+msgid "Library check complete"
+msgstr "Bibliotheekcontrole voltooid"
+
+msgid "Library check failed"
+msgstr "Bibliotheekcontrole mislukt"
+
+msgid "Library check interrupted"
+msgstr "Bibliotheekcontrole onderbroken"
+
 msgid "Library folders"
 msgstr "Bibliotheekmappen"
 
@@ -2633,6 +2732,9 @@ msgstr "Lokaal — {}"
 msgid "Look"
 msgstr "Vormgeving"
 
+msgid "Look for changes"
+msgstr "Wijzigingen zoeken"
+
 msgid "Look records up in"
 msgstr "Albums opzoeken in"
 
@@ -2708,6 +2810,9 @@ msgstr "Beheren"
 msgid "Manage playlists"
 msgstr "Afspeellijsten beheren"
 
+msgid "Manually"
+msgstr "Handmatig"
+
 msgid "Mar"
 msgstr "mrt"
 
@@ -2722,6 +2827,9 @@ msgstr "Markeren als niet afgespeeld"
 
 msgid "Mark the start first with :loop a."
 msgstr "Markeer eerst het begin met :loop a."
+
+msgid "Mastering engineer"
+msgstr "Masteringtechnicus"
 
 msgid "Match"
 msgstr "Voldoen aan"
@@ -2780,6 +2888,9 @@ msgstr "Ontbreekt"
 msgid "Mixed"
 msgstr "Gemengd"
 
+msgid "Mixing engineer"
+msgstr "Mixtechnicus"
+
 msgid "Mon"
 msgstr "ma"
 
@@ -2824,6 +2935,9 @@ msgstr "Meer"
 
 msgid "More actions"
 msgstr "Meer acties"
+
+msgid "More options"
+msgstr "Meer opties"
 
 msgid "Most at {}:00"
 msgstr "Meest om {}:00"
@@ -2947,6 +3061,9 @@ msgstr "Navigatie"
 
 msgid "Needs update"
 msgstr "Moet worden bijgewerkt"
+
+msgid "Nerdy"
+msgstr "Nerdy"
 
 msgid "Network"
 msgstr "Netwerk"
@@ -3140,6 +3257,9 @@ msgstr "Geen resultaten gevonden."
 msgid "No review available"
 msgstr "Geen recensie beschikbaar"
 
+msgid "No saved queries yet. Add conditions, then choose Save query."
+msgstr "Nog geen opgeslagen zoekopdrachten. Voeg voorwaarden toe en kies Zoekopdracht opslaan."
+
 msgid "No setting says that"
 msgstr "Geen instelling zegt dat"
 
@@ -3298,6 +3418,9 @@ msgstr "Aan"
 
 msgid "On air"
 msgstr "Nu live"
+
+msgid "On app startup"
+msgstr "Bij het starten van de app"
 
 msgid "On the sidebar's destinations."
 msgstr "Op de bestemmingen van de zijbalk."
@@ -3487,6 +3610,9 @@ msgstr "In afwachting"
 
 msgid "Per-app bit-perfect (PipeWire client)"
 msgstr "Bit-perfect per app (PipeWire-client)"
+
+msgid "Performer"
+msgstr "Uitvoerend artiest"
 
 msgid "Performers"
 msgstr "Uitvoerenden"
@@ -3734,6 +3860,9 @@ msgstr "Privacy en netwerk"
 msgid "Processed"
 msgstr "Verwerkt"
 
+msgid "Producer"
+msgstr "Producent"
+
 msgid "Profile name"
 msgstr "Profielnaam"
 
@@ -3769,6 +3898,9 @@ msgstr "Filters voor kwaliteit, formaat, bron en waardering"
 
 msgid "Quarantined"
 msgstr "In quarantaine"
+
+msgid "Query name"
+msgstr "Naam van zoekopdracht"
 
 msgid "Queue"
 msgstr "Wachtrij"
@@ -3838,6 +3970,9 @@ msgstr "Waarderen"
 
 msgid "Rating"
 msgstr "Waardering"
+
+msgid "Re-fetch album information"
+msgstr "Albuminformatie opnieuw ophalen"
 
 msgid "Reactivate"
 msgstr "Opnieuw activeren"
@@ -3928,6 +4063,9 @@ msgstr "Onlangs afgespeelde afspeellijsten"
 
 msgid "Recently played playlists in the library"
 msgstr "Onlangs afgespeelde afspeellijsten in de bibliotheek"
+
+msgid "Recording engineer"
+msgstr "Opnametechnicus"
 
 msgid "Records"
 msgstr "Albums"
@@ -4051,6 +4189,9 @@ msgstr "Verwijderen…"
 
 msgid "Rename"
 msgstr "Hernoemen"
+
+msgid "Rename query"
+msgstr "Zoekopdracht hernoemen"
 
 msgid "Renderer"
 msgstr "Renderer"
@@ -4190,6 +4331,9 @@ msgstr "STATUS"
 msgid "SURFACES"
 msgstr "OPPERVLAKKEN"
 
+msgid "Sample rate"
+msgstr "Samplefrequentie"
+
 msgid "Sample-rate switching (PipeWire)"
 msgstr "Wisselen van samplefrequentie (PipeWire)"
 
@@ -4217,6 +4361,9 @@ msgstr "Wijzigingen opslaan"
 msgid "Save preset"
 msgstr "Preset opslaan"
 
+msgid "Save query"
+msgstr "Zoekopdracht opslaan"
+
 msgid "Save stations to find them here."
 msgstr "Sla zenders op om ze hier terug te vinden."
 
@@ -4235,6 +4382,9 @@ msgstr "Opgeslagen"
 msgid "Saved position"
 msgstr "Opgeslagen positie"
 
+msgid "Saved queries"
+msgstr "Opgeslagen zoekopdrachten"
+
 msgid "Saved results remain available between sessions."
 msgstr "Opgeslagen resultaten blijven beschikbaar tussen sessies."
 
@@ -4250,14 +4400,14 @@ msgstr "Opslaan… {} van {} bestanden"
 msgid "Scales the whole interface, like browser zoom. Small fits more content on screen, Large and Extra large improve readability (requires restart)"
 msgstr "Schaalt de hele interface, zoals browserzoom. Klein toont meer inhoud op het scherm, Groot en Extra groot verbeteren de leesbaarheid (vereist herstart)"
 
-msgid "Scan again"
-msgstr "Opnieuw scannen"
-
-msgid "Scan every folder again"
-msgstr "Alle mappen opnieuw scannen"
+msgid "Scan settings could not be saved or read: {}"
+msgstr "Scaninstellingen konden niet worden opgeslagen of gelezen: {}"
 
 msgid "Scanning…"
 msgstr "Scannen…"
+
+msgid "Scheduled checks run while Chilpa is open. Startup checks run once when the app opens. Unchanged files are skipped."
+msgstr "Geplande controles worden uitgevoerd terwijl Chilpa open is. Opstartcontroles worden eenmaal uitgevoerd bij het openen. Ongewijzigde bestanden worden overgeslagen."
 
 msgid "Scrobbling"
 msgstr "Scrobbelen"
@@ -4663,6 +4813,12 @@ msgstr "Weergave stoppen na:"
 msgid "Stop playback to diagnose?"
 msgstr "Afspelen stoppen om te diagnosticeren?"
 
+msgid "Stop scan"
+msgstr "Scan stoppen"
+
+msgid "Stopping after the current file…"
+msgstr "Stoppen na het huidige bestand…"
+
 msgid "Stops in"
 msgstr "Stopt over"
 
@@ -4764,6 +4920,9 @@ msgstr "Dat antwoord hoort niet bij dit venster."
 msgid "That file is not a JPEG, PNG or WebP image"
 msgstr "Dat bestand is geen JPEG-, PNG- of WebP-afbeelding"
 
+msgid "That saved query no longer exists."
+msgstr "Die opgeslagen zoekopdracht bestaat niet meer."
+
 msgid "The EQ profile is too large."
 msgstr "Het EQ-profiel is te groot."
 
@@ -4812,6 +4971,12 @@ msgstr "De eerste is het eigen accent van het thema; de andere vervangen die in 
 msgid "The floating player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
 msgstr "De zwevende afspeelbalk verdwijnt na tien seconden zonder muisbeweging en komt bij elke beweging terug."
 
+msgid "The folder is no longer in the library."
+msgstr "De map staat niet meer in de bibliotheek."
+
+msgid "The folder scan policy is invalid."
+msgstr "Het scanbeleid voor de map is ongeldig."
+
 msgid "The image could not be kept"
 msgstr "De afbeelding kon niet worden bewaard"
 
@@ -4824,6 +4989,9 @@ msgstr "De afbeelding kon niet worden opgeslagen"
 msgid "The image is too large"
 msgstr "De afbeelding is te groot"
 
+msgid "The incorrect lyrics could not be excluded. Try again."
+msgstr "De onjuiste songtekst kon niet worden uitgesloten. Probeer het opnieuw."
+
 msgid "The line being sung stays in view."
 msgstr "De regel die wordt gezongen blijft in beeld."
 
@@ -4835,6 +5003,12 @@ msgstr "De loop kan hier niet worden gemarkeerd; het einde heeft minstens twee s
 
 msgid "The loudness every track is aligned to. -14 LUFS matches streaming services, -18 LUFS is the ReplayGain reference."
 msgstr "De luidheid waarop elk nummer wordt afgestemd. -14 LUFS komt overeen met streamingdiensten, -18 LUFS is de ReplayGain-referentie."
+
+msgid "The lower bound must not exceed the upper bound."
+msgstr "De ondergrens mag niet hoger zijn dan de bovengrens."
+
+msgid "The lyrics API could not save the report. This result is excluded on this device."
+msgstr "De songtekst-API kon de melding niet opslaan. Dit resultaat is op dit apparaat uitgesloten."
 
 msgid "The lyrics cache could not be opened."
 msgstr "De songtekstcache kon niet worden geopend."
@@ -4884,8 +5058,29 @@ msgstr "De renderer heeft de opdracht geweigerd."
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "Dezelfde regel als bij ListenBrainz: de helft van een nummer, of vier minuten."
 
+msgid "The saved folder scan policy is invalid."
+msgstr "Het opgeslagen scanbeleid voor mappen is ongeldig."
+
+msgid "The saved queries could not be read or saved: {}"
+msgstr "Zoekopdrachten konden niet worden gelezen of opgeslagen: {}"
+
+msgid "The saved query catalog exceeds 1 MiB."
+msgstr "De catalogus is groter dan 1 MiB."
+
+msgid "The saved query catalog is damaged; I kept its original data."
+msgstr "De catalogus is beschadigd; ik heb de oorspronkelijke gegevens behouden."
+
+msgid "The saved scan could not be restored."
+msgstr "De opgeslagen scan kon niet worden hersteld."
+
 msgid "The saved sign-in could not be opened."
 msgstr "De opgeslagen inloggegevens konden niet worden geopend."
+
+msgid "The scan could not start: {}"
+msgstr "De scan kon niet worden gestart: {}"
+
+msgid "The scan worker stopped unexpectedly."
+msgstr "Het scanproces is onverwacht gestopt."
 
 msgid "The selected hardware volume control is gone."
 msgstr "De geselecteerde hardwarevolumeregeling bestaat niet meer."
@@ -5021,6 +5216,9 @@ msgstr "Dit item kan nu niet worden afgespeeld."
 
 msgid "This removes {} from your library."
 msgstr "Hiermee wordt {} uit je bibliotheek verwijderd."
+
+msgid "This saved query catalog uses an unsupported version; I kept its original data."
+msgstr "Deze catalogusversie wordt niet ondersteund; ik heb de oorspronkelijke gegevens behouden."
 
 msgid "This screen is not built yet."
 msgstr "Dit scherm is nog niet gebouwd."
@@ -5328,6 +5526,9 @@ msgstr "Updates behouden je bibliotheek, instellingen en plug-ins. Eén vorige A
 msgid "Updating Chilpa…"
 msgstr "Chilpa bijwerken…"
 
+msgid "Updating the library…"
+msgstr "Bibliotheek bijwerken…"
+
 msgid "Updating usage…"
 msgstr "Gebruik bijwerken…"
 
@@ -5342,6 +5543,9 @@ msgstr "MusicBrainz gebruiken"
 
 msgid "Use Quick Connect"
 msgstr "Quick Connect gebruiken"
+
+msgid "Use a name of 1 to 80 characters, without line breaks."
+msgstr "Gebruik een naam van 1 tot 80 tekens zonder regeleinden."
 
 msgid "Use at most 10 DSP filters."
 msgstr "Gebruik maximaal 10 DSP-filters."
@@ -5393,6 +5597,9 @@ msgstr "Nauwkeurige filters bekijken"
 
 msgid "View tracks"
 msgstr "Nummers bekijken"
+
+msgid "Vocals"
+msgstr "Zang"
 
 msgid "Volume"
 msgstr "Volume"
@@ -5544,6 +5751,12 @@ msgstr "De externe SACD-XML schrijven?"
 msgid "Write to a file"
 msgstr "Naar een bestand schrijven"
 
+msgid "Writer"
+msgstr "Auteur"
+
+msgid "Wrong lyric"
+msgstr "Onjuiste songtekst"
+
 msgid "XML can be edited only for SACD images"
 msgstr "XML kan alleen voor SACD-images worden bewerkt"
 
@@ -5561,6 +5774,9 @@ msgstr "Gisteren"
 
 msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
 msgstr "Je bent zelf verantwoordelijk voor je back-ups. Dit is een hulpmiddel, geen systeemhersteltool."
+
+msgid "You can save up to 64 queries."
+msgstr "U kunt maximaal 64 zoekopdrachten opslaan."
 
 msgid "Your DAC"
 msgstr "Je DAC"
@@ -7013,6 +7229,9 @@ msgstr "{} nummers in {} albums"
 
 msgid "{} tracks match disc {}"
 msgstr "{} nummers komen overeen met schijf {}"
+
+msgid "{} unreadable"
+msgstr "{} onleesbaar"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "er is bij {} niet op tijd toestemming gegeven; verbind opnieuw"

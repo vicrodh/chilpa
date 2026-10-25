@@ -35,6 +35,16 @@ impl LyricsServiceClient {
 }
 
 impl LyricsServiceClient {
+    pub(crate) fn reject(&self, track: &Track, provider: &str, fingerprint: &str) -> Result<(), String> {
+        let mut request = service::request(track, Timing::Unsynced, None);
+        request["provider"] = json!(provider);
+        request["fingerprint"] = json!(fingerprint);
+        let (status, _, body) = self.post("/v1/lyrics/reject", &request)?;
+        let answer: Value = serde_json::from_str(&body).map_err(|_| "the lyrics report could not be read")?;
+        if status == 200 && answer["schema"] == 1 && answer["status"] == "rejected" { Ok(()) }
+        else { Err(format!("the lyrics report was not accepted ({status})")) }
+    }
+
     /// Posts a question at a path and splits the reply: the status, the
     /// `Retry-After` and the body. `Err` is no reply at all: the network,
     /// not the service.

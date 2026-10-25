@@ -192,6 +192,17 @@ QtObject {
     readonly property int columnExcludeCorner: 4
     readonly property int columnExcludeIcon: 12
 
+    // Saved queries keep the modal footprint independent of the row count.
+    readonly property real savedDialogShare: 0.6
+    readonly property int savedDialogMinWide: 640
+    readonly property int savedDialogMinTall: 420
+    readonly property int savedDialogAround: 32
+    readonly property int savedRowTall: 36
+    readonly property real savedNameShare: 0.34
+    readonly property int savedActionsWide: rowButton * 3 + innerApart * 2
+    readonly property int savedHeaderTall: 30
+    readonly property int savedFormTall: 80
+
     // Zero results.
     readonly property int zeroRow: 32
     readonly property int zeroRound: 8

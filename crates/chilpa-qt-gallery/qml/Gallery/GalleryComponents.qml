@@ -125,6 +125,7 @@ TitledFlow {
         }
         TrackRowSlot { width: section.width; height: Metrics.rowCompact; inViewport: false }
         TrackColumns { id: rowCols; width: section.width }
+        GalleryTechnical { width: section.width }
         TrackHeader { cols: rowCols }
         TrackSourceLabel { cols: TrackColumns { showSource: true } name: "Local" }
         // A divider with nothing of its own, and the header of a record
@@ -188,7 +189,7 @@ TitledFlow {
         FolderDetail { width: section.width; height: Metrics.panesHeight; folder: top; tracks: folderTracks; albums: folderAlbums }
         PanelHeader { width: Metrics.rightPanel; title: "Queue"; detail: "12 songs · 48 min" }
         QueueMenu { model: folderTracks; laterLabel: "Library selection" }
-        VolumeControl {}
+        Driving.VolumeControl {}
         QueueRow { width: Metrics.rightPanel; index: 0; title: "Faded Lines"; artist: "Mora Vale"; duration: "4:04"; playing: true; art: "" }
         QueueRow { width: Metrics.rightPanel; index: 1; title: "Rivers"; artist: "Mora Vale"; duration: "5:48"; playing: false; art: "" }
         ChoiceRow {
@@ -201,8 +202,8 @@ TitledFlow {
             model: audio
             SettingsRow { width: section.width; page: audio }
         }
-        FolderRow { width: section.width; path: "/music/Mora Vale/Low Orbit"; name: "Low Orbit"; lastScan: new Date(); reachable: true }
-        FolderRow { width: section.width; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false }
+        FolderRow { width: section.width; path: "/music/Mora Vale/Low Orbit"; name: "Low Orbit"; lastScan: new Date(); reachable: true; scanPolicy: "startup" }
+        FolderRow { width: section.width; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false; scanPolicy: "manual" }
         ScanProgress { width: section.width }
         PillButton {
             text: "Analysis offer"

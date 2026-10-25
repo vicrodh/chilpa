@@ -1,163 +1,176 @@
-//! Scanning without freezing the interface.
-//!
-//! The scan opens its own connection on its own thread: a SQLite connection
-//! is not shared across threads, and the interface has to keep reading
-//! while writing happens. That is what WAL is for (see
-//! [`crate::schema::apply_pragmas`]).
-//!
-//! What is reported is what really happened: files seen, read and skipped.
-//! A bar that advances without knowing how many files there are is lying,
-//! so here we count first and advance afterwards.
+//! One background scan, with cooperative cancellation and bounded progress.
 
-use crate::scan::{Containers, NoContainers, ScanReport};
+use crate::scan::{Containers, NoContainers, ScanControl, ScanReport};
 use crate::store::Library;
-use std::sync::Arc;
+use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::{channel, Receiver, TryRecvError};
+use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
 use std::thread::JoinHandle;
 
-/// How the scan is going.
+pub const MAX_ROOTS: usize = 256;
+
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ScanProgress {
-    /// How many files there are to look at is now known.
     Counted { total: usize },
-    /// Van `done` de `total`.
     Advanced { done: usize, total: usize },
-    /// It finished, with its report.
+    Phase { root: PathBuf, finalizing: bool },
     Done(ScanReport),
-    /// It could not be done.
+    Interrupted(ScanReport),
     Failed(String),
 }
 
-/// A scan running in the background.
+// I retain one count, one progress update, one phase and one terminal event.
+// A hidden or busy frontend never builds a queue proportional to file count.
+#[derive(Default)]
+struct Mailbox { events: Mutex<VecDeque<ScanProgress>>, terminal: AtomicBool }
+impl Mailbox {
+    fn send(&self, event: ScanProgress) {
+        let mut events = self.events.lock().unwrap_or_else(|error| error.into_inner());
+        events.retain(|old| std::mem::discriminant(old) != std::mem::discriminant(&event));
+        let terminal = matches!(event, ScanProgress::Done(_) | ScanProgress::Interrupted(_) | ScanProgress::Failed(_));
+        events.push_back(event);
+        if terminal { self.terminal.store(true, Ordering::Release); }
+    }
+    fn poll(&self) -> Vec<ScanProgress> {
+        self.events.lock().unwrap_or_else(|error| error.into_inner()).drain(..).collect()
+    }
+}
+
 pub struct ScanJob {
-    events: Receiver<ScanProgress>,
+    events: Arc<Mailbox>,
+    control: ScanControl,
     thread: Option<JoinHandle<()>>,
 }
 
 impl ScanJob {
-    /// Starts scanning a folder into the database at `db_path`.
     pub fn start(db_path: PathBuf, root: PathBuf, artwork_cache: Option<PathBuf>) -> Self {
         Self::start_all(db_path, vec![root], artwork_cache)
     }
 
-    /// The same with several folders, one after another.
-    ///
-    /// The count is taken over all of them first, so the bar advances from
-    /// start to finish instead of restarting on every folder.
-    pub fn start_all(
-        db_path: PathBuf,
-        roots: Vec<PathBuf>,
-        artwork_cache: Option<PathBuf>,
-    ) -> Self {
+    pub fn start_all(db_path: PathBuf, roots: Vec<PathBuf>, artwork_cache: Option<PathBuf>) -> Self {
         Self::start_with(db_path, roots, artwork_cache, Arc::new(NoContainers))
     }
 
-    /// The same, with files that hold several tracks -- disc images -- read
-    /// by `containers`.
-    pub fn start_with(
-        db_path: PathBuf,
-        roots: Vec<PathBuf>,
-        artwork_cache: Option<PathBuf>,
-        containers: Arc<dyn Containers + Send + Sync>,
-    ) -> Self {
-        let (tx, rx) = channel();
-        let thread = std::thread::Builder::new()
-            .name("chilpa-scan".into())
-            .spawn(move || {
-                let lib = match Library::open(&db_path) {
-                    Ok(l) => l,
-                    Err(e) => {
-                        let _ = tx.send(ScanProgress::Failed(e.to_string()));
-                        return;
-                    }
-                };
-                // Count first: without a total, a progress bar invents one.
-                let total: usize =
-                    roots.iter().map(|r| crate::scan::count_files(r, &*containers)).sum();
-                let _ = tx.send(ScanProgress::Counted { total });
-
-                let mut accumulated = ScanReport {
-                    root: roots.first().cloned().unwrap_or_default(),
-                    unreachable: true,
-                    ..ScanReport::default()
-                };
-                // What the earlier folders already account for, so progress does
-                // not start over on each one.
-                let mut previous = 0usize;
-                for root in &roots {
-                    let warn = |done: usize| {
-                        let _ = tx.send(ScanProgress::Advanced { done: previous + done, total });
-                    };
-                    match crate::scan::scan_root_with(
-                        &lib,
-                        root,
-                        artwork_cache.as_deref(),
-                        &warn,
-                        &*containers,
-                    ) {
-                        Ok(r) => {
-                            previous += r.seen;
-                            accumulated.seen += r.seen;
-                            accumulated.read += r.read;
-                            accumulated.unchanged += r.unchanged;
-                            accumulated.missing += r.missing;
-                            accumulated.unreadable += r.unreadable;
-                            // As long as one folder could be read, the scan was worth
-                            // something.
-                            accumulated.unreachable &= r.unreachable;
-                        }
-                        Err(e) => {
-                            let _ = tx.send(ScanProgress::Failed(e.to_string()));
-                            return;
-                        }
-                    }
-                }
-                if roots.is_empty() {
-                    accumulated.unreachable = false;
-                }
-                let _ = tx.send(ScanProgress::Done(accumulated));
-            })
-            .expect("the scan thread starts");
-        Self { events: rx, thread: Some(thread) }
+    pub fn start_with(db_path: PathBuf, roots: Vec<PathBuf>, artwork_cache: Option<PathBuf>, containers: Arc<dyn Containers + Send + Sync>) -> Self {
+        Self::try_start_with(db_path, roots, artwork_cache, containers).expect("the scan thread starts")
     }
 
-    /// Whatever has happened, without blocking.
+    pub fn try_start_with(db_path: PathBuf, roots: Vec<PathBuf>, artwork_cache: Option<PathBuf>, containers: Arc<dyn Containers + Send + Sync>) -> std::io::Result<Self> {
+        if roots.len() > MAX_ROOTS { return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "a scan supports at most 256 roots")); }
+        let events = Arc::new(Mailbox::default());
+        let worker_events = events.clone();
+        let control = ScanControl::default();
+        let worker_control = control.clone();
+        let thread = std::thread::Builder::new().name("chilpa-scan".into()).spawn(move || {
+            run(db_path, roots, artwork_cache, containers, worker_control, worker_events);
+        })?;
+        Ok(Self { events, control, thread: Some(thread) })
+    }
+
     pub fn poll(&self) -> Vec<ScanProgress> {
-        let mut out = Vec::new();
-        loop {
-            match self.events.try_recv() {
-                Ok(e) => out.push(e),
-                Err(TryRecvError::Empty) | Err(TryRecvError::Disconnected) => break,
-            }
+        let mut events = self.events.poll();
+        if self.finished() && self.events.terminal.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire).is_ok() {
+            events.push(ScanProgress::Failed(chilpa_i18n::t("The scan worker stopped unexpectedly.")));
         }
-        out
+        events
     }
+    pub fn stop(&self) { self.control.stop(); }
+    pub fn finished(&self) -> bool { self.thread.as_ref().is_some_and(|thread| thread.is_finished()) }
+}
 
-    /// True when the thread has finished.
-    pub fn finished(&self) -> bool {
-        self.thread.as_ref().is_some_and(|t| t.is_finished())
+fn run(db_path: PathBuf, roots: Vec<PathBuf>, artwork_cache: Option<PathBuf>, containers: Arc<dyn Containers + Send + Sync>, control: ScanControl, events: Arc<Mailbox>) {
+    let mut accumulated = ScanReport { root: roots.first().cloned().unwrap_or_default(), unreachable: !roots.is_empty(), ..ScanReport::default() };
+    let lib = match Library::open(&db_path) {
+        Ok(lib) => lib,
+        Err(error) => { events.send(ScanProgress::Failed(error.to_string())); return; }
+    };
+    // I retain at most 256 counters, released with this worker.
+    let mut counts = Vec::with_capacity(roots.len());
+    for root in &roots {
+        let Some(count) = crate::scan::count_controlled(root, &*containers, &control) else {
+            accumulated.interrupted = true;
+            events.send(ScanProgress::Interrupted(accumulated));
+            return;
+        };
+        counts.push(count);
     }
+    let total = counts.iter().sum();
+    events.send(ScanProgress::Counted { total });
+    let mut previous = 0;
+    for (root, count) in roots.iter().zip(counts) {
+        events.send(ScanProgress::Phase { root: root.clone(), finalizing: false });
+        let progress = |done| events.send(ScanProgress::Advanced { done: previous + done, total });
+        let finalizing = || events.send(ScanProgress::Phase { root: root.clone(), finalizing: true });
+        match crate::scan::scan_controlled(&lib, root, artwork_cache.as_deref(), &progress, &*containers, &control, &finalizing) {
+            Ok(report) => {
+                previous += count;
+                accumulated.seen += report.seen;
+                accumulated.read += report.read;
+                accumulated.unchanged += report.unchanged;
+                accumulated.missing += report.missing;
+                accumulated.unreadable += report.unreadable;
+                accumulated.sidecars_unreadable += report.sidecars_unreadable;
+                accumulated.unreachable &= report.unreachable;
+                accumulated.changed |= report.changed;
+                if report.interrupted {
+                    accumulated.interrupted = true;
+                    events.send(ScanProgress::Interrupted(accumulated));
+                    return;
+                }
+            }
+            Err(error) => { events.send(ScanProgress::Failed(error.to_string())); return; }
+        }
+    }
+    events.send(ScanProgress::Done(accumulated));
 }
 
 impl Drop for ScanJob {
     fn drop(&mut self) {
-        // The scan is not interrupted halfway: leaving the database with files
-        // half-recorded is worse than waiting.
-        if let Some(t) = self.thread.take() {
-            let _ = t.join();
-        }
+        self.control.stop();
+        if let Some(thread) = self.thread.take() { let _ = thread.join(); }
     }
 }
 
-/// Counts a folder's audio files, without touching the database.
-pub fn count(root: &Path) -> usize {
-    crate::scan::count_audio_files(root)
-}
+pub fn count(root: &Path) -> usize { crate::scan::count_audio_files(root) }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_panicked_worker_reports_failure_once_instead_of_running_forever() {
+        struct Panics;
+        impl Containers for Panics {
+            fn may_hold(&self, path: &Path) -> bool { path.extension().is_some_and(|extension| extension == "disc") }
+            fn tracks(&self, _: &Path) -> Option<Vec<crate::scan::ContainedTrack>> { panic!("injected container failure") }
+        }
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().join("music");
+        std::fs::create_dir(&root).unwrap();
+        std::fs::write(root.join("album.disc"), "fixture").unwrap();
+        let job = ScanJob::start_with(directory.path().join("library.db"), vec![root], None, Arc::new(Panics));
+        let events = to_the_end(&job);
+        assert!(matches!(events.last(), Some(ScanProgress::Failed(_))));
+        assert!(job.finished());
+        assert!(job.poll().is_empty(), "the terminal failure is emitted once");
+    }
+
+    #[test]
+    fn progress_mailbox_stays_bounded_when_nobody_polls() {
+        let mailbox = Mailbox::default();
+        mailbox.send(ScanProgress::Counted { total: 100_000 });
+        for done in 0..100_000 {
+            mailbox.send(ScanProgress::Advanced { done, total: 100_000 });
+            mailbox.send(ScanProgress::Phase { root: PathBuf::from("music"), finalizing: false });
+        }
+        mailbox.send(ScanProgress::Done(ScanReport::default()));
+        let events = mailbox.poll();
+        assert_eq!(events.len(), 4);
+        assert!(matches!(events[0], ScanProgress::Counted { .. }));
+        assert!(matches!(events[1], ScanProgress::Advanced { done: 99_999, .. }));
+        assert!(matches!(events[3], ScanProgress::Done(_)));
+        assert!(mailbox.poll().is_empty());
+    }
 
     /// Waits for the scan to finish and returns everything it reported.
     fn to_the_end(job: &ScanJob) -> Vec<ScanProgress> {

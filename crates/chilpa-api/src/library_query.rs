@@ -112,7 +112,27 @@ pub struct QueryChip {
 /// A query as typed, read: nothing for an empty text, or why it cannot be read.
 pub fn read(text: &str) -> Result<Option<Node>, String> {
     if text.trim().is_empty() { return Ok(None); }
-    parse(text).map(Some).map_err(|error| i18n::t_args(i18n::mark("The filter cannot be read: {}"), &[&i18n::t(error.what)]))
+    let node = parse(text).map_err(|error| i18n::t_args(i18n::mark("The filter cannot be read: {}"), &[&i18n::t(error.what)]))?;
+    validate(&node)?;
+    Ok(Some(node))
+}
+
+/// I share numeric range validation between applying, checking and saving Refine.
+fn validate(node: &Node) -> Result<(), String> {
+    match node {
+        Node::All(nodes) | Node::Any(nodes) => { for node in nodes { validate(node)?; } }
+        Node::Group(node) | Node::Not(node) => validate(node)?,
+        Node::Is(field, Values::Range(from, to)) => {
+            if from.zip(*to).is_some_and(|(a, b)| a > b) {
+                return Err(i18n::t("The lower bound must not exceed the upper bound."));
+            }
+            if *field == Field::Rating && from.iter().chain(to.iter()).any(|n| !(0..=5).contains(n)) {
+                return Err(i18n::t("a rating goes from 0 to 5"));
+            }
+        }
+        _ => {}
+    }
+    Ok(())
 }
 
 fn split(text: &str) -> (bool, Vec<Node>) {

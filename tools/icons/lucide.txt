@@ -1,4 +1,4 @@
-# Lucide glyphs used where Tabler has no semantic equivalent.
+# I list the Lucide glyphs used in the interface.
 list-end
 list-plus
 list-start
@@ -33,3 +33,12 @@ rotate-ccw-clock
 list-video
 circle-play
 circle-pause
+external-link
+glasses
+search-code
+flag-triangle-right
+ellipsis
+languages
+rotate-ccw
+save
+file-up

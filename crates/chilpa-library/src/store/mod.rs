@@ -25,6 +25,7 @@ macro_rules! track_art {
 
 pub mod albums;
 mod album_groups;
+mod album_technical;
 pub mod artwork;
 pub mod advisory;
 pub mod artists;
@@ -34,6 +35,7 @@ pub mod query;
 mod refine;
 mod browse_candidates;
 pub mod credits;
+pub mod metadata;
 pub mod edit;
 pub mod favorites;
 pub mod features;

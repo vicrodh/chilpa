@@ -94,7 +94,7 @@ fn track() -> TrackEntry {
         id: 7, external_id: "file.flac".into(), title: "Track".into(), artist: "Artist".into(),
         album: "Album".into(), album_id: Some(1), disc_number: None, track_number: None,
         duration_ms: 1000, sample_rate_hz: None, bit_depth: None, plays: 0, artwork_path: None,
-        available: true, codec: None, composers: String::new(), disc_subtitle: None, work: None
+        available: true, codec: None, composers: String::new(), disc_subtitle: None, work: None,
     }))
 }
 

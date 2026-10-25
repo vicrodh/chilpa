@@ -49,6 +49,25 @@ TestCase {
         clip: true
         ScrollBar.vertical: ViewportScrollBar { id: gutterBar; gutter: Metrics.pageGutter }
     }
+    function assertVisibleThumb(scrollbar) {
+        tryVerify(() => scrollbar.contentItem.width > 0 && scrollbar.contentItem.height > 0)
+        verify(scrollbar.contentItem.opacity > 0)
+    }
+    function test_both_axes_have_nonzero_visible_thumbs() {
+        const oldHorizontal = wideBar.policy, oldVertical = gutterBar.policy
+        try {
+            wideBar.policy = ScrollBar.AlwaysOn
+            gutterBar.policy = ScrollBar.AlwaysOn
+            tryCompare(wideBar, "visible", true)
+            tryCompare(gutterBar, "visible", true)
+            assertVisibleThumb(wideBar)
+            assertVisibleThumb(gutterBar)
+            verify(gutterBar.x >= gutterView.x + gutterView.width)
+        } finally {
+            wideBar.policy = oldHorizontal
+            gutterBar.policy = oldVertical
+        }
+    }
     function test_hover_crosses_the_free_gutter_to_the_thumb() {
         tryCompare(gutterBar, "parent", this)
         mouseMove(gutterView, 150, 120)

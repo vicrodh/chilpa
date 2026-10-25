@@ -18,6 +18,10 @@ pub mod qobject {
         /// The record it is on, in the same shape.
         #[qinvokable]
         fn album(self: &NowAbout, path: &QString, rev: i32) -> QString;
+        #[qinvokable]
+        fn refetch_album(self: &NowAbout, path: &QString) -> bool;
+        #[qinvokable]
+        fn retry(self: &NowAbout, part: &QString, path: &QString) -> bool;
     }
 }
 use cxx_qt_lib::QString;
@@ -26,6 +30,14 @@ use cxx_qt_lib::QString;
 pub struct NowAboutRust;
 
 impl qobject::NowAbout {
+    pub fn refetch_album(&self, path: &QString) -> bool {
+        chilpa_qt_kit::app::with(|api| api.refetch_now_album_about(&path.to_string()))
+    }
+
+    pub fn retry(&self, part: &QString, path: &QString) -> bool {
+        chilpa_qt_kit::app::with(|api| api.retry_now_about(&part.to_string(), &path.to_string()))
+    }
+
     pub fn track(&self, _path: &QString, _rev: i32) -> QString {
         QString::from(&chilpa_qt_kit::app::with(|api| api.now_track_about()))
     }

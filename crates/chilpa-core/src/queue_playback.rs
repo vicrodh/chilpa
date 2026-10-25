@@ -664,6 +664,7 @@ struct TrackFrames<'a> {
     moved_at: u64,
     /// The normalization gain and the player bar's volume (`loudness`).
     level: crate::loudness::level::Leveler,
+    gain_format: StreamFormat,
     /// Where the decoded frames go for the waveform, and the position in
     /// the track of the next frame the decoder hands out.
     feed: Option<std::sync::Arc<dyn chilpa_audio::seek_waveform::Feed>>,
@@ -673,6 +674,7 @@ struct TrackFrames<'a> {
 }
 
 impl FrameSource for TrackFrames<'_> {
+    fn pcm_format(&self) -> Option<StreamFormat> { Some(self.gain_format) }
     fn ended_early(&self) -> bool {
         self.skipped
     }
@@ -764,7 +766,7 @@ impl FrameSource for TrackFrames<'_> {
                     let frames = if self.spread { duplicate_mono(&frames) } else { frames };
                     let mut bytes = Vec::new();
                     let samples = Samples::Int { data: &frames, bits };
-                    crate::playback::pack_decoded(self.decoded, &samples, self.opened.sample_format, &mut bytes)
+                    crate::playback::pack_decoded(self.decoded, &samples, self.gain_format.sample_format, &mut bytes)
                         .map_err(|e| PlayError::Pack(e).to_string())?;
                     bytes
                 }
@@ -784,9 +786,13 @@ impl FrameSource for TrackFrames<'_> {
                     self.decoded_at += (frames.len() / channels) as u64;
                     self.level.float(&mut frames);
                     let frames = if self.spread { duplicate_mono(&frames) } else { frames };
-                    let mut bytes = Vec::new();
-                    pack(&Samples::Float(&frames), self.opened.sample_format, &mut bytes)
-                        .map_err(|e| PlayError::Pack(e).to_string())?;
+                    let mut bytes = Vec::with_capacity(frames.len() * self.gain_format.sample_format.bytes());
+                    if self.gain_format.sample_format == SampleFormat::F32 {
+                        bytes.extend(frames.iter().flat_map(|sample| sample.to_le_bytes()));
+                    } else {
+                        pack(&Samples::Float(&frames), self.gain_format.sample_format, &mut bytes)
+                            .map_err(|e| PlayError::Pack(e).to_string())?;
+                    }
                     bytes
                 }
                 Ok(None) => {
@@ -1088,7 +1094,7 @@ where
         // Raw one-bit sources never enter a PCM gain stage. A saved PCM
         // volume must not mark them processed or make the player refuse them.
         let volume = (shape.is_some() && policy != Policy::BitPerfect).then(|| volume.clone());
-        let level = match shape {
+        let mut level = match shape {
             Some((rate, channels, frames)) if normalize.get() => {
                 let key = path.to_string_lossy();
                 let said = match &source { Source::Pcm(_, _, data) => data.and_then(crate::remote::Normalization::valid).map(|d| (d.gain_db, d.peak)), _ => None };
@@ -1099,12 +1105,12 @@ where
                     crate::loudness::analyzer::sender(),
                     said,
                     || about.tags.as_ref().map(|tags| tags.replaygain()).unwrap_or_default(),
-                    volume,
+                    volume.clone(),
                 )
             }
-            _ => crate::loudness::level::Leveler::volume_only(volume),
+            _ => crate::loudness::level::Leveler::volume_only(volume.clone()),
         };
-        if level.touches() {
+        if level.touches() || volume.as_ref().is_some_and(|volume| volume.get() != 1.0) {
             delivery.transforms.push(chilpa_audio::negotiate::Transform::VolumeApplied);
         }
         if shape.is_some() && controls.dsp.requested() {
@@ -1149,6 +1155,19 @@ where
         let render_started = std::time::Instant::now();
         // Skipping a track ends the source just like a natural end, so it has
         // to be asked: with repeat-one, skipping advances.
+        let mut gain_format = delivery.opened;
+        if matches!(&source, Source::DsdPcm(_)) || matches!(&source, Source::Pcm(decoded, ..) if decoded.stream_format().sample_format == SampleFormat::F32) {
+            gain_format.sample_format = SampleFormat::F32;
+        } else if let Source::Pcm(decoded, ..) = &source {
+            let original = decoded.stream_format().sample_format;
+            if original.is_integer() && (gain_format.sample_format == SampleFormat::F32
+                || (decoded.codec() == "vorbis" && original.valid_bits() > gain_format.sample_format.valid_bits())) {
+                gain_format.sample_format = original;
+            }
+        }
+        let mut output_level = level.take_output();
+        let mut gain = |bytes: &mut [u8]| output_level.packed(bytes, gain_format, delivery.duplicates_mono());
+        let output_gain = (shape.is_some() && (volume.is_some() || normalize.get())).then_some(&mut gain as &mut dyn FnMut(&mut [u8]));
         let (outcome, skipped) = match &mut source {
             Source::Pcm(decoded, _, _) => {
                 let channels = decoded.stream_format().channels;
@@ -1177,6 +1196,7 @@ where
                     rewind_to: None,
                     moved_at: 0,
                     level,
+                    gain_format,
                     feed: feed.clone(),
                     decoded_at: 0,
                     ahead: if crate::remote::entry(path).is_some() { chilpa_audio::render::NETWORK_AHEAD } else { chilpa_audio::render::AHEAD },
@@ -1184,7 +1204,7 @@ where
                 let base = std::sync::Arc::clone(&frames.base);
                 let delivered = std::sync::Arc::clone(&frames.delivered);
                 let outcome =
-                    chilpa_audio::render::render_with_processor(&mut frames, sink, stop, pause, dsp.as_mut(), &mut |f| {
+                    chilpa_audio::render::render_with_volume(&mut frames, sink, stop, pause, dsp.as_mut(), output_gain, &mut |f| {
                         delivered.store(f, std::sync::atomic::Ordering::Relaxed);
                         let at = f as i64 + base.load(std::sync::atomic::Ordering::Relaxed);
                         on_progress(index, Progress { position: at.max(0) as u64, delivered: f })
@@ -1223,15 +1243,16 @@ where
                 if let Some(feed) = &feed {
                     feed.begin(path, converter.channels(), Some(converter.total_frames()));
                 }
-                let mut frames = DsdPcmFrames::new(converter, delivery.opened, skip.clone(), seek.clone(), level, feed.clone());
+                let mut frames = DsdPcmFrames::new(converter, gain_format, skip.clone(), seek.clone(), level, feed.clone());
                 let base = std::sync::Arc::clone(&frames.base);
                 let delivered = std::sync::Arc::clone(&frames.delivered);
-                let outcome = chilpa_audio::render::render_with_processor(
+                let outcome = chilpa_audio::render::render_with_volume(
                     &mut frames,
                     sink,
                     stop,
                     pause,
                     dsp.as_mut(),
+                    output_gain,
                     &mut |frames| {
                         delivered.store(frames, std::sync::atomic::Ordering::Relaxed);
                         let position = (frames as i64 + base.load(std::sync::atomic::Ordering::Relaxed)).max(0) as u64;

@@ -26,15 +26,22 @@ impl Chilpa {
     /// a plain word is one of the engine's own and is not the window's to
     /// write.
     pub fn remember_preference(&mut self, key: &str, value: &str) {
-        if !key.contains('.') {
-            return;
+        if let Err(error) = self.remember_preference_checked(key, value) {
+            eprintln!("preference save failed: {error}");
+        }
+    }
+
+    /// I report persistence failures before applying preference side effects.
+    pub fn remember_preference_checked(&mut self, key: &str, value: &str) -> Result<(), String> {
+        if !key.contains('.') || key == chilpa_core::settings::SAVED_QUERIES_KEY {
+            return Err("reserved preference key".into());
         }
         let previous = chilpa_core::network::current();
-        let mut s = chilpa_core::settings::load();
-        s.window.insert(key.to_string(), value.to_string());
-        let _ = chilpa_core::settings::save(&s);
-        self.privacy_changed(previous, &s);
+        chilpa_core::settings::update_value(key, |_| Ok((value.to_owned(), ())))?;
+        let saved = chilpa_core::settings::load();
+        self.privacy_changed(previous, &saved);
         self.lyrics_preference_changed(key);
+        Ok(())
     }
 
     /// Remembers the last folder opened.
