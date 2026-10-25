@@ -2921,6 +2921,12 @@ msgstr "DSD nativo"
 msgid "Native DSD and DoP bypass DSP. Select PCM output to process them."
 msgstr "O DSD nativo e o DoP ignoram o DSP. Selecione a saída PCM para processá-los."
 
+msgid "Native DSD bypasses software volume. Use the DAC or amplifier; your PCM volume is kept."
+msgstr "O DSD nativo ignora o volume por software. Use o DAC ou o amplificador; o volume PCM é mantido."
+
+msgid "Native DSD needs exclusive mode and a compatible output. Otherwise playback converts DSD to PCM."
+msgstr "DSD nativo requer modo exclusivo e uma saída compatível. Caso contrário, a reprodução converte DSD para PCM."
+
 msgid "Native plugins"
 msgstr "Plugins nativos"
 

@@ -199,6 +199,8 @@ fn native_dsd_opens_the_kernel_u32_format_without_a_pcm_carrier() {
         }),
     );
     player.set_dsd_mode(chilpa_core::queue_playback::DsdMode::Native);
+    // Moving from shared PCM must not make the one-bit guard refuse DSD.
+    player.set_volume(0.125);
     player.play(&track, "alsa:hw:0,0");
 
     let limit = Instant::now() + Duration::from_secs(10);
@@ -408,6 +410,60 @@ fn a_seek_in_a_dsd_track_moves_the_music_and_the_position() {
     assert!(positions.first().is_some_and(|p| *p >= 176_400), "it started at {:?}", positions.first());
     assert_eq!(positions.last(), Some(&352_800), "and ended at the end of the track");
     let _ = std::fs::remove_file(track);
+}
+
+#[test]
+fn pcm_volume_never_marks_or_changes_native_dsd_or_dop_payloads() {
+    struct Capture(StreamFormat, Arc<Mutex<Vec<u8>>>);
+    impl AudioSink for Capture {
+        fn format(&self) -> StreamFormat { self.0 }
+        fn write(&mut self, bytes: &[u8]) -> Result<usize, SinkError> {
+            self.1.lock().unwrap().extend_from_slice(bytes);
+            Ok(bytes.len() / self.0.frame_bytes())
+        }
+        fn close(&mut self) -> Result<(), SinkError> { Ok(()) }
+    }
+    let track = dsf_of("saved-pcm-volume", u64::from(RATE) / 20);
+    for (mode, format, rate) in [(DsdMode::Native, SampleFormat::DsdU32Be, 88_200), (DsdMode::Dop, SampleFormat::S24In32, 176_400)] {
+        let mut reference = None;
+        for volume in [1.0, 0.125, 0.0] {
+            let controls = Controls::new();
+            controls.dsd_mode.set(mode);
+            controls.direct_dsd.set(true);
+            controls.volume.set(volume);
+            let captured = Arc::new(Mutex::new(Vec::new()));
+            let caps = DeviceCaps { sample_rates: vec![rate], formats: vec![format], channels: vec![2], probed: true };
+            play_queue_with(&SharedQueue::new(vec![track.clone()]), &caps, Policy::AllowAnything, &controls,
+                |opened| Ok(Capture(opened, captured.clone())), &mut |_, _, delivery| {
+                    assert!(!delivery.transforms.contains(&Transform::VolumeApplied), "{mode:?}: PCM volume is bypassed");
+                }, &mut |_, _| {}).unwrap();
+            let bytes = captured.lock().unwrap().clone();
+            assert!(!bytes.is_empty());
+            if let Some(original) = &reference { assert_eq!(&bytes, original, "{mode:?}: saved volume {volume}"); }
+            else { reference = Some(bytes); }
+        }
+    }
+    std::fs::remove_file(track).unwrap();
+}
+
+#[test]
+fn entering_pcm_conversion_resumes_a_dsd_track_at_the_requested_position() {
+    let track = dsf("pcm-output-switch", 2);
+    let caps = DeviceCaps { sample_rates: vec![88_200], formats: vec![SampleFormat::S32], channels: vec![2], probed: true };
+    // Every saved mode falls back to PCM on a shared output.
+    for mode in [DsdMode::Pcm, DsdMode::Native, DsdMode::Dop] {
+        let controls = Controls::new();
+        controls.dsd_mode.set(mode);
+        controls.seek.request(Duration::from_secs(1));
+        let mut positions = Vec::new();
+        let results = play_queue_with(&SharedQueue::new(vec![track.clone()]), &caps, Policy::AllowAnything, &controls,
+            |opened| Ok(Swallow(opened)), &mut |_, _, delivery| assert!(delivery.transforms.contains(&Transform::DsdToPcm)),
+            &mut |_, progress| positions.push(progress.position)).unwrap();
+        assert_eq!(results[0].frames(), 88_200, "{mode:?}: only the remaining second is delivered");
+        assert!(positions.first().is_some_and(|at| *at >= 88_200));
+        assert_eq!(positions.last(), Some(&176_400));
+    }
+    std::fs::remove_file(track).unwrap();
 }
 
 /// A two channel DSDIFF of DSD64 silence, `seconds` long.

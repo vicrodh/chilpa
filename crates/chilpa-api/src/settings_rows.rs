@@ -32,6 +32,17 @@ pub struct SettingsRow {
 
 type Row = SettingsRow;
 
+fn pipewire_dsd_row(row: &mut Row, exclusive: bool, mode: &str) {
+    for (value, label) in fixed("audio.dsdMode") {
+        if value == "dop" { continue; }
+        row.values.push(value.into());
+        row.options.push(label);
+    }
+    row.control = if exclusive { "select" } else { "fixed" }.into();
+    row.value = if exclusive && mode == "native" { "native" } else { "pcm" }.into();
+    row.description = chilpa_i18n::t("Native DSD needs exclusive mode and a compatible output. Otherwise playback converts DSD to PCM.");
+}
+
 /// What the page holds that the facade does not: the last diagnosis of the
 /// output, what the last press said, and a plugin's sign-in page while it is
 /// being waited for.
@@ -395,6 +406,10 @@ impl Chilpa {
                 }
             }
             "audio.dsdMode" => {
+                if self.stack_of(output) == "pipewire" {
+                    pipewire_dsd_row(row, self.exclusive(), self.dsd_mode().key());
+                    return;
+                }
                 if !matches!(self.stack_of(output).as_str(), "alsa" | "coreaudio") {
                     row.control.clear();
                     return;
@@ -621,6 +636,25 @@ fn account(row: &mut Row, status: &crate::ScrobbleStatus) {
     }
     if !status.error.is_empty() {
         row.description = status.error.clone();
+    }
+}
+
+#[cfg(test)]
+mod dsd_tests {
+    use super::*;
+
+    #[test]
+    fn pipewire_exposes_native_dsd_only_when_exclusive_and_keeps_dop_out() {
+        for mode in ["native", "dop", "pcm"] {
+            for exclusive in [false, true] {
+                let mut row = Row::default();
+                pipewire_dsd_row(&mut row, exclusive, mode);
+                assert_eq!(row.values, ["native", "pcm"]);
+                assert_eq!(row.options.len(), 2);
+                assert_eq!(row.control, if exclusive { "select" } else { "fixed" });
+                assert_eq!(row.value, if exclusive && mode == "native" { "native" } else { "pcm" });
+            }
+        }
     }
 }
 

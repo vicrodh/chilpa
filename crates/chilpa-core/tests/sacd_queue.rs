@@ -254,6 +254,40 @@ fn a_disc_track_lasts_the_same_however_it_is_carried() {
 }
 
 #[test]
+fn moving_a_disc_track_to_pcm_keeps_its_position() {
+    use chilpa_core::queue_playback::{play_queue_with, Controls, DsdMode, SharedQueue};
+    use chilpa_audio::negotiate::Policy;
+    let iso = image("pcm-resume");
+    // The sequential-playback fixture's sector counters do not match its
+    // second track's TOC timecode. Give that track two seekable frame starts.
+    let mut bytes = std::fs::read(&iso).unwrap();
+    for index in 0..10 {
+        let s = sector(&mut bytes, AUDIO_START + 10 + index);
+        s.fill(0);
+        let start = index % 5 == 0;
+        s[0] = (1 << 5) | if start { 1 << 2 } else { 0 };
+        let header = if start { 6 } else { 3 };
+        let packet = (if start { 0x8000 } else { 0 }) | (2 << 11) | (SECTOR - header) as u16;
+        s[1..3].copy_from_slice(&packet.to_be_bytes());
+        if start { s[3..6].copy_from_slice(&[0, 1, (index / 5) as u8]); }
+        s[header..].fill(0x69);
+    }
+    std::fs::write(&iso, bytes).unwrap();
+    let track = PathBuf::from(format!("sacd:{}#2", iso.display()));
+    let caps = DeviceCaps { sample_rates: vec![88_200], formats: vec![SampleFormat::S32], channels: vec![2], probed: true };
+    let controls = Controls::new();
+    controls.dsd_mode.set(DsdMode::Pcm);
+    controls.seek.request(Duration::from_millis(10));
+    let mut positions = Vec::new();
+    let results = play_queue_with(&SharedQueue::new(vec![track]), &caps, Policy::AllowAnything, &controls,
+        |format| Ok(Swallow(format)), &mut |_, _, _| {}, &mut |_, progress| positions.push(progress.position)).unwrap();
+    assert_eq!(results[0].frames(), 2352 - 882, "only the remainder of the two disc frames is played");
+    assert!(positions.first().is_some_and(|at| *at >= 882));
+    assert_eq!(positions.last(), Some(&2352));
+    std::fs::remove_file(iso).unwrap();
+}
+
+#[test]
 fn a_track_that_breaks_halfway_stops_the_queue_and_says_why() {
     // A sector in the middle of the first track that no longer adds up. The
     // reader said so, and DoP took it for the end of the track: the queue

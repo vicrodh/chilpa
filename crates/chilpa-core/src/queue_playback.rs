@@ -23,6 +23,9 @@ use crate::playback::PlayError;
 use chilpa_audio::dop::DopPacker;
 use chilpa_dsd::{DsdPcmConverter, DsdSource, DEFAULT_GAIN_DB};
 
+mod dsd_pcm;
+use dsd_pcm::DsdPcmFrames;
+
 /// What a track is read from after its route has been resolved.
 pub(crate) enum Source {
     Pcm(Decoded, Option<std::sync::Arc<dyn crate::playback_events::Observer>>, Option<crate::remote::Normalization>),
@@ -825,48 +828,6 @@ impl TrackFrames<'_> {
     }
 }
 
-/// Converted DSD laid out in the format negotiated for the PCM route.
-struct DsdPcmFrames<'a> {
-    converter: &'a mut DsdPcmConverter,
-    opened: StreamFormat,
-    skip: SkipSignal,
-    seek: SeekSignal,
-    skipped: bool,
-    level: crate::loudness::level::Leveler,
-    /// Where the converted frames go for the waveform, and how many have
-    /// gone: this route cannot seek, so they count from the start.
-    feed: Option<std::sync::Arc<dyn chilpa_audio::seek_waveform::Feed>>,
-    decoded_at: u64,
-}
-
-impl FrameSource for DsdPcmFrames<'_> {
-    fn ended_early(&self) -> bool {
-        self.skipped
-    }
-
-    fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
-        if self.skip.take() {
-            self.skipped = true;
-            return Ok(None);
-        }
-        // Conversion is streaming today. A seek that cannot be served must
-        // not leak into the next track; this source continues where it was.
-        let _ = self.seek.take();
-        let Some(mut samples) = self.converter.next_block().map_err(|e| e.to_string())? else {
-            return Ok(None);
-        };
-        if let Some(feed) = &self.feed {
-            feed.feed_float(self.decoded_at, &samples);
-        }
-        self.decoded_at += (samples.len() / usize::from(self.converter.channels().max(1))) as u64;
-        self.level.float(&mut samples);
-        let mut bytes = Vec::new();
-        pack(&Samples::Float(&samples), self.opened.sample_format, &mut bytes)
-            .map_err(|error| PlayError::Pack(error).to_string())?;
-        Ok(Some(bytes))
-    }
-}
-
 /// Plays the tracks in order.
 ///
 /// `open_sink` opens the device with the format it is handed. It is called
@@ -1119,12 +1080,14 @@ where
         // normalization, when it is on, under any (QBZ: "This breaks strict
         // bit perfect"). Either one that changes anything is said in the
         // delivery, so the verdict for that track is not bit-perfect.
-        let volume = (policy != Policy::BitPerfect).then(|| volume.clone());
         let shape = match &source {
             Source::Pcm(decoded, ..) => Some((decoded.stream_format().sample_rate_hz, decoded.stream_format().channels, decoded.frame_count())),
             Source::DsdPcm(converter) => Some((converter.output_rate(), converter.channels(), Some(converter.total_frames()))),
             _ => None,
         };
+        // Raw one-bit sources never enter a PCM gain stage. A saved PCM
+        // volume must not mark them processed or make the player refuse them.
+        let volume = (shape.is_some() && policy != Policy::BitPerfect).then(|| volume.clone());
         let level = match shape {
             Some((rate, channels, frames)) if normalize.get() => {
                 let key = path.to_string_lossy();
@@ -1260,24 +1223,19 @@ where
                 if let Some(feed) = &feed {
                     feed.begin(path, converter.channels(), Some(converter.total_frames()));
                 }
-                let mut frames = DsdPcmFrames {
-                    converter,
-                    opened: delivery.opened,
-                    skip: skip.clone(),
-                    seek: seek.clone(),
-                    skipped: false,
-                    level,
-                    feed: feed.clone(),
-                    decoded_at: 0,
-                };
+                let mut frames = DsdPcmFrames::new(converter, delivery.opened, skip.clone(), seek.clone(), level, feed.clone());
+                let base = std::sync::Arc::clone(&frames.base);
+                let delivered = std::sync::Arc::clone(&frames.delivered);
                 let outcome = chilpa_audio::render::render_with_processor(
                     &mut frames,
                     sink,
                     stop,
                     pause,
                     dsp.as_mut(),
-                    &mut |position| {
-                        on_progress(index, Progress { position, delivered: position })
+                    &mut |frames| {
+                        delivered.store(frames, std::sync::atomic::Ordering::Relaxed);
+                        let position = (frames as i64 + base.load(std::sync::atomic::Ordering::Relaxed)).max(0) as u64;
+                        on_progress(index, Progress { position, delivered: frames })
                     },
                 );
                 if let Some(feed) = &feed {
