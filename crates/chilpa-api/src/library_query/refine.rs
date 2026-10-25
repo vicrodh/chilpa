@@ -136,7 +136,10 @@ pub fn refine(text: &str) -> Value {
 /// Positions are Unicode characters in the query, without the command prefix.
 pub fn check(text: &str) -> Value {
     match chilpa_library::store::query::parse(text) {
-        Ok(_) => json!({"ok":true}),
+        Ok(_) => match read(text) {
+            Ok(_) => json!({"ok":true}),
+            Err(message) => json!({"ok":false,"at":0,"message":message}),
+        },
         Err(error) => json!({"ok":false,"at":error.at,"message":chilpa_i18n::t(error.what)}),
     }
 }

@@ -160,6 +160,7 @@ Item {
             width: Stage.volumeBarWide
             value: Player.volume / 100 // derived: a percentage to a fraction
             locked: Player.volumeLocked
+            onReleased: Player.persistVolume()
             onChanged: (v) => { if (!Player.volumeLocked) Player.chooseVolume(Math.round(v * 100)) }
         }
         Rectangle {

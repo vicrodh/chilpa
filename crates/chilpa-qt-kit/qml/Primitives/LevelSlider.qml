@@ -14,6 +14,9 @@ Item {
     // The pointer let go: where the level settled, for whoever keeps it.
     signal released(int value)
 
+    onTipChanged: if (area.containsMouse) slider.tip !== "" ? TipState.show(slider.tip, slider) : TipState.hide(slider)
+    Component.onDestruction: TipState.hide(slider)
+
     readonly property bool active: area.containsMouse || area.pressed
 
     implicitWidth: vertical ? Metrics.button28 : Metrics.volumeWidth
@@ -89,7 +92,12 @@ Item {
                 slider.moved(at(mouse.x, mouse.y))
         }
         onReleased: (mouse) => slider.released(at(mouse.x, mouse.y))
-        onWheel: (wheel) => slider.moved(Math.max(0, Math.min(100, slider.value + (wheel.angleDelta.y > 0 ? Metrics.volumeStep : -Metrics.volumeStep))))
+        onWheel: (wheel) => {
+            const level = Math.max(0, Math.min(100, slider.value + (wheel.angleDelta.y > 0 ? Metrics.volumeStep : -Metrics.volumeStep)))
+            slider.moved(level)
+            slider.released(level)
+        }
+        onCanceled: slider.released(slider.value)
         onContainsMouseChanged: containsMouse && slider.tip !== "" ? TipState.show(slider.tip, slider) : TipState.hide(slider)
     }
 }

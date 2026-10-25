@@ -51,13 +51,14 @@ Rectangle {
 
     radius: Metrics.radiusMenu
     color: Theme.color.surfacePanel
-    onActivePathChanged: rows.reveal(activePath)
+    onActivePathChanged: { heldAt = view.contentY; rows.reveal(activePath) }
     Component.onCompleted: rows.reveal(activePath)
 
     Edge {}
 
     FolderModel {
         id: rows
+        objectName: "folderNavigatorRows"
         tree: true
         contentRev: Library.contentRev
         query: sought.text
@@ -93,6 +94,7 @@ Rectangle {
     }
     SearchField {
         id: find
+        objectName: "folderNavigatorSearch"
         anchors.left: close.right
         anchors.leftMargin: Metrics.gap6
         anchors.right: parent.right
@@ -117,6 +119,7 @@ Rectangle {
 
     ListView {
         id: view
+        objectName: "folderNavigatorList"
 
         property int hovered: -1
 

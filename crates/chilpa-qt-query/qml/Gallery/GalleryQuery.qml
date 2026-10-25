@@ -52,5 +52,11 @@ Column {
     ComplexQuery { width: gallery.width; text: ":filter (genre:jazz | (composer:monk (label:riverside)))" }
     ZeroResults { width: gallery.width }
     DockedNote { width: gallery.width }
+    SavedQueriesDialog { visible: false }
+    SavedQueryTable {
+        width: gallery.width
+        height: Metrics.panesHeight
+        entries: [{id: "sample", name: "Evening jazz", expression: "genre:jazz year:1955..1965"}]
+    }
     RefineWindow { visible: false; summary: "256 songs · 18 h" }
 }

@@ -10,6 +10,8 @@
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
+mod checked;
+pub use checked::{read_value, read_value_from, update_value, update_value_at, SAVED_QUERIES_KEY};
 
 /// The preferences remembered today.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -140,22 +142,7 @@ pub fn save(settings: &Settings) -> std::io::Result<()> {
 }
 
 pub fn save_to(file: &std::path::Path, settings: &Settings) -> std::io::Result<()> {
-    if let Some(dir) = file.parent() {
-        std::fs::create_dir_all(dir)?;
-    }
-    let mut text = format!(
-        "# Chilpa's preferences. Editing this by hand is fine.\noutput = {}\nlast_folder = {}\nlayout = {}\nalbum_sort = {}\nvisualizer = {}\nlanguage = {}\n",
-        settings.output,
-        settings.last_folder,
-        settings.layout,
-        settings.album_sort,
-        settings.visualizer,
-        settings.language
-    );
-    for (key, value) in &settings.window {
-        text.push_str(&format!("{key} = {value}\n"));
-    }
-    std::fs::write(file, text)
+    checked::save(file, settings)
 }
 
 fn parse(text: &str) -> BTreeMap<String, String> {

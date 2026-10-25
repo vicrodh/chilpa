@@ -61,6 +61,8 @@ pub mod qobject {
         /// Tracks, length and genre for a list's columns (`album_list_facts`).
         #[qinvokable]
         fn facts(self: &AlbumActions, id: i64, rev: i32) -> QString;
+        #[qinvokable]
+        fn technical(self: &AlbumActions, id: i64, rev: i32) -> QString;
         /// Says why it does not, where the window shows problems.
         #[qinvokable]
         fn explain(self: &AlbumActions, id: i64);
@@ -94,15 +96,14 @@ impl AlbumActionsRust {
 
 impl qobject::AlbumActions {
     pub fn quality(&self, id: i64, _rev: i32) -> cxx_qt_lib::QString {
-        app::with(|api| {
-            let quality = api.album_card_quality(id);
-            cxx_qt_lib::QString::from(serde_json::json!({"tier":quality.tier.rank(),"label":quality.long()}).to_string())
-        })
+        cxx_qt_lib::QString::from(app::with(|api| api.album_card_quality_json(id)))
     }
     pub fn available(&self, id: i64, _rev: i32) -> bool {
         app::with(|api| api.album_available(id))
     }
     pub fn facts(&self, id: i64, _rev: i32) -> cxx_qt_lib::QString { cxx_qt_lib::QString::from(app::with(|api| api.album_list_facts(id))) }
+
+    pub fn technical(&self, id: i64, _rev: i32) -> cxx_qt_lib::QString { cxx_qt_lib::QString::from(app::with(|api| api.album_technical(id))) }
 
     pub fn explain(&self, id: i64) {
         app::with(|api| api.explain_unavailable_album(id));

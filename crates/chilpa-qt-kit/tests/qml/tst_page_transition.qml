@@ -213,8 +213,56 @@ TestCase {
         compare(pages.committedRoute, "same-route-preparation")
     }
 
+    function test_navigation_inside_a_retained_screen_keeps_its_tree_and_viewport() {
+        Motion.reduced = true
+        pages.retainedScreen = "folders"
+        pages.sourceComponent = scrolling
+        pages.route = "0\u001ffolders\u001f0\u001f/music"
+        tryCompare(pages, "committedRoute", pages.route)
+        const shell = pages.item
+        shell.contentY = 320
+        pages.route = "0\u001ffolders\u001f0\u001f/music/child"
+        compare(pages.phase, "content", "the navigation rail stays visible")
+        compare(pages.item, shell)
+        tryCompare(pages, "committedRoute", pages.route)
+        compare(pages.item, shell, "I change the content route without reconstructing the shell")
+        compare(shell.contentY, 320)
+        compare(shell.mountedRoute, pages.route)
+        verify(!findChild(pages, "acknowledgementSkeleton").visible)
+        pages.route = "0\u001ffolders\u001f0\u001f/music"
+        tryCompare(pages, "committedRoute", pages.route)
+        compare(pages.item, shell)
+        compare(shell.contentY, 320)
+        pages.route = "1\u001ffolders\u001f0\u001f/other"
+        compare(pages.phase, "acknowledging", "another tab owns its own page")
+        tryCompare(pages, "committedRoute", pages.route)
+        verify(pages.item !== shell)
+    }
+
+    function test_rapid_retained_routes_cannot_retarget_a_page_after_it_has_left() {
+        Motion.reduced = true
+        pages.retainedScreen = "folders"
+        pages.sourceComponent = scrolling
+        pages.route = "0\u001ffolders\u001f0\u001f/origin"
+        tryCompare(pages, "committedRoute", pages.route)
+        pages.route = "0\u001ffolders\u001f0\u001f/skipped"
+        const skipped = pages.generation
+        pages.route = "0\u001ffolders\u001f0\u001f/latest"
+        pages.retarget(skipped)
+        tryCompare(pages, "committedRoute", pages.route)
+        compare(pages.item.mountedRoute, pages.route)
+        pages.route = "0\u001ffolders\u001f0\u001f/cancelled"
+        const cancelled = pages.generation
+        pages.sourceComponent = home
+        pages.route = "0\u001fhome\u001f0\u001f"
+        pages.retarget(cancelled)
+        tryCompare(pages, "committedRoute", pages.route)
+        compare(pages.item.objectName, "homePage")
+    }
+
     function cleanup() {
         Motion.reduced = true
+        pages.retainedScreen = ""
         pages.route = ""
         pages.sourceComponent = null
         pages.start()

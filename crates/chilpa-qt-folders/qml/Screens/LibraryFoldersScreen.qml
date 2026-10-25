@@ -16,6 +16,7 @@ Item {
     id: page
 
     readonly property real contentWidth: Math.min(Metrics.settingsMaxWidth + Metrics.settingsNav, width - Metrics.contentX * 2) // derived: padding on both sides
+    readonly property bool canStart: !LibraryFolders.scanning && !LibraryFolders.canResume
 
     Text {
         id: title
@@ -28,30 +29,34 @@ Item {
         color: Theme.color.textPrimary
     }
 
-    IconButton {
+    PillButton {
         anchors.right: add.right
         anchors.verticalCenter: title.verticalCenter
-        tip: I18n.tr("Scan every folder again", I18n.rev)
-        glyph: Icons.refresh
-        enabled: LibraryFolders.count > 0 && !LibraryFolders.scanning
+        objectName: "checkAllLibraryFolders"
+        text: I18n.tr("Check all folders", I18n.rev)
+        glyph: Lucide.rotateCcw
+        iconFamily: Lucide.font
+        enabled: LibraryFolders.count > 0 && page.canStart
         onClicked: LibraryFolders.rescanAll()
     }
 
     Item {
         id: add
+        enabled: page.canStart
         x: Metrics.contentX
         anchors.top: title.bottom
         anchors.topMargin: Metrics.section
         width: page.contentWidth
-        height: Metrics.settingsRow
+        height: Math.max(Metrics.settingsRow, explanation.implicitHeight)
 
         Column {
+            id: explanation
             anchors.left: parent.left
             anchors.right: path.left
             anchors.rightMargin: Metrics.gap16
             anchors.verticalCenter: parent.verticalCenter
-            Text { text: I18n.tr("Add a folder", I18n.rev); font.pointSize: Type.bodyLarge; font.weight: Type.medium; color: Theme.color.textPrimary }
-            Text { text: I18n.tr("Browse for a music folder, or type its full path.", I18n.rev); font.pointSize: Type.meta; color: Theme.color.textSecondary }
+            Text { width: parent.width; text: I18n.tr("Add a folder", I18n.rev); wrapMode: Text.WordWrap; font.pointSize: Type.bodyLarge; font.weight: Type.medium; color: Theme.color.textPrimary }
+            Text { width: parent.width; text: I18n.tr("Browse for a music folder, or type its full path.", I18n.rev); wrapMode: Text.WordWrap; font.pointSize: Type.meta; color: Theme.color.textSecondary }
         }
 
         SearchField {
@@ -60,7 +65,7 @@ Item {
             anchors.rightMargin: Metrics.gap8
             anchors.verticalCenter: parent.verticalCenter
             width: Metrics.selectWidth
-            placeholder: "/home/you/Music"
+            placeholder: I18n.tr("Folder path", I18n.rev)
             onAccepted: page.addTyped()
         }
         PillButton {
@@ -86,9 +91,22 @@ Item {
     ScanProgress {
         id: progress
         x: Metrics.contentX
+        anchors.top: hint.bottom
+        anchors.topMargin: Metrics.gap12
+        width: page.contentWidth
+    }
+
+    Text {
+        id: hint
+        x: Metrics.contentX
         anchors.top: add.bottom
         anchors.topMargin: Metrics.gap12
         width: page.contentWidth
+        text: I18n.tr("Scheduled checks run while Chilpa is open. Startup checks run once when the app opens. Unchanged files are skipped.", I18n.rev)
+            + " " + I18n.tr("Closing stops a scan. Saved progress can be continued here after reopening.", I18n.rev)
+        wrapMode: Text.WordWrap
+        font.pointSize: Type.meta
+        color: Theme.color.textSecondary
     }
 
     ListView {
@@ -107,6 +125,7 @@ Item {
             width: ListView.view.width
             onRescan: LibraryFolders.rescan(path)
             onForget: LibraryFolders.forget(path)
+            onPolicyChosen: policy => LibraryFolders.choosePolicy(path, policy)
         }
     }
 

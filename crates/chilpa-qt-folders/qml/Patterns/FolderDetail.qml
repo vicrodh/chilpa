@@ -28,6 +28,10 @@ Item {
     Binding { target: detail.folder; property: "grouped"; value: detail.collections }
     readonly property string name: folder.path.replace(/\/+$/, "").split("/").pop()
     readonly property string sought: find.text.trim().toLowerCase()
+    Connections {
+        target: detail.folder
+        function onPathChanged() { find.text = ""; contents.contentY = 0 }
+    }
 
     function context(item, path, left, top) {
         const at = item.mapToItem(detail.menu.parent, left, top)
@@ -69,7 +73,8 @@ Item {
             Text { width: parent.width; text: detail.name; elide: Text.ElideMiddle; font.pointSize: Type.section; font.weight: Type.semibold; color: Theme.color.textPrimary }
             Text {
                 width: parent.width
-                text: detail.folder.inLibrary ? I18n.trCount("{} track", "{} tracks", detail.folder.tracks, I18n.rev)
+                text: detail.folder.loading ? I18n.tr("Loading…", I18n.rev)
+                    : detail.folder.inLibrary ? I18n.trCount("{} track", "{} tracks", detail.folder.tracks, I18n.rev)
                                               : I18n.tr("Not in the library: this is the folder as it is on disk.", I18n.rev)
                 elide: Text.ElideRight
                 font.pointSize: Type.meta
@@ -109,6 +114,8 @@ Item {
     }
 
     Flickable {
+        id: contents
+        objectName: "folderDetailContents"
         visible: detail.folder.path !== ""
         anchors.top: head.bottom
         anchors.topMargin: Metrics.gap16
@@ -123,6 +130,7 @@ Item {
 
         Column {
             id: body
+            visible: !detail.folder.loading
             width: parent.width - Metrics.gap10
             spacing: Metrics.gap12
 
@@ -213,5 +221,12 @@ Item {
                 color: Theme.color.textSecondary
             }
         }
+    }
+    Text {
+        anchors.centerIn: contents
+        visible: detail.folder.loading
+        text: I18n.tr("Loading…", I18n.rev)
+        font.pointSize: Type.body
+        color: Theme.color.textTertiary
     }
 }

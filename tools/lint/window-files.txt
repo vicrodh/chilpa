@@ -12,7 +12,6 @@ crates/chilpa-qt/qml/Components/AlphaStrip.qml
 crates/chilpa-qt/qml/Components/CascadingMenu.qml
 crates/chilpa-qt/qml/Components/ChoiceRow.qml
 crates/chilpa-qt/qml/Components/CreditLine.qml
-crates/chilpa-qt/qml/Components/DragGhost.qml
 crates/chilpa-qt/qml/Components/FilterCrumb.qml
 crates/chilpa-qt/qml/Components/LibraryToolbar.qml
 crates/chilpa-qt/qml/Components/MarkButtons.qml
@@ -24,11 +23,9 @@ crates/chilpa-qt/qml/Components/PlaylistNotice.qml
 crates/chilpa-qt/qml/Components/PlaylistPicker.qml
 crates/chilpa-qt/qml/Components/PlaylistSourceChooser.qml
 crates/chilpa-qt/qml/Components/PlaylistSourceWrite.qml
-crates/chilpa-qt/qml/Components/QualityIcon.qml
 crates/chilpa-qt/qml/Components/QueueMenu.qml
 crates/chilpa-qt/qml/Components/QueueRow.qml
 crates/chilpa-qt/qml/Components/RatingButton.qml
-crates/chilpa-qt/qml/Components/RatingStars.qml
 crates/chilpa-qt/qml/Components/SearchHit.qml
 crates/chilpa-qt/qml/Components/SeekBar.qml
 crates/chilpa-qt/qml/Components/SettingsRow.qml
@@ -46,7 +43,6 @@ crates/chilpa-qt/qml/Components/TrackRowLead.qml
 crates/chilpa-qt/qml/Components/TrackRowMove.qml
 crates/chilpa-qt/qml/Components/TrackRow.qml
 crates/chilpa-qt/qml/Components/TrackSourceLabel.qml
-crates/chilpa-qt/qml/Components/VolumeControl.qml
 crates/chilpa-qt/qml/Main.qml
 crates/chilpa-qt/qml/Patterns/CastPicker.qml
 crates/chilpa-qt/qml/Patterns/DevHooks.qml

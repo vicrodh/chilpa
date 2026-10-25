@@ -1,5 +1,5 @@
 import QtQuick
-import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "../Theme"
 
 // Five stars without five controls: two glyph runs and one hit target keep
 // the rating cheap enough for every visible track row. I draw only the filled

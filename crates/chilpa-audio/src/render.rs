@@ -19,6 +19,9 @@ pub trait FrameSource {
     /// the user.
     fn next_block(&mut self) -> Result<Option<Vec<u8>>, String>;
 
+    /// I retain floating PCM headroom until gain, before integer conversion.
+    fn pcm_format(&self) -> Option<crate::format::StreamFormat> { None }
+
     /// True, once, when the block just handed over comes from somewhere else
     /// in the track: after a seek, what the device still holds is from
     /// before, and it is thrown away rather than played first.
@@ -375,15 +378,30 @@ where
     S: FrameSource + Send,
     K: AudioSink,
 {
+    render_with_volume(source, sink, stop, pause, processor, None, on_progress)
+}
+
+/// I apply combined PCM gains after read-ahead and before DSP.
+/// One-bit callers leave volume absent, including DoP in PCM containers.
+pub fn render_with_volume<S: FrameSource + Send, K: AudioSink>(
+    source: &mut S,
+    sink: &mut K,
+    stop: &StopSignal,
+    pause: &PauseSignal,
+    processor: Option<&mut crate::dsp::Processor>,
+    volume: Option<&mut dyn FnMut(&mut [u8])>,
+    on_progress: &mut dyn FnMut(u64),
+) -> Outcome {
     let format = sink.format();
-    let frame_bytes = format.frame_bytes();
+    let source_format = source.pcm_format().unwrap_or(format);
+    let frame_bytes = source_format.frame_bytes();
     let fill = frame_bytes * format.sample_rate_hz as usize * source.ahead().as_millis() as usize / 1000;
     let cushion = Cushion::new(fill.max(frame_bytes));
     let started = std::time::Instant::now();
     std::thread::scope(|threads| {
         let reader = std::thread::Builder::new().name("chilpa-read-ahead".into());
         let outcome = match reader.spawn_scoped(threads, || cushion.read(source, stop)) {
-            Ok(_) => deliver(&cushion, sink, stop, pause, on_progress, frame_bytes, started, processor),
+            Ok(_) => deliver(&cushion, sink, stop, pause, on_progress, frame_bytes, started, processor, volume, Some(source_format)),
             Err(_) => Outcome::Failed { frames: 0, error: SinkError::Backend(chilpa_i18n::t("the read-ahead thread could not start")) },
         };
         cushion.finish();
@@ -401,8 +419,16 @@ fn deliver<K: AudioSink>(
     frame_bytes: usize,
     started: std::time::Instant,
     mut processor: Option<&mut crate::dsp::Processor>,
+    mut volume: Option<&mut dyn FnMut(&mut [u8])>,
+    source_format: Option<crate::format::StreamFormat>,
 ) -> Outcome {
     let format = sink.format();
+    let source_format = source_format.unwrap_or(format);
+    let conversion = source_format.sample_format == crate::format::SampleFormat::F32
+        || source_format.sample_format != format.sample_format;
+    // I reserve the bound once so a short first chunk cannot make Vec growth
+    // retain more than 16 KiB. Matching integer formats allocate no scratch buffer.
+    let mut converted = if conversion { Vec::with_capacity(16 * 1024) } else { Vec::new() };
     crate::diagnostics::trace("render", "started", format_args!("format={format:?}"));
     let mut frames: u64 = 0;
     let mut xruns = 0;
@@ -456,8 +482,9 @@ fn deliver<K: AudioSink>(
             }
             sink.position_changed(position);
         }
-        if let Some(processor) = &mut processor { processor.process(&mut block); }
         let mut offset = 0;
+        let mut processed_end = 0;
+        let mut chunk_start = 0;
         let mut warned = false;
         while offset < block.len() {
             if stop.is_stopped() {
@@ -520,7 +547,28 @@ fn deliver<K: AudioSink>(
             if offset >= block.len() {
                 break;
             }
-            match sink.write(&block[offset..]) {
+            if offset == processed_end {
+                // I prepare at most 5 ms (and 16 KiB) when live gain is
+                // present. Retries reuse this chunk without advancing a
+                // normalization ramp or DSP history twice. Read-ahead stays
+                // unchanged; a blocked device can retain this one chunk.
+                let chunk = if volume.is_some() || conversion {
+                    (format.sample_rate_hz as usize / 200).max(1)
+                        .min((16 * 1024 / frame_bytes.max(format.frame_bytes())).max(1)) * frame_bytes
+                } else { block.len() };
+                chunk_start = offset;
+                processed_end = (offset + chunk).min(block.len());
+                let bytes = &mut block[offset..processed_end];
+                if let Some(volume) = &mut volume { volume(bytes); }
+                if conversion {
+                    crate::dsp::volume::convert_pcm(bytes, source_format.sample_format, format.sample_format, &mut converted);
+                    if let Some(processor) = &mut processor { processor.process(&mut converted); }
+                } else if let Some(processor) = &mut processor { processor.process(bytes); }
+            }
+            let bytes = if conversion {
+                &converted[(offset - chunk_start) / frame_bytes * format.frame_bytes()..]
+            } else { &block[offset..processed_end] };
+            match sink.write(bytes) {
                 // Full: nothing was taken, and the rest of the block is
                 // offered again. Taking this for "on to the next block"
                 // dropped the rest of it, which on a device with a queue of
@@ -1186,3 +1234,7 @@ mod tests {
         assert_eq!(render(&mut source, &mut sink, &stop), Outcome::Stopped { frames: 6 });
     }
 }
+
+#[cfg(test)]
+#[path = "render_volume_tests.rs"]
+mod volume_tests;

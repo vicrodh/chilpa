@@ -52,6 +52,7 @@ impl<'a> DsdPcmFrames<'a> {
 }
 
 impl FrameSource for DsdPcmFrames<'_> {
+    fn pcm_format(&self) -> Option<StreamFormat> { Some(self.opened) }
     fn ended_early(&self) -> bool {
         self.skipped
     }
@@ -108,13 +109,13 @@ impl FrameSource for DsdPcmFrames<'_> {
         }
         self.decoded_at += (samples.len() / usize::from(self.converter.channels())) as u64;
         self.level.float(&mut samples);
-        let mut bytes = Vec::new();
-        pack(
-            &Samples::Float(&samples),
-            self.opened.sample_format,
-            &mut bytes,
-        )
-        .map_err(|error| PlayError::Pack(error).to_string())?;
+        let mut bytes = Vec::with_capacity(samples.len() * self.opened.sample_format.bytes());
+        if self.opened.sample_format == chilpa_audio::format::SampleFormat::F32 {
+            bytes.extend(samples.iter().flat_map(|sample| sample.to_le_bytes()));
+        } else {
+            pack(&Samples::Float(&samples), self.opened.sample_format, &mut bytes)
+                .map_err(|error| PlayError::Pack(error).to_string())?;
+        }
         Ok(Some(bytes))
     }
 }

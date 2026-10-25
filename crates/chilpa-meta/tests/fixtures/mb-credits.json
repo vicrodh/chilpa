@@ -1,0 +1,776 @@
+{
+  "id": "4dc27ed5-eafd-4db7-9cdb-22b6a7e715c7",
+  "title": "Greatest Hits",
+  "artist-credit": [
+    {
+      "name": "Ritchie Valens",
+      "artist": {
+        "id": "5222714d-21ee-4061-87f7-c749f1586790",
+        "country": "US",
+        "type": "Person",
+        "disambiguation": "",
+        "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+        "genres": [
+          {
+            "name": "tex-mex",
+            "id": "532af7e7-79d1-4bd2-9416-7b7c5860a66e",
+            "disambiguation": "",
+            "count": 1
+          }
+        ],
+        "sort-name": "Valens, Ritchie",
+        "name": "Ritchie Valens"
+      },
+      "joinphrase": ""
+    }
+  ],
+  "label-info": [
+    {
+      "catalog-number": "AFZ 008",
+      "label": {
+        "name": "Audio Fidelity",
+        "sort-name": "Audio Fidelity",
+        "type-id": "88ee6ae7-f413-3490-a1d2-54f6a9f0838c",
+        "label-code": 122,
+        "genres": [],
+        "id": "5927b5be-6fd6-4a3e-9da3-407e3599bdbc",
+        "type": "Reissue Production",
+        "disambiguation": ""
+      }
+    }
+  ],
+  "date": "2003-03-25",
+  "country": "US",
+  "barcode": "643157200826",
+  "genres": [
+    {
+      "name": "latin",
+      "id": "7369bb8b-3399-4180-8cb2-4e37e0e7b0e7",
+      "count": 1,
+      "disambiguation": ""
+    },
+    {
+      "id": "b07b5eec-c7f0-4529-a876-e0dd6b350084",
+      "disambiguation": "",
+      "count": 1,
+      "name": "latin rock"
+    }
+  ],
+  "relations": [
+    {
+      "direction": "backward",
+      "attribute-values": {},
+      "target-credit": "",
+      "end": null,
+      "ended": false,
+      "artist": {
+        "disambiguation": "mastering engineer",
+        "type": "Person",
+        "id": "9b1dae1d-157d-4cad-8d6c-b9b37f04ed3f",
+        "country": "US",
+        "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+        "name": "Steve Hoffman",
+        "sort-name": "Hoffman, Steve"
+      },
+      "type": "compiler",
+      "attributes": [],
+      "type-id": "2f81887a-8674-4d8b-bd48-8bfd4c6fa332",
+      "begin": null,
+      "attribute-ids": {},
+      "source-credit": "",
+      "target-type": "artist"
+    }
+  ],
+  "media": [
+    {
+      "position": 1,
+      "id": "1a16d6e6-a2cf-3083-ab4a-7f7f44d6f5bd",
+      "title": "",
+      "format-id": "1a168dbd-d7ce-381d-a38a-3948de2cb4d6",
+      "track-offset": 0,
+      "track-count": 18,
+      "format": "Hybrid SACD (CD layer)",
+      "tracks": [
+        {
+          "id": "011daa32-6aad-381a-b0ac-4e729cb84060",
+          "title": "La Bamba",
+          "position": 1,
+          "length": 127933,
+          "artist-credit": [
+            {
+              "name": "Ritchie Valens",
+              "artist": {
+                "name": "Ritchie Valens",
+                "sort-name": "Valens, Ritchie",
+                "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                "type": "Person",
+                "disambiguation": "",
+                "id": "5222714d-21ee-4061-87f7-c749f1586790",
+                "country": "US"
+              },
+              "joinphrase": ""
+            }
+          ],
+          "recording": {
+            "first-release-date": "1958-11-17",
+            "artist-credit": [
+              {
+                "name": "Ritchie Valens",
+                "artist": {
+                  "id": "5222714d-21ee-4061-87f7-c749f1586790",
+                  "country": "US",
+                  "disambiguation": "",
+                  "type": "Person",
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                  "sort-name": "Valens, Ritchie",
+                  "name": "Ritchie Valens"
+                },
+                "joinphrase": ""
+              }
+            ],
+            "video": false,
+            "relations": [
+              {
+                "target-type": "artist",
+                "type": "producer",
+                "attributes": [],
+                "target-credit": "",
+                "artist": {
+                  "sort-name": "Keane, Bob",
+                  "name": "Bob Keane",
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                  "id": "4c0094ac-67d5-4737-90f0-6506968517a8",
+                  "country": "US",
+                  "type": "Person",
+                  "disambiguation": ""
+                }
+              },
+              {
+                "target-type": "artist",
+                "type": "recording",
+                "attributes": [],
+                "target-credit": "",
+                "artist": {
+                  "name": "Larry Levine",
+                  "sort-name": "Levine, Larry",
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                  "disambiguation": "",
+                  "type": "Person",
+                  "country": "US",
+                  "id": "b327871b-3d82-45dc-b3d1-f48c4b89f180"
+                }
+              },
+              {
+                "target-type": "artist",
+                "type": "recording",
+                "attributes": [],
+                "target-credit": "",
+                "artist": {
+                  "country": "US",
+                  "id": "4ded1a28-8b01-4a7a-84b2-39f6f2fbd4e0",
+                  "type": "Person",
+                  "disambiguation": "recording engineer, mixer & producer",
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                  "sort-name": "Ross, Stan",
+                  "name": "Stan Ross"
+                }
+              },
+              {
+                "type": "performance",
+                "work": {
+                  "id": "98c77c85-30de-48ad-ab83-e0c29b3da0ef",
+                  "title": "La bamba",
+                  "relations": [
+                    {
+                      "target-type": "artist",
+                      "type": "arranger",
+                      "attributes": [],
+                      "target-credit": "",
+                      "artist": {
+                        "country": "US",
+                        "id": "5222714d-21ee-4061-87f7-c749f1586790",
+                        "disambiguation": "",
+                        "type": "Person",
+                        "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                        "name": "Ritchie Valens",
+                        "sort-name": "Valens, Ritchie"
+                      }
+                    },
+                    {
+                      "target-type": "artist",
+                      "type": "composer",
+                      "attributes": [],
+                      "target-credit": "",
+                      "artist": {
+                        "disambiguation": "special purpose artist",
+                        "type": "Other",
+                        "id": "9be7f096-97ec-4615-8957-8d40b5dcbc41",
+                        "country": "XW",
+                        "type-id": "ac897045-5043-3294-969b-187360e45d86",
+                        "name": "[traditional]",
+                        "sort-name": "[traditional]"
+                      }
+                    },
+                    {
+                      "target-type": "artist",
+                      "type": "lyricist",
+                      "attributes": [],
+                      "target-credit": "",
+                      "artist": {
+                        "sort-name": "[traditional]",
+                        "name": "[traditional]",
+                        "type": "Other",
+                        "disambiguation": "special purpose artist",
+                        "country": "XW",
+                        "id": "9be7f096-97ec-4615-8957-8d40b5dcbc41",
+                        "type-id": "ac897045-5043-3294-969b-187360e45d86"
+                      }
+                    },
+                    {
+                      "target-type": "artist",
+                      "type": "lyricist",
+                      "attributes": [
+                        "additional"
+                      ],
+                      "target-credit": "",
+                      "artist": {
+                        "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                        "type": "Person",
+                        "disambiguation": "",
+                        "country": "US",
+                        "id": "5222714d-21ee-4061-87f7-c749f1586790",
+                        "sort-name": "Valens, Ritchie",
+                        "name": "Ritchie Valens"
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "length": 125400,
+            "genres": [
+              {
+                "count": 1,
+                "disambiguation": "",
+                "id": "b07b5eec-c7f0-4529-a876-e0dd6b350084",
+                "name": "latin rock"
+              },
+              {
+                "count": 3,
+                "disambiguation": "",
+                "id": "911c7bbb-172d-4df8-9478-dbff4296e791",
+                "name": "pop"
+              },
+              {
+                "name": "pop rock",
+                "id": "797e2e85-5ffd-495c-a757-8b4079052f0e",
+                "disambiguation": "",
+                "count": 1
+              },
+              {
+                "id": "e4581b76-a842-440b-9b0f-1aa7a00a5c57",
+                "disambiguation": "",
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "name": "tex-mex",
+                "id": "532af7e7-79d1-4bd2-9416-7b7c5860a66e",
+                "disambiguation": "",
+                "count": 2
+              }
+            ],
+            "id": "ca761827-c9d4-4a44-9dea-0eec9df14ed4",
+            "title": "La bamba",
+            "disambiguation": ""
+          },
+          "number": "1"
+        },
+        {
+          "length": 116213,
+          "position": 7,
+          "title": "Dooby Dooby Wah",
+          "id": "6e83159e-3b7c-3430-bfab-736408647ca2",
+          "recording": {
+            "genres": [
+              {
+                "disambiguation": "",
+                "count": 1,
+                "id": "e4581b76-a842-440b-9b0f-1aa7a00a5c57",
+                "name": "rock and roll"
+              }
+            ],
+            "length": 116213,
+            "title": "Dooby Dooby Wah",
+            "id": "3c3b3c13-dbea-41c0-9956-cb96cd429e40",
+            "disambiguation": "",
+            "artist-credit": [
+              {
+                "artist": {
+                  "name": "Ritchie Valens",
+                  "sort-name": "Valens, Ritchie",
+                  "disambiguation": "",
+                  "type": "Person",
+                  "id": "5222714d-21ee-4061-87f7-c749f1586790",
+                  "country": "US",
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df"
+                },
+                "joinphrase": "",
+                "name": "Ritchie Valens"
+              }
+            ],
+            "first-release-date": "2003-03-25",
+            "video": false,
+            "relations": [
+              {
+                "target-type": "artist",
+                "type": "producer",
+                "attributes": [],
+                "target-credit": "",
+                "artist": {
+                  "name": "Bob Keane",
+                  "sort-name": "Keane, Bob",
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                  "type": "Person",
+                  "disambiguation": "",
+                  "country": "US",
+                  "id": "4c0094ac-67d5-4737-90f0-6506968517a8"
+                }
+              },
+              {
+                "target-type": "artist",
+                "type": "recording",
+                "attributes": [],
+                "target-credit": "",
+                "artist": {
+                  "name": "Larry Levine",
+                  "sort-name": "Levine, Larry",
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                  "country": "US",
+                  "id": "b327871b-3d82-45dc-b3d1-f48c4b89f180",
+                  "type": "Person",
+                  "disambiguation": ""
+                }
+              },
+              {
+                "target-type": "artist",
+                "type": "recording",
+                "attributes": [],
+                "target-credit": "",
+                "artist": {
+                  "name": "Stan Ross",
+                  "sort-name": "Ross, Stan",
+                  "type": "Person",
+                  "disambiguation": "recording engineer, mixer & producer",
+                  "country": "US",
+                  "id": "4ded1a28-8b01-4a7a-84b2-39f6f2fbd4e0",
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df"
+                }
+              },
+              {
+                "type": "performance",
+                "work": {
+                  "id": "f093fbd0-596f-428e-82b1-b6b392af4a92",
+                  "title": "Dooby Dooby Wah",
+                  "relations": [
+                    {
+                      "target-type": "artist",
+                      "type": "writer",
+                      "attributes": [],
+                      "target-credit": "Robert V. Kuhn",
+                      "artist": {
+                        "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                        "country": "US",
+                        "id": "7d56c964-f3c4-474a-82ee-ac48c660b6a0",
+                        "disambiguation": "",
+                        "type": "Person",
+                        "sort-name": "Kuhn, Robert",
+                        "name": "Robert Kuhn"
+                      }
+                    },
+                    {
+                      "target-type": "artist",
+                      "type": "writer",
+                      "attributes": [],
+                      "target-credit": "",
+                      "artist": {
+                        "name": "Ritchie Valens",
+                        "sort-name": "Valens, Ritchie",
+                        "type": "Person",
+                        "disambiguation": "",
+                        "country": "US",
+                        "id": "5222714d-21ee-4061-87f7-c749f1586790",
+                        "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "number": "7",
+          "artist-credit": [
+            {
+              "artist": {
+                "id": "5222714d-21ee-4061-87f7-c749f1586790",
+                "country": "US",
+                "type": "Person",
+                "disambiguation": "",
+                "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                "name": "Ritchie Valens",
+                "sort-name": "Valens, Ritchie"
+              },
+              "joinphrase": "",
+              "name": "Ritchie Valens"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "",
+      "format-id": "6c521ee3-f723-41de-bc6b-ec3621b9ffa9",
+      "id": "80a94372-79ef-3f71-9d80-1c27476c6c6f",
+      "position": 2,
+      "track-offset": 0,
+      "tracks": [
+        {
+          "artist-credit": [
+            {
+              "name": "Ritchie Valens",
+              "joinphrase": "",
+              "artist": {
+                "sort-name": "Valens, Ritchie",
+                "name": "Ritchie Valens",
+                "id": "5222714d-21ee-4061-87f7-c749f1586790",
+                "country": "US",
+                "disambiguation": "",
+                "type": "Person",
+                "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df"
+              }
+            }
+          ],
+          "recording": {
+            "genres": [
+              {
+                "name": "latin rock",
+                "disambiguation": "",
+                "count": 1,
+                "id": "b07b5eec-c7f0-4529-a876-e0dd6b350084"
+              },
+              {
+                "name": "pop",
+                "disambiguation": "",
+                "count": 3,
+                "id": "911c7bbb-172d-4df8-9478-dbff4296e791"
+              },
+              {
+                "name": "pop rock",
+                "count": 1,
+                "disambiguation": "",
+                "id": "797e2e85-5ffd-495c-a757-8b4079052f0e"
+              },
+              {
+                "count": 2,
+                "disambiguation": "",
+                "id": "e4581b76-a842-440b-9b0f-1aa7a00a5c57",
+                "name": "rock and roll"
+              },
+              {
+                "count": 2,
+                "disambiguation": "",
+                "id": "532af7e7-79d1-4bd2-9416-7b7c5860a66e",
+                "name": "tex-mex"
+              }
+            ],
+            "length": 125400,
+            "disambiguation": "",
+            "id": "ca761827-c9d4-4a44-9dea-0eec9df14ed4",
+            "title": "La bamba",
+            "video": false,
+            "first-release-date": "1958-11-17",
+            "artist-credit": [
+              {
+                "name": "Ritchie Valens",
+                "joinphrase": "",
+                "artist": {
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                  "id": "5222714d-21ee-4061-87f7-c749f1586790",
+                  "country": "US",
+                  "type": "Person",
+                  "disambiguation": "",
+                  "sort-name": "Valens, Ritchie",
+                  "name": "Ritchie Valens"
+                }
+              }
+            ],
+            "relations": [
+              {
+                "target-type": "artist",
+                "type": "producer",
+                "attributes": [],
+                "target-credit": "",
+                "artist": {
+                  "sort-name": "Keane, Bob",
+                  "name": "Bob Keane",
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                  "country": "US",
+                  "id": "4c0094ac-67d5-4737-90f0-6506968517a8",
+                  "type": "Person",
+                  "disambiguation": ""
+                }
+              },
+              {
+                "target-type": "artist",
+                "type": "recording",
+                "attributes": [],
+                "target-credit": "",
+                "artist": {
+                  "id": "b327871b-3d82-45dc-b3d1-f48c4b89f180",
+                  "country": "US",
+                  "type": "Person",
+                  "disambiguation": "",
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                  "sort-name": "Levine, Larry",
+                  "name": "Larry Levine"
+                }
+              },
+              {
+                "target-type": "artist",
+                "type": "recording",
+                "attributes": [],
+                "target-credit": "",
+                "artist": {
+                  "disambiguation": "recording engineer, mixer & producer",
+                  "type": "Person",
+                  "country": "US",
+                  "id": "4ded1a28-8b01-4a7a-84b2-39f6f2fbd4e0",
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                  "sort-name": "Ross, Stan",
+                  "name": "Stan Ross"
+                }
+              },
+              {
+                "type": "performance",
+                "work": {
+                  "id": "98c77c85-30de-48ad-ab83-e0c29b3da0ef",
+                  "title": "La bamba",
+                  "relations": [
+                    {
+                      "target-type": "artist",
+                      "type": "arranger",
+                      "attributes": [],
+                      "target-credit": "",
+                      "artist": {
+                        "sort-name": "Valens, Ritchie",
+                        "name": "Ritchie Valens",
+                        "id": "5222714d-21ee-4061-87f7-c749f1586790",
+                        "country": "US",
+                        "disambiguation": "",
+                        "type": "Person",
+                        "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df"
+                      }
+                    },
+                    {
+                      "target-type": "artist",
+                      "type": "composer",
+                      "attributes": [],
+                      "target-credit": "",
+                      "artist": {
+                        "name": "[traditional]",
+                        "sort-name": "[traditional]",
+                        "country": "XW",
+                        "id": "9be7f096-97ec-4615-8957-8d40b5dcbc41",
+                        "type": "Other",
+                        "disambiguation": "special purpose artist",
+                        "type-id": "ac897045-5043-3294-969b-187360e45d86"
+                      }
+                    },
+                    {
+                      "target-type": "artist",
+                      "type": "lyricist",
+                      "attributes": [],
+                      "target-credit": "",
+                      "artist": {
+                        "type": "Other",
+                        "disambiguation": "special purpose artist",
+                        "country": "XW",
+                        "id": "9be7f096-97ec-4615-8957-8d40b5dcbc41",
+                        "type-id": "ac897045-5043-3294-969b-187360e45d86",
+                        "sort-name": "[traditional]",
+                        "name": "[traditional]"
+                      }
+                    },
+                    {
+                      "target-type": "artist",
+                      "type": "lyricist",
+                      "attributes": [
+                        "additional"
+                      ],
+                      "target-credit": "",
+                      "artist": {
+                        "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                        "disambiguation": "",
+                        "type": "Person",
+                        "country": "US",
+                        "id": "5222714d-21ee-4061-87f7-c749f1586790",
+                        "sort-name": "Valens, Ritchie",
+                        "name": "Ritchie Valens"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "number": "1",
+          "id": "58934ce3-9ad5-4299-893a-169f392d0774",
+          "title": "La Bamba",
+          "position": 1,
+          "length": 127933
+        },
+        {
+          "length": 116213,
+          "id": "caa748fd-61e9-413a-969e-16c29039fe1d",
+          "title": "Dooby Dooby Wah",
+          "position": 7,
+          "artist-credit": [
+            {
+              "name": "Ritchie Valens",
+              "artist": {
+                "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                "id": "5222714d-21ee-4061-87f7-c749f1586790",
+                "country": "US",
+                "type": "Person",
+                "disambiguation": "",
+                "sort-name": "Valens, Ritchie",
+                "name": "Ritchie Valens"
+              },
+              "joinphrase": ""
+            }
+          ],
+          "number": "7",
+          "recording": {
+            "disambiguation": "",
+            "title": "Dooby Dooby Wah",
+            "id": "3c3b3c13-dbea-41c0-9956-cb96cd429e40",
+            "length": 116213,
+            "genres": [
+              {
+                "count": 1,
+                "disambiguation": "",
+                "id": "e4581b76-a842-440b-9b0f-1aa7a00a5c57",
+                "name": "rock and roll"
+              }
+            ],
+            "relations": [
+              {
+                "target-type": "artist",
+                "type": "producer",
+                "attributes": [],
+                "target-credit": "",
+                "artist": {
+                  "sort-name": "Keane, Bob",
+                  "name": "Bob Keane",
+                  "disambiguation": "",
+                  "type": "Person",
+                  "id": "4c0094ac-67d5-4737-90f0-6506968517a8",
+                  "country": "US",
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df"
+                }
+              },
+              {
+                "target-type": "artist",
+                "type": "recording",
+                "attributes": [],
+                "target-credit": "",
+                "artist": {
+                  "disambiguation": "",
+                  "type": "Person",
+                  "id": "b327871b-3d82-45dc-b3d1-f48c4b89f180",
+                  "country": "US",
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                  "name": "Larry Levine",
+                  "sort-name": "Levine, Larry"
+                }
+              },
+              {
+                "target-type": "artist",
+                "type": "recording",
+                "attributes": [],
+                "target-credit": "",
+                "artist": {
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                  "disambiguation": "recording engineer, mixer & producer",
+                  "type": "Person",
+                  "country": "US",
+                  "id": "4ded1a28-8b01-4a7a-84b2-39f6f2fbd4e0",
+                  "name": "Stan Ross",
+                  "sort-name": "Ross, Stan"
+                }
+              },
+              {
+                "type": "performance",
+                "work": {
+                  "id": "f093fbd0-596f-428e-82b1-b6b392af4a92",
+                  "title": "Dooby Dooby Wah",
+                  "relations": [
+                    {
+                      "target-type": "artist",
+                      "type": "writer",
+                      "attributes": [],
+                      "target-credit": "Robert V. Kuhn",
+                      "artist": {
+                        "id": "7d56c964-f3c4-474a-82ee-ac48c660b6a0",
+                        "country": "US",
+                        "disambiguation": "",
+                        "type": "Person",
+                        "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                        "name": "Robert Kuhn",
+                        "sort-name": "Kuhn, Robert"
+                      }
+                    },
+                    {
+                      "target-type": "artist",
+                      "type": "writer",
+                      "attributes": [],
+                      "target-credit": "",
+                      "artist": {
+                        "name": "Ritchie Valens",
+                        "sort-name": "Valens, Ritchie",
+                        "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                        "disambiguation": "",
+                        "type": "Person",
+                        "country": "US",
+                        "id": "5222714d-21ee-4061-87f7-c749f1586790"
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "video": false,
+            "artist-credit": [
+              {
+                "joinphrase": "",
+                "artist": {
+                  "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+                  "disambiguation": "",
+                  "type": "Person",
+                  "country": "US",
+                  "id": "5222714d-21ee-4061-87f7-c749f1586790",
+                  "name": "Ritchie Valens",
+                  "sort-name": "Valens, Ritchie"
+                },
+                "name": "Ritchie Valens"
+              }
+            ],
+            "first-release-date": "2003-03-25"
+          }
+        }
+      ],
+      "format": "Hybrid SACD (SACD layer, 2 channels)",
+      "track-count": 18
+    }
+  ]
+}

@@ -124,6 +124,15 @@ msgstr "Доступна новая версия Chilpa."
 msgid "A player for your own music"
 msgstr "Плеер для вашей собственной музыки"
 
+msgid "A saved query already has that name."
+msgstr "Сохранённый запрос с таким названием уже существует."
+
+msgid "A saved query may use at most 16 KiB."
+msgstr "Размер сохранённого запроса не должен превышать 16 КиБ."
+
+msgid "A scan supports up to 256 folders and 64 KiB of saved paths."
+msgstr "Сканирование поддерживает до 256 папок и 64 КиБ сохранённых путей."
+
 msgid "A secure cast URL could not be created."
 msgstr "Не удалось создать защищённый URL для трансляции."
 
@@ -186,6 +195,9 @@ msgstr "Активные модули"
 
 msgid "Add"
 msgstr "Добавить"
+
+msgid "Add a condition before saving a query."
+msgstr "Добавьте условие перед сохранением запроса."
 
 msgid "Add a condition: type a genre, artist, year…"
 msgstr "Добавить условие: введите жанр, исполнителя, год…"
@@ -511,6 +523,9 @@ msgstr "апр."
 msgid "April"
 msgstr "апреля"
 
+msgid "Arranger"
+msgstr "Аранжировщик"
+
 msgid "Artist"
 msgstr "Исполнитель"
 
@@ -592,6 +607,9 @@ msgstr "Автоопределение ваших DAC и пошаговая на
 msgid "Auto-follow"
 msgstr "Автопрокрутка"
 
+msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
+msgstr "Автоматические проверки приостановлены до продолжения или сброса этого сканирования. Уже добавленные файлы сохраняются."
+
 msgid "Automatic headroom lowers gain to leave room for EQ boosts."
 msgstr "Автоматический запас по уровню снижает усиление, чтобы оставить место для подъёма EQ."
 
@@ -657,6 +675,9 @@ msgstr "Bit-perfect"
 
 msgid "Bit-perfect"
 msgstr "Bit-perfect"
+
+msgid "Bits"
+msgstr "Биты"
 
 msgid "Block network access, including plugins, online artwork, updates and scrobbling. Local playback, cached content and installed Mood models stay available. Artist Network is hidden."
 msgstr "Блокировать доступ к сети, включая плагины, онлайн-обложки, обновления и скробблинг. Локальное воспроизведение, кэшированное содержимое и установленные модели настроения остаются доступными. Сеть исполнителей скрыта."
@@ -817,6 +838,12 @@ msgstr "Изменить изображение"
 msgid "Change sign-in"
 msgstr "Изменить данные для входа"
 
+msgid "Change source"
+msgstr "Сменить источник"
+
+msgid "Channels"
+msgstr "Каналы"
+
 msgid "Chapters"
 msgstr "Главы"
 
@@ -826,8 +853,14 @@ msgstr "Проверка"
 msgid "Check Audio Stack"
 msgstr "Проверить аудиостек"
 
+msgid "Check all folders"
+msgstr "Проверить все папки"
+
 msgid "Check for a newer version of Chilpa."
 msgstr "Проверить наличие новой версии Chilpa."
+
+msgid "Check for new additions"
+msgstr "Проверять новые добавления"
 
 msgid "Check for updates"
 msgstr "Проверить обновления"
@@ -837,6 +870,9 @@ msgstr "Проверять обновления автоматически"
 
 msgid "Checking for updates…"
 msgstr "Проверка обновлений…"
+
+msgid "Checking library folders…"
+msgstr "Проверка папок медиатеки…"
 
 msgid "Checking the account…"
 msgstr "Проверка учётной записи…"
@@ -1081,8 +1117,14 @@ msgstr "Закройте кавычки."
 msgid "Close to tray"
 msgstr "Сворачивать в трей"
 
+msgid "Closing stops a scan. Saved progress can be continued here after reopening."
+msgstr "Закрытие останавливает сканирование. После повторного открытия здесь можно продолжить сохранённый прогресс."
+
 msgid "Closing the window keeps Chilpa playing in the tray instead of quitting."
 msgstr "При закрытии окна Chilpa продолжает играть в трее, а не завершает работу."
+
+msgid "Codec"
+msgstr "Кодек"
 
 msgid "Collaborators"
 msgstr "Соавторы"
@@ -1153,6 +1195,9 @@ msgstr "Сборники"
 msgid "Completed"
 msgstr "Завершено"
 
+msgid "Completed work is saved. Continue checks the folder again and skips unchanged files."
+msgstr "Выполненная работа сохранена. Продолжение повторно проверит папку и пропустит неизменённые файлы."
+
 msgid "Composer"
 msgstr "Композитор"
 
@@ -1192,11 +1237,17 @@ msgstr "Подключение…"
 msgid "Connection error"
 msgstr "Ошибка подключения"
 
+msgid "Container"
+msgstr "Контейнер"
+
 msgid "Continue"
 msgstr "Продолжить"
 
 msgid "Continue listening"
 msgstr "Продолжить прослушивание"
+
+msgid "Continue or dismiss the interrupted scan before starting another."
+msgstr "Продолжите или сбросьте прерванное сканирование перед запуском нового."
 
 msgid "Convert to PCM"
 msgstr "Преобразовывать в PCM"
@@ -1459,6 +1510,12 @@ msgstr "Удалить плейлист"
 msgid "Delete preset"
 msgstr "Удалить пресет"
 
+msgid "Delete saved query"
+msgstr "Удалить сохранённый запрос"
+
+msgid "Delete the saved query “{}”?"
+msgstr "Удалить сохранённый запрос «{}»?"
+
 msgid "Delete “{}”?"
 msgstr "Удалить «{}»?"
 
@@ -1557,6 +1614,9 @@ msgstr "Диски"
 
 msgid "Dismiss"
 msgstr "Скрыть"
+
+msgid "Dismiss scan"
+msgstr "Сбросить сканирование"
 
 msgid "Display settings"
 msgstr "Настройки отображения"
@@ -1708,6 +1768,9 @@ msgstr "Включите источник «{}» в разделе «Настр�
 msgid "Ends at {}"
 msgstr "Закончится в {}"
 
+msgid "Engineer"
+msgstr "Звукорежиссёр"
+
 msgid "English"
 msgstr "Английский"
 
@@ -1734,6 +1797,15 @@ msgstr "Эквалайзер"
 
 msgid "Errors"
 msgstr "Ошибки"
+
+msgid "Every 12 hours"
+msgstr "Каждые 12 часов"
+
+msgid "Every 24 hours"
+msgstr "Каждые 24 часа"
+
+msgid "Every week"
+msgstr "Каждую неделю"
 
 msgid "Everyone who plays on a track"
 msgstr "Все, кто играет в треке"
@@ -1822,6 +1894,9 @@ msgstr "Поля"
 msgid "File"
 msgstr "Файл"
 
+msgid "File size"
+msgstr "Размер файла"
+
 msgid "Files"
 msgstr "Файлы"
 
@@ -1903,8 +1978,14 @@ msgstr "Цвета папок на боковой панели"
 msgid "Folder name"
 msgstr "Название папки"
 
+msgid "Folder path"
+msgstr "Путь к папке"
+
 msgid "Folders"
 msgstr "Папки"
+
+msgid "Folders are unavailable. Their existing tracks remain in the library."
+msgstr "Папки недоступны. Их существующие треки остаются в медиатеке."
 
 msgid "Follow"
 msgstr "Подписаться"
@@ -2218,6 +2299,9 @@ msgstr "Я сохраняю этот фильтр; отредактируйте 
 msgid "I restarted the audio services"
 msgstr "Аудиослужбы перезапущены"
 
+msgid "I save only the conditions. Opening a query uses the currently selected sources and keeps the queue."
+msgstr "Я сохраняю только условия. При открытии использую выбранные источники и сохраняю очередь."
+
 msgid "I understand and accept these terms"
 msgstr "Я понимаю и принимаю эти условия"
 
@@ -2302,6 +2386,9 @@ msgstr "Информация: {}"
 msgid "Information"
 msgstr "Информация"
 
+msgid "Information could not be retrieved. Try again shortly."
+msgstr "Не удалось получить информацию. Повторите попытку чуть позже."
+
 msgid "Init system (service commands)"
 msgstr "Система инициализации (команды служб)"
 
@@ -2349,6 +2436,9 @@ msgstr "Установлено"
 
 msgid "Installing plugin…"
 msgstr "Установка плагина…"
+
+msgid "Instrument"
+msgstr "Инструмент"
 
 msgid "Integrations"
 msgstr "Интеграции"
@@ -2527,6 +2617,15 @@ msgstr "Выравнивать громкость между треками. Э�
 msgid "Library"
 msgstr "Библиотека"
 
+msgid "Library check complete"
+msgstr "Проверка медиатеки завершена"
+
+msgid "Library check failed"
+msgstr "Проверка медиатеки не удалась"
+
+msgid "Library check interrupted"
+msgstr "Проверка медиатеки прервана"
+
 msgid "Library folders"
 msgstr "Папки библиотеки"
 
@@ -2635,6 +2734,9 @@ msgstr "Локально — {}"
 msgid "Look"
 msgstr "Оформление"
 
+msgid "Look for changes"
+msgstr "Проверить изменения"
+
 msgid "Look records up in"
 msgstr "Искать записи в"
 
@@ -2710,6 +2812,9 @@ msgstr "Управление"
 msgid "Manage playlists"
 msgstr "Управление плейлистами"
 
+msgid "Manually"
+msgstr "Вручную"
+
 msgid "Mar"
 msgstr "мар."
 
@@ -2724,6 +2829,9 @@ msgstr "Отметить как непрослушанное"
 
 msgid "Mark the start first with :loop a."
 msgstr "Сначала отметьте начало командой :loop a."
+
+msgid "Mastering engineer"
+msgstr "Мастеринг-инженер"
 
 msgid "Match"
 msgstr "Совпадение"
@@ -2782,6 +2890,9 @@ msgstr "Отсутствует"
 msgid "Mixed"
 msgstr "Разные"
 
+msgid "Mixing engineer"
+msgstr "Микс-инженер"
+
 msgid "Mon"
 msgstr "Пн"
 
@@ -2825,6 +2936,9 @@ msgid "More"
 msgstr "Ещё"
 
 msgid "More actions"
+msgstr "Другие действия"
+
+msgid "More options"
 msgstr "Другие действия"
 
 msgid "Most at {}:00"
@@ -2949,6 +3063,9 @@ msgstr "Навигация"
 
 msgid "Needs update"
 msgstr "Нужно обновить"
+
+msgid "Nerdy"
+msgstr "Nerdy"
 
 msgid "Network"
 msgstr "Сеть"
@@ -3142,6 +3259,9 @@ msgstr "Ничего не найдено."
 msgid "No review available"
 msgstr "Рецензии нет"
 
+msgid "No saved queries yet. Add conditions, then choose Save query."
+msgstr "Сохранённых запросов пока нет. Добавьте условия и выберите «Сохранить запрос»."
+
 msgid "No setting says that"
 msgstr "Такой настройки нет"
 
@@ -3300,6 +3420,9 @@ msgstr "Вкл."
 
 msgid "On air"
 msgstr "В эфире"
+
+msgid "On app startup"
+msgstr "При запуске приложения"
 
 msgid "On the sidebar's destinations."
 msgstr "На пунктах боковой панели."
@@ -3489,6 +3612,9 @@ msgstr "Ожидает"
 
 msgid "Per-app bit-perfect (PipeWire client)"
 msgstr "Bit-perfect для приложения (клиент PipeWire)"
+
+msgid "Performer"
+msgstr "Исполнитель"
 
 msgid "Performers"
 msgstr "Исполнители партий"
@@ -3736,6 +3862,9 @@ msgstr "Конфиденциальность и сеть"
 msgid "Processed"
 msgstr "Обработано"
 
+msgid "Producer"
+msgstr "Продюсер"
+
 msgid "Profile name"
 msgstr "Имя профиля"
 
@@ -3771,6 +3900,9 @@ msgstr "Фильтры по качеству, формату, источнику
 
 msgid "Quarantined"
 msgstr "В карантине"
+
+msgid "Query name"
+msgstr "Название запроса"
 
 msgid "Queue"
 msgstr "Очередь"
@@ -3840,6 +3972,9 @@ msgstr "Оценить"
 
 msgid "Rating"
 msgstr "Рейтинг"
+
+msgid "Re-fetch album information"
+msgstr "Повторно получить сведения об альбоме"
 
 msgid "Reactivate"
 msgstr "Активировать снова"
@@ -3930,6 +4065,9 @@ msgstr "Недавно прослушанные плейлисты"
 
 msgid "Recently played playlists in the library"
 msgstr "Недавно прослушанные плейлисты в библиотеке"
+
+msgid "Recording engineer"
+msgstr "Звукорежиссёр записи"
 
 msgid "Records"
 msgstr "Альбомы"
@@ -4053,6 +4191,9 @@ msgstr "Удалить…"
 
 msgid "Rename"
 msgstr "Переименовать"
+
+msgid "Rename query"
+msgstr "Переименовать запрос"
 
 msgid "Renderer"
 msgstr "Рендерер"
@@ -4192,6 +4333,9 @@ msgstr "СТАТУС"
 msgid "SURFACES"
 msgstr "ПОВЕРХНОСТИ"
 
+msgid "Sample rate"
+msgstr "Частота дискретизации"
+
 msgid "Sample-rate switching (PipeWire)"
 msgstr "Переключение частоты дискретизации (PipeWire)"
 
@@ -4219,6 +4363,9 @@ msgstr "Сохранить изменения"
 msgid "Save preset"
 msgstr "Сохранить пресет"
 
+msgid "Save query"
+msgstr "Сохранить запрос"
+
 msgid "Save stations to find them here."
 msgstr "Сохраняйте станции, чтобы найти их здесь."
 
@@ -4237,6 +4384,9 @@ msgstr "Сохранено"
 msgid "Saved position"
 msgstr "Сохранённая позиция"
 
+msgid "Saved queries"
+msgstr "Сохранённые запросы"
+
 msgid "Saved results remain available between sessions."
 msgstr "Сохранённые результаты доступны между сеансами."
 
@@ -4252,14 +4402,14 @@ msgstr "Сохранение… файлов: {} из {}"
 msgid "Scales the whole interface, like browser zoom. Small fits more content on screen, Large and Extra large improve readability (requires restart)"
 msgstr "Масштабирует весь интерфейс, как масштаб страницы в браузере. Маленький вмещает больше контента на экране, Большой и Очень большой улучшают читаемость (требуется перезапуск)"
 
-msgid "Scan again"
-msgstr "Сканировать снова"
-
-msgid "Scan every folder again"
-msgstr "Заново сканировать все папки"
+msgid "Scan settings could not be saved or read: {}"
+msgstr "Не удалось сохранить или прочитать настройки сканирования: {}"
 
 msgid "Scanning…"
 msgstr "Сканирование…"
+
+msgid "Scheduled checks run while Chilpa is open. Startup checks run once when the app opens. Unchanged files are skipped."
+msgstr "Плановые проверки выполняются, пока Chilpa открыт. Проверка при запуске выполняется один раз при открытии приложения. Неизменённые файлы пропускаются."
 
 msgid "Scrobbling"
 msgstr "Скробблинг"
@@ -4666,6 +4816,12 @@ msgstr "Остановить воспроизведение через:"
 msgid "Stop playback to diagnose?"
 msgstr "Остановить воспроизведение для диагностики?"
 
+msgid "Stop scan"
+msgstr "Остановить сканирование"
+
+msgid "Stopping after the current file…"
+msgstr "Остановка после текущего файла…"
+
 msgid "Stops in"
 msgstr "Остановится через"
 
@@ -4768,6 +4924,9 @@ msgstr "Этот ответ не относится к этому окну."
 msgid "That file is not a JPEG, PNG or WebP image"
 msgstr "Этот файл не является изображением JPEG, PNG или WebP"
 
+msgid "That saved query no longer exists."
+msgstr "Этот сохранённый запрос больше не существует."
+
 msgid "The EQ profile is too large."
 msgstr "Профиль EQ слишком большой."
 
@@ -4816,6 +4975,12 @@ msgstr "Первый — собственный акцент темы; оста�
 msgid "The floating player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
 msgstr "Плавающая панель плеера убирается после десяти секунд без движения мыши, а любое движение возвращает её."
 
+msgid "The folder is no longer in the library."
+msgstr "Папки больше нет в медиатеке."
+
+msgid "The folder scan policy is invalid."
+msgstr "Политика сканирования папки недействительна."
+
 msgid "The image could not be kept"
 msgstr "Не удалось сохранить изображение в Chilpa"
 
@@ -4828,6 +4993,9 @@ msgstr "Не удалось сохранить изображение"
 msgid "The image is too large"
 msgstr "Изображение слишком большое"
 
+msgid "The incorrect lyrics could not be excluded. Try again."
+msgstr "Не удалось исключить неверный текст. Повторите попытку."
+
 msgid "The line being sung stays in view."
 msgstr "Текущая строка остаётся в поле зрения."
 
@@ -4839,6 +5007,12 @@ msgstr "Здесь нельзя отметить повтор A-B: до его �
 
 msgid "The loudness every track is aligned to. -14 LUFS matches streaming services, -18 LUFS is the ReplayGain reference."
 msgstr "Громкость, к которой приводится каждый трек. -14 LUFS соответствует стриминговым сервисам, -18 LUFS — эталон ReplayGain."
+
+msgid "The lower bound must not exceed the upper bound."
+msgstr "Нижняя граница не может превышать верхнюю."
+
+msgid "The lyrics API could not save the report. This result is excluded on this device."
+msgstr "API текстов не удалось сохранить сообщение. Этот результат исключён на этом устройстве."
 
 msgid "The lyrics cache could not be opened."
 msgstr "Не удалось открыть кэш текстов песен."
@@ -4888,8 +5062,29 @@ msgstr "Рендерер отклонил команду."
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "То же правило, что у ListenBrainz: половина трека или четыре минуты."
 
+msgid "The saved folder scan policy is invalid."
+msgstr "Сохранённая политика сканирования папок недействительна."
+
+msgid "The saved queries could not be read or saved: {}"
+msgstr "Не удалось прочитать или сохранить запросы: {}"
+
+msgid "The saved query catalog exceeds 1 MiB."
+msgstr "Каталог запросов превышает 1 МиБ."
+
+msgid "The saved query catalog is damaged; I kept its original data."
+msgstr "Каталог запросов повреждён; исходные данные сохранены."
+
+msgid "The saved scan could not be restored."
+msgstr "Не удалось восстановить сохранённое сканирование."
+
 msgid "The saved sign-in could not be opened."
 msgstr "Не удалось открыть сохранённые данные для входа."
+
+msgid "The scan could not start: {}"
+msgstr "Не удалось начать сканирование: {}"
+
+msgid "The scan worker stopped unexpectedly."
+msgstr "Процесс сканирования неожиданно остановился."
 
 msgid "The selected hardware volume control is gone."
 msgstr "Выбранный регулятор аппаратной громкости исчез."
@@ -5025,6 +5220,9 @@ msgstr "Эту запись сейчас нельзя воспроизвести
 
 msgid "This removes {} from your library."
 msgstr "Это удалит {} из вашей библиотеки."
+
+msgid "This saved query catalog uses an unsupported version; I kept its original data."
+msgstr "Версия каталога не поддерживается; исходные данные сохранены."
 
 msgid "This screen is not built yet."
 msgstr "Этот экран ещё не создан."
@@ -5332,6 +5530,9 @@ msgstr "Обновления сохраняют вашу библиотеку, �
 msgid "Updating Chilpa…"
 msgstr "Обновление Chilpa…"
 
+msgid "Updating the library…"
+msgstr "Обновление медиатеки…"
+
 msgid "Updating usage…"
 msgstr "Подсчёт использования…"
 
@@ -5346,6 +5547,9 @@ msgstr "Использовать MusicBrainz"
 
 msgid "Use Quick Connect"
 msgstr "Использовать Quick Connect"
+
+msgid "Use a name of 1 to 80 characters, without line breaks."
+msgstr "Используйте название от 1 до 80 символов без переносов строк."
 
 msgid "Use at most 10 DSP filters."
 msgstr "Используйте не более 10 фильтров DSP."
@@ -5397,6 +5601,9 @@ msgstr "Показать точные фильтры"
 
 msgid "View tracks"
 msgstr "Показать треки"
+
+msgid "Vocals"
+msgstr "Вокал"
 
 msgid "Volume"
 msgstr "Громкость"
@@ -5548,6 +5755,12 @@ msgstr "Записать внешний XML SACD?"
 msgid "Write to a file"
 msgstr "Записать в файл"
 
+msgid "Writer"
+msgstr "Автор"
+
+msgid "Wrong lyric"
+msgstr "Неверный текст"
+
 msgid "XML can be edited only for SACD images"
 msgstr "XML можно редактировать только для образов SACD"
 
@@ -5565,6 +5778,9 @@ msgstr "Вчера"
 
 msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
 msgstr "Вы сами отвечаете за резервные копии. Это помощник, а не средство восстановления системы."
+
+msgid "You can save up to 64 queries."
+msgstr "Можно сохранить до 64 запросов."
 
 msgid "Your DAC"
 msgstr "Ваш DAC"
@@ -7041,6 +7257,9 @@ msgstr "Треков: {}, записей: {}"
 
 msgid "{} tracks match disc {}"
 msgstr "Треков, совпадающих с диском {2}: {1}"
+
+msgid "{} unreadable"
+msgstr "Не удалось прочитать: {}"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "{}: разрешение не получено вовремя; подключите снова"

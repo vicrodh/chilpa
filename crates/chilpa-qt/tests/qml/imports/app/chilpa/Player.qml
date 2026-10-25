@@ -33,6 +33,10 @@ QtObject {
     property string lyricsJson: ""
     property bool lyricsSynced: false
     property int lyricsLine: -1
+    property string rejectedLyrics: ""
+    function rejectLyrics(revision) { rejectedLyrics = revision }
+    property string changedLyrics: ""
+    function changeLyricsSource(revision) { changedLyrics = revision }
     function seek(seconds) { sought = seconds; position = seconds }
     property bool shuffle: false
     property int repeat: 0
@@ -49,6 +53,8 @@ QtObject {
     function toggleShuffle() { shuffle = !shuffle }
     function cycleRepeat() { repeat = (repeat + 1) % 3 }
     function chooseVolume(percent) { volume = percent }
+    property int volumeSaves: 0
+    function persistVolume() { volumeSaves += 1 }
     function chooseMuted(on) { muted = on }
     function nudge(seconds) { seek(position + seconds) }
     function clock(seconds) { return String(Math.floor(seconds)) }

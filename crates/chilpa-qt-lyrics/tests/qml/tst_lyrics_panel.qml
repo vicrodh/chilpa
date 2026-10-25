@@ -51,6 +51,8 @@ TestCase {
     }
 
     function init() {
+        Player.rejectedLyrics = ""
+        Player.changedLyrics = ""
         Player.playing = true
         Player.paused = false
         Player.position = 0
@@ -60,6 +62,67 @@ TestCase {
         SettingsModel.preferences = ({})
         options().reset()
         show("", false, -1)
+    }
+
+    function test_wrong_lyrics_action_targets_the_displayed_revision() {
+        const document = JSON.parse(words)
+        document.revision = "42"
+        show(JSON.stringify(document), true, 0)
+        const action = findChild(panel, "lyricsActionsButton")
+        tryCompare(action, "visible", true)
+        waitForPolish(panel)
+        verify(action.width > 0 && action.height > 0, "the action has a pointer target")
+        tryVerify(() => action.mapToItem(panel, 0, 0).y + action.height <= panel.height)
+        mouseClick(action, action.width / 2, action.height / 2)
+        const menu = findChild(panel, "lyricsActionsMenu")
+        tryCompare(menu, "opened", true)
+        menu.choose(1, 0)
+        compare(Player.rejectedLyrics, "42")
+        show('{"status":"searching"}', false, -1)
+        tryCompare(action, "visible", false)
+    }
+
+    function test_lyric_actions_sit_below_translation_and_open_to_the_left() {
+        const document = JSON.parse(translated)
+        document.revision = "43"
+        document.can_change_source = true
+        show(JSON.stringify(document), true, 0)
+        const translate = findChild(panel, "translateButton")
+        const more = findChild(panel, "lyricsActionsButton")
+        tryVerify(() => more.y >= translate.y + translate.height)
+        compare(more.round, translate.round)
+        compare(more.iconFamily, Lucide.font)
+        compare(more.glyph, Lucide.ellipsis)
+        mouseClick(more, more.width / 2, more.height / 2)
+        const menu = findChild(panel, "lyricsActionsMenu")
+        tryCompare(menu, "opened", true)
+        verify(menu.x + menu.width < 0, "the flyout opens left of its button")
+        compare(menu.entries.length, 2)
+        compare(menu.entries[0].glyph, Lucide.searchCode)
+        compare(menu.entries[1].glyph, Lucide.flagTriangleRight)
+        menu.choose(0, 0)
+        compare(Player.changedLyrics, "43")
+        compare(Player.rejectedLyrics, "", "changing source does not flag a lyric")
+    }
+
+    function test_an_unavailable_source_change_is_greyed_out_and_an_old_menu_closes_with_its_track() {
+        const document = JSON.parse(words)
+        document.revision = "44"
+        document.can_change_source = false
+        show(JSON.stringify(document), true, 0)
+        const more = findChild(panel, "lyricsActionsButton")
+        mouseClick(more, more.width / 2, more.height / 2)
+        const menu = findChild(panel, "lyricsActionsMenu")
+        tryCompare(menu, "opened", true)
+        compare(menu.entries[0].enabled, false)
+        const list = findChild(menu, "menuOptions")
+        list.forceLayout()
+        const unavailable = list.itemAtIndex(0)
+        verify(!unavailable.enabled && unavailable.opacity < 1)
+        menu.choose(0, 0)
+        compare(Player.changedLyrics, "")
+        show('{"status":"searching"}', false, -1)
+        tryCompare(menu, "opened", false)
     }
 
     function test_only_the_sung_line_is_drawn_word_by_word() {

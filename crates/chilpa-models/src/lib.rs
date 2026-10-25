@@ -11,6 +11,7 @@
 //!    with a `hires: bool`. No type names a service.
 
 pub mod artwork;
+pub mod credits;
 pub mod quality;
 pub mod queue;
 pub mod remote;

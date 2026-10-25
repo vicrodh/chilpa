@@ -1,4 +1,5 @@
 import QtQuick
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import QtTest
 import app.chilpa
 import "../../qml/Components"

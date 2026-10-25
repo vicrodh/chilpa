@@ -58,7 +58,7 @@ Item {
     }
 
     AlbumColumnsGear {
-        visible: SettingsModel.libraryView !== "grid"
+        visible: SettingsModel.libraryView === "tracks"
         anchors.right: views.left
         anchors.rightMargin: Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
@@ -67,13 +67,15 @@ Item {
     }
     SegmentedControl {
         id: views
+        objectName: "libraryViewSwitcher"
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         options: [
             { glyph: Icons.list, tip: I18n.tr("List", I18n.rev) },
-            { glyph: Icons.layoutGrid, tip: I18n.tr("Grid", I18n.rev) }
+            { glyph: Icons.layoutGrid, tip: I18n.tr("Grid", I18n.rev) },
+            { glyph: Lucide.glasses, iconFamily: Lucide.font, tip: I18n.tr("Nerdy", I18n.rev) }
         ]
-        current: SettingsModel.libraryView === "grid" ? 1 : 0
-        onActivated: (index) => SettingsModel.libraryView = index === 1 ? "grid" : "tracks"
+        current: SettingsModel.libraryView === "nerdy" ? 2 : SettingsModel.libraryView === "grid" ? 1 : 0
+        onActivated: (index) => SettingsModel.libraryView = index === 2 ? "nerdy" : index === 1 ? "grid" : "tracks"
     }
 }

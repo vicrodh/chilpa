@@ -65,6 +65,7 @@ Item {
         cursorShape: bar.locked ? Qt.ArrowCursor : Qt.PointingHandCursor
         onPressed: (mouse) => { if (!bar.locked) bar.changed(bar.clamped(mouse.x / width)) }
         onPositionChanged: (mouse) => { if (!bar.locked && pressed) bar.changed(bar.clamped(mouse.x / width)) }
+        onCanceled: if (!bar.locked) bar.released(bar.shown)
         onReleased: (mouse) => { if (!bar.locked) bar.released(bar.clamped(mouse.x / width)) }
     }
 }
