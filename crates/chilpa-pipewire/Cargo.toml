@@ -9,9 +9,14 @@ rust-version.workspace = true
 # What a stack cannot promise is read by the user.
 chilpa-i18n.workspace = true
 chilpa-audio.workspace = true
-# The samples reach PipeWire through its ALSA plugin, so the sink this
-# opens is the one chilpa-alsa already knows how to drive. No second
-# implementation of writing to a device.
+# PCM keeps using the ALSA plugin; native DSD owns a PipeWire stream.
 chilpa-alsa.workspace = true
 # The HiFi Wizard reads the graph out of `pw-dump`.
 serde_json = "1"
+
+[build-dependencies]
+cc = "1"
+pkg-config = "0.3"
+
+[dev-dependencies]
+tempfile = "3"

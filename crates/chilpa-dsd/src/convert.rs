@@ -8,6 +8,9 @@
 use chilpa_audio::dsd::Decimator;
 use crate::{DsdError, DsdSource};
 
+#[cfg(test)]
+mod seek_tests;
+
 /// PCM rate used for converted DSD on shared and converting outputs.
 pub const OUTPUT_RATE: u32 = 88_200;
 /// Headroom used because low-passed DSD may exceed PCM full scale.
@@ -22,6 +25,8 @@ pub struct DsdPcmConverter {
     total_frames: u64,
     emitted_frames: u64,
     finished: bool,
+    discard_bytes: usize,
+    discard_frames: u64,
 }
 
 impl DsdPcmConverter {
@@ -50,6 +55,8 @@ impl DsdPcmConverter {
             gain: 10f32.powf(gain_db / 20.0),
             emitted_frames: 0,
             finished: false,
+            discard_bytes: 0,
+            discard_frames: 0,
         })
     }
 
@@ -65,11 +72,45 @@ impl DsdPcmConverter {
         self.total_frames
     }
 
+    /// Moves in PCM frames, warming the existing FIR chain before the target.
+    /// I retain 128 output frames of history: more than the 16-byte first
+    /// stage and all 63-tap half-band stages need, at every supported rate.
+    /// A source that cannot seek keeps its current filter state and position.
+    pub fn seek_to_frame(&mut self, frame: u64) -> Result<Option<u64>, DsdError> {
+        let frame = frame.min(self.total_frames);
+        let rate = self.source.info().dsd_rate_hz;
+        let ratio = u64::from(rate / OUTPUT_RATE);
+        let start = frame.saturating_sub(128) * ratio;
+        let Some(landed) = self.source.seek(start)? else { return Ok(None); };
+        // Container alignment can land before the requested history. Keep
+        // every decimation stage on the original absolute PCM frame grid.
+        let aligned = landed.div_ceil(ratio) * ratio;
+        self.discard_bytes = ((aligned - landed) / 8) as usize;
+        self.emitted_frames = (aligned / ratio).min(self.total_frames);
+        let target = frame.max(self.emitted_frames);
+        self.discard_frames = target - self.emitted_frames;
+        self.decimator = Decimator::new(rate, self.source_channels).expect("validated DSD rate");
+        self.finished = false;
+        Ok(Some(target))
+    }
+
     pub fn next_block(&mut self) -> Result<Option<Vec<f32>>, DsdError> {
+        loop {
+            let Some(mut block) = self.convert_block()? else { return Ok(None); };
+            let frames = block.len() / 2;
+            let discard = self.discard_frames.min(frames as u64) as usize;
+            self.discard_frames -= discard as u64;
+            if discard == frames { continue; }
+            if discard != 0 { block.drain(..discard * 2); }
+            return Ok(Some(block));
+        }
+    }
+
+    fn convert_block(&mut self) -> Result<Option<Vec<f32>>, DsdError> {
         if self.finished {
             return Ok(None);
         }
-        let Some(planar) = self.source.next_block()? else {
+        let Some(mut planar) = self.source.next_block()? else {
             self.finished = true;
             let missing = self.total_frames.saturating_sub(self.emitted_frames);
             self.emitted_frames = self.total_frames;
@@ -85,12 +126,18 @@ impl DsdPcmConverter {
             ));
         }
 
+        if self.discard_bytes != 0 {
+            let discard = self.discard_bytes.min(planar.iter().map(Vec::len).min().unwrap_or(0));
+            for channel in &mut planar { channel.drain(..discard); }
+            self.discard_bytes -= discard;
+        }
+
         let channels = self.decimator.process(&planar);
 
         let available = channels.iter().map(Vec::len).min().unwrap_or(0) as u64;
         let frames = available.min(self.total_frames.saturating_sub(self.emitted_frames)) as usize;
         if frames == 0 {
-            return self.next_block();
+            return self.convert_block();
         }
 
         const MINUS_3_DB: f32 = std::f32::consts::FRAC_1_SQRT_2;

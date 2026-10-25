@@ -365,6 +365,7 @@ impl qobject::Player {
             crate::registry::library(|l| l.content_changed());
         }
         if now.path != self.rust().shown || now.artwork_path != self.rust().shown_art || QString::from(&now.title) != self.rust().title || QString::from(&now.format) != self.rust().output_format {
+            self.as_mut().read_volume();
             self.as_mut().rust_mut().shown = now.path.clone();
             self.as_mut().rust_mut().shown_art = now.artwork_path.clone();
             // A new queue drops the mix; the switch follows.
@@ -412,6 +413,7 @@ impl qobject::Player {
         }
         if now.playing != self.rust().playing {
             self.as_mut().set_playing(now.playing);
+            self.as_mut().read_volume();
         }
         if now.paused != self.rust().paused {
             self.as_mut().set_paused(now.paused);
