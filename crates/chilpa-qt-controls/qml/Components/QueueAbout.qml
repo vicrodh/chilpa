@@ -13,7 +13,8 @@ Item {
     id: about
     // "track" or "album".
     property string part: "track"
-    readonly property var found: read(part === "album" ? NowAbout.album(Player.path, Library.remoteRev) : NowAbout.track(Player.path, Library.remoteRev))
+    property int retryRevision: 0
+    readonly property var found: visible ? read(part === "album" ? NowAbout.album(Player.path, Library.remoteRev + retryRevision) : NowAbout.track(Player.path, Library.remoteRev + retryRevision)) : ({})
     readonly property var facts: found.facts || []
     readonly property var credits: found.credits || []
     readonly property string description: found.description || ""
@@ -25,6 +26,24 @@ Item {
         options: [{text: I18n.tr("Track", I18n.rev)}, {text: I18n.tr("Album", I18n.rev)}]
         current: about.part === "album" ? 1 : 0
         onActivated: (index) => about.part = index === 1 ? "album" : "track"
+    }
+
+    IconButton {
+        objectName: "queueAboutRefetch"
+        anchors.right: parent.right
+        anchors.verticalCenter: parts.verticalCenter
+        visible: about.part === "album" && about.found.can_refetch === true
+        enabled: about.found.loading !== true
+        tip: I18n.tr("Re-fetch album information", I18n.rev)
+        glyph: Lucide.rotateCcw
+        iconFamily: Lucide.font
+        Accessible.role: Accessible.Button
+        Accessible.name: tip
+        activeFocusOnTab: true
+        Keys.onReturnPressed: if (enabled) clicked()
+        Keys.onSpacePressed: if (enabled) clicked()
+        onClicked: if (NowAbout.refetchAlbum(Player.path)) about.retryRevision++
+        FocusRing {}
     }
 
     Flickable {
@@ -96,22 +115,49 @@ Item {
             }
             Text {
                 objectName: "queueAboutNothing"
-                visible: about.found.loading === false && about.facts.length === 0 && about.credits.length === 0 && about.description === ""
+                visible: about.found.loading === false && about.facts.length === 0 && about.credits.length === 0 && about.description === "" && !about.found.failed && !about.found.busy
                 width: parent.width
                 wrapMode: Text.Wrap
                 text: I18n.tr("Nothing more is known about it.", I18n.rev)
                 font.pointSize: Type.small
                 color: Theme.color.textTertiary
             }
+            Text {
+                objectName: "queueAboutFailure"
+                visible: about.found.failed === true || about.found.busy === true
+                width: parent.width
+                wrapMode: Text.Wrap
+                text: I18n.tr("Information could not be retrieved. Try again shortly.", I18n.rev)
+                font.pointSize: Type.small
+                color: Theme.color.textTertiary
+            }
+            PillButton {
+                objectName: "queueAboutRetry"
+                visible: about.found.failed === true || about.found.busy === true
+                text: I18n.tr("Retry", I18n.rev)
+                glyph: Lucide.rotateCcw
+                iconFamily: Lucide.font
+                onClicked: if (NowAbout.retry(about.part, Player.path)) about.retryRevision++
+            }
             Row {
                 visible: (about.found.origin || "") !== ""
+                width: parent.width
                 spacing: Metrics.gap6
-                Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Source", I18n.rev) + " · " + (about.found.origin || ""); font.pointSize: Type.meta; color: Theme.color.textTertiary }
-                PillButton {
+                Text {
+                    width: parent.width - (browser.visible ? browser.width + parent.spacing : 0)
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: I18n.tr("Source", I18n.rev) + " · " + (about.found.origin || "")
+                    elide: Text.ElideRight
+                    font.pointSize: Type.meta
+                    color: Theme.color.textTertiary
+                }
+                IconButton {
+                    id: browser
                     objectName: "queueAboutLink"
                     visible: (about.found.link || "") !== ""
-                    kind: "ghost"
-                    text: I18n.tr("Open in browser", I18n.rev)
+                    tip: I18n.tr("Open in browser", I18n.rev)
+                    glyph: Lucide.externalLink
+                    iconFamily: Lucide.font
                     onClicked: Qt.openUrlExternally(about.found.link)
                 }
             }

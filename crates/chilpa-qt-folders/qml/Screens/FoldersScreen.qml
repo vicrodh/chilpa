@@ -128,6 +128,7 @@ Item {
 
         FolderTree {
             id: tree
+            objectName: "folderNavigator"
             visible: !page.flat
             width: Math.max(Metrics.folderTreeMin, Math.min(page.rail, body.width * Metrics.folderTreeShare)) // derived: the rail takes half at most
             height: parent.height - Metrics.contentBottom
@@ -143,6 +144,7 @@ Item {
             onReleased: SettingsModel.keep("ui.folders.rail", String(Math.round(page.rail)))
         }
         FolderDetail {
+            objectName: "folderDetail"
             visible: !page.flat
             anchors.left: tree.right
             anchors.leftMargin: Metrics.gridGap

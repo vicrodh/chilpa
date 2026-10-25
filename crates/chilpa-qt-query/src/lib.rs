@@ -6,4 +6,5 @@ mod history;
 
 pub mod bridge {
     pub mod chips;
+    pub mod saved;
 }

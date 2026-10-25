@@ -43,6 +43,7 @@ Item {
         : toggle.refineMode ? Number(SettingsModel.kept("ui.library.refineHeight")) || panes.gripStart
         : SettingsModel.panesHeight > 0 ? SettingsModel.panesHeight : Metrics.panesHeight
     readonly property bool grid: SettingsModel.libraryView === "grid"
+    readonly property bool nerdy: SettingsModel.libraryView === "nerdy"
     property string group: SettingsModel.kept("ui.library.group")
     // The list's columns; genre stays off until asked for.
     property var listColumns: (SettingsModel.kept("ui.library.listColumns") || "year,tracks,duration,rating,source").split(",").filter(c => c !== "" && c !== "-")
@@ -218,14 +219,17 @@ Item {
     // The records the columns leave, as cards or as rows.
     AlbumGrid {
         id: result
+        objectName: "libraryAlbums"
         visible: records.albums > 0 || !Library.busy
         anchors.top: toolbar.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
+        anchors.bottomMargin: page.nerdy ? Metrics.playerSpace + Metrics.playerBottom + Metrics.gap16 : 0
         x: head.x
         width: head.width
-        bottomInset: Metrics.contentBottom
+        bottomInset: page.nerdy ? Metrics.gap8 : Metrics.contentBottom
         list: !page.grid
+        technical: page.nerdy
         listColumns: page.listColumns
         model: records
         onOpen: (albumId) => Navigation.go("album", albumId)

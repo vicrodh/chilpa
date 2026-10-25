@@ -124,6 +124,15 @@ msgstr "Chilpaの新しいバージョンがあります。"
 msgid "A player for your own music"
 msgstr "あなた自身の音楽のためのプレーヤー"
 
+msgid "A saved query already has that name."
+msgstr "同じ名前のクエリがすでにあります。"
+
+msgid "A saved query may use at most 16 KiB."
+msgstr "保存するクエリは16 KiB以下にしてください。"
+
+msgid "A scan supports up to 256 folders and 64 KiB of saved paths."
+msgstr "スキャンは最大256個のフォルダーと64 KiBの保存済みパスに対応しています。"
+
 msgid "A secure cast URL could not be created."
 msgstr "安全なキャストURLを作成できませんでした。"
 
@@ -186,6 +195,9 @@ msgstr "有効なモジュール"
 
 msgid "Add"
 msgstr "追加"
+
+msgid "Add a condition before saving a query."
+msgstr "保存する前に条件を追加してください。"
 
 msgid "Add a condition: type a genre, artist, year…"
 msgstr "条件を追加：ジャンル、アーティスト、年を入力…"
@@ -509,6 +521,9 @@ msgstr "4月"
 msgid "April"
 msgstr "4月"
 
+msgid "Arranger"
+msgstr "編曲者"
+
 msgid "Artist"
 msgstr "アーティスト"
 
@@ -590,6 +605,9 @@ msgstr "DACを自動検出し、ビットパーフェクト再生をステップ
 msgid "Auto-follow"
 msgstr "自動追従"
 
+msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
+msgstr "このスキャンを続行または破棄するまで、自動確認は一時停止されます。破棄しても追加済みのファイルは保持されます。"
+
 msgid "Automatic headroom lowers gain to leave room for EQ boosts."
 msgstr "自動ヘッドルームは、EQでブーストする余裕を確保するためにゲインを下げます。"
 
@@ -655,6 +673,9 @@ msgstr "ビットパーフェクト"
 
 msgid "Bit-perfect"
 msgstr "ビットパーフェクト"
+
+msgid "Bits"
+msgstr "ビット"
 
 msgid "Block network access, including plugins, online artwork, updates and scrobbling. Local playback, cached content and installed Mood models stay available. Artist Network is hidden."
 msgstr "プラグイン、オンラインのアートワーク、アップデート、スクロブルを含むネットワークアクセスをブロックします。ローカル再生、キャッシュ済みコンテンツ、インストール済みのムードモデルは引き続き使えます。アーティストの「ネットワーク」は非表示になります。"
@@ -813,6 +834,12 @@ msgstr "画像を変更"
 msgid "Change sign-in"
 msgstr "ログイン情報を変更"
 
+msgid "Change source"
+msgstr "提供元を変更"
+
+msgid "Channels"
+msgstr "チャンネル"
+
 msgid "Chapters"
 msgstr "チャプター"
 
@@ -822,8 +849,14 @@ msgstr "チェック"
 msgid "Check Audio Stack"
 msgstr "オーディオスタックをチェック"
 
+msgid "Check all folders"
+msgstr "すべてのフォルダーを確認"
+
 msgid "Check for a newer version of Chilpa."
 msgstr "Chilpaの新しいバージョンを確認します。"
+
+msgid "Check for new additions"
+msgstr "新しい追加を確認"
 
 msgid "Check for updates"
 msgstr "アップデートを確認"
@@ -833,6 +866,9 @@ msgstr "アップデートを自動で確認"
 
 msgid "Checking for updates…"
 msgstr "アップデートを確認中…"
+
+msgid "Checking library folders…"
+msgstr "ライブラリのフォルダーを確認中…"
 
 msgid "Checking the account…"
 msgstr "アカウントを確認中…"
@@ -1077,8 +1113,14 @@ msgstr "引用符を閉じてください。"
 msgid "Close to tray"
 msgstr "閉じてトレイに格納"
 
+msgid "Closing stops a scan. Saved progress can be continued here after reopening."
+msgstr "アプリを閉じるとスキャンは停止します。再度開いた後、ここで保存済みの処理を続行できます。"
+
 msgid "Closing the window keeps Chilpa playing in the tray instead of quitting."
 msgstr "ウィンドウを閉じても、終了せずにChilpaがトレイで再生を続けます。"
+
+msgid "Codec"
+msgstr "コーデック"
 
 msgid "Collaborators"
 msgstr "共演者"
@@ -1149,6 +1191,9 @@ msgstr "コンピレーション"
 msgid "Completed"
 msgstr "完了"
 
+msgid "Completed work is saved. Continue checks the folder again and skips unchanged files."
+msgstr "完了した処理は保存されています。続行するとフォルダーを再確認し、変更のないファイルはスキップします。"
+
 msgid "Composer"
 msgstr "作曲者"
 
@@ -1188,11 +1233,17 @@ msgstr "接続中…"
 msgid "Connection error"
 msgstr "接続エラー"
 
+msgid "Container"
+msgstr "コンテナ"
+
 msgid "Continue"
 msgstr "続ける"
 
 msgid "Continue listening"
 msgstr "続きを再生"
+
+msgid "Continue or dismiss the interrupted scan before starting another."
+msgstr "別のスキャンを開始する前に、中断されたスキャンを続行または破棄してください。"
 
 msgid "Convert to PCM"
 msgstr "PCMに変換"
@@ -1455,6 +1506,12 @@ msgstr "プレイリストを削除"
 msgid "Delete preset"
 msgstr "プリセットを削除"
 
+msgid "Delete saved query"
+msgstr "保存したクエリを削除"
+
+msgid "Delete the saved query “{}”?"
+msgstr "保存したクエリ「{}」を削除しますか？"
+
 msgid "Delete “{}”?"
 msgstr "「{}」を削除しますか？"
 
@@ -1553,6 +1610,9 @@ msgstr "ディスク"
 
 msgid "Dismiss"
 msgstr "閉じる"
+
+msgid "Dismiss scan"
+msgstr "スキャンを破棄"
 
 msgid "Display settings"
 msgstr "表示設定"
@@ -1704,6 +1764,9 @@ msgstr "このアルバムを再生するには、設定 › ソースで{}を�
 msgid "Ends at {}"
 msgstr "終了予定 {}"
 
+msgid "Engineer"
+msgstr "エンジニア"
+
 msgid "English"
 msgstr "英語"
 
@@ -1730,6 +1793,15 @@ msgstr "イコライザー"
 
 msgid "Errors"
 msgstr "エラー"
+
+msgid "Every 12 hours"
+msgstr "12時間ごと"
+
+msgid "Every 24 hours"
+msgstr "24時間ごと"
+
+msgid "Every week"
+msgstr "毎週"
 
 msgid "Everyone who plays on a track"
 msgstr "トラックで演奏するすべての人"
@@ -1818,6 +1890,9 @@ msgstr "項目"
 msgid "File"
 msgstr "ファイル"
 
+msgid "File size"
+msgstr "ファイルサイズ"
+
 msgid "Files"
 msgstr "ファイル"
 
@@ -1899,8 +1974,14 @@ msgstr "サイドバーのフォルダーの色"
 msgid "Folder name"
 msgstr "フォルダー名"
 
+msgid "Folder path"
+msgstr "フォルダーのパス"
+
 msgid "Folders"
 msgstr "フォルダー"
+
+msgid "Folders are unavailable. Their existing tracks remain in the library."
+msgstr "フォルダーを利用できません。既存の曲はライブラリに保持されています。"
 
 msgid "Follow"
 msgstr "フォロー"
@@ -2214,6 +2295,9 @@ msgstr "このフィルターを適用したままにします。変更するに
 msgid "I restarted the audio services"
 msgstr "オーディオサービスを再起動しました"
 
+msgid "I save only the conditions. Opening a query uses the currently selected sources and keeps the queue."
+msgstr "条件のみを保存します。開く際は選択中のソースを使用し、キューはそのまま維持します。"
+
 msgid "I understand and accept these terms"
 msgstr "これらの規約を理解し、同意します"
 
@@ -2298,6 +2382,9 @@ msgstr "情報: {}"
 msgid "Information"
 msgstr "情報"
 
+msgid "Information could not be retrieved. Try again shortly."
+msgstr "情報を取得できませんでした。しばらくしてから再試行してください。"
+
 msgid "Init system (service commands)"
 msgstr "Initシステム（サービスコマンド）"
 
@@ -2345,6 +2432,9 @@ msgstr "インストール済み"
 
 msgid "Installing plugin…"
 msgstr "プラグインをインストール中…"
+
+msgid "Instrument"
+msgstr "楽器"
 
 msgid "Integrations"
 msgstr "連携"
@@ -2523,6 +2613,15 @@ msgstr "トラック間のラウドネスをそろえます。厳密なビット
 msgid "Library"
 msgstr "ライブラリ"
 
+msgid "Library check complete"
+msgstr "ライブラリの確認が完了しました"
+
+msgid "Library check failed"
+msgstr "ライブラリの確認に失敗しました"
+
+msgid "Library check interrupted"
+msgstr "ライブラリの確認が中断されました"
+
 msgid "Library folders"
 msgstr "ライブラリフォルダー"
 
@@ -2631,6 +2730,9 @@ msgstr "ローカル — {}"
 msgid "Look"
 msgstr "見た目"
 
+msgid "Look for changes"
+msgstr "変更を確認"
+
 msgid "Look records up in"
 msgstr "アルバム情報の検索先"
 
@@ -2706,6 +2808,9 @@ msgstr "管理"
 msgid "Manage playlists"
 msgstr "プレイリストを管理"
 
+msgid "Manually"
+msgstr "手動"
+
 msgid "Mar"
 msgstr "3月"
 
@@ -2720,6 +2825,9 @@ msgstr "未再生にする"
 
 msgid "Mark the start first with :loop a."
 msgstr "先に :loop a で開始点を指定してください。"
+
+msgid "Mastering engineer"
+msgstr "マスタリングエンジニア"
 
 msgid "Match"
 msgstr "一致条件"
@@ -2778,6 +2886,9 @@ msgstr "見つかりません"
 msgid "Mixed"
 msgstr "混在"
 
+msgid "Mixing engineer"
+msgstr "ミキシングエンジニア"
+
 msgid "Mon"
 msgstr "月"
 
@@ -2821,6 +2932,9 @@ msgid "More"
 msgstr "その他"
 
 msgid "More actions"
+msgstr "その他の操作"
+
+msgid "More options"
 msgstr "その他の操作"
 
 msgid "Most at {}:00"
@@ -2945,6 +3059,9 @@ msgstr "ナビゲーション"
 
 msgid "Needs update"
 msgstr "更新が必要"
+
+msgid "Nerdy"
+msgstr "Nerdy"
 
 msgid "Network"
 msgstr "ネットワーク"
@@ -3138,6 +3255,9 @@ msgstr "結果が見つかりません。"
 msgid "No review available"
 msgstr "レビューはありません"
 
+msgid "No saved queries yet. Add conditions, then choose Save query."
+msgstr "保存したクエリはありません。条件を追加して「クエリを保存」を選択してください。"
+
 msgid "No setting says that"
 msgstr "該当する設定はありません"
 
@@ -3296,6 +3416,9 @@ msgstr "オン"
 
 msgid "On air"
 msgstr "放送中"
+
+msgid "On app startup"
+msgstr "アプリ起動時"
 
 msgid "On the sidebar's destinations."
 msgstr "サイドバーの各項目で有効です。"
@@ -3485,6 +3608,9 @@ msgstr "未処理"
 
 msgid "Per-app bit-perfect (PipeWire client)"
 msgstr "アプリごとのビットパーフェクト（PipeWireクライアント）"
+
+msgid "Performer"
+msgstr "演奏者"
 
 msgid "Performers"
 msgstr "演奏者"
@@ -3732,6 +3858,9 @@ msgstr "プライバシーとネットワーク"
 msgid "Processed"
 msgstr "処理後"
 
+msgid "Producer"
+msgstr "プロデューサー"
+
 msgid "Profile name"
 msgstr "プロファイル名"
 
@@ -3767,6 +3896,9 @@ msgstr "音質、フォーマット、ソース、評価のフィルター"
 
 msgid "Quarantined"
 msgstr "隔離済み"
+
+msgid "Query name"
+msgstr "クエリ名"
 
 msgid "Queue"
 msgstr "キュー"
@@ -3836,6 +3968,9 @@ msgstr "評価する"
 
 msgid "Rating"
 msgstr "評価"
+
+msgid "Re-fetch album information"
+msgstr "アルバム情報を再取得"
 
 msgid "Reactivate"
 msgstr "再有効化"
@@ -3926,6 +4061,9 @@ msgstr "最近再生したプレイリスト"
 
 msgid "Recently played playlists in the library"
 msgstr "ライブラリで最近再生したプレイリスト"
+
+msgid "Recording engineer"
+msgstr "録音エンジニア"
 
 msgid "Records"
 msgstr "アルバム"
@@ -4049,6 +4187,9 @@ msgstr "削除…"
 
 msgid "Rename"
 msgstr "名前を変更"
+
+msgid "Rename query"
+msgstr "クエリ名を変更"
 
 msgid "Renderer"
 msgstr "レンダラー"
@@ -4188,6 +4329,9 @@ msgstr "ステータス"
 msgid "SURFACES"
 msgstr "サーフェス"
 
+msgid "Sample rate"
+msgstr "サンプルレート"
+
 msgid "Sample-rate switching (PipeWire)"
 msgstr "サンプルレート切り替え（PipeWire）"
 
@@ -4215,6 +4359,9 @@ msgstr "変更を保存"
 msgid "Save preset"
 msgstr "プリセットを保存"
 
+msgid "Save query"
+msgstr "クエリを保存"
+
 msgid "Save stations to find them here."
 msgstr "ステーションを保存すると、ここに表示されます。"
 
@@ -4233,6 +4380,9 @@ msgstr "保存済み"
 msgid "Saved position"
 msgstr "保存した位置"
 
+msgid "Saved queries"
+msgstr "保存したクエリ"
+
 msgid "Saved results remain available between sessions."
 msgstr "保存した結果は、セッションをまたいで利用できます。"
 
@@ -4248,14 +4398,14 @@ msgstr "保存中… {} / {}個のファイル"
 msgid "Scales the whole interface, like browser zoom. Small fits more content on screen, Large and Extra large improve readability (requires restart)"
 msgstr "ブラウザーのズームのようにインターフェース全体を拡大縮小します。「小」は画面により多くのコンテンツを表示し、「大」と「特大」は読みやすさを向上させます（再起動が必要）"
 
-msgid "Scan again"
-msgstr "もう一度スキャン"
-
-msgid "Scan every folder again"
-msgstr "すべてのフォルダーをもう一度スキャン"
+msgid "Scan settings could not be saved or read: {}"
+msgstr "スキャン設定を保存または読み取れませんでした: {}"
 
 msgid "Scanning…"
 msgstr "スキャン中…"
+
+msgid "Scheduled checks run while Chilpa is open. Startup checks run once when the app opens. Unchanged files are skipped."
+msgstr "定期確認はChilpaを開いている間に実行されます。起動時の確認はアプリを開いたときに1回実行されます。変更のないファイルはスキップされます。"
 
 msgid "Scrobbling"
 msgstr "スクロブル"
@@ -4660,6 +4810,12 @@ msgstr "再生を停止する時間："
 msgid "Stop playback to diagnose?"
 msgstr "再生を停止して診断しますか？"
 
+msgid "Stop scan"
+msgstr "スキャンを停止"
+
+msgid "Stopping after the current file…"
+msgstr "現在のファイルの処理後に停止します…"
+
 msgid "Stops in"
 msgstr "停止まで"
 
@@ -4760,6 +4916,9 @@ msgstr "その応答はこのウィンドウのものではありません。"
 msgid "That file is not a JPEG, PNG or WebP image"
 msgstr "そのファイルはJPEG、PNG、WebPのいずれの画像でもありません"
 
+msgid "That saved query no longer exists."
+msgstr "この保存済みクエリはもう存在しません。"
+
 msgid "The EQ profile is too large."
 msgstr "EQプロファイルが大きすぎます。"
 
@@ -4808,6 +4967,12 @@ msgstr "最初はテーマ自体のアクセントで、他のものは「カス
 msgid "The floating player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
 msgstr "フローティングのプレーヤーバーは、マウスが10秒間動かないと退き、動かすと戻ります。"
 
+msgid "The folder is no longer in the library."
+msgstr "このフォルダーはライブラリにありません。"
+
+msgid "The folder scan policy is invalid."
+msgstr "フォルダーのスキャン設定が無効です。"
+
 msgid "The image could not be kept"
 msgstr "画像を保持できませんでした"
 
@@ -4820,6 +4985,9 @@ msgstr "画像を保存できませんでした"
 msgid "The image is too large"
 msgstr "画像が大きすぎます"
 
+msgid "The incorrect lyrics could not be excluded. Try again."
+msgstr "誤った歌詞を除外できませんでした。再試行してください。"
+
 msgid "The line being sung stays in view."
 msgstr "歌っている行が常に表示されます。"
 
@@ -4831,6 +4999,12 @@ msgstr "ここではループを設定できません。終了点は2秒以上�
 
 msgid "The loudness every track is aligned to. -14 LUFS matches streaming services, -18 LUFS is the ReplayGain reference."
 msgstr "各トラックを揃えるラウドネス。-14 LUFSはストリーミングサービスの基準、-18 LUFSはReplayGainの基準です。"
+
+msgid "The lower bound must not exceed the upper bound."
+msgstr "下限は上限以下にしてください。"
+
+msgid "The lyrics API could not save the report. This result is excluded on this device."
+msgstr "歌詞APIに報告を保存できませんでした。この結果はこの端末で除外されます。"
 
 msgid "The lyrics cache could not be opened."
 msgstr "歌詞キャッシュを開けませんでした。"
@@ -4880,8 +5054,29 @@ msgstr "レンダラーがコマンドを拒否しました。"
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "ListenBrainzと同じルールで、トラックの半分、または4分です。"
 
+msgid "The saved folder scan policy is invalid."
+msgstr "保存されたフォルダーのスキャン設定が無効です。"
+
+msgid "The saved queries could not be read or saved: {}"
+msgstr "クエリの読み込みまたは保存に失敗しました：{}"
+
+msgid "The saved query catalog exceeds 1 MiB."
+msgstr "クエリ一覧が1 MiBを超えています。"
+
+msgid "The saved query catalog is damaged; I kept its original data."
+msgstr "クエリ一覧が破損しています。元のデータは保持しました。"
+
+msgid "The saved scan could not be restored."
+msgstr "保存済みのスキャンを復元できませんでした。"
+
 msgid "The saved sign-in could not be opened."
 msgstr "保存されたログイン情報を開けませんでした。"
+
+msgid "The scan could not start: {}"
+msgstr "スキャンを開始できませんでした: {}"
+
+msgid "The scan worker stopped unexpectedly."
+msgstr "スキャン処理が予期せず停止しました。"
 
 msgid "The selected hardware volume control is gone."
 msgstr "選択したハードウェア音量コントロールがなくなりました。"
@@ -5017,6 +5212,9 @@ msgstr "このアルバムは現在再生できません。"
 
 msgid "This removes {} from your library."
 msgstr "ライブラリから{}を削除します。"
+
+msgid "This saved query catalog uses an unsupported version; I kept its original data."
+msgstr "このクエリ一覧のバージョンには対応していません。元のデータは保持しました。"
 
 msgid "This screen is not built yet."
 msgstr "この画面はまだ作成されていません。"
@@ -5324,6 +5522,9 @@ msgstr "アップデートしてもライブラリ、設定、プラグインは
 msgid "Updating Chilpa…"
 msgstr "Chilpaを更新しています…"
 
+msgid "Updating the library…"
+msgstr "ライブラリを更新中…"
+
 msgid "Updating usage…"
 msgstr "使用量を更新しています…"
 
@@ -5338,6 +5539,9 @@ msgstr "MusicBrainzを使用"
 
 msgid "Use Quick Connect"
 msgstr "Quick Connectを使用"
+
+msgid "Use a name of 1 to 80 characters, without line breaks."
+msgstr "名前は改行なしで1〜80文字にしてください。"
 
 msgid "Use at most 10 DSP filters."
 msgstr "DSPフィルターは最大10個までです。"
@@ -5389,6 +5593,9 @@ msgstr "精密フィルターを表示"
 
 msgid "View tracks"
 msgstr "トラックを表示"
+
+msgid "Vocals"
+msgstr "ボーカル"
 
 msgid "Volume"
 msgstr "音量"
@@ -5540,6 +5747,12 @@ msgstr "外部のSACD XMLを書き込みますか？"
 msgid "Write to a file"
 msgstr "ファイルに書き出す"
 
+msgid "Writer"
+msgstr "作者"
+
+msgid "Wrong lyric"
+msgstr "歌詞が違う"
+
 msgid "XML can be edited only for SACD images"
 msgstr "XMLを編集できるのはSACDイメージのみです"
 
@@ -5557,6 +5770,9 @@ msgstr "昨日"
 
 msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
 msgstr "バックアップはご自身の責任で行ってください。これは補助ツールであり、システム復旧ツールではありません。"
+
+msgid "You can save up to 64 queries."
+msgstr "保存できるクエリは64件までです。"
 
 msgid "Your DAC"
 msgstr "あなたのDAC"
@@ -6985,6 +7201,9 @@ msgstr "{}トラック（{}アルバム）"
 
 msgid "{} tracks match disc {}"
 msgstr "{}トラックがディスク{}に一致します"
+
+msgid "{} unreadable"
+msgstr "読み取り不可: {}"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "{}が時間内に許可されませんでした。もう一度接続してください"

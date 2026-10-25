@@ -9,6 +9,7 @@ Item {
     id: button
     required property string tip
     property string glyph
+    property string iconFamily
     property bool small: false
     property bool checked: false
     // Off but still shown, as Undo with nothing to undo.
@@ -17,6 +18,13 @@ Item {
     property color tint: Theme.color.textSecondary
     property int round: Refine.buttonRound
     signal clicked()
+
+    activeFocusOnTab: enabled && !quiet
+    Accessible.role: Accessible.Button
+    Accessible.name: tip
+    Accessible.onPressAction: if (!quiet) clicked()
+    Keys.onReturnPressed: if (!quiet) clicked()
+    Keys.onSpacePressed: if (!quiet) clicked()
 
     implicitWidth: small ? Refine.rowButton : Refine.button
     implicitHeight: implicitWidth
@@ -29,9 +37,11 @@ Item {
     Icon {
         anchors.centerIn: parent
         glyph: button.glyph
+        iconFamily: button.iconFamily
         size: button.small ? Refine.rowButtonIcon : Refine.buttonIcon
         color: button.checked ? Theme.color.accent : button.quiet ? Theme.color.strokeHairline : button.tint
     }
+    FocusRing { radius: button.round }
     MouseArea {
         id: area
         anchors.fill: parent

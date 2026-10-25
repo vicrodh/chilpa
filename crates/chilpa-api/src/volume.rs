@@ -61,6 +61,12 @@ impl Chilpa {
     }
 
     pub fn set_player_volume(&mut self, percent: u8) {
+        self.preview_player_volume(percent);
+        self.persist_player_volume();
+    }
+
+    /// I apply a drag immediately and keep only its latest value in memory.
+    pub fn preview_player_volume(&mut self, percent: u8) {
         if self.casting.active() { self.cast_set_volume(percent); return; }
         let percent = percent.min(100);
         let view = self.player_volume();
@@ -74,8 +80,17 @@ impl Chilpa {
             }
             return;
         }
-        self.remember_preference(VOLUME, &percent.to_string());
+        self.pending_volume = Some(percent);
         self.apply_volume();
+    }
+
+    /// I save once when the slider is released, including wheel/key steps.
+    pub fn persist_player_volume(&mut self) {
+        let Some(percent) = self.pending_volume else { return };
+        match self.remember_preference_checked(VOLUME, &percent.to_string()) {
+            Ok(()) => self.pending_volume = None,
+            Err(error) => self.now.error = error,
+        }
     }
 
     pub fn set_player_muted(&mut self, muted: bool) {
@@ -160,7 +175,7 @@ impl Chilpa {
     }
 
     fn software_percent(&self) -> u8 {
-        self.preference(VOLUME).and_then(|v| v.parse().ok()).unwrap_or(100).min(100)
+        self.pending_volume.or_else(|| self.preference(VOLUME).and_then(|v| v.parse().ok())).unwrap_or(100).min(100)
     }
 }
 

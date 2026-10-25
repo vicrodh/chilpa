@@ -45,7 +45,7 @@ impl GainRamp {
 
     /// The gain for the next sample.
     #[inline]
-    fn next(&mut self) -> f32 {
+    pub(super) fn next(&mut self) -> f32 {
         if self.remaining == 0 {
             if self.countdown == 0 {
                 self.poll();

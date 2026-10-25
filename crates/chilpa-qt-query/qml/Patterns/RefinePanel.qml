@@ -85,6 +85,24 @@ Rectangle {
         onClearAsked: { panel.target = ""; Library.applyQuery("") }
         onConsoleToggled: panel.consoleShown = !panel.consoleShown
         onDetachAsked: panel.detachAsked()
+        canSave: panel.query.trim() !== ""
+        onSaveAsked: { savedDialog.saving = true; savedDialog.active = true }
+        onSavedAsked: { savedDialog.saving = false; savedDialog.active = true }
+    }
+    Loader {
+        id: savedDialog
+        objectName: "savedQueriesLoader"
+        active: false
+        property bool saving: false
+        sourceComponent: SavedQueriesDialog {
+            detached: panel.detached
+            mode: savedDialog.saving ? "save" : "list"
+            Component.onCompleted: { expression = panel.query; open() }
+            onClosed: {
+                head.restoreSavedFocus(savedDialog.saving)
+                savedDialog.active = false
+            }
+        }
     }
     KeyedModel {
         id: keyed

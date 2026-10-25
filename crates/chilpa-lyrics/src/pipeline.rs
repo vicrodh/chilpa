@@ -215,11 +215,17 @@ impl Pipeline {
         self.cache.lock().unwrap_or_else(|e| e.into_inner()).forget_provider(plugin);
     }
 
+    pub fn reject_result(&self, track: &Track, provider: &str, fingerprint: &str) -> rusqlite::Result<()> {
+        self.cache.lock().unwrap_or_else(|e| e.into_inner()).reject_result(track, provider, fingerprint)
+    }
+
     /// Finds lyrics. `fresh` skips the cache, for a refresh.
     pub fn resolve(&self, request: &Request, fresh: bool) -> Outcome {
         if let Some(path) = request.path.as_deref() {
             if let Some(found) = crate::local::find(path) {
-                return Outcome { resolved: Some(Resolved { document: found.document, origin: found.origin }), refresh: false, failed: false };
+                if !self.cache.lock().unwrap_or_else(|e| e.into_inner()).is_rejected(&request.track, &found.origin.provider, &found.document) {
+                    return Outcome { resolved: Some(Resolved { document: found.document, origin: found.origin }), refresh: false, failed: false };
+                }
             }
         }
         let track = &request.track;
@@ -355,7 +361,9 @@ impl Pipeline {
                 Message::Source(answer) => {
                     source_until = None;
                     asked.source = Some(match answer {
-                        Answer::Found(mut list) if !list.is_empty() => Ok(Some(list.swap_remove(0))),
+                        Answer::Found(list) if !list.is_empty() => Ok(list.into_iter().find(|candidate|
+                            !self.cache.lock().unwrap_or_else(|e| e.into_inner()).is_rejected(&request.track,
+                                request.source.as_ref().map_or("", |(source, _)| source.id()), &candidate.document))),
                         Answer::Found(_) | Answer::None => Ok(None),
                         Answer::Failed { message, .. } => Err(message),
                     });
@@ -391,6 +399,7 @@ impl Pipeline {
             if providers.is_some_and(|allowed| !allowed.iter().any(|id| id == provider)) {
                 continue;
             }
+            if self.cache.lock().unwrap_or_else(|e| e.into_inner()).is_rejected(track, provider, &candidate.document) { continue; }
             let verdict = judge(track, &candidate.claim, &candidate.document);
             if !verdict.accepted() {
                 continue;
@@ -636,7 +645,7 @@ mod tests {
     #[test]
     fn a_document_that_says_who_gave_it_is_shown_under_that_name() {
         let mut named = candidate(WORDS, 200_000);
-        named.document.source = Some(crate::model::Provenance { provider: "somewhere".into(), name: "Somewhere".into(), claim: None });
+        named.document.source = Some(crate::model::Provenance { provider: "somewhere".into(), name: "Somewhere".into(), claim: None, result_id: None });
         let p = pipeline(Fake::new("service", Answer::Found(vec![named])));
         let outcome = p.resolve(&request(None), false);
         let origin = &outcome.resolved.as_ref().unwrap().origin;

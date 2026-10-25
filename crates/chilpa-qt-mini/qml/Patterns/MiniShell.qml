@@ -71,8 +71,10 @@ Rectangle {
         }
     }
     function volume(by) {
-        if (!Player.volumeLocked)
+        if (!Player.volumeLocked) {
             Player.chooseVolume(Math.max(0, Math.min(100, Player.volume + by)))
+            Player.persistVolume()
+        }
     }
 
     // One rounded mask for either backdrop, shared by the five surfaces.

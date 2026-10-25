@@ -104,6 +104,7 @@ Rectangle {
                     anchors.centerIn: parent
                     visible: !segment.modelData.text
                     glyph: segment.modelData.glyph || ""
+                    iconFamily: segment.modelData.iconFamily || ""
                     size: Metrics.iconMd
                     color: segment.active ? Theme.color.textPrimary : Theme.color.textSecondary
                 }

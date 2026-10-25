@@ -88,6 +88,7 @@ Rectangle {
                 width: Card.volumeSlider
                 enabled: !control.locked
                 value: Player.volume
+                onReleased: Player.persistVolume()
                 onMoved: (level) => Player.chooseVolume(level)
             }
             Text {

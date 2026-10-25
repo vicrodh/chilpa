@@ -23,6 +23,9 @@ use rusqlite::{params, Connection};
 use std::path::Path;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+mod feedback;
+pub use feedback::result_id;
+
 /// How long found lyrics are served before asking again in the background.
 pub const FRESH: Duration = Duration::from_secs(60 * 60 * 24 * 90);
 /// How long "none" is believed.
@@ -108,6 +111,11 @@ impl Cache {
                 layer TEXT,
                 fetched_at INTEGER NOT NULL,
                 used_at INTEGER NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS rejected_lyrics (
+                key TEXT NOT NULL, seconds INTEGER NOT NULL, provider TEXT NOT NULL,
+                fingerprint TEXT NOT NULL, rejected_at INTEGER NOT NULL,
+                PRIMARY KEY (key, seconds, provider, fingerprint)
             );",
         )?;
         let cache = Cache { db };
@@ -170,6 +178,7 @@ impl Cache {
             if document.schema != SCHEMA {
                 continue;
             }
+            if self.is_rejected(track, row.provider.as_deref().unwrap_or_default(), &document) { continue; }
             // Lyrics a source gave for its own track are that track's; the
             // others must still fit what is playing.
             if !key.starts_with("source:") && !matching::judge(track, &row.claim, &document).accepted() {

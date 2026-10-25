@@ -336,6 +336,18 @@ QtObject {
     // The heart and the menu button, a cell each.
     readonly property int rowAction: 28
     readonly property int colMore: rowAction * 2 // derived: two cells
+
+    // The data view keeps technical values readable and scrolls sideways.
+    readonly property int nerdyTableWidth: 1680
+    readonly property int nerdyFormat: 76
+    readonly property int nerdyCodec: 88
+    readonly property int nerdyRate: 128
+    readonly property int nerdyDepth: 64
+    readonly property int nerdyChannels: 88
+    readonly property int nerdySize: 96
+    readonly property int nerdyYear: 64
+    readonly property int nerdySource: 110
+    readonly property int nerdyArtwork: 80
     // The arrows that move a row: stacked in a rich row, side by side in a
     // compact one.
     readonly property int moveCell: 18
@@ -501,6 +513,7 @@ QtObject {
     readonly property int folderRow: 48
     readonly property int folderDateWidth: 130
     readonly property int folderStatusWidth: 70
+    readonly property int folderPolicyWidth: 188
     readonly property int folderEntry: 44
     readonly property int folderArt: 34
     readonly property int folderTreeWidth: 272

@@ -18,18 +18,20 @@ Item {
     property string year
     property url art
     property int tint: 0
+    property bool technical: false
+    readonly property var technicalFacts: technical && albumId !== 0 ? JSON.parse(AlbumActions.technical(albumId, rev) || "{}") : ({})
     // The columns shown, by name: "year", "tracks", "duration", "genre",
     // "rating", "source".
     property var columns: ["year"]
     // The grid's revision: what the record holds is read again when it moves.
     property int rev: 0
     // Tracks, length and genre, read only when a column shows one.
-    readonly property var facts: albumId !== 0 && (shows("tracks") || shows("duration") || shows("genre"))
+    readonly property var facts: !technical && albumId !== 0 && (shows("tracks") || shows("duration") || shows("genre"))
         ? JSON.parse(AlbumActions.facts(albumId, rev) || "{}") : ({})
     property int tracks: facts.tracks || 0
     property real durationMs: facts.duration_ms || 0
     property string genre: facts.genre || ""
-    property int stars: albumId !== 0 && shows("rating") ? Ratings.stars("album", albumId, Ratings.rev) : 0
+    property int stars: !technical && albumId !== 0 && shows("rating") ? Ratings.stars("album", albumId, Ratings.rev) : 0
     // The record's sources; their column only where a list mixes them.
     property var sources: []
     property bool mixed: false
@@ -52,7 +54,7 @@ Item {
         return two(Math.floor(s / 3600)) + ":" + two(Math.floor(s / 60) % 60) + ":" + two(s % 60)
     }
 
-    implicitHeight: Metrics.rowRich
+    implicitHeight: technical ? Metrics.rowCompact : Metrics.rowRich
     opacity: available ? 1 : Metrics.disabledOpacity
 
     ListRowSurface {
@@ -66,7 +68,8 @@ Item {
 
     Item {
         id: arrow
-        width: Metrics.button32
+        visible: !row.technical
+        width: row.technical ? 0 : Metrics.button32
         height: parent.height
 
         Icon {
@@ -83,17 +86,17 @@ Item {
             onTapped: row.quick()
         }
     }
-    ArtTile {
+    Loader {
         id: cover
+        active: !row.technical
         anchors.left: arrow.right
         anchors.verticalCenter: parent.verticalCenter
-        width: Metrics.artRow
+        width: row.technical ? 0 : Metrics.artRow
         height: Metrics.artRow
-        radius: Metrics.radiusArtSmall
-        source: row.art
-        tint: row.tint
+        sourceComponent: ArtTile { radius: Metrics.radiusArtSmall; source: row.art; tint: row.tint }
     }
     Column {
+        visible: !row.technical
         anchors.left: cover.right
         anchors.leftMargin: Metrics.gap12
         anchors.right: cells.left
@@ -112,7 +115,7 @@ Item {
             id: artistLabel
             width: parent.width
             text: row.subtitle
-            albumId: row.albumId; onFallback: row.clicked(0)
+            albumId: row.technical ? 0 : row.albumId; onFallback: row.clicked(0)
             elide: Text.ElideRight
             font.pointSize: Type.meta
         }
@@ -127,6 +130,7 @@ Item {
     }
     Row {
         id: cells
+        visible: !row.technical
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap12
         height: parent.height
@@ -165,6 +169,12 @@ Item {
                 }
             }
         }
+    }
+
+    Loader {
+        anchors.fill: parent
+        active: row.technical
+        sourceComponent: TechnicalCells { facts: row.technicalFacts; title: row.title; artist: row.subtitle; year: row.year }
     }
 
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }

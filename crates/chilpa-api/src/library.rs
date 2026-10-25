@@ -65,71 +65,13 @@ impl Chilpa {
         tracks
     }
 
-    /// Starts a background scan. The interface does not block.
-    pub fn start_scan(&mut self, folder: &std::path::Path) {
-        if self.scan.is_some() {
-            self.now.error = chilpa_i18n::t("a scan is already running");
-            return;
-        }
-        if self.metadata.saving() {
-            self.now.error = chilpa_i18n::t("metadata is being saved; scan when it is done");
-            return;
-        }
-        // The folder is written down before its scan starts, so the list of
-        // folders shows it at once, as being scanned. It used to appear only
-        // when the scan ended, and until then adding it looked like it had
-        // failed.
-        if let Some(lib) = self.library() {
-            if let Ok(source) = lib.source_id("local", "default") {
-                let _ = lib.root_id(source, folder);
-            }
-        }
-        // The interface's connection is let go: the scan opens its own, and
-        // two connections to the same WAL database coexist without fighting.
-        self.scan = Some(chilpa_library::ScanJob::start_with(
-            chilpa_library::Library::default_path(),
-            vec![folder.to_path_buf()],
-            Some(chilpa_core::artwork_cache()),
-            chilpa_core::sacd_tracks::disc_images(),
-        ));
-        self.scan_status = ScanStatus { running: true, ..ScanStatus::default() };
-    }
-
-    /// Rescans every folder already in the library.
-    ///
-    /// It is the usual case after day one: the music lives where it lives,
-    /// and going to find it by hand every time is work for the user that
-    /// the library has already written down.
-    pub fn rescan(&mut self) {
-        if self.scan.is_some() {
-            self.now.error = chilpa_i18n::t("a scan is already running");
-            return;
-        }
-        if self.metadata.saving() {
-            self.now.error = chilpa_i18n::t("metadata is being saved; scan when it is done");
-            return;
-        }
-        let folders = self.roots();
-        if folders.is_empty() {
-            self.now.error = chilpa_i18n::t("there is no folder in the library yet");
-            return;
-        }
-        self.scan = Some(chilpa_library::ScanJob::start_with(
-            chilpa_library::Library::default_path(),
-            folders,
-            Some(chilpa_core::artwork_cache()),
-            chilpa_core::sacd_tracks::disc_images(),
-        ));
-        self.scan_status = ScanStatus { running: true, ..ScanStatus::default() };
-    }
-
     /// Starts the analysis of whatever is missing, in the background.
     pub fn start_analysis(&mut self) {
         self.start_analysis_under(None);
     }
 
     /// The same, only for what is missing under `folder` when one is given.
-    fn start_analysis_under(&mut self, folder: Option<String>) {
+    pub(crate) fn start_analysis_under(&mut self, folder: Option<String>) {
         if self.analysis.is_some() || self.mood_analysis.is_some() {
             self.now.error = chilpa_i18n::t("an analysis is already running");
             return;
@@ -295,12 +237,12 @@ impl Chilpa {
     /// scanned and whether it can be reached now. A folder on a disk that is
     /// not mounted is kept and marked, never pruned.
     pub fn library_folders(&mut self) -> Vec<LibraryFolder> {
+        self.ensure_scan_runtime();
         let Some(lib) = self.library() else { return Vec::new() };
-        lib.roots()
-            .unwrap_or_default()
-            .into_iter()
-            .map(|r| LibraryFolder {
-                reachable: r.reachable && r.path.is_dir(),
+        let roots = lib.roots().unwrap_or_default();
+        roots.into_iter().map(|r| LibraryFolder {
+                scan_policy: self.scan_runtime.policies.get(r.path.to_string_lossy().as_ref()).copied().unwrap_or_default(),
+                reachable: r.reachable,
                 path: r.path.to_string_lossy().into_owned(),
                 last_scan: r.last_scan,
             })
@@ -365,6 +307,8 @@ impl Chilpa {
     ///
     /// Returns true if there was such a folder to forget.
     pub fn forget_folder(&mut self, folder: &str) -> bool {
+        if self.scan.is_some() { self.scan_error(chilpa_i18n::t("a scan is already running")); return false; }
+        if !self.forget_folder_scan_state(folder) { return false; }
         let Some(lib) = self.library() else { return false };
         let Some(root) = lib
             .roots()
@@ -382,48 +326,6 @@ impl Chilpa {
                 false
             }
         }
-    }
-
-    /// How the scan is going. On finishing, it refreshes what the view shows.
-    pub fn scan_status(&mut self) -> &ScanStatus {
-        let events = self.scan.as_ref().map(|j| j.poll()).unwrap_or_default();
-        for event in events {
-            match event {
-                chilpa_library::ScanProgress::Counted { total } => {
-                    self.scan_status.total = total;
-                }
-                chilpa_library::ScanProgress::Advanced { done, total } => {
-                    self.scan_status.done = done;
-                    self.scan_status.total = total;
-                }
-                chilpa_library::ScanProgress::Done(r) => {
-                    self.scan_status = ScanStatus {
-                        running: false,
-                        done: r.seen,
-                        total: r.seen,
-                        summary: ScanSummary {
-                            seen: r.seen,
-                            read: r.read,
-                            unchanged: r.unchanged,
-                            missing: r.missing,
-                            unreadable: r.unreadable,
-                            unreachable: r.unreachable,
-                        },
-                    };
-                    self.scan = None;
-                    if let Some(folder) = self.analysis_status.waiting.take() {
-                        self.start_analysis_under(Some(folder));
-                    }
-                }
-                chilpa_library::ScanProgress::Failed(e) => {
-                    self.now.error = chilpa_i18n::t_args("the scan failed: {}", &[&e]);
-                    self.scan_status.running = false;
-                    self.scan = None;
-                    self.analysis_status.waiting = None;
-                }
-            }
-        }
-        &self.scan_status
     }
 
     /// Scans a folder into the library, waiting for it to finish.

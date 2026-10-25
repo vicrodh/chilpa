@@ -5,6 +5,8 @@ import "../Theme"
 // I keep the thumb in a margin beside the viewport's clipped delegates.
 ScrollBar {
     id: bar
+    // My explicit thumb dimensions already include the full painted area.
+    padding: 0
     property var viewport: null
     property var area: null
     property var viewportArea: null
@@ -16,7 +18,7 @@ ScrollBar {
     implicitWidth: sideways ? Metrics.scrollbarThumbMin : Metrics.scrollbarWidth
     implicitHeight: sideways ? Metrics.gap4 : Metrics.scrollbarWidth
     minimumSize: Math.min(1, Metrics.scrollbarThumbMin / Math.max(sideways ? width : height, 1))
-    visible: policy !== ScrollBar.AlwaysOff && size < 1 && (hovered || pressed || viewportHovered || !!(area && area.hovered) || !!(viewportArea && viewportArea.hovered))
+    visible: policy !== ScrollBar.AlwaysOff && size < 1 && (policy === ScrollBar.AlwaysOn || hovered || pressed || viewportHovered || !!(area && area.hovered) || !!(viewportArea && viewportArea.hovered))
     background: Rectangle {
         radius: Metrics.scrollbarWidth / Metrics.gap2
         color: Theme.color.surfaceSidebar

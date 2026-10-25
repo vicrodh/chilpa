@@ -82,6 +82,9 @@ pub struct Provenance {
     /// What the provider said the lyrics are for, to judge them again here.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub claim: Option<crate::matching::Claim>,
+    /// Opaque identity supplied by the service for rejecting this text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub result_id: Option<String>,
 }
 
 impl Default for Timing {
