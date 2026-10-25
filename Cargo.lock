@@ -701,10 +701,13 @@ dependencies = [
 name = "chilpa-pipewire"
 version = "0.1.0"
 dependencies = [
+ "cc",
  "chilpa-alsa",
  "chilpa-audio",
  "chilpa-i18n",
+ "pkg-config",
  "serde_json",
+ "tempfile",
 ]
 
 [[package]]

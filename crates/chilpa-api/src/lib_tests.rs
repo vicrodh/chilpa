@@ -1,6 +1,59 @@
 use super::*;
 
 #[test]
+fn play_restarts_a_queue_after_the_worker_reported_an_error() {
+    const CHILD: &str = "CHILPA_TEST_RETRY_PLAYBACK";
+    if std::env::var(CHILD).as_deref() != Ok("1") {
+        let profile = tempfile::tempdir().unwrap();
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "lib_tests::play_restarts_a_queue_after_the_worker_reported_an_error", "--nocapture"])
+            .env(CHILD, "1").env("TMPDIR", profile.path())
+            .envs(chilpa_dirs::profile_environment(profile.path())).output().unwrap();
+        assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+        assert!(String::from_utf8_lossy(&result.stdout).contains("1 passed; 0 failed"));
+        return;
+    }
+    let track = chilpa_dirs::data().join("retry.wav");
+    std::fs::create_dir_all(track.parent().unwrap()).unwrap();
+    std::fs::write(&track, b"broken audio").unwrap();
+    let mut api = Chilpa::new();
+    api.play_file(&track, "file:capture", false);
+    let until = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while api.now.error.is_empty() && std::time::Instant::now() < until {
+        api.poll();
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    assert!(!api.now.error.is_empty() && !api.now.playing);
+    assert!(!api.player.as_ref().unwrap().idle(), "no explicit stop barrier was sent");
+    // Repair the input and retry through the same Play action, without
+    // removing the worker, resetting the queue or sending an explicit stop.
+    let data_len = 4410u32 * 4;
+    let mut wave = b"RIFF".to_vec();
+    wave.extend((36 + data_len).to_le_bytes());
+    wave.extend(b"WAVEfmt ");
+    wave.extend(16u32.to_le_bytes());
+    wave.extend(1u16.to_le_bytes());
+    wave.extend(2u16.to_le_bytes());
+    wave.extend(44_100u32.to_le_bytes());
+    wave.extend(176_400u32.to_le_bytes());
+    wave.extend(4u16.to_le_bytes());
+    wave.extend(16u16.to_le_bytes());
+    wave.extend(b"data");
+    wave.extend(data_len.to_le_bytes());
+    wave.resize(wave.len() + data_len as usize, 0);
+    std::fs::write(&track, wave).unwrap();
+    api.set_paused(false);
+    assert!(api.now.playing && api.now.error.is_empty(), "Play submitted a new request");
+    let until = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while api.now.format.is_empty() && std::time::Instant::now() < until {
+        api.poll();
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    assert!(!api.now.format.is_empty() && api.now.error.is_empty(), "the repaired track started: {:?}", api.now);
+    api.stop();
+}
+
+#[test]
 fn listing_sources_returns_the_local_library() {
     let mut chilpa = Chilpa::new();
     assert_eq!(chilpa.dispatch(Command::ListSources), Event::Sources(vec![SourceId::local()]));

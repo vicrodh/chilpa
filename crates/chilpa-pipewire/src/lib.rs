@@ -1,9 +1,7 @@
-//! PipeWire, reached through the ALSA plugin it installs.
+//! PipeWire: PCM through its ALSA plugin, native DSD through an owned stream.
 //!
-//! No second way of writing to a device: PipeWire ships a PCM that ALSA
-//! knows, so the samples take the same road `chilpa-alsa` already drives.
-//! What this crate knows that that one does not is which sinks exist, what
-//! they are called, and how to name one.
+//! PCM takes the same road `chilpa-alsa` already drives. Native DSD uses
+//! `audio/dsd` with exact format and destination checks in this crate.
 //!
 //! **A sink is named per stream, and nothing global is touched.** The plugin
 //! takes arguments -- `pipewire:NODE=<name>,EXCLUSIVE=1` -- so the stream
@@ -27,6 +25,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 pub mod setup;
+#[cfg(target_os = "linux")]
+mod dsd;
 
 static FORCING: AtomicBool = AtomicBool::new(false);
 
@@ -346,6 +346,11 @@ impl OutputBackend for PipeWire {
         Ok(chilpa_audio::capture::capabilities())
     }
 
+    #[cfg(target_os = "linux")]
+    fn untouched_caps(&self, id: &str) -> Option<chilpa_audio::negotiate::DeviceCaps> {
+        dsd::capabilities(id)
+    }
+
     fn outputs(&self) -> Vec<BackendOutput> {
         sinks()
             .into_iter()
@@ -367,6 +372,11 @@ impl OutputBackend for PipeWire {
         format: StreamFormat,
         exclusive: bool,
     ) -> Result<Box<dyn AudioSink + Send>, SinkError> {
+        #[cfg(target_os = "linux")]
+        if format.sample_format.is_dsd() {
+            return dsd::DsdSink::open(id, format, exclusive)
+                .map(|sink| Box::new(sink) as Box<dyn AudioSink + Send>);
+        }
         // A sink that is gone has to be caught here. The plugin does not
         // fail on a name it cannot find: it quietly plays to the default
         // instead, so an unplugged DAC would come out of the laptop speakers

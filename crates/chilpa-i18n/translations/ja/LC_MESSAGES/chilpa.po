@@ -2919,6 +2919,12 @@ msgstr "ネイティブDSD"
 msgid "Native DSD and DoP bypass DSP. Select PCM output to process them."
 msgstr "ネイティブDSDとDoPはDSPをバイパスします。処理するにはPCM出力を選択してください。"
 
+msgid "Native DSD bypasses software volume. Use the DAC or amplifier; your PCM volume is kept."
+msgstr "ネイティブDSDではソフトウェア音量は適用されません。DACまたはアンプで調整してください。PCMの音量設定は保持されます。"
+
+msgid "Native DSD needs exclusive mode and a compatible output. Otherwise playback converts DSD to PCM."
+msgstr "ネイティブDSDには排他モードと対応する出力が必要です。利用できない場合はPCMに変換して再生します。"
+
 msgid "Native plugins"
 msgstr "ネイティブプラグイン"
 
