@@ -1175,7 +1175,7 @@ impl Chilpa {
     pub fn set_paused(&mut self, paused: bool) {
         if paused { self.casting.local_start = None; self.persist_progress(true); }
         if self.casting.active() { self.cast_pause(paused); return; }
-        if !paused && self.player.as_ref().is_none_or(|p| p.idle()) && !self.queue.is_empty() {
+        if !paused && (!self.now.playing || self.player.as_ref().is_none_or(|p| p.idle())) && !self.queue.is_empty() {
             let restored = self.restored_at.take();
             let seconds = restored.unwrap_or(self.now.seconds).max(0.0);
             let index = self.now.index.min(self.queue.len() - 1);

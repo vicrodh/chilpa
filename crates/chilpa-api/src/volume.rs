@@ -46,7 +46,18 @@ impl Chilpa {
             };
             return VolumeView { percent: 100, muted: false, locked: true, why, ..VolumeView::default() };
         }
+        if self.pipewire_one_bit() {
+            return VolumeView {
+                percent: 100, muted: false, locked: true,
+                why: chilpa_i18n::t("Native DSD bypasses software volume. Use the DAC or amplifier; your PCM volume is kept."),
+                ..VolumeView::default()
+            };
+        }
         VolumeView { percent, muted, ..VolumeView::default() }
+    }
+
+    fn pipewire_one_bit(&self) -> bool {
+        self.now.playing && self.dsp.passthrough && self.stack_of(&self.chosen_output().0) == "pipewire"
     }
 
     pub fn set_player_volume(&mut self, percent: u8) {
@@ -114,6 +125,12 @@ impl Chilpa {
     /// What the samples are multiplied by. One when the device's knob does
     /// the work or the route is direct.
     pub(crate) fn software_gain(&mut self) -> f32 {
+        // Keep the PCM preference ready for the next track or output. The
+        // queue bypasses it on one-bit streams; the locked slider is a view,
+        // not a replacement for the saved PCM volume or mute setting.
+        if self.pipewire_one_bit() {
+            return if self.preference(MUTED).as_deref() == Some("true") { 0.0 } else { gain_of(self.software_percent()) };
+        }
         let view = self.player_volume();
         if view.hardware || view.locked {
             return 1.0;
@@ -137,7 +154,7 @@ impl Chilpa {
     /// A track that plays at a scaled volume is not bit-perfect, from the
     /// moment it is scaled; the verdict at its start could not know.
     pub(crate) fn mark_scaled(&mut self, gain: f32) {
-        if gain != 1.0 {
+        if gain != 1.0 && !self.dsp.passthrough {
             self.now.bit_perfect = false;
         }
     }
@@ -157,6 +174,49 @@ pub fn gain_of(percent: u8) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pipewire_one_bit_volume_keeps_pcm_preferences_across_route_changes() {
+        const CHILD: &str = "CHILPA_TEST_PIPEWIRE_VOLUME";
+        if std::env::var(CHILD).as_deref() != Ok("1") {
+            let profile = tempfile::tempdir().unwrap();
+            let result = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "volume::tests::pipewire_one_bit_volume_keeps_pcm_preferences_across_route_changes", "--nocapture"])
+                .env(CHILD, "1").envs(chilpa_dirs::profile_environment(profile.path())).output().unwrap();
+            assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+            assert!(String::from_utf8_lossy(&result.stdout).contains("1 passed; 0 failed"));
+            return;
+        }
+        let mut api = Chilpa::new();
+        api.remember("pipewire:volume-fixture", false);
+        api.set_player_volume(40);
+        let gain = gain_of(40);
+        api.now.playing = true;
+        api.now.bit_perfect = true;
+        api.dsp.passthrough = true;
+        let view = api.player_volume();
+        assert!(view.locked && !view.why.is_empty());
+        assert_eq!((view.percent, view.muted), (100, false));
+        assert_eq!(api.software_gain(), gain, "PCM gain stays ready for the next track");
+        api.set_player_volume(75);
+        api.set_player_muted(true);
+        api.apply_volume();
+        assert!(api.now.bit_perfect, "a bypassed gain does not change the one-bit verdict");
+        api.dsp.passthrough = false;
+        let pcm = api.player_volume();
+        assert_eq!((pcm.percent, pcm.muted, pcm.locked), (40, false, false));
+        assert_eq!(api.software_gain(), gain);
+        api.set_player_muted(true);
+        assert_eq!(api.software_gain(), 0.0);
+        api.dsp.passthrough = true;
+        assert!(!api.player_volume().muted, "software mute is bypassed on native DSD");
+        assert_eq!(api.software_gain(), 0.0, "the saved PCM mute is retained");
+        api.dsp.passthrough = false;
+        assert!(api.player_volume().muted);
+        api.now.playing = false;
+        api.dsp.passthrough = true;
+        assert!(!api.player_volume().locked, "an old stream cannot lock a stopped player");
+    }
 
     #[test]
     fn the_slider_is_heard_on_a_curve() {
