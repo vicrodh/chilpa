@@ -7,10 +7,8 @@
 //! cxx-qt's singletons are registered at run time, and the compiler takes
 //! the bare name for a type.
 //!
-//! Adding a folder scans it in the background. While a scan runs, a thread
-//! queues a poll four times a second; the page shows how far it is, and
-//! when it ends the folders are read again and the Library is told its
-//! content changed, which reloads every screen that shows it.
+//! I publish scan state from the existing player tick, only by revision.
+//! The facade owns automatic schedules and the single scan worker.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -34,6 +32,15 @@ pub mod qobject {
         #[qproperty(f64, progress)]
         /// How far the scan is, or what the last one found.
         #[qproperty(QString, status)]
+        #[qproperty(QString, phase)]
+        #[qproperty(bool, can_resume)]
+        #[qproperty(i32, done)]
+        #[qproperty(i32, total)]
+        #[qproperty(i32, read_count)]
+        #[qproperty(i32, same_count)]
+        #[qproperty(i32, missing_count)]
+        #[qproperty(i32, unreadable_count)]
+        #[qproperty(bool, unreachable)]
         type LibraryFolders = super::FoldersRust;
 
         /// A folder that was not in the library joined it and its scan began.
@@ -63,6 +70,14 @@ pub mod qobject {
         /// Scans every folder again.
         #[qinvokable]
         fn rescan_all(self: Pin<&mut LibraryFolders>);
+        #[qinvokable]
+        fn stop_scan(self: Pin<&mut LibraryFolders>);
+        #[qinvokable]
+        fn resume_scan(self: Pin<&mut LibraryFolders>);
+        #[qinvokable]
+        fn dismiss_status(self: Pin<&mut LibraryFolders>);
+        #[qinvokable]
+        fn choose_policy(self: Pin<&mut LibraryFolders>, path: &QString, policy: &QString);
 
         /// Stops scanning a folder. Its files are not touched, and adding it
         /// back finds its tracks with their history.
@@ -79,10 +94,8 @@ use chilpa_qt_kit::app;
 use chilpa_api::LibraryFolder;
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::QString;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::pin::Pin;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 
 thread_local! {
     static FOLDERS: RefCell<Vec<LibraryFolder>> = const { RefCell::new(Vec::new()) };
@@ -92,7 +105,6 @@ thread_local! {
 pub fn read<R>(f: impl FnOnce(&[LibraryFolder]) -> R) -> R {
     FOLDERS.with(|l| f(&l.borrow()))
 }
-const POLL: std::time::Duration = std::time::Duration::from_millis(250);
 
 #[derive(Default)]
 pub struct FoldersRust {
@@ -102,8 +114,16 @@ pub struct FoldersRust {
     scanning_path: QString,
     progress: f64,
     status: QString,
-    /// Cleared by the poll that sees the scan end, which stops its thread.
-    polling: Option<Arc<AtomicBool>>,
+    phase: QString,
+    can_resume: bool,
+    done: i32,
+    total: i32,
+    read_count: i32,
+    same_count: i32,
+    missing_count: i32,
+    unreadable_count: i32,
+    unreachable: bool,
+    seen_revision: u64,
 }
 
 impl qobject::LibraryFolders {
@@ -114,8 +134,8 @@ impl qobject::LibraryFolders {
         }
         let bare = folder.trim_end_matches('/').to_owned();
         let known = read(|folders| folders.iter().any(|f| f.path.trim_end_matches('/') == bare));
-        self.as_mut().scan(Some(folder));
-        if !known && app::with(|api| api.scan_status().running) {
+        let started = self.as_mut().scan(Some(folder));
+        if !known && started {
             self.as_mut().added(&QString::from(&bare));
         }
     }
@@ -153,74 +173,72 @@ impl qobject::LibraryFolders {
     pub fn forget(mut self: Pin<&mut Self>, path: &QString) {
         let path = path.to_string();
         if app::with(|api| api.forget_folder(&path)) {
-            self.as_mut().refresh();
+            let revision = *self.rev();
+            self.as_mut().poll();
+            if *self.rev() == revision { self.as_mut().refresh(); }
             app::with(|api| api.mark_library_changed());
-        }
+        } else { self.as_mut().poll(); }
     }
 
-    /// Starts a scan of one folder, or of all of them, and polls it.
-    fn scan(mut self: Pin<&mut Self>, folder: Option<String>) {
-        let started = app::with(|api| {
-            match &folder {
-                Some(f) => api.start_scan(std::path::Path::new(f)),
-                None => api.rescan(),
-            }
-            api.scan_status().running
+    fn scan(mut self: Pin<&mut Self>, folder: Option<String>) -> bool {
+        let started = app::with(|api| match &folder {
+            Some(folder) => api.start_scan(std::path::Path::new(folder)),
+            None => api.rescan(),
         });
-        if !started {
-            let why = app::with(|api| api.now_playing().error.clone());
-            self.as_mut().set_status(QString::from(&why));
-            return;
-        }
-        self.as_mut().set_scanning_path(QString::from(folder.as_deref().unwrap_or("")));
-        self.as_mut().set_scanning(true);
-        self.as_mut().set_progress(0.0);
-        // A folder just added is in the list from now, marked as scanning.
-        self.as_mut().refresh();
-        let active = Arc::new(AtomicBool::new(true));
-        self.as_mut().rust_mut().polling = Some(active.clone());
-        let thread = self.qt_thread();
-        std::thread::spawn(move || {
-            while active.load(Ordering::Relaxed) {
-                std::thread::sleep(POLL);
-                if thread.queue(|folders| folders.poll()).is_err() {
-                    break;
-                }
-            }
+        self.as_mut().poll();
+        started
+    }
+
+    pub fn stop_scan(mut self: Pin<&mut Self>) {
+        app::with(|api| api.stop_scan());
+        self.as_mut().poll();
+    }
+
+    pub fn resume_scan(mut self: Pin<&mut Self>) {
+        app::with(|api| api.resume_scan());
+        self.as_mut().poll();
+    }
+
+    pub fn dismiss_status(mut self: Pin<&mut Self>) {
+        app::with(|api| api.dismiss_scan_status());
+        self.as_mut().poll();
+    }
+
+    pub fn choose_policy(mut self: Pin<&mut Self>, path: &QString, policy: &QString) {
+        let changed = app::with(|api| {
+            let before = api.scan_revision();
+            api.set_folder_scan_policy(&path.to_string(), &policy.to_string()) && api.scan_revision() != before
         });
+        let revision = *self.rev();
+        self.as_mut().poll();
+        if changed && *self.rev() == revision { self.as_mut().refresh(); }
     }
 
     fn poll(mut self: Pin<&mut Self>) {
         let state = app::with(|api| api.scan_status().clone());
-        if state.running {
-            let progress = if state.total > 0 { state.done as f64 / state.total as f64 } else { 0.0 };
-            let (done, total) = (state.done.to_string(), state.total.to_string());
-            // Until the folder has been walked there is no total, and
-            // "0 of 0" reads as a scan that found nothing.
-            let line = if state.total == 0 {
-                app::t("Looking for files…")
-            } else {
-                app::with(|api| api.t_args("Reading {} of {} files", &[&done, &total]))
-            };
-            self.as_mut().set_progress(progress);
-            self.as_mut().set_status(QString::from(&line));
-            return;
-        }
-        if let Some(active) = self.as_mut().rust_mut().polling.take() {
-            active.store(false, Ordering::Relaxed);
-        }
-        let s = &state.summary;
-        let (read, same, missing) = (s.read.to_string(), s.unchanged.to_string(), s.missing.to_string());
-        let line = app::with(|api| api.t_args("{} read, {} unchanged, {} missing", &[&read, &same, &missing]));
-        self.as_mut().set_status(QString::from(&line));
-        self.as_mut().set_progress(1.0);
-        self.as_mut().set_scanning(false);
-        self.as_mut().refresh();
-        app::with(|api| api.mark_library_changed());
+        if state.revision == self.rust().seen_revision { return; }
+        self.as_mut().rust_mut().seen_revision = state.revision;
+        let refresh = !state.running || !*self.scanning();
+        let count = |value: usize| value.min(i32::MAX as usize) as i32;
+        self.as_mut().set_scanning(state.running);
+        self.as_mut().set_scanning_path(QString::from(&state.root));
+        self.as_mut().set_phase(QString::from(state.phase.key()));
+        self.as_mut().set_can_resume(state.can_resume);
+        self.as_mut().set_progress(if state.total > 0 { (state.done as f64 / state.total as f64).min(1.0) } else { 0.0 });
+        self.as_mut().set_status(QString::from(&state.error));
+        self.as_mut().set_done(count(state.done));
+        self.as_mut().set_total(count(state.total));
+        self.as_mut().set_read_count(count(state.summary.read));
+        self.as_mut().set_same_count(count(state.summary.unchanged));
+        self.as_mut().set_missing_count(count(state.summary.missing));
+        self.as_mut().set_unreadable_count(count(state.summary.unreadable));
+        self.as_mut().set_unreachable(state.summary.unreachable);
+        if refresh { self.refresh(); }
     }
 
     fn refresh(mut self: Pin<&mut Self>) {
         let folders = app::with(|api| api.library_folders());
+        if read(|current| current == folders.as_slice()) { return; }
         let n = folders.len() as i32;
         FOLDERS.with(|l| *l.borrow_mut() = folders);
         self.as_mut().set_count(n);
@@ -233,7 +251,8 @@ impl cxx_qt::Initialize for qobject::LibraryFolders {
     fn initialize(mut self: Pin<&mut Self>) {
         let thread = self.qt_thread();
         THREAD.with(|slot| *slot.borrow_mut() = Some(thread));
-        self.as_mut().refresh();
+        self.as_mut().rust_mut().seen_revision = u64::MAX;
+        self.as_mut().poll();
     }
 }
 
@@ -251,4 +270,17 @@ pub fn ask(f: impl FnOnce(Pin<&mut qobject::LibraryFolders>) + Send + 'static) {
             let _ = thread.queue(f);
         }
     });
+}
+
+/// I queue Qt work only for a scan revision or a changed library snapshot.
+pub fn sync(library_changed: bool) {
+    thread_local! { static LAST: Cell<u64> = const { Cell::new(u64::MAX) }; }
+    let revision = app::with(|api| api.scan_revision());
+    if LAST.with(|last| last.replace(revision) != revision) || library_changed {
+        ask(move |mut folders| {
+            let revision = *folders.rev();
+            folders.as_mut().poll();
+            if library_changed && *folders.rev() == revision { folders.refresh(); }
+        });
+    }
 }

@@ -82,6 +82,13 @@ impl Verdict {
 
 /// Judges whether a document, claiming to be `claim`, belongs to `track`.
 pub fn judge(track: &Track, claim: &Claim, doc: &Document) -> Verdict {
+    // Search metadata can name the requested song while the downloaded
+    // document explicitly names another. The search cannot override it.
+    if !track.title.trim().is_empty() && doc.title.as_deref()
+        .filter(|title| !title.trim().is_empty())
+        .is_some_and(|title| similarity(&track.title, title) < 0.5) {
+        return Verdict::Rejected;
+    }
     if let (Some(a), Some(b)) = (track.isrc.as_deref(), claim.isrc.as_deref()) {
         if !a.trim().is_empty() && !b.trim().is_empty() {
             if !a.trim().eq_ignore_ascii_case(b.trim()) {
@@ -255,6 +262,22 @@ fn strip_accent(c: char) -> char {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn search_metadata_cannot_hide_a_document_naming_another_song() {
+        let track = Track { title: "Dooby Dooby Wah".into(), artist: "Ritchie Valens".into(), duration_ms: Some(113_000), ..Default::default() };
+        let mut claim = Claim { title: Some(track.title.clone()), artist: Some(track.artist.clone()), duration_ms: track.duration_ms, ..Default::default() };
+        let mut document = crate::lrc::parse("[ti:We Belong Together]\n[ar:Ritchie Valens]\n[00:01.00]A recorded line");
+        assert_eq!(judge(&track, &claim, &document), Verdict::Rejected);
+        document.timing = Timing::Unsynced;
+        assert_eq!(judge(&track, &claim, &document), Verdict::Rejected, "dropping timing cannot repair the identity");
+        let mut identified = track.clone();
+        identified.isrc = Some("USAAA1234567".into());
+        claim.isrc = identified.isrc.clone();
+        assert_eq!(judge(&identified, &claim, &document), Verdict::Rejected);
+        document.title = Some("Dooby Dooby Wah (Remastered)".into());
+        assert!(judge(&identified, &claim, &document).accepted());
+    }
     use crate::lrc;
 
     fn track() -> Track {

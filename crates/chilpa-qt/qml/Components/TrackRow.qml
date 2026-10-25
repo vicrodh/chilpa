@@ -68,7 +68,7 @@ TrackRowSlot {
         readonly property alias albumText: albumLabel
         readonly property alias sourceBadge: badge
         readonly property alias end: rowEnd
-        readonly property alias ratingStars: stars
+        readonly property alias ratingStars: rowFacts.ratingStars
         readonly property Item headerComposerLabel: groupHeader.composerLabel
         readonly property Item groupActionArea: groupHeader.actionArea
         function groupActionAt(from, x, y) { return groupHeader.actionAt(from, x, y) }
@@ -168,36 +168,7 @@ TrackRowSlot {
 
             TrackSourceLabel { id: badge; cols: row.cols; name: row.sourceName; sourceInfo: row.sourceInfo; anchors.verticalCenter: parent.verticalCenter }
 
-            Row {
-                x: row.cols.qualityX
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Metrics.gap6
-
-                QualityIcon { tier: row.tier }
-                Text { text: row.quality; font.pointSize: Type.small; color: Theme.color.textSecondary }
-            }
-
-            RatingStars {
-                id: stars
-                x: row.cols.ratingX
-                anchors.verticalCenter: parent.verticalCenter
-                visible: row.cols.rating > 0
-                interactive: false
-                value: row.rating
-                pointerPreview: row.ratingPreview
-            }
-
-            Text {
-                x: row.cols.playsX
-                width: row.cols.plays - Metrics.gap12
-                visible: row.cols.plays > 0
-                anchors.verticalCenter: parent.verticalCenter
-                text: row.plays
-                horizontalAlignment: Text.AlignRight
-                font.pointSize: Type.small
-                font.features: { "tnum": 1 }
-                color: Theme.color.textTertiary
-            }
+            TrackRowFacts { id: rowFacts; row: content.row }
 
             TrackRowEnd {
                 id: rowEnd
@@ -208,17 +179,6 @@ TrackRowSlot {
                 favorite: row.favorite
                 inViewport: row.immediate
                 hovered: row.actionHovered
-            }
-
-            Text {
-                x: row.cols.timeX
-                width: row.cols.time
-                anchors.verticalCenter: parent.verticalCenter
-                text: row.duration
-                horizontalAlignment: Text.AlignRight
-                font.pointSize: Type.row
-                font.features: { "tnum": 1 }
-                color: row.rich ? Theme.color.textSecondary : Theme.color.textPrimary
             }
         }
     }

@@ -1,4 +1,5 @@
 import QtQuick
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import QtQuick.Controls.Basic
 import QtQuick.Effects
 import app.chilpa

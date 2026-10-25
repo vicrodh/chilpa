@@ -159,5 +159,5 @@ Window {
     // Over everything while the plugins start.
     StartupSplash { anchors.fill: parent; z: 1000 }
     // A press outside the field that has the keyboard, or another view, takes it.
-    FocusRelease { key: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.routeKey].join(" ") }
+    FocusRelease { key: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.screen === "folders" ? "" : Navigation.routeKey].join(" ") }
 }

@@ -2,6 +2,7 @@
 mod biquad;
 mod engine;
 mod wire;
+pub mod volume;
 #[cfg(test)]
 mod tests;
 

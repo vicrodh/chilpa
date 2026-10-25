@@ -1,8 +1,15 @@
 //! Read-only album information shared by local records and source catalogs.
+mod technical;
 use crate::Chilpa;
 use serde_json::{json, Value};
 
 impl Chilpa {
+    /// I keep the card's presentation document in the facade shared by views.
+    pub fn album_card_quality_json(&mut self, id: i64) -> String {
+        let quality = self.album_card_quality(id);
+        json!({"tier": quality.tier.rank(), "label": quality.long()}).to_string()
+    }
+
     /// I resolve a card's credit only on interaction, without loading its tracks.
     pub fn album_artist_link(&mut self, id: i64, name: &str) -> String {
         let name = name.trim();

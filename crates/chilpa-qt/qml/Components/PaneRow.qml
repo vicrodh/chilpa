@@ -1,5 +1,6 @@
 // hot-path: one per entry of a filter column, recycled while it scrolls.
 import QtQuick
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/query/qml/Theme"

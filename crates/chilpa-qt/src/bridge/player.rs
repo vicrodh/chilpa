@@ -79,6 +79,11 @@ pub mod qobject {
         #[qproperty(bool, lyrics_synced)]
         type Player = super::PlayerRust;
 
+        #[qinvokable]
+        fn reject_lyrics(self: Pin<&mut Player>, revision: &QString);
+        #[qinvokable]
+        fn change_lyrics_source(self: Pin<&mut Player>, revision: &QString);
+
         /// Empties the queue and stops.
         #[qinvokable]
         fn clear_queue(self: Pin<&mut Player>);
@@ -91,6 +96,8 @@ pub mod qobject {
         fn choose_automix(self: Pin<&mut Player>, on: bool);
         #[qinvokable]
         fn choose_volume(self: Pin<&mut Player>, percent: i32);
+        #[qinvokable]
+        fn persist_volume(self: Pin<&mut Player>);
         #[qinvokable]
         fn choose_muted(self: Pin<&mut Player>, on: bool);
 
@@ -206,6 +213,16 @@ pub struct PlayerRust {
 }
 
 impl qobject::Player {
+    pub fn change_lyrics_source(mut self: Pin<&mut Self>, revision: &QString) {
+        app::with(|api| api.change_lyrics_source(&revision.to_string()));
+        self.as_mut().rust_mut().lyrics_shown = 0;
+    }
+
+    pub fn reject_lyrics(mut self: Pin<&mut Self>, revision: &QString) {
+        app::with(|api| api.reject_lyrics(&revision.to_string()));
+        self.as_mut().rust_mut().lyrics_shown = 0;
+    }
+
     pub fn quit(self: Pin<&mut Self>) {
         self.window_asked(1);
     }
@@ -236,8 +253,12 @@ impl qobject::Player {
     }
 
     pub fn choose_volume(self: Pin<&mut Self>, percent: i32) {
-        app::with(|api| api.set_player_volume(percent.clamp(0, 100) as u8));
+        app::with(|api| api.preview_player_volume(percent.clamp(0, 100) as u8));
         self.read_volume();
+    }
+
+    pub fn persist_volume(self: Pin<&mut Self>) {
+        app::with(|api| api.persist_player_volume());
     }
 
     pub fn choose_muted(self: Pin<&mut Self>, on: bool) {
@@ -352,6 +373,7 @@ impl qobject::Player {
             self.as_mut().set_origin(QString::from(&json));
         }
         chilpa_qt_kit::bridge::queue_activity::publish(queue_busy);
+        chilpa_qt_folders::bridge::folders::sync(changed);
         let listening = app::with(|api| api.listening_revision());
         crate::registry::library(move |mut l| { l.as_mut().set_listening_rev(listening); l.as_mut().set_remote_rev(remote.0); l.set_remote_art_rev(remote.1); });
         if let Some(asked) = app::with(|api| api.window_request()) {

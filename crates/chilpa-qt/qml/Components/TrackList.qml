@@ -181,7 +181,7 @@ Item {
             albumHovered: index === view.albumHovered
             cols: columns
             canRate: trackId !== 0
-            rating: inViewport ? Ratings.stars("track", trackId, Ratings.rev) : 0
+            rating: inViewport && list.showRating ? Ratings.stars("track", trackId, Ratings.rev) : 0
             favorite: inViewport && Ratings.favorite("track", trackId, Ratings.rev)
             ratingPreview: index === view.hovered ? view.ratingHovered : 0
             hovered: index === view.hovered || list.activeFocus && index === list.cursorRow
@@ -209,30 +209,7 @@ Item {
         measure: credit
     }
 
-    // Where what is dragged would land.
-    Rectangle {
-        objectName: "dropLine"
-        readonly property Item target: pointer.dropRow >= 0 && pointer.dropRow !== pointer.pressedRow ? view.itemAtIndex(pointer.dropRow) : null
-
-        visible: !!target && !target.header
-        x: columns.pad
-        y: view.y + (target ? target.y - view.contentY + (pointer.dropAfter ? target.height : 0) : 0) - height / 2
-        z: 4
-        width: list.width - columns.pad * 2 // derived: padding on both sides
-        height: Metrics.gap2
-        radius: Metrics.gap2
-        color: Theme.color.accent
-    }
-
-    DragGhost {
-        objectName: "dragGhost"
-        visible: pointer.dragging
-        source: pointer
-        at: Qt.point(pointer.mouseX, pointer.mouseY)
-        count: pointer.dragCount
-        title: pointer.dragTitle
-        detail: pointer.dragDetail
-    }
+    Tools.TrackDragOverlay { anchors.fill: parent; pointer: pointer; rows: view; cols: columns }
 
     // Measures where each artist of a row's credit is; one for the list.
     CreditLine { id: credit; visible: false }

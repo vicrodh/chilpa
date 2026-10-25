@@ -92,11 +92,13 @@ Item {
                 color: Theme.color.textSecondary
             }
             LevelSlider {
+                objectName: "volumeLevel"
                 anchors.horizontalCenter: parent.horizontalCenter
                 vertical: true
                 enabled: !Player.volumeLocked
                 value: Player.muted ? 0 : Player.volume
                 tip: I18n.trArgs("Volume {}%", [String(Player.volume)], I18n.rev)
+                onReleased: Player.persistVolume()
                 onMoved: (level) => {
                     // Moving it is wanting sound: a muted volume comes back.
                     if (Player.muted)

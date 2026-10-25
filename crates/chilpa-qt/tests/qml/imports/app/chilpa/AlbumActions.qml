@@ -16,6 +16,8 @@ QtObject {
     // What a test says a record holds, for a list's columns, by its id.
     property var factsOf: ({})
     function facts(id, revision) { return JSON.stringify(factsOf[id] || {}) }
+    property var technicalOf: ({})
+    function technical(id, revision) { return JSON.stringify(technicalOf[id] || {}) }
     function selected(id, revision) { return false }
     property double playedId: 0
     function play(id, shuffled) { playedId = id }

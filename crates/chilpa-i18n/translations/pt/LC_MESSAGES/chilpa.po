@@ -124,6 +124,15 @@ msgstr "Há uma nova versão do Chilpa disponível."
 msgid "A player for your own music"
 msgstr "Um player para a sua própria música"
 
+msgid "A saved query already has that name."
+msgstr "Já existe uma consulta salva com esse nome."
+
+msgid "A saved query may use at most 16 KiB."
+msgstr "Uma consulta salva pode ocupar até 16 KiB."
+
+msgid "A scan supports up to 256 folders and 64 KiB of saved paths."
+msgstr "Uma verificação aceita até 256 pastas e 64 KiB de caminhos salvos."
+
 msgid "A secure cast URL could not be created."
 msgstr "Não foi possível criar uma URL segura de transmissão."
 
@@ -186,6 +195,9 @@ msgstr "Módulos ativos"
 
 msgid "Add"
 msgstr "Adicionar"
+
+msgid "Add a condition before saving a query."
+msgstr "Adicione uma condição antes de salvar a consulta."
 
 msgid "Add a condition: type a genre, artist, year…"
 msgstr "Adicione uma condição: digite um gênero, artista, ano…"
@@ -510,6 +522,9 @@ msgstr "abr"
 msgid "April"
 msgstr "abril"
 
+msgid "Arranger"
+msgstr "Arranjador"
+
 msgid "Artist"
 msgstr "Artista"
 
@@ -591,6 +606,9 @@ msgstr "Detecta automaticamente seus DACs e configura a reprodução bit-perfect
 msgid "Auto-follow"
 msgstr "Rolagem automática"
 
+msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
+msgstr "As verificações automáticas ficam pausadas até você continuar ou descartar esta verificação. Os arquivos já adicionados são mantidos."
+
 msgid "Automatic headroom lowers gain to leave room for EQ boosts."
 msgstr "O headroom automático reduz o ganho para deixar margem para os realces do EQ."
 
@@ -656,6 +674,9 @@ msgstr "Bit-perfect"
 
 msgid "Bit-perfect"
 msgstr "Bit-perfect"
+
+msgid "Bits"
+msgstr "Bits"
 
 msgid "Block network access, including plugins, online artwork, updates and scrobbling. Local playback, cached content and installed Mood models stay available. Artist Network is hidden."
 msgstr "Bloqueia o acesso à rede, incluindo plugins, capas online, atualizações e scrobbling. A reprodução local, o conteúdo em cache e os modelos de humor instalados continuam disponíveis. A Rede de artistas fica oculta."
@@ -815,6 +836,12 @@ msgstr "Alterar imagem"
 msgid "Change sign-in"
 msgstr "Alterar login"
 
+msgid "Change source"
+msgstr "Alterar fonte"
+
+msgid "Channels"
+msgstr "Canais"
+
 msgid "Chapters"
 msgstr "Capítulos"
 
@@ -824,8 +851,14 @@ msgstr "Verificar"
 msgid "Check Audio Stack"
 msgstr "Verificar pilha de áudio"
 
+msgid "Check all folders"
+msgstr "Verificar todas as pastas"
+
 msgid "Check for a newer version of Chilpa."
 msgstr "Verifica se há uma versão mais recente do Chilpa."
+
+msgid "Check for new additions"
+msgstr "Buscar novas adições"
 
 msgid "Check for updates"
 msgstr "Verificar atualizações"
@@ -835,6 +868,9 @@ msgstr "Verificar atualizações automaticamente"
 
 msgid "Checking for updates…"
 msgstr "Verificando atualizações…"
+
+msgid "Checking library folders…"
+msgstr "Verificando pastas da biblioteca…"
 
 msgid "Checking the account…"
 msgstr "Verificando a conta…"
@@ -1079,8 +1115,14 @@ msgstr "Feche as aspas."
 msgid "Close to tray"
 msgstr "Fechar para a bandeja"
 
+msgid "Closing stops a scan. Saved progress can be continued here after reopening."
+msgstr "Fechar o aplicativo interrompe a verificação. O progresso salvo pode ser retomado aqui após reabrir."
+
 msgid "Closing the window keeps Chilpa playing in the tray instead of quitting."
 msgstr "Fechar a janela mantém o Chilpa tocando na bandeja em vez de sair."
+
+msgid "Codec"
+msgstr "Codec"
 
 msgid "Collaborators"
 msgstr "Colaboradores"
@@ -1151,6 +1193,9 @@ msgstr "Coletâneas"
 msgid "Completed"
 msgstr "Concluído"
 
+msgid "Completed work is saved. Continue checks the folder again and skips unchanged files."
+msgstr "O trabalho concluído está salvo. Continuar verifica a pasta novamente e ignora arquivos sem alterações."
+
 msgid "Composer"
 msgstr "Compositor"
 
@@ -1190,11 +1235,17 @@ msgstr "Conectando…"
 msgid "Connection error"
 msgstr "Erro de conexão"
 
+msgid "Container"
+msgstr "Contêiner"
+
 msgid "Continue"
 msgstr "Continuar"
 
 msgid "Continue listening"
 msgstr "Continuar ouvindo"
+
+msgid "Continue or dismiss the interrupted scan before starting another."
+msgstr "Continue ou descarte a verificação interrompida antes de iniciar outra."
 
 msgid "Convert to PCM"
 msgstr "Converter para PCM"
@@ -1457,6 +1508,12 @@ msgstr "Excluir playlist"
 msgid "Delete preset"
 msgstr "Excluir preset"
 
+msgid "Delete saved query"
+msgstr "Excluir consulta salva"
+
+msgid "Delete the saved query “{}”?"
+msgstr "Excluir a consulta salva “{}”?"
+
 msgid "Delete “{}”?"
 msgstr "Excluir “{}”?"
 
@@ -1555,6 +1612,9 @@ msgstr "Discos"
 
 msgid "Dismiss"
 msgstr "Dispensar"
+
+msgid "Dismiss scan"
+msgstr "Descartar verificação"
 
 msgid "Display settings"
 msgstr "Opções de exibição"
@@ -1706,6 +1766,9 @@ msgstr "Ative {} em Configurações › Fontes para reproduzir este disco."
 msgid "Ends at {}"
 msgstr "Termina às {}"
 
+msgid "Engineer"
+msgstr "Engenheiro de som"
+
 msgid "English"
 msgstr "Inglês"
 
@@ -1732,6 +1795,15 @@ msgstr "Equalizador"
 
 msgid "Errors"
 msgstr "Erros"
+
+msgid "Every 12 hours"
+msgstr "A cada 12 horas"
+
+msgid "Every 24 hours"
+msgstr "A cada 24 horas"
+
+msgid "Every week"
+msgstr "Toda semana"
 
 msgid "Everyone who plays on a track"
 msgstr "Todos que tocam em uma faixa"
@@ -1820,6 +1892,9 @@ msgstr "Campos"
 msgid "File"
 msgstr "Arquivo"
 
+msgid "File size"
+msgstr "Tamanho do arquivo"
+
 msgid "Files"
 msgstr "Arquivos"
 
@@ -1901,8 +1976,14 @@ msgstr "Cores das pastas na barra lateral"
 msgid "Folder name"
 msgstr "Nome da pasta"
 
+msgid "Folder path"
+msgstr "Caminho da pasta"
+
 msgid "Folders"
 msgstr "Pastas"
+
+msgid "Folders are unavailable. Their existing tracks remain in the library."
+msgstr "As pastas estão indisponíveis. Suas faixas existentes permanecem na biblioteca."
 
 msgid "Follow"
 msgstr "Seguir"
@@ -2216,6 +2297,9 @@ msgstr "Mantenho este filtro aplicado; edite o texto para alterá-lo."
 msgid "I restarted the audio services"
 msgstr "Reiniciei os serviços de áudio"
 
+msgid "I save only the conditions. Opening a query uses the currently selected sources and keeps the queue."
+msgstr "Salvo apenas as condições. Ao abrir, uso as fontes selecionadas e mantenho a fila."
+
 msgid "I understand and accept these terms"
 msgstr "Entendo e aceito estes termos"
 
@@ -2300,6 +2384,9 @@ msgstr "Informações: {}"
 msgid "Information"
 msgstr "Informações"
 
+msgid "Information could not be retrieved. Try again shortly."
+msgstr "Não foi possível obter as informações. Tente novamente em instantes."
+
 msgid "Init system (service commands)"
 msgstr "Sistema init (comandos de serviço)"
 
@@ -2347,6 +2434,9 @@ msgstr "Instalados"
 
 msgid "Installing plugin…"
 msgstr "Instalando plugin…"
+
+msgid "Instrument"
+msgstr "Instrumento"
 
 msgid "Integrations"
 msgstr "Integrações"
@@ -2525,6 +2615,15 @@ msgstr "Nivela o volume sonoro entre as faixas. Isso quebra o bit-perfect estrit
 msgid "Library"
 msgstr "Biblioteca"
 
+msgid "Library check complete"
+msgstr "Verificação da biblioteca concluída"
+
+msgid "Library check failed"
+msgstr "Falha na verificação da biblioteca"
+
+msgid "Library check interrupted"
+msgstr "Verificação da biblioteca interrompida"
+
 msgid "Library folders"
 msgstr "Pastas da biblioteca"
 
@@ -2633,6 +2732,9 @@ msgstr "Local — {}"
 msgid "Look"
 msgstr "Visual"
 
+msgid "Look for changes"
+msgstr "Buscar alterações"
+
 msgid "Look records up in"
 msgstr "Buscar discos em"
 
@@ -2708,6 +2810,9 @@ msgstr "Gerenciar"
 msgid "Manage playlists"
 msgstr "Gerenciar playlists"
 
+msgid "Manually"
+msgstr "Manualmente"
+
 msgid "Mar"
 msgstr "mar"
 
@@ -2722,6 +2827,9 @@ msgstr "Marcar como não reproduzido"
 
 msgid "Mark the start first with :loop a."
 msgstr "Marque primeiro o início com :loop a."
+
+msgid "Mastering engineer"
+msgstr "Engenheiro de masterização"
 
 msgid "Match"
 msgstr "Corresponder a"
@@ -2780,6 +2888,9 @@ msgstr "Ausente"
 msgid "Mixed"
 msgstr "Misto"
 
+msgid "Mixing engineer"
+msgstr "Engenheiro de mixagem"
+
 msgid "Mon"
 msgstr "seg"
 
@@ -2824,6 +2935,9 @@ msgstr "Mais"
 
 msgid "More actions"
 msgstr "Mais ações"
+
+msgid "More options"
+msgstr "Mais opções"
 
 msgid "Most at {}:00"
 msgstr "Mais às {}:00"
@@ -2947,6 +3061,9 @@ msgstr "Navegação"
 
 msgid "Needs update"
 msgstr "Precisa de atualização"
+
+msgid "Nerdy"
+msgstr "Nerdy"
 
 msgid "Network"
 msgstr "Rede"
@@ -3140,6 +3257,9 @@ msgstr "Nenhum resultado encontrado."
 msgid "No review available"
 msgstr "Nenhuma resenha disponível"
 
+msgid "No saved queries yet. Add conditions, then choose Save query."
+msgstr "Nenhuma consulta salva. Adicione condições e escolha Salvar consulta."
+
 msgid "No setting says that"
 msgstr "Nenhuma configuração diz isso"
 
@@ -3298,6 +3418,9 @@ msgstr "Ativado"
 
 msgid "On air"
 msgstr "No ar"
+
+msgid "On app startup"
+msgstr "Ao abrir o aplicativo"
 
 msgid "On the sidebar's destinations."
 msgstr "Nos destinos da barra lateral."
@@ -3487,6 +3610,9 @@ msgstr "Pendente"
 
 msgid "Per-app bit-perfect (PipeWire client)"
 msgstr "Bit-perfect por aplicativo (cliente PipeWire)"
+
+msgid "Performer"
+msgstr "Intérprete"
 
 msgid "Performers"
 msgstr "Intérpretes"
@@ -3734,6 +3860,9 @@ msgstr "Privacidade e rede"
 msgid "Processed"
 msgstr "Processado"
 
+msgid "Producer"
+msgstr "Produtor"
+
 msgid "Profile name"
 msgstr "Nome do perfil"
 
@@ -3769,6 +3898,9 @@ msgstr "Filtros de qualidade, formato, fonte e avaliação"
 
 msgid "Quarantined"
 msgstr "Em quarentena"
+
+msgid "Query name"
+msgstr "Nome da consulta"
 
 msgid "Queue"
 msgstr "Fila"
@@ -3838,6 +3970,9 @@ msgstr "Avaliar"
 
 msgid "Rating"
 msgstr "Avaliação"
+
+msgid "Re-fetch album information"
+msgstr "Buscar novamente as informações do álbum"
 
 msgid "Reactivate"
 msgstr "Reativar"
@@ -3928,6 +4063,9 @@ msgstr "Playlists reproduzidas recentemente"
 
 msgid "Recently played playlists in the library"
 msgstr "Playlists reproduzidas recentemente na biblioteca"
+
+msgid "Recording engineer"
+msgstr "Engenheiro de gravação"
 
 msgid "Records"
 msgstr "Discos"
@@ -4051,6 +4189,9 @@ msgstr "Remover…"
 
 msgid "Rename"
 msgstr "Renomear"
+
+msgid "Rename query"
+msgstr "Renomear consulta"
 
 msgid "Renderer"
 msgstr "Renderizador"
@@ -4190,6 +4331,9 @@ msgstr "STATUS"
 msgid "SURFACES"
 msgstr "SUPERFÍCIES"
 
+msgid "Sample rate"
+msgstr "Taxa de amostragem"
+
 msgid "Sample-rate switching (PipeWire)"
 msgstr "Troca de taxa de amostragem (PipeWire)"
 
@@ -4217,6 +4361,9 @@ msgstr "Salvar alterações"
 msgid "Save preset"
 msgstr "Salvar preset"
 
+msgid "Save query"
+msgstr "Salvar consulta"
+
 msgid "Save stations to find them here."
 msgstr "Salve estações para encontrá-las aqui."
 
@@ -4235,6 +4382,9 @@ msgstr "Salvo"
 msgid "Saved position"
 msgstr "Posição salva"
 
+msgid "Saved queries"
+msgstr "Consultas salvas"
+
 msgid "Saved results remain available between sessions."
 msgstr "Os resultados salvos continuam disponíveis entre as sessões."
 
@@ -4250,14 +4400,14 @@ msgstr "Salvando… {} de {} arquivos"
 msgid "Scales the whole interface, like browser zoom. Small fits more content on screen, Large and Extra large improve readability (requires restart)"
 msgstr "Dimensiona toda a interface, como o zoom do navegador. Pequeno mostra mais conteúdo na tela; Grande e Extra grande melhoram a legibilidade (requer reinício)"
 
-msgid "Scan again"
-msgstr "Escanear novamente"
-
-msgid "Scan every folder again"
-msgstr "Escanear todas as pastas novamente"
+msgid "Scan settings could not be saved or read: {}"
+msgstr "Não foi possível salvar ou ler as configurações da verificação: {}"
 
 msgid "Scanning…"
 msgstr "Escaneando…"
+
+msgid "Scheduled checks run while Chilpa is open. Startup checks run once when the app opens. Unchanged files are skipped."
+msgstr "As verificações agendadas ocorrem enquanto Chilpa está aberto. As verificações de início ocorrem uma vez ao abrir o aplicativo. Arquivos sem alterações são ignorados."
 
 msgid "Scrobbling"
 msgstr "Scrobbling"
@@ -4663,6 +4813,12 @@ msgstr "Parar a reprodução após:"
 msgid "Stop playback to diagnose?"
 msgstr "Parar a reprodução para diagnosticar?"
 
+msgid "Stop scan"
+msgstr "Parar verificação"
+
+msgid "Stopping after the current file…"
+msgstr "Parando após o arquivo atual…"
+
 msgid "Stops in"
 msgstr "Para em"
 
@@ -4764,6 +4920,9 @@ msgstr "Essa resposta não pertence a esta janela."
 msgid "That file is not a JPEG, PNG or WebP image"
 msgstr "Esse arquivo não é uma imagem JPEG, PNG ou WebP"
 
+msgid "That saved query no longer exists."
+msgstr "Essa consulta salva não existe mais."
+
 msgid "The EQ profile is too large."
 msgstr "O perfil de EQ é grande demais."
 
@@ -4812,6 +4971,12 @@ msgstr "O primeiro é o destaque do próprio tema; os outros o substituem em tod
 msgid "The floating player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
 msgstr "A barra flutuante do player se recolhe após dez segundos sem o mouse se mover, e qualquer movimento a traz de volta."
 
+msgid "The folder is no longer in the library."
+msgstr "A pasta não está mais na biblioteca."
+
+msgid "The folder scan policy is invalid."
+msgstr "A política de verificação da pasta é inválida."
+
 msgid "The image could not be kept"
 msgstr "Não foi possível manter a imagem"
 
@@ -4824,6 +4989,9 @@ msgstr "Não foi possível salvar a imagem"
 msgid "The image is too large"
 msgstr "A imagem é grande demais"
 
+msgid "The incorrect lyrics could not be excluded. Try again."
+msgstr "Não foi possível excluir a letra incorreta. Tente novamente."
+
 msgid "The line being sung stays in view."
 msgstr "A linha que está sendo cantada permanece à vista."
 
@@ -4835,6 +5003,12 @@ msgstr "O loop não pode ser marcado aqui; o fim precisa estar a pelo menos dois
 
 msgid "The loudness every track is aligned to. -14 LUFS matches streaming services, -18 LUFS is the ReplayGain reference."
 msgstr "A sonoridade à qual cada faixa é alinhada. -14 LUFS corresponde aos serviços de streaming; -18 LUFS é a referência do ReplayGain."
+
+msgid "The lower bound must not exceed the upper bound."
+msgstr "O limite inferior não pode superar o superior."
+
+msgid "The lyrics API could not save the report. This result is excluded on this device."
+msgstr "A API de letras não conseguiu salvar a denúncia. Este resultado está excluído neste dispositivo."
 
 msgid "The lyrics cache could not be opened."
 msgstr "Não foi possível abrir o cache de letras."
@@ -4884,8 +5058,29 @@ msgstr "O renderizador recusou o comando."
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "A mesma regra do ListenBrainz: metade de uma faixa ou quatro minutos."
 
+msgid "The saved folder scan policy is invalid."
+msgstr "A política de verificação de pastas salva é inválida."
+
+msgid "The saved queries could not be read or saved: {}"
+msgstr "Não foi possível ler ou salvar as consultas: {}"
+
+msgid "The saved query catalog exceeds 1 MiB."
+msgstr "O catálogo de consultas excede 1 MiB."
+
+msgid "The saved query catalog is damaged; I kept its original data."
+msgstr "O catálogo está danificado; mantive os dados originais."
+
+msgid "The saved scan could not be restored."
+msgstr "Não foi possível restaurar a verificação salva."
+
 msgid "The saved sign-in could not be opened."
 msgstr "Não foi possível abrir o login salvo."
+
+msgid "The scan could not start: {}"
+msgstr "Não foi possível iniciar a verificação: {}"
+
+msgid "The scan worker stopped unexpectedly."
+msgstr "O processo de verificação parou inesperadamente."
 
 msgid "The selected hardware volume control is gone."
 msgstr "O controle de volume de hardware selecionado não existe mais."
@@ -5021,6 +5216,9 @@ msgstr "Este disco não pode ser reproduzido agora."
 
 msgid "This removes {} from your library."
 msgstr "Isso remove {} da sua biblioteca."
+
+msgid "This saved query catalog uses an unsupported version; I kept its original data."
+msgstr "A versão do catálogo não é compatível; mantive os dados originais."
 
 msgid "This screen is not built yet."
 msgstr "Esta tela ainda não foi construída."
@@ -5328,6 +5526,9 @@ msgstr "As atualizações preservam sua biblioteca, suas configurações e seus 
 msgid "Updating Chilpa…"
 msgstr "Atualizando o Chilpa…"
 
+msgid "Updating the library…"
+msgstr "Atualizando a biblioteca…"
+
 msgid "Updating usage…"
 msgstr "Atualizando o uso…"
 
@@ -5342,6 +5543,9 @@ msgstr "Usar o MusicBrainz"
 
 msgid "Use Quick Connect"
 msgstr "Usar o Quick Connect"
+
+msgid "Use a name of 1 to 80 characters, without line breaks."
+msgstr "Use um nome de 1 a 80 caracteres, sem quebras de linha."
 
 msgid "Use at most 10 DSP filters."
 msgstr "Use no máximo 10 filtros de DSP."
@@ -5393,6 +5597,9 @@ msgstr "Ver filtros precisos"
 
 msgid "View tracks"
 msgstr "Ver faixas"
+
+msgid "Vocals"
+msgstr "Voz"
 
 msgid "Volume"
 msgstr "Volume"
@@ -5544,6 +5751,12 @@ msgstr "Gravar o XML externo do SACD?"
 msgid "Write to a file"
 msgstr "Gravar em um arquivo"
 
+msgid "Writer"
+msgstr "Autor"
+
+msgid "Wrong lyric"
+msgstr "Letra incorreta"
+
 msgid "XML can be edited only for SACD images"
 msgstr "O XML só pode ser editado em imagens de SACD"
 
@@ -5561,6 +5774,9 @@ msgstr "Ontem"
 
 msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
 msgstr "Você é responsável pelos seus próprios backups. Isto é uma ajuda, não uma ferramenta de recuperação do sistema."
+
+msgid "You can save up to 64 queries."
+msgstr "Você pode salvar até 64 consultas."
 
 msgid "Your DAC"
 msgstr "Seu DAC"
@@ -7013,6 +7229,9 @@ msgstr "{} faixas em {} discos"
 
 msgid "{} tracks match disc {}"
 msgstr "{} faixas correspondem ao disco {}"
+
+msgid "{} unreadable"
+msgstr "{} ilegíveis"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "{} não foi autorizado a tempo; conecte novamente"

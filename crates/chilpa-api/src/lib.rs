@@ -7,7 +7,6 @@ pub use chilpa_core::queue_playback::Repeat;
 pub use chilpa_library::{AlbumSort, Stats};
 pub use plugins::{NativeCaller, PluginInfo};
 pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
-
 mod ab_loop;
 pub mod about;
 mod accounts;
@@ -39,6 +38,10 @@ pub use hotkeys::{Pressed, Scope};
 pub mod format;
 pub mod paths;
 mod library;
+mod scan_state;
+mod scan_actions;
+mod scan_policy;
+pub use scan_state::{LibraryFolder, ScanPhase, ScanPolicy, ScanStatus, ScanSummary};
 mod listening_export;
 mod listening_period;
 mod listening_stats;
@@ -54,6 +57,7 @@ mod outputs;
 mod playlists;
 pub use playlists::PlaylistTarget;
 mod preferences;
+pub mod saved_queries;
 mod privacy;
 pub use privacy::network_allowed;
 mod play_indicator;
@@ -155,7 +159,6 @@ pub mod window;
 mod volume;
 pub use volume::VolumeView;
 pub use metadata::view::MetadataView;
-
 pub use browse::{filter_facets, select_facets, select_tracks, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, GroupHeader, Reader, Snapshot, Totals, TrackEntry, TrackOrder, TrackRow};
 pub use browse::PageCache;
 mod album_versions;
@@ -170,7 +173,6 @@ pub use covers::{contained_cover, cover_derivative, header_atmosphere};
 pub use folders::audio_files_in;
 pub use quality::{Quality, Tier};
 pub use scrobble::ScrobbleStatus;
-
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
 use std::path::PathBuf;
 
@@ -553,16 +555,6 @@ pub struct LibraryTrack {
     pub analysis: String,
 }
 
-/// A folder of the library, as the folders page shows it.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct LibraryFolder {
-    pub path: String,
-    /// When it was last scanned, in unix seconds.
-    pub last_scan: Option<i64>,
-    /// False when it is not there now: an unmounted disk, a moved folder.
-    pub reachable: bool,
-}
-
 /// A named batch added with "Play later". Its positions stay stable because
 /// removing queue entries marks them instead of shifting the array.
 #[derive(Clone, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
@@ -602,31 +594,10 @@ pub struct AnalysisStatus {
     pub waiting: Option<String>,
 }
 
-/// How the background scan is going.
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
-pub struct ScanStatus {
-    pub running: bool,
-    pub done: usize,
-    pub total: usize,
-    /// What the last finished scan left behind.
-    pub summary: ScanSummary,
-}
-
-/// What happened in a scan, in one line for the view.
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
-pub struct ScanSummary {
-    pub seen: usize,
-    pub read: usize,
-    pub unchanged: usize,
-    pub missing: usize,
-    /// Found and not readable: links that point nowhere, mostly.
-    pub unreadable: usize,
-    pub unreachable: bool,
-}
-
 /// The Chilpa instance a frontend talks to.
 pub struct Chilpa {
     core: chilpa_core::Core,
+    pub(crate) pending_volume: Option<u8>,
     library: Option<chilpa_library::Library>,
     /// What is needed to log the play when it ends.
     in_progress: Option<InProgress>,
@@ -691,6 +662,7 @@ pub struct Chilpa {
     /// The background scan, while it runs.
     scan: Option<chilpa_library::ScanJob>,
     scan_status: ScanStatus,
+    scan_runtime: scan_state::Runtime,
     analysis: Option<chilpa_core::analysis_job::AnalysisJob>,
     mood_analysis: Option<mood::Job>,
     analysis_folder: Option<String>,
@@ -778,6 +750,7 @@ impl Chilpa {
         let tap = chilpa_core::tap::Tap::new();
         let mut chilpa = Self {
             core: chilpa_core::Core::new(),
+            pending_volume: None,
             library: None,
             in_progress: None,
             scrobbler: None,
@@ -819,6 +792,7 @@ impl Chilpa {
             tap,
             scan: None,
             scan_status: ScanStatus::default(),
+            scan_runtime: Default::default(),
             analysis: None,
             mood_analysis: None,
             analysis_folder: None,
@@ -1249,6 +1223,7 @@ impl Chilpa {
             self.sleep_until = None;
             self.stop();
         }
+        self.advance_scan();
         self.advance_ab();
         self.advance_desktop();
         self.advance_discord();
@@ -1485,6 +1460,7 @@ impl Chilpa {
 
 impl Drop for Chilpa {
     fn drop(&mut self) {
+        self.interrupt_scan_on_shutdown();
         self.catalog.genre_window(false); self.catalog.composer_window(false);
         self.appimage_updates.take();
         self.persist_queue_session();

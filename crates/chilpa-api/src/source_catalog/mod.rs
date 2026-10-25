@@ -36,6 +36,7 @@ pub(crate) mod view;
 mod sorting;
 mod selection;
 mod navigation;
+mod technical;
 mod residency;
 pub use selection::SelectionHold;
 #[cfg(test)]

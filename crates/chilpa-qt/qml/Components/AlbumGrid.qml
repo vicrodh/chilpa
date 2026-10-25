@@ -31,23 +31,14 @@ Item {
     // The sources a card wears: a source's record its own, the library's
     // the logo where sources mix in, and any copy grouped with it its
     // source too.
-    function badges(albumId, rev) {
-        if (albumId === 0)
-            return []
-        let found = JSON.parse(AlbumActions.sources(albumId, rev) || "[]")
-        if (albumId > 0 && found.length === 0)
-            found = [{ local: true }]
-        if (albumId > 0 && !(grid.model && grid.model.mixed) && !found.some(s => !s.local))
-            return []
-        return found.map(s => s.local && !s.icon ? Object.assign({}, s, { icon: "qrc:/qt/qml/app/chilpa/kit/assets/logo.png" }) : s)
-            .filter((s, at, all) => all.findIndex(o => o.icon === s.icon) === at)
-    }
     // Room below the last row, for what floats over the grid.
     property int bottomInset: 0
     // The artist whose page holds the grid: its menu does not lead there.
     property string artistPage
     // Records as rows, one under another, instead of cards side by side.
     property bool list: false
+    // A compact record table with stored technical facts and no cover objects.
+    property bool technical: false
     // The columns of those rows (`AlbumRow.columns`).
     property var listColumns: ["year"]
     property real viewportX: 0
@@ -58,33 +49,15 @@ Item {
 
     // A selected cover paints outside its card. Keep that ring inside the
     // scrollable plane on every edge instead of clipping boundary cards.
-    readonly property real layoutWidth: Math.max(0, width - Metrics.cardRing * 2) // derived: a ring on both sides
+    readonly property real layoutWidth: Math.max(0, (technical ? view.contentWidth : width) - Metrics.cardRing * 2) // derived: a ring on both sides
     readonly property int columns: layoutWidth <= 0 ? 0 : list ? 1 : fixedColumns > 0 ? fixedColumns
         : CardLayout.columns(width)
     readonly property real cardWidth: columns > 0 ? CardLayout.cardWidth : 0
-    readonly property real rowHeight: list ? Metrics.rowRich : cardWidth + Metrics.cardTextGap + Metrics.cardTextHeight
+    readonly property real rowHeight: technical ? Metrics.rowCompact : list ? Metrics.rowRich : cardWidth + Metrics.cardTextGap + Metrics.cardTextHeight
 
     signal open(int albumId, string title)
 
-    // A click selects while anything is selected or with a modifier held;
-    // otherwise it opens the page or the quick view, as Settings says.
-    function clicked(at, albumId, title, modifiers, available) {
-        if (!available)
-            AlbumActions.explain(albumId)
-        else if (!grid.isRound(albumId) && (modifiers !== 0 || AlbumActions.selectedCount > 0))
-            grid.model.select(at, modifiers === 0 ? 1 : modifiers)
-        else if (!grid.isRound(albumId) && !grid.list && SettingsModel.quickViewClick)
-            toggleQuick(at)
-        else {
-            grid.model.prepareOpen(at)
-            grid.open(albumId, title)
-        }
-    }
-
-    function toggleQuick(at) {
-        grid.model.prepareOpen(at)
-        grid.model.expanded = grid.model.expanded === at ? -1 : at
-    }
+    Tools.AlbumGridInteraction { id: interaction; grid: grid }
 
     implicitHeight: shelf ? Math.max(rowHeight, view.contentItem.childrenRect.height) + Metrics.cardRing * 2 : view.contentHeight // derived: the shelf keeps both selection rings
 
@@ -93,6 +66,9 @@ Item {
         motionViewport: grid.viewport
 
         anchors.fill: parent
+        anchors.rightMargin: grid.technical ? Metrics.gap16 : 0
+        anchors.bottomMargin: grid.technical ? Metrics.gap16 : 0
+        flickableDirection: grid.technical ? Flickable.HorizontalAndVerticalFlick : grid.shelf ? Flickable.HorizontalFlick : Flickable.VerticalFlick
         orientation: grid.shelf ? ListView.Horizontal : ListView.Vertical
         interactive: grid.shelf ? contentWidth > width : !grid.fitContent
         // Scrolled rows stay inside the grid, not over what sits above it.
@@ -106,13 +82,26 @@ Item {
         topMargin: Metrics.cardRing
         bottomMargin: grid.bottomInset + Metrics.cardRing
         boundsBehavior: Flickable.StopAtBounds
+        header: grid.technical ? technicalHeader : null
+        headerPositioning: ListView.OverlayHeader
         ScrollBar.vertical: ViewportScrollBar {
+            objectName: "albumVerticalScrollBar"
             policy: grid.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
-            gutter: grid.scrollGutter
+            gutter: grid.technical ? Metrics.gap8 : grid.scrollGutter
             viewportHovered: viewHover.hovered
         }
-        ScrollBar.horizontal: ViewportScrollBar { policy: grid.shelf ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
+        ScrollBar.horizontal: ViewportScrollBar {
+            objectName: "albumHorizontalScrollBar"
+            policy: grid.technical ? ScrollBar.AlwaysOn : grid.shelf ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+            gutter: grid.technical ? Metrics.gap8 : -Metrics.gap4
+        }
         HoverHandler { id: viewHover; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad }
+        Binding {
+            target: view; property: "contentWidth"
+            when: grid.technical
+            value: Math.max(view.width, Metrics.nerdyTableWidth)
+            restoreMode: Binding.RestoreBindingOrValue
+        }
 
         delegate: Item {
             id: row
@@ -125,7 +114,7 @@ Item {
             readonly property real lead: group !== "" ? Metrics.rowGroup : 0
             readonly property bool nearby: !grid.viewport || y + height >= grid.visibleTop - grid.viewport.height && y < grid.visibleTop + grid.viewport.height * 2
 
-            width: grid.shelf ? grid.cardWidth : grid.width
+            width: grid.shelf ? grid.cardWidth : grid.technical ? view.contentWidth : grid.width
             height: lead + grid.rowHeight + (quick.active ? Metrics.gap8 + quick.height : 0)
 
             Text {
@@ -148,22 +137,23 @@ Item {
                 x: Metrics.cardRing
                 y: row.lead
                 width: grid.layoutWidth
+                technical: grid.technical
                 rev: grid.detailsRev
                 albumId: shown ? grid.model.albumId(row.first, row.revision) : 0
                 title: shown ? grid.model.title(row.first, row.revision) : ""
                 subtitle: shown ? grid.model.subtitle(row.first, row.revision) : ""
                 year: shown ? grid.model.year(row.first, row.revision) : ""
-                art: shown ? grid.model.art(row.first, row.revision) : ""
+                art: shown && !grid.technical ? grid.model.art(row.first, row.revision) : ""
                 columns: grid.listColumns
-                sources: shown && grid.listColumns.indexOf("source") >= 0 ? grid.badges(albumId, rev) : []
+                sources: shown && !grid.technical && grid.listColumns.indexOf("source") >= 0 ? interaction.badges(albumId, rev) : []
                 mixed: !!grid.model && grid.model.mixed
                 tint: row.first
                 selected: shown && AlbumActions.selected(albumId, AlbumActions.rev)
                 expanded: shown && grid.model.expanded === row.first
                 available: !shown || AlbumActions.available(albumId, rev)
-                onClicked: (modifiers) => grid.clicked(row.first, albumId, title, modifiers, available)
+                onClicked: (modifiers) => interaction.clicked(row.first, albumId, title, modifiers, available)
                 onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
-                onQuick: grid.toggleQuick(row.first)
+                onQuick: interaction.toggleQuick(row.first)
                 onMenu: (x, y) => {
                     if (!available)
                         return
@@ -188,7 +178,7 @@ Item {
                     width: grid.cardWidth
                     visible: occupied
                     albumId: occupied ? grid.model.albumId(at, rev) : 0
-                    sources: occupied ? grid.badges(albumId, grid.detailsRev) : []
+                    sources: occupied ? interaction.badges(albumId, grid.detailsRev) : []
                     title: occupied ? grid.model.title(at, rev) : ""
                     subtitle: occupied ? grid.model.subtitle(at, rev) : ""
                     year: occupied ? grid.model.year(at, rev) : ""
@@ -201,10 +191,10 @@ Item {
                     selecting: !round && AlbumActions.selectedCount > 0
                     expanded: grid.model.expanded === at
                     available: round || !occupied || AlbumActions.available(albumId, grid.detailsRev)
-                    onClicked: (modifiers) => grid.clicked(at, albumId, title, modifiers, available)
+                    onClicked: (modifiers) => interaction.clicked(at, albumId, title, modifiers, available)
                     // A record that stops playing closes its quick view too.
                     onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
-                    onQuick: grid.toggleQuick(at)
+                    onQuick: interaction.toggleQuick(at)
                     onMenu: (x, y) => {
                         if (round || !available)
                             return
@@ -232,12 +222,21 @@ Item {
         }
     }
 
+    Component {
+        id: technicalHeader
+        Tools.TechnicalCells {
+            width: grid.layoutWidth
+            height: Metrics.rowHeader
+            header: true
+        }
+    }
+
     AlbumMenu {
         id: albumMenu
         objectName: "albumMenu"
 
         canExpand: true
         artistPage: grid.artistPage
-        onQuick: (at) => grid.toggleQuick(at)
+        onQuick: (at) => interaction.toggleQuick(at)
     }
 }

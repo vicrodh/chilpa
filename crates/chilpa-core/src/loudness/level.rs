@@ -83,6 +83,25 @@ impl Leveler {
         }
     }
 
+    /// I leave the analyzer with the decoder and move gains to consumption.
+    pub fn take_output(&mut self) -> Self {
+        Self { ramp: self.ramp.take(), volume: self.volume.take(), analyzer: None,
+            pending: None, reset: false, start: super::StartGain { gain: self.start.gain, known: self.start.known } }
+    }
+
+    pub fn packed(&mut self, bytes: &mut [u8], format: chilpa_audio::format::StreamFormat, duplicate_mono: bool) {
+        let volume = self.volume.as_ref().map_or(1.0, Level::get);
+        let mut sample = 0;
+        let mut gain = volume;
+        chilpa_audio::dsp::volume::scale(bytes, format, || {
+            if !duplicate_mono || sample % 2 == 0 {
+                gain = self.ramp.as_mut().map_or(1.0, GainRamp::next) * volume;
+            }
+            sample += 1;
+            gain
+        });
+    }
+
     /// Whether the samples change: a start gain that is not unity or not
     /// known yet, or a volume under full.
     pub fn touches(&self) -> bool {
@@ -151,6 +170,21 @@ impl Leveler {
 mod tests {
     use super::*;
     use std::sync::mpsc::sync_channel;
+
+    #[test]
+    fn late_combined_gain_avoids_clipping_a_boost_before_low_volume() {
+        use chilpa_audio::format::{SampleFormat, StreamFormat};
+        let shared = Arc::new(AtomicU32::new(2.0f32.to_bits()));
+        let mut reader = Leveler::volume_only(Some(Level::new(0.25)));
+        reader.ramp = Some(GainRamp::new(shared, 2.0, 44_100, 1));
+        let mut output = reader.take_output();
+        let mut samples = [30_000];
+        reader.int(&mut samples, 16);
+        assert_eq!(samples, [30_000], "read-ahead retains unscaled PCM");
+        let mut bytes = 30_000i16.to_le_bytes();
+        output.packed(&mut bytes, StreamFormat::new(SampleFormat::S16, 44_100, 1), false);
+        assert_eq!(i16::from_le_bytes(bytes), 15_000, "boost and volume combine before rounding or clipping");
+    }
 
     fn shape(key: &str) -> Shape<'_> {
         Shape { key, rate: 1000, channels: 1, frames: Some(60_000) }

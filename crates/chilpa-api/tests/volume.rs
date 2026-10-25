@@ -56,6 +56,12 @@ fn shared_volume_scales_samples_and_only_direct_alsa_locks_it() {
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.remember(OUTPUT, true);
     chilpa.set_player_volume(40);
+    for percent in [41, 63, 27] { chilpa.preview_player_volume(percent); }
+    assert_eq!(chilpa.player_volume().percent, 27);
+    assert_eq!(chilpa.preference("playback.volume").as_deref(), Some("40"), "dragging does not write settings");
+    chilpa.persist_player_volume();
+    assert_eq!(chilpa.preference("playback.volume").as_deref(), Some("27"));
+    chilpa.set_player_volume(40);
     let view = chilpa.player_volume();
     assert_eq!((view.percent, view.locked, view.hardware), (40, false, false));
 

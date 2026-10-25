@@ -10,8 +10,10 @@ QtObject {
     required property var settings
     readonly property var sidebarTurns: ({ open: "collapsed", collapsed: "closed", closed: "open" })
     function volume(by) {
-        if (!Player.volumeLocked)
+        if (!Player.volumeLocked) {
             Player.chooseVolume(Math.max(0, Math.min(100, Player.volume + by)))
+            Player.persistVolume()
+        }
     }
 
     function run(action, args) {
@@ -34,7 +36,7 @@ QtObject {
         case "playback.play": if (Player.paused) Player.toggle(); else if (!Player.playing) ListenList.command("play", "", ""); break
         case "playback.pause": if (Player.playing && !Player.paused) Player.toggle(); break
         case "playback.seek": Player.seek(Math.max(0, args.value + (args.relative ? Player.position : 0))); break
-        case "playback.volume": if (!Player.volumeLocked) Player.chooseVolume(Math.max(0, Math.min(100, args.value + (args.relative ? Player.volume : 0)))); break
+        case "playback.volume": if (!Player.volumeLocked) { Player.chooseVolume(Math.max(0, Math.min(100, args.value + (args.relative ? Player.volume : 0)))); Player.persistVolume() } break
         case "playback.sleep": Controls.sleepIn(args.argument === "off" ? 0 : Number(args.argument)); break
         case "playback.loop": Controls.refresh(); break
         case "settings.set": settings.set(args.key, args.argument); break

@@ -10,6 +10,7 @@ Item {
     property real heldWidth: -1
     onResizingChanged: if (resizing) heldWidth = width; else heldWidth = -1
     property string route: ""
+    property string retainedScreen: ""
     property string componentRoute: ""
     property Component sourceComponent
     property string committedRoute: ""
@@ -29,6 +30,7 @@ Item {
 
     function routeKeyOf(loader) { return ((loader?.pageRoute || "").split("\u001f")[3]) || "" }
     function routeIdOf(loader) { return Number((loader?.pageRoute || "").split("\u001f")[2]) || 0 }
+    function scrollKeyOf(loader) { const parts = loader.pageRoute.split("\u001f"); return parts[1] === retainedScreen ? parts.slice(0, 3).join("\u001f") : loader.pageRoute }
 
     function request(force) {
         if (!force && phase === "content" && route === committedRoute
@@ -37,6 +39,14 @@ Item {
         if (phase === "acknowledging" && acknowledgedRoute === route && awaitingFrame)
             return
         const current = frontA ? first : second
+        const from = committedRoute.split("\u001f"), to = route.split("\u001f")
+        if (!force && phase === "content" && current.item && retainedScreen && from[0] === to[0]
+                && from[1] === retainedScreen && to[1] === retainedScreen && current.sourceComponent === sourceComponent) {
+            generation += 1
+            settleReveal()
+            Qt.callLater(retarget, generation)
+            return
+        }
         if (phase === "content") current.scroll.remember()
         current.scroll.enabled = false
         const focus = transition.Window.window?.activeFocusItem
@@ -58,6 +68,25 @@ Item {
         if (phase === "content" || phase === "loading") request()
     }
     Component.onCompleted: request()
+
+    // I keep a navigation shell while its own content changes. Deferring
+    // coalesces the individual route properties published in the same turn.
+    function retarget(epoch) {
+        if (epoch !== generation || phase !== "content") return
+        const current = frontA ? first : second
+        componentRoute = route
+        if (epoch !== generation) return
+        current.pageRoute = route
+        if (epoch !== generation) return
+        current.epoch = epoch
+        committedRoute = route
+        acknowledgedRoute = route
+        pendingRoute = ""
+        preparingRoute()
+        if (epoch !== generation) return
+        awaitingContentFrame = true
+        frameFence.arm(epoch * 2 + 1)
+    }
 
     // I retain both trees until the acknowledgement has reached the screen.
     function start() { request() }
@@ -170,7 +199,7 @@ Item {
         ScrollMemory {
             id: firstScroll
             viewport: first.item && first.item.contentY !== undefined ? first.item : first.item?.scrollView || null
-            key: first.pageRoute
+            key: transition.scrollKeyOf(first)
         }
     }
     Loader {
@@ -187,7 +216,7 @@ Item {
         ScrollMemory {
             id: secondScroll
             viewport: second.item && second.item.contentY !== undefined ? second.item : second.item?.scrollView || null
-            key: second.pageRoute
+            key: transition.scrollKeyOf(second)
         }
     }
     FrameFence {

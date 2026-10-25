@@ -19,6 +19,8 @@ QtObject {
 
     function show(said, item) {
         text = said
+        if (target === item)
+            return
         target = item
         shown = false
         delay.restart()

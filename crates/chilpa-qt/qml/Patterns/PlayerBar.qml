@@ -226,7 +226,7 @@ Item {
                 }
             }
         }
-        VolumeControl {
+        Parts.VolumeControl {
             opensDown: bar.onTop
             anchors.verticalCenter: parent.verticalCenter
             visible: bar.width >= Metrics.playerNoVolume
