@@ -27,7 +27,7 @@ pub(super) fn identity(http:&dyn Http,credential:&Credential)->Result<String,Fai
     let reply=http.get_as("https://api.discogs.com/oauth/identity","application/json",TIMEOUT,LARGEST,&header)
         .map_err(|_|Failure::Unreachable("identity unavailable".into()))?;
     let doc=decoded(reply)?;
-    let user=doc["username"].as_str().filter(|u|safe(u) && u.len()<=128).ok_or(Failure::Credential)?;
+    let user=doc["username"].as_str().filter(|u|!u.is_empty() && u.len()<=128 && !u.chars().any(|c|c.is_control() || c=='<' || c=='>')).ok_or(Failure::Credential)?;
     Ok(user.into())
 }
 pub(super) fn begin(http:&dyn Http)->Result<Begin,Failure> {

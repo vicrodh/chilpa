@@ -108,28 +108,7 @@ impl crate::Chilpa {
     }
     pub(crate) fn discogs_row(&mut self,row:&mut crate::SettingsRow)->bool {
         if !row.key.starts_with("integrations.discogs.") {return false;}
-        let status=self.discogs();
-        match row.key.as_str() {
-            "integrations.discogs.account"=>{
-                if status.checking && status.needs_code {
-                    row.control="external".into();row.action=chilpa_i18n::t("Open Discogs");row.value=status.link;
-                    row.description=chilpa_i18n::t("Allow Chilpa on Discogs, then paste the code below.");
-                } else if status.checking {
-                    row.control="button".into();row.action=chilpa_i18n::t("Cancel");
-                    row.description=chilpa_i18n::t("Checking the account…");
-                } else if !status.user.is_empty() {
-                    row.title=chilpa_i18n::t_args("Connected as {}",&[&status.user]);row.action=chilpa_i18n::t("Disconnect");
-                    row.description=chilpa_i18n::t("Disconnecting forgets this account here. Revoke access at discogs.com/settings/applications.");
-                }
-                if !status.error.is_empty() {row.description=status.error;}
-                if !chilpa_core::network::current().proxy && status.user.is_empty() {
-                    row.control="none".into();row.description=chilpa_i18n::t("Enable Chilpa proxy for browser sign-in, or connect with a personal token below.");
-                }
-            }
-            "integrations.discogs.code" if !status.needs_code=>row.control.clear(),
-            "integrations.discogs.token" if !status.error.is_empty()=>row.description=status.error,
-            _=>{}
-        }
+        fill_account_row(row,self.discogs(),chilpa_core::network::current().proxy);
         true
     }
     pub fn discogs_quota_pending(&self)->bool {self.discogs_account.as_ref().is_some_and(|a|a.quota && !a.quota_presented)}
@@ -149,4 +128,28 @@ impl crate::Chilpa {
         }
         true
     }
+}
+
+fn fill_account_row(row:&mut crate::SettingsRow,status:DiscogsStatus,proxy_enabled:bool) {
+        match row.key.as_str() {
+            "integrations.discogs.account"=>{
+                if status.checking && status.needs_code {
+                    row.control="external".into();row.action=chilpa_i18n::t("Open Discogs");row.value=status.link;
+                    row.description=chilpa_i18n::t("Allow Chilpa on Discogs, then paste the code below.");
+                } else if status.checking {
+                    row.control="button".into();row.action=chilpa_i18n::t("Cancel");
+                    row.description=chilpa_i18n::t("Checking the account…");
+                } else if !status.user.is_empty() {
+                    row.title=chilpa_i18n::t_args("Connected as {}",&[&status.user]);row.action=chilpa_i18n::t("Disconnect");
+                    row.description=chilpa_i18n::t("Disconnecting forgets this account here. Revoke access at discogs.com/settings/applications.");
+                }
+                if !status.error.is_empty() {row.description=status.error;}
+                if !proxy_enabled && status.user.is_empty() {
+                    row.control="none".into();row.description=chilpa_i18n::t("Enable Chilpa proxy for browser sign-in, or connect with a personal token below.");
+                }
+            }
+            "integrations.discogs.code" if !status.needs_code || !proxy_enabled=>row.control.clear(),
+            "integrations.discogs.token" if !status.error.is_empty()=>row.description=status.error,
+            _=>{}
+        }
 }

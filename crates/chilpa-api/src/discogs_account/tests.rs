@@ -127,3 +127,25 @@ fn disconnect_during_a_slow_keystore_cannot_publish_or_restore_a_late_credential
     assert!(!root.path().join("credential.sealed").exists());
     assert_eq!(account.provider()(),Credential::Anonymous);
 }
+#[test]
+fn account_rows_cover_connection_states_and_hide_browser_code_when_proxy_access_is_off() {
+    fn row(key:&str)->crate::SettingsRow {crate::SettingsRow {key:key.into(),control:"button".into(),action:chilpa_i18n::t("Connect"),..Default::default()}}
+    for status in [DiscogsStatus::default(),DiscogsStatus {checking:true,..Default::default()},
+        DiscogsStatus {user:"tester".into(),..Default::default()},
+        DiscogsStatus {checking:true,needs_code:true,link:"https://www.discogs.com/oauth/authorize?oauth_token=request".into(),..Default::default()}] {
+        let mut account=row("integrations.discogs.account");fill_account_row(&mut account,status.clone(),true);
+        if status.needs_code {assert_eq!(account.control,"external");assert_eq!(account.value,status.link);}
+        else {assert_eq!(account.control,"button");assert_eq!(account.action,if status.checking {chilpa_i18n::t("Cancel")} else if status.user.is_empty() {chilpa_i18n::t("Connect")} else {chilpa_i18n::t("Disconnect")});}
+        let mut code=row("integrations.discogs.code");code.control="secret".into();
+        fill_account_row(&mut code,status.clone(),true);assert_eq!(code.control.is_empty(),!status.needs_code);
+        fill_account_row(&mut code,status,false);assert!(code.control.is_empty());
+    }
+}
+#[test]
+fn verified_usernames_accept_unicode_but_not_control_characters_or_markup() {
+    let key=Credential::Token("marker".into());
+    let network=Network::default().reply(200,r#"{"username":"José"}"#);
+    assert_eq!(wire::identity(&network,&key).unwrap(),"José");
+    let network=Network::default().reply(200,r#"{"username":"<img>"}"#);
+    assert!(wire::identity(&network,&key).is_err());
+}

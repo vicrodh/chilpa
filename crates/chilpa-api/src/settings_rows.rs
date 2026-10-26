@@ -213,17 +213,15 @@ impl Chilpa {
                 }
                 let mut row = Row { kind: 1, key: s.key.into(), title: chilpa_i18n::t(s.title), description: if s.description.is_empty() { String::new() } else { chilpa_i18n::t(s.description) }, control: s.control.name().into(), action: if s.action.is_empty() { String::new() } else { chilpa_i18n::t(s.action) }, ..Row::default() };
                 self.fill(&mut row, &output, notes);
-                let local_account_action=row.key=="integrations.discogs.account" && {
+                // An unavailable row stays absent when offline restrictions apply.
+                if row.control.is_empty() { continue; }
+                let local_account_action=row.key=="integrations.discogs.account" && row.control=="button" && {
                     let status=self.discogs();!status.user.is_empty() || status.checking
                 };
                 let lyrics_off = self.preference("integrations.lyrics.enabled").as_deref() == Some("false");
                 if (self.offline() && row.key.starts_with("integrations.") && row.key != "integrations.offline" && row.key != "integrations.lyrics.enabled" && !local_account_action)
                     || (lyrics_off && row.key.starts_with("integrations.lyrics.") && row.key != "integrations.lyrics.enabled") {
                     row.control = "fixed".into();
-                }
-                // A row that does not apply to what is chosen is left out.
-                if row.control.is_empty() {
-                    continue;
                 }
                 rows.push(row);
                 if s.key == "audio.wizard" {
