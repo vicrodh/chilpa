@@ -7,6 +7,26 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[test]
+fn the_device_sidebar_shortcut_defaults_on_and_remembers_the_opt_out() {
+    isolated("the_device_sidebar_shortcut_defaults_on_and_remembers_the_opt_out", || {
+        let value = |api: &mut chilpa_api::Chilpa| {
+            api.settings_rows("navigation", &chilpa_api::RowNotes::default()).0
+                .into_iter().find(|row| row.key == "navigation.devices").unwrap().value
+        };
+        let mut api = chilpa_api::Chilpa::new();
+        assert_eq!(value(&mut api), "true");
+        assert!(api.adjust("navigation.devices", "false"));
+        drop(api);
+        let mut reopened = chilpa_api::Chilpa::new();
+        assert_eq!(value(&mut reopened), "false");
+        assert!(!reopened.adjust("navigation.devices", "invalid"));
+        assert_eq!(value(&mut reopened), "false");
+        assert!(reopened.adjust("navigation.devices", "true"));
+        assert_eq!(value(&mut reopened), "true");
+    });
+}
+
 fn isolated(name: &str, run: impl FnOnce()) {
     if std::env::var("CHILPA_DEVICE_TEST").as_deref() == Ok(name) {
         run();

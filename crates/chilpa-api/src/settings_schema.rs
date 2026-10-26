@@ -198,6 +198,10 @@ pub const SECTIONS: &[Section] = &[
         icon: "list",
         groups: &[
             Group {
+                title: Chilpa::mark("Sidebar"),
+                settings: &[setting(crate::device_sync::SHOW_IN_SIDEBAR, Chilpa::mark("Devices in the sidebar"), Chilpa::mark("Show the shortcut for syncing players and memory cards."), Control::Toggle)],
+            },
+            Group {
                 title: Chilpa::mark("Tabs"),
                 settings: &[
                     setting("navigation.newtab", Chilpa::mark("Middle click opens a new tab"), Chilpa::mark("On the sidebar's destinations."), Control::Toggle),

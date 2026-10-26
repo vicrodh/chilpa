@@ -142,7 +142,7 @@ impl Mtp {
             if !prefix.is_empty() { prefix.push('/'); }
             prefix.push_str(part);
             let ancestor = index + 1 < parts.len();
-            let cached = ancestor.then(|| self.folders.borrow().get(&prefix).copied()).flatten();
+            let cached = self.folders.borrow().get(&prefix).copied();
             let info = if let Some(cached) = cached {
                 let info = block_on(self.storage.get_object_info(cached.handle)).map_err(protocol)?;
                 // Handles are session-local hints. I revalidate each ancestor, including root
@@ -155,8 +155,8 @@ impl Mtp {
                 info
             } else {
                 let Some(info) = self.child(parent, part)? else { return Ok(None) };
-                if ancestor {
-                    if !info.is_folder() { return Err(conflict("a file occupies an MTP parent folder")); }
+                if ancestor && !info.is_folder() { return Err(conflict("a file occupies an MTP parent folder")); }
+                if info.is_folder() {
                     let mut folders = self.folders.borrow_mut();
                     if folders.len() == FOLDER_CACHE_LIMIT { folders.clear(); }
                     folders.insert(prefix.clone(), FolderRef { handle:info.handle, parent, reported_parent:info.parent, storage:info.storage_id });

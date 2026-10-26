@@ -13,10 +13,12 @@ Item {
     property string lastStatus: ""
     property var ids: []
     property int playlistId: 0
+    property int navigationStep: 0
     property string storage: "SMOKE_STORAGE"
     property string folder: "SMOKE_FOLDER"
     property string profileName: "SMOKE_PROFILE"
     TrackListModel { id: tracks; kind: "tracks"; key: "album\u001foff\u001fDAP"; filterRev: Library.contentRev }
+    SettingsPage { id: navigationSettings; section: "navigation" }
     function check(condition, message) { if (!condition) throw new Error(message) }
     function find(item, predicate) {
         if (predicate(item)) return item
@@ -65,6 +67,22 @@ Item {
         if (DeviceSync.busy || (!document.destinations && phase !== 8)) return
         check(!status.error, "device task failed: " + JSON.stringify(status.error))
         if (phase === 2) {
+            const entry = find(mainWindow.contentItem, item => item.objectName === "deviceNavigation")
+            check(!!entry, "device shortcut missing")
+            if (navigationStep === 0) {
+                check(entry.visible, "device shortcut should default on")
+                navigationSettings.set("navigation.devices", "false")
+                navigationStep = 1
+                return
+            }
+            if (navigationStep === 1) {
+                const hidden = find(mainWindow.contentItem, item => item.objectName === "deviceNavigation")
+                check(hidden && !hidden.visible, "device shortcut did not respect the opt-out")
+                navigationSettings.set("navigation.devices", "true")
+                navigationStep = 2
+                return
+            }
+            check(entry.visible, "device shortcut did not return")
             const destination = document.destinations.find(row => row.id === storage)
             check(!!destination && destination.writable, "expected writable storage missing: " + JSON.stringify(document.destinations))
             named("deviceDestination").picked(storage)
