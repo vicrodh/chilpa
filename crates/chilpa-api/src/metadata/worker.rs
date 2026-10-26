@@ -73,6 +73,11 @@ impl Http for Network {
             Err(e) => Err(e.to_string()),
         }
     }
+    fn post_as(&self,url:&str,accept:&str,timeout:Duration,max_bytes:usize,authorization:&str)->Result<Reply,String> {
+        let asked=chilpa_core::Fetch {url,user_agent:&self.agent,accept,timeout,max_bytes,authorization:Some(authorization)};
+        let got=chilpa_core::fetch_oauth(&asked).map_err(|_|"the OAuth exchange could not be completed".to_string())?;
+        Ok(Reply {status:got.status,headers:got.headers,body:got.body})
+    }
     fn get_as(&self, url: &str, accept: &str, timeout: Duration, max_bytes: usize, authorization: &str) -> Result<Reply,String> {
         if !chilpa_core::permits_authorization(url,authorization) { return Err("credential destination is not allowed".into()); }
         let asked = chilpa_core::Fetch { url, user_agent:&self.agent,accept,timeout,max_bytes,authorization:Some(authorization) };

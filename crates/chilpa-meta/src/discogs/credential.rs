@@ -23,17 +23,20 @@ impl Credential {
         let token = token.trim();
         clean(token).then(|| Self::Token(token.into()))
     }
+    /// I sign the two handshake legs with the same encoding as API requests.
+    pub fn sign_oauth(consumer_key:&str,token:Option<&str>,signature:&str,now_unix:u64,nonce:&str)->Option<String> {
+        if !clean(consumer_key) || !clean(signature) || !clean(nonce) || token.is_some_and(|t|!clean(t)) {return None;}
+        let token=token.map(|t|format!("oauth_token=\"{}\", ",encode(t))).unwrap_or_default();
+        Some(format!("OAuth oauth_consumer_key=\"{}\", oauth_nonce=\"{}\", {token}oauth_signature_method=\"PLAINTEXT\", oauth_timestamp=\"{now_unix}\", oauth_signature=\"{}\"",encode(consumer_key),encode(nonce),encode(signature)))
+    }
     pub fn authenticated(&self) -> bool { !matches!(self, Self::Anonymous) }
     /// The signature is the RFC 5849 PLAINTEXT value, percent encoded again
-    /// as an Authorization parameter. The worker constructs its inner value.
+    /// as an Authorization parameter. Both secrets are encoded in its inner value.
     pub fn header(&self, now_unix: u64, nonce: &str) -> Option<String> {
         match self {
             Self::Anonymous => None,
             Self::Token(token) if clean(token) => Some(format!("Discogs token={token}")),
-            Self::OAuth { consumer_key, token, signature } if clean(consumer_key) && clean(token) && clean(signature) && clean(nonce) => {
-                Some(format!("OAuth oauth_consumer_key=\"{}\", oauth_nonce=\"{}\", oauth_token=\"{}\", oauth_signature_method=\"PLAINTEXT\", oauth_timestamp=\"{now_unix}\", oauth_signature=\"{}\"",
-                    encode(consumer_key), encode(nonce), encode(token), encode(signature)))
-            }
+            Self::OAuth { consumer_key, token, signature } => Self::sign_oauth(consumer_key,Some(token),signature,now_unix,nonce),
             _ => None,
         }
     }
@@ -60,6 +63,12 @@ mod tests {
         let key = Credential::OAuth {consumer_key:"consumer".into(),token:"access".into(),signature:"client%25secret&token%2Fsecret".into()};
         assert_eq!(key.header(123,"fresh"),Some("OAuth oauth_consumer_key=\"consumer\", oauth_nonce=\"fresh\", oauth_token=\"access\", oauth_signature_method=\"PLAINTEXT\", oauth_timestamp=\"123\", oauth_signature=\"client%2525secret%26token%252Fsecret\"".into()));
         assert!(key.header(123,"bad\nnonce").is_none());
+    }
+    #[test]
+    fn request_token_signing_omits_the_absent_token_and_refuses_header_injection() {
+        let header=Credential::sign_oauth("consumer",None,"client%25secret&",123,"fresh").unwrap();
+        assert!(!header.contains("oauth_token="));assert!(header.contains("client%2525secret%26"));
+        assert!(Credential::sign_oauth("consumer",None,"bad\r\nheader",123,"fresh").is_none());
     }
     #[test]
     fn debug_never_shows_secrets() {

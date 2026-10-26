@@ -133,7 +133,7 @@ impl crate::Chilpa {
 fn fill_account_row(row:&mut crate::SettingsRow,status:DiscogsStatus,proxy_enabled:bool) {
         match row.key.as_str() {
             "integrations.discogs.account"=>{
-                if status.checking && status.needs_code {
+                if status.checking && status.needs_code && proxy_enabled {
                     row.control="external".into();row.action=chilpa_i18n::t("Open Discogs");row.value=status.link;
                     row.description=chilpa_i18n::t("Allow Chilpa on Discogs, then paste the code below.");
                 } else if status.checking {
@@ -144,7 +144,7 @@ fn fill_account_row(row:&mut crate::SettingsRow,status:DiscogsStatus,proxy_enabl
                     row.description=chilpa_i18n::t("Disconnecting forgets this account here. Revoke access at discogs.com/settings/applications.");
                 }
                 if !status.error.is_empty() {row.description=status.error;}
-                if !proxy_enabled && status.user.is_empty() {
+                if !proxy_enabled && status.user.is_empty() && !status.checking {
                     row.control="none".into();row.description=chilpa_i18n::t("Enable Chilpa proxy for browser sign-in, or connect with a personal token below.");
                 }
             }

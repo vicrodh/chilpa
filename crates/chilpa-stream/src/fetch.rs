@@ -1,4 +1,4 @@
-//! A GET that hands back bytes.
+//! A bounded request that hands back bytes.
 //!
 //! `request::send` is for plugins: JSON in, JSON out, text only. A cover is
 //! not text, a catalogue wants to be told who is asking, and a lookup that
@@ -76,7 +76,21 @@ fn local(url: &str) -> bool {
 }
 
 /// Asks once. A status that is not 200 is an answer, not a failure.
-pub fn fetch(request: &Fetch) -> Result<Fetched, FetchError> {
+pub fn fetch(request: &Fetch) -> Result<Fetched, FetchError> { ask(request,false) }
+
+/// I restrict bodyless authenticated POSTs to the two direct OAuth endpoints.
+/// The application credential never crosses a redirect or reaches another host.
+pub fn fetch_oauth(request:&Fetch)->Result<Fetched,FetchError> {
+    let url=url::Url::parse(request.url).map_err(|_|FetchError::Scheme)?;
+    if url.host_str()!=Some("api.discogs.com") || !matches!(url.path(),"/oauth/request_token"|"/oauth/access_token")
+        || url.query().is_some() || url.fragment().is_some()
+        || !request.authorization.is_some_and(|header|header.starts_with("OAuth ") && permits_authorization(request.url,header)) {
+        return Err(FetchError::Scheme);
+    }
+    ask(request,true)
+}
+
+fn ask(request:&Fetch,post:bool)->Result<Fetched,FetchError> {
     let local = local(request.url);
     if !request.url.starts_with("https://") && !local {
         return Err(FetchError::Scheme);
@@ -86,17 +100,19 @@ pub fn fetch(request: &Fetch) -> Result<Fetched, FetchError> {
         .http_status_as_error(false)
         // A redirect to plain http is refused too.
         .https_only(!local)
-        .max_redirects(if request.authorization.is_some() { 0 } else { 5 })
+        .max_redirects(if request.authorization.is_some() || post { 0 } else { 5 })
         .middleware(crate::network::guard)
         .build());
-    let mut asked = agent
-        .get(request.url)
-        .header("User-Agent", request.user_agent)
-        .header("Accept", request.accept);
-    if let Some(authorization) = request.authorization.filter(|value| permits_authorization(request.url,value)) {
-        asked = asked.header("Authorization", authorization);
+    let reply = if post {
+        let mut asked=agent.post(request.url).header("User-Agent",request.user_agent)
+            .header("Accept",request.accept).header("Content-Type","application/x-www-form-urlencoded");
+        if let Some(header)=request.authorization.filter(|value|permits_authorization(request.url,value)) {asked=asked.header("Authorization",header);}
+        asked.send_empty()
+    } else {
+        let mut asked=agent.get(request.url).header("User-Agent",request.user_agent).header("Accept",request.accept);
+        if let Some(header)=request.authorization.filter(|value|permits_authorization(request.url,value)) {asked=asked.header("Authorization",header);}
+        asked.call()
     }
-    let reply = asked.call()
         .map_err(|e| match e {
             ureq::Error::RequireHttpsOnly(_) => FetchError::Scheme,
             other => FetchError::Transport(other.to_string()),
@@ -204,6 +220,25 @@ mod tests {
         asked.join().unwrap();
         assert_eq!(got.status, 503);
         assert_eq!(got.headers["retry-after"], "4");
+    }
+    #[test]
+    fn oauth_posts_refuse_other_origins_paths_credentials_and_query_strings() {
+        for address in ["https://evil.test/oauth/request_token","https://api.discogs.com/releases/1",
+            "http://api.discogs.com/oauth/request_token","https://api.discogs.com/oauth/request_token?secret=marker",
+            "https://api.discogs.com/oauth/access_token#fragment","https://api.discogs.com:8443/oauth/request_token"] {
+            let request=Fetch {url:address,user_agent:"fixture",accept:"*/*",timeout:Duration::from_secs(1),max_bytes:64,authorization:Some("OAuth marker")};
+            assert!(matches!(fetch_oauth(&request),Err(FetchError::Scheme)),"{address}");
+        }
+        let request=Fetch {url:"https://api.discogs.com/oauth/request_token",user_agent:"fixture",accept:"*/*",timeout:Duration::from_secs(1),max_bytes:64,authorization:None};
+        assert!(matches!(fetch_oauth(&request),Err(FetchError::Scheme)));
+    }
+    #[test]
+    fn the_oauth_transport_sends_a_bodyless_post_and_preserves_redirects() {
+        let (url,asked)=answering(reply("302 Found","Location: https://api.discogs.com/oauth/request_token\r\n",b""));
+        let request=Fetch {url:&url,user_agent:"fixture",accept:"application/x-www-form-urlencoded",timeout:Duration::from_secs(1),max_bytes:64,authorization:None};
+        assert_eq!(super::ask(&request,true).unwrap().status,302);
+        let wire=asked.join().unwrap();assert!(wire.starts_with("POST /x HTTP/1.1"));
+        assert!(wire.to_ascii_lowercase().contains("content-type: application/x-www-form-urlencoded"));
     }
     #[test]
     fn credentials_have_exact_origins_and_separate_handshake_scope() {
