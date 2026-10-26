@@ -9,6 +9,7 @@ Rectangle {
     id: panel
     property var rows: []
     property bool busy: false
+    property string query: ""
     signal toggled(string id)
     signal filterEdited(string text)
     signal opened(string id)
@@ -24,7 +25,8 @@ Rectangle {
         width: parent.width - Metrics.gap8 * 2 // derived: equal insets
         placeholder: I18n.tr("Find music or saved selections…", I18n.rev)
         enabled: !panel.busy
-        onTextChanged: panel.filterEdited(text)
+        text: panel.query
+        onTextChanged: if (text !== panel.query) panel.filterEdited(text)
     }
     KeyedModel { id: selections; keyField: "id"; items: panel.rows }
     ListView {

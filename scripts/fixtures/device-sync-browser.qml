@@ -69,12 +69,14 @@ Item {
             named("deviceBrowserSearch").text = ""
             named("deviceBrowserBack").clicked(); named("deviceBrowserBack").clicked()
             check(JSON.parse(DeviceSync.snapshot).plan === token,"browsing invalidated the preview")
+            named("deviceSelectionSearch").text = "Missing record"
             DeviceSync.useTracks(JSON.stringify(ids))
             phase = 4
         } else if (phase === 4) {
             const option = catalog.options.find(row => row.id.startsWith("tracks:"))
             check(option && option.name === "DAP Native Smoke" && option.checked,"album batch still has a generic name")
             check(option.description.includes("Sync Fixture"),"batch artist missing")
+            check(named("deviceSelectionSearch").text === "","incoming album remained behind the old filter")
             openRow(option.id)
             phase = 5
         } else if (phase === 5) {

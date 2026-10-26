@@ -153,6 +153,19 @@ TestCase {
         bounds(child("deviceMusicList"))
         compare(DeviceSync.status.plan,"prepared")
     }
+    function test_an_incoming_album_returns_from_history_and_clears_the_picker_filter() {
+        child("deviceSelectionSearch").text = "An older filter"
+        child("deviceSections").activated(1)
+        compare(page.recorded,true)
+        DeviceSync.useTracks("[42,43]")
+        DeviceSync.closeBrowser()
+        DeviceSync.setStatus({phase:"selecting",busy:true})
+        DeviceSync.setStatus({phase:"idle",busy:false})
+        compare(page.recorded,false)
+        compare(page.reviewing,false)
+        compare(child("deviceSelectionSearch").text,"")
+        verify(child("deviceSelections").visible)
+    }
     function test_synced_music_and_read_only_browser_controls() {
         child("deviceSections").activated(1)
         compare(DeviceSync.lastAction,["browse","recorded"])

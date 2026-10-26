@@ -25,7 +25,7 @@ Item {
         lastPhase = status.phase || ""
         if (previous === "browsing") return
         if (["review", "transferring", "done"].includes(lastPhase)) { reviewing = true; recorded = false }
-        else if (lastPhase === "idle") reviewing = false
+        else if (lastPhase === "idle") { reviewing = false; if (!music.source) recorded = false }
     }
     Component.onCompleted: { backend.enter(); settle() }
     Component.onDestruction: backend.leave()
@@ -101,7 +101,7 @@ Item {
         }
     }
     Component { id: pairing; DevicePairing { mounted: screen.status.destination === "mounted"; busy: screen.backend.busy; onCreateAsked: (name, folder) => screen.backend.createProfile(name, folder); onDismissed: screen.creating = false } }
-    Component { id: selections; DeviceSelection { rows: screen.document.options || []; busy: screen.backend.busy; onToggled: id => screen.backend.toggle(id); onOpened: id => screen.backend.browse(id); onFilterEdited: text => screen.backend.filter(text) } }
+    Component { id: selections; DeviceSelection { rows: screen.document.options || []; query: screen.document.filter || ""; busy: screen.backend.busy; onToggled: id => screen.backend.toggle(id); onOpened: id => screen.backend.browse(id); onFilterEdited: text => screen.backend.filter(text) } }
     Component { id: browser; DeviceBrowser { document: screen.music; busy: screen.backend.busy; onAlbumAsked: id => screen.backend.openBrowserAlbum(id); onBackAsked: screen.backend.browserBack(); onFilterEdited: text => screen.backend.filterBrowser(text); onPageAsked: at => screen.backend.browserPage(at); onReloadAsked: screen.backend.browse(screen.music.source) } }
     Component { id: changes; DeviceChanges { emptyText: screen.status.phase === "review" ? I18n.tr("No files need to change.", I18n.rev) : I18n.tr("Review changes to check what this storage needs.", I18n.rev); rows: JSON.parse(screen.backend.pageRows || "[]"); page: screen.backend.page; pages: screen.document.page_count || 1; busy: screen.backend.busy; onPageAsked: at => screen.backend.changePage(at) } }
 }

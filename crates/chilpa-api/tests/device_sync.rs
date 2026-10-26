@@ -295,6 +295,8 @@ fn device_legacy_selection_gets_readable_names_without_rewriting_its_profile() {
                 .unwrap();
             assert_eq!(saved.name, "First record");
             assert!(saved.description.contains("Artist"));
+        let filtered: serde_json::Value = serde_json::from_str(&reopened.catalog_json("First")).unwrap();
+        assert_eq!(filtered["filter"], "First");
             reopened.browse("library-selection").unwrap();
             wait(&mut reopened);
             let document: serde_json::Value =
