@@ -165,6 +165,21 @@ TestCase {
         bounds(child("deviceSelections"))
         compare(DeviceSync.data.options[0].checked,selected)
     }
+    function test_browser_actions_keep_the_id_across_reused_artist_and_album_rows() {
+        child("deviceSections").activated(1)
+        const list = child("deviceMusicList")
+        for (let cycle = 0; cycle < 12; ++cycle) {
+            for (const kind of ["artist", "album", "playlist"]) {
+                const id = kind + ":" + cycle
+                DeviceSync.music = {source:"recorded",title:"Card",recorded:true,view:"artists",rows:[{id:id,title:kind,detail:"A group",kind:kind,open:true}],page:0,pages:1}
+                tryVerify(() => list.itemAtIndex(0) !== null && list.itemAtIndex(0).entry?.id === id)
+                const button = findChild(list.itemAtIndex(0), "deviceMusicOpen")
+                verify(button !== null)
+                button.clicked()
+                compare(DeviceSync.lastAction, ["album", id])
+            }
+        }
+    }
     function test_browsing_restores_a_preview_without_forcing_the_changes_tab() {
         DeviceSync.setStatus({phase:"review",plan:"prepared",label:"Ready to sync"})
         child("deviceSections").activated(0)

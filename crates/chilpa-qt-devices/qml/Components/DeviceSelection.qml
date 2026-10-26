@@ -66,13 +66,14 @@ Rectangle {
             id: row
             required property var model
             required property int index
+            readonly property var sourceEntry: model?.entry || ({})
             width: list.width
             rowIndex: index
-            entry: ({id:model.entry.id,title:model.entry.name,detail:model.entry.description,checked:model.entry.checked,open:true})
+            entry: ({id:sourceEntry.id || "",title:sourceEntry.name || "",detail:sourceEntry.description || "",checked:sourceEntry.checked === true,open:!!sourceEntry.id})
             checkable: true
             busy: panel.busy
-            onToggled: panel.toggled(model.entry.id)
-            onOpened: panel.opened(model.entry.id)
+            onToggled: id => panel.toggled(id)
+            onOpened: id => panel.opened(id)
         }
     }
     DevicePager {

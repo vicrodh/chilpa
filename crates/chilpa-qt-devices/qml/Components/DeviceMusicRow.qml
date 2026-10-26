@@ -11,8 +11,8 @@ Item {
     property int rowIndex: 0
     property bool checkable: false
     property bool busy: false
-    signal toggled()
-    signal opened()
+    signal toggled(string id)
+    signal opened(string id)
     height: DeviceLayout.rowHeight
 
     ListRowSurface { anchors.fill: parent; rowIndex: row.rowIndex; selected: row.checkable && row.entry.checked === true; hovered: hover.hovered }
@@ -28,7 +28,7 @@ Item {
         Accessible.name: row.entry.title || ""
         checked: row.entry.checked === true
         enabled: !row.busy
-        onClicked: row.toggled()
+        onClicked: if (!row.busy && row.entry.id) row.toggled(row.entry.id)
         HoverHandler { onHoveredChanged: hovered ? TipState.show(row.entry.title || "", check) : TipState.hide(check) }
         Component.onDestruction: TipState.hide(check)
     }
@@ -72,6 +72,6 @@ Item {
             Icon { id: arrow; visible: row.entry.open === true; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; glyph: Icons.chevronRight; size: Metrics.iconSm; color: Theme.color.textSecondary }
         }
         HoverHandler { cursorShape: content.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor }
-        onClicked: row.opened()
+        onClicked: if (!row.busy && row.entry.open === true && row.entry.id) row.opened(row.entry.id)
     }
 }

@@ -99,9 +99,9 @@ Rectangle {
             required property int index
             width: list.width
             rowIndex: index
-            entry: model.entry
+            entry: model?.entry || ({})
             busy: panel.busy
-            onOpened: panel.albumAsked(model.entry.id)
+            onOpened: id => panel.albumAsked(id)
         }
     }
     DevicePager {
