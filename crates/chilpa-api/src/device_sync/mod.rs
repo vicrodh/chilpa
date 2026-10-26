@@ -10,6 +10,16 @@ use serde::Serialize;
 pub use service::{Service, Status};
 pub use work::{ChangeRow, Destination};
 
+pub(crate) const SHOW_IN_SIDEBAR: &str = "navigation.devices";
+
+impl crate::Chilpa {
+    pub(crate) fn device_sync_setting(&mut self, key: &str, value: &str) -> bool {
+        if key != SHOW_IN_SIDEBAR || !matches!(value, "true" | "false") { return false; }
+        self.remember_preference(key, value);
+        true
+    }
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct UiError {
     pub message: String,

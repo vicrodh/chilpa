@@ -1652,6 +1652,9 @@ msgstr ""
 msgid "Devices & cast"
 msgstr "Appareils et diffusion"
 
+msgid "Devices in the sidebar"
+msgstr ""
+
 msgid "Diagnose"
 msgstr "Diagnostiquer"
 
@@ -4851,6 +4854,9 @@ msgstr "Afficher par défaut les recommandations de la source sur l'accueil"
 msgid "Show the query as console text"
 msgstr "Afficher la requête en texte de console"
 
+msgid "Show the shortcut for syncing players and memory cards."
+msgstr ""
+
 msgid "Show the sidebar"
 msgstr "Afficher la barre latérale"
 
@@ -4880,6 +4886,9 @@ msgstr "Tout lire en aléatoire"
 
 msgid "Side by side, all must hold"
 msgstr "Côte à côte, toutes doivent être vraies"
+
+msgid "Sidebar"
+msgstr ""
 
 msgid "Sidecar"
 msgstr "Fichier annexe"

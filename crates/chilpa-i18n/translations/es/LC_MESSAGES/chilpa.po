@@ -1652,6 +1652,9 @@ msgstr "Dispositivos"
 msgid "Devices & cast"
 msgstr "Dispositivos y transmisión"
 
+msgid "Devices in the sidebar"
+msgstr "Dispositivos en la barra lateral"
+
 msgid "Diagnose"
 msgstr "Diagnosticar"
 
@@ -4851,6 +4854,9 @@ msgstr "Mostrar las recomendaciones de esta fuente por defecto en Inicio"
 msgid "Show the query as console text"
 msgstr "Mostrar la consulta como texto de consola"
 
+msgid "Show the shortcut for syncing players and memory cards."
+msgstr "Muestra el acceso para sincronizar reproductores y tarjetas de memoria."
+
 msgid "Show the sidebar"
 msgstr "Mostrar la barra lateral"
 
@@ -4880,6 +4886,9 @@ msgstr "Mezclar todas"
 
 msgid "Side by side, all must hold"
 msgstr "Lado a lado, todas tienen que cumplirse"
+
+msgid "Sidebar"
+msgstr "Barra lateral"
 
 msgid "Sidecar"
 msgstr "Sidecar"

@@ -1650,6 +1650,9 @@ msgstr ""
 msgid "Devices & cast"
 msgstr "デバイスとキャスト"
 
+msgid "Devices in the sidebar"
+msgstr ""
+
 msgid "Diagnose"
 msgstr "診断"
 
@@ -4847,6 +4850,9 @@ msgstr "ホームにソースのおすすめを既定で表示"
 msgid "Show the query as console text"
 msgstr "クエリをコンソールのテキストで表示"
 
+msgid "Show the shortcut for syncing players and memory cards."
+msgstr ""
+
 msgid "Show the sidebar"
 msgstr "サイドバーを表示"
 
@@ -4876,6 +4882,9 @@ msgstr "すべてシャッフル"
 
 msgid "Side by side, all must hold"
 msgstr "並べた条件はすべて満たす必要があります"
+
+msgid "Sidebar"
+msgstr ""
 
 msgid "Sidecar"
 msgstr "サイドカー"

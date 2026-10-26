@@ -170,7 +170,7 @@ impl Chilpa {
             self.remember_preference(key, value);
             return true;
         }
-        self.playlist_grouping_setting(key, value) || self.search_preview_setting(key, value) || self.tray_setting(key, value) || self.discord_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value)
+        self.playlist_grouping_setting(key, value) || self.search_preview_setting(key, value) || self.device_sync_setting(key, value) || self.tray_setting(key, value) || self.discord_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value)
     }
 
     /// A toggle's value from its preference, "true" or "false".
@@ -460,6 +460,7 @@ impl Chilpa {
             "navigation.restoreTabs" => row.value = self.pref_on("navigation.restoreTabs", true),
             crate::source_integration::GROUP_PLAYLISTS => row.value = self.pref_on(&row.key, false),
             crate::search::SEARCH_PREVIEW => row.value = self.pref_on(&row.key, true),
+            crate::device_sync::SHOW_IN_SIDEBAR => row.value = self.pref_on(&row.key, true),
             "navigation.folderColors" => row.value = self.pref_on("navigation.folderColors", false),
             "integrations.listenbrainz.enabled" => row.value = self.listenbrainz().enabled.to_string(),
             "integrations.lastfm.account" => {

@@ -1654,6 +1654,9 @@ msgstr ""
 msgid "Devices & cast"
 msgstr "Устройства и трансляция"
 
+msgid "Devices in the sidebar"
+msgstr ""
+
 msgid "Diagnose"
 msgstr "Диагностировать"
 
@@ -4855,6 +4858,9 @@ msgstr "Показывать рекомендации источников на 
 msgid "Show the query as console text"
 msgstr "Показать запрос как текст консоли"
 
+msgid "Show the shortcut for syncing players and memory cards."
+msgstr ""
+
 msgid "Show the sidebar"
 msgstr "Показать боковую панель"
 
@@ -4884,6 +4890,9 @@ msgstr "Перемешать все"
 
 msgid "Side by side, all must hold"
 msgstr "Рядом стоящие условия должны выполняться все"
+
+msgid "Sidebar"
+msgstr ""
 
 msgid "Sidecar"
 msgstr "Вспомогательный файл"

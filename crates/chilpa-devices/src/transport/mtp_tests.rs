@@ -67,6 +67,19 @@ fn moving_a_cached_folder_never_recreates_the_original_path() {
 }
 
 #[test]
+fn a_cached_folder_is_revalidated_when_it_is_the_requested_path() {
+    let fixture = Fixture::new(true);
+    let device = fixture.open();
+    let path = RelativePath::new("Sync/Music/Artist/Album").unwrap();
+    assert!(device.locate(&path).unwrap().is_some());
+    let original = fixture.directory.path().join(path.as_str());
+    std::fs::rename(&original, original.with_file_name("Moved album")).unwrap();
+    rescan_virtual_device(&fixture.serial).unwrap();
+    assert!(!matches!(device.locate(&path), Ok(Some(_))));
+    assert!(!original.exists());
+}
+
+#[test]
 fn folder_references_stay_bounded_across_many_albums() {
     let fixture = Fixture::new(true);
     for index in 0..FOLDER_CACHE_LIMIT {

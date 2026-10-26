@@ -1652,6 +1652,9 @@ msgstr ""
 msgid "Devices & cast"
 msgstr "Apparaten en casten"
 
+msgid "Devices in the sidebar"
+msgstr ""
+
 msgid "Diagnose"
 msgstr "Diagnosticeren"
 
@@ -4851,6 +4854,9 @@ msgstr "Aanbevelingen van bronnen standaard tonen op de startpagina"
 msgid "Show the query as console text"
 msgstr "De zoekopdracht als consoletekst tonen"
 
+msgid "Show the shortcut for syncing players and memory cards."
+msgstr ""
+
 msgid "Show the sidebar"
 msgstr "De zijbalk tonen"
 
@@ -4880,6 +4886,9 @@ msgstr "Alles shuffelen"
 
 msgid "Side by side, all must hold"
 msgstr "Naast elkaar moeten ze allemaal gelden"
+
+msgid "Sidebar"
+msgstr ""
 
 msgid "Sidecar"
 msgstr "Sidecar"

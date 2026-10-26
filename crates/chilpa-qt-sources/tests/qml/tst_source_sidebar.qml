@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import app.chilpa
 import app.chilpa.sources
+import app.chilpa.kit
 import "../../../chilpa-qt/qml/Patterns"
 
 TestCase {
@@ -21,6 +22,8 @@ TestCase {
     Sidebar { id: sidebar; width: 240; height: 600; collapsed: false; router: navigationRouterFixture }
 
     function init() {
+        SettingsModel.preferences = ({})
+        Prefs.rev++
         Navigation.screen = "source"
         Navigation.routeKey = "radio"
         sidebar.collapsed = false
@@ -29,6 +32,18 @@ TestCase {
         Sources.show({ navigation_id: "collection", panels: [{ id: "radio", name: "Source", icon: "letterS",
             children: [{ id: "collection", title: "Collection" }] }] })
         wait(30)
+    }
+
+    function test_device_shortcut_can_be_hidden_and_restored() {
+        const entry = findChild(sidebar, "deviceNavigation")
+        verify(entry)
+        compare(entry.visible, true)
+        SettingsModel.preferences = {"navigation.devices":"false"}
+        Prefs.rev++
+        compare(entry.visible, false)
+        SettingsModel.preferences = {"navigation.devices":"true"}
+        Prefs.rev++
+        compare(entry.visible, true)
     }
 
     function test_global_playlist_grouping_can_collapse_and_return_to_one_list() {
