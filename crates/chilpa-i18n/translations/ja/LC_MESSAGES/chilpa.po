@@ -2214,17 +2214,20 @@ msgstr "絞り込み、Enterで検索、またはストリームURL"
 msgid "Find a preset or device"
 msgstr "プリセットまたはデバイスを検索"
 
+msgid "Find albums or tracks…"
+msgstr "アルバムや曲を検索…"
+
 msgid "Find covers"
 msgstr "カバーを探す"
 
 msgid "Find matches"
 msgstr "一致を探す"
 
+msgid "Find music or saved selections…"
+msgstr "音楽や保存済みの選択を検索…"
+
 msgid "Find playlists"
 msgstr "プレイリストを探す"
-
-msgid "Find playlists or saved queries…"
-msgstr ""
 
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr "DACのPipeWireノード名を見つけてここに貼り付けてください："
@@ -2593,6 +2596,9 @@ msgstr ""
 msgid "I could not read the device profiles."
 msgstr ""
 
+msgid "I could not read the last synced music for this storage."
+msgstr "このストレージで最後に同期した音楽を読み取れませんでした。"
+
 msgid "I could not read the local playlists."
 msgstr ""
 
@@ -2953,6 +2959,9 @@ msgstr "前回のプレイリスト"
 msgid "Last sync"
 msgstr ""
 
+msgid "Last synced with Chilpa. Files changed elsewhere may differ."
+msgstr "Chilpaで最後に同期した内容です。他のアプリで変更したファイルは異なる場合があります。"
+
 msgid "Last track"
 msgstr "最後のトラック"
 
@@ -3075,6 +3084,12 @@ msgstr "アルバムを読み込み中…"
 
 msgid "Loading device profiles…"
 msgstr ""
+
+msgid "Loading music was cancelled."
+msgstr "音楽の読み込みをキャンセルしました。"
+
+msgid "Loading music…"
+msgstr "音楽を読み込み中…"
 
 msgid "Loading purchases…"
 msgstr "購入履歴を読み込み中…"
@@ -3631,11 +3646,17 @@ msgstr "このトラックの歌詞はありません。"
 msgid "No matches"
 msgstr "一致なし"
 
+msgid "No matching music."
+msgstr "一致する音楽がありません。"
+
 msgid "No matching plugins"
 msgstr "一致するプラグインはありません"
 
 msgid "No matching selections. Create a local playlist or save a query in Refine."
 msgstr ""
+
+msgid "No music has been synced with Chilpa to this storage yet."
+msgstr "このストレージにはChilpaで同期した音楽がまだありません。"
 
 msgid "No opening was confirmed"
 msgstr "オープンは確認されていません"
@@ -5117,6 +5138,9 @@ msgstr "トラックを選択"
 msgid "Selected GPU is unavailable in this display session — using Auto"
 msgstr "選択したGPUはこのディスプレイセッションでは利用できないため、自動設定を使用します"
 
+msgid "Selected music"
+msgstr "選択した音楽"
+
 msgid "Send to Last.fm"
 msgstr "Last.fmに送信"
 
@@ -5513,6 +5537,9 @@ msgstr "今すぐ同期"
 msgid "Sync to device…"
 msgstr ""
 
+msgid "Synced music"
+msgstr "同期済みの音楽"
+
 msgid "Syncing"
 msgstr "同期中"
 
@@ -5859,6 +5886,9 @@ msgstr ""
 msgid "This address belongs to a different server."
 msgstr "このアドレスは別のサーバーのものです。"
 
+msgid "This album is no longer in the current view."
+msgstr "このアルバムは現在の表示にありません。"
+
 msgid "This build can query the output but cannot render audio through it yet."
 msgstr "このビルドでは出力情報を問い合わせできますが、その出力での再生はまだ利用できません。"
 
@@ -5900,6 +5930,9 @@ msgstr "今月"
 
 msgid "This month vs Last month"
 msgstr "今月 vs 先月"
+
+msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
+msgstr "この音楽表示は50,000ファイルまたは16 MiBのメタデータの上限を超えています。"
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "これは音を出しません。デバイスに送られるはずだったものをファイルに書き出すので、元のトラックと比較できます。ビットパーフェクトは主張するのではなく、これで証明できます。"
@@ -5951,6 +5984,9 @@ msgstr "この画面はまだ作成されていません。"
 
 msgid "This section is not built yet."
 msgstr "このセクションはまだ作成されていません。"
+
+msgid "This selection has no tracks."
+msgstr "この選択には曲がありません。"
 
 msgid "This selection includes music without an available local file. I kept the device unchanged."
 msgstr ""
@@ -6173,6 +6209,9 @@ msgstr "不明"
 
 msgid "Unknown DSP action."
 msgstr "不明なDSP操作です。"
+
+msgid "Unknown album"
+msgstr "不明なアルバム"
 
 msgid "Unknown artist"
 msgstr "不明なアーティスト"

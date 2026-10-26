@@ -21,7 +21,7 @@ Item {
         return item
     }
     function music() {
-        const control = find(mainWindow.contentItem, row => row.options && row.options.length === 2 && row.options[0].text === I18n.tr("Music", I18n.rev) && typeof row.activated === "function")
+        const control = find(mainWindow.contentItem, row => row.objectName === "deviceSections" || (row.options && row.options.length === 2 && row.options[0].text === I18n.tr("Music", I18n.rev) && typeof row.activated === "function"))
         check(!!control, "Music segment missing")
         control.activated(0)
     }
@@ -61,7 +61,7 @@ Item {
             const query = document.options.find(row => row.name === "DAP Query")
             check(!!query, "saved Refine query missing")
             queryId = query.id
-            const row = find(mainWindow.contentItem, item => item.objectName === "deviceSelectionCheck" && item.text === "DAP Query")
+            const row = find(mainWindow.contentItem, item => item.objectName === "deviceSelectionCheck" && (item.text === "DAP Query" || item.parent.entry?.title === "DAP Query"))
             if (!row) return
             row.clicked()
             named("devicePreview").clicked()
@@ -76,7 +76,7 @@ Item {
             music()
             phase = 6
         } else if (phase === 6) {
-            const row = find(mainWindow.contentItem, item => item.objectName === "deviceSelectionCheck" && item.text === "DAP Query")
+            const row = find(mainWindow.contentItem, item => item.objectName === "deviceSelectionCheck" && (item.text === "DAP Query" || item.parent.entry?.title === "DAP Query"))
             if (!row) return
             row.clicked()
             if (!status.remove_unselected) named("deviceRemoveUnselected").click()

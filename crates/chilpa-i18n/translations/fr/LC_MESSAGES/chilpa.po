@@ -2216,17 +2216,20 @@ msgstr "Filtrer, Entrée pour rechercher, ou une URL de flux"
 msgid "Find a preset or device"
 msgstr "Rechercher un préréglage ou un périphérique"
 
+msgid "Find albums or tracks…"
+msgstr "Rechercher des albums ou des pistes…"
+
 msgid "Find covers"
 msgstr "Rechercher des pochettes"
 
 msgid "Find matches"
 msgstr "Trouver des correspondances"
 
+msgid "Find music or saved selections…"
+msgstr "Rechercher de la musique ou des sélections enregistrées…"
+
 msgid "Find playlists"
 msgstr "Trouver des playlists"
-
-msgid "Find playlists or saved queries…"
-msgstr ""
 
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr "Trouvez le nom de nœud PipeWire de votre DAC et collez-le ici :"
@@ -2596,6 +2599,9 @@ msgstr ""
 msgid "I could not read the device profiles."
 msgstr ""
 
+msgid "I could not read the last synced music for this storage."
+msgstr "Je n’ai pas pu lire la dernière musique synchronisée sur ce stockage."
+
 msgid "I could not read the local playlists."
 msgstr ""
 
@@ -2956,6 +2962,9 @@ msgstr "Dernière playlist"
 msgid "Last sync"
 msgstr ""
 
+msgid "Last synced with Chilpa. Files changed elsewhere may differ."
+msgstr "Dernière synchronisation avec Chilpa. Les fichiers modifiés ailleurs peuvent être différents."
+
 msgid "Last track"
 msgstr "Dernière piste"
 
@@ -3078,6 +3087,12 @@ msgstr "Chargement des albums…"
 
 msgid "Loading device profiles…"
 msgstr ""
+
+msgid "Loading music was cancelled."
+msgstr "Le chargement de la musique a été annulé."
+
+msgid "Loading music…"
+msgstr "Chargement de la musique…"
 
 msgid "Loading purchases…"
 msgstr "Chargement des achats…"
@@ -3634,11 +3649,17 @@ msgstr "Pas de paroles pour cette piste."
 msgid "No matches"
 msgstr "Aucun résultat"
 
+msgid "No matching music."
+msgstr "Aucune musique correspondante."
+
 msgid "No matching plugins"
 msgstr "Aucun plugin correspondant"
 
 msgid "No matching selections. Create a local playlist or save a query in Refine."
 msgstr ""
+
+msgid "No music has been synced with Chilpa to this storage yet."
+msgstr "Aucune musique n’a encore été synchronisée avec Chilpa sur ce stockage."
 
 msgid "No opening was confirmed"
 msgstr "Aucune ouverture n’a été confirmée"
@@ -5121,6 +5142,9 @@ msgstr "Sélectionner des pistes"
 msgid "Selected GPU is unavailable in this display session — using Auto"
 msgstr "Le GPU sélectionné n'est pas disponible dans cette session d'affichage — utilisation du mode Auto"
 
+msgid "Selected music"
+msgstr "Musique sélectionnée"
+
 msgid "Send to Last.fm"
 msgstr "Envoyer à Last.fm"
 
@@ -5517,6 +5541,9 @@ msgstr "Synchroniser maintenant"
 msgid "Sync to device…"
 msgstr ""
 
+msgid "Synced music"
+msgstr "Musique synchronisée"
+
 msgid "Syncing"
 msgstr "Synchronisation"
 
@@ -5864,6 +5891,9 @@ msgstr ""
 msgid "This address belongs to a different server."
 msgstr "Cette adresse appartient à un autre serveur."
 
+msgid "This album is no longer in the current view."
+msgstr "Cet album ne figure plus dans la vue actuelle."
+
 msgid "This build can query the output but cannot render audio through it yet."
 msgstr "Cette version peut interroger la sortie, mais ne peut pas encore y envoyer de l’audio."
 
@@ -5905,6 +5935,9 @@ msgstr "Ce mois-ci"
 
 msgid "This month vs Last month"
 msgstr "Ce mois-ci vs le mois dernier"
+
+msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
+msgstr "Cette vue musicale dépasse 50 000 fichiers ou 16 MiB de métadonnées."
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Celle-ci ne produit aucun son. Elle écrit ce qui serait parti vers le périphérique, afin de comparer le fichier à la piste d'origine, seul moyen de prouver le bit-perfect plutôt que de l'affirmer."
@@ -5956,6 +5989,9 @@ msgstr "Cet écran n'est pas encore développé."
 
 msgid "This section is not built yet."
 msgstr "Cette section n'est pas encore développée."
+
+msgid "This selection has no tracks."
+msgstr "Cette sélection ne contient aucune piste."
 
 msgid "This selection includes music without an available local file. I kept the device unchanged."
 msgstr ""
@@ -6178,6 +6214,9 @@ msgstr "Inconnu"
 
 msgid "Unknown DSP action."
 msgstr "Action DSP inconnue."
+
+msgid "Unknown album"
+msgstr "Album inconnu"
 
 msgid "Unknown artist"
 msgstr "Artiste inconnu"

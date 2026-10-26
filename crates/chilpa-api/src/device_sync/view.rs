@@ -58,6 +58,7 @@ impl Service {
             "pairing" => i18n::mark("Adding storage…"),
             "saving" => i18n::mark("Saving selection…"),
             "selecting" => i18n::mark("Reading Library selection…"),
+            "browsing" => i18n::mark("Loading music…"),
             "preparing" => i18n::mark("Reviewing changes…"),
             "transferring" => i18n::mark("Syncing music…"),
             "cancelling" => i18n::mark("Cancelling…"),

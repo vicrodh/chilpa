@@ -2216,17 +2216,20 @@ msgstr "Filtern, mit Enter suchen oder eine Stream-URL eingeben"
 msgid "Find a preset or device"
 msgstr "Preset oder Gerät suchen"
 
+msgid "Find albums or tracks…"
+msgstr "Alben oder Titel suchen…"
+
 msgid "Find covers"
 msgstr "Cover suchen"
 
 msgid "Find matches"
 msgstr "Treffer suchen"
 
+msgid "Find music or saved selections…"
+msgstr "Musik oder gespeicherte Auswahlen suchen…"
+
 msgid "Find playlists"
 msgstr "Playlists suchen"
-
-msgid "Find playlists or saved queries…"
-msgstr ""
 
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr "Ermittle den PipeWire-Knotennamen deines DAC und füge ihn hier ein:"
@@ -2596,6 +2599,9 @@ msgstr ""
 msgid "I could not read the device profiles."
 msgstr ""
 
+msgid "I could not read the last synced music for this storage."
+msgstr "Ich konnte die zuletzt synchronisierte Musik auf diesem Speicher nicht lesen."
+
 msgid "I could not read the local playlists."
 msgstr ""
 
@@ -2956,6 +2962,9 @@ msgstr "Letzte Playlist"
 msgid "Last sync"
 msgstr ""
 
+msgid "Last synced with Chilpa. Files changed elsewhere may differ."
+msgstr "Zuletzt mit Chilpa synchronisiert. Anderswo geänderte Dateien können abweichen."
+
 msgid "Last track"
 msgstr "Letzter Titel"
 
@@ -3078,6 +3087,12 @@ msgstr "Alben werden geladen…"
 
 msgid "Loading device profiles…"
 msgstr ""
+
+msgid "Loading music was cancelled."
+msgstr "Das Laden der Musik wurde abgebrochen."
+
+msgid "Loading music…"
+msgstr "Musik wird geladen…"
 
 msgid "Loading purchases…"
 msgstr "Käufe werden geladen…"
@@ -3634,11 +3649,17 @@ msgstr "Kein Songtext für diesen Titel."
 msgid "No matches"
 msgstr "Keine Treffer"
 
+msgid "No matching music."
+msgstr "Keine passende Musik."
+
 msgid "No matching plugins"
 msgstr "Keine passenden Plugins"
 
 msgid "No matching selections. Create a local playlist or save a query in Refine."
 msgstr ""
+
+msgid "No music has been synced with Chilpa to this storage yet."
+msgstr "Auf diesen Speicher wurde noch keine Musik mit Chilpa synchronisiert."
 
 msgid "No opening was confirmed"
 msgstr "Kein Öffnen wurde bestätigt"
@@ -5121,6 +5142,9 @@ msgstr "Titel auswählen"
 msgid "Selected GPU is unavailable in this display session — using Auto"
 msgstr "Die ausgewählte GPU ist in dieser Bildschirmsitzung nicht verfügbar — Auto wird verwendet"
 
+msgid "Selected music"
+msgstr "Ausgewählte Musik"
+
 msgid "Send to Last.fm"
 msgstr "An Last.fm senden"
 
@@ -5517,6 +5541,9 @@ msgstr "Jetzt synchronisieren"
 msgid "Sync to device…"
 msgstr ""
 
+msgid "Synced music"
+msgstr "Synchronisierte Musik"
+
 msgid "Syncing"
 msgstr "Wird synchronisiert"
 
@@ -5864,6 +5891,9 @@ msgstr ""
 msgid "This address belongs to a different server."
 msgstr "Diese Adresse gehört zu einem anderen Server."
 
+msgid "This album is no longer in the current view."
+msgstr "Dieses Album ist nicht mehr in der aktuellen Ansicht."
+
 msgid "This build can query the output but cannot render audio through it yet."
 msgstr "Diese Version kann die Ausgabe abfragen, aber noch kein Audio darüber wiedergeben."
 
@@ -5905,6 +5935,9 @@ msgstr "Diesen Monat"
 
 msgid "This month vs Last month"
 msgstr "Dieser Monat vs. letzter Monat"
+
+msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
+msgstr "Diese Musikansicht überschreitet 50.000 Dateien oder 16 MiB Metadaten."
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Diese Ausgabe macht keinen Ton. Sie schreibt auf, was an das Gerät gegangen wäre, sodass die Datei mit dem Titel verglichen werden kann, aus dem sie stammt – nur so lässt sich Bit-perfect belegen, statt es nur zu behaupten."
@@ -5956,6 +5989,9 @@ msgstr "Dieser Bildschirm ist noch nicht fertig."
 
 msgid "This section is not built yet."
 msgstr "Dieser Bereich ist noch nicht fertig."
+
+msgid "This selection has no tracks."
+msgstr "Diese Auswahl enthält keine Titel."
 
 msgid "This selection includes music without an available local file. I kept the device unchanged."
 msgstr ""
@@ -6178,6 +6214,9 @@ msgstr "Unbekannt"
 
 msgid "Unknown DSP action."
 msgstr "Unbekannte DSP-Aktion."
+
+msgid "Unknown album"
+msgstr "Unbekanntes Album"
 
 msgid "Unknown artist"
 msgstr "Unbekannter Künstler"

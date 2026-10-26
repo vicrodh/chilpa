@@ -2216,17 +2216,20 @@ msgstr "Filter, Enter om te zoeken, of een stream-URL"
 msgid "Find a preset or device"
 msgstr "Zoek een preset of apparaat"
 
+msgid "Find albums or tracks…"
+msgstr "Albums of nummers zoeken…"
+
 msgid "Find covers"
 msgstr "Hoezen zoeken"
 
 msgid "Find matches"
 msgstr "Overeenkomsten zoeken"
 
+msgid "Find music or saved selections…"
+msgstr "Muziek of opgeslagen selecties zoeken…"
+
 msgid "Find playlists"
 msgstr "Afspeellijsten zoeken"
-
-msgid "Find playlists or saved queries…"
-msgstr ""
 
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr "Zoek de PipeWire-nodenaam van je DAC en plak deze hier:"
@@ -2596,6 +2599,9 @@ msgstr ""
 msgid "I could not read the device profiles."
 msgstr ""
 
+msgid "I could not read the last synced music for this storage."
+msgstr "Ik kon de laatst gesynchroniseerde muziek op deze opslag niet lezen."
+
 msgid "I could not read the local playlists."
 msgstr ""
 
@@ -2956,6 +2962,9 @@ msgstr "Laatste afspeellijst"
 msgid "Last sync"
 msgstr ""
 
+msgid "Last synced with Chilpa. Files changed elsewhere may differ."
+msgstr "Laatst gesynchroniseerd met Chilpa. Bestanden die elders zijn gewijzigd, kunnen afwijken."
+
 msgid "Last track"
 msgstr "Laatste nummer"
 
@@ -3078,6 +3087,12 @@ msgstr "Albums laden…"
 
 msgid "Loading device profiles…"
 msgstr ""
+
+msgid "Loading music was cancelled."
+msgstr "Het laden van muziek is geannuleerd."
+
+msgid "Loading music…"
+msgstr "Muziek laden…"
 
 msgid "Loading purchases…"
 msgstr "Aankopen laden…"
@@ -3634,11 +3649,17 @@ msgstr "Geen songtekst voor dit nummer."
 msgid "No matches"
 msgstr "Geen overeenkomsten"
 
+msgid "No matching music."
+msgstr "Geen overeenkomende muziek."
+
 msgid "No matching plugins"
 msgstr "Geen overeenkomende plug-ins"
 
 msgid "No matching selections. Create a local playlist or save a query in Refine."
 msgstr ""
+
+msgid "No music has been synced with Chilpa to this storage yet."
+msgstr "Er is nog geen muziek met Chilpa naar deze opslag gesynchroniseerd."
 
 msgid "No opening was confirmed"
 msgstr "Er is geen opening bevestigd"
@@ -5121,6 +5142,9 @@ msgstr "Nummers selecteren"
 msgid "Selected GPU is unavailable in this display session — using Auto"
 msgstr "De geselecteerde GPU is niet beschikbaar in deze beeldschermsessie — ‘Automatisch' wordt gebruikt"
 
+msgid "Selected music"
+msgstr "Geselecteerde muziek"
+
 msgid "Send to Last.fm"
 msgstr "Naar Last.fm sturen"
 
@@ -5517,6 +5541,9 @@ msgstr "Nu synchroniseren"
 msgid "Sync to device…"
 msgstr ""
 
+msgid "Synced music"
+msgstr "Gesynchroniseerde muziek"
+
 msgid "Syncing"
 msgstr "Synchroniseren"
 
@@ -5864,6 +5891,9 @@ msgstr ""
 msgid "This address belongs to a different server."
 msgstr "Dit adres hoort bij een andere server."
 
+msgid "This album is no longer in the current view."
+msgstr "Dit album staat niet meer in de huidige weergave."
+
 msgid "This build can query the output but cannot render audio through it yet."
 msgstr "Deze versie kan de uitvoer bevragen, maar er nog geen audio door afspelen."
 
@@ -5905,6 +5935,9 @@ msgstr "Deze maand"
 
 msgid "This month vs Last month"
 msgstr "Deze maand vs vorige maand"
+
+msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
+msgstr "Deze muziekweergave overschrijdt 50.000 bestanden of 16 MiB aan metagegevens."
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Deze maakt geen geluid. Hij schrijft weg wat naar het apparaat zou zijn gegaan, zodat het bestand kan worden vergeleken met het nummer waar het van komt -- de enige manier om bit-perfect te bewijzen in plaats van te beweren."
@@ -5956,6 +5989,9 @@ msgstr "Dit scherm is nog niet gebouwd."
 
 msgid "This section is not built yet."
 msgstr "Deze sectie is nog niet gebouwd."
+
+msgid "This selection has no tracks."
+msgstr "Deze selectie bevat geen nummers."
 
 msgid "This selection includes music without an available local file. I kept the device unchanged."
 msgstr ""
@@ -6178,6 +6214,9 @@ msgstr "Onbekend"
 
 msgid "Unknown DSP action."
 msgstr "Onbekende DSP-actie."
+
+msgid "Unknown album"
+msgstr "Onbekend album"
 
 msgid "Unknown artist"
 msgstr "Onbekende artiest"

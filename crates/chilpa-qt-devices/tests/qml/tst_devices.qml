@@ -19,6 +19,7 @@ TestCase {
         DeviceSync.status = {phase:"idle",busy:false,profile:"profile",destination:"storage",label:"Choose music for this storage",remove_unselected:false,plan:"",removals:0,error:null}
         DeviceSync.data = {has_profiles:true,profile_folder:"Chilpa",storage_detail:"40 GiB available of 64 GiB",profile_names:["Player SD"],profile_values:["profile"],destination_names:["Player · Memory card"],destination_values:["storage"],destination_enabled:[true],destination_details:["40 GiB available"],options:selections(80),selected:"1 selection",can_review:true,change_count:3,page_count:2}
         DeviceSync.lastAction = []
+        DeviceSync.music = ({})
         ThemeModel.palette = {"surface.window":"#1b1e20","surface.pane":"#1b1e20","surface.panel":"#232629","surface.raised":"#31363b","text.primary":"#fcfcfc","text.secondary":"#a1a9b1","text.tertiary":"#6e767e","stroke.hairline":"#34373a","fill.field":"#2b2e30","state.selected":"#34373a","state.stripe":"#212426","row.selected":"#3d2225","accent":"#d8323a","text.onAccent":"#ffffff","status.negative":"#e5606d"}
         ThemeModel.rev++
         page = createTemporaryObject(surface,test,{width:900,height:800})
@@ -118,13 +119,74 @@ TestCase {
         DeviceSync.profileCreated(); wait(10)
         bounds(child("deviceSelections"))
     }
+    function test_selection_opens_albums_then_tracks_and_returns_to_the_picker() {
+        const selected = DeviceSync.data.options[0].checked
+        const list = child("deviceSelections")
+        const open = findChild(list.itemAtIndex(0),"deviceMusicOpen")
+        mouseClick(open,open.width / 2,open.height / 2)
+        compare(DeviceSync.lastAction,["browse","list-0"])
+        const albums = child("deviceMusicList")
+        tryCompare(albums,"count",1)
+        tryVerify(() => albums.itemAtIndex(0) !== null)
+        const album = findChild(albums.itemAtIndex(0),"deviceMusicOpen")
+        album.forceActiveFocus()
+        verify(findChild(album,"deviceMusicFocusRing").visible)
+        keyClick(Qt.Key_Space)
+        compare(DeviceSync.lastAction,["album","album:0"])
+        tryCompare(albums,"count",2)
+        tryVerify(() => albums.itemAtIndex(1) !== null)
+        compare(albums.itemAtIndex(0).entry.title,"First song")
+        compare(albums.itemAtIndex(1).entry.title,"Second song")
+        click("deviceBrowserBack")
+        compare(DeviceSync.music.level,"albums")
+        click("deviceBrowserBack")
+        bounds(child("deviceSelections"))
+        compare(DeviceSync.data.options[0].checked,selected)
+    }
+    function test_browsing_restores_a_preview_without_forcing_the_changes_tab() {
+        DeviceSync.setStatus({phase:"review",plan:"prepared",label:"Ready to sync"})
+        child("deviceSections").activated(0)
+        DeviceSync.browse("list-0")
+        DeviceSync.setStatus({phase:"browsing",busy:true})
+        DeviceSync.setStatus({phase:"review",busy:false})
+        compare(page.reviewing,false)
+        bounds(child("deviceMusicList"))
+        compare(DeviceSync.status.plan,"prepared")
+    }
+    function test_synced_music_and_read_only_browser_controls() {
+        child("deviceSections").activated(1)
+        compare(DeviceSync.lastAction,["browse","recorded"])
+        compare(DeviceSync.music.recorded,true)
+        DeviceSync.music = Object.assign({},DeviceSync.music,{pages:2,can_back:false,notice:"Last synced with Chilpa. Files changed elsewhere may differ."})
+        wait(20)
+        click("deviceMusicNextPage")
+        compare(DeviceSync.lastAction,["browserPage",1])
+        child("deviceBrowserSearch").text = "Record"
+        compare(DeviceSync.lastAction,["browserFilter","Record"])
+        click("deviceBrowserReload")
+        compare(DeviceSync.lastAction,["browse","recorded"])
+        for (const size of [[360,558],[660,558],[1000,758]]) {
+            page.width = size[0]; page.height = size[1]; wait(20)
+            bounds(child("deviceMusicList"))
+            bounds(child("deviceBrowserSearch"))
+            bounds(child("devicePreview"))
+        }
+    }
     function test_visual_review() {
         if (!captureVisuals) return
         page.width = 900; page.height = 760
         wait(40)
         grabImage(page).save("/tmp/chilpa-dap-ui-dark.png")
+        DeviceSync.browse("list-0"); wait(40)
+        grabImage(page).save("/tmp/chilpa-dap-albums-dark.png")
+        DeviceSync.openBrowserAlbum("album:0"); wait(40)
+        grabImage(page).save("/tmp/chilpa-dap-tracks-dark.png")
         ThemeModel.palette = Object.assign({},ThemeModel.palette,{"surface.window":"#fcfcfc","surface.pane":"#fcfcfc","surface.panel":"#f4f5f6","surface.raised":"#ffffff","text.primary":"#232629","text.secondary":"#707d8a","text.tertiary":"#9aa3ab","stroke.hairline":"#dddddd","fill.field":"#eeeeee","state.selected":"#e7e7e7","state.stripe":"#f4f4f4","row.selected":"#f3e5e6","accent":"#a3161f"})
         ThemeModel.rev++; wait(40)
+        grabImage(page).save("/tmp/chilpa-dap-tracks-light.png")
+        child("deviceSections").activated(1); wait(40)
+        grabImage(page).save("/tmp/chilpa-dap-synced-light.png")
+        child("deviceSections").activated(0); wait(40)
         grabImage(page).save("/tmp/chilpa-dap-ui-light.png")
         DeviceSync.setStatus({phase:"review",plan:"review",label:"Ready to sync",summary:"2 to copy · 0 to update · 1 to remove",removals:1,required:"24 MiB"})
         wait(40)

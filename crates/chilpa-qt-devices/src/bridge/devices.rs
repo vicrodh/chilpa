@@ -13,6 +13,7 @@ pub mod qobject {
         #[qproperty(QString, snapshot)]
         #[qproperty(QString, catalog)]
         #[qproperty(QString, page_rows)]
+        #[qproperty(QString, browser)]
         #[qproperty(bool, busy)]
         #[qproperty(bool, has_connected)]
         #[qproperty(i32, page)]
@@ -47,6 +48,18 @@ pub mod qobject {
         fn cancel(self: Pin<&mut DeviceSync>);
         #[qinvokable]
         fn change_page(self: Pin<&mut DeviceSync>, page: i32);
+        #[qinvokable]
+        fn browse(self: Pin<&mut DeviceSync>, source: &QString);
+        #[qinvokable]
+        fn open_browser_album(self: Pin<&mut DeviceSync>, id: &QString);
+        #[qinvokable]
+        fn browser_back(self: Pin<&mut DeviceSync>);
+        #[qinvokable]
+        fn filter_browser(self: Pin<&mut DeviceSync>, text: &QString);
+        #[qinvokable]
+        fn browser_page(self: Pin<&mut DeviceSync>, page: i32);
+        #[qinvokable]
+        fn close_browser(self: Pin<&mut DeviceSync>);
         #[qsignal]
         fn profile_created(self: Pin<&mut DeviceSync>);
     }
@@ -61,6 +74,7 @@ pub struct DeviceSyncRust {
     snapshot: QString,
     catalog: QString,
     page_rows: QString,
+    browser: QString,
     busy: bool,
     has_connected: bool,
     page: i32,
@@ -84,6 +98,7 @@ impl qobject::DeviceSync {
         if self.rust().viewers > 0 && (force || self.rust().published_revision != Some(revision)) {
             let catalog = QString::from(&self.rust().service.catalog_json(&self.rust().filter));
             let rows = QString::from(&self.rust().service.changes_json(*self.page() as usize));
+            let browser = QString::from(&self.rust().service.browser_json());
             let connected = self
                 .rust()
                 .service
@@ -96,6 +111,9 @@ impl qobject::DeviceSync {
             }
             if self.page_rows() != &rows {
                 self.as_mut().set_page_rows(rows);
+            }
+            if self.browser() != &browser {
+                self.as_mut().set_browser(browser);
             }
             if *self.has_connected() != connected {
                 self.as_mut().set_has_connected(connected);
@@ -126,6 +144,7 @@ impl qobject::DeviceSync {
         self.as_mut().rust_mut().service.release_view();
         self.as_mut().set_catalog(QString::default());
         self.as_mut().set_page_rows(QString::default());
+        self.as_mut().set_browser(QString::default());
         self.as_mut().rust_mut().published_revision = None;
     }
     pub fn poll(mut self: Pin<&mut Self>) {
@@ -192,11 +211,59 @@ impl qobject::DeviceSync {
         self.publish(false);
     }
     pub fn change_page(mut self: Pin<&mut Self>, page: i32) {
-        if self.rust().viewers == 0 { return; }
+        if self.rust().viewers == 0 {
+            return;
+        }
         let maximum = self.rust().service.change_count().saturating_sub(1) / 200;
         self.as_mut()
             .set_page((page.max(0) as usize).min(maximum) as i32);
         let rows = QString::from(&self.rust().service.changes_json(*self.page() as usize));
         self.set_page_rows(rows);
+    }
+    pub fn browse(self: Pin<&mut Self>, source: &QString) {
+        if self.rust().viewers == 0 {
+            return;
+        }
+        self.run(|s| s.browse(&source.to_string()));
+    }
+    pub fn open_browser_album(self: Pin<&mut Self>, id: &QString) {
+        if self.rust().viewers == 0 {
+            return;
+        }
+        self.run(|s| s.open_browser_album(&id.to_string()));
+    }
+    pub fn browser_back(mut self: Pin<&mut Self>) {
+        if self.rust().viewers == 0 {
+            return;
+        }
+        self.as_mut().rust_mut().service.browser_back();
+        self.publish(false);
+    }
+    pub fn filter_browser(mut self: Pin<&mut Self>, text: &QString) {
+        if self.rust().viewers == 0 {
+            return;
+        }
+        self.as_mut()
+            .rust_mut()
+            .service
+            .filter_browser(&text.to_string());
+        self.publish(false);
+    }
+    pub fn browser_page(mut self: Pin<&mut Self>, page: i32) {
+        if self.rust().viewers == 0 {
+            return;
+        }
+        self.as_mut()
+            .rust_mut()
+            .service
+            .browser_page(page.max(0) as usize);
+        self.publish(false);
+    }
+    pub fn close_browser(mut self: Pin<&mut Self>) {
+        if self.rust().viewers == 0 {
+            return;
+        }
+        self.as_mut().rust_mut().service.close_browser();
+        self.publish(false);
     }
 }

@@ -6,6 +6,7 @@ mod model;
 mod paths;
 mod plan;
 mod state;
+mod recorded;
 pub mod transport;
 
 pub use engine::{pair, recover, synchronize};
@@ -14,6 +15,7 @@ pub use paths::{component, RelativePath};
 pub use plan::{prepare, Action, ActionInfo, Plan};
 pub use engine::inspect_target;
 pub use state::State;
+pub use recorded::RecordedFile;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
