@@ -11,7 +11,7 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Fetch<'a> {
     pub url: &'a str,
     pub user_agent: &'a str,
@@ -20,6 +20,27 @@ pub struct Fetch<'a> {
     pub timeout: Duration,
     /// A reply larger than this is refused.
     pub max_bytes: usize,
+    /// I send this only to an explicitly allowed origin and never across a redirect.
+    pub authorization: Option<&'a str>,
+}
+
+impl std::fmt::Debug for Fetch<'_> {
+    fn fmt(&self, out: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        out.debug_struct("Fetch").field("timeout",&self.timeout).field("max_bytes",&self.max_bytes).finish_non_exhaustive()
+    }
+}
+
+/// User credentials belong to the direct API. The one-use handshake secret
+/// belongs only to the worker's finish route and has its own scheme.
+pub fn permits_authorization(address: &str, authorization: &str) -> bool {
+    let Ok(url) = url::Url::parse(address) else { return false };
+    if url.scheme() != "https" || !url.username().is_empty() || url.password().is_some()
+        || url.port_or_known_default() != Some(443) || authorization.contains(['\r','\n']) { return false; }
+    match url.host_str() {
+        Some("api.discogs.com") => authorization.starts_with("Discogs token=") || authorization.starts_with("OAuth "),
+        Some("api.chilpa.app") => url.path() == "/discogs/oauth/finish" && authorization.starts_with("Chilpa "),
+        _ => false,
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -65,14 +86,17 @@ pub fn fetch(request: &Fetch) -> Result<Fetched, FetchError> {
         .http_status_as_error(false)
         // A redirect to plain http is refused too.
         .https_only(!local)
-        .max_redirects(5)
+        .max_redirects(if request.authorization.is_some() { 0 } else { 5 })
         .middleware(crate::network::guard)
         .build());
-    let reply = agent
+    let mut asked = agent
         .get(request.url)
         .header("User-Agent", request.user_agent)
-        .header("Accept", request.accept)
-        .call()
+        .header("Accept", request.accept);
+    if let Some(authorization) = request.authorization.filter(|value| permits_authorization(request.url,value)) {
+        asked = asked.header("Authorization", authorization);
+    }
+    let reply = asked.call()
         .map_err(|e| match e {
             ureq::Error::RequireHttpsOnly(_) => FetchError::Scheme,
             other => FetchError::Transport(other.to_string()),
@@ -124,6 +148,7 @@ mod tests {
             accept: "image/*",
             timeout: Duration::from_secs(5),
             max_bytes,
+            authorization: None,
         })
     }
 
@@ -179,5 +204,29 @@ mod tests {
         asked.join().unwrap();
         assert_eq!(got.status, 503);
         assert_eq!(got.headers["retry-after"], "4");
+    }
+    #[test]
+    fn credentials_have_exact_origins_and_separate_handshake_scope() {
+        let token = "Discogs token=MARKER_TOKEN";
+        assert!(permits_authorization("https://api.discogs.com/oauth/identity",token));
+        assert!(permits_authorization("https://api.discogs.com/releases/1","OAuth marker"));
+        assert!(permits_authorization("https://api.chilpa.app/discogs/oauth/finish?oauth_token=public","Chilpa request-secret"));
+        for address in ["https://i.discogs.com/image", "https://api.discogs.com.evil.test/x", "https://api.discogs.com@evil.test/x",
+            "http://api.discogs.com/x", "https://api.discogs.com:8443/x", "https://api.chilpa.app/discogs/oauth/finish", "https://api.chilpa.app/discogs/search"] {
+            assert!(!permits_authorization(address,token),"{address}");
+        }
+        assert!(!permits_authorization("https://api.chilpa.app/discogs/search","Chilpa request-secret"));
+    }
+    #[test]
+    fn an_unrelated_host_receives_no_credential_and_auth_requests_follow_no_redirects() {
+        let (url, asked) = answering(reply("302 Found","Location: https://api.discogs.com/oauth/identity\r\n",b""));
+        let request = Fetch {url:&url,user_agent:"fixture",accept:"*/*",timeout:Duration::from_secs(2),max_bytes:64,
+            authorization:Some("Discogs token=MARKER_TOKEN")};
+        let got = fetch(&request).unwrap();
+        assert_eq!(got.status,302);
+        let wire = asked.join().unwrap();
+        assert!(!wire.to_ascii_lowercase().contains("authorization:"));
+        assert!(!wire.contains("MARKER_TOKEN"));
+        assert!(!format!("{request:?}").contains("MARKER_TOKEN"));
     }
 }

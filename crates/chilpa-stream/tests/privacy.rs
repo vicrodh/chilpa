@@ -12,7 +12,7 @@ fn offline_blocks_http_streams_workers_and_servers_and_can_be_reversed() {
     let response: serde_json::Value = serde_json::from_slice(&send_request(request.to_string().as_bytes(), None)).unwrap();
     assert!(response["error"].as_str().unwrap().contains("disabled"));
     assert!(fetch(&Fetch { url: &address, user_agent: "fixture", accept: "*/*",
-        timeout: Duration::from_secs(1), max_bytes: 32 }).is_err());
+        timeout: Duration::from_secs(1), max_bytes: 32, authorization: None }).is_err());
     assert!(call_server(&Call { method: "GET", url: &address, headers: &[], body: None,
         timeout: Duration::from_secs(1), max_bytes: 32 }).is_err());
     assert!(Ranged::open(RangedRequest { url: address.clone(), headers: vec![] }).is_err());

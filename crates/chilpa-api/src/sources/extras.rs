@@ -17,6 +17,7 @@ impl Chilpa {
             let result = chilpa_core::fetch(&chilpa_core::Fetch {
                 url: &address, user_agent: "Chilpa", accept: "application/json, text/vtt, text/plain",
                 timeout: Duration::from_secs(15), max_bytes: 2 * 1024 * 1024,
+                authorization: None,
             }).map_err(|_| chilpa_i18n::t("This episode material could not be loaded."))
                 .and_then(|reply| {
                     if reply.status != 200 { return Err(chilpa_i18n::t("This episode material could not be loaded.")); }

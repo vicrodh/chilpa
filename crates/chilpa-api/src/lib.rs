@@ -18,6 +18,8 @@ mod browse;
 mod credits;
 mod desktop;
 mod discord;
+mod discogs_account;
+pub use discogs_account::DiscogsStatus;
 pub use desktop::WindowRequest;
 mod tracks_view;
 mod albums_view;
@@ -642,6 +644,7 @@ pub struct Chilpa {
     lyrics: lyrics_service::Lyrics,
     desktop: desktop::Desktop,
     discord: discord::Discord,
+    discogs_account: Option<discogs_account::Account>,
     ab_loop: Option<ab_loop::AbLoop>,
     keys: Option<hotkeys::Keys>,
     source_favorites: source_favorites::SourceFavorites,
@@ -780,6 +783,7 @@ impl Chilpa {
             lyrics: Default::default(),
             desktop: Default::default(),
             discord: Default::default(),
+            discogs_account: None,
             ab_loop: None,
             keys: None,
             source_favorites: Default::default(),

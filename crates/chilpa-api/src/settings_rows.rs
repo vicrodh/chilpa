@@ -139,7 +139,7 @@ impl Chilpa {
         if let Some(said) = self.library_maintenance(key) {
             return Some(said);
         }
-        self.lyrics_maintenance(key).or_else(|| self.wizard_maintenance(key)).or_else(|| self.audio_output_maintenance(key))
+        self.lyrics_maintenance(key).or_else(|| self.wizard_maintenance(key)).or_else(|| self.audio_output_maintenance(key)).or_else(||self.discogs_maintenance(key))
     }
 
     /// A setting's new value, for the feature it belongs to. Like
@@ -147,6 +147,7 @@ impl Chilpa {
     /// of keys: the window's bridge hands over what it does not know by
     /// name. `false` for a key nobody takes.
     pub fn adjust(&mut self, key: &str, value: &str) -> bool {
+        if self.discogs_setting(key,value) {return true;}
         if key == "storage.remoteLimitMb" {
             if !crate::storage_cache::set_limit(value) { return false }
             self.remember_preference(key, value);
@@ -212,8 +213,11 @@ impl Chilpa {
                 }
                 let mut row = Row { kind: 1, key: s.key.into(), title: chilpa_i18n::t(s.title), description: if s.description.is_empty() { String::new() } else { chilpa_i18n::t(s.description) }, control: s.control.name().into(), action: if s.action.is_empty() { String::new() } else { chilpa_i18n::t(s.action) }, ..Row::default() };
                 self.fill(&mut row, &output, notes);
+                let local_account_action=row.key=="integrations.discogs.account" && {
+                    let status=self.discogs();!status.user.is_empty() || status.checking
+                };
                 let lyrics_off = self.preference("integrations.lyrics.enabled").as_deref() == Some("false");
-                if (self.offline() && row.key.starts_with("integrations.") && row.key != "integrations.offline" && row.key != "integrations.lyrics.enabled")
+                if (self.offline() && row.key.starts_with("integrations.") && row.key != "integrations.offline" && row.key != "integrations.lyrics.enabled" && !local_account_action)
                     || (lyrics_off && row.key.starts_with("integrations.lyrics.") && row.key != "integrations.lyrics.enabled") {
                     row.control = "fixed".into();
                 }
@@ -237,6 +241,7 @@ impl Chilpa {
 
     /// The value, the options and anything the row says about its state.
     fn fill(&mut self, row: &mut Row, output: &str, notes: &RowNotes) {
+        if self.discogs_row(row) {return;}
         if self.graphics_row(row) || self.normalization_row(row) || self.wizard_row(row) || self.theme_row(row) {
             return;
         }

@@ -429,6 +429,9 @@ msgstr "Alle thema's"
 msgid "All time"
 msgstr "Altijd"
 
+msgid "Allow Chilpa on Discogs, then paste the code below."
+msgstr "Geef Chilpa toestemming op Discogs en plak de code hieronder."
+
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Sta Chilpa toe op Last.fm; dit wordt vanzelf bijgewerkt."
 
@@ -1805,8 +1808,47 @@ msgstr "De wijzigingen aan het andere item verwerpen?"
 msgid "Discard the changes?"
 msgstr "De wijzigingen verwerpen?"
 
+msgid "Discogs account"
+msgstr "Discogs-account"
+
+msgid "Discogs account setup could not start."
+msgstr "Het verbinden van het Discogs-account kon niet worden gestart."
+
+msgid "Discogs authorization code"
+msgstr "Discogs-autorisatiecode"
+
+msgid "Discogs could not be reached. Try connecting again."
+msgstr "Discogs is niet bereikbaar. Probeer opnieuw verbinding te maken."
+
+msgid "Discogs did not accept the token or authorization code. Connect again."
+msgstr "Discogs heeft het token of de autorisatiecode geweigerd. Maak opnieuw verbinding."
+
+msgid "Discogs did not accept your account. Connect it again in Settings > Integrations."
+msgstr "Discogs heeft je account geweigerd. Verbind het opnieuw via Instellingen > Integraties."
+
+msgid "Discogs has no more requests for this connection. Connect your Discogs account in Settings > Integrations."
+msgstr "De limiet voor Discogs-verzoeken bij deze verbinding is bereikt. Verbind je Discogs-account via Instellingen > Integraties."
+
+msgid "Discogs is disconnected for now, but its saved account could not be removed. It may reconnect after restarting."
+msgstr "Discogs is voorlopig losgekoppeld, maar het opgeslagen account kon niet worden verwijderd. Na opnieuw opstarten kan het weer verbinding maken."
+
+msgid "Discogs is out of requests"
+msgstr "Limiet voor Discogs-verzoeken bereikt"
+
+msgid "Discogs limits how many requests one connection can make. To keep searching, connect your account with a personal token or by signing in."
+msgstr "Discogs beperkt het aantal verzoeken per verbinding. Verbind je account met een persoonlijk token of meld je aan om verder te zoeken."
+
 msgid "Discogs release"
 msgstr "Discogs-uitgave"
+
+msgid "Discogs sign-in expired. Connect again."
+msgstr "Het aanmelden bij Discogs is verlopen. Maak opnieuw verbinding."
+
+msgid "Discogs sign-in was cancelled."
+msgstr "Het aanmelden bij Discogs is geannuleerd."
+
+msgid "Discogs token"
+msgstr "Discogs-token"
 
 msgid "Disconnect"
 msgstr "Verbinding verbreken"
@@ -1816,6 +1858,9 @@ msgstr "Account loskoppelen"
 
 msgid "Disconnected"
 msgstr "Verbinding verbroken"
+
+msgid "Disconnecting forgets this account here. Revoke access at discogs.com/settings/applications."
+msgstr "Bij verbreken wordt dit account hier vergeten. Trek de toegang in via discogs.com/settings/applications."
 
 msgid "Discord Rich Presence"
 msgstr "Discord Rich Presence"
@@ -1966,6 +2011,9 @@ msgstr "Leeg. Voeg nummers uit een lijst toe met een rechtsklik."
 
 msgid "Enable"
 msgstr "Inschakelen"
+
+msgid "Enable Chilpa proxy for browser sign-in, or connect with a personal token below."
+msgstr "Schakel de Chilpa-proxy in om je via de browser aan te melden, of gebruik hieronder een persoonlijk token."
 
 msgid "Enable PipeWire in your NixOS configuration"
 msgstr "Schakel PipeWire in in je NixOS-configuratie"
@@ -3844,6 +3892,9 @@ msgstr "Alleen met de exclusieve modus aan."
 msgid "Open"
 msgstr "Openen"
 
+msgid "Open Discogs"
+msgstr "Discogs openen"
+
 msgid "Open Last.fm"
 msgstr "Last.fm openen"
 
@@ -4020,6 +4071,12 @@ msgstr "Plak een parametrisch EQ-profiel of een Chilpa-preset-JSON. Bij actieve 
 
 msgid "Paste a parametric EQ profile."
 msgstr "Plak een parametrisch EQ-profiel."
+
+msgid "Paste a personal access token from discogs.com/settings/developers."
+msgstr "Plak een persoonlijk toegangstoken van discogs.com/settings/developers."
+
+msgid "Paste the code Discogs shows after you allow Chilpa."
+msgstr "Plak de code die Discogs toont nadat je Chilpa toestemming hebt gegeven."
 
 msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
 msgstr "Plak het token dat de bron heeft opgegeven. Chilpa bewaart het versleuteld en de plug-in ziet het nooit."
@@ -5211,6 +5268,12 @@ msgstr "Inloggen"
 msgid "Sign in from Account to see your purchases."
 msgstr "Log in via Account om je aankopen te zien."
 
+msgid "Sign in on Discogs to search with your account."
+msgstr "Meld je aan bij Discogs om met je account te zoeken."
+
+msgid "Sign in with Discogs"
+msgstr "Aanmelden met Discogs"
+
 msgid "Sign in with an API key"
 msgstr "Inloggen met een API-sleutel"
 
@@ -5510,6 +5573,12 @@ msgstr "Dat bestand is geen JPEG-, PNG- of WebP-afbeelding"
 msgid "That saved query no longer exists."
 msgstr "Die opgeslagen zoekopdracht bestaat niet meer."
 
+msgid "The Discogs account changed. Search again."
+msgstr "Het Discogs-account is gewijzigd. Zoek opnieuw."
+
+msgid "The Discogs account could not be saved. The connection was not changed."
+msgstr "Het Discogs-account kon niet worden opgeslagen. De verbinding is niet gewijzigd."
+
 msgid "The EQ profile is too large."
 msgstr "Het EQ-profiel is te groot."
 
@@ -5695,6 +5764,12 @@ msgstr "Het resultaat is niet opgeslagen. Bekijk de fout voordat u afsluit."
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "Dezelfde regel als bij ListenBrainz: de helft van een nummer, of vier minuten."
+
+msgid "The saved Discogs account could not be opened. Connect again."
+msgstr "Het opgeslagen Discogs-account kon niet worden geopend. Maak opnieuw verbinding."
+
+msgid "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
+msgstr "Het opgeslagen Discogs-account kon na het annuleren niet worden hersteld. Controleer het account voordat je opnieuw opstart."
 
 msgid "The saved folder scan policy is invalid."
 msgstr "Het opgeslagen scanbeleid voor mappen is ongeldig."
@@ -6226,6 +6301,9 @@ msgstr "Quick Connect gebruiken"
 
 msgid "Use a name of 1 to 80 characters, without line breaks."
 msgstr "Gebruik een naam van 1 tot 80 tekens zonder regeleinden."
+
+msgid "Use a token"
+msgstr "Een token gebruiken"
 
 msgid "Use at most 10 DSP filters."
 msgstr "Gebruik maximaal 10 DSP-filters."

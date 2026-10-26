@@ -91,6 +91,8 @@ pub(crate) struct Editor {
     view: MetadataView,
     worker: Option<Worker>,
     network: Arc<dyn chilpa_meta::Http>,
+    credential: chilpa_meta::discogs::CredentialProvider,
+    credential_epoch: Arc<std::sync::atomic::AtomicU64>,
 }
 
 impl Default for Editor {
@@ -127,6 +129,8 @@ impl Default for Editor {
             view: MetadataView { state: "closed", focus: -1, ..MetadataView::default() },
             worker: None,
             network: Arc::new(worker::Network::new()),
+            credential: Arc::new(||chilpa_meta::discogs::Credential::Anonymous),
+            credential_epoch: Arc::new(std::sync::atomic::AtomicU64::new(0)),
         }
     }
 }
@@ -148,7 +152,7 @@ impl Editor {
     /// is no worker to hand it to.
     fn ask(&mut self, job: Job) -> bool {
         if self.worker.is_none() {
-            self.worker = Worker::start(self.network.clone());
+            self.worker = Worker::start(self.network.clone(),self.credential.clone(),self.credential_epoch.clone());
         }
         match &self.worker {
             Some(worker) => worker.ask(job),
@@ -215,6 +219,9 @@ impl Chilpa {
             _ => Provider::MusicBrainz,
         };
 
+        if self.metadata.worker.is_none() {
+            (self.metadata.credential,self.metadata.credential_epoch)=self.discogs_provider();
+        }
         let editor = &mut self.metadata;
         editor.forget();
         editor.state = State::Opening;
@@ -344,11 +351,24 @@ impl Chilpa {
     }
 
     fn metadata_take(&mut self, done: Done) {
-        let editor = &mut self.metadata;
-        if done.session() != editor.session {
+        if done.session() != self.metadata.session {
             artwork::discard(&done);
             return;
         }
+        let current_account=match &done {
+            Done::Found {turn,account_epoch,hits,..} if *turn==self.metadata.lookup_turn && self.metadata.provider==Provider::Discogs=>self.discogs_result(*account_epoch,hits.as_ref().err()),
+            Done::Loaded {turn,account_epoch,release,..} if *turn==self.metadata.lookup_turn && self.metadata.provider==Provider::Discogs=>self.discogs_result(*account_epoch,release.as_ref().err()),
+            Done::Candidates {turn,account_epoch,candidates,..} if *turn==self.metadata.artwork_turn && self.metadata.artwork_provider==Provider::Discogs=>self.discogs_result(*account_epoch,candidates.as_ref().err()),
+            _=>true,
+        };
+        if !current_account {
+            match &done {Done::Found {..}=>self.metadata.searching=false,Done::Loaded {..}=>self.metadata.loading=false,
+                Done::Candidates {..}=>self.metadata.artwork_searching=false,_=>{}}
+            artwork::discard(&done);
+            self.metadata.refuse(chilpa_i18n::t("The Discogs account changed. Search again."));
+            return;
+        }
+        let editor = &mut self.metadata;
         match done {
             Done::Opened { reads, homes, layers, tracks, .. } => {
                 let Some(album) = editor.album.as_ref() else { return };

@@ -429,6 +429,9 @@ msgstr "Tous les thèmes"
 msgid "All time"
 msgstr "Depuis toujours"
 
+msgid "Allow Chilpa on Discogs, then paste the code below."
+msgstr "Autorisez Chilpa sur Discogs, puis collez le code ci-dessous."
+
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Autoriser Chilpa sur Last.fm ; cela se met à jour tout seul."
 
@@ -1805,8 +1808,47 @@ msgstr "Abandonner les modifications de l'autre disque ?"
 msgid "Discard the changes?"
 msgstr "Abandonner les modifications ?"
 
+msgid "Discogs account"
+msgstr "Compte Discogs"
+
+msgid "Discogs account setup could not start."
+msgstr "Impossible de démarrer la connexion au compte Discogs."
+
+msgid "Discogs authorization code"
+msgstr "Code d’autorisation Discogs"
+
+msgid "Discogs could not be reached. Try connecting again."
+msgstr "Impossible de joindre Discogs. Réessayez de vous connecter."
+
+msgid "Discogs did not accept the token or authorization code. Connect again."
+msgstr "Discogs a refusé le jeton ou le code d’autorisation. Reconnectez-vous."
+
+msgid "Discogs did not accept your account. Connect it again in Settings > Integrations."
+msgstr "Discogs a refusé votre compte. Reconnectez-le dans Paramètres > Intégrations."
+
+msgid "Discogs has no more requests for this connection. Connect your Discogs account in Settings > Integrations."
+msgstr "Le quota de requêtes Discogs de cette connexion est épuisé. Connectez votre compte Discogs dans Paramètres > Intégrations."
+
+msgid "Discogs is disconnected for now, but its saved account could not be removed. It may reconnect after restarting."
+msgstr "Discogs est déconnecté pour le moment, mais le compte enregistré n’a pas pu être supprimé. Il peut se reconnecter au redémarrage."
+
+msgid "Discogs is out of requests"
+msgstr "Quota de requêtes Discogs épuisé"
+
+msgid "Discogs limits how many requests one connection can make. To keep searching, connect your account with a personal token or by signing in."
+msgstr "Discogs limite le nombre de requêtes par connexion. Pour poursuivre vos recherches, connectez votre compte avec un jeton personnel ou en vous identifiant."
+
 msgid "Discogs release"
 msgstr "Sortie Discogs"
+
+msgid "Discogs sign-in expired. Connect again."
+msgstr "La connexion à Discogs a expiré. Reconnectez-vous."
+
+msgid "Discogs sign-in was cancelled."
+msgstr "La connexion à Discogs a été annulée."
+
+msgid "Discogs token"
+msgstr "Jeton Discogs"
 
 msgid "Disconnect"
 msgstr "Déconnecter"
@@ -1816,6 +1858,9 @@ msgstr "Déconnecter le compte"
 
 msgid "Disconnected"
 msgstr "Déconnecté"
+
+msgid "Disconnecting forgets this account here. Revoke access at discogs.com/settings/applications."
+msgstr "La déconnexion supprime ce compte ici. Révoquez l’accès sur discogs.com/settings/applications."
 
 msgid "Discord Rich Presence"
 msgstr "Discord Rich Presence"
@@ -1966,6 +2011,9 @@ msgstr "Vide. Ajoutez des pistes depuis n'importe quelle liste avec un clic droi
 
 msgid "Enable"
 msgstr "Activer"
+
+msgid "Enable Chilpa proxy for browser sign-in, or connect with a personal token below."
+msgstr "Activez le proxy Chilpa pour vous identifier dans le navigateur, ou utilisez un jeton personnel ci-dessous."
 
 msgid "Enable PipeWire in your NixOS configuration"
 msgstr "Activez PipeWire dans votre configuration NixOS"
@@ -3844,6 +3892,9 @@ msgstr "Uniquement avec le mode exclusif activé."
 msgid "Open"
 msgstr "Ouvrir"
 
+msgid "Open Discogs"
+msgstr "Ouvrir Discogs"
+
 msgid "Open Last.fm"
 msgstr "Ouvrir Last.fm"
 
@@ -4020,6 +4071,12 @@ msgstr "Collez un profil d'EQ paramétrique ou un JSON de préréglage Chilpa. L
 
 msgid "Paste a parametric EQ profile."
 msgstr "Collez un profil d'EQ paramétrique."
+
+msgid "Paste a personal access token from discogs.com/settings/developers."
+msgstr "Collez un jeton d’accès personnel obtenu sur discogs.com/settings/developers."
+
+msgid "Paste the code Discogs shows after you allow Chilpa."
+msgstr "Collez le code affiché par Discogs après avoir autorisé Chilpa."
 
 msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
 msgstr "Collez le jeton fourni par la source. Chilpa le conserve chiffré et le plugin ne le voit jamais."
@@ -5211,6 +5268,12 @@ msgstr "Se connecter"
 msgid "Sign in from Account to see your purchases."
 msgstr "Connectez-vous depuis Compte pour voir vos achats."
 
+msgid "Sign in on Discogs to search with your account."
+msgstr "Identifiez-vous sur Discogs pour effectuer des recherches avec votre compte."
+
+msgid "Sign in with Discogs"
+msgstr "Se connecter avec Discogs"
+
 msgid "Sign in with an API key"
 msgstr "Se connecter avec une clé d'API"
 
@@ -5510,6 +5573,12 @@ msgstr "Ce fichier n'est pas une image JPEG, PNG ou WebP"
 msgid "That saved query no longer exists."
 msgstr "Cette requête enregistrée n’existe plus."
 
+msgid "The Discogs account changed. Search again."
+msgstr "Le compte Discogs a changé. Relancez la recherche."
+
+msgid "The Discogs account could not be saved. The connection was not changed."
+msgstr "Impossible d’enregistrer le compte Discogs. La connexion reste inchangée."
+
 msgid "The EQ profile is too large."
 msgstr "Le profil d'EQ est trop volumineux."
 
@@ -5695,6 +5764,12 @@ msgstr "Le résultat n’a pas été enregistré. Consultez l’erreur avant de 
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "La même règle que ListenBrainz : la moitié d'une piste, ou quatre minutes."
+
+msgid "The saved Discogs account could not be opened. Connect again."
+msgstr "Impossible d’ouvrir le compte Discogs enregistré. Reconnectez-vous."
+
+msgid "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
+msgstr "Impossible de restaurer le compte Discogs enregistré après l’annulation. Vérifiez le compte avant de redémarrer."
 
 msgid "The saved folder scan policy is invalid."
 msgstr "La règle d’analyse des dossiers enregistrée n’est pas valide."
@@ -6226,6 +6301,9 @@ msgstr "Utiliser Quick Connect"
 
 msgid "Use a name of 1 to 80 characters, without line breaks."
 msgstr "Utilisez un nom de 1 à 80 caractères, sans saut de ligne."
+
+msgid "Use a token"
+msgstr "Utiliser un jeton"
 
 msgid "Use at most 10 DSP filters."
 msgstr "Utilisez 10 filtres DSP au maximum."

@@ -19,6 +19,7 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Components/SettingsActions.js" as Set
 import "qrc:/qt/qml/app/chilpa/wizard/qml/Patterns" as WizardPatterns
 import "qrc:/qt/qml/app/chilpa/stats/qml/Patterns" as AnalysisUi
 import "qrc:/qt/qml/app/chilpa/themes/qml/Patterns" as Themes
+import "qrc:/qt/qml/app/chilpa/metadata/qml/Patterns" as MetadataUi
 // Settings rows follow the facade schema.
 Item {
     id: page
@@ -38,6 +39,7 @@ Item {
     Connections { target: I18n; function onRevChanged() { rows.refresh() } }
     Connections { target: Prefs; function onRevChanged() { if (page.visible && page.section === "navigation") rows.refresh() } }
     Connections { target: AudioOutput; function onOutputSelected() { if (page.visible && page.section === "audio") rows.refresh() } }
+    MetadataUi.DiscogsSettings { rows: rows; current: page.visible && !page.leaving && page.section === "integrations" }
     Text {
         id: title
         x: Metrics.contentX

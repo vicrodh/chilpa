@@ -428,6 +428,9 @@ msgstr "すべてのテーマ"
 msgid "All time"
 msgstr "全期間"
 
+msgid "Allow Chilpa on Discogs, then paste the code below."
+msgstr "DiscogsでChilpaを許可し、以下にコードを貼り付けてください。"
+
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Last.fmでChilpaを許可してください。この表示は自動で更新されます。"
 
@@ -1803,8 +1806,47 @@ msgstr "もう一方のアルバムの変更を破棄しますか？"
 msgid "Discard the changes?"
 msgstr "変更を破棄しますか？"
 
+msgid "Discogs account"
+msgstr "Discogsアカウント"
+
+msgid "Discogs account setup could not start."
+msgstr "Discogsアカウントの接続を開始できませんでした。"
+
+msgid "Discogs authorization code"
+msgstr "Discogs認証コード"
+
+msgid "Discogs could not be reached. Try connecting again."
+msgstr "Discogsに接続できませんでした。もう一度接続してください。"
+
+msgid "Discogs did not accept the token or authorization code. Connect again."
+msgstr "Discogsがトークンまたは認証コードを受け付けませんでした。もう一度接続してください。"
+
+msgid "Discogs did not accept your account. Connect it again in Settings > Integrations."
+msgstr "Discogsがアカウントを受け付けませんでした。「設定」>「連携」で再接続してください。"
+
+msgid "Discogs has no more requests for this connection. Connect your Discogs account in Settings > Integrations."
+msgstr "この接続で利用できるDiscogsのリクエスト数の上限に達しました。「設定」>「連携」でDiscogsアカウントを接続してください。"
+
+msgid "Discogs is disconnected for now, but its saved account could not be removed. It may reconnect after restarting."
+msgstr "Discogsは現在切断されていますが、保存済みのアカウントを削除できませんでした。再起動すると再接続する可能性があります。"
+
+msgid "Discogs is out of requests"
+msgstr "Discogsのリクエスト上限に達しました"
+
+msgid "Discogs limits how many requests one connection can make. To keep searching, connect your account with a personal token or by signing in."
+msgstr "Discogsでは接続ごとのリクエスト数に上限があります。検索を続けるには、個人用トークンを使うかログインしてアカウントを接続してください。"
+
 msgid "Discogs release"
 msgstr "Discogsリリース"
+
+msgid "Discogs sign-in expired. Connect again."
+msgstr "Discogsへのログインが期限切れになりました。もう一度接続してください。"
+
+msgid "Discogs sign-in was cancelled."
+msgstr "Discogsへのログインをキャンセルしました。"
+
+msgid "Discogs token"
+msgstr "Discogsトークン"
 
 msgid "Disconnect"
 msgstr "接続を解除"
@@ -1814,6 +1856,9 @@ msgstr "アカウントの接続を解除"
 
 msgid "Disconnected"
 msgstr "切断済み"
+
+msgid "Disconnecting forgets this account here. Revoke access at discogs.com/settings/applications."
+msgstr "切断すると、このアプリ内のアカウント情報が削除されます。アクセス権の取り消しはdiscogs.com/settings/applicationsで行ってください。"
 
 msgid "Discord Rich Presence"
 msgstr "Discordリッチプレゼンス"
@@ -1964,6 +2009,9 @@ msgstr "空です。右クリックでどの一覧からでもトラックを追
 
 msgid "Enable"
 msgstr "有効にする"
+
+msgid "Enable Chilpa proxy for browser sign-in, or connect with a personal token below."
+msgstr "ブラウザーでログインするにはChilpaプロキシを有効にするか、以下で個人用トークンを使ってください。"
 
 msgid "Enable PipeWire in your NixOS configuration"
 msgstr "NixOS構成でPipeWireを有効にしてください"
@@ -3841,6 +3889,9 @@ msgstr "排他モードがオンの場合のみ。"
 msgid "Open"
 msgstr "開く"
 
+msgid "Open Discogs"
+msgstr "Discogsを開く"
+
 msgid "Open Last.fm"
 msgstr "Last.fmを開く"
 
@@ -4017,6 +4068,12 @@ msgstr "パラメトリックEQプロファイルまたはChilpaプリセット�
 
 msgid "Paste a parametric EQ profile."
 msgstr "パラメトリックEQプロファイルを貼り付けてください。"
+
+msgid "Paste a personal access token from discogs.com/settings/developers."
+msgstr "discogs.com/settings/developersで発行した個人用アクセストークンを貼り付けてください。"
+
+msgid "Paste the code Discogs shows after you allow Chilpa."
+msgstr "Chilpaのアクセスを許可した後にDiscogsが表示するコードを貼り付けてください。"
 
 msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
 msgstr "ソースから提供されたトークンを貼り付けてください。Chilpaは暗号化して保持し、プラグインには見えません。"
@@ -5207,6 +5264,12 @@ msgstr "ログイン"
 msgid "Sign in from Account to see your purchases."
 msgstr "購入を確認するには、アカウントからログインしてください。"
 
+msgid "Sign in on Discogs to search with your account."
+msgstr "アカウントで検索するにはDiscogsにログインしてください。"
+
+msgid "Sign in with Discogs"
+msgstr "Discogsでログイン"
+
 msgid "Sign in with an API key"
 msgstr "APIキーでログイン"
 
@@ -5505,6 +5568,12 @@ msgstr "そのファイルはJPEG、PNG、WebPのいずれの画像でもあり�
 msgid "That saved query no longer exists."
 msgstr "この保存済みクエリはもう存在しません。"
 
+msgid "The Discogs account changed. Search again."
+msgstr "Discogsアカウントが変わりました。もう一度検索してください。"
+
+msgid "The Discogs account could not be saved. The connection was not changed."
+msgstr "Discogsアカウントを保存できませんでした。接続は変更されていません。"
+
 msgid "The EQ profile is too large."
 msgstr "EQプロファイルが大きすぎます。"
 
@@ -5690,6 +5759,12 @@ msgstr "結果は保存されていません。終了する前にエラーを確
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "ListenBrainzと同じルールで、トラックの半分、または4分です。"
+
+msgid "The saved Discogs account could not be opened. Connect again."
+msgstr "保存済みのDiscogsアカウントを開けませんでした。もう一度接続してください。"
+
+msgid "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
+msgstr "キャンセル後に保存済みのDiscogsアカウントを復元できませんでした。再起動する前にアカウントを確認してください。"
 
 msgid "The saved folder scan policy is invalid."
 msgstr "保存されたフォルダーのスキャン設定が無効です。"
@@ -6221,6 +6296,9 @@ msgstr "Quick Connectを使用"
 
 msgid "Use a name of 1 to 80 characters, without line breaks."
 msgstr "名前は改行なしで1〜80文字にしてください。"
+
+msgid "Use a token"
+msgstr "トークンを使う"
 
 msgid "Use at most 10 DSP filters."
 msgstr "DSPフィルターは最大10個までです。"
