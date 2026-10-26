@@ -16,9 +16,15 @@ pub fn inspect_target(transport: &mut dyn Transport, cancel: &Cancellation) -> R
     }
     let mut raw = Bounded(Vec::new());
     transport.read(&marker(), &mut raw, cancel)?;
-    let target: Target = serde_json::from_slice(&raw.0).map_err(|_| invalid("damaged sync identity"))?;
+    parse_target_identity(&raw.0).map(Some)
+}
+
+/// I validate the same bounded marker for read-only discovery and exclusive sessions.
+pub fn parse_target_identity(bytes: &[u8]) -> Result<Target> {
+    if bytes.len() > 4096 { return Err(invalid("sync identity exceeds 4 KiB")); }
+    let target: Target = serde_json::from_slice(bytes).map_err(|_| invalid("damaged sync identity"))?;
     target.validate()?;
-    Ok(Some(target))
+    Ok(target)
 }
 
 pub(crate) fn check_target(transport: &mut dyn Transport, target: &Target, cancel: &Cancellation) -> Result<()> {
@@ -59,6 +65,7 @@ fn discard_stage(transport: &mut dyn Transport, pending: &Pending) -> Result<()>
 /// I reconcile the journal against bytes on the device, including the crash window between
 /// a successful rename and its local database commit. I never infer success from a lost reply.
 pub fn recover(state: &mut State, transport: &mut dyn Transport, cancel: &Cancellation) -> Result<usize> {
+    transport.end_review();
     let target = state.target()?.ok_or_else(|| invalid("pair a storage before recovery"))?;
     check_target(transport, &target, cancel)?;
     let mut recovered = 0;
@@ -98,6 +105,7 @@ pub fn recover(state: &mut State, transport: &mut dyn Transport, cancel: &Cancel
 /// explicit approval, and it remains limited to unchanged files recorded by this profile.
 pub fn synchronize(state: &mut State, transport: &mut dyn Transport, plan: &Plan,
     approved_plan: &str, approve_removals: bool, cancel: &Cancellation, progress: &mut (dyn FnMut(Progress) + Send)) -> Result<()> {
+    transport.end_review();
     if approved_plan != plan.id() || (plan.deletion_count() > 0 && !approve_removals) { return Err(conflict("this sync preview has not been approved")); }
     if state.target()?.as_ref().map(|t| &t.id) != Some(&plan.target.id) || state.revision()? != plan.revision {
         return Err(conflict("the sync profile changed after this preview"));

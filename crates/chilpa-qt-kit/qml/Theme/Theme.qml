@@ -180,8 +180,11 @@ QtObject {
         readonly property color shadowTabActive: ThemeModel.shadowColor("tabActive", 0, theme.rev)
     }
 
+    function opaque(color) { return Qt.rgba(color.r, color.g, color.b, 1) }
+
     // The color a cover shows while it loads, varied by position so a grid
     // of placeholders does not read as one block.
+
     function placeholder(index) {
         return ThemeModel.placeholder(index, theme.rev)
     }

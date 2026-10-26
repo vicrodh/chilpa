@@ -1,4 +1,9 @@
 //! I open device sessions only inside one requested background job.
+mod playlist;
+mod discovery;
+pub(crate) use discovery::{discover, mounted};
+pub(crate) use playlist::read_playlist;
+
 use super::{
     catalog::{Pick, Profile, Root, Store},
     failure, selection, UiError,
@@ -18,6 +23,8 @@ pub struct Destination {
     pub available: String,
     pub capacity: String,
     pub writable: bool,
+    #[serde(skip)]
+    pub(crate) profiles: Vec<String>,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct ChangeRow {
@@ -35,141 +42,41 @@ pub(crate) struct Ready {
     pub destination: String,
     pub tracks: usize,
 }
-pub(crate) fn mounted() -> Destination {
-    Destination {
-        id: "mounted".into(),
-        name: chilpa_i18n::t("Mounted storage"),
-        storage: chilpa_i18n::t("Choose a folder on a memory card or USB drive"),
-        available: String::new(),
-        capacity: String::new(),
-        writable: true,
-    }
-}
-pub(crate) fn discover(cancel: &Cancellation) -> (Vec<Destination>, Option<UiError>) {
-    // I isolate mounted-storage smoke fixtures from every physical USB interface.
-    if std::env::var("CHILPA_DEVICE_TEST_MOUNTED_ONLY").as_deref() == Ok("1") {
-        return (vec![mounted()], None);
-    }
-    let mut rows = Vec::new();
-    let mut error = None;
-    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-    match chilpa_devices::transport::mtp::devices() {
-        Err(problem) => error = Some(UiError::from(problem)),
-        Ok(devices) => {
-            if devices.len() > 8 {
-                error = Some(failure(
-                    chilpa_i18n::mark("Connect at most eight USB players at a time."),
-                    "",
-                ));
-            }
-            for device in devices.into_iter().take(8) {
-                if let Err(problem) = cancel.check() {
-                    error = Some(UiError::from(problem));
-                    break;
-                }
-                let description = match chilpa_devices::transport::mtp::describe(device.location) {
-                    Ok(description) => description,
-                    Err(problem) => {
-                        if error.is_none() {
-                            error = Some(UiError::from(problem));
-                        }
-                        continue;
-                    }
-                };
-                for volume in description.volumes {
-                    if rows.len() >= 128 {
-                        error = Some(failure(
-                            chilpa_i18n::mark("Too many device storage locations were reported."),
-                            "",
-                        ));
-                        break;
-                    }
-                    rows.push(Destination {
-                        id: format!("{}/{}", device.location, volume.id),
-                        name: if description.name.trim().is_empty() {
-                            device.name.clone()
-                        } else {
-                            description.name.clone()
-                        },
-                        storage: volume.name,
-                        available: super::bytes(volume.available),
-                        capacity: super::bytes(volume.capacity),
-                        writable: volume.writable,
-                    });
-                }
-            }
-        }
-    }
-    #[cfg(target_os = "android")]
-    let _ = cancel;
-    rows.push(mounted());
-    (rows, error)
-}
 
 fn transport(root: &Root, destination: &str, create: bool) -> Result<Box<dyn Transport>, UiError> {
-    match root {
-        Root::Mounted { path } => {
-            if destination != "mounted" {
-                return Err(failure(
-                    chilpa_i18n::mark(
-                        "Choose mounted storage for this profile, or select a player profile.",
-                    ),
-                    "",
-                ));
-            }
-            if !create && (!path.is_dir() || !path.join(".chilpa-sync/identity.json").is_file()) {
-                return Err(failure(
-                    chilpa_i18n::mark(
-                        "The saved storage folder is unavailable. Reconnect its original memory.",
-                    ),
-                    "",
-                ));
-            }
-            Ok(Box::new(
-                chilpa_devices::transport::Mounted::open(path).map_err(UiError::from)?,
-            ))
+    if destination.starts_with("volume:") {
+        let volume = chilpa_devices::volumes::Volume::resolve(destination).map_err(UiError::from)?;
+        let relative = discovery::folder(root, Some(&volume));
+        let path = volume.folder(&relative, create).map_err(UiError::from)?;
+        return Ok(Box::new(chilpa_devices::transport::Mounted::open(&path).map_err(UiError::from)?));
+    }
+    if destination == "mounted" {
+        let Root::Mounted { path } = root else {
+            return Err(failure(chilpa_i18n::mark("Choose the connected player and its storage first."), ""));
+        };
+        if !create && !path.join(".chilpa-sync/identity.json").is_file() {
+            return Err(failure(chilpa_i18n::mark("The saved storage folder is unavailable. Reconnect its original memory."), ""));
         }
-        Root::Mtp { folder } => {
-            #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-            {
-                let (location, volume) = destination.split_once('/').ok_or_else(|| {
-                    failure(
-                        chilpa_i18n::mark("Choose the connected player and its storage first."),
-                        "",
-                    )
-                })?;
-                let location = location.parse().map_err(|_| {
-                    failure(
-                        chilpa_i18n::mark("The USB connection changed. Refresh the device list."),
-                        "",
-                    )
-                })?;
-                let volume = volume.parse().map_err(|_| {
-                    failure(
-                        chilpa_i18n::mark("The USB connection changed. Refresh the device list."),
-                        "",
-                    )
-                })?;
-                let folder =
-                    chilpa_sync::RelativePath::new(folder.clone()).map_err(UiError::from)?;
-                let device = if create {
-                    chilpa_devices::transport::mtp::Mtp::open(location, volume, folder)
-                } else {
-                    chilpa_devices::transport::mtp::Mtp::open_existing(location, volume, folder)
-                };
-                Ok(Box::new(device.map_err(UiError::from)?))
-            }
-            #[cfg(target_os = "android")]
-            {
-                let _ = (folder, destination, create);
-                Err(failure(
-                    chilpa_i18n::mark("USB host sync is available in the desktop application."),
-                    "",
-                ))
-            }
-        }
+        return Ok(Box::new(chilpa_devices::transport::Mounted::open(path).map_err(UiError::from)?));
+    }
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    {
+        let invalid_connection = || failure(chilpa_i18n::mark("The USB connection changed. Refresh the device list."), "");
+        let (location, volume) = destination.split_once('/').ok_or_else(invalid_connection)?;
+        let location = location.parse().map_err(|_| invalid_connection())?;
+        let volume = volume.parse().map_err(|_| invalid_connection())?;
+        let folder = chilpa_sync::RelativePath::new(discovery::folder(root, None)).map_err(UiError::from)?;
+        let device = if create { chilpa_devices::transport::mtp::Mtp::open(location, volume, folder) }
+            else { chilpa_devices::transport::mtp::Mtp::open_existing(location, volume, folder) };
+        Ok(Box::new(device.map_err(UiError::from)?))
+    }
+    #[cfg(target_os = "android")]
+    {
+        let _ = (root, destination, create);
+        Err(failure(chilpa_i18n::mark("USB host sync is available in the desktop application."), ""))
     }
 }
+
 fn checked_state(
     store: &Store,
     profile: &Profile,
@@ -236,6 +143,7 @@ pub(crate) fn add(
         catalog.profiles.push(profile.clone());
         Ok(())
     })?;
+    store.remember_profile(&profile.id)?;
     Ok(profile)
 }
 pub(crate) fn save_selection(
@@ -301,7 +209,7 @@ pub(crate) fn prepare(
         Some(value) => value,
         None => selection::resolve(library, &profile.picks, cancel)?,
     };
-    let plan = chilpa_sync::prepare(
+    let plan = chilpa_sync::prepare_review(
         &state,
         device.as_mut(),
         &inputs,

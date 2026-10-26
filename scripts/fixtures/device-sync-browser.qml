@@ -48,7 +48,10 @@ Item {
     }
     function advance() {
         check(!Player.playing,"unexpected playback")
-        if (DeviceSync.busy) return
+        if (DeviceSync.busy) {
+            if (phase === 21) DeviceSync.poll()
+            if (DeviceSync.busy) return
+        }
         const status = JSON.parse(DeviceSync.snapshot || "{}")
         const catalog = JSON.parse(DeviceSync.catalog || "{}")
         if (phase !== 0) check(!status.error,"browser task failed: " + JSON.stringify(status.error))
@@ -110,21 +113,56 @@ Item {
         } else if (phase === 11) {
             const view = document()
             check(view.recorded && view.notice && view.rows.length === 2,"synced history is incomplete")
-            const album = view.rows.find(row => row.title === "DAP Native Smoke")
-            check(!!album,"synced album missing")
-            if (!openRow(album.id)) return
+            named("deviceBrowserView").picked("artists")
             phase = 12
         } else if (phase === 12) {
-            check(document().rows.length === 2 && document().rows.every(row => row.path.startsWith("Music/")),"history does not describe published media")
-            Navigation.go("library",0)
+            const view = document()
+            check(view.view === "artists" && view.rows.length === 1,"artist category is incomplete")
+            if (!openRow(view.rows[0].id)) return
             phase = 13
         } else if (phase === 13) {
-            check(DeviceSync.catalog === "" && DeviceSync.pageRows === "" && DeviceSync.browser === "","closed surface retained a payload")
-            DeviceSync.filterBrowser("late"); DeviceSync.browserPage(0); DeviceSync.openBrowserAlbum("album:0"); DeviceSync.browse("recorded"); DeviceSync.poll()
-            check(DeviceSync.browser === "" && !DeviceSync.busy,"late callback rebuilt the closed browser")
-            mainWindow.visible = false
+            const view = document()
+            check(view.rows.length === 1 && view.rows[0].title === "DAP Native Smoke","artist albums are incomplete")
+            if (!openRow(view.rows[0].id)) return
             phase = 14
         } else if (phase === 14) {
+            check(document().rows.length === 2,"artist album lost tracks")
+            named("deviceBrowserBack").clicked()
+            phase = 15
+        } else if (phase === 15) {
+            named("deviceBrowserBack").clicked()
+            named("deviceBrowserView").picked("albums")
+            phase = 16
+        } else if (phase === 16) {
+            check(document().rows.length === 1,"album category includes unrelated collections")
+            named("deviceBrowserView").picked("tracks")
+            phase = 17
+        } else if (phase === 17) {
+            check(document().rows.length === 2,"track category lost media")
+            named("deviceBrowserView").picked("playlists")
+            phase = 18
+        } else if (phase === 18) {
+            const view = document()
+            check(view.rows.length === 1 && view.rows[0].kind === "playlist" && view.rows[0].open,"playlist category is incomplete")
+            if (!openRow(view.rows[0].id)) return
+            phase = 19
+        } else if (phase === 19) {
+            const rows = document().rows
+            check(rows.length === 3 && rows[0].path === rows[2].path && rows[0].id !== rows[2].id,"device playlist lost its duplicate occurrence")
+            check(rows[2].number === 3,"playlist order is missing")
+            named("deviceBrowserBack").clicked()
+            phase = 20
+        } else if (phase === 20) {
+            if (!openRow(document().rows[0].id)) return
+            Navigation.go("library",0)
+            phase = 21
+        } else if (phase === 21) {
+            check(DeviceSync.catalog === "" && DeviceSync.pageRows === "" && DeviceSync.browser === "","closed surface retained a payload")
+            DeviceSync.filterBrowser("late"); DeviceSync.browserView("tracks"); DeviceSync.browserPage(0); DeviceSync.openBrowserAlbum("album:0"); DeviceSync.browse("recorded"); DeviceSync.poll()
+            check(DeviceSync.browser === "" && !DeviceSync.busy,"late callback rebuilt the closed browser")
+            mainWindow.visible = false
+            phase = 22
+        } else if (phase === 22) {
             check(DeviceSync.browser === "" && !DeviceSync.busy,"hidden surface restarted work")
             mainWindow.visible = true
             ++cycles
@@ -140,7 +178,7 @@ Item {
         }
     }
     Timer {
-        interval: test.phase >= 13 && test.duration >= 1800000 ? 60000 : 300
+        interval: test.phase >= 21 && test.duration >= 1800000 ? 60000 : 300
         repeat: true
         running: !test.stopped
         onTriggered: { try { test.advance() } catch(error) { test.stopped = true; console.error("SMOKE FAIL browser phase=" + test.phase + " " + error.message); Qt.exit(1) } }

@@ -1,2 +1,3 @@
 module app.chilpa.devices
 singleton DeviceSync 1.0 DeviceSync.qml
+StorageEvents 1.0 StorageEvents.qml

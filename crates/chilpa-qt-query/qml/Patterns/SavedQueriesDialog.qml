@@ -83,7 +83,7 @@ Modal {
         Item {
             id: header
             width: parent.width
-            height: title.height + Refine.headApart + subtitle.implicitHeight
+            height: title.height
             Text {
                 id: title
                 width: parent.width - closeIcon.width - Metrics.gap16
@@ -98,15 +98,7 @@ Modal {
                 color: Theme.color.textPrimary
             }
             SquareButton { id: closeIcon; anchors.right: parent.right; glyph: Lucide.x; iconFamily: Lucide.font; tip: I18n.tr("Close", I18n.rev); onClicked: dialog.close() }
-            Text {
-                id: subtitle
-                y: title.height + Refine.headApart
-                width: parent.width
-                text: I18n.tr("I save only the conditions. Opening a query uses the currently selected sources and keeps the queue.", I18n.rev)
-                wrapMode: Text.WordWrap
-                font.pointSize: Type.meta
-                color: Theme.color.textSecondary
-            }
+
         }
         Item {
             id: form

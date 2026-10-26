@@ -1,3 +1,5 @@
+mod source_cache;
+
 use crate::{component, conflict, invalid, model::{fingerprint, hash_text, Source}, state::{Managed, Operation},
     transport::Transport, Cancellation, Input, Playlist, RelativePath, Result, State, Target,
     AssetKind, MAX_ASSETS, MAX_METADATA_BYTES, SPACE_RESERVE};
@@ -26,6 +28,8 @@ pub struct Plan {
     actions: Vec<Action>,
     required_bytes: u64,
     unchanged: usize,
+    source_bytes_hashed: u64,
+    metadata_review: bool,
 }
 impl Plan {
     pub fn id(&self) -> &str { &self.id }
@@ -33,6 +37,9 @@ impl Plan {
     pub fn actions(&self) -> &[Action] { &self.actions }
     pub fn required_bytes(&self) -> u64 { self.required_bytes }
     pub fn unchanged_files(&self) -> usize { self.unchanged }
+    /// Present files in a metadata review have not been cryptographically verified.
+    pub fn is_metadata_review(&self) -> bool { self.metadata_review }
+    pub fn source_bytes_hashed(&self) -> u64 { self.source_bytes_hashed }
     pub fn deletion_count(&self) -> usize { self.operations.iter().filter(|op| op.desired.is_none()).count() }
 }
 
@@ -40,10 +47,27 @@ impl Plan {
 /// member fails the plan, rather than silently becoming an empty desired collection.
 pub fn prepare(state: &State, transport: &mut dyn Transport, inputs: &[Input], playlists: &[Playlist],
     remove_unselected: bool, cancel: &Cancellation) -> Result<Plan> {
+    prepare_inner(state, transport, inputs, playlists, remove_unselected, cancel, false)
+}
+
+/// I inspect destination metadata for a fast preview. Presence is not integrity verification.
+/// Synchronization verifies every affected destination against its recorded hash before writing.
+pub fn prepare_review(state: &State, transport: &mut dyn Transport, inputs: &[Input], playlists: &[Playlist],
+    remove_unselected: bool, cancel: &Cancellation) -> Result<Plan> {
+    // The review snapshot is scoped to this call and never reaches execution or recovery.
+    transport.begin_review();
+    let result = prepare_inner(state, transport, inputs, playlists, remove_unselected, cancel, true);
+    transport.end_review();
+    result
+}
+
+fn prepare_inner(state: &State, transport: &mut dyn Transport, inputs: &[Input], playlists: &[Playlist],
+    remove_unselected: bool, cancel: &Cancellation, metadata_review: bool) -> Result<Plan> {
     if state.interrupted()? { return Err(conflict("recover the interrupted sync before planning")); }
     let target = state.target()?.ok_or_else(|| invalid("pair a storage before planning"))?;
     crate::engine::check_target(transport, &target, cancel)?;
     if inputs.len().saturating_add(playlists.len()) > MAX_ASSETS { return Err(invalid("too many selected sync assets")); }
+    let mut source_cache = source_cache::Cache::load(state)?;
     let mut desired = BTreeMap::<RelativePath, (Managed, Source)>::new();
     let mut tracks = BTreeMap::new();
     let mut metadata_bytes = 0usize;
@@ -57,7 +81,7 @@ pub fn prepare(state: &State, transport: &mut dyn Transport, inputs: &[Input], p
         if metadata_bytes > MAX_METADATA_BYTES { return Err(invalid("sync selection exceeds its metadata budget")); }
         let source = input.source.canonicalize()?;
         if !source.is_file() { return Err(invalid("selected sync source is not a regular file")); }
-        let digest = fingerprint(&mut std::fs::File::open(&source)?, cancel)?;
+        let digest = source_cache.fingerprint(&source, cancel, metadata_review)?;
         let extension = source.extension().and_then(|s| s.to_str()).filter(|s| !s.is_empty() && s.len() <= 16 && s.bytes().all(|b| b.is_ascii_alphanumeric()))
             .ok_or_else(|| invalid("selected media needs a portable file extension"))?.to_ascii_lowercase();
         let id = hash_text(&input.id);
@@ -93,7 +117,7 @@ pub fn prepare(state: &State, transport: &mut dyn Transport, inputs: &[Input], p
     // Retained files still belong to this manifest when pruning is disabled.
     // I reject a batch before it can create a manifest that the next run cannot read.
     let retained = desired.iter().map(|(path, (record, _))| (path, record))
-        .chain(known.iter().filter(|(path, _)| !remove_unselected && !desired.contains_key(*path)));
+        .chain(known.iter().filter(|(path, record)| !remove_unselected && record.kind == AssetKind::Media && !desired.contains_key(*path)));
     let mut manifest_bytes = 0usize;
     for (index, (path, record)) in retained.enumerate() {
         let record = serde_json::to_vec(record).map_err(|e| invalid(e.to_string()))?;
@@ -110,7 +134,7 @@ pub fn prepare(state: &State, transport: &mut dyn Transport, inputs: &[Input], p
     for kind in [AssetKind::Media, AssetKind::Playlist] {
         for (path, (record, source)) in desired.iter().filter(|(_, (r, _))| r.kind == kind) {
             cancel.check()?;
-            let actual = transport.fingerprint(path, cancel)?;
+            let actual = destination(transport, path, known.get(path), metadata_review, cancel)?;
             let previous = known.get(path).map(|r| &r.fingerprint);
             if actual.is_some() && actual.as_ref() != previous { return Err(conflict(format!("unowned or externally changed file at {path}"))); }
             if actual.as_ref() == Some(&record.fingerprint) { unchanged += 1; continue; }
@@ -119,12 +143,12 @@ pub fn prepare(state: &State, transport: &mut dyn Transport, inputs: &[Input], p
             operations.push(Operation { path:path.clone(), previous:actual, desired:Some(record.clone()), source:Some(source.clone()) });
         }
     }
-    if remove_unselected {
+    {
         for (path, record) in known.iter().filter(|(_, r)| r.kind == AssetKind::Playlist)
             .chain(known.iter().filter(|(_, r)| r.kind == AssetKind::Media)) {
-            if desired.contains_key(path) { continue; }
+            if desired.contains_key(path) || (!remove_unselected && record.kind == AssetKind::Media) { continue; }
             cancel.check()?;
-            let actual = transport.fingerprint(path, cancel)?;
+            let actual = destination(transport, path, known.get(path), metadata_review, cancel)?;
             if actual.is_some() && actual.as_ref() != Some(&record.fingerprint) { return Err(conflict(format!("externally changed file cannot be removed: {path}"))); }
             actions.push(Action::Remove { path:path.clone(), bytes:actual.as_ref().map_or(0, |f| f.size),info:ActionInfo::of(record,path) });
             operations.push(Operation { path:path.clone(), previous:actual, desired:None, source:None });
@@ -136,5 +160,19 @@ pub fn prepare(state: &State, transport: &mut dyn Transport, inputs: &[Input], p
     }
     let available = transport.available_bytes()?;
     if !operations.is_empty() && available < required_bytes { return Err(crate::Error::Space { required:required_bytes, available }); }
-    Ok(Plan { id:crate::token(), target, revision:state.revision()?, operations, actions, required_bytes, unchanged })
+    source_cache.save(state)?;
+    Ok(Plan { id:crate::token(), target, revision:state.revision()?, operations, actions, required_bytes, unchanged,
+        source_bytes_hashed:source_cache.bytes_hashed, metadata_review })
+}
+
+fn destination(transport: &mut dyn Transport, path: &RelativePath, known: Option<&Managed>,
+    metadata_review: bool, cancel: &Cancellation) -> Result<Option<crate::Fingerprint>> {
+    if !metadata_review { return transport.fingerprint(path, cancel); }
+    let Some(info) = transport.stat(path)? else { return Ok(None) };
+    let Some(known) = known else { return Err(conflict(format!("unowned file at {path}"))); };
+    if info.directory || info.size != known.fingerprint.size {
+        return Err(conflict(format!("externally changed file at {path}")));
+    }
+    // This expected fingerprint is checked against bytes before any mutation by synchronize.
+    Ok(Some(known.fingerprint.clone()))
 }

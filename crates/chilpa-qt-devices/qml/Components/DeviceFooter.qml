@@ -80,6 +80,6 @@ Column {
             onClicked: footer.syncAsked(footer.token, approval.checked)
         }
         PillButton { objectName: "deviceCancel"; visible: footer.status.busy === true; text: I18n.tr("Cancel", I18n.rev); enabled: footer.status.phase !== "cancelling"; onClicked: footer.cancelAsked() }
-        Text { height: Metrics.pillHeight; verticalAlignment: Text.AlignVCenter; visible: !footer.status.busy && footer.status.error?.recovery !== true; text: I18n.tr("Original files, with playlists", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
+        Text { width: Math.min(implicitWidth, parent.width); height: Math.max(Metrics.pillHeight, implicitHeight); wrapMode: Text.WordWrap; verticalAlignment: Text.AlignVCenter; visible: !footer.status.busy && footer.status.error?.recovery !== true; text: footer.status.review_note || I18n.tr("Original music files", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
     }
 }

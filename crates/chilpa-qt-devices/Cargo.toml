@@ -9,6 +9,7 @@ links = "chilpa_qt_devices"
 
 [dependencies]
 chilpa-api.workspace = true
+chilpa-dirs.workspace = true
 chilpa-qt-kit.workspace = true
 cxx = "1"
 cxx-qt = "0.7"

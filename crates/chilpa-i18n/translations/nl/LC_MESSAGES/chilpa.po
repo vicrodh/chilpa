@@ -378,6 +378,9 @@ msgstr "Albums"
 msgid "Albums ({})"
 msgstr "Albums ({})"
 
+msgid "Albums and tracks"
+msgstr "Albums en nummers"
+
 msgid "All"
 msgstr "Alle"
 
@@ -416,6 +419,9 @@ msgstr "Alle opgeslagen resultaten"
 
 msgid "All seasons"
 msgstr "Alle seizoenen"
+
+msgid "All selections"
+msgstr "Alle selecties"
 
 msgid "All set"
 msgstr "Alles gereed"
@@ -467,6 +473,9 @@ msgstr "Al in gebruik door {}"
 
 msgid "Also delete the lyrics saved for this plugin's tracks"
 msgstr "Ook de opgeslagen songteksten van de nummers van deze plug-in verwijderen"
+
+msgid "Also remove music files no longer selected"
+msgstr "Ook niet meer geselecteerde muziekbestanden verwijderen"
 
 msgid "Also write the other tag layers"
 msgstr "Schrijf ook de andere taglagen"
@@ -1169,9 +1178,6 @@ msgstr "Afbeelding kiezen"
 msgid "Choose image…"
 msgstr "Afbeelding kiezen…"
 
-msgid "Choose mounted storage for this profile, or select a player profile."
-msgstr ""
-
 msgid "Choose music for this storage"
 msgstr ""
 
@@ -1183,9 +1189,6 @@ msgstr "Afspeellijsthoes kiezen"
 
 msgid "Choose playlist file"
 msgstr "Afspeellijstbestand kiezen"
-
-msgid "Choose playlists, a saved query or Library tracks first."
-msgstr ""
 
 msgid "Choose plugin icon"
 msgstr "Plug-inpictogram kiezen"
@@ -1388,14 +1391,14 @@ msgstr ""
 msgid "Connect"
 msgstr "Verbinden"
 
+msgid "Connect a player or memory card. Save a profile for each storage."
+msgstr "Sluit een speler of geheugenkaart aan. Sla voor elke opslag een profiel op."
+
 msgid "Connect at most eight USB players at a time."
 msgstr ""
 
 msgid "Connect on {}"
 msgstr "Verbinden via {}"
-
-msgid "Connect your player in USB file transfer mode. Save a separate profile for its internal memory and each card."
-msgstr ""
 
 msgid "Connect {}"
 msgstr "{} verbinden"
@@ -2216,9 +2219,6 @@ msgstr "Filter, Enter om te zoeken, of een stream-URL"
 msgid "Find a preset or device"
 msgstr "Zoek een preset of apparaat"
 
-msgid "Find albums or tracks…"
-msgstr "Albums of nummers zoeken…"
-
 msgid "Find covers"
 msgstr "Hoezen zoeken"
 
@@ -2271,9 +2271,6 @@ msgid "Folder name"
 msgstr "Mapnaam"
 
 msgid "Folder on the memory card"
-msgstr ""
-
-msgid "Folder on the player"
 msgstr ""
 
 msgid "Folder path"
@@ -2646,9 +2643,6 @@ msgstr "Ik houd dit filter actief; bewerk de tekst om het te wijzigen."
 
 msgid "I restarted the audio services"
 msgstr "Ik heb de audioservices herstart"
-
-msgid "I save only the conditions. Opening a query uses the currently selected sources and keeps the queue."
-msgstr "Ik sla alleen de voorwaarden op. Bij openen gebruik ik de geselecteerde bronnen en behoud ik de wachtrij."
 
 msgid "I understand and accept these terms"
 msgstr "Ik begrijp en accepteer deze voorwaarden"
@@ -3265,6 +3259,9 @@ msgstr "Lid van"
 msgid "Members & Former"
 msgstr "Leden en voormalige leden"
 
+msgid "Memory card"
+msgstr "Geheugenkaart"
+
 msgid "Menu"
 msgstr "Menu"
 
@@ -3393,6 +3390,9 @@ msgstr "Omhoog verplaatsen"
 
 msgid "Music"
 msgstr ""
+
+msgid "Music folder"
+msgstr "Muziekmap"
 
 msgid "Music player\nNothing playing"
 msgstr "Muziekspeler\nNiets aan het afspelen"
@@ -4039,8 +4039,8 @@ msgstr "Originele bytes · geen transcodering door Chilpa · verwerking door ont
 msgid "Original files"
 msgstr "Originele bestanden"
 
-msgid "Original files, with playlists"
-msgstr ""
+msgid "Original music files"
+msgstr "Originele muziekbestanden"
 
 msgid "Oscilloscope"
 msgstr "Oscilloscoop"
@@ -4426,6 +4426,9 @@ msgstr "Filters voor kwaliteit, formaat, bron en waardering"
 msgid "Quarantined"
 msgstr "In quarantaine"
 
+msgid "Queries"
+msgstr "Zoekopdrachten"
+
 msgid "Queries supported formats and predicts delivery. This does not test audible output."
 msgstr "Vraagt ondersteunde formaten op en voorspelt de overdracht. Dit test geen hoorbare uitvoer."
 
@@ -4467,6 +4470,9 @@ msgstr "Wachtrijen"
 
 msgid "Quick Connect is turned off on that server"
 msgstr "Quick Connect is uitgeschakeld op die server"
+
+msgid "Quick review by size; copies and removals are verified when syncing."
+msgstr "Snelle controle op grootte; kopieën en verwijderingen worden bij het synchroniseren geverifieerd."
 
 msgid "Quick view"
 msgstr "Snelweergave"
@@ -4716,9 +4722,6 @@ msgstr "Groep verwijderen"
 
 msgid "Remove image"
 msgstr "Afbeelding verwijderen"
-
-msgid "Remove managed files no longer selected"
-msgstr ""
 
 msgid "Remove one condition to get results:"
 msgstr "Verwijder één voorwaarde om resultaten te krijgen:"
@@ -5070,6 +5073,9 @@ msgstr "Deze afleveringen doorzoeken"
 
 msgid "Search this page…"
 msgstr "Zoeken op deze pagina…"
+
+msgid "Search this view…"
+msgstr "In deze weergave zoeken…"
 
 msgid "Search title, artist or album"
 msgstr "Zoek op titel, artiest of album"
@@ -5831,6 +5837,9 @@ msgstr "De geselecteerde hardwarevolumeregeling bestaat niet meer."
 msgid "The selected queues are empty."
 msgstr "De geselecteerde wachtrijen zijn leeg."
 
+msgid "The selected storage changed or disconnected."
+msgstr "De geselecteerde opslag is gewijzigd of losgekoppeld."
+
 msgid "The selected tracks could not be read."
 msgstr "De geselecteerde nummers konden niet worden gelezen."
 
@@ -5965,6 +5974,15 @@ msgstr "Deze uitvoer krijgt DSD dat naar PCM is omgezet. Alleen een kaart op hw 
 
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "Deze afspeellijst bevat al {} van de {} nummers die je toevoegt. Voeg alleen de nieuwe toe, of voeg alles toe inclusief duplicaten."
+
+msgid "This playlist is no longer available."
+msgstr "Deze afspeellijst is niet meer beschikbaar."
+
+msgid "This playlist is not valid UTF-8."
+msgstr "Deze afspeellijst heeft geen geldige UTF-8-codering."
+
+msgid "This playlist references music outside the recorded selection. Sync it again to refresh its contents."
+msgstr "Deze afspeellijst verwijst naar muziek buiten de vastgelegde selectie. Synchroniseer opnieuw om de inhoud bij te werken."
 
 msgid "This preset uses precise filters; each band shows its level. To move the bands, create a separate graphic EQ. You can restore your previous EQ."
 msgstr "Deze preset gebruikt nauwkeurige filters; elke band toont zijn niveau. Maak een aparte grafische EQ om de banden te verschuiven. Je kunt je vorige EQ herstellen."
@@ -6259,6 +6277,9 @@ msgstr "Niet afgespeeld"
 
 msgid "Unrated"
 msgstr "Niet gewaardeerd"
+
+msgid "Unselected playlists are removed after approval. Enable this option to remove unselected music too."
+msgstr "Niet geselecteerde afspeellijsten worden na goedkeuring verwijderd. Schakel deze optie in om ook niet geselecteerde muziek te verwijderen."
 
 msgid "Unsupported"
 msgstr "Niet ondersteund"
@@ -8056,6 +8077,9 @@ msgstr[1] "{} sterren"
 
 msgid "{} still loading · counts may grow"
 msgstr "{} laadt nog · aantallen kunnen stijgen"
+
+msgid "{} to copy · {} to update · {} to remove · {} already present"
+msgstr "{} te kopiëren · {} bij te werken · {} te verwijderen · {} al aanwezig"
 
 msgid "{} to copy · {} to update · {} to remove · {} unchanged"
 msgstr ""

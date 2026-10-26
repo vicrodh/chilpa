@@ -52,6 +52,28 @@ TestCase {
             DeviceSync.setStatus({phase:"idle",error:null})
         }
     }
+    function test_storage_events_follow_surface_visibility_without_idle_polling() {
+        const watcher = child("deviceStorageEvents")
+        verify(watcher.active)
+        watcher.changed()
+        compare(DeviceSync.lastAction, ["connectionsChanged"])
+        page.visible = false
+        verify(!watcher.active)
+        compare(child("deviceProgressPoll").running, false)
+        page.visible = true
+        verify(watcher.active)
+        compare(child("deviceProgressPoll").running, false)
+    }
+    function test_detected_card_uses_the_relative_folder_without_a_folder_dialog() {
+        DeviceSync.setStatus({destination:"volume:card-fixture"})
+        page.creating = true
+        wait(20)
+        verify(child("deviceManagedFolder").visible)
+        verify(!child("deviceChooseFolder").visible)
+        child("deviceProfileName").text = "Reader card"
+        click("deviceCreateProfile")
+        compare(DeviceSync.lastAction, ["create", "Reader card", "Chilpa"])
+    }
     function test_removals_need_consent_for_the_current_preview() {
         DeviceSync.setStatus({phase:"review",plan:"first",label:"Ready to sync",removals:2,summary:"2 to copy · 2 to remove"})
         wait(20)
@@ -190,6 +212,42 @@ TestCase {
             bounds(child("devicePreview"))
         }
     }
+    function test_collection_filters_and_paging_preserve_the_selection() {
+        const selected = DeviceSync.data.options[0].checked
+        child("deviceSelectionKind").picked("playlists")
+        compare(DeviceSync.lastAction,["selectionKind","playlists"])
+        DeviceSync.data = Object.assign({},DeviceSync.data,{selection_kind:"playlists",selection_pages:3,selection_page:0})
+        wait(20)
+        click("deviceSelectionsNextPage")
+        compare(DeviceSync.lastAction,["selectionPage",1])
+        child("deviceSelectionSearch").text = "Evening"
+        compare(DeviceSync.lastAction,["filter","Evening"])
+        compare(DeviceSync.data.options[0].checked,selected)
+        DeviceSync.setStatus({busy:true,phase:"preparing"})
+        compare(child("deviceSelectionKind").enabled,false)
+        compare(child("deviceSelectionsNextPage").enabled,false)
+    }
+    function test_quick_review_explains_presence_and_keeps_approval_visible() {
+        DeviceSync.setStatus({phase:"review",plan:"quick",label:"Ready to sync",removals:1,summary:"2 to copy · 1 to remove · 12 already present",review_note:"Quick review by size; copies and removals are verified when syncing."})
+        for (const size of [[360,558],[1000,758]]) {
+            page.width = size[0]; page.height = size[1]; wait(20)
+            bounds(child("deviceChangeList")); bounds(child("deviceApproveRemovals")); bounds(child("deviceSyncNow"))
+            compare(child("deviceSyncNow").enabled,false)
+        }
+    }
+    function test_artist_album_track_and_playlist_categories_use_the_facade() {
+        child("deviceSections").activated(1)
+        const selected = DeviceSync.data.options[0].checked
+        for (const view of ["music","artists","albums","tracks","playlists"]) {
+            child("deviceBrowserView").picked(view)
+            compare(DeviceSync.lastAction,["browserView",view])
+            compare(DeviceSync.data.options[0].checked,selected)
+            for (const size of [[360,558],[1000,758]]) {
+                page.width = size[0]; page.height = size[1]; wait(20)
+                bounds(child("deviceMusicList")); bounds(child("deviceBrowserView")); bounds(child("deviceBrowserSearch"))
+            }
+        }
+    }
     function test_visual_review() {
         if (!captureVisuals) return
         page.width = 900; page.height = 760
@@ -197,6 +255,8 @@ TestCase {
         grabImage(page).save("/tmp/chilpa-dap-ui-dark.png")
         DeviceSync.browse("list-0"); wait(40)
         grabImage(page).save("/tmp/chilpa-dap-albums-dark.png")
+        DeviceSync.music = Object.assign({},DeviceSync.music,{view:"artists",rows:[{id:"artist:0",title:"An artist",detail:"12 albums",kind:"artist",open:true}]}); wait(40)
+        grabImage(page).save("/tmp/chilpa-dap-artists-dark.png")
         DeviceSync.openBrowserAlbum("album:0"); wait(40)
         grabImage(page).save("/tmp/chilpa-dap-tracks-dark.png")
         ThemeModel.palette = Object.assign({},ThemeModel.palette,{"surface.window":"#fcfcfc","surface.pane":"#fcfcfc","surface.panel":"#f4f5f6","surface.raised":"#ffffff","text.primary":"#232629","text.secondary":"#707d8a","text.tertiary":"#9aa3ab","stroke.hairline":"#dddddd","fill.field":"#eeeeee","state.selected":"#e7e7e7","state.stripe":"#f4f4f4","row.selected":"#f3e5e6","accent":"#a3161f"})

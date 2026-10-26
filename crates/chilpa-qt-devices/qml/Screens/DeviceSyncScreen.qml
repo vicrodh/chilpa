@@ -31,6 +31,7 @@ Item {
     Component.onDestruction: backend.leave()
     onStatusChanged: settle()
     Connections { target: screen.backend; function onProfileCreated() { screen.creating = false } }
+    StorageEvents { objectName: "deviceStorageEvents"; active: screen.visible && (!screen.Window.window || (screen.Window.window.visible && screen.Window.window.visibility !== Window.Minimized)); onChanged: screen.backend.connectionsChanged() }
     Timer { objectName: "deviceProgressPoll"; interval: Motion.poll; repeat: true; running: screen.visible && screen.backend.busy && (!screen.Window.window || (screen.Window.window.visible && screen.Window.window.visibility !== Window.Minimized)); onTriggered: screen.backend.poll() }
 
     Column {
@@ -83,13 +84,17 @@ Item {
         anchors.bottomMargin: Metrics.playerSpace + Metrics.gap20
         spacing: Metrics.gap8
         CircleCheck {
+            id: pruning
             objectName: "deviceRemoveUnselected"
             visible: !screen.setup && !screen.reviewing && !screen.recorded && !screen.music.source && screen.document.has_profiles === true
             width: parent.width
-            text: I18n.tr("Remove managed files no longer selected", I18n.rev)
+            text: I18n.tr("Also remove music files no longer selected", I18n.rev)
+            Accessible.description: I18n.tr("Unselected playlists are removed after approval. Enable this option to remove unselected music too.", I18n.rev)
             checked: screen.status.remove_unselected === true
             enabled: !screen.backend.busy
             onClicked: screen.backend.removals(!screen.status.remove_unselected)
+            HoverHandler { enabled: pruning.visible; onHoveredChanged: hovered ? TipState.show(pruning.Accessible.description, pruning) : TipState.hide(pruning) }
+            Component.onDestruction: TipState.hide(pruning)
         }
         DeviceFooter {
             width: parent.width
@@ -101,7 +106,7 @@ Item {
         }
     }
     Component { id: pairing; DevicePairing { mounted: screen.status.destination === "mounted"; busy: screen.backend.busy; onCreateAsked: (name, folder) => screen.backend.createProfile(name, folder); onDismissed: screen.creating = false } }
-    Component { id: selections; DeviceSelection { rows: screen.document.options || []; query: screen.document.filter || ""; busy: screen.backend.busy; onToggled: id => screen.backend.toggle(id); onOpened: id => screen.backend.browse(id); onFilterEdited: text => screen.backend.filter(text) } }
-    Component { id: browser; DeviceBrowser { document: screen.music; busy: screen.backend.busy; onAlbumAsked: id => screen.backend.openBrowserAlbum(id); onBackAsked: screen.backend.browserBack(); onFilterEdited: text => screen.backend.filterBrowser(text); onPageAsked: at => screen.backend.browserPage(at); onReloadAsked: screen.backend.browse(screen.music.source) } }
+    Component { id: selections; DeviceSelection { rows: screen.document.options || []; query: screen.document.filter || ""; kind: screen.document.selection_kind || "all"; page: screen.document.selection_page || 0; pages: screen.document.selection_pages || 1; busy: screen.backend.busy; onToggled: id => screen.backend.toggle(id); onOpened: id => screen.backend.browse(id); onKindAsked: kind => screen.backend.selectionKind(kind); onPageAsked: page => screen.backend.selectionPage(page); onFilterEdited: text => screen.backend.filter(text) } }
+    Component { id: browser; DeviceBrowser { document: screen.music; busy: screen.backend.busy; onAlbumAsked: id => screen.backend.openBrowserAlbum(id); onBackAsked: screen.backend.browserBack(); onFilterEdited: text => screen.backend.filterBrowser(text); onViewAsked: view => screen.backend.browserView(view); onPageAsked: at => screen.backend.browserPage(at); onReloadAsked: screen.backend.reloadBrowser() } }
     Component { id: changes; DeviceChanges { emptyText: screen.status.phase === "review" ? I18n.tr("No files need to change.", I18n.rev) : I18n.tr("Review changes to check what this storage needs.", I18n.rev); rows: JSON.parse(screen.backend.pageRows || "[]"); page: screen.backend.page; pages: screen.document.page_count || 1; busy: screen.backend.busy; onPageAsked: at => screen.backend.changePage(at) } }
 }

@@ -5,12 +5,13 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 /// I accept an explicitly selected volume/folder; discovery never chooses a destination for me.
-pub struct Mounted { root: PathBuf, _lease: File }
+pub struct Mounted { root: PathBuf, anchor: File, _lease: File }
 
 impl Mounted {
     pub fn open(root: &Path) -> Result<Self> {
         let root = root.canonicalize()?;
         if !root.is_dir() { return Err(crate::invalid("the selected sync root is not a directory")); }
+        let anchor = crate::volumes::directory_handle(&root)?;
         let metadata = root.join(".chilpa-sync");
         match std::fs::symlink_metadata(&metadata) {
             Ok(m) if m.file_type().is_symlink() || !m.is_dir() => return Err(conflict("sync metadata is not a real directory")),
@@ -23,9 +24,11 @@ impl Mounted {
         }
         let lease = OpenOptions::new().read(true).write(true).create(true).truncate(false).open(lease_path)?;
         lease.try_lock().map_err(|_| conflict("another sync session owns this storage"))?;
-        Ok(Self { root, _lease: lease })
+        crate::volumes::unchanged(&root, &anchor)?;
+        Ok(Self { root, anchor, _lease: lease })
     }
     fn path(&self, relative: &RelativePath) -> Result<PathBuf> {
+        crate::volumes::unchanged(&self.root, &self.anchor)?;
         let mut path = self.root.clone();
         for part in relative.as_str().split('/') {
             path.push(part);
@@ -40,7 +43,7 @@ impl Mounted {
 }
 
 impl Transport for Mounted {
-    fn available_bytes(&mut self) -> Result<u64> { native_fs::available(&self.root) }
+    fn available_bytes(&mut self) -> Result<u64> { crate::volumes::unchanged(&self.root, &self.anchor)?; native_fs::available(&self.root) }
     fn stat(&mut self, path: &RelativePath) -> Result<Option<Entry>> {
         match std::fs::symlink_metadata(self.path(path)?) {
             Ok(m) if m.is_file() || m.is_dir() => Ok(Some(Entry { size: m.len(), directory: m.is_dir() })),

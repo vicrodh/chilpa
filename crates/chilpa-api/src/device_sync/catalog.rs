@@ -246,6 +246,22 @@ impl Store {
             })?;
         Ok(value)
     }
+    pub(crate) fn active_profile(&self) -> Option<String> {
+        let file = std::fs::File::open(self.directory.join("active-profile")).ok()?;
+        let mut bytes = Vec::new();
+        file.take(33).read_to_end(&mut bytes).ok()?;
+        let id = String::from_utf8(bytes).ok()?;
+        identifier(&id).then_some(id)
+    }
+    pub(crate) fn remember_profile(&self, id: &str) -> Result<(), UiError> {
+        if !identifier(id) { return Err(damaged()); }
+        if self.active_profile().as_deref() == Some(id) { return Ok(()); }
+        std::fs::create_dir_all(&self.directory).map_err(|e| failure(chilpa_i18n::mark("I could not save the device profiles."), e))?;
+        let mut temporary = tempfile::NamedTempFile::new_in(&self.directory).map_err(|e| failure(chilpa_i18n::mark("I could not save the device profiles."), e))?;
+        temporary.write_all(id.as_bytes()).and_then(|_| temporary.as_file().sync_all()).map_err(|e| failure(chilpa_i18n::mark("I could not save the device profiles."), e))?;
+        temporary.persist(self.directory.join("active-profile")).map_err(|e| failure(chilpa_i18n::mark("I could not save the device profiles."), e))?;
+        Ok(())
+    }
     pub fn state_path(&self, id: &str) -> Result<PathBuf, UiError> {
         if !identifier(id) {
             return Err(damaged());

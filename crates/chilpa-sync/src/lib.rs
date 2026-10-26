@@ -12,8 +12,8 @@ pub mod transport;
 pub use engine::{pair, recover, synchronize};
 pub use model::{AssetKind, Cancellation, Fingerprint, Input, Playlist, Progress, Target};
 pub use paths::{component, RelativePath};
-pub use plan::{prepare, Action, ActionInfo, Plan};
-pub use engine::inspect_target;
+pub use plan::{prepare, prepare_review, Action, ActionInfo, Plan};
+pub use engine::{inspect_target, parse_target_identity};
 pub use state::State;
 pub use recorded::RecordedFile;
 

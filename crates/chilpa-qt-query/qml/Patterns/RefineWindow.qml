@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Window
+import QtQuick.Controls.Basic as Controls
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
@@ -15,21 +16,41 @@ Window {
     id: window
     property string summary: ""
     property bool folded: false
+    property real expandedHeight: 0
+    property int expandedMaximumHeight: 0
     signal dockAsked()
 
     readonly property string countWord: summary.split(" ")[0]
     title: I18n.tr("Refine", I18n.rev)
     flags: Qt.Window | Qt.FramelessWindowHint
-    color: "transparent"
+    color: Theme.opaque(Theme.color.surfacePane)
     width: Refine.windowWide
-    height: folded ? Refine.windowBar : Math.min(Screen.desktopAvailableHeight - Refine.windowRoom, Refine.windowBar + panel.implicitHeight)
-    minimumWidth: Refine.windowWide / 2 // derived: half its width at least
+    height: Refine.windowBar + Refine.gripStart
+    minimumWidth: Refine.addMinWide + Refine.footSide * 2 + Metrics.gap16 // derived: input, side padding and scrollbar gutter
+    minimumHeight: Refine.windowBar + Refine.gripLeast
     visible: true
+    Component.onCompleted: {
+        expandedMaximumHeight = maximumHeight
+        height = Math.max(minimumHeight, Math.min(Screen.desktopAvailableHeight - Refine.windowRoom, Refine.windowBar + panel.implicitHeight))
+    }
+    onFoldedChanged: {
+        if (folded) {
+            expandedHeight = height
+            minimumHeight = Refine.windowBar
+            maximumHeight = Refine.windowBar
+            height = Refine.windowBar
+        } else {
+            maximumHeight = expandedMaximumHeight
+            minimumHeight = Refine.windowBar + Refine.gripLeast
+            height = expandedHeight
+        }
+    }
 
     Rectangle {
+        objectName: "refineWindowSurface"
         anchors.fill: parent
         radius: Refine.panelRound
-        color: Theme.ambient ? Theme.color.ambientRaised : Theme.color.surfacePane
+        color: window.color
         border.width: Metrics.hairline
         border.color: Theme.color.strokeHairline
         clip: true
@@ -62,15 +83,29 @@ Window {
             }
             Rectangle { visible: !window.folded; anchors.bottom: parent.bottom; width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline }
         }
-        RefinePanel {
-            id: panel
+        Flickable {
+            id: viewport
+            objectName: "refineWindowViewport"
             visible: !window.folded
             anchors.top: bar.bottom
             width: parent.width
             height: parent.height - bar.height
-            bare: true
-            detached: true
-            summary: window.summary
+            contentWidth: width
+            contentHeight: panel.height
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
+            Controls.ScrollBar.vertical: ViewportScrollBar {}
+            RefinePanel {
+                id: panel
+                width: viewport.width - Metrics.gap16 // derived: I reserve the scrollbar gutter
+                height: Math.max(viewport.height, implicitHeight)
+                bare: true
+                detached: true
+                narrow: width < Refine.narrowBelow
+                color: window.color
+                summary: window.summary
+            }
         }
     }
+    WindowGrips { objectName: "refineWindowGrips"; anchors.fill: parent; window: window; verticalResize: !window.folded }
 }

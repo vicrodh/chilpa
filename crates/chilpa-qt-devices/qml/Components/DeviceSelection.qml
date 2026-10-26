@@ -10,33 +10,52 @@ Rectangle {
     property var rows: []
     property bool busy: false
     property string query: ""
+    property string kind: "all"
+    property int page: 0
+    property int pages: 1
     onQueryChanged: if (search && search.text !== query) search.text = query
     signal toggled(string id)
     signal filterEdited(string text)
     signal opened(string id)
+    signal kindAsked(string kind)
+    signal pageAsked(int page)
     radius: Metrics.radiusMenu
     color: Theme.color.surfacePane
     border.color: Theme.color.strokeHairline
     border.width: Metrics.hairline
 
-    SearchField {
-        id: search
-        objectName: "deviceSelectionSearch"
+    Row {
+        id: head
         x: Metrics.gap8; y: Metrics.gap8
         width: parent.width - Metrics.gap8 * 2 // derived: equal insets
-        placeholder: I18n.tr("Find music or saved selections…", I18n.rev)
-        enabled: !panel.busy
-        text: panel.query
-        onTextChanged: if (text !== panel.query) panel.filterEdited(text)
+        spacing: Metrics.gap8
+        SelectField {
+            objectName: "deviceSelectionKind"
+            width: (parent.width - Metrics.gap8) / 2 // derived: two equal fields and their gap
+            options: [I18n.tr("All selections", I18n.rev), I18n.tr("Playlists", I18n.rev), I18n.tr("Queries", I18n.rev), I18n.tr("Albums and tracks", I18n.rev)]
+            values: ["all", "playlists", "queries", "tracks"]
+            value: panel.kind
+            enabled: !panel.busy
+            onPicked: kind => panel.kindAsked(kind)
+        }
+        SearchField {
+            id: search
+            objectName: "deviceSelectionSearch"
+            width: (parent.width - Metrics.gap8) / 2 // derived: two equal fields and their gap
+            placeholder: I18n.tr("Find music or saved selections…", I18n.rev)
+            enabled: !panel.busy
+            text: panel.query
+            onTextChanged: if (text !== panel.query) panel.filterEdited(text)
+        }
     }
     KeyedModel { id: selections; keyField: "id"; items: panel.rows }
     ListView {
         id: list
         objectName: "deviceSelections"
         x: Metrics.gap4
-        y: search.y + search.height + Metrics.gap8
+        y: head.y + head.height + Metrics.gap8
         width: parent.width - Metrics.gap4 * 2 - Metrics.gap16 // derived: insets and scrollbar gutter
-        height: Math.max(0, parent.height - y - Metrics.gap4)
+        height: Math.max(0, footer.y - y - Metrics.gap4)
         model: selections
         clip: true
         reuseItems: true
@@ -55,6 +74,18 @@ Rectangle {
             onToggled: panel.toggled(model.entry.id)
             onOpened: panel.opened(model.entry.id)
         }
+    }
+    DevicePager {
+        id: footer
+        anchors.right: parent.right
+        anchors.rightMargin: Metrics.gap8
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: Metrics.gap4
+        controlPrefix: "deviceSelections"
+        page: panel.page
+        pages: panel.pages
+        busy: panel.busy
+        onPageAsked: page => panel.pageAsked(page)
     }
     Text {
         anchors.centerIn: list

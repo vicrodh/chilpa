@@ -377,6 +377,9 @@ msgstr "アルバム"
 msgid "Albums ({})"
 msgstr "アルバム（{}）"
 
+msgid "Albums and tracks"
+msgstr "アルバムと曲"
+
 msgid "All"
 msgstr "すべて"
 
@@ -415,6 +418,9 @@ msgstr "保存済みの結果すべて"
 
 msgid "All seasons"
 msgstr "すべてのシーズン"
+
+msgid "All selections"
+msgstr "すべての選択"
 
 msgid "All set"
 msgstr "準備完了"
@@ -466,6 +472,9 @@ msgstr "{}で使用済み"
 
 msgid "Also delete the lyrics saved for this plugin's tracks"
 msgstr "このプラグインのトラックに保存された歌詞も削除する"
+
+msgid "Also remove music files no longer selected"
+msgstr "選択を解除した音楽ファイルも削除"
 
 msgid "Also write the other tag layers"
 msgstr "ほかのタグレイヤーにも書き込む"
@@ -1167,9 +1176,6 @@ msgstr "画像を選択"
 msgid "Choose image…"
 msgstr "画像を選択…"
 
-msgid "Choose mounted storage for this profile, or select a player profile."
-msgstr ""
-
 msgid "Choose music for this storage"
 msgstr ""
 
@@ -1181,9 +1187,6 @@ msgstr "プレイリストのアートワークを選択"
 
 msgid "Choose playlist file"
 msgstr "プレイリストファイルを選択"
-
-msgid "Choose playlists, a saved query or Library tracks first."
-msgstr ""
 
 msgid "Choose plugin icon"
 msgstr "プラグインのアイコンを選択"
@@ -1386,14 +1389,14 @@ msgstr ""
 msgid "Connect"
 msgstr "接続"
 
+msgid "Connect a player or memory card. Save a profile for each storage."
+msgstr "プレーヤーかメモリーカードを接続し、ストレージごとにプロファイルを保存します。"
+
 msgid "Connect at most eight USB players at a time."
 msgstr ""
 
 msgid "Connect on {}"
 msgstr "{}で接続"
-
-msgid "Connect your player in USB file transfer mode. Save a separate profile for its internal memory and each card."
-msgstr ""
 
 msgid "Connect {}"
 msgstr "{}に接続"
@@ -2214,9 +2217,6 @@ msgstr "絞り込み、Enterで検索、またはストリームURL"
 msgid "Find a preset or device"
 msgstr "プリセットまたはデバイスを検索"
 
-msgid "Find albums or tracks…"
-msgstr "アルバムや曲を検索…"
-
 msgid "Find covers"
 msgstr "カバーを探す"
 
@@ -2269,9 +2269,6 @@ msgid "Folder name"
 msgstr "フォルダー名"
 
 msgid "Folder on the memory card"
-msgstr ""
-
-msgid "Folder on the player"
 msgstr ""
 
 msgid "Folder path"
@@ -2643,9 +2640,6 @@ msgstr "このフィルターを適用したままにします。変更するに
 
 msgid "I restarted the audio services"
 msgstr "オーディオサービスを再起動しました"
-
-msgid "I save only the conditions. Opening a query uses the currently selected sources and keeps the queue."
-msgstr "条件のみを保存します。開く際は選択中のソースを使用し、キューはそのまま維持します。"
 
 msgid "I understand and accept these terms"
 msgstr "これらの規約を理解し、同意します"
@@ -3262,6 +3256,9 @@ msgstr "所属"
 msgid "Members & Former"
 msgstr "メンバー・元メンバー"
 
+msgid "Memory card"
+msgstr "メモリーカード"
+
 msgid "Menu"
 msgstr "メニュー"
 
@@ -3390,6 +3387,9 @@ msgstr "上に移動"
 
 msgid "Music"
 msgstr ""
+
+msgid "Music folder"
+msgstr "音楽フォルダー"
 
 msgid "Music player\nNothing playing"
 msgstr "ミュージックプレーヤー\n再生していません"
@@ -4036,8 +4036,8 @@ msgstr "元のバイト列 · Chilpaによるトランスコードなし · レ�
 msgid "Original files"
 msgstr "元のファイル"
 
-msgid "Original files, with playlists"
-msgstr ""
+msgid "Original music files"
+msgstr "元の音楽ファイル"
 
 msgid "Oscilloscope"
 msgstr "オシロスコープ"
@@ -4423,6 +4423,9 @@ msgstr "音質、フォーマット、ソース、評価のフィルター"
 msgid "Quarantined"
 msgstr "隔離済み"
 
+msgid "Queries"
+msgstr "クエリ"
+
 msgid "Queries supported formats and predicts delivery. This does not test audible output."
 msgstr "対応フォーマットを問い合わせ、出力を予測します。可聴出力のテストではありません。"
 
@@ -4464,6 +4467,9 @@ msgstr "キュー"
 
 msgid "Quick Connect is turned off on that server"
 msgstr "そのサーバーではQuick Connectがオフになっています"
+
+msgid "Quick review by size; copies and removals are verified when syncing."
+msgstr "サイズによる簡易確認です。コピーと削除は同期時に検証されます。"
 
 msgid "Quick view"
 msgstr "クイックビュー"
@@ -4713,9 +4719,6 @@ msgstr "グループを削除"
 
 msgid "Remove image"
 msgstr "画像を削除"
-
-msgid "Remove managed files no longer selected"
-msgstr ""
 
 msgid "Remove one condition to get results:"
 msgstr "条件を 1 つ外すと結果が出ます："
@@ -5067,6 +5070,9 @@ msgstr "これらのエピソードを検索"
 
 msgid "Search this page…"
 msgstr "このページを検索…"
+
+msgid "Search this view…"
+msgstr "この表示を検索…"
 
 msgid "Search title, artist or album"
 msgstr "タイトル、アーティスト、アルバムで検索"
@@ -5826,6 +5832,9 @@ msgstr "選択したハードウェア音量コントロールがなくなりま
 msgid "The selected queues are empty."
 msgstr "選択したキューは空です。"
 
+msgid "The selected storage changed or disconnected."
+msgstr "選択したストレージが変更されたか、接続が切れました。"
+
 msgid "The selected tracks could not be read."
 msgstr "選択したトラックを読み取れませんでした。"
 
@@ -5960,6 +5969,15 @@ msgstr "この出力はDSDをPCMに変換して受け取ります。そのまま
 
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "このプレイリストには、追加する{2}トラックのうち{1}トラックがすでに含まれています。新しいものだけを追加するか、重複を含めてすべて追加してください。"
+
+msgid "This playlist is no longer available."
+msgstr "このプレイリストは利用できなくなりました。"
+
+msgid "This playlist is not valid UTF-8."
+msgstr "このプレイリストのUTF-8エンコーディングは無効です。"
+
+msgid "This playlist references music outside the recorded selection. Sync it again to refresh its contents."
+msgstr "このプレイリストは記録された選択の範囲外にある音楽を参照しています。再同期して内容を更新してください。"
 
 msgid "This preset uses precise filters; each band shows its level. To move the bands, create a separate graphic EQ. You can restore your previous EQ."
 msgstr "このプリセットは精密フィルターを使っています。各バンドにそのレベルを表示しています。バンドを動かすには、別にグラフィックEQを作成してください。以前のEQに戻すこともできます。"
@@ -6254,6 +6272,9 @@ msgstr "未再生"
 
 msgid "Unrated"
 msgstr "未評価"
+
+msgid "Unselected playlists are removed after approval. Enable this option to remove unselected music too."
+msgstr "選択を解除したプレイリストは承認後に削除されます。音楽も削除する場合はこの設定を有効にしてください。"
 
 msgid "Unsupported"
 msgstr "非対応"
@@ -8027,6 +8048,9 @@ msgstr[0] "{}つ星"
 
 msgid "{} still loading · counts may grow"
 msgstr "{} 読み込み中・件数は増える場合があります"
+
+msgid "{} to copy · {} to update · {} to remove · {} already present"
+msgstr "コピー {} · 更新 {} · 削除 {} · 配置済み {}"
 
 msgid "{} to copy · {} to update · {} to remove · {} unchanged"
 msgstr ""

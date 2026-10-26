@@ -182,6 +182,7 @@ fn apply(service: &mut Service, token: &str, removals: bool) {
 }
 fn find_files(root: &Path, extension: &str) -> Vec<PathBuf> {
     let mut files = Vec::new();
+    if !root.exists() { return files; }
     for entry in std::fs::read_dir(root).unwrap() {
         let path = entry.unwrap().path();
         if path.is_dir() {
@@ -764,15 +765,10 @@ fn device_library_selection_resolves_off_thread_and_survives_reopening() {
                 .iter()
                 .any(|row| matches!(&row.pick, Pick::Tracks { .. }) && row.checked));
             let token = preview(&mut reopened);
-            assert_eq!((reopened.status().tracks, reopened.status().copies), (2, 3));
+            assert_eq!((reopened.status().tracks, reopened.status().copies), (2, 2));
             apply(&mut reopened, &token, false);
-            let playlist = find_files(&fixture.card.join("Playlists"), "m3u8")
-                .pop()
-                .unwrap();
-            let text = std::fs::read_to_string(playlist).unwrap();
-            let members: Vec<_> = text.lines().filter(|line| !line.starts_with('#')).collect();
-            assert_eq!(members.len(), 3);
-            assert_eq!(members[0], members[2]);
+            assert!(find_files(&fixture.card.join("Playlists"), "m3u8").is_empty());
+            assert_eq!(find_files(&fixture.card.join("Music"), "flac").len(), 2);
         },
     );
 }
@@ -871,5 +867,207 @@ fn device_missing_mount_is_not_recreated_on_the_host() {
         );
         assert!(displaced.join(".chilpa-sync/identity.json").is_file());
         assert!(!displaced.join("Music").exists());
+    });
+}
+
+#[test]
+fn retiring_the_last_playlist_keeps_music_and_refreshes_an_open_history() {
+    isolated("retiring_the_last_playlist_keeps_music_and_refreshes_an_open_history", || {
+        let fixture = Fixture::new();
+        let mut service = fixture.paired();
+        let token = preview(&mut service);
+        apply(&mut service, &token, false);
+        let list = service.options().iter().find(|row| row.checked).unwrap().id.clone();
+        service.toggle(&list).unwrap();
+        let document: serde_json::Value = serde_json::from_str(&service.catalog_json("")).unwrap();
+        assert_eq!(document["can_review"], true, "I can retire the last explicit selection");
+        let token = preview(&mut service);
+        assert_eq!((service.status().copies, service.status().removals), (0, 1));
+        assert!(!service.status().remove_unselected, "music pruning stays off");
+        assert!(service.apply(&token, false).is_err(), "playlist removal still needs approval");
+        service.browse("recorded").unwrap(); wait(&mut service);
+        service.browser_view("playlists").unwrap();
+        let old: serde_json::Value = serde_json::from_str(&service.browser_json()).unwrap();
+        assert_eq!(old["rows"].as_array().unwrap().len(), 1);
+        apply(&mut service, &token, true);
+        assert_eq!(service.browser_json(), "{}", "a previous history snapshot cannot survive a mutation");
+        assert!(find_files(&fixture.card.join("Playlists"), "m3u8").is_empty());
+        assert_eq!(find_files(&fixture.card.join("Music"), "flac").len(), 2);
+        assert_eq!(std::fs::read(fixture.card.join("unmanaged.flac")).unwrap(), b"foreign file");
+        service.browse("recorded").unwrap(); wait(&mut service);
+        service.browser_view("playlists").unwrap();
+        let fresh: serde_json::Value = serde_json::from_str(&service.browser_json()).unwrap();
+        assert_eq!(fresh["total"], 0);
+        service.browser_view("tracks").unwrap();
+        let fresh: serde_json::Value = serde_json::from_str(&service.browser_json()).unwrap();
+        assert_eq!(fresh["total"], 2, "retired playlists do not delete retained media");
+    });
+}
+
+#[test]
+fn album_batches_retire_a_legacy_synthetic_playlist_without_recopying_music() {
+    isolated("album_batches_retire_a_legacy_synthetic_playlist_without_recopying_music", || {
+        let fixture = Fixture::new();
+        let service = fixture.paired();
+        let profile = service.profile().unwrap().clone();
+        let store = Store { directory:fixture.profiles.clone() };
+        let tracks = fixture.library.export_tracks(&[1,2]).unwrap();
+        let keys: Vec<_> = tracks.iter().map(|t|t.key.clone()).collect();
+        let inputs: Vec<_> = tracks.into_iter().map(|t|chilpa_sync::Input {
+            id:t.key, source:PathBuf::from(t.path.unwrap()), artist:t.artist, album:t.album,
+            title:t.title, track_number:t.number,
+        }).collect();
+        {
+            let mut state = chilpa_sync::State::open(&store.state_path(&profile.id).unwrap()).unwrap();
+            let mut device = chilpa_devices::transport::Mounted::open(&fixture.card).unwrap();
+            let cancel = chilpa_sync::Cancellation::default();
+            let list = chilpa_sync::Playlist {id:"library-selection".into(), name:"Library selection".into(), tracks:keys.clone()};
+            let plan = chilpa_sync::prepare(&state, &mut device, &inputs, &[list], false, &cancel).unwrap();
+            chilpa_sync::synchronize(&mut state,&mut device,&plan,plan.id(),false,&cancel,&mut |_|()).unwrap();
+        }
+        store.update(|catalog| {
+            catalog.profiles[0].picks = vec![Pick::Tracks {id:"library-selection".into(),name:"Library selection".into(),keys}];
+            Ok(())
+        }).unwrap();
+        drop(service);
+        let old = find_files(&fixture.card.join("Playlists"), "m3u8");
+        assert_eq!(old.len(), 1);
+        assert!(old[0].file_name().unwrap().to_string_lossy().contains("b08dde2446f47a93"));
+        let mut service = fixture.service();
+        let token = preview(&mut service);
+        assert_eq!((service.status().copies, service.status().unchanged, service.status().removals), (0,2,1));
+        assert!(service.apply(&token,false).is_err());
+        apply(&mut service,&token,true);
+        assert!(find_files(&fixture.card.join("Playlists"), "m3u8").is_empty());
+        assert_eq!(find_files(&fixture.card.join("Music"), "flac").len(), 2);
+        preview(&mut service);
+        assert_eq!(service.change_count(), 0, "an album must not recreate its removed synthetic playlist");
+    });
+}
+
+#[test]
+fn recorded_categories_and_playlist_members_preserve_navigation_and_occurrences() {
+    isolated("recorded_categories_and_playlist_members_preserve_navigation_and_occurrences", || {
+        let fixture = Fixture::new(); name_fixture_albums(&fixture);
+        let mut service = fixture.paired();
+        let token=preview(&mut service); apply(&mut service,&token,false);
+        service.browse("recorded").unwrap(); wait(&mut service);
+        service.browser_view("artists").unwrap();
+        let artists:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+        assert_eq!(artists["total"],1);
+        service.filter_browser("Artist");
+        service.open_browser_album(artists["rows"][0]["id"].as_str().unwrap()).unwrap();
+        let albums:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+        assert_eq!(albums["total"],2);
+        service.open_browser_album(albums["rows"][0]["id"].as_str().unwrap()).unwrap();
+        let before_reload:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+        service.reload_browser().unwrap(); wait(&mut service);
+        let after_reload:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+        assert_eq!(after_reload["album"],before_reload["album"]);
+        service.browser_back(); service.browser_back();
+        let restored:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+        assert_eq!(restored["query"],"Artist");
+        service.browser_view("albums").unwrap();
+        let albums:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+        assert_eq!(albums["total"],2);
+        service.browser_view("tracks").unwrap();
+        let tracks:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+        assert_eq!(tracks["total"],2);
+        service.browser_view("playlists").unwrap();
+        let lists:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+        let list=lists["rows"][0]["id"].as_str().unwrap();
+        assert_eq!(lists["total"],1);
+        assert_eq!(lists["rows"][0]["open"],true);
+        service.open_browser_album(list).unwrap(); wait(&mut service);
+        let members:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+        assert_eq!(members["total"],3);
+        assert_eq!(members["rows"][0]["title"],members["rows"][2]["title"]);
+        assert_ne!(members["rows"][0]["id"],members["rows"][2]["id"]);
+        assert_eq!(members["rows"][2]["number"],3);
+        let playlist=find_files(&fixture.card.join("Playlists"),"m3u8").pop().unwrap();
+        let first=members["rows"][0]["path"].as_str().unwrap();
+        std::fs::write(playlist,format!("#EXTM3U\n../{first}\n../{first}\n")).unwrap();
+        service.reload_browser().unwrap(); wait(&mut service);
+        let refreshed:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+        assert_eq!(refreshed["total"],2,"refresh reads the current device playlist");
+        assert_ne!(refreshed["rows"][0]["id"],refreshed["rows"][1]["id"]);
+        service.browser_back();
+        let restored:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+        assert_eq!(restored["view"],"playlists");
+        assert_eq!(restored["total"],1);
+    });
+}
+
+#[test]
+fn collection_filters_page_hundreds_of_playlists_without_losing_checks() {
+    isolated("collection_filters_page_hundreds_of_playlists_without_losing_checks", || {
+        let fixture=Fixture::new();
+        for i in 0..420 {fixture.library.create_playlist(fixture.source,&format!("List {i:03}"),"").unwrap();}
+        let mut service=fixture.paired();
+        let page:serde_json::Value=serde_json::from_str(&service.catalog_page_json("","playlists",0)).unwrap();
+        assert_eq!(page["selection_total"],421);
+        assert_eq!(page["selection_pages"],3);
+        assert_eq!(page["options"].as_array().unwrap().len(),200);
+        let next:serde_json::Value=serde_json::from_str(&service.catalog_page_json("","playlists",1)).unwrap();
+        let checked=next["options"][0]["id"].as_str().unwrap().to_owned();
+        service.toggle(&checked).unwrap();
+        let end:serde_json::Value=serde_json::from_str(&service.catalog_page_json("","playlists",usize::MAX)).unwrap();
+        assert_eq!(end["selection_page"],2);
+        assert_eq!(end["options"].as_array().unwrap().len(),21);
+        let searched:serde_json::Value=serde_json::from_str(&service.catalog_page_json("List 41","playlists",0)).unwrap();
+        assert_eq!(searched["selection_total"],10);
+        assert!(service.options().iter().any(|row|row.id==checked && row.checked));
+        let empty:serde_json::Value=serde_json::from_str(&service.catalog_page_json("","queries",0)).unwrap();
+        assert_eq!(empty["selection_total"],0);
+        assert_eq!(empty["selection_pages"],1);
+    });
+}
+
+#[test]
+fn closing_a_playlist_read_releases_its_handoff_and_preserves_the_session_slot() {
+    isolated("closing_a_playlist_read_releases_its_handoff_and_preserves_the_session_slot", || {
+        let fixture=Fixture::new(); let mut service=fixture.paired();
+        let token=preview(&mut service); apply(&mut service,&token,false);
+        let token=preview(&mut service);
+        service.browse("recorded").unwrap(); wait(&mut service);
+        service.browser_view("playlists").unwrap();
+        let lists:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+        service.open_browser_album(lists["rows"][0]["id"].as_str().unwrap()).unwrap();
+        assert!(service.status().busy);
+        service.release_view();
+        assert_eq!(service.browser_json(),"{}");
+        assert!(service.browse("recorded").is_err(),"a closing transport keeps its exclusive session slot");
+        wait(&mut service);
+        assert_eq!(service.browser_json(),"{}");
+        assert!(service.status().plan.is_empty());
+        assert!(service.apply(&token,false).is_err(),"a closed review cannot survive a pending metadata reader");
+        service.open_view().unwrap(); wait(&mut service);
+        service.browse("recorded").unwrap(); wait(&mut service);
+        service.browser_view("playlists").unwrap();
+        let reopened:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+        assert_eq!(reopened["total"],1);
+    });
+}
+
+#[test]
+fn playlist_browsing_rejects_external_members_invalid_text_and_oversized_files_without_writes() {
+    isolated("playlist_browsing_rejects_external_members_invalid_text_and_oversized_files_without_writes", || {
+        let fixture=Fixture::new(); let mut service=fixture.paired();
+        let token=preview(&mut service); apply(&mut service,&token,false);
+        let list=find_files(&fixture.card.join("Playlists"),"m3u8").pop().unwrap();
+        let state=Store {directory:fixture.profiles.clone()}.state_path(&service.profile().unwrap().id).unwrap();
+        let before=std::fs::read(&state).unwrap();
+        for contents in [vec![0xff],b"#EXTM3U\n../unmanaged.flac\n".to_vec(),vec![b'#';1024*1024+1]] {
+            std::fs::write(&list,contents).unwrap();
+            service.close_browser(); service.browse("recorded").unwrap(); wait(&mut service);
+            service.browser_view("playlists").unwrap();
+            let lists:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+            service.open_browser_album(lists["rows"][0]["id"].as_str().unwrap()).unwrap(); wait(&mut service);
+            let result:serde_json::Value=serde_json::from_str(&service.browser_json()).unwrap();
+            assert!(result["error"].is_object(),"a rejected playlist must not look empty or successful");
+            assert_eq!(std::fs::read(&state).unwrap(),before,"browsing cannot mutate sync history or source cache");
+            assert_eq!(std::fs::read(fixture.card.join("unmanaged.flac")).unwrap(),b"foreign file");
+            assert_eq!(find_files(&fixture.card.join("Music"),"flac").len(),2);
+        }
     });
 }

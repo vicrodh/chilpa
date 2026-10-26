@@ -4,8 +4,12 @@ use super::{
     failure, library, UiError,
 };
 use chilpa_sync::{AssetKind, Cancellation, State, MAX_ASSETS, MAX_METADATA_BYTES};
-use serde_json::{json, Value};
 use std::{collections::BTreeMap, path::Path};
+
+mod navigation;
+pub(crate) use navigation::Bookmark;
+mod presentation;
+mod playlist;
 
 const PAGE: usize = 200;
 pub(super) struct Track {
@@ -18,7 +22,12 @@ pub(super) struct Track {
     pub size: String,
     pub playlist: bool,
 }
+struct Artist {
+    name: String,
+    albums: Vec<usize>,
+}
 struct Album {
+    playlist: bool,
     title: String,
     artist: String,
     tracks: Vec<usize>,
@@ -29,6 +38,13 @@ pub(super) struct Browser {
     recorded: bool,
     tracks: Vec<Track>,
     albums: Vec<Album>,
+    artists: Vec<Artist>,
+    view: &'static str,
+    artist: Option<usize>,
+    artist_parent: Option<(String, usize)>,
+    playlist: Option<usize>,
+    playlist_members: Vec<usize>,
+    playlist_parent: Option<(String, usize)>,
     album: Option<usize>,
     query: String,
     search: String,
@@ -48,7 +64,7 @@ impl Browser {
         if tracks.len() > MAX_ASSETS {
             return Err(limit());
         }
-        let mut groups = BTreeMap::<(String, String), Vec<usize>>::new();
+        let mut groups = BTreeMap::<(bool, String, String), Vec<usize>>::new();
         for (index, track) in tracks.iter().enumerate() {
             cancel.check().map_err(UiError::from)?;
             bytes = bytes.saturating_add(
@@ -69,27 +85,43 @@ impl Browser {
                 track.album.clone()
             };
             groups
-                .entry((track.artist.clone(), title))
+                .entry((track.playlist, track.artist.clone(), title))
                 .or_default()
                 .push(index);
         }
-        let albums = groups
+        let albums: Vec<Album> = groups
             .into_iter()
-            .map(|((artist, title), mut indices)| {
+            .map(|((playlist, artist, title), mut indices)| {
                 indices.sort_by_key(|i| (tracks[*i].disc, tracks[*i].number, *i));
                 Album {
+                    playlist,
                     title,
                     artist,
                     tracks: indices,
                 }
             })
             .collect();
+        let mut artists = BTreeMap::<String, Vec<usize>>::new();
+        for (index, album) in albums.iter().enumerate() {
+            bytes = bytes.saturating_add(album.title.len() + album.artist.len());
+            if !album.playlist { artists.entry(album.artist.clone()).or_default().push(index); }
+        }
+        let artists: Vec<_> = artists.into_iter().map(|(name, albums)| Artist { name, albums }).collect();
+        bytes = bytes.saturating_add(artists.iter().map(|a| a.name.len()).sum::<usize>());
+        if bytes > MAX_METADATA_BYTES { return Err(limit()); }
         Ok(Self {
             source,
             title,
             recorded,
             tracks,
             albums,
+            artists,
+            view: "music",
+            artist: None,
+            artist_parent: None,
+            playlist: None,
+            playlist_members: Vec::new(),
+            playlist_parent: None,
             album: None,
             query: String::new(),
             search: String::new(),
@@ -157,83 +189,15 @@ impl Browser {
                 .iter()
                 .any(|s| s.to_lowercase().contains(&self.search))
     }
-    fn visible(&self) -> Vec<usize> {
-        if let Some(album) = self.album {
-            self.albums[album]
-                .tracks
-                .iter()
-                .copied()
-                .filter(|i| self.matches(*i))
-                .collect()
-        } else {
-            self.albums
-                .iter()
-                .enumerate()
-                .filter(|(_, a)| a.tracks.iter().any(|i| self.matches(*i)))
-                .map(|(i, _)| i)
-                .collect()
-        }
-    }
-    pub fn open(&mut self, id: &str) -> Result<(), UiError> {
-        let index = id
-            .strip_prefix("album:")
-            .and_then(|i| i.parse::<usize>().ok());
-        let index = index
-            .filter(|i| *i < self.albums.len() && self.album.is_none())
-            .ok_or_else(|| {
-                failure(
-                    chilpa_i18n::mark("This album is no longer in the current view."),
-                    "",
-                )
-            })?;
-        self.album = Some(index);
-        self.parent = Some((std::mem::take(&mut self.query), self.page));
-        self.search.clear();
-        self.page = 0;
-        Ok(())
-    }
-    /// I return false at the selection root so its owner can return to the picker.
-    pub fn back(&mut self) -> bool {
-        if self.album.take().is_none() {
-            return false;
-        }
-        let (query, page) = self.parent.take().unwrap_or_default();
-        self.search = query.to_lowercase();
-        self.query = query;
-        self.page = page;
-        true
-    }
     pub fn filter(&mut self, query: &str) {
         self.query = query.chars().take(256).collect();
         self.search = self.query.to_lowercase();
         self.page = 0;
     }
     pub fn change_page(&mut self, page: usize) {
-        self.page = page.min(self.visible().len().saturating_sub(1) / PAGE);
+        self.page = page.min(self.items().len().saturating_sub(1) / PAGE);
     }
-    pub fn document(&self) -> Value {
-        let indices = self.visible();
-        let pages = indices.len().div_ceil(PAGE).max(1);
-        let page = self.page.min(pages - 1);
-        let rows: Vec<_> = indices.iter().skip(page * PAGE).take(PAGE).map(|i| {
-            if self.album.is_none() {
-                let album = &self.albums[*i];
-                let count = chilpa_i18n::tf("{} track", "{} tracks", album.tracks.len() as i64, &[&album.tracks.len().to_string()]);
-                let detail = [album.artist.clone(),count].into_iter().filter(|s|!s.is_empty()).collect::<Vec<_>>().join(" · ");
-                json!({"id":format!("album:{i}"),"title":album.title,"detail":detail,"kind":"album","open":true})
-            } else {
-                let track = &self.tracks[*i];
-                let disc = if track.disc > 0 { chilpa_i18n::t_args("Disc {}", &[&track.disc.to_string()]) } else { String::new() };
-                let detail = [track.artist.clone(),disc,track.size.clone()].into_iter().filter(|s|!s.is_empty()).collect::<Vec<_>>().join(" · ");
-                json!({"id":format!("track:{i}"),"title":track.title,"detail":detail,
-                    "path":track.path,"number":track.number,"kind":if track.playlist{"playlist"}else{"track"},"open":false})
-            }
-        }).collect();
-        json!({"source":self.source,"recorded":self.recorded,"title":self.title,"album":self.album.map(|i|&self.albums[i].title),
-            "can_back":self.album.is_some() || !self.recorded,"rows":rows,"page":page,"pages":pages,"total":indices.len(),
-            "level":if self.album.is_some(){"tracks"}else{"albums"},"query":self.query,
-            "notice":if self.recorded {chilpa_i18n::t("Last synced with Chilpa. Files changed elsewhere may differ.")}else{String::new()}})
-    }
+
 }
 fn limit() -> UiError {
     failure(

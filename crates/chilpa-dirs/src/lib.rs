@@ -99,6 +99,20 @@ pub fn executable_helper(name: &str) -> Option<PathBuf> {
     helper.is_file().then_some(helper)
 }
 
+/// I keep the native mount table and its event endpoint beside the other OS conventions.
+#[cfg(any(target_os = "linux", target_os = "android"))]
+pub fn mount_info_file() -> &'static std::path::Path { std::path::Path::new("/proc/self/mountinfo") }
+#[cfg(any(target_os = "linux", target_os = "android"))]
+pub fn mount_events_file() -> &'static std::ffi::CStr { c"/proc/self/mounts" }
+#[cfg(any(target_os = "linux", target_os = "android"))]
+pub fn block_device_node(device: &str) -> Option<PathBuf> {
+    let (major, minor) = device.split_once(':')?;
+    if major.is_empty() || minor.is_empty() || !major.bytes().chain(minor.bytes()).all(|b| b.is_ascii_digit()) { return None; }
+    Some(std::path::Path::new("/sys/dev/block").join(device))
+}
+#[cfg(target_os = "macos")]
+pub fn mounted_volume_directory() -> &'static std::path::Path { std::path::Path::new("/Volumes") }
+
 /// A variable, when it is set to something.
 ///
 /// An empty value is the same as unset: a shell that exports `XDG_DATA_HOME=`

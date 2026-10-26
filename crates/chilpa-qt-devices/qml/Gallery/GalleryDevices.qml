@@ -16,9 +16,16 @@ Item {
         DeviceHeader { width: parent.width; document: gallery.document; status: gallery.review }
         DeviceSelection { width: parent.width; height: DeviceLayout.galleryHeight; rows: [{id:"one",name:"Evening music",description:"12 tracks",checked:true},{id:"two",name:"A saved query",description:"genre:Jazz year:1960..1969",checked:false}] }
         DeviceSelection { width: parent.width; height: DeviceLayout.galleryHeight; busy: true }
+        DeviceSelection { width: parent.width; height: DeviceLayout.galleryHeight; kind:"queries"; page:1; pages:3; rows:[{id:"query-one",name:"A saved query",description:"genre:Jazz",checked:true}] }
+        DevicePager { page:0; pages:3 }
+        DevicePager { page:1; pages:3; busy:true }
+        DevicePager { page:2; pages:3 }
         DeviceMusicRow { width: parent.width; entry: ({title:"An album",detail:"Artist · 12 tracks",kind:"album",open:true}) }
         DeviceMusicRow { width: parent.width; checkable:true; entry: ({title:"A selected album",detail:"Artist · 12 tracks",checked:true,open:true}) }
         DeviceMusicRow { width: parent.width; entry: ({title:"First song",detail:"Artist · Disc 1",number:1,kind:"track",open:false}) }
+        DeviceMusicRow { width: parent.width; entry: ({title:"An artist",detail:"12 albums",kind:"artist",open:true}) }
+        DeviceBrowser { width: parent.width; height: DeviceLayout.galleryHeight; document: ({source:"recorded",title:"Player SD",recorded:true,view:"artists",rows:[{id:"artist:0",title:"An artist",detail:"12 albums",kind:"artist",open:true}],page:0,pages:1}) }
+        DeviceBrowser { width: parent.width; height: DeviceLayout.galleryHeight; document: ({source:"recorded",title:"Player SD",recorded:true,view:"playlists",rows:[{id:"playlist:0",title:"Evening music",path:"Playlists/Evening music.m3u8",kind:"playlist",open:true}],page:0,pages:1}) }
         DeviceBrowser { width: parent.width; height: DeviceLayout.galleryHeight; document: ({source:"demo",title:"Evening music",can_back:true,rows:[{id:"album:0",title:"An album",detail:"Artist · 12 tracks",kind:"album",open:true}],page:0,pages:1}) }
         DeviceBrowser { width: parent.width; height: DeviceLayout.galleryHeight; document: ({source:"demo",title:"Evening music",album:"An album",can_back:true,rows:[{id:"track:0",title:"First song",detail:"Artist · Disc 1",number:1,kind:"track",open:false}],page:0,pages:2}) }
         DeviceBrowser { width: parent.width; height: DeviceLayout.galleryHeight; document: ({source:"recorded",title:"Player SD",recorded:true,notice:"Last synced with Chilpa. Files changed elsewhere may differ.",rows:[],page:0,pages:1}) }
