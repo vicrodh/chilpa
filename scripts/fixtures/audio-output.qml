@@ -2,6 +2,7 @@ import QtQuick
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
+import app.chilpa.about
 
 Item {
     id: smoke
@@ -42,6 +43,7 @@ Item {
     }
     function advance() {
         if (phase === 0) {
+            Onboarding.command("close")
             const component = Qt.createComponent("qrc:/qt/qml/app/chilpa/qml/Main.qml")
             check(component.status === Component.Ready,component.errorString())
             mainWindow = component.createObject(null)
@@ -51,12 +53,13 @@ Item {
             phase = 1; return
         }
         if (scenario === "idle") {
-            check(!Player.playing,"idle comparison started audio")
+            check(!Player.playing || Player.paused,"idle comparison started audio")
             if (Date.now() - began >= duration) complete()
             return
         }
         if (phase === 1) {
             if (!Player.path.endsWith("fixture.wav")) return
+            audio.stopForDiagnosis()
             audio.press("audio.outputDetails")
             phase = 2; return
         }
@@ -75,8 +78,11 @@ Item {
             check(!doc.error && doc.saved && doc.last.state === "available","silent check failed: " + JSON.stringify(doc.last) + doc.error)
             check(doc.last.audible === "untested","opening claimed audibility")
             check(doc.last.opened.sample_rate_hz === 44100,"wrong opening result")
-            mainWindow.contentItem.grabToImage(result => result.saveToFile("SMOKE_CAPTURE"))
-            AudioOutput.close(); phase = 4; waits = 0; return
+            mainWindow.contentItem.grabToImage(result => {
+                check(result.saveToFile("SMOKE_CAPTURE"),"panel capture could not be saved")
+                AudioOutput.close(); phase = 4; waits = 0
+            })
+            phase = 14; return
         }
         if (phase === 4) {
             check(!AudioOutput.shown && AudioOutput.snapshot === "{}","closed view retained its payload")

@@ -43,7 +43,7 @@ fn late_results_do_not_repopulate_a_closed_view() {
     api.audio_output.shown = true; api.audio_output.selection = "old".into();
     api.audio_output_command("close","");
     tx.send(ResultDoc { selection:"old".into(),inspection:Inspection::unavailable("fixture","old","1".into()),
-        outputs:vec![json!({"id":"old"})],history:vec![case("old",44_100)],last:None,error:String::new(),hardware_generation:String::new() }).unwrap();
+        outputs:Some(vec![json!({"id":"old"})]),history:vec![case("old",44_100)],last:None,error:String::new(),hardware_generation:String::new() }).unwrap();
     api.advance_audio_output();
     assert!(api.audio_output.pending.is_none()); assert!(api.audio_output.outputs.is_empty());
     assert!(api.audio_output.history.is_empty()); assert!(api.audio_output_doc(0).is_none());
@@ -72,7 +72,7 @@ fn a_response_for_another_selection_is_discarded() {
     api.audio_output.pending = Some(rx); api.audio_output.shown = true;
     api.audio_output.selection = "new".into();
     tx.send(ResultDoc { selection:"old".into(),inspection:Inspection::unavailable("fixture","old","1".into()),
-        outputs:vec![json!({"id":"old"})],history:Vec::new(),last:None,error:String::new(),hardware_generation:String::new() }).unwrap();
+        outputs:Some(vec![json!({"id":"old"})]),history:Vec::new(),last:None,error:String::new(),hardware_generation:String::new() }).unwrap();
     api.advance_audio_output();
     assert!(api.audio_output.inspection.is_none()); assert!(api.audio_output.outputs.is_empty());
     assert_eq!(api.audio_output.selection,"new");
@@ -104,4 +104,25 @@ fn a_case_from_another_inspection_cannot_open_or_select_an_output() {
     assert!(api.audio_output.pending.is_none()); assert!(!api.audio_output.error.is_empty());
     assert!(!api.audio_output_command("use","fixture:other"));
     assert_eq!(api.audio_output.selection,"fixture:target");
+}
+
+#[test]
+fn a_restored_paused_queue_can_stop_before_checking_without_opening_audio() {
+    let mut api=crate::Chilpa::new();
+    api.queue=vec!["fixture.wav".into()]; api.now.path="fixture.wav".into();
+    api.now.playing=true;api.now.paused=true;
+    api.stop();
+    assert!(!api.now.playing);assert!(!api.now.paused);assert!(api.player.is_none());
+    assert_eq!(api.queue,["fixture.wav"]);assert_eq!(api.now.path,"fixture.wav");
+}
+#[test]
+fn a_completed_check_keeps_the_inspected_catalog_without_listing_again() {
+    let mut api=crate::Chilpa::new();
+    let (tx,rx)=mpsc::sync_channel(1);
+    api.audio_output.pending=Some(rx);api.audio_output.shown=true;api.audio_output.selection="fixture:local".into();
+    api.audio_output.outputs=vec![json!({"id":"fixture:local"}),json!({"id":"cast:remote"})];
+    tx.send(ResultDoc {selection:"fixture:local".into(),inspection:Inspection::unavailable("fixture","fixture:local","1".into()),
+        outputs:None,history:Vec::new(),last:Some(case("fixture:local",44100)),error:String::new(),hardware_generation:String::new()}).unwrap();
+    api.advance_audio_output();
+    assert_eq!(api.audio_output.outputs.len(),2);assert_eq!(api.audio_output.outputs[1]["id"],"cast:remote");
 }

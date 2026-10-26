@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.controls
 import "../../qml/Components"
 import "../../qml/Patterns"
+import "../../qml/Gallery"
 
 TestCase {
     id: test
@@ -17,6 +18,17 @@ TestCase {
     WindowControls { id: controls; window: test.Window.window }
     Item { id: invoking; objectName: "invokingControl"; activeFocusOnTab: true }
     QtObject { id: owner; property bool visible: true; property int visibility: Window.Windowed }
+    Component { id: galleryExample; GalleryAudioOutput {} }
+    function test_gallery_states_and_panel_preview_never_request_real_equipment() {
+        const gallery = createTemporaryObject(galleryExample,test)
+        verify(gallery)
+        findChild(gallery,"audioGalleryPreview").clicked()
+        const panel = findChild(gallery,"audioOutputPanel")
+        tryCompare(panel,"opened",true)
+        compare(AudioOutput.commands.length,0)
+        verify(!findChild(panel,"audioOutputRefresh").running)
+        panel.close()
+    }
     function init() {
         AudioOutput.commands = []
         commands.clear()

@@ -10,7 +10,7 @@ use std::sync::{mpsc, Arc, atomic::{AtomicBool, Ordering}};
 struct ResultDoc {
     selection: String,
     inspection: Inspection,
-    outputs: Vec<Value>,
+    outputs: Option<Vec<Value>>,
     history: Vec<Case>,
     last: Option<Case>,
     error: String,
@@ -74,7 +74,8 @@ impl crate::Chilpa {
         if !state.shown || state.selection != result.selection { return; }
         state.selection = result.inspection.identity.id.clone();
         state.hardware_generation = result.hardware_generation;
-        state.inspection = Some(result.inspection); state.outputs = result.outputs;
+        state.inspection = Some(result.inspection);
+        if let Some(outputs) = result.outputs { state.outputs = outputs; }
         state.history = result.history; state.last = result.last;
         state.error = result.error; state.saved = state.last.is_some() && state.error.is_empty();
         state.revision += 1;
@@ -151,7 +152,7 @@ impl crate::Chilpa {
             let hardware_generation = chilpa_core::backends::generation();
             if before != hardware_generation { inspection.state = State::Stale; }
             let (history,error) = match history::load(&path) { Ok(rows) => (rows,String::new()), Err(e) => (Vec::new(),e) };
-            let _ = tx.send(ResultDoc { selection:selected,inspection,outputs,history,last:None,error,hardware_generation });
+            let _ = tx.send(ResultDoc { selection:selected,inspection,outputs:Some(outputs),history,last:None,error,hardware_generation });
         }).map_err(|_| chilpa_i18n::t("Audio output inspection could not start."))?;
         self.audio_output.checking = false; self.audio_output.pending = Some(rx); Ok(())
     }
@@ -199,7 +200,7 @@ impl crate::Chilpa {
             };
             let inspection = engine::inspect(&selected);
             let hardware_generation = chilpa_core::backends::generation();
-            let _ = tx.send(ResultDoc { selection:selected,inspection,outputs:listed(&[]),history,last:Some(case),error,hardware_generation });
+            let _ = tx.send(ResultDoc { selection:selected,inspection,outputs:None,history,last:Some(case),error,hardware_generation });
         }).map_err(|_| chilpa_i18n::t("Audio check could not start."))?;
         self.audio_output.cancel = cancel; self.audio_output.pending = Some(rx); self.audio_output.checking = true;
         self.audio_output.saved = false; Ok(())

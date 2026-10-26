@@ -33,7 +33,7 @@ Column {
         }
     }
     AudioFact {
-        visible: now.document.available && !now.document.cast
+        visible: now.document.available === true && !now.document.cast
         heading: I18n.tr("Exclusive mode", I18n.rev)
         value: now.document.exclusiveObserved === true ? I18n.tr("Acquired at opening", I18n.rev)
             : now.document.exclusiveObserved === false ? I18n.tr("Shared at opening", I18n.rev)
