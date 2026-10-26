@@ -7,6 +7,7 @@ import app.chilpa.about
 Item {
     id: smoke
     property var mainWindow
+    property var mainComponent
     property int phase: 0
     property bool stopped: false
     property string scenario: "SMOKE_SCENARIO"
@@ -44,9 +45,9 @@ Item {
     function advance() {
         if (phase === 0) {
             Onboarding.command("close")
-            const component = Qt.createComponent("qrc:/qt/qml/app/chilpa/qml/Main.qml")
-            check(component.status === Component.Ready,component.errorString())
-            mainWindow = component.createObject(null)
+            mainComponent = Qt.createComponent("qrc:/qt/qml/app/chilpa/qml/Main.qml")
+            check(mainComponent.status === Component.Ready,mainComponent.errorString())
+            mainWindow = mainComponent.createObject(null)
             check(!!mainWindow,"real Main did not construct")
             mainWindow.width = 1100; mainWindow.height = 850
             Qt.createQmlObject('import QtQuick; Rectangle { anchors.fill: parent; z: -100 }',mainWindow.contentItem).color = Qt.binding(() => mainWindow.color)

@@ -85,6 +85,15 @@ Item {
         }
         if (phase === 5) {
             quota.close();quota.destroy();quota = null
+            settings.set("integrations.offline","true");settings.refresh()
+            check(row("integrations.discogs.account")?.control === "fixed","offline kept browser sign-in active")
+            check(row("integrations.discogs.token")?.control === "fixed","offline kept token verification active")
+            check(!row("integrations.discogs.code"),"offline revealed an absent browser code")
+            settings.set("integrations.offline","false");settings.set("integrations.proxy.enabled","false");settings.refresh()
+            check(row("integrations.discogs.account")?.control === "none","proxy opt-out kept browser setup active")
+            check(row("integrations.discogs.token")?.control === "secret","proxy opt-out disabled direct personal tokens")
+            check(!row("integrations.discogs.code"),"proxy opt-out revealed the browser code")
+            settings.set("integrations.proxy.enabled","true")
             Navigation.go("home",0);cycles++;cycleAt = Date.now();phase = 6;return
         }
         if (phase === 6) {
