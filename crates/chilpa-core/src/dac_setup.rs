@@ -236,7 +236,10 @@ pub fn detect_blocking() -> Vec<DacCandidate> {
         .map(|sink| {
             let looks_like_dac = sink.is_hardware && (sink.bus == "usb" || sink.bus == "pci");
             DacCandidate {
-                rates_label: if looks_like_dac { format_rates(&dac_rates(&sink.node_name)) } else { String::new() },
+                rates_label: if looks_like_dac {
+                    setup::sink_rates(&sink.node_name).filter(|r| !r.is_empty()).map(|r|format_rates(&r))
+                        .unwrap_or_else(||chilpa_i18n::t_args("Assumed fallback: {}",&[&format_rates(&FALLBACK_RATES)]))
+                } else { String::new() },
                 description: if sink.description.is_empty() { sink.node_name.clone() } else { sink.description },
                 bus: sink.bus,
                 is_default: sink.is_default,
@@ -304,8 +307,8 @@ pub fn poll_view(requested_rate: u32, requested_bits: u32, negotiated: Option<Ne
     }
 }
 
-pub fn negotiated_now() -> Option<Negotiated> {
-    setup::negotiated_now()
+pub fn negotiated_output(output: &str) -> Option<Negotiated> {
+    setup::negotiated_output(output)
 }
 
 pub fn probe_health() -> Health {

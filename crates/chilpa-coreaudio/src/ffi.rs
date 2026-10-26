@@ -35,6 +35,7 @@ pub const kAudioObjectPropertyScopeOutput: AudioObjectPropertyScope = fourcc(b"o
 pub const kAudioHardwarePropertyDevices: AudioObjectPropertySelector = fourcc(b"dev#");
 pub const kAudioHardwarePropertyDefaultOutputDevice: AudioObjectPropertySelector = fourcc(b"dOut");
 pub const kAudioObjectPropertyName: AudioObjectPropertySelector = fourcc(b"lnam");
+pub const kAudioDevicePropertyDeviceUID: AudioObjectPropertySelector = fourcc(b"uid ");
 pub const kAudioDevicePropertyStreamConfiguration: AudioObjectPropertySelector = fourcc(b"slay");
 pub const kAudioDevicePropertyAvailableNominalSampleRates: AudioObjectPropertySelector =
     fourcc(b"nsr#");
@@ -44,7 +45,6 @@ pub const kAudioDevicePropertyHogMode: AudioObjectPropertySelector = fourcc(b"oi
 /// Zero once the device is gone: unplugged, or turned off.
 pub const kAudioDevicePropertyDeviceIsAlive: AudioObjectPropertySelector = fourcc(b"livn");
 /// Whether any program, this one or another, is playing through it.
-#[cfg(test)]
 pub const kAudioDevicePropertyDeviceIsRunningSomewhere: AudioObjectPropertySelector =
     fourcc(b"gone");
 /// The knob, from 0 to 1. A device that has none simply does not answer.
@@ -104,7 +104,7 @@ pub struct AudioValueRange {
 
 /// What a stream really carries, as opposed to what the device is set to.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct AudioStreamBasicDescription {
     pub mSampleRate: f64,
     pub mFormatID: u32,

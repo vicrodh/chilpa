@@ -119,6 +119,7 @@ TitledFlow {
             MenuEntry { width: parent.width; entry: ({ text: "USB DAC", detail: "hw:1,0", checked: true, mark: "BP" }) }
         }
         Menu { entries: [{ text: "A menu, closed" }] }
+        MenuFooter { width: Metrics.menuWidth; entries: [{text:"Output details…",glyph:Icons.chevronRight}] }
     }
 
     Rectangle {

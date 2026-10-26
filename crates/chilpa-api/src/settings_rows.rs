@@ -139,7 +139,7 @@ impl Chilpa {
         if let Some(said) = self.library_maintenance(key) {
             return Some(said);
         }
-        self.lyrics_maintenance(key).or_else(|| self.wizard_maintenance(key))
+        self.lyrics_maintenance(key).or_else(|| self.wizard_maintenance(key)).or_else(|| self.audio_output_maintenance(key))
     }
 
     /// A setting's new value, for the feature it belongs to. Like
@@ -223,7 +223,7 @@ impl Chilpa {
                 }
                 rows.push(row);
                 if s.key == "audio.wizard" {
-                    for line in notes.report.iter().flat_map(|r| &r.rows) {
+                    for line in notes.report.iter().filter(|r|r.device == output).flat_map(|r| &r.rows) {
                         rows.push(Row { kind: 2, title: line.name.clone(), description: line.format.clone(), value: line.verdict.clone(), ..Row::default() });
                     }
                 }
@@ -441,7 +441,7 @@ impl Chilpa {
                 }
             }
             "audio.wizard" => {
-                if let Some(report) = notes.report {
+                if let Some(report) = notes.report.filter(|r|r.device == output) {
                     row.description = report.summary.clone();
                 }
             }

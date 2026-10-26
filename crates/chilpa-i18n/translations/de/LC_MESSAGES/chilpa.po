@@ -112,6 +112,9 @@ msgstr "5 Std."
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Ein JACK-Graph läuft mit einer einzigen Abtastrate, und jedes Programm darin läuft mit dieser Rate – hier sind es {} Hz. Ein Titel mit einer anderen Rate wird per Resampling umgerechnet, bevor Chilpa mitreden kann, und keine Einstellung hier ändert das. JACK dient dazu, Audio zwischen Programmen zu routen; für eine Datei, die unverändert beim DAC ankommen soll, wähle die Karte selbst."
 
+msgid "A PCM carrier does not verify DoP. No tone or library track will play."
+msgstr "Ein PCM-Träger verifiziert DoP nicht. Es wird weder ein Testton noch ein Bibliothekstitel abgespielt."
+
 msgid "A bar or OR: either is enough"
 msgstr "Ein Strich oder OR: eines genügt"
 
@@ -138,6 +141,9 @@ msgstr ""
 
 msgid "A profile already manages this device folder."
 msgstr ""
+
+msgid "A receiver uses network playback. Its physical DAC is not exposed here."
+msgstr "Ein Empfänger spielt Audio über das Netzwerk ab. Sein physischer DAC ist hier nicht zugänglich."
 
 msgid "A saved query already has that name."
 msgstr "Eine gespeicherte Abfrage hat bereits diesen Namen."
@@ -193,6 +199,9 @@ msgstr "Akzent"
 msgid "Accept permissions and enable"
 msgstr "Berechtigungen akzeptieren und aktivieren"
 
+msgid "Accepted"
+msgstr "Akzeptiert"
+
 msgid "Access to downloader"
 msgstr "Zugriff auf den Downloader"
 
@@ -207,6 +216,12 @@ msgstr "Konto nicht verbunden."
 
 msgid "Acknowledgments"
 msgstr "Danksagungen"
+
+msgid "Acquired at opening"
+msgstr "Beim Öffnen erworben"
+
+msgid "Acquisition was not reported by this backend"
+msgstr "Dieses Backend hat den Erwerb des Exklusivmodus nicht gemeldet"
 
 msgid "Action"
 msgstr ""
@@ -462,6 +477,15 @@ msgstr "Ein EQ-Wert fehlt oder ist ungültig."
 msgid "An active EQ filter is missing Q."
 msgstr "Bei einem aktiven EQ-Filter fehlt Q."
 
+msgid "An announcement or driver query does not confirm opening or audible output."
+msgstr "Eine Ankündigung oder Treiberabfrage bestätigt weder das Öffnen noch eine hörbare Ausgabe."
+
+msgid "An audio check is already running."
+msgstr "Eine Audioprüfung läuft bereits."
+
+msgid "An audio output check is running. Try playback again when it finishes."
+msgstr "Eine Audioausgabeprüfung läuft. Versuchen Sie die Wiedergabe nach ihrem Abschluss erneut."
+
 msgid "An interrupted sync needs recovery before reviewing new changes."
 msgstr ""
 
@@ -597,17 +621,47 @@ msgstr "Vor dem Beenden fragen"
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Bittet PipeWire oder PulseAudio, die Karte freizugeben, solange Chilpa darauf wiedergibt, und gibt sie zurück, wenn Chilpa stoppt oder lange pausiert."
 
+msgid "Assumed fallback: {}"
+msgstr "Angenommener Ersatz: {}"
+
 msgid "Audio"
 msgstr "Audio"
 
 msgid "Audio CD"
 msgstr "Audio-CD"
 
+msgid "Audio and output"
+msgstr "Audio und Ausgabe"
+
+msgid "Audio check could not start."
+msgstr "Die Audioprüfung konnte nicht gestartet werden."
+
+msgid "Audio check history could not be read."
+msgstr "Der Verlauf der Audioprüfungen konnte nicht gelesen werden."
+
+msgid "Audio check history could not be saved."
+msgstr "Der Verlauf der Audioprüfungen konnte nicht gespeichert werden."
+
+msgid "Audio check history is damaged. The original file was kept."
+msgstr "Der Verlauf der Audioprüfungen ist beschädigt. Die Originaldatei wurde beibehalten."
+
+msgid "Audio check history is too large."
+msgstr "Der Verlauf der Audioprüfungen ist zu groß."
+
+msgid "Audio output inspection could not start."
+msgstr "Die Prüfung der Audioausgabedaten konnte nicht gestartet werden."
+
+msgid "Audio output task stopped unexpectedly."
+msgstr "Der Vorgang für die Audioausgabe wurde unerwartet beendet."
+
 msgid "Audio stack"
 msgstr "Audio-Stack"
 
 msgid "Audio stack ready"
 msgstr "Audio-Stack bereit"
+
+msgid "Auditory confirmation"
+msgstr "Hörbestätigung"
 
 msgid "Aug"
 msgstr "Aug."
@@ -708,6 +762,9 @@ msgstr "Bass"
 msgid "Between tracks"
 msgstr "Zwischen Titeln"
 
+msgid "Bit depth not stated"
+msgstr "Bittiefe nicht angegeben"
+
 msgid "Bit perfect"
 msgstr "Bit-perfect"
 
@@ -741,6 +798,9 @@ msgstr "Browse-Ansicht"
 msgid "Browse…"
 msgstr "Durchsuchen…"
 
+msgid "Buffering…"
+msgstr "Puffern…"
+
 msgid "Build"
 msgstr "Build"
 
@@ -757,6 +817,9 @@ msgid "Busiest day, {} play"
 msgid_plural "Busiest day, {} plays"
 msgstr[0] "Aktivster Tag, {} Wiedergabe"
 msgstr[1] "Aktivster Tag, {} Wiedergaben"
+
+msgid "Busy"
+msgstr "Belegt"
 
 msgid "Buttons to go back or forward ten seconds, and the A-B loop."
 msgstr "Schaltflächen zum Springen um zehn Sekunden zurück oder vor sowie die A-B-Schleife."
@@ -896,6 +959,9 @@ msgstr "Prüfen"
 msgid "Check Audio Stack"
 msgstr "Audio-Stack prüfen"
 
+msgid "Check a format…"
+msgstr "Ein Format prüfen…"
+
 msgid "Check all folders"
 msgstr "Alle Ordner prüfen"
 
@@ -910,6 +976,9 @@ msgstr "Nach Updates suchen"
 
 msgid "Check for updates automatically"
 msgstr "Automatisch nach Updates suchen"
+
+msgid "Check one format"
+msgstr "Ein Format prüfen"
 
 msgid "Checking for updates…"
 msgstr "Es wird nach Updates gesucht…"
@@ -934,6 +1003,9 @@ msgstr "Chilpa"
 
 msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
 msgstr "Chilpa legt Rate, Sink und Exklusivmodus zur Laufzeit bereits fest. Diese Dateien ändern nur das systemweite Verhalten – kopiere und starte sie selbst, wenn du sie willst. Erstelle vorher eine Sicherung."
+
+msgid "Chilpa applies the processing shown below."
+msgstr "Chilpa wendet die unten gezeigte Verarbeitung an."
 
 msgid "Chilpa can also read the tempo, musical key and loudness of what this folder holds. It takes much longer than reading the folder: it starts when the scan is done, runs in the background, and can be stopped in Settings > Library > Analysis."
 msgstr "Chilpa kann auch Tempo, Tonart und Lautheit der Musik in diesem Ordner ermitteln. Das dauert viel länger als das Einlesen des Ordners: Es startet, wenn der Scan fertig ist, läuft im Hintergrund und kann unter Einstellungen > Bibliothek > Analyse gestoppt werden."
@@ -965,6 +1037,9 @@ msgstr "Chilpa schreibt diese Dateien nie"
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr "Chilpa öffnet sich mit den Tabs, die beim Schließen offen waren."
 
+msgid "Chilpa output"
+msgstr "Ausgabe von Chilpa"
+
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
 msgstr "Chilpa spielt die Dateien auf deinen Laufwerken und deine eigenen Server ab, und Plugins fügen weitere Quellen hinzu. Es sagt dir klar, ob das, was bei deinem DAC ankommt, bit-perfect ist."
 
@@ -979,6 +1054,9 @@ msgstr "Chilpa fordert {} · {} bit an"
 
 msgid "Chilpa sends no telemetry. When enabled, artist and release searches make one-way requests to MusicBrainz for results. Turning it off disables MusicBrainz features in Artist Network."
 msgstr "Chilpa sendet keine Telemetrie. Wenn aktiviert, senden Künstler- und Veröffentlichungssuchen einseitige Anfragen an MusicBrainz, um Ergebnisse zu erhalten. Wenn du es ausschaltest, sind die MusicBrainz-Funktionen im Künstler-Netzwerk deaktiviert."
+
+msgid "Chilpa sends the original audio to the receiver."
+msgstr "Chilpa sendet das ursprüngliche Audio an den Empfänger."
 
 msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
 msgstr "Chilpa stellt das Gerät auf die Rate jedes Titels ein. Bei aktivem Exklusivmodus gehört das Gerät, solange ein Titel läuft, allein Chilpa, sodass am Mac nichts anderes es währenddessen nutzen kann. Schalte den Exklusivmodus aus, um es zu teilen; der Mac mischt dann alles andere, was wiedergegeben wird, dazu."
@@ -1012,6 +1090,9 @@ msgstr "Wähle ein DSP-Plugin."
 
 msgid "Choose a DSP preset."
 msgstr "Wähle ein DSP-Preset."
+
+msgid "Choose a PCM format, rate and channel count."
+msgstr "Wählen Sie ein PCM-Format, eine Abtastrate und eine Kanalzahl."
 
 msgid "Choose a cover"
 msgstr "Cover auswählen"
@@ -1114,6 +1195,9 @@ msgstr ""
 
 msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
 msgstr "Wähle das Wiedergabe-Mixer-Element dieser Ausgabe. Chilpa prüft es, bevor die Auswahl gespeichert wird."
+
+msgid "Choose the receiver in Play on to connect."
+msgstr "Wählen Sie den Empfänger unter Wiedergeben auf, um eine Verbindung herzustellen."
 
 msgid "Clear"
 msgstr "Leeren"
@@ -1340,6 +1424,9 @@ msgstr "Setze den unterbrochenen Scan fort oder verwirf ihn, bevor ein weiterer 
 msgid "Convert to PCM"
 msgstr "In PCM umwandeln"
 
+msgid "Convertible system input; physical DAC capabilities are unknown"
+msgstr "Konvertierbare Systemeingabe; physische DAC-Fähigkeiten sind unbekannt"
+
 msgid "Copy"
 msgstr "Kopieren"
 
@@ -1433,6 +1520,9 @@ msgstr "Kritiker-Auswahl"
 msgid "Crossfeed · 0–50%"
 msgstr "Crossfeed · 0–50%"
 
+msgid "Current signal path"
+msgstr "Aktueller Signalweg"
+
 msgid "Cursor down"
 msgstr "Cursor nach unten"
 
@@ -1478,6 +1568,9 @@ msgstr "AUFGELÖST"
 msgid "DLNA / UPnP and Chromecast"
 msgstr "DLNA / UPnP und Chromecast"
 
+msgid "DSD converted to PCM"
+msgstr "DSD in PCM konvertiert"
+
 msgid "DSD files keep their changes in a sidecar"
 msgstr "DSD-Dateien speichern ihre Änderungen in einer Begleitdatei"
 
@@ -1513,6 +1606,9 @@ msgstr "DSD{} · PCM bei {} Hz · {}"
 
 msgid "DSP active"
 msgstr "DSP aktiv"
+
+msgid "DSP applied to consumed PCM blocks"
+msgstr "DSP auf verarbeitete PCM-Blöcke angewendet"
 
 msgid "DSP applies to local output. Cast sends the original audio."
 msgstr "DSP gilt für die lokale Ausgabe. Casting sendet das Originalaudio."
@@ -1580,6 +1676,12 @@ msgstr "Jahrzehnte"
 msgid "December"
 msgstr "Dezember"
 
+msgid "Declared by the hardware driver"
+msgstr "Vom Hardwaretreiber angegeben"
+
+msgid "Decoded floating samples quantized to {} bits"
+msgstr "Dekodierte Gleitkommawerte auf {} Bit quantisiert"
+
 msgid "Default"
 msgstr "Standard"
 
@@ -1625,6 +1727,9 @@ msgstr "Ziele"
 msgid "Details"
 msgstr ""
 
+msgid "Details available"
+msgstr "Details verfügbar"
+
 msgid "Detected: "
 msgstr "Erkannt: "
 
@@ -1663,6 +1768,9 @@ msgstr "Ausgabe diagnostizieren"
 
 msgid "Diagnosis"
 msgstr "Diagnose"
+
+msgid "Different format"
+msgstr "Anderes Format"
 
 msgid "Dimming"
 msgstr "Abdunkeln"
@@ -1727,6 +1835,9 @@ msgstr "Scan verwerfen"
 msgid "Display settings"
 msgstr "Anzeigeeinstellungen"
 
+msgid "DoP carrier · {}"
+msgstr "DoP-Träger · {}"
+
 msgid "Dock"
 msgstr "Andocken"
 
@@ -1777,6 +1888,9 @@ msgstr "Downloads"
 
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr "Ziehe oder nutze ↑↓, um eine eigene Reihenfolge zu behalten."
+
+msgid "Driver query; playback has not been tested"
+msgstr "Treiberabfrage; Wiedergabe wurde nicht getestet"
 
 msgid "Duplicate DSP preset ID."
 msgstr "Doppelte DSP-Preset-ID."
@@ -1871,6 +1985,9 @@ msgstr "Das optionale Stimmungs-Plugin aktivieren und den Download seiner Modell
 msgid "Enable {} in Settings › Sources to play this record."
 msgstr "Aktiviere {} unter Einstellungen › Quellen, um dieses Album wiederzugeben."
 
+msgid "Endpoint readback"
+msgstr "Rückmeldung des Endpunkts"
+
 msgid "Ends at {}"
 msgstr "Endet um {}"
 
@@ -1901,6 +2018,12 @@ msgstr "Folgennotizen"
 msgid "Equalizer"
 msgstr "Equalizer"
 
+msgid "Equipment"
+msgstr "Gerät"
+
+msgid "Equipment changed. Read its details again before checking a format."
+msgstr "Das Gerät hat sich geändert. Lesen Sie seine Details vor einer Formatprüfung erneut ein."
+
 msgid "Errors"
 msgstr "Fehler"
 
@@ -1922,8 +2045,14 @@ msgstr "Exakt bedeutet hier, dass das Gerät allein Chilpa gehört, solange ein 
 msgid "Exclude"
 msgstr "Ausschließen"
 
+msgid "Exclusive"
+msgstr "Exklusiv"
+
 msgid "Exclusive mode"
 msgstr "Exklusivmodus"
+
+msgid "Exclusive mode was requested."
+msgstr "Exklusivmodus wurde angefordert."
 
 msgid "Exit Immersive"
 msgstr "Immersive Ansicht verlassen"
@@ -2066,6 +2195,9 @@ msgstr "Schließe zuerst die laufende Analyse ab oder brich sie ab."
 msgid "Finish selecting"
 msgstr "Auswahl beenden"
 
+msgid "Finished"
+msgstr "Abgeschlossen"
+
 msgid "First track"
 msgstr "Erster Titel"
 
@@ -2188,6 +2320,9 @@ msgstr "GPU"
 
 msgid "GPU (compatibility)"
 msgstr "GPU (Kompatibilität)"
+
+msgid "Gain applied to consumed PCM blocks"
+msgstr "Verstärkung auf verarbeitete PCM-Blöcke angewendet"
 
 msgid "Gain in decibels. Use arrow keys to adjust; Home and End reach the limits."
 msgstr "Gain in Dezibel. Mit den Pfeiltasten anpassen; Pos1 und Ende springen zu den Grenzwerten."
@@ -2387,6 +2522,9 @@ msgstr "Hohe Auflösung"
 msgid "High shelf"
 msgstr "High-Shelf"
 
+msgid "Historical result; the current device or configuration is not verified."
+msgstr "Historisches Ergebnis; das aktuelle Gerät oder seine Konfiguration ist nicht verifiziert."
+
 msgid "History"
 msgstr "Verlauf"
 
@@ -2466,6 +2604,9 @@ msgstr "EINFLÜSSE"
 
 msgid "Icon"
 msgstr "Icon"
+
+msgid "Identity and provenance"
+msgstr "Identität und Herkunft"
 
 msgid "Image"
 msgstr "Bild"
@@ -2548,8 +2689,32 @@ msgstr "Die Informationen konnten nicht abgerufen werden. Bitte in Kürze erneut
 msgid "Init system (service commands)"
 msgstr "Init-System (Dienstbefehle)"
 
+msgid "Input channels"
+msgstr "Eingangskanäle"
+
+msgid "Input rates (Hz)"
+msgstr "Eingangsabtastraten (Hz)"
+
+msgid "Input sample formats"
+msgstr "Eingangssampleformate"
+
 msgid "Inspect"
 msgstr "Prüfen"
+
+msgid "Inspect an available output before selecting it."
+msgstr "Prüfen Sie die Daten einer verfügbaren Ausgabe, bevor Sie sie auswählen."
+
+msgid "Inspect an output"
+msgstr "Ausgabedaten ansehen"
+
+msgid "Inspect an output before checking it."
+msgstr "Sehen Sie die Ausgabedaten vor einer Öffnungsprüfung an."
+
+msgid "Inspect equipment, the current signal path and individual opening checks."
+msgstr "Gerät, aktuellen Signalweg und einzelne Öffnungsprüfungen ansehen."
+
+msgid "Inspecting does not select an output, reserve the DAC or start audio."
+msgstr "Das Ansehen der Daten wählt keine Ausgabe, reserviert keinen DAC und startet kein Audio."
 
 msgid "Inspecting plugin…"
 msgstr "Plugin wird geprüft…"
@@ -2634,6 +2799,12 @@ msgstr "Ungültige EQ-Preamp-Zeile."
 
 msgid "Invalid arguments; :help shows the syntax."
 msgstr "Ungültige Argumente; :help zeigt die Syntax."
+
+msgid "Invalid audio check request."
+msgstr "Ungültige Anfrage zur Audioprüfung."
+
+msgid "Invalid output identity."
+msgstr "Ungültige Ausgabeidentität."
 
 msgid "Invalid preference value; check its choices in Settings."
 msgstr "Ungültiger Einstellungswert; prüfe die Auswahlmöglichkeiten in den Einstellungen."
@@ -2728,6 +2899,9 @@ msgstr "Letzte 12 Monate"
 msgid "Last 3 months"
 msgstr "Letzte 3 Monate"
 
+msgid "Last check"
+msgstr "Letzte Prüfung"
+
 msgid "Last playlist"
 msgstr "Letzte Playlist"
 
@@ -2815,6 +2989,9 @@ msgstr "Limits und Bereinigung"
 msgid "Line Bed"
 msgstr "Line Bed"
 
+msgid "Linux audio diagnostics…"
+msgstr "Linux-Audiodiagnose…"
+
 msgid "List"
 msgstr "Liste"
 
@@ -2865,6 +3042,9 @@ msgstr "Wird geladen…"
 
 msgid "Local"
 msgstr "Lokal"
+
+msgid "Local DSP and software volume are bypassed."
+msgstr "Lokaler DSP und Softwarelautstärke werden umgangen."
 
 msgid "Local artwork"
 msgstr "Lokales Artwork"
@@ -3055,6 +3235,9 @@ msgstr "Fehlend"
 msgid "Mixed"
 msgstr "Gemischt"
 
+msgid "Mixed output"
+msgstr "Gemischte Ausgabe"
+
 msgid "Mixing engineer"
 msgstr "Mischtechniker"
 
@@ -3063,6 +3246,9 @@ msgstr "Mo"
 
 msgid "Mono dark"
 msgstr "Mono dunkel"
+
+msgid "Mono duplicated without changing sample values"
+msgstr "Mono ohne Änderung der Samplewerte dupliziert"
 
 msgid "Mono light"
 msgstr "Mono hell"
@@ -3172,6 +3358,9 @@ msgstr "MusicBrainz-Veröffentlichungsgruppe"
 msgid "MusicBrainz track"
 msgstr "MusicBrainz-Titel"
 
+msgid "Musical source"
+msgstr "Musikquelle"
+
 msgid "Mute"
 msgstr "Stummschalten"
 
@@ -3234,6 +3423,9 @@ msgstr "Navigation"
 
 msgid "Needs update"
 msgstr "Update nötig"
+
+msgid "Negotiation prediction, not a playback test: {}"
+msgstr "Vorhersage der Aushandlung, kein Wiedergabetest: {}"
 
 msgid "Nerdy"
 msgstr "Nerdy"
@@ -3373,6 +3565,9 @@ msgstr "Keine Genres in diesem Zeitraum."
 msgid "No grouping"
 msgstr "Keine Gruppierung"
 
+msgid "No hardware format table is available for this route."
+msgstr "Für diesen Signalweg ist keine Hardwareformattabelle verfügbar."
+
 msgid "No label"
 msgstr "Ohne Label"
 
@@ -3396,6 +3591,12 @@ msgstr "Keine passenden Plugins"
 
 msgid "No matching selections. Create a local playlist or save a query in Refine."
 msgstr ""
+
+msgid "No opening was confirmed"
+msgstr "Kein Öffnen wurde bestätigt"
+
+msgid "No physical readback is available for this route."
+msgstr "Für diesen Signalweg ist keine Rückmeldung zum physischen Format verfügbar."
 
 msgid "No playable tracks found."
 msgstr "Keine wiedergebbaren Titel gefunden."
@@ -3435,6 +3636,12 @@ msgstr "Keine Ergebnisse gefunden."
 
 msgid "No review available"
 msgstr "Keine Rezension verfügbar"
+
+msgid "No sample changes are reported in Chilpa; the downstream path is unverified."
+msgstr "Chilpa meldet keine Änderungen der Samples; der nachfolgende Signalweg ist nicht verifiziert."
+
+msgid "No sample processing reported in Chilpa"
+msgstr "Keine Sampleverarbeitung in Chilpa gemeldet"
 
 msgid "No saved queries yet. Add conditions, then choose Save query."
 msgstr "Noch keine gespeicherten Abfragen. Bedingungen hinzufügen und Abfrage speichern wählen."
@@ -3511,6 +3718,9 @@ msgstr "Nicht angegeben"
 msgid "Not through this stack: it mixes by design."
 msgstr "Nicht über diesen Stack: Er mischt konstruktionsbedingt."
 
+msgid "Not verified"
+msgstr "Nicht verifiziert"
+
 msgid "Notch"
 msgstr "Notch"
 
@@ -3531,6 +3741,9 @@ msgstr "Hier ist nichts."
 
 msgid "Nothing in this period."
 msgstr "Nichts in diesem Zeitraum."
+
+msgid "Nothing is playing. Equipment details remain available."
+msgstr "Es wird nichts wiedergegeben. Die Gerätedetails bleiben verfügbar."
 
 msgid "Nothing more is known about it."
 msgstr "Mehr ist darüber nicht bekannt."
@@ -3555,6 +3768,9 @@ msgstr "Nov."
 
 msgid "November"
 msgstr "November"
+
+msgid "Now"
+msgstr "Jetzt"
 
 msgid "Now Playing"
 msgstr "Aktuelle Wiedergabe"
@@ -3612,6 +3828,9 @@ msgstr "Ein Titel geht direkt in den nächsten über."
 
 msgid "One track straight into the next. Off, the device plays out and opens again."
 msgstr "Ein Titel geht direkt in den nächsten über. Aus: Das Gerät spielt aus und wird erneut geöffnet."
+
+msgid "One-bit DSD"
+msgstr "Ein-Bit-DSD"
 
 msgid "Only personal presets can be deleted."
 msgstr "Nur eigene Presets können gelöscht werden."
@@ -3718,11 +3937,26 @@ msgstr "Den Ordner für entbehrliche Dateien öffnen."
 msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
 msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin oder Plex. Seine Musik wird Teil der Bibliothek."
 
-msgid "Opens the device and says which formats reach it untouched."
-msgstr "Öffnet das Gerät und zeigt, welche Formate es unverändert erreichen."
+msgid "Opened by Chilpa"
+msgstr "Von Chilpa geöffnet"
+
+msgid "Opening and optional endpoint readback. Audibility remains untested."
+msgstr "Öffnen und optionale Endpunktrückmeldung. Hörbarkeit bleibt ungeprüft."
+
+msgid "Opening checks"
+msgstr "Öffnungsprüfungen"
+
+msgid "Opening mode"
+msgstr "Öffnungsmodus"
+
+msgid "Opening: {} · Audibility: {}"
+msgstr "Öffnen: {} · Hörbarkeit: {}"
 
 msgid "Optional access token for private playlists"
 msgstr "Optionales Zugriffstoken für private Playlists"
+
+msgid "Original audio over the selected network transport"
+msgstr "Ursprüngliches Audio über den ausgewählten Netzwerktransport"
 
 msgid "Original bytes"
 msgstr "Originalbytes"
@@ -3748,11 +3982,20 @@ msgstr "Andere / unbekannt"
 msgid "Other cache"
 msgstr "Sonstiger Cache"
 
+msgid "Out of date"
+msgstr "Veraltet"
+
 msgid "Output"
 msgstr "Ausgabe"
 
+msgid "Output details…"
+msgstr "Ausgabedetails…"
+
 msgid "Output device"
 msgstr "Ausgabegerät"
+
+msgid "Output identity could not be saved."
+msgstr "Die Ausgabeidentität konnte nicht gespeichert werden."
 
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "PCM-Samples können nicht in einen nativen DSD-Stream geschrieben werden"
@@ -3805,8 +4048,17 @@ msgstr "Interpret"
 msgid "Performers"
 msgstr "Ausführende"
 
+msgid "Permission required"
+msgstr "Berechtigung erforderlich"
+
 msgid "Permission review required"
 msgstr "Berechtigungsprüfung erforderlich"
+
+msgid "Physical format combinations"
+msgstr "Physische Formatkombinationen"
+
+msgid "Physical format match"
+msgstr "Übereinstimmung des physischen Formats"
 
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "Wähle ein Theme oder behalte System, um deinem Desktop zu folgen, wähle deine Sprache und drücke :, um die Befehlszeile zu öffnen."
@@ -4000,6 +4252,9 @@ msgstr "Vorverstärkung"
 msgid "Precise filters"
 msgstr "Präzise Filter"
 
+msgid "Predicted unchanged PCM; DoP decoding and audible output are untested"
+msgstr "Unverändertes PCM vorhergesagt; DoP-Dekodierung und hörbare Ausgabe sind ungeprüft"
+
 msgid "Preferred GPU"
 msgstr "Bevorzugte GPU"
 
@@ -4051,6 +4306,9 @@ msgstr "Datenschutz und Netzwerk"
 msgid "Processed"
 msgstr "Verarbeitet"
 
+msgid "Processing"
+msgstr "Verarbeitung"
+
 msgid "Producer"
 msgstr "Produzent"
 
@@ -4089,6 +4347,9 @@ msgstr "Filter für Qualität, Format, Quelle und Bewertung"
 
 msgid "Quarantined"
 msgstr "In Quarantäne"
+
+msgid "Queries supported formats and predicts delivery. This does not test audible output."
+msgstr "Fragt unterstützte Formate ab und sagt die Übertragung voraus. Dies testet keine hörbare Ausgabe."
 
 msgid "Query name"
 msgstr "Name der Abfrage"
@@ -4176,6 +4437,15 @@ msgstr "Lies eine Playlist ein, wähle Ziele, prüfe die Treffer und erstelle da
 
 msgid "Read as"
 msgstr "Gelesen als"
+
+msgid "Read at opening on the selected endpoint. This does not measure audible output."
+msgstr "Beim Öffnen des ausgewählten Endpunkts gelesen. Dies misst keine hörbare Ausgabe."
+
+msgid "Read equipment details"
+msgstr "Gerätedetails einlesen"
+
+msgid "Read from the selected endpoint"
+msgstr "Vom ausgewählten Endpunkt gelesen"
 
 msgid "Read less"
 msgstr "Weniger anzeigen"
@@ -4432,8 +4702,17 @@ msgstr "Warteschlange {} ersetzen"
 msgid "Report an issue"
 msgstr "Problem melden"
 
+msgid "Reported by the receiver"
+msgstr "Vom Empfänger gemeldet"
+
+msgid "Reported property"
+msgstr "Gemeldete Eigenschaft"
+
 msgid "Repositories"
 msgstr "Repositorys"
+
+msgid "Requested and opened"
+msgstr "Angefordert und geöffnet"
 
 msgid "Requests: {}"
 msgstr "Fordert an: {}"
@@ -4452,6 +4731,9 @@ msgstr "EQ zurücksetzen"
 
 msgid "Reset counter"
 msgstr "Zähler zurücksetzen"
+
+msgid "Resolution reduced from {} to {} bits"
+msgstr "Auflösung von {} auf {} Bit verringert"
 
 msgid "Resolving…"
 msgstr "Wird aufgelöst…"
@@ -4476,6 +4758,9 @@ msgstr "Vorherigen EQ wiederherstellen"
 
 msgid "Restore tabs"
 msgstr "Tabs wiederherstellen"
+
+msgid "Result saved on this computer."
+msgstr "Ergebnis auf diesem Computer gespeichert."
 
 msgid "Results are saved after every track. Run Analyze again to continue the pending tracks."
 msgstr "Die Ergebnisse werden nach jedem Titel gespeichert. Starte die Analyse erneut, um die ausstehenden Titel fortzusetzen."
@@ -4549,11 +4834,17 @@ msgstr "STATUS"
 msgid "SURFACES"
 msgstr "OBERFLÄCHEN"
 
+msgid "Sample format"
+msgstr "Sampleformat"
+
 msgid "Sample rate"
 msgstr "Abtastrate"
 
 msgid "Sample-rate switching (PipeWire)"
 msgstr "Umschaltung der Abtastrate (PipeWire)"
+
+msgid "Samples converted to floating point"
+msgstr "Samples in Gleitkomma konvertiert"
 
 msgid "Sandboxed — host check unavailable"
 msgstr "In Sandbox – Host-Prüfung nicht verfügbar"
@@ -4603,6 +4894,9 @@ msgstr "Gespeichert"
 msgid "Saved device selection"
 msgstr ""
 
+msgid "Saved for the displayed inspection. Refresh after changing equipment or configuration."
+msgstr "Für die angezeigten Daten gespeichert. Aktualisieren Sie nach Änderungen an Gerät oder Konfiguration."
+
 msgid "Saved position"
 msgstr "Gespeicherte Position"
 
@@ -4638,6 +4932,9 @@ msgstr "Scanvorgang läuft…"
 
 msgid "Scheduled checks run while Chilpa is open. Startup checks run once when the app opens. Unchanged files are skipped."
 msgstr "Geplante Prüfungen laufen, solange Chilpa geöffnet ist. Startprüfungen laufen einmal beim Öffnen der App. Unveränderte Dateien werden übersprungen."
+
+msgid "Scope of this check"
+msgstr "Umfang dieser Prüfung"
 
 msgid "Scrobbling"
 msgstr "Scrobbling"
@@ -4776,6 +5073,9 @@ msgstr "An ListenBrainz senden"
 msgid "Sep"
 msgstr "Sept."
 
+msgid "Separate input limits do not establish every combination of rate, word width and channels."
+msgstr "Getrennte Eingangsgrenzen belegen nicht jede Kombination aus Abtastrate, Wortbreite und Kanalzahl."
+
 msgid "September"
 msgstr "September"
 
@@ -4817,6 +5117,18 @@ msgstr "Einstellungen"
 
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "Forme den Klang: Hebe ein Band an, um mehr zu hören, und senke es ab, um weniger zu hören."
+
+msgid "Shared"
+msgstr "Gemeinsam"
+
+msgid "Shared at opening"
+msgstr "Beim Öffnen gemeinsam genutzt"
+
+msgid "Shared checks keep the current hardware configuration; the system may convert the input."
+msgstr "Prüfungen im gemeinsamen Modus behalten die aktuelle Hardwarekonfiguration bei; das System kann die Eingabe konvertieren."
+
+msgid "Shared mode was requested."
+msgstr "Gemeinsamer Modus wurde angefordert."
 
 msgid "Short names: y g l c a al t r p ty q"
 msgstr "Kurzformen: y g l c a al t r p ty q"
@@ -4905,6 +5217,12 @@ msgstr "Mit einem API-Schlüssel anmelden"
 msgid "Signed out"
 msgstr "Abgemeldet"
 
+msgid "Silent opening checks accept PCM only. Opening a PCM carrier does not check DoP."
+msgstr "Stille Öffnungsprüfungen akzeptieren nur PCM. Das Öffnen eines PCM-Trägers prüft DoP nicht."
+
+msgid "Silent opening checks are unavailable for this output."
+msgstr "Stille Öffnungsprüfungen sind für diese Ausgabe nicht verfügbar."
+
 msgid "Similar albums"
 msgstr "Ähnliche Alben"
 
@@ -4943,6 +5261,9 @@ msgstr "Leicht"
 
 msgid "Software"
 msgstr "Software"
+
+msgid "Some endpoint streams could not be read."
+msgstr "Einige Streams des Endpunkts konnten nicht gelesen werden."
 
 msgid "Some of these tracks were already added"
 msgstr "Einige dieser Titel wurden bereits hinzugefügt"
@@ -4986,6 +5307,9 @@ msgstr "Spektrum"
 msgid "Split queue before this track"
 msgstr "Warteschlange vor diesem Titel teilen"
 
+msgid "Stable endpoint identity. Results also depend on its connection and configuration."
+msgstr "Stabile Endpunktidentität. Ergebnisse hängen auch von Verbindung und Konfiguration ab."
+
 msgid "Standard analysis"
 msgstr "Standardanalyse"
 
@@ -5003,6 +5327,9 @@ msgstr "Starten"
 
 msgid "Start from current theme"
 msgstr "Vom aktuellen Theme ausgehen"
+
+msgid "Start silent check"
+msgstr "Stille Prüfung starten"
 
 msgid "Starting plugins…"
 msgstr "Plugins werden gestartet…"
@@ -5049,11 +5376,17 @@ msgstr "Stoppen und diagnostizieren"
 msgid "Stop playback after:"
 msgstr "Wiedergabe stoppen nach:"
 
+msgid "Stop playback before checking an output. Inspection remains available while listening."
+msgstr "Stoppen Sie die Wiedergabe vor einer Ausgabeprüfung. Das Ansehen der Daten bleibt beim Hören verfügbar."
+
 msgid "Stop playback to diagnose?"
 msgstr "Wiedergabe zur Diagnose stoppen?"
 
 msgid "Stop scan"
 msgstr "Scan anhalten"
+
+msgid "Stopped"
+msgstr "Gestoppt"
 
 msgid "Stopping after the current file…"
 msgstr "Wird nach der aktuellen Datei angehalten…"
@@ -5207,6 +5540,12 @@ msgstr "Das Konto ist abgelaufen; verbinde es erneut."
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr "Der integrierte Test spielt vier Titel mit unterschiedlichen Bittiefen und Abtastraten ab (16/44.1, 24/44.1, 24/96, 24/192), sodass du siehst, wie dein DAC umschaltet. Jeder ist der meistgespielte Titel deiner Bibliothek in diesem Format oder ein erzeugtes Testsignal, falls du keinen hast. Wenn du lieber deine eigene Warteschlange nutzen möchtest, füge zuerst einen Titel jeder Art hinzu, damit jede Rate geprüft wird."
 
+msgid "The check finished, but the previous physical format could not be restored."
+msgstr "Die Prüfung ist beendet, aber das vorherige physische Format konnte nicht wiederhergestellt werden."
+
+msgid "The check finished, but the previous sample rate could not be restored."
+msgstr "Die Prüfung ist beendet, aber die vorherige Abtastrate konnte nicht wiederhergestellt werden."
+
 msgid "The connection is not encrypted."
 msgstr "Die Verbindung ist nicht verschlüsselt."
 
@@ -5236,6 +5575,9 @@ msgstr ""
 
 msgid "The download view is unavailable."
 msgstr "Die Download-Ansicht ist nicht verfügbar."
+
+msgid "The engine reports unchanged samples on this route."
+msgstr "Der Audiomotor meldet unveränderte Samples auf diesem Signalweg."
 
 msgid "The filter cannot be read: {}"
 msgstr "Der Filter kann nicht gelesen werden: {}"
@@ -5291,6 +5633,9 @@ msgstr "Die Liedtext-API konnte die Meldung nicht speichern. Dieses Ergebnis ist
 msgid "The lyrics cache could not be opened."
 msgstr "Der Songtext-Cache konnte nicht geöffnet werden."
 
+msgid "The output changed during the check. Its new configuration was kept."
+msgstr "Die Ausgabe hat sich während der Prüfung geändert. Ihre neue Konfiguration wurde beibehalten."
+
 msgid "The output is playing in exclusive mode. Diagnosis needs to open it directly, so playback must stop first."
 msgstr "Die Ausgabe spielt im Exklusivmodus. Für die Diagnose muss sie direkt geöffnet werden, daher muss die Wiedergabe zuerst stoppen."
 
@@ -5318,8 +5663,14 @@ msgstr "Die Plugin-ZIP-Datei konnte nicht gelesen werden."
 msgid "The plugin did not answer within 15 seconds. Its account status is unknown."
 msgstr "Das Plugin hat nicht innerhalb von 15 Sekunden geantwortet. Der Status seines Kontos ist unbekannt."
 
+msgid "The previous sample rate did not settle after the check."
+msgstr "Die vorherige Abtastrate hat sich nach der Prüfung nicht stabilisiert."
+
 msgid "The queues exceed the session limit of 100,000 tracks."
 msgstr "Die Warteschlangen überschreiten das Sitzungslimit von 100.000 Titeln."
+
+msgid "The receiver does not report its physical DAC format."
+msgstr "Der Empfänger meldet das Format seines physischen DACs nicht."
 
 msgid "The record is not open in the editor."
 msgstr "Das Album ist im Editor nicht geöffnet."
@@ -5338,6 +5689,9 @@ msgstr "Der Renderer unterstützt dieses Format oder diese Steuerung nicht. Chil
 
 msgid "The renderer refused the command."
 msgstr "Der Renderer hat den Befehl abgelehnt."
+
+msgid "The result has not been saved. Review the error before leaving."
+msgstr "Das Ergebnis wurde nicht gespeichert. Prüfen Sie den Fehler vor dem Schließen."
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "Dieselbe Regel wie bei ListenBrainz: die Hälfte eines Titels oder vier Minuten."
@@ -5435,6 +5789,9 @@ msgstr ""
 msgid "This address belongs to a different server."
 msgstr "Diese Adresse gehört zu einem anderen Server."
 
+msgid "This build can query the output but cannot render audio through it yet."
+msgstr "Diese Version kann die Ausgabe abfragen, aber noch kein Audio darüber wiedergeben."
+
 msgid "This can take a few minutes when MusicBrainz is busy."
 msgstr "Das kann einige Minuten dauern, wenn MusicBrainz ausgelastet ist."
 
@@ -5477,6 +5834,9 @@ msgstr "Dieser Monat vs. letzter Monat"
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Diese Ausgabe macht keinen Ton. Sie schreibt auf, was an das Gerät gegangen wäre, sodass die Datei mit dem Titel verglichen werden kann, aus dem sie stammt – nur so lässt sich Bit-perfect belegen, statt es nur zu behaupten."
 
+msgid "This opens and closes the selected output without writing audio. Stop playback first. The queue, volume and desktop default stay as they are."
+msgstr "Öffnet und schließt die ausgewählte Ausgabe ohne Audiodaten zu senden. Stoppen Sie zuerst die Wiedergabe. Warteschlange, Lautstärke und Standardausgabe des Desktops bleiben erhalten."
+
 msgid "This output has no hardware mute switch."
 msgstr "Diese Ausgabe hat keinen Hardware-Stummschalter."
 
@@ -5485,6 +5845,9 @@ msgstr "Diese Ausgabe hat keine eindeutige, sichere Lautstärkeregelung für die
 
 msgid "This output is always Chilpa's alone."
 msgstr "Diese Ausgabe gehört immer allein Chilpa."
+
+msgid "This output is busy. Stop playback before checking it."
+msgstr "Diese Ausgabe ist belegt. Stoppen Sie die Wiedergabe vor ihrer Prüfung."
 
 msgid "This output takes DSD converted to PCM. DoP needs exclusive mode, and a DAC that decodes it."
 msgstr "Diese Ausgabe nimmt in PCM umgewandeltes DSD. DoP braucht den Exklusivmodus und einen DAC, der es decodiert."
@@ -5735,11 +6098,17 @@ msgstr "Plugin deinstallieren"
 msgid "Uninstall plugin and remove account data"
 msgstr "Plugin deinstallieren und Kontodaten entfernen"
 
+msgid "Unknown"
+msgstr "Unbekannt"
+
 msgid "Unknown DSP action."
 msgstr "Unbekannte DSP-Aktion."
 
 msgid "Unknown artist"
 msgstr "Unbekannter Künstler"
+
+msgid "Unknown audio output action."
+msgstr "Unbekannte Audioausgabeaktion."
 
 msgid "Unknown command; enter :help."
 msgstr "Unbekannter Befehl; gib :help ein."
@@ -5777,6 +6146,9 @@ msgstr "Nicht gespielt"
 msgid "Unrated"
 msgstr "Nicht bewertet"
 
+msgid "Unsupported"
+msgstr "Nicht unterstützt"
+
 msgid "Unsupported EQ directive. Paste parametric filters without channel routing or other commands."
 msgstr "Nicht unterstützte EQ-Anweisung. Füge parametrische Filter ohne Kanalrouting oder andere Befehle ein."
 
@@ -5788,6 +6160,9 @@ msgstr "Nicht unterstützter aktiver EQ-Filter. Verwende PK, LS, HS, LP, HP oder
 
 msgid "Unsupported or empty DSP preset catalog."
 msgstr "Nicht unterstützter oder leerer DSP-Preset-Katalog."
+
+msgid "Untested"
+msgstr "Ungeprüft"
 
 msgid "Up next"
 msgstr "Als Nächstes"
@@ -5870,6 +6245,9 @@ msgstr "Das Playlist-Symbol oder eine Cover-Collage verwenden."
 msgid "Use the system language or choose a language."
 msgstr "Die Systemsprache verwenden oder eine Sprache wählen."
 
+msgid "Use this output"
+msgstr "Diese Ausgabe verwenden"
+
 msgid "User"
 msgstr "Benutzer"
 
@@ -5921,6 +6299,9 @@ msgstr "Lautstärkenormalisierung"
 msgid "Volume {}%"
 msgstr "Lautstärke {}%"
 
+msgid "Wait for the audio check to finish."
+msgstr "Warten Sie, bis die Audioprüfung abgeschlossen ist."
+
 msgid "Wait for the queue to finish switching."
 msgstr "Warte, bis die Warteschlange den Wechsel abgeschlossen hat."
 
@@ -5929,6 +6310,9 @@ msgstr "Wartet, bis die Wiedergabe stoppt"
 
 msgid "Waiting for the DAC to start playing…"
 msgstr "Warten, bis der DAC mit der Wiedergabe beginnt…"
+
+msgid "Waiting for the engine's opening report…"
+msgstr "Warten auf den Öffnungsbericht des Audiomotors…"
 
 msgid "Wallpaper"
 msgstr "Hintergrundbild"
@@ -5951,6 +6335,9 @@ msgstr "Wave Bed"
 msgid "Waveform"
 msgstr "Wellenform"
 
+msgid "Weak identity. Saved checks remain historical and cannot certify the connected unit."
+msgstr "Schwache Identität. Gespeicherte Prüfungen bleiben historisch und können das angeschlossene Gerät nicht zertifizieren."
+
 msgid "Website"
 msgstr "Website"
 
@@ -5971,6 +6358,9 @@ msgstr "Was die Eingabetaste mit einem Ergebnis der Suche in der immersiven Ansi
 
 msgid "What should happen to the original queues?"
 msgstr "Was soll mit den ursprünglichen Warteschlangen geschehen?"
+
+msgid "What this route reports"
+msgstr "Was dieser Signalweg meldet"
 
 msgid "What to test with"
 msgstr "Womit testen"
@@ -6025,6 +6415,9 @@ msgstr "Ohne Plugins"
 
 msgid "Without {}"
 msgstr "Ohne {}"
+
+msgid "Word widened from {} to {} bits without sample loss"
+msgstr "Wort ohne Sampleverlust von {} auf {} Bit erweitert"
 
 msgid "Words"
 msgstr "Wörter"
@@ -7306,6 +7699,9 @@ msgstr "{} (geteilt)"
 msgid "{} / {} artists"
 msgstr "{} / {} Künstler"
 
+msgid "{} Hz · {} · {} channels"
+msgstr "{} Hz · {} · {} Kanäle"
+
 msgid "{} album"
 msgid_plural "{} albums"
 msgstr[0] "{} Album"
@@ -7461,6 +7857,9 @@ msgid_plural "{} more playlists..."
 msgstr[0] "{} weitere Playlist..."
 msgstr[1] "{} weitere Playlists..."
 
+msgid "{} musical bits"
+msgstr "{} Signalbits"
+
 msgid "{} no longer accepts the account; connect again"
 msgstr "{} akzeptiert das Konto nicht mehr; verbinde es erneut"
 
@@ -7591,6 +7990,12 @@ msgstr "{2}. {1} {3}"
 
 msgid "{} · {}"
 msgstr "{} · {}"
+
+msgid "{} · {} Hz · {} · {} channels"
+msgstr "{} · {} Hz · {} · {} Kanäle"
+
+msgid "{} · {} Hz · {}/{} bits · {} channels"
+msgstr "{} · {} Hz · {}/{} Bit · {} Kanäle"
 
 msgid "{}-bit / {}"
 msgstr "{}-Bit / {}"

@@ -7,3 +7,4 @@ singleton PlayerLayout 1.0 PlayerLayout.qml
 singleton Queues 1.0 Queues.qml
 SearchModel 1.0 SearchModel.qml
 singleton NowAbout 1.0 NowAbout.qml
+singleton AudioOutput 1.0 AudioOutput.qml

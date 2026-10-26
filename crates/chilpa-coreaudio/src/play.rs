@@ -399,6 +399,72 @@ fn match_rate(device: AudioObjectID, rate_hz: u32) {
     );
 }
 
+/// I hold exclusive checks until restoration, without owning volume. Shared
+/// checks open the AudioUnit input and never request a physical-format change.
+pub(crate) fn check(id: &str, format: StreamFormat, exclusive: bool)
+    -> Result<(StreamFormat, chilpa_audio::evidence::Observation), SinkError> {
+    struct CheckHold(AudioObjectID);
+    impl Drop for CheckHold { fn drop(&mut self) { give_back(self.0); } }
+    let device = crate::find(id).ok_or(SinkError::DeviceLost)?;
+    let holder = read::hog_holder(device).ok_or_else(||SinkError::Backend(chilpa_i18n::t("No physical readback is available for this route.")))?;
+    if read::running_somewhere(device) || holder != kAudioHogModeNobody {
+        return Err(SinkError::Busy(chilpa_i18n::t("This output is busy. Stop playback before checking it.")));
+    }
+    let _hold = if exclusive { hog(device,id)?; Some(CheckHold(device)) } else { None };
+    if exclusive && read::running_somewhere(device) {
+        return Err(SinkError::Busy(chilpa_i18n::t("This output is busy. Stop playback before checking it.")));
+    }
+    let rate = read::current_rate(device);
+    let streams = read::output_streams(device);
+    let count = streams.len();
+    let originals: Vec<_> = streams.into_iter().take(32)
+        .filter_map(|stream| read::format(stream,kAudioStreamPropertyPhysicalFormat).map(|f| (stream,f))).collect();
+    if exclusive && (rate <= 0.0 || count == 0 || originals.len() != count) {
+        return Err(SinkError::Backend(chilpa_i18n::t("No physical readback is available for this route.")));
+    }
+    if exclusive { match_rate(device,format.sample_rate_hz); widen_wire(device); }
+    let shared = Box::new(Shared { ring:Ring::new((format.sample_rate_hz as usize / 4).max(4096) * usize::from(format.channels)) });
+    let opened = Unit::open(device,id,format,&shared);
+    let changed_rate = read::current_rate(device);
+    let changed: Vec<_> = originals.iter().filter_map(|(stream,_)|
+        read::format(*stream,kAudioStreamPropertyPhysicalFormat).map(|f| (*stream,f))).collect();
+    let answer = opened.map(|unit| {
+        let observed = crate::evidence::observation(id);
+        drop(unit);
+        (format,observed)
+    });
+    if !exclusive { return answer; }
+    // I allow a bounded stop notification delay while retaining the hog.
+    for _ in 0..10 {
+        if !read::running_somewhere(device) { break; }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    let same = crate::find(id) == Some(device) && !read::running_somewhere(device)
+        && read::hog_holder(device) == Some(std::process::id() as i32)
+        && read::current_rate(device) == changed_rate
+        && changed.iter().all(|(stream,f)| read::format(*stream,kAudioStreamPropertyPhysicalFormat) == Some(*f));
+    if !same {
+        return Err(SinkError::Backend(chilpa_i18n::t("The output changed during the check. Its new configuration was kept.")));
+    }
+    if rate > 0.0 && (read::current_rate(device) - rate).abs() > 0.5 {
+        set(device,&global(kAudioDevicePropertyNominalSampleRate),&rate)
+            .map_err(|_| SinkError::Backend(chilpa_i18n::t("The check finished, but the previous sample rate could not be restored.")))?;
+        if !settles_at(device,rate) {
+            return Err(SinkError::Backend(chilpa_i18n::t("The previous sample rate did not settle after the check.")));
+        }
+    }
+    for (stream,original) in &originals {
+        if read::format(*stream,kAudioStreamPropertyPhysicalFormat) != Some(*original) {
+            set(*stream,&global(kAudioStreamPropertyPhysicalFormat),original)
+                .map_err(|_| SinkError::Backend(chilpa_i18n::t("The check finished, but the previous physical format could not be restored.")))?;
+        }
+    }
+    let restored = || originals.iter().all(|(stream,f)|read::format(*stream,kAudioStreamPropertyPhysicalFormat) == Some(*f));
+    for _ in 0..10 { if restored() { break; } std::thread::sleep(std::time::Duration::from_millis(20)); }
+    if !restored() { return Err(SinkError::Backend(chilpa_i18n::t("The check finished, but the previous physical format could not be restored."))); }
+    answer
+}
+
 /// The widest integer word the wire takes at the rate the device is at.
 ///
 /// A device keeps the word it was last left at. The Macaron sat at 16 bits,

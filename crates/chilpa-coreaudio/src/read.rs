@@ -144,6 +144,14 @@ pub fn name(device: AudioObjectID) -> String {
     read_string(device, &global(kAudioObjectPropertyName)).unwrap_or_default()
 }
 
+pub fn uid(device: AudioObjectID) -> String {
+    read_string(device, &global(kAudioDevicePropertyDeviceUID)).unwrap_or_default()
+}
+
+pub fn ranged_physical_formats(stream: AudioObjectID) -> Vec<AudioStreamRangedDescription> {
+    read_all(stream, &global(kAudioStreamPropertyAvailablePhysicalFormats))
+}
+
 /// How it is attached.
 pub fn transport(device: AudioObjectID) -> u32 {
     read(device, &global(kAudioDevicePropertyTransportType)).unwrap_or(0)
@@ -216,7 +224,6 @@ pub fn gone(device: AudioObjectID) -> bool {
 
 /// Whether some program is playing through the device right now. Only the
 /// test that opens devices asks, so as not to take one from a listener.
-#[cfg(test)]
 pub fn running_somewhere(device: AudioObjectID) -> bool {
     read::<u32>(device, &global(kAudioDevicePropertyDeviceIsRunningSomewhere)).is_some_and(|v| v != 0)
 }
@@ -227,8 +234,9 @@ pub fn running_somewhere(device: AudioObjectID) -> bool {
 /// never set here: taking a device is opening it, and this file does not
 /// open anything.
 pub fn hogged_by(device: AudioObjectID) -> i32 {
-    read(device, &global(kAudioDevicePropertyHogMode)).unwrap_or(-1)
+    hog_holder(device).unwrap_or(-1)
 }
+pub fn hog_holder(device: AudioObjectID) -> Option<i32> { read(device,&global(kAudioDevicePropertyHogMode)) }
 
 /// Whether the object really has that property.
 ///

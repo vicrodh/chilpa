@@ -13,6 +13,21 @@ import "../Components"
 // it was left, and says where it is once it settles.
 Item {
     id: controls
+    property bool outputDetailsHost: true
+    Connections {
+        target: controls.outputDetailsHost ? Prefs : null
+        function onRevChanged() { AudioOutput.takeRequest() }
+    }
+    Connections {
+        target: controls.outputDetailsHost ? AudioOutput : null
+        function onOutputSelected() { Player.readSwitches(); Cast.refresh() }
+    }
+    Loader {
+        objectName: "audioOutputHost"
+        active: controls.outputDetailsHost && AudioOutput.shown
+        sourceComponent: Component { AudioOutputPanel { ownerWindow: controls.window } }
+        onLoaded: item.present()
+    }
 
     // The window whose keys these are.
     required property var window

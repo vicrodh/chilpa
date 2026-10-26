@@ -55,7 +55,8 @@ pub enum Policy {
 }
 
 /// Each thing that happened to the signal between decoder and DAC.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Transform {
     /// Laid out in more bits with a shift. Loses nothing.
     Widened { from_bits: u8, to_bits: u8 },
@@ -91,7 +92,7 @@ impl Transform {
 
 /// What actually opened. It is the only place that can say whether the
 /// output is bit-perfect, and it says so from the facts, not from a setting.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Delivery {
     pub requested: StreamFormat,
     pub opened: StreamFormat,

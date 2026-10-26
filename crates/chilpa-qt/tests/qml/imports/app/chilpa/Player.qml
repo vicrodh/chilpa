@@ -54,6 +54,8 @@ QtObject {
     function cycleRepeat() { repeat = (repeat + 1) % 3 }
     function chooseVolume(percent) { volume = percent }
     property int volumeSaves: 0
+    property int switchReads: 0
+    function readSwitches() { switchReads++ }
     function persistVolume() { volumeSaves += 1 }
     function chooseMuted(on) { muted = on }
     function nudge(seconds) { seek(position + seconds) }

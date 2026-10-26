@@ -297,6 +297,9 @@ fn server() -> String {
 }
 
 impl OutputBackend for PipeWire {
+    fn inspect(&self, id: &str) -> chilpa_audio::evidence::Inspection {
+        chilpa_audio::evidence::Inspection::convertible(self.kind().key(),id,self.generation(),&chilpa_audio::capture::capabilities())
+    }
     fn kind(&self) -> BackendKind {
         BackendKind::PipeWire
     }

@@ -7,6 +7,7 @@ import app.chilpa.immersive
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as AudioParts
 import "../Components"
 
 // The player's "LCD": cover, times, title with its quality, who and from
@@ -18,7 +19,7 @@ Rectangle {
     // The bar standing tall with the waveform: the times go beside it,
     // not here (the owner, 2026-10-09).
     property bool tall: false
-    readonly property bool qualityHovered: quality.hovered
+    readonly property bool qualityHovered: indicator.hovered
     readonly property var castState: JSON.parse(Cast.snapshot || "{}")
     // The key of the page of what plays, when it is an entry of a source.
     readonly property string parentSource: JSON.parse(Sources.snapshot || "{}").playing_parent || ""
@@ -103,7 +104,7 @@ Rectangle {
                 color: Theme.color.textPrimary
             }
 
-            QualityIcon {
+            AudioParts.AudioQualityGlyph {
                 id: indicator
                 objectName: "playbackIndicator"
                 anchors.verticalCenter: parent.verticalCenter
@@ -112,8 +113,6 @@ Rectangle {
                 iconFamily: Cast.active ? SourceGlyphs.font : ""
                 color: Cast.active ? Theme.color.casting : tierColor
                 visible: Cast.active || tier > 0
-
-                HoverHandler { id: quality }
             }
         }
 

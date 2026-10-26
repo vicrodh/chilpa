@@ -28,6 +28,7 @@
 mod ffi;
 mod play;
 mod read;
+mod evidence;
 
 use chilpa_audio::backend::{BackendInfo, BackendKind, BackendOutput, Fidelity, Knob, OutputBackend};
 use chilpa_audio::format::StreamFormat;
@@ -77,6 +78,16 @@ fn declared(device: ffi::AudioObjectID) -> String {
 }
 
 impl OutputBackend for CoreAudio {
+    fn canonical_id(&self, id:&str) -> Option<String> {
+        if id.starts_with("uid:") && id.len() > 4 { Some(id.into()) }
+        else { find(id).map(device_key) }
+    }
+    fn inspect(&self, id: &str) -> chilpa_audio::evidence::Inspection { evidence::inspect(id) }
+    fn observation(&self, id: &str) -> chilpa_audio::evidence::Observation { evidence::observation(id) }
+    fn check(&self, id: &str, format: StreamFormat, exclusive: bool)
+        -> Result<(StreamFormat, chilpa_audio::evidence::Observation), SinkError> {
+        play::check(id, format, exclusive)
+    }
     fn kind(&self) -> BackendKind {
         BackendKind::CoreAudio
     }
@@ -135,10 +146,8 @@ impl OutputBackend for CoreAudio {
             outputs.push((
                 Some(device) == default,
                 BackendOutput {
-                    // CoreAudio's own id is a number that changes between
-                    // boots, so what travels is the name, which does not.
-                    // See `find`.
-                    id: read::name(device),
+                    // I persist the UID; equal display names remain distinct.
+                    id: device_key(device),
                     label: read::name(device),
                     detail,
                     // Only a wire that carries integers can carry a track's
@@ -284,16 +293,33 @@ impl OutputBackend for CoreAudio {
     }
 }
 
-/// The device with that name, if it is still there.
-///
-/// By name and not by CoreAudio's id, which is assigned at boot and reused:
-/// a settings file that remembered a number would, after a restart, point at
-/// whatever device happened to get that number. Named, a device that is gone
-/// is simply not found, which is the answer somebody can act on.
+/// I resolve a persistent UID, or an unambiguous legacy name.
 pub fn find(name: &str) -> Option<ffi::AudioObjectID> {
-    read::every_device()
-        .into_iter()
-        .find(|d| read::output_channels(*d) > 0 && read::name(*d) == name)
+    let matches = read::every_device().into_iter().filter(|d| read::output_channels(*d) > 0)
+        .filter(|d| matches_identifier(name,*d,&read::uid(*d),&read::name(*d)));
+    unique(matches)
+}
+fn matches_identifier(query:&str, object:u32, uid:&str, label:&str) -> bool {
+    if let Some(wanted) = query.strip_prefix("uid:") { !wanted.is_empty() && uid == wanted }
+    else if let Some(wanted) = query.strip_prefix("session:") {
+        wanted.split_once(':').is_some_and(|(session,id)|session == session_id() && id.parse::<u32>().ok() == Some(object))
+    }
+    else { label == query }
+}
+fn unique(mut matches:impl Iterator<Item=ffi::AudioObjectID>) -> Option<ffi::AudioObjectID> {
+    let first = matches.next()?;
+    // I migrate old names only when they identify exactly one output.
+    matches.next().is_none().then_some(first)
+}
+
+fn device_key(device: ffi::AudioObjectID) -> String {
+    let uid = read::uid(device);
+    if uid.is_empty() { format!("session:{}:{device}",session_id()) } else { format!("uid:{uid}") }
+}
+fn session_id() -> &'static str {
+    static ID:std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    ID.get_or_init(||format!("{}-{:x}",std::process::id(),std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_nanos()))
 }
 
 /// The rates a track can come in, and the ones a device may run at.
@@ -381,6 +407,16 @@ pub fn taken_by_someone_else(name: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn equal_labels_require_their_uid_and_legacy_names_resolve_only_when_unique() {
+        let devices = [(1,"serial-a","USB DAC"),(2,"serial-b","USB DAC"),(3,"serial-c","Speakers")];
+        let resolve = |query:&str| unique(devices.iter().filter(|(id,uid,label)|matches_identifier(query,*id,uid,label)).map(|(id,_,_)|*id));
+        assert_eq!(resolve("USB DAC"),None);
+        assert_eq!(resolve("uid:serial-a"),Some(1)); assert_eq!(resolve("uid:serial-b"),Some(2));
+        assert_eq!(resolve("Speakers"),Some(3)); assert_eq!(resolve("uid:"),None);
+        assert_eq!(resolve(&format!("session:{}:2",session_id())),Some(2));
+        assert_eq!(resolve("session:previous-process:2"),None);
+    }
 
     #[test]
     fn reading_the_machine_never_panics() {
@@ -398,7 +434,7 @@ mod tests {
     fn every_output_carries_a_name_and_says_how_it_is_attached() {
         for output in CoreAudio.outputs() {
             assert!(!output.id.is_empty(), "an output with no name cannot be remembered");
-            assert_eq!(output.id, output.label);
+            assert!(output.id.starts_with("uid:") || output.id.starts_with("session:"));
             assert!(!output.detail.is_empty(), "{} says nothing about itself", output.label);
         }
     }

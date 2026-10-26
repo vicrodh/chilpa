@@ -118,7 +118,9 @@ pub const SECTIONS: &[Section] = &[
                     setting("audio.hwVolume", Chilpa::mark("Hardware volume"), Chilpa::mark("Move the output's own volume from the player bar when the selected ALSA control supports safe playback volume."), Control::Toggle),
                 ],
             },
-            Group { title: Chilpa::mark("Diagnosis"), settings: &[action("audio.wizard", Chilpa::mark("Diagnose the output"), Chilpa::mark("Opens the device and says which formats reach it untouched."), Control::Button, Chilpa::mark("Diagnose"))] },
+            Group { title: Chilpa::mark("Diagnosis"), settings: &[
+                action("audio.outputDetails", Chilpa::mark("Audio and output"), Chilpa::mark("Inspect equipment, the current signal path and individual opening checks."), Control::Button, Chilpa::mark("Output details…")),
+                action("audio.wizard", Chilpa::mark("Diagnose the output"), Chilpa::mark("Queries supported formats and predicts delivery. This does not test audible output."), Control::Button, Chilpa::mark("Diagnose"))] },
         ],
     },
     Section {

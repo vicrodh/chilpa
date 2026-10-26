@@ -112,6 +112,9 @@ msgstr "5時間"
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "JACKグラフは1つのレートで動作し、その中のすべてのプログラムが同じレートで動きます。このグラフは{} Hzです。ほかのレートで録音されたトラックは、Chilpaが関与する前にリサンプリングされ、ここの設定では変更できません。JACKはプログラム間のオーディオルーティング用です。ファイルを加工せずDACに届けたい場合は、カードそのものを選んでください。"
 
+msgid "A PCM carrier does not verify DoP. No tone or library track will play."
+msgstr "PCMキャリアを開いてもDoPの検証にはなりません。テスト音やライブラリの曲は再生しません。"
+
 msgid "A bar or OR: either is enough"
 msgstr "縦棒または OR：どちらか一方で十分です"
 
@@ -138,6 +141,9 @@ msgstr ""
 
 msgid "A profile already manages this device folder."
 msgstr ""
+
+msgid "A receiver uses network playback. Its physical DAC is not exposed here."
+msgstr "受信機はネットワーク経由で再生します。物理DACの情報にはここからアクセスできません。"
 
 msgid "A saved query already has that name."
 msgstr "同じ名前のクエリがすでにあります。"
@@ -193,6 +199,9 @@ msgstr "アクセント"
 msgid "Accept permissions and enable"
 msgstr "権限を承認して有効にする"
 
+msgid "Accepted"
+msgstr "受け入れ済み"
+
 msgid "Access to downloader"
 msgstr "ダウンローダーへのアクセス"
 
@@ -207,6 +216,12 @@ msgstr "アカウントに接続されていません。"
 
 msgid "Acknowledgments"
 msgstr "謝辞"
+
+msgid "Acquired at opening"
+msgstr "オープン時に取得"
+
+msgid "Acquisition was not reported by this backend"
+msgstr "このバックエンドは排他モードを取得したかどうかを報告していません"
 
 msgid "Action"
 msgstr ""
@@ -461,6 +476,15 @@ msgstr "EQの値が見つからないか、無効です。"
 msgid "An active EQ filter is missing Q."
 msgstr "有効なEQフィルターにQがありません。"
 
+msgid "An announcement or driver query does not confirm opening or audible output."
+msgstr "機器の申告やドライバーへの問い合わせだけでは、オープンや可聴出力は確認できません。"
+
+msgid "An audio check is already running."
+msgstr "音声のチェックはすでに実行中です。"
+
+msgid "An audio output check is running. Try playback again when it finishes."
+msgstr "音声出力のチェックを実行中です。完了後に再生をやり直してください。"
+
 msgid "An interrupted sync needs recovery before reviewing new changes."
 msgstr ""
 
@@ -596,17 +620,47 @@ msgstr "終了前に確認"
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Chilpaが再生している間、PipeWireまたはPulseAudioにカードの解放を要求し、Chilpaが停止または長時間一時停止したときに返します。"
 
+msgid "Assumed fallback: {}"
+msgstr "仮定した代替値：{}"
+
 msgid "Audio"
 msgstr "オーディオ"
 
 msgid "Audio CD"
 msgstr "オーディオCD"
 
+msgid "Audio and output"
+msgstr "音声と出力"
+
+msgid "Audio check could not start."
+msgstr "音声のチェックを開始できませんでした。"
+
+msgid "Audio check history could not be read."
+msgstr "音声チェックの履歴を読み込めませんでした。"
+
+msgid "Audio check history could not be saved."
+msgstr "音声チェックの履歴を保存できませんでした。"
+
+msgid "Audio check history is damaged. The original file was kept."
+msgstr "音声チェックの履歴が破損しています。元のファイルは保持しました。"
+
+msgid "Audio check history is too large."
+msgstr "音声チェックの履歴が大きすぎます。"
+
+msgid "Audio output inspection could not start."
+msgstr "音声出力情報の取得を開始できませんでした。"
+
+msgid "Audio output task stopped unexpectedly."
+msgstr "音声出力の処理が予期せず停止しました。"
+
 msgid "Audio stack"
 msgstr "オーディオスタック"
 
 msgid "Audio stack ready"
 msgstr "オーディオスタックの準備完了"
+
+msgid "Auditory confirmation"
+msgstr "聴感による確認"
 
 msgid "Aug"
 msgstr "8月"
@@ -707,6 +761,9 @@ msgstr "低音"
 msgid "Between tracks"
 msgstr "トラック間"
 
+msgid "Bit depth not stated"
+msgstr "ビット深度の記載なし"
+
 msgid "Bit perfect"
 msgstr "ビットパーフェクト"
 
@@ -740,6 +797,9 @@ msgstr "ブラウズ表示"
 msgid "Browse…"
 msgstr "参照…"
 
+msgid "Buffering…"
+msgstr "バッファリング中…"
+
 msgid "Build"
 msgstr "ビルド"
 
@@ -755,6 +815,9 @@ msgstr "最も再生した日"
 msgid "Busiest day, {} play"
 msgid_plural "Busiest day, {} plays"
 msgstr[0] "最も再生した日、{}回再生"
+
+msgid "Busy"
+msgstr "使用中"
 
 msgid "Buttons to go back or forward ten seconds, and the A-B loop."
 msgstr "10秒戻る・進むボタンと、ABループ。"
@@ -894,6 +957,9 @@ msgstr "チェック"
 msgid "Check Audio Stack"
 msgstr "オーディオスタックをチェック"
 
+msgid "Check a format…"
+msgstr "フォーマットをチェック…"
+
 msgid "Check all folders"
 msgstr "すべてのフォルダーを確認"
 
@@ -908,6 +974,9 @@ msgstr "アップデートを確認"
 
 msgid "Check for updates automatically"
 msgstr "アップデートを自動で確認"
+
+msgid "Check one format"
+msgstr "1つのフォーマットをチェック"
 
 msgid "Checking for updates…"
 msgstr "アップデートを確認中…"
@@ -932,6 +1001,9 @@ msgstr "Chilpa"
 
 msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
 msgstr "Chilpaはレート、シンク、排他モードを実行時にすでに固定しています。これらのファイルが変更するのはシステム全体の動作のみです。必要な場合は、ご自身でコピーして実行してください。事前にバックアップしてください。"
+
+msgid "Chilpa applies the processing shown below."
+msgstr "Chilpaは以下の処理を適用しています。"
 
 msgid "Chilpa can also read the tempo, musical key and loudness of what this folder holds. It takes much longer than reading the folder: it starts when the scan is done, runs in the background, and can be stopped in Settings > Library > Analysis."
 msgstr "Chilpaは、このフォルダーにあるもののテンポ、キー、ラウドネスも読み取れます。フォルダーの読み取りよりはるかに時間がかかります。スキャンの完了後に開始してバックグラウンドで実行され、設定 > ライブラリ > 解析で停止できます。"
@@ -963,6 +1035,9 @@ msgstr "Chilpaはこれらのファイルを書き込みません"
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr "Chilpaは、前回閉じたときのタブで開きます。"
 
+msgid "Chilpa output"
+msgstr "Chilpaの出力"
+
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
 msgstr "Chilpaはディスク上のファイルと自分で運用するサーバーを再生し、プラグインでソースを追加できます。DACに届く音がビットパーフェクトかどうかをはっきり伝えます。"
 
@@ -977,6 +1052,9 @@ msgstr "Chilpaがリクエスト中: {} · {}ビット"
 
 msgid "Chilpa sends no telemetry. When enabled, artist and release searches make one-way requests to MusicBrainz for results. Turning it off disables MusicBrainz features in Artist Network."
 msgstr "Chilpaはテレメトリーを送信しません。有効にすると、アーティストとリリースの検索でMusicBrainzに一方向のリクエストを送り、結果を取得します。オフにすると、アーティストの「ネットワーク」でMusicBrainzの機能が無効になります。"
+
+msgid "Chilpa sends the original audio to the receiver."
+msgstr "Chilpaは元の音声を受信機に送信します。"
 
 msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
 msgstr "Chilpaはデバイスを各トラックのレートに設定します。排他モードがオンの間は、トラックの再生中デバイスがChilpaだけのものになり、Mac上のほかのものは使えません。共有するには排他モードをオフにしてください。Macはほかの再生音もミックスします。"
@@ -1010,6 +1088,9 @@ msgstr "DSPプラグインを選択してください。"
 
 msgid "Choose a DSP preset."
 msgstr "DSPプリセットを選択してください。"
+
+msgid "Choose a PCM format, rate and channel count."
+msgstr "PCMフォーマット、サンプルレート、チャンネル数を選択してください。"
 
 msgid "Choose a cover"
 msgstr "カバーを選択"
@@ -1112,6 +1193,9 @@ msgstr ""
 
 msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
 msgstr "この出力に対応する再生ミキサー要素を選択してください。Chilpaは保存前に確認します。"
+
+msgid "Choose the receiver in Play on to connect."
+msgstr "接続するには「再生先」で受信機を選択してください。"
 
 msgid "Clear"
 msgstr "クリア"
@@ -1338,6 +1422,9 @@ msgstr "別のスキャンを開始する前に、中断されたスキャンを
 msgid "Convert to PCM"
 msgstr "PCMに変換"
 
+msgid "Convertible system input; physical DAC capabilities are unknown"
+msgstr "変換可能なシステム入力。物理DACの対応能力は不明です"
+
 msgid "Copy"
 msgstr "コピー"
 
@@ -1431,6 +1518,9 @@ msgstr "評論家のおすすめ"
 msgid "Crossfeed · 0–50%"
 msgstr "クロスフィード · 0–50%"
 
+msgid "Current signal path"
+msgstr "現在の信号経路"
+
 msgid "Cursor down"
 msgstr "カーソルを下へ"
 
@@ -1476,6 +1566,9 @@ msgstr "解散"
 msgid "DLNA / UPnP and Chromecast"
 msgstr "DLNA / UPnPとChromecast"
 
+msgid "DSD converted to PCM"
+msgstr "DSDをPCMに変換"
+
 msgid "DSD files keep their changes in a sidecar"
 msgstr "DSDファイルの変更はサイドカーファイルに保存されます"
 
@@ -1511,6 +1604,9 @@ msgstr "DSD{} · PCM {} Hz · {}"
 
 msgid "DSP active"
 msgstr "DSP有効"
+
+msgid "DSP applied to consumed PCM blocks"
+msgstr "処理したPCMブロックにDSPを適用"
 
 msgid "DSP applies to local output. Cast sends the original audio."
 msgstr "DSPはローカル出力に適用されます。キャストでは元の音声を送信します。"
@@ -1578,6 +1674,12 @@ msgstr "年代"
 msgid "December"
 msgstr "12月"
 
+msgid "Declared by the hardware driver"
+msgstr "ハードウェアドライバーによる申告"
+
+msgid "Decoded floating samples quantized to {} bits"
+msgstr "デコードした浮動小数点サンプルを{}ビットに量子化"
+
 msgid "Default"
 msgstr "既定"
 
@@ -1623,6 +1725,9 @@ msgstr "取り込み先"
 msgid "Details"
 msgstr ""
 
+msgid "Details available"
+msgstr "詳細を取得済み"
+
 msgid "Detected: "
 msgstr "検出: "
 
@@ -1661,6 +1766,9 @@ msgstr "出力を診断"
 
 msgid "Diagnosis"
 msgstr "診断"
+
+msgid "Different format"
+msgstr "異なるフォーマット"
 
 msgid "Dimming"
 msgstr "減光"
@@ -1725,6 +1833,9 @@ msgstr "スキャンを破棄"
 msgid "Display settings"
 msgstr "表示設定"
 
+msgid "DoP carrier · {}"
+msgstr "DoPキャリア · {}"
+
 msgid "Dock"
 msgstr "ドッキング"
 
@@ -1775,6 +1886,9 @@ msgstr "ダウンロード"
 
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr "ドラッグするか↑↓を使って、カスタムの順序を維持します。"
+
+msgid "Driver query; playback has not been tested"
+msgstr "ドライバーへの問い合わせ。再生は未テストです"
 
 msgid "Duplicate DSP preset ID."
 msgstr "DSPプリセットのIDが重複しています。"
@@ -1869,6 +1983,9 @@ msgstr "オプションのムードプラグインを有効にして、そのモ
 msgid "Enable {} in Settings › Sources to play this record."
 msgstr "このアルバムを再生するには、設定 › ソースで{}を有効にしてください。"
 
+msgid "Endpoint readback"
+msgstr "出力先から読み取った値"
+
 msgid "Ends at {}"
 msgstr "終了予定 {}"
 
@@ -1899,6 +2016,12 @@ msgstr "エピソードのノート"
 msgid "Equalizer"
 msgstr "イコライザー"
 
+msgid "Equipment"
+msgstr "機器"
+
+msgid "Equipment changed. Read its details again before checking a format."
+msgstr "機器が変更されました。フォーマットをチェックする前に詳細を再取得してください。"
+
 msgid "Errors"
 msgstr "エラー"
 
@@ -1920,8 +2043,14 @@ msgstr "ここでの「Exact」は、トラックの再生中デバイスがChil
 msgid "Exclude"
 msgstr "除外"
 
+msgid "Exclusive"
+msgstr "排他"
+
 msgid "Exclusive mode"
 msgstr "排他モード"
+
+msgid "Exclusive mode was requested."
+msgstr "排他モードを要求しました。"
 
 msgid "Exit Immersive"
 msgstr "没入表示を終了"
@@ -2064,6 +2193,9 @@ msgstr "現在の解析を終えるか、キャンセルしてください。"
 msgid "Finish selecting"
 msgstr "選択を終了"
 
+msgid "Finished"
+msgstr "完了"
+
 msgid "First track"
 msgstr "最初のトラック"
 
@@ -2186,6 +2318,9 @@ msgstr "GPU"
 
 msgid "GPU (compatibility)"
 msgstr "GPU（互換）"
+
+msgid "Gain applied to consumed PCM blocks"
+msgstr "処理したPCMブロックにゲインを適用"
 
 msgid "Gain in decibels. Use arrow keys to adjust; Home and End reach the limits."
 msgstr "ゲイン（デシベル）。矢印キーで調整し、HomeとEndで上限と下限に移動します。"
@@ -2385,6 +2520,9 @@ msgstr "ハイレゾ音質"
 msgid "High shelf"
 msgstr "ハイシェルフ"
 
+msgid "Historical result; the current device or configuration is not verified."
+msgstr "過去の結果です。現在の機器または設定は検証されていません。"
+
 msgid "History"
 msgstr "履歴"
 
@@ -2463,6 +2601,9 @@ msgstr "影響を受けたアーティスト"
 
 msgid "Icon"
 msgstr "アイコン"
+
+msgid "Identity and provenance"
+msgstr "識別情報と出所"
 
 msgid "Image"
 msgstr "画像"
@@ -2545,8 +2686,32 @@ msgstr "情報を取得できませんでした。しばらくしてから再試
 msgid "Init system (service commands)"
 msgstr "Initシステム（サービスコマンド）"
 
+msgid "Input channels"
+msgstr "入力チャンネル"
+
+msgid "Input rates (Hz)"
+msgstr "入力サンプルレート（Hz）"
+
+msgid "Input sample formats"
+msgstr "入力サンプルフォーマット"
+
 msgid "Inspect"
 msgstr "検査"
+
+msgid "Inspect an available output before selecting it."
+msgstr "利用可能な出力の情報を確認してから選択してください。"
+
+msgid "Inspect an output"
+msgstr "出力の情報を確認"
+
+msgid "Inspect an output before checking it."
+msgstr "出力の情報を確認してからチェックしてください。"
+
+msgid "Inspect equipment, the current signal path and individual opening checks."
+msgstr "機器、現在の信号経路、個別のオープンチェックを確認します。"
+
+msgid "Inspecting does not select an output, reserve the DAC or start audio."
+msgstr "情報の確認では、出力の選択、DACの占有、音声の開始は行いません。"
 
 msgid "Inspecting plugin…"
 msgstr "プラグインを検査中…"
@@ -2631,6 +2796,12 @@ msgstr "EQのプリアンプ行が無効です。"
 
 msgid "Invalid arguments; :help shows the syntax."
 msgstr "引数が無効です。:help で構文を表示できます。"
+
+msgid "Invalid audio check request."
+msgstr "音声チェックのリクエストが無効です。"
+
+msgid "Invalid output identity."
+msgstr "出力の識別情報が無効です。"
 
 msgid "Invalid preference value; check its choices in Settings."
 msgstr "環境設定の値が無効です。設定で選択肢を確認してください。"
@@ -2725,6 +2896,9 @@ msgstr "過去12か月"
 msgid "Last 3 months"
 msgstr "過去3か月"
 
+msgid "Last check"
+msgstr "前回のチェック"
+
 msgid "Last playlist"
 msgstr "前回のプレイリスト"
 
@@ -2812,6 +2986,9 @@ msgstr "上限とクリーンアップ"
 msgid "Line Bed"
 msgstr "Line Bed"
 
+msgid "Linux audio diagnostics…"
+msgstr "Linuxの音声診断…"
+
 msgid "List"
 msgstr "リスト"
 
@@ -2862,6 +3039,9 @@ msgstr "読み込み中…"
 
 msgid "Local"
 msgstr "ローカル"
+
+msgid "Local DSP and software volume are bypassed."
+msgstr "ローカルDSPとソフトウェア音量はバイパスされます。"
 
 msgid "Local artwork"
 msgstr "ローカルのアートワーク"
@@ -3052,6 +3232,9 @@ msgstr "見つかりません"
 msgid "Mixed"
 msgstr "混在"
 
+msgid "Mixed output"
+msgstr "ミックス出力"
+
 msgid "Mixing engineer"
 msgstr "ミキシングエンジニア"
 
@@ -3060,6 +3243,9 @@ msgstr "月"
 
 msgid "Mono dark"
 msgstr "モノ・ダーク"
+
+msgid "Mono duplicated without changing sample values"
+msgstr "サンプル値を変更せずモノラルを複製"
 
 msgid "Mono light"
 msgstr "モノ・ライト"
@@ -3169,6 +3355,9 @@ msgstr "MusicBrainzのリリースグループ"
 msgid "MusicBrainz track"
 msgstr "MusicBrainzのトラック"
 
+msgid "Musical source"
+msgstr "音源"
+
 msgid "Mute"
 msgstr "ミュート"
 
@@ -3231,6 +3420,9 @@ msgstr "ナビゲーション"
 
 msgid "Needs update"
 msgstr "更新が必要"
+
+msgid "Negotiation prediction, not a playback test: {}"
+msgstr "ネゴシエーションの予測であり、再生テストではありません：{}"
 
 msgid "Nerdy"
 msgstr "Nerdy"
@@ -3370,6 +3562,9 @@ msgstr "この期間にジャンルはありません。"
 msgid "No grouping"
 msgstr "グループ化なし"
 
+msgid "No hardware format table is available for this route."
+msgstr "この経路ではハードウェアのフォーマット表を取得できません。"
+
 msgid "No label"
 msgstr "レーベルなし"
 
@@ -3393,6 +3588,12 @@ msgstr "一致するプラグインはありません"
 
 msgid "No matching selections. Create a local playlist or save a query in Refine."
 msgstr ""
+
+msgid "No opening was confirmed"
+msgstr "オープンは確認されていません"
+
+msgid "No physical readback is available for this route."
+msgstr "この経路では物理フォーマットを読み取れません。"
 
 msgid "No playable tracks found."
 msgstr "再生できるトラックが見つかりません。"
@@ -3432,6 +3633,12 @@ msgstr "結果が見つかりません。"
 
 msgid "No review available"
 msgstr "レビューはありません"
+
+msgid "No sample changes are reported in Chilpa; the downstream path is unverified."
+msgstr "Chilpa内でサンプルの変更は報告されていません。以降の経路は未検証です。"
+
+msgid "No sample processing reported in Chilpa"
+msgstr "Chilpa内でサンプル処理は報告されていません"
 
 msgid "No saved queries yet. Add conditions, then choose Save query."
 msgstr "保存したクエリはありません。条件を追加して「クエリを保存」を選択してください。"
@@ -3508,6 +3715,9 @@ msgstr "未指定"
 msgid "Not through this stack: it mixes by design."
 msgstr "このスタックでは利用できません。設計上、ミックスされます。"
 
+msgid "Not verified"
+msgstr "未検証"
+
 msgid "Notch"
 msgstr "ノッチ"
 
@@ -3528,6 +3738,9 @@ msgstr "ここには何もありません。"
 
 msgid "Nothing in this period."
 msgstr "この期間には何もありません。"
+
+msgid "Nothing is playing. Equipment details remain available."
+msgstr "再生中の音声はありません。機器の詳細は引き続き確認できます。"
 
 msgid "Nothing more is known about it."
 msgstr "これ以上の情報はありません。"
@@ -3552,6 +3765,9 @@ msgstr "11月"
 
 msgid "November"
 msgstr "11月"
+
+msgid "Now"
+msgstr "現在"
 
 msgid "Now Playing"
 msgstr "再生中"
@@ -3609,6 +3825,9 @@ msgstr "トラックから次のトラックへ途切れなくつなぎます。
 
 msgid "One track straight into the next. Off, the device plays out and opens again."
 msgstr "トラックから次のトラックへ途切れなくつなぎます。オフの場合、デバイスは再生を終えてからもう一度開かれます。"
+
+msgid "One-bit DSD"
+msgstr "1ビットDSD"
 
 msgid "Only personal presets can be deleted."
 msgstr "削除できるのは個人用プリセットのみです。"
@@ -3715,11 +3934,26 @@ msgstr "使い捨てファイルに使うフォルダーを開きます。"
 msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
 msgstr "OpenSubsonic（Navidrome、gonic…）、Jellyfin、Plex。その音楽はライブラリに追加されます。"
 
-msgid "Opens the device and says which formats reach it untouched."
-msgstr "デバイスを開き、加工されずに届くフォーマットを表示します。"
+msgid "Opened by Chilpa"
+msgstr "Chilpaがオープン"
+
+msgid "Opening and optional endpoint readback. Audibility remains untested."
+msgstr "オープンと、可能な場合の出力先情報の読み取りを行います。可聴性は未テストのままです。"
+
+msgid "Opening checks"
+msgstr "オープンチェック"
+
+msgid "Opening mode"
+msgstr "オープンモード"
+
+msgid "Opening: {} · Audibility: {}"
+msgstr "オープン：{} · 可聴性：{}"
 
 msgid "Optional access token for private playlists"
 msgstr "非公開プレイリスト用の任意のアクセストークン"
+
+msgid "Original audio over the selected network transport"
+msgstr "選択したネットワーク経路で元の音声を送信"
 
 msgid "Original bytes"
 msgstr "元のバイト列"
@@ -3745,11 +3979,20 @@ msgstr "その他 / 不明"
 msgid "Other cache"
 msgstr "その他のキャッシュ"
 
+msgid "Out of date"
+msgstr "情報が古い"
+
 msgid "Output"
 msgstr "出力"
 
+msgid "Output details…"
+msgstr "出力の詳細…"
+
 msgid "Output device"
 msgstr "出力デバイス"
+
+msgid "Output identity could not be saved."
+msgstr "出力の識別情報を保存できませんでした。"
 
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "PCMサンプルはネイティブDSDストリームに書き込めません"
@@ -3802,8 +4045,17 @@ msgstr "演奏者"
 msgid "Performers"
 msgstr "演奏者"
 
+msgid "Permission required"
+msgstr "権限が必要"
+
 msgid "Permission review required"
 msgstr "権限の確認が必要です"
+
+msgid "Physical format combinations"
+msgstr "物理フォーマットの組み合わせ"
+
+msgid "Physical format match"
+msgstr "物理フォーマットの一致"
 
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "テーマを選ぶか、「システム」のままにしてデスクトップに合わせます。言語を選び、: を押すとコマンドラインが開きます。"
@@ -3997,6 +4249,9 @@ msgstr "プリアンプ"
 msgid "Precise filters"
 msgstr "精密フィルター"
 
+msgid "Predicted unchanged PCM; DoP decoding and audible output are untested"
+msgstr "PCMが変更されないと予測されます。DoPのデコードと可聴出力は未テストです"
+
 msgid "Preferred GPU"
 msgstr "優先GPU"
 
@@ -4048,6 +4303,9 @@ msgstr "プライバシーとネットワーク"
 msgid "Processed"
 msgstr "処理後"
 
+msgid "Processing"
+msgstr "処理"
+
 msgid "Producer"
 msgstr "プロデューサー"
 
@@ -4086,6 +4344,9 @@ msgstr "音質、フォーマット、ソース、評価のフィルター"
 
 msgid "Quarantined"
 msgstr "隔離済み"
+
+msgid "Queries supported formats and predicts delivery. This does not test audible output."
+msgstr "対応フォーマットを問い合わせ、出力を予測します。可聴出力のテストではありません。"
 
 msgid "Query name"
 msgstr "クエリ名"
@@ -4173,6 +4434,15 @@ msgstr "プレイリストを読み取り、取り込み先を選び、一致を
 
 msgid "Read as"
 msgstr "解釈"
+
+msgid "Read at opening on the selected endpoint. This does not measure audible output."
+msgstr "選択した出力先のオープン時に読み取った値です。可聴出力の測定ではありません。"
+
+msgid "Read equipment details"
+msgstr "機器の詳細を取得"
+
+msgid "Read from the selected endpoint"
+msgstr "選択した出力先から読み取り"
 
 msgid "Read less"
 msgstr "閉じる"
@@ -4429,8 +4699,17 @@ msgstr "キュー「{}」を置き換え"
 msgid "Report an issue"
 msgstr "問題を報告"
 
+msgid "Reported by the receiver"
+msgstr "受信機からの報告"
+
+msgid "Reported property"
+msgstr "報告されたプロパティ"
+
 msgid "Repositories"
 msgstr "リポジトリ"
+
+msgid "Requested and opened"
+msgstr "要求とオープン結果"
 
 msgid "Requests: {}"
 msgstr "要求: {}"
@@ -4449,6 +4728,9 @@ msgstr "EQをリセット"
 
 msgid "Reset counter"
 msgstr "カウンターをリセット"
+
+msgid "Resolution reduced from {} to {} bits"
+msgstr "解像度を{}ビットから{}ビットに縮小"
 
 msgid "Resolving…"
 msgstr "確認中…"
@@ -4473,6 +4755,9 @@ msgstr "以前のEQに戻す"
 
 msgid "Restore tabs"
 msgstr "タブを復元"
+
+msgid "Result saved on this computer."
+msgstr "結果をこのコンピューターに保存しました。"
 
 msgid "Results are saved after every track. Run Analyze again to continue the pending tracks."
 msgstr "結果はトラックごとに保存されます。未処理のトラックを続けるには、もう一度「解析」を実行してください。"
@@ -4546,11 +4831,17 @@ msgstr "ステータス"
 msgid "SURFACES"
 msgstr "サーフェス"
 
+msgid "Sample format"
+msgstr "サンプルフォーマット"
+
 msgid "Sample rate"
 msgstr "サンプルレート"
 
 msgid "Sample-rate switching (PipeWire)"
 msgstr "サンプルレート切り替え（PipeWire）"
+
+msgid "Samples converted to floating point"
+msgstr "サンプルを浮動小数点に変換"
 
 msgid "Sandboxed — host check unavailable"
 msgstr "サンドボックス環境 — ホストのチェックは利用できません"
@@ -4600,6 +4891,9 @@ msgstr "保存済み"
 msgid "Saved device selection"
 msgstr ""
 
+msgid "Saved for the displayed inspection. Refresh after changing equipment or configuration."
+msgstr "表示中の確認結果に対応する記録です。機器や設定を変更したら情報を再取得してください。"
+
 msgid "Saved position"
 msgstr "保存した位置"
 
@@ -4635,6 +4929,9 @@ msgstr "スキャン中…"
 
 msgid "Scheduled checks run while Chilpa is open. Startup checks run once when the app opens. Unchanged files are skipped."
 msgstr "定期確認はChilpaを開いている間に実行されます。起動時の確認はアプリを開いたときに1回実行されます。変更のないファイルはスキップされます。"
+
+msgid "Scope of this check"
+msgstr "このチェックの範囲"
 
 msgid "Scrobbling"
 msgstr "スクロブル"
@@ -4772,6 +5069,9 @@ msgstr "ListenBrainzに送信"
 msgid "Sep"
 msgstr "9月"
 
+msgid "Separate input limits do not establish every combination of rate, word width and channels."
+msgstr "個別の入力上限から、サンプルレート、ワード幅、チャンネル数のすべての組み合わせに対応すると判断することはできません。"
+
 msgid "September"
 msgstr "9月"
 
@@ -4813,6 +5113,18 @@ msgstr "設定"
 
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "音を整えます。帯域を上げるとその音が強まり、下げると弱まります。"
+
+msgid "Shared"
+msgstr "共有"
+
+msgid "Shared at opening"
+msgstr "オープン時は共有"
+
+msgid "Shared checks keep the current hardware configuration; the system may convert the input."
+msgstr "共有モードのチェックでは現在のハードウェア設定を保持します。システムが入力を変換する場合があります。"
+
+msgid "Shared mode was requested."
+msgstr "共有モードを要求しました。"
 
 msgid "Short names: y g l c a al t r p ty q"
 msgstr "短縮名：y g l c a al t r p ty q"
@@ -4901,6 +5213,12 @@ msgstr "APIキーでログイン"
 msgid "Signed out"
 msgstr "ログアウト済み"
 
+msgid "Silent opening checks accept PCM only. Opening a PCM carrier does not check DoP."
+msgstr "無音のオープンチェックはPCMのみ対応します。PCMキャリアを開いてもDoPのチェックにはなりません。"
+
+msgid "Silent opening checks are unavailable for this output."
+msgstr "この出力では無音のオープンチェックを利用できません。"
+
 msgid "Similar albums"
 msgstr "類似アルバム"
 
@@ -4939,6 +5257,9 @@ msgstr "弱"
 
 msgid "Software"
 msgstr "ソフトウェア"
+
+msgid "Some endpoint streams could not be read."
+msgstr "出力先の一部のストリーム情報を読み取れませんでした。"
 
 msgid "Some of these tracks were already added"
 msgstr "これらのトラックの一部はすでに追加されています"
@@ -4982,6 +5303,9 @@ msgstr "スペクトラム"
 msgid "Split queue before this track"
 msgstr "このトラックの前でキューを分割"
 
+msgid "Stable endpoint identity. Results also depend on its connection and configuration."
+msgstr "安定した出力先識別情報です。結果は接続と設定にも依存します。"
+
 msgid "Standard analysis"
 msgstr "標準解析"
 
@@ -4999,6 +5323,9 @@ msgstr "開始"
 
 msgid "Start from current theme"
 msgstr "現在のテーマから開始"
+
+msgid "Start silent check"
+msgstr "無音チェックを開始"
 
 msgid "Starting plugins…"
 msgstr "プラグインを起動しています…"
@@ -5045,11 +5372,17 @@ msgstr "停止して診断"
 msgid "Stop playback after:"
 msgstr "再生を停止する時間："
 
+msgid "Stop playback before checking an output. Inspection remains available while listening."
+msgstr "出力をチェックする前に再生を停止してください。情報の確認は再生中でも利用できます。"
+
 msgid "Stop playback to diagnose?"
 msgstr "再生を停止して診断しますか？"
 
 msgid "Stop scan"
 msgstr "スキャンを停止"
+
+msgid "Stopped"
+msgstr "停止"
 
 msgid "Stopping after the current file…"
 msgstr "現在のファイルの処理後に停止します…"
@@ -5202,6 +5535,12 @@ msgstr "アカウントの有効期限が切れました。もう一度接続し
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr "内蔵テストは、ビット深度とサンプルレートが異なる4つのトラック（16/44.1、24/44.1、24/96、24/192）を再生し、DACの切り替わりを確認できます。各トラックは、ライブラリでそのフォーマットの最も再生回数が多いトラックで、ない場合は生成したテスト信号です。自分のキューを使いたい場合は、すべてのレートが試されるように、先に各種類のトラックを1つずつ追加してください。"
 
+msgid "The check finished, but the previous physical format could not be restored."
+msgstr "チェックは完了しましたが、以前の物理フォーマットを復元できませんでした。"
+
+msgid "The check finished, but the previous sample rate could not be restored."
+msgstr "チェックは完了しましたが、以前のサンプルレートを復元できませんでした。"
+
 msgid "The connection is not encrypted."
 msgstr "接続は暗号化されていません。"
 
@@ -5231,6 +5570,9 @@ msgstr ""
 
 msgid "The download view is unavailable."
 msgstr "ダウンロード表示は利用できません。"
+
+msgid "The engine reports unchanged samples on this route."
+msgstr "エンジンはこの経路でサンプルが変更されていないと報告しています。"
 
 msgid "The filter cannot be read: {}"
 msgstr "フィルターを読み取れません: {}"
@@ -5286,6 +5628,9 @@ msgstr "歌詞APIに報告を保存できませんでした。この結果はこ
 msgid "The lyrics cache could not be opened."
 msgstr "歌詞キャッシュを開けませんでした。"
 
+msgid "The output changed during the check. Its new configuration was kept."
+msgstr "チェック中に出力が変更されました。新しい設定を保持しました。"
+
 msgid "The output is playing in exclusive mode. Diagnosis needs to open it directly, so playback must stop first."
 msgstr "出力は排他モードで再生中です。診断には直接開く必要があるため、先に再生を停止する必要があります。"
 
@@ -5313,8 +5658,14 @@ msgstr "プラグインのZIPを読み取れませんでした。"
 msgid "The plugin did not answer within 15 seconds. Its account status is unknown."
 msgstr "プラグインが15秒以内に応答しませんでした。アカウントの状態は不明です。"
 
+msgid "The previous sample rate did not settle after the check."
+msgstr "チェック後に以前のサンプルレートが安定しませんでした。"
+
 msgid "The queues exceed the session limit of 100,000 tracks."
 msgstr "キューがセッションの上限である100,000トラックを超えています。"
+
+msgid "The receiver does not report its physical DAC format."
+msgstr "受信機は物理DACのフォーマットを報告していません。"
 
 msgid "The record is not open in the editor."
 msgstr "そのアルバムはエディターで開かれていません。"
@@ -5333,6 +5684,9 @@ msgstr "レンダラーはこのフォーマットまたは操作に対応して
 
 msgid "The renderer refused the command."
 msgstr "レンダラーがコマンドを拒否しました。"
+
+msgid "The result has not been saved. Review the error before leaving."
+msgstr "結果は保存されていません。終了する前にエラーを確認してください。"
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "ListenBrainzと同じルールで、トラックの半分、または4分です。"
@@ -5430,6 +5784,9 @@ msgstr ""
 msgid "This address belongs to a different server."
 msgstr "このアドレスは別のサーバーのものです。"
 
+msgid "This build can query the output but cannot render audio through it yet."
+msgstr "このビルドでは出力情報を問い合わせできますが、その出力での再生はまだ利用できません。"
+
 msgid "This can take a few minutes when MusicBrainz is busy."
 msgstr "MusicBrainzが混雑している場合、数分かかることがあります。"
 
@@ -5472,6 +5829,9 @@ msgstr "今月 vs 先月"
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "これは音を出しません。デバイスに送られるはずだったものをファイルに書き出すので、元のトラックと比較できます。ビットパーフェクトは主張するのではなく、これで証明できます。"
 
+msgid "This opens and closes the selected output without writing audio. Stop playback first. The queue, volume and desktop default stay as they are."
+msgstr "音声を送信せず、選択した出力を開いて閉じます。先に再生を停止してください。キュー、音量、デスクトップの既定の出力は変更しません。"
+
 msgid "This output has no hardware mute switch."
 msgstr "この出力にはハードウェアのミュートスイッチがありません。"
 
@@ -5480,6 +5840,9 @@ msgstr "この出力には、曖昧さがなく安全な再生音量コントロ
 
 msgid "This output is always Chilpa's alone."
 msgstr "この出力は常にChilpaだけのものです。"
+
+msgid "This output is busy. Stop playback before checking it."
+msgstr "この出力は使用中です。チェックする前に再生を停止してください。"
 
 msgid "This output takes DSD converted to PCM. DoP needs exclusive mode, and a DAC that decodes it."
 msgstr "この出力はDSDをPCMに変換して受け取ります。DoPには排他モードと、それをデコードするDACが必要です。"
@@ -5730,11 +6093,17 @@ msgstr "プラグインをアンインストール"
 msgid "Uninstall plugin and remove account data"
 msgstr "プラグインをアンインストールしてアカウントデータを削除"
 
+msgid "Unknown"
+msgstr "不明"
+
 msgid "Unknown DSP action."
 msgstr "不明なDSP操作です。"
 
 msgid "Unknown artist"
 msgstr "不明なアーティスト"
+
+msgid "Unknown audio output action."
+msgstr "音声出力の操作が不明です。"
 
 msgid "Unknown command; enter :help."
 msgstr "不明なコマンドです。:helpを入力してください。"
@@ -5772,6 +6141,9 @@ msgstr "未再生"
 msgid "Unrated"
 msgstr "未評価"
 
+msgid "Unsupported"
+msgstr "非対応"
+
 msgid "Unsupported EQ directive. Paste parametric filters without channel routing or other commands."
 msgstr "サポートされていないEQディレクティブです。チャンネルのルーティングやその他のコマンドを含めずに、パラメトリックフィルターを貼り付けてください。"
 
@@ -5783,6 +6155,9 @@ msgstr "サポートされていない有効なEQフィルターです。PK、LS
 
 msgid "Unsupported or empty DSP preset catalog."
 msgstr "サポートされていない、または空のDSPプリセットカタログです。"
+
+msgid "Untested"
+msgstr "未テスト"
 
 msgid "Up next"
 msgstr "次に再生"
@@ -5865,6 +6240,9 @@ msgstr "プレイリストアイコンまたはカバーのコラージュを使
 msgid "Use the system language or choose a language."
 msgstr "システムの言語を使うか、言語を選びます。"
 
+msgid "Use this output"
+msgstr "この出力を使用"
+
 msgid "User"
 msgstr "ユーザー"
 
@@ -5916,6 +6294,9 @@ msgstr "音量ノーマライズ"
 msgid "Volume {}%"
 msgstr "音量 {}%"
 
+msgid "Wait for the audio check to finish."
+msgstr "音声のチェックが完了するまでお待ちください。"
+
 msgid "Wait for the queue to finish switching."
 msgstr "キューの切り替えが終わるまでお待ちください。"
 
@@ -5924,6 +6305,9 @@ msgstr "再生の停止を待っています"
 
 msgid "Waiting for the DAC to start playing…"
 msgstr "DACの再生開始を待っています…"
+
+msgid "Waiting for the engine's opening report…"
+msgstr "エンジンのオープン結果を待機中…"
 
 msgid "Wallpaper"
 msgstr "壁紙"
@@ -5946,6 +6330,9 @@ msgstr "Wave Bed"
 msgid "Waveform"
 msgstr "波形"
 
+msgid "Weak identity. Saved checks remain historical and cannot certify the connected unit."
+msgstr "識別情報が不確かです。保存したチェックは過去の記録であり、接続中の機器を保証するものではありません。"
+
 msgid "Website"
 msgstr "ウェブサイト"
 
@@ -5966,6 +6353,9 @@ msgstr "没入表示の検索結果でEnterキーを押したときの動作で�
 
 msgid "What should happen to the original queues?"
 msgstr "元のキューをどうしますか？"
+
+msgid "What this route reports"
+msgstr "この経路からの報告"
 
 msgid "What to test with"
 msgstr "テストに使うもの"
@@ -6020,6 +6410,9 @@ msgstr "プラグインなし"
 
 msgid "Without {}"
 msgstr "{} なし"
+
+msgid "Word widened from {} to {} bits without sample loss"
+msgstr "サンプルを失わずにワード幅を{}ビットから{}ビットに拡張"
 
 msgid "Words"
 msgstr "キーワード"
@@ -7300,6 +7693,9 @@ msgstr "{}（分割）"
 msgid "{} / {} artists"
 msgstr "{} / {}アーティスト"
 
+msgid "{} Hz · {} · {} channels"
+msgstr "{} Hz · {} · {}チャンネル"
+
 msgid "{} album"
 msgid_plural "{} albums"
 msgstr[0] "{}アルバム"
@@ -7439,6 +7835,9 @@ msgid "{} more playlist..."
 msgid_plural "{} more playlists..."
 msgstr[0] "他{}件のプレイリスト..."
 
+msgid "{} musical bits"
+msgstr "音源のビット深度：{}ビット"
+
 msgid "{} no longer accepts the account; connect again"
 msgstr "{}はアカウントを受け付けなくなりました。もう一度接続してください"
 
@@ -7559,6 +7958,12 @@ msgstr "{3}年{1}{2}日"
 
 msgid "{} · {}"
 msgstr "{} · {}"
+
+msgid "{} · {} Hz · {} · {} channels"
+msgstr "{} · {} Hz · {} · {}チャンネル"
+
+msgid "{} · {} Hz · {}/{} bits · {} channels"
+msgstr "{} · {} Hz · {}/{}ビット · {}チャンネル"
 
 msgid "{}-bit / {}"
 msgstr "{}ビット / {}"

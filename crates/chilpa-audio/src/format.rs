@@ -4,7 +4,8 @@
 ///
 /// There is no "hi-res" format and no flags: there is a sample format, a
 /// rate and a channel count.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SampleFormat {
     /// 16-bit integer, little endian.
     S16,
@@ -61,7 +62,7 @@ impl SampleFormat {
 }
 
 /// One concrete stream: format, rate and channels.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
 pub struct StreamFormat {
     pub sample_format: SampleFormat,
     pub sample_rate_hz: u32,

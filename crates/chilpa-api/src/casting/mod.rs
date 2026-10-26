@@ -19,6 +19,10 @@ pub(crate) struct Casting {
     status: Status, error: String, pub(crate) order: Vec<usize>, loaded: bool, loading: bool,
 }
 impl Casting {
+    pub(crate) fn inspected_selection(&self) -> Option<&Device> { self.selected.as_ref() }
+    pub(crate) fn inspected_devices(&self) -> &[Device] { &self.devices }
+    pub(crate) fn inspected_status(&self) -> &Status { &self.status }
+    pub(crate) fn inspected_error(&self) -> &str { &self.error }
     pub(crate) fn active(&self) -> bool { self.selected.is_some() }
     fn send(&self, order: Order) { if let Some(worker) = &self.worker { worker.send(self.generation, order); } }
     fn advance(&mut self) { self.generation = self.generation.wrapping_add(1); }

@@ -371,17 +371,49 @@ fn negotiated_in(hw_params: &str) -> Option<Negotiated> {
     Some(Negotiated { rate: rate?, format, channels })
 }
 
-/// The first card playing anything, whichever it is: there is one output
-/// at a time. `None` when none is open.
-pub fn negotiated_now() -> Option<Negotiated> {
-    (0..16).find_map(|card| {
-        (0..4).find_map(|pcm| std::fs::read_to_string(format!("/proc/asound/card{card}/pcm{pcm}p/sub0/hw_params")).ok().and_then(|text| negotiated_in(&text)))
-    })
+/// I read only the addressed PCM. Multiple active substreams are ambiguous.
+pub fn negotiated_device(card: u32, pcm: u32) -> Option<Negotiated> {
+    let mut active = (0..32).filter_map(|sub|
+        std::fs::read_to_string(format!("/proc/asound/card{card}/pcm{pcm}p/sub{sub}/hw_params")).ok().and_then(|text| negotiated_in(&text)));
+    let one = active.next()?;
+    active.next().is_none().then_some(one)
+}
+pub fn negotiated_output(output: &str) -> Option<Negotiated> {
+    if let Some(raw) = output.strip_prefix("alsa:hw:") {
+        let (card,pcm) = raw.split_once(',')?;
+        return negotiated_device(card.parse().ok()?,pcm.parse().ok()?);
+    }
+    let node = output.strip_prefix("pipewire:")?;
+    let listing = run("pactl", &["list", "sinks"])?;
+    let card: u32 = card_of_sink(&listing,node)?.parse().ok()?;
+    let pcm = pcm_of_sink(&listing,node)?;
+    negotiated_device(card,pcm)
+}
+fn pcm_of_sink(listing: &str, node: &str) -> Option<u32> {
+    let mut inside = false;
+    for line in listing.lines().map(str::trim) {
+        if line.starts_with("Sink #") { inside = false; }
+        if let Some(name) = line.strip_prefix("Name:") { inside = name.trim() == node; }
+        if inside {
+            if let Some(pcm) = line.strip_prefix("alsa.device = ").or_else(||line.strip_prefix("api.alsa.pcm.device = ")) {
+                return pcm.trim_matches('"').parse().ok();
+            }
+        }
+    }
+    None
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn the_selected_sink_keeps_its_own_pcm_when_two_cards_are_open() {
+        let listing = "Sink #1\n Name: other\n alsa.card = \"0\"\n alsa.device = \"3\"\nSink #2\n Name: selected\n alsa.card = \"2\"\n api.alsa.pcm.device = \"1\"\n";
+        assert_eq!(card_of_sink(listing,"selected").as_deref(),Some("2"));
+        assert_eq!(pcm_of_sink(listing,"selected"),Some(1));
+        assert_eq!(pcm_of_sink(listing,"other"),Some(3));
+        assert_eq!(pcm_of_sink(listing,"missing"),None);
+    }
 
     #[test]
     fn distros_are_told_by_id_then_id_like() {

@@ -105,6 +105,7 @@ pub mod stall;
 pub use plugin_installation::PreparedPlugin;
 pub use chilpa_plugin::bridge::WorkerLauncher;
 mod quality;
+mod audio_output;
 mod marks;
 pub use marks::Marks;
 mod ratings;
@@ -685,6 +686,7 @@ pub struct Chilpa {
     /// user coming back.
     connecting: Option<plugins::Connecting>,
     now: NowPlaying,
+    audio_output: audio_output::AudioOutput,
     home: home::Home,
     sample_rate: u32,
     /// Set while a relaunch we asked for is unwinding the old playback.
@@ -808,6 +810,7 @@ impl Chilpa {
             catalog,
             connecting: None,
             now: NowPlaying::default(),
+            audio_output: audio_output::AudioOutput::default(),
             home: home::Home::default(),
             sample_rate: 0,
             relaunching: None,
@@ -820,6 +823,7 @@ impl Chilpa {
             artwork: Default::default(),
             copies: Default::default(),
         };
+        chilpa.migrate_output_identity();
         if let Some(tabs) = chilpa.restored_tabs() {
             chilpa.protect_tabs(&tabs);
         }
@@ -1232,6 +1236,7 @@ impl Chilpa {
         self.advance_plugins();
         self.plugin_update_activity(self.now.playing || self.now.paused || self.listen.pending.is_some());
         self.advance_dsp();
+        self.advance_audio_output();
         self.advance_search();
         self.advance_sources();
         self.advance_catalog();
@@ -1250,7 +1255,9 @@ impl Chilpa {
         for event in events {
             if self.listen.active == 0 { continue; }
             match event {
-                PlayerEvent::Started { path, opened, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, index, queue_len, dsd_multiple, dsd_passthrough } => {
+                PlayerEvent::Started { path, opened, route, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, index, queue_len, dsd_multiple, dsd_passthrough } => {
+                    let requested_rate = route.delivery.requested.sample_rate_hz;
+                    self.audio_output.route = Some(route);
                     self.dsp.passthrough = dsd_passthrough;
                     // What was playing until now is left where it was.
                     self.keep_place(true);
@@ -1287,7 +1294,7 @@ impl Chilpa {
                     // rate, not the DoP carrier or native U32 frame rate.
                     let rate = match dsd_multiple {
                         Some(multiple) => multiple * 44_100,
-                        None => opened.sample_rate_hz,
+                        None => requested_rate,
                     };
                     let codec = self.remote_codec(&self.now.path.clone());
                     self.now.quality = Quality::of_track(&self.now.path, codec.as_deref(), bits, Some(rate));

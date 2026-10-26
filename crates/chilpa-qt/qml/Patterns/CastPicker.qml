@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
@@ -10,6 +11,7 @@ Menu {
     id: picker
     property Item invokingControl
     property bool preview: false
+    property var previewFooter: [{act:"inspect",text:I18n.tr("Output details…", I18n.rev)}]
     property var previewEntries: [
         { act: "local", icon: "local", text: "Desktop audio", detail: I18n.tr("This computer", I18n.rev), checked: true },
         { separator: true }, { text: "Chromecast", note: true },
@@ -22,6 +24,13 @@ Menu {
     width: Metrics.castMenuWidth
     heightLimit: parent ? parent.height - Metrics.gap10 * 2 : Infinity // derived: the overlay margins
     title: I18n.tr("Play on", I18n.rev)
+    footerEntries: (preview ? previewFooter : castState.footer || []).map(entry => Object.assign({}, entry, {glyph:Icons.chevronRight}))
+    onFooterChosen: index => {
+        if (!preview && footerEntries[index]?.act === "inspect") {
+            if (invokingControl) invokingControl.forceActiveFocus()
+            AudioOutput.show("equipment")
+        }
+    }
     entries: (preview ? previewEntries : castState.entries || []).map(function(entry) {
         const icons = { local: Icons.deviceSpeaker, cast: SourceGlyphs.castAudio, dlna: SourceGlyphs.dlna }
         return Object.assign({}, entry, { glyph: icons[entry.icon] || "", family: entry.icon === "cast" || entry.icon === "dlna" ? SourceGlyphs.font : "" })

@@ -16,6 +16,7 @@ pub mod diagnostics;
 pub mod dop;
 pub mod dsd;
 pub mod format;
+pub mod evidence;
 pub mod gapless;
 pub mod negotiate;
 pub mod pack;

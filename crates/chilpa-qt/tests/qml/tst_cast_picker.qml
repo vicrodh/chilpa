@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import app.chilpa
+import app.chilpa.controls
 import "../../qml/Patterns"
 
 TestCase {
@@ -17,7 +18,7 @@ TestCase {
         Cast.nextActive = null
         Cast.selected = ""
         Cast.disconnected = false
-        Cast.snapshot = JSON.stringify({ entries: picker.previewEntries })
+        Cast.snapshot = JSON.stringify({ entries: picker.previewEntries, footer: picker.previewFooter })
     }
     function cleanup() { picker.close(); wait(0) }
     function entry(action) {
@@ -51,11 +52,25 @@ TestCase {
         compare(Cast.disconnected, true)
         tryCompare(picker, "visible", false)
     }
+    function test_fixed_details_footer_does_not_select_or_disconnect_a_renderer() {
+        picker.show(anchor)
+        tryCompare(picker,"opened",true)
+        const footer = findChild(picker.contentItem,"menuFooter0")
+        verify(footer !== null)
+        footer.forceActiveFocus()
+        keyClick(Qt.Key_Return)
+        tryCompare(picker,"opened",false)
+        compare(AudioOutput.shown,true)
+        compare(AudioOutput.tab,"equipment")
+        compare(Cast.selected,"")
+        compare(Cast.disconnected,false)
+        AudioOutput.close()
+    }
     function test_long_list_stays_in_overlay_and_scrolls() {
         const entries = picker.previewEntries.slice()
         for (let i = 0; i < 30; ++i)
             entries.push({ act: "connect", id: "extra" + i, text: "Renderer " + i, detail: "Network receiver" })
-        Cast.snapshot = JSON.stringify({ entries: entries })
+        Cast.snapshot = JSON.stringify({ entries: entries, footer: picker.previewFooter })
         picker.show(anchor)
         tryCompare(picker, "opened", true)
         verify(picker.y >= 10)

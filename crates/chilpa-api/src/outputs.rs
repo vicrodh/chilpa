@@ -145,7 +145,7 @@ impl crate::Chilpa {
         WizardReport {
             device: d.device,
             probed: d.probed,
-            summary: d.summary,
+            summary: chilpa_i18n::t_args("Negotiation prediction, not a playback test: {}",&[&d.summary]),
             rates: d.sample_rates,
             formats: d.formats,
             rows: d
@@ -158,7 +158,7 @@ impl crate::Chilpa {
                     name: chilpa_i18n::t(&f.name),
                     format: f.format,
                     verdict: match f.verdict {
-                        chilpa_core::wizard::Verdict::BitPerfect => "bit-perfect".into(),
+                        chilpa_core::wizard::Verdict::BitPerfect => chilpa_i18n::t("Predicted unchanged PCM; DoP decoding and audible output are untested"),
                         chilpa_core::wizard::Verdict::Converted { a } => {
                             chilpa_i18n::t_args("converted to {}", &[&a])
                         }

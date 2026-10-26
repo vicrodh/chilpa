@@ -489,6 +489,8 @@ pub struct Controls {
     /// samples, under any policy, and a track it touches is not delivered
     /// bit-perfect.
     pub normalize: Switch,
+    /// I publish gain actually applied to the most recent consumed PCM block.
+    pub gain_active: std::sync::Arc<std::sync::atomic::AtomicBool>,
     /// The loudness they are brought to, in LUFS, and whether a boost stops
     /// short of clipping. Read as each track starts.
     pub normalize_target: Level,
@@ -567,6 +569,7 @@ impl Default for Controls {
             stop_after: StopAfter::new(),
             gapless: Switch::new(true),
             normalize: Switch::new(false),
+            gain_active: Default::default(),
             normalize_target: Level::new(crate::loudness::DEFAULT_TARGET),
             prevent_clipping: Switch::new(true),
             exclusive: Switch::new(false),
@@ -1146,6 +1149,7 @@ where
             on_progress(index, progress)
         };
         controls.dsp.begin_stream();
+        controls.gain_active.store(false, std::sync::atomic::Ordering::Release);
         on_track(index, path, &delivery, &about);
         chilpa_audio::diagnostics::trace(
             "queue",
@@ -1166,7 +1170,10 @@ where
             }
         }
         let mut output_level = level.take_output();
-        let mut gain = |bytes: &mut [u8]| output_level.packed(bytes, gain_format, delivery.duplicates_mono());
+        let mut gain = |bytes: &mut [u8]| {
+            let changed = output_level.packed(bytes, gain_format, delivery.duplicates_mono());
+            controls.gain_active.store(changed, std::sync::atomic::Ordering::Release);
+        };
         let output_gain = (shape.is_some() && (volume.is_some() || normalize.get())).then_some(&mut gain as &mut dyn FnMut(&mut [u8]));
         let (outcome, skipped) = match &mut source {
             Source::Pcm(decoded, _, _) => {
