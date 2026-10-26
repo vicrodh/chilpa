@@ -613,6 +613,7 @@ impl Service {
             _ => None,
         };
         if let Some(outcome) = outcome {
+            let mut catalog_changed = true;
             self.pending = None;
             self.status.busy = false;
             self.status.error = None;
@@ -650,12 +651,16 @@ impl Service {
                 }
                 Ok(Outcome::Connections(destinations, error, previous)) => {
                     let before = self.status.destination.clone();
-                    self.destinations = destinations;
+                    catalog_changed = self.destinations.len() != destinations.len()
+                        || self.destinations.iter().any(|row| !destinations.contains(row));
                     self.status = previous;
                     self.status.busy = false;
-                    self.align_destination();
-                    if self.status.destination != before { self.invalidate(); }
-                    self.status.error = error;
+                    if catalog_changed {
+                        self.destinations = destinations;
+                        self.align_destination();
+                        if self.status.destination != before { self.invalidate(); }
+                    }
+                    if error.is_some() { self.status.error = error; }
                 }
                 Ok(Outcome::Reopened(options, labels, destinations, error, previous)) => {
                     self.view_loaded = true;
@@ -667,7 +672,7 @@ impl Service {
                     let before = self.status.destination.clone();
                     self.align_options();
                     if self.status.destination != before { self.invalidate(); }
-                    self.status.error = error;
+                    if error.is_some() { self.status.error = error; }
                 }
                 Ok(Outcome::Added(profile)) => {
                     self.status.profile = profile.id.clone();
@@ -804,7 +809,7 @@ impl Service {
                     self.status.error = Some(error);
                 }
             }
-            self.revision += 1;
+            if catalog_changed { self.revision += 1; }
             changed = true;
         }
         if resolve_incoming {
