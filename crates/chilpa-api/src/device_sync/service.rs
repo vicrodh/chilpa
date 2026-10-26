@@ -489,12 +489,12 @@ impl Service {
     /// Closing the surface releases row/query payloads; the bounded active task keeps running.
     pub fn release_view(&mut self) {
         self.close_browser();
-        self.labels.clear();
+        self.labels = library::Labels::new();
         self.rows = Vec::new();
         self.options = Vec::new();
         self.available_options = Vec::new();
         self.view_loaded = false;
-        self.incoming.clear();
+        self.incoming = Vec::new();
         self.incoming_ids = None;
         if self.pending.is_none() {
             self.ready = None;

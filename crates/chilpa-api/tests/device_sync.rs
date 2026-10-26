@@ -207,6 +207,23 @@ fn name_fixture_albums(fixture: &Fixture) {
 }
 
 #[test]
+fn device_mounted_smoke_discovery_excludes_physical_usb() {
+    isolated(
+        "device_mounted_smoke_discovery_excludes_physical_usb",
+        || {
+            std::env::set_var("CHILPA_DEVICE_TEST_MOUNTED_ONLY", "1");
+            let fixture = Fixture::new();
+            let mut service = Service::new(fixture.library_path.clone(), fixture.profiles.clone());
+            service.refresh().unwrap();
+            wait(&mut service);
+            assert_eq!(service.destinations().len(), 1);
+            assert_eq!(service.destinations()[0].id, "mounted");
+            assert!(service.status().error.is_none());
+        },
+    );
+}
+
+#[test]
 fn device_album_batches_keep_their_names_and_accumulate_without_duplicates() {
     isolated(
         "device_album_batches_keep_their_names_and_accumulate_without_duplicates",
@@ -295,8 +312,9 @@ fn device_legacy_selection_gets_readable_names_without_rewriting_its_profile() {
                 .unwrap();
             assert_eq!(saved.name, "First record");
             assert!(saved.description.contains("Artist"));
-        let filtered: serde_json::Value = serde_json::from_str(&reopened.catalog_json("First")).unwrap();
-        assert_eq!(filtered["filter"], "First");
+            let filtered: serde_json::Value =
+                serde_json::from_str(&reopened.catalog_json("First")).unwrap();
+            assert_eq!(filtered["filter"], "First");
             reopened.browse("library-selection").unwrap();
             wait(&mut reopened);
             let document: serde_json::Value =

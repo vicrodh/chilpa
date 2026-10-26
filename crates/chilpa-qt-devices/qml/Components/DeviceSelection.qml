@@ -10,6 +10,7 @@ Rectangle {
     property var rows: []
     property bool busy: false
     property string query: ""
+    onQueryChanged: if (search && search.text !== query) search.text = query
     signal toggled(string id)
     signal filterEdited(string text)
     signal opened(string id)
