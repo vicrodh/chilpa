@@ -30,9 +30,9 @@ pub(crate) enum Job {
 
 pub(crate) enum Done {
     Opened { session: u64, tracks: Vec<EditTrack>, reads: Vec<Read>, homes: Vec<HomeState>, layers: Layers },
-    Found { session: u64, turn: u64, hits: Result<Vec<Hit>, Failure> },
-    Loaded { session: u64, turn: u64, release: Result<Release, Failure> },
-    Candidates { session: u64, turn: u64, candidates: Result<Vec<Candidate>, Failure> },
+    Found { session: u64, turn: u64, account_epoch:u64, hits: Result<Vec<Hit>, Failure> },
+    Loaded { session: u64, turn: u64, account_epoch:u64, release: Result<Release, Failure> },
+    Candidates { session: u64, turn: u64, account_epoch:u64, candidates: Result<Vec<Candidate>, Failure> },
     Cover { session: u64, turn: u64, cover: Result<Waiting, String> },
     Progress { session: u64, done: usize, total: usize },
     Saved { session: u64, written: Written },
@@ -67,11 +67,17 @@ impl Network {
 
 impl Http for Network {
     fn get(&self, url: &str, accept: &str, timeout: Duration, max_bytes: usize) -> Result<Reply, String> {
-        let asked = chilpa_core::Fetch { url, user_agent: &self.agent, accept, timeout, max_bytes };
+        let asked = chilpa_core::Fetch { url, user_agent: &self.agent, accept, timeout, max_bytes, authorization:None };
         match chilpa_core::fetch(&asked) {
             Ok(got) => Ok(Reply { status: got.status, headers: got.headers, body: got.body }),
             Err(e) => Err(e.to_string()),
         }
+    }
+    fn get_as(&self, url: &str, accept: &str, timeout: Duration, max_bytes: usize, authorization: &str) -> Result<Reply,String> {
+        if !chilpa_core::permits_authorization(url,authorization) { return Err("credential destination is not allowed".into()); }
+        let asked = chilpa_core::Fetch { url, user_agent:&self.agent,accept,timeout,max_bytes,authorization:Some(authorization) };
+        let got = chilpa_core::fetch(&asked).map_err(|_| "the authenticated request could not be completed".to_string())?;
+        Ok(Reply {status:got.status,headers:got.headers,body:got.body})
     }
 }
 
@@ -81,7 +87,7 @@ pub(crate) struct Worker {
 }
 
 impl Worker {
-    pub(crate) fn start(network: Arc<dyn Http>) -> Option<Self> {
+    pub(crate) fn start(network: Arc<dyn Http>, credential: discogs::CredentialProvider,epoch:Arc<std::sync::atomic::AtomicU64>) -> Option<Self> {
         let (jobs, asked) = channel::<Job>();
         let (finished, done) = channel::<Done>();
         std::thread::Builder::new()
@@ -90,7 +96,7 @@ impl Worker {
                 // Whatever was left in wait belongs to a run that is over.
                 artwork::sweep();
                 for job in asked {
-                    run(job, network.as_ref(), &finished);
+                    run(job, network.as_ref(), &credential,epoch.load(std::sync::atomic::Ordering::Acquire), &finished);
                 }
             })
             .ok()?;
@@ -176,25 +182,26 @@ fn open(session: u64, tracks: Vec<EditTrack>) -> Done {
     Done::Opened { session, tracks, reads, homes, layers: inspect(&files) }
 }
 
-fn run(job: Job, http: &dyn Http, finished: &Sender<Done>) {
+fn run(job: Job, http: &dyn Http, credential: &discogs::CredentialProvider,account_epoch:u64, finished: &Sender<Done>) {
+    let discogs_session = discogs::Session::new(http,credential.as_ref(),chilpa_core::network::current().proxy && !chilpa_core::network::current().offline);
     let done = match job {
         Job::Open { session, tracks } => open(session, tracks),
         Job::Search { session, turn, provider, title, artist, catalog_number } => {
             let hits = match provider {
                 Provider::MusicBrainz => musicbrainz::search(&Net::musicbrainz(http), &title, &artist, &catalog_number),
-                Provider::Discogs => discogs::search(&Net::proxy(http), &artist, &title, &catalog_number),
+                Provider::Discogs => discogs::search(&discogs_session, &artist, &title, &catalog_number),
             };
-            Done::Found { session, turn, hits }
+            Done::Found { session, turn, account_epoch, hits }
         }
         Job::Load { session, turn, provider, id } => {
             let release = match provider {
                 Provider::MusicBrainz => musicbrainz::release(&Net::musicbrainz(http), &id),
-                Provider::Discogs => discogs::release(&Net::proxy(http), &id),
+                Provider::Discogs => discogs::release(&discogs_session, &id),
             };
-            Done::Loaded { session, turn, release }
+            Done::Loaded { session, turn, account_epoch, release }
         }
         Job::ArtworkSearch { session, turn, provider, title, artist, catalog_number } => {
-            Done::Candidates { session, turn, candidates: artwork::find(http, session, turn, provider, &title, &artist, &catalog_number) }
+            Done::Candidates { session, turn, account_epoch, candidates: artwork::find(http, session, turn, provider, &title, &artist, &catalog_number,credential) }
         }
         Job::ArtworkFetch { session, turn, provider, url } => Done::Cover { session, turn, cover: artwork::fetch(http, session, provider, &url) },
         Job::ArtworkFile { session, turn, path } => Done::Cover { session, turn, cover: artwork::from_file(session, &path) },

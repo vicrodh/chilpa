@@ -61,4 +61,8 @@ TitledFlow {
         confirmText: "Write into the files"
     }
     PillButton { text: "Confirm dialog"; onClicked: confirm.open() }
+    QuotaDialog { id: quota }
+    PillButton { text: "Discogs quota dialog"; onClicked: quota.open() }
+    DiscogsSettings { rows: ({refresh: function() {}}) }
+    DiscogsQuotaHost {}
 }

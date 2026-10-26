@@ -430,6 +430,9 @@ msgstr "Все темы"
 msgid "All time"
 msgstr "За всё время"
 
+msgid "Allow Chilpa on Discogs, then paste the code below."
+msgstr "Разрешите доступ для Chilpa в Discogs и вставьте код ниже."
+
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Разрешите доступ Chilpa на сайте Last.fm; статус обновится автоматически."
 
@@ -1807,8 +1810,47 @@ msgstr "Отбросить изменения в другой записи?"
 msgid "Discard the changes?"
 msgstr "Отбросить изменения?"
 
+msgid "Discogs account"
+msgstr "Аккаунт Discogs"
+
+msgid "Discogs account setup could not start."
+msgstr "Не удалось начать подключение аккаунта Discogs."
+
+msgid "Discogs authorization code"
+msgstr "Код авторизации Discogs"
+
+msgid "Discogs could not be reached. Try connecting again."
+msgstr "Не удалось связаться с Discogs. Попробуйте подключиться снова."
+
+msgid "Discogs did not accept the token or authorization code. Connect again."
+msgstr "Discogs не принял токен или код авторизации. Подключитесь снова."
+
+msgid "Discogs did not accept your account. Connect it again in Settings > Integrations."
+msgstr "Discogs не принял ваш аккаунт. Подключите его снова в разделе Настройки > Интеграции."
+
+msgid "Discogs has no more requests for this connection. Connect your Discogs account in Settings > Integrations."
+msgstr "Лимит запросов Discogs для этого подключения исчерпан. Подключите аккаунт Discogs в разделе Настройки > Интеграции."
+
+msgid "Discogs is disconnected for now, but its saved account could not be removed. It may reconnect after restarting."
+msgstr "Discogs пока отключён, но сохранённый аккаунт удалить не удалось. После перезапуска он может подключиться снова."
+
+msgid "Discogs is out of requests"
+msgstr "Лимит запросов Discogs исчерпан"
+
+msgid "Discogs limits how many requests one connection can make. To keep searching, connect your account with a personal token or by signing in."
+msgstr "Discogs ограничивает число запросов от одного подключения. Чтобы продолжить поиск, подключите аккаунт с помощью личного токена или войдите в него."
+
 msgid "Discogs release"
 msgstr "Релиз Discogs"
+
+msgid "Discogs sign-in expired. Connect again."
+msgstr "Время входа в Discogs истекло. Подключитесь снова."
+
+msgid "Discogs sign-in was cancelled."
+msgstr "Вход в Discogs отменён."
+
+msgid "Discogs token"
+msgstr "Токен Discogs"
 
 msgid "Disconnect"
 msgstr "Отключить"
@@ -1818,6 +1860,9 @@ msgstr "Отключить учётную запись"
 
 msgid "Disconnected"
 msgstr "Отключено"
+
+msgid "Disconnecting forgets this account here. Revoke access at discogs.com/settings/applications."
+msgstr "Отключение удаляет аккаунт из этого приложения. Отзовите доступ на discogs.com/settings/applications."
 
 msgid "Discord Rich Presence"
 msgstr "Discord Rich Presence"
@@ -1968,6 +2013,9 @@ msgstr "Пусто. Добавляйте треки из любого списк
 
 msgid "Enable"
 msgstr "Включить"
+
+msgid "Enable Chilpa proxy for browser sign-in, or connect with a personal token below."
+msgstr "Включите прокси Chilpa для входа через браузер или используйте личный токен ниже."
 
 msgid "Enable PipeWire in your NixOS configuration"
 msgstr "Включите PipeWire в конфигурации NixOS"
@@ -3847,6 +3895,9 @@ msgstr "Только при включённом эксклюзивном реж
 msgid "Open"
 msgstr "Открыть"
 
+msgid "Open Discogs"
+msgstr "Открыть Discogs"
+
 msgid "Open Last.fm"
 msgstr "Открыть Last.fm"
 
@@ -4023,6 +4074,12 @@ msgstr "Вставьте профиль параметрического EQ ил
 
 msgid "Paste a parametric EQ profile."
 msgstr "Вставьте профиль параметрического EQ."
+
+msgid "Paste a personal access token from discogs.com/settings/developers."
+msgstr "Вставьте личный токен доступа с discogs.com/settings/developers."
+
+msgid "Paste the code Discogs shows after you allow Chilpa."
+msgstr "Вставьте код, который Discogs покажет после разрешения доступа для Chilpa."
 
 msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
 msgstr "Вставьте токен, выданный источником. Chilpa хранит его в зашифрованном виде, и плагин его никогда не видит."
@@ -5215,6 +5272,12 @@ msgstr "Войти"
 msgid "Sign in from Account to see your purchases."
 msgstr "Войдите в разделе «Учётная запись», чтобы увидеть свои покупки."
 
+msgid "Sign in on Discogs to search with your account."
+msgstr "Войдите в Discogs, чтобы выполнять поиск со своим аккаунтом."
+
+msgid "Sign in with Discogs"
+msgstr "Войти через Discogs"
+
 msgid "Sign in with an API key"
 msgstr "Войти с помощью ключа API"
 
@@ -5515,6 +5578,12 @@ msgstr "Этот файл не является изображением JPEG, P
 msgid "That saved query no longer exists."
 msgstr "Этот сохранённый запрос больше не существует."
 
+msgid "The Discogs account changed. Search again."
+msgstr "Аккаунт Discogs изменился. Повторите поиск."
+
+msgid "The Discogs account could not be saved. The connection was not changed."
+msgstr "Не удалось сохранить аккаунт Discogs. Подключение не изменилось."
+
 msgid "The EQ profile is too large."
 msgstr "Профиль EQ слишком большой."
 
@@ -5700,6 +5769,12 @@ msgstr "Результат не сохранён. Просмотрите оши�
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "То же правило, что у ListenBrainz: половина трека или четыре минуты."
+
+msgid "The saved Discogs account could not be opened. Connect again."
+msgstr "Не удалось открыть сохранённый аккаунт Discogs. Подключитесь снова."
+
+msgid "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
+msgstr "Не удалось восстановить сохранённый аккаунт Discogs после отмены. Проверьте аккаунт перед перезапуском."
 
 msgid "The saved folder scan policy is invalid."
 msgstr "Сохранённая политика сканирования папок недействительна."
@@ -6231,6 +6306,9 @@ msgstr "Использовать Quick Connect"
 
 msgid "Use a name of 1 to 80 characters, without line breaks."
 msgstr "Используйте название от 1 до 80 символов без переносов строк."
+
+msgid "Use a token"
+msgstr "Использовать токен"
 
 msgid "Use at most 10 DSP filters."
 msgstr "Используйте не более 10 фильтров DSP."

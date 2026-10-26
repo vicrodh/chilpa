@@ -18,6 +18,8 @@ pub(crate) fn said(provider: Provider, failure: &Failure) -> String {
         Provider::Discogs => "Discogs",
     };
     match failure {
+        Failure::Quota(_) => chilpa_i18n::t("Discogs has no more requests for this connection. Connect your Discogs account in Settings > Integrations."),
+        Failure::Credential => chilpa_i18n::t("Discogs did not accept your account. Connect it again in Settings > Integrations."),
         Failure::Busy(seconds) => chilpa_i18n::t_args("{} is busy; try again in {} seconds", &[name, &seconds.to_string()]),
         Failure::Unreachable(_) => chilpa_i18n::t_args("there is no connection to {}", &[name]),
         Failure::Refused(why) => chilpa_i18n::t_args("{} is not available yet: {}", &[name, why]),

@@ -143,6 +143,14 @@ fn picture_at(http: &dyn Http, url: &str, timeout: Duration, most: usize) -> Opt
     (reply.status == 200 && check(&reply.body).is_ok()).then_some(reply.body)
 }
 
+struct DiscogsPictures<'a> {http: &'a dyn Http}
+impl Http for DiscogsPictures<'_> {
+    fn get(&self,url:&str,_:&str,timeout:Duration,max_bytes:usize)->Result<chilpa_meta::Reply,String> {
+        discogs::fetch_image(self.http,url,chilpa_core::network::current().proxy && !chilpa_core::network::current().offline,timeout,max_bytes)
+            .map_err(|_|"Discogs image unavailable".into())
+    }
+}
+
 /// Keeps a candidate's preview on disk. `None` when it has none to show:
 /// a candidate that cannot be seen is not listed.
 #[allow(clippy::too_many_arguments)]
@@ -177,6 +185,7 @@ pub(crate) fn find(
     title: &str,
     artist: &str,
     catalog_number: &str,
+    credential: &discogs::CredentialProvider,
 ) -> Result<Vec<Candidate>, Failure> {
     let mut found = match provider {
         Provider::MusicBrainz => {
@@ -200,9 +209,8 @@ pub(crate) fn find(
             candidates(http, session, turn, wanted.collect())
         }
         Provider::Discogs => {
-            let covers = discogs::images(&Net::proxy(http), artist, title, catalog_number)?;
-            // The preview comes straight from where the image is. The cover
-            // itself goes through the proxy.
+            let query=discogs::Session::new(http,credential.as_ref(),chilpa_core::network::current().proxy && !chilpa_core::network::current().offline);
+            let covers = discogs::images(&query, artist, title, catalog_number)?;
             let wanted = covers.into_iter().map(|cover| {
                 let detail = match cover.year.as_str() {
                     "" => format!("{} × {}", cover.width, cover.height),
@@ -210,7 +218,7 @@ pub(crate) fn find(
                 };
                 (cover.url.clone(), cover.url, cover.release, detail)
             });
-            candidates(http, session, turn, wanted.collect())
+            candidates(&DiscogsPictures {http}, session, turn, wanted.collect())
         }
     };
     found.truncate(MOST + 1);
@@ -220,13 +228,13 @@ pub(crate) fn find(
 /// The cover itself, fetched and left in wait.
 pub(crate) fn fetch(http: &dyn Http, session: u64, provider: Provider, url: &str) -> Result<Waiting, String> {
     let could_not = || chilpa_i18n::t("that cover could not be fetched");
+    if provider == Provider::Discogs {
+        let reply=discogs::fetch_image(http,url,chilpa_core::network::current().proxy && !chilpa_core::network::current().offline,Duration::from_secs(30),LARGEST).map_err(|_|could_not())?;
+        return if reply.status == 200 {wait(session,reply.body,"discogs")} else {Err(could_not())};
+    }
     let (address, from) = match provider {
         Provider::MusicBrainz => (url.to_string(), "musicbrainz"),
-        Provider::Discogs => {
-            // The proxy counts this request with every other it is asked.
-            Net::proxy(http).pace.wait();
-            (discogs::image_url(url).map_err(|_| could_not())?, "discogs")
-        }
+        Provider::Discogs => unreachable!("Discogs images use the credential-free image transport"),
     };
     let reply = http.get(&address, "image/*", Duration::from_secs(30), LARGEST).map_err(|_| could_not())?;
     if reply.status != 200 {
@@ -374,7 +382,8 @@ mod tests {
 
     #[test]
     fn covers_found_at_once_keep_their_order_and_a_missing_one_is_left_out() {
-        let found = find(&ByAddress, u64::MAX, 1, Provider::MusicBrainz, "A record", "Someone", "").unwrap();
+        let credential:discogs::CredentialProvider=std::sync::Arc::new(||discogs::Credential::Anonymous);
+        let found = find(&ByAddress, u64::MAX, 1, Provider::MusicBrainz, "A record", "Someone", "",&credential).unwrap();
         let titles: Vec<&str> = found.iter().map(|c| c.title.as_str()).collect();
         assert_eq!(titles, [RELEASES[0], RELEASES[2]]);
         assert!(found.iter().all(|c| c.url.ends_with("/front")), "the cover kept is the original, not the preview");

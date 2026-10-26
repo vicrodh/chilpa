@@ -429,6 +429,9 @@ msgstr "Todos los temas"
 msgid "All time"
 msgstr "Todo"
 
+msgid "Allow Chilpa on Discogs, then paste the code below."
+msgstr "Autoriza a Chilpa en Discogs y pega el código aquí abajo."
+
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Permite a Chilpa en Last.fm; esto se actualiza solo."
 
@@ -1805,8 +1808,47 @@ msgstr "¿Descartar los cambios del otro disco?"
 msgid "Discard the changes?"
 msgstr "¿Descartar los cambios?"
 
+msgid "Discogs account"
+msgstr "Cuenta de Discogs"
+
+msgid "Discogs account setup could not start."
+msgstr "No se pudo iniciar la conexión de la cuenta de Discogs."
+
+msgid "Discogs authorization code"
+msgstr "Código de autorización de Discogs"
+
+msgid "Discogs could not be reached. Try connecting again."
+msgstr "No se pudo contactar con Discogs. Intenta conectarlo de nuevo."
+
+msgid "Discogs did not accept the token or authorization code. Connect again."
+msgstr "Discogs no aceptó el token o el código de autorización. Conecta de nuevo."
+
+msgid "Discogs did not accept your account. Connect it again in Settings > Integrations."
+msgstr "Discogs no aceptó tu cuenta. Conéctala de nuevo en Ajustes > Integraciones."
+
+msgid "Discogs has no more requests for this connection. Connect your Discogs account in Settings > Integrations."
+msgstr "Discogs agotó las solicitudes para esta conexión. Conecta tu cuenta de Discogs en Ajustes > Integraciones."
+
+msgid "Discogs is disconnected for now, but its saved account could not be removed. It may reconnect after restarting."
+msgstr "Discogs está desconectado por ahora, pero no se pudo eliminar la cuenta guardada. Podría reconectarse al reiniciar."
+
+msgid "Discogs is out of requests"
+msgstr "Discogs agotó las solicitudes"
+
+msgid "Discogs limits how many requests one connection can make. To keep searching, connect your account with a personal token or by signing in."
+msgstr "Discogs limita las solicitudes que puede hacer una conexión. Para seguir buscando, conecta tu cuenta con un token personal o inicia sesión."
+
 msgid "Discogs release"
 msgstr "Release de Discogs"
+
+msgid "Discogs sign-in expired. Connect again."
+msgstr "El inicio de sesión en Discogs venció. Conecta de nuevo."
+
+msgid "Discogs sign-in was cancelled."
+msgstr "Se canceló el inicio de sesión en Discogs."
+
+msgid "Discogs token"
+msgstr "Token de Discogs"
 
 msgid "Disconnect"
 msgstr "Desconectar"
@@ -1816,6 +1858,9 @@ msgstr "Desconectar la cuenta"
 
 msgid "Disconnected"
 msgstr "Desconectado"
+
+msgid "Disconnecting forgets this account here. Revoke access at discogs.com/settings/applications."
+msgstr "Desconectar olvida esta cuenta aquí. Revoca el acceso en discogs.com/settings/applications."
 
 msgid "Discord Rich Presence"
 msgstr "Discord Rich Presence"
@@ -1966,6 +2011,9 @@ msgstr "Vacía. Agrega pistas desde cualquier lista con clic derecho."
 
 msgid "Enable"
 msgstr "Activar"
+
+msgid "Enable Chilpa proxy for browser sign-in, or connect with a personal token below."
+msgstr "Activa el proxy de Chilpa para iniciar sesión en el navegador, o usa un token personal aquí abajo."
 
 msgid "Enable PipeWire in your NixOS configuration"
 msgstr "Activa PipeWire en tu configuración de NixOS"
@@ -3844,6 +3892,9 @@ msgstr "Sólo con el modo exclusivo activo."
 msgid "Open"
 msgstr "Abrir"
 
+msgid "Open Discogs"
+msgstr "Abrir Discogs"
+
 msgid "Open Last.fm"
 msgstr "Abrir Last.fm"
 
@@ -4020,6 +4071,12 @@ msgstr "Pega un perfil de EQ paramétrico o un preset JSON de Chilpa. Si hay fil
 
 msgid "Paste a parametric EQ profile."
 msgstr "Pega un perfil de EQ paramétrico."
+
+msgid "Paste a personal access token from discogs.com/settings/developers."
+msgstr "Pega un token de acceso personal de discogs.com/settings/developers."
+
+msgid "Paste the code Discogs shows after you allow Chilpa."
+msgstr "Pega el código que muestra Discogs después de autorizar a Chilpa."
 
 msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
 msgstr "Pega el token proporcionado por la fuente. Chilpa lo guarda cifrado y el plugin nunca lo ve."
@@ -5211,6 +5268,12 @@ msgstr "Iniciar sesión"
 msgid "Sign in from Account to see your purchases."
 msgstr "Inicia sesión en Cuenta para ver tus compras."
 
+msgid "Sign in on Discogs to search with your account."
+msgstr "Inicia sesión en Discogs para buscar con tu cuenta."
+
+msgid "Sign in with Discogs"
+msgstr "Iniciar sesión con Discogs"
+
 msgid "Sign in with an API key"
 msgstr "Iniciar sesión con una API key"
 
@@ -5510,6 +5573,12 @@ msgstr "Ese archivo no es una imagen JPEG, PNG o WebP"
 msgid "That saved query no longer exists."
 msgstr "Esa consulta guardada ya no existe."
 
+msgid "The Discogs account changed. Search again."
+msgstr "La cuenta de Discogs cambió. Busca de nuevo."
+
+msgid "The Discogs account could not be saved. The connection was not changed."
+msgstr "No se pudo guardar la cuenta de Discogs. La conexión no cambió."
+
 msgid "The EQ profile is too large."
 msgstr "El perfil de EQ es demasiado grande."
 
@@ -5695,6 +5764,12 @@ msgstr "El resultado no se ha guardado. Revisa el error antes de salir."
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "La misma regla que ListenBrainz: la mitad de una pista, o cuatro minutos."
+
+msgid "The saved Discogs account could not be opened. Connect again."
+msgstr "No se pudo abrir la cuenta de Discogs guardada. Conecta de nuevo."
+
+msgid "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
+msgstr "No se pudo restaurar la cuenta de Discogs guardada tras cancelar. Revisa la cuenta antes de reiniciar."
 
 msgid "The saved folder scan policy is invalid."
 msgstr "La política de escaneo de carpetas guardada no es válida."
@@ -6226,6 +6301,9 @@ msgstr "Usar Quick Connect"
 
 msgid "Use a name of 1 to 80 characters, without line breaks."
 msgstr "Usa un nombre de 1 a 80 caracteres, sin saltos de línea."
+
+msgid "Use a token"
+msgstr "Usar un token"
 
 msgid "Use at most 10 DSP filters."
 msgstr "Puedes usar hasta 10 filtros DSP."

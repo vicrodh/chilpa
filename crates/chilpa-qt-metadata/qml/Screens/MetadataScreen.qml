@@ -56,6 +56,7 @@ Item {
         else
             MetadataEditor.save()
     }
+    DiscogsQuotaHost { current: page.visible }
     function askClose() {
         page.forceActiveFocus()
         if (doc.dirty)

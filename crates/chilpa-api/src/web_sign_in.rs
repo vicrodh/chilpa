@@ -63,6 +63,11 @@ pub(crate) fn executable() -> Option<PathBuf> {
 
 /// Opens the window and waits until the address is reached or it is closed.
 pub(crate) fn run(executable: &Path, capture: &Capture, title: &str) -> Outcome {
+    run_controlled(executable,capture,title,LONGEST,||false)
+}
+
+pub(crate) fn run_controlled(executable: &Path, capture: &Capture, title: &str, limit:Duration,cancel:impl Fn()->bool) -> Outcome {
+    if cancel() {return Outcome::Closed;}
     let mut command = Command::new(executable);
     // The window keeps its website data between sign-ins, as a browser does, so a
     // bot check the person passed once is not asked again.
@@ -81,7 +86,7 @@ pub(crate) fn run(executable: &Path, capture: &Capture, title: &str) -> Outcome 
     let status = loop {
         match child.try_wait() {
             Ok(Some(status)) => break status,
-            Ok(None) if started.elapsed() < LONGEST => std::thread::sleep(Duration::from_millis(200)),
+            Ok(None) if !cancel() && started.elapsed() < limit => std::thread::sleep(Duration::from_millis(200)),
             Ok(None) => {
                 let _ = child.kill();
                 let _ = child.wait();
@@ -151,5 +156,19 @@ mod tests {
         assert!(matches!(run(&elsewhere, &found, "Source"), Outcome::Failed(_)));
         let unavailable = script(folder.path(), "exit 3");
         assert!(matches!(run(&unavailable, &found, "Source"), Outcome::Failed(_)));
+    }
+    #[cfg(unix)]
+    #[test]
+    fn a_cancelled_sign_in_does_not_start_and_an_open_child_is_reaped() {
+        let folder=tempfile::tempdir().unwrap();
+        let capture=Capture::from_link(&json!("https://login.example.test/a"),&capture()).unwrap();
+        assert_eq!(run_controlled(&folder.path().join("missing"),&capture,"Source",Duration::from_secs(1),||true),Outcome::Closed);
+        let window=script(folder.path(),"exec sleep 30");
+        let cancel=std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let signal=cancel.clone();
+        let trigger=std::thread::spawn(move||{std::thread::sleep(Duration::from_millis(30));signal.store(true,std::sync::atomic::Ordering::Release);});
+        let began=Instant::now();
+        assert_eq!(run_controlled(&window,&capture,"Source",Duration::from_secs(1),||cancel.load(std::sync::atomic::Ordering::Acquire)),Outcome::Closed);
+        trigger.join().unwrap();assert!(began.elapsed()<Duration::from_secs(2));
     }
 }

@@ -22,6 +22,7 @@ pub mod qobject {
         #[qproperty(bool, open)]
         /// Opening, saving, or waiting for something it asked for.
         #[qproperty(bool, busy)]
+        #[qproperty(bool, discogs_quota)]
         type MetadataEditor = super::MetadataEditorRust;
 
         /// Zero as the track opens the record on its first.
@@ -51,6 +52,7 @@ pub mod qobject {
         #[qinvokable] fn artwork_from_file(self: Pin<&mut MetadataEditor>);
         #[qinvokable] fn clear_artwork(self: Pin<&mut MetadataEditor>);
         #[qinvokable] fn save(self: Pin<&mut MetadataEditor>) -> bool;
+        #[qinvokable] fn take_discogs_quota(self: Pin<&mut MetadataEditor>) -> bool;
     }
 
     impl cxx_qt::Threading for MetadataEditor {}
@@ -71,6 +73,7 @@ pub struct MetadataEditorRust {
     rev: i32,
     open: bool,
     busy: bool,
+    discogs_quota: bool,
     saving: bool,
     /// Cleared by the poll that sees the editor closed, which stops its thread.
     polling: Option<Arc<AtomicBool>>,
@@ -99,6 +102,7 @@ impl qobject::MetadataEditor {
     pub fn choose_artwork(self: Pin<&mut Self>, candidate: i32) -> bool { self.then(|api| api.metadata_choose_artwork(candidate.max(0) as usize)) }
     pub fn clear_artwork(self: Pin<&mut Self>) { self.then(|api| api.metadata_clear_artwork()) }
     pub fn save(self: Pin<&mut Self>) -> bool { self.then(|api| api.metadata_save()) }
+    pub fn take_discogs_quota(self: Pin<&mut Self>) -> bool { self.then(|api|api.take_discogs_quota()) }
 
     pub fn artwork_from_file(self: Pin<&mut Self>) {
         // The picker is the desktop's and blocks until it is answered, so it
@@ -138,6 +142,7 @@ impl qobject::MetadataEditor {
         let was_saving = std::mem::replace(&mut self.as_mut().rust_mut().saving, saving);
         self.as_mut().set_open(open);
         self.as_mut().set_busy(state == "opening" || saving || waiting);
+        self.as_mut().set_discogs_quota(app::with(|api|api.discogs_quota_pending()));
         self.as_mut().set_rev(rev);
         if was_saving && !saving {
             // What a save left changes what every list shows: the facade

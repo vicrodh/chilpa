@@ -336,6 +336,11 @@ pub const SECTIONS: &[Section] = &[
             Group { title: "Discord", settings: &[
                 setting("integrations.discord.enabled", Chilpa::mark("Discord Rich Presence"), Chilpa::mark("Show what you're listening to as your Discord status. Opt-in — Discord must be running."), Control::Toggle),
             ] },
+            Group { title: "Discogs", settings: &[
+                action("integrations.discogs.account", Chilpa::mark("Discogs account"), Chilpa::mark("Sign in on Discogs to search with your account."), Control::Button, Chilpa::mark("Connect")),
+                action("integrations.discogs.token", Chilpa::mark("Discogs token"), Chilpa::mark("Paste a personal access token from discogs.com/settings/developers."), Control::Secret, Chilpa::mark("Connect")),
+                action("integrations.discogs.code", Chilpa::mark("Discogs authorization code"), Chilpa::mark("Paste the code Discogs shows after you allow Chilpa."), Control::Secret, Chilpa::mark("Connect")),
+            ] },
             Group { title: "MusicBrainz", settings: &[
                 setting("integrations.musicbrainz.enabled", Chilpa::mark("Use MusicBrainz"), Chilpa::mark("Chilpa sends no telemetry. When enabled, artist and release searches make one-way requests to MusicBrainz for results. Turning it off disables MusicBrainz features in Artist Network."), Control::Toggle),
             ] },

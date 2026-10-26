@@ -1,6 +1,6 @@
 //! Where the proxy is.
 //!
-//! The one place that says so in this crate. Discogs is asked through it
-//! because its key cannot ship inside a program anyone can read.
+//! I keep its address here. Discogs uses it for the OAuth handshake and
+//! optional anonymous backup; account requests go directly to Discogs.
 
 pub const ORIGIN: &str = "https://api.chilpa.app";

@@ -1,2 +1,3 @@
 module app.chilpa.metadata
 singleton MetadataEditor 1.0 MetadataEditor.qml
+singleton DiscogsAccount 1.0 DiscogsAccount.qml

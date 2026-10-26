@@ -30,6 +30,10 @@ pub struct Reply {
 pub trait Http: Send + Sync {
     /// `Err` is nothing came back. Any status is an `Ok`.
     fn get(&self, url: &str, accept: &str, timeout: Duration, max_bytes: usize) -> Result<Reply, String>;
+    /// I refuse rather than silently drop credentials in an older client.
+    fn get_as(&self, _: &str, _: &str, _: Duration, _: usize, _: &str) -> Result<Reply, String> {
+        Err("this client sends no credentials".into())
+    }
 }
 
 /// One request start at a time, no closer together than `every`.
@@ -64,6 +68,8 @@ static MUSICBRAINZ: Pace = Pace::new(Duration::from_millis(1_100));
 /// The proxy allows thirty requests a minute from an address, whatever
 /// they are for.
 static PROXY: Pace = Pace::new(Duration::from_millis(2_100));
+static DISCOGS_ANONYMOUS: Pace = Pace::new(Duration::from_millis(2_500));
+static DISCOGS_AUTHENTICATED: Pace = Pace::new(Duration::from_millis(1_100));
 
 /// For what has no limit of its own to keep.
 static FREE: Pace = Pace::new(Duration::ZERO);
@@ -83,6 +89,9 @@ impl<'a> Net<'a> {
 
     pub fn proxy(http: &'a dyn Http) -> Self {
         Self { http, pace: &PROXY, nap: std::thread::sleep }
+    }
+    pub fn discogs_direct(http: &'a dyn Http, authenticated: bool) -> Self {
+        Self { http, pace: if authenticated { &DISCOGS_AUTHENTICATED } else { &DISCOGS_ANONYMOUS }, nap: std::thread::sleep }
     }
 
     /// Unpaced: the Cover Art Archive, an image's own host, and tests.
@@ -116,6 +125,10 @@ pub enum Failure {
     Unreachable(String),
     /// Told to wait, in seconds.
     Busy(u64),
+    /// Anonymous direct access and its optional backup have no quota left.
+    Quota(u64),
+    /// An authenticated request was refused. I never retry it anonymously.
+    Credential,
     /// The proxy does not serve this to Chilpa.
     Refused(String),
     /// Answered, and not with what was expected.
@@ -140,6 +153,7 @@ pub(crate) mod testing {
     pub(crate) struct Canned {
         replies: Mutex<VecDeque<Result<Reply, String>>>,
         asked: Mutex<Vec<String>>,
+        authorization: Mutex<Vec<Option<String>>>,
     }
 
     impl Canned {
@@ -165,12 +179,19 @@ pub(crate) mod testing {
         pub(crate) fn asked(&self) -> Vec<String> {
             self.asked.lock().unwrap().clone()
         }
+        pub(crate) fn authorization(&self) -> Vec<Option<String>> { self.authorization.lock().unwrap().clone() }
     }
 
     impl Http for Canned {
         fn get(&self, url: &str, _: &str, _: Duration, _: usize) -> Result<Reply, String> {
             self.asked.lock().unwrap().push(url.to_string());
+            self.authorization.lock().unwrap().push(None);
             self.replies.lock().unwrap().pop_front().unwrap_or_else(|| Err("nothing was loaded".to_string()))
+        }
+        fn get_as(&self, url: &str, _: &str, _: Duration, _: usize, authorization: &str) -> Result<Reply, String> {
+            self.asked.lock().unwrap().push(url.into());
+            self.authorization.lock().unwrap().push(Some(authorization.into()));
+            self.replies.lock().unwrap().pop_front().unwrap_or_else(|| Err("nothing was loaded".into()))
         }
     }
 }
@@ -178,6 +199,21 @@ pub(crate) mod testing {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn get_as_default_refuses_instead_of_sending_anonymous_requests() {
+        struct Old;
+        impl Http for Old {
+            fn get(&self,_:&str,_:&str,_:Duration,_:usize)->Result<Reply,String> {panic!("credentials must not be dropped")}
+        }
+        assert!(Old.get_as("https://api.discogs.com/oauth/identity","application/json",Duration::ZERO,1,"Discogs token=marker").is_err());
+    }
+    #[test]
+    fn discogs_modes_have_distinct_process_wide_paces() {
+        let http=testing::Canned::new();
+        assert_eq!(Net::discogs_direct(&http,false).pace.every,Duration::from_millis(2500));
+        assert_eq!(Net::discogs_direct(&http,true).pace.every,Duration::from_millis(1100));
+        assert!(std::ptr::eq(Net::discogs_direct(&http,true).pace,Net::discogs_direct(&http,true).pace));
+    }
 
     #[test]
     fn two_callers_share_one_pace() {

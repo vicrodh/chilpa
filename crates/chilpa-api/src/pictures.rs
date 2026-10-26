@@ -99,6 +99,7 @@ pub(crate) fn keep(address: &str) -> Option<String> {
         accept: "image/*",
         timeout: Duration::from_secs(8),
         max_bytes: LARGEST,
+        authorization: None,
     };
     let got = chilpa_core::fetch(&asked).ok().filter(|reply| reply.status == 200)?;
     let extension = kind(&got.body)?;
