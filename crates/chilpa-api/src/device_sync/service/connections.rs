@@ -19,6 +19,52 @@ mod tests {
     fn destination(id: &str, profile: &str) -> Destination {
         Destination { id:id.into(), name:String::new(), storage:String::new(), available:String::new(), capacity:String::new(), writable:true, profiles:if profile.is_empty() {vec![]} else {vec![profile.into()]} }
     }
+    fn finish(service: &mut Service, outcome: super::super::Outcome) {
+        let (sender, receiver) = std::sync::mpsc::sync_channel(1);
+        service.pending = Some(receiver);
+        assert!(sender.send(Ok(outcome)).is_ok());
+        service.poll();
+    }
+    #[test]
+    fn unchanged_connections_preserve_a_manual_choice_preview_and_recovery_notice() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut service = Service::new(directory.path().join("absent-library"), directory.path().join("profiles"));
+        service.catalog.profiles.push(Profile { id:"a".repeat(32), target_id:"b".repeat(32), name:"Card".into(), root:Root::Mtp { folder:"Chilpa".into() }, picks:vec![], remove_unselected:false, revision:0 });
+        service.status.profile = "a".repeat(32);
+        service.status.destination = "other/2".into();
+        service.status.phase = "review".into();
+        service.status.plan = "current-preview".into();
+        service.destinations = vec![destination("paired/1", &"a".repeat(32)), destination("other/2", "")];
+        let previous = service.status.clone();
+        let mut reordered = service.destinations.clone();
+        reordered.reverse();
+        let revision = service.revision();
+        finish(&mut service, super::super::Outcome::Connections(reordered, None, previous));
+        assert_eq!(service.status.destination, "other/2");
+        assert_eq!(service.status.plan, "current-preview");
+        assert_eq!(service.status.phase, "review");
+        assert_eq!(service.destinations[0].id, "paired/1");
+        assert_eq!(service.revision(), revision, "unchanged connections do not rebuild catalogs");
+        service.status.phase = "error".into();
+        service.status.plan.clear();
+        service.status.error = Some(crate::device_sync::UiError { message:"Recovery required".into(), detail:String::new(), recovery:true });
+        let previous = service.status.clone();
+        let destinations = service.destinations.clone();
+        finish(&mut service, super::super::Outcome::Connections(destinations, None, previous));
+        assert!(service.status.error.as_ref().unwrap().recovery);
+    }
+    #[test]
+    fn reopening_keeps_the_operation_error_when_discovery_succeeds() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut service = Service::new(directory.path().join("absent-library"), directory.path().join("profiles"));
+        service.status.destination = "mounted".into();
+        service.status.phase = "error".into();
+        service.status.error = Some(crate::device_sync::UiError { message:"Recovery required".into(), detail:String::new(), recovery:true });
+        let previous = service.status.clone();
+        finish(&mut service, super::super::Outcome::Reopened(vec![], super::super::library::Labels::new(), vec![destination("mounted", "")], None, previous));
+        assert_eq!(service.status.phase, "error");
+        assert!(service.status.error.as_ref().unwrap().recovery);
+    }
     #[test]
     fn last_profile_is_persisted_separately_from_the_compatible_catalog() {
         let directory = tempfile::tempdir().unwrap();
