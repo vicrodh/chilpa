@@ -5,11 +5,8 @@ use serde_json::{json, Value};
 
 impl Service {
     pub fn catalog_json(&self, query: &str) -> String {
-        let query: String = query
-            .chars()
-            .take(256)
-            .flat_map(char::to_lowercase)
-            .collect();
+        let filter: String = query.chars().take(256).collect();
+        let query = filter.to_lowercase();
         let options: Vec<_> = self
             .options()
             .iter()
@@ -42,7 +39,7 @@ impl Service {
             "destination_values":self.destinations().iter().map(|d|&d.id).collect::<Vec<_>>(),
             "destination_details":destinations.iter().map(|d|&d["detail"]).collect::<Vec<_>>(),
             "destination_enabled":self.destinations().iter().map(|d|d.writable).collect::<Vec<_>>(),
-            "profiles":profiles,"destinations":destinations,"options":options,"profile_folder":folder,
+            "profiles":profiles,"destinations":destinations,"options":options,"profile_folder":folder,"filter":filter,
             "has_profiles":!profiles.is_empty(),"has_connected":self.destinations().iter().any(|d|d.id!="mounted"),
             "selected":i18n::tf("{} selection","{} selections",selected as i64,&[&selected.to_string()]),
             "storage_detail":destinations.iter().zip(self.destinations()).find(|(_,d)|d.id==self.status().destination).map(|(row,_)|&row["detail"]),

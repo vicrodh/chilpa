@@ -25,8 +25,8 @@ QtObject {
     function selectDestination(id) { lastAction = ["destination",id] }
     function createProfile(name,folder) { lastAction = ["create",name,folder] }
     function toggle(id) { lastAction = ["toggle",id] }
-    function useTracks(ids) { lastAction = ["tracks",ids] }
-    function filter(text) { lastAction = ["filter",text] }
+    function useTracks(ids) { data = Object.assign({},data,{filter:""}); lastAction = ["tracks",ids] }
+    function filter(text) { data = Object.assign({},data,{filter:text}); lastAction = ["filter",text] }
     function removals(enabled) { lastAction = ["removals",enabled] }
     function preview(recover) { lastAction = ["preview",recover] }
     function apply(token,removals) { lastAction = ["apply",token,removals] }

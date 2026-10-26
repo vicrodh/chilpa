@@ -183,6 +183,7 @@ impl qobject::DeviceSync {
         self.run(|s| s.toggle(&id.to_string()));
     }
     pub fn use_tracks(mut self: Pin<&mut Self>, ids: &QString) {
+        self.as_mut().rust_mut().filter.clear();
         let active = self.rust().viewers > 0;
         self.as_mut().run(|service| {
             service.stage_library_tracks(&ids.to_string())?;
