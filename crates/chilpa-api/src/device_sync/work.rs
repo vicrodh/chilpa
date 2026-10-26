@@ -46,6 +46,10 @@ pub(crate) fn mounted() -> Destination {
     }
 }
 pub(crate) fn discover(cancel: &Cancellation) -> (Vec<Destination>, Option<UiError>) {
+    // I isolate mounted-storage smoke fixtures from every physical USB interface.
+    if std::env::var("CHILPA_DEVICE_TEST_MOUNTED_ONLY").as_deref() == Ok("1") {
+        return (vec![mounted()], None);
+    }
     let mut rows = Vec::new();
     let mut error = None;
     #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]

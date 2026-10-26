@@ -8,6 +8,7 @@ import "../Theme"
 Rectangle {
     id: panel
     property var document: ({})
+    onDocumentChanged: if (search && search.text !== (document.query || "")) search.text = document.query || ""
     property bool busy: false
     readonly property string location: [document.source,document.album,document.page].join("/")
     onLocationChanged: list.positionViewAtBeginning()

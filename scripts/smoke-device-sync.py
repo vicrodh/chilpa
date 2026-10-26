@@ -79,7 +79,8 @@ def prepare(args):
         Path(target).mkdir()
     values = {"SMOKE_STORAGE": storage, "SMOKE_FOLDER": target, "SMOKE_PROFILE": "DAP smoke",
               "SMOKE_MEDIA_ROOT": str(media), "SMOKE_LARGE_ROOT": str(large),
-              "SMOKE_CAPTURE_PREFIX": str(output / "capture-"), "SMOKE_CAPTURE": str(output / "capture.png")}
+              "SMOKE_CAPTURE_PREFIX": str(output / "capture-"), "SMOKE_CAPTURE": str(output / "capture.png"),
+              "SMOKE_SECONDS": str(args.seconds)}
     source = (ROOT / "fixtures" / FIXTURES[args.scenario]).read_text()
     # I substitute inside QML string literals, including Windows-safe backslash escaping.
     for key in sorted(values, key=len, reverse=True):
@@ -89,17 +90,21 @@ def prepare(args):
     manifest = dict(version=1, scenario=args.scenario, storage=storage, target=target,
                     profile=str(profile), binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest(),
                     fixture_sha256=hashlib.sha256(fixture.read_bytes()).hexdigest())
+    if args.scenario == "browser":
+        manifest["duration_seconds"] = args.seconds
     (output / "smoke.json").write_text(json.dumps(manifest, indent=2) + "\n")
     return output, profile, fixture, manifest
 
 
-def environment(args, profile, fixture):
+def environment(args, profile, fixture, mounted_only=False):
     env = {key: value for key, value in os.environ.items()
            if not key.startswith(("CHILPA_", "QT_", "QSG_"))
            and key not in ("QML_IMPORT_PATH", "QML2_IMPORT_PATH", "LD_PRELOAD")}
     env.update(XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"),
                XDG_CACHE_HOME=str(profile / "cache"), QT_NO_XDG_DESKTOP_PORTAL="1", QSG_INFO="1",
                QSG_RHI_SHADER_CACHE_DIR=str(profile / "renderer"), CHILPA_QML_SMOKE=str(fixture))
+    if mounted_only:
+        env["CHILPA_DEVICE_TEST_MOUNTED_ONLY"] = "1"
     if args.platform == "offscreen":
         env.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software", CHILPA_RENDERER="software")
     else:
@@ -142,9 +147,9 @@ def run(args):
     output, profile, fixture, manifest = prepare(args)
     print("Device smoke output: " + str(output), flush=True)
     started, samples, target = time.monotonic(), [], None
-    deadline = 1900 if args.scenario in ("lifecycle", "browser") else 360
+    deadline = args.seconds + 180 if args.scenario == "browser" else 1900 if args.scenario == "lifecycle" else 360
     with (output / "run.log").open("w") as log:
-        process = subprocess.Popen(command(args.binary, output), env=environment(args, profile, fixture),
+        process = subprocess.Popen(command(args.binary, output), env=environment(args, profile, fixture, manifest["storage"] == "mounted"),
                                    stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
         try:
             while process.poll() is None and time.monotonic() - started < deadline:
@@ -184,12 +189,15 @@ def main():
     parser.add_argument("--mtp", help="explicit LOCATION/STORAGE; I write only a new dedicated smoke folder")
     parser.add_argument("--scenario", choices=FIXTURES, default="basic")
     parser.add_argument("--platform", choices=("native", "offscreen"), default="native")
+    parser.add_argument("--seconds", type=int, default=1800, help="browser lifecycle duration, 1 to 1800 seconds")
     args = parser.parse_args()
     args.binary = args.binary.resolve(strict=True)
     if not sys.platform.startswith("linux") and sys.platform != "darwin":
         parser.error("this native smoke runner currently supports Linux and macOS")
     if args.scenario != "basic" and not args.seed:
         parser.error("this scenario requires --seed from a basic smoke")
+    if not 1 <= args.seconds <= 1800:
+        parser.error("--seconds must be between 1 and 1800")
     return run(args)
 
 

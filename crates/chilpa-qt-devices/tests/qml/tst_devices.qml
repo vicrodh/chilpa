@@ -154,7 +154,12 @@ TestCase {
         compare(DeviceSync.status.plan,"prepared")
     }
     function test_an_incoming_album_returns_from_history_and_clears_the_picker_filter() {
-        child("deviceSelectionSearch").text = "An older filter"
+        const search = child("deviceSelectionSearch")
+        search.text = "An older filter"
+        DeviceSync.useTracks("[42,43]")
+        compare(child("deviceSelectionSearch"),search)
+        compare(search.text,"")
+        search.text = "Another older filter"
         child("deviceSections").activated(1)
         compare(page.recorded,true)
         DeviceSync.useTracks("[42,43]")
