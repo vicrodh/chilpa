@@ -9,16 +9,22 @@ Item {
     required property var rows
     property bool current: false
     property var ownerWindow: Window.window
+    readonly property var lifetime: ({alive:true})
     readonly property bool seen: current && ownerWindow?.visible === true && ownerWindow.visibility !== Window.Minimized
-    onSeenChanged: if (seen) DiscogsAccount.refresh()
-    Component.onCompleted: if (seen) DiscogsAccount.refresh()
+    // I leave construction and model notifications before updating another model.
+    function read(life) { if (life.alive && seen) DiscogsAccount.refresh() }
+    function reload(life) { if (life.alive && seen) rows.refresh() }
+    function schedule() { if (seen) Qt.callLater(watcher.read,lifetime) }
+    onSeenChanged: schedule()
+    Component.onCompleted: schedule()
+    Component.onDestruction: lifetime.alive = false
     Connections {
         target: Prefs
-        function onRevChanged() { if (watcher.seen) DiscogsAccount.refresh() }
+        function onRevChanged() { watcher.schedule() }
     }
     Connections {
         target: DiscogsAccount
-        function onRevisionChanged() { if (watcher.seen) watcher.rows.refresh() }
+        function onRevisionChanged() { if (watcher.seen) Qt.callLater(watcher.reload,watcher.lifetime) }
     }
     Timer {
         objectName: "discogsSettingsRefresh"
