@@ -27,7 +27,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-storage-events-") as directory:
     subprocess.run([str(Path(qt) / "moc"), str(sources / "cxx/storage_events.h"), "-o", str(moc)], check=True, env=environment)
     flags = shlex.split(subprocess.check_output(["pkg-config", "--cflags", "--libs", "Qt6Quick", "Qt6Qml", "Qt6Test"], text=True))
     if sys.platform == "darwin":
-        flags += ["-framework", "DiskArbitration", "-framework", "IOKit"]
+        flags += ["-framework", "DiskArbitration", "-framework", "IOKit", "-framework", "CoreFoundation"]
     binary = temporary / "storage-events"
     subprocess.run(["c++", "-std=c++17", "-fPIC", str(sources / "cxx/storage_events.cpp"), str(sources / "tests/storage_events.cpp"), str(moc), "-o", str(binary), *flags], check=True, env=environment)
     command = [str(binary)] if sys.platform == "darwin" else ["dbus-run-session", "--", str(binary)]
