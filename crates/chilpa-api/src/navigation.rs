@@ -29,6 +29,7 @@ pub enum Screen {
     PluginDownloads,
     /// Settings > Library > Library folders.
     LibraryFolders,
+    DeviceSync,
     /// The library by folder, or a folder opened from the disk.
     Folders,
     OpenMedia,
@@ -64,6 +65,7 @@ impl Screen {
             Screen::Settings => "settings",
             Screen::PluginDownloads => "pluginDownloads",
             Screen::LibraryFolders => "libraryFolders",
+            Screen::DeviceSync => "deviceSync",
             Screen::Folders => "folders",
             Screen::OpenMedia => "openMedia",
             Screen::Playlist => "playlist",
@@ -80,7 +82,7 @@ impl Screen {
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::DeviceSync, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -288,6 +290,7 @@ impl crate::Chilpa {
             Screen::Albums => (self.t("Albums"), "disc"),
             Screen::Tracks => (self.t("Tracks"), "music"),
             Screen::Settings => (self.t("Settings"), "settings"),
+            Screen::DeviceSync => (self.t("Device sync"), "deviceMobile"),
             Screen::PluginDownloads => (self.plugins.as_ref().and_then(|plugins| plugins.try_lock().ok())
                 .and_then(|plugins| plugins.list().into_iter().find(|plugin| plugin.id == r.key).map(|plugin| plugin.name))
                 .unwrap_or_else(|| self.t("Purchases")), "download"),

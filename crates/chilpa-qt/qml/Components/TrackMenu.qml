@@ -1,5 +1,6 @@
 import QtQuick
 import app.chilpa
+import app.chilpa.devices
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
@@ -15,7 +16,7 @@ CascadingMenu {
             play: Icons.playerPlayFilled, queue: Lucide.listEnd,
             next: Lucide.listStart, later: Lucide.listPlus,
             pick: Icons.playlistAdd, album: Icons.disc, artist: SourceGlyphs.musicArtist,
-            folder: Icons.folder,
+            folder: Icons.folder, sync: Icons.deviceMobile,
             remove: Icons.trash, dequeue: Icons.trash,
             up: Icons.chevronUp, down: Icons.chevronDown
         }
@@ -49,6 +50,9 @@ CascadingMenu {
         else if (act === "pick") {
             picker.trackIdsJson = model.chosenTrackIdsJson(row)
             picker.show(x, y)
+        } else if (act === "sync") {
+            DeviceSync.useTracks(model.chosenTrackIdsJson(row))
+            Navigation.go("deviceSync", 0)
         } else if (act === "dequeue")
             Player.removeQueued(row)
         else if (act === "remove")

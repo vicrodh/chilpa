@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import app.chilpa.playlists
 import app.chilpa
+import app.chilpa.devices
 import "../../qml/Components"
 
 TestCase {
@@ -42,5 +43,16 @@ TestCase {
         mouseClick(pick, pick.width / 2, pick.height / 2)
         tryCompare(menu, "visible", false)
         compare(AddToPlaylist.lastAsked, "[42,43]", "the window's one picker is asked for the tracks")
+    }
+    function test_device_action_keeps_the_complete_selection_and_opens_its_review() {
+        menu.show(2,100,100)
+        tryCompare(menu,"opened",true)
+        const sync = entry("sync")
+        verify(sync !== null)
+        waitForRendering(sync)
+        mouseClick(sync,sync.width / 2,sync.height / 2)
+        compare(DeviceSync.lastAction,["tracks","[42,43]"])
+        compare(Navigation.page,"deviceSync")
+        tryCompare(menu,"visible",false)
     }
 }

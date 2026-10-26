@@ -15,6 +15,7 @@ Controls.CheckBox {
         color: control.checked || control.activeFocus ? Theme.color.accent : Theme.color.textSecondary
     }
     contentItem: Text {
+        textFormat: Text.PlainText
         text: control.text; leftPadding: control.indicator.width + control.spacing
         verticalAlignment: Text.AlignVCenter; wrapMode: Text.Wrap
         color: Theme.color.textPrimary; font.pointSize: Type.body

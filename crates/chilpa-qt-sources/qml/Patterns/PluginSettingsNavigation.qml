@@ -1,3 +1,4 @@
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import QtQuick
 import app.chilpa
 import app.chilpa.kit

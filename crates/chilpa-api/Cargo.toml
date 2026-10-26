@@ -8,6 +8,8 @@ rust-version.workspace = true
 [dependencies]
 # Where the plugins go, per platform (ADR-010 M3).
 chilpa-dirs.workspace = true
+chilpa-sync.workspace = true
+chilpa-devices.workspace = true
 chilpa-core.workspace = true
 chilpa-cast.workspace = true
 chilpa-models.workspace = true

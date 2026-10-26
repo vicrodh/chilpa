@@ -9,6 +9,7 @@ import "qrc:/qt/qml/app/chilpa/folders/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/folders/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/stats/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Screens"
+import "qrc:/qt/qml/app/chilpa/devices/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Driving
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
@@ -59,6 +60,7 @@ PageTransition {
         case "playlist": return playlist
         case "playlistManager": return playlistManager
         case "playlistImport": return playlistImport
+        case "deviceSync": return deviceSync
         case "metadata": return metadata
         case "listenlist": return listenlist
         case "search": return searchResults
@@ -93,6 +95,7 @@ PageTransition {
     Component { id: openMedia; OpenMediaScreen {} }
     Component { id: playlist; PlaylistScreen { playlistId: host.routeIdOf(parent) } }
     Component { id: playlistImport; PlaylistImportScreen {} }
+    Component { id: deviceSync; DeviceSyncScreen {} }
     Component { id: playlistManager; PlaylistManagerScreen {} }
     Component { id: listenlist; ListenListScreen {} }
     Component { id: searchResults; SearchScreen { query: host.routeKeyOf(parent) } }

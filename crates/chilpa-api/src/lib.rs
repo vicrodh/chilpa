@@ -58,6 +58,7 @@ mod playlists;
 pub use playlists::PlaylistTarget;
 mod preferences;
 pub mod saved_queries;
+pub mod device_sync;
 mod privacy;
 pub use privacy::network_allowed;
 mod play_indicator;

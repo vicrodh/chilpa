@@ -1,8 +1,10 @@
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
+import app.chilpa.devices
 import "qrc:/qt/qml/app/chilpa/controls/qml/Primitives" as Driving
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Components" as Lists
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -177,6 +179,16 @@ Rectangle {
                             }
                         }
                     }
+                }
+                NavItem {
+                    visible: DeviceSync.hasConnected
+                    width: parent.width
+                    text: I18n.tr("Devices", I18n.rev)
+                    glyph: Icons.deviceMobile
+                    collapsed: side.collapsed
+                    active: Navigation.screen === "deviceSync"
+                    onClicked: Navigation.go("deviceSync", 0)
+                    onMiddleClicked: SettingsModel.middleClickTabs ? Navigation.open("deviceSync", 0) : clicked()
                 }
             }
         }

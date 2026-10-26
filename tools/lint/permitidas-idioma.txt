@@ -814,3 +814,23 @@ ipc
 refetch
 
 unicode
+adb
+deserializer
+f_bavail
+f_frsize
+rename_excl
+at_fdcwd
+rename_noreplace
+renameat2
+renamex_np
+statvfs
+mtp
+bavail
+frsize
+excl
+fdcwd
+noreplace
+renameat
+renamex
+wal
+unregister

@@ -47,6 +47,7 @@ pub mod find;
 pub mod fingerprints;
 pub mod importing;
 pub mod playlists;
+pub mod export;
 pub mod plays;
 pub mod progress;
 pub mod progress_writer;

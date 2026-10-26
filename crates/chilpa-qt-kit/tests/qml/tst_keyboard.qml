@@ -70,6 +70,20 @@ TestCase {
         compare(segments.current, 1)
     }
 
+    function test_disabled_select_options_are_skipped_by_the_keyboard() {
+        select.value = "1"
+        select.enabledOptions = [true,false,true]
+        select.forceActiveFocus()
+        keyClick(Qt.Key_Down)
+        compare(select.value,"3")
+        keyClick(Qt.Key_Up)
+        compare(select.value,"1")
+        select.enabledOptions = [false,false,false]
+        keyClick(Qt.Key_Down)
+        compare(select.value,"1")
+        select.enabledOptions = []
+    }
+
     function test_a_press_outside_the_field_takes_the_keyboard_and_commits() {
         finished.clear()
         name.focusInput()

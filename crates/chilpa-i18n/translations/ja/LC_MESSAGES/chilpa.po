@@ -118,11 +118,26 @@ msgstr "縦棒または OR：どちらか一方で十分です"
 msgid "A click on a record opens"
 msgstr "アルバムをクリックしたときに開くもの"
 
+msgid "A device operation is still running."
+msgstr ""
+
+msgid "A device selection can contain at most 50,000 files and playlists."
+msgstr ""
+
+msgid "A name for this memory"
+msgstr ""
+
 msgid "A new version of Chilpa is available."
 msgstr "Chilpaの新しいバージョンがあります。"
 
 msgid "A player for your own music"
 msgstr "あなた自身の音楽のためのプレーヤー"
+
+msgid "A playlist member could not be resolved."
+msgstr ""
+
+msgid "A profile already manages this device folder."
+msgstr ""
 
 msgid "A saved query already has that name."
 msgstr "同じ名前のクエリがすでにあります。"
@@ -135,6 +150,12 @@ msgstr "スキャンは最大256個のフォルダーと64 KiBの保存済みパ
 
 msgid "A secure cast URL could not be created."
 msgstr "安全なキャストURLを作成できませんでした。"
+
+msgid "A selected local file is unavailable. I kept the device unchanged."
+msgstr ""
+
+msgid "A selected playlist or one of its tracks is missing. I kept the device unchanged."
+msgstr ""
 
 msgid "A selected queue is no longer available."
 msgstr "選択したキューは利用できなくなりました。"
@@ -187,6 +208,9 @@ msgstr "アカウントに接続されていません。"
 msgid "Acknowledgments"
 msgstr "謝辞"
 
+msgid "Action"
+msgstr ""
+
 msgid "Active"
 msgstr "有効"
 
@@ -214,6 +238,9 @@ msgstr "ライブラリにフォルダーを追加"
 msgid "Add a server"
 msgstr "サーバーを追加"
 
+msgid "Add a storage profile"
+msgstr ""
+
 msgid "Add all to playlist…"
 msgstr "すべてをプレイリストに追加…"
 
@@ -240,6 +267,9 @@ msgstr "新しいトラックのみ追加"
 
 msgid "Add server"
 msgstr "サーバーを追加"
+
+msgid "Add storage"
+msgstr ""
 
 msgid "Add the folders where your music lives. Chilpa reads their tags and covers and builds your library from them."
 msgstr "音楽を保存しているフォルダーを追加してください。Chilpaはタグとカバーを読み取り、そこからライブラリを作ります。"
@@ -276,6 +306,9 @@ msgstr "過去30日に追加：d、w、m、y"
 
 msgid "Added this month"
 msgstr "今月追加"
+
+msgid "Adding storage…"
+msgstr ""
 
 msgid "Adding to queue…"
 msgstr "キューに追加中…"
@@ -428,6 +461,9 @@ msgstr "EQの値が見つからないか、無効です。"
 msgid "An active EQ filter is missing Q."
 msgstr "有効なEQフィルターにQがありません。"
 
+msgid "An interrupted sync needs recovery before reviewing new changes."
+msgstr ""
+
 msgid "Analysis"
 msgstr "解析"
 
@@ -463,6 +499,9 @@ msgstr "再生中のトラックのマークをイコライザーバーでアニ
 
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "アプリ全体の背後にアルバムアートのアニメーション背景を表示します。リソース使用量が多く、GPUアクセラレーションを使います。"
+
+msgid "Another device profile update is still running."
+msgstr ""
 
 msgid "Any of these"
 msgstr "いずれかに一致"
@@ -807,6 +846,9 @@ msgstr "キャンセル済み"
 msgid "Cancelling update…"
 msgstr "アップデートをキャンセル中…"
 
+msgid "Cancelling…"
+msgstr ""
+
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "最大ピークがフルスケールを超えないようブーストを制限します。オフにすると、ピークがクリップしても静かなトラックが目標に達します。"
 
@@ -836,6 +878,9 @@ msgstr "ログイン情報を変更"
 
 msgid "Change source"
 msgstr "提供元を変更"
+
+msgid "Changes"
+msgstr ""
 
 msgid "Channels"
 msgstr "チャンネル"
@@ -975,11 +1020,23 @@ msgstr "ダウンロードの前にダウンロードフォルダーを選択し
 msgid "Choose a file…"
 msgstr "ファイルを選択…"
 
+msgid "Choose a folder on a memory card or USB drive"
+msgstr ""
+
+msgid "Choose a folder on the memory card"
+msgstr ""
+
+msgid "Choose a folder…"
+msgstr ""
+
 msgid "Choose a keymap: default, letters or vi."
 msgstr "キーマップを選択してください: default、letters、vi。"
 
 msgid "Choose a local ZIP file."
 msgstr "ローカルのZIPファイルを選択してください。"
+
+msgid "Choose a local storage folder."
+msgstr ""
 
 msgid "Choose a playback control"
 msgstr "再生コントロールを選択"
@@ -990,11 +1047,23 @@ msgstr "プリセットを選択してください。"
 msgid "Choose a renderer on your local network. The queue stays in Chilpa."
 msgstr "ローカルネットワーク上のレンダラーを選択してください。キューはChilpaに残ります。"
 
+msgid "Choose a saved device profile."
+msgstr ""
+
+msgid "Choose an available writable storage."
+msgstr ""
+
 msgid "Choose an image"
 msgstr "画像を選択"
 
 msgid "Choose at least two different queues."
 msgstr "異なるキューを2つ以上選択してください。"
+
+msgid "Choose at most 512 playlists or queries for one storage."
+msgstr ""
+
+msgid "Choose between 1 and 50,000 Library tracks."
+msgstr ""
 
 msgid "Choose device"
 msgstr "デバイスを選択"
@@ -1014,6 +1083,12 @@ msgstr "画像を選択"
 msgid "Choose image…"
 msgstr "画像を選択…"
 
+msgid "Choose mounted storage for this profile, or select a player profile."
+msgstr ""
+
+msgid "Choose music for this storage"
+msgstr ""
+
 msgid "Choose playlist"
 msgstr "プレイリストを選択"
 
@@ -1023,11 +1098,17 @@ msgstr "プレイリストのアートワークを選択"
 msgid "Choose playlist file"
 msgstr "プレイリストファイルを選択"
 
+msgid "Choose playlists, a saved query or Library tracks first."
+msgstr ""
+
 msgid "Choose plugin icon"
 msgstr "プラグインのアイコンを選択"
 
 msgid "Choose queues and arrange their order. Repeated tracks are kept."
 msgstr "キューを選択して順序を並べ替えます。重複したトラックはそのまま残ります。"
+
+msgid "Choose the connected player and its storage first."
+msgstr ""
 
 msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
 msgstr "この出力に対応する再生ミキサー要素を選択してください。Chilpaは保存前に確認します。"
@@ -1212,11 +1293,20 @@ msgstr "作成できる設定ファイル："
 msgid "Configure"
 msgstr "設定"
 
+msgid "Confirm this preview and its removals before syncing."
+msgstr ""
+
 msgid "Connect"
 msgstr "接続"
 
+msgid "Connect at most eight USB players at a time."
+msgstr ""
+
 msgid "Connect on {}"
 msgstr "{}で接続"
+
+msgid "Connect your player in USB file transfer mode. Save a separate profile for its internal memory and each card."
+msgstr ""
 
 msgid "Connect {}"
 msgstr "{}に接続"
@@ -1530,6 +1620,9 @@ msgstr "デスクトップ"
 msgid "Destinations"
 msgstr "取り込み先"
 
+msgid "Details"
+msgstr ""
+
 msgid "Detected: "
 msgstr "検出: "
 
@@ -1541,6 +1634,18 @@ msgstr "デバイス"
 
 msgid "Device discovery"
 msgstr "デバイスの検出"
+
+msgid "Device profiles exceed 1 MiB."
+msgstr ""
+
+msgid "Device sync"
+msgstr ""
+
+msgid "Device sync was cancelled. Its progress is saved for recovery."
+msgstr ""
+
+msgid "Devices"
+msgstr ""
 
 msgid "Devices & cast"
 msgstr "デバイスとキャスト"
@@ -1938,6 +2043,9 @@ msgstr "一致を探す"
 msgid "Find playlists"
 msgstr "プレイリストを探す"
 
+msgid "Find playlists or saved queries…"
+msgstr ""
+
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr "DACのPipeWireノード名を見つけてここに貼り付けてください："
 
@@ -1973,6 +2081,12 @@ msgstr "サイドバーのフォルダーの色"
 
 msgid "Folder name"
 msgstr "フォルダー名"
+
+msgid "Folder on the memory card"
+msgstr ""
+
+msgid "Folder on the player"
+msgstr ""
 
 msgid "Folder path"
 msgstr "フォルダーのパス"
@@ -2217,6 +2331,9 @@ msgstr "HiFiウィザード — DACセットアップ"
 msgid "Hide"
 msgstr "非表示"
 
+msgid "Hide details"
+msgstr ""
+
 msgid "Hide explicit"
 msgstr "露骨な表現を非表示"
 
@@ -2274,6 +2391,40 @@ msgstr "ホーム"
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "ウィンドウの背後に見える壁紙のぼかしの強さ。0%でくっきり、100%で最も強くぼかします。"
 
+msgid "I approve removing {} managed file."
+msgid_plural "I approve removing {} managed files."
+msgstr[0] ""
+
+msgid "I could not finish this device operation. I kept its recovery information."
+msgstr ""
+
+msgid "I could not read the Library for device sync."
+msgstr ""
+
+msgid "I could not read the device profiles."
+msgstr ""
+
+msgid "I could not read the local playlists."
+msgstr ""
+
+msgid "I could not read the saved queries."
+msgstr ""
+
+msgid "I could not read the selected Library tracks."
+msgstr ""
+
+msgid "I could not read this Library selection. Try again."
+msgstr ""
+
+msgid "I could not resolve the device query."
+msgstr ""
+
+msgid "I could not save the device profiles."
+msgstr ""
+
+msgid "I could not start the device task."
+msgstr ""
+
 msgid "I created a backup"
 msgstr "バックアップを作成しました"
 
@@ -2285,6 +2436,9 @@ msgstr "CDドライブが見つかりませんでした"
 
 msgid "I did not understand that request."
 msgstr "リクエストを理解できませんでした。"
+
+msgid "I do not have permission to access this USB device."
+msgstr ""
 
 msgid "I do not know the list \"{}\""
 msgstr "リスト「{}」は見つかりません"
@@ -2571,6 +2725,9 @@ msgstr "過去3か月"
 msgid "Last playlist"
 msgstr "前回のプレイリスト"
 
+msgid "Last sync"
+msgstr ""
+
 msgid "Last track"
 msgstr "最後のトラック"
 
@@ -2688,6 +2845,9 @@ msgstr "さらに読み込む"
 msgid "Loading albums…"
 msgstr "アルバムを読み込み中…"
 
+msgid "Loading device profiles…"
+msgstr ""
+
 msgid "Loading purchases…"
 msgstr "購入履歴を読み込み中…"
 
@@ -2747,6 +2907,9 @@ msgstr "ファイルを探しています…"
 
 msgid "Looking for lyrics…"
 msgstr "歌詞を探しています…"
+
+msgid "Looking for players…"
+msgstr ""
 
 msgid "Lossless"
 msgstr "ロスレス"
@@ -2946,6 +3109,9 @@ msgstr "再生回数順"
 msgid "Most played tracks"
 msgstr "最も再生したトラック"
 
+msgid "Mounted storage"
+msgstr ""
+
 msgid "Move"
 msgstr "移動"
 
@@ -2969,6 +3135,9 @@ msgstr "ルートへ移動"
 
 msgid "Move up"
 msgstr "上に移動"
+
+msgid "Music"
+msgstr ""
 
 msgid "Music player\nNothing playing"
 msgstr "ミュージックプレーヤー\n再生していません"
@@ -3177,6 +3346,9 @@ msgstr "デバイスが見つかりません"
 msgid "No download folder selected"
 msgstr "ダウンロードフォルダーが選択されていません"
 
+msgid "No files need to change."
+msgstr ""
+
 msgid "No folder"
 msgstr "フォルダーなし"
 
@@ -3215,6 +3387,9 @@ msgstr "一致なし"
 
 msgid "No matching plugins"
 msgstr "一致するプラグインはありません"
+
+msgid "No matching selections. Create a local playlist or save a query in Refine."
+msgstr ""
 
 msgid "No playable tracks found."
 msgstr "再生できるトラックが見つかりません。"
@@ -3528,6 +3703,9 @@ msgstr "プラグインを開く"
 msgid "Open the HiFi Wizard"
 msgstr "HiFiウィザードを開く"
 
+msgid "Open the Library before choosing music for a device."
+msgstr ""
+
 msgid "Open the folder used for disposable files."
 msgstr "使い捨てファイルに使うフォルダーを開きます。"
 
@@ -3549,6 +3727,9 @@ msgstr "元のバイト列 · Chilpaによるトランスコードなし · レ�
 msgid "Original files"
 msgstr "元のファイル"
 
+msgid "Original files, with playlists"
+msgstr ""
+
 msgid "Oscilloscope"
 msgstr "オシロスコープ"
 
@@ -3569,6 +3750,9 @@ msgstr "出力デバイス"
 
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "PCMサンプルはネイティブDSDストリームに書き込めません"
+
+msgid "Page {} of {}"
+msgstr ""
 
 msgid "Parentheses group; NOT works like the minus"
 msgstr "括弧でまとめます。NOT はマイナスと同じです"
@@ -3713,6 +3897,9 @@ msgstr "10 回以上再生"
 
 msgid "Player"
 msgstr "プレーヤー"
+
+msgid "Player and storage"
+msgstr ""
 
 msgid "Player bar"
 msgstr "プレーヤーバー"
@@ -3999,6 +4186,9 @@ msgstr "キャッシュフォルダーの現在のサイズをバックグラウ
 msgid "Read “{}” as words instead"
 msgstr "「{}」を語として扱う"
 
+msgid "Reading Library selection…"
+msgstr ""
+
 msgid "Reading it from {}…"
 msgstr "{}から読み取っています…"
 
@@ -4028,6 +4218,9 @@ msgstr "ローカルPCM再生の準備ができました"
 
 msgid "Ready to review"
 msgstr "確認の準備完了"
+
+msgid "Ready to sync"
+msgstr ""
 
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
 msgstr "トラックと再生ログから件数と検索インデックスを再構築します。失われるものはありません。"
@@ -4077,6 +4270,9 @@ msgstr "そのジャンルのアルバム"
 msgid "Records with that composer"
 msgstr "その作曲者のアルバム"
 
+msgid "Recover interrupted sync"
+msgstr ""
+
 msgid "Refine"
 msgstr "絞り込み"
 
@@ -4085,6 +4281,9 @@ msgstr "絞り込みは別ウィンドウで開いています"
 
 msgid "Refresh"
 msgstr "更新"
+
+msgid "Refresh connected players"
+msgstr ""
 
 msgid "Refresh mix"
 msgstr "ミックスを更新"
@@ -4163,6 +4362,9 @@ msgstr "グループを削除"
 
 msgid "Remove image"
 msgstr "画像を削除"
+
+msgid "Remove managed files no longer selected"
+msgstr ""
 
 msgid "Remove one condition to get results:"
 msgstr "条件を 1 つ外すと結果が出ます："
@@ -4287,8 +4489,20 @@ msgstr "確認"
 msgid "Review & Apply"
 msgstr "確認して適用"
 
+msgid "Review changes"
+msgstr ""
+
+msgid "Review changes to check what this storage needs."
+msgstr ""
+
+msgid "Review the device changes before syncing."
+msgstr ""
+
 msgid "Review the requested permissions before installing."
 msgstr "インストールする前に、要求された権限を確認してください。"
+
+msgid "Reviewing changes…"
+msgstr ""
 
 msgid "Rich"
 msgstr "リッチ"
@@ -4359,6 +4573,9 @@ msgstr "変更を保存"
 msgid "Save preset"
 msgstr "プリセットを保存"
 
+msgid "Save profile"
+msgstr ""
+
 msgid "Save query"
 msgstr "クエリを保存"
 
@@ -4377,14 +4594,23 @@ msgstr "保存先"
 msgid "Saved"
 msgstr "保存済み"
 
+msgid "Saved device selection"
+msgstr ""
+
 msgid "Saved position"
 msgstr "保存した位置"
+
+msgid "Saved profile"
+msgstr ""
 
 msgid "Saved queries"
 msgstr "保存したクエリ"
 
 msgid "Saved results remain available between sessions."
 msgstr "保存した結果は、セッションをまたいで利用できます。"
+
+msgid "Saving selection…"
+msgstr ""
 
 msgid "Saving..."
 msgstr "保存中..."
@@ -4711,6 +4937,9 @@ msgstr "これらのトラックの一部はすでに追加されています"
 msgid "Some packages are missing"
 msgstr "一部のパッケージがありません"
 
+msgid "Some selected Library tracks are missing. I kept the device unchanged."
+msgstr ""
+
 msgid "Songs"
 msgstr "トラック"
 
@@ -4864,11 +5093,26 @@ msgstr "歌っている行"
 msgid "Surface"
 msgstr "サーフェス"
 
+msgid "Sync cancelled"
+msgstr ""
+
+msgid "Sync complete"
+msgstr ""
+
+msgid "Sync needs attention"
+msgstr ""
+
 msgid "Sync now"
 msgstr "今すぐ同期"
 
+msgid "Sync to device…"
+msgstr ""
+
 msgid "Syncing"
 msgstr "同期中"
+
+msgid "Syncing music…"
+msgstr ""
 
 msgid "Syncing: {} track read"
 msgid_plural "Syncing: {} tracks read"
@@ -4937,6 +5181,9 @@ msgstr "ムードモデルの準備ができていません。先にムードモ
 msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."
 msgstr "PulseAudioプロトコルはすべてのプログラムの音をミックスし、結果を1つのレートにリサンプリングするため、トラックがファイルのままデバイスに届くことはありません。ここで変更できる設定はありません。どこでも動作する方式です。サンプルをそのまま届けるには、カード自体かPipeWireを選んでください。"
 
+msgid "The USB connection changed. Refresh the device list."
+msgstr ""
+
 msgid "The account did not connect. You can close this tab."
 msgstr "アカウントに接続できませんでした。このタブは閉じて構いません。"
 
@@ -4951,6 +5198,27 @@ msgstr "接続は暗号化されていません。"
 
 msgid "The current track has no such destination."
 msgstr "現在のトラックにはそのような移動先がありません。"
+
+msgid "The device playlist picker can show at most 2,048 playlists."
+msgstr ""
+
+msgid "The device profile catalog is damaged. I kept its original data."
+msgstr ""
+
+msgid "The device profile changed. Review it again."
+msgstr ""
+
+msgid "The device profile revision is invalid."
+msgstr ""
+
+msgid "The device query cannot be read."
+msgstr ""
+
+msgid "The device review needs attention before continuing."
+msgstr ""
+
+msgid "The device task stopped. Its progress is saved for recovery."
+msgstr ""
 
 msgid "The download view is unavailable."
 msgstr "ダウンロード表示は利用できません。"
@@ -5018,6 +5286,12 @@ msgstr "出力はまだ再生中です"
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr "この出力ではChilpaだけが再生されます。他のプログラムは、解放されるまで待ちます。"
 
+msgid "The player is busy. Close the other file transfer application and try again."
+msgstr ""
+
+msgid "The player is not responding. Reconnect it and try again."
+msgstr ""
+
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
 msgstr "プレイリストは作成されましたが、一部のトラックを追加できませんでした。再試行する前に開いて確認してください。"
 
@@ -5072,6 +5346,9 @@ msgstr "保存済みのスキャンを復元できませんでした。"
 msgid "The saved sign-in could not be opened."
 msgstr "保存されたログイン情報を開けませんでした。"
 
+msgid "The saved storage folder is unavailable. Reconnect its original memory."
+msgstr ""
+
 msgid "The scan could not start: {}"
 msgstr "スキャンを開始できませんでした: {}"
 
@@ -5123,6 +5400,9 @@ msgstr "テーマ"
 msgid "There is no previous EQ to restore."
 msgstr "復元できる以前のEQがありません。"
 
+msgid "There is not enough space for this selection and its temporary files."
+msgstr ""
+
 msgid "These records' barcodes are sent to MusicBrainz."
 msgstr "これらのアルバムのバーコードがMusicBrainzに送信されます。"
 
@@ -5134,6 +5414,9 @@ msgstr "サードパーティ製"
 
 msgid "Third-party plugins"
 msgstr "サードパーティ製プラグイン"
+
+msgid "This Library selection is no longer available."
+msgstr ""
 
 msgid "This address belongs to a different server."
 msgstr "このアドレスは別のサーバーのものです。"
@@ -5222,6 +5505,9 @@ msgstr "この画面はまだ作成されていません。"
 msgid "This section is not built yet."
 msgstr "このセクションはまだ作成されていません。"
 
+msgid "This selection includes music without an available local file. I kept the device unchanged."
+msgstr ""
+
 msgid "This server is no longer available."
 msgstr "このサーバーは利用できなくなりました。"
 
@@ -5233,6 +5519,9 @@ msgstr "このソースが順序を管理します。"
 
 msgid "This source's folders are read-only. Choose a local folder to organize its playlists in Chilpa."
 msgstr "このソースのフォルダーは読み取り専用です。Chilpaでプレイリストを整理するには、ローカルフォルダーを選んでください。"
+
+msgid "This storage does not match the saved profile. Choose its original memory or create a new profile."
+msgstr ""
 
 msgid "This track has no album to open"
 msgstr "このトラックには開けるアルバムがありません"
@@ -5305,6 +5594,9 @@ msgstr "サイドバーの表示切り替え"
 
 msgid "Token"
 msgstr "トークン"
+
+msgid "Too many device storage locations were reported."
+msgstr ""
 
 msgid "Tools"
 msgstr "ツール"
@@ -5395,6 +5687,9 @@ msgstr "語を入力して Enter"
 
 msgid "UP NEXT"
 msgstr "次に再生"
+
+msgid "USB host sync is available in the desktop application."
+msgstr ""
 
 msgid "Unassigned"
 msgstr "未割り当て"
@@ -5771,6 +6066,9 @@ msgstr "昨日"
 msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
 msgstr "バックアップはご自身の責任で行ってください。これは補助ツールであり、システム復旧ツールではありません。"
 
+msgid "You can save at most 64 device storage profiles."
+msgstr ""
+
 msgid "You can save up to 64 queries."
 msgstr "保存できるクエリは64件までです。"
 
@@ -5791,6 +6089,9 @@ msgstr "お使いのディストリビューション"
 
 msgid "Your music"
 msgstr "あなたの音楽"
+
+msgid "Your music is up to date"
+msgstr ""
 
 msgid "Your queue is empty"
 msgstr "キューは空です"
@@ -7013,6 +7314,9 @@ msgstr[0] "{}アーティスト"
 msgid "{} artists"
 msgstr "{}アーティスト"
 
+msgid "{} available of {}"
+msgstr ""
+
 msgid "{} bit at {} Hz, {}"
 msgstr "{}ビット・{} Hz、{}"
 
@@ -7141,6 +7445,9 @@ msgstr "{} / {}"
 msgid "{} of {} files were changed before it failed: {}"
 msgstr "失敗するまでに{} / {}個のファイルが変更されました: {}"
 
+msgid "{} of {} files · {}"
+msgstr ""
+
 msgid "{} of {} formats come out untouched"
 msgstr "{} / {}個のフォーマットがそのまま出力されます"
 
@@ -7172,8 +7479,15 @@ msgid "{} record"
 msgid_plural "{} records"
 msgstr[0] "{}アルバム"
 
+msgid "{} required"
+msgstr ""
+
 msgid "{} sel"
 msgstr "{}選択"
+
+msgid "{} selection"
+msgid_plural "{} selections"
+msgstr[0] ""
 
 msgid "{} shown"
 msgstr "{}件を表示"
@@ -7188,6 +7502,9 @@ msgstr[0] "{}つ星"
 
 msgid "{} still loading · counts may grow"
 msgstr "{} 読み込み中・件数は増える場合があります"
+
+msgid "{} to copy · {} to update · {} to remove · {} unchanged"
+msgstr ""
 
 msgid "{} track"
 msgid_plural "{} tracks"

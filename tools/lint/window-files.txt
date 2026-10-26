@@ -15,7 +15,6 @@ crates/chilpa-qt/qml/Components/CreditLine.qml
 crates/chilpa-qt/qml/Components/FilterCrumb.qml
 crates/chilpa-qt/qml/Components/LibraryToolbar.qml
 crates/chilpa-qt/qml/Components/MarkButtons.qml
-crates/chilpa-qt/qml/Components/NavItem.qml
 crates/chilpa-qt/qml/Components/OptionRow.qml
 crates/chilpa-qt/qml/Components/PageHero.qml
 crates/chilpa-qt/qml/Components/PaneRow.qml
