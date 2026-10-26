@@ -22,6 +22,7 @@ extern "C" const char *chilpa_mount_events_file();
 struct StorageEvents::State {
     StorageEvents *owner;
     bool active = false;
+    bool observed = false;
     QTimer debounce;
     QMetaObject::Connection activation;
 #if defined(Q_OS_LINUX) || defined(Q_OS_ANDROID)
@@ -46,6 +47,8 @@ struct StorageEvents::State {
     }
     void schedule() { if (active) debounce.start(); }
     void start() {
+        if (observed) schedule();
+        observed = true;
         activation = QObject::connect(qGuiApp, &QGuiApplication::applicationStateChanged, owner,
             [this](Qt::ApplicationState value) { if (value == Qt::ApplicationActive) schedule(); });
 #if defined(Q_OS_LINUX) || defined(Q_OS_ANDROID)
