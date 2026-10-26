@@ -1,6 +1,7 @@
 //! I adapt mounted volumes and USB protocols to the core's storage contract.
 //! The planner never links platform APIs or chooses a transport on its own.
 pub mod transport;
+pub mod volumes;
 pub use chilpa_sync::{Cancellation, Error, RelativePath, Result, BUFFER_BYTES, MAX_ASSETS};
 
 fn invalid(text: impl Into<String>) -> Error { Error::Invalid(text.into()) }

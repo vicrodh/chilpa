@@ -27,6 +27,8 @@ pub mod qobject {
         #[qinvokable]
         fn refresh(self: Pin<&mut DeviceSync>);
         #[qinvokable]
+        fn connections_changed(self: Pin<&mut DeviceSync>);
+        #[qinvokable]
         fn select_profile(self: Pin<&mut DeviceSync>, id: &QString);
         #[qinvokable]
         fn select_destination(self: Pin<&mut DeviceSync>, id: &QString);
@@ -38,6 +40,10 @@ pub mod qobject {
         fn use_tracks(self: Pin<&mut DeviceSync>, ids: &QString);
         #[qinvokable]
         fn filter(self: Pin<&mut DeviceSync>, text: &QString);
+        #[qinvokable]
+        fn selection_kind(self: Pin<&mut DeviceSync>, kind: &QString);
+        #[qinvokable]
+        fn selection_page(self: Pin<&mut DeviceSync>, page: i32);
         #[qinvokable]
         fn removals(self: Pin<&mut DeviceSync>, enabled: bool);
         #[qinvokable]
@@ -57,9 +63,13 @@ pub mod qobject {
         #[qinvokable]
         fn filter_browser(self: Pin<&mut DeviceSync>, text: &QString);
         #[qinvokable]
+        fn browser_view(self: Pin<&mut DeviceSync>, view: &QString);
+        #[qinvokable]
         fn browser_page(self: Pin<&mut DeviceSync>, page: i32);
         #[qinvokable]
         fn close_browser(self: Pin<&mut DeviceSync>);
+        #[qinvokable]
+        fn reload_browser(self: Pin<&mut DeviceSync>);
         #[qsignal]
         fn profile_created(self: Pin<&mut DeviceSync>);
     }
@@ -80,8 +90,11 @@ pub struct DeviceSyncRust {
     page: i32,
     service: Service,
     filter: String,
+    selection_kind: String,
+    selection_page: usize,
     published_revision: Option<u64>,
     viewers: usize,
+    connection_pending: bool,
 }
 impl qobject::DeviceSync {
     fn run(mut self: Pin<&mut Self>, command: impl FnOnce(&mut Service) -> Result<(), UiError>) {
@@ -96,7 +109,7 @@ impl qobject::DeviceSync {
         let busy = self.rust().service.status().busy;
         let revision = self.rust().service.revision();
         if self.rust().viewers > 0 && (force || self.rust().published_revision != Some(revision)) {
-            let catalog = QString::from(&self.rust().service.catalog_json(&self.rust().filter));
+            let catalog = QString::from(&self.rust().service.catalog_page_json(&self.rust().filter, &self.rust().selection_kind, self.rust().selection_page));
             let rows = QString::from(&self.rust().service.changes_json(*self.page() as usize));
             let browser = QString::from(&self.rust().service.browser_json());
             let connected = self
@@ -141,7 +154,11 @@ impl qobject::DeviceSync {
         if viewers > 0 {
             return;
         }
+        self.as_mut().rust_mut().connection_pending = false;
         self.as_mut().rust_mut().service.release_view();
+        self.as_mut().rust_mut().filter = String::new();
+        self.as_mut().rust_mut().selection_kind = String::new();
+        self.as_mut().rust_mut().selection_page = 0;
         self.as_mut().set_catalog(QString::default());
         self.as_mut().set_page_rows(QString::default());
         self.as_mut().set_browser(QString::default());
@@ -162,9 +179,21 @@ impl qobject::DeviceSync {
                 self.as_mut().rust_mut().service.show_error(error);
             }
         }
+        if self.rust().viewers > 0 && self.rust().connection_pending && !self.rust().service.status().busy {
+            self.as_mut().rust_mut().connection_pending = false;
+            self.as_mut().run(Service::connections_changed);
+        }
         self.as_mut().publish(false);
         if created {
             self.profile_created();
+        }
+    }
+    pub fn connections_changed(mut self: Pin<&mut Self>) {
+        if self.rust().viewers == 0 { return; }
+        if self.rust().service.status().busy {
+            self.as_mut().rust_mut().connection_pending = true;
+        } else {
+            self.run(Service::connections_changed);
         }
     }
     pub fn refresh(self: Pin<&mut Self>) {
@@ -184,6 +213,8 @@ impl qobject::DeviceSync {
     }
     pub fn use_tracks(mut self: Pin<&mut Self>, ids: &QString) {
         self.as_mut().rust_mut().filter.clear();
+        self.as_mut().rust_mut().selection_kind = "tracks".into();
+        self.as_mut().rust_mut().selection_page = 0;
         let active = self.rust().viewers > 0;
         self.as_mut().run(|service| {
             service.stage_library_tracks(&ids.to_string())?;
@@ -194,7 +225,22 @@ impl qobject::DeviceSync {
         });
     }
     pub fn filter(mut self: Pin<&mut Self>, text: &QString) {
+        if self.rust().viewers == 0 { return; }
         self.as_mut().rust_mut().filter = text.to_string().chars().take(256).collect();
+        self.as_mut().rust_mut().selection_page = 0;
+        self.publish(true);
+    }
+    pub fn selection_kind(mut self: Pin<&mut Self>, kind: &QString) {
+        if self.rust().viewers == 0 { return; }
+        self.as_mut().rust_mut().selection_kind = match kind.to_string().as_str() {
+            "playlists" => "playlists", "queries" => "queries", "tracks" => "tracks", _ => "all",
+        }.into();
+        self.as_mut().rust_mut().selection_page = 0;
+        self.publish(true);
+    }
+    pub fn selection_page(mut self: Pin<&mut Self>, page: i32) {
+        if self.rust().viewers == 0 { return; }
+        self.as_mut().rust_mut().selection_page = page.max(0) as usize;
         self.publish(true);
     }
     pub fn removals(self: Pin<&mut Self>, enabled: bool) {
@@ -250,6 +296,10 @@ impl qobject::DeviceSync {
             .filter_browser(&text.to_string());
         self.publish(false);
     }
+    pub fn browser_view(self: Pin<&mut Self>, view: &QString) {
+        if self.rust().viewers == 0 { return; }
+        self.run(|s| s.browser_view(&view.to_string()));
+    }
     pub fn browser_page(mut self: Pin<&mut Self>, page: i32) {
         if self.rust().viewers == 0 {
             return;
@@ -266,5 +316,9 @@ impl qobject::DeviceSync {
         }
         self.as_mut().rust_mut().service.close_browser();
         self.publish(false);
+    }
+    pub fn reload_browser(self: Pin<&mut Self>) {
+        if self.rust().viewers == 0 { return; }
+        self.run(Service::reload_browser);
     }
 }

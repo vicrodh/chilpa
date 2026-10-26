@@ -78,7 +78,6 @@ crates/chilpa-qt/qml/Screens/SourceEntryScreen.qml
 crates/chilpa-qt/qml/Screens/SourceScreen.qml
 crates/chilpa-qt/qml/Screens/TracksScreen.qml
 crates/chilpa-qt/qml/SidebarFrame.qml
-crates/chilpa-qt/qml/WindowGrips.qml
 crates/chilpa-qt/src/bridge/album_actions.rs
 crates/chilpa-qt/src/bridge/album.rs
 crates/chilpa-qt/src/bridge/albums.rs

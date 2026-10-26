@@ -16,7 +16,8 @@ Item {
     height: DeviceLayout.rowHeight
 
     ListRowSurface { anchors.fill: parent; rowIndex: row.rowIndex; selected: row.checkable && row.entry.checked === true; hovered: hover.hovered }
-    HoverHandler { id: hover }
+    HoverHandler { id: hover; onHoveredChanged: hovered && row.entry.kind === "track" && row.entry.path ? TipState.show(row.entry.path, row) : TipState.hide(row) }
+    Component.onDestruction: TipState.hide(row)
     CircleCheck {
         id: check
         objectName: "deviceSelectionCheck"
@@ -35,7 +36,7 @@ Item {
         visible: !row.checkable && !(row.entry.number > 0)
         x: Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
-        glyph: row.entry.kind === "album" ? Icons.disc : row.entry.kind === "playlist" ? Icons.playlist : Icons.music
+        glyph: row.entry.kind === "album" ? Icons.disc : row.entry.kind === "artist" ? Icons.user : row.entry.kind === "playlist" ? Icons.playlist : Icons.music
         size: Metrics.iconMd
         color: Theme.color.textSecondary
     }
@@ -66,7 +67,7 @@ Item {
                 width: Math.max(0, parent.width - (arrow.visible ? Metrics.button28 : 0))
                 spacing: Metrics.gap4
                 Text { width: parent.width; text: row.entry.title || ""; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.color.textPrimary; font.pointSize: Type.body; font.weight: Type.medium }
-                Text { width: parent.width; text: row.entry.path || row.entry.detail || ""; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.color.textSecondary; font.pointSize: Type.small }
+                Text { width: parent.width; text: row.entry.kind === "playlist" ? row.entry.path || row.entry.detail || "" : row.entry.detail || row.entry.path || ""; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.color.textSecondary; font.pointSize: Type.small }
             }
             Icon { id: arrow; visible: row.entry.open === true; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; glyph: Icons.chevronRight; size: Metrics.iconSm; color: Theme.color.textSecondary }
         }

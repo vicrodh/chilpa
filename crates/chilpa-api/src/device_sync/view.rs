@@ -5,17 +5,30 @@ use serde_json::{json, Value};
 
 impl Service {
     pub fn catalog_json(&self, query: &str) -> String {
+        self.catalog_page_json(query, "all", 0)
+    }
+    pub fn catalog_page_json(&self, query: &str, kind: &str, page: usize) -> String {
+        let kind = match kind { "playlists" => "playlists", "queries" => "queries", "tracks" => "tracks", _ => "all" };
         let filter: String = query.chars().take(256).collect();
         let query = filter.to_lowercase();
         let options: Vec<_> = self
             .options()
             .iter()
+            .filter(|row| match (&row.pick, kind) {
+                (_, "all") | (super::Pick::Playlist { .. }, "playlists")
+                | (super::Pick::Query { .. }, "queries") | (super::Pick::Tracks { .. }, "tracks") => true,
+                _ => false,
+            })
             .filter(|row| {
                 query.is_empty()
                     || row.name.to_lowercase().contains(&query)
                     || row.description.to_lowercase().contains(&query)
             })
             .collect();
+        let selection_pages = options.len().div_ceil(200).max(1);
+        let selection_page = page.min(selection_pages - 1);
+        let selection_total = options.len();
+        let options: Vec<_> = options.into_iter().skip(selection_page * 200).take(200).collect();
         let profile = self.profile();
         let profiles: Vec<_> = self
             .profiles()
@@ -41,9 +54,10 @@ impl Service {
             "destination_enabled":self.destinations().iter().map(|d|d.writable).collect::<Vec<_>>(),
             "profiles":profiles,"destinations":destinations,"options":options,"profile_folder":folder,"filter":filter,
             "has_profiles":!profiles.is_empty(),"has_connected":self.destinations().iter().any(|d|d.id!="mounted"),
+            "selection_kind":kind,"selection_page":selection_page,"selection_pages":selection_pages,"selection_total":selection_total,
             "selected":i18n::tf("{} selection","{} selections",selected as i64,&[&selected.to_string()]),
             "storage_detail":destinations.iter().zip(self.destinations()).find(|(_,d)|d.id==self.status().destination).map(|(row,_)|&row["detail"]),
-            "can_review":self.destinations().iter().any(|d|d.id==self.status().destination&&d.writable) && profile.is_some_and(|p|matches!((&p.root,self.status().destination.as_str()),(Root::Mounted{..},"mounted")) || matches!(&p.root,Root::Mtp{..}) && self.status().destination.contains('/')) && selected>0,
+            "can_review":self.destinations().iter().any(|d|d.id==self.status().destination&&d.writable) && profile.is_some_and(|p|(selected>0 || !p.picks.is_empty()) && (matches!((&p.root,self.status().destination.as_str()),(Root::Mounted{..},"mounted")) || matches!(&p.root,Root::Mtp{..}) && self.status().destination.contains('/'))),
             "change_count":self.change_count(),"page_count":self.change_count().div_ceil(200).max(1)}).to_string()
     }
     pub fn status_json(&self) -> String {
@@ -67,8 +81,9 @@ impl Service {
             _ => i18n::mark("Choose music for this storage"),
         };
         value["label"] = json!(i18n::t(label));
+        value["review_note"] = json!(if status.metadata_review {i18n::t("Quick review by size; copies and removals are verified when syncing.")} else {String::new()});
         value["summary"] = json!(i18n::t_args(
-            "{} to copy · {} to update · {} to remove · {} unchanged",
+            if status.metadata_review {i18n::mark("{} to copy · {} to update · {} to remove · {} already present")} else {i18n::mark("{} to copy · {} to update · {} to remove · {} unchanged")},
             &[
                 &status.copies.to_string(),
                 &status.updates.to_string(),

@@ -843,3 +843,17 @@ replacen
 keystore
 bodyless
 urlencoded
+bsize
+cloexec
+ctime
+getfsstat
+mkdirat
+mnt
+nowait
+mntfromname
+mntonname
+nofollow
+nsec
+openat
+rdonly
+statfs

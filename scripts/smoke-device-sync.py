@@ -60,8 +60,8 @@ def prepare(args):
         if seed.get("version") != 1 or seed.get("scenario") != "basic" or not result.get("passed"):
             raise ValueError("--seed must be the output directory of a completed basic device smoke")
         shutil.copytree(args.seed / "profile", profile, dirs_exist_ok=True)
-    for name in ("config", "data", "cache", "renderer"):
-        (profile / name).mkdir(exist_ok=True)
+    for name in ("config", "data", "cache", "renderer", "runtime", "tmp"):
+        (profile / name).mkdir(mode=0o700, exist_ok=True)
     media = output / "media"
     media.mkdir()
     for name in ("DAP First.wav", "DAP Second.wav"):
@@ -101,7 +101,7 @@ def environment(args, profile, fixture, mounted_only=False):
            if not key.startswith(("CHILPA_", "QT_", "QSG_"))
            and key not in ("QML_IMPORT_PATH", "QML2_IMPORT_PATH", "LD_PRELOAD")}
     env.update(XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"),
-               XDG_CACHE_HOME=str(profile / "cache"), QT_NO_XDG_DESKTOP_PORTAL="1", QSG_INFO="1",
+               XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"), TMPDIR=str(profile / "tmp"), QT_NO_XDG_DESKTOP_PORTAL="1", QSG_INFO="1",
                QSG_RHI_SHADER_CACHE_DIR=str(profile / "renderer"), CHILPA_QML_SMOKE=str(fixture))
     if mounted_only:
         env["CHILPA_DEVICE_TEST_MOUNTED_ONLY"] = "1"

@@ -2,6 +2,7 @@
 //! Session handles never enter the profile or journal.
 use super::{Entry, Transport};
 use crate::{conflict, invalid, Cancellation, RelativePath, Result, BUFFER_BYTES, MAX_ASSETS};
+use chilpa_sync::MAX_METADATA_BYTES;
 use futures::executor::block_on;
 use mtp_rs::mtp::{ByteRange, ListingItem, MtpDevice, NewObjectInfo, ObjectHandle, ObjectInfo, Storage, StorageId};
 use std::io::{Read, Write};
@@ -9,6 +10,14 @@ use std::time::Duration;
 use std::{cell::RefCell, collections::BTreeMap};
 
 const FOLDER_CACHE_LIMIT: usize = 256;
+// Only a read-only review owns these listings: at most 50k objects and 16 MiB including
+// names, map keys and entry overhead. Execution always resolves fresh paths.
+#[derive(Default)]
+struct ReviewListings {
+    folders: BTreeMap<u64, BTreeMap<String, ObjectInfo>>,
+    entries: usize, bytes: usize,
+}
+
 #[derive(Clone, Copy)]
 struct FolderRef { handle:ObjectHandle, parent:ObjectHandle, reported_parent:ObjectHandle, storage:StorageId }
 
@@ -73,9 +82,47 @@ pub fn describe(location: u64) -> Result<Description> {
     result.map(|volumes|Description{name,volumes})
 }
 
+/// I inspect configured roots in one read-only session across all reported volumes.
+pub fn describe_identities(location: u64, roots: &[RelativePath], cancel: &Cancellation)
+    -> Result<(Description, Vec<(u64, String, String)>)> {
+    if roots.len() > 64 { return Err(invalid("more than 64 sync roots were requested")); }
+    let device = open(location)?;
+    let name = device.device_info().model.clone();
+    let result = (|| {
+        let storages = block_on(device.storages()).map_err(protocol)?;
+        if storages.len() > 128 { return Err(invalid("more than 128 MTP volumes were reported")); }
+        let mut volumes = Vec::new();
+        let mut identities = Vec::new();
+        for storage in storages {
+            cancel.check()?;
+            let info = storage.info();
+            let volume = storage.id().0;
+            volumes.push(Volume { id:volume, name:info.description.clone(), capacity:info.total_capacity,
+                available:info.free_space, writable:info.is_writable });
+            let mut transport = Mtp { device:None, storage, root:RelativePath::new("Chilpa")?, partial_reads:false,
+                folders:RefCell::default(), review:RefCell::default(),
+                #[cfg(test)] listing_calls:std::cell::Cell::new(0) };
+            transport.begin_review();
+            for root in roots {
+                cancel.check()?;
+                transport.root = root.clone();
+                if !transport.locate(root)?.is_some_and(|entry| entry.is_folder()) { continue; }
+                if let Some(target) = chilpa_sync::inspect_target(&mut transport, cancel)? {
+                    identities.push((volume, root.as_str().to_owned(), target.id));
+                }
+            }
+        }
+        Ok((Description { name, volumes }, identities))
+    })();
+    let closed = block_on(device.close()).map_err(protocol);
+    match result { Ok(value) => { closed?; Ok(value) }, Err(error) => Err(error) }
+}
+
 pub struct Mtp {
     device: Option<MtpDevice>, storage: Storage, root: RelativePath, partial_reads: bool,
     folders: RefCell<BTreeMap<String, FolderRef>>,
+    review: RefCell<Option<ReviewListings>>,
+    #[cfg(test)] listing_calls: std::cell::Cell<usize>,
 }
 impl Mtp {
     pub fn open(location: u64, volume: u64, root: RelativePath) -> Result<Self> {
@@ -93,7 +140,8 @@ impl Mtp {
         }
         let storage = block_on(device.storage(StorageId(volume))).map_err(|e| during("reading selected storage", protocol(e)))?;
         if !storage.info().is_writable { return Err(conflict("selected MTP storage is read-only")); }
-        let transport = Self { device:Some(device), storage, root, partial_reads, folders:RefCell::default() };
+        let transport = Self { device:Some(device), storage, root, partial_reads, folders:RefCell::default(), review:RefCell::default(),
+            #[cfg(test)] listing_calls:std::cell::Cell::new(0) };
         let root = transport.root.clone();
         if create { transport.ensure(&root).map_err(|e| during("preparing root folder", e))?; }
         else if !transport.locate(&root)?.is_some_and(|info| info.is_folder()) { return Err(conflict("paired MTP folder is missing")); }
@@ -105,7 +153,17 @@ impl Mtp {
     }
     fn path(&self, path: &RelativePath) -> Result<RelativePath> { RelativePath::new(format!("{}/{path}", self.root)) }
     fn child(&self, parent: ObjectHandle, name: &str) -> Result<Option<ObjectInfo>> {
+        if let Some(review) = self.review.borrow().as_ref() {
+            if let Some(listing) = review.folders.get(&parent.0) {
+                return Self::review_child(listing, name);
+            }
+        }
+        let parent_handle = parent.0;
+        let reviewing = self.review.borrow().is_some();
+        let mut snapshot = BTreeMap::new();
+        let mut snapshot_bytes = 0usize;
         // I consume every item, including errors, before deciding that a child is absent.
+        #[cfg(test)] self.listing_calls.set(self.listing_calls.get() + 1);
         let parent = (parent != ObjectHandle::ROOT).then_some(parent);
         let operation = if parent.is_none() { "listing storage root" } else { "listing folder" };
         let mut listing = block_on(self.storage.list_objects_stream(parent)).map_err(|e| during(operation, protocol(e)))?;
@@ -118,22 +176,59 @@ impl Mtp {
             };
             if info.filename.eq_ignore_ascii_case(name) {
                 if found.is_some() || info.filename != name { return Err(conflict("ambiguous or case-colliding MTP path")); }
-                found = Some(info);
+                found = Some(info.clone());
+            }
+            if reviewing {
+                let key = info.filename.to_ascii_lowercase();
+                snapshot_bytes = snapshot_bytes.saturating_add(info.filename.capacity() + key.capacity()
+                    + std::mem::size_of::<ObjectInfo>() + 128);
+                if snapshot.len() >= MAX_ASSETS || snapshot_bytes + 128 > MAX_METADATA_BYTES {
+                    return Err(invalid("MTP review listing exceeds its metadata budget"));
+                }
+                if snapshot.insert(key, info).is_some() { return Err(conflict("ambiguous or case-colliding MTP path")); }
             }
         }
+        if let Some(review) = self.review.borrow_mut().as_mut() {
+            if review.entries + snapshot.len() > MAX_ASSETS || review.bytes + snapshot_bytes + 128 > MAX_METADATA_BYTES {
+                *review = ReviewListings::default();
+            }
+            review.entries += snapshot.len();
+            review.bytes += snapshot_bytes + 128;
+            review.folders.insert(parent_handle, snapshot);
+        }
         Ok(found)
+    }
+    fn review_child(listing: &BTreeMap<String, ObjectInfo>, name: &str) -> Result<Option<ObjectInfo>> {
+        let found = listing.get(&name.to_ascii_lowercase());
+        if found.is_some_and(|info| info.filename != name) { return Err(conflict("ambiguous or case-colliding MTP path")); }
+        Ok(found.cloned())
     }
     fn locate(&self, path: &RelativePath) -> Result<Option<ObjectInfo>> {
         for pause in [0, 50, 200] {
             if pause != 0 { std::thread::sleep(Duration::from_millis(pause)); }
             match self.locate_once(path) {
-                Err(crate::Error::Transport { problem:chilpa_sync::TransportProblem::StaleReference, .. }) if pause != 200 => self.folders.borrow_mut().clear(),
+                Err(crate::Error::Transport { problem:chilpa_sync::TransportProblem::StaleReference, .. }) if pause != 200 => {
+                    self.folders.borrow_mut().clear();
+                    if let Some(review) = self.review.borrow_mut().as_mut() { *review = ReviewListings::default(); }
+                },
                 result => return result,
             }
         }
         unreachable!()
     }
     fn locate_once(&self, path: &RelativePath) -> Result<Option<ObjectInfo>> {
+        if self.review.borrow().is_some() {
+            let mut parent = ObjectHandle::ROOT;
+            let mut last = None;
+            let mut parts = path.as_str().split('/').peekable();
+            while let Some(part) = parts.next() {
+                let Some(info) = self.child(parent, part)? else { return Ok(None) };
+                if parts.peek().is_some() && !info.is_folder() { return Err(conflict("a file occupies an MTP parent folder")); }
+                parent = info.handle;
+                last = Some(info);
+            }
+            return Ok(last);
+        }
         let mut parent = ObjectHandle::ROOT;
         let parts: Vec<_> = path.as_str().split('/').collect();
         let mut last = None;
@@ -199,6 +294,14 @@ impl Drop for Mtp {
 }
 
 impl Transport for Mtp {
+    fn begin_review(&mut self) {
+        self.folders.borrow_mut().clear();
+        *self.review.borrow_mut() = Some(ReviewListings::default());
+    }
+    fn end_review(&mut self) {
+        *self.review.borrow_mut() = None;
+        self.folders.borrow_mut().clear();
+    }
     fn available_bytes(&mut self) -> Result<u64> {
         block_on(self.storage.refresh()).map_err(protocol)?;
         if !self.storage.info().is_writable { return Err(conflict("MTP storage became read-only")); }
@@ -207,7 +310,7 @@ impl Transport for Mtp {
     fn stat(&mut self, path: &RelativePath) -> Result<Option<Entry>> {
         Ok(self.locate(&self.path(path)?)?.map(|info| Entry { size:info.size, directory:info.is_folder() }))
     }
-    fn create_dir_all(&mut self, path: &RelativePath) -> Result<()> { self.ensure(&self.path(path)?)?; Ok(()) }
+    fn create_dir_all(&mut self, path: &RelativePath) -> Result<()> { self.end_review(); self.ensure(&self.path(path)?)?; Ok(()) }
     fn read(&mut self, path: &RelativePath, output: &mut dyn Write, cancel: &Cancellation) -> Result<()> {
         cancel.check()?;
         let info = self.locate(&self.path(path)?)?.ok_or_else(|| conflict("MTP file disappeared"))?;
@@ -232,6 +335,7 @@ impl Transport for Mtp {
     }
     fn write_new(&mut self, path: &RelativePath, input: &mut (dyn Read + Send), size: u64,
         cancel: &Cancellation, progress: &mut (dyn FnMut(u64) + Send)) -> Result<()> {
+        self.end_review();
         cancel.check()?;
         let full = self.path(path)?;
         if self.locate(&full)?.is_some() { return Err(conflict("MTP upload destination already exists")); }
@@ -253,6 +357,7 @@ impl Transport for Mtp {
         Ok(())
     }
     fn rename_new(&mut self, from: &RelativePath, to: &RelativePath) -> Result<()> {
+        self.end_review();
         if from.parent() != to.parent() { return Err(invalid("MTP publication needs staging in the same folder")); }
         let (from, to) = (self.path(from)?, self.path(to)?);
         if self.locate(&to)?.is_some() { return Err(conflict("MTP rename destination already exists")); }
@@ -260,6 +365,7 @@ impl Transport for Mtp {
         block_on(self.storage.rename(source.handle, to.filename())).map_err(protocol)
     }
     fn remove_file(&mut self, path: &RelativePath) -> Result<()> {
+        self.end_review();
         let info = self.locate(&self.path(path)?)?.ok_or_else(|| conflict("MTP removal target disappeared"))?;
         if info.is_folder() { return Err(conflict("MTP sync never recursively removes folders")); }
         block_on(self.storage.delete(info.handle)).map_err(protocol)

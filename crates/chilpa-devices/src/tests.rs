@@ -290,3 +290,159 @@ fn an_approved_removal_can_free_a_full_card_without_an_upload_reserve() {
     synchronize(&mut rig.state, &mut device, &plan, plan.id(), true, &Cancellation::default(), &mut |_| ()).unwrap();
     assert_eq!(rig.state.managed_count().unwrap(), 0);
 }
+
+struct ReviewMeter<'a> { inner: &'a mut dyn Transport, media_bytes: u64, reads: usize, stats: usize, reviewing: bool }
+impl Transport for ReviewMeter<'_> {
+    fn begin_review(&mut self) { self.reviewing = true; self.inner.begin_review(); }
+    fn end_review(&mut self) { self.reviewing = false; self.inner.end_review(); }
+    fn available_bytes(&mut self) -> Result<u64> { self.inner.available_bytes() }
+    fn stat(&mut self, path: &RelativePath) -> Result<Option<Entry>> { self.stats += 1; self.inner.stat(path) }
+    fn read(&mut self, path: &RelativePath, out: &mut dyn Write, cancel: &Cancellation) -> Result<()> {
+        struct Counter<'a> { out: &'a mut dyn Write, count: &'a mut u64 }
+        impl Write for Counter<'_> {
+            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+                let written = self.out.write(bytes)?;
+                *self.count += written as u64;
+                Ok(written)
+            }
+            fn flush(&mut self) -> std::io::Result<()> { self.out.flush() }
+        }
+        self.reads += 1;
+        if path.as_str().starts_with("Music/") || path.as_str().starts_with("Playlists/") {
+            self.inner.read(path, &mut Counter { out, count:&mut self.media_bytes }, cancel)
+        } else { self.inner.read(path, out, cancel) }
+    }
+    fn create_dir_all(&mut self, p: &RelativePath) -> Result<()> { self.inner.create_dir_all(p) }
+    fn write_new(&mut self, p: &RelativePath, input: &mut (dyn Read + Send), size: u64, c: &Cancellation, f: &mut (dyn FnMut(u64) + Send)) -> Result<()> {
+        self.inner.write_new(p,input,size,c,f)
+    }
+    fn rename_new(&mut self, a: &RelativePath, b: &RelativePath) -> Result<()> { self.inner.rename_new(a,b) }
+    fn remove_file(&mut self, p: &RelativePath) -> Result<()> { self.inner.remove_file(p) }
+}
+
+#[test]
+fn metadata_review_reads_no_device_media_and_reuses_unchanged_local_hashes() {
+    let mut rig = Rig::new();
+    let inputs: Vec<_> = (0..12).map(|i| rig.input(&format!("track-{i}"), &vec![i as u8; 1024*1024])).collect();
+    rig.sync(&inputs, &[], false);
+    let mut meter = ReviewMeter { inner:&mut rig.device, media_bytes:0, reads:0, stats:0, reviewing:false };
+    let started = std::time::Instant::now();
+    let full = prepare(&rig.state, &mut meter, &inputs, &[], false, &Cancellation::default()).unwrap();
+    let full_time = started.elapsed();
+    assert_eq!(meter.media_bytes, 12*1024*1024);
+    assert_eq!(full.source_bytes_hashed(), 12*1024*1024);
+    meter.media_bytes = 0;
+    meter.reads = 0;
+    meter.stats = 0;
+    let started = std::time::Instant::now();
+    let review = prepare_review(&rig.state, &mut meter, &inputs, &[], false, &Cancellation::default()).unwrap();
+    assert!(review.is_metadata_review());
+    assert_eq!(review.unchanged_files(), 12);
+    assert!(review.actions().is_empty());
+    assert_eq!(meter.media_bytes, 0);
+    assert_eq!(meter.reads, 1); // Only the bounded identity marker is read.
+    assert_eq!(meter.stats, 13);
+    assert!(!meter.reviewing);
+    #[cfg(unix)] assert_eq!(review.source_bytes_hashed(), 0);
+    eprintln!("Review fixture: tracks=12 media_bytes=12582912 full_device_bytes=12582912 review_device_bytes={} full_source_bytes={} review_source_bytes={} review_stats={} full_us={} review_us={}",
+        meter.media_bytes, full.source_bytes_hashed(), review.source_bytes_hashed(), meter.stats,
+        full_time.as_micros(), started.elapsed().as_micros());
+}
+
+#[test]
+fn review_caches_do_not_hide_source_edits_or_atomic_replacements() {
+    let mut rig = Rig::new();
+    let input = rig.input("track", b"original");
+    rig.sync(&[input.clone()], &[], false);
+    let modified = std::fs::metadata(&input.source).unwrap().modified().unwrap();
+    std::fs::write(&input.source, b"modified").unwrap();
+    std::fs::File::options().write(true).open(&input.source).unwrap().set_modified(modified).unwrap();
+    let changed = prepare_review(&rig.state, &mut rig.device, &[input.clone()], &[], false, &Cancellation::default()).unwrap();
+    assert_eq!(changed.source_bytes_hashed(), 8);
+    assert_eq!(copies(&changed).len(), 1);
+    let replacement = input.source.with_extension("replacement");
+    std::fs::write(&replacement, b"replaced").unwrap();
+    std::fs::File::options().write(true).open(&replacement).unwrap().set_modified(modified).unwrap();
+    std::fs::remove_file(&input.source).unwrap();
+    std::fs::rename(replacement, &input.source).unwrap();
+    let replaced = prepare_review(&rig.state, &mut rig.device, &[input], &[], false, &Cancellation::default()).unwrap();
+    assert_eq!(replaced.source_bytes_hashed(), 8);
+    assert_ne!(copies(&changed), copies(&replaced));
+}
+
+#[test]
+fn metadata_review_defers_same_size_integrity_checks_but_never_mutates_changed_files() {
+    let mut rig = Rig::new();
+    let input = rig.input("track", b"original");
+    let original = rig.sync(&[input.clone()], &[], false);
+    let path = rig.root.path().join(copies(&original)[0].as_str());
+    std::fs::write(&path, b"modified").unwrap();
+    let present = prepare_review(&rig.state, &mut rig.device, &[input], &[], false, &Cancellation::default()).unwrap();
+    assert_eq!(present.unchanged_files(), 1);
+    assert!(present.is_metadata_review());
+    let removal = prepare_review(&rig.state, &mut rig.device, &[], &[], true, &Cancellation::default()).unwrap();
+    assert_eq!(removal.deletion_count(), 1);
+    assert!(matches!(synchronize(&mut rig.state, &mut rig.device, &removal, removal.id(), true, &Cancellation::default(), &mut |_| ()), Err(Error::Conflict(_))));
+    assert!(!rig.state.interrupted().unwrap());
+    assert_eq!(std::fs::read(path).unwrap(), b"modified");
+}
+
+#[test]
+fn failed_or_cancelled_reviews_release_snapshots_and_do_not_publish_partial_caches() {
+    let mut rig = Rig::new();
+    let input = rig.input("track", b"original");
+    let mut missing = input.clone();
+    missing.id = "missing".into();
+    missing.source = input.source.with_extension("absent");
+    let mut meter = ReviewMeter { inner:&mut rig.device, media_bytes:0, reads:0, stats:0, reviewing:false };
+    assert!(prepare_review(&rig.state, &mut meter, &[input.clone(),missing], &[], false, &Cancellation::default()).is_err());
+    assert!(!meter.reviewing);
+    let cancelled = Cancellation::default(); cancelled.cancel();
+    assert!(matches!(prepare_review(&rig.state, &mut meter, &[input.clone()], &[], false, &cancelled), Err(Error::Cancelled)));
+    assert!(!meter.reviewing);
+    let plan = prepare_review(&rig.state, &mut meter, &[input.clone()], &[], false, &Cancellation::default()).unwrap();
+    assert_eq!(plan.source_bytes_hashed(), 8);
+    let mut other = Rig::new();
+    let plan = prepare_review(&other.state, &mut other.device, &[input], &[], false, &Cancellation::default()).unwrap();
+    assert_eq!(plan.source_bytes_hashed(), 8);
+    assert!(prepare_review(&rig.state, &mut other.device, &[], &[], false, &Cancellation::default()).is_err());
+}
+
+#[test]
+fn metadata_review_rejects_foreign_and_resized_files_and_verifies_replacements() {
+    let mut rig = Rig::new();
+    let a = rig.input("a", b"audio");
+    let b = rig.input("b", b"music");
+    let initial = rig.sync(&[a.clone()], &[playlist(&["a"])], false);
+    let playlist_path = copies(&initial).into_iter().find(|p| p.as_str().starts_with("Playlists/")).unwrap();
+    let actual = rig.root.path().join(playlist_path.as_str());
+    let mut external = std::fs::read(&actual).unwrap();
+    external[0] = b'!';
+    std::fs::write(&actual, &external).unwrap();
+    let review = prepare_review(&rig.state, &mut rig.device, &[a.clone(), b.clone()], &[playlist(&["b","a"])], false, &Cancellation::default()).unwrap();
+    assert!(synchronize(&mut rig.state, &mut rig.device, &review, review.id(), false, &Cancellation::default(), &mut |_| ()).is_err());
+    assert!(!rig.state.interrupted().unwrap());
+    assert_eq!(std::fs::read(&actual).unwrap(), external);
+    let new_path = copies(&review).into_iter().find(|p| p.as_str().starts_with("Music/")).unwrap();
+    let foreign = rig.root.path().join(new_path.as_str());
+    std::fs::create_dir_all(foreign.parent().unwrap()).unwrap();
+    std::fs::write(&foreign, b"music").unwrap();
+    assert!(prepare_review(&rig.state, &mut rig.device, &[a.clone(),b], &[], false, &Cancellation::default()).is_err());
+    std::fs::write(&actual, b"shorter").unwrap();
+    assert!(prepare_review(&rig.state, &mut rig.device, &[a], &[playlist(&["a"])], false, &Cancellation::default()).is_err());
+}
+
+#[cfg(unix)]
+#[test]
+fn local_review_cache_survives_reopening_only_its_own_profile() {
+    let mut rig = Rig::new();
+    let input = rig.input("track", b"original");
+    let first = prepare_review(&rig.state, &mut rig.device, &[input.clone()], &[], false, &Cancellation::default()).unwrap();
+    assert_eq!(first.source_bytes_hashed(), 8);
+    let Rig { root:_root, source:_source, profile, state, mut device } = rig;
+    drop(state);
+    let reopened = State::open(&profile.path().join("sync.db")).unwrap();
+    let next = prepare_review(&reopened, &mut device, &[input], &[], false, &Cancellation::default()).unwrap();
+    assert_eq!(next.source_bytes_hashed(), 0);
+    assert_eq!(copies(&first), copies(&next));
+}

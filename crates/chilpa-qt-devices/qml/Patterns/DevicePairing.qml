@@ -26,7 +26,7 @@ Flickable {
         Text { width: parent.width; text: I18n.tr("Add a storage profile", I18n.rev); wrapMode: Text.WordWrap; font.pointSize: Type.section; font.weight: Type.semibold; color: Theme.color.textPrimary }
         Text {
             width: parent.width
-            text: I18n.tr("Connect your player in USB file transfer mode. Save a separate profile for its internal memory and each card.", I18n.rev)
+            text: I18n.tr("Connect a player or memory card. Save a profile for each storage.", I18n.rev)
             wrapMode: Text.WordWrap
             font.pointSize: Type.body
             color: Theme.color.textSecondary
@@ -41,7 +41,7 @@ Flickable {
             visible: !form.mounted
             width: parent.width
             spacing: Metrics.gap4
-            Text { text: I18n.tr("Folder on the player", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
+            Text { text: I18n.tr("Music folder", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
             TextField { id: folder; objectName: "deviceManagedFolder"; width: parent.width; text: "Chilpa"; enabled: !form.busy }
         }
         Column {

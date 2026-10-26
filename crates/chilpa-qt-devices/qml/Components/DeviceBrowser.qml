@@ -10,13 +10,14 @@ Rectangle {
     property var document: ({})
     onDocumentChanged: if (search && search.text !== (document.query || "")) search.text = document.query || ""
     property bool busy: false
-    readonly property string location: [document.source,document.album,document.page].join("/")
+    readonly property string location: [document.source,document.view,document.artist,document.album,document.page].join("/")
     onLocationChanged: list.positionViewAtBeginning()
     signal albumAsked(string id)
     signal backAsked()
     signal filterEdited(string text)
     signal pageAsked(int page)
     signal reloadAsked()
+    signal viewAsked(string view)
     radius: Metrics.radiusMenu
     color: Theme.color.surfacePane
     border.color: Theme.color.strokeHairline
@@ -56,14 +57,27 @@ Rectangle {
             font.pointSize: Type.small
         }
         DeviceNotice { width: parent.width; visible: panel.document.error !== null && panel.document.error !== undefined; error: panel.document.error || null; busy: panel.busy }
-        SearchField {
-            id: search
-            objectName: "deviceBrowserSearch"
+        Row {
             width: parent.width
-            text: panel.document.query || ""
-            placeholder: I18n.tr("Find albums or tracks…", I18n.rev)
-            enabled: !panel.busy
-            onTextChanged: if (text !== (panel.document.query || "")) panel.filterEdited(text)
+            spacing: Metrics.gap8
+            SelectField {
+                objectName: "deviceBrowserView"
+                width: (parent.width - Metrics.gap8) / 2 // derived: two equal fields and their gap
+                options: [I18n.tr("Music", I18n.rev), I18n.tr("Artists", I18n.rev), I18n.tr("Albums", I18n.rev), I18n.tr("Tracks", I18n.rev), I18n.tr("Playlists", I18n.rev)]
+                values: ["music", "artists", "albums", "tracks", "playlists"]
+                value: panel.document.view || "music"
+                enabled: !panel.busy
+                onPicked: value => panel.viewAsked(value)
+            }
+            SearchField {
+                id: search
+                objectName: "deviceBrowserSearch"
+                width: (parent.width - Metrics.gap8) / 2 // derived: two equal fields and their gap
+                text: panel.document.query || ""
+                placeholder: I18n.tr("Search this view…", I18n.rev)
+                enabled: !panel.busy
+                onTextChanged: if (text !== (panel.document.query || "")) panel.filterEdited(text)
+            }
         }
     }
     KeyedModel { id: music; keyField: "id"; items: panel.document.rows || [] }
@@ -90,22 +104,22 @@ Rectangle {
             onOpened: panel.albumAsked(model.entry.id)
         }
     }
-    Row {
+    DevicePager {
         id: footer
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap8
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Metrics.gap4
-        spacing: Metrics.gap8
-        IconButton { objectName: "deviceMusicPreviousPage"; glyph: Icons.chevronLeft; tip: I18n.tr("Previous page", I18n.rev); enabled: (panel.document.page || 0) > 0 && !panel.busy; onClicked: panel.pageAsked(panel.document.page - 1) }
-        Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.trArgs("Page {} of {}", [String((panel.document.page || 0) + 1), String(panel.document.pages || 1)], I18n.rev); color: Theme.color.textSecondary; font.pointSize: Type.small }
-        IconButton { objectName: "deviceMusicNextPage"; glyph: Icons.chevronRight; tip: I18n.tr("Next page", I18n.rev); enabled: (panel.document.page || 0) + 1 < (panel.document.pages || 1) && !panel.busy; onClicked: panel.pageAsked(panel.document.page + 1) }
+        page: panel.document.page || 0
+        pages: panel.document.pages || 1
+        busy: panel.busy
+        onPageAsked: page => panel.pageAsked(page)
     }
     Text {
         anchors.centerIn: list
         width: list.width - Metrics.gap16
         visible: (panel.document.rows || []).length === 0 && !panel.document.error
-        text: panel.document.loading ? I18n.tr("Loading music…", I18n.rev) : panel.document.query ? I18n.tr("No matching music.", I18n.rev) : panel.document.recorded ? I18n.tr("No music has been synced with Chilpa to this storage yet.", I18n.rev) : I18n.tr("This selection has no tracks.", I18n.rev)
+        text: panel.document.loading ? I18n.tr("Loading music…", I18n.rev) : panel.document.query ? I18n.tr("No matching music.", I18n.rev) : panel.document.recorded ? ((panel.document.view && panel.document.view !== "music") || panel.document.album ? I18n.tr("No matching music.", I18n.rev) : I18n.tr("No music has been synced with Chilpa to this storage yet.", I18n.rev)) : I18n.tr("This selection has no tracks.", I18n.rev)
         wrapMode: Text.WordWrap
         horizontalAlignment: Text.AlignHCenter
         color: Theme.color.textSecondary

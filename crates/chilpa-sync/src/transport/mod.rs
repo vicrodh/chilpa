@@ -9,6 +9,10 @@ pub struct Entry { pub size: u64, pub directory: bool }
 /// I require an exclusive session for this root until the transport is dropped.
 /// Failed lookups and incomplete listings are errors, never an empty collection.
 pub trait Transport {
+    /// I allow a bounded metadata snapshot only during a read-only preview.
+    fn begin_review(&mut self) {}
+    /// I discard every preview hint before execution can inspect or mutate the device.
+    fn end_review(&mut self) {}
     fn available_bytes(&mut self) -> Result<u64>;
     fn stat(&mut self, path: &RelativePath) -> Result<Option<Entry>>;
     fn create_dir_all(&mut self, path: &RelativePath) -> Result<()>;

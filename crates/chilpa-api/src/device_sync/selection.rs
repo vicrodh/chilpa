@@ -80,10 +80,7 @@ pub fn resolve(
     cancel: &Cancellation,
 ) -> Result<(Vec<Input>, Vec<Playlist>), UiError> {
     if picks.is_empty() {
-        return Err(failure(
-            chilpa_i18n::mark("Choose playlists, a saved query or Library tracks first."),
-            "",
-        ));
+        return Ok((Vec::new(), Vec::new()));
     }
     let library = Library::open_read_only(path).map_err(|e| {
         failure(
@@ -105,7 +102,8 @@ pub fn resolve(
                 Pick::Tracks{id,name,keys}=>(id.clone(),name.clone(),library.export_track_ids(keys).map_err(|e|failure(chilpa_i18n::mark("Some selected Library tracks are missing. I kept the device unchanged."),e))?),
             };
             if ids.len()>MAX_ASSETS {return Err(failure(chilpa_i18n::mark("A device selection can contain at most 50,000 files and playlists."),""));}
-            selected.extend(ids.iter().copied());lists.push((id,name,ids));
+            selected.extend(ids.iter().copied());
+            if matches!(pick, Pick::Playlist { .. }) { lists.push((id,name,ids)); }
             if selected.len()+lists.len()>MAX_ASSETS {return Err(failure(chilpa_i18n::mark("A device selection can contain at most 50,000 files and playlists."),""));}
         }
         let ids:Vec<_>=selected.into_iter().collect();

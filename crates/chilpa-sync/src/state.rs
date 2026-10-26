@@ -49,7 +49,19 @@ impl State {
                 PRAGMA user_version=1; COMMIT;")?,
             1 => (), _ => return Err(invalid("unsupported sync journal version")),
         }
+        db.execute_batch("CREATE TABLE IF NOT EXISTS sync_source_cache(id INTEGER PRIMARY KEY CHECK(id=1), record TEXT NOT NULL);")?;
         Ok(Self { db, _lease: lease })
+    }
+    pub(crate) fn source_cache(&self) -> Result<Option<String>> {
+        // I bound the SQLite allocation before fetching the optional cache payload.
+        let size: Option<i64> = self.db.query_row("SELECT length(CAST(record AS BLOB)) FROM sync_source_cache WHERE id=1", [], |r| r.get(0)).optional()?;
+        if size.is_some_and(|size| size < 0 || size > MAX_METADATA_BYTES as i64) { return Ok(None); }
+        Ok(self.db.query_row("SELECT record FROM sync_source_cache WHERE id=1", [], |r| r.get(0)).optional()?)
+    }
+    pub(crate) fn save_source_cache(&self, record: &str) -> Result<()> {
+        if record.len() > MAX_METADATA_BYTES { return Err(invalid("source cache exceeds its metadata budget")); }
+        self.db.execute("INSERT INTO sync_source_cache(id,record) VALUES (1,?1) ON CONFLICT(id) DO UPDATE SET record=excluded.record WHERE sync_source_cache.record<>excluded.record", [record])?;
+        Ok(())
     }
     pub fn target(&self) -> Result<Option<Target>> {
         Ok(self.db.query_row("SELECT id,name FROM sync_target", [], |r| Ok(Target { version:1, id:r.get(0)?, name:r.get(1)? })).optional()?)

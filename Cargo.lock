@@ -627,6 +627,7 @@ name = "chilpa-devices"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "chilpa-dirs",
  "chilpa-sync",
  "futures",
  "libc",
@@ -858,6 +859,7 @@ name = "chilpa-qt-devices"
 version = "0.1.0"
 dependencies = [
  "chilpa-api",
+ "chilpa-dirs",
  "chilpa-qt-kit",
  "cxx",
  "cxx-qt",

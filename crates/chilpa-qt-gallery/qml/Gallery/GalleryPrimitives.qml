@@ -68,6 +68,7 @@ TitledFlow {
 
     Row {
         spacing: Metrics.gap8
+        Item { width: Metrics.cardMinWidth; height: Metrics.playerHeight; WindowGrips { anchors.fill: parent; window: Window.window } }
         ResizeHandle { height: Metrics.sidebarCollapsed }
         ResizeHandle { vertical: false; width: Metrics.sidebarCollapsed }
         Toggle { checked: true }

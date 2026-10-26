@@ -378,6 +378,9 @@ msgstr "Albums"
 msgid "Albums ({})"
 msgstr "Albums ({})"
 
+msgid "Albums and tracks"
+msgstr "Albums et pistes"
+
 msgid "All"
 msgstr "Tout"
 
@@ -416,6 +419,9 @@ msgstr "Tous les résultats enregistrés"
 
 msgid "All seasons"
 msgstr "Toutes les saisons"
+
+msgid "All selections"
+msgstr "Toutes les sélections"
 
 msgid "All set"
 msgstr "Tout est prêt"
@@ -467,6 +473,9 @@ msgstr "Déjà utilisé par {}"
 
 msgid "Also delete the lyrics saved for this plugin's tracks"
 msgstr "Supprimer aussi les paroles enregistrées pour les pistes de ce plugin"
+
+msgid "Also remove music files no longer selected"
+msgstr "Supprimer aussi les fichiers musicaux désélectionnés"
 
 msgid "Also write the other tag layers"
 msgstr "Écrire aussi les autres couches d'étiquettes"
@@ -1169,9 +1178,6 @@ msgstr "Choisir une image"
 msgid "Choose image…"
 msgstr "Choisir une image…"
 
-msgid "Choose mounted storage for this profile, or select a player profile."
-msgstr ""
-
 msgid "Choose music for this storage"
 msgstr ""
 
@@ -1183,9 +1189,6 @@ msgstr "Choisir l'illustration de la playlist"
 
 msgid "Choose playlist file"
 msgstr "Choisir le fichier de playlist"
-
-msgid "Choose playlists, a saved query or Library tracks first."
-msgstr ""
 
 msgid "Choose plugin icon"
 msgstr "Choisir l'icône du plugin"
@@ -1388,14 +1391,14 @@ msgstr ""
 msgid "Connect"
 msgstr "Connecter"
 
+msgid "Connect a player or memory card. Save a profile for each storage."
+msgstr "Connectez un lecteur ou une carte mémoire. Enregistrez un profil par stockage."
+
 msgid "Connect at most eight USB players at a time."
 msgstr ""
 
 msgid "Connect on {}"
 msgstr "Connecter sur {}"
-
-msgid "Connect your player in USB file transfer mode. Save a separate profile for its internal memory and each card."
-msgstr ""
 
 msgid "Connect {}"
 msgstr "Connecter {}"
@@ -2216,9 +2219,6 @@ msgstr "Filtrer, Entrée pour rechercher, ou une URL de flux"
 msgid "Find a preset or device"
 msgstr "Rechercher un préréglage ou un périphérique"
 
-msgid "Find albums or tracks…"
-msgstr "Rechercher des albums ou des pistes…"
-
 msgid "Find covers"
 msgstr "Rechercher des pochettes"
 
@@ -2271,9 +2271,6 @@ msgid "Folder name"
 msgstr "Nom du dossier"
 
 msgid "Folder on the memory card"
-msgstr ""
-
-msgid "Folder on the player"
 msgstr ""
 
 msgid "Folder path"
@@ -2646,9 +2643,6 @@ msgstr "Je garde ce filtre appliqué ; modifiez son texte pour le changer."
 
 msgid "I restarted the audio services"
 msgstr "J'ai redémarré les services audio"
-
-msgid "I save only the conditions. Opening a query uses the currently selected sources and keeps the queue."
-msgstr "Je garde uniquement les conditions. À l’ouverture, j’utilise les sources sélectionnées et conserve la file."
 
 msgid "I understand and accept these terms"
 msgstr "Je comprends et j'accepte ces conditions"
@@ -3265,6 +3259,9 @@ msgstr "Membre de"
 msgid "Members & Former"
 msgstr "Membres et anciens"
 
+msgid "Memory card"
+msgstr "Carte mémoire"
+
 msgid "Menu"
 msgstr "Menu"
 
@@ -3393,6 +3390,9 @@ msgstr "Monter"
 
 msgid "Music"
 msgstr ""
+
+msgid "Music folder"
+msgstr "Dossier de musique"
 
 msgid "Music player\nNothing playing"
 msgstr "Lecteur de musique\nAucune lecture en cours"
@@ -4039,8 +4039,8 @@ msgstr "Octets d'origine · aucun transcodage par Chilpa · traitement du récep
 msgid "Original files"
 msgstr "Fichiers d'origine"
 
-msgid "Original files, with playlists"
-msgstr ""
+msgid "Original music files"
+msgstr "Fichiers musicaux originaux"
 
 msgid "Oscilloscope"
 msgstr "Oscilloscope"
@@ -4426,6 +4426,9 @@ msgstr "Filtres de qualité, de format, de source et de note"
 msgid "Quarantined"
 msgstr "En quarantaine"
 
+msgid "Queries"
+msgstr "Requêtes"
+
 msgid "Queries supported formats and predicts delivery. This does not test audible output."
 msgstr "Interroge les formats pris en charge et prédit la livraison. Cela ne teste pas la sortie audible."
 
@@ -4467,6 +4470,9 @@ msgstr "Files d'attente"
 
 msgid "Quick Connect is turned off on that server"
 msgstr "Quick Connect est désactivé sur ce serveur"
+
+msgid "Quick review by size; copies and removals are verified when syncing."
+msgstr "Vérification rapide par taille ; les copies et suppressions sont vérifiées à la synchronisation."
 
 msgid "Quick view"
 msgstr "Aperçu rapide"
@@ -4716,9 +4722,6 @@ msgstr "Retirer le groupe"
 
 msgid "Remove image"
 msgstr "Supprimer l'image"
-
-msgid "Remove managed files no longer selected"
-msgstr ""
 
 msgid "Remove one condition to get results:"
 msgstr "Retirez une condition pour obtenir des résultats :"
@@ -5070,6 +5073,9 @@ msgstr "Rechercher dans ces épisodes"
 
 msgid "Search this page…"
 msgstr "Rechercher dans cette page…"
+
+msgid "Search this view…"
+msgstr "Rechercher dans cette vue…"
 
 msgid "Search title, artist or album"
 msgstr "Rechercher un titre, un artiste ou un album"
@@ -5831,6 +5837,9 @@ msgstr "Le contrôle de volume matériel sélectionné a disparu."
 msgid "The selected queues are empty."
 msgstr "Les files d'attente sélectionnées sont vides."
 
+msgid "The selected storage changed or disconnected."
+msgstr "Le stockage sélectionné a changé ou a été déconnecté."
+
 msgid "The selected tracks could not be read."
 msgstr "Les pistes sélectionnées n'ont pas pu être chargées."
 
@@ -5965,6 +5974,15 @@ msgstr "Cette sortie reçoit le DSD converti en PCM. Seule une carte sur hw le r
 
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "Cette playlist contient déjà {} des {} pistes que vous ajoutez. Ajoutez seulement les nouvelles, ou tout, y compris les doublons."
+
+msgid "This playlist is no longer available."
+msgstr "Cette playlist n’est plus disponible."
+
+msgid "This playlist is not valid UTF-8."
+msgstr "Cette playlist n’utilise pas un encodage UTF-8 valide."
+
+msgid "This playlist references music outside the recorded selection. Sync it again to refresh its contents."
+msgstr "Cette playlist référence des morceaux hors de la sélection enregistrée. Synchronisez-la à nouveau pour actualiser son contenu."
 
 msgid "This preset uses precise filters; each band shows its level. To move the bands, create a separate graphic EQ. You can restore your previous EQ."
 msgstr "Ce préréglage utilise des filtres précis ; chaque bande affiche son niveau. Pour déplacer les bandes, créez un égaliseur graphique séparé. Vous pouvez rétablir votre EQ précédent."
@@ -6259,6 +6277,9 @@ msgstr "Non écoutés"
 
 msgid "Unrated"
 msgstr "Sans note"
+
+msgid "Unselected playlists are removed after approval. Enable this option to remove unselected music too."
+msgstr "Les playlists désélectionnées sont supprimées après confirmation. Activez cette option pour supprimer aussi la musique désélectionnée."
 
 msgid "Unsupported"
 msgstr "Non pris en charge"
@@ -8056,6 +8077,9 @@ msgstr[1] "{} étoiles"
 
 msgid "{} still loading · counts may grow"
 msgstr "{} se charge encore · les nombres peuvent augmenter"
+
+msgid "{} to copy · {} to update · {} to remove · {} already present"
+msgstr "{} à copier · {} à mettre à jour · {} à supprimer · {} déjà présents"
 
 msgid "{} to copy · {} to update · {} to remove · {} unchanged"
 msgstr ""

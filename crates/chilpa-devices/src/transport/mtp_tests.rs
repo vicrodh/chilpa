@@ -94,3 +94,82 @@ fn folder_references_stay_bounded_across_many_albums() {
         assert!(device.folders.borrow().len() <= FOLDER_CACHE_LIMIT);
     }
 }
+
+#[test]
+fn review_lists_each_folder_once_and_releases_its_snapshot() {
+    let fixture = Fixture::new(true);
+    for index in 0..64 {
+        std::fs::write(fixture.file().with_file_name(format!("track-{index}.flac")), b"audio").unwrap();
+    }
+    let mut device = fixture.open();
+    device.listing_calls.set(0);
+    device.begin_review();
+    let started = std::time::Instant::now();
+    for index in 0..64 {
+        let path = RelativePath::new(format!("Music/Artist/Album/track-{index}.flac")).unwrap();
+        assert_eq!(device.stat(&path).unwrap().unwrap().size, 5);
+    }
+    let review_calls = device.listing_calls.get();
+    let review_time = started.elapsed();
+    assert_eq!(review_calls, 5);
+    device.end_review();
+    assert!(device.review.borrow().is_none());
+    assert!(device.folders.borrow().is_empty());
+    device.listing_calls.set(0);
+    let started = std::time::Instant::now();
+    for index in 0..64 {
+        let path = RelativePath::new(format!("Music/Artist/Album/track-{index}.flac")).unwrap();
+        assert_eq!(device.stat(&path).unwrap().unwrap().size, 5);
+    }
+    eprintln!("MTP review fixture: tracks=64 review_listings={review_calls} fresh_listings={} review_us={} fresh_us={}",
+        device.listing_calls.get(), review_time.as_micros(), started.elapsed().as_micros());
+    assert_eq!(device.listing_calls.get(), 68);
+}
+
+#[test]
+fn review_absence_is_not_reused_by_upload_or_removal() {
+    let fixture = Fixture::new(true);
+    let mut device = fixture.open();
+    let path = RelativePath::new("Music/Artist/Album/new.flac").unwrap();
+    device.begin_review();
+    assert!(device.stat(&path).unwrap().is_none());
+    let actual = fixture.file().with_file_name("new.flac");
+    std::fs::write(&actual, b"foreign").unwrap();
+    rescan_virtual_device(&fixture.serial).unwrap();
+    assert!(device.write_new(&path, &mut b"ours".as_slice(), 4, &Cancellation::default(), &mut |_| ()).is_err());
+    assert_eq!(std::fs::read(&actual).unwrap(), b"foreign");
+    assert!(device.review.borrow().is_none());
+    device.begin_review();
+    assert!(device.stat(&song()).unwrap().is_some());
+    device.end_review();
+    std::fs::write(fixture.file(), b"other").unwrap();
+    rescan_virtual_device(&fixture.serial).unwrap();
+    let mut bytes = Vec::new();
+    device.read(&song(), &mut bytes, &Cancellation::default()).unwrap();
+    assert_eq!(bytes, b"other");
+}
+
+#[test]
+fn discovery_matches_the_card_marker_without_picking_the_internal_volume() {
+    let directory = tempfile::tempdir().unwrap();
+    let internal = directory.path().join("internal");
+    let card = directory.path().join("card");
+    std::fs::create_dir(&internal).unwrap();
+    std::fs::create_dir_all(card.join("Chilpa/.chilpa-sync")).unwrap();
+    let target = "c".repeat(32);
+    std::fs::write(card.join("Chilpa/.chilpa-sync/identity.json"), format!(r#"{{"version":1,"id":"{target}","name":"Card"}}"#)).unwrap();
+    let config = VirtualDeviceConfig {
+        serial:format!("discovery-{}", directory.path().display()), watch_backing_dirs:false, event_poll_interval:Duration::ZERO,
+        storages:vec![VirtualStorageConfig { description:"Internal".into(), capacity:1024*1024, backing_dir:internal.clone(), read_only:false },
+            VirtualStorageConfig { description:"MicroSD".into(), capacity:1024*1024, backing_dir:card.clone(), read_only:false }],
+        ..Default::default()
+    };
+    let device = register_virtual_device(&config);
+    let result = describe_identities(device.location_id, &[RelativePath::new("Chilpa").unwrap()], &Cancellation::default());
+    unregister_virtual_device(device.location_id);
+    let (description, identities) = result.unwrap();
+    assert_eq!(description.volumes.len(), 2);
+    assert_eq!(identities, vec![(description.volumes[1].id, "Chilpa".into(), target)]);
+    assert!(!internal.join("Chilpa").exists());
+    assert!(!card.join("Chilpa/.chilpa-sync/lock").exists());
+}

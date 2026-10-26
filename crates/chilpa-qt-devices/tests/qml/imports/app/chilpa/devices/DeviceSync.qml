@@ -20,6 +20,7 @@ QtObject {
     function enter() { enters++ }
     function leave() { leaves++ }
     function poll() { polls++ }
+    function connectionsChanged() { lastAction = ["connectionsChanged"] }
     function refresh() { lastAction = ["refresh"] }
     function selectProfile(id) { lastAction = ["profile",id] }
     function selectDestination(id) { lastAction = ["destination",id] }
@@ -27,6 +28,9 @@ QtObject {
     function toggle(id) { lastAction = ["toggle",id] }
     function useTracks(ids) { data = Object.assign({},data,{filter:""}); lastAction = ["tracks",ids] }
     function filter(text) { data = Object.assign({},data,{filter:text}); lastAction = ["filter",text] }
+    function selectionKind(kind) { data = Object.assign({},data,{selection_kind:kind,selection_page:0}); lastAction = ["selectionKind",kind] }
+    function selectionPage(page) { data = Object.assign({},data,{selection_page:page}); lastAction = ["selectionPage",page] }
+    function browserView(view) { music = Object.assign({},music,{view:view,album:null,query:"",page:0}); lastAction = ["browserView",view] }
     function removals(enabled) { lastAction = ["removals",enabled] }
     function preview(recover) { lastAction = ["preview",recover] }
     function apply(token,removals) { lastAction = ["apply",token,removals] }
@@ -44,5 +48,6 @@ QtObject {
     function filterBrowser(text) { lastAction = ["browserFilter",text] }
     function browserPage(at) { lastAction = ["browserPage",at] }
     function closeBrowser() { music = ({}) }
+    function reloadBrowser() { lastAction = ["browse",music.source] }
     function setStatus(value) { status = Object.assign({},status,value) }
 }

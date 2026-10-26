@@ -9,6 +9,7 @@ use super::{
 };
 use chilpa_sync::Cancellation;
 mod browsing;
+mod connections;
 use serde::Serialize;
 use std::{
     collections::HashSet,
@@ -38,6 +39,7 @@ pub struct Status {
     pub total: usize,
     pub current: String,
     pub transferred: String,
+    pub metadata_review: bool,
 }
 enum Outcome {
     Refreshed(
@@ -48,8 +50,10 @@ enum Outcome {
         Option<UiError>,
     ),
     Added(Profile),
-    Reopened(Vec<OptionRow>, library::Labels, Status),
+    Connections(Vec<Destination>, Option<UiError>, Status),
+    Reopened(Vec<OptionRow>, library::Labels, Vec<Destination>, Option<UiError>, Status),
     Browsed(Result<Browser, UiError>),
+    PlaylistRead(Option<UiError>),
     Saved(Profile),
     Selected(OptionRow),
     Prepared(Ready),
@@ -78,6 +82,8 @@ pub struct Service {
     browse_source: String,
     browse_title: String,
     browser_error: Option<UiError>,
+    reading_playlist: bool,
+    playlist_result: Arc<Mutex<Option<Browser>>>,
 }
 impl Default for Service {
     fn default() -> Self {
@@ -120,6 +126,8 @@ impl Service {
             browse_source: String::new(),
             browse_title: String::new(),
             browser_error: None,
+            reading_playlist: false,
+            playlist_result: Arc::new(Mutex::new(None)),
         }
     }
     pub fn status(&self) -> &Status {
@@ -175,6 +183,7 @@ impl Service {
         self.status.unchanged = 0;
         self.status.tracks = 0;
         self.status.required.clear();
+        self.status.metadata_review = false;
     }
     fn launch(
         &mut self,
@@ -232,7 +241,8 @@ impl Service {
             let options = selection::options(&library)?;
             let labels = library::labels(&library, &catalog, &cancel)?;
             cancel.check().map_err(UiError::from)?;
-            Ok(Outcome::Reopened(options, labels, previous))
+            let (destinations, error) = work::discover(&catalog, &cancel);
+            Ok(Outcome::Reopened(options, labels, destinations, error, previous))
         })
     }
     pub fn refresh(&mut self) -> Result<(), UiError> {
@@ -245,7 +255,7 @@ impl Service {
             } else {
                 Vec::new()
             };
-            let (destinations, error) = work::discover(&cancel);
+            let (destinations, error) = work::discover(&catalog, &cancel);
             let labels = library::labels(&library, &catalog, &cancel)?;
             Ok(Outcome::Refreshed(
                 catalog,
@@ -254,6 +264,16 @@ impl Service {
                 labels,
                 error,
             ))
+        })
+    }
+    /// I refresh connection metadata only; Library rows and the current selection stay resident.
+    pub fn connections_changed(&mut self) -> Result<(), UiError> {
+        self.idle()?;
+        let previous = self.status.clone();
+        let catalog = self.catalog.clone();
+        self.launch("discovering", move |_, _, cancel| {
+            let (destinations, error) = work::discover(&catalog, &cancel);
+            Ok(Outcome::Connections(destinations, error, previous))
         })
     }
     /// I load saved profiles and selections without claiming a USB interface.
@@ -288,6 +308,7 @@ impl Service {
                 "",
             ));
         }
+        self.store.remember_profile(id)?;
         self.invalidate();
         self.status.profile = id.into();
         self.align_options();
@@ -469,6 +490,7 @@ impl Service {
                 "",
             ));
         }
+        self.close_browser();
         let ready = self.ready.take().unwrap();
         let progress = self.progress.clone();
         self.launch("transferring", move |store, _, cancel| {
@@ -496,9 +518,13 @@ impl Service {
         self.view_loaded = false;
         self.incoming = Vec::new();
         self.incoming_ids = None;
-        if self.pending.is_none() {
+        if self.pending.is_none() || self.reading_playlist {
             self.ready = None;
             self.status.plan.clear();
+            if let Some(previous) = &mut self.browse_previous {
+                previous.plan.clear();
+                if previous.phase == "review" { previous.phase = "idle".into(); }
+            }
             if self.status.phase == "review" {
                 self.status.phase = "idle".into();
             }
@@ -506,23 +532,7 @@ impl Service {
         self.revision += 1;
     }
     fn align_options(&mut self) {
-        if self
-            .profile()
-            .is_some_and(|profile| matches!(profile.root, Root::Mounted { .. }))
-        {
-            self.status.destination = "mounted".into();
-        } else if self
-            .profile()
-            .is_some_and(|profile| matches!(profile.root, Root::Mtp { .. }))
-            && self.status.destination == "mounted"
-        {
-            self.status.destination = self
-                .destinations
-                .iter()
-                .find(|d| d.id != "mounted" && d.writable)
-                .map(|d| d.id.clone())
-                .unwrap_or_default();
-        }
+        self.align_destination();
         let picks = self.profile().map(|p| p.picks.clone()).unwrap_or_default();
         self.status.remove_unselected = self.profile().is_some_and(|p| p.remove_unselected);
         self.options = self.available_options.clone();
@@ -620,12 +630,8 @@ impl Service {
                         .iter()
                         .any(|p| p.id == self.status.profile)
                     {
-                        self.status.profile = self
-                            .catalog
-                            .profiles
-                            .first()
-                            .map(|p| p.id.clone())
-                            .unwrap_or_default();
+                        self.status.profile = self.store.active_profile().filter(|id| self.catalog.profiles.iter().any(|p| p.id == *id))
+                            .or_else(|| self.catalog.profiles.first().map(|p| p.id.clone())).unwrap_or_default();
                     }
                     if !self
                         .destinations
@@ -642,16 +648,32 @@ impl Service {
                     self.status.phase = "idle".into();
                     self.status.error = error;
                 }
-                Ok(Outcome::Reopened(options, labels, previous)) => {
+                Ok(Outcome::Connections(destinations, error, previous)) => {
+                    let before = self.status.destination.clone();
+                    self.destinations = destinations;
+                    self.status = previous;
+                    self.status.busy = false;
+                    self.align_destination();
+                    if self.status.destination != before { self.invalidate(); }
+                    self.status.error = error;
+                }
+                Ok(Outcome::Reopened(options, labels, destinations, error, previous)) => {
                     self.view_loaded = true;
                     self.available_options = options;
                     self.labels = labels;
+                    self.destinations = destinations;
                     self.status = previous;
                     self.status.busy = false;
+                    let before = self.status.destination.clone();
                     self.align_options();
+                    if self.status.destination != before { self.invalidate(); }
+                    self.status.error = error;
                 }
                 Ok(Outcome::Added(profile)) => {
                     self.status.profile = profile.id.clone();
+                    if let Some(destination) = self.destinations.iter_mut().find(|d| d.id == self.status.destination) {
+                        destination.profiles.push(profile.id.clone());
+                    }
                     self.catalog.profiles.push(profile);
                     self.align_options();
                     self.status.phase = "idle".into();
@@ -705,6 +727,14 @@ impl Service {
                         self.status.phase = "idle".into();
                     }
                 }
+                Ok(Outcome::PlaylistRead(error)) => {
+                    self.reading_playlist = false;
+                    if let Some(previous) = self.browse_previous.take() {
+                        self.status = previous;
+                    }
+                    let view = self.playlist_result.lock().unwrap_or_else(|e| e.into_inner()).take();
+                    if self.view_loaded && !self.browse_source.is_empty() { self.browser = view; self.browser_error = error; }
+                }
                 Ok(Outcome::Browsed(result)) => {
                     if let Some(previous) = self.browse_previous.take() {
                         self.status = previous;
@@ -750,6 +780,7 @@ impl Service {
                     self.status.unchanged = ready.plan.unchanged_files();
                     self.status.required = super::bytes(ready.plan.required_bytes());
                     self.status.tracks = ready.tracks;
+                    self.status.metadata_review = ready.plan.is_metadata_review();
                     self.ready = Some(ready);
                     self.status.phase = "review".into();
                 }
@@ -759,6 +790,9 @@ impl Service {
                     self.status.plan.clear();
                 }
                 Err(error) => {
+                    self.reading_playlist = false;
+                    self.browse_previous = None;
+                    self.playlist_result.lock().unwrap_or_else(|e| e.into_inner()).take();
                     self.status.plan.clear();
                     self.incoming_ids = None;
                     self.status.phase = if self.cancel.check().is_err() {
@@ -781,5 +815,28 @@ impl Service {
             }
         }
         changed
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_stopped_playlist_worker_cannot_restore_a_busy_session_on_close() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut service = Service::new(directory.path().join("library"), directory.path().join("profiles"));
+        let (sender, receiver) = sync_channel(1);
+        drop(sender);
+        service.pending = Some(receiver);
+        service.status.busy = true;
+        service.status.phase = "browsing".into();
+        service.browse_previous = Some(Status::default());
+        service.reading_playlist = true;
+        service.poll();
+        assert!(service.status.error.is_some());
+        service.close_browser();
+        assert!(!service.status.busy, "a stopped metadata worker must release the session slot");
+        assert!(service.idle().is_ok());
     }
 }
