@@ -1,5 +1,4 @@
 import QtQuick
-import QtQml.Models
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.about
@@ -23,20 +22,18 @@ Item {
     property int revision: 0
     Component { id: mainTemplate; Shell.Main {} }
     Component { id: quotaTemplate; AccountParts.QuotaDialog {} }
-    SettingsPage { id: settings; section: "integrations" }
-    Instantiator {
-        id: rows
-        model: settings
-        delegate: QtObject {
-            required property string key
-            required property string control
-            required property string value
-        }
-    }
     function check(condition, message) { if (!condition) throw new Error(message) }
+    property var actions
     function row(key) {
-        for (let i = 0; i < rows.count; ++i) if (rows.objectAt(i).key === key) return rows.objectAt(i)
-        return null
+        const seen = []
+        function visit(item) {
+            if (!item || seen.includes(item)) return null
+            seen.push(item)
+            if (item.key === key && item.control !== undefined && item.visible) return item
+            for (const child of item.children || []) { const found = visit(child); if (found) return found }
+            return null
+        }
+        return visit(mainWindow?.contentItem)
     }
     function focusAccount() {
         Visit.keep("settings.focus", {section:"integrations",key:"integrations.discogs.account"})
@@ -60,9 +57,8 @@ Item {
         }
         check(!Player.playing,"account settings started playback")
         if (phase === 1) {
-            DiscogsAccount.refresh()
-            if (DiscogsAccount.busy) return
-            settings.refresh()
+            if (DiscogsAccount.busy || !row("integrations.discogs.account") || !row("integrations.discogs.token")) return
+            actions = row("integrations.discogs.account").page
             check(row("integrations.discogs.account")?.control === "button","account action is absent")
             check(row("integrations.discogs.token")?.control === "secret","personal token input is absent")
             check(!row("integrations.discogs.code"),"browser code is visible without authorization")
@@ -85,19 +81,18 @@ Item {
         }
         if (phase === 5) {
             quota.close()
-            settings.set("integrations.offline","true");settings.refresh()
+            actions.set("integrations.offline","true")
             check(row("integrations.discogs.account")?.control === "fixed","offline kept browser sign-in active")
             check(row("integrations.discogs.token")?.control === "fixed","offline kept token verification active")
             check(!row("integrations.discogs.code"),"offline revealed an absent browser code")
-            settings.set("integrations.offline","false");settings.set("integrations.proxy.enabled","false");settings.refresh()
+            actions.set("integrations.offline","false");actions.set("integrations.proxy.enabled","false")
             check(row("integrations.discogs.account")?.control === "none","proxy opt-out kept browser setup active")
             check(row("integrations.discogs.token")?.control === "secret","proxy opt-out disabled direct personal tokens")
             check(!row("integrations.discogs.code"),"proxy opt-out revealed the browser code")
-            settings.set("integrations.proxy.enabled","true")
-            Navigation.go("home",0);cycles++;cycleAt = Date.now();phase = 6;return
+            actions.set("integrations.proxy.enabled","true")
+            actions = null;Navigation.go("home",0);cycles++;cycleAt = Date.now();phase = 6;return
         }
         if (phase === 6) {
-            DiscogsAccount.refresh()
             check(DiscogsAccount.revision === revision && !DiscogsAccount.busy,"idle account state changed")
             check(!MetadataEditor.discogsQuota,"preview created a quota episode")
             if (Date.now() - began >= duration) {
@@ -107,9 +102,9 @@ Item {
             if (Date.now() - cycleAt >= 110000) {focusAccount();cycleAt = Date.now();phase = 7}
         }
         if (phase === 7 && Date.now() - cycleAt >= 1500) {
-            settings.refresh()
+            if (!row("integrations.discogs.account")) return
             check(row("integrations.discogs.account")?.control === "button","account action did not reopen")
-            Navigation.go("home",0);cycles++;cycleAt = Date.now();phase = 6
+            actions = null;Navigation.go("home",0);cycles++;cycleAt = Date.now();phase = 6
         }
     }
     Timer {
