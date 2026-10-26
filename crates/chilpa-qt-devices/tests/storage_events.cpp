@@ -17,6 +17,10 @@ int main(int argc, char **argv) {
     if (events.active()) return 1;
     events.setActive(true);
     events.setActive(false);
+    events.setActive(true);
+    if (!changed.wait(1500)) return 6;
+    events.setActive(false);
+    changed.clear();
 #if defined(Q_OS_LINUX)
     const auto descriptors = [] { return QDir("/proc/self/fd").entryList(QDir::AllEntries | QDir::NoDotAndDotDot).size(); };
     const auto before = descriptors();
