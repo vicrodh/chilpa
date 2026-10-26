@@ -19,6 +19,16 @@ helpers = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(helpers)
 
 
+def sample(pid, elapsed):
+    row = helpers.sample(pid, elapsed)
+    if row and sys.platform.startswith("linux"):
+        fields = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
+        row["cpu_seconds"] = (int(fields[11]) + int(fields[12])) / os.sysconf("SC_CLK_TCK")
+        totals = dict(line.split(":", 1) for line in Path(f"/proc/{pid}/smaps_rollup").read_text().splitlines() if ":" in line)
+        row["pss_kib"] = int(totals["Pss"].split()[0])
+    return row
+
+
 def run(args):
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -46,6 +56,8 @@ def run(args):
     fixture.write_text(source)
     environment = helpers.environment(args, profile, fixture)
     environment.update(TMPDIR=str(profile / "runtime"), CHILPA_CAPTURE_REALTIME="1", CHILPA_DEV="1")
+    if args.timing:
+        environment["QSG_RENDER_TIMING"] = "1"
     started = time.monotonic()
     samples, target = [], None
     with (output / "run.log").open("w") as log:
@@ -56,7 +68,7 @@ def run(args):
                 target = process.pid if sys.platform == "darwin" else target or helpers.linux_target(process.pid, args.binary)
                 if target:
                     try:
-                        row = helpers.sample(target, round(time.monotonic() - started, 2))
+                        row = sample(target, round(time.monotonic() - started, 2))
                         if row:
                             samples.append(row)
                     except (OSError, ValueError, KeyError):
@@ -74,6 +86,7 @@ def run(args):
     errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "Binding loop", "Unable to assign", "is not a type")
     passed = bool(samples) and "SMOKE audio real Main completed" in contents and not any(e in contents for e in errors)
     result = dict(passed=passed, scenario=args.scenario, platform=args.platform,
+                  timing=args.timing,
                   binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest(),
                   fixture_sha256=hashlib.sha256(fixture.read_bytes()).hexdigest(),
                   seconds=round(time.monotonic() - started, 2), exit_code=process.returncode, samples=samples,
@@ -91,6 +104,7 @@ if __name__ == "__main__":
     parser.add_argument("--scenario", choices=("basic", "lifecycle", "idle"), default="basic")
     parser.add_argument("--platform", choices=("native", "offscreen"), default="native")
     parser.add_argument("--duration", type=int)
+    parser.add_argument("--timing", action="store_true", help="keep Qt's render timing in the isolated log")
     parser.add_argument("--language", choices=("en", "es", "de", "fr", "pt", "nl", "ru", "ja"), default="es")
     options = parser.parse_args()
     options.binary = options.binary.resolve(strict=True)

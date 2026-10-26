@@ -1216,6 +1216,10 @@ impl Chilpa {
         if self.casting.active() { self.cast_stop(); return; }
         // An episode stopped halfway is picked up from here.
         self.keep_place(true);
+        if self.player.as_ref().is_none_or(|p| p.idle()) {
+            self.now.playing = false; self.now.paused = false;
+            self.stop_after = None; self.sleep_until = None;
+        }
         if let Some(p) = &self.player {
             p.stop();
         }

@@ -39,12 +39,7 @@ TitledFlow {
     SleepTimer {}
     QuitQuestion {}
     WindowControls { id: galleryControls; window: Window.window; outputDetailsHost: false }
-    AudioFact { width: Metrics.confirmWidth; heading: "Endpoint readback"; value: "PCM · 96000 Hz · 24/32 bits · 2 channels"; note: "Read at opening; audibility is untested." }
-    AudioQualityGlyph { tier: 3; preview: true }
-    AudioNow { width: Metrics.confirmWidth; document: ({available:true, summary:"No sample changes are reported in Chilpa; the downstream path is unverified.", source:"FLAC · 96000 Hz · 24 musical bits", processing:"Word widened without sample loss", output:"96000 Hz · PCM 24/32 · 2 channels", readback:"No physical readback is available for this route."}) }
-    AudioEquipment { width: Metrics.confirmWidth; document: ({status:"Unknown", formats:[], attributes:[], history:[]}) }
-    AudioCheck { width: Metrics.confirmWidth; document: ({name:"Example output",canCheck:false}) }
-    AudioOutputPanel { preview: true; previewDocument: ({name:"Example output",outputs:[],now:{available:false,summary:"Nothing is playing."}}) }
+    GalleryAudioOutput {}
     WindowActions { controls: galleryControls; commandBar: null; sheet: null; settings: null }
     TrackFocus { window: Window.window }
     NavigationPointer { window: Window.window; enabled: false }
