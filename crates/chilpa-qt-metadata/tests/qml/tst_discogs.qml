@@ -56,7 +56,7 @@ TestCase {
         settings.current = true
         tryCompare(timer,"running",true)
         DiscogsAccount.revision++
-        compare(rows.reads,1)
+        tryCompare(rows,"reads",1)
         owner.visibility = Window.Minimized
         tryCompare(timer,"running",false)
         const minimizedReads = DiscogsAccount.reads
@@ -68,6 +68,17 @@ TestCase {
         const reads = DiscogsAccount.reads
         wait(600);compare(DiscogsAccount.reads,reads)
         DiscogsAccount.revision++
+        compare(rows.reads,1)
+    }
+    function test_model_refresh_leaves_the_notifying_stack_and_drops_a_hidden_publication() {
+        settings.current = true
+        wait(0)
+        DiscogsAccount.revision++
+        compare(rows.reads,0)
+        tryCompare(rows,"reads",1)
+        DiscogsAccount.revision++
+        settings.current = false
+        wait(0)
         compare(rows.reads,1)
     }
 }
