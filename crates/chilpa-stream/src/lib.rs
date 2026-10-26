@@ -22,7 +22,7 @@ pub use patience::Patience;
 pub use request::send as send_request;
 mod worker;
 pub use worker::{send_worker_request, worker_url_allowed, WorkerNetworkError};
-pub use fetch::{fetch, permits_authorization, Fetch, FetchError, Fetched};
+pub use fetch::{fetch, fetch_oauth, permits_authorization, Fetch, FetchError, Fetched};
 pub use ranged::{Ranged, RangedError, RangedRequest};
 pub use server::{call as call_server, Call};
 

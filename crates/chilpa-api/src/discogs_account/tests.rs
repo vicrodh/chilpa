@@ -2,7 +2,7 @@ use super::*;
 use chilpa_meta::{Http,Reply};
 use std::{collections::VecDeque,path::Path,time::{Duration,Instant}};
 #[derive(Default)]
-struct Network {replies:Mutex<VecDeque<Reply>>,asked:Mutex<Vec<(String,Option<String>)>>}
+struct Network {replies:Mutex<VecDeque<Reply>>,asked:Mutex<Vec<(String,Option<String>)>>,posted:Mutex<Vec<String>>}
 impl Network {
     fn reply(self,status:u16,body:&str)->Self {
         self.replies.lock().unwrap().push_back(Reply {status,headers:Default::default(),body:body.as_bytes().to_vec()});self
@@ -13,6 +13,9 @@ impl Network {
     }
 }
 impl Http for Network {
+    fn post_as(&self,url:&str,_:&str,_:Duration,_:usize,authorization:&str)->Result<Reply,String> {
+        self.posted.lock().unwrap().push(url.into());self.next(url,Some(authorization))
+    }
     fn get(&self,url:&str,_:&str,_:Duration,_:usize)->Result<Reply,String> {self.next(url,None)}
     fn get_as(&self,url:&str,_:&str,_:Duration,_:usize,authorization:&str)->Result<Reply,String> {self.next(url,Some(authorization))}
 }
@@ -71,7 +74,7 @@ fn quota_is_presented_once_until_a_success_rearms_it_and_old_account_results_are
 }
 #[test]
 fn callback_addresses_bind_the_verifier_to_the_exact_pending_request() {
-    let pending=wire::Begin {token:"request".into(),secret:"MARKER_SECRET".into(),url:String::new()};
+    let pending=wire::Begin {token:"request".into(),secret:"MARKER_SECRET".into(),url:String::new(),consumer:"consumer".into(),signing:"client&".into()};
     assert_eq!(wire::verifier(" abc123 ",&pending),Some("abc123".into()));
     assert_eq!(wire::verifier(&format!("{}?oauth_token=request&oauth_verifier=abc123",wire::CALLBACK),&pending),Some("abc123".into()));
     for address in ["https://api.chilpa.app/discogs/oauth/done.evil?oauth_token=request&oauth_verifier=abc123",
@@ -81,26 +84,31 @@ fn callback_addresses_bind_the_verifier_to_the_exact_pending_request() {
     }
 }
 #[test]
-fn oauth_finish_sends_the_request_secret_only_in_the_authorization_header() {
-    let network=Network::default().reply(200,r#"{"consumer_key":"consumer","token":"access","signature":"client&access-secret"}"#);
-    let pending=wire::Begin {token:"request".into(),secret:"MARKER_SECRET".into(),url:String::new()};
+fn oauth_finish_sends_the_request_secret_only_to_the_direct_access_endpoint() {
+    let network=Network::default().reply(200,"oauth_token=access&oauth_token_secret=access-secret");
+    let pending=wire::Begin {token:"request".into(),secret:"MARKER_SECRET".into(),url:String::new(),consumer:"consumer".into(),signing:"client&".into()};
     let credential=wire::finish(&network,&pending,"abc123").unwrap();
     assert!(credential.header(1,"nonce").unwrap().contains("client%26access-secret"));
     let asked=network.asked.lock().unwrap();assert!(!asked[0].0.contains("MARKER_SECRET"));
-    assert_eq!(asked[0].1.as_deref(),Some("Chilpa MARKER_SECRET"));
+    assert!(asked[0].1.as_ref().unwrap().contains("client%26MARKER_SECRET"));
+    assert_eq!(network.posted.lock().unwrap().as_slice(),["https://api.discogs.com/oauth/access_token"]);
 }
 #[test]
 fn oauth_begin_finish_and_identity_keep_signing_material_out_of_urls() {
     let network=Network::default()
-        .reply(200,r#"{"request_token":"request","request_secret":"MARKER_SECRET","authorize_url":"https://www.discogs.com/oauth/authorize?oauth_token=request"}"#)
-        .reply(200,r#"{"consumer_key":"consumer","token":"access","signature":"client&access-secret"}"#)
+        .reply(200,r#"{"consumer_key":"consumer","signature":"client&"}"#)
+        .reply(200,"oauth_token=request&oauth_token_secret=MARKER_SECRET&oauth_callback_confirmed=true")
+        .reply(200,"oauth_token=access&oauth_token_secret=access-secret")
         .reply(200,r#"{"username":"tester"}"#);
     let pending=wire::begin(&network).unwrap();
     let credential=wire::finish(&network,&pending,&format!("{}?oauth_token=request&oauth_verifier=code",wire::CALLBACK)).unwrap();
     assert_eq!(wire::identity(&network,&credential).unwrap(),"tester");
-    let asked=network.asked.lock().unwrap();assert_eq!(asked.len(),3);
+    let asked=network.asked.lock().unwrap();assert_eq!(asked.len(),4);
     assert!(asked.iter().all(|(url,_)|!url.contains("MARKER_SECRET") && !url.contains("access-secret")));
-    assert!(asked[2].1.as_ref().unwrap().contains("client%26access-secret"));
+    assert!(asked[3].1.as_ref().unwrap().contains("client%26access-secret"));
+    assert!(asked[0].0.contains("/discogs/oauth/setup?"));assert!(asked[0].1.is_none());
+    assert!(asked[1].1.as_ref().unwrap().contains("oauth_callback=\"https%3A%2F%2Fapi.chilpa.app%2Fdiscogs%2Foauth%2Fdone\""));
+    assert_eq!(network.posted.lock().unwrap().as_slice(),["https://api.discogs.com/oauth/request_token","https://api.discogs.com/oauth/access_token"]);
 }
 fn gated_secrets(root:&Path)->Result<chilpa_secrets::SecretBox,()> {
     std::fs::write(root.join("keystore-entered"),b"ready").map_err(|_|())?;
@@ -148,4 +156,13 @@ fn verified_usernames_accept_unicode_but_not_control_characters_or_markup() {
     assert_eq!(wire::identity(&network,&key).unwrap(),"José");
     let network=Network::default().reply(200,r#"{"username":"<img>"}"#);
     assert!(wire::identity(&network,&key).is_err());
+}
+
+#[test]
+fn oauth_request_token_requires_a_confirmed_callback_and_unique_form_fields() {
+    for body in ["oauth_token=request&oauth_token_secret=secret&oauth_callback_confirmed=false",
+        "oauth_token=request&oauth_token=other&oauth_token_secret=secret&oauth_callback_confirmed=true"] {
+        let network=Network::default().reply(200,r#"{"consumer_key":"consumer","signature":"client&"}"#).reply(200,body);
+        assert!(wire::begin(&network).is_err());
+    }
 }

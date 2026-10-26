@@ -30,6 +30,10 @@ pub struct Reply {
 pub trait Http: Send + Sync {
     /// `Err` is nothing came back. Any status is an `Ok`.
     fn get(&self, url: &str, accept: &str, timeout: Duration, max_bytes: usize) -> Result<Reply, String>;
+    /// I allow bodyless OAuth exchanges only in clients with a scoped transport.
+    fn post_as(&self, _: &str, _: &str, _: Duration, _: usize, _: &str) -> Result<Reply, String> {
+        Err("this client sends no OAuth exchanges".into())
+    }
     /// I refuse rather than silently drop credentials in an older client.
     fn get_as(&self, _: &str, _: &str, _: Duration, _: usize, _: &str) -> Result<Reply, String> {
         Err("this client sends no credentials".into())
