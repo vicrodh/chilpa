@@ -127,7 +127,8 @@ impl Worker {
                 if !self.current(epoch) {return;}
                 if let Some(window)=crate::web_sign_in::executable() {
                     let capture=crate::web_sign_in::Capture {url:begin.url.clone(),until:wire::CALLBACK.into(),action:"finish".into(),field:"redirect_url".into(),user_agent:None};
-                    let outcome=crate::web_sign_in::run_controlled(&window,&capture,"Discogs",CONNECTING,||!self.current(epoch));
+                    let outcome=crate::web_sign_in::run_controlled(&window,&capture,"Discogs",CONNECTING,
+                        ||!self.current(epoch) || !chilpa_core::network::current().allows(chilpa_meta::proxy::ORIGIN));
                     if !self.current(epoch) {return;}
                     match outcome {
                         crate::web_sign_in::Outcome::Reached(address)=>match wire::finish(self.http.as_ref(),&begin,&address) {

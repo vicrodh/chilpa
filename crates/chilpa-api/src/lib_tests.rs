@@ -17,6 +17,7 @@ fn play_restarts_a_queue_after_the_worker_reported_an_error() {
     std::fs::create_dir_all(track.parent().unwrap()).unwrap();
     std::fs::write(&track, b"broken audio").unwrap();
     let mut api = Chilpa::new();
+    api.use_output_as_chosen("file:capture");
     api.play_file(&track, "file:capture", false);
     let until = std::time::Instant::now() + std::time::Duration::from_secs(5);
     while api.now.error.is_empty() && std::time::Instant::now() < until {
