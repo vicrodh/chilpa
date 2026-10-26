@@ -98,7 +98,7 @@ Item {
             check(status.profile && document.has_profiles, "profile was not saved")
             const option = document.options.find(row => row.name === "DAP Daily")
             check(!!option, "native playlist not offered")
-            const row = find(mainWindow.contentItem, item => item.objectName === "deviceSelectionCheck" && item.text === "DAP Daily")
+            const row = find(mainWindow.contentItem, item => item.objectName === "deviceSelectionCheck" && (item.text === "DAP Daily" || item.parent.entry?.title === "DAP Daily"))
             if (!row) return
             row.clicked()
             phase = 4

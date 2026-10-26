@@ -11,15 +11,20 @@ Item {
     property var backend: DeviceSync
     readonly property var status: JSON.parse(backend.snapshot || "{}")
     readonly property var document: JSON.parse(backend.catalog || "{}")
+    readonly property var music: JSON.parse(backend.browser || "{}")
     property bool creating: false
     property bool reviewing: false
+    property bool recorded: false
     property string lastPhase: ""
     readonly property bool setup: creating || (!document.has_profiles && !status.busy)
+    readonly property bool compactSections: head.width < Metrics.deviceSelectWidth * 2 // derived: the space of two storage selectors
 
     function settle() {
         if (status.phase === lastPhase) return
+        const previous = lastPhase
         lastPhase = status.phase || ""
-        if (["review", "transferring", "done"].includes(lastPhase)) reviewing = true
+        if (previous === "browsing") return
+        if (["review", "transferring", "done"].includes(lastPhase)) { reviewing = true; recorded = false }
         else if (lastPhase === "idle") reviewing = false
     }
     Component.onCompleted: { backend.enter(); settle() }
@@ -36,9 +41,9 @@ Item {
         DeviceHeader {
             width: parent.width
             document: screen.document; status: screen.status
-            onProfileAsked: id => screen.backend.selectProfile(id)
-            onDestinationAsked: id => screen.backend.selectDestination(id)
-            onRefreshAsked: screen.backend.refresh()
+            onProfileAsked: id => { screen.recorded = false; screen.backend.selectProfile(id) }
+            onDestinationAsked: id => { screen.recorded = false; screen.backend.selectDestination(id) }
+            onRefreshAsked: { screen.recorded = false; screen.backend.refresh() }
             onCreateAsked: screen.creating = true
         }
         DeviceNotice { width: parent.width; visible: screen.status.error !== null && screen.status.error !== undefined; error: screen.status.error || null; busy: screen.backend.busy }
@@ -47,9 +52,13 @@ Item {
             width: parent.width
             spacing: Metrics.gap12
             SegmentedControl {
-                options: [{ text: I18n.tr("Music", I18n.rev) }, { text: screen.status.phase === "done" ? I18n.tr("Last sync", I18n.rev) : I18n.tr("Changes", I18n.rev) }]
-                current: screen.reviewing ? 1 : 0
-                onActivated: index => screen.reviewing = index === 1
+                objectName: "deviceSections"
+                options: [{ text: screen.compactSections ? "" : I18n.tr("Music", I18n.rev), glyph: Icons.music, tip: I18n.tr("Music", I18n.rev) },
+                    { text: screen.compactSections ? "" : I18n.tr("Synced music", I18n.rev), glyph: Icons.deviceMobile, tip: I18n.tr("Synced music", I18n.rev) },
+                    { text: screen.compactSections ? "" : screen.status.phase === "done" ? I18n.tr("Last sync", I18n.rev) : I18n.tr("Changes", I18n.rev), glyph: Icons.list, tip: I18n.tr("Changes", I18n.rev) }]
+                current: screen.reviewing ? 2 : screen.recorded ? 1 : 0
+                enabled: !screen.backend.busy
+                onActivated: index => { screen.reviewing = index === 2; screen.recorded = index === 1; if (screen.recorded) screen.backend.browse("recorded"); else screen.backend.closeBrowser() }
             }
             Text { height: Metrics.button28; verticalAlignment: Text.AlignVCenter; text: screen.document.selected || ""; color: Theme.color.textSecondary; font.pointSize: Type.small }
         }
@@ -62,8 +71,10 @@ Item {
         anchors.topMargin: Metrics.gap12
         anchors.bottom: foot.top
         anchors.bottomMargin: Metrics.gap12
-        sourceComponent: screen.setup ? pairing : screen.reviewing ? changes : selections
+        visible: screen.setup || screen.reviewing || screen.recorded || !screen.music.source
+        sourceComponent: screen.setup ? pairing : screen.reviewing ? changes : screen.recorded ? browser : selections
     }
+    Loader { anchors.fill: body; active: !screen.setup && !screen.reviewing && !screen.recorded && !!screen.music.source; visible: active; sourceComponent: browser }
     Column {
         id: foot
         x: Metrics.contentX
@@ -73,7 +84,7 @@ Item {
         spacing: Metrics.gap8
         CircleCheck {
             objectName: "deviceRemoveUnselected"
-            visible: !screen.setup && !screen.reviewing && screen.document.has_profiles === true
+            visible: !screen.setup && !screen.reviewing && !screen.recorded && !screen.music.source && screen.document.has_profiles === true
             width: parent.width
             text: I18n.tr("Remove managed files no longer selected", I18n.rev)
             checked: screen.status.remove_unselected === true
@@ -90,6 +101,7 @@ Item {
         }
     }
     Component { id: pairing; DevicePairing { mounted: screen.status.destination === "mounted"; busy: screen.backend.busy; onCreateAsked: (name, folder) => screen.backend.createProfile(name, folder); onDismissed: screen.creating = false } }
-    Component { id: selections; DeviceSelection { rows: screen.document.options || []; busy: screen.backend.busy; onToggled: id => screen.backend.toggle(id); onFilterEdited: text => screen.backend.filter(text) } }
+    Component { id: selections; DeviceSelection { rows: screen.document.options || []; busy: screen.backend.busy; onToggled: id => screen.backend.toggle(id); onOpened: id => screen.backend.browse(id); onFilterEdited: text => screen.backend.filter(text) } }
+    Component { id: browser; DeviceBrowser { document: screen.music; busy: screen.backend.busy; onAlbumAsked: id => screen.backend.openBrowserAlbum(id); onBackAsked: screen.backend.browserBack(); onFilterEdited: text => screen.backend.filterBrowser(text); onPageAsked: at => screen.backend.browserPage(at); onReloadAsked: screen.backend.browse(screen.music.source) } }
     Component { id: changes; DeviceChanges { emptyText: screen.status.phase === "review" ? I18n.tr("No files need to change.", I18n.rev) : I18n.tr("Review changes to check what this storage needs.", I18n.rev); rows: JSON.parse(screen.backend.pageRows || "[]"); page: screen.backend.page; pages: screen.document.page_count || 1; busy: screen.backend.busy; onPageAsked: at => screen.backend.changePage(at) } }
 }

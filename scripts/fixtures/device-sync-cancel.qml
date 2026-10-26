@@ -24,7 +24,7 @@ Item {
         return item
     }
     function music() {
-        const control = find(mainWindow.contentItem, row => row.options && row.options.length === 2 && row.options[0].text === I18n.tr("Music", I18n.rev) && typeof row.activated === "function")
+        const control = find(mainWindow.contentItem, row => row.objectName === "deviceSections" || (row.options && row.options.length === 2 && row.options[0].text === I18n.tr("Music", I18n.rev) && typeof row.activated === "function"))
         check(!!control, "Music segment missing")
         control.activated(0)
     }
@@ -96,7 +96,7 @@ Item {
             music()
             phase = 8
         } else if (phase === 8) {
-            const row = find(mainWindow.contentItem, item => item.objectName === "deviceSelectionCheck" && item.text === I18n.tr("Library selection", I18n.rev))
+            const row = find(mainWindow.contentItem, item => item.objectName === "deviceSelectionCheck" && (item.text === I18n.tr("Library selection", I18n.rev) || item.parent.entry?.id?.startsWith("tracks:")))
             if (!row) return
             row.click()
             if (!status.remove_unselected) named("deviceRemoveUnselected").click()

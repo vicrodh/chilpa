@@ -11,6 +11,7 @@ Rectangle {
     property bool busy: false
     signal toggled(string id)
     signal filterEdited(string text)
+    signal opened(string id)
     radius: Metrics.radiusMenu
     color: Theme.color.surfacePane
     border.color: Theme.color.strokeHairline
@@ -21,7 +22,7 @@ Rectangle {
         objectName: "deviceSelectionSearch"
         x: Metrics.gap8; y: Metrics.gap8
         width: parent.width - Metrics.gap8 * 2 // derived: equal insets
-        placeholder: I18n.tr("Find playlists or saved queries…", I18n.rev)
+        placeholder: I18n.tr("Find music or saved selections…", I18n.rev)
         enabled: !panel.busy
         onTextChanged: panel.filterEdited(text)
     }
@@ -39,34 +40,17 @@ Rectangle {
         cacheBuffer: DeviceLayout.rowHeight * 2 // derived: two rows on each side
         boundsBehavior: Flickable.StopAtBounds
         Controls.ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.gap4 }
-        delegate: Item {
+        delegate: DeviceMusicRow {
             id: row
-            required property var entry
+            required property var model
             required property int index
             width: list.width
-            height: DeviceLayout.rowHeight
-            ListRowSurface { anchors.fill: parent; rowIndex: row.index; selected: row.entry.checked; hovered: hover.hovered }
-            HoverHandler { id: hover }
-            CircleCheck {
-                objectName: "deviceSelectionCheck"
-                x: Metrics.gap4
-                width: parent.width - Metrics.gap8
-                height: Metrics.button32
-                text: row.entry.name
-                checked: row.entry.checked
-                enabled: !panel.busy
-                onClicked: panel.toggled(row.entry.id)
-            }
-            Text {
-                x: Metrics.gap8 + Metrics.iconMd + Metrics.gap8
-                y: Metrics.button32
-                width: parent.width - x - Metrics.gap8
-                text: row.entry.description
-                textFormat: Text.PlainText
-                elide: Text.ElideRight
-                font.pointSize: Type.small
-                color: Theme.color.textSecondary
-            }
+            rowIndex: index
+            entry: ({id:model.entry.id,title:model.entry.name,detail:model.entry.description,checked:model.entry.checked,open:true})
+            checkable: true
+            busy: panel.busy
+            onToggled: panel.toggled(model.entry.id)
+            onOpened: panel.opened(model.entry.id)
         }
     }
     Text {

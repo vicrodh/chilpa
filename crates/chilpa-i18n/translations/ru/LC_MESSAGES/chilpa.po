@@ -2218,17 +2218,20 @@ msgstr "Фильтр, Enter для поиска или URL потока"
 msgid "Find a preset or device"
 msgstr "Найти пресет или устройство"
 
+msgid "Find albums or tracks…"
+msgstr "Найти альбомы или треки…"
+
 msgid "Find covers"
 msgstr "Найти обложки"
 
 msgid "Find matches"
 msgstr "Найти совпадения"
 
+msgid "Find music or saved selections…"
+msgstr "Найти музыку или сохранённые подборки…"
+
 msgid "Find playlists"
 msgstr "Найти плейлисты"
-
-msgid "Find playlists or saved queries…"
-msgstr ""
 
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr "Найдите имя узла PipeWire вашего DAC и вставьте его сюда:"
@@ -2599,6 +2602,9 @@ msgstr ""
 msgid "I could not read the device profiles."
 msgstr ""
 
+msgid "I could not read the last synced music for this storage."
+msgstr "Не удалось прочитать последнюю синхронизированную музыку на этом накопителе."
+
 msgid "I could not read the local playlists."
 msgstr ""
 
@@ -2959,6 +2965,9 @@ msgstr "Последний плейлист"
 msgid "Last sync"
 msgstr ""
 
+msgid "Last synced with Chilpa. Files changed elsewhere may differ."
+msgstr "Последняя синхронизация с Chilpa. Файлы, изменённые другими приложениями, могут отличаться."
+
 msgid "Last track"
 msgstr "Последний трек"
 
@@ -3081,6 +3090,12 @@ msgstr "Загрузка альбомов…"
 
 msgid "Loading device profiles…"
 msgstr ""
+
+msgid "Loading music was cancelled."
+msgstr "Загрузка музыки отменена."
+
+msgid "Loading music…"
+msgstr "Загрузка музыки…"
 
 msgid "Loading purchases…"
 msgstr "Загрузка покупок…"
@@ -3637,11 +3652,17 @@ msgstr "Нет текста песни для этого трека."
 msgid "No matches"
 msgstr "Нет совпадений"
 
+msgid "No matching music."
+msgstr "Подходящая музыка не найдена."
+
 msgid "No matching plugins"
 msgstr "Подходящих плагинов нет"
 
 msgid "No matching selections. Create a local playlist or save a query in Refine."
 msgstr ""
+
+msgid "No music has been synced with Chilpa to this storage yet."
+msgstr "На этот накопитель ещё не синхронизирована музыка с помощью Chilpa."
 
 msgid "No opening was confirmed"
 msgstr "Открытие не подтверждено"
@@ -5125,6 +5146,9 @@ msgstr "Выбрать треки"
 msgid "Selected GPU is unavailable in this display session — using Auto"
 msgstr "Выбранный GPU недоступен в этом сеансе отображения — используется авто"
 
+msgid "Selected music"
+msgstr "Выбранная музыка"
+
 msgid "Send to Last.fm"
 msgstr "Отправлять в Last.fm"
 
@@ -5521,6 +5545,9 @@ msgstr "Синхронизировать сейчас"
 msgid "Sync to device…"
 msgstr ""
 
+msgid "Synced music"
+msgstr "Синхронизированная музыка"
+
 msgid "Syncing"
 msgstr "Синхронизация"
 
@@ -5869,6 +5896,9 @@ msgstr ""
 msgid "This address belongs to a different server."
 msgstr "Этот адрес принадлежит другому серверу."
 
+msgid "This album is no longer in the current view."
+msgstr "Этого альбома больше нет в текущем представлении."
+
 msgid "This build can query the output but cannot render audio through it yet."
 msgstr "Эта сборка может запрашивать данные выхода, но ещё не может воспроизводить через него звук."
 
@@ -5910,6 +5940,9 @@ msgstr "В этом месяце"
 
 msgid "This month vs Last month"
 msgstr "Этот месяц и прошлый"
+
+msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
+msgstr "Это представление музыки превышает 50 000 файлов или 16 MiB метаданных."
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Этот вариант не издаёт звука. Он записывает в файл то, что ушло бы на устройство, чтобы сравнить файл с исходным треком — это единственный способ доказать bit-perfect, а не просто заявить о нём."
@@ -5961,6 +5994,9 @@ msgstr "Этот экран ещё не создан."
 
 msgid "This section is not built yet."
 msgstr "Этот раздел ещё не создан."
+
+msgid "This selection has no tracks."
+msgstr "В этой подборке нет треков."
 
 msgid "This selection includes music without an available local file. I kept the device unchanged."
 msgstr ""
@@ -6183,6 +6219,9 @@ msgstr "Неизвестно"
 
 msgid "Unknown DSP action."
 msgstr "Неизвестное действие DSP."
+
+msgid "Unknown album"
+msgstr "Неизвестный альбом"
 
 msgid "Unknown artist"
 msgstr "Неизвестный исполнитель"

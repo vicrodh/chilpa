@@ -2216,17 +2216,20 @@ msgstr ""
 msgid "Find a preset or device"
 msgstr ""
 
+msgid "Find albums or tracks…"
+msgstr "Find albums or tracks…"
+
 msgid "Find covers"
 msgstr ""
 
 msgid "Find matches"
 msgstr "Find matches"
 
+msgid "Find music or saved selections…"
+msgstr "Find music or saved selections…"
+
 msgid "Find playlists"
 msgstr "Find playlists"
-
-msgid "Find playlists or saved queries…"
-msgstr "Find playlists or saved queries…"
 
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr ""
@@ -2596,6 +2599,9 @@ msgstr "I could not read the Library for device sync."
 msgid "I could not read the device profiles."
 msgstr "I could not read the device profiles."
 
+msgid "I could not read the last synced music for this storage."
+msgstr "I could not read the last synced music for this storage."
+
 msgid "I could not read the local playlists."
 msgstr "I could not read the local playlists."
 
@@ -2956,6 +2962,9 @@ msgstr ""
 msgid "Last sync"
 msgstr "Last sync"
 
+msgid "Last synced with Chilpa. Files changed elsewhere may differ."
+msgstr "Last synced with Chilpa. Files changed elsewhere may differ."
+
 msgid "Last track"
 msgstr ""
 
@@ -3078,6 +3087,12 @@ msgstr ""
 
 msgid "Loading device profiles…"
 msgstr "Loading device profiles…"
+
+msgid "Loading music was cancelled."
+msgstr "Loading music was cancelled."
+
+msgid "Loading music…"
+msgstr "Loading music…"
 
 msgid "Loading purchases…"
 msgstr "Loading purchases…"
@@ -3634,11 +3649,17 @@ msgstr ""
 msgid "No matches"
 msgstr "No matches"
 
+msgid "No matching music."
+msgstr "No matching music."
+
 msgid "No matching plugins"
 msgstr "No matching plugins"
 
 msgid "No matching selections. Create a local playlist or save a query in Refine."
 msgstr "No matching selections. Create a local playlist or save a query in Refine."
+
+msgid "No music has been synced with Chilpa to this storage yet."
+msgstr "No music has been synced with Chilpa to this storage yet."
 
 msgid "No opening was confirmed"
 msgstr ""
@@ -5121,6 +5142,9 @@ msgstr ""
 msgid "Selected GPU is unavailable in this display session — using Auto"
 msgstr ""
 
+msgid "Selected music"
+msgstr "Selected music"
+
 msgid "Send to Last.fm"
 msgstr ""
 
@@ -5517,6 +5541,9 @@ msgstr ""
 msgid "Sync to device…"
 msgstr "Sync to device…"
 
+msgid "Synced music"
+msgstr "Synced music"
+
 msgid "Syncing"
 msgstr ""
 
@@ -5864,6 +5891,9 @@ msgstr "This Library selection is no longer available."
 msgid "This address belongs to a different server."
 msgstr ""
 
+msgid "This album is no longer in the current view."
+msgstr "This album is no longer in the current view."
+
 msgid "This build can query the output but cannot render audio through it yet."
 msgstr ""
 
@@ -5905,6 +5935,9 @@ msgstr ""
 
 msgid "This month vs Last month"
 msgstr ""
+
+msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
+msgstr "This music view exceeds 50,000 files or 16 MiB of metadata."
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr ""
@@ -5956,6 +5989,9 @@ msgstr ""
 
 msgid "This section is not built yet."
 msgstr ""
+
+msgid "This selection has no tracks."
+msgstr "This selection has no tracks."
 
 msgid "This selection includes music without an available local file. I kept the device unchanged."
 msgstr "This selection includes music without an available local file. I kept the device unchanged."
@@ -6178,6 +6214,9 @@ msgstr ""
 
 msgid "Unknown DSP action."
 msgstr ""
+
+msgid "Unknown album"
+msgstr "Unknown album"
 
 msgid "Unknown artist"
 msgstr ""

@@ -1,4 +1,5 @@
 //! I give one requested job the session; idle services hold no worker or transport.
+use super::{browser::Browser, library};
 use super::{
     catalog::{Catalog, Pick, Profile, Root, Store},
     failure,
@@ -7,6 +8,7 @@ use super::{
     UiError,
 };
 use chilpa_sync::Cancellation;
+mod browsing;
 use serde::Serialize;
 use std::{
     collections::HashSet,
@@ -38,9 +40,16 @@ pub struct Status {
     pub transferred: String,
 }
 enum Outcome {
-    Refreshed(Catalog, Vec<Destination>, Vec<OptionRow>, Option<UiError>),
+    Refreshed(
+        Catalog,
+        Vec<Destination>,
+        Vec<OptionRow>,
+        library::Labels,
+        Option<UiError>,
+    ),
     Added(Profile),
-    Reopened(Vec<OptionRow>, Status),
+    Reopened(Vec<OptionRow>, library::Labels, Status),
+    Browsed(Result<Browser, UiError>),
     Saved(Profile),
     Selected(OptionRow),
     Prepared(Ready),
@@ -61,8 +70,14 @@ pub struct Service {
     progress: Arc<Mutex<Option<chilpa_sync::Progress>>>,
     revision: u64,
     view_loaded: bool,
-    incoming: Option<OptionRow>,
+    incoming: Vec<OptionRow>,
     incoming_ids: Option<Vec<i64>>,
+    labels: library::Labels,
+    browser: Option<Browser>,
+    browse_previous: Option<Status>,
+    browse_source: String,
+    browse_title: String,
+    browser_error: Option<UiError>,
 }
 impl Default for Service {
     fn default() -> Self {
@@ -97,8 +112,14 @@ impl Service {
             progress: Arc::new(Mutex::new(None)),
             revision: 0,
             view_loaded: false,
-            incoming: None,
+            incoming: Vec::new(),
             incoming_ids: None,
+            labels: library::Labels::new(),
+            browser: None,
+            browse_previous: None,
+            browse_source: String::new(),
+            browse_title: String::new(),
+            browser_error: None,
         }
     }
     pub fn status(&self) -> &Status {
@@ -142,6 +163,7 @@ impl Service {
         }
     }
     fn invalidate(&mut self) {
+        self.close_browser();
         self.ready = None;
         self.rows.clear();
         self.status.plan.clear();
@@ -205,10 +227,12 @@ impl Service {
             return self.refresh();
         }
         let previous = self.status.clone();
+        let catalog = self.catalog.clone();
         self.launch("loading", move |_, library, cancel| {
             let options = selection::options(&library)?;
+            let labels = library::labels(&library, &catalog, &cancel)?;
             cancel.check().map_err(UiError::from)?;
-            Ok(Outcome::Reopened(options, previous))
+            Ok(Outcome::Reopened(options, labels, previous))
         })
     }
     pub fn refresh(&mut self) -> Result<(), UiError> {
@@ -222,24 +246,33 @@ impl Service {
                 Vec::new()
             };
             let (destinations, error) = work::discover(&cancel);
-            Ok(Outcome::Refreshed(catalog, destinations, options, error))
+            let labels = library::labels(&library, &catalog, &cancel)?;
+            Ok(Outcome::Refreshed(
+                catalog,
+                destinations,
+                options,
+                labels,
+                error,
+            ))
         })
     }
     /// I load saved profiles and selections without claiming a USB interface.
     pub fn load(&mut self) -> Result<(), UiError> {
         self.idle()?;
         self.invalidate();
-        self.launch("loading", |store, library, _| {
+        self.launch("loading", |store, library, cancel| {
             let catalog = store.read()?;
             let options = if library.is_file() {
                 selection::options(&library)?
             } else {
                 Vec::new()
             };
+            let labels = library::labels(&library, &catalog, &cancel)?;
             Ok(Outcome::Refreshed(
                 catalog,
                 vec![work::mounted()],
                 options,
+                labels,
                 None,
             ))
         })
@@ -289,6 +322,8 @@ impl Service {
                 "",
             ));
         }
+        self.idle()?;
+        self.invalidate();
         self.launch("pairing", move |store, _, cancel| {
             Ok(Outcome::Added(work::add(
                 &store,
@@ -395,25 +430,7 @@ impl Service {
                     e,
                 )
             })?;
-            let id = "library-selection".to_owned();
-            let name = chilpa_i18n::t("Library selection");
-            let pick = Pick::Tracks {
-                id: id.clone(),
-                name: name.clone(),
-                keys: tracks.into_iter().map(|t| t.key).collect(),
-            };
-            Ok(Outcome::Selected(OptionRow {
-                id,
-                name,
-                description: chilpa_i18n::tf(
-                    "{} track",
-                    "{} tracks",
-                    ids.len() as i64,
-                    &[&ids.len().to_string()],
-                ),
-                checked: true,
-                pick,
-            }))
+            Ok(Outcome::Selected(library::batch(tracks)))
         })
     }
     pub fn preview(&mut self, recover: bool) -> Result<(), UiError> {
@@ -471,11 +488,13 @@ impl Service {
     }
     /// Closing the surface releases row/query payloads; the bounded active task keeps running.
     pub fn release_view(&mut self) {
+        self.close_browser();
+        self.labels.clear();
         self.rows = Vec::new();
         self.options = Vec::new();
         self.available_options = Vec::new();
         self.view_loaded = false;
-        self.incoming = None;
+        self.incoming.clear();
         self.incoming_ids = None;
         if self.pending.is_none() {
             self.ready = None;
@@ -528,7 +547,16 @@ impl Service {
                 });
             }
         }
-        if let Some(incoming) = &self.incoming {
+        for row in &mut self.options {
+            if let Some((name, description)) = self
+                .labels
+                .get(&(self.status.profile.clone(), row.id.clone()))
+            {
+                row.name = name.clone();
+                row.description = description.clone();
+            }
+        }
+        for incoming in &self.incoming {
             self.options.retain(|row| row.id != incoming.id);
             self.options.insert(0, incoming.clone());
         }
@@ -579,12 +607,13 @@ impl Service {
             self.status.busy = false;
             self.status.error = None;
             match outcome {
-                Ok(Outcome::Refreshed(catalog, destinations, options, error)) => {
+                Ok(Outcome::Refreshed(catalog, destinations, options, labels, error)) => {
                     self.view_loaded = true;
                     resolve_incoming = true;
                     self.catalog = catalog;
                     self.destinations = destinations;
                     self.available_options = options;
+                    self.labels = labels;
                     if !self
                         .catalog
                         .profiles
@@ -613,9 +642,10 @@ impl Service {
                     self.status.phase = "idle".into();
                     self.status.error = error;
                 }
-                Ok(Outcome::Reopened(options, previous)) => {
+                Ok(Outcome::Reopened(options, labels, previous)) => {
                     self.view_loaded = true;
                     self.available_options = options;
+                    self.labels = labels;
                     self.status = previous;
                     self.status.busy = false;
                     self.align_options();
@@ -627,18 +657,72 @@ impl Service {
                     self.status.phase = "idle".into();
                 }
                 Ok(Outcome::Saved(profile)) => {
-                    self.incoming = None;
+                    self.incoming.clear();
                     self.replace_profile(profile);
                     self.status.phase = "idle".into();
                 }
-                Ok(Outcome::Selected(row)) => {
-                    self.incoming = Some(row.clone());
-                    self.options.retain(|o| o.id != row.id);
-                    self.options.insert(0, row);
-                    self.status.phase = "idle".into();
+                Ok(Outcome::Selected(mut row)) => {
+                    if let Some(existing) =
+                        self.options
+                            .iter()
+                            .find(|saved| match (&saved.pick, &row.pick) {
+                                (Pick::Tracks { keys: a, .. }, Pick::Tracks { keys: b, .. }) => {
+                                    a == b
+                                }
+                                _ => false,
+                            })
+                    {
+                        row.id = existing.id.clone();
+                        if let Pick::Tracks { id, .. } = &mut row.pick {
+                            *id = row.id.clone();
+                        }
+                    }
+                    let bytes: usize = self
+                        .incoming
+                        .iter()
+                        .filter(|r| r.id != row.id)
+                        .chain(std::iter::once(&row))
+                        .map(|r| {
+                            serde_json::to_vec(&r.pick)
+                                .map(|b| b.len())
+                                .unwrap_or(usize::MAX)
+                        })
+                        .fold(0, usize::saturating_add);
+                    if bytes > 1024 * 1024
+                        || self.incoming.len() >= 512
+                            && !self.incoming.iter().any(|r| r.id == row.id)
+                    {
+                        self.status.phase = "error".into();
+                        self.status.error = Some(failure(
+                            chilpa_i18n::mark("Device profiles exceed 1 MiB."),
+                            "",
+                        ));
+                    } else {
+                        self.incoming.retain(|r| r.id != row.id);
+                        self.incoming.push(row.clone());
+                        self.options.retain(|o| o.id != row.id);
+                        self.options.insert(0, row);
+                        self.status.phase = "idle".into();
+                    }
+                }
+                Ok(Outcome::Browsed(result)) => {
+                    if let Some(previous) = self.browse_previous.take() {
+                        self.status = previous;
+                    }
+                    match result {
+                        Ok(view) if self.view_loaded => self.browser = Some(view),
+                        Err(_) if self.cancel.check().is_err() => {
+                            self.browser_error = Some(failure(
+                                chilpa_i18n::mark("Loading music was cancelled."),
+                                "",
+                            ))
+                        }
+                        Err(error) => self.browser_error = Some(error),
+                        _ => (),
+                    }
                 }
                 Ok(Outcome::Prepared(ready)) => {
-                    self.incoming = None;
+                    self.incoming.clear();
                     self.replace_profile(ready.profile.clone());
                     self.rows = work::rows(&ready.plan);
                     self.status.plan = ready.plan.id().into();

@@ -21,9 +21,10 @@ COMPLETED = {
     "restore": "SMOKE device restart query and approved removal completed",
     "cancel": "SMOKE device cancel recovery and cleanup completed",
     "lifecycle": "SMOKE lifecycle real Main completed",
+    "browser": "SMOKE browser real Main completed",
 }
 FIXTURES = {"basic": "device-sync.qml", "restore": "device-sync-restore.qml",
-            "cancel": "device-sync-cancel.qml", "lifecycle": "device-sync-lifecycle.qml"}
+            "cancel": "device-sync-cancel.qml", "lifecycle": "device-sync-lifecycle.qml", "browser": "device-sync-browser.qml"}
 
 
 def wav(path, size=176400):
@@ -141,7 +142,7 @@ def run(args):
     output, profile, fixture, manifest = prepare(args)
     print("Device smoke output: " + str(output), flush=True)
     started, samples, target = time.monotonic(), [], None
-    deadline = 1900 if args.scenario == "lifecycle" else 360
+    deadline = 1900 if args.scenario in ("lifecycle", "browser") else 360
     with (output / "run.log").open("w") as log:
         process = subprocess.Popen(command(args.binary, output), env=environment(args, profile, fixture),
                                    stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
@@ -165,7 +166,8 @@ def run(args):
                     os.killpg(process.pid, signal.SIGKILL)
                     process.wait(timeout=5)
     contents = (output / "run.log").read_text(errors="replace")
-    passed = bool(samples) and COMPLETED[args.scenario] in contents and "SMOKE FAIL" not in contents
+    errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "Binding loop", "QQmlApplicationEngine failed", "is not a type", "SyntaxError", "Unable to assign")
+    passed = bool(samples) and COMPLETED[args.scenario] in contents and not any(error in contents for error in errors)
     result = dict(**manifest, passed=passed, exit_code=process.returncode, platform=args.platform,
                   seconds=round(time.monotonic() - started, 2), samples=samples,
                   peak_rss_mib=max([row["rss_kib"] / 1024 for row in samples], default=None))

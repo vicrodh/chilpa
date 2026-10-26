@@ -9,22 +9,29 @@ use std::{
 
 #[test]
 fn the_device_sidebar_shortcut_defaults_on_and_remembers_the_opt_out() {
-    isolated("the_device_sidebar_shortcut_defaults_on_and_remembers_the_opt_out", || {
-        let value = |api: &mut chilpa_api::Chilpa| {
-            api.settings_rows("navigation", &chilpa_api::RowNotes::default()).0
-                .into_iter().find(|row| row.key == "navigation.devices").unwrap().value
-        };
-        let mut api = chilpa_api::Chilpa::new();
-        assert_eq!(value(&mut api), "true");
-        assert!(api.adjust("navigation.devices", "false"));
-        drop(api);
-        let mut reopened = chilpa_api::Chilpa::new();
-        assert_eq!(value(&mut reopened), "false");
-        assert!(!reopened.adjust("navigation.devices", "invalid"));
-        assert_eq!(value(&mut reopened), "false");
-        assert!(reopened.adjust("navigation.devices", "true"));
-        assert_eq!(value(&mut reopened), "true");
-    });
+    isolated(
+        "the_device_sidebar_shortcut_defaults_on_and_remembers_the_opt_out",
+        || {
+            let value = |api: &mut chilpa_api::Chilpa| {
+                api.settings_rows("navigation", &chilpa_api::RowNotes::default())
+                    .0
+                    .into_iter()
+                    .find(|row| row.key == "navigation.devices")
+                    .unwrap()
+                    .value
+            };
+            let mut api = chilpa_api::Chilpa::new();
+            assert_eq!(value(&mut api), "true");
+            assert!(api.adjust("navigation.devices", "false"));
+            drop(api);
+            let mut reopened = chilpa_api::Chilpa::new();
+            assert_eq!(value(&mut reopened), "false");
+            assert!(!reopened.adjust("navigation.devices", "invalid"));
+            assert_eq!(value(&mut reopened), "false");
+            assert!(reopened.adjust("navigation.devices", "true"));
+            assert_eq!(value(&mut reopened), "true");
+        },
+    );
 }
 
 fn isolated(name: &str, run: impl FnOnce()) {
@@ -184,6 +191,265 @@ fn find_files(root: &Path, extension: &str) -> Vec<PathBuf> {
         }
     }
     files
+}
+
+fn name_fixture_albums(fixture: &Fixture) {
+    fixture
+        .library
+        .connection()
+        .execute_batch(
+            "INSERT INTO albums(id,title,album_artist) VALUES
+        (10,'First record','Artist'),(20,'Second record','Artist');
+        UPDATE tracks SET album_id=10,disc_number=1,track_number=1 WHERE id=1;
+        UPDATE tracks SET album_id=20,disc_number=2,track_number=1 WHERE id=2;",
+        )
+        .unwrap();
+}
+
+#[test]
+fn device_album_batches_keep_their_names_and_accumulate_without_duplicates() {
+    isolated(
+        "device_album_batches_keep_their_names_and_accumulate_without_duplicates",
+        || {
+            let fixture = Fixture::new();
+            name_fixture_albums(&fixture);
+            let mut service = fixture.paired();
+            let list = service
+                .options()
+                .iter()
+                .find(|r| r.checked)
+                .unwrap()
+                .id
+                .clone();
+            service.toggle(&list).unwrap();
+            for ids in [&[1][..], &[1][..], &[2][..]] {
+                service.add_library_tracks(ids).unwrap();
+                wait(&mut service);
+            }
+            let batches: Vec<_> = service
+                .options()
+                .iter()
+                .filter(|r| matches!(&r.pick, Pick::Tracks { .. }))
+                .collect();
+            assert_eq!(batches.len(), 2);
+            assert_eq!(
+                batches.iter().map(|r| r.name.as_str()).collect::<Vec<_>>(),
+                ["Second record", "First record"]
+            );
+            assert!(batches
+                .iter()
+                .all(|r| r.description.contains("Artist") && r.checked));
+            assert_ne!(batches[0].id, batches[1].id);
+            service.save_selection().unwrap();
+            wait(&mut service);
+            drop(service);
+            let reopened = fixture.service();
+            let saved: std::collections::BTreeSet<_> = reopened
+                .options()
+                .iter()
+                .filter(|r| r.checked)
+                .map(|r| r.name.as_str())
+                .collect();
+            assert_eq!(
+                saved,
+                ["First record", "Second record"].into_iter().collect()
+            );
+        },
+    );
+}
+
+#[test]
+fn device_legacy_selection_gets_readable_names_without_rewriting_its_profile() {
+    isolated(
+        "device_legacy_selection_gets_readable_names_without_rewriting_its_profile",
+        || {
+            let fixture = Fixture::new();
+            name_fixture_albums(&fixture);
+            let service = fixture.paired();
+            let keys = fixture
+                .library
+                .export_tracks(&[1])
+                .unwrap()
+                .into_iter()
+                .map(|t| t.key)
+                .collect();
+            Store {
+                directory: fixture.profiles.clone(),
+            }
+            .update(|catalog| {
+                catalog.profiles[0].picks = vec![Pick::Tracks {
+                    id: "library-selection".into(),
+                    name: "Library selection".into(),
+                    keys,
+                }];
+                Ok(())
+            })
+            .unwrap();
+            drop(service);
+            let before = std::fs::read(fixture.profiles.join("profiles.json")).unwrap();
+            let mut reopened = fixture.service();
+            let saved = reopened
+                .options()
+                .iter()
+                .find(|r| r.id == "library-selection")
+                .unwrap();
+            assert_eq!(saved.name, "First record");
+            assert!(saved.description.contains("Artist"));
+            reopened.browse("library-selection").unwrap();
+            wait(&mut reopened);
+            let document: serde_json::Value =
+                serde_json::from_str(&reopened.browser_json()).unwrap();
+            assert_eq!(document["rows"][0]["title"], "First record");
+            assert!(!reopened
+                .browser_json()
+                .contains(fixture.first.to_str().unwrap()));
+            assert_eq!(
+                std::fs::read(fixture.profiles.join("profiles.json")).unwrap(),
+                before
+            );
+            reopened.add_library_tracks(&[1]).unwrap();
+            wait(&mut reopened);
+            assert_eq!(
+                reopened
+                    .options()
+                    .iter()
+                    .filter(|r| matches!(&r.pick, Pick::Tracks { .. }))
+                    .count(),
+                1
+            );
+            assert!(reopened
+                .options()
+                .iter()
+                .any(|r| r.id == "library-selection"));
+        },
+    );
+}
+
+#[test]
+fn device_browsing_preserves_selection_and_an_approved_preview_token() {
+    isolated(
+        "device_browsing_preserves_selection_and_an_approved_preview_token",
+        || {
+            let fixture = Fixture::new();
+            name_fixture_albums(&fixture);
+            let mut service = fixture.paired();
+            let token = preview(&mut service);
+            let status = serde_json::to_value(service.status()).unwrap();
+            let profile = std::fs::read(fixture.profiles.join("profiles.json")).unwrap();
+            let selected = service
+                .options()
+                .iter()
+                .find(|r| r.checked)
+                .unwrap()
+                .id
+                .clone();
+            service.browse(&selected).unwrap();
+            wait(&mut service);
+            assert_eq!(serde_json::to_value(service.status()).unwrap(), status);
+            let document: serde_json::Value =
+                serde_json::from_str(&service.browser_json()).unwrap();
+            assert_eq!(document["rows"].as_array().unwrap().len(), 2);
+            service
+                .open_browser_album(document["rows"][0]["id"].as_str().unwrap())
+                .unwrap();
+            service.filter_browser("First");
+            service.browser_page(usize::MAX);
+            service.browser_back();
+            service.browser_back();
+            assert_eq!(service.browser_json(), "{}");
+            assert_eq!(serde_json::to_value(service.status()).unwrap(), status);
+            assert_eq!(
+                std::fs::read(fixture.profiles.join("profiles.json")).unwrap(),
+                profile
+            );
+            apply(&mut service, &token, false);
+        },
+    );
+}
+
+#[test]
+fn device_recorded_music_is_scoped_to_the_profile_and_excludes_unmanaged_files() {
+    isolated(
+        "device_recorded_music_is_scoped_to_the_profile_and_excludes_unmanaged_files",
+        || {
+            let fixture = Fixture::new();
+            name_fixture_albums(&fixture);
+            let mut service = fixture.paired();
+            let token = preview(&mut service);
+            apply(&mut service, &token, false);
+            let profile = service.status().profile.clone();
+            let store = Store {
+                directory: fixture.profiles.clone(),
+            };
+            let state = store.state_path(&profile).unwrap();
+            let before = std::fs::read(&state).unwrap();
+            service.browse("recorded").unwrap();
+            wait(&mut service);
+            let root: serde_json::Value = serde_json::from_str(&service.browser_json()).unwrap();
+            assert_eq!(root["recorded"], true);
+            assert!(root["notice"]
+                .as_str()
+                .unwrap()
+                .contains("Files changed elsewhere may differ"));
+            assert!(!service.browser_json().contains("unmanaged"));
+            for album in root["rows"].as_array().unwrap() {
+                service
+                    .open_browser_album(album["id"].as_str().unwrap())
+                    .unwrap();
+                let tracks: serde_json::Value =
+                    serde_json::from_str(&service.browser_json()).unwrap();
+                assert!(tracks["rows"].as_array().unwrap().iter().all(|r| r["path"]
+                    .as_str()
+                    .unwrap()
+                    .starts_with("Music/")
+                    || r["path"].as_str().unwrap().starts_with("Playlists/")));
+                service.browser_back();
+            }
+            assert_eq!(std::fs::read(&state).unwrap(), before);
+            let other = fixture.card.parent().unwrap().join("other-card");
+            std::fs::create_dir(&other).unwrap();
+            service
+                .add_profile("Other card", other.to_str().unwrap())
+                .unwrap();
+            wait(&mut service);
+            assert_eq!(service.browser_json(), "{}");
+            service.browse("recorded").unwrap();
+            wait(&mut service);
+            let empty: serde_json::Value = serde_json::from_str(&service.browser_json()).unwrap();
+            assert_eq!(empty["rows"].as_array().unwrap().len(), 0);
+            service.select_profile(&profile).unwrap();
+            assert_eq!(service.browser_json(), "{}");
+        },
+    );
+}
+
+#[test]
+fn closing_a_device_view_releases_a_pending_browser_result() {
+    isolated(
+        "closing_a_device_view_releases_a_pending_browser_result",
+        || {
+            let fixture = Fixture::new();
+            let mut service = fixture.paired();
+            let selected = service
+                .options()
+                .iter()
+                .find(|r| r.checked)
+                .unwrap()
+                .id
+                .clone();
+            service.browse(&selected).unwrap();
+            service.release_view();
+            assert!(!service.status().busy);
+            assert_eq!(service.browser_json(), "{}");
+            service.poll();
+            service.filter_browser("late");
+            service.browser_page(50);
+            assert_eq!(service.browser_json(), "{}");
+            service.open_view().unwrap();
+            wait(&mut service);
+            assert!(!service.options().is_empty());
+        },
+    );
 }
 
 #[test]
@@ -476,7 +742,7 @@ fn device_library_selection_resolves_off_thread_and_survives_reopening() {
             assert!(reopened
                 .options()
                 .iter()
-                .any(|row| row.id == "library-selection" && row.checked));
+                .any(|row| matches!(&row.pick, Pick::Tracks { .. }) && row.checked));
             let token = preview(&mut reopened);
             assert_eq!((reopened.status().tracks, reopened.status().copies), (2, 3));
             apply(&mut reopened, &token, false);
@@ -548,7 +814,7 @@ fn device_staged_library_tracks_survive_choosing_a_new_storage_profile() {
             assert!(service
                 .options()
                 .iter()
-                .any(|row| row.id == "library-selection" && row.checked));
+                .any(|row| matches!(&row.pick, Pick::Tracks { .. }) && row.checked));
             service.select_destination("mounted").unwrap();
             service
                 .add_profile("New card", fixture.card.to_str().unwrap())
@@ -557,7 +823,7 @@ fn device_staged_library_tracks_survive_choosing_a_new_storage_profile() {
             assert!(service
                 .options()
                 .iter()
-                .any(|row| row.id == "library-selection" && row.checked));
+                .any(|row| matches!(&row.pick, Pick::Tracks { .. }) && row.checked));
             let document = service.catalog_json("");
             assert!(
                 !document.contains(fixture.first.to_str().unwrap()),

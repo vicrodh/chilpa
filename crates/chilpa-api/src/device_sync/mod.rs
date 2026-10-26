@@ -4,6 +4,8 @@ mod selection;
 mod service;
 mod work;
 mod view;
+mod library;
+mod browser;
 pub use catalog::{Catalog, Pick, Profile, Root, Store};
 pub use selection::OptionRow;
 use serde::Serialize;
