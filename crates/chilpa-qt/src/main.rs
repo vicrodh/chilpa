@@ -17,6 +17,7 @@ use chilpa_qt_about as _;
 use chilpa_qt_stats as _;
 use chilpa_qt_link as _;
 use chilpa_qt_query as _;
+use chilpa_qt_devices as _;
 use chilpa_qt_playlists as _;
 use chilpa_qt_wizard as _;
 use chilpa_qt_controls as _;
@@ -52,29 +53,17 @@ pub unsafe extern "C" fn chilpa_cover(
     capacity: std::ffi::c_ulong,
 ) -> bool {
     let Ok(path) = unsafe { std::ffi::CStr::from_ptr(path) }.to_str() else { return false };
-    write_path(chilpa_api::cover_derivative(std::path::Path::new(path), size), out, capacity)
+    unsafe { format::write_path(chilpa_api::cover_derivative(std::path::Path::new(path), size), out, capacity) }
 }
 #[no_mangle]
 pub unsafe extern "C" fn chilpa_contained_cover(path: *const std::ffi::c_char, size: u32, out: *mut std::ffi::c_char, capacity: std::ffi::c_ulong) -> bool {
     let Ok(path) = unsafe { std::ffi::CStr::from_ptr(path) }.to_str() else { return false };
-    write_path(chilpa_api::contained_cover(std::path::Path::new(path), size), out, capacity)
+    unsafe { format::write_path(chilpa_api::contained_cover(std::path::Path::new(path), size), out, capacity) }
 }
 #[no_mangle]
 pub unsafe extern "C" fn chilpa_atmosphere(path: *const std::ffi::c_char, out: *mut std::ffi::c_char, capacity: std::ffi::c_ulong) -> bool {
     let Ok(path) = unsafe { std::ffi::CStr::from_ptr(path) }.to_str() else { return false };
-    write_path(chilpa_api::header_atmosphere(std::path::Path::new(path)), out, capacity)
-}
-fn write_path(made: Option<std::path::PathBuf>, out: *mut std::ffi::c_char, capacity: std::ffi::c_ulong) -> bool {
-    let Some(made) = made else { return false };
-    let bytes = made.to_string_lossy().into_owned().into_bytes();
-    if bytes.len() + 1 > capacity as usize {
-        return false;
-    }
-    unsafe {
-        std::ptr::copy_nonoverlapping(bytes.as_ptr(), out.cast::<u8>(), bytes.len());
-        *out.add(bytes.len()) = 0;
-    }
-    true
+    unsafe { format::write_path(chilpa_api::header_atmosphere(std::path::Path::new(path)), out, capacity) }
 }
 
 /// The desktop entry the window is named after, where there is one.

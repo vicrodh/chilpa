@@ -3,6 +3,8 @@ resolver = "2"
 exclude = ["vendor/chilpa-plugin-api", "crates/chilpa-qt-kit/vendor/qt-build-utils"]
 members = [
     "crates/chilpa-models",
+    "crates/chilpa-sync",
+    "crates/chilpa-devices",
     "crates/chilpa-dirs",
     "crates/chilpa-theme",
     "crates/chilpa-audio",
@@ -47,6 +49,7 @@ members = [
     "crates/chilpa-qt-link",
     "crates/chilpa-qt-query",
     "crates/chilpa-qt-playlists",
+    "crates/chilpa-qt-devices",
     "crates/chilpa-qt-wizard",
     "crates/chilpa-qt-artwork",
     "crates/chilpa-qt-about",
@@ -66,6 +69,8 @@ rust-version = "1.96"
 
 [workspace.dependencies]
 chilpa-models = { path = "crates/chilpa-models" }
+chilpa-sync = { path = "crates/chilpa-sync" }
+chilpa-devices = { path = "crates/chilpa-devices" }
 chilpa-dirs = { path = "crates/chilpa-dirs" }
 chilpa-theme = { path = "crates/chilpa-theme" }
 chilpa-audio = { path = "crates/chilpa-audio" }
@@ -109,6 +114,7 @@ chilpa-qt-graphics = { path = "crates/chilpa-qt-graphics" }
 chilpa-qt-link = { path = "crates/chilpa-qt-link" }
 chilpa-qt-query = { path = "crates/chilpa-qt-query" }
 chilpa-qt-playlists = { path = "crates/chilpa-qt-playlists" }
+chilpa-qt-devices = { path = "crates/chilpa-qt-devices" }
 chilpa-qt-wizard = { path = "crates/chilpa-qt-wizard" }
 chilpa-qt-artwork = { path = "crates/chilpa-qt-artwork" }
 chilpa-qt-about = { path = "crates/chilpa-qt-about" }

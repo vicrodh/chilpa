@@ -25,6 +25,7 @@ Item {
     function menuChosen(act) {
         if (act === "settings") Navigation.openSection("")
         else if (act === "folders") Navigation.go("libraryFolders", 0)
+        else if (act === "deviceSync") Navigation.go("deviceSync", 0)
         else if (act === "stats") Navigation.go("stats", 0)
         else if (act === "about") about.open()
         else if (["appUpdates", "pluginUpdates", "whatsNew"].includes(act)) updateInbox.open(act)
@@ -188,6 +189,7 @@ Item {
                     { act: "settings", text: I18n.tr("Settings", I18n.rev), glyph: Lucide.settings2, family: Lucide.font, hint: Hotkeys.shortcut("nav.settings") },
                     { act: "ui.openLink", text: I18n.tr("Open music link", I18n.rev), glyph: Lucide.link, family: Lucide.font, hint: Hotkeys.shortcut("ui.openLink") },
                     { act: "folders", text: I18n.tr("Library folders", I18n.rev), glyph: Lucide.folder, family: Lucide.font },
+                    { act: "deviceSync", text: I18n.tr("Device sync", I18n.rev), glyph: Icons.deviceMobile },
                     { act: "stats", text: I18n.tr("Listening stats", I18n.rev), glyph: Lucide.chartColumn, family: Lucide.font },
                     { act: "ui.showShortcuts", text: I18n.tr("Keyboard shortcuts", I18n.rev), glyph: Lucide.keyboard, family: Lucide.font, hint: Hotkeys.shortcut("ui.showShortcuts") },
                     { act: "documentation", text: I18n.tr("Documentation", I18n.rev), glyph: Lucide.bookOpen, family: Lucide.font },

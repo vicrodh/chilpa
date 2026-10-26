@@ -56,7 +56,8 @@ ListModel {
             { act: "next", text: "Play next" },
             { act: "later", text: "Play later" },
             { separator: true },
-            { act: "pick", text: "Add to playlist…" }
+            { act: "pick", text: "Add to playlist…" },
+            { act: "sync", text: "Sync to device…" }
         ])
     }
     function chosenTrackIdsJson(row) { return "[42,43]" }

@@ -118,11 +118,26 @@ msgstr "Een streep of OR: één is genoeg"
 msgid "A click on a record opens"
 msgstr "Een klik op een album opent"
 
+msgid "A device operation is still running."
+msgstr ""
+
+msgid "A device selection can contain at most 50,000 files and playlists."
+msgstr ""
+
+msgid "A name for this memory"
+msgstr ""
+
 msgid "A new version of Chilpa is available."
 msgstr "Er is een nieuwe versie van Chilpa beschikbaar."
 
 msgid "A player for your own music"
 msgstr "Een speler voor je eigen muziek"
+
+msgid "A playlist member could not be resolved."
+msgstr ""
+
+msgid "A profile already manages this device folder."
+msgstr ""
 
 msgid "A saved query already has that name."
 msgstr "Er bestaat al een opgeslagen zoekopdracht met die naam."
@@ -135,6 +150,12 @@ msgstr "Een scan ondersteunt maximaal 256 mappen en 64 KiB aan opgeslagen paden.
 
 msgid "A secure cast URL could not be created."
 msgstr "Er kon geen beveiligde cast-URL worden gemaakt."
+
+msgid "A selected local file is unavailable. I kept the device unchanged."
+msgstr ""
+
+msgid "A selected playlist or one of its tracks is missing. I kept the device unchanged."
+msgstr ""
 
 msgid "A selected queue is no longer available."
 msgstr "Een geselecteerde wachtrij is niet meer beschikbaar."
@@ -187,6 +208,9 @@ msgstr "Account niet verbonden."
 msgid "Acknowledgments"
 msgstr "Dankbetuigingen"
 
+msgid "Action"
+msgstr ""
+
 msgid "Active"
 msgstr "Actief"
 
@@ -214,6 +238,9 @@ msgstr "Een map aan de bibliotheek toevoegen"
 msgid "Add a server"
 msgstr "Een server toevoegen"
 
+msgid "Add a storage profile"
+msgstr ""
+
 msgid "Add all to playlist…"
 msgstr "Alles aan afspeellijst toevoegen…"
 
@@ -240,6 +267,9 @@ msgstr "Alleen nieuwe nummers toevoegen"
 
 msgid "Add server"
 msgstr "Server toevoegen"
+
+msgid "Add storage"
+msgstr ""
 
 msgid "Add the folders where your music lives. Chilpa reads their tags and covers and builds your library from them."
 msgstr "Voeg de mappen toe waarin je muziek staat. Chilpa leest hun tags en hoezen en bouwt daarmee je bibliotheek op."
@@ -276,6 +306,9 @@ msgstr "Toegevoegd in de laatste 30 dagen: d, w, m of y"
 
 msgid "Added this month"
 msgstr "Deze maand toegevoegd"
+
+msgid "Adding storage…"
+msgstr ""
 
 msgid "Adding to queue…"
 msgstr "Aan wachtrij toevoegen…"
@@ -429,6 +462,9 @@ msgstr "Een EQ-waarde ontbreekt of is ongeldig."
 msgid "An active EQ filter is missing Q."
 msgstr "Bij een actief EQ-filter ontbreekt Q."
 
+msgid "An interrupted sync needs recovery before reviewing new changes."
+msgstr ""
+
 msgid "Analysis"
 msgstr "Analyse"
 
@@ -464,6 +500,9 @@ msgstr "Animeer de markering van het huidige nummer met equalizerbalken. Standaa
 
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Geanimeerde achtergrond met albumhoes achter de hele app. Hoog resourcegebruik: GPU-versneld."
+
+msgid "Another device profile update is still running."
+msgstr ""
 
 msgid "Any of these"
 msgstr "Minstens één hiervan"
@@ -809,6 +848,9 @@ msgstr "Geannuleerd"
 msgid "Cancelling update…"
 msgstr "Update annuleren…"
 
+msgid "Cancelling…"
+msgstr ""
+
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "Begrenst de versterking zodat de luidste piek onder volle schaal blijft. Uit: stille nummers bereiken het doel, ook als hun pieken clippen."
 
@@ -838,6 +880,9 @@ msgstr "Inloggegevens wijzigen"
 
 msgid "Change source"
 msgstr "Andere bron"
+
+msgid "Changes"
+msgstr ""
 
 msgid "Channels"
 msgstr "Kanalen"
@@ -977,11 +1022,23 @@ msgstr "Kies een downloadmap voordat je downloadt."
 msgid "Choose a file…"
 msgstr "Kies een bestand…"
 
+msgid "Choose a folder on a memory card or USB drive"
+msgstr ""
+
+msgid "Choose a folder on the memory card"
+msgstr ""
+
+msgid "Choose a folder…"
+msgstr ""
+
 msgid "Choose a keymap: default, letters or vi."
 msgstr "Kies een toetsenschema: default, letters of vi."
 
 msgid "Choose a local ZIP file."
 msgstr "Kies een lokaal ZIP-bestand."
+
+msgid "Choose a local storage folder."
+msgstr ""
 
 msgid "Choose a playback control"
 msgstr "Kies een weergavebediening"
@@ -992,11 +1049,23 @@ msgstr "Kies een preset."
 msgid "Choose a renderer on your local network. The queue stays in Chilpa."
 msgstr "Kies een renderer op je lokale netwerk. De wachtrij blijft in Chilpa."
 
+msgid "Choose a saved device profile."
+msgstr ""
+
+msgid "Choose an available writable storage."
+msgstr ""
+
 msgid "Choose an image"
 msgstr "Kies een afbeelding"
 
 msgid "Choose at least two different queues."
 msgstr "Kies minstens twee verschillende wachtrijen."
+
+msgid "Choose at most 512 playlists or queries for one storage."
+msgstr ""
+
+msgid "Choose between 1 and 50,000 Library tracks."
+msgstr ""
 
 msgid "Choose device"
 msgstr "Apparaat kiezen"
@@ -1016,6 +1085,12 @@ msgstr "Afbeelding kiezen"
 msgid "Choose image…"
 msgstr "Afbeelding kiezen…"
 
+msgid "Choose mounted storage for this profile, or select a player profile."
+msgstr ""
+
+msgid "Choose music for this storage"
+msgstr ""
+
 msgid "Choose playlist"
 msgstr "Afspeellijst kiezen"
 
@@ -1025,11 +1100,17 @@ msgstr "Afspeellijsthoes kiezen"
 msgid "Choose playlist file"
 msgstr "Afspeellijstbestand kiezen"
 
+msgid "Choose playlists, a saved query or Library tracks first."
+msgstr ""
+
 msgid "Choose plugin icon"
 msgstr "Plug-inpictogram kiezen"
 
 msgid "Choose queues and arrange their order. Repeated tracks are kept."
 msgstr "Kies wachtrijen en bepaal hun volgorde. Herhaalde nummers blijven behouden."
+
+msgid "Choose the connected player and its storage first."
+msgstr ""
 
 msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
 msgstr "Kies het mixerelement voor weergave dat bij deze uitvoer hoort. Chilpa controleert het voordat de keuze wordt opgeslagen."
@@ -1214,11 +1295,20 @@ msgstr "Configuratiebestanden die je kunt aanmaken:"
 msgid "Configure"
 msgstr "Configureren"
 
+msgid "Confirm this preview and its removals before syncing."
+msgstr ""
+
 msgid "Connect"
 msgstr "Verbinden"
 
+msgid "Connect at most eight USB players at a time."
+msgstr ""
+
 msgid "Connect on {}"
 msgstr "Verbinden via {}"
+
+msgid "Connect your player in USB file transfer mode. Save a separate profile for its internal memory and each card."
+msgstr ""
 
 msgid "Connect {}"
 msgstr "{} verbinden"
@@ -1532,6 +1622,9 @@ msgstr "Bureaublad"
 msgid "Destinations"
 msgstr "Bestemmingen"
 
+msgid "Details"
+msgstr ""
+
 msgid "Detected: "
 msgstr "Gedetecteerd: "
 
@@ -1543,6 +1636,18 @@ msgstr "Apparaat"
 
 msgid "Device discovery"
 msgstr "Apparaten zoeken"
+
+msgid "Device profiles exceed 1 MiB."
+msgstr ""
+
+msgid "Device sync"
+msgstr ""
+
+msgid "Device sync was cancelled. Its progress is saved for recovery."
+msgstr ""
+
+msgid "Devices"
+msgstr ""
 
 msgid "Devices & cast"
 msgstr "Apparaten en casten"
@@ -1940,6 +2045,9 @@ msgstr "Overeenkomsten zoeken"
 msgid "Find playlists"
 msgstr "Afspeellijsten zoeken"
 
+msgid "Find playlists or saved queries…"
+msgstr ""
+
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr "Zoek de PipeWire-nodenaam van je DAC en plak deze hier:"
 
@@ -1975,6 +2083,12 @@ msgstr "Mapkleuren in de zijbalk"
 
 msgid "Folder name"
 msgstr "Mapnaam"
+
+msgid "Folder on the memory card"
+msgstr ""
+
+msgid "Folder on the player"
+msgstr ""
 
 msgid "Folder path"
 msgstr "Mappad"
@@ -2219,6 +2333,9 @@ msgstr "HiFi-wizard — DAC-configuratie"
 msgid "Hide"
 msgstr "Verbergen"
 
+msgid "Hide details"
+msgstr ""
+
 msgid "Hide explicit"
 msgstr "Expliciet verbergen"
 
@@ -2276,6 +2393,41 @@ msgstr "Startpagina"
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Hoe sterk de bureaubladachtergrond achter het venster wordt vervaagd: 0% houdt hem scherp, 100% is de sterkste vervaging."
 
+msgid "I approve removing {} managed file."
+msgid_plural "I approve removing {} managed files."
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "I could not finish this device operation. I kept its recovery information."
+msgstr ""
+
+msgid "I could not read the Library for device sync."
+msgstr ""
+
+msgid "I could not read the device profiles."
+msgstr ""
+
+msgid "I could not read the local playlists."
+msgstr ""
+
+msgid "I could not read the saved queries."
+msgstr ""
+
+msgid "I could not read the selected Library tracks."
+msgstr ""
+
+msgid "I could not read this Library selection. Try again."
+msgstr ""
+
+msgid "I could not resolve the device query."
+msgstr ""
+
+msgid "I could not save the device profiles."
+msgstr ""
+
+msgid "I could not start the device task."
+msgstr ""
+
 msgid "I created a backup"
 msgstr "Ik heb een back-up gemaakt"
 
@@ -2287,6 +2439,9 @@ msgstr "Ik heb geen cd-station gevonden"
 
 msgid "I did not understand that request."
 msgstr "Ik heb dat verzoek niet begrepen."
+
+msgid "I do not have permission to access this USB device."
+msgstr ""
 
 msgid "I do not know the list \"{}\""
 msgstr "Ik ken de lijst ‘{}' niet"
@@ -2573,6 +2728,9 @@ msgstr "Afgelopen 3 maanden"
 msgid "Last playlist"
 msgstr "Laatste afspeellijst"
 
+msgid "Last sync"
+msgstr ""
+
 msgid "Last track"
 msgstr "Laatste nummer"
 
@@ -2690,6 +2848,9 @@ msgstr "Meer laden"
 msgid "Loading albums…"
 msgstr "Albums laden…"
 
+msgid "Loading device profiles…"
+msgstr ""
+
 msgid "Loading purchases…"
 msgstr "Aankopen laden…"
 
@@ -2749,6 +2910,9 @@ msgstr "Bestanden zoeken…"
 
 msgid "Looking for lyrics…"
 msgstr "Songtekst zoeken…"
+
+msgid "Looking for players…"
+msgstr ""
 
 msgid "Lossless"
 msgstr "Lossless"
@@ -2948,6 +3112,9 @@ msgstr "Meest afgespeeld"
 msgid "Most played tracks"
 msgstr "Meest afgespeelde nummers"
 
+msgid "Mounted storage"
+msgstr ""
+
 msgid "Move"
 msgstr "Verplaatsen"
 
@@ -2971,6 +3138,9 @@ msgstr "Naar hoofdmap verplaatsen"
 
 msgid "Move up"
 msgstr "Omhoog verplaatsen"
+
+msgid "Music"
+msgstr ""
 
 msgid "Music player\nNothing playing"
 msgstr "Muziekspeler\nNiets aan het afspelen"
@@ -3179,6 +3349,9 @@ msgstr "Geen apparaten gevonden"
 msgid "No download folder selected"
 msgstr "Geen downloadmap geselecteerd"
 
+msgid "No files need to change."
+msgstr ""
+
 msgid "No folder"
 msgstr "Geen map"
 
@@ -3217,6 +3390,9 @@ msgstr "Geen overeenkomsten"
 
 msgid "No matching plugins"
 msgstr "Geen overeenkomende plug-ins"
+
+msgid "No matching selections. Create a local playlist or save a query in Refine."
+msgstr ""
 
 msgid "No playable tracks found."
 msgstr "Geen afspeelbare nummers gevonden."
@@ -3530,6 +3706,9 @@ msgstr "Plug-ins openen"
 msgid "Open the HiFi Wizard"
 msgstr "HiFi-wizard openen"
 
+msgid "Open the Library before choosing music for a device."
+msgstr ""
+
 msgid "Open the folder used for disposable files."
 msgstr "Open de map voor wegwerpbestanden."
 
@@ -3551,6 +3730,9 @@ msgstr "Originele bytes · geen transcodering door Chilpa · verwerking door ont
 msgid "Original files"
 msgstr "Originele bestanden"
 
+msgid "Original files, with playlists"
+msgstr ""
+
 msgid "Oscilloscope"
 msgstr "Oscilloscoop"
 
@@ -3571,6 +3753,9 @@ msgstr "Uitvoerapparaat"
 
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "PCM-samples kunnen niet naar een native DSD-stream worden geschreven"
+
+msgid "Page {} of {}"
+msgstr ""
 
 msgid "Parentheses group; NOT works like the minus"
 msgstr "Haakjes groeperen; NOT werkt als de min"
@@ -3715,6 +3900,9 @@ msgstr "10 keer of vaker afgespeeld"
 
 msgid "Player"
 msgstr "Speler"
+
+msgid "Player and storage"
+msgstr ""
 
 msgid "Player bar"
 msgstr "Afspeelbalk"
@@ -4001,6 +4189,9 @@ msgstr "Lees de huidige grootte van de cachemappen op de achtergrond."
 msgid "Read “{}” as words instead"
 msgstr "„{}” als woorden lezen"
 
+msgid "Reading Library selection…"
+msgstr ""
+
 msgid "Reading it from {}…"
 msgstr "Wordt gelezen van {}…"
 
@@ -4030,6 +4221,9 @@ msgstr "Klaar voor lokale PCM-weergave"
 
 msgid "Ready to review"
 msgstr "Klaar om te controleren"
+
+msgid "Ready to sync"
+msgstr ""
 
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
 msgstr "Bouwt de tellers en de zoekindex opnieuw op uit de nummers en het afspeellogboek. Er gaat niets verloren."
@@ -4079,6 +4273,9 @@ msgstr "Albums van dat genre"
 msgid "Records with that composer"
 msgstr "Albums met die componist"
 
+msgid "Recover interrupted sync"
+msgstr ""
+
 msgid "Refine"
 msgstr "Verfijnen"
 
@@ -4087,6 +4284,9 @@ msgstr "Verfijnen staat in een eigen venster"
 
 msgid "Refresh"
 msgstr "Vernieuwen"
+
+msgid "Refresh connected players"
+msgstr ""
 
 msgid "Refresh mix"
 msgstr "Mix vernieuwen"
@@ -4165,6 +4365,9 @@ msgstr "Groep verwijderen"
 
 msgid "Remove image"
 msgstr "Afbeelding verwijderen"
+
+msgid "Remove managed files no longer selected"
+msgstr ""
 
 msgid "Remove one condition to get results:"
 msgstr "Verwijder één voorwaarde om resultaten te krijgen:"
@@ -4289,8 +4492,20 @@ msgstr "Controleren"
 msgid "Review & Apply"
 msgstr "Controleren en toepassen"
 
+msgid "Review changes"
+msgstr ""
+
+msgid "Review changes to check what this storage needs."
+msgstr ""
+
+msgid "Review the device changes before syncing."
+msgstr ""
+
 msgid "Review the requested permissions before installing."
 msgstr "Controleer de gevraagde toestemmingen voordat je installeert."
+
+msgid "Reviewing changes…"
+msgstr ""
 
 msgid "Rich"
 msgstr "Uitgebreid"
@@ -4361,6 +4576,9 @@ msgstr "Wijzigingen opslaan"
 msgid "Save preset"
 msgstr "Preset opslaan"
 
+msgid "Save profile"
+msgstr ""
+
 msgid "Save query"
 msgstr "Zoekopdracht opslaan"
 
@@ -4379,14 +4597,23 @@ msgstr "Opslaan in"
 msgid "Saved"
 msgstr "Opgeslagen"
 
+msgid "Saved device selection"
+msgstr ""
+
 msgid "Saved position"
 msgstr "Opgeslagen positie"
+
+msgid "Saved profile"
+msgstr ""
 
 msgid "Saved queries"
 msgstr "Opgeslagen zoekopdrachten"
 
 msgid "Saved results remain available between sessions."
 msgstr "Opgeslagen resultaten blijven beschikbaar tussen sessies."
+
+msgid "Saving selection…"
+msgstr ""
 
 msgid "Saving..."
 msgstr "Opslaan..."
@@ -4714,6 +4941,9 @@ msgstr "Sommige van deze nummers waren al toegevoegd"
 msgid "Some packages are missing"
 msgstr "Sommige pakketten ontbreken"
 
+msgid "Some selected Library tracks are missing. I kept the device unchanged."
+msgstr ""
+
 msgid "Songs"
 msgstr "Nummers"
 
@@ -4867,11 +5097,26 @@ msgstr "Gezongen regel"
 msgid "Surface"
 msgstr "Oppervlak"
 
+msgid "Sync cancelled"
+msgstr ""
+
+msgid "Sync complete"
+msgstr ""
+
+msgid "Sync needs attention"
+msgstr ""
+
 msgid "Sync now"
 msgstr "Nu synchroniseren"
 
+msgid "Sync to device…"
+msgstr ""
+
 msgid "Syncing"
 msgstr "Synchroniseren"
+
+msgid "Syncing music…"
+msgstr ""
 
 msgid "Syncing: {} track read"
 msgid_plural "Syncing: {} tracks read"
@@ -4941,6 +5186,9 @@ msgstr "De stemmingsmodellen zijn niet gereed. Voltooi eerst de download bij Ste
 msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."
 msgstr "Het PulseAudio-protocol mixt alle programma's samen en resamplet het resultaat naar één samplefrequentie, zodat een nummer het apparaat nooit bereikt zoals het uit het bestand kwam. Hier is geen instelling die dat verandert. Het is de optie die overal werkt; kies voor ongewijzigde samples de kaart zelf of PipeWire."
 
+msgid "The USB connection changed. Refresh the device list."
+msgstr ""
+
 msgid "The account did not connect. You can close this tab."
 msgstr "Het account kon niet worden verbonden. Je kunt dit tabblad sluiten."
 
@@ -4955,6 +5203,27 @@ msgstr "De verbinding is niet versleuteld."
 
 msgid "The current track has no such destination."
 msgstr "Het huidige nummer heeft zo'n bestemming niet."
+
+msgid "The device playlist picker can show at most 2,048 playlists."
+msgstr ""
+
+msgid "The device profile catalog is damaged. I kept its original data."
+msgstr ""
+
+msgid "The device profile changed. Review it again."
+msgstr ""
+
+msgid "The device profile revision is invalid."
+msgstr ""
+
+msgid "The device query cannot be read."
+msgstr ""
+
+msgid "The device review needs attention before continuing."
+msgstr ""
+
+msgid "The device task stopped. Its progress is saved for recovery."
+msgstr ""
 
 msgid "The download view is unavailable."
 msgstr "De downloadweergave is niet beschikbaar."
@@ -5022,6 +5291,12 @@ msgstr "De uitvoer speelt nog"
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr "De uitvoer speelt alleen Chilpa af. Andere programma's wachten tot Chilpa loslaat."
 
+msgid "The player is busy. Close the other file transfer application and try again."
+msgstr ""
+
+msgid "The player is not responding. Reconnect it and try again."
+msgstr ""
+
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
 msgstr "De afspeellijst is aangemaakt, maar sommige nummers konden niet worden toegevoegd. Open hem voordat je het opnieuw probeert."
 
@@ -5076,6 +5351,9 @@ msgstr "De opgeslagen scan kon niet worden hersteld."
 msgid "The saved sign-in could not be opened."
 msgstr "De opgeslagen inloggegevens konden niet worden geopend."
 
+msgid "The saved storage folder is unavailable. Reconnect its original memory."
+msgstr ""
+
 msgid "The scan could not start: {}"
 msgstr "De scan kon niet worden gestart: {}"
 
@@ -5127,6 +5405,9 @@ msgstr "Thema"
 msgid "There is no previous EQ to restore."
 msgstr "Er is geen vorige EQ om te herstellen."
 
+msgid "There is not enough space for this selection and its temporary files."
+msgstr ""
+
 msgid "These records' barcodes are sent to MusicBrainz."
 msgstr "De barcodes van deze albums worden naar MusicBrainz verzonden."
 
@@ -5138,6 +5419,9 @@ msgstr "Van derden"
 
 msgid "Third-party plugins"
 msgstr "Plug-ins van derden"
+
+msgid "This Library selection is no longer available."
+msgstr ""
 
 msgid "This address belongs to a different server."
 msgstr "Dit adres hoort bij een andere server."
@@ -5226,6 +5510,9 @@ msgstr "Dit scherm is nog niet gebouwd."
 msgid "This section is not built yet."
 msgstr "Deze sectie is nog niet gebouwd."
 
+msgid "This selection includes music without an available local file. I kept the device unchanged."
+msgstr ""
+
 msgid "This server is no longer available."
 msgstr "Deze server is niet meer beschikbaar."
 
@@ -5237,6 +5524,9 @@ msgstr "Deze bron bepaalt de volgorde."
 
 msgid "This source's folders are read-only. Choose a local folder to organize its playlists in Chilpa."
 msgstr "De mappen van deze bron zijn alleen-lezen. Kies een lokale map om de afspeellijsten ervan in Chilpa te ordenen."
+
+msgid "This storage does not match the saved profile. Choose its original memory or create a new profile."
+msgstr ""
 
 msgid "This track has no album to open"
 msgstr "Dit nummer heeft geen album om te openen"
@@ -5309,6 +5599,9 @@ msgstr "Zijbalk in-/uitschakelen"
 
 msgid "Token"
 msgstr "Token"
+
+msgid "Too many device storage locations were reported."
+msgstr ""
 
 msgid "Tools"
 msgstr "Hulpmiddelen"
@@ -5399,6 +5692,9 @@ msgstr "Typ woorden en druk op Enter"
 
 msgid "UP NEXT"
 msgstr "HIERNA"
+
+msgid "USB host sync is available in the desktop application."
+msgstr ""
 
 msgid "Unassigned"
 msgstr "Niet toegewezen"
@@ -5775,6 +6071,9 @@ msgstr "Gisteren"
 msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
 msgstr "Je bent zelf verantwoordelijk voor je back-ups. Dit is een hulpmiddel, geen systeemhersteltool."
 
+msgid "You can save at most 64 device storage profiles."
+msgstr ""
+
 msgid "You can save up to 64 queries."
 msgstr "U kunt maximaal 64 zoekopdrachten opslaan."
 
@@ -5795,6 +6094,9 @@ msgstr "Je distributie"
 
 msgid "Your music"
 msgstr "Je muziek"
+
+msgid "Your music is up to date"
+msgstr ""
 
 msgid "Your queue is empty"
 msgstr "Je wachtrij is leeg"
@@ -7020,6 +7322,9 @@ msgstr[1] "{} artiesten"
 msgid "{} artists"
 msgstr "{} artiesten"
 
+msgid "{} available of {}"
+msgstr ""
+
 msgid "{} bit at {} Hz, {}"
 msgstr "{} bit op {} Hz, {}"
 
@@ -7162,6 +7467,9 @@ msgstr "{} van {}"
 msgid "{} of {} files were changed before it failed: {}"
 msgstr "{} van {} bestanden zijn gewijzigd voordat het mislukte: {}"
 
+msgid "{} of {} files · {}"
+msgstr ""
+
 msgid "{} of {} formats come out untouched"
 msgstr "{} van {} formaten komen ongewijzigd aan"
 
@@ -7197,8 +7505,16 @@ msgid_plural "{} records"
 msgstr[0] "{} album"
 msgstr[1] "{} albums"
 
+msgid "{} required"
+msgstr ""
+
 msgid "{} sel"
 msgstr "{} gesel."
+
+msgid "{} selection"
+msgid_plural "{} selections"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} shown"
 msgstr "{} getoond"
@@ -7215,6 +7531,9 @@ msgstr[1] "{} sterren"
 
 msgid "{} still loading · counts may grow"
 msgstr "{} laadt nog · aantallen kunnen stijgen"
+
+msgid "{} to copy · {} to update · {} to remove · {} unchanged"
+msgstr ""
 
 msgid "{} track"
 msgid_plural "{} tracks"

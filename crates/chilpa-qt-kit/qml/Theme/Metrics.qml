@@ -31,6 +31,7 @@ QtObject {
     readonly property int gap12: 12
     readonly property int gap14: 14
     readonly property int gap16: 16
+    readonly property int gap20: 20
     readonly property int modalInset: 20
     readonly property int modalInsets: 40
     readonly property int gap22: 22
@@ -568,4 +569,13 @@ QtObject {
     readonly property int blockGap: 32
     readonly property int networkValue: 150
     readonly property int storyArt: 72
+    // I keep the device screen's bounded tables and wrapping controls in the shared theme.
+    readonly property int deviceSelectWidth: 280
+    readonly property int deviceRowHeight: 52
+    readonly property int deviceActionWidth: 90
+    readonly property int deviceSizeWidth: 84
+    readonly property int deviceTableHeader: 32
+    readonly property int deviceDetailHeight: 96
+    readonly property int deviceNoticeHeight: 104
+    readonly property int deviceGalleryHeight: 260
 }

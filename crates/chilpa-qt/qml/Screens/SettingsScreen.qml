@@ -1,3 +1,4 @@
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 // Qt 6.10 brings a SearchField of its own with QtQuick.Controls; this is the kit's.
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives" as Kit

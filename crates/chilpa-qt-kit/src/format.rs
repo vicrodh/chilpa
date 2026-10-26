@@ -1,5 +1,22 @@
 pub use chilpa_api::format::{clock, span};
 
+/// I return a generated artwork path through the shared C++ image-provider buffer.
+///
+/// # Safety
+/// `out` must point to writable storage of at least `capacity` bytes.
+pub unsafe fn write_path(made: Option<std::path::PathBuf>, out: *mut std::ffi::c_char, capacity: std::ffi::c_ulong) -> bool {
+    let Some(made) = made else { return false };
+    let bytes = made.to_string_lossy().into_owned().into_bytes();
+    if bytes.len() + 1 > capacity as usize {
+        return false;
+    }
+    unsafe {
+        std::ptr::copy_nonoverlapping(bytes.as_ptr(), out.cast::<u8>(), bytes.len());
+        *out.add(bytes.len()) = 0;
+    }
+    true
+}
+
 /// A list of strings as Qt takes it.
 pub fn strings(items: impl Iterator<Item = String>) -> cxx_qt_lib::QStringList {
     let mut list = cxx_qt_lib::QList::<cxx_qt_lib::QString>::default();

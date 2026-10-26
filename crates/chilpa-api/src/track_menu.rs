@@ -22,7 +22,9 @@ pub struct TrackMenuContext {
 }
 
 pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
-    if context.count == 0 { return Vec::new(); }
+    if context.count == 0 {
+        return Vec::new();
+    }
     // What cannot be played now offers nothing but leaving a list of mine,
     // and outside one, nothing at all (ADR-017).
     if context.unavailable {
@@ -47,6 +49,9 @@ pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
     }
     entries.push(json!({"separator": true}));
     entries.push(item("pick", i18n::mark("Add to playlist…")));
+    if !context.remote {
+        entries.push(item("sync", i18n::mark("Sync to device…")));
+    }
     let mut navigation = Vec::new();
     if context.count == 1 {
         for (enabled, act, label) in [
@@ -74,8 +79,12 @@ pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
     if context.editable {
         entries.push(json!({"separator": true}));
         if context.count == 1 {
-            if context.move_up { entries.push(json!({"act": "up", "text": i18n::t("Move up"), "hint": "Alt ↑"})); }
-            if context.move_down { entries.push(json!({"act": "down", "text": i18n::t("Move down"), "hint": "Alt ↓"})); }
+            if context.move_up {
+                entries.push(json!({"act": "up", "text": i18n::t("Move up"), "hint": "Alt ↑"}));
+            }
+            if context.move_down {
+                entries.push(json!({"act": "down", "text": i18n::t("Move down"), "hint": "Alt ↓"}));
+            }
         }
         entries.push(item("remove", i18n::mark("Remove from playlist")));
     }
@@ -89,8 +98,17 @@ mod tests {
     #[test]
     fn every_track_and_selection_offers_all_three_queue_placements() {
         for count in [1, 4] {
-            let menu = track_menu(TrackMenuContext { count, album: true, artist: true, editable: true, ..Default::default() });
-            let actions: Vec<_> = menu.iter().filter_map(|entry| entry["act"].as_str()).collect();
+            let menu = track_menu(TrackMenuContext {
+                count,
+                album: true,
+                artist: true,
+                editable: true,
+                ..Default::default()
+            });
+            let actions: Vec<_> = menu
+                .iter()
+                .filter_map(|entry| entry["act"].as_str())
+                .collect();
             assert_eq!(&actions[..5], &["play", "queue", "next", "later", "pick"]);
             assert!(actions.contains(&"remove"));
             assert_eq!(actions.contains(&"album"), count == 1);
@@ -102,9 +120,22 @@ mod tests {
     #[test]
     fn empty_targets_and_read_only_playlists_offer_no_mutation() {
         assert!(track_menu(TrackMenuContext::default()).is_empty());
-        let menu = track_menu(TrackMenuContext { count: 1, queued: true, ..Default::default() });
-        let actions: Vec<_> = menu.iter().filter_map(|entry| entry["act"].as_str()).collect();
-        assert_eq!(actions, ["play", "dequeue", "pick"]);
+        let menu = track_menu(TrackMenuContext {
+            count: 1,
+            queued: true,
+            ..Default::default()
+        });
+        let actions: Vec<_> = menu
+            .iter()
+            .filter_map(|entry| entry["act"].as_str())
+            .collect();
+        assert_eq!(actions, ["play", "dequeue", "pick", "sync"]);
+        let remote = track_menu(TrackMenuContext {
+            count: 1,
+            remote: true,
+            ..Default::default()
+        });
+        assert!(!remote.iter().any(|entry| entry["act"] == "sync"));
     }
 }
 
@@ -114,9 +145,22 @@ mod credit_tests {
 
     #[test]
     fn a_track_by_several_offers_the_page_of_each() {
-        let menu = track_menu(TrackMenuContext { count: 1, artist: true, artists: vec!["A".into(), "B".into()], ..Default::default() });
-        let actions: Vec<_> = menu.iter().filter_map(|entry| entry["act"].as_str()).collect();
-        assert!(actions.contains(&"artist:0") && actions.contains(&"artist:1") && !actions.contains(&"artist"), "{actions:?}");
+        let menu = track_menu(TrackMenuContext {
+            count: 1,
+            artist: true,
+            artists: vec!["A".into(), "B".into()],
+            ..Default::default()
+        });
+        let actions: Vec<_> = menu
+            .iter()
+            .filter_map(|entry| entry["act"].as_str())
+            .collect();
+        assert!(
+            actions.contains(&"artist:0")
+                && actions.contains(&"artist:1")
+                && !actions.contains(&"artist"),
+            "{actions:?}"
+        );
     }
 }
 
@@ -126,17 +170,39 @@ mod unavailable_tests {
 
     #[test]
     fn an_unplayable_track_can_only_leave_a_playlist_of_mine() {
-        let in_playlist = track_menu(TrackMenuContext { count: 1, editable: true, album: true, unavailable: true, ..Default::default() });
+        let in_playlist = track_menu(TrackMenuContext {
+            count: 1,
+            editable: true,
+            album: true,
+            unavailable: true,
+            ..Default::default()
+        });
         assert_eq!(in_playlist.len(), 1);
         assert_eq!(in_playlist[0]["act"], "remove");
-        assert!(track_menu(TrackMenuContext { count: 1, album: true, unavailable: true, ..Default::default() }).is_empty());
-        assert!(track_menu(TrackMenuContext { count: 1, unavailable: false, ..Default::default() }).len() > 1);
+        assert!(track_menu(TrackMenuContext {
+            count: 1,
+            album: true,
+            unavailable: true,
+            ..Default::default()
+        })
+        .is_empty());
+        assert!(
+            track_menu(TrackMenuContext {
+                count: 1,
+                unavailable: false,
+                ..Default::default()
+            })
+            .len()
+                > 1
+        );
     }
 }
 
 /// Navigation stays consistent across the library, playlist and queue views.
 pub fn track_can_go(track: &crate::TrackRow, kind: &str, _key: &str, target: &str) -> bool {
-    if !track.available { return false; }
+    if !track.available {
+        return false;
+    }
     match target.split(':').next().unwrap_or_default() {
         "album" => track.album_id != 0,
         "artist" => !track.artist.is_empty(),

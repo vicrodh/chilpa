@@ -1,9 +1,8 @@
 import QtQuick
 import QtQuick.Controls.impl as ControlsImpl
-import app.chilpa
 import app.chilpa.kit
-import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "../Theme"
+import "../Primitives"
 // A sidebar entry (design/03 NavItem). Collapsed, only its icon shows, and
 // the label moves to a tooltip.
 Rectangle {

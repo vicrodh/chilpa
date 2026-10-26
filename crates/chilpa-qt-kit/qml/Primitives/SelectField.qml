@@ -10,6 +10,7 @@ Rectangle {
     property var options: []
     property var values: []
     property var marks: []
+    property var enabledOptions: []
     property var sources: []
     property var details: []
     // What the closed field says instead of the whole option, where the
@@ -49,6 +50,7 @@ Rectangle {
         // `values` and `options` can arrive one after the other when the row
         // changes in place; for that moment the index may be past `options`.
         text: field.briefs[field.current] ?? field.options[field.current] ?? ""
+        textFormat: Text.PlainText
         elide: Text.ElideRight
         font.pointSize: Type.body
         color: Theme.color.textPrimary
@@ -72,8 +74,14 @@ Rectangle {
         const step = event.key === Qt.Key_Up ? -1 : event.key === Qt.Key_Down ? 1 : 0
         if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
             menu.opened ? menu.close() : menu.open()
-        else if (step !== 0 && field.values.length > 0)
-            field.picked(field.values[Math.max(0, Math.min(field.values.length - 1, field.current + step))])
+        else if (step !== 0 && field.values.length > 0) {
+            for (let next = field.current + step; next >= 0 && next < field.values.length; next += step) {
+                if (field.enabledOptions[next] !== false) {
+                    field.picked(field.values[next])
+                    break
+                }
+            }
+        }
         else
             return
         event.accepted = true
@@ -102,6 +110,7 @@ Rectangle {
         x: field.width - width
         entries: field.options.map((text, i) => ({
             text: text,
+            enabled: field.enabledOptions[i] !== false,
             checked: i === field.current,
             sourceInfo: field.sources[i],
             detail: field.details[i] || "",
