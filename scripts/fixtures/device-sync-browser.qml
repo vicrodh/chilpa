@@ -30,7 +30,7 @@ Item {
     function document() { return JSON.parse(DeviceSync.browser || "{}") }
     function openRow(id) {
         const button = find(mainWindow.contentItem,item => item.objectName === "deviceMusicOpen" && item.visible && item.parent.entry?.id === id)
-        if (!button) {
+        if (!button || !button.enabled) {
             if (!waitingSince) waitingSince = Date.now()
             check(Date.now()-waitingSince < 10000,"missing music row " + id)
             return false
