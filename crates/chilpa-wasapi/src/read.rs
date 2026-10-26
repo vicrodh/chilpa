@@ -267,7 +267,7 @@ const WIDTHS: &[(SampleFormat, u16, u16)] = &[
 /// Measured, and cheaply: `IsFormatSupported` is a question. Every other
 /// platform either opens the device to find out or is asked politely and
 /// answers for the mixer instead.
-pub fn caps(id: &str) -> windows::core::Result<DeviceCaps> {
+pub fn cases(id: &str) -> windows::core::Result<Vec<chilpa_audio::format::StreamFormat>> {
     let _com = Apartment::enter()?;
     let enumerator: IMMDeviceEnumerator =
         unsafe { CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)? };
@@ -275,8 +275,7 @@ pub fn caps(id: &str) -> windows::core::Result<DeviceCaps> {
     let device = unsafe { enumerator.GetDevice(PCWSTR(wide.as_ptr()))? };
     let client: IAudioClient = unsafe { device.Activate(CLSCTX_ALL, None)? };
 
-    let mut sample_rates = Vec::new();
-    let mut formats = Vec::new();
+    let mut cases = Vec::new();
     for &rate in RATES {
         for &(format, bits, container) in WIDTHS {
             let asked = extensible(rate, bits, container, 2);
@@ -304,23 +303,21 @@ pub fn caps(id: &str) -> windows::core::Result<DeviceCaps> {
             // accepting either would let a converted path through under a
             // name that promises no conversion.
             if supported.0 == 0 {
-                if !sample_rates.contains(&rate) {
-                    sample_rates.push(rate);
-                }
-                if !formats.contains(&format) {
-                    formats.push(format);
-                }
+                cases.push(chilpa_audio::format::StreamFormat::new(format,rate,2));
             }
         }
     }
-    Ok(DeviceCaps {
-        sample_rates,
-        formats,
-        channels: vec![2],
-        // Asked of the driver, one format at a time. This is the one
-        // platform where that costs nothing.
-        probed: true,
-    })
+    Ok(cases)
+}
+
+pub fn caps(id: &str) -> windows::core::Result<DeviceCaps> {
+    let cases = cases(id)?;
+    let mut sample_rates = Vec::new(); let mut formats = Vec::new();
+    for case in cases {
+        if !sample_rates.contains(&case.sample_rate_hz) { sample_rates.push(case.sample_rate_hz); }
+        if !formats.contains(&case.sample_format) { formats.push(case.sample_format); }
+    }
+    Ok(DeviceCaps { sample_rates, formats, channels: vec![2], probed: true })
 }
 
 /// A format description Windows will recognise for integer PCM.

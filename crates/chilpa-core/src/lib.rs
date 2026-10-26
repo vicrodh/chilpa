@@ -14,6 +14,7 @@ pub mod dsd_playback;
 pub mod playback;
 pub mod backends;
 pub mod player;
+pub mod output_evidence;
 pub mod settings;
 pub mod wizard;
 pub mod queue_playback;
@@ -254,6 +255,7 @@ pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
 /// saying what its wire carries. This used to be a match over all of them
 /// here, with a cfg for the platform each needed.
 fn measure(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio::sink::SinkError> {
+    let _lease = output_evidence::lease::playback()?;
     let Some((stack, bare)) = backends::resolve(id) else {
         return Err(unknown_output(id));
     };
@@ -266,6 +268,7 @@ fn open_output(
     format: chilpa_audio::format::StreamFormat,
     exclusive: bool,
 ) -> Result<Box<dyn chilpa_audio::sink::AudioSink + Send>, chilpa_audio::sink::SinkError> {
+    let lease = output_evidence::lease::playback()?;
     let Some((stack, bare)) = backends::resolve(id) else {
         return Err(unknown_output(id));
     };
@@ -273,7 +276,7 @@ fn open_output(
     // function's. It used to ask always, which is right about fidelity and
     // wrong about everything else: somebody turns bit-perfect off precisely
     // so they can hear something else at the same time.
-    stack.open(&bare, format, exclusive)
+    stack.open(&bare, format, exclusive).map(|sink|output_evidence::lease::wrap(sink,lease))
 }
 
 /// Whether the road past Chilpa leaves the samples alone.

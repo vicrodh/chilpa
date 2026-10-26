@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import app.chilpa
 import app.chilpa.immersive
+import app.chilpa.controls
 import "../../qml/Patterns"
 
 TestCase {
@@ -11,6 +12,20 @@ TestCase {
     width: 900
     height: 500
     PlayerLcd { id: lcd; width: 700 }
+    function test_existing_quality_glyph_opens_now_with_mouse_and_keyboard() {
+        lcd.y = 0
+        const glyph = findChild(lcd,"playbackIndicator")
+        verify(glyph.visible)
+        AudioOutput.shown = false
+        waitForRendering(glyph)
+        mouseClick(glyph,glyph.width / 2,glyph.height / 2)
+        compare(AudioOutput.shown,true); compare(AudioOutput.tab,"now")
+        AudioOutput.close()
+        glyph.forceActiveFocus()
+        keyClick(Qt.Key_Return)
+        compare(AudioOutput.shown,true); compare(AudioOutput.tab,"now")
+        AudioOutput.close()
+    }
     function test_the_cover_grows_on_hover_and_opens_now_playing_on_a_click() {
         lcd.width = 700
         lcd.y = 460

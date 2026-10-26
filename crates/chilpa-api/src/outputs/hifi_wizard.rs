@@ -76,6 +76,7 @@ struct Doc {
     manual_valid: bool,
     manual_dac_type: String,
     test_requested_label: String,
+    test_output: String,
     test_negotiated_label: String,
     test_rate_matched: bool,
     test_playing: bool,
@@ -329,9 +330,12 @@ impl Chilpa {
                 // What Chilpa asked the device for, against what the card runs at.
                 let now = self.now_playing();
                 let (rate, bits) = if now.playing { (self.sample_rate, now.quality.bits.map_or(0, u32::from)) } else { (0, 0) };
+                let output = self.audio_output.route.as_ref().filter(|_|now.playing).map(|r|r.device.clone()).unwrap_or_default();
+                change(|s| s.doc.test_output = output.clone());
                 background("poll", move || {
-                    let view = core::poll_view(rate, bits, core::negotiated_now());
+                    let view = core::poll_view(rate, bits, core::negotiated_output(&output));
                     change(|s| {
+                        if !s.doc.open || s.doc.test_output != output { return; }
                         s.doc.test_requested_label = view.requested_label;
                         s.doc.test_negotiated_label = view.negotiated_label;
                         s.doc.test_rate_matched = view.rate_matched;

@@ -10,6 +10,8 @@ Controls.Popup {
     dim: false
     closePolicy: Controls.Popup.CloseOnEscape | Controls.Popup.CloseOnReleaseOutside
     property var entries: []
+    property var footerEntries: []
+    signal footerChosen(int index)
     // A binding and not an alias: Qt 6.11.1 refuses an alias into another
     // object's list, and the whole window failed to load on a Mac.
     readonly property var entryItems: list.contentItem ? list.contentItem.children : []
@@ -28,7 +30,7 @@ Controls.Popup {
     onEntriesChanged: measure()
     function measure() {
         let width = Metrics.menuWidth
-        for (const entry of entries) {
+        for (const entry of entries.concat(footerEntries)) {
             textMeasure.text = [entry.text, entry.detail, entry.mark, entry.hint].filter(Boolean).join(" ")
             width = Math.max(width, textMeasure.width + Metrics.menuIconColumn + Metrics.gap16 * 4) // derived: icons and row padding
         }
@@ -77,7 +79,6 @@ Controls.Popup {
             Edge {}
         }
     }
-
     contentItem: Column {
         readonly property real contentHeight: list.contentHeight
         property alias contentY: list.contentY
@@ -112,7 +113,7 @@ Controls.Popup {
             // A select, the menu with a search, takes at most half the window
             // with its search, and never fewer than five rows.
             readonly property real selectRoom: Math.max(Metrics.menuItem * 5, room / 2 - search.height - parent.spacing - menu.padding * 2) // derived: half the window, less the search and the panel's padding
-            implicitHeight: Math.min(contentHeight, menu.heightLimit, room - Metrics.fieldHeightLarge * 3, menu.searchable ? selectRoom : Infinity) // derived: space for search and popup margins
+            implicitHeight: Math.min(contentHeight, menu.heightLimit - footer.implicitHeight, room - Metrics.fieldHeightLarge * 3 - footer.implicitHeight, menu.searchable ? selectRoom : Infinity) // derived: fixed footer, search and popup margins
             model: menu.shown
             clip: true
             boundsBehavior: Flickable.StopAtBounds
@@ -132,6 +133,18 @@ Controls.Popup {
             color: Theme.color.textSecondary
             font.pointSize: Type.body
             padding: Metrics.gap10
+        }
+        Loader {
+            id: footer
+            width: parent.width
+            active: menu.footerEntries.length > 0
+            sourceComponent: Component {
+                MenuFooter {
+                    width: footer.width
+                    entries: menu.footerEntries
+                    onChosen: index => { menu.close(); menu.footerChosen(index) }
+                }
+            }
         }
     }
 }

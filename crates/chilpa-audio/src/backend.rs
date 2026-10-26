@@ -249,6 +249,27 @@ pub struct Knob {
 
 /// A stack Chilpa can hand samples to.
 pub trait OutputBackend: Send + Sync {
+    /// I resolve legacy identifiers only when their target is unambiguous.
+    fn canonical_id(&self, id:&str) -> Option<String> { Some(id.into()) }
+    /// I open one explicit case, read it and close it, without writing samples.
+    /// Adapters that change persistent device configuration restore it here.
+    fn check(&self, id: &str, format: StreamFormat, exclusive: bool)
+        -> Result<(StreamFormat, crate::evidence::Observation), SinkError> {
+        let mut sink = self.open(id, format, exclusive)?;
+        let opened = sink.format();
+        let observation = self.observation(id);
+        sink.close()?;
+        Ok((opened, observation))
+    }
+    /// I inspect published properties only. This must never reserve or open audio.
+    fn inspect(&self, id: &str) -> crate::evidence::Inspection {
+        crate::evidence::Inspection::unavailable(self.kind().key(), id, self.generation())
+    }
+
+    /// I read the selected endpoint after opening, without changing it.
+    fn observation(&self, _id: &str) -> crate::evidence::Observation {
+        crate::evidence::Observation::default()
+    }
     /// Which stack it is: a constant, and all anybody needs to tell stacks
     /// apart. `info` is not that. Finding out whether a server is there can
     /// mean connecting to it, and looking a stack up by asking every one for

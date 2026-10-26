@@ -7,6 +7,7 @@
 
 pub mod backends;
 pub mod devices;
+mod evidence;
 pub mod hardware_volume;
 pub mod realtime;
 pub mod reserve;
@@ -465,7 +466,7 @@ fn open_patiently(device: &str, named: bool, reserved: bool) -> Result<PCM, Sink
         );
         let opened = if named { open_named(device) } else { open(device) };
         match opened {
-            Err(SinkError::Backend(_)) if tries > 0 && busy(device) => {
+            Err(SinkError::Backend(_) | SinkError::Busy(_)) if tries > 0 && busy(device) => {
                 chilpa_audio::diagnostics::trace(
                     "alsa",
                     "pcm_busy",
@@ -508,12 +509,19 @@ fn busy(device: &str) -> bool {
 pub fn open_named(device: &str) -> Result<PCM, SinkError> {
     PCM::new(device, Direction::Playback, false).map_err(|e| match e.errno() {
         ENODEV | ENOENT => SinkError::DeviceLost,
+        EBUSY => SinkError::Busy(e.to_string()),
+        1 | 13 => SinkError::Permission(e.to_string()),
         _ => SinkError::Backend(e.to_string()),
     })
 }
 
 fn backend(e: alsa::Error) -> SinkError {
-    SinkError::Backend(e.to_string())
+    match e.errno() {
+        EBUSY => SinkError::Busy(e.to_string()),
+        1 | 13 => SinkError::Permission(e.to_string()),
+        22 => SinkError::Unsupported(e.to_string()),
+        _ => SinkError::Backend(e.to_string()),
+    }
 }
 
 #[cfg(test)]

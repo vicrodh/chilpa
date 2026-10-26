@@ -92,7 +92,7 @@ Item {
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: Cast.active ? I18n.tr("Original bytes", I18n.rev) : Player.bitPerfect ? I18n.tr("Bit perfect", I18n.rev) : I18n.tr("Processed", I18n.rev)
+                    text: Cast.active ? I18n.tr("Original bytes", I18n.rev) : Player.bitPerfect ? I18n.tr("Bit perfect", I18n.rev) : I18n.tr("Not verified", I18n.rev)
                     font.pointSize: Type.small
                     font.weight: Type.medium
                     color: Player.bitPerfect ? Theme.color.accent : Theme.color.textSecondary

@@ -19,6 +19,9 @@ use std::time::Duration;
 /// ending normally.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum SinkError {
+    Busy(String),
+    Permission(String),
+    Unsupported(String),
     /// The device vanished: unplugged, powered off, or taken by someone else.
     DeviceLost,
     /// It ran dry and had to be recovered. Playing can continue.
@@ -45,7 +48,7 @@ impl std::fmt::Display for SinkError {
             ),
             SinkError::Closed => chilpa_i18n::t("the device was already closed"),
             // Already a sentence, from whoever failed.
-            SinkError::Backend(message) => message.clone(),
+            SinkError::Backend(message) | SinkError::Busy(message) | SinkError::Permission(message) | SinkError::Unsupported(message) => message.clone(),
         };
         write!(f, "{said}")
     }

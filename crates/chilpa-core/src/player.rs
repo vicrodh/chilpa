@@ -25,6 +25,7 @@ pub enum PlayerEvent {
     Started {
         path: PathBuf,
         opened: StreamFormat,
+        route: crate::output_evidence::Route,
         /// The music's own channels. A mono track goes out in both channels
         /// of a stereo device, and `opened` then says two.
         channels: u16,
@@ -115,6 +116,7 @@ pub struct Player {
 }
 
 impl Player {
+    pub fn gain_active(&self) -> bool { self.controls.gain_active.load(Ordering::Acquire) }
     pub fn dsp(&self) -> chilpa_audio::dsp::Control { self.controls.dsp.clone() }
     /// Starts the player thread.
     pub fn spawn(mut probe: ProbeDevice, mut open: OpenSink) -> Self {
@@ -169,6 +171,7 @@ impl Player {
                             // pause is not touched here: it was set when the
                             // order was sent (`play_all_from_paused`).
                             controls_thread.handoff.set(false);
+                            controls_thread.gain_active.store(false,Ordering::Release);
                             stop_thread.reset();
                             skip_thread.take();
                             // Whatever seek was left pending belonged to the
@@ -598,6 +601,7 @@ fn play(
                 let _ = events.send(PlayerEvent::Started {
                     path: path.to_path_buf(),
                     opened: delivery.opened,
+                    route: crate::output_evidence::route(device, delivery, exclusive),
                     channels: delivery.requested.channels,
                     bits: Some(1),
                     bit_perfect,
@@ -625,6 +629,7 @@ fn play(
                 let _ = events.send(PlayerEvent::Started {
                     path: path.to_path_buf(),
                     opened: delivery.opened,
+                    route: crate::output_evidence::route(device, delivery, exclusive),
                     channels: delivery.requested.channels,
                     bits,
                     bit_perfect,
@@ -652,6 +657,7 @@ fn play(
             let _ = events.send(PlayerEvent::Started {
                 path: path.to_path_buf(),
                 opened: delivery.opened,
+                    route: crate::output_evidence::route(device, delivery, exclusive),
                 channels: delivery.requested.channels,
                 bits: if dsd.is_some() { Some(1) } else { about.bits },
                 bit_perfect,
@@ -737,6 +743,7 @@ fn play_stream(
             let _ = events.send(PlayerEvent::Started {
                 path: path.clone(),
                 opened: delivery.opened,
+                    route: crate::output_evidence::route(device, delivery, exclusive),
                 channels: delivery.requested.channels,
                 bits,
                 bit_perfect: delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery) && !dsp.requested(),
@@ -817,6 +824,7 @@ fn play_cd(
             let _ = events.send(PlayerEvent::Started {
                 path: path.to_path_buf(),
                 opened: delivery.opened,
+                    route: crate::output_evidence::route(device, delivery, exclusive),
                 channels: chilpa_cd::CDDA_FORMAT.channels,
                 bits: delivery.bits_carried(),
                 bit_perfect,

@@ -5,6 +5,9 @@ import QtQuick
 // 02-layout.md and 03-components.md). Nothing outside Theme/ writes a size by
 // hand; the QML literal check fails if it does.
 QtObject {
+    readonly property int outputDetailsWidth: 700
+    readonly property int outputDetailsHeight: 520
+    readonly property int outputDetailsChrome: 240
     // The window.
     readonly property int windowWidth: 1280
     readonly property int windowHeight: 800

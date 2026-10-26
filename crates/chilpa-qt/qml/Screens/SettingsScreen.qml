@@ -7,6 +7,7 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
+import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as Driving
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
@@ -36,6 +37,7 @@ Item {
     }
     Connections { target: I18n; function onRevChanged() { rows.refresh() } }
     Connections { target: Prefs; function onRevChanged() { if (page.visible && page.section === "navigation") rows.refresh() } }
+    Connections { target: AudioOutput; function onOutputSelected() { if (page.visible && page.section === "audio") rows.refresh() } }
     Text {
         id: title
         x: Metrics.contentX

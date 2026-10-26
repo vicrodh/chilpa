@@ -834,3 +834,8 @@ renameat
 renamex
 wal
 unregister
+cartesian
+qqc
+readback
+uid
+tgid

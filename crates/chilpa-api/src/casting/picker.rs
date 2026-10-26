@@ -15,7 +15,7 @@ impl Chilpa {
             else if self.casting.loading { i18n::t("Loading…") }
             else if self.now.paused { i18n::t("Paused") }
             else if self.now.playing { i18n::t("Playing") } else { i18n::t("Connected") };
-        json!({"entries": self.cast_entries(&state), "searching": self.casting.discovery.is_some(),
+        json!({"entries": self.cast_entries(&state), "footer":[{"act":"inspect","text":i18n::t("Output details…")}], "searching": self.casting.discovery.is_some(),
             "active": self.casting.active(), "name": self.cast_destination().unwrap_or_default(),
             "protocol": protocol, "icon": icon, "state": state, "error": self.casting.error}).to_string()
     }

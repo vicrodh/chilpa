@@ -51,6 +51,8 @@ fn no_knob() -> String {
 }
 
 impl OutputBackend for Alsa {
+    fn inspect(&self, id: &str) -> chilpa_audio::evidence::Inspection { crate::evidence::inspect(id) }
+    fn observation(&self, id: &str) -> chilpa_audio::evidence::Observation { crate::evidence::observation(id) }
     fn kind(&self) -> BackendKind {
         BackendKind::Alsa
     }
@@ -135,6 +137,9 @@ impl OutputBackend for Alsa {
 }
 
 impl OutputBackend for AlsaPlug {
+    fn inspect(&self, id: &str) -> chilpa_audio::evidence::Inspection {
+        chilpa_audio::evidence::Inspection::convertible(self.kind().key(),id,self.generation(),&chilpa_audio::capture::capabilities())
+    }
     fn kind(&self) -> BackendKind {
         BackendKind::AlsaPlug
     }
@@ -191,6 +196,9 @@ impl OutputBackend for AlsaPlug {
 }
 
 impl OutputBackend for AlsaPcm {
+    fn inspect(&self, id: &str) -> chilpa_audio::evidence::Inspection {
+        chilpa_audio::evidence::Inspection::convertible(self.kind().key(),id,self.generation(),&chilpa_audio::capture::capabilities())
+    }
     fn kind(&self) -> BackendKind {
         BackendKind::AlsaPcm
     }
@@ -281,6 +289,9 @@ fn whoever(description: &str) -> String {
 }
 
 impl OutputBackend for System {
+    fn inspect(&self, id: &str) -> chilpa_audio::evidence::Inspection {
+        chilpa_audio::evidence::Inspection::convertible(self.kind().key(),id,self.generation(),&chilpa_audio::capture::capabilities())
+    }
     fn kind(&self) -> BackendKind {
         BackendKind::System
     }

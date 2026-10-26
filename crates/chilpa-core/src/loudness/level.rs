@@ -89,8 +89,9 @@ impl Leveler {
             pending: None, reset: false, start: super::StartGain { gain: self.start.gain, known: self.start.known } }
     }
 
-    pub fn packed(&mut self, bytes: &mut [u8], format: chilpa_audio::format::StreamFormat, duplicate_mono: bool) {
+    pub fn packed(&mut self, bytes: &mut [u8], format: chilpa_audio::format::StreamFormat, duplicate_mono: bool) -> bool {
         let volume = self.volume.as_ref().map_or(1.0, Level::get);
+        let mut changed = false;
         let mut sample = 0;
         let mut gain = volume;
         chilpa_audio::dsp::volume::scale(bytes, format, || {
@@ -98,8 +99,10 @@ impl Leveler {
                 gain = self.ramp.as_mut().map_or(1.0, GainRamp::next) * volume;
             }
             sample += 1;
+            changed |= gain != 1.0;
             gain
         });
+        changed
     }
 
     /// Whether the samples change: a start gain that is not unity or not
@@ -170,6 +173,18 @@ impl Leveler {
 mod tests {
     use super::*;
     use std::sync::mpsc::sync_channel;
+    #[test]
+    fn packed_gain_reports_consumed_blocks_and_live_unity_without_inferring_from_a_switch() {
+        let volume = Level::new(1.0);
+        let mut level = Leveler::volume_only(Some(volume.clone()));
+        let format = chilpa_audio::format::StreamFormat::new(chilpa_audio::format::SampleFormat::S16,44_100,1);
+        let mut sample = 10_000i16.to_le_bytes();
+        assert!(!level.packed(&mut sample,format,false));
+        volume.set(0.5); assert!(level.packed(&mut sample,format,false));
+        assert_eq!(i16::from_le_bytes(sample),5000);
+        volume.set(1.0); assert!(!level.packed(&mut sample,format,false));
+        assert_eq!(i16::from_le_bytes(sample),5000);
+    }
 
     #[test]
     fn late_combined_gain_avoids_clipping_a_boost_before_low_volume() {

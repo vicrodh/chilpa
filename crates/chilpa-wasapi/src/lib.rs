@@ -36,6 +36,25 @@ use chilpa_audio::sink::{AudioSink, SinkError};
 pub struct Wasapi;
 
 impl OutputBackend for Wasapi {
+    fn inspect(&self, id: &str) -> chilpa_audio::evidence::Inspection {
+        use chilpa_audio::evidence::*;
+        let mut doc = Inspection::unavailable("wasapi",id,String::new());
+        doc.identity.strong = true;
+        doc.render_available = false;
+        doc.method = "wasapi_exclusive_is_format_supported".into();
+        match read::cases(id) {
+            Ok(cases) => {
+                doc.state = State::Available;
+                doc.formats = cases.into_iter().take(256).map(|f| FormatRange {
+                    encoding:"pcm".into(),rate_min:f.sample_rate_hz as f64,rate_max:f.sample_rate_hz as f64,
+                    useful_bits:f.sample_format.valid_bits() as u16,container_bits:(f.sample_format.bytes()*8) as u16,
+                    channels:f.channels,stream:id.into(),scope:Scope::DriverAcceptance
+                }).collect();
+            }
+            Err(_) => doc.state = State::Failed,
+        }
+        doc
+    }
     fn kind(&self) -> BackendKind {
         BackendKind::Wasapi
     }

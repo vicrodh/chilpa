@@ -199,6 +199,10 @@ pub fn capabilities() -> Option<chilpa_audio::negotiate::DeviceCaps> {
 }
 
 impl OutputBackend for Jack {
+    fn inspect(&self, id: &str) -> chilpa_audio::evidence::Inspection {
+        capabilities().map(|caps| chilpa_audio::evidence::Inspection::convertible("jack",id,format!("{:?}",caps.sample_rates),&caps))
+            .unwrap_or_else(|| chilpa_audio::evidence::Inspection::unavailable("jack",id,String::new()))
+    }
     fn kind(&self) -> BackendKind {
         BackendKind::Jack
     }

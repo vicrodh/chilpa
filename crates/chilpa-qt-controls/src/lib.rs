@@ -4,6 +4,7 @@
 //! the one `chilpa-qt-kit` holds.
 
 pub mod bridge {
+    pub mod audio_output;
     pub mod controls;
     pub mod commands;
     pub mod hotkeys;
