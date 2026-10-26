@@ -6,11 +6,13 @@ import app.chilpa.about
 import app.chilpa.metadata
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
+import "qrc:/qt/qml/app/chilpa/metadata/qml/Components" as AccountParts
+
+import "qrc:/qt/qml/app/chilpa/qml" as Shell
+
 Item {
     id: smoke
     property var mainWindow
-    property var mainComponent
-    property var quotaComponent
     property var quota
     property int phase: 0
     property bool stopped: false
@@ -19,6 +21,8 @@ Item {
     property double cycleAt: 0
     property int cycles: 0
     property int revision: 0
+    Component { id: mainTemplate; Shell.Main {} }
+    Component { id: quotaTemplate; AccountParts.QuotaDialog {} }
     SettingsPage { id: settings; section: "integrations" }
     Instantiator {
         id: rows
@@ -48,9 +52,7 @@ Item {
     function advance() {
         if (phase === 0) {
             Onboarding.command("close")
-            mainComponent = Qt.createComponent("qrc:/qt/qml/app/chilpa/qml/Main.qml")
-            check(mainComponent.status === Component.Ready,mainComponent.errorString())
-            mainWindow = mainComponent.createObject(null)
+            mainWindow = mainTemplate.createObject(null)
             check(!!mainWindow,"real Main did not construct")
             mainWindow.width = 1100; mainWindow.height = 850
             Qt.createQmlObject('import QtQuick; Rectangle { anchors.fill: parent; z: -100 }',mainWindow.contentItem).color = Qt.binding(() => mainWindow.color)
@@ -72,9 +74,7 @@ Item {
             capture("SMOKE_CAPTURE",3);return
         }
         if (phase === 3) {
-            quotaComponent = Qt.createComponent("qrc:/qt/qml/app/chilpa/metadata/qml/Components/QuotaDialog.qml")
-            check(quotaComponent.status === Component.Ready,quotaComponent.errorString())
-            quota = quotaComponent.createObject(mainWindow.contentItem)
+            quota = quotaTemplate.createObject(mainWindow.contentItem)
             check(!!quota,"quota dialog did not construct")
             quota.open();cycleAt = Date.now();phase = 4;return
         }
@@ -84,7 +84,7 @@ Item {
             capture("SMOKE_QUOTA_CAPTURE",5);return
         }
         if (phase === 5) {
-            quota.close();quota.destroy();quota = null
+            quota.close()
             settings.set("integrations.offline","true");settings.refresh()
             check(row("integrations.discogs.account")?.control === "fixed","offline kept browser sign-in active")
             check(row("integrations.discogs.token")?.control === "fixed","offline kept token verification active")

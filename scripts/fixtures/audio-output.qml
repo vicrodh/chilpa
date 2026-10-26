@@ -3,11 +3,11 @@ import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
 import app.chilpa.about
+import "qrc:/qt/qml/app/chilpa/qml" as Shell
 
 Item {
     id: smoke
     property var mainWindow
-    property var mainComponent
     property int phase: 0
     property bool stopped: false
     property string scenario: "SMOKE_SCENARIO"
@@ -20,6 +20,7 @@ Item {
     property int volume: 0
     property int queueRevision: 0
     property string other: ""
+    Component { id: mainTemplate; Shell.Main {} }
     SettingsPage { id: audio; section: "audio" }
     function check(condition, message) { if (!condition) throw new Error(message) }
     function find(item, name) {
@@ -45,9 +46,7 @@ Item {
     function advance() {
         if (phase === 0) {
             Onboarding.command("close")
-            mainComponent = Qt.createComponent("qrc:/qt/qml/app/chilpa/qml/Main.qml")
-            check(mainComponent.status === Component.Ready,mainComponent.errorString())
-            mainWindow = mainComponent.createObject(null)
+            mainWindow = mainTemplate.createObject(null)
             check(!!mainWindow,"real Main did not construct")
             mainWindow.width = 1100; mainWindow.height = 850
             Qt.createQmlObject('import QtQuick; Rectangle { anchors.fill: parent; z: -100 }',mainWindow.contentItem).color = Qt.binding(() => mainWindow.color)
