@@ -100,6 +100,11 @@ def environment(args, profile, fixture, mounted_only=False):
     env = {key: value for key, value in os.environ.items()
            if not key.startswith(("CHILPA_", "QT_", "QSG_"))
            and key not in ("QML_IMPORT_PATH", "QML2_IMPORT_PATH", "LD_PRELOAD")}
+    display = env.get("WAYLAND_DISPLAY")
+    runtime = env.get("XDG_RUNTIME_DIR")
+    if args.platform == "native" and display and runtime and not Path(display).is_absolute():
+        # I keep the compositor endpoint while isolating application runtime files.
+        env["WAYLAND_DISPLAY"] = str(Path(runtime) / display)
     env.update(XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"),
                XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"), TMPDIR=str(profile / "tmp"), QT_NO_XDG_DESKTOP_PORTAL="1", QSG_INFO="1",
                QSG_RHI_SHADER_CACHE_DIR=str(profile / "renderer"), CHILPA_QML_SMOKE=str(fixture))
