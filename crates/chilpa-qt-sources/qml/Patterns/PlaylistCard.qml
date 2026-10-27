@@ -37,6 +37,8 @@ Item {
         width: card.width; height: width
         radius: Metrics.radiusCard
         visible: !card.folder
+        // Only a picture the listener chose, a file on disk, is shown whole.
+        contain: !!card.art && card.art.indexOf("://") < 0
         source: !card.art ? "" : card.art.indexOf("://") >= 0 ? card.art : "file://" + card.art.split("/").map(encodeURIComponent).join("/")
     }
     PlaylistCollage {

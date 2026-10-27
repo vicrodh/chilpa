@@ -59,6 +59,8 @@ Rectangle {
         x: Metrics.gap12
         anchors.verticalCenter: parent.verticalCenter
         radius: Metrics.radiusArtSmall
+        // Only a picture the listener chose, a file on disk, is shown whole.
+        contain: !!row.artwork && row.artwork.indexOf("://") < 0
         source: !row.artwork ? "" : row.artwork.indexOf("://") >= 0 ? row.artwork : "file://" + row.artwork.split("/").map(encodeURIComponent).join("/")
         tint: row.index
     }

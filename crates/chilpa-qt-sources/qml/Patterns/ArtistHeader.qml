@@ -55,6 +55,8 @@ Item {
         objectName: "artistPortrait"
         width: Math.min(Metrics.artistPortrait, header.width / 3); height: width // derived: room for the text on narrow windows
         radius: width / 2 // derived: a circle
+        // A picture the listener chose is shown whole, not cropped to the circle.
+        contain: chosen.toString() !== ""
         // The picture the listener chose for the artist wins over the one
         // the source or the records bring.
         readonly property url chosen: Artwork.artist(header.info.title || "", Artwork.rev)

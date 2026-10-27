@@ -43,7 +43,7 @@ Column {
         implicitHeight: Math.max(portrait.height, body.height)
         ArtTile {
             id: portrait
-            contain: header.info.art_fit === "contain"
+            contain: header.info.art_fit === "contain" || !!header.info.chosen_art
             width: Math.min(Metrics.heroArt, parent.width / 3); height: width // derived: keep room for the text on narrow windows
             radius: header.artist ? width / 2 : Metrics.radiusCard // derived: circular artist portrait
             // A cover the listener chose wins over the one the source has.
