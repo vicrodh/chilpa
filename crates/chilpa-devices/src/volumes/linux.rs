@@ -16,6 +16,13 @@ fn unescape(raw: &str) -> PathBuf {
     }
     std::ffi::OsString::from_vec(bytes).into()
 }
+fn removable(node: &std::path::Path) -> bool {
+    // I recognize native SD controllers whose block devices deliberately have removable=0.
+    node.ancestors().take(16).any(|parent| {
+        std::fs::read_to_string(parent.join("removable")).is_ok_and(|value| value.trim() == "1")
+            || std::fs::read_to_string(parent.join("type")).is_ok_and(|value| matches!(value.trim(), "SD" | "SDcombo"))
+    }) || node.components().any(|part| part.as_os_str().as_encoded_bytes().starts_with(b"usb"))
+}
 pub(super) fn mounted() -> Result<Vec<Volume>> {
     let mut table = String::new();
     std::fs::File::open(chilpa_dirs::mount_info_file())?.take(4 * 1024 * 1024 + 1).read_to_string(&mut table)?;
@@ -33,11 +40,7 @@ pub(super) fn mounted() -> Result<Vec<Volume>> {
         if root != "/" || mount == "/" { continue; }
         let Some(node) = chilpa_dirs::block_device_node(device) else { continue };
         let Ok(node) = std::fs::canonicalize(node) else { continue };
-        // USB readers and built-in MMC readers both expose a removable parent in sysfs.
-        let removable = node.ancestors().take(16).any(|parent| {
-            std::fs::read_to_string(parent.join("removable")).is_ok_and(|value| value.trim() == "1")
-        }) || node.components().any(|part| part.as_os_str().as_encoded_bytes().starts_with(b"usb"));
-        if !removable { continue; }
+        if !removable(&node) { continue; }
         let path = unescape(mount);
         if !path.is_absolute() || std::fs::symlink_metadata(&path).is_ok_and(|m| m.file_type().is_symlink()) { continue; }
         use std::os::unix::ffi::OsStrExt;
@@ -61,5 +64,20 @@ mod tests {
     #[test]
     fn mount_paths_keep_spaces_and_literal_escape_sequences() {
         assert_eq!(super::unescape("/media/a\\040b\\134040"), std::path::Path::new("/media/a b\\040"));
+    }
+    #[test]
+    fn native_sd_cards_are_detected_without_classifying_emmc_as_removable() {
+        let directory = tempfile::tempdir().unwrap();
+        let card = directory.path().join("mmc_host/mmc0/mmc0:0001");
+        let node = card.join("block/mmcblk0/mmcblk0p1");
+        std::fs::create_dir_all(&node).unwrap();
+        std::fs::write(node.parent().unwrap().join("removable"), "0\n").unwrap();
+        for (kind, expected) in [("SD", true), ("SDcombo", true), ("MMC", false), ("SDIO", false)] {
+            std::fs::write(card.join("type"), kind).unwrap();
+            assert_eq!(super::removable(&node), expected, "card type: {kind}");
+        }
+        std::fs::write(node.parent().unwrap().join("removable"), "1\n").unwrap();
+        assert!(super::removable(&node));
+        assert!(super::removable(&directory.path().join("usb1/1-1/block/sda/sda1")));
     }
 }
