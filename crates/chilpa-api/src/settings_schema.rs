@@ -143,7 +143,7 @@ pub const SECTIONS: &[Section] = &[
     Section {
         id: "appearance",
         label: Chilpa::mark("Appearance"),
-        icon: "lucide:database",
+        icon: "lucide:palette",
         groups: &[Group {
             title: Chilpa::mark("Look"),
             settings: &[

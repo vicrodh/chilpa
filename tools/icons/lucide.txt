@@ -49,3 +49,4 @@ route-off
 database
 cable
 blocks
+palette

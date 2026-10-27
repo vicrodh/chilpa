@@ -39,6 +39,7 @@ QtObject {
     readonly property string listPlus: "\ue23f"
     readonly property string listStart: "\ue2e1"
     readonly property string listVideo: "\ue2e2"
+    readonly property string palette: "\ue1dd"
     readonly property string power: "\ue140"
     readonly property string proportions: "\ue5cf"
     readonly property string radio: "\ue142"
