@@ -72,6 +72,8 @@ pub mod qobject {
         fn reload_browser(self: Pin<&mut DeviceSync>);
         #[qsignal]
         fn profile_created(self: Pin<&mut DeviceSync>);
+        #[qsignal]
+        fn selection_staged(self: Pin<&mut DeviceSync>);
     }
 }
 use chilpa_api::device_sync::{Service, UiError};
@@ -216,13 +218,16 @@ impl qobject::DeviceSync {
         self.as_mut().rust_mut().selection_kind = "tracks".into();
         self.as_mut().rust_mut().selection_page = 0;
         let active = self.rust().viewers > 0;
+        let mut staged = false;
         self.as_mut().run(|service| {
             service.stage_library_tracks(&ids.to_string())?;
+            staged = true;
             if active {
                 service.open_view()?;
             }
             Ok(())
         });
+        if staged { self.selection_staged(); }
     }
     pub fn filter(mut self: Pin<&mut Self>, text: &QString) {
         if self.rust().viewers == 0 { return; }

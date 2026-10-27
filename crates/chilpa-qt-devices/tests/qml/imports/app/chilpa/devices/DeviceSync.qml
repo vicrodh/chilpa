@@ -17,6 +17,7 @@ QtObject {
     property int leaves: 0
     property var lastAction: []
     signal profileCreated()
+    signal selectionStaged()
     function enter() { enters++ }
     function leave() { leaves++ }
     function poll() { polls++ }
@@ -26,7 +27,7 @@ QtObject {
     function selectDestination(id) { lastAction = ["destination",id] }
     function createProfile(name,folder) { lastAction = ["create",name,folder] }
     function toggle(id) { lastAction = ["toggle",id] }
-    function useTracks(ids) { data = Object.assign({},data,{filter:""}); lastAction = ["tracks",ids] }
+    function useTracks(ids) { data = Object.assign({},data,{filter:""}); lastAction = ["tracks",ids]; selectionStaged() }
     function filter(text) { data = Object.assign({},data,{filter:text}); lastAction = ["filter",text] }
     function selectionKind(kind) { data = Object.assign({},data,{selection_kind:kind,selection_page:0}); lastAction = ["selectionKind",kind] }
     function selectionPage(page) { data = Object.assign({},data,{selection_page:page}); lastAction = ["selectionPage",page] }

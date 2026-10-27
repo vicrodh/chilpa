@@ -30,7 +30,11 @@ Item {
     Component.onCompleted: { backend.enter(); settle() }
     Component.onDestruction: backend.leave()
     onStatusChanged: settle()
-    Connections { target: screen.backend; function onProfileCreated() { screen.creating = false } }
+    Connections {
+        target: screen.backend
+        function onProfileCreated() { screen.creating = false }
+        function onSelectionStaged() { screen.reviewing = false; screen.recorded = false }
+    }
     StorageEvents { objectName: "deviceStorageEvents"; active: screen.visible && (!screen.Window.window || (screen.Window.window.visible && screen.Window.window.visibility !== Window.Minimized)); onChanged: screen.backend.connectionsChanged() }
     Timer { objectName: "deviceProgressPoll"; interval: Motion.poll; repeat: true; running: screen.visible && screen.backend.busy && (!screen.Window.window || (screen.Window.window.visible && screen.Window.window.visibility !== Window.Minimized)); onTriggered: screen.backend.poll() }
 

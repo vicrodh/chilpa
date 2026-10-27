@@ -225,6 +225,18 @@ TestCase {
         compare(child("deviceSelectionSearch").text,"")
         verify(child("deviceSelections").visible)
     }
+    function test_incoming_music_returns_from_history_when_background_updates_coalesce() {
+        child("deviceSections").activated(1)
+        DeviceSync.setStatus({phase:"browsing",busy:true})
+        DeviceSync.closeBrowser()
+        DeviceSync.useTracks("[42,43]")
+        DeviceSync.setStatus({phase:"reconnecting",busy:true})
+        DeviceSync.setStatus({phase:"idle",busy:false})
+        compare(page.recorded,false)
+        compare(page.reviewing,false)
+        bounds(child("deviceSelections"))
+        compare(child("deviceSelectionSearch").text,"")
+    }
     function test_synced_music_and_read_only_browser_controls() {
         child("deviceSections").activated(1)
         compare(DeviceSync.lastAction,["browse","recorded"])
