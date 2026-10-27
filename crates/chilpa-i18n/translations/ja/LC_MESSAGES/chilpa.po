@@ -1197,6 +1197,9 @@ msgstr "プラグインのアイコンを選択"
 msgid "Choose queues and arrange their order. Repeated tracks are kept."
 msgstr "キューを選択して順序を並べ替えます。重複したトラックはそのまま残ります。"
 
+msgid "Choose storage"
+msgstr ""
+
 msgid "Choose the connected player and its storage first."
 msgstr ""
 
@@ -1205,6 +1208,9 @@ msgstr "この出力に対応する再生ミキサー要素を選択してくだ
 
 msgid "Choose the receiver in Play on to connect."
 msgstr "接続するには「再生先」で受信機を選択してください。"
+
+msgid "Choose the storage paired with this profile."
+msgstr ""
 
 msgid "Clear"
 msgstr "クリア"
@@ -5859,6 +5865,9 @@ msgstr "保存されたログイン情報を開けませんでした。"
 msgid "The saved storage folder is unavailable. Reconnect its original memory."
 msgstr ""
 
+msgid "The saved storage is not connected."
+msgstr ""
+
 msgid "The scan could not start: {}"
 msgstr "スキャンを開始できませんでした: {}"
 
@@ -6063,7 +6072,13 @@ msgstr "このソースが順序を管理します。"
 msgid "This source's folders are read-only. Choose a local folder to organize its playlists in Chilpa."
 msgstr "このソースのフォルダーは読み取り専用です。Chilpaでプレイリストを整理するには、ローカルフォルダーを選んでください。"
 
+msgid "This storage belongs to another saved profile."
+msgstr ""
+
 msgid "This storage does not match the saved profile. Choose its original memory or create a new profile."
+msgstr ""
+
+msgid "This storage is read-only."
 msgstr ""
 
 msgid "This track has no album to open"

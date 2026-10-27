@@ -16,6 +16,7 @@ Rectangle {
     // What the closed field says instead of the whole option, where the
     // option is long: the field is then as wide as that.
     property var briefs: []
+    property string placeholder: ""
     property string value
     property real menuWidthLimit: Metrics.menuMaxWidth
 
@@ -49,7 +50,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         // `values` and `options` can arrive one after the other when the row
         // changes in place; for that moment the index may be past `options`.
-        text: field.briefs[field.current] ?? field.options[field.current] ?? ""
+        text: field.briefs[field.current] ?? field.options[field.current] ?? field.placeholder
         textFormat: Text.PlainText
         elide: Text.ElideRight
         font.pointSize: Type.body

@@ -46,6 +46,7 @@ Item {
         DeviceHeader {
             width: parent.width
             document: screen.document; status: screen.status
+            showStorageNotice: !screen.setup
             onProfileAsked: id => { screen.recorded = false; screen.backend.selectProfile(id) }
             onDestinationAsked: id => { screen.recorded = false; screen.backend.selectDestination(id) }
             onRefreshAsked: { screen.recorded = false; screen.backend.refresh() }

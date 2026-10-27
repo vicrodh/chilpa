@@ -1199,6 +1199,9 @@ msgstr "Elegir icono del plugin"
 msgid "Choose queues and arrange their order. Repeated tracks are kept."
 msgstr "Elige las colas y ordena cómo se combinarán. Se conservan las pistas repetidas."
 
+msgid "Choose storage"
+msgstr "Elige un almacenamiento"
+
 msgid "Choose the connected player and its storage first."
 msgstr "Primero elige el reproductor conectado y su memoria."
 
@@ -1207,6 +1210,9 @@ msgstr "Elige el control de volumen de reproducción de esta salida. Chilpa lo v
 
 msgid "Choose the receiver in Play on to connect."
 msgstr "Elige el receptor en Reproducir en para conectarte."
+
+msgid "Choose the storage paired with this profile."
+msgstr "Elige el almacenamiento asociado a este perfil."
 
 msgid "Clear"
 msgstr "Vaciar"
@@ -5864,6 +5870,9 @@ msgstr "No se pudo abrir el acceso guardado."
 msgid "The saved storage folder is unavailable. Reconnect its original memory."
 msgstr "La carpeta guardada no está disponible. Vuelve a conectar la memoria original."
 
+msgid "The saved storage is not connected."
+msgstr "El almacenamiento guardado no está conectado."
+
 msgid "The scan could not start: {}"
 msgstr "No se pudo iniciar el escaneo: {}"
 
@@ -6068,8 +6077,14 @@ msgstr "Este source controla el orden."
 msgid "This source's folders are read-only. Choose a local folder to organize its playlists in Chilpa."
 msgstr "Las carpetas de esta fuente son de solo lectura. Elige una carpeta local para organizar sus playlists en Chilpa."
 
+msgid "This storage belongs to another saved profile."
+msgstr "Este almacenamiento pertenece a otro perfil guardado."
+
 msgid "This storage does not match the saved profile. Choose its original memory or create a new profile."
 msgstr "Esta memoria no corresponde al perfil guardado. Elige la memoria original o crea un perfil nuevo."
+
+msgid "This storage is read-only."
+msgstr "Este almacenamiento es de solo lectura."
 
 msgid "This track has no album to open"
 msgstr "Esta pista no tiene un álbum que abrir"
