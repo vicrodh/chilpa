@@ -190,6 +190,23 @@ TestCase {
         bounds(child("deviceMusicList"))
         compare(DeviceSync.status.plan,"prepared")
     }
+    function test_connection_refresh_preserves_the_music_section_filter_and_scroll() {
+        DeviceSync.setStatus({phase:"review",plan:"prepared",label:"Ready to sync"})
+        child("deviceSections").activated(0)
+        const search = child("deviceSelectionSearch"), list = child("deviceSelections")
+        search.text = "Evening"
+        list.contentY = 500
+        wait(30)
+        const position = list.contentY
+        DeviceSync.setStatus({phase:"reconnecting",busy:true})
+        DeviceSync.setStatus({phase:"review",busy:false})
+        compare(page.reviewing,false)
+        compare(child("deviceSelectionSearch"),search)
+        compare(search.text,"Evening")
+        compare(child("deviceSelections"),list)
+        compare(list.contentY,position)
+        compare(DeviceSync.status.plan,"prepared")
+    }
     function test_an_incoming_album_returns_from_history_and_clears_the_picker_filter() {
         const search = child("deviceSelectionSearch")
         search.text = "An older filter"

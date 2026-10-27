@@ -64,7 +64,7 @@ impl Service {
         let status = self.status();
         let mut value = serde_json::to_value(status).unwrap_or(Value::Null);
         let label = match status.phase.as_str() {
-            "discovering" => i18n::mark("Looking for players…"),
+            "discovering" | "reconnecting" => i18n::mark("Looking for players…"),
             "loading" => i18n::mark("Loading device profiles…"),
             "pairing" => i18n::mark("Adding storage…"),
             "saving" => i18n::mark("Saving selection…"),
