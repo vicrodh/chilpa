@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import time
 import wave
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -81,20 +82,24 @@ with tempfile.TemporaryDirectory(prefix="chilpa-live-visualizer-") as directory:
     log_path = output / "live-visualizer.log"
     from contextlib import nullcontext
     display = nullcontext(os.environ.get("DISPLAY", "")) if args.host_display or args.headless_rhi else scene_checks.isolated_display(output)
+    started = time.monotonic()
     with display as address, log_path.open("w") as log:
         environment["DISPLAY"] = address
         result = subprocess.run(["timeout", "--kill-after=2s", "65s", "dbus-run-session", "--", str(args.binary.resolve())],
             env=environment, cwd=profile, stdout=log, stderr=subprocess.STDOUT, timeout=70)
     transcript = log_path.read_text()
-    print("\n".join(line for line in transcript.splitlines() if "SMOKE" in line or "qrc:" in line))
+    errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "Binding loop", "Unable to assign", "is not a type",
+              "Failed to compile shader", "Failed to build graphics pipeline state", "Failed to link shader program")
+    diagnostics = dict.fromkeys(line for line in transcript.splitlines()
+        if "SMOKE" in line or "qrc:" in line or any(error in line for error in errors))
+    print("\n".join(list(diagnostics)[:30]))
     capture = profile / "tmp/chilpa-capture.raw"
     captured_bytes = capture.stat().st_size if capture.exists() else 0
     print(f"SMOKE live capture bytes={captured_bytes}")
-    errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "Binding loop", "Unable to assign", "is not a type",
-              "Failed to build graphics pipeline state", "Failed to link shader program")
     marker = "SMOKE queue visualizer completed" if args.queues else "SMOKE live visualizer completed"
     passed = (result.returncode == 0 and captured_bytes > rate * 4
               and marker in transcript and not any(error in transcript for error in errors))
     (output / "report.json").write_text(json.dumps(dict(binary=str(args.binary.resolve()), backend=args.backend,
-        captured_bytes=captured_bytes, exit_code=result.returncode, passed=passed, log=str(log_path)), indent=2) + "\n")
+        captured_bytes=captured_bytes, exit_code=result.returncode, passed=passed, log=str(log_path),
+        seconds=round(time.monotonic() - started, 2)), indent=2) + "\n")
     raise SystemExit(0 if passed else 1)

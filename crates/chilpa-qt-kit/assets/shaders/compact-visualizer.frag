@@ -13,11 +13,14 @@ layout(std140, binding = 0) uniform buf {
     mat4 peaks;
 };
 
-float element(mat4 values, int index) { return values[index % 4][index / 4]; }
+float element(mat4 values, int index) {
+    int row = index / 4;
+    return values[index - row * 4][row];
+}
 void main() {
     float slot = dims.x / 28.0;
     vec2 pixel = qt_TexCoord0 * dims;
-    int column = min(27, int(pixel.x / max(slot, 0.0001)));
+    int column = int(min(27.0, pixel.x / max(slot, 0.0001)));
     int bin = column < 14 ? column : 27 - column;
     if (bin > 0) bin += 1;
     float value = clamp(element(amplitudes0, bin), 0.0, 1.0);

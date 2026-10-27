@@ -1,5 +1,6 @@
 import QtQuick
 import app.chilpa
+import app.chilpa.about
 import app.chilpa.controls
 import app.chilpa.immersive
 
@@ -17,6 +18,8 @@ Item {
     property var counts: ({bars:0, waveform:0, energy:0, goniometer:0, oscilloscope:0})
     property var names: ["bars", "waveform", "energy", "goniometer", "oscilloscope", "bars", "bars"]
     SettingsPage { id: audio; section: "audio" }
+    // A content-item grab excludes the window clear color; I include it in the capture.
+    Component { id: captureBackground; Rectangle { anchors.fill: parent; z: -1; color: smoke.mainWindow.color } }
     function check(ok, message) { if (!ok) throw new Error(message) }
     function find(item, name) {
         if (item.objectName === name) return item
@@ -40,17 +43,22 @@ Item {
     }
     Timer {
         interval: 75
-        running: true
+        running: smoke.phase < 6
         repeat: true
         onTriggered: {
             try {
                 if (smoke.capturing) return
                 ++smoke.ticks
+                if (smoke.mainWindow && JSON.parse(Onboarding.doc || "{}").open === true) {
+                    Onboarding.command("close")
+                    return
+                }
                 if (smoke.phase === 0) {
                     const component = Qt.createComponent("qrc:/qt/qml/app/chilpa/qml/Main.qml")
                     check(component.status === Component.Ready, component.errorString())
                     smoke.mainWindow = component.createObject(null)
                     smoke.mainWindow.width = 1480; smoke.mainWindow.height = 950
+                    captureBackground.createObject(smoke.mainWindow.contentItem)
                     smoke.phase = 1
                     return
                 }
@@ -65,7 +73,8 @@ Item {
                 if (smoke.phase === 2) {
                     if (!Player.playing || Player.paused || !find(smoke.mainWindow.contentItem, "queueVisualizationToggle")) return
                     check(!AudioOutput.shown, "Queue opened equipment inspection")
-                    check(item("queueVisualizationToggle").enabled, "Queue visualization is unavailable")
+                    // I wait for the asynchronous page handover before using its controls.
+                    if (!item("queueVisualizationToggle").visible || !item("queueVisualizationToggle").enabled) return
                     item("queueVisualizationToggle").clicked()
                     smoke.selectMode(0)
                     smoke.phase = 3
@@ -103,9 +112,10 @@ Item {
                 if (smoke.ticks - smoke.began < 8) return
                 check(smoke.parkedFrames === Object.values(smoke.counts).reduce((a, b) => a + b, 0), "Hidden visualization still publishes frames")
                 check(!AudioOutput.shown, "Signal path changed equipment-panel state")
+                smoke.phase = 6
                 Player.clearQueue()
                 console.log("SMOKE queue visualizer completed")
-                Qt.quit()
+                Qt.exit(0)
             } catch (error) {
                 console.error("SMOKE FAIL queue visualizer: " + error)
                 Qt.exit(1)
