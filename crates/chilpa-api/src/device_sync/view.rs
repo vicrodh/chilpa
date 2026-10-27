@@ -57,7 +57,7 @@ impl Service {
             "selection_kind":kind,"selection_page":selection_page,"selection_pages":selection_pages,"selection_total":selection_total,
             "selected":i18n::tf("{} selection","{} selections",selected as i64,&[&selected.to_string()]),
             "storage_detail":destinations.iter().zip(self.destinations()).find(|(_,d)|d.id==self.status().destination).map(|(row,_)|&row["detail"]),
-            "can_review":self.destinations().iter().any(|d|d.id==self.status().destination&&d.writable) && profile.is_some_and(|p|(selected>0 || !p.picks.is_empty()) && (self.status().destination.starts_with("volume:") || matches!((&p.root,self.status().destination.as_str()),(Root::Mounted{..},"mounted")) || matches!(&p.root,Root::Mtp{..}) && self.status().destination.contains('/'))),
+            "can_review":self.destinations().iter().any(|d|d.id==self.status().destination&&d.writable) && profile.is_some_and(|p|self.status().destination.starts_with("volume:") || matches!((&p.root,self.status().destination.as_str()),(Root::Mounted{..},"mounted")) || matches!(&p.root,Root::Mtp{..}) && self.status().destination.contains('/')),
             "change_count":self.change_count(),"page_count":self.change_count().div_ceil(200).max(1)}).to_string()
     }
     pub fn status_json(&self) -> String {
