@@ -121,8 +121,7 @@
     void main() {
         vec2 px = qt_TexCoord0 * vec2(bandW, bandH);
         float slot = bandW / 48.0;
-        int col = int(floor(px.x / slot));
-        col = clamp(col, 0, 47);
+        int col = int(clamp(floor(px.x / slot), 0.0, 47.0));
         float h = max(2.0, amp(col) * bandH);
         float w = slot - 2.0;
         vec2 lp = vec2(px.x - (float(col) * slot + 1.0), px.y - (bandH - h) * 0.5);

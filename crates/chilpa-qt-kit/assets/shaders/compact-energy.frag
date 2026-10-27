@@ -36,8 +36,7 @@
     void main() {
         vec2 px = qt_TexCoord0 * vec2(bandW, bandH);
         float slot = bandW / 5.0;
-        int col = int(floor(px.x / slot));
-        col = clamp(col, 0, 4);
+        int col = int(clamp(floor(px.x / slot), 0.0, 4.0));
         float h = max(2.0, amp(col) * bandH);
         float w = slot - 6.0;
         vec2 lp = vec2(px.x - (float(col) * slot + 3.0), px.y - (bandH - h));
