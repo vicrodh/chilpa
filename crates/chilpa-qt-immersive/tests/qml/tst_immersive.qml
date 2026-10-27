@@ -238,6 +238,21 @@ TestCase {
         header.pickerTrailing = Qt.platform.os === "osx"
     }
 
+    function test_the_view_menu_opens_inside_the_window_from_the_right_end() {
+        const header = findChild(view, "immersiveHeader")
+        const trigger = findChild(header, "immersiveViewTrigger")
+        const menu = findChild(header, "immersiveViewMenu")
+        header.pickerTrailing = true
+        waitForRendering(view)
+        menu.openBelow(trigger)
+        tryCompare(menu, "opened", true)
+        const left = header.mapToItem(null, menu.x, 0).x
+        verify(left >= 0, "not cut at the left: " + left)
+        verify(left + menu.width <= test.Window.window.width, "not cut at the right: " + (left + menu.width) + " of " + test.Window.window.width)
+        menu.close()
+        header.pickerTrailing = Qt.platform.os === "osx"
+    }
+
     function test_the_focus_lyrics_say_when_there_are_none() {
         Player.lyricsJson = ""
         Immersive.setView(0, 4, 0)

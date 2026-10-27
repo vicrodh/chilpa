@@ -62,7 +62,7 @@ Item {
         onNext: menu.cycle(1)
         onMenu: menu.openBelow(trigger)
     }
-    ViewMenu { id: menu }
+    ViewMenu { id: menu; objectName: "immersiveViewMenu" }
 
     SearchField {
         id: field
