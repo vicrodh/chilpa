@@ -15,6 +15,10 @@ TitledFlow {
     MediaListeningPanel { width: Metrics.confirmWidth; height: Metrics.panesHeight }
     ServerEditForm { width: Metrics.confirmWidth; height: implicitHeight
         preview: ({step:"libraries",kind:"jellyfin",label:"Music server",address:"http://music.local:8096",choices:[{id:"music",name:"Music",detail:""}],selectedLibraries:[]}) }
+    MusicServers { width: Metrics.settingsMaxWidth; height: Metrics.panesHeight; model: [] }
+    ServerTableRow { width: Metrics.settingsMaxWidth; name: "Music server"; status: "Connected"; server: ({icon:"navidrome",product:"Navidrome 0.64.2",tracks:1234}); options:["Edit…","Disable","Sync now","Remove…"]; values:["edit","disable","sync","remove"] }
+    ServerConnectionDialog { id: serverPreview; preview: ({step:"idle"}) }
+    PillButton { text: "Music server modal"; onClicked: serverPreview.open() }
     EpisodeMaterial { width: Metrics.confirmWidth; entry: ({description:"Episode notes"}) }
     ImportCheck { text: "Mixed playlist"; checked: true; width: Metrics.confirmWidth }
     ImportMatch { width: Metrics.confirmWidth; match: ({title:"Track",artist:"Artist",confidence:0.95}); sourceName: "Source"; destination: "Mixed"; qualityLabel: "FLAC" }

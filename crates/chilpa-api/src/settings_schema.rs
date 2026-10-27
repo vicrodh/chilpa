@@ -79,7 +79,7 @@ pub struct Group {
 pub struct Section {
     pub id: &'static str,
     pub label: &'static str,
-    /// The name of its glyph in `Icons`.
+    /// An Icons glyph, or a Lucide glyph prefixed with `lucide:`.
     pub icon: &'static str,
     pub groups: &'static [Group],
 }
@@ -143,7 +143,7 @@ pub const SECTIONS: &[Section] = &[
     Section {
         id: "appearance",
         label: Chilpa::mark("Appearance"),
-        icon: "adjustmentsHorizontal",
+        icon: "lucide:database",
         groups: &[Group {
             title: Chilpa::mark("Look"),
             settings: &[
@@ -215,6 +215,9 @@ pub const SECTIONS: &[Section] = &[
                 settings: &[setting(crate::search::SEARCH_PREVIEW, Chilpa::mark("Search preview"), Chilpa::mark("Shows results under the search box as you type. Off, typing opens the results page."), Control::Toggle)],
             },
             Group { title: Chilpa::mark("Records"), settings: &[setting("navigation.albumClick", Chilpa::mark("A click on a record opens"), Chilpa::mark("Its page, or its quick view under the row."), Control::Segmented)] },
+            Group { title: Chilpa::mark("Track credits"), settings: &[
+                setting(crate::credits::SHOW_COMPOSERS, Chilpa::mark("Show composers"), "", Control::Toggle),
+            ] },
             Group {
                 title: Chilpa::mark("Player bar"),
                 settings: &[
@@ -272,7 +275,7 @@ pub const SECTIONS: &[Section] = &[
     Section {
         id: "storage",
         label: Chilpa::mark("Storage"),
-        icon: "folderOpen",
+        icon: "lucide:database",
         groups: &[
             Group { title: Chilpa::mark("Usage"), settings: &[
                 setting("storage.total", Chilpa::mark("Cache used"), Chilpa::mark("Artwork, generated images, plugin data and other temporary files."), Control::Status),
@@ -287,13 +290,14 @@ pub const SECTIONS: &[Section] = &[
                 setting("storage.remoteLimitMb", Chilpa::mark("Remote image limit"), Chilpa::mark("Older temporary images are removed in the background. Artwork referenced by your library is kept."), Control::Select),
                 action("storage.clear.remote", Chilpa::mark("Clear temporary remote artwork"), Chilpa::mark("Remove unreferenced images from sources and plugins. Needed images download again."), Control::Button, Chilpa::mark("Clear…")),
                 action("storage.clear.derivatives", Chilpa::mark("Clear generated images"), Chilpa::mark("Remove smaller covers and backgrounds. Chilpa makes them again as needed."), Control::Button, Chilpa::mark("Clear…")),
+                action("storage.clear.lyrics", Chilpa::mark("Clear lyrics cache"), "", Control::Button, Chilpa::mark("Clear…")),
             ] },
         ],
     },
     Section {
         id: "sources",
-        label: Chilpa::mark("Sources"),
-        icon: "server",
+        label: Chilpa::mark("Music servers"),
+        icon: "lucide:cable",
         groups: &[Group {
             title: Chilpa::mark("Servers"),
             // Expands to one row per server, and the row that adds one
@@ -306,7 +310,7 @@ pub const SECTIONS: &[Section] = &[
     Section {
         id: "plugins",
         label: Chilpa::mark("Plugins"),
-        icon: "stack2",
+        icon: "lucide:blocks",
         groups: &[Group {
             title: Chilpa::mark("Installed"),
             // This sentinel expands to one row per installed plugin in the
@@ -355,14 +359,16 @@ pub const SECTIONS: &[Section] = &[
             ] },
         ],
     },
-    Section { id: "devices", label: Chilpa::mark("Devices & cast"), icon: "cast", groups: &[
-        Group { title: Chilpa::mark("Network playback"), settings: &[
-            action("devices.cast", Chilpa::mark("DLNA / UPnP and Chromecast"), Chilpa::mark("Choose a renderer on your local network. The queue stays in Chilpa."), Control::Button, Chilpa::mark("Choose device")),
-            setting("devices.original", Chilpa::mark("Original files"), Chilpa::mark("Original bytes · no transcoding by Chilpa · receiver processing unknown"), Control::Status),
-            setting("devices.discovery", Chilpa::mark("Device discovery"), Chilpa::mark("Search only while the picker is open. Disconnecting stops the receiver and leaves local playback stopped."), Control::Status),
+    Section { id: "updates", label: Chilpa::mark("Updates"), icon: "infoCircle", groups: &[
+        Group { title: Chilpa::mark("Application"), settings: &[
+            setting("updates.automatic", Chilpa::mark("Check for new releases on launch"), "", Control::Toggle),
+            action("updates.check", Chilpa::mark("Check for updates now"), "", Control::Button, Chilpa::mark("Check")),
+            setting("updates.current", Chilpa::mark("Current version"), "", Control::Status),
+            setting("updates.installation", Chilpa::mark("Installation"), "", Control::Status),
+            action("updates.changelog", Chilpa::mark("Show changelog for current version"), "", Control::Button, Chilpa::mark("Show")),
         ] },
     ] },
-    Section { id: "updates", label: Chilpa::mark("Updates"), icon: "infoCircle", groups: &[] },
+    Section { id: "developers", label: Chilpa::mark("Developers"), icon: "lucide:bug", groups: &[] },
 ];
 
 pub fn section(id: &str) -> &'static Section {

@@ -22,16 +22,25 @@ pub mod qobject {
         /// Where the menu's "documentation" and "issue" rows go.
         #[qinvokable]
         fn link(self: &About, name: &QString) -> QString;
+
+        /// I route every report entry point through the shared invitation.
+        #[qinvokable]
+        fn report_issue(self: Pin<&mut About>);
+        #[qsignal]
+        fn issue_requested(self: Pin<&mut About>);
     }
 }
 
 use chilpa_qt_kit::app;
 use cxx_qt_lib::QString;
+use std::pin::Pin;
 
 #[derive(Default)]
 pub struct AboutRust;
 
 impl qobject::About {
+    pub fn report_issue(self: Pin<&mut Self>) { self.issue_requested(); }
+
     pub fn document(&self, _rev: i32) -> QString {
         QString::from(&app::with(|api| api.about_document(env!("CHILPA_BUILD_DATE"), env!("CHILPA_BUILD_COMMIT"))))
     }

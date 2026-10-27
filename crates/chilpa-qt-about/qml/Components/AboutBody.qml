@@ -1,5 +1,6 @@
 import QtQuick
 import app.chilpa.kit
+import app.chilpa.about
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
@@ -22,7 +23,8 @@ Column {
         color: Theme.color.textSecondary
     }
     Item { width: 1; height: Metrics.gap22 }
-    Row {
+    Flow {
+        width: parent.width
         spacing: Metrics.gap12
         Repeater {
             model: body.doc.links || []
@@ -33,6 +35,11 @@ Column {
                 glyph: Icons.externalLink
                 onClicked: Qt.openUrlExternally(modelData.url)
             }
+        }
+        PillButton {
+            objectName: "aboutReportIssue"
+            text: I18n.tr("Report an issue", I18n.rev)
+            onClicked: About.reportIssue()
         }
     }
     Item { width: 1; height: Metrics.gap24 }

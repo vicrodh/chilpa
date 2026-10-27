@@ -184,7 +184,7 @@ use std::rc::Rc;
 use chilpa_qt_kit::bridge::queue_activity;
 
 /// The roles, in order from `Qt::UserRole`.
-const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo", "composer", "headerWork", "headerComposer", "headerComposerTarget", "explicitContent"];
+const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo", "composer", "headerWork", "headerComposer", "headerComposerTarget", "explicitContent", "credits"];
 const USER_ROLE: i32 = 256;
 const ROLE_PLAYING: i32 = USER_ROLE + 9;
 const ROLE_SELECTED: i32 = USER_ROLE + 10;
@@ -641,7 +641,7 @@ impl qobject::TrackListModel {
             move_down: editable && this.order.to_string() == "custom" && row < this.len() as i32 - 1,
             album: self.can_go(row, &QString::from("album")),
             artist: self.can_go(row, &QString::from("artist")),
-            artists: this.track(row.max(0) as usize).map(|t| app::with(|api| api.credit_names(&t.artist))).unwrap_or_default(),
+            artists: this.track(row.max(0) as usize).map(|t| t.credits.as_ref().map(|c| c.artists.iter().chain(&c.featured).map(|p| p.name.clone()).collect()).unwrap_or_else(|| app::with(|api| api.credit_names(&t.artist)))).unwrap_or_default(),
             folder: self.can_go(row, &QString::from("folder")),
             metadata: self.can_go(row, &QString::from("metadata")),
             remote: this.track(row.max(0) as usize).is_some_and(|t| t.id < 0),

@@ -28,6 +28,8 @@ pub mod qobject {
         #[qproperty(QString, preview_value)]
         /// Whether the playing row's mark is the moving bars.
         #[qproperty(bool, animated_indicator)]
+        /// Composers are separate from performing and featured artists.
+        #[qproperty(bool, track_composers)]
         type Prefs = super::PrefsRust;
 
         /// A control shows `value` for `key` before keeping it. Empty
@@ -50,6 +52,7 @@ pub struct PrefsRust {
     preview_key: QString,
     preview_value: QString,
     animated_indicator: bool,
+    track_composers: bool,
 }
 
 impl qobject::Prefs {
@@ -63,6 +66,7 @@ impl cxx_qt::Initialize for qobject::Prefs {
     fn initialize(mut self: Pin<&mut Self>) {
         let animated = crate::app::with(|api| api.play_indicator_animated());
         self.as_mut().set_animated_indicator(animated);
+        self.as_mut().set_track_composers(crate::app::with(|api| api.track_composers_shown()));
         let thread = self.qt_thread();
         THREAD.with(|slot| *slot.borrow_mut() = Some(thread));
     }
@@ -82,6 +86,7 @@ pub fn changed() {
                 prefs.as_mut().set_rev(next);
                 let animated = crate::app::with(|api| api.play_indicator_animated());
                 prefs.as_mut().set_animated_indicator(animated);
+                prefs.as_mut().set_track_composers(crate::app::with(|api| api.track_composers_shown()));
             });
         }
     });

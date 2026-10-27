@@ -21,6 +21,7 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 // I acknowledge the route before I mount its view (frontend ADR-0014).
 PageTransition {
     id: host
+    visible: !Immersive.open
     retainedScreen: "folders"
     Binding { target: CardLayout; property: "viewportWidth"; value: host.width }
     Connections { target: Navigation; function onRouteRequested() { host.request(true) } }

@@ -2,6 +2,9 @@
 //! the artists it names as a place to click.
 
 use crate::Chilpa;
+mod track;
+pub use track::TrackCredits;
+pub const SHOW_COMPOSERS: &str = "navigation.trackComposers";
 
 /// Where each artist of a credit starts and ends inside it, in the units
 /// a window counts text in (UTF-16), one pair an artist. Empty when the
@@ -32,6 +35,21 @@ pub fn stops(credit: &str, names: &[String]) -> Vec<usize> {
 }
 
 impl Chilpa {
+    pub fn track_composers_shown(&self) -> bool { self.preference(SHOW_COMPOSERS).as_deref() == Some("true") }
+    pub(crate) fn track_credits_setting(&mut self, key: &str, value: &str) -> bool {
+        if key != SHOW_COMPOSERS || !matches!(value, "true" | "false") { return false; }
+        self.remember_preference_checked(key, value).is_ok()
+    }
+    pub fn source_credit_document(&self, album: i64, path: &str) -> String {
+        if let Some((track, _)) = self.catalog.track_by_path(path) {
+            return TrackCredits::source(&track.artist, &track.metadata, &track.plugin).document().to_string();
+        }
+        if let Some(card) = (album < 0).then(|| self.catalog.card(album)).flatten() {
+            return TrackCredits::source(&card.artist, &card.metadata, &card.plugin).document().to_string();
+        }
+        String::new()
+    }
+
     /// The artists a credit names, in its order: itself when it is one.
     pub fn credit_names(&mut self, credit: &str) -> Vec<String> {
         // Whatever wrote to the library since, here or on another

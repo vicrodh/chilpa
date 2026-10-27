@@ -28,6 +28,9 @@ msgstr "“{}” não abriu ({} {})"
 msgid "\"{}\" would not start ({})"
 msgstr "“{}” não iniciou ({})"
 
+msgid "# Tracks"
+msgstr "Nº de faixas"
+
 msgid "(Re)start the PipeWire audio services"
 msgstr "(Re)iniciar os serviços de áudio do PipeWire"
 
@@ -229,6 +232,9 @@ msgstr "Este backend não informou se adquiriu o modo exclusivo"
 msgid "Action"
 msgstr ""
 
+msgid "Actions"
+msgstr "Ações"
+
 msgid "Active"
 msgstr "Ativa"
 
@@ -252,6 +258,9 @@ msgstr "Adicionar uma pasta"
 
 msgid "Add a folder to the library"
 msgstr "Adicionar uma pasta à biblioteca"
+
+msgid "Add a new server"
+msgstr "Adicionar servidor"
 
 msgid "Add a server"
 msgstr "Adicionar um servidor"
@@ -407,6 +416,9 @@ msgstr "Todos os tipos de episódio"
 
 msgid "All groups"
 msgstr "Todos os grupos"
+
+msgid "All levels"
+msgstr "Todos os níveis"
 
 msgid "All music"
 msgstr "Toda a música"
@@ -570,6 +582,12 @@ msgstr "Aparência"
 msgid "Appears On"
 msgstr "Participações"
 
+msgid "Application"
+msgstr "Aplicativo"
+
+msgid "Application logs"
+msgstr "Registros do aplicativo"
+
 msgid "Apply"
 msgstr "Aplicar"
 
@@ -602,6 +620,9 @@ msgstr "abr"
 
 msgid "April"
 msgstr "abril"
+
+msgid "Architecture"
+msgstr "Arquitetura"
 
 msgid "Arranger"
 msgstr "Arranjador"
@@ -735,6 +756,9 @@ msgstr "Atualizar plugins automaticamente"
 msgid "Available"
 msgstr "Disponíveis"
 
+msgid "Available GPUs"
+msgstr "GPUs disponíveis"
+
 msgid "Awaiting approval"
 msgstr "Aguardando aprovação"
 
@@ -773,6 +797,9 @@ msgstr "Balanço · −100 esquerda / +100 direita"
 
 msgid "Barcode"
 msgstr "Código de barras"
+
+msgid "Bars"
+msgstr "Barras"
 
 msgid "Based on {artist} · {genres}"
 msgstr "Baseado em {artist} · {genres}"
@@ -941,6 +968,18 @@ msgstr "Limita o ganho para que o pico mais alto fique abaixo da escala completa
 msgid "Cards"
 msgstr "Cartões"
 
+msgid "Cast"
+msgstr "Transmitir"
+
+msgid "Cast destination"
+msgstr "Destino da transmissão"
+
+msgid "Cast protocol"
+msgstr "Protocolo de transmissão"
+
+msgid "Cast state"
+msgstr "Estado da transmissão"
+
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr "A transmissão exige um arquivo original com tamanho conhecido e intervalos de bytes."
 
@@ -964,6 +1003,9 @@ msgstr "Alterar login"
 
 msgid "Change source"
 msgstr "Alterar fonte"
+
+msgid "Change spectrum style ({})"
+msgstr "Alterar estilo do espectro ({})"
 
 msgid "Changes"
 msgstr ""
@@ -992,11 +1034,17 @@ msgstr "Verifica se há uma versão mais recente do Chilpa."
 msgid "Check for new additions"
 msgstr "Buscar novas adições"
 
+msgid "Check for new releases on launch"
+msgstr "Buscar novas versões ao iniciar"
+
 msgid "Check for updates"
 msgstr "Verificar atualizações"
 
 msgid "Check for updates automatically"
 msgstr "Verificar atualizações automaticamente"
+
+msgid "Check for updates now"
+msgstr "Buscar atualizações agora"
 
 msgid "Check one format"
 msgstr "Verificar um formato"
@@ -1030,6 +1078,9 @@ msgstr "Verificar as fontes selecionadas pode levar alguns minutos."
 
 msgid "Checking {source}…"
 msgstr "Verificando {source}…"
+
+msgid "Checking…"
+msgstr "Buscando…"
 
 msgid "Chilpa"
 msgstr "Chilpa"
@@ -1154,6 +1205,9 @@ msgstr "Escolha um mapa de teclas: default, letters ou vi."
 msgid "Choose a local ZIP file."
 msgstr "Escolha um arquivo ZIP local."
 
+msgid "Choose a local file for the report."
+msgstr "Escolha um arquivo local para o relatório."
+
 msgid "Choose a local storage folder."
 msgstr ""
 
@@ -1162,9 +1216,6 @@ msgstr "Escolher um controle de reprodução"
 
 msgid "Choose a preset."
 msgstr "Escolha um preset."
-
-msgid "Choose a renderer on your local network. The queue stays in Chilpa."
-msgstr "Escolha um renderizador na sua rede local. A fila permanece no Chilpa."
 
 msgid "Choose a saved device profile."
 msgstr ""
@@ -1183,9 +1234,6 @@ msgstr ""
 
 msgid "Choose between 1 and 50,000 Library tracks."
 msgstr ""
-
-msgid "Choose device"
-msgstr "Escolher dispositivo"
 
 msgid "Choose download folder"
 msgstr "Escolher pasta de download"
@@ -1256,11 +1304,17 @@ msgstr "Limpar imagens geradas"
 msgid "Clear generated images?"
 msgstr "Limpar imagens geradas?"
 
+msgid "Clear logs"
+msgstr "Limpar registros"
+
 msgid "Clear loop"
 msgstr "Remover loop"
 
 msgid "Clear lyrics cache"
 msgstr "Limpar cache de letras"
+
+msgid "Clear lyrics cache?"
+msgstr "Limpar cache de letras?"
 
 msgid "Clear queue"
 msgstr "Limpar fila"
@@ -1403,6 +1457,9 @@ msgstr "O trabalho concluído está salvo. Continuar verifica a pasta novamente 
 msgid "Composer"
 msgstr "Compositor"
 
+msgid "Composer: {}"
+msgstr "Compositor: {}"
+
 msgid "Composers"
 msgstr "Compositores"
 
@@ -1423,6 +1480,9 @@ msgstr ""
 
 msgid "Connect"
 msgstr "Conectar"
+
+msgid "Connect OpenSubsonic, Jellyfin or Plex to add its music to your library."
+msgstr "Conecte OpenSubsonic, Jellyfin ou Plex para adicionar suas músicas à biblioteca."
 
 msgid "Connect a player or memory card. Save a profile for each storage."
 msgstr "Conecte um reprodutor ou cartão de memória. Salve um perfil para cada armazenamento."
@@ -1469,6 +1529,9 @@ msgstr "Converter para PCM"
 msgid "Convertible system input; physical DAC capabilities are unknown"
 msgstr "Entrada conversível do sistema; capacidades físicas do DAC desconhecidas"
 
+msgid "Copied"
+msgstr "Copiado"
+
 msgid "Copy"
 msgstr "Copiar"
 
@@ -1490,8 +1553,14 @@ msgstr "Copiar playlist"
 msgid "Copy preset JSON"
 msgstr "Copiar JSON do preset"
 
+msgid "Copy report"
+msgstr "Copiar relatório"
+
 msgid "Copy the colors of the currently applied theme into the editor as a starting point."
 msgstr "Copia as cores do tema aplicado atualmente para o editor como ponto de partida."
+
+msgid "Copy the redacted logs to help diagnose the issue. You can review them before sharing."
+msgstr "Copie os registros com dados sensíveis ocultos para ajudar no diagnóstico. Você pode revisá-los antes de compartilhar."
 
 msgid "Copyright"
 msgstr "Copyright"
@@ -1547,6 +1616,9 @@ msgstr "Criar e adicionar"
 msgid "Create graphic EQ"
 msgstr "Criar EQ gráfico"
 
+msgid "Create issue"
+msgstr "Criar relato"
+
 msgid "Create playlist"
 msgstr "Criar playlist"
 
@@ -1567,6 +1639,9 @@ msgstr "Crossfeed · 0–50%"
 
 msgid "Current signal path"
 msgstr "Caminho atual do áudio"
+
+msgid "Current version"
+msgstr "Versão atual"
 
 msgid "Cursor down"
 msgstr "Cursor para baixo"
@@ -1610,9 +1685,6 @@ msgstr "FALECIMENTO"
 msgid "DISBANDED"
 msgstr "DISSOLUÇÃO"
 
-msgid "DLNA / UPnP and Chromecast"
-msgstr "DLNA / UPnP e Chromecast"
-
 msgid "DSD converted to PCM"
 msgstr "DSD convertido em PCM"
 
@@ -1621,6 +1693,9 @@ msgstr "os arquivos DSD guardam suas alterações em um arquivo auxiliar"
 
 msgid "DSD not supported: {}"
 msgstr "DSD não suportado: {}"
+
+msgid "DSD output mode"
+msgstr "Modo de saída DSD"
 
 msgid "DSD over PCM (DoP)"
 msgstr "DSD sobre PCM (DoP)"
@@ -1769,6 +1844,9 @@ msgstr "Descrição ainda não informada."
 msgid "Desktop"
 msgstr "Área de trabalho"
 
+msgid "Desktop environment"
+msgstr "Ambiente de desktop"
+
 msgid "Destinations"
 msgstr "Destinos"
 
@@ -1784,11 +1862,11 @@ msgstr "Detectado: "
 msgid "Detecting your DACs…"
 msgstr "Detectando seus DACs…"
 
+msgid "Developers"
+msgstr "Desenvolvedores"
+
 msgid "Device"
 msgstr "Dispositivo"
-
-msgid "Device discovery"
-msgstr "Descoberta de dispositivos"
 
 msgid "Device profiles exceed 1 MiB."
 msgstr ""
@@ -1805,9 +1883,6 @@ msgstr ""
 msgid "Devices"
 msgstr ""
 
-msgid "Devices & cast"
-msgstr "Dispositivos e transmissão"
-
 msgid "Devices in the sidebar"
 msgstr ""
 
@@ -1818,6 +1893,9 @@ msgid "Diagnose the output"
 msgstr "Diagnosticar a saída"
 
 msgid "Diagnosis"
+msgstr "Diagnóstico"
+
+msgid "Diagnostics"
 msgstr "Diagnóstico"
 
 msgid "Different format"
@@ -1927,6 +2005,12 @@ msgstr "Descartar verificação"
 
 msgid "Display settings"
 msgstr "Opções de exibição"
+
+msgid "Distribution"
+msgstr "Distribuição"
+
+msgid "Distribution version"
+msgstr "Versão da distribuição"
 
 msgid "DoP carrier · {}"
 msgstr "Portadora DoP · {}"
@@ -2039,6 +2123,9 @@ msgstr "Editar metadados…"
 msgid "Edit playlist"
 msgstr "Editar playlist"
 
+msgid "Edit server"
+msgstr "Editar servidor"
+
 msgid "Edit…"
 msgstr "Editar…"
 
@@ -2081,8 +2168,8 @@ msgstr "Ativar letras"
 msgid "Enable the optional Mood plugin and manage its model download."
 msgstr "Ative o plugin opcional de humor e gerencie o download do modelo dele."
 
-msgid "Enable {} in Settings › Sources to play this record."
-msgstr "Ative {} em Configurações › Fontes para reproduzir este disco."
+msgid "Enable {} in Settings › Music servers to play this record."
+msgstr "Ative {} em Configurações › Servidores de música para reproduzir este disco."
 
 msgid "Endpoint readback"
 msgstr "Leitura dos parâmetros do destino"
@@ -2111,6 +2198,9 @@ msgstr "Digite um número válido."
 msgid "Enter includes the first match · Shift+Enter excludes it"
 msgstr "Enter inclui o primeiro resultado · Shift+Enter o exclui"
 
+msgid "Environment"
+msgstr "Ambiente"
+
 msgid "Episode download was cancelled."
 msgstr ""
 
@@ -2125,6 +2215,9 @@ msgstr "Equipamento"
 
 msgid "Equipment changed. Read its details again before checking a format."
 msgstr "O equipamento mudou. Consulte seus detalhes novamente antes de verificar um formato."
+
+msgid "Error"
+msgstr "Erro"
 
 msgid "Errors"
 msgstr "Erros"
@@ -2174,8 +2267,14 @@ msgstr "Explorar"
 msgid "Export"
 msgstr "Exportar"
 
+msgid "Export diagnostics"
+msgstr "Exportar diagnóstico"
+
 msgid "Export listening history"
 msgstr "Exportar histórico de reprodução"
+
+msgid "Export…"
+msgstr "Exportar…"
 
 msgid "Extra controls"
 msgstr "Controles extras"
@@ -2438,6 +2537,9 @@ msgstr "Ganho em decibéis. Use as setas para ajustar; Home e End levam aos limi
 msgid "Gapless"
 msgstr "Gapless"
 
+msgid "Gapless playback"
+msgstr "Reprodução sem intervalos"
+
 msgid "Generate"
 msgstr "Gerar"
 
@@ -2506,6 +2608,9 @@ msgstr "EQ gráfico"
 
 msgid "Graphic equalizer"
 msgstr "Equalizador gráfico"
+
+msgid "Graphics"
+msgstr "Gráficos"
 
 msgid "Grid"
 msgstr "Grade"
@@ -2578,6 +2683,9 @@ msgstr "Assistente HiFi — Configuração do DAC"
 
 msgid "Hide"
 msgstr "Ocultar"
+
+msgid "Hide audio path"
+msgstr "Ocultar caminho do áudio"
 
 msgid "Hide details"
 msgstr ""
@@ -2788,6 +2896,9 @@ msgstr "Inclui modelos de plugins baixados, dados de forma de onda e caches de s
 msgid "Influences"
 msgstr "Influências"
 
+msgid "Info"
+msgstr "Info"
+
 msgid "Info: Embedded tags"
 msgstr "Informações: tags embutidas"
 
@@ -2851,6 +2962,9 @@ msgstr "Instale e ative primeiro o plugin de humor."
 msgid "Install from ZIP…"
 msgstr "Instalar de um ZIP…"
 
+msgid "Install method"
+msgstr "Método de instalação"
+
 msgid "Install plugin from ZIP"
 msgstr "Instalar plugin de um ZIP"
 
@@ -2865,6 +2979,9 @@ msgstr "Instale as ferramentas do PipeWire (pw-dump)"
 
 msgid "Install the Pulse compatibility tools (optional fallback)"
 msgstr "Instale as ferramentas de compatibilidade do Pulse (alternativa opcional)"
+
+msgid "Installation"
+msgstr "Instalação"
 
 msgid "Installed"
 msgstr "Instalados"
@@ -2883,6 +3000,9 @@ msgstr "A Inter vem com o Chilpa e tem todos os pesos que o design usa. Tem efei
 
 msgid "Interface"
 msgstr "Interface"
+
+msgid "Interface scale"
+msgstr "Escala da interface"
 
 msgid "Interface size"
 msgstr "Tamanho da interface"
@@ -2983,6 +3103,9 @@ msgstr "Manter a fila entre sessões"
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "Ler as palavras literalmente e buscar o gênero sem ampliá-lo"
 
+msgid "Kernel"
+msgstr "Kernel"
+
 msgid "Keyboard Shortcuts"
 msgstr "Atalhos de teclado"
 
@@ -3060,6 +3183,9 @@ msgstr "Duração"
 
 msgid "Letters"
 msgstr "Letras"
+
+msgid "Level"
+msgstr "Nível"
 
 msgid "Level loudness across tracks. This breaks strict bit perfect."
 msgstr "Nivela o volume sonoro entre as faixas. Isso quebra o bit-perfect estrito."
@@ -3195,6 +3321,9 @@ msgstr "Local — aceita fontes mistas"
 
 msgid "Local — {}"
 msgstr "Local — {}"
+
+msgid "Log options"
+msgstr "Opções de registro"
 
 msgid "Look"
 msgstr "Visual"
@@ -3334,6 +3463,9 @@ msgstr "Cartão de memória"
 msgid "Menu"
 msgstr "Menu"
 
+msgid "Message"
+msgstr "Mensagem"
+
 msgid "Metadata"
 msgstr "Metadados"
 
@@ -3469,6 +3601,9 @@ msgstr "Pasta de música"
 msgid "Music player\nNothing playing"
 msgstr "Player de música\nNada tocando"
 
+msgid "Music servers"
+msgstr "Servidores de música"
+
 msgid "Music services"
 msgstr "Serviços de música"
 
@@ -3501,6 +3636,9 @@ msgstr "Silenciar"
 
 msgid "Mute / Unmute"
 msgstr "Silenciar / Reativar som"
+
+msgid "Muted"
+msgstr "Sem som"
 
 msgid "My Playlist"
 msgstr "Minha playlist"
@@ -3573,9 +3711,6 @@ msgstr "O acesso à rede está desativado em Configurações > Integrações."
 
 msgid "Network access, including authentication, artwork and audio servers discovered by the plugin"
 msgstr "Acesso à rede, incluindo autenticação, capas e servidores de áudio descobertos pelo plugin"
-
-msgid "Network playback"
-msgstr "Reprodução em rede"
 
 msgid "Never played"
 msgstr "Nunca reproduzidas"
@@ -3832,6 +3967,9 @@ msgstr "Sem ano; gênero, gravadora e compositor também aceitam none"
 msgid "None"
 msgstr "Nenhum"
 
+msgid "Normalization"
+msgstr "Normalização"
+
 msgid "Not answering"
 msgstr "Não responde"
 
@@ -3858,6 +3996,9 @@ msgstr "Agora não"
 
 msgid "Not rated"
 msgstr "Sem avaliação"
+
+msgid "Not reported"
+msgstr "Não informado"
 
 msgid "Not specified"
 msgstr "Não especificado"
@@ -4051,11 +4192,17 @@ msgstr "Abrir em nova fila"
 msgid "Open in new tab"
 msgstr "Abrir em nova aba"
 
+msgid "Open issue draft"
+msgstr "Abrir rascunho do relato"
+
 msgid "Open it again"
 msgstr "Abrir novamente"
 
 msgid "Open its page"
 msgstr "Abrir a página"
+
+msgid "Open log file"
+msgstr "Abrir arquivo de registro"
 
 msgid "Open media"
 msgstr "Abrir mídia"
@@ -4077,6 +4224,9 @@ msgstr "Abrir plex.tv/link"
 
 msgid "Open plugins"
 msgstr "Abrir plugins"
+
+msgid "Open release page"
+msgstr "Abrir página da versão"
 
 msgid "Open the HiFi Wizard"
 msgstr "Abrir o Assistente HiFi"
@@ -4108,6 +4258,9 @@ msgstr "Modo de abertura"
 msgid "Opening: {} · Audibility: {}"
 msgstr "Abertura: {} · Audibilidade: {}"
 
+msgid "Operating system"
+msgstr "Sistema operacional"
+
 msgid "Optional access token for private playlists"
 msgstr "Token de acesso opcional para playlists privadas"
 
@@ -4122,9 +4275,6 @@ msgstr "Bytes originais"
 
 msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
 msgstr "Bytes originais · sem transcodificação pelo Chilpa · processamento do receptor desconhecido"
-
-msgid "Original files"
-msgstr "Arquivos originais"
 
 msgid "Original music files"
 msgstr "Arquivos de música originais"
@@ -4153,11 +4303,17 @@ msgstr "Detalhes da saída…"
 msgid "Output device"
 msgstr "Dispositivo de saída"
 
+msgid "Output format"
+msgstr "Formato de saída"
+
 msgid "Output identity could not be saved."
 msgstr "Não foi possível salvar a identidade da saída."
 
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "Amostras PCM não podem ser gravadas em um fluxo DSD nativo"
+
+msgid "PEAK"
+msgstr "PICO"
 
 msgid "Page {} of {}"
 msgstr ""
@@ -4312,8 +4468,14 @@ msgstr "Reproduzir/Pausar"
 msgid "Playback"
 msgstr "Reprodução"
 
+msgid "Playback error"
+msgstr "Erro de reprodução"
+
 msgid "Playback options"
 msgstr "Opções de reprodução"
+
+msgid "Playback state"
+msgstr "Estado da reprodução"
 
 msgid "Playback stops and the window closes."
 msgstr "A reprodução para e a janela fecha."
@@ -4417,6 +4579,9 @@ msgstr "Faixas populares"
 msgid "Portuguese"
 msgstr "Português"
 
+msgid "Position"
+msgstr "Posição"
+
 msgid "Position in Streaming"
 msgstr "Posição em Streaming"
 
@@ -4519,6 +4684,9 @@ msgstr "Compras"
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "Coloque uma pasta de plugin no diretório de plugins do Chilpa e reabra o app."
 
+msgid "Qt version"
+msgstr "Versão do Qt"
+
 msgid "Quality"
 msgstr "Qualidade"
 
@@ -4557,6 +4725,9 @@ msgstr "Adicionar à fila a faixa sob o cursor"
 
 msgid "Queue is empty"
 msgstr "A fila está vazia"
+
+msgid "Queue length"
+msgstr "Tamanho da fila"
 
 msgid "Queue options"
 msgstr "Opções da fila"
@@ -4903,6 +5074,12 @@ msgstr "Substituir a fila {}"
 msgid "Report an issue"
 msgstr "Relatar um problema"
 
+msgid "Report plugin errors in the corresponding plugin's repository."
+msgstr "Relate erros de plugins no repositório do plugin correspondente."
+
+msgid "Report saved"
+msgstr "Relatório salvo"
+
 msgid "Reported by the receiver"
 msgstr "Informado pelo receptor"
 
@@ -4914,6 +5091,9 @@ msgstr "Repositórios"
 
 msgid "Requested and opened"
 msgstr "Solicitado e aberto"
+
+msgid "Requested output route"
+msgstr "Caminho de saída solicitado"
 
 msgid "Requests: {}"
 msgstr "Solicita: {}"
@@ -4984,11 +5164,23 @@ msgstr "Revisar"
 msgid "Review & Apply"
 msgstr "Revisar e aplicar"
 
+msgid "Review and copy logs…"
+msgstr "Revisar e copiar registros…"
+
+msgid "Review and export…"
+msgstr "Revisar e exportar…"
+
+msgid "Review and share…"
+msgstr "Revisar e compartilhar…"
+
 msgid "Review changes"
 msgstr ""
 
 msgid "Review changes to check what this storage needs."
 msgstr ""
+
+msgid "Review diagnostics"
+msgstr "Revisar diagnóstico"
 
 msgid "Review the device changes before syncing."
 msgstr ""
@@ -5010,6 +5202,9 @@ msgstr "Atraso direito · 0–30 ms"
 
 msgid "Route"
 msgstr "Rota"
+
+msgid "Runtime"
+msgstr "Em execução"
 
 msgid "Russian"
 msgstr "Russo"
@@ -5101,6 +5296,9 @@ msgstr ""
 msgid "Saved for the displayed inspection. Refresh after changing equipment or configuration."
 msgstr "Salvo para a inspeção exibida. Atualize os detalhes após mudar o equipamento ou a configuração."
 
+msgid "Saved lyrics and translations will be fetched again when needed."
+msgstr "As letras e traduções salvas serão buscadas novamente quando necessário."
+
 msgid "Saved position"
 msgstr "Posição salva"
 
@@ -5127,6 +5325,9 @@ msgstr "Salvando… {} de {} arquivos"
 
 msgid "Scales the whole interface, like browser zoom. Small fits more content on screen, Large and Extra large improve readability (requires restart)"
 msgstr "Dimensiona toda a interface, como o zoom do navegador. Pequeno mostra mais conteúdo na tela; Grande e Extra grande melhoram a legibilidade (requer reinício)"
+
+msgid "Scan for cast devices…"
+msgstr "Buscar dispositivos de transmissão…"
 
 msgid "Scan settings could not be saved or read: {}"
 msgstr "Não foi possível salvar ou ler as configurações da verificação: {}"
@@ -5158,8 +5359,8 @@ msgstr "Buscar pastas"
 msgid "Search listens"
 msgstr "Buscar reproduções"
 
-msgid "Search only while the picker is open. Disconnecting stops the receiver and leaves local playback stopped."
-msgstr "Busca apenas enquanto o seletor está aberto. Desconectar interrompe o receptor e deixa a reprodução local parada."
+msgid "Search logs"
+msgstr "Buscar nos registros"
 
 msgid "Search playlists and folders"
 msgstr "Buscar playlists e pastas"
@@ -5274,6 +5475,9 @@ msgstr "A GPU selecionada não está disponível nesta sessão gráfica — usan
 msgid "Selected music"
 msgstr "Música selecionada"
 
+msgid "Selected output"
+msgstr "Saída selecionada"
+
 msgid "Send to Last.fm"
 msgstr "Enviar ao Last.fm"
 
@@ -5322,8 +5526,14 @@ msgstr "Define a polaridade geral, clara ou escura. Afeta os tons derivados, as 
 msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
 msgstr "Ajusta o grafo do PipeWire à taxa de cada faixa enquanto o Chilpa tem a saída só para si, para que o DAC receba a taxa que o arquivo tem. A taxa volta ao normal quando o Chilpa para."
 
+msgid "Setting"
+msgstr "Configuração"
+
 msgid "Settings"
 msgstr "Configurações"
+
+msgid "Shader rendering available"
+msgstr "Renderização com shaders disponível"
 
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "Molde o som: aumente uma banda para ouvir mais, diminua para ouvir menos."
@@ -5348,6 +5558,15 @@ msgstr "Mostrar"
 
 msgid "Show Shortcuts"
 msgstr "Mostrar atalhos"
+
+msgid "Show audio path"
+msgstr "Mostrar caminho do áudio"
+
+msgid "Show changelog for current version"
+msgstr "Mostrar alterações da versão atual"
+
+msgid "Show composers"
+msgstr "Mostrar compositores"
 
 msgid "Show each playlist folder in its chosen color."
 msgstr "Mostra cada pasta de playlists na cor escolhida."
@@ -5487,6 +5706,9 @@ msgstr "Suave"
 msgid "Software"
 msgstr "Software"
 
+msgid "Software volume"
+msgstr "Volume por software"
+
 msgid "Some endpoint streams could not be read."
 msgstr "Não foi possível ler todos os fluxos do destino."
 
@@ -5531,6 +5753,9 @@ msgstr "Espectro"
 
 msgid "Split queue before this track"
 msgstr "Dividir a fila antes desta faixa"
+
+msgid "Squares"
+msgstr "Quadrados"
 
 msgid "Stable endpoint identity. Results also depend on its connection and configuration."
 msgstr "Identidade estável do destino. Os resultados também dependem de sua conexão e configuração."
@@ -5699,6 +5924,9 @@ msgstr "Sincronizando…"
 msgid "System"
 msgstr "Sistema"
 
+msgid "System / manual"
+msgstr "Sistema / manual"
+
 msgid "System Colors"
 msgstr "Cores do sistema"
 
@@ -5717,6 +5945,9 @@ msgstr "Tags: {}"
 msgid "Take the card from the sound server"
 msgstr "Tomar a placa do servidor de som"
 
+msgid "Target"
+msgstr "Módulo"
+
 msgid "Target loudness"
 msgstr "Sonoridade alvo"
 
@@ -5731,6 +5962,9 @@ msgstr "Testar a reprodução"
 
 msgid "Text"
 msgstr "Texto"
+
+msgid "Text files (*.txt)"
+msgstr "Arquivos de texto (*.txt)"
 
 msgid "That answer does not belong to this window."
 msgstr "Essa resposta não pertence a esta janela."
@@ -5870,6 +6104,12 @@ msgstr "A linha que está sendo cantada permanece à vista."
 msgid "The listening history could not be saved"
 msgstr "Não foi possível salvar o histórico de reprodução"
 
+msgid "The log file could not be opened. Session logs remain available here."
+msgstr "Não foi possível abrir o arquivo de registro. Os registros da sessão continuam disponíveis aqui."
+
+msgid "The log file could not be written. Session logs remain available here."
+msgstr "Não foi possível gravar o arquivo de registro. Os registros da sessão continuam disponíveis aqui."
+
 msgid "The loop cannot be marked here; its end needs at least two seconds."
 msgstr "O loop não pode ser marcado aqui; o fim precisa estar a pelo menos dois segundos."
 
@@ -5948,6 +6188,12 @@ msgstr "O renderizador não é compatível com este formato ou controle. O Chilp
 msgid "The renderer refused the command."
 msgstr "O renderizador recusou o comando."
 
+msgid "The report could not be saved. Choose a new file name."
+msgstr "Não foi possível salvar o relatório. Escolha outro nome de arquivo."
+
+msgid "The report could not be written."
+msgstr "Não foi possível gravar o relatório."
+
 msgid "The result has not been saved. Review the error before leaving."
 msgstr "O resultado não foi salvo. Confira o erro antes de sair."
 
@@ -6019,6 +6265,9 @@ msgstr "O papel de parede do sistema. Escolha uma imagem sua para usar no lugar 
 
 msgid "The temporary media queue cannot be combined."
 msgstr "A fila temporária de mídia não pode ser combinada."
+
+msgid "The update check failed. Try again."
+msgstr "A busca por atualizações falhou. Tente novamente."
 
 msgid "The update could not be completed. Your current AppImage is safe. Try again later."
 msgstr "Não foi possível concluir a atualização. Seu AppImage atual está seguro. Tente novamente mais tarde."
@@ -6281,11 +6530,26 @@ msgstr "Melhor resultado"
 msgid "Track"
 msgstr "Faixa"
 
+msgid "Track album"
+msgstr "Álbum da faixa"
+
+msgid "Track artist"
+msgstr "Artista da faixa"
+
+msgid "Track bit depth"
+msgstr "Profundidade de bits da faixa"
+
 msgid "Track count"
 msgstr "Número de faixas"
 
+msgid "Track credits"
+msgstr "Créditos das faixas"
+
 msgid "Track details · {}"
 msgstr "Detalhes da faixa · {}"
+
+msgid "Track format"
+msgstr "Formato da faixa"
 
 msgid "Track lists"
 msgstr "Listas de faixas"
@@ -6295,6 +6559,12 @@ msgstr "Menu da faixa"
 
 msgid "Track review"
 msgstr "Revisão das faixas"
+
+msgid "Track sample rate"
+msgstr "Taxa de amostragem da faixa"
+
+msgid "Track title"
+msgstr "Título da faixa"
 
 msgid "Track {}"
 msgstr "Faixa {}"
@@ -6349,6 +6619,9 @@ msgstr "Tunnel Flow"
 
 msgid "Type"
 msgstr "Tipo"
+
+msgid "Type / version"
+msgstr "Tipo / versão"
 
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr "Digite este código em plex.tv/link, conectado à sua conta do Plex."
@@ -6500,6 +6773,9 @@ msgstr "Falha na atualização; a versão anterior foi mantida"
 msgid "Update ready"
 msgstr "Atualização pronta"
 
+msgid "Update the connection, sign-in or libraries for this server."
+msgstr "Atualize a conexão, o acesso ou as bibliotecas deste servidor."
+
 msgid "Updated"
 msgstr "Atualizado"
 
@@ -6578,6 +6854,9 @@ msgstr ""
 msgid "Version"
 msgstr "Versão"
 
+msgid "Version {} is available."
+msgstr "A versão {} está disponível."
+
 msgid "Version: {}"
 msgstr "Versão: {}"
 
@@ -6592,6 +6871,9 @@ msgstr "Ver imagem"
 
 msgid "View less"
 msgstr "Ver menos"
+
+msgid "View logs"
+msgstr "Ver registros"
 
 msgid "View precise filters"
 msgstr "Ver filtros precisos"
@@ -6718,6 +7000,9 @@ msgstr "Quais fontes contam"
 
 msgid "Who the records are credited to"
 msgstr "A quem os discos são creditados"
+
+msgid "Window system"
+msgstr "Sistema de janelas"
 
 msgid "Windows audio would not answer ({})"
 msgstr "O áudio do Windows não respondeu ({})"
@@ -7033,6 +7318,9 @@ msgstr "exatamente"
 
 msgid "exclusive"
 msgstr "exclusivo"
+
+msgid "feat. {}"
+msgstr "part. {}"
 
 msgid "file"
 msgstr "arquivo"

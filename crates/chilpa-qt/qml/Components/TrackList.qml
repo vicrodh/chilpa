@@ -172,6 +172,7 @@ Item {
             inViewport: !list.viewport || immediate || list.prefetch && y + height >= list.visibleTop - list.viewport.height && y < list.visibleTop + list.viewport.height * 2
             sourceName: model.sourceName || ""
             composer: model.composer || ""
+            credits: JSON.parse(model.credits || "{}")
             explicitContent: model.explicitContent === true
             headerGlyph: list.model && list.model.kind === "listenlist" ? (headerLabel === I18n.tr("History", I18n.rev) ? Lucide.rotateCcwClock : headerLabel === I18n.tr("Up next", I18n.rev) ? Lucide.listVideo : "") : ""
             headerIconFamily: headerGlyph !== "" ? Lucide.font : ""

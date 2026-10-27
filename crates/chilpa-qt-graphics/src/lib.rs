@@ -17,6 +17,7 @@ unsafe extern "C" {
     fn chilpa_line_bed_register_qml_type();
     fn chilpa_tunnel_flow_register_qml_type();
     fn chilpa_scope_trace_register_qml_type();
+    fn chilpa_spectrum_register_qml_type();
     /// Qt's Vulkan devices as JSON. See `cxx/probe.cpp`.
     fn chilpa_vulkan_devices_json() -> *const std::ffi::c_char;
     /// The probe window for a saved GPU. See `cxx/probe.cpp`.
@@ -82,6 +83,7 @@ pub fn apply_gpu_preference() {
         chilpa_line_bed_register_qml_type();
         chilpa_tunnel_flow_register_qml_type();
         chilpa_scope_trace_register_qml_type();
+        chilpa_spectrum_register_qml_type();
     }
     if gpu::needs_local_inventory() {
         gpu::set_inventory_json(&devices_json());

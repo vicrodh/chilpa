@@ -141,6 +141,42 @@ TestCase {
         compare(Immersive.open, false, "it leaves the view")
     }
 
+    function test_spectrum_cycles_in_place_and_remembers_its_variant() {
+        SettingsModel.keep("ui.immersive.spectrum.variant", "0")
+        Visualizer.bars = Array(16).fill(0.9)
+        Immersive.setView(0, 3, 0)
+        waitForRendering(view)
+        const button = findChild(view, "immersiveSpectrumCycle")
+        const leave = findChild(view, "immersiveLeave")
+        compare(findChild(view, "immersiveSpectrumVisualizer"), null)
+        verify(button !== null && button.visible)
+        compare(button.x, leave.x + leave.width + Metrics.gap16)
+        compare(button.y, leave.y)
+        for (const mode of [5, 6, 0, 5]) {
+            mouseClick(button, button.width / 2, button.height / 2)
+            const renderer = findChild(view, "immersiveSpectrumVisualizer")
+            if (mode === 0) tryVerify(() => findChild(view, "immersiveSpectrumVisualizer") === null)
+            else {
+                compare(renderer.mode, mode)
+                for (let tick = 0; tick < 20; ++tick) Pulse.ms += Pulse.period
+                verify(findChild(view, "immersiveSpectrumState").values[0] > 0.8)
+                waitForRendering(view)
+                const picture = grabImage(view)
+                verify(picture.red(15, 400) + picture.green(15, 400) + picture.blue(15, 400) > 30,
+                    "the variant paints its current bars through the selected backend")
+            }
+            compare(SettingsModel.kept("ui.immersive.spectrum.variant"), String(mode))
+        }
+        Immersive.open = false
+        tryVerify(() => findChild(view, "immersiveSpectrumVisualizer") === null)
+        Immersive.open = true
+        waitForRendering(view)
+        compare(findChild(view, "immersiveSpectrumVisualizer").mode, 5)
+        Immersive.setView(0, 0, 0)
+        verify(!findChild(view, "immersiveSpectrumCycle").visible)
+        tryVerify(() => findChild(view, "immersiveSpectrumVisualizer") === null)
+    }
+
     function test_the_header_walks_the_views() {
         const header = findChild(view, "immersiveHeader")
         verify(header !== null)

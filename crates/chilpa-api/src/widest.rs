@@ -21,12 +21,20 @@ fn longest(texts: impl Iterator<Item = (usize, Value)>) -> Vec<Value> {
 }
 
 impl Chilpa {
-    /// `{"title": [[title, credit], ...], "artist": [...], "album": [...]}`.
+    /// `{"title": [[title, featured, composer], ...], "artist": [...], "album": [...]}`.
     pub fn widest_texts(&self, rows: &[&TrackRow]) -> Value {
         let chars = |text: &str| text.chars().count();
         json!({
-            "title": longest(rows.iter().map(|row| (chars(&row.title) + chars(&row.composer), json!([row.title, row.composer])))),
-            "artist": longest(rows.iter().map(|row| (chars(&row.artist), json!(row.artist)))),
+            "title": longest(rows.iter().map(|row| {
+                let featured = row.credits.as_ref().map(|c| c.featured.iter().map(|p| p.name.as_str()).collect::<Vec<_>>().join(", ")).unwrap_or_default();
+                let featured = if featured.is_empty() { featured } else { chilpa_i18n::t_args("feat. {}", &[&featured]) };
+                let composer = row.credits.as_ref().map(|c| c.composers.iter().map(|p| p.name.as_str()).collect::<Vec<_>>().join(", ")).unwrap_or_else(|| row.composer.clone());
+                (chars(&row.title) + chars(&featured) + chars(&composer), json!([row.title, featured, composer]))
+            })),
+            "artist": longest(rows.iter().map(|row| {
+                let artist = row.credits.as_ref().map(|c| c.artists.iter().map(|p| p.name.as_str()).collect::<Vec<_>>().join(", ")).unwrap_or_else(|| row.artist.clone());
+                (chars(&artist), json!(artist))
+            })),
             "album": longest(rows.iter().map(|row| (chars(&row.album), json!(row.album)))),
         })
     }
@@ -50,7 +58,7 @@ mod tests {
             row("Zombie", "", "The Cranberries", "No Need to Argue"),
             row("I Still Do", "D. O'an, N. Hogan", "The Cranberries", "Everybody Else Is Doing It, So Why Can't We?")];
         let found = api.widest_texts(&rows.iter().collect::<Vec<_>>());
-        assert_eq!(found["title"][0], json!(["I Still Do", "D. O'an, N. Hogan"]), "a title is as long as its credit with it");
+        assert_eq!(found["title"][0], json!(["I Still Do", "", "D. O'an, N. Hogan"]), "a title is as long as its credit with it");
         assert_eq!(found["artist"], json!(["The Cranberries"]), "the same text once");
         assert_eq!(found["album"], json!(["Everybody Else Is Doing It, So Why Can't We?", "No Need to Argue"]));
         assert!(api.widest_texts(&[])["title"].as_array().unwrap().is_empty());

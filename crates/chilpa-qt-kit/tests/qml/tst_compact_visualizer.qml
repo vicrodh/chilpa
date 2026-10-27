@@ -19,7 +19,8 @@ TestCase {
         property var oscilloscope: []
         property bool presented: false
         property int selected: -1
-        function setCompact(active, mode) { presented = active; selected = mode }
+        property int claims: 0
+        function setCompact(active, mode) { claims++; presented = active; selected = mode }
     }
     Rectangle {
         id: stage; width: 320; height: 42; color: "black"
@@ -53,7 +54,7 @@ TestCase {
         compare(Pulse.held, 0)
         band.visible = true
         verify(feed.presented, "the same retained item resumes after showing")
-        verify(findChild(band, "compactVisualizerShader") !== null)
+        verify(findChild(band, band.gpuAvailable ? "compactVisualizerShader" : "compactVisualizerFallback") !== null)
     }
     function test_modes_select_one_feed_and_silence_self_parks() {
         band.active = true
@@ -95,9 +96,27 @@ TestCase {
             pulse(60)
             waitForRendering(band)
             const silent = grabImage(stage)
-            verify(silent.red(x, 1) < 100, "no peak remains above a silent column")
+            for (let y = 0; y < band.height; ++y)
+                verify(silent.red(x, y) < 100, "the entire silent column clears, including the last peak at y=" + y)
         }
     }
+    Component { id: passiveMaker; CompactSpectrumState { source: feed.bars } }
+    function test_passive_consumer_never_changes_an_existing_capture_claim() {
+        band.active = true
+        const calls = feed.claims
+        const passive = passiveMaker.createObject(stage, {active: true})
+        verify(passive !== null)
+        for (const mode of [0, 5, 6]) {
+            passive.mode = mode
+            passive.active = false
+            passive.active = true
+        }
+        passive.destroy()
+        wait(0)
+        compare(feed.claims, calls, "a passive consumer never acquires or releases capture")
+        verify(feed.presented, "the original owner's claim survives destruction")
+    }
+
     function test_cycle_preserves_the_reference_order_and_appends_variants() {
         for (let mode = 0; mode < 7; ++mode) {
             band.mode = mode

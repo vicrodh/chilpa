@@ -94,6 +94,22 @@ Rectangle {
             scopeRenderer: Component { CompactScope {} }
             onCycleRequested: nextMode => mode = nextMode
         }
+        CompactSpectrumState { active: false }
+        CompactSpectrumFallback {
+            id: fallbackSample
+            width: gallery.sampleWide / 2 // derived: half the sample
+            height: Metrics.visualizerBandTall
+            mode: 6
+            topColor: Theme.color.accent
+            bottomColor: Theme.color.accent
+            modelState: QtObject {
+                readonly property int count: 28
+                readonly property real slot: fallbackSample.width / count
+                readonly property real height: fallbackSample.height
+                function at(index) { return 0.6 }
+                function peak(index) { return 0.8 }
+            }
+        }
         Row {
             spacing: Stage.menuRowPad
             ImmersiveQueueTab { label: "Queue"; count: 3; active: true }

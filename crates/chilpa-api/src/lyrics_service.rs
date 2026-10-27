@@ -380,7 +380,7 @@ impl crate::Chilpa {
     /// The lyrics' own buttons in Settings: what each does, and what its
     /// row says afterwards.
     pub(crate) fn lyrics_maintenance(&mut self, key: &str) -> Option<String> {
-        (key == "library.lyricsCache").then(|| self.clear_lyrics_cache())
+        matches!(key, "library.lyricsCache" | "storage.clear.lyrics").then(|| self.clear_lyrics_cache())
     }
 
     /// Forgets every lyric kept on this machine, found or not, and looks

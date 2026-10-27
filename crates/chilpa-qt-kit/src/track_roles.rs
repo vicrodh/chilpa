@@ -44,6 +44,7 @@ pub fn track(track: &chilpa_api::TrackRow, role: i32, number: i32, playing: bool
         19 => text(&app::with(|api| api.track_source_badge(&track.path))),
         20 => text(&track.composer),
         24 => QVariant::from(&track.explicit.unwrap_or(false)),
+        25 => text(&track.credits.as_ref().map(|c| c.document().to_string()).unwrap_or_default()),
         _ => QVariant::default(),
     }
 }

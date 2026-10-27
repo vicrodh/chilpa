@@ -10,6 +10,9 @@ import "../Theme"
 // down, quiet until the pointer is on it.
 Rectangle {
     id: leave
+    property string glyph: Icons.chevronDown
+    property string iconFamily: Icons.outline
+    property string tip: I18n.tr("Exit Immersive", I18n.rev)
     signal clicked()
     width: Stage.capsuleIdle
     height: Stage.capsuleIdle
@@ -18,12 +21,12 @@ Rectangle {
     border.width: Metrics.hairline
     border.color: Theme.color.immersiveGlassEdge
     Accessible.role: Accessible.Button
-    Accessible.name: I18n.tr("Exit Immersive", I18n.rev)
+    Accessible.name: tip
 
     Text {
         anchors.centerIn: parent
-        text: Icons.chevronDown
-        font.family: Icons.outline
+        text: leave.glyph
+        font.family: leave.iconFamily
         font.pixelSize: Stage.capsuleIcon
         color: Theme.color.immersiveTextStrong
         opacity: area.containsMouse ? 1 : Stage.idleGlyph
@@ -37,5 +40,6 @@ Rectangle {
         onContainsMouseChanged: containsMouse ? Kit.TipState.show(leave.Accessible.name, leave) : Kit.TipState.hide(leave)
     }
     onEnabledChanged: if (!enabled) Kit.TipState.hide(leave)
+    onVisibleChanged: if (!visible) Kit.TipState.hide(leave)
     Component.onDestruction: Kit.TipState.hide(leave)
 }

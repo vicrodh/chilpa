@@ -154,7 +154,7 @@ impl Chilpa {
             .collect()
     }
 
-    /// The servers as Settings › Sources lists them, and the row that adds
+    /// The servers as Settings › Music servers lists them, and the row that adds
     /// one.
     pub(crate) fn server_rows(&mut self, notes: &crate::settings_rows::RowNotes) -> Vec<crate::SettingsRow> {
         let mut rows = Vec::new();
@@ -187,6 +187,10 @@ impl Chilpa {
                 title: server.name,
                 description,
                 control: "status".into(),
+                value: serde_json::json!({
+                    "icon": server.icon, "product": server.product, "tracks": server.tracks,
+                    "enabled": server.enabled, "syncing": server.syncing,
+                }).to_string(),
                 action,
                 values: if server.enabled { vec!["edit".into(), "disable".into(), "sync".into(), "remove".into()] }
                     else { vec!["edit".into(), "enable".into(), "remove".into()] },
@@ -198,7 +202,7 @@ impl Chilpa {
         rows.push(crate::SettingsRow {
             kind: 1,
             key: "sources.addServer".into(),
-            title: chilpa_i18n::t("Add a server"),
+            title: chilpa_i18n::t("Add a new server"),
             description: chilpa_i18n::t("OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."),
             control: "button".into(),
             action: chilpa_i18n::t("Add…"),
@@ -444,7 +448,7 @@ impl Chilpa {
     pub fn album_unavailable_reason(&mut self, id: i64) -> String {
         let disabled = self.library().and_then(|lib| lib.disabled_servers_of(id).ok()).unwrap_or_default();
         if !disabled.is_empty() {
-            return chilpa_i18n::t_args("Enable {} in Settings › Sources to play this record.", &[&disabled.join(", ")]);
+            return chilpa_i18n::t_args("Enable {} in Settings › Music servers to play this record.", &[&disabled.join(", ")]);
         }
         let places = self.library().and_then(|lib| lib.unreachable_sources_of(id).ok()).unwrap_or_default();
         match places.as_slice() {

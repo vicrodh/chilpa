@@ -57,11 +57,11 @@ Item {
         visible: !row.group
         anchors.right: parent.right
         y: (row.baseHeight - height) / 2
-        sourceComponent: row.line ? verdict
+        sourceComponent: row.line || (row.control === "none" && row.value !== "") ? verdict
             : row.control === "toggle" || (row.control === "fixed" && row.options.length === 0) ? toggle
             : row.control === "select" || row.control === "device" || row.control === "fixed" ? select
             : row.control === "segmented" ? segmented
-            : row.control === "button" || row.control === "link" ? button
+            : row.control === "button" || row.control === "buttonBusy" || row.control === "link" ? button
             : row.control === "secret" ? secret
             : row.control === "external" ? external
             : row.control === "swatches" ? swatches
@@ -81,6 +81,7 @@ Item {
     Component {
         id: toggle
         Toggle {
+            objectName: "settingToggle." + row.key
             enabled: row.control === "toggle"
             checked: row.value === "true"
             onToggled: (on) => row.page.set(row.key === "navigation.extraControls" ? "playback.extra"
@@ -90,6 +91,7 @@ Item {
     Component {
         id: select
         SelectField {
+            objectName: "settingSelect." + row.key
             enabled: row.control !== "fixed"
             options: row.options
             values: row.optionValues
@@ -112,7 +114,9 @@ Item {
     Component {
         id: button
         PillButton {
+            objectName: "settingAction." + row.key
             text: row.action
+            enabled: row.control !== "buttonBusy"
             glyph: row.control === "link" ? Icons.chevronRight : ""
             onClicked: row.key === "storage.open" ? Qt.openUrlExternally(row.value) : row.page.press(row.key)
         }

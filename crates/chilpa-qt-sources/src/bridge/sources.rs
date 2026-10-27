@@ -24,6 +24,7 @@ pub mod qobject {
         fn art(self: &Sources, plugin: &QString, image: &QString, rev: i32) -> QUrl;
         #[qinvokable]
         fn artist_key(self: &Sources, id: i64, path: &QString) -> QString;
+        #[qinvokable] fn credit_document(self: &Sources, id: i64, path: &QString, rev: i32) -> QString;
         #[qinvokable] fn artist_link(self: &Sources, id: i64, name: &QString) -> QString;
         #[qinvokable]
         fn reference_card(self: &Sources, plugin: &QString, reference: &QString) -> i64;
@@ -75,6 +76,7 @@ impl qobject::Sources {
         if path.is_empty() { QUrl::default() } else { QUrl::from_local_file(&QString::from(path)) }
     }
     pub fn artist_key(&self, id: i64, path: &QString) -> QString { QString::from(crate::app::with(|api| api.source_artist_key(id, &path.to_string()).unwrap_or_default())) }
+    pub fn credit_document(&self, id: i64, path: &QString, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.source_credit_document(id, &path.to_string()))) }
     pub fn artist_link(&self, id: i64, name: &QString) -> QString { QString::from(crate::app::with(|api| api.album_artist_link(id, &name.to_string()))) }
     pub fn reference_card(&self, plugin: &QString, reference: &QString) -> i64 { crate::app::with(|api| api.native_reference_card(&plugin.to_string(), &reference.to_string())) }
     pub fn card(&self, id: i64, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.native_card_info(id))) }

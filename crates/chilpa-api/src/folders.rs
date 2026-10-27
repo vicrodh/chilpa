@@ -194,6 +194,7 @@ pub(crate) fn image_rows(path: &std::path::Path) -> Vec<crate::TrackRow> {
             composer_target: String::new(),
             groups: None,
             explicit: info.tags.explicit,
+            credits: None,
             quality: crate::Quality::of_file(&path.to_string_lossy(), info.bit_depth, info.sample_rate_hz),
         }
     }).collect()

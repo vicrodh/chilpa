@@ -79,10 +79,13 @@ fn main() {
     println!("cargo:rerun-if-changed=qml");
     println!("cargo:rerun-if-changed=assets");
     println!("cargo:rerun-if-changed=src/bridge");
+    println!("cargo:rerun-if-changed=cxx/log_capture.cpp");
+    println!("cargo:rerun-if-changed=cxx/developer_facts.cpp");
     CxxQtBuilder::library(Interface::default())
         .qt_module("Gui")
         .qt_module("Qml")
         .qt_module("Quick")
+        .cc_builder(|cc| { cc.file("cxx/log_capture.cpp"); cc.file("cxx/developer_facts.cpp"); })
         .qml_module(QmlModule {
             uri: "app.chilpa.about",
             rust_files: &bridges,

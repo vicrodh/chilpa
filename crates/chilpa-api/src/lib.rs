@@ -9,6 +9,7 @@ pub use plugins::{NativeCaller, PluginInfo};
 pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 mod ab_loop;
 pub mod about;
+pub mod developer;
 mod accounts;
 mod casting;
 mod dsp;

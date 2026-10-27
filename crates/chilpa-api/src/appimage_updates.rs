@@ -14,6 +14,7 @@ pub(crate) struct Updates {
     installation: Option<Installation>,
     view: Arc<Mutex<Value>>,
     cancel: Arc<AtomicBool>,
+    launch_checked: AtomicBool,
 }
 
 impl Drop for Updates { fn drop(&mut self) { self.cancel.store(true, Ordering::Release); } }
@@ -31,22 +32,32 @@ impl Updates {
             Some(Installation { image, helper: chilpa_dirs::executable_helper("chilpa-appimage-updater.AppImage")?,
                 restart: chilpa_dirs::executable_helper("chilpa-restart")?, repository, version, information:None, expected:None })
         });
-        let supported = installation.is_some();
-        Self { installation, view: Arc::new(Mutex::new(json!({"supported":supported,
+        let can_install = installation.is_some();
+        let current_version = installation.as_ref().map(|image| image.version.to_string()).unwrap_or_else(|| env!("CARGO_PKG_VERSION").into());
+        Self { installation, view: Arc::new(Mutex::new(json!({"supported":true,"can_install":can_install,
+            "current_version":current_version,"installation":if can_install { "AppImage" } else { "System / manual" },
             "automatic":automatic,"phase":"idle","progress":0.0,"busy":false}))),
-            cancel: Arc::new(AtomicBool::new(false)) }
+            cancel: Arc::new(AtomicBool::new(false)), launch_checked: AtomicBool::new(false) }
+    }
+    fn claim_launch_check(&self) -> bool {
+        !self.launch_checked.swap(true, Ordering::AcqRel) && self.view.lock().unwrap()["automatic"] == true
     }
     fn start(&self, download: bool) -> bool {
         if chilpa_core::network::current().offline { return false; }
-        let Some(mut installation) = self.installation.clone() else { return false };
+        let mut installation = self.installation.clone();
+        if download && installation.is_none() { return false; }
         {
             let mut state = self.view.lock().unwrap();
             if state["busy"] == true || state["phase"] == "ready" || download && state["phase"] != "available" { return false; }
             if download {
+                let image = installation.as_mut().unwrap();
                 let Some(tag) = state["tag"].as_str() else { return false; };
-                installation.information = Some(information(&installation, tag));
+                image.information = Some(information(image, tag));
                 let (Some(hash),Some(size)) = (state["sha256"].as_str(),state["size"].as_u64()) else { return false; };
-                installation.expected = Some((hash.into(),size));
+                image.expected = Some((hash.into(),size));
+            }
+            if !download {
+                for key in ["tag", "version", "release_url", "sha256", "size"] { state.as_object_mut().unwrap().remove(key); }
             }
             state["busy"] = true.into();
             state["phase"] = if download { "downloading" } else { "checking" }.into();
@@ -56,16 +67,24 @@ impl Updates {
         self.cancel.store(false, Ordering::Release);
         let (view, cancel) = (self.view.clone(), self.cancel.clone());
         std::thread::spawn(move || {
-            let result = if download { download_image(&installation, &view, &cancel) }
-                else { check_image(&installation, &view, &cancel) };
-            let mut state = view.lock().unwrap();
-            state["busy"] = false.into();
-            state["reason"] = result.as_ref().err().filter(|reason| reason.as_str() == "read_only").cloned().unwrap_or_default().into();
-            state["phase"] = match result { Ok(phase) => phase,
-                Err(_) if cancel.load(Ordering::Acquire) => "cancelled", Err(_) => "error" }.into();
+            let result = if download { download_image(installation.as_ref().unwrap(), &view, &cancel) }
+                else if let Some(image) = &installation { check_image(image, &view, &cancel) }
+                else { check_manual(&view, &cancel) };
+            finish(&mut view.lock().unwrap(), result, cancel.load(Ordering::Acquire));
         });
         true
     }
+}
+
+fn finish(state: &mut Value, result: Result<&str, String>, cancelled: bool) {
+    state["busy"] = false.into();
+    state["reason"] = result.as_ref().err().filter(|reason| reason.as_str() == "read_only").cloned().unwrap_or_default().into();
+    state["phase"] = match result {
+        Ok("ready") => "ready",
+        _ if cancelled => "cancelled",
+        Ok(phase) => phase,
+        Err(_) => "error",
+    }.into();
 }
 
 fn command(installation: &Installation, image: &Path) -> Command {
@@ -130,19 +149,53 @@ fn information(installation: &Installation, tag: &str) -> String {
     format!("gh-releases-zsync|{owner}|{repository}|{tag}|Chilpa-{version}-{architecture}.AppImage.zsync")
 }
 
-fn check_image(installation: &Installation, view: &Mutex<Value>, cancel: &AtomicBool) -> Result<&'static str, String> {
-    let channel = if installation.version.pre.is_empty() { "releases/latest" } else { "releases?per_page=30" };
-    let address = format!("https://api.github.com/repos/{}/{channel}", installation.repository);
+fn latest_release(repository: &str, version: &Version, cancel: &AtomicBool) -> Result<Option<Value>, String> {
+    if cancel.load(Ordering::Acquire) { return Err("Update cancelled".into()); }
+    let channel = if version.pre.is_empty() { "releases/latest" } else { "releases?per_page=30" };
+    let address = format!("https://api.github.com/repos/{repository}/{channel}");
     let response = chilpa_core::call_server(&chilpa_core::Call { method:"GET", url:&address,
         headers:&[("Accept".into(),"application/vnd.github+json".into())], body:None,
         timeout:Duration::from_secs(5), max_bytes:512 * 1024 }).map_err(|_| "The release service is unavailable")?;
     if cancel.load(Ordering::Acquire) { return Err("Update cancelled".into()); }
-    if response.status == 404 { return Ok("current"); }
-    if response.status != 200 { return Err("The release service is unavailable".into()); }
-    let document: Value = serde_json::from_slice(&response.body).map_err(|_| "Invalid release metadata")?;
-    let Some(document) = select_release(&document, &installation.version) else { return Ok("current"); };
+    release_response(response.status, &response.body, version)
+}
+
+fn release_response(status: u16, body: &[u8], version: &Version) -> Result<Option<Value>, String> {
+    if status != 200 { return Err("The release service is unavailable".into()); }
+    let document: Value = serde_json::from_slice(body).map_err(|_| "Invalid release metadata")?;
+    let is_release = |value: &Value| value["tag_name"].is_string() && value["draft"].is_boolean() && value["prerelease"].is_boolean();
+    if !document.as_array().map_or_else(|| is_release(&document), |items| items.iter().all(is_release)) {
+        return Err("Invalid release metadata".into());
+    }
+    let releases = document.as_array().map(Vec::as_slice).unwrap_or(std::slice::from_ref(&document));
+    if !releases.is_empty() && !releases.iter().any(|item| item["tag_name"].as_str().is_some_and(|tag| Version::parse(tag.strip_prefix('v').unwrap_or(tag)).is_ok())) {
+        return Err("Invalid release metadata".into());
+    }
+    Ok(select_release(&document, version).cloned())
+}
+
+fn note_release(view: &Mutex<Value>, repository: &str, document: &Value) -> Result<(), String> {
+    let tag = document["tag_name"].as_str().ok_or("No release version")?;
+    let mut state = view.lock().unwrap();
+    state["tag"] = tag.into();
+    state["version"] = tag.strip_prefix('v').unwrap_or(tag).into();
+    state["release_url"] = format!("https://github.com/{repository}/releases/tag/{tag}").into();
+    Ok(())
+}
+
+fn check_manual(view: &Mutex<Value>, cancel: &AtomicBool) -> Result<&'static str, String> {
+    let version = Version::parse(env!("CARGO_PKG_VERSION")).map_err(|_| "Invalid application version")?;
+    let repository = "vicrodh/chilpa";
+    let Some(document) = latest_release(repository, &version, cancel)? else { return Ok("current"); };
+    note_release(view, repository, &document)?;
+    Ok("available")
+}
+
+fn check_image(installation: &Installation, view: &Mutex<Value>, cancel: &AtomicBool) -> Result<&'static str, String> {
+    let Some(document) = latest_release(&installation.repository, &installation.version, cancel)? else { return Ok("current"); };
     let tag = document["tag_name"].as_str().ok_or("No release version")?;
     let (hash,size) = release_asset(&document, tag)?;
+    note_release(view, &installation.repository, &document)?;
     let mut selected = installation.clone();
     selected.information = Some(information(installation, tag));
     let mut state = view.lock().unwrap();
@@ -260,20 +313,71 @@ fn replace_image(image: &Path, seed: &Path, candidate: &Path) -> Result<(), Stri
 }
 
 impl Chilpa {
+    pub(crate) fn updates_setting(&mut self, key: &str, value: &str) -> bool {
+        if key != "updates.automatic" || !matches!(value, "true" | "false") { return false; }
+        if self.remember_preference_checked(key, value).is_err() { return false; }
+        self.updates().view.lock().unwrap()["automatic"] = (value == "true").into();
+        true
+    }
+
+    pub(crate) fn updates_maintenance(&mut self, key: &str) -> Option<String> {
+        match key {
+            "updates.check" => { self.appimage_updates_check(false); Some(String::new()) }
+            "updates.changelog" => { self.onboarding_command("whatsNew"); Some(String::new()) }
+            _ => None,
+        }
+    }
+
+    pub(crate) fn updates_settings_row(&mut self, row: &mut crate::settings_rows::SettingsRow) -> bool {
+        if !row.key.starts_with("updates.") { return false; }
+        let offline = self.offline();
+        let state = self.updates().view.lock().unwrap();
+        match row.key.as_str() {
+            "updates.automatic" => row.value = (state["automatic"] == true).to_string(),
+            "updates.current" | "updates.installation" => {
+                row.kind = 2;
+                row.control = "none".into();
+                let value = state[if row.key == "updates.current" { "current_version" } else { "installation" }].as_str().unwrap_or_default();
+                row.value = if value == "System / manual" { chilpa_i18n::t("System / manual") } else { value.into() };
+            }
+            "updates.check" => {
+                if offline || state["busy"] == true || state["phase"] == "ready" { row.control = "buttonBusy".into(); }
+                row.action = match state["phase"].as_str().unwrap_or_default() {
+                    "checking" => chilpa_i18n::t("Checking…"),
+                    "downloading" => chilpa_i18n::t("Downloading update…"),
+                    "installing" => chilpa_i18n::t("Preparing the updated AppImage…"),
+                    "cancelling" => chilpa_i18n::t("Cancelling update…"),
+                    "ready" => chilpa_i18n::t("Update ready"),
+                    _ => chilpa_i18n::t("Check"),
+                };
+                row.description = if offline { chilpa_i18n::t("Offline") }
+                    else { match state["phase"].as_str().unwrap_or_default() {
+                        "current" => chilpa_i18n::t("Chilpa is up to date."),
+                        "available" => chilpa_i18n::t_args("Version {} is available.", &[state["version"].as_str().unwrap_or_default()]),
+                        "error" => chilpa_i18n::t("The update check failed. Try again."),
+                        _ => String::new(),
+                    } };
+            }
+            _ => (),
+        }
+        true
+    }
+
     fn updates(&mut self) -> &Updates {
         if self.appimage_updates.is_none() {
             self.appimage_updates = Some(Updates::new(self.preference("updates.automatic").as_deref() != Some("false")));
         }
         self.appimage_updates.as_ref().unwrap()
     }
-    pub fn appimage_updates_json(&mut self) -> String { self.updates().view.lock().unwrap().to_string() }
+    pub fn appimage_updates_json(&mut self) -> String {
+        let offline = self.offline();
+        let mut state = self.updates().view.lock().unwrap();
+        state["offline"] = offline.into();
+        state.to_string()
+    }
     pub fn appimage_updates_check(&mut self, automatic: bool) {
-        if automatic {
-            let previous = self.preference("updates.last_check").and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
-            let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
-            if now.saturating_sub(previous) < 86400 || self.updates().view.lock().unwrap()["automatic"] != true { return; }
-            if self.updates().start(false) { self.remember_preference("updates.last_check", &now.to_string()); }
-        } else { self.updates().start(false); }
+        if automatic && !self.updates().claim_launch_check() { return; }
+        self.updates().start(false);
     }
     pub fn appimage_updates_download(&mut self) { self.updates().start(true); }
     pub fn appimage_updates_cancel(&mut self) {
@@ -285,8 +389,7 @@ impl Chilpa {
         }
     }
     pub fn appimage_updates_automatic(&mut self, on: bool) {
-        self.remember_preference("updates.automatic", if on { "true" } else { "false" });
-        self.updates().view.lock().unwrap()["automatic"] = on.into();
+        self.updates_setting("updates.automatic", if on { "true" } else { "false" });
     }
     pub fn appimage_updates_restart(&mut self) -> bool {
         let updates = self.updates();
@@ -300,6 +403,57 @@ impl Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn manual_release_checks_need_valid_service_metadata_but_no_appimage_asset() {
+        let current = Version::new(1, 0, 0);
+        let release = json!({"tag_name":"v1.1.0", "draft":false, "prerelease":false});
+        let document = release_response(200, &serde_json::to_vec(&release).unwrap(), &current).unwrap().unwrap();
+        let view = Mutex::new(json!({"can_install":false}));
+        note_release(&view, "example/fixture", &document).unwrap();
+        assert_eq!(view.lock().unwrap()["release_url"], "https://github.com/example/fixture/releases/tag/v1.1.0");
+        assert!(release_asset(&document, "v1.1.0").is_err(), "manual releases do not claim an installable AppImage");
+        assert!(release_response(200, b"[]", &current).unwrap().is_none());
+        for status in [404, 403, 429, 500] { assert!(release_response(status, b"{}", &current).is_err()); }
+        for body in [b"not json".as_slice(), b"{}", b"null", b"[{}]", br#"{"tag_name":"invalid","draft":false,"prerelease":false}"#] { assert!(release_response(200, body, &current).is_err()); }
+    }
+    #[test]
+    fn cancelled_checks_do_not_report_success_but_committed_images_stay_ready() {
+        let mut state = json!({"busy":true});
+        finish(&mut state, Ok("available"), true);
+        assert_eq!(state["phase"], "cancelled");
+        assert_eq!(state["busy"], false);
+        finish(&mut state, Ok("ready"), true);
+        assert_eq!(state["phase"], "ready");
+        finish(&mut state, Err("service unavailable".into()), false);
+        assert_eq!(state["phase"], "error");
+    }
+    #[test]
+    fn launch_checks_are_claimed_once_and_manual_installations_cannot_download() {
+        let updates = Updates { installation:None, view:Arc::new(Mutex::new(json!({"automatic":true}))),
+            cancel:Arc::new(AtomicBool::new(false)), launch_checked:AtomicBool::new(false) };
+        assert!(updates.claim_launch_check());
+        assert!(!updates.claim_launch_check());
+        assert!(!updates.start(true));
+        updates.launch_checked.store(false, Ordering::Release);
+        updates.view.lock().unwrap()["automatic"] = false.into();
+        assert!(!updates.claim_launch_check());
+        updates.view.lock().unwrap()["automatic"] = true.into();
+        assert!(!updates.claim_launch_check(), "enabling the preference does not repeat this launch");
+    }
+    #[test]
+    fn settings_show_the_actual_operation_and_disable_checks_after_publication() {
+        let mut app = Chilpa::new();
+        app.appimage_updates = Some(Updates { installation:None, view:Arc::new(Mutex::new(json!({"phase":"downloading","busy":true}))),
+            cancel:Arc::new(AtomicBool::new(false)), launch_checked:AtomicBool::new(false) });
+        let mut row = crate::settings_rows::SettingsRow { key:"updates.check".into(), ..Default::default() };
+        app.updates_settings_row(&mut row);
+        assert_eq!(row.control, "buttonBusy");
+        assert_eq!(row.action, chilpa_i18n::t("Downloading update…"));
+        *app.updates().view.lock().unwrap() = json!({"phase":"ready","busy":false});
+        app.updates_settings_row(&mut row);
+        assert_eq!(row.control, "buttonBusy");
+        assert_eq!(row.action, chilpa_i18n::t("Update ready"));
+    }
     #[test]
     fn progress_accepts_cli_records_and_rejects_invalid_percentages() {
         assert_eq!(progress("\x1b[2K12.5% done (3 of 24 MiB)..."), Some(0.125));

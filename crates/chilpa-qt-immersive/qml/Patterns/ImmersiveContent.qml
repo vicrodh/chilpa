@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Window
 import app.chilpa
+import app.chilpa.kit
 import app.chilpa.ambient
 import app.chilpa.immersive
 import app.chilpa.graphics
@@ -90,7 +91,7 @@ Item {
         const p = item.mapFromItem(view, hover.point.position.x, hover.point.position.y)
         return p.x >= 0 && p.y >= 0 && p.x <= item.width && p.y <= item.height
     }
-    readonly property bool pointerInChrome: hover.hovered && (overChrome(header) || overChrome(playerBar) || overChrome(songCard))
+    readonly property bool pointerInChrome: hover.hovered && (overChrome(header) || overChrome(playerBar) || overChrome(songCard) || overChrome(spectrumCycle))
     function wake() {
         chromeVisible = true
         hideTimer.restart()
@@ -116,7 +117,7 @@ Item {
         Loader { anchors.fill: parent; active: view.presented && view.sceneOff && view.focusMode && view.mode === 0; visible: active; sourceComponent: AlbumReactivePanel { shaders: view.shaders } }
         Loader { anchors.fill: parent; active: view.presented && view.sceneOff && view.focusMode && view.mode === 1; visible: active; sourceComponent: StaticPanel { shaders: view.shaders } }
         Loader { anchors.fill: parent; active: view.presented && view.sceneOff && view.focusMode && view.mode === 2; visible: active; sourceComponent: CoverFlowPanel { shaders: view.shaders } }
-        Loader { anchors.fill: parent; active: view.presented && view.sceneOff && view.focusMode && view.mode === 3; visible: active; sourceComponent: SpectrumPanel { shaders: view.shaders } }
+        Loader { id: spectrum; anchors.fill: parent; active: view.presented && view.sceneOff && view.focusMode && view.mode === 3; visible: active; sourceComponent: SpectrumPanel { shaders: view.shaders } }
         Loader { anchors.fill: parent; active: view.presented && view.sceneOff && view.focusMode && view.mode === 4; visible: active; sourceComponent: LyricsFocusPanel { feed: lyricsFeed } }
         Loader { anchors.fill: parent; active: view.presented && view.sceneOff && view.focusMode && view.mode === 5; visible: active; sourceComponent: QueueTabsPanel { centered: false } }
         Loader { anchors.fill: parent; active: view.presented && view.sceneOff && view.focusMode && view.mode === 6; visible: active; sourceComponent: WaveBedPanel {} }
@@ -167,12 +168,26 @@ Item {
         onExitAsked: Immersive.open = false
     }
     LeaveButton {
+        id: leave
         objectName: "immersiveLeave"
         x: Stage.edge
         y: playerBar.y + (Stage.barTall - height) / 2 // derived: level with the bar's middle
         opacity: playerBar.opacity
         enabled: view.chromeVisible
         onClicked: Immersive.open = false
+    }
+    LeaveButton {
+        id: spectrumCycle
+        objectName: "immersiveSpectrumCycle"
+        x: leave.x + leave.width + Metrics.gap16
+        y: leave.y
+        visible: spectrum.active
+        opacity: playerBar.opacity
+        enabled: view.chromeVisible
+        glyph: Lucide.chartColumn
+        iconFamily: Lucide.font
+        tip: I18n.trArgs("Change spectrum style ({})", [spectrum.item ? spectrum.item.variantLabel : ""], I18n.rev)
+        onClicked: { if (spectrum.item) spectrum.item.cycleVariant(); view.wake() }
     }
     ImmersiveHeader {
         id: header

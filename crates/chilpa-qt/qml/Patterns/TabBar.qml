@@ -29,7 +29,8 @@ Item {
         else if (act === "stats") Navigation.go("stats", 0)
         else if (act === "about") about.open()
         else if (["appUpdates", "pluginUpdates", "whatsNew"].includes(act)) updateInbox.open(act)
-        else if (act === "documentation" || act === "issue") Qt.openUrlExternally(About.link(act))
+        else if (act === "documentation") Qt.openUrlExternally(About.link(act))
+        else if (act === "issue") About.reportIssue()
         else if (act === "close") bar.Window.window.close()
         else if (act === "quit") bar.quitAsked()
         else Hotkeys.ask(act)
@@ -209,6 +210,7 @@ Item {
                 onActionChosen: entry => bar.menuChosen(entry.act)
             }
             AboutModal { id: about }
+            ReportIssueDialog {}
             LinkUi.LinkModal {}
             WizardUi.HifiWizardModal {}
         }

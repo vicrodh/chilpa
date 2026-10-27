@@ -65,6 +65,7 @@ TrackRowSlot {
         id: content
         objectName: "trackRowBody"
         readonly property var row: track
+        readonly property alias creditedTitle: creditedTitle
         readonly property Text artistLabel: row.rich ? richArtist : compactArtist
         readonly property alias albumText: albumLabel
         readonly property alias sourceBadge: badge
@@ -126,18 +127,24 @@ TrackRowSlot {
                 anchors.verticalCenter: parent.verticalCenter
 
                 CreditedTitle {
+                    id: creditedTitle
                     width: parent.width
                     title: row.title
                     explicitContent: row.explicitContent
-                    credit: row.composer
+                    credit: row.credits.featured_html || ""
+                    composer: !Prefs.trackComposers ? "" : row.credits.links ? row.credits.composer_html || "" : row.composer ? I18n.trArgs("Composer: {}", [row.composer], I18n.rev) : ""
+                    richCredits: !!row.credits.links
                     titleSize: row.rich ? Type.bodyLarge : Type.row
                     titleWeight: row.rich ? Type.medium : Type.regular
                 }
                 Text {
                     id: richArtist
+                    objectName: "trackPerformingArtistsRich"
                     width: parent.width
                     visible: row.rich
-                    text: row.artist
+                    text: row.credits.artist_html || row.artist
+                    textFormat: row.credits.links ? Text.RichText : Text.PlainText
+                    linkColor: color
                     elide: Text.ElideRight
                     font.pointSize: Type.meta
                     color: row.artistHovered ? Theme.color.textPrimary : Theme.color.textSecondary
@@ -146,11 +153,14 @@ TrackRowSlot {
 
             Text {
                 id: compactArtist
+                objectName: "trackPerformingArtists"
                 x: row.cols.artistX
                 width: row.cols.artistW - Metrics.gap12
                 visible: width > 0
                 anchors.verticalCenter: parent.verticalCenter
-                text: row.artist
+                text: row.credits.artist_html || row.artist
+                textFormat: row.credits.links ? Text.RichText : Text.PlainText
+                linkColor: color
                 elide: Text.ElideRight
                 font.pointSize: Type.row
                 color: Theme.color.textPrimary

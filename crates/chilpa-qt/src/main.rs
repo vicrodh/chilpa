@@ -105,6 +105,7 @@ fn main() {
     }
     // Before anything is opened: a second launch shows the first and ends.
     if !chilpa_api::Chilpa::only_instance() { return; }
+    let log_capture = chilpa_qt_about::start_logging();
     // The saved GPU, the renderer preference and managed Auto, before the
     // application object builds its backend.
     graphics_boot::gpu::preflight_saved_gpu_at_boot();
@@ -112,6 +113,7 @@ fn main() {
     #[cfg(target_os = "linux")]
     if let Err(reason) = graphics_boot::preflight::auto_at_boot() {
         eprintln!("renderer: the start stopped before the window: {reason}");
+        drop(log_capture);
         std::process::exit(78);
     }
     // Before anything is restored: a start that dies restoring degrades the
@@ -183,5 +185,6 @@ fn main() {
     });
     drop(engine);
     app::shutdown();
+    drop(log_capture);
     std::process::exit(0);
 }

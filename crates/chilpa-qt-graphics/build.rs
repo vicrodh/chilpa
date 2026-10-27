@@ -103,7 +103,7 @@ fn build_scene_items() {
     if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") {
         cc.flag("/Zc:__cplusplus").flag("/permissive-").flag("/utf-8");
     }
-    for item in ["plasma", "ribbon", "linebed", "tunnelflow", "scope_trace"] {
+    for item in ["plasma", "ribbon", "linebed", "tunnelflow", "scope_trace", "spectrum"] {
         let header = format!("cxx/{item}_item.h");
         let source = format!("cxx/{item}_item.cpp");
         println!("cargo:rerun-if-changed={header}");

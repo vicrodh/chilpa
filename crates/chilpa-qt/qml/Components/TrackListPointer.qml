@@ -102,16 +102,16 @@ MouseArea {
     function onAlbum(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
         if (!item || item.header || item.album === "" || !host.model.canGo(row, "album")) return false
-        return insideText(item, item.albumText, x, y)
-    }
-    function insideText(item, label, x, y) {
-        if (!label || !label.visible) return false
-        const point = label.mapFromItem(item, x - item.x, y + rows.contentY - item.y)
-        return point.x >= 0 && point.y >= 0 && point.x < Math.min(label.width, label.contentWidth) && point.y < label.height
+        return item.containsLabel(pointer, item.albumText, x, y)
     }
     function onHeaderComposer(item, x, y) {
         return item && item.headerWork && item.headerComposerTarget !== ""
-            && insideText(item, item.headerComposerLabel, x, y)
+            && item.containsLabel(pointer, item.headerComposerLabel, x, y)
+    }
+
+    function creditAt(row, x, y) {
+        const item = row >= 0 ? rows.itemAtIndex(row) : null
+        return item && item.available ? item.creditAt(pointer, x, y) : null
     }
 
     onPressed: (mouse) => {
@@ -159,6 +159,8 @@ MouseArea {
             } else host.model.groupAction(row, groupAction === 1 ? "play" : "shuffle", header.headerLabel)
             return
         }
+        const credit = mouse.button === Qt.LeftButton && !host.selectionMode && !(mouse.modifiers & (Qt.ControlModifier | Qt.MetaModifier | Qt.ShiftModifier)) ? creditAt(row, mouse.x, mouse.y) : null
+        if (credit) { Navigation.goKey(credit.target, credit.key); return }
         if (mouse.button === Qt.LeftButton && onHeaderComposer(header, mouse.x, mouse.y)) {
             const target = header.headerComposerTarget
             if (target.startsWith("artist:")) Navigation.openArtist(target.slice(7))
@@ -209,7 +211,7 @@ MouseArea {
         const header = row >= 0 ? rows.itemAtIndex(row) : null
         if (groupActionAt(row, mouse.x, mouse.y) || onHeaderComposer(header, mouse.x, mouse.y))
             return
-        if (onAlbum(row, mouse.x, mouse.y) || onArtist(row, mouse.x, mouse.y))
+        if (creditAt(row, mouse.x, mouse.y) || onAlbum(row, mouse.x, mouse.y) || onArtist(row, mouse.x, mouse.y))
             return
         // A second quick press on an arrow is one more step, not a play.
         if (row >= 0 && mouse.button === Qt.LeftButton && move(row, mouse.x, mouse.y))
