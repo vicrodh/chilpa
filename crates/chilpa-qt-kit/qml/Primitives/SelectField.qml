@@ -54,7 +54,7 @@ Rectangle {
         textFormat: Text.PlainText
         elide: Text.ElideRight
         font.pointSize: Type.body
-        color: Theme.color.textPrimary
+        color: field.enabledOptions[field.current] === false ? Theme.color.textTertiary : Theme.color.textPrimary
     }
 
     Icon {

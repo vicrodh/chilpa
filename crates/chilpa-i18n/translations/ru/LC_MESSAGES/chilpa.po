@@ -169,6 +169,9 @@ msgstr "Выбранная очередь больше недоступна."
 msgid "A sidecar sets this, not the file"
 msgstr "Это задаёт вспомогательный файл, а не сам файл"
 
+msgid "A sync operation still uses this profile."
+msgstr ""
+
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr "Прослушивание засчитывается, когда проиграна половина трека или четыре минуты. Прослушивания офлайн отправляются позже."
 
@@ -1489,6 +1492,9 @@ msgstr "Не удалось переместить плейлист."
 msgid "Could not read the analysis inventory."
 msgstr "Не удалось прочитать перечень анализа."
 
+msgid "Could not remove the saved profile."
+msgstr ""
+
 msgid "Could not save the folder. Please try again."
 msgstr "Не удалось сохранить папку. Повторите попытку."
 
@@ -2551,6 +2557,9 @@ msgstr "Скрыть с боковой панели"
 msgid "Hide manual entry"
 msgstr "Скрыть ручной ввод"
 
+msgid "Hide offline profiles"
+msgstr ""
+
 msgid "Hide sidebar"
 msgstr "Скрыть боковую панель"
 
@@ -3235,6 +3244,9 @@ msgstr "Управление"
 msgid "Manage playlists"
 msgstr "Управление плейлистами"
 
+msgid "Manage profiles"
+msgstr ""
+
 msgid "Manually"
 msgstr "Вручную"
 
@@ -3616,6 +3628,9 @@ msgstr "Без композитора"
 msgid "No conditions yet. Add one below, or click values in Columns."
 msgstr "Условий пока нет. Добавьте ниже или нажмите на значения в «Столбцах»."
 
+msgid "No connected profiles"
+msgstr ""
+
 msgid "No cover"
 msgstr "Без обложки"
 
@@ -3888,6 +3903,9 @@ msgstr "октября"
 
 msgid "Off"
 msgstr "Выкл."
+
+msgid "Offline"
+msgstr ""
 
 msgid "Offline mode"
 msgstr "Офлайн-режим"
@@ -4417,6 +4435,9 @@ msgstr "Продюсер"
 msgid "Profile name"
 msgstr "Имя профиля"
 
+msgid "Profile removed. Some local sync history could not be cleared."
+msgstr ""
+
 msgid "Provider identifiers"
 msgstr "Идентификаторы поставщиков"
 
@@ -4495,8 +4516,8 @@ msgstr "Очереди"
 msgid "Quick Connect is turned off on that server"
 msgstr "На этом сервере Quick Connect отключён"
 
-msgid "Quick review by size; copies and removals are verified when syncing."
-msgstr "Быстрая проверка по размеру; копирование и удаление проверяются при синхронизации."
+msgid "Quick review by size"
+msgstr ""
 
 msgid "Quick view"
 msgstr "Быстрый просмотр"
@@ -4753,11 +4774,20 @@ msgstr "Уберите одно условие, чтобы получить ре
 msgid "Remove original queues"
 msgstr "Удалить исходные очереди"
 
+msgid "Remove profile"
+msgstr ""
+
+msgid "Remove saved profile"
+msgstr ""
+
 msgid "Remove smaller covers and backgrounds. Chilpa makes them again as needed."
 msgstr "Удаляет уменьшенные обложки и фоны. Chilpa создаст их заново при необходимости."
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "Удалить этот плагин, его учётную запись, настройки и кэшированную библиотеку из Chilpa? Ваша учётная запись и плейлисты в источнике не удаляются."
+
+msgid "Remove this profile and its local sync history? Files on the device will stay."
+msgstr ""
 
 msgid "Remove this server?"
 msgstr "Удалить этот сервер?"
@@ -4767,6 +4797,9 @@ msgstr "Удаляет неиспользуемые изображения ис�
 
 msgid "Remove…"
 msgstr "Удалить…"
+
+msgid "Removing saved profile…"
+msgstr ""
 
 msgid "Rename"
 msgstr "Переименовать"
@@ -5265,6 +5298,9 @@ msgstr "Показать на боковой панели"
 
 msgid "Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."
 msgstr "Показывает тексты песен из файлов, кэша и онлайн-сервисов. Выключите, чтобы остановить все поиски и переводы текстов и очистить текущий текст."
+
+msgid "Show offline profiles"
+msgstr ""
 
 msgid "Show playlist only from the same source as the track"
 msgstr "Показывать только плейлисты из того же источника, что и трек"
@@ -6456,6 +6492,12 @@ msgstr "Корректен"
 
 msgid "Valid node name"
 msgstr "Допустимое имя узла"
+
+msgid "Verify files after transfer"
+msgstr ""
+
+msgid "Verifying copied files…"
+msgstr ""
 
 msgid "Version"
 msgstr "Версия"

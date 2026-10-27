@@ -33,7 +33,7 @@ impl Service {
         let profiles: Vec<_> = self
             .profiles()
             .iter()
-            .map(|p| json!({"id":p.id,"name":p.name}))
+            .map(|p| json!({"id":p.id,"name":p.name,"connected":self.destinations().iter().any(|d|d.profiles.contains(&p.id))}))
             .collect();
         let destinations: Vec<_> = self.destinations().iter().map(|d| json!({
             "id":d.id,"name":format!("{} · {}",d.name,d.storage),
@@ -48,6 +48,7 @@ impl Service {
         let selected = self.options().iter().filter(|row| row.checked).count();
         json!({"profile_names":self.profiles().iter().map(|p|&p.name).collect::<Vec<_>>(),
             "profile_values":self.profiles().iter().map(|p|&p.id).collect::<Vec<_>>(),
+            "profile_enabled":profiles.iter().map(|p|p["connected"].as_bool().unwrap_or(false)).collect::<Vec<_>>(),
             "destination_names":destinations.iter().map(|d|&d["name"]).collect::<Vec<_>>(),
             "destination_values":self.destinations().iter().map(|d|&d.id).collect::<Vec<_>>(),
             "destination_details":destinations.iter().map(|d|&d["detail"]).collect::<Vec<_>>(),
@@ -67,11 +68,13 @@ impl Service {
             "discovering" | "reconnecting" => i18n::mark("Looking for players…"),
             "loading" => i18n::mark("Loading device profiles…"),
             "pairing" => i18n::mark("Adding storage…"),
+            "forgetting" => i18n::mark("Removing saved profile…"),
             "saving" => i18n::mark("Saving selection…"),
             "selecting" => i18n::mark("Reading Library selection…"),
             "browsing" => i18n::mark("Loading music…"),
             "downloading" => i18n::mark("Downloading episodes…"),
             "preparing" => i18n::mark("Reviewing changes…"),
+            "transferring" if status.verifying => i18n::mark("Verifying copied files…"),
             "transferring" => i18n::mark("Syncing music…"),
             "cancelling" => i18n::mark("Cancelling…"),
             "done" => i18n::mark("Sync complete"),
@@ -82,7 +85,7 @@ impl Service {
             _ => i18n::mark("Choose music for this storage"),
         };
         value["label"] = json!(i18n::t(label));
-        value["review_note"] = json!(if status.metadata_review {i18n::t("Quick review by size; copies and removals are verified when syncing.")} else {String::new()});
+        value["review_note"] = json!(if status.metadata_review {i18n::t("Quick review by size")} else {String::new()});
         value["summary"] = json!(i18n::t_args(
             if status.metadata_review {i18n::mark("{} to copy · {} to update · {} to remove · {} already present")} else {i18n::mark("{} to copy · {} to update · {} to remove · {} unchanged")},
             &[

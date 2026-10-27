@@ -169,6 +169,9 @@ msgstr "選択したキューは利用できなくなりました。"
 msgid "A sidecar sets this, not the file"
 msgstr "この値はファイルではなくサイドカーファイルで設定されています"
 
+msgid "A sync operation still uses this profile."
+msgstr ""
+
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr "トラックは半分または4分再生された時点で1回として数えられます。オフラインでの再生は後で送信されます。"
 
@@ -1485,6 +1488,9 @@ msgstr "プレイリストを移動できませんでした。"
 msgid "Could not read the analysis inventory."
 msgstr "解析一覧を読み取れませんでした。"
 
+msgid "Could not remove the saved profile."
+msgstr ""
+
 msgid "Could not save the folder. Please try again."
 msgstr "フォルダーを保存できませんでした。もう一度お試しください。"
 
@@ -2547,6 +2553,9 @@ msgstr "サイドバーから非表示"
 msgid "Hide manual entry"
 msgstr "手動入力を非表示"
 
+msgid "Hide offline profiles"
+msgstr ""
+
 msgid "Hide sidebar"
 msgstr "サイドバーを非表示"
 
@@ -3229,6 +3238,9 @@ msgstr "管理"
 msgid "Manage playlists"
 msgstr "プレイリストを管理"
 
+msgid "Manage profiles"
+msgstr ""
+
 msgid "Manually"
 msgstr "手動"
 
@@ -3610,6 +3622,9 @@ msgstr "作曲者なし"
 msgid "No conditions yet. Add one below, or click values in Columns."
 msgstr "条件はまだありません。下で追加するか、列で値をクリックしてください。"
 
+msgid "No connected profiles"
+msgstr ""
+
 msgid "No cover"
 msgstr "カバーなし"
 
@@ -3882,6 +3897,9 @@ msgstr "10月"
 
 msgid "Off"
 msgstr "オフ"
+
+msgid "Offline"
+msgstr ""
 
 msgid "Offline mode"
 msgstr "オフラインモード"
@@ -4411,6 +4429,9 @@ msgstr "プロデューサー"
 msgid "Profile name"
 msgstr "プロファイル名"
 
+msgid "Profile removed. Some local sync history could not be cleared."
+msgstr ""
+
 msgid "Provider identifiers"
 msgstr "プロバイダー識別子"
 
@@ -4489,8 +4510,8 @@ msgstr "キュー"
 msgid "Quick Connect is turned off on that server"
 msgstr "そのサーバーではQuick Connectがオフになっています"
 
-msgid "Quick review by size; copies and removals are verified when syncing."
-msgstr "サイズによる簡易確認です。コピーと削除は同期時に検証されます。"
+msgid "Quick review by size"
+msgstr ""
 
 msgid "Quick view"
 msgstr "クイックビュー"
@@ -4747,11 +4768,20 @@ msgstr "条件を 1 つ外すと結果が出ます："
 msgid "Remove original queues"
 msgstr "元のキューを削除"
 
+msgid "Remove profile"
+msgstr ""
+
+msgid "Remove saved profile"
+msgstr ""
+
 msgid "Remove smaller covers and backgrounds. Chilpa makes them again as needed."
 msgstr "小さいカバーと背景を削除します。必要に応じてChilpaが再作成します。"
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "このプラグインと、そのアカウント、設定、キャッシュしたライブラリをChilpaから削除しますか？ソース側のアカウントやプレイリストは削除されません。"
+
+msgid "Remove this profile and its local sync history? Files on the device will stay."
+msgstr ""
 
 msgid "Remove this server?"
 msgstr "このサーバーを削除しますか？"
@@ -4761,6 +4791,9 @@ msgstr "ソースやプラグインから参照されていない画像を削除
 
 msgid "Remove…"
 msgstr "削除…"
+
+msgid "Removing saved profile…"
+msgstr ""
 
 msgid "Rename"
 msgstr "名前を変更"
@@ -5257,6 +5290,9 @@ msgstr "サイドバーに表示"
 
 msgid "Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."
 msgstr "ファイル、キャッシュ、オンラインから歌詞を表示します。オフにすると、すべての歌詞の検索と翻訳を止め、現在の歌詞を消去します。"
+
+msgid "Show offline profiles"
+msgstr ""
 
 msgid "Show playlist only from the same source as the track"
 msgstr "トラックと同じソースのプレイリストのみ表示"
@@ -6446,6 +6482,12 @@ msgstr "検査合格"
 
 msgid "Valid node name"
 msgstr "有効なノード名"
+
+msgid "Verify files after transfer"
+msgstr ""
+
+msgid "Verifying copied files…"
+msgstr ""
 
 msgid "Version"
 msgstr "バージョン"

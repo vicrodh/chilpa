@@ -169,6 +169,9 @@ msgstr "Una de las colas seleccionadas ya no está disponible."
 msgid "A sidecar sets this, not the file"
 msgstr "Lo pone un sidecar, no el archivo"
 
+msgid "A sync operation still uses this profile."
+msgstr "Una sincronización todavía usa este perfil."
+
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr "Una pista cuenta cuando se reprodujo la mitad, o cuatro minutos. Lo que escuches sin conexión se envía después."
 
@@ -1487,6 +1490,9 @@ msgstr "No se pudo mover la playlist."
 msgid "Could not read the analysis inventory."
 msgstr "No se pudo leer el inventario de análisis."
 
+msgid "Could not remove the saved profile."
+msgstr "No se pudo eliminar el perfil guardado."
+
 msgid "Could not save the folder. Please try again."
 msgstr "No se pudo guardar la carpeta. Inténtalo de nuevo."
 
@@ -2549,6 +2555,9 @@ msgstr "Ocultar del sidebar"
 msgid "Hide manual entry"
 msgstr "Ocultar la captura manual"
 
+msgid "Hide offline profiles"
+msgstr "Ocultar perfiles sin conexión"
+
 msgid "Hide sidebar"
 msgstr "Ocultar barra lateral"
 
@@ -3232,6 +3241,9 @@ msgstr "Administrar"
 msgid "Manage playlists"
 msgstr "Administrar playlists"
 
+msgid "Manage profiles"
+msgstr "Administrar perfiles"
+
 msgid "Manually"
 msgstr "Manualmente"
 
@@ -3613,6 +3625,9 @@ msgstr "Sin compositor"
 msgid "No conditions yet. Add one below, or click values in Columns."
 msgstr "Aún no hay condiciones. Agrega una abajo o haz clic en valores en Columnas."
 
+msgid "No connected profiles"
+msgstr "No hay perfiles conectados"
+
 msgid "No cover"
 msgstr "Sin carátula"
 
@@ -3885,6 +3900,9 @@ msgstr "octubre"
 
 msgid "Off"
 msgstr "Apagado"
+
+msgid "Offline"
+msgstr "Sin conexión"
 
 msgid "Offline mode"
 msgstr "Modo offline"
@@ -4414,6 +4432,9 @@ msgstr "Productor"
 msgid "Profile name"
 msgstr "Nombre del perfil"
 
+msgid "Profile removed. Some local sync history could not be cleared."
+msgstr "Perfil eliminado. No se pudo borrar parte del historial local de sincronización."
+
 msgid "Provider identifiers"
 msgstr "Identificadores de proveedores"
 
@@ -4492,8 +4513,8 @@ msgstr "Colas"
 msgid "Quick Connect is turned off on that server"
 msgstr "Quick Connect está apagado en ese servidor"
 
-msgid "Quick review by size; copies and removals are verified when syncing."
-msgstr "Revisión rápida por tamaño; las copias y bajas se verifican al sincronizar."
+msgid "Quick review by size"
+msgstr "Revisión rápida por tamaño"
 
 msgid "Quick view"
 msgstr "Vista rápida"
@@ -4750,11 +4771,20 @@ msgstr "Quita una condición para obtener resultados:"
 msgid "Remove original queues"
 msgstr "Eliminar las colas originales"
 
+msgid "Remove profile"
+msgstr "Eliminar perfil"
+
+msgid "Remove saved profile"
+msgstr "Eliminar perfil guardado"
+
 msgid "Remove smaller covers and backgrounds. Chilpa makes them again as needed."
 msgstr "Borrar portadas pequeñas y fondos. Chilpa volverá a crearlos cuando hagan falta."
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "¿Eliminar este plugin, su cuenta, ajustes y biblioteca en caché de Chilpa? Esto no elimina tu cuenta ni tus playlists en el servicio."
+
+msgid "Remove this profile and its local sync history? Files on the device will stay."
+msgstr "¿Eliminar este perfil y su historial local de sincronización? Los archivos del dispositivo se conservarán."
 
 msgid "Remove this server?"
 msgstr "¿Quitar este servidor?"
@@ -4764,6 +4794,9 @@ msgstr "Borrar imágenes de fuentes y plugins que no usa la biblioteca. Se desca
 
 msgid "Remove…"
 msgstr "Quitar…"
+
+msgid "Removing saved profile…"
+msgstr "Eliminando perfil guardado…"
 
 msgid "Rename"
 msgstr "Renombrar"
@@ -5261,6 +5294,9 @@ msgstr "Mostrar en el sidebar"
 
 msgid "Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."
 msgstr "Muestra letras de archivos, caché y servicios online. Desactívalo para detener todas las consultas y traducciones y borrar la letra actual."
+
+msgid "Show offline profiles"
+msgstr "Mostrar perfiles sin conexión"
 
 msgid "Show playlist only from the same source as the track"
 msgstr "Mostrar solo playlists de la misma fuente que la pista"
@@ -6451,6 +6487,12 @@ msgstr "Válidos"
 
 msgid "Valid node name"
 msgstr "Nombre de nodo válido"
+
+msgid "Verify files after transfer"
+msgstr "Verificar archivos después de transferir"
+
+msgid "Verifying copied files…"
+msgstr "Verificando archivos copiados…"
 
 msgid "Version"
 msgstr "Versión"

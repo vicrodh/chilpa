@@ -125,12 +125,12 @@ fn same_size_device_edits_and_unowned_collisions_are_conflicts() {
 }
 
 #[test]
-fn changed_source_after_preview_never_reaches_a_published_path() {
+fn optional_copy_verification_rejects_changed_bytes_before_publication() {
     let mut rig = Rig::new();
     let input = rig.input("a", b"original");
     let plan = prepare(&rig.state, &mut rig.device, &[input.clone()], &[], false, &Cancellation::default()).unwrap();
     std::fs::write(&input.source, b"modified").unwrap();
-    assert!(synchronize(&mut rig.state, &mut rig.device, &plan, plan.id(), false, &Cancellation::default(), &mut |_| ()).is_err());
+    assert!(synchronize_with_verification(&mut rig.state, &mut rig.device, &plan, plan.id(), false, true, &Cancellation::default(), &mut |_| ()).is_err());
     assert!(!rig.root.path().join(copies(&plan)[0].as_str()).exists());
     assert_eq!(rig.state.managed_count().unwrap(), 0);
     assert!(rig.state.interrupted().unwrap());
@@ -371,7 +371,7 @@ fn review_caches_do_not_hide_source_edits_or_atomic_replacements() {
 }
 
 #[test]
-fn metadata_review_defers_same_size_integrity_checks_but_never_mutates_changed_files() {
+fn approved_removals_do_not_read_audio_even_when_copy_verification_is_enabled() {
     let mut rig = Rig::new();
     let input = rig.input("track", b"original");
     let original = rig.sync(&[input.clone()], &[], false);
@@ -382,9 +382,14 @@ fn metadata_review_defers_same_size_integrity_checks_but_never_mutates_changed_f
     assert!(present.is_metadata_review());
     let removal = prepare_review(&rig.state, &mut rig.device, &[], &[], true, &Cancellation::default()).unwrap();
     assert_eq!(removal.deletion_count(), 1);
-    assert!(matches!(synchronize(&mut rig.state, &mut rig.device, &removal, removal.id(), true, &Cancellation::default(), &mut |_| ()), Err(Error::Conflict(_))));
+    let mut meter = ReviewMeter { inner:&mut rig.device, media_bytes:0, reads:0, stats:0, reviewing:false };
+    let mut events = Vec::new();
+    synchronize_with_verification(&mut rig.state, &mut meter, &removal, removal.id(), true, true, &Cancellation::default(), &mut |event| events.push(event)).unwrap();
+    assert_eq!(meter.media_bytes, 0, "deletion must not download managed audio");
+    assert!(events.iter().any(|event| event.completed_files == 0 && !event.current_path.is_empty()));
+    assert!(events.iter().all(|event| !event.verifying));
     assert!(!rig.state.interrupted().unwrap());
-    assert_eq!(std::fs::read(path).unwrap(), b"modified");
+    assert!(!path.exists());
 }
 
 #[test]
@@ -409,27 +414,46 @@ fn failed_or_cancelled_reviews_release_snapshots_and_do_not_publish_partial_cach
 }
 
 #[test]
-fn metadata_review_rejects_foreign_and_resized_files_and_verifies_replacements() {
+fn metadata_review_rejects_foreign_and_resized_files_before_writing() {
     let mut rig = Rig::new();
     let a = rig.input("a", b"audio");
     let b = rig.input("b", b"music");
     let initial = rig.sync(&[a.clone()], &[playlist(&["a"])], false);
     let playlist_path = copies(&initial).into_iter().find(|p| p.as_str().starts_with("Playlists/")).unwrap();
     let actual = rig.root.path().join(playlist_path.as_str());
-    let mut external = std::fs::read(&actual).unwrap();
-    external[0] = b'!';
-    std::fs::write(&actual, &external).unwrap();
     let review = prepare_review(&rig.state, &mut rig.device, &[a.clone(), b.clone()], &[playlist(&["b","a"])], false, &Cancellation::default()).unwrap();
-    assert!(synchronize(&mut rig.state, &mut rig.device, &review, review.id(), false, &Cancellation::default(), &mut |_| ()).is_err());
-    assert!(!rig.state.interrupted().unwrap());
-    assert_eq!(std::fs::read(&actual).unwrap(), external);
+    let original = std::fs::read(&actual).unwrap();
     let new_path = copies(&review).into_iter().find(|p| p.as_str().starts_with("Music/")).unwrap();
     let foreign = rig.root.path().join(new_path.as_str());
     std::fs::create_dir_all(foreign.parent().unwrap()).unwrap();
     std::fs::write(&foreign, b"music").unwrap();
+    assert!(synchronize(&mut rig.state, &mut rig.device, &review, review.id(), false, &Cancellation::default(), &mut |_| ()).is_err());
+    assert!(!rig.state.interrupted().unwrap());
+    assert_eq!(std::fs::read(&actual).unwrap(), original);
     assert!(prepare_review(&rig.state, &mut rig.device, &[a.clone(),b], &[], false, &Cancellation::default()).is_err());
     std::fs::write(&actual, b"shorter").unwrap();
     assert!(prepare_review(&rig.state, &mut rig.device, &[a], &[playlist(&["a"])], false, &Cancellation::default()).is_err());
+}
+
+#[test]
+fn copies_default_to_no_readback_and_verify_once_when_requested() {
+    for verify in [false, true] {
+        let mut rig = Rig::new();
+        let input = rig.input("track", &vec![7; 1024 * 1024]);
+        let mut meter = ReviewMeter { inner:&mut rig.device, media_bytes:0, reads:0, stats:0, reviewing:false };
+        let plan = prepare_review(&rig.state, &mut meter, &[input], &[], false, &Cancellation::default()).unwrap();
+        assert_eq!(meter.media_bytes, 0);
+        let mut events = Vec::new();
+        if verify {
+            synchronize_with_verification(&mut rig.state, &mut meter, &plan, plan.id(), false, true, &Cancellation::default(), &mut |event| events.push(event)).unwrap();
+        } else {
+            synchronize(&mut rig.state, &mut meter, &plan, plan.id(), false, &Cancellation::default(), &mut |event| events.push(event)).unwrap();
+        }
+        assert_eq!(meter.media_bytes, if verify {1024 * 1024} else {0});
+        assert_eq!(events.iter().any(|event| event.verifying && event.transferred_bytes > 0), verify);
+        assert_eq!(rig.state.managed_count().unwrap(), 1);
+        assert!(!rig.state.interrupted().unwrap());
+    }
 }
 
 #[cfg(unix)]

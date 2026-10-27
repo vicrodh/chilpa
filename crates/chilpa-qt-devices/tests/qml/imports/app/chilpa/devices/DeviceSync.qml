@@ -26,6 +26,7 @@ QtObject {
     function selectProfile(id) { lastAction = ["profile",id] }
     function selectDestination(id) { lastAction = ["destination",id] }
     function createProfile(name,folder) { lastAction = ["create",name,folder] }
+    function forgetProfile(id) { lastAction = ["forget",id] }
     function toggle(id) { lastAction = ["toggle",id] }
     function useEpisode(source,id) { lastAction = ["episode",source,id]; selectionStaged(); return true }
     function useTracks(ids) { data = Object.assign({},data,{filter:""}); lastAction = ["tracks",ids]; selectionStaged(); return true }
@@ -35,7 +36,7 @@ QtObject {
     function browserView(view) { music = Object.assign({},music,{view:view,album:null,query:"",page:0}); lastAction = ["browserView",view] }
     function removals(enabled) { lastAction = ["removals",enabled] }
     function preview(recover) { lastAction = ["preview",recover] }
-    function apply(token,removals) { lastAction = ["apply",token,removals] }
+    function apply(token,removals,verifyCopies) { lastAction = ["apply",token,removals,verifyCopies] }
     function cancel() { lastAction = ["cancel"] }
     function changePage(at) { page = at; lastAction = ["page",at] }
     function browse(source) {

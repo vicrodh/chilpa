@@ -1,5 +1,5 @@
 //! I expose a diagnostic client for testing the same core that the facade uses.
-use chilpa_sync::{pair, prepare, recover, synchronize, Cancellation, Input, Playlist, State, MAX_METADATA_BYTES};
+use chilpa_sync::{pair, prepare_review, recover, synchronize_with_verification, Cancellation, Input, Playlist, State, MAX_METADATA_BYTES};
 use chilpa_devices::transport::{Adb, AdbSelector, Mounted, Transport};
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -14,6 +14,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut options = BTreeMap::new();
     let mut apply = false;
     let mut approve_removals = false;
+    let mut verify_copies = false;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -29,11 +30,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
             "--apply" => apply = true,
             "--approve-removals" => approve_removals = true,
+            "--verify-copies" => verify_copies = true,
             "--root" | "--state" | "--request" | "--adb" | "--mtp" | "--pair-name" => {
                 let value = args.next().ok_or("missing option value")?;
                 if options.insert(arg, value).is_some() { return Err("duplicate option".into()); }
             }
-            _ => return Err("usage: chilpa-sync --list-devices | --root PATH --state DB --request JSON [--mtp LOCATION/STORAGE | --adb transport:ID|serial:SERIAL] [--pair-name NAME] [--apply] [--approve-removals]".into()),
+            _ => return Err("usage: chilpa-sync --list-devices | --root PATH --state DB --request JSON [--mtp LOCATION/STORAGE | --adb transport:ID|serial:SERIAL] [--pair-name NAME] [--apply] [--approve-removals] [--verify-copies]".into()),
         }
     }
     let root = options.get("--root").ok_or("missing --root")?;
@@ -66,11 +68,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         let recovered = recover(&mut state, transport.as_mut(), &cancel)?;
         println!("recovered_operations={recovered}");
     }
-    let plan = prepare(&state, transport.as_mut(), &request.tracks, &request.playlists, request.remove_unselected, &cancel)?;
+    let plan = prepare_review(&state, transport.as_mut(), &request.tracks, &request.playlists, request.remove_unselected, &cancel)?;
     println!("target={} actions={} unchanged={} removals={} required_bytes={}", plan.target().id, plan.actions().len(),
         plan.unchanged_files(), plan.deletion_count(), plan.required_bytes());
     if apply {
-        synchronize(&mut state, transport.as_mut(), &plan, plan.id(), approve_removals, &cancel, &mut |_| ())?;
+        synchronize_with_verification(&mut state, transport.as_mut(), &plan, plan.id(), approve_removals, verify_copies, &cancel, &mut |_| ())?;
         println!("sync_complete managed_files={}", state.managed_count()?);
     }
     Ok(())

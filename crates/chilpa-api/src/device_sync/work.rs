@@ -235,6 +235,7 @@ pub(crate) fn apply(
     store: &Store,
     ready: Ready,
     approve_removals: bool,
+    verify_copies: bool,
     cancel: &Cancellation,
     progress: &Arc<Mutex<Option<chilpa_sync::Progress>>>,
 ) -> Result<(), UiError> {
@@ -257,12 +258,13 @@ pub(crate) fn apply(
     }
     let mut device = transport(&current.root, &ready.destination, false)?;
     let mut state = checked_state(store, &current, device.as_mut(), cancel)?;
-    let result = chilpa_sync::synchronize(
+    let result = chilpa_sync::synchronize_with_verification(
         &mut state,
         device.as_mut(),
         &ready.plan,
         ready.plan.id(),
         approve_removals,
+        verify_copies,
         cancel,
         &mut |value| {
             if let Ok(mut slot) = progress.lock() {

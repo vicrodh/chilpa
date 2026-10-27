@@ -60,6 +60,7 @@ pub struct Progress {
     pub total_files: usize,
     pub current_path: String,
     pub transferred_bytes: u64,
+    pub verifying: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

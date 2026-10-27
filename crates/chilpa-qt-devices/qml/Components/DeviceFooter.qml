@@ -10,10 +10,10 @@ Column {
     readonly property string token: status.phase === "review" ? status.plan || "" : ""
     signal previewAsked()
     signal recoverAsked()
-    signal syncAsked(string token, bool removals)
+    signal syncAsked(string token, bool removals, bool verifyCopies)
     signal cancelAsked()
     spacing: Metrics.gap8
-    onTokenChanged: approval.checked = false
+    onTokenChanged: { approval.checked = false; if (token !== "") verification.checked = false }
 
     Rectangle { width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline }
     Text {
@@ -77,9 +77,17 @@ Column {
             kind: "primary"
             text: I18n.tr("Sync now", I18n.rev)
             enabled: (footer.document.change_count || 0) > 0 && ((footer.status.removals || 0) === 0 || approval.checked)
-            onClicked: footer.syncAsked(footer.token, approval.checked)
+            onClicked: footer.syncAsked(footer.token, approval.checked, verification.checked)
         }
         PillButton { objectName: "deviceCancel"; visible: footer.status.busy === true; text: I18n.tr("Cancel", I18n.rev); enabled: footer.status.phase !== "cancelling"; onClicked: footer.cancelAsked() }
         Text { width: Math.min(implicitWidth, parent.width); height: Math.max(Metrics.pillHeight, implicitHeight); wrapMode: Text.WordWrap; verticalAlignment: Text.AlignVCenter; visible: !footer.status.busy && footer.status.error?.recovery !== true; text: footer.status.review_note || I18n.tr("Original music files", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
+    }
+    CircleCheck {
+        id: verification
+        objectName: "deviceVerifyCopies"
+        width: parent.width
+        visible: footer.token !== "" || footer.status.phase === "transferring"
+        enabled: !footer.status.busy && ((footer.status.copies || 0) + (footer.status.updates || 0)) > 0
+        text: I18n.tr("Verify files after transfer", I18n.rev)
     }
 }

@@ -9,7 +9,7 @@ mod state;
 mod recorded;
 pub mod transport;
 
-pub use engine::{pair, recover, synchronize};
+pub use engine::{pair, recover, synchronize, synchronize_with_verification};
 pub use model::{AssetKind, Cancellation, Fingerprint, Input, Playlist, Progress, Target};
 pub use paths::{component, RelativePath};
 pub use plan::{prepare, prepare_review, Action, ActionInfo, Plan};

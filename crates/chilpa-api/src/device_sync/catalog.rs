@@ -270,6 +270,41 @@ impl Store {
         }
         Ok(self.directory.join(format!("{id}.sqlite3")))
     }
+    /// I forget local configuration without opening or changing the storage.
+    pub(super) fn forget(&self, id: &str) -> Result<(Catalog, Option<UiError>), UiError> {
+        let state = self.state_path(id)?;
+        let lock = state.with_extension("sync-lock");
+        let lease = OpenOptions::new().read(true).write(true).create(true).truncate(false).open(&lock)
+            .map_err(|e| failure(chilpa_i18n::mark("Could not remove the saved profile."), e))?;
+        lease.try_lock().map_err(|e| failure(chilpa_i18n::mark("A sync operation still uses this profile."), e))?;
+        let catalog = self.update(|catalog| {
+            let at = catalog.profiles.iter().position(|profile| profile.id == id)
+                .ok_or_else(|| failure(chilpa_i18n::mark("Choose a saved device profile."), ""))?;
+            catalog.profiles.remove(at);
+            Ok(catalog.clone())
+        })?;
+        // The catalog is the commit point. Failed cleanup cannot put a removed profile back.
+        let mut notice = None;
+        let remove = |path: &Path| {
+            std::fs::remove_file(path).err().filter(|e| e.kind() != std::io::ErrorKind::NotFound)
+                .map(|e| failure(chilpa_i18n::mark("Profile removed. Some local sync history could not be cleared."), e))
+        };
+        for suffix in ["", "-journal", "-wal", "-shm"] {
+            let mut path = state.as_os_str().to_os_string();
+            path.push(suffix);
+            if let Some(error) = remove(Path::new(&path)) { notice.get_or_insert(error); }
+        }
+        drop(lease);
+        if let Some(error) = remove(&lock) { notice.get_or_insert(error); }
+        if self.active_profile().as_deref() == Some(id) {
+            if let Some(profile) = catalog.profiles.first() {
+                if let Err(e) = self.remember_profile(&profile.id) { notice.get_or_insert(e); }
+            } else {
+                if let Some(error) = remove(&self.directory.join("active-profile")) { notice.get_or_insert(error); }
+            }
+        }
+        Ok((catalog, notice))
+    }
 }
 pub fn local_path(value: &str) -> Result<PathBuf, UiError> {
     let path = if value.starts_with("file:") {

@@ -1,4 +1,5 @@
 import QtQuick
+import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../Components"
 import "../Patterns"
@@ -7,13 +8,14 @@ import "../Theme"
 Item {
     id: gallery
     implicitHeight: samples.implicitHeight
-    readonly property var document: ({has_profiles: true, profile_names: ["Player SD"], profile_values: ["demo"], destination_names: ["Player · Memory card"], destination_values: ["storage"], destination_details: ["40 GiB available"], destination_enabled: [true], selected: "2 selections", can_review: true, change_count: 3, page_count: 2})
-    readonly property var review: ({phase: "review", label: "Ready to sync", profile: "demo", destination: "storage", plan: "demo-plan", summary: "2 to copy · 0 to update · 1 to remove · 20 unchanged", required: "80 MiB", removals: 1})
+    readonly property var document: ({has_profiles: true, profile_names: ["Player SD", "Reader card"], profile_values: ["demo", "offline"], profile_enabled:[true,false], profiles:[{id:"demo",name:"Player SD",connected:true},{id:"offline",name:"Reader card",connected:false}], destination_names: ["Player · Memory card"], destination_values: ["storage"], destination_details: ["40 GiB available"], destination_enabled: [true], selected: "2 selections", can_review: true, change_count: 3, page_count: 2})
+    readonly property var review: ({phase: "review", label: "Ready to sync", profile: "demo", destination: "storage", plan: "demo-plan", summary: "2 to copy · 0 to update · 1 to remove · 20 unchanged", required: "80 MiB", copies:2, removals: 1})
+    DeviceProfiles { id: profiles; rows: gallery.document.profiles }
     Column {
         id: samples
         width: parent.width
         spacing: Metrics.gap16
-        DeviceHeader { width: parent.width; document: gallery.document; status: gallery.review }
+        DeviceHeader { width: parent.width; document: gallery.document; status: gallery.review; onProfilesAsked: profiles.open() }
         DeviceSelection { width: parent.width; height: DeviceLayout.galleryHeight; rows: [{id:"one",name:"Evening music",description:"12 tracks",checked:true},{id:"two",name:"A saved query",description:"genre:Jazz year:1960..1969",checked:false}] }
         DeviceSelection { width: parent.width; height: DeviceLayout.galleryHeight; busy: true }
         DeviceSelection { width: parent.width; height: DeviceLayout.galleryHeight; kind:"queries"; page:1; pages:3; rows:[{id:"query-one",name:"A saved query",description:"genre:Jazz",checked:true}] }

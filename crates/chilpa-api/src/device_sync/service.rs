@@ -40,6 +40,7 @@ pub struct Status {
     pub current: String,
     pub transferred: String,
     pub metadata_review: bool,
+    pub verifying: bool,
 }
 enum Outcome {
     Refreshed(
@@ -50,6 +51,7 @@ enum Outcome {
         Option<UiError>,
     ),
     Added(Profile),
+    Forgotten(String, Catalog, Option<UiError>),
     Connections(Vec<Destination>, Option<UiError>, Status),
     Reopened(Vec<OptionRow>, library::Labels, Vec<Destination>, Option<UiError>, Status),
     Browsed(Result<Browser, UiError>),
@@ -188,6 +190,7 @@ impl Service {
         self.status.tracks = 0;
         self.status.required.clear();
         self.status.metadata_review = false;
+        self.status.verifying = false;
     }
     fn launch(
         &mut self,
@@ -361,6 +364,18 @@ impl Service {
             )?))
         })
     }
+    pub fn forget_profile(&mut self, id: &str) -> Result<(), UiError> {
+        self.idle()?;
+        if !self.catalog.profiles.iter().any(|profile| profile.id == id) {
+            return Err(failure(chilpa_i18n::mark("Choose a saved device profile."), ""));
+        }
+        self.invalidate();
+        let id = id.to_owned();
+        self.launch("forgetting", move |store, _, _| {
+            let (catalog, notice) = store.forget(&id)?;
+            Ok(Outcome::Forgotten(id, catalog, notice))
+        })
+    }
     pub fn toggle(&mut self, id: &str) -> Result<(), UiError> {
         self.idle()?;
         self.invalidate();
@@ -504,6 +519,9 @@ impl Service {
         })
     }
     pub fn apply(&mut self, token: &str, approve_removals: bool) -> Result<(), UiError> {
+        self.apply_with_verification(token, approve_removals, false)
+    }
+    pub fn apply_with_verification(&mut self, token: &str, approve_removals: bool, verify_copies: bool) -> Result<(), UiError> {
         self.idle()?;
         let ready = self.ready.as_ref().ok_or_else(|| {
             failure(
@@ -519,11 +537,15 @@ impl Service {
         }
         self.close_browser();
         let ready = self.ready.take().unwrap();
+        let total = ready.plan.actions().len();
         let progress = self.progress.clone();
         self.launch("transferring", move |store, _, cancel| {
-            work::apply(&store, ready, approve_removals, &cancel, &progress)?;
+            work::apply(&store, ready, approve_removals, verify_copies, &cancel, &progress)?;
             Ok(Outcome::Applied)
-        })
+        })?;
+        self.status.total = total;
+        self.status.current = self.rows.first().map(|row| row.title.clone()).unwrap_or_default();
+        Ok(())
     }
     pub fn cancel(&mut self) {
         self.incoming_ids.clear();
@@ -613,6 +635,7 @@ impl Service {
                 self.status.completed = p.completed_files;
                 self.status.total = p.total_files;
                 self.status.transferred = super::bytes(p.transferred_bytes);
+                self.status.verifying = p.verifying;
                 self.status.current = self
                     .rows
                     .get(p.completed_files)
@@ -706,6 +729,18 @@ impl Service {
                     self.catalog.profiles.push(profile);
                     self.align_options();
                     self.status.phase = "idle".into();
+                }
+                Ok(Outcome::Forgotten(id, catalog, notice)) => {
+                    self.catalog = catalog;
+                    self.drafts.clear(&id);
+                    self.labels.retain(|(profile, _), _| *profile != id);
+                    for destination in &mut self.destinations { destination.profiles.retain(|profile| *profile != id); }
+                    if self.status.profile == id {
+                        self.status.profile = self.catalog.profiles.first().map(|profile| profile.id.clone()).unwrap_or_default();
+                    }
+                    self.invalidate();
+                    self.align_options();
+                    self.status.error = notice;
                 }
                 Ok(Outcome::Saved(profile)) => {
                     self.drafts.clear(&profile.id);
