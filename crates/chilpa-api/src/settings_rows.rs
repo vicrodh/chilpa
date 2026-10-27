@@ -134,12 +134,13 @@ impl Chilpa {
             return Some(chilpa_i18n::t("Updating usage…"));
         }
         if let Some(kind) = key.strip_prefix("storage.clear.") {
+            if let Some(said) = self.lyrics_maintenance(key) { return Some(said); }
             return crate::storage_cache::clear(kind).then(|| chilpa_i18n::t("Clearing in the background…"));
         }
         if let Some(said) = self.library_maintenance(key) {
             return Some(said);
         }
-        self.lyrics_maintenance(key).or_else(|| self.wizard_maintenance(key)).or_else(|| self.audio_output_maintenance(key)).or_else(||self.discogs_maintenance(key))
+        self.lyrics_maintenance(key).or_else(|| self.updates_maintenance(key)).or_else(|| self.wizard_maintenance(key)).or_else(|| self.audio_output_maintenance(key)).or_else(||self.discogs_maintenance(key))
     }
 
     /// A setting's new value, for the feature it belongs to. Like
@@ -147,7 +148,7 @@ impl Chilpa {
     /// of keys: the window's bridge hands over what it does not know by
     /// name. `false` for a key nobody takes.
     pub fn adjust(&mut self, key: &str, value: &str) -> bool {
-        if self.discogs_setting(key,value) {return true;}
+        if self.discogs_setting(key,value) || self.updates_setting(key,value) {return true;}
         if key == "storage.remoteLimitMb" {
             if !crate::storage_cache::set_limit(value) { return false }
             self.remember_preference(key, value);
@@ -171,7 +172,7 @@ impl Chilpa {
             self.remember_preference(key, value);
             return true;
         }
-        self.playlist_grouping_setting(key, value) || self.search_preview_setting(key, value) || self.device_sync_setting(key, value) || self.tray_setting(key, value) || self.discord_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value)
+        self.track_credits_setting(key, value) || self.playlist_grouping_setting(key, value) || self.search_preview_setting(key, value) || self.device_sync_setting(key, value) || self.tray_setting(key, value) || self.discord_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value)
     }
 
     /// A toggle's value from its preference, "true" or "false".
@@ -239,7 +240,7 @@ impl Chilpa {
 
     /// The value, the options and anything the row says about its state.
     fn fill(&mut self, row: &mut Row, output: &str, notes: &RowNotes) {
-        if self.discogs_row(row) {return;}
+        if self.discogs_row(row) || self.updates_settings_row(row) {return;}
         if self.graphics_row(row) || self.normalization_row(row) || self.wizard_row(row) || self.theme_row(row) {
             return;
         }
@@ -459,7 +460,11 @@ impl Chilpa {
             "playback.normalize" => row.value = self.normalize().to_string(),
             "playback.keepQueue" => row.value = self.keep_queue().to_string(),
             "navigation.newtab" => row.value = self.pref_on("navigation.newtab", true),
-            "navigation.playerLayout" => row.value = self.player_layout().to_string(),
+            "navigation.playerLayout" => {
+                row.value = self.player_layout().to_string();
+                for (value, label) in fixed(&row.key) { row.values.push(value.into()); row.options.push(label); }
+            },
+            crate::credits::SHOW_COMPOSERS => row.value = self.track_composers_shown().to_string(),
             "navigation.restoreTabs" => row.value = self.pref_on("navigation.restoreTabs", true),
             crate::source_integration::GROUP_PLAYLISTS => row.value = self.pref_on(&row.key, false),
             crate::search::SEARCH_PREVIEW => row.value = self.pref_on(&row.key, true),
@@ -646,6 +651,16 @@ fn account(row: &mut Row, status: &crate::ScrobbleStatus) {
 #[cfg(test)]
 mod dsd_tests {
     use super::*;
+
+    #[test]
+    fn navigation_layout_select_has_the_players_three_options_and_current_value() {
+        let mut api = Chilpa::new();
+        let mut row = Row { key: "navigation.playerLayout".into(), control: "select".into(), ..Row::default() };
+        api.fill(&mut row, "", &RowNotes::default());
+        assert_eq!(row.values, crate::player_layout::LAYOUTS);
+        assert_eq!(row.options.len(), row.values.len());
+        assert_eq!(row.value, api.player_layout());
+    }
 
     #[test]
     fn pipewire_exposes_native_dsd_only_when_exclusive_and_keeps_dop_out() {

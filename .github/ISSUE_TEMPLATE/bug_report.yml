@@ -1,0 +1,132 @@
+name: Bug report
+description: Tell us about something that is not working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Report plugin errors in the corresponding plugin's repository.**
+        Include that plugin's name and version there. This form is for Chilpa.
+
+        Please describe what happened and, if possible, how to reproduce it. Logs help with most reports, but they
+        are not required when the issue is self-explanatory or unavailable.
+
+        If you investigated the cause, please include what you found. Patches
+        are welcome, but never required.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of Chilpa is affected?
+      options:
+        - Startup or crash
+        - Playback or audio
+        - Music servers
+        - Local or offline library
+        - Casting or device sync
+        - Interface or navigation
+        - Plugin installation or host permissions
+        - Installation, update or packaging
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Android
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Tell us what you observed and what you expected instead.
+      placeholder: Describe the problem in your own words.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we reproduce it?
+      description: If it is intermittent, describe what you were doing before it appeared.
+      placeholder: |
+        1. Open...
+        2. Select...
+        3. Observe...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Chilpa version
+      description: Find it under About, or include the package version.
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: Installation method
+      options:
+        - AppImage
+        - APT repository or .deb
+        - RPM repository or .rpm
+        - AUR
+        - Gentoo overlay
+        - Nix or NixOS
+        - Flatpak
+        - Snap
+        - Homebrew Cask
+        - Signed macOS DMG
+        - Upstream macOS DMG
+        - Windows MSI or ZIP
+        - Built from source
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment details
+      description: Add only what seems relevant to this report.
+      placeholder: |
+        OS or distribution:
+        Desktop environment / display server:
+        Audio backend / DAC:
+        GPU:
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Logs make most bugs much faster to diagnose and often reveal whether
+        the cause is Chilpa, packaging, configuration or the surrounding system.
+
+        If they are relevant and available, choose Report an issue > Review
+        and copy logs, inspect the redacted report, then choose Copy report.
+        Paste it below or attach the exported text file. The same review is
+        available under Settings > Developers > View logs > Review and share.
+        Nothing is uploaded automatically. Review terminal output for secrets
+        before sharing it when Chilpa cannot start.
+      placeholder: |
+        Paste the reviewed report here, or attach the exported text file.
+
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Screenshots or additional context
+      description: Drag in images or files, or add anything else that may help.

@@ -17,7 +17,7 @@ Column {
         wrapMode: Text.WordWrap
         font.pointSize: Type.body
         color: Theme.color.textSecondary
-        text: panel.state.phase === "checking" ? I18n.tr("Checking for updates…", I18n.rev)
+        text: panel.state.offline === true && !panel.state.busy ? I18n.tr("Offline", I18n.rev) : panel.state.phase === "checking" ? I18n.tr("Checking for updates…", I18n.rev)
             : panel.state.phase === "available" ? I18n.tr("A new version of Chilpa is available.", I18n.rev)
             : panel.state.phase === "downloading" ? I18n.tr("Downloading update…", I18n.rev)
             : panel.state.phase === "installing" ? I18n.tr("Preparing the updated AppImage…", I18n.rev)
@@ -25,7 +25,7 @@ Column {
             : panel.state.phase === "ready" ? I18n.tr("The update is ready. Restart Chilpa to use it.", I18n.rev)
             : panel.state.phase === "current" ? I18n.tr("Chilpa is up to date.", I18n.rev)
             : panel.state.phase === "error" && panel.state.reason === "read_only" ? I18n.tr("Move this AppImage to a writable folder, then try again.", I18n.rev)
-            : panel.state.phase === "error" ? I18n.tr("The update could not be completed. Your current AppImage is safe. Try again later.", I18n.rev)
+            : panel.state.phase === "error" ? panel.state.can_install === true ? I18n.tr("The update could not be completed. Your current AppImage is safe. Try again later.", I18n.rev) : I18n.tr("The update check failed. Try again.", I18n.rev)
             : panel.state.phase === "cancelled" ? I18n.tr("Update cancelled.", I18n.rev)
             : I18n.tr("Check for a newer version of Chilpa.", I18n.rev)
     }
@@ -43,12 +43,13 @@ Column {
     }
     Row {
         spacing: Metrics.gap8
-        PillButton { objectName: "checkUpdates"; text: I18n.tr("Check for updates", I18n.rev); enabled: !panel.state.busy && panel.state.phase !== "ready"; onClicked: Updates.check(false) }
-        PillButton { objectName: "downloadUpdate"; text: I18n.tr("Update", I18n.rev); kind: "primary"; visible: panel.state.phase === "available"; onClicked: Updates.download() }
+        PillButton { objectName: "checkUpdates"; text: I18n.tr("Check for updates", I18n.rev); enabled: !panel.state.offline && !panel.state.busy && panel.state.phase !== "ready"; onClicked: Updates.check(false) }
+        PillButton { objectName: "downloadUpdate"; enabled: !panel.state.offline; text: I18n.tr("Update", I18n.rev); kind: "primary"; visible: panel.state.phase === "available" && panel.state.can_install === true; onClicked: Updates.download() }
+        PillButton { objectName: "openUpdateRelease"; enabled: !panel.state.offline && !!panel.state.release_url; text: I18n.tr("Open release page", I18n.rev); visible: panel.state.phase === "available" && panel.state.can_install !== true; onClicked: Qt.openUrlExternally(panel.state.release_url) }
         PillButton { objectName: "cancelUpdate"; text: I18n.tr("Cancel", I18n.rev); visible: panel.state.busy === true && panel.state.phase !== "installing"; enabled: panel.state.phase !== "cancelling"; onClicked: Updates.cancel() }
         PillButton { objectName: "restartUpdate"; text: I18n.tr("Restart Chilpa", I18n.rev); kind: "primary"; visible: panel.state.phase === "ready"; onClicked: if (Updates.restart()) Qt.quit() }
     }
-    Text { width: parent.width; wrapMode: Text.WordWrap; text: I18n.tr("Updates keep your library, settings and plugins. One previous AppImage is kept beside the new one.", I18n.rev); font.pointSize: Type.small; color: Theme.color.textTertiary }
-    Timer { interval: Motion.poll; repeat: true; running: panel.visible; onTriggered: Updates.refresh() }
+    Text { width: parent.width; visible: panel.state.can_install === true; wrapMode: Text.WordWrap; text: I18n.tr("Updates keep your library, settings and plugins. One previous AppImage is kept beside the new one.", I18n.rev); font.pointSize: Type.small; color: Theme.color.textTertiary }
+    Timer { objectName: "updatePolling"; interval: Motion.poll; repeat: true; running: panel.visible && panel.Window.window && panel.Window.window.visible && panel.state.busy === true; onTriggered: Updates.refresh() }
     Component.onCompleted: Updates.refresh()
 }

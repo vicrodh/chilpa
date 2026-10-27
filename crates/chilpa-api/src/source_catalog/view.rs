@@ -137,6 +137,34 @@ mod work_tests {
     use super::*;
 
     #[test]
+    fn source_metadata_keeps_primary_featured_and_writer_routes_through_rows_and_menu() {
+        let mut app = crate::Chilpa::new();
+        let track = {
+            let mut inner = app.catalog.lock();
+            let id = inner.store.take_item_track("fixture", &serde_json::json!({
+                "kind":"track", "ref":"track:1", "title":"Song", "artist":"Lead", "artist_ref":"artist:1",
+                "composer":"Writer", "performers":[
+                    {"name":"Lead", "roles":["MainArtist"], "ref":"artist:1"},
+                    {"name":"Guest", "roles":["FeaturedArtist"], "ref":"artist:2"},
+                    {"name":"Writer", "roles":["Composer"], "ref":"artist:3"}
+                ]
+            }), None, 1).unwrap();
+            inner.store.tracks.get(&id).unwrap().clone()
+        };
+        let row = row_of(&track, String::new());
+        let credits = row.credits.as_ref().unwrap();
+        assert_eq!(credits.artists[0].name, "Lead");
+        assert_eq!(credits.featured[0].name, "Guest");
+        assert_eq!(credits.composers[0].name, "Writer");
+        let document: serde_json::Value = serde_json::from_str(&app.source_credit_document(0, &track.path)).unwrap();
+        assert_eq!(document, credits.document());
+        assert_eq!(app.source_track_artist(&track.path, &track.artist, 0).as_deref(), Some("fixture native:artist:1"));
+        assert_eq!(app.source_track_artist(&track.path, &track.artist, 1).as_deref(), Some("fixture native:artist:2"));
+        assert_eq!(app.source_track_artist(&track.path, &track.artist, 2), None, "the writer is not a performing artist");
+        assert!(!app.track_composers_shown(), "writing credits are opt-in");
+    }
+
+    #[test]
     fn source_track_keeps_work_and_the_composer_artist_route() {
         let track = Track {
             plugin: "fixture".into(),
@@ -168,6 +196,7 @@ pub(crate) fn row_of(track: &Track, art: String) -> TrackRow {
         artwork_path: art,
         available: track.playable,
         explicit: track.metadata["explicit"].as_bool(),
+        credits: Some(Box::new(crate::credits::TrackCredits::source(&track.artist, &track.metadata, &track.plugin))),
         composer: super::composers::own_composers(&track.metadata).join(", "),
         disc_subtitle: track.metadata["disc_subtitle"].as_str().unwrap_or_default().to_string(),
         work: track.metadata["work"].as_str().unwrap_or_default().to_string(),

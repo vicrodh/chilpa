@@ -1,4 +1,5 @@
 import QtQuick
+import app.chilpa.kit
 import "../Theme"
 
 // The widths of a track list's columns, computed once and shared by the
@@ -44,7 +45,7 @@ QtObject {
     readonly property FontMetrics creditFont: FontMetrics { font.pointSize: Type.meta }
     function widthOf(texts) { return Math.max(0, ...(texts || []).map(text => rowFont.advanceWidth(text))) }
     property var wants: widest.title === undefined ? ({}) : ({
-        title: Math.max(0, ...widest.title.map(pair => rowFont.advanceWidth(pair[0]) + (pair[1] ? Metrics.gap6 + creditFont.advanceWidth(pair[1]) : 0))),
+        title: Math.max(0, ...widest.title.map(pair => rowFont.advanceWidth(pair[0]) + (pair[1] ? Metrics.gap6 + creditFont.advanceWidth(pair[1]) : 0) + (Prefs.trackComposers && pair[2] ? Metrics.gap6 + creditFont.advanceWidth(I18n.trArgs("Composer: {}", [pair[2]], I18n.rev)) : 0))),
         artist: widthOf(widest.artist), album: widthOf(widest.album)})
     // A column is never narrower than a header's name.
     readonly property int least: Metrics.gap16 * 4 // derived: room for a header's name

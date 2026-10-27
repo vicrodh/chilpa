@@ -1,13 +1,19 @@
 import QtQuick
 import "../Theme"
 
-// A title with a quiet credit after it on the same baseline, such as a
-// track's composer: the credit keeps up to a third of the width, the title
+// A title with independently linked featured and optional composer credits:
+// the credit keeps up to a third of the width, the title
 // the rest, and each elides on its own.
 Item {
     id: line
     property string title
     property string credit
+    property string composer
+    property bool richCredits: false
+    function linkAt(from, x, y) {
+        const point = creditText.mapFromItem(from, x, y)
+        return creditText.visible ? creditText.linkAt(point.x, point.y) : ""
+    }
     property bool explicitContent: false
     property real titleSize: Type.row
     property int titleWeight: Type.regular
@@ -39,11 +45,12 @@ Item {
         id: creditText
         x: titleText.width + line.advisoryWidth + line.spacing
         objectName: "titleCredit"
-        visible: line.credit !== ""
+        visible: line.credit !== "" || line.composer !== ""
         width: Math.max(0, line.width - x)
         anchors.baseline: titleText.baseline
-        text: line.credit
-        textFormat: Text.PlainText
+        text: [line.credit, line.composer].filter(Boolean).join(" · ")
+        textFormat: line.richCredits ? Text.RichText : Text.PlainText
+        linkColor: color
         elide: Text.ElideRight
         font.pointSize: Type.meta
         color: Theme.color.textTertiary

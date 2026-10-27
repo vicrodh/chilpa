@@ -1,4 +1,5 @@
 import QtQuick
+import app.chilpa.kit
 import "../Theme"
 
 // The header's content stays behind the list's one pointer. Its disc
@@ -32,6 +33,7 @@ Item {
         sourceComponent: TrackGroupHeader {
             objectName: "groupHeader"
             of: header.row
+            composer: Prefs.trackComposers ? header.row.headerComposer : ""
             discActions: header.actionsEnabled && !header.row.headerWork && !header.row.record
             actionHovered: header.row.actionHovered
         }

@@ -9,12 +9,12 @@ Item {
     id: notice
     readonly property var state: JSON.parse(Updates.snapshot || "{}")
     property string dismissed: ""
+    property bool launchChecked: false
     readonly property string identity: (state.version || "") + ":" + (state.phase || "")
     width: Frame.updateWidth
     height: contents.height + Metrics.gap12 * 2 // derived: panel padding
-    Timer { interval: Frame.updateDelay; running: true; onTriggered: Updates.check(true) }
-    Timer { interval: Frame.updateInterval; repeat: true; running: true; onTriggered: Updates.check(true) }
-    Timer { interval: Motion.poll; repeat: true; running: notice.state.supported === true; onTriggered: Updates.refresh() }
+    Timer { interval: Frame.updateDelay; running: !notice.launchChecked; onTriggered: { notice.launchChecked = true; Updates.check(true) } }
+    Timer { interval: Motion.poll; repeat: true; running: notice.visible && notice.state.busy === true && notice.Window.window && notice.Window.window.visible; onTriggered: Updates.refresh() }
     Rectangle {
         anchors.fill: parent
         visible: notice.dismissed !== notice.identity && ["available", "downloading", "installing", "ready"].indexOf(notice.state.phase) >= 0
@@ -39,7 +39,7 @@ Item {
     Modal {
         id: details
         width: Frame.updateWidth + Metrics.modalInsets
-        UpdatesPanel { width: details.width - Metrics.modalInsets }
+        Loader { width: details.width - Metrics.modalInsets; active: details.opened; sourceComponent: UpdatesPanel {} }
     }
     Component.onCompleted: Updates.refresh()
 }

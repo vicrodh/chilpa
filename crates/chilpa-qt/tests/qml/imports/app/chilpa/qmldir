@@ -15,3 +15,4 @@ singleton AlbumActions 1.0 AlbumActions.qml
 singleton Library 1.0 Library.qml
 SettingsPage 1.0 SettingsPage.qml
 FacetModel 1.0 FacetModel.qml
+singleton Servers 1.0 Servers.qml

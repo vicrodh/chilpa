@@ -1,32 +1,41 @@
 import QtQuick
 import QtQuick.Effects
 import app.chilpa
+import app.chilpa.kit
 import app.chilpa.ambient
 import app.chilpa.immersive
+import app.chilpa.graphics
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 import "../Primitives"
 import "../Theme"
 
-// Focus 3, Spectrum (03-immersive §1.4): opaque black, 28 columns that
-// are the 14 active bars of the 16 (the first and last stay empty)
-// mirrored about the center, each a gradient from the cover's secondary
-// at the tip to its primary at the base, rising from 15 % of the height
-// to at most 70 % of it. The cover sits smaller over the bars with its
-// own block: no "Now Playing" sign here.
+// I reuse the logarithmic queue renderer inside the existing Spectrum view.
+// The immersive host owns capture; this panel only consumes its bars.
 Rectangle {
     id: panel
     property bool shaders: true
+    property var feed: Visualizer
+    property int variant: [0, 5, 6].indexOf(Number(SettingsModel.kept("ui.immersive.spectrum.variant"))) >= 0
+        ? Number(SettingsModel.kept("ui.immersive.spectrum.variant")) : 0
+    readonly property string variantLabel: variant === 5 ? I18n.tr("PEAK", I18n.rev)
+        : variant === 6 ? I18n.tr("Squares", I18n.rev) : I18n.tr("Bars", I18n.rev)
+    function cycleVariant() {
+        variant = variant === 0 ? 5 : variant === 5 ? 6 : 0
+        SettingsModel.keep("ui.immersive.spectrum.variant", String(variant))
+    }
     color: Theme.color.immersiveBlack
+    readonly property real maxBar: panel.height * Stage.spectrumMaxShare
+
     readonly property var activeBins: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
     readonly property real slot: panel.width / Stage.spectrumColumns
-    readonly property real maxBar: panel.height * Stage.spectrumMaxShare
 
     StreamSettle {
         id: bars
-        target: Visualizer.bars
-        live: panel.visible && Immersive.open
+        target: panel.variant === 0 ? panel.feed.bars : []
+        live: panel.visible && Immersive.open && panel.variant === 0
     }
     Gradient {
         id: barGradient
@@ -34,7 +43,7 @@ Rectangle {
         GradientStop { position: 1; color: Ambient.primary }
     }
     Repeater {
-        model: Stage.spectrumColumns
+        model: panel.variant === 0 ? Stage.spectrumColumns : 0
         Rectangle {
             required property int index
             readonly property int bin: index < Stage.spectrumColumns / 2 ? panel.activeBins[index] : panel.activeBins[Stage.spectrumColumns - 1 - index] // derived: mirrored
@@ -44,6 +53,67 @@ Rectangle {
             anchors.bottom: parent.bottom
             anchors.bottomMargin: panel.height * Stage.spectrumBaseline
             gradient: barGradient
+        }
+    }
+
+    Loader {
+        id: variants
+        width: panel.width
+        height: panel.maxBar
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: panel.height * Stage.spectrumBaseline
+        active: panel.visible && Immersive.open && panel.variant !== 0
+        sourceComponent: Item {
+            objectName: "immersiveSpectrumVisualizer"
+            readonly property int mode: panel.variant
+            readonly property bool gpuAvailable: GraphicsInfo.api !== GraphicsInfo.Software && GraphicsInfo.api !== GraphicsInfo.Null
+            readonly property bool nativeSupported: gpuAvailable && width * 4 >= height
+            CompactSpectrumState {
+                id: animationState
+                objectName: "immersiveSpectrumState"
+                active: variants.active
+                mode: panel.variant
+                source: active ? panel.feed.bars : []
+            }
+            Loader {
+                anchors.fill: parent
+                active: parent.nativeSupported
+                sourceComponent: SpectrumItem {
+                    mode: panel.variant
+                    values: animationState.values
+                    peakValues: animationState.peaks
+                    topColor: Ambient.secondary
+                    bottomColor: Ambient.primary
+                }
+            }
+            Loader {
+                anchors.fill: parent
+                active: parent.gpuAvailable && !parent.nativeSupported
+                sourceComponent: CompactSpectrumShader {
+                    mode: panel.variant
+                    values: animationState.values
+                    peakValues: animationState.peaks
+                    topColor: Ambient.secondary
+                    bottomColor: Ambient.primary
+                }
+            }
+            Loader {
+                anchors.fill: parent
+                active: !parent.gpuAvailable
+                sourceComponent: CompactSpectrumFallback {
+                    mode: panel.variant
+                    topColor: Ambient.secondary
+                    bottomColor: Ambient.primary
+                    modelState: QtObject {
+                        readonly property int count: Stage.spectrumColumns
+                        readonly property real slot: panel.slot
+                        readonly property real height: panel.maxBar
+                        function bin(i) { return panel.activeBins[i < count / 2 ? i : count - 1 - i] }
+                        function at(i) { return animationState.values[bin(i)] || 0 }
+                        function peak(i) { return animationState.peaks[bin(i)] || 0 }
+                    }
+                }
+            }
         }
     }
 

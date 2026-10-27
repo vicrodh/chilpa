@@ -41,6 +41,7 @@ pub struct TrackRow {
     pub composer_target: String,
     pub groups: Option<Box<crate::TrackGroups>>,
     pub explicit: Option<bool>,
+    pub credits: Option<Box<crate::credits::TrackCredits>>,
 }
 
 /// One row in a grouped track list. Headers are explicit boundaries, so the
@@ -89,6 +90,7 @@ pub(crate) fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
         quality: Quality::of_track(&t.external_id, t.codec.as_deref(), t.bit_depth, t.sample_rate_hz),
         available: t.available,
         explicit: t.explicit,
+        credits: None,
         id: t.id,
         path: t.external_id,
         title: t.title,
@@ -307,7 +309,7 @@ pub(crate) fn file_row(path: &str) -> TrackRow {
     // Not in the library: a file opened from a folder plays if it is there;
     // a server's track the library no longer holds does not.
     let available = !chilpa_models::RemoteEntry::is_remote(path) && std::path::Path::new(path).exists();
-    TrackRow { title: crate::title_of(std::path::Path::new(path)), quality: Quality::of_file(path, None, None), id: 0, path: path.to_string(), artist: String::new(), album: String::new(), album_id: 0, disc: 0, number: 0, duration_ms: 0, plays: 0, artwork_path: String::new(), available, composer: String::new(), disc_subtitle: String::new(), work: String::new(), composer_target: String::new(), groups: None, explicit: None }
+    TrackRow { title: crate::title_of(std::path::Path::new(path)), quality: Quality::of_file(path, None, None), id: 0, path: path.to_string(), artist: String::new(), album: String::new(), album_id: 0, disc: 0, number: 0, duration_ms: 0, plays: 0, artwork_path: String::new(), available, composer: String::new(), disc_subtitle: String::new(), work: String::new(), composer_target: String::new(), groups: None, explicit: None, credits: None }
 }
 
 /// A record as its page shows it.

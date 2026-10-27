@@ -44,3 +44,8 @@ save
 file-up
 audio-lines
 audio-lines-off
+route
+route-off
+database
+cable
+blocks

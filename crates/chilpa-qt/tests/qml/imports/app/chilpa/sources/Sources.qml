@@ -9,6 +9,8 @@ QtObject {
     // A cover a test says arrived, by its address.
     property var arrived: ({})
     function art(plugin, image, rev) { return arrived[image] || "" }
+    property var creditDocuments: ({})
+    function creditDocument(id, path, rev) { return JSON.stringify(creditDocuments[path] || creditDocuments[id] || {}) }
     function artistKey(id, path) { return "" }
     function artistLink(id, name) { return JSON.stringify(AlbumActions.artistDestination.key ? AlbumActions.artistDestination : {target:"artist",key:name}) }
     function card(id, rev) { return JSON.stringify((state.cards || {})[id] || {}) }

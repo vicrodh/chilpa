@@ -27,11 +27,13 @@ Item {
     property bool visualizationsReady: false
     property bool visualization: SettingsModel.kept("ui.queue.visualizer") === "true"
     property int visualizationMode: Math.max(0, Math.min(6, Number(SettingsModel.kept("ui.queue.visualizer.mode") || 0)))
+    property bool signalPath: SettingsModel.kept("ui.queue.signalPath") !== "false"
     readonly property bool presented: visible && tab === "playing" && (!Window.window
         || (Window.window.visible && Window.window.visibility !== Window.Minimized))
+    readonly property bool pathPresented: presented && signalPath
     property string pathDocument: "{}"
     function refreshPath() {
-        if (!presented) return
+        if (!pathPresented) return
         const next = AudioOutput.signalPath()
         if (next !== pathDocument) pathDocument = next
     }
@@ -39,7 +41,11 @@ Item {
         visualization = !visualization
         SettingsModel.keep("ui.queue.visualizer", visualization ? "true" : "false")
     }
-    onPresentedChanged: { if (presented) refreshPath(); else pathDocument = "{}" }
+    function toggleSignalPath() {
+        signalPath = !signalPath
+        SettingsModel.keep("ui.queue.signalPath", signalPath ? "true" : "false")
+    }
+    onPathPresentedChanged: { if (pathPresented) refreshPath(); else pathDocument = "{}" }
     Component.onCompleted: refreshPath()
 
     Column {
@@ -84,18 +90,30 @@ Item {
                 current: card.tabs.indexOf(card.tab)
                 onActivated: (index) => card.show(card.tabs[index])
             }
-            IconButton {
-                objectName: "queueVisualizationToggle"
+            Row {
                 visible: card.tab === "playing"
-                enabled: card.visualizationsReady && card.visualizerFeed !== null
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                glyph: card.visualization ? Lucide.audioLinesOff : Lucide.audioLines
-                iconFamily: Lucide.font
-                tip: card.visualization ? I18n.tr("Hide visualization", I18n.rev) : I18n.tr("Show visualization", I18n.rev)
-                checked: card.visualization
-                size: Metrics.button26
-                onClicked: card.toggleVisualization()
+                spacing: Metrics.gap4
+                IconButton {
+                    objectName: "queueVisualizationToggle"
+                    enabled: card.visualizationsReady && card.visualizerFeed !== null
+                    glyph: card.visualization ? Lucide.audioLinesOff : Lucide.audioLines
+                    iconFamily: Lucide.font
+                    tip: card.visualization ? I18n.tr("Hide visualization", I18n.rev) : I18n.tr("Show visualization", I18n.rev)
+                    checked: card.visualization
+                    size: Metrics.button26
+                    onClicked: card.toggleVisualization()
+                }
+                IconButton {
+                    objectName: "queueSignalPathToggle"
+                    glyph: card.signalPath ? Lucide.routeOff : Lucide.route
+                    iconFamily: Lucide.font
+                    tip: card.signalPath ? I18n.tr("Hide audio path", I18n.rev) : I18n.tr("Show audio path", I18n.rev)
+                    checked: card.signalPath
+                    size: Metrics.button26
+                    onClicked: card.toggleSignalPath()
+                }
             }
             // The lyrics' display settings, at the far end of their tab's row.
             IconButton {
@@ -174,7 +192,8 @@ Item {
             Loader {
                 objectName: "queueSignalPathHost"
                 width: parent.width
-                active: card.presented
+                active: card.pathPresented
+                visible: active
                 sourceComponent: QueueSignalPath { document: JSON.parse(card.pathDocument) }
             }
         }

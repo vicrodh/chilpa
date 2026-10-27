@@ -8,6 +8,8 @@ import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
 import app.chilpa.controls
+import app.chilpa.about
+import "qrc:/qt/qml/app/chilpa/about/qml/Patterns" as AboutPatterns
 import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as Driving
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
@@ -39,6 +41,7 @@ Item {
     Connections { target: I18n; function onRevChanged() { rows.refresh() } }
     Connections { target: Prefs; function onRevChanged() { if (page.visible && page.section === "navigation") rows.refresh() } }
     Connections { target: AudioOutput; function onOutputSelected() { if (page.visible && page.section === "audio") rows.refresh() } }
+    Connections { target: Updates; function onSnapshotChanged() { if (page.visible && page.section === "updates") rows.refresh() } }
     MetadataUi.DiscogsSettings { rows: rows; current: page.visible && !page.leaving && page.section === "integrations" }
     Text {
         id: title
@@ -72,9 +75,11 @@ Item {
             NavItem {
                 required property int index
                 required property string modelData
+                readonly property string sectionGlyph: SettingsModel.sectionIcons[index] || ""
                 width: nav.width
                 text: I18n.tr(SettingsModel.sectionLabels[index], I18n.rev)
-                glyph: Icons[SettingsModel.sectionIcons[index]] || ""
+                glyph: sectionGlyph.startsWith("lucide:") ? Lucide[sectionGlyph.substring(7)] || "" : Icons[sectionGlyph] || ""
+                iconFamily: sectionGlyph.startsWith("lucide:") ? Lucide.font : ""
                 active: modelData === page.section
                 onClicked: Navigation.openSection(modelData)
             }
@@ -84,71 +89,21 @@ Item {
     // The settings that say what was typed, as the facade orders them:
     // each with where it lives, and a click, or Enter on the one marked,
     // goes there.
-    ListView {
+    Driving.SettingsResults {
         id: found
         visible: search.text !== ""
+        query: search.text
         anchors.top: title.bottom
         anchors.topMargin: Metrics.section
         anchors.bottom: parent.bottom
         anchors.left: nav.right
         anchors.leftMargin: Metrics.heroGap
         width: page.width - x - Metrics.contentX
-        property int current: 0
-        readonly property var matches: {
-            try {
-                return JSON.parse(SettingsModel.find(search.text, I18n.rev))
-            } catch (e) {
-                return []
-            }
-        }
-        signal chosen(var setting)
-        function step(by) {
-            current = Math.max(0, Math.min(matches.length - 1, current + by))
-            positionViewAtIndex(current, ListView.Contain)
-        }
-        function choose() {
-            if (matches.length > 0)
-                chosen(matches[current])
-        }
-        onChosen: (setting) => page.go(setting)
-        onMatchesChanged: current = 0
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
-        model: matches
-        spacing: Metrics.gap2
-        ScrollBar.vertical: ViewportScrollBar {}
-        delegate: Rectangle {
-            required property var modelData
-            required property int index
-            objectName: "settingFound"
-            width: ListView.view.width - Metrics.gap12
-            height: lines.implicitHeight + Metrics.gap12 * 2 // derived: padding above and below
-            radius: Metrics.radiusControl
-            color: index === found.current || hover.hovered ? Theme.color.stateHover : "transparent"
-            Column {
-                id: lines
-                x: Metrics.gap12
-                y: Metrics.gap12
-                width: parent.width - Metrics.gap12 * 2 // derived: padding on both sides
-                spacing: Metrics.gap2
-                Text { width: parent.width; text: modelData.title; elide: Text.ElideRight; font.pointSize: Type.body; font.weight: Type.medium; color: Theme.color.textPrimary }
-                Text { width: parent.width; text: modelData.place; elide: Text.ElideRight; font.pointSize: Type.small; color: Theme.color.textTertiary }
-                Text { width: parent.width; visible: text !== ""; text: modelData.description; wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight; font.pointSize: Type.meta; color: Theme.color.textSecondary }
-            }
-            HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
-            TapHandler { onTapped: found.chosen(modelData) }
-        }
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: found.count === 0
-            text: I18n.tr("No setting says that", I18n.rev)
-            font.pointSize: Type.body
-            color: Theme.color.textTertiary
-        }
+        onChosen: setting => page.go(setting)
     }
     ListView {
         id: list
-        visible: page.section !== "plugins" && search.text === ""
+        visible: !["plugins", "sources", "developers"].includes(page.section) && search.text === ""
         anchors.top: title.bottom
         anchors.topMargin: Metrics.section - Metrics.settingsGroup + Metrics.gap12
         anchors.bottom: parent.bottom
@@ -158,13 +113,12 @@ Item {
         // sits on the right, its label and description on the left.
         width: page.width - x - Metrics.contentX
         clip: true
-        model: rows
+        model: visible ? rows : null
         bottomMargin: Metrics.contentBottom
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.pageGutter }
         delegate: SettingsRow {
             id: settingRow; width: ListView.view.width - Metrics.gap12; page: actions
-            serverEditor: Component { SourceParts.ServerEditForm { onClosed: actions.set(settingRow.key, "close-edit") } }
             themePicker: Component { Themes.ThemePicker { options: settingRow.options; values: settingRow.optionValues; value: settingRow.value; onPicked: (slug) => actions.set(settingRow.key, slug) } }
             themeOptions: Component { Themes.ThemeOptionsPanel {} }
         }
@@ -199,11 +153,35 @@ Item {
         anchors.rightMargin: Metrics.contentX
     }
 
+    Loader {
+        active: page.visible && !page.leaving && search.text === "" && ["sources", "developers"].includes(page.section)
+        anchors.top: title.bottom
+        anchors.topMargin: Metrics.section
+        anchors.bottom: parent.bottom
+        anchors.left: nav.right
+        anchors.leftMargin: Metrics.heroGap
+        anchors.right: parent.right
+        anchors.rightMargin: Metrics.contentX
+        sourceComponent: page.section === "sources" ? musicServers : developerTools
+    }
+    Component { id: musicServers; MusicServers { model: rows; onAddRequested: adding.open(); onActionRequested: (key, action) => actions.set(key, action) } }
+    Component { id: developerTools; AboutPatterns.DeveloperSettings { active: page.visible && !page.leaving && page.section === "developers"; onCastRequested: anchor => casting.show(anchor) } }
+
     QtObject {
         id: actions
         property string editingServerKey: ""
-        function set(key, value) { SettingsActions.set(actions, rows, removing, Servers, I18n, key, value) }
-        function press(key) { if (!storage.press(key)) SettingsActions.press(actions, rows, pluginManager, casting, adding, diagnosis, inventory, Navigation, Servers, Qt, key) }
+        function set(key, value) {
+            if (key.startsWith("sources.server/") && value === "edit") {
+                editingServerKey = key
+                editing.show(Number(key.substring("sources.server/".length)))
+            } else SettingsActions.set(actions, rows, removing, Servers, I18n, key, value)
+            if (key.startsWith("updates.") || key === "integrations.offline") Updates.refresh()
+        }
+        function press(key) {
+            if (key === "updates.check") Updates.check(false)
+            else if (key === "updates.changelog") Onboarding.command("whatsNew")
+            else if (!storage.press(key)) SettingsActions.press(actions, rows, pluginManager, casting, adding, diagnosis, inventory, Navigation, Servers, Qt, key)
+        }
     }
 
     CastPicker { id: casting }
@@ -212,6 +190,7 @@ Item {
         id: adding
         onClosed: rows.refresh()
     }
+    SourceParts.ServerConnectionDialog { id: editing; onClosed: { actions.editingServerKey = ""; rows.refresh() } }
 
     ConfirmDialog {
         id: removing
@@ -226,18 +205,18 @@ Item {
 
     WizardPatterns.OutputDiagnosisDialog { id: diagnosis; settingsPage: rows }
     AnalysisUi.AnalysisInventoryDialog { id: inventory }
-    StorageSettingsActions { id: storage; rows: rows; current: page.visible && page.section === "storage" }
+    StorageSettingsActions { id: storage; rows: rows; current: page.visible && !page.leaving && search.text === "" && page.section === "storage" }
 
     // A sync moving, a server coming back: its rows follow while shown.
     Timer {
         interval: Motion.refresh
         repeat: true
-        running: page.visible && page.section === "sources" && actions.editingServerKey === ""
+        running: page.visible && !page.leaving && search.text === "" && page.section === "sources" && actions.editingServerKey === "" && !adding.opened
         onTriggered: { rows.refresh(); Sources.refresh() }
     }
 
     Text {
-        visible: rows.pending
+        visible: rows.pending && page.section !== "developers"
         anchors.left: nav.right
         anchors.leftMargin: Metrics.heroGap
         anchors.top: nav.top

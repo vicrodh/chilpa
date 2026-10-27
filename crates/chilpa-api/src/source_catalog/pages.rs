@@ -274,6 +274,10 @@ impl crate::Chilpa {
     pub fn source_track_artist(&mut self, path: &str, credit: &str, place: i32) -> Option<String> {
         if place < 0 { return None; }
         let (plugin, _) = crate::source_opener::of_plugin(path)?;
+        if let Some((track, _)) = self.catalog.track_by_path(path) {
+            let credits = crate::credits::TrackCredits::source(&track.artist, &track.metadata, &track.plugin);
+            if let Some(person) = credits.artists.iter().chain(&credits.featured).nth(place as usize) { return Some(person.key.clone()); }
+        }
         if place == 0 {
             if let Some(key) = self.source_artist_key(0, path) { return Some(key); }
         }

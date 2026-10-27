@@ -3,6 +3,7 @@ import app.chilpa.about
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
+import "../Patterns"
 
 // The About window, opened by its button, and its body at a card's width;
 // the update panels; one card of the Welcome and the release notes as What's
@@ -18,6 +19,13 @@ Item {
         x: Metrics.contentX
         y: Metrics.contentX
         spacing: Metrics.gap16
+        DeveloperSettings { width: gallery.sampleWide; height: Metrics.panesHeight }
+        DeveloperDiagnosticRow { width: gallery.sampleWide; saved: true; entry: ({label:"Renderer",saved:"auto",runtime:"vulkan",status:"info"}) }
+        DeveloperDiagnosticSection { width: gallery.sampleWide; entry: ({title:"System",rows:[{label:"Architecture",runtime:"x86_64"}]}) }
+        DeveloperLogRow { width: gallery.sampleWide; entry: ({time:0,level:"stderr",target:"audio",message:"Fixture session log"}) }
+        PillButton { text: "Developer logs"; onClicked: developerLogs.open() }
+        PillButton { text: "Review report"; onClicked: developerReport.open() }
+        PillButton { text: "Report an issue"; onClicked: reportIssue.open() }
         PillButton { text: "About"; onClicked: about.open() }
         AboutBody { width: gallery.sampleWide; doc: ({ version: "0.0.0", build: "2026-10-09 (405e25a54)", platform: "Linux (Qt)", links: [{ label: "Website", url: "https://chilpa.app" }] }) }
         UpdatesPanel { width: gallery.sampleWide }
@@ -38,6 +46,9 @@ Item {
                 { kind: 3, level: 0, text: "Full changelog", id: "", url: "https://github.com/vicrodh/chilpa" }] })
         }
     }
+    DeveloperLogDialog { id: developerLogs }
+    DeveloperReportDialog { id: developerReport }
+    ReportIssueDialog { id: reportIssue; listenForRequests: false }
     OnboardingModal {}
     AboutModal { id: about }
 }

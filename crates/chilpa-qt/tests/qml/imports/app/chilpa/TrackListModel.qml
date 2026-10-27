@@ -20,7 +20,7 @@ ListModel {
         if (!measures) return ""
         const rows = [], longest = key => rows.map(key).sort((a, b) => String(b).length - String(a).length).slice(0, 3)
         for (let i = 0; i < count; ++i) if (get(i).rowKind === 0) rows.push(get(i))
-        return JSON.stringify({title: rows.map(row => [row.title, row.composer || ""]).sort((a, b) => (b[0] + b[1]).length - (a[0] + a[1]).length).slice(0, 3),
+        return JSON.stringify({title: rows.map(row => [row.title, "", row.composer || ""]).sort((a, b) => (b[0] + b[1]).length - (a[0] + a[1]).length).slice(0, 3),
             artist: longest(row => row.artist), album: longest(row => row.album)})
     }
     function listAction(action, row, to) { lastAction = action; lastRow = row }

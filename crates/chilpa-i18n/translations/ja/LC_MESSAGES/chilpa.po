@@ -28,6 +28,9 @@ msgstr "「{}」を開けませんでした（{} {}）"
 msgid "\"{}\" would not start ({})"
 msgstr "「{}」を開始できませんでした（{}）"
 
+msgid "# Tracks"
+msgstr "曲数"
+
 msgid "(Re)start the PipeWire audio services"
 msgstr "PipeWireオーディオサービスを（再）起動"
 
@@ -229,6 +232,9 @@ msgstr "このバックエンドは排他モードを取得したかどうかを
 msgid "Action"
 msgstr ""
 
+msgid "Actions"
+msgstr "操作"
+
 msgid "Active"
 msgstr "有効"
 
@@ -252,6 +258,9 @@ msgstr "フォルダーを追加"
 
 msgid "Add a folder to the library"
 msgstr "ライブラリにフォルダーを追加"
+
+msgid "Add a new server"
+msgstr "サーバーを追加"
 
 msgid "Add a server"
 msgstr "サーバーを追加"
@@ -406,6 +415,9 @@ msgstr "すべてのエピソードタイプ"
 
 msgid "All groups"
 msgstr "すべてのグループ"
+
+msgid "All levels"
+msgstr "すべてのレベル"
 
 msgid "All music"
 msgstr "すべての音楽"
@@ -569,6 +581,12 @@ msgstr "外観"
 msgid "Appears On"
 msgstr "参加作品"
 
+msgid "Application"
+msgstr "アプリケーション"
+
+msgid "Application logs"
+msgstr "アプリケーションログ"
+
 msgid "Apply"
 msgstr "適用"
 
@@ -601,6 +619,9 @@ msgstr "4月"
 
 msgid "April"
 msgstr "4月"
+
+msgid "Architecture"
+msgstr "アーキテクチャ"
 
 msgid "Arranger"
 msgstr "編曲者"
@@ -734,6 +755,9 @@ msgstr "プラグインを自動更新"
 msgid "Available"
 msgstr "利用可能"
 
+msgid "Available GPUs"
+msgstr "利用可能なGPU"
+
 msgid "Awaiting approval"
 msgstr "承認待ち"
 
@@ -772,6 +796,9 @@ msgstr "バランス · −100（左）/ +100（右）"
 
 msgid "Barcode"
 msgstr "バーコード"
+
+msgid "Bars"
+msgstr "バー"
 
 msgid "Based on {artist} · {genres}"
 msgstr "{artist} · {genres}に基づく"
@@ -939,6 +966,18 @@ msgstr "最大ピークがフルスケールを超えないようブーストを
 msgid "Cards"
 msgstr "カード"
 
+msgid "Cast"
+msgstr "キャスト"
+
+msgid "Cast destination"
+msgstr "キャスト先"
+
+msgid "Cast protocol"
+msgstr "キャストプロトコル"
+
+msgid "Cast state"
+msgstr "キャスト状態"
+
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr "キャストには、サイズとバイト範囲がわかる元のファイルが必要です。"
 
@@ -962,6 +1001,9 @@ msgstr "ログイン情報を変更"
 
 msgid "Change source"
 msgstr "提供元を変更"
+
+msgid "Change spectrum style ({})"
+msgstr "スペクトルのスタイルを変更（{}）"
 
 msgid "Changes"
 msgstr ""
@@ -990,11 +1032,17 @@ msgstr "Chilpaの新しいバージョンを確認します。"
 msgid "Check for new additions"
 msgstr "新しい追加を確認"
 
+msgid "Check for new releases on launch"
+msgstr "起動時に新しいバージョンを確認"
+
 msgid "Check for updates"
 msgstr "アップデートを確認"
 
 msgid "Check for updates automatically"
 msgstr "アップデートを自動で確認"
+
+msgid "Check for updates now"
+msgstr "今すぐ更新を確認"
 
 msgid "Check one format"
 msgstr "1つのフォーマットをチェック"
@@ -1028,6 +1076,9 @@ msgstr "選択したソースの確認には数分かかることがあります
 
 msgid "Checking {source}…"
 msgstr "{source}を確認中…"
+
+msgid "Checking…"
+msgstr "確認中…"
 
 msgid "Chilpa"
 msgstr "Chilpa"
@@ -1152,6 +1203,9 @@ msgstr "キーマップを選択してください: default、letters、vi。"
 msgid "Choose a local ZIP file."
 msgstr "ローカルのZIPファイルを選択してください。"
 
+msgid "Choose a local file for the report."
+msgstr "レポートの保存先となるローカルファイルを選択してください。"
+
 msgid "Choose a local storage folder."
 msgstr ""
 
@@ -1160,9 +1214,6 @@ msgstr "再生コントロールを選択"
 
 msgid "Choose a preset."
 msgstr "プリセットを選択してください。"
-
-msgid "Choose a renderer on your local network. The queue stays in Chilpa."
-msgstr "ローカルネットワーク上のレンダラーを選択してください。キューはChilpaに残ります。"
 
 msgid "Choose a saved device profile."
 msgstr ""
@@ -1181,9 +1232,6 @@ msgstr ""
 
 msgid "Choose between 1 and 50,000 Library tracks."
 msgstr ""
-
-msgid "Choose device"
-msgstr "デバイスを選択"
 
 msgid "Choose download folder"
 msgstr "ダウンロードフォルダーを選択"
@@ -1254,11 +1302,17 @@ msgstr "生成された画像をクリア"
 msgid "Clear generated images?"
 msgstr "生成された画像をクリアしますか？"
 
+msgid "Clear logs"
+msgstr "ログを消去"
+
 msgid "Clear loop"
 msgstr "ループを解除"
 
 msgid "Clear lyrics cache"
 msgstr "歌詞キャッシュをクリア"
+
+msgid "Clear lyrics cache?"
+msgstr "歌詞のキャッシュを消去しますか？"
 
 msgid "Clear queue"
 msgstr "キューをクリア"
@@ -1401,6 +1455,9 @@ msgstr "完了した処理は保存されています。続行するとフォル
 msgid "Composer"
 msgstr "作曲者"
 
+msgid "Composer: {}"
+msgstr "作曲：{}"
+
 msgid "Composers"
 msgstr "作曲者"
 
@@ -1421,6 +1478,9 @@ msgstr ""
 
 msgid "Connect"
 msgstr "接続"
+
+msgid "Connect OpenSubsonic, Jellyfin or Plex to add its music to your library."
+msgstr "OpenSubsonic、Jellyfin、Plexに接続して、ライブラリに音楽を追加できます。"
 
 msgid "Connect a player or memory card. Save a profile for each storage."
 msgstr "プレーヤーかメモリーカードを接続し、ストレージごとにプロファイルを保存します。"
@@ -1467,6 +1527,9 @@ msgstr "PCMに変換"
 msgid "Convertible system input; physical DAC capabilities are unknown"
 msgstr "変換可能なシステム入力。物理DACの対応能力は不明です"
 
+msgid "Copied"
+msgstr "コピーしました"
+
 msgid "Copy"
 msgstr "コピー"
 
@@ -1488,8 +1551,14 @@ msgstr "プレイリストをコピー"
 msgid "Copy preset JSON"
 msgstr "プリセットのJSONをコピー"
 
+msgid "Copy report"
+msgstr "レポートをコピー"
+
 msgid "Copy the colors of the currently applied theme into the editor as a starting point."
 msgstr "現在適用中のテーマの色を出発点としてエディターにコピーします。"
+
+msgid "Copy the redacted logs to help diagnose the issue. You can review them before sharing."
+msgstr "問題の診断に役立つよう、個人情報を除去したログをコピーしてください。共有前に内容を確認できます。"
 
 msgid "Copyright"
 msgstr "著作権"
@@ -1545,6 +1614,9 @@ msgstr "作成して追加"
 msgid "Create graphic EQ"
 msgstr "グラフィックEQを作成"
 
+msgid "Create issue"
+msgstr "問題を報告"
+
 msgid "Create playlist"
 msgstr "プレイリストを作成"
 
@@ -1565,6 +1637,9 @@ msgstr "クロスフィード · 0–50%"
 
 msgid "Current signal path"
 msgstr "現在の信号経路"
+
+msgid "Current version"
+msgstr "現在のバージョン"
 
 msgid "Cursor down"
 msgstr "カーソルを下へ"
@@ -1608,9 +1683,6 @@ msgstr "没年"
 msgid "DISBANDED"
 msgstr "解散"
 
-msgid "DLNA / UPnP and Chromecast"
-msgstr "DLNA / UPnPとChromecast"
-
 msgid "DSD converted to PCM"
 msgstr "DSDをPCMに変換"
 
@@ -1619,6 +1691,9 @@ msgstr "DSDファイルの変更はサイドカーファイルに保存されま
 
 msgid "DSD not supported: {}"
 msgstr "DSDには対応していません: {}"
+
+msgid "DSD output mode"
+msgstr "DSD出力モード"
 
 msgid "DSD over PCM (DoP)"
 msgstr "DSD over PCM (DoP)"
@@ -1767,6 +1842,9 @@ msgstr "説明はまだありません。"
 msgid "Desktop"
 msgstr "デスクトップ"
 
+msgid "Desktop environment"
+msgstr "デスクトップ環境"
+
 msgid "Destinations"
 msgstr "取り込み先"
 
@@ -1782,11 +1860,11 @@ msgstr "検出: "
 msgid "Detecting your DACs…"
 msgstr "DACを検出中…"
 
+msgid "Developers"
+msgstr "開発者向け"
+
 msgid "Device"
 msgstr "デバイス"
-
-msgid "Device discovery"
-msgstr "デバイスの検出"
 
 msgid "Device profiles exceed 1 MiB."
 msgstr ""
@@ -1803,9 +1881,6 @@ msgstr ""
 msgid "Devices"
 msgstr ""
 
-msgid "Devices & cast"
-msgstr "デバイスとキャスト"
-
 msgid "Devices in the sidebar"
 msgstr ""
 
@@ -1816,6 +1891,9 @@ msgid "Diagnose the output"
 msgstr "出力を診断"
 
 msgid "Diagnosis"
+msgstr "診断"
+
+msgid "Diagnostics"
 msgstr "診断"
 
 msgid "Different format"
@@ -1925,6 +2003,12 @@ msgstr "スキャンを破棄"
 
 msgid "Display settings"
 msgstr "表示設定"
+
+msgid "Distribution"
+msgstr "ディストリビューション"
+
+msgid "Distribution version"
+msgstr "ディストリビューションのバージョン"
 
 msgid "DoP carrier · {}"
 msgstr "DoPキャリア · {}"
@@ -2037,6 +2121,9 @@ msgstr "メタデータを編集…"
 msgid "Edit playlist"
 msgstr "プレイリストを編集"
 
+msgid "Edit server"
+msgstr "サーバーを編集"
+
 msgid "Edit…"
 msgstr "編集…"
 
@@ -2079,8 +2166,8 @@ msgstr "歌詞を有効にする"
 msgid "Enable the optional Mood plugin and manage its model download."
 msgstr "オプションのムードプラグインを有効にして、そのモデルのダウンロードを管理します。"
 
-msgid "Enable {} in Settings › Sources to play this record."
-msgstr "このアルバムを再生するには、設定 › ソースで{}を有効にしてください。"
+msgid "Enable {} in Settings › Music servers to play this record."
+msgstr "このアルバムを再生するには、設定 › 音楽サーバーで{}を有効にしてください。"
 
 msgid "Endpoint readback"
 msgstr "出力先から読み取った値"
@@ -2109,6 +2196,9 @@ msgstr "有効な数値を入力してください。"
 msgid "Enter includes the first match · Shift+Enter excludes it"
 msgstr "Enter で最初の候補を含める・Shift+Enter で除外"
 
+msgid "Environment"
+msgstr "環境"
+
 msgid "Episode download was cancelled."
 msgstr ""
 
@@ -2123,6 +2213,9 @@ msgstr "機器"
 
 msgid "Equipment changed. Read its details again before checking a format."
 msgstr "機器が変更されました。フォーマットをチェックする前に詳細を再取得してください。"
+
+msgid "Error"
+msgstr "エラー"
 
 msgid "Errors"
 msgstr "エラー"
@@ -2172,8 +2265,14 @@ msgstr "探索"
 msgid "Export"
 msgstr "エクスポート"
 
+msgid "Export diagnostics"
+msgstr "診断情報をエクスポート"
+
 msgid "Export listening history"
 msgstr "再生履歴をエクスポート"
+
+msgid "Export…"
+msgstr "エクスポート…"
 
 msgid "Extra controls"
 msgstr "追加コントロール"
@@ -2436,6 +2535,9 @@ msgstr "ゲイン（デシベル）。矢印キーで調整し、HomeとEndで�
 msgid "Gapless"
 msgstr "ギャップレス"
 
+msgid "Gapless playback"
+msgstr "ギャップレス再生"
+
 msgid "Generate"
 msgstr "生成"
 
@@ -2504,6 +2606,9 @@ msgstr "グラフィックEQ"
 
 msgid "Graphic equalizer"
 msgstr "グラフィックイコライザー"
+
+msgid "Graphics"
+msgstr "グラフィック"
 
 msgid "Grid"
 msgstr "グリッド"
@@ -2576,6 +2681,9 @@ msgstr "HiFiウィザード — DACセットアップ"
 
 msgid "Hide"
 msgstr "非表示"
+
+msgid "Hide audio path"
+msgstr "オーディオ経路を非表示"
 
 msgid "Hide details"
 msgstr ""
@@ -2785,6 +2893,9 @@ msgstr "ダウンロード済みのプラグインモデル、波形データ、
 msgid "Influences"
 msgstr "影響を受けたアーティスト"
 
+msgid "Info"
+msgstr "情報"
+
 msgid "Info: Embedded tags"
 msgstr "情報: 埋め込みタグ"
 
@@ -2848,6 +2959,9 @@ msgstr "先にムードプラグインをインストールして有効にして
 msgid "Install from ZIP…"
 msgstr "ZIPからインストール…"
 
+msgid "Install method"
+msgstr "インストール方法"
+
 msgid "Install plugin from ZIP"
 msgstr "ZIPからプラグインをインストール"
 
@@ -2862,6 +2976,9 @@ msgstr "PipeWireツール（pw-dump）をインストール"
 
 msgid "Install the Pulse compatibility tools (optional fallback)"
 msgstr "Pulse互換ツールをインストール（任意のフォールバック）"
+
+msgid "Installation"
+msgstr "インストール方法"
 
 msgid "Installed"
 msgstr "インストール済み"
@@ -2880,6 +2997,9 @@ msgstr "InterはChilpaに同梱されており、デザインで使うすべて�
 
 msgid "Interface"
 msgstr "インターフェース"
+
+msgid "Interface scale"
+msgstr "インターフェースの倍率"
 
 msgid "Interface size"
 msgstr "インターフェースのサイズ"
@@ -2980,6 +3100,9 @@ msgstr "セッション間でキューを保持"
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "語句をそのまま読み、ジャンルを拡張せずに検索する"
 
+msgid "Kernel"
+msgstr "カーネル"
+
 msgid "Keyboard Shortcuts"
 msgstr "キーボードショートカット"
 
@@ -3057,6 +3180,9 @@ msgstr "長さ"
 
 msgid "Letters"
 msgstr "Letters"
+
+msgid "Level"
+msgstr "レベル"
 
 msgid "Level loudness across tracks. This breaks strict bit perfect."
 msgstr "トラック間のラウドネスをそろえます。厳密なビットパーフェクトではなくなります。"
@@ -3192,6 +3318,9 @@ msgstr "ローカル — 複数ソースの混在に対応"
 
 msgid "Local — {}"
 msgstr "ローカル — {}"
+
+msgid "Log options"
+msgstr "ログ設定"
 
 msgid "Look"
 msgstr "見た目"
@@ -3331,6 +3460,9 @@ msgstr "メモリーカード"
 msgid "Menu"
 msgstr "メニュー"
 
+msgid "Message"
+msgstr "メッセージ"
+
 msgid "Metadata"
 msgstr "メタデータ"
 
@@ -3466,6 +3598,9 @@ msgstr "音楽フォルダー"
 msgid "Music player\nNothing playing"
 msgstr "ミュージックプレーヤー\n再生していません"
 
+msgid "Music servers"
+msgstr "音楽サーバー"
+
 msgid "Music services"
 msgstr "音楽サービス"
 
@@ -3498,6 +3633,9 @@ msgstr "ミュート"
 
 msgid "Mute / Unmute"
 msgstr "ミュート / 解除"
+
+msgid "Muted"
+msgstr "ミュート"
 
 msgid "My Playlist"
 msgstr "マイプレイリスト"
@@ -3570,9 +3708,6 @@ msgstr "ネットワークアクセスは設定 > 連携で無効になってい
 
 msgid "Network access, including authentication, artwork and audio servers discovered by the plugin"
 msgstr "ネットワークアクセス（認証、アートワーク、プラグインが検出するオーディオサーバーを含む）"
-
-msgid "Network playback"
-msgstr "ネットワーク再生"
 
 msgid "Never played"
 msgstr "未再生"
@@ -3829,6 +3964,9 @@ msgstr "年なし。ジャンル・レーベル・作曲者にも none が使え
 msgid "None"
 msgstr "なし"
 
+msgid "Normalization"
+msgstr "ノーマライズ"
+
 msgid "Not answering"
 msgstr "応答なし"
 
@@ -3855,6 +3993,9 @@ msgstr "今はしない"
 
 msgid "Not rated"
 msgstr "未評価"
+
+msgid "Not reported"
+msgstr "報告なし"
 
 msgid "Not specified"
 msgstr "未指定"
@@ -4048,11 +4189,17 @@ msgstr "新しいキューで開く"
 msgid "Open in new tab"
 msgstr "新しいタブで開く"
 
+msgid "Open issue draft"
+msgstr "問題報告の下書きを開く"
+
 msgid "Open it again"
 msgstr "もう一度開く"
 
 msgid "Open its page"
 msgstr "ページを開く"
+
+msgid "Open log file"
+msgstr "ログファイルを開く"
 
 msgid "Open media"
 msgstr "メディアを開く"
@@ -4074,6 +4221,9 @@ msgstr "plex.tv/linkを開く"
 
 msgid "Open plugins"
 msgstr "プラグインを開く"
+
+msgid "Open release page"
+msgstr "リリースページを開く"
 
 msgid "Open the HiFi Wizard"
 msgstr "HiFiウィザードを開く"
@@ -4105,6 +4255,9 @@ msgstr "オープンモード"
 msgid "Opening: {} · Audibility: {}"
 msgstr "オープン：{} · 可聴性：{}"
 
+msgid "Operating system"
+msgstr "オペレーティングシステム"
+
 msgid "Optional access token for private playlists"
 msgstr "非公開プレイリスト用の任意のアクセストークン"
 
@@ -4119,9 +4272,6 @@ msgstr "元のバイト列"
 
 msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
 msgstr "元のバイト列 · Chilpaによるトランスコードなし · レシーバー側の処理は不明"
-
-msgid "Original files"
-msgstr "元のファイル"
 
 msgid "Original music files"
 msgstr "元の音楽ファイル"
@@ -4150,11 +4300,17 @@ msgstr "出力の詳細…"
 msgid "Output device"
 msgstr "出力デバイス"
 
+msgid "Output format"
+msgstr "出力形式"
+
 msgid "Output identity could not be saved."
 msgstr "出力の識別情報を保存できませんでした。"
 
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "PCMサンプルはネイティブDSDストリームに書き込めません"
+
+msgid "PEAK"
+msgstr "ピーク"
 
 msgid "Page {} of {}"
 msgstr ""
@@ -4309,8 +4465,14 @@ msgstr "再生／一時停止"
 msgid "Playback"
 msgstr "再生"
 
+msgid "Playback error"
+msgstr "再生エラー"
+
 msgid "Playback options"
 msgstr "再生オプション"
+
+msgid "Playback state"
+msgstr "再生状態"
 
 msgid "Playback stops and the window closes."
 msgstr "再生が停止し、ウィンドウが閉じます。"
@@ -4414,6 +4576,9 @@ msgstr "人気のトラック"
 msgid "Portuguese"
 msgstr "ポルトガル語"
 
+msgid "Position"
+msgstr "位置"
+
 msgid "Position in Streaming"
 msgstr "ストリーミングでの位置"
 
@@ -4516,6 +4681,9 @@ msgstr "購入"
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "プラグインのフォルダーをChilpaのプラグインディレクトリに置き、アプリを開き直してください。"
 
+msgid "Qt version"
+msgstr "Qtのバージョン"
+
 msgid "Quality"
 msgstr "音質"
 
@@ -4554,6 +4722,9 @@ msgstr "カーソル位置のトラックをキューに追加"
 
 msgid "Queue is empty"
 msgstr "キューは空です"
+
+msgid "Queue length"
+msgstr "キューの長さ"
 
 msgid "Queue options"
 msgstr "キューのオプション"
@@ -4900,6 +5071,12 @@ msgstr "キュー「{}」を置き換え"
 msgid "Report an issue"
 msgstr "問題を報告"
 
+msgid "Report plugin errors in the corresponding plugin's repository."
+msgstr "プラグインのエラーは、該当するプラグインのリポジトリで報告してください。"
+
+msgid "Report saved"
+msgstr "レポートを保存しました"
+
 msgid "Reported by the receiver"
 msgstr "受信機からの報告"
 
@@ -4911,6 +5088,9 @@ msgstr "リポジトリ"
 
 msgid "Requested and opened"
 msgstr "要求とオープン結果"
+
+msgid "Requested output route"
+msgstr "要求された出力経路"
 
 msgid "Requests: {}"
 msgstr "要求: {}"
@@ -4981,11 +5161,23 @@ msgstr "確認"
 msgid "Review & Apply"
 msgstr "確認して適用"
 
+msgid "Review and copy logs…"
+msgstr "ログを確認してコピー…"
+
+msgid "Review and export…"
+msgstr "確認してエクスポート…"
+
+msgid "Review and share…"
+msgstr "確認して共有…"
+
 msgid "Review changes"
 msgstr ""
 
 msgid "Review changes to check what this storage needs."
 msgstr ""
+
+msgid "Review diagnostics"
+msgstr "診断情報を確認"
 
 msgid "Review the device changes before syncing."
 msgstr ""
@@ -5007,6 +5199,9 @@ msgstr "右ディレイ · 0–30 ms"
 
 msgid "Route"
 msgstr "経路"
+
+msgid "Runtime"
+msgstr "ランタイム"
 
 msgid "Russian"
 msgstr "ロシア語"
@@ -5098,6 +5293,9 @@ msgstr ""
 msgid "Saved for the displayed inspection. Refresh after changing equipment or configuration."
 msgstr "表示中の確認結果に対応する記録です。機器や設定を変更したら情報を再取得してください。"
 
+msgid "Saved lyrics and translations will be fetched again when needed."
+msgstr "保存済みの歌詞と翻訳は、必要になったときに再取得されます。"
+
 msgid "Saved position"
 msgstr "保存した位置"
 
@@ -5124,6 +5322,9 @@ msgstr "保存中… {} / {}個のファイル"
 
 msgid "Scales the whole interface, like browser zoom. Small fits more content on screen, Large and Extra large improve readability (requires restart)"
 msgstr "ブラウザーのズームのようにインターフェース全体を拡大縮小します。「小」は画面により多くのコンテンツを表示し、「大」と「特大」は読みやすさを向上させます（再起動が必要）"
+
+msgid "Scan for cast devices…"
+msgstr "キャストデバイスを検索…"
 
 msgid "Scan settings could not be saved or read: {}"
 msgstr "スキャン設定を保存または読み取れませんでした: {}"
@@ -5155,8 +5356,8 @@ msgstr "フォルダーを検索"
 msgid "Search listens"
 msgstr "再生履歴を検索"
 
-msgid "Search only while the picker is open. Disconnecting stops the receiver and leaves local playback stopped."
-msgstr "ピッカーを開いている間だけ検索します。接続を解除するとレシーバーが停止し、ローカル再生は停止したままになります。"
+msgid "Search logs"
+msgstr "ログを検索"
 
 msgid "Search playlists and folders"
 msgstr "プレイリストとフォルダーを検索"
@@ -5270,6 +5471,9 @@ msgstr "選択したGPUはこのディスプレイセッションでは利用で
 msgid "Selected music"
 msgstr "選択した音楽"
 
+msgid "Selected output"
+msgstr "選択中の出力"
+
 msgid "Send to Last.fm"
 msgstr "Last.fmに送信"
 
@@ -5318,8 +5522,14 @@ msgstr "全体の明暗の極性を設定します。派生する陰影、境界
 msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
 msgstr "Chilpaが出力を単独で使用している間、PipeWireのグラフを各トラックのレートに合わせ、DACがファイル本来のレートを受け取れるようにします。Chilpaが停止するとレートは元に戻ります。"
 
+msgid "Setting"
+msgstr "設定項目"
+
 msgid "Settings"
 msgstr "設定"
+
+msgid "Shader rendering available"
+msgstr "シェーダー描画が利用可能"
 
 msgid "Shape the sound: raise a band to hear more, lower it to hear less."
 msgstr "音を整えます。帯域を上げるとその音が強まり、下げると弱まります。"
@@ -5344,6 +5554,15 @@ msgstr "表示"
 
 msgid "Show Shortcuts"
 msgstr "ショートカットを表示"
+
+msgid "Show audio path"
+msgstr "オーディオ経路を表示"
+
+msgid "Show changelog for current version"
+msgstr "現在のバージョンの変更履歴を表示"
+
+msgid "Show composers"
+msgstr "作曲者を表示"
 
 msgid "Show each playlist folder in its chosen color."
 msgstr "各プレイリストフォルダーを、選んだ色で表示します。"
@@ -5483,6 +5702,9 @@ msgstr "弱"
 msgid "Software"
 msgstr "ソフトウェア"
 
+msgid "Software volume"
+msgstr "ソフトウェア音量"
+
 msgid "Some endpoint streams could not be read."
 msgstr "出力先の一部のストリーム情報を読み取れませんでした。"
 
@@ -5527,6 +5749,9 @@ msgstr "スペクトラム"
 
 msgid "Split queue before this track"
 msgstr "このトラックの前でキューを分割"
+
+msgid "Squares"
+msgstr "スクエア"
 
 msgid "Stable endpoint identity. Results also depend on its connection and configuration."
 msgstr "安定した出力先識別情報です。結果は接続と設定にも依存します。"
@@ -5694,6 +5919,9 @@ msgstr "同期中…"
 msgid "System"
 msgstr "システム"
 
+msgid "System / manual"
+msgstr "システム / 手動"
+
 msgid "System Colors"
 msgstr "システムカラー"
 
@@ -5712,6 +5940,9 @@ msgstr "タグ: {}"
 msgid "Take the card from the sound server"
 msgstr "サウンドサーバーからカードを取得します"
 
+msgid "Target"
+msgstr "ターゲット"
+
 msgid "Target loudness"
 msgstr "目標ラウドネス"
 
@@ -5726,6 +5957,9 @@ msgstr "再生をテスト"
 
 msgid "Text"
 msgstr "テキスト"
+
+msgid "Text files (*.txt)"
+msgstr "テキストファイル (*.txt)"
 
 msgid "That answer does not belong to this window."
 msgstr "その応答はこのウィンドウのものではありません。"
@@ -5865,6 +6099,12 @@ msgstr "歌っている行が常に表示されます。"
 msgid "The listening history could not be saved"
 msgstr "再生履歴を保存できませんでした"
 
+msgid "The log file could not be opened. Session logs remain available here."
+msgstr "ログファイルを開けませんでした。このセッションのログは引き続きここで確認できます。"
+
+msgid "The log file could not be written. Session logs remain available here."
+msgstr "ログファイルを書き込めませんでした。このセッションのログは引き続きここで確認できます。"
+
 msgid "The loop cannot be marked here; its end needs at least two seconds."
 msgstr "ここではループを設定できません。終了点は2秒以上後にしてください。"
 
@@ -5943,6 +6183,12 @@ msgstr "レンダラーはこのフォーマットまたは操作に対応して
 msgid "The renderer refused the command."
 msgstr "レンダラーがコマンドを拒否しました。"
 
+msgid "The report could not be saved. Choose a new file name."
+msgstr "レポートを保存できませんでした。別のファイル名を選択してください。"
+
+msgid "The report could not be written."
+msgstr "レポートを書き込めませんでした。"
+
 msgid "The result has not been saved. Review the error before leaving."
 msgstr "結果は保存されていません。終了する前にエラーを確認してください。"
 
@@ -6014,6 +6260,9 @@ msgstr "システムの壁紙。代わりに自分の画像を選ぶこともで
 
 msgid "The temporary media queue cannot be combined."
 msgstr "一時的なメディアキューは結合できません。"
+
+msgid "The update check failed. Try again."
+msgstr "更新の確認に失敗しました。もう一度お試しください。"
 
 msgid "The update could not be completed. Your current AppImage is safe. Try again later."
 msgstr "アップデートを完了できませんでした。現在のAppImageは安全です。後でもう一度お試しください。"
@@ -6276,11 +6525,26 @@ msgstr "トップ結果"
 msgid "Track"
 msgstr "トラック"
 
+msgid "Track album"
+msgstr "曲のアルバム"
+
+msgid "Track artist"
+msgstr "曲のアーティスト"
+
+msgid "Track bit depth"
+msgstr "曲のビット深度"
+
 msgid "Track count"
 msgstr "トラック数"
 
+msgid "Track credits"
+msgstr "楽曲クレジット"
+
 msgid "Track details · {}"
 msgstr "トラックの詳細 · {}"
+
+msgid "Track format"
+msgstr "曲の形式"
 
 msgid "Track lists"
 msgstr "トラック一覧"
@@ -6290,6 +6554,12 @@ msgstr "トラックメニュー"
 
 msgid "Track review"
 msgstr "トラックの確認"
+
+msgid "Track sample rate"
+msgstr "曲のサンプルレート"
+
+msgid "Track title"
+msgstr "曲名"
 
 msgid "Track {}"
 msgstr "トラック {}"
@@ -6344,6 +6614,9 @@ msgstr "Tunnel Flow"
 
 msgid "Type"
 msgstr "種類"
+
+msgid "Type / version"
+msgstr "種類 / バージョン"
 
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr "Plexアカウントにログインした状態で、plex.tv/linkでこのコードを入力してください。"
@@ -6495,6 +6768,9 @@ msgstr "アップデートに失敗しました。以前のバージョンは保
 msgid "Update ready"
 msgstr "アップデートの準備完了"
 
+msgid "Update the connection, sign-in or libraries for this server."
+msgstr "このサーバーの接続、ログイン、ライブラリを変更します。"
+
 msgid "Updated"
 msgstr "更新済み"
 
@@ -6573,6 +6849,9 @@ msgstr ""
 msgid "Version"
 msgstr "バージョン"
 
+msgid "Version {} is available."
+msgstr "バージョン{}が利用可能です。"
+
 msgid "Version: {}"
 msgstr "バージョン: {}"
 
@@ -6587,6 +6866,9 @@ msgstr "画像を表示"
 
 msgid "View less"
 msgstr "表示を減らす"
+
+msgid "View logs"
+msgstr "ログを表示"
 
 msgid "View precise filters"
 msgstr "精密フィルターを表示"
@@ -6713,6 +6995,9 @@ msgstr "対象にするソース"
 
 msgid "Who the records are credited to"
 msgstr "アルバムのクレジット先"
+
+msgid "Window system"
+msgstr "ウィンドウシステム"
 
 msgid "Windows audio would not answer ({})"
 msgstr "Windowsのオーディオが応答しませんでした（{}）"
@@ -7028,6 +7313,9 @@ msgstr "ちょうど"
 
 msgid "exclusive"
 msgstr "排他"
+
+msgid "feat. {}"
+msgstr "feat. {}"
 
 msgid "file"
 msgstr "ファイル"

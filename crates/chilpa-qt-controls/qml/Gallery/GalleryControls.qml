@@ -15,6 +15,7 @@ TitledFlow {
     SearchSelection { search: previewSearch }
     SearchNavigation { search: previewSearch }
     SearchFilters { width: Metrics.confirmWidth; search: previewSearch }
+    SettingsResults { width: Metrics.confirmWidth; height: Metrics.rowCompact * 5; query: "output" } // derived: a short settings preview
     SearchPreviewSwitch { search: previewSearch }
     SearchResultCard { row: ({kind: 3, title: "Record", detail: "Album · Artist", art: ""}) }
     SearchRail { width: Metrics.confirmWidth; title: "Albums"; rows: [{at: 0, kind: 3, title: "Record", detail: "Album · Artist", art: ""}]; card: Component { SearchResultCard { required property var modelData; row: modelData } } }

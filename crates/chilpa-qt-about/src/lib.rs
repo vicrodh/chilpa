@@ -6,7 +6,11 @@
 
 pub mod bridge {
     pub mod about;
+    pub mod developers;
     pub mod updates;
     pub mod plugin_updates;
     pub mod onboarding;
 }
+
+mod log_capture;
+pub use log_capture::{start_logging, LogCapture};

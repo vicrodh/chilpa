@@ -868,3 +868,6 @@ speex
 
 # Rust names its subsecond accessor subsec_nanos.
 subsec
+
+# The Unicode replacement code point in a malformed UTF-8 log fixture.
+fffd

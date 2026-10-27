@@ -9,7 +9,7 @@ pub(crate) mod onboarding;
 /// The project's wiki, the menu's Documentation.
 pub const DOCUMENTATION: &str = "https://github.com/vicrodh/chilpa/wiki";
 /// A new issue on the project, the menu's Report an issue.
-pub const NEW_ISSUE: &str = "https://github.com/vicrodh/chilpa/issues/new";
+pub const NEW_ISSUE: &str = "https://github.com/vicrodh/chilpa/issues/new?template=bug_report.yml";
 
 /// The platform as the About window names it, after QBZ's: the system and
 /// the toolkit.
