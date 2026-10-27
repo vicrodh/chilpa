@@ -211,7 +211,7 @@ mod tests {
         }
         lib.select_album_version(first, second).unwrap();
         let reader = Reader::open(&path).unwrap();
-        let album = crate::Album { id:first, title:"Box".into(), artist:"Artist".into(), year:Some(2000), track_count:1, artwork_path:String::new(), play_count:0 };
+        let album = crate::Album { id:first, title:"Box".into(), artist:"Artist".into(), year:Some(2000), track_count:1, artwork_path:String::new(), play_count:0, explicit: None };
         assert_eq!(ids(reader.selection_targets(&FoundRow::Album(album)).unwrap()), [11], "picking does not substitute the preferred edition");
         let artist = crate::Artist { name:"Artist".into(), album_count:2, track_count:3, artwork_path:String::new() };
         let selected = ids(reader.selection_targets(&FoundRow::Artist(artist)).unwrap());

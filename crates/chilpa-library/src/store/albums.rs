@@ -17,6 +17,7 @@ pub struct StoredAlbum {
     pub year: Option<i32>,
     pub artwork_path: Option<String>,
     pub track_count: usize,
+    pub explicit: Option<bool>,
 }
 
 
@@ -141,7 +142,7 @@ impl Library {
     /// library again, and that was the audit's high finding.
         pub fn albums(&self, limit: usize, offset: usize) -> rusqlite::Result<Vec<StoredAlbum>> {
         let mut stmt = self.db.prepare(
-            concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", count(t.id)
+            concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", count(t.id), ", album_advisory!("a"), "
              FROM albums a
              JOIN tracks t ON t.album_id = a.id AND t.present = 1
              JOIN sources s ON s.id = t.source_id AND s.enabled = 1
@@ -157,6 +158,7 @@ impl Library {
                 year: r.get(3)?,
                 artwork_path: r.get(4)?,
                 track_count: r.get::<_, i64>(5)? as usize,
+                    explicit: r.get(6)?,
             })
         })?;
         rows.collect()
@@ -200,7 +202,7 @@ impl Library {
     /// compilations they are on -- newest first, with their play counts.
     pub fn albums_appearing(&self, artist: &str) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
         let mut stmt = self.db.prepare(
-            concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", r.present_tracks, r.plays
+            concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", r.present_tracks, r.plays, ", album_advisory!("a"), "
              FROM albums a
              JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
              WHERE a.album_artist <> ?1 COLLATE NOCASE
@@ -222,6 +224,7 @@ impl Library {
                     year: r.get(3)?,
                     artwork_path: r.get(4)?,
                     track_count: r.get::<_, i64>(5)? as usize,
+                    explicit: r.get(7)?,
                 },
                 r.get::<_, i64>(6)? as usize,
             ))
@@ -267,7 +270,7 @@ impl Library {
              )
              SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ",
                     r.present_tracks,
-                    r.plays
+                    r.plays, ", album_advisory!("a"), "
              FROM page g
              JOIN albums a ON a.id = g.id
              JOIN album_rollup r ON r.album_id = a.id
@@ -285,6 +288,7 @@ impl Library {
                     year: r.get(3)?,
                     artwork_path: r.get(4)?,
                     track_count: r.get::<_, i64>(5)? as usize,
+                    explicit: r.get(7)?,
                 },
                 r.get::<_, i64>(6)? as usize,
             ))
@@ -341,7 +345,7 @@ impl Library {
         }
         let marks = vec!["?"; ids.len()].join(",");
         let sql = format!(
-            concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", r.present_tracks, r.plays
+            concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", r.present_tracks, r.plays, ", album_advisory!("a"), "
              FROM albums a JOIN album_rollup r ON r.album_id = a.id
              WHERE a.id IN ({marks}) AND EXISTS
                (SELECT 1 FROM tracks t JOIN sources s ON s.id = t.source_id AND s.enabled = 1
@@ -359,6 +363,7 @@ impl Library {
                         year: r.get(3)?,
                         artwork_path: r.get(4)?,
                         track_count: r.get::<_, i64>(5)? as usize,
+                    explicit: r.get(7)?,
                     },
                     r.get::<_, i64>(6)? as usize,
                 ))
@@ -444,7 +449,7 @@ impl Library {
         let album = self
             .db
             .query_row(
-                concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", count(t.id)
+                concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", count(t.id), ", album_advisory!("a"), "
                  FROM albums a
                  JOIN tracks t ON t.album_id = a.id AND t.present = 1
                  JOIN sources s ON s.id = t.source_id AND s.enabled = 1
@@ -459,6 +464,7 @@ impl Library {
                         year: r.get(3)?,
                         artwork_path: r.get(4)?,
                         track_count: r.get::<_, i64>(5)? as usize,
+                    explicit: r.get(6)?,
                     })
                 },
             )
@@ -540,7 +546,7 @@ impl Library {
     pub fn most_played_albums(&self, limit: usize) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
         let mut stmt = self.db.prepare(
             concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ",
-                    count(DISTINCT t.id), count(p.id)
+                    count(DISTINCT t.id), count(p.id), ", album_advisory!("a"), "
              FROM albums a
              JOIN tracks t ON t.album_id = a.id
              JOIN sources s ON s.id = t.source_id AND s.enabled = 1
@@ -559,6 +565,7 @@ impl Library {
                     year: r.get(3)?,
                     artwork_path: r.get(4)?,
                     track_count: r.get::<_, i64>(5)? as usize,
+                    explicit: r.get(7)?,
                 },
                 r.get::<_, i64>(6)? as usize,
             ))

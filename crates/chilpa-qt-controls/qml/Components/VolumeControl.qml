@@ -33,6 +33,7 @@ Item {
 
     Popup {
         id: volume
+        PopupInput { surface: volume }
 
         // A click outside closes it and is nothing else: it is not also a click
         // on what is there.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keep a modal's closing press from reaching the page underneath."""
+"""Keep popup input, transitions and dismissal inside the active layer."""
 import re
 import sys
 
@@ -7,22 +7,40 @@ sys.path.insert(0, __file__.rsplit("/", 1)[0])
 from qmllib import code_only, files, rel  # noqa: E402
 
 
-def main():
+def surfaces(code):
+    for match in re.finditer(r"\b(?:\w+\.)?(Popup|Modal)\s*\{", code):
+        start = match.end()
+        depth = 1
+        end = start
+        while end < len(code) and depth:
+            depth += (code[end] == "{") - (code[end] == "}")
+            end += 1
+        yield match.group(1), code[start:end - 1], code.count("\n", 0, match.start()) + 1
+
+
+def violations(source):
     errors = []
-    for path in files():
-        code = code_only(path.read_text())
-        modal = re.search(r"\bmodal\s*:\s*true\b", code) or re.search(r"(?m)^\s*(?:\w+\.)?Modal\s*\{", code)
-        if not modal:
-            continue
-        if re.search(r"\bCloseOnPressOutside\b", code):
-            errors.append(f"{rel(path)}: a modal must not close on press; use release or an explicit close action")
-        popup = re.search(r"(?m)^\s*(?:Controls\.)?Popup\s*\{", code)
-        if popup and "closePolicy:" not in code:
-            errors.append(f"{rel(path)}: a modal Popup needs an explicit close policy")
+    for kind, body, line in surfaces(code_only(source)):
+        modal = kind == "Modal" or re.search(r"\bmodal\s*:\s*true\b", body)
+        if modal and re.search(r"\bCloseOnPressOutside(?:Parent)?\b", body):
+            errors.append((line, "a modal must not close on press; use release or an explicit close action"))
+        if kind == "Popup":
+            identity = re.search(r"\bid\s*:\s*(\w+)", body)
+            guard = re.search(r"\bPopupInput\s*\{\s*surface\s*:\s*(\w+)\s*\}", body)
+            if not identity or not guard or identity.group(1) != guard.group(1):
+                errors.append((line, "a Popup needs PopupInput bound to its own id, including custom content"))
+            if modal and not re.search(r"\bclosePolicy\s*:", body):
+                errors.append((line, "a modal Popup needs an explicit close policy"))
+    return errors
+
+
+def main():
+    errors = [f"{rel(path)}:{line}: {message}" for path in files()
+              for line, message in violations(path.read_text())]
     if errors:
         print("\n".join(errors), file=sys.stderr)
         sys.exit(1)
-    print("qml-modal-input: modal closing policies cannot forward a press")
+    print("qml-modal-input: popups contain pointer input and modal dismissal stays on release")
 
 
 if __name__ == "__main__":

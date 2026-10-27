@@ -45,7 +45,10 @@ struct Shared {
     drain: OnceLock<Thread>,
     sources: AtomicU32,
     marshal_all: AtomicBool,
+    presented: AtomicBool,
+    frame_ready: AtomicBool,
     panel_scopes: AtomicU32,
+    compact_mode: AtomicU32,
     scene_active: AtomicBool,
     scene: AtomicU32,
     scene_feeds: Mutex<SceneFeeds>,
@@ -96,7 +99,10 @@ impl Visualizer {
             drain: OnceLock::new(),
             sources: AtomicU32::new(0),
             marshal_all: AtomicBool::new(false),
+            presented: AtomicBool::new(true),
+            frame_ready: AtomicBool::new(false),
             panel_scopes: AtomicU32::new(0),
+            compact_mode: AtomicU32::new(u32::MAX),
             scene_active: AtomicBool::new(false),
             scene: AtomicU32::new(0),
             scene_feeds: Mutex::new(SceneFeeds::default()),
@@ -119,7 +125,7 @@ impl Visualizer {
     /// frame from here on, and the producer runs if it was not.
     pub fn open(&self) {
         self.0.marshal_all.store(true, Ordering::Relaxed);
-        self.set_source(IMMERSIVE, true);
+        self.set_source(IMMERSIVE, self.0.presented.load(Ordering::Relaxed));
         if self.enabled() {
             self.wake_drain();
         }
@@ -130,14 +136,14 @@ impl Visualizer {
     pub fn close(&self) {
         self.0.panel_scopes.store(0, Ordering::Relaxed);
         self.apply_scopes();
-        self.set_source(IMMERSIVE, false);
         self.0.marshal_all.store(false, Ordering::Relaxed);
+        self.set_source(IMMERSIVE, false);
     }
 
     /// Which panel the immersive view shows: a scope's DSP runs only
     /// while its panel is the one on screen, in focus.
     pub fn set_view(&self, view_mode: i32, mode: i32) {
-        let mask = if self.0.marshal_all.load(Ordering::Relaxed) && view_mode == 0 { scopes_for(mode) } else { 0 };
+        let mask = if self.0.marshals_all() && view_mode == 0 { scopes_for(mode) } else { 0 };
         self.0.panel_scopes.store(mask, Ordering::Relaxed);
         self.apply_scopes();
     }
@@ -157,7 +163,17 @@ impl Visualizer {
 
     /// A hidden or minimized immersive view releases its claim on the tap.
     pub fn set_presented(&self, presented: bool) {
-        self.set_source(IMMERSIVE, presented && self.0.marshal_all.load(Ordering::Relaxed));
+        self.0.presented.store(presented, Ordering::Relaxed);
+        self.set_source(IMMERSIVE, presented && self.0.marshals_all());
+    }
+
+    /// I share one producer and one drain with the compact queue visualizer.
+    /// Modes follow bars, waveform, energy, goniometer, oscilloscope, peaks,
+    /// and squares. A hidden component releases its claim and scope demand.
+    pub fn set_compact(&self, presented: bool, mode: i32) {
+        self.0.compact_mode.store(if presented { mode.clamp(0, 6) as u32 } else { u32::MAX }, Ordering::Relaxed);
+        self.set_source(BAR, presented);
+        self.apply_scopes();
     }
 
     /// Ribbon columns follow playback, with a reset on track changes/seeks.
@@ -194,14 +210,22 @@ impl Visualizer {
     pub fn drain(&self) -> Drained {
         let cells = &self.0.cells;
         let mut out = Drained::default();
-        if !self.0.marshal_all.load(Ordering::Relaxed) {
-            return out;
-        }
+        let all = self.0.marshals_all();
+        let compact = self.0.compact_mode.load(Ordering::Relaxed);
+        if !all && compact == u32::MAX { return out; }
         out.bars = cells.bars.lock().unwrap_or_else(|e| e.into_inner()).take();
         out.energy = cells.energy.lock().unwrap_or_else(|e| e.into_inner()).take();
         out.wave = cells.wave.lock().unwrap_or_else(|e| e.into_inner()).take();
         out.goniometer = cells.goniometer.lock().unwrap_or_else(|e| e.into_inner()).take();
         out.oscilloscope = cells.oscilloscope.lock().unwrap_or_else(|e| e.into_inner()).take();
+        if !all {
+            if !matches!(compact, 0 | 5 | 6) { out.bars = None; }
+            if compact != 1 { out.wave = None; }
+            if compact != 2 { out.energy = None; }
+            if compact != 3 { out.goniometer = None; }
+            if compact != 4 { out.oscilloscope = None; }
+            return out;
+        }
         let spectral = cells.spectral.lock().unwrap_or_else(|e| e.into_inner()).take();
         if let Some(bins) = spectral.as_deref() {
             let scene = self.0.scene.load(Ordering::Relaxed);
@@ -237,12 +261,13 @@ impl Visualizer {
         let before = self.0.sources.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |m| Some(with_bit(m, bit, on)));
         let Ok(before) = before else { return };
         let (was, now) = (before != 0, with_bit(before, bit, on) != 0);
-        if was != now {
-            self.apply_enabled(now);
-        }
+        self.0.controls.set_compact(!self.0.marshals_all(), self.0.compact_mode.load(Ordering::Relaxed));
+        self.apply_scopes();
+        if was != now { self.apply_enabled(now); }
     }
 
     fn apply_enabled(&self, on: bool) {
+        self.0.tap.set_visualizing(on);
         self.0.controls.set_enabled(on);
         if !on {
             // The producer and the drain park on their own; nothing to do.
@@ -258,8 +283,9 @@ impl Visualizer {
     }
 
     fn apply_scopes(&self) {
-        let requested = self.0.panel_scopes.load(Ordering::Relaxed);
-        self.0.controls.set_scopes(visible_scopes(requested, self.0.scene_active.load(Ordering::Relaxed)));
+        let requested = if self.0.marshals_all() { self.0.panel_scopes.load(Ordering::Relaxed) } else { 0 };
+        let compact = match self.0.compact_mode.load(Ordering::Relaxed) { 3 => GONIOMETER, 4 => OSCILLOSCOPE, _ => 0 };
+        self.0.controls.set_scopes(visible_scopes(requested, self.0.scene_active.load(Ordering::Relaxed)) | compact);
     }
 
     fn wake_drain(&self) {
@@ -268,6 +294,10 @@ impl Visualizer {
 }
 
 impl Shared {
+    fn marshals_all(&self) -> bool {
+        self.marshal_all.load(Ordering::Relaxed) && self.presented.load(Ordering::Relaxed)
+    }
+
     /// Waking the drain is one atomic swap while it is awake, and the
     /// permit it leaves is kept for its next park, so a wake is never lost
     /// between the latch and the park.
@@ -284,8 +314,10 @@ struct Latch(Arc<Shared>);
 
 impl Sink for Latch {
     fn submit(&self, frame: Frame) {
-        let all = self.0.marshal_all.load(Ordering::Relaxed);
+        let all = self.0.marshals_all();
         let cells = &self.0.cells;
+        let compact = self.0.compact_mode.load(Ordering::Relaxed);
+        let wakes = |all, stream| wakes(all, stream) || compact_stream(compact) == Some(stream);
         let wake = match frame {
             Frame::Bars(b) => {
                 *cells.bars.lock().unwrap_or_else(|e| e.into_inner()) = Some(b);
@@ -322,9 +354,13 @@ impl Sink for Latch {
                 wakes(all, Stream::Oscilloscope)
             }
         };
-        if wake {
-            self.0.wake_drain();
-        }
+        if wake { self.0.frame_ready.store(true, Ordering::Relaxed); }
+    }
+
+    fn finish_frame(&self) {
+        // Bars, energy and waveform belong to one analysis. I wake only when
+        // all its cells are ready, avoiding three GUI publishes per frame.
+        if self.0.frame_ready.swap(false, Ordering::Relaxed) { self.0.wake_drain(); }
     }
 }
 
@@ -341,6 +377,17 @@ enum Stream {
 /// every frame; the scopes ride along. With none open, nothing does.
 fn wakes(marshal_all: bool, stream: Stream) -> bool {
     marshal_all && matches!(stream, Stream::Bars | Stream::Wave | Stream::Energy)
+}
+
+fn compact_stream(mode: u32) -> Option<Stream> {
+    match mode {
+        0 | 5 | 6 => Some(Stream::Bars),
+        1 => Some(Stream::Wave),
+        2 => Some(Stream::Energy),
+        3 => Some(Stream::Goniometer),
+        4 => Some(Stream::Oscilloscope),
+        _ => None,
+    }
 }
 
 /// The scope a focus panel asks for: 7 the goniometer, 8 the oscilloscope.
@@ -448,6 +495,40 @@ mod tests {
         assert_eq!(mask, IMMERSIVE | BAR);
         assert_eq!(with_bit(mask, IMMERSIVE, false), BAR, "the bar's claim survives the view closing");
         assert_eq!(with_bit(with_bit(mask, IMMERSIVE, false), BAR, false), 0);
+    }
+
+    #[test]
+    fn compact_modes_share_the_producer_and_only_marshal_the_selected_stream() {
+        let handle = Visualizer::new(Tap::new());
+        for mode in 0..7 {
+            handle.set_compact(true, mode);
+            let latch = Latch(handle.0.clone());
+            latch.submit(Frame::Bars([0.2; BARS]));
+            latch.submit(Frame::Energy([0.3; ENERGY_BANDS]));
+            latch.submit(Frame::Wave(Box::new([0.4; WAVE_POINTS * 2])));
+            latch.submit(Frame::Goniometer { points: Box::new([0.5; 512]), correlation: 1.0 });
+            latch.submit(Frame::Oscilloscope(Box::new([0.6; 512])));
+            let frame = handle.drain();
+            assert_eq!(frame.bars.is_some(), matches!(mode, 0 | 5 | 6));
+            assert_eq!(frame.wave.is_some(), mode == 1);
+            assert_eq!(frame.energy.is_some(), mode == 2);
+            assert_eq!(frame.goniometer.is_some(), mode == 3);
+            assert_eq!(frame.oscilloscope.is_some(), mode == 4);
+            assert!(frame.pack.is_none() && frame.linebed.is_none() && frame.ribbon.is_none());
+        }
+        handle.open();
+        handle.set_view(0, 7);
+        handle.set_compact(true, 4);
+        assert_eq!(handle.0.controls.scopes(), GONIOMETER | OSCILLOSCOPE);
+        handle.set_presented(false);
+        assert_eq!(handle.0.controls.scopes(), OSCILLOSCOPE);
+        assert!(handle.enabled(), "the compact view keeps its claim");
+        handle.set_compact(false, 4);
+        assert!(!handle.enabled(), "no visible consumers means no producer");
+        handle.set_presented(true);
+        assert_eq!(handle.0.controls.scopes(), GONIOMETER);
+        handle.close();
+        assert!(!handle.enabled());
     }
 
     #[test]

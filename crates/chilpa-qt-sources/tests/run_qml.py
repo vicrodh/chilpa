@@ -20,6 +20,7 @@ CRATES = {
     "chilpa-qt-kit": "qrc:/qt/qml/app/chilpa/kit/qml/",
     "chilpa-qt": "qrc:/qt/qml/app/chilpa/qml/",
     "chilpa-qt-sources": "qrc:/qt/qml/app/chilpa/sources/qml/",
+    "chilpa-qt-devices": "qrc:/qt/qml/app/chilpa/devices/qml/",
     "chilpa-qt-controls": "qrc:/qt/qml/app/chilpa/controls/qml/",
     "chilpa-qt-lyrics": "qrc:/qt/qml/app/chilpa/lyrics/qml/",
     "chilpa-qt-metadata": "qrc:/qt/qml/app/chilpa/metadata/qml/",
@@ -53,6 +54,10 @@ with tempfile.TemporaryDirectory(prefix="chilpa-shared-qml-") as directory:
             text = text.replace(prefix, (stage / "crates" / crate / "qml").as_uri() + "/")
         path.write_text(text)
     imports = [str(found) for found in sorted(stage.glob("crates/*/tests/qml/imports"))]
+    # I give the complete shell doubles priority over the kit's minimal module.
+    shell_imports = str(stage / "crates/chilpa-qt/tests/qml/imports")
+    imports.remove(shell_imports)
+    imports.append(shell_imports)
     for test in sys.argv[1:]:
         candidates = list(stage.glob("crates/*/tests/qml/tst_" + test + ".qml"))
         if len(candidates) != 1:

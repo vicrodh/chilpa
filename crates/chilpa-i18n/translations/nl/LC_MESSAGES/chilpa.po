@@ -672,6 +672,9 @@ msgstr "De inspectie van de audio-uitvoer kon niet worden gestart."
 msgid "Audio output task stopped unexpectedly."
 msgstr "De taak voor de audio-uitvoer is onverwacht gestopt."
 
+msgid "Audio path"
+msgstr "Audiopad"
+
 msgid "Audio stack"
 msgstr "Audiostack"
 
@@ -998,11 +1001,23 @@ msgstr "Automatisch op updates controleren"
 msgid "Check one format"
 msgstr "Eén formaat controleren"
 
+msgid "Checking available space"
+msgstr "Beschikbare ruimte controleren"
+
+msgid "Checking destination files"
+msgstr "Doelbestanden controleren"
+
 msgid "Checking for updates…"
 msgstr "Op updates controleren…"
 
 msgid "Checking library folders…"
 msgstr "Bibliotheekmappen controleren…"
+
+msgid "Checking local files"
+msgstr "Lokale bestanden controleren"
+
+msgid "Checking storage identity"
+msgstr "Opslagidentiteit controleren"
 
 msgid "Checking the account…"
 msgstr "Het account controleren…"
@@ -1099,6 +1114,9 @@ msgstr "Kiezen"
 
 msgid "Choose DSP on or bypass."
 msgstr "Kies DSP aan of bypass."
+
+msgid "Choose Unknown, Clean or Explicit"
+msgstr "Kies Onbekend, Geen expliciete inhoud of Expliciet"
 
 msgid "Choose a DSP favorite."
 msgstr "Kies een DSP-favoriet."
@@ -1216,6 +1234,9 @@ msgstr "Kies de ontvanger bij Afspelen op om verbinding te maken."
 
 msgid "Choose the storage paired with this profile."
 msgstr ""
+
+msgid "Clean"
+msgstr "Geen expliciete inhoud"
 
 msgid "Clear"
 msgstr "Wissen"
@@ -1430,6 +1451,9 @@ msgstr "Verbindingsfout"
 msgid "Container"
 msgstr "Container"
 
+msgid "Content advisory"
+msgstr "Inhoudsclassificatie"
+
 msgid "Continue"
 msgstr "Doorgaan"
 
@@ -1627,6 +1651,9 @@ msgstr "DSD{} · PCM op {} Hz · {}"
 
 msgid "DSP active"
 msgstr "DSP actief"
+
+msgid "DSP and gain"
+msgstr "DSP en versterking"
 
 msgid "DSP applied to consumed PCM blocks"
 msgstr "DSP toegepast op verwerkte PCM-blokken"
@@ -2138,6 +2165,9 @@ msgstr "Uitvouwen"
 msgid "Experimental: theme may not match your system exactly."
 msgstr "Experimenteel: het thema komt mogelijk niet exact overeen met je systeem."
 
+msgid "Explicit"
+msgstr "Expliciet"
+
 msgid "Explore"
 msgstr "Verkennen"
 
@@ -2324,6 +2354,9 @@ msgstr "Vergeet de tot nu toe gevonden songteksten en de nummers waarvan bekend 
 msgid "Format"
 msgstr "Formaat"
 
+msgid "Format conversion"
+msgstr "Formaatconversie"
+
 msgid "Forward"
 msgstr "Vooruit"
 
@@ -2392,6 +2425,9 @@ msgstr "GPU"
 
 msgid "GPU (compatibility)"
 msgstr "GPU (compatibiliteit)"
+
+msgid "Gain"
+msgstr "Versterking"
 
 msgid "Gain applied to consumed PCM blocks"
 msgstr "Versterking toegepast op verwerkte PCM-blokken"
@@ -2555,8 +2591,8 @@ msgstr "Verbergen in zijbalk"
 msgid "Hide manual entry"
 msgstr "Handmatige invoer verbergen"
 
-msgid "Hide offline profiles"
-msgstr ""
+msgid "Hide review details"
+msgstr "Controledetails verbergen"
 
 msgid "Hide sidebar"
 msgstr "Zijbalk verbergen"
@@ -2572,6 +2608,9 @@ msgstr "Vertaling verbergen"
 
 msgid "Hide unavailable"
 msgstr "Niet-beschikbare verbergen"
+
+msgid "Hide visualization"
+msgstr "Visualisatie verbergen"
 
 msgid "Hide when idle"
 msgstr "Verbergen bij inactiviteit"
@@ -3331,6 +3370,9 @@ msgstr "Gemengde uitvoer"
 msgid "Mixing engineer"
 msgstr "Mixtechnicus"
 
+msgid "Mode not reported"
+msgstr "Modus niet gemeld"
+
 msgid "Mon"
 msgstr "ma"
 
@@ -3745,6 +3787,9 @@ msgstr "Chilpa meldt geen samplewijzigingen; het verdere pad is niet geverifieer
 msgid "No sample processing reported in Chilpa"
 msgstr "Geen sampleverwerking gemeld in Chilpa"
 
+msgid "No saved profiles"
+msgstr "Geen opgeslagen profielen"
+
 msgid "No saved queries yet. Add conditions, then choose Save query."
 msgstr "Nog geen opgeslagen zoekopdrachten. Voeg voorwaarden toe en kies Zoekopdracht opslaan."
 
@@ -4054,6 +4099,9 @@ msgstr "Openen en optioneel teruglezen van eindpuntgegevens. Hoorbaarheid blijft
 msgid "Opening checks"
 msgstr "Openingscontroles"
 
+msgid "Opening device connection"
+msgstr "Verbinden met apparaat"
+
 msgid "Opening mode"
 msgstr "Openingsmodus"
 
@@ -4062,6 +4110,9 @@ msgstr "Opening: {} · Hoorbaarheid: {}"
 
 msgid "Optional access token for private playlists"
 msgstr "Optioneel toegangstoken voor privéafspeellijsten"
+
+msgid "Original audio"
+msgstr "Originele audio"
 
 msgid "Original audio over the selected network transport"
 msgstr "Oorspronkelijke audio via het geselecteerde netwerktransport"
@@ -4141,6 +4192,9 @@ msgstr "Plak het token dat de bron heeft opgegeven. Chilpa bewaart het versleute
 msgid "Paste the user token from listenbrainz.org/settings."
 msgstr "Plak het gebruikerstoken van listenbrainz.org/settings."
 
+msgid "Path unverified"
+msgstr "Pad niet geverifieerd"
+
 msgid "Pause"
 msgstr "Pauzeren"
 
@@ -4173,6 +4227,9 @@ msgstr "Fysieke formaatcombinaties"
 
 msgid "Physical format match"
 msgstr "Overeenkomst van het fysieke formaat"
+
+msgid "Physical output unreported"
+msgstr "Fysieke uitvoer niet gemeld"
 
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "Kies een thema of houd Systeem aan om je bureaublad te volgen, kies je taal en druk op : om de opdrachtregel te openen."
@@ -4381,6 +4438,9 @@ msgstr "Stemmingsanalyse voorbereiden"
 msgid "Preparing analysis…"
 msgstr "Analyse voorbereiden…"
 
+msgid "Preparing playlists"
+msgstr "Afspeellijsten voorbereiden"
+
 msgid "Preparing results…"
 msgstr "Resultaten voorbereiden…"
 
@@ -4426,8 +4486,14 @@ msgstr "Verwerkt"
 msgid "Processing"
 msgstr "Verwerking"
 
+msgid "Processing active"
+msgstr "Verwerking actief"
+
 msgid "Producer"
 msgstr "Producent"
+
+msgid "Profile"
+msgstr "Profiel"
 
 msgid "Profile name"
 msgstr "Profielnaam"
@@ -4591,6 +4657,9 @@ msgstr "„{}” als woorden lezen"
 msgid "Reading Library selection…"
 msgstr ""
 
+msgid "Reading file sizes"
+msgstr "Bestandsgrootten lezen"
+
 msgid "Reading it from {}…"
 msgstr "Wordt gelezen van {}…"
 
@@ -4629,6 +4698,9 @@ msgstr "Bouwt de tellers en de zoekindex opnieuw op uit de nummers en het afspee
 
 msgid "Recalculate usage"
 msgstr "Gebruik herberekenen"
+
+msgid "Receiver"
+msgstr "Ontvanger"
 
 msgid "Receiver processing unknown"
 msgstr "Verwerking door ontvanger onbekend"
@@ -4771,9 +4843,6 @@ msgstr "Verwijder één voorwaarde om resultaten te krijgen:"
 msgid "Remove original queues"
 msgstr "Originele wachtrijen verwijderen"
 
-msgid "Remove profile"
-msgstr ""
-
 msgid "Remove saved profile"
 msgstr ""
 
@@ -4782,9 +4851,6 @@ msgstr "Verwijder kleinere hoezen en achtergronden. Chilpa maakt ze opnieuw aan 
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "Deze plug-in, het bijbehorende account, de instellingen en de gecachte bibliotheek uit Chilpa verwijderen? Je account en afspeellijsten bij de bron worden hierdoor niet verwijderd."
-
-msgid "Remove this profile and its local sync history? Files on the device will stay."
-msgstr ""
 
 msgid "Remove this server?"
 msgstr "Deze server verwijderen?"
@@ -4869,6 +4935,9 @@ msgstr "Teller resetten"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "Resolutie verlaagd van {} naar {} bits"
+
+msgid "Resolving selected music"
+msgstr "Geselecteerde muziek voorbereiden"
 
 msgid "Resolving…"
 msgstr "Opzoeken…"
@@ -5301,6 +5370,9 @@ msgstr ""
 msgid "Show playlist only from the same source as the track"
 msgstr "Toon alleen afspeellijsten van dezelfde bron als het nummer"
 
+msgid "Show review details"
+msgstr "Controledetails tonen"
+
 msgid "Show saved tracks in Tracks"
 msgstr "Opgeslagen nummers tonen in Nummers"
 
@@ -5321,6 +5393,9 @@ msgstr "Token tonen"
 
 msgid "Show translation"
 msgstr "Vertaling tonen"
+
+msgid "Show visualization"
+msgstr "Visualisatie tonen"
 
 msgid "Show what you're listening to as your Discord status. Opt-in — Discord must be running."
 msgstr "Toon wat je aan het luisteren bent als je Discord-status. Opt-in — Discord moet actief zijn."
@@ -6299,6 +6374,12 @@ msgstr "Niet beschikbaar"
 msgid "Uncategorized"
 msgstr "Zonder categorie"
 
+msgid "Unchanged"
+msgstr "Ongewijzigd"
+
+msgid "Unchanged samples"
+msgstr "Ongewijzigde samples"
+
 msgid "Undo"
 msgstr "Ongedaan maken"
 
@@ -6541,6 +6622,9 @@ msgstr "Wacht tot de audiocontrole is voltooid."
 
 msgid "Wait for the queue to finish switching."
 msgstr "Wacht tot de wachtrij klaar is met overschakelen."
+
+msgid "Waiting for output"
+msgstr "Wachten op uitvoer"
 
 msgid "Waiting for playback to stop"
 msgstr "Wachten tot het afspelen stopt"

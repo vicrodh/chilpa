@@ -129,20 +129,28 @@ Rectangle {
         width: parent.width
         height: root.detailsOpen ? Metrics.metadataDetails : 0
         clip: true
-        Grid {
-            x: Metrics.gap12
-            y: Metrics.gap8
-            columns: 2
-            columnSpacing: Metrics.gap12
-            rowSpacing: Metrics.gap6
-            Repeater {
-                model: root.rest.length
-                MetadataField {
-                    required property int index
-                    width: (details.width - Metrics.gap12 * 3) / 2 // derived: two columns between three gaps
-                    ofTrack: true
-                    field: root.rest[index] || ({})
-                    onEdited: (name, value) => MetadataEditor.setTrack(root.track.id, name, value)
+        Flickable {
+            anchors.fill: parent
+            contentHeight: fields.height + Metrics.gap8 * 2 // derived: the fields and their vertical insets
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ViewportScrollBar {}
+            Grid {
+                id: fields
+                x: Metrics.gap12
+                y: Metrics.gap8
+                columns: 2
+                columnSpacing: Metrics.gap12
+                rowSpacing: Metrics.gap6
+                Repeater {
+                    model: root.rest.length
+                    MetadataField {
+                        required property int index
+                        width: (details.width - Metrics.gap12 * 3) / 2 // derived: two columns between three gaps
+                        ofTrack: true
+                        field: root.rest[index] || ({})
+                        onEdited: (name, value) => MetadataEditor.setTrack(root.track.id, name, value)
+                    }
                 }
             }
         }

@@ -859,3 +859,12 @@ rdonly
 statfs
 # Embedded multimedia card abbreviation.
 emmc
+
+# I use the established cancellation spelling, round-trip verb and codec name.
+cancellable
+cancelling
+roundtrips
+speex
+
+# Rust names its subsecond accessor subsec_nanos.
+subsec

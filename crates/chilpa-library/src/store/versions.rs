@@ -24,6 +24,7 @@ pub struct AlbumVersion {
     /// What says its format: a file's extension, a server track's codec.
     pub codec: String,
     pub tracks: usize,
+    pub explicit: Option<bool>,
     /// Some track of it can be played now. An edition whose folder is not
     /// mounted or whose server does not answer is offered dimmed and never
     /// chosen for me while another one can play (ADR-017).
@@ -277,7 +278,7 @@ impl Library {
             .query_map([], |r| r.get(0))?.collect::<rusqlite::Result<_>>()?;
         let mut stmt = self.db.prepare("SELECT a.id, a.title, a.album_artist, a.folder,
             s.provider || ':' || s.instance, t.external_id, t.bit_depth, t.sample_rate_hz, t.id, t.duration_ms,
-            s.label, s.icon, s.provider = 'local', t.reachable, coalesce(t.codec, ''), s.kind = 'server'
+            s.label, s.icon, s.provider = 'local', t.reachable, coalesce(t.codec, ''), s.kind = 'server', t.explicit
             FROM albums a JOIN tracks t ON t.album_id = a.id JOIN sources s ON s.id = t.source_id
             WHERE t.present = 1 AND s.enabled = 1 ORDER BY a.id, t.id")?;
         let mut rows = stmt.query([])?;
@@ -305,8 +306,14 @@ impl Library {
                 rank: (quality.0, quality.1, quality.2, 0, enhanced),
                 title, artist: row.get(2).unwrap_or_default(), location, source: row.get(4).unwrap_or_default(),
                 source_label: row.get(10).unwrap_or_default(), source_icon: row.get(11).unwrap_or_default(), local: row.get(12).unwrap_or(false),
-                path: path.clone(), bits, rate, codec: ext.clone(), tracks: 0, reachable: false,
+                path: path.clone(), bits, rate, codec: ext.clone(), tracks: 0, reachable: false, explicit: Some(false),
             });
+            let advisory: Option<bool> = row.get(16)?;
+            v.explicit = match (v.explicit, advisory) {
+                (Some(true), _) | (_, Some(true)) => Some(true),
+                (Some(false), Some(false)) => Some(false),
+                _ => None,
+            };
             v.tracks += 1;
             v.reachable |= reachable;
             if quality < (v.rank.0, v.rank.1, v.rank.2) {

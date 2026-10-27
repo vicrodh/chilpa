@@ -74,11 +74,8 @@ pub fn options(library: &Path) -> Result<Vec<OptionRow>, UiError> {
     }
     Ok(rows)
 }
-pub fn resolve(
-    path: &Path,
-    picks: &[Pick],
-    cancel: &Cancellation,
-) -> Result<(Vec<Input>, Vec<Playlist>), UiError> {
+pub fn resolve_with_progress(path: &Path, picks: &[Pick], cancel: &Cancellation,
+    progress: &mut (dyn FnMut(chilpa_sync::ReviewProgress) + Send)) -> Result<(Vec<Input>, Vec<Playlist>), UiError> {
     if picks.iter().all(|pick| matches!(pick, Pick::Episode { .. })) {
         return Ok((Vec::new(), Vec::new()));
     }
@@ -90,7 +87,8 @@ pub fn resolve(
     })?;
     library.read_snapshot(|| {
         let mut selected=BTreeSet::new(); let mut lists=Vec::new();
-        for pick in picks {
+        for (index, pick) in picks.iter().enumerate() {
+            progress(chilpa_sync::ReviewProgress { stage:"selection", completed:index, total:picks.len(), current_path:pick.name().into(), selected_bytes:0 });
             cancel.check().map_err(UiError::from)?;
             let (id,name,ids)=match pick {
                 Pick::Episode { .. } => continue,
@@ -110,7 +108,9 @@ pub fn resolve(
         let ids:Vec<_>=selected.into_iter().collect();
         let tracks=library.export_tracks(&ids).map_err(|e|failure(chilpa_i18n::mark("Some selected Library tracks are missing. I kept the device unchanged."),e))?;
         let mut inputs=Vec::with_capacity(tracks.len());let mut keys=BTreeMap::new();
-        for track in tracks {
+        let total = tracks.len();
+        for (index, track) in tracks.into_iter().enumerate() {
+            progress(chilpa_sync::ReviewProgress { stage:"selection_files", completed:index, total, current_path:track.title.clone(), selected_bytes:0 });
             cancel.check().map_err(UiError::from)?;
             let path=track.path.filter(|_|track.available).ok_or_else(||failure(chilpa_i18n::mark("This selection includes music without an available local file. I kept the device unchanged."),&track.title))?;
             if !Path::new(&path).is_file() {return Err(failure(chilpa_i18n::mark("A selected local file is unavailable. I kept the device unchanged."),&track.title));}

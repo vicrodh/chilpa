@@ -32,6 +32,11 @@ impl Target {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Fingerprint { pub size: u64, pub sha256: String }
 
+// I reserve the largest compact Fingerprint replacing a deferred JSON null.
+// A validated digest has exactly 64 hexadecimal bytes, none requiring escaping.
+pub(crate) const MAX_DIGEST_JSON_GROWTH: usize =
+    br#"{"size":18446744073709551615,"sha256":""}"#.len() + 64 - b"null".len();
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AssetKind { Media, Playlist }
 
@@ -63,12 +68,48 @@ pub struct Progress {
     pub verifying: bool,
 }
 
+/// I report completed units within the named review stage, never simulated transfer bytes.
+#[derive(Clone, Debug)]
+pub struct ReviewProgress {
+    pub stage: &'static str,
+    pub completed: usize,
+    pub total: usize,
+    pub current_path: String,
+    pub selected_bytes: u64,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub(crate) enum Source { File(PathBuf), Bytes(Vec<u8>) }
+pub(crate) enum Source { File(PathBuf), CheckedFile { path: PathBuf, stamp: crate::source::Stamp }, Bytes(Vec<u8>) }
 impl Source {
-    pub fn reader(&self) -> Result<Box<dyn Read + Send + '_>> {
-        match self { Self::File(p) => Ok(Box::new(std::fs::File::open(p)?)), Self::Bytes(b) => Ok(Box::new(b.as_slice())) }
+    pub fn check(&self) -> Result<()> {
+        if let Self::CheckedFile { path, stamp } = self { stamp.check(path)?; }
+        Ok(())
     }
+    pub fn reader(&self) -> Result<SourceReader<'_>> {
+        let (input, guard): (Box<dyn Read + Send + '_>, _) = match self {
+            Self::File(path) => (Box::new(std::fs::File::open(path)?), None),
+            Self::CheckedFile { path, stamp } => {
+                let file = std::fs::File::open(path)?;
+                stamp.check_file(&file, path)?;
+                (Box::new(file.try_clone()?), Some((file, path.as_path(), stamp)))
+            },
+            Self::Bytes(bytes) => (Box::new(bytes.as_slice()), None),
+        };
+        Ok(SourceReader { input, guard })
+    }
+}
+pub(crate) struct SourceReader<'a> {
+    input: Box<dyn Read + Send + 'a>,
+    guard: Option<(std::fs::File, &'a std::path::Path, &'a crate::source::Stamp)>,
+}
+impl SourceReader<'_> {
+    pub fn check(&self) -> Result<()> {
+        if let Some((file, path, stamp)) = &self.guard { stamp.check_file(file, path)?; }
+        Ok(())
+    }
+}
+impl Read for SourceReader<'_> {
+    fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> { self.input.read(bytes) }
 }
 
 pub(crate) struct HashWriter { hash: Sha256, size: u64, cancel: Cancellation }

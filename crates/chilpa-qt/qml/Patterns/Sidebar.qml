@@ -25,6 +25,16 @@ Rectangle {
     readonly property var sourceView: JSON.parse(Sources.snapshot || "{}")
     readonly property var panels: sourceView.panels || []
     readonly property var downloadPlugins: (sourceView.download_plugins || []).filter(plugin => plugin.access === "sidebar")
+    readonly property bool devicesVisible: Prefs.rev >= 0 && SettingsModel.kept("navigation.devices") !== "false"
+    readonly property var localPages: [
+        { screen: "home", glyph: Icons.home, text: I18n.tr("Home", I18n.rev) },
+        { screen: "library", glyph: Icons.columns3, text: I18n.tr("Library", I18n.rev) },
+        { screen: "artists", glyph: SourceGlyphs.musicArtist, family: SourceGlyphs.font, text: I18n.tr("Artists", I18n.rev) },
+        { screen: "albums", glyph: Icons.disc, text: I18n.tr("Albums", I18n.rev) },
+        { screen: "tracks", glyph: Icons.music, text: I18n.tr("Tracks", I18n.rev) },
+        { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) },
+        { screen: "openMedia", glyph: Icons.folderOpen, text: I18n.tr("Open media", I18n.rev) }
+    ].concat(devicesVisible ? [{ screen: "deviceSync", glyph: Icons.deviceMobile, text: I18n.tr("Devices", I18n.rev) }] : [])
 
     Component.onCompleted: refreshSources()
     Timer { interval: Motion.poll; repeat: true; running: side.sourceView.starting === true; onTriggered: side.refreshSources() }
@@ -102,15 +112,7 @@ Rectangle {
                 width: parent.width
 
                 Repeater {
-                    model: [
-                        { screen: "home", glyph: Icons.home, text: I18n.tr("Home", I18n.rev) },
-                        { screen: "library", glyph: Icons.columns3, text: I18n.tr("Library", I18n.rev) },
-                        { screen: "artists", glyph: SourceGlyphs.musicArtist, family: SourceGlyphs.font, text: I18n.tr("Artists", I18n.rev) },
-                        { screen: "albums", glyph: Icons.disc, text: I18n.tr("Albums", I18n.rev) },
-                        { screen: "tracks", glyph: Icons.music, text: I18n.tr("Tracks", I18n.rev) },
-                        { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) },
-                        { screen: "openMedia", glyph: Icons.folderOpen, text: I18n.tr("Open media", I18n.rev) }
-                    ].concat(side.panels.map(p => ({ screen: "source", key: p.id, glyph: SourceGlyphs.of(p.icon) || Icons[p.icon] || Icons.letterX, family: SourceGlyphs.of(p.icon) ? SourceGlyphs.font : "", image: p.icon_image || "", tint: p.icon_tint || false, text: p.name, music: p.music === true, children: p.children || [] })))
+                    model: side.localPages.concat(side.panels.map(p => ({ screen: "source", key: p.id, glyph: SourceGlyphs.of(p.icon) || Icons[p.icon] || Icons.letterX, family: SourceGlyphs.of(p.icon) ? SourceGlyphs.font : "", image: p.icon_image || "", tint: p.icon_tint || false, text: p.name, music: p.music === true, children: p.children || [] })))
                         .concat(side.downloadPlugins.map(p => ({ screen: "pluginDownloads", key: p.id, glyph: Icons.download, image: p.icon || "", text: p.name, tint: true, download: true })))
 
                     Column {
@@ -120,7 +122,7 @@ Rectangle {
                         width: parent.width
 
                         Text {
-                            visible: group.index === 7 && side.panels.length > 0 && !side.collapsed
+                            visible: group.index === side.localPages.length && side.panels.length > 0 && !side.collapsed
                             height: visible ? Metrics.navItemHeight : 0
                             x: Metrics.navItemPadding
                             text: I18n.tr("Streaming", I18n.rev)
@@ -128,7 +130,7 @@ Rectangle {
                             color: Theme.color.textTertiary; verticalAlignment: Text.AlignVCenter
                         }
                         Text {
-                            visible: group.modelData.download === true && group.index === 7 + side.panels.length && !side.collapsed
+                            visible: group.modelData.download === true && group.index === side.localPages.length + side.panels.length && !side.collapsed
                             height: visible ? Metrics.navItemHeight : 0
                             x: Metrics.navItemPadding
                             text: I18n.tr("Downloads", I18n.rev)
@@ -136,7 +138,7 @@ Rectangle {
                             color: Theme.color.textTertiary; verticalAlignment: Text.AlignVCenter
                         }
                         NavItem {
-                            objectName: group.modelData.key ? "sourceParent" : "navigationParent"
+                            objectName: group.modelData.screen === "deviceSync" ? "deviceNavigation" : group.modelData.key ? "sourceParent" : "navigationParent"
                             width: parent.width
                             expandable: !!group.modelData.key && group.modelData.screen === "source"
                             expanded: side.expandedSources[group.modelData.key] === true
@@ -178,17 +180,6 @@ Rectangle {
                             }
                         }
                     }
-                }
-                NavItem {
-                    objectName: "deviceNavigation"
-                    visible: Prefs.rev >= 0 && SettingsModel.kept("navigation.devices") !== "false"
-                    width: parent.width
-                    text: I18n.tr("Devices", I18n.rev)
-                    glyph: Icons.deviceMobile
-                    collapsed: side.collapsed
-                    active: Navigation.screen === "deviceSync"
-                    onClicked: Navigation.go("deviceSync", 0)
-                    onMiddleClicked: SettingsModel.middleClickTabs ? Navigation.open("deviceSync", 0) : clicked()
                 }
             }
         }

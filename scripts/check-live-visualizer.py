@@ -17,7 +17,11 @@ parser.add_argument("output", type=Path)
 parser.add_argument("--backend", choices=("opengl", "vulkan"), default="opengl")
 parser.add_argument("--host-display", action="store_true")
 parser.add_argument("--dsp-package", type=Path)
+parser.add_argument("--queues", action="store_true")
+parser.add_argument("--headless-rhi", action="store_true")
 args = parser.parse_args()
+if args.headless_rhi and args.backend != "opengl":
+    parser.error("--headless-rhi requires the OpenGL backend")
 scripts = Path(__file__).resolve().parent
 output = args.output.resolve()
 output.mkdir(parents=True, exist_ok=True)
@@ -27,7 +31,7 @@ spec.loader.exec_module(scene_checks)
 
 with tempfile.TemporaryDirectory(prefix="chilpa-live-visualizer-") as directory:
     profile = Path(directory)
-    for name in ("config/chilpa", "data/chilpa/plugins", "cache", "runtime"):
+    for name in ("config/chilpa", "data/chilpa/plugins", "cache", "runtime", "tmp"):
         (profile / name).mkdir(parents=True)
     (profile / "runtime").chmod(0o700)
     (profile / "config/chilpa/settings.conf").write_text("output = file:capture\nlanguage = es\n")
@@ -62,29 +66,35 @@ with tempfile.TemporaryDirectory(prefix="chilpa-live-visualizer-") as directory:
         seconds=0, shuffle=False, repeat=0, stop_after=None)
     (profile / "data/chilpa/listenlist.json").write_text(json.dumps(dict(version=1, buffers=[buffer], active=1, selected=1, next=2)))
     fixture = profile / "live.qml"
-    fixture.write_text((scripts / "fixtures/live-visualizer.qml").read_text()
+    template = "queue-visualizer.qml" if args.queues else "live-visualizer.qml"
+    fixture.write_text((scripts / "fixtures" / template).read_text()
         .replace('"OUTPUT_DIRECTORY"', json.dumps(str(output)))
         .replace('"WITH_DSP"', "true" if args.dsp_package else "false"))
-    environment = dict(os.environ, XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"),
-        XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"), TMPDIR=str(profile / "runtime"),
-        QT_QPA_PLATFORM="xcb", QT_NO_XDG_DESKTOP_PORTAL="1", CHILPA_QML_SMOKE=str(fixture),
+    inherited = {key:value for key,value in os.environ.items()
+                 if not key.startswith(("CHILPA_", "QOBUZ_", "TIDAL_", "APPLE_", "SPOTIFY_", "PODCAST_"))}
+    environment = dict(inherited, XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"),
+        XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"), TMPDIR=str(profile / "tmp"),
+        QT_QPA_PLATFORM="offscreen" if args.headless_rhi else "xcb", QT_NO_XDG_DESKTOP_PORTAL="1", CHILPA_QML_SMOKE=str(fixture),
         CHILPA_CAPTURE_REALTIME="1", QSG_RHI_BACKEND=args.backend, CHILPA_RENDERER=args.backend)
+    if args.headless_rhi:
+        environment.update(QT_QUICK_BACKEND="rhi", QSG_INFO="1")
     log_path = output / "live-visualizer.log"
     from contextlib import nullcontext
-    display = nullcontext(os.environ["DISPLAY"]) if args.host_display else scene_checks.isolated_display(output)
+    display = nullcontext(os.environ.get("DISPLAY", "")) if args.host_display or args.headless_rhi else scene_checks.isolated_display(output)
     with display as address, log_path.open("w") as log:
         environment["DISPLAY"] = address
         result = subprocess.run(["timeout", "--kill-after=2s", "65s", "dbus-run-session", "--", str(args.binary.resolve())],
             env=environment, cwd=profile, stdout=log, stderr=subprocess.STDOUT, timeout=70)
     transcript = log_path.read_text()
     print("\n".join(line for line in transcript.splitlines() if "SMOKE" in line or "qrc:" in line))
-    capture = profile / "runtime/chilpa-capture.raw"
+    capture = profile / "tmp/chilpa-capture.raw"
     captured_bytes = capture.stat().st_size if capture.exists() else 0
     print(f"SMOKE live capture bytes={captured_bytes}")
     errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "Binding loop", "Unable to assign", "is not a type",
               "Failed to build graphics pipeline state", "Failed to link shader program")
+    marker = "SMOKE queue visualizer completed" if args.queues else "SMOKE live visualizer completed"
     passed = (result.returncode == 0 and captured_bytes > rate * 4
-              and "SMOKE live visualizer completed" in transcript and not any(error in transcript for error in errors))
+              and marker in transcript and not any(error in transcript for error in errors))
     (output / "report.json").write_text(json.dumps(dict(binary=str(args.binary.resolve()), backend=args.backend,
         captured_bytes=captured_bytes, exit_code=result.returncode, passed=passed, log=str(log_path)), indent=2) + "\n")
     raise SystemExit(0 if passed else 1)

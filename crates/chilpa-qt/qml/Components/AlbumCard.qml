@@ -20,6 +20,7 @@ Item {
     readonly property var sourceInfo: sources.length > 0 ? sources[0] : ({})
     property var qualityInfo: ({})
     property int albumId
+    property bool explicitContent: false
     property string title
     property string subtitle
     property string artistName: subtitle
@@ -144,7 +145,8 @@ Item {
         anchors.topMargin: Metrics.cardTextGap
         width: card.width
 
-        Text {
+        AdvisoryTitle {
+            explicitContent: card.explicitContent
             id: titleLine; objectName: "albumTitle"
             width: parent.width - (qualityBadge.visible ? qualityBadge.width + Metrics.gap4 : 0)
             text: card.title

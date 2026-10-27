@@ -72,7 +72,7 @@ Item {
         objectName: "homeModuleLoader"
         width: parent.width
         height: item ? Math.max(item.shown ? placeholder.height : 0, item.implicitHeight) : 0
-        active: slot.started || status === Loader.Ready
+        active: slot.started || slot.bound
         asynchronous: true
         visible: slot.ready && slot.shown
         sourceComponent: slot.content

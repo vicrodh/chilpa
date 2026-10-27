@@ -11,6 +11,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 // it, and closing it empties the filter.
 Popup {
     id: flyout
+    PopupInput { surface: flyout }
 
     // A row under the list: its icon and what it does, as the sidebar's rows.
     component Way: Rectangle {

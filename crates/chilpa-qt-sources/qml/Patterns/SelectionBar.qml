@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Effects
 import app.chilpa
 import app.chilpa.kit
@@ -116,7 +117,7 @@ Item {
 
     Shortcut {
         sequence: "Escape"
-        enabled: bar.visible
+        enabled: !InputLayers.blocksShortcuts(bar.Window.window) && (bar.visible)
         onActivated: AlbumActions.clearSelection()
     }
 

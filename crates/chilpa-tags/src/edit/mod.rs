@@ -6,6 +6,7 @@
 //! it is how a date lost its day and three genres became one.
 
 pub mod inspect;
+pub(crate) mod advisory;
 pub mod read;
 pub mod write;
 

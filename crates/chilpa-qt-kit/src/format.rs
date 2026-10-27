@@ -1,3 +1,10 @@
+use cxx_qt_lib::{QString, QUrl};
+
+/// I share empty and local artwork URL handling across album and track models.
+pub fn art_url(path: &str) -> QUrl {
+    if path.is_empty() { QUrl::default() } else { QUrl::from_local_file(&QString::from(path)) }
+}
+
 pub use chilpa_api::format::{clock, span};
 
 /// I return a generated artwork path through the shared C++ image-provider buffer.

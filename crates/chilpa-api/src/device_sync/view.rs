@@ -84,6 +84,20 @@ impl Service {
             "error" => i18n::mark("Sync needs attention"),
             _ => i18n::mark("Choose music for this storage"),
         };
+        value["review_stage_label"] = json!(i18n::t(match status.review_stage.as_str() {
+            "selection" => i18n::mark("Resolving selected music"),
+            "selection_files" => i18n::mark("Checking local files"),
+            "connecting" => i18n::mark("Opening device connection"),
+            "profile" => i18n::mark("Checking storage identity"),
+            "sources" => i18n::mark("Reading file sizes"),
+            "playlists" => i18n::mark("Preparing playlists"),
+            "destination" => i18n::mark("Checking destination files"),
+            "space" => i18n::mark("Checking available space"),
+            _ => "",
+        }));
+        value["review_progress_text"] = json!(if status.total > 0 {
+            i18n::t_args("{} of {}", &[&status.completed.to_string(), &status.total.to_string()])
+        } else { String::new() });
         value["label"] = json!(i18n::t(label));
         value["review_note"] = json!(if status.metadata_review {i18n::t("Quick review by size")} else {String::new()});
         value["summary"] = json!(i18n::t_args(

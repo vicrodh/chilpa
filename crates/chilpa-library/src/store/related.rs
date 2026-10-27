@@ -108,11 +108,11 @@ impl Library {
         let mut records: HashMap<i64, Record> = HashMap::new();
         {
             let mut stmt = self.db.prepare(
-                concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", r.present_tracks, r.plays
+                concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", r.present_tracks, r.plays, ", album_advisory!("a"), "
                  FROM albums a JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0"),
             )?;
             let rows = stmt.query_map([], |r| {
-                Ok((StoredAlbum { id: r.get(0)?, title: r.get(1)?, album_artist: r.get(2)?, year: r.get(3)?, artwork_path: r.get(4)?, track_count: r.get::<_, i64>(5)? as usize }, r.get::<_, i64>(6)? as usize))
+                Ok((StoredAlbum { id: r.get(0)?, title: r.get(1)?, album_artist: r.get(2)?, year: r.get(3)?, artwork_path: r.get(4)?, track_count: r.get::<_, i64>(5)? as usize, explicit: r.get(7)? }, r.get::<_, i64>(6)? as usize))
             })?;
             for row in rows {
                 let (album, plays) = row?;

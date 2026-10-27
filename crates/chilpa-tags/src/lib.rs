@@ -159,7 +159,7 @@ fn open(path: &Path) -> Result<Opened, TagError> {
 
 /// Reads a file's tags and properties.
 pub fn read(path: &Path) -> Result<FileInfo, TagError> {
-    let opened = open(path)?;
+    let mut opened = open(path)?;
     let mut info = FileInfo {
         tags: Tags::default(),
         duration: opened.duration,
@@ -168,10 +168,13 @@ pub fn read(path: &Path) -> Result<FileInfo, TagError> {
         channels: opened.channels,
     };
 
-    let Some(tag) = opened.tag.as_ref() else {
+    let Some(tag) = opened.tag.as_mut() else {
         return Ok(info);
     };
 
+    let explicit = if tag.tag_type() == lofty::tag::TagType::VorbisComments {
+        edit::advisory::read(path).map_err(TagError::Unreadable)?
+    } else { tag.get_string(ItemKey::ParentalAdvisory).and_then(advisory) };
     let several = |key: ItemKey| -> Vec<String> {
         tag.get_strings(key).map(str::to_string).collect()
     };
@@ -203,7 +206,7 @@ pub fn read(path: &Path) -> Result<FileInfo, TagError> {
             .map(str::trim)
             .filter(|label| !label.is_empty())
             .map(str::to_string),
-        explicit: tag.get_string(ItemKey::ParentalAdvisory).and_then(advisory),
+        explicit,
         date: tag
             .get_string(ItemKey::RecordingDate)
             .or_else(|| tag.get_string(ItemKey::ReleaseDate))

@@ -147,6 +147,7 @@ fn track_file(field: &Field, read: &Read, track: &EditTrack) -> String {
         "musicbrainz_recording_id" => track.recording_mbid.clone().unwrap_or_default(),
         "musicbrainz_track_id" => said.musicbrainz_track_id.clone().unwrap_or_default(),
         "musicbrainz_artist_ids" => join(&said.musicbrainz_artist_ids),
+        "explicit" => (if read.known { said.explicit } else { track.explicit }).map(|value| value.to_string()).unwrap_or_default(),
         _ => String::new(),
     }
 }
@@ -277,7 +278,7 @@ pub(crate) mod testing {
     use super::*;
 
     pub(crate) fn album() -> StoredAlbum {
-        StoredAlbum { id: 7, title: "A record".into(), album_artist: "Someone".into(), year: Some(1990), artwork_path: None, track_count: 2 }
+        StoredAlbum { id: 7, title: "A record".into(), album_artist: "Someone".into(), year: Some(1990), artwork_path: None, track_count: 2, explicit: None }
     }
 
     pub(crate) fn track(id: i64, number: u16) -> EditTrack {
@@ -292,6 +293,7 @@ pub(crate) mod testing {
             disc_subtitle: String::new(),
             work: String::new(),
             recording_mbid: None,
+            explicit: None,
             genres: vec!["Rock".into()],
         }
     }
@@ -313,7 +315,7 @@ pub(crate) mod testing {
                 "title", "artist_credit", "album", "date", "track_number", "disc_number", "cover", "album_artist",
                 "catalog_number", "musicbrainz_release_id", "musicbrainz_release_group_id", "musicbrainz_recording_id",
                 "musicbrainz_track_id", "artists", "album_artists", "genres", "composers", "performers",
-                "musicbrainz_album_artist_ids", "musicbrainz_artist_ids", "compilation",
+                "musicbrainz_album_artist_ids", "musicbrainz_artist_ids", "compilation", "explicit",
             ],
         }
     }
@@ -332,6 +334,27 @@ pub(crate) mod testing {
 mod tests {
     use super::testing::*;
     use super::*;
+
+    #[test]
+    fn advisory_keeps_unknown_clean_and_explicit_distinct() {
+        let at = fields::track("explicit").unwrap();
+        for value in [None, Some(false), Some(true)] {
+            let mut source = read(1);
+            source.said.explicit = value;
+            let mut stored = track(1, 1);
+            stored.explicit = Some(true);
+            let draft = Draft::open(&album(), vec![stored], vec![source], vec![home(None)]);
+            assert_eq!(draft.rows[0].cells[at].now, value.map(|value| value.to_string()).unwrap_or_default());
+            assert!(!draft.rows[0].cells[at].dirty());
+        }
+        let mut draft = plain();
+        draft.set_track(1, "explicit", "false");
+        assert!(draft.rows[0].cells[at].dirty(), "unknown is not clean");
+        draft.set_track(1, "explicit", "");
+        assert!(!draft.rows[0].cells[at].dirty());
+        draft.set_track(1, "explicit", "invalid");
+        assert!(draft.first_invalid().is_some());
+    }
 
     #[test]
     fn a_record_opens_saying_what_its_files_say_and_clean() {

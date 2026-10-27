@@ -63,6 +63,14 @@ impl Cache {
             .map_or_else(BTreeMap::new, |entries| entries.0);
         Ok(Self { old, next:BTreeMap::new(), encoded_bytes:2, bytes_hashed:0 })
     }
+    pub fn cached(&self, path: &Path) -> Result<Option<Fingerprint>> {
+        let metadata = std::fs::metadata(path)?;
+        let current = stamp(&metadata);
+        let key = format!("{:x}", Sha256::digest(path.as_os_str().as_encoded_bytes()));
+        Ok(self.old.get(&key).filter(|cached| Some(&cached.stamp) == current.as_ref()
+            && cached.digest.size == metadata.len() && cached.digest.sha256.len() == 64
+            && cached.digest.sha256.bytes().all(|byte| byte.is_ascii_hexdigit())).map(|cached| cached.digest.clone()))
+    }
     pub fn fingerprint(&mut self, path: &Path, cancel: &Cancellation, reuse: bool) -> Result<Fingerprint> {
         cancel.check()?;
         let mut file = File::open(path)?;

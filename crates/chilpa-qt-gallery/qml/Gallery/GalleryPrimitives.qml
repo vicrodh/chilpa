@@ -1,5 +1,6 @@
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 import QtQuick
+import QtQuick.Controls.Basic as Controls
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
@@ -16,6 +17,8 @@ TitledFlow {
         Rectangle { id: raised; anchors.fill: parent; radius: Metrics.radiusPlayer; color: Theme.color.surfacePlayer }
     }
     title: "Primitives"
+    ExplicitBadge {}
+    AdvisoryTitle { width: Metrics.cardMinWidth; text: "A record with an advisory"; explicitContent: true; font.pointSize: Type.body }
 
     Row {
         spacing: Metrics.gap8
@@ -39,7 +42,17 @@ TitledFlow {
         spacing: Metrics.gap8
         PillButton { kind: "primary"; glyph: Icons.playerPlayFilled; filled: true; text: "Play" }
         PillButton { glyph: Icons.arrowsShuffle; text: "Shuffle" }
+        PillButton { text: "Open popup"; onClicked: samplePopup.open() }
         PillButton { text: "Open modal"; onClicked: sampleModal.open() }
+    }
+
+    Controls.Popup {
+        id: samplePopup
+        modal: true
+        focus: true
+        closePolicy: Controls.Popup.CloseOnEscape | Controls.Popup.CloseOnReleaseOutside
+        PopupInput { surface: samplePopup }
+        contentItem: PillButton { text: "Close popup"; onClicked: samplePopup.close() }
     }
 
     Modal {

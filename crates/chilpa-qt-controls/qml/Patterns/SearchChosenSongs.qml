@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Effects
 import app.chilpa
 import app.chilpa.kit
@@ -50,8 +51,8 @@ Item {
     implicitHeight: Metrics.selectionBarHeight
 
     // Escape lets the choice go; Ctrl+A takes every song shown.
-    Shortcut { sequence: "Escape"; enabled: chosen.active && chosen.selecting; onActivated: chosen.stop() }
-    Shortcut { sequence: StandardKey.SelectAll; enabled: chosen.active && chosen.rows.length > 0; onActivated: chosen.chooseAll() }
+    Shortcut { sequence: "Escape"; enabled: !InputLayers.blocksShortcuts(chosen.Window.window) && (chosen.active && chosen.selecting); onActivated: chosen.stop() }
+    Shortcut { sequence: StandardKey.SelectAll; enabled: !InputLayers.blocksShortcuts(chosen.Window.window) && (chosen.active && chosen.rows.length > 0); onActivated: chosen.chooseAll() }
 
     Item {
         objectName: "searchChosenBar"

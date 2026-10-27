@@ -71,9 +71,10 @@ Item {
                 font.letterSpacing: Type.labelTracking
                 color: Theme.color.textSecondary
             }
-            Text {
+            AdvisoryTitle {
                 width: parent.width
                 text: detail.title
+                explicitContent: detail.explicitContent
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
                 elide: Text.ElideRight

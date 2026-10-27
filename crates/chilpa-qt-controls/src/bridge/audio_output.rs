@@ -19,6 +19,7 @@ pub mod qobject {
         #[qinvokable] fn refresh(self: Pin<&mut AudioOutput>);
         #[qinvokable] fn command(self: Pin<&mut AudioOutput>, action: &QString, argument: &QString);
         #[qinvokable] fn take_request(self: Pin<&mut AudioOutput>);
+        #[qinvokable] fn signal_path(self: &AudioOutput) -> QString;
         #[qsignal] fn output_selected(self: Pin<&mut AudioOutput>);
     }
 }
@@ -28,6 +29,9 @@ use std::pin::Pin;
 #[derive(Default)]
 pub struct AudioOutputRust { snapshot:QString,tab:QString,shown:bool,revision:u64 }
 impl qobject::AudioOutput {
+    pub fn signal_path(&self) -> QString {
+        QString::from(&chilpa_qt_kit::app::with(|api| api.audio_signal_path()))
+    }
     pub fn show(mut self: Pin<&mut Self>, tab: &QString) {
         self.as_mut().set_tab(tab.clone());
         chilpa_qt_kit::app::with(|api| api.audio_output_command("open",""));

@@ -68,7 +68,7 @@ Item {
         check(!status.error, "device task failed: " + JSON.stringify(status.error))
         if (phase === 2) {
             const entry = find(mainWindow.contentItem, item => item.objectName === "deviceNavigation")
-            check(!!entry, "device shortcut missing")
+            check(navigationStep === 1 || !!entry, "device shortcut missing")
             if (navigationStep === 0) {
                 check(entry.visible, "device shortcut should default on")
                 navigationSettings.set("navigation.devices", "false")
@@ -77,7 +77,7 @@ Item {
             }
             if (navigationStep === 1) {
                 const hidden = find(mainWindow.contentItem, item => item.objectName === "deviceNavigation")
-                check(hidden && !hidden.visible, "device shortcut did not respect the opt-out")
+                check(!hidden || !hidden.visible, "device shortcut did not respect the opt-out")
                 navigationSettings.set("navigation.devices", "true")
                 navigationStep = 2
                 return

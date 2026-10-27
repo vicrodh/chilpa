@@ -125,7 +125,7 @@ fn same_size_device_edits_and_unowned_collisions_are_conflicts() {
 }
 
 #[test]
-fn optional_copy_verification_rejects_changed_bytes_before_publication() {
+fn a_changed_source_is_rejected_before_any_journal_or_staging() {
     let mut rig = Rig::new();
     let input = rig.input("a", b"original");
     let plan = prepare(&rig.state, &mut rig.device, &[input.clone()], &[], false, &Cancellation::default()).unwrap();
@@ -133,8 +133,8 @@ fn optional_copy_verification_rejects_changed_bytes_before_publication() {
     assert!(synchronize_with_verification(&mut rig.state, &mut rig.device, &plan, plan.id(), false, true, &Cancellation::default(), &mut |_| ()).is_err());
     assert!(!rig.root.path().join(copies(&plan)[0].as_str()).exists());
     assert_eq!(rig.state.managed_count().unwrap(), 0);
-    assert!(rig.state.interrupted().unwrap());
-    recover(&mut rig.state, &mut rig.device, &Cancellation::default()).unwrap();
+    assert!(!rig.state.interrupted().unwrap());
+    assert_eq!(recover(&mut rig.state, &mut rig.device, &Cancellation::default()).unwrap(), 0);
     assert!(!rig.state.interrupted().unwrap());
 }
 
@@ -358,7 +358,7 @@ fn review_caches_do_not_hide_source_edits_or_atomic_replacements() {
     std::fs::write(&input.source, b"modified").unwrap();
     std::fs::File::options().write(true).open(&input.source).unwrap().set_modified(modified).unwrap();
     let changed = prepare_review(&rig.state, &mut rig.device, &[input.clone()], &[], false, &Cancellation::default()).unwrap();
-    assert_eq!(changed.source_bytes_hashed(), 8);
+    assert_eq!(changed.source_bytes_hashed(), 0);
     assert_eq!(copies(&changed).len(), 1);
     let replacement = input.source.with_extension("replacement");
     std::fs::write(&replacement, b"replaced").unwrap();
@@ -366,7 +366,7 @@ fn review_caches_do_not_hide_source_edits_or_atomic_replacements() {
     std::fs::remove_file(&input.source).unwrap();
     std::fs::rename(replacement, &input.source).unwrap();
     let replaced = prepare_review(&rig.state, &mut rig.device, &[input], &[], false, &Cancellation::default()).unwrap();
-    assert_eq!(replaced.source_bytes_hashed(), 8);
+    assert_eq!(replaced.source_bytes_hashed(), 0);
     assert_ne!(copies(&changed), copies(&replaced));
 }
 
@@ -406,10 +406,10 @@ fn failed_or_cancelled_reviews_release_snapshots_and_do_not_publish_partial_cach
     assert!(matches!(prepare_review(&rig.state, &mut meter, &[input.clone()], &[], false, &cancelled), Err(Error::Cancelled)));
     assert!(!meter.reviewing);
     let plan = prepare_review(&rig.state, &mut meter, &[input.clone()], &[], false, &Cancellation::default()).unwrap();
-    assert_eq!(plan.source_bytes_hashed(), 8);
+    assert_eq!(plan.source_bytes_hashed(), 0);
     let mut other = Rig::new();
     let plan = prepare_review(&other.state, &mut other.device, &[input], &[], false, &Cancellation::default()).unwrap();
-    assert_eq!(plan.source_bytes_hashed(), 8);
+    assert_eq!(plan.source_bytes_hashed(), 0);
     assert!(prepare_review(&rig.state, &mut other.device, &[], &[], false, &Cancellation::default()).is_err());
 }
 
@@ -458,15 +458,262 @@ fn copies_default_to_no_readback_and_verify_once_when_requested() {
 
 #[cfg(unix)]
 #[test]
-fn local_review_cache_survives_reopening_only_its_own_profile() {
+fn cold_review_stays_metadata_only_after_reopening_its_profile() {
     let mut rig = Rig::new();
     let input = rig.input("track", b"original");
     let first = prepare_review(&rig.state, &mut rig.device, &[input.clone()], &[], false, &Cancellation::default()).unwrap();
-    assert_eq!(first.source_bytes_hashed(), 8);
+    assert_eq!(first.source_bytes_hashed(), 0);
     let Rig { root:_root, source:_source, profile, state, mut device } = rig;
     drop(state);
     let reopened = State::open(&profile.path().join("sync.db")).unwrap();
     let next = prepare_review(&reopened, &mut device, &[input], &[], false, &Cancellation::default()).unwrap();
     assert_eq!(next.source_bytes_hashed(), 0);
     assert_eq!(copies(&first), copies(&next));
+}
+
+#[test]
+fn a_cold_eleven_gib_review_only_reads_metadata_and_preserves_exact_sizes() {
+    let rig = Rig::new();
+    let input = rig.input("large-dff", b"");
+    let bytes = 11 * 1024 * 1024 * 1024u64;
+    std::fs::File::options().write(true).open(&input.source).unwrap().set_len(bytes).unwrap();
+    // Sparse local fixture and simulated capacity: no physical card or large transfer.
+    let mut device = Faults { inner:rig.device, fail_at:usize::MAX, calls:0, free:Some(u64::MAX), partial:false };
+    let mut meter = ReviewMeter { inner:&mut device, media_bytes:0, reads:0, stats:0, reviewing:false };
+    let mut events = Vec::new();
+    let started = std::time::Instant::now();
+    let plan = prepare_review_with_progress(&rig.state, &mut meter, &[input], &[], false,
+        &Cancellation::default(), &mut |event| events.push(event)).unwrap();
+    assert_eq!(plan.source_bytes_hashed(), 0);
+    assert_eq!(plan.required_bytes(), bytes + SPACE_RESERVE);
+    assert!(matches!(plan.actions(), [Action::Copy { bytes:actual, .. }] if *actual == bytes));
+    assert_eq!(meter.media_bytes, 0);
+    assert_eq!(meter.stats, 2, "identity and absent Music parent; no per-track destination lookup");
+    assert_eq!(meter.reads, 1, "only the bounded storage identity marker");
+    assert!(events.iter().any(|event| event.stage == "sources" && event.completed == 1 && event.selected_bytes == bytes));
+    assert!(events.iter().any(|event| event.stage == "space" && event.completed == event.total));
+    eprintln!("Cold review fixture: sparse_bytes={bytes} source_bytes_hashed=0 device_media_bytes=0 elapsed_us={}", started.elapsed().as_micros());
+    assert_eq!(device.calls, 0);
+    assert!(!rig.state.interrupted().unwrap());
+}
+
+#[test]
+fn deferred_copy_commits_the_stream_digest_and_rejects_changed_sources() {
+    let mut rig = Rig::new();
+    let input = rig.input("track", b"original audio");
+    let cancel = Cancellation::default();
+    let plan = prepare_review(&rig.state, &mut rig.device, &[input.clone()], &[], false, &cancel).unwrap();
+    assert_eq!(plan.source_bytes_hashed(), 0);
+    std::fs::write(&input.source, b"changed audio!").unwrap();
+    assert!(matches!(synchronize(&mut rig.state, &mut rig.device, &plan, plan.id(), false, &cancel, &mut |_| ()), Err(Error::Conflict(_))));
+    assert!(!rig.state.interrupted().unwrap());
+    let plan = prepare_review(&rig.state, &mut rig.device, &[input.clone()], &[], false, &cancel).unwrap();
+    synchronize(&mut rig.state, &mut rig.device, &plan, plan.id(), false, &cancel, &mut |_| ()).unwrap();
+    let db = rusqlite::Connection::open(rig.profile.path().join("sync.db")).unwrap();
+    let raw: String = db.query_row("SELECT record FROM sync_files", [], |row| row.get(0)).unwrap();
+    let record: serde_json::Value = serde_json::from_str(&raw).unwrap();
+    use sha2::Digest;
+    assert_eq!(record["fingerprint"]["sha256"], format!("{:x}", sha2::Sha256::digest(b"changed audio!")));
+    // Strict inspection compares destination bytes with the durably committed inline digest.
+    let strict = prepare(&rig.state, &mut rig.device, &[input.clone()], &[], false, &cancel).unwrap();
+    assert!(strict.actions().is_empty());
+    assert_eq!(strict.unchanged_files(), 1);
+    let path = copies(&plan).remove(0);
+    std::fs::write(rig.root.path().join(path.as_str()), b"tampered audio").unwrap();
+    assert!(matches!(prepare(&rig.state, &mut rig.device, &[input], &[], false, &cancel), Err(Error::Conflict(_))));
+}
+
+#[test]
+fn deferred_recovery_never_publishes_an_unfinished_digest() {
+    for partial in [true, false] {
+        for failure in 1..=8 {
+            let rig = Rig::new();
+            let input = rig.input("track", b"audio for deferred recovery");
+            let mut state = rig.state;
+            let mut faults = Faults { inner:rig.device, fail_at:failure, calls:0, free:None, partial };
+            let cancel = Cancellation::default();
+            let plan = prepare_review(&state, &mut faults, &[input.clone()], &[], false, &cancel).unwrap();
+            let _ = synchronize(&mut state, &mut faults, &plan, plan.id(), false, &cancel, &mut |_| ());
+            faults.fail_at = usize::MAX;
+            recover(&mut state, &mut faults, &cancel).unwrap();
+            assert!(!state.interrupted().unwrap());
+            let next = prepare(&state, &mut faults, &[input], &[], false, &cancel).unwrap();
+            assert_eq!(next.unchanged_files(), state.managed_count().unwrap());
+        }
+    }
+}
+
+#[test]
+fn review_progress_can_cancel_before_inspecting_the_next_source() {
+    let mut rig = Rig::new();
+    let input = rig.input("track", b"audio");
+    let cancel = Cancellation::default();
+    let trigger = cancel.clone();
+    let mut meter = ReviewMeter { inner:&mut rig.device, media_bytes:0, reads:0, stats:0, reviewing:false };
+    let result = prepare_review_with_progress(&rig.state, &mut meter, &[input], &[], false, &cancel,
+        &mut |event| if event.stage == "sources" { trigger.cancel(); });
+    assert!(matches!(result, Err(Error::Cancelled)));
+    assert!(!meter.reviewing);
+    assert!(!rig.state.interrupted().unwrap());
+}
+
+#[test]
+fn legacy_manifest_reuses_only_a_matching_source_cache_without_reading_audio() {
+    let mut rig = Rig::new();
+    let input = rig.input("legacy", b"legacy audio");
+    rig.sync(&[input.clone()], &[], false);
+    let db = rusqlite::Connection::open(rig.profile.path().join("sync.db")).unwrap();
+    db.execute("UPDATE sync_files SET record=json_remove(record,'$.source_stamp')", []).unwrap();
+    let plan = prepare_review(&rig.state, &mut rig.device, &[input.clone()], &[], false, &Cancellation::default()).unwrap();
+    assert_eq!(plan.source_bytes_hashed(), 0);
+    #[cfg(unix)] {
+        assert_eq!(plan.unchanged_files(), 1);
+        assert!(plan.actions().is_empty());
+    }
+    // A missing optional cache never becomes evidence that unrelated bytes match.
+    db.execute("DELETE FROM sync_source_cache", []).unwrap();
+    let plan = prepare_review(&rig.state, &mut rig.device, &[input], &[], false, &Cancellation::default()).unwrap();
+    assert_eq!(plan.source_bytes_hashed(), 0);
+    assert_eq!(copies(&plan).len(), 1);
+}
+
+#[test]
+fn source_changes_during_transfer_abort_before_publication() {
+    let mut rig = Rig::new();
+    let input = rig.input("changing", &vec![3; BUFFER_BYTES * 2]);
+    let cancel = Cancellation::default();
+    let plan = prepare_review(&rig.state, &mut rig.device, &[input.clone()], &[], false, &cancel).unwrap();
+    let mut changed = false;
+    let result = synchronize(&mut rig.state, &mut rig.device, &plan, plan.id(), false, &cancel, &mut |event| {
+        if event.transferred_bytes > 0 && !changed {
+            changed = true;
+            std::fs::write(&input.source, vec![4; BUFFER_BYTES * 2]).unwrap();
+        }
+    });
+    assert!(matches!(result, Err(Error::Conflict(_))));
+    assert!(changed);
+    assert_eq!(rig.state.managed_count().unwrap(), 0);
+    assert!(!rig.root.path().join(copies(&plan)[0].as_str()).exists());
+    recover(&mut rig.state, &mut rig.device, &cancel).unwrap();
+    assert!(!rig.state.interrupted().unwrap());
+    assert_eq!(rig.state.managed_count().unwrap(), 0);
+}
+
+#[test]
+fn optional_copy_verification_rejects_changed_bytes_before_publication() {
+    struct CorruptStage { inner:Mounted, root:std::path::PathBuf }
+    impl Transport for CorruptStage {
+        fn available_bytes(&mut self) -> Result<u64> { self.inner.available_bytes() }
+        fn stat(&mut self, path:&RelativePath) -> Result<Option<Entry>> { self.inner.stat(path) }
+        fn create_dir_all(&mut self, path:&RelativePath) -> Result<()> { self.inner.create_dir_all(path) }
+        fn read(&mut self, path:&RelativePath, output:&mut dyn Write, cancel:&Cancellation) -> Result<()> { self.inner.read(path, output, cancel) }
+        fn write_new(&mut self, path:&RelativePath, input:&mut (dyn Read + Send), size:u64,
+            cancel:&Cancellation, progress:&mut (dyn FnMut(u64) + Send)) -> Result<()> {
+            self.inner.write_new(path, input, size, cancel, progress)?;
+            // I corrupt the received bytes without changing their size or the local source.
+            if path.filename().ends_with(".partial") {
+                std::fs::OpenOptions::new().write(true).open(self.root.join(path.as_str()))?.write_all(b"X")?;
+            }
+            Ok(())
+        }
+        fn rename_new(&mut self, from:&RelativePath, to:&RelativePath) -> Result<()> { self.inner.rename_new(from, to) }
+        fn remove_file(&mut self, path:&RelativePath) -> Result<()> { self.inner.remove_file(path) }
+    }
+    let rig = Rig::new();
+    let input = rig.input("a", b"original");
+    let mut device = CorruptStage { inner:rig.device, root:rig.root.path().to_path_buf() };
+    let mut state = rig.state;
+    let cancel = Cancellation::default();
+    let plan = prepare_review(&state, &mut device, &[input.clone()], &[], false, &cancel).unwrap();
+    let result = synchronize_with_verification(&mut state, &mut device, &plan, plan.id(), false, true, &cancel, &mut |_| ());
+    assert!(matches!(result, Err(Error::Conflict(message)) if message.contains("transferred bytes failed verification")));
+    assert_eq!(std::fs::read(&input.source).unwrap(), b"original");
+    assert!(!rig.root.path().join(copies(&plan)[0].as_str()).exists());
+    assert_eq!(state.managed_count().unwrap(), 0);
+    assert!(state.interrupted().unwrap());
+    assert_eq!(recover(&mut state, &mut device, &cancel).unwrap(), 1);
+    assert!(!state.interrupted().unwrap());
+}
+
+#[test]
+fn deferred_recovery_reopens_durable_state_across_media_playlist_and_pruning_boundaries() {
+    for failure in 1..=24 {
+        let mut rig = Rig::new();
+        let old = rig.input("old", b"obsolete audio");
+        rig.sync(&[old], &[playlist(&["old"])], false);
+        let fresh = rig.input("fresh", b"new deferred audio");
+        let cancel = Cancellation::default();
+        let plan = prepare_review(&rig.state, &mut rig.device, &[fresh.clone()], &[playlist(&["fresh","fresh"])], true, &cancel).unwrap();
+        assert_eq!(plan.source_bytes_hashed(), 0);
+        assert_eq!(plan.deletion_count(), 1);
+        assert!(plan.actions().iter().any(|action| matches!(action, Action::Copy { replaces:true, info, .. } if info.kind == AssetKind::Playlist)));
+        let Rig { root, source:_source, profile, mut state, device } = rig;
+        let mut faulty = Faults { inner:device, fail_at:failure, calls:0, free:None, partial:false };
+        let _ = synchronize(&mut state, &mut faulty, &plan, plan.id(), true, &cancel, &mut |_| ());
+        drop(plan);
+        drop(state);
+        drop(faulty);
+        // Recovery gets no in-memory plan or materialized digest from the interrupted run.
+        let mut state = State::open(&profile.path().join("sync.db")).unwrap();
+        let mut device = Mounted::open(root.path()).unwrap();
+        recover(&mut state, &mut device, &cancel).unwrap();
+        assert!(!state.interrupted().unwrap(), "boundary {failure}");
+        for entry in std::fs::read_dir(root.path().join("Playlists")).unwrap() {
+            let path = entry.unwrap().path();
+            let text = std::fs::read_to_string(&path).unwrap();
+            for media in text.lines().skip(1) {
+                assert!(path.parent().unwrap().join(media).is_file(), "boundary {failure}: {media}");
+            }
+        }
+        let next = prepare_review(&state, &mut device, &[fresh.clone()], &[playlist(&["fresh","fresh"])], true, &cancel).unwrap();
+        synchronize(&mut state, &mut device, &next, next.id(), true, &cancel, &mut |_| ()).unwrap();
+        let exact = prepare(&state, &mut device, &[fresh], &[playlist(&["fresh","fresh"])], true, &cancel).unwrap();
+        assert!(exact.actions().is_empty(), "boundary {failure}");
+        assert_eq!(exact.unchanged_files(), 2);
+        assert_eq!(state.managed_count().unwrap(), 2);
+    }
+}
+
+#[test]
+fn source_timestamps_on_both_sides_of_epoch_survive_review_transfer_and_reopening() {
+    use std::{fs::FileTimes, time::{Duration, UNIX_EPOCH}};
+    for before_epoch in [true, false] {
+        let mut rig = Rig::new();
+        let input = rig.input("dated", b"audio with a historical timestamp");
+        let offset = Duration::new(1, 123_456_789);
+        let requested = if before_epoch { UNIX_EPOCH - offset } else { UNIX_EPOCH + offset };
+        std::fs::File::options().write(true).open(&input.source).unwrap()
+            .set_times(FileTimes::new().set_modified(requested)).unwrap();
+        let modified = std::fs::metadata(&input.source).unwrap().modified().unwrap();
+        assert_eq!(modified < UNIX_EPOCH, before_epoch);
+        let duration = if before_epoch { UNIX_EPOCH.duration_since(modified).unwrap() }
+            else { modified.duration_since(UNIX_EPOCH).unwrap() };
+        let cancel = Cancellation::default();
+        let plan = prepare_review(&rig.state, &mut rig.device, &[input.clone()], &[], false, &cancel).unwrap();
+        assert_eq!(plan.source_bytes_hashed(), 0);
+        synchronize(&mut rig.state, &mut rig.device, &plan, plan.id(), false, &cancel, &mut |_| ()).unwrap();
+        assert_eq!(std::fs::read(rig.root.path().join(copies(&plan)[0].as_str())).unwrap(),
+            b"audio with a historical timestamp");
+        let Rig { root, source:_source, profile, state, device } = rig;
+        drop(plan);
+        drop(state);
+        drop(device);
+        let state_path = profile.path().join("sync.db");
+        let db = rusqlite::Connection::open(&state_path).unwrap();
+        let raw: String = db.query_row("SELECT record FROM sync_files", [], |row| row.get(0)).unwrap();
+        let record: serde_json::Value = serde_json::from_str(&raw).unwrap();
+        let timestamp = &record["source_stamp"]["modified"];
+        assert_eq!(timestamp["before_epoch"], before_epoch);
+        assert_eq!(timestamp["seconds"], duration.as_secs());
+        assert_eq!(timestamp["nanoseconds"], duration.subsec_nanos());
+        drop(db);
+        let state = State::open(&state_path).unwrap();
+        let mut device = Mounted::open(root.path()).unwrap();
+        let review = prepare_review(&state, &mut device, &[input.clone()], &[], false, &cancel).unwrap();
+        assert!(review.actions().is_empty());
+        assert_eq!(review.unchanged_files(), 1);
+        assert_eq!(review.source_bytes_hashed(), 0);
+        let strict = prepare(&state, &mut device, &[input], &[], false, &cancel).unwrap();
+        assert!(strict.actions().is_empty());
+    }
 }

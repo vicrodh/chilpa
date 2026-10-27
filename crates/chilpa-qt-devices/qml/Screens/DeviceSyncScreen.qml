@@ -3,7 +3,6 @@ import app.chilpa.devices
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns" as KitPatterns
 import "../Components"
 import "../Patterns"
 
@@ -116,17 +115,7 @@ Item {
         id: profiles
         rows: screen.document.profiles || []
         busy: screen.backend.busy
-        onForgetAsked: id => { forget.profileId = id; profiles.close(); forget.open() }
-    }
-    KitPatterns.ConfirmDialog {
-        id: forget
-        objectName: "deviceForgetConfirmation"
-        property string profileId: ""
-        title: I18n.tr("Remove saved profile", I18n.rev)
-        message: I18n.tr("Remove this profile and its local sync history? Files on the device will stay.", I18n.rev)
-        confirmText: I18n.tr("Remove profile", I18n.rev)
-        destructive: true
-        onConfirmed: screen.backend.forgetProfile(profileId)
+        onForgetAsked: id => screen.backend.forgetProfile(id)
     }
     Component { id: pairing; DevicePairing { mounted: screen.status.destination === "mounted"; busy: screen.backend.busy; onCreateAsked: (name, folder) => screen.backend.createProfile(name, folder); onDismissed: screen.creating = false } }
     Component { id: selections; DeviceSelection { rows: screen.document.options || []; query: screen.document.filter || ""; kind: screen.document.selection_kind || "all"; page: screen.document.selection_page || 0; pages: screen.document.selection_pages || 1; busy: screen.backend.busy; onToggled: id => screen.backend.toggle(id); onOpened: id => screen.backend.browse(id); onKindAsked: kind => screen.backend.selectionKind(kind); onPageAsked: page => screen.backend.selectionPage(page); onFilterEdited: text => screen.backend.filter(text) } }

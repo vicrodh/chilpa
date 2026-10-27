@@ -7,6 +7,8 @@ QtObject {
     readonly property string font: iconFont.name
 
     readonly property string arrowRight: "\ue049"
+    readonly property string audioLines: "\ue55a"
+    readonly property string audioLinesOff: "\ue737"
     readonly property string bookOpen: "\ue05f"
     readonly property string bug: "\ue20c"
     readonly property string chartColumn: "\ue2a3"

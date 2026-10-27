@@ -126,6 +126,7 @@ ListView {
     // A source's shelf, cut to the size chosen.
     component SourceRail: SourceShelf {
         viewport: page
+        active: page.visible && !page.leaving
         property var entry: ({})
         oneRow: true
         section: Object.assign({}, entry, { kind: entry.entityKind || "album", items: (entry.items || []).slice(0, entry.size || undefined) })
@@ -196,7 +197,7 @@ ListView {
                 : entry.kind === "tracks" ? (entry.grid ? compactTracks : trackShelf) : sourceRail
         }
     }
-    SourceHomeSections { id: remote; active: page.presented; refresh: page.homeRefresh; rendered: false }
+    SourceHomeSections { id: remote; active: page.presented && page.visible && !page.leaving; refresh: page.homeRefresh; rendered: false }
     Component { id: albumShelf; AlbumShelf { entry: parent.entry; width: parent ? parent.width : 0 } }
     Component { id: trackShelf; TrackShelf { entry: parent.entry; width: parent ? parent.width : 0 } }
     Component { id: playlistShelf; PlaylistShelf { entry: parent.entry; width: parent ? parent.width : 0 } }

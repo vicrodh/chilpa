@@ -107,7 +107,7 @@ pub fn artist_cards(artists: &[ListedArtist], filter: &str) -> (Vec<crate::Album
                 year: None,
                 track_count: a.track_count,
                 artwork_path: a.artwork_path.clone(),
-                play_count: 0,
+                play_count: 0, explicit: None,
             };
             (card, json!({"title": a.name, "sources": listed.sources}).to_string())
         })

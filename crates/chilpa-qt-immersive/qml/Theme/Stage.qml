@@ -397,4 +397,7 @@ QtObject {
     readonly property int searchMinChars: 2
     readonly property int searchPanelShadow: 32
     readonly property int searchPanelShadowDrop: 8
+    readonly property int compactScopeInset: Metrics.gap2 + Metrics.hairline
+    readonly property real compactScopeLine: 1.35
+    readonly property real compactScopeFill: 0.08
 }

@@ -42,3 +42,11 @@ CREATE TRIGGER version_catalog_album_artist_rollup_update AFTER UPDATE OF album_
 WHEN old.album_id IS NOT new.album_id OR old.artist IS NOT new.artist OR old.tracks IS NOT new.tracks
 BEGIN UPDATE version_catalog_revision SET revision = revision + 1 WHERE id = 1; END;
 "#;
+
+/// I invalidate cached editions when an advisory changes without a rescan.
+pub(super) const MIGRATION_V46: &str = r#"
+CREATE TRIGGER version_catalog_tracks_advisory_update AFTER UPDATE OF explicit ON tracks
+WHEN old.explicit IS NOT new.explicit
+BEGIN UPDATE version_catalog_revision SET revision = revision + 1 WHERE id = 1; END;
+UPDATE version_catalog_revision SET revision = revision + 1 WHERE id = 1;
+"#;

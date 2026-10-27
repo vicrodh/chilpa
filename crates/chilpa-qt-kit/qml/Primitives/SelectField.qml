@@ -17,6 +17,8 @@ Rectangle {
     // option is long: the field is then as wide as that.
     property var briefs: []
     property string placeholder: ""
+    property var explicitOptions: []
+    property bool explicitContent: false
     property string value
     property real menuWidthLimit: Metrics.menuMaxWidth
 
@@ -41,7 +43,8 @@ Rectangle {
         sourceInfo: field.sources[field.current] || ({})
     }
 
-    Text {
+    AdvisoryTitle {
+        explicitContent: field.explicitContent
         id: said
         anchors.left: sourceBadge.right
         anchors.leftMargin: sourceBadge.visible ? Metrics.gap6 : 0
@@ -51,7 +54,6 @@ Rectangle {
         // `values` and `options` can arrive one after the other when the row
         // changes in place; for that moment the index may be past `options`.
         text: field.briefs[field.current] ?? field.options[field.current] ?? field.placeholder
-        textFormat: Text.PlainText
         elide: Text.ElideRight
         font.pointSize: Type.body
         color: field.enabledOptions[field.current] === false ? Theme.color.textTertiary : Theme.color.textPrimary
@@ -111,6 +113,7 @@ Rectangle {
         x: field.width - width
         entries: field.options.map((text, i) => ({
             text: text,
+            explicitContent: field.explicitOptions[i] === true,
             enabled: field.enabledOptions[i] !== false,
             checked: i === field.current,
             sourceInfo: field.sources[i],

@@ -5,6 +5,7 @@ QtObject {
     property int contentRev: 0
     property int tracksRev: 0
     property int selectedId: 0
+    property bool explicitContent: false
     property string title: ""
     property string art: ""
     property string artist: ""

@@ -27,6 +27,10 @@ Rectangle {
         property var goniometer: Array.from({length: 512}, (_, i) => 0.6 * Math.sin(i * 0.09 + (i % 2) * 0.8))
         property var oscilloscope: Array.from({length: 512}, (_, i) => 0.7 * Math.sin(i * 0.025))
         property real stereoCorrelation: 0.63
+        property var bars: [0.6, 0, 0.8, 0.7, 0.5, 0.4, 0.3, 0.5, 0.7, 0.8, 0.6, 0.4, 0.2, 0.3, 0.1, 0]
+        property var waveform: Array.from({length: 512}, (_, i) => 0.7 * Math.sin(i * 0.025))
+        property var energy: [0.7, 0.5, 0.8, 0.4, 0.2]
+        function setCompact(presented, mode) {}
     }
     function bedSample() {
         const values = new Float32Array(256 * 200)
@@ -76,6 +80,20 @@ Rectangle {
         TrackMeta { width: gallery.sampleWide / 2 } // derived: half the sample
         SongCard {}
         StreamSettle {}
+        CompactSpectrumShader {
+            width: gallery.sampleWide / 2 // derived: half the sample
+            height: Metrics.visualizerBandTall
+            values: gallery.exampleFeed.bars
+            topColor: Theme.color.accent
+            bottomColor: Theme.color.immersiveAxis
+        }
+        CompactVisualizer {
+            width: gallery.sampleWide / 2 // derived: half the sample
+            feed: gallery.exampleFeed
+            active: visible
+            scopeRenderer: Component { CompactScope {} }
+            onCycleRequested: nextMode => mode = nextMode
+        }
         Row {
             spacing: Stage.menuRowPad
             ImmersiveQueueTab { label: "Queue"; count: 3; active: true }

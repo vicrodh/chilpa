@@ -12,5 +12,10 @@ sha2 = "0.10"
 rand = "0.10"
 rusqlite = "0.40"
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem", "Win32_Foundation"] }
+
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "android"))'.dependencies]
+
 [dev-dependencies]
 tempfile = "3"

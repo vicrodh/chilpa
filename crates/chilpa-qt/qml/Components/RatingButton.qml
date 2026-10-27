@@ -42,6 +42,7 @@ Item {
 
     Popup {
         id: flyout
+        PopupInput { surface: flyout }
 
         modal: true
         dim: false

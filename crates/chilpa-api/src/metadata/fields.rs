@@ -17,6 +17,7 @@ pub(crate) enum Kind {
     Text(usize),
     List,
     Flag,
+    Advisory,
     Date,
     Number,
     Uuid,
@@ -53,7 +54,7 @@ pub(crate) const ALBUM: [Field; 12] = [
 ];
 
 /// A track's.
-pub(crate) const TRACK: [Field; 12] = [
+pub(crate) const TRACK: [Field; 13] = [
     field("title", Kind::Text(512), true),
     field("artist_credit", Kind::Text(512), true),
     field("artists", Kind::List, false),
@@ -66,6 +67,7 @@ pub(crate) const TRACK: [Field; 12] = [
     field("musicbrainz_recording_id", Kind::Uuid, false),
     field("musicbrainz_track_id", Kind::Uuid, false),
     field("musicbrainz_artist_ids", Kind::UuidList, false),
+    field("explicit", Kind::Advisory, false),
 ];
 
 pub(crate) fn album(name: &str) -> Option<usize> {
@@ -79,7 +81,7 @@ pub(crate) fn track(name: &str) -> Option<usize> {
 /// What somebody typed, as it is kept.
 pub(crate) fn normalize(kind: Kind, text: &str) -> String {
     match kind {
-        Kind::Text(_) | Kind::Date | Kind::Number | Kind::Digits => text.trim().to_string(),
+        Kind::Text(_) | Kind::Date | Kind::Number | Kind::Digits | Kind::Advisory => text.trim().to_string(),
         Kind::List => join(&split(text)),
         Kind::Flag => (text.trim() == "true").to_string(),
         Kind::Uuid => text.trim().to_lowercase(),
@@ -147,6 +149,7 @@ pub(crate) fn invalid(field: &Field, of_a_track: bool, value: &str) -> String {
     }
     let too_long = |most: usize| chilpa_i18n::t_args("that is longer than {} characters", &[&most.to_string()]);
     match field.kind {
+        Kind::Advisory if !matches!(value, "true" | "false") => chilpa_i18n::t("Choose Unknown, Clean or Explicit"),
         Kind::Text(most) if value.chars().count() > most => too_long(most),
         Kind::List | Kind::UuidList => {
             let values = split(value);

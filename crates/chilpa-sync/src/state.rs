@@ -8,10 +8,26 @@ use std::path::Path;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Managed {
-    pub fingerprint: Fingerprint, pub kind: AssetKind, pub key: String,
+    // A missing digest is permitted only in a pending copy, before staging completes.
+    pub fingerprint: Option<Fingerprint>,
+    #[serde(default, skip_serializing_if = "Option::is_none")] pub source_stamp: Option<crate::source::Stamp>,
+    pub kind: AssetKind, pub key: String,
     #[serde(default)] pub title: String,
     #[serde(default)] pub artist: String,
     #[serde(default)] pub album: String,
+}
+
+impl Managed {
+    pub fn digest(&self) -> Result<&Fingerprint> {
+        self.fingerprint.as_ref().filter(|value| value.sha256.len() == 64 && value.sha256.bytes().all(|b| b.is_ascii_hexdigit()))
+            .ok_or_else(|| invalid("sync record has no committed content digest"))
+    }
+    pub fn digest_growth(&self) -> usize {
+        if self.fingerprint.is_none() { crate::model::MAX_DIGEST_JSON_GROWTH } else { 0 }
+    }
+    pub fn size(&self) -> u64 {
+        self.fingerprint.as_ref().map_or_else(|| self.source_stamp.as_ref().map_or(0, |s| s.size), |d| d.size)
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -90,6 +106,7 @@ impl State {
             bytes += path.len() + record.len();
             if bytes > MAX_METADATA_BYTES || files.len() >= MAX_ASSETS { return Err(invalid("sync manifest exceeds its metadata budget")); }
             let managed: Managed = serde_json::from_str(&record).map_err(|_| invalid("damaged sync file record"))?;
+            managed.digest()?;
             files.insert(RelativePath::new(path)?, managed);
         }
         Ok(files)
@@ -128,17 +145,34 @@ impl State {
                 stage:RelativePath::new(format!("{parent}/.chilpa-sync-{run}-{i}.partial"))?,
                 backup:RelativePath::new(format!("{parent}/.chilpa-sync-{run}-{i}.backup"))? };
             let record = serde_json::to_string(&pending).map_err(|e| invalid(e.to_string()))?;
-            bytes += record.len();
+            bytes += record.len() + operation.desired.as_ref().map_or(0, Managed::digest_growth);
             if bytes > MAX_METADATA_BYTES * 2 { return Err(invalid("sync journal exceeds its metadata budget")); }
             tx.execute("INSERT INTO sync_pending(position,record) VALUES (?1,?2)", params![i as i64, record])?;
         }
         tx.commit()?;
         Ok(())
     }
+    pub(crate) fn staged(&self, position: i64, pending: &Pending) -> Result<()> {
+        pending.operation.desired.as_ref().ok_or_else(|| invalid("staged copy has no desired record"))?.digest()?;
+        let record = serde_json::to_string(pending).map_err(|e| invalid(e.to_string()))?;
+        let (previous_bytes, deferred): (i64, bool) = self.db.query_row(
+            "SELECT length(CAST(record AS BLOB)), CASE WHEN json_type(record,'$.operation.desired.fingerprint')='null' THEN 1 ELSE 0 END FROM sync_pending WHERE position=?1",
+            [position], |row| Ok((row.get(0)?, row.get(1)?)))?;
+        let previous_bytes = usize::try_from(previous_bytes).map_err(|_| invalid("invalid journal record length"))?;
+        let reserved = previous_bytes.saturating_add(if deferred { crate::model::MAX_DIGEST_JSON_GROWTH } else { 0 });
+        // Every row stays within its share of the total reserved by start(). I avoid
+        // rescanning the entire journal for every copied track, which would be quadratic.
+        if record.len() > reserved || record.len() > MAX_METADATA_BYTES * 2 {
+            return Err(invalid("staged digest exceeds its reserved journal budget"));
+        }
+        self.db.execute("UPDATE sync_pending SET record=?1 WHERE position=?2", params![record, position])?;
+        Ok(())
+    }
     /// I record a published fact before removing its backup or pending row.
     pub(crate) fn published(&mut self, operation: &Operation) -> Result<()> {
         let tx = self.db.transaction()?;
         if let Some(desired) = &operation.desired {
+            desired.digest()?;
             let record = serde_json::to_string(desired).map_err(|e| invalid(e.to_string()))?;
             tx.execute("INSERT INTO sync_files(path,record) VALUES (?1,?2) ON CONFLICT(path) DO UPDATE SET record=excluded.record",
                 params![operation.path.as_str(), record])?;
@@ -161,6 +195,44 @@ impl State {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn deferred_record() -> Managed {
+        Managed { fingerprint:None, source_stamp:None, kind:AssetKind::Media, key:"fixture".into(),
+            title:"Fixture".into(), artist:String::new(), album:String::new() }
+    }
+
+    #[test]
+    fn digest_reservation_covers_the_largest_serialized_fingerprint_exactly() {
+        let mut record = deferred_record();
+        let before = serde_json::to_vec(&record).unwrap().len();
+        let reserved = record.digest_growth();
+        record.fingerprint = Some(Fingerprint { size:u64::MAX, sha256:"f".repeat(64) });
+        let after = serde_json::to_vec(&record).unwrap().len();
+        assert_eq!(after - before, crate::model::MAX_DIGEST_JSON_GROWTH);
+        assert_eq!(before + reserved, after);
+        assert_eq!(record.digest_growth(), 0);
+    }
+
+    #[test]
+    fn staged_materialization_cannot_exceed_its_reserved_share_of_the_journal() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut state = State::open(&directory.path().join("sync.db")).unwrap();
+        let operation = Operation { path:RelativePath::new("Music/fixture.flac").unwrap(), previous:None,
+            desired:Some(deferred_record()), source:None };
+        state.start(&[operation]).unwrap();
+        let (position, mut pending) = state.pending().unwrap().remove(0);
+        let before: String = state.db.query_row("SELECT record FROM sync_pending", [], |r| r.get(0)).unwrap();
+        pending.operation.desired.as_mut().unwrap().fingerprint = Some(Fingerprint { size:u64::MAX, sha256:"f".repeat(64) });
+        let mut oversized = pending.clone();
+        oversized.operation.desired.as_mut().unwrap().title.push('x');
+        assert!(matches!(state.staged(position, &oversized), Err(crate::Error::Invalid(_))));
+        let retained: String = state.db.query_row("SELECT record FROM sync_pending", [], |r| r.get(0)).unwrap();
+        assert_eq!(retained, before, "failed materialization must leave the durable journal unchanged");
+        state.staged(position, &pending).unwrap();
+        let committed: String = state.db.query_row("SELECT record FROM sync_pending", [], |r| r.get(0)).unwrap();
+        assert_eq!(committed.len(), before.len() + crate::model::MAX_DIGEST_JSON_GROWTH);
+        assert!(matches!(state.staged(position, &oversized), Err(crate::Error::Invalid(_))));
+    }
 
     #[test]
     fn an_oversized_batch_leaves_no_unreadable_recovery_journal() {

@@ -671,6 +671,9 @@ msgstr "音声出力情報の取得を開始できませんでした。"
 msgid "Audio output task stopped unexpectedly."
 msgstr "音声出力の処理が予期せず停止しました。"
 
+msgid "Audio path"
+msgstr "オーディオ経路"
+
 msgid "Audio stack"
 msgstr "オーディオスタック"
 
@@ -996,11 +999,23 @@ msgstr "アップデートを自動で確認"
 msgid "Check one format"
 msgstr "1つのフォーマットをチェック"
 
+msgid "Checking available space"
+msgstr "空き容量を確認中"
+
+msgid "Checking destination files"
+msgstr "転送先のファイルを確認中"
+
 msgid "Checking for updates…"
 msgstr "アップデートを確認中…"
 
 msgid "Checking library folders…"
 msgstr "ライブラリのフォルダーを確認中…"
+
+msgid "Checking local files"
+msgstr "ローカルファイルを確認中"
+
+msgid "Checking storage identity"
+msgstr "ストレージを識別中"
 
 msgid "Checking the account…"
 msgstr "アカウントを確認中…"
@@ -1097,6 +1112,9 @@ msgstr "選択"
 
 msgid "Choose DSP on or bypass."
 msgstr "DSPのオンまたはバイパスを選択してください。"
+
+msgid "Choose Unknown, Clean or Explicit"
+msgstr "不明、露骨な表現なし、露骨な表現ありから選択してください"
 
 msgid "Choose a DSP favorite."
 msgstr "DSPのお気に入りを選択してください。"
@@ -1214,6 +1232,9 @@ msgstr "接続するには「再生先」で受信機を選択してください
 
 msgid "Choose the storage paired with this profile."
 msgstr ""
+
+msgid "Clean"
+msgstr "露骨な表現なし"
 
 msgid "Clear"
 msgstr "クリア"
@@ -1428,6 +1449,9 @@ msgstr "接続エラー"
 msgid "Container"
 msgstr "コンテナ"
 
+msgid "Content advisory"
+msgstr "コンテンツの分類"
+
 msgid "Continue"
 msgstr "続ける"
 
@@ -1625,6 +1649,9 @@ msgstr "DSD{} · PCM {} Hz · {}"
 
 msgid "DSP active"
 msgstr "DSP有効"
+
+msgid "DSP and gain"
+msgstr "DSPとゲイン"
 
 msgid "DSP applied to consumed PCM blocks"
 msgstr "処理したPCMブロックにDSPを適用"
@@ -2136,6 +2163,9 @@ msgstr "展開"
 msgid "Experimental: theme may not match your system exactly."
 msgstr "実験的: テーマがシステムと完全に一致しない場合があります。"
 
+msgid "Explicit"
+msgstr "露骨な表現あり"
+
 msgid "Explore"
 msgstr "探索"
 
@@ -2322,6 +2352,9 @@ msgstr "これまでに見つかった歌詞と、歌詞がないと判明した
 msgid "Format"
 msgstr "フォーマット"
 
+msgid "Format conversion"
+msgstr "フォーマット変換"
+
 msgid "Forward"
 msgstr "進む"
 
@@ -2390,6 +2423,9 @@ msgstr "GPU"
 
 msgid "GPU (compatibility)"
 msgstr "GPU（互換）"
+
+msgid "Gain"
+msgstr "ゲイン"
 
 msgid "Gain applied to consumed PCM blocks"
 msgstr "処理したPCMブロックにゲインを適用"
@@ -2553,8 +2589,8 @@ msgstr "サイドバーから非表示"
 msgid "Hide manual entry"
 msgstr "手動入力を非表示"
 
-msgid "Hide offline profiles"
-msgstr ""
+msgid "Hide review details"
+msgstr "確認の詳細を隠す"
 
 msgid "Hide sidebar"
 msgstr "サイドバーを非表示"
@@ -2570,6 +2606,9 @@ msgstr "翻訳を非表示"
 
 msgid "Hide unavailable"
 msgstr "利用不可を非表示"
+
+msgid "Hide visualization"
+msgstr "ビジュアライザーを隠す"
 
 msgid "Hide when idle"
 msgstr "操作がないときは非表示"
@@ -3328,6 +3367,9 @@ msgstr "ミックス出力"
 msgid "Mixing engineer"
 msgstr "ミキシングエンジニア"
 
+msgid "Mode not reported"
+msgstr "モード情報なし"
+
 msgid "Mon"
 msgstr "月"
 
@@ -3742,6 +3784,9 @@ msgstr "Chilpa内でサンプルの変更は報告されていません。以降
 msgid "No sample processing reported in Chilpa"
 msgstr "Chilpa内でサンプル処理は報告されていません"
 
+msgid "No saved profiles"
+msgstr "保存済みプロファイルはありません"
+
 msgid "No saved queries yet. Add conditions, then choose Save query."
 msgstr "保存したクエリはありません。条件を追加して「クエリを保存」を選択してください。"
 
@@ -4051,6 +4096,9 @@ msgstr "オープンと、可能な場合の出力先情報の読み取りを行
 msgid "Opening checks"
 msgstr "オープンチェック"
 
+msgid "Opening device connection"
+msgstr "デバイスに接続中"
+
 msgid "Opening mode"
 msgstr "オープンモード"
 
@@ -4059,6 +4107,9 @@ msgstr "オープン：{} · 可聴性：{}"
 
 msgid "Optional access token for private playlists"
 msgstr "非公開プレイリスト用の任意のアクセストークン"
+
+msgid "Original audio"
+msgstr "元のオーディオ"
 
 msgid "Original audio over the selected network transport"
 msgstr "選択したネットワーク経路で元の音声を送信"
@@ -4138,6 +4189,9 @@ msgstr "ソースから提供されたトークンを貼り付けてください
 msgid "Paste the user token from listenbrainz.org/settings."
 msgstr "listenbrainz.org/settings のユーザートークンを貼り付けてください。"
 
+msgid "Path unverified"
+msgstr "経路未検証"
+
 msgid "Pause"
 msgstr "一時停止"
 
@@ -4170,6 +4224,9 @@ msgstr "物理フォーマットの組み合わせ"
 
 msgid "Physical format match"
 msgstr "物理フォーマットの一致"
+
+msgid "Physical output unreported"
+msgstr "物理出力の情報なし"
 
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "テーマを選ぶか、「システム」のままにしてデスクトップに合わせます。言語を選び、: を押すとコマンドラインが開きます。"
@@ -4378,6 +4435,9 @@ msgstr "ムード解析を準備しています"
 msgid "Preparing analysis…"
 msgstr "解析を準備しています…"
 
+msgid "Preparing playlists"
+msgstr "プレイリストを準備中"
+
 msgid "Preparing results…"
 msgstr "結果を準備しています…"
 
@@ -4423,8 +4483,14 @@ msgstr "処理後"
 msgid "Processing"
 msgstr "処理"
 
+msgid "Processing active"
+msgstr "処理が有効"
+
 msgid "Producer"
 msgstr "プロデューサー"
+
+msgid "Profile"
+msgstr "プロファイル"
 
 msgid "Profile name"
 msgstr "プロファイル名"
@@ -4588,6 +4654,9 @@ msgstr "「{}」を語として扱う"
 msgid "Reading Library selection…"
 msgstr ""
 
+msgid "Reading file sizes"
+msgstr "ファイルサイズを読み取り中"
+
 msgid "Reading it from {}…"
 msgstr "{}から読み取っています…"
 
@@ -4626,6 +4695,9 @@ msgstr "トラックと再生ログから件数と検索インデックスを再
 
 msgid "Recalculate usage"
 msgstr "使用量を再計算"
+
+msgid "Receiver"
+msgstr "レシーバー"
 
 msgid "Receiver processing unknown"
 msgstr "レシーバーの処理は不明"
@@ -4768,9 +4840,6 @@ msgstr "条件を 1 つ外すと結果が出ます："
 msgid "Remove original queues"
 msgstr "元のキューを削除"
 
-msgid "Remove profile"
-msgstr ""
-
 msgid "Remove saved profile"
 msgstr ""
 
@@ -4779,9 +4848,6 @@ msgstr "小さいカバーと背景を削除します。必要に応じてChilpa
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "このプラグインと、そのアカウント、設定、キャッシュしたライブラリをChilpaから削除しますか？ソース側のアカウントやプレイリストは削除されません。"
-
-msgid "Remove this profile and its local sync history? Files on the device will stay."
-msgstr ""
 
 msgid "Remove this server?"
 msgstr "このサーバーを削除しますか？"
@@ -4866,6 +4932,9 @@ msgstr "カウンターをリセット"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "解像度を{}ビットから{}ビットに縮小"
+
+msgid "Resolving selected music"
+msgstr "選択した音楽を準備中"
 
 msgid "Resolving…"
 msgstr "確認中…"
@@ -5297,6 +5366,9 @@ msgstr ""
 msgid "Show playlist only from the same source as the track"
 msgstr "トラックと同じソースのプレイリストのみ表示"
 
+msgid "Show review details"
+msgstr "確認の詳細を表示"
+
 msgid "Show saved tracks in Tracks"
 msgstr "保存したトラックを「トラック」に表示"
 
@@ -5317,6 +5389,9 @@ msgstr "トークンを表示"
 
 msgid "Show translation"
 msgstr "翻訳を表示"
+
+msgid "Show visualization"
+msgstr "ビジュアライザーを表示"
 
 msgid "Show what you're listening to as your Discord status. Opt-in — Discord must be running."
 msgstr "聴いている曲をDiscordのステータスとして表示します。オプトイン制で、Discordが起動している必要があります。"
@@ -6294,6 +6369,12 @@ msgstr "利用不可"
 msgid "Uncategorized"
 msgstr "未分類"
 
+msgid "Unchanged"
+msgstr "変更なし"
+
+msgid "Unchanged samples"
+msgstr "サンプル変更なし"
+
 msgid "Undo"
 msgstr "元に戻す"
 
@@ -6536,6 +6617,9 @@ msgstr "音声のチェックが完了するまでお待ちください。"
 
 msgid "Wait for the queue to finish switching."
 msgstr "キューの切り替えが終わるまでお待ちください。"
+
+msgid "Waiting for output"
+msgstr "出力を待機中"
 
 msgid "Waiting for playback to stop"
 msgstr "再生の停止を待っています"

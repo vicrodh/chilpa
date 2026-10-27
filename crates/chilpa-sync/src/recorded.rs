@@ -58,7 +58,7 @@ impl State {
             files.push(RecordedFile {
                 path: RelativePath::new(path)?,
                 kind: managed.kind,
-                size: managed.fingerprint.size,
+                size: managed.digest()?.size,
                 title: managed.title,
                 artist: managed.artist,
                 album: managed.album,
@@ -91,10 +91,11 @@ mod tests {
                 previous: None,
                 source: None,
                 desired: Some(Managed {
-                    fingerprint: Fingerprint {
+                    source_stamp: None,
+                    fingerprint: Some(Fingerprint {
                         size: 42,
                         sha256: "b".repeat(64),
-                    },
+                    }),
                     kind: AssetKind::Media,
                     key: "private stable key".into(),
                     title: "Song".into(),

@@ -111,6 +111,30 @@ fn a_sidecar_changes_what_the_scan_writes_down() {
 }
 
 #[test]
+fn advisory_overrides_survive_rescans_and_unknown_clears_the_file_value() {
+    let Some(dir) = record("advisory") else { panic!("ffmpeg is required for advisory rescan coverage"); };
+    let (home, file) = home_of(&dir);
+    let mut changes = chilpa_tags::edit::FileChanges::none(PathBuf::from(&file));
+    changes.explicit = chilpa_tags::edit::Change::Set(true);
+    chilpa_tags::edit::stage(&[changes], Default::default(), &mut |_, _| {}).unwrap().commit().unwrap();
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &dir).unwrap();
+    let advisory = || lib.connection().query_row("SELECT explicit FROM tracks WHERE external_id = ?1", [&file], |row| row.get::<_, Option<bool>>(0)).unwrap();
+    assert_eq!(advisory(), Some(true));
+    for (index, value) in [Override::Value(false), Override::Cleared, Override::Value(true), Override::Absent].into_iter().enumerate() {
+        let expected = match value { Override::Value(value) => Some(value), Override::Cleared => None, Override::Absent => Some(true) };
+        let mut sidecar = Sidecar::new(index as i64 + 1);
+        sidecar.track_mut("01.flac").explicit = value;
+        store(&home, &sidecar, index as i64 + 1).unwrap();
+        scan_root(&lib, &dir).unwrap();
+        assert_eq!(advisory(), expected);
+        scan_root(&lib, &dir).unwrap();
+        assert_eq!(advisory(), expected, "unchanged rescans preserve the advisory");
+    }
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
 fn a_second_scan_with_the_same_sidecar_rereads_nothing() {
     let Some(dir) = record("same") else {
         eprintln!("no ffmpeg: skipped");

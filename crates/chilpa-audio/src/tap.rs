@@ -20,6 +20,10 @@
 use crate::format::{SampleFormat, StreamFormat};
 use crate::sink::{AudioSink, SinkError};
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
+
+mod history;
+use history::History;
 
 /// How many frames are kept to look at. At 192 kHz that is about 43 ms,
 /// which is more than fits in a screen frame.
@@ -27,7 +31,7 @@ pub const FRAMES_KEPT: usize = 8192;
 
 /// The last thing that went out, for whoever wants to draw it.
 #[derive(Clone, Default)]
-pub struct Tap(Arc<Mutex<State>>, Arc<crate::tap_dsd::RawTap>);
+pub struct Tap(Arc<Mutex<State>>, Arc<crate::tap_dsd::RawTap>, Arc<AtomicBool>);
 
 #[derive(Default)]
 struct State {
@@ -40,6 +44,9 @@ struct State {
     /// How many frames have been copied since it opened.
     frames: u64,
     dsd: bool,
+    /// Only a visible visualizer retains output-playhead history.
+    visualizing: bool,
+    history: History,
 }
 
 /// A snapshot of what just went out.
@@ -71,11 +78,13 @@ impl Tap {
             e.sample_rate_hz = format.sample_rate_hz;
             e.frames = 0;
             e.dsd = format.sample_format.is_dsd() || dop;
+            let active = e.visualizing && !e.dsd;
+            e.history.prepare(format.sample_rate_hz, active);
         }
     }
 
     /// Copies what was delivered. If the lock is busy, it does nothing.
-    fn copy(&self, bytes: &[u8], format: StreamFormat) {
+    fn copy(&self, bytes: &[u8], format: StreamFormat, held: u64) {
         let Ok(mut e) = self.0.try_lock() else { return };
         if e.samples.is_empty() || e.dsd {
             return;
@@ -88,10 +97,26 @@ impl Tap {
         let total = e.samples.len();
         let mut cursor = e.cursor;
         let mut written = 0usize;
-        for sample in bytes.chunks_exact(width) {
-            e.samples[cursor] = normalize(sample, format.sample_format);
-            cursor = (cursor + 1) % total;
-            written += 1;
+        if e.visualizing {
+            for frame in bytes.chunks_exact(width * channels) {
+                let mut stereo = [0.0; 2];
+                for (channel, sample) in frame.chunks_exact(width).enumerate() {
+                    let value = normalize(sample, format.sample_format);
+                    e.samples[cursor] = value;
+                    cursor = (cursor + 1) % total;
+                    written += 1;
+                    if channel < 2 { stereo[channel] = value; }
+                }
+                if channels == 1 { stereo[1] = stereo[0]; }
+                e.history.push(stereo);
+            }
+            e.history.set_delay(held);
+        } else {
+            for sample in bytes.chunks_exact(width) {
+                e.samples[cursor] = normalize(sample, format.sample_format);
+                cursor = (cursor + 1) % total;
+                written += 1;
+            }
         }
         e.cursor = cursor;
         e.frames += (written / channels) as u64;
@@ -129,6 +154,30 @@ impl Tap {
         }
     }
 
+    /// I retain at most 4 MiB of stereo history only while a view consumes it.
+    /// I allocate on the control thread, never in the device write path.
+    pub fn set_visualizing(&self, active: bool) {
+        let Ok(mut state) = self.0.lock() else { return };
+        if state.visualizing == active { return; }
+        state.visualizing = active;
+        let rate = state.sample_rate_hz;
+        let pcm = !state.dsd;
+        state.history.prepare(rate, active && pcm);
+        self.2.store(active, Ordering::Relaxed);
+    }
+
+    /// I copy only the analysis window, without allocating or calculating meters.
+    /// The device delay selects the audible window, not the last queued block.
+    pub fn visualizer_snapshot(&self, stereo: &mut [f32]) -> u32 {
+        let Ok(state) = self.0.lock() else { return 0 };
+        if state.dsd || !state.visualizing || !state.history.snapshot(stereo) { return 0; }
+        state.sample_rate_hz
+    }
+
+    fn reset_pcm(&self) {
+        if let Ok(mut state) = self.0.lock() { state.history.reset(); }
+    }
+
     pub(crate) fn drain_dsd(&self) -> crate::tap_dsd::Batch {
         self.1.drain()
     }
@@ -164,6 +213,7 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
 
     fn position_changed(&mut self, position: Option<u64>) {
         self.tap.1.reset();
+        self.tap.reset_pcm();
         self.inner.position_changed(position);
     }
 
@@ -172,6 +222,14 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
     }
 
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+        let visualizing = self.tap.2.load(Ordering::Relaxed);
+        // A visible PCM visualizer needs a regular feed instead of long
+        // accepted-write bursts. Partial writes preserve pending DSP/gain and
+        // device buffer sizes. Hidden taps use the original write unchanged.
+        let frames = if visualizing && !self.dop && !self.format.sample_format.is_dsd() {
+            let limit = pcm_feed_frames(self.format.sample_rate_hz) * self.format.frame_bytes();
+            &frames[..frames.len().min(limit)]
+        } else { frames };
         // Write first, then copy what the device accepted: copying more would
         // show samples that never played.
         let accepted = self.inner.write(frames)?;
@@ -180,17 +238,20 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
             if self.dop || self.format.sample_format.is_dsd() {
                 self.tap.1.copy(delivered);
             } else {
-                self.tap.copy(delivered, self.format);
+                let held = if visualizing { self.inner.held() } else { 0 };
+                self.tap.copy(delivered, self.format, held);
             }
         }
         Ok(accepted)
     }
 
     fn close(&mut self) -> Result<(), SinkError> {
+        self.tap.reset_pcm();
         self.inner.close()
     }
 
     fn handoff(&mut self) -> Result<(), SinkError> {
+        self.tap.reset_pcm();
         self.inner.handoff()
     }
 
@@ -200,6 +261,7 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
 
     fn flush(&mut self) -> Result<(), SinkError> {
         self.tap.1.reset();
+        self.tap.reset_pcm();
         self.inner.flush()
     }
 
@@ -213,12 +275,17 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
 
     fn suspend(&mut self) -> Result<(), SinkError> {
         self.tap.1.reset();
+        self.tap.reset_pcm();
         self.inner.suspend()
     }
 
     fn wake(&mut self) -> Result<(), SinkError> {
         self.inner.wake()
     }
+}
+
+fn pcm_feed_frames(sample_rate: u32) -> usize {
+    u64::from(sample_rate).div_ceil(100).clamp(64, 8192) as usize
 }
 
 /// A packed sample, taken to -1.0..1.0.
@@ -289,6 +356,69 @@ mod tests {
             v.extend_from_slice(&(-m).to_le_bytes());
         }
         v
+    }
+
+    #[test]
+    fn only_a_visible_pcm_visualizer_splits_the_device_feed() {
+        for (rate, frames) in [(44_100, 441), (48_000, 480), (96_000, 960), (192_000, 1920), (768_000, 7680)] {
+            assert_eq!(pcm_feed_frames(rate), frames);
+        }
+        assert_eq!(pcm_feed_frames(0), 64);
+        assert_eq!(pcm_feed_frames(u32::MAX), 8192);
+        let format = StreamFormat::new(SampleFormat::S16, 48_000, 2);
+        let tap = Tap::new();
+        let mut sink = tap.wrap(mirror(format, 0));
+        let bytes = ramp(4800);
+        assert_eq!(sink.write(&bytes).unwrap(), 4800, "off preserves the original one-call write");
+        tap.set_visualizing(true);
+        assert_eq!(sink.write(&bytes).unwrap(), 480, "visible capture receives a ten-ms piece");
+        tap.set_visualizing(false);
+        assert_eq!(sink.write(&bytes).unwrap(), 4800, "hiding restores the original write immediately");
+    }
+
+    #[test]
+    fn delayed_partial_writes_publish_only_accepted_audio_and_preserve_bytes() {
+        struct QueuedSink { inner: MirrorSink, delay: u64 }
+        impl AudioSink for QueuedSink {
+            fn format(&self) -> StreamFormat { self.inner.format() }
+            fn write(&mut self, bytes: &[u8]) -> Result<usize, SinkError> { self.inner.write(bytes) }
+            fn close(&mut self) -> Result<(), SinkError> { Ok(()) }
+            fn held(&self) -> u64 { self.delay }
+        }
+        let format = StreamFormat::new(SampleFormat::S16, 48_000, 2);
+        let mirror = mirror(format, 480);
+        let written = mirror.written.clone();
+        let tap = Tap::new();
+        tap.set_visualizing(true);
+        let mut sink = tap.wrap(QueuedSink { inner: mirror, delay: 240 });
+        let bytes = ramp(4800);
+        let mut offset = 0;
+        let mut out = [0.0; 4096];
+        while offset < bytes.len() {
+            let accepted = sink.write(&bytes[offset..]).unwrap();
+            assert_eq!(accepted, 480);
+            offset += accepted * format.frame_bytes();
+            assert_eq!(tap.frames(), (offset / format.frame_bytes()) as u64);
+            assert_eq!(tap.visualizer_snapshot(&mut out), 48_000);
+            let last = offset / format.frame_bytes() - 240 - 1;
+            let expected = normalize(&bytes[last * 4..last * 4 + 2], SampleFormat::S16);
+            assert_eq!(out[4094], expected, "the last sample ends at the audible playhead");
+        }
+        assert_eq!(*written.borrow(), bytes, "partial writes neither drop nor replay PCM");
+        sink.set_paused(true).unwrap();
+        let before = out;
+        tap.visualizer_snapshot(&mut out);
+        assert_eq!(out, before, "without new accepted frames a pause keeps the picture");
+        sink.set_paused(false).unwrap();
+        sink.position_changed(Some(0));
+        assert_eq!(tap.visualizer_snapshot(&mut out), 0);
+        assert_eq!(out, [0.0; 4096], "a seek does not expose history from the old cursor");
+        sink.write(&bytes[..1920]).unwrap();
+        sink.flush().unwrap();
+        assert_eq!(tap.visualizer_snapshot(&mut out), 0);
+        sink.write(&bytes[..1920]).unwrap();
+        sink.close().unwrap();
+        assert_eq!(tap.visualizer_snapshot(&mut out), 0, "closed output has no stale visual frame");
     }
 
     #[test]

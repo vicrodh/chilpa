@@ -68,6 +68,7 @@ pub struct FileChanges {
     pub album_artist: Change<String>,
     pub album_artists: Change<Vec<String>>,
     pub compilation: Change<bool>,
+    pub explicit: Change<bool>,
     pub date: Change<String>,
     pub genres: Change<Vec<String>>,
     pub catalog_number: Change<String>,
@@ -128,6 +129,7 @@ impl FileChanges {
             album_artist: Change::Keep,
             album_artists: Change::Keep,
             compilation: Change::Keep,
+            explicit: Change::Keep,
             date: Change::Keep,
             genres: Change::Keep,
             catalog_number: Change::Keep,
@@ -154,6 +156,7 @@ impl FileChanges {
             && self.album.is_keep()
             && self.date.is_keep()
             && self.compilation.is_keep()
+            && self.explicit.is_keep()
             && self.track_number.is_keep()
             && self.disc_number.is_keep()
             && self.cover.is_keep()
@@ -378,6 +381,17 @@ fn apply(tag: &mut Tag, changes: &FileChanges, strict: bool) -> Result<(), &'sta
         // A record that is not a compilation says nothing about it.
         Change::Set(false) | Change::Clear => tag.remove_key(ItemKey::FlagCompilation),
     }
+    if tag.tag_type() != TagType::VorbisComments {
+        match &changes.explicit {
+            Change::Keep => {}
+            Change::Set(value) => {
+                if !tag.insert_text(ItemKey::ParentalAdvisory, if *value { "1" } else { "2" }.into()) && strict {
+                    return Err("explicit");
+                }
+            }
+            Change::Clear => tag.remove_key(ItemKey::ParentalAdvisory),
+        }
+    }
     match &changes.date {
         Change::Keep => {}
         Change::Set(v) => match timestamp(v) {
@@ -483,6 +497,12 @@ fn verify(said: &Snapshot, first_picture: Option<&[u8]>, changes: &FileChanges) 
     if !compilation {
         return Err("compilation");
     }
+    let explicit = match changes.explicit {
+        Change::Keep => true,
+        Change::Set(value) => said.explicit == Some(value),
+        Change::Clear => said.explicit.is_none(),
+    };
+    if !explicit { return Err("explicit"); }
     if !text(&changes.date, said.date.as_deref()) {
         return Err("date");
     }
@@ -518,6 +538,7 @@ fn one(changes: &FileChanges, copy: &Path, options: Options) -> Result<(), Write
 
     let mut file = read_copy(copy).map_err(&failed)?;
     let primary = file.primary_tag_type();
+    let native_comments = if primary == TagType::VorbisComments { Some(super::advisory::comments(copy).map_err(&failed)?) } else { None };
     if file.tag(primary).is_none() {
         // A file whose only tag is of another kind is read through that one.
         // The canonical tag starts as its copy, or what was not changed
@@ -564,6 +585,18 @@ fn one(changes: &FileChanges, copy: &Path, options: Options) -> Result<(), Write
     write.lossy_text_encoding(false);
     file.save_to_path(copy, write).map_err(|e| failed(e.to_string()))?;
     drop(file);
+    if let Some(comments) = native_comments {
+        use lofty::tag::{MergeTag, SplitTag};
+        let mut fresh = read_copy(copy).map_err(&failed)?;
+        let tag = fresh.remove(primary).unwrap_or_else(|| Tag::new(primary));
+        drop(fresh);
+        let mut comments = comments.split_tag().0.merge_tag(tag);
+        if !changes.explicit.is_keep() { drop(comments.remove("ITUNESADVISORY")); }
+        if let Change::Set(value) = changes.explicit {
+            comments.insert("ITUNESADVISORY".into(), if value { "1" } else { "2" }.into());
+        }
+        comments.save_to_path(copy, write).map_err(|error| failed(error.to_string()))?;
+    }
     if primary == TagType::Id3v2 && (id3_work.is_some() || !changes.work.is_keep()
         || options.id3 == Id3Version::V23 && (id3_subtitle.is_some() || !changes.disc_subtitle.is_keep())) {
         let fresh = read_copy(copy).map_err(&failed)?;
@@ -586,8 +619,10 @@ fn one(changes: &FileChanges, copy: &Path, options: Options) -> Result<(), Write
     if !same_sound(sound(&after), audio) {
         return Err(WriteError::Audio { path: path.clone() });
     }
-    let tag = after.tag(after.primary_tag_type());
-    let said = tag.map(of_tag).unwrap_or_default();
+    let primary = after.primary_tag_type();
+    let mut said = after.tag(primary).map(of_tag).unwrap_or_default();
+    if primary == TagType::VorbisComments { said.explicit = super::advisory::read(copy).map_err(&failed)?; }
+    let tag = after.tag(primary);
     let picture = tag.and_then(|t| t.pictures().first()).map(Picture::data);
     verify(&said, picture, changes).map_err(|field| WriteError::Verify { path: path.clone(), field })?;
 
@@ -653,6 +688,9 @@ pub fn placed(path: &Path) -> Result<Vec<&'static str>, WriteError> {
     }
     if ItemKey::FlagCompilation.map_key(kind).is_some() {
         out.push("compilation");
+    }
+    if kind == TagType::VorbisComments || ItemKey::ParentalAdvisory.map_key(kind).is_some() {
+        out.push("explicit");
     }
     Ok(out)
 }

@@ -16,6 +16,7 @@ import "../Components"
 // there is no field to type in, so it brings its own.
 Popup {
     id: flyout
+    PopupInput { surface: flyout }
 
     Tools.SearchNavigation { id: searchNavigation; search: flyout.search }
     required property SearchModel search

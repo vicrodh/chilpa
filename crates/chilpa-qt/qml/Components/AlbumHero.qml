@@ -51,9 +51,10 @@ Item {
             color: hero.contrasted ? Theme.color.backdropText : Theme.color.textSecondary
             opacity: hero.contrasted ? 0.78 : 1
         }
-        Text {
+        AdvisoryTitle {
             width: parent.width
             text: hero.detail.title
+            explicitContent: hero.detail.explicitContent
             elide: Text.ElideRight
             font.pointSize: Type.display
             font.weight: Type.bold

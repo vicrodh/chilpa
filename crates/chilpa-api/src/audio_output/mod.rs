@@ -2,6 +2,7 @@
 //! facade; closing releases the view and cancels an active silent check.
 mod history;
 mod view;
+mod signal_path;
 #[cfg(test)] mod tests;
 use chilpa_core::output_evidence::{self as engine, Case, Inspection, Route, State, StreamFormat};
 use serde_json::{json, Value};

@@ -53,12 +53,14 @@ pub fn devices() -> Result<Vec<Device>> {
         location:d.location_id, name:d.display(), serial:d.serial_number,
     }).collect())
 }
-fn open(location: u64) -> Result<MtpDevice> {
+fn open(location: u64) -> Result<MtpDevice> { open_cancellable(location, &Cancellation::default()) }
+fn open_cancellable(location: u64, cancel: &Cancellation) -> Result<MtpDevice> {
     let mut last = None;
     // An interrupted Android session can reject the first reopen while its server settles.
     // I retry only session establishment, with quiet gaps; I never replay a device mutation.
     for pause in [0, 2, 5] {
-        if pause != 0 { std::thread::sleep(Duration::from_secs(pause)); }
+        for _ in 0..pause * 10 { cancel.check()?; std::thread::sleep(Duration::from_millis(100)); }
+        cancel.check()?;
         match block_on(MtpDevice::builder().timeout(Duration::from_secs(30)).open_by_location(location)) {
             Ok(device) => return Ok(device),
             Err(error @ (mtp_rs::Error::PermissionDenied | mtp_rs::Error::ExclusiveAccess
@@ -100,7 +102,7 @@ pub fn describe_identities(location: u64, roots: &[RelativePath], cancel: &Cance
             volumes.push(Volume { id:volume, name:info.description.clone(), capacity:info.total_capacity,
                 available:info.free_space, writable:info.is_writable });
             let mut transport = Mtp { device:None, storage, root:RelativePath::new("Chilpa")?, partial_reads:false,
-                folders:RefCell::default(), review:RefCell::default(),
+                folders:RefCell::default(), review:RefCell::default(), cancel:cancel.clone(),
                 #[cfg(test)] listing_calls:std::cell::Cell::new(0) };
             transport.begin_review();
             for root in roots {
@@ -122,17 +124,19 @@ pub struct Mtp {
     device: Option<MtpDevice>, storage: Storage, root: RelativePath, partial_reads: bool,
     folders: RefCell<BTreeMap<String, FolderRef>>,
     review: RefCell<Option<ReviewListings>>,
+    cancel: Cancellation,
     #[cfg(test)] listing_calls: std::cell::Cell<usize>,
 }
 impl Mtp {
     pub fn open(location: u64, volume: u64, root: RelativePath) -> Result<Self> {
-        Self::connect(location,volume,root,true)
+        Self::open_cancellable(location,volume,root,true,&Cancellation::default())
     }
     pub fn open_existing(location: u64, volume: u64, root: RelativePath) -> Result<Self> {
-        Self::connect(location,volume,root,false)
+        Self::open_cancellable(location,volume,root,false,&Cancellation::default())
     }
-    fn connect(location: u64, volume: u64, root: RelativePath, create: bool) -> Result<Self> {
-        let device = open(location)?;
+    pub fn open_cancellable(location: u64, volume: u64, root: RelativePath, create: bool, cancel: &Cancellation) -> Result<Self> {
+        let device = open_cancellable(location, cancel)?;
+        cancel.check()?;
         let capabilities = device.capabilities();
         let partial_reads = capabilities.supports_partial_download;
         if !capabilities.can_upload || !capabilities.can_rename || !capabilities.can_delete || !capabilities.can_create_folder {
@@ -140,7 +144,7 @@ impl Mtp {
         }
         let storage = block_on(device.storage(StorageId(volume))).map_err(|e| during("reading selected storage", protocol(e)))?;
         if !storage.info().is_writable { return Err(conflict("selected MTP storage is read-only")); }
-        let transport = Self { device:Some(device), storage, root, partial_reads, folders:RefCell::default(), review:RefCell::default(),
+        let transport = Self { device:Some(device), storage, root, partial_reads, folders:RefCell::default(), review:RefCell::default(), cancel:cancel.clone(),
             #[cfg(test)] listing_calls:std::cell::Cell::new(0) };
         let root = transport.root.clone();
         if create { transport.ensure(&root).map_err(|e| during("preparing root folder", e))?; }
@@ -153,6 +157,7 @@ impl Mtp {
     }
     fn path(&self, path: &RelativePath) -> Result<RelativePath> { RelativePath::new(format!("{}/{path}", self.root)) }
     fn child(&self, parent: ObjectHandle, name: &str) -> Result<Option<ObjectInfo>> {
+        self.cancel.check()?;
         if let Some(review) = self.review.borrow().as_ref() {
             if let Some(listing) = review.folders.get(&parent.0) {
                 return Self::review_child(listing, name);
@@ -169,7 +174,10 @@ impl Mtp {
         let mut listing = block_on(self.storage.list_objects_stream(parent)).map_err(|e| during(operation, protocol(e)))?;
         if listing.total() > MAX_ASSETS { return Err(invalid("MTP folder exceeds the sync listing budget")); }
         let mut found = None;
-        while let Some(item) = block_on(listing.next()) {
+        loop {
+            self.cancel.check()?;
+            let Some(item) = block_on(listing.next()) else { break };
+            self.cancel.check()?;
             let info = match item.map_err(|e| during("reading directory entry", protocol(e)))? {
                 ListingItem::Object(info) => info,
                 ListingItem::Skipped(skipped) => return Err(protocol(skipped.error)),
@@ -294,6 +302,7 @@ impl Drop for Mtp {
 }
 
 impl Transport for Mtp {
+    fn set_cancellation(&mut self, cancel: &Cancellation) { self.cancel = cancel.clone(); }
     fn begin_review(&mut self) {
         self.folders.borrow_mut().clear();
         *self.review.borrow_mut() = Some(ReviewListings::default());
@@ -303,6 +312,7 @@ impl Transport for Mtp {
         self.folders.borrow_mut().clear();
     }
     fn available_bytes(&mut self) -> Result<u64> {
+        self.cancel.check()?;
         block_on(self.storage.refresh()).map_err(protocol)?;
         if !self.storage.info().is_writable { return Err(conflict("MTP storage became read-only")); }
         Ok(self.storage.info().free_space)

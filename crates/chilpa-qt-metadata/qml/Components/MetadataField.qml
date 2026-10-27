@@ -22,6 +22,7 @@ Item {
 
     readonly property string name: field.name || ""
     readonly property bool toggle: name === "compilation"
+    readonly property bool advisory: name === "explicit"
     readonly property string invalid: field.invalid || ""
     readonly property bool labelled: !cell && !toggle
     // It has the keyboard.
@@ -37,6 +38,7 @@ Item {
         case "album_artist": return I18n.tr("Album artist", I18n.rev)
         case "album_artists": return I18n.tr("Album artists", I18n.rev)
         case "compilation": return I18n.tr("Compilation", I18n.rev)
+        case "explicit": return I18n.tr("Content advisory", I18n.rev)
         case "date": return I18n.tr("Date", I18n.rev)
         case "genres": return I18n.tr("Genres", I18n.rev)
         case "catalog_number": return I18n.tr("Catalog number", I18n.rev)
@@ -94,7 +96,7 @@ Item {
 
     TextField {
         id: input
-        visible: !root.toggle
+        visible: !root.toggle && !root.advisory
         y: root.labelled ? caption.height + Metrics.gap2 : 0
         width: parent.width
         height: root.cell ? Metrics.metadataRow : Metrics.fieldHeight
@@ -111,6 +113,19 @@ Item {
             if (text !== (root.field.value || ""))
                 root.edited(root.name, text)
         }
+    }
+
+    SelectField {
+        objectName: "metadataAdvisory"
+        visible: root.advisory
+        y: root.labelled ? caption.height + Metrics.gap2 : 0
+        width: parent.width
+        height: Metrics.fieldHeight
+        enabled: root.field.editable !== false
+        options: [I18n.tr("Unknown", I18n.rev), I18n.tr("Clean", I18n.rev), I18n.tr("Explicit", I18n.rev)]
+        values: ["", "false", "true"]
+        value: root.field.value || ""
+        onPicked: value => root.edited(root.name, value)
     }
 
     Row {

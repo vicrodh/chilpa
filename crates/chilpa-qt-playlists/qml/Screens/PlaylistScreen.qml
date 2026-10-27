@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
@@ -180,12 +181,12 @@ Flickable {
     // The playlist's own order is changed a place at a time.
     Shortcut {
         sequence: "Alt+Up"
-        enabled: page.editable && page.order === "custom" && find.typed === ""
+        enabled: !InputLayers.blocksShortcuts(page.Window.window) && (page.editable && page.order === "custom" && find.typed === "")
         onActivated: tracks.moveInPlaylist(tracks.selectedRow(), -1)
     }
     Shortcut {
         sequence: "Alt+Down"
-        enabled: page.editable && page.order === "custom" && find.typed === ""
+        enabled: !InputLayers.blocksShortcuts(page.Window.window) && (page.editable && page.order === "custom" && find.typed === "")
         onActivated: tracks.moveInPlaylist(tracks.selectedRow(), 1)
     }
 }

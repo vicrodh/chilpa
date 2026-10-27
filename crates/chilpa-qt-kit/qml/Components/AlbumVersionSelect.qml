@@ -14,6 +14,8 @@ Loader {
         briefs: selector.versions.map(v => v.brief)
         values: selector.versions.map(v => v.id.toString())
         details: selector.versions.map(v => v.detail)
+        explicitOptions: selector.versions.map(v => v.explicit === true)
+        explicitContent: selector.versions.some(v => v.id.toString() === value && v.explicit === true)
         sources: selector.versions.map(v => v.source)
         value: selector.detail.selectedId.toString()
         onPicked: (value) => selector.detail.selectVersion(value)

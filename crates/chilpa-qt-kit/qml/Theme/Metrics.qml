@@ -581,4 +581,5 @@ QtObject {
     readonly property int deviceDetailHeight: 96
     readonly property int deviceNoticeHeight: 104
     readonly property int deviceGalleryHeight: 260
+    readonly property int visualizerBandTall: 42
 }

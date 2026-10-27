@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -40,7 +41,7 @@ Item {
 
     // Escape lets the selection go; Ctrl+A takes every track.
     Shortcut {
-        enabled: page.selectionMode
+        enabled: !InputLayers.blocksShortcuts(page.Window.window) && (page.selectionMode)
         sequence: "Escape"
         onActivated: {
             tracks.clearSelection()
@@ -48,6 +49,7 @@ Item {
         }
     }
     Shortcut {
+        enabled: !InputLayers.blocksShortcuts(page.Window.window)
         sequence: StandardKey.SelectAll
         onActivated: {
             page.selectionMode = true

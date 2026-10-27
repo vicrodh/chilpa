@@ -4,6 +4,9 @@ import app.chilpa
 import "../../qml/Patterns"
 
 TestCase {
+    id: test
+    property int backgroundTaps: 0
+    TapHandler { onTapped: test.backgroundTaps++ }
     name: "AlbumInformation"; when: windowShown; visible: true; width: 1200; height: 820
     TextEdit { id: pasteTarget; visible: false }
     AlbumInfoModal { id: modal; albumId: 1; summary: "18 songs · 1 h" }
@@ -15,7 +18,7 @@ TestCase {
         tryCompare(modal, "opened", true)
         waitForRendering(modal.contentItem)
     }
-    function cleanup() { modal.close(); wait(0) }
+    function cleanup() { modal.close(); wait(0); compare(backgroundTaps, 0) }
     function test_bounded_modal_has_scroll_and_expandable_selectable_credits() {
         verify(modal.width < width)
         verify(modal.height < height)

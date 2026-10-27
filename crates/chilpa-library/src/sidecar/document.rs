@@ -26,7 +26,7 @@ pub const ALBUM_FIELDS: [&str; 12] = [
 ];
 
 /// A track's.
-pub const TRACK_FIELDS: [&str; 12] = [
+pub const TRACK_FIELDS: [&str; 13] = [
     "title",
     "artist_credit",
     "artists",
@@ -39,6 +39,7 @@ pub const TRACK_FIELDS: [&str; 12] = [
     "musicbrainz_recording_id",
     "musicbrainz_track_id",
     "musicbrainz_artist_ids",
+    "explicit",
 ];
 
 /// A field of a sidecar: not there, there, or there to say "empty".
@@ -394,6 +395,7 @@ impl Album {
 /// What a sidecar lays over one track.
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct Track {
+    pub explicit: Override<bool>,
     pub title: Override<String>,
     pub artist_credit: Override<String>,
     pub artists: Override<Vec<String>>,
@@ -476,6 +478,7 @@ impl Track {
 
     /// A field as the editor shows it. A name that is not a field is `Absent`.
     pub fn get(&self, name: &str) -> Override<String> {
+        if name == "explicit" { return self.explicit.map(|value| value.to_string()); }
         if let Some(text) = self.text(name) {
             return text.clone();
         }
@@ -491,6 +494,18 @@ impl Track {
     /// Sets a field from what the editor holds. False for a name that is
     /// not a field, and for a number that is not one.
     pub fn put(&mut self, name: &str, value: Override<String>) -> bool {
+        if name == "explicit" {
+            self.explicit = match value {
+                Override::Absent => Override::Absent,
+                Override::Cleared => Override::Cleared,
+                Override::Value(text) => match text.as_str() {
+                    "true" => Override::Value(true),
+                    "false" => Override::Value(false),
+                    _ => return false,
+                },
+            };
+            return true;
+        }
         if let Some(text) = self.text_mut(name) {
             *text = value;
             return true;
@@ -515,6 +530,7 @@ impl Track {
 
     pub fn is_empty(&self) -> bool {
         self.unknown.is_empty()
+            && self.explicit.is_absent()
             && Self::TEXTS.iter().all(|name| self.text(name).is_some_and(Override::is_absent))
             && Self::LISTS.iter().all(|name| self.list(name).is_some_and(Override::is_absent))
             && Self::NUMBERS.iter().all(|name| self.number(name).is_some_and(Override::is_absent))
@@ -522,6 +538,7 @@ impl Track {
 
     fn from_map(mut map: Map<String, Value>) -> Self {
         let mut track = Track::default();
+        track.explicit = take_flag(&mut map, "explicit");
         for name in Self::TEXTS {
             if let Some(field) = track.text_mut(name) {
                 *field = take_text(&mut map, name);
@@ -543,6 +560,7 @@ impl Track {
 
     fn to_map(&self) -> Map<String, Value> {
         let mut map = self.unknown.clone();
+        put_flag(&mut map, "explicit", &self.explicit);
         for name in Self::TEXTS {
             if let Some(field) = self.text(name) {
                 put_text(&mut map, name, field);
@@ -666,6 +684,11 @@ impl Sidecar {
             Override::Value(genres) => tags.genres = genres.clone(),
         }
         let Some(track) = self.tracks.get(key) else { return };
+        match track.explicit {
+            Override::Absent => {}
+            Override::Cleared => tags.explicit = None,
+            Override::Value(value) => tags.explicit = Some(value),
+        }
         lay(&track.title, &mut tags.title);
         lay(&track.disc_subtitle, &mut tags.disc_subtitle);
         lay(&track.work, &mut tags.work);
@@ -693,6 +716,27 @@ impl Sidecar {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn advisory_overrides_roundtrip_and_preserve_unknown_fields() {
+        for (value, expected) in [("true", Some(true)), ("false", Some(false)), ("null", None)] {
+            let mut sidecar = read(&format!(r#"{{"format":"chilpa-sidecar","version":1,"tracks":{{"one.flac":{{"explicit":{value},"future":{{"flag":7}}}}}}}}"#));
+            let mut tags = chilpa_tags::Tags { explicit: Some(true), ..Default::default() };
+            sidecar.overlay(&mut tags, "one.flac");
+            assert_eq!(tags.explicit, expected);
+            sidecar = Sidecar::from_json(&sidecar.to_json()).unwrap();
+            assert_eq!(sidecar.tracks["one.flac"].unknown["future"]["flag"], 7);
+            sidecar.overlay(&mut tags, "one.flac");
+            assert_eq!(tags.explicit, expected);
+            assert!(!sidecar.tracks["one.flac"].is_empty());
+        }
+        let sidecar = read(r#"{"format":"chilpa-sidecar","version":1,"tracks":{"one.flac":{"explicit":"future-value"}}}"#);
+        let roundtrip: Value = serde_json::from_slice(&sidecar.to_json()).unwrap();
+        assert_eq!(roundtrip["tracks"]["one.flac"]["explicit"], "future-value");
+        let mut tags = chilpa_tags::Tags { explicit: Some(false), ..Default::default() };
+        sidecar.overlay(&mut tags, "one.flac");
+        assert_eq!(tags.explicit, Some(false));
+    }
 
     fn read(json: &str) -> Sidecar {
         Sidecar::from_json(json.as_bytes()).unwrap()

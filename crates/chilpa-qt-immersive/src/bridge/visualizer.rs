@@ -43,6 +43,8 @@ pub mod qobject {
         #[qinvokable]
         fn set_presented(self: &Visualizer, presented: bool);
         #[qinvokable]
+        fn set_compact(self: &Visualizer, presented: bool, mode: i32);
+        #[qinvokable]
         fn set_cursor(self: &Visualizer, track: &QString, position: f64, duration: f64);
         #[qinvokable]
         fn ribbon_snapshot(self: &Visualizer) -> QByteArray;
@@ -57,6 +59,7 @@ use chilpa_qt_kit::app;
 use cxx_qt::Threading as _;
 use cxx_qt_lib::{QByteArray, QList, QString};
 use std::pin::Pin;
+use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 
 #[derive(Default)]
 pub struct VisualizerRust {
@@ -121,6 +124,10 @@ impl qobject::Visualizer {
         app::with(|api| api.visualizer()).set_presented(presented);
     }
 
+    pub fn set_compact(&self, presented: bool, mode: i32) {
+        app::with(|api| api.visualizer()).set_compact(presented, mode);
+    }
+
     pub fn set_cursor(&self, track: &QString, position: f64, duration: f64) {
         app::with(|api| api.visualizer()).set_cursor(&track.to_string(), position, duration);
     }
@@ -135,16 +142,26 @@ impl cxx_qt::Initialize for qobject::Visualizer {
         let handle = app::with(|api| api.visualizer());
         let thread = self.qt_thread();
         let drained = handle.clone();
+        let pending = Arc::new(AtomicBool::new(false));
         let drain = std::thread::Builder::new()
             .name("chilpa-viz-drain".into())
             .spawn(move || loop {
-                if !drained.enabled() {
+                if !drained.enabled() || pending.load(Ordering::Acquire) {
                     std::thread::park();
                     continue;
                 }
                 let out = drained.drain();
-                if out != Drained::default() && thread.queue(move |this| apply(this, out)).is_err() {
-                    return;
+                if out != Drained::default() {
+                    // I keep one Qt callback in flight. While the GUI is busy,
+                    // new frames overwrite the facade cells instead of queuing.
+                    pending.store(true, Ordering::Release);
+                    let applied = pending.clone();
+                    let worker = std::thread::current();
+                    if thread.queue(move |this| {
+                        apply(this, out);
+                        applied.store(false, Ordering::Release);
+                        worker.unpark();
+                    }).is_err() { return; }
                 }
                 // Woken while publishing, the permit is kept: this returns
                 // at once and the cells are read again.

@@ -11,6 +11,7 @@ import "../Primitives"
 // that keeps it open, close, give the hover back and open again.
 Popup {
     id: preview
+    PopupInput { surface: preview }
     property Item target: null
     property url source
     property bool shown: false

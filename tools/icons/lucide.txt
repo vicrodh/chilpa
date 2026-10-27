@@ -42,3 +42,5 @@ languages
 rotate-ccw
 save
 file-up
+audio-lines
+audio-lines-off

@@ -115,7 +115,7 @@ fn a_record_s_rows_are_found_by_what_is_typed_with_the_headers_they_stand_under(
     let row = |id: i64, title: &str, work: &str| TrackRow {
         id, path: String::new(), title: title.into(), artist: "Haydn Trio Eisenstadt".into(), album: "Songs".into(), album_id: 1,
         disc: 1, number: id as u16, duration_ms: 1000, plays: 0, quality: crate::quality::Quality::default(), artwork_path: String::new(),
-        available: true, composer: "Joseph Haydn".into(), disc_subtitle: String::new(), work: work.into(), composer_target: String::new(), groups: None,
+        available: true, composer: "Joseph Haydn".into(), disc_subtitle: String::new(), work: work.into(), composer_target: String::new(), groups: None, explicit: None,
     };
     let header = |label: &str, work: bool| TrackEntry::Header(crate::GroupHeader { label: label.into(), work, ..Default::default() });
     let entries = vec![header("Disc 1", false), header("Scottish Songs", true), TrackEntry::Track(row(1, "Lizae Baillie", "Scottish Songs")),
