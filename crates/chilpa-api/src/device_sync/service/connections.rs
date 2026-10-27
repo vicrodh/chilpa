@@ -97,4 +97,22 @@ mod tests {
         service.align_destination();
         assert!(service.status.destination.is_empty(), "duplicate identities require an explicit storage choice");
     }
+    #[test]
+    fn a_detected_writable_card_can_review_relative_and_legacy_profiles() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut service = Service::new(directory.path().join("absent-library"), directory.path().join("profiles"));
+        let profile = "a".repeat(32);
+        service.catalog.profiles.push(Profile { id:profile.clone(), target_id:"b".repeat(32), name:"Card".into(), root:Root::Mtp { folder:"Chilpa".into() }, picks:vec![crate::device_sync::Pick::Playlist { id:"playlist".into(), name:"Evening".into(), key:"local:list".into() }], remove_unselected:false, revision:0 });
+        service.status.profile = profile.clone();
+        service.destinations = vec![destination("volume:card-reader", &profile)];
+        service.align_destination();
+        let can_review = |service: &Service| serde_json::from_str::<serde_json::Value>(&service.catalog_json("")).unwrap()["can_review"] == true;
+        assert!(can_review(&service), "a detected card does not use an MTP location/storage identifier");
+        service.catalog.profiles[0].root = Root::Mounted { path:directory.path().join("Chilpa") };
+        assert!(can_review(&service), "a legacy profile can follow its card into a reader");
+        service.destinations[0].writable = false;
+        assert!(!can_review(&service), "read-only cards cannot start a review");
+        service.destinations.clear();
+        assert!(!can_review(&service), "a disconnected card cannot start a review");
+    }
 }
