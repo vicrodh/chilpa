@@ -456,7 +456,7 @@ impl Chilpa {
             let mut card = self.entry_json(source, entry, sounds(source, &entry.id));
             card["source"] = source.clone().into();
             card["name"] = self.source_name(source).into();
-            card["device_sync"] = self.device_episode(source, &entry.id).is_some().into();
+            card["device_sync"] = self.device_episode_audio(source, entry).is_some().into();
             card["parent"] = self.episode_parent(source, &entry.id).map(|p| serde_json::json!({"id":p.id,"title":p.title,"source":source})).unwrap_or_default();
             card["description"] = entry.description.clone().into();
             card["metadata_loading"] = s.metadata_loading.into();

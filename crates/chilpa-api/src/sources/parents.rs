@@ -174,6 +174,7 @@ mod tests {
                 ("download_url".into(), "https://example.invalid/episode.mp3".into()), ("download_format".into(), "mp3".into())].into(),
             ..Default::default()
         });
+        assert!(app.device_episode_audio("fixture-spoken", &episode).is_some());
         let parent = app.episode_parent("fixture-spoken", &episode.id).unwrap();
         assert_eq!(parent.id, "opaque parent /?#");
         assert_eq!(parent.title, "My podcast");
@@ -250,16 +251,24 @@ mod tests {
 }
 
 impl crate::Chilpa {
+    /// I publish eligibility from the current metadata without building an export or reading parents.
+    pub(super) fn device_episode_audio<'a>(&'a self, source: &str, entry: &Entry) -> Option<(&'a str, &'a str)> {
+        if source != self.sources.current || self.sources.medium != "podcasts" || self.sources.music
+            || !entry.playable || entry.live || entry.kind != EntryKind::Item || entry.title.is_empty() || entry.title.len() > 1024 { return None; }
+        let metadata = &self.sources.presentation.get(&entry.id)?.metadata;
+        let url = metadata.get("download_url")?;
+        let format = metadata.get("download_format")?;
+        crate::device_sync::Episode::public_audio(url, format).then_some((url.as_str(), format.as_str()))
+    }
     pub fn device_episode(&self, source: &str, id: &str) -> Option<crate::device_sync::Episode> {
         use sha2::Digest;
-        if source != self.sources.current || self.sources.medium != "podcasts" || self.sources.music { return None; }
-        let (_, entry) = self.entry_by_id(id).filter(|(whose, entry)| whose == source && entry.playable && !entry.live && entry.kind == chilpa_plugin::messages::EntryKind::Item)?;
-        let metadata = &self.sources.presentation.get(id)?.metadata;
+        let (_, entry) = self.entry_by_id(id).filter(|(whose, _)| whose == source)?;
+        let (url, format) = self.device_episode_audio(source, &entry)?;
         let parent = self.episode_parent(source, id);
         let episode = crate::device_sync::Episode { id: format!("episode:{:x}", sha2::Sha256::digest(format!("{source}\0{id}"))),
             title: entry.title, show: parent.as_ref().map(|p| p.title.clone()).unwrap_or_else(|| chilpa_i18n::t("Podcasts")),
             publisher: parent.map(|p| p.subtitle).unwrap_or_default(),
-            url: metadata.get("download_url")?.clone(), format: metadata.get("download_format")?.clone() };
+            url: url.into(), format: format.into() };
         episode.valid().then_some(episode)
     }
 }

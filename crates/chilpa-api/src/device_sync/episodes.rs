@@ -29,9 +29,11 @@ impl Episode {
             && [&self.title, &self.show, &self.publisher]
                 .iter()
                 .all(|s| s.len() <= 1024)
-            && self.url.len() <= 8192
-            && chilpa_core::download::allowed(&self.url)
-            && ["mp3", "m4a", "aac", "ogg", "opus", "flac", "wav"].contains(&self.format.as_str())
+            && Self::public_audio(&self.url, &self.format)
+    }
+    pub(crate) fn public_audio(url: &str, format: &str) -> bool {
+        url.len() <= 8192 && chilpa_core::download::allowed(url)
+            && ["mp3", "m4a", "aac", "ogg", "opus", "flac", "wav"].contains(&format)
     }
     pub(super) fn row(self) -> OptionRow {
         let id = self.id.clone();
