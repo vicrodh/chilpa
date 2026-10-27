@@ -181,6 +181,6 @@ Item {
         interval: test.phase >= 21 && test.duration >= 1800000 ? 60000 : 300
         repeat: true
         running: !test.stopped
-        onTriggered: { try { test.advance() } catch(error) { test.stopped = true; console.error("SMOKE FAIL browser phase=" + test.phase + " " + error.message); Qt.exit(1) } }
+        onTriggered: { try { test.advance() } catch(error) { test.stopped = true; console.error("SMOKE FAIL browser phase=" + test.phase + " " + error.message + " status=" + DeviceSync.snapshot + " browser=" + JSON.stringify({source:test.document().source,level:test.document().level})); Qt.exit(1) } }
     }
 }

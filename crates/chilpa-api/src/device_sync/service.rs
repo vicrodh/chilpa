@@ -271,7 +271,7 @@ impl Service {
         self.idle()?;
         let previous = self.status.clone();
         let catalog = self.catalog.clone();
-        self.launch("discovering", move |_, _, cancel| {
+        self.launch("reconnecting", move |_, _, cancel| {
             let (destinations, error) = work::discover(&catalog, &cancel);
             Ok(Outcome::Connections(destinations, error, previous))
         })

@@ -23,7 +23,7 @@ Item {
         if (status.phase === lastPhase) return
         const previous = lastPhase
         lastPhase = status.phase || ""
-        if (previous === "browsing") return
+        if (previous === "browsing" || previous === "reconnecting") return
         if (["review", "transferring", "done"].includes(lastPhase)) { reviewing = true; recorded = false }
         else if (lastPhase === "idle") { reviewing = false; if (!music.source) recorded = false }
     }
