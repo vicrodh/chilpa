@@ -17,7 +17,7 @@ QtObject {
     readonly property var buffers: ({ a: [], b: [], peaksA: [], peaksB: [], flip: false })
     function receive() {
         if (!state.active) return
-        const source = state.source
+        const source = state.source || []
         if (state.mode !== 1 && Array.isArray(source)) {
             targetValues = source
             settling = true

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# ADR-004: ningún servicio de streaming se nombra en este repo.
-# Sin argumentos revisa los archivos rastreados; con --message <archivo> revisa un mensaje de commit.
+# ADR-004: provider names stay out of the core and commit messages.
+# The root README may describe products and plugin examples.
 set -euo pipefail
 root=$(git rev-parse --show-toplevel)
 list="$root/tools/lint/streaming-names.txt"
@@ -12,7 +12,7 @@ if [ "${1:-}" = "--message" ]; then
     fi
     exit 0
 fi
-hits=$(git -C "$root" grep -inwIE "$pattern" -- ':!tools/lint/streaming-names.txt' || true)
+hits=$(git -C "$root" grep -inwIE "$pattern" -- ':!tools/lint/streaming-names.txt' ':(top,exclude)README.md' || true)
 if [ -n "$hits" ]; then
     echo "$hits"
     echo "no-platform-names: hay servicios de streaming nombrados en el repo (ADR-004)" >&2
