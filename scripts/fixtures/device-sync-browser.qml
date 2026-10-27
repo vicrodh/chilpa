@@ -66,6 +66,7 @@ Item {
             check(status.phase === "review" && status.copies === 0 && status.unchanged === 3,"seed review changed files")
             token = status.plan
             named("deviceSections").activated(0)
+            DeviceSync.connectionsChanged()
             phase = 2
         } else if (phase === 2) {
             if (!openRow(selected)) return
@@ -89,6 +90,7 @@ Item {
             check(JSON.parse(DeviceSync.snapshot).plan === token,"browsing invalidated the preview")
             named("deviceSelectionSearch").text = "Missing record"
             DeviceSync.useTracks(JSON.stringify(ids))
+            DeviceSync.connectionsChanged()
             phase = 7
         } else if (phase === 7) {
             const option = catalog.options.find(row => row.id.startsWith("tracks:"))
