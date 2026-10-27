@@ -277,6 +277,138 @@ fn device_album_batches_keep_their_names_and_accumulate_without_duplicates() {
 }
 
 #[test]
+fn device_album_trips_keep_unsaved_edits_and_isolate_profiles() {
+    isolated("device_album_trips_keep_unsaved_edits_and_isolate_profiles", || {
+        let fixture = Fixture::new();
+        name_fixture_albums(&fixture);
+        let mut service = fixture.paired();
+        let first_profile = service.status().profile.clone();
+        let daily = service.options().iter().find(|r| r.name == "Daily").unwrap().id.clone();
+        service.toggle(&daily).unwrap();
+        for ids in ["[1]", "[2]", "[1]"] {
+            service.release_view();
+            assert!(service.options().is_empty());
+            service.stage_library_tracks(ids).unwrap();
+            service.open_view().unwrap();
+            wait(&mut service);
+        }
+        assert_eq!(service.options().iter().filter(|r| r.checked).count(), 2);
+        assert!(!service.options().iter().find(|r| r.id == daily).unwrap().checked);
+        let first = service.options().iter().find(|r| r.name == "First record").unwrap().id.clone();
+        service.toggle(&first).unwrap();
+        service.set_removals(true).unwrap();
+        service.release_view();
+        service.open_view().unwrap();
+        wait(&mut service);
+        assert!(!service.options().iter().find(|r| r.id == first).unwrap().checked);
+        assert!(service.status().remove_unselected);
+        let other_card = fixture.card.parent().unwrap().join("other-card");
+        std::fs::create_dir(&other_card).unwrap();
+        service.select_destination("mounted").unwrap();
+        service.add_profile("Other card", other_card.to_str().unwrap()).unwrap();
+        wait(&mut service);
+        let second_profile = service.status().profile.clone();
+        assert!(service.options().iter().all(|r| !r.checked));
+        assert!(!service.status().remove_unselected);
+        service.add_library_tracks(&[1]).unwrap();
+        service.release_view();
+        wait(&mut service);
+        assert!(service.options().is_empty(), "a late result must retain intent without reopening rows");
+        service.open_view().unwrap();
+        wait(&mut service);
+        assert_eq!(service.options().iter().filter(|r| r.checked).count(), 1);
+        service.select_profile(&first_profile).unwrap();
+        assert!(!service.options().iter().find(|r| r.id == first).unwrap().checked);
+        assert!(service.options().iter().any(|r| r.name == "Second record" && r.checked));
+        service.save_selection().unwrap();
+        wait(&mut service);
+        service.select_profile(&second_profile).unwrap();
+        service.select_profile(&first_profile).unwrap();
+        assert_eq!(service.options().iter().filter(|r| r.checked).count(), 1);
+        drop(service);
+        let reopened = fixture.service();
+        assert!(reopened.options().iter().any(|r| r.name == "Second record" && r.checked));
+        assert!(!reopened.options().iter().any(|r| r.name == "First record" && r.checked));
+        assert_eq!(find_files(&fixture.card, "flac"), [fixture.card.join("unmanaged.flac")], "staging never copies media");
+    });
+}
+
+#[test]
+fn rapid_album_trips_queue_each_request_without_replacing_a_pending_batch() {
+    isolated("rapid_album_trips_queue_each_request_without_replacing_a_pending_batch", || {
+        let fixture = Fixture::new();
+        name_fixture_albums(&fixture);
+        let mut service = fixture.paired();
+        service.release_view();
+        service.stage_library_tracks("[1]").unwrap();
+        service.stage_library_tracks("[2]").unwrap();
+        service.open_view().unwrap();
+        service.stage_library_tracks("[1]").unwrap();
+        wait(&mut service);
+        assert_eq!(service.options().iter().filter(|r| matches!(r.pick, Pick::Tracks { .. }) && r.checked).count(), 2);
+        service.release_view();
+        service.open_view().unwrap();
+        wait(&mut service);
+        assert_eq!(service.options().iter().filter(|r| matches!(r.pick, Pick::Tracks { .. }) && r.checked).count(), 2);
+    });
+}
+
+#[test]
+fn podcast_audio_stages_without_a_playlist_and_downloads_only_for_review() {
+    isolated("podcast_audio_stages_without_a_playlist_and_downloads_only_for_review", || {
+        use std::io::{Read, Write};
+        let fixture = Fixture::new();
+        let mut service = fixture.paired();
+        let daily = service.options().iter().find(|r| r.checked).unwrap().id.clone();
+        service.toggle(&daily).unwrap();
+        service.save_selection().unwrap();
+        wait(&mut service);
+        drop(service);
+        let mut service = Service::new(fixture.library_path.clone(), fixture.profiles.clone());
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let url = format!("http://{}/episode.mp3", listener.local_addr().unwrap());
+        let episode = chilpa_api::device_sync::Episode { id: "episode:fixture".into(), title: "My episode".into(), show: "My show".into(), publisher: "Publisher".into(), url, format: "mp3".into() };
+        service.stage_episode(episode.clone()).unwrap();
+        service.stage_episode(episode).unwrap();
+        assert_eq!(listener.accept().unwrap_err().kind(), std::io::ErrorKind::WouldBlock);
+        assert!(service.options().is_empty(), "a closed surface retains only bounded intent");
+        service.open_view().unwrap();
+        wait(&mut service);
+        let row = service.options().iter().find(|r| r.checked).unwrap();
+        assert_eq!(row.name, "My episode");
+        assert_eq!(row.description, "My show");
+        listener.set_nonblocking(false).unwrap();
+        let server = std::thread::spawn(move || {
+            for _ in 0..2 {
+                let (mut peer, _) = listener.accept().unwrap();
+                let mut request = [0u8; 2048];
+                let _ = peer.read(&mut request);
+                peer.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: audio/mpeg\r\nContent-Length: 7\r\nConnection: close\r\n\r\nepisode").unwrap();
+            }
+        });
+        service.preview(false).unwrap();
+        assert_eq!(service.status().phase, "downloading");
+        service.release_view();
+        wait(&mut service);
+        assert!(service.status().plan.is_empty());
+        assert!(service.options().is_empty());
+        assert!(find_files(&fixture.card, "mp3").is_empty());
+        service.open_view().unwrap();
+        wait(&mut service);
+        assert_eq!(service.options().iter().find(|r| r.checked).unwrap().description, "My show");
+        let token = preview(&mut service);
+        server.join().unwrap();
+        assert_eq!(service.status().copies, 1);
+        assert_eq!(service.status().tracks, 1);
+        apply(&mut service, &token, false);
+        assert_eq!(find_files(&fixture.card, "mp3").len(), 1);
+        assert_eq!(std::fs::read(&find_files(&fixture.card, "mp3")[0]).unwrap(), b"episode");
+        assert!(find_files(&fixture.card, "m3u8").is_empty());
+    });
+}
+
+#[test]
 fn device_legacy_selection_gets_readable_names_without_rewriting_its_profile() {
     isolated(
         "device_legacy_selection_gets_readable_names_without_rewriting_its_profile",

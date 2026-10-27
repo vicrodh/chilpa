@@ -381,6 +381,9 @@ msgstr "Álbumes ({})"
 msgid "Albums and tracks"
 msgstr "Álbumes y pistas"
 
+msgid "Albums from streaming services will not be synced."
+msgstr "Los álbumes de servicios de streaming no se sincronizarán."
+
 msgid "All"
 msgstr "Todo"
 
@@ -1751,6 +1754,9 @@ msgstr "Búsqueda de dispositivos"
 msgid "Device profiles exceed 1 MiB."
 msgstr "Los perfiles de dispositivos superan 1 MiB."
 
+msgid "Device selections exceed 512 edits or 1 MiB. Save a selection before adding more."
+msgstr "Las selecciones superan 512 cambios o 1 MiB. Guarda una selección antes de agregar más."
+
 msgid "Device sync"
 msgstr "Sincronización"
 
@@ -1925,6 +1931,9 @@ msgstr "Descargar pista"
 msgid "Downloaded"
 msgstr "Descargado"
 
+msgid "Downloading episodes…"
+msgstr "Descargando episodios…"
+
 msgid "Downloading update…"
 msgstr "Descargando actualización…"
 
@@ -2062,6 +2071,9 @@ msgstr "Escribe un número válido."
 
 msgid "Enter includes the first match · Shift+Enter excludes it"
 msgstr "Enter incluye la primera coincidencia · Shift+Enter la excluye"
+
+msgid "Episode download was cancelled."
+msgstr "Se canceló la descarga del episodio."
 
 msgid "Episode notes"
 msgstr "Notas del episodio"
@@ -4315,6 +4327,9 @@ msgstr "Calidad declarada por el plugin"
 msgid "Plugins"
 msgstr "Plugins"
 
+msgid "Podcasts"
+msgstr "Podcasts"
+
 msgid "Popular Tracks"
 msgstr "Pistas populares"
 
@@ -5588,6 +5603,9 @@ msgstr "Tomar la tarjeta del servidor de sonido"
 msgid "Target loudness"
 msgstr "Volumen objetivo"
 
+msgid "Temporary episode storage is unavailable."
+msgstr "El almacenamiento temporal para episodios no está disponible."
+
 msgid "Test"
 msgstr "Prueba"
 
@@ -5681,6 +5699,21 @@ msgstr "La vista de descargas no está disponible."
 msgid "The engine reports unchanged samples on this route."
 msgstr "El motor informa muestras sin cambios en esta ruta."
 
+msgid "The episode audio could not be downloaded."
+msgstr "No se pudo descargar el audio del episodio."
+
+msgid "The episode could not be saved temporarily."
+msgstr "No se pudo guardar el episodio temporalmente."
+
+msgid "The episode download is incomplete."
+msgstr "La descarga del episodio está incompleta."
+
+msgid "The episode download was interrupted."
+msgstr "La descarga del episodio se interrumpió."
+
+msgid "The episode exceeds the download limit."
+msgstr "El episodio supera el límite de descarga."
+
 msgid "The filter cannot be read: {}"
 msgstr "No se puede leer el filtro: {}"
 
@@ -5767,6 +5800,12 @@ msgstr "El plugin no respondió en 15 segundos. No se pudo comprobar el estado d
 
 msgid "The previous sample rate did not settle after the check."
 msgstr "La tasa de muestreo anterior no se estabilizó tras la comprobación."
+
+msgid "The publisher did not return an audio file."
+msgstr "El servidor del podcast no devolvió un archivo de audio."
+
+msgid "The publisher did not return the episode audio."
+msgstr "El servidor del podcast no devolvió el audio del episodio."
 
 msgid "The queues exceed the session limit of 100,000 tracks."
 msgstr "Las colas exceden el límite de 100,000 pistas por sesión."
@@ -5923,6 +5962,9 @@ msgstr "Esta salida directa no tiene control de volumen por hardware. Usa el DAC
 
 msgid "This entry is no longer at hand. Open it again from its source."
 msgstr "Esta entrada ya no está a la mano. Ábrela otra vez desde su fuente."
+
+msgid "This episode does not have a supported public audio file."
+msgstr "Este episodio no tiene un archivo de audio público compatible."
 
 msgid "This episode material could not be loaded."
 msgstr "No se pudo cargar el material de este episodio."

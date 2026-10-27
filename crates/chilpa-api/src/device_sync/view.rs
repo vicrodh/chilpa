@@ -8,7 +8,7 @@ impl Service {
         self.catalog_page_json(query, "all", 0)
     }
     pub fn catalog_page_json(&self, query: &str, kind: &str, page: usize) -> String {
-        let kind = match kind { "playlists" => "playlists", "queries" => "queries", "tracks" => "tracks", _ => "all" };
+        let kind = match kind { "playlists" => "playlists", "queries" => "queries", "tracks" => "tracks", "podcasts" => "podcasts", _ => "all" };
         let filter: String = query.chars().take(256).collect();
         let query = filter.to_lowercase();
         let options: Vec<_> = self
@@ -16,7 +16,7 @@ impl Service {
             .iter()
             .filter(|row| match (&row.pick, kind) {
                 (_, "all") | (super::Pick::Playlist { .. }, "playlists")
-                | (super::Pick::Query { .. }, "queries") | (super::Pick::Tracks { .. }, "tracks") => true,
+                | (super::Pick::Query { .. }, "queries") | (super::Pick::Tracks { .. }, "tracks") | (super::Pick::Episode { .. }, "podcasts") => true,
                 _ => false,
             })
             .filter(|row| {
@@ -70,6 +70,7 @@ impl Service {
             "saving" => i18n::mark("Saving selection…"),
             "selecting" => i18n::mark("Reading Library selection…"),
             "browsing" => i18n::mark("Loading music…"),
+            "downloading" => i18n::mark("Downloading episodes…"),
             "preparing" => i18n::mark("Reviewing changes…"),
             "transferring" => i18n::mark("Syncing music…"),
             "cancelling" => i18n::mark("Cancelling…"),

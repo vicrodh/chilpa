@@ -57,7 +57,6 @@ crates/chilpa-qt/qml/Patterns/QueuePanel.qml
 crates/chilpa-qt/qml/Patterns/RightPanel.qml
 crates/chilpa-qt/qml/Patterns/SearchBox.qml
 crates/chilpa-qt/qml/Patterns/SearchFlyout.qml
-crates/chilpa-qt/qml/Patterns/SelectionBar.qml
 crates/chilpa-qt/qml/Patterns/ServerSetupDialog.qml
 crates/chilpa-qt/qml/Patterns/Sidebar.qml
 crates/chilpa-qt/qml/Patterns/SystemControls.qml

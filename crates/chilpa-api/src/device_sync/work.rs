@@ -41,6 +41,7 @@ pub(crate) struct Ready {
     pub profile: Profile,
     pub destination: String,
     pub tracks: usize,
+    pub _episode_files: Option<tempfile::TempDir>,
 }
 
 fn transport(root: &Root, destination: &str, create: bool) -> Result<Box<dyn Transport>, UiError> {
@@ -185,11 +186,14 @@ pub(crate) fn prepare(
     recover: bool,
     cancel: &Cancellation,
 ) -> Result<Ready, UiError> {
-    let selection = if recover {
+    let mut selection = if recover {
         None
     } else {
         Some(selection::resolve(library, &profile.picks, cancel)?)
     };
+    let mut episode_files = if let Some((inputs, _)) = &mut selection {
+        super::episodes::resolve(&profile.picks, inputs, cancel)?
+    } else { None };
     let mut device = transport(&profile.root, &destination, false)?;
     let mut state = checked_state(store, &profile, device.as_mut(), cancel)?;
     if state.interrupted().map_err(UiError::from)? {
@@ -205,10 +209,11 @@ pub(crate) fn prepare(
         }
         chilpa_sync::recover(&mut state, device.as_mut(), cancel).map_err(UiError::from)?;
     }
-    let (inputs, playlists) = match selection {
+    let (mut inputs, playlists) = match selection {
         Some(value) => value,
         None => selection::resolve(library, &profile.picks, cancel)?,
     };
+    if recover { episode_files = super::episodes::resolve(&profile.picks, &mut inputs, cancel)?; }
     let plan = chilpa_sync::prepare_review(
         &state,
         device.as_mut(),
@@ -223,6 +228,7 @@ pub(crate) fn prepare(
         profile,
         destination,
         tracks: inputs.len(),
+        _episode_files: episode_files,
     })
 }
 pub(crate) fn apply(

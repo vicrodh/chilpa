@@ -8,30 +8,57 @@ fn path(source: &str) -> std::path::PathBuf {
     chilpa_dirs::cache().join("source-parents").join(format!("{:016x}.json", hash.finish()))
 }
 fn read(source: &str) -> BTreeMap<String, Entry> {
-    std::fs::read(path(source)).ok().and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or_default()
+    read_file(&path(source))
 }
 
-fn remember(file: &std::path::Path, parent: &Entry, entries: &[Entry]) {
-    let mut parents: BTreeMap<String, Entry> = std::fs::read(file).ok()
-        .and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or_default();
-    for entry in entries.iter().filter(|e| e.kind == EntryKind::Item && !e.live) {
-        parents.insert(entry.id.clone(), parent.clone());
+const MAX_PARENT_BYTES: u64 = 4 * 1024 * 1024;
+fn read_file(file: &std::path::Path) -> BTreeMap<String, Entry> {
+    use std::io::Read;
+    let Ok(file) = std::fs::File::open(file) else { return BTreeMap::new() };
+    let mut bytes = Vec::new();
+    if file.take(MAX_PARENT_BYTES + 1).read_to_end(&mut bytes).is_err() || bytes.len() as u64 > MAX_PARENT_BYTES { return BTreeMap::new(); }
+    serde_json::from_slice::<BTreeMap<String, Entry>>(&bytes).ok().filter(|rows| rows.len() <= 2048).unwrap_or_default()
+}
+fn remember(file: &std::path::Path, updates: BTreeMap<String, Entry>) {
+    if updates.is_empty() { return; }
+    let old = read_file(file);
+    let mut parents = BTreeMap::new();
+    let mut size = 2u64;
+    for (id, parent) in updates.into_iter().chain(old) {
+        if parents.contains_key(&id) || parents.len() >= 2048 { continue; }
+        let Ok(bytes) = serde_json::to_vec(&(&id, &parent)) else { continue };
+        let next = size.saturating_add(bytes.len() as u64);
+        if next > MAX_PARENT_BYTES { continue; }
+        size = next;
+        parents.insert(id, parent);
     }
+    let Ok(bytes) = serde_json::to_vec(&parents) else { return };
     let Some(directory) = file.parent() else { return };
     if std::fs::create_dir_all(directory).is_err() { return; }
     let Ok(mut temporary) = tempfile::NamedTempFile::new_in(directory) else { return };
-    if serde_json::to_writer(temporary.as_file_mut(), &parents).is_ok() { let _ = temporary.persist(file); }
+    use std::io::Write;
+    if temporary.write_all(&bytes).is_ok() { let _ = temporary.persist(file); }
 }
 
 impl Chilpa {
     pub(super) fn remember_episode_parents(&self, entries: &[Entry]) {
         if self.sources.medium != "podcasts" { return; }
-        let Some(parent) = self.sources.trail.last().and_then(|c| c.entry.as_ref()) else { return };
-        remember(&path(&self.sources.current), parent, entries);
+        let parent = self.sources.trail.last().and_then(|c| c.entry.as_ref());
+        let updates = entries.iter().filter(|entry| entry.kind == EntryKind::Item && !entry.live)
+            .filter_map(|entry| parent.cloned().or_else(|| self.metadata_episode_parent(&entry.id)).map(|parent| (entry.id.clone(), parent))).collect();
+        remember(&path(&self.sources.current), updates);
     }
 
+    fn metadata_episode_parent(&self, id: &str) -> Option<Entry> {
+        let metadata = &self.sources.presentation.get(id)?.metadata;
+        let id = metadata.get("parent_id")?.clone();
+        if id.is_empty() { return None; }
+        Some(Entry { id, title: metadata.get("parent_title").cloned().filter(|title| !title.is_empty()).unwrap_or_else(|| chilpa_i18n::t("Go to podcast")),
+            subtitle: metadata.get("parent_subtitle").cloned().unwrap_or_default(), image_url: metadata.get("parent_image").cloned(),
+            kind: EntryKind::Folder, ..Default::default() })
+    }
     pub(super) fn episode_parent(&self, source: &str, id: &str) -> Option<Entry> {
-        read(source).remove(id)
+        read(source).remove(id).or_else(|| (source == self.sources.current && self.sources.medium == "podcasts").then(|| self.metadata_episode_parent(id)).flatten())
     }
 
     pub(super) fn open_episode_parent(&mut self) {
@@ -136,6 +163,48 @@ mod tests {
     }
 
     #[test]
+    fn explicit_episode_metadata_keeps_parent_navigation_and_excludes_music_providers() {
+        let mut app = Chilpa::new();
+        app.sources.current = "fixture-spoken".into();
+        app.sources.medium = "podcasts".into();
+        let episode = Entry { id: "opaque episode /?#".into(), title: "Episode".into(), playable: true, kind: EntryKind::Item, ..Default::default() };
+        app.sources.entries = vec![episode.clone()];
+        app.sources.presentation.insert(episode.id.clone(), chilpa_plugin::presentation::Presentation {
+            metadata: [("parent_id".into(), "opaque parent /?#".into()), ("parent_title".into(), "My podcast".into()),
+                ("download_url".into(), "https://example.invalid/episode.mp3".into()), ("download_format".into(), "mp3".into())].into(),
+            ..Default::default()
+        });
+        let parent = app.episode_parent("fixture-spoken", &episode.id).unwrap();
+        assert_eq!(parent.id, "opaque parent /?#");
+        assert_eq!(parent.title, "My podcast");
+        let selected = app.device_episode("fixture-spoken", &episode.id).unwrap();
+        assert_eq!(selected.show, "My podcast");
+        assert!(app.device_episode("another-source", &episode.id).is_none());
+        app.sources.music = true;
+        assert!(app.device_episode("fixture-spoken", &episode.id).is_none());
+        app.sources.music = false;
+        app.sources.medium.clear();
+        assert!(app.device_episode("fixture-spoken", &episode.id).is_none());
+        app.sources.medium = "podcasts".into();
+        app.sources.presentation.get_mut(&episode.id).unwrap().metadata.insert("download_url".into(), "https://user:secret@example.invalid/a.mp3".into());
+        assert!(app.device_episode("fixture-spoken", &episode.id).is_none());
+    }
+
+    #[test]
+    fn parent_records_are_bounded_without_discarding_new_episode_references() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = directory.path().join("parents.json");
+        let parent = Entry { id: "show".into(), title: "Podcast".into(), ..Default::default() };
+        let updates = (0..3000).map(|id| (format!("episode-{id:04}"), parent.clone())).collect();
+        remember(&file, updates);
+        let saved = read_file(&file);
+        assert_eq!(saved.len(), 2048);
+        assert!(std::fs::metadata(&file).unwrap().len() <= MAX_PARENT_BYTES);
+        remember(&file, [("new-episode".into(), parent.clone())].into());
+        assert_eq!(read_file(&file)["new-episode"], parent);
+    }
+
+    #[test]
     fn planned_music_routes_keep_their_types_without_preparing_a_media_parent() {
         use crate::navigation::Screen;
         let app = Chilpa::new();
@@ -170,12 +239,27 @@ mod tests {
         let file = root.path().join("parents.json");
         let show = Entry { id: "show ?/#".into(), title: "Podcast".into(), kind: EntryKind::Folder, ..Default::default() };
         let episode = Entry { id: "episode:opaque #/?".into(), kind: EntryKind::Item, ..Default::default() };
-        remember(&file, &show, &[episode.clone()]);
+        remember(&file, [(episode.id.clone(), show.clone())].into());
         let other = Entry { id: "another".into(), title: "Another show".into(), ..show.clone() };
-        remember(&file, &other, &[Entry { id: "second".into(), ..episode.clone() }]);
+        remember(&file, [("second".into(), other.clone())].into());
         let saved: BTreeMap<String, Entry> = serde_json::from_slice(&std::fs::read(file).unwrap()).unwrap();
         assert_eq!(saved[&episode.id], show);
         assert_eq!(saved["second"], other);
         assert_ne!(path("one"), path("two"), "sources cannot share episode identity");
+    }
+}
+
+impl crate::Chilpa {
+    pub fn device_episode(&self, source: &str, id: &str) -> Option<crate::device_sync::Episode> {
+        use sha2::Digest;
+        if source != self.sources.current || self.sources.medium != "podcasts" || self.sources.music { return None; }
+        let (_, entry) = self.entry_by_id(id).filter(|(whose, entry)| whose == source && entry.playable && !entry.live && entry.kind == chilpa_plugin::messages::EntryKind::Item)?;
+        let metadata = &self.sources.presentation.get(id)?.metadata;
+        let parent = self.episode_parent(source, id);
+        let episode = crate::device_sync::Episode { id: format!("episode:{:x}", sha2::Sha256::digest(format!("{source}\0{id}"))),
+            title: entry.title, show: parent.as_ref().map(|p| p.title.clone()).unwrap_or_else(|| chilpa_i18n::t("Podcasts")),
+            publisher: parent.map(|p| p.subtitle).unwrap_or_default(),
+            url: metadata.get("download_url")?.clone(), format: metadata.get("download_format")?.clone() };
+        episode.valid().then_some(episode)
     }
 }

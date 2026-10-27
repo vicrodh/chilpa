@@ -28,6 +28,7 @@ pub enum Pick {
         name: String,
         expression: String,
     },
+    Episode { id: String, name: String, episode: super::Episode },
     Tracks {
         id: String,
         name: String,
@@ -37,12 +38,12 @@ pub enum Pick {
 impl Pick {
     pub fn id(&self) -> &str {
         match self {
-            Self::Playlist { id, .. } | Self::Query { id, .. } | Self::Tracks { id, .. } => id,
+            Self::Playlist { id, .. } | Self::Query { id, .. } | Self::Tracks { id, .. } | Self::Episode { id, .. } => id,
         }
     }
     pub fn name(&self) -> &str {
         match self {
-            Self::Playlist { name, .. } | Self::Query { name, .. } | Self::Tracks { name, .. } => {
+            Self::Playlist { name, .. } | Self::Query { name, .. } | Self::Tracks { name, .. } | Self::Episode { name, .. } => {
                 name
             }
         }
@@ -104,6 +105,7 @@ impl Catalog {
                     return Err(damaged());
                 }
                 match pick {
+                    Pick::Episode { episode, .. } if !episode.valid() => return Err(damaged()),
                     Pick::Query { expression, .. } => {
                         if expression.len() > 16 * 1024 {
                             return Err(damaged());

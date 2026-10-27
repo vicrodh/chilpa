@@ -17,6 +17,7 @@ pub(super) type Labels = HashMap<(String, String), (String, String)>;
 
 pub(super) fn ids(library: &Library, pick: &Pick) -> Result<Vec<i64>, UiError> {
     let result = match pick {
+        Pick::Episode { .. } => Ok(Vec::new()),
         Pick::Playlist { key, .. } => library.export_playlist(key).map(|(_, ids)| ids),
         Pick::Tracks { keys, .. } => library.export_track_ids(keys),
         Pick::Query { expression, .. } => {
@@ -54,6 +55,7 @@ pub(super) fn tracks(
     cancel: &Cancellation,
 ) -> Result<Vec<ExportTrack>, UiError> {
     cancel.check().map_err(UiError::from)?;
+    if let Pick::Episode { episode, .. } = pick { return Ok(vec![episode.track()]); }
     let library = Library::open_read_only(path).map_err(|e| {
         failure(
             chilpa_i18n::mark("I could not read this Library selection. Try again."),

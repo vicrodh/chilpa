@@ -68,7 +68,7 @@ CascadingMenu {
         case "later": AlbumActions.playLater(albumId, title); break
         case "queue": AlbumActions.queue(albumId); break
         case "pick": picker.trackIdsJson = AlbumActions.trackIdsJson(albumId); picker.show(x, y); break
-        case "sync": DeviceSync.useTracks(AlbumActions.trackIdsJson(albumId)); Navigation.go("deviceSync", 0); break
+        case "sync": if (DeviceSync.useTracks(AlbumActions.deviceTracksJson(albumId))) Navigation.go("deviceSync", 0); break
         case "open": Navigation.go("album", albumId); break
         case "tab": Navigation.open("album", albumId); break
         case "quick": menu.quick(entry.at); break

@@ -37,7 +37,9 @@ pub mod qobject {
         #[qinvokable]
         fn toggle(self: Pin<&mut DeviceSync>, id: &QString);
         #[qinvokable]
-        fn use_tracks(self: Pin<&mut DeviceSync>, ids: &QString);
+        fn use_tracks(self: Pin<&mut DeviceSync>, ids: &QString) -> bool;
+        #[qinvokable]
+        fn use_episode(self: Pin<&mut DeviceSync>, source: &QString, id: &QString) -> bool;
         #[qinvokable]
         fn filter(self: Pin<&mut DeviceSync>, text: &QString);
         #[qinvokable]
@@ -213,7 +215,7 @@ impl qobject::DeviceSync {
     pub fn toggle(self: Pin<&mut Self>, id: &QString) {
         self.run(|s| s.toggle(&id.to_string()));
     }
-    pub fn use_tracks(mut self: Pin<&mut Self>, ids: &QString) {
+    pub fn use_tracks(mut self: Pin<&mut Self>, ids: &QString) -> bool {
         self.as_mut().rust_mut().filter.clear();
         self.as_mut().rust_mut().selection_kind = "tracks".into();
         self.as_mut().rust_mut().selection_page = 0;
@@ -227,7 +229,19 @@ impl qobject::DeviceSync {
             }
             Ok(())
         });
-        if staged { self.selection_staged(); }
+        if staged { self.as_mut().selection_staged(); }
+        staged
+    }
+    pub fn use_episode(mut self: Pin<&mut Self>, source: &QString, id: &QString) -> bool {
+        let episode = chilpa_qt_kit::app::with(|api| api.device_episode(&source.to_string(), &id.to_string()));
+        let Some(episode) = episode else { return false };
+        self.as_mut().rust_mut().filter.clear();
+        self.as_mut().rust_mut().selection_kind = "podcasts".into();
+        self.as_mut().rust_mut().selection_page = 0;
+        let mut staged = false;
+        self.as_mut().run(|service| { service.stage_episode(episode)?; staged = true; Ok(()) });
+        if staged { self.as_mut().selection_staged(); }
+        staged
     }
     pub fn filter(mut self: Pin<&mut Self>, text: &QString) {
         if self.rust().viewers == 0 { return; }
@@ -238,7 +252,7 @@ impl qobject::DeviceSync {
     pub fn selection_kind(mut self: Pin<&mut Self>, kind: &QString) {
         if self.rust().viewers == 0 { return; }
         self.as_mut().rust_mut().selection_kind = match kind.to_string().as_str() {
-            "playlists" => "playlists", "queries" => "queries", "tracks" => "tracks", _ => "all",
+            "playlists" => "playlists", "queries" => "queries", "tracks" => "tracks", "podcasts" => "podcasts", _ => "all",
         }.into();
         self.as_mut().rust_mut().selection_page = 0;
         self.publish(true);

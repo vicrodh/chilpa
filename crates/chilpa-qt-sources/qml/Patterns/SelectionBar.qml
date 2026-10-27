@@ -2,9 +2,10 @@ import QtQuick
 import QtQuick.Effects
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.devices
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import "../Components"
+import "qrc:/qt/qml/app/chilpa/qml/Components"
 
 // What can be done with the records selected (design/03 SelectionBar):
 // how many, play, queue, play next, add to a playlist, and the way out. It
@@ -88,6 +89,13 @@ Item {
                 picker.show(add.x + row.x, 0)
                 picker.y = -picker.height - Metrics.gap8
             }
+        }
+        IconButton {
+            objectName: "albumSelectionDevice"
+            glyph: Icons.deviceMobile
+            enabled: AlbumActions.deviceAvailable(0, AlbumActions.rev)
+            tip: enabled ? I18n.tr("Sync to device…", I18n.rev) : I18n.tr("Albums from streaming services will not be synced.", I18n.rev)
+            onClicked: { if (DeviceSync.useTracks(AlbumActions.deviceTracksJson(0))) Navigation.go("deviceSync", 0) }
         }
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter

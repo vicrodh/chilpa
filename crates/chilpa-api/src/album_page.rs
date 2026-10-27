@@ -138,3 +138,8 @@ pub fn ordered_entries(entries: Vec<TrackEntry>, order: &str, ascending: bool) -
 
 #[cfg(test)]
 mod tests;
+
+/// I apply an album action to its selection when the named album belongs to it.
+pub fn action_targets(id: i64, selected: &[i64]) -> Vec<i64> {
+    if id == 0 || selected.contains(&id) { selected.to_vec() } else { vec![id] }
+}

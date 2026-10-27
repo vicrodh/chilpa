@@ -169,3 +169,28 @@ fn a_module_missing_a_required_export_does_not_load() {
     let refused = host.load(Manifest::parse(MANIFEST).unwrap(), &bare);
     assert!(matches!(refused, Err(PluginError::MissingExport(_))));
 }
+
+#[test]
+#[ignore = "I require an explicitly supplied media package and recorded directory reply."]
+fn an_external_media_package_keeps_parent_and_audio_metadata_through_the_wasm_host() {
+    let directory = std::path::PathBuf::from(std::env::var_os("CHILPA_MEDIA_PACKAGE").expect("media package path"));
+    let parent = std::env::var("CHILPA_MEDIA_PARENT").expect("opaque parent reference");
+    let recorded = std::fs::read_to_string(std::env::var_os("CHILPA_MEDIA_REPLY").expect("recorded reply path")).unwrap();
+    let manifest = Manifest::parse(&std::fs::read_to_string(directory.join("manifest.json")).unwrap()).unwrap();
+    let wasm = std::fs::read(directory.join("plugin.wasm")).unwrap();
+    let host = Host::new().unwrap();
+    let plugin = host.load(manifest, &wasm).unwrap();
+    let notes = TestHost::new();
+    notes.prepare(|notes| notes.http_reply = serde_json::to_vec(&serde_json::json!({"status":200,"body":recorded})).unwrap());
+    let services: Services = Arc::new(Mutex::new(notes));
+    let document: chilpa_plugin::presentation::SourceDocument = ask(&host, &plugin, &services, op::BROWSE, &Browse::at(&parent)).unwrap();
+    let document = document.clean(None).unwrap();
+    assert_eq!(document.medium, "podcasts");
+    let episode = document.listing.entries.iter().find(|entry| entry.kind == EntryKind::Item && entry.playable).expect("playable episode");
+    let metadata = &document.presentation[&episode.id].metadata;
+    assert_eq!(metadata["parent_id"], parent);
+    assert!(!metadata["download_format"].is_empty());
+    let stream: Stream = ask(&host, &plugin, &services, op::RESOLVER, &Resolve::new(&episode.id)).unwrap();
+    assert!(stream.usable());
+    assert_eq!(stream.url, metadata["download_url"]);
+}
