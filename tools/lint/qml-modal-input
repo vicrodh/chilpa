@@ -2,9 +2,10 @@
 """Keep popup input, transitions and dismissal inside the active layer."""
 import re
 import sys
+from pathlib import Path
 
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
-from qmllib import code_only, files, rel  # noqa: E402
+from qmllib import KIT, code_only, files, rel, resolve_import, without_comments  # noqa: E402
 
 
 def surfaces(code):
@@ -34,9 +35,20 @@ def violations(source):
     return errors
 
 
+def import_violations(source, path):
+    available = {""} if path.parent.resolve() == (KIT / "Primitives").resolve() else set()
+    for target, alias in re.findall(r'^\s*import\s+"([^"]+)"(?:\s+as\s+(\w+))?', without_comments(source), re.MULTILINE):
+        if resolve_import(path, target) == (KIT, Path("Primitives")):
+            available.add(alias)
+    code = code_only(source)
+    return [(code.count("\n", 0, match.start()) + 1, "PopupInput needs the kit Primitives import in its own namespace")
+            for match in re.finditer(r"(?<![\w.])(?:(\w+)\.)?PopupInput\s*\{", code)
+            if (match.group(1) or "") not in available]
+
+
 def main():
     errors = [f"{rel(path)}:{line}: {message}" for path in files()
-              for line, message in violations(path.read_text())]
+              for line, message in violations(path.read_text()) + import_violations(path.read_text(), path)]
     if errors:
         print("\n".join(errors), file=sys.stderr)
         sys.exit(1)

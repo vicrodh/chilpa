@@ -5,6 +5,7 @@ import app.chilpa
 import app.chilpa.kit
 import app.chilpa.immersive
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives" as Kit
 import "../Primitives"
 import "../Theme"
 
@@ -195,7 +196,7 @@ Item {
         // with the bar, or it would outlive an Escape (the owner, 2026-10-08).
         Popup {
             id: exitMenu
-            PopupInput { surface: exitMenu }
+            Kit.PopupInput { surface: exitMenu }
             objectName: "immersiveExitMenu"
             parent: more
             x: more.width - width
