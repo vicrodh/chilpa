@@ -110,6 +110,8 @@ mod tests {
         assert!(can_review(&service), "a detected card does not use an MTP location/storage identifier");
         service.catalog.profiles[0].root = Root::Mounted { path:directory.path().join("Chilpa") };
         assert!(can_review(&service), "a legacy profile can follow its card into a reader");
+        service.catalog.profiles[0].picks.clear();
+        assert!(can_review(&service), "an empty saved selection can retire previously managed files");
         service.destinations[0].writable = false;
         assert!(!can_review(&service), "read-only cards cannot start a review");
         service.destinations.clear();

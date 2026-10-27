@@ -885,6 +885,12 @@ fn retiring_the_last_playlist_keeps_music_and_refreshes_an_open_history() {
         assert_eq!((service.status().copies, service.status().removals), (0, 1));
         assert!(!service.status().remove_unselected, "music pruning stays off");
         assert!(service.apply(&token, false).is_err(), "playlist removal still needs approval");
+        service.release_view();
+        service.open_view().unwrap(); wait(&mut service);
+        let document: serde_json::Value = serde_json::from_str(&service.catalog_json("")).unwrap();
+        assert_eq!(document["can_review"], true, "I can retry a saved empty selection after reopening");
+        let token = preview(&mut service);
+        assert_eq!(service.status().removals, 1);
         service.browse("recorded").unwrap(); wait(&mut service);
         service.browser_view("playlists").unwrap();
         let old: serde_json::Value = serde_json::from_str(&service.browser_json()).unwrap();
@@ -901,6 +907,14 @@ fn retiring_the_last_playlist_keeps_music_and_refreshes_an_open_history() {
         service.browser_view("tracks").unwrap();
         let fresh: serde_json::Value = serde_json::from_str(&service.browser_json()).unwrap();
         assert_eq!(fresh["total"], 2, "retired playlists do not delete retained media");
+        service.set_removals(true).unwrap();
+        let document: serde_json::Value = serde_json::from_str(&service.catalog_json("")).unwrap();
+        assert_eq!(document["can_review"], true, "I can prune retained music without adding a selection");
+        let token = preview(&mut service);
+        assert_eq!(service.status().removals, 2);
+        apply(&mut service, &token, true);
+        assert!(find_files(&fixture.card.join("Music"), "flac").is_empty());
+        assert_eq!(std::fs::read(fixture.card.join("unmanaged.flac")).unwrap(), b"foreign file");
     });
 }
 
