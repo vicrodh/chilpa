@@ -1199,6 +1199,9 @@ msgstr ""
 msgid "Choose queues and arrange their order. Repeated tracks are kept."
 msgstr ""
 
+msgid "Choose storage"
+msgstr ""
+
 msgid "Choose the connected player and its storage first."
 msgstr "Choose the connected player and its storage first."
 
@@ -1206,6 +1209,9 @@ msgid "Choose the playback mixer element that belongs to this output. Chilpa ver
 msgstr ""
 
 msgid "Choose the receiver in Play on to connect."
+msgstr ""
+
+msgid "Choose the storage paired with this profile."
 msgstr ""
 
 msgid "Clear"
@@ -5864,6 +5870,9 @@ msgstr ""
 msgid "The saved storage folder is unavailable. Reconnect its original memory."
 msgstr "The saved storage folder is unavailable. Reconnect its original memory."
 
+msgid "The saved storage is not connected."
+msgstr ""
+
 msgid "The scan could not start: {}"
 msgstr "The scan could not start: {}"
 
@@ -6068,8 +6077,14 @@ msgstr ""
 msgid "This source's folders are read-only. Choose a local folder to organize its playlists in Chilpa."
 msgstr ""
 
+msgid "This storage belongs to another saved profile."
+msgstr ""
+
 msgid "This storage does not match the saved profile. Choose its original memory or create a new profile."
 msgstr "This storage does not match the saved profile. Choose its original memory or create a new profile."
+
+msgid "This storage is read-only."
+msgstr ""
 
 msgid "This track has no album to open"
 msgstr ""

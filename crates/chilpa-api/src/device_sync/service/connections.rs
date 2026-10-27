@@ -1,6 +1,20 @@
 use super::{Root, Service};
 
 impl Service {
+    pub(in crate::device_sync) fn selected_storage_matches(&self) -> bool {
+        self.profile().is_some_and(|profile| self.destinations.iter().any(|destination|
+            destination.id == self.status.destination && destination.writable && destination.profiles.contains(&profile.id)))
+    }
+    pub(in crate::device_sync) fn storage_notice(&self) -> String {
+        let Some(profile) = self.profile() else { return String::new() };
+        if self.selected_storage_matches() { return String::new(); }
+        match self.destinations.iter().find(|destination| destination.id == self.status.destination) {
+            None => chilpa_i18n::t("The saved storage is not connected."),
+            Some(destination) if destination.profiles.contains(&profile.id) => chilpa_i18n::t("This storage is read-only."),
+            Some(destination) if !destination.profiles.is_empty() => chilpa_i18n::t("This storage belongs to another saved profile."),
+            Some(_) => chilpa_i18n::t("Choose the storage paired with this profile."),
+        }
+    }
     pub(super) fn align_destination(&mut self) {
         let Some(profile) = self.profile() else { return };
         let matches: Vec<_> = self.destinations.iter().filter(|d| d.writable && d.profiles.contains(&profile.id)).collect();
@@ -25,6 +39,56 @@ mod tests {
         assert!(sender.send(Ok(outcome)).is_ok());
         service.poll();
     }
+    #[test]
+    fn mtp_reader_and_restart_keep_distinct_profiles_and_wait_for_the_matching_storage() {
+        let directory = tempfile::tempdir().unwrap();
+        let store = crate::device_sync::Store { directory:directory.path().join("profiles") };
+        let profiles: Vec<_> = [("a", "b", "Player"), ("c", "d", "Reader")].into_iter().map(|(id, target, name)| Profile {
+            id:id.repeat(32), target_id:target.repeat(32), name:name.into(), root:Root::Mtp { folder:"Chilpa".into() },
+            picks:vec![], remove_unselected:true, revision:0,
+        }).collect();
+        store.update(|catalog| { catalog.profiles = profiles.clone(); Ok(()) }).unwrap();
+        let mut service = Service::new(directory.path().join("absent-library"), store.directory.clone());
+        service.catalog.profiles = profiles.clone();
+        service.status.profile = profiles[0].id.clone();
+        let reader = destination("volume:reader", &profiles[1].id);
+        service.destinations = vec![destination("usb-old/2", &profiles[0].id), reader.clone()];
+        service.align_options();
+        assert_eq!(service.status.destination, "usb-old/2");
+        assert!(service.selected_storage_matches());
+        service.select_profile(&profiles[1].id).unwrap();
+        assert_eq!(service.status.destination, "volume:reader");
+        service.select_profile(&profiles[0].id).unwrap();
+        let previous = service.status.clone();
+        finish(&mut service, super::super::Outcome::Connections(vec![reader.clone()], None, previous));
+        assert_eq!(service.status.profile, profiles[0].id);
+        assert!(service.status.destination.is_empty(), "the reader cannot replace an absent MTP player");
+        assert!(!service.selected_storage_matches());
+        assert!(!service.storage_notice().is_empty());
+        service.select_destination("volume:reader").unwrap();
+        let view: serde_json::Value = serde_json::from_str(&service.catalog_json("")).unwrap();
+        assert_eq!(view["can_review"], false, "a writable card belonging to another profile cannot be reviewed");
+        assert!(!view["storage_notice"].as_str().unwrap().is_empty());
+        drop(service);
+        let mut reopened = Service::new(directory.path().join("absent-library"), store.directory.clone());
+        reopened.load().unwrap();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while reopened.status.busy {
+            assert!(std::time::Instant::now() < deadline);
+            reopened.poll();
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        assert!(reopened.status.error.is_none());
+        assert_eq!(reopened.status.profile, profiles[0].id);
+        assert!(reopened.status.destination.is_empty());
+        let previous = reopened.status.clone();
+        finish(&mut reopened, super::super::Outcome::Connections(vec![reader, destination("usb-new/7", &profiles[0].id)], None, previous));
+        assert_eq!(reopened.status.destination, "usb-new/7");
+        assert!(reopened.selected_storage_matches());
+        assert!(reopened.storage_notice().is_empty());
+        assert_eq!(store.read().unwrap().profiles, profiles, "reconnection never rewrites stored target identities");
+    }
+
     #[test]
     fn unchanged_connections_preserve_a_manual_choice_preview_and_recovery_notice() {
         let directory = tempfile::tempdir().unwrap();

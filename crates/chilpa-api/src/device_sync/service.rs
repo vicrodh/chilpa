@@ -293,9 +293,10 @@ impl Service {
                 Vec::new()
             };
             let labels = library::labels(&library, &catalog, &cancel)?;
+            let destination = work::mounted_for(&catalog);
             Ok(Outcome::Refreshed(
                 catalog,
-                vec![work::mounted()],
+                vec![destination],
                 options,
                 labels,
                 None,

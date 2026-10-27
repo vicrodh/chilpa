@@ -60,6 +60,12 @@ pub(crate) fn discover(catalog: &Catalog, cancel: &Cancellation) -> (Vec<Destina
             _ => (),
         }
     }
+    rows.push(mounted_for(catalog));
+    (rows, error)
+}
+
+/// I validate fixed mounted roots without opening USB or acquiring a writable lease.
+pub(crate) fn mounted_for(catalog: &Catalog) -> Destination {
     let mut manual = mounted();
     for profile in &catalog.profiles {
         if let Root::Mounted { path } = &profile.root {
@@ -68,6 +74,5 @@ pub(crate) fn discover(catalog: &Catalog, cancel: &Cancellation) -> (Vec<Destina
             }
         }
     }
-    rows.push(manual);
-    (rows, error)
+    manual
 }

@@ -8,6 +8,7 @@ Column {
     id: head
     property var document: ({})
     property var status: ({})
+    property bool showStorageNotice: true
     signal profileAsked(string id)
     signal destinationAsked(string id)
     signal refreshAsked()
@@ -64,6 +65,7 @@ Column {
                 details: head.document.destination_details || []
                 enabledOptions: head.document.destination_enabled || []
                 value: head.status.destination || ""
+                placeholder: I18n.tr("Choose storage", I18n.rev)
                 enabled: !head.status.busy
                 onPicked: value => head.destinationAsked(value)
             }
@@ -77,6 +79,16 @@ Column {
         font.pointSize: Type.small
         color: Theme.color.textSecondary
         elide: Text.ElideMiddle
+    }
+    Text {
+        objectName: "deviceStorageNotice"
+        width: parent.width
+        visible: head.showStorageNotice && !head.status.error && text !== ""
+        text: head.document.storage_notice || ""
+        textFormat: Text.PlainText
+        wrapMode: Text.WordWrap
+        color: Theme.color.textSecondary
+        font.pointSize: Type.small
     }
     CutTextTips { watching: head }
 }

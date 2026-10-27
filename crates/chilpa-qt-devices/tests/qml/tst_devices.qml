@@ -64,6 +64,23 @@ TestCase {
         verify(watcher.active)
         compare(child("deviceProgressPoll").running, false)
     }
+    function test_missing_saved_player_does_not_offer_the_other_profile_card_as_a_review() {
+        DeviceSync.setStatus({destination:"",error:null})
+        DeviceSync.data = Object.assign({},DeviceSync.data,{destination_names:["Reader · Memory card"],destination_values:["volume:reader"],destination_enabled:[true],can_review:false,storage_notice:"The saved storage is not connected."})
+        wait(20)
+        const selector = child("deviceDestination")
+        compare(selector.current,-1)
+        compare(selector.placeholder,"Choose storage")
+        verify(child("deviceStorageNotice").visible)
+        compare(child("devicePreview").enabled,false)
+        compare(DeviceSync.lastAction,[])
+        DeviceSync.setStatus({destination:"new-usb/7"})
+        DeviceSync.data = Object.assign({},DeviceSync.data,{destination_names:["Player · SD"],destination_values:["new-usb/7"],can_review:true,storage_notice:""})
+        wait(20)
+        compare(selector.current,0)
+        verify(!child("deviceStorageNotice").visible)
+        verify(child("devicePreview").enabled)
+    }
     function test_detected_card_uses_the_relative_folder_without_a_folder_dialog() {
         DeviceSync.setStatus({destination:"volume:card-fixture"})
         page.creating = true

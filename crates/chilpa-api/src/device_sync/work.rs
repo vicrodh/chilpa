@@ -1,7 +1,7 @@
 //! I open device sessions only inside one requested background job.
 mod playlist;
 mod discovery;
-pub(crate) use discovery::{discover, mounted};
+pub(crate) use discovery::{discover, mounted_for};
 pub(crate) use playlist::read_playlist;
 
 use super::{
