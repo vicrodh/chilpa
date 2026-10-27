@@ -25,32 +25,35 @@
 
 # Chilpa
 
-A native music player for local libraries and self-hosted servers, extended
-through optional plugins. The audio engine does not depend on Qt, and every
-source-specific integration lives in its own plugin.
+Chilpa is a local media player focused on HiFi and BitPerfect audio in a simple way, with a modern look and an architecture designed to be scalable from the start. It is platform-agnostic but compatible with any platform. It is designed to manage your music library, regardless of the source or size, and is built to grow over time.
 
 I took the name **Chilpa** from *chilpatl*, a Classical Nahuatl word for a
 **red wasp or hornet** (*avispa roja / avispón*).
+
+_Cool, but just take me to the download page_
+Sure, here is: [Releases](https://github.com/vicrodh/chilpa/releases)
 
 ## Features
 
 - Local music libraries, album editions, CDs and supported disc images.
 - Multiple queues, playlists, search and source-aware library browsing.
 - **Refine**: narrow the library with conditions on artist, genre, year,
-  composer, label, rating, quality and more.
+  composer, label, rating, quality, source, etc. Save queries, load queries, play with the library, it's yours. 
 - **Listening stats**, computed on your computer and never sent anywhere:
   what you played today, this week, this month or in any period you pick,
   with charts of your top artists, albums, tracks and genres, decades and a
   listening clock, and export to CSV or a PNG image.
+- **Self-Hosted-Aware** If you already have a self-hosted music solution, Chilpa doesn't replace it—it extends and complements it. Bring your Jellyfin, Subsonic, Plex, NAS, SMB, etc., server. 
 - Audio output that reports its actual format and processing state.
 - Synchronized lyrics, translations and immersive views that react to audio.
 - **Plugins** add sources and features: radio, podcasts, DSP presets and a
   graphic EQ, playlist import and local mood analysis, from the official
   catalog, the third-party catalog or any other. See [Plugins](#plugins).
+- **DAP Sync** Do you have a DAP? Want to sync it like iTunes? Or just transfer music to your microSD card, but keep track of what you copy and delete? Well, we've got you covered. Create profiles for each device and verify the integrity of your tracks. It's an early version, but it works.  
 - **A command line**, as if Vim and the Quake console had a child. Press `:`
   to open it. Try it :)
-- Configurable keyboard shortcuts and keyboard navigation.
-- English, Spanish, German, French, Dutch, Portuguese, Russian and Japanese.
+- Configurable **keyboard shortcuts** and keyboard navigation.
+- **Multilingual** English, Spanish, German, French, Dutch, Portuguese, Russian and Japanese.
   Corrections from native speakers are welcome.
 
 Native DSD and DoP bypass DSP. Enabling DSP changes a PCM signal, and Chilpa
@@ -254,10 +257,12 @@ To write a plugin, start with the API and authoring contracts in
 [chilpa-plugins-sdk](https://github.com/vicrodh/chilpa-plugins-sdk). To list it in the third-party
 catalog, follow [its rules](https://github.com/vicrodh/chilpa-3rd-party-plugins/blob/main/CONTRIBUTING.md).
 
+**Agent Skill** I spent the time working on the SDK so you won't have to if you want to develop a plugin. For example, I included a skill in the SDK repository that's compatible with the most popular agents (Claude, Codex, Kimi). As a result, I used the Spotify integration as a proof of concept and ended up with a functional plugin that's fully integrated with Chilpa in 3–4 hours (and a few hundred thousand tokens, to be honest). 
+
 ## Privacy and offline use
 
 Chilpa has **no telemetry**. No information about its users is collected:
-there are no analytics, usage reports or background tracking.
+there are no analytics, usage reports or background tracking. The stats stays on your machine, and you choose what to with those. 
 
 Some optional features use online services. Requests run in the background
 and do not hold up navigation or playback:
@@ -350,7 +355,7 @@ any bug you find, feature you want or idea you have.
 
 - [ ] A control API, with its documentation
 - [ ] Windows release
-- [ ] Sync and support for DAPs and other MTP devices
+- [ ] Mood based and dynamic playlists. Based on your local listens, pure vectors, pure math, no AI. 
 - [ ] Daemon mode
 - [ ] Mobile versions (iOS and Android)
 - [ ] Hive mode: control any Chilpa instance from any other

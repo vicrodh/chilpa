@@ -1,5 +1,15 @@
 //! I redact before a line enters memory, disk, the window or an export.
 
+/// Only explicitly typed library version facts may bypass address detection.
+pub(super) fn version(text: &str) -> String {
+    if text.len() <= 32 && text.split('.').count() <= 4
+        && text.split('.').all(|part| !part.is_empty() && part.len() <= 8 && part.bytes().all(|byte| byte.is_ascii_digit())) {
+        text.into()
+    } else {
+        clean(text)
+    }
+}
+
 pub(super) fn clean(text: &str) -> String {
     let text: String = text.chars().filter(|character| !character.is_control() || character.is_whitespace()).collect();
     let lower = text.to_ascii_lowercase();
@@ -22,6 +32,17 @@ pub(super) fn clean(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn numeric_versions_are_an_explicit_bounded_exception() {
+        assert_eq!(version("1.2.15.3"), "1.2.15.3");
+        assert_eq!(version(""), "");
+        assert_eq!(clean("endpoint 192.168.1.2"), "endpoint [address]");
+        assert_eq!(clean("1.2.15.3"), "[address]");
+        for value in ["password=fixture", "/home/fixture/1.2.15.3", "https://fixture.invalid/1.2.15.3", "1.2.15.3 person@fixture.invalid"] {
+            assert!(!version(value).contains("fixture"));
+        }
+        assert_eq!(version(&"1".repeat(33)), "[identifier]");
+    }
     #[test]
     fn private_fields_and_locations_never_reach_the_sink() {
         for input in ["Authorization: Bearer fixture", "password=fixture", "{\"api_key\":\"fixture\"}", "token fixture", "cookie fixture"] {

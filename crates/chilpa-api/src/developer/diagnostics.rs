@@ -9,6 +9,20 @@ fn row(label: &str, saved: &str, runtime: &str, comparable: bool) -> Value {
         "runtime":if known {redaction::clean(runtime).chars().take(4096).collect::<String>()} else {chilpa_i18n::t("Not reported")},
         "status":if comparable && known && !saved.is_empty() {if saved == runtime {"match"} else {"different"}} else {"info"}})
 }
+
+fn version_row(label: &str, runtime: &str) -> Value {
+    let mut value = row(label, "", "", false);
+    value["format"] = json!("version");
+    if !runtime.is_empty() {
+        value["runtime"] = json!(redaction::version(runtime).chars().take(4096).collect::<String>());
+    }
+    value
+}
+fn playback_state(playing: bool, paused: bool) -> &'static str {
+    if !playing { chilpa_i18n::mark("Stopped") }
+    else if paused { chilpa_i18n::mark("Paused") }
+    else { chilpa_i18n::mark("Playing") }
+}
 impl Chilpa {
     /// Native facts are supplied by Qt on a manual refresh. I keep no snapshot.
     pub fn developer_document(&self, native: &str, built: &str, commit: &str) -> String {
@@ -21,18 +35,18 @@ impl Chilpa {
             row(chilpa_i18n::mark("Operating system"), "", native_text("system"), false),
             row(chilpa_i18n::mark("Architecture"), "", native_text("architecture"), false),
             row(chilpa_i18n::mark("Kernel"), "", native_text("kernel"), false),
-            row(chilpa_i18n::mark("Qt version"), "", native_text("qt"), false),
+            version_row(chilpa_i18n::mark("Qt version"), native_text("qt")),
             row(chilpa_i18n::mark("Distribution"), "", native_text("distribution"), false),
             row(chilpa_i18n::mark("Distribution version"), "", native_text("distributionVersion"), false),
             row(chilpa_i18n::mark("Install method"), "", if chilpa_dirs::appimage().is_some() { "AppImage" } else { "" }, false),
-            row("libc", "", native_text("libc"), false),
-            row("ALSA", "", native_text("alsa"), false),
-            row("PipeWire", "", native_text("pipewire"), false),
-            row("PulseAudio", "", native_text("pulse"), false),
+            version_row("libc", native_text("libc")),
+            version_row("ALSA", native_text("alsa")),
+            version_row("PipeWire", native_text("pipewire")),
+            version_row("PulseAudio", native_text("pulse")),
         ];
         let now = &self.now;
         let verdict = if now.path.is_empty() { String::new() } else if now.bit_perfect { chilpa_i18n::t("Yes") } else { chilpa_i18n::t("No") };
-        let state = if now.playing { chilpa_i18n::t("Playing") } else if now.paused { chilpa_i18n::t("Paused") } else { chilpa_i18n::t("Stopped") };
+        let state = chilpa_i18n::t(playback_state(now.playing, now.paused));
         let playback = vec![
             row(chilpa_i18n::mark("Playback state"), "", &state, false),
             row(chilpa_i18n::mark("Queue length"), "", &now.queue_len.to_string(), false),
@@ -98,7 +112,9 @@ pub fn report(document: &str) -> String {
     for section in doc["sections"].as_array().into_iter().flatten() {
         text.push_str(&redaction::clean(section["title"].as_str().unwrap_or(""))); text.push('\n');
         for row in section["rows"].as_array().into_iter().flatten() {
-            text.push_str(&format!("{}: {}",redaction::clean(row["label"].as_str().unwrap_or("")),redaction::clean(row["runtime"].as_str().unwrap_or(""))));
+            let runtime = row["runtime"].as_str().unwrap_or("");
+            let runtime = if row["format"] == "version" { redaction::version(runtime) } else { redaction::clean(runtime) };
+            text.push_str(&format!("{}: {}",redaction::clean(row["label"].as_str().unwrap_or("")),runtime));
             if let Some(saved)=row["saved"].as_str().filter(|value| !value.is_empty()) { text.push_str(&format!(" (saved: {})", redaction::clean(saved))); }
             text.push('\n');
         }
@@ -110,6 +126,34 @@ pub fn report(document: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn a_restored_paused_track_is_not_reported_as_playing() {
+        assert_eq!(playback_state(true, true), "Paused");
+        assert_eq!(playback_state(true, false), "Playing");
+        assert_eq!(playback_state(false, false), "Stopped");
+        assert_eq!(playback_state(false, true), "Stopped");
+    }
+    #[test]
+    fn native_versions_survive_display_and_reviewed_export() {
+        let version = version_row("ALSA", "1.2.15.3");
+        assert_eq!(version["runtime"], "1.2.15.3");
+        assert_eq!(version["format"], "version");
+        assert_eq!(version_row("ALSA", "")["runtime"], chilpa_i18n::t("Not reported"));
+        let doc = json!({"sections":[{"title":"System","rows":[version,
+            {"label":"Endpoint","runtime":"192.168.1.2"}]}]}).to_string();
+        let text = report(&doc);
+        assert!(text.contains("ALSA: 1.2.15.3\n"));
+        assert!(text.contains("Endpoint: [address]\n"));
+    }
+    #[test]
+    fn typed_versions_still_redact_private_values() {
+        for runtime in ["password=fixture", "/home/fixture/library", "https://fixture.invalid/library"] {
+            assert!(!version_row("ALSA", runtime)["runtime"].as_str().unwrap().contains("fixture"));
+            let doc = json!({"sections":[{"title":"System","rows":[
+                {"label":"ALSA","format":"version","runtime":runtime}]}]}).to_string();
+            assert!(!report(&doc).contains("fixture"));
+        }
+    }
     #[test]
     fn a_saved_request_never_claims_an_unreported_runtime_match() {
         let unknown=row("Exclusive mode","true","",true);

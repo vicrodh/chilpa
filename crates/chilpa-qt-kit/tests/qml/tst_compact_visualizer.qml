@@ -101,6 +101,24 @@ TestCase {
         }
     }
     Component { id: passiveMaker; CompactSpectrumState { source: feed.bars } }
+    function test_missing_frame_parks_and_accepts_the_first_valid_frame() {
+        feed.bars = undefined
+        const claims = feed.claims
+        const state = createTemporaryObject(passiveMaker, stage, {active: true})
+        verify(state !== null)
+        state.receive()
+        compare(state.targetValues.length, 0)
+        pulse(1)
+        compare(Pulse.held, 0, "a missing initial frame does not keep the clock running")
+        feed.bars = Array(16).fill(0.8)
+        compare(state.targetValues.length, 16)
+        state.tick()
+        fuzzyCompare(state.values[0], 0.36, 0.000001, "the first valid frame retains the existing easing")
+        pulse(30)
+        compare(Pulse.held, 0)
+        compare(feed.claims, claims, "receiving the first frame never acquires capture")
+    }
+
     function test_passive_consumer_never_changes_an_existing_capture_claim() {
         band.active = true
         const calls = feed.claims
