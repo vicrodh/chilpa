@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls.Basic
+import QtQuick.Window
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.immersive
@@ -29,9 +30,16 @@ Popup {
         border.color: Theme.color.immersiveGlassEdge
     }
 
+    // Below the trigger, left edges aligned, then clamped into the window
+    // with the same gap: a Popup does not keep itself on screen, and on a
+    // Mac the trigger sits at the right end of the band (QBZ's `_place`).
     function openBelow(item) {
-        x = item.x
-        y = item.y + item.height + Stage.menuApart
+        const spot = item.mapToItem(null, 0, item.height + Stage.menuApart)
+        const window = item.Window.window
+        const left = window ? Math.max(Stage.menuApart, Math.min(spot.x, window.width - width - Stage.menuApart)) : spot.x
+        const at = parent.mapFromItem(null, left, spot.y)
+        x = at.x
+        y = at.y
         open()
     }
 
