@@ -857,3 +857,5 @@ nsec
 openat
 rdonly
 statfs
+# Embedded multimedia card abbreviation.
+emmc
