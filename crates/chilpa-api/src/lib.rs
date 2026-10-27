@@ -169,6 +169,7 @@ mod album_versions;
 mod album_copies;
 pub mod library_query;
 mod album_page;
+pub use album_page::action_targets as album_action_targets;
 mod album_shelves;
 pub use album_page::{entries_matching, ordered_entries, AlbumPage};
 mod album_information;

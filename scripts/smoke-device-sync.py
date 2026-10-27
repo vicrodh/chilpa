@@ -18,16 +18,17 @@ import wave
 ROOT = Path(__file__).resolve().parent
 COMPLETED = {
     "basic": "SMOKE device real Main completed",
+    "selections": "SMOKE selections real Main completed",
     "restore": "SMOKE device restart query and approved removal completed",
     "cancel": "SMOKE device cancel recovery and cleanup completed",
     "lifecycle": "SMOKE lifecycle real Main completed",
     "browser": "SMOKE browser real Main completed",
 }
-FIXTURES = {"basic": "device-sync.qml", "restore": "device-sync-restore.qml",
+FIXTURES = {"basic": "device-sync.qml", "selections": "device-sync-selections.qml", "restore": "device-sync-restore.qml",
             "cancel": "device-sync-cancel.qml", "lifecycle": "device-sync-lifecycle.qml", "browser": "device-sync-browser.qml"}
 
 
-def wav(path, size=176400):
+def wav(path, size=176400, album="DAP Native Smoke"):
     with wave.open(str(path), "wb") as output:
         output.setparams((2, 2, 44100, 0, "NONE", "not compressed"))
         while size:
@@ -35,7 +36,7 @@ def wav(path, size=176400):
             output.writeframesraw(bytes(count))
             size -= count
     fields = []
-    for key, value in ((b"INAM", path.stem), (b"IART", "Sync Fixture"), (b"IPRD", "DAP Native Smoke")):
+    for key, value in ((b"INAM", path.stem), (b"IART", "Sync Fixture"), (b"IPRD", album)):
         text = value.encode("utf-8") + b"\0"
         fields.append(key + struct.pack("<I", len(text)) + text + bytes(len(text) % 2))
     info = b"INFO" + b"".join(fields)
@@ -65,7 +66,7 @@ def prepare(args):
     media = output / "media"
     media.mkdir()
     for name in ("DAP First.wav", "DAP Second.wav"):
-        wav(media / name)
+        wav(media / name, album=Path(name).stem if args.scenario == "selections" else "DAP Native Smoke")
     large = output / "large"
     if args.scenario == "cancel":
         large.mkdir()
@@ -199,7 +200,7 @@ def main():
     args.binary = args.binary.resolve(strict=True)
     if not sys.platform.startswith("linux") and sys.platform != "darwin":
         parser.error("this native smoke runner currently supports Linux and macOS")
-    if args.scenario != "basic" and not args.seed:
+    if args.scenario not in ("basic", "selections") and not args.seed:
         parser.error("this scenario requires --seed from a basic smoke")
     if not 1 <= args.seconds <= 1800:
         parser.error("--seconds must be between 1 and 1800")

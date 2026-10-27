@@ -1,5 +1,8 @@
 //! I expose device profiles, Library selections and bounded background jobs to every frontend.
 mod catalog;
+mod drafts;
+mod episodes;
+pub use episodes::Episode;
 mod selection;
 mod service;
 mod work;
@@ -92,5 +95,42 @@ impl crate::Chilpa {
                 "",
             )
         })
+    }
+}
+
+/// I leave external albums out before reading local tracks or staging device work.
+pub fn device_albums_available(ids: &[i64]) -> bool { ids.iter().any(|id| *id > 0) }
+impl crate::Chilpa {
+    pub fn device_album_tracks(&mut self, albums: &[i64]) -> Vec<i64> {
+        let mut ids = Vec::new();
+        for album in albums.iter().copied().filter(|id| *id > 0) {
+            ids.extend(self.album_track_rows(album).into_iter().map(|track| track.id));
+            if ids.len() > chilpa_sync::MAX_ASSETS { break; }
+        }
+        if albums.iter().any(|id| *id < 0) {
+            self.now.error = chilpa_i18n::t("Albums from streaming services will not be synced.");
+        }
+        ids
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn mixed_albums_export_only_local_tracks_and_report_omissions() {
+        let directory = tempfile::tempdir().unwrap();
+        let library = chilpa_library::Library::open(&directory.path().join("library.sqlite3")).unwrap();
+        let source = library.source_id("local", "default").unwrap();
+        library.connection().execute_batch("INSERT INTO albums(id,title) VALUES (7,'First'),(9,'Second')").unwrap();
+        library.connection().execute("INSERT INTO tracks(id,source_id,external_id,title,album_id,disc_number,track_number,added_at) VALUES (81,?1,'one.flac','One',7,1,1,1),(91,?1,'two.flac','Two',9,1,1,1)", [source]).unwrap();
+        let mut app = crate::Chilpa::new();
+        app.library = Some(library);
+        assert!(super::device_albums_available(&[7,-9]));
+        assert!(!super::device_albums_available(&[-7,-9]));
+        assert_eq!(app.device_album_tracks(&[7, -7, 9]), [81,91]);
+        assert!(!app.now.error.is_empty());
+        assert_eq!(crate::album_action_targets(0, &[7,9]), [7,9]);
+        assert_eq!(crate::album_action_targets(7, &[7,9]), [7,9]);
+        assert_eq!(crate::album_action_targets(8, &[7,9]), [8]);
     }
 }

@@ -31,5 +31,8 @@ QtObject {
     function playMany(idsJson, shuffled) { lastAction = "many:" + idsJson }
     property string menuTrackIdsJson: "[]"
     property int requestedAlbumId: 0
+    function deviceAvailable(id, revision) { return (id === 0 || selectedIds.indexOf(id) >= 0 ? selectedIds : [id]).some(value => value > 0) }
+    function deviceTracksJson(id) { return trackIdsJson(id) }
+    function clearSelection() { selectedIds = []; selectedCount = 0; ++rev }
     function trackIdsJson(id) { requestedAlbumId = id; return menuTrackIdsJson }
 }

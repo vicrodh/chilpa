@@ -32,8 +32,8 @@ Rectangle {
         SelectField {
             objectName: "deviceSelectionKind"
             width: (parent.width - Metrics.gap8) / 2 // derived: two equal fields and their gap
-            options: [I18n.tr("All selections", I18n.rev), I18n.tr("Playlists", I18n.rev), I18n.tr("Queries", I18n.rev), I18n.tr("Albums and tracks", I18n.rev)]
-            values: ["all", "playlists", "queries", "tracks"]
+            options: [I18n.tr("All selections", I18n.rev), I18n.tr("Playlists", I18n.rev), I18n.tr("Queries", I18n.rev), I18n.tr("Albums and tracks", I18n.rev), I18n.tr("Podcasts", I18n.rev)]
+            values: ["all", "playlists", "queries", "tracks", "podcasts"]
             value: panel.kind
             enabled: !panel.busy
             onPicked: kind => panel.kindAsked(kind)

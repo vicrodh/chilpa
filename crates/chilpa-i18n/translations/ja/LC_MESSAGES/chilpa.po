@@ -380,6 +380,9 @@ msgstr "アルバム（{}）"
 msgid "Albums and tracks"
 msgstr "アルバムと曲"
 
+msgid "Albums from streaming services will not be synced."
+msgstr ""
+
 msgid "All"
 msgstr "すべて"
 
@@ -1749,6 +1752,9 @@ msgstr "デバイスの検出"
 msgid "Device profiles exceed 1 MiB."
 msgstr ""
 
+msgid "Device selections exceed 512 edits or 1 MiB. Save a selection before adding more."
+msgstr ""
+
 msgid "Device sync"
 msgstr ""
 
@@ -1923,6 +1929,9 @@ msgstr "トラックをダウンロード"
 msgid "Downloaded"
 msgstr "ダウンロード済み"
 
+msgid "Downloading episodes…"
+msgstr ""
+
 msgid "Downloading update…"
 msgstr "アップデートをダウンロード中…"
 
@@ -2060,6 +2069,9 @@ msgstr "有効な数値を入力してください。"
 
 msgid "Enter includes the first match · Shift+Enter excludes it"
 msgstr "Enter で最初の候補を含める・Shift+Enter で除外"
+
+msgid "Episode download was cancelled."
+msgstr ""
 
 msgid "Episode notes"
 msgstr "エピソードのノート"
@@ -4312,6 +4324,9 @@ msgstr "プラグインが報告した音質"
 msgid "Plugins"
 msgstr "プラグイン"
 
+msgid "Podcasts"
+msgstr ""
+
 msgid "Popular Tracks"
 msgstr "人気のトラック"
 
@@ -5583,6 +5598,9 @@ msgstr "サウンドサーバーからカードを取得します"
 msgid "Target loudness"
 msgstr "目標ラウドネス"
 
+msgid "Temporary episode storage is unavailable."
+msgstr ""
+
 msgid "Test"
 msgstr "テスト"
 
@@ -5676,6 +5694,21 @@ msgstr "ダウンロード表示は利用できません。"
 msgid "The engine reports unchanged samples on this route."
 msgstr "エンジンはこの経路でサンプルが変更されていないと報告しています。"
 
+msgid "The episode audio could not be downloaded."
+msgstr ""
+
+msgid "The episode could not be saved temporarily."
+msgstr ""
+
+msgid "The episode download is incomplete."
+msgstr ""
+
+msgid "The episode download was interrupted."
+msgstr ""
+
+msgid "The episode exceeds the download limit."
+msgstr ""
+
 msgid "The filter cannot be read: {}"
 msgstr "フィルターを読み取れません: {}"
 
@@ -5762,6 +5795,12 @@ msgstr "プラグインが15秒以内に応答しませんでした。アカウ�
 
 msgid "The previous sample rate did not settle after the check."
 msgstr "チェック後に以前のサンプルレートが安定しませんでした。"
+
+msgid "The publisher did not return an audio file."
+msgstr ""
+
+msgid "The publisher did not return the episode audio."
+msgstr ""
 
 msgid "The queues exceed the session limit of 100,000 tracks."
 msgstr "キューがセッションの上限である100,000トラックを超えています。"
@@ -5918,6 +5957,9 @@ msgstr "この直接出力にはハードウェア音量コントロールがあ
 
 msgid "This entry is no longer at hand. Open it again from its source."
 msgstr "この項目はもう利用できません。ソースからもう一度開いてください。"
+
+msgid "This episode does not have a supported public audio file."
+msgstr ""
 
 msgid "This episode material could not be loaded."
 msgstr "このエピソードの資料を読み込めませんでした。"

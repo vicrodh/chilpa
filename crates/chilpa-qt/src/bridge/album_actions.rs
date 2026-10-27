@@ -55,6 +55,10 @@ pub mod qobject {
         fn list_action(self: &AlbumActions, id: i64, action: &QString);
         #[qinvokable]
         fn track_ids_json(self: &AlbumActions, id: i64) -> QString;
+        #[qinvokable]
+        fn device_available(self: &AlbumActions, id: i64, rev: i32) -> bool;
+        #[qinvokable]
+        fn device_tracks_json(self: &AlbumActions, id: i64) -> QString;
         /// Whether the record opens: some track of it plays now (ADR-017).
         #[qinvokable]
         fn available(self: &AlbumActions, id: i64, rev: i32) -> bool;
@@ -86,11 +90,7 @@ pub struct AlbumActionsRust {
 
 impl AlbumActionsRust {
     fn targets(&self, id: i64) -> Vec<i64> {
-        if id == 0 || self.selection.contains(&id) {
-            self.selection.clone()
-        } else {
-            vec![id]
-        }
+        chilpa_api::album_action_targets(id, &self.selection)
     }
 }
 
@@ -174,6 +174,14 @@ impl qobject::AlbumActions {
 
     pub fn track_ids_json(&self, id: i64) -> cxx_qt_lib::QString {
         let ids: Vec<i64> = self.rust().targets(id).into_iter().flat_map(|album| app::with(|api| api.album_track_rows(album))).map(|track| track.id).collect();
+        cxx_qt_lib::QString::from(serde_json::to_string(&ids).unwrap_or_default())
+    }
+
+    pub fn device_available(&self, id: i64, _rev: i32) -> bool {
+        chilpa_api::device_sync::device_albums_available(&self.rust().targets(id))
+    }
+    pub fn device_tracks_json(&self, id: i64) -> cxx_qt_lib::QString {
+        let ids = app::with(|api| api.device_album_tracks(&self.rust().targets(id)));
         cxx_qt_lib::QString::from(serde_json::to_string(&ids).unwrap_or_default())
     }
 

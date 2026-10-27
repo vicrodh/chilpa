@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import app.chilpa
 import app.chilpa.sources
+import app.chilpa.devices
 import "../../qml/Screens"
 
 TestCase {
@@ -25,6 +26,18 @@ TestCase {
         compare(Navigation.went, ["source", "fixture"])
         Sources.show({detail: {id: "radio", live: true}})
         verify(!parent.visible)
+        detail.visible = false
+    }
+    function test_only_explicit_podcast_audio_offers_device_sync() {
+        Sources.show({detail: {id:"episode",source:"fixture",title:"Episode",device_sync:true}})
+        detail.visible = true
+        const button = findChild(detail, "episodeDevice")
+        verify(button.visible)
+        button.clicked()
+        compare(DeviceSync.lastAction, ["episode","fixture","episode"])
+        compare(Navigation.page,"deviceSync")
+        Sources.show({detail:{id:"music",source:"fixture",device_sync:false}})
+        verify(!button.visible)
         detail.visible = false
     }
     function test_sidebar_destination_and_page_tabs_share_confirmed_state() {

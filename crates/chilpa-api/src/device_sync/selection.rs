@@ -79,7 +79,7 @@ pub fn resolve(
     picks: &[Pick],
     cancel: &Cancellation,
 ) -> Result<(Vec<Input>, Vec<Playlist>), UiError> {
-    if picks.is_empty() {
+    if picks.iter().all(|pick| matches!(pick, Pick::Episode { .. })) {
         return Ok((Vec::new(), Vec::new()));
     }
     let library = Library::open_read_only(path).map_err(|e| {
@@ -93,6 +93,7 @@ pub fn resolve(
         for pick in picks {
             cancel.check().map_err(UiError::from)?;
             let (id,name,ids)=match pick {
+                Pick::Episode { .. } => continue,
                 Pick::Playlist{id,key,..}=>{let(name,ids)=library.export_playlist(key).map_err(|e|failure(chilpa_i18n::mark("A selected playlist or one of its tracks is missing. I kept the device unchanged."),e))?;(id.clone(),name,ids)}
                 Pick::Query{id,name,expression}=>{
                     let filter=Filter{query:crate::library_query::read(expression).map_err(|e|failure(chilpa_i18n::mark("The device query cannot be read."),e))?,..Default::default()};

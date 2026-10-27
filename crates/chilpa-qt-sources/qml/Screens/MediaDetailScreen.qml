@@ -3,6 +3,7 @@ import QtQuick.Controls.Basic as Controls
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
+import app.chilpa.devices
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
@@ -44,6 +45,7 @@ Flickable {
                     width: parent.width; spacing: Metrics.gap8
                     PillButton { text: page.radio ? I18n.tr("Listen live", I18n.rev) : page.entry.progress > 0 && !page.entry.played ? I18n.tr("Resume", I18n.rev) : I18n.tr("Play", I18n.rev); kind: "primary"; enabled: page.entry.playable === true; onClicked: page.ask("play") }
                     PillButton { text: page.entry.saved ? I18n.tr("Saved", I18n.rev) : I18n.tr("Save", I18n.rev); onClicked: page.ask("save") }
+                    PillButton { objectName: "episodeDevice"; visible: page.entry.device_sync === true; text: I18n.tr("Sync to device…", I18n.rev); glyph: Icons.deviceMobile; onClicked: { if (DeviceSync.useEpisode(page.entry.source, page.entry.id)) Navigation.go("deviceSync", 0) } }
                     PillButton { visible: !page.radio; text: I18n.tr("Add to queue", I18n.rev); enabled: page.entry.playable === true; onClicked: page.ask("queue") }
                     PillButton { visible: !page.radio; text: page.entry.played ? I18n.tr("Mark as unplayed", I18n.rev) : I18n.tr("Mark as heard", I18n.rev); onClicked: page.ask("heard") }
                 }

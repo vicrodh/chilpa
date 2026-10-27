@@ -381,6 +381,9 @@ msgstr "Alben ({})"
 msgid "Albums and tracks"
 msgstr "Alben und Titel"
 
+msgid "Albums from streaming services will not be synced."
+msgstr ""
+
 msgid "All"
 msgstr "Alle"
 
@@ -1751,6 +1754,9 @@ msgstr "Geräteerkennung"
 msgid "Device profiles exceed 1 MiB."
 msgstr ""
 
+msgid "Device selections exceed 512 edits or 1 MiB. Save a selection before adding more."
+msgstr ""
+
 msgid "Device sync"
 msgstr ""
 
@@ -1925,6 +1931,9 @@ msgstr "Titel herunterladen"
 msgid "Downloaded"
 msgstr "Heruntergeladen"
 
+msgid "Downloading episodes…"
+msgstr ""
+
 msgid "Downloading update…"
 msgstr "Update wird heruntergeladen…"
 
@@ -2062,6 +2071,9 @@ msgstr "Gib eine gültige Zahl ein."
 
 msgid "Enter includes the first match · Shift+Enter excludes it"
 msgstr "Eingabe schließt den ersten Treffer ein · Umschalt+Eingabe schließt ihn aus"
+
+msgid "Episode download was cancelled."
+msgstr ""
 
 msgid "Episode notes"
 msgstr "Folgennotizen"
@@ -4315,6 +4327,9 @@ msgstr "Vom Plugin gemeldete Qualität"
 msgid "Plugins"
 msgstr "Plugins"
 
+msgid "Podcasts"
+msgstr ""
+
 msgid "Popular Tracks"
 msgstr "Beliebte Titel"
 
@@ -5588,6 +5603,9 @@ msgstr "Die Karte vom Soundserver übernehmen"
 msgid "Target loudness"
 msgstr "Ziel-Lautheit"
 
+msgid "Temporary episode storage is unavailable."
+msgstr ""
+
 msgid "Test"
 msgstr "Testen"
 
@@ -5681,6 +5699,21 @@ msgstr "Die Download-Ansicht ist nicht verfügbar."
 msgid "The engine reports unchanged samples on this route."
 msgstr "Der Audiomotor meldet unveränderte Samples auf diesem Signalweg."
 
+msgid "The episode audio could not be downloaded."
+msgstr ""
+
+msgid "The episode could not be saved temporarily."
+msgstr ""
+
+msgid "The episode download is incomplete."
+msgstr ""
+
+msgid "The episode download was interrupted."
+msgstr ""
+
+msgid "The episode exceeds the download limit."
+msgstr ""
+
 msgid "The filter cannot be read: {}"
 msgstr "Der Filter kann nicht gelesen werden: {}"
 
@@ -5767,6 +5800,12 @@ msgstr "Das Plugin hat nicht innerhalb von 15 Sekunden geantwortet. Der Status s
 
 msgid "The previous sample rate did not settle after the check."
 msgstr "Die vorherige Abtastrate hat sich nach der Prüfung nicht stabilisiert."
+
+msgid "The publisher did not return an audio file."
+msgstr ""
+
+msgid "The publisher did not return the episode audio."
+msgstr ""
 
 msgid "The queues exceed the session limit of 100,000 tracks."
 msgstr "Die Warteschlangen überschreiten das Sitzungslimit von 100.000 Titeln."
@@ -5923,6 +5962,9 @@ msgstr "Diese direkte Ausgabe hat keine Hardware-Lautstärkeregelung. Nutze den 
 
 msgid "This entry is no longer at hand. Open it again from its source."
 msgstr "Dieser Eintrag ist nicht mehr verfügbar. Öffne ihn erneut über seine Quelle."
+
+msgid "This episode does not have a supported public audio file."
+msgstr ""
 
 msgid "This episode material could not be loaded."
 msgstr "Das Material zu dieser Folge konnte nicht geladen werden."
