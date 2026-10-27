@@ -13,6 +13,7 @@ Column {
     signal destinationAsked(string id)
     signal refreshAsked()
     signal createAsked()
+    signal profilesAsked()
     spacing: Metrics.gap12
 
     Row {
@@ -32,6 +33,7 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
             spacing: Metrics.gap6
             PillButton { objectName: "deviceAddStorage"; text: I18n.tr("Add storage", I18n.rev); enabled: !head.status.busy; onClicked: head.createAsked() }
+            IconButton { objectName: "deviceManageProfiles"; visible: head.document.has_profiles === true; glyph: Icons.settings; tip: I18n.tr("Manage profiles", I18n.rev); enabled: !head.status.busy; onClicked: head.profilesAsked() }
             IconButton { objectName: "deviceRefresh"; glyph: Icons.refresh; tip: I18n.tr("Refresh connected players", I18n.rev); enabled: !head.status.busy; onClicked: head.refreshAsked() }
         }
     }
@@ -48,6 +50,7 @@ Column {
                 width: parent.width
                 options: head.document.profile_names || []
                 values: head.document.profile_values || []
+                enabledOptions: head.document.profile_enabled || []
                 value: head.status.profile || ""
                 enabled: !head.status.busy
                 onPicked: value => head.profileAsked(value)

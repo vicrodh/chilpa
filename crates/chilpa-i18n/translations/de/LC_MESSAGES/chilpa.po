@@ -169,6 +169,9 @@ msgstr "Eine ausgewählte Warteschlange ist nicht mehr verfügbar."
 msgid "A sidecar sets this, not the file"
 msgstr "Eine Begleitdatei legt das fest, nicht die Datei selbst"
 
+msgid "A sync operation still uses this profile."
+msgstr ""
+
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr "Ein Titel zählt, sobald die Hälfte davon oder vier Minuten wiedergegeben wurden. Offline erfasste Wiedergaben werden später gesendet."
 
@@ -1487,6 +1490,9 @@ msgstr "Die Playlist konnte nicht verschoben werden."
 msgid "Could not read the analysis inventory."
 msgstr "Die Analyse-Übersicht konnte nicht gelesen werden."
 
+msgid "Could not remove the saved profile."
+msgstr ""
+
 msgid "Could not save the folder. Please try again."
 msgstr "Der Ordner konnte nicht gespeichert werden. Versuche es erneut."
 
@@ -2549,6 +2555,9 @@ msgstr "In der Seitenleiste ausblenden"
 msgid "Hide manual entry"
 msgstr "Manuelle Eingabe ausblenden"
 
+msgid "Hide offline profiles"
+msgstr ""
+
 msgid "Hide sidebar"
 msgstr "Seitenleiste ausblenden"
 
@@ -3232,6 +3241,9 @@ msgstr "Verwalten"
 msgid "Manage playlists"
 msgstr "Playlists verwalten"
 
+msgid "Manage profiles"
+msgstr ""
+
 msgid "Manually"
 msgstr "Manuell"
 
@@ -3613,6 +3625,9 @@ msgstr "Ohne Komponist"
 msgid "No conditions yet. Add one below, or click values in Columns."
 msgstr "Noch keine Bedingungen. Füge unten eine hinzu oder klicke Werte in den Spalten an."
 
+msgid "No connected profiles"
+msgstr ""
+
 msgid "No cover"
 msgstr "Kein Cover"
 
@@ -3885,6 +3900,9 @@ msgstr "Oktober"
 
 msgid "Off"
 msgstr "Aus"
+
+msgid "Offline"
+msgstr ""
 
 msgid "Offline mode"
 msgstr "Offline-Modus"
@@ -4414,6 +4432,9 @@ msgstr "Produzent"
 msgid "Profile name"
 msgstr "Profilname"
 
+msgid "Profile removed. Some local sync history could not be cleared."
+msgstr ""
+
 msgid "Provider identifiers"
 msgstr "Anbieter-Kennungen"
 
@@ -4492,8 +4513,8 @@ msgstr "Warteschlangen"
 msgid "Quick Connect is turned off on that server"
 msgstr "Quick Connect ist auf diesem Server ausgeschaltet"
 
-msgid "Quick review by size; copies and removals are verified when syncing."
-msgstr "Schnellprüfung nach Dateigröße; Kopien und Entfernungen werden beim Synchronisieren geprüft."
+msgid "Quick review by size"
+msgstr ""
 
 msgid "Quick view"
 msgstr "Schnellansicht"
@@ -4750,11 +4771,20 @@ msgstr "Entferne eine Bedingung, um Ergebnisse zu erhalten:"
 msgid "Remove original queues"
 msgstr "Ursprüngliche Warteschlangen entfernen"
 
+msgid "Remove profile"
+msgstr ""
+
+msgid "Remove saved profile"
+msgstr ""
+
 msgid "Remove smaller covers and backgrounds. Chilpa makes them again as needed."
 msgstr "Entfernt kleinere Cover und Hintergründe. Chilpa erstellt sie bei Bedarf neu."
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "Dieses Plugin samt Konto, Einstellungen und zwischengespeicherter Bibliothek aus Chilpa entfernen? Dein Konto und deine Playlists bei der Quelle werden dadurch nicht gelöscht."
+
+msgid "Remove this profile and its local sync history? Files on the device will stay."
+msgstr ""
 
 msgid "Remove this server?"
 msgstr "Diesen Server entfernen?"
@@ -4764,6 +4794,9 @@ msgstr "Entfernt nicht mehr referenzierte Bilder von Quellen und Plugins. Benöt
 
 msgid "Remove…"
 msgstr "Entfernen…"
+
+msgid "Removing saved profile…"
+msgstr ""
 
 msgid "Rename"
 msgstr "Umbenennen"
@@ -5261,6 +5294,9 @@ msgstr "In Seitenleiste anzeigen"
 
 msgid "Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."
 msgstr "Zeigt Songtexte aus Dateien, dem Cache und Online-Diensten an. Schalte die Option aus, um alle Songtext-Abfragen und Übersetzungen zu beenden und den aktuellen Songtext zu löschen."
+
+msgid "Show offline profiles"
+msgstr ""
 
 msgid "Show playlist only from the same source as the track"
 msgstr "Nur Playlists aus derselben Quelle wie der Titel anzeigen"
@@ -6451,6 +6487,12 @@ msgstr "Gültig"
 
 msgid "Valid node name"
 msgstr "Gültiger Knotenname"
+
+msgid "Verify files after transfer"
+msgstr ""
+
+msgid "Verifying copied files…"
+msgstr ""
 
 msgid "Version"
 msgstr "Version"

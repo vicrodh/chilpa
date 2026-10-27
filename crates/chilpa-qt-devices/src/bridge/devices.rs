@@ -35,6 +35,8 @@ pub mod qobject {
         #[qinvokable]
         fn create_profile(self: Pin<&mut DeviceSync>, name: &QString, folder: &QString);
         #[qinvokable]
+        fn forget_profile(self: Pin<&mut DeviceSync>, id: &QString);
+        #[qinvokable]
         fn toggle(self: Pin<&mut DeviceSync>, id: &QString);
         #[qinvokable]
         fn use_tracks(self: Pin<&mut DeviceSync>, ids: &QString) -> bool;
@@ -51,7 +53,7 @@ pub mod qobject {
         #[qinvokable]
         fn preview(self: Pin<&mut DeviceSync>, recover: bool);
         #[qinvokable]
-        fn apply(self: Pin<&mut DeviceSync>, token: &QString, approve_removals: bool);
+        fn apply(self: Pin<&mut DeviceSync>, token: &QString, approve_removals: bool, verify_copies: bool);
         #[qinvokable]
         fn cancel(self: Pin<&mut DeviceSync>);
         #[qinvokable]
@@ -215,6 +217,9 @@ impl qobject::DeviceSync {
     pub fn toggle(self: Pin<&mut Self>, id: &QString) {
         self.run(|s| s.toggle(&id.to_string()));
     }
+    pub fn forget_profile(self: Pin<&mut Self>, id: &QString) {
+        self.run(|service| service.forget_profile(&id.to_string()));
+    }
     pub fn use_tracks(mut self: Pin<&mut Self>, ids: &QString) -> bool {
         self.as_mut().rust_mut().filter.clear();
         self.as_mut().rust_mut().selection_kind = "tracks".into();
@@ -269,8 +274,8 @@ impl qobject::DeviceSync {
         self.as_mut().set_page(0);
         self.run(|s| s.preview(recover));
     }
-    pub fn apply(self: Pin<&mut Self>, token: &QString, approve_removals: bool) {
-        self.run(|s| s.apply(&token.to_string(), approve_removals));
+    pub fn apply(self: Pin<&mut Self>, token: &QString, approve_removals: bool, verify_copies: bool) {
+        self.run(|s| s.apply_with_verification(&token.to_string(), approve_removals, verify_copies));
     }
     pub fn cancel(mut self: Pin<&mut Self>) {
         self.as_mut().rust_mut().service.cancel();

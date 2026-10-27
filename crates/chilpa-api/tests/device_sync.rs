@@ -225,6 +225,88 @@ fn device_mounted_smoke_discovery_excludes_physical_usb() {
 }
 
 #[test]
+fn device_forgetting_profiles_preserves_storage_and_clears_missing_folder_history() {
+    isolated("device_forgetting_profiles_preserves_storage_and_clears_missing_folder_history", || {
+        for missing in [false, true] {
+            let fixture = Fixture::new();
+            let mut service = fixture.paired();
+            let token = preview(&mut service);
+            apply(&mut service, &token, false);
+            let id = service.status().profile.clone();
+            let store = Store { directory:fixture.profiles.clone() };
+            let journal = store.state_path(&id).unwrap();
+            assert!(journal.is_file());
+            let marker = fixture.card.join(".chilpa-sync/identity.json");
+            let identity = std::fs::read(&marker).unwrap();
+            let tracks = find_files(&fixture.card, "flac");
+            if missing {
+                std::fs::remove_dir_all(&fixture.card).unwrap();
+                service.load().unwrap();
+                wait(&mut service);
+                let view:serde_json::Value = serde_json::from_str(&service.catalog_json("")).unwrap();
+                assert_eq!(view["profile_enabled"][0], false);
+                assert_eq!(view["can_review"], false);
+            }
+            service.forget_profile(&id).unwrap();
+            wait(&mut service);
+            assert!(service.profiles().is_empty());
+            assert!(store.read().unwrap().profiles.is_empty());
+            assert!(!journal.exists());
+            assert!(!journal.with_extension("sync-lock").exists());
+            assert!(!fixture.profiles.join("active-profile").exists());
+            if missing { assert!(!fixture.card.exists(), "forgetting must not recreate the missing device folder"); }
+            else {
+                assert_eq!(std::fs::read(&marker).unwrap(), identity);
+                assert_eq!(find_files(&fixture.card,"flac"), tracks);
+                assert_eq!(std::fs::read(fixture.card.join("unmanaged.flac")).unwrap(), b"foreign file");
+            }
+            let reopened = fixture.service();
+            assert!(reopened.profiles().is_empty());
+        }
+    });
+}
+
+#[test]
+fn device_forgetting_a_profile_requires_its_local_writer_lease() {
+    isolated("device_forgetting_a_profile_requires_its_local_writer_lease", || {
+        let fixture = Fixture::new();
+        let mut service = fixture.paired();
+        let token = preview(&mut service);
+        apply(&mut service, &token, false);
+        let id = service.status().profile.clone();
+        let store = Store { directory:fixture.profiles.clone() };
+        let _writer = chilpa_sync::State::open(&store.state_path(&id).unwrap()).unwrap();
+        service.forget_profile(&id).unwrap();
+        failed(&mut service);
+        assert_eq!(store.read().unwrap().profiles.len(), 1);
+        assert!(fixture.card.join(".chilpa-sync/identity.json").exists());
+    });
+}
+
+#[test]
+fn device_copy_readback_is_explicit_and_off_by_default() {
+    isolated("device_copy_readback_is_explicit_and_off_by_default", || {
+        for verify in [false, true] {
+            let fixture = Fixture::new();
+            let mut service = fixture.paired();
+            let token = preview(&mut service);
+            let mut changed = std::fs::read(&fixture.first).unwrap();
+            changed[0] = b'!';
+            std::fs::write(&fixture.first, &changed).unwrap();
+            if verify {
+                service.apply_with_verification(&token, false, true).unwrap();
+                failed(&mut service);
+                assert!(service.status().error.as_ref().unwrap().recovery);
+                assert_eq!(find_files(&fixture.card,"flac").len(), 1, "only the unmanaged file survives verification failure");
+            } else {
+                apply(&mut service, &token, false);
+                assert!(find_files(&fixture.card,"flac").iter().any(|path| std::fs::read(path).unwrap() == changed));
+            }
+        }
+    });
+}
+
+#[test]
 fn device_album_batches_keep_their_names_and_accumulate_without_duplicates() {
     isolated(
         "device_album_batches_keep_their_names_and_accumulate_without_duplicates",

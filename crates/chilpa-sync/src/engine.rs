@@ -102,9 +102,16 @@ pub fn recover(state: &mut State, transport: &mut dyn Transport, cancel: &Cancel
 }
 
 /// `approved_plan` binds the confirmation to this exact preview. Removal needs a separate
-/// explicit approval, and it remains limited to unchanged files recorded by this profile.
+/// explicit approval, and it remains limited to paths recorded by this profile.
 pub fn synchronize(state: &mut State, transport: &mut dyn Transport, plan: &Plan,
     approved_plan: &str, approve_removals: bool, cancel: &Cancellation, progress: &mut (dyn FnMut(Progress) + Send)) -> Result<()> {
+    synchronize_with_verification(state, transport, plan, approved_plan, approve_removals, false, cancel, progress)
+}
+
+/// I read copied bytes back only when requested; removing managed files never downloads audio.
+pub fn synchronize_with_verification(state: &mut State, transport: &mut dyn Transport, plan: &Plan,
+    approved_plan: &str, approve_removals: bool, verify_copies: bool, cancel: &Cancellation,
+    progress: &mut (dyn FnMut(Progress) + Send)) -> Result<()> {
     transport.end_review();
     if approved_plan != plan.id() || (plan.deletion_count() > 0 && !approve_removals) { return Err(conflict("this sync preview has not been approved")); }
     if state.target()?.as_ref().map(|t| &t.id) != Some(&plan.target.id) || state.revision()? != plan.revision {
@@ -116,7 +123,9 @@ pub fn synchronize(state: &mut State, transport: &mut dyn Transport, plan: &Plan
     let free = transport.available_bytes()?;
     if free < plan.required_bytes() { return Err(crate::Error::Space { required:plan.required_bytes(), available:free }); }
     for operation in &plan.operations {
-        if transport.fingerprint(&operation.path, cancel)? != operation.previous {
+        cancel.check()?;
+        progress(Progress { completed_files:0, total_files:plan.actions().len(), current_path:operation.path.to_string(), transferred_bytes:0, verifying:false });
+        if !matches_metadata(transport, &operation.path, operation.previous.as_ref())? {
             return Err(conflict(format!("device content changed after preview at {}", operation.path)));
         }
     }
@@ -126,21 +135,27 @@ pub fn synchronize(state: &mut State, transport: &mut dyn Transport, plan: &Plan
         cancel.check()?;
         check_target(transport, &plan.target, cancel)?;
         let operation = &pending.operation;
+        progress(Progress { completed_files:index, total_files:plan.actions().len(), current_path:operation.path.to_string(), transferred_bytes:0, verifying:false });
         if let Some(wanted) = &operation.desired {
             let source = operation.source.as_ref().ok_or_else(|| invalid("sync operation has no source"))?;
             if let Some(parent) = pending.stage.parent() { transport.create_dir_all(&parent)?; }
             let mut input = source.reader()?;
             transport.write_new(&pending.stage, &mut input, wanted.fingerprint.size, cancel, &mut |bytes| {
                 progress(Progress { completed_files:index, total_files:plan.actions().len(),
-                    current_path:operation.path.to_string(), transferred_bytes:bytes });
+                    current_path:operation.path.to_string(), transferred_bytes:bytes, verifying:false });
             })?;
-            if transport.fingerprint(&pending.stage, cancel)?.as_ref() != Some(&wanted.fingerprint) {
+            let valid = if verify_copies {
+                transport.fingerprint_with_progress(&pending.stage, cancel, &mut |bytes| {
+                    progress(Progress { completed_files:index, total_files:plan.actions().len(), current_path:operation.path.to_string(), transferred_bytes:bytes, verifying:true });
+                })?.as_ref() == Some(&wanted.fingerprint)
+            } else { matches_metadata(transport, &pending.stage, Some(&wanted.fingerprint))? };
+            if !valid {
                 return Err(conflict(format!("transferred bytes failed verification at {}", operation.path)));
             }
         }
         cancel.check()?;
         check_target(transport, &plan.target, cancel)?;
-        if transport.fingerprint(&operation.path, cancel)? != operation.previous {
+        if !matches_metadata(transport, &operation.path, operation.previous.as_ref())? {
             return Err(conflict(format!("device content changed before publication at {}", operation.path)));
         }
         if operation.previous.is_some() {
@@ -151,7 +166,7 @@ pub fn synchronize(state: &mut State, transport: &mut dyn Transport, plan: &Plan
             if let Some(parent) = operation.path.parent() { transport.create_dir_all(&parent)?; }
             transport.rename_new(&pending.stage, &operation.path)?;
         }
-        if transport.fingerprint(&operation.path, cancel)? != operation.desired.as_ref().map(|m| m.fingerprint.clone()) {
+        if !matches_metadata(transport, &operation.path, operation.desired.as_ref().map(|m| &m.fingerprint))? {
             return Err(conflict(format!("published device content failed verification at {}", operation.path)));
         }
         state.published(operation)?;
@@ -159,7 +174,15 @@ pub fn synchronize(state: &mut State, transport: &mut dyn Transport, plan: &Plan
         if operation.previous.is_some() { transport.remove_file(&pending.backup)?; }
         state.finished(*position)?;
         progress(Progress { completed_files:index + 1, total_files:plan.actions().len(),
-            current_path:operation.path.to_string(), transferred_bytes:operation.desired.as_ref().map_or(0, |m| m.fingerprint.size) });
+            current_path:operation.path.to_string(), transferred_bytes:operation.desired.as_ref().map_or(0, |m| m.fingerprint.size), verifying:false });
     }
     Ok(())
+}
+
+fn matches_metadata(transport: &mut dyn Transport, path: &RelativePath, expected: Option<&crate::Fingerprint>) -> Result<bool> {
+    Ok(match (transport.stat(path)?, expected) {
+        (None, None) => true,
+        (Some(info), Some(expected)) => !info.directory && info.size == expected.size,
+        _ => false,
+    })
 }

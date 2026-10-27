@@ -25,10 +25,25 @@ pub trait Transport {
     fn published(&mut self, _path: &RelativePath, _cancel: &Cancellation) -> Result<()> { Ok(()) }
 
     fn fingerprint(&mut self, path: &RelativePath, cancel: &Cancellation) -> Result<Option<Fingerprint>> {
+        self.fingerprint_with_progress(path, cancel, &mut |_| ())
+    }
+    fn fingerprint_with_progress(&mut self, path: &RelativePath, cancel: &Cancellation,
+        progress: &mut (dyn FnMut(u64) + Send)) -> Result<Option<Fingerprint>> {
         let Some(info) = self.stat(path)? else { return Ok(None) };
         if info.directory { return Err(crate::conflict(format!("a directory occupies {path}"))); }
         let mut writer = crate::model::HashWriter::new(cancel);
-        self.read(path, &mut writer, cancel)?;
+        struct Reporting<'a> { writer:&'a mut crate::model::HashWriter, bytes:u64, progress:&'a mut (dyn FnMut(u64) + Send) }
+        impl Write for Reporting<'_> {
+            fn write(&mut self, bytes:&[u8]) -> std::io::Result<usize> {
+                let count = self.writer.write(bytes)?;
+                self.bytes += count as u64;
+                (self.progress)(self.bytes);
+                Ok(count)
+            }
+            fn flush(&mut self) -> std::io::Result<()> { self.writer.flush() }
+        }
+        progress(0);
+        self.read(path, &mut Reporting { writer:&mut writer, bytes:0, progress }, cancel)?;
         cancel.check()?;
         let digest = writer.finish();
         if digest.size != info.size { return Err(crate::conflict(format!("device file changed while reading {path}"))); }

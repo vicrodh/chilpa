@@ -51,7 +51,7 @@ pub fn prepare(state: &State, transport: &mut dyn Transport, inputs: &[Input], p
 }
 
 /// I inspect destination metadata for a fast preview. Presence is not integrity verification.
-/// Synchronization verifies every affected destination against its recorded hash before writing.
+/// Synchronization rechecks ownership and size; copied-byte verification is optional.
 pub fn prepare_review(state: &State, transport: &mut dyn Transport, inputs: &[Input], playlists: &[Playlist],
     remove_unselected: bool, cancel: &Cancellation) -> Result<Plan> {
     // The review snapshot is scoped to this call and never reaches execution or recovery.
@@ -173,6 +173,6 @@ fn destination(transport: &mut dyn Transport, path: &RelativePath, known: Option
     if info.directory || info.size != known.fingerprint.size {
         return Err(conflict(format!("externally changed file at {path}")));
     }
-    // This expected fingerprint is checked against bytes before any mutation by synchronize.
+    // I keep the intended digest for optional copy verification, without reading media here.
     Ok(Some(known.fingerprint.clone()))
 }
