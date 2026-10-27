@@ -3,6 +3,7 @@ import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
 import "../Components"
 
@@ -60,6 +61,8 @@ Item {
     function focusedList() { return trackFocus.focusedList() }
     function restoreFocus(previous) { trackFocus.restoreFocus(previous) }
     function pressed(event) {
+        if (InputLayers.blocksShortcuts(window) && !JSON.parse(Hotkeys.snapshot || "{}").recording)
+            return
         for (let item = window.activeFocusItem; item; item = item.parent) {
             if (item.blocksWindowShortcuts === true && !JSON.parse(Hotkeys.snapshot || "{}").recording)
                 return

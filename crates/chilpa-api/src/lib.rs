@@ -543,6 +543,7 @@ pub struct Album {
     pub artwork_path: String,
     /// How many plays it has, counted from the log.
     pub play_count: usize,
+    pub explicit: Option<bool>,
 }
 
 /// A track from the library.

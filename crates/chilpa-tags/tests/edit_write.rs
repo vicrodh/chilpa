@@ -84,6 +84,45 @@ fn state(path: &Path) -> (u64, std::time::SystemTime) {
     (meta.len(), meta.modified().unwrap())
 }
 
+#[test]
+fn advisory_roundtrips_explicit_clean_and_unknown_without_touching_other_tags() {
+    use lofty::file::AudioFile;
+    let dir = folder("advisory");
+    for path in every_format(&dir) {
+        if path.extension().is_some_and(|extension| extension == "flac") {
+            let mut reader = std::fs::File::open(&path).unwrap();
+            let mut file = lofty::flac::FlacFile::read_from(&mut reader, Default::default()).unwrap();
+            file.vorbis_comments_mut().unwrap().insert("UNMAPPED_FIXTURE".into(), "Keep this value".into());
+            file.save_to_path(&path, Default::default()).unwrap();
+        }
+        let before = snapshot(&path).unwrap();
+        let mut change = FileChanges::none(path.clone());
+        change.explicit = Change::Set(true);
+        if !placed(&path).unwrap().contains(&"explicit") {
+            let bytes = std::fs::read(&path).unwrap();
+            assert!(matches!(write(&[change]), Err(WriteError::NoPlace { field: "explicit", .. })));
+            assert_eq!(std::fs::read(&path).unwrap(), bytes, "unsupported tags leave the original intact");
+            continue;
+        }
+        for value in [Some(true), Some(false), None] {
+            change.explicit = value.map_or(Change::Clear, Change::Set);
+            write(&[change.clone()]).unwrap();
+            let mut after = snapshot(&path).unwrap();
+            assert_eq!(after.explicit, value, "{}", path.display());
+            assert_eq!(chilpa_tags::read(&path).unwrap().tags.explicit, value, "the scanner reads the same advisory");
+            after.explicit = before.explicit;
+            assert_eq!(after, before, "unrelated tags survive advisory edits");
+            if path.extension().is_some_and(|extension| extension == "flac") {
+                let mut reader = std::fs::File::open(&path).unwrap();
+                let file = lofty::flac::FlacFile::read_from(&mut reader, Default::default()).unwrap();
+                assert_eq!(file.vorbis_comments().unwrap().get("UNMAPPED_FIXTURE"), Some("Keep this value"));
+            }
+        }
+    }
+    assert_eq!(copies(&dir), 0);
+    let _ = std::fs::remove_dir_all(dir);
+}
+
 /// The copies a write leaves waiting in a folder.
 fn copies(dir: &Path) -> usize {
     std::fs::read_dir(dir)

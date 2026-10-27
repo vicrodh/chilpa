@@ -12,6 +12,7 @@ Popup {
     parent: Overlay.overlay
     anchors.centerIn: parent
     modal: true
+    PopupInput { surface: root }
     focus: true
     padding: 0
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnReleaseOutside

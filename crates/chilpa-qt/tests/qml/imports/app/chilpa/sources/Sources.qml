@@ -24,7 +24,8 @@ QtObject {
     function refresh() { refreshCount++ }
     // Pages by key, as a test sets them.
     property var pages: ({})
-    function page(key, rev) { return pages[key] || JSON.stringify({ music: false }) }
+    signal pageRequested(string key)
+    function page(key, rev) { pageRequested(key); return pages[key] || JSON.stringify({ music: false }) }
     property var networks: ({})
     function network(name, rev) { return networks[name] || JSON.stringify({ loading: false }) }
     property var sceneDocument: ({state:"idle",artists:[]})

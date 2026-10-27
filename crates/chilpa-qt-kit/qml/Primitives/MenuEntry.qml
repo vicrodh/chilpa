@@ -77,7 +77,8 @@ Item {
         anchors.rightMargin: tail.width > 0 ? Metrics.gap16 : 0
         anchors.verticalCenter: parent.verticalCenter
 
-        Text {
+        AdvisoryTitle {
+            explicitContent: line.entry.explicitContent === true
             id: title
             width: parent.width
             text: line.entry.text || ""

@@ -53,7 +53,7 @@ impl crate::Chilpa {
         }).to_string()))
     }
 
-    fn audio_now(&self, dsp: bool, gain: bool) -> Value {
+    pub(super) fn audio_now(&self, dsp: bool, gain: bool) -> Value {
         if !self.now.playing { return json!({"available":false,"summary":chilpa_i18n::t("Nothing is playing. Equipment details remain available.")}); }
         if self.casting.active() {
             return json!({"available":true,"cast":true,"summary":chilpa_i18n::t("Chilpa sends the original audio to the receiver."),

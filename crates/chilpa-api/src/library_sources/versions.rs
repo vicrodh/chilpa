@@ -131,7 +131,7 @@ impl RecordCopy<'_> {
 pub(crate) fn copies<'a>(ids: impl IntoIterator<Item = i64>, local: &'a VersionCatalog, sources: &'a HashMap<i64, SourceVersion>) -> Vec<RecordCopy<'a>> {
     ids.into_iter().filter_map(|id| if id > 0 {
         local.versions.get(&id).map(|v| RecordCopy { id, group: &v.group, source: format!("library:{id}"), edition: words(&v.title),
-            tracks: v.tracks, explicit: None, tier: v.tier() })
+            tracks: v.tracks, explicit: v.explicit, tier: v.tier() })
     } else {
         sources.get(&id).map(|v| RecordCopy { id, group: &v.group, source: v.plugin.clone(), edition: v.edition.clone(),
             tracks: v.tracks, explicit: v.explicit, tier: v.tier })

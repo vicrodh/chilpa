@@ -19,6 +19,7 @@ pub mod qobject {
         #[qproperty(i32, tracks_rev)]
         #[qproperty(QString, versions)]
         #[qproperty(bool, found)]
+        #[qproperty(bool, explicit_content)]
         #[qproperty(QString, title)]
         #[qproperty(QString, artist)]
         #[qproperty(QString, artist_information)]
@@ -63,6 +64,7 @@ pub struct AlbumDetailRust {
     versions: QString,
     found: bool,
     title: QString,
+    explicit_content: bool,
     artist: QString,
     artist_information: QString,
     art: QUrl,
@@ -151,12 +153,9 @@ impl qobject::AlbumDetailModel {
         self.as_mut().set_versions(QString::from(serde_json::to_string(&page.versions).unwrap_or_default()));
         self.as_mut().set_tracks_rev(token);
         self.as_mut().set_selected_id(d.album.id);
-        let art = if d.album.artwork_path.is_empty() {
-            QUrl::default()
-        } else {
-            QUrl::from_local_file(&QString::from(&d.album.artwork_path))
-        };
+        let art = crate::format::art_url(&d.album.artwork_path);
         self.as_mut().set_title(QString::from(&d.album.title));
+        self.as_mut().set_explicit_content(d.album.explicit == Some(true));
         self.as_mut().set_artist(QString::from(&d.album.artist));
         self.as_mut().set_artist_information(QString::from(&page.artist_information));
         self.as_mut().set_art(art);

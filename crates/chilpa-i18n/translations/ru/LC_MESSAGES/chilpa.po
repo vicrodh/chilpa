@@ -673,6 +673,9 @@ msgstr "Не удалось начать просмотр данных ауди�
 msgid "Audio output task stopped unexpectedly."
 msgstr "Задача аудиовыхода неожиданно остановилась."
 
+msgid "Audio path"
+msgstr "Аудиотракт"
+
 msgid "Audio stack"
 msgstr "Аудиостек"
 
@@ -1000,11 +1003,23 @@ msgstr "Проверять обновления автоматически"
 msgid "Check one format"
 msgstr "Проверить один формат"
 
+msgid "Checking available space"
+msgstr "Проверка свободного места"
+
+msgid "Checking destination files"
+msgstr "Проверка файлов назначения"
+
 msgid "Checking for updates…"
 msgstr "Проверка обновлений…"
 
 msgid "Checking library folders…"
 msgstr "Проверка папок медиатеки…"
+
+msgid "Checking local files"
+msgstr "Проверка локальных файлов"
+
+msgid "Checking storage identity"
+msgstr "Проверка идентификатора накопителя"
 
 msgid "Checking the account…"
 msgstr "Проверка учётной записи…"
@@ -1101,6 +1116,9 @@ msgstr "Выбрать"
 
 msgid "Choose DSP on or bypass."
 msgstr "Выберите: DSP включён или обход."
+
+msgid "Choose Unknown, Clean or Explicit"
+msgstr "Выберите Неизвестно, Без откровенного содержания или Откровенное содержание"
 
 msgid "Choose a DSP favorite."
 msgstr "Выберите избранный пресет DSP."
@@ -1218,6 +1236,9 @@ msgstr "Для подключения выберите приёмник в ме�
 
 msgid "Choose the storage paired with this profile."
 msgstr ""
+
+msgid "Clean"
+msgstr "Без откровенного содержания"
 
 msgid "Clear"
 msgstr "Очистить"
@@ -1432,6 +1453,9 @@ msgstr "Ошибка подключения"
 msgid "Container"
 msgstr "Контейнер"
 
+msgid "Content advisory"
+msgstr "Классификация содержания"
+
 msgid "Continue"
 msgstr "Продолжить"
 
@@ -1629,6 +1653,9 @@ msgstr "DSD{} · PCM на {} Hz · {}"
 
 msgid "DSP active"
 msgstr "DSP активен"
+
+msgid "DSP and gain"
+msgstr "DSP и усиление"
 
 msgid "DSP applied to consumed PCM blocks"
 msgstr "DSP применён к обрабатываемым блокам PCM"
@@ -2140,6 +2167,9 @@ msgstr "Развернуть"
 msgid "Experimental: theme may not match your system exactly."
 msgstr "Экспериментально: тема может не точно совпадать с вашей системой."
 
+msgid "Explicit"
+msgstr "Откровенное содержание"
+
 msgid "Explore"
 msgstr "Исследовать"
 
@@ -2326,6 +2356,9 @@ msgstr "Забывает найденные до сих пор тексты пе
 msgid "Format"
 msgstr "Формат"
 
+msgid "Format conversion"
+msgstr "Преобразование формата"
+
 msgid "Forward"
 msgstr "Вперёд"
 
@@ -2394,6 +2427,9 @@ msgstr "GPU"
 
 msgid "GPU (compatibility)"
 msgstr "GPU (совместимость)"
+
+msgid "Gain"
+msgstr "Усиление"
 
 msgid "Gain applied to consumed PCM blocks"
 msgstr "Усиление применено к обрабатываемым блокам PCM"
@@ -2557,8 +2593,8 @@ msgstr "Скрыть с боковой панели"
 msgid "Hide manual entry"
 msgstr "Скрыть ручной ввод"
 
-msgid "Hide offline profiles"
-msgstr ""
+msgid "Hide review details"
+msgstr "Скрыть подробности проверки"
 
 msgid "Hide sidebar"
 msgstr "Скрыть боковую панель"
@@ -2574,6 +2610,9 @@ msgstr "Скрыть перевод"
 
 msgid "Hide unavailable"
 msgstr "Скрыть недоступные"
+
+msgid "Hide visualization"
+msgstr "Скрыть визуализацию"
 
 msgid "Hide when idle"
 msgstr "Скрывать при бездействии"
@@ -3334,6 +3373,9 @@ msgstr "Смешанный выход"
 msgid "Mixing engineer"
 msgstr "Микс-инженер"
 
+msgid "Mode not reported"
+msgstr "Режим не указан"
+
 msgid "Mon"
 msgstr "Пн"
 
@@ -3748,6 +3790,9 @@ msgstr "Chilpa не сообщает об изменении отсчётов; �
 msgid "No sample processing reported in Chilpa"
 msgstr "Обработка отсчётов в Chilpa не отмечена"
 
+msgid "No saved profiles"
+msgstr "Нет сохранённых профилей"
+
 msgid "No saved queries yet. Add conditions, then choose Save query."
 msgstr "Сохранённых запросов пока нет. Добавьте условия и выберите «Сохранить запрос»."
 
@@ -4057,6 +4102,9 @@ msgstr "Открытие и необязательное чтение парам
 msgid "Opening checks"
 msgstr "Проверки открытия"
 
+msgid "Opening device connection"
+msgstr "Подключение устройства"
+
 msgid "Opening mode"
 msgstr "Режим открытия"
 
@@ -4065,6 +4113,9 @@ msgstr "Открытие: {} · Слышимость: {}"
 
 msgid "Optional access token for private playlists"
 msgstr "Необязательный токен доступа для закрытых плейлистов"
+
+msgid "Original audio"
+msgstr "Исходное аудио"
 
 msgid "Original audio over the selected network transport"
 msgstr "Исходное аудио через выбранный сетевой транспорт"
@@ -4144,6 +4195,9 @@ msgstr "Вставьте токен, выданный источником. Chil
 msgid "Paste the user token from listenbrainz.org/settings."
 msgstr "Вставьте токен пользователя со страницы listenbrainz.org/settings."
 
+msgid "Path unverified"
+msgstr "Тракт не проверен"
+
 msgid "Pause"
 msgstr "Пауза"
 
@@ -4176,6 +4230,9 @@ msgstr "Сочетания физических форматов"
 
 msgid "Physical format match"
 msgstr "Совпадение физического формата"
+
+msgid "Physical output unreported"
+msgstr "Физический выход не указан"
 
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "Выберите тему или оставьте «Системный», чтобы следовать рабочему столу, выберите язык и нажмите :, чтобы открыть командную строку."
@@ -4384,6 +4441,9 @@ msgstr "Подготовка анализа настроения"
 msgid "Preparing analysis…"
 msgstr "Подготовка анализа…"
 
+msgid "Preparing playlists"
+msgstr "Подготовка плейлистов"
+
 msgid "Preparing results…"
 msgstr "Подготовка результатов…"
 
@@ -4429,8 +4489,14 @@ msgstr "Обработано"
 msgid "Processing"
 msgstr "Обработка"
 
+msgid "Processing active"
+msgstr "Обработка включена"
+
 msgid "Producer"
 msgstr "Продюсер"
+
+msgid "Profile"
+msgstr "Профиль"
 
 msgid "Profile name"
 msgstr "Имя профиля"
@@ -4594,6 +4660,9 @@ msgstr "Читать «{}» как слова"
 msgid "Reading Library selection…"
 msgstr ""
 
+msgid "Reading file sizes"
+msgstr "Чтение размеров файлов"
+
 msgid "Reading it from {}…"
 msgstr "Чтение из источника «{}»…"
 
@@ -4632,6 +4701,9 @@ msgstr "Пересобирает счётчики и поисковый инде
 
 msgid "Recalculate usage"
 msgstr "Пересчитать использование"
+
+msgid "Receiver"
+msgstr "Приёмник"
 
 msgid "Receiver processing unknown"
 msgstr "Обработка на ресивере неизвестна"
@@ -4774,9 +4846,6 @@ msgstr "Уберите одно условие, чтобы получить ре
 msgid "Remove original queues"
 msgstr "Удалить исходные очереди"
 
-msgid "Remove profile"
-msgstr ""
-
 msgid "Remove saved profile"
 msgstr ""
 
@@ -4785,9 +4854,6 @@ msgstr "Удаляет уменьшенные обложки и фоны. Chilpa
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "Удалить этот плагин, его учётную запись, настройки и кэшированную библиотеку из Chilpa? Ваша учётная запись и плейлисты в источнике не удаляются."
-
-msgid "Remove this profile and its local sync history? Files on the device will stay."
-msgstr ""
 
 msgid "Remove this server?"
 msgstr "Удалить этот сервер?"
@@ -4872,6 +4938,9 @@ msgstr "Сбросить счётчик"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "Разрядность снижена с {} до {} бит"
+
+msgid "Resolving selected music"
+msgstr "Подготовка выбранной музыки"
 
 msgid "Resolving…"
 msgstr "Обработка…"
@@ -5305,6 +5374,9 @@ msgstr ""
 msgid "Show playlist only from the same source as the track"
 msgstr "Показывать только плейлисты из того же источника, что и трек"
 
+msgid "Show review details"
+msgstr "Показать подробности проверки"
+
 msgid "Show saved tracks in Tracks"
 msgstr "Показывать сохранённые треки в «Треках»"
 
@@ -5325,6 +5397,9 @@ msgstr "Показать токен"
 
 msgid "Show translation"
 msgstr "Показать перевод"
+
+msgid "Show visualization"
+msgstr "Показать визуализацию"
 
 msgid "Show what you're listening to as your Discord status. Opt-in — Discord must be running."
 msgstr "Показывать, что вы слушаете, в статусе Discord. По желанию — Discord должен быть запущен."
@@ -6304,6 +6379,12 @@ msgstr "Недоступно"
 msgid "Uncategorized"
 msgstr "Без категории"
 
+msgid "Unchanged"
+msgstr "Без изменений"
+
+msgid "Unchanged samples"
+msgstr "Сэмплы без изменений"
+
 msgid "Undo"
 msgstr "Отменить"
 
@@ -6546,6 +6627,9 @@ msgstr "Дождитесь завершения проверки звука."
 
 msgid "Wait for the queue to finish switching."
 msgstr "Дождитесь завершения переключения очереди."
+
+msgid "Waiting for output"
+msgstr "Ожидание выхода"
 
 msgid "Waiting for playback to stop"
 msgstr "Ожидание остановки воспроизведения"

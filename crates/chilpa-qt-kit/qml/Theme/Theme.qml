@@ -14,6 +14,7 @@ QtObject {
     // The dynamic background shows through the chrome: every surface that
     // goes translucent under it reads this one predicate.
     readonly property bool ambient: ThemeModel.ambient
+    readonly property string explicitLabel: I18n.tr("Explicit", I18n.rev)
     readonly property string searchLabel: I18n.tr("Search", I18n.rev)
     readonly property string emptySearchLabel: I18n.tr("No matches", I18n.rev)
     // What the sung line of lyrics can be tinted with, after the text's own
@@ -181,6 +182,7 @@ QtObject {
     }
 
     function opaque(color) { return Qt.rgba(color.r, color.g, color.b, 1) }
+    function withAlpha(color, alpha) { return Qt.rgba(color.r, color.g, color.b, alpha) }
 
     // The color a cover shows while it loads, varied by position so a grid
     // of placeholders does not read as one block.

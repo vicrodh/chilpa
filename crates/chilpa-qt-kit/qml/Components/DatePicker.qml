@@ -11,6 +11,7 @@ import "../Primitives"
 // and out as "2026-10-09".
 Controls.Popup {
     id: picker
+    PopupInput { surface: picker }
 
     // The day marked as chosen, and the last one that can be picked.
     property string selected

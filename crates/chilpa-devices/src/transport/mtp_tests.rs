@@ -173,3 +173,21 @@ fn discovery_matches_the_card_marker_without_picking_the_internal_volume() {
     assert!(!internal.join("Chilpa").exists());
     assert!(!card.join("Chilpa/.chilpa-sync/lock").exists());
 }
+
+#[test]
+fn cancellation_stops_review_enumeration_and_a_new_job_can_reopen_the_snapshot() {
+    let fixture = Fixture::new(true);
+    let mut device = fixture.open();
+    let cancel = Cancellation::default();
+    device.set_cancellation(&cancel);
+    device.begin_review();
+    cancel.cancel();
+    let before = device.listing_calls.get();
+    assert!(matches!(device.stat(&song()), Err(crate::Error::Cancelled)));
+    assert_eq!(device.listing_calls.get(), before);
+    device.end_review();
+    device.set_cancellation(&Cancellation::default());
+    device.begin_review();
+    assert!(device.stat(&song()).unwrap().is_some());
+    device.end_review();
+}

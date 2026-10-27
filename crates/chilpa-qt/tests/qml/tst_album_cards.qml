@@ -37,6 +37,21 @@ TestCase {
         compare(page.shelf.height, height, "I keep the shelf's scroll geometry while its cards load")
     }
     function initTestCase() { records.append({first:0,span:6,group:"", revision:0}) }
+    function test_explicit_flags_update_retained_cards_without_changing_titles() {
+        const label = findChild(card, "albumTitle")
+        card.title = "A & <B>"
+        card.explicitContent = true
+        verify(findChild(label, "explicitBadge") !== null)
+        compare(label.text, "A & <B>")
+        card.explicitContent = false
+        tryVerify(() => findChild(label, "explicitBadge") === null)
+        compare(label.text, "A & <B>")
+        card.title = "Record"
+        records.explicitRows = [0,1,2,3,4,5]; records.rev++
+        tryVerify(() => findChild(grid, "explicitBadge") !== null)
+        records.explicitRows = []; records.rev++
+        tryVerify(() => findChild(grid, "explicitBadge") === null)
+    }
     function test_artist_name_opens_the_source_artist_without_opening_the_album() {
         card.albumId = -7; card.subtitle = "Band"
         AlbumActions.artistDestination = {target:"source",key:"fixture native:artist:7"}
@@ -63,9 +78,9 @@ TestCase {
         grid.roundIds = [-1]
         SettingsModel.quickViewClick = true
         records.expanded = -1
-        grid.clicked(0, -1, "Artist", 0, true)
+        findChild(grid, "albumGridInteraction").clicked(0, -1, "Artist", 0, true)
         compare(records.expanded, -1)
-        grid.clicked(1, -2, "Record", 0, true)
+        findChild(grid, "albumGridInteraction").clicked(1, -2, "Record", 0, true)
         compare(records.expanded, 1)
         grid.roundIds = []; SettingsModel.quickViewClick = false
         records.expanded = -1; records.kind = ""; records.rev++
@@ -105,7 +120,12 @@ TestCase {
         const quick = findChild(grid, "albumQuickLoader")
         tryCompare(quick, "active", true)
         const menu = findChild(quick.item, "quickQueueMenu")
-        menu.model.append({title:"Track"})
+        menu.model.append({trackId:1,rowKind:0,number:1,title:"Track",artist:"",album:"",duration:"3:00",plays:0,quality:"",tier:0,playing:false,selected:false,headerLabel:"",headerMeta:"",art:"",available:true,explicitContent:true})
+        tryVerify(() => findChild(quick.item, "creditedText") !== null)
+        const trackTitle = findChild(quick.item, "creditedText").parent
+        verify(findChild(trackTitle, "explicitBadge") !== null)
+        menu.model.setProperty(0, "explicitContent", false)
+        tryVerify(() => findChild(trackTitle, "explicitBadge") === null)
         const button = findChild(quick.item, "quickQueueActions")
         compare(button.tip, "Queue actions")
         waitForRendering(button)

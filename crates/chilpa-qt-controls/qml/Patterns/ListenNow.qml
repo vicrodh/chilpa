@@ -1,10 +1,14 @@
 import QtQuick
+import QtQuick.Window
+import QtQuick.Controls.Basic
+import app.chilpa.controls
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Components"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // The live player stays visible while another buffer is being edited: the
 // art, what plays, and under it three tabs -- its progress and quality, its
@@ -18,6 +22,25 @@ Item {
     function show(name) { tab = name; SettingsModel.keep("ui.queue.panel", name) }
     // The lyrics as the player bar shows them, given by the screen.
     property Component lyrics
+    property var visualizerFeed: null
+    property Component scopeRenderer
+    property bool visualizationsReady: false
+    property bool visualization: SettingsModel.kept("ui.queue.visualizer") === "true"
+    property int visualizationMode: Math.max(0, Math.min(6, Number(SettingsModel.kept("ui.queue.visualizer.mode") || 0)))
+    readonly property bool presented: visible && tab === "playing" && (!Window.window
+        || (Window.window.visible && Window.window.visibility !== Window.Minimized))
+    property string pathDocument: "{}"
+    function refreshPath() {
+        if (!presented) return
+        const next = AudioOutput.signalPath()
+        if (next !== pathDocument) pathDocument = next
+    }
+    function toggleVisualization() {
+        visualization = !visualization
+        SettingsModel.keep("ui.queue.visualizer", visualization ? "true" : "false")
+    }
+    onPresentedChanged: { if (presented) refreshPath(); else pathDocument = "{}" }
+    Component.onCompleted: refreshPath()
 
     Column {
         id: head
@@ -61,6 +84,19 @@ Item {
                 current: card.tabs.indexOf(card.tab)
                 onActivated: (index) => card.show(card.tabs[index])
             }
+            IconButton {
+                objectName: "queueVisualizationToggle"
+                visible: card.tab === "playing"
+                enabled: card.visualizationsReady && card.visualizerFeed !== null
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                glyph: card.visualization ? Lucide.audioLinesOff : Lucide.audioLines
+                iconFamily: Lucide.font
+                tip: card.visualization ? I18n.tr("Hide visualization", I18n.rev) : I18n.tr("Show visualization", I18n.rev)
+                checked: card.visualization
+                size: Metrics.button26
+                onClicked: card.toggleVisualization()
+            }
             // The lyrics' display settings, at the far end of their tab's row.
             IconButton {
                 objectName: "queueLyricsOptions"
@@ -82,9 +118,19 @@ Item {
         anchors.bottom: parent.bottom
         width: parent.width
 
-        Column {
-            objectName: "queuePanelPlaying"
+        Flickable {
+            id: playingView
+            objectName: "queuePlayingViewport"
+            anchors.fill: parent
             visible: card.tab === "playing"
+            clip: true
+            contentWidth: width
+            contentHeight: playingContent.height
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ViewportScrollBar {}
+        Column {
+            id: playingContent
+            objectName: "queuePanelPlaying"
             width: parent.width
             spacing: Metrics.gap12
             SeekBar {
@@ -106,6 +152,32 @@ Item {
                 color: Theme.color.textSecondary
                 font.pointSize: Type.small
             }
+            Loader {
+                id: animation
+                objectName: "queueVisualization"
+                width: parent.width
+                height: active ? Metrics.visualizerBandTall : 0
+                active: card.presented && card.visualization && card.visualizationsReady && card.visualizerFeed !== null
+                sourceComponent: CompactVisualizer {
+                    feed: card.visualizerFeed
+                    scopeRenderer: card.scopeRenderer
+                    active: card.presented && Player.playing && !Player.paused
+                        && animation.y + animation.height > playingView.contentY
+                        && animation.y < playingView.contentY + playingView.height
+                    mode: card.visualizationMode
+                    onCycleRequested: nextMode => {
+                        card.visualizationMode = nextMode
+                        SettingsModel.keep("ui.queue.visualizer.mode", String(nextMode))
+                    }
+                }
+            }
+            Loader {
+                objectName: "queueSignalPathHost"
+                width: parent.width
+                active: card.presented
+                sourceComponent: QueueSignalPath { document: JSON.parse(card.pathDocument) }
+            }
+        }
         }
         // Only the tab in view is built: lyrics follow the song while shown.
         Loader {

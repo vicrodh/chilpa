@@ -1,4 +1,5 @@
 import QtQuick
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
@@ -8,6 +9,7 @@ MouseArea {
     parent: window ? window.contentItem : null
     anchors.fill: parent
     z: Metrics.tooltipLayer + Metrics.gap2
+    enabled: !InputLayers.blocks(window)
     acceptedButtons: Qt.BackButton | Qt.ForwardButton
     cursorShape: undefined
     onClicked: mouse => mouse.button === Qt.BackButton ? Navigation.back() : Navigation.forward()

@@ -8,6 +8,14 @@ import "../Patterns"
 TitledFlow {
     title: "Audio and output"
     width: Metrics.settingsMaxWidth
+    QueueSignalPath {
+        width: Metrics.listenArt
+        document: ({status:"unverified",summary:"Path unverified",stages:[
+            {label:"Source",value:"FLAC · 24-bit / 96 kHz",detail:"Source metadata"},
+            {label:"Processing",value:"Unchanged",detail:"No sample changes reported"},
+            {label:"Output",value:"96000 Hz · PCM 24/32 · 2 channels",detail:"No physical readback"},
+            {label:"Device",value:"Example DAC",mode:"Mode not reported"}]})
+    }
     AudioQualityGlyph { tier: 2; preview: true }
     AudioQualityGlyph { tier: 3; preview: true }
     AudioQualityGlyph { tier: 4; preview: true }

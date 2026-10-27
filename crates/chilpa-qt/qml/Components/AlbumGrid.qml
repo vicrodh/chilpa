@@ -57,7 +57,7 @@ Item {
 
     signal open(int albumId, string title)
 
-    Tools.AlbumGridInteraction { id: interaction; grid: grid }
+    Tools.AlbumGridInteraction { id: interaction; objectName: "albumGridInteraction"; grid: grid }
 
     implicitHeight: shelf ? Math.max(rowHeight, view.contentItem.childrenRect.height) + Metrics.cardRing * 2 : view.contentHeight // derived: the shelf keeps both selection rings
 
@@ -141,6 +141,7 @@ Item {
                 rev: grid.detailsRev
                 albumId: shown ? grid.model.albumId(row.first, row.revision) : 0
                 title: shown ? grid.model.title(row.first, row.revision) : ""
+                explicitContent: shown && grid.model.explicitContent(row.first, row.revision)
                 subtitle: shown ? grid.model.subtitle(row.first, row.revision) : ""
                 year: shown ? grid.model.year(row.first, row.revision) : ""
                 art: shown && !grid.technical ? grid.model.art(row.first, row.revision) : ""
@@ -180,6 +181,7 @@ Item {
                     albumId: occupied ? grid.model.albumId(at, rev) : 0
                     sources: occupied ? interaction.badges(albumId, grid.detailsRev) : []
                     title: occupied ? grid.model.title(at, rev) : ""
+                    explicitContent: occupied && grid.model.explicitContent(at, rev)
                     subtitle: occupied ? grid.model.subtitle(at, rev) : ""
                     year: occupied ? grid.model.year(at, rev) : ""
                     art: occupied ? grid.model.art(at, rev) : ""

@@ -13,10 +13,9 @@
 //! thread parks while it is disabled or the player is paused, waking on its
 //! own within 200 ms, and a scope's DSP runs only while its bit is set.
 //!
-//! What differs from QBZ is the source. QBZ reads a ring a million samples
-//! deep, aligned to the device's playhead; this reads the tap, which keeps
-//! what the device accepted, so the drawing runs ahead of what is heard by
-//! whatever the device holds: up to half a second on a direct backend.
+//! The tap retains bounded stereo history while a view is visible and aligns
+//! the analysis window with the output delay reported by the backend. The
+//! reusable window does not copy the metering snapshot or compute its RMS.
 
 mod analysis;
 mod dsd;
@@ -70,6 +69,8 @@ pub enum Frame {
 /// Whoever receives the frames. The window latches them for its drain.
 pub trait Sink: Send + Sync {
     fn submit(&self, frame: Frame);
+    /// I publish one completed analysis batch after its last stream arrives.
+    fn finish_frame(&self) {}
 }
 
 /// What the window tells the producer: whether anybody is looking, whether
@@ -79,6 +80,8 @@ pub struct Controls {
     enabled: Arc<AtomicBool>,
     paused: Arc<AtomicBool>,
     scopes: Arc<AtomicU32>,
+    compact_only: Arc<AtomicBool>,
+    compact_mode: Arc<AtomicU32>,
 }
 
 impl Controls {
@@ -102,6 +105,12 @@ impl Controls {
     /// burn CPU on the same picture.
     pub fn set_paused(&self, paused: bool) {
         self.paused.store(paused, Ordering::Relaxed);
+    }
+
+    /// I skip unused analysis and frame allocation for a compact-only consumer.
+    pub fn set_compact(&self, only: bool, mode: u32) {
+        self.compact_mode.store(mode, Ordering::Relaxed);
+        self.compact_only.store(only, Ordering::Relaxed);
     }
 
     pub fn scopes(&self) -> u32 {
@@ -153,10 +162,14 @@ impl Producer {
             self.ribbon = ribbon::SpectralAnalyzer::new(44_100, FFT_SIZE, SPECTRAL_BANDS, SPECTRAL_RATE_HZ, SPECTRAL_SMOOTHING);
             self.scopes = scope::ScopeProcessor::default();
         }
-        let snapshot = if update.active { update.snapshot } else { Some(tap.snapshot()) };
-        let Some(snapshot) = snapshot else { return };
-        if snapshot.sample_rate_hz == 0 || !fill(&snapshot, &mut self.samples) { return; }
-        let rate = snapshot.sample_rate_hz;
+        let rate = if update.active {
+            let Some(snapshot) = update.snapshot else { return };
+            if !fill(&snapshot, &mut self.samples) { return; }
+            snapshot.sample_rate_hz
+        } else {
+            tap.visualizer_snapshot(&mut self.samples)
+        };
+        if rate == 0 { return; }
         let samples = &self.samples;
         let mask = controls.scopes();
         if mask & GONIOMETER != 0 {
@@ -166,16 +179,21 @@ impl Producer {
         if mask & OSCILLOSCOPE != 0 {
             sink.submit(Frame::Oscilloscope(self.scopes.oscilloscope(samples, rate)));
         }
-        if self.ribbon.process(samples, rate) {
+        let compact = controls.compact_only.load(Ordering::Relaxed);
+        let mode = controls.compact_mode.load(Ordering::Relaxed);
+        if !compact && self.ribbon.process(samples, rate) {
             sink.submit(Frame::Spectral(self.ribbon.bands().to_vec()));
         }
-        let analysis::Analyzed { bars, energy, transient } = self.analyzer.analyze(samples, rate);
-        sink.submit(Frame::Bars(bars));
-        sink.submit(Frame::Energy(energy));
-        if let Some(intensity) = transient {
-            sink.submit(Frame::Transient(intensity));
+        if !compact || matches!(mode, 0 | 2 | 5 | 6) {
+            let analysis::Analyzed { bars, energy, transient } = self.analyzer.analyze(samples, rate);
+            if !compact || mode != 2 { sink.submit(Frame::Bars(bars)); }
+            if !compact || mode == 2 { sink.submit(Frame::Energy(energy)); }
+            if !compact {
+                if let Some(intensity) = transient { sink.submit(Frame::Transient(intensity)); }
+            }
         }
-        sink.submit(Frame::Wave(wave(samples)));
+        if !compact || mode == 1 { sink.submit(Frame::Wave(wave(samples))); }
+        sink.finish_frame();
     }
 }
 

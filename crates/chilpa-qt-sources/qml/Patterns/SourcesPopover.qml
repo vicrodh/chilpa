@@ -9,6 +9,7 @@ import "../Components"
 
 Popup {
     id: popover
+    PopupInput { surface: popover }
     property bool showAlbumGrouping: true
     // Only which sources: no library columns, qualities, formats or stars,
     // and no Reset, which would clear those too.

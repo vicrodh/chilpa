@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.immersive
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // The view picker's menu (03-immersive §1.2): 660 wide on a dark glass,
 // FOCUS in two balanced columns and SPLIT in the third, rows of 33 with
@@ -14,6 +15,7 @@ import "../Theme"
 // them; the scenes come with their block.
 Popup {
     id: menu
+    PopupInput { surface: menu }
     property bool scopes: Immersive.accelerated
     width: Stage.menuWide
     padding: Stage.menuPad

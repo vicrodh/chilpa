@@ -99,7 +99,7 @@ impl Chilpa {
                 let join = |a: &str, b: &str| if b.is_empty() { a.to_string() } else { format!("{a} · {b}") };
                 let (long, brief, title) = index.records.get(&member)
                     .map(|r| (r.quality.long(), r.quality.brief(), r.title.clone())).unwrap_or_default();
-                versions.push(AlbumVersion { id: member, label: join(&source.label, &long), brief: join(&source.label, &brief), detail: title, source });
+                versions.push(AlbumVersion { id: member, label: join(&source.label, &long), brief: join(&source.label, &brief), detail: title, source, explicit: copy.explicit });
             }
         }
         versions

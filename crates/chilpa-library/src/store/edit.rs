@@ -26,6 +26,7 @@ pub struct TrackEdit {
     pub recording_mbid: Put<Option<String>>,
     pub genres: Put<Vec<String>>,
     pub composers: Put<Vec<String>>,
+    pub explicit: Put<Option<bool>>,
 }
 
 impl TrackEdit {
@@ -42,6 +43,7 @@ impl TrackEdit {
             recording_mbid: Put::Keep,
             genres: Put::Keep,
             composers: Put::Keep,
+            explicit: Put::Keep,
         }
     }
 }
@@ -74,6 +76,7 @@ pub struct Edited {
 /// A record's track as the editor starts from it.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct EditTrack {
+    pub explicit: Option<bool>,
     pub id: i64,
     pub external_id: String,
     /// The file that holds it, when one does.
@@ -96,7 +99,7 @@ impl Library {
                 "SELECT t.id, t.external_id,
                         (SELECT s.container FROM scanned_files s WHERE s.track_id = t.id LIMIT 1),
                         t.title, t.artist, t.track_number, t.disc_number, t.recording_mbid,
-                        t.disc_subtitle, t.work
+                        t.disc_subtitle, t.work, t.explicit
                  FROM tracks t
                  WHERE t.album_id = ?1 AND t.present = 1
                  ORDER BY t.disc_number, t.track_number, t.title COLLATE NOCASE",
@@ -113,6 +116,7 @@ impl Library {
                     recording_mbid: r.get(7)?,
                     disc_subtitle: r.get::<_, Option<String>>(8)?.unwrap_or_default(),
                     work: r.get::<_, Option<String>>(9)?.unwrap_or_default(),
+                    explicit: r.get(10)?,
                     genres: Vec::new(),
                 })
             })?;
@@ -224,6 +228,9 @@ impl Library {
         }
 
         for track in &edit.tracks {
+            if let Put::Set(value) = track.explicit {
+                tx.execute("UPDATE tracks SET explicit = ?2 WHERE id = ?1", params![track.id, value])?;
+            }
             tx.execute("UPDATE tracks SET album_title = ?2 WHERE id = ?1", params![track.id, title])?;
             if let Put::Set(label) = &edit.label {
                 tx.execute("UPDATE tracks SET label = ?2 WHERE id = ?1", params![track.id, label])?;
@@ -293,6 +300,19 @@ impl Library {
 mod tests {
     use super::*;
     use crate::AlbumSort;
+
+    #[test]
+    fn advisory_edits_update_the_editor_snapshot_and_preserve_other_tracks() {
+        let lib = shelf();
+        for value in [Some(true), Some(false), None] {
+            let mut changes = edit(1, "First", &[1]);
+            changes.tracks[0].explicit = Put::Set(value);
+            lib.apply_edit(&changes).unwrap();
+            let tracks = lib.edit_tracks(1).unwrap();
+            assert_eq!(tracks[0].explicit, value);
+            assert_eq!(tracks[1].explicit, None);
+        }
+    }
 
     /// Two records by the same artist. "First" has three tracks, one of
     /// them away; "Second" has one. Track 1 has played twice, track 4 once.

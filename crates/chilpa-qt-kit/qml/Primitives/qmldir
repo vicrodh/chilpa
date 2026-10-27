@@ -1,2 +1,3 @@
 singleton TipState 1.0 TipState.qml
 singleton Visit 1.0 Visit.qml
+singleton InputLayers 1.0 InputLayers.qml

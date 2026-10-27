@@ -207,6 +207,7 @@ pub struct BrowseTrack {
     pub composers: String,
     pub disc_subtitle: Option<String>,
     pub work: Option<String>,
+    pub explicit: Option<bool>,
 }
 
 /// One entry of a facet column: what it is called, how many albums it
@@ -285,7 +286,7 @@ const ROW: &str = concat!("SELECT t.id, t.external_id, t.title, t.artist, a.titl
             t.track_number, t.duration_ms, t.sample_rate_hz, t.bit_depth,
             COALESCE(r.plays, 0) AS plays, ", track_art!("t", "a"), ", (t.present = 1 AND t.reachable = 1), t.codec,
             (SELECT group_concat(c.name, ', ') FROM track_composers tc JOIN composers c ON c.id = tc.composer_id WHERE tc.track_id = t.id),
-            t.disc_subtitle, t.work");
+            t.disc_subtitle, t.work, t.explicit");
 
 fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
     Ok(BrowseTrack {
@@ -307,6 +308,7 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
         composers: r.get::<_, Option<String>>(15)?.unwrap_or_default(),
         disc_subtitle: r.get(16)?,
         work: r.get(17)?,
+        explicit: r.get(18)?,
     })
 }
 

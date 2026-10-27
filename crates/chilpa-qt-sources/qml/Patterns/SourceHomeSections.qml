@@ -40,6 +40,7 @@ Column {
         Visit.keep("home.source.sections", sections)
     }
     function resolve(source) {
+        if (!active || source.enabled !== true) return
         const page = JSON.parse(Sources.page(source.id + " native:discover:home", Library.remoteRev) || "{}")
         if (page.loading === true && !(page.shelves || []).length) return
         let preferences = []
@@ -65,9 +66,9 @@ Column {
             if (index >= home.sources.length) { stop(); home.ready = true }
         }
     }
-    KeyedModel { id: renderedRows; items: home.rendered ? home.sections.filter(section => section.enabled !== false && ((section.items || []).length || section.error)) : [] }
+    KeyedModel { id: renderedRows; keyField: "homeId"; items: home.rendered ? home.sections.filter(section => section.enabled !== false && ((section.items || []).length || section.error)) : [] }
     Repeater {
         model: renderedRows
-        SourceShelf { required property var entry; width: home.width; section: entry; oneRow: true }
+        SourceShelf { required property var entry; active: home.active; width: home.width; section: entry; oneRow: true }
     }
 }

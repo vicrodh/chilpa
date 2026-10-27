@@ -304,7 +304,7 @@ mod tests {
     #[test]
     fn the_current_album_moves_to_the_front_without_duplicate_entries() {
         let album = |id| crate::browse::album_of((chilpa_library::StoredAlbum {
-            id, title: format!("Album {id}"), album_artist: "Artist".into(), year: None, artwork_path: None, track_count: 1,
+            id, title: format!("Album {id}"), album_artist: "Artist".into(), year: None, artwork_path: None, track_count: 1, explicit: None,
         }, 1));
         let HomeRows::Albums(rows) = with_current(HomeRows::Albums(vec![album(1), album(2), album(3)]), Some(album(2)), 2) else { panic!() };
         assert_eq!(rows.iter().map(|album| album.id).collect::<Vec<_>>(), [2, 1]);

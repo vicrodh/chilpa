@@ -16,7 +16,7 @@ pub(crate) fn read_playlist(
             "",
         ));
     }
-    let mut device = transport(&profile.root, destination, false)?;
+    let mut device = transport(&profile.root, destination, false, cancel)?;
     let check = |device: &mut dyn chilpa_sync::transport::Transport| -> Result<(), UiError> {
         let identity = chilpa_sync::inspect_target(device, cancel).map_err(UiError::from)?;
         if identity.as_ref().map(|t| t.id.as_str()) != Some(profile.target_id.as_str()) {

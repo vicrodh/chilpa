@@ -362,7 +362,7 @@ mod tests {
     #[test]
     fn a_menu_keeps_its_destination_and_row_context_after_results_are_reordered() {
         let row = |id, title: &str| FoundRow::Album(chilpa_api::Album {
-            id, title:title.into(), artist:"Artist".into(), year:None, track_count:1, artwork_path:String::new(), play_count:0
+            id, title:title.into(), artist:"Artist".into(), year:None, track_count:1, artwork_path:String::new(), play_count:0, explicit:None
         });
         let mut state = SearchRust { rows:vec![row(1, "First album"), row(2, "Selected album")], ..Default::default() };
         state.menu = Some((state.rows.clone(), 1));

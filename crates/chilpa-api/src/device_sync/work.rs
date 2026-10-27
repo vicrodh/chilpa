@@ -44,7 +44,8 @@ pub(crate) struct Ready {
     pub _episode_files: Option<tempfile::TempDir>,
 }
 
-fn transport(root: &Root, destination: &str, create: bool) -> Result<Box<dyn Transport>, UiError> {
+fn transport(root: &Root, destination: &str, create: bool, cancel: &Cancellation) -> Result<Box<dyn Transport>, UiError> {
+    cancel.check().map_err(UiError::from)?;
     if destination.starts_with("volume:") {
         let volume = chilpa_devices::volumes::Volume::resolve(destination).map_err(UiError::from)?;
         let relative = discovery::folder(root, Some(&volume));
@@ -67,8 +68,7 @@ fn transport(root: &Root, destination: &str, create: bool) -> Result<Box<dyn Tra
         let location = location.parse().map_err(|_| invalid_connection())?;
         let volume = volume.parse().map_err(|_| invalid_connection())?;
         let folder = chilpa_sync::RelativePath::new(discovery::folder(root, None)).map_err(UiError::from)?;
-        let device = if create { chilpa_devices::transport::mtp::Mtp::open(location, volume, folder) }
-            else { chilpa_devices::transport::mtp::Mtp::open_existing(location, volume, folder) };
+        let device = chilpa_devices::transport::mtp::Mtp::open_cancellable(location, volume, folder, create, cancel);
         Ok(Box::new(device.map_err(UiError::from)?))
     }
     #[cfg(target_os = "android")]
@@ -110,7 +110,7 @@ pub(crate) fn add(
             folder: folder.into(),
         }
     };
-    let mut device = transport(&root, destination, true)?;
+    let mut device = transport(&root, destination, true, cancel)?;
     let id = format!("{:032x}", rand::random::<u128>());
     let mut state = State::open(&store.state_path(&id)?).map_err(UiError::from)?;
     let target =
@@ -185,16 +185,23 @@ pub(crate) fn prepare(
     destination: String,
     recover: bool,
     cancel: &Cancellation,
+    progress: &Arc<Mutex<Option<chilpa_sync::ReviewProgress>>>,
 ) -> Result<Ready, UiError> {
+    let mut report = |value| { if let Ok(mut slot) = progress.lock() { *slot = Some(value); } };
+    report(chilpa_sync::ReviewProgress { stage:"selection", completed:0, total:profile.picks.len(), current_path:String::new(), selected_bytes:0 });
     let mut selection = if recover {
         None
     } else {
-        Some(selection::resolve(library, &profile.picks, cancel)?)
+        Some(selection::resolve_with_progress(library, &profile.picks, cancel, &mut report)?)
     };
     let mut episode_files = if let Some((inputs, _)) = &mut selection {
         super::episodes::resolve(&profile.picks, inputs, cancel)?
     } else { None };
-    let mut device = transport(&profile.root, &destination, false)?;
+    report(chilpa_sync::ReviewProgress { stage:"connecting", completed:0, total:0, current_path:String::new(), selected_bytes:0 });
+    cancel.check().map_err(UiError::from)?;
+    let mut device = transport(&profile.root, &destination, false, cancel)?;
+    device.set_cancellation(cancel);
+    report(chilpa_sync::ReviewProgress { stage:"profile", completed:0, total:0, current_path:String::new(), selected_bytes:0 });
     let mut state = checked_state(store, &profile, device.as_mut(), cancel)?;
     if state.interrupted().map_err(UiError::from)? {
         if !recover {
@@ -211,16 +218,17 @@ pub(crate) fn prepare(
     }
     let (mut inputs, playlists) = match selection {
         Some(value) => value,
-        None => selection::resolve(library, &profile.picks, cancel)?,
+        None => selection::resolve_with_progress(library, &profile.picks, cancel, &mut report)?,
     };
     if recover { episode_files = super::episodes::resolve(&profile.picks, &mut inputs, cancel)?; }
-    let plan = chilpa_sync::prepare_review(
+    let plan = chilpa_sync::prepare_review_with_progress(
         &state,
         device.as_mut(),
         &inputs,
         &playlists,
         profile.remove_unselected,
         cancel,
+        &mut report,
     )
     .map_err(UiError::from)?;
     Ok(Ready {
@@ -256,7 +264,7 @@ pub(crate) fn apply(
             "",
         ));
     }
-    let mut device = transport(&current.root, &ready.destination, false)?;
+    let mut device = transport(&current.root, &ready.destination, false, cancel)?;
     let mut state = checked_state(store, &current, device.as_mut(), cancel)?;
     let result = chilpa_sync::synchronize_with_verification(
         &mut state,

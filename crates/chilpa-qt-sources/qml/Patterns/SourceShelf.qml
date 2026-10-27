@@ -20,6 +20,11 @@ Column {
     property string filter: ""
     // No sort, no play and no Load more: the page's folded "Other".
     property bool plain: false
+    property bool active: true
+    property int catalogRevision: 0
+    property int trackRevision: 0
+    Binding { target: shelf; property: "catalogRevision"; when: shelf.active; value: Library.contentRev + Library.remoteRev + Library.remoteArtRev; restoreMode: Binding.RestoreNone }
+    Binding { target: shelf; property: "trackRevision"; when: shelf.active; value: Library.remoteRev + Library.remoteArtRev; restoreMode: Binding.RestoreNone }
     readonly property bool trackSection: section.tracks === true || !!section.tracks_key
     readonly property string activeKey: (section.tags || []).find(t => t.slug === selectedTag)?.key || section.key || ""
     // What the models read by: the shelf's key, or what the document says
@@ -28,7 +33,7 @@ Column {
     function albumIds() { const ids = []; for (let i = 0; i < cards.albums; i++) ids.push(cards.albumId(i, cards.rev)); return JSON.stringify(ids) }
     spacing: Metrics.gap12
     readonly property bool shown: !!section.error || cards.albums > 0 || tracks.count > 0
-    readonly property var loadState: trackSection && modelKind === "source" && modelKey ? JSON.parse(Sources.page(modelKey, Library.remoteRev) || "{}") : section
+    readonly property var loadState: active && trackSection && modelKind === "source" && modelKey ? JSON.parse(Sources.page(modelKey, trackRevision) || "{}") : section
     readonly property bool ready: trackSection ? tracks.ready && (shown || loadState.loading !== true) : cards.ready
     // A page of the rail: the cards that fit across, as QBZ's rails step.
     readonly property int viewportColumns: CardLayout.columns(rail.width)
@@ -38,9 +43,9 @@ Column {
     readonly property var horizontalView: trackSection && oneRow ? trackContent.item?.scrollView || null : oneRow ? grid.scrollView : rail
     readonly property real farthest: horizontalView ? Math.max(0, horizontalView.contentWidth - horizontalView.width) : 0
     visible: shown
-    AlbumGridModel { id: cards; kind: shelf.trackSection ? "" : shelf.modelKind; key: shelf.modelKey; limit: shelf.wrap ? 0 : shelf.section.size || Metrics.shelfItems; maxRows: shelf.oneRow ? 1 : 0; columns: grid.columns; order: sorting.sort; group: shelf.oneRow ? "" : sorting.grouping; filter: shelf.filter; contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev }
-    TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.modelKey : ""); limit: shelf.section.size || (shelf.oneRow ? shelf.viewportColumns : Metrics.shelfTrackLimit); filterRev: Library.remoteRev + Library.remoteArtRev; playingPath: Player.path }
-    TrackListModel { id: fullTracks; kind: tracks.kind; key: tracks.key; filterRev: Library.remoteRev + Library.remoteArtRev }
+    AlbumGridModel { id: cards; kind: shelf.trackSection ? "" : shelf.modelKind; key: shelf.modelKey; limit: shelf.wrap ? 0 : shelf.section.size || Metrics.shelfItems; maxRows: shelf.oneRow ? 1 : 0; columns: grid.columns; order: sorting.sort; group: shelf.oneRow ? "" : sorting.grouping; filter: shelf.filter; contentRev: shelf.catalogRevision }
+    TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.modelKey : ""); limit: shelf.section.size || (shelf.oneRow ? shelf.viewportColumns : Metrics.shelfTrackLimit); filterRev: shelf.trackRevision; playingPath: Player.path }
+    TrackListModel { id: fullTracks; kind: tracks.kind; key: tracks.key; filterRev: shelf.trackRevision }
     SectionHeader {
         objectName: "shelfHeader"
         width: parent.width; title: shelf.section.title || ""

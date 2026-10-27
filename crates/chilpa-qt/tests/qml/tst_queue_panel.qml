@@ -12,9 +12,20 @@ TestCase {
     when: windowShown
     visible: true
     width: 1500; height: 900
-    ListenListScreen { id: page; anchors.fill: parent }
+    ListenListScreen { id: page; anchors.fill: parent; visualizerFeed: feed; visualizationsReady: true }
+    QtObject {
+        id: feed
+        property var bars: []
+        property var energy: []
+        property var waveform: []
+        property var goniometer: []
+        property var oscilloscope: []
+        property bool capturing: false
+        function setCompact(shown, mode) { capturing = shown }
+    }
 
-    function cleanup() { panel().show("playing"); NowAbout.trackAnswer = ({}); NowAbout.albumAnswer = ({}) }
+
+    function cleanup() { page.visible = true; panel().visualization = false; SettingsModel.keep("ui.queue.visualizer", "false"); AudioOutput.pathAnswer = "{}"; panel().show("playing"); NowAbout.trackAnswer = ({}); NowAbout.albumAnswer = ({}) }
     function panel() { return findChild(page, "listenNow") }
     function shown(item, name) {
         let found = []
@@ -44,6 +55,52 @@ TestCase {
         compare(SettingsModel.kept("ui.queue.panel"), "about")
         tryVerify(() => findChild(page, "queuePanelAbout").item !== null)
         verify(!findChild(page, "queuePanelLyrics").active)
+    }
+
+    function test_visualization_toggle_cycles_and_releases_the_consumer() {
+        const toggle = findChild(page, "queueVisualizationToggle")
+        const animation = findChild(page, "queueVisualization")
+        compare(animation.active, false)
+        verify(toggle.enabled)
+        const idleGlyph = toggle.glyph
+        mouseClick(toggle)
+        tryVerify(() => animation.item !== null)
+        compare(SettingsModel.kept("ui.queue.visualizer"), "true")
+        verify(toggle.glyph !== idleGlyph)
+        animation.item.cycleRequested(5)
+        compare(panel().visualizationMode, 5)
+        compare(SettingsModel.kept("ui.queue.visualizer.mode"), "5")
+        panel().show("about")
+        tryCompare(animation, "item", null)
+        compare(feed.capturing, false)
+        panel().show("playing")
+        tryVerify(() => animation.item !== null)
+        compare(animation.item.mode, 5)
+        mouseClick(toggle)
+        tryCompare(animation, "item", null)
+        compare(feed.capturing, false)
+    }
+
+    function test_signal_path_moves_up_without_animation_and_reads_only_while_shown() {
+        AudioOutput.pathAnswer = JSON.stringify({status:"unverified",summary:"Path unverified",stages:[
+            {label:"Source",value:"FLAC 24/96"},{label:"Device",value:"Fixture DAC",mode:"Mode not reported"}]})
+        panel().refreshPath()
+        const host = findChild(page, "queueSignalPathHost")
+        tryVerify(() => host.item !== null)
+        compare(findChild(host.item, "queueSignalPathStatus").text, "Path unverified")
+        const without = host.y
+        panel().toggleVisualization()
+        tryVerify(() => host.y > without)
+        panel().toggleVisualization()
+        tryCompare(host, "y", without)
+        const reads = AudioOutput.pathReads
+        page.visible = false
+        page.tick()
+        compare(AudioOutput.pathReads, reads)
+        compare(host.item, null)
+        page.visible = true
+        tryVerify(() => host.item !== null)
+        verify(AudioOutput.pathReads > reads)
     }
 
     // The lyrics fill the column with no header, keep a size of their own,

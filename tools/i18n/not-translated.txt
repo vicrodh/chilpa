@@ -23,3 +23,6 @@ Chilpa Mini Player
 )
 # The command prompt is punctuation in every language.
 :
+
+# The parental-advisory glyph is a fixed E; its accessible label is translated.
+E

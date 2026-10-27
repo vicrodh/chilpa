@@ -115,6 +115,7 @@ TestCase {
     function test_modals_keep_tab_and_queue_shortcuts_away_from_the_background() {
         timer.open(); shown(timer)
         Navigation.stepCount = 0; ListenList.lastAction = ""
+        plain.forceActiveFocus()
         Hotkeys.answer = "nav.nextTab"
         keyClick(Qt.Key_Tab, Qt.ControlModifier)
         compare(Navigation.stepCount, 0)
@@ -122,6 +123,15 @@ TestCase {
         keyClick(Qt.Key_Right, Qt.ControlModifier | Qt.AltModifier)
         compare(ListenList.lastAction, "")
         verify(timer.opened)
+    }
+
+    function test_modals_block_side_buttons_above_and_outside_the_panel() {
+        timer.open(); shown(timer)
+        mouseClick(timer.contentItem, 10, 10, Qt.BackButton)
+        mouseClick(covered, 10, 10, Qt.ForwardButton)
+        compare(Navigation.backCount, 0)
+        compare(Navigation.forwardCount, 0)
+        compare(coveredClicks, 0)
     }
 
     function test_the_search_box_is_asked_through_the_shortcuts() {

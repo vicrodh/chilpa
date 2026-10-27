@@ -20,7 +20,15 @@ ListView {
     property bool presented: false
     property bool leaving: false
     Connections { target: page.Window.window; function onFrameSwapped() { if (page.visible) page.presented = true } }
-    readonly property string document: Sources.page(key, Library.remoteRev) || "{}"
+    property string document: "{}"
+    function refreshDocument() {
+        if (visible && !leaving) document = Sources.page(key, Library.remoteRev) || "{}"
+    }
+    onKeyChanged: refreshDocument()
+    onVisibleChanged: refreshDocument()
+    onLeavingChanged: refreshDocument()
+    Component.onCompleted: refreshDocument()
+    Connections { target: Library; function onRemoteRevChanged() { page.refreshDocument() } }
     readonly property var about: JSON.parse(document)
     readonly property var shelves: about.tab ? (headerItem ? headerItem.shownShelves : []) : about.shelves || []
     // The shelves by key, changed only when a shelf comes or goes: a page
@@ -93,6 +101,8 @@ ListView {
     Component {
         id: sourceModule
         SourceShelf {
+            viewport: page
+            active: page.visible && !page.leaving
             property var entry: parent.entry
             section: Object.assign({}, entry, {kind:entry.entityKind || entry.kind})
             wrap: (page.about.header || {}).kind === "artist" && section.kind === "album"

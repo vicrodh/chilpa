@@ -7,6 +7,18 @@ use std::{sync::Arc, time::Duration};
 fn ingest(catalog: &Catalog, plugin: &str, key: &str, value: &Value) {
     let stamp = now();
     let mut inner = catalog.lock();
+    // I keep an identical page's metadata and rows, including richer cards
+    // fetched elsewhere, and advance only its freshness and completion state.
+    let unchanged = inner.store.shelves.get(key).is_some_and(|shelf| shelf.document == *value
+        && shelf.cards.iter().all(|id| inner.store.cards.contains_key(id))
+        && shelf.tracks.iter().all(|id| inner.store.tracks.contains_key(id)));
+    if unchanged {
+        let shelf = inner.store.shelves.get_mut(key).expect("cached page");
+        shelf.read_at = stamp;
+        shelf.epoch = 1;
+        inner.shelf_errors.remove(key);
+        return;
+    }
     let mut shelf = Shelf { title:value["title"].as_str().unwrap_or_default().into(), document:value.clone(), read_at:stamp, epoch:1, ..Default::default() };
     for item in value["items"].as_array().into_iter().flatten() {
         if item["kind"] == "track" { shelf.tracks.extend(inner.store.take_item_track(plugin, item, None, stamp)); }
@@ -156,7 +168,11 @@ fn loaded_beyond(catalog: &Catalog, child: &str, fresh: &Value) -> Option<(Value
         return None;
     }
     let same_start = fresh_items.iter().zip(kept_items).all(|(a, b)| a["ref"] == b["ref"]);
-    same_start.then(|| (kept["items"].clone(), kept["more"].clone()))
+    same_start.then(|| {
+        let mut items = fresh_items.clone();
+        items.extend_from_slice(&kept_items[fresh_items.len()..]);
+        (json!(items), kept["more"].clone())
+    })
 }
 
 fn page_shelves(catalog: &Catalog, plugin: &str, reference: &str, header: &mut Value, shelves: &Value, mixed_artist: bool) -> Value {
@@ -536,6 +552,13 @@ mod tests {
         assert_eq!(kept["more"], "artist:7:album:4", "and so does where it goes on from");
         let page = catalog.lock().store.shelves["fixture native:artist:7"].document.clone();
         assert_eq!(page["shelves"][0]["items"].as_array().unwrap().len(), 4, "the page's own row says the same");
+
+        let mut renamed = first.clone();
+        renamed["shelves"][0]["items"][0]["title"] = json!("Renamed record");
+        ingest_document(&catalog,"fixture","artist:7",&renamed);
+        let kept = catalog.stored_shelf(child).unwrap();
+        assert_eq!(kept.cards.len(), 4, "refresh retains appended rows");
+        assert_eq!(catalog.card(kept.cards[0]).unwrap().title, "Renamed record", "fresh metadata replaces the cached prefix");
 
         let changed = json!({"shelves":[{"id":"album","kind":"album","items":[record(9),record(2)],"more":"artist:7:album:2"}]});
         ingest_document(&catalog,"fixture","artist:7",&changed);

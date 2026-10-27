@@ -12,22 +12,21 @@ Item {
     property var feed: Visualizer
     property color traceColor: Ambient.brightest
     readonly property real guideOpacity: scopeMode === 0 ? 0.19 : 0.12
+    function tint(alpha) { return Theme.withAlpha(traceColor, alpha) }
 
     Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         y: parent.height * 0.08
         width: Metrics.hairline
         height: parent.height * 0.84
-        color: panel.traceColor
-        opacity: panel.guideOpacity
+        color: panel.tint(panel.guideOpacity)
     }
     Rectangle {
         x: parent.width * 0.08
         anchors.verticalCenter: parent.verticalCenter
         width: parent.width * 0.84
         height: Metrics.hairline
-        color: panel.traceColor
-        opacity: panel.guideOpacity
+        color: panel.tint(panel.guideOpacity)
     }
     Repeater {
         model: panel.scopeMode === 1 ? 3 : 0
@@ -37,8 +36,7 @@ Item {
             y: parent.height * 0.14
             width: Metrics.hairline
             height: parent.height * 0.72
-            color: panel.traceColor
-            opacity: 0.07
+            color: panel.tint(0.07)
         }
     }
     Repeater {
@@ -51,8 +49,7 @@ Item {
             height: width
             color: "transparent"
             border.width: Metrics.hairline
-            border.color: panel.traceColor
-            opacity: index === 0 ? 0.18 : 0.09
+            border.color: panel.tint(index === 0 ? 0.18 : 0.09)
             radius: width / 2 // derived: circular guide
         }
     }
@@ -64,8 +61,7 @@ Item {
             width: parent.width * 0.76
             height: Metrics.hairline
             rotation: index === 0 ? 45 : -45
-            color: panel.traceColor
-            opacity: 0.08
+            color: panel.tint(0.08)
         }
     }
     ScopeTraceItem {
@@ -93,8 +89,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             height: Stage.scopeCorrelationTrack
             radius: height / 2 // derived: round track ends
-            color: panel.traceColor
-            opacity: 0.22
+            color: panel.tint(0.22)
             Rectangle {
                 width: Stage.scopeCorrelationThumbWide
                 height: Stage.scopeCorrelationThumbTall
@@ -109,8 +104,7 @@ Item {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             text: panel.feed.stereoCorrelation.toFixed(2)
-            color: panel.traceColor
-            opacity: 0.72
+            color: panel.tint(0.72)
             font.pointSize: Stage.spectralLabel
         }
     }

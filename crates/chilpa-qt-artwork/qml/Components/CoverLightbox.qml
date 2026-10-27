@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // A cover or a portrait shown whole, as QBZ's lightbox: the window under a
 // veil, the picture in its own proportion inside nine tenths of it, decoded
@@ -9,6 +10,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 // the picture does not, and the wheel does not reach the page below.
 Popup {
     id: lightbox
+    PopupInput { surface: lightbox }
     property url source
     onClosed: source = ""
     function show(picture) {
@@ -21,6 +23,7 @@ Popup {
     width: parent ? parent.width : 0
     height: parent ? parent.height : 0
     padding: 0
+    modal: true
     focus: true
     closePolicy: Popup.CloseOnEscape
     background: Rectangle { color: Theme.color.lightboxScrim }

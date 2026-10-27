@@ -58,6 +58,8 @@ pub mod qobject {
         #[qinvokable]
         fn title(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
         #[qinvokable]
+        fn explicit_content(self: &AlbumGridModel, index: i32, rev: i32) -> bool;
+        #[qinvokable]
         fn subtitle(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
         #[qinvokable]
         fn year(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
@@ -189,6 +191,9 @@ impl qobject::AlbumGridModel {
     pub fn title(&self, index: i32, _rev: i32) -> QString {
         self.rust().get(index, |a| QString::from(&a.title)).unwrap_or_default()
     }
+    pub fn explicit_content(&self, index: i32, _rev: i32) -> bool {
+        self.rust().get(index, |album| album.explicit == Some(true)).unwrap_or(false)
+    }
     pub fn subtitle(&self, index: i32, _rev: i32) -> QString {
         self.rust().get(index, |a| QString::from(&a.artist)).unwrap_or_default()
     }
@@ -196,15 +201,7 @@ impl qobject::AlbumGridModel {
         self.rust().get(index, |a| a.year.map(|year| QString::from(&year.to_string())).unwrap_or_default()).unwrap_or_default()
     }
     pub fn art(&self, index: i32, _rev: i32) -> QUrl {
-        self.rust()
-            .get(index, |a| {
-                if a.artwork_path.is_empty() {
-                    QUrl::default()
-                } else {
-                    QUrl::from_local_file(&QString::from(&a.artwork_path))
-                }
-            })
-            .unwrap_or_default()
+        self.rust().get(index, |album| crate::format::art_url(&album.artwork_path)).unwrap_or_default()
     }
     pub fn artist(&self, index: i32, _rev: i32) -> QString {
         self.rust().artist_cards.get(index.max(0) as usize).map(QString::from).unwrap_or_default()
@@ -247,9 +244,6 @@ impl qobject::AlbumGridModel {
     }
 
     fn schedule(mut self: Pin<&mut Self>) {
-        if self.rust().kind.to_string() == "source" && self.rust().list.len() == 0 {
-            self.as_mut().set_ready(false);
-        }
         self.as_mut().rust_mut().generation = self.rust().generation.wrapping_add(1);
         if self.rust().pending {
             return;

@@ -1,6 +1,8 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.sources
+import app.chilpa.immersive
+import "qrc:/qt/qml/app/chilpa/immersive/qml/Components"
 import "Screens"
 import "Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Screens"
@@ -97,7 +99,11 @@ PageTransition {
     Component { id: playlistImport; PlaylistImportScreen {} }
     Component { id: deviceSync; DeviceSyncScreen {} }
     Component { id: playlistManager; PlaylistManagerScreen {} }
-    Component { id: listenlist; ListenListScreen {} }
+    Component { id: listenlist; ListenListScreen {
+        visualizerFeed: Visualizer
+        visualizationsReady: true
+        scopeRenderer: Component { CompactScope {} }
+    } }
     Component { id: searchResults; SearchScreen { query: host.routeKeyOf(parent) } }
     Component { id: metadata; MetadataScreen { albumId: host.routeIdOf(parent) } }
     Component { id: stats; StatsScreen {} }

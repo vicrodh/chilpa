@@ -126,3 +126,38 @@ fn a_completed_check_keeps_the_inspected_catalog_without_listing_again() {
     api.advance_audio_output();
     assert_eq!(api.audio_output.outputs.len(),2);assert_eq!(api.audio_output.outputs[1]["id"],"cast:remote");
 }
+
+#[test]
+fn queue_path_is_read_only_and_keeps_downstream_uncertainty() {
+    let mut api = crate::Chilpa::new();
+    let idle: Value = serde_json::from_str(&api.audio_signal_path()).unwrap();
+    assert_eq!(idle["status"], "idle");
+    api.now.playing = true;
+    let waiting: Value = serde_json::from_str(&api.audio_signal_path()).unwrap();
+    assert_eq!(waiting["status"], "waiting");
+    api.audio_output.route = Some(Route { revision: 1, device: "fixture:a".into(),
+        delivery: engine::Delivery { requested: case("a",44_100).requested,
+            opened: case("a",44_100).requested, transforms: Vec::new() },
+        planned_processing: vec![engine::Transform::DspApplied], exclusive_requested: true,
+        observation: Observation::default() });
+    let path: Value = serde_json::from_str(&api.audio_signal_path()).unwrap();
+    assert_eq!(path["status"], "unverified");
+    assert_eq!(path["stages"].as_array().unwrap().len(), 4);
+    assert_eq!(path["stages"][3]["mode"], "Mode not reported");
+    assert_eq!(path["stages"][1]["value"], "Unchanged", "planned DSP is not observed processing");
+    assert!(path["stages"][2]["detail"].as_str().unwrap().contains("No physical readback"));
+    api.now.bit_perfect = true;
+    let unchanged: Value = serde_json::from_str(&api.audio_signal_path()).unwrap();
+    assert_eq!(unchanged["status"], "unchanged");
+    assert_eq!(unchanged["stages"][3]["mode"], "Mode not reported", "unchanged engine samples do not certify exclusive acquisition");
+    api.audio_output.route.as_mut().unwrap().delivery.transforms.push(engine::Transform::Narrowed { from_bits:24, to_bits:16 });
+    let converted: Value = serde_json::from_str(&api.audio_signal_path()).unwrap();
+    assert_eq!(converted["status"], "processed", "observed conversion wins over a stale unchanged flag");
+    for _ in 0..10 { let _ = api.audio_signal_path(); }
+    assert!(!api.audio_output.shown);
+    assert!(api.audio_output.pending.is_none());
+    assert!(api.audio_output.inspection.is_none());
+    assert!(api.audio_output.outputs.is_empty());
+    assert!(api.audio_output.hardware_generation.is_empty());
+    assert!(api.audio_output.history.is_empty());
+}

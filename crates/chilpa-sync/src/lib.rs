@@ -6,13 +6,14 @@ mod model;
 mod paths;
 mod plan;
 mod state;
+mod source;
 mod recorded;
 pub mod transport;
 
 pub use engine::{pair, recover, synchronize, synchronize_with_verification};
-pub use model::{AssetKind, Cancellation, Fingerprint, Input, Playlist, Progress, Target};
+pub use model::{AssetKind, Cancellation, Fingerprint, Input, Playlist, Progress, ReviewProgress, Target};
 pub use paths::{component, RelativePath};
-pub use plan::{prepare, prepare_review, Action, ActionInfo, Plan};
+pub use plan::{prepare, prepare_review, prepare_review_with_progress, Action, ActionInfo, Plan};
 pub use engine::{inspect_target, parse_target_identity};
 pub use state::State;
 pub use recorded::RecordedFile;

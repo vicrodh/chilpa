@@ -36,6 +36,7 @@ pub(crate) fn check_target(transport: &mut dyn Transport, target: &Target, cance
 
 /// I write identity once per selected root, so ports, drive letters and MTP handles are irrelevant.
 pub fn pair(state: &mut State, transport: &mut dyn Transport, name: &str, cancel: &Cancellation) -> Result<Target> {
+    transport.set_cancellation(cancel);
     cancel.check()?;
     let target = if let Some(target) = inspect_target(transport, cancel)? { target } else {
         if state.target()?.is_some() { return Err(conflict("the paired storage identity is missing")); }
@@ -65,6 +66,7 @@ fn discard_stage(transport: &mut dyn Transport, pending: &Pending) -> Result<()>
 /// I reconcile the journal against bytes on the device, including the crash window between
 /// a successful rename and its local database commit. I never infer success from a lost reply.
 pub fn recover(state: &mut State, transport: &mut dyn Transport, cancel: &Cancellation) -> Result<usize> {
+    transport.set_cancellation(cancel);
     transport.end_review();
     let target = state.target()?.ok_or_else(|| invalid("pair a storage before recovery"))?;
     check_target(transport, &target, cancel)?;
@@ -76,11 +78,11 @@ pub fn recover(state: &mut State, transport: &mut dyn Transport, cancel: &Cancel
         let actual = transport.fingerprint(&operation.path, cancel)?;
         let backup = transport.fingerprint(&pending.backup, cancel)?;
         if backup.is_some() && backup != operation.previous { return Err(conflict(format!("sync backup changed at {}", pending.backup))); }
-        let wanted = operation.desired.as_ref().map(|m| &m.fingerprint);
+        let wanted = operation.desired.as_ref().and_then(|m| m.fingerprint.as_ref());
         let published = match wanted {
             Some(wanted) => actual.as_ref() == Some(wanted),
             // A completed removal can have lost its backup already, just before journal cleanup.
-            None => actual.is_none(),
+            None => operation.desired.is_none() && actual.is_none(),
         };
         if published {
             state.published(operation)?;
@@ -112,6 +114,7 @@ pub fn synchronize(state: &mut State, transport: &mut dyn Transport, plan: &Plan
 pub fn synchronize_with_verification(state: &mut State, transport: &mut dyn Transport, plan: &Plan,
     approved_plan: &str, approve_removals: bool, verify_copies: bool, cancel: &Cancellation,
     progress: &mut (dyn FnMut(Progress) + Send)) -> Result<()> {
+    transport.set_cancellation(cancel);
     transport.end_review();
     if approved_plan != plan.id() || (plan.deletion_count() > 0 && !approve_removals) { return Err(conflict("this sync preview has not been approved")); }
     if state.target()?.as_ref().map(|t| &t.id) != Some(&plan.target.id) || state.revision()? != plan.revision {
@@ -119,6 +122,9 @@ pub fn synchronize_with_verification(state: &mut State, transport: &mut dyn Tran
     }
     check_target(transport, &plan.target, cancel)?;
     cancel.check()?;
+    for source in plan.source_guards.iter().chain(plan.operations.iter().filter_map(|op| op.source.as_ref())) {
+        cancel.check()?; source.check()?;
+    }
     if plan.operations.is_empty() { return Ok(()); }
     let free = transport.available_bytes()?;
     if free < plan.required_bytes() { return Err(crate::Error::Space { required:plan.required_bytes(), available:free }); }
@@ -134,30 +140,44 @@ pub fn synchronize_with_verification(state: &mut State, transport: &mut dyn Tran
     for (index, (position, pending)) in pending.iter().enumerate() {
         cancel.check()?;
         check_target(transport, &plan.target, cancel)?;
-        let operation = &pending.operation;
+        let mut staged = pending.clone();
+        let operation = &mut staged.operation;
         progress(Progress { completed_files:index, total_files:plan.actions().len(), current_path:operation.path.to_string(), transferred_bytes:0, verifying:false });
-        if let Some(wanted) = &operation.desired {
+        if let Some(wanted) = &mut operation.desired {
             let source = operation.source.as_ref().ok_or_else(|| invalid("sync operation has no source"))?;
             if let Some(parent) = pending.stage.parent() { transport.create_dir_all(&parent)?; }
             let mut input = source.reader()?;
-            transport.write_new(&pending.stage, &mut input, wanted.fingerprint.size, cancel, &mut |bytes| {
+            let mut hashed = crate::source::DigestReader::new(&mut input, cancel);
+            let written = transport.write_new(&pending.stage, &mut hashed, wanted.size(), cancel, &mut |bytes| {
                 progress(Progress { completed_files:index, total_files:plan.actions().len(),
                     current_path:operation.path.to_string(), transferred_bytes:bytes, verifying:false });
-            })?;
+            });
+            cancel.check()?;
+            written?;
+            let digest = hashed.finish();
+            input.check()?;
+            if digest.size != wanted.size() || wanted.fingerprint.as_ref().is_some_and(|expected| expected != &digest) {
+                return Err(conflict("sync source changed after review"));
+            }
+            wanted.fingerprint = Some(digest);
             let valid = if verify_copies {
                 transport.fingerprint_with_progress(&pending.stage, cancel, &mut |bytes| {
                     progress(Progress { completed_files:index, total_files:plan.actions().len(), current_path:operation.path.to_string(), transferred_bytes:bytes, verifying:true });
-                })?.as_ref() == Some(&wanted.fingerprint)
-            } else { matches_metadata(transport, &pending.stage, Some(&wanted.fingerprint))? };
+                })?.as_ref() == wanted.fingerprint.as_ref()
+            } else { matches_metadata(transport, &pending.stage, wanted.fingerprint.as_ref())? };
             if !valid {
                 return Err(conflict(format!("transferred bytes failed verification at {}", operation.path)));
             }
         }
+        // The real digest becomes durable before any destination or backup rename.
+        if operation.desired.is_some() { state.staged(*position, &staged)?; }
+        let operation = &staged.operation;
         cancel.check()?;
         check_target(transport, &plan.target, cancel)?;
         if !matches_metadata(transport, &operation.path, operation.previous.as_ref())? {
             return Err(conflict(format!("device content changed before publication at {}", operation.path)));
         }
+        if let Some(source) = &operation.source { source.check()?; }
         if operation.previous.is_some() {
             if let Some(parent) = pending.backup.parent() { transport.create_dir_all(&parent)?; }
             transport.rename_new(&operation.path, &pending.backup)?;
@@ -166,7 +186,7 @@ pub fn synchronize_with_verification(state: &mut State, transport: &mut dyn Tran
             if let Some(parent) = operation.path.parent() { transport.create_dir_all(&parent)?; }
             transport.rename_new(&pending.stage, &operation.path)?;
         }
-        if !matches_metadata(transport, &operation.path, operation.desired.as_ref().map(|m| &m.fingerprint))? {
+        if !matches_metadata(transport, &operation.path, operation.desired.as_ref().and_then(|m| m.fingerprint.as_ref()))? {
             return Err(conflict(format!("published device content failed verification at {}", operation.path)));
         }
         state.published(operation)?;
@@ -174,7 +194,7 @@ pub fn synchronize_with_verification(state: &mut State, transport: &mut dyn Tran
         if operation.previous.is_some() { transport.remove_file(&pending.backup)?; }
         state.finished(*position)?;
         progress(Progress { completed_files:index + 1, total_files:plan.actions().len(),
-            current_path:operation.path.to_string(), transferred_bytes:operation.desired.as_ref().map_or(0, |m| m.fingerprint.size), verifying:false });
+            current_path:operation.path.to_string(), transferred_bytes:operation.desired.as_ref().map_or(0, |m| m.size()), verifying:false });
     }
     Ok(())
 }

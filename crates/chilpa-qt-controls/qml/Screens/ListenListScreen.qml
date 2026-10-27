@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
@@ -12,6 +13,9 @@ import "qrc:/qt/qml/app/chilpa/qml/Patterns"
 Item {
     id: page
     readonly property var document: ListenList.snapshot ? JSON.parse(ListenList.snapshot) : ({})
+    property var visualizerFeed: null
+    property Component scopeRenderer
+    property bool visualizationsReady: false
     property string typed: ""
     property bool followPlaying: false
     property bool positioningList: false
@@ -52,11 +56,12 @@ Item {
     function tick() {
         ListenList.refresh()
         Cast.refresh()
+        now.refreshPath()
         page.now = Date.now()
         page.foot = JSON.parse(ListenList.footer() || "{}")
     }
     Component.onCompleted: tick()
-    Timer { interval: Motion.listenRefresh; running: page.visible; repeat: true; onTriggered: page.tick() }
+    Timer { interval: Motion.listenRefresh; running: page.visible && (!page.Window.window || page.Window.window.visible && page.Window.window.visibility !== Window.Minimized); repeat: true; onTriggered: page.tick() }
     Parts.SleepTimer { id: sleep }
     Tools.QueueMergeDialog { id: merging; document: page.document }
     TrackListModel {
@@ -81,6 +86,9 @@ Item {
     }
     Tools.ListenNow {
         id: now
+        visualizerFeed: page.visualizerFeed
+        scopeRenderer: page.scopeRenderer
+        visualizationsReady: page.visualizationsReady
         lyrics: Component { LyricsPanel { closable: false } }
         x: Metrics.contentX
         y: Metrics.contentTop

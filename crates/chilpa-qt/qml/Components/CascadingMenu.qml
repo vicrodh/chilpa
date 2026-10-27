@@ -7,6 +7,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 Menu {
     id: root
     modal: false
+    blocksBackground: true
     focus: true
     signal actionChosen(var entry)
     readonly property bool pairHovered: hovering || branch.hovering

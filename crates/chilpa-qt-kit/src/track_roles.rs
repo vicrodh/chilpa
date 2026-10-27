@@ -1,6 +1,6 @@
 //! I convert the facade rows into the shared track roles.
 use crate::{app, format};
-use cxx_qt_lib::{QString, QUrl, QVariant};
+use cxx_qt_lib::{QString, QVariant};
 
 pub fn header(header: &chilpa_api::GroupHeader, role: i32) -> QVariant {
     match role - 256 {
@@ -9,7 +9,7 @@ pub fn header(header: &chilpa_api::GroupHeader, role: i32) -> QVariant {
         11 => QVariant::from(&QString::from(&header.label)),
         12 => QVariant::from(&QString::from(&header.meta)),
         13 => QVariant::from(&0i64),
-        15 => QVariant::from(&if header.art.is_empty() { QUrl::default() } else { QUrl::from_local_file(&QString::from(&header.art)) }),
+        15 => QVariant::from(&format::art_url(&header.art)),
         16 => QVariant::from(&true),
         21 => QVariant::from(&header.work),
         22 => QVariant::from(&QString::from(&header.composer)),
@@ -35,7 +35,7 @@ pub fn track(track: &chilpa_api::TrackRow, role: i32, number: i32, playing: bool
         13 => QVariant::from(&track.id),
         14 => QVariant::from(&track.album_id),
         15 => {
-            let url = if track.artwork_path.is_empty() { QUrl::default() } else { QUrl::from_local_file(&QString::from(&track.artwork_path)) };
+            let url = format::art_url(&track.artwork_path);
             QVariant::from(&url)
         }
         16 => QVariant::from(&track.available),
@@ -43,6 +43,7 @@ pub fn track(track: &chilpa_api::TrackRow, role: i32, number: i32, playing: bool
         18 => text(&app::with(|api| api.track_source_name(&track.path))),
         19 => text(&app::with(|api| api.track_source_badge(&track.path))),
         20 => text(&track.composer),
+        24 => QVariant::from(&track.explicit.unwrap_or(false)),
         _ => QVariant::default(),
     }
 }

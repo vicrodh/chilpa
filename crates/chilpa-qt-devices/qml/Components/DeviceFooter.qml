@@ -8,6 +8,9 @@ Column {
     property var status: ({})
     property var document: ({})
     readonly property string token: status.phase === "review" ? status.plan || "" : ""
+    property bool progressExpanded: false
+    readonly property bool reviewing: ["preparing", "downloading", "cancelling"].includes(status.phase) && !!status.review_stage
+    onReviewingChanged: if (reviewing) progressExpanded = true
     signal previewAsked()
     signal recoverAsked()
     signal syncAsked(string token, bool removals, bool verifyCopies)
@@ -16,13 +19,34 @@ Column {
     onTokenChanged: { approval.checked = false; if (token !== "") verification.checked = false }
 
     Rectangle { width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline }
-    Text {
+    Row {
         width: parent.width
-        text: footer.status.label || ""
-        font.pointSize: Type.body
-        font.weight: Type.semibold
-        wrapMode: Text.WordWrap
-        color: Theme.color.textPrimary
+        spacing: Metrics.gap8
+        IconButton {
+            objectName: "deviceReviewDetails"
+            visible: footer.reviewing
+            glyph: footer.progressExpanded ? Icons.chevronDown : Icons.chevronRight
+            tip: footer.progressExpanded ? I18n.tr("Hide review details", I18n.rev) : I18n.tr("Show review details", I18n.rev)
+            onClicked: footer.progressExpanded = !footer.progressExpanded
+        }
+        Text {
+            width: Math.max(0, parent.width - (footer.reviewing ? Metrics.button28 + Metrics.gap8 : 0))
+            height: Math.max(implicitHeight, footer.reviewing ? Metrics.button28 : 0)
+            verticalAlignment: Text.AlignVCenter
+            text: footer.reviewing && footer.status.phase !== "cancelling" ? footer.status.review_stage_label || footer.status.label || "" : footer.status.label || ""
+            font.pointSize: Type.body
+            font.weight: Type.semibold
+            wrapMode: Text.WordWrap
+            color: Theme.color.textPrimary
+        }
+    }
+    Column {
+        objectName: "deviceReviewProgress"
+        width: parent.width
+        visible: footer.reviewing && footer.progressExpanded
+        spacing: Metrics.gap4
+        Text { width: parent.width; text: [footer.status.review_progress_text, footer.status.selected_bytes].filter(Boolean).join(" · "); color: Theme.color.textSecondary; font.pointSize: Type.small; elide: Text.ElideRight }
+        Text { width: parent.width; text: footer.status.current || ""; textFormat: Text.PlainText; color: Theme.color.textSecondary; font.pointSize: Type.small; elide: Text.ElideMiddle }
     }
     Text {
         width: parent.width
@@ -34,7 +58,7 @@ Column {
     }
     Column {
         width: parent.width
-        visible: footer.status.busy === true || (["error", "cancelled"].includes(footer.status.phase) && (footer.status.total || 0) > 0)
+        visible: !footer.reviewing && (footer.status.busy === true || (["error", "cancelled"].includes(footer.status.phase) && (footer.status.total || 0) > 0))
         spacing: Metrics.gap4
         Rectangle {
             width: parent.width

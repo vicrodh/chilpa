@@ -406,7 +406,7 @@ mod tests {
         api.take_found_records();
         assert_eq!(api.search.records.len(), 1, "taken once");
         assert_eq!(api.act_on_remote_found(match &rows[0] { FoundRow::Remote(row) => row, _ => unreachable!() }, "open"), Leads::Screen("album", record.id), "it opens as the record its card is");
-        let local = crate::Album { id: 7, title: "Own".into(), artist: "Here".into(), year: Some(2001), track_count: 1, artwork_path: String::new(), play_count: 0 };
+        let local = crate::Album { id: 7, title: "Own".into(), artist: "Here".into(), year: Some(2001), track_count: 1, artwork_path: String::new(), play_count: 0, explicit: None };
         assert_eq!(api.found_record(&FoundRow::Album(local)), crate::FoundRecord { id: 7, artist: "Here".into(), year: Some(2001) });
     }
     #[test]

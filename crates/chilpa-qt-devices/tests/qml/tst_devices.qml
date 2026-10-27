@@ -52,6 +52,20 @@ TestCase {
             DeviceSync.setStatus({phase:"idle",error:null})
         }
     }
+    function test_review_details_expand_with_real_stage_count_and_file() {
+        DeviceSync.setStatus({phase:"preparing",busy:true,label:"Reviewing changes…",review_stage:"sources",review_stage_label:"Reading file sizes",review_progress_text:"14 of 90",selected_bytes:"11 GiB",current:"Music/Album/Track.dff"})
+        wait(20)
+        compare(child("deviceReviewProgress").visible, true)
+        bounds(child("deviceReviewProgress"))
+        click("deviceReviewDetails")
+        compare(child("deviceReviewProgress").visible, false)
+        DeviceSync.setStatus({review_stage:"destination",review_stage_label:"Checking destination files",review_progress_text:"15 of 90",current:"Music/Album/Next.dff"})
+        compare(child("deviceReviewProgress").visible, false)
+        click("deviceReviewDetails")
+        compare(child("deviceReviewProgress").visible, true)
+        click("deviceCancel")
+        compare(DeviceSync.lastAction, ["cancel"])
+    }
     function test_storage_events_follow_surface_visibility_without_idle_polling() {
         const watcher = child("deviceStorageEvents")
         verify(watcher.active)
@@ -153,13 +167,46 @@ TestCase {
         const remove = findChild(list.itemAtIndex(0),"deviceRemoveProfile")
         verify(remove !== null)
         mouseClick(remove,remove.width/2,remove.height/2)
-        const confirmation = child("deviceForgetConfirmation")
-        tryCompare(confirmation,"visible",true)
-        compare(confirmation.profileId,"profile")
-        compare(DeviceSync.lastAction,[])
-        confirmation.confirmed()
         compare(DeviceSync.lastAction,["forget","profile"])
-        confirmation.close()
+        verify(manager.visible)
+        verify(show.checked)
+        verify(findChild(manager,"deviceProfilesHeader") !== null)
+        DeviceSync.data = Object.assign({},DeviceSync.data,{profiles:[],has_profiles:false})
+        tryCompare(list,"count",0)
+        verify(manager.visible)
+        verify(manager.showOffline)
+        verify(list.activeFocus)
+        compare(findChild(page,"deviceForgetConfirmation"),null)
+        manager.close()
+    }
+    function test_profile_removal_keeps_the_table_scroll_and_surviving_rows() {
+        const rows = []
+        for (let at = 0; at < 40; at++) rows.push({id:"profile-" + at,name:"Reader " + at,connected:at % 2 === 0})
+        DeviceSync.data = Object.assign({},DeviceSync.data,{profiles:rows})
+        click("deviceManageProfiles")
+        const manager = child("deviceProfiles")
+        tryCompare(manager,"opened",true)
+        const show = findChild(manager,"deviceShowOfflineProfiles")
+        mouseClick(show,show.width/2,show.height/2)
+        const list = findChild(manager,"deviceProfileList")
+        tryCompare(list,"count",40)
+        list.contentY = 500
+        wait(30)
+        const at = list.indexAt(list.width/2,list.contentY + list.height/2)
+        const row = list.itemAtIndex(at)
+        const previous = list.itemAtIndex(at - 1)
+        verify(row && previous)
+        const top = list.contentY
+        const remove = findChild(row,"deviceRemoveProfile")
+        mouseClick(remove,remove.width/2,remove.height/2)
+        compare(DeviceSync.lastAction,["forget","profile-" + at])
+        DeviceSync.data = Object.assign({},DeviceSync.data,{profiles:rows.filter((entry,index) => index !== at)})
+        tryCompare(list,"count",39)
+        compare(list.itemAtIndex(at - 1),previous)
+        compare(list.contentY,top)
+        verify(list.activeFocus)
+        verify(manager.opened && manager.showOffline && show.checked)
+        manager.close()
     }
     function test_selection_changes_keep_the_delegate_and_scroll_position() {
         const list = child("deviceSelections")

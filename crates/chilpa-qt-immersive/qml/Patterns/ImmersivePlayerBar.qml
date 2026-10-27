@@ -195,6 +195,7 @@ Item {
         // with the bar, or it would outlive an Escape (the owner, 2026-10-08).
         Popup {
             id: exitMenu
+            PopupInput { surface: exitMenu }
             objectName: "immersiveExitMenu"
             parent: more
             x: more.width - width

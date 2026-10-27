@@ -117,6 +117,7 @@ fn put(changes: &mut FileChanges, of_the_record: bool, name: &str, value: &str) 
         (false, "title") => changes.title = text(),
         (false, "artist_credit") => changes.artist_credit = text(),
         (false, "artists") => changes.artists = list(),
+        (false, "explicit") => changes.explicit = match value { "true" => Change::Set(true), "false" => Change::Set(false), _ => Change::Clear },
         (false, "track_number") => changes.track_number = number(),
         (false, "disc_number") => changes.disc_number = number(),
         (false, "disc_subtitle") => changes.disc_subtitle = text(),
@@ -383,6 +384,7 @@ pub(crate) fn project(draft: &Draft, reached: &[i64], cover: &str) -> AlbumEdit 
         .map(|row| {
             let recording = track_cell(row, "musicbrainz_recording_id");
             let composers = track_cell(row, "composers");
+            let explicit = track_cell(row, "explicit");
             TrackEdit {
                 id: row.track.id,
                 title: set(&track_cell(row, "title")),
@@ -394,6 +396,7 @@ pub(crate) fn project(draft: &Draft, reached: &[i64], cover: &str) -> AlbumEdit 
                 recording_mbid: if went(&recording) { Put::Set((!recording.now.is_empty()).then(|| recording.now.clone())) } else { Put::Keep },
                 genres: if went(genres) { Put::Set(split(&genres.now)) } else { Put::Keep },
                 composers: if went(&composers) { Put::Set(split(&composers.now)) } else { Put::Keep },
+                explicit: if went(&explicit) { Put::Set(explicit.now.parse::<bool>().ok()) } else { Put::Keep },
             }
         })
         .collect();
@@ -527,6 +530,23 @@ mod tests {
     use super::super::artwork::testing::picture;
     use super::super::draft::testing::*;
     use super::*;
+
+    #[test]
+    fn advisory_saves_project_all_three_states_and_fall_back_to_sidecars() {
+        for (text, expected) in [("true", Some(true)), ("false", Some(false)), ("", None)] {
+            let mut source = read(1);
+            source.said.explicit = if expected.is_none() { Some(true) } else { None };
+            let mut draft = Draft::open(&album(), vec![track(1, 1)], vec![source], vec![home(None)]);
+            assert!(draft.set_track(1, "explicit", text));
+            let made = plan(&draft, Mode::Files, options(), None, 1);
+            assert_eq!(made.files[0].explicit, expected.map_or(Change::Clear, Change::Set));
+            assert_eq!(project(&draft, &[1], "").tracks[0].explicit, Put::Set(expected));
+            draft.rows[0].placed.retain(|field| *field != "explicit");
+            let made = plan(&draft, Mode::Files, options(), None, 1);
+            assert!(made.files[0].explicit.is_keep());
+            assert_eq!(made.homes[0].sidecar.tracks["01.flac"].explicit, expected.map_or(Override::Cleared, Override::Value));
+        }
+    }
 
     fn options() -> Options {
         Options::default()

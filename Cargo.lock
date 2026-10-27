@@ -632,6 +632,7 @@ dependencies = [
  "futures",
  "libc",
  "mtp-rs",
+ "rusqlite",
  "serde",
  "serde_json",
  "sha2",
@@ -1142,6 +1143,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "tempfile",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

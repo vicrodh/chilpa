@@ -672,6 +672,9 @@ msgstr "Não foi possível iniciar a inspeção da saída de áudio."
 msgid "Audio output task stopped unexpectedly."
 msgstr "A tarefa de saída de áudio parou inesperadamente."
 
+msgid "Audio path"
+msgstr "Caminho do áudio"
+
 msgid "Audio stack"
 msgstr "Pilha de áudio"
 
@@ -998,11 +1001,23 @@ msgstr "Verificar atualizações automaticamente"
 msgid "Check one format"
 msgstr "Verificar um formato"
 
+msgid "Checking available space"
+msgstr "Verificando espaço disponível"
+
+msgid "Checking destination files"
+msgstr "Verificando arquivos de destino"
+
 msgid "Checking for updates…"
 msgstr "Verificando atualizações…"
 
 msgid "Checking library folders…"
 msgstr "Verificando pastas da biblioteca…"
+
+msgid "Checking local files"
+msgstr "Verificando arquivos locais"
+
+msgid "Checking storage identity"
+msgstr "Verificando a identidade do armazenamento"
 
 msgid "Checking the account…"
 msgstr "Verificando a conta…"
@@ -1099,6 +1114,9 @@ msgstr "Escolher"
 
 msgid "Choose DSP on or bypass."
 msgstr "Escolha DSP ativado ou bypass."
+
+msgid "Choose Unknown, Clean or Explicit"
+msgstr "Escolha Desconhecido, Sem conteúdo explícito ou Explícito"
 
 msgid "Choose a DSP favorite."
 msgstr "Escolha um favorito de DSP."
@@ -1216,6 +1234,9 @@ msgstr "Escolha o receptor em Reproduzir em para conectar."
 
 msgid "Choose the storage paired with this profile."
 msgstr ""
+
+msgid "Clean"
+msgstr "Sem conteúdo explícito"
 
 msgid "Clear"
 msgstr "Limpar"
@@ -1430,6 +1451,9 @@ msgstr "Erro de conexão"
 msgid "Container"
 msgstr "Contêiner"
 
+msgid "Content advisory"
+msgstr "Classificação de conteúdo"
+
 msgid "Continue"
 msgstr "Continuar"
 
@@ -1627,6 +1651,9 @@ msgstr "DSD{} · PCM a {} Hz · {}"
 
 msgid "DSP active"
 msgstr "DSP ativo"
+
+msgid "DSP and gain"
+msgstr "DSP e ganho"
 
 msgid "DSP applied to consumed PCM blocks"
 msgstr "DSP aplicado aos blocos PCM consumidos"
@@ -2138,6 +2165,9 @@ msgstr "Expandir"
 msgid "Experimental: theme may not match your system exactly."
 msgstr "Experimental: o tema pode não corresponder exatamente ao seu sistema."
 
+msgid "Explicit"
+msgstr "Explícito"
+
 msgid "Explore"
 msgstr "Explorar"
 
@@ -2324,6 +2354,9 @@ msgstr "Esquece as letras encontradas até agora e as faixas que se sabe não te
 msgid "Format"
 msgstr "Formato"
 
+msgid "Format conversion"
+msgstr "Conversão de formato"
+
 msgid "Forward"
 msgstr "Avançar"
 
@@ -2392,6 +2425,9 @@ msgstr "GPU"
 
 msgid "GPU (compatibility)"
 msgstr "GPU (compatibilidade)"
+
+msgid "Gain"
+msgstr "Ganho"
 
 msgid "Gain applied to consumed PCM blocks"
 msgstr "Ganho aplicado aos blocos PCM consumidos"
@@ -2555,8 +2591,8 @@ msgstr "Ocultar da barra lateral"
 msgid "Hide manual entry"
 msgstr "Ocultar entrada manual"
 
-msgid "Hide offline profiles"
-msgstr ""
+msgid "Hide review details"
+msgstr "Ocultar detalhes da revisão"
 
 msgid "Hide sidebar"
 msgstr "Ocultar barra lateral"
@@ -2572,6 +2608,9 @@ msgstr "Ocultar tradução"
 
 msgid "Hide unavailable"
 msgstr "Ocultar indisponíveis"
+
+msgid "Hide visualization"
+msgstr "Ocultar visualização"
 
 msgid "Hide when idle"
 msgstr "Ocultar quando ocioso"
@@ -3331,6 +3370,9 @@ msgstr "Saída mixada"
 msgid "Mixing engineer"
 msgstr "Engenheiro de mixagem"
 
+msgid "Mode not reported"
+msgstr "Modo não informado"
+
 msgid "Mon"
 msgstr "seg"
 
@@ -3745,6 +3787,9 @@ msgstr "O Chilpa não informa alterações nas amostras; o caminho posterior nã
 msgid "No sample processing reported in Chilpa"
 msgstr "Nenhum processamento de amostras informado no Chilpa"
 
+msgid "No saved profiles"
+msgstr "Nenhum perfil salvo"
+
 msgid "No saved queries yet. Add conditions, then choose Save query."
 msgstr "Nenhuma consulta salva. Adicione condições e escolha Salvar consulta."
 
@@ -4054,6 +4099,9 @@ msgstr "Abertura e leitura opcional dos parâmetros do destino. A audibilidade c
 msgid "Opening checks"
 msgstr "Verificações de abertura"
 
+msgid "Opening device connection"
+msgstr "Conectando ao dispositivo"
+
 msgid "Opening mode"
 msgstr "Modo de abertura"
 
@@ -4062,6 +4110,9 @@ msgstr "Abertura: {} · Audibilidade: {}"
 
 msgid "Optional access token for private playlists"
 msgstr "Token de acesso opcional para playlists privadas"
+
+msgid "Original audio"
+msgstr "Áudio original"
 
 msgid "Original audio over the selected network transport"
 msgstr "Áudio original pelo transporte de rede selecionado"
@@ -4141,6 +4192,9 @@ msgstr "Cole o token fornecido pela fonte. O Chilpa o mantém criptografado e o 
 msgid "Paste the user token from listenbrainz.org/settings."
 msgstr "Cole o token de usuário de listenbrainz.org/settings."
 
+msgid "Path unverified"
+msgstr "Caminho não verificado"
+
 msgid "Pause"
 msgstr "Pausar"
 
@@ -4173,6 +4227,9 @@ msgstr "Combinações de formato físico"
 
 msgid "Physical format match"
 msgstr "Correspondência do formato físico"
+
+msgid "Physical output unreported"
+msgstr "Saída física não informada"
 
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "Escolha um tema ou mantenha Sistema para seguir a sua área de trabalho, escolha o seu idioma e pressione : para abrir a linha de comando."
@@ -4381,6 +4438,9 @@ msgstr "Preparando a análise de humor"
 msgid "Preparing analysis…"
 msgstr "Preparando a análise…"
 
+msgid "Preparing playlists"
+msgstr "Preparando playlists"
+
 msgid "Preparing results…"
 msgstr "Preparando os resultados…"
 
@@ -4426,8 +4486,14 @@ msgstr "Processado"
 msgid "Processing"
 msgstr "Processamento"
 
+msgid "Processing active"
+msgstr "Processamento ativo"
+
 msgid "Producer"
 msgstr "Produtor"
+
+msgid "Profile"
+msgstr "Perfil"
 
 msgid "Profile name"
 msgstr "Nome do perfil"
@@ -4591,6 +4657,9 @@ msgstr "Ler “{}” como palavras"
 msgid "Reading Library selection…"
 msgstr ""
 
+msgid "Reading file sizes"
+msgstr "Lendo tamanhos dos arquivos"
+
 msgid "Reading it from {}…"
 msgstr "Lendo de {}…"
 
@@ -4629,6 +4698,9 @@ msgstr "Reconstrói as contagens e o índice de busca a partir das faixas e do r
 
 msgid "Recalculate usage"
 msgstr "Recalcular uso"
+
+msgid "Receiver"
+msgstr "Receptor"
 
 msgid "Receiver processing unknown"
 msgstr "Processamento do receptor desconhecido"
@@ -4771,9 +4843,6 @@ msgstr "Remova uma condição para obter resultados:"
 msgid "Remove original queues"
 msgstr "Remover as filas originais"
 
-msgid "Remove profile"
-msgstr ""
-
 msgid "Remove saved profile"
 msgstr ""
 
@@ -4782,9 +4851,6 @@ msgstr "Remove as capas e os fundos menores. O Chilpa os cria novamente conforme
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "Remover do Chilpa este plugin, sua conta, as configurações e a biblioteca em cache? Isso não exclui sua conta nem suas playlists na fonte."
-
-msgid "Remove this profile and its local sync history? Files on the device will stay."
-msgstr ""
 
 msgid "Remove this server?"
 msgstr "Remover este servidor?"
@@ -4869,6 +4935,9 @@ msgstr "Zerar contador"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "Resolução reduzida de {} para {} bits"
+
+msgid "Resolving selected music"
+msgstr "Preparando a música selecionada"
 
 msgid "Resolving…"
 msgstr "Resolvendo…"
@@ -5301,6 +5370,9 @@ msgstr ""
 msgid "Show playlist only from the same source as the track"
 msgstr "Mostrar apenas playlists da mesma fonte da faixa"
 
+msgid "Show review details"
+msgstr "Mostrar detalhes da revisão"
+
 msgid "Show saved tracks in Tracks"
 msgstr "Mostrar faixas salvas em Faixas"
 
@@ -5321,6 +5393,9 @@ msgstr "Mostrar token"
 
 msgid "Show translation"
 msgstr "Mostrar tradução"
+
+msgid "Show visualization"
+msgstr "Mostrar visualização"
 
 msgid "Show what you're listening to as your Discord status. Opt-in — Discord must be running."
 msgstr "Mostra o que você está ouvindo como seu status do Discord. Opcional — o Discord precisa estar em execução."
@@ -6299,6 +6374,12 @@ msgstr "Indisponível"
 msgid "Uncategorized"
 msgstr "Sem categoria"
 
+msgid "Unchanged"
+msgstr "Sem alterações"
+
+msgid "Unchanged samples"
+msgstr "Amostras sem alterações"
+
 msgid "Undo"
 msgstr "Desfazer"
 
@@ -6541,6 +6622,9 @@ msgstr "Aguarde a conclusão da verificação de áudio."
 
 msgid "Wait for the queue to finish switching."
 msgstr "Aguarde a fila terminar de trocar."
+
+msgid "Waiting for output"
+msgstr "Aguardando a saída"
 
 msgid "Waiting for playback to stop"
 msgstr "Aguardando a reprodução parar"

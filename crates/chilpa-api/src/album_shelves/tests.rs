@@ -46,7 +46,7 @@ fn worker_shelves_match_local_order_grouping_and_related_metadata() {
 
 #[test]
 fn source_shelves_stay_interleaved_bounded_and_exclude_the_open_record() {
-    let album = |id| Album { id, title: format!("Record {id}"), artist: "Artist".into(), year: None, track_count: 1, artwork_path: String::new(), play_count: 0 };
+    let album = |id| Album { id, title: format!("Record {id}"), artist: "Artist".into(), year: None, track_count: 1, artwork_path: String::new(), play_count: 0, explicit: None };
     let groups = vec![vec![album(7), album(4), album(2)], vec![album(-3)], vec![album(-5)]];
     assert_eq!(merge_shelves(7, groups.clone(), 8).iter().map(|card| card.id).collect::<Vec<_>>(), [2, -3, -5, 4]);
     assert_eq!(merge_shelves(7, groups.clone(), 3).iter().map(|card| card.id).collect::<Vec<_>>(), [2, -3, -5]);

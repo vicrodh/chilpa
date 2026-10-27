@@ -14,6 +14,17 @@ macro_rules! album_art {
     };
 }
 
+/// I preserve unknown advisory values unless a present track reports explicit
+/// content or every present track is known clean. The lookup stays inside the page query.
+macro_rules! album_advisory {
+    ($a:literal) => {
+        concat!("(SELECT CASE WHEN max(ad.explicit) = 1 THEN 1 ",
+            "WHEN count(ad.explicit) = count(*) AND count(*) > 0 THEN 0 END ",
+            "FROM tracks ad JOIN sources ads ON ads.id = ad.source_id AND ads.enabled = 1 ",
+            "WHERE ad.album_id = ", $a, ".id AND ad.present = 1)")
+    };
+}
+
 /// A track's cover, as QBZ's track surfaces take it (`ArtworkScope::Track`):
 /// the one chosen for its record, else its own disc's, else its record's.
 /// A box whose discs each have a cover showed the box's on every queue row.

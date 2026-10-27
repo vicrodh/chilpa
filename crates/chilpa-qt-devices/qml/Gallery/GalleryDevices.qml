@@ -10,7 +10,7 @@ Item {
     implicitHeight: samples.implicitHeight
     readonly property var document: ({has_profiles: true, profile_names: ["Player SD", "Reader card"], profile_values: ["demo", "offline"], profile_enabled:[true,false], profiles:[{id:"demo",name:"Player SD",connected:true},{id:"offline",name:"Reader card",connected:false}], destination_names: ["Player · Memory card"], destination_values: ["storage"], destination_details: ["40 GiB available"], destination_enabled: [true], selected: "2 selections", can_review: true, change_count: 3, page_count: 2})
     readonly property var review: ({phase: "review", label: "Ready to sync", profile: "demo", destination: "storage", plan: "demo-plan", summary: "2 to copy · 0 to update · 1 to remove · 20 unchanged", required: "80 MiB", copies:2, removals: 1})
-    DeviceProfiles { id: profiles; rows: gallery.document.profiles }
+    DeviceProfiles { id: profiles; rows: gallery.document.profiles; onForgetAsked: id => rows = rows.filter(row => row.id !== id) }
     Column {
         id: samples
         width: parent.width

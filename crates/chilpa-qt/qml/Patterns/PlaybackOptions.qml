@@ -10,6 +10,7 @@ import "../Components"
 // How the queue plays, from the player bar.
 Popup {
     id: options
+    PopupInput { surface: options }
 
     // A click outside closes it and is nothing else: it is not also a click
     // on what is there.

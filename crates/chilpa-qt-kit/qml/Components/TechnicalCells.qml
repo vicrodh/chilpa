@@ -1,10 +1,12 @@
 import QtQuick
 import app.chilpa.kit
 import "../Theme"
+import "../Primitives"
 
 Item {
     id: cells
     property var facts: ({})
+    property bool explicitContent: false
     property string title
     property string artist
     property string year
@@ -14,7 +16,8 @@ Item {
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Metrics.hairline; visible: cells.header; color: Theme.color.strokeHairline }
     Repeater {
         model: columns.columns
-        Text {
+        AdvisoryTitle {
+            explicitContent: !cells.header && modelData.key === "album" && cells.explicitContent
             required property var modelData
             objectName: (cells.header ? "technicalHeader_" : "technicalCell_") + modelData.key
             x: modelData.x + Metrics.gap12

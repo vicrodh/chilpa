@@ -399,7 +399,7 @@ mod tests {
     }
 
     fn album(id: i64, by: &str) -> Album {
-        Album { id, title: format!("Record {id}"), artist: by.into(), year: Some(1999), track_count: 3, artwork_path: String::new(), play_count: 0 }
+        Album { id, title: format!("Record {id}"), artist: by.into(), year: Some(1999), track_count: 3, artwork_path: String::new(), play_count: 0, explicit: None }
     }
 
     fn acts(menu: &[Value]) -> Vec<&str> {

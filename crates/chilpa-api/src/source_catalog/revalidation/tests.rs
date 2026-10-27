@@ -62,6 +62,42 @@ fn identical_personal_revalidation_keeps_revisions_and_disk_quiet() {
 }
 
 #[test]
+fn identical_home_revalidation_keeps_shelves_ids_and_disk_quiet() {
+    let catalog = Catalog::new();
+    catalog.lock().loaded = true;
+    let key = "fixture native:discover:home";
+    let child = "fixture native:discover:home|recent";
+    let answer = json!({"title":"Home","shelves":[{"id":"recent","kind":"album","items":[
+        {"kind":"album","ref":"album:1","title":"Record"}]}]});
+    super::super::pages::ingest_document(&catalog, "fixture", "discover:home", &answer);
+    catalog.publish(false);
+    fetch::persist(&catalog, |_| Ok(()));
+    let ids = catalog.stored_shelf(child).unwrap().cards;
+    let before = catalog.revisions();
+    for _ in 0..3 {
+        let job = periodic(&catalog, key);
+        assert!(!catalog.loading(key));
+        assert!(!catalog.shelf_snapshot(child, "").2);
+        super::super::pages::ingest_document(&catalog, "fixture", "discover:home", &answer);
+        fetch::finish(&catalog, &job, Ok(()));
+        assert_eq!(catalog.revisions(), before);
+        assert_eq!(catalog.stored_shelf(child).unwrap().cards, ids);
+        fetch::persist(&catalog, |_| panic!("identical home refresh must not rewrite the catalog"));
+    }
+    let mut changed = answer.clone();
+    changed["shelves"][0]["items"][0]["title"] = json!("Renamed record");
+    let job = periodic(&catalog, key);
+    super::super::pages::ingest_document(&catalog, "fixture", "discover:home", &changed);
+    fetch::finish(&catalog, &job, Ok(()));
+    assert_ne!(catalog.revisions(), before);
+    assert_eq!(catalog.stored_shelf(child).unwrap().cards, ids);
+    assert_eq!(catalog.card(ids[0]).unwrap().title, "Renamed record");
+    let mut writes = 0;
+    fetch::persist(&catalog, |_| { writes += 1; Ok(()) });
+    assert_eq!(writes, 1);
+}
+
+#[test]
 fn changed_library_rows_folders_order_and_membership_publish_and_persist() {
     for change in ["metadata", "folders", "order", "membership"] {
         let catalog = seed("playlists");

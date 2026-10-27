@@ -184,7 +184,7 @@ use std::rc::Rc;
 use chilpa_qt_kit::bridge::queue_activity;
 
 /// The roles, in order from `Qt::UserRole`.
-const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo", "composer", "headerWork", "headerComposer", "headerComposerTarget"];
+const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo", "composer", "headerWork", "headerComposer", "headerComposerTarget", "explicitContent"];
 const USER_ROLE: i32 = 256;
 const ROLE_PLAYING: i32 = USER_ROLE + 9;
 const ROLE_SELECTED: i32 = USER_ROLE + 10;

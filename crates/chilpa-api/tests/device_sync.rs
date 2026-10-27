@@ -284,8 +284,8 @@ fn device_forgetting_a_profile_requires_its_local_writer_lease() {
 }
 
 #[test]
-fn device_copy_readback_is_explicit_and_off_by_default() {
-    isolated("device_copy_readback_is_explicit_and_off_by_default", || {
+fn device_copy_readback_options_preserve_source_guards_and_valid_copies() {
+    isolated("device_copy_readback_options_preserve_source_guards_and_valid_copies", || {
         for verify in [false, true] {
             let fixture = Fixture::new();
             let mut service = fixture.paired();
@@ -293,15 +293,20 @@ fn device_copy_readback_is_explicit_and_off_by_default() {
             let mut changed = std::fs::read(&fixture.first).unwrap();
             changed[0] = b'!';
             std::fs::write(&fixture.first, &changed).unwrap();
-            if verify {
-                service.apply_with_verification(&token, false, true).unwrap();
-                failed(&mut service);
-                assert!(service.status().error.as_ref().unwrap().recovery);
-                assert_eq!(find_files(&fixture.card,"flac").len(), 1, "only the unmanaged file survives verification failure");
-            } else {
-                apply(&mut service, &token, false);
-                assert!(find_files(&fixture.card,"flac").iter().any(|path| std::fs::read(path).unwrap() == changed));
-            }
+            if verify { service.apply_with_verification(&token, false, true).unwrap(); }
+            else { service.apply(&token, false).unwrap(); }
+            failed(&mut service);
+            let error = service.status().error.as_ref().unwrap();
+            assert_eq!(error.detail, "sync source changed after review");
+            assert!(!error.recovery, "a rejected source must not start staging or a journal");
+            assert_eq!(find_files(&fixture.card,"flac").len(), 1, "only the unmanaged file remains");
+            // A new review approves the current source; both readback choices preserve its bytes.
+            let token = preview(&mut service);
+            if verify { service.apply_with_verification(&token, false, true).unwrap(); }
+            else { service.apply(&token, false).unwrap(); }
+            wait(&mut service);
+            assert_eq!(service.status().phase, "done");
+            assert!(find_files(&fixture.card,"flac").iter().any(|path| std::fs::read(path).unwrap() == changed));
         }
     });
 }
@@ -1034,6 +1039,7 @@ fn device_staged_library_tracks_survive_choosing_a_new_storage_profile() {
         || {
             let fixture = Fixture::new();
             let mut service = fixture.service();
+            service.release_view();
             service.stage_library_tracks("[2,1,2]").unwrap();
             assert!(
                 !service.status().busy,

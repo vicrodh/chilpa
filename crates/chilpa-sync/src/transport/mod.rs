@@ -9,6 +9,8 @@ pub struct Entry { pub size: u64, pub directory: bool }
 /// I require an exclusive session for this root until the transport is dropped.
 /// Failed lookups and incomplete listings are errors, never an empty collection.
 pub trait Transport {
+    /// I let metadata enumeration observe the job cancellation between protocol calls.
+    fn set_cancellation(&mut self, _cancel: &Cancellation) {}
     /// I allow a bounded metadata snapshot only during a read-only preview.
     fn begin_review(&mut self) {}
     /// I discard every preview hint before execution can inspect or mutate the device.

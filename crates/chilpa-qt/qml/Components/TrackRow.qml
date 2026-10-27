@@ -38,6 +38,7 @@ TrackRowSlot {
     property bool albumHovered: false; property string sourceName: ""
     // Who wrote it, quiet after the title; empty when nobody is named.
     property string composer: ""
+    property bool explicitContent: false
     property var sourceInfo: ({})
     property bool selectionMode: false
     // The first row of a group in a list whose group names stay at the top.
@@ -127,6 +128,7 @@ TrackRowSlot {
                 CreditedTitle {
                     width: parent.width
                     title: row.title
+                    explicitContent: row.explicitContent
                     credit: row.composer
                     titleSize: row.rich ? Type.bodyLarge : Type.row
                     titleWeight: row.rich ? Type.medium : Type.regular

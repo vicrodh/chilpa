@@ -19,6 +19,7 @@ pub struct Snapshot {
     pub album_artist: Option<String>,
     pub album_artists: Vec<String>,
     pub compilation: Option<bool>,
+    pub explicit: Option<bool>,
     /// The date as it comes: `2019`, `2019-03-15`, or anything else.
     pub date: Option<String>,
     pub genres: Vec<String>,
@@ -76,6 +77,7 @@ pub(crate) fn of_tag(tag: &Tag) -> Snapshot {
         album_artists: values(tag, ItemKey::AlbumArtists),
         compilation: value(tag, ItemKey::FlagCompilation)
             .map(|v| matches!(v.to_ascii_lowercase().as_str(), "1" | "true" | "yes")),
+        explicit: tag.get_string(ItemKey::ParentalAdvisory).and_then(crate::advisory),
         // The same order `read` looks in.
         date: value(tag, ItemKey::RecordingDate)
             .or_else(|| value(tag, ItemKey::ReleaseDate))
@@ -107,5 +109,23 @@ pub(crate) fn of_tag(tag: &Tag) -> Snapshot {
 /// through this crate's own readers.
 pub fn snapshot(path: &Path) -> Result<Snapshot, TagError> {
     let opened = crate::open(path)?;
-    Ok(opened.tag.as_ref().map(of_tag).unwrap_or_default())
+    let mut snapshot = opened.tag.as_ref().map(of_tag).unwrap_or_default();
+    if opened.tag.as_ref().is_some_and(|tag| tag.tag_type() == lofty::tag::TagType::VorbisComments) {
+        snapshot.explicit = super::advisory::read(path).map_err(TagError::Unreadable)?;
+    }
+    Ok(snapshot)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn advisory_keeps_absence_separate_from_clean() {
+        let mut tag = Tag::new(lofty::tag::TagType::Id3v2);
+        assert_eq!(of_tag(&mut tag).explicit, None);
+        for (text, expected) in [("1", Some(true)), ("4", Some(true)), ("2", Some(false)), ("0", None), ("other", None)] {
+            assert!(tag.insert_text(ItemKey::ParentalAdvisory, text.into()));
+            assert_eq!(of_tag(&mut tag).explicit, expected);
+        }
+    }
 }

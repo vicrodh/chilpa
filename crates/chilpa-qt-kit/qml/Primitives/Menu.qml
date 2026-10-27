@@ -6,7 +6,10 @@ import "../Theme"
 // I keep original entry indices when filtering so labels never change identity.
 Controls.Popup {
     id: menu
+    PopupInput { surface: menu }
     modal: true
+    property bool blocksBackground: modal
+    focus: true
     dim: false
     closePolicy: Controls.Popup.CloseOnEscape | Controls.Popup.CloseOnReleaseOutside
     property var entries: []

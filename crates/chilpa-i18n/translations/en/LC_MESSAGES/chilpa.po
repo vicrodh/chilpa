@@ -672,6 +672,9 @@ msgstr ""
 msgid "Audio output task stopped unexpectedly."
 msgstr "Audio output task stopped unexpectedly."
 
+msgid "Audio path"
+msgstr "Audio path"
+
 msgid "Audio stack"
 msgstr ""
 
@@ -998,11 +1001,23 @@ msgstr ""
 msgid "Check one format"
 msgstr ""
 
+msgid "Checking available space"
+msgstr "Checking available space"
+
+msgid "Checking destination files"
+msgstr "Checking destination files"
+
 msgid "Checking for updates…"
 msgstr ""
 
 msgid "Checking library folders…"
 msgstr "Checking library folders…"
+
+msgid "Checking local files"
+msgstr "Checking local files"
+
+msgid "Checking storage identity"
+msgstr "Checking storage identity"
 
 msgid "Checking the account…"
 msgstr ""
@@ -1099,6 +1114,9 @@ msgstr ""
 
 msgid "Choose DSP on or bypass."
 msgstr ""
+
+msgid "Choose Unknown, Clean or Explicit"
+msgstr "Choose Unknown, Clean or Explicit"
 
 msgid "Choose a DSP favorite."
 msgstr ""
@@ -1216,6 +1234,9 @@ msgstr ""
 
 msgid "Choose the storage paired with this profile."
 msgstr ""
+
+msgid "Clean"
+msgstr "Clean"
 
 msgid "Clear"
 msgstr ""
@@ -1430,6 +1451,9 @@ msgstr ""
 msgid "Container"
 msgstr "Container"
 
+msgid "Content advisory"
+msgstr "Content advisory"
+
 msgid "Continue"
 msgstr ""
 
@@ -1627,6 +1651,9 @@ msgstr ""
 
 msgid "DSP active"
 msgstr ""
+
+msgid "DSP and gain"
+msgstr "DSP and gain"
 
 msgid "DSP applied to consumed PCM blocks"
 msgstr ""
@@ -2138,6 +2165,9 @@ msgstr ""
 msgid "Experimental: theme may not match your system exactly."
 msgstr ""
 
+msgid "Explicit"
+msgstr "Explicit"
+
 msgid "Explore"
 msgstr ""
 
@@ -2324,6 +2354,9 @@ msgstr ""
 msgid "Format"
 msgstr ""
 
+msgid "Format conversion"
+msgstr "Format conversion"
+
 msgid "Forward"
 msgstr ""
 
@@ -2392,6 +2425,9 @@ msgstr ""
 
 msgid "GPU (compatibility)"
 msgstr ""
+
+msgid "Gain"
+msgstr "Gain"
 
 msgid "Gain applied to consumed PCM blocks"
 msgstr ""
@@ -2555,8 +2591,8 @@ msgstr ""
 msgid "Hide manual entry"
 msgstr ""
 
-msgid "Hide offline profiles"
-msgstr ""
+msgid "Hide review details"
+msgstr "Hide review details"
 
 msgid "Hide sidebar"
 msgstr ""
@@ -2572,6 +2608,9 @@ msgstr ""
 
 msgid "Hide unavailable"
 msgstr "Hide unavailable"
+
+msgid "Hide visualization"
+msgstr "Hide visualization"
 
 msgid "Hide when idle"
 msgstr ""
@@ -3331,6 +3370,9 @@ msgstr ""
 msgid "Mixing engineer"
 msgstr ""
 
+msgid "Mode not reported"
+msgstr "Mode not reported"
+
 msgid "Mon"
 msgstr ""
 
@@ -3745,6 +3787,9 @@ msgstr ""
 msgid "No sample processing reported in Chilpa"
 msgstr ""
 
+msgid "No saved profiles"
+msgstr "No saved profiles"
+
 msgid "No saved queries yet. Add conditions, then choose Save query."
 msgstr "No saved queries yet. Add conditions, then choose Save query."
 
@@ -4054,6 +4099,9 @@ msgstr ""
 msgid "Opening checks"
 msgstr ""
 
+msgid "Opening device connection"
+msgstr "Opening device connection"
+
 msgid "Opening mode"
 msgstr ""
 
@@ -4062,6 +4110,9 @@ msgstr ""
 
 msgid "Optional access token for private playlists"
 msgstr "Optional access token for private playlists"
+
+msgid "Original audio"
+msgstr "Original audio"
 
 msgid "Original audio over the selected network transport"
 msgstr ""
@@ -4141,6 +4192,9 @@ msgstr ""
 msgid "Paste the user token from listenbrainz.org/settings."
 msgstr ""
 
+msgid "Path unverified"
+msgstr "Path unverified"
+
 msgid "Pause"
 msgstr ""
 
@@ -4173,6 +4227,9 @@ msgstr ""
 
 msgid "Physical format match"
 msgstr "Physical format match"
+
+msgid "Physical output unreported"
+msgstr "Physical output unreported"
 
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
@@ -4381,6 +4438,9 @@ msgstr ""
 msgid "Preparing analysis…"
 msgstr ""
 
+msgid "Preparing playlists"
+msgstr "Preparing playlists"
+
 msgid "Preparing results…"
 msgstr ""
 
@@ -4426,8 +4486,14 @@ msgstr ""
 msgid "Processing"
 msgstr ""
 
+msgid "Processing active"
+msgstr "Processing active"
+
 msgid "Producer"
 msgstr ""
+
+msgid "Profile"
+msgstr "Profile"
 
 msgid "Profile name"
 msgstr ""
@@ -4591,6 +4657,9 @@ msgstr ""
 msgid "Reading Library selection…"
 msgstr "Reading Library selection…"
 
+msgid "Reading file sizes"
+msgstr "Reading file sizes"
+
 msgid "Reading it from {}…"
 msgstr ""
 
@@ -4629,6 +4698,9 @@ msgstr ""
 
 msgid "Recalculate usage"
 msgstr ""
+
+msgid "Receiver"
+msgstr "Receiver"
 
 msgid "Receiver processing unknown"
 msgstr ""
@@ -4771,9 +4843,6 @@ msgstr ""
 msgid "Remove original queues"
 msgstr ""
 
-msgid "Remove profile"
-msgstr ""
-
 msgid "Remove saved profile"
 msgstr ""
 
@@ -4782,9 +4851,6 @@ msgstr ""
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
-
-msgid "Remove this profile and its local sync history? Files on the device will stay."
-msgstr ""
 
 msgid "Remove this server?"
 msgstr ""
@@ -4869,6 +4935,9 @@ msgstr "Reset counter"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr ""
+
+msgid "Resolving selected music"
+msgstr "Resolving selected music"
 
 msgid "Resolving…"
 msgstr ""
@@ -5301,6 +5370,9 @@ msgstr ""
 msgid "Show playlist only from the same source as the track"
 msgstr ""
 
+msgid "Show review details"
+msgstr "Show review details"
+
 msgid "Show saved tracks in Tracks"
 msgstr ""
 
@@ -5321,6 +5393,9 @@ msgstr "Show token"
 
 msgid "Show translation"
 msgstr ""
+
+msgid "Show visualization"
+msgstr "Show visualization"
 
 msgid "Show what you're listening to as your Discord status. Opt-in — Discord must be running."
 msgstr "Show what you're listening to as your Discord status. Opt-in — Discord must be running."
@@ -6299,6 +6374,12 @@ msgstr ""
 msgid "Uncategorized"
 msgstr "Uncategorized"
 
+msgid "Unchanged"
+msgstr "Unchanged"
+
+msgid "Unchanged samples"
+msgstr "Unchanged samples"
+
 msgid "Undo"
 msgstr ""
 
@@ -6541,6 +6622,9 @@ msgstr ""
 
 msgid "Wait for the queue to finish switching."
 msgstr ""
+
+msgid "Waiting for output"
+msgstr "Waiting for output"
 
 msgid "Waiting for playback to stop"
 msgstr "Waiting for playback to stop"

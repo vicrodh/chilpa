@@ -63,6 +63,7 @@ Item {
     }
     Popup {
         id: genres
+        PopupInput { surface: genres }
         objectName: "discoveryGenrePopup"
         x: controls.width - width
         y: controls.height + Metrics.gap8

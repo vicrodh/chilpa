@@ -41,6 +41,8 @@ pub struct Status {
     pub transferred: String,
     pub metadata_review: bool,
     pub verifying: bool,
+    pub review_stage: String,
+    pub selected_bytes: String,
 }
 enum Outcome {
     Refreshed(
@@ -75,6 +77,7 @@ pub struct Service {
     pending: Option<Receiver<Result<Outcome, UiError>>>,
     cancel: Cancellation,
     progress: Arc<Mutex<Option<chilpa_sync::Progress>>>,
+    review_progress: Arc<Mutex<Option<chilpa_sync::ReviewProgress>>>,
     revision: u64,
     view_loaded: bool,
     drafts: super::drafts::Drafts,
@@ -122,6 +125,7 @@ impl Service {
             pending: None,
             cancel: Cancellation::default(),
             progress: Arc::new(Mutex::new(None)),
+            review_progress: Arc::new(Mutex::new(None)),
             revision: 0,
             view_loaded: false,
             drafts: Default::default(),
@@ -205,6 +209,9 @@ impl Service {
         self.status.completed = 0;
         self.status.total = 0;
         self.status.current.clear();
+        self.status.review_stage.clear();
+        self.status.selected_bytes.clear();
+        if let Ok(mut slot) = self.review_progress.lock() { *slot = None; }
         self.status.transferred.clear();
         if let Ok(mut slot) = self.progress.lock() {
             *slot = None;
@@ -508,10 +515,11 @@ impl Service {
         self.invalidate();
         let phase = if picks.iter().any(|pick| matches!(pick, Pick::Episode { .. })) { "downloading" } else { "preparing" };
         let result = self.review_result.clone();
+        let progress = self.review_progress.clone();
         result.lock().unwrap_or_else(|e| e.into_inner()).0 = true;
         self.launch(phase, move |store, library, cancel| {
             let profile = work::save_selection(&store, &profile.id, picks, remove)?;
-            let ready = work::prepare(&store, &library, profile, destination, recover, &cancel)?;
+            let ready = work::prepare(&store, &library, profile, destination, recover, &cancel, &progress)?;
             let profile = ready.profile.clone();
             let mut slot = result.lock().unwrap_or_else(|e| e.into_inner());
             if slot.0 { slot.1 = Some(ready); }
@@ -630,6 +638,16 @@ impl Service {
     }
     pub fn poll(&mut self) -> bool {
         let mut changed = false;
+        if let Ok(mut slot) = self.review_progress.lock() {
+            if let Some(p) = slot.take() {
+                self.status.review_stage = p.stage.into();
+                self.status.completed = p.completed;
+                self.status.total = p.total;
+                self.status.current = p.current_path;
+                self.status.selected_bytes = super::bytes(p.selected_bytes);
+                changed = true;
+            }
+        }
         if let Ok(mut slot) = self.progress.lock() {
             if let Some(p) = slot.take() {
                 self.status.completed = p.completed_files;
@@ -880,6 +898,28 @@ impl Service {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn review_progress_reports_the_latest_real_stage_without_retaining_a_history() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut service = Service::new(directory.path().join("library"), directory.path().join("profiles"));
+        service.status.phase = "preparing".into();
+        for completed in 0..20 {
+            *service.review_progress.lock().unwrap() = Some(chilpa_sync::ReviewProgress {
+                stage:"sources", completed, total:20, current_path:format!("track-{completed}.dff"), selected_bytes:11 * 1024 * 1024 * 1024,
+            });
+        }
+        assert!(service.poll());
+        assert_eq!(service.status.completed, 19);
+        assert_eq!(service.status.total, 20);
+        assert_eq!(service.status.current, "track-19.dff");
+        assert_eq!(service.status.review_stage, "sources");
+        assert!(service.status.transferred.is_empty());
+        assert!(service.review_progress.lock().unwrap().is_none());
+        let view: serde_json::Value = serde_json::from_str(&service.status_json()).unwrap();
+        assert!(!view["review_stage_label"].as_str().unwrap().is_empty());
+        assert_eq!(view["review_progress_text"], chilpa_i18n::t_args("{} of {}", &["19", "20"]));
+    }
 
     #[test]
     fn a_stopped_playlist_worker_cannot_restore_a_busy_session_on_close() {

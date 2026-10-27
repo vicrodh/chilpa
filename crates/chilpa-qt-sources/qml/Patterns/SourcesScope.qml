@@ -40,6 +40,7 @@ Item {
 
     Popup {
         id: popup
+        PopupInput { surface: popup }
         objectName: "sourcesScopePopup"
         // A click outside closes it and is nothing else.
         modal: true

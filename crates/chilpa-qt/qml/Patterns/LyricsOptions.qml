@@ -17,6 +17,7 @@ import "../Components"
 // translated is Settings' toggle, mirrored here under its own key.
 Popup {
     id: flyout
+    PopupInput { surface: flyout }
     objectName: "lyricsOptions"
 
     // Where the choices are kept: the window's settings, or a double.
