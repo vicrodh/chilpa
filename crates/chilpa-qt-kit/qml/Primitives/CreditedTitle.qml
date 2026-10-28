@@ -49,10 +49,10 @@ Item {
         width: Math.max(0, line.width - x)
         anchors.baseline: titleText.baseline
         text: [line.credit, line.composer].filter(Boolean).join(" · ")
-        textFormat: line.richCredits ? Text.RichText : Text.PlainText
+        // Styled text keeps the link color and elides; rich text does neither, so a linked
+        // name ran over the next column and took Qt's own link color.
+        textFormat: line.richCredits ? Text.StyledText : Text.PlainText
         linkColor: color
-        // Rich text does not elide: it is cut at the column and never runs over the next one.
-        clip: line.richCredits
         elide: Text.ElideRight
         font.pointSize: Type.meta
         color: Theme.color.textTertiary
