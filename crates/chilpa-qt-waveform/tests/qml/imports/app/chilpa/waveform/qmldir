@@ -1,2 +1,3 @@
 module app.chilpa.waveform
 singleton Waveform 1.0 Waveform.qml
+WaveformBars 1.0 WaveformBars.qml

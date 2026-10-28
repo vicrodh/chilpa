@@ -44,16 +44,17 @@ TestCase {
         verify(button.visible, "two sources to tell apart")
         compare(button.text, "All sources")
         const menu = findChild(screen, "playlistSourceMenu")
-        compare(menu.entries.map(entry => entry.text), ["All sources", "Chilpa", "Fixture"])
-        menu.chosen(2)
+        compare(menu.sources, ["local", "fixture"])
+        menu.flip("local", false)
         compare(PlaylistManager.askedSource, "fixture")
         compare(screen.rows.map(row => row.name), ["From a source"])
         compare(button.text, "Fixture")
         compare(SettingsModel.kept("ui.playlists.source"), "fixture")
-        menu.chosen(1)
-        compare(screen.rows.map(row => row.name), ["Stored playlist"])
-        menu.chosen(0)
-        compare(screen.rows.length, 2)
+        menu.flip("fixture", false)
+        compare(screen.source, "fixture", "the last one on stays on")
+        menu.flip("local", true)
+        compare(screen.rows.length, 2, "every source on is every list")
+        compare(button.text, "All sources")
     }
 
     function cards() { return named(screen, "playlistCardName").map(name => name.parent.parent) }

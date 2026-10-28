@@ -55,6 +55,7 @@ Item {
             }
             PlaylistManagerActions { manager: playlistManager }
             PlaylistManagerTools { width: Metrics.settingsMaxWidth; sources: ["local", "demo"] }
+            PlaylistSourcesPopup { sources: ["local", "demo"]; labelOf: id => id }
         }
         Row {
             spacing: Metrics.gap16

@@ -75,9 +75,10 @@ pub(crate) fn playlist_of(p: chilpa_library::StoredPlaylist) -> Playlist {
 }
 
 /// Whether a playlist is one of `source`'s: empty takes every one, "local"
-/// the library's own, and a plugin's id that plugin's.
+/// the library's own, and a plugin's id that plugin's. Several are given as a
+/// comma-separated list and any of them counts.
 fn from_source(playlist: &Playlist, source: &str) -> bool {
-    source.is_empty() || if source == "local" { playlist.mixed } else { playlist.source == source }
+    source.is_empty() || source.split(',').any(|one| if one == "local" { playlist.mixed } else { playlist.source == one })
 }
 
 /// The sources the manager's playlists come from, for its filter: the
@@ -812,6 +813,7 @@ mod group_tests {
         assert_eq!(ids(""), [1, 2, 3, 4]);
         assert_eq!(ids("local"), [1], "the library's own, whatever their tracks' sources");
         assert_eq!(ids("fixture"), [2, 4]);
+        assert_eq!(ids("local,other"), [1, 3], "several sources count together");
         let rows = playlist_manager_entries(playlists.clone(), Vec::new(), "", "all", "", "custom", true, None);
         assert_eq!(rows.iter().map(|row| row.writable).collect::<Vec<_>>(), [true, false, false, false], "only what the listener may change says so");
         assert_eq!(playlist_manager_sources(&playlists), ["local", "fixture", "other"], "the library's own first, then each source once");

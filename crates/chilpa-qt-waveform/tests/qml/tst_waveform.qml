@@ -60,13 +60,13 @@ TestCase {
     // to it, none is rebuilt, and the columns are asked for once it rests.
     function test_a_moving_width_stretches_the_bars_and_asks_once_it_rests() {
         const laid = findChild(bar, "waveformBars")
-        const first = laid.children.find(child => child.objectName === "waveformBar")
+        const node = findChild(bar, "waveformBarsNode")
         for (const width of [590, 575, 560, 548, 540]) {
             bar.width = width
             wait(10)
         }
         compare(bar.columns, Math.ceil(600 / Bars.pixelsPerColumn), "the columns wait for the width to rest")
-        verify(laid.children.includes(first), "no bar was rebuilt while it moved")
+        compare(findChild(bar, "waveformBarsNode"), node, "the bars were not rebuilt while it moved")
         compare(laid.width * laid.transform[0].xScale, 540, "the bars reach the new width")
         tryCompare(bar, "columns", Math.ceil(540 / Bars.pixelsPerColumn))
         compare(Waveform.columns, bar.columns)
@@ -78,33 +78,22 @@ TestCase {
 
     function test_one_bar_per_value_in_the_colors_of_played_known_and_unknown() {
         waitForRendering(bar)
-        const bars = []
-        const laid = findChild(bar, "waveformBars")
-        for (let i = 0; i < laid.children.length; ++i) {
-            const child = laid.children[i]
-            if (child.objectName === "waveformBar")
-                bars.push(child)
-        }
-        compare(bars.length, bar.columns)
-        bars.sort((a, b) => a.x - b.x)
-        compare(bars[0].color, Theme.color.accent, "the first quarter is played")
-        compare(bars[Math.floor(bar.columns * 0.4)].color, Theme.color.textSecondary, "the first half is known")
-        compare(bars[bar.columns - 1].color, Theme.color.strokeHairline, "the rest is not yet")
-        verify(bars[1].x > bars[0].x && bars[1].x - bars[0].x <= Bars.pixelsPerColumn + 1, "one slot apart")
-        verify(bars[0].height > Bars.barLeast && bars[0].height <= bar.height, "a bar within the height: " + bars[0].height)
-        verify(bar.height / 2 - bars[0].y > bars[0].y + bars[0].height - bar.height / 2, "it swings further up than down")
+        const node = findChild(bar, "waveformBarsNode")
+        compare(node.count, bar.columns)
+        compare(node.colorAt(0), Theme.color.accent, "the first quarter is played")
+        compare(node.colorAt(Math.floor(bar.columns * 0.4)), Theme.color.textSecondary, "the first half is known")
+        compare(node.colorAt(bar.columns - 1), Theme.color.strokeHairline, "the rest is not yet")
+        const first = node.barAt(0), second = node.barAt(1)
+        verify(second.x > first.x && second.x - first.x <= Bars.pixelsPerColumn + 1, "one slot apart")
+        verify(first.height > Bars.barLeast && first.height <= bar.height, "a bar within the height: " + first.height)
+        verify(bar.height / 2 - first.y > first.y + first.height - bar.height / 2, "it swings further up than down")
     }
 
     function test_no_document_draws_no_bars() {
         Waveform.values = []
         Waveform.lows = []
         waitForRendering(bar)
-        let count = 0
-        const laid = findChild(bar, "waveformBars")
-        for (let i = 0; i < laid.children.length; ++i)
-            if (laid.children[i].objectName === "waveformBar")
-                ++count
-        compare(count, 0)
+        compare(findChild(bar, "waveformBarsNode").count, 0)
     }
 
     function test_a_click_seeks_there_and_a_drag_goes_where_it_is_let_go() {

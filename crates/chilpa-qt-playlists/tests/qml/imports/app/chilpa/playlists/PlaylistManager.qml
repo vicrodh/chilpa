@@ -9,7 +9,7 @@ QtObject {
     property string askedSource: ""
     function json(query, filter, source, order, ascending, folderId) {
         askedSource = source
-        return JSON.stringify(rows.filter(row => source === "" || (source === "local" ? row.local : row.source === source)))
+        return JSON.stringify(rows.filter(row => source === "" || source.split(",").some(one => one === "local" ? row.local : row.source === one)))
     }
     function sourcesJson() { return JSON.stringify([...new Set(rows.map(row => row.local ? "local" : row.source))]) }
     // The order each playlist keeps, as the facade does.
