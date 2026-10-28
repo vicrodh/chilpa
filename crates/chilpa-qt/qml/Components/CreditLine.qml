@@ -2,6 +2,7 @@ import QtQuick
 import app.chilpa
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/TextLinks.js" as TextLinks
 
 // A credit as its tag wrote it. It names one artist or several, and a click
 // opens the page of the one under the pointer.
@@ -43,10 +44,10 @@ Text {
         else Navigation.openCredit(target.credit, line.placeAt(x, target.credit))
     }
 
-    text: document.html || credit
-    // Styled text keeps the link color and elides; rich text does neither.
-    textFormat: document.links ? Text.StyledText : Text.PlainText
-    linkColor: color
+    // Rich text takes the color of each anchor from its markup and does not elide.
+    text: document.links ? TextLinks.render(document.html, "", color, color) : (document.html || credit)
+    textFormat: document.links ? Text.RichText : Text.PlainText
+    clip: document.links && contentWidth > width
     elide: Text.ElideRight
 
     FontMetrics { id: metrics; font: line.font }

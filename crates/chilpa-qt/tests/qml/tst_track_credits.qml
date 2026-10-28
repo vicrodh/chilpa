@@ -51,8 +51,9 @@ TestCase {
         Prefs.trackComposers = true
         verify(title.text.includes("Writer"))
         verify(!title.text.includes("Composer:"), "the name stands alone, with no label")
-        verify(title.textFormat === Text.StyledText, "linked credits elide and keep the row's color")
-        verify(title.contentWidth <= title.width + 1, "the credit stays inside its column")
+        verify(title.textFormat === Text.RichText)
+        verify(title.contentWidth <= title.width + 1 || title.clip, "the credit stays inside its column or is cut there")
+        verify(title.text.includes("color:"), "each anchor carries the row's color, not Qt's link color")
         clickLink(title,"2",list)
         compare(Navigation.went,["source","fixture native:artist:writer"])
     }
