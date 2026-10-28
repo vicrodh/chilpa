@@ -51,7 +51,8 @@ TestCase {
         Prefs.trackComposers = true
         verify(title.text.includes("Writer"))
         verify(!title.text.includes("Composer:"), "the name stands alone, with no label")
-        verify(title.clip, "rich credits are cut at their column")
+        verify(title.textFormat === Text.StyledText, "linked credits elide and keep the row's color")
+        verify(title.contentWidth <= title.width + 1, "the credit stays inside its column")
         clickLink(title,"2",list)
         compare(Navigation.went,["source","fixture native:artist:writer"])
     }

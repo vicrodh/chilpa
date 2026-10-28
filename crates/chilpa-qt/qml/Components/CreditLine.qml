@@ -44,7 +44,8 @@ Text {
     }
 
     text: document.html || credit
-    textFormat: document.links ? Text.RichText : Text.PlainText
+    // Styled text keeps the link color and elides; rich text does neither.
+    textFormat: document.links ? Text.StyledText : Text.PlainText
     linkColor: color
     elide: Text.ElideRight
 

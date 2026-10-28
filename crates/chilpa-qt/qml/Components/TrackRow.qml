@@ -143,7 +143,7 @@ TrackRowSlot {
                     width: parent.width
                     visible: row.rich
                     text: row.credits.artist_html || row.artist
-                    textFormat: row.credits.links ? Text.RichText : Text.PlainText
+                    textFormat: row.credits.links ? Text.StyledText : Text.PlainText
                     linkColor: color
                     elide: Text.ElideRight
                     font.pointSize: Type.meta
@@ -159,7 +159,7 @@ TrackRowSlot {
                 visible: width > 0
                 anchors.verticalCenter: parent.verticalCenter
                 text: row.credits.artist_html || row.artist
-                textFormat: row.credits.links ? Text.RichText : Text.PlainText
+                textFormat: row.credits.links ? Text.StyledText : Text.PlainText
                 linkColor: color
                 elide: Text.ElideRight
                 font.pointSize: Type.row
