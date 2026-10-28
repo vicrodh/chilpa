@@ -259,3 +259,14 @@ fn the_legacy_focus_view_keeps_flattening_same_mode_groups() {
     assert!(!rows.advanced); assert_eq!(rows.rows.len(),2);
     assert_eq!(super::super::with_value("genre:Jazz (year:1960)","genre","Soul",ValueState::Include),"genre:Jazz,Soul year:1960");
 }
+
+#[test]
+fn one_pass_counts_equal_the_counts_one_by_one() {
+    use crate::Filter;
+    let reader=crate::Reader::of(library());
+    let filters=[Filter::default(),Filter {genre:Some("Jazz".into()),..Filter::default()},Filter {year:Some(1960),..Filter::default()},Filter {query:Some(Node::Any(vec![])),..Filter::default()}];
+    let together=reader.lib.query_counts(&filters.iter().collect::<Vec<_>>()).unwrap();
+    assert_eq!(together,filters.iter().map(|f| reader.lib.query_count(f).unwrap()).collect::<Vec<_>>());
+    assert_eq!(together[3],0,"a filter that holds nothing counts nothing");
+    assert!(reader.lib.query_counts(&[]).unwrap().is_empty());
+}

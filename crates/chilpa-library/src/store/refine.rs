@@ -30,34 +30,71 @@ impl Library {
         Ok(out)
     }
 
+    /// I count the tracks each filter leaves, in one pass over the library
+    /// instead of one per filter.
+    pub fn query_counts(&self, filters: &[&Filter]) -> rusqlite::Result<Vec<usize>> {
+        if filters.is_empty() { return Ok(Vec::new()); }
+        // Every clause opens with the same eligibility test: it is asked once,
+        // not once per filter.
+        const BASE: &str = "t.present = 1 AND t.source_id IN (SELECT id FROM sources WHERE enabled = 1)";
+        let mut columns = Vec::new(); let mut args = Vec::new();
+        for filter in filters {
+            let (clause,own) = browse::clause(filter);
+            let rest = condition(&clause).strip_prefix(BASE).map(|rest| rest.trim_start_matches(" AND ").trim()).unwrap_or(condition(&clause));
+            columns.push(format!("count(*) FILTER (WHERE {})", if rest.is_empty() { "1" } else { rest }));
+            args.extend(own);
+        }
+        self.connection().query_row(&format!("SELECT {} FROM tracks t JOIN albums a ON a.id=t.album_id WHERE {BASE}", columns.join(", ")),
+            params_from_iter(args.iter()), |r| (0..filters.len()).map(|i| r.get::<_,i64>(i).map(|n| n as usize)).collect())
+    }
+
     /// I count all alternatives together, including OR branches independent of the field.
-    pub fn query_facet_counts(&self, high: &Filter, low: &Filter, field: Field, typed: &str) -> rusqlite::Result<(usize,Vec<(String,usize)>)> {
+    /// `low` is the filter that already leaves a value in, or none when no
+    /// track does. Only the names that match what was typed are looked at,
+    /// and only the first three of them are counted: nothing here walks every
+    /// track once per field.
+    pub fn query_facet_counts(&self, high: &Filter, low: Option<&Filter>, field: Field, typed: &str) -> rusqlite::Result<(usize,Vec<(String,usize)>)> {
         let (name,join) = match field {
             Field::Artist => ("r.artist","JOIN album_artist_rollup r ON r.album_id=a.id"),
             Field::Composer => ("c.name","JOIN track_composers tc ON tc.track_id=t.id JOIN composers c ON c.id=tc.composer_id"),
             Field::Genre => ("g.name","JOIN track_genres tg ON tg.track_id=t.id JOIN genres g ON g.id=tg.genre_id"),
             Field::Label => ("t.label",""), _ => return Ok((0,Vec::new())),
         };
-        let (low_clause,mut args) = browse::clause(low);
-        let (high_clause,high_args) = browse::clause(high); args.extend(high_args);
-        args.push(Box::new(super::query::fold(typed)));
         let eligible="t.present=1 AND t.source_id IN (SELECT id FROM sources WHERE enabled=1) AND t.album_id IN (SELECT id FROM albums)";
-        let names=match field {
-            Field::Artist => format!("SELECT min(artist) AS name FROM album_artist_rollup WHERE album_id IN (SELECT t.album_id FROM tracks t WHERE {eligible}) GROUP BY artist COLLATE NOCASE"),
-            Field::Composer => format!("SELECT name FROM composers WHERE id IN (SELECT tc.composer_id FROM track_composers tc JOIN tracks t ON t.id=tc.track_id WHERE {eligible})"),
-            Field::Genre => format!("SELECT name FROM genres WHERE id IN (SELECT tg.genre_id FROM track_genres tg JOIN tracks t ON t.id=tg.track_id WHERE {eligible})"),
-            _ => format!("SELECT min(t.label) AS name FROM tracks t WHERE {eligible} AND coalesce(t.label,'')<>'' GROUP BY t.label COLLATE NOCASE"),
+        // The names that match what was typed come first and in order; whether
+        // a track still holds each is asked down that list, until three do.
+        let (names,holds)=match field {
+            Field::Artist => ("SELECT min(artist) AS name FROM album_artist_rollup WHERE instr(chilpa_fold(artist),?)>0 GROUP BY artist COLLATE NOCASE".to_string(),
+                format!("EXISTS (SELECT 1 FROM album_artist_rollup r JOIN tracks t ON t.album_id=r.album_id WHERE r.artist=cand.name COLLATE NOCASE AND {eligible})")),
+            Field::Composer => ("SELECT name FROM composers WHERE instr(chilpa_fold(name),?)>0".to_string(),
+                format!("EXISTS (SELECT 1 FROM track_composers tc JOIN tracks t ON t.id=tc.track_id WHERE tc.composer_id=(SELECT id FROM composers WHERE name=cand.name) AND {eligible})")),
+            Field::Genre => ("SELECT name FROM genres WHERE instr(chilpa_fold(name),?)>0".to_string(),
+                format!("EXISTS (SELECT 1 FROM track_genres tg JOIN tracks t ON t.id=tg.track_id WHERE tg.genre_id=(SELECT id FROM genres WHERE name=cand.name) AND {eligible})")),
+            _ => ("SELECT name FROM (SELECT min(label) AS name FROM tracks WHERE coalesce(label,'')<>'' GROUP BY label COLLATE NOCASE) WHERE instr(chilpa_fold(name),?)>0".to_string(),
+                format!("EXISTS (SELECT 1 FROM tracks t WHERE t.label=cand.name COLLATE NOCASE AND {eligible})")),
         };
-        let sql = format!("WITH low AS MATERIALIZED (SELECT t.id FROM tracks t JOIN albums a ON a.id=t.album_id {low_clause}),
-            high AS MATERIALIZED (SELECT t.id FROM tracks t JOIN albums a ON a.id=t.album_id {high_clause}),
-            names AS MATERIALIZED ({names}),
-            choices AS MATERIALIZED (SELECT name FROM names WHERE instr(chilpa_fold(name),?)>0 ORDER BY chilpa_fold(name),name LIMIT 3),
+        let mut args: Vec<Box<dyn rusqlite::ToSql>> = vec![Box::new(super::query::fold(typed))];
+        let (high_clause,high_args) = browse::clause(high); args.extend(high_args);
+        // A value already left in by the filter is counted under `low`; none
+        // is, when nothing the filter says leaves it in.
+        let (low_not,low_total) = match low {
+            Some(low) => {
+                let (clause,low_args) = browse::clause(low); args.extend(low_args);
+                (format!("AND NOT ({})",condition(&clause)),format!("SELECT count(*) FROM tracks t JOIN albums a ON a.id=t.album_id {clause}"))
+            }
+            None => (String::new(),"SELECT 0".to_string()),
+        };
+        // The same filter is in the statement twice, under the counts and as the baseline.
+        if let Some(low) = low { args.extend(browse::clause(low).1); }
+        let sql = format!("WITH cand AS MATERIALIZED (SELECT name FROM ({names}) ORDER BY chilpa_fold(name),name),
+            choices AS MATERIALIZED (SELECT name FROM cand WHERE {holds} LIMIT 3),
             counts AS (SELECT choices.name, count(DISTINCT t.id) AS n FROM choices
                 JOIN tracks t JOIN albums a ON a.id=t.album_id {join}
-                WHERE {name}=choices.name COLLATE NOCASE AND t.id IN high AND t.id NOT IN low
+                WHERE {name}=choices.name COLLATE NOCASE AND ({high_cond}) {low_not}
                 GROUP BY choices.name COLLATE NOCASE)
-            SELECT NULL, count(*) FROM low UNION ALL
-            SELECT choices.name,coalesce(counts.n,0) FROM choices LEFT JOIN counts ON counts.name=choices.name");
+            SELECT NULL, ({low_total}) UNION ALL
+            SELECT choices.name,coalesce(counts.n,0) FROM choices LEFT JOIN counts ON counts.name=choices.name",
+            high_cond=condition(&high_clause));
         let mut stmt = self.connection().prepare(&sql)?;
         let mut baseline = 0; let mut values = Vec::new();
         for row in stmt.query_map(params_from_iter(args.iter()),|r| Ok((r.get::<_,Option<String>>(0)?,r.get::<_,i64>(1)? as usize)))? {
@@ -66,3 +103,6 @@ impl Library {
         Ok((baseline,values))
     }
 }
+
+/// A clause's conditions without its `WHERE`, to embed in another statement.
+fn condition(clause: &str) -> &str { clause.trim_start().strip_prefix("WHERE").unwrap_or(clause).trim() }
