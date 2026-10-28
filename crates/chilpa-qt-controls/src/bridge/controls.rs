@@ -66,7 +66,7 @@ unsafe extern "C" {
 /// not held back again.
 static QUIT_ALLOWED: AtomicBool = AtomicBool::new(false);
 #[cfg(target_os = "macos")]
-static QUIT_THREAD: std::sync::OnceLock<cxx_qt::CxxQtThread<qobject::Controls>> = OnceLock::new();
+static QUIT_THREAD: std::sync::OnceLock<cxx_qt::CxxQtThread<qobject::Controls>> = std::sync::OnceLock::new();
 
 #[cfg(target_os = "macos")]
 extern "C" fn quit_held_back() -> bool {
