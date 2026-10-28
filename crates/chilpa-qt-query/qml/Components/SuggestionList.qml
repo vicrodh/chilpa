@@ -12,37 +12,58 @@ import "../Theme"
 // words anywhere, in a title or in a record's. Enter includes the first
 // match, Shift+Enter keeps it out. Asked for once the typing settles: one
 // round of counts per pause, not per key. The counts come back on their
-// own, from a thread of the facade's; what is shown stays until an answer
-// for what is typed now arrives.
+// own, from a thread of the facade's, for the query and text they were
+// asked for; what is shown stays until an answer for what is typed now
+// arrives, and Enter waits for that answer rather than take an older one.
 Item {
     id: list
     property string query: Library.queryText
     property string typed: ""
     property var found: ({ groups: [], words: {} })
+    // The query and text `found` answers, or none.
+    property var shownFor: null
+    // The bridge's handle for this list: its rounds and their answers carry it.
+    property int consumer: 0
+    // An Enter (true for Shift+Enter) waiting for the answer to what is typed now.
+    property var waiting: null
     signal edit(var change)
 
     implicitHeight: Math.min(Refine.suggestMax, content.implicitHeight + Refine.suggestPad * 2) // derived: padding above and below
 
+    function current() { return list.typed.trim() }
+    function shownIsCurrent() { return list.shownFor !== null && list.shownFor[0] === list.query && list.shownFor[1] === current() }
+    function ask() { settle.stop(); QueryChips.suggest(list.consumer, list.query, current()) }
     Timer {
         id: settle
         interval: Motion.base
-        onTriggered: QueryChips.suggest(list.query, list.typed.trim())
+        onTriggered: list.ask()
     }
-    onTypedChanged: settle.restart()
-    Component.onCompleted: settle.restart()
+    onTypedChanged: { list.waiting = null; settle.restart() }
+    // A condition changed under the list: its counts are for another query.
+    onQueryChanged: { list.waiting = null; list.found = { groups: [], words: {} }; list.shownFor = null; settle.restart() }
+    Component.onCompleted: { list.consumer = QueryChips.openSuggestions(); settle.restart() }
+    Component.onDestruction: QueryChips.closeSuggestions(list.consumer)
     Connections {
         target: QueryChips
-        function onSuggested(query, typed, found) {
-            if (query !== list.query || typed !== list.typed.trim()) return
+        function onSuggested(consumer, query, typed, found) {
+            if (consumer !== list.consumer || query !== list.query || typed !== list.current()) return
             list.found = JSON.parse(found || "{\"groups\":[],\"words\":{}}")
+            list.shownFor = [query, typed]
+            if (list.waiting !== null) { const exclude = list.waiting; list.waiting = null; list.apply(exclude) }
         }
     }
 
-    // The first match, included or kept out (Enter, Shift+Enter).
+    // The first match, included or kept out (Enter, Shift+Enter): of the
+    // answer for what is typed now, or of the one asked for it at once.
     function first(exclude) {
+        if (shownIsCurrent()) { apply(exclude); return }
+        waiting = exclude
+        ask()
+    }
+    function apply(exclude) {
         const group = found.groups.find(g => g.items.length > 0)
         if (group) edit({ op: "value", field: group.field, value: group.items[0].value, state: exclude ? "exclude" : "include" })
-        else if (!exclude && typed.trim() !== "") edit({ op: "words", field: "words", word: typed.trim() })
+        else if (!exclude && current() !== "") edit({ op: "words", field: "words", word: current() })
     }
 
     ElevatedShadow { target: box; radius: Refine.pickRound }

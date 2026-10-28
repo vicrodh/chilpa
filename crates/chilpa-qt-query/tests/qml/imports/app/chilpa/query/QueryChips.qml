@@ -36,13 +36,19 @@ QtObject {
     function observe(text) { observed = observed.concat([text]) }
     property var suggestions: ({ groups: [], words: {} })
     property string lastTyped: ""
+    property string lastSuggestQuery: ""
+    property int lastConsumer: 0
+    property int consumers: 0
+    property var closed: []
     // A round is answered on a later turn of the loop, as the bridge's
     // thread answers; with `answers` off, a test answers by hand.
     property bool answers: true
-    signal suggested(string query, string typed, string found)
-    function suggest(query, typed) {
-        lastTyped = typed
-        if (answers) Qt.callLater(() => suggested(query, typed, JSON.stringify(suggestions)))
+    signal suggested(int consumer, string query, string typed, string found)
+    function openSuggestions() { consumers += 1; return consumers }
+    function closeSuggestions(consumer) { closed = closed.concat([consumer]) }
+    function suggest(consumer, query, typed) {
+        lastConsumer = consumer; lastSuggestQuery = query; lastTyped = typed
+        if (answers) Qt.callLater(() => suggested(consumer, query, typed, JSON.stringify(suggestions)))
     }
     property var notesOf: ({})
     function notes(query) { return JSON.stringify(notesOf[query] || []) }

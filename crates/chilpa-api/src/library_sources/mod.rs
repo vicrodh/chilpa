@@ -156,10 +156,12 @@ impl crate::Reader {
     /// whatever the catalog does, so the refreshes it causes are answered
     /// from the cache.
     pub(crate) fn source_index(&self) -> (Stamp, std::rc::Rc<SourceIndex>) {
-        let Some(catalog) = &self.catalog else { return Default::default() };
-        let Some(natives) = catalog.natives() else { return Default::default() };
+        // Nothing integrated any more: what was kept of the last index goes.
+        let none = || { self.sources.borrow_mut().take(); Default::default() };
+        let Some(catalog) = &self.catalog else { return none() };
+        let Some(natives) = catalog.natives() else { return none() };
         let chosen = integrated(&natives);
-        if chosen.is_empty() { return Default::default(); }
+        if chosen.is_empty() { return none(); }
         let stamp = (catalog.integrated_signature(&chosen), chosen);
         if let Some((held, index)) = self.sources.borrow().as_ref().filter(|(held, _)| *held == stamp) {
             return (held.clone(), index.clone());

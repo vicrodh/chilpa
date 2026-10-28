@@ -11,7 +11,7 @@ use chilpa_library::store::query::{Field, Node, Values};
 use serde_json::{json, Value};
 
 pub use edits::refine_edit;
-pub use access::suggest_later;
+pub use access::{suggest_consumer, suggest_later, suggest_release};
 pub(crate) use data::{cofactor, has_field};
 
 pub(crate) fn field(name: &str) -> Option<Field> {
