@@ -54,6 +54,8 @@ pub struct LibraryFolder {
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct ScanStatus {
     pub running: bool,
+    /// Files found so far while the folders are still being listed.
+    pub found: usize,
     pub done: usize,
     pub total: usize,
     pub summary: ScanSummary,

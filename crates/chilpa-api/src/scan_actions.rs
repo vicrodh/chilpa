@@ -135,6 +135,7 @@ impl Chilpa {
         for event in events {
             use chilpa_library::ScanProgress;
             match event {
+                ScanProgress::Discovered { found } => self.scan_status.found = found,
                 ScanProgress::Counted { total } => self.scan_status.total = total,
                 ScanProgress::Advanced { done, total } => {
                     self.scan_status.done = done;

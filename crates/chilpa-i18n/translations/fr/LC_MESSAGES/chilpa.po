@@ -3349,6 +3349,9 @@ msgstr "Cherche les paroles via le service de paroles de Chilpa quand ni le fich
 msgid "Looking for files…"
 msgstr "Recherche de fichiers…"
 
+msgid "Looking for files… {} found"
+msgstr "Recherche de fichiers… {} trouvés"
+
 msgid "Looking for lyrics…"
 msgstr "Recherche des paroles…"
 
