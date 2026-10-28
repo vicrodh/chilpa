@@ -511,6 +511,7 @@ dependencies = [
 name = "chilpa-appkit"
 version = "0.1.0"
 dependencies = [
+ "cc",
  "objc2",
  "objc2-app-kit",
  "objc2-foundation",

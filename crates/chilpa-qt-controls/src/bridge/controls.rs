@@ -40,7 +40,43 @@ pub mod qobject {
         /// The tray's menu, in the language chosen now.
         #[qinvokable]
         fn relabel_tray(self: &Controls);
+        /// Holds back the system's own Quit and asks the interface about it,
+        /// on a Mac; elsewhere it does nothing.
+        #[qinvokable]
+        fn watch_quit(self: Pin<&mut Controls>);
+        /// The next quit goes through: the interface has decided.
+        #[qinvokable]
+        fn allow_quit(self: &Controls);
+        /// The system asked to quit and the interface has not decided yet.
+        #[qsignal]
+        fn quit_asked(self: Pin<&mut Controls>);
     }
+    impl cxx_qt::Threading for Controls {}
+}
+#[cfg(target_os = "macos")]
+use cxx_qt::Threading;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+#[cfg(target_os = "macos")]
+unsafe extern "C" {
+    fn chilpa_install_quit_filter(swallow: extern "C" fn() -> bool);
+}
+
+/// Set once the interface has decided to quit, so the quit it then causes is
+/// not held back again.
+static QUIT_ALLOWED: AtomicBool = AtomicBool::new(false);
+#[cfg(target_os = "macos")]
+static QUIT_THREAD: std::sync::OnceLock<cxx_qt::CxxQtThread<qobject::Controls>> = OnceLock::new();
+
+#[cfg(target_os = "macos")]
+extern "C" fn quit_held_back() -> bool {
+    if QUIT_ALLOWED.load(Ordering::SeqCst) {
+        return false;
+    }
+    if let Some(thread) = QUIT_THREAD.get() {
+        let _ = thread.queue(|controls| controls.quit_asked());
+    }
+    true
 }
 use chilpa_qt_kit::app;
 use cxx_qt_lib::QString;
@@ -92,5 +128,19 @@ impl qobject::Controls {
 
     pub fn relabel_tray(&self) {
         app::with(|api| api.relabel_tray());
+    }
+
+    pub fn watch_quit(self: Pin<&mut Self>) {
+        #[cfg(target_os = "macos")]
+        if QUIT_THREAD.set(self.qt_thread()).is_ok() {
+            // SAFETY: the window's thread installs it after the application exists.
+            unsafe { chilpa_install_quit_filter(quit_held_back) };
+        }
+        #[cfg(not(target_os = "macos"))]
+        let _ = self;
+    }
+
+    pub fn allow_quit(&self) {
+        QUIT_ALLOWED.store(true, Ordering::SeqCst);
     }
 }

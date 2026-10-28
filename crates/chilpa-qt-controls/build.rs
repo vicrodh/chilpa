@@ -30,10 +30,12 @@ fn main() {
     let resources = files("qml", &|p| p.file_name().is_some_and(|n| n == "qmldir"));
     println!("cargo:rerun-if-changed=qml");
     println!("cargo:rerun-if-changed=src/bridge");
+    println!("cargo:rerun-if-changed=cxx/quit_filter.cpp");
     CxxQtBuilder::library(Interface::default())
         .qt_module("Gui")
         .qt_module("Qml")
         .qt_module("Quick")
+        .cc_builder(|cc| { cc.file("cxx/quit_filter.cpp"); })
         .qml_module(QmlModule {
             uri: "app.chilpa.controls",
             rust_files: &bridges,

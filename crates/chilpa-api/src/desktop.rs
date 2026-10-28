@@ -50,9 +50,27 @@ pub(crate) struct Desktop {
     told: (Option<TrackMeta>, Option<PlaybackStatus>),
     /// A jump the desktop has not heard of yet, in seconds.
     pub(crate) seeked: Option<f64>,
+    /// What the menu-bar item and the Dock ask of a Mac.
+    #[cfg(target_os = "macos")]
+    mac: MacDesktop,
     requests: VecDeque<WindowRequest>,
     /// Paths a launch asked to open, until the window takes them.
     opening: Vec<String>,
+}
+
+/// What the menu-bar item or the Dock asked, until the facade takes it.
+#[cfg(target_os = "macos")]
+enum MacAsked {
+    Tray(chilpa_appkit::tray::Event),
+    /// The Dock or the Finder asked Chilpa to open again.
+    Reopen,
+}
+
+#[cfg(target_os = "macos")]
+#[derive(Default)]
+struct MacDesktop {
+    tell: Option<std::sync::mpsc::Sender<MacAsked>>,
+    asked: Option<std::sync::mpsc::Receiver<MacAsked>>,
 }
 
 /// The cover as an address the desktop can open.
@@ -106,13 +124,27 @@ impl Chilpa {
                 self.start_tray();
             }
         }
+        #[cfg(target_os = "macos")]
+        {
+            let (tx, rx) = std::sync::mpsc::channel();
+            let reopened = tx.clone();
+            chilpa_appkit::reopen::on_reopen(move || {
+                let _ = reopened.send(MacAsked::Reopen);
+            });
+            self.desktop.mac = MacDesktop { tell: Some(tx), asked: Some(rx) };
+            if self.tray_wanted() {
+                self.start_tray();
+            }
+        }
     }
 
     /// Whether the icon is on the panel now.
     pub fn tray_present(&self) -> bool {
         #[cfg(target_os = "linux")]
         return self.desktop.tray.is_some();
-        #[cfg(not(target_os = "linux"))]
+        #[cfg(target_os = "macos")]
+        return chilpa_appkit::tray::present();
+        #[cfg(not(any(target_os = "linux", target_os = "macos")))]
         false
     }
 
@@ -132,6 +164,13 @@ impl Chilpa {
             });
             self.desktop.tray_said = said;
         }
+        #[cfg(target_os = "macos")]
+        {
+            let Some(tell) = self.desktop.mac.tell.clone() else { return };
+            chilpa_appkit::tray::create(&self.tray_glyph(), &mac_tray_labels(), move |event| {
+                let _ = tell.send(MacAsked::Tray(event));
+            });
+        }
     }
 
     /// Takes the icon off the panel.
@@ -140,6 +179,8 @@ impl Chilpa {
         {
             self.desktop.tray = None;
         }
+        #[cfg(target_os = "macos")]
+        chilpa_appkit::tray::remove();
     }
 
     /// Shows the glyph the preference asks for now.
@@ -148,6 +189,8 @@ impl Chilpa {
         if let Some(tray) = &self.desktop.tray {
             tray.recolor(crate::tray::glyph_of(&self.tray_glyph(), chilpa_mpris::tray::prefers_dark()));
         }
+        #[cfg(target_os = "macos")]
+        chilpa_appkit::tray::set_glyph(&self.tray_glyph());
     }
 
     /// The tray's menu in the language of the moment.
@@ -156,6 +199,8 @@ impl Chilpa {
         if let Some(tray) = &self.desktop.tray {
             tray.relabel(tray_labels());
         }
+        #[cfg(target_os = "macos")]
+        chilpa_appkit::tray::relabel(&mac_tray_labels());
     }
 
     /// What the desktop asks of the window, one request at a time.
@@ -183,6 +228,14 @@ impl Chilpa {
 
     /// Does what the desktop asked and tells it what plays now.
     pub(crate) fn advance_desktop(&mut self) {
+        #[cfg(target_os = "macos")]
+        {
+            let Some(asked) = &self.desktop.mac.asked else { return };
+            let events: Vec<_> = std::iter::from_fn(|| asked.try_recv().ok()).collect();
+            for event in events {
+                self.mac_asked(event);
+            }
+        }
         #[cfg(target_os = "linux")]
         {
             let Some((_, asked)) = &self.desktop.link else { return };
@@ -221,6 +274,23 @@ impl Chilpa {
                     self.desktop.tray_said = said;
                 }
             }
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    fn mac_asked(&mut self, asked: MacAsked) {
+        use chilpa_appkit::tray::Event;
+        let sounding = self.now.playing && !self.now.paused;
+        match asked {
+            MacAsked::Tray(Event::PlayPause) => self.set_paused(sounding),
+            MacAsked::Tray(Event::Next) => self.next_track(),
+            MacAsked::Tray(Event::Previous) => {
+                let (device, bit_perfect) = self.chosen_output();
+                self.previous_track(&device, bit_perfect);
+            }
+            MacAsked::Tray(Event::ToggleWindow) => self.desktop.requests.push_back(WindowRequest::Toggle),
+            MacAsked::Tray(Event::QuitAsked) => self.desktop.requests.push_back(WindowRequest::QuitAsked),
+            MacAsked::Reopen => self.desktop.requests.push_back(WindowRequest::Raise),
         }
     }
 
@@ -268,6 +338,18 @@ impl Chilpa {
 #[cfg(target_os = "linux")]
 fn tray_labels() -> chilpa_mpris::tray::Labels {
     chilpa_mpris::tray::Labels {
+        play_pause: chilpa_i18n::t("Play/Pause"),
+        next: chilpa_i18n::t("Next Track"),
+        previous: chilpa_i18n::t("Previous Track"),
+        show_hide: chilpa_i18n::t("Show/Hide Window"),
+        quit: chilpa_i18n::t("Quit Chilpa"),
+    }
+}
+
+/// The menu-bar item's menu, as it reads now.
+#[cfg(target_os = "macos")]
+fn mac_tray_labels() -> chilpa_appkit::tray::Labels {
+    chilpa_appkit::tray::Labels {
         play_pause: chilpa_i18n::t("Play/Pause"),
         next: chilpa_i18n::t("Next Track"),
         previous: chilpa_i18n::t("Previous Track"),
