@@ -40,6 +40,7 @@ QtObject {
     property int lastConsumer: 0
     property int consumers: 0
     property var closed: []
+    property int suggestCalls: 0
     // A round is answered on a later turn of the loop, as the bridge's
     // thread answers; with `answers` off, a test answers by hand.
     property bool answers: true
@@ -47,6 +48,7 @@ QtObject {
     function openSuggestions() { consumers += 1; return consumers }
     function closeSuggestions(consumer) { closed = closed.concat([consumer]) }
     function suggest(consumer, query, typed) {
+        suggestCalls += 1
         lastConsumer = consumer; lastSuggestQuery = query; lastTyped = typed
         if (answers) Qt.callLater(() => suggested(consumer, query, typed, JSON.stringify(suggestions)))
     }

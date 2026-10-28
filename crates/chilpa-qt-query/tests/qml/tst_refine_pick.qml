@@ -32,6 +32,8 @@ TestCase {
         QueryChips.lastRefineEdit = ({})
         QueryChips.answers = true
         QueryChips.lastTyped = ""
+        QueryChips.closed = []
+        QueryChips.suggestCalls = 0
         findChild(panel, "refineAddInput").text = ""
         Library.queryText = "jazz"
         panel.picking = ""
@@ -172,7 +174,8 @@ TestCase {
         tryVerify(() => QueryChips.lastRefineEdit.op === "words" && QueryChips.lastRefineEdit.word === "zzz", 2000)
     }
 
-    Component { id: lone; SuggestionList { width: 600 } }
+    // Behind the panel, so a list left over by a failed test takes no click.
+    Component { id: lone; SuggestionList { width: 600; z: -1 } }
     // A condition changed under the list: its counts go, and it asks again
     // for the same text under the new query.
     function test_a_query_change_clears_the_counts_and_asks_again() {
@@ -189,6 +192,71 @@ TestCase {
         tryVerify(() => list.found.groups.length === 2, 2000)
         list.destroy()
         tryVerify(() => QueryChips.closed.indexOf(consumer) >= 0, 2000)
+    }
+
+    // Enter pressed again, or held, while the round for the text is on its
+    // way asks no second round: only the intent changes, and the answer
+    // applies the last one.
+    function test_enter_pressed_again_keeps_the_round_and_changes_only_the_intent() {
+        QueryChips.answers = false
+        const input = findChild(panel, "refineAddInput")
+        input.forceActiveFocus()
+        input.text = "monk"
+        tryVerify(() => QueryChips.lastTyped === "monk", 2000)
+        const calls = QueryChips.suggestCalls
+        keyClick(Qt.Key_Return)
+        keyClick(Qt.Key_Return)
+        keyClick(Qt.Key_Return, Qt.ShiftModifier)
+        compare(QueryChips.suggestCalls, calls, "the round asked for 'monk' is kept")
+        QueryChips.suggested(QueryChips.lastConsumer, "jazz", "monk", JSON.stringify(QueryChips.suggestions))
+        tryVerify(() => QueryChips.lastRefineEdit.value === "Thelonious Monk", 2000)
+        compare(QueryChips.lastRefineEdit.state, "exclude", "the last press was Shift+Enter")
+    }
+
+    // Hidden, the list hands its handle back so the facade can let its
+    // thread go; shown again it takes a new one, and asks only when what it
+    // shows is not for the text and query of now.
+    function test_a_hidden_list_lets_its_handle_go_and_asks_again_when_shown() {
+        QueryChips.answers = false
+        const list = lone.createObject(test, { typed: "monk" })
+        tryVerify(() => QueryChips.lastTyped === "monk", 2000)
+        const first = QueryChips.lastConsumer
+        compare(list.consumer, first)
+        QueryChips.suggested(first, "jazz", "monk", JSON.stringify(QueryChips.suggestions))
+        tryVerify(() => list.found.groups.length === 2, 2000)
+        list.visible = false
+        compare(list.consumer, 0, "no handle while hidden")
+        verify(QueryChips.closed.indexOf(first) >= 0, "and the bridge was told")
+        const calls = QueryChips.suggestCalls
+        list.visible = true
+        verify(list.consumer !== 0 && list.consumer !== first, "a new handle on return")
+        wait(250)
+        compare(QueryChips.suggestCalls, calls, "what it shows is still for jazz and monk: no round")
+        compare(list.found.groups.length, 2, "and it is still shown")
+        list.visible = false
+        Library.queryText = "rock"
+        wait(250)
+        compare(QueryChips.suggestCalls, calls, "hidden, a query change asks nothing")
+        list.visible = true
+        tryVerify(() => QueryChips.suggestCalls === calls + 1 && QueryChips.lastSuggestQuery === "rock", 2000)
+        list.destroy()
+    }
+
+    Component { id: windowed; Window { width: 400; height: 300; property alias list: inner; SuggestionList { id: inner; width: 380; typed: "monk" } } }
+    // Refine in its own window, closed from the window's own button: the
+    // window hides, the list stays, and its handle goes just the same.
+    function test_a_list_in_a_window_closed_lets_its_handle_go() {
+        QueryChips.answers = false
+        const window = windowed.createObject(test)
+        window.visible = true
+        tryVerify(() => window.list.consumer !== 0, 2000)
+        const first = window.list.consumer
+        window.visible = false
+        tryVerify(() => window.list.consumer === 0, 2000)
+        verify(QueryChips.closed.indexOf(first) >= 0)
+        window.visible = true
+        tryVerify(() => window.list.consumer !== 0 && window.list.consumer !== first, 2000)
+        window.destroy()
     }
 
     // The search above a field's values narrows them; it once reached

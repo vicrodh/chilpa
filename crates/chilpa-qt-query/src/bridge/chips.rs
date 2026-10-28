@@ -109,8 +109,10 @@ impl qobject::QueryChips {
         } else { query::refine_edit(&before,&edit) };
         self.applied(text,after)
     }
+    /// The handle, or 0 once the window has handed out more than fit in an
+    /// int: a list with 0 asks nothing rather than share another's rounds.
     pub fn open_suggestions(self: Pin<&mut Self>) -> i32 {
-        let consumer = i32::try_from(query::suggest_consumer()).unwrap_or(i32::MAX);
+        let Ok(consumer) = i32::try_from(query::suggest_consumer()) else { return 0 };
         self.rust_mut().rounds.insert(consumer, 0);
         consumer
     }
