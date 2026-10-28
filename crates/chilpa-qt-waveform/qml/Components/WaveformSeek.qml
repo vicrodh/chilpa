@@ -71,26 +71,23 @@ Item {
         width: bar.laidWidth
         height: bar.height
         transform: Scale { xScale: bar.width / Math.max(1, bar.laidWidth) }
-        Repeater {
+        // One scene-graph node for every column; a position tick only
+        // recolors it (cxx/waveform_bars.cpp).
+        WaveformBars {
             id: bars
-            model: bar.values.length === bar.columns && bar.lows.length === bar.columns ? bar.columns : 0
-            Rectangle {
-                id: column
-                required property int index
-                objectName: "waveformBar"
-                readonly property real value: Math.min(1, Math.max(0, bar.values[index]))
-                readonly property real low: Math.min(1, Math.max(0, bar.lows[index]))
-                readonly property real reach: Math.min(bar.halfTall, Bars.barLeast / 2 + value * Math.max(0, bar.halfTall - Bars.barLeast / 2)) // derived: the least bar and the rest by the value
-                readonly property real drop: Math.min(bar.halfTall, Bars.barLeast / 2 + low * Math.max(0, bar.halfTall - Bars.barLeast / 2)) // derived: the same, downward
-                readonly property bool sung: (index + 1) / bar.columns <= bar.played
-                readonly property bool known: index / bar.columns < Waveform.analyzed
-                x: bar.slot * index
-                y: bar.height / 2 - reach // derived: from the rail up to the upward peak
-                width: bar.barWide
-                height: reach + drop // derived: the upward peak and the downward one
-                visible: value > 0.0005 || low > 0.0005
-                color: sung ? Theme.color.accent : (known ? Theme.color.textSecondary : Theme.color.strokeHairline)
-            }
+            objectName: "waveformBarsNode"
+            anchors.fill: parent
+            values: bar.values.length === bar.columns && bar.lows.length === bar.columns ? bar.values : []
+            lows: bar.values.length === bar.columns && bar.lows.length === bar.columns ? bar.lows : []
+            played: bar.played
+            analyzed: Waveform.analyzed
+            slot: bar.slot
+            barWide: bar.barWide
+            halfTall: bar.halfTall
+            barLeast: Bars.barLeast
+            playedColor: Theme.color.accent
+            knownColor: Theme.color.textSecondary
+            restColor: Theme.color.strokeHairline
         }
     }
     // The shade: the surface fading out toward the rail, over the bars.

@@ -28,6 +28,7 @@ extern const QStaticPlugin qt_static_plugin_app_chilpa_metadata_plugin();
 extern "C" void chilpa_frame_fence_register_qml_type();
 extern "C" void chilpa_playing_surface_register_qml_type();
 extern "C" void chilpa_storage_events_register_qml_type();
+extern "C" void chilpa_waveform_bars_register_qml_type();
 extern "C" void chilpa_install_application_icon();
 
 extern "C" void chilpa_install_shell()
@@ -36,6 +37,7 @@ extern "C" void chilpa_install_shell()
     chilpa_frame_fence_register_qml_type();
     chilpa_playing_surface_register_qml_type();
     chilpa_storage_events_register_qml_type();
+    chilpa_waveform_bars_register_qml_type();
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_ambient_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_mini_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_dsp_plugin());

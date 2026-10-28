@@ -5,6 +5,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
+import "../Components"
 
 // The playlist manager's tools: what is typed to find a list or a folder,
 // which kind it lists, whose, in what order, and as a grid or a list.
@@ -14,6 +15,9 @@ Row {
     property string source
     property bool grid: true
     property var sourceLabel: function(id) { return id }
+    property var sourceIcon: function(id) { return "" }
+    // The sources listed, as ids; none is every one.
+    readonly property var chosen: source === "" ? [] : source.split(",").filter(id => sources.indexOf(id) >= 0)
     property alias query: search.text
     property alias kind: filterButton.value
     readonly property string order: sort.base
@@ -56,15 +60,19 @@ Row {
         id: sourceButton
         objectName: "playlistSourceFilter"
         visible: tools.sources.length > 1
-        glyph: Icons.server
-        text: tools.sources.indexOf(tools.source) >= 0 ? tools.sourceLabel(tools.source) : I18n.tr("All sources", I18n.rev)
-        onClicked: sourceMenu.open()
-        Menu {
+        glyph: Icons.stack2
+        text: tools.chosen.length === 0 || tools.chosen.length >= tools.sources.length
+            ? I18n.tr("All sources", I18n.rev) : tools.chosen.map(tools.sourceLabel).join(" · ")
+        onClicked: sourceMenu.opened ? sourceMenu.close() : sourceMenu.open()
+        PlaylistSourcesPopup {
             id: sourceMenu
             objectName: "playlistSourceMenu"
             y: parent.height + Metrics.gap4
-            entries: [{text: I18n.tr("All sources", I18n.rev), value: ""}].concat(tools.sources.map(id => ({text: tools.sourceLabel(id), value: id})))
-            onChosen: (index) => tools.sourceChosen(entries[index].value)
+            sources: tools.sources
+            labelOf: tools.sourceLabel
+            iconOf: tools.sourceIcon
+            chosen: tools.source
+            onPicked: (value) => tools.sourceChosen(value)
         }
     }
     SortButton {

@@ -41,7 +41,8 @@ Item {
     function reload() {
         sources = JSON.parse(PlaylistManager.sourcesJson() || "[]")
         // A source no longer there lists every one, not nothing.
-        const from = sources.indexOf(source) >= 0 ? source : ""
+        const kept = source.split(",").filter(id => sources.indexOf(id) >= 0)
+        const from = kept.join(",")
         const raw = JSON.parse(PlaylistManager.json(bar.query, bar.kind, from, bar.order, bar.ascending, folderId))
         rows = raw.map(entry => ({rowKind: entry.kind === "Folder" ? 1 : 0,
             entryId: entry.id, name: entry.name, source: entry.source, sourceName: entry.source_name,
@@ -136,6 +137,7 @@ Item {
             source: page.source
             grid: page.grid
             sourceLabel: page.sourceLabel
+            sourceIcon: (id) => page.panelOf(id).icon_image || page.panelOf(id).icon || ""
             onChanged: page.reload()
             onSourceChosen: (value) => {
                 page.source = value
