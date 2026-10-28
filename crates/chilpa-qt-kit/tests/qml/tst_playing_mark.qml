@@ -112,12 +112,28 @@ TestCase {
 
     function test_four_bars_keep_the_wave_geometry_and_one_pulse() {
         const bars = createTemporaryObject(barsFactory, test, {barScale: 1.5, tint: Qt.rgba(0.3, 0.6, 0.8, 0.5)})
-        compare(bars.children.length, 4)
+        // One arm draws: the quad where the scene graph has shaders, the
+        // four rectangles where it has none; the other builds nothing.
+        const quad = findChild(bars, "playingBarsShader")
+        const rectangles = findChild(bars, "playingBarsRectangles")
+        verify(quad !== null && rectangles !== null)
+        compare(quad.visible, bars.shaderOk, "the quad draws where there are shaders")
+        compare(rectangles.active, !bars.shaderOk, "the rectangles draw where there are none")
+        compare(quad.width, bars.width + 2 * bars.barScale)
+        compare(quad.height, bars.height + 2 * bars.barScale)
+        compare(quad.radius, bars.barScale)
+        compare(quad.tint, bars.tint)
+        compare(quad.dims, Qt.size(bars.width, bars.height))
+        compare(quad.geometry, Qt.vector2d(Metrics.eqBar * bars.barScale, Metrics.eqStep * bars.barScale))
         const amplitudes = [0.6, 1, 0.4, 0.8], phases = [0, 0.25, 0.125, 0.375]
         for (const t of [0, 0.125, 0.25, 0.5, 0.875]) {
             bars.t = t
+            fuzzyCompare(quad.phase, t, 0.00001, "the quad takes the phase as its uniform")
+            if (bars.shaderOk)
+                continue
+            compare(rectangles.item.children.length, 4)
             for (let i = 0; i < 4; ++i) {
-                const bar = bars.children[i]
+                const bar = rectangles.item.children[i]
                 fuzzyCompare(bar.height, bars.height * amplitudes[i] * bars.wave(phases[i]), 0.00001)
                 fuzzyCompare(bar.y + bar.height, bars.height, 0.00001)
                 compare(bar.width, Metrics.eqBar * bars.barScale)
