@@ -81,9 +81,19 @@ impl ScanJob {
     pub fn finished(&self) -> bool { self.thread.as_ref().is_some_and(|thread| thread.is_finished()) }
 }
 
+/// The worker's connection. The one that started the scan already opened
+/// the library, so its upgrade and maintenance are done; opening the full
+/// way again read every local track before the first file was looked at,
+/// 230 ms on thirty thousand and growing with the library, not the folder.
+/// A library that is not there yet, or not at this version, is opened the
+/// full way, which is what creates it.
+fn open(db_path: &Path) -> rusqlite::Result<Library> {
+    Library::open_existing(db_path).or_else(|_| Library::open(db_path))
+}
+
 fn run(db_path: PathBuf, roots: Vec<PathBuf>, artwork_cache: Option<PathBuf>, containers: Arc<dyn Containers + Send + Sync>, control: ScanControl, events: Arc<Mailbox>) {
     let mut accumulated = ScanReport { root: roots.first().cloned().unwrap_or_default(), unreachable: !roots.is_empty(), ..ScanReport::default() };
-    let lib = match Library::open(&db_path) {
+    let lib = match open(&db_path) {
         Ok(lib) => lib,
         Err(error) => { events.send(ScanProgress::Failed(error.to_string())); return; }
     };
@@ -335,5 +345,23 @@ mod tests {
         }
         drop(job);
         let _ = std::fs::remove_file(db);
+    }
+
+    #[test]
+    fn the_worker_opens_a_library_the_facade_already_has_without_its_maintenance() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = dir.path().join("lib.db");
+        std::fs::write(dir.path().join("one.flac"), b"x").unwrap();
+        drop(Library::open(&db).unwrap());
+        let before = std::fs::metadata(&db).unwrap().modified().unwrap();
+        let lib = open(&db).unwrap();
+        // The light open neither migrates nor rewrites anything.
+        assert_eq!(std::fs::metadata(&db).unwrap().modified().unwrap(), before);
+        drop(lib);
+        let job = ScanJob::start(db.clone(), dir.path().to_path_buf(), None);
+        match to_the_end(&job).last() {
+            Some(ScanProgress::Done(report)) => assert_eq!(report.seen, 1),
+            other => panic!("it should have finished: {other:?}"),
+        }
     }
 }
