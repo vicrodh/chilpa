@@ -12,7 +12,7 @@ TestCase {
     visible: true
     width: 1500
     height: 600
-    property var document: ({artist_html:'<a href="0">Lead</a>',featured_html:'feat. <a href="1">Guest</a>',composer_html:'Composer: <a href="2">Writer</a>',html:'<a href="0">Lead</a> · feat. <a href="1">Guest</a>',links:[
+    property var document: ({artist_html:'<a href="0">Lead</a>',featured_html:'feat. <a href="1">Guest</a>',composer_html:'<a href="2">Writer</a>',html:'<a href="0">Lead</a> · feat. <a href="1">Guest</a>',links:[
         {name:"Lead",target:"source",key:"fixture native:artist:lead"},
         {name:"Guest",target:"source",key:"fixture native:artist:guest"},
         {name:"Writer",target:"source",key:"fixture native:artist:writer"}]})
@@ -49,7 +49,9 @@ TestCase {
         clickLink(title,"1",list)
         compare(Navigation.went,["source","fixture native:artist:guest"])
         Prefs.trackComposers = true
-        verify(title.text.includes("Composer:"))
+        verify(title.text.includes("Writer"))
+        verify(!title.text.includes("Composer:"), "the name stands alone, with no label")
+        verify(title.clip, "rich credits are cut at their column")
         clickLink(title,"2",list)
         compare(Navigation.went,["source","fixture native:artist:writer"])
     }

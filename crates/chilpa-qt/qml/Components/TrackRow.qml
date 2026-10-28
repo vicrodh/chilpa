@@ -132,7 +132,7 @@ TrackRowSlot {
                     title: row.title
                     explicitContent: row.explicitContent
                     credit: row.credits.featured_html || ""
-                    composer: !Prefs.trackComposers ? "" : row.credits.links ? row.credits.composer_html || "" : row.composer ? I18n.trArgs("Composer: {}", [row.composer], I18n.rev) : ""
+                    composer: !Prefs.trackComposers ? "" : row.credits.links ? row.credits.composer_html || "" : row.composer || ""
                     richCredits: !!row.credits.links
                     titleSize: row.rich ? Type.bodyLarge : Type.row
                     titleWeight: row.rich ? Type.medium : Type.regular

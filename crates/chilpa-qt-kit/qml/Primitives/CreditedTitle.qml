@@ -51,6 +51,8 @@ Item {
         text: [line.credit, line.composer].filter(Boolean).join(" · ")
         textFormat: line.richCredits ? Text.RichText : Text.PlainText
         linkColor: color
+        // Rich text does not elide: it is cut at the column and never runs over the next one.
+        clip: line.richCredits
         elide: Text.ElideRight
         font.pointSize: Type.meta
         color: Theme.color.textTertiary
