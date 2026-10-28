@@ -3,6 +3,7 @@ import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/TextLinks.js" as TextLinks
 
 TrackRowSlot {
     id: track
@@ -142,9 +143,10 @@ TrackRowSlot {
                     objectName: "trackPerformingArtistsRich"
                     width: parent.width
                     visible: row.rich
-                    text: row.credits.artist_html || row.artist
-                    textFormat: row.credits.links ? Text.StyledText : Text.PlainText
-                    linkColor: color
+                    text: row.credits.links ? TextLinks.render(row.credits.artist_html, "", color, color) : row.artist
+                    textFormat: row.credits.links ? Text.RichText : Text.PlainText
+                    // Rich text does not elide: it is cut at its column.
+                    clip: row.credits.links && contentWidth > width
                     elide: Text.ElideRight
                     font.pointSize: Type.meta
                     color: row.artistHovered ? Theme.color.textPrimary : Theme.color.textSecondary
@@ -158,9 +160,10 @@ TrackRowSlot {
                 width: row.cols.artistW - Metrics.gap12
                 visible: width > 0
                 anchors.verticalCenter: parent.verticalCenter
-                text: row.credits.artist_html || row.artist
-                textFormat: row.credits.links ? Text.StyledText : Text.PlainText
-                linkColor: color
+                text: row.credits.links ? TextLinks.render(row.credits.artist_html, "", color, color) : row.artist
+                textFormat: row.credits.links ? Text.RichText : Text.PlainText
+                // Rich text does not elide: it is cut at its column.
+                clip: row.credits.links && contentWidth > width
                 elide: Text.ElideRight
                 font.pointSize: Type.row
                 color: Theme.color.textPrimary

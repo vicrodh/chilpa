@@ -1,5 +1,6 @@
 import QtQuick
 import "../Theme"
+import "../Theme/TextLinks.js" as TextLinks
 
 // A title with independently linked featured and optional composer credits:
 // the credit keeps up to a third of the width, the title
@@ -48,11 +49,11 @@ Item {
         visible: line.credit !== "" || line.composer !== ""
         width: Math.max(0, line.width - x)
         anchors.baseline: titleText.baseline
-        text: [line.credit, line.composer].filter(Boolean).join(" · ")
-        // Styled text keeps the link color and elides; rich text does neither, so a linked
-        // name ran over the next column and took Qt's own link color.
-        textFormat: line.richCredits ? Text.StyledText : Text.PlainText
-        linkColor: color
+        // Rich text takes the color of each anchor from its markup, not from linkColor, and does
+        // not elide: the markup carries the row's color and the text is cut at its column.
+        text: line.richCredits ? TextLinks.render([line.credit, line.composer].filter(Boolean).join(" · "), "", color, color) : [line.credit, line.composer].filter(Boolean).join(" · ")
+        textFormat: line.richCredits ? Text.RichText : Text.PlainText
+        clip: line.richCredits && contentWidth > width
         elide: Text.ElideRight
         font.pointSize: Type.meta
         color: Theme.color.textTertiary
