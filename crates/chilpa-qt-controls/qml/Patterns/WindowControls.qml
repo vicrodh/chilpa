@@ -130,6 +130,10 @@ Item {
     onWindowChanged: listen()
     Component.onCompleted: {
         restorePlace()
+        // On a Mac the system's own Quit would be refused by a window that
+        // hides when closed; it comes here instead.
+        if (Qt.platform.os === "osx")
+            Controls.watchQuit()
         listen()
         Controls.refresh()
         Hotkeys.refresh()
@@ -152,6 +156,7 @@ Item {
     // player's refuses to close while it is open.
     function finishQuit() {
         controls.quitting = true
+        Controls.allowQuit()
         if (controls.miniOpen)
             return controls.quitMini()
         return controls.window.visible ? controls.window.close() : Qt.quit()
@@ -184,6 +189,10 @@ Item {
         function onPositionChanged() { if (Controls.loopState > 0) Controls.refresh() }
     }
     Connections {
+        target: Controls
+        function onQuitAsked() { controls.requestQuit() }
+    }
+    Connections {
         target: controls.window
         function onWidthChanged() { settle.restart() }
         function onHeightChanged() { settle.restart() }
@@ -199,6 +208,7 @@ Item {
                 return
             if (!Controls.closesToTray() && !Controls.confirmsQuit()) {
                 controls.quitting = true
+                Controls.allowQuit()
                 return
             }
             close.accepted = false

@@ -21,4 +21,9 @@ QtObject {
     property int stoppedAsking: 0
     function confirmsQuit() { return askQuit }
     function stopConfirmingQuit() { askQuit = false; stoppedAsking++ }
+    // The system's own Quit, held back for the interface to decide.
+    signal quitAsked()
+    property int allowed: 0
+    function watchQuit() {}
+    function allowQuit() { allowed++ }
 }

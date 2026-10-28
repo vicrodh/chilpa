@@ -42,6 +42,14 @@ pub fn went_wrong(before: f64, after: f64, target: f64) -> bool {
 #[cfg(target_os = "macos")]
 mod lights;
 
+pub mod glyph;
+/// The menu-bar item.
+#[cfg(target_os = "macos")]
+pub mod tray;
+/// The Dock's click on a hidden window.
+#[cfg(target_os = "macos")]
+pub mod reopen;
+
 /// Hides the title's text and puts the middle of the lights `target` points
 /// under the window's top. False while there is no window to do it to: the
 /// caller asks again. It can be asked any number of times; lights already

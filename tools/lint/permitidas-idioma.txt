@@ -871,3 +871,8 @@ subsec
 
 # The Unicode replacement code point in a malformed UTF-8 log fixture.
 fffd
+
+# objc2 names: the selector macro, the main-thread marker and the ivars setter.
+sel
+mtm
+ivars
