@@ -8,7 +8,7 @@
 
 namespace {
 constexpr int kColumns = 28;
-constexpr int kMaxRows = 128;
+constexpr int kMaxRows = 256;
 using Frame = std::array<float, 16>;
 class SpectrumNode final : public QSGGeometryNode {
 public:
@@ -66,6 +66,8 @@ void SpectrumItem::setPeakValues(const QVariantList &values) { const auto next =
 void SpectrumItem::setTopColor(const QColor &value) { if (m_top != value) { m_top = value; update(); } }
 void SpectrumItem::setBottomColor(const QColor &value) { if (m_bottom != value) { m_bottom = value; update(); } }
 void SpectrumItem::setMode(int value) { if (m_mode != value) { m_mode = value; update(); } }
+void SpectrumItem::setRowDivisions(int value) { value = std::clamp(value, 1, 4); if (m_rowDivisions != value) { m_rowDivisions = value; update(); } }
+void SpectrumItem::setPeakThickness(qreal value) { value = std::clamp<qreal>(value, 1, 8); if (!qFuzzyCompare(m_peakThickness, value)) { m_peakThickness = value; update(); } }
 void SpectrumItem::geometryChange(const QRectF &next, const QRectF &previous)
 {
     QQuickItem::geometryChange(next, previous);
@@ -77,11 +79,14 @@ QSGNode *SpectrumItem::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
     const float w = width(), h = height(), slot = w / kColumns;
     // The host uses the shader for exceptionally narrow/tall surfaces. This
     // second guard bounds native storage even for malformed standalone inputs.
-    if (!std::isfinite(w) || !std::isfinite(h) || slot <= 2 || h <= 0 || h / slot + 0.5f > kMaxRows) {
+    // A cell is slot wide and slot / rowDivisions tall.
+    const float pitch = slot / float(m_rowDivisions);
+    const float thick = float(m_peakThickness);
+    if (!std::isfinite(w) || !std::isfinite(h) || slot <= 2 || pitch <= 2 || h <= 0 || h / pitch + 0.5f > kMaxRows) {
         delete oldNode;
         return nullptr;
     }
-    const int rows = int(std::floor(h / slot + 0.5f));
+    const int rows = int(std::floor(h / pitch + 0.5f));
     // One gradient clamp split, one peak split and one mark per column. Capacity stays
     // fixed between resizes: changing amplitudes never allocates geometry.
     const int capacity = kColumns * (rows + 3) * 6;
@@ -114,7 +119,7 @@ QSGNode *SpectrumItem::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         const float amplitude = m_values[bin] * h;
         const float left = column * slot + 1, right = (column + 1) * slot - 1;
         const bool peak = m_mode == 5 && m_peaks[bin] >= 0.001f;
-        const float peakTop = std::max(0.0f, h * (1 - m_peaks[bin]) - 1);
+        const float peakTop = std::max(0.0f, h * (1 - m_peaks[bin]) - thick);
         const auto tint = [&](float y) { return gradient(top, bottom, (y - (h - amplitude)) / std::max(amplitude, 1.0f)); };
         const auto segment = [&](float upper, float lower) {
             if (lower <= upper) return;
@@ -127,20 +132,20 @@ QSGNode *SpectrumItem::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
             }
         };
         for (int row = 0; row < rows; ++row) {
-            if ((row + 0.5f) * slot > amplitude) break;
-            const float cellTop = std::max(0.0f, h - (row + 1) * slot + 1);
-            const float cellBottom = h - row * slot - 1;
-            if (peak && peakTop < cellBottom && peakTop + 1 > cellTop) {
+            if ((row + 0.5f) * pitch > amplitude) break;
+            const float cellTop = std::max(0.0f, h - (row + 1) * pitch + 1);
+            const float cellBottom = h - row * pitch - 1;
+            if (peak && peakTop < cellBottom && peakTop + thick > cellTop) {
                 // Avoid drawing translucent cells twice under the peak mark.
                 const float upperEnd = std::max(cellTop, peakTop);
-                const float lowerStart = std::min(cellBottom, peakTop + 1);
+                const float lowerStart = std::min(cellBottom, peakTop + thick);
                 segment(cellTop, upperEnd);
                 segment(lowerStart, cellBottom);
             } else {
                 segment(cellTop, cellBottom);
             }
         }
-        if (peak) rectangle(out, left, right, peakTop, peakTop + 1, top, top);
+        if (peak) rectangle(out, left, right, peakTop, peakTop + thick, top, top);
     }
 #if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
     // A degenerate triangle keeps Qt able to revive the node after silence.

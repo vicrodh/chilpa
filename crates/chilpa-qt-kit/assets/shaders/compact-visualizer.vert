@@ -9,6 +9,8 @@ layout(std140, binding = 0) uniform buf {
     vec4 topColor;
     vec4 bottomColor;
     float mode;
+    float rowDivisions;
+    float peakThickness;
     mat4 amplitudes0;
     mat4 peaks;
 };

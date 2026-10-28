@@ -25,6 +25,9 @@ ShaderEffect {
     property color topColor
     property color bottomColor
     property real mode: 0
+    // Cells per slot height (2 makes rectangles of half the height) and the peak mark's thickness in pixels.
+    property real rowDivisions: 1
+    property real peakThickness: 1
     property matrix4x4 amplitudes0: mode >= 5 ? matrix(values, 0) : matrix([], 0)
     property matrix4x4 peaks: matrix(peakValues, 0)
     readonly property string shaderStem: mode === 0 ? "compact-bars"

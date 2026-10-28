@@ -80,6 +80,9 @@ Rectangle {
                 active: parent.nativeSupported
                 sourceComponent: SpectrumItem {
                     mode: panel.variant
+                    // PEAK and Squares draw rectangles half as tall, twice as many, so a column keeps its height; the peak mark is three pixels thick.
+                    rowDivisions: panel.variant >= 5 ? 2 : 1
+                    peakThickness: panel.variant === 5 ? 3 : 1
                     values: animationState.values
                     peakValues: animationState.peaks
                     topColor: Ambient.secondary
@@ -91,6 +94,9 @@ Rectangle {
                 active: parent.gpuAvailable && !parent.nativeSupported
                 sourceComponent: CompactSpectrumShader {
                     mode: panel.variant
+                    // PEAK and Squares draw rectangles half as tall, twice as many, so a column keeps its height; the peak mark is three pixels thick.
+                    rowDivisions: panel.variant >= 5 ? 2 : 1
+                    peakThickness: panel.variant === 5 ? 3 : 1
                     values: animationState.values
                     peakValues: animationState.peaks
                     topColor: Ambient.secondary
@@ -102,6 +108,9 @@ Rectangle {
                 active: !parent.gpuAvailable
                 sourceComponent: CompactSpectrumFallback {
                     mode: panel.variant
+                    // PEAK and Squares draw rectangles half as tall, twice as many, so a column keeps its height; the peak mark is three pixels thick.
+                    rowDivisions: panel.variant >= 5 ? 2 : 1
+                    peakThickness: panel.variant === 5 ? 3 : 1
                     topColor: Ambient.secondary
                     bottomColor: Ambient.primary
                     modelState: QtObject {
