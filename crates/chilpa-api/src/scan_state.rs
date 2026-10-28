@@ -91,13 +91,20 @@ pub(crate) struct Runtime {
     pub startup: BTreeSet<String>,
     pub intent: Vec<PathBuf>,
     pub next_check: Instant,
+    /// When the screens were last told about records the running scan
+    /// wrote, so that the first batch shows at once and the rest no more
+    /// often than `SHOW_EVERY`.
+    pub shown_at: Option<Instant>,
 }
 impl Default for Runtime {
     fn default() -> Self {
         Self { initialized: false, policies: BTreeMap::new(), last_attempts: BTreeMap::new(),
-            startup: BTreeSet::new(), intent: Vec::new(), next_check: Instant::now() }
+            startup: BTreeSet::new(), intent: Vec::new(), next_check: Instant::now(), shown_at: None }
     }
 }
+
+/// How often the screens are refreshed with what a running scan wrote.
+pub(crate) const SHOW_EVERY: std::time::Duration = std::time::Duration::from_secs(3);
 
 pub(crate) fn limits() -> String { chilpa_i18n::t("A scan supports up to 256 folders and 64 KiB of saved paths.") }
 pub(crate) fn storage(error: impl std::fmt::Display) -> String {

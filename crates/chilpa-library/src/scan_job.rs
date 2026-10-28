@@ -15,15 +15,17 @@ pub enum ScanProgress {
     Discovered { found: usize },
     Counted { total: usize },
     Advanced { done: usize, total: usize },
+    /// The records of the first `done` files are written and can be shown.
+    Committed { done: usize },
     Phase { root: PathBuf, finalizing: bool },
     Done(ScanReport),
     Interrupted(ScanReport),
     Failed(String),
 }
 
-// I retain one of each kind of event -- found, count, progress, phase --
-// and one terminal event. A hidden or busy frontend never builds a queue
-// proportional to file count.
+// I retain one of each kind of event -- found, count, progress, commit,
+// phase -- and one terminal event. A hidden or busy frontend never builds a
+// queue proportional to file count.
 #[derive(Default)]
 struct Mailbox { events: Mutex<VecDeque<ScanProgress>>, terminal: AtomicBool }
 impl Mailbox {
@@ -120,8 +122,9 @@ fn run(db_path: PathBuf, roots: Vec<PathBuf>, artwork_cache: Option<PathBuf>, co
         let count = listing.files.len();
         events.send(ScanProgress::Phase { root: root.clone(), finalizing: false });
         let progress = |done| events.send(ScanProgress::Advanced { done: previous + done, total });
+        let committed = |done| events.send(ScanProgress::Committed { done: previous + done });
         let finalizing = || events.send(ScanProgress::Phase { root: root.clone(), finalizing: true });
-        match crate::scan::scan_listing(&lib, root, artwork_cache.as_deref(), &progress, &*containers, &control, &finalizing, listing) {
+        match crate::scan::scan_listing(&lib, root, artwork_cache.as_deref(), &progress, &*containers, &control, &finalizing, &committed, listing) {
             Ok(report) => {
                 previous += count;
                 accumulated.seen += report.seen;
@@ -182,15 +185,17 @@ mod tests {
         mailbox.send(ScanProgress::Counted { total: 100_000 });
         for done in 0..100_000 {
             mailbox.send(ScanProgress::Advanced { done, total: 100_000 });
+            mailbox.send(ScanProgress::Committed { done });
             mailbox.send(ScanProgress::Phase { root: PathBuf::from("music"), finalizing: false });
         }
         mailbox.send(ScanProgress::Done(ScanReport::default()));
         let events = mailbox.poll();
-        assert_eq!(events.len(), 5);
+        assert_eq!(events.len(), 6);
         assert!(matches!(events[0], ScanProgress::Discovered { found: 99_999 }));
         assert!(matches!(events[1], ScanProgress::Counted { .. }));
         assert!(matches!(events[2], ScanProgress::Advanced { done: 99_999, .. }));
-        assert!(matches!(events[4], ScanProgress::Done(_)));
+        assert!(matches!(events[3], ScanProgress::Committed { done: 99_999 }));
+        assert!(matches!(events[5], ScanProgress::Done(_)));
         assert!(mailbox.poll().is_empty());
     }
 
@@ -247,7 +252,7 @@ mod tests {
     }
 
     #[test]
-    fn a_long_walk_says_what_it_found_before_the_total_is_known() {
+    fn a_long_walk_says_what_it_found_and_the_first_batch_is_committed_early() {
         let dir = tempfile::tempdir().unwrap();
         for n in 0..520 {
             std::fs::write(dir.path().join(format!("{n:03}.flac")), b"not audio").unwrap();
@@ -257,6 +262,14 @@ mod tests {
         let found = events.iter().position(|e| matches!(e, ScanProgress::Discovered { found: 500 }));
         let counted = events.iter().position(|e| matches!(e, ScanProgress::Counted { total: 520 }));
         assert!(found.is_some() && found < counted, "the walk is watched before the total is known: {events:?}");
+        // The commit notice is coalesced, so a poll sees the latest; one
+        // arrives while the scan still runs, and never says more than a
+        // batch was written before the first was.
+        let first_commit = events.iter().find_map(|e| match e { ScanProgress::Committed { done } => Some(*done), _ => None });
+        assert!(first_commit.is_some_and(|done| done <= 200), "{events:?}");
+        let committed = events.iter().position(|e| matches!(e, ScanProgress::Committed { .. }));
+        let done = events.iter().position(|e| matches!(e, ScanProgress::Done(_)));
+        assert!(committed < done);
         let lib = Library::open(&dir.path().join("lib.db")).unwrap();
         assert_eq!(lib.track_count(false).unwrap(), 520);
     }

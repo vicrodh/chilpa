@@ -142,8 +142,13 @@ pub fn scan_controlled(
     on_finalizing: &dyn Fn(),
 ) -> rusqlite::Result<ScanReport> {
     let listing = walk_controlled(root, containers, control, &|_| {});
-    scan_listing(lib, root, cache, on_progress, containers, control, on_finalizing, listing)
+    scan_listing(lib, root, cache, on_progress, containers, control, on_finalizing, &|_| {}, listing)
 }
+
+/// How many files go into the first batch. It is small so the first
+/// records reach the screens about as soon as reading starts, instead of
+/// after a full batch; `on_committed` says when they have.
+const FIRST_BATCH: usize = 25;
 
 /// Scans the files of `listing`, taken from `root` by a walk that finished
 /// unless `control` stopped it, in which case nothing is read and the scan
@@ -157,6 +162,7 @@ pub fn scan_listing(
     containers: &dyn Containers,
     control: &ScanControl,
     on_finalizing: &dyn Fn(),
+    on_committed: &dyn Fn(usize),
     listing: Listing,
 ) -> rusqlite::Result<ScanReport> {
     let mut report = ScanReport { root: root.to_path_buf(), ..ScanReport::default() };
@@ -211,8 +217,9 @@ pub fn scan_listing(
         if examined % 25 == 0 {
             on_progress(examined);
         }
-        if examined > 0 && examined % BATCH == 0 {
+        if examined == FIRST_BATCH || (examined > 0 && examined % BATCH == 0) {
             tx.commit()?;
+            on_committed(examined);
             tx = lib.write_transaction()?;
         }
         if containers.may_hold(file) {
