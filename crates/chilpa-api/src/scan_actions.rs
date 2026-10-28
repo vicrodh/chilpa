@@ -76,6 +76,7 @@ impl Chilpa {
                     }
                 }
                 self.scan = Some(job);
+                self.scan_runtime.shown_at = None;
                 self.scan_status = ScanStatus { running: true, phase: ScanPhase::Discovering,
                     root: if roots.len() == 1 { roots[0].to_string_lossy().into_owned() } else { String::new() },
                     revision: self.scan_status.revision.wrapping_add(1), ..ScanStatus::default() };
@@ -140,6 +141,16 @@ impl Chilpa {
                 ScanProgress::Advanced { done, total } => {
                     self.scan_status.done = done;
                     self.scan_status.total = total.max(done);
+                }
+                // Records the scan wrote are shown as they land: the first
+                // batch at once, then at most every few seconds, instead of
+                // all at the end.
+                ScanProgress::Committed { .. } => {
+                    let now = std::time::Instant::now();
+                    if self.scan_runtime.shown_at.is_none_or(|at| now.duration_since(at) >= scan_state::SHOW_EVERY) {
+                        self.scan_runtime.shown_at = Some(now);
+                        self.mark_library_changed();
+                    }
                 }
                 ScanProgress::Phase { root, finalizing } => {
                     self.scan_status.root = root.to_string_lossy().into_owned();

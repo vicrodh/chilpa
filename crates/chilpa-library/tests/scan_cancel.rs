@@ -65,6 +65,21 @@ fn cancellation_before_discovery_does_not_touch_the_database() {
 }
 
 #[test]
+fn the_first_batch_is_committed_at_twenty_five_files_and_then_every_two_hundred() {
+    let directory = tempfile::tempdir().unwrap();
+    for index in 0..450 { wave(&directory.path().join(format!("{index:03}.wav"))); }
+    let library = Library::in_memory().unwrap();
+    let control = ScanControl::default();
+    let listing = scan::list_controlled(directory.path(), &NoContainers, &control, &|_| {}).unwrap();
+    assert_eq!(listing.files.len(), 450);
+    let committed = std::cell::RefCell::new(Vec::new());
+    let report = scan::scan_listing(&library, directory.path(), None, &|_| {}, &NoContainers, &control, &|| {},
+        &|done| committed.borrow_mut().push(done), listing).unwrap();
+    assert_eq!(report.read, 450);
+    assert_eq!(*committed.borrow(), [25, 200, 400], "the first records are written early, the rest by the batch");
+}
+
+#[test]
 fn unchanged_checks_are_quiet_but_reachability_and_renames_are_reported() {
     let directory = tempfile::tempdir().unwrap();
     let first = directory.path().join("first.wav");

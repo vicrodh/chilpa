@@ -185,6 +185,28 @@ fn dismissing_interrupted_manual_scan_releases_due_automatic_checks() {
 }
 
 #[test]
+fn the_first_batch_of_a_running_scan_reaches_the_screens_before_it_ends() {
+    if !isolated("scan_actions::tests::the_first_batch_of_a_running_scan_reaches_the_screens_before_it_ends") { return; }
+    let music = tempfile::tempdir().unwrap();
+    for index in 0..2_000 { wave(&music.path().join(format!("{index:04}.wav"))); }
+    let mut api = Chilpa::new();
+    assert!(api.start_scan(music.path()));
+    assert!(api.library_changed(), "a folder that joined the library is a change on its own");
+    let mut shown_while_running = false;
+    let mut found_was_published = false;
+    let limit = Instant::now() + Duration::from_secs(60);
+    while api.scan_status().running {
+        assert!(Instant::now() < limit, "scan did not finish");
+        found_was_published |= api.scan_status.found > 0;
+        shown_while_running |= api.library_changed();
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    assert!(shown_while_running, "the records of the first batch are shown while the rest is still being read");
+    assert!(found_was_published, "the walk says how many files it has found");
+    assert_eq!(api.scan_status.summary.read, 2_000);
+}
+
+#[test]
 fn folder_projection_uses_background_reachability_without_filesystem_probes() {
     if !isolated("scan_actions::tests::folder_projection_uses_background_reachability_without_filesystem_probes") { return; }
     let directory = tempfile::tempdir().unwrap();
