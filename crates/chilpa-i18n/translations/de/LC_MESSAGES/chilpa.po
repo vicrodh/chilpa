@@ -741,6 +741,9 @@ msgstr "Erkennt deine DACs automatisch und richtet die Bit-perfect-Wiedergabe Sc
 msgid "Auto-follow"
 msgstr "Auto-Scroll"
 
+msgid "Auto-tail"
+msgstr "Automatisch folgen"
+
 msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 msgstr "Automatische Prüfungen pausieren, bis dieser Scan fortgesetzt oder verworfen wird. Bereits hinzugefügte Dateien bleiben erhalten."
 
@@ -1205,9 +1208,6 @@ msgstr "Wähle ein Tastenschema: default, letters oder vi."
 msgid "Choose a local ZIP file."
 msgstr "Wähle eine lokale ZIP-Datei."
 
-msgid "Choose a local file for the report."
-msgstr "Eine lokale Datei für den Bericht auswählen."
-
 msgid "Choose a local storage folder."
 msgstr ""
 
@@ -1541,8 +1541,17 @@ msgstr "URL in die Zwischenablage kopieren"
 msgid "Copy album and artist"
 msgstr "Album und Künstler kopieren"
 
+msgid "Copy all"
+msgstr "Alles kopieren"
+
+msgid "Copy bundle"
+msgstr "Paket kopieren"
+
 msgid "Copy full information"
 msgstr "Alle Informationen kopieren"
+
+msgid "Copy link"
+msgstr "Link kopieren"
 
 msgid "Copy lyrics"
 msgstr "Songtext kopieren"
@@ -1789,6 +1798,9 @@ msgstr "Tag"
 
 msgid "Days of the week"
 msgstr "Wochentage"
+
+msgid "Debug"
+msgstr "Debug"
 
 msgid "Dec"
 msgstr "Dez."
@@ -2587,6 +2599,9 @@ msgstr "Zum Album"
 
 msgid "Go to artist"
 msgstr "Zum Künstler"
+
+msgid "Go to logs"
+msgstr "Zu den Protokollen"
 
 msgid "Go to podcast"
 msgstr "Zum Podcast"
@@ -4095,6 +4110,9 @@ msgstr "Offline-Modus"
 
 msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
 msgstr "Ältere temporäre Bilder werden im Hintergrund entfernt. Von deiner Bibliothek referenziertes Artwork bleibt erhalten."
+
+msgid "Older versions"
+msgstr "Ältere Versionen"
 
 msgid "Oldest first"
 msgstr "Älteste zuerst"
@@ -5963,9 +5981,6 @@ msgstr "Wiedergabe testen"
 msgid "Text"
 msgstr "Text"
 
-msgid "Text files (*.txt)"
-msgstr "Textdateien (*.txt)"
-
 msgid "That answer does not belong to this window."
 msgstr "Diese Antwort gehört nicht zu diesem Fenster."
 
@@ -6527,6 +6542,9 @@ msgstr "Werkzeuge"
 msgid "Top result"
 msgstr "Bestes Ergebnis"
 
+msgid "Trace"
+msgstr "Trace"
+
 msgid "Track"
 msgstr "Titel"
 
@@ -6796,6 +6814,15 @@ msgstr "Bibliothek wird aktualisiert…"
 
 msgid "Updating usage…"
 msgstr "Nutzung wird aktualisiert…"
+
+msgid "Upload"
+msgstr "Hochladen"
+
+msgid "Upload failed."
+msgstr "Hochladen fehlgeschlagen."
+
+msgid "Uploading…"
+msgstr "Wird hochgeladen…"
 
 msgid "Uppercase"
 msgstr "Großbuchstaben"

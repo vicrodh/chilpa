@@ -741,6 +741,9 @@ msgstr "Detecta automaticamente seus DACs e configura a reprodução bit-perfect
 msgid "Auto-follow"
 msgstr "Rolagem automática"
 
+msgid "Auto-tail"
+msgstr "Acompanhar automaticamente"
+
 msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 msgstr "As verificações automáticas ficam pausadas até você continuar ou descartar esta verificação. Os arquivos já adicionados são mantidos."
 
@@ -1205,9 +1208,6 @@ msgstr "Escolha um mapa de teclas: default, letters ou vi."
 msgid "Choose a local ZIP file."
 msgstr "Escolha um arquivo ZIP local."
 
-msgid "Choose a local file for the report."
-msgstr "Escolha um arquivo local para o relatório."
-
 msgid "Choose a local storage folder."
 msgstr ""
 
@@ -1541,8 +1541,17 @@ msgstr "Copiar URL para a área de transferência"
 msgid "Copy album and artist"
 msgstr "Copiar álbum e artista"
 
+msgid "Copy all"
+msgstr "Copiar tudo"
+
+msgid "Copy bundle"
+msgstr "Copiar pacote"
+
 msgid "Copy full information"
 msgstr "Copiar informações completas"
+
+msgid "Copy link"
+msgstr "Copiar link"
 
 msgid "Copy lyrics"
 msgstr "Copiar letra"
@@ -1789,6 +1798,9 @@ msgstr "Dia"
 
 msgid "Days of the week"
 msgstr "Dias da semana"
+
+msgid "Debug"
+msgstr "Depuração"
 
 msgid "Dec"
 msgstr "dez"
@@ -2587,6 +2599,9 @@ msgstr "Ir para o álbum"
 
 msgid "Go to artist"
 msgstr "Ir para o artista"
+
+msgid "Go to logs"
+msgstr "Ir para os registros"
 
 msgid "Go to podcast"
 msgstr "Ir para o podcast"
@@ -4095,6 +4110,9 @@ msgstr "Modo offline"
 
 msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
 msgstr "As imagens temporárias mais antigas são removidas em segundo plano. As capas referenciadas pela sua biblioteca são mantidas."
+
+msgid "Older versions"
+msgstr "Versões anteriores"
 
 msgid "Oldest first"
 msgstr "Mais antigos primeiro"
@@ -5963,9 +5981,6 @@ msgstr "Testar a reprodução"
 msgid "Text"
 msgstr "Texto"
 
-msgid "Text files (*.txt)"
-msgstr "Arquivos de texto (*.txt)"
-
 msgid "That answer does not belong to this window."
 msgstr "Essa resposta não pertence a esta janela."
 
@@ -6527,6 +6542,9 @@ msgstr "Ferramentas"
 msgid "Top result"
 msgstr "Melhor resultado"
 
+msgid "Trace"
+msgstr "Rastreamento"
+
 msgid "Track"
 msgstr "Faixa"
 
@@ -6796,6 +6814,15 @@ msgstr "Atualizando a biblioteca…"
 
 msgid "Updating usage…"
 msgstr "Atualizando o uso…"
+
+msgid "Upload"
+msgstr "Enviar"
+
+msgid "Upload failed."
+msgstr "Falha no envio."
+
+msgid "Uploading…"
+msgstr "Enviando…"
 
 msgid "Uppercase"
 msgstr "Maiúsculas"

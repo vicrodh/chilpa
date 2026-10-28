@@ -741,6 +741,9 @@ msgstr "Detecteer automatisch je DAC's en stel stap voor stap bit-perfecte weerg
 msgid "Auto-follow"
 msgstr "Automatisch volgen"
 
+msgid "Auto-tail"
+msgstr "Automatisch volgen"
+
 msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 msgstr "Automatische controles zijn gepauzeerd totdat u deze scan hervat of sluit. Reeds toegevoegde bestanden blijven behouden."
 
@@ -1205,9 +1208,6 @@ msgstr "Kies een toetsenschema: default, letters of vi."
 msgid "Choose a local ZIP file."
 msgstr "Kies een lokaal ZIP-bestand."
 
-msgid "Choose a local file for the report."
-msgstr "Kies een lokaal bestand voor het rapport."
-
 msgid "Choose a local storage folder."
 msgstr ""
 
@@ -1541,8 +1541,17 @@ msgstr "URL naar klembord kopiëren"
 msgid "Copy album and artist"
 msgstr "Album en artiest kopiëren"
 
+msgid "Copy all"
+msgstr "Alles kopiëren"
+
+msgid "Copy bundle"
+msgstr "Bundel kopiëren"
+
 msgid "Copy full information"
 msgstr "Volledige informatie kopiëren"
+
+msgid "Copy link"
+msgstr "Link kopiëren"
 
 msgid "Copy lyrics"
 msgstr "Songtekst kopiëren"
@@ -1789,6 +1798,9 @@ msgstr "Dag"
 
 msgid "Days of the week"
 msgstr "Dagen van de week"
+
+msgid "Debug"
+msgstr "Debug"
 
 msgid "Dec"
 msgstr "dec"
@@ -2587,6 +2599,9 @@ msgstr "Naar album"
 
 msgid "Go to artist"
 msgstr "Naar artiest"
+
+msgid "Go to logs"
+msgstr "Naar de logboeken"
 
 msgid "Go to podcast"
 msgstr "Naar podcast"
@@ -4095,6 +4110,9 @@ msgstr "Offlinemodus"
 
 msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
 msgstr "Oudere tijdelijke afbeeldingen worden op de achtergrond verwijderd. Hoezen waar je bibliotheek naar verwijst, blijven behouden."
+
+msgid "Older versions"
+msgstr "Oudere versies"
 
 msgid "Oldest first"
 msgstr "Oudste eerst"
@@ -5963,9 +5981,6 @@ msgstr "Weergave testen"
 msgid "Text"
 msgstr "Tekst"
 
-msgid "Text files (*.txt)"
-msgstr "Tekstbestanden (*.txt)"
-
 msgid "That answer does not belong to this window."
 msgstr "Dat antwoord hoort niet bij dit venster."
 
@@ -6527,6 +6542,9 @@ msgstr "Hulpmiddelen"
 msgid "Top result"
 msgstr "Topresultaat"
 
+msgid "Trace"
+msgstr "Trace"
+
 msgid "Track"
 msgstr "Nummer"
 
@@ -6796,6 +6814,15 @@ msgstr "Bibliotheek bijwerken…"
 
 msgid "Updating usage…"
 msgstr "Gebruik bijwerken…"
+
+msgid "Upload"
+msgstr "Uploaden"
+
+msgid "Upload failed."
+msgstr "Uploaden mislukt."
+
+msgid "Uploading…"
+msgstr "Uploaden…"
 
 msgid "Uppercase"
 msgstr "Hoofdletters"

@@ -11,8 +11,8 @@ Item {
         width: parent.width
         spacing: Metrics.gap8
         Text {
-            width: Metrics.colPlaysRich
-            text: row.heading ? row.entry.time : Qt.formatTime(new Date(Number(row.entry.time || 0) * 1000), "hh:mm:ss")
+            width: Metrics.colPlaysRich * 2 // derived: a date with milliseconds
+            text: row.heading ? row.entry.time : Qt.formatDateTime(new Date(Number(row.entry.ts || 0)), "yyyy-MM-dd hh:mm:ss.zzz")
             font.pointSize: Type.small
             color: Theme.color.textSecondary
             elide: Text.ElideRight
@@ -20,7 +20,7 @@ Item {
         Text { width: Metrics.colPlaysRich; text: row.entry.level || ""; font.pointSize: Type.small; color: Theme.color.textSecondary; elide: Text.ElideRight }
         Text { width: Metrics.selectWidth / 2; text: row.entry.target || ""; font.pointSize: Type.small; color: Theme.color.textSecondary; elide: Text.ElideRight } // derived: compact target column
         Text {
-            width: row.width - Metrics.colPlaysRich * 2 - Metrics.selectWidth / 2 - Metrics.gap8 * 3 // derived: remaining width after three fixed columns and gaps
+            width: row.width - Metrics.colPlaysRich * 3 - Metrics.selectWidth / 2 - Metrics.gap8 * 3 // derived: remaining width after three fixed columns and gaps
             text: row.entry.message || ""
             font.pointSize: Type.meta
             color: Theme.color.textPrimary
