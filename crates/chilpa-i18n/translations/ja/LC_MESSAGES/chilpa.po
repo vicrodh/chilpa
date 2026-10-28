@@ -1302,9 +1302,6 @@ msgstr "生成された画像をクリア"
 msgid "Clear generated images?"
 msgstr "生成された画像をクリアしますか？"
 
-msgid "Clear logs"
-msgstr "ログを消去"
-
 msgid "Clear loop"
 msgstr "ループを解除"
 
@@ -1455,9 +1452,6 @@ msgstr "完了した処理は保存されています。続行するとフォル
 msgid "Composer"
 msgstr "作曲者"
 
-msgid "Composer: {}"
-msgstr "作曲：{}"
-
 msgid "Composers"
 msgstr "作曲者"
 
@@ -1542,14 +1536,11 @@ msgstr "アルバムとアーティストをコピー"
 msgid "Copy all"
 msgstr "すべてコピー"
 
-msgid "Copy bundle"
-msgstr "バンドルをコピー"
+msgid "Copy diagnostics bundle"
+msgstr "診断バンドルをコピー"
 
 msgid "Copy full information"
 msgstr "すべての情報をコピー"
-
-msgid "Copy link"
-msgstr "リンクをコピー"
 
 msgid "Copy lyrics"
 msgstr "歌詞をコピー"
@@ -3334,8 +3325,8 @@ msgstr "ローカル — 複数ソースの混在に対応"
 msgid "Local — {}"
 msgstr "ローカル — {}"
 
-msgid "Log options"
-msgstr "ログ設定"
+msgid "Logs"
+msgstr "ログ"
 
 msgid "Look"
 msgstr "見た目"
@@ -3861,6 +3852,9 @@ msgstr "レーベル情報なし"
 
 msgid "No listens match."
 msgstr "一致する再生はありません。"
+
+msgid "No log entries."
+msgstr "ログはありません。"
 
 msgid "No lyrics"
 msgstr "歌詞なし"
@@ -5184,9 +5178,6 @@ msgstr "ログを確認してコピー…"
 
 msgid "Review and export…"
 msgstr "確認してエクスポート…"
-
-msgid "Review and share…"
-msgstr "確認して共有…"
 
 msgid "Review changes"
 msgstr ""
@@ -6810,8 +6801,8 @@ msgstr "ライブラリを更新中…"
 msgid "Updating usage…"
 msgstr "使用量を更新しています…"
 
-msgid "Upload"
-msgstr "アップロード"
+msgid "Upload (public)"
+msgstr "アップロード(公開)"
 
 msgid "Upload failed."
 msgstr "アップロードに失敗しました。"

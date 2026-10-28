@@ -22,7 +22,10 @@ Item {
         DeveloperSettings { width: gallery.sampleWide; height: Metrics.panesHeight }
         DeveloperDiagnosticRow { width: gallery.sampleWide; saved: true; entry: ({label:"Renderer",saved:"auto",runtime:"vulkan",status:"info"}) }
         DeveloperDiagnosticSection { width: gallery.sampleWide; entry: ({title:"System",rows:[{label:"Architecture",runtime:"x86_64"}]}) }
-        DeveloperLogRow { width: gallery.sampleWide; entry: ({time:0,level:"stderr",target:"audio",message:"Fixture session log"}) }
+        LogActionButton { text: "Copy all"; glyph: Icons.copy }
+        LogControls { width: gallery.sampleWide }
+        LogList { width: gallery.sampleWide; height: Metrics.panesHeight; rows: [{ts: 0, level: "warn", target: "audio", message: "Fixture session log"}] }
+        LogUploaded { width: gallery.sampleWide; url: "https://paste.example/abc" }
         PillButton { text: "Developer logs"; onClicked: developerLogs.open() }
         PillButton { text: "Review report"; onClicked: developerReport.open() }
         PillButton { text: "Report an issue"; onClicked: reportIssue.open() }

@@ -1306,9 +1306,6 @@ msgstr "Очистить созданные изображения"
 msgid "Clear generated images?"
 msgstr "Очистить созданные изображения?"
 
-msgid "Clear logs"
-msgstr "Очистить журналы"
-
 msgid "Clear loop"
 msgstr "Сбросить повтор A-B"
 
@@ -1459,9 +1456,6 @@ msgstr "Выполненная работа сохранена. Продолже
 msgid "Composer"
 msgstr "Композитор"
 
-msgid "Composer: {}"
-msgstr "Композитор: {}"
-
 msgid "Composers"
 msgstr "Композиторы"
 
@@ -1546,14 +1540,11 @@ msgstr "Копировать альбом и исполнителя"
 msgid "Copy all"
 msgstr "Копировать всё"
 
-msgid "Copy bundle"
-msgstr "Копировать пакет"
+msgid "Copy diagnostics bundle"
+msgstr "Копировать пакет диагностики"
 
 msgid "Copy full information"
 msgstr "Копировать полную информацию"
-
-msgid "Copy link"
-msgstr "Копировать ссылку"
 
 msgid "Copy lyrics"
 msgstr "Копировать текст песни"
@@ -3340,8 +3331,8 @@ msgstr "Локально — поддерживает смешанные ист�
 msgid "Local — {}"
 msgstr "Локально — {}"
 
-msgid "Log options"
-msgstr "Параметры журналов"
+msgid "Logs"
+msgstr "Журналы"
 
 msgid "Look"
 msgstr "Оформление"
@@ -3867,6 +3858,9 @@ msgstr "Нет информации о лейбле"
 
 msgid "No listens match."
 msgstr "Нет подходящих прослушиваний."
+
+msgid "No log entries."
+msgstr "Записей журнала нет."
 
 msgid "No lyrics"
 msgstr "Нет текста песни"
@@ -5190,9 +5184,6 @@ msgstr "Проверить и скопировать журналы…"
 
 msgid "Review and export…"
 msgstr "Проверить и экспортировать…"
-
-msgid "Review and share…"
-msgstr "Проверить и отправить…"
 
 msgid "Review changes"
 msgstr ""
@@ -6820,8 +6811,8 @@ msgstr "Обновление медиатеки…"
 msgid "Updating usage…"
 msgstr "Подсчёт использования…"
 
-msgid "Upload"
-msgstr "Загрузить"
+msgid "Upload (public)"
+msgstr "Загрузить (публично)"
 
 msgid "Upload failed."
 msgstr "Не удалось загрузить."

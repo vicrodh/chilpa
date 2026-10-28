@@ -50,3 +50,4 @@ database
 cable
 blocks
 palette
+cloud-upload

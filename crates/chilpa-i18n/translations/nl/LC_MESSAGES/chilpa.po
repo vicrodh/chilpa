@@ -1304,9 +1304,6 @@ msgstr "Gegenereerde afbeeldingen wissen"
 msgid "Clear generated images?"
 msgstr "Gegenereerde afbeeldingen wissen?"
 
-msgid "Clear logs"
-msgstr "Logboeken wissen"
-
 msgid "Clear loop"
 msgstr "Loop wissen"
 
@@ -1457,9 +1454,6 @@ msgstr "Voltooid werk is opgeslagen. Doorgaan controleert de map opnieuw en slaa
 msgid "Composer"
 msgstr "Componist"
 
-msgid "Composer: {}"
-msgstr "Componist: {}"
-
 msgid "Composers"
 msgstr "Componisten"
 
@@ -1544,14 +1538,11 @@ msgstr "Album en artiest kopiëren"
 msgid "Copy all"
 msgstr "Alles kopiëren"
 
-msgid "Copy bundle"
-msgstr "Bundel kopiëren"
+msgid "Copy diagnostics bundle"
+msgstr "Diagnosebundel kopiëren"
 
 msgid "Copy full information"
 msgstr "Volledige informatie kopiëren"
-
-msgid "Copy link"
-msgstr "Link kopiëren"
 
 msgid "Copy lyrics"
 msgstr "Songtekst kopiëren"
@@ -3337,8 +3328,8 @@ msgstr "Lokaal — ondersteunt gemengde bronnen"
 msgid "Local — {}"
 msgstr "Lokaal — {}"
 
-msgid "Log options"
-msgstr "Logopties"
+msgid "Logs"
+msgstr "Logboeken"
 
 msgid "Look"
 msgstr "Vormgeving"
@@ -3864,6 +3855,9 @@ msgstr "Geen labelinformatie"
 
 msgid "No listens match."
 msgstr "Geen treffers."
+
+msgid "No log entries."
+msgstr "Geen logboekregels."
 
 msgid "No lyrics"
 msgstr "Geen songtekst"
@@ -5187,9 +5181,6 @@ msgstr "Logs controleren en kopiëren…"
 
 msgid "Review and export…"
 msgstr "Controleren en exporteren…"
-
-msgid "Review and share…"
-msgstr "Controleren en delen…"
 
 msgid "Review changes"
 msgstr ""
@@ -6815,8 +6806,8 @@ msgstr "Bibliotheek bijwerken…"
 msgid "Updating usage…"
 msgstr "Gebruik bijwerken…"
 
-msgid "Upload"
-msgstr "Uploaden"
+msgid "Upload (public)"
+msgstr "Uploaden (openbaar)"
 
 msgid "Upload failed."
 msgstr "Uploaden mislukt."

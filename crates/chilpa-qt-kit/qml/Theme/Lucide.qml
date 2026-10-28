@@ -20,6 +20,7 @@ QtObject {
     readonly property string circleCheckBig: "\ue07c"
     readonly property string circlePause: "\ue07f"
     readonly property string circlePlay: "\ue080"
+    readonly property string cloudUpload: "\ue091"
     readonly property string copy: "\ue09e"
     readonly property string database: "\ue0ad"
     readonly property string eject: "\ue733"
