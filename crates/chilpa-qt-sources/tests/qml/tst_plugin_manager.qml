@@ -340,6 +340,31 @@ TestCase {
         verify(!findChild(rows.itemAt(1), "pluginThirdParty").visible, "Chilpa's own says nothing")
         verify(findChild(findChild(tab, "nativeCatalogRow"), "pluginThirdParty").visible, "offered by the third-party catalog")
     }
+    // One row per plugin; the versions it is not offered at wait in a second view.
+    function test_older_versions_wait_in_a_second_view() {
+        backend.state = {busy: false, repositories: [], installed: [],
+            native_catalog: [
+                {id: "app.example.one", name: "One", version: "0.2.0", description: "", repository_id: "third-party", third_party: true,
+                 older: [{id: "app.example.one", name: "One", version: "0.1.18", repository_id: "native"}]},
+                {id: "app.example.two", name: "Two", version: "1.0.0", description: "", repository_id: "native"}]}
+        manager.read()
+        const tab = findChild(manager, "nativePluginsTab")
+        tryVerify(() => findChild(tab, "nativeCatalogRow") !== null)
+        const buttons = []
+        const collect = (item) => { for (const child of item.children) { if (child.objectName === "olderVersionsButton") buttons.push(child); collect(child) } }
+        collect(tab.contentItem)
+        compare(buttons.length, 2)
+        compare(buttons.filter(button => button.visible).length, 1, "only the plugin with older versions offers them")
+        buttons.find(button => button.visible).clicked()
+        const dialog = findChild(tab, "pluginOlderVersions")
+        tryCompare(dialog, "opened", true)
+        const rows = []
+        const gather = (item) => { for (const child of item.children) { if (child.objectName === "olderVersionRow") rows.push(child); gather(child) } }
+        gather(dialog.contentItem)
+        compare(rows.length, 1)
+        findChild(dialog.contentItem, "installOlderVersion").clicked()
+        compare(backend.calls[backend.calls.length - 1], ["install_native", {repository: "native", id: "app.example.one"}])
+    }
     function test_catalog_command_keeps_repository_identity() {
         manager.command("prepare", {repository: "repo", id: "entry"})
         compare(backend.calls[backend.calls.length - 1], ["prepare", {repository: "repo", id: "entry"}])

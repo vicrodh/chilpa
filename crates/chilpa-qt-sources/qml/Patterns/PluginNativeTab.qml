@@ -61,7 +61,7 @@ Flickable {
                 height: Metrics.settingsRow
                 Column {
                     anchors.left: parent.left
-                    anchors.right: get.left
+                    anchors.right: older.visible ? older.left : get.left
                     anchors.rightMargin: Metrics.gap12
                     anchors.verticalCenter: parent.verticalCenter
                     Row {
@@ -71,6 +71,17 @@ Flickable {
                         ThirdPartyTag { id: offerThirdParty; anchors.verticalCenter: parent.verticalCenter; visible: modelData.third_party === true }
                     }
                     Text { width: parent.width; text: modelData.problem || modelData.description; elide: Text.ElideRight; color: modelData.problem ? Theme.color.statusWarning : Theme.color.textSecondary; font.pointSize: Type.meta }
+                }
+                P.PillButton {
+                    id: older
+                    objectName: "olderVersionsButton"
+                    anchors.right: get.left
+                    anchors.rightMargin: Metrics.gap8
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: (modelData.older || []).length > 0
+                    kind: "ghost"
+                    text: I18n.tr("Older versions", I18n.rev)
+                    onClicked: { olderVersions.plugin = modelData; olderVersions.open() }
                 }
                 P.PillButton {
                     id: get
@@ -83,4 +94,5 @@ Flickable {
             }
         }
     }
+    PluginOlderVersions { id: olderVersions; controller: tab.controller }
 }
