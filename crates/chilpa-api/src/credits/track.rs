@@ -105,9 +105,8 @@ impl TrackCredits {
         let composer_html = section(&self.composers);
         let names = |people: &[Person]| people.iter().map(|p| p.name.as_str()).collect::<Vec<_>>().join(", ");
         let featured = if featured_html.is_empty() { String::new() } else { chilpa_i18n::t_args("feat. {}", &[&featured_html]) };
-        let composer = if composer_html.is_empty() { String::new() } else { chilpa_i18n::t_args("Composer: {}", &[&composer_html]) };
         let html = if featured.is_empty() { artist_html.clone() } else { format!("{artist_html} · {featured}") };
-        json!({"artist_html":artist_html,"featured_html":featured,"composer_html":composer,"html":html,
+        json!({"artist_html":artist_html,"featured_html":featured,"composer_html":composer_html,"html":html,
             "artist":names(&self.artists),"featured":names(&self.featured),"composer":names(&self.composers),"links":links})
     }
 }
