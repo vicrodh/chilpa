@@ -51,8 +51,9 @@ impl Library {
     /// I count all alternatives together, including OR branches independent of the field.
     /// `low` is the filter that already leaves a value in, or none when no
     /// track does. Only the names that match what was typed are looked at,
-    /// and only the first three of them are counted: nothing here walks every
-    /// track once per field.
+    /// and only the first three of them are counted; the labels are read
+    /// off the tracks a listener can reach, once, and nothing else walks
+    /// the tracks per field.
     pub fn query_facet_counts(&self, high: &Filter, low: Option<&Filter>, field: Field, typed: &str) -> rusqlite::Result<(usize,Vec<(String,usize)>)> {
         let (name,join) = match field {
             Field::Artist => ("r.artist","JOIN album_artist_rollup r ON r.album_id=a.id"),
@@ -61,17 +62,19 @@ impl Library {
             Field::Label => ("t.label",""), _ => return Ok((0,Vec::new())),
         };
         let eligible="t.present=1 AND t.source_id IN (SELECT id FROM sources WHERE enabled=1) AND t.album_id IN (SELECT id FROM albums)";
-        // The names that match what was typed come first and in order; whether
-        // a track still holds each is asked down that list, until three do.
+        // The names that match what was typed come first and in order. An
+        // artist or a label is spelled several ways, and the one shown is the
+        // least among the rows a listener can reach, as `query_vocabulary`
+        // spells it: never one only an absent track or a disabled source
+        // wrote. A composer or a genre is one row per spelling, so only
+        // whether a track still holds it is asked, down the list until three do.
         let (names,holds)=match field {
-            Field::Artist => ("SELECT min(artist) AS name FROM album_artist_rollup WHERE instr(chilpa_fold(artist),?)>0 GROUP BY artist COLLATE NOCASE".to_string(),
-                format!("EXISTS (SELECT 1 FROM album_artist_rollup r JOIN tracks t ON t.album_id=r.album_id WHERE r.artist=cand.name COLLATE NOCASE AND {eligible})")),
+            Field::Artist => (format!("SELECT min(artist) AS name FROM album_artist_rollup WHERE instr(chilpa_fold(artist),?)>0 AND album_id IN (SELECT t.album_id FROM tracks t WHERE {eligible}) GROUP BY artist COLLATE NOCASE"), "1".to_string()),
             Field::Composer => ("SELECT name FROM composers WHERE instr(chilpa_fold(name),?)>0".to_string(),
                 format!("EXISTS (SELECT 1 FROM track_composers tc JOIN tracks t ON t.id=tc.track_id WHERE tc.composer_id=(SELECT id FROM composers WHERE name=cand.name) AND {eligible})")),
             Field::Genre => ("SELECT name FROM genres WHERE instr(chilpa_fold(name),?)>0".to_string(),
                 format!("EXISTS (SELECT 1 FROM track_genres tg JOIN tracks t ON t.id=tg.track_id WHERE tg.genre_id=(SELECT id FROM genres WHERE name=cand.name) AND {eligible})")),
-            _ => ("SELECT name FROM (SELECT min(label) AS name FROM tracks WHERE coalesce(label,'')<>'' GROUP BY label COLLATE NOCASE) WHERE instr(chilpa_fold(name),?)>0".to_string(),
-                format!("EXISTS (SELECT 1 FROM tracks t WHERE t.label=cand.name COLLATE NOCASE AND {eligible})")),
+            _ => (format!("SELECT min(t.label) AS name FROM tracks t WHERE {eligible} AND coalesce(t.label,'')<>'' AND instr(chilpa_fold(t.label),?)>0 GROUP BY t.label COLLATE NOCASE"), "1".to_string()),
         };
         let mut args: Vec<Box<dyn rusqlite::ToSql>> = vec![Box::new(super::query::fold(typed))];
         let (high_clause,high_args) = browse::clause(high); args.extend(high_args);
@@ -106,3 +109,49 @@ impl Library {
 
 /// A clause's conditions without its `WHERE`, to embed in another statement.
 fn condition(clause: &str) -> &str { clause.trim_start().strip_prefix("WHERE").unwrap_or(clause).trim() }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusqlite::params;
+
+    /// Four present spellings of one label and an absent track's fifth; one
+    /// artist spelled one way on a record that can be reached and another
+    /// way on one that cannot.
+    fn library() -> Library {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        let db = lib.connection();
+        db.execute("INSERT INTO albums(id, title, album_artist) VALUES (1, 'Here', 'Opeth'), (2, 'Gone', 'OPETH')", []).unwrap();
+        db.execute("INSERT INTO album_artist_rollup(album_id, artist, tracks) VALUES (1, 'Opeth', 4), (2, 'OPETH', 1)", []).unwrap();
+        for (id, album, label, present) in [(1, 1, "cafe", 1), (2, 1, "Café", 1), (3, 1, "Càfe", 1), (4, 1, "Cáfe", 1), (5, 2, "CAFE", 0)] {
+            db.execute("INSERT INTO tracks(id, source_id, external_id, title, album_id, label, present, added_at) VALUES (?1, ?2, ?3, 'Song', ?4, ?5, ?6, 1)",
+                params![id, source, format!("/{id}.flac"), album, label, present]).unwrap();
+        }
+        lib
+    }
+
+    fn names(lib: &Library, field: Field, typed: &str) -> Vec<String> {
+        lib.query_facet_counts(&Filter::default(), None, field, typed).unwrap().1.into_iter().map(|(name, _)| name).collect()
+    }
+
+    #[test]
+    fn a_label_is_spelled_as_a_track_that_can_be_reached_spells_it() {
+        let lib = library();
+        assert_eq!(names(&lib, Field::Label, "cafe"), ["Café", "Càfe", "Cáfe"], "the absent track's CAFE neither names its group nor takes a place");
+        lib.connection().execute("UPDATE tracks SET present = 1 WHERE id = 5", []).unwrap();
+        assert_eq!(names(&lib, Field::Label, "cafe"), ["CAFE", "Café", "Càfe"], "reachable, it does both");
+    }
+
+    #[test]
+    fn an_artist_is_spelled_as_a_record_that_can_be_reached_spells_it() {
+        let lib = library();
+        assert_eq!(names(&lib, Field::Artist, "opeth"), ["Opeth"], "the only record that can be reached spells it so");
+        lib.connection().execute("UPDATE tracks SET present = 1 WHERE id = 5", []).unwrap();
+        // The rollup's artist collates NOCASE, so `min` holds either spelling
+        // once both records can be reached; it is one of theirs either way.
+        let shown = names(&lib, Field::Artist, "opeth");
+        assert_eq!(shown.len(), 1);
+        assert!(["Opeth", "OPETH"].contains(&shown[0].as_str()), "{shown:?}");
+    }
+}
