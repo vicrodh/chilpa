@@ -20,19 +20,30 @@ Item {
     property string query: Library.queryText
     property string typed: ""
     property var found: ({ groups: [], words: {} })
-    // The query and text `found` answers, or none.
+    // The query and text `found` answers, or none; and the ones of the round
+    // asked last, so a round is asked once per text, not per key.
     property var shownFor: null
-    // The bridge's handle for this list: its rounds and their answers carry it.
+    property var asked: null
+    // The bridge's handle for this list while it is on screen: its rounds
+    // and their answers carry it. 0 off screen, or with no handle left.
     property int consumer: 0
     // An Enter (true for Shift+Enter) waiting for the answer to what is typed now.
     property var waiting: null
+    // Off screen, folded or in a window closed, the list holds no handle:
+    // the facade lets its thread and reader go, and this asks again on return.
+    readonly property bool shown: visible && Window.visibility !== Window.Hidden && Window.visibility !== Window.Minimized
     signal edit(var change)
 
     implicitHeight: Math.min(Refine.suggestMax, content.implicitHeight + Refine.suggestPad * 2) // derived: padding above and below
 
     function current() { return list.typed.trim() }
-    function shownIsCurrent() { return list.shownFor !== null && list.shownFor[0] === list.query && list.shownFor[1] === current() }
-    function ask() { settle.stop(); QueryChips.suggest(list.consumer, list.query, current()) }
+    function sameAs(pair) { return pair !== null && pair[0] === list.query && pair[1] === current() }
+    function ask() {
+        settle.stop()
+        if (list.consumer === 0 || sameAs(list.asked)) return
+        list.asked = [list.query, current()]
+        QueryChips.suggest(list.consumer, list.query, current())
+    }
     Timer {
         id: settle
         interval: Motion.base
@@ -41,8 +52,23 @@ Item {
     onTypedChanged: { list.waiting = null; settle.restart() }
     // A condition changed under the list: its counts are for another query.
     onQueryChanged: { list.waiting = null; list.found = { groups: [], words: {} }; list.shownFor = null; settle.restart() }
-    Component.onCompleted: { list.consumer = QueryChips.openSuggestions(); settle.restart() }
-    Component.onDestruction: QueryChips.closeSuggestions(list.consumer)
+    function renew() {
+        if (list.consumer !== 0) return
+        list.consumer = QueryChips.openSuggestions()
+        list.asked = null
+        if (!sameAs(list.shownFor)) settle.restart()
+    }
+    function suspend() {
+        settle.stop()
+        list.waiting = null
+        list.asked = null
+        if (list.consumer === 0) return
+        QueryChips.closeSuggestions(list.consumer)
+        list.consumer = 0
+    }
+    onShownChanged: shown ? renew() : suspend()
+    Component.onCompleted: if (shown) renew()
+    Component.onDestruction: suspend()
     Connections {
         target: QueryChips
         function onSuggested(consumer, query, typed, found) {
@@ -54,9 +80,10 @@ Item {
     }
 
     // The first match, included or kept out (Enter, Shift+Enter): of the
-    // answer for what is typed now, or of the one asked for it at once.
+    // answer for what is typed now, or of the one asked for it, at once if
+    // it was not yet; pressed again, only the intent changes.
     function first(exclude) {
-        if (shownIsCurrent()) { apply(exclude); return }
+        if (sameAs(shownFor)) { apply(exclude); return }
         waiting = exclude
         ask()
     }
