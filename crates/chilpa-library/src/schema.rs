@@ -255,6 +255,10 @@ pub fn apply_pragmas(db: &Connection) -> rusqlite::Result<()> {
     // A wait before giving up: a long scan must not knock over a read
     // from the interface.
     db.busy_timeout(std::time::Duration::from_secs(5))?;
+    // Room for every statement a scan repeats per file. The default keeps
+    // sixteen, and the scan's loop runs more than that, so the ones it
+    // needed most were thrown out and compiled again each time.
+    db.set_prepared_statement_cache_capacity(64);
     Ok(())
 }
 

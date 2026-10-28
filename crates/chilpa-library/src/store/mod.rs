@@ -335,11 +335,11 @@ impl Library {
     /// inside somebody else's transaction, theirs is what makes this atomic.
     pub fn set_track_genres(&self, track_id: i64, genres: &[String]) -> rusqlite::Result<()> {
         let tx = self.own_transaction()?;
-        tx.execute("DELETE FROM track_genres WHERE track_id = ?1", params![track_id])?;
+        tx.prepare_cached("DELETE FROM track_genres WHERE track_id = ?1")?.execute(params![track_id])?;
         {
-            let mut insert = tx.prepare("INSERT OR IGNORE INTO genres (name) VALUES (?1)")?;
-            let mut find = tx.prepare("SELECT id FROM genres WHERE name = ?1")?;
-            let mut link = tx.prepare("INSERT OR IGNORE INTO track_genres (track_id, genre_id) VALUES (?1, ?2)")?;
+            let mut insert = tx.prepare_cached("INSERT OR IGNORE INTO genres (name) VALUES (?1)")?;
+            let mut find = tx.prepare_cached("SELECT id FROM genres WHERE name = ?1")?;
+            let mut link = tx.prepare_cached("INSERT OR IGNORE INTO track_genres (track_id, genre_id) VALUES (?1, ?2)")?;
             for name in split_genres(genres) {
                 let name = name.as_str();
                 insert.execute(params![name])?;
@@ -356,11 +356,11 @@ impl Library {
     /// people. Inside somebody else's transaction, theirs makes it atomic.
     pub fn set_track_composers(&self, track_id: i64, composers: &[String]) -> rusqlite::Result<()> {
         let tx = self.own_transaction()?;
-        tx.execute("DELETE FROM track_composers WHERE track_id = ?1", params![track_id])?;
+        tx.prepare_cached("DELETE FROM track_composers WHERE track_id = ?1")?.execute(params![track_id])?;
         {
-            let mut insert = tx.prepare("INSERT OR IGNORE INTO composers (name) VALUES (?1)")?;
-            let mut find = tx.prepare("SELECT id FROM composers WHERE name = ?1")?;
-            let mut link = tx.prepare("INSERT OR IGNORE INTO track_composers (track_id, composer_id) VALUES (?1, ?2)")?;
+            let mut insert = tx.prepare_cached("INSERT OR IGNORE INTO composers (name) VALUES (?1)")?;
+            let mut find = tx.prepare_cached("SELECT id FROM composers WHERE name = ?1")?;
+            let mut link = tx.prepare_cached("INSERT OR IGNORE INTO track_composers (track_id, composer_id) VALUES (?1, ?2)")?;
             for name in split_composers(composers) {
                 insert.execute(params![name])?;
                 let id: i64 = find.query_row(params![name], |r| r.get(0))?;
