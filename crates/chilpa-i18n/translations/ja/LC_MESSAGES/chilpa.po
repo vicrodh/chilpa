@@ -740,6 +740,9 @@ msgstr "DACを自動検出し、ビットパーフェクト再生をステップ
 msgid "Auto-follow"
 msgstr "自動追従"
 
+msgid "Auto-tail"
+msgstr "自動で追従"
+
 msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 msgstr "このスキャンを続行または破棄するまで、自動確認は一時停止されます。破棄しても追加済みのファイルは保持されます。"
 
@@ -1203,9 +1206,6 @@ msgstr "キーマップを選択してください: default、letters、vi。"
 msgid "Choose a local ZIP file."
 msgstr "ローカルのZIPファイルを選択してください。"
 
-msgid "Choose a local file for the report."
-msgstr "レポートの保存先となるローカルファイルを選択してください。"
-
 msgid "Choose a local storage folder."
 msgstr ""
 
@@ -1539,8 +1539,17 @@ msgstr "URLをクリップボードにコピー"
 msgid "Copy album and artist"
 msgstr "アルバムとアーティストをコピー"
 
+msgid "Copy all"
+msgstr "すべてコピー"
+
+msgid "Copy bundle"
+msgstr "バンドルをコピー"
+
 msgid "Copy full information"
 msgstr "すべての情報をコピー"
+
+msgid "Copy link"
+msgstr "リンクをコピー"
 
 msgid "Copy lyrics"
 msgstr "歌詞をコピー"
@@ -1787,6 +1796,9 @@ msgstr "日"
 
 msgid "Days of the week"
 msgstr "曜日"
+
+msgid "Debug"
+msgstr "デバッグ"
 
 msgid "Dec"
 msgstr "12月"
@@ -2585,6 +2597,9 @@ msgstr "アルバムへ移動"
 
 msgid "Go to artist"
 msgstr "アーティストへ移動"
+
+msgid "Go to logs"
+msgstr "ログを開く"
 
 msgid "Go to podcast"
 msgstr "ポッドキャストへ移動"
@@ -4092,6 +4107,9 @@ msgstr "オフラインモード"
 
 msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
 msgstr "古い一時画像はバックグラウンドで削除されます。ライブラリが参照しているアートワークは残ります。"
+
+msgid "Older versions"
+msgstr "以前のバージョン"
 
 msgid "Oldest first"
 msgstr "古い順"
@@ -5958,9 +5976,6 @@ msgstr "再生をテスト"
 msgid "Text"
 msgstr "テキスト"
 
-msgid "Text files (*.txt)"
-msgstr "テキストファイル (*.txt)"
-
 msgid "That answer does not belong to this window."
 msgstr "その応答はこのウィンドウのものではありません。"
 
@@ -6522,6 +6537,9 @@ msgstr "ツール"
 msgid "Top result"
 msgstr "トップ結果"
 
+msgid "Trace"
+msgstr "トレース"
+
 msgid "Track"
 msgstr "トラック"
 
@@ -6791,6 +6809,15 @@ msgstr "ライブラリを更新中…"
 
 msgid "Updating usage…"
 msgstr "使用量を更新しています…"
+
+msgid "Upload"
+msgstr "アップロード"
+
+msgid "Upload failed."
+msgstr "アップロードに失敗しました。"
+
+msgid "Uploading…"
+msgstr "アップロード中…"
 
 msgid "Uppercase"
 msgstr "大文字"

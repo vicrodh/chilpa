@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls.Basic
-import QtQuick.Dialogs
 import app.chilpa.about
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -53,17 +52,9 @@ Modal {
             width: parent.width
             spacing: Metrics.gap8
             PillButton { objectName: "developerCopyReport"; text: I18n.tr("Copy report", I18n.rev); onClicked: Developers.copyReport() }
-            PillButton { objectName: "developerExportReport"; text: I18n.tr("Export…", I18n.rev); onClicked: destination.open() }
+            PillButton { objectName: "developerExportReport"; text: I18n.tr("Export…", I18n.rev); onClicked: Developers.exportReport() }
             PillButton { objectName: "developerOpenIssue"; visible: dialog.offerIssue; text: I18n.tr("Open issue draft", I18n.rev); onClicked: { dialog.close(); About.reportIssue() } }
             PillButton { objectName: "developerCloseReport"; text: I18n.tr("Close", I18n.rev); onClicked: dialog.close() }
         }
-    }
-    FileDialog {
-        id: destination
-        title: I18n.tr("Export diagnostics", I18n.rev)
-        fileMode: FileDialog.SaveFile
-        defaultSuffix: "txt"
-        nameFilters: [I18n.tr("Text files (*.txt)", I18n.rev)]
-        onAccepted: Developers.saveReport(selectedFile.toString())
     }
 }

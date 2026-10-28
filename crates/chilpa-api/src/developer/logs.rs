@@ -1,21 +1,22 @@
-//! One process owns at most 512 lines / 512 KiB, plus two 1 MiB disk files.
+//! One process owns at most 5000 lines / 4 MiB, plus two 1 MiB disk files.
 //! The stderr reader calls me only when bytes arrive; no publication runs idle.
-use super::redaction;
+use super::{redaction, repeat};
 use serde::Serialize;
-use std::{collections::VecDeque, fs::{File, OpenOptions}, io::{Write, Seek}, path::{Path, PathBuf}, sync::{LazyLock, Mutex}, time::{SystemTime, UNIX_EPOCH}};
+use std::{time::Instant, collections::VecDeque, fs::{File, OpenOptions}, io::{Write, Seek}, path::{Path, PathBuf}, sync::{LazyLock, Mutex}, time::{SystemTime, UNIX_EPOCH}};
 
-const MAX_LINES: usize = 512;
-const MAX_BYTES: usize = 512 * 1024;
+const MAX_LINES: usize = 5000;
+const MAX_BYTES: usize = 4 * 1024 * 1024;
 const MAX_LINE: usize = 4096;
 const DISK_BYTES: usize = 1024 * 1024;
 static STORE: LazyLock<Mutex<Store>> = LazyLock::new(|| Mutex::new(Store::default()));
 
+/// One retained record; `ts` is epoch milliseconds.
 #[derive(Clone, Serialize)]
-struct Entry { time: u64, level: &'static str, target: String, message: String }
+pub(super) struct Entry { pub(super) ts: i64, pub(super) level: &'static str, pub(super) target: String, pub(super) message: String }
 #[derive(Default)]
 struct Store {
     entries: VecDeque<Entry>, bytes: usize, sink: Option<File>, path: Option<PathBuf>, disk_bytes: usize,
-    status: String, redact_continuation: bool, private_key: bool,
+    status: String, redact_continuation: bool, private_key: bool, repeats: repeat::Consecutive,
 }
 
 fn regular(path: &Path) -> std::io::Result<bool> {
@@ -78,16 +79,25 @@ impl Store {
         let lower = message.to_ascii_lowercase();
         let level = if lower.starts_with("error:") || lower.starts_with("[error]") { "error" }
             else if lower.starts_with("warning:") || lower.starts_with("[warn]") { "warn" }
-            else if lower.starts_with("info:") || lower.starts_with("[info]") { "info" } else { "stderr" };
+            else if lower.starts_with("info:") || lower.starts_with("[info]") { "info" }
+            else if lower.starts_with("debug:") || lower.starts_with("[debug]") { "debug" }
+            else if lower.starts_with("trace:") || lower.starts_with("[trace]") { "trace" } else { "stderr" };
         let target = message.split_once(':').map(|(prefix, _)| prefix).filter(|prefix| prefix.len() <= 48 && !prefix.contains(' ')).unwrap_or("application").to_string();
-        let entry = Entry { time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(), level, target, message };
+        let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as i64;
+        for entry in self.repeats.push(Entry { ts, level, target, message }, Instant::now()).into_iter().flatten() { self.record(entry); }
+    }
+    /// A burst that has not ended yet is summarized before anything reads the ring.
+    fn flush(&mut self) {
+        if let Some(entry) = self.repeats.flush() { self.record(entry); }
+    }
+    fn record(&mut self, entry: Entry) {
         let bytes = entry.message.capacity() + entry.target.capacity();
         while self.entries.len() >= MAX_LINES || self.bytes + bytes > MAX_BYTES {
             if let Some(old) = self.entries.pop_front() { self.bytes -= old.message.capacity() + old.target.capacity(); } else { break; }
         }
         self.bytes += bytes;
         if let Some(path) = self.path.clone() {
-            let line = format!("{} {} {}\n", entry.time, entry.level, entry.message);
+            let line = format!("{} {} {} {}\n", format_ts(entry.ts), entry.level.to_ascii_uppercase(), entry.target, entry.message);
             if self.disk_bytes + line.len() > DISK_BYTES {
                 self.sink.take();
                 self.sink = create_sink(&path).ok(); self.disk_bytes = 0;
@@ -107,18 +117,61 @@ pub fn initialize() {
 }
 /// The input is transient; only the redacted result is retained.
 pub fn append(text: &str) { STORE.lock().unwrap_or_else(|error| error.into_inner()).append(text); }
+/// `YYYY-MM-DD HH:MM:SS.mmm` in UTC from epoch milliseconds, the form the
+/// file and the shared bundle carry.
+pub(super) fn format_ts(ms: i64) -> String {
+    let (days, rest) = (ms.div_euclid(86_400_000), ms.rem_euclid(86_400_000));
+    // Civil date from a day count (proleptic Gregorian, era based).
+    let z = days + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z.rem_euclid(146_097);
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = yoe + era * 400 + i64::from(month <= 2);
+    format!("{year:04}-{month:02}-{day:02} {:02}:{:02}:{:02}.{:03}", rest / 3_600_000, rest / 60_000 % 60, rest / 1000 % 60, rest % 1000)
+}
+fn matches(entry: &Entry, level: &str, search: &str) -> bool {
+    (level == "all" || level.eq_ignore_ascii_case(entry.level))
+        && (search.is_empty() || entry.message.to_lowercase().contains(search) || entry.target.to_lowercase().contains(search))
+}
+/// The viewer shows the last rows that match, never more than this.
+const VIEW_ROWS: usize = 500;
 /// A manual snapshot, filtered and capped before it crosses Qt.
 pub fn document(level: &str, search: &str) -> String {
-    let store = STORE.lock().unwrap_or_else(|error| error.into_inner());
+    let mut store = STORE.lock().unwrap_or_else(|error| error.into_inner());
+    store.flush();
     let search = search.chars().take(128).collect::<String>().to_lowercase();
-    let rows: Vec<_> = store.entries.iter().filter(|entry| (level == "all" || level == entry.level) && entry.message.to_lowercase().contains(&search)).collect();
+    let matching: Vec<_> = store.entries.iter().filter(|entry| matches(entry, level, &search)).collect();
     #[derive(Serialize)]
-    struct Document<'a> { rows: Vec<&'a Entry>, total: usize, shown: usize, status: &'a str, #[serde(rename="fileAvailable")] file_available: bool }
-    let shown = rows.len();
+    struct Document<'a> { rows: &'a [&'a Entry], total: usize, shown: usize, status: &'a str, #[serde(rename="fileAvailable")] file_available: bool }
+    let shown = matching.len();
+    let rows = &matching[shown.saturating_sub(VIEW_ROWS)..];
     serde_json::to_string(&Document {rows,total:store.entries.len(),shown,status:&store.status,file_available:store.sink.is_some()}).unwrap_or_else(|_| "{}".into())
 }
+fn line_of(entry: &Entry) -> String {
+    format!("{} {} {} {}\n", format_ts(entry.ts), entry.level.to_ascii_uppercase(), entry.target, entry.message)
+}
+/// Every row that matches, as the text "Copy all" puts on the clipboard.
+pub fn filtered_text(level: &str, search: &str) -> String {
+    let mut store = STORE.lock().unwrap_or_else(|error| error.into_inner());
+    store.flush();
+    let search = search.chars().take(128).collect::<String>().to_lowercase();
+    store.entries.iter().filter(|entry| matches(entry, level, &search)).map(line_of).collect()
+}
 pub fn export() -> String {
-    STORE.lock().unwrap_or_else(|error| error.into_inner()).entries.iter().map(|entry| format!("{} {} {}\n", entry.time, entry.level, entry.message)).collect()
+    let mut store = STORE.lock().unwrap_or_else(|error| error.into_inner());
+    store.flush();
+    store.entries.iter().map(line_of).collect()
+}
+/// The last `count` records, oldest first, for the shared bundle.
+pub(super) fn tail(count: usize) -> Vec<Entry> {
+    let mut store = STORE.lock().unwrap_or_else(|error| error.into_inner());
+    store.flush();
+    let skip = store.entries.len().saturating_sub(count);
+    store.entries.iter().skip(skip).cloned().collect()
 }
 pub fn file_url() -> String {
     let store = STORE.lock().unwrap_or_else(|error| error.into_inner());
@@ -126,7 +179,7 @@ pub fn file_url() -> String {
 }
 pub fn clear() {
     let mut store = STORE.lock().unwrap_or_else(|error| error.into_inner());
-    store.entries.clear(); store.bytes = 0;
+    store.entries.clear(); store.bytes = 0; store.repeats = repeat::Consecutive::default();
     if let Some(file) = &mut store.sink { let _ = file.set_len(0).and_then(|()| file.rewind()); }
     store.disk_bytes = 0;
 }
@@ -154,6 +207,29 @@ mod tests {
         assert!(store.entries.back().unwrap().message.len() <= MAX_LINE);
     }
     #[test]
+    fn a_timestamp_reads_as_a_date_with_milliseconds() {
+        assert_eq!(format_ts(0), "1970-01-01 00:00:00.000");
+        assert_eq!(format_ts(1_700_000_000_123), "2023-11-14 22:13:20.123");
+        assert_eq!(format_ts(951_782_400_000), "2000-02-29 00:00:00.000");
+    }
+    #[test]
+    fn identical_neighbours_collapse_and_flush_reports_them() {
+        let mut store = Store::default();
+        for _ in 0..4 { store.append("info: tick"); }
+        store.append("info: tock");
+        let messages: Vec<_> = store.entries.iter().map(|entry| entry.message.as_str()).collect();
+        assert_eq!(messages.len(), 3);
+        assert!(messages[1].starts_with("[log] previous message repeated 3 additional times"));
+        store.flush();
+        assert_eq!(store.entries.len(), 3);
+    }
+    #[test]
+    fn debug_and_trace_prefixes_are_levels_of_their_own() {
+        let mut store = Store::default();
+        store.append("debug: a"); store.append("[trace] b");
+        assert_eq!(store.entries[0].level, "debug"); assert_eq!(store.entries[1].level, "trace");
+    }
+    #[test]
     fn files_rotate_and_never_contain_raw_secrets() {
         let directory = tempfile::tempdir().unwrap();
         let logs = directory.path().join("diagnostics");
@@ -163,7 +239,7 @@ mod tests {
             use std::os::unix::fs::PermissionsExt;
             assert_eq!(std::fs::metadata(&logs).unwrap().permissions().mode() & 0o777, 0o700);
         }
-        for _ in 0..800 { store.append(&"x ".repeat(1500)); }
+        for i in 0..800 { store.append(&format!("{i} {}", "x ".repeat(1500))); }
         store.append("Authorization: Bearer fixture-private-value");
         let path=store.path.as_ref().unwrap();
         for path in [path.clone(),path.with_extension("previous.log")] {

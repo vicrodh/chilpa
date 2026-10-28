@@ -19,7 +19,7 @@ TestCase {
     SignalSpy { id: castSpy; target: panel; signalName: "castRequested" }
     function init() {
         test.width=960; test.height=600; panel.active=true; panel.expanded=false
-        Developers.release(); Developers.refreshed=0; Developers.logsRefreshed=0; Developers.copied=0
+        Developers.release(); Developers.refreshed=0; Developers.logsRefreshed=0; Developers.copied=0; Developers.uploadedUrl=""; Developers.uploads=0; Developers.bundled=0; Developers.allCopied=0; Developers.urlCopied=0
         backgroundClicks=0; castSpy.clear()
     }
     function cleanup() { logs.close(); report.close(); panel.active=false; tryCompare(logs,"visible",false); tryCompare(report,"visible",false) }
@@ -56,6 +56,19 @@ TestCase {
         compare(backgroundClicks,0)
         tryCompare(logs,"visible",false)
         compare(Developers.logs,"")
+    }
+    function test_the_log_viewer_copies_uploads_and_follows_only_when_asked() {
+        logs.open(); tryCompare(logs,"opened",true)
+        click(findChild(logs.contentItem,"developerCopyAll")); compare(Developers.allCopied,1)
+        click(findChild(logs.contentItem,"developerCopyBundle")); compare(Developers.bundled,1)
+        verify(!findChild(logs.contentItem,"developerUploadedUrl").visible)
+        click(findChild(logs.contentItem,"developerUploadBundle")); compare(Developers.uploads,1)
+        verify(findChild(logs.contentItem,"developerUploadedUrl").visible)
+        click(findChild(logs.contentItem,"developerCopyUrl")); compare(Developers.urlCopied,1)
+        compare(logs.autoTail,false)
+        wait(1300); compare(Developers.logsRefreshed,1)
+        logs.autoTail=true
+        tryVerify(()=>Developers.logsRefreshed>=2,3000)
     }
     function test_copy_requires_a_reviewed_report_and_modal_blocks_background() {
         report.open(); tryCompare(report,"opened",true)

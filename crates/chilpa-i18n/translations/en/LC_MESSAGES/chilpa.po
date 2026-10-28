@@ -741,6 +741,9 @@ msgstr ""
 msgid "Auto-follow"
 msgstr ""
 
+msgid "Auto-tail"
+msgstr "Auto-tail"
+
 msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 msgstr "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 
@@ -1205,9 +1208,6 @@ msgstr ""
 msgid "Choose a local ZIP file."
 msgstr ""
 
-msgid "Choose a local file for the report."
-msgstr "Choose a local file for the report."
-
 msgid "Choose a local storage folder."
 msgstr "Choose a local storage folder."
 
@@ -1541,8 +1541,17 @@ msgstr ""
 msgid "Copy album and artist"
 msgstr ""
 
+msgid "Copy all"
+msgstr "Copy all"
+
+msgid "Copy bundle"
+msgstr "Copy bundle"
+
 msgid "Copy full information"
 msgstr ""
+
+msgid "Copy link"
+msgstr "Copy link"
 
 msgid "Copy lyrics"
 msgstr ""
@@ -1789,6 +1798,9 @@ msgstr ""
 
 msgid "Days of the week"
 msgstr ""
+
+msgid "Debug"
+msgstr "Debug"
 
 msgid "Dec"
 msgstr ""
@@ -2587,6 +2599,9 @@ msgstr ""
 
 msgid "Go to artist"
 msgstr ""
+
+msgid "Go to logs"
+msgstr "Go to logs"
 
 msgid "Go to podcast"
 msgstr "Go to podcast"
@@ -4095,6 +4110,9 @@ msgstr ""
 
 msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
 msgstr ""
+
+msgid "Older versions"
+msgstr "Older versions"
 
 msgid "Oldest first"
 msgstr ""
@@ -5963,9 +5981,6 @@ msgstr ""
 msgid "Text"
 msgstr ""
 
-msgid "Text files (*.txt)"
-msgstr "Text files (*.txt)"
-
 msgid "That answer does not belong to this window."
 msgstr ""
 
@@ -6527,6 +6542,9 @@ msgstr "Tools"
 msgid "Top result"
 msgstr ""
 
+msgid "Trace"
+msgstr "Trace"
+
 msgid "Track"
 msgstr ""
 
@@ -6796,6 +6814,15 @@ msgstr "Updating the library…"
 
 msgid "Updating usage…"
 msgstr ""
+
+msgid "Upload"
+msgstr "Upload"
+
+msgid "Upload failed."
+msgstr "Upload failed."
+
+msgid "Uploading…"
+msgstr "Uploading…"
 
 msgid "Uppercase"
 msgstr ""

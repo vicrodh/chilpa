@@ -742,6 +742,9 @@ msgstr "Автоопределение ваших DAC и пошаговая на
 msgid "Auto-follow"
 msgstr "Автопрокрутка"
 
+msgid "Auto-tail"
+msgstr "Автопрокрутка"
+
 msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 msgstr "Автоматические проверки приостановлены до продолжения или сброса этого сканирования. Уже добавленные файлы сохраняются."
 
@@ -1207,9 +1210,6 @@ msgstr "Выберите схему клавиш: default, letters или vi."
 msgid "Choose a local ZIP file."
 msgstr "Выберите локальный ZIP-файл."
 
-msgid "Choose a local file for the report."
-msgstr "Выберите локальный файл для отчёта."
-
 msgid "Choose a local storage folder."
 msgstr ""
 
@@ -1543,8 +1543,17 @@ msgstr "Копировать URL в буфер обмена"
 msgid "Copy album and artist"
 msgstr "Копировать альбом и исполнителя"
 
+msgid "Copy all"
+msgstr "Копировать всё"
+
+msgid "Copy bundle"
+msgstr "Копировать пакет"
+
 msgid "Copy full information"
 msgstr "Копировать полную информацию"
+
+msgid "Copy link"
+msgstr "Копировать ссылку"
 
 msgid "Copy lyrics"
 msgstr "Копировать текст песни"
@@ -1791,6 +1800,9 @@ msgstr "День"
 
 msgid "Days of the week"
 msgstr "Дни недели"
+
+msgid "Debug"
+msgstr "Отладка"
 
 msgid "Dec"
 msgstr "дек."
@@ -2589,6 +2601,9 @@ msgstr "Перейти к альбому"
 
 msgid "Go to artist"
 msgstr "Перейти к исполнителю"
+
+msgid "Go to logs"
+msgstr "Перейти к журналам"
 
 msgid "Go to podcast"
 msgstr "Перейти к подкасту"
@@ -4098,6 +4113,9 @@ msgstr "Офлайн-режим"
 
 msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
 msgstr "Более старые временные изображения удаляются в фоновом режиме. Обложки, на которые ссылается ваша библиотека, сохраняются."
+
+msgid "Older versions"
+msgstr "Предыдущие версии"
 
 msgid "Oldest first"
 msgstr "Сначала старые"
@@ -5968,9 +5986,6 @@ msgstr "Проверить воспроизведение"
 msgid "Text"
 msgstr "Текст"
 
-msgid "Text files (*.txt)"
-msgstr "Текстовые файлы (*.txt)"
-
 msgid "That answer does not belong to this window."
 msgstr "Этот ответ не относится к этому окну."
 
@@ -6532,6 +6547,9 @@ msgstr "Инструменты"
 msgid "Top result"
 msgstr "Лучший результат"
 
+msgid "Trace"
+msgstr "Трассировка"
+
 msgid "Track"
 msgstr "Трек"
 
@@ -6801,6 +6819,15 @@ msgstr "Обновление медиатеки…"
 
 msgid "Updating usage…"
 msgstr "Подсчёт использования…"
+
+msgid "Upload"
+msgstr "Загрузить"
+
+msgid "Upload failed."
+msgstr "Не удалось загрузить."
+
+msgid "Uploading…"
+msgstr "Загрузка…"
 
 msgid "Uppercase"
 msgstr "Прописные"

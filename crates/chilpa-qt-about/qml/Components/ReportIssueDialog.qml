@@ -70,6 +70,11 @@ Modal {
                 width: parent.width
                 spacing: Metrics.gap8
                 PillButton {
+                    objectName: "reportIssueGoToLogs"
+                    text: I18n.tr("Go to logs", I18n.rev)
+                    onClicked: logs.open()
+                }
+                PillButton {
                     objectName: "reportIssueReviewLogs"
                     text: I18n.tr("Review and copy logs…", I18n.rev)
                     onClicked: review.open()
@@ -83,6 +88,7 @@ Modal {
             }
         }
     }
+    DeveloperLogDialog { id: logs; onShareRequested: review.open() }
     DeveloperReportDialog {
         id: review
         objectName: "reportIssueReview"
