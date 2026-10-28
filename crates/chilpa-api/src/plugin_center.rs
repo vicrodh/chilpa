@@ -566,7 +566,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         }
     }
     state["categories"] = json!(categories);
-    state["native_catalog"] = json!(native_catalog);
+    state["native_catalog"] = json!(latest_per_plugin(native_catalog));
     state["catalog"] = json!(catalog);
     let plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
     state["network_requests"] = json!(*plugins.network_requests.lock().map_err(|_| "Network permissions are unavailable.")?);
@@ -595,6 +595,32 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     counts["installed"] = json!(state["installed"].as_array().into_iter().flatten().filter(|row| !row["origin"].is_null()).count());
     state["counts"] = counts;
     failure.map_or(Ok(()), Err)
+}
+
+/// One row per plugin, whichever catalogs offer it: the highest version stays
+/// as the row and the others go under `older`, for the second view. Versions
+/// that are equal or that do not read keep the order the catalogs gave.
+fn latest_per_plugin(rows: Vec<Value>) -> Vec<Value> {
+    let mut groups: Vec<Vec<Value>> = Vec::new();
+    for row in rows {
+        match groups.iter_mut().find(|group| group[0]["id"] == row["id"]) {
+            Some(group) => group.push(row),
+            None => groups.push(vec![row]),
+        }
+    }
+    groups.into_iter().map(|mut group| {
+        let version = |row: &Value| row["version"].as_str().unwrap_or("").to_owned();
+        for i in 1..group.len() {
+            let mut at = i;
+            while at > 0 && crate::plugin_updates::newer(&version(&group[at]), &version(&group[at - 1])) {
+                group.swap(at, at - 1);
+                at -= 1;
+            }
+        }
+        let mut latest = group.remove(0);
+        latest["older"] = json!(group);
+        latest
+    }).collect()
 }
 
 fn matches_filter(name: &str, description: &str, category: &str, state: &Value) -> bool {
@@ -807,4 +833,38 @@ pub(crate) fn permission_review(root: &std::path::Path, id: &str) -> Result<Valu
     Ok(json!({"id":id,"name":manifest.name,"description":value["description"],"version":manifest.version,
         "permissions":manifest.capabilities.iter().map(|cap| cap.describe()).collect::<Vec<_>>(),
         "revision":format!("{:x}", sha2::Sha256::digest(&bytes))}))
+}
+
+#[cfg(test)]
+mod grouping_tests {
+    use super::*;
+
+    fn row(id: &str, version: &str, repository: &str) -> Value {
+        json!({"id": id, "version": version, "repository_id": repository})
+    }
+
+    #[test]
+    fn a_plugin_in_two_catalogs_is_one_row_with_the_rest_under_older() {
+        let rows = latest_per_plugin(vec![
+            row("one", "0.1.18", "native"), row("two", "1.0.0", "native"),
+            row("one", "0.2.0", "third-party"), row("one", "0.1.9", "other"),
+        ]);
+        assert_eq!(rows.len(), 2);
+        assert_eq!((rows[0]["id"].as_str(), rows[0]["version"].as_str(), rows[0]["repository_id"].as_str()), (Some("one"), Some("0.2.0"), Some("third-party")));
+        let older: Vec<_> = rows[0]["older"].as_array().unwrap().iter().map(|row| row["version"].as_str().unwrap()).collect();
+        assert_eq!(older, ["0.1.18", "0.1.9"], "the newer of the rest comes first");
+        assert!(rows[1]["older"].as_array().unwrap().is_empty());
+    }
+
+    #[test]
+    fn versions_are_compared_as_numbers_not_as_text() {
+        let rows = latest_per_plugin(vec![row("one", "0.9.0", "a"), row("one", "0.10.0", "b")]);
+        assert_eq!(rows[0]["version"], "0.10.0");
+    }
+
+    #[test]
+    fn equal_or_unreadable_versions_keep_the_catalogs_order() {
+        let rows = latest_per_plugin(vec![row("one", "1.0.0", "a"), row("one", "1.0.0", "b"), row("one", "next", "c")]);
+        assert_eq!(rows[0]["repository_id"], "a");
+    }
 }
