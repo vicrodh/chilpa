@@ -32,6 +32,7 @@ TestCase {
         QueryChips.lastRefineEdit = ({})
         QueryChips.answers = true
         QueryChips.lastTyped = ""
+        findChild(panel, "refineAddInput").text = ""
         Library.queryText = "jazz"
         panel.picking = ""
         panel.target = ""
@@ -130,14 +131,64 @@ TestCase {
         compare(all("suggestion").length, 0, "nothing until an answer comes")
         input.text = "monk"
         tryVerify(() => QueryChips.lastTyped === "monk", 2000)
-        QueryChips.suggested("jazz", "mon", JSON.stringify({ groups: [{ field: "artist", items: [{ value: "Monday", count: 1, state: "none" }] }], words: {} }))
+        const consumer = QueryChips.lastConsumer
+        QueryChips.suggested(consumer, "jazz", "mon", JSON.stringify({ groups: [{ field: "artist", items: [{ value: "Monday", count: 1, state: "none" }] }], words: {} }))
         wait(50)
         compare(all("suggestion").length, 0, "the answer for 'mon' is not what is typed")
-        QueryChips.suggested("jazz", "monk", JSON.stringify(QueryChips.suggestions))
+        QueryChips.suggested(consumer, "jazz", "monk", JSON.stringify(QueryChips.suggestions))
         tryVerify(() => all("suggestion").length === 2, 2000)
-        QueryChips.suggested("jazz", "mon", JSON.stringify({ groups: [], words: {} }))
+        QueryChips.suggested(consumer, "jazz", "mon", JSON.stringify({ groups: [], words: {} }))
         wait(50)
         compare(all("suggestion").length, 2, "a late older answer does not take it back")
+        QueryChips.suggested(consumer + 1, "jazz", "monk", JSON.stringify({ groups: [], words: {} }))
+        wait(50)
+        compare(all("suggestion").length, 2, "another list's answer is not this one's")
+    }
+
+    // Enter while the answer for what is typed now is on its way applies
+    // that answer when it comes, never the one shown for the older text; an
+    // empty answer falls back to the words.
+    function test_enter_waits_for_the_answer_to_what_is_typed_now() {
+        QueryChips.answers = false
+        const input = findChild(panel, "refineAddInput")
+        input.forceActiveFocus()
+        input.text = "monk"
+        tryVerify(() => QueryChips.lastTyped === "monk", 2000)
+        QueryChips.suggested(QueryChips.lastConsumer, "jazz", "monk", JSON.stringify(QueryChips.suggestions))
+        tryVerify(() => all("suggestion").length === 2, 2000)
+        input.text = "bach"
+        QueryChips.lastRefineEdit = ({})
+        keyClick(Qt.Key_Return)
+        tryVerify(() => QueryChips.lastTyped === "bach", 2000)
+        compare(QueryChips.lastRefineEdit, {}, "nothing applied: Monk was the answer for other text")
+        QueryChips.suggested(QueryChips.lastConsumer, "jazz", "bach", JSON.stringify({ groups: [{ field: "composer", items: [{ value: "J. S. Bach", count: 3, state: "none" }] }], words: {} }))
+        tryVerify(() => QueryChips.lastRefineEdit.value === "J. S. Bach", 2000)
+        compare(QueryChips.lastRefineEdit.field, "composer")
+        Library.queryText = "jazz"
+        input.text = "zzz"
+        tryVerify(() => QueryChips.lastTyped === "zzz", 2000)
+        keyClick(Qt.Key_Return)
+        QueryChips.suggested(QueryChips.lastConsumer, "jazz", "zzz", JSON.stringify({ groups: [], words: {} }))
+        tryVerify(() => QueryChips.lastRefineEdit.op === "words" && QueryChips.lastRefineEdit.word === "zzz", 2000)
+    }
+
+    Component { id: lone; SuggestionList { width: 600 } }
+    // A condition changed under the list: its counts go, and it asks again
+    // for the same text under the new query.
+    function test_a_query_change_clears_the_counts_and_asks_again() {
+        QueryChips.answers = false
+        const list = lone.createObject(test, { typed: "monk" })
+        tryVerify(() => QueryChips.lastTyped === "monk" && QueryChips.lastSuggestQuery === "jazz", 2000)
+        const consumer = QueryChips.lastConsumer
+        QueryChips.suggested(consumer, "jazz", "monk", JSON.stringify(QueryChips.suggestions))
+        tryVerify(() => list.found.groups.length === 2, 2000)
+        Library.queryText = "rock"
+        compare(list.found.groups.length, 0, "the counts were for jazz")
+        tryVerify(() => QueryChips.lastSuggestQuery === "rock" && QueryChips.lastTyped === "monk", 2000)
+        QueryChips.suggested(consumer, "rock", "monk", JSON.stringify(QueryChips.suggestions))
+        tryVerify(() => list.found.groups.length === 2, 2000)
+        list.destroy()
+        tryVerify(() => QueryChips.closed.indexOf(consumer) >= 0, 2000)
     }
 
     // The search above a field's values narrows them; it once reached

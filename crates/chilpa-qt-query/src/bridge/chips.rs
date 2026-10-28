@@ -25,14 +25,20 @@ pub mod qobject {
         fn refine(self: &QueryChips, query: &QString) -> QString;
         #[qinvokable]
         fn refine_edit(self: Pin<&mut QueryChips>, query: &QString, edit: &QString) -> QString;
-        /// I start a suggestion round for what is typed; `suggested` brings
-        /// the answer to the latest round, never to an older one.
+        /// A list that will ask suggestion rounds: the handle its rounds and
+        /// their answers carry, until `close_suggestions` takes it back.
         #[qinvokable]
-        fn suggest(self: Pin<&mut QueryChips>, query: &QString, typed: &QString);
-        /// The answer to the latest `suggest`, with the query and text it
-        /// was asked for.
+        fn open_suggestions(self: Pin<&mut QueryChips>) -> i32;
+        #[qinvokable]
+        fn close_suggestions(self: Pin<&mut QueryChips>, consumer: i32);
+        /// I start a suggestion round for what a list has typed; `suggested`
+        /// brings the answer to the list's latest round, never to an older one.
+        #[qinvokable]
+        fn suggest(self: Pin<&mut QueryChips>, consumer: i32, query: &QString, typed: &QString);
+        /// The answer to a list's latest `suggest`, with the query and text
+        /// it was asked for.
         #[qsignal]
-        fn suggested(self: Pin<&mut QueryChips>, query: QString, typed: QString, found: QString);
+        fn suggested(self: Pin<&mut QueryChips>, consumer: i32, query: QString, typed: QString, found: QString);
         #[qinvokable]
         fn notes(self: &QueryChips, query: &QString) -> QString;
         #[qinvokable]
@@ -74,8 +80,9 @@ pub struct QueryChipsRust {
     can_undo: bool,
     query_text: QString,
     history: crate::history::History,
-    /// The latest suggestion round asked; an answer to an older one is dropped.
-    round: u64,
+    /// Each open list's latest suggestion round; an answer to an older one,
+    /// or to a list that closed, is dropped.
+    rounds: std::collections::HashMap<i32, u64>,
 }
 
 impl qobject::QueryChips {
@@ -102,15 +109,24 @@ impl qobject::QueryChips {
         } else { query::refine_edit(&before,&edit) };
         self.applied(text,after)
     }
-    pub fn suggest(mut self: Pin<&mut Self>, text: &QString, typed: &QString) {
-        let round = self.rust().round + 1;
-        self.as_mut().rust_mut().round = round;
+    pub fn open_suggestions(self: Pin<&mut Self>) -> i32 {
+        let consumer = i32::try_from(query::suggest_consumer()).unwrap_or(i32::MAX);
+        self.rust_mut().rounds.insert(consumer, 0);
+        consumer
+    }
+    pub fn close_suggestions(self: Pin<&mut Self>, consumer: i32) {
+        self.rust_mut().rounds.remove(&consumer);
+        query::suggest_release(consumer as u64);
+    }
+    pub fn suggest(mut self: Pin<&mut Self>, consumer: i32, text: &QString, typed: &QString) {
+        let round = self.rust().rounds.get(&consumer).copied().unwrap_or(0) + 1;
+        self.as_mut().rust_mut().rounds.insert(consumer, round);
         let (text, typed) = (text.to_string(), typed.to_string());
         let thread = self.qt_thread();
-        query::suggest_later(&text.clone(), &typed.clone(), move |found| {
+        query::suggest_later(consumer as u64, &text.clone(), &typed.clone(), move |found| {
             let _ = thread.queue(move |mut chips| {
-                if chips.rust().round != round { return; }
-                chips.as_mut().suggested(QString::from(&text), QString::from(&typed), json(found));
+                if chips.rust().rounds.get(&consumer) != Some(&round) { return; }
+                chips.as_mut().suggested(consumer, QString::from(&text), QString::from(&typed), json(found));
             });
         });
     }
