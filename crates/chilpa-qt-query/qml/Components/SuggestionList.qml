@@ -11,7 +11,9 @@ import "../Theme"
 // grouped, at most three each, with what each would leave, then the typed
 // words anywhere, in a title or in a record's. Enter includes the first
 // match, Shift+Enter keeps it out. Asked for once the typing settles: one
-// round of counts per pause, not per key.
+// round of counts per pause, not per key. The counts come back on their
+// own, from a thread of the facade's; what is shown stays until an answer
+// for what is typed now arrives.
 Item {
     id: list
     property string query: Library.queryText
@@ -24,10 +26,17 @@ Item {
     Timer {
         id: settle
         interval: Motion.base
-        onTriggered: list.found = JSON.parse(QueryChips.suggest(list.query, list.typed.trim()) || "{\"groups\":[],\"words\":{}}")
+        onTriggered: QueryChips.suggest(list.query, list.typed.trim())
     }
     onTypedChanged: settle.restart()
     Component.onCompleted: settle.restart()
+    Connections {
+        target: QueryChips
+        function onSuggested(query, typed, found) {
+            if (query !== list.query || typed !== list.typed.trim()) return
+            list.found = JSON.parse(found || "{\"groups\":[],\"words\":{}}")
+        }
+    }
 
     // The first match, included or kept out (Enter, Shift+Enter).
     function first(exclude) {
