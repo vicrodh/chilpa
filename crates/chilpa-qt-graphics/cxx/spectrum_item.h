@@ -16,6 +16,8 @@ class SpectrumItem : public QQuickItem
     Q_PROPERTY(QColor topColor READ topColor WRITE setTopColor)
     Q_PROPERTY(QColor bottomColor READ bottomColor WRITE setBottomColor)
     Q_PROPERTY(int mode READ mode WRITE setMode)
+    Q_PROPERTY(int rowDivisions READ rowDivisions WRITE setRowDivisions)
+    Q_PROPERTY(qreal peakThickness READ peakThickness WRITE setPeakThickness)
 public:
     explicit SpectrumItem(QQuickItem *parent = nullptr);
     QVariantList values() const;
@@ -28,6 +30,10 @@ public:
     void setBottomColor(const QColor &value);
     int mode() const { return m_mode; }
     void setMode(int value);
+    int rowDivisions() const { return m_rowDivisions; }
+    qreal peakThickness() const { return m_peakThickness; }
+    void setRowDivisions(int value);
+    void setPeakThickness(qreal value);
 protected:
     QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *) override;
     void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
@@ -37,6 +43,8 @@ private:
     QColor m_top{Qt::white};
     QColor m_bottom{Qt::white};
     int m_mode = 5;
+    int m_rowDivisions = 1;
+    qreal m_peakThickness = 1;
 };
 
 extern "C" void chilpa_spectrum_register_qml_type();

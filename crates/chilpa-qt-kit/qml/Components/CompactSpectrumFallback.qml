@@ -10,6 +10,10 @@ Item {
     required property int mode
     required property color topColor
     required property color bottomColor
+    // Cells per slot height (2 makes rectangles of half the height) and the peak mark's thickness in pixels.
+    property real rowDivisions: 1
+    property real peakThickness: 1
+    readonly property real pitch: fallback.modelState.slot / Math.max(1, rowDivisions)
     Gradient {
         id: tint
         GradientStop { position: 0; color: fallback.topColor }
@@ -37,18 +41,18 @@ Item {
                 x: 1
                 y: Math.max(0, column.height * (1 - fallback.modelState.peak(column.index)) - height)
                 width: Math.max(0, column.width - 2) // derived: paired pixel gaps
-                height: 1 // intrinsic: a peak is a single pixel mark
+                height: Math.max(1, fallback.peakThickness)
                 color: fallback.topColor
             }
             Repeater {
-                model: fallback.mode >= 5 ? Math.max(1, Math.floor(column.height / fallback.modelState.slot)) : 0
+                model: fallback.mode >= 5 ? Math.max(1, Math.floor(column.height / fallback.pitch)) : 0
                 delegate: Rectangle {
                     required property int index
                     x: 1
-                    y: column.height - (index + 1) * fallback.modelState.slot
+                    y: column.height - (index + 1) * fallback.pitch
                     width: Math.max(0, fallback.modelState.slot - 2) // derived: paired pixel gaps
-                    height: width
-                    visible: (index + 0.5) * fallback.modelState.slot <= fallback.modelState.at(column.index) * column.height
+                    height: Math.max(0, fallback.pitch - 2) // derived: paired pixel gaps
+                    visible: (index + 0.5) * fallback.pitch <= fallback.modelState.at(column.index) * column.height
                     color: fallback.topColor
                 }
             }

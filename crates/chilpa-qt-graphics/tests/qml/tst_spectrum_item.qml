@@ -24,12 +24,15 @@ TestCase {
         return [{tag: "compact", width: 448, height: 224}, {tag: "immersive", width: 1280, height: 504},
             {tag: "ambient-gradient", width: 448, height: 224, gradient: true},
             {tag: "translucent-gradient", width: 448, height: 224, gradient: true, translucent: true},
-            {tag: "ancestor-opacity", width: 448, height: 224, gradient: true, opacity: 0.5}]
+            {tag: "ancestor-opacity", width: 448, height: 224, gradient: true, opacity: 0.5},
+            {tag: "immersive-rectangles", width: 1280, height: 504, rows: 2, thick: 3}]
     }
     function test_native_geometry_preserves_every_lit_pixel(data) {
         if (GraphicsInfo.api === GraphicsInfo.Software || GraphicsInfo.api === GraphicsInfo.Null)
             skip("The native geometry requires the native RHI renderer")
         plotWidth = data.width; plotHeight = data.height
+        quad.rowDivisions = columns.rowDivisions = data.rows || 1
+        quad.peakThickness = columns.peakThickness = data.thick || 1
         reference.opacity = candidate.opacity = data.opacity || 1
         quad.topColor = columns.topColor = data.translucent ? "#8042d9c8" : data.gradient ? "#42d9c8" : "white"
         quad.bottomColor = columns.bottomColor = data.translucent ? "#c0416bd8" : data.gradient ? "#416bd8" : "white"
