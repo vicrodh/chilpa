@@ -30,6 +30,8 @@ TestCase {
                                    words: { anywhere: 269, title: 101, album: 101 } }
         QueryChips.refinedText = "edited"
         QueryChips.lastRefineEdit = ({})
+        QueryChips.answers = true
+        QueryChips.lastTyped = ""
         Library.queryText = "jazz"
         panel.picking = ""
         panel.target = ""
@@ -115,6 +117,27 @@ TestCase {
         waitForRendering(words)
         mouseClick(words)
         compare(QueryChips.lastRefineEdit, { op: "words", field: "words", word: "monk" })
+    }
+
+    // The counts arrive after the typing moved on: an answer for the older
+    // text is not shown, and the list keeps what it had until its own comes.
+    function test_an_answer_for_older_text_does_not_replace_the_newer() {
+        QueryChips.answers = false
+        const input = findChild(panel, "refineAddInput")
+        input.forceActiveFocus()
+        input.text = "mon"
+        tryVerify(() => QueryChips.lastTyped === "mon", 2000)
+        compare(all("suggestion").length, 0, "nothing until an answer comes")
+        input.text = "monk"
+        tryVerify(() => QueryChips.lastTyped === "monk", 2000)
+        QueryChips.suggested("jazz", "mon", JSON.stringify({ groups: [{ field: "artist", items: [{ value: "Monday", count: 1, state: "none" }] }], words: {} }))
+        wait(50)
+        compare(all("suggestion").length, 0, "the answer for 'mon' is not what is typed")
+        QueryChips.suggested("jazz", "monk", JSON.stringify(QueryChips.suggestions))
+        tryVerify(() => all("suggestion").length === 2, 2000)
+        QueryChips.suggested("jazz", "mon", JSON.stringify({ groups: [], words: {} }))
+        wait(50)
+        compare(all("suggestion").length, 2, "a late older answer does not take it back")
     }
 
     // The search above a field's values narrows them; it once reached

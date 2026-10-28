@@ -25,8 +25,14 @@ pub mod qobject {
         fn refine(self: &QueryChips, query: &QString) -> QString;
         #[qinvokable]
         fn refine_edit(self: Pin<&mut QueryChips>, query: &QString, edit: &QString) -> QString;
+        /// I start a suggestion round for what is typed; `suggested` brings
+        /// the answer to the latest round, never to an older one.
         #[qinvokable]
-        fn suggest(self: &QueryChips, query: &QString, typed: &QString) -> QString;
+        fn suggest(self: Pin<&mut QueryChips>, query: &QString, typed: &QString);
+        /// The answer to the latest `suggest`, with the query and text it
+        /// was asked for.
+        #[qsignal]
+        fn suggested(self: Pin<&mut QueryChips>, query: QString, typed: QString, found: QString);
         #[qinvokable]
         fn notes(self: &QueryChips, query: &QString) -> QString;
         #[qinvokable]
@@ -55,11 +61,12 @@ pub mod qobject {
         fn excluding(self: Pin<&mut QueryChips>, query: &QString, column: &QString, value: &QString) -> QString;
     }
     impl cxx_qt::Initialize for QueryChips {}
+    impl cxx_qt::Threading for QueryChips {}
 }
 
 use chilpa_api::library_query as query;
 use cxx_qt_lib::QString;
-use cxx_qt::CxxQtType;
+use cxx_qt::{CxxQtType, Threading as _};
 use std::pin::Pin;
 
 #[derive(Default)]
@@ -67,6 +74,8 @@ pub struct QueryChipsRust {
     can_undo: bool,
     query_text: QString,
     history: crate::history::History,
+    /// The latest suggestion round asked; an answer to an older one is dropped.
+    round: u64,
 }
 
 impl qobject::QueryChips {
@@ -93,9 +102,17 @@ impl qobject::QueryChips {
         } else { query::refine_edit(&before,&edit) };
         self.applied(text,after)
     }
-    pub fn suggest(&self, text: &QString, typed: &QString) -> QString {
-        json(chilpa_api::Reader::for_refine().map(|r| r.refine_suggest(&text.to_string(),&typed.to_string()))
-            .unwrap_or_else(|| serde_json::json!({"groups":[],"words":{"anywhere":0,"title":0,"album":0}})))
+    pub fn suggest(mut self: Pin<&mut Self>, text: &QString, typed: &QString) {
+        let round = self.rust().round + 1;
+        self.as_mut().rust_mut().round = round;
+        let (text, typed) = (text.to_string(), typed.to_string());
+        let thread = self.qt_thread();
+        query::suggest_later(&text.clone(), &typed.clone(), move |found| {
+            let _ = thread.queue(move |mut chips| {
+                if chips.rust().round != round { return; }
+                chips.as_mut().suggested(QString::from(&text), QString::from(&typed), json(found));
+            });
+        });
     }
     pub fn notes(&self, text: &QString) -> QString {
         json(serde_json::to_value(chilpa_api::Reader::for_refine().map(|r| r.refine_notes(&text.to_string())).unwrap_or_default()).unwrap_or_default())

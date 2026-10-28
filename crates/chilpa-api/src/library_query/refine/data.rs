@@ -6,6 +6,10 @@ use chilpa_library::store::query::fold;
 
 fn weight(item: &crate::library_sources::SourceItem) -> usize { if item.track==0 {item.tracks} else {1} }
 
+/// What a round answers when there is nothing to say: nothing typed, no
+/// reader, no facade, or a count that failed.
+pub(crate) fn nothing() -> Value { json!({"groups":[],"words":{"anywhere":0,"title":0,"album":0}}) }
+
 fn constant(value: bool) -> Node { if value {Node::All(vec![])} else {Node::Any(vec![])} }
 
 pub(crate) fn cofactor(node: &Node, f: Field, value: bool) -> Node {
@@ -77,7 +81,7 @@ impl Reader {
 
     pub(crate) fn suggest_using(&self, text: &str, typed: &str, index: &SourceIndex) -> Value {
         let typed = typed.trim();
-        let empty = || json!({"groups":[],"words":{"anywhere":0,"title":0,"album":0}});
+        let empty = nothing;
         if typed.is_empty() { return empty(); }
         let Ok(node) = read(text) else { return empty() };
         let needs_names=node.as_ref().is_some_and(|n| super::super::names_words(n) || super::super::names_genres(n));
