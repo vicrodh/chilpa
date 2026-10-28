@@ -40,7 +40,14 @@ TitledFlow {
     LibraryColumnChoices { width: Metrics.confirmWidth; selected: ["year", "artist", "album"]; onToggled: column => selected = selected.includes(column) ? selected.filter(value => value !== column) : selected.concat([column]) }
     SourcePlaylistEditor {}
     PlaylistFolderDialog {}
-    PluginOlderVersions { id: olderPreview; controller: QtObject { readonly property var view: ({busy: false}); function command() {} }; plugin: ({name: "Plugin", older: [{id: "preview", version: "0.1.0", repository_id: "native"}]}) }
+    PluginOlderVersions {
+        id: olderPreview
+        controller: QtObject {
+            readonly property var view: ({busy: false})
+            function command() {}
+        }
+        plugin: ({name: "Plugin", older: [{id: "preview", version: "0.1.0", repository_id: "native"}]})
+    }
     PillButton { text: "Older versions modal"; onClicked: olderPreview.open() }
     SourcePlaylistRows { width: Metrics.confirmWidth; rows: [{title:"Song",artist:"Artist",member:"1"}] }
     SourcePageHeader { width: Metrics.confirmWidth; info: ({title:"Artist",description:"Biography"}) }
