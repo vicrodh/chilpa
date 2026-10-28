@@ -77,11 +77,25 @@ TrackRowSlot {
         function groupActionAt(from, x, y) { return groupHeader.actionAt(from, x, y) }
 
         Rectangle { objectName: "groupStart"; visible: row.groupStart; width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline; z: 1 } // derived: over the row's surface
+        // The surface lives under ALL the rows, not inside its own: parented
+        // to the view's content at z -1 it is drawn before any row's text, so
+        // the surfaces are one batch and the texts of every row merge across
+        // rows. Inside the row, a translucent stripe sat between one row's
+        // text and the next's in render order, and the scene graph starts a
+        // new batch at every such overlap: two rows per batch, ~200 batches
+        // and 2-3 ms of recording per frame for a 45-row queue (measured
+        // 2026-10-27). It keeps the row's geometry, states and visibility.
         ListRowSurface {
-            anchors.fill: parent
+            readonly property bool lifted: !!track.ListView.view
+            parent: lifted ? track.ListView.view.contentItem : content
+            z: -1
+            x: lifted ? track.x : 0
+            y: lifted ? track.y : 0
+            width: track.width
+            height: track.height
             rowIndex: row.index
             radius: row.rich ? Metrics.radiusCard : Metrics.radiusRow
-            visible: !row.header
+            visible: !row.header && track.visible
             hovered: row.hovered; selected: row.selected
             emphasized: row.playing && row.rich
             edge: row.playing && !Prefs.animatedIndicator
