@@ -43,6 +43,10 @@ pub fn went_wrong(before: f64, after: f64, target: f64) -> bool {
 mod lights;
 
 pub mod glyph;
+pub mod media;
+/// The Control Center widget, the media keys and the lock screen.
+#[cfg(target_os = "macos")]
+pub mod nowplaying;
 /// The menu-bar item.
 #[cfg(target_os = "macos")]
 pub mod tray;
