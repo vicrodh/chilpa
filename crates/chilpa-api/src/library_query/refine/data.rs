@@ -91,7 +91,7 @@ impl Reader {
             let present = applied.query.as_ref().is_some_and(|n| has_field(n,f));
             let high = if present { Filter {query:applied.query.as_ref().map(|n| cofactor(n,f,true)),..Filter::default()} } else {applied.clone()};
             let low = Filter {query:Some(if present {cofactor(applied.query.as_ref().expect("query"),f,false)} else {constant(false)}),..Filter::default()};
-            let Ok((mut baseline,local)) = self.lib.query_facet_counts(&high,&low,f,typed) else { return empty() };
+            let Ok((mut baseline,local)) = self.lib.query_facet_counts(&high,present.then_some(&low),f,typed) else { return empty() };
             let mut counts: std::collections::BTreeMap<String,(String,usize)> = local.into_iter().map(|(name,n)| (name.to_lowercase(),(name,n))).collect();
             let high = Prepared::new(&high); let low = Prepared::new(&low);
             for item in &index.items {
@@ -111,12 +111,14 @@ impl Reader {
             }).collect();
             if !items.is_empty() { groups.push(json!({"field":f.name(),"items":items})); }
         }
+        let kinds = [("anywhere","words"),("title","title"),("album","album")];
+        let queries: Vec<Filter> = kinds.iter().map(|(_,f)| effective(read(&super::edits::preview_words(text,f,typed)).ok().flatten(),&known,&genres)).collect();
+        // One pass over the library answers the three.
+        let Ok(local) = self.lib.query_counts(&queries.iter().collect::<Vec<_>>()) else { return empty() };
         let mut words = json!({});
-        for (name,f) in [("anywhere","words"),("title","title"),("album","album")] {
-            let edited = super::edits::preview_words(text,f,typed);
-            let query = effective(read(&edited).ok().flatten(),&known,&genres);
-            let Some(count) = self.count_refine(&query,index,&stars) else { return empty() };
-            words[name]=json!(count);
+        for (((name,_),query),local) in kinds.iter().zip(&queries).zip(local) {
+            let prepared = Prepared::new(query);
+            words[name]=json!(local + index.items.iter().filter(|item| prepared.passes(item,&stars)).map(weight).sum::<usize>());
         }
         json!({"groups":groups,"words":words})
     }
