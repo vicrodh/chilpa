@@ -88,7 +88,7 @@ Modal {
             }
         }
     }
-    DeveloperLogDialog { id: logs; onShareRequested: review.open() }
+    DeveloperLogDialog { id: logs }
     DeveloperReportDialog {
         id: review
         objectName: "reportIssueReview"

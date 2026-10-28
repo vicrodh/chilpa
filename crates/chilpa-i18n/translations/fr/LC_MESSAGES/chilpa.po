@@ -1304,9 +1304,6 @@ msgstr "Effacer les images générées"
 msgid "Clear generated images?"
 msgstr "Effacer les images générées ?"
 
-msgid "Clear logs"
-msgstr "Effacer les journaux"
-
 msgid "Clear loop"
 msgstr "Supprimer la boucle"
 
@@ -1457,9 +1454,6 @@ msgstr "Le travail terminé est enregistré. Continuer vérifie à nouveau le do
 msgid "Composer"
 msgstr "Compositeur"
 
-msgid "Composer: {}"
-msgstr "Compositeur : {}"
-
 msgid "Composers"
 msgstr "Compositeurs"
 
@@ -1544,14 +1538,11 @@ msgstr "Copier l'album et l'artiste"
 msgid "Copy all"
 msgstr "Tout copier"
 
-msgid "Copy bundle"
-msgstr "Copier le paquet"
+msgid "Copy diagnostics bundle"
+msgstr "Copier le paquet de diagnostic"
 
 msgid "Copy full information"
 msgstr "Copier toutes les informations"
-
-msgid "Copy link"
-msgstr "Copier le lien"
 
 msgid "Copy lyrics"
 msgstr "Copier les paroles"
@@ -3337,8 +3328,8 @@ msgstr "Local — prend en charge les sources mixtes"
 msgid "Local — {}"
 msgstr "Local — {}"
 
-msgid "Log options"
-msgstr "Options de journalisation"
+msgid "Logs"
+msgstr "Journaux"
 
 msgid "Look"
 msgstr "Aspect"
@@ -3864,6 +3855,9 @@ msgstr "Aucune information sur le label"
 
 msgid "No listens match."
 msgstr "Aucune écoute ne correspond."
+
+msgid "No log entries."
+msgstr "Aucune entrée de journal."
 
 msgid "No lyrics"
 msgstr "Pas de paroles"
@@ -5187,9 +5181,6 @@ msgstr "Vérifier et copier les journaux…"
 
 msgid "Review and export…"
 msgstr "Vérifier et exporter…"
-
-msgid "Review and share…"
-msgstr "Vérifier et partager…"
 
 msgid "Review changes"
 msgstr ""
@@ -6815,8 +6806,8 @@ msgstr "Mise à jour de la bibliothèque…"
 msgid "Updating usage…"
 msgstr "Mise à jour de l'utilisation…"
 
-msgid "Upload"
-msgstr "Téléverser"
+msgid "Upload (public)"
+msgstr "Téléverser (public)"
 
 msgid "Upload failed."
 msgstr "Échec du téléversement."

@@ -81,7 +81,9 @@ impl Store {
             else if lower.starts_with("warning:") || lower.starts_with("[warn]") { "warn" }
             else if lower.starts_with("info:") || lower.starts_with("[info]") { "info" }
             else if lower.starts_with("debug:") || lower.starts_with("[debug]") { "debug" }
-            else if lower.starts_with("trace:") || lower.starts_with("[trace]") { "trace" } else { "stderr" };
+            else if lower.starts_with("trace:") || lower.starts_with("[trace]") { "trace" }
+            // A panic says what it is; anything else the process wrote is information.
+            else if lower.starts_with("thread '") && lower.contains("panicked") { "error" } else { "info" };
         let target = message.split_once(':').map(|(prefix, _)| prefix).filter(|prefix| prefix.len() <= 48 && !prefix.contains(' ')).unwrap_or("application").to_string();
         let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as i64;
         for entry in self.repeats.push(Entry { ts, level, target, message }, Instant::now()).into_iter().flatten() { self.record(entry); }

@@ -1304,9 +1304,6 @@ msgstr "Limpar imagens geradas"
 msgid "Clear generated images?"
 msgstr "Limpar imagens geradas?"
 
-msgid "Clear logs"
-msgstr "Limpar registros"
-
 msgid "Clear loop"
 msgstr "Remover loop"
 
@@ -1457,9 +1454,6 @@ msgstr "O trabalho concluído está salvo. Continuar verifica a pasta novamente 
 msgid "Composer"
 msgstr "Compositor"
 
-msgid "Composer: {}"
-msgstr "Compositor: {}"
-
 msgid "Composers"
 msgstr "Compositores"
 
@@ -1544,14 +1538,11 @@ msgstr "Copiar álbum e artista"
 msgid "Copy all"
 msgstr "Copiar tudo"
 
-msgid "Copy bundle"
-msgstr "Copiar pacote"
+msgid "Copy diagnostics bundle"
+msgstr "Copiar pacote de diagnóstico"
 
 msgid "Copy full information"
 msgstr "Copiar informações completas"
-
-msgid "Copy link"
-msgstr "Copiar link"
 
 msgid "Copy lyrics"
 msgstr "Copiar letra"
@@ -3337,8 +3328,8 @@ msgstr "Local — aceita fontes mistas"
 msgid "Local — {}"
 msgstr "Local — {}"
 
-msgid "Log options"
-msgstr "Opções de registro"
+msgid "Logs"
+msgstr "Registros"
 
 msgid "Look"
 msgstr "Visual"
@@ -3864,6 +3855,9 @@ msgstr "Sem informação da gravadora"
 
 msgid "No listens match."
 msgstr "Nenhuma reprodução corresponde."
+
+msgid "No log entries."
+msgstr "Nenhuma entrada de registro."
 
 msgid "No lyrics"
 msgstr "Sem letra"
@@ -5187,9 +5181,6 @@ msgstr "Revisar e copiar registros…"
 
 msgid "Review and export…"
 msgstr "Revisar e exportar…"
-
-msgid "Review and share…"
-msgstr "Revisar e compartilhar…"
 
 msgid "Review changes"
 msgstr ""
@@ -6815,8 +6806,8 @@ msgstr "Atualizando a biblioteca…"
 msgid "Updating usage…"
 msgstr "Atualizando o uso…"
 
-msgid "Upload"
-msgstr "Enviar"
+msgid "Upload (public)"
+msgstr "Enviar (público)"
 
 msgid "Upload failed."
 msgstr "Falha no envio."

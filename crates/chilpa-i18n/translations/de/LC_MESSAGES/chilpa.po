@@ -1304,9 +1304,6 @@ msgstr "Erzeugte Bilder löschen"
 msgid "Clear generated images?"
 msgstr "Erzeugte Bilder löschen?"
 
-msgid "Clear logs"
-msgstr "Protokolle leeren"
-
 msgid "Clear loop"
 msgstr "Schleife aufheben"
 
@@ -1457,9 +1454,6 @@ msgstr "Abgeschlossene Arbeit ist gespeichert. Fortsetzen prüft den Ordner erne
 msgid "Composer"
 msgstr "Komponist"
 
-msgid "Composer: {}"
-msgstr "Komponist: {}"
-
 msgid "Composers"
 msgstr "Komponisten"
 
@@ -1544,14 +1538,11 @@ msgstr "Album und Künstler kopieren"
 msgid "Copy all"
 msgstr "Alles kopieren"
 
-msgid "Copy bundle"
-msgstr "Paket kopieren"
+msgid "Copy diagnostics bundle"
+msgstr "Diagnosepaket kopieren"
 
 msgid "Copy full information"
 msgstr "Alle Informationen kopieren"
-
-msgid "Copy link"
-msgstr "Link kopieren"
 
 msgid "Copy lyrics"
 msgstr "Songtext kopieren"
@@ -3337,8 +3328,8 @@ msgstr "Lokal – unterstützt gemischte Quellen"
 msgid "Local — {}"
 msgstr "Lokal – {}"
 
-msgid "Log options"
-msgstr "Protokolloptionen"
+msgid "Logs"
+msgstr "Protokolle"
 
 msgid "Look"
 msgstr "Optik"
@@ -3864,6 +3855,9 @@ msgstr "Keine Label-Informationen"
 
 msgid "No listens match."
 msgstr "Keine passenden Wiedergaben."
+
+msgid "No log entries."
+msgstr "Keine Protokolleinträge."
 
 msgid "No lyrics"
 msgstr "Kein Songtext"
@@ -5187,9 +5181,6 @@ msgstr "Protokolle prüfen und kopieren…"
 
 msgid "Review and export…"
 msgstr "Prüfen und exportieren…"
-
-msgid "Review and share…"
-msgstr "Prüfen und teilen…"
 
 msgid "Review changes"
 msgstr ""
@@ -6815,8 +6806,8 @@ msgstr "Bibliothek wird aktualisiert…"
 msgid "Updating usage…"
 msgstr "Nutzung wird aktualisiert…"
 
-msgid "Upload"
-msgstr "Hochladen"
+msgid "Upload (public)"
+msgstr "Hochladen (öffentlich)"
 
 msgid "Upload failed."
 msgstr "Hochladen fehlgeschlagen."

@@ -1304,9 +1304,6 @@ msgstr ""
 msgid "Clear generated images?"
 msgstr ""
 
-msgid "Clear logs"
-msgstr "Clear logs"
-
 msgid "Clear loop"
 msgstr ""
 
@@ -1457,9 +1454,6 @@ msgstr "Completed work is saved. Continue checks the folder again and skips unch
 msgid "Composer"
 msgstr ""
 
-msgid "Composer: {}"
-msgstr "Composer: {}"
-
 msgid "Composers"
 msgstr ""
 
@@ -1544,14 +1538,11 @@ msgstr ""
 msgid "Copy all"
 msgstr "Copy all"
 
-msgid "Copy bundle"
-msgstr "Copy bundle"
+msgid "Copy diagnostics bundle"
+msgstr "Copy diagnostics bundle"
 
 msgid "Copy full information"
 msgstr ""
-
-msgid "Copy link"
-msgstr "Copy link"
 
 msgid "Copy lyrics"
 msgstr ""
@@ -3337,8 +3328,8 @@ msgstr "Local — supports mixed sources"
 msgid "Local — {}"
 msgstr ""
 
-msgid "Log options"
-msgstr "Log options"
+msgid "Logs"
+msgstr "Logs"
 
 msgid "Look"
 msgstr ""
@@ -3864,6 +3855,9 @@ msgstr ""
 
 msgid "No listens match."
 msgstr ""
+
+msgid "No log entries."
+msgstr "No log entries."
 
 msgid "No lyrics"
 msgstr ""
@@ -5187,9 +5181,6 @@ msgstr "Review and copy logs…"
 
 msgid "Review and export…"
 msgstr "Review and export…"
-
-msgid "Review and share…"
-msgstr "Review and share…"
 
 msgid "Review changes"
 msgstr "Review changes"
@@ -6815,8 +6806,8 @@ msgstr "Updating the library…"
 msgid "Updating usage…"
 msgstr ""
 
-msgid "Upload"
-msgstr "Upload"
+msgid "Upload (public)"
+msgstr "Upload (public)"
 
 msgid "Upload failed."
 msgstr "Upload failed."

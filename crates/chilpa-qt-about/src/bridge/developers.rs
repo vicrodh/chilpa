@@ -16,6 +16,7 @@ pub mod qobject {
         #[qproperty(QString, status)]
         #[qproperty(QString, uploaded_url)]
         #[qproperty(bool, uploading)]
+        #[qproperty(QString, upload_error)]
         type Developers = super::DevelopersRust;
         #[qinvokable]
         fn refresh(self: Pin<&mut Developers>);
@@ -58,7 +59,7 @@ unsafe extern "C" {
     fn chilpa_developer_clipboard(text: *const std::ffi::c_char);
 }
 #[derive(Default)]
-pub struct DevelopersRust { diagnostics: QString, logs: QString, review: QString, status: QString, uploaded_url: QString, uploading: bool }
+pub struct DevelopersRust { diagnostics: QString, logs: QString, review: QString, status: QString, uploaded_url: QString, uploading: bool, upload_error: QString }
 fn native_snapshot() -> String {
     // SAFETY: I call Qt on its UI thread and copy the static native buffer immediately.
     let native = unsafe { CStr::from_ptr(chilpa_developer_native_facts()) }.to_string_lossy();
@@ -115,7 +116,7 @@ impl qobject::Developers {
         if *self.uploading() { return; }
         self.as_mut().set_uploading(true);
         self.as_mut().set_uploaded_url(QString::default());
-        self.as_mut().set_status(QString::default());
+        self.as_mut().set_upload_error(QString::default());
         let bundle = developer::bundle(&developer::report(&native_snapshot()));
         let thread = self.qt_thread();
         std::thread::spawn(move || {
@@ -123,7 +124,7 @@ impl qobject::Developers {
             let _ = thread.queue(move |mut developers| {
                 match result {
                     Ok(address) => developers.as_mut().set_uploaded_url(QString::from(&address)),
-                    Err(error) => developers.as_mut().set_status(QString::from(&error)),
+                    Err(error) => developers.as_mut().set_upload_error(QString::from(&error)),
                 }
                 developers.set_uploading(false);
             });

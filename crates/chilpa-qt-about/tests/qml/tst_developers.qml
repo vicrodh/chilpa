@@ -57,9 +57,24 @@ TestCase {
         tryCompare(logs,"visible",false)
         compare(Developers.logs,"")
     }
+    function test_the_log_viewer_opens_on_its_two_buttons_and_closes_with_its_x() {
+        logs.open(); tryCompare(logs,"opened",true)
+        compare(logs.advanced,false)
+        verify(findChild(logs.contentItem,"developerCopyAll").visible)
+        verify(findChild(logs.contentItem,"developerUploadBundle").visible)
+        verify(!findChild(logs.contentItem,"developerRefreshLogs").visible, "the controls open closed")
+        verify(!findChild(logs.contentItem,"developerClearLogs").visible, "Clear waits behind the disclosure")
+        click(findChild(logs.contentItem,"developerLogOptions"))
+        verify(logs.advanced)
+        verify(findChild(logs.contentItem,"developerClearLogs").visible)
+        click(findChild(logs.contentItem,"developerLogClose"))
+        tryCompare(logs,"visible",false)
+    }
     function test_the_log_viewer_copies_uploads_and_follows_only_when_asked() {
         logs.open(); tryCompare(logs,"opened",true)
+        verify(!findChild(logs.contentItem,"developerCopyBundle").visible, "the bundle waits behind the disclosure")
         click(findChild(logs.contentItem,"developerCopyAll")); compare(Developers.allCopied,1)
+        logs.advanced=true
         click(findChild(logs.contentItem,"developerCopyBundle")); compare(Developers.bundled,1)
         verify(!findChild(logs.contentItem,"developerUploadedUrl").visible)
         click(findChild(logs.contentItem,"developerUploadBundle")); compare(Developers.uploads,1)

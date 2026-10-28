@@ -5,92 +5,166 @@ import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
+// The log viewer, laid out as QBZ's (`LogViewerModal.qml`). The default view
+// is the header (title, shown / total, the disclosure and a close), the column
+// header, the list, the address of an upload once there is one, and exactly
+// two buttons: Copy all and Upload. The disclosure reveals the level, the
+// search, Refresh and Auto-tail, and a row for the bundle, the log file and
+// Clear. It opens closed every time.
 Modal {
     id: dialog
-    signal shareRequested()
     property bool advanced: false
     property bool autoTail: false
+    // Copy all says Copied for a beat after any copy, as QBZ's does.
+    property bool copied: false
     readonly property var document: JSON.parse(Developers.logs || "{}")
-    width: Math.min(Metrics.settingsMaxWidth, parent.width - Metrics.modalInsets)
-    height: Math.min(Metrics.panesHeight + Metrics.modalInsets, parent.height - Metrics.modalInsets)
-    function refresh() { Developers.refreshLogs(level.value || "all", search.text) }
-    onOpened: { advanced = false; autoTail = false; level.value = "all"; search.text = ""; refresh() }
+    width: Math.min(parent.width - Metrics.modalInsets * 2, 760) // derived: the window less a margin, at most QBZ's 760
+    height: Math.min(parent.height - Metrics.modalInsets * 2, 640) // derived: the window less a margin, at most QBZ's 640
+    function refresh() { Developers.refreshLogs(controls.level, controls.search) }
+    function flashCopied() { dialog.copied = true; copiedBeat.restart() }
+    onOpened: { advanced = false; autoTail = false; controls.reset(); refresh() }
     onClosed: { autoTail = false; Developers.releaseLogs() }
     // The log follows itself once a second, and only while it is open and asked to.
     Timer { interval: 1000; repeat: true; running: dialog.visible && dialog.autoTail; onTriggered: dialog.refresh() }
-    Column {
-        id: header
-        width: parent.width
-        spacing: Metrics.gap12
+    Timer { id: copiedBeat; interval: 1000; onTriggered: dialog.copied = false }
+
+    Item {
+        id: headerRow
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: Metrics.button28
         Row {
-            spacing: Metrics.gap12
-            Text { text: I18n.tr("Application logs", I18n.rev); font.pointSize: Type.section; font.weight: Type.semibold; color: Theme.color.textPrimary }
-            Text { text: (dialog.document.shown || 0) + " / " + (dialog.document.total || 0); font.pointSize: Type.meta; color: Theme.color.textSecondary }
-            IconButton { tip: I18n.tr("Log options", I18n.rev); glyph: dialog.advanced ? Icons.minus : Icons.plus; onClicked: dialog.advanced = !dialog.advanced }
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Metrics.gap10
+            Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Logs", I18n.rev); font.pointSize: Type.section; font.weight: Type.semibold; color: Theme.color.textPrimary }
+            // Shown over total tells "the filter matched nothing" from "the ring is empty".
+            Text { anchors.verticalCenter: parent.verticalCenter; text: (dialog.document.shown || 0) + " / " + (dialog.document.total || 0); font.pointSize: Type.small; color: Theme.color.textTertiary }
         }
-        Flow {
-            visible: dialog.advanced
-            width: parent.width
-            spacing: Metrics.gap8
-            SelectField {
-                id: level
-                width: Metrics.selectWidth / 2 // derived: compact severity selector
-                options: [I18n.tr("All levels", I18n.rev), I18n.tr("Error", I18n.rev), I18n.tr("Warning", I18n.rev), I18n.tr("Info", I18n.rev), I18n.tr("Debug", I18n.rev), I18n.tr("Trace", I18n.rev), "stderr"]
-                values: ["all","error","warn","info","debug","trace","stderr"]
-                value: "all"
-                onPicked: value => { level.value = value; dialog.refresh() }
+        Row {
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Metrics.gap10
+            Item {
+                objectName: "developerLogOptions"
+                anchors.verticalCenter: parent.verticalCenter
+                width: Metrics.button24
+                height: Metrics.button24
+                Icon {
+                    anchors.centerIn: parent
+                    glyph: dialog.advanced ? Icons.minus : Icons.plus
+                    size: Metrics.iconNav
+                    color: optionsArea.containsMouse ? Theme.color.textPrimary : Theme.color.textTertiary
+                }
+                MouseArea { id: optionsArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: dialog.advanced = !dialog.advanced }
             }
-            TextField { id: search; placeholder: I18n.tr("Search logs", I18n.rev); onAccepted: dialog.refresh() }
-            PillButton { objectName: "developerRefreshLogs"; text: I18n.tr("Refresh", I18n.rev); onClicked: dialog.refresh() }
-            Row {
-                spacing: Metrics.gap8
-                Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Auto-tail", I18n.rev); font.pointSize: Type.meta; color: Theme.color.textSecondary }
-                Toggle { objectName: "developerAutoTail"; anchors.verticalCenter: parent.verticalCenter; checked: dialog.autoTail; onToggled: on => dialog.autoTail = on }
+            Item {
+                anchors.verticalCenter: parent.verticalCenter
+                width: Metrics.button28
+                height: Metrics.button28
+                Icon {
+                    anchors.centerIn: parent
+                    glyph: Icons.x
+                    size: Metrics.iconNav
+                    color: closeArea.containsMouse ? Theme.color.textPrimary : Theme.color.textTertiary
+                }
+                MouseArea { id: closeArea; objectName: "developerLogClose"; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: dialog.close() }
             }
-        }
-        DeveloperLogRow {
-            width: parent.width
-            heading: true
-            entry: ({time:I18n.tr("Time", I18n.rev),level:I18n.tr("Level", I18n.rev),target:I18n.tr("Target", I18n.rev),message:I18n.tr("Message", I18n.rev)})
         }
     }
-    ListView {
-        objectName: "developerLogList"
-        anchors.top: header.bottom
+
+    LogControls {
+        id: controls
+        anchors.top: headerRow.bottom
+        anchors.topMargin: Metrics.gap14
+        anchors.left: parent.left
+        anchors.right: parent.right
+        visible: dialog.advanced
+        autoTail: dialog.autoTail
+        onChanged: dialog.refresh()
+        onRefreshAsked: dialog.refresh()
+        onAutoTailAsked: on => dialog.autoTail = on
+    }
+
+    LogList {
+        anchors.top: dialog.advanced ? controls.bottom : headerRow.bottom
+        anchors.topMargin: Metrics.gap14
+        anchors.left: parent.left
+        anchors.right: parent.right
+        // Stops at whichever optional row is mounted below it.
+        anchors.bottom: uploaded.visible ? uploaded.top : (dialog.advanced ? actions.top : footer.top)
+        anchors.bottomMargin: Metrics.gap14
+        rows: dialog.visible ? dialog.document.rows || [] : []
+        autoTail: dialog.autoTail
+    }
+
+    LogUploaded {
+        id: uploaded
+        objectName: "developerUploadedUrl"
+        anchors.bottom: dialog.advanced ? actions.top : footer.top
+        anchors.bottomMargin: Metrics.gap14
+        anchors.left: parent.left
+        anchors.right: parent.right
+        url: Developers.uploadedUrl
+        error: Developers.uploadError
+        onCopyAsked: { Developers.copyUrl(); dialog.flashCopied() }
+    }
+
+    Item {
+        id: actions
         anchors.bottom: footer.top
-        anchors.bottomMargin: Metrics.gap16
-        width: parent.width
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
-        model: dialog.visible ? dialog.document.rows || [] : []
-        delegate: DeveloperLogRow { required property var modelData; width: ListView.view.width; entry: modelData }
-        onCountChanged: if (dialog.autoTail) positionViewAtEnd()
-        ScrollBar.vertical: ViewportScrollBar {}
+        anchors.bottomMargin: Metrics.gap14
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: Metrics.button32
+        visible: dialog.advanced
+        LogActionButton {
+            objectName: "developerCopyBundle"
+            anchors.left: parent.left
+            text: I18n.tr("Copy diagnostics bundle", I18n.rev)
+            glyph: Icons.copy
+            onClicked: { Developers.copyBundle(); dialog.flashCopied() }
+        }
+        Row {
+            anchors.right: parent.right
+            spacing: Metrics.gap10
+            LogActionButton {
+                objectName: "developerOpenLogFile"
+                text: I18n.tr("Open log file", I18n.rev)
+                glyph: Icons.externalLink
+                enabled: dialog.document.fileAvailable === true
+                onClicked: Qt.openUrlExternally(Developers.logUrl())
+            }
+            LogActionButton {
+                objectName: "developerClearLogs"
+                text: I18n.tr("Clear", I18n.rev)
+                glyph: Icons.trash
+                danger: true
+                onClicked: { Developers.clearLogs(); dialog.refresh() }
+            }
+        }
     }
-    Column {
+
+    // Always visible: the two things this window is for.
+    Row {
         id: footer
         anchors.bottom: parent.bottom
-        width: parent.width
-        spacing: Metrics.gap8
-        Text { width: parent.width; text: Developers.status !== "" ? Developers.status : dialog.document.status || ""; visible: text !== ""; wrapMode: Text.WordWrap; font.pointSize: Type.meta; color: Theme.color.textSecondary }
-        Row {
-            objectName: "developerUploadedUrl"
-            width: parent.width
-            visible: Developers.uploadedUrl !== ""
-            spacing: Metrics.gap8
-            Text { width: parent.width - copyUrl.width - Metrics.gap8; anchors.verticalCenter: parent.verticalCenter; text: Developers.uploadedUrl; elide: Text.ElideMiddle; font.pointSize: Type.meta; color: Theme.color.textPrimary }
-            PillButton { id: copyUrl; objectName: "developerCopyUrl"; text: I18n.tr("Copy link", I18n.rev); onClicked: Developers.copyUrl() }
+        anchors.left: parent.left
+        spacing: Metrics.gap10
+        LogActionButton {
+            objectName: "developerCopyAll"
+            text: dialog.copied ? I18n.tr("Copied", I18n.rev) : I18n.tr("Copy all", I18n.rev)
+            glyph: dialog.copied ? Icons.check : Icons.copy
+            onClicked: { Developers.copyLogs(controls.level, controls.search); dialog.flashCopied() }
         }
-        Flow {
-            width: parent.width
-            spacing: Metrics.gap8
-            PillButton { objectName: "developerCopyBundle"; text: I18n.tr("Copy bundle", I18n.rev); onClicked: Developers.copyBundle() }
-            PillButton { objectName: "developerOpenLogFile"; text: I18n.tr("Open log file", I18n.rev); enabled: dialog.document.fileAvailable === true; onClicked: Qt.openUrlExternally(Developers.logUrl()) }
-            PillButton { objectName: "developerClearLogs"; text: I18n.tr("Clear logs", I18n.rev); onClicked: { Developers.clearLogs(); dialog.refresh() } }
-            PillButton { objectName: "developerCopyAll"; text: I18n.tr("Copy all", I18n.rev); onClicked: Developers.copyLogs(level.value || "all", search.text) }
-            PillButton { objectName: "developerUploadBundle"; text: Developers.uploading ? I18n.tr("Uploading…", I18n.rev) : I18n.tr("Upload", I18n.rev); enabled: !Developers.uploading; onClicked: Developers.uploadBundle() }
-            PillButton { objectName: "developerShareLogs"; text: I18n.tr("Review and share…", I18n.rev); onClicked: dialog.shareRequested() }
-            PillButton { text: I18n.tr("Close", I18n.rev); onClicked: dialog.close() }
+        LogActionButton {
+            objectName: "developerUploadBundle"
+            text: Developers.uploading ? I18n.tr("Uploading…", I18n.rev) : I18n.tr("Upload (public)", I18n.rev)
+            glyph: Lucide.cloudUpload
+            iconFamily: Lucide.font
+            enabled: !Developers.uploading
+            onClicked: Developers.uploadBundle()
         }
     }
 }

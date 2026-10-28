@@ -55,6 +55,6 @@ Item {
             }
         }
     }
-    DeveloperLogDialog { id: logs; onShareRequested: report.open() }
+    DeveloperLogDialog { id: logs }
     DeveloperReportDialog { id: report }
 }
