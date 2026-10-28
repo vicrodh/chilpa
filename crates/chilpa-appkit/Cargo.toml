@@ -14,6 +14,8 @@ cc = "1"
 # The generation the file dialog already brings, so the binary holds one.
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
+# The Mac's Now Playing, the one QBZ uses.
+souvlaki = "0.8"
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSGeometry", "NSData", "NSString", "NSObject"] }
 objc2-app-kit = { version = "0.3", default-features = false, features = [
     "std",

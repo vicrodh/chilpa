@@ -876,3 +876,8 @@ fffd
 sel
 mtm
 ivars
+
+# Names from the Mac Now Playing integration: a window handle field, the module and the crate.
+hwnd
+nowplaying
+souvlaki

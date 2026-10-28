@@ -14,7 +14,7 @@ use chilpa_mpris::{MediaEvent, PlaybackStatus, TrackMeta};
 use std::collections::VecDeque;
 
 mod launch;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::time::Duration;
 
 /// What the desktop asks of the window.
@@ -62,6 +62,8 @@ pub(crate) struct Desktop {
 #[cfg(target_os = "macos")]
 enum MacAsked {
     Tray(chilpa_appkit::tray::Event),
+    /// A media key, the Control Center widget or the lock screen.
+    Media(chilpa_appkit::media::Command),
     /// The Dock or the Finder asked Chilpa to open again.
     Reopen,
 }
@@ -71,10 +73,14 @@ enum MacAsked {
 struct MacDesktop {
     tell: Option<std::sync::mpsc::Sender<MacAsked>>,
     asked: Option<std::sync::mpsc::Receiver<MacAsked>>,
+    /// The system's Now Playing, when it took Chilpa.
+    now_playing: Option<chilpa_appkit::nowplaying::NowPlaying>,
+    /// What it was last told, to tell it only what changed.
+    told: (Option<chilpa_appkit::media::Track>, Option<chilpa_appkit::media::Status>),
 }
 
 /// The cover as an address the desktop can open.
-#[cfg(any(target_os = "linux", test))]
+#[cfg(any(target_os = "linux", target_os = "macos", test))]
 fn art_url(path: &str) -> Option<String> {
     if path.is_empty() {
         None
@@ -131,7 +137,11 @@ impl Chilpa {
             chilpa_appkit::reopen::on_reopen(move || {
                 let _ = reopened.send(MacAsked::Reopen);
             });
-            self.desktop.mac = MacDesktop { tell: Some(tx), asked: Some(rx) };
+            let media = tx.clone();
+            let now_playing = chilpa_appkit::nowplaying::start(move |command| {
+                let _ = media.send(MacAsked::Media(command));
+            });
+            self.desktop.mac = MacDesktop { tell: Some(tx), asked: Some(rx), now_playing, ..MacDesktop::default() };
             if self.tray_wanted() {
                 self.start_tray();
             }
@@ -235,6 +245,7 @@ impl Chilpa {
             for event in events {
                 self.mac_asked(event);
             }
+            self.tell_now_playing();
         }
         #[cfg(target_os = "linux")]
         {
@@ -291,6 +302,61 @@ impl Chilpa {
             MacAsked::Tray(Event::ToggleWindow) => self.desktop.requests.push_back(WindowRequest::Toggle),
             MacAsked::Tray(Event::QuitAsked) => self.desktop.requests.push_back(WindowRequest::QuitAsked),
             MacAsked::Reopen => self.desktop.requests.push_back(WindowRequest::Raise),
+            MacAsked::Media(command) => {
+                use chilpa_appkit::media::Command;
+                match command {
+                    Command::Play if !sounding => self.set_paused(false),
+                    Command::Pause if sounding => self.set_paused(true),
+                    Command::Play | Command::Pause => {}
+                    Command::Toggle => self.set_paused(sounding),
+                    Command::Next => self.next_track(),
+                    Command::Previous => {
+                        let (device, bit_perfect) = self.chosen_output();
+                        self.previous_track(&device, bit_perfect);
+                    }
+                    Command::Stop => self.stop(),
+                    Command::SeekBy(_) | Command::SetPosition(_) => {
+                        if let Some(to) = chilpa_appkit::media::seek_target(command, self.now.seconds, self.now.total_seconds) {
+                            self.seek(to);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Tells the system what plays and how, only when it changed.
+    #[cfg(target_os = "macos")]
+    fn tell_now_playing(&mut self) {
+        use chilpa_appkit::media::{Status, Track};
+        let status = match (self.now.playing, self.now.paused) {
+            (false, _) => Status::Stopped,
+            (true, true) => Status::Paused,
+            (true, false) => Status::Playing,
+        };
+        let track = self.now.playing.then(|| Track {
+            title: self.now.title.clone(),
+            artist: self.now.artist.clone(),
+            album: self.now.album.clone(),
+            duration: (self.now.total_seconds > 0.0).then(|| Duration::from_secs_f64(self.now.total_seconds)),
+            art_url: art_url(&self.now.artwork_path),
+        });
+        let position = Duration::from_secs_f64(self.now.seconds.max(0.0));
+        let Desktop { mac, seeked, .. } = &mut self.desktop;
+        let Some(now_playing) = mac.now_playing.as_mut() else { return };
+        let another = track != mac.told.0;
+        if another {
+            match &track {
+                Some(track) => now_playing.set_track(track),
+                None => now_playing.clear_track(),
+            }
+            mac.told.0 = track;
+        }
+        // The system carries on from the position it is given, so it is told
+        // on a change of state, of track or after a jump, not on every poll.
+        if another || mac.told.1 != Some(status) || seeked.take().is_some() {
+            now_playing.set_playback(status, (status != Status::Stopped).then_some(position));
+            mac.told.1 = Some(status);
         }
     }
 
