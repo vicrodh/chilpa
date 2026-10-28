@@ -13,6 +13,8 @@ Rectangle {
     property var openSource: function(action, id, text) { Navigation.goKey("source", id) }
 
     readonly property var panels: JSON.parse(Sources.snapshot || "{}").panels || []
+    // The same opt-out the sidebar's Devices entry follows.
+    readonly property bool devicesVisible: Prefs.rev >= 0 && SettingsModel.kept("navigation.devices") !== "false"
     readonly property var places: [
         { screen: "home", glyph: Icons.home, text: I18n.tr("Home", I18n.rev) },
         { screen: "library", glyph: Icons.columns3, text: I18n.tr("Library", I18n.rev) },
@@ -20,9 +22,10 @@ Rectangle {
         { screen: "albums", glyph: Icons.disc, text: I18n.tr("Albums", I18n.rev) },
         { screen: "tracks", glyph: Icons.music, text: I18n.tr("Tracks", I18n.rev) },
         { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) },
-        { screen: "openMedia", glyph: Icons.folderOpen, text: I18n.tr("Open media", I18n.rev) },
-        { screen: "playlistManager", glyph: Icons.playlist, text: I18n.tr("Playlists", I18n.rev) }
-    ].concat(panels.map(p => ({ screen: "source", key: p.id, text: p.name,
+        { screen: "openMedia", glyph: Icons.folderOpen, text: I18n.tr("Open media", I18n.rev) }
+    ].concat(devicesVisible ? [{ screen: "deviceSync", glyph: Icons.deviceMobile, text: I18n.tr("Devices", I18n.rev) }] : [])
+    .concat([{ screen: "playlistManager", glyph: Icons.playlist, text: I18n.tr("Playlists", I18n.rev) }])
+    .concat(panels.map(p => ({ screen: "source", key: p.id, text: p.name,
         glyph: SourceGlyphs.of(p.icon) || Icons[p.icon] || Icons.server,
         sourceIcon: p.icon_image || "",
         family: SourceGlyphs.of(p.icon) ? SourceGlyphs.font : "", music: p.music === true })))
