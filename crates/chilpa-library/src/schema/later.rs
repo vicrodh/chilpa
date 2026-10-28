@@ -200,3 +200,13 @@ CREATE TABLE analysis_results (
 );
 CREATE INDEX analysis_results_track ON analysis_results(track_id, run_id);
 "#;
+
+/// The test every Library count opens with, `present = 1 AND source_id IN
+/// (...)`, answered from one index that also carries the album each track
+/// joins to, so a count never visits the track rows. Refine asks it once
+/// per field and once more for the words on every suggestion round;
+/// `tracks_present` alone left the planner looking up the source per row.
+pub(super) const MIGRATION_V47: &str = r#"
+CREATE INDEX tracks_present_source_album ON tracks(present, source_id, album_id);
+ANALYZE;
+"#;

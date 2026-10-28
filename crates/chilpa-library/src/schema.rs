@@ -27,7 +27,7 @@ use later::*;
 use steps::*;
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 46;
+pub const VERSION: i64 = 47;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -35,7 +35,7 @@ pub const VERSION: i64 = 46;
 /// Each step runs once and is never edited after shipping: a database that
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
-const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30, MIGRATION_V31, MIGRATION_V32, MIGRATION_V33, MIGRATION_V34, MIGRATION_V35, MIGRATION_V36, MIGRATION_V37, MIGRATION_V38, MIGRATION_V39, MIGRATION_V40, MIGRATION_V41, MIGRATION_V42, revisions::MIGRATION_V43, metadata::MIGRATION_V44, device_sync::MIGRATION_V45, revisions::MIGRATION_V46];
+const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30, MIGRATION_V31, MIGRATION_V32, MIGRATION_V33, MIGRATION_V34, MIGRATION_V35, MIGRATION_V36, MIGRATION_V37, MIGRATION_V38, MIGRATION_V39, MIGRATION_V40, MIGRATION_V41, MIGRATION_V42, revisions::MIGRATION_V43, metadata::MIGRATION_V44, device_sync::MIGRATION_V45, revisions::MIGRATION_V46, MIGRATION_V47];
 
 /// Where the copy of a library about to be upgraded goes.
 ///
@@ -404,6 +404,27 @@ mod tests {
         let (title, art): (String, String) = db.query_row("SELECT title, artwork_path FROM play_context WHERE event_id = 1", [], |r| Ok((r.get(0)?, r.get(1)?))).unwrap();
         assert_eq!((title.as_str(), art.as_str()), ("Song", ""));
         assert_eq!(db.query_row("SELECT count(*) FROM play_events", [], |r| r.get::<_, i64>(0)).unwrap(), 1);
+    }
+
+    #[test]
+    fn a_library_at_forty_six_gains_the_count_index_and_keeps_its_tracks() {
+        let db = Connection::open_in_memory().unwrap();
+        stop_at(&db, 46);
+        db.execute_batch("INSERT INTO sources(id, provider, instance) VALUES (1, 'local', 'default');
+            INSERT INTO albums(id, title, album_artist) VALUES (1, 'Record', 'Artist');
+            INSERT INTO tracks(id, source_id, external_id, title, album_id, added_at)
+            VALUES (1, 1, '/a.flac', 'One', 1, 0), (2, 1, '/b.flac', 'Two', 1, 0);").unwrap();
+        let indexes = |db: &Connection| db.query_row("SELECT count(*) FROM sqlite_master WHERE type = 'index' AND name = 'tracks_present_source_album'", [], |r| r.get::<_, i64>(0)).unwrap();
+        assert_eq!(indexes(&db), 0, "version 46 did not have it");
+        migrate(&db).unwrap();
+        assert_eq!(db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).unwrap(), VERSION);
+        assert_eq!(indexes(&db), 1);
+        let columns: Vec<String> = db.prepare("PRAGMA index_info(tracks_present_source_album)").unwrap()
+            .query_map([], |r| r.get::<_, String>(2)).unwrap().map(|r| r.unwrap()).collect();
+        assert_eq!(columns, ["present", "source_id", "album_id"], "the order the eligibility test asks in");
+        assert_eq!(db.query_row("SELECT count(*) FROM tracks WHERE album_id = 1", [], |r| r.get::<_, i64>(0)).unwrap(), 2, "both tracks are still there");
+        migrate(&db).unwrap();
+        assert_eq!(indexes(&db), 1, "a second run leaves one index");
     }
 
     #[test]
