@@ -129,8 +129,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix="chilpa-macos-") as directory:
         work = Path(directory)
         for appearance in ("light", "dark"):
-            source = root / f"crates/chilpa-qt-kit/assets/app-icon-{appearance}.png"
-            assert digest(source) == digest(root / f"packaging/macos/AppIcon.icon/Assets/{appearance}.png")
+            # The .icns is made from the padded master (tools/icons/macos-icon): art that fills the canvas draws bigger than every other icon.
+            source = root / f"packaging/macos/icns-{appearance}.png"
+            assert digest(root / f"crates/chilpa-qt-kit/assets/app-icon-{appearance}.png") == digest(root / f"packaging/macos/AppIcon.icon/Assets/{appearance}.png")
             icons = work / f"{appearance}.iconset"
             iconset(source, icons)
             name = "AppIcon.icns" if appearance == "light" else "AppIcon-dark.icns"

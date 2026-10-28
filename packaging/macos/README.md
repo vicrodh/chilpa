@@ -19,6 +19,12 @@ icon catalog. With only Command Line Tools, omit `--require-native-icon`:
 the package carries both ICNS variants and the running app follows system
 appearance. Finder uses the light fallback in that configuration.
 
+The ICNS variants are made from `icns-light.png` and `icns-dark.png`: the
+artwork in a squircle body of 896 of 1024 points with a margin and a soft
+shadow, which is the size of QBZ's icon. Art that fills its canvas draws
+larger than every other icon in the Dock. `tools/icons/macos-icon` rebuilds
+them from `crates/chilpa-qt-kit/assets/app-icon-*.png` and needs Pillow.
+
 Packaging deploys Qt and its QML imports inside `Chilpa.app`, verifies that
 Mach-O dependencies do not reference a build machine, and produces ZIP and
 DMG downloads with SHA-256 checksums. These packages are signed ad hoc and are
