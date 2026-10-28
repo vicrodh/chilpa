@@ -43,7 +43,7 @@ pub fn trace_playback(scope: &str, event: &str, details: std::fmt::Arguments<'_>
 pub use chilpa_stream::{network, send_request};
 pub use chilpa_stream::{send_worker_request, worker_url_allowed, WorkerNetworkError};
 pub use chilpa_stream::download;
-pub use chilpa_stream::{fetch, fetch_oauth, post_text, permits_authorization, Fetch, FetchError, Fetched};
+pub use chilpa_stream::{fetch, fetch_oauth, post_body, permits_authorization, Fetch, FetchError, Fetched};
 pub use chilpa_stream::{call_server, Call, RangedRequest};
 
 use chilpa_models::SourceId;
