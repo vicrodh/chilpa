@@ -11,6 +11,8 @@ pub const MAX_ROOTS: usize = 256;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ScanProgress {
+    /// How many files the walk has found so far, before the total is known.
+    Discovered { found: usize },
     Counted { total: usize },
     Advanced { done: usize, total: usize },
     Phase { root: PathBuf, finalizing: bool },
@@ -19,8 +21,9 @@ pub enum ScanProgress {
     Failed(String),
 }
 
-// I retain one count, one progress update, one phase and one terminal event.
-// A hidden or busy frontend never builds a queue proportional to file count.
+// I retain one of each kind of event -- found, count, progress, phase --
+// and one terminal event. A hidden or busy frontend never builds a queue
+// proportional to file count.
 #[derive(Default)]
 struct Mailbox { events: Mutex<VecDeque<ScanProgress>>, terminal: AtomicBool }
 impl Mailbox {
@@ -84,24 +87,31 @@ fn run(db_path: PathBuf, roots: Vec<PathBuf>, artwork_cache: Option<PathBuf>, co
         Ok(lib) => lib,
         Err(error) => { events.send(ScanProgress::Failed(error.to_string())); return; }
     };
-    // I retain at most 256 counters, released with this worker.
-    let mut counts = Vec::with_capacity(roots.len());
+    // Every root is listed before any is read, so the bar has its total
+    // before it moves, and each listing is kept for the reader: the walk
+    // used to be done twice. What is held is one path per audio file under
+    // the roots, released with this worker.
+    let mut listings = Vec::with_capacity(roots.len());
+    let mut found = 0;
     for root in &roots {
-        let Some(count) = crate::scan::count_controlled(root, &*containers, &control) else {
+        let on_found = |under_root| events.send(ScanProgress::Discovered { found: found + under_root });
+        let Some(listing) = crate::scan::list_controlled(root, &*containers, &control, &on_found) else {
             accumulated.interrupted = true;
             events.send(ScanProgress::Interrupted(accumulated));
             return;
         };
-        counts.push(count);
+        found += listing.files.len();
+        listings.push(listing);
     }
-    let total = counts.iter().sum();
+    let total = found;
     events.send(ScanProgress::Counted { total });
     let mut previous = 0;
-    for (root, count) in roots.iter().zip(counts) {
+    for (root, listing) in roots.iter().zip(listings) {
+        let count = listing.files.len();
         events.send(ScanProgress::Phase { root: root.clone(), finalizing: false });
         let progress = |done| events.send(ScanProgress::Advanced { done: previous + done, total });
         let finalizing = || events.send(ScanProgress::Phase { root: root.clone(), finalizing: true });
-        match crate::scan::scan_controlled(&lib, root, artwork_cache.as_deref(), &progress, &*containers, &control, &finalizing) {
+        match crate::scan::scan_listing(&lib, root, artwork_cache.as_deref(), &progress, &*containers, &control, &finalizing, listing) {
             Ok(report) => {
                 previous += count;
                 accumulated.seen += report.seen;
@@ -158,6 +168,7 @@ mod tests {
     #[test]
     fn progress_mailbox_stays_bounded_when_nobody_polls() {
         let mailbox = Mailbox::default();
+        for found in 0..100_000 { mailbox.send(ScanProgress::Discovered { found }); }
         mailbox.send(ScanProgress::Counted { total: 100_000 });
         for done in 0..100_000 {
             mailbox.send(ScanProgress::Advanced { done, total: 100_000 });
@@ -165,10 +176,11 @@ mod tests {
         }
         mailbox.send(ScanProgress::Done(ScanReport::default()));
         let events = mailbox.poll();
-        assert_eq!(events.len(), 4);
-        assert!(matches!(events[0], ScanProgress::Counted { .. }));
-        assert!(matches!(events[1], ScanProgress::Advanced { done: 99_999, .. }));
-        assert!(matches!(events[3], ScanProgress::Done(_)));
+        assert_eq!(events.len(), 5);
+        assert!(matches!(events[0], ScanProgress::Discovered { found: 99_999 }));
+        assert!(matches!(events[1], ScanProgress::Counted { .. }));
+        assert!(matches!(events[2], ScanProgress::Advanced { done: 99_999, .. }));
+        assert!(matches!(events[4], ScanProgress::Done(_)));
         assert!(mailbox.poll().is_empty());
     }
 
@@ -182,7 +194,7 @@ mod tests {
             {
                 break;
             }
-            std::thread::sleep(std::time::Duration::from_millis(10));
+            std::thread::sleep(std::time::Duration::from_millis(1));
         }
         events
     }
@@ -222,6 +234,21 @@ mod tests {
         }
         drop(job);
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_long_walk_says_what_it_found_before_the_total_is_known() {
+        let dir = tempfile::tempdir().unwrap();
+        for n in 0..520 {
+            std::fs::write(dir.path().join(format!("{n:03}.flac")), b"not audio").unwrap();
+        }
+        let job = ScanJob::start(dir.path().join("lib.db"), dir.path().to_path_buf(), None);
+        let events = to_the_end(&job);
+        let found = events.iter().position(|e| matches!(e, ScanProgress::Discovered { found: 500 }));
+        let counted = events.iter().position(|e| matches!(e, ScanProgress::Counted { total: 520 }));
+        assert!(found.is_some() && found < counted, "the walk is watched before the total is known: {events:?}");
+        let lib = Library::open(&dir.path().join("lib.db")).unwrap();
+        assert_eq!(lib.track_count(false).unwrap(), 520);
     }
 
     #[test]

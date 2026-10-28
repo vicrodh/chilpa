@@ -3349,6 +3349,9 @@ msgstr "Busca letras pelo serviço de letras do Chilpa quando nem o arquivo nem 
 msgid "Looking for files…"
 msgstr "Procurando arquivos…"
 
+msgid "Looking for files… {} found"
+msgstr "Procurando arquivos… {} encontrados"
+
 msgid "Looking for lyrics…"
 msgstr "Procurando letras…"
 

@@ -3346,6 +3346,9 @@ msgstr "ファイルとそのソースに歌詞がない場合、Chilpaの歌詞
 msgid "Looking for files…"
 msgstr "ファイルを探しています…"
 
+msgid "Looking for files… {} found"
+msgstr "ファイルを探しています… {} 件見つかりました"
+
 msgid "Looking for lyrics…"
 msgstr "歌詞を探しています…"
 

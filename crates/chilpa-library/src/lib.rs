@@ -14,6 +14,7 @@ pub mod release_kind;
 pub mod scan;
 mod scan_sidecar;
 pub mod scan_job;
+pub mod scan_walk;
 pub mod schema;
 pub mod sidecar;
 pub mod smart;

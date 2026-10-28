@@ -81,8 +81,8 @@ impl Containers for NoContainers {
     }
 }
 
-const EXTENSIONS: &[&str] =
-    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "aac", "mp3", "ogg", "oga", "dsf", "dff"];
+pub use crate::scan_walk::Listing;
+use crate::scan_walk::{walk, walk_controlled};
 
 /// Scans a folder and its subfolders, leaving covers in `cache`.
 pub fn scan_root_with_cache(
@@ -121,14 +121,17 @@ pub fn scan_root_with(
 
 /// How many audio files live under a folder. It does not touch the database.
 pub fn count_audio_files(root: &Path) -> usize {
-    walk(root, &NoContainers).0.len()
+    walk(root, &NoContainers).files.len()
 }
 
 /// The same, counting a file that may hold tracks as one.
 pub fn count_files(root: &Path, containers: &dyn Containers) -> usize {
-    walk(root, containers).0.len()
+    walk(root, containers).files.len()
 }
 
+/// Walks the root and scans what it finds. A caller that already holds the
+/// listing, because it counted first, hands it to [`scan_listing`] instead
+/// of walking again.
 pub fn scan_controlled(
     lib: &Library,
     root: &Path,
@@ -137,6 +140,24 @@ pub fn scan_controlled(
     containers: &dyn Containers,
     control: &ScanControl,
     on_finalizing: &dyn Fn(),
+) -> rusqlite::Result<ScanReport> {
+    let listing = walk_controlled(root, containers, control, &|_| {});
+    scan_listing(lib, root, cache, on_progress, containers, control, on_finalizing, listing)
+}
+
+/// Scans the files of `listing`, taken from `root` by a walk that finished
+/// unless `control` stopped it, in which case nothing is read and the scan
+/// reports itself interrupted.
+#[allow(clippy::too_many_arguments)]
+pub fn scan_listing(
+    lib: &Library,
+    root: &Path,
+    cache: Option<&Path>,
+    on_progress: &dyn Fn(usize),
+    containers: &dyn Containers,
+    control: &ScanControl,
+    on_finalizing: &dyn Fn(),
+    listing: Listing,
 ) -> rusqlite::Result<ScanReport> {
     let mut report = ScanReport { root: root.to_path_buf(), ..ScanReport::default() };
     if control.stopped() { report.interrupted = true; return Ok(report); }
@@ -150,7 +171,7 @@ pub fn scan_controlled(
     }
     report.changed |= lib.set_root_reachable(root_id, true)?;
     let now = now_unix();
-    let (files, blocked) = walk_controlled(root, containers, control);
+    let Listing { files, blocked } = listing;
     if control.stopped() { report.interrupted = true; return Ok(report); }
     // The tracks whose record was named by their folder this time.
     let mut from_place: Vec<i64> = Vec::new();
@@ -823,46 +844,15 @@ impl ScanControl {
 }
 
 pub fn count_controlled(root: &Path, containers: &dyn Containers, control: &ScanControl) -> Option<usize> {
-    let count = walk_controlled(root, containers, control).0.len();
-    (!control.stopped()).then_some(count)
+    list_controlled(root, containers, control, &|_| {}).map(|listing| listing.files.len())
 }
 
-fn walk(root: &Path, containers: &dyn Containers) -> (Vec<PathBuf>, Vec<PathBuf>) {
-    walk_controlled(root, containers, &ScanControl::default())
-}
-
-fn walk_controlled(root: &Path, containers: &dyn Containers, control: &ScanControl) -> (Vec<PathBuf>, Vec<PathBuf>) {
-    let mut output = Vec::new();
-    let mut blocked = Vec::new();
-    let mut pending = vec![root.to_path_buf()];
-    while let Some(dir) = pending.pop() {
-        if control.stopped() { break; }
-        let Ok(entries) = std::fs::read_dir(&dir) else {
-            // An unreadable subfolder neither cancels the scan nor disables the
-            // prune for the rest: in QBZ a lost+found disabled it forever. What
-            // was known under it is left as it was, not taken for gone.
-            blocked.push(dir);
-            continue;
-        };
-        for entry in entries.flatten() {
-            if control.stopped() { break; }
-            let path = entry.path();
-            if path.is_dir() {
-                pending.push(path);
-            } else if is_audio(&path) || containers.may_hold(&path) {
-                output.push(path);
-            }
-        }
-    }
-    if !control.stopped() { output.sort(); }
-    (output, blocked)
-}
-
-fn is_audio(path: &Path) -> bool {
-    path.extension()
-        .and_then(|e| e.to_str())
-        .map(|e| EXTENSIONS.contains(&e.to_lowercase().as_str()))
-        .unwrap_or(false)
+/// The listing of a root, or nothing when `control` stopped the walk. It
+/// says how many files it has found so far through `on_found`, every few
+/// hundred, so a long walk can be watched.
+pub fn list_controlled(root: &Path, containers: &dyn Containers, control: &ScanControl, on_found: &dyn Fn(usize)) -> Option<Listing> {
+    let listing = walk_controlled(root, containers, control, on_found);
+    (!control.stopped()).then_some(listing)
 }
 
 #[cfg(target_family = "unix")]

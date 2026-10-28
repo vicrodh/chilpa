@@ -11,6 +11,7 @@ QtObject {
     property string status: ""
     property string phase: "idle"
     property bool canResume: false
+    property int found: 0
     property int done: 0
     property int total: 0
     property int readCount: 0
