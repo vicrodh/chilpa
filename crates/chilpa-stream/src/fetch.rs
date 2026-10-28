@@ -90,9 +90,9 @@ pub fn fetch_oauth(request:&Fetch)->Result<Fetched,FetchError> {
     ask(request,true)
 }
 
-/// Posts `body` as plain text, once, to an https address. For the one
+/// Posts `body`, once, to an https address, as `content_type`. For the one
 /// request a listener asks for by hand: sharing a reviewed report.
-pub fn post_text(request: &Fetch, body: &str) -> Result<Fetched, FetchError> {
+pub fn post_body(request: &Fetch, content_type: &str, body: &str) -> Result<Fetched, FetchError> {
     if !request.url.starts_with("https://") || request.authorization.is_some() { return Err(FetchError::Scheme); }
     let agent = crate::network::agent(ureq::Agent::config_builder()
         .timeout_global(Some(request.timeout))
@@ -102,7 +102,7 @@ pub fn post_text(request: &Fetch, body: &str) -> Result<Fetched, FetchError> {
         .middleware(crate::network::guard)
         .build());
     let reply = agent.post(request.url).header("User-Agent", request.user_agent).header("Accept", request.accept)
-        .header("Content-Type", "text/plain; charset=utf-8").send(body)
+        .header("Content-Type", content_type).send(body)
         .map_err(|e| match e {
             ureq::Error::RequireHttpsOnly(_) => FetchError::Scheme,
             other => FetchError::Transport(other.to_string()),
@@ -165,12 +165,12 @@ mod tests {
     use std::io::{Read, Write};
 
     #[test]
-    fn a_post_of_text_is_refused_off_https_and_with_a_credential() {
+    fn a_post_is_refused_off_https_and_with_a_credential() {
         let mut request = Fetch { url: "http://127.0.0.1:1/", user_agent: "t", accept: "text/plain", timeout: Duration::from_secs(1), max_bytes: 16, authorization: None };
-        assert!(matches!(post_text(&request, "x"), Err(FetchError::Scheme)));
+        assert!(matches!(post_body(&request, "text/plain", "x"), Err(FetchError::Scheme)));
         request.url = "https://example.invalid/";
         request.authorization = Some("Bearer x");
-        assert!(matches!(post_text(&request, "x"), Err(FetchError::Scheme)));
+        assert!(matches!(post_body(&request, "text/plain", "x"), Err(FetchError::Scheme)));
     }
 
     /// Answers one request with those bytes and hands back what was asked.

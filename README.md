@@ -276,6 +276,9 @@ and do not hold up navigation or playback:
   files and cache, and clear the displayed lyrics.
 - **MusicBrainz:** artist relationships and release metadata. Its switch in
   **Settings > Integrations** disables these requests.
+- **Log upload:** only when you press **Upload (public)** in the log viewer.
+  It posts the diagnostics bundle you see there to bpa.st, a public paste that
+  expires after a week, and shows its address. Nothing is sent otherwise.
 
 **Offline mode**, in the same settings section, blocks network access for
 Chilpa and its plugins, including artwork downloads, scrobbling, update checks,
