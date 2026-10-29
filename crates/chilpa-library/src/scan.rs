@@ -85,6 +85,8 @@ use crate::scan_walk::{walk, walk_controlled, Listing};
 
 /// What a scan says while it runs. Each does nothing unless a watcher asks.
 pub trait ScanWatch {
+    /// The root answered and is about to be walked.
+    fn walking(&self) {}
     /// How many audio files the walk has found so far, every few hundred.
     fn found(&self, _so_far: usize) {}
     /// The walk finished and `files` are about to be read.
@@ -211,8 +213,22 @@ pub fn scan_watched(
     }
     report.changed |= lib.set_root_reachable(root_id, true)?;
     let now = now_unix();
-    let Listing { files, blocked } = walk_controlled(root, containers, control, &|found| watch.found(found));
+    watch.walking();
+    let Listing { files, blocked, root_empty } = walk_controlled(root, containers, control, &|found| watch.found(found));
     if control.stopped() { report.interrupted = true; return Ok(report); }
+    // The walk's own look at the root, under the rule `root_answers` keeps:
+    // nothing at all in a root the library holds files from is a mount
+    // point with nothing mounted. A share that dropped after that check and
+    // is back for the one after reading would have this listing taken for
+    // an emptied folder.
+    if root_empty && crate::store::reach::root_holds_files(lib, root_id)? {
+        if lib.set_root_reachable(root_id, false)? {
+            report.changed = true;
+            watch.committed(0, written());
+        }
+        report.unreachable = true;
+        return Ok(report);
+    }
     watch.listed(files.len());
     // The tracks whose record was named by their folder this time.
     let mut from_place: Vec<i64> = Vec::new();
