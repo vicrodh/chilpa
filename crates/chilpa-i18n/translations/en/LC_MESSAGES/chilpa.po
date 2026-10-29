@@ -3349,6 +3349,9 @@ msgstr ""
 msgid "Looking for files…"
 msgstr ""
 
+msgid "Looking for files… {} found"
+msgstr ""
+
 msgid "Looking for lyrics…"
 msgstr ""
 

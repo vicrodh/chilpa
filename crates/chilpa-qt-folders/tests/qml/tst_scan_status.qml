@@ -25,6 +25,7 @@ TestCase {
         LibraryFolders.canResume = false
         LibraryFolders.unreachable = false
         LibraryFolders.action = ""
+        LibraryFolders.found = 0
         LibraryFolders.readCount = 2
         LibraryFolders.sameCount = 10
         LibraryFolders.missingCount = 0
@@ -49,6 +50,8 @@ TestCase {
         compare(banner.visible, true)
         compare(title(), "Looking for files…")
         compare(findChild(banner, "scanRoot").text, "/music")
+        LibraryFolders.found = 500
+        compare(title(), "Looking for files… 500 found")
         LibraryFolders.phase = "reading"
         LibraryFolders.done = 25; LibraryFolders.total = 100; LibraryFolders.progress = 0.25
         compare(title(), "Reading 25 of 100 files")

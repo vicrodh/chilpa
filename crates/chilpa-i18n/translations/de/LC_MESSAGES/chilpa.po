@@ -3349,6 +3349,9 @@ msgstr "Songtexte über Chilpas Songtext-Service suchen, wenn weder die Datei no
 msgid "Looking for files…"
 msgstr "Dateien werden gesucht…"
 
+msgid "Looking for files… {} found"
+msgstr "Dateien werden gesucht… {} gefunden"
+
 msgid "Looking for lyrics…"
 msgstr "Songtext wird gesucht…"
 

@@ -76,6 +76,8 @@ impl Chilpa {
                     }
                 }
                 self.scan = Some(job);
+                self.scan_runtime.shown_at = None;
+                (self.scan_runtime.written, self.scan_runtime.shown_written) = (0, 0);
                 self.scan_status = ScanStatus { running: true, phase: ScanPhase::Discovering,
                     root: if roots.len() == 1 { roots[0].to_string_lossy().into_owned() } else { String::new() },
                     revision: self.scan_status.revision.wrapping_add(1), ..ScanStatus::default() };
@@ -135,15 +137,24 @@ impl Chilpa {
         for event in events {
             use chilpa_library::ScanProgress;
             match event {
+                ScanProgress::Discovered { found } => self.scan_status.found = found,
                 ScanProgress::Counted { total } => self.scan_status.total = total,
                 ScanProgress::Advanced { done, total } => {
                     self.scan_status.done = done;
                     self.scan_status.total = total.max(done);
                 }
-                ScanProgress::Phase { root, finalizing } => {
+                ScanProgress::Committed { written, .. } => {
+                    self.scan_runtime.written = self.scan_runtime.written.max(written);
+                }
+                ScanProgress::Phase { root, stage } => {
+                    use chilpa_library::scan_job::ScanStage;
                     self.scan_status.root = root.to_string_lossy().into_owned();
                     if self.scan_status.phase != ScanPhase::Stopping {
-                        self.scan_status.phase = if finalizing { ScanPhase::Finalizing } else { ScanPhase::Reading };
+                        self.scan_status.phase = match stage {
+                            ScanStage::Listing => ScanPhase::Discovering,
+                            ScanStage::Reading => ScanPhase::Reading,
+                            ScanStage::Finalizing => ScanPhase::Finalizing,
+                        };
                     }
                 }
                 ScanProgress::Done(report) => {
@@ -178,7 +189,23 @@ impl Chilpa {
             }
             self.scan_status.revision = self.scan_status.revision.wrapping_add(1);
         }
+        self.show_scan_writes();
         &self.scan_status
+    }
+
+    /// Shows what the running scan wrote as it lands, instead of all at the
+    /// end: the first rows at once, then at most every `SHOW_EVERY`, and
+    /// only when rows were written since they were last shown. It is looked
+    /// at on every poll while a scan runs, so a change held back by the
+    /// interval waits for the interval, not for the next batch.
+    fn show_scan_writes(&mut self) {
+        let runtime = &mut self.scan_runtime;
+        if self.scan.is_none() || runtime.written <= runtime.shown_written { return; }
+        let now = std::time::Instant::now();
+        if runtime.shown_at.is_some_and(|at| now.duration_since(at) < scan_state::SHOW_EVERY) { return; }
+        runtime.shown_at = Some(now);
+        runtime.shown_written = runtime.written;
+        self.mark_library_changed();
     }
 }
 
