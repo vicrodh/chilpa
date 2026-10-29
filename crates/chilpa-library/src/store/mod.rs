@@ -36,6 +36,9 @@ macro_rules! track_art {
 
 pub mod albums;
 mod album_groups;
+mod albumless;
+#[cfg(test)]
+mod albumless_tests;
 mod album_technical;
 pub mod artwork;
 pub mod advisory;

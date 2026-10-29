@@ -238,6 +238,7 @@ impl Stars {
 /// no allocation.
 pub(crate) struct Prepared {
     off: bool,
+    albumless: bool,
     queries: Vec<(usize, String)>,
     years: Vec<i32>,
     genres: Vec<String>,
@@ -267,6 +268,7 @@ impl Prepared {
             .filter_map(|key| key.strip_prefix(crate::source_opener::PROVIDER).and_then(|rest| rest.strip_prefix(':')).map(String::from)).collect();
         Self {
             off: f.performer.is_some(),
+            albumless: f.albumless,
             queries: f.queries.iter().enumerate().map(|(at, q)| (at, q.trim().to_lowercase())).filter(|(at, q)| *at != 4 && !q.is_empty()).collect(),
             years: f.years.iter().copied().chain(f.year).collect(),
             genres: folded(f.genres.iter().chain(&f.genre).cloned()),
@@ -288,7 +290,7 @@ impl Prepared {
     /// Whether an item passes, as the database's `WHERE` would pass a track
     /// of its own: the same columns, chosen keys and extras.
     pub(crate) fn passes(&self, item: &SourceItem, stars: &Stars) -> bool {
-        if self.off { return false; }
+        if self.off || (self.albumless && item.album != 0) { return false; }
         let names = &item.folded;
         let holds = |values: &[String], query: &str| values.iter().any(|value| value.contains(query));
         for (column, query) in &self.queries {

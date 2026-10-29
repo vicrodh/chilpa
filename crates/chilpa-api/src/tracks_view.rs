@@ -92,7 +92,7 @@ pub(crate) fn metadata_group(by: &str, year: Option<i32>, genre: &str, label: &s
 /// The group a row belongs to, which is what its header says.
 pub fn group_of(group: &str, row: &TrackRow) -> String {
     match group {
-        "album" => row.album.clone(),
+        "album" => if row.album_id == 0 { chilpa_i18n::t("No album tracks") } else { row.album.clone() },
         "artist" => row.artist.clone(),
         "name" => chilpa_library::letter_of(&row.title),
         "plays" => crate::library_sources::plays::label(row.plays as i64),

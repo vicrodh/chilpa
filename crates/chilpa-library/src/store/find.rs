@@ -109,7 +109,7 @@ impl Library {
         let mut stmt = self.db.prepare(
             "SELECT s.rowid
              FROM (SELECT rowid, rank FROM track_search WHERE track_search MATCH ?1 LIMIT ?3) s
-             JOIN tracks t ON t.id = s.rowid AND t.present = 1 AND t.album_id IS NOT NULL
+             JOIN tracks t ON t.id = s.rowid AND t.present = 1
              JOIN sources source ON source.id = t.source_id AND source.enabled = 1
              ORDER BY s.rank
              LIMIT ?2",
@@ -124,7 +124,7 @@ impl Library {
             let clause = vec!["t.id IN (SELECT tc.track_id FROM composers c JOIN track_composers tc ON tc.composer_id = c.id
                 WHERE c.name LIKE ? ESCAPE '\\')"; words.len()].join(" AND ");
             let sql = format!("SELECT t.id FROM tracks t JOIN sources s ON s.id = t.source_id AND s.enabled = 1
-                WHERE t.present = 1 AND t.album_id IS NOT NULL AND {clause}
+                WHERE t.present = 1 AND {clause}
                 ORDER BY t.album_id, t.disc_number, t.track_number LIMIT ?");
             let mut args: Vec<Box<dyn ToSql>> = words.iter().map(|w| Box::new(w.clone()) as Box<dyn ToSql>).collect();
             args.push(Box::new(limit as i64));

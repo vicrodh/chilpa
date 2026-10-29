@@ -3811,6 +3811,9 @@ msgstr "Для этого источника нет модулей главно�
 msgid "No active parametric EQ filters were found."
 msgstr "Активные фильтры параметрического EQ не найдены."
 
+msgid "No album tracks"
+msgstr ""
+
 msgid "No albums found"
 msgstr "Альбомы не найдены"
 
@@ -3984,6 +3987,9 @@ msgstr "Нет треков под этот фильтр."
 
 msgid "No tracks match your search."
 msgstr "Нет треков по вашему запросу."
+
+msgid "No tracks without an album match these filters."
+msgstr ""
 
 msgid "No year"
 msgstr "Без года"

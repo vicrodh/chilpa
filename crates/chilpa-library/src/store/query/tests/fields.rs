@@ -89,8 +89,9 @@ fn quality_uses_the_best_present_track_and_preserves_unknowns() {
 
 #[test]
 fn bucket_values_and_play_bounds_are_bound_parameters() {
+    // Quality binds each rank once for records and once for tracks without an album.
     for (query, count) in [("plays:0", 1), ("plays:1,10", 2), ("plays:1..10", 2), ("plays:..5", 1),
-        ("-plays:10..", 1), ("type:album", 1), ("-type:single,ep", 2), ("quality:cd", 1), ("-quality:hires,dsd", 2)] {
+        ("-plays:10..", 1), ("type:album", 1), ("-type:single,ep", 2), ("quality:cd", 2), ("-quality:hires,dsd", 4)] {
         let (sql, args) = parse(query).unwrap().compile(0);
         assert_eq!(args.len(), count, "{query}: {sql}");
         assert_eq!(sql.matches('?').count(), count, "{query}: {sql}");
@@ -99,6 +100,10 @@ fn bucket_values_and_play_bounds_are_bound_parameters() {
     let (sql, args) = Node::Is(Field::Type, Values::Any(vec![hostile.into()])).compile(0);
     assert!(!sql.contains(hostile));
     assert_eq!(args.len(), 1);
+    let (sql, args) = Node::Is(Field::Quality, Values::Any(vec!["cd".into(), hostile.into()])).compile(0);
+    assert!(!sql.contains(hostile));
+    assert_eq!(args.len(), 2, "only the known quality rank is bound in both branches");
+    assert_eq!(sql.matches('?').count(), 2);
 }
 
 #[test]

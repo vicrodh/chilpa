@@ -3805,6 +3805,9 @@ msgstr "このソースで使えるホームのモジュールはありません
 msgid "No active parametric EQ filters were found."
 msgstr "有効なパラメトリックEQフィルターが見つかりませんでした。"
 
+msgid "No album tracks"
+msgstr ""
+
 msgid "No albums found"
 msgstr "アルバムが見つかりません"
 
@@ -3978,6 +3981,9 @@ msgstr "このフィルターに一致するトラックはありません。"
 
 msgid "No tracks match your search."
 msgstr "検索に一致するトラックはありません。"
+
+msgid "No tracks without an album match these filters."
+msgstr ""
 
 msgid "No year"
 msgstr "年なし"

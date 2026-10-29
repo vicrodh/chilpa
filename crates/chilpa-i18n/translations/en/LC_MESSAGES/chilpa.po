@@ -3808,6 +3808,9 @@ msgstr ""
 msgid "No active parametric EQ filters were found."
 msgstr ""
 
+msgid "No album tracks"
+msgstr "No album tracks"
+
 msgid "No albums found"
 msgstr ""
 
@@ -3981,6 +3984,9 @@ msgstr ""
 
 msgid "No tracks match your search."
 msgstr ""
+
+msgid "No tracks without an album match these filters."
+msgstr "No tracks without an album match these filters."
 
 msgid "No year"
 msgstr "No year"

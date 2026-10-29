@@ -304,6 +304,43 @@ mod tests {
     }
 
     #[test]
+    fn a_saved_track_without_a_record_keeps_its_catalog_id_and_queue_path() {
+        let catalog = Catalog::new();
+        let path = "plugin:guest:track:loose";
+        let id = {
+            let mut inner = catalog.lock();
+            let id = inner.store.track_id(path);
+            let track = inner.store.tracks.get_mut(&id).unwrap();
+            track.plugin = "guest".into();
+            track.title = "Loose song".into();
+            track.artist = "Solo".into();
+            track.playable = true;
+            track.metadata = json!({"kind":"track", "ref":"track:loose", "year":1997});
+            inner.store.shelves.insert("guest section:tracks".into(), super::super::store::Shelf {
+                tracks: vec![id], ..Default::default()
+            });
+            id
+        };
+        let items = catalog.integrated_items(&[], &["guest".into()]);
+        assert_eq!(items.len(), 1);
+        assert_eq!((items[0].track, items[0].album), (id, 0));
+        let index = std::rc::Rc::new(crate::library_sources::SourceIndex::new(items, Vec::new()));
+        let mut reader = crate::Reader::of(chilpa_library::Library::in_memory().unwrap());
+        reader.catalog = Some(catalog.clone());
+        let filter = crate::Filter { albumless: true, ..Default::default() };
+        let (facets, snapshot) = reader.refresh_using(&filter, crate::TrackOrder::Title, || true,
+            ((1, vec![("guest".into(), false, true)]), index)).unwrap();
+        assert_eq!(snapshot.ids, [id]);
+        assert_eq!(snapshot.totals.albums, 0);
+        assert!(facets.albums.is_empty());
+        assert_eq!(reader.paths(&snapshot.ids), [path]);
+        let tracks = catalog.tracks_by_ids(&snapshot.ids);
+        let row = super::super::view::row_of(&tracks[0].0, tracks[0].1.clone());
+        assert_eq!((row.id, row.album_id, row.path.as_str(), row.available), (id, 0, path, true));
+        assert!(!crate::track_can_go(&row, "library", "", "album"));
+    }
+
+    #[test]
     fn a_saved_track_on_a_saved_record_is_read_once() {
         let mut store = Store::default();
         let album = store.card_id("guest", "album:1");

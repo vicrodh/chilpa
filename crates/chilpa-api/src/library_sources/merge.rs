@@ -49,7 +49,7 @@ pub(crate) fn key_of(item: &SourceItem) -> OrderKey {
 /// I name snapshot sections and loaded rows with the same labels.
 pub(crate) fn group_label(key: &OrderKey, by: &str) -> String {
     match by {
-        "album" => key.album.clone(),
+        "album" => if key.album_id == 0 { chilpa_i18n::t("No album tracks") } else { key.album.clone() },
         "artist" => key.artist.clone(),
         "year" | "decade" | "genre" | "label" | "composer" =>
             crate::tracks_view::metadata_group(by, key.group_year, &key.genre, &key.label, &key.composer),

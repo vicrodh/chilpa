@@ -83,6 +83,7 @@ TitledFlow {
         ScrollMemory { key: "gallery" }
         LibraryPanes { width: parent.width; height: Metrics.panesHeight }
         LibraryToolbar { width: parent.width; tracks: most }
+        LibraryTrackCollection { width: parent.width; height: Metrics.panesHeight; model: most; active: visible }
         SortButton { value: "artist"; options: [{ value: "artist", text: "Artist" }, { value: "year", text: "Year" }] }
         AlbumRow { width: parent.width; albumId: 1; title: "Low Orbit"; subtitle: "Mora Vale"; year: "2019"; art: "" }
         AlbumRow {

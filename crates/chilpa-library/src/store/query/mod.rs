@@ -160,14 +160,14 @@ impl Node {
 
 /// The ids of the tracks that hold a field's values, read from its index.
 fn set(field: Field, values: &Values, now: i64, args: &mut Args) -> String {
-    let tracks = "SELECT t.id FROM tracks t JOIN albums a ON a.id = t.album_id WHERE";
+    let tracks = "SELECT t.id FROM tracks t LEFT JOIN albums a ON a.id = t.album_id WHERE";
     match (field, values) {
         (Field::Plays, Values::Any(_) | Values::Range(..)) => buckets::plays(values, args),
         (Field::Type | Field::Quality, Values::Any(names)) => buckets::records(field, names, args),
         (Field::Genre | Field::ExactGenre, Values::Missing) => "SELECT id FROM tracks WHERE id NOT IN (SELECT track_id FROM track_genres)".into(),
         (Field::Composer, Values::Missing) => "SELECT id FROM tracks WHERE id NOT IN (SELECT track_id FROM track_composers)".into(),
         (Field::Label, Values::Missing) => "SELECT id FROM tracks WHERE coalesce(label, '') = ''".into(),
-        (Field::Year, Values::Missing) => format!("{tracks} a.year IS NULL"),
+        (Field::Year, Values::Missing) => format!("{tracks} CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END IS NULL"),
         (Field::Genre | Field::ExactGenre, Values::Any(names)) => {
             args.extend(names.iter().map(|n| Box::new(n.clone()) as Box<dyn ToSql>));
             format!("SELECT tg.track_id FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE g.name COLLATE NOCASE IN ({})", marks(names.len()))
@@ -181,8 +181,8 @@ fn set(field: Field, values: &Values, now: i64, args: &mut Args) -> String {
             format!("SELECT id FROM tracks WHERE label COLLATE NOCASE IN ({})", marks(names.len()))
         }
         (Field::Artist, Values::Any(names)) => {
-            args.extend(names.iter().map(|n| Box::new(n.clone()) as Box<dyn ToSql>));
-            format!("SELECT id FROM tracks WHERE album_id IN (SELECT album_id FROM album_artist_rollup WHERE artist COLLATE NOCASE IN ({}))", marks(names.len()))
+            for _ in 0..2 { args.extend(names.iter().map(|n| Box::new(n.clone()) as Box<dyn ToSql>)); }
+            format!("{tracks} {}", super::albumless::artist_condition(&format!("COLLATE NOCASE IN ({})", marks(names.len()))))
         }
         (Field::Album | Field::Title | Field::Text | Field::Words, Values::Any(words)) => {
             // Every word starts a word of the title, the artist or the
@@ -202,7 +202,7 @@ fn set(field: Field, values: &Values, now: i64, args: &mut Args) -> String {
         }
         (Field::Year, Values::Any(years)) => {
             let years: Vec<i64> = years.iter().filter_map(|y| y.trim().parse().ok()).collect();
-            let sql = format!("{tracks} a.year IN ({})", marks(years.len()));
+            let sql = format!("{tracks} CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END IN ({})", marks(years.len()));
             args.extend(years.into_iter().map(|y| Box::new(y) as Box<dyn ToSql>));
             sql
         }
@@ -213,7 +213,7 @@ fn set(field: Field, values: &Values, now: i64, args: &mut Args) -> String {
             sql
         }
         (Field::Year | Field::Rating | Field::Added, Values::Range(from, to)) => {
-            let column = match field { Field::Year => "a.year", Field::Rating => ALBUM_STARS, _ => "t.added_at" };
+            let column = match field { Field::Year => "CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END", Field::Rating => ALBUM_STARS, _ => "t.added_at" };
             let mut parts = Vec::new();
             if let Some(from) = from { parts.push(format!("{column} >= ?")); args.push(Box::new(*from)); }
             if let Some(to) = to { parts.push(format!("{column} <= ?")); args.push(Box::new(*to)); }

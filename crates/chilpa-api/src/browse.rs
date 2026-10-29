@@ -731,7 +731,7 @@ impl Reader {
         let chosen: HashSet<i64> = self.lib.grouped_album_ids(&ids).unwrap_or(ids).into_iter().collect();
         albums.retain(|a| a.key.parse().is_ok_and(|id| chosen.contains(&id)));
         let mut artists = if left == Filter::default() {
-            read!(self.lib.facet_artists(&left))
+            read!(self.lib.facet_record_artists(&left))
         } else { read!(self.lib.facet_artists_for_albums(&left_ids)) };
         if self.lib.group_album_versions() {
             if !current() { return None; }
@@ -747,6 +747,12 @@ impl Reader {
                 for artist in &mut artists { artist.albums = groups.get(&artist.label.to_lowercase()).map_or(0, HashSet::len); }
             }
         }
+        for loose in read!(self.lib.facet_albumless_artists(&left)) {
+            if let Some(artist) = artists.iter_mut().find(|entry| entry.key.eq_ignore_ascii_case(&loose.key)) {
+                artist.albums += loose.albums;
+            } else { artists.push(loose); }
+        }
+        artists.sort_by(|a, b| chilpa_library::store::order_keys::nocase(&a.label, &b.label));
         let sources = read!(match shared { Some(sources) => Ok(sources.clone()), None => self.lib.facet_sources() });
         let years = read!(self.lib.facet_years_matching(&crate::library_query::facet_filter(f, "year")));
         Some(Facets {
@@ -760,6 +766,14 @@ impl Reader {
 }
 
 impl Chilpa {
+    /// The Library header counts real records and every eligible track.
+    pub fn library_summary(&self, totals: Totals) -> String {
+        let (albums, songs) = (totals.albums.to_string(), totals.tracks.to_string());
+        format!("{} · {}",
+            self.tf("{} album", "{} albums", totals.albums as i64, &[&albums]),
+            self.tf("{} song", "{} songs", totals.tracks as i64, &[&songs]))
+    }
+
     /// A second, read-only connection to an initialized library. Reports
     /// its own open errors: the main connection may still be healthy.
     pub fn reader(&self) -> Option<Reader> {

@@ -1493,4 +1493,6 @@ impl Drop for Chilpa {
 }
 
 #[cfg(test)]
+mod albumless_tests;
+#[cfg(test)]
 mod lib_tests;

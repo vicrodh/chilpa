@@ -3808,6 +3808,9 @@ msgstr "Er zijn geen startpaginamodules beschikbaar voor deze bron."
 msgid "No active parametric EQ filters were found."
 msgstr "Er zijn geen actieve parametrische EQ-filters gevonden."
 
+msgid "No album tracks"
+msgstr ""
+
 msgid "No albums found"
 msgstr "Geen albums gevonden"
 
@@ -3981,6 +3984,9 @@ msgstr "Geen nummers komen overeen met dit filter."
 
 msgid "No tracks match your search."
 msgstr "Geen nummers komen overeen met je zoekopdracht."
+
+msgid "No tracks without an album match these filters."
+msgstr ""
 
 msgid "No year"
 msgstr "Geen jaar"

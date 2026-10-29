@@ -6,7 +6,7 @@ impl Library {
     /// Counts tracks, using the same eligibility clause as the Library.
     pub fn query_count(&self, filter: &Filter) -> rusqlite::Result<usize> {
         let (clause,args) = browse::clause(filter);
-        self.connection().query_row(&format!("SELECT count(*) FROM tracks t JOIN albums a ON a.id=t.album_id {clause}"),
+        self.connection().query_row(&format!("SELECT count(*) FROM tracks t LEFT JOIN albums a ON a.id=t.album_id {clause}"),
             params_from_iter(args.iter()), |r| r.get::<_,i64>(0).map(|n| n as usize))
     }
 
@@ -14,9 +14,12 @@ impl Library {
     pub fn query_vocabulary(&self) -> rusqlite::Result<Vec<(Field,Vec<String>)>> {
         let fields = [Field::Artist,Field::Composer,Field::Genre,Field::Label];
         let mut out: Vec<_> = fields.into_iter().map(|f| (f,Vec::new())).collect();
-        let eligible = "t.present=1 AND t.source_id IN (SELECT id FROM sources WHERE enabled=1) AND t.album_id IN (SELECT id FROM albums)";
+        let eligible = "t.present=1 AND t.source_id IN (SELECT id FROM sources WHERE enabled=1)";
+        let loose_artists = super::albumless::ARTISTS;
         let sql = format!("SELECT 0, min(r.artist) FROM album_artist_rollup r WHERE EXISTS
             (SELECT 1 FROM tracks t WHERE t.album_id=r.album_id AND {eligible}) GROUP BY r.artist COLLATE NOCASE
+            UNION SELECT 0, min(credits.artist) FROM ({loose_artists}) credits JOIN tracks t ON t.id=credits.track_id
+            WHERE {eligible} GROUP BY credits.artist COLLATE NOCASE
             UNION SELECT 1, c.name FROM composers c JOIN track_composers tc ON tc.composer_id=c.id
             JOIN tracks t ON t.id=tc.track_id WHERE {eligible}
             UNION SELECT 2, g.name FROM genres g JOIN track_genres tg ON tg.genre_id=g.id
@@ -44,7 +47,7 @@ impl Library {
             columns.push(format!("count(*) FILTER (WHERE {})", if rest.is_empty() { "1" } else { rest }));
             args.extend(own);
         }
-        self.connection().query_row(&format!("SELECT {} FROM tracks t JOIN albums a ON a.id=t.album_id WHERE {BASE}", columns.join(", ")),
+        self.connection().query_row(&format!("SELECT {} FROM tracks t LEFT JOIN albums a ON a.id=t.album_id WHERE {BASE}", columns.join(", ")),
             params_from_iter(args.iter()), |r| (0..filters.len()).map(|i| r.get::<_,i64>(i).map(|n| n as usize)).collect())
     }
 
@@ -55,13 +58,16 @@ impl Library {
     /// off the tracks a listener can reach, once, and nothing else walks
     /// the tracks per field.
     pub fn query_facet_counts(&self, high: &Filter, low: Option<&Filter>, field: Field, typed: &str) -> rusqlite::Result<(usize,Vec<(String,usize)>)> {
+        let loose_artists = super::albumless::ARTISTS;
+        let artist_join = format!("LEFT JOIN album_artist_rollup r ON r.album_id=a.id
+            LEFT JOIN ({loose_artists}) loose ON loose.track_id=t.id");
         let (name,join) = match field {
-            Field::Artist => ("r.artist","JOIN album_artist_rollup r ON r.album_id=a.id"),
+            Field::Artist => ("coalesce(r.artist,loose.artist)",artist_join.as_str()),
             Field::Composer => ("c.name","JOIN track_composers tc ON tc.track_id=t.id JOIN composers c ON c.id=tc.composer_id"),
             Field::Genre => ("g.name","JOIN track_genres tg ON tg.track_id=t.id JOIN genres g ON g.id=tg.genre_id"),
             Field::Label => ("t.label",""), _ => return Ok((0,Vec::new())),
         };
-        let eligible="t.present=1 AND t.source_id IN (SELECT id FROM sources WHERE enabled=1) AND t.album_id IN (SELECT id FROM albums)";
+        let eligible="t.present=1 AND t.source_id IN (SELECT id FROM sources WHERE enabled=1)";
         // The names that match what was typed come first and in order. An
         // artist or a label is spelled several ways, and the one shown is the
         // least among the rows a listener can reach, as `query_vocabulary`
@@ -69,7 +75,10 @@ impl Library {
         // wrote. A composer or a genre is one row per spelling, so only
         // whether a track still holds it is asked, down the list until three do.
         let (names,holds)=match field {
-            Field::Artist => (format!("SELECT min(artist) AS name FROM album_artist_rollup WHERE instr(chilpa_fold(artist),?)>0 AND album_id IN (SELECT t.album_id FROM tracks t WHERE {eligible}) GROUP BY artist COLLATE NOCASE"), "1".to_string()),
+            Field::Artist => (format!("SELECT min(artist) AS name FROM (
+                SELECT artist FROM album_artist_rollup WHERE album_id IN (SELECT t.album_id FROM tracks t WHERE {eligible})
+                UNION ALL SELECT credits.artist FROM ({loose_artists}) credits JOIN tracks t ON t.id=credits.track_id WHERE {eligible}
+                ) WHERE instr(chilpa_fold(artist),?)>0 GROUP BY artist COLLATE NOCASE"), "1".to_string()),
             Field::Composer => ("SELECT name FROM composers WHERE instr(chilpa_fold(name),?)>0".to_string(),
                 format!("EXISTS (SELECT 1 FROM track_composers tc JOIN tracks t ON t.id=tc.track_id WHERE tc.composer_id=(SELECT id FROM composers WHERE name=cand.name) AND {eligible})")),
             Field::Genre => ("SELECT name FROM genres WHERE instr(chilpa_fold(name),?)>0".to_string(),
@@ -83,7 +92,7 @@ impl Library {
         let (low_not,low_total) = match low {
             Some(low) => {
                 let (clause,low_args) = browse::clause(low); args.extend(low_args);
-                (format!("AND NOT ({})",condition(&clause)),format!("SELECT count(*) FROM tracks t JOIN albums a ON a.id=t.album_id {clause}"))
+                (format!("AND NOT ({})",condition(&clause)),format!("SELECT count(*) FROM tracks t LEFT JOIN albums a ON a.id=t.album_id {clause}"))
             }
             None => (String::new(),"SELECT 0".to_string()),
         };
@@ -92,7 +101,7 @@ impl Library {
         let sql = format!("WITH cand AS MATERIALIZED (SELECT name FROM ({names}) ORDER BY chilpa_fold(name),name),
             choices AS MATERIALIZED (SELECT name FROM cand WHERE {holds} LIMIT 3),
             counts AS (SELECT choices.name, count(DISTINCT t.id) AS n FROM choices
-                JOIN tracks t JOIN albums a ON a.id=t.album_id {join}
+                JOIN tracks t LEFT JOIN albums a ON a.id=t.album_id {join}
                 WHERE {name}=choices.name COLLATE NOCASE AND ({high_cond}) {low_not}
                 GROUP BY choices.name COLLATE NOCASE)
             SELECT NULL, ({low_total}) UNION ALL

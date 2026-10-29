@@ -33,9 +33,9 @@ pub(super) fn columns(order: TrackOrder, grouped_by: &str) -> String {
     let title = matches!(order, Title | TitleDescending | Plays | PlaysAscending | Duration | DurationDescending | Disc | Performer) || grouped_by == "name";
     let pick = |on: bool, column: &str| if on { column.to_string() } else { "NULL".to_string() };
     [
-        pick(matches!(order, Artist | ArtistDescending), "a.album_artist"),
+        pick(matches!(order, Artist | ArtistDescending), "coalesce(a.album_artist, t.artist)"),
         pick(record, "a.title"),
-        pick(matches!(order, Artist | ArtistDescending | Year | YearDescending), "a.year"),
+        pick(matches!(order, Artist | ArtistDescending | Year | YearDescending), "CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END"),
         pick(place, "coalesce(t.release_disc, t.disc_number)"),
         pick(place, "t.track_number"),
         pick(title, "t.title"),

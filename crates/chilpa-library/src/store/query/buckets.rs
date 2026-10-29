@@ -29,8 +29,10 @@ pub(super) fn records(field: Field, names: &[String], args: &mut Args) -> String
             }).collect();
             let sql = format!("SELECT album_id FROM tracks WHERE present = 1 AND album_id IS NOT NULL
                 GROUP BY album_id HAVING max(chilpa_quality(external_id, codec, bit_depth, sample_rate_hz)) IN ({})", marks(ranks.len()));
-            args.extend(ranks.into_iter().map(|rank| Box::new(rank) as Box<dyn ToSql>));
-            sql
+            let loose = format!("SELECT id FROM tracks WHERE album_id IS NULL
+                AND chilpa_quality(external_id, codec, bit_depth, sample_rate_hz) IN ({})", marks(ranks.len()));
+            for _ in 0..2 { args.extend(ranks.iter().map(|rank| Box::new(*rank) as Box<dyn ToSql>)); }
+            return format!("SELECT id FROM tracks WHERE album_id IN ({sql}) UNION {loose}");
         }
         _ => unreachable!(),
     };

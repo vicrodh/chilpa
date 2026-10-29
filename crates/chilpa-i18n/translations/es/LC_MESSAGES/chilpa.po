@@ -3808,6 +3808,9 @@ msgstr "Esta fuente no tiene módulos disponibles para Inicio."
 msgid "No active parametric EQ filters were found."
 msgstr "No se encontraron filtros paramétricos activos."
 
+msgid "No album tracks"
+msgstr "Pistas sin álbum"
+
 msgid "No albums found"
 msgstr "No se encontraron álbumes"
 
@@ -3981,6 +3984,9 @@ msgstr "No hay pistas que coincidan con este filtro."
 
 msgid "No tracks match your search."
 msgstr "Ninguna pista coincide con tu búsqueda."
+
+msgid "No tracks without an album match these filters."
+msgstr "Ninguna pista sin álbum coincide con estos filtros."
 
 msgid "No year"
 msgstr "Sin año"

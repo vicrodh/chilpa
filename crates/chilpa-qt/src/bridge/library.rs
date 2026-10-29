@@ -22,6 +22,7 @@ pub mod qobject {
         #[qproperty(i32, remote_rev)]
         #[qproperty(i32, remote_art_rev)]
         #[qproperty(bool, busy)]
+        #[qproperty(bool, albumless)]
         #[qproperty(QString, summary)]
         #[qproperty(QStringList, source_keys)] #[qproperty(QStringList, source_labels)]
         #[qproperty(QStringList, source_counts)] #[qproperty(QStringList, excluded_sources)]
@@ -47,6 +48,8 @@ pub mod qobject {
         #[qsignal]
         #[cxx_name = "orderChanged"]
         fn order_changed(self: Pin<&mut Library>);
+
+        #[qinvokable] fn show_albumless(self: Pin<&mut Library>, on: bool);
 
         #[qinvokable] fn clear_column(self: Pin<&mut Library>, column: &QString);
 
@@ -87,6 +90,7 @@ pub struct LibraryRust {
     remote_rev: i32,
     remote_art_rev: i32,
     busy: bool,
+    albumless: bool,
     summary: QString,
     source_keys: QStringList, source_labels: QStringList, source_counts: QStringList, source_icons: QStringList,
     excluded_sources: QStringList, qualities: QStringList, formats: QStringList,
@@ -113,6 +117,13 @@ fn strings(items: impl IntoIterator<Item = String>) -> QStringList {
 }
 
 impl qobject::Library {
+    pub fn show_albumless(mut self: Pin<&mut Self>, on: bool) {
+        if !browse::write(|s| s.filter.show_albumless(on)) { return; }
+        self.as_mut().set_albumless(on);
+        self.as_mut().set_queries(strings(browse::read(|s| s.filter.queries.clone())));
+        self.refresh();
+    }
+
     pub fn group_artist_albums(mut self: Pin<&mut Self>, on: bool) {
         if app::with(|api| api.set_group_artist_versions(on)) {
             self.as_mut().set_artist_group_versions(on);
@@ -178,6 +189,7 @@ impl qobject::Library {
 
     pub fn clear(mut self: Pin<&mut Self>) {
         browse::write(|s| s.filter = Filter::default());
+        self.as_mut().set_albumless(false);
         self.as_mut().set_query_text(QString::default());
         self.as_mut().set_queries(strings(vec![String::new(); ORDER.len()]));
         self.as_mut().set_excluded_sources(QStringList::default());
@@ -270,14 +282,7 @@ impl qobject::Library {
             s.facets = Rc::new(facets);
             s.snapshot = Rc::new(snapshot);
         });
-        let (albums, songs) = (totals.albums.to_string(), totals.tracks.to_string());
-        let line = app::with(|api| {
-            format!(
-                "{} · {}",
-                api.tf("{} album", "{} albums", totals.albums as i64, &[&albums]),
-                api.tf("{} song", "{} songs", totals.tracks as i64, &[&songs])
-            )
-        });
+        let line = app::with(|api| api.library_summary(totals));
         self.as_mut().set_summary(QString::from(&line));
         self.as_mut().set_busy(false);
         let next = self.rev().wrapping_add(1);

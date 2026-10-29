@@ -120,6 +120,7 @@ Item {
             }
             SortButton {
                 objectName: "libraryGrouping"
+                visible: !Library.albumless
                 anchors.verticalCenter: parent.verticalCenter
                 glyph: Icons.stack2
                 directed: false
@@ -182,7 +183,7 @@ Item {
         refineMode: toggle.refineMode
         room: page.height - y - Metrics.contentBottom
         summary: tracks.summary
-        columns: Component { LibraryPanes { shown: page.panes } }
+        columns: Component { LibraryPanes { shown: Library.albumless ? page.panes.filter(c => c !== "album") : page.panes } }
     }
 
     ResizeHandle {
@@ -212,6 +213,9 @@ Item {
         x: head.x
         width: head.width
         tracks: tracks
+        enabled: !Library.busy
+        albumless: Library.albumless
+        onAlbumlessToggled: Library.showAlbumless(!Library.albumless)
         columns: page.listColumns
         onColumnsChosen: (columns) => { page.listColumns = columns; SettingsModel.keep("ui.library.listColumns", columns.join(",") || "-") }
     }
@@ -220,7 +224,7 @@ Item {
     AlbumGrid {
         id: result
         objectName: "libraryAlbums"
-        visible: records.albums > 0 || !Library.busy
+        visible: !Library.albumless && (records.albums > 0 || !Library.busy)
         anchors.top: toolbar.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
@@ -234,11 +238,17 @@ Item {
         model: records
         onOpen: (albumId) => Navigation.go("album", albumId)
     }
-    ZeroResults { anchors.top: toolbar.bottom; x: head.x; active: records.albums === 0 && Library.queryText !== "" && !Library.busy }
+    LibraryTrackCollection {
+        id: looseTracks
+        objectName: "albumlessList"
+        anchors.fill: result
+        model: tracks
+    }
+    ZeroResults { anchors.top: toolbar.bottom; x: head.x; active: !Library.albumless && records.albums === 0 && Library.queryText !== "" && !Library.busy }
     ShelfSkeleton {
         anchors.fill: result
-        visible: Library.busy && records.albums === 0
-        tracks: !page.grid
+        visible: Library.busy && (Library.albumless ? !looseTracks.published : records.albums === 0)
+        tracks: Library.albumless || !page.grid
         oneRow: false
         count: Metrics.shelfLimit
     }

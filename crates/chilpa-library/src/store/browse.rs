@@ -32,6 +32,8 @@ pub struct Filter {
     /// An album credit or any artist contributing to the album.
     pub artist: Option<String>,
     pub album: Option<i64>,
+    /// Only tracks whose metadata names no album; never a synthetic record.
+    pub albumless: bool,
     /// Multi-selection from Library Explorer. Singular fields remain for
     /// callers that open one artist or album directly.
     pub years: Vec<i32>,
@@ -63,6 +65,18 @@ pub struct Filter {
 }
 
 impl Filter {
+    /// Switch the track collection without leaving an incompatible album choice.
+    pub fn show_albumless(&mut self, on: bool) -> bool {
+        if self.albumless == on { return false; }
+        self.albumless = on;
+        if on {
+            self.album = None;
+            self.albums.clear();
+            self.queries[6].clear();
+        }
+        true
+    }
+
     /// Applies a Library Explorer column and invalidates every choice to its right.
     pub fn choose(&mut self, at: usize, keys: &[String]) {
         match at {
@@ -153,10 +167,10 @@ impl TrackOrder {
     fn keys(self) -> &'static str {
         match self {
             TrackOrder::Artist => {
-                "a.album_artist COLLATE NOCASE, a.year, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number"
+                "coalesce(a.album_artist, t.artist) COLLATE NOCASE, CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number"
             }
             TrackOrder::Album => "a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number",
-            TrackOrder::Year => "a.year, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number",
+            TrackOrder::Year => "CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number",
             TrackOrder::Added => "t.added_at DESC, coalesce(t.release_disc, t.disc_number), t.track_number",
             // Without the spaces a tag left before it: a title that starts
             // with one is not before the alphabet.
@@ -166,10 +180,10 @@ impl TrackOrder {
             TrackOrder::DurationDescending => "t.duration_ms DESC, ltrim(t.title) COLLATE NOCASE",
             TrackOrder::Disc => "coalesce(t.release_disc, t.disc_number), t.track_number, t.title COLLATE NOCASE",
             TrackOrder::ArtistDescending => {
-                "a.album_artist COLLATE NOCASE DESC, a.year, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number"
+                "coalesce(a.album_artist, t.artist) COLLATE NOCASE DESC, CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number"
             }
             TrackOrder::TitleDescending => "ltrim(t.title) COLLATE NOCASE DESC",
-            TrackOrder::YearDescending => "a.year DESC, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number",
+            TrackOrder::YearDescending => "CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END DESC, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number",
             TrackOrder::Performer => "t.artist COLLATE NOCASE, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number, t.title COLLATE NOCASE",
             TrackOrder::AlbumDescending => "a.title COLLATE NOCASE DESC, coalesce(t.release_disc, t.disc_number), t.track_number",
             TrackOrder::AddedAscending => "t.added_at, coalesce(t.release_disc, t.disc_number), t.track_number",
@@ -294,7 +308,7 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
         external_id: r.get(1)?,
         title: r.get(2)?,
         artist: r.get(3)?,
-        album: r.get(4)?,
+        album: r.get::<_, Option<String>>(4)?.unwrap_or_default(),
         album_id: r.get(5)?,
         disc_number: r.get::<_, Option<i64>>(6)?.map(|n| n as u16),
         track_number: r.get::<_, Option<i64>>(7)?.map(|n| n as u16),
@@ -319,28 +333,33 @@ const ALBUMS: &str = "FROM albums a JOIN album_rollup ar ON ar.album_id = a.id W
     AND EXISTS (SELECT 1 FROM tracks member JOIN sources visible ON visible.id = member.source_id
                 WHERE member.album_id = a.id AND member.present = 1 AND visible.enabled = 1)";
 
-const FACET_FROM: &str = "FROM tracks t JOIN albums a ON a.id = t.album_id";
+const FACET_FROM: &str = "FROM tracks t LEFT JOIN albums a ON a.id = t.album_id";
 
 const FROM: &str = "FROM tracks t
-     JOIN albums a ON a.id = t.album_id
+     LEFT JOIN albums a ON a.id = t.album_id
      LEFT JOIN track_rollup r ON r.track_id = t.id";
 
 /// The `WHERE` a filter makes, and its parameters in order.
 pub(super) fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
     let mut sql = String::from("WHERE t.present = 1 AND t.source_id IN (SELECT id FROM sources WHERE enabled = 1)");
     let mut args: Vec<Box<dyn ToSql>> = Vec::new();
+    if f.albumless { sql.push_str(" AND t.album_id IS NULL"); }
     for (column, query) in f.queries.iter().enumerate() {
         if query.trim().is_empty() { continue; }
         let pattern = format!("%{}%", query.trim().replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_"));
+        if column == 5 {
+            sql.push_str(&format!(" AND {}", super::albumless::artist_condition("LIKE ? ESCAPE '\\'")));
+            args.push(Box::new(pattern.clone()));
+            args.push(Box::new(pattern));
+            continue;
+        }
         sql.push_str(match column {
-            0 => " AND CAST(a.year AS TEXT) LIKE ? ESCAPE '\\'",
+            0 => " AND CAST(CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END AS TEXT) LIKE ? ESCAPE '\\'",
             1 => " AND t.id IN (SELECT tq.track_id FROM track_genres tq JOIN genres gq ON gq.id = tq.genre_id WHERE gq.name LIKE ? ESCAPE '\\')",
             2 => " AND t.label LIKE ? ESCAPE '\\'",
             3 => " AND t.id IN (SELECT cq.track_id FROM track_composers cq JOIN composers cc ON cc.id = cq.composer_id WHERE cc.name LIKE ? ESCAPE '\\')",
             // A rating's header search narrows its column, not the tracks.
             4 => continue,
-            5 => " AND a.id IN (SELECT album_id FROM album_artist_rollup
-                WHERE artist LIKE ? ESCAPE '\\')",
             _ => " AND a.title LIKE ? ESCAPE '\\'",
         });
         args.push(Box::new(pattern));
@@ -349,7 +368,7 @@ pub(super) fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
     let mut years = f.years.clone();
     if let Some(year) = f.year.filter(|year| !years.contains(year)) { years.push(year); }
     if !years.is_empty() {
-        sql.push_str(&format!(" AND a.year IN ({})", marks(years.len())));
+        sql.push_str(&format!(" AND CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END IN ({})", marks(years.len())));
         args.extend(years.into_iter().map(|v| Box::new(v) as Box<dyn ToSql>));
     }
     let mut genres = f.genres.clone();
@@ -380,9 +399,8 @@ pub(super) fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
     let mut artists = f.artists.clone();
     if let Some(artist) = f.artist.as_ref().filter(|artist| !artists.iter().any(|v| v.eq_ignore_ascii_case(artist))) { artists.push(artist.clone()); }
     if !artists.is_empty() {
-        sql.push_str(&format!(" AND a.id IN (SELECT album_id FROM album_artist_rollup
-            WHERE artist COLLATE NOCASE IN ({}))", marks(artists.len())));
-        args.extend(artists.into_iter().map(|v| Box::new(v) as Box<dyn ToSql>));
+        sql.push_str(&format!(" AND {}", super::albumless::artist_condition(&format!("COLLATE NOCASE IN ({})", marks(artists.len())))));
+        for _ in 0..2 { args.extend(artists.iter().cloned().map(|v| Box::new(v) as Box<dyn ToSql>)); }
     }
     let mut albums = f.albums.clone();
     if let Some(album) = f.album.filter(|album| !albums.contains(album)) { albums.push(album); }
@@ -428,8 +446,9 @@ pub(super) fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
         }
     }
     if let Some(name) = &f.performer {
-        sql.push_str(" AND t.id IN (SELECT track_id FROM album_members
-            WHERE artist = ? COLLATE NOCASE)");
+        sql.push_str(&format!(" AND (t.id IN (SELECT track_id FROM album_members WHERE artist = ? COLLATE NOCASE)
+            OR t.id IN (SELECT track_id FROM ({}) WHERE artist = ? COLLATE NOCASE))", super::albumless::ARTISTS));
+        args.push(Box::new(name.clone()));
         args.push(Box::new(name.clone()));
     }
     if let Some(query) = &f.query {
@@ -467,8 +486,8 @@ impl Library {
     /// I count years under the other fields' conditions.
     pub fn facet_years_matching(&self, filter: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
         let (filter, args) = self.browse_clause(filter);
-        let sql = format!("SELECT a.year, count(DISTINCT a.id) {FACET_FROM} {filter}
-            AND a.year IS NOT NULL GROUP BY a.year ORDER BY a.year DESC");
+        let sql = format!("SELECT CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END, count(DISTINCT coalesce(a.id, -t.id)) {FACET_FROM} {filter}
+            AND CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END IS NOT NULL GROUP BY CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END ORDER BY CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END DESC");
         let mut stmt = self.db.prepare(&sql)?;
         let rows = stmt.query_map(params_from_iter(args.iter()), |r| {
             let year: i32 = r.get(0)?;
@@ -497,7 +516,7 @@ impl Library {
         left.albums.clear();
         let (filter, args) = self.browse_clause(&left);
         let sql = format!(
-            "SELECT g.name, count(DISTINCT a.id) {FACET_FROM}
+            "SELECT g.name, count(DISTINCT coalesce(a.id, -t.id)) {FACET_FROM}
              JOIN track_genres tg ON tg.track_id = t.id
              JOIN genres g ON g.id = tg.genre_id
              {filter} GROUP BY g.name ORDER BY g.name COLLATE NOCASE"
@@ -512,7 +531,7 @@ impl Library {
         left.queries[2..].fill(String::new());
         let (filter, args) = self.browse_clause(&left);
         let sql = format!(
-            "SELECT min(t.label), count(DISTINCT a.id) {FACET_FROM}
+            "SELECT min(t.label), count(DISTINCT coalesce(a.id, -t.id)) {FACET_FROM}
              {filter} AND t.label IS NOT NULL AND t.label <> ''
              GROUP BY t.label COLLATE NOCASE ORDER BY 1 COLLATE NOCASE"
         );
@@ -526,7 +545,7 @@ impl Library {
         left.queries[3..].fill(String::new());
         let (filter, args) = self.browse_clause(&left);
         let sql = format!(
-            "SELECT c.name, count(DISTINCT a.id) {FACET_FROM}
+            "SELECT c.name, count(DISTINCT coalesce(a.id, -t.id)) {FACET_FROM}
              JOIN track_composers tc ON tc.track_id = t.id
              JOIN composers c ON c.id = tc.composer_id
              {filter} GROUP BY c.name ORDER BY c.name COLLATE NOCASE"
@@ -543,7 +562,7 @@ impl Library {
         left.queries[4..].fill(String::new());
         let (filter, args) = self.browse_clause(&left);
         let sql = format!(
-            "SELECT COALESCE(ra.stars, 0) AS stars, count(DISTINCT a.id) {FACET_FROM}
+            "SELECT COALESCE(ra.stars, 0) AS stars, count(DISTINCT coalesce(a.id, -t.id)) {FACET_FROM}
              LEFT JOIN album_ratings ra ON ra.album_id = a.id
              {filter} GROUP BY stars ORDER BY stars DESC"
         );
@@ -561,7 +580,7 @@ impl Library {
     }
 
     /// Album credits and contributing artists the columns to their left leave.
-    pub fn facet_artists(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
+    pub fn facet_record_artists(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
         let mut left = f.clone();
         left.queries[5..].fill(String::new());
         left.artist = None;
@@ -577,6 +596,18 @@ impl Library {
         }
         let albums: Vec<i64> = self.facet_albums(&left)?.iter().filter_map(|a| a.key.parse().ok()).collect();
         self.facet_artists_for_albums(&albums)
+    }
+
+    /// Record credits and artists whose tracks have no record.
+    pub fn facet_artists(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
+        let mut artists = self.facet_record_artists(f)?;
+        for loose in self.facet_albumless_artists(f)? {
+            if let Some(artist) = artists.iter_mut().find(|a| a.key.eq_ignore_ascii_case(&loose.key)) {
+                artist.albums += loose.albums;
+            } else { artists.push(loose); }
+        }
+        artists.sort_by(|a, b| super::order_keys::nocase(&a.label, &b.label));
+        Ok(artists)
     }
 
     /// I reuse the albums already read for the artist column's left side.
@@ -595,7 +626,7 @@ impl Library {
         left.queries[6].clear();
         let (filter, args) = self.browse_clause(&left);
         let sql = format!(
-            "SELECT a.id, a.title, a.year, count(t.id) {FACET_FROM} {filter}
+            "SELECT a.id, a.title, a.year, count(t.id) {FACET_FROM} {filter} AND a.id IS NOT NULL
              GROUP BY a.id ORDER BY a.title COLLATE NOCASE, a.album_artist COLLATE NOCASE, a.year"
         );
         let mut stmt = self.db.prepare(&sql)?;
