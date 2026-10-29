@@ -103,6 +103,36 @@ fn a_root_smaller_than_the_first_batch_still_says_its_records_are_written() {
 }
 
 #[test]
+fn availability_and_what_reconciliation_takes_away_are_said_as_written() {
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path().join("music");
+    std::fs::create_dir(&root).unwrap();
+    for index in 0..3 { wave(&root.join(format!("{index}.wav"))); }
+    let library = Library::in_memory().unwrap();
+    scan::scan_root(&library, &root).unwrap();
+    let scan = || {
+        let commits = Commits::default();
+        scan::scan_watched(&library, &root, None, &NoContainers, &ScanControl::default(), &commits).unwrap();
+        commits.done.take()
+    };
+
+    // Back with every file as it was: only its availability changed.
+    library.set_root_reachable(library.roots().unwrap()[0].id, false).unwrap();
+    let back = scan();
+    assert!(matches!(back[..], [(3, written)] if written > 0), "{back:?}");
+
+    // One file gone: reading writes nothing, reconciliation does.
+    std::fs::remove_file(root.join("0.wav")).unwrap();
+    let gone = scan();
+    assert!(matches!(gone[..], [(2, 0), (2, written)] if written > 0), "{gone:?}");
+
+    // The folder stops answering.
+    std::fs::rename(&root, directory.path().join("parked")).unwrap();
+    let away = scan();
+    assert!(matches!(away[..], [(0, written)] if written > 0), "{away:?}");
+}
+
+#[test]
 fn unchanged_checks_are_quiet_but_reachability_and_renames_are_reported() {
     let directory = tempfile::tempdir().unwrap();
     let first = directory.path().join("first.wav");
