@@ -152,10 +152,15 @@ impl Chilpa {
                         self.mark_library_changed();
                     }
                 }
-                ScanProgress::Phase { root, finalizing } => {
+                ScanProgress::Phase { root, stage } => {
+                    use chilpa_library::scan_job::ScanStage;
                     self.scan_status.root = root.to_string_lossy().into_owned();
                     if self.scan_status.phase != ScanPhase::Stopping {
-                        self.scan_status.phase = if finalizing { ScanPhase::Finalizing } else { ScanPhase::Reading };
+                        self.scan_status.phase = match stage {
+                            ScanStage::Listing => ScanPhase::Discovering,
+                            ScanStage::Reading => ScanPhase::Reading,
+                            ScanStage::Finalizing => ScanPhase::Finalizing,
+                        };
                     }
                 }
                 ScanProgress::Done(report) => {
