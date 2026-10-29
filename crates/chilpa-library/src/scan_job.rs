@@ -7,14 +7,24 @@
 //! and the files read every root before the current one, so "Reading N of
 //! M" never goes back and M grows when the next root has been listed.
 //!
-//! Memory (ADR-018): the worker holds the listing of one root at a time --
-//! a path per audio file under it and one per folder it could not read --
-//! and, while reading, the set of the paths that could be read, which the
-//! reconciliation needs, of the same length. Both are bounded by that
-//! root's file count (at about 100 bytes a path, some 10 MB each for
-//! 100,000 files) and released when the root's scan returns, before the
-//! next root is listed. The progress mailbox holds one event of each kind.
-//! The facade runs one worker at a time.
+//! Memory (ADR-018), for the one worker the facade runs at a time. While a
+//! root is scanned the worker holds, all at once:
+//!
+//! - the root's listing: a path per audio or container file under it, and
+//!   one per folder it could not open;
+//! - the paths that could be read, one per file and one per track inside a
+//!   container, and the files that could not be looked at;
+//! - an entry per folder for its sidecar, parsed when there is one;
+//! - during reconciliation, every row the library holds for the root: its
+//!   path, its track and, for a track inside a file, that file's path.
+//!
+//! All of it grows with the root's file count, and with the tracks inside
+//! its containers, and is released when the root's scan returns, before
+//! the next root is listed. At the peak that is three copies of every path:
+//! estimated, not measured, at some 45 MB for 100,000 files with 100-byte
+//! paths and 75 MB with 200-byte ones. It is an estimate, not a limit:
+//! there is no byte cap and no inventory kept on disk instead. The progress
+//! mailbox holds one event of each kind.
 
 use crate::scan::{Containers, NoContainers, ScanControl, ScanReport, ScanWatch};
 use crate::store::Library;
