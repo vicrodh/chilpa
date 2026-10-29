@@ -877,22 +877,24 @@ fn save_cover(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusqlite:
 /// Not the ones under a subfolder that could not be opened: whether they
 /// are still there is unknown, so they stay listed and cannot be played,
 /// like a folder that does not answer (ADR-017 §2). A subfolder that was
-/// never readable, a `lost+found`, holds none and changes nothing.
+/// never readable, a `lost+found`, holds none and changes nothing. A track
+/// inside a file is where that file is: its own path names no place on disk.
 fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>, blocked: &[PathBuf]) -> rusqlite::Result<usize> {
     let mut stmt = lib
         .db
-        .prepare("SELECT path, track_id FROM scanned_files WHERE root_id = ?1")?;
-    let rows: Vec<(String, Option<i64>)> = stmt
-        .query_map(params![root_id], |r| Ok((r.get(0)?, r.get(1)?)))?
+        .prepare("SELECT path, track_id, container FROM scanned_files WHERE root_id = ?1")?;
+    let rows: Vec<(String, Option<i64>, Option<String>)> = stmt
+        .query_map(params![root_id], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
         .collect::<rusqlite::Result<_>>()?;
     let mut missing = 0;
-    for (path, track) in rows {
+    for (path, track, container) in rows {
         // A set and not a list: every row was compared against every file,
         // which on a rescan of a large library is its size squared.
         if seen.contains(&path) {
             continue;
         }
-        if blocked.iter().any(|dir| Path::new(&path).starts_with(dir)) {
+        let place = Path::new(container.as_deref().unwrap_or(&path));
+        if blocked.iter().any(|dir| place.starts_with(dir)) {
             if let Some(id) = track {
                 lib.db.execute("UPDATE tracks SET reachable = 0 WHERE id = ?1 AND reachable <> 0", params![id])?;
             }
