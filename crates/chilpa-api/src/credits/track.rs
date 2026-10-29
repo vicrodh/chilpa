@@ -43,6 +43,7 @@ fn is_artist(roles: &[String]) -> bool { roles.iter().any(|r| matches!(r.as_str(
 
 impl TrackCredits {
     pub(crate) fn source(artist: &str, metadata: &Value, plugin: &str) -> Self {
+        let artist = artist.trim();
         let mut credits = Self::default();
         for value in entries(&metadata["artists"]) {
             let roles = roles(value);
@@ -71,9 +72,13 @@ impl TrackCredits {
             }
         }
         if credits.artists.is_empty() { add(&mut credits.artists, person(artist, metadata["artist_ref"].as_str().unwrap_or_default(), plugin)); }
-        else if let Some(main) = credits.artists.iter_mut().find(|p| p.name.eq_ignore_ascii_case(artist.trim())) {
-            if let Some(routed) = person(&main.name, metadata["artist_ref"].as_str().unwrap_or_default(), plugin) {
-                if routed.key.contains(" native:artist:") { *main = routed; }
+        else if let Some(main) = credits.artists.iter_mut().find(|p| artist.len() <= MAX_NAME_BYTES && p.name.split_whitespace().map(str::to_lowercase).eq(artist.split_whitespace().map(str::to_lowercase))) {
+            // Raw role credits can retain legacy uppercase names after the
+            // source has supplied the canonical display name and identity.
+            let name = if main.name.chars().any(char::is_lowercase) && !artist.chars().any(char::is_lowercase) { &main.name } else { artist };
+            if let Some(routed) = person(name, metadata["artist_ref"].as_str().unwrap_or_default(), plugin) {
+                if routed.key.contains(" native:artist:") || !main.key.contains(" native:artist:") { *main = routed; }
+                else { main.name = routed.name; }
             }
         }
         for value in entries(&metadata["composers"]) { add(&mut credits.composers, entry(value, plugin)); }
@@ -115,6 +120,54 @@ fn escape(text: &str) -> String { text.replace('&', "&amp;").replace('<', "&lt;"
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn canonical_primary_names_survive_raw_role_credits_without_promoting_technical_staff() {
+        let metadata = json!({"artist_ref":"artist:lead","performers":
+            "LEAD ARTIST, MainArtist, Vocalist, Producer, Composer - Backing Artist, BackgroundVocalist, Producer - Mastering Person, MasteringEngineer - Editing Person, VideoScriptEditor, DigitalEditingEngineer, RecordingEngineer - Guest Artist, FeaturedArtist"});
+        let credits = TrackCredits::source("Lead Artist", &metadata, "fixture");
+        assert_eq!(credits.artists.len(), 1);
+        assert_eq!(credits.artists[0].name, "Lead Artist");
+        assert_eq!(credits.artists[0].key, "fixture native:artist:lead");
+        assert_eq!(credits.featured.iter().map(|person| person.name.as_str()).collect::<Vec<_>>(), ["Guest Artist"]);
+        let document = credits.document();
+        assert!(document["artist_html"].as_str().unwrap().contains("Lead Artist"));
+        for name in ["LEAD ARTIST", "Backing Artist", "Mastering Person", "Editing Person"] {
+            assert!(!document["html"].as_str().unwrap().contains(name));
+        }
+    }
+
+    #[test]
+    fn canonical_casing_preserves_existing_artist_routes_when_the_primary_ref_is_absent() {
+        let metadata = json!({"artists":[{"name":"LEAD ARTIST","ref":"artist:lead"}]});
+        let credits = TrackCredits::source("Lead Artist", &metadata, "fixture");
+        assert_eq!(credits.artists[0].name, "Lead Artist");
+        assert_eq!(credits.artists[0].key, "fixture native:artist:lead");
+        let credits = TrackCredits::source("Lead Artist", &json!({"performers":"LEAD ARTIST, MainArtist"}), "fixture");
+        assert_eq!(credits.artists[0].name, "Lead Artist");
+        assert_eq!(credits.artists[0].key, "fixture matching-artist-v3:Lead Artist");
+    }
+
+    #[test]
+    fn established_casing_and_acronyms_are_preserved_without_title_case_guesses() {
+        for name in ["ABBA", "AC/DC", "k.d. lang", "deadmau5", "LCD Soundsystem", "Édith Piaf"] {
+            let metadata = json!({"artist_ref":"artist:lead","performers":format!("{}, MainArtist", name.to_uppercase())});
+            assert_eq!(TrackCredits::source(name, &metadata, "fixture").artists[0].name, name);
+        }
+        let metadata = json!({"artists":[{"name":"Lead Artist","ref":"artist:lead"}]});
+        assert_eq!(TrackCredits::source("LEAD ARTIST", &metadata, "fixture").artists[0].name, "Lead Artist");
+    }
+
+    #[test]
+    fn canonical_names_match_unicode_casing_and_repeated_whitespace() {
+        let credits = TrackCredits::source("  Édith Piaf  ", &json!({"artist_ref":"artist:lead","performers":"ÉDITH  PIAF, MainArtist"}), "fixture");
+        assert_eq!(credits.artists[0].name, "Édith Piaf");
+        assert_eq!(credits.artists[0].key, "fixture native:artist:lead");
+        let metadata = json!({"artists":[{"name":"Lead Artist","ref":"artist:lead"}]});
+        let credits = TrackCredits::source(&"L".repeat(MAX_NAME_BYTES + 1), &metadata, "fixture");
+        assert_eq!(credits.artists[0].name, "Lead Artist");
+        assert_eq!(credits.artists[0].key, "fixture native:artist:lead");
+    }
 
     #[test]
     fn performing_featured_and_writing_credits_keep_distinct_identity_routes() {
