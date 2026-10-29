@@ -9,7 +9,7 @@ superelipse of exponent 4.4: what the latest QBZ's icon measures (body 64 to
 960, 62 px of margin; its corners are as round as that exponent).
 
 Usage: tools/icons/macos-icon
-Needs Pillow. Writes packaging/macos/icns-light.png and icns-dark.png.
+Needs Pillow. Writes crates/chilpa-qt-kit/assets/app-icon-macos-light.png and app-icon-macos-dark.png.
 """
 import subprocess
 from pathlib import Path
@@ -79,6 +79,6 @@ def master(appearance):
 
 
 for appearance in ("light", "dark"):
-    out = ROOT / f"packaging/macos/icns-{appearance}.png"
+    out = ROOT / f"crates/chilpa-qt-kit/assets/app-icon-macos-{appearance}.png"
     master(appearance).save(out, optimize=True)
     print(f"macos-icon: {out.relative_to(ROOT)}")

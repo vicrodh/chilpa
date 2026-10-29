@@ -130,7 +130,7 @@ def main():
         work = Path(directory)
         for appearance in ("light", "dark"):
             # The .icns is made from the padded master (tools/icons/macos-icon): art that fills the canvas draws bigger than every other icon.
-            source = root / f"packaging/macos/icns-{appearance}.png"
+            source = root / f"crates/chilpa-qt-kit/assets/app-icon-macos-{appearance}.png"
             assert digest(root / f"crates/chilpa-qt-kit/assets/app-icon-{appearance}.png") == digest(root / f"packaging/macos/AppIcon.icon/Assets/{appearance}.png")
             icons = work / f"{appearance}.iconset"
             iconset(source, icons)
