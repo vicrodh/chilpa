@@ -179,6 +179,10 @@ impl ScanWatch for RootWatch<'_> {
     }
     fn listed(&self, files: usize) {
         self.files.set(files);
+        // The found count is said every few hundred files; its last word for
+        // this root is the whole listing, or the next root would start from
+        // the last round number.
+        self.events.send(ScanProgress::Discovered { found: self.before + files });
         self.events.send(ScanProgress::Counted { total: self.before + files });
         self.events.send(ScanProgress::Phase { root: self.root.to_path_buf(), stage: ScanStage::Reading });
     }
@@ -246,6 +250,18 @@ mod tests {
         assert!(mailbox.poll().is_empty());
     }
 
+    #[test]
+    fn a_root_listed_says_every_file_it_found() {
+        let mailbox = Mailbox::default();
+        let root = PathBuf::from("music");
+        let watch = RootWatch { events: &mailbox, root: &root, before: 600, written: 0, files: Cell::new(0), wrote: Cell::new(0) };
+        watch.found(500);
+        watch.listed(530);
+        let events = mailbox.poll();
+        assert!(events.contains(&ScanProgress::Discovered { found: 1_130 }), "{events:?}");
+        assert!(events.contains(&ScanProgress::Counted { total: 1_130 }), "{events:?}");
+    }
+
     /// Waits for the scan to finish and returns everything it reported.
     fn to_the_end(job: &ScanJob) -> Vec<ScanProgress> {
         let limit = std::time::Instant::now() + std::time::Duration::from_secs(10);
@@ -310,7 +326,8 @@ mod tests {
         }
         let job = ScanJob::start(dir.path().join("lib.db"), dir.path().to_path_buf(), None);
         let events = to_the_end(&job);
-        let found = events.iter().position(|e| matches!(e, ScanProgress::Discovered { found: 500 }));
+        // Coalesced: a poll sees 500, or the whole 520 said when the listing ends.
+        let found = events.iter().position(|e| matches!(e, ScanProgress::Discovered { found } if *found >= 500));
         let counted = events.iter().position(|e| matches!(e, ScanProgress::Counted { total: 520 }));
         assert!(found.is_some() && found < counted, "the walk is watched before the total is known: {events:?}");
         // The commit notice is coalesced, so a poll sees the latest; one
