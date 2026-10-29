@@ -15,7 +15,7 @@ pub(crate) fn newer(candidate: &str, installed: &str) -> bool {
 }
 
 pub(crate) fn native(root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &PluginRepositories,
-    input: &Value, state: &mut Value, automatic: bool, active: &std::sync::atomic::AtomicBool) -> Result<(), String> {
+    input: &Value, state: &mut Value, automatic: bool, active: &std::sync::atomic::AtomicBool) -> Result<Option<String>, String> {
     let repo = input["repository"].as_str().unwrap_or("");
     let id = input["id"].as_str().unwrap_or("");
     let entry = repositories.cached(repo)?.into_iter().find(|entry| entry.id == id && entry.adapter == "native")
@@ -45,14 +45,14 @@ pub(crate) fn native(root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &
         state["approval"] = json!({"id":id,"name":manifest.name,"description":manifest.description,"version":manifest.version,
             "permissions":manifest.capabilities.iter().map(|cap|cap.describe()).collect::<Vec<_>>(),"revision":revision,
             "update":true,"repository":repo});
-        return Ok(());
+        return Ok(None);
     }
     activate_native(root, &mut host, &package, &entry, repo, needs_review && reviewed, was_enabled)?;
     state["approval"] = if installed.is_none() { super::plugin_center::permission_review(root, id)? } else { Value::Null };
     state["form"] = Value::Null;
     state["settings_loading_id"] = Value::Null;
     state["settings_id"] = Value::Null;
-    Ok(())
+    Ok(host.natives.is_native(id).then(|| id.to_string()))
 }
 
 pub(crate) fn activate_native(root: &Path, host: &mut Plugins, package: &crate::StagedPackage,

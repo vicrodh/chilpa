@@ -125,7 +125,7 @@ impl Inbox {
         self.catalogs.insert(catalog.into(), listed);
     }
     pub(crate) fn apply(&mut self, root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &PluginRepositories,
-        active: &AtomicBool, state: &mut Value) -> Result<bool, String> {
+        active: &AtomicBool, state: &mut Value, refreshed: &mut Vec<String>) -> Result<bool, String> {
         if chilpa_core::network::current().offline { return Ok(false); }
         let mut changed = false;
         for notice in self.notices.iter_mut().filter(|n| (self.automatic || n.requested) && matches!(n.phase.as_str(), "available" | "deferred")).take(1) {
@@ -135,9 +135,10 @@ impl Inbox {
             }
             let result = if notice.adapter == "native" {
                 crate::plugin_updates::native(root, plugins, repositories, &json!({"id":notice.id,"repository":notice.repository}), state, true, active)
-            } else { update_compatible(root, plugins, repositories, notice, active) };
+            } else { update_compatible(root, plugins, repositories, notice, active).map(|()| None) };
             match result {
-                Ok(()) => {
+                Ok(activated) => {
+                    refreshed.extend(activated);
                     notice.phase = "updated".into(); notice.message.clear(); notice.requested = false;
                     state["form"] = Value::Null; state["settings_loading_id"] = Value::Null; state["settings_id"] = Value::Null;
                 }
@@ -214,14 +215,14 @@ mod tests {
         let host = Arc::new(Mutex::new(Plugins::new(root.clone()).unwrap()));
         let repositories = PluginRepositories::load(root.join(".repositories")).unwrap();
         let active = AtomicBool::new(true);
-        assert!(inbox.apply(&root, &host, &repositories, &active, &mut json!({})).unwrap());
+        assert!(inbox.apply(&root, &host, &repositories, &active, &mut json!({}), &mut Vec::new()).unwrap());
         assert_eq!(inbox.notices[0].phase, "deferred");
         let revision = inbox.revision;
-        assert!(!inbox.apply(&root, &host, &repositories, &active, &mut json!({})).unwrap());
+        assert!(!inbox.apply(&root, &host, &repositories, &active, &mut json!({}), &mut Vec::new()).unwrap());
         assert_eq!(inbox.revision, revision, "an idle maintenance pass must not rewrite or republish the inbox");
         inbox.automatic = false;
         active.store(false, Ordering::Release);
-        assert!(!inbox.apply(&root, &host, &repositories, &active, &mut json!({})).unwrap());
+        assert!(!inbox.apply(&root, &host, &repositories, &active, &mut json!({}), &mut Vec::new()).unwrap());
         assert!(!root.join("app.test.one").exists(), "deferred updates never execute before authorization and idle playback");
     }
 }

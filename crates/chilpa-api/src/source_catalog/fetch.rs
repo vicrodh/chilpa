@@ -213,6 +213,17 @@ pub(super) fn finish(catalog: &Catalog, job: &Job, outcome: Result<(), String>) 
     inner.running.remove(job);
     inner.native_running.remove(job);
     catalog.wake.notify_one();
+    if inner.retry_after_running.remove(job) {
+        if let Job::Shelf(key) = job {
+            inner.shelf_errors.remove(key);
+            if let Some(shelf) = inner.store.shelves.get_mut(key) { shelf.read_at = 0; }
+        }
+        // The completed call predates an explicit retry or process replacement.
+        catalog.queue(&mut inner, job.clone(), true);
+        drop(inner);
+        catalog.publish(false);
+        return;
+    }
     match (job, outcome) {
         (Job::Shelf(key) | Job::Append(key), Err(e)) => { inner.shelf_errors.insert(key.clone(), e); }
         (Job::Tracks(id), Err(e)) => { inner.card_errors.insert(*id, e); inner.card_retry_at.insert(*id, Instant::now()); }
@@ -856,6 +867,70 @@ mod persistence_tests {
 #[cfg(test)]
 mod scheduler_tests {
     use super::*;
+
+    #[test]
+    fn replacement_retries_outlive_old_native_reads_and_keep_cached_identity() {
+        let catalog = Catalog::new();
+        let key = "fixture native:discover:home";
+        let job = Job::Shelf(key.into());
+        let id = {
+            let mut inner = catalog.lock();
+            inner.loaded = true;
+            let id = inner.store.card_id("fixture", "album:one");
+            inner.store.shelves.insert(key.into(), Shelf { cards:vec![id], read_at:1, epoch:1, ..Default::default() });
+            inner.running.insert(job.clone());
+            inner.native_running.insert(job.clone(), "fixture".into());
+            inner.shelf_errors.insert(key.into(), "old failure".into());
+            id
+        };
+        for _ in 0..8 { catalog.retry(key); }
+        assert_eq!(catalog.lock().retry_after_running.len(), 1, "repeated retries share the running native slot");
+        assert!(catalog.lock().queue.urgent.is_empty());
+        // A late old response can finish ingesting before the replacement is read.
+        catalog.lock().store.shelves.get_mut(key).unwrap().read_at = 99;
+        finish(&catalog, &job, Err("the old process stopped".into()));
+        assert!(catalog.shelf_error(key).is_none());
+        assert!(catalog.loading(key));
+        {
+            let mut inner = catalog.lock();
+            assert!(inner.retry_after_running.is_empty());
+            assert!(inner.native_running.is_empty());
+            assert_eq!(inner.queue.urgent.len(), 1);
+            assert_eq!(inner.queue.urgent.pop_front(), Some(job.clone()));
+            inner.queue.queued.remove(&job);
+            assert_eq!(inner.store.shelves[key].read_at, 0);
+            assert_eq!(inner.store.shelves[key].cards, vec![id]);
+            inner.running.insert(job.clone());
+            inner.native_running.insert(job.clone(), "fixture".into());
+            inner.store.shelves.get_mut(key).unwrap().read_at = 100;
+        }
+        finish(&catalog, &job, Ok(()));
+        assert!(!catalog.loading(key));
+        assert_eq!(catalog.stored_shelf(key).unwrap().cards, vec![id]);
+        assert_eq!(catalog.stored_shelf(key).unwrap().read_at, 100);
+        assert!(catalog.lock().queue.queued.is_empty());
+    }
+
+    #[test]
+    fn disabling_or_removing_a_source_cancels_its_deferred_retry() {
+        for removed in [false, true] {
+            let catalog = Catalog::new();
+            let key = "fixture native:discover:home";
+            let job = Job::Shelf(key.into());
+            {
+                let mut inner = catalog.lock();
+                inner.running.insert(job.clone());
+                inner.native_running.insert(job.clone(), "fixture".into());
+            }
+            catalog.retry(key);
+            assert_eq!(catalog.lock().retry_after_running.len(), 1);
+            if removed { catalog.forget_plugin("fixture"); }
+            else { catalog.set_source_states([("fixture".into(), false)]); }
+            assert!(catalog.lock().retry_after_running.is_empty());
+            finish(&catalog, &job, Err("stopped".into()));
+            assert!(catalog.lock().queue.queued.is_empty());
+        }
+    }
 
     #[test]
     fn native_work_has_global_and_plugin_caps_and_leaves_room_for_visible_pages() {
