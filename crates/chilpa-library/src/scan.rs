@@ -64,8 +64,25 @@ pub trait Containers {
     /// beside the music is neither an error nor audio.
     fn tracks(&self, path: &Path) -> Option<Vec<ContainedTrack>>;
 
+    /// What a file holds, telling one that could not be read from one that
+    /// holds no tracks: what the library had from the first is kept. By
+    /// default, what `tracks` says, and nothing is unreadable.
+    fn contents(&self, path: &Path) -> Contents {
+        self.tracks(path).map_or(Contents::Nothing, Contents::Tracks)
+    }
+
     /// A side file's change marker, folded into the container's scan stamp.
     fn evidence_stamp(&self, _: &Path) -> u64 { 0 }
+}
+
+/// What a file that may hold tracks was found to hold.
+pub enum Contents {
+    Tracks(Vec<ContainedTrack>),
+    /// No tracks: it is not what the reader reads.
+    Nothing,
+    /// It could not be read this time, which says nothing about what it
+    /// holds.
+    Unreadable(std::io::Error),
 }
 
 /// Every file is one track.
@@ -491,7 +508,16 @@ impl Found<'_> {
             return Ok(());
         }
 
-        let Some(tracks) = containers.tracks(file) else { return Ok(()) };
+        let tracks = match containers.contents(file) {
+            Contents::Tracks(tracks) => tracks,
+            Contents::Nothing => return Ok(()),
+            Contents::Unreadable(error) => {
+                report.seen += 1;
+                report.unreadable += 1;
+                unread.note(file, &error);
+                return Ok(());
+            }
+        };
         let name = file.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
         for track in &tracks {
             report.seen += 1;
