@@ -44,6 +44,9 @@ pub mod qobject {
         /// Bound to `Library.contentRev`: the library changed. A grid of
         /// kind "library" binds it to `Library.rev`: the filter moved.
         #[qproperty(i32, content_rev)]
+        /// Static Home keeps its rows until the next explicit snapshot revision.
+        #[qproperty(bool, stable_items)]
+        #[qproperty(i32, snapshot_rev)]
         /// For "artists" and "all": only what holds every word of it -- the
         /// name, or the record's title or artist.
         #[qproperty(QString, filter)]
@@ -150,6 +153,8 @@ pub struct AlbumGridRust {
     source_ready: bool,
     rev: i32,
     content_rev: i32,
+    stable_items: bool,
+    snapshot_rev: i32,
     filter: QString,
     expanded: i32,
     fresh: i32,
@@ -256,6 +261,14 @@ impl qobject::AlbumGridModel {
         self.as_mut().rust_mut().pending = false;
         let limit = self.rust().limit.max(1) as usize;
         let kind = self.rust().kind.to_string();
+        let identity = (kind.clone(), self.key().to_string(), self.order().to_string(), self.group().to_string(), self.filter().to_string());
+        if kind == "source" && *self.stable_items() && *self.ready() && self.rust().loaded.as_ref() == Some(&identity) {
+            if let Albums::Loaded(rows) = &self.rust().list {
+                let mut rows = rows.clone();
+                app::with(|api| api.refresh_source_album_artwork(&mut rows));
+                return self.show(Albums::Loaded(rows));
+            }
+        }
         if matches!(kind.as_str(), "sameArtist" | "related") {
             let generation = self.rust().generation.wrapping_add(1);
             self.as_mut().rust_mut().generation = generation;
@@ -379,9 +392,9 @@ impl qobject::AlbumGridModel {
         let identity = (self.kind().to_string(), self.key().to_string(), self.order().to_string(), self.group().to_string(), self.filter().to_string());
         let same = self.rust().loaded.as_ref() == Some(&identity);
         let rows = list_changes::album_rows(list.len(), self.rust().columns.max(0) as usize, self.rust().max_rows.max(0) as usize, &self.rust().groups);
+        if same && rows == self.rust().rows && matches!((&self.rust().list, &list), (Albums::Loaded(a), Albums::Loaded(b)) if a == b) { let ready = self.rust().kind.to_string() != "source" || self.rust().source_ready; self.as_mut().set_ready(ready); return; }
         let next = self.rev().wrapping_add(1);
         self.as_mut().set_rev(next);
-        if same && rows == self.rust().rows && matches!((&self.rust().list, &list), (Albums::Loaded(a), Albums::Loaded(b)) if a == b) { let ready = self.rust().kind.to_string() != "source" || self.rust().source_ready; self.as_mut().set_ready(ready); return; }
         let plan = if same && !self.rust().rows.is_empty() { match (&self.rust().list, &list) {
             (Albums::Loaded(old), Albums::Loaded(new)) => list_changes::albums(old, new, &self.rust().rows, &rows),
             _ => None,
@@ -459,6 +472,10 @@ impl cxx_qt::Initialize for qobject::AlbumGridModel {
         self.as_mut().on_group_changed(|m| m.schedule()).release();
         self.as_mut().on_limit_changed(|m| m.schedule()).release();
         self.as_mut().on_content_rev_changed(|m| m.schedule()).release();
+        self.as_mut().on_stable_items_changed(|mut m| { m.as_mut().rust_mut().loaded = None; m.schedule(); }).release();
+        self.as_mut().on_snapshot_rev_changed(|mut m| {
+            if *m.stable_items() { m.as_mut().rust_mut().loaded = None; m.schedule(); }
+        }).release();
         self.as_mut()
             .on_filter_changed(|m| match m.kind().to_string().as_str() {
                 "artists" => m.show_artists(),

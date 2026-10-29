@@ -1076,6 +1076,9 @@ msgstr "Revisando la cuenta…"
 msgid "Checking your audio stack…"
 msgstr "Revisando tu stack de audio…"
 
+msgid "Checking your library and connected sources…"
+msgstr "Buscando en tu biblioteca y fuentes conectadas…"
+
 msgid "Checking your selected sources can take a few minutes."
 msgstr "La búsqueda en las fuentes seleccionadas puede tardar unos minutos."
 
@@ -1282,6 +1285,9 @@ msgstr "Elige el receptor en Reproducir en para conectarte."
 
 msgid "Choose the storage paired with this profile."
 msgstr "Elige el almacenamiento asociado a este perfil."
+
+msgid "Choose where to open this music"
+msgstr "Elige dónde abrir esta música"
 
 msgid "Clean"
 msgstr "Sin contenido explícito"
@@ -2381,11 +2387,17 @@ msgstr "Buscar carátulas"
 msgid "Find matches"
 msgstr "Buscar coincidencias"
 
+msgid "Find music"
+msgstr "Buscar música"
+
 msgid "Find music or saved selections…"
 msgstr "Buscar música o selecciones guardadas…"
 
 msgid "Find playlists"
 msgstr "Buscar playlists"
+
+msgid "Find this music in your library and connected sources."
+msgstr "Encuentra esta música en tu biblioteca y fuentes conectadas."
 
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr "Busca el nombre de nodo de PipeWire de tu DAC y pégalo aquí:"
@@ -2572,9 +2584,6 @@ msgstr "Comenzar"
 
 msgid "Getting started"
 msgstr "Primeros pasos"
-
-msgid "Go"
-msgstr "Ir"
 
 msgid "Go Back"
 msgstr "Atrás"
@@ -4195,9 +4204,6 @@ msgstr "Abrir CD de audio"
 msgid "Open downloads"
 msgstr "Abrir descargas"
 
-msgid "Open in"
-msgstr "Abrir en"
-
 msgid "Open in browser"
 msgstr "Abrir en el navegador"
 
@@ -4353,6 +4359,9 @@ msgstr "Pega un perfil de EQ paramétrico."
 
 msgid "Paste a personal access token from discogs.com/settings/developers."
 msgstr "Pega un token de acceso personal de discogs.com/settings/developers."
+
+msgid "Paste a valid HTTPS music link"
+msgstr "Pega un enlace HTTPS de música válido"
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
 msgstr "Pega el código que muestra Discogs después de autorizar a Chilpa."
@@ -5133,9 +5142,6 @@ msgstr "Resolución reducida de {} a {} bits"
 
 msgid "Resolving selected music"
 msgstr "Preparando la música seleccionada"
-
-msgid "Resolving…"
-msgstr "Buscando…"
 
 msgid "Restart Chilpa"
 msgstr "Reiniciar Chilpa"

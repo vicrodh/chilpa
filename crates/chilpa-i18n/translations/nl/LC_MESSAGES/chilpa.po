@@ -1076,6 +1076,9 @@ msgstr "Het account controleren…"
 msgid "Checking your audio stack…"
 msgstr "Je audiostack controleren…"
 
+msgid "Checking your library and connected sources…"
+msgstr ""
+
 msgid "Checking your selected sources can take a few minutes."
 msgstr "Het controleren van je geselecteerde bronnen kan enkele minuten duren."
 
@@ -1281,6 +1284,9 @@ msgid "Choose the receiver in Play on to connect."
 msgstr "Kies de ontvanger bij Afspelen op om verbinding te maken."
 
 msgid "Choose the storage paired with this profile."
+msgstr ""
+
+msgid "Choose where to open this music"
 msgstr ""
 
 msgid "Clean"
@@ -2381,11 +2387,17 @@ msgstr "Hoezen zoeken"
 msgid "Find matches"
 msgstr "Overeenkomsten zoeken"
 
+msgid "Find music"
+msgstr ""
+
 msgid "Find music or saved selections…"
 msgstr "Muziek of opgeslagen selecties zoeken…"
 
 msgid "Find playlists"
 msgstr "Afspeellijsten zoeken"
+
+msgid "Find this music in your library and connected sources."
+msgstr ""
 
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr "Zoek de PipeWire-nodenaam van je DAC en plak deze hier:"
@@ -2572,9 +2584,6 @@ msgstr "Aan de slag"
 
 msgid "Getting started"
 msgstr "Eerste stappen"
-
-msgid "Go"
-msgstr "Ga"
 
 msgid "Go Back"
 msgstr "Terug"
@@ -4195,9 +4204,6 @@ msgstr "Audio-cd openen"
 msgid "Open downloads"
 msgstr "Downloads openen"
 
-msgid "Open in"
-msgstr "Openen in"
-
 msgid "Open in browser"
 msgstr "Openen in browser"
 
@@ -4353,6 +4359,9 @@ msgstr "Plak een parametrisch EQ-profiel."
 
 msgid "Paste a personal access token from discogs.com/settings/developers."
 msgstr "Plak een persoonlijk toegangstoken van discogs.com/settings/developers."
+
+msgid "Paste a valid HTTPS music link"
+msgstr ""
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
 msgstr "Plak de code die Discogs toont nadat je Chilpa toestemming hebt gegeven."
@@ -5133,9 +5142,6 @@ msgstr "Resolutie verlaagd van {} naar {} bits"
 
 msgid "Resolving selected music"
 msgstr "Geselecteerde muziek voorbereiden"
-
-msgid "Resolving…"
-msgstr "Opzoeken…"
 
 msgid "Restart Chilpa"
 msgstr "Chilpa herstarten"

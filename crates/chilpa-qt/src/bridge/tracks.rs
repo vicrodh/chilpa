@@ -35,6 +35,9 @@ pub mod qobject {
         #[qproperty(bool, playlist_editable)]
         #[qproperty(i32, limit)]
         #[qproperty(i32, filter_rev)]
+        /// Static Home keeps its rows until the next explicit snapshot revision.
+        #[qproperty(bool, stable_items)]
+        #[qproperty(i32, snapshot_rev)]
         #[qproperty(QString, playing_path)]
         #[qproperty(i32, count)]
         #[qproperty(bool, ready)]
@@ -176,7 +179,6 @@ use crate::{app, browse, format, registry, worker};
 use chilpa_api::{TrackEntry as Entry, TrackOrder, TrackRow};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QVariant, QVector};
-use std::cell::RefCell;
 use std::collections::HashSet;
 use std::pin::Pin;
 use chilpa_api::list_changes::{self, Step};
@@ -189,21 +191,7 @@ const USER_ROLE: i32 = 256;
 const ROLE_PLAYING: i32 = USER_ROLE + 9;
 const ROLE_SELECTED: i32 = USER_ROLE + 10;
 
-/// Rows read at a time from a snapshot, and how many pages stay cached.
-const PAGE: usize = 128;
-const PAGES_KEPT: usize = 32;
-
-
-enum Rows {
-    Loaded(Vec<Entry>),
-    Snapshot { ids: Rc<chilpa_api::Snapshot>, pages: Rc<RefCell<chilpa_api::PageCache<TrackRow>>> },
-}
-
-impl Default for Rows {
-    fn default() -> Self {
-        Rows::Loaded(Vec::new())
-    }
-}
+use chilpa_qt_kit::track_rows::{Rows, At};
 
 #[derive(Default)]
 pub struct TrackListRust {
@@ -216,6 +204,8 @@ pub struct TrackListRust {
     playlist_editable: bool,
     limit: i32,
     filter_rev: i32,
+    stable_items: bool,
+    snapshot_rev: i32,
     playing_path: QString,
     count: i32,
     ready: bool,
@@ -239,37 +229,9 @@ pub struct TrackListRust {
     queue_numbers: Vec<i32>,
 }
 
-/// A row, either loaded or read from the snapshot's page.
-enum At<'a> {
-    Header(&'a chilpa_api::GroupHeader),
-    Track(Rc<Vec<TrackRow>>, usize),
-    Loaded(&'a TrackRow),
-}
-
 impl TrackListRust {
-    fn len(&self) -> usize {
-        match &self.rows {
-            Rows::Loaded(v) => v.len(),
-            Rows::Snapshot { ids, .. } => ids.ids.len(),
-        }
-    }
-
-    fn at(&self, row: usize) -> Option<At<'_>> {
-        match &self.rows {
-            Rows::Loaded(v) => match v.get(row)? {
-                Entry::Header(header) => Some(At::Header(header)),
-                Entry::Track(t) => Some(At::Loaded(t)),
-            },
-            Rows::Snapshot { ids, pages } => {
-                let page = row / PAGE;
-                let rows = pages.borrow_mut().read(page, PAGES_KEPT, || {
-                    let end = ((page + 1) * PAGE).min(ids.ids.len());
-                    app::with(|api| api.track_rows(&ids.ids[page * PAGE..end]))
-                });
-                (row % PAGE < rows.len()).then(|| At::Track(rows, row % PAGE))
-            }
-        }
-    }
+    fn len(&self) -> usize { self.rows.len() }
+    fn at(&self, row: usize) -> Option<At<'_>> { self.rows.at(row) }
 
     /// Every track's file and id, in list order, when they are loaded.
     fn loaded_tracks(&self) -> Vec<&TrackRow> {
@@ -815,6 +777,15 @@ impl qobject::TrackListModel {
         self.as_mut().rust_mut().pending = false;
         let (id, limit) = (self.rust().album_id, self.rust().limit.max(1) as usize);
         let kind = self.rust().kind.to_string();
+        let identity = (kind.clone(), id, self.key().to_string());
+        if kind == "source" && *self.stable_items() && *self.count() > 0 && self.rust().loaded.as_ref() == Some(&identity) {
+            if let Rows::Loaded(rows) = &self.rust().rows {
+                let mut rows = rows.clone();
+                app::with(|api| api.refresh_source_track_artwork(&mut rows));
+                let duration = rows.iter().filter_map(|row| match row { Entry::Track(track) => Some(track.duration_ms), _ => None }).sum();
+                return self.show(kind, Rows::Loaded(rows), Some(duration), Vec::new());
+            }
+        }
         if kind == "mostPlayed" {
             let asked = self.rust().asked.wrapping_add(1);
             self.as_mut().rust_mut().asked = asked;
@@ -1012,6 +983,10 @@ impl cxx_qt::Initialize for qobject::TrackListModel {
         self.as_mut().on_ascending_changed(|m| m.schedule()).release();
         self.as_mut().on_limit_changed(|m| m.schedule()).release();
         self.as_mut().on_filter_rev_changed(|m| m.schedule()).release();
+        self.as_mut().on_stable_items_changed(|mut m| { m.as_mut().rust_mut().loaded = None; m.schedule(); }).release();
+        self.as_mut().on_snapshot_rev_changed(|mut m| {
+            if *m.stable_items() { m.as_mut().rust_mut().loaded = None; m.schedule(); }
+        }).release();
         self.as_mut()
             .on_playing_path_changed(|mut m| {
                 let now = m.playing_path().to_string();

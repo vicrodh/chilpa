@@ -75,6 +75,30 @@ TestCase {
         compare(Link.chosen, 0)
     }
 
+    function test_choices_support_keyboard_navigation_and_accessible_labels() {
+        Link.show()
+        tryCompare(modal, "visible", true)
+        Link.choices = JSON.stringify([{source:"Library", title:"Record", artist:"Band",local:true},
+                                      {source:"Connected source", title:"Record", artist:"Band"}])
+        const first = findChild(modal.contentItem, "linkChoice")
+        tryCompare(first, "activeFocus", true)
+        compare(first.Accessible.name, "Library, Record, Band")
+        keyClick(Qt.Key_Down)
+        keyClick(Qt.Key_Return)
+        compare(Link.chosen, 1)
+    }
+
+    function test_progress_is_visible_only_while_searching() {
+        Link.show()
+        tryCompare(modal, "visible", true)
+        const progress = findChild(modal.contentItem, "linkProgress")
+        verify(!progress.visible)
+        Link.resolving = true
+        verify(progress.visible)
+        Link.resolving = false
+        verify(!progress.visible)
+    }
+
     function test_it_opens_where_the_link_leads() {
         Link.opened("album", 7, "")
         compare(Navigation.page, "album")
