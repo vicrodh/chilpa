@@ -3349,6 +3349,9 @@ msgstr "Zoek songteksten op via de songtekstservice van Chilpa als het bestand e
 msgid "Looking for files…"
 msgstr "Bestanden zoeken…"
 
+msgid "Looking for files… {} found"
+msgstr "Bestanden zoeken… {} gevonden"
+
 msgid "Looking for lyrics…"
 msgstr "Songtekst zoeken…"
 

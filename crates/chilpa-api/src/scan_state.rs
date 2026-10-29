@@ -54,6 +54,8 @@ pub struct LibraryFolder {
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct ScanStatus {
     pub running: bool,
+    /// Files found so far while the folders are still being listed.
+    pub found: usize,
     pub done: usize,
     pub total: usize,
     pub summary: ScanSummary,
@@ -89,13 +91,23 @@ pub(crate) struct Runtime {
     pub startup: BTreeSet<String>,
     pub intent: Vec<PathBuf>,
     pub next_check: Instant,
+    /// The rows the running scan has written so far, when the screens were
+    /// last told about them and how many there were then: the first rows
+    /// show at once, the rest no more often than `SHOW_EVERY`, and nothing
+    /// shows while no new row was written.
+    pub written: u64,
+    pub shown_at: Option<Instant>,
+    pub shown_written: u64,
 }
 impl Default for Runtime {
     fn default() -> Self {
         Self { initialized: false, policies: BTreeMap::new(), last_attempts: BTreeMap::new(),
-            startup: BTreeSet::new(), intent: Vec::new(), next_check: Instant::now() }
+            startup: BTreeSet::new(), intent: Vec::new(), next_check: Instant::now(), written: 0, shown_at: None, shown_written: 0 }
     }
 }
+
+/// How often the screens are refreshed with what a running scan wrote.
+pub(crate) const SHOW_EVERY: std::time::Duration = std::time::Duration::from_secs(3);
 
 pub(crate) fn limits() -> String { chilpa_i18n::t("A scan supports up to 256 folders and 64 KiB of saved paths.") }
 pub(crate) fn storage(error: impl std::fmt::Display) -> String {

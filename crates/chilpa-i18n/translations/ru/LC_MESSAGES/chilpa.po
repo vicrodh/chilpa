@@ -3352,6 +3352,9 @@ msgstr "Искать тексты песен через сервис текст�
 msgid "Looking for files…"
 msgstr "Поиск файлов…"
 
+msgid "Looking for files… {} found"
+msgstr "Поиск файлов… найдено: {}"
+
 msgid "Looking for lyrics…"
 msgstr "Поиск текста песни…"
 

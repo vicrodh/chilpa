@@ -349,12 +349,17 @@ impl Library {
 
     pub(crate) fn local_edition(&self, source: i64, title: &str, artist: &str, location: &str, year: Option<u32>) -> rusqlite::Result<i64> {
         let key = format!("{source}:{location}");
-        let found: Option<i64> = self.db.query_row("SELECT id FROM albums WHERE title = ?1 AND version_key = ?2", params![title, key], |r| r.get(0)).optional()?;
+        // Asked once per file a scan reads. A statement on `albums` compiles
+        // the members trigger as it is prepared, so each is kept prepared.
+        let found: Option<i64> = self.db.prepare_cached("SELECT id FROM albums WHERE title = ?1 AND version_key = ?2")?
+            .query_row(params![title, key], |r| r.get(0)).optional()?;
         if let Some(id) = found {
-            self.db.execute("UPDATE albums SET album_artist = ?3 WHERE id = ?1 AND album_artist <> ?2 COLLATE NOCASE", params![id, artist, crate::VARIOUS_ARTISTS])?;
+            self.db.prepare_cached("UPDATE albums SET album_artist = ?3 WHERE id = ?1 AND album_artist <> ?2 COLLATE NOCASE")?
+                .execute(params![id, artist, crate::VARIOUS_ARTISTS])?;
             return Ok(id);
         }
-        self.db.execute("INSERT INTO albums(title, album_artist, year, folder, version_key) VALUES (?1, ?2, ?3, ?4, ?5)", params![title, artist, year, location, key])?;
+        self.db.prepare_cached("INSERT INTO albums(title, album_artist, year, folder, version_key) VALUES (?1, ?2, ?3, ?4, ?5)")?
+            .execute(params![title, artist, year, location, key])?;
         Ok(self.db.last_insert_rowid())
     }
 

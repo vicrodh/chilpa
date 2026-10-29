@@ -206,6 +206,40 @@ fn a_root_that_disappears_marks_its_tracks_but_does_not_delete_them() {
 }
 
 #[test]
+fn a_share_that_goes_away_while_it_is_read_is_away_not_emptied() {
+    use chilpa_library::scan::{scan_root_with, ContainedTrack, Containers};
+    use std::path::Path;
+    // Read first, it takes the share away: its mount point stays, empty.
+    struct Unmount { album: PathBuf, parked: PathBuf }
+    impl Containers for Unmount {
+        fn may_hold(&self, path: &Path) -> bool { path.extension().is_some_and(|extension| extension == "disc") }
+        fn tracks(&self, _: &Path) -> Option<Vec<ContainedTrack>> {
+            let _ = std::fs::rename(&self.album, &self.parked);
+            None
+        }
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let (share, parked) = (dir.path().join("share"), dir.path().join("parked"));
+    let album = share.join("album");
+    std::fs::create_dir_all(&album).unwrap();
+    for n in 0..3 { std::fs::write(album.join(format!("{n}.flac")), b"not audio").unwrap(); }
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &share).unwrap();
+    assert_eq!(lib.track_count(false).unwrap(), 3);
+
+    // Named so it is read before the tracks.
+    std::fs::write(album.join("0.disc"), b"x").unwrap();
+    let report = scan_root_with(&lib, &share, None, &|_| {}, &Unmount { album: album.clone(), parked }).unwrap();
+
+    assert!(report.unreachable, "the share stopped answering");
+    assert_eq!(report.missing, 0, "the files it could not read are not taken for deleted");
+    assert_eq!(lib.track_count(false).unwrap(), 3, "still listed (ADR-017)");
+    let scanned: i64 = lib.connection().query_row("SELECT count(*) FROM scanned_files", [], |r| r.get(0)).unwrap();
+    assert_eq!(scanned, 3, "what was scanned of them is kept");
+    assert_eq!(unreachable(&lib), 3, "and none of them can be played");
+}
+
+#[test]
 fn different_album_artist_tags_in_one_release_do_not_split_a_compilation() {
     if !have_ffmpeg() { return; }
     let dir = std::env::temp_dir().join(format!("chilpa-scan-compilation-{}", std::process::id()));
@@ -737,6 +771,88 @@ fn a_subfolder_that_cannot_be_opened_is_away_not_emptied() {
     scan_root(&lib, &dir).unwrap();
     assert_eq!(unreachable(&lib), 0);
     std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn the_tracks_inside_a_file_under_a_subfolder_that_cannot_be_opened_are_away_not_emptied() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let sub = dir.path().join("disc 1");
+    std::fs::create_dir(&sub).unwrap();
+    std::fs::write(sub.join("album.box"), b"box").unwrap();
+    let lib = Library::in_memory().unwrap();
+    scan_boxes(&lib, dir.path(), &Boxes::default());
+    assert_eq!(lib.track_count(false).unwrap(), 2);
+
+    std::fs::set_permissions(&sub, std::fs::Permissions::from_mode(0o000)).unwrap();
+    if std::fs::read_dir(&sub).is_ok() {
+        std::fs::set_permissions(&sub, std::fs::Permissions::from_mode(0o755)).unwrap();
+        eprintln!("permissions do not apply here: skipped");
+        return;
+    }
+    let report = scan_boxes(&lib, dir.path(), &Boxes::default());
+    std::fs::set_permissions(&sub, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+    assert_eq!(report.missing, 0, "a track's own path is not where its file is");
+    assert_eq!(lib.track_count(false).unwrap(), 2, "both still listed");
+    assert_eq!(unreachable(&lib), 2, "and neither can be played");
+    let scanned: i64 = lib.connection().query_row("SELECT count(*) FROM scanned_files", [], |r| r.get(0)).unwrap();
+    assert_eq!(scanned, 2, "what was scanned of them is kept");
+}
+
+#[cfg(unix)]
+#[test]
+fn files_that_can_be_listed_and_not_looked_at_are_away_not_emptied() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let album = dir.path().join("album");
+    std::fs::create_dir(&album).unwrap();
+    for n in 0..2 { std::fs::write(album.join(format!("{n}.flac")), b"not audio").unwrap(); }
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, dir.path()).unwrap();
+    assert_eq!(lib.track_count(false).unwrap(), 2);
+
+    // Readable and not searchable: the names list, the files cannot be looked at.
+    std::fs::set_permissions(&album, std::fs::Permissions::from_mode(0o644)).unwrap();
+    if std::fs::metadata(album.join("0.flac")).is_ok() {
+        std::fs::set_permissions(&album, std::fs::Permissions::from_mode(0o755)).unwrap();
+        eprintln!("permissions do not apply here: skipped");
+        return;
+    }
+    let report = scan_root(&lib, dir.path()).unwrap();
+    std::fs::set_permissions(&album, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+    assert_eq!((report.unreadable, report.missing), (2, 0), "not looked at is not gone");
+    assert_eq!(lib.track_count(false).unwrap(), 2, "both still listed");
+    assert_eq!(unreachable(&lib), 2, "and neither can be played");
+    scan_root(&lib, dir.path()).unwrap();
+    assert_eq!(unreachable(&lib), 0, "searchable again, they play again");
+}
+
+#[cfg(unix)]
+#[test]
+fn a_linked_folder_whose_place_stops_answering_is_away_until_the_link_goes() {
+    let dir = tempfile::tempdir().unwrap();
+    let (root, elsewhere) = (dir.path().join("music"), dir.path().join("elsewhere"));
+    std::fs::create_dir_all(&root).unwrap();
+    std::fs::create_dir_all(&elsewhere).unwrap();
+    std::fs::write(elsewhere.join("far.flac"), b"not audio").unwrap();
+    std::os::unix::fs::symlink(&elsewhere, root.join("linked")).unwrap();
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &root).unwrap();
+    assert_eq!(lib.track_count(false).unwrap(), 1);
+
+    std::fs::rename(&elsewhere, dir.path().join("parked")).unwrap();
+    let report = scan_root(&lib, &root).unwrap();
+    assert_eq!(report.missing, 0, "a link that does not resolve says nothing about what was under it");
+    assert_eq!((lib.track_count(false).unwrap(), unreachable(&lib)), (1, 1));
+
+    // Without the link, what was under it is gone.
+    std::fs::write(root.join("kept.flac"), b"not audio").unwrap();
+    std::fs::remove_file(root.join("linked")).unwrap();
+    let report = scan_root(&lib, &root).unwrap();
+    assert_eq!(report.missing, 1);
 }
 
 /// One track of a set, in the folder of its disc.

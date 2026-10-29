@@ -23,8 +23,12 @@ pub(crate) fn root_answers(lib: &Library, root_id: i64, root: &Path) -> rusqlite
     if !empty {
         return Ok(true);
     }
-    let known: i64 = lib.db.query_row("SELECT count(*) FROM scanned_files WHERE root_id = ?1", params![root_id], |r| r.get(0))?;
-    Ok(known == 0)
+    Ok(!root_holds_files(lib, root_id)?)
+}
+
+/// Whether the library holds files scanned under a folder.
+pub(crate) fn root_holds_files(lib: &Library, root_id: i64) -> rusqlite::Result<bool> {
+    lib.db.query_row("SELECT EXISTS (SELECT 1 FROM scanned_files WHERE root_id = ?1)", params![root_id], |r| r.get(0))
 }
 
 impl Library {

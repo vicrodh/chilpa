@@ -18,7 +18,9 @@ Rectangle {
     function title() {
         if (failed) return I18n.tr("Library check failed", I18n.rev)
         switch (phase) {
-        case "discovering": return I18n.tr("Looking for files…", I18n.rev)
+        case "discovering": return (LibraryFolders.found > 0
+            ? I18n.trArgs("Looking for files… {} found", [String(LibraryFolders.found)], I18n.rev)
+            : I18n.tr("Looking for files…", I18n.rev))
         case "reading": return I18n.trArgs("Reading {} of {} files", [String(LibraryFolders.done), String(LibraryFolders.total)], I18n.rev)
         case "finalizing": return I18n.tr("Updating the library…", I18n.rev)
         case "stopping": return I18n.tr("Stopping after the current file…", I18n.rev)

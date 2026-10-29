@@ -34,6 +34,8 @@ pub mod qobject {
         #[qproperty(QString, status)]
         #[qproperty(QString, phase)]
         #[qproperty(bool, can_resume)]
+        /// Files found so far while the folders are still being listed.
+        #[qproperty(i32, found)]
         #[qproperty(i32, done)]
         #[qproperty(i32, total)]
         #[qproperty(i32, read_count)]
@@ -116,6 +118,7 @@ pub struct FoldersRust {
     status: QString,
     phase: QString,
     can_resume: bool,
+    found: i32,
     done: i32,
     total: i32,
     read_count: i32,
@@ -226,6 +229,7 @@ impl qobject::LibraryFolders {
         self.as_mut().set_can_resume(state.can_resume);
         self.as_mut().set_progress(if state.total > 0 { (state.done as f64 / state.total as f64).min(1.0) } else { 0.0 });
         self.as_mut().set_status(QString::from(&state.error));
+        self.as_mut().set_found(count(state.found));
         self.as_mut().set_done(count(state.done));
         self.as_mut().set_total(count(state.total));
         self.as_mut().set_read_count(count(state.summary.read));
