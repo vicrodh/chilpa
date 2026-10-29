@@ -773,6 +773,34 @@ fn a_subfolder_that_cannot_be_opened_is_away_not_emptied() {
     std::fs::remove_dir_all(dir).unwrap();
 }
 
+#[cfg(unix)]
+#[test]
+fn the_tracks_inside_a_file_under_a_subfolder_that_cannot_be_opened_are_away_not_emptied() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let sub = dir.path().join("disc 1");
+    std::fs::create_dir(&sub).unwrap();
+    std::fs::write(sub.join("album.box"), b"box").unwrap();
+    let lib = Library::in_memory().unwrap();
+    scan_boxes(&lib, dir.path(), &Boxes::default());
+    assert_eq!(lib.track_count(false).unwrap(), 2);
+
+    std::fs::set_permissions(&sub, std::fs::Permissions::from_mode(0o000)).unwrap();
+    if std::fs::read_dir(&sub).is_ok() {
+        std::fs::set_permissions(&sub, std::fs::Permissions::from_mode(0o755)).unwrap();
+        eprintln!("permissions do not apply here: skipped");
+        return;
+    }
+    let report = scan_boxes(&lib, dir.path(), &Boxes::default());
+    std::fs::set_permissions(&sub, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+    assert_eq!(report.missing, 0, "a track's own path is not where its file is");
+    assert_eq!(lib.track_count(false).unwrap(), 2, "both still listed");
+    assert_eq!(unreachable(&lib), 2, "and neither can be played");
+    let scanned: i64 = lib.connection().query_row("SELECT count(*) FROM scanned_files", [], |r| r.get(0)).unwrap();
+    assert_eq!(scanned, 2, "what was scanned of them is kept");
+}
+
 /// One track of a set, in the folder of its disc.
 fn disc_track(dir: &std::path::Path, folder: &str, disc: u32) -> bool {
     std::fs::create_dir_all(dir.join(folder)).is_ok()
