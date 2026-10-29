@@ -76,8 +76,11 @@ TestCase {
             {key:"fixture section:albums",title:"Albums"},
             {key:"fixture section:artists",title:"Artists"}
         ]})}
-        const page = createTemporaryObject(pageComponent, this, {key:"fixture section:library"})
+        // A page that is leaving no longer reads its document, so it loads
+        // first and is marked as leaving once its shelves are known.
+        const page = createTemporaryObject(pageComponent, this, {key:"fixture section:library", leaving:false})
         tryCompare(page, "count", 2)
+        page.leaving = true
         tryVerify(() => page.itemAtIndex(0) !== null && page.itemAtIndex(1) !== null)
         const first = findChild(page.itemAtIndex(0), "homeModuleLoader").entry.id
         const second = findChild(page.itemAtIndex(1), "homeModuleLoader").entry.id

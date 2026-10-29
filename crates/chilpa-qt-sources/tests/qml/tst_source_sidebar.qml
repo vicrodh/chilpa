@@ -40,10 +40,14 @@ TestCase {
         compare(entry.visible, true)
         SettingsModel.preferences = {"navigation.devices":"false"}
         Prefs.rev++
-        compare(entry.visible, false)
+        // Hiding the shortcut drops it from the navigation model, so the
+        // delegate is destroyed; showing it again builds a new one.
+        tryCompare(sidebar, "devicesVisible", false)
+        compare(findChild(sidebar, "deviceNavigation"), null)
         SettingsModel.preferences = {"navigation.devices":"true"}
         Prefs.rev++
-        compare(entry.visible, true)
+        tryVerify(() => findChild(sidebar, "deviceNavigation") !== null)
+        compare(findChild(sidebar, "deviceNavigation").visible, true)
     }
 
     function test_global_playlist_grouping_can_collapse_and_return_to_one_list() {

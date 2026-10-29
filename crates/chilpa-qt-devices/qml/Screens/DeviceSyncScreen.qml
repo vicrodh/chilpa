@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls.Basic as Controls
 import app.chilpa.devices
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -17,6 +18,7 @@ Item {
     property bool recorded: false
     property string lastPhase: ""
     readonly property bool setup: creating || (!document.has_profiles && !status.busy)
+    readonly property int minimumBodyHeight: Metrics.deviceTableHeader + Metrics.deviceRowHeight + Metrics.button32 + Metrics.gap24
     readonly property bool compactSections: head.width < Metrics.deviceSelectWidth * 2 // derived: the space of two storage selectors
 
     function settle() {
@@ -38,43 +40,58 @@ Item {
     StorageEvents { objectName: "deviceStorageEvents"; active: screen.visible && (!screen.Window.window || (screen.Window.window.visible && screen.Window.window.visibility !== Window.Minimized)); onChanged: screen.backend.connectionsChanged() }
     Timer { objectName: "deviceProgressPoll"; interval: Motion.poll; repeat: true; running: screen.visible && screen.backend.busy && (!screen.Window.window || (screen.Window.window.visible && screen.Window.window.visibility !== Window.Minimized)); onTriggered: screen.backend.poll() }
 
-    Column {
-        id: head
+    Flickable {
+        id: headerViewport
+        objectName: "deviceHeaderViewport"
         x: Metrics.contentX; y: Metrics.contentTop
         width: parent.width - Metrics.contentHorizontalMargins
-        spacing: Metrics.gap12
-        DeviceHeader {
-            width: parent.width
-            document: screen.document; status: screen.status
-            showStorageNotice: !screen.setup
-            onProfileAsked: id => { screen.recorded = false; screen.backend.selectProfile(id) }
-            onDestinationAsked: id => { screen.recorded = false; screen.backend.selectDestination(id) }
-            onRefreshAsked: { screen.recorded = false; screen.backend.refresh() }
-            onCreateAsked: screen.creating = true
-            onProfilesAsked: profiles.open()
-        }
-        DeviceNotice { width: parent.width; visible: screen.status.error !== null && screen.status.error !== undefined; error: screen.status.error || null; busy: screen.backend.busy }
-        Flow {
-            visible: !screen.setup && screen.document.has_profiles === true
-            width: parent.width
+        // Keep a usable table row and its controls above the fixed footer.
+        // Wrapped notices and headings scroll within the remaining space.
+        height: Math.min(head.height, Math.max(0, foot.y - y - Metrics.gap24 - screen.minimumBodyHeight))
+        contentWidth: width
+        contentHeight: head.height
+        clip: true
+        interactive: contentHeight > height
+        flickableDirection: Flickable.VerticalFlick
+        boundsBehavior: Flickable.StopAtBounds
+        Controls.ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.gap4 }
+        Column {
+            id: head
+            width: headerViewport.width
             spacing: Metrics.gap12
-            SegmentedControl {
-                objectName: "deviceSections"
-                options: [{ text: screen.compactSections ? "" : I18n.tr("Music", I18n.rev), glyph: Icons.music, tip: I18n.tr("Music", I18n.rev) },
-                    { text: screen.compactSections ? "" : I18n.tr("Synced music", I18n.rev), glyph: Icons.deviceMobile, tip: I18n.tr("Synced music", I18n.rev) },
-                    { text: screen.compactSections ? "" : screen.status.phase === "done" ? I18n.tr("Last sync", I18n.rev) : I18n.tr("Changes", I18n.rev), glyph: Icons.list, tip: I18n.tr("Changes", I18n.rev) }]
-                current: screen.reviewing ? 2 : screen.recorded ? 1 : 0
-                enabled: !screen.backend.busy
-                onActivated: index => { screen.reviewing = index === 2; screen.recorded = index === 1; if (screen.recorded) screen.backend.browse("recorded"); else screen.backend.closeBrowser() }
+            DeviceHeader {
+                width: parent.width
+                document: screen.document; status: screen.status
+                showStorageNotice: !screen.setup
+                onProfileAsked: id => { screen.recorded = false; screen.backend.selectProfile(id) }
+                onDestinationAsked: id => { screen.recorded = false; screen.backend.selectDestination(id) }
+                onRefreshAsked: { screen.recorded = false; screen.backend.refresh() }
+                onCreateAsked: screen.creating = true
+                onProfilesAsked: profiles.open()
             }
-            Text { height: Metrics.button28; verticalAlignment: Text.AlignVCenter; text: screen.document.selected || ""; color: Theme.color.textSecondary; font.pointSize: Type.small }
+            DeviceNotice { width: parent.width; visible: screen.status.error !== null && screen.status.error !== undefined; error: screen.status.error || null; busy: screen.backend.busy }
+            Flow {
+                visible: !screen.setup && screen.document.has_profiles === true
+                width: parent.width
+                spacing: Metrics.gap12
+                SegmentedControl {
+                    objectName: "deviceSections"
+                    options: [{ text: screen.compactSections ? "" : I18n.tr("Music", I18n.rev), glyph: Icons.music, tip: I18n.tr("Music", I18n.rev) },
+                        { text: screen.compactSections ? "" : I18n.tr("Synced music", I18n.rev), glyph: Icons.deviceMobile, tip: I18n.tr("Synced music", I18n.rev) },
+                        { text: screen.compactSections ? "" : screen.status.phase === "done" ? I18n.tr("Last sync", I18n.rev) : I18n.tr("Changes", I18n.rev), glyph: Icons.list, tip: I18n.tr("Changes", I18n.rev) }]
+                    current: screen.reviewing ? 2 : screen.recorded ? 1 : 0
+                    enabled: !screen.backend.busy
+                    onActivated: index => { screen.reviewing = index === 2; screen.recorded = index === 1; if (screen.recorded) screen.backend.browse("recorded"); else screen.backend.closeBrowser() }
+                }
+                Text { height: Metrics.button28; verticalAlignment: Text.AlignVCenter; text: screen.document.selected || ""; color: Theme.color.textSecondary; font.pointSize: Type.small }
+            }
         }
     }
     Loader {
         id: body
         x: Metrics.contentX
         width: parent.width - Metrics.contentHorizontalMargins
-        anchors.top: head.bottom
+        anchors.top: headerViewport.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: foot.top
         anchors.bottomMargin: Metrics.gap12
