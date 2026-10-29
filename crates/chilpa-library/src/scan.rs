@@ -64,8 +64,25 @@ pub trait Containers {
     /// beside the music is neither an error nor audio.
     fn tracks(&self, path: &Path) -> Option<Vec<ContainedTrack>>;
 
+    /// What a file holds, telling one that could not be read from one that
+    /// holds no tracks: what the library had from the first is kept. By
+    /// default, what `tracks` says, and nothing is unreadable.
+    fn contents(&self, path: &Path) -> Contents {
+        self.tracks(path).map_or(Contents::Nothing, Contents::Tracks)
+    }
+
     /// A side file's change marker, folded into the container's scan stamp.
     fn evidence_stamp(&self, _: &Path) -> u64 { 0 }
+}
+
+/// What a file that may hold tracks was found to hold.
+pub enum Contents {
+    Tracks(Vec<ContainedTrack>),
+    /// No tracks: it is not what the reader reads.
+    Nothing,
+    /// It could not be read this time, which says nothing about what it
+    /// holds.
+    Unreadable(std::io::Error),
 }
 
 /// Every file is one track.
@@ -255,9 +272,8 @@ pub fn scan_watched(
     // What could be read. Only these are present at the end: a path that is
     // listed but cannot be opened is not a track anybody can play.
     let mut readable: HashSet<String> = HashSet::with_capacity(files.len());
-    // What is listed and could not be looked at for a reason other than not
-    // being there: kept, like what is under a folder that cannot be opened.
-    let mut away: HashSet<String> = HashSet::new();
+    // What is listed and could not be looked at.
+    let mut unread = Unread::default();
     let mut homes = Homes::new();
 
     for (examined, file) in files.iter().enumerate() {
@@ -278,7 +294,7 @@ pub fn scan_watched(
         }
         if containers.may_hold(file) {
             let found = Found { lib, source, root_id, now, cache };
-            found.container(file, containers, &mut report, &mut readable, &mut away, &mut homes)?;
+            found.container(file, containers, &mut report, &mut readable, &mut unread, &mut homes)?;
             continue;
         }
         report.seen += 1;
@@ -290,7 +306,7 @@ pub fn scan_watched(
                 // as seen: a folder with 20,298 links into a layout that no
                 // longer existed reported 20,405 files and recorded 107.
                 report.unreadable += 1;
-                note_away(&mut away, file, &error);
+                unread.note(file, &error);
                 continue;
             }
         };
@@ -405,7 +421,8 @@ pub fn scan_watched(
     report.sidecars_unreadable = homes.record(lib, now)?;
     aside.set(lib.db.total_changes() - sidecars);
     let before_reconcile = lib.db.total_changes();
-    report.missing = mark_missing(lib, root_id, &readable, &blocked, &away)?;
+    unread.settle();
+    report.missing = mark_missing(lib, root_id, &readable, &blocked, &unread)?;
     join_tagged_neighbours(lib, &from_place)?;
     lib.assemble_local_releases()?;
     // Once the parts are one record, its discs can be compared.
@@ -452,7 +469,7 @@ impl Found<'_> {
         containers: &dyn Containers,
         report: &mut ScanReport,
         readable: &mut HashSet<String>,
-        away: &mut HashSet<String>,
+        unread: &mut Unread,
         homes: &mut Homes,
     ) -> rusqlite::Result<()> {
         let lib = self.lib;
@@ -461,7 +478,7 @@ impl Found<'_> {
             Err(error) => {
                 report.seen += 1;
                 report.unreadable += 1;
-                note_away(away, file, &error);
+                unread.note(file, &error);
                 return Ok(());
             }
         };
@@ -491,7 +508,16 @@ impl Found<'_> {
             return Ok(());
         }
 
-        let Some(tracks) = containers.tracks(file) else { return Ok(()) };
+        let tracks = match containers.contents(file) {
+            Contents::Tracks(tracks) => tracks,
+            Contents::Nothing => return Ok(()),
+            Contents::Unreadable(error) => {
+                report.seen += 1;
+                report.unreadable += 1;
+                unread.note(file, &error);
+                return Ok(());
+            }
+        };
         let name = file.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
         for track in &tracks {
             report.seen += 1;
@@ -900,13 +926,42 @@ fn save_cover(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusqlite:
 
 
 
-/// Keeps a listed file whose state could not be known. Not being there is
-/// known: a link that points nowhere, a file deleted since the listing. Any
-/// other failure -- no permission to look, a share that stops answering --
-/// says nothing about whether it is there.
-fn note_away(away: &mut HashSet<String>, file: &Path, error: &std::io::Error) {
-    if error.kind() != std::io::ErrorKind::NotFound {
-        away.insert(file.display().to_string());
+/// Listed files that could not be looked at, by what that says.
+#[derive(Default)]
+struct Unread {
+    /// Failed for a reason other than not being there -- no permission to
+    /// look, a share that stops answering -- which says nothing about
+    /// whether they are there: kept, unplayable.
+    away: HashSet<String>,
+    /// Not there when read: a link that points nowhere, a file deleted
+    /// since the listing, or one being replaced right then.
+    vanished: Vec<PathBuf>,
+    /// Vanished and there again before reconciling: left as they were.
+    back: HashSet<String>,
+}
+
+impl Unread {
+    fn note(&mut self, file: &Path, error: &std::io::Error) {
+        if error.kind() == std::io::ErrorKind::NotFound {
+            self.vanished.push(file.to_path_buf());
+        } else {
+            self.away.insert(file.display().to_string());
+        }
+    }
+
+    /// Looks for the vanished files again before anything is taken for
+    /// gone. One that is there again was replaced while the scan ran, as an
+    /// editor that writes a new file over the old one does, and the next
+    /// scan reads it; one still not there is gone.
+    fn settle(&mut self) {
+        for file in std::mem::take(&mut self.vanished) {
+            match std::fs::metadata(&file) {
+                Ok(meta) if !meta.is_dir() => { self.back.insert(file.display().to_string()); }
+                Ok(_) => {}
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(_) => { self.away.insert(file.display().to_string()); }
+            }
+        }
     }
 }
 
@@ -916,9 +971,9 @@ fn note_away(away: &mut HashSet<String>, file: &Path, error: &std::io::Error) {
 /// are still there is unknown, so they stay listed and cannot be played,
 /// like a folder that does not answer (ADR-017 §2). A subfolder that was
 /// never readable, a `lost+found`, holds none and changes nothing. Nor the
-/// files in `away`, listed and not looked at. A track inside a file is
+/// files listed and not looked at (`Unread`). A track inside a file is
 /// where that file is: its own path names no place on disk.
-fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>, blocked: &[PathBuf], away: &HashSet<String>) -> rusqlite::Result<usize> {
+fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>, blocked: &[PathBuf], unread: &Unread) -> rusqlite::Result<usize> {
     let mut stmt = lib
         .db
         .prepare("SELECT path, track_id, container FROM scanned_files WHERE root_id = ?1")?;
@@ -933,7 +988,13 @@ fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>, blocked: &[
             continue;
         }
         let place = container.as_deref().unwrap_or(&path);
-        if away.contains(place) || blocked.iter().any(|dir| Path::new(place).starts_with(dir)) {
+        if unread.back.contains(place) {
+            continue;
+        }
+        // Under a folder, not the folder's own path: a link that does not
+        // resolve is both, and a file it named is gone like any other.
+        let under = |dir: &PathBuf| Path::new(place) != dir && Path::new(place).starts_with(dir);
+        if unread.away.contains(place) || blocked.iter().any(under) {
             if let Some(id) = track {
                 lib.db.execute("UPDATE tracks SET reachable = 0 WHERE id = ?1 AND reachable <> 0", params![id])?;
             }
