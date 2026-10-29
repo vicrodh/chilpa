@@ -91,17 +91,18 @@ pub(crate) struct Runtime {
     pub startup: BTreeSet<String>,
     pub intent: Vec<PathBuf>,
     pub next_check: Instant,
-    /// When the screens were last told about records the running scan
-    /// wrote, so that the first batch shows at once and the rest no more
-    /// often than `SHOW_EVERY`, and how many rows it had written by then:
-    /// a commit that wrote nothing new is not shown.
+    /// The rows the running scan has written so far, when the screens were
+    /// last told about them and how many there were then: the first rows
+    /// show at once, the rest no more often than `SHOW_EVERY`, and nothing
+    /// shows while no new row was written.
+    pub written: u64,
     pub shown_at: Option<Instant>,
     pub shown_written: u64,
 }
 impl Default for Runtime {
     fn default() -> Self {
         Self { initialized: false, policies: BTreeMap::new(), last_attempts: BTreeMap::new(),
-            startup: BTreeSet::new(), intent: Vec::new(), next_check: Instant::now(), shown_at: None, shown_written: 0 }
+            startup: BTreeSet::new(), intent: Vec::new(), next_check: Instant::now(), written: 0, shown_at: None, shown_written: 0 }
     }
 }
 

@@ -223,6 +223,33 @@ fn a_rescan_that_finds_nothing_changed_asks_no_screen_to_read_the_library_again(
 }
 
 #[test]
+fn a_folder_that_answers_again_is_shown_before_the_other_folders_are_read() {
+    if !isolated("scan_actions::tests::a_folder_that_answers_again_is_shown_before_the_other_folders_are_read") { return; }
+    let (back, large) = (tempfile::tempdir().unwrap(), tempfile::tempdir().unwrap());
+    for index in 0..3 { wave(&back.path().join(format!("{index}.wav"))); }
+    for index in 0..3_000 { wave(&large.path().join(format!("{index:04}.wav"))); }
+    let mut api = Chilpa::new();
+    for folder in [back.path(), large.path()] {
+        assert!(api.start_scan(folder));
+        finish(&mut api);
+    }
+    let library = api.library().unwrap();
+    let source = library.source_id("local", "default").unwrap();
+    library.set_root_reachable(library.root_id(source, back.path()).unwrap(), false).unwrap();
+    let _ = api.library_changed();
+    assert!(api.rescan());
+    let mut shown_while_running = false;
+    let limit = Instant::now() + Duration::from_secs(60);
+    while api.scan_status().running {
+        assert!(Instant::now() < limit, "scan did not finish");
+        shown_while_running |= api.library_changed();
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    assert_eq!(api.scan_status.summary.unchanged, 3_003, "nothing but the availability changed");
+    assert!(shown_while_running, "the folder's tracks are playable again before the large folder is read");
+}
+
+#[test]
 fn folder_projection_uses_background_reachability_without_filesystem_probes() {
     if !isolated("scan_actions::tests::folder_projection_uses_background_reachability_without_filesystem_probes") { return; }
     let directory = tempfile::tempdir().unwrap();

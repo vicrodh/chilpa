@@ -91,10 +91,11 @@ pub trait ScanWatch {
     fn listed(&self, _files: usize) {}
     /// How many of them have been looked at, every 25.
     fn advanced(&self, _done: usize) {}
-    /// The records of the first `done` files are written and can be shown.
-    /// `written` is how many rows reading has changed so far: it stays at
-    /// zero while every file is as it was, so a rescan that finds nothing
-    /// asks no screen to read the library again.
+    /// What the scan of the first `done` files wrote is committed and can be
+    /// shown. `written` is how many rows the root's scan has changed so far
+    /// -- its availability, its records and, once reconciled, what is gone
+    /// -- and stays at zero while everything is as it was, so a rescan that
+    /// finds nothing asks no screen to read the library again.
     fn committed(&self, _done: usize, _written: u64) {}
     /// Reading ended and what is gone is being reconciled.
     fn finalizing(&self) {}
@@ -194,10 +195,18 @@ pub fn scan_watched(
     if control.stopped() { report.interrupted = true; return Ok(report); }
     let source = lib.source_id("local", "default")?;
     let root_id = lib.root_id(source, root)?;
+    // The rows this root's scan changes that a screen shows: whether the
+    // root can be reached, its records, and what reconciliation takes away.
+    // A root found as it was changes none. The sidecars' bookkeeping is set
+    // aside, and the root's scan date is written after the last notice.
+    let unwritten = lib.db.total_changes();
+    let aside = std::cell::Cell::new(0);
+    let written = || lib.db.total_changes() - unwritten - aside.get();
 
     if !crate::store::reach::root_answers(lib, root_id, root)? {
         report.changed |= lib.set_root_reachable(root_id, false)?;
         report.unreachable = true;
+        if report.changed { watch.committed(0, written()); }
         return Ok(report);
     }
     report.changed |= lib.set_root_reachable(root_id, true)?;
@@ -226,9 +235,6 @@ pub fn scan_watched(
     // is interrupted loses at most a batch -- the files in it were never
     // recorded as scanned, so the next scan reads them again.
     const BATCH: usize = 200;
-    // The rows reading writes. A file found as it was writes none.
-    let unwritten = lib.db.total_changes();
-    let written = || lib.db.total_changes() - unwritten;
     let mut tx = lib.write_transaction()?;
     // What could be read. Only these are present at the end: a path that is
     // listed but cannot be opened is not a track anybody can play.
@@ -361,7 +367,10 @@ pub fn scan_watched(
     // while it was read leaves the rest of its files unreadable, and an
     // unreadable file is reconciled as missing.
     if !crate::store::reach::root_answers(lib, root_id, root)? {
-        report.changed |= lib.set_root_reachable(root_id, false)?;
+        if lib.set_root_reachable(root_id, false)? {
+            report.changed = true;
+            watch.committed(files.len(), written());
+        }
         report.unreachable = true;
         return Ok(report);
     }
@@ -369,7 +378,9 @@ pub fn scan_watched(
 
     // What was there and is not, or is there and cannot be read: marked
     // missing, never deleted.
+    let sidecars = lib.db.total_changes();
     report.sidecars_unreadable = homes.record(lib, now)?;
+    aside.set(lib.db.total_changes() - sidecars);
     let before_reconcile = lib.db.total_changes();
     report.missing = mark_missing(lib, root_id, &readable, &blocked)?;
     join_tagged_neighbours(lib, &from_place)?;
@@ -378,7 +389,11 @@ pub fn scan_watched(
     own_disc_covers(lib, root, cache)?;
     // What came in can be the artist a joined credit was waiting for.
     lib.match_credits()?;
-    report.changed |= lib.db.total_changes() != before_reconcile;
+    if lib.db.total_changes() != before_reconcile {
+        report.changed = true;
+        // Shown now, not when every other root has been read too.
+        watch.committed(files.len(), written());
+    }
     lib.db
         .execute("UPDATE roots SET last_scan = ?2 WHERE id = ?1", params![root_id, now])?;
     // A scan is the only thing that changes the size of the library, so it is

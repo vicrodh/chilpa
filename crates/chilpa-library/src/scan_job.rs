@@ -35,9 +35,10 @@ pub enum ScanProgress {
     /// listed, right before it is read.
     Counted { total: usize },
     Advanced { done: usize, total: usize },
-    /// The records of the first `done` files are written and can be shown.
-    /// `written` counts the rows reading has changed so far, across roots:
-    /// when it has not grown, nothing a screen shows has changed.
+    /// What the scan of the first `done` files wrote is committed and can be
+    /// shown. `written` counts the rows the scan has changed so far across
+    /// roots -- availability, records and reconciliation: when it has not
+    /// grown, nothing a screen shows has changed.
     Committed { done: usize, written: u64 },
     Phase { root: PathBuf, stage: ScanStage },
     Done(ScanReport),
