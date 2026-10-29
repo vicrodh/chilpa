@@ -703,6 +703,7 @@ dependencies = [
 name = "chilpa-meta"
 version = "0.1.0"
 dependencies = [
+ "quick-xml 0.41.0",
  "rand 0.10.3",
  "serde",
  "serde_json",

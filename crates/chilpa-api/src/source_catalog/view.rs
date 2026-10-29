@@ -130,6 +130,30 @@ mod tests {
         let artists: serde_json::Value = serde_json::from_str(&app.source_page("fixture section:artists")).unwrap();
         assert_eq!(artists["round"], true, "a waiting artist tab must reserve round portraits");
     }
+
+    #[test]
+    fn artwork_refresh_keeps_the_original_rows_after_the_source_replaces_a_shelf() {
+        let mut app = crate::Chilpa::new();
+        app.catalog.lock().loaded = true;
+        let page = |suffix: &str| json!({"shelves":[
+            {"id":"albums","kind":"album","items":[{"kind":"album","ref":format!("album:{suffix}"),"title":suffix}]},
+            {"id":"tracks","kind":"track","items":[{"kind":"track","ref":format!("track:{suffix}"),"title":suffix}]}]});
+        super::super::pages::ingest_document(&app.catalog, "fixture", "discover:home", &page("original"));
+        let mut albums = app.source_shelf_snapshot("fixture native:discover:home|albums", "", "", "").albums;
+        let mut tracks = app.source_track_entries("fixture native:discover:home|tracks");
+        assert_eq!(albums.len(), 1);
+        assert_eq!(tracks.len(), 1);
+        let original = albums[0].id;
+        super::super::pages::ingest_document(&app.catalog, "fixture", "discover:home", &page("replacement"));
+        let replacement = app.source_shelf_snapshot("fixture native:discover:home|albums", "", "", "").albums;
+        assert_ne!(replacement[0].id, original);
+        app.refresh_source_album_artwork(&mut albums);
+        app.refresh_source_track_artwork(&mut tracks);
+        assert_eq!(albums[0].id, original);
+        assert_eq!(albums[0].title, "original");
+        let crate::TrackEntry::Track(track) = &tracks[0] else { panic!("a source track stays a track") };
+        assert_eq!(track.title, "original");
+    }
 }
 
 #[cfg(test)]
@@ -212,6 +236,22 @@ fn words(text: &str) -> Vec<String> {
 }
 
 impl Chilpa {
+    /// Refresh covers of an existing Home snapshot without changing its membership.
+    pub fn refresh_source_album_artwork(&self, rows: &mut [Album]) {
+        for row in rows { row.artwork_path = self.catalog.art_of_card(row.id); }
+    }
+
+    /// Keep source track rows and their order while pending covers arrive.
+    pub fn refresh_source_track_artwork(&self, rows: &mut [crate::TrackEntry]) {
+        let ids: Vec<_> = rows.iter().filter_map(|row| match row { crate::TrackEntry::Track(track) => Some(track.id), _ => None }).collect();
+        let covers: std::collections::HashMap<_, _> = self.catalog.tracks_by_ids(&ids).into_iter().map(|(track, art)| (track.id, art)).collect();
+        for row in rows {
+            if let crate::TrackEntry::Track(track) = row {
+                if let Some(art) = covers.get(&track.id) { track.artwork_path.clone_from(art); }
+            }
+        }
+    }
+
     /// The source and its icon, as a record's version selector shows it.
     pub(crate) fn source_of(&mut self, plugin: &str) -> AlbumSource {
         self.source_panels();

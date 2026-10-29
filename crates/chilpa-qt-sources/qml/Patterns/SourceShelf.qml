@@ -21,10 +21,15 @@ Column {
     // No sort, no play and no Load more: the page's folded "Other".
     property bool plain: false
     property bool active: true
+    property bool liveUpdates: true
+    property int snapshotRevision: Library.remoteRev
+    property int snapshotGeneration: 0
+    onSectionChanged: { snapshotRevision = Library.remoteRev; snapshotGeneration++ }
+    onActiveChanged: if (active) { snapshotRevision = Library.remoteRev; snapshotGeneration++ }
     property int catalogRevision: 0
     property int trackRevision: 0
-    Binding { target: shelf; property: "catalogRevision"; when: shelf.active; value: Library.contentRev + Library.remoteRev + Library.remoteArtRev; restoreMode: Binding.RestoreNone }
-    Binding { target: shelf; property: "trackRevision"; when: shelf.active; value: Library.remoteRev + Library.remoteArtRev; restoreMode: Binding.RestoreNone }
+    Binding { target: shelf; property: "catalogRevision"; when: shelf.active; value: Library.contentRev + (shelf.liveUpdates ? Library.remoteRev : shelf.snapshotRevision) + Library.remoteArtRev; restoreMode: Binding.RestoreNone }
+    Binding { target: shelf; property: "trackRevision"; when: shelf.active; value: (shelf.liveUpdates ? Library.remoteRev : shelf.snapshotRevision) + Library.remoteArtRev; restoreMode: Binding.RestoreNone }
     readonly property bool trackSection: section.tracks === true || !!section.tracks_key
     readonly property string activeKey: (section.tags || []).find(t => t.slug === selectedTag)?.key || section.key || ""
     // What the models read by: the shelf's key, or what the document says
@@ -43,9 +48,9 @@ Column {
     readonly property var horizontalView: trackSection && oneRow ? trackContent.item?.scrollView || null : oneRow ? grid.scrollView : rail
     readonly property real farthest: horizontalView ? Math.max(0, horizontalView.contentWidth - horizontalView.width) : 0
     visible: shown
-    AlbumGridModel { id: cards; kind: shelf.trackSection ? "" : shelf.modelKind; key: shelf.modelKey; limit: shelf.wrap ? 0 : shelf.section.size || Metrics.shelfItems; maxRows: shelf.oneRow ? 1 : 0; columns: grid.columns; order: sorting.sort; group: shelf.oneRow ? "" : sorting.grouping; filter: shelf.filter; contentRev: shelf.catalogRevision }
-    TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.modelKey : ""); limit: shelf.section.size || (shelf.oneRow ? shelf.viewportColumns : Metrics.shelfTrackLimit); filterRev: shelf.trackRevision; playingPath: Player.path }
-    TrackListModel { id: fullTracks; kind: tracks.kind; key: tracks.key; filterRev: shelf.trackRevision }
+    AlbumGridModel { id: cards; stableItems: !shelf.liveUpdates; snapshotRev: shelf.snapshotGeneration; kind: shelf.trackSection ? "" : shelf.modelKind; key: shelf.modelKey; limit: shelf.wrap ? 0 : shelf.section.size || Metrics.shelfItems; maxRows: shelf.oneRow ? 1 : 0; columns: grid.columns; order: sorting.sort; group: shelf.oneRow ? "" : sorting.grouping; filter: shelf.filter; contentRev: shelf.catalogRevision }
+    TrackListModel { id: tracks; stableItems: !shelf.liveUpdates; snapshotRev: shelf.snapshotGeneration; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.modelKey : ""); limit: shelf.section.size || (shelf.oneRow ? shelf.viewportColumns : Metrics.shelfTrackLimit); filterRev: shelf.trackRevision; playingPath: Player.path }
+    TrackListModel { id: fullTracks; stableItems: !shelf.liveUpdates; snapshotRev: shelf.snapshotGeneration; kind: tracks.kind; key: tracks.key; filterRev: shelf.trackRevision }
     SectionHeader {
         objectName: "shelfHeader"
         width: parent.width; title: shelf.section.title || ""
