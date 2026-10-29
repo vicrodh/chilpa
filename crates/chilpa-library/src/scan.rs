@@ -239,6 +239,9 @@ pub fn scan_watched(
     // What could be read. Only these are present at the end: a path that is
     // listed but cannot be opened is not a track anybody can play.
     let mut readable: HashSet<String> = HashSet::with_capacity(files.len());
+    // What is listed and could not be looked at for a reason other than not
+    // being there: kept, like what is under a folder that cannot be opened.
+    let mut away: HashSet<String> = HashSet::new();
     let mut homes = Homes::new();
 
     for (examined, file) in files.iter().enumerate() {
@@ -259,17 +262,21 @@ pub fn scan_watched(
         }
         if containers.may_hold(file) {
             let found = Found { lib, source, root_id, now, cache };
-            found.container(file, containers, &mut report, &mut readable, &mut homes)?;
+            found.container(file, containers, &mut report, &mut readable, &mut away, &mut homes)?;
             continue;
         }
         report.seen += 1;
-        let Ok(meta) = std::fs::metadata(file) else {
-            // A link that points nowhere, or a file gone since the listing.
-            // It used to be skipped in silence and still counted as seen: a
-            // folder with 20,298 links into a layout that no longer existed
-            // reported 20,405 files and recorded 107.
-            report.unreadable += 1;
-            continue;
+        let meta = match std::fs::metadata(file) {
+            Ok(meta) => meta,
+            Err(error) => {
+                // A link that points nowhere, or a file gone since the
+                // listing. It used to be skipped in silence and still counted
+                // as seen: a folder with 20,298 links into a layout that no
+                // longer existed reported 20,405 files and recorded 107.
+                report.unreadable += 1;
+                note_away(&mut away, file, &error);
+                continue;
+            }
         };
         readable.insert(file.display().to_string());
         // In nanoseconds, not seconds: two different versions of a file
@@ -382,7 +389,7 @@ pub fn scan_watched(
     report.sidecars_unreadable = homes.record(lib, now)?;
     aside.set(lib.db.total_changes() - sidecars);
     let before_reconcile = lib.db.total_changes();
-    report.missing = mark_missing(lib, root_id, &readable, &blocked)?;
+    report.missing = mark_missing(lib, root_id, &readable, &blocked, &away)?;
     join_tagged_neighbours(lib, &from_place)?;
     lib.assemble_local_releases()?;
     // Once the parts are one record, its discs can be compared.
@@ -429,13 +436,18 @@ impl Found<'_> {
         containers: &dyn Containers,
         report: &mut ScanReport,
         readable: &mut HashSet<String>,
+        away: &mut HashSet<String>,
         homes: &mut Homes,
     ) -> rusqlite::Result<()> {
         let lib = self.lib;
-        let Ok(meta) = std::fs::metadata(file) else {
-            report.seen += 1;
-            report.unreadable += 1;
-            return Ok(());
+        let meta = match std::fs::metadata(file) {
+            Ok(meta) => meta,
+            Err(error) => {
+                report.seen += 1;
+                report.unreadable += 1;
+                note_away(away, file, &error);
+                return Ok(());
+            }
         };
         let mtime = meta
             .modified()
@@ -872,14 +884,25 @@ fn save_cover(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusqlite:
 
 
 
+/// Keeps a listed file whose state could not be known. Not being there is
+/// known: a link that points nowhere, a file deleted since the listing. Any
+/// other failure -- no permission to look, a share that stops answering --
+/// says nothing about whether it is there.
+fn note_away(away: &mut HashSet<String>, file: &Path, error: &std::io::Error) {
+    if error.kind() != std::io::ErrorKind::NotFound {
+        away.insert(file.display().to_string());
+    }
+}
+
 /// Marks the root's files that did not turn up as missing.
 ///
 /// Not the ones under a subfolder that could not be opened: whether they
 /// are still there is unknown, so they stay listed and cannot be played,
 /// like a folder that does not answer (ADR-017 §2). A subfolder that was
-/// never readable, a `lost+found`, holds none and changes nothing. A track
-/// inside a file is where that file is: its own path names no place on disk.
-fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>, blocked: &[PathBuf]) -> rusqlite::Result<usize> {
+/// never readable, a `lost+found`, holds none and changes nothing. Nor the
+/// files in `away`, listed and not looked at. A track inside a file is
+/// where that file is: its own path names no place on disk.
+fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>, blocked: &[PathBuf], away: &HashSet<String>) -> rusqlite::Result<usize> {
     let mut stmt = lib
         .db
         .prepare("SELECT path, track_id, container FROM scanned_files WHERE root_id = ?1")?;
@@ -893,8 +916,8 @@ fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>, blocked: &[
         if seen.contains(&path) {
             continue;
         }
-        let place = Path::new(container.as_deref().unwrap_or(&path));
-        if blocked.iter().any(|dir| place.starts_with(dir)) {
+        let place = container.as_deref().unwrap_or(&path);
+        if away.contains(place) || blocked.iter().any(|dir| Path::new(place).starts_with(dir)) {
             if let Some(id) = track {
                 lib.db.execute("UPDATE tracks SET reachable = 0 WHERE id = ?1 AND reachable <> 0", params![id])?;
             }

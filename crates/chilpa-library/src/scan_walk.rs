@@ -67,7 +67,18 @@ where
             // file is the file, which is what `is_dir` did for every entry.
             let is_dir = match entry.file_type() {
                 Ok(kind) if !kind.is_symlink() => kind.is_dir(),
-                _ => path.is_dir(),
+                _ => match std::fs::metadata(&path) {
+                    Ok(meta) => meta.is_dir(),
+                    // A link that does not resolve is listed by its name when
+                    // it names a file of ours: the reader says what became of
+                    // it. Any other may be a folder whose place stopped
+                    // answering, so what was known under it is kept.
+                    Err(_) if is_audio(&path) || containers.may_hold(&path) => false,
+                    Err(_) => {
+                        listing.blocked.push(path);
+                        continue;
+                    }
+                },
             };
             if is_dir {
                 pending.push(path);
