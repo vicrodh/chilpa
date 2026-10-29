@@ -130,6 +130,8 @@ struct Inner {
     /// Complete cached personal shelves checked without foreground loading.
     revalidating: HashSet<Job>,
     native_running: HashMap<Job, String>,
+    /// Explicit retries waiting for native reads: at most one per running job.
+    retry_after_running: HashSet<Job>,
     deferred: Vec<Deferred>,
     /// Each plugin's approved domains, which its covers are fetched within.
     domains: HashMap<String, Vec<String>>,
@@ -481,7 +483,11 @@ impl Catalog {
         if let Some(shelf) = inner.store.shelves.get_mut(key) {
             shelf.read_at = 0;
         }
-        self.queue(&mut inner, Job::Shelf(key.to_string()), true);
+        let job = Job::Shelf(key.to_string());
+        if inner.native_running.contains_key(&job) && !residency::blocked(&inner, &job) {
+            inner.retry_after_running.insert(job.clone());
+        }
+        self.queue(&mut inner, job, true);
     }
 
     pub fn shelf_title(&self, key: &str) -> Option<String> {
@@ -752,6 +758,7 @@ impl Catalog {
         inner.queue.later.retain(|job| !belongs(job));
         inner.queue.queued.retain(|job| !belongs(job));
         inner.revalidating.retain(|job| !belongs(job));
+        inner.retry_after_running.retain(|job| !belongs(job));
         inner.deferred.retain(|d| d.albums.iter().all(|id| cards.contains(id)));
         inner.domains.remove(plugin);
         inner.epochs.remove(plugin);

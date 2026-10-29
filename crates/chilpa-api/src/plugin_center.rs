@@ -69,10 +69,12 @@ impl PluginCenter {
                         }
                         let checked = (action == "updates_check" || updates.due()) && !chilpa_core::network::current().offline;
                         if checked { let _ = updates.check(&root, &plugins, &repositories); }
-                        let applied = updates.apply(&root, &plugins, &repositories, &playing, &mut state)?;
+                        let mut activated = Vec::new();
+                        let applied = updates.apply(&root, &plugins, &repositories, &playing, &mut state, &mut activated)?;
+                        reload.lock().unwrap().extend(activated);
                         if checked || applied {
                             manager_changed = true;
-                            run("filter", &json!({}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing)?;
+                            let _ = run("filter", &json!({}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing)?;
                             let states = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.catalog_states();
                             catalog.set_source_states(states);
                             changed.store(true, Ordering::Release);
@@ -190,6 +192,7 @@ impl PluginCenter {
                 }
                 let started = std::time::Instant::now();
                 let result = run(&action, &input, &root, &plugins, &mut pending, &mut state, &mut evidence, &playing);
+                if let Ok(Some(id)) = &result { reload.lock().unwrap().push(id.clone()); }
                 if result.is_ok() && action == "integration" && matches!(input["field"].as_str(), Some("genres_from_musicbrainz" | "composers_from_musicbrainz")) {
                     let states = plugins.lock().ok().map(|host| host.catalog_states());
                     if let Some(states) = states { catalog.set_source_states(states); }
@@ -301,10 +304,11 @@ impl Chilpa {
 }
 
 fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<Plugins>>,
-    pending: &mut Option<PreparedPlugin>, state: &mut Value, evidence: &mut crate::plugin_evidence::Evidence, playing: &AtomicBool) -> Result<(), String> {
+    pending: &mut Option<PreparedPlugin>, state: &mut Value, evidence: &mut crate::plugin_evidence::Evidence, playing: &AtomicBool) -> Result<Option<String>, String> {
     let mut repositories = PluginRepositories::load(root.join(".repositories"))?;
     let id = input["id"].as_str().unwrap_or("");
     let mut failure = None;
+    let mut activated = None;
     match action {
         "add" => { let source = repositories.add(input["url"].as_str().unwrap_or(""))?; repositories.refresh(&source.id, "EN")?; }
         "remove_repository" => repositories.remove(id)?,
@@ -336,10 +340,12 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             let prepared = pending.take().ok_or("Inspect a package before installing it.")?;
             if root.join(&prepared.manifest().id).exists() && playing.load(Ordering::Acquire) { return Err("Stop playback before updating a plugin.".into()); }
             let mut host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
+            let installed_id = prepared.manifest().id.clone();
             crate::plugin_updates::compatible(root, &mut host, prepared, true)?;
+            if host.natives.is_native(&installed_id) { activated = Some(installed_id); }
             state["proposal"] = Value::Null;
         }
-        "install_native" => crate::plugin_updates::native(root, plugins, &repositories, input, state, false, playing)?,
+        "install_native" => activated = crate::plugin_updates::native(root, plugins, &repositories, input, state, false, playing)?,
         "install_local" => {
             let address = input["path"].as_str().unwrap_or("");
             let path = url::Url::parse(address).ok().and_then(|url| url.to_file_path().ok())
@@ -371,6 +377,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                 let enabled = host.enabled(&manifest.id);
                 crate::plugin_updates::activate_native(root, &mut host, &package, &entry, "local", needs_review && reviewed, enabled)?;
                 state["approval"] = if installed.is_none() { permission_review(root, &manifest.id)? } else { Value::Null };
+                if host.natives.is_native(&manifest.id) { activated = Some(manifest.id.clone()); }
             }
             state["form"] = Value::Null;
         }
@@ -419,12 +426,12 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             let params = if action == "downloads_action" { input["request"].clone() } else { json!({}) };
             state["downloads"] = natives.call(id, method, params, std::time::Duration::from_secs(30))?;
             state["downloads_id"] = id.into();
-            if action == "downloads_tick" { return Ok(()); }
+            if action == "downloads_tick" { return Ok(None); }
         }
         "settings" | "submit" | "tick" => {
             let mut plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
             if plugins.natives.is_native(id) {
-                if action == "tick" { return Ok(()); }
+                if action == "tick" { return Ok(None); }
                 if !plugins.enabled(id) { return Err(chilpa_i18n::t("the plugin is not running")); }
                 let natives = plugins.natives.clone();
                 drop(plugins);
@@ -438,7 +445,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                 if plugins.enabled(id) && plugins.worker_domains(id).is_some() {
                     plugins.call_waiting(id, "tick", b"{}")?;
                 }
-                return Ok(());
+                return Ok(None);
             } else {
                 if action == "settings" { state["form"] = Value::Null; }
                 let operation = if action == "submit" { "settings.submit" } else { "settings.open" };
@@ -594,7 +601,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     }).cloned().collect::<Vec<_>>());
     counts["installed"] = json!(state["installed"].as_array().into_iter().flatten().filter(|row| !row["origin"].is_null()).count());
     state["counts"] = counts;
-    failure.map_or(Ok(()), Err)
+    failure.map_or(Ok(activated), Err)
 }
 
 /// One row per plugin, whichever catalogs offer it: the highest version stays
@@ -801,6 +808,7 @@ mod tests {
         assert_eq!(view["error"], "", "{view}");
         assert_eq!(view["installed"][0]["id"], "app.test.local");
         assert_eq!(view["installed"][0]["enabled"], false);
+        assert!(center.refreshed.lock().unwrap().is_empty(), "unapproved local installs must not read a catalog");
         assert!(view["repositories"].as_array().unwrap().is_empty());
         assert_eq!(std::fs::read(root.join("app.test.local/plugin")).unwrap(), b"must not run");
         #[cfg(unix)]
@@ -815,6 +823,7 @@ mod tests {
         center.command("install_local", json!({"path":address}));
         let view = wait_finished(&center);
         assert_ne!(view["error"], "");
+        assert!(center.refreshed.lock().unwrap().is_empty(), "rejected replacements must not read a catalog");
         assert!(host.lock().unwrap().enabled("app.test.local"));
         assert_eq!(std::fs::read(root.join("app.test.local/plugin")).unwrap(), b"must not run");
         center.command("install_local", json!({"path":"https://example.org/package.zip"}));

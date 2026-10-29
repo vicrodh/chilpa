@@ -159,6 +159,8 @@ impl Catalog {
         inner.queue.later.retain(|job| !cancelled.contains(job));
         inner.queue.queued.retain(|job| !cancelled.contains(job));
         inner.revalidating.retain(|job| !cancelled.contains(job));
+        let cancelled_retries: HashSet<_> = inner.retry_after_running.iter().filter(|job| blocked(&inner, job)).cloned().collect();
+        inner.retry_after_running.retain(|job| !cancelled_retries.contains(job));
         drop(inner);
         self.wake.notify_one();
     }
