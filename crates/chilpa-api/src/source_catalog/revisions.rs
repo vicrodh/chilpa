@@ -26,6 +26,7 @@ pub(super) fn library_changed(after: &super::store::Store, before: &super::store
 pub(super) struct EntityRevision {
     card: Option<Arc<Card>>,
     tracks: Vec<Arc<Track>>,
+    inherited_formats: u64,
     content: i32,
     genres: u64,
     genres_revision: u64,
@@ -61,6 +62,7 @@ impl Catalog {
         let tracks: Vec<_> = card.as_ref().into_iter().flat_map(|card| card.tracks.iter().flatten())
             .filter_map(|id| inner.store.tracks.shared(id)).collect();
         let mut artwork = std::collections::hash_map::DefaultHasher::new();
+        let mut inherited_formats = std::collections::hash_map::DefaultHasher::new();
         let mut hash_card = |card: &Card| {
             card.art.hash(&mut artwork);
             inner.store.chosen.get(&(card.plugin.clone(), card.identity.clone())).hash(&mut artwork);
@@ -68,10 +70,16 @@ impl Catalog {
         };
         if let Some(card) = &card { hash_card(card); }
         for track in &tracks {
-            if let Some(parent) = inner.store.cards.get(&track.album_id) { hash_card(parent); }
+            if let Some(parent) = inner.store.cards.get(&track.album_id) {
+                hash_card(parent);
+                if track.format.is_none() && parent.kind == super::store::CardKind::Album && parent.plugin == track.plugin {
+                    parent.format.hash(&mut inherited_formats);
+                }
+            }
         }
         for track in &tracks { inner.art_received.contains(&track.image).hash(&mut artwork); }
         let artwork = artwork.finish();
+        let inherited_formats = inherited_formats.finish();
         if inner.entity_revisions.len() >= 64 && !inner.entity_revisions.contains_key(&id) {
             inner.entity_revisions.clear();
         }
@@ -82,7 +90,7 @@ impl Catalog {
             (None, None) => true,
             _ => false,
         };
-        let content_changed = !same || old.is_some_and(|revision| revision.error != error) || old.is_none_or(|revision| revision.tracks.len() != tracks.len()
+        let content_changed = !same || old.is_some_and(|revision| revision.error != error || revision.inherited_formats != inherited_formats) || old.is_none_or(|revision| revision.tracks.len() != tracks.len()
             || revision.tracks.iter().zip(&tracks).any(|(a, b)| !Arc::ptr_eq(a, b) && a != b));
         // I compare displayed metadata only when content or either cache changed.
         let genres = old.filter(|revision| !content_changed && revision.genres_revision == inner.genres.revision
@@ -106,6 +114,7 @@ impl Catalog {
         let genres_revision = inner.genres.revision;
         let composers_revision = inner.composers.revision;
         let revision = inner.entity_revisions.entry(id).or_default();
+        revision.inherited_formats = inherited_formats;
         revision.genres = genres;
         revision.genres_revision = genres_revision;
         revision.composers_revision = composers_revision;

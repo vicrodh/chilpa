@@ -34,7 +34,7 @@ pub(crate) struct Handle {
 }
 
 /// What a source says a format is, kept as the library keeps a server's.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub(crate) struct Format {
     pub codec: String,
     pub bits: Option<u8>,
