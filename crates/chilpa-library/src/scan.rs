@@ -92,7 +92,10 @@ pub trait ScanWatch {
     /// How many of them have been looked at, every 25.
     fn advanced(&self, _done: usize) {}
     /// The records of the first `done` files are written and can be shown.
-    fn committed(&self, _done: usize) {}
+    /// `written` is how many rows reading has changed so far: it stays at
+    /// zero while every file is as it was, so a rescan that finds nothing
+    /// asks no screen to read the library again.
+    fn committed(&self, _done: usize, _written: u64) {}
     /// Reading ended and what is gone is being reconciled.
     fn finalizing(&self) {}
 }
@@ -223,6 +226,9 @@ pub fn scan_watched(
     // is interrupted loses at most a batch -- the files in it were never
     // recorded as scanned, so the next scan reads them again.
     const BATCH: usize = 200;
+    // The rows reading writes. A file found as it was writes none.
+    let unwritten = lib.db.total_changes();
+    let written = || lib.db.total_changes() - unwritten;
     let mut tx = lib.write_transaction()?;
     // What could be read. Only these are present at the end: a path that is
     // listed but cannot be opened is not a track anybody can play.
@@ -242,7 +248,7 @@ pub fn scan_watched(
         }
         if examined == FIRST_BATCH || (examined > 0 && examined % BATCH == 0) {
             tx.commit()?;
-            watch.committed(examined);
+            watch.committed(examined, written());
             tx = lib.write_transaction()?;
         }
         if containers.may_hold(file) {

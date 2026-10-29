@@ -207,6 +207,22 @@ fn the_first_batch_of_a_running_scan_reaches_the_screens_before_it_ends() {
 }
 
 #[test]
+fn a_rescan_that_finds_nothing_changed_asks_no_screen_to_read_the_library_again() {
+    if !isolated("scan_actions::tests::a_rescan_that_finds_nothing_changed_asks_no_screen_to_read_the_library_again") { return; }
+    let music = tempfile::tempdir().unwrap();
+    for index in 0..600 { wave(&music.path().join(format!("{index:04}.wav"))); }
+    let mut api = Chilpa::new();
+    assert!(api.start_scan(music.path()));
+    finish(&mut api);
+    assert_eq!(api.scan_status.summary.read, 600);
+    assert!(api.library_changed());
+    assert!(api.rescan());
+    finish(&mut api);
+    assert_eq!(api.scan_status.summary.unchanged, 600);
+    assert!(!api.library_changed(), "no batch wrote a row, so no screen reads the library again");
+}
+
+#[test]
 fn folder_projection_uses_background_reachability_without_filesystem_probes() {
     if !isolated("scan_actions::tests::folder_projection_uses_background_reachability_without_filesystem_probes") { return; }
     let directory = tempfile::tempdir().unwrap();

@@ -93,13 +93,15 @@ pub(crate) struct Runtime {
     pub next_check: Instant,
     /// When the screens were last told about records the running scan
     /// wrote, so that the first batch shows at once and the rest no more
-    /// often than `SHOW_EVERY`.
+    /// often than `SHOW_EVERY`, and how many rows it had written by then:
+    /// a commit that wrote nothing new is not shown.
     pub shown_at: Option<Instant>,
+    pub shown_written: u64,
 }
 impl Default for Runtime {
     fn default() -> Self {
         Self { initialized: false, policies: BTreeMap::new(), last_attempts: BTreeMap::new(),
-            startup: BTreeSet::new(), intent: Vec::new(), next_check: Instant::now(), shown_at: None }
+            startup: BTreeSet::new(), intent: Vec::new(), next_check: Instant::now(), shown_at: None, shown_written: 0 }
     }
 }
 
