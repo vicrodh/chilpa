@@ -52,6 +52,22 @@ TestCase {
             DeviceSync.setStatus({phase:"idle",error:null})
         }
     }
+    function test_compact_headers_scroll_without_consuming_the_table_or_actions() {
+        page.width = 360; page.height = 558
+        DeviceSync.setStatus({phase:"error",error:{message:"The player is not responding. Reconnect it and try again. Its recovery information is preserved.",detail:"A USB transfer timed out.",recovery:true}})
+        const header = child("deviceHeaderViewport")
+        tryVerify(() => header.contentHeight > header.height)
+        verify(child("deviceSelections").height >= Metrics.deviceRowHeight)
+        bounds(child("deviceRecover"))
+        header.contentY = header.contentHeight - header.height
+        wait(20)
+        verify(header.contentY > 0)
+        verify(child("deviceSelections").height >= Metrics.deviceRowHeight)
+        DeviceSync.setStatus({phase:"review",plan:"compact",error:null,removals:1,summary:"2 to copy · 1 to remove · 12 already present",review_note:"Quick review by size"})
+        wait(20)
+        verify(child("deviceChangeList").height >= Metrics.deviceRowHeight)
+        bounds(child("deviceApproveRemovals")); bounds(child("deviceSyncNow"))
+    }
     function test_review_details_expand_with_real_stage_count_and_file() {
         DeviceSync.setStatus({phase:"preparing",busy:true,label:"Reviewing changes…",review_stage:"sources",review_stage_label:"Reading file sizes",review_progress_text:"14 of 90",selected_bytes:"11 GiB",current:"Music/Album/Track.dff"})
         wait(20)
