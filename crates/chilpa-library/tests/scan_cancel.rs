@@ -64,22 +64,42 @@ fn cancellation_before_discovery_does_not_touch_the_database() {
     assert!(library.roots().unwrap().is_empty());
 }
 
+/// What a scan said about its files and its commits.
+#[derive(Default)]
+struct Commits { listed: std::cell::Cell<usize>, done: std::cell::RefCell<Vec<(usize, u64)>> }
+impl scan::ScanWatch for Commits {
+    fn listed(&self, files: usize) { self.listed.set(files); }
+    fn committed(&self, done: usize, written: u64) { self.done.borrow_mut().push((done, written)); }
+}
+impl Commits {
+    fn done(&self) -> Vec<usize> { self.done.borrow().iter().map(|(done, _)| *done).collect() }
+}
+
 #[test]
 fn the_first_batch_is_committed_at_twenty_five_files_and_then_every_two_hundred() {
     let directory = tempfile::tempdir().unwrap();
     for index in 0..450 { wave(&directory.path().join(format!("{index:03}.wav"))); }
     let library = Library::in_memory().unwrap();
-    #[derive(Default)]
-    struct Commits { listed: std::cell::Cell<usize>, done: std::cell::RefCell<Vec<usize>> }
-    impl scan::ScanWatch for Commits {
-        fn listed(&self, files: usize) { self.listed.set(files); }
-        fn committed(&self, done: usize, _: u64) { self.done.borrow_mut().push(done); }
-    }
     let commits = Commits::default();
     let report = scan::scan_watched(&library, directory.path(), None, &NoContainers, &ScanControl::default(), &commits).unwrap();
     assert_eq!(commits.listed.get(), 450);
     assert_eq!(report.read, 450);
-    assert_eq!(*commits.done.borrow(), [25, 200, 400], "the first records are written early, the rest by the batch");
+    assert_eq!(commits.done(), [25, 200, 400, 450], "the first records are written early, the rest by the batch, the last batch too");
+}
+
+#[test]
+fn a_root_smaller_than_the_first_batch_still_says_its_records_are_written() {
+    let directory = tempfile::tempdir().unwrap();
+    for index in 0..24 { wave(&directory.path().join(format!("{index:02}.wav"))); }
+    let library = Library::in_memory().unwrap();
+    let commits = Commits::default();
+    scan::scan_watched(&library, directory.path(), None, &NoContainers, &ScanControl::default(), &commits).unwrap();
+    let said = commits.done.borrow().clone();
+    assert!(matches!(said[..], [(24, written)] if written > 0), "{said:?}");
+
+    let again = Commits::default();
+    scan::scan_watched(&library, directory.path(), None, &NoContainers, &ScanControl::default(), &again).unwrap();
+    assert_eq!(*again.done.borrow(), [(24, 0)], "found as it was, it wrote nothing");
 }
 
 #[test]

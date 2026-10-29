@@ -354,6 +354,8 @@ pub fn scan_watched(
 
     tx.commit()?;
     watch.advanced(files.len());
+    // The last batch, and the only one of a root under `FIRST_BATCH` files.
+    watch.committed(files.len(), written());
     if control.stopped() { report.interrupted = true; return Ok(report); }
     // Asked again before anything is taken for gone: a share that went away
     // while it was read leaves the rest of its files unreadable, and an
