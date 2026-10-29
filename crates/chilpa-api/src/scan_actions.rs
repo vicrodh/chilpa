@@ -77,6 +77,7 @@ impl Chilpa {
                 }
                 self.scan = Some(job);
                 self.scan_runtime.shown_at = None;
+                self.scan_runtime.shown_written = 0;
                 self.scan_status = ScanStatus { running: true, phase: ScanPhase::Discovering,
                     root: if roots.len() == 1 { roots[0].to_string_lossy().into_owned() } else { String::new() },
                     revision: self.scan_status.revision.wrapping_add(1), ..ScanStatus::default() };
@@ -144,11 +145,14 @@ impl Chilpa {
                 }
                 // Records the scan wrote are shown as they land: the first
                 // batch at once, then at most every few seconds, instead of
-                // all at the end.
-                ScanProgress::Committed { .. } => {
+                // all at the end. A commit that wrote no row since the last
+                // one shown changes nothing a screen shows.
+                ScanProgress::Committed { written, .. } => {
                     let now = std::time::Instant::now();
-                    if self.scan_runtime.shown_at.is_none_or(|at| now.duration_since(at) >= scan_state::SHOW_EVERY) {
+                    if written > self.scan_runtime.shown_written
+                        && self.scan_runtime.shown_at.is_none_or(|at| now.duration_since(at) >= scan_state::SHOW_EVERY) {
                         self.scan_runtime.shown_at = Some(now);
+                        self.scan_runtime.shown_written = written;
                         self.mark_library_changed();
                     }
                 }

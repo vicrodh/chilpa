@@ -73,7 +73,7 @@ fn the_first_batch_is_committed_at_twenty_five_files_and_then_every_two_hundred(
     struct Commits { listed: std::cell::Cell<usize>, done: std::cell::RefCell<Vec<usize>> }
     impl scan::ScanWatch for Commits {
         fn listed(&self, files: usize) { self.listed.set(files); }
-        fn committed(&self, done: usize) { self.done.borrow_mut().push(done); }
+        fn committed(&self, done: usize, _: u64) { self.done.borrow_mut().push(done); }
     }
     let commits = Commits::default();
     let report = scan::scan_watched(&library, directory.path(), None, &NoContainers, &ScanControl::default(), &commits).unwrap();

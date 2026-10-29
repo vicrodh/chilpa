@@ -36,7 +36,9 @@ pub enum ScanProgress {
     Counted { total: usize },
     Advanced { done: usize, total: usize },
     /// The records of the first `done` files are written and can be shown.
-    Committed { done: usize },
+    /// `written` counts the rows reading has changed so far, across roots:
+    /// when it has not grown, nothing a screen shows has changed.
+    Committed { done: usize, written: u64 },
     Phase { root: PathBuf, stage: ScanStage },
     Done(ScanReport),
     Interrupted(ScanReport),
@@ -127,14 +129,16 @@ fn run(db_path: PathBuf, roots: Vec<PathBuf>, artwork_cache: Option<PathBuf>, co
         Ok(lib) => lib,
         Err(error) => { events.send(ScanProgress::Failed(error.to_string())); return; }
     };
-    // The files of the roots already read: they were listed and read whole.
-    let mut before = 0;
+    // The files of the roots already read, which were listed and read
+    // whole, and the rows reading them wrote.
+    let (mut before, mut written) = (0, 0);
     for root in &roots {
         events.send(ScanProgress::Phase { root: root.clone(), stage: ScanStage::Listing });
-        let watch = RootWatch { events: &events, root, before, files: Cell::new(0) };
+        let watch = RootWatch { events: &events, root, before, written, files: Cell::new(0), wrote: Cell::new(0) };
         match crate::scan::scan_watched(&lib, root, artwork_cache.as_deref(), &*containers, &control, &watch) {
             Ok(report) => {
                 before += watch.files.get();
+                written += watch.wrote.get();
                 accumulated.seen += report.seen;
                 accumulated.read += report.read;
                 accumulated.unchanged += report.unchanged;
@@ -160,10 +164,12 @@ fn run(db_path: PathBuf, roots: Vec<PathBuf>, artwork_cache: Option<PathBuf>, co
 struct RootWatch<'a> {
     events: &'a Mailbox,
     root: &'a Path,
-    /// The files of the roots already read.
+    /// The files of the roots already read, and the rows they wrote.
     before: usize,
-    /// This root's files, once it is listed.
+    written: u64,
+    /// This root's files, once it is listed, and the rows it has written.
     files: Cell<usize>,
+    wrote: Cell<u64>,
 }
 
 impl ScanWatch for RootWatch<'_> {
@@ -178,8 +184,9 @@ impl ScanWatch for RootWatch<'_> {
     fn advanced(&self, done: usize) {
         self.events.send(ScanProgress::Advanced { done: self.before + done, total: self.before + self.files.get() });
     }
-    fn committed(&self, done: usize) {
-        self.events.send(ScanProgress::Committed { done: self.before + done });
+    fn committed(&self, done: usize, written: u64) {
+        self.wrote.set(written);
+        self.events.send(ScanProgress::Committed { done: self.before + done, written: self.written + written });
     }
     fn finalizing(&self) {
         self.events.send(ScanProgress::Phase { root: self.root.to_path_buf(), stage: ScanStage::Finalizing });
@@ -224,7 +231,7 @@ mod tests {
         mailbox.send(ScanProgress::Counted { total: 100_000 });
         for done in 0..100_000 {
             mailbox.send(ScanProgress::Advanced { done, total: 100_000 });
-            mailbox.send(ScanProgress::Committed { done });
+            mailbox.send(ScanProgress::Committed { done, written: 0 });
             mailbox.send(ScanProgress::Phase { root: PathBuf::from("music"), stage: ScanStage::Reading });
         }
         mailbox.send(ScanProgress::Done(ScanReport::default()));
@@ -233,7 +240,7 @@ mod tests {
         assert!(matches!(events[0], ScanProgress::Discovered { found: 99_999 }));
         assert!(matches!(events[1], ScanProgress::Counted { .. }));
         assert!(matches!(events[2], ScanProgress::Advanced { done: 99_999, .. }));
-        assert!(matches!(events[3], ScanProgress::Committed { done: 99_999 }));
+        assert!(matches!(events[3], ScanProgress::Committed { done: 99_999, .. }));
         assert!(matches!(events[5], ScanProgress::Done(_)));
         assert!(mailbox.poll().is_empty());
     }
@@ -308,13 +315,29 @@ mod tests {
         // The commit notice is coalesced, so a poll sees the latest; one
         // arrives while the scan still runs, and never says more than a
         // batch was written before the first was.
-        let first_commit = events.iter().find_map(|e| match e { ScanProgress::Committed { done } => Some(*done), _ => None });
+        let first_commit = events.iter().find_map(|e| match e { ScanProgress::Committed { done, .. } => Some(*done), _ => None });
         assert!(first_commit.is_some_and(|done| done <= 200), "{events:?}");
         let committed = events.iter().position(|e| matches!(e, ScanProgress::Committed { .. }));
         let done = events.iter().position(|e| matches!(e, ScanProgress::Done(_)));
         assert!(committed < done);
         let lib = Library::open(&dir.path().join("lib.db")).unwrap();
         assert_eq!(lib.track_count(false).unwrap(), 520);
+    }
+
+    #[test]
+    fn a_commit_says_whether_reading_wrote_anything() {
+        let dir = tempfile::tempdir().unwrap();
+        for n in 0..450 {
+            std::fs::write(dir.path().join(format!("{n:03}.flac")), b"not audio").unwrap();
+        }
+        let written = |events: &[ScanProgress]| -> Vec<u64> {
+            events.iter().filter_map(|e| match e { ScanProgress::Committed { written, .. } => Some(*written), _ => None }).collect()
+        };
+        let first = to_the_end(&ScanJob::start(dir.path().join("lib.db"), dir.path().to_path_buf(), None));
+        assert!(written(&first).last().is_some_and(|rows| *rows > 0), "{first:?}");
+        let again = to_the_end(&ScanJob::start(dir.path().join("lib.db"), dir.path().to_path_buf(), None));
+        let rows = written(&again);
+        assert!(!rows.is_empty() && rows.iter().all(|rows| *rows == 0), "a rescan that finds every file as it was writes nothing: {again:?}");
     }
 
     #[test]
