@@ -206,6 +206,40 @@ fn a_root_that_disappears_marks_its_tracks_but_does_not_delete_them() {
 }
 
 #[test]
+fn a_share_that_goes_away_while_it_is_read_is_away_not_emptied() {
+    use chilpa_library::scan::{scan_root_with, ContainedTrack, Containers};
+    use std::path::Path;
+    // Read first, it takes the share away: its mount point stays, empty.
+    struct Unmount { album: PathBuf, parked: PathBuf }
+    impl Containers for Unmount {
+        fn may_hold(&self, path: &Path) -> bool { path.extension().is_some_and(|extension| extension == "disc") }
+        fn tracks(&self, _: &Path) -> Option<Vec<ContainedTrack>> {
+            let _ = std::fs::rename(&self.album, &self.parked);
+            None
+        }
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let (share, parked) = (dir.path().join("share"), dir.path().join("parked"));
+    let album = share.join("album");
+    std::fs::create_dir_all(&album).unwrap();
+    for n in 0..3 { std::fs::write(album.join(format!("{n}.flac")), b"not audio").unwrap(); }
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &share).unwrap();
+    assert_eq!(lib.track_count(false).unwrap(), 3);
+
+    // Named so it is read before the tracks.
+    std::fs::write(album.join("0.disc"), b"x").unwrap();
+    let report = scan_root_with(&lib, &share, None, &|_| {}, &Unmount { album: album.clone(), parked }).unwrap();
+
+    assert!(report.unreachable, "the share stopped answering");
+    assert_eq!(report.missing, 0, "the files it could not read are not taken for deleted");
+    assert_eq!(lib.track_count(false).unwrap(), 3, "still listed (ADR-017)");
+    let scanned: i64 = lib.connection().query_row("SELECT count(*) FROM scanned_files", [], |r| r.get(0)).unwrap();
+    assert_eq!(scanned, 3, "what was scanned of them is kept");
+    assert_eq!(unreachable(&lib), 3, "and none of them can be played");
+}
+
+#[test]
 fn different_album_artist_tags_in_one_release_do_not_split_a_compilation() {
     if !have_ffmpeg() { return; }
     let dir = std::env::temp_dir().join(format!("chilpa-scan-compilation-{}", std::process::id()));

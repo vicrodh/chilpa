@@ -69,14 +69,17 @@ fn the_first_batch_is_committed_at_twenty_five_files_and_then_every_two_hundred(
     let directory = tempfile::tempdir().unwrap();
     for index in 0..450 { wave(&directory.path().join(format!("{index:03}.wav"))); }
     let library = Library::in_memory().unwrap();
-    let control = ScanControl::default();
-    let listing = scan::list_controlled(directory.path(), &NoContainers, &control, &|_| {}).unwrap();
-    assert_eq!(listing.files.len(), 450);
-    let committed = std::cell::RefCell::new(Vec::new());
-    let report = scan::scan_listing(&library, directory.path(), None, &|_| {}, &NoContainers, &control, &|| {},
-        &|done| committed.borrow_mut().push(done), listing).unwrap();
+    #[derive(Default)]
+    struct Commits { listed: std::cell::Cell<usize>, done: std::cell::RefCell<Vec<usize>> }
+    impl scan::ScanWatch for Commits {
+        fn listed(&self, files: usize) { self.listed.set(files); }
+        fn committed(&self, done: usize) { self.done.borrow_mut().push(done); }
+    }
+    let commits = Commits::default();
+    let report = scan::scan_watched(&library, directory.path(), None, &NoContainers, &ScanControl::default(), &commits).unwrap();
+    assert_eq!(commits.listed.get(), 450);
     assert_eq!(report.read, 450);
-    assert_eq!(*committed.borrow(), [25, 200, 400], "the first records are written early, the rest by the batch");
+    assert_eq!(*commits.done.borrow(), [25, 200, 400], "the first records are written early, the rest by the batch");
 }
 
 #[test]

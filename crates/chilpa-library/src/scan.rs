@@ -81,8 +81,32 @@ impl Containers for NoContainers {
     }
 }
 
-pub use crate::scan_walk::Listing;
-use crate::scan_walk::{walk, walk_controlled};
+use crate::scan_walk::{walk, walk_controlled, Listing};
+
+/// What a scan says while it runs. Each does nothing unless a watcher asks.
+pub trait ScanWatch {
+    /// How many audio files the walk has found so far, every few hundred.
+    fn found(&self, _so_far: usize) {}
+    /// The walk finished and `files` are about to be read.
+    fn listed(&self, _files: usize) {}
+    /// How many of them have been looked at, every 25.
+    fn advanced(&self, _done: usize) {}
+    /// The records of the first `done` files are written and can be shown.
+    fn committed(&self, _done: usize) {}
+    /// Reading ended and what is gone is being reconciled.
+    fn finalizing(&self) {}
+}
+
+/// The two callbacks `scan_controlled` takes, as a watcher.
+struct Callbacks<'a> {
+    progress: &'a dyn Fn(usize),
+    finalizing: &'a dyn Fn(),
+}
+
+impl ScanWatch for Callbacks<'_> {
+    fn advanced(&self, done: usize) { (self.progress)(done) }
+    fn finalizing(&self) { (self.finalizing)() }
+}
 
 /// Scans a folder and its subfolders, leaving covers in `cache`.
 pub fn scan_root_with_cache(
@@ -129,9 +153,7 @@ pub fn count_files(root: &Path, containers: &dyn Containers) -> usize {
     walk(root, containers).files.len()
 }
 
-/// Walks the root and scans what it finds. A caller that already holds the
-/// listing, because it counted first, hands it to [`scan_listing`] instead
-/// of walking again.
+/// Walks the root and scans what it finds.
 pub fn scan_controlled(
     lib: &Library,
     root: &Path,
@@ -141,29 +163,29 @@ pub fn scan_controlled(
     control: &ScanControl,
     on_finalizing: &dyn Fn(),
 ) -> rusqlite::Result<ScanReport> {
-    let listing = walk_controlled(root, containers, control, &|_| {});
-    scan_listing(lib, root, cache, on_progress, containers, control, on_finalizing, &|_| {}, listing)
+    scan_watched(lib, root, cache, containers, control, &Callbacks { progress: on_progress, finalizing: on_finalizing })
 }
 
 /// How many files go into the first batch. It is small so the first
 /// records reach the screens about as soon as reading starts, instead of
-/// after a full batch; `on_committed` says when they have.
+/// after a full batch; `ScanWatch::committed` says when they have.
 const FIRST_BATCH: usize = 25;
 
-/// Scans the files of `listing`, taken from `root` by a walk that finished
-/// unless `control` stopped it, in which case nothing is read and the scan
-/// reports itself interrupted.
-#[allow(clippy::too_many_arguments)]
-pub fn scan_listing(
+/// Walks the root and scans what it finds, telling `watch` as it goes.
+/// When `control` stops it, nothing more is read and the scan reports
+/// itself interrupted.
+///
+/// The root is asked whether it answers before the walk, and the walk is
+/// read straight after it. A listing is never taken ahead and kept: one
+/// taken while a share was away is empty, and read once the share was back
+/// it took every track under it for deleted.
+pub fn scan_watched(
     lib: &Library,
     root: &Path,
     cache: Option<&Path>,
-    on_progress: &dyn Fn(usize),
     containers: &dyn Containers,
     control: &ScanControl,
-    on_finalizing: &dyn Fn(),
-    on_committed: &dyn Fn(usize),
-    listing: Listing,
+    watch: &dyn ScanWatch,
 ) -> rusqlite::Result<ScanReport> {
     let mut report = ScanReport { root: root.to_path_buf(), ..ScanReport::default() };
     if control.stopped() { report.interrupted = true; return Ok(report); }
@@ -177,8 +199,9 @@ pub fn scan_listing(
     }
     report.changed |= lib.set_root_reachable(root_id, true)?;
     let now = now_unix();
-    let Listing { files, blocked } = listing;
+    let Listing { files, blocked } = walk_controlled(root, containers, control, &|found| watch.found(found));
     if control.stopped() { report.interrupted = true; return Ok(report); }
+    watch.listed(files.len());
     // The tracks whose record was named by their folder this time.
     let mut from_place: Vec<i64> = Vec::new();
 
@@ -215,11 +238,11 @@ pub fn scan_listing(
         // Reported every 25 files: one by one floods the channel without the
         // interface being able to draw any faster.
         if examined % 25 == 0 {
-            on_progress(examined);
+            watch.advanced(examined);
         }
         if examined == FIRST_BATCH || (examined > 0 && examined % BATCH == 0) {
             tx.commit()?;
-            on_committed(examined);
+            watch.committed(examined);
             tx = lib.write_transaction()?;
         }
         if containers.may_hold(file) {
@@ -324,9 +347,17 @@ pub fn scan_listing(
     }
 
     tx.commit()?;
-    on_progress(files.len());
+    watch.advanced(files.len());
     if control.stopped() { report.interrupted = true; return Ok(report); }
-    on_finalizing();
+    // Asked again before anything is taken for gone: a share that went away
+    // while it was read leaves the rest of its files unreadable, and an
+    // unreadable file is reconciled as missing.
+    if !crate::store::reach::root_answers(lib, root_id, root)? {
+        report.changed |= lib.set_root_reachable(root_id, false)?;
+        report.unreachable = true;
+        return Ok(report);
+    }
+    watch.finalizing();
 
     // What was there and is not, or is there and cannot be read: marked
     // missing, never deleted.
@@ -866,15 +897,8 @@ impl ScanControl {
 }
 
 pub fn count_controlled(root: &Path, containers: &dyn Containers, control: &ScanControl) -> Option<usize> {
-    list_controlled(root, containers, control, &|_| {}).map(|listing| listing.files.len())
-}
-
-/// The listing of a root, or nothing when `control` stopped the walk. It
-/// says how many files it has found so far through `on_found`, every few
-/// hundred, so a long walk can be watched.
-pub fn list_controlled(root: &Path, containers: &dyn Containers, control: &ScanControl, on_found: &dyn Fn(usize)) -> Option<Listing> {
-    let listing = walk_controlled(root, containers, control, on_found);
-    (!control.stopped()).then_some(listing)
+    let count = walk_controlled(root, containers, control, &|_| {}).files.len();
+    (!control.stopped()).then_some(count)
 }
 
 #[cfg(target_family = "unix")]

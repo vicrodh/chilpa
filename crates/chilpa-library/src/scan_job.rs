@@ -1,7 +1,24 @@
 //! One background scan, with cooperative cancellation and bounded progress.
+//!
+//! Each root is listed right before it is read, never ahead: a listing
+//! taken while a share was away is empty, and read after the share came
+//! back it took every track under it for deleted. So the total grows root
+//! by root. The files found and the total count every root listed so far,
+//! and the files read every root before the current one, so "Reading N of
+//! M" never goes back and M grows when the next root has been listed.
+//!
+//! Memory (ADR-018): the worker holds the listing of one root at a time --
+//! a path per audio file under it and one per folder it could not read --
+//! and, while reading, the set of the paths that could be read, which the
+//! reconciliation needs, of the same length. Both are bounded by that
+//! root's file count (at about 100 bytes a path, some 10 MB each for
+//! 100,000 files) and released when the root's scan returns, before the
+//! next root is listed. The progress mailbox holds one event of each kind.
+//! The facade runs one worker at a time.
 
-use crate::scan::{Containers, NoContainers, ScanControl, ScanReport};
+use crate::scan::{Containers, NoContainers, ScanControl, ScanReport, ScanWatch};
 use crate::store::Library;
+use std::cell::Cell;
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
@@ -11,16 +28,27 @@ pub const MAX_ROOTS: usize = 256;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ScanProgress {
-    /// How many files the walk has found so far, before the total is known.
+    /// How many files the walk has found so far, in this root and the ones
+    /// listed before it.
     Discovered { found: usize },
+    /// The files of every root listed so far. It grows as each root is
+    /// listed, right before it is read.
     Counted { total: usize },
     Advanced { done: usize, total: usize },
     /// The records of the first `done` files are written and can be shown.
     Committed { done: usize },
-    Phase { root: PathBuf, finalizing: bool },
+    Phase { root: PathBuf, stage: ScanStage },
     Done(ScanReport),
     Interrupted(ScanReport),
     Failed(String),
+}
+
+/// What the scan is doing with a root.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ScanStage {
+    Listing,
+    Reading,
+    Finalizing,
 }
 
 // I retain one of each kind of event -- found, count, progress, commit,
@@ -99,34 +127,14 @@ fn run(db_path: PathBuf, roots: Vec<PathBuf>, artwork_cache: Option<PathBuf>, co
         Ok(lib) => lib,
         Err(error) => { events.send(ScanProgress::Failed(error.to_string())); return; }
     };
-    // Every root is listed before any is read, so the bar has its total
-    // before it moves, and each listing is kept for the reader: the walk
-    // used to be done twice. What is held is one path per audio file under
-    // the roots, released with this worker.
-    let mut listings = Vec::with_capacity(roots.len());
-    let mut found = 0;
+    // The files of the roots already read: they were listed and read whole.
+    let mut before = 0;
     for root in &roots {
-        let on_found = |under_root| events.send(ScanProgress::Discovered { found: found + under_root });
-        let Some(listing) = crate::scan::list_controlled(root, &*containers, &control, &on_found) else {
-            accumulated.interrupted = true;
-            events.send(ScanProgress::Interrupted(accumulated));
-            return;
-        };
-        found += listing.files.len();
-        listings.push(listing);
-    }
-    let total = found;
-    events.send(ScanProgress::Counted { total });
-    let mut previous = 0;
-    for (root, listing) in roots.iter().zip(listings) {
-        let count = listing.files.len();
-        events.send(ScanProgress::Phase { root: root.clone(), finalizing: false });
-        let progress = |done| events.send(ScanProgress::Advanced { done: previous + done, total });
-        let committed = |done| events.send(ScanProgress::Committed { done: previous + done });
-        let finalizing = || events.send(ScanProgress::Phase { root: root.clone(), finalizing: true });
-        match crate::scan::scan_listing(&lib, root, artwork_cache.as_deref(), &progress, &*containers, &control, &finalizing, &committed, listing) {
+        events.send(ScanProgress::Phase { root: root.clone(), stage: ScanStage::Listing });
+        let watch = RootWatch { events: &events, root, before, files: Cell::new(0) };
+        match crate::scan::scan_watched(&lib, root, artwork_cache.as_deref(), &*containers, &control, &watch) {
             Ok(report) => {
-                previous += count;
+                before += watch.files.get();
                 accumulated.seen += report.seen;
                 accumulated.read += report.read;
                 accumulated.unchanged += report.unchanged;
@@ -145,6 +153,37 @@ fn run(db_path: PathBuf, roots: Vec<PathBuf>, artwork_cache: Option<PathBuf>, co
         }
     }
     events.send(ScanProgress::Done(accumulated));
+}
+
+/// One root's scan, told in the job's terms: its counts run on from the
+/// roots before it.
+struct RootWatch<'a> {
+    events: &'a Mailbox,
+    root: &'a Path,
+    /// The files of the roots already read.
+    before: usize,
+    /// This root's files, once it is listed.
+    files: Cell<usize>,
+}
+
+impl ScanWatch for RootWatch<'_> {
+    fn found(&self, so_far: usize) {
+        self.events.send(ScanProgress::Discovered { found: self.before + so_far });
+    }
+    fn listed(&self, files: usize) {
+        self.files.set(files);
+        self.events.send(ScanProgress::Counted { total: self.before + files });
+        self.events.send(ScanProgress::Phase { root: self.root.to_path_buf(), stage: ScanStage::Reading });
+    }
+    fn advanced(&self, done: usize) {
+        self.events.send(ScanProgress::Advanced { done: self.before + done, total: self.before + self.files.get() });
+    }
+    fn committed(&self, done: usize) {
+        self.events.send(ScanProgress::Committed { done: self.before + done });
+    }
+    fn finalizing(&self) {
+        self.events.send(ScanProgress::Phase { root: self.root.to_path_buf(), stage: ScanStage::Finalizing });
+    }
 }
 
 impl Drop for ScanJob {
@@ -186,7 +225,7 @@ mod tests {
         for done in 0..100_000 {
             mailbox.send(ScanProgress::Advanced { done, total: 100_000 });
             mailbox.send(ScanProgress::Committed { done });
-            mailbox.send(ScanProgress::Phase { root: PathBuf::from("music"), finalizing: false });
+            mailbox.send(ScanProgress::Phase { root: PathBuf::from("music"), stage: ScanStage::Reading });
         }
         mailbox.send(ScanProgress::Done(ScanReport::default()));
         let events = mailbox.poll();
@@ -228,13 +267,17 @@ mod tests {
         let job = ScanJob::start(db, dir.clone(), None);
         let events = to_the_end(&job);
 
-        // The total arrives first: a bar without one invents its progress.
-        match events.first() {
+        // The total arrives before any progress: a bar without one invents
+        // its progress.
+        let counted = events.iter().position(|e| matches!(e, ScanProgress::Counted { .. }));
+        let advanced = events.iter().position(|e| matches!(e, ScanProgress::Advanced { .. }));
+        match counted.map(|at| &events[at]) {
             Some(ScanProgress::Counted { total }) => {
                 assert_eq!(*total, 4, "the audio ones are counted, not the .txt")
             }
-            other => panic!("the count comes first: {other:?}"),
+            other => panic!("the count comes before progress: {other:?}"),
         }
+        assert!(counted < advanced, "{events:?}");
         let mut seen = 0;
         for e in &events {
             if let ScanProgress::Advanced { done, total } = e {
@@ -291,17 +334,24 @@ mod tests {
         let job = ScanJob::start_all(dir.join("lib.db"), vec![a, b], None);
         let events = to_the_end(&job);
 
-        match events.first() {
-            Some(ScanProgress::Counted { total }) => assert_eq!(*total, 5, "both together"),
-            other => panic!("the count comes first: {other:?}"),
-        }
-        let mut seen = 0;
+        // Each folder is listed right before it is read, so the total grows
+        // folder by folder; it never shrinks and progress never restarts.
+        let (mut seen, mut most) = (0, 0);
         for e in &events {
-            if let ScanProgress::Advanced { done, .. } = e {
-                assert!(*done >= seen, "progress does not restart between folders");
-                seen = *done;
+            match e {
+                ScanProgress::Counted { total } => {
+                    assert!(*total >= most, "the total does not shrink: {events:?}");
+                    most = *total;
+                }
+                ScanProgress::Advanced { done, total } => {
+                    assert!(*done >= seen, "progress does not restart between folders");
+                    assert!(*done <= *total && *total <= 5, "{events:?}");
+                    seen = *done;
+                }
+                _ => {}
             }
         }
+        assert_eq!(most, 5, "both together in the end");
         match events.last() {
             Some(ScanProgress::Done(r)) => {
                 assert_eq!(r.seen, 5, "all five were seen");
@@ -358,6 +408,46 @@ mod tests {
         }
         drop(job);
         let _ = std::fs::remove_file(db);
+    }
+
+    /// A share that is away when the scan starts and back by its turn: an
+    /// empty listing taken while it was away took every track for deleted.
+    #[test]
+    fn a_folder_away_when_the_scan_starts_and_back_by_its_turn_loses_nothing() {
+        struct Remount { parked: PathBuf, back: PathBuf }
+        impl Containers for Remount {
+            fn may_hold(&self, path: &Path) -> bool { path.extension().is_some_and(|extension| extension == "disc") }
+            // Read while the other folder is scanned, before the share's turn.
+            fn tracks(&self, _: &Path) -> Option<Vec<crate::scan::ContainedTrack>> {
+                let _ = std::fs::rename(&self.parked, &self.back);
+                None
+            }
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let (share, other, parked) = (dir.path().join("share"), dir.path().join("other"), dir.path().join("parked"));
+        std::fs::create_dir_all(share.join("album")).unwrap();
+        for n in 0..3 { std::fs::write(share.join("album").join(format!("{n}.flac")), b"not audio").unwrap(); }
+        std::fs::create_dir_all(&other).unwrap();
+        std::fs::write(other.join("one.flac"), b"not audio").unwrap();
+        std::fs::write(other.join("remount.disc"), b"x").unwrap();
+        let db = dir.path().join("lib.db");
+        crate::scan::scan_root(&Library::open(&db).unwrap(), &share).unwrap();
+        // Away: the mount point is there and empty.
+        std::fs::rename(share.join("album"), &parked).unwrap();
+
+        let back = share.join("album");
+        let job = ScanJob::start_with(db.clone(), vec![other, share.clone()], None, Arc::new(Remount { parked, back }));
+        let report = match to_the_end(&job).last() {
+            Some(ScanProgress::Done(report)) => report.clone(),
+            other => panic!("it should have finished: {other:?}"),
+        };
+        drop(job);
+        assert_eq!(report.missing, 0, "nothing under the share was taken for deleted");
+        let lib = Library::open_existing(&db).unwrap();
+        let under = format!("{}/%", share.display());
+        let present: i64 = lib.db.query_row("SELECT count(*) FROM tracks WHERE present = 1 AND external_id LIKE ?1", [&under], |r| r.get(0)).unwrap();
+        let scanned: i64 = lib.db.query_row("SELECT count(*) FROM scanned_files WHERE path LIKE ?1", [&under], |r| r.get(0)).unwrap();
+        assert_eq!((present, scanned), (3, 3), "the share's tracks and what was scanned of them are kept");
     }
 
     #[test]
