@@ -375,6 +375,10 @@ mod tests {
             }
         }
         assert_eq!(most, 5, "both together in the end");
+        // Neither folder reaches a first batch; each still says its last
+        // batch is written, and the latest notice is the second's.
+        let last_commit = events.iter().rev().find_map(|e| match e { ScanProgress::Committed { done, written } => Some((*done, *written)), _ => None });
+        assert!(last_commit.is_some_and(|(done, written)| done == 5 && written > 0), "{events:?}");
         match events.last() {
             Some(ScanProgress::Done(r)) => {
                 assert_eq!(r.seen, 5, "all five were seen");
