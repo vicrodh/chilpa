@@ -472,9 +472,15 @@ mod tests {
         drop(job);
         assert_eq!(report.missing, 0, "nothing under the share was taken for deleted");
         let lib = Library::open_existing(&db).unwrap();
-        let under = format!("{}/%", share.display());
-        let present: i64 = lib.db.query_row("SELECT count(*) FROM tracks WHERE present = 1 AND external_id LIKE ?1", [&under], |r| r.get(0)).unwrap();
-        let scanned: i64 = lib.db.query_row("SELECT count(*) FROM scanned_files WHERE path LIKE ?1", [&under], |r| r.get(0)).unwrap();
+        // Compared by path components, not by a pattern: the separator is
+        // the platform's.
+        let under_share = |sql: &str| -> usize {
+            let mut stmt = lib.db.prepare(sql).unwrap();
+            let paths: Vec<String> = stmt.query_map([], |r| r.get(0)).unwrap().map(Result::unwrap).collect();
+            paths.iter().filter(|path| Path::new(path).starts_with(&share)).count()
+        };
+        let present = under_share("SELECT external_id FROM tracks WHERE present = 1");
+        let scanned = under_share("SELECT path FROM scanned_files");
         assert_eq!((present, scanned), (3, 3), "the share's tracks and what was scanned of them are kept");
     }
 
