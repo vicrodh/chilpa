@@ -1076,6 +1076,9 @@ msgstr "Vérification du compte…"
 msgid "Checking your audio stack…"
 msgstr "Vérification de votre pile audio…"
 
+msgid "Checking your library and connected sources…"
+msgstr ""
+
 msgid "Checking your selected sources can take a few minutes."
 msgstr "La vérification des sources sélectionnées peut prendre quelques minutes."
 
@@ -1281,6 +1284,9 @@ msgid "Choose the receiver in Play on to connect."
 msgstr "Choisissez le récepteur dans Lire sur pour vous connecter."
 
 msgid "Choose the storage paired with this profile."
+msgstr ""
+
+msgid "Choose where to open this music"
 msgstr ""
 
 msgid "Clean"
@@ -2381,11 +2387,17 @@ msgstr "Rechercher des pochettes"
 msgid "Find matches"
 msgstr "Trouver des correspondances"
 
+msgid "Find music"
+msgstr ""
+
 msgid "Find music or saved selections…"
 msgstr "Rechercher de la musique ou des sélections enregistrées…"
 
 msgid "Find playlists"
 msgstr "Trouver des playlists"
+
+msgid "Find this music in your library and connected sources."
+msgstr ""
 
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr "Trouvez le nom de nœud PipeWire de votre DAC et collez-le ici :"
@@ -2572,9 +2584,6 @@ msgstr "Commencer"
 
 msgid "Getting started"
 msgstr "Premiers pas"
-
-msgid "Go"
-msgstr "Aller"
 
 msgid "Go Back"
 msgstr "Retour"
@@ -4195,9 +4204,6 @@ msgstr "Ouvrir le CD audio"
 msgid "Open downloads"
 msgstr "Ouvrir les téléchargements"
 
-msgid "Open in"
-msgstr "Ouvrir dans"
-
 msgid "Open in browser"
 msgstr "Ouvrir dans le navigateur"
 
@@ -4353,6 +4359,9 @@ msgstr "Collez un profil d'EQ paramétrique."
 
 msgid "Paste a personal access token from discogs.com/settings/developers."
 msgstr "Collez un jeton d’accès personnel obtenu sur discogs.com/settings/developers."
+
+msgid "Paste a valid HTTPS music link"
+msgstr ""
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
 msgstr "Collez le code affiché par Discogs après avoir autorisé Chilpa."
@@ -5133,9 +5142,6 @@ msgstr "Résolution réduite de {} à {} bits"
 
 msgid "Resolving selected music"
 msgstr "Préparation de la musique sélectionnée"
-
-msgid "Resolving…"
-msgstr "Résolution…"
 
 msgid "Restart Chilpa"
 msgstr "Redémarrer Chilpa"

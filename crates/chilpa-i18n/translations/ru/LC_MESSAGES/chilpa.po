@@ -1078,6 +1078,9 @@ msgstr "Проверка учётной записи…"
 msgid "Checking your audio stack…"
 msgstr "Проверка аудиостека…"
 
+msgid "Checking your library and connected sources…"
+msgstr ""
+
 msgid "Checking your selected sources can take a few minutes."
 msgstr "Проверка выбранных источников может занять несколько минут."
 
@@ -1283,6 +1286,9 @@ msgid "Choose the receiver in Play on to connect."
 msgstr "Для подключения выберите приёмник в меню «Воспроизводить на»."
 
 msgid "Choose the storage paired with this profile."
+msgstr ""
+
+msgid "Choose where to open this music"
 msgstr ""
 
 msgid "Clean"
@@ -2383,11 +2389,17 @@ msgstr "Найти обложки"
 msgid "Find matches"
 msgstr "Найти совпадения"
 
+msgid "Find music"
+msgstr ""
+
 msgid "Find music or saved selections…"
 msgstr "Найти музыку или сохранённые подборки…"
 
 msgid "Find playlists"
 msgstr "Найти плейлисты"
+
+msgid "Find this music in your library and connected sources."
+msgstr ""
 
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr "Найдите имя узла PipeWire вашего DAC и вставьте его сюда:"
@@ -2574,9 +2586,6 @@ msgstr "Начать"
 
 msgid "Getting started"
 msgstr "Первые шаги"
-
-msgid "Go"
-msgstr "Перейти"
 
 msgid "Go Back"
 msgstr "Назад"
@@ -4198,9 +4207,6 @@ msgstr "Открыть аудио-CD"
 msgid "Open downloads"
 msgstr "Открыть загрузки"
 
-msgid "Open in"
-msgstr "Открыть в"
-
 msgid "Open in browser"
 msgstr "Открыть в браузере"
 
@@ -4356,6 +4362,9 @@ msgstr "Вставьте профиль параметрического EQ."
 
 msgid "Paste a personal access token from discogs.com/settings/developers."
 msgstr "Вставьте личный токен доступа с discogs.com/settings/developers."
+
+msgid "Paste a valid HTTPS music link"
+msgstr ""
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
 msgstr "Вставьте код, который Discogs покажет после разрешения доступа для Chilpa."
@@ -5136,9 +5145,6 @@ msgstr "Разрядность снижена с {} до {} бит"
 
 msgid "Resolving selected music"
 msgstr "Подготовка выбранной музыки"
-
-msgid "Resolving…"
-msgstr "Обработка…"
 
 msgid "Restart Chilpa"
 msgstr "Перезапустить Chilpa"

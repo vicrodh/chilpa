@@ -21,18 +21,28 @@ Column {
     property bool ready: false
     property var documents: Visit.recall("home.source.documents", ({}))
     property var sections: Visit.recall("home.source.sections", [])
-    readonly property var sources: active
-        ? JSON.parse(Sources.homeLibraries(Library.remoteRev + Library.rev + Sources.revision + home.refresh) || "[]")
-        : Visit.recall("home.source.list", [])
+    property var loadedSources: ({})
+    readonly property string sourceDocument: active
+        ? Sources.homeLibraries(Library.rev + Sources.revision + home.refresh) || "[]"
+        : JSON.stringify(Visit.recall("home.source.list", []))
+    readonly property var sources: JSON.parse(sourceDocument)
     onSourcesChanged: scheduled.restart()
+    onRefreshChanged: scheduled.restart()
     onActiveChanged: scheduled.restart()
     onSelectedSourcesChanged: scheduled.restart()
     onBrowsingSourceChanged: scheduled.restart()
     Component.onCompleted: scheduled.restart()
+    Connections {
+        target: Library
+        function onRemoteRevChanged() {
+            if (home.active && !scheduled.running) home.updateLive()
+        }
+    }
     Timer { id: scheduled; interval: 0; onTriggered: home.schedule() }
     function schedule() {
         if (!active) { step.stop(); return }
         Visit.keep("home.source.list", sources)
+        loadedSources = ({})
         step.index = 0
         ready = sources.length === 0
         publish()
@@ -46,7 +56,19 @@ Column {
         sections = rows
         Visit.keep("home.source.sections", sections)
     }
-    function resolve(source) {
+    function updateLive() {
+        for (const source of sources) {
+            if (!loadedSources[source.id]) resolve(source)
+            else if ((documents[source.id] || []).some(section => section.live === true)) resolve(source, true)
+        }
+    }
+    function isLive(section) {
+        if (section.live !== undefined) return section.live === true
+        // Older documents expose listening history through these generic roles.
+        // A personal page also contains editorial shelves, which stay still.
+        return section.personal === true && /^(recent|recent_albums|recent_playlists|recent_tracks|recently_played|recently-played|continue|history)$/.test(section.id || "")
+    }
+    function resolve(source, liveOnly) {
         if (!active || (source.enabled !== true && !selectedSources.includes(source.id) && browsingSource !== source.id)) return
         const page = JSON.parse(Sources.page(source.id + " native:discover:home", Library.remoteRev) || "{}")
         if (page.loading === true && !(page.shelves || []).length) return
@@ -54,11 +76,20 @@ Column {
         try { preferences = JSON.parse(SettingsModel.kept("ui.source." + source.id + ".discover.home") || "[]") } catch (_) {}
         const available = (page.shelves || []).map(section => Object.assign({}, section, {size:0}))
         const ordered = SectionChoices.order(available, preferences)
-        documents[source.id] = ordered.map(section => Object.assign({}, section, {
+        const previous = documents[source.id] || []
+        let next = ordered.map(section => Object.assign({}, section, {
             title: source.icon ? section.title : source.name + " · " + section.title,
+            live: isLive(section),
             sourceEnabled: section.enabled !== false, sourceIcon: source.icon || "", sourceId: source.id,
             sourceName: source.name, homeId: source.id + ":" + section.id
         }))
+        if (liveOnly) next = previous.map(section => {
+            if (section.live !== true) return section
+            return next.find(candidate => candidate.homeId === section.homeId) || section
+        })
+        loadedSources[source.id] = page.loading !== true
+        if (JSON.stringify(previous) === JSON.stringify(next)) return
+        documents[source.id] = next
         Visit.keep("home.source.documents", documents)
         publish()
     }

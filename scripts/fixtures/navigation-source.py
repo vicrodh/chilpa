@@ -5,6 +5,7 @@ import threading
 import time
 
 output = threading.Lock()
+rotation = 0
 with open("/plugin/image-base.json") as configuration:
     image_base = json.load(configuration)
 
@@ -13,6 +14,7 @@ def items(kind, size=24):
     return [dict(kind=singular, ref=f"{singular}:{i}", title=f"Fixture {singular} {i}", artist="Fixture artist", artist_ref="artist:0", album="Fixture record", album_ref=f"album:{i}", duration_ms=180000, image=f"{image_base}/{singular}-{i}.png") for i in range(size)]
 
 def answer(request):
+    global rotation
     method = request.get("method")
     params = request.get("params") or {}
     if method == "initialize":
@@ -20,7 +22,17 @@ def answer(request):
     elif method == "page.get":
         time.sleep(1.2)
         reference = params.get("ref", "")
-        if reference.startswith("artist:"):
+        if reference == "discover:rotating":
+            if params.get("refresh"):
+                rotation += 1
+            shelves = []
+            for kind in ("album", "track"):
+                rows = items(kind, 4)
+                for index, item in enumerate(rows):
+                    item["ref"] = f"{kind}:{rotation * 1000 + index}"
+                shelves.append(dict(id=kind + "s", kind=kind, items=rows))
+            result = dict(title=f"Rotation {rotation}", shelves=shelves)
+        elif reference.startswith("artist:"):
             result = dict(header=dict(kind="artist", ref=reference, title="Fixture artist", image=f"{image_base}/artist.png"), shelves=[
                 dict(id="tracks", title="Popular Tracks", kind="track", items=items("track", 10)),
                 dict(id="album", title="Albums", kind="album", items=items("album", 48))])

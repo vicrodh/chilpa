@@ -9,6 +9,7 @@ pub mod worker;
 pub mod album_pages;
 pub mod album_rows;
 pub mod track_roles;
+pub mod track_rows;
 pub mod bridge {
     pub mod i18n;
     pub mod prefs;

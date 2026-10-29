@@ -13,22 +13,26 @@ Item {
     property Component content
     property bool started: false
     property bool bound: false
+    // Once drawn, a module keeps its content during background refreshes.
+    property bool displayed: false
+    onContentChanged: displayed = false
     clip: true
     readonly property bool ready: bound && body.status === Loader.Ready && body.item && body.item.ready === true
     readonly property bool shown: !ready || body.item.shown
+    readonly property bool placeholderVisible: !ready && !displayed
     readonly property var footprint: Visit.recall("home.module." + entry.id, null)
     height: ready ? (shown ? body.height : 0)
         : footprint && Math.abs(footprint.width - width) < Metrics.gap2 ? footprint.height : placeholder.height
     function remember() {
         if (ready) Visit.keep("home.module." + entry.id, { width: width, height: shown ? body.height : 0 })
     }
-    onReadyChanged: Qt.callLater(remember)
+    onReadyChanged: { if (ready) displayed = true; Qt.callLater(remember) }
     onHeightChanged: if (ready) Qt.callLater(remember)
 
     Column {
         id: placeholder
         width: parent.width
-        visible: !slot.ready
+        visible: slot.placeholderVisible
         spacing: slot.entry.kind === "shelf" ? Metrics.gap12 : Metrics.gap8
         SectionHeader { width: parent.width; title: slot.entry.title || ""; sourceIcon: slot.entry.sourceIcon || "" }
         Item {
@@ -74,7 +78,7 @@ Item {
         height: item ? Math.max(item.shown ? placeholder.height : 0, item.implicitHeight) : 0
         active: slot.started || slot.bound
         asynchronous: true
-        visible: slot.ready && slot.shown
+        visible: (slot.ready || slot.displayed) && slot.shown
         sourceComponent: slot.content
         onLoaded: slot.bound = true
     }
