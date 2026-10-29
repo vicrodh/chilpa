@@ -1076,6 +1076,9 @@ msgstr ""
 msgid "Checking your audio stack…"
 msgstr ""
 
+msgid "Checking your library and connected sources…"
+msgstr ""
+
 msgid "Checking your selected sources can take a few minutes."
 msgstr ""
 
@@ -1281,6 +1284,9 @@ msgid "Choose the receiver in Play on to connect."
 msgstr ""
 
 msgid "Choose the storage paired with this profile."
+msgstr ""
+
+msgid "Choose where to open this music"
 msgstr ""
 
 msgid "Clean"
@@ -2381,11 +2387,17 @@ msgstr ""
 msgid "Find matches"
 msgstr "Find matches"
 
+msgid "Find music"
+msgstr ""
+
 msgid "Find music or saved selections…"
 msgstr "Find music or saved selections…"
 
 msgid "Find playlists"
 msgstr "Find playlists"
+
+msgid "Find this music in your library and connected sources."
+msgstr ""
 
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr ""
@@ -2572,9 +2584,6 @@ msgstr "Get started"
 
 msgid "Getting started"
 msgstr "Getting started"
-
-msgid "Go"
-msgstr ""
 
 msgid "Go Back"
 msgstr ""
@@ -4195,9 +4204,6 @@ msgstr "Open audio CD"
 msgid "Open downloads"
 msgstr "Open downloads"
 
-msgid "Open in"
-msgstr ""
-
 msgid "Open in browser"
 msgstr ""
 
@@ -4353,6 +4359,9 @@ msgstr ""
 
 msgid "Paste a personal access token from discogs.com/settings/developers."
 msgstr "Paste a personal access token from discogs.com/settings/developers."
+
+msgid "Paste a valid HTTPS music link"
+msgstr ""
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
 msgstr "Paste the code Discogs shows after you allow Chilpa."
@@ -5133,9 +5142,6 @@ msgstr ""
 
 msgid "Resolving selected music"
 msgstr "Resolving selected music"
-
-msgid "Resolving…"
-msgstr ""
 
 msgid "Restart Chilpa"
 msgstr ""

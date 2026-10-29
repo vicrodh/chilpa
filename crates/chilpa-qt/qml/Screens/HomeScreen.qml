@@ -127,6 +127,7 @@ ListView {
     component SourceRail: SourceShelf {
         viewport: page
         active: page.visible && !page.leaving
+        liveUpdates: entry.live === true
         property var entry: ({})
         oneRow: true
         section: Object.assign({}, entry, { kind: entry.entityKind || "album", items: (entry.items || []).slice(0, entry.size || undefined) })

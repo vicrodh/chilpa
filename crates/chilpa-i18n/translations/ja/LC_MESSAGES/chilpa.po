@@ -1074,6 +1074,9 @@ msgstr "アカウントを確認中…"
 msgid "Checking your audio stack…"
 msgstr "オーディオスタックを確認中…"
 
+msgid "Checking your library and connected sources…"
+msgstr ""
+
 msgid "Checking your selected sources can take a few minutes."
 msgstr "選択したソースの確認には数分かかることがあります。"
 
@@ -1279,6 +1282,9 @@ msgid "Choose the receiver in Play on to connect."
 msgstr "接続するには「再生先」で受信機を選択してください。"
 
 msgid "Choose the storage paired with this profile."
+msgstr ""
+
+msgid "Choose where to open this music"
 msgstr ""
 
 msgid "Clean"
@@ -2379,11 +2385,17 @@ msgstr "カバーを探す"
 msgid "Find matches"
 msgstr "一致を探す"
 
+msgid "Find music"
+msgstr ""
+
 msgid "Find music or saved selections…"
 msgstr "音楽や保存済みの選択を検索…"
 
 msgid "Find playlists"
 msgstr "プレイリストを探す"
+
+msgid "Find this music in your library and connected sources."
+msgstr ""
 
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr "DACのPipeWireノード名を見つけてここに貼り付けてください："
@@ -2570,9 +2582,6 @@ msgstr "はじめる"
 
 msgid "Getting started"
 msgstr "はじめに"
-
-msgid "Go"
-msgstr "移動"
 
 msgid "Go Back"
 msgstr "戻る"
@@ -4192,9 +4201,6 @@ msgstr "オーディオCDを開く"
 msgid "Open downloads"
 msgstr "ダウンロードを開く"
 
-msgid "Open in"
-msgstr "開く先"
-
 msgid "Open in browser"
 msgstr "ブラウザーで開く"
 
@@ -4350,6 +4356,9 @@ msgstr "パラメトリックEQプロファイルを貼り付けてください�
 
 msgid "Paste a personal access token from discogs.com/settings/developers."
 msgstr "discogs.com/settings/developersで発行した個人用アクセストークンを貼り付けてください。"
+
+msgid "Paste a valid HTTPS music link"
+msgstr ""
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
 msgstr "Chilpaのアクセスを許可した後にDiscogsが表示するコードを貼り付けてください。"
@@ -5130,9 +5139,6 @@ msgstr "解像度を{}ビットから{}ビットに縮小"
 
 msgid "Resolving selected music"
 msgstr "選択した音楽を準備中"
-
-msgid "Resolving…"
-msgstr "確認中…"
 
 msgid "Restart Chilpa"
 msgstr "Chilpaを再起動"

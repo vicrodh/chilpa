@@ -1076,6 +1076,9 @@ msgstr "Verificando a conta…"
 msgid "Checking your audio stack…"
 msgstr "Verificando sua pilha de áudio…"
 
+msgid "Checking your library and connected sources…"
+msgstr ""
+
 msgid "Checking your selected sources can take a few minutes."
 msgstr "Verificar as fontes selecionadas pode levar alguns minutos."
 
@@ -1281,6 +1284,9 @@ msgid "Choose the receiver in Play on to connect."
 msgstr "Escolha o receptor em Reproduzir em para conectar."
 
 msgid "Choose the storage paired with this profile."
+msgstr ""
+
+msgid "Choose where to open this music"
 msgstr ""
 
 msgid "Clean"
@@ -2381,11 +2387,17 @@ msgstr "Buscar capas"
 msgid "Find matches"
 msgstr "Buscar correspondências"
 
+msgid "Find music"
+msgstr ""
+
 msgid "Find music or saved selections…"
 msgstr "Buscar música ou seleções salvas…"
 
 msgid "Find playlists"
 msgstr "Buscar playlists"
+
+msgid "Find this music in your library and connected sources."
+msgstr ""
 
 msgid "Find your DAC's PipeWire node name and paste it here:"
 msgstr "Encontre o nome do nó PipeWire do seu DAC e cole aqui:"
@@ -2572,9 +2584,6 @@ msgstr "Começar"
 
 msgid "Getting started"
 msgstr "Primeiros passos"
-
-msgid "Go"
-msgstr "Ir"
 
 msgid "Go Back"
 msgstr "Voltar"
@@ -4195,9 +4204,6 @@ msgstr "Abrir CD de áudio"
 msgid "Open downloads"
 msgstr "Abrir downloads"
 
-msgid "Open in"
-msgstr "Abrir em"
-
 msgid "Open in browser"
 msgstr "Abrir no navegador"
 
@@ -4353,6 +4359,9 @@ msgstr "Cole um perfil de EQ paramétrico."
 
 msgid "Paste a personal access token from discogs.com/settings/developers."
 msgstr "Cole um token de acesso pessoal de discogs.com/settings/developers."
+
+msgid "Paste a valid HTTPS music link"
+msgstr ""
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
 msgstr "Cole o código que o Discogs mostra após autorizar o Chilpa."
@@ -5133,9 +5142,6 @@ msgstr "Resolução reduzida de {} para {} bits"
 
 msgid "Resolving selected music"
 msgstr "Preparando a música selecionada"
-
-msgid "Resolving…"
-msgstr "Resolvendo…"
 
 msgid "Restart Chilpa"
 msgstr "Reiniciar o Chilpa"
