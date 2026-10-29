@@ -60,10 +60,24 @@ impl chilpa_library::scan::Containers for DiscImages {
     }
 
     fn tracks(&self, path: &Path) -> Option<Vec<chilpa_library::scan::ContainedTrack>> {
-        let disc = chilpa_sacd::open(path).ok()?;
+        match self.contents(path) {
+            chilpa_library::scan::Contents::Tracks(tracks) => Some(tracks),
+            _ => None,
+        }
+    }
+
+    /// An image that could not be read this time, from the disk or the
+    /// network, is told apart from one that is not a SACD: the library keeps
+    /// what it had from the first.
+    fn contents(&self, path: &Path) -> chilpa_library::scan::Contents {
+        let disc = match chilpa_sacd::open(path) {
+            Ok(disc) => disc,
+            Err(chilpa_sacd::SacdError::Open(error)) => return chilpa_library::scan::Contents::Unreadable(error),
+            Err(_) => return chilpa_library::scan::Contents::Nothing,
+        };
         let expected: Vec<_> = disc.area.tracks.iter().map(|track| track.number).collect();
         let xml = super::sacd_xml::read_for(path, &expected);
-        Some(
+        chilpa_library::scan::Contents::Tracks(
             disc.area
                 .tracks
                 .iter()
@@ -170,6 +184,17 @@ mod tests {
             let read = tags(&area, &track, Path::new("disc.iso"));
             assert_eq!((read.disc_number, read.disc_total), (number, total));
         }
+    }
+
+    #[test]
+    fn an_image_that_cannot_be_read_is_told_apart_from_one_that_is_no_disc() {
+        use chilpa_library::scan::{Containers, Contents};
+        let dir = tempfile::tempdir().unwrap();
+        let other = dir.path().join("dvd.iso");
+        std::fs::write(&other, vec![0u8; 4096]).unwrap();
+        assert!(matches!(DiscImages.contents(&other), Contents::Nothing), "no SACD: holds nothing");
+        assert!(matches!(DiscImages.contents(&dir.path().join("gone.iso")), Contents::Unreadable(_)), "could not be opened");
+        assert!(DiscImages.tracks(&other).is_none());
     }
 
     #[test]
