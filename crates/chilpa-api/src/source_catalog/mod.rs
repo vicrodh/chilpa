@@ -37,6 +37,7 @@ mod sorting;
 mod selection;
 mod navigation;
 mod technical;
+mod track_quality;
 mod residency;
 pub use selection::SelectionHold;
 #[cfg(test)]
@@ -567,7 +568,7 @@ impl Catalog {
             self.queue(&mut inner, Job::Tracks(id), true);
         }
         let ids = card.tracks?;
-        Some(ids.iter().filter_map(|t| inner.store.tracks.get(t).cloned()).map(|track| inner.composers.track(inner.genres.track(track, &inner.store, now()), now())).collect())
+        Some(ids.iter().filter_map(|t| inner.store.tracks.get(t).cloned()).map(|track| inner.composers.track(inner.genres.track(inner.store.with_album_quality(track), &inner.store, now()), now())).collect())
     }
 
     pub fn card_error(&self, id: i64) -> Option<String> {
@@ -576,14 +577,14 @@ impl Catalog {
 
     pub fn track_by_path(&self, path: &str) -> Option<(store::Track, String)> {
         let inner = self.lock();
-        let track = inner.composers.track(inner.genres.track(inner.store.track_by_path(path)?.clone(), &inner.store, now()), now());
+        let track = inner.composers.track(inner.genres.track(inner.store.with_album_quality(inner.store.track_by_path(path)?.clone()), &inner.store, now()), now());
         let art = inner.store.art_of(&track);
         Some((track, art))
     }
 
     pub fn tracks_by_ids(&self, ids: &[i64]) -> Vec<(store::Track, String)> {
         let inner = self.lock();
-        ids.iter().filter_map(|id| inner.store.tracks.get(id)).map(|t| (inner.composers.track(inner.genres.track(t.clone(), &inner.store, now()), now()), inner.store.art_of(t))).collect()
+        ids.iter().filter_map(|id| inner.store.tracks.get(id)).map(|t| (inner.composers.track(inner.genres.track(inner.store.with_album_quality(t.clone()), &inner.store, now()), now()), inner.store.art_of(t))).collect()
     }
 
     pub fn art_of_card(&self, id: i64) -> String {
