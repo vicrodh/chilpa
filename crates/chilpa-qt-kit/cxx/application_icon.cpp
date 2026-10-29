@@ -13,8 +13,8 @@ extern "C" void chilpa_install_application_icon()
     const auto refresh = [] {
         const bool dark = QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
         QGuiApplication::setWindowIcon(QIcon(dark
-            ? QStringLiteral(":/qt/qml/app/chilpa/kit/assets/app-icon-dark.png")
-            : QStringLiteral(":/qt/qml/app/chilpa/kit/assets/app-icon-light.png")));
+            ? QStringLiteral(":/qt/qml/app/chilpa/kit/assets/app-icon-macos-dark.png")
+            : QStringLiteral(":/qt/qml/app/chilpa/kit/assets/app-icon-macos-light.png")));
     };
     refresh();
     QObject::connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, qGuiApp, refresh);
