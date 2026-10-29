@@ -13,6 +13,9 @@ ApplicationWindow {
     width: 1100; height: 700; visible: true
     property int fixtureAlbum: 0
     property int phase: 0
+    // QtTest key delivery processes events; another timer tick must not
+    // re-enter a phase while its native input is still being dispatched.
+    property bool phaseBusy: false
     property string lastQuery: ""
     property string lastSource: ""
     property int resultSteps: 0
@@ -49,7 +52,8 @@ ApplicationWindow {
     Timer {
         interval: 100; repeat: true; running: true
         onTriggered: {
-            if (!tracks.ready || tracks.count < 100) return
+            if (window.phaseBusy || !tracks.ready || tracks.count < 100) return
+            window.phaseBusy = true
             if (window.phase === 0) {
                 Hotkeys.command("keymap", "vi")
                 list.forceActiveFocus()
@@ -120,6 +124,7 @@ ApplicationWindow {
                 Qt.exit(0)
             }
             ++window.phase
+            window.phaseBusy = false
         }
     }
     Timer { interval: 20000; running: true; onTriggered: { console.log("SMOKE FAIL vi commands timed out phase=" + window.phase); Qt.exit(1) } }
