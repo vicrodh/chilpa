@@ -197,7 +197,15 @@ ListView {
                 : entry.kind === "tracks" ? (entry.grid ? compactTracks : trackShelf) : sourceRail
         }
     }
-    SourceHomeSections { id: remote; active: page.presented && page.visible && !page.leaving; refresh: page.homeRefresh; rendered: false }
+    SourceHomeSections {
+        id: remote
+        active: page.presented && page.visible && !page.leaving
+        refresh: page.homeRefresh
+        rendered: false
+        selectedSources: [...new Set(page.kept.filter(section => section.enabled !== false && section.id.startsWith("source:"))
+            .map(section => section.id.slice(7).split(":")[0]))]
+        browsingSource: customization.item && customization.item.opened ? customization.item.activeGroup : ""
+    }
     Component { id: albumShelf; AlbumShelf { entry: parent.entry; width: parent ? parent.width : 0 } }
     Component { id: trackShelf; TrackShelf { entry: parent.entry; width: parent ? parent.width : 0 } }
     Component { id: playlistShelf; PlaylistShelf { entry: parent.entry; width: parent ? parent.width : 0 } }

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls.Basic
+import QtTest
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
@@ -20,6 +21,7 @@ ApplicationWindow {
     TextInput { id: field; y: 520; width: 300; height: 30 }
     SearchBox { id: searchBox; y: 560; width: 300; room: 400 }
     WindowControls { id: controls; window: window }
+    TestCase { id: keyboard; when: false }
     Connections {
         target: Hotkeys
         function onSearchCommand(query, source) { window.lastQuery = query; window.lastSource = source }
@@ -83,7 +85,9 @@ ApplicationWindow {
                 window.command("/search:local Vi smoke fixture")
                 window.check(window.lastSource === "local" && window.lastQuery === "Vi smoke fixture", "source command reaches the existing search flyout")
                 list.forceActiveFocus()
-                window.press(Qt.Key_N, "n"); window.press(Qt.Key_N, "N", Qt.ShiftModifier)
+                keyboard.keyClick(Qt.Key_N)
+                window.check(window.resultSteps === 1, "n steps the existing search forward")
+                keyboard.keyClick(Qt.Key_N, Qt.ShiftModifier)
                 window.check(window.resultSteps === 0, "n and N step the same search results")
                 const seek = JSON.parse(CommandLine.prepare(":seek 1:30"))
                 window.check(seek.value === 90 && !seek.relative, "clock seek parses to seconds")

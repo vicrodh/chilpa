@@ -18,8 +18,10 @@ Window {
     readonly property bool playing: Player.playing
     property int queueResets: 0
     property int historyResets: 0
-    property var resetBaseline: [0, 0]
-    property var transitionResets: ({})
+    property int queueUpdates: 0
+    property int historyUpdates: 0
+    property var updateBaseline: [0, 0]
+    property var transitionUpdates: ({})
     property string phase: "startup"
     property int ticks: 0
     property int phaseTicks: 0
@@ -76,8 +78,22 @@ Window {
         filterRev: Player.queueRev + ListenList.revision
         playingPath: Player.path
     }
-    Connections { target: queueRows; function onModelReset() { ++window.queueResets } }
-    Connections { target: historyRows; function onModelReset() { ++window.historyResets } }
+    Connections {
+        target: queueRows
+        function onModelReset() { ++window.queueResets; ++window.queueUpdates }
+        function onRowsInserted() { ++window.queueUpdates }
+        function onRowsRemoved() { ++window.queueUpdates }
+        function onRowsMoved() { ++window.queueUpdates }
+        function onDataChanged() { ++window.queueUpdates }
+    }
+    Connections {
+        target: historyRows
+        function onModelReset() { ++window.historyResets; ++window.historyUpdates }
+        function onRowsInserted() { ++window.historyUpdates }
+        function onRowsRemoved() { ++window.historyUpdates }
+        function onRowsMoved() { ++window.historyUpdates }
+        function onDataChanged() { ++window.historyUpdates }
+    }
     Parts.CoverFlowDeck {
         id: deck
         anchors.fill: parent
@@ -155,10 +171,10 @@ Window {
                 path:Player.path,playingRow:queueRows.playingRow(),ahead:queueRows.count,behind:historyRows.count,
                 snapshot:deck.snapshot(),cards:deck.covers().map(item => ({identity:item.identity,occupied:item.occupied,offset:item.offset,destination:item.destination}))}))
             check(before.card.identity === "track:" + id && card === before.card,
-                "model reset recycled the cached cover owner for " + id)
+                "model update recycled the cached cover owner for " + id)
             check(card.occupied, "a transport frame hid the retained cover for " + id)
             const tile = child(card, "flowArtwork"), decoded = image(tile)
-            check(tile === before.tile && decoded === before.image, "model reset replaced an Image for " + id)
+            check(tile === before.tile && decoded === before.image, "model update replaced an Image for " + id)
             check(tile.ready && decoded.status === Image.Ready, "loaded image blinked or restarted for " + id)
             check(tile.decode === before.decode && decoded.source.toString() === before.source
                 && decoded.sourceSize.width === before.width && decoded.sourceSize.height === before.height,
@@ -277,7 +293,7 @@ Window {
                 if (!window.trackIds.every(id => window.cover(id) && window.cover(id).ready)) return
                 window.remember()
                 window.check(queueRows.count === 3 && historyRows.count === 0, "initial native queue/history mismatch")
-                window.resetBaseline = [window.queueResets, window.historyResets]
+                window.updateBaseline = [window.queueUpdates, window.historyUpdates]
                 Player.next()
                 window.enter("next")
             } else if (window.phase === "next" || window.phase === "back") {
@@ -285,15 +301,15 @@ Window {
                 if (!window.audioReady(index)) return
                 if (Player.path !== window.trackPaths[index] || window.cover(window.trackIds[index]).destination !== 0 || window.moving()) return
                 window.stable()
-                window.check(window.queueResets > window.resetBaseline[0] && window.historyResets > window.resetBaseline[1],
-                             "native transport did not reset both changed queue/history models")
-                window.transitionResets[window.phase] = {queue:window.queueResets - window.resetBaseline[0],
-                    history:window.historyResets - window.resetBaseline[1]}
+                window.check(window.queueUpdates > window.updateBaseline[0] && window.historyUpdates > window.updateBaseline[1],
+                             "native transport did not notify both changed queue/history models")
+                window.transitionUpdates[window.phase] = {queue:window.queueUpdates - window.updateBaseline[0],
+                    history:window.historyUpdates - window.updateBaseline[1]}
                 window.check((forward ? window.nextSamples : window.backSamples) >= 3, "too few captures during animation")
                 window.check(queueRows.count === (forward ? 2 : 3) && historyRows.count === (forward ? 1 : 0), "native history did not follow transport")
                 window.check(window.trackIds.every((id, i) => window.cover(id).destination === i - index), "settled native cover destinations differ")
                 if (forward) {
-                    window.resetBaseline = [window.queueResets, window.historyResets]
+                    window.updateBaseline = [window.queueUpdates, window.historyUpdates]
                     // I replay real native rows for eight Back frames to make
                     // delayed delivery deterministic; playback remains native.
                     retainedAhead.entries = window.retainRows(queueRows)
@@ -405,8 +421,8 @@ Window {
                 window.check(window.mixedFrames === 8 && window.mixedCaptures > 0, "mixed snapshot frames were not captured")
                 console.log("SMOKE focus evidence " + JSON.stringify({native_models:true, native_transport:true, injected_snapshot_gap:true, snapshot_gap_frames:window.mixedFrames,
                     snapshot_gap_captures:window.mixedCaptures, native_models_scope:"Next and restored Back; first eight Back frames replay real native rows",
-                    preserved_images:window.trackIds.length, transition_model_resets:window.transitionResets,
-                    reset_scope:"Native transport changes queue/history; reset timing is not asserted during animation",
+                    preserved_images:window.trackIds.length, transition_model_updates:window.transitionUpdates, model_resets:[window.queueResets, window.historyResets],
+                    update_scope:"Native transport notifies incremental edits or resets; identities and images stay stable in every frame",
                     next_frames:window.nextSamples,
                     back_frames:window.backSamples, lyrics_context:true, lyrics_centered:true, words_timed:true,
                     line_timing_no_words:true, lyric_glide:window.sawGlide, timed_prelude:true, prelude_seek:true,

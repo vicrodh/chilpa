@@ -118,4 +118,19 @@ TestCase {
         compare(model.actedRow, 5)
         tryCompare(flyout, "opened", false)
     }
+
+    function test_focused_results_receive_vi_steps_without_unblocking_the_background() {
+        openSearch("colon")
+        keyClick(Qt.Key_Down)
+        compare(flyout.current, 1)
+        for (const action of ["search.next", "list.down"]) {
+            Hotkeys.answer = action
+            keyClick(action === "search.next" ? Qt.Key_N : Qt.Key_J)
+            compare(flyout.current, 3)
+            Hotkeys.answer = action === "search.next" ? "search.previous" : "list.up"
+            keyClick(action === "search.next" ? Qt.Key_N : Qt.Key_K, action === "search.next" ? Qt.ShiftModifier : Qt.NoModifier)
+            compare(flyout.current, 1)
+            verify(flyout.opened && Hotkeys.searchActive)
+        }
+    }
 }

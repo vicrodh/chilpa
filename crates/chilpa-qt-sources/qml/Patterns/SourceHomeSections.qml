@@ -10,9 +10,14 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 // Returning to Home reserves the same slots before any plugin is queried.
 Column {
     id: home
+    objectName: "homeSourceSections"
     property int refresh: 0
     property bool rendered: true
     property bool active: true
+    // Explicit module choices and the source currently inspected in Customize
+    // can be read even when its default Home integration is off.
+    property var selectedSources: []
+    property string browsingSource: ""
     property bool ready: false
     property var documents: Visit.recall("home.source.documents", ({}))
     property var sections: Visit.recall("home.source.sections", [])
@@ -21,6 +26,8 @@ Column {
         : Visit.recall("home.source.list", [])
     onSourcesChanged: scheduled.restart()
     onActiveChanged: scheduled.restart()
+    onSelectedSourcesChanged: scheduled.restart()
+    onBrowsingSourceChanged: scheduled.restart()
     Component.onCompleted: scheduled.restart()
     Timer { id: scheduled; interval: 0; onTriggered: home.schedule() }
     function schedule() {
@@ -40,7 +47,7 @@ Column {
         Visit.keep("home.source.sections", sections)
     }
     function resolve(source) {
-        if (!active || source.enabled !== true) return
+        if (!active || (source.enabled !== true && !selectedSources.includes(source.id) && browsingSource !== source.id)) return
         const page = JSON.parse(Sources.page(source.id + " native:discover:home", Library.remoteRev) || "{}")
         if (page.loading === true && !(page.shelves || []).length) return
         let preferences = []

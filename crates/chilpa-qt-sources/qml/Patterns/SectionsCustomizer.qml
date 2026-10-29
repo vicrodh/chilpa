@@ -71,46 +71,50 @@ Modal {
     Column {
         anchors.fill: parent; spacing: Metrics.gap16
         Text { id: title; text: I18n.tr("Customize", I18n.rev); font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
+        Flickable {
+            id: tabs
+            objectName: "customizeGroups"
+            visible: customization.grouped
+            width: parent.width; height: Metrics.button32 + Metrics.gap8
+            contentWidth: tabRow.width; contentHeight: height
+            clip: true; interactive: contentWidth > width
+            flickableDirection: Flickable.HorizontalFlick
+            ScrollBar.horizontal: ViewportScrollBar {}
+            Row {
+                id: tabRow; spacing: Metrics.gap6
+                Repeater {
+                    model: customization.groups
+                    Rectangle {
+                        required property var modelData
+                        objectName: "customizeGroup_" + modelData.id
+                        width: tabLabel.implicitWidth + Metrics.gap12 + Metrics.gap12
+                        height: Metrics.button32; radius: Metrics.radiusControl
+                        color: customization.activeGroup === modelData.id ? Theme.color.stateSelected : Theme.color.surfaceRaised
+                        Row {
+                            id: tabLabel; anchors.centerIn: parent; spacing: Metrics.gap6
+                            SourceIcon { visible: !!modelData.icon; sourceInfo: ({icon: modelData.icon || ""}); width: visible ? Metrics.iconSm : 0; height: Metrics.iconSm }
+                            Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.name; font.pointSize: Type.body; color: Theme.color.textPrimary }
+                        }
+                        HoverHandler { cursorShape: Qt.PointingHandCursor }
+                        TapHandler { onTapped: customization.activeGroup = modelData.id }
+                    }
+                }
+            }
+        }
         Row {
             id: columns
             visible: customization.grouped
             width: parent.width
-            height: parent.height - title.height - actions.height - parent.spacing * 2 // derived: two gaps between title, columns and actions
+            height: parent.height - title.height - tabs.height - actions.height - parent.spacing * 3 // derived: gaps between title, tabs, columns and actions
             spacing: Metrics.gap16
             Column {
                 width: (columns.width - columns.spacing) / 2 // derived: two equally wide columns
                 height: parent.height
                 spacing: Metrics.gap8
-                Flickable {
-                    id: tabs
-                    width: parent.width; height: Metrics.button32
-                    contentWidth: tabRow.width; contentHeight: height
-                    clip: true; interactive: contentWidth > width
-                    Row {
-                        id: tabRow; spacing: Metrics.gap6
-                        Repeater {
-                            model: customization.groups
-                            Rectangle {
-                                required property var modelData
-                                objectName: "customizeGroup_" + modelData.id
-                                width: tabLabel.implicitWidth + Metrics.gap12 + Metrics.gap12
-                                height: tabs.height; radius: Metrics.radiusControl
-                                color: customization.activeGroup === modelData.id ? Theme.color.stateSelected : Theme.color.surfaceRaised
-                                Row {
-                                    id: tabLabel; anchors.centerIn: parent; spacing: Metrics.gap6
-                                    SourceIcon { visible: !!modelData.icon; sourceInfo: ({icon: modelData.icon || ""}); width: visible ? Metrics.iconSm : 0; height: Metrics.iconSm }
-                                    Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.name; font.pointSize: Type.body; color: Theme.color.textPrimary }
-                                }
-                                HoverHandler { cursorShape: Qt.PointingHandCursor }
-                                TapHandler { onTapped: customization.activeGroup = modelData.id }
-                            }
-                        }
-                    }
-                }
                 ListView {
                     id: sourceChoices
                     objectName: "customizeSourceChoices"
-                    width: parent.width; height: parent.height - tabs.height - parent.spacing
+                    width: parent.width; height: parent.height
                     clip: true; spacing: Metrics.gap8; model: customization.visibleRows
                     ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8 }
                     Text {
@@ -123,7 +127,7 @@ Modal {
                         required property var modelData
                         objectName: "sourceModule_" + modelData.id
                         width: sourceChoices.width - Metrics.gap16; spacing: Metrics.gap8
-                        Toggle { id: sourceToggle; checked: modelData.enabled !== false; onToggled: on => customization.toggled(modelData.sectionIndex, on) }
+                        Toggle { id: sourceToggle; objectName: "sourceModuleToggle_" + modelData.id; checked: modelData.enabled !== false; onToggled: on => customization.toggled(modelData.sectionIndex, on) }
                         Text {
                             width: parent.width - sourceToggle.width - parent.spacing
                             height: sourceToggle.height; verticalAlignment: Text.AlignVCenter

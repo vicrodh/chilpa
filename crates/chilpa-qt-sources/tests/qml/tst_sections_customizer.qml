@@ -44,6 +44,22 @@ TestCase {
         compare(backgroundClicks, 0)
     }
 
+    function test_group_tabs_span_both_columns_above_the_module_lists() {
+        customizer.open()
+        tryVerify(() => customizer.opened)
+        const tabs = findChild(customizer.contentItem, "customizeGroups")
+        const available = findChild(customizer.contentItem, "customizeSourceChoices")
+        const active = findChild(customizer.contentItem, "customizeActiveModules")
+        verify(tabs && available && active)
+        compare(tabs.width, tabs.parent.width)
+        verify(tabs.width > available.width + active.width)
+        const bottom = tabs.mapToItem(customizer.contentItem, 0, tabs.height).y
+        verify(bottom < available.mapToItem(customizer.contentItem, 0, 0).y)
+        verify(bottom < active.mapToItem(customizer.contentItem, 0, 0).y)
+        verify(available.mapToItem(customizer.contentItem, available.width, 0).x
+            < active.mapToItem(customizer.contentItem, 0, 0).x)
+    }
+
     function test_active_modules_keep_global_order_and_local_count() {
         customizer.open()
         tryVerify(() => customizer.opened)
