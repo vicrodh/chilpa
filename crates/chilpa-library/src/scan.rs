@@ -965,7 +965,10 @@ fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>, blocked: &[
         if unread.back.contains(place) {
             continue;
         }
-        if unread.away.contains(place) || blocked.iter().any(|dir| Path::new(place).starts_with(dir)) {
+        // Under a folder, not the folder's own path: a link that does not
+        // resolve is both, and a file it named is gone like any other.
+        let under = |dir: &PathBuf| Path::new(place) != dir && Path::new(place).starts_with(dir);
+        if unread.away.contains(place) || blocked.iter().any(under) {
             if let Some(id) = track {
                 lib.db.execute("UPDATE tracks SET reachable = 0 WHERE id = ?1 AND reachable <> 0", params![id])?;
             }

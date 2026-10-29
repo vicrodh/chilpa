@@ -833,26 +833,29 @@ fn files_that_can_be_listed_and_not_looked_at_are_away_not_emptied() {
 #[cfg(unix)]
 #[test]
 fn a_linked_folder_whose_place_stops_answering_is_away_until_the_link_goes() {
-    let dir = tempfile::tempdir().unwrap();
-    let (root, elsewhere) = (dir.path().join("music"), dir.path().join("elsewhere"));
-    std::fs::create_dir_all(&root).unwrap();
-    std::fs::create_dir_all(&elsewhere).unwrap();
-    std::fs::write(elsewhere.join("far.flac"), b"not audio").unwrap();
-    std::os::unix::fs::symlink(&elsewhere, root.join("linked")).unwrap();
-    let lib = Library::in_memory().unwrap();
-    scan_root(&lib, &root).unwrap();
-    assert_eq!(lib.track_count(false).unwrap(), 1);
+    // Whatever the link is called: a folder can be named like a file.
+    for name in ["linked", "album.flac"] {
+        let dir = tempfile::tempdir().unwrap();
+        let (root, elsewhere) = (dir.path().join("music"), dir.path().join("elsewhere"));
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::create_dir_all(&elsewhere).unwrap();
+        std::fs::write(elsewhere.join("far.flac"), b"not audio").unwrap();
+        std::os::unix::fs::symlink(&elsewhere, root.join(name)).unwrap();
+        let lib = Library::in_memory().unwrap();
+        scan_root(&lib, &root).unwrap();
+        assert_eq!(lib.track_count(false).unwrap(), 1);
 
-    std::fs::rename(&elsewhere, dir.path().join("parked")).unwrap();
-    let report = scan_root(&lib, &root).unwrap();
-    assert_eq!(report.missing, 0, "a link that does not resolve says nothing about what was under it");
-    assert_eq!((lib.track_count(false).unwrap(), unreachable(&lib)), (1, 1));
+        std::fs::rename(&elsewhere, dir.path().join("parked")).unwrap();
+        let report = scan_root(&lib, &root).unwrap();
+        assert_eq!(report.missing, 0, "{name}: a link that does not resolve says nothing about what was under it");
+        assert_eq!((lib.track_count(false).unwrap(), unreachable(&lib)), (1, 1), "{name}");
 
-    // Without the link, what was under it is gone.
-    std::fs::write(root.join("kept.flac"), b"not audio").unwrap();
-    std::fs::remove_file(root.join("linked")).unwrap();
-    let report = scan_root(&lib, &root).unwrap();
-    assert_eq!(report.missing, 1);
+        // Without the link, what was under it is gone.
+        std::fs::write(root.join("kept.flac"), b"not audio").unwrap();
+        std::fs::remove_file(root.join(name)).unwrap();
+        let report = scan_root(&lib, &root).unwrap();
+        assert_eq!(report.missing, 1, "{name}");
+    }
 }
 
 /// One track of a set, in the folder of its disc.

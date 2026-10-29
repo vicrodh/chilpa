@@ -15,7 +15,7 @@ const EXTENSIONS: &[&str] =
     &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "aac", "mp3", "ogg", "oga", "dsf", "dff"];
 
 /// Every audio file under a root in name order, and the subfolders that
-/// could not be opened.
+/// could not be opened, links that did not resolve among them.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Listing {
     pub files: Vec<PathBuf>,
@@ -75,14 +75,14 @@ where
                 Ok(kind) if !kind.is_symlink() => kind.is_dir(),
                 _ => match std::fs::metadata(&path) {
                     Ok(meta) => meta.is_dir(),
-                    // A link that does not resolve is listed by its name when
-                    // it names a file of ours: the reader says what became of
-                    // it. Any other may be a folder whose place stopped
-                    // answering, so what was known under it is kept.
-                    Err(_) if is_audio(&path) || containers.may_hold(&path) => false,
+                    // A link that does not resolve may be a folder whose place
+                    // stopped answering, whatever its name says, so what was
+                    // known under it is kept. One named like a file of ours is
+                    // listed too, and the reader says what became of it.
                     Err(_) => {
-                        listing.blocked.push(path);
-                        continue;
+                        listing.blocked.push(path.clone());
+                        if !(is_audio(&path) || containers.may_hold(&path)) { continue; }
+                        false
                     }
                 },
             };
