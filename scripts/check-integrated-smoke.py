@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""I check one built application across browsing, queues, commands and scenes."""
+"""Check one built application across browsing, queues, commands and scenes."""
 import argparse
 from datetime import datetime, timezone
 import hashlib
@@ -47,6 +47,7 @@ stages = {
                str(output / "album-details.log")],
     "queues": [python, "scripts/check-queues.py", str(binary), str(library)],
     "sources": [python, "scripts/check-source-navigation.py", str(binary), str(output / "sources")],
+    "home-modules": [python, "scripts/check-source-navigation.py", str(binary), str(output / "home-modules"), "--home-modules"],
     "commands": [python, "scripts/check-vi-commands.py", str(binary), str(output / "commands"),
                  "--library", str(library)],
     "keyboard": [python, "scripts/check-vi-commands.py", str(binary), str(output / "keyboard"),

@@ -18,7 +18,16 @@ Connections {
             else if (event.key === Qt.Key_Up) route.flyout.step(-1)
             else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) route.flyout.chooseCurrent()
             else if (event.key === Qt.Key_Escape) route.flyout.close()
-            else return
+            else {
+                // The focused results own these keys: the popup deliberately
+                // blocks shortcuts from reaching the page behind it.
+                const action = Hotkeys.pressedIn("window", event.key, event.modifiers, event.text, false)
+                if (action === "search.next" || action === "list.down" || action === "search.previous" || action === "list.up") {
+                    const by = action === "search.next" || action === "list.down" ? 1 : -1
+                    for (let n = 0; n < Math.max(1, Hotkeys.repeat || 1); ++n) Hotkeys.searchStepped(by)
+                } else if (action === "list.play") route.flyout.chooseCurrent()
+                else if (action !== "-") return
+            }
             event.accepted = true
         }
     }

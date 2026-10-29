@@ -58,6 +58,16 @@ ApplicationWindow {
                 return false
             })
         }
+        function reveal(cap) {
+            let viewport = cap.parent
+            while (viewport && viewport.contentY === undefined) viewport = viewport.parent
+            check(!!viewport, "the shortcut belongs to a scrollable list")
+            viewport.contentY = Math.max(0, Math.min(viewport.contentHeight - viewport.height,
+                cap.mapToItem(viewport.contentItem, 0, 0).y - viewport.height / 2))
+            waitForRendering(cap)
+            const at = cap.mapToItem(viewport, 0, 0)
+            check(at.y >= 0 && at.y + cap.height <= viewport.height, "the shortcut must be inside the viewport before clicking")
+        }
         function shown(popup) {
             tryCompare(popup, "opened", true)
             waitForRendering(popup.contentItem)
@@ -118,6 +128,7 @@ ApplicationWindow {
             shown(editor)
             let cap = keycap("commands.open")
             check(cap !== undefined)
+            reveal(cap)
             mouseClick(cap)
             tryCompare(editor, "recording", true)
             keyClick(Qt.Key_Semicolon, Qt.ControlModifier)
@@ -125,6 +136,7 @@ ApplicationWindow {
             same(Hotkeys.shortcut("commands.open"), "Ctrl + ;")
             cap = keycap("commands.open")
             check(cap !== undefined)
+            reveal(cap)
             mouseClick(cap)
             tryCompare(editor, "recording", true)
             keyClick(Qt.Key_Colon, Qt.ShiftModifier)
@@ -253,6 +265,14 @@ ApplicationWindow {
             shown(results)
             const reopened = results.current
             check(reopened > albumRow)
+            keyClick(Qt.Key_N, Qt.ShiftModifier)
+            same(results.current, albumRow, "N must reach the focused popup")
+            keyClick(Qt.Key_N)
+            same(results.current, reopened, "n must keep stepping while the popup is open")
+            keyClick(Qt.Key_K)
+            same(results.current, albumRow, "k moves within the focused results")
+            keyClick(Qt.Key_J)
+            same(results.current, reopened, "j moves within the focused results")
             keyClick(Qt.Key_Down)
             check(results.current > reopened, "reopened search must receive Down")
             keyClick(Qt.Key_Up)

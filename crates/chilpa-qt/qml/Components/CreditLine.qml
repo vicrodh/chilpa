@@ -47,7 +47,7 @@ Text {
     // Rich text takes the color of each anchor from its markup and does not elide.
     text: document.links ? TextLinks.render(document.html, "", color, color) : (document.html || credit)
     textFormat: document.links ? Text.RichText : Text.PlainText
-    clip: document.links && contentWidth > width
+    clip: !!document.links && contentWidth > width
     elide: Text.ElideRight
 
     FontMetrics { id: metrics; font: line.font }
