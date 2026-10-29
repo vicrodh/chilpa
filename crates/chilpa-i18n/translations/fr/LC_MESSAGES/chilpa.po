@@ -2585,6 +2585,9 @@ msgstr "Commencer"
 msgid "Getting started"
 msgstr "Premiers pas"
 
+msgid "GitHub is limiting requests from this network. Try again later."
+msgstr "GitHub limite les requêtes depuis ce réseau. Réessayez plus tard."
+
 msgid "Go Back"
 msgstr "Retour"
 
@@ -3595,8 +3598,8 @@ msgstr "Descendre"
 msgid "Move the output's own volume from the player bar when the selected ALSA control supports safe playback volume."
 msgstr "Règle le volume propre de la sortie depuis la barre de lecture lorsque le contrôle ALSA sélectionné permet un volume de lecture sûr."
 
-msgid "Move this AppImage to a writable folder, then try again."
-msgstr "Déplacez cette AppImage vers un dossier accessible en écriture, puis réessayez."
+msgid "Move this app to a writable folder, then try again."
+msgstr "Déplacez cette application vers un dossier accessible en écriture, puis réessayez."
 
 msgid "Move to folder"
 msgstr "Déplacer vers un dossier"
@@ -6284,8 +6287,8 @@ msgstr "La file d'attente multimédia temporaire ne peut pas être combinée."
 msgid "The update check failed. Try again."
 msgstr "La recherche de mises à jour a échoué. Réessayez."
 
-msgid "The update could not be completed. Your current AppImage is safe. Try again later."
-msgstr "La mise à jour n'a pas pu être terminée. Votre AppImage actuelle est intacte. Réessayez plus tard."
+msgid "The update could not be completed. The version you have is safe. Try again later."
+msgstr "La mise à jour n'a pas pu être terminée. Votre version actuelle est intacte. Réessayez plus tard."
 
 msgid "The update is ready. Restart Chilpa to use it."
 msgstr "La mise à jour est prête. Redémarrez Chilpa pour l'utiliser."
@@ -6803,8 +6806,8 @@ msgstr "Mis à jour {}"
 msgid "Updates"
 msgstr "Mises à jour"
 
-msgid "Updates keep your library, settings and plugins. One previous AppImage is kept beside the new one."
-msgstr "Les mises à jour conservent votre bibliothèque, vos paramètres et vos plugins. Une AppImage précédente est conservée à côté de la nouvelle."
+msgid "Updates keep your library, settings and plugins. One previous version is kept beside the new one."
+msgstr "Les mises à jour conservent votre bibliothèque, vos paramètres et vos plugins. Une version précédente est conservée à côté de la nouvelle."
 
 msgid "Updating Chilpa…"
 msgstr "Mise à jour de Chilpa…"

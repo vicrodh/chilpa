@@ -15,6 +15,7 @@ pub mod patience;
 pub mod request;
 pub mod fetch;
 pub mod download;
+pub mod release;
 pub mod ranged;
 pub mod server;
 

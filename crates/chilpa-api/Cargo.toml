@@ -46,6 +46,8 @@ url = "2"
 discord-rich-presence = "1.1.0"
 roxmltree = "0.21"
 zip = { version = "8.6", default-features = false, features = ["deflate"] }
+tar = "0.4"
+flate2 = "1"
 
 [dev-dependencies]
 # The test plugins are written in wasm text, so no separate toolchain is

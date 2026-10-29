@@ -44,6 +44,16 @@ TestCase {
         Updates.snapshot = JSON.stringify({supported:true,can_install:false,phase:"error"})
         verify(!findChild(panel,"updateStatus").text.includes("AppImage"))
     }
+    function test_a_tarball_or_mac_install_updates_itself_and_a_rate_limit_is_named() {
+        Updates.snapshot = JSON.stringify({supported:true,can_install:true,kind:"tarball",phase:"available"})
+        wait(0)
+        verify(findChild(panel,"downloadUpdate").visible)
+        verify(!findChild(panel,"openUpdateRelease").visible)
+        Updates.snapshot = JSON.stringify({supported:true,can_install:false,phase:"error",reason:"rate_limited"})
+        verify(findChild(panel,"updateStatus").text.includes("GitHub"))
+        Updates.snapshot = JSON.stringify({supported:true,can_install:true,phase:"error",reason:"read_only"})
+        verify(!findChild(panel,"updateStatus").text.includes("AppImage"))
+    }
     function test_offline_controls_do_not_offer_network_actions() {
         Updates.snapshot = JSON.stringify({supported:true,can_install:true,phase:"available",offline:true})
         verify(!findChild(panel,"checkUpdates").enabled)

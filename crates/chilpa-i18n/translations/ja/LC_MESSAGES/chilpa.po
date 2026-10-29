@@ -2583,6 +2583,9 @@ msgstr "はじめる"
 msgid "Getting started"
 msgstr "はじめに"
 
+msgid "GitHub is limiting requests from this network. Try again later."
+msgstr "このネットワークからのリクエストはGitHubによって制限されています。後でもう一度お試しください。"
+
 msgid "Go Back"
 msgstr "戻る"
 
@@ -3592,8 +3595,8 @@ msgstr "下に移動"
 msgid "Move the output's own volume from the player bar when the selected ALSA control supports safe playback volume."
 msgstr "選択したALSAコントロールが安全な再生音量に対応している場合、出力自体の音量をプレーヤーバーから操作します。"
 
-msgid "Move this AppImage to a writable folder, then try again."
-msgstr "このAppImageを書き込み可能なフォルダーに移動してから、もう一度お試しください。"
+msgid "Move this app to a writable folder, then try again."
+msgstr "このアプリを書き込み可能なフォルダーに移動してから、もう一度お試しください。"
 
 msgid "Move to folder"
 msgstr "フォルダーに移動"
@@ -6279,8 +6282,8 @@ msgstr "一時的なメディアキューは結合できません。"
 msgid "The update check failed. Try again."
 msgstr "更新の確認に失敗しました。もう一度お試しください。"
 
-msgid "The update could not be completed. Your current AppImage is safe. Try again later."
-msgstr "アップデートを完了できませんでした。現在のAppImageは安全です。後でもう一度お試しください。"
+msgid "The update could not be completed. The version you have is safe. Try again later."
+msgstr "アップデートを完了できませんでした。現在のバージョンは安全です。後でもう一度お試しください。"
 
 msgid "The update is ready. Restart Chilpa to use it."
 msgstr "アップデートの準備ができました。使用するにはChilpaを再起動してください。"
@@ -6798,8 +6801,8 @@ msgstr "{}に更新"
 msgid "Updates"
 msgstr "アップデート"
 
-msgid "Updates keep your library, settings and plugins. One previous AppImage is kept beside the new one."
-msgstr "アップデートしてもライブラリ、設定、プラグインは保持されます。以前のAppImageが1つ、新しいものの隣に残ります。"
+msgid "Updates keep your library, settings and plugins. One previous version is kept beside the new one."
+msgstr "アップデートしてもライブラリ、設定、プラグインは保持されます。以前のバージョンが1つ、新しいものの隣に残ります。"
 
 msgid "Updating Chilpa…"
 msgstr "Chilpaを更新しています…"

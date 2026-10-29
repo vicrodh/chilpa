@@ -881,3 +881,10 @@ ivars
 hwnd
 nowplaying
 souvlaki
+# Pieces of names from the tar and flate2 crates and the release host, used by the app updater.
+cksum
+flate
+github
+gz
+linkname
+xattrs

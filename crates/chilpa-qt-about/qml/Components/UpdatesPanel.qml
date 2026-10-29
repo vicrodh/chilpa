@@ -24,8 +24,9 @@ Column {
             : panel.state.phase === "cancelling" ? I18n.tr("Cancelling update…", I18n.rev)
             : panel.state.phase === "ready" ? I18n.tr("The update is ready. Restart Chilpa to use it.", I18n.rev)
             : panel.state.phase === "current" ? I18n.tr("Chilpa is up to date.", I18n.rev)
-            : panel.state.phase === "error" && panel.state.reason === "read_only" ? I18n.tr("Move this AppImage to a writable folder, then try again.", I18n.rev)
-            : panel.state.phase === "error" ? panel.state.can_install === true ? I18n.tr("The update could not be completed. Your current AppImage is safe. Try again later.", I18n.rev) : I18n.tr("The update check failed. Try again.", I18n.rev)
+            : panel.state.phase === "error" && panel.state.reason === "read_only" ? I18n.tr("Move this app to a writable folder, then try again.", I18n.rev)
+            : panel.state.phase === "error" && panel.state.reason === "rate_limited" ? I18n.tr("GitHub is limiting requests from this network. Try again later.", I18n.rev)
+            : panel.state.phase === "error" ? panel.state.can_install === true ? I18n.tr("The update could not be completed. The version you have is safe. Try again later.", I18n.rev) : I18n.tr("The update check failed. Try again.", I18n.rev)
             : panel.state.phase === "cancelled" ? I18n.tr("Update cancelled.", I18n.rev)
             : I18n.tr("Check for a newer version of Chilpa.", I18n.rev)
     }
@@ -49,7 +50,7 @@ Column {
         PillButton { objectName: "cancelUpdate"; text: I18n.tr("Cancel", I18n.rev); visible: panel.state.busy === true && panel.state.phase !== "installing"; enabled: panel.state.phase !== "cancelling"; onClicked: Updates.cancel() }
         PillButton { objectName: "restartUpdate"; text: I18n.tr("Restart Chilpa", I18n.rev); kind: "primary"; visible: panel.state.phase === "ready"; onClicked: if (Updates.restart()) Qt.quit() }
     }
-    Text { width: parent.width; visible: panel.state.can_install === true; wrapMode: Text.WordWrap; text: I18n.tr("Updates keep your library, settings and plugins. One previous AppImage is kept beside the new one.", I18n.rev); font.pointSize: Type.small; color: Theme.color.textTertiary }
+    Text { width: parent.width; visible: panel.state.can_install === true; wrapMode: Text.WordWrap; text: I18n.tr("Updates keep your library, settings and plugins. One previous version is kept beside the new one.", I18n.rev); font.pointSize: Type.small; color: Theme.color.textTertiary }
     Timer { objectName: "updatePolling"; interval: Motion.poll; repeat: true; running: panel.visible && panel.Window.window && panel.Window.window.visible && panel.state.busy === true; onTriggered: Updates.refresh() }
     Component.onCompleted: Updates.refresh()
 }
