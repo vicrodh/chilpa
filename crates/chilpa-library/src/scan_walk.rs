@@ -20,6 +20,8 @@ const EXTENSIONS: &[&str] =
 pub struct Listing {
     pub files: Vec<PathBuf>,
     pub blocked: Vec<PathBuf>,
+    /// The root itself listed nothing at all, as an empty mount point does.
+    pub root_empty: bool,
 }
 
 /// How often the walk says how many files it has found so far.
@@ -42,8 +44,10 @@ where
 {
     let mut listing = Listing::default();
     let mut pending = vec![root.to_path_buf()];
+    let mut first = true;
     while let Some(dir) = pending.pop() {
         if control.stopped() { break; }
+        let at_root = std::mem::replace(&mut first, false);
         let Ok(entries) = read(&dir) else {
             // An unreadable subfolder neither cancels the scan nor disables the
             // prune for the rest: in QBZ a lost+found disabled it forever. What
@@ -51,6 +55,8 @@ where
             listing.blocked.push(dir);
             continue;
         };
+        let mut entries = entries.peekable();
+        listing.root_empty |= at_root && entries.peek().is_none();
         for entry in entries {
             if control.stopped() { break; }
             // A listing that breaks off, as a share's does when it drops
@@ -161,6 +167,14 @@ mod tests {
         }
         assert_eq!(listing.blocked, [closed]);
         assert_eq!(listing.files.len(), 3);
+    }
+
+    #[test]
+    fn the_listing_says_when_the_root_itself_holds_nothing() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(walk(dir.path(), &NoContainers).root_empty);
+        std::fs::create_dir(dir.path().join("empty")).unwrap();
+        assert!(!walk(dir.path(), &NoContainers).root_empty, "an empty subfolder is something");
     }
 
     #[test]

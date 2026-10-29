@@ -133,6 +133,32 @@ fn availability_and_what_reconciliation_takes_away_are_said_as_written() {
 }
 
 #[test]
+fn a_share_away_only_while_it_is_walked_is_not_taken_for_emptied() {
+    // Answers when asked, is away while walked, back before it is asked again.
+    struct Bounce { album: std::path::PathBuf, parked: std::path::PathBuf }
+    impl scan::ScanWatch for Bounce {
+        fn walking(&self) { std::fs::rename(&self.album, &self.parked).unwrap(); }
+        fn listed(&self, _: usize) { std::fs::rename(&self.parked, &self.album).unwrap(); }
+    }
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path().join("share");
+    let bounce = Bounce { album: root.join("album"), parked: directory.path().join("parked") };
+    std::fs::create_dir_all(&bounce.album).unwrap();
+    for index in 0..3 { wave(&bounce.album.join(format!("{index}.wav"))); }
+    let library = Library::in_memory().unwrap();
+    scan::scan_root(&library, &root).unwrap();
+
+    let report = scan::scan_watched(&library, &root, None, &NoContainers, &ScanControl::default(), &bounce).unwrap();
+    if bounce.parked.exists() { std::fs::rename(&bounce.parked, &bounce.album).unwrap(); }
+    assert!(report.unreachable, "an empty walk of a root that holds files is not believed");
+    assert_eq!(report.missing, 0);
+    let scanned: i64 = library.connection().query_row("SELECT count(*) FROM scanned_files", [], |row| row.get(0)).unwrap();
+    assert_eq!((library.track_count(false).unwrap(), scanned), (3, 3), "the tracks and what was scanned of them are kept");
+    let again = scan::scan_root(&library, &root).unwrap();
+    assert_eq!((again.unreachable, again.unchanged), (false, 3));
+}
+
+#[test]
 fn unchanged_checks_are_quiet_but_reachability_and_renames_are_reported() {
     let directory = tempfile::tempdir().unwrap();
     let first = directory.path().join("first.wav");

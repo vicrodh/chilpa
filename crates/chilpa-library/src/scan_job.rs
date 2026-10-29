@@ -134,7 +134,6 @@ fn run(db_path: PathBuf, roots: Vec<PathBuf>, artwork_cache: Option<PathBuf>, co
     // whole, and the rows reading them wrote.
     let (mut before, mut written) = (0, 0);
     for root in &roots {
-        events.send(ScanProgress::Phase { root: root.clone(), stage: ScanStage::Listing });
         let watch = RootWatch { events: &events, root, before, written, files: Cell::new(0), wrote: Cell::new(0) };
         match crate::scan::scan_watched(&lib, root, artwork_cache.as_deref(), &*containers, &control, &watch) {
             Ok(report) => {
@@ -174,6 +173,9 @@ struct RootWatch<'a> {
 }
 
 impl ScanWatch for RootWatch<'_> {
+    fn walking(&self) {
+        self.events.send(ScanProgress::Phase { root: self.root.to_path_buf(), stage: ScanStage::Listing });
+    }
     fn found(&self, so_far: usize) {
         self.events.send(ScanProgress::Discovered { found: self.before + so_far });
     }
