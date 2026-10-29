@@ -110,8 +110,10 @@ mod tests {
     fn the_listing_holds_the_audio_files_in_name_order_and_nothing_else() {
         let dir = tree();
         let listing = walk(dir.path(), &NoContainers);
-        let names: Vec<String> = listing.files.iter().map(|p| p.strip_prefix(dir.path()).unwrap().display().to_string()).collect();
-        assert_eq!(names, ["artist/album/01.FLAC", "artist/album/02.flac", "artist/album/disc 2/01.mp3"]);
+        // Compared by components, not as text: the separator is the platform's.
+        let names: Vec<PathBuf> = listing.files.iter().map(|p| p.strip_prefix(dir.path()).unwrap().to_path_buf()).collect();
+        let album = Path::new("artist").join("album");
+        assert_eq!(names, [album.join("01.FLAC"), album.join("02.flac"), album.join("disc 2").join("01.mp3")]);
         assert!(listing.blocked.is_empty());
     }
 
