@@ -5,18 +5,12 @@
 ### Hi-Fi music. Every source. Bit-perfect.
 
 <p>
-  <a href="https://github.com/vicrodh/chilpa/releases"><img src="https://img.shields.io/github/v/release/vicrodh/chilpa?style=flat-square" alt="Release" /></a>
-  <a href="https://github.com/vicrodh/chilpa"><img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-0b0b0b?style=flat-square&logo=linux" alt="Platforms: Linux and macOS" /></a>
-  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/Rust-1.96-0b0b0b?style=flat-square&logo=rust" alt="Rust 1.96" /></a>
-  <a href="https://www.qt.io"><img src="https://img.shields.io/badge/Qt-6.11-0b0b0b?style=flat-square&logo=qt" alt="Qt 6.11" /></a>
-  <a href="https://doc.qt.io/qt-6/qmlapplications.html"><img src="https://img.shields.io/badge/UI-QML-0b0b0b?style=flat-square&logo=qt" alt="QML" /></a>
-  <a href="https://github.com/vicrodh/chilpa-plugins-sdk"><img src="https://img.shields.io/badge/plugins-WebAssembly-0b0b0b?style=flat-square&logo=webassembly" alt="Plugins: WebAssembly" /></a>
-  <a href="https://github.com/vicrodh/chilpa"><img src="https://img.shields.io/badge/audio-ALSA%20%7C%20PipeWire%20%7C%20PulseAudio%20%7C%20JACK-0b0b0b?style=flat-square" alt="Audio: ALSA, PipeWire, PulseAudio, JACK" /></a>
-  <a href="https://www.sqlite.org"><img src="https://img.shields.io/badge/library-SQLite-0b0b0b?style=flat-square&logo=sqlite" alt="Library: SQLite" /></a>
-</p>
-
-<p>
-  <a href="https://techforpalestine.org/learn-more"><img src="https://raw.githubusercontent.com/Safouene1/support-palestine-banner/master/StandWithPalestine.svg" alt="StandWithPalestine" /></a>
+  <a href="https://github.com/vicrodh/chilpa/releases"><img src="https://img.shields.io/github/v/release/vicrodh/chilpa?style=for-the-badge&color=0b0b0b&labelColor=333" alt="Release" /></a>
+  <a href="https://github.com/vicrodh/chilpa/actions/workflows/checks.yml"><img src="https://img.shields.io/github/actions/workflow/status/vicrodh/chilpa/checks.yml?branch=pre-launch&style=for-the-badge&label=CI&labelColor=333" alt="CI status" /></a>
+  <a href="https://github.com/vicrodh/chilpa/releases"><img src="https://img.shields.io/badge/platforms-Linux%20%7C%20macOS-0b0b0b?style=for-the-badge&labelColor=333" alt="Platforms: Linux and macOS" /></a>
+  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/Rust-1.96-0b0b0b?style=for-the-badge&logo=rust&labelColor=333" alt="Rust 1.96" /></a>
+  <a href="https://www.qt.io"><img src="https://img.shields.io/badge/Qt-6.11-0b0b0b?style=for-the-badge&logo=qt&labelColor=333" alt="Qt 6.11" /></a>
+  <a href="https://techforpalestine.org/learn-more"><img height="28" src="assets/badge-palestine.svg" alt="Stand with Palestine" /></a>
 </p>
 
 <img width="100%" alt="Chilpa's Home, in the dark theme on the left and the light theme on the right" src="assets/captures/01_home.png" />
@@ -115,7 +109,7 @@ your GitHub theme, light or dark.
 ### Install or update with one command
 
 ```sh
-curl -fsSL --proto '=https' https://github.com/vicrodh/chilpa/releases/latest/download/install.sh | bash
+curl -fsSL --proto '=https' https://chilpa.app/install.sh | bash
 ```
 
 The script installs Chilpa in `~/.local/opt/chilpa` on Linux and in
@@ -124,6 +118,13 @@ same command again. Before replacing an installation it made, the script
 checks the release's SHA-256 digest and size; installations from package
 managers are left alone. On Linux it needs glibc 2.39 or newer, curl, and
 Python 3 or jq; on macOS it uses the system's JavaScript runtime.
+
+On macOS, if the system refuses to open the app the first time, remove the
+quarantine flag once and open it again:
+
+```sh
+xattr -dr com.apple.quarantine ~/Applications/Chilpa.app
+```
 
 To inspect the selected package, append `-s -- --check` to `bash`. To select
 an existing prerelease, download `install.sh` from that release and run
@@ -180,7 +181,9 @@ tar xf chilpa-0.1.0-linux-x86_64.tar.gz
 ```
 
 The tarball uses the system libraries: Qt 6.11 or newer with Qt Quick, ALSA,
-PulseAudio, D-Bus, SQLite and OpenSSL 3. It does not update itself.
+PulseAudio, D-Bus, SQLite and OpenSSL 3. Chilpa updates it in place from
+Settings: the folder keeps its name and path, and the previous version is kept
+beside it as `<folder>.previous`.
 
 It includes a desktop entry and its icon. The entry runs
 `/usr/bin/chilpa-qt`, which suits a package; to add Chilpa to your own menu,
@@ -205,15 +208,17 @@ records the minimum macOS version required by the deployed runtime.
 
 The app is signed ad hoc and is not notarized with an Apple Developer
 identity. macOS may require approving it in Privacy & Security after the
-first attempt to open it. An installation made with the one-line command
-updates by running that command again; a bundle installed by hand is
-replaced with the new download.
+first attempt to open it. Chilpa updates the app in place from Settings and
+keeps the previous version beside it as `Chilpa.app.previous`. A copy managed
+by Homebrew or signed by someone else is updated through its own channel.
 
 ### Your data
 
-Settings live in `~/.config/chilpa`, the library and plugins in
-`~/.local/share/chilpa`, and the artwork cache in `~/.cache/chilpa`.
-Updating or removing the application leaves them in place.
+On Linux, settings live in `~/.config/chilpa`, the library and plugins in
+`~/.local/share/chilpa`, and the artwork cache in `~/.cache/chilpa`. On macOS,
+settings, library and plugins live in `~/Library/Application Support/chilpa`
+and the artwork cache in `~/Library/Caches/chilpa`. Updating or removing the
+application leaves them in place.
 
 ## Plugins
 
@@ -349,6 +354,12 @@ AppImage and the tarball are made.
 
 </details>
 
+## AI Disclosure
+
+<strong>Is Chilpa a vibe-coded app?</strong><br />
+<strong><u>Yes it is</u></strong>. When I started <a href="https://github.com/vicrodh/qbz">QBZ</a> it was for myself: although I admire Strawberry a lot (Chilpa takes several of its features as inspiration), I have a love/hate relationship with it, so I didn't want to use the Qobuz web player and I didn't want to fight with Strawberry's search either. First I made a small CLI client based on the Python downloaders, then I turned it into an API, then I fell for the Rust hype (for the better) and decided to migrate the project to that language, all by hand, as a POC, as a hobby. When LLMs went mainstream I dusted the project off, and that's when it saw the light: over its 9 months of life it became the reference open-source streaming player. Its core was hand-written code; its evolution was vibe-coded.<br />
+Chilpa, on the other hand, is 99% made with LLMs: it already had all the logic, the ADRs and, above all, the community's feedback. I have written no more than 200 lines of Chilpa's code, plus several unit tests; being optimistic, that's 1% of the code, and that's rounding up. So yes, Chilpa is a vibe-coded app. It's built responsibly, with good practices, ADRs, SOLID principles and the workflows I use in my real job, but it's still AI generated code. If that's a problem for you, Chilpa is probably not for you.
+
 ## Roadmap
 
 I have a clear path to take Chilpa where I want it to be. There is a lot of
@@ -377,3 +388,22 @@ data removed. Ideas go to
 MIT; see [LICENSE](LICENSE). Third-party notices are in `licenses/`, and the
 distributed packages include the licenses of the bundled Qt and runtime
 components. Plugins and optional model downloads keep their own notices.
+
+## Acknowledgements
+
+This software stands on other people's work. Thank you to:
+
+| | |
+|---|---|
+| <sub>**Platform**</sub> | <sub>[Qt](https://www.qt.io), [cxx-qt](https://github.com/KDAB/cxx-qt), [Rust](https://www.rust-lang.org), [SQLite](https://www.sqlite.org) with [rusqlite](https://github.com/rusqlite/rusqlite), [Wasmtime](https://wasmtime.dev)</sub> |
+| <sub>**Audio**</sub> | <sub>[Symphonia](https://github.com/pdeljanov/Symphonia), [lofty](https://github.com/Serial-ATA/lofty-rs), [ebur128](https://github.com/sdroege/ebur128), [souvlaki](https://github.com/Sinono3/souvlaki), [dsd2pcm](https://sourceforge.net/projects/dsd2pcm/) by Sebastian Gesemann, [dst-decoder](https://crates.io/crates/dst-decoder) and the MPEG-4 DST reference authors</sub> |
+| <sub>**Look and feel**</sub> | <sub>[Lucide](https://lucide.dev), [Tabler Icons](https://tabler.io/icons), [Inter](https://rsms.me/inter/) by Rasmus Andersson</sub> |
+| <sub>**Metadata**</sub> | <sub>[MusicBrainz](https://musicbrainz.org), [Cover Art Archive](https://coverartarchive.org), [ListenBrainz](https://listenbrainz.org), [Last.fm](https://www.last.fm), [Discogs](https://www.discogs.com)</sub> |
+| <sub>**Lyrics**</sub> | <sub>[LRCLIB](https://lrclib.net), NetEase Cloud Music, Kugou, QQ Music, [Apple Music-like Lyrics](https://github.com/Steve-xmh/applemusic-like-lyrics)</sub> |
+| <sub>**Servers**</sub> | <sub>[Jellyfin](https://jellyfin.org), [Navidrome](https://www.navidrome.org), [Plex](https://www.plex.tv), [Subsonic](http://www.subsonic.org), [Lyrion](https://lyrion.org)</sub> |
+| <sub>**QBZ**</sub> | <sub>[QBZ](https://github.com/vicrodh/qbz), for everything it taught me, and above all its community: your feedback, your bug reports and your patience shaped most of what Chilpa is</sub> |
+| <sub>**Crates**</sub> | <sub>The authors of every crate in `Cargo.lock`, whose work runs under all of the above</sub> |
+
+### Anti-Acknowledgements
+
+To Konami, for releasing <a href="https://steamcommunity.com/id/blitzfc/achievements/4231820">Castlevania: Belmont's Curse</a>. As Castlevania fan, this took all my attention and delayed the release for two weeks. Sorry, not sorry.

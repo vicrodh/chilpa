@@ -200,6 +200,12 @@ PY
     mv -f "$stage/receipt" "$receipt"
     committed=1
     printf '%s\n' 'Chilpa installed. Run this command again to update.'
-    if [ "$system" = Linux ]; then printf 'Launch: %s\n' "$launcher"; else printf 'Launch: %s\n' "$destination"; fi
+    if [ "$system" = Linux ]; then
+        printf 'Launch: %s\n' "$launcher"
+    else
+        printf 'Launch: %s\n' "$destination"
+        printf '%s\n' 'Chilpa is not notarized. If macOS refuses to open it, run this once and open it again:'
+        printf '  xattr -dr com.apple.quarantine %q\n' "$destination"
+    fi
 )
 chilpa_install "$@"

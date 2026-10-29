@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="246" height="28" viewBox="0 0 246 28" role="img" aria-label="Stand with Palestine">
+  <title>Stand with Palestine</title>
+  <rect width="104" height="28" fill="#000"/>
+  <rect x="104" width="142" height="28" fill="#007A3D"/>
+  <g fill="#fff" font-family="Verdana,DejaVu Sans,Geneva,sans-serif" font-size="10" font-weight="bold" text-anchor="middle">
+    <text x="52" y="17.5" textLength="80" lengthAdjust="spacing">STAND WITH</text>
+    <text x="155" y="17.5" textLength="78" lengthAdjust="spacing">PALESTINE</text>
+  </g>
+  <g transform="translate(204 6.5)">
+    <rect width="30" height="5" fill="#000"/>
+    <rect y="5" width="30" height="5" fill="#fff"/>
+    <rect y="10" width="30" height="5" fill="#007A3D"/>
+    <path d="M0 0L14 7.5L0 15Z" fill="#CE1126"/>
+    <rect width="30" height="15" fill="none" stroke="#fff" stroke-opacity=".35"/>
+  </g>
+</svg>
