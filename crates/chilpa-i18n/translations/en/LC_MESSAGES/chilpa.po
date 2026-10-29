@@ -2585,6 +2585,9 @@ msgstr "Get started"
 msgid "Getting started"
 msgstr "Getting started"
 
+msgid "GitHub is limiting requests from this network. Try again later."
+msgstr ""
+
 msgid "Go Back"
 msgstr ""
 
@@ -3595,7 +3598,7 @@ msgstr ""
 msgid "Move the output's own volume from the player bar when the selected ALSA control supports safe playback volume."
 msgstr ""
 
-msgid "Move this AppImage to a writable folder, then try again."
+msgid "Move this app to a writable folder, then try again."
 msgstr ""
 
 msgid "Move to folder"
@@ -6284,7 +6287,7 @@ msgstr ""
 msgid "The update check failed. Try again."
 msgstr "The update check failed. Try again."
 
-msgid "The update could not be completed. Your current AppImage is safe. Try again later."
+msgid "The update could not be completed. The version you have is safe. Try again later."
 msgstr ""
 
 msgid "The update is ready. Restart Chilpa to use it."
@@ -6803,7 +6806,7 @@ msgstr ""
 msgid "Updates"
 msgstr ""
 
-msgid "Updates keep your library, settings and plugins. One previous AppImage is kept beside the new one."
+msgid "Updates keep your library, settings and plugins. One previous version is kept beside the new one."
 msgstr ""
 
 msgid "Updating Chilpa…"

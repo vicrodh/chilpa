@@ -28,6 +28,9 @@ with tarfile.open(tarball) as archive:
         assert ".." not in Path(member.name).parts
     for name in ("LICENSE", "app.chilpa.Chilpa.desktop", "icons/hicolor/512x512/apps/app.chilpa.Chilpa.png"):
         assert archive.getmember(f"{prefix}/{name}").isfile()
+    with archive.extractfile(f"{prefix}/release.json") as stream:
+        record = json.load(stream)
+    assert record["kind"] == "tarball" and record["version"] == args.version
     executable = archive.getmember(f"{prefix}/chilpa-qt")
     assert executable.isfile() and executable.mode & 0o111
     with archive.extractfile(executable) as stream:

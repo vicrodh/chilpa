@@ -88,6 +88,8 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     shutil.copy2(root / "vendor/chilpa-plugin-api/LICENSE", notices / "plugin-protocol-MIT.txt")
     shutil.copy2(root / "packaging/linux/Inter-OFL.txt", notices / "Inter-OFL.txt")
     (plain / "MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    # The record that lets an extracted tarball update itself; packages and AppImages carry other records.
+    (plain / "release.json").write_text(json.dumps({"repository":args.repository,"version":args.version,"kind":"tarball"}) + "\n")
     runtime = args.binary.parent / "compat-runtime"
     if runtime.is_dir():
         shutil.copytree(runtime, plain / "compat-runtime")

@@ -2587,6 +2587,9 @@ msgstr "Начать"
 msgid "Getting started"
 msgstr "Первые шаги"
 
+msgid "GitHub is limiting requests from this network. Try again later."
+msgstr "GitHub ограничивает запросы из этой сети. Повторите попытку позже."
+
 msgid "Go Back"
 msgstr "Назад"
 
@@ -3598,8 +3601,8 @@ msgstr "Переместить вниз"
 msgid "Move the output's own volume from the player bar when the selected ALSA control supports safe playback volume."
 msgstr "Менять громкость самого вывода с панели плеера, если выбранный элемент ALSA поддерживает безопасную громкость воспроизведения."
 
-msgid "Move this AppImage to a writable folder, then try again."
-msgstr "Переместите этот AppImage в папку с правом записи и повторите попытку."
+msgid "Move this app to a writable folder, then try again."
+msgstr "Переместите это приложение в папку с правом записи и повторите попытку."
 
 msgid "Move to folder"
 msgstr "Переместить в папку"
@@ -6289,8 +6292,8 @@ msgstr "Временную очередь медиа нельзя объедин
 msgid "The update check failed. Try again."
 msgstr "Не удалось проверить обновления. Повторите попытку."
 
-msgid "The update could not be completed. Your current AppImage is safe. Try again later."
-msgstr "Не удалось завершить обновление. Текущий AppImage в безопасности. Повторите попытку позже."
+msgid "The update could not be completed. The version you have is safe. Try again later."
+msgstr "Не удалось завершить обновление. Текущая версия в безопасности. Повторите попытку позже."
 
 msgid "The update is ready. Restart Chilpa to use it."
 msgstr "Обновление готово. Перезапустите Chilpa, чтобы использовать его."
@@ -6808,8 +6811,8 @@ msgstr "Обновлено: {}"
 msgid "Updates"
 msgstr "Обновления"
 
-msgid "Updates keep your library, settings and plugins. One previous AppImage is kept beside the new one."
-msgstr "Обновления сохраняют вашу библиотеку, настройки и плагины. Один предыдущий AppImage хранится рядом с новым."
+msgid "Updates keep your library, settings and plugins. One previous version is kept beside the new one."
+msgstr "Обновления сохраняют вашу библиотеку, настройки и плагины. Одна предыдущая версия хранится рядом с новой."
 
 msgid "Updating Chilpa…"
 msgstr "Обновление Chilpa…"

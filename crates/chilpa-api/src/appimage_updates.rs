@@ -1,5 +1,5 @@
 //! I run the bundled delta updater away from the UI and replace only verified images.
-use crate::Chilpa;
+use crate::{bundle_updates::{self as bundle, Native}, Chilpa};
 use serde_json::{json, Value};
 use semver::Version;
 use sha2::{Digest, Sha256};
@@ -12,6 +12,7 @@ struct Installation { image: PathBuf, helper: PathBuf, restart: PathBuf, reposit
 
 pub(crate) struct Updates {
     installation: Option<Installation>,
+    native: Option<Native>,
     view: Arc<Mutex<Value>>,
     cancel: Arc<AtomicBool>,
     launch_checked: AtomicBool,
@@ -25,17 +26,22 @@ impl Updates {
             let path = chilpa_dirs::executable_helper("../share/chilpa/release.json")?;
             let bytes = fs::read(path).ok().filter(|bytes| bytes.len() < 4096)?;
             let release: Value = serde_json::from_slice(&bytes).ok()?;
-            let repository = release["repository"].as_str()?.to_string();
-            let parts = repository.split('/').collect::<Vec<_>>();
-            if parts.len() != 2 || parts.iter().any(|part| part.is_empty() || !part.bytes().all(|b| b.is_ascii_alphanumeric() || b"_.-".contains(&b))) { return None; }
+            let repository = bundle::repository_name(release["repository"].as_str()?)?;
             let version = Version::parse(release["version"].as_str()?).ok()?;
             Some(Installation { image, helper: chilpa_dirs::executable_helper("chilpa-appimage-updater.AppImage")?,
                 restart: chilpa_dirs::executable_helper("chilpa-restart")?, repository, version, information:None, expected:None })
         });
-        let can_install = installation.is_some();
-        let current_version = installation.as_ref().map(|image| image.version.to_string()).unwrap_or_else(|| env!("CARGO_PKG_VERSION").into());
-        Self { installation, view: Arc::new(Mutex::new(json!({"supported":true,"can_install":can_install,
-            "current_version":current_version,"installation":if can_install { "AppImage" } else { "System / manual" },
+        let native = if installation.is_none() { bundle::detect() } else { None };
+        let can_install = installation.is_some() || native.is_some();
+        let current_version = installation.as_ref().map(|image| image.version.clone()).or_else(|| native.as_ref().map(|found| found.version.clone()))
+            .map_or_else(|| env!("CARGO_PKG_VERSION").to_string(), |version| version.to_string());
+        let (label, kind) = match (&installation, &native) {
+            (Some(_), _) => ("AppImage", "appimage"),
+            (None, Some(found)) => (found.kind.label(), found.kind.key()),
+            (None, None) => ("System / manual", "manual"),
+        };
+        Self { installation, native, view: Arc::new(Mutex::new(json!({"supported":true,"can_install":can_install,
+            "current_version":current_version,"installation":label,"kind":kind,
             "automatic":automatic,"phase":"idle","progress":0.0,"busy":false}))),
             cancel: Arc::new(AtomicBool::new(false)), launch_checked: AtomicBool::new(false) }
     }
@@ -45,16 +51,20 @@ impl Updates {
     fn start(&self, download: bool) -> bool {
         if chilpa_core::network::current().offline { return false; }
         let mut installation = self.installation.clone();
-        if download && installation.is_none() { return false; }
+        let native = self.native.clone();
+        if download && installation.is_none() && native.is_none() { return false; }
+        let mut release = None;
         {
             let mut state = self.view.lock().unwrap();
             if state["busy"] == true || state["phase"] == "ready" || download && state["phase"] != "available" { return false; }
             if download {
-                let image = installation.as_mut().unwrap();
                 let Some(tag) = state["tag"].as_str() else { return false; };
-                image.information = Some(information(image, tag));
                 let (Some(hash),Some(size)) = (state["sha256"].as_str(),state["size"].as_u64()) else { return false; };
-                image.expected = Some((hash.into(),size));
+                if let Some(image) = installation.as_mut() {
+                    image.information = Some(information(image, tag));
+                    image.expected = Some((hash.into(),size));
+                }
+                release = Some((tag.to_string(), hash.to_string(), size));
             }
             if !download {
                 for key in ["tag", "version", "release_url", "sha256", "size"] { state.as_object_mut().unwrap().remove(key); }
@@ -67,9 +77,14 @@ impl Updates {
         self.cancel.store(false, Ordering::Release);
         let (view, cancel) = (self.view.clone(), self.cancel.clone());
         std::thread::spawn(move || {
-            let result = if download { download_image(installation.as_ref().unwrap(), &view, &cancel) }
-                else if let Some(image) = &installation { check_image(image, &view, &cancel) }
-                else { check_manual(&view, &cancel) };
+            let result = match (download, &installation, &native, &release) {
+                (true, Some(image), _, _) => download_image(image, &view, &cancel),
+                (true, None, Some(found), Some((tag, hash, size))) => download_native(found, tag, hash, *size, &view, &cancel),
+                (true, ..) => Err("No installable release".into()),
+                (false, Some(image), ..) => check_image(image, &view, &cancel),
+                (false, None, Some(found), _) => check_native(found, &view, &cancel),
+                (false, None, None, _) => check_manual(&view, &cancel),
+            };
             finish(&mut view.lock().unwrap(), result, cancel.load(Ordering::Acquire));
         });
         true
@@ -78,7 +93,7 @@ impl Updates {
 
 fn finish(state: &mut Value, result: Result<&str, String>, cancelled: bool) {
     state["busy"] = false.into();
-    state["reason"] = result.as_ref().err().filter(|reason| reason.as_str() == "read_only").cloned().unwrap_or_default().into();
+    state["reason"] = result.as_ref().err().filter(|reason| matches!(reason.as_str(), "read_only" | "rate_limited")).cloned().unwrap_or_default().into();
     state["phase"] = match result {
         Ok("ready") => "ready",
         _ if cancelled => "cancelled",
@@ -161,6 +176,7 @@ fn latest_release(repository: &str, version: &Version, cancel: &AtomicBool) -> R
 }
 
 fn release_response(status: u16, body: &[u8], version: &Version) -> Result<Option<Value>, String> {
+    if matches!(status, 403 | 429) { return Err("rate_limited".into()); }
     if status != 200 { return Err("The release service is unavailable".into()); }
     let document: Value = serde_json::from_slice(body).map_err(|_| "Invalid release metadata")?;
     let is_release = |value: &Value| value["tag_name"].is_string() && value["draft"].is_boolean() && value["prerelease"].is_boolean();
@@ -185,10 +201,26 @@ fn note_release(view: &Mutex<Value>, repository: &str, document: &Value) -> Resu
 
 fn check_manual(view: &Mutex<Value>, cancel: &AtomicBool) -> Result<&'static str, String> {
     let version = Version::parse(env!("CARGO_PKG_VERSION")).map_err(|_| "Invalid application version")?;
-    let repository = "vicrodh/chilpa";
+    let repository = bundle::REPOSITORY;
     let Some(document) = latest_release(repository, &version, cancel)? else { return Ok("current"); };
     note_release(view, repository, &document)?;
     Ok("available")
+}
+
+fn check_native(native: &Native, view: &Mutex<Value>, cancel: &AtomicBool) -> Result<&'static str, String> {
+    let Some(document) = latest_release(&native.repository, &native.version, cancel)? else { return Ok("current"); };
+    let tag = document["tag_name"].as_str().ok_or("No release version")?;
+    let (hash, size) = asset_digest(&document, &bundle::asset_name(native.kind, tag.strip_prefix('v').unwrap_or(tag)), false)?;
+    note_release(view, &native.repository, &document)?;
+    let mut state = view.lock().unwrap();
+    state["sha256"] = hash.into();
+    state["size"] = size.into();
+    Ok("available")
+}
+
+fn download_native(native: &Native, tag: &str, hash: &str, size: u64, view: &Mutex<Value>, cancel: &AtomicBool) -> Result<&'static str, String> {
+    bundle::install(&bundle::Plan { native, tag, hash, size }, cancel, &|done| view.lock().unwrap()["progress"] = done.into())?;
+    Ok("ready")
 }
 
 fn check_image(installation: &Installation, view: &Mutex<Value>, cancel: &AtomicBool) -> Result<&'static str, String> {
@@ -227,16 +259,21 @@ fn select_release<'a>(document: &'a Value, current: &Version) -> Option<&'a Valu
 
 fn release_asset(document: &Value, tag: &str) -> Result<(String,u64), String> {
     let name = format!("Chilpa-{}-{}.AppImage", tag.strip_prefix('v').unwrap_or(tag), std::env::consts::ARCH);
+    asset_digest(document, &name, true)
+}
+
+/// The listed size and SHA-256 of one release file; an AppImage also needs its delta file beside it.
+fn asset_digest(document: &Value, name: &str, delta: bool) -> Result<(String,u64), String> {
     let assets = document["assets"].as_array().ok_or("No release assets")?;
-    let mut images = assets.iter().filter(|asset| asset["name"] == name);
-    let asset = images.next().ok_or("No AppImage for this platform")?;
-    if images.next().is_some() || !assets.iter().any(|asset| asset["name"] == format!("{name}.zsync")) {
+    let mut files = assets.iter().filter(|asset| asset["name"] == name);
+    let asset = files.next().ok_or("No release file for this platform")?;
+    if files.next().is_some() || delta && !assets.iter().any(|asset| asset["name"] == format!("{name}.zsync")) {
         return Err("Incomplete or ambiguous release assets".into());
     }
-    let hash = asset["digest"].as_str().and_then(|s| s.strip_prefix("sha256:")).ok_or("No AppImage checksum")?;
-    let size = asset["size"].as_u64().ok_or("No AppImage size")?;
+    let hash = asset["digest"].as_str().and_then(|s| s.strip_prefix("sha256:")).ok_or("No release checksum")?;
+    let size = asset["size"].as_u64().ok_or("No release size")?;
     if hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit()) || size == 0 || size > 2 * 1024 * 1024 * 1024 {
-        return Err("Invalid AppImage checksum or size".into());
+        return Err("Invalid release checksum or size".into());
     }
     Ok((hash.to_ascii_lowercase(),size))
 }
@@ -254,7 +291,7 @@ fn download_image(installation: &Installation, view: &Mutex<Value>, cancel: &Ato
         else { e.to_string() }
     })?;
     let seed = directory.path().join("Chilpa-seed.AppImage");
-    fs::hard_link(&installation.image, &seed).map_err(|e| e.to_string())?;
+    stage_seed(&installation.image, &seed, |from, to| fs::hard_link(from, to))?;
     let original = fs::metadata(&installation.image).map_err(|e| e.to_string())?;
     let mut unchanged = false;
     let result = run(command(installation, &seed), cancel, Duration::from_secs(1800), |line| {
@@ -297,8 +334,16 @@ fn download_image(installation: &Installation, view: &Mutex<Value>, cancel: &Ato
         state["phase"] = "installing".into();
     }
     replace_image(&installation.image, &seed, &candidate)?;
+    let version = view.lock().unwrap()["version"].as_str().map(str::to_owned);
+    if let Some(version) = version { bundle::refresh_receipt(&installation.image, &version); }
     view.lock().unwrap()["progress"] = 1.0.into();
     Ok("ready")
+}
+
+/// A hard link costs nothing; filesystems that cannot make one (exFAT, some network mounts) get a copy.
+fn stage_seed(image: &Path, seed: &Path, link: impl Fn(&Path, &Path) -> std::io::Result<()>) -> Result<(), String> {
+    if link(image, seed).is_ok() { return Ok(()); }
+    fs::copy(image, seed).map(|_| ()).map_err(|e| e.to_string())
 }
 
 fn replace_image(image: &Path, seed: &Path, candidate: &Path) -> Result<(), String> {
@@ -394,6 +439,7 @@ impl Chilpa {
     pub fn appimage_updates_restart(&mut self) -> bool {
         let updates = self.updates();
         if updates.view.lock().unwrap()["phase"] != "ready" { return false; }
+        if let Some(native) = &updates.native { return bundle::restart(native); }
         let Some(installation) = &updates.installation else { return false };
         Command::new(&installation.restart).arg(std::process::id().to_string()).arg(&installation.image)
             .stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).spawn().is_ok()
@@ -429,7 +475,7 @@ mod tests {
     }
     #[test]
     fn launch_checks_are_claimed_once_and_manual_installations_cannot_download() {
-        let updates = Updates { installation:None, view:Arc::new(Mutex::new(json!({"automatic":true}))),
+        let updates = Updates { installation:None, native:None, view:Arc::new(Mutex::new(json!({"automatic":true}))),
             cancel:Arc::new(AtomicBool::new(false)), launch_checked:AtomicBool::new(false) };
         assert!(updates.claim_launch_check());
         assert!(!updates.claim_launch_check());
@@ -443,7 +489,7 @@ mod tests {
     #[test]
     fn settings_show_the_actual_operation_and_disable_checks_after_publication() {
         let mut app = Chilpa::new();
-        app.appimage_updates = Some(Updates { installation:None, view:Arc::new(Mutex::new(json!({"phase":"downloading","busy":true}))),
+        app.appimage_updates = Some(Updates { installation:None, native:None, view:Arc::new(Mutex::new(json!({"phase":"downloading","busy":true}))),
             cancel:Arc::new(AtomicBool::new(false)), launch_checked:AtomicBool::new(false) });
         let mut row = crate::settings_rows::SettingsRow { key:"updates.check".into(), ..Default::default() };
         app.updates_settings_row(&mut row);
@@ -508,6 +554,38 @@ mod tests {
         let installation = Installation { image:PathBuf::new(), helper:PathBuf::new(), restart:PathBuf::new(),
             repository:"example/fixture".into(), version:Version::new(1,0,0), information:None, expected:None };
         assert!(information(&installation,"v1.10.0").ends_with(&format!("-{}.AppImage.zsync", std::env::consts::ARCH)));
+    }
+    #[test]
+    fn a_rate_limited_service_is_told_apart_from_an_unavailable_one() {
+        let current = Version::new(1, 0, 0);
+        for status in [403, 429] { assert_eq!(release_response(status, b"{}", &current).unwrap_err(), "rate_limited"); }
+        for status in [404, 500] { assert_eq!(release_response(status, b"{}", &current).unwrap_err(), "The release service is unavailable"); }
+        let mut state = json!({"busy":true});
+        finish(&mut state, Err("rate_limited".into()), false);
+        assert_eq!((state["phase"].as_str(), state["reason"].as_str()), (Some("error"), Some("rate_limited")));
+        finish(&mut state, Err("some other failure".into()), false);
+        assert_eq!(state["reason"], "");
+    }
+    #[test]
+    fn the_tarball_and_mac_files_are_found_by_name_with_their_listed_digest() {
+        let hash = "b".repeat(64);
+        let tarball = bundle::asset_name(bundle::Kind::Tarball, "1.10.0");
+        let document = json!({"assets":[{"name":tarball,"size":2048,"digest":format!("sha256:{hash}")}]});
+        assert_eq!(asset_digest(&document, &tarball, false).unwrap(), (hash, 2048));
+        assert!(asset_digest(&document, &tarball, true).is_err(), "only an AppImage needs a delta file");
+        assert!(asset_digest(&document, &bundle::asset_name(bundle::Kind::MacApp, "1.10.0"), false).is_err());
+    }
+    #[test]
+    fn a_seed_is_copied_when_the_filesystem_cannot_link() {
+        let directory = tempfile::tempdir().unwrap();
+        let image = directory.path().join("Player.AppImage");
+        fs::write(&image, b"original").unwrap();
+        let seed = directory.path().join("seed");
+        stage_seed(&image, &seed, |_, _| Err(std::io::ErrorKind::PermissionDenied.into())).unwrap();
+        assert_eq!(fs::read(&seed).unwrap(), b"original");
+        let linked = directory.path().join("linked");
+        stage_seed(&image, &linked, |from, to| fs::hard_link(from, to)).unwrap();
+        assert_eq!(fs::read(&linked).unwrap(), b"original");
     }
     #[cfg(target_os = "linux")]
     #[test]
