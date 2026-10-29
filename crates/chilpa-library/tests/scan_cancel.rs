@@ -159,6 +159,37 @@ fn a_share_away_only_while_it_is_walked_is_not_taken_for_emptied() {
 }
 
 #[test]
+fn a_file_not_there_when_read_and_back_before_reconciling_is_not_taken_for_gone() {
+    // Read first, the disc takes the track away; the track is back by the
+    // time the scan reconciles, as a file written over by an editor is.
+    struct Away { track: std::path::PathBuf, parked: std::path::PathBuf }
+    impl scan::Containers for Away {
+        fn may_hold(&self, path: &Path) -> bool { path.extension().is_some_and(|extension| extension == "disc") }
+        fn tracks(&self, _: &Path) -> Option<Vec<scan::ContainedTrack>> {
+            std::fs::rename(&self.track, &self.parked).unwrap();
+            None
+        }
+    }
+    impl scan::ScanWatch for Away {
+        fn finalizing(&self) { std::fs::rename(&self.parked, &self.track).unwrap(); }
+    }
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path().join("music");
+    std::fs::create_dir(&root).unwrap();
+    let away = Away { track: root.join("x.wav"), parked: directory.path().join("parked.wav") };
+    wave(&away.track);
+    let library = Library::in_memory().unwrap();
+    scan::scan_root(&library, &root).unwrap();
+    std::fs::write(root.join("a.disc"), b"x").unwrap();
+
+    let report = scan::scan_watched(&library, &root, None, &away, &ScanControl::default(), &away).unwrap();
+    assert_eq!((report.unreadable, report.missing), (1, 0), "looked for again, it is there");
+    let present: bool = library.connection().query_row("SELECT present FROM tracks", [], |row| row.get(0)).unwrap();
+    let scanned: i64 = library.connection().query_row("SELECT count(*) FROM scanned_files", [], |row| row.get(0)).unwrap();
+    assert!(present && scanned == 1, "the track and what was scanned of it are kept");
+}
+
+#[test]
 fn unchanged_checks_are_quiet_but_reachability_and_renames_are_reported() {
     let directory = tempfile::tempdir().unwrap();
     let first = directory.path().join("first.wav");
