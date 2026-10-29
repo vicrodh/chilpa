@@ -32,19 +32,35 @@ pub(crate) fn walk(root: &Path, containers: &dyn Containers) -> Listing {
 /// The listing, reporting every `FOUND_EVERY` files through `on_found`. It
 /// stops where `control` says, leaving the listing unsorted and partial.
 pub(crate) fn walk_controlled(root: &Path, containers: &dyn Containers, control: &ScanControl, on_found: &dyn Fn(usize)) -> Listing {
+    walk_with(root, containers, control, on_found, |dir| std::fs::read_dir(dir))
+}
+
+/// The walk, with each folder listed by `read`.
+fn walk_with<I>(root: &Path, containers: &dyn Containers, control: &ScanControl, on_found: &dyn Fn(usize), read: impl Fn(&Path) -> std::io::Result<I>) -> Listing
+where
+    I: Iterator<Item = std::io::Result<std::fs::DirEntry>>,
+{
     let mut listing = Listing::default();
     let mut pending = vec![root.to_path_buf()];
     while let Some(dir) = pending.pop() {
         if control.stopped() { break; }
-        let Ok(entries) = std::fs::read_dir(&dir) else {
+        let Ok(entries) = read(&dir) else {
             // An unreadable subfolder neither cancels the scan nor disables the
             // prune for the rest: in QBZ a lost+found disabled it forever. What
             // was known under it is left as it was, not taken for gone.
             listing.blocked.push(dir);
             continue;
         };
-        for entry in entries.flatten() {
+        for entry in entries {
             if control.stopped() { break; }
+            // A listing that breaks off, as a share's does when it drops
+            // mid-walk, is not the whole folder: it is reported like one that
+            // could not be opened, so what did not turn up under it is not
+            // taken for deleted.
+            let Ok(entry) = entry else {
+                listing.blocked.push(dir);
+                break;
+            };
             let path = entry.path();
             // The entry's own kind costs nothing: the listing carries it. A
             // link is followed, so a linked folder is walked and a link to a
@@ -132,6 +148,25 @@ mod tests {
         }
         assert_eq!(listing.blocked, [closed]);
         assert_eq!(listing.files.len(), 3);
+    }
+
+    #[test]
+    fn a_folder_whose_listing_breaks_off_is_reported_like_one_that_cannot_be_opened() {
+        let dir = tree();
+        let album = dir.path().join("artist").join("album");
+        std::fs::create_dir(dir.path().join("artist").join("other")).unwrap();
+        std::fs::write(dir.path().join("artist").join("other").join("03.flac"), b"x").unwrap();
+        // The album's listing gives one entry and then fails.
+        let read = |path: &Path| -> std::io::Result<Box<dyn Iterator<Item = std::io::Result<std::fs::DirEntry>>>> {
+            let entries = std::fs::read_dir(path)?;
+            if path == album {
+                return Ok(Box::new(entries.take(1).chain(std::iter::once(Err(std::io::Error::other("injected"))))));
+            }
+            Ok(Box::new(entries))
+        };
+        let listing = walk_with(dir.path(), &NoContainers, &ScanControl::default(), &|_| {}, read);
+        assert_eq!(listing.blocked, [album], "the album is not known whole");
+        assert!(listing.files.contains(&dir.path().join("artist").join("other").join("03.flac")), "the rest is listed: {listing:?}");
     }
 
     #[test]
