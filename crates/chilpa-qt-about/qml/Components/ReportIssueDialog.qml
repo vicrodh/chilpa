@@ -12,7 +12,7 @@ Modal {
     property var openExternal: function(url) { Qt.openUrlExternally(url) }
     width: Math.min(Metrics.confirmWidth + Metrics.modalInsets, parent.width - Metrics.modalInsets)
     height: Math.min(body.implicitHeight + Metrics.modalInsets, parent.height - Metrics.modalInsets)
-    onClosed: review.close()
+    onClosed: if (review.item) review.item.close()
     Connections {
         target: About
         enabled: dialog.listenForRequests
@@ -72,12 +72,12 @@ Modal {
                 PillButton {
                     objectName: "reportIssueGoToLogs"
                     text: I18n.tr("Go to logs", I18n.rev)
-                    onClicked: logs.open()
+                    onClicked: { dialog.logs.active = true; dialog.logs.item.open() }
                 }
                 PillButton {
                     objectName: "reportIssueReviewLogs"
                     text: I18n.tr("Review and copy logs…", I18n.rev)
-                    onClicked: review.open()
+                    onClicked: { dialog.review.active = true; dialog.review.item.open() }
                 }
                 PillButton {
                     objectName: "reportIssueCreate"
@@ -88,10 +88,23 @@ Modal {
             }
         }
     }
-    DeveloperLogDialog { id: logs }
-    DeveloperReportDialog {
-        id: review
-        objectName: "reportIssueReview"
-        offerIssue: false
+    // Build auxiliary overlays only after an explicit request, when the
+    // window has its geometry. Each loader owns at most one open dialog.
+    readonly property Loader logs: Loader {
+        active: false
+        sourceComponent: DeveloperLogDialog {
+            objectName: "reportIssueLogs"
+            parent: dialog.parent
+            onClosed: dialog.logs.active = false
+        }
+    }
+    readonly property Loader review: Loader {
+        active: false
+        sourceComponent: DeveloperReportDialog {
+            parent: dialog.parent
+            objectName: "reportIssueReview"
+            offerIssue: false
+            onClosed: dialog.review.active = false
+        }
     }
 }
