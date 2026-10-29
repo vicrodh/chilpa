@@ -225,28 +225,70 @@ fn a_rescan_that_finds_nothing_changed_asks_no_screen_to_read_the_library_again(
 #[test]
 fn a_folder_that_answers_again_is_shown_before_the_other_folders_are_read() {
     if !isolated("scan_actions::tests::a_folder_that_answers_again_is_shown_before_the_other_folders_are_read") { return; }
-    let (back, large) = (tempfile::tempdir().unwrap(), tempfile::tempdir().unwrap());
-    for index in 0..3 { wave(&back.path().join(format!("{index}.wav"))); }
-    for index in 0..3_000 { wave(&large.path().join(format!("{index:04}.wav"))); }
+    use std::sync::{mpsc, Arc, Mutex};
+
+    struct HoldReading {
+        root: PathBuf,
+        entered: mpsc::SyncSender<()>,
+        release: Mutex<Option<mpsc::Receiver<()>>>,
+    }
+    impl chilpa_library::scan::Containers for HoldReading {
+        fn may_hold(&self, path: &Path) -> bool {
+            // Audio files reach this callback after listing, immediately
+            // before their metadata is read. Hold only the first one.
+            if path.starts_with(&self.root) {
+                if let Some(release) = self.release.lock().unwrap().take() {
+                    if self.entered.send(()).is_ok() {
+                        // A failed assertion drops the sender and also
+                        // releases the worker before ScanJob joins it.
+                        let _ = release.recv();
+                    }
+                }
+            }
+            false
+        }
+        fn tracks(&self, _: &Path) -> Option<Vec<chilpa_library::scan::ContainedTrack>> { None }
+    }
+
+    let music = tempfile::tempdir().unwrap();
+    // Rescan orders roots by path; random temporary names cannot define
+    // which folder returns before the other folder is read.
+    let (back, large) = (music.path().join("01-back"), music.path().join("02-large"));
+    for folder in [&back, &large] { std::fs::create_dir(folder).unwrap(); }
+    for index in 0..3 { wave(&back.join(format!("{index}.wav"))); }
+    for index in 0..3_000 { wave(&large.join(format!("{index:04}.wav"))); }
     let mut api = Chilpa::new();
-    for folder in [back.path(), large.path()] {
+    for folder in [&back, &large] {
         assert!(api.start_scan(folder));
         finish(&mut api);
     }
     let library = api.library().unwrap();
     let source = library.source_id("local", "default").unwrap();
-    library.set_root_reachable(library.root_id(source, back.path()).unwrap(), false).unwrap();
+    library.set_root_reachable(library.root_id(source, &back).unwrap(), false).unwrap();
+    let tracks: Vec<_> = (0..3).map(|index| library.track_by_path(source, &back.join(format!("{index}.wav"))).unwrap().unwrap()).collect();
+    // These loose WAVs have no album; inspect their playback flags by ID.
+    let playable = |library: &chilpa_library::Library| tracks.iter().map(|id| library.connection().query_row(
+        "SELECT present = 1 AND reachable = 1 FROM tracks WHERE id = ?1", [id], |row| row.get::<_, bool>(0)).unwrap()).collect::<Vec<_>>();
+    assert_eq!(playable(library), [false; 3]);
     let _ = api.library_changed();
-    assert!(api.rescan());
-    let mut shown_while_running = false;
-    let limit = Instant::now() + Duration::from_secs(60);
-    while api.scan_status().running {
-        assert!(Instant::now() < limit, "scan did not finish");
-        shown_while_running |= api.library_changed();
-        std::thread::sleep(Duration::from_millis(1));
-    }
-    assert_eq!(api.scan_status.summary.unchanged, 3_003, "nothing but the availability changed");
+
+    let (entered_tx, entered_rx) = mpsc::sync_channel(1);
+    let (release_tx, release_rx) = mpsc::sync_channel(1);
+    let gate = Arc::new(HoldReading { root: large.clone(), entered: entered_tx, release: Mutex::new(Some(release_rx)) });
+    let roots = api.roots();
+    assert_eq!(roots, [back, large.clone()]);
+    assert!(api.start_scan_using(roots, |roots| chilpa_library::ScanJob::try_start_with(
+        chilpa_library::Library::default_path(), roots, None, gate)));
+    entered_rx.recv_timeout(Duration::from_secs(20)).expect("the scan did not reach the second root");
+    assert!(api.scan_status().running, "the scan remains active until the test releases the second root");
+    assert_eq!(api.scan_status.root, large.to_string_lossy());
+    assert_eq!(api.scan_status.done, 3, "the second root has not read any file yet");
+    let shown_while_running = api.library_changed();
     assert!(shown_while_running, "the folder's tracks are playable again before the large folder is read");
+    assert_eq!(playable(api.library().unwrap()), [true; 3]);
+    release_tx.send(()).unwrap();
+    finish(&mut api);
+    assert_eq!(api.scan_status.summary.unchanged, 3_003, "nothing but the availability changed");
 }
 
 #[test]
