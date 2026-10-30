@@ -3823,6 +3823,9 @@ msgstr "Исполнители этой сцены не найдены."
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "Исполнители из выбранных плагинов в этой сцене не найдены."
 
+msgid "No audio output is known yet; try again in a moment."
+msgstr "Аудиовывод пока неизвестен; попробуйте ещё раз через мгновение."
+
 msgid "No composer"
 msgstr "Без композитора"
 

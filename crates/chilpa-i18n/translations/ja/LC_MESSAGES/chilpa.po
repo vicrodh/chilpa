@@ -3817,6 +3817,9 @@ msgstr "このシーンのアーティストは見つかりませんでした。
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "選択したプラグインのアーティストは、このシーンで見つかりませんでした。"
 
+msgid "No audio output is known yet; try again in a moment."
+msgstr "まだ音声出力が見つかりません。少し待ってからもう一度お試しください。"
+
 msgid "No composer"
 msgstr "作曲者なし"
 

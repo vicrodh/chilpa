@@ -220,6 +220,16 @@ impl Chilpa {
             self.cast_load(from, start_at.map(|s| s.as_secs_f64()).unwrap_or(0.0), false);
             return;
         }
+        // An output called nothing is not handed to the player to fail on:
+        // where nothing could be named without the listing, the listing is
+        // waited for here, briefly, and a play that still has no output is
+        // refused and says so.
+        let Some(device) = self.output_for_play(device) else {
+            self.now.error = chilpa_i18n::t("No audio output is known yet; try again in a moment.");
+            chilpa_core::trace_playback("facade", "launch_refused", format_args!("from={from} reason={why:?}: no output"));
+            return;
+        };
+        let device = device.as_str();
         chilpa_core::trace_playback(
             "facade",
             "launch_requested",

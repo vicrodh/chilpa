@@ -16,13 +16,14 @@ pub(crate) const HIFI_WIZARD: &str = "audio.hifiWizard";
 #[cfg(target_os = "linux")]
 mod hifi_wizard;
 mod listing;
-pub(crate) use listing::{Listing, WATCH};
+pub(crate) use listing::Listing;
 
 /// How long a play with nothing remembered waits for the first listing
 /// where nothing can be named without it. Never on Linux, where the
 /// system stack's one output is named without asking; elsewhere the one
 /// stack answers from the operating system in milliseconds, and this is
-/// the ceiling, not the expectation.
+/// the ceiling, not the expectation. A play, and nothing else: whatever
+/// the window asks reads what stands and never waits.
 const FIRST_ANSWER: std::time::Duration = std::time::Duration::from_secs(1);
 
 /// File capture is a development output, separate from normal listening devices.
@@ -226,7 +227,10 @@ impl crate::Chilpa {
 
     /// The first output there is, as last listed. Before the stacks have
     /// answered once, the one that is there without asking them: the window
-    /// is not kept waiting for a sound server to name a default.
+    /// is not kept waiting for a sound server to name a default. Empty
+    /// where nothing can be named without asking and nothing has answered
+    /// yet, which is what the window then shows; a play resolves it by
+    /// `output_for_play`.
     ///
     /// One snapshot, read once: whether the stacks have answered and what
     /// they said travel together, so the empty list from before the answer
@@ -239,12 +243,26 @@ impl crate::Chilpa {
         if found.listed {
             return String::new();
         }
-        if let Some(standing) = chilpa_core::backends::standing_output() {
-            return standing;
+        chilpa_core::backends::standing_output().unwrap_or_default()
+    }
+
+    /// The output a play goes to: the one it was given, or -- when nothing
+    /// could be named without the listing -- the first one listed, waited
+    /// for here and `FIRST_ANSWER` at most. `None` when there still is
+    /// none: the play is then refused and says so, instead of handing the
+    /// player an output called nothing to fail on.
+    pub(crate) fn output_for_play(&self, device: &str) -> Option<String> {
+        if !device.is_empty() {
+            return Some(device.to_string());
         }
-        // Nothing is named without asking on this platform, so the thread
-        // that is asking is waited for, this once and this long at most.
-        self.outputs_listing.first_answer(FIRST_ANSWER).outputs.iter().find(|o| offered(o)).map(|o| o.id.clone()).unwrap_or_default()
+        self.outputs_listing.first_answer(FIRST_ANSWER).outputs.iter().find(|o| offered(o)).map(|o| o.id.clone())
+    }
+
+    /// The audio settings are being looked at, or no longer: while they
+    /// are, the listing keeps itself current, so a card plugged in while
+    /// the page is open shows up on it.
+    pub fn watch_outputs(&mut self, shown: bool) {
+        self.outputs_listing.watch(shown);
     }
 
     /// What the chosen output's own volume control is doing.

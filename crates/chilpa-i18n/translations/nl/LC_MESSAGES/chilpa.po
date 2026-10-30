@@ -3820,6 +3820,9 @@ msgstr "Er zijn geen artiesten uit deze scène gevonden."
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "Er zijn in deze scène geen artiesten van je geselecteerde plug-ins gevonden."
 
+msgid "No audio output is known yet; try again in a moment."
+msgstr "Er is nog geen audio-uitvoer bekend; probeer het zo nog eens."
+
 msgid "No composer"
 msgstr "Geen componist"
 

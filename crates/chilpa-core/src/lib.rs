@@ -85,13 +85,16 @@ pub struct Output {
     pub bit_perfect: bool,
 }
 
-/// Every output of every stack that is on this machine.
+/// Every output of every stack that is on this machine, uncut: whoever
+/// asks bounds what it keeps.
 ///
 /// Flat, because a window that only offers one picker still has to offer
 /// everything. The one that offers two -- the stack, and then its outputs --
-/// asks `backends::outputs_of` instead and gets the same rows.
+/// asks `backends::outputs_of` instead and gets the same rows. The cap of
+/// [`inventory`] is the listing kept for the window's lists; this is not
+/// that listing, and it does not cut.
 pub fn outputs() -> Vec<Output> {
-    inventory().outputs
+    inventory_of(&backends::all(), usize::MAX).outputs
 }
 
 /// How many outputs one stack may list. A machine has a handful; a server
@@ -483,6 +486,11 @@ mod tests {
         assert_eq!(found.clipped, [BackendKind::PipeWire]);
         let few = inventory_of(&stacks[1..], 128);
         assert!(few.clipped.is_empty(), "a stack under the cap is not said to be cut");
+        // The flat list is not the listing kept for the window: it is not
+        // cut, so whoever bounds it keeps bounding it as before.
+        let whole = inventory_of(&stacks, usize::MAX);
+        assert_eq!(whole.outputs.len(), 302);
+        assert!(whole.clipped.is_empty());
     }
 }
 pub use chilpa_audio::dsp;

@@ -14,8 +14,8 @@
 //! wanted of it; one snapshot of at most `MOST_OUTPUTS_PER_STACK` outputs
 //! per stack, the previous one dropped as the next lands; one listing at
 //! start, one whenever asked, and one every `REFRESH_EVERY` only while
-//! somebody is looking at the list -- a settings page just built, a picker
-//! open. With nothing looking there is no periodic work at all.
+//! somebody is looking at the list -- the audio settings while shown, the
+//! cast picker while open. With nothing looking there is no periodic work.
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
@@ -27,11 +27,6 @@ use std::time::{Duration, Instant};
 /// card coming or going is noticed sooner, by whoever reads `generation`
 /// and asks.
 const REFRESH_EVERY: Duration = Duration::from_secs(5);
-
-/// How long a watcher's interest lasts past its last word. A page says so
-/// when it is built and not again while it stays open, so this is long
-/// enough for a card plugged in while somebody is still looking at it.
-pub(crate) const WATCH: Duration = Duration::from_secs(60);
 
 /// What one listing found.
 ///
@@ -61,9 +56,13 @@ pub(crate) type Survey = Arc<dyn Fn() -> Found + Send + Sync + 'static>;
 struct Wanted {
     /// The next listing is wanted now rather than on the timer.
     asked: bool,
-    /// Somebody is looking at the list until then. The listing is made
-    /// again every `REFRESH_EVERY` while that holds, and only when asked
-    /// otherwise.
+    /// Somebody is looking at the list, and says so when they stop: the
+    /// audio settings while shown.
+    watched: bool,
+    /// Somebody is looking at the list until then, and says so again while
+    /// they keep looking: the cast picker, from the poll. The listing is
+    /// made again every `REFRESH_EVERY` while either holds, and only when
+    /// asked otherwise.
     watched_until: Option<Instant>,
     stop: bool,
     /// Whether a thread is listing, or waiting to. Set before one is
@@ -77,6 +76,12 @@ struct Wanted {
     worker: Option<JoinHandle<()>>,
 }
 
+impl Wanted {
+    fn watched(&self) -> bool {
+        self.watched || self.watched_until.is_some_and(|until| Instant::now() < until)
+    }
+}
+
 struct Shared {
     /// Swapped whole under the lock and read by cloning the pointer, so
     /// the lock is held for nanoseconds on either side.
@@ -87,6 +92,9 @@ struct Shared {
     /// a listing finds what the last one found: whoever draws the list
     /// rebuilds on a new number and never on a tick.
     revision: AtomicU64,
+    /// How many snapshots have been published, changed or not. Moved after
+    /// the snapshot and its revision are in place.
+    published: AtomicU64,
     wanted: Mutex<Wanted>,
     wake: Condvar,
 }
@@ -97,14 +105,18 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 }
 
 impl Shared {
-    /// Hands the window the new snapshot. The old one is dropped outside
-    /// the lock: a list of a hundred strings is not freed under it.
+    /// Hands the window the new snapshot. The lock covers a pointer clone
+    /// and a pointer swap and nothing else: the comparison runs between
+    /// them with no lock held, and the old snapshot is dropped after.
     fn publish(&self, found: Arc<Found>) {
-        let changed = *lock(&self.found).clone() != *found;
+        let previous = Arc::clone(&lock(&self.found));
+        let changed = *previous != *found;
+        drop(previous);
         let old = std::mem::replace(&mut *lock(&self.found), found);
         if changed {
             self.revision.fetch_add(1, Ordering::AcqRel);
         }
+        self.published.fetch_add(1, Ordering::AcqRel);
         self.answered.notify_all();
         drop(old);
     }
@@ -142,6 +154,7 @@ impl Listing {
             found: Mutex::new(Arc::new(Found::default())),
             answered: Condvar::new(),
             revision: AtomicU64::new(0),
+            published: AtomicU64::new(0),
             wanted: Mutex::new(Wanted::default()),
             wake: Condvar::new(),
         });
@@ -179,8 +192,8 @@ impl Listing {
     }
 
     /// What was last found, once the stacks have answered or `patience`
-    /// has run out, whichever is first. The one place the window waits on
-    /// the listing, and only where nothing can be named without it.
+    /// has run out, whichever is first. The one place anything waits on
+    /// the listing: a play, where nothing can be named without it.
     pub(crate) fn first_answer(&self, patience: Duration) -> Arc<Found> {
         let deadline = Instant::now() + patience;
         let mut found = lock(&self.shared.found);
@@ -222,15 +235,29 @@ impl Listing {
         self.shared.wake.notify_one();
     }
 
-    /// Somebody is looking at the list for that long: it is made again
-    /// every `REFRESH_EVERY` until then. Said again, the longer stands.
+    /// Somebody is looking at the list, or has stopped: the audio settings
+    /// as they are shown and left. While looked at, the listing is made
+    /// again every `REFRESH_EVERY`.
+    pub(crate) fn watch(&self, on: bool) {
+        let mut wanted = lock(&self.shared.wanted);
+        let begins = on && !wanted.watched();
+        wanted.watched = on;
+        self.start(&mut wanted);
+        if begins {
+            self.shared.wake.notify_one();
+        }
+    }
+
+    /// Somebody is looking at the list for that long, and will say so
+    /// again while they keep looking: the cast picker, from the poll. Said
+    /// again, the longer stands.
     pub(crate) fn watch_for(&self, how_long: Duration) {
         let now = Instant::now();
         let mut wanted = lock(&self.shared.wanted);
         // Woken only when the watch begins: a thread already on its timer
         // reads the longer lease when the timer ends, and a picker saying
         // so four times a second does not wake it four times a second.
-        let begins = !wanted.watched_until.is_some_and(|standing| now < standing);
+        let begins = !wanted.watched();
         if wanted.watched_until.is_none_or(|standing| standing < now + how_long) {
             wanted.watched_until = Some(now + how_long);
         }
@@ -238,6 +265,11 @@ impl Listing {
         if begins {
             self.shared.wake.notify_one();
         }
+    }
+
+    #[cfg(test)]
+    fn published(&self) -> u64 {
+        self.shared.published.load(Ordering::Acquire)
     }
 
     #[cfg(test)]
@@ -282,7 +314,7 @@ fn run(shared: &Shared, list: &Survey, every: Duration) {
         let deadline = Instant::now() + every;
         let mut wanted = lock(&shared.wanted);
         while !wanted.stop && !wanted.asked {
-            if wanted.watched_until.is_some_and(|until| Instant::now() < until) {
+            if wanted.watched() {
                 let left = deadline.saturating_duration_since(Instant::now());
                 if left.is_zero() {
                     break;
@@ -350,6 +382,16 @@ pub(crate) mod tests {
         })
     }
 
+    /// A short period, so that a timer that runs when it should not shows
+    /// within a test's patience instead of five seconds later.
+    const SHORT: Duration = Duration::from_millis(20);
+
+    /// A listing made every `SHORT` while watched, counting its publications
+    /// through `published`.
+    fn quick() -> Listing {
+        Listing::with_every(Arc::new(|| answered(Vec::new())), SHORT)
+    }
+
     #[test]
     fn reading_returns_at_once_while_the_stacks_are_still_being_asked() {
         let (gate, calls) = (Arc::new(Gate::default()), Arc::new(AtomicUsize::new(0)));
@@ -360,7 +402,8 @@ pub(crate) mod tests {
         assert!(!listing.listed());
         assert!(before.elapsed() < Duration::from_secs(1), "reading waited on the listing");
         gate.open();
-        assert!(wait_until(|| listing.listed(), Duration::from_secs(5)), "the stacks answered and nothing was kept");
+        assert!(wait_until(|| listing.published() == 1, Duration::from_secs(5)), "the stacks answered and nothing was kept");
+        assert!(listing.listed());
         assert_eq!(listing.found().outputs.iter().map(|o| o.id.as_str()).collect::<Vec<_>>(), ["alsa:hw:1,0"]);
     }
 
@@ -377,7 +420,7 @@ pub(crate) mod tests {
         assert!(wait_until(|| calls.load(Ordering::SeqCst) == 1, Duration::from_secs(5)));
         let before = listing.found();
         gate.open();
-        assert!(wait_until(|| listing.listed(), Duration::from_secs(5)));
+        assert!(wait_until(|| listing.published() == 1, Duration::from_secs(5)));
         let after = listing.found();
         assert!(!before.listed && before.outputs.is_empty(), "the snapshot before the answer still says so");
         assert!(after.listed && !after.outputs.is_empty(), "the snapshot after carries what was found");
@@ -401,16 +444,25 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn asking_lists_again_without_waiting_for_the_timer() {
+    fn asking_lists_again_at_once() {
         let (gate, calls) = (Arc::new(Gate::default()), Arc::new(AtomicUsize::new(0)));
         gate.open();
         let listing = Listing::with(counted(&gate, &calls));
-        assert!(wait_until(|| listing.listed(), Duration::from_secs(5)));
-        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        assert!(wait_until(|| listing.published() == 1, Duration::from_secs(5)));
+        // The timer is seconds away, and nobody is watching for it anyway.
         listing.ask();
-        assert!(wait_until(|| calls.load(Ordering::SeqCst) == 2, Duration::from_secs(2)), "asking did not list again");
-        std::thread::sleep(Duration::from_millis(300));
-        assert_eq!(calls.load(Ordering::SeqCst), 2, "it listed on its own while nobody was watching");
+        assert!(wait_until(|| listing.published() == 2, Duration::from_secs(2)), "asking did not list again");
+        assert_eq!(calls.load(Ordering::SeqCst), 2);
+    }
+
+    #[test]
+    fn nothing_lists_on_its_own_while_nobody_watches() {
+        // Twenty milliseconds a period: a timer that ran unwatched would
+        // have published a dozen more by the time this looks.
+        let listing = quick();
+        assert!(wait_until(|| listing.published() == 1, Duration::from_secs(5)));
+        std::thread::sleep(SHORT * 15);
+        assert_eq!(listing.published(), 1, "it listed on its own while nobody was watching");
     }
 
     #[test]
@@ -418,35 +470,38 @@ pub(crate) mod tests {
         let (gate, calls) = (Arc::new(Gate::default()), Arc::new(AtomicUsize::new(0)));
         gate.open();
         let listing = Listing::with(counted(&gate, &calls));
-        assert!(wait_until(|| listing.listed(), Duration::from_secs(5)));
+        assert!(wait_until(|| listing.published() == 1, Duration::from_secs(5)));
         assert_eq!(listing.revision(), 1);
         listing.ask();
-        assert!(wait_until(|| calls.load(Ordering::SeqCst) == 2, Duration::from_secs(2)));
+        assert!(wait_until(|| listing.published() == 2, Duration::from_secs(2)));
         assert_eq!(listing.revision(), 1, "the same list again is not a change for the window to redraw");
     }
 
     #[test]
-    fn watching_lists_again_on_the_timer_and_stops_when_the_watch_ends() {
-        let calls = Arc::new(AtomicUsize::new(0));
-        let counted = Arc::clone(&calls);
-        let listing = Listing::with_every(
-            Arc::new(move || {
-                counted.fetch_add(1, Ordering::SeqCst);
-                answered(Vec::new())
-            }),
-            Duration::from_millis(50),
-        );
-        assert!(wait_until(|| listing.listed(), Duration::from_secs(5)));
-        std::thread::sleep(Duration::from_millis(200));
-        assert_eq!(calls.load(Ordering::SeqCst), 1, "it listed on its own while nobody was watching");
-        listing.watch_for(Duration::from_millis(300));
-        assert!(wait_until(|| calls.load(Ordering::SeqCst) >= 4, Duration::from_secs(2)), "watching did not list again on the timer");
-        assert!(wait_until(|| !lock(&listing.shared.wanted).watched_until.is_some_and(|until| Instant::now() < until), Duration::from_secs(2)));
-        // A listing the timer started just before the watch ended lands.
-        std::thread::sleep(Duration::from_millis(100));
-        let settled = calls.load(Ordering::SeqCst);
-        std::thread::sleep(Duration::from_millis(200));
-        assert_eq!(calls.load(Ordering::SeqCst), settled, "it kept listing after the watch ended");
+    fn watching_lists_on_the_timer_while_the_page_is_shown_and_stops_when_it_is_left() {
+        let listing = quick();
+        assert!(wait_until(|| listing.published() == 1, Duration::from_secs(5)));
+        listing.watch(true);
+        assert!(wait_until(|| listing.published() >= 5, Duration::from_secs(2)), "watching did not list again on the timer");
+        listing.watch(false);
+        // A listing the timer started just before the page was left lands.
+        std::thread::sleep(SHORT * 5);
+        let settled = listing.published();
+        std::thread::sleep(SHORT * 15);
+        assert_eq!(listing.published(), settled, "it kept listing after the page was left");
+    }
+
+    #[test]
+    fn a_short_watch_lists_on_the_timer_and_ends_on_its_own() {
+        let listing = quick();
+        assert!(wait_until(|| listing.published() == 1, Duration::from_secs(5)));
+        listing.watch_for(SHORT * 10);
+        assert!(wait_until(|| listing.published() >= 4, Duration::from_secs(2)), "the lease did not list on the timer");
+        assert!(wait_until(|| !lock(&listing.shared.wanted).watched(), Duration::from_secs(2)));
+        std::thread::sleep(SHORT * 5);
+        let settled = listing.published();
+        std::thread::sleep(SHORT * 15);
+        assert_eq!(listing.published(), settled, "it kept listing after the lease ended");
     }
 
     #[test]
@@ -454,7 +509,7 @@ pub(crate) mod tests {
         let (gate, calls) = (Arc::new(Gate::default()), Arc::new(AtomicUsize::new(0)));
         gate.open();
         let listing = Listing::with(counted(&gate, &calls));
-        assert!(wait_until(|| listing.listed(), Duration::from_secs(5)));
+        assert!(wait_until(|| listing.published() == 1, Duration::from_secs(5)));
         let worker = listing.take_worker().expect("the thread started");
         // The thread is waiting with no timer: a wakeup lost here is a
         // thread that never leaves, not one that leaves five seconds late.
@@ -487,23 +542,28 @@ pub(crate) mod tests {
         // empty snapshot stood forever looking like a machine with nothing.
         let calls = Arc::new(AtomicUsize::new(0));
         let counted = Arc::clone(&calls);
-        let listing = Listing::with(Arc::new(move || {
-            if counted.fetch_add(1, Ordering::SeqCst) == 0 {
-                panic!("a stack could not be asked");
-            }
-            answered(vec![output("alsa:hw:1,0", "Card")])
-        }));
+        let listing = Listing::with_every(
+            Arc::new(move || {
+                if counted.fetch_add(1, Ordering::SeqCst) == 0 {
+                    panic!("a stack could not be asked");
+                }
+                answered(vec![output("alsa:hw:1,0", "Card")])
+            }),
+            SHORT,
+        );
         assert!(wait_until(|| listing.failure().is_some(), Duration::from_secs(5)), "the thread's end went unsaid");
         assert!(!listing.listed());
         assert!(!lock(&listing.shared.wanted).alive);
         listing.ask();
-        assert!(wait_until(|| listing.listed(), Duration::from_secs(5)), "asking did not start over");
+        assert!(wait_until(|| listing.published() == 1, Duration::from_secs(5)), "asking did not start over");
+        assert!(listing.listed());
         assert_eq!(listing.failure(), None, "the failure stayed after the thread was back");
         assert_eq!(calls.load(Ordering::SeqCst), 2);
-        // Asked again with the thread alive, no second one is started.
+        // Asked again with the thread alive, no second one is started: one
+        // more listing, and then nothing, since nobody is watching.
         listing.ask();
-        assert!(wait_until(|| calls.load(Ordering::SeqCst) == 3, Duration::from_secs(2)));
-        std::thread::sleep(Duration::from_millis(100));
-        assert_eq!(calls.load(Ordering::SeqCst), 3);
+        assert!(wait_until(|| listing.published() == 2, Duration::from_secs(2)));
+        std::thread::sleep(SHORT * 10);
+        assert_eq!(listing.published(), 2);
     }
 }
