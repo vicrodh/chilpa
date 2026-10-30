@@ -2,7 +2,7 @@
 
 <img width="100%" alt="Chilpa, Hi-Fi music player" src="assets/banner.png" />
 
-### Hi-Fi music. Every source. Bit-perfect.
+
 
 <p>
   <a href="https://github.com/vicrodh/chilpa/releases"><img src="https://img.shields.io/github/v/release/vicrodh/chilpa?style=for-the-badge&color=0b0b0b&labelColor=333" alt="Release" /></a>
@@ -13,45 +13,41 @@
   <a href="https://techforpalestine.org/learn-more"><img height="28" src="assets/badge-palestine.svg" alt="Stand with Palestine" /></a>
 </p>
 
-<img width="100%" alt="Chilpa's Home, in the dark theme on the left and the light theme on the right" src="assets/captures/01_home.png" />
-
 </div>
 
-# Chilpa
-
-Chilpa is a local media player focused on HiFi and BitPerfect audio in a simple way, with a modern look and an architecture designed to be scalable from the start. It is platform-agnostic but compatible with any platform. It is designed to manage your music library, regardless of the source or size, and is built to grow over time.
+### Chilpa is a Hi-Fi music player. Bit-perfect. Multi Platform. Multi Source
 
 I took the name **Chilpa** from *chilpatl*, a Classical Nahuatl word for a
 **red wasp or hornet** (*avispa roja / avispón*).
 
+And yes, it is the spiritual successor of QBZ. 
+
 _Cool, but just take me to the download page_
 Sure, here is: [Releases](https://github.com/vicrodh/chilpa/releases)
+
+<img width="100%" alt="Chilpa's Home, in the dark theme on the left and the light theme on the right" src="assets/captures/01_home.png" />
 
 ## Features
 
 - Local music libraries, album editions, CDs and supported disc images.
+- All the formats that matters, FLAC, WAV, ALAC, DSD, DFF, and also the others Mp3, ogg, etc; CUE sheets support, SACD images: covered. 
 - Multiple queues, playlists, search and source-aware library browsing.
 - **Refine**: narrow the library with conditions on artist, genre, year,
   composer, label, rating, quality, source, etc. Save queries, load queries, play with the library, it's yours. 
-- **Listening stats**, computed on your computer and never sent anywhere:
-  what you played today, this week, this month or in any period you pick,
-  with charts of your top artists, albums, tracks and genres, decades and a
-  listening clock, and export to CSV or a PNG image.
-- **Self-Hosted-Aware** If you already have a self-hosted music solution, Chilpa doesn't replace it—it extends and complements it. Bring your Jellyfin, Subsonic, Plex, NAS, SMB, etc., server. 
+- **Listening stats**, local only, keep track of listening, visual features like
+  listening clock, lapse compare and export to CSV or a PNG image.
+- **Self-Hosted-Aware** Compatible with most common self-hosted servers: Jellyfin, Subsonic, Plex, NAS, SMB, etc.
 - Audio output that reports its actual format and processing state.
 - Synchronized lyrics, translations and immersive views that react to audio.
 - **Plugins** add sources and features: radio, podcasts, DSP presets and a
   graphic EQ, playlist import and local mood analysis, from the official
   catalog, the third-party catalog or any other. See [Plugins](#plugins).
-- **DAP Sync** Do you have a DAP? Want to sync it like iTunes? Or just transfer music to your microSD card, but keep track of what you copy and delete? Well, we've got you covered. Create profiles for each device and verify the integrity of your tracks. It's an early version, but it works.  
+- **DAP Sync** Sync DAPs or phones with the music library, track changes, multistorages, multi devices.  
 - **A command line**, as if Vim and the Quake console had a child. Press `:`
   to open it. Try it :)
 - Configurable **keyboard shortcuts** and keyboard navigation.
-- **Multilingual** English, Spanish, German, French, Dutch, Portuguese, Russian and Japanese.
-  Corrections from native speakers are welcome.
+- **Multilingual** English, Spanish, German, French, Dutch, Portuguese, Russian and Japanese. Corrections from native speakers are welcome.
 
-Native DSD and DoP bypass DSP. Enabling DSP changes a PCM signal, and Chilpa
-then reports the output as processed instead of bit-perfect.
 
 ## Screenshots
 
@@ -101,240 +97,59 @@ then reports the output as processed instead of bit-perfect.
   </tr>
 </table>
 
-The screenshots of queues, the HiFi Wizard, the artist page and Refine follow
-your GitHub theme, light or dark.
-
 ## Install
-
-### Install or update with one command
 
 ```sh
 curl -fsSL --proto '=https' https://chilpa.app/install.sh | bash
 ```
 
-The script installs Chilpa in `~/.local/opt/chilpa` on Linux and in
-`~/Applications/Chilpa.app` on macOS. To update, close Chilpa and run the
-same command again. Before replacing an installation it made, the script
-checks the release's SHA-256 digest and size; installations from package
-managers are left alone. On Linux it needs glibc 2.39 or newer, curl, and
-Python 3 or jq; on macOS it uses the system's JavaScript runtime.
+Installs or updates Chilpa for your user, on Linux and macOS. If macOS refuses to open the app, run `xattr -dr com.apple.quarantine ~/Applications/Chilpa.app` once.
 
-On macOS, if the system refuses to open the app the first time, remove the
-quarantine flag once and open it again:
+| Package | Platform | Updates |
+| --- | --- | --- |
+| AppImage | Linux x86_64, ARM64 | In app |
+| Tarball | Linux x86_64, ARM64 | In app |
+| macOS app (DMG, ZIP) | Apple Silicon, Intel | In app |
+| DEB, RPM | Linux x86_64, ARM64 | Package manager |
 
-```sh
-xattr -dr com.apple.quarantine ~/Applications/Chilpa.app
-```
-
-To inspect the selected package, append `-s -- --check` to `bash`. To select
-an existing prerelease, download `install.sh` from that release and run
-`bash install.sh --version=X.Y.Z-beta.N`.
-
-### DEB and RPM
-
-Download the package for your CPU from Releases, then install it through
-your package manager:
-
-```sh
-sudo apt install ./chilpa_0.1.0_amd64.deb
-# Fedora:
-sudo dnf install ./chilpa-0.1.0-1.x86_64.rpm
-```
-
-Use `arm64.deb` or `aarch64.rpm` for Linux on ARM64. These packages include
-the Qt runtime under `/opt/chilpa`. Update them through the package manager.
-
-### AppImage
-
-Download `Chilpa-0.1.0-x86_64.AppImage` and `SHA256SUMS` from the
-release, then:
-
-```sh
-sha256sum --check --ignore-missing SHA256SUMS
-chmod +x Chilpa-0.1.0-x86_64.AppImage
-./Chilpa-0.1.0-x86_64.AppImage
-```
-
-The image carries its own Qt and audio runtime. If FUSE is not available,
-run it with `APPIMAGE_EXTRACT_AND_RUN=1`.
-
-On every start Chilpa keeps itself in the application menu: it writes
-`~/.local/share/applications/app.chilpa.Chilpa.desktop` and its icon, with
-`Exec` pointing at the image, so a moved image is followed on its next start.
-If AppImageLauncher, Gear Lever or another tool already added the image,
-Chilpa adds no second entry, and it never replaces an entry it did not write.
-To remove it, delete that file and
-`~/.local/share/icons/hicolor/512x512/apps/app.chilpa.Chilpa.png`.
-
-Keep the image in a folder you own, such as `~/Applications`. Chilpa checks
-for updates once a day; About has the switch for the automatic check and a
-**Check for updates** button. An update downloads beside the image, is
-verified against the release checksum and replaces the file in place, keeping
-the previous image as `<name>.previous`. Version 0.1.0 uses the stable
-update channel.
-
-### Tarball
-
-```sh
-tar xf chilpa-0.1.0-linux-x86_64.tar.gz
-./chilpa-0.1.0/chilpa-qt
-```
-
-The tarball uses the system libraries: Qt 6.11 or newer with Qt Quick, ALSA,
-PulseAudio, D-Bus, SQLite and OpenSSL 3. Chilpa updates it in place from
-Settings: the folder keeps its name and path, and the previous version is kept
-beside it as `<folder>.previous`.
-
-It includes a desktop entry and its icon. The entry runs
-`/usr/bin/chilpa-qt`, which suits a package; to add Chilpa to your own menu,
-run this from the folder where you extracted it:
-
-```sh
-mkdir -p ~/.local/share/applications
-sed "s|^Exec=.*|Exec=$PWD/chilpa-0.1.0/chilpa-qt %U|" \
-  chilpa-0.1.0/app.chilpa.Chilpa.desktop \
-  > ~/.local/share/applications/app.chilpa.Chilpa.desktop
-cp -r chilpa-0.1.0/icons ~/.local/share/
-```
-
-### macOS
-
-Download `Chilpa-0.1.0-macos-aarch64.dmg` or
-`Chilpa-0.1.0-macos-aarch64.zip` for Apple Silicon; use the `macos-x86_64`
-packages for Intel. Open the DMG and drag
-Chilpa to Applications, or extract the ZIP and move `Chilpa.app` there.
-Both architectures include Qt. The release manifest
-records the minimum macOS version required by the deployed runtime.
-
-The app is signed ad hoc and is not notarized with an Apple Developer
-identity. macOS may require approving it in Privacy & Security after the
-first attempt to open it. Chilpa updates the app in place from Settings and
-keeps the previous version beside it as `Chilpa.app.previous`. A copy managed
-by Homebrew or signed by someone else is updated through its own channel.
-
-### Your data
-
-On Linux, settings live in `~/.config/chilpa`, the library and plugins in
-`~/.local/share/chilpa`, and the artwork cache in `~/.cache/chilpa`. On macOS,
-settings, library and plugins live in `~/Library/Application Support/chilpa`
-and the artwork cache in `~/Library/Caches/chilpa`. Updating or removing the
-application leaves them in place.
+Every package is on [Releases](https://github.com/vicrodh/chilpa/releases). Commands, requirements, uninstalling and where your data lives: [INSTALL.md](INSTALL.md).
 
 ## Plugins
 
-Plugins add sources and features. They are installed from
-**Settings > Plugins**:
+Install them from **Settings > Plugins**: press **Install**, switch the plugin on and approve the permissions it declares.
 
-1. Under **Chilpa Native Plugins**, press **Install** next to a plugin. It
-   installs switched off.
-2. Turn on its switch, review the permissions it declares and approve them.
-3. Open the plugin's details for its settings and account, if it has one.
+The [official catalog](https://github.com/vicrodh/chilpa-plugins) is built in and works offline. The [third-party catalog](https://github.com/vicrodh/chilpa-3rd-party-plugins) lists plugins by independent authors, tagged **Third-party**, and its README has the rules. Any other catalog can be added by URL, and **Install from ZIP…** takes a package downloaded by hand.
 
-The [official catalog](https://github.com/vicrodh/chilpa-plugins) is configured by default, and
-Chilpa ships a copy of it so the list works offline. **Manage > Refresh**
-fetches the current one.
+| Plugin | What it does |
+| --- | --- |
+| Radio | Stations from Radio Browser. |
+| Podcasts | Shows and episodes from PodcastIndex. |
+| Chilpa DSP | Equalizer, crossfeed and listening presets. |
+| Playlist Importer | Imports public playlists and files, and matches them to your sources. |
+| Mood | **Experimental.** Mood and similarity from local audio, with offline models. |
 
-Chilpa also offers the [third-party catalog](https://github.com/vicrodh/chilpa-3rd-party-plugins) by
-default. It lists plugins published by independent authors, checked and
-validated before they are listed, and they carry a **Third-party** tag in the
-list. Its README names them and the rules a plugin follows to be listed.
+Process plugins run in a sandbox: `bubblewrap` on Linux (unprivileged user namespaces on, not root), Seatbelt on macOS. WASM plugins need nothing extra.
 
-| Plugin | What it does | Package |
-| --- | --- | --- |
-| Radio | Stations from Radio Browser. No account. | WASM |
-| Podcasts | Shows and episodes from PodcastIndex. No account. | WASM |
-| Chilpa DSP | Equalizer, crossfeed and listening presets. | WASM |
-| Playlist Importer | Imports public playlists and playlist files, and matches their tracks against your library and connected sources. | Linux x86_64 / macOS Apple Silicon process |
-| Mood | **Experimental.** Analyzes local audio for mood and similarity with offline models. No audio or analysis results are uploaded. Models download only after you enable it. | Linux x86_64 process |
-
-Process plugins run inside a sandbox. On Linux, install `bubblewrap` and keep
-unprivileged user namespaces enabled; macOS uses the system's Seatbelt sandbox.
-Run Chilpa as a normal user: the sandbox refuses to start as root. The catalog
-selects each platform's package and checksum. WASM plugins need nothing extra.
-
-**Install from ZIP…** installs a package downloaded by hand. To use another
-catalog, paste its URL into **Plugin repository URL** and press **Add**.
-Chilpa can also run some plugins made for other platforms from their own
-catalogs; those appear under **Compatible plugins**, and their compatibility
-is not guaranteed.
-
-To write a plugin, start with the API and authoring contracts in
-[chilpa-plugins-sdk](https://github.com/vicrodh/chilpa-plugins-sdk). To list it in the third-party
-catalog, follow [its rules](https://github.com/vicrodh/chilpa-3rd-party-plugins/blob/main/CONTRIBUTING.md).
+To write one, start with [chilpa-plugins-sdk](https://github.com/vicrodh/chilpa-plugins-sdk), and see the [listing rules](https://github.com/vicrodh/chilpa-3rd-party-plugins/blob/main/CONTRIBUTING.md) for the third-party catalog.
 
 **Agent Skill** I spent the time working on the SDK so you won't have to if you want to develop a plugin. For example, I included a skill in the SDK repository that's compatible with the most popular agents (Claude, Codex, Kimi). As a result, I used the Spotify integration as a proof of concept and ended up with a functional plugin that's fully integrated with Chilpa in 3–4 hours (and a few hundred thousand tokens, to be honest). 
 
 ## Privacy and offline use
 
-Chilpa has **no telemetry**. No information about its users is collected:
-there are no analytics, usage reports or background tracking. The stats stays on your machine, and you choose what to with those. 
+Chilpa has **no telemetry**: no analytics, usage reports or tracking. Your stats stay on your machine.
 
-Some optional features use online services. Requests run in the background
-and do not hold up navigation or playback:
+Some optional features use online services, in the background and never holding up playback:
 
-- **Chilpa proxy:** metadata searches, artist biographies, podcast discovery
-  and Last.fm integration. Turn it off in **Settings > Integrations > Chilpa proxy**.
-- **Chilpa lyrics API:** lyric searches send track metadata; translation sends
-  the lyric lines and the requested language. Translation is on by default
-  and has its own switch. Turn off **Chilpa lyrics API** to stop hosted lookups and translation,
-  or **Enable lyrics** to stop all lyric lookups and translations, including
-  files and cache, and clear the displayed lyrics.
-- **MusicBrainz:** artist relationships and release metadata. Its switch in
-  **Settings > Integrations** disables these requests.
-- **Log upload:** only when you press **Upload (public)** in the log viewer.
-  It posts the diagnostics bundle you see there to bpa.st, a public paste that
-  expires after a week, and shows its address. Nothing is sent otherwise.
+- **Chilpa proxy:** metadata, artist biographies, podcast discovery and Last.fm. Off in **Settings > Integrations > Chilpa proxy**.
+- **Chilpa lyrics API:** sends track metadata for lyric searches, and the lyric lines for translation. Each has its own switch; **Enable lyrics** stops all lookups.
+- **MusicBrainz:** artist relationships and release metadata. Has its own switch.
+- **Log upload:** only when you press **Upload (public)**. It posts the diagnostics bundle to bpa.st, a public paste that expires after a week.
 
-**Offline mode**, in the same settings section, blocks network access for
-Chilpa and its plugins, including artwork downloads, scrobbling, update checks,
-plugin catalog refreshes, network playback and device discovery. The Artist
-Network panel and its button disappear. Your individual service preferences
-stay saved for when you turn offline mode off.
-
-Local playback, local and cached artwork, DSP and local or cached lyrics work
-without a connection. Mood also works offline once its optional models have
-been downloaded; no audio or analysis results are sent to a model provider.
-Install plugins and download Mood models before going offline. Scrobbling and
-source plugins use their own services when you explicitly connect and enable
-them; offline mode also blocks that traffic.
+**Offline mode** blocks all network access for Chilpa and its plugins. Local playback, DSP, and local or cached artwork and lyrics keep working. Install plugins and download Mood models first.
 
 ## Build from source
 
-<details>
-<summary>Linux build instructions</summary>
-
-### Requirements
-
-- Rust 1.96 or newer.
-- Qt 6.11 or newer with Qt Quick. Release builds use 6.11.2.
-- A C/C++ toolchain, CMake, pkg-config, libclang and NASM.
-- Development packages for ALSA, JACK, PulseAudio, PipeWire, D-Bus, OpenSSL,
-  OpenGL/EGL, xkbcommon and Wayland.
-
-On Ubuntu 24.04:
-
-```sh
-sudo apt-get install -y --no-install-recommends \
-  build-essential pkg-config cmake clang libclang-dev nasm \
-  libasound2-dev libjack-jackd2-dev libpulse-dev libpipewire-0.3-dev \
-  libdbus-1-dev libssl-dev libgl1-mesa-dev libegl1-mesa-dev \
-  libxkbcommon-dev libwayland-dev libxkbcommon-x11-0 libxcb-cursor0 \
-  python3-venv
-```
-
-If your distribution ships an older Qt, install 6.11.2 with aqtinstall:
-
-```sh
-python3 -m venv ~/.local/share/aqt
-~/.local/share/aqt/bin/pip install aqtinstall==3.3.0
-~/.local/share/aqt/bin/aqt install-qt linux desktop 6.11.2 linux_gcc_64 --outputdir ~/Qt
-
-export QMAKE=~/Qt/6.11.2/gcc_64/bin/qmake
-export CMAKE_PREFIX_PATH=~/Qt/6.11.2/gcc_64
-export LD_LIBRARY_PATH=~/Qt/6.11.2/gcc_64/lib
-```
-
-### Build and run
+Rust 1.96 and Qt 6.11 or newer:
 
 ```sh
 git clone https://github.com/vicrodh/chilpa.git
@@ -343,16 +158,7 @@ cargo build --locked --release -p chilpa-qt
 ./target/release/chilpa-qt
 ```
 
-The plugin protocol is a vendored snapshot of the public SDK, so the build
-needs no other repository; `vendor/chilpa-plugin-api/ORIGIN.json` records its
-upstream revision.
-
-[`.github/workflows/release-linux.yml`](.github/workflows/release-linux.yml)
-has the exact packages used for published builds, and
-[packaging/linux/README.md](packaging/linux/README.md) describes how the
-AppImage and the tarball are made.
-
-</details>
+Dependencies for Ubuntu 24.04 and the exact release setup: [BUILDING.md](BUILDING.md).
 
 ## AI Disclosure
 
