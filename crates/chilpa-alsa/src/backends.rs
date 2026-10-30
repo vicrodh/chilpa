@@ -288,6 +288,11 @@ fn whoever(description: &str) -> String {
     inner.trim().to_string()
 }
 
+/// The one output the system stack offers, as ALSA names it. Named here so
+/// it can be chosen before the stacks have been listed, without asking
+/// ALSA what `default` currently is.
+pub const SYSTEM_DEFAULT: &str = "default";
+
 impl OutputBackend for System {
     fn inspect(&self, id: &str) -> chilpa_audio::evidence::Inspection {
         chilpa_audio::evidence::Inspection::convertible(self.kind().key(),id,self.generation(),&chilpa_audio::capture::capabilities())
@@ -326,7 +331,7 @@ impl OutputBackend for System {
 
     fn outputs(&self) -> Vec<BackendOutput> {
         vec![BackendOutput {
-            id: "default".to_string(),
+            id: SYSTEM_DEFAULT.to_string(),
             label: chilpa_i18n::t("Wherever the system is sending sound"),
             detail: what_default_is(),
             bit_perfect: false,

@@ -93,11 +93,42 @@ pub fn described() -> Vec<BackendInfo> {
 /// The outputs of one stack, with identifiers that name it.
 pub fn outputs_of(kind: BackendKind) -> Vec<BackendOutput> {
     let Some(stack) = of(kind) else { return Vec::new() };
+    outputs_from(stack.as_ref())
+}
+
+/// The outputs of that stack, with identifiers that name it.
+pub(crate) fn outputs_from(stack: &dyn OutputBackend) -> Vec<BackendOutput> {
+    let kind = stack.kind();
     stack
         .outputs()
         .into_iter()
         .map(|o| BackendOutput { id: BackendOutput::full_id(kind, &o.id), ..o })
         .collect()
+}
+
+/// The output to start on while the stacks have not been listed yet and
+/// nothing is remembered.
+///
+/// On Linux it is wherever the system is already sending sound, named
+/// without asking anything: the system stack is always there and always
+/// offers that one output, so it is also what listing everything puts
+/// first. Elsewhere the platform's one stack answers from the operating
+/// system and not over a socket, so it is asked for its first output, which
+/// is what the full list would have put first too.
+pub fn standing_output() -> Option<String> {
+    #[cfg(target_os = "linux")]
+    {
+        Some(BackendOutput::full_id(BackendKind::System, chilpa_alsa::SYSTEM_DEFAULT))
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        all()
+            .iter()
+            .filter(|stack| stack.kind() != BackendKind::File && stack.info().present)
+            .flat_map(|stack| outputs_from(stack.as_ref()))
+            .next()
+            .map(|o| o.id)
+    }
 }
 
 /// The stack an identifier names, and what that stack calls the output.

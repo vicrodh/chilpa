@@ -91,17 +91,31 @@ pub struct Output {
 /// everything. The one that offers two -- the stack, and then its outputs --
 /// asks `backends::outputs_of` instead and gets the same rows.
 pub fn outputs() -> Vec<Output> {
-    backends::all()
+    inventory().1
+}
+
+/// Every stack, and every output of the ones that are here, each asked once.
+///
+/// Asking a stack what it is and what it offers is not free: on Linux a
+/// sound server is asked by starting a process, and a JACK graph by opening
+/// a client. Whoever keeps both lists for the window asks here and pays for
+/// one pass, instead of once for the stacks and again for the outputs.
+pub fn inventory() -> (Vec<backends::Stack>, Vec<Output>) {
+    let stacks = backends::all();
+    let described: Vec<backends::Stack> = stacks.iter().map(|stack| stack.info()).collect();
+    let outputs = stacks
         .iter()
-        .filter(|stack| stack.info().present)
-        .flat_map(|stack| backends::outputs_of(stack.kind()))
+        .zip(&described)
+        .filter(|(_, info)| info.present)
+        .flat_map(|(stack, _)| backends::outputs_from(stack.as_ref()))
         .map(|o| Output {
             id: o.id,
             label: o.label,
             detail: o.detail,
             bit_perfect: o.bit_perfect,
         })
-        .collect()
+        .collect();
+    (described, outputs)
 }
 
 /// Opens the user's library, creating it if needed.

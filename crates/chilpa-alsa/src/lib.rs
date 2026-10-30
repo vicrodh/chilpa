@@ -13,7 +13,7 @@ pub mod realtime;
 pub mod reserve;
 pub mod volume;
 
-pub use backends::{Alsa, AlsaPcm, AlsaPlug, System};
+pub use backends::{Alsa, AlsaPcm, AlsaPlug, System, SYSTEM_DEFAULT};
 pub use devices::{list, Device};
 pub use volume::{Level, Volume};
 
