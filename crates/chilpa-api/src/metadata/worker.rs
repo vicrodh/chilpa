@@ -7,7 +7,7 @@
 use super::artwork::{self, Candidate, Waiting};
 use super::draft::{HomeState, Read};
 use super::save::{self, Plan, Written};
-use chilpa_library::sidecar::{load, Home};
+use chilpa_library::sidecar::load;
 use chilpa_library::scan::ContainedTrack;
 use chilpa_library::EditTrack;
 use chilpa_meta::{discogs, musicbrainz, Failure, Hit, Http, Net, Provider, Release, Reply};
@@ -19,7 +19,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 pub(crate) enum Job {
-    Open { session: u64, tracks: Vec<EditTrack> },
+    /// `hosted` has the homes on a server among the tracks, read from the
+    /// library by whoever asked: the worker does not touch the library.
+    Open { session: u64, tracks: Vec<EditTrack>, hosted: Vec<HomeState> },
     Search { session: u64, turn: u64, provider: Provider, title: String, artist: String, catalog_number: String },
     Load { session: u64, turn: u64, provider: Provider, id: String },
     ArtworkSearch { session: u64, turn: u64, provider: Provider, title: String, artist: String, catalog_number: String },
@@ -141,13 +143,16 @@ fn held(track: &EditTrack, inside: Option<&[ContainedTrack]>, xml: Option<&chilp
     Some(snapshot)
 }
 
-fn open(session: u64, tracks: Vec<EditTrack>) -> Done {
+fn open(session: u64, tracks: Vec<EditTrack>, hosted: Vec<HomeState>) -> Done {
     let mut reads = Vec::with_capacity(tracks.len());
     let mut homes: Vec<HomeState> = Vec::new();
     let mut files: Vec<PathBuf> = Vec::new();
     let mut containers: HashMap<String, (Option<Vec<ContainedTrack>>, Option<chilpa_core::sacd_xml::XmlMetadata>)> = HashMap::new();
     for track in &tracks {
         let read = match &track.container {
+            // Nothing of a track on a server is on this machine: what the
+            // library keeps of it stands in for what a file would say.
+            _ if track.hosted.is_some() => Read::default(),
             Some(container) => {
                 let (inside, xml) = containers.entry(container.clone()).or_insert_with(|| {
                     let inside = chilpa_core::sacd_tracks::disc_images().tracks(Path::new(container));
@@ -173,15 +178,22 @@ fn open(session: u64, tracks: Vec<EditTrack>) -> Done {
         };
         reads.push(read);
 
-        let home = Home::of(&track.external_id, track.container.as_deref());
+        let home = track.home();
         if !homes.iter().any(|h| h.home == home) {
-            let (sidecar, unreadable) = match load(&home, &track.external_id) {
-                Ok(sidecar) => (sidecar, String::new()),
-                Err(e) => (None, e.to_string()),
+            let state = match hosted.iter().find(|h| h.home == home) {
+                Some(state) => state.clone(),
+                None if home.is_hosted() => HomeState { home, of: track.external_id.clone(), sidecar: None, unreadable: String::new(), xml: None },
+                None => {
+                    let (sidecar, unreadable) = match load(&home, &track.external_id) {
+                        Ok(sidecar) => (sidecar, String::new()),
+                        Err(e) => (None, e.to_string()),
+                    };
+                    let xml = track.container.as_ref().and_then(|container| containers.get(container))
+                        .and_then(|(_, xml)| xml.as_ref()).map(|xml| xml.path.clone());
+                    HomeState { home, of: track.external_id.clone(), sidecar, unreadable, xml }
+                }
             };
-            let xml = track.container.as_ref().and_then(|container| containers.get(container))
-                .and_then(|(_, xml)| xml.as_ref()).map(|xml| xml.path.clone());
-            homes.push(HomeState { home, of: track.external_id.clone(), sidecar, unreadable, xml });
+            homes.push(state);
         }
     }
     Done::Opened { session, tracks, reads, homes, layers: inspect(&files) }
@@ -190,7 +202,7 @@ fn open(session: u64, tracks: Vec<EditTrack>) -> Done {
 fn run(job: Job, http: &dyn Http, credential: &discogs::CredentialProvider,account_epoch:u64, finished: &Sender<Done>) {
     let discogs_session = discogs::Session::new(http,credential.as_ref(),chilpa_core::network::current().proxy && !chilpa_core::network::current().offline);
     let done = match job {
-        Job::Open { session, tracks } => open(session, tracks),
+        Job::Open { session, tracks, hosted } => open(session, tracks, hosted),
         Job::Search { session, turn, provider, title, artist, catalog_number } => {
             let hits = match provider {
                 Provider::MusicBrainz => musicbrainz::search(&Net::musicbrainz(http), &title, &artist, &catalog_number),

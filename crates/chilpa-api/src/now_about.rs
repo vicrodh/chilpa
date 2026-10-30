@@ -63,6 +63,8 @@ fn read_track(path: String, source: Option<(Value, String)>, musicbrainz: bool, 
             if !release_id.is_empty() { hint.release_id = release_id; }
             if !credits.is_empty() || !text(&metadata, "composer").is_empty() { origin = name; }
         }
+        // A server's entry is not a path on this machine.
+        None if chilpa_models::RemoteEntry::parse(&path).is_some() => {}
         None => if let Ok(file) = chilpa_tags::read(std::path::Path::new(&path)) {
             let tags = file.tags;
             push(&mut facts, i18n::mark("Composer"), tags.composers.join(", "));
@@ -76,10 +78,10 @@ fn read_track(path: String, source: Option<(Value, String)>, musicbrainz: bool, 
     }
     if hint.isrc.is_empty() { hint.isrc = isrc.clone(); }
     if hint.recording_id.is_empty() { hint.recording_id = recording; }
-    metadata::file_hint(&path, &mut hint);
     let mut failed = false;
     if musicbrainz {
         let library = chilpa_library::Library::open_existing(&chilpa_library::Library::default_path()).ok();
+        metadata::file_hint(&path, &mut hint, library.as_ref());
         let http = crate::metadata::worker::Network::new();
         let net = chilpa_meta::Net::musicbrainz(&http);
         let policy = chilpa_core::network::current();
@@ -124,8 +126,8 @@ fn read_album(record: Record, musicbrainz: bool, refresh: bool) -> Value {
     if can_lookup {
         hint.album = title;
         hint.album_artist = artist;
-        metadata::file_hint(&hint.path.clone(), &mut hint);
         let library = chilpa_library::Library::open_existing(&chilpa_library::Library::default_path()).ok();
+        metadata::file_hint(&hint.path.clone(), &mut hint, library.as_ref());
         let http = crate::metadata::worker::Network::new();
         let net = chilpa_meta::Net::musicbrainz(&http);
         let policy = chilpa_core::network::current();

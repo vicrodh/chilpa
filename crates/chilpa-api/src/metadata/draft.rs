@@ -97,6 +97,11 @@ impl Row {
     pub fn inside_a_disc(&self) -> bool {
         self.track.container.is_some()
     }
+
+    /// On a server of mine: nothing of it is a file of this machine.
+    pub fn hosted(&self) -> bool {
+        self.track.hosted.is_some()
+    }
 }
 
 pub(crate) struct Draft {
@@ -181,7 +186,7 @@ impl Draft {
     pub fn open(album: &StoredAlbum, tracks: Vec<EditTrack>, reads: Vec<Read>, homes: Vec<HomeState>) -> Self {
         let mut rows: Vec<Row> = Vec::with_capacity(tracks.len());
         for (track, read) in tracks.into_iter().zip(reads) {
-            let home = Home::of(&track.external_id, track.container.as_deref());
+            let home = track.home();
             let at = homes.iter().position(|h| h.home == home).unwrap_or(0);
             let key = home.key(&track.external_id);
             let over = homes.get(at).and_then(|h| h.sidecar.as_ref()).and_then(|s| s.tracks.get(&key));

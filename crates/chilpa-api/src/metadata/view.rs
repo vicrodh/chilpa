@@ -1,7 +1,7 @@
 //! What the window is handed. It goes out as JSON, field for field.
 
 use super::artwork::Candidate;
-use super::draft::{Cell, Draft};
+use super::draft::{Cell, Draft, Row};
 use super::fields::{self, Field, ALBUM, TRACK};
 use super::{Editor, Mode};
 use chilpa_meta::{Hit, Release};
@@ -68,6 +68,9 @@ pub struct CoverView {
 pub struct SaveView {
     /// "sidecar" | "files" | "xml"
     pub mode: &'static str,
+    /// The record is on a server: its changes stay on this device, laid
+    /// over what the server says, and never go into a file or to it.
+    pub hosted: bool,
     pub files_allowed: bool,
     /// Why not. Empty when allowed.
     pub files_refused: String,
@@ -142,6 +145,9 @@ fn field_view(field: &Field, cell: &Cell, of_a_track: bool, editable: bool) -> F
 /// Why the files cannot be written to, with the first reason that applies.
 /// Empty when they can.
 pub(crate) fn files_refused(draft: &Draft, layers: &Layers) -> String {
+    if draft.rows.iter().any(Row::hosted) {
+        return chilpa_i18n::t("a record on a server keeps its changes on this device");
+    }
     if draft.rows.iter().any(|row| row.inside_a_disc()) {
         return chilpa_i18n::t("tracks inside a disc image keep their changes in a sidecar");
     }
@@ -227,6 +233,7 @@ impl Editor {
             let refused = files_refused(draft, &self.layers);
             view.save = SaveView {
                 mode: match self.mode { Mode::Files => "files", Mode::Xml => "xml", Mode::Sidecar => "sidecar" },
+                hosted: draft.rows.iter().any(Row::hosted),
                 files_allowed: refused.is_empty(),
                 files_refused: refused,
                 xml_allowed: xml_refused(draft).is_empty(),

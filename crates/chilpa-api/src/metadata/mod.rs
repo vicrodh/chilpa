@@ -13,6 +13,7 @@ pub(crate) use apply::said as failure_message;
 mod artwork;
 mod draft;
 mod fields;
+mod hosted;
 mod save;
 pub mod view;
 pub(crate) mod worker;
@@ -85,6 +86,9 @@ pub(crate) struct Editor {
     waiting: Option<artwork::Waiting>,
     /// The cover the record has, on disk.
     cover: String,
+    /// The homes on a server a save is going to write once the worker has
+    /// landed the rest.
+    pending_hosted: Vec<save::HomePlan>,
     progress: (usize, usize),
     error: String,
     notice: String,
@@ -123,6 +127,7 @@ impl Default for Editor {
             candidates: Vec::new(),
             waiting: None,
             cover: String::new(),
+            pending_hosted: Vec::new(),
             progress: (0, 0),
             error: String::new(),
             notice: String::new(),
@@ -181,6 +186,7 @@ impl Editor {
         self.candidates.clear();
         self.waiting = None;
         self.cover.clear();
+        self.pending_hosted.clear();
         self.progress = (0, 0);
         self.focus = -1;
         artwork::sweep();
@@ -213,6 +219,9 @@ impl Chilpa {
             Some((Some((album, _)), tracks)) if !tracks.is_empty() => (album, tracks),
             Some(_) => return self.metadata.refuse(chilpa_i18n::t("none of that record's files are here now")),
         };
+        // What the worker would read beside a file is read from the library
+        // for a record on a server, here, where the library is.
+        let hosted = self.library().map(|lib| hosted::homes(lib, &tracks)).unwrap_or_default();
         let chosen = match self.preference("library.metaSrc").as_deref() {
             Some("discogs") => Provider::Discogs,
             _ if !self.musicbrainz_enabled() => Provider::Discogs,
@@ -234,7 +243,7 @@ impl Chilpa {
         editor.error.clear();
         editor.notice.clear();
         let session = editor.session;
-        if !editor.ask(Job::Open { session, tracks }) {
+        if !editor.ask(Job::Open { session, tracks, hosted }) {
             editor.forget();
             return editor.refuse(chilpa_i18n::t("the editor could not be started"));
         }

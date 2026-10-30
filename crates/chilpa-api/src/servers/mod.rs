@@ -41,6 +41,9 @@ pub struct ServerRow {
     pub syncing: bool,
     pub tracks: usize,
     pub albums: usize,
+    /// Records and tracks edited here that the server no longer lists.
+    /// Their edits are kept, in case it lists them again.
+    pub orphans: usize,
     /// The line under its name: syncing, when it was, why not.
     pub state: String,
     /// Reached over plain http from outside this machine and the LAN it is
@@ -148,6 +151,7 @@ impl Chilpa {
                     syncing: running.contains_key(&s.source_id),
                     tracks: s.tracks,
                     albums: s.albums,
+                    orphans: lib.orphan_overlays(s.source_id).unwrap_or(0),
                     state,
                 }
             })
@@ -164,6 +168,16 @@ impl Chilpa {
             if server.unencrypted {
                 description.push(' ');
                 description.push_str(&chilpa_i18n::t("The connection is not encrypted."));
+            }
+            if server.orphans > 0 {
+                let n = server.orphans.to_string();
+                description.push(' ');
+                description.push_str(&chilpa_i18n::tf(
+                    "{} record or track edited here is one the server no longer lists; its edits are kept.",
+                    "{} records or tracks edited here are ones the server no longer lists; their edits are kept.",
+                    server.orphans as i64,
+                    &[&n],
+                ));
             }
             if let Some((said_key, said)) = notes.said {
                 if said_key == &key {
@@ -415,14 +429,18 @@ impl Chilpa {
         let prefix = prefix.trim_end_matches('x').to_string();
         self.purge_queue(|path| path.starts_with(&prefix));
         let Some(lib) = self.library() else { return false };
+        let chosen = lib.overlay_covers_dir(id);
         if lib.remove_source(id).is_err() {
             self.now.error = chilpa_i18n::t("the library could not be written");
             return false;
         }
-        let covers = sync::covers_dir(&stored.instance);
-        if let Err(e) = std::fs::remove_dir_all(&covers) {
-            if e.kind() != std::io::ErrorKind::NotFound {
-                self.now.error = chilpa_i18n::t_args("the covers of {} could not be deleted from {}", &[&stored.label, &covers.display().to_string()]);
+        // Its own covers, and the ones chosen here for its records: the
+        // overlays those went with left the library with the source.
+        for covers in std::iter::once(sync::covers_dir(&stored.instance)).chain(chosen) {
+            if let Err(e) = std::fs::remove_dir_all(&covers) {
+                if e.kind() != std::io::ErrorKind::NotFound {
+                    self.now.error = chilpa_i18n::t_args("the covers of {} could not be deleted from {}", &[&stored.label, &covers.display().to_string()]);
+                }
             }
         }
         self.servers.errors.remove(&id);

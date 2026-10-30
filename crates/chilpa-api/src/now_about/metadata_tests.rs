@@ -41,10 +41,38 @@ fn an_image_uses_its_album_overrides_instead_of_treating_the_track_uri_as_a_file
         "musicbrainz_release_id":"00000000-0000-4000-8000-000000000001", "album_artist":"Various Artists", "catalog_number":null}, "tracks":{}});
     std::fs::write(home.sidecar(), serde_json::to_vec(&sidecar).unwrap()).unwrap();
     let mut hint = Hint { catalog_number: "old number".into(), ..hint() };
-    file_hint(&path, &mut hint);
+    file_hint(&path, &mut hint, None);
     assert_eq!(hint.release_id, "00000000-0000-4000-8000-000000000001");
     assert_eq!(hint.album_artist, "Various Artists");
     assert_eq!(hint.catalog_number, "", "an explicit clear also overrides a previously known value");
+}
+
+#[test]
+fn a_server_s_track_takes_what_was_laid_over_it_from_the_library_and_no_path() {
+    use chilpa_library::sidecar::{Home, Override, Sidecar};
+    let library = Library::in_memory().unwrap();
+    let source = library
+        .add_server(&chilpa_library::NewServer { provider: "example-server".into(), instance: "aaaa".into(), libraries: "[]".into(), details: "{}".into(), ..Default::default() })
+        .unwrap();
+    let entry = "remote:example-server/aaaa/1";
+    let track = chilpa_library::ServerTrack {
+        external_id: entry.into(), title: "La Bamba".into(), artist: "Ritchie Valens".into(), album: "Greatest Hits".into(),
+        album_artist: "Ritchie Valens".into(), album_key: "al-1".into(), duration_ms: 124_000, ..Default::default()
+    };
+    let generation = library.begin_server_sync(source).unwrap();
+    library.save_server_tracks(source, generation, &[track]).unwrap();
+    let mut laid = Sidecar::new(0);
+    laid.album.musicbrainz_release_id = Override::Value("00000000-0000-4000-8000-000000000002".into());
+    laid.album.catalog_number = Override::Value("CAT-2".into());
+    library.store_overlay(&Home::hosted(source, Some("al-1"), entry), &laid, None, 1).unwrap();
+
+    let mut hint = hint();
+    file_hint(entry, &mut hint, Some(&library));
+    assert_eq!(hint.release_id, "00000000-0000-4000-8000-000000000002");
+    assert_eq!(hint.catalog_number, "CAT-2");
+    let mut without = Hint::default();
+    file_hint(entry, &mut without, None);
+    assert!(without.release_id.is_empty() && without.catalog_number.is_empty(), "nothing is read for it without the library");
 }
 
 #[test]

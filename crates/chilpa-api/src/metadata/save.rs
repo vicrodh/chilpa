@@ -36,7 +36,11 @@ pub(crate) struct Plan {
     /// The track each of `files` is, in the same order.
     pub file_tracks: Vec<i64>,
     pub options: Options,
+    /// The homes with a file to write: a folder's sidecar, a disc's.
     pub homes: Vec<HomePlan>,
+    /// The homes on a server: written into the library by whoever holds
+    /// it, once the worker has landed the rest (`hosted::land`).
+    pub hosted: Vec<HomePlan>,
     pub xmls: Vec<XmlPlan>,
     pub cover: Option<Waiting>,
     pub now: i64,
@@ -74,6 +78,17 @@ fn over(value: &str, file: &str) -> Override<String> {
     if value == file {
         Override::Absent
     } else if value.is_empty() {
+        Override::Cleared
+    } else {
+        Override::Value(value.to_string())
+    }
+}
+
+/// What a field's value is laid over a record on a server as. There is no
+/// file to type back to: what was typed is kept as it is, and nothing typed
+/// clears. Only a field that changed gets here.
+fn kept(value: &str) -> Override<String> {
+    if value.is_empty() {
         Override::Cleared
     } else {
         Override::Value(value.to_string())
@@ -174,7 +189,7 @@ pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Wa
                         put(&mut files[i], true, field.name, &cell.now);
                     }
                 } else if laid.is_absent() {
-                    laid = over(&cell.now, &row.album_file[at]);
+                    laid = if row.hosted() { kept(&cell.now) } else { over(&cell.now, &row.album_file[at]) };
                 }
             }
             sidecar.album.put(field.name, laid);
@@ -201,6 +216,8 @@ pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Wa
                     put(&mut files[i], false, field.name, &cell.now);
                 }
                 Override::Absent
+            } else if row.hosted() {
+                kept(&cell.now)
             } else {
                 over(&cell.now, &row.file[at])
             };
@@ -232,7 +249,7 @@ pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Wa
     }
 
     let beside = cover.is_some() && mode != Mode::Files;
-    let homes = draft
+    let (hosted, homes): (Vec<HomePlan>, Vec<HomePlan>) = draft
         .homes
         .iter()
         .zip(sidecars)
@@ -246,11 +263,11 @@ pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Wa
             cover: beside,
             tracks: in_home(at).map(|(_, row)| row.track.id).collect(),
         })
-        .collect();
+        .partition(|home| home.home.is_hosted());
 
     let file_tracks = draft.rows.iter().map(|row| row.track.id).collect();
     let xmls = xmls.into_iter().flatten().filter(|xml| !xml.changes.album.is_empty() || !xml.changes.tracks.is_empty()).collect();
-    Plan { files, file_tracks, options, homes, xmls, cover, now }
+    Plan { files, file_tracks, options, homes, hosted, xmls, cover, now }
 }
 
 fn refusal(why: Refusal) -> String {
@@ -448,10 +465,13 @@ impl Chilpa {
             let refused = super::view::xml_refused(draft);
             if !refused.is_empty() { return editor.refuse(refused); }
         }
-        let made = plan(draft, editor.mode, Options { id3: editor.id3, secondary_layers: editor.secondary_layers }, editor.waiting.clone(), crate::now_unix());
-        for home in &made.homes {
+        let mut made = plan(draft, editor.mode, Options { id3: editor.id3, secondary_layers: editor.secondary_layers }, editor.waiting.clone(), crate::now_unix());
+        for home in made.homes.iter().chain(&made.hosted) {
             let state = draft.homes.iter().find(|h| h.home == home.home);
             if let Some(why) = state.filter(|h| !h.unreadable.is_empty()) {
+                if home.home.is_hosted() {
+                    return editor.refuse(chilpa_i18n::t_args("the changes could not be kept in the library: {}", &[&why.unreadable]));
+                }
                 let name = why.home.sidecar().to_string_lossy().into_owned();
                 return editor.refuse(chilpa_i18n::t_args("{} is not a sidecar Chilpa can read; move it away or fix it", &[&name]));
             }
@@ -459,6 +479,9 @@ impl Chilpa {
                 return editor.refuse(chilpa_i18n::t("a newer Chilpa wrote this sidecar; update Chilpa to change it"));
             }
         }
+        // The homes on a server are written by the window's thread once the
+        // worker has landed the rest: the worker does not touch the library.
+        editor.pending_hosted = std::mem::take(&mut made.hosted);
 
         editor.state = State::Saving;
         editor.progress = (0, made.files.iter().filter(|f| !f.is_empty()).count());
@@ -504,10 +527,27 @@ impl Chilpa {
             }
         }
 
+        // The homes on a server, once the files and the sidecars are where
+        // they go. Not after a save that failed before them.
+        let hosted = std::mem::take(&mut self.metadata.pending_hosted);
+        let mut hosted_landed = false;
+        let mut hosted_failed = None;
+        if failed.is_none() && !hosted.is_empty() {
+            let cover = self.metadata.waiting.clone();
+            match self.library().map(|lib| super::hosted::land(lib, &hosted, cover.as_ref(), now)) {
+                Some((landed, why)) => {
+                    hosted_landed = !landed.is_empty();
+                    hosted_failed = why;
+                }
+                None => hosted_failed = Some(self.now.error.clone()),
+            }
+        }
+
         let editor = &mut self.metadata;
-        match failed {
+        let nothing_landed = written.nothing() && !hosted_landed;
+        match failed.or(hosted_failed) {
             // Nothing was written: the form is as it was, and so is the record.
-            Some(reason) if written.nothing() => {
+            Some(reason) if nothing_landed => {
                 editor.state = State::Ready;
                 editor.progress = (0, 0);
                 editor.error = reason;

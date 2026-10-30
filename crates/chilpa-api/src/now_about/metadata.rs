@@ -24,18 +24,26 @@ pub(super) struct Hint {
 #[path = "metadata_tests.rs"]
 mod tests;
 
-pub(super) fn file_hint(path: &str, hint: &mut Hint) {
+/// What the file, or what was laid over it, adds to a hint. A server's
+/// track is no file of this machine: what was laid over it is read from
+/// the library, and no path is made from its entry.
+pub(super) fn file_hint(path: &str, hint: &mut Hint, library: Option<&Library>) {
     if path.is_empty() || crate::source_opener::of_plugin(path).is_some() { return; }
-    let container = chilpa_core::sacd_tracks::parse(std::path::Path::new(path)).map(|(file, _)| file.display().to_string());
-    let home = chilpa_library::sidecar::Home::of(path, container.as_deref());
-    if container.is_none() {
-        if let Ok(snapshot) = chilpa_tags::edit::snapshot(std::path::Path::new(path)) {
-            if hint.release_id.is_empty() { hint.release_id = snapshot.musicbrainz_release_id.unwrap_or_default(); }
-            if hint.catalog_number.is_empty() { hint.catalog_number = snapshot.catalog_number.unwrap_or_default(); }
-            if let Some(artist) = snapshot.album_artist { hint.album_artist = artist; }
+    let laid = if chilpa_models::RemoteEntry::parse(path).is_some() {
+        library.and_then(|library| library.overlay_of_entry(path).ok().flatten())
+    } else {
+        let container = chilpa_core::sacd_tracks::parse(std::path::Path::new(path)).map(|(file, _)| file.display().to_string());
+        let home = chilpa_library::sidecar::Home::of(path, container.as_deref());
+        if container.is_none() {
+            if let Ok(snapshot) = chilpa_tags::edit::snapshot(std::path::Path::new(path)) {
+                if hint.release_id.is_empty() { hint.release_id = snapshot.musicbrainz_release_id.unwrap_or_default(); }
+                if hint.catalog_number.is_empty() { hint.catalog_number = snapshot.catalog_number.unwrap_or_default(); }
+                if let Some(artist) = snapshot.album_artist { hint.album_artist = artist; }
+            }
         }
-    }
-    if let Ok(Some(sidecar)) = chilpa_library::sidecar::load(&home, path) {
+        chilpa_library::sidecar::load(&home, path).ok().flatten()
+    };
+    if let Some(sidecar) = laid {
         use chilpa_library::sidecar::Override;
         for (value, target) in [(&sidecar.album.musicbrainz_release_id, &mut hint.release_id),
             (&sidecar.album.catalog_number, &mut hint.catalog_number), (&sidecar.album.album_artist, &mut hint.album_artist)] {
