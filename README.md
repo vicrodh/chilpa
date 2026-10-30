@@ -111,6 +111,34 @@ Installs or updates Chilpa for your user, on Linux and macOS. If macOS refuses t
 | Tarball | Linux x86_64, ARM64 | In app |
 | macOS app (DMG, ZIP) | Apple Silicon, Intel | In app |
 | DEB, RPM | Linux x86_64, ARM64 | Package manager |
+| AUR, Gentoo overlay | Linux x86_64, ARM64 | Package manager |
+
+<details>
+<summary>Install from a package manager</summary>
+
+```sh
+# Debian, Ubuntu
+sudo curl -fsSL https://pkgs.chilpa.app/chilpa.gpg -o /usr/share/keyrings/chilpa.gpg
+echo 'deb [signed-by=/usr/share/keyrings/chilpa.gpg] https://pkgs.chilpa.app/apt stable main' | sudo tee /etc/apt/sources.list.d/chilpa.list
+sudo apt update && sudo apt install chilpa
+
+# Fedora, RHEL
+sudo curl -fsSL https://pkgs.chilpa.app/chilpa.repo -o /etc/yum.repos.d/chilpa.repo
+sudo dnf install chilpa
+
+# Arch
+yay -S chilpa-bin
+
+# Gentoo
+eselect repository add chilpa git https://github.com/vicrodh/chilpa-overlay.git
+emaint sync -r chilpa
+echo 'media-sound/chilpa-bin ~amd64' | sudo tee -a /etc/portage/package.accept_keywords/chilpa
+emerge --ask media-sound/chilpa-bin
+```
+
+openSUSE, signing key and ARM64 notes: [INSTALL.md](INSTALL.md).
+
+</details>
 
 Every package is on [Releases](https://github.com/vicrodh/chilpa/releases). Commands, requirements, uninstalling and where your data lives: [INSTALL.md](INSTALL.md).
 
