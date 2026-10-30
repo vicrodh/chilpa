@@ -21,6 +21,7 @@ Rectangle {
     property bool detailsOpen: false
 
     readonly property var tracks: doc.tracks || []
+    readonly property bool hosted: (doc.save || {}).hosted === true
     readonly property var track: chosen >= 0 && chosen < tracks.length ? tracks[chosen] : null
     readonly property real table: width - Metrics.gap8 * 2 // derived: the table's inset on each side
     readonly property real artistWidth: Math.max(Metrics.metadataCellMin, table * 0.23) // derived: QBZ's share of the table
@@ -148,6 +149,7 @@ Rectangle {
                         required property int index
                         width: (details.width - Metrics.gap12 * 3) / 2 // derived: two columns between three gaps
                         ofTrack: true
+                        hosted: root.hosted
                         field: root.rest[index] || ({})
                         onEdited: (name, value) => MetadataEditor.setTrack(root.track.id, name, value)
                     }

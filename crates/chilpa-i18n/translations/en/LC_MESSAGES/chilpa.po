@@ -4132,9 +4132,6 @@ msgstr ""
 msgid "Older versions"
 msgstr "Older versions"
 
-msgid "Show older versions"
-msgstr ""
-
 msgid "Oldest first"
 msgstr ""
 
@@ -4148,6 +4145,9 @@ msgid "On app startup"
 msgstr "On app startup"
 
 msgid "On the sidebar's destinations."
+msgstr ""
+
+msgid "On this device"
 msgstr ""
 
 msgid "One row"
@@ -5553,6 +5553,9 @@ msgstr ""
 msgid "Set loop start (A)"
 msgstr ""
 
+msgid "Set on this device, not what the server says"
+msgstr ""
+
 msgid "Set preference"
 msgstr ""
 
@@ -5620,6 +5623,9 @@ msgid "Show lyrics from files, cache and online services. Turn off to stop all l
 msgstr ""
 
 msgid "Show offline profiles"
+msgstr ""
+
+msgid "Show older versions"
 msgstr ""
 
 msgid "Show playlist only from the same source as the track"
@@ -6204,6 +6210,9 @@ msgid "The receiver does not report its physical DAC format."
 msgstr ""
 
 msgid "The record is not open in the editor."
+msgstr ""
+
+msgid "The record is on a server. Changes stay on this device and are not sent to it."
 msgstr ""
 
 msgid "The record's cover"
@@ -7232,6 +7241,9 @@ msgstr ""
 msgid "a rating must be between 0 and 5 stars"
 msgstr ""
 
+msgid "a record on a server keeps its changes on this device"
+msgstr ""
+
 msgid "a scan is already running"
 msgstr ""
 
@@ -7847,6 +7859,9 @@ msgid "the area declares no tracks"
 msgstr ""
 
 msgid "the audio area falls outside the image"
+msgstr ""
+
+msgid "the changes could not be kept in the library: {}"
 msgstr ""
 
 msgid "the changes were saved"
@@ -8567,6 +8582,11 @@ msgstr ""
 
 msgid "{} record"
 msgid_plural "{} records"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} record or track edited here is one the server no longer lists; its edits are kept."
+msgid_plural "{} records or tracks edited here are ones the server no longer lists; their edits are kept."
 msgstr[0] ""
 msgstr[1] ""
 

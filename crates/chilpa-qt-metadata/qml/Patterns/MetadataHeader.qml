@@ -20,6 +20,9 @@ Item {
     readonly property var layers: doc.layers || ({})
     readonly property bool files: save.mode === "files"
     readonly property bool xml: save.mode === "xml"
+    // The record is on a server: there is nothing to choose, a save stays
+    // on this device.
+    readonly property bool hosted: save.hosted === true
     readonly property string album: (doc.album || []).length > 0 ? doc.album[0].value : ""
     readonly property string layerLine: (layers.present || []).map(l => l.name + " (" + l.files + ")").join(", ")
 
@@ -94,11 +97,33 @@ Item {
             color: Theme.color.textSecondary
         }
         SegmentedControl {
+            objectName: "metadataSaveTo"
+            visible: !root.hosted
             options: root.save.xml_allowed
                      ? [{ text: I18n.tr("Sidecar", I18n.rev) }, { text: I18n.tr("Files", I18n.rev) }, { text: I18n.tr("SACD XML", I18n.rev) }]
                      : [{ text: I18n.tr("Sidecar", I18n.rev) }, { text: I18n.tr("Files", I18n.rev) }]
             current: root.xml ? 2 : root.files ? 1 : 0
             onActivated: (index) => MetadataEditor.setMode(index === 2 ? "xml" : index === 1 ? "files" : "sidecar")
+        }
+        Text {
+            objectName: "metadataOnThisDevice"
+            visible: root.hosted
+            height: Metrics.segmentHeight
+            verticalAlignment: Text.AlignVCenter
+            text: I18n.tr("On this device", I18n.rev)
+            font.pointSize: Type.meta
+            font.weight: Type.semibold
+            color: Theme.color.textPrimary
+        }
+        Text {
+            visible: root.hosted
+            width: Math.min(implicitWidth, options.width)
+            height: Math.max(Metrics.segmentHeight, implicitHeight)
+            verticalAlignment: Text.AlignVCenter
+            text: I18n.tr("The record is on a server. Changes stay on this device and are not sent to it.", I18n.rev)
+            wrapMode: Text.WordWrap
+            font.pointSize: Type.meta
+            color: Theme.color.textSecondary
         }
         Text {
             visible: root.xml
@@ -111,7 +136,7 @@ Item {
             color: Theme.color.textSecondary
         }
         Text {
-            visible: !root.save.files_allowed && root.save.files_refused !== ""
+            visible: !root.hosted && !root.save.files_allowed && root.save.files_refused !== ""
             height: Metrics.segmentHeight
             verticalAlignment: Text.AlignVCenter
             text: root.save.files_refused || ""

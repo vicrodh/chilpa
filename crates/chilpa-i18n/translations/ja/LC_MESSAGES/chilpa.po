@@ -4129,9 +4129,6 @@ msgstr "古い一時画像はバックグラウンドで削除されます。ラ
 msgid "Older versions"
 msgstr "以前のバージョン"
 
-msgid "Show older versions"
-msgstr "以前のバージョンを表示"
-
 msgid "Oldest first"
 msgstr "古い順"
 
@@ -4146,6 +4143,9 @@ msgstr "アプリ起動時"
 
 msgid "On the sidebar's destinations."
 msgstr "サイドバーの各項目で有効です。"
+
+msgid "On this device"
+msgstr "このデバイス上"
 
 msgid "One row"
 msgstr "1行"
@@ -5549,6 +5549,9 @@ msgstr "ループの終了点を設定 (B)"
 msgid "Set loop start (A)"
 msgstr "ループの開始点を設定 (A)"
 
+msgid "Set on this device, not what the server says"
+msgstr "この値はサーバーの値ではなく、このデバイスで設定されたものです"
+
 msgid "Set preference"
 msgstr "設定を変更"
 
@@ -5617,6 +5620,9 @@ msgstr "ファイル、キャッシュ、オンラインから歌詞を表示し
 
 msgid "Show offline profiles"
 msgstr ""
+
+msgid "Show older versions"
+msgstr "以前のバージョンを表示"
 
 msgid "Show playlist only from the same source as the track"
 msgstr "トラックと同じソースのプレイリストのみ表示"
@@ -6200,6 +6206,9 @@ msgstr "受信機は物理DACのフォーマットを報告していません。
 
 msgid "The record is not open in the editor."
 msgstr "そのアルバムはエディターで開かれていません。"
+
+msgid "The record is on a server. Changes stay on this device and are not sent to it."
+msgstr "このアルバムはサーバー上にあります。変更はこのデバイスにのみ保存され、サーバーには送られません。"
 
 msgid "The record's cover"
 msgstr "アルバムのカバー"
@@ -7227,6 +7236,9 @@ msgstr "評価は 0 から 5 です"
 msgid "a rating must be between 0 and 5 stars"
 msgstr "評価は0から5つ星の間でなければなりません"
 
+msgid "a record on a server keeps its changes on this device"
+msgstr "サーバー上のアルバムの変更はこのデバイスに保存されます"
+
 msgid "a scan is already running"
 msgstr "スキャンはすでに実行中です"
 
@@ -7842,6 +7854,9 @@ msgstr "この領域にはトラックが宣言されていません"
 
 msgid "the audio area falls outside the image"
 msgstr "オーディオ領域がイメージの外にあります"
+
+msgid "the changes could not be kept in the library: {}"
+msgstr "変更をライブラリに保存できませんでした: {}"
 
 msgid "the changes were saved"
 msgstr "変更を保存しました"
@@ -8543,6 +8558,10 @@ msgstr "{}個を読み取り、{}個は変更なし、{}個は見つかりませ
 msgid "{} record"
 msgid_plural "{} records"
 msgstr[0] "{}アルバム"
+
+msgid "{} record or track edited here is one the server no longer lists; its edits are kept."
+msgid_plural "{} records or tracks edited here are ones the server no longer lists; their edits are kept."
+msgstr[0] "ここで編集した{}件のアルバムまたはトラックはサーバーに表示されなくなりました。編集内容は保持されます。"
 
 msgid "{} required"
 msgstr ""

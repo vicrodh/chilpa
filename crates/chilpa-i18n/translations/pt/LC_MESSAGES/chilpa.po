@@ -4132,9 +4132,6 @@ msgstr "As imagens temporárias mais antigas são removidas em segundo plano. As
 msgid "Older versions"
 msgstr "Versões anteriores"
 
-msgid "Show older versions"
-msgstr "Mostrar versões anteriores"
-
 msgid "Oldest first"
 msgstr "Mais antigos primeiro"
 
@@ -4149,6 +4146,9 @@ msgstr "Ao abrir o aplicativo"
 
 msgid "On the sidebar's destinations."
 msgstr "Nos destinos da barra lateral."
+
+msgid "On this device"
+msgstr "Neste dispositivo"
 
 msgid "One row"
 msgstr "Uma linha"
@@ -5553,6 +5553,9 @@ msgstr "Definir fim do loop (B)"
 msgid "Set loop start (A)"
 msgstr "Definir início do loop (A)"
 
+msgid "Set on this device, not what the server says"
+msgstr "Definido neste dispositivo, não o que o servidor diz"
+
 msgid "Set preference"
 msgstr "Definir preferência"
 
@@ -5621,6 +5624,9 @@ msgstr "Mostra letras de arquivos, do cache e de serviços online. Desative para
 
 msgid "Show offline profiles"
 msgstr ""
+
+msgid "Show older versions"
+msgstr "Mostrar versões anteriores"
 
 msgid "Show playlist only from the same source as the track"
 msgstr "Mostrar apenas playlists da mesma fonte da faixa"
@@ -6205,6 +6211,9 @@ msgstr "O receptor não informa o formato de seu DAC físico."
 
 msgid "The record is not open in the editor."
 msgstr "O disco não está aberto no editor."
+
+msgid "The record is on a server. Changes stay on this device and are not sent to it."
+msgstr "O disco está em um servidor. As alterações ficam neste dispositivo e não são enviadas a ele."
 
 msgid "The record's cover"
 msgstr "A capa do disco"
@@ -7232,6 +7241,9 @@ msgstr "uma avaliação vai de 0 a 5"
 msgid "a rating must be between 0 and 5 stars"
 msgstr "uma avaliação deve ficar entre 0 e 5 estrelas"
 
+msgid "a record on a server keeps its changes on this device"
+msgstr "um disco em um servidor guarda as alterações neste dispositivo"
+
 msgid "a scan is already running"
 msgstr "um escaneamento já está em andamento"
 
@@ -7848,6 +7860,9 @@ msgstr "a área não declara nenhuma faixa"
 
 msgid "the audio area falls outside the image"
 msgstr "a área de áudio fica fora da imagem"
+
+msgid "the changes could not be kept in the library: {}"
+msgstr "não foi possível guardar as alterações na biblioteca: {}"
 
 msgid "the changes were saved"
 msgstr "as alterações foram salvas"
@@ -8569,6 +8584,11 @@ msgid "{} record"
 msgid_plural "{} records"
 msgstr[0] "{} disco"
 msgstr[1] "{} discos"
+
+msgid "{} record or track edited here is one the server no longer lists; its edits are kept."
+msgid_plural "{} records or tracks edited here are ones the server no longer lists; their edits are kept."
+msgstr[0] "{} disco ou faixa editado aqui já não aparece no servidor; as alterações são mantidas."
+msgstr[1] "{} discos ou faixas editados aqui já não aparecem no servidor; as alterações são mantidas."
 
 msgid "{} required"
 msgstr ""

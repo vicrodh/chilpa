@@ -17,6 +17,9 @@ Item {
     // A track's "title" is its own; a record's is the record's.
     property bool ofTrack: false
     property bool cell: false
+    // The record is on a server: what is laid over a field was set on this
+    // device, not by a sidecar beside a file.
+    property bool hosted: false
 
     signal edited(string name, string value)
 
@@ -90,7 +93,9 @@ Item {
         color: Theme.color.textTertiary
 
         HoverHandler {
-            onHoveredChanged: hovered ? TipState.show(I18n.tr("A sidecar sets this, not the file", I18n.rev), layer) : TipState.hide(layer)
+            onHoveredChanged: hovered
+                ? TipState.show(root.hosted ? I18n.tr("Set on this device, not what the server says", I18n.rev) : I18n.tr("A sidecar sets this, not the file", I18n.rev), layer)
+                : TipState.hide(layer)
         }
     }
 

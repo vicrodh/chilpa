@@ -18,6 +18,8 @@ Rectangle {
     property var doc: ({})
     property bool identifiersOpen: false
 
+    readonly property bool hosted: (doc.save || {}).hosted === true
+
     // A record's field by name. The fields stay put as the view changes, so
     // the one being typed in keeps the keyboard.
     function field(name) {
@@ -56,17 +58,17 @@ Rectangle {
             Rectangle { width: parent.width; height: 1; color: Theme.color.strokeHairline }
             MetadataArtwork { width: parent.width; doc: root.doc }
 
-            MetadataField { width: parent.width; field: root.field("title"); onEdited: (n, v) => root.edit(n, v) }
-            MetadataField { width: parent.width; field: root.field("album_artist"); onEdited: (n, v) => root.edit(n, v) }
-            MetadataField { width: parent.width; field: root.field("album_artists"); onEdited: (n, v) => root.edit(n, v) }
-            MetadataField { width: parent.width; field: root.field("compilation"); onEdited: (n, v) => root.edit(n, v) }
-            MetadataField { width: parent.width; field: root.field("genres"); onEdited: (n, v) => root.edit(n, v) }
-            MetadataField { width: parent.width; field: root.field("label"); onEdited: (n, v) => root.edit(n, v) }
+            MetadataField { width: parent.width; hosted: root.hosted; field: root.field("title"); onEdited: (n, v) => root.edit(n, v) }
+            MetadataField { width: parent.width; hosted: root.hosted; field: root.field("album_artist"); onEdited: (n, v) => root.edit(n, v) }
+            MetadataField { width: parent.width; hosted: root.hosted; field: root.field("album_artists"); onEdited: (n, v) => root.edit(n, v) }
+            MetadataField { width: parent.width; hosted: root.hosted; field: root.field("compilation"); onEdited: (n, v) => root.edit(n, v) }
+            MetadataField { width: parent.width; hosted: root.hosted; field: root.field("genres"); onEdited: (n, v) => root.edit(n, v) }
+            MetadataField { width: parent.width; hosted: root.hosted; field: root.field("label"); onEdited: (n, v) => root.edit(n, v) }
             Row {
                 width: parent.width
                 spacing: Metrics.gap8
-                MetadataField { width: (parent.width - parent.spacing) * 0.34; field: root.field("date"); onEdited: (n, v) => root.edit(n, v) } // derived: QBZ's split of the row
-                MetadataField { width: (parent.width - parent.spacing) * 0.66; field: root.field("catalog_number"); onEdited: (n, v) => root.edit(n, v) } // derived: QBZ's split of the row
+                MetadataField { width: (parent.width - parent.spacing) * 0.34; hosted: root.hosted; field: root.field("date"); onEdited: (n, v) => root.edit(n, v) } // derived: QBZ's split of the row
+                MetadataField { width: (parent.width - parent.spacing) * 0.66; hosted: root.hosted; field: root.field("catalog_number"); onEdited: (n, v) => root.edit(n, v) } // derived: QBZ's split of the row
             }
 
             Rectangle {
@@ -100,6 +102,7 @@ Rectangle {
                     MetadataField {
                         required property string modelData
                         width: parent.width
+                        hosted: root.hosted
                         field: root.field(modelData)
                         onEdited: (n, v) => root.edit(n, v)
                     }

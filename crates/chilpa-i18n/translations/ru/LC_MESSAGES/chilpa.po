@@ -4135,9 +4135,6 @@ msgstr "Более старые временные изображения уда
 msgid "Older versions"
 msgstr "Предыдущие версии"
 
-msgid "Show older versions"
-msgstr "Показать старые версии"
-
 msgid "Oldest first"
 msgstr "Сначала старые"
 
@@ -4152,6 +4149,9 @@ msgstr "При запуске приложения"
 
 msgid "On the sidebar's destinations."
 msgstr "На пунктах боковой панели."
+
+msgid "On this device"
+msgstr "На этом устройстве"
 
 msgid "One row"
 msgstr "В одну строку"
@@ -5557,6 +5557,9 @@ msgstr "Задать конец повтора (B)"
 msgid "Set loop start (A)"
 msgstr "Задать начало повтора (A)"
 
+msgid "Set on this device, not what the server says"
+msgstr "Задано на этом устройстве, а не то, что сообщает сервер"
+
 msgid "Set preference"
 msgstr "Задать параметр"
 
@@ -5625,6 +5628,9 @@ msgstr "Показывает тексты песен из файлов, кэша
 
 msgid "Show offline profiles"
 msgstr ""
+
+msgid "Show older versions"
+msgstr "Показать старые версии"
 
 msgid "Show playlist only from the same source as the track"
 msgstr "Показывать только плейлисты из того же источника, что и трек"
@@ -6210,6 +6216,9 @@ msgstr "Приёмник не сообщает формат своего физ�
 
 msgid "The record is not open in the editor."
 msgstr "Запись не открыта в редакторе."
+
+msgid "The record is on a server. Changes stay on this device and are not sent to it."
+msgstr "Запись находится на сервере. Изменения остаются на этом устройстве и на сервер не отправляются."
 
 msgid "The record's cover"
 msgstr "Обложка записи"
@@ -7237,6 +7246,9 @@ msgstr "рейтинг — от 0 до 5"
 msgid "a rating must be between 0 and 5 stars"
 msgstr "рейтинг должен быть от 0 до 5 звёзд"
 
+msgid "a record on a server keeps its changes on this device"
+msgstr "изменения записи на сервере остаются на этом устройстве"
+
 msgid "a scan is already running"
 msgstr "сканирование уже выполняется"
 
@@ -7854,6 +7866,9 @@ msgstr "область не объявляет ни одного трека"
 
 msgid "the audio area falls outside the image"
 msgstr "аудиообласть выходит за пределы образа"
+
+msgid "the changes could not be kept in the library: {}"
+msgstr "не удалось сохранить изменения в библиотеке: {}"
 
 msgid "the changes were saved"
 msgstr "изменения сохранены"
@@ -8595,6 +8610,12 @@ msgid_plural "{} records"
 msgstr[0] "{} запись"
 msgstr[1] "{} записи"
 msgstr[2] "{} записей"
+
+msgid "{} record or track edited here is one the server no longer lists; its edits are kept."
+msgid_plural "{} records or tracks edited here are ones the server no longer lists; their edits are kept."
+msgstr[0] "{} отредактированную здесь запись или трек сервер больше не показывает; изменения сохранены."
+msgstr[1] "{} отредактированные здесь записи или трека сервер больше не показывает; изменения сохранены."
+msgstr[2] "{} отредактированных здесь записей или треков сервер больше не показывает; изменения сохранены."
 
 msgid "{} required"
 msgstr ""
