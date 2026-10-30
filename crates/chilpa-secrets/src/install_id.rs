@@ -13,17 +13,20 @@ use uuid::Uuid;
 
 const FILE: &str = "install-id";
 
+/// The id this install already has, if any. Nothing is written.
+pub(crate) fn load(storage_dir: &Path) -> Option<Uuid> {
+    let contents = fs::read_to_string(storage_dir.join(FILE)).ok()?;
+    Uuid::parse_str(contents.trim()).ok()
+}
+
 pub(crate) fn load_or_create(storage_dir: &Path) -> std::io::Result<Uuid> {
-    let path = storage_dir.join(FILE);
-
-    if let Ok(contents) = fs::read_to_string(&path) {
-        if let Ok(uuid) = Uuid::parse_str(contents.trim()) {
-            return Ok(uuid);
-        }
-        // An unreadable one is remade. Whatever was encrypted with the
-        // previous one is lost, and that is better than failing to start.
+    if let Some(uuid) = load(storage_dir) {
+        return Ok(uuid);
     }
+    // A missing or unreadable one is made anew. Whatever was encrypted with
+    // a previous one is lost, and that is better than failing to start.
 
+    let path = storage_dir.join(FILE);
     fs::create_dir_all(storage_dir)?;
     let uuid = Uuid::new_v4();
     // It is written aside and renamed: a power cut mid write would leave a

@@ -13,15 +13,17 @@
 //! The derived path, by contrast, comes from the same install id every
 //! start.
 //!
-//! The backend marker travels inside every envelope, so what one sealed is
-//! not silently opened by the other, and so that if someone gains keyring
-//! access later, their old data is not ignored without a word.
+//! The backend marker travels inside every envelope. A box on the keyring
+//! opens what the derived path sealed with the derived key, which this
+//! install can always rebuild: a start that found no keyring costs nothing on
+//! the next one. A box without the keyring refuses what the keyring sealed,
+//! by name, because it has no keyring key to open it with.
 //!
 //! The keyring is asked once per process and per service name
 //! (`MasterKeys`): the boxes that open at startup, each on its own thread,
 //! share one resolution instead of racing each other to mint the first key.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use hkdf::Hkdf;
 // Only the keyring path mints a key; the other one derives it.
@@ -70,17 +72,35 @@ impl BackendKind {
 pub struct Backend {
     kind: BackendKind,
     master_key: [u8; MASTER_KEY_LEN],
+    /// What the derived key is rebuilt from, for an envelope the derived
+    /// path sealed while this box is on the keyring.
+    service_name: String,
+    storage_dir: PathBuf,
 }
 
 impl Backend {
     pub fn new(service_name: &str, storage_dir: &Path) -> Result<Self, SecretError> {
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
         if let Ok(master_key) = try_keyring(service_name) {
-            return Ok(Self { kind: BackendKind::Keyring, master_key });
+            return Ok(Self::with_key(BackendKind::Keyring, master_key, service_name, storage_dir));
         }
 
         let master_key = derive_key(service_name, storage_dir)?;
-        Ok(Self { kind: BackendKind::Derived, master_key })
+        Ok(Self::with_key(BackendKind::Derived, master_key, service_name, storage_dir))
+    }
+
+    fn with_key(
+        kind: BackendKind,
+        master_key: [u8; MASTER_KEY_LEN],
+        service_name: &str,
+        storage_dir: &Path,
+    ) -> Self {
+        Self {
+            kind,
+            master_key,
+            service_name: service_name.to_string(),
+            storage_dir: storage_dir.to_path_buf(),
+        }
     }
 
     /// The derived path only, without touching the keyring.
@@ -94,7 +114,7 @@ impl Backend {
     /// path.
     pub fn derived_only(service_name: &str, storage_dir: &Path) -> Result<Self, SecretError> {
         let master_key = derive_key(service_name, storage_dir)?;
-        Ok(Self { kind: BackendKind::Derived, master_key })
+        Ok(Self::with_key(BackendKind::Derived, master_key, service_name, storage_dir))
     }
 
     /// The keyring path with the entry given: the tests' keyring-backed box,
@@ -103,9 +123,11 @@ impl Backend {
     #[cfg(all(test, any(target_os = "linux", target_os = "macos", target_os = "windows")))]
     pub(crate) fn with_entry(
         service_name: &str,
+        storage_dir: &Path,
         entry: &dyn MasterKeyEntry,
     ) -> Result<Self, SecretError> {
-        Ok(Self { kind: BackendKind::Keyring, master_key: SHARED.resolve(service_name, entry)? })
+        let master_key = SHARED.resolve(service_name, entry)?;
+        Ok(Self::with_key(BackendKind::Keyring, master_key, service_name, storage_dir))
     }
 
     pub fn kind(&self) -> BackendKind {
@@ -123,8 +145,20 @@ impl Backend {
         seal_with_key(&self.master_key, self.marker(), plaintext)
     }
 
+    /// Opens with the primary key. On the keyring, an envelope the derived
+    /// path sealed opens with the derived key: a start without the keyring
+    /// sealed it, and losing it would ask the user for a sign-in again. The
+    /// install id is read, never created; without it nothing here was ever
+    /// derived, and the envelope is refused as another backend's.
     pub fn open(&self, sealed: &[u8]) -> Result<Vec<u8>, SecretError> {
-        open_with_key(&self.master_key, self.marker(), sealed)
+        match open_with_key(&self.master_key, self.marker(), sealed) {
+            Err(SecretError::BackendMismatch) if self.kind == BackendKind::Keyring => {
+                let key = existing_derived_key(&self.service_name, &self.storage_dir)
+                    .ok_or(SecretError::BackendMismatch)?;
+                open_with_key(&key, MARKER_DERIVED, sealed)
+            }
+            opened => opened,
+        }
     }
 }
 
@@ -276,6 +310,19 @@ fn derive_key(
     storage_dir: &Path,
 ) -> Result<[u8; MASTER_KEY_LEN], SecretError> {
     let install_uuid = install_id::load_or_create(storage_dir).map_err(SecretError::Io)?;
+    derive_from(service_name, &install_uuid)
+}
+
+/// The derived key of an install whose id already exists; `None` when the
+/// derived path never ran here. Nothing is written.
+fn existing_derived_key(service_name: &str, storage_dir: &Path) -> Option<[u8; MASTER_KEY_LEN]> {
+    derive_from(service_name, &install_id::load(storage_dir)?).ok()
+}
+
+fn derive_from(
+    service_name: &str,
+    install_uuid: &uuid::Uuid,
+) -> Result<[u8; MASTER_KEY_LEN], SecretError> {
     let machine = install_id::machine_id().unwrap_or_default();
 
     // None of the three is a secret. The strength is that all three have to
@@ -304,6 +351,12 @@ mod tests {
     /// How long a reader is held for the others. A resolution that runs
     /// alone reads alone, waits this out and goes on.
     const HOLD: Duration = Duration::from_millis(300);
+
+    /// A box on the keyring, on an install where the derived path never ran.
+    fn keyring_box(service_name: &str, entry: &dyn MasterKeyEntry) -> Backend {
+        let install = tempfile::tempdir().unwrap();
+        Backend::with_entry(service_name, install.path(), entry).unwrap()
+    }
 
     /// A store that lets every reader in before any of them writes: a fresh
     /// keyring with the startup threads at its door at the same time.
@@ -377,7 +430,7 @@ mod tests {
             .map(|_| {
                 let entry = Arc::clone(&entry);
                 std::thread::spawn(move || {
-                    Backend::with_entry("test-fresh-start", &*entry).unwrap().master_key
+                    keyring_box("test-fresh-start", &*entry).master_key
                 })
             })
             .collect();
@@ -391,7 +444,7 @@ mod tests {
     #[test]
     fn the_key_in_use_is_the_one_the_keyring_holds_after_the_write() {
         let entry = Overtaken { value: Mutex::new(None), other: B64.encode([7u8; MASTER_KEY_LEN]) };
-        let backend = Backend::with_entry("test-overtaken", &entry).unwrap();
+        let backend = keyring_box("test-overtaken", &entry);
         assert_eq!(
             backend.master_key,
             [7u8; MASTER_KEY_LEN],
@@ -421,9 +474,9 @@ mod tests {
 
     #[test]
     fn a_second_box_in_the_same_process_takes_the_first_key_without_asking_again() {
-        let entry = Counting { value: Mutex::new(None), reads: Mutex::new(0), writes: Mutex::new(0) };
-        let first = Backend::with_entry("test-once-per-process", &entry).unwrap();
-        let second = Backend::with_entry("test-once-per-process", &entry).unwrap();
+        let entry = fresh();
+        let first = keyring_box("test-once-per-process", &entry);
+        let second = keyring_box("test-once-per-process", &entry);
         assert_eq!(first.master_key, second.master_key);
         assert_eq!(*entry.writes.lock().unwrap(), 1, "one mint");
         assert_eq!(*entry.reads.lock().unwrap(), 2, "one look, one read back, and nothing more");
@@ -436,8 +489,46 @@ mod tests {
             reads: Mutex::new(0),
             writes: Mutex::new(0),
         };
-        let backend = Backend::with_entry("test-existing-entry", &entry).unwrap();
+        let backend = keyring_box("test-existing-entry", &entry);
         assert_eq!(backend.master_key, [9u8; MASTER_KEY_LEN]);
         assert_eq!(*entry.writes.lock().unwrap(), 0, "nothing to mint");
+    }
+
+    fn fresh() -> Counting {
+        Counting { value: Mutex::new(None), reads: Mutex::new(0), writes: Mutex::new(0) }
+    }
+
+    #[test]
+    fn a_keyring_box_opens_what_the_derived_path_sealed_on_this_install() {
+        // One start found no keyring and sealed with the derived key; the
+        // next one has the keyring again and must not ask for the sign-in.
+        let install = tempfile::tempdir().unwrap();
+        let derived = Backend::derived_only("test-flip", install.path()).unwrap();
+        let sealed = derived.seal(b"token").unwrap();
+        let entry = fresh();
+        let keyring = Backend::with_entry("test-flip", install.path(), &entry).unwrap();
+        assert_eq!(keyring.open(&sealed).unwrap(), b"token");
+        let resealed = keyring.seal(b"token").unwrap();
+        assert_eq!(resealed[1], MARKER_KEYRING, "new seals stay on the keyring");
+        assert!(matches!(derived.open(&resealed).unwrap_err(), SecretError::BackendMismatch));
+    }
+
+    #[test]
+    fn what_the_derived_path_sealed_on_another_install_does_not_open_on_the_keyring() {
+        let one = tempfile::tempdir().unwrap();
+        let other = tempfile::tempdir().unwrap();
+        let sealed = Backend::derived_only("test-flip-elsewhere", one.path()).unwrap().seal(b"token").unwrap();
+        let entry = fresh();
+        let keyring = Backend::with_entry("test-flip-elsewhere", other.path(), &entry).unwrap();
+        assert!(
+            matches!(keyring.open(&sealed).unwrap_err(), SecretError::BackendMismatch),
+            "no install id here, so nothing was ever derived here"
+        );
+        assert!(!other.path().join("install-id").exists(), "opening writes no install id");
+        Backend::derived_only("test-flip-elsewhere", other.path()).unwrap();
+        assert!(
+            matches!(keyring.open(&sealed).unwrap_err(), SecretError::Cipher(_)),
+            "another install id derives another key"
+        );
     }
 }

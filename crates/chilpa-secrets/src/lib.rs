@@ -18,6 +18,15 @@
 //! was used. What it can know, and tell the user, is
 //! [`SecretBox::backend`].
 //!
+//! # When the path changes between starts
+//!
+//! A start can find the keyring missing or locked and the next one find it
+//! back. A box on the keyring therefore also opens what the derived path
+//! sealed on this install, with the derived key, which the install can
+//! always rebuild; what it seals from then on goes to the keyring. The other
+//! way does not work: a box without the keyring has no keyring key, and what
+//! the keyring sealed waits for a start that has it.
+//!
 //! # What it protects against
 //!
 //! - Copying the directory to another machine. The keyring entry is not
@@ -31,6 +40,10 @@
 //!   as any local encryption.
 //! - Recompiling Chilpa to copy what it decrypts. That is an attack on the
 //!   source, not on the cipher.
+//! - Someone who can read this install's id and the `machine-id` rebuilds
+//!   the derived key, so they can also write an envelope that a box on the
+//!   keyring accepts as the derived path's. That is the same reach as the
+//!   shell above; what the keyring sealed stays out of it.
 //!
 //! **Nothing is stored in the clear, ever, on either path.**
 
@@ -74,8 +87,10 @@ impl SecretBox {
         self.backend.seal(plaintext)
     }
 
-    /// Opens. Fails if it was tampered with, if the other backend sealed it, or
-    /// if the master key is no longer the same.
+    /// Opens. Fails if it was tampered with, if the keyring sealed it and
+    /// this box is not on the keyring, or if the master key is no longer the
+    /// same. A box on the keyring also opens what the derived path sealed on
+    /// this install.
     pub fn open_sealed(&self, sealed: &[u8]) -> Result<Vec<u8>, SecretError> {
         self.backend.open(sealed)
     }

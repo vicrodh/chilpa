@@ -7,10 +7,11 @@
 //! [14..]    ciphertext + tag    — what AES-256-GCM produces
 //! ```
 //!
-//! The marker travels inside so we can **refuse** to open something another
-//! backend sealed, rather than trying and failing with a cipher error that
-//! says nothing. If someone gains keyring access after having run with the
-//! fallback, their old data is not silently ignored.
+//! The marker travels inside so the box knows which key sealed it. Without
+//! the keyring, what the keyring sealed is **refused** by name rather than
+//! failing with a cipher error that says nothing. On the keyring, what the
+//! fallback sealed is opened with the derived key, so gaining keyring access
+//! after a run with the fallback does not lose that run's data.
 
 use crate::error::SecretError;
 
