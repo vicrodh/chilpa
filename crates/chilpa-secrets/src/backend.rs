@@ -22,6 +22,7 @@
 //! The keyring is asked once per process and per service name
 //! (`MasterKeys`): the boxes that open at startup, each on its own thread,
 //! share one resolution instead of racing each other to mint the first key.
+//! When that resolution refuses the keyring, it says why on stderr, once.
 
 use std::path::{Path, PathBuf};
 
@@ -126,7 +127,7 @@ impl Backend {
         storage_dir: &Path,
         entry: &dyn MasterKeyEntry,
     ) -> Result<Self, SecretError> {
-        let master_key = SHARED.resolve(service_name, entry)?;
+        let master_key = SHARED.resolve(service_name, || master_key_from(entry))?;
         Ok(Self::with_key(BackendKind::Keyring, master_key, service_name, storage_dir))
     }
 
@@ -168,29 +169,30 @@ fn try_keyring(service_name: &str) -> Result<[u8; MASTER_KEY_LEN], SecretError> 
     use keyring::credential::CredentialPersistence;
     use keyring::Entry;
 
-    // A build without its platform's feature exports the in-memory mock,
-    // whose writes succeed and whose contents die with the process. That is
-    // worse than the derived fallback, which is at least stable, and it does
-    // not show because nothing fails. Any backend that does not write to
-    // disk is refused: the real ones inherit `UntilDelete` and the mock
-    // `EntryOnly`.
-    //
-    // Reach: it reads the compile-time builder, which is what `Entry::new`
-    // uses here. It would not catch someone swapping it at runtime with
-    // `keyring::set_default_credential_builder`; nobody does, and what this
-    // guards against is a build configuration mistake.
-    let persistence = keyring::default::default_credential_builder().persistence();
-    if !matches!(persistence, CredentialPersistence::UntilDelete) {
-        return Err(SecretError::Keyring(
-            "the keyring backend does not write to disk (a mock?); it is not used".into(),
-        ));
-    }
+    SHARED.resolve(service_name, || {
+        // A build without its platform's feature exports the in-memory mock,
+        // whose writes succeed and whose contents die with the process. That
+        // is worse than the derived fallback, which is at least stable, and
+        // it does not show because nothing fails. Any backend that does not
+        // write to disk is refused: the real ones inherit `UntilDelete` and
+        // the mock `EntryOnly`.
+        //
+        // Reach: it reads the compile-time builder, which is what
+        // `Entry::new` uses here. It would not catch someone swapping it at
+        // runtime with `keyring::set_default_credential_builder`; nobody
+        // does, and what this guards against is a build configuration
+        // mistake.
+        let persistence = keyring::default::default_credential_builder().persistence();
+        if !matches!(persistence, CredentialPersistence::UntilDelete) {
+            return Err(Refusal::new("the store keeps nothing on disk (a mock?)", ""));
+        }
 
-    // Building the entry touches nothing: it is attributes and a label. The
-    // store is first reached by `read`.
-    let entry = Entry::new(service_name, KEYRING_ENTRY)
-        .map_err(|e| SecretError::Keyring(format!("Entry::new: {e}")))?;
-    SHARED.resolve(service_name, &SystemEntry(entry))
+        // Building the entry touches nothing: it is attributes and a label.
+        // The store is first reached by `read`.
+        let entry = Entry::new(service_name, KEYRING_ENTRY)
+            .map_err(|e| Refusal::new("the entry could not be named", e))?;
+        master_key_from(&SystemEntry(entry))
+    })
 }
 
 /// One master key per service name for the whole process.
@@ -203,7 +205,7 @@ fn try_keyring(service_name: &str) -> Result<[u8; MASTER_KEY_LEN], SecretError> 
 /// process either has the keyring or it does not.
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 pub(crate) struct MasterKeys {
-    resolved: std::sync::Mutex<Vec<(String, Result<[u8; MASTER_KEY_LEN], String>)>>,
+    resolved: std::sync::Mutex<Vec<(String, Result<[u8; MASTER_KEY_LEN], Refusal>)>>,
 }
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
@@ -216,24 +218,75 @@ impl MasterKeys {
     }
 
     /// The key for `service_name`: resolved once, under a lock the whole
-    /// way through, and shared after that.
+    /// way through, and shared after that. A refusal is said when it
+    /// happens, so a log tells which path every later box of the process
+    /// is on and why.
     pub(crate) fn resolve(
         &self,
         service_name: &str,
-        entry: &dyn MasterKeyEntry,
+        resolve: impl FnOnce() -> Result<[u8; MASTER_KEY_LEN], Refusal>,
     ) -> Result<[u8; MASTER_KEY_LEN], SecretError> {
         let mut resolved = self.resolved.lock().unwrap_or_else(|e| e.into_inner());
         if let Some((_, outcome)) = resolved.iter().find(|(name, _)| name == service_name) {
-            return outcome.clone().map_err(SecretError::Keyring);
+            return outcome.clone().map_err(Refusal::into_error);
         }
-        let outcome = master_key_from(entry);
-        let kept = match &outcome {
-            Ok(key) => Ok(*key),
-            Err(SecretError::Keyring(why)) => Err(why.clone()),
-            Err(e) => Err(e.to_string()),
+        let outcome = resolve();
+        if let Err(refusal) = &outcome {
+            refusal.say(service_name);
+        }
+        resolved.push((service_name.to_string(), outcome.clone()));
+        outcome.map_err(Refusal::into_error)
+    }
+}
+
+/// Why the keyring is not used.
+///
+/// `what` is in words the session log keeps: its redaction blanks any line
+/// that says "secret", "password" or "credential", and the stores name
+/// themselves and their errors after those. `detail` is the store's own
+/// message, for a terminal.
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+#[derive(Clone, Debug)]
+pub(crate) struct Refusal {
+    what: String,
+    detail: String,
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+impl Refusal {
+    fn new(what: impl Into<String>, detail: impl std::fmt::Display) -> Self {
+        Self { what: what.into(), detail: detail.to_string() }
+    }
+
+    /// What the store answered to `step`, sorted into a few plain words.
+    fn from_store(step: &str, e: keyring::Error) -> Self {
+        let what = match &e {
+            keyring::Error::NoStorageAccess(_) => "no access to the store (locked or refused)".to_string(),
+            keyring::Error::PlatformFailure(_) => "the store failed or is not running".to_string(),
+            keyring::Error::Ambiguous(items) => format!("{} entries match", items.len()),
+            keyring::Error::BadEncoding(_) => "the entry is not text".to_string(),
+            _ => "the store refused the entry".to_string(),
         };
-        resolved.push((service_name.to_string(), kept));
-        outcome
+        Self::new(format!("{step}: {what}"), e)
+    }
+
+    /// Two lines, once per service name and process.
+    fn say(&self, service_name: &str) {
+        eprintln!(
+            "keyring: not used for {service_name} by this process, which derives its key from this machine: {}",
+            self.what
+        );
+        if !self.detail.is_empty() {
+            eprintln!("keyring: the store said: {}", self.detail);
+        }
+    }
+
+    fn into_error(self) -> SecretError {
+        if self.detail.is_empty() {
+            SecretError::Keyring(self.what)
+        } else {
+            SecretError::Keyring(format!("{}: {}", self.what, self.detail))
+        }
     }
 }
 
@@ -244,8 +297,8 @@ impl MasterKeys {
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 pub(crate) trait MasterKeyEntry {
     /// `Ok(None)` when there is no entry yet.
-    fn read(&self) -> Result<Option<String>, String>;
-    fn write(&self, value: &str) -> Result<(), String>;
+    fn read(&self) -> Result<Option<String>, Refusal>;
+    fn write(&self, value: &str) -> Result<(), Refusal>;
 }
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
@@ -253,16 +306,16 @@ struct SystemEntry(keyring::Entry);
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 impl MasterKeyEntry for SystemEntry {
-    fn read(&self) -> Result<Option<String>, String> {
+    fn read(&self) -> Result<Option<String>, Refusal> {
         match self.0.get_password() {
             Ok(existing) => Ok(Some(existing)),
             Err(keyring::Error::NoEntry) => Ok(None),
-            Err(e) => Err(format!("get_password: {e}")),
+            Err(e) => Err(Refusal::from_store("reading the entry", e)),
         }
     }
 
-    fn write(&self, value: &str) -> Result<(), String> {
-        self.0.set_password(value).map_err(|e| format!("set_password: {e}"))
+    fn write(&self, value: &str) -> Result<(), Refusal> {
+        self.0.set_password(value).map_err(|e| Refusal::from_store("writing the entry", e))
     }
 }
 
@@ -272,33 +325,31 @@ impl MasterKeyEntry for SystemEntry {
 /// second process can store its own in between, and a key the keyring did
 /// not keep seals nothing that opens on the next start.
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-fn master_key_from(entry: &dyn MasterKeyEntry) -> Result<[u8; MASTER_KEY_LEN], SecretError> {
+fn master_key_from(entry: &dyn MasterKeyEntry) -> Result<[u8; MASTER_KEY_LEN], Refusal> {
     use base64::engine::general_purpose::STANDARD as B64;
     use base64::Engine;
 
-    if let Some(existing) = entry.read().map_err(SecretError::Keyring)? {
+    if let Some(existing) = entry.read()? {
         return decode_key(&existing);
     }
     let mut minted = [0u8; MASTER_KEY_LEN];
     rand::rng().fill(&mut minted);
-    entry.write(&B64.encode(minted)).map_err(SecretError::Keyring)?;
-    match entry.read().map_err(SecretError::Keyring)? {
+    entry.write(&B64.encode(minted))?;
+    match entry.read()? {
         Some(stored) => decode_key(&stored),
-        None => Err(SecretError::Keyring("the entry did not read back after it was written".into())),
+        None => Err(Refusal::new("the entry did not read back after it was written", "")),
     }
 }
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-fn decode_key(text: &str) -> Result<[u8; MASTER_KEY_LEN], SecretError> {
+fn decode_key(text: &str) -> Result<[u8; MASTER_KEY_LEN], Refusal> {
     use base64::engine::general_purpose::STANDARD as B64;
     use base64::Engine;
 
-    let bytes = B64.decode(text.trim()).map_err(|e| SecretError::Keyring(format!("base64: {e}")))?;
+    let bytes = B64.decode(text.trim()).map_err(|e| Refusal::new("the entry is not a key", e))?;
     if bytes.len() != MASTER_KEY_LEN {
-        return Err(SecretError::Keyring(format!(
-            "the entry is {} bytes and should be {MASTER_KEY_LEN}",
-            bytes.len()
-        )));
+        let size = format!("it is {} bytes and should be {MASTER_KEY_LEN}", bytes.len());
+        return Err(Refusal::new("the entry is not a key", size));
     }
     let mut out = [0u8; MASTER_KEY_LEN];
     out.copy_from_slice(&bytes);
@@ -383,7 +434,7 @@ mod tests {
     }
 
     impl MasterKeyEntry for Contended {
-        fn read(&self) -> Result<Option<String>, String> {
+        fn read(&self) -> Result<Option<String>, Refusal> {
             let mut arrived = self.arrived.lock().unwrap();
             *arrived += 1;
             self.everyone.notify_all();
@@ -395,7 +446,7 @@ mod tests {
             Ok(self.stored())
         }
 
-        fn write(&self, value: &str) -> Result<(), String> {
+        fn write(&self, value: &str) -> Result<(), Refusal> {
             *self.value.lock().unwrap() = Some(value.to_string());
             Ok(())
         }
@@ -409,11 +460,11 @@ mod tests {
     }
 
     impl MasterKeyEntry for Overtaken {
-        fn read(&self) -> Result<Option<String>, String> {
+        fn read(&self) -> Result<Option<String>, Refusal> {
             Ok(self.value.lock().unwrap().clone())
         }
 
-        fn write(&self, _value: &str) -> Result<(), String> {
+        fn write(&self, _value: &str) -> Result<(), Refusal> {
             *self.value.lock().unwrap() = Some(self.other.clone());
             Ok(())
         }
@@ -460,12 +511,12 @@ mod tests {
     }
 
     impl MasterKeyEntry for Counting {
-        fn read(&self) -> Result<Option<String>, String> {
+        fn read(&self) -> Result<Option<String>, Refusal> {
             *self.reads.lock().unwrap() += 1;
             Ok(self.value.lock().unwrap().clone())
         }
 
-        fn write(&self, value: &str) -> Result<(), String> {
+        fn write(&self, value: &str) -> Result<(), Refusal> {
             *self.writes.lock().unwrap() += 1;
             *self.value.lock().unwrap() = Some(value.to_string());
             Ok(())
@@ -530,5 +581,54 @@ mod tests {
             matches!(keyring.open(&sealed).unwrap_err(), SecretError::Cipher(_)),
             "another install id derives another key"
         );
+    }
+
+    /// A locked store: every read is refused.
+    struct Locked {
+        reads: Mutex<usize>,
+    }
+
+    impl MasterKeyEntry for Locked {
+        fn read(&self) -> Result<Option<String>, Refusal> {
+            *self.reads.lock().unwrap() += 1;
+            Err(Refusal::new("reading the entry: no access to the store (locked or refused)", "object locked"))
+        }
+
+        fn write(&self, _value: &str) -> Result<(), Refusal> {
+            unreachable!("nothing is minted after a refused read")
+        }
+    }
+
+    #[test]
+    fn a_refused_keyring_is_asked_once_and_every_box_takes_the_refusal() {
+        let entry = Locked { reads: Mutex::new(0) };
+        for _ in 0..2 {
+            let refused = SHARED.resolve("test-locked", || master_key_from(&entry)).unwrap_err();
+            assert!(
+                matches!(&refused, SecretError::Keyring(why) if why.contains("no access to the store")),
+                "{refused}"
+            );
+        }
+        assert_eq!(*entry.reads.lock().unwrap(), 1, "the second box asks the store nothing");
+    }
+
+    #[test]
+    fn the_first_line_of_a_refusal_survives_the_log_redaction() {
+        // The session log blanks a line that has any of these words, and the
+        // stores' own messages often do; the line that says what failed must
+        // not.
+        let blanked = ["secret", "password", "credential", "token"];
+        let answers = vec![
+            keyring::Error::NoStorageAccess("Secret Service: object locked".into()),
+            keyring::Error::PlatformFailure("org.freedesktop.secrets was not provided".into()),
+            keyring::Error::BadEncoding(vec![0xff]),
+            keyring::Error::Invalid("service".into(), "a password-like name".into()),
+        ];
+        for answer in answers {
+            let refusal = Refusal::from_store("reading the entry", answer);
+            let what = refusal.what.to_lowercase();
+            assert!(blanked.iter().all(|word| !what.contains(word)), "{what}");
+            assert!(!refusal.detail.is_empty(), "the store's own message is kept for a terminal");
+        }
     }
 }

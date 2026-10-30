@@ -23,3 +23,19 @@ pub enum SecretError {
     #[error("unexpected: {0}")]
     Other(String),
 }
+
+impl SecretError {
+    /// What failed, in one word a log line can carry: no detail, nothing
+    /// sealed, no key and no path.
+    pub fn kind(&self) -> &'static str {
+        match self {
+            SecretError::NoBackend(_) => "no-backend",
+            SecretError::Keyring(_) => "keyring",
+            SecretError::Cipher(_) => "cipher",
+            SecretError::Malformed(_) => "malformed",
+            SecretError::BackendMismatch => "backend-mismatch",
+            SecretError::Io(_) => "disk",
+            SecretError::Other(_) => "other",
+        }
+    }
+}
