@@ -225,7 +225,9 @@ fn a_cover_chosen_for_a_server_s_record_outlasts_the_server_s_own() {
     synced(&lib, source, &[track("1", "One"), track("2", "One"), loose.clone()]);
     let home = home(source);
     let covers = lib.overlay_covers_dir(source).unwrap();
-    assert_eq!(covers, dir.path().join("source-covers").join(source.to_string()), "beside the library, under the server");
+    // The library reports the real path; a temp dir on macOS sits behind a symlink.
+    let real = dir.path().canonicalize().unwrap();
+    assert_eq!(covers, real.join("source-covers").join(source.to_string()), "beside the library, under the server");
 
     let stored = lib.store_overlay(&home, &Sidecar::new(0), Some((b"a jpeg", "jpg")), 5).unwrap();
     let cover = stored.cover.expect("the cover was kept");
