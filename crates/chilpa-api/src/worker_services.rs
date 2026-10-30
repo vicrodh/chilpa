@@ -59,7 +59,7 @@ impl WorkerServices for WorkerContext {
         match operation {
             ServiceOperation::PrivateGet { key } => {
                 if !self.manifest.can_store() { return Err(BridgeError::Denied); }
-                let bytes = self.store.get(&self.manifest.id, &key).map_err(|_| BridgeError::Storage)?;
+                let bytes = self.store.get(&self.manifest.id, &key).map_err(|e| { if e == chilpa_secrets::StoreError::Corrupt { eprintln!("chilpa-plugins: a private record of {} did not open (damaged, or sealed with another key)", self.manifest.id); } BridgeError::Storage })?;
                 match bytes {
                     Some(bytes) => serde_json::from_slice(&bytes).map_err(|_| BridgeError::Storage),
                     None => Ok(Value::Null),

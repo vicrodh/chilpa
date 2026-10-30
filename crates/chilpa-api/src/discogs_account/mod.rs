@@ -32,7 +32,7 @@ impl Drop for Account {
 }
 impl Account {
     fn start(http:Arc<dyn chilpa_meta::Http>,root:std::path::PathBuf)->Self {
-        Self::start_with(http,root,|root|chilpa_secrets::SecretBox::open("chilpa",root).map_err(|_|()))
+        Self::start_with(http,root,|root|chilpa_secrets::SecretBox::open("chilpa",root).map_err(|e|eprintln!("chilpa-discogs: no box: step={} ({e})",e.kind())))
     }
     fn start_with(http:Arc<dyn chilpa_meta::Http>,root:std::path::PathBuf,open:worker::OpenSecrets)->Self {
         let status=DiscogsStatus {checking:true,..Default::default()};

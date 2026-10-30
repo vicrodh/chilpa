@@ -12,7 +12,7 @@ pub(super) fn load(root:&Path,secrets:&SecretBox)->Result<Option<Saved>,()> {
     };
     let mut bytes=Vec::new();file.take(MAX_BYTES+1).read_to_end(&mut bytes).map_err(|_|())?;
     if bytes.len() as u64>MAX_BYTES {return Err(());}
-    let plain=secrets.open_sealed(&bytes).map_err(|_|())?;
+    let plain=secrets.open_sealed(&bytes).map_err(|e|eprintln!("chilpa-discogs: the saved account not opened: step={} backend={:?}",e.kind(),secrets.backend()))?;
     let saved:Saved=serde_json::from_slice(&plain).map_err(|_|())?;
     if saved.username.is_empty() || saved.username.len()>128 || saved.credential.header(1,"validation").is_none() {return Err(());}
     Ok(Some(saved))

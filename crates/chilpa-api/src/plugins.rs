@@ -327,7 +327,7 @@ impl Plugins {
     /// would be a problem with the machine and not with a plugin.
     pub fn new(root: PathBuf) -> Option<Self> {
         let host = Host::new().ok()?;
-        let secrets = SecretBox::open("chilpa", &root).ok().map(Arc::new);
+        let secrets = SecretBox::open("chilpa", &root).map_err(|e| eprintln!("chilpa-plugins: no box for plugin accounts: step={} ({e})", e.kind())).ok().map(Arc::new);
         let services: Services =
             Arc::new(Mutex::new(ChilpaServices::new(root.clone(), secrets.clone())));
         let approvals = Approvals::load(&root);

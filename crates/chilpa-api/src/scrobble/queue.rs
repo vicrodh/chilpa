@@ -93,10 +93,14 @@ pub(super) struct Worker {
 
 impl Worker {
     fn open(service: Service, dir: PathBuf, secrets_dir: &Path, status: Arc<Mutex<ScrobbleStatus>>) -> Self {
-        let secrets = SecretBox::open("chilpa", secrets_dir).ok();
+        let secrets = SecretBox::open("chilpa", secrets_dir).map_err(|e| eprintln!("chilpa-scrobble: no box: step={} ({e})", e.kind())).ok();
         let credential = std::fs::read(dir.join("credential.sealed"))
             .ok()
-            .and_then(|sealed| secrets.as_ref()?.open_sealed(&sealed).ok())
+            .and_then(|sealed| {
+                let secrets = secrets.as_ref()?;
+                let opened = secrets.open_sealed(&sealed);
+                opened.map_err(|e| eprintln!("chilpa-scrobble: {} sign-in not opened: step={} backend={:?}", service.label, e.kind(), secrets.backend())).ok()
+            })
             .and_then(|plain| String::from_utf8(plain).ok());
         let saved = read_json(&dir.join("state.json")).unwrap_or_default();
         let pending = read_json(&dir.join("pending.json")).unwrap_or_default();
