@@ -703,10 +703,10 @@ pub struct Chilpa {
     /// and the window would blink to "not playing" on its way to the new
     /// device. What it holds is what to do with the interrupted listen.
     relaunching: Option<Relaunch>,
-    /// The last answer from the catalogue about which outputs exist. Kept so
-    /// the window can be told when it changed without asking the stacks for
-    /// their whole list on a timer.
-    outputs_generation: String,
+    /// The stacks and outputs as last listed, on a thread of their own. The
+    /// window reads what was found and never asks the stacks itself: on
+    /// PipeWire asking starts a process, and it froze the window.
+    outputs_listing: outputs::Listing,
     /// The metadata editor, and the record open in it if there is one.
     metadata: metadata::Editor,
     /// My servers: adding, syncing, watching and removing them (ADR-017).
@@ -754,7 +754,6 @@ impl Chilpa {
         let on = |key| saved.window.get(key).is_some_and(|v| v == "true");
         chilpa_core::backends::set_reserving(on(outputs::RESERVE));
         chilpa_core::backends::set_forcing_rate(on(outputs::FORCE_RATE));
-        chilpa_core::backends::warm_up();
         let catalog = source_catalog::Catalog::new();
         library_query::refine::access::attach(&catalog);
         let tap = chilpa_core::tap::Tap::new();
@@ -822,7 +821,7 @@ impl Chilpa {
             home: home::Home::default(),
             sample_rate: 0,
             relaunching: None,
-            outputs_generation: String::new(),
+            outputs_listing: outputs::Listing::new(),
             metadata: metadata::Editor::default(),
             servers: servers::Servers::default(),
             casting: casting::Casting::default(),

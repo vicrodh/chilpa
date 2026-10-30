@@ -127,7 +127,15 @@ fn every_listed_output_names_the_stack_it_belongs_to() {
     // A bare "hw:1,0" does not say which stack it came from, and that is
     // exactly what somebody has to be told when a remembered output is
     // no longer there.
-    for output in Chilpa::new().outputs() {
+    let api = Chilpa::new();
+    // The stacks are listed on their own thread; the window never waits
+    // for them, so this does, with a bound.
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while !api.outputs_listed() && std::time::Instant::now() < deadline {
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    assert!(api.outputs_listed(), "the stacks did not answer within ten seconds");
+    for output in api.outputs() {
         let (stack, bare) = output.id.split_once(':').unwrap_or_else(|| panic!("{} names no stack", output.id));
         // Asked of the core and not of the audio crate. The facade is
         // not allowed to reach into the engine (ADR-001), and the answer

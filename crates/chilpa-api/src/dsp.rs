@@ -40,10 +40,12 @@ pub(crate) struct Dsp {
     pub(crate) passthrough: bool,
 }
 
-/// How long the output stays as chosen while the poll asks again. Choosing it
-/// lists every device, and on PipeWire that starts a process on the window's
-/// thread: asked on every poll, a slow sound server froze the window for
-/// seconds at a time.
+/// How long the output stays as chosen while the poll asks again. Choosing
+/// it used to list every device, and on PipeWire that started a process on
+/// the window's thread: asked on every poll, a slow sound server froze the
+/// window for seconds at a time. The listing now lives on its own thread
+/// (`outputs::listing`); this keeps the poll from reading the settings file
+/// every tick for an answer that only changes by hand.
 const OUTPUT_RECHECK: Duration = Duration::from_secs(5);
 
 /// Whether the poll should choose the output again: nothing applied yet, or

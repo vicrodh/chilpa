@@ -15,9 +15,16 @@ pub(crate) const HIFI_WIZARD: &str = "audio.hifiWizard";
 
 #[cfg(target_os = "linux")]
 mod hifi_wizard;
+mod listing;
+pub(crate) use listing::Listing;
 
 /// File capture is a development output, separate from normal listening devices.
 fn developer_outputs() -> bool { std::env::var_os("CHILPA_DEV").is_some_and(|value| value == "1") }
+
+/// An output as the window reads it, out of one as the core listed it.
+fn output_of(o: &chilpa_core::Output) -> Output {
+    Output { id: o.id.clone(), label: o.label.clone(), detail: o.detail.clone(), bit_perfect: o.bit_perfect }
+}
 
 /// Off Linux the wizard has nothing to set up: its row is hidden, and the
 /// window's calls find a closed document.
@@ -106,21 +113,32 @@ impl crate::Chilpa {
     /// tick after it had just built it.
     pub fn outputs_changed(&mut self) -> bool {
         let now = chilpa_core::backends::generation();
-        if self.outputs_generation.is_empty() {
-            self.outputs_generation = now;
+        if self.outputs_listing.generation.is_empty() {
+            self.outputs_listing.generation = now;
             return false;
         }
-        if now == self.outputs_generation {
+        if now == self.outputs_listing.generation {
             return false;
         }
-        self.outputs_generation = now;
+        self.outputs_listing.generation = now;
+        // A card came or went: the list is made again now, not on its timer.
+        self.outputs_listing.ask();
         true
+    }
+
+    /// Whether the stacks have answered once since Chilpa started. Until
+    /// then every list here is empty, and the output chosen is the one
+    /// remembered or the one that is there without asking.
+    pub fn outputs_listed(&self) -> bool {
+        self.outputs_listing.listed()
     }
 
     /// Moves to another output under the policy already chosen.
     pub fn use_output_as_chosen(&mut self, output: &str) {
         let (_, bit_perfect) = self.chosen_output();
         self.use_output(output, bit_perfect);
+        // Whoever chose is looking at the list: it is made again now.
+        self.outputs_listing.ask();
     }
 
     /// An output's diagnosis: which formats come out untouched.
@@ -169,9 +187,17 @@ impl crate::Chilpa {
         }
     }
 
-    /// The chosen output, or the first one there is.
+    /// The first output there is, as last listed. Before the stacks have
+    /// answered once, the one that is there without asking them: the window
+    /// is not kept waiting for a sound server to name a default.
     pub(crate) fn device_or_first(&self) -> String {
-        self.outputs().first().map(|o| o.id.clone()).unwrap_or_default()
+        if let Some(first) = self.outputs().first() {
+            return first.id.clone();
+        }
+        if self.outputs_listing.listed() {
+            return String::new();
+        }
+        chilpa_core::backends::standing_output().unwrap_or_default()
     }
 
     /// What the chosen output's own volume control is doing.
@@ -216,18 +242,21 @@ impl crate::Chilpa {
     ///
     /// The card through `plughw` is not among them: it is the card with
     /// another plugin, and the window offers it as that (`alsa_plugin`).
+    ///
+    /// As last listed, like every list here: the window never asks the
+    /// stacks itself (`listing`). Empty until they have answered once.
     pub fn stacks(&self) -> Vec<OutputStack> {
-        chilpa_core::backends::described()
-            .into_iter()
+        self.outputs_listing.found().stacks
+            .iter()
             .filter(|s| !matches!(s.kind, chilpa_core::backends::StackKind::AlsaPlug | chilpa_core::backends::StackKind::AlsaPcm)
                 && (s.kind != chilpa_core::backends::StackKind::File || developer_outputs()))
             .map(|s| OutputStack {
                 key: s.kind.key().to_string(),
                 label: s.label(),
                 present: s.present,
-                missing: s.missing,
+                missing: s.missing.clone(),
                 fidelity: word(s.fidelity).to_string(),
-                caveat: s.caveat,
+                caveat: s.caveat.clone(),
             })
             .collect()
     }
@@ -237,17 +266,10 @@ impl crate::Chilpa {
     /// things, and `stacks` is where they are told apart.
     pub fn stack_outputs(&self, key: &str) -> Vec<Output> {
         if key == "file" && !developer_outputs() { return Vec::new(); }
-        let Some(kind) = chilpa_core::backends::StackKind::from_key(key) else {
-            return Vec::new();
-        };
-        chilpa_core::backends::outputs_of(kind)
-            .into_iter()
-            .map(|o| Output {
-                id: o.id,
-                label: o.label,
-                detail: o.detail,
-                bit_perfect: o.bit_perfect,
-            })
+        self.outputs_listing.found().outputs
+            .iter()
+            .filter(|o| own_stack(&o.id) == key)
+            .map(output_of)
             .collect()
     }
 
@@ -269,10 +291,9 @@ impl crate::Chilpa {
     /// label and "ALSA (plughw)".
     pub fn output_names(&self, output_id: &str) -> (String, String) {
         let key = own_stack(output_id);
-        let device = self.stack_outputs(key).into_iter().find(|o| o.id == output_id).map(|o| o.label);
-        let stack = chilpa_core::backends::StackKind::from_key(key)
-            .and_then(chilpa_core::backends::of)
-            .map(|s| s.info().label());
+        let found = self.outputs_listing.found();
+        let device = found.outputs.iter().find(|o| o.id == output_id).map(|o| o.label.clone());
+        let stack = found.stacks.iter().find(|s| s.kind.key() == key).map(|s| s.label());
         (device.unwrap_or_else(|| output_id.to_string()), stack.unwrap_or_else(|| key.to_string()))
     }
 
@@ -290,11 +311,14 @@ impl crate::Chilpa {
     }
 
     /// What the output's stack promises: "exact", "depends" or "never".
-    /// One nobody knows promises nothing.
+    /// One nobody knows promises nothing, and neither does any stack until
+    /// they have been listed once.
     pub fn fidelity_of(&self, output_id: &str) -> &'static str {
-        chilpa_core::backends::StackKind::from_key(own_stack(output_id))
-            .and_then(chilpa_core::backends::of)
-            .map_or("never", |s| word(s.info().fidelity))
+        let key = own_stack(output_id);
+        self.outputs_listing.found().stacks
+            .iter()
+            .find(|s| s.kind.key() == key)
+            .map_or("never", |s| word(s.fidelity))
     }
 
     /// Whether a card is asked of the sound server that holds it before it
@@ -361,17 +385,12 @@ impl crate::Chilpa {
         }
     }
 
-    /// The outputs the user can choose from.
+    /// The outputs the user can choose from, as last listed.
     pub fn outputs(&self) -> Vec<Output> {
-        chilpa_core::outputs()
-            .into_iter()
+        self.outputs_listing.found().outputs
+            .iter()
             .filter(|output| !output.id.starts_with("file:") || developer_outputs())
-            .map(|o| Output {
-                id: o.id,
-                label: o.label,
-                detail: o.detail,
-                bit_perfect: o.bit_perfect,
-            })
+            .map(output_of)
             .collect()
     }
 }
@@ -387,5 +406,46 @@ mod tests {
         assert_eq!(card_and_device("alsapcm:sysdefault:CARD=1"), Some((1, 0)));
         assert_eq!(card_and_device("pipewire:alsa_output.usb"), None);
         assert_eq!(card_and_device("system:default"), None);
+    }
+
+    #[test]
+    fn the_window_reads_what_was_last_listed_and_never_asks_the_stacks() {
+        use super::listing::tests::{output, wait_until, Gate};
+        use chilpa_core::backends::{Fidelity, Stack, StackKind};
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::Arc;
+        use std::time::{Duration, Instant};
+        fn stack(kind: StackKind, fidelity: Fidelity) -> Stack {
+            Stack { kind, present: true, missing: String::new(), provider: String::new(), fidelity, caveat: String::new() }
+        }
+        let (gate, calls) = (Arc::new(Gate::default()), Arc::new(AtomicUsize::new(0)));
+        let (at_gate, counted) = (Arc::clone(&gate), Arc::clone(&calls));
+        let mut api = crate::Chilpa::new();
+        api.outputs_listing = Listing::with(Box::new(move || {
+            counted.fetch_add(1, Ordering::SeqCst);
+            at_gate.wait();
+            super::listing::Found {
+                stacks: vec![stack(StackKind::Alsa, Fidelity::Exact), stack(StackKind::PipeWire, Fidelity::Depends)],
+                outputs: vec![output("alsa:hw:1,0", "Card"), output("pipewire:card", "Card through the graph")],
+            }
+        }));
+        assert!(wait_until(|| calls.load(Ordering::SeqCst) == 1, Duration::from_secs(5)), "the listing did not start");
+        // The stacks are being asked right now, and the window does not wait.
+        let before = Instant::now();
+        assert!(api.outputs().is_empty() && api.stacks().is_empty() && api.stack_outputs("alsa").is_empty());
+        assert_eq!(api.fidelity_of("alsa:hw:1,0"), "never", "nothing is promised before the stacks answer");
+        assert_eq!(api.output_names("alsa:hw:1,0"), ("alsa:hw:1,0".to_string(), "alsa".to_string()));
+        #[cfg(target_os = "linux")]
+        assert_eq!(api.device_or_first(), "system:default", "an output is named without asking");
+        assert!(before.elapsed() < Duration::from_secs(1), "the window waited on the listing");
+        gate.open();
+        assert!(wait_until(|| api.outputs_listed(), Duration::from_secs(5)), "the stacks answered and nothing was kept");
+        assert_eq!(api.outputs().iter().map(|o| o.id.as_str()).collect::<Vec<_>>(), ["alsa:hw:1,0", "pipewire:card"]);
+        assert_eq!(api.device_or_first(), "alsa:hw:1,0");
+        assert_eq!(api.stack_outputs("pipewire").iter().map(|o| o.id.as_str()).collect::<Vec<_>>(), ["pipewire:card"]);
+        assert_eq!(api.stacks().iter().map(|s| s.key.as_str()).collect::<Vec<_>>(), ["alsa", "pipewire"]);
+        assert_eq!((api.fidelity_of("alsa:hw:1,0"), api.fidelity_of("pipewire:card")), ("exact", "depends"));
+        assert_eq!(api.output_names("pipewire:card"), ("Card through the graph".to_string(), "PipeWire".to_string()));
+        assert_eq!(calls.load(Ordering::SeqCst), 1, "reading listed the stacks again");
     }
 }

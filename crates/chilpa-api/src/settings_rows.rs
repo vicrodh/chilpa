@@ -186,6 +186,12 @@ impl Chilpa {
         if section == "storage" && !crate::storage_cache::usage().ready {
             crate::storage_cache::request_scan();
         }
+        // The audio rows show the stacks and outputs as last listed, and
+        // somebody opening them wants a device plugged in a moment ago: the
+        // next listing is made now, and the next read of the page has it.
+        if section == "audio" {
+            self.outputs_listing.ask();
+        }
         let section = settings_schema::section(section);
         let mut rows = Vec::new();
         let (output, _) = self.chosen_output();
