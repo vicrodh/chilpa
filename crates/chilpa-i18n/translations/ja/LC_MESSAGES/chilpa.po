@@ -4126,6 +4126,9 @@ msgstr "古い一時画像はバックグラウンドで削除されます。ラ
 msgid "Older versions"
 msgstr "以前のバージョン"
 
+msgid "Show older versions"
+msgstr "以前のバージョンを表示"
+
 msgid "Oldest first"
 msgstr "古い順"
 

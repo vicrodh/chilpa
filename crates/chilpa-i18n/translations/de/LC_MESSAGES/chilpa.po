@@ -4129,6 +4129,9 @@ msgstr "Ältere temporäre Bilder werden im Hintergrund entfernt. Von deiner Bib
 msgid "Older versions"
 msgstr "Ältere Versionen"
 
+msgid "Show older versions"
+msgstr "Ältere Versionen anzeigen"
+
 msgid "Oldest first"
 msgstr "Älteste zuerst"
 

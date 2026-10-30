@@ -4129,6 +4129,9 @@ msgstr "Oudere tijdelijke afbeeldingen worden op de achtergrond verwijderd. Hoez
 msgid "Older versions"
 msgstr "Oudere versies"
 
+msgid "Show older versions"
+msgstr "Oudere versies tonen"
+
 msgid "Oldest first"
 msgstr "Oudste eerst"
 

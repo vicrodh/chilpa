@@ -4129,6 +4129,9 @@ msgstr "Les anciennes images temporaires sont supprimées en arrière-plan. Les 
 msgid "Older versions"
 msgstr "Versions antérieures"
 
+msgid "Show older versions"
+msgstr "Afficher les versions précédentes"
+
 msgid "Oldest first"
 msgstr "Plus anciens d'abord"
 

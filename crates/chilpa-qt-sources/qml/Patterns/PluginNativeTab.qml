@@ -61,7 +61,7 @@ Flickable {
                 height: Metrics.settingsRow
                 Column {
                     anchors.left: parent.left
-                    anchors.right: older.visible ? older.left : get.left
+                    anchors.right: actions.left
                     anchors.rightMargin: Metrics.gap12
                     anchors.verticalCenter: parent.verticalCenter
                     Row {
@@ -72,24 +72,47 @@ Flickable {
                     }
                     Text { width: parent.width; text: modelData.problem || modelData.description; elide: Text.ElideRight; color: modelData.problem ? Theme.color.statusWarning : Theme.color.textSecondary; font.pointSize: Type.meta }
                 }
-                P.PillButton {
-                    id: older
-                    objectName: "olderVersionsButton"
-                    anchors.right: get.left
-                    anchors.rightMargin: Metrics.gap8
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: (modelData.older || []).length > 0
-                    kind: "ghost"
-                    text: I18n.tr("Older versions", I18n.rev)
-                    onClicked: { olderVersions.plugin = modelData; olderVersions.open() }
-                }
-                P.PillButton {
-                    id: get
+                // The action, and under it a small link to the versions the
+                // list does not show: one row per plugin keeps the list short.
+                Column {
+                    id: actions
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    text: modelData.update ? I18n.tr("Update", I18n.rev) : I18n.tr("Install", I18n.rev)
-                    enabled: !tab.controller.view.busy && !modelData.problem
-                    onClicked: tab.controller.command("install_native", {repository: modelData.repository_id, id: modelData.id})
+                    spacing: Metrics.gap2
+                    P.PillButton {
+                        id: get
+                        objectName: "nativeOfferAction"
+                        anchors.right: parent.right
+                        text: modelData.update ? I18n.tr("Update", I18n.rev) : I18n.tr("Install", I18n.rev)
+                        enabled: !tab.controller.view.busy && !modelData.problem
+                        onClicked: tab.controller.command("install_native", {repository: modelData.repository_id, id: modelData.id})
+                    }
+                    Text {
+                        id: older
+                        objectName: "olderVersionsButton"
+                        signal clicked()
+                        anchors.right: parent.right
+                        visible: (modelData.older || []).length > 0
+                        activeFocusOnTab: visible
+                        text: I18n.tr("Show older versions", I18n.rev)
+                        font.pointSize: Type.micro
+                        font.underline: pointer.containsMouse || activeFocus
+                        color: pointer.containsMouse || activeFocus ? Theme.color.textPrimary : Theme.color.textTertiary
+                        Accessible.role: Accessible.Link
+                        Accessible.name: text
+                        Accessible.onPressAction: clicked()
+                        Keys.onReturnPressed: clicked()
+                        Keys.onEnterPressed: clicked()
+                        Keys.onSpacePressed: clicked()
+                        onClicked: { olderVersions.plugin = modelData; olderVersions.open() }
+                        MouseArea {
+                            id: pointer
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: older.clicked()
+                        }
+                    }
                 }
             }
         }

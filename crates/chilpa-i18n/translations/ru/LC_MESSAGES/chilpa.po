@@ -4132,6 +4132,9 @@ msgstr "Более старые временные изображения уда
 msgid "Older versions"
 msgstr "Предыдущие версии"
 
+msgid "Show older versions"
+msgstr "Показать старые версии"
+
 msgid "Oldest first"
 msgstr "Сначала старые"
 

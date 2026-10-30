@@ -252,8 +252,8 @@ TestCase {
         manager.read()
         const rows = findChild(manager, "nativeCatalogRow")
         verify(rows !== null, "a repository's native plugin is offered")
-        let button = null
-        for (let child of rows.children) if (child.text !== undefined && child.clicked !== undefined) button = child
+        const button = findChild(rows, "nativeOfferAction")
+        verify(button !== null, "the offer has its action")
         compare(button.text, "Update", "a newer version is offered as an update")
         button.clicked()
         compare(backend.calls[backend.calls.length - 1], ["install_native", {repository: "repo", id: "app.test.one"}])
