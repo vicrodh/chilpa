@@ -16,6 +16,10 @@
 //! The backend marker travels inside every envelope, so what one sealed is
 //! not silently opened by the other, and so that if someone gains keyring
 //! access later, their old data is not ignored without a word.
+//!
+//! The keyring is asked once per process and per service name
+//! (`MasterKeys`): the boxes that open at startup, each on its own thread,
+//! share one resolution instead of racing each other to mint the first key.
 
 use std::path::Path;
 
@@ -94,10 +98,14 @@ impl Backend {
     }
 
     /// The keyring path with the entry given: the tests' keyring-backed box,
-    /// which never reaches the system store.
+    /// which never reaches the system store. The resolution is the shared
+    /// one, so each test names a service of its own.
     #[cfg(all(test, any(target_os = "linux", target_os = "macos", target_os = "windows")))]
-    pub(crate) fn with_entry(entry: &dyn MasterKeyEntry) -> Result<Self, SecretError> {
-        Ok(Self { kind: BackendKind::Keyring, master_key: master_key_from(entry)? })
+    pub(crate) fn with_entry(
+        service_name: &str,
+        entry: &dyn MasterKeyEntry,
+    ) -> Result<Self, SecretError> {
+        Ok(Self { kind: BackendKind::Keyring, master_key: SHARED.resolve(service_name, entry)? })
     }
 
     pub fn kind(&self) -> BackendKind {
@@ -148,7 +156,51 @@ fn try_keyring(service_name: &str) -> Result<[u8; MASTER_KEY_LEN], SecretError> 
     // store is first reached by `read`.
     let entry = Entry::new(service_name, KEYRING_ENTRY)
         .map_err(|e| SecretError::Keyring(format!("Entry::new: {e}")))?;
-    master_key_from(&SystemEntry(entry))
+    SHARED.resolve(service_name, &SystemEntry(entry))
+}
+
+/// One master key per service name for the whole process.
+///
+/// Several boxes open at startup, each on a thread of its own. On a
+/// keyring with no entry yet, each of them would read nothing, mint a key
+/// and store it; the last write would win, and the others would seal with
+/// a key the keyring never kept. Here the first resolution runs alone and
+/// every box after it takes the same outcome, the failure included: a
+/// process either has the keyring or it does not.
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+pub(crate) struct MasterKeys {
+    resolved: std::sync::Mutex<Vec<(String, Result<[u8; MASTER_KEY_LEN], String>)>>,
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+static SHARED: MasterKeys = MasterKeys::new();
+
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+impl MasterKeys {
+    pub(crate) const fn new() -> Self {
+        Self { resolved: std::sync::Mutex::new(Vec::new()) }
+    }
+
+    /// The key for `service_name`: resolved once, under a lock the whole
+    /// way through, and shared after that.
+    pub(crate) fn resolve(
+        &self,
+        service_name: &str,
+        entry: &dyn MasterKeyEntry,
+    ) -> Result<[u8; MASTER_KEY_LEN], SecretError> {
+        let mut resolved = self.resolved.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some((_, outcome)) = resolved.iter().find(|(name, _)| name == service_name) {
+            return outcome.clone().map_err(SecretError::Keyring);
+        }
+        let outcome = master_key_from(entry);
+        let kept = match &outcome {
+            Ok(key) => Ok(*key),
+            Err(SecretError::Keyring(why)) => Err(why.clone()),
+            Err(e) => Err(e.to_string()),
+        };
+        resolved.push((service_name.to_string(), kept));
+        outcome
+    }
 }
 
 /// The one entry the keyring path uses: the master key, kept as text.
@@ -181,21 +233,24 @@ impl MasterKeyEntry for SystemEntry {
 }
 
 /// The key the entry holds, or a new one minted and stored there.
+///
+/// After a mint the entry is read back and what it holds is the key: a
+/// second process can store its own in between, and a key the keyring did
+/// not keep seals nothing that opens on the next start.
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-pub(crate) fn master_key_from(
-    entry: &dyn MasterKeyEntry,
-) -> Result<[u8; MASTER_KEY_LEN], SecretError> {
+fn master_key_from(entry: &dyn MasterKeyEntry) -> Result<[u8; MASTER_KEY_LEN], SecretError> {
     use base64::engine::general_purpose::STANDARD as B64;
     use base64::Engine;
 
+    if let Some(existing) = entry.read().map_err(SecretError::Keyring)? {
+        return decode_key(&existing);
+    }
+    let mut minted = [0u8; MASTER_KEY_LEN];
+    rand::rng().fill(&mut minted);
+    entry.write(&B64.encode(minted)).map_err(SecretError::Keyring)?;
     match entry.read().map_err(SecretError::Keyring)? {
-        Some(existing) => decode_key(&existing),
-        None => {
-            let mut key = [0u8; MASTER_KEY_LEN];
-            rand::rng().fill(&mut key);
-            entry.write(&B64.encode(key)).map_err(SecretError::Keyring)?;
-            Ok(key)
-        }
+        Some(stored) => decode_key(&stored),
+        None => Err(SecretError::Keyring("the entry did not read back after it was written".into())),
     }
 }
 
@@ -321,7 +376,9 @@ mod tests {
         let threads: Vec<_> = (0..4)
             .map(|_| {
                 let entry = Arc::clone(&entry);
-                std::thread::spawn(move || Backend::with_entry(&*entry).unwrap().master_key)
+                std::thread::spawn(move || {
+                    Backend::with_entry("test-fresh-start", &*entry).unwrap().master_key
+                })
             })
             .collect();
         let keys: Vec<[u8; MASTER_KEY_LEN]> = threads.into_iter().map(|t| t.join().unwrap()).collect();
@@ -334,11 +391,53 @@ mod tests {
     #[test]
     fn the_key_in_use_is_the_one_the_keyring_holds_after_the_write() {
         let entry = Overtaken { value: Mutex::new(None), other: B64.encode([7u8; MASTER_KEY_LEN]) };
-        let backend = Backend::with_entry(&entry).unwrap();
+        let backend = Backend::with_entry("test-overtaken", &entry).unwrap();
         assert_eq!(
             backend.master_key,
             [7u8; MASTER_KEY_LEN],
             "a key the keyring did not keep seals nothing worth keeping"
         );
+    }
+
+    /// A store that counts how often it is asked.
+    struct Counting {
+        value: Mutex<Option<String>>,
+        reads: Mutex<usize>,
+        writes: Mutex<usize>,
+    }
+
+    impl MasterKeyEntry for Counting {
+        fn read(&self) -> Result<Option<String>, String> {
+            *self.reads.lock().unwrap() += 1;
+            Ok(self.value.lock().unwrap().clone())
+        }
+
+        fn write(&self, value: &str) -> Result<(), String> {
+            *self.writes.lock().unwrap() += 1;
+            *self.value.lock().unwrap() = Some(value.to_string());
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn a_second_box_in_the_same_process_takes_the_first_key_without_asking_again() {
+        let entry = Counting { value: Mutex::new(None), reads: Mutex::new(0), writes: Mutex::new(0) };
+        let first = Backend::with_entry("test-once-per-process", &entry).unwrap();
+        let second = Backend::with_entry("test-once-per-process", &entry).unwrap();
+        assert_eq!(first.master_key, second.master_key);
+        assert_eq!(*entry.writes.lock().unwrap(), 1, "one mint");
+        assert_eq!(*entry.reads.lock().unwrap(), 2, "one look, one read back, and nothing more");
+    }
+
+    #[test]
+    fn an_entry_that_exists_is_used_as_it_is() {
+        let entry = Counting {
+            value: Mutex::new(Some(B64.encode([9u8; MASTER_KEY_LEN]))),
+            reads: Mutex::new(0),
+            writes: Mutex::new(0),
+        };
+        let backend = Backend::with_entry("test-existing-entry", &entry).unwrap();
+        assert_eq!(backend.master_key, [9u8; MASTER_KEY_LEN]);
+        assert_eq!(*entry.writes.lock().unwrap(), 0, "nothing to mint");
     }
 }
