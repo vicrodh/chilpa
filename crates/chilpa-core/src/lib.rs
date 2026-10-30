@@ -91,7 +91,23 @@ pub struct Output {
 /// everything. The one that offers two -- the stack, and then its outputs --
 /// asks `backends::outputs_of` instead and gets the same rows.
 pub fn outputs() -> Vec<Output> {
-    inventory().1
+    inventory().outputs
+}
+
+/// How many outputs one stack may list. A machine has a handful; a server
+/// with a runaway list of virtual sinks does not get to grow whoever keeps
+/// the list with it. Per stack, so a server with many does not push the
+/// stacks after it off the list.
+pub const MOST_OUTPUTS_PER_STACK: usize = 128;
+
+/// Every stack, and every output of the ones that are here, each asked once.
+#[derive(Default, Debug, PartialEq)]
+pub struct Inventory {
+    pub stacks: Vec<backends::Stack>,
+    pub outputs: Vec<Output>,
+    /// The stacks that offered more than [`MOST_OUTPUTS_PER_STACK`] and
+    /// were cut there. Said, so that a list that ends is known to end.
+    pub clipped: Vec<backends::StackKind>,
 }
 
 /// Every stack, and every output of the ones that are here, each asked once.
@@ -100,22 +116,31 @@ pub fn outputs() -> Vec<Output> {
 /// sound server is asked by starting a process, and a JACK graph by opening
 /// a client. Whoever keeps both lists for the window asks here and pays for
 /// one pass, instead of once for the stacks and again for the outputs.
-pub fn inventory() -> (Vec<backends::Stack>, Vec<Output>) {
-    let stacks = backends::all();
-    let described: Vec<backends::Stack> = stacks.iter().map(|stack| stack.info()).collect();
-    let outputs = stacks
-        .iter()
-        .zip(&described)
-        .filter(|(_, info)| info.present)
-        .flat_map(|(stack, _)| backends::outputs_from(stack.as_ref()))
-        .map(|o| Output {
-            id: o.id,
-            label: o.label,
-            detail: o.detail,
-            bit_perfect: o.bit_perfect,
-        })
-        .collect();
-    (described, outputs)
+pub fn inventory() -> Inventory {
+    inventory_of(&backends::all(), MOST_OUTPUTS_PER_STACK)
+}
+
+/// The inventory of those stacks, each one's outputs cut at `most`.
+fn inventory_of(stacks: &[Box<dyn chilpa_audio::backend::OutputBackend>], most: usize) -> Inventory {
+    let mut inventory = Inventory::default();
+    for stack in stacks {
+        let info = stack.info();
+        if info.present {
+            let mut found = backends::outputs_from(stack.as_ref());
+            if found.len() > most {
+                found.truncate(most);
+                inventory.clipped.push(info.kind);
+            }
+            inventory.outputs.extend(found.into_iter().map(|o| Output {
+                id: o.id,
+                label: o.label,
+                detail: o.detail,
+                bit_perfect: o.bit_perfect,
+            }));
+        }
+        inventory.stacks.push(info);
+    }
+    inventory
 }
 
 /// Opens the user's library, creating it if needed.
@@ -401,6 +426,63 @@ mod tests {
     fn the_core_starts_with_the_local_library() {
         let core = Core::new();
         assert_eq!(core.sources(), &[SourceId::local()]);
+    }
+
+    /// A stack that offers that many outputs, all alike.
+    struct Offering(chilpa_audio::backend::BackendKind, usize);
+
+    impl chilpa_audio::backend::OutputBackend for Offering {
+        fn kind(&self) -> chilpa_audio::backend::BackendKind {
+            self.0
+        }
+        fn info(&self) -> chilpa_audio::backend::BackendInfo {
+            chilpa_audio::backend::BackendInfo {
+                kind: self.0,
+                present: true,
+                missing: String::new(),
+                provider: String::new(),
+                fidelity: chilpa_audio::backend::Fidelity::Never,
+                caveat: String::new(),
+            }
+        }
+        fn outputs(&self) -> Vec<chilpa_audio::backend::BackendOutput> {
+            (0..self.1)
+                .map(|n| chilpa_audio::backend::BackendOutput {
+                    id: format!("sink{n}"),
+                    label: String::new(),
+                    detail: String::new(),
+                    bit_perfect: false,
+                })
+                .collect()
+        }
+        fn caps(&self, _: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio::sink::SinkError> {
+            panic!("{:?} was measured", self.0)
+        }
+        fn open(
+            &self,
+            _: &str,
+            _: chilpa_audio::format::StreamFormat,
+            _: bool,
+        ) -> Result<Box<dyn chilpa_audio::sink::AudioSink + Send>, chilpa_audio::sink::SinkError> {
+            panic!("{:?} was opened", self.0)
+        }
+    }
+
+    #[test]
+    fn a_stack_with_too_many_outputs_is_cut_and_said_so_and_the_next_stack_keeps_its_own() {
+        // The cap used to be one number over the whole list, applied after
+        // it was built: a server with 256 sinks left every stack after it
+        // with nothing, while the picker still showed those stacks as here.
+        use chilpa_audio::backend::{BackendKind, OutputBackend};
+        let stacks: Vec<Box<dyn OutputBackend>> =
+            vec![Box::new(Offering(BackendKind::PipeWire, 300)), Box::new(Offering(BackendKind::Pulse, 2))];
+        let found = inventory_of(&stacks, 128);
+        assert_eq!(found.stacks.iter().map(|s| s.kind).collect::<Vec<_>>(), [BackendKind::PipeWire, BackendKind::Pulse]);
+        assert_eq!(found.outputs.iter().filter(|o| o.id.starts_with("pipewire:")).count(), 128);
+        assert_eq!(found.outputs.iter().filter(|o| o.id.starts_with("pulse:")).count(), 2, "the stack after the cut one lost its outputs");
+        assert_eq!(found.clipped, [BackendKind::PipeWire]);
+        let few = inventory_of(&stacks[1..], 128);
+        assert!(few.clipped.is_empty(), "a stack under the cap is not said to be cut");
     }
 }
 pub use chilpa_audio::dsp;

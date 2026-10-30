@@ -4162,6 +4162,9 @@ msgstr ""
 msgid "Only personal presets can be deleted."
 msgstr ""
 
+msgid "Only the first {} outputs are listed."
+msgstr ""
+
 msgid "Only tracks from this source"
 msgstr "Only tracks from this source"
 

@@ -16,10 +16,20 @@ pub(crate) const HIFI_WIZARD: &str = "audio.hifiWizard";
 #[cfg(target_os = "linux")]
 mod hifi_wizard;
 mod listing;
-pub(crate) use listing::Listing;
+pub(crate) use listing::{Listing, WATCH};
+
+/// How long a play with nothing remembered waits for the first listing
+/// where nothing can be named without it. Never on Linux, where the
+/// system stack's one output is named without asking; elsewhere the one
+/// stack answers from the operating system in milliseconds, and this is
+/// the ceiling, not the expectation.
+const FIRST_ANSWER: std::time::Duration = std::time::Duration::from_secs(1);
 
 /// File capture is a development output, separate from normal listening devices.
 fn developer_outputs() -> bool { std::env::var_os("CHILPA_DEV").is_some_and(|value| value == "1") }
+
+/// Whether a listed output is offered: file capture only to a developer.
+fn offered(o: &chilpa_core::Output) -> bool { !o.id.starts_with("file:") || developer_outputs() }
 
 /// An output as the window reads it, out of one as the core listed it.
 fn output_of(o: &chilpa_core::Output) -> Output {
@@ -133,6 +143,33 @@ impl crate::Chilpa {
         self.outputs_listing.listed()
     }
 
+    /// Grows when the stacks or outputs as listed change: when they first
+    /// answer, when a card comes or goes. Zero before the first answer.
+    /// Whoever draws them rebuilds on a new number, never on a tick.
+    pub fn outputs_revision(&self) -> u64 {
+        self.outputs_listing.revision()
+    }
+
+    /// Why the outputs are not being listed, when they are not: the thread
+    /// that lists them could not be started, or stopped unexpectedly. The
+    /// lists then stand as last found. Asking for them again starts over.
+    pub fn outputs_failure(&self) -> Option<String> {
+        self.outputs_listing.failure()
+    }
+
+    /// A Chilpa whose stacks and outputs are these, listed at once and
+    /// never asked of the machine. For tests that must not touch its sound
+    /// servers; hidden because nothing else has a reason to call it.
+    #[doc(hidden)]
+    pub fn with_listed(stacks: Vec<chilpa_core::backends::Stack>, outputs: Vec<chilpa_core::Output>) -> Self {
+        Self::with_listing(Listing::with(std::sync::Arc::new(move || listing::Found {
+            listed: true,
+            stacks: stacks.clone(),
+            outputs: outputs.clone(),
+            clipped: Vec::new(),
+        })))
+    }
+
     /// Moves to another output under the policy already chosen.
     pub fn use_output_as_chosen(&mut self, output: &str) {
         let (_, bit_perfect) = self.chosen_output();
@@ -190,14 +227,24 @@ impl crate::Chilpa {
     /// The first output there is, as last listed. Before the stacks have
     /// answered once, the one that is there without asking them: the window
     /// is not kept waiting for a sound server to name a default.
+    ///
+    /// One snapshot, read once: whether the stacks have answered and what
+    /// they said travel together, so the empty list from before the answer
+    /// is never taken for the empty list of a machine with nothing.
     pub(crate) fn device_or_first(&self) -> String {
-        if let Some(first) = self.outputs().first() {
+        let found = self.outputs_listing.found();
+        if let Some(first) = found.outputs.iter().find(|o| offered(o)) {
             return first.id.clone();
         }
-        if self.outputs_listing.listed() {
+        if found.listed {
             return String::new();
         }
-        chilpa_core::backends::standing_output().unwrap_or_default()
+        if let Some(standing) = chilpa_core::backends::standing_output() {
+            return standing;
+        }
+        // Nothing is named without asking on this platform, so the thread
+        // that is asking is waited for, this once and this long at most.
+        self.outputs_listing.first_answer(FIRST_ANSWER).outputs.iter().find(|o| offered(o)).map(|o| o.id.clone()).unwrap_or_default()
     }
 
     /// What the chosen output's own volume control is doing.
@@ -244,9 +291,12 @@ impl crate::Chilpa {
     /// another plugin, and the window offers it as that (`alsa_plugin`).
     ///
     /// As last listed, like every list here: the window never asks the
-    /// stacks itself (`listing`). Empty until they have answered once.
+    /// stacks itself (`listing`). Empty until they have answered once. A
+    /// stack that offered more outputs than are kept says so in its caveat,
+    /// so a list that ends is known to end.
     pub fn stacks(&self) -> Vec<OutputStack> {
-        self.outputs_listing.found().stacks
+        let found = self.outputs_listing.found();
+        found.stacks
             .iter()
             .filter(|s| !matches!(s.kind, chilpa_core::backends::StackKind::AlsaPlug | chilpa_core::backends::StackKind::AlsaPcm)
                 && (s.kind != chilpa_core::backends::StackKind::File || developer_outputs()))
@@ -256,7 +306,12 @@ impl crate::Chilpa {
                 present: s.present,
                 missing: s.missing.clone(),
                 fidelity: word(s.fidelity).to_string(),
-                caveat: s.caveat.clone(),
+                caveat: if found.clipped.contains(&s.kind) {
+                    let cut = chilpa_i18n::t_args("Only the first {} outputs are listed.", &[&chilpa_core::MOST_OUTPUTS_PER_STACK.to_string()]);
+                    if s.caveat.is_empty() { cut } else { format!("{} {cut}", s.caveat) }
+                } else {
+                    s.caveat.clone()
+                },
             })
             .collect()
     }
@@ -387,11 +442,7 @@ impl crate::Chilpa {
 
     /// The outputs the user can choose from, as last listed.
     pub fn outputs(&self) -> Vec<Output> {
-        self.outputs_listing.found().outputs
-            .iter()
-            .filter(|output| !output.id.starts_with("file:") || developer_outputs())
-            .map(output_of)
-            .collect()
+        self.outputs_listing.found().outputs.iter().filter(|o| offered(o)).map(output_of).collect()
     }
 }
 
@@ -408,38 +459,44 @@ mod tests {
         assert_eq!(card_and_device("system:default"), None);
     }
 
+    fn stack(kind: chilpa_core::backends::StackKind, fidelity: chilpa_core::backends::Fidelity) -> chilpa_core::backends::Stack {
+        chilpa_core::backends::Stack { kind, present: true, missing: String::new(), provider: String::new(), fidelity, caveat: String::new() }
+    }
+
     #[test]
     fn the_window_reads_what_was_last_listed_and_never_asks_the_stacks() {
         use super::listing::tests::{output, wait_until, Gate};
-        use chilpa_core::backends::{Fidelity, Stack, StackKind};
+        use chilpa_core::backends::{Fidelity, StackKind};
         use std::sync::atomic::{AtomicUsize, Ordering};
         use std::sync::Arc;
         use std::time::{Duration, Instant};
-        fn stack(kind: StackKind, fidelity: Fidelity) -> Stack {
-            Stack { kind, present: true, missing: String::new(), provider: String::new(), fidelity, caveat: String::new() }
-        }
         let (gate, calls) = (Arc::new(Gate::default()), Arc::new(AtomicUsize::new(0)));
         let (at_gate, counted) = (Arc::clone(&gate), Arc::clone(&calls));
-        let mut api = crate::Chilpa::new();
-        api.outputs_listing = Listing::with(Box::new(move || {
+        // The stand-in is there from the start: no listing of the machine's
+        // stacks is ever started by this test.
+        let api = crate::Chilpa::with_listing(Listing::with(Arc::new(move || {
             counted.fetch_add(1, Ordering::SeqCst);
             at_gate.wait();
             super::listing::Found {
+                listed: true,
                 stacks: vec![stack(StackKind::Alsa, Fidelity::Exact), stack(StackKind::PipeWire, Fidelity::Depends)],
                 outputs: vec![output("alsa:hw:1,0", "Card"), output("pipewire:card", "Card through the graph")],
+                clipped: Vec::new(),
             }
-        }));
+        })));
         assert!(wait_until(|| calls.load(Ordering::SeqCst) == 1, Duration::from_secs(5)), "the listing did not start");
         // The stacks are being asked right now, and the window does not wait.
         let before = Instant::now();
         assert!(api.outputs().is_empty() && api.stacks().is_empty() && api.stack_outputs("alsa").is_empty());
         assert_eq!(api.fidelity_of("alsa:hw:1,0"), "never", "nothing is promised before the stacks answer");
         assert_eq!(api.output_names("alsa:hw:1,0"), ("alsa:hw:1,0".to_string(), "alsa".to_string()));
+        assert_eq!(api.outputs_revision(), 0);
         #[cfg(target_os = "linux")]
         assert_eq!(api.device_or_first(), "system:default", "an output is named without asking");
         assert!(before.elapsed() < Duration::from_secs(1), "the window waited on the listing");
         gate.open();
         assert!(wait_until(|| api.outputs_listed(), Duration::from_secs(5)), "the stacks answered and nothing was kept");
+        assert_eq!(api.outputs_revision(), 1);
         assert_eq!(api.outputs().iter().map(|o| o.id.as_str()).collect::<Vec<_>>(), ["alsa:hw:1,0", "pipewire:card"]);
         assert_eq!(api.device_or_first(), "alsa:hw:1,0");
         assert_eq!(api.stack_outputs("pipewire").iter().map(|o| o.id.as_str()).collect::<Vec<_>>(), ["pipewire:card"]);
@@ -447,5 +504,46 @@ mod tests {
         assert_eq!((api.fidelity_of("alsa:hw:1,0"), api.fidelity_of("pipewire:card")), ("exact", "depends"));
         assert_eq!(api.output_names("pipewire:card"), ("Card through the graph".to_string(), "PipeWire".to_string()));
         assert_eq!(calls.load(Ordering::SeqCst), 1, "reading listed the stacks again");
+    }
+
+    #[test]
+    fn a_stack_cut_at_the_cap_says_so_where_the_window_reads_its_caveat() {
+        use super::listing::tests::{output, wait_until};
+        use chilpa_core::backends::{Fidelity, StackKind};
+        use std::time::Duration;
+        let api = crate::Chilpa::with_listing(Listing::with(std::sync::Arc::new(|| super::listing::Found {
+            listed: true,
+            stacks: vec![stack(StackKind::PipeWire, Fidelity::Depends), stack(StackKind::Pulse, Fidelity::Never)],
+            outputs: vec![output("pipewire:one", "One"), output("pulse:two", "Two")],
+            clipped: vec![StackKind::PipeWire],
+        })));
+        assert!(wait_until(|| api.outputs_listed(), Duration::from_secs(5)));
+        let stacks = api.stacks();
+        assert!(stacks[0].caveat.ends_with("Only the first 128 outputs are listed."), "{}", stacks[0].caveat);
+        assert!(stacks[1].caveat.is_empty(), "a stack under the cap says nothing: {}", stacks[1].caveat);
+    }
+
+    #[test]
+    fn with_nothing_remembered_the_first_output_is_never_called_nothing() {
+        // The empty snapshot from before the stacks answer and the empty
+        // list of a machine with nothing look alike; the snapshot tells
+        // them apart itself, and the window reads it once.
+        use super::listing::tests::{output, wait_until, Gate};
+        use std::sync::Arc;
+        use std::time::Duration;
+        let gate = Arc::new(Gate::default());
+        let at_gate = Arc::clone(&gate);
+        let api = crate::Chilpa::with_listing(Listing::with(Arc::new(move || {
+            at_gate.wait();
+            super::listing::tests::answered(vec![output("alsa:hw:1,0", "Card")])
+        })));
+        #[cfg(target_os = "linux")]
+        assert_eq!(api.device_or_first(), "system:default");
+        gate.open();
+        assert!(wait_until(|| api.outputs_listed(), Duration::from_secs(5)));
+        assert_eq!(api.device_or_first(), "alsa:hw:1,0");
+        let none = crate::Chilpa::with_listed(Vec::new(), Vec::new());
+        assert!(wait_until(|| none.outputs_listed(), Duration::from_secs(5)));
+        assert_eq!(none.device_or_first(), "", "a machine with nothing listed has nothing to name");
     }
 }

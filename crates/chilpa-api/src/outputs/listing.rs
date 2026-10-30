@@ -6,51 +6,116 @@
 //! window for 10 and 18 seconds at a time (sampled 2026-10-30, under
 //! `Chilpa::poll`). So one thread of its own lists, and the window reads
 //! what it last found: a short lock around a pointer swap, never around the
-//! asking. Until the stacks have answered once the lists are empty and
+//! asking. Until the stacks have answered once the snapshot says so, and
 //! `Chilpa::device_or_first` falls back to the output that is there without
 //! asking.
+//!
+//! What it costs, declared (ADR-018): one thread, idle unless something is
+//! wanted of it; one snapshot of at most `MOST_OUTPUTS_PER_STACK` outputs
+//! per stack, the previous one dropped as the next lands; one listing at
+//! start, one whenever asked, and one every `REFRESH_EVERY` only while
+//! somebody is looking at the list -- a settings page just built, a picker
+//! open. With nothing looking there is no periodic work at all.
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
-/// How long a listing stands before it is made again on its own. A sink a
-/// server added shows up within this; a card coming or going is noticed
-/// sooner, by whoever reads `generation` and asks.
+/// How long a listing stands before it is made again on its own, while
+/// somebody is watching. A sink a server added shows up within this; a
+/// card coming or going is noticed sooner, by whoever reads `generation`
+/// and asks.
 const REFRESH_EVERY: Duration = Duration::from_secs(5);
 
-/// More outputs than this are not kept. A machine has a handful, and a
-/// server with a runaway list of virtual sinks does not get to grow the
-/// window's memory with it.
-const MOST_OUTPUTS: usize = 256;
+/// How long a watcher's interest lasts past its last word. A page says so
+/// when it is built and not again while it stays open, so this is long
+/// enough for a card plugged in while somebody is still looking at it.
+pub(crate) const WATCH: Duration = Duration::from_secs(60);
 
 /// What one listing found.
-#[derive(Default)]
+///
+/// Availability travels with the content: a snapshot read once says both
+/// whether the stacks have answered and what they said. Read as two
+/// things, the window once took the empty list of the snapshot before the
+/// answer together with the "answered" of the one after it, and played to
+/// an output called nothing.
+#[derive(Default, PartialEq)]
 pub(crate) struct Found {
+    /// Whether the stacks have answered. False only in the snapshot that
+    /// stands before they have, which is the one empty list that means "not
+    /// yet" rather than "nothing".
+    pub(crate) listed: bool,
     pub(crate) stacks: Vec<chilpa_core::backends::Stack>,
     pub(crate) outputs: Vec<chilpa_core::Output>,
+    /// The stacks whose outputs were cut at the core's cap.
+    pub(crate) clipped: Vec<chilpa_core::backends::StackKind>,
 }
 
 /// What surveys the stacks: the real thing, or a test's stand-in for it.
-pub(crate) type Survey = Box<dyn Fn() -> Found + Send + 'static>;
+pub(crate) type Survey = Arc<dyn Fn() -> Found + Send + Sync + 'static>;
+
+/// What the thread is told, all of it under the one lock its condition
+/// waits on, so that nothing told while it is deciding to wait is lost.
+#[derive(Default)]
+struct Wanted {
+    /// The next listing is wanted now rather than on the timer.
+    asked: bool,
+    /// Somebody is looking at the list until then. The listing is made
+    /// again every `REFRESH_EVERY` while that holds, and only when asked
+    /// otherwise.
+    watched_until: Option<Instant>,
+    stop: bool,
+    /// Whether a thread is listing, or waiting to. Set before one is
+    /// started and cleared by the thread on its way out, whichever way it
+    /// leaves, so a second is never started beside a live one.
+    alive: bool,
+    /// Why there is no thread when there should be: none could be started,
+    /// or the one there was stopped unexpectedly. Cleared when one starts.
+    failed: Option<String>,
+    /// The thread's handle. Never joined; held so a test can.
+    worker: Option<JoinHandle<()>>,
+}
 
 struct Shared {
     /// Swapped whole under the lock and read by cloning the pointer, so
     /// the lock is held for nanoseconds on either side.
     found: Mutex<Arc<Found>>,
-    /// Whether the stacks have answered at least once.
-    listed: AtomicBool,
-    /// Set by whoever wants the next listing now rather than on the timer.
-    asked: Mutex<bool>,
+    /// Told on every publication, for whoever waits on the first.
+    answered: Condvar,
+    /// Grows by one each time the snapshot's content changes, and not when
+    /// a listing finds what the last one found: whoever draws the list
+    /// rebuilds on a new number and never on a tick.
+    revision: AtomicU64,
+    wanted: Mutex<Wanted>,
     wake: Condvar,
-    stop: AtomicBool,
+}
+
+/// A lock, poisoned or not: nothing here is left half-written by a panic.
+fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+impl Shared {
+    /// Hands the window the new snapshot. The old one is dropped outside
+    /// the lock: a list of a hundred strings is not freed under it.
+    fn publish(&self, found: Arc<Found>) {
+        let changed = *lock(&self.found).clone() != *found;
+        let old = std::mem::replace(&mut *lock(&self.found), found);
+        if changed {
+            self.revision.fetch_add(1, Ordering::AcqRel);
+        }
+        self.answered.notify_all();
+        drop(old);
+    }
 }
 
 /// The listing, and the thread that keeps it current.
 pub(crate) struct Listing {
     shared: Arc<Shared>,
-    worker: Option<JoinHandle<()>>,
+    survey: Survey,
+    /// How long a listing stands before it is made again while watched.
+    every: Duration,
     /// The last `generation` of the stacks seen, for telling the window
     /// the outputs changed without listing them.
     pub(crate) generation: String,
@@ -59,78 +124,175 @@ pub(crate) struct Listing {
 impl Listing {
     /// Starts listing the machine's stacks.
     pub(crate) fn new() -> Self {
-        Self::with(Box::new(|| {
-            let (stacks, outputs) = chilpa_core::inventory();
-            Found { stacks, outputs: outputs.into_iter().take(MOST_OUTPUTS).collect() }
+        Self::with(Arc::new(|| {
+            let found = chilpa_core::inventory();
+            Found { listed: true, stacks: found.stacks, outputs: found.outputs, clipped: found.clipped }
         }))
     }
 
-    /// Starts listing with `list`: at once, then every `REFRESH_EVERY` and
-    /// whenever asked, on a thread of its own.
+    /// Starts listing with `list`: at once, then whenever asked, and every
+    /// `REFRESH_EVERY` while watched, on a thread of its own.
     pub(crate) fn with(list: Survey) -> Self {
-        let shared = Arc::new(Shared {
-            found: Mutex::new(Arc::new(Found::default())),
-            listed: AtomicBool::new(false),
-            asked: Mutex::new(false),
-            wake: Condvar::new(),
-            stop: AtomicBool::new(false),
-        });
-        let on_thread = Arc::clone(&shared);
-        let worker = std::thread::Builder::new()
-            .name("chilpa-outputs".into())
-            .spawn(move || run(&on_thread, &list))
-            .ok();
-        Self { shared, worker, generation: String::new() }
+        Self::with_every(list, REFRESH_EVERY)
     }
 
-    /// What was last found. Empty until the stacks have answered once.
+    /// `with`, refreshing every `every` while watched.
+    pub(crate) fn with_every(list: Survey, every: Duration) -> Self {
+        let shared = Arc::new(Shared {
+            found: Mutex::new(Arc::new(Found::default())),
+            answered: Condvar::new(),
+            revision: AtomicU64::new(0),
+            wanted: Mutex::new(Wanted::default()),
+            wake: Condvar::new(),
+        });
+        let listing = Self { shared, survey: list, every, generation: String::new() };
+        listing.start(&mut lock(&listing.shared.wanted));
+        listing
+    }
+
+    /// Starts the thread if there is none. Under the lock, so that two
+    /// askers do not start two, and so that `alive` is set before the
+    /// thread can clear it.
+    fn start(&self, wanted: &mut Wanted) {
+        if wanted.alive || wanted.stop {
+            return;
+        }
+        wanted.alive = true;
+        wanted.failed = None;
+        let (shared, survey, every) = (Arc::clone(&self.shared), Arc::clone(&self.survey), self.every);
+        match std::thread::Builder::new().name("chilpa-outputs".into()).spawn(move || run(&shared, &survey, every)) {
+            Ok(handle) => {
+                wanted.worker = Some(handle);
+                // The thread lists at once, and that is the listing asked for.
+                wanted.asked = false;
+            }
+            Err(e) => {
+                wanted.alive = false;
+                wanted.failed = Some(format!("no thread could be started to list the outputs: {e}"));
+            }
+        }
+    }
+
+    /// What was last found. Says itself whether the stacks have answered.
     pub(crate) fn found(&self) -> Arc<Found> {
-        Arc::clone(&self.shared.found.lock().unwrap_or_else(|e| e.into_inner()))
+        Arc::clone(&lock(&self.shared.found))
+    }
+
+    /// What was last found, once the stacks have answered or `patience`
+    /// has run out, whichever is first. The one place the window waits on
+    /// the listing, and only where nothing can be named without it.
+    pub(crate) fn first_answer(&self, patience: Duration) -> Arc<Found> {
+        let deadline = Instant::now() + patience;
+        let mut found = lock(&self.shared.found);
+        while !found.listed {
+            let left = deadline.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                break;
+            }
+            found = self.shared.answered.wait_timeout(found, left).unwrap_or_else(|e| e.into_inner()).0;
+        }
+        Arc::clone(&found)
     }
 
     /// Whether the stacks have answered at least once.
     pub(crate) fn listed(&self) -> bool {
-        self.shared.listed.load(Ordering::Acquire)
+        self.found().listed
+    }
+
+    /// Grows when the snapshot's content changes. Zero until the stacks
+    /// have answered once.
+    pub(crate) fn revision(&self) -> u64 {
+        self.shared.revision.load(Ordering::Acquire)
+    }
+
+    /// Why the listing is not being kept, when it is not: no thread could
+    /// be started, or the one there was stopped unexpectedly. What stands
+    /// is then whatever was last found, or nothing. Asking starts over.
+    pub(crate) fn failure(&self) -> Option<String> {
+        lock(&self.shared.wanted).failed.clone()
     }
 
     /// Has the next listing made now. Asked while one is under way, the
-    /// next one follows it at once; asked twice, it is made once.
+    /// next one follows it at once; asked twice, it is made once. A thread
+    /// that is gone is started again here, once, and never beside a live one.
     pub(crate) fn ask(&self) {
-        *self.shared.asked.lock().unwrap_or_else(|e| e.into_inner()) = true;
+        let mut wanted = lock(&self.shared.wanted);
+        wanted.asked = true;
+        self.start(&mut wanted);
         self.shared.wake.notify_one();
+    }
+
+    /// Somebody is looking at the list for that long: it is made again
+    /// every `REFRESH_EVERY` until then. Said again, the longer stands.
+    pub(crate) fn watch_for(&self, how_long: Duration) {
+        let now = Instant::now();
+        let mut wanted = lock(&self.shared.wanted);
+        // Woken only when the watch begins: a thread already on its timer
+        // reads the longer lease when the timer ends, and a picker saying
+        // so four times a second does not wake it four times a second.
+        let begins = !wanted.watched_until.is_some_and(|standing| now < standing);
+        if wanted.watched_until.is_none_or(|standing| standing < now + how_long) {
+            wanted.watched_until = Some(now + how_long);
+        }
+        self.start(&mut wanted);
+        if begins {
+            self.shared.wake.notify_one();
+        }
+    }
+
+    #[cfg(test)]
+    fn take_worker(&self) -> Option<JoinHandle<()>> {
+        lock(&self.shared.wanted).worker.take()
     }
 }
 
 impl Drop for Listing {
     fn drop(&mut self) {
-        self.shared.stop.store(true, Ordering::Release);
-        self.shared.wake.notify_one();
+        let mut wanted = lock(&self.shared.wanted);
+        wanted.stop = true;
         // Not joined: a listing under way may be waiting on a server for
         // seconds, and the window's shutdown is not where to wait for it.
         // The thread holds its own share of the state and leaves on its own
         // the moment it is back.
-        self.worker.take();
+        wanted.worker.take();
+        drop(wanted);
+        self.shared.wake.notify_all();
     }
 }
 
-fn run(shared: &Shared, list: &Survey) {
-    loop {
-        if shared.stop.load(Ordering::Acquire) {
-            return;
+/// Clears `alive` when the thread leaves, however it leaves: a panic in a
+/// stack's listing is a thread gone, and said so, not a snapshot that
+/// stands forever looking fresh.
+struct Leaving<'a>(&'a Shared);
+
+impl Drop for Leaving<'_> {
+    fn drop(&mut self) {
+        let mut wanted = lock(&self.0.wanted);
+        wanted.alive = false;
+        if std::thread::panicking() {
+            wanted.failed = Some("the thread listing the outputs stopped unexpectedly".to_string());
         }
-        let found = Arc::new(list());
-        *shared.found.lock().unwrap_or_else(|e| e.into_inner()) = found;
-        shared.listed.store(true, Ordering::Release);
-        let mut asked = shared.asked.lock().unwrap_or_else(|e| e.into_inner());
-        let deadline = Instant::now() + REFRESH_EVERY;
-        while !*asked && !shared.stop.load(Ordering::Acquire) {
-            let left = deadline.saturating_duration_since(Instant::now());
-            if left.is_zero() {
-                break;
+    }
+}
+
+fn run(shared: &Shared, list: &Survey, every: Duration) {
+    let _leaving = Leaving(shared);
+    while !lock(&shared.wanted).stop {
+        shared.publish(Arc::new(list()));
+        let deadline = Instant::now() + every;
+        let mut wanted = lock(&shared.wanted);
+        while !wanted.stop && !wanted.asked {
+            if wanted.watched_until.is_some_and(|until| Instant::now() < until) {
+                let left = deadline.saturating_duration_since(Instant::now());
+                if left.is_zero() {
+                    break;
+                }
+                wanted = shared.wake.wait_timeout(wanted, left).unwrap_or_else(|e| e.into_inner()).0;
+            } else {
+                wanted = shared.wake.wait(wanted).unwrap_or_else(|e| e.into_inner());
             }
-            asked = shared.wake.wait_timeout(asked, left).unwrap_or_else(|e| e.into_inner()).0;
         }
-        *asked = false;
+        wanted.asked = false;
     }
 }
 
@@ -174,13 +336,17 @@ pub(crate) mod tests {
         chilpa_core::Output { id: id.into(), label: label.into(), detail: String::new(), bit_perfect: true }
     }
 
+    pub(crate) fn answered(outputs: Vec<chilpa_core::Output>) -> Found {
+        Found { listed: true, stacks: Vec::new(), outputs, clipped: Vec::new() }
+    }
+
     /// A survey that counts its calls and waits at the gate on each one.
     fn counted(gate: &Arc<Gate>, calls: &Arc<AtomicUsize>) -> Survey {
         let (gate, calls) = (Arc::clone(gate), Arc::clone(calls));
-        Box::new(move || {
+        Arc::new(move || {
             calls.fetch_add(1, Ordering::SeqCst);
             gate.wait();
-            Found { stacks: Vec::new(), outputs: vec![output("alsa:hw:1,0", "Card")] }
+            answered(vec![output("alsa:hw:1,0", "Card")])
         })
     }
 
@@ -199,44 +365,145 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn availability_and_outputs_travel_in_one_snapshot() {
+        // The window used to read the list and "answered" separately, and
+        // between the two reads the stacks answered: an empty list said
+        // "answered", and the first output was called nothing. Now a
+        // snapshot taken before the answer says it is not one, whole, and a
+        // snapshot taken after carries the outputs, whole: there is no
+        // pair of reads to disagree.
+        let (gate, calls) = (Arc::new(Gate::default()), Arc::new(AtomicUsize::new(0)));
+        let listing = Listing::with(counted(&gate, &calls));
+        assert!(wait_until(|| calls.load(Ordering::SeqCst) == 1, Duration::from_secs(5)));
+        let before = listing.found();
+        gate.open();
+        assert!(wait_until(|| listing.listed(), Duration::from_secs(5)));
+        let after = listing.found();
+        assert!(!before.listed && before.outputs.is_empty(), "the snapshot before the answer still says so");
+        assert!(after.listed && !after.outputs.is_empty(), "the snapshot after carries what was found");
+        assert_eq!(listing.revision(), 1, "the first answer is the first change");
+    }
+
+    #[test]
+    fn a_wait_for_the_first_answer_ends_when_it_lands_or_when_patience_does() {
+        let (gate, calls) = (Arc::new(Gate::default()), Arc::new(AtomicUsize::new(0)));
+        let listing = Listing::with(counted(&gate, &calls));
+        let asked = Instant::now();
+        let early = listing.first_answer(Duration::from_millis(100));
+        assert!(!early.listed, "patience ran out before the stacks answered");
+        assert!(asked.elapsed() >= Duration::from_millis(100) && asked.elapsed() < Duration::from_secs(2), "{:?}", asked.elapsed());
+        gate.open();
+        let late = listing.first_answer(Duration::from_secs(5));
+        assert!(late.listed && !late.outputs.is_empty());
+        let again = Instant::now();
+        assert!(listing.first_answer(Duration::from_secs(5)).listed);
+        assert!(again.elapsed() < Duration::from_millis(100), "an answer already there is not waited for");
+    }
+
+    #[test]
     fn asking_lists_again_without_waiting_for_the_timer() {
         let (gate, calls) = (Arc::new(Gate::default()), Arc::new(AtomicUsize::new(0)));
         gate.open();
         let listing = Listing::with(counted(&gate, &calls));
         assert!(wait_until(|| listing.listed(), Duration::from_secs(5)));
         assert_eq!(calls.load(Ordering::SeqCst), 1);
-        // The timer is seconds away; without the ask this would stay at one.
         listing.ask();
         assert!(wait_until(|| calls.load(Ordering::SeqCst) == 2, Duration::from_secs(2)), "asking did not list again");
         std::thread::sleep(Duration::from_millis(300));
-        assert_eq!(calls.load(Ordering::SeqCst), 2, "nothing lists on its own between the timer's ticks");
+        assert_eq!(calls.load(Ordering::SeqCst), 2, "it listed on its own while nobody was watching");
     }
 
     #[test]
-    fn dropping_the_listing_stops_its_thread() {
+    fn the_revision_moves_only_when_what_was_found_does() {
         let (gate, calls) = (Arc::new(Gate::default()), Arc::new(AtomicUsize::new(0)));
         gate.open();
-        let mut listing = Listing::with(counted(&gate, &calls));
+        let listing = Listing::with(counted(&gate, &calls));
         assert!(wait_until(|| listing.listed(), Duration::from_secs(5)));
-        let worker = listing.worker.take().expect("the thread started");
+        assert_eq!(listing.revision(), 1);
+        listing.ask();
+        assert!(wait_until(|| calls.load(Ordering::SeqCst) == 2, Duration::from_secs(2)));
+        assert_eq!(listing.revision(), 1, "the same list again is not a change for the window to redraw");
+    }
+
+    #[test]
+    fn watching_lists_again_on_the_timer_and_stops_when_the_watch_ends() {
+        let calls = Arc::new(AtomicUsize::new(0));
+        let counted = Arc::clone(&calls);
+        let listing = Listing::with_every(
+            Arc::new(move || {
+                counted.fetch_add(1, Ordering::SeqCst);
+                answered(Vec::new())
+            }),
+            Duration::from_millis(50),
+        );
+        assert!(wait_until(|| listing.listed(), Duration::from_secs(5)));
+        std::thread::sleep(Duration::from_millis(200));
+        assert_eq!(calls.load(Ordering::SeqCst), 1, "it listed on its own while nobody was watching");
+        listing.watch_for(Duration::from_millis(300));
+        assert!(wait_until(|| calls.load(Ordering::SeqCst) >= 4, Duration::from_secs(2)), "watching did not list again on the timer");
+        assert!(wait_until(|| !lock(&listing.shared.wanted).watched_until.is_some_and(|until| Instant::now() < until), Duration::from_secs(2)));
+        // A listing the timer started just before the watch ended lands.
+        std::thread::sleep(Duration::from_millis(100));
+        let settled = calls.load(Ordering::SeqCst);
+        std::thread::sleep(Duration::from_millis(200));
+        assert_eq!(calls.load(Ordering::SeqCst), settled, "it kept listing after the watch ended");
+    }
+
+    #[test]
+    fn dropping_the_listing_stops_its_thread_at_once() {
+        let (gate, calls) = (Arc::new(Gate::default()), Arc::new(AtomicUsize::new(0)));
+        gate.open();
+        let listing = Listing::with(counted(&gate, &calls));
+        assert!(wait_until(|| listing.listed(), Duration::from_secs(5)));
+        let worker = listing.take_worker().expect("the thread started");
+        // The thread is waiting with no timer: a wakeup lost here is a
+        // thread that never leaves, not one that leaves five seconds late.
+        let dropped = Instant::now();
         drop(listing);
         let (done, finished) = std::sync::mpsc::channel();
         std::thread::spawn(move || done.send(worker.join().is_ok()));
         assert_eq!(finished.recv_timeout(Duration::from_secs(5)), Ok(true), "the thread did not leave after the drop");
+        assert!(dropped.elapsed() < Duration::from_secs(1), "it left late: {:?}", dropped.elapsed());
         assert_eq!(calls.load(Ordering::SeqCst), 1, "it listed again on its way out");
     }
 
     #[test]
     fn a_listing_under_way_at_the_drop_finishes_and_the_thread_leaves() {
         let (gate, calls) = (Arc::new(Gate::default()), Arc::new(AtomicUsize::new(0)));
-        let mut listing = Listing::with(counted(&gate, &calls));
+        let listing = Listing::with(counted(&gate, &calls));
         assert!(wait_until(|| calls.load(Ordering::SeqCst) == 1, Duration::from_secs(5)));
-        let worker = listing.worker.take().expect("the thread started");
+        let worker = listing.take_worker().expect("the thread started");
         drop(listing);
         gate.open();
         let (done, finished) = std::sync::mpsc::channel();
         std::thread::spawn(move || done.send(worker.join().is_ok()));
         assert_eq!(finished.recv_timeout(Duration::from_secs(5)), Ok(true));
         assert_eq!(calls.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn a_thread_that_stops_unexpectedly_is_said_so_and_started_again_when_asked() {
+        // A stack's listing panics: the thread is gone, and without this the
+        // empty snapshot stood forever looking like a machine with nothing.
+        let calls = Arc::new(AtomicUsize::new(0));
+        let counted = Arc::clone(&calls);
+        let listing = Listing::with(Arc::new(move || {
+            if counted.fetch_add(1, Ordering::SeqCst) == 0 {
+                panic!("a stack could not be asked");
+            }
+            answered(vec![output("alsa:hw:1,0", "Card")])
+        }));
+        assert!(wait_until(|| listing.failure().is_some(), Duration::from_secs(5)), "the thread's end went unsaid");
+        assert!(!listing.listed());
+        assert!(!lock(&listing.shared.wanted).alive);
+        listing.ask();
+        assert!(wait_until(|| listing.listed(), Duration::from_secs(5)), "asking did not start over");
+        assert_eq!(listing.failure(), None, "the failure stayed after the thread was back");
+        assert_eq!(calls.load(Ordering::SeqCst), 2);
+        // Asked again with the thread alive, no second one is started.
+        listing.ask();
+        assert!(wait_until(|| calls.load(Ordering::SeqCst) == 3, Duration::from_secs(2)));
+        std::thread::sleep(Duration::from_millis(100));
+        assert_eq!(calls.load(Ordering::SeqCst), 3);
     }
 }

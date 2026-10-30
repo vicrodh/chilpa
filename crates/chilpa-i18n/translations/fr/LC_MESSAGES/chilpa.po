@@ -4162,6 +4162,9 @@ msgstr "DSD sur un bit"
 msgid "Only personal presets can be deleted."
 msgstr "Seuls les préréglages personnels peuvent être supprimés."
 
+msgid "Only the first {} outputs are listed."
+msgstr "Seules les {} premières sorties sont listées."
+
 msgid "Only tracks from this source"
 msgstr "Uniquement les pistes de cette source"
 

@@ -741,7 +741,9 @@ impl Default for Chilpa {
 }
 
 impl Chilpa {
-    pub fn new() -> Self {
+    pub fn new() -> Self { Self::with_listing(outputs::Listing::new()) }
+    /// `new`, reading the outputs from that listing instead of one of the machine's (tests).
+    pub(crate) fn with_listing(outputs_listing: outputs::Listing) -> Self {
         // The language is set before anything can speak: a message built
         // during startup has to come out in the same language as the rest.
         let saved = chilpa_core::settings::load();
@@ -821,7 +823,7 @@ impl Chilpa {
             home: home::Home::default(),
             sample_rate: 0,
             relaunching: None,
-            outputs_listing: outputs::Listing::new(),
+            outputs_listing,
             metadata: metadata::Editor::default(),
             servers: servers::Servers::default(),
             casting: casting::Casting::default(),

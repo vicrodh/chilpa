@@ -127,14 +127,21 @@ fn every_listed_output_names_the_stack_it_belongs_to() {
     // A bare "hw:1,0" does not say which stack it came from, and that is
     // exactly what somebody has to be told when a remembered output is
     // no longer there.
-    let api = Chilpa::new();
-    // The stacks are listed on their own thread; the window never waits
-    // for them, so this does, with a bound.
+    // Listed as the core lists them, without asking this machine's sound
+    // servers: what is checked is that the facade hands the identifiers
+    // on whole, and the core's own tests check what the stacks hand out.
+    let listed = vec![
+        chilpa_core::Output { id: "alsa:hw:1,0".into(), label: "Card".into(), detail: String::new(), bit_perfect: true },
+        chilpa_core::Output { id: "pipewire:alsa_output.usb".into(), label: "Card".into(), detail: String::new(), bit_perfect: false },
+        chilpa_core::Output { id: "system:default".into(), label: "System".into(), detail: String::new(), bit_perfect: false },
+    ];
+    let api = Chilpa::with_listed(Vec::new(), listed);
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
     while !api.outputs_listed() && std::time::Instant::now() < deadline {
         std::thread::sleep(std::time::Duration::from_millis(5));
     }
-    assert!(api.outputs_listed(), "the stacks did not answer within ten seconds");
+    assert!(api.outputs_listed(), "the stand-in did not answer within ten seconds");
+    assert_eq!(api.outputs().len(), 3);
     for output in api.outputs() {
         let (stack, bare) = output.id.split_once(':').unwrap_or_else(|| panic!("{} names no stack", output.id));
         // Asked of the core and not of the audio crate. The facade is

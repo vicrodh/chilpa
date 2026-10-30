@@ -4159,6 +4159,9 @@ msgstr "1ビットDSD"
 msgid "Only personal presets can be deleted."
 msgstr "削除できるのは個人用プリセットのみです。"
 
+msgid "Only the first {} outputs are listed."
+msgstr "最初の {} 件の出力のみ表示されます。"
+
 msgid "Only tracks from this source"
 msgstr "このソースのトラックのみ"
 

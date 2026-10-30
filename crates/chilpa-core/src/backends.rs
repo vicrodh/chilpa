@@ -99,14 +99,17 @@ pub(crate) fn outputs_from(stack: &dyn OutputBackend) -> Vec<BackendOutput> {
 }
 
 /// The output to start on while the stacks have not been listed yet and
-/// nothing is remembered.
+/// nothing is remembered. Named without asking any stack anything, on
+/// every platform: this is read on the window's thread, and the listing
+/// left that thread precisely so no stack is ever asked there.
 ///
-/// On Linux it is wherever the system is already sending sound, named
-/// without asking anything: the system stack is always there and always
-/// offers that one output, so it is also what listing everything puts
-/// first. Elsewhere the platform's one stack answers from the operating
-/// system and not over a socket, so it is asked for its first output, which
-/// is what the full list would have put first too.
+/// On Linux it is wherever the system is already sending sound: the system
+/// stack is always there and always offers that one output, so it is also
+/// what listing everything puts first. Elsewhere there is nothing to name:
+/// a Mac and Windows name their outputs by identifiers the operating system
+/// hands out, and finding the first one means asking it. `None` there, and
+/// whoever asked waits for the listing, briefly. That arm is not compiled
+/// on the Linux machine this is built on (ADR-010).
 pub fn standing_output() -> Option<String> {
     #[cfg(target_os = "linux")]
     {
@@ -114,12 +117,7 @@ pub fn standing_output() -> Option<String> {
     }
     #[cfg(not(target_os = "linux"))]
     {
-        all()
-            .iter()
-            .filter(|stack| stack.kind() != BackendKind::File && stack.info().present)
-            .flat_map(|stack| outputs_from(stack.as_ref()))
-            .next()
-            .map(|o| o.id)
+        None
     }
 }
 

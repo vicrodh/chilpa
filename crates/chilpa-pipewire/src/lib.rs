@@ -111,10 +111,7 @@ fn run(program: &str, args: &[&str]) -> Option<String> {
     // waiting for the program to end first waited until the patience ran
     // out and the stack said it was missing.
     let mut stdout = child.stdout.take()?;
-    let reader = std::thread::spawn(move || {
-        let mut text = String::new();
-        std::io::Read::read_to_string(&mut stdout, &mut text).ok().map(|_| text)
-    });
+    let reader = std::thread::spawn(move || read_capped(&mut stdout));
     let deadline = std::time::Instant::now() + PATIENCE;
     loop {
         match child.try_wait() {
@@ -132,6 +129,21 @@ fn run(program: &str, args: &[&str]) -> Option<String> {
         }
     }
     reader.join().ok()?
+}
+
+/// The most of a tool's answer that is kept. A server with a runaway list of
+/// sinks does not get to grow this process with it: `pactl list sinks` says
+/// about two kilobytes per sink, so this holds hundreds of them.
+const MOST_BYTES: u64 = 1 << 20;
+
+/// What the tool said, up to [`MOST_BYTES`] of it. The rest is read and
+/// dropped so the tool can finish instead of blocking on a full pipe, and
+/// a cut that falls inside a character keeps what was whole before it.
+fn read_capped(stdout: &mut impl std::io::Read) -> Option<String> {
+    let mut bytes = Vec::new();
+    std::io::Read::read_to_end(&mut std::io::Read::take(&mut *stdout, MOST_BYTES), &mut bytes).ok()?;
+    let _ = std::io::copy(stdout, &mut std::io::sink());
+    Some(String::from_utf8_lossy(&bytes).into_owned())
 }
 
 /// The rates PipeWire's graph may run at, out of its own settings.
@@ -462,6 +474,15 @@ mod tests {
         // patience ran out and the stack said it was missing.
         let said = run("sh", &["-c", "head -c 100000 /dev/zero | tr '\\0' x"]);
         assert_eq!(said.map(|s| s.len()), Some(100_000));
+    }
+
+    #[test]
+    fn an_answer_past_the_cap_is_cut_there_and_the_tool_still_finishes() {
+        // Two megabytes offered, one kept: the rest is drained so the tool
+        // ends on its own instead of blocking on the pipe until the
+        // patience runs out and the stack says it is missing.
+        let said = run("sh", &["-c", "head -c 2097152 /dev/zero | tr '\\0' x"]);
+        assert_eq!(said.map(|s| s.len()), Some(1 << 20));
     }
 
     /// What `pw-metadata -n settings` printed on the machine this was found on.

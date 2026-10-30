@@ -4162,6 +4162,9 @@ msgstr "Ein-Bit-DSD"
 msgid "Only personal presets can be deleted."
 msgstr "Nur eigene Presets können gelöscht werden."
 
+msgid "Only the first {} outputs are listed."
+msgstr "Es werden nur die ersten {} Ausgaben aufgeführt."
+
 msgid "Only tracks from this source"
 msgstr "Nur Titel aus dieser Quelle"
 
