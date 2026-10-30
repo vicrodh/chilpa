@@ -34,7 +34,32 @@ TestCase {
         commands.clear()
         check.document = ({canCheck:true,playing:false,busy:false,name:"Fixture DAC",selection:"fixture:target",inspection:{identity:{generation:"revision-1"}}})
     }
-    function cleanup() { AudioOutput.shown = false; wait(0) }
+    function cleanup() { AudioOutput.shown = false; AudioOutput.watching = false; wait(0) }
+    QtObject { id: audioRows; property int refreshes: 0; function refresh() { refreshes++ } }
+    Component { id: watchExample; AudioSettingsWatch { rows: audioRows; ownerWindow: owner } }
+    function test_the_audio_settings_watch_the_listing_only_while_seen() {
+        const watch = createTemporaryObject(watchExample, test, {current: false})
+        verify(watch)
+        compare(AudioOutput.watching, false)
+        const before = audioRows.refreshes
+        AudioOutput.outputsListed()
+        compare(audioRows.refreshes, before, "rows not shown were rebuilt")
+        watch.current = true
+        compare(AudioOutput.watching, true)
+        AudioOutput.outputsListed()
+        compare(audioRows.refreshes, before + 1)
+        AudioOutput.outputSelected()
+        compare(audioRows.refreshes, before + 2)
+        owner.visibility = Window.Minimized
+        compare(AudioOutput.watching, false, "a minimized window still watched")
+        owner.visibility = Window.Windowed
+        compare(AudioOutput.watching, true)
+        watch.current = false
+        compare(AudioOutput.watching, false, "a page left kept watching")
+        watch.current = true
+        watch.destroy(); wait(0)
+        compare(AudioOutput.watching, false, "a page destroyed while shown kept watching")
+    }
     function test_check_is_explicit_and_keeps_the_requested_tuple_and_mode() {
         compare(commands.count,0)
         findChild(check,"audioCheckFormat").picked("s24_in32")

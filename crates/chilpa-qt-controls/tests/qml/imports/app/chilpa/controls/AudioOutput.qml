@@ -8,6 +8,8 @@ QtObject {
     property var commands: []
     signal outputSelected()
     signal outputsListed()
+    property bool watching: false
+    function watchOutputs(shown) { watching = shown }
     property string pathAnswer: "{}"
     property int pathReads: 0
     function signalPath() { pathReads++; return pathAnswer }

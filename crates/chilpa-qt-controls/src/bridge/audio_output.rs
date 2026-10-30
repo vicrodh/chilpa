@@ -20,6 +20,9 @@ pub mod qobject {
         #[qinvokable] fn command(self: Pin<&mut AudioOutput>, action: &QString, argument: &QString);
         #[qinvokable] fn take_request(self: Pin<&mut AudioOutput>);
         #[qinvokable] fn signal_path(self: &AudioOutput) -> QString;
+        /// The audio settings are shown, or no longer: the listing keeps
+        /// itself current while they are.
+        #[qinvokable] fn watch_outputs(self: Pin<&mut AudioOutput>, shown: bool);
         #[qsignal] fn output_selected(self: Pin<&mut AudioOutput>);
         /// The stacks and outputs as listed changed: they first answered,
         /// or a card came or went. Whoever draws them reads them again.
@@ -50,6 +53,9 @@ pub struct AudioOutputRust { snapshot:QString,tab:QString,shown:bool,revision:u6
 impl qobject::AudioOutput {
     pub fn signal_path(&self) -> QString {
         QString::from(&chilpa_qt_kit::app::with(|api| api.audio_signal_path()))
+    }
+    pub fn watch_outputs(self: Pin<&mut Self>, shown: bool) {
+        chilpa_qt_kit::app::with(|api| api.watch_outputs(shown));
     }
     pub fn show(mut self: Pin<&mut Self>, tab: &QString) {
         self.as_mut().set_tab(tab.clone());

@@ -55,6 +55,8 @@ TitledFlow {
                 lastStatus:modelData,lastPhysicalStatus:"Unknown",saved:modelData !== "Failed"})
         }
     }
+    // Not seen: it only tells the listing while the audio settings are.
+    AudioSettingsWatch { rows: ({refresh: function() {}}) }
     PillButton { objectName: "audioGalleryPreview"; text: "Preview output details"; onClicked: panel.present() }
     AudioOutputPanel {
         id: panel
