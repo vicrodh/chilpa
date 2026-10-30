@@ -93,6 +93,13 @@ impl Backend {
         Ok(Self { kind: BackendKind::Derived, master_key })
     }
 
+    /// The keyring path with the entry given: the tests' keyring-backed box,
+    /// which never reaches the system store.
+    #[cfg(all(test, any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    pub(crate) fn with_entry(entry: &dyn MasterKeyEntry) -> Result<Self, SecretError> {
+        Ok(Self { kind: BackendKind::Keyring, master_key: master_key_from(entry)? })
+    }
+
     pub fn kind(&self) -> BackendKind {
         self.kind
     }
@@ -116,8 +123,6 @@ impl Backend {
 /// Reads, or creates and stores, the master key in the system store.
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 fn try_keyring(service_name: &str) -> Result<[u8; MASTER_KEY_LEN], SecretError> {
-    use base64::engine::general_purpose::STANDARD as B64;
-    use base64::Engine;
     use keyring::credential::CredentialPersistence;
     use keyring::Entry;
 
@@ -139,34 +144,76 @@ fn try_keyring(service_name: &str) -> Result<[u8; MASTER_KEY_LEN], SecretError> 
         ));
     }
 
+    // Building the entry touches nothing: it is attributes and a label. The
+    // store is first reached by `read`.
     let entry = Entry::new(service_name, KEYRING_ENTRY)
         .map_err(|e| SecretError::Keyring(format!("Entry::new: {e}")))?;
+    master_key_from(&SystemEntry(entry))
+}
 
-    match entry.get_password() {
-        Ok(existing) => {
-            let bytes = B64
-                .decode(existing.trim())
-                .map_err(|e| SecretError::Keyring(format!("base64: {e}")))?;
-            if bytes.len() != MASTER_KEY_LEN {
-                return Err(SecretError::Keyring(format!(
-                    "the entry is {} bytes and should be {MASTER_KEY_LEN}",
-                    bytes.len()
-                )));
-            }
-            let mut out = [0u8; MASTER_KEY_LEN];
-            out.copy_from_slice(&bytes);
-            Ok(out)
+/// The one entry the keyring path uses: the master key, kept as text.
+///
+/// A seam, so the tests put an in-memory store where the system one goes
+/// and never reach the real keyring.
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+pub(crate) trait MasterKeyEntry {
+    /// `Ok(None)` when there is no entry yet.
+    fn read(&self) -> Result<Option<String>, String>;
+    fn write(&self, value: &str) -> Result<(), String>;
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+struct SystemEntry(keyring::Entry);
+
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+impl MasterKeyEntry for SystemEntry {
+    fn read(&self) -> Result<Option<String>, String> {
+        match self.0.get_password() {
+            Ok(existing) => Ok(Some(existing)),
+            Err(keyring::Error::NoEntry) => Ok(None),
+            Err(e) => Err(format!("get_password: {e}")),
         }
-        Err(keyring::Error::NoEntry) => {
+    }
+
+    fn write(&self, value: &str) -> Result<(), String> {
+        self.0.set_password(value).map_err(|e| format!("set_password: {e}"))
+    }
+}
+
+/// The key the entry holds, or a new one minted and stored there.
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+pub(crate) fn master_key_from(
+    entry: &dyn MasterKeyEntry,
+) -> Result<[u8; MASTER_KEY_LEN], SecretError> {
+    use base64::engine::general_purpose::STANDARD as B64;
+    use base64::Engine;
+
+    match entry.read().map_err(SecretError::Keyring)? {
+        Some(existing) => decode_key(&existing),
+        None => {
             let mut key = [0u8; MASTER_KEY_LEN];
             rand::rng().fill(&mut key);
-            entry
-                .set_password(&B64.encode(key))
-                .map_err(|e| SecretError::Keyring(format!("set_password: {e}")))?;
+            entry.write(&B64.encode(key)).map_err(SecretError::Keyring)?;
             Ok(key)
         }
-        Err(e) => Err(SecretError::Keyring(format!("get_password: {e}"))),
     }
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+fn decode_key(text: &str) -> Result<[u8; MASTER_KEY_LEN], SecretError> {
+    use base64::engine::general_purpose::STANDARD as B64;
+    use base64::Engine;
+
+    let bytes = B64.decode(text.trim()).map_err(|e| SecretError::Keyring(format!("base64: {e}")))?;
+    if bytes.len() != MASTER_KEY_LEN {
+        return Err(SecretError::Keyring(format!(
+            "the entry is {} bytes and should be {MASTER_KEY_LEN}",
+            bytes.len()
+        )));
+    }
+    let mut out = [0u8; MASTER_KEY_LEN];
+    out.copy_from_slice(&bytes);
+    Ok(out)
 }
 
 fn derive_key(
@@ -189,4 +236,109 @@ fn derive_key(
     let mut out = [0u8; MASTER_KEY_LEN];
     hk.expand(HKDF_INFO, &mut out).map_err(|e| SecretError::Other(format!("HKDF: {e}")))?;
     Ok(out)
+}
+
+#[cfg(all(test, any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+mod tests {
+    use super::*;
+    use base64::engine::general_purpose::STANDARD as B64;
+    use base64::Engine;
+    use std::sync::{Arc, Condvar, Mutex};
+    use std::time::Duration;
+
+    /// How long a reader is held for the others. A resolution that runs
+    /// alone reads alone, waits this out and goes on.
+    const HOLD: Duration = Duration::from_millis(300);
+
+    /// A store that lets every reader in before any of them writes: a fresh
+    /// keyring with the startup threads at its door at the same time.
+    struct Contended {
+        value: Mutex<Option<String>>,
+        arrived: Mutex<usize>,
+        everyone: Condvar,
+        parties: usize,
+    }
+
+    impl Contended {
+        fn new(parties: usize) -> Self {
+            Self {
+                value: Mutex::new(None),
+                arrived: Mutex::new(0),
+                everyone: Condvar::new(),
+                parties,
+            }
+        }
+
+        fn stored(&self) -> Option<String> {
+            self.value.lock().unwrap().clone()
+        }
+    }
+
+    impl MasterKeyEntry for Contended {
+        fn read(&self) -> Result<Option<String>, String> {
+            let mut arrived = self.arrived.lock().unwrap();
+            *arrived += 1;
+            self.everyone.notify_all();
+            let (arrived, _) = self
+                .everyone
+                .wait_timeout_while(arrived, HOLD, |arrived| *arrived < self.parties)
+                .unwrap();
+            drop(arrived);
+            Ok(self.stored())
+        }
+
+        fn write(&self, value: &str) -> Result<(), String> {
+            *self.value.lock().unwrap() = Some(value.to_string());
+            Ok(())
+        }
+    }
+
+    /// A store where another process stores its own key right after ours:
+    /// what it holds afterwards is not what this process wrote.
+    struct Overtaken {
+        value: Mutex<Option<String>>,
+        other: String,
+    }
+
+    impl MasterKeyEntry for Overtaken {
+        fn read(&self) -> Result<Option<String>, String> {
+            Ok(self.value.lock().unwrap().clone())
+        }
+
+        fn write(&self, _value: &str) -> Result<(), String> {
+            *self.value.lock().unwrap() = Some(self.other.clone());
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn boxes_opened_at_once_on_a_fresh_keyring_share_the_key_it_keeps() {
+        // The first start of an install: no entry yet, and the plugins, the
+        // scrobble queue and the servers each open a box on a thread of
+        // their own. Whatever they seal must open on the next start, so all
+        // of them have to end up with the key the keyring kept.
+        let entry = Arc::new(Contended::new(4));
+        let threads: Vec<_> = (0..4)
+            .map(|_| {
+                let entry = Arc::clone(&entry);
+                std::thread::spawn(move || Backend::with_entry(&*entry).unwrap().master_key)
+            })
+            .collect();
+        let keys: Vec<[u8; MASTER_KEY_LEN]> = threads.into_iter().map(|t| t.join().unwrap()).collect();
+        let stored = decode_key(&entry.stored().expect("a key was stored")).unwrap();
+        for key in &keys {
+            assert_eq!(*key, stored, "every box seals with the key the keyring keeps");
+        }
+    }
+
+    #[test]
+    fn the_key_in_use_is_the_one_the_keyring_holds_after_the_write() {
+        let entry = Overtaken { value: Mutex::new(None), other: B64.encode([7u8; MASTER_KEY_LEN]) };
+        let backend = Backend::with_entry(&entry).unwrap();
+        assert_eq!(
+            backend.master_key,
+            [7u8; MASTER_KEY_LEN],
+            "a key the keyring did not keep seals nothing worth keeping"
+        );
+    }
 }
