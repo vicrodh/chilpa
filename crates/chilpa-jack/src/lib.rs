@@ -145,12 +145,49 @@ fn within<T: Send + 'static>(
     }
 }
 
+/// Whether a question to the graph is still out: asked, and its thread not
+/// done -- still connecting, still closing, or stuck closing for good.
+static ASKING: AtomicBool = AtomicBool::new(false);
+
+/// The question that is out. Dropped when its thread is done, whichever way
+/// it ends, and when no thread could be started for it.
+struct Asking;
+
+impl Drop for Asking {
+    fn drop(&mut self) {
+        ASKING.store(false, Ordering::Release);
+    }
+}
+
+/// Runs one question's `work` on a thread of its own, unless the last
+/// question's thread is still there: then it is not asked at all.
+///
+/// One at a time, because of what a stuck close does. After
+/// `jack_client_close` hangs, every later client waits forever on the
+/// `jack` crate's lock, so a question asked every few seconds -- the
+/// outputs are listed on a timer -- would add a thread each time, waiting
+/// behind the first one for as long as the process lives. Refused here, a
+/// question costs nothing, and the answer is the one a late graph gives.
+fn one_at_a_time<T: Send + 'static>(
+    work: impl FnOnce(Sender<T>) + Send + 'static,
+) -> Result<T, Silence> {
+    if ASKING.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire).is_err() {
+        return Err(Silence::Late);
+    }
+    let asking = Asking;
+    within(PATIENCE, move |answer| {
+        let _asking = asking;
+        work(answer);
+    })
+}
+
 /// Asks the graph one thing: connects, asks, answers, and only then closes,
-/// on a thread nobody is waiting on.
+/// on a thread nobody is waiting on. One question at a time, see
+/// [`one_at_a_time`].
 fn ask<T: Send + 'static>(
     question: impl FnOnce(&jack::Client) -> T + Send + 'static,
 ) -> Result<T, Silence> {
-    within(PATIENCE, move |answer| {
+    one_at_a_time(move |answer| {
         if let Some((client, _)) = hello() {
             let _ = answer.send(question(&client));
             drop(client);
@@ -605,6 +642,45 @@ mod tests {
     fn no_graph_is_said_at_once() {
         let got = within(Duration::from_secs(5), |answer: Sender<u32>| drop(answer));
         assert_eq!(got, Err(Silence::Absent));
+    }
+
+    /// Asks until the question goes out: another test in this process may
+    /// have one out for a millisecond, and this one always answers at once,
+    /// so a late answer here can only mean it was refused.
+    fn asked_when_free(value: u32, then: impl FnOnce() + Send + 'static) -> Result<u32, Silence> {
+        // Kept outside the question: a refused one drops its closure.
+        let then = Arc::new(Mutex::new(Some(then)));
+        let limit = Instant::now() + Duration::from_secs(5);
+        loop {
+            let then = Arc::clone(&then);
+            let got = one_at_a_time(move |answer: Sender<u32>| {
+                let _ = answer.send(value);
+                if let Some(after) = then.lock().unwrap().take() {
+                    after();
+                }
+            });
+            if got != Err(Silence::Late) || Instant::now() > limit {
+                return got;
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+
+    #[test]
+    fn a_second_question_is_refused_while_the_first_is_still_closing() {
+        // A question's thread stays until its client is closed, and a close
+        // under PipeWire's JACK library can hang for good. The outputs are
+        // listed on a timer, and each listing asked again: a thread per
+        // question, every one waiting behind the stuck close.
+        let (release, released) = mpsc::channel::<()>();
+        assert_eq!(asked_when_free(1, move || drop(released.recv())), Ok(1));
+        let asked = Instant::now();
+        let second = one_at_a_time(|answer: Sender<u32>| drop(answer.send(2)));
+        assert_eq!(second, Err(Silence::Late), "a second question went out beside one still closing");
+        assert!(asked.elapsed() < Duration::from_millis(500), "refusing it waited {:?}", asked.elapsed());
+        // Once the first is really done, and not before, the next goes out.
+        drop(release);
+        assert_eq!(asked_when_free(3, || {}), Ok(3));
     }
 
     #[test]
