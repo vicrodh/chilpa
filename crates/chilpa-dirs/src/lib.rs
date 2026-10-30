@@ -86,6 +86,50 @@ pub fn desktop_names() -> [Option<String>; 3] {
         .map(|name| std::env::var(name).ok().filter(|v| !v.is_empty()))
 }
 
+/// Whether the desktop asks for dark colours, as GNOME, GTK or KDE say.
+/// False when none of them says anything.
+///
+/// Ported from QBZ's `prefer_dark_tray` (`qbz-qt/src/tray_linux.rs`), with
+/// its early returns: the portal-less GNOME answer only ever says yes, while
+/// GTK and KDE answer on the first line that names their key, a "no"
+/// included, so `gtk-application-prefer-dark-theme=0` never reaches KDE's
+/// file. One shot; it does not follow a switch made while Chilpa runs.
+pub fn desktop_prefers_dark() -> bool {
+    #[cfg(target_os = "linux")]
+    let gnome = std::process::Command::new("gsettings")
+        .args(["get", "org.gnome.desktop.interface", "color-scheme"])
+        .output()
+        .ok()
+        .map(|out| String::from_utf8_lossy(&out.stdout).into_owned());
+    #[cfg(not(target_os = "linux"))]
+    let gnome: Option<String> = None;
+    prefers_dark_from(gnome.as_deref(), &config_base())
+}
+
+fn prefers_dark_from(gnome: Option<&str>, config: &std::path::Path) -> bool {
+    if gnome.is_some_and(|scheme| scheme.contains("prefer-dark")) {
+        return true;
+    }
+    for toolkit in ["gtk-4.0", "gtk-3.0"] {
+        if let Ok(settings) = std::fs::read_to_string(config.join(toolkit).join("settings.ini")) {
+            for line in settings.lines() {
+                if let Some(rest) = line.trim().strip_prefix("gtk-application-prefer-dark-theme") {
+                    let value = rest.trim_start_matches(['=', ' ']);
+                    return value.starts_with('1') || value.starts_with("true");
+                }
+            }
+        }
+    }
+    if let Ok(globals) = std::fs::read_to_string(config.join("kdeglobals")) {
+        for line in globals.lines() {
+            if let Some(rest) = line.trim().strip_prefix("ColorScheme") {
+                return rest.trim_start_matches(['=', ' ']).to_lowercase().contains("dark");
+            }
+        }
+    }
+    false
+}
+
 /// The original image outside its read-only runtime mount, on Linux only.
 pub fn appimage() -> Option<PathBuf> {
     if !cfg!(target_os = "linux") { return None; }
@@ -245,5 +289,55 @@ mod tests {
         for path in [config(), data(), cache()] {
             assert!(path.ends_with("chilpa"), "{path:?}");
         }
+    }
+
+    fn desktop_files(files: &[(&str, &str)]) -> PathBuf {
+        use std::sync::atomic::{AtomicU32, Ordering};
+        static COUNT: AtomicU32 = AtomicU32::new(0);
+        let root = std::env::temp_dir()
+            .join(format!("chilpa-dirs-dark-{}-{}", std::process::id(), COUNT.fetch_add(1, Ordering::Relaxed)));
+        for (name, text) in files {
+            let path = root.join(name);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, text).unwrap();
+        }
+        std::fs::create_dir_all(&root).unwrap();
+        root
+    }
+
+    #[test]
+    fn gnome_saying_dark_wins_over_files_that_say_light() {
+        let root = desktop_files(&[("gtk-3.0/settings.ini", "gtk-application-prefer-dark-theme=0\n")]);
+        assert!(prefers_dark_from(Some("'prefer-dark'\n"), &root));
+    }
+
+    #[test]
+    fn gnome_saying_default_falls_through_to_gtk() {
+        let root = desktop_files(&[("gtk-3.0/settings.ini", "[Settings]\ngtk-application-prefer-dark-theme=1\n")]);
+        assert!(prefers_dark_from(Some("'default'\n"), &root));
+    }
+
+    #[test]
+    fn a_gtk_no_is_final_and_never_asks_kde() {
+        let root = desktop_files(&[
+            ("gtk-4.0/settings.ini", "gtk-application-prefer-dark-theme=false\n"),
+            ("kdeglobals", "ColorScheme=BreezeDark\n"),
+        ]);
+        assert!(!prefers_dark_from(None, &root));
+    }
+
+    #[test]
+    fn without_a_gtk_key_kde_decides() {
+        let root = desktop_files(&[
+            ("gtk-3.0/settings.ini", "gtk-theme-name=adw-gtk3-dark\n"),
+            ("kdeglobals", "[General]\nColorScheme=BreezeDark\n"),
+        ]);
+        assert!(prefers_dark_from(None, &root));
+    }
+
+    #[test]
+    fn when_nothing_says_anything_it_is_light() {
+        let root = desktop_files(&[]);
+        assert!(!prefers_dark_from(None, &root));
     }
 }

@@ -58,38 +58,6 @@ fn pixmaps(variant: Variant) -> Vec<Icon> {
     sources.iter().filter_map(|png| pixmap(png)).collect()
 }
 
-/// Whether the desktop is in its dark colours, as GNOME, GTK or KDE say.
-pub fn prefers_dark() -> bool {
-    if let Ok(out) = std::process::Command::new("gsettings").args(["get", "org.gnome.desktop.interface", "color-scheme"]).output() {
-        if String::from_utf8_lossy(&out.stdout).contains("prefer-dark") {
-            return true;
-        }
-    }
-    let Some(config) = std::env::var_os("XDG_CONFIG_HOME").map(std::path::PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| std::path::PathBuf::from(home).join(".config")))
-    else {
-        return false;
-    };
-    for toolkit in ["gtk-4.0", "gtk-3.0"] {
-        if let Ok(settings) = std::fs::read_to_string(config.join(toolkit).join("settings.ini")) {
-            for line in settings.lines() {
-                if let Some(rest) = line.trim().strip_prefix("gtk-application-prefer-dark-theme") {
-                    let value = rest.trim_start_matches(['=', ' ']);
-                    return value.starts_with('1') || value.starts_with("true");
-                }
-            }
-        }
-    }
-    if let Ok(globals) = std::fs::read_to_string(config.join("kdeglobals")) {
-        for line in globals.lines() {
-            if let Some(rest) = line.trim().strip_prefix("ColorScheme") {
-                return rest.trim_start_matches(['=', ' ']).to_lowercase().contains("dark");
-            }
-        }
-    }
-    false
-}
-
 /// What the tooltip says: its title and the lines under it.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Said {

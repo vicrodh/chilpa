@@ -166,7 +166,7 @@ impl Chilpa {
                 return;
             }
             let Some(tell) = self.desktop.tell.clone() else { return };
-            let glyph = crate::tray::glyph_of(&self.tray_glyph(), chilpa_mpris::tray::prefers_dark());
+            let glyph = crate::tray::glyph_of(&self.tray_glyph(), chilpa_dirs::desktop_prefers_dark());
             let said = crate::tray::said(self.now.playing.then_some(&self.now), self.now.playing && !self.now.paused);
             let labels = tray_labels();
             self.desktop.tray = chilpa_mpris::tray::spawn(glyph, labels, chilpa_mpris::tray::Said { title: said.0.clone(), lines: said.1.clone() }, move |event| {
@@ -197,7 +197,7 @@ impl Chilpa {
     pub(crate) fn recolor_tray(&mut self) {
         #[cfg(target_os = "linux")]
         if let Some(tray) = &self.desktop.tray {
-            tray.recolor(crate::tray::glyph_of(&self.tray_glyph(), chilpa_mpris::tray::prefers_dark()));
+            tray.recolor(crate::tray::glyph_of(&self.tray_glyph(), chilpa_dirs::desktop_prefers_dark()));
         }
         #[cfg(target_os = "macos")]
         chilpa_appkit::tray::set_glyph(&self.tray_glyph());

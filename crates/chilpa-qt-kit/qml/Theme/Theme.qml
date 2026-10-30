@@ -192,10 +192,13 @@ QtObject {
     }
 
     // "system" follows the desktop: the scheme is handed to Rust, which
-    // decides the theme.
+    // decides the theme. A compositor with no platform theme reports no
+    // scheme, and then GNOME, GTK and KDE settings answer instead, as in QBZ.
     readonly property Binding followSystem: Binding {
         target: ThemeModel
         property: "systemDark"
-        value: Qt.styleHints.colorScheme === Qt.ColorScheme.Dark
+        value: Qt.styleHints.colorScheme === Qt.ColorScheme.Unknown
+            ? ThemeModel.desktopPrefersDark()
+            : Qt.styleHints.colorScheme === Qt.ColorScheme.Dark
     }
 }

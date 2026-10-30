@@ -51,6 +51,11 @@ pub mod qobject {
         #[qinvokable]
         fn fixed_font_family(self: &ThemeModel) -> QString;
 
+        /// What GNOME, GTK or KDE say about dark colours, for when Qt's
+        /// style hints report no scheme (a bare Wayland compositor).
+        #[qinvokable]
+        fn desktop_prefers_dark(self: &ThemeModel) -> bool;
+
         /// Replaces the accent with a `#RRGGBB` color and remembers it.
         /// Empty goes back to the theme's own.
         #[qinvokable]
@@ -119,6 +124,10 @@ fn qcolor(c: Rgba) -> QColor {
 }
 
 impl qobject::ThemeModel {
+    pub fn desktop_prefers_dark(&self) -> bool {
+        app::with(|api| api.desktop_prefers_dark())
+    }
+
     pub fn fixed_font_family(&self) -> QString {
         unsafe extern "C" { fn chilpa_fixed_font_family() -> *const std::ffi::c_char; }
         // SAFETY: Qt keeps this immutable, NUL-terminated family for the process.
