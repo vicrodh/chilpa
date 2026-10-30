@@ -77,3 +77,13 @@ fn a_preset_of_precise_filters_shows_its_level_on_each_graphic_band() {
     assert!(levels[5].abs() < 0.1, "and flat at 1 kHz: {}", levels[5]);
     assert!(graphic::levels(&Preset::default(), 48_000).iter().all(|level| *level == 0.0), "a flat preset reads flat");
 }
+
+#[test]
+fn the_poll_chooses_the_output_again_only_when_it_is_due() {
+    let now = Instant::now();
+    assert!(recheck_due(false, Some(now), now), "nothing applied yet");
+    assert!(recheck_due(true, None, now), "never chosen");
+    assert!(!recheck_due(true, Some(now), now + Duration::from_secs(1)), "a second later it stands");
+    assert!(!recheck_due(true, Some(now), now + OUTPUT_RECHECK - Duration::from_millis(1)));
+    assert!(recheck_due(true, Some(now), now + OUTPUT_RECHECK), "old enough to look again");
+}

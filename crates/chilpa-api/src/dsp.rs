@@ -32,10 +32,24 @@ pub(crate) struct Dsp {
     pending: Option<mpsc::Receiver<Loaded>>,
     next_scan: Option<Instant>,
     applied: Option<String>,
+    /// When the output was last chosen for `applied`.
+    synced_at: Option<Instant>,
     error: String,
     /// The preset's preamp, response curve and graphic band levels, by rate and preset.
     analysis: Option<(String, f64, Vec<f64>, Vec<f64>)>,
     pub(crate) passthrough: bool,
+}
+
+/// How long the output stays as chosen while the poll asks again. Choosing it
+/// lists every device, and on PipeWire that starts a process on the window's
+/// thread: asked on every poll, a slow sound server froze the window for
+/// seconds at a time.
+const OUTPUT_RECHECK: Duration = Duration::from_secs(5);
+
+/// Whether the poll should choose the output again: nothing applied yet, or
+/// the last choice is old enough that the device may have changed.
+fn recheck_due(applied: bool, synced_at: Option<Instant>, now: Instant) -> bool {
+    !applied || synced_at.is_none_or(|at| now.duration_since(at) >= OUTPUT_RECHECK)
 }
 
 impl Dsp {
@@ -79,6 +93,7 @@ impl Chilpa {
         selected.enabled.then(|| self.dsp.preset(&selected)).flatten()
     }
     pub(crate) fn sync_dsp(&mut self) {
+        self.dsp.synced_at = Some(Instant::now());
         let preset = if self.dsp.providers.is_empty() { None } else {
             let (output, _) = self.chosen_output(); self.dsp_configuration(&output)
         };
@@ -129,7 +144,9 @@ impl Chilpa {
                 }
             }
         }
-        self.sync_dsp();
+        if recheck_due(self.dsp.applied.is_some(), self.dsp.synced_at, Instant::now()) {
+            self.sync_dsp();
+        }
     }
 
     pub fn dsp_json(&mut self) -> String {
