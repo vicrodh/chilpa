@@ -24,7 +24,7 @@ use chilpa_audio::sink::{AudioSink, SinkError};
 use jack::PortSpec as _;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::{self, RecvTimeoutError, Sender};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
 /// The JACK graph.
@@ -57,6 +57,10 @@ enum Silence {
     Absent,
     /// There may be one, and it did not answer in time.
     Late,
+    /// It was not asked: the previous question's client was still closing
+    /// when the patience ran out. Not the same as absent, and never
+    /// reported as it.
+    Busy,
 }
 
 /// Threads of this crate still at work where nobody waits for them:
@@ -145,9 +149,11 @@ fn within<T: Send + 'static>(
     }
 }
 
-/// Whether a question to the graph is still out: asked, and its thread not
-/// done -- still connecting, still closing, or stuck closing for good.
-static ASKING: AtomicBool = AtomicBool::new(false);
+/// Whether a question to the graph is out: asked, and its thread not done
+/// -- still connecting, still closing, or stuck closing for good. The
+/// condition is told when it is done again.
+static ASKING: Mutex<bool> = Mutex::new(false);
+static ANSWERED: Condvar = Condvar::new();
 
 /// The question that is out. Dropped when its thread is done, whichever way
 /// it ends, and when no thread could be started for it.
@@ -155,27 +161,44 @@ struct Asking;
 
 impl Drop for Asking {
     fn drop(&mut self) {
-        ASKING.store(false, Ordering::Release);
+        *ASKING.lock().unwrap_or_else(|e| e.into_inner()) = false;
+        ANSWERED.notify_all();
     }
 }
 
-/// Runs one question's `work` on a thread of its own, unless the last
-/// question's thread is still there: then it is not asked at all.
+/// Runs one question's `work` on a thread of its own, once the previous
+/// question's thread is done: a question waits its turn, and the turn and
+/// the answer together cost `patience` at most.
 ///
 /// One at a time, because of what a stuck close does. After
 /// `jack_client_close` hangs, every later client waits forever on the
 /// `jack` crate's lock, so a question asked every few seconds -- the
 /// outputs are listed on a timer -- would add a thread each time, waiting
-/// behind the first one for as long as the process lives. Refused here, a
-/// question costs nothing, and the answer is the one a late graph gives.
+/// behind the first one for as long as the process lives. A turn that never
+/// comes costs the patience and no thread, and is said to be that
+/// (`Busy`), not a graph that is absent.
+///
+/// Waited for and not refused, because the player asks twice in a row --
+/// the stack's fidelity, then its capabilities -- and the first answer is
+/// sent before its client closes: refused, the second question found the
+/// close still under way a millisecond later and said no graph was running.
 fn one_at_a_time<T: Send + 'static>(
+    patience: Duration,
     work: impl FnOnce(Sender<T>) + Send + 'static,
 ) -> Result<T, Silence> {
-    if ASKING.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire).is_err() {
-        return Err(Silence::Late);
+    let deadline = std::time::Instant::now() + patience;
+    let mut out = ASKING.lock().unwrap_or_else(|e| e.into_inner());
+    while *out {
+        let left = deadline.saturating_duration_since(std::time::Instant::now());
+        if left.is_zero() {
+            return Err(Silence::Busy);
+        }
+        out = ANSWERED.wait_timeout(out, left).unwrap_or_else(|e| e.into_inner()).0;
     }
+    *out = true;
+    drop(out);
     let asking = Asking;
-    within(PATIENCE, move |answer| {
+    within(deadline.saturating_duration_since(std::time::Instant::now()), move |answer| {
         let _asking = asking;
         work(answer);
     })
@@ -187,7 +210,7 @@ fn one_at_a_time<T: Send + 'static>(
 fn ask<T: Send + 'static>(
     question: impl FnOnce(&jack::Client) -> T + Send + 'static,
 ) -> Result<T, Silence> {
-    one_at_a_time(move |answer| {
+    one_at_a_time(PATIENCE, move |answer| {
         if let Some((client, _)) = hello() {
             let _ = answer.send(question(&client));
             drop(client);
@@ -218,8 +241,15 @@ fn let_go<C: Send + 'static>(client: C) {
 /// and the window says converted. Neither of those is a decision this crate
 /// has any business making on its own.
 pub fn capabilities() -> Option<chilpa_audio::negotiate::DeviceCaps> {
-    let rate = ask(|client| client.sample_rate() as u32).ok()?;
-    Some(chilpa_audio::negotiate::DeviceCaps {
+    measured().ok()
+}
+
+/// The same, saying why there is no answer when there is none: a graph
+/// that is absent and one that is still closing an earlier client are
+/// different things, and only the first means nothing can play.
+fn measured() -> Result<chilpa_audio::negotiate::DeviceCaps, Silence> {
+    let rate = ask(|client| client.sample_rate() as u32)?;
+    Ok(chilpa_audio::negotiate::DeviceCaps {
         sample_rates: vec![rate],
         // The graph deals in f32 and the conversion into it costs nothing;
         // what costs is the rate, and that is above.
@@ -256,7 +286,10 @@ impl OutputBackend for Jack {
                     ),
                 )
             }
-            Err(Silence::Late) => {
+            // Busy is late by another road: the previous question's client
+            // was still closing when the patience ran out. Said as late,
+            // never as absent: there may well be a graph.
+            Err(Silence::Late | Silence::Busy) => {
                 return BackendInfo::missing(
                     BackendKind::Jack,
                     chilpa_i18n::t("the JACK graph did not answer in time"),
@@ -289,8 +322,11 @@ impl OutputBackend for Jack {
     /// The one server that can be measured without taking anything: the
     /// graph's rate is published and every client is told it.
     fn caps(&self, _id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, SinkError> {
-        capabilities().ok_or_else(|| {
-            SinkError::Backend(chilpa_i18n::t("no JACK graph is running"))
+        measured().map_err(|why| {
+            SinkError::Backend(match why {
+                Silence::Absent => chilpa_i18n::t("no JACK graph is running"),
+                Silence::Late | Silence::Busy => chilpa_i18n::t("the JACK graph did not answer in time"),
+            })
         })
     }
 
@@ -644,43 +680,37 @@ mod tests {
         assert_eq!(got, Err(Silence::Absent));
     }
 
-    /// Asks until the question goes out: another test in this process may
-    /// have one out for a millisecond, and this one always answers at once,
-    /// so a late answer here can only mean it was refused.
-    fn asked_when_free(value: u32, then: impl FnOnce() + Send + 'static) -> Result<u32, Silence> {
-        // Kept outside the question: a refused one drops its closure.
-        let then = Arc::new(Mutex::new(Some(then)));
-        let limit = Instant::now() + Duration::from_secs(5);
-        loop {
-            let then = Arc::clone(&then);
-            let got = one_at_a_time(move |answer: Sender<u32>| {
-                let _ = answer.send(value);
-                if let Some(after) = then.lock().unwrap().take() {
-                    after();
-                }
-            });
-            if got != Err(Silence::Late) || Instant::now() > limit {
-                return got;
-            }
-            std::thread::sleep(Duration::from_millis(5));
-        }
-    }
-
     #[test]
-    fn a_second_question_is_refused_while_the_first_is_still_closing() {
+    fn a_question_waits_its_turn_behind_one_still_closing_and_is_busy_past_its_patience() {
         // A question's thread stays until its client is closed, and a close
         // under PipeWire's JACK library can hang for good. The outputs are
         // listed on a timer, and each listing asked again: a thread per
-        // question, every one waiting behind the stuck close.
+        // question, every one waiting behind the stuck close. And the
+        // player asks twice in a row, fidelity then capabilities, so a
+        // close still under way a millisecond after the first answer must
+        // not turn the second into "no graph".
         let (release, released) = mpsc::channel::<()>();
-        assert_eq!(asked_when_free(1, move || drop(released.recv())), Ok(1));
+        let first = one_at_a_time(PATIENCE, move |answer: Sender<u32>| {
+            let _ = answer.send(1);
+            let _ = released.recv();
+        });
+        assert_eq!(first, Ok(1));
+        // Answered, and still closing. The next question waits its turn
+        // and, when its patience runs out first, is told busy: not absent.
         let asked = Instant::now();
-        let second = one_at_a_time(|answer: Sender<u32>| drop(answer.send(2)));
-        assert_eq!(second, Err(Silence::Late), "a second question went out beside one still closing");
-        assert!(asked.elapsed() < Duration::from_millis(500), "refusing it waited {:?}", asked.elapsed());
-        // Once the first is really done, and not before, the next goes out.
-        drop(release);
-        assert_eq!(asked_when_free(3, || {}), Ok(3));
+        let second = one_at_a_time(Duration::from_millis(200), |answer: Sender<u32>| { let _ = answer.send(2); });
+        assert_eq!(second, Err(Silence::Busy));
+        assert!(asked.elapsed() >= Duration::from_millis(200) && asked.elapsed() < Duration::from_secs(2), "{:?}", asked.elapsed());
+        // One with patience gets its turn once the first is really done.
+        let closing = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(100));
+            drop(release);
+        });
+        let asked = Instant::now();
+        let third = one_at_a_time(PATIENCE, |answer: Sender<u32>| { let _ = answer.send(3); });
+        assert_eq!(third, Ok(3), "the turn came and the question was not asked");
+        assert!(asked.elapsed() >= Duration::from_millis(80), "it did not wait for the close: {:?}", asked.elapsed());
+        closing.join().unwrap();
     }
 
     #[test]
