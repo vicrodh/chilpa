@@ -126,6 +126,8 @@ jobs:
           set -euo pipefail
           pkg="$RUNNER_TEMP/chilpa-overlay/media-sound/chilpa-bin"
           for ebuild in "$pkg"/*.ebuild; do bash -n "$ebuild"; done
+          # xmllint ships in libxml2-utils, not on the runner by default.
+          command -v xmllint >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils; }
           xmllint --noout "$pkg/metadata.xml"
           grep -q "^DIST chilpa-${VERSION}-linux-x86_64.tar.gz " "$pkg/Manifest"
           grep -q "^DIST chilpa-${VERSION}-linux-aarch64.tar.gz " "$pkg/Manifest"
