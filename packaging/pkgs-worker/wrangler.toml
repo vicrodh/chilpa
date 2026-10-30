@@ -1,0 +1,16 @@
+name = "chilpa-pkgs"
+main = "src/index.js"
+compatibility_date = "2025-10-01"
+account_id = "b3d0b0d1313d0be934b58ad4dbb617d4"
+workers_dev = false
+
+# A Workers Custom Domain: the deploy creates the DNS record itself.
+routes = [{ pattern = "pkgs.chilpa.app", custom_domain = true }]
+
+# The index files are generated at release time into ./public by
+# scripts/packaging/build-pkgs-repo.sh. The Worker runs first so it can
+# redirect package paths before the static lookup.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true

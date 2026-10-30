@@ -1,0 +1,187 @@
+name: release-aur
+
+# Updates the AUR package chilpa-bin when a stable release is published.
+# The recipe template is packaging/aur/chilpa-bin/PKGBUILD on main; this
+# workflow stamps the version and the checksums of the PUBLISHED tarballs.
+# The workflow file of a release event comes from the tagged commit, so a
+# release made before this file existed is packaged with workflow_dispatch.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Stable version to package (for example 0.1.0)'
+        required: true
+        type: string
+      publish:
+        description: 'Push to AUR (needs the AUR_SSH_PRIVATE_KEY secret)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: aur-chilpa-bin
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  update-aur:
+    runs-on: ubuntu-24.04
+    # Prereleases are filtered here and again in resolve-release.sh.
+    if: github.event_name == 'workflow_dispatch' || (!github.event.release.prerelease && !github.event.release.draft)
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      HAS_AUR_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY != '' }}
+    steps:
+      # Recipes come from main, not from the tag: an older tag has no packaging/ files.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve and verify the release
+        id: release
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          DISPATCH_VERSION: ${{ inputs.version }}
+        run: scripts/packaging/resolve-release.sh
+
+      - name: Decide whether to publish
+        id: mode
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_PUBLISH: ${{ inputs.publish }}
+        run: |
+          set -euo pipefail
+          # A release event publishes whenever the deploy key exists. A manual
+          # run publishes only when asked to.
+          publish=false
+          if [[ "$HAS_AUR_KEY" == true ]]; then
+            if [[ "$EVENT_NAME" == release || "$DISPATCH_PUBLISH" == true ]]; then publish=true; fi
+          else
+            echo "::notice::No AUR_SSH_PRIVATE_KEY secret: dry run, the stamped files go to an artifact."
+          fi
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+
+      - name: Download the published tarballs and verify them against SHA256SUMS
+        id: sums
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          scripts/packaging/fetch-assets.sh "$TAG" "$RUNNER_TEMP/assets" \
+            "chilpa-${VERSION}-linux-x86_64.tar.gz" "chilpa-${VERSION}-linux-aarch64.tar.gz"
+          {
+            echo "x86_64=$(sha256sum "$RUNNER_TEMP/assets/chilpa-${VERSION}-linux-x86_64.tar.gz" | cut -d' ' -f1)"
+            echo "aarch64=$(sha256sum "$RUNNER_TEMP/assets/chilpa-${VERSION}-linux-aarch64.tar.gz" | cut -d' ' -f1)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Configure AUR SSH
+        if: steps.mode.outputs.publish == 'true'
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          # Optional repository variable: the SHA256 fingerprint of the AUR
+          # ed25519 host key as published on aur.archlinux.org (SSH Host
+          # Keys). When set, the scanned key must match it.
+          AUR_HOST_KEY_SHA256: ${{ vars.AUR_HOST_KEY_SHA256 }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          install -m 600 /dev/null ~/.ssh/aur
+          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > ~/.ssh/aur
+          # Trust on first use of the scanned key, unless the fingerprint is pinned.
+          ssh-keyscan -t ed25519 aur.archlinux.org > ~/.ssh/known_hosts
+          scanned="$(ssh-keygen -lf ~/.ssh/known_hosts | awk '{print $2}')"
+          echo "AUR host key: ${scanned}"
+          if [[ -n "$AUR_HOST_KEY_SHA256" && "$scanned" != "$AUR_HOST_KEY_SHA256" ]]; then
+            echo "::error::AUR host key ${scanned} does not match the pinned fingerprint"
+            exit 1
+          fi
+          {
+            echo "Host aur.archlinux.org"
+            echo "  IdentityFile ~/.ssh/aur"
+            echo "  IdentitiesOnly yes"
+            echo "  User aur"
+          } >> ~/.ssh/config
+
+      - name: Clone the AUR repository
+        env:
+          PUBLISH: ${{ steps.mode.outputs.publish }}
+        run: |
+          set -euo pipefail
+          dest="$RUNNER_TEMP/aur-chilpa-bin"
+          if [[ "$PUBLISH" == true ]]; then
+            url=ssh://aur@aur.archlinux.org/chilpa-bin.git
+          else
+            url=https://aur.archlinux.org/chilpa-bin.git
+          fi
+          if ! git clone "$url" "$dest"; then
+            if [[ "$PUBLISH" == true ]]; then
+              echo "::error::Could not clone ${url}"
+              exit 1
+            fi
+            # The package does not exist on AUR until its first push.
+            mkdir -p "$dest"
+            git -C "$dest" init -b master
+            git -C "$dest" remote add origin "$url"
+          fi
+          git -C "$dest" checkout master 2>/dev/null || git -C "$dest" checkout -b master
+          git -C "$dest" config user.name vicrodh
+          git -C "$dest" config user.email 103399283+vicrodh@users.noreply.github.com
+
+      - name: Stamp the PKGBUILD
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          SHA_X86_64: ${{ steps.sums.outputs.x86_64 }}
+          SHA_AARCH64: ${{ steps.sums.outputs.aarch64 }}
+        run: |
+          set -euo pipefail
+          cp packaging/aur/chilpa-bin/PKGBUILD "$RUNNER_TEMP/aur-chilpa-bin/PKGBUILD"
+          scripts/packaging/stamp-aur.sh "$RUNNER_TEMP/aur-chilpa-bin/PKGBUILD" "$VERSION" "$SHA_X86_64" "$SHA_AARCH64"
+
+      - name: Generate .SRCINFO
+        run: |
+          set -euo pipefail
+          docker run --rm -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+            -v "$RUNNER_TEMP/aur-chilpa-bin:/pkg" archlinux:latest bash -euc '
+              useradd -m builder
+              chown -R builder:builder /pkg
+              runuser -u builder -- bash -c "cd /pkg && makepkg --printsrcinfo > .SRCINFO"
+              chown -R "${HOST_UID}:${HOST_GID}" /pkg
+            '
+          grep -q '^pkgbase = chilpa-bin$' "$RUNNER_TEMP/aur-chilpa-bin/.SRCINFO"
+
+      - name: Commit and push
+        if: steps.mode.outputs.publish == 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/aur-chilpa-bin"
+          git -C "$dir" add PKGBUILD .SRCINFO
+          if git -C "$dir" diff --cached --quiet; then
+            echo "chilpa-bin: no metadata changes"
+            exit 0
+          fi
+          git -C "$dir" commit -m "Update to ${VERSION}"
+          git -C "$dir" push origin master
+
+      - name: Upload the dry-run metadata
+        if: steps.mode.outputs.publish != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: aur-chilpa-bin-dry-run
+          retention-days: 7
+          include-hidden-files: true
+          path: |
+            ${{ runner.temp }}/aur-chilpa-bin/PKGBUILD
+            ${{ runner.temp }}/aur-chilpa-bin/.SRCINFO
+          if-no-files-found: error

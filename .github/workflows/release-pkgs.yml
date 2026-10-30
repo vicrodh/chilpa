@@ -1,0 +1,154 @@
+name: release-pkgs
+
+# Rebuilds and deploys the signed APT and DNF repositories at pkgs.chilpa.app
+# when a stable release is published. Only index files are hosted, in a
+# Cloudflare Worker (packaging/pkgs-worker); package URLs are answered with a
+# 302 to the GitHub release asset. The indices list the three newest stable
+# releases, rebuilt from the published packages on every run, so no previous
+# repository state has to be carried between runs.
+# A release made before this file existed is packaged with workflow_dispatch.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Stable version to publish (for example 0.1.0)'
+        required: true
+        type: string
+      publish:
+        description: 'Deploy to Cloudflare (needs the signing key and Cloudflare secrets)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: pkgs-repo
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    if: github.event_name == 'workflow_dispatch' || (!github.event.release.prerelease && !github.event.release.draft)
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RETAIN_RELEASES: '3'
+      HAS_GPG_KEY: ${{ secrets.PKGS_GPG_PRIVATE_KEY != '' }}
+      HAS_CLOUDFLARE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve and verify the release
+        id: release
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          DISPATCH_VERSION: ${{ inputs.version }}
+        run: scripts/packaging/resolve-release.sh
+
+      - name: Decide whether to deploy
+        id: mode
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_PUBLISH: ${{ inputs.publish }}
+        run: |
+          set -euo pipefail
+          deploy=false
+          if [[ "$HAS_GPG_KEY" == true && "$HAS_CLOUDFLARE" == true ]]; then
+            if [[ "$EVENT_NAME" == release || "$DISPATCH_PUBLISH" == true ]]; then deploy=true; fi
+          else
+            echo "::notice::Signing key or Cloudflare secrets missing: dry run, the site goes to an artifact signed with a throwaway key."
+          fi
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+
+      - name: Choose the releases to list
+        id: retained
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          tags="$( { echo "$TAG"; gh release list --exclude-drafts --exclude-pre-releases --limit 50 --json tagName --jq '.[].tagName'; } \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -uV -r | head -n "$RETAIN_RELEASES")"
+          echo "Listing: ${tags//$'\n'/ }"
+          if ! grep -qx "$TAG" <<<"$tags"; then
+            echo "::warning::${TAG} is older than the ${RETAIN_RELEASES} newest releases and will not be listed"
+          fi
+          {
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download the packages and verify them against SHA256SUMS
+        env:
+          TAGS: ${{ steps.retained.outputs.tags }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/packages"
+          for tag in $TAGS; do
+            v="${tag#v}"
+            scripts/packaging/fetch-assets.sh "$tag" "$RUNNER_TEMP/dl-$v" \
+              "chilpa_${v}_amd64.deb" "chilpa_${v}_arm64.deb" \
+              "chilpa-${v}-1.x86_64.rpm" "chilpa-${v}-1.aarch64.rpm"
+            mv "$RUNNER_TEMP/dl-$v"/chilpa* "$RUNNER_TEMP/packages/"
+          done
+          ls -l "$RUNNER_TEMP/packages"
+
+      - name: Install the repository tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends apt-utils createrepo-c gnupg
+
+      - name: Prepare the signing key
+        env:
+          PKGS_GPG_PRIVATE_KEY: ${{ secrets.PKGS_GPG_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          install -d -m 700 "$GNUPGHOME"
+          if [[ "$HAS_GPG_KEY" == true ]]; then
+            printf '%s\n' "$PKGS_GPG_PRIVATE_KEY" | gpg --batch --import
+          else
+            gpg --batch --passphrase '' --quick-generate-key 'Chilpa dry run <dry-run@invalid>' rsa2048 sign never
+          fi
+          echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
+
+      - name: Build the signed repositories
+        env:
+          GPG_PASSPHRASE: ${{ secrets.PKGS_GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          cp -a packaging/pkgs-worker "$RUNNER_TEMP/worker"
+          scripts/packaging/build-pkgs-repo.sh "$RUNNER_TEMP/packages" "$RUNNER_TEMP/worker/public"
+          # Cloudflare static assets are capped per file; packages must not be in there.
+          if find "$RUNNER_TEMP/worker/public" -size +20M | grep -q .; then
+            echo "::error::A file in the site exceeds 20 MB"; exit 1
+          fi
+          find "$RUNNER_TEMP/worker/public" -type f | sort
+
+      - name: Deploy the Worker
+        if: steps.mode.outputs.deploy == 'true'
+        working-directory: ${{ runner.temp }}/worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.20.0 deploy
+
+      - name: Upload the dry-run site
+        if: steps.mode.outputs.deploy != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pkgs-site-dry-run
+          retention-days: 7
+          path: ${{ runner.temp }}/worker/public
+          if-no-files-found: error

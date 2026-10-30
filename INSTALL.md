@@ -33,6 +33,52 @@ sudo dnf install ./chilpa-0.1.0-1.x86_64.rpm
 
 For ARM64 use `arm64.deb` or `aarch64.rpm`. The packages include the Qt runtime under `/opt/chilpa`. Update them with your package manager.
 
+## Package repositories
+
+A signed repository at `pkgs.chilpa.app` brings every new release through `apt upgrade` and `dnf upgrade`. It serves the indices only; the packages come from the GitHub release.
+
+Debian, Ubuntu and derivatives (amd64, arm64):
+
+```sh
+sudo curl -fsSL https://pkgs.chilpa.app/chilpa.gpg -o /usr/share/keyrings/chilpa.gpg
+echo 'deb [signed-by=/usr/share/keyrings/chilpa.gpg] https://pkgs.chilpa.app/apt stable main' \
+  | sudo tee /etc/apt/sources.list.d/chilpa.list
+sudo apt update && sudo apt install chilpa
+```
+
+Fedora, RHEL and derivatives (x86_64, aarch64):
+
+```sh
+sudo curl -fsSL https://pkgs.chilpa.app/chilpa.repo -o /etc/yum.repos.d/chilpa.repo
+sudo dnf install chilpa
+```
+
+openSUSE:
+
+```sh
+sudo zypper addrepo https://pkgs.chilpa.app/chilpa.repo
+sudo zypper --gpg-auto-import-keys refresh && sudo zypper install chilpa
+```
+
+The repository metadata is signed with a key made only for Chilpa packages. The armored public key is `https://pkgs.chilpa.app/chilpa.asc` (the binary form is `chilpa.gpg`). To read its fingerprint before trusting it:
+
+```sh
+curl -fsSL https://pkgs.chilpa.app/chilpa.asc | gpg --show-keys --fingerprint
+```
+
+`chilpa.repo` turns on `repo_gpgcheck`, so dnf and zypper reject metadata that does not match the key. The RPM files themselves are not signed individually, so it keeps `gpgcheck=0`; their SHA-256 sums are in the release's `SHA256SUMS`.
+
+## Arch Linux and Gentoo
+
+```sh
+# Arch (AUR)
+yay -S chilpa-bin
+
+# Gentoo
+eselect repository add chilpa git https://github.com/vicrodh/chilpa-overlay.git
+emerge --sync chilpa && emerge media-sound/chilpa-bin
+```
+
 ## AppImage
 
 Download `Chilpa-0.1.0-x86_64.AppImage` and `SHA256SUMS`, then:
