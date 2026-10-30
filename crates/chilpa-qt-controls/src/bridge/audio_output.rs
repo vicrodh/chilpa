@@ -21,11 +21,30 @@ pub mod qobject {
         #[qinvokable] fn take_request(self: Pin<&mut AudioOutput>);
         #[qinvokable] fn signal_path(self: &AudioOutput) -> QString;
         #[qsignal] fn output_selected(self: Pin<&mut AudioOutput>);
+        /// The stacks and outputs as listed changed: they first answered,
+        /// or a card came or went. Whoever draws them reads them again.
+        #[qsignal] fn outputs_listed(self: Pin<&mut AudioOutput>);
     }
+    impl cxx_qt::Threading for AudioOutput {}
+    impl cxx_qt::Initialize for AudioOutput {}
 }
-use cxx_qt::CxxQtType;
+use cxx_qt::{CxxQtType, Threading as _};
 use cxx_qt_lib::QString;
 use std::pin::Pin;
+static THREAD: std::sync::OnceLock<cxx_qt::CxxQtThread<qobject::AudioOutput>> = std::sync::OnceLock::new();
+static LISTED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// The facade's outputs revision, published from the transport heartbeat
+/// like the queue's activity. True when it moved, and the panel then tells
+/// whoever draws the lists; the window never polls the lists themselves.
+pub fn publish(revision: u64) -> bool {
+    if LISTED.swap(revision, std::sync::atomic::Ordering::Relaxed) == revision { return false; }
+    if let Some(thread) = THREAD.get() { let _ = thread.queue(|panel| panel.outputs_listed()); }
+    true
+}
+impl cxx_qt::Initialize for qobject::AudioOutput {
+    fn initialize(self: Pin<&mut Self>) { let _ = THREAD.set(self.qt_thread()); }
+}
 #[derive(Default)]
 pub struct AudioOutputRust { snapshot:QString,tab:QString,shown:bool,revision:u64 }
 impl qobject::AudioOutput {

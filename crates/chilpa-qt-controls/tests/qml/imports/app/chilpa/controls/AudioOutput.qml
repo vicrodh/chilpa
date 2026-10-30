@@ -7,6 +7,7 @@ QtObject {
     property int reads: 0
     property var commands: []
     signal outputSelected()
+    signal outputsListed()
     property string pathAnswer: "{}"
     property int pathReads: 0
     function signalPath() { pathReads++; return pathAnswer }

@@ -40,7 +40,7 @@ Item {
     }
     Connections { target: I18n; function onRevChanged() { rows.refresh() } }
     Connections { target: Prefs; function onRevChanged() { if (page.visible && page.section === "navigation") rows.refresh() } }
-    Connections { target: AudioOutput; function onOutputSelected() { if (page.visible && page.section === "audio") rows.refresh() } }
+    Connections { target: AudioOutput; function onOutputSelected() { if (page.visible && page.section === "audio") rows.refresh() } function onOutputsListed() { onOutputSelected() } }
     Connections { target: Updates; function onSnapshotChanged() { if (page.visible && page.section === "updates") rows.refresh() } }
     MetadataUi.DiscogsSettings { rows: rows; current: page.visible && !page.leaving && page.section === "integrations" }
     Text {

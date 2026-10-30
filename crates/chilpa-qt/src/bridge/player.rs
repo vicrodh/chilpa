@@ -266,6 +266,9 @@ impl qobject::Player {
         self.read_volume();
     }
 
+    /// The output and its route as the facade names them now.
+    fn read_route(mut self: Pin<&mut Self>) { let (device, route) = app::with(|api| api.output_route()); self.as_mut().set_device(QString::from(&device)); self.set_route(QString::from(&route)); }
+
     fn read_volume(mut self: Pin<&mut Self>) {
         let v = app::with(|api| api.player_volume());
         self.as_mut().set_volume(i32::from(v.percent));
@@ -362,12 +365,14 @@ impl qobject::Player {
     fn tick(mut self: Pin<&mut Self>) {
         let lyrics_shown = self.rust().lyrics_shown;
         let origin_seen = &self.rust().origin_seen;
-        let (now, origin, changed, casting, remote, queue_busy) = app::with(|api| {
+        let (now, origin, changed, casting, remote, queue_busy, outputs_rev) = app::with(|api| {
             let now = chilpa_api::playback_view::PlaybackView::read(api.poll(), lyrics_shown);
             let origin = (api.playing_origin() != origin_seen.as_ref())
                 .then(|| (api.playing_origin().cloned(), api.playing_origin_json()));
-            (now, origin, api.library_changed(), api.cast_destination().is_some(), api.source_revisions(), api.queue_busy())
+            (now, origin, api.library_changed(), api.cast_destination().is_some(), api.source_revisions(), api.queue_busy(), api.outputs_revision())
         });
+        // The stacks answered, or a card came or went: the route follows, and the panel tells the lists.
+        if chilpa_qt_controls::bridge::audio_output::publish(outputs_rev) { self.as_mut().read_route(); }
         if let Some((seen, json)) = origin {
             self.as_mut().rust_mut().origin_seen = seen;
             self.as_mut().set_origin(QString::from(&json));
@@ -407,9 +412,7 @@ impl qobject::Player {
             self.as_mut().set_quality_long(QString::from(&now.quality.long()));
             self.as_mut().set_quality_tier(now.quality.tier.rank());
             self.as_mut().set_output_format(QString::from(&now.format));
-            let (device, route) = app::with(|api| api.output_route());
-            self.as_mut().set_device(QString::from(&device));
-            self.as_mut().set_route(QString::from(&route));
+            self.as_mut().read_route();
             self.as_mut().set_path(QString::from(&now.path));
         }
         // Lyrics arrive after the track starts, so they have their own turn.

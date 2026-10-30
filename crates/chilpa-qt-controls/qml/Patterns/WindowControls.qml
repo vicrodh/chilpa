@@ -22,6 +22,7 @@ Item {
     Connections {
         target: controls.outputDetailsHost ? AudioOutput : null
         function onOutputSelected() { Player.readSwitches(); Cast.refresh() }
+        function onOutputsListed() { Cast.refresh() }
     }
     Loader {
         objectName: "audioOutputHost"
