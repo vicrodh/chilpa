@@ -127,7 +127,7 @@ pub(crate) fn overlaid(info: Option<FileInfo>, seen: &Seen, key: &str) -> Option
 /// The homes a scan has come across, each asked about once.
 #[derive(Default)]
 pub(crate) struct Homes {
-    seen: HashMap<PathBuf, Seen>,
+    seen: HashMap<Home, Seen>,
 }
 
 impl Homes {
@@ -136,7 +136,7 @@ impl Homes {
     }
 
     pub(crate) fn of(&mut self, lib: &Library, home: &Home, external_id: &str) -> &Seen {
-        self.seen.entry(home.path.clone()).or_insert_with(|| look(lib, home, external_id))
+        self.seen.entry(home.clone()).or_insert_with(|| look(lib, home, external_id))
     }
 
     /// Writes down what was seen, and forgets the sidecars that are gone.

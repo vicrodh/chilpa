@@ -1,18 +1,49 @@
 //! Where a sidecar lives, and how it gets there.
 
 use super::document::{Override, Sidecar, SidecarError, VERSION};
+use chilpa_models::RemoteEntry;
 use std::path::{Path, PathBuf};
 
 const SIDECAR: &str = ".chilpa.json";
 const QBZ: &str = ".qbz.json";
 
+/// What an overlay in the library goes under: a record on its server, or a
+/// track that has no record there.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum Scope {
+    Album,
+    Track,
+}
+
+impl Scope {
+    /// As the library writes it down.
+    pub fn name(self) -> &'static str {
+        match self {
+            Scope::Album => "album",
+            Scope::Track => "track",
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        match name {
+            "album" => Some(Scope::Album),
+            "track" => Some(Scope::Track),
+            _ => None,
+        }
+    }
+}
+
 /// Where a track's sidecar lives.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub struct Home {
-    /// The folder, or the file that holds the track.
-    pub path: PathBuf,
-    /// True when `path` is a file that holds tracks.
-    pub container: bool,
+pub enum Home {
+    /// A folder of files, each a track of its own.
+    Folder(PathBuf),
+    /// A file that holds tracks.
+    Container(PathBuf),
+    /// A record, or a loose track, on a server of mine. What is laid over
+    /// it lives in the library under its id on the server: no file of this
+    /// machine stands for it, and no path is ever made from its entry.
+    Hosted { source_id: i64, scope: Scope, key: String },
 }
 
 /// A path with something added to its last name: `a.iso` and `.chilpa.json`
@@ -23,78 +54,116 @@ fn suffixed(path: &Path, suffix: &str) -> PathBuf {
     PathBuf::from(name)
 }
 
+/// What a track goes by on its server: the id inside its entry, or the
+/// entry itself when it is not one.
+fn server_id(external_id: &str) -> String {
+    RemoteEntry::parse(external_id).map(|entry| entry.external_id).unwrap_or_else(|| external_id.to_string())
+}
+
 impl Home {
     /// The home of a track: the file that holds it, when one does, and the
     /// folder it sits in when it is a file of its own.
     pub fn of(external_id: &str, container: Option<&str>) -> Self {
         match container {
-            Some(file) => Self { path: PathBuf::from(file), container: true },
-            None => Self {
-                path: Path::new(external_id).parent().map(Path::to_path_buf).unwrap_or_default(),
-                container: false,
-            },
+            Some(file) => Home::Container(PathBuf::from(file)),
+            None => Home::Folder(Path::new(external_id).parent().map(Path::to_path_buf).unwrap_or_default()),
         }
     }
 
+    /// The home of a track on a server: its record's, by the record's id on
+    /// the server, or its own when it has no record there.
+    pub fn hosted(source_id: i64, album_key: Option<&str>, external_id: &str) -> Self {
+        match album_key {
+            Some(key) => Home::Hosted { source_id, scope: Scope::Album, key: key.to_string() },
+            None => Home::Hosted { source_id, scope: Scope::Track, key: server_id(external_id) },
+        }
+    }
+
+    pub fn is_hosted(&self) -> bool {
+        matches!(self, Home::Hosted { .. })
+    }
+
+    /// The folder, or the file that holds the track. Empty for a home on a
+    /// server, which has neither.
+    pub fn path(&self) -> &Path {
+        match self {
+            Home::Folder(path) | Home::Container(path) => path,
+            Home::Hosted { .. } => Path::new(""),
+        }
+    }
+
+    /// The sidecar's file. Empty for a home on a server: its document is a
+    /// row of the library.
     pub fn sidecar(&self) -> PathBuf {
-        if self.container {
-            suffixed(&self.path, SIDECAR)
-        } else {
-            self.path.join(SIDECAR)
+        match self {
+            Home::Folder(path) => path.join(SIDECAR),
+            Home::Container(path) => suffixed(path, SIDECAR),
+            Home::Hosted { .. } => PathBuf::new(),
         }
     }
 
-    /// Where its cover goes. `extension` is "jpg" or "png".
+    /// Where its cover goes. `extension` is "jpg" or "png". Empty for a
+    /// home on a server: the library keeps its cover (`store::overlay`).
     pub fn cover(&self, extension: &str) -> PathBuf {
         let name = format!(".chilpa.cover.{extension}");
-        if self.container {
-            suffixed(&self.path, &name)
-        } else {
-            self.path.join(name)
+        match self {
+            Home::Folder(path) => path.join(name),
+            Home::Container(path) => suffixed(path, &name),
+            Home::Hosted { .. } => PathBuf::new(),
         }
     }
 
-    /// A file that sits beside the sidecar, by its name.
+    /// A file that sits beside the sidecar, by its name. Empty for a home
+    /// on a server, which has nothing beside it on this machine.
     pub fn beside(&self, name: &str) -> PathBuf {
-        if self.container {
-            self.path.with_file_name(name)
-        } else {
-            self.path.join(name)
+        match self {
+            Home::Folder(path) => path.join(name),
+            Home::Container(path) => path.with_file_name(name),
+            Home::Hosted { .. } => PathBuf::new(),
         }
     }
 
-    /// What a track goes by in this home: its file's name, or what follows
-    /// the holding file in its path.
+    /// What a track goes by in this home: its file's name, what follows the
+    /// holding file in its path, or its id on its server.
     pub fn key(&self, external_id: &str) -> String {
-        if self.container {
-            let held_by = self.path.to_string_lossy();
-            return match external_id.rsplit_once(held_by.as_ref()) {
-                Some((_, after)) => after.to_string(),
-                None => external_id.to_string(),
-            };
+        match self {
+            Home::Folder(_) => Path::new(external_id).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
+            Home::Container(path) => {
+                let held_by = path.to_string_lossy();
+                match external_id.rsplit_once(held_by.as_ref()) {
+                    Some((_, after)) => after.to_string(),
+                    None => external_id.to_string(),
+                }
+            }
+            Home::Hosted { .. } => server_id(external_id),
         }
-        Path::new(external_id).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default()
     }
 
     /// The `.qbz.json` files that stand in for a missing sidecar, in the
     /// order they are tried. QBZ kept one per record and looked for it in
     /// the record's folder and in the file's.
     pub fn qbz_candidates(&self, external_id: &str) -> Vec<PathBuf> {
-        if self.container {
-            return vec![suffixed(&self.path, QBZ)];
+        match self {
+            Home::Container(path) => vec![suffixed(path, QBZ)],
+            Home::Folder(path) => {
+                let mut out = vec![path.join(QBZ)];
+                let above = PathBuf::from(crate::album_folder::album_folder(Path::new(external_id)));
+                if !above.as_os_str().is_empty() && above != *path {
+                    out.push(above.join(QBZ));
+                }
+                out
+            }
+            Home::Hosted { .. } => Vec::new(),
         }
-        let mut out = vec![self.path.join(QBZ)];
-        let above = PathBuf::from(crate::album_folder::album_folder(Path::new(external_id)));
-        if !above.as_os_str().is_empty() && above != self.path {
-            out.push(above.join(QBZ));
-        }
-        out
     }
 }
 
 /// The file whose word is in force for a home: its own sidecar, or the
-/// first of QBZ's that is there.
+/// first of QBZ's that is there. Nothing on disk for a home on a server.
 pub fn in_force(home: &Home, external_id: &str) -> Option<PathBuf> {
+    if home.is_hosted() {
+        return None;
+    }
     let own = home.sidecar();
     if own.is_file() {
         return Some(own);
@@ -196,6 +265,10 @@ pub fn stage(home: &Home, mut sidecar: Sidecar, cover: Option<(&[u8], &str)>, no
     if sidecar.version > VERSION {
         return Err(SidecarError::Newer(sidecar.version));
     }
+    if home.is_hosted() {
+        // Its document is a row of the library, written by whoever holds it.
+        return Err(SidecarError::Io(std::io::Error::new(std::io::ErrorKind::Unsupported, "a home on a server has no file to write")));
+    }
     let over_qbz = sidecar.imported;
     sidecar.version = VERSION;
     sidecar.updated_at = now;
@@ -256,7 +329,7 @@ mod tests {
     #[test]
     fn a_file_s_home_is_its_folder_and_a_held_track_s_is_what_holds_it() {
         let home = Home::of("/music/Record/01 - One.flac", None);
-        assert_eq!(home.path, Path::new("/music/Record"));
+        assert_eq!(home.path(), Path::new("/music/Record"));
         assert_eq!(home.sidecar(), Path::new("/music/Record/.chilpa.json"));
         assert_eq!(home.cover("jpg"), Path::new("/music/Record/.chilpa.cover.jpg"));
         assert_eq!(home.key("/music/Record/01 - One.flac"), "01 - One.flac");
@@ -266,6 +339,30 @@ mod tests {
         assert_eq!(held.cover("png"), Path::new("/music/Record/Disc #1.iso.chilpa.cover.png"));
         assert_eq!(held.key("sacd:/music/Record/Disc #1.iso#3"), "#3");
         assert_eq!(held.beside("Disc #1.iso.chilpa.cover.png"), Path::new("/music/Record/Disc #1.iso.chilpa.cover.png"));
+    }
+
+    #[test]
+    fn a_track_on_a_server_has_no_file_and_goes_by_its_id_there() {
+        let entry = "remote:example-server/aaaa/song%2F7";
+        let record = Home::hosted(3, Some("al-9"), entry);
+        assert_eq!(record, Home::Hosted { source_id: 3, scope: Scope::Album, key: "al-9".into() });
+        assert_eq!(record.key(entry), "song/7", "the id as the server wrote it");
+        assert_eq!(record.path(), Path::new(""));
+        assert_eq!(record.sidecar(), PathBuf::new(), "no file stands for it");
+        assert!(record.qbz_candidates(entry).is_empty());
+        assert_eq!(in_force(&record, entry), None);
+        assert!(load(&record, entry).unwrap().is_none());
+        assert!(stage(&record, titled("A"), None, 1).is_err(), "nothing of it is written to disk here");
+
+        assert_eq!(record.cover("jpg"), PathBuf::new(), "the library keeps its cover");
+        assert_eq!(record.beside("al-9.jpg"), PathBuf::new());
+
+        let loose = Home::hosted(3, None, entry);
+        assert_eq!(loose, Home::Hosted { source_id: 3, scope: Scope::Track, key: "song/7".into() });
+        for scope in [Scope::Album, Scope::Track] {
+            assert_eq!(Scope::from_name(scope.name()), Some(scope), "a scope reads back as it is written");
+        }
+        assert_eq!(Scope::from_name("folder"), None);
     }
 
     #[test]

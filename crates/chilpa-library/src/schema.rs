@@ -27,7 +27,7 @@ use later::*;
 use steps::*;
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 47;
+pub const VERSION: i64 = 48;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -35,7 +35,7 @@ pub const VERSION: i64 = 47;
 /// Each step runs once and is never edited after shipping: a database that
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
-const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30, MIGRATION_V31, MIGRATION_V32, MIGRATION_V33, MIGRATION_V34, MIGRATION_V35, MIGRATION_V36, MIGRATION_V37, MIGRATION_V38, MIGRATION_V39, MIGRATION_V40, MIGRATION_V41, MIGRATION_V42, revisions::MIGRATION_V43, metadata::MIGRATION_V44, device_sync::MIGRATION_V45, revisions::MIGRATION_V46, MIGRATION_V47];
+const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30, MIGRATION_V31, MIGRATION_V32, MIGRATION_V33, MIGRATION_V34, MIGRATION_V35, MIGRATION_V36, MIGRATION_V37, MIGRATION_V38, MIGRATION_V39, MIGRATION_V40, MIGRATION_V41, MIGRATION_V42, revisions::MIGRATION_V43, metadata::MIGRATION_V44, device_sync::MIGRATION_V45, revisions::MIGRATION_V46, MIGRATION_V47, MIGRATION_V48];
 
 /// Where the copy of a library about to be upgraded goes.
 ///
@@ -429,6 +429,37 @@ mod tests {
         assert_eq!(db.query_row("SELECT count(*) FROM tracks WHERE album_id = 1", [], |r| r.get::<_, i64>(0)).unwrap(), 2, "both tracks are still there");
         migrate(&db).unwrap();
         assert_eq!(indexes(&db), 1, "a second run leaves one index");
+    }
+
+    #[test]
+    fn a_library_at_forty_seven_gains_the_overlay_table_after_a_copy_is_kept() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("library.db");
+        let db = Connection::open(&path).unwrap();
+        apply_pragmas(&db).unwrap();
+        stop_at(&db, 47);
+        db.execute_batch("INSERT INTO sources(id, provider, instance, kind) VALUES (1, 'example-server', 'aaaa', 'server');
+            INSERT INTO albums(id, title, album_artist, version_key) VALUES (1, 'Record', 'Artist', '1:al-1');
+            INSERT INTO tracks(id, source_id, external_id, title, album_id, added_at)
+            VALUES (1, 1, 'remote:example-server/aaaa/1', 'One', 1, 0);").unwrap();
+        let tables = |db: &Connection| db.query_row("SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'source_overlay'", [], |r| r.get::<_, i64>(0)).unwrap();
+        assert_eq!(tables(&db), 0, "version 47 did not have it");
+        drop(db);
+
+        let lib = crate::Library::open(&path).unwrap();
+        let backup = backup_path(&path);
+        assert!(backup.is_file(), "a copy is kept before the shape of the file changes");
+        let copied = Connection::open(&backup).unwrap();
+        assert_eq!(copied.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).unwrap(), 47, "as it was");
+        let db = lib.connection();
+        assert_eq!(db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).unwrap(), VERSION);
+        assert_eq!(tables(db), 1);
+        assert_eq!(db.query_row("SELECT title FROM tracks WHERE id = 1", [], |r| r.get::<_, String>(0)).unwrap(), "One", "and the track is still there");
+        db.execute("INSERT INTO source_overlay (source_id, scope, key, document, updated_at) VALUES (1, 'album', 'al-1', '{}', 0)", []).unwrap();
+        assert!(db.execute("INSERT INTO source_overlay (source_id, scope, key, document, updated_at) VALUES (1, 'album', 'al-1', '{}', 1)", []).is_err(), "one overlay per record");
+        assert!(db.execute("INSERT INTO source_overlay (source_id, scope, key, document, updated_at) VALUES (1, 'folder', 'x', '{}', 1)", []).is_err(), "a scope is a record or a track");
+        db.execute_batch("DELETE FROM tracks; DELETE FROM sources WHERE id = 1;").unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(db.query_row("SELECT count(*) FROM source_overlay", [], |r| r.get::<_, i64>(0)).unwrap(), 0, "it goes with its source");
     }
 
     #[test]

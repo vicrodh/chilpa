@@ -286,6 +286,7 @@ pub(crate) mod testing {
             id,
             external_id: format!("/m/A record/{number:02}.flac"),
             container: None,
+            hosted: None,
             title: format!("Track {number}"),
             artist: "Someone".into(),
             track_number: Some(number),

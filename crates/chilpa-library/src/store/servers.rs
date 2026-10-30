@@ -241,22 +241,25 @@ impl Library {
     }
 
     /// Writes tracks as the server describes them, with their records and
-    /// genres, in one transaction: a page lands whole or not at all.
+    /// genres, in one transaction: a page lands whole or not at all. What
+    /// was laid over any of them here is laid over again on top
+    /// (`overlay`): the server's word fills what nobody changed.
     pub fn save_server_tracks(&self, source_id: i64, generation: i64, tracks: &[ServerTrack]) -> rusqlite::Result<()> {
         let tx = self.own_transaction()?;
         let now = now_unix();
+        let mut written: Vec<(i64, Option<i64>, String, String)> = Vec::with_capacity(tracks.len());
         for track in tracks {
             if track.artists.len() > 1 {
                 self.state_credit(&track.artist, &track.artists)?;
             }
+            let key = if track.album_key.is_empty() {
+                format!("{}\u{1f}{}", track.album, track.album_artist)
+            } else {
+                track.album_key.clone()
+            };
             let album_id = if track.album.trim().is_empty() {
                 None
             } else {
-                let key = if track.album_key.is_empty() {
-                    format!("{}\u{1f}{}", track.album, track.album_artist)
-                } else {
-                    track.album_key.clone()
-                };
                 let artist = if track.album_artist.trim().is_empty() { &track.artist } else { &track.album_artist };
                 Some(self.source_edition(source_id, &key, &track.album, artist, track.year)?)
             };
@@ -308,6 +311,7 @@ impl Library {
                 |r| r.get(0),
             )?;
             self.set_track_genres(track_id, &track.genres)?;
+            written.push((track_id, album_id, key, track.external_id.clone()));
             if let (Some(album), Some(cover)) = (album_id, track.cover.as_deref().filter(|c| !c.is_empty())) {
                 // The first cover named for a record is its cover; a later
                 // name replaces it and asks for it to be fetched again.
@@ -320,6 +324,7 @@ impl Library {
                 )?;
             }
         }
+        self.lay_overlays_over(source_id, &written)?;
         tx.finish()
     }
 
@@ -353,11 +358,14 @@ impl Library {
     }
 
     /// The cover of a server's record, once it is on disk. `None` is a
-    /// record the server has no cover for: it is not asked about again.
+    /// record the server has no cover for: it is not asked about again. A
+    /// cover somebody chose for the record here (`overlay`) stays over it.
     pub fn set_server_cover(&self, album_id: i64, path: Option<&str>) -> rusqlite::Result<()> {
         let tx = self.own_transaction()?;
         if let Some(path) = path {
-            tx.execute("UPDATE albums SET artwork_path = ?2 WHERE id = ?1", params![album_id, path])?;
+            if self.overlay_cover_of_album(album_id)?.is_none() {
+                tx.execute("UPDATE albums SET artwork_path = ?2 WHERE id = ?1", params![album_id, path])?;
+            }
         }
         tx.execute("UPDATE server_covers SET fetched = 1 WHERE album_id = ?1", params![album_id])?;
         tx.finish()
@@ -513,6 +521,9 @@ impl Library {
         }
         tx.execute(&format!("DELETE FROM audio_features WHERE track_id IN ({tracks_of})"), params![source_id])?;
         tx.execute(&format!("DELETE FROM scanned_files WHERE track_id IN ({tracks_of})"), params![source_id])?;
+        // What was laid over its records goes with them, whether or not
+        // the source row stays for a playlist's sake.
+        tx.execute("DELETE FROM source_overlay WHERE source_id = ?1", params![source_id])?;
         tx.execute(&format!("DELETE FROM tracks WHERE id IN ({tracks_of})"), params![source_id])?;
         {
             let mut delete = tx.prepare("DELETE FROM albums WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM tracks WHERE album_id = ?1)")?;

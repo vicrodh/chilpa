@@ -4,6 +4,7 @@
 //! the library catching up with them, by the same rules the scan follows:
 //! after it, scanning those files again changes nothing.
 
+use crate::sidecar::Home;
 use crate::store::Library;
 use rusqlite::{params, OptionalExtension};
 
@@ -73,6 +74,15 @@ pub struct Edited {
     pub moved: bool,
 }
 
+/// A track on a server of mine, as the editor needs to know it: whose, and
+/// which record on the server it belongs to.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Hosted {
+    pub source_id: i64,
+    /// The record's id on the server; `None` for a track without one.
+    pub album_key: Option<String>,
+}
+
 /// A record's track as the editor starts from it.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct EditTrack {
@@ -81,6 +91,8 @@ pub struct EditTrack {
     pub external_id: String,
     /// The file that holds it, when one does.
     pub container: Option<String>,
+    /// The server it lives on, when it is not a file of this machine.
+    pub hosted: Option<Hosted>,
     pub title: String,
     pub artist: String,
     pub track_number: Option<u16>,
@@ -91,6 +103,17 @@ pub struct EditTrack {
     pub genres: Vec<String>,
 }
 
+impl EditTrack {
+    /// Where its sidecar lives: its folder, the file that holds it, or the
+    /// library when it is on a server.
+    pub fn home(&self) -> Home {
+        match &self.hosted {
+            Some(hosted) => Home::hosted(hosted.source_id, hosted.album_key.as_deref(), &self.external_id),
+            None => Home::of(&self.external_id, self.container.as_deref()),
+        }
+    }
+}
+
 impl Library {
     /// A record's present tracks, in the record's order.
     pub fn edit_tracks(&self, album_id: i64) -> rusqlite::Result<Vec<EditTrack>> {
@@ -99,16 +122,26 @@ impl Library {
                 "SELECT t.id, t.external_id,
                         (SELECT s.container FROM scanned_files s WHERE s.track_id = t.id LIMIT 1),
                         t.title, t.artist, t.track_number, t.disc_number, t.recording_mbid,
-                        t.disc_subtitle, t.work, t.explicit
+                        t.disc_subtitle, t.work, t.explicit,
+                        t.source_id, s.kind = 'server', a.version_key
                  FROM tracks t
+                 JOIN sources s ON s.id = t.source_id
+                 LEFT JOIN albums a ON a.id = t.album_id
                  WHERE t.album_id = ?1 AND t.present = 1
                  ORDER BY t.disc_number, t.track_number, t.title COLLATE NOCASE",
             )?;
             let rows = stmt.query_map(params![album_id], |r| {
+                let source_id: i64 = r.get(11)?;
+                let on_a_server: bool = r.get(12)?;
+                let version_key: String = r.get::<_, Option<String>>(13)?.unwrap_or_default();
+                // A server's record is keyed `<source>:<id on the server>`
+                // (`source_edition`); what follows the source is its key.
+                let album_key = version_key.strip_prefix(&format!("{source_id}:")).map(str::to_string);
                 Ok(EditTrack {
                     id: r.get(0)?,
                     external_id: r.get(1)?,
                     container: r.get(2)?,
+                    hosted: on_a_server.then_some(Hosted { source_id, album_key }),
                     title: r.get(3)?,
                     artist: r.get(4)?,
                     track_number: r.get::<_, Option<i64>>(5)?.and_then(|n| u16::try_from(n).ok()),

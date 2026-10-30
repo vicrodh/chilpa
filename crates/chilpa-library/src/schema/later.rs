@@ -210,3 +210,20 @@ pub(super) const MIGRATION_V47: &str = r#"
 CREATE INDEX tracks_present_source_album ON tracks(present, source_id, album_id);
 ANALYZE;
 "#;
+
+/// What is laid over a server's records without touching the server: the
+/// sidecar document, kept here because a record on a server has no folder
+/// on this machine to keep it beside. One row per record, under the id the
+/// server gives it (the same one `source_edition` keys by), or per track
+/// when it has no record there. A sync rewrites the mirror and never this
+/// table; a record the server no longer lists keeps its row.
+pub(super) const MIGRATION_V48: &str = r#"
+CREATE TABLE source_overlay (
+    source_id  INTEGER NOT NULL REFERENCES sources(id) ON DELETE CASCADE,
+    scope      TEXT NOT NULL CHECK (scope IN ('album', 'track')),
+    key        TEXT NOT NULL,
+    document   TEXT NOT NULL,
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY (source_id, scope, key)
+);
+"#;
