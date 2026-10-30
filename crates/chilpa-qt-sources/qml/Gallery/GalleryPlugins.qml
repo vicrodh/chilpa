@@ -100,6 +100,12 @@ TitledFlow {
         document: ({status: {phase: "failed", label: "Session expired", description: "Reconnect your account to continue playback."},
             links: [{label: "Reconnect", url: "https://example.invalid", primary: true}], form: {fields: [], actions: []}, values: {}})
     }
+    PluginSetupWizard {
+        width: Metrics.confirmWidth
+        document: ({step: 3, title: "Connect playback", description: "Finish connecting the account in this numbered assistant.",
+            steps: [{label: "Prepare", state: "complete"}, {label: "Library", state: "complete"},
+                {label: "Playback", state: "current"}, {label: "Ready", state: "upcoming"}]})
+    }
     PluginPurchaseTrackRow { width: Metrics.confirmWidth; entry: ({title:"Purchased track",number:1,duration:213}); rowIndex: 0; formatId: "6" }
     PluginPurchaseDetail { width: Metrics.settingsMaxWidth; height: Metrics.panesHeight; selection: ({kind:"album",title:"Purchased album",artist:"Artist",tracks:[]}); document: ({destination_ready:true}) }
     PluginSettingsNavigation { width: Metrics.settingsNav }

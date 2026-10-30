@@ -16,6 +16,14 @@ Column {
     spacing: Metrics.gap12
     onDocumentChanged: values = Object.assign({}, document.values || {})
 
+    Loader {
+        width: form.width
+        active: Array.isArray((form.document.wizard || {}).steps) && form.document.wizard.steps.length > 0
+        visible: active
+        sourceComponent: Component {
+            PluginSetupWizard { width: form.width; document: form.document.wizard || ({}) }
+        }
+    }
     Repeater {
         model: form.document.notices || []
         Text {
@@ -31,6 +39,7 @@ Column {
     PluginValidation {
         width: form.width
         visible: !!form.document.status
+            && !Array.isArray((form.document.wizard || {}).steps)
         phase: (form.document.status || {}).phase || "pending"
         label: (form.document.status || {}).label || ""
         problem: (form.document.status || {}).description || ""
@@ -85,6 +94,7 @@ Column {
             Component {
                 id: input
                 TextField {
+                    objectName: "pluginField_" + field.modelData.key
                     secret: field.modelData.control.type === "secret"
                     text: String(form.values[field.modelData.key] ?? "")
                     onTextEdited: form.values[field.modelData.key] = field.modelData.control.type === "number" ? Number(text) : text
@@ -128,7 +138,9 @@ Column {
             model: (form.document.form || {}).actions || []
             PillButton {
                 required property var modelData
+                required property int index
                 text: modelData.label
+                kind: Array.isArray((form.document.wizard || {}).steps) && index === 0 ? "primary" : "secondary"
                 onClicked: {
                     const submitted = {}
                     for (const key of modelData.fields)
