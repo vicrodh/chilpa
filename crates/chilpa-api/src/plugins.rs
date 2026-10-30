@@ -678,6 +678,10 @@ impl Plugins {
     /// The catalogue plugins that work now, with their name.
     pub fn searchers(&self) -> Vec<(String, String)> {
         self.registry.usable_of_kind(chilpa_plugin::manifest::Kind::Source)
+            .into_iter().map(|(id, name)| {
+                let name = self.natives.source_name(&id).unwrap_or(name);
+                (id, name)
+            }).collect()
     }
 
     /// Only an approved, usable DSP with the processing permission is offered.
@@ -695,7 +699,10 @@ impl Plugins {
     /// The plugins that put an entry of their own in the window: id, name
     /// and icon hint.
     pub fn panels(&self) -> Vec<(String, String, String)> {
-        self.registry.panels()
+        self.registry.panels().into_iter().map(|(id, name, icon)| {
+            let name = self.natives.source_name(&id).unwrap_or(name);
+            (id, name, icon)
+        }).collect()
     }
 
     pub(crate) fn worker_domains(&self, id: &str) -> Option<Vec<String>> {
@@ -1105,6 +1112,46 @@ impl NativeCaller {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn source_name_changes_native_search_and_panels_but_not_the_plugin_list() {
+        struct Fixture(chilpa_plugin::Manifest);
+        impl chilpa_plugin::RuntimePlugin for Fixture {
+            fn manifest(&self) -> &chilpa_plugin::Manifest { &self.0 }
+            fn call(&mut self, _: &Host, _: &Services, operation: &str, _: &[u8], _: Limits)
+                -> Result<chilpa_plugin::Reply, chilpa_plugin::PluginError> {
+                Err(chilpa_plugin::PluginError::MissingExport(operation.into()))
+            }
+        }
+
+        let root = tempfile::tempdir().unwrap();
+        let mut host = Plugins::new(root.path().into()).unwrap();
+        for (id, runtime, package_name, capabilities, source_name) in [
+            ("test.native", chilpa_plugin::Runtime::Process, "Fixture package", serde_json::json!({"source_name":"Fixture music"}), "Fixture music"),
+            ("test.fallback", chilpa_plugin::Runtime::Process, "Fallback package", serde_json::json!({}), "Fallback package"),
+            ("test.compatibility", chilpa_plugin::Runtime::Wasm, "Compatibility package", serde_json::json!({}), "Compatibility package"),
+        ] {
+            let document = serde_json::json!({"id":id,"name":package_name,"version":"1.0.0","api_version":1,
+                "kind":"source","runtime":runtime,"icon":"music",
+                "capabilities":[{"type":"register_source"},{"type":"register_panel"}]}).to_string();
+            let manifest: chilpa_plugin::Manifest = serde_json::from_str(&document).unwrap();
+            if runtime == chilpa_plugin::Runtime::Process {
+                crate::natives::tests::remember_source(&host.natives, manifest.clone(), capabilities);
+            }
+            assert!(host.registry.install_adapter(runtime, &document, |_| true,
+                |manifest| Ok(Box::new(Fixture(manifest)) as Box<dyn chilpa_plugin::RuntimePlugin>)));
+
+            assert!(host.searchers().contains(&(id.to_string(), source_name.to_string())));
+            assert!(host.panels().contains(&(id.to_string(), source_name.to_string(), "music".to_string())));
+            let listed = host.list().into_iter().find(|plugin| plugin.id == id).unwrap();
+            assert_eq!(listed.name, package_name);
+            assert_eq!(host.registry.installed().find(|plugin| plugin.id == id).unwrap().manifest.as_ref(), Some(&manifest),
+                "a source label must not change the approved identity or permissions");
+        }
+        assert_eq!(host.natives.display_name("test.native"), "Fixture music");
+        assert_eq!(host.searchers().len(), 3);
+        assert_eq!(host.panels().len(), 3);
+    }
 
     #[test]
     fn restarting_a_process_reloads_the_installed_package() {

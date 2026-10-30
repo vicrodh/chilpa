@@ -162,7 +162,17 @@ impl Natives {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|k| k.capabilities["playlist_import"] == 1)
     }
     pub(crate) fn display_name(&self, id: &str) -> String {
-        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).map(|k| k.manifest.name.clone()).unwrap_or_else(|| id.into())
+        self.source_name(id).unwrap_or_else(|| id.into())
+    }
+    /// A known process source may name its music separately from its package.
+    /// The optional initialize capability is plain text, at most 128 UTF-8 bytes.
+    pub(crate) fn source_name(&self, id: &str) -> Option<String> {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).map(|known| {
+            known.capabilities["source_name"].as_str()
+                .filter(|name| name.len() <= 128 && !name.chars().any(char::is_control))
+                .map(str::trim).filter(|name| !name.is_empty())
+                .unwrap_or(&known.manifest.name).to_owned()
+        })
     }
     pub(crate) fn playlist_limit(&self, id: &str) -> usize {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).and_then(|k| k.capabilities["playlist_limit"].as_u64()).unwrap_or(2000).clamp(1, 10000) as usize
@@ -350,8 +360,44 @@ fn launch(_: &Manifest, _: &Path, _: std::sync::Weak<Natives>) -> Result<Launche
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
+
+    pub(crate) fn remember_source(natives: &Natives, manifest: Manifest, capabilities: Value) {
+        natives.known.lock().unwrap().insert(manifest.id.clone(), Known {
+            manifest, folder: PathBuf::new(), capabilities, discover: Vec::new(),
+            restarts: 0, restarting: false, last_start: Instant::now(),
+        });
+    }
+
+    #[test]
+    fn source_name_accepts_bounded_text_without_changing_the_package_name() {
+        let natives = Natives::default();
+        let manifest: Manifest = serde_json::from_value(json!({"id":"test.source","name":"Fixture package","version":"1.0.0","api_version":1,"kind":"source","runtime":"process"})).unwrap();
+        for (value, expected) in [("  Fixture music  ".to_string(), "Fixture music".to_string()),
+                                  ("x".repeat(128), "x".repeat(128)),
+                                  ("\u{00e9}".repeat(64), "\u{00e9}".repeat(64))] {
+            remember_source(&natives, manifest.clone(), json!({"source_name":value}));
+            assert_eq!(natives.display_name("test.source"), expected);
+            assert_eq!(natives.known.lock().unwrap()["test.source"].manifest.name, "Fixture package");
+        }
+    }
+
+    #[test]
+    fn source_name_falls_back_for_missing_or_invalid_text() {
+        let natives = Natives::default();
+        let manifest: Manifest = serde_json::from_value(json!({"id":"test.source","name":"Fixture package","version":"1.0.0","api_version":1,"kind":"source","runtime":"process"})).unwrap();
+        for capabilities in [json!({}), json!({"source_name":null}), json!({"source_name":42}),
+            json!({"source_name":[]}), json!({"source_name":""}), json!({"source_name":" \u{2003} "}),
+            json!({"source_name":"Fixture\nMusic"}), json!({"source_name":"\tFixture"}),
+            json!({"source_name":"Fixture\u{007f}"}), json!({"source_name":"Fixture\u{0085}"}),
+            json!({"source_name":"x".repeat(129)}), json!({"source_name":"\u{00e9}".repeat(65)})] {
+            remember_source(&natives, manifest.clone(), capabilities);
+            assert_eq!(natives.display_name("test.source"), "Fixture package");
+        }
+        assert_eq!(natives.display_name("unknown.source"), "unknown.source");
+        assert_eq!(natives.source_name("unknown.source"), None);
+    }
 
     #[test]
     fn search_uses_the_pinned_manifest_audio_capability() {
