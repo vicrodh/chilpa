@@ -68,7 +68,7 @@ Flickable {
                         width: parent.width
                         spacing: Metrics.gap8
                         Text { width: Math.min(implicitWidth, parent.width - (offerThirdParty.visible ? offerThirdParty.width + parent.spacing : 0)); text: modelData.name + "  " + modelData.version; elide: Text.ElideRight; color: Theme.color.textPrimary; font.pointSize: Type.body }
-                        ThirdPartyTag { id: offerThirdParty; anchors.verticalCenter: parent.verticalCenter; visible: modelData.third_party === true }
+                        ThirdPartyTag { id: offerThirdParty; anchors.verticalCenter: parent.verticalCenter; by: modelData.third_party_by || ""; visible: modelData.third_party === true }
                     }
                     Text { width: parent.width; text: modelData.problem || modelData.description; elide: Text.ElideRight; color: modelData.problem ? Theme.color.statusWarning : Theme.color.textSecondary; font.pointSize: Type.meta }
                 }

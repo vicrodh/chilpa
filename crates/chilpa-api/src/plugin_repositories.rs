@@ -195,6 +195,17 @@ impl PluginRepositories {
     }
 }
 
+/// The GitHub account a plugin repository URL belongs to, for the label that
+/// says who publishes a third-party plugin. `None` for any other host or an
+/// owner GitHub would not accept.
+pub(crate) fn github_owner(repository: &str) -> Option<String> {
+    let url = url::Url::parse(repository).ok()?;
+    if !matches!(url.host_str()?, "github.com" | "www.github.com") { return None; }
+    let owner = url.path_segments()?.next()?;
+    let valid = !owner.is_empty() && owner.len() <= 39 && owner.chars().all(|c| c.is_ascii_alphanumeric() || c == '-');
+    valid.then(|| owner.to_string())
+}
+
 fn read_bounded(path: &Path, maximum: usize) -> std::io::Result<Vec<u8>> {
     let file = std::fs::File::open(path)?;
     let mut bytes = Vec::new();
@@ -231,6 +242,16 @@ fn fetch(source: &str, maximum: usize) -> Result<Vec<u8>, String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_github_owner_comes_from_the_repository_url() {
+        assert_eq!(super::github_owner("https://github.com/someone/chilpa-pg-x").as_deref(), Some("someone"));
+        assert_eq!(super::github_owner("https://www.github.com/Some-One/x/tree/main").as_deref(), Some("Some-One"));
+        assert_eq!(super::github_owner("https://gitlab.com/someone/x"), None);
+        assert_eq!(super::github_owner("https://github.com/"), None);
+        assert_eq!(super::github_owner("https://github.com/bad owner/x"), None);
+        assert_eq!(super::github_owner("not a url"), None);
+    }
+
     use super::*;
 
     #[test]

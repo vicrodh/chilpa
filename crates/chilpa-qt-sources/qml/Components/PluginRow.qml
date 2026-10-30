@@ -32,7 +32,7 @@ Item {
                 color: Theme.color.textPrimary
                 font.pointSize: Type.body
             }
-            ThirdPartyTag { id: thirdParty; anchors.verticalCenter: parent.verticalCenter; visible: row.plugin.third_party === true }
+            ThirdPartyTag { id: thirdParty; anchors.verticalCenter: parent.verticalCenter; by: row.plugin.third_party_by || ""; visible: row.plugin.third_party === true }
         }
         Text {
             objectName: "pluginHelp"

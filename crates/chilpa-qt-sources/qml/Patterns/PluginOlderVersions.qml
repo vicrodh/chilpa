@@ -41,7 +41,7 @@ P.Modal {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Metrics.gap8
                     Text { id: label; text: modelData.version; color: Theme.color.textPrimary; font.pointSize: Type.body }
-                    ThirdPartyTag { anchors.verticalCenter: parent.verticalCenter; visible: modelData.third_party === true }
+                    ThirdPartyTag { anchors.verticalCenter: parent.verticalCenter; by: modelData.third_party_by || ""; visible: modelData.third_party === true }
                 }
                 P.PillButton {
                     id: install

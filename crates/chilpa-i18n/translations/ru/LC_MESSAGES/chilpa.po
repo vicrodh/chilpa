@@ -6328,6 +6328,9 @@ msgstr "ISRC этих треков отправляются в MusicBrainz."
 msgid "Third-party"
 msgstr "Сторонний"
 
+msgid "Third-party by {}"
+msgstr "Сторонний, автор {}"
+
 msgid "Third-party plugins"
 msgstr "Сторонние плагины"
 

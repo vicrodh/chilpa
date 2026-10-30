@@ -538,6 +538,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         row["repository_id"] = "native".into();
         row["update"] = installed.is_some().into();
         row["third_party"] = third_party.contains(&entry.id).into();
+        row["third_party_by"] = third_party_by(&third_party, &entry).into();
         native_catalog.push(row);
     }
     let compatibility_available = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.compatibility_launcher().is_some();
@@ -552,6 +553,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                 row["repository_id"] = repository.id.clone().into();
                 row["update"] = installed.is_some().into();
                 row["third_party"] = third_party.contains(&entry.id).into();
+                row["third_party_by"] = third_party_by(&third_party, &entry).into();
                 native_catalog.push(row);
                 continue;
             }
@@ -589,7 +591,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         let integration = library.as_ref().and_then(|lib| lib.find_source(crate::source_opener::PROVIDER, &plugin.id).ok().flatten()
             .and_then(|source| lib.imported_source_state(source).ok())).unwrap_or_default();
         json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"downloads":downloads,"download_access":crate::plugin_access::read(root,&plugin.id),"integration_available":sidebar_order.contains(&plugin.id) || !library_kinds.is_empty(),"integration":crate::source_integration::read(root, &plugin.id),"native":native,"limited_network":limited_network,"enabled":enabled,"folder_write":export::enabled(root,&plugin.id),"export_folder":export::read(root,&plugin.id).map(|p|p.display().to_string()),"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
-            "problem":plugin.problem,"permissions":plugin.asks,"origin":origin,"third_party":third_party.contains(&plugin.id),
+            "problem":plugin.problem,"permissions":plugin.asks,"origin":origin,"third_party":third_party.contains(&plugin.id),"third_party_by":if third_party.contains(&plugin.id) { origin["catalog_entry"]["repository"].as_str().and_then(crate::plugin_repositories::github_owner).unwrap_or_default() } else { String::new() },
             "icon":crate::plugin_icons::image_url(root, &plugin.id),"tint":crate::plugin_icons::tint(root, &plugin.id),
             "settings":native_settings || origin["inspection"]["settings_pages"].as_array().is_some_and(|pages| !pages.is_empty()),
             "light":if !plugin.problem.is_empty() {"red"} else if origin.is_null() {"native"} else if plugin.state == "fine" {"green"} else {"yellow"}})
@@ -635,6 +637,13 @@ fn matches_filter(name: &str, description: &str, category: &str, state: &Value) 
     let selected = state["category"].as_str().unwrap_or("");
     (selected.is_empty() || category == selected)
         && (name.to_lowercase().contains(query) || description.to_lowercase().contains(query))
+}
+
+/// Who publishes a third-party plugin, as its repository says; empty for
+/// Chilpa's own plugins and for repositories that are not on GitHub.
+fn third_party_by(third_party: &std::collections::HashSet<String>, entry: &chilpa_plugin::catalog::CatalogEntry) -> String {
+    if !third_party.contains(&entry.id) { return String::new(); }
+    crate::plugin_repositories::github_owner(&entry.repository).unwrap_or_default()
 }
 
 #[cfg(test)]

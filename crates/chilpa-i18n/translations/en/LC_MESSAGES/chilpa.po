@@ -6323,6 +6323,9 @@ msgstr "These tracks' ISRCs are sent to MusicBrainz."
 msgid "Third-party"
 msgstr ""
 
+msgid "Third-party by {}"
+msgstr ""
+
 msgid "Third-party plugins"
 msgstr "Third-party plugins"
 

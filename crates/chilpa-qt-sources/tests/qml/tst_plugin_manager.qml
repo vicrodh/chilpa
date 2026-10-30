@@ -328,9 +328,9 @@ TestCase {
     // A third party's plugin says so, installed or offered.
     function test_a_third_party_plugin_says_so() {
         backend.state = {busy: false, repositories: [],
-            installed: [{id: "app.example.stream", name: "Stream", version: "1.0.0", light: "native", third_party: true},
+            installed: [{id: "app.example.stream", name: "Stream", version: "1.0.0", light: "native", third_party: true, third_party_by: "someone"},
                         {id: "app.example.own", name: "Own", version: "1.0.0", light: "native"}],
-            native_catalog: [{id: "app.example.other", name: "Other", version: "1.0.0", description: "", repository_id: "third-party", third_party: true}]}
+            native_catalog: [{id: "app.example.other", name: "Other", version: "1.0.0", description: "", repository_id: "third-party", third_party: true, third_party_by: "someone-else"}]}
         manager.read()
         const tab = findChild(manager, "nativePluginsTab")
         tryVerify(() => findChild(tab, "nativeCatalogRow") !== null)
@@ -339,6 +339,9 @@ TestCase {
         verify(findChild(rows.itemAt(0), "pluginThirdParty").visible, "installed from the third-party catalog")
         verify(!findChild(rows.itemAt(1), "pluginThirdParty").visible, "Chilpa's own says nothing")
         verify(findChild(findChild(tab, "nativeCatalogRow"), "pluginThirdParty").visible, "offered by the third-party catalog")
+        compare(findChild(findChild(tab, "nativeCatalogRow"), "pluginThirdParty").by, "someone-else", "the offer names who publishes it")
+        compare(findChild(rows.itemAt(0), "pluginThirdParty").by, "someone", "the installed row names who publishes it")
+        compare(findChild(rows.itemAt(1), "pluginThirdParty").by, "", "Chilpa's own names nobody")
     }
     // One row per plugin; the versions it is not offered at wait in a second view.
     function test_older_versions_wait_in_a_second_view() {
