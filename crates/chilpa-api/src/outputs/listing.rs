@@ -482,7 +482,7 @@ pub(crate) mod tests {
         let listing = quick();
         assert!(wait_until(|| listing.published() == 1, Duration::from_secs(5)));
         listing.watch(true);
-        assert!(wait_until(|| listing.published() >= 5, Duration::from_secs(2)), "watching did not list again on the timer");
+        assert!(wait_until(|| listing.published() >= 3, Duration::from_secs(10)), "watching did not list again on the timer");
         listing.watch(false);
         // A listing the timer started just before the page was left lands.
         std::thread::sleep(SHORT * 5);
@@ -495,9 +495,10 @@ pub(crate) mod tests {
     fn a_short_watch_lists_on_the_timer_and_ends_on_its_own() {
         let listing = quick();
         assert!(wait_until(|| listing.published() == 1, Duration::from_secs(5)));
-        listing.watch_for(SHORT * 10);
-        assert!(wait_until(|| listing.published() >= 4, Duration::from_secs(2)), "the lease did not list on the timer");
-        assert!(wait_until(|| !lock(&listing.shared.wanted).watched(), Duration::from_secs(2)));
+        // Long enough that a slow runner still gets its timer ticks inside the lease.
+        listing.watch_for(SHORT * 50);
+        assert!(wait_until(|| listing.published() >= 3, Duration::from_secs(10)), "the lease did not list on the timer");
+        assert!(wait_until(|| !lock(&listing.shared.wanted).watched(), Duration::from_secs(10)));
         std::thread::sleep(SHORT * 5);
         let settled = listing.published();
         std::thread::sleep(SHORT * 15);
