@@ -26,9 +26,9 @@ xattr -dr com.apple.quarantine ~/Applications/Chilpa.app
 Download the package for your CPU, then:
 
 ```sh
-sudo apt install ./chilpa_0.1.0_amd64.deb
+sudo apt install ./chilpa_0.1.1_amd64.deb
 # Fedora:
-sudo dnf install ./chilpa-0.1.0-1.x86_64.rpm
+sudo dnf install ./chilpa-0.1.1-1.x86_64.rpm
 ```
 
 For ARM64 use `arm64.deb` or `aarch64.rpm`. The packages include the Qt runtime under `/opt/chilpa`. Update them with your package manager.
@@ -81,25 +81,25 @@ emerge --sync chilpa && emerge media-sound/chilpa-bin
 
 ## AppImage
 
-Download `Chilpa-0.1.0-x86_64.AppImage` and `SHA256SUMS`, then:
+Download `Chilpa-0.1.1-x86_64.AppImage` and `SHA256SUMS`, then:
 
 ```sh
 sha256sum --check --ignore-missing SHA256SUMS
-chmod +x Chilpa-0.1.0-x86_64.AppImage
-./Chilpa-0.1.0-x86_64.AppImage
+chmod +x Chilpa-0.1.1-x86_64.AppImage
+./Chilpa-0.1.1-x86_64.AppImage
 ```
 
 The image carries its own Qt and audio runtime. If FUSE is not available, start it with `APPIMAGE_EXTRACT_AND_RUN=1`.
 
 **Menu entry.** On every start Chilpa writes `~/.local/share/applications/app.chilpa.Chilpa.desktop` and its icon, with `Exec` pointing at the image, so a moved image is followed the next time it starts. If AppImageLauncher, Gear Lever or a similar tool already added the image, Chilpa adds no second entry. It never replaces an entry it did not write. To remove it, delete that file and `~/.local/share/icons/hicolor/512x512/apps/app.chilpa.Chilpa.png`.
 
-**Updates.** Keep the image in a folder you own, such as `~/Applications`. Chilpa checks for updates once a day. About has the switch for the automatic check and a Check for updates button. An update downloads next to the image, is verified against the release checksum, and replaces the file, keeping the old one as `<name>.previous`. Version 0.1.0 uses the stable update channel.
+**Updates.** Keep the image in a folder you own, such as `~/Applications`. Chilpa checks for updates once a day. About has the switch for the automatic check and a Check for updates button. An update downloads next to the image, is verified against the release checksum, and replaces the file, keeping the old one as `<name>.previous`. Version 0.1.1 uses the stable update channel.
 
 ## Tarball
 
 ```sh
-tar xf chilpa-0.1.0-linux-x86_64.tar.gz
-./chilpa-0.1.0/chilpa-qt
+tar xf chilpa-0.1.1-linux-x86_64.tar.gz
+./chilpa-0.1.1/chilpa-qt
 ```
 
 The tarball uses your system libraries: Qt 6.11 or newer with Qt Quick, ALSA, PulseAudio, D-Bus, SQLite and OpenSSL 3. Chilpa updates it in place: About has the switch for the automatic check and a Check for updates button. The folder keeps its name and path, and the previous version stays beside it as `<folder>.previous`. Keep the folder where you can write to it.
@@ -108,10 +108,10 @@ It includes a desktop entry and an icon. The entry runs `/usr/bin/chilpa-qt`, wh
 
 ```sh
 mkdir -p ~/.local/share/applications
-sed "s|^Exec=.*|Exec=$PWD/chilpa-0.1.0/chilpa-qt %U|" \
-  chilpa-0.1.0/app.chilpa.Chilpa.desktop \
+sed "s|^Exec=.*|Exec=$PWD/chilpa-0.1.1/chilpa-qt %U|" \
+  chilpa-0.1.1/app.chilpa.Chilpa.desktop \
   > ~/.local/share/applications/app.chilpa.Chilpa.desktop
-cp -r chilpa-0.1.0/icons ~/.local/share/
+cp -r chilpa-0.1.1/icons ~/.local/share/
 ```
 
 ## macOS

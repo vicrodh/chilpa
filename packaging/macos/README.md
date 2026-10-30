@@ -10,7 +10,7 @@ requires macOS 26.
 ```sh
 NORUN=1 ./scripts/qt-run.sh
 python3 scripts/package-macos.py --binary target/release/chilpa-qt \
-  --version 0.1.0 --output dist --require-native-icon
+  --version 0.1.1 --output dist --require-native-icon
 python3 scripts/check-macos-package.py dist/Chilpa.app --report dist/macos-smoke.json
 ```
 

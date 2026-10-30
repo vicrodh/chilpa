@@ -6,7 +6,7 @@
 
 <p>
   <a href="https://github.com/vicrodh/chilpa/releases"><img src="https://img.shields.io/github/v/release/vicrodh/chilpa?style=for-the-badge&color=0b0b0b&labelColor=333" alt="Release" /></a>
-  <a href="https://github.com/vicrodh/chilpa/actions/workflows/checks.yml"><img src="https://img.shields.io/github/actions/workflow/status/vicrodh/chilpa/checks.yml?branch=pre-launch&style=for-the-badge&label=CI&labelColor=333" alt="CI status" /></a>
+  <a href="https://github.com/vicrodh/chilpa/actions/workflows/checks.yml"><img src="https://img.shields.io/github/actions/workflow/status/vicrodh/chilpa/checks.yml?branch=main&style=for-the-badge&label=CI&labelColor=333" alt="CI status" /></a>
   <a href="https://github.com/vicrodh/chilpa/releases"><img src="https://img.shields.io/badge/platforms-Linux%20%7C%20macOS-0b0b0b?style=for-the-badge&labelColor=333" alt="Platforms: Linux and macOS" /></a>
   <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/Rust-1.96-0b0b0b?style=for-the-badge&logo=rust&labelColor=333" alt="Rust 1.96" /></a>
   <a href="https://www.qt.io"><img src="https://img.shields.io/badge/Qt-6.11-0b0b0b?style=for-the-badge&logo=qt&labelColor=333" alt="Qt 6.11" /></a>
