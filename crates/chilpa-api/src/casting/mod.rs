@@ -16,6 +16,9 @@ pub(crate) struct Casting {
     pub(crate) disconnecting: bool,
     pub(crate) local_start: Option<(usize, String, Option<Duration>)>,
     local_output: (String, String),
+    /// The outputs revision `local_output` was read at: the picker shows
+    /// the output by its name once the stacks have answered, not by its id.
+    local_output_rev: u64,
     status: Status, error: String, pub(crate) order: Vec<usize>, loaded: bool, loading: bool,
 }
 impl Casting {
@@ -40,8 +43,7 @@ impl Chilpa {
     pub fn cast_picker(&mut self, open: bool) {
         self.casting.picker = open;
         if open {
-            let (output, _) = self.chosen_output();
-            self.casting.local_output = self.output_names(&output);
+            self.name_local_output();
             self.cast_discover();
         }
         else {
@@ -162,6 +164,13 @@ impl Chilpa {
         self.casting.status.muted = Some(muted);
         self.casting.send(Order::Action(Action::Mute(muted)));
     }
+    /// The local output as the picker names it, read at the listing's
+    /// current revision.
+    fn name_local_output(&mut self) {
+        self.casting.local_output_rev = self.outputs_revision();
+        let (output, _) = self.chosen_output();
+        self.casting.local_output = self.output_names(&output);
+    }
     pub(crate) fn poll_cast(&mut self) {
         if let Some(rx) = &self.casting.discovery {
             match rx.try_recv() {
@@ -169,6 +178,11 @@ impl Chilpa {
                 Err(mpsc::TryRecvError::Disconnected) => self.casting.discovery = None,
                 _ => {}
             }
+        }
+        if self.casting.picker {
+            // Somebody is looking at the local output's name: the listing keeps itself current, and the name follows it.
+            self.outputs_listing.watch_for(Duration::from_secs(6));
+            if self.casting.local_output_rev != self.outputs_revision() { self.name_local_output(); }
         }
         if self.casting.picker && self.casting.searched.is_none_or(|t| t.elapsed() > Duration::from_secs(10)) { self.cast_discover(); }
         let events = self.casting.worker.as_ref().map(|w| w.poll()).unwrap_or_default();

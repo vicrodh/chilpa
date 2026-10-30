@@ -188,9 +188,12 @@ impl Chilpa {
         }
         // The audio rows show the stacks and outputs as last listed, and
         // somebody opening them wants a device plugged in a moment ago: the
-        // next listing is made now, and the next read of the page has it.
+        // next listing is made now, the page is told when it lands, and the
+        // listing keeps itself current for a while, since the page is
+        // looked at and does not say so again.
         if section == "audio" {
             self.outputs_listing.ask();
+            self.outputs_listing.watch_for(crate::outputs::WATCH);
         }
         let section = settings_schema::section(section);
         let mut rows = Vec::new();
