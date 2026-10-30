@@ -201,7 +201,8 @@ QtObject {
     readonly property int shotDelay: 2500
     // The longest a scripted scroll test runs.
     readonly property int scrollTestSeconds: 15
-    readonly property int scrollbarWidth: 10
+    // 60% of the 10 it had: the bar sits beside the content, not over it.
+    readonly property int scrollbarWidth: 6
     // Where a page's scrollbar sits: the middle of the margin to the right
     // of its content, off the rows and the cards (ArtistPage keeps its bar
     // in that margin too).

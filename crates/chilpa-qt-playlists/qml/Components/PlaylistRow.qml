@@ -27,6 +27,8 @@ Item {
     property bool editing: false
     property string sourceIcon: ""
     property bool showSourceBadge: false
+    // A playlist inside a folder, local or from a source, steps in under it.
+    property bool nested: false
 
     signal opened()
     signal menu(real x, real y)
@@ -46,7 +48,7 @@ Item {
     // is, so the names stay in line with the folders'.
     Item {
         id: icon
-        x: Metrics.navItemPadding + (row.folderId > 0 ? Metrics.playlistIndent : 0) - (width - Metrics.iconMd) / 2 // derived: centered on the icon
+        x: Metrics.navItemPadding + (row.nested ? Metrics.playlistIndent : 0) - (width - Metrics.iconMd) / 2 // derived: centered on the icon
         width: Metrics.playlistCollage
         height: parent.height
 

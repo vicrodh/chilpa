@@ -96,8 +96,10 @@ Item {
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         model: stableRows
-        // Two pixels further right than a page's, off the rows' chevrons.
-        ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap6 }
+        // The rows end before the bar's strip, so the bar never covers a
+        // row's count or chevron; the bar sits in the middle of the strip.
+        readonly property int barStrip: Metrics.scrollbarWidth + Metrics.gap4 // derived: the bar and a margin
+        ScrollBar.vertical: ViewportScrollBar { gutter: -view.barStrip / 2 } // derived: the middle of the strip
 
         delegate: Loader {
             id: host
@@ -105,7 +107,7 @@ Item {
             required property var entry
 
             x: entry.depth * Metrics.gap8 // derived: one small inset per folder depth
-            width: ListView.view.width - x
+            width: ListView.view.width - x - view.barStrip
             height: Metrics.playlistRowHeight
             sourceComponent: entry.rowKind === 2 ? groupDelegate : entry.rowKind === 1 ? folderDelegate : playlistDelegate
             Component {
@@ -158,6 +160,7 @@ Item {
                     artwork: host.entry.artwork
                     folderId: host.entry.folderId
                     visibleInSidebar: host.entry.visibleInSidebar
+                    nested: host.entry.nested === true
                     covers: host.entry.covers
                     active: Navigation.screen === (playlistId < 0 ? "album" : "playlist") && Navigation.routeId === playlistId
                     onOpened: section.openPlaylist(playlistId)
