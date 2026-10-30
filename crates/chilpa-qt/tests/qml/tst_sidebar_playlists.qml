@@ -146,14 +146,13 @@ TestCase {
         compare(SettingsModel.kept("ui.playlists.collapsed"), "false")
     }
 
-    // The list's bar stands two pixels further right than a page's, off the
-    // rows' chevrons.
+    // The rows end before a strip at the list's edge; the bar sits in its middle.
     function test_the_bar_stands_clear_of_the_rows_chevrons() {
         const list = findChild(sidebar, "sidebarPlaylistList")
         const bar = list.children.find(child => child.hasOwnProperty("gutter"))
-        verify(bar !== undefined)
-        compare(bar.gutter, -Metrics.gap6)
-        tryVerify(() => bar.x + bar.width / 2 === list.width - Metrics.gap6, 1000, "centered six pixels in: " + bar.x)
+        const strip = Metrics.scrollbarWidth + Metrics.gap4
+        verify(bar !== undefined && bar.gutter === -strip / 2)
+        tryVerify(() => bar.x + bar.width / 2 === list.width - strip / 2 && list.itemAtIndex(0) !== null && list.itemAtIndex(0).x + list.itemAtIndex(0).width <= bar.x, 1000, "bar at " + bar.x)
     }
 
     // With the sidebar closed, the header's flyout lists the same playlists
