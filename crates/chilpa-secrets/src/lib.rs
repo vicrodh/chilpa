@@ -162,4 +162,45 @@ mod tests {
             SecretError::BackendMismatch
         ));
     }
+
+    #[test]
+    fn what_any_box_sealed_in_a_race_opens_in_a_box_reopened_afterwards() {
+        // The first start: several boxes open at once over a fresh directory
+        // and each seals with the key it got. The next start reads the id
+        // from the disk, so every one of those keys has to come from it.
+        const THREADS: usize = 8;
+        for _ in 0..50 {
+            let dir = tempfile::tempdir().unwrap();
+            let gate = std::sync::Barrier::new(THREADS);
+            let sealed: Vec<Vec<u8>> = std::thread::scope(|scope| {
+                let racers: Vec<_> = (0..THREADS)
+                    .map(|_| {
+                        scope.spawn(|| {
+                            gate.wait();
+                            SecretBox::derived_only("chilpa-test", dir.path()).unwrap().seal(b"token").unwrap()
+                        })
+                    })
+                    .collect();
+                racers.into_iter().map(|racer| racer.join().unwrap()).collect()
+            });
+            let reopened = box_in(dir.path());
+            for blob in &sealed {
+                assert_eq!(reopened.open_sealed(blob).unwrap(), b"token");
+            }
+        }
+    }
+
+    #[test]
+    fn an_id_that_was_already_there_keeps_producing_the_same_key() {
+        // An existing install keeps its file as it is, so what it sealed
+        // before this code existed goes on opening.
+        let one = tempfile::tempdir().unwrap();
+        let other = tempfile::tempdir().unwrap();
+        let id = "5f0f6f5e-3c55-4b1a-9d3e-0a1b2c3d4e5f";
+        std::fs::write(one.path().join("install-id"), id).unwrap();
+        std::fs::write(other.path().join("install-id"), id).unwrap();
+        let sealed = box_in(one.path()).seal(b"token").unwrap();
+        assert_eq!(box_in(other.path()).open_sealed(&sealed).unwrap(), b"token");
+        assert_eq!(std::fs::read_to_string(other.path().join("install-id")).unwrap(), id);
+    }
 }
