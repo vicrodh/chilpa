@@ -4162,6 +4162,9 @@ msgstr "Op de bestemmingen van de zijbalk."
 msgid "On this device"
 msgstr "Op dit apparaat"
 
+msgid "Onboarding"
+msgstr "Introductie"
+
 msgid "One row"
 msgstr "Eén rij"
 

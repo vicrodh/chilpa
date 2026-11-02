@@ -4159,6 +4159,9 @@ msgstr "サイドバーの各項目で有効です。"
 msgid "On this device"
 msgstr "このデバイス上"
 
+msgid "Onboarding"
+msgstr "はじめに"
+
 msgid "One row"
 msgstr "1行"
 

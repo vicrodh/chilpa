@@ -37,6 +37,7 @@ Item {
         UpdateNotice {}
         PillButton { text: "Welcome"; onClicked: Onboarding.command("welcome") }
         PillButton { text: "What's new"; onClicked: Onboarding.command("whatsNew") }
+        OnboardingNotice { width: Metrics.sidebarWidth }
         DeckCard {
             width: gallery.sampleWide; height: gallery.sampleWide * 9 / 16 // derived: the art's 16:9
             eyebrow: "Getting started"

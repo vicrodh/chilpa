@@ -37,6 +37,7 @@ QtObject {
     readonly property int bulletIndent: 16
     readonly property int startMs: 1200
     readonly property int readMs: 150
+    readonly property int ringStroke: 2
 
     readonly property real headingSize: Type.section
     readonly property real eyebrowSize: 11 * Type.pointsPerPixel // derived: QBZ's 11 px

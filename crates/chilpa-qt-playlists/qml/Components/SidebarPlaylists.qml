@@ -178,7 +178,7 @@ Item {
     }
 
     Text {
-        visible: !section.folded && section.rows.length === 0 && filter.text === ""
+        visible: !section.folded && section.rows.length === 0 && filter.text === "" && filter.y + filter.height + Metrics.gap10 + implicitHeight <= section.height
         anchors.top: filter.bottom
         anchors.topMargin: Metrics.gap10
         x: Metrics.navItemPadding

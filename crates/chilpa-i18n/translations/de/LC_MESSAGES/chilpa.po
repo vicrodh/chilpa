@@ -4162,6 +4162,9 @@ msgstr "Bei den Einträgen der Seitenleiste."
 msgid "On this device"
 msgstr "Auf diesem Gerät"
 
+msgid "Onboarding"
+msgstr "Einführung"
+
 msgid "One row"
 msgstr "Eine Zeile"
 

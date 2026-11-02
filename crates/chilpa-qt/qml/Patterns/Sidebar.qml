@@ -6,6 +6,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/controls/qml/Primitives" as Driving
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Components" as Lists
+import "qrc:/qt/qml/app/chilpa/about/qml/Components" as AboutUi
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
@@ -100,7 +101,7 @@ Rectangle {
             width: parent.width
             // Reserve two playlist rows below navigation when it grows, or
             // the playlists' label while they are folded.
-            height: Math.min(contentHeight, Math.max(0, parent.height - y - (playlists.folded ? Metrics.button24 : Metrics.navItemHeight * 2) - Metrics.sidebarGap)) // derived: the rows or the label, and their gap
+            height: Math.min(contentHeight, Math.max(0, parent.height - y - (playlists.folded ? Metrics.button24 : Metrics.navItemHeight * 2) - Metrics.sidebarGap - (onboarding.visible ? onboarding.height + Metrics.sidebarGap : 0))) // derived: the rows or the label, and their gap
             contentWidth: width
             contentHeight: navigation.height
             clip: true
@@ -189,7 +190,8 @@ Rectangle {
             id: playlists
             visible: !side.collapsed
             width: parent.width
-            height: Math.max(0, parent.height - y - Metrics.sidebarPadV) // derived: the rest of the column
+            height: Math.max(0, parent.height - y - Metrics.sidebarPadV - (onboarding.visible ? onboarding.height + Metrics.sidebarGap : 0)) // derived: the rest of the column
         }
+        AboutUi.OnboardingNotice { id: onboarding; width: parent.width; visible: !side.collapsed && onboarding.shown }
     }
 }

@@ -3,12 +3,13 @@ import QtTest
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.about
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../../qml/Components"
 
 // The deck asks what this start shows until the facade answers; the Welcome
-// walks its cards and closes with its last button; a card's button closes it
-// and names where to go; What's new ends in its release notes; every way out
-// marks the version seen.
+// walks its cards and closes with its last button; a card's button sets the
+// Welcome aside and names where to go; What's new ends in its release notes;
+// every other way out marks the version seen.
 TestCase {
     id: test
     name: "Onboarding"
@@ -17,6 +18,7 @@ TestCase {
     width: 1200
     height: 820
 
+    OnboardingNotice { id: notice; width: Metrics.sidebarWidth }
     OnboardingModal { id: modal }
     SignalSpy { id: chosen; target: modal; signalName: "actionChosen" }
 
@@ -72,7 +74,7 @@ TestCase {
         compare(Onboarding.asked, ["close"], "closing marks the version seen")
     }
 
-    function test_a_cards_button_closes_the_deck_and_says_where_to_go() {
+    function test_a_welcome_cards_button_sets_the_deck_aside_and_says_where_to_go() {
         show({ kind: "welcome", version: "0.1.0", deck: welcomeDeck })
         modal.cardIndex = 1
         waitForRendering(modal.contentItem)
@@ -81,7 +83,46 @@ TestCase {
         tryCompare(modal, "visible", false)
         compare(chosen.count, 1)
         compare(chosen.signalArguments[0][0], "libraryFolders")
+        compare(Onboarding.asked, ["aside:2"], "two cards seen, and the version is not marked seen")
+    }
+
+    function test_a_whats_new_cards_button_still_closes_it_for_good() {
+        show({ kind: "whatsNew", version: "0.2.0", hasBody: false, loading: false, deck: welcomeDeck.slice(0, 2) })
+        modal.cardIndex = 1
+        waitForRendering(modal.contentItem)
+        press("cardAction")
+        tryCompare(modal, "visible", false)
         compare(Onboarding.asked, ["close"])
+    }
+
+    function test_a_welcome_set_aside_reopens_on_the_first_card_it_had_not_shown() {
+        show({ kind: "welcome", version: "0.1.0", deck: welcomeDeck, reached: 2 })
+        compare(modal.cardIndex, 2)
+        compare(child("cardTitle").text, "Servers and plugins")
+        Onboarding.doc = JSON.stringify({ started: true, open: false })
+        tryCompare(modal, "visible", false)
+        show({ kind: "welcome", version: "0.1.0", deck: welcomeDeck, reached: 9 })
+        compare(modal.cardIndex, 2, "every card seen: it reopens on the last")
+    }
+
+    function test_a_fresh_welcome_opens_on_its_first_card() {
+        show({ kind: "welcome", version: "0.1.0", deck: welcomeDeck, reached: 0 })
+        compare(modal.cardIndex, 0)
+        press("deckNext")
+        press("cardAction")
+        compare(Onboarding.asked, ["aside:2"])
+    }
+
+    function test_the_onboarding_button_shows_only_while_the_welcome_is_aside() {
+        Onboarding.doc = JSON.stringify({ started: true, open: false, aside: false, kind: "welcome", deck: welcomeDeck })
+        verify(!notice.shown)
+        Onboarding.doc = JSON.stringify({ started: true, open: false, aside: true, reached: 2, welcomeCards: 3, kind: "welcome", deck: welcomeDeck })
+        verify(notice.shown)
+        compare(notice.progress, 2 / 3, "the ring fills to the share of cards seen")
+        mouseClick(findChild(notice, "continueOnboarding"))
+        compare(Onboarding.asked, ["welcome"], "it reopens the Welcome")
+        mouseClick(findChild(notice, "dismissOnboarding"))
+        compare(Onboarding.asked, ["welcome", "dismiss"], "its X ends the Welcome for good")
     }
 
     function test_escape_closes_from_any_card_and_marks_it_seen() {

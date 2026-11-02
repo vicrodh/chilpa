@@ -4162,6 +4162,9 @@ msgstr "Sur les destinations de la barre latérale."
 msgid "On this device"
 msgstr "Sur cet appareil"
 
+msgid "Onboarding"
+msgstr "Prise en main"
+
 msgid "One row"
 msgstr "Une ligne"
 
