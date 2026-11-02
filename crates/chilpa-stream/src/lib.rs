@@ -103,6 +103,31 @@ impl NowPlaying {
     pub fn get(&self) -> Option<String> {
         self.0.lock().ok().and_then(|g| g.clone())
     }
+
+    /// A reader that hands out each title once, when it changes.
+    pub fn changes(&self) -> TitleChanges {
+        TitleChanges { titles: self.clone(), last: None }
+    }
+}
+
+/// The station's title as events: the playback loop asks many times a second,
+/// and a station's title changes with the song.
+#[derive(Debug)]
+pub struct TitleChanges {
+    titles: NowPlaying,
+    last: Option<String>,
+}
+
+impl TitleChanges {
+    /// The title, when it differs from the one handed out last.
+    pub fn next_change(&mut self) -> Option<String> {
+        let title = self.titles.get()?;
+        if self.last.as_deref() == Some(title.as_str()) {
+            return None;
+        }
+        self.last = Some(title.clone());
+        Some(title)
+    }
 }
 
 /// An open stream, ready for the decoder to read.
@@ -327,5 +352,23 @@ mod tests {
         let copy = np.clone();
         std::thread::spawn(move || copy.set(Some("A song".into()))).join().unwrap();
         assert_eq!(np.get().as_deref(), Some("A song"));
+    }
+
+    #[test]
+    fn a_title_is_handed_out_once_however_often_it_is_asked_for() {
+        let np = NowPlaying::new();
+        let mut changes = np.changes();
+        assert_eq!(changes.next_change(), None);
+        np.set(Some("A - One".into()));
+        assert_eq!(changes.next_change().as_deref(), Some("A - One"));
+        for _ in 0..1_000 {
+            assert_eq!(changes.next_change(), None);
+        }
+        np.set(Some("A - One".into()));
+        assert_eq!(changes.next_change(), None, "the station repeating itself is no change");
+        np.set(Some("B - Two".into()));
+        assert_eq!(changes.next_change().as_deref(), Some("B - Two"));
+        np.set(Some("A - One".into()));
+        assert_eq!(changes.next_change().as_deref(), Some("A - One"), "a song that comes back is a change");
     }
 }

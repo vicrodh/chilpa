@@ -720,7 +720,7 @@ fn play_stream(
     let address = parts.first().cloned().unwrap_or_default();
     let stream = chilpa_stream::open_parts(&parts)
         .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-    let titles = stream.now_playing();
+    let mut titles = stream.now_playing().changes();
     let station = stream.info().name.clone();
 
     let path = url.to_path_buf();
@@ -756,16 +756,19 @@ fn play_stream(
                 dsd_passthrough: false,
             });
         },
-        &mut |frames| {
-            // The station title changes with every song; it is published
-            // with the progress, which is the only thing that travels often.
-            if let Some(title) = titles.get() {
-                let _ = events.send(PlayerEvent::StreamTitle { title: title });
-            }
-            let _ = events.send(PlayerEvent::Progress { frames, played: frames });
-        },
+        &mut |frames| publish_progress(&events, &mut titles, frames),
     )?;
     Ok(played.outcome)
+}
+
+/// Runs after every write to the output. The station title changes with every
+/// song; it is looked at here, the only thing that travels often, and published
+/// only when it changed: what listens to it goes to the network.
+fn publish_progress(events: &Sender<PlayerEvent>, titles: &mut chilpa_stream::TitleChanges, frames: u64) {
+    if let Some(title) = titles.next_change() {
+        let _ = events.send(PlayerEvent::StreamTitle { title });
+    }
+    let _ = events.send(PlayerEvent::Progress { frames, played: frames });
 }
 
 /// A CD is asked for as `cdda:/dev/sr0`. The prefix is not decoration: a
@@ -875,6 +878,26 @@ fn play_cd(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_station_title_is_published_once_and_every_progress_still_is() {
+        let (events, heard) = channel();
+        let now_playing = chilpa_stream::NowPlaying::new();
+        now_playing.set(Some("A - One".into()));
+        let mut titles = now_playing.changes();
+        for frames in 0..1_000 {
+            publish_progress(&events, &mut titles, frames);
+        }
+        now_playing.set(Some("B - Two".into()));
+        publish_progress(&events, &mut titles, 1_000);
+        let heard: Vec<PlayerEvent> = heard.try_iter().collect();
+        let songs: Vec<&str> = heard.iter().filter_map(|event| match event {
+            PlayerEvent::StreamTitle { title } => Some(title.as_str()),
+            _ => None,
+        }).collect();
+        assert_eq!(songs, ["A - One", "B - Two"]);
+        assert_eq!(heard.iter().filter(|event| matches!(event, PlayerEvent::Progress { .. })).count(), 1_001);
+    }
 
     #[test]
     fn a_cd_path_is_recognized_by_its_prefix() {

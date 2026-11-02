@@ -20,6 +20,7 @@ mod navigation;
 mod parents;
 mod view;
 mod extras;
+mod song_cover;
 #[cfg(test)]
 mod progress_tests;
 
@@ -162,6 +163,8 @@ pub(crate) struct SourcesState {
     saved_cards: Vec<Entry>,
     extras: serde_json::Value,
     on_air_history: Vec<serde_json::Value>,
+    song_covers: Option<mpsc::Sender<song_cover::Song>>,
+    song_cover_find: fn(&song_cover::Song) -> Option<String>,
     /// What the listener started or finished from the current source.
     heard: HashMap<String, Heard>,
     /// The entry a page of its own is showing, and whose it is.
@@ -230,6 +233,8 @@ impl Default for SourcesState {
             saved_cards: Vec::new(),
             extras: serde_json::Value::Null,
             on_air_history: Vec::new(),
+            song_covers: None,
+            song_cover_find: song_cover::from_network,
             heard: HashMap::new(),
             detail: None,
             kept_at: None,
@@ -1307,13 +1312,16 @@ impl Chilpa {
         if artist.is_empty() || song.is_empty() {
             return;
         }
-        let (url, tx) = (sounding.url.clone(), self.sources.tx.clone());
-        let _ = std::thread::Builder::new().name("chilpa-song-cover".into()).spawn(move || {
-            let Some(address) = crate::scrobble::lastfm::track_cover(&artist, &song) else { return };
-            if let Some(path) = crate::pictures::keep(&address) {
-                let _ = tx.send(Answer::Picture { url, song: title, path });
-            }
-        });
+        let song = song_cover::Song { url: sounding.url.clone(), title, artist, name: song };
+        if self.sources.song_covers.is_none() {
+            let (find, tx) = (self.sources.song_cover_find, self.sources.tx.clone());
+            self.sources.song_covers = song_cover::start(find, move |song, path| {
+                let _ = tx.send(Answer::Picture { url: song.url.clone(), song: song.title.clone(), path });
+            });
+        }
+        if let Some(covers) = &self.sources.song_covers {
+            let _ = covers.send(song);
+        }
     }
 
     fn take_listing(&mut self, cursor: Option<String>, result: Result<SourceDocument, String>) {

@@ -66,3 +66,38 @@ fn a_late_chapter_reply_does_not_replace_the_selected_transcript() {
     api.advance_sources();
     assert_eq!(api.sources.extras["rows"][0]["text"], "Hello");
 }
+
+#[test]
+fn a_station_flooding_its_title_goes_to_the_network_once_and_the_cover_returns_after_a_reconnect() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    static ASKED: AtomicUsize = AtomicUsize::new(0);
+    fn find(_: &song_cover::Song) -> Option<String> {
+        ASKED.fetch_add(1, Ordering::SeqCst);
+        Some("/covers/one.jpg".into())
+    }
+    let mut api = Chilpa::new();
+    let url = "https://radio.example/stream".to_string();
+    api.sources.song_cover_find = find;
+    api.sources.sounding = Some(Sounding { url: url.clone(), source: "example.radio".into(), entry: Entry::default(), picture: "/covers/station.jpg".into() });
+    api.now.path = url;
+    api.now.title = "A - One".into();
+    for _ in 0..1_000 {
+        api.song_changed("A - One");
+    }
+    let take = |api: &mut Chilpa| {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while api.now.artwork_path != "/covers/one.jpg" && Instant::now() < deadline {
+            while let Ok(Answer::Picture { url, song, path }) = api.sources.rx.try_recv() {
+                api.take_picture(url, song, path);
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    };
+    take(&mut api);
+    assert_eq!(api.now.artwork_path, "/covers/one.jpg");
+    api.song_changed("A - One");
+    assert_eq!(api.now.artwork_path, "/covers/station.jpg", "a reconnect shows the station until the cover is back");
+    take(&mut api);
+    assert_eq!(api.now.artwork_path, "/covers/one.jpg");
+    assert_eq!(ASKED.load(Ordering::SeqCst), 1);
+}
