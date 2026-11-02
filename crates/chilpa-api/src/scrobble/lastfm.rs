@@ -101,14 +101,18 @@ fn failure(code: i64, message: &str) -> Failure {
 }
 
 /// The address of the cover Last.fm shows for a song, the largest it gives.
-/// `None` when it does not know the song or has no cover for it.
-pub(crate) fn track_cover(artist: &str, title: &str) -> Option<String> {
+/// `None` when it does not know the song or has no cover for it; an error when
+/// that could not be asked: no network, a limit, the service failing.
+pub(crate) fn track_cover(artist: &str, title: &str) -> Result<Option<String>, Failure> {
     let mut params = Map::new();
     params.insert("artist".into(), json!(artist));
     params.insert("track".into(), json!(title));
     params.insert("autocorrect".into(), json!("1"));
-    let reply = call("track.getInfo", params).ok()?;
-    largest_image(&reply)
+    match call("track.getInfo", params) {
+        Ok(reply) => Ok(largest_image(&reply)),
+        Err(Failure::Refused(_)) => Ok(None),
+        Err(failure) => Err(failure),
+    }
 }
 
 /// What Last.fm says of an artist: a short biography, where it came from,

@@ -71,33 +71,41 @@ fn a_late_chapter_reply_does_not_replace_the_selected_transcript() {
 fn a_station_flooding_its_title_goes_to_the_network_once_and_the_cover_returns_after_a_reconnect() {
     use std::sync::atomic::{AtomicUsize, Ordering};
     static ASKED: AtomicUsize = AtomicUsize::new(0);
-    fn find(_: &song_cover::Song) -> Option<String> {
+    static COVER: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    fn find(_: &song_cover::Song) -> song_cover::Found {
         ASKED.fetch_add(1, Ordering::SeqCst);
-        Some("/covers/one.jpg".into())
+        song_cover::Found::Cover(COVER.get().cloned().unwrap_or_default())
     }
+    let directory = tempfile::tempdir().unwrap();
+    let cover = directory.path().join("one.jpg");
+    std::fs::write(&cover, b"cover").unwrap();
+    let cover = cover.to_string_lossy().into_owned();
+    COVER.set(cover.clone()).unwrap();
     let mut api = Chilpa::new();
     let url = "https://radio.example/stream".to_string();
     api.sources.song_cover_find = find;
     api.sources.sounding = Some(Sounding { url: url.clone(), source: "example.radio".into(), entry: Entry::default(), picture: "/covers/station.jpg".into() });
     api.now.path = url;
     api.now.title = "A - One".into();
+    let take_until_cover = |api: &mut Chilpa| {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while api.now.artwork_path != *COVER.get().unwrap() {
+            assert!(Instant::now() < deadline, "the cover did not come");
+            match api.sources.rx.try_recv() {
+                Ok(Answer::Picture { url, song, path }) => api.take_picture(url, song, path),
+                _ => std::thread::sleep(Duration::from_millis(2)),
+            }
+        }
+    };
+    api.song_changed("A - One");
+    take_until_cover(&mut api);
+    api.song_changed("A - One");
+    assert_eq!(api.now.artwork_path, "/covers/station.jpg", "a reconnect shows the station until the cover is back");
+    take_until_cover(&mut api);
     for _ in 0..1_000 {
         api.song_changed("A - One");
     }
-    let take = |api: &mut Chilpa| {
-        let deadline = Instant::now() + Duration::from_secs(5);
-        while api.now.artwork_path != "/covers/one.jpg" && Instant::now() < deadline {
-            while let Ok(Answer::Picture { url, song, path }) = api.sources.rx.try_recv() {
-                api.take_picture(url, song, path);
-            }
-            std::thread::sleep(Duration::from_millis(5));
-        }
-    };
-    take(&mut api);
-    assert_eq!(api.now.artwork_path, "/covers/one.jpg");
-    api.song_changed("A - One");
-    assert_eq!(api.now.artwork_path, "/covers/station.jpg", "a reconnect shows the station until the cover is back");
-    take(&mut api);
-    assert_eq!(api.now.artwork_path, "/covers/one.jpg");
+    take_until_cover(&mut api);
+    assert_eq!(api.now.artwork_path, cover);
     assert_eq!(ASKED.load(Ordering::SeqCst), 1);
 }

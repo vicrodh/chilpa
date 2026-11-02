@@ -164,7 +164,7 @@ pub(crate) struct SourcesState {
     extras: serde_json::Value,
     on_air_history: Vec<serde_json::Value>,
     song_covers: Option<mpsc::Sender<song_cover::Song>>,
-    song_cover_find: fn(&song_cover::Song) -> Option<String>,
+    song_cover_find: fn(&song_cover::Song) -> song_cover::Found,
     /// What the listener started or finished from the current source.
     heard: HashMap<String, Heard>,
     /// The entry a page of its own is showing, and whose it is.
