@@ -99,12 +99,12 @@ static void process(void *data)
     if (buffer->requested) frames = SPA_MIN(frames, buffer->requested);
     size_t copied = 0;
     /* Negotiation, identity and links are checked under this same loop lock.
-     * Never admit user bytes before open or after any route failure. */
-    if (s->opened && s->active && !s->paused && dsd_route_ready(s))
+     * Never admit user bytes before open, before the route is confirmed for
+     * this activation, or after any route failure. */
+    if (s->opened && s->live && dsd_route_ready(s))
         copied = dsd_ring_read(s, d->data, frames);
     size_t filled = copied;
-    if (copied < frames && s->opened && s->active && !s->paused &&
-            !s->draining && dsd_route_ready(s)) {
+    if (copied < frames && s->opened && s->live && !s->draining && dsd_route_ready(s)) {
         /* Balanced DSD idle bytes, never PCM zeros. Not counted as user data. */
         memset((uint8_t *)d->data + copied * DSD_FRAME_BYTES, 0x69,
                 (frames - copied) * DSD_FRAME_BYTES);
@@ -231,11 +231,14 @@ struct dsd_session *chilpa_pw_dsd_open(const char *name, uint64_t serial,
 }
 
 /* After a suspend the format, the links and the buffers come back only once
- * the stream is active again. Waits for them, with the open deadline. */
+ * the stream is active again. Waits for them, with the open deadline. A
+ * suspend set off by the last deactivation may still be on its way, and the
+ * route would look ready from before it: a roundtrip delivers it first. */
 static int confirm_route(struct dsd_session *s)
 {
     struct timespec deadline;
     pw_thread_loop_get_time(s->loop, &deadline, DSD_OPEN_NS);
+    if (dsd_roundtrip(s, &deadline) < 0) return s->error;
     while (!s->error && (!dsd_route_ready(s) || s->buffer_count < 2)) {
         int result = pw_thread_loop_timed_wait_full(s->loop, &deadline);
         if (result < 0 && (!dsd_route_ready(s) || s->buffer_count < 2))
