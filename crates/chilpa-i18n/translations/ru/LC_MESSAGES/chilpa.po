@@ -4153,6 +4153,9 @@ msgstr "На пунктах боковой панели."
 msgid "On this device"
 msgstr "На этом устройстве"
 
+msgid "Onboarding"
+msgstr "Знакомство"
+
 msgid "One row"
 msgstr "В одну строку"
 

@@ -193,7 +193,10 @@ MAX_LOC_SHELL_RUST = 5_100
 #
 # 13,800 the same day: Folders, Open media and the library's folders left
 # for a crate of their own.
-MAX_LOC_SHELL_QML = 13_800
+#
+# 13,801 on 2026-11-03: the sidebar places the Welcome's Onboarding button,
+# which lives in the about crate; placing it takes an import and one line.
+MAX_LOC_SHELL_QML = 13_801
 
 CODE_SUFFIXES = {".rs", ".qml", ".cpp", ".h", ".hpp", ".py", ".sh"}
 

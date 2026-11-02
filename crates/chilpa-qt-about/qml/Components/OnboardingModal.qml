@@ -40,21 +40,36 @@ Modal {
     height: Math.min((parent ? parent.height : OnboardingFrame.tallest) - OnboardingFrame.gutter, OnboardingFrame.tallest)
     Overlay.modal: Rectangle { color: Theme.color.lightboxScrim }
 
+    property int reached: 0
+    onCardIndexChanged: reached = Math.max(reached, cardIndex + 1)
+    property bool steppingAside: false
+
     readonly property bool wanted: doc.open === true
     onWantedChanged: {
         if (!wanted)
             return close()
-        cardIndex = 0
+        // Read from the doc: `welcome` and `deck` may not have caught up yet.
+        const resumed = doc.kind === "welcome" ? Math.min(doc.reached || 0, Math.max((doc.deck || []).length - 1, 0)) : 0
+        reached = Math.max(doc.reached || 0, resumed + 1)
+        cardIndex = resumed
         open()
     }
     onOpened: keys.forceActiveFocus()
-    onClosed: if (wanted) Onboarding.command("close")
+    onClosed: {
+        if (wanted && !steppingAside)
+            Onboarding.command("close")
+        steppingAside = false
+    }
 
     function goBack() { if (cardIndex > 0) cardIndex -= 1 }
     function goNext() { if (lastCard) close(); else cardIndex += 1 }
     // The HiFi Wizard opens here, as its Settings button opens it; anything
     // else is a place in the window, for the window to go to.
     function follow(action) {
+        if (welcome) {
+            steppingAside = true
+            Onboarding.command("aside:" + reached)
+        }
         close()
         if (action === "hifiWizard")
             HifiWizard.command("open", "")

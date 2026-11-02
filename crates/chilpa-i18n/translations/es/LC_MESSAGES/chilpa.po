@@ -4150,6 +4150,9 @@ msgstr "En los destinos del sidebar."
 msgid "On this device"
 msgstr "En este dispositivo"
 
+msgid "Onboarding"
+msgstr "Introducción"
+
 msgid "One row"
 msgstr "Una fila"
 

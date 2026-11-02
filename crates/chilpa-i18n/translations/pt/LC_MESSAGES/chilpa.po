@@ -4150,6 +4150,9 @@ msgstr "Nos destinos da barra lateral."
 msgid "On this device"
 msgstr "Neste dispositivo"
 
+msgid "Onboarding"
+msgstr "Introdução"
+
 msgid "One row"
 msgstr "Uma linha"
 

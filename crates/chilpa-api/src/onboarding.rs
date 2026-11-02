@@ -14,6 +14,9 @@ use std::time::Duration;
 /// The version a deck was last closed in, or the one Chilpa started on when
 /// it had nothing to show.
 pub(crate) const SEEN: &str = "onboarding.seenVersion";
+/// The cards reached by a Welcome set aside and not yet finished; empty once
+/// it closes.
+const ASIDE: &str = "onboarding.welcomeAside";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const RELEASES: &str = "https://api.github.com/repos/vicrodh/chilpa/releases/tags";
 
@@ -105,6 +108,8 @@ struct State {
     has_body: bool,
     blocks: Vec<Block>,
     toc: Vec<TocEntry>,
+    aside: bool,
+    reached: usize,
     /// Which opening the notes being read belong to: a reply for an earlier
     /// one is dropped.
     opening: u64,
@@ -113,8 +118,17 @@ struct State {
 
 static STATE: Mutex<State> = Mutex::new(State {
     started: false, open: false, kind: Kind::Welcome, loading: false, version: String::new(), date: String::new(),
-    has_body: false, blocks: Vec::new(), toc: Vec::new(), opening: 0, revision: 1,
+    has_body: false, blocks: Vec::new(), toc: Vec::new(), aside: false, reached: 0, opening: 0, revision: 1,
 });
+
+fn cards_reached(value: &str) -> Option<usize> {
+    let reached = value.parse::<usize>().ok()?;
+    Some(reached.min(deck(Kind::Welcome).len()))
+}
+
+fn aside_reached(action: &str) -> Option<usize> {
+    cards_reached(action.strip_prefix("aside:")?)
+}
 
 fn change(f: impl FnOnce(&mut State)) {
     let mut state = STATE.lock().unwrap_or_else(|e| e.into_inner());
@@ -127,6 +141,12 @@ fn change(f: impl FnOnce(&mut State)) {
 fn open(kind: Kind) {
     let mut opening = 0;
     change(|s| {
+        if kind == Kind::Welcome {
+            if !s.aside {
+                s.reached = 0;
+            }
+            s.aside = false;
+        }
         s.open = true;
         s.kind = kind;
         s.version = VERSION.to_string();
@@ -209,6 +229,14 @@ impl crate::Chilpa {
         if !first {
             return;
         }
+        if let Some(reached) = self.preference(ASIDE).as_deref().and_then(cards_reached) {
+            change(|s| {
+                s.kind = Kind::Welcome;
+                s.aside = true;
+                s.reached = reached;
+            });
+            return;
+        }
         let seen = self.preference(SEEN);
         let has_deck = !deck(Kind::News).is_empty();
         match decide(seen.as_deref(), VERSION, self.roots().is_empty(), has_deck) {
@@ -219,21 +247,57 @@ impl crate::Chilpa {
     }
 
     /// `welcome` and `whatsNew` open a deck; `close` closes it, from any
-    /// page, and marks this version seen.
+    /// page, and marks this version seen. `dismiss` ends a Welcome set aside.
     pub fn onboarding_command(&mut self, action: &str) {
         match action {
             "welcome" => open(Kind::Welcome),
             "whatsNew" => open(Kind::News),
             "close" => {
-                change(|s| s.open = false);
+                let mut welcome = false;
+                change(|s| {
+                    s.open = false;
+                    if s.kind == Kind::Welcome {
+                        s.aside = false;
+                        s.reached = 0;
+                        welcome = true;
+                    }
+                });
+                if welcome {
+                    self.remember_preference(ASIDE, "");
+                }
                 self.remember_preference(SEEN, VERSION);
             }
-            _ => eprintln!("onboarding: unknown action {action}"),
+            "dismiss" => {
+                change(|s| {
+                    s.aside = false;
+                    s.reached = 0;
+                });
+                self.remember_preference(ASIDE, "");
+                self.remember_preference(SEEN, VERSION);
+            }
+            _ => match aside_reached(action) {
+                Some(reached) => {
+                    let mut set_aside = false;
+                    change(|s| {
+                        if s.open && s.kind == Kind::Welcome {
+                            s.open = false;
+                            s.aside = true;
+                            s.reached = reached;
+                            set_aside = true;
+                        }
+                    });
+                    if set_aside {
+                        self.remember_preference(ASIDE, &reached.to_string());
+                    }
+                }
+                None => eprintln!("onboarding: unknown action {action}"),
+            },
         }
     }
 
     /// The deck's document when it moved since `seen`: `{started, open, kind,
-    /// loading, version, date, hasBody, toc, blocks, deck}`.
+    /// loading, version, date, hasBody, toc, blocks, deck, aside, reached,
+    /// welcomeCards}`.
     pub fn onboarding_doc(&self, seen: u64) -> Option<(u64, String)> {
         let state = STATE.lock().unwrap_or_else(|e| e.into_inner());
         if state.revision == seen {
@@ -250,6 +314,9 @@ impl crate::Chilpa {
             "toc": state.toc,
             "blocks": state.blocks,
             "deck": deck(state.kind),
+            "aside": state.aside,
+            "reached": state.reached,
+            "welcomeCards": deck(Kind::Welcome).len(),
         });
         Some((state.revision, doc.to_string()))
     }
@@ -404,6 +471,17 @@ mod tests {
         assert!(welcome.iter().all(|c| c.image.ends_with(".png") && !c.title.is_empty() && !c.body.is_empty()));
         assert!(welcome.iter().all(|c| c.action.is_empty() == c.action_label.is_empty()), "a button has a label and a place");
         assert!(deck(Kind::News).is_empty());
+    }
+
+    #[test]
+    fn stepping_aside_names_the_cards_reached_within_the_welcome() {
+        assert_eq!(aside_reached("aside:3"), Some(3));
+        assert_eq!(aside_reached("aside:99"), Some(deck(Kind::Welcome).len()), "never more cards than it has");
+        assert_eq!(aside_reached("aside:"), None);
+        assert_eq!(aside_reached("aside:-1"), None);
+        assert_eq!(aside_reached("aside"), None);
+        assert_eq!(aside_reached("close"), None);
+        assert_eq!(cards_reached(""), None, "an emptied preference holds nothing");
     }
 
     #[test]
