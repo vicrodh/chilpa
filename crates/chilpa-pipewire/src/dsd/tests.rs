@@ -148,3 +148,35 @@ fn unsupported_requests_never_open_a_server_connection() {
         assert!(DsdSink::open("invalid", format, exclusive).is_err());
     }
 }
+
+/// A real sink suspends a stream that is not playing, which the graph fixture
+/// never does: open, a pause long enough to be suspended, resume, a seek and
+/// the end. Run with CHILPA_DSD_LIVE_SINK set to the sink's node name.
+#[test]
+#[ignore = "needs a real PipeWire DSD sink, and plays DSD silence on it"]
+fn a_real_sink_plays_after_priming_a_pause_and_a_seek() {
+    let id = std::env::var("CHILPA_DSD_LIVE_SINK").expect("CHILPA_DSD_LIVE_SINK names the sink");
+    let format = StreamFormat::new(SampleFormat::DsdU32Be, 176_400, 2);
+    let mut sink = DsdSink::open(&id, format, true).expect("the sink opens");
+    // 0x69 is DSD's idle pattern: silence, never a tone.
+    let silence = vec![0x69u8; 8 * 4_410];
+    let play = |sink: &mut DsdSink, step: &str| {
+        let until = Instant::now() + Duration::from_secs(1);
+        while Instant::now() < until {
+            match sink.write(&silence) {
+                Ok(0) => std::thread::sleep(Duration::from_millis(5)),
+                Ok(_) | Err(SinkError::Xrun) => {}
+                Err(error) => panic!("{step}: {error:?}"),
+            }
+        }
+    };
+    play(&mut sink, "first play");
+    sink.set_paused(true).expect("pause");
+    std::thread::sleep(Duration::from_secs(3));
+    sink.set_paused(false).expect("resume");
+    play(&mut sink, "after a pause");
+    sink.flush().expect("seek");
+    std::thread::sleep(Duration::from_millis(500));
+    play(&mut sink, "after a seek");
+    sink.drain(&|| false).expect("the end");
+}
