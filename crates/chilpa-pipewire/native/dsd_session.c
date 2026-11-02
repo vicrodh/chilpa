@@ -122,7 +122,7 @@ static void link_info(void *data, const struct pw_link_info *info)
     }
     link->valid = link->format_valid && info->state >= PW_LINK_STATE_PAUSED;
     if (info->state == PW_LINK_STATE_ERROR || info->state == PW_LINK_STATE_UNLINKED ||
-            (s->opened && !link->valid))
+            (s->live && !link->valid))
         dsd_fail(s, -ENODEV, info->error ? info->error : "DSD link was lost");
     pw_thread_loop_signal(s->loop, false);
 }

@@ -59,6 +59,10 @@ struct dsd_session {
     enum pw_stream_state state;
     bool started_loop, physical, closing, opened, format_valid;
     bool active, paused, draining, drain_requested, drained;
+    /* Playing, with its route confirmed since it last became active. PipeWire
+     * suspends a stream that is not playing and clears its format; only a
+     * live stream treats that as a failure. */
+    bool live;
     bool xrun;
     uint32_t buffer_count, param_count;
     uint8_t *ring;
@@ -78,6 +82,7 @@ bool dsd_route_ready(struct dsd_session *s);
 int dsd_roundtrip(struct dsd_session *s, const struct timespec *deadline);
 struct dsd_session *dsd_session_new(const char *name, uint64_t serial, uint32_t cookie, struct timespec *deadline);
 int dsd_session_start_stream(struct dsd_session *s, const struct timespec *deadline);
+void dsd_stream_format(void *data, uint32_t id, const struct spa_pod *param);
 
 int chilpa_pw_dsd_query(const char *name, struct dsd_caps *caps, char *error, size_t size);
 struct dsd_session *chilpa_pw_dsd_open(const char *name, uint64_t serial,

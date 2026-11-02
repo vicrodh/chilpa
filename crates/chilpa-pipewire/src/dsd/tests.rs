@@ -13,6 +13,15 @@ unsafe extern "C" {
         exact_rate: u32,
     ) -> u32;
     fn chilpa_pw_dsd_test_ring() -> bool;
+    fn chilpa_pw_dsd_test_cleared_format() -> u32;
+}
+
+#[test]
+fn a_suspended_stream_survives_its_cleared_format_and_a_live_one_does_not() {
+    // PipeWire suspends a primed or paused stream and clears its format; the
+    // stream must wait for it to come back. Losing it while live, or being
+    // given another format, still fails.
+    assert_eq!(unsafe { chilpa_pw_dsd_test_cleared_format() }, 0b110);
 }
 
 fn pod(

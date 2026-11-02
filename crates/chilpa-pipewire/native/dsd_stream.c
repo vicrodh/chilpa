@@ -18,13 +18,16 @@ static void stream_state(void *data, enum pw_stream_state old,
     pw_thread_loop_signal(s->loop, false);
 }
 
-static void stream_format(void *data, uint32_t id, const struct spa_pod *param)
+void dsd_stream_format(void *data, uint32_t id, const struct spa_pod *param)
 {
     struct dsd_session *s = data;
     if (id != SPA_PARAM_Format || s->closing) return;
     s->format_valid = dsd_format_matches(param, s->rate, s->interleave);
     if (!s->format_valid) {
-        if (param || s->opened) {
+        /* A cleared format is a suspended stream: primed before its first
+         * write, paused or flushed. Activation negotiates it again and waits
+         * for the route. Another format, or losing it while live, fails. */
+        if (param || s->live) {
             struct spa_audio_info_dsd info = { 0 };
             uint32_t type = 0, subtype = 0;
             if (param) {
@@ -118,7 +121,7 @@ static void process(void *data)
 }
 
 static const struct pw_stream_events stream_events = {
-    PW_VERSION_STREAM_EVENTS, .state_changed = stream_state, .param_changed = stream_format,
+    PW_VERSION_STREAM_EVENTS, .state_changed = stream_state, .param_changed = dsd_stream_format,
     .add_buffer = add_buffer, .remove_buffer = remove_buffer, .process = process,
     .drained = stream_drained,
 };
@@ -227,19 +230,36 @@ struct dsd_session *chilpa_pw_dsd_open(const char *name, uint64_t serial,
     return s;
 }
 
+/* After a suspend the format, the links and the buffers come back only once
+ * the stream is active again. Waits for them, with the open deadline. */
+static int confirm_route(struct dsd_session *s)
+{
+    struct timespec deadline;
+    pw_thread_loop_get_time(s->loop, &deadline, DSD_OPEN_NS);
+    while (!s->error && (!dsd_route_ready(s) || s->buffer_count < 2)) {
+        int result = pw_thread_loop_timed_wait_full(s->loop, &deadline);
+        if (result < 0 && (!dsd_route_ready(s) || s->buffer_count < 2))
+            dsd_fail(s, result, "DSD route did not return after the stream was suspended");
+    }
+    s->live = s->error == 0;
+    return s->error;
+}
+
 static int activate(struct dsd_session *s)
 {
     int result = pw_stream_set_active(s->stream, true);
     if (result < 0) dsd_fail(s, result, "Cannot activate native DSD stream");
     else s->active = true;
-    return s->error;
+    return s->error ? s->error : confirm_route(s);
 }
 
 int64_t chilpa_pw_dsd_write(struct dsd_session *s, const uint8_t *bytes, size_t size)
 {
     pw_thread_loop_lock(s->loop);
     int64_t result = s->error;
-    if (!result && (size % DSD_FRAME_BYTES || !dsd_route_ready(s))) result = -EPROTO;
+    /* Before activation the stream may be suspended; the ring takes the bytes
+     * and activation confirms the route. */
+    if (!result && (size % DSD_FRAME_BYTES || (s->live && !dsd_route_ready(s)))) result = -EPROTO;
     if (!result && s->xrun) { s->xrun = false; result = -EPIPE; }
     if (!result && !s->paused) {
         if (s->drain_requested && !s->drained) result = -EBUSY;
@@ -276,9 +296,11 @@ int chilpa_pw_dsd_pause(struct dsd_session *s, bool paused)
     if (!s->error && s->paused != paused) {
         if (paused) stream_delay(s);
         s->paused = paused;
+        if (paused) s->live = false;
         if (s->active) {
             int result = pw_stream_set_active(s->stream, !paused);
             if (result < 0) dsd_fail(s, result, "Cannot pause native DSD stream");
+            else if (!paused) confirm_route(s);
         }
     }
     int result = s->error;
@@ -294,7 +316,7 @@ int chilpa_pw_dsd_flush(struct dsd_session *s)
         result = pw_stream_set_active(s->stream, false);
         if (result >= 0) result = pw_stream_flush(s->stream, false);
         if (result < 0) dsd_fail(s, result, "Cannot flush native DSD stream");
-        s->active = s->draining = s->drain_requested = s->drained = s->xrun = false;
+        s->active = s->live = s->draining = s->drain_requested = s->drained = s->xrun = false;
         s->read_at = s->write_at = 0;
         s->submitted = 0;
         s->last_delay = 0;

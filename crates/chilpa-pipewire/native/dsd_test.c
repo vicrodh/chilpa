@@ -127,6 +127,30 @@ uint32_t chilpa_pw_dsd_test_format(int32_t interleave, bool lsb, bool swapped,
         (dsd_format_matches(pod, exact_rate, interleave) ? 1u << 16 : 0);
 }
 
+/* What a cleared or a different format does to an open session: bit 0 when a
+ * suspended one fails, bit 1 when a live one fails, bit 2 when a suspended
+ * one given another rate fails. */
+uint32_t chilpa_pw_dsd_test_cleared_format(void)
+{
+    struct spa_audio_info_dsd other = { .rate = 88200u * 8u, .channels = 2,
+        .bitorder = SPA_PARAM_BITORDER_msb, .interleave = 4,
+        .position = { SPA_AUDIO_CHANNEL_FL, SPA_AUDIO_CHANNEL_FR } };
+    uint8_t storage[512];
+    struct spa_pod_builder builder = SPA_POD_BUILDER_INIT(storage, sizeof(storage));
+    const struct spa_pod *wrong = spa_format_audio_dsd_build(&builder, SPA_PARAM_Format, &other);
+    const struct { bool live; const struct spa_pod *param; } cases[] = {
+        { false, NULL }, { true, NULL }, { false, wrong },
+    };
+    uint32_t failed = 0;
+    for (unsigned i = 0; i < 3; i++) {
+        struct dsd_session s = { .rate = 88200, .interleave = 4, .opened = true,
+            .format_valid = true, .live = cases[i].live };
+        dsd_stream_format(&s, SPA_PARAM_Format, cases[i].param);
+        if (s.error) failed |= 1u << i;
+    }
+    return failed;
+}
+
 bool chilpa_pw_dsd_test_ring(void)
 {
     struct dsd_session s = { .capacity = 7, .read_at = (1ull << 32) - 3, .write_at = (1ull << 32) - 3 };
