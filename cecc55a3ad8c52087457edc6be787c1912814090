@@ -1,0 +1,4 @@
+review: astra /mnt/build/tmp/blitzkriegfc/bridge-2026-11-01/astra-flood-review2.md, not safe; its findings answered in 29a07a44
+review: astra /mnt/build/tmp/blitzkriegfc/bridge-2026-11-01/astra-flood-review3.md, not safe; owner accepted the open items
+accepted: owner 2026-11-02 in chat ("Los acepto"): install-id race on a corrupt id without locks, unbounded song channel, retry delay on Last.fm 29, a retry after leaving radio, missing worker tests.
+smoke: owner 2026-11-02, release binary of d20fd407 (sha256 2c2b7dbe): radio, the cover changes with each song. Earlier on 29a07a44 by cc: 1,027 requests fell to 1 on the same station. Real scrobbles not tested, owner's call.
