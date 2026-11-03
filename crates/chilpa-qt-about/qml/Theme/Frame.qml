@@ -16,4 +16,8 @@ QtObject {
     readonly property int updateDelay: 15000
     readonly property int updateInterval: 86400000
     readonly property int notificationDot: 6
+    // The update bubble under the app menu: its point, and the size it
+    // grows from when it comes out.
+    readonly property int noticeCaret: 12
+    readonly property real noticeGrowth: 0.9
 }

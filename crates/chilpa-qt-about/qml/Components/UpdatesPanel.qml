@@ -8,6 +8,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 Column {
     id: panel
     readonly property var state: JSON.parse(Updates.snapshot || "{}")
+    readonly property bool offered: ["available", "downloading", "installing", "cancelling", "ready"].indexOf(state.phase) >= 0 && !!state.version
     visible: state.supported === true
     spacing: Metrics.gap8
     Text { text: I18n.tr("Updates", I18n.rev); color: Theme.color.textPrimary; font.pointSize: Type.titleSmall }
@@ -30,6 +31,16 @@ Column {
             : panel.state.phase === "cancelled" ? I18n.tr("Update cancelled.", I18n.rev)
             : I18n.tr("Check for a newer version of Chilpa.", I18n.rev)
     }
+    // The version running and the one on offer, side by side.
+    Grid {
+        columns: 2
+        columnSpacing: Metrics.gap12
+        rowSpacing: Metrics.gap4
+        Text { text: I18n.tr("Current version", I18n.rev); font.pointSize: Type.body; color: Theme.color.textSecondary }
+        Text { objectName: "currentVersion"; text: panel.state.current_version || ""; font.pointSize: Type.body; font.weight: Type.semibold; color: Theme.color.textPrimary }
+        Text { visible: panel.offered; text: I18n.tr("Available version", I18n.rev); font.pointSize: Type.body; color: Theme.color.textSecondary }
+        Text { objectName: "availableVersion"; visible: panel.offered; text: panel.state.version || ""; font.pointSize: Type.body; font.weight: Type.semibold; color: Theme.color.accent }
+    }
     ProgressBar {
         objectName: "updateProgress"
         width: parent.width
@@ -48,7 +59,7 @@ Column {
         PillButton { objectName: "downloadUpdate"; enabled: !panel.state.offline; text: I18n.tr("Update", I18n.rev); kind: "primary"; visible: panel.state.phase === "available" && panel.state.can_install === true; onClicked: Updates.download() }
         PillButton { objectName: "openUpdateRelease"; enabled: !panel.state.offline && !!panel.state.release_url; text: I18n.tr("Open release page", I18n.rev); visible: panel.state.phase === "available" && panel.state.can_install !== true; onClicked: Qt.openUrlExternally(panel.state.release_url) }
         PillButton { objectName: "cancelUpdate"; text: I18n.tr("Cancel", I18n.rev); visible: panel.state.busy === true && panel.state.phase !== "installing"; enabled: panel.state.phase !== "cancelling"; onClicked: Updates.cancel() }
-        PillButton { objectName: "restartUpdate"; text: I18n.tr("Restart Chilpa", I18n.rev); kind: "primary"; visible: panel.state.phase === "ready"; onClicked: if (Updates.restart()) Qt.quit() }
+        PillButton { objectName: "restartUpdate"; text: I18n.tr("Restart Chilpa", I18n.rev); kind: "primary"; visible: panel.state.phase === "ready"; onClicked: Updates.restart() }
     }
     Text { width: parent.width; visible: panel.state.can_install === true; wrapMode: Text.WordWrap; text: I18n.tr("Updates keep your library, settings and plugins. One previous version is kept beside the new one.", I18n.rev); font.pointSize: Type.small; color: Theme.color.textTertiary }
     Timer { objectName: "updatePolling"; interval: Motion.poll; repeat: true; running: panel.visible && panel.Window.window && panel.Window.window.visible && panel.state.busy === true; onTriggered: Updates.refresh() }

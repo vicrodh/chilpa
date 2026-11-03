@@ -762,6 +762,9 @@ msgstr "Verfügbar"
 msgid "Available GPUs"
 msgstr "Verfügbare GPUs"
 
+msgid "Available version"
+msgstr "Verfügbare Version"
+
 msgid "Awaiting approval"
 msgstr "Wartet auf Genehmigung"
 
@@ -1151,11 +1154,14 @@ msgstr "Chilpa sendet das ursprüngliche Audio an den Empfänger."
 msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
 msgstr "Chilpa stellt das Gerät auf die Rate jedes Titels ein. Bei aktivem Exklusivmodus gehört das Gerät, solange ein Titel läuft, allein Chilpa, sodass am Mac nichts anderes es währenddessen nutzen kann. Schalte den Exklusivmodus aus, um es zu teilen; der Mac mischt dann alles andere, was wiedergegeben wird, dazu."
 
-msgid "Chilpa update available"
-msgstr "Chilpa-Update verfügbar"
-
 msgid "Chilpa will make smaller covers and backgrounds again when needed."
 msgstr "Chilpa erstellt kleinere Cover und Hintergründe bei Bedarf neu."
+
+msgid "Chilpa {} is available"
+msgstr "Chilpa {} ist verfügbar"
+
+msgid "Chilpa {} is ready"
+msgstr "Chilpa {} ist bereit"
 
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
 msgstr "Chilpas Icon im Panel: Ein Klick zeigt oder verbirgt das Fenster, die mittlere Taste startet oder pausiert die Wiedergabe, das Mausrad ändert die Lautstärke."
@@ -1648,6 +1654,9 @@ msgstr "Aktueller Signalweg"
 
 msgid "Current version"
 msgstr "Aktuelle Version"
+
+msgid "Current version: {}"
+msgstr "Aktuelle Version: {}"
 
 msgid "Cursor down"
 msgstr "Cursor nach unten"

@@ -761,6 +761,9 @@ msgstr "利用可能"
 msgid "Available GPUs"
 msgstr "利用可能なGPU"
 
+msgid "Available version"
+msgstr "利用可能なバージョン"
+
 msgid "Awaiting approval"
 msgstr "承認待ち"
 
@@ -1149,11 +1152,14 @@ msgstr "Chilpaは元の音声を受信機に送信します。"
 msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
 msgstr "Chilpaはデバイスを各トラックのレートに設定します。排他モードがオンの間は、トラックの再生中デバイスがChilpaだけのものになり、Mac上のほかのものは使えません。共有するには排他モードをオフにしてください。Macはほかの再生音もミックスします。"
 
-msgid "Chilpa update available"
-msgstr "Chilpaのアップデートがあります"
-
 msgid "Chilpa will make smaller covers and backgrounds again when needed."
 msgstr "必要になったとき、Chilpaは小さいカバーと背景をもう一度作成します。"
+
+msgid "Chilpa {} is available"
+msgstr "Chilpa {} が利用できます"
+
+msgid "Chilpa {} is ready"
+msgstr "Chilpa {} の準備ができました"
 
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
 msgstr "パネル上のChilpaのアイコン: クリックでウィンドウの表示と非表示、中ボタンで再生と一時停止、ホイールで音量を調整します。"
@@ -1646,6 +1652,9 @@ msgstr "現在の信号経路"
 
 msgid "Current version"
 msgstr "現在のバージョン"
+
+msgid "Current version: {}"
+msgstr "現在のバージョン: {}"
 
 msgid "Cursor down"
 msgstr "カーソルを下へ"

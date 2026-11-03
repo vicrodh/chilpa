@@ -8,5 +8,7 @@ QtObject {
     function download() { calls = calls.concat(["download"]) }
     function cancel() { calls = calls.concat(["cancel"]) }
     function setAutomatic(on) { calls = calls.concat(["automatic"]) }
-    function restart() { calls = calls.concat(["restart"]); return false }
+    property bool restarts: false
+    signal restarting()
+    function restart() { calls = calls.concat(["restart"]); if (restarts) restarting(); return restarts }
 }

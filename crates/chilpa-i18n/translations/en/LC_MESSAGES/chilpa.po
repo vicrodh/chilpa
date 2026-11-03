@@ -762,6 +762,9 @@ msgstr "Available"
 msgid "Available GPUs"
 msgstr "Available GPUs"
 
+msgid "Available version"
+msgstr ""
+
 msgid "Awaiting approval"
 msgstr ""
 
@@ -1151,10 +1154,13 @@ msgstr ""
 msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
 msgstr ""
 
-msgid "Chilpa update available"
+msgid "Chilpa will make smaller covers and backgrounds again when needed."
 msgstr ""
 
-msgid "Chilpa will make smaller covers and backgrounds again when needed."
+msgid "Chilpa {} is available"
+msgstr ""
+
+msgid "Chilpa {} is ready"
 msgstr ""
 
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
@@ -1648,6 +1654,9 @@ msgstr ""
 
 msgid "Current version"
 msgstr "Current version"
+
+msgid "Current version: {}"
+msgstr ""
 
 msgid "Cursor down"
 msgstr ""

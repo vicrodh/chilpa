@@ -762,6 +762,9 @@ msgstr "Beschikbaar"
 msgid "Available GPUs"
 msgstr "Beschikbare GPU’s"
 
+msgid "Available version"
+msgstr "Beschikbare versie"
+
 msgid "Awaiting approval"
 msgstr "Wacht op goedkeuring"
 
@@ -1151,11 +1154,14 @@ msgstr "Chilpa stuurt de oorspronkelijke audio naar de ontvanger."
 msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
 msgstr "Chilpa stelt het apparaat in op de samplefrequentie van elk nummer. Met de exclusieve modus aan is het apparaat tijdens het afspelen ook alleen van Chilpa, zodat niets anders op de Mac het intussen kan gebruiken. Zet de exclusieve modus uit om het te delen; de Mac mixt dan alles wat er verder speelt."
 
-msgid "Chilpa update available"
-msgstr "Chilpa-update beschikbaar"
-
 msgid "Chilpa will make smaller covers and backgrounds again when needed."
 msgstr "Chilpa maakt indien nodig opnieuw kleinere hoezen en achtergronden."
+
+msgid "Chilpa {} is available"
+msgstr "Chilpa {} is beschikbaar"
+
+msgid "Chilpa {} is ready"
+msgstr "Chilpa {} is klaar"
 
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
 msgstr "Het pictogram van Chilpa op het paneel: een klik toont of verbergt het venster, de middelste knop speelt af of pauzeert, het wiel verandert het volume."
@@ -1648,6 +1654,9 @@ msgstr "Huidig signaalpad"
 
 msgid "Current version"
 msgstr "Huidige versie"
+
+msgid "Current version: {}"
+msgstr "Huidige versie: {}"
 
 msgid "Cursor down"
 msgstr "Cursor omlaag"

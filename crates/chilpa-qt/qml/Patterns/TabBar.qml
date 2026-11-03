@@ -179,6 +179,7 @@ Item {
                 anchors.top: parent.top
                 anchors.right: parent.right
                 review: function(target) { target === "libraryFolders" ? Navigation.go(target, 0) : Navigation.openSection(target || "plugins") }
+                onQuitAsked: Player.quit()
             }
             CascadingMenu {
                 id: mainMenu

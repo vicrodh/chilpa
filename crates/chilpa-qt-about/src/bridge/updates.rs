@@ -18,6 +18,10 @@ pub mod qobject {
         #[qinvokable] fn cancel(self: Pin<&mut Updates>);
         #[qinvokable] fn set_automatic(self: Pin<&mut Updates>, on: bool);
         #[qinvokable] fn restart(self: Pin<&mut Updates>) -> bool;
+        /// The helper that starts the new version waits for this process to
+        /// end: the window quits Chilpa for real, past the tray and the quit
+        /// question, when this fires.
+        #[qsignal] fn restarting(self: Pin<&mut Updates>);
     }
 }
 use chilpa_qt_kit::app;
@@ -36,5 +40,9 @@ impl qobject::Updates {
     pub fn download(mut self: Pin<&mut Self>) { app::with(|api| api.appimage_updates_download()); self.as_mut().refresh(); }
     pub fn cancel(self: Pin<&mut Self>) { app::with(|api| api.appimage_updates_cancel()); }
     pub fn set_automatic(mut self: Pin<&mut Self>, on: bool) { app::with(|api| api.appimage_updates_automatic(on)); self.as_mut().refresh(); }
-    pub fn restart(self: Pin<&mut Self>) -> bool { app::with(|api| api.appimage_updates_restart()) }
+    pub fn restart(self: Pin<&mut Self>) -> bool {
+        let started = app::with(|api| api.appimage_updates_restart());
+        if started { self.restarting(); }
+        started
+    }
 }
