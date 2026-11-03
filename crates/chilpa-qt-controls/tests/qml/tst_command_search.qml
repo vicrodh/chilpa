@@ -37,7 +37,7 @@ TestCase {
         model.actedRow = -1
         flyout.current = -1
         for (let i = 0; i < 6; ++i)
-            model.append({kind:i % 2 === 0 ? 0 : 4, title:"Result " + i, detail:"Album", art:"", duration:"3:00", sourceName:"", sourceIcon:""})
+            model.append({kind:i % 2 === 0 ? 0 : 4, title:"Result " + i, detail:"Album", art:"", duration:"3:00", sourceName:"", sourceIcon:"", aiGenerated:false})
         origin.forceActiveFocus()
     }
     function cleanup() {

@@ -34,8 +34,8 @@ TestCase {
     // Chilpa's mark, a source's its icon.
     function test_in_the_flyout_the_library_s_own_wear_chilpa_s_mark() {
         model.clear()
-        model.append({kind: 4, title: "Own song", detail: "", art: "", duration: "3:00", sourceIcon: "", sourceName: ""})
-        model.append({kind: 4, title: "Their song", detail: "", art: "", duration: "3:00", sourceIcon: "broadcast", sourceName: "Fixture"})
+        model.append({kind: 4, title: "Own song", detail: "", art: "", duration: "3:00", sourceIcon: "", sourceName: "", aiGenerated: false})
+        model.append({kind: 4, title: "Their song", detail: "", art: "", duration: "3:00", sourceIcon: "broadcast", sourceName: "Fixture", aiGenerated: false})
         flyout.open()
         tryCompare(flyout, "opened", true)
         const marks = () => { const out = []; const walk = node => { if (node.objectName === "hitOrigin" && node.visible) out.push(node); for (const child of node.children || []) walk(child) }; walk(flyout.contentItem); return out }
