@@ -14,6 +14,38 @@ unsafe extern "C" {
     ) -> u32;
     fn chilpa_pw_dsd_test_ring() -> bool;
     fn chilpa_pw_dsd_test_cleared_format() -> u32;
+    fn dsd_reliable_server(version: *const c_char) -> bool;
+    fn dsd_settle_ns(rate: u32, delay: i64, numerator: u32, denominator: u32, chunk: u32) -> u64;
+}
+
+#[test]
+fn native_dsd_is_offered_only_by_a_server_with_reliable_transport() {
+    // Before PipeWire 1.6 a queued chunk can replace one the sink has not
+    // read, so native DSD there converts to PCM instead.
+    let reliable = |version: &str| {
+        let version = CString::new(version).unwrap();
+        unsafe { dsd_reliable_server(version.as_ptr()) }
+    };
+    for version in ["1.6.0", "1.6.9", "1.10.2", "2.0.0"] {
+        assert!(reliable(version), "{version} keeps unread handoffs");
+    }
+    for version in ["1.5.99", "1.4.7", "1.0.5", "0.3.65", "", "next"] {
+        assert!(!reliable(version), "{version} has no reliable transport");
+    }
+    assert!(!unsafe { dsd_reliable_server(std::ptr::null()) });
+}
+
+#[test]
+fn a_drain_reports_done_once_the_device_has_played_the_last_chunk() {
+    let ms = |ns: u64| ns as f64 / 1e6;
+    // 1,024 ticks at 48 kHz of device delay, a last chunk of 4,096 frames at
+    // 176.4 kHz, and the 2 ms margin.
+    let settle = unsafe { dsd_settle_ns(176_400, 1_024, 1, 48_000, 4_096) };
+    assert!((ms(settle) - (21.333 + 23.220 + 2.0)).abs() < 0.01, "{} ms", ms(settle));
+    // No report from PipeWire still waits for the last chunk.
+    assert!((ms(unsafe { dsd_settle_ns(88_200, 0, 0, 0, 2_048) }) - (23.220 + 2.0)).abs() < 0.01);
+    // A wrong report cannot hold a stop for long.
+    assert_eq!(unsafe { dsd_settle_ns(88_200, i64::MAX / 4, 1, 1, 2_048) }, 500_000_000);
 }
 
 #[test]

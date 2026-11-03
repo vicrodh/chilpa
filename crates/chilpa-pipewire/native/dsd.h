@@ -16,6 +16,10 @@
 #define DSD_MAX_LINKS 8u
 #define DSD_ERROR_BYTES 256u
 #define DSD_OPEN_NS 800000000ll
+/* After a drain, what the device still has to play: its delay and the last
+ * chunk, a little margin, and never more than this. */
+#define DSD_SETTLE_MARGIN_NS 2000000ull
+#define DSD_SETTLE_MAX_NS 500000000ull
 
 struct dsd_caps {
     uint64_t serial;
@@ -58,6 +62,9 @@ struct dsd_session {
     char message[DSD_ERROR_BYTES];
     enum pw_stream_state state;
     bool started_loop, physical, closing, opened, format_valid;
+    /* The server honors reliable transport (PipeWire 1.6 and later). Without
+     * it a queued chunk can replace one the sink has not read. */
+    bool reliable;
     bool active, paused, draining, drain_requested, drained;
     /* Playing, with its route confirmed since it last became active. PipeWire
      * suspends a stream that is not playing and clears its format; only a
@@ -65,6 +72,10 @@ struct dsd_session {
     bool live;
     bool xrun;
     uint32_t buffer_count, param_count;
+    /* Frames in the last chunk queued, and when a drained stream's last
+     * payload has reached the device (monotonic nanoseconds). */
+    uint32_t last_chunk;
+    uint64_t settle_until;
     uint8_t *ring;
     size_t capacity;
     uint64_t read_at, write_at;
@@ -74,6 +85,8 @@ struct dsd_session {
 
 bool dsd_choice_contains(uint32_t type, const int32_t *values, uint32_t count, int32_t wanted);
 bool dsd_format_matches(const struct spa_pod *pod, uint32_t rate, int32_t interleave);
+bool dsd_reliable_server(const char *version);
+uint64_t dsd_settle_ns(uint32_t rate, int64_t delay, uint32_t num, uint32_t denom, uint32_t chunk);
 void dsd_collect_format(const struct spa_pod *pod, struct dsd_caps *caps);
 size_t dsd_ring_write(struct dsd_session *s, const uint8_t *bytes, size_t frames);
 size_t dsd_ring_read(struct dsd_session *s, uint8_t *bytes, size_t frames);

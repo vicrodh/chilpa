@@ -1,6 +1,31 @@
 /* SPDX-License-Identifier: MIT */
 #include "dsd.h"
+#include <stdio.h>
 #include <string.h>
+
+/* Reliable transport, which keeps a handoff the sink has not read, arrived in
+ * PipeWire 1.6. An older server or an unreadable version has none. */
+bool dsd_reliable_server(const char *version)
+{
+    unsigned major = 0, minor = 0;
+    if (!version || sscanf(version, "%u.%u", &major, &minor) != 2) return false;
+    return major > 1 || (major == 1 && minor >= 6);
+}
+
+/* How long after a drain the device is still playing: the delay PipeWire
+ * reports, in ticks of num/denom seconds, the last chunk at the stream's
+ * rate, and a margin, bounded so a wrong report cannot hold a stop. */
+uint64_t dsd_settle_ns(uint32_t rate, int64_t delay, uint32_t num, uint32_t denom, uint32_t chunk)
+{
+    uint64_t ns = DSD_SETTLE_MARGIN_NS;
+    if (delay > 0 && denom) {
+        /* Wide, so an absurd report saturates instead of wrapping around. */
+        unsigned __int128 wide = (unsigned __int128)(uint64_t)delay * num * 1000000000u / denom;
+        ns += wide > DSD_SETTLE_MAX_NS ? DSD_SETTLE_MAX_NS : (uint64_t)wide;
+    }
+    if (rate) ns += (uint64_t)chunk * 1000000000ull / rate;
+    return SPA_MIN(ns, DSD_SETTLE_MAX_NS);
+}
 
 bool dsd_choice_contains(uint32_t type, const int32_t *v, uint32_t n, int32_t wanted)
 {

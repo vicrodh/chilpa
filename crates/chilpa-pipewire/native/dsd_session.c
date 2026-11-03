@@ -45,6 +45,7 @@ static void core_info(void *data, const struct pw_core_info *info)
 {
     struct dsd_session *s = data;
     s->core_cookie = info->cookie;
+    if (info->version) s->reliable = dsd_reliable_server(info->version);
     if (s->expected_serial && s->expected_cookie != info->cookie)
         dsd_fail(s, -ENODEV, "PipeWire server instance changed while DSD was suspended");
 }
@@ -226,6 +227,11 @@ struct dsd_session *dsd_session_new(const char *name, uint64_t serial, uint32_t 
     /* Registry, bound-node info, then the explicit enumeration share one deadline. */
     if (dsd_roundtrip(s, deadline) == 0 && !s->target)
         dsd_fail(s, -ENODEV, "PipeWire has no DSD target with this identity");
+    /* The server's version came with the core info, before the roundtrip.
+     * Without reliable transport native DSD can lose payload, so it is not
+     * offered and the player converts DSD to PCM instead. */
+    if (!s->error && !s->reliable)
+        dsd_fail(s, -ENOTSUP, "PipeWire before 1.6 cannot carry native DSD without losing data");
     if (!s->error && dsd_roundtrip(s, deadline) == 0 && !s->physical)
         dsd_fail(s, -ENOTSUP, "DSD target is not a physical ALSA sink");
     if (!s->error) {

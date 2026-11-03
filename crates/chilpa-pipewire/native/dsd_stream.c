@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 static void stream_state(void *data, enum pw_stream_state old,
         enum pw_stream_state state, const char *error)
@@ -72,13 +73,43 @@ static void remove_buffer(void *data, struct pw_buffer *buffer)
     if (s->buffer_count) s->buffer_count--;
 }
 
+static uint64_t now_ns(void)
+{
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (uint64_t)now.tv_sec * 1000000000ull + (uint64_t)now.tv_nsec;
+}
+
+/* A drained stream is no longer playing: PipeWire may suspend it, and that
+ * clears its format without being a failure. */
 static void stream_drained(void *data)
 {
     struct dsd_session *s = data;
     s->drained = true;
     s->active = false;
+    s->live = false;
     s->last_delay = 0;
     pw_thread_loop_signal(s->loop, false);
+}
+
+/* PipeWire reports a drain once its queue is empty, not once the device has
+ * played the last chunk: the drain reports done after the device's delay,
+ * measured the first time the drain is seen. */
+static bool settled(struct dsd_session *s)
+{
+    if (!s->drained) return false;
+    if (!s->settle_until) {
+        struct pw_time time = { 0 };
+        int64_t delay = 0;
+        uint32_t num = 0, denom = 0;
+        if (pw_stream_get_time_n(s->stream, &time, sizeof(time)) >= 0) {
+            delay = time.delay;
+            num = time.rate.num;
+            denom = time.rate.denom;
+        }
+        s->settle_until = now_ns() + dsd_settle_ns(s->rate, delay, num, denom, s->last_chunk);
+    }
+    return now_ns() >= s->settle_until;
 }
 
 static void process(void *data)
@@ -120,6 +151,7 @@ static void process(void *data)
     d->chunk->stride = DSD_FRAME_BYTES;
     d->chunk->size = filled * DSD_FRAME_BYTES;
     buffer->size = copied;
+    s->last_chunk = filled;
     int result = pw_stream_queue_buffer(s->stream, buffer);
     if (result < 0) dsd_fail(s, result, "Cannot queue PipeWire DSD buffer");
 }
@@ -351,6 +383,7 @@ int chilpa_pw_dsd_drain(struct dsd_session *s)
     if (!s->error && !s->draining) {
         s->draining = true;
         s->drained = false;
+        s->settle_until = 0;
         if (!s->active) activate(s);
     }
     if (!s->error && s->write_at == s->read_at && !s->drain_requested) {
@@ -358,7 +391,7 @@ int chilpa_pw_dsd_drain(struct dsd_session *s)
         int result = pw_stream_flush(s->stream, true);
         if (result < 0) dsd_fail(s, result, "Cannot drain native DSD stream");
     }
-    int result = s->error ? s->error : (s->drained ? 1 : 0);
+    int result = s->error ? s->error : (settled(s) ? 1 : 0);
     pw_thread_loop_unlock(s->loop);
     return result;
 }
