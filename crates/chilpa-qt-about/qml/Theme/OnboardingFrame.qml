@@ -52,4 +52,10 @@ QtObject {
     readonly property real artMiddleAt: 0.48
 
     readonly property string art: "qrc:/qt/qml/app/chilpa/about/assets/"
+    // A card in ink keeps its art untouched and writes on its light side,
+    // which starts at 63 % of the width, with the art's own dark tokens:
+    // `onboarding.artFrom` and `onboarding.artMiddle` are the same in every
+    // theme, because the art is.
+    readonly property real inkFrom: 0.63
+    readonly property real footerSize: 11 * Type.pointsPerPixel // derived: the eyebrow's 11 px, untracked
 }

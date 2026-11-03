@@ -11,6 +11,9 @@ use serde::Serialize;
 use std::sync::Mutex;
 use std::time::Duration;
 
+mod news;
+use news::news;
+
 /// The version a deck was last closed in, or the one Chilpa started on when
 /// it had nothing to show.
 pub(crate) const SEEN: &str = "onboarding.seenVersion";
@@ -39,6 +42,11 @@ struct Card {
     #[serde(rename = "actionLabel")]
     action_label: String,
     action: &'static str,
+    /// The art has a light side: the words sit there in dark ink, with no
+    /// gradient over the art.
+    ink: bool,
+    /// A small line under the body, empty for none.
+    footer: String,
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
@@ -58,7 +66,7 @@ struct TocEntry {
 
 fn card(image: &'static str, title: &str, body: &str, action_label: &str, action: &'static str) -> Card {
     let action_label = if action_label.is_empty() { String::new() } else { chilpa_i18n::t(action_label) };
-    Card { image, title: chilpa_i18n::t(title), body: chilpa_i18n::t(body), action_label, action }
+    Card { image, title: chilpa_i18n::t(title), body: chilpa_i18n::t(body), action_label, action, ink: false, footer: String::new() }
 }
 
 /// The cards of a deck. What's new has none for a version without news of
@@ -80,7 +88,7 @@ fn deck(kind: Kind) -> Vec<Card> {
             card("make-it-yours.png", chilpa_i18n::mark("Make it yours"),
                 chilpa_i18n::mark("Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."), chilpa_i18n::mark("Open appearance"), "appearance"),
         ],
-        Kind::News => Vec::new(),
+        Kind::News => news(VERSION),
     }
 }
 
@@ -403,7 +411,18 @@ mod tests {
         assert_eq!(welcome.iter().map(|c| c.action).collect::<Vec<_>>(), ["", "libraryFolders", "plugins", "hifiWizard", "appearance"]);
         assert!(welcome.iter().all(|c| c.image.ends_with(".png") && !c.title.is_empty() && !c.body.is_empty()));
         assert!(welcome.iter().all(|c| c.action.is_empty() == c.action_label.is_empty()), "a button has a label and a place");
-        assert!(deck(Kind::News).is_empty());
+        assert!(welcome.iter().all(|c| !c.ink && c.footer.is_empty()), "the welcome darkens its art and has no footer");
+        assert!(news("0.1.0").is_empty() && news("0.1.1").is_empty() && news("0.1.3").is_empty());
+    }
+
+    #[test]
+    fn version_0_1_2_brings_one_card_in_dark_ink_with_a_footer() {
+        for version in ["0.1.2", "0.1.2-rc.1"] {
+            let cards = news(version);
+            assert_eq!(cards.len(), 1, "{version}");
+            assert_eq!(cards[0].image, "altar.png");
+            assert!(cards[0].ink && !cards[0].footer.is_empty() && cards[0].action.is_empty());
+        }
     }
 
     #[test]

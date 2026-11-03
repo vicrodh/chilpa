@@ -8,13 +8,16 @@ import "../Theme"
 // One card of the deck, QBZ's (WhatsNewModal.qml): the art fills the box,
 // darkened from the left by a gradient painted here, and the text sits over
 // the left half: an eyebrow, the title, a sentence or two and, when the card
-// leads somewhere, a button.
+// leads somewhere, a button. A card in ink leaves its art untouched and
+// writes on the art's light side, dark, with a small footer.
 Rectangle {
     id: card
 
     property var model: null
     property string eyebrow
     signal actionChosen(string action)
+
+    readonly property bool ink: !!card.model && card.model.ink === true
 
     radius: Metrics.radiusControl
     color: Theme.color.surfaceRaised
@@ -34,6 +37,7 @@ Rectangle {
 
     Rectangle {
         anchors.fill: parent
+        visible: !card.ink
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0; color: Theme.color.onboardingArtFrom }
@@ -44,8 +48,9 @@ Rectangle {
 
     Column {
         anchors.left: parent.left
-        anchors.leftMargin: OnboardingFrame.cardInset
-        anchors.right: parent.horizontalCenter
+        anchors.leftMargin: card.ink ? Math.round(card.width * OnboardingFrame.inkFrom) : OnboardingFrame.cardInset
+        anchors.right: card.ink ? parent.right : parent.horizontalCenter
+        anchors.rightMargin: card.ink ? OnboardingFrame.cardInset : 0
         anchors.verticalCenter: parent.verticalCenter
         spacing: OnboardingFrame.cardGap
 
@@ -60,7 +65,7 @@ Rectangle {
             objectName: "cardTitle"
             width: parent.width
             text: card.model ? card.model.title : ""
-            color: Theme.color.backdropText
+            color: card.ink ? Theme.color.onboardingArtFrom : Theme.color.backdropText
             font.pointSize: OnboardingFrame.titleSize
             font.weight: Type.bold
             wrapMode: Text.WordWrap
@@ -68,9 +73,19 @@ Rectangle {
         Text {
             width: parent.width
             text: card.model ? card.model.body : ""
-            color: Theme.color.backdropTextMuted
+            color: card.ink ? Theme.color.onboardingArtFrom : Theme.color.backdropTextMuted
             font.pointSize: OnboardingFrame.bodySize
             lineHeight: OnboardingFrame.bodyLine
+            wrapMode: Text.WordWrap
+        }
+        Text {
+            objectName: "cardFooter"
+            width: parent.width
+            visible: text !== ""
+            text: card.model ? card.model.footer || "" : ""
+            color: Theme.color.onboardingArtMiddle
+            font.pointSize: OnboardingFrame.footerSize
+            font.italic: true
             wrapMode: Text.WordWrap
         }
         Item { width: 1; height: Metrics.gap4; visible: action.visible }

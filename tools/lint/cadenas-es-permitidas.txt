@@ -11,3 +11,4 @@
 # es manejar español se dice una vez.
 crates/chilpa-i18n/src/po.rs # el parser de catálogos: sus pruebas traen .po en español, que es lo que parsea
 crates/chilpa-core/src/settings.rs # prueba de migración: un settings.conf de antes del barrido trae "Clasico" y "espectro", y el punto es que se sigan abriendo
+crates/chilpa-api/src/onboarding/news.rs # las tarjetas de What's new por versión: la de 0.1.2 deja «día de muertos» sin traducir en su pie, por pedido del dueño (2026-11-02)

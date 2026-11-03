@@ -2042,6 +2042,9 @@ msgstr "No volver a preguntar"
 msgid "Don't group with other versions"
 msgstr "No agrupar con otras versiones"
 
+msgid "Don't worry about the AI slop in the image, it won't happen again. But día de muertos is a special occasion in Mexico, and here we pay tribute to our late QBZ."
+msgstr ""
+
 msgid "Done"
 msgstr "Listo"
 
@@ -4821,6 +4824,12 @@ msgstr "RELACIONES"
 
 msgid "Radio"
 msgstr "Radio"
+
+msgid "Radio and DSD fixes"
+msgstr "Arreglos en radio y DSD"
+
+msgid "Radio asks for each song's cover once, and the cover stays on screen. Native DSD through PipeWire now plays on a real DAC, with PipeWire 1.6 or later."
+msgstr "La radio pide la portada de cada canción una sola vez, y la portada se queda en pantalla. El DSD nativo por PipeWire ya suena en un DAC real, con PipeWire 1.6 o más reciente."
 
 msgid "Rate"
 msgstr "Calificar"
