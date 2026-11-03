@@ -32,14 +32,14 @@ Item {
     Connections { target: Updates; function onRestarting() { inbox.quitAsked() } }
     Component.onCompleted: { PluginUpdates.refresh(); Updates.refresh() }
     // Out of the app menu while a version is on offer and unread, until it
-    // is opened or dismissed.
+    // is opened or dismissed; it steps aside while a modal or the menu is open.
     Controls.Popup {
         id: bubble
         objectName: "updateBubble"
         PopupInput { surface: bubble }
         readonly property Item button: inbox.anchorItem || inbox
         parent: inbox
-        visible: inbox.appUnread && inbox.dismissed !== inbox.appIdentity && !!inbox.Window.window
+        visible: inbox.appUnread && inbox.dismissed !== inbox.appIdentity && !!inbox.Window.window && !InputLayers.blocks(inbox.Window.window)
         modal: false
         focus: false
         closePolicy: Controls.Popup.NoAutoClose
@@ -70,6 +70,7 @@ Item {
     }
     Modal {
         id: pluginDetails
+        objectName: "pluginUpdateDetails"
         width: Frame.widest
         Loader {
             width: pluginDetails.width - Metrics.modalInsets

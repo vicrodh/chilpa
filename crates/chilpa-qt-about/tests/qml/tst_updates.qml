@@ -42,6 +42,14 @@ TestCase {
         const corner = bubble.contentItem.mapToItem(menuButton, bubble.contentItem.width, 0)
         fuzzyCompare(corner.x, menuButton.width, 1)
         verify(corner.y > menuButton.height)
+        // A modal over the window sends it away until the modal closes.
+        inbox.openPlugins()
+        const plugins = findChild(inbox, "pluginUpdateDetails")
+        tryVerify(() => plugins.opened)
+        tryVerify(() => !bubble.visible)
+        plugins.close()
+        tryVerify(() => bubble.opened)
+        PluginUpdates.calls = []
         mouseClick(findChild(bubble.contentItem, "noticeDismiss"))
         tryVerify(() => !bubble.visible)
         offer("ready")
