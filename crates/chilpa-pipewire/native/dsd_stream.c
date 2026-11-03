@@ -230,6 +230,14 @@ struct dsd_session *chilpa_pw_dsd_open(const char *name, uint64_t serial,
     return s;
 }
 
+/* The route of this activation: format, links and buffers back, and the
+ * stream streaming. A suspend only reaches a stream that is not running, so
+ * once this one streams, nothing from the last deactivation can clear it. */
+static bool route_confirmed(struct dsd_session *s)
+{
+    return dsd_route_ready(s) && s->buffer_count >= 2 && s->state == PW_STREAM_STATE_STREAMING;
+}
+
 /* After a suspend the format, the links and the buffers come back only once
  * the stream is active again. Waits for them, with the open deadline. A
  * suspend set off by the last deactivation may still be on its way, and the
@@ -238,10 +246,11 @@ static int confirm_route(struct dsd_session *s)
 {
     struct timespec deadline;
     pw_thread_loop_get_time(s->loop, &deadline, DSD_OPEN_NS);
-    if (dsd_roundtrip(s, &deadline) < 0) return s->error;
-    while (!s->error && (!dsd_route_ready(s) || s->buffer_count < 2)) {
-        int result = pw_thread_loop_timed_wait_full(s->loop, &deadline);
-        if (result < 0 && (!dsd_route_ready(s) || s->buffer_count < 2))
+    int result = dsd_roundtrip(s, &deadline);
+    if (result < 0) dsd_fail(s, result, "Cannot confirm the native DSD route");
+    while (!s->error && !route_confirmed(s)) {
+        result = pw_thread_loop_timed_wait_full(s->loop, &deadline);
+        if (result < 0 && !route_confirmed(s))
             dsd_fail(s, result, "DSD route did not return after the stream was suspended");
     }
     s->live = s->error == 0;
