@@ -85,6 +85,13 @@ static void process(void *data)
 {
     struct dsd_session *s = data;
     if (s->drain_requested) return;
+    /* An empty chunk is never queued: this stream is asynchronous, and a
+     * queued chunk takes the cycle's handoff, replacing payload the peer has
+     * not read yet. Before the route of this activation is confirmed, and once
+     * a drain has no payload left, nothing goes out and the sink plays its own
+     * silence. */
+    if (!s->opened || !s->live || !dsd_route_ready(s)) return;
+    if (s->draining && s->write_at == s->read_at) return;
     struct pw_buffer *buffer = pw_stream_dequeue_buffer(s->stream);
     if (!buffer) return;
     struct spa_buffer *spa = buffer->buffer;
@@ -97,14 +104,11 @@ static void process(void *data)
     struct spa_data *d = &spa->datas[0];
     size_t frames = d->maxsize / DSD_FRAME_BYTES;
     if (buffer->requested) frames = SPA_MIN(frames, buffer->requested);
-    size_t copied = 0;
-    /* Negotiation, identity and links are checked under this same loop lock.
-     * Never admit user bytes before open, before the route is confirmed for
-     * this activation, or after any route failure. */
-    if (s->opened && s->live && dsd_route_ready(s))
-        copied = dsd_ring_read(s, d->data, frames);
+    /* Negotiation, identity and links were checked above, under this same
+     * loop lock. */
+    size_t copied = dsd_ring_read(s, d->data, frames);
     size_t filled = copied;
-    if (copied < frames && s->opened && s->live && !s->draining && dsd_route_ready(s)) {
+    if (copied < frames && !s->draining) {
         /* Balanced DSD idle bytes, never PCM zeros. Not counted as user data. */
         memset((uint8_t *)d->data + copied * DSD_FRAME_BYTES, 0x69,
                 (frames - copied) * DSD_FRAME_BYTES);
@@ -136,6 +140,10 @@ int dsd_session_start_stream(struct dsd_session *s, const struct timespec *deadl
         PW_KEY_MEDIA_ROLE, "Music", PW_KEY_APP_NAME, "Chilpa",
         PW_KEY_NODE_NAME, "chilpa.native-dsd", PW_KEY_TARGET_OBJECT, serial,
         PW_KEY_NODE_RATE, node_rate, PW_KEY_NODE_EXCLUSIVE, "true",
+        /* Since PipeWire 1.6 a reliable output never replaces a handoff the
+         * peer has not read; older servers ignore it. Spelled out, because
+         * older headers do not name it. */
+        "node.reliable", "true",
         PW_KEY_NODE_DONT_RECONNECT, "true", "node.dont-fallback", "true",
         "node.dont-move", "true", NULL);
     if (!props) return -ENOMEM;
