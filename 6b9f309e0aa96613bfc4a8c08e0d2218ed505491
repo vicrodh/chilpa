@@ -1,0 +1,5 @@
+review: astra /mnt/build/tmp/blitzkriegfc/bridge-2026-11-01/astra-dsd-review3.md
+review: astra /mnt/build/tmp/blitzkriegfc/bridge-2026-11-01/astra-dsd-review4.md
+review: sol /mnt/build/tmp/blitzkriegfc/bridge-2026-11-01/sol-dsd-review.md
+accepted: owner 2026-11-02 in chat: a pause can drop the queued fraction of a second ("Imperceptible y aceptable"); the drain end is an estimate PipeWire cannot confirm, the 1 s settle cap shares the 2 s drain limit, and the new tests cover helpers, not PipeWire callbacks ("Si"). Listed for 0.1.3 in docs/borradores/pendientes-0.1.3.md.
+smoke: owner 2026-11-02, release binary of d20fd407 (sha256 2c2b7dbe), Fosi ZH3, PipeWire 1.6.9, exclusive, native DSD: play, pause of 10 s or more and resume, seek, natural and manual track change, the last track ends complete, DAC passthrough on and off. All good, no skip heard on resume.
