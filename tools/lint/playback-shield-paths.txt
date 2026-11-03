@@ -1,0 +1,20 @@
+# The playback shield (ADR-021). A commit that touches one of these paths
+# reaches pre-launch or main only with a note in refs/notes/playback-shield
+# that records two independent reviews and the owner's smoke on a real DAC.
+#
+# Commits already in the history at `since:` were landed before the shield.
+since: 470fa8f51e46f3f03301c3d2b033830e0fb8592e
+
+crates/chilpa-core/
+crates/chilpa-audio/
+crates/chilpa-alsa/
+crates/chilpa-pipewire/
+crates/chilpa-pulse/
+crates/chilpa-jack/
+crates/chilpa-coreaudio/
+crates/chilpa-wasapi/
+crates/chilpa-dsd/
+crates/chilpa-sacd/
+crates/chilpa-decode/
+crates/chilpa-stream/
+crates/chilpa-cd/

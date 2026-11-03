@@ -89,6 +89,11 @@ PRs targeting `main` will be closed and asked to retarget to `pre-launch`.
      build the desktop application.
    - Run `tools/lint/fast`. Enable the repository hook after cloning
      (`git config core.hooksPath hooks`) and it runs on every commit.
+   - Playback is shielded. A commit under the paths in
+     `tools/lint/playback-shield-paths.txt` lands only after two independent
+     reviews and a listening test on a real DAC, recorded as a note in
+     `refs/notes/playback-shield`. The `pre-push` hook refuses it on
+     `pre-launch` and `main` otherwise.
 6. **Push pre-launch**
    - `git push origin pre-launch`
 7. **Close the PR with a comment** explaining it was merged to `pre-launch`.

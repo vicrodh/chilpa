@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""The playback shield (ADR-021).
+
+A commit that touches a protected path (playback-shield-paths.txt) reaches
+pre-launch or main only with a note in refs/notes/playback-shield holding at
+least two independent reviews and the owner's smoke on a real DAC:
+
+    review: <reviewer> <where the review is> <verdict>
+    review: <reviewer> <where the review is> <verdict>
+    smoke: owner <date> <binary sha256> <what was played and heard>
+
+It runs as the pre-push hook, with the pushed refs on stdin, or by hand on a
+range: `tools/lint/playback-shield origin/pre-launch..HEAD`.
+"""
+
+import subprocess
+import sys
+from pathlib import Path
+
+NOTES = "refs/notes/playback-shield"
+GUARDED = ("refs/heads/pre-launch", "refs/heads/main")
+ZERO = "0" * 40
+
+
+def git(*args):
+    return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout
+
+
+ROOT = Path(git("rev-parse", "--show-toplevel").strip())
+LINES = [
+    line.strip()
+    for line in (ROOT / "tools/lint/playback-shield-paths.txt").read_text().splitlines()
+    if line.strip() and not line.startswith("#")
+]
+SINCE = [line.split(":", 1)[1].strip() for line in LINES if line.startswith("since:")]
+PROTECTED = [line for line in LINES if not line.startswith("since:")]
+
+
+def areas(commit):
+    files = git("diff-tree", "--no-commit-id", "--name-only", "-r", "--no-renames", "--root", commit).split()
+    return sorted({path for name in files for path in PROTECTED if name.startswith(path)})
+
+
+def gaps(commit):
+    note = subprocess.run(["git", "notes", f"--ref={NOTES}", "show", commit], capture_output=True, text=True)
+    lines = note.stdout.splitlines() if note.returncode == 0 else []
+    reviews = sum(line.startswith("review: ") for line in lines)
+    smoked = any(line.startswith("smoke: owner ") for line in lines)
+    found = []
+    if reviews < 2:
+        found.append(f"{reviews} of 2 reviews")
+    if not smoked:
+        found.append("no owner smoke")
+    return found
+
+
+def check(spec):
+    failed = 0
+    for commit in git("rev-list", "--no-merges", "--reverse", *spec, "--not", *SINCE).split():
+        touched = areas(commit)
+        if not touched:
+            continue
+        missing = gaps(commit)
+        if missing:
+            failed += 1
+            subject = git("log", "-1", "--format=%h %s", commit).strip()
+            print(f"playback-shield: {subject}\n  touches {', '.join(touched)}; {'; '.join(missing)}", file=sys.stderr)
+    return failed
+
+
+def pushed():
+    failed = 0
+    for line in sys.stdin:
+        _, local, remote_ref, remote = line.split()
+        if remote_ref not in GUARDED or local == ZERO:
+            continue
+        known = remote != ZERO and subprocess.run(["git", "cat-file", "-e", remote], capture_output=True).returncode == 0
+        failed += check([f"{remote}..{local}"] if known else [local, "--not", "--remotes"])
+    return failed
+
+
+def main():
+    if sys.argv[1:] == ["--pre-push"]:
+        failed = pushed()
+    elif len(sys.argv) == 2:
+        failed = check([sys.argv[1]])
+    else:
+        print("usage: playback-shield <range> | --pre-push", file=sys.stderr)
+        return 2
+    if failed:
+        print(
+            f"playback-shield: {failed} commit(s) touch playback without two reviews and the owner's smoke (ADR-021).\n"
+            f"  Record them with: git notes --ref=playback-shield add <commit>",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
