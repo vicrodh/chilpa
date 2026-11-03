@@ -67,6 +67,7 @@ pub use privacy::network_allowed;
 mod play_indicator;
 mod playlist_sources;
 mod plugin_broker;
+mod plugin_display;
 mod playlist_import;
 mod pictures;
 mod storage_cache;

@@ -42,6 +42,9 @@ pub mod qobject {
         fn home_libraries(self: &Sources, rev: i32) -> QString;
         #[qinvokable]
         fn page(self: &Sources, key: &QString, rev: i32) -> QString;
+        /// Explicitly approved trusted QML. Empty for ordinary or disabled plugins.
+        #[qinvokable]
+        fn display(self: &Sources, plugin: &QString, rev: i32) -> QUrl;
         /// What MusicBrainz and Last.fm know of an artist by name, for the
         /// page's Network sidebar; `loading` until it is read.
         #[qinvokable]
@@ -63,6 +66,15 @@ use std::pin::Pin;
 #[derive(Default)]
 pub struct SourcesRust { snapshot: QString, revision: i32 }
 impl qobject::Sources {
+    pub fn display(&self, plugin: &QString, _rev: i32) -> QUrl {
+        crate::app::with(|api| api.plugin_display(&plugin.to_string()))
+            .map(|(path, epoch)| {
+                let mut url = QUrl::from_local_file(&QString::from(path.to_string_lossy().as_ref()));
+                url.set_query(&QString::from(format!("revision={epoch}")));
+                url
+            })
+            .unwrap_or_default()
+    }
     pub fn refresh(mut self: Pin<&mut Self>) {
         let snapshot = QString::from(crate::app::with(|api| api.sources_json()));
         if self.snapshot() != &snapshot {

@@ -6210,6 +6210,9 @@ msgstr "プラグインのZIPを読み取れませんでした。"
 msgid "The plugin did not answer within 15 seconds. Its account status is unknown."
 msgstr "プラグインが15秒以内に応答しませんでした。アカウントの状態は不明です。"
 
+msgid "The plugin interface could not be opened."
+msgstr ""
+
 msgid "The previous sample rate did not settle after the check."
 msgstr "チェック後に以前のサンプルレートが安定しませんでした。"
 
@@ -7275,6 +7278,9 @@ msgstr "トラックにアーティストがありません"
 msgid "a track has no title"
 msgstr "トラックにタイトルがありません"
 
+msgid "a trusted interface requires one relative QML entry, a process runtime and a panel registration"
+msgstr ""
+
 msgid "a year or a rating is a number"
 msgstr "年と評価は数値です"
 
@@ -7689,6 +7695,9 @@ msgstr "ライブラリを読み取る（変更はできません）"
 
 msgid "results"
 msgstr "件の結果"
+
+msgid "run a trusted interface inside Chilpa, outside the plugin sandbox, with full access to the application, player, files and network"
+msgstr ""
 
 msgid "run through a different plugin runtime"
 msgstr "別のプラグインランタイムで実行する"

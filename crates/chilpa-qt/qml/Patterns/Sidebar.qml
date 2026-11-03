@@ -54,6 +54,7 @@ Rectangle {
     function deferNavigation(action) { tasks.deferNavigation(action) }
     function openSource(action, id, text) {
         Navigation.goKey("source", id)
+        if (String(Sources.display(id, Sources.revision)) !== "") return
         if (!router) return
         deferNavigation(function() { Sources.command(action, id, text); side.refreshPending = false })
     }

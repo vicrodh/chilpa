@@ -6215,6 +6215,9 @@ msgstr ""
 msgid "The plugin did not answer within 15 seconds. Its account status is unknown."
 msgstr ""
 
+msgid "The plugin interface could not be opened."
+msgstr ""
+
 msgid "The previous sample rate did not settle after the check."
 msgstr ""
 
@@ -7280,6 +7283,9 @@ msgstr ""
 msgid "a track has no title"
 msgstr ""
 
+msgid "a trusted interface requires one relative QML entry, a process runtime and a panel registration"
+msgstr ""
+
 msgid "a year or a rating is a number"
 msgstr ""
 
@@ -7694,6 +7700,9 @@ msgid "read your library, without being able to change it"
 msgstr ""
 
 msgid "results"
+msgstr ""
+
+msgid "run a trusted interface inside Chilpa, outside the plugin sandbox, with full access to the application, player, files and network"
 msgstr ""
 
 msgid "run through a different plugin runtime"

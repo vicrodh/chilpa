@@ -118,6 +118,7 @@ pub(crate) struct SourcesState {
     native_action_serial: u64,
     collection: collection::Collection,
     panels: Vec<Panel>,
+    pub(crate) displays: BTreeMap<String, (std::path::PathBuf, u64)>,
     pub(crate) layouts: BTreeMap<String, crate::source_layout::Layout>,
     /// The installed plugins as last read while the sandbox was free.
     pub(crate) listed: std::sync::Mutex<Vec<crate::plugins::PluginInfo>>,
@@ -199,6 +200,7 @@ impl Default for SourcesState {
             native_action_serial: 0,
             collection: collection::Collection::default(),
             panels: Vec::new(),
+            displays: BTreeMap::new(),
             layouts: BTreeMap::new(),
             listed: std::sync::Mutex::default(),
             current: String::new(),
@@ -321,6 +323,7 @@ impl Chilpa {
             *self.sources.listed.lock().unwrap_or_else(|e| e.into_inner()) = plugins.list();
             let found: Vec<(String, String, String, bool)> = plugins.panels().into_iter()
                 .map(|(id, name, icon)| { let music = plugins.worker_domains(&id).is_some(); (id, name, icon, music) }).collect();
+            self.sources.displays = found.iter().filter_map(|(id, ..)| plugins.trusted_display(id).map(|entry| (id.clone(), entry))).collect();
             drop(plugins);
             self.sources.panels = found.into_iter().map(|(id, name, icon, worker)| {
                     let icon_image = crate::plugin_icons::image_url(&Self::plugins_dir(), &id);
@@ -351,6 +354,7 @@ impl Chilpa {
         state.generation += 1;
         state.roots.clear();
         state.panels.clear();
+        state.displays.clear();
         state.entries.clear();
         state.presentation.clear();
         state.medium.clear();
@@ -541,6 +545,7 @@ impl Chilpa {
             "detail": detail,
         });
         document["download_plugins"] = serde_json::json!(download_plugins);
+        document["display_revisions"] = serde_json::json!(s.displays.iter().map(|(id, (_, epoch))| (id, epoch)).collect::<BTreeMap<_, _>>());
         document["playing_parent"] = self.playing_media_parent().map(|(source, _)| source).unwrap_or_default().into();
         document["playing_source"] = playing_source.into();
         document["playing_entry"] = context.into();

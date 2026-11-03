@@ -705,6 +705,12 @@ impl Plugins {
         }).collect()
     }
 
+    pub(crate) fn trusted_display(&self, id: &str) -> Option<(PathBuf, u64)> {
+        let manifest = self.registry.installed().find(|p| p.id == id)?.manifest.as_ref()?;
+        crate::plugin_display::resolve(&self.root, manifest, self.approvals.covers(manifest), self.registry.usable().contains(&id) && self.registry.alive(id))
+            .map(|path| (path, self.epochs.get(id).copied().unwrap_or_default()))
+    }
+
     pub(crate) fn worker_domains(&self, id: &str) -> Option<Vec<String>> {
         let manifest = self.registry.installed().find(|plugin| plugin.id == id)?.manifest.as_ref()?;
         (manifest.runtime == chilpa_plugin::Runtime::Bridge)

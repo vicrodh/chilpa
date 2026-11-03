@@ -40,9 +40,11 @@ PageTransition {
     readonly property var requested: host.componentRoute.split("\u001f")
     readonly property string screen: requested.length > 1 ? requested[1] : ""
     readonly property string routeKey: requested.length > 3 ? requested[3] : ""
-    readonly property var music: screen === "source" && !(medium && sourceDocument.source === routeKey) ? JSON.parse(Sources.page(routeKey, Library.remoteRev) || "{}") : ({})
+    readonly property url displayEntry: screen === "source" && routeKey.indexOf(" ") < 0 ? Sources.display(routeKey, Sources.revision) : ""
+    readonly property var music: screen === "source" && String(displayEntry) === "" && !(medium && sourceDocument.source === routeKey) ? JSON.parse(Sources.page(routeKey, Library.remoteRev) || "{}") : ({})
 
     sourceComponent: {
+        if (screen === "source" && String(displayEntry) !== "") return pluginDisplay
         if (screen === "source" && medium && sourceDocument.source === routeKey) return mediaSource
         if (music.music === true)
             return music.artist === true || / (native:artist:|matching-artist-v[23]:)/.test(routeKey) ? sourceArtist : music.shelves !== undefined ? sourceHome : music.albumsOnly === false ? sourceListing : sourceAlbums
@@ -75,6 +77,7 @@ PageTransition {
         }
     }
     Component { id: home; HomeScreen {} }
+    Component { id: pluginDisplay; PluginDisplayScreen { pluginId: host.routeKeyOf(parent); entry: host.displayEntry } }
     Component { id: library; LibraryScreen {} }
     Component { id: album; AlbumScreen { albumId: host.routeIdOf(parent) } }
     Component { id: albums; AlbumsScreen {} }
@@ -84,14 +87,7 @@ PageTransition {
     Component { id: artist; ArtistPage { key: "local artist:" + host.routeKeyOf(parent) } }
     Component { id: artistScene; ArtistScene {} }
     Component { id: settings; SettingsScreen { routeSection: host.routeKeyOf(parent); purchaseCard: purchaseAlbumCard } }
-    Component {
-        id: pluginDownloads
-        Item {
-            readonly property string pluginId: host.routeKeyOf(parent)
-            SettingsPage { id: backend; section: "plugins" }
-            PluginManager { anchors.fill: parent; page: backend; initialDownloadsId: parent.pluginId; purchaseCard: purchaseAlbumCard }
-        }
-    }
+    Component { id: pluginDownloads; PluginDownloadsScreen { pluginId: host.routeKeyOf(parent); purchaseCard: purchaseAlbumCard } }
     Component { id: purchaseAlbumCard; PurchaseAlbumCard {} }
     Component { id: libraryFolders; LibraryFoldersScreen {} }
     Component { id: folders; FoldersScreen { routeKey: host.routeKeyOf(parent) } }

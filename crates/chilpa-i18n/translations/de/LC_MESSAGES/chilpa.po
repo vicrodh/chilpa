@@ -6215,6 +6215,9 @@ msgstr "Die Plugin-ZIP-Datei konnte nicht gelesen werden."
 msgid "The plugin did not answer within 15 seconds. Its account status is unknown."
 msgstr "Das Plugin hat nicht innerhalb von 15 Sekunden geantwortet. Der Status seines Kontos ist unbekannt."
 
+msgid "The plugin interface could not be opened."
+msgstr ""
+
 msgid "The previous sample rate did not settle after the check."
 msgstr "Die vorherige Abtastrate hat sich nach der Prüfung nicht stabilisiert."
 
@@ -7280,6 +7283,9 @@ msgstr "ein Titel hat keinen Künstler"
 msgid "a track has no title"
 msgstr "ein Titel hat keinen Titelnamen"
 
+msgid "a trusted interface requires one relative QML entry, a process runtime and a panel registration"
+msgstr ""
+
 msgid "a year or a rating is a number"
 msgstr "ein Jahr oder eine Bewertung ist eine Zahl"
 
@@ -7695,6 +7701,9 @@ msgstr "deine Bibliothek lesen, ohne sie ändern zu können"
 
 msgid "results"
 msgstr "Ergebnisse"
+
+msgid "run a trusted interface inside Chilpa, outside the plugin sandbox, with full access to the application, player, files and network"
+msgstr ""
 
 msgid "run through a different plugin runtime"
 msgstr "über eine andere Plugin-Laufzeit ausgeführt werden"

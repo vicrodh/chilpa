@@ -8,15 +8,17 @@ pub mod qobject {
         #[qml_singleton]
         #[qproperty(i32, revision)]
         #[qproperty(bool, busy)]
+        #[qproperty(bool, connected)]
+        #[qproperty(bool, issue)]
         type DiscogsAccount = super::DiscogsAccountRust;
         #[qinvokable] fn refresh(self: Pin<&mut DiscogsAccount>);
     }
 }
 use cxx_qt::CxxQtType;
 use std::pin::Pin;
-pub struct DiscogsAccountRust {revision:i32,busy:bool,seen:u64}
+pub struct DiscogsAccountRust {revision:i32,busy:bool,connected:bool,issue:bool,seen:u64}
 impl Default for DiscogsAccountRust {
-    fn default()->Self {Self {revision:0,busy:false,seen:u64::MAX}}
+    fn default()->Self {Self {revision:0,busy:false,connected:false,issue:false,seen:u64::MAX}}
 }
 impl qobject::DiscogsAccount {
     pub fn refresh(mut self:Pin<&mut Self>) {
@@ -24,6 +26,8 @@ impl qobject::DiscogsAccount {
         if status.revision==self.seen {return;}
         self.as_mut().rust_mut().seen=status.revision;
         self.as_mut().set_busy(status.checking);
+        self.as_mut().set_connected(!status.user.is_empty() && !status.checking && status.error.is_empty());
+        self.as_mut().set_issue(!status.error.is_empty());
         let revision=self.revision.wrapping_add(1);
         self.set_revision(revision);
     }

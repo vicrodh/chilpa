@@ -6220,6 +6220,9 @@ msgstr "Не удалось прочитать ZIP плагина."
 msgid "The plugin did not answer within 15 seconds. Its account status is unknown."
 msgstr "Плагин не ответил за 15 секунд. Состояние его учётной записи неизвестно."
 
+msgid "The plugin interface could not be opened."
+msgstr ""
+
 msgid "The previous sample rate did not settle after the check."
 msgstr "Прежняя частота дискретизации не стабилизировалась после проверки."
 
@@ -7285,6 +7288,9 @@ msgstr "у трека нет исполнителя"
 msgid "a track has no title"
 msgstr "у трека нет названия"
 
+msgid "a trusted interface requires one relative QML entry, a process runtime and a panel registration"
+msgstr ""
+
 msgid "a year or a rating is a number"
 msgstr "год и рейтинг — это числа"
 
@@ -7701,6 +7707,9 @@ msgstr "читать вашу библиотеку, не имея возможн
 
 msgid "results"
 msgstr "результатов"
+
+msgid "run a trusted interface inside Chilpa, outside the plugin sandbox, with full access to the application, player, files and network"
+msgstr ""
 
 msgid "run through a different plugin runtime"
 msgstr "работать в другой среде выполнения плагинов"

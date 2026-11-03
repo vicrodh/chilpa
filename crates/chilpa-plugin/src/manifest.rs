@@ -68,6 +68,9 @@ pub enum Capability {
     RegisterSource,
     /// Contribute a panel to the interface, as a descriptor.
     RegisterPanel,
+    /// Load trusted QML in the host process, outside the process sandbox.
+    /// This grants full application access, including the player and files.
+    TrustedUi { entry: String },
     /// Register a command the user can trigger.
     RegisterCommand,
     /// Supply processing parameters for local PCM playback.
@@ -127,6 +130,7 @@ impl Capability {
                 chilpa_i18n::t("bring catalogue: search for and fetch music")
             }
             Capability::RegisterPanel => chilpa_i18n::t("put a panel of its own in the window"),
+            Capability::TrustedUi { .. } => chilpa_i18n::t("run a trusted interface inside Chilpa, outside the plugin sandbox, with full access to the application, player, files and network"),
             Capability::RegisterCommand => chilpa_i18n::t("add a command you trigger"),
             Capability::ProcessAudio => chilpa_i18n::t("process PCM audio with equalization and stereo controls"),
             Capability::GuestCredentials => chilpa_i18n::t(
@@ -220,11 +224,14 @@ pub enum ManifestError {
     BadDomain(String),
     /// How it says the account connects does not work.
     BadAuth(String),
+    /// A trusted interface must name one portable QML file in its package.
+    BadDisplay,
 }
 
 impl std::fmt::Display for ManifestError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            ManifestError::BadDisplay => write!(f, "{}", chilpa_i18n::t("a trusted interface requires one relative QML entry, a process runtime and a panel registration")),
             ManifestError::BadAuth(e) => {
                 write!(f, "{}", chilpa_i18n::t_args("how the account connects does not work: {}", &[&e.to_string()]))
             }
@@ -317,6 +324,14 @@ impl Manifest {
             return Err(ManifestError::BadAuth("guest credentials require an isolated bridge and private storage".into()));
         }
         for c in &self.capabilities {
+            if let Capability::TrustedUi { entry } = c {
+                if self.runtime != Runtime::Process || !self.has(&Capability::RegisterPanel)
+                    || !valid_display_entry(entry)
+                    || self.capabilities.iter().filter(|c| matches!(c, Capability::TrustedUi { .. })).count() != 1
+                {
+                    return Err(ManifestError::BadDisplay);
+                }
+            }
             if let Capability::Network { domains } = c {
                 for d in domains {
                     if !valid_domain(d) && !(self.runtime == Runtime::Bridge && d == "*") {
@@ -395,6 +410,12 @@ impl Manifest {
     pub fn needs_account(&self) -> bool {
         self.auth.is_some()
     }
+}
+
+fn valid_display_entry(entry: &str) -> bool {
+    entry.len() <= 256 && entry.ends_with(".qml")
+        && entry.split('/').all(|part| !part.is_empty() && part != "." && part != ".."
+            && part.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.')))
 }
 
 /// What is approved of a plugin, and what is kept to know whether it still
