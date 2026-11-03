@@ -189,7 +189,7 @@ Item {
                             Text { text: I18n.tr("Now Playing", I18n.rev); color: panel.accent; font.pointSize: Stage.metaArtistText; font.weight: Type.semibold; font.letterSpacing: Stage.nowTracking; anchors.verticalCenter: parent.verticalCenter }
                         }
                     }
-                    Text { width: parent.width; text: Player.title; color: Theme.color.immersiveText; font.pointSize: nowPane.titleSize; font.weight: Type.bold; wrapMode: Text.WordWrap }
+                    AdvisoryTitle { width: parent.width; text: Player.title; aiGenerated: Player.aiGenerated === true; color: Theme.color.immersiveText; font.pointSize: nowPane.titleSize; font.weight: Type.bold; wrapMode: Text.WordWrap }
                     Text { visible: Player.album !== ""; width: parent.width; text: Player.album; color: Theme.color.immersiveTextGhost; font.italic: true; font.pointSize: nowPane.metaSize; elide: Text.ElideRight }
                     Text { visible: Player.artist !== ""; width: parent.width; text: Player.artist; color: Theme.color.immersiveTextMuted; font.pointSize: nowPane.metaSize; elide: Text.ElideRight }
                     QualityChip { text: Player.qualityLong; scale: Stage.cineNowScale }

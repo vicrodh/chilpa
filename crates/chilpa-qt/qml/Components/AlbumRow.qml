@@ -14,6 +14,7 @@ Item {
 
     property int albumId
     property bool explicitContent: false
+    property bool aiGenerated: false
     property string title
     property string subtitle
     property string year
@@ -106,6 +107,7 @@ Item {
 
         AdvisoryTitle {
             explicitContent: row.explicitContent
+            aiGenerated: row.aiGenerated
             width: parent.width
             text: row.title
             elide: Text.ElideRight
@@ -176,7 +178,7 @@ Item {
     Loader {
         anchors.fill: parent
         active: row.technical
-        sourceComponent: TechnicalCells { explicitContent: row.explicitContent; facts: row.technicalFacts; title: row.title; artist: row.subtitle; year: row.year }
+        sourceComponent: TechnicalCells { explicitContent: row.explicitContent; aiGenerated: row.aiGenerated; facts: row.technicalFacts; title: row.title; artist: row.subtitle; year: row.year }
     }
 
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }

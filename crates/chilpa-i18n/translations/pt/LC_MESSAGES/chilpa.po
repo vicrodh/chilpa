@@ -184,6 +184,9 @@ msgstr "Repetição A-B"
 msgid "ACCENT"
 msgstr "DESTAQUE"
 
+msgid "AI-generated"
+msgstr "Gerado por IA"
+
 msgid "ALSA direct"
 msgstr "ALSA direto"
 

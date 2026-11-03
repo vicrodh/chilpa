@@ -184,6 +184,9 @@ msgstr "Повтор A-B"
 msgid "ACCENT"
 msgstr "АКЦЕНТ"
 
+msgid "AI-generated"
+msgstr "Создано ИИ"
+
 msgid "ALSA direct"
 msgstr "ALSA напрямую"
 

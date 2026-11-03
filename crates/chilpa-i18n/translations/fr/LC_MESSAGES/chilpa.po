@@ -184,6 +184,9 @@ msgstr "Boucle A-B"
 msgid "ACCENT"
 msgstr "ACCENT"
 
+msgid "AI-generated"
+msgstr "Généré par IA"
+
 msgid "ALSA direct"
 msgstr "ALSA direct"
 

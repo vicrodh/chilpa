@@ -46,6 +46,7 @@ Column {
                 current: line.picked
                 index: line.modelData.at; kind: line.modelData.kind
                 title: line.modelData.title; detail: line.modelData.detail
+                aiGenerated: line.modelData.aiGenerated === true
                 art: songs.artUrl(line.modelData.art); duration: line.modelData.duration
                 sourceIcon: line.modelData.sourceIcon; sourceName: line.modelData.sourceName
                 markOwn: true

@@ -11,7 +11,13 @@ with open("/plugin/image-base.json") as configuration:
 
 def items(kind, size=24):
     singular = {"albums": "album", "tracks": "track", "artists": "artist", "labels": "label", "playlists": "playlist"}.get(kind, kind)
-    return [dict(kind=singular, ref=f"{singular}:{i}", title=f"Fixture {singular} {i}", artist="Fixture artist", artist_ref="artist:0", album="Fixture record", album_ref=f"album:{i}", duration_ms=180000, image=f"{image_base}/{singular}-{i}.png") for i in range(size)]
+    rows = [dict(kind=singular, ref=f"{singular}:{i}", title=f"Fixture {singular} {i}", artist="Fixture artist", artist_ref="artist:0", album="Fixture record", album_ref=f"album:{i}", duration_ms=180000, image=f"{image_base}/{singular}-{i}.png") for i in range(size)]
+    if singular in ("album", "track"):
+        for i, row in enumerate(rows):
+            if i % 3 != 2:
+                row["ai_generated"] = i % 3 == 0
+            row["explicit"] = i % 3 == 0
+    return rows
 
 def answer(request):
     global rotation
@@ -37,7 +43,8 @@ def answer(request):
                 dict(id="tracks", title="Popular Tracks", kind="track", items=items("track", 10)),
                 dict(id="album", title="Albums", kind="album", items=items("album", 48))])
         elif reference.startswith("album:"):
-            result = dict(header=dict(kind="album", ref=reference, title="Fixture record", artist="Fixture artist", artist_ref="artist:0", image=f"{image_base}/record.png"), extra_tracks=items("track", 12))
+            header = items("album", int(reference.split(":")[1]) + 1)[-1]
+            result = dict(header=header, extra_tracks=items("track", 12))
         else:
             result = dict(title="Fixture home", shelves=[dict(id=f"shelf-{i}", title=f"Module {i}", kind="album", items=items("album")) for i in range(6)])
     elif method == "library.list":

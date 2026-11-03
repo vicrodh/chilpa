@@ -21,11 +21,12 @@ Item {
     width: implicitWidth
     height: implicitHeight
 
-    Text {
+    AdvisoryTitle {
         id: title
         x: card.metaWide - width
         width: Math.min(implicitWidth, Stage.cardTitleCap)
         text: Player.title
+        aiGenerated: Player.aiGenerated === true
         color: Theme.color.immersiveTextStrong
         font.pointSize: Stage.cardTitleText
         font.weight: Type.semibold

@@ -19,6 +19,9 @@ TitledFlow {
     title: "Primitives"
     ExplicitBadge {}
     AdvisoryTitle { width: Metrics.cardMinWidth; text: "A record with an advisory"; explicitContent: true; font.pointSize: Type.body }
+    AiBadge {}
+    ContentBadges { explicitContent: true; aiGenerated: true }
+    AdvisoryTitle { width: Metrics.cardMinWidth; text: "A source-labelled record"; aiGenerated: true; explicitContent: true; font.pointSize: Type.body }
 
     Row {
         spacing: Metrics.gap8

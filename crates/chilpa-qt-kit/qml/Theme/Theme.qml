@@ -15,6 +15,7 @@ QtObject {
     // goes translucent under it reads this one predicate.
     readonly property bool ambient: ThemeModel.ambient
     readonly property string explicitLabel: I18n.tr("Explicit", I18n.rev)
+    readonly property string aiGeneratedLabel: I18n.tr("AI-generated", I18n.rev)
     readonly property string searchLabel: I18n.tr("Search", I18n.rev)
     readonly property string emptySearchLabel: I18n.tr("No matches", I18n.rev)
     // What the sung line of lyrics can be tinted with, after the text's own

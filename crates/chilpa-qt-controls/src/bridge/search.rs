@@ -97,7 +97,7 @@ use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant};
 use std::pin::Pin;
 
-const ROLES: &[&str] = &["kind", "title", "detail", "art", "duration", "sourceIcon", "sourceName"];
+const ROLES: &[&str] = &["kind", "title", "detail", "art", "duration", "sourceIcon", "sourceName", "aiGenerated"];
 const USER_ROLE: i32 = 256;
 const LIMIT: usize = 12;
 
@@ -145,6 +145,7 @@ impl qobject::SearchModel {
             3 => QVariant::from(&if row.artwork().starts_with("https://") { QUrl::from(row.artwork()) } else { QUrl::from_local_file(&QString::from(row.artwork())) }),
             5 => text(&row.source_icon()),
             6 => text(&row.source_name()),
+            7 => QVariant::from(&row.ai_generated().unwrap_or(false)),
             _ => text(&row.duration()),
         }
     }
@@ -275,6 +276,7 @@ impl qobject::SearchModel {
             "duration": row.duration(), "sourceIcon": row.source_icon(), "sourceName": row.source_name(), "section": section,
             "albumId": record.id, "artist": record.artist, "year": record.year.map(|year| year.to_string()).unwrap_or_default(),
             "key": row.song_key(),
+            "aiGenerated": row.ai_generated(),
         })).collect())
     }
 
@@ -362,7 +364,7 @@ mod tests {
     #[test]
     fn a_menu_keeps_its_destination_and_row_context_after_results_are_reordered() {
         let row = |id, title: &str| FoundRow::Album(chilpa_api::Album {
-            id, title:title.into(), artist:"Artist".into(), year:None, track_count:1, artwork_path:String::new(), play_count:0, explicit:None
+            id, title:title.into(), artist:"Artist".into(), year:None, track_count:1, artwork_path:String::new(), play_count:0, ai_generated: None, explicit:None
         });
         let mut state = SearchRust { rows:vec![row(1, "First album"), row(2, "Selected album")], ..Default::default() };
         state.menu = Some((state.rows.clone(), 1));

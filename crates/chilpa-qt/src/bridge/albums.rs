@@ -63,6 +63,8 @@ pub mod qobject {
         #[qinvokable]
         fn explicit_content(self: &AlbumGridModel, index: i32, rev: i32) -> bool;
         #[qinvokable]
+        fn ai_generated(self: &AlbumGridModel, index: i32, rev: i32) -> bool;
+        #[qinvokable]
         fn subtitle(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
         #[qinvokable]
         fn year(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
@@ -198,6 +200,9 @@ impl qobject::AlbumGridModel {
     }
     pub fn explicit_content(&self, index: i32, _rev: i32) -> bool {
         self.rust().get(index, |album| album.explicit == Some(true)).unwrap_or(false)
+    }
+    pub fn ai_generated(&self, index: i32, _rev: i32) -> bool {
+        self.rust().get(index, |album| album.ai_generated == Some(true)).unwrap_or(false)
     }
     pub fn subtitle(&self, index: i32, _rev: i32) -> QString {
         self.rust().get(index, |a| QString::from(&a.artist)).unwrap_or_default()

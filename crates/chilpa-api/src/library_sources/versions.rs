@@ -51,6 +51,7 @@ pub(crate) struct SourceVersion {
     pub tracks: usize,
     /// What the source says: explicit, clean, or nothing.
     pub explicit: Option<bool>,
+    pub ai_generated: Option<bool>,
     /// 4 DSD, 3 hi-res, 2 lossless, 1 lossy, 0 unknown, as the library ranks.
     pub tier: u8,
     pub plugin: String,
@@ -243,6 +244,7 @@ impl SourceIndex {
                 edition: words(&item.album_title),
                 tracks: if item.track == 0 { item.tracks } else { 0 },
                 explicit: None,
+                ai_generated: None,
                 tier: 0,
                 plugin: item.plugin.clone(),
                 key: SourceVersion::key_of(&item.plugin, &item.album_identity),
@@ -259,7 +261,7 @@ mod tests {
     use chilpa_library::store::versions::album_group;
 
     fn version(title: &str, plugin: &str, tier: u8, explicit: Option<bool>) -> SourceVersion {
-        SourceVersion { group: album_group(title, "Band"), edition: words(title), tracks: 12, explicit, tier,
+        SourceVersion { group: album_group(title, "Band"), edition: words(title), tracks: 12, explicit, ai_generated: None, tier,
             plugin: plugin.into(), key: SourceVersion::key_of(plugin, title) }
     }
 

@@ -184,6 +184,9 @@ msgstr "ABループ"
 msgid "ACCENT"
 msgstr "アクセント"
 
+msgid "AI-generated"
+msgstr "AI生成"
+
 msgid "ALSA direct"
 msgstr "ALSAダイレクト"
 

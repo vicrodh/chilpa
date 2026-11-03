@@ -153,6 +153,7 @@ Item {
             AlbumCard {
                 width: CardLayout.cardWidth
                 albumId: one.albumId(0, one.rev); title: one.title(0, one.rev); subtitle: one.subtitle(0, one.rev); year: one.year(0, one.rev); art: one.art(0, one.rev)
+                aiGenerated: one.aiGenerated(0, one.rev)
                 sources: albumId < 0 ? JSON.parse(AlbumActions.sources(albumId, one.rev) || "[]") : []
                 qualityInfo: JSON.parse(AlbumActions.quality(albumId, one.rev) || "{}")
                 canExpand: false

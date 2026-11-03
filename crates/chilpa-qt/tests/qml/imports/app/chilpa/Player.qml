@@ -1,6 +1,7 @@
 pragma Singleton
 import QtQuick
 QtObject {
+    property bool aiGenerated: false
     property string origin: "fixture-origin"
     property bool live: false
     property string path: "/test.wav"

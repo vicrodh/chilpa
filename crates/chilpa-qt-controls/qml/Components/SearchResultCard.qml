@@ -39,10 +39,11 @@ Item {
             color: Theme.color.backdropText
         }
     }
-    Text {
+    AdvisoryTitle {
         anchors.top: cover.bottom; anchors.topMargin: Metrics.cardTextGap
         width: parent.width
-        text: card.row.title || ""; textFormat: Text.PlainText; elide: Text.ElideRight
+        text: card.row.title || ""; elide: Text.ElideRight
+        aiGenerated: card.row.aiGenerated === true
         horizontalAlignment: card.person ? Text.AlignHCenter : Text.AlignLeft
         font.pointSize: Type.body
         color: Theme.color.textPrimary

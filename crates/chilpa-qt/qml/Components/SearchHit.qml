@@ -23,6 +23,7 @@ Item {
     property bool current: false
     property string sourceIcon: ""
     property string sourceName: ""
+    property bool aiGenerated: false
     // Where results of every source mix, the library's own wear Chilpa's mark.
     property bool markOwn: false
     readonly property bool own: markOwn && sourceName === "" && !header && !link
@@ -94,10 +95,11 @@ Item {
         anchors.rightMargin: Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
 
-        Text {
+        AdvisoryTitle {
             width: parent.width
             visible: !hit.link
             text: hit.title
+            aiGenerated: hit.aiGenerated
             elide: Text.ElideRight
             font.pointSize: hit.best ? Type.bestResult : Type.body
             font.weight: hit.best ? Type.semibold : Type.medium

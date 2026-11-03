@@ -12,7 +12,25 @@ TestCase {
     SourcePageHeader { id:header; width:parent.width; info:({kind:"album",title:"Album",quality_label:"WAV 24/96",quality_tier:3}) }
     SourceShelf { id:shelf; y:header.height; width:parent.width; wrap:true; section:({title:"Releases",key:"fixture native:artist:1|albums",more:"page:2",error:"Loading"}) }
     SourceRecordDetails { id:details; y:600; width:900; cardId:-5; record:({title:"List",art:"file:///covers/list.jpg"}) }
-    function init() { header.info = {kind:"album",title:"Album",quality_label:"WAV 24/96",quality_tier:3} }
+    function init() { header.record = undefined; header.info = {kind:"album",title:"Album",quality_label:"WAV 24/96",quality_tier:3} }
+    function test_content_advisories_follow_the_selected_album_and_keep_its_name() {
+        header.info = {kind:"album",title:"Album",ai_generated:true,explicit:true}
+        verify(findChild(header, "aiBadge") !== null)
+        verify(findChild(header, "explicitBadge") !== null)
+        compare(findChild(header, "advisoryText").text, "Album")
+        header.record = {aiGenerated:false,explicitContent:false,versions:"[]",selectedId:0}
+        tryVerify(() => findChild(header, "aiBadge") === null)
+        tryVerify(() => findChild(header, "explicitBadge") === null)
+        header.record = undefined
+        tryVerify(() => findChild(header, "aiBadge") !== null)
+        header.info = {kind:"artist",title:"Artist",ai_generated:true,explicit:true}
+        tryVerify(() => findChild(header, "aiBadge") === null)
+        tryVerify(() => findChild(header, "explicitBadge") === null)
+        for (const value of [false, null, "true"]) {
+            header.info = {kind:"album",title:"Album",ai_generated:value}
+            tryVerify(() => findChild(header, "aiBadge") === null)
+        }
+    }
     function findText(item,text) {
         if(item.text===text) return item
         for(const child of item.children || []) { const found=findText(child,text); if(found) return found }

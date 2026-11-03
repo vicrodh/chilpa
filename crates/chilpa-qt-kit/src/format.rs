@@ -7,6 +7,13 @@ pub fn art_url(path: &str) -> QUrl {
 
 pub use chilpa_api::format::{clock, span};
 
+/// A track list's count and duration, shared by list bridges.
+pub fn track_summary(tracks: usize, ms: u64) -> String {
+    let n = tracks.to_string();
+    let songs = crate::app::with(|api| api.tf("{} song", "{} songs", tracks as i64, &[&n]));
+    format!("{songs} · {}", span(ms))
+}
+
 /// I return a generated artwork path through the shared C++ image-provider buffer.
 ///
 /// # Safety

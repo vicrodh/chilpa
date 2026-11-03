@@ -91,6 +91,16 @@ impl FoundRow {
         }
     }
 
+    /// Content labels belong to the source item, never to its display name.
+    pub fn ai_generated(&self) -> Option<bool> {
+        match self {
+            Self::Album(album) => album.ai_generated,
+            Self::Track(track) => track.ai_generated,
+            Self::Remote(row) if matches!(row.entity.as_str(), "album" | "track") => row.item.as_ref().and_then(|item| item["ai_generated"].as_bool()),
+            _ => None,
+        }
+    }
+
     pub fn detail(&self) -> String {
         match self {
             FoundRow::Remote(row) => row.detail.clone(),
@@ -399,7 +409,7 @@ mod tests {
     }
 
     fn album(id: i64, by: &str) -> Album {
-        Album { id, title: format!("Record {id}"), artist: by.into(), year: Some(1999), track_count: 3, artwork_path: String::new(), play_count: 0, explicit: None }
+        Album { id, title: format!("Record {id}"), artist: by.into(), year: Some(1999), track_count: 3, artwork_path: String::new(), play_count: 0, ai_generated: None, explicit: None }
     }
 
     fn acts(menu: &[Value]) -> Vec<&str> {

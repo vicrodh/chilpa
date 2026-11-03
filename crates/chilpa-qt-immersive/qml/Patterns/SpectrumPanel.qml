@@ -160,7 +160,7 @@ Rectangle {
             Column {
                 width: panel.width
                 spacing: Stage.metaApart
-                Text { width: parent.width; text: Player.title; color: Theme.color.immersiveTextStrong; font.pointSize: Stage.metaTitleText; font.weight: Type.bold; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight }
+                AdvisoryTitle { width: parent.width; text: Player.title; aiGenerated: Player.aiGenerated === true; color: Theme.color.immersiveTextStrong; font.pointSize: Stage.metaTitleText; font.weight: Type.bold; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight }
                 Text { width: parent.width; text: Player.artist; color: Theme.color.immersiveTextMuted; font.pointSize: Stage.metaArtistText; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight }
                 Text { visible: Player.album !== ""; width: parent.width; text: Player.album; color: Theme.color.immersiveTextGhost; font.pointSize: Stage.metaAlbumText; font.italic: true; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight }
                 Item {

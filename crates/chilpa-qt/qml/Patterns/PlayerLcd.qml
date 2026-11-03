@@ -95,9 +95,10 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: Metrics.gap6
 
-            Text {
+            AdvisoryTitle {
                 width: Math.min(implicitWidth, Math.max(0, labels.width - (indicator.visible ? indicator.width + Metrics.gap6 : 0))) // derived: reserve the quality icon inside the text area
                 text: Player.title
+                aiGenerated: Player.aiGenerated === true
                 elide: Text.ElideRight
                 font.pointSize: Type.row
                 font.weight: Type.medium

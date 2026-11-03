@@ -24,6 +24,17 @@ TestCase {
         const theirs = i % 2 === 1
         return Object.assign(row(3, "albums", "Record " + i), {albumId: theirs ? -(i + 1) : i + 1, artist: "Band", year: "1999", sourceIcon: theirs ? "broadcast" : "", sourceName: theirs ? "Fixture" : ""})
     }
+    function test_ai_result_badges_follow_search_metadata_without_changing_names() {
+        const rows = found(4)
+        const target = rows.find(row => row.title === "Record 1")
+        target.aiGenerated = true
+        page.search.rowsJsonText = JSON.stringify(rows); page.read()
+        wait(0)
+        tryVerify(() => records().some(card => card.title === "Record 1" && findChild(card, "aiBadge") !== null))
+        target.aiGenerated = false
+        page.search.rowsJsonText = JSON.stringify(rows); page.read()
+        tryVerify(() => records().some(card => card.title === "Record 1" && findChild(card, "aiBadge") === null))
+    }
     function found(albums) {
         let rows = [row(0, "top", "Top result"), row(1, "top", "Mora Vale"), row(0, "artists", "Artists"), row(2, "artists", "Mora")]
         rows.push(row(0, "albums", "Albums"))

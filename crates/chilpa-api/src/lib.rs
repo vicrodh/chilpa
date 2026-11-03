@@ -166,7 +166,7 @@ pub mod window;
 mod volume;
 pub use volume::VolumeView;
 pub use metadata::view::MetadataView;
-pub use browse::{filter_facets, select_facets, select_tracks, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, GroupHeader, Reader, Snapshot, Totals, TrackEntry, TrackOrder, TrackRow};
+pub use browse::{filter_facets, select_facets, select_tracks, Album, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, GroupHeader, Reader, Snapshot, Totals, TrackEntry, TrackOrder, TrackRow};
 pub use browse::PageCache;
 mod album_versions;
 mod album_copies;
@@ -266,6 +266,7 @@ pub struct NowPlaying {
     pub path: String,
     /// The title the file states; if it states none, its name.
     pub title: String,
+    pub ai_generated: Option<bool>,
     pub artist: String,
     pub album: String,
     /// The local library album, or zero when this track has no local context.
@@ -532,21 +533,6 @@ pub struct Artist {
     pub album_count: usize,
     pub track_count: usize,
     pub artwork_path: String,
-}
-
-/// An album as a view needs it.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Album {
-    pub id: i64,
-    pub title: String,
-    pub artist: String,
-    pub year: Option<i32>,
-    pub track_count: usize,
-    /// The cover on disk, empty if there is none.
-    pub artwork_path: String,
-    /// How many plays it has, counted from the log.
-    pub play_count: usize,
-    pub explicit: Option<bool>,
 }
 
 /// A track from the library.

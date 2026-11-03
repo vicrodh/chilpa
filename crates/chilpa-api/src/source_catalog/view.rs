@@ -33,6 +33,7 @@ pub(crate) fn album_of(card: &Card) -> Album {
         track_count: card.tracks.as_ref().map_or_else(|| card.metadata["tracks"].as_u64().unwrap_or_default() as usize, Vec::len),
         artwork_path: card.art.clone(),
         play_count: 0,
+        ai_generated: card.metadata["ai_generated"].as_bool(),
         explicit: card.metadata["explicit"].as_bool(),
     }
 }
@@ -219,6 +220,7 @@ pub(crate) fn row_of(track: &Track, art: String) -> TrackRow {
         quality: track.format.as_ref().map(|f| f.quality()).unwrap_or_default(),
         artwork_path: art,
         available: track.playable,
+        ai_generated: track.metadata["ai_generated"].as_bool(),
         explicit: track.metadata["explicit"].as_bool(),
         credits: Some(Box::new(crate::credits::TrackCredits::source(&track.artist, &track.metadata, &track.plugin))),
         composer: super::composers::own_composers(&track.metadata).join(", "),
@@ -564,7 +566,7 @@ impl Chilpa {
         let source = self.source_of(&card.plugin);
         let (long, brief) = (detail.quality.long(), detail.quality.brief());
         let join = |a: &str, b: &str| if b.is_empty() { a.to_string() } else { format!("{a} · {b}") };
-        vec![AlbumVersion { id, label: join(&source.label, &long), brief: join(&source.label, &brief), detail: card.title.clone(), source, explicit: card.metadata["explicit"].as_bool() }]
+        vec![AlbumVersion { id, label: join(&source.label, &long), brief: join(&source.label, &brief), detail: card.title.clone(), source, ai_generated: card.metadata["ai_generated"].as_bool(), explicit: card.metadata["explicit"].as_bool() }]
     }
 
     pub(crate) fn source_album_sources(&mut self, id: i64) -> Vec<AlbumSource> {

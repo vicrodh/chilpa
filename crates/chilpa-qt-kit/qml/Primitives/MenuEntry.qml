@@ -79,6 +79,7 @@ Item {
 
         AdvisoryTitle {
             explicitContent: line.entry.explicitContent === true
+            aiGenerated: line.entry.aiGenerated === true
             id: title
             width: parent.width
             text: line.entry.text || ""

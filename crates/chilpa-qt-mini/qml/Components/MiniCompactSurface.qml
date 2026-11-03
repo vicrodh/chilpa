@@ -2,6 +2,7 @@ import QtQuick
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
 
 // Surface 1 (02-mini §1.3): a strip of cover and text in the 380 by 178
@@ -38,9 +39,10 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Card.metaApart
 
-        Text {
+        AdvisoryTitle {
             width: meta.width
             text: Player.path !== "" ? Player.title : I18n.tr("No track playing", I18n.rev)
+            aiGenerated: Player.aiGenerated === true
             color: surface.headerStrong
             font.pointSize: Card.titleText
             font.weight: Type.semibold

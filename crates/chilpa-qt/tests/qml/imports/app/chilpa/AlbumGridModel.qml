@@ -14,6 +14,8 @@ ListModel {
     function albumId(index, revision) { return kind === "source" ? -(index + 1) : index + 1 }
     function title(index, revision) { return "Record " + index }
     property var explicitRows: []
+    property var aiRows: []
+    function aiGenerated(index, revision) { return aiRows.includes(index) }
     function explicitContent(index, revision) { return explicitRows.includes(index) }
     function subtitle(index, revision) { return "Artist" }
     function year(index, revision) { return "2026" }

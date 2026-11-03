@@ -8,6 +8,7 @@ AlbumCard {
     signal opened()
     purchaseMode: true
     title: record.title || ""
+    aiGenerated: record.ai_generated === true
     subtitle: record.artist || ""
     artistDestination: record.artist && record.plugin ? ({target:"source",key:record.plugin + " " + (record.artist_ref ? "native:" + record.artist_ref : "matching-artist-v3:" + record.artist)}) : ({})
     year: record.year || ""

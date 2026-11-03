@@ -16,6 +16,7 @@ Item {
         return creditText.visible ? creditText.linkAt(point.x, point.y) : ""
     }
     property bool explicitContent: false
+    property bool aiGenerated: false
     property real titleSize: Type.row
     property int titleWeight: Type.regular
     property color titleColor: Theme.color.textPrimary
@@ -37,10 +38,10 @@ Item {
     }
     Loader {
         id: advisory
-        active: line.explicitContent
+        active: line.explicitContent || line.aiGenerated
         x: titleText.width + line.spacing
         anchors.verticalCenter: titleText.verticalCenter
-        sourceComponent: ExplicitBadge {}
+        sourceComponent: ContentBadges { explicitContent: line.explicitContent; aiGenerated: line.aiGenerated }
     }
     Text {
         id: creditText

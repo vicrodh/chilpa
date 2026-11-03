@@ -55,6 +55,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-source-smoke-") as directory:
     output.mkdir(parents=True, exist_ok=True)
     smoke = profile / "sources.qml"
     fixture = ("home-source-modules.qml" if "--home-modules" in sys.argv[3:] else
+               "source-advisories.qml" if "--content-advisories" in sys.argv[3:] else
                "artist-source-links.qml" if "--artist-links" in sys.argv[3:] else "source-navigation.qml")
     smoke.write_text((root / fixture).read_text().replace('property string captureFolder: ""', 'property string captureFolder: ' + json.dumps(str(output))))
     env = dict(os.environ, XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"), XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"), QT_QPA_PLATFORM="offscreen", CHILPA_RENDERER="software", CHILPA_QML_SMOKE=str(smoke))
@@ -67,6 +68,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-source-smoke-") as directory:
         print("SMOKE FAIL no covers were requested")
         sys.exit(1)
     completed = ("SMOKE native Home modules completed" if fixture == "home-source-modules.qml" else
+                 "SMOKE source advisories completed" if fixture == "source-advisories.qml" else
                  "SMOKE source artist links completed" if fixture == "artist-source-links.qml" else "SMOKE sources completed")
     if result.returncode or any(error in result.stdout for error in errors) or completed not in result.stdout:
         sys.exit(1)

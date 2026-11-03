@@ -1,5 +1,7 @@
 # abreviaturas, jerga de audio y nombres que vienen de Rust o de Qt.
 aac
+# Artificial intelligence content metadata.
+ai
 acq
 aes
 airp

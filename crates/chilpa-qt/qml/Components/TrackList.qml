@@ -174,6 +174,7 @@ Item {
             composer: model.composer || ""
             credits: JSON.parse(model.credits || "{}")
             explicitContent: model.explicitContent === true
+            aiGenerated: model.aiGenerated === true
             headerGlyph: list.model && list.model.kind === "listenlist" ? (headerLabel === I18n.tr("History", I18n.rev) ? Lucide.rotateCcwClock : headerLabel === I18n.tr("Up next", I18n.rev) ? Lucide.listVideo : "") : ""
             headerIconFamily: headerGlyph !== "" ? Lucide.font : ""
             headerWork: model.headerWork || false

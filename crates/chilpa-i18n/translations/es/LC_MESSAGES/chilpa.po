@@ -184,6 +184,9 @@ msgstr "Loop A-B"
 msgid "ACCENT"
 msgstr "ACENTO"
 
+msgid "AI-generated"
+msgstr "Generado por IA"
+
 msgid "ALSA direct"
 msgstr "ALSA directo"
 

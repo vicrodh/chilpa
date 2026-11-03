@@ -16,6 +16,7 @@ AlbumCard {
     width: CardLayout.cardWidth
     albumId: row.albumId || 0
     title: row.title || ""
+    aiGenerated: row.aiGenerated === true
     subtitle: row.artist || ""
     year: row.year || ""
     art: !row.art ? "" : row.art.startsWith("https://") ? row.art : "file://" + row.art.split("/").map(encodeURIComponent).join("/")

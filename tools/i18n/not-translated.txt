@@ -26,3 +26,5 @@ Chilpa Mini Player
 
 # The parental-advisory glyph is a fixed E; its accessible label is translated.
 E
+# The shared AI content glyph is fixed; its full accessible label is translated.
+AI

@@ -184,6 +184,9 @@ msgstr "A-B-Schleife"
 msgid "ACCENT"
 msgstr "AKZENT"
 
+msgid "AI-generated"
+msgstr "KI-generiert"
+
 msgid "ALSA direct"
 msgstr "ALSA direkt"
 

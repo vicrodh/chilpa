@@ -4,6 +4,7 @@ import app.chilpa.kit
 import app.chilpa.ambient
 import app.chilpa.immersive
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Primitives"
 import "../Theme"
@@ -46,9 +47,10 @@ Column {
             }
         }
     }
-    Text {
+    AdvisoryTitle {
         width: parent.width
         text: Player.title
+        aiGenerated: Player.aiGenerated === true
         color: Theme.color.immersiveTextStrong
         font.pointSize: Stage.metaTitleText
         font.weight: Type.bold

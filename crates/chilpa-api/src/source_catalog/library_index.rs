@@ -177,6 +177,7 @@ pub(crate) struct SourceRecord {
     pub quality: crate::quality::Quality,
     /// What the source says: explicit, clean, or nothing.
     pub explicit: Option<bool>,
+    pub ai_generated: Option<bool>,
     pub tracks: usize,
 }
 
@@ -184,7 +185,7 @@ impl SourceRecord {
     pub(crate) fn version(&self) -> crate::library_sources::SourceVersion {
         crate::library_sources::SourceVersion {
             group: self.group.clone(), edition: crate::library_sources::words(&self.title), tracks: self.tracks,
-            explicit: self.explicit, tier: self.quality.tier.rank().clamp(0, 4) as u8, plugin: self.plugin.clone(),
+            explicit: self.explicit, ai_generated: self.ai_generated, tier: self.quality.tier.rank().clamp(0, 4) as u8, plugin: self.plugin.clone(),
             key: crate::library_sources::SourceVersion::key_of(&self.plugin, &self.identity),
         }
     }
@@ -199,6 +200,7 @@ fn source_record(store: &Store, card: &Card) -> SourceRecord {
         group: chilpa_library::store::versions::album_group(&card.title, &card.artist),
         title: card.title.clone(), quality,
         explicit: card.metadata["explicit"].as_bool(),
+        ai_generated: card.metadata["ai_generated"].as_bool(),
         tracks: card.tracks.as_ref().map_or_else(|| card.metadata["tracks"].as_u64().unwrap_or_default() as usize, Vec::len),
     }
 }

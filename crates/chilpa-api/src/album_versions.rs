@@ -130,6 +130,7 @@ pub struct AlbumVersion {
     pub detail: String,
     pub source: AlbumSource,
     pub explicit: Option<bool>,
+    pub ai_generated: Option<bool>,
 }
 
 fn edition(title: &str) -> String {
@@ -288,7 +289,7 @@ pub(crate) fn version_labels(versions: Vec<chilpa_library::store::versions::Albu
             let annotation = if annotation.is_empty() { edition(location) } else { annotation };
             let annotation = if annotation.is_empty() { annotation } else { format!(" - {annotation}") };
             AlbumVersion { id: v.id, brief: format!("{} · {brief}", source.label), label: format!("{} · {quality}{annotation} · {tracks}", source.label),
-                detail: format!("{} · {location}", v.title), source, explicit: v.explicit }
+                detail: format!("{} · {location}", v.title), source, ai_generated: None, explicit: v.explicit }
         }).collect()
 }
 

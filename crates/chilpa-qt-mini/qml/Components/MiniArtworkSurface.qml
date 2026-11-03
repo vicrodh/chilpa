@@ -2,6 +2,7 @@ import QtQuick
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
 
 // Surface 2, the default (02-mini §1.3): a large cover over centered
@@ -42,9 +43,10 @@ Item {
             width: stack.width
             spacing: Card.metaApart
 
-            Text {
+            AdvisoryTitle {
                 width: parent.width
                 text: Player.path !== "" ? Player.title : I18n.tr("No track playing", I18n.rev)
+                aiGenerated: Player.aiGenerated === true
                 color: surface.headerStrong
                 font.pointSize: Card.titleText
                 font.weight: Type.semibold

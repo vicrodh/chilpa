@@ -63,9 +63,10 @@ Item {
             source: Player.art
             radius: Metrics.radiusCard
         }
-        Text {
+        AdvisoryTitle {
             width: parent.width
             text: Player.title
+            aiGenerated: Player.aiGenerated === true
             wrapMode: Text.Wrap
             font.pointSize: Type.titleSmall
             font.weight: Type.bold

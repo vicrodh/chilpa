@@ -20,6 +20,7 @@ pub mod qobject {
         #[qproperty(QString, versions)]
         #[qproperty(bool, found)]
         #[qproperty(bool, explicit_content)]
+        #[qproperty(bool, ai_generated)]
         #[qproperty(QString, title)]
         #[qproperty(QString, artist)]
         #[qproperty(QString, artist_information)]
@@ -65,6 +66,7 @@ pub struct AlbumDetailRust {
     found: bool,
     title: QString,
     explicit_content: bool,
+    ai_generated: bool,
     artist: QString,
     artist_information: QString,
     art: QUrl,
@@ -156,6 +158,7 @@ impl qobject::AlbumDetailModel {
         let art = crate::format::art_url(&d.album.artwork_path);
         self.as_mut().set_title(QString::from(&d.album.title));
         self.as_mut().set_explicit_content(d.album.explicit == Some(true));
+        self.as_mut().set_ai_generated(d.album.ai_generated == Some(true));
         self.as_mut().set_artist(QString::from(&d.album.artist));
         self.as_mut().set_artist_information(QString::from(&page.artist_information));
         self.as_mut().set_art(art);

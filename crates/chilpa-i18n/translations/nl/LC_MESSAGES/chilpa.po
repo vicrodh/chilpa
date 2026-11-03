@@ -184,6 +184,9 @@ msgstr "A-B-herhaling"
 msgid "ACCENT"
 msgstr "ACCENT"
 
+msgid "AI-generated"
+msgstr "AI-gegenereerd"
+
 msgid "ALSA direct"
 msgstr "ALSA direct"
 

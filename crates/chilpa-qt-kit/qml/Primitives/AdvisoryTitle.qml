@@ -4,9 +4,12 @@ import "../Theme"
 Item {
     id: line
     property bool explicitContent: false
+    property bool aiGenerated: false
     property alias text: title.text
     property alias font: title.font
     property alias color: title.color
+    property alias style: title.style
+    property alias styleColor: title.styleColor
     property alias elide: title.elide
     property alias wrapMode: title.wrapMode
     property alias maximumLineCount: title.maximumLineCount
@@ -29,9 +32,9 @@ Item {
     }
     Loader {
         id: badge
-        active: line.explicitContent
+        active: line.explicitContent || line.aiGenerated
         x: title.x + Math.min(title.paintedWidth, title.width) + Metrics.gap6
         anchors.verticalCenter: parent.verticalCenter
-        sourceComponent: ExplicitBadge {}
+        sourceComponent: ContentBadges { explicitContent: line.explicitContent; aiGenerated: line.aiGenerated }
     }
 }

@@ -21,6 +21,7 @@ Item {
     property var qualityInfo: ({})
     property int albumId
     property bool explicitContent: false
+    property bool aiGenerated: false
     property string title
     property string subtitle
     property string artistName: subtitle
@@ -147,6 +148,7 @@ Item {
 
         AdvisoryTitle {
             explicitContent: card.explicitContent
+            aiGenerated: card.aiGenerated
             id: titleLine; objectName: "albumTitle"
             width: parent.width - (qualityBadge.visible ? qualityBadge.width + Metrics.gap4 : 0)
             text: card.title

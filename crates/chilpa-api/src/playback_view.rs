@@ -4,6 +4,7 @@ use crate::{NowPlaying, Quality};
 pub struct PlaybackView {
     pub path: String,
     pub title: String,
+    pub ai_generated: Option<bool>,
     pub artist: String,
     pub album: String,
     pub album_id: i64,
@@ -30,6 +31,7 @@ impl PlaybackView {
     pub fn read(now: &NowPlaying, lyrics_shown: u64) -> Self {
         Self {
             path: now.path.clone(), title: now.title.clone(), artist: now.artist.clone(),
+            ai_generated: now.ai_generated,
             album: now.album.clone(), album_id: now.album_id,
             artwork_path: now.artwork_path.clone(), playing: now.playing, paused: now.paused,
             seconds: now.seconds, total_seconds: now.total_seconds, format: now.format.clone(),

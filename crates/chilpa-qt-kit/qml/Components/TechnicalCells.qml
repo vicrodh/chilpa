@@ -7,6 +7,7 @@ Item {
     id: cells
     property var facts: ({})
     property bool explicitContent: false
+    property bool aiGenerated: false
     property string title
     property string artist
     property string year
@@ -18,6 +19,7 @@ Item {
         model: columns.columns
         AdvisoryTitle {
             explicitContent: !cells.header && modelData.key === "album" && cells.explicitContent
+            aiGenerated: !cells.header && modelData.key === "album" && cells.aiGenerated
             required property var modelData
             objectName: (cells.header ? "technicalHeader_" : "technicalCell_") + modelData.key
             x: modelData.x + Metrics.gap12

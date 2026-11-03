@@ -483,6 +483,7 @@ impl Chilpa {
             track_count: a.track_count,
             artwork_path: a.artwork_path.unwrap_or_default(),
             play_count: listens,
+            ai_generated: None,
             explicit: a.explicit,
         })
     }

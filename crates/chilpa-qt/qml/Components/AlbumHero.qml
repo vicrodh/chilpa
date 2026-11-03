@@ -55,6 +55,7 @@ Item {
             width: parent.width
             text: hero.detail.title
             explicitContent: hero.detail.explicitContent
+            aiGenerated: hero.detail.aiGenerated
             elide: Text.ElideRight
             font.pointSize: Type.display
             font.weight: Type.bold

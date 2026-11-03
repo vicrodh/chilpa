@@ -516,6 +516,7 @@ impl Chilpa {
     /// Attaches the card the source gave to what is playing, if it is its own.
     pub(crate) fn name_from_source(&mut self, path: &std::path::Path) {
         let path = path.display().to_string();
+        self.now.ai_generated = self.catalog.track_by_path(&path).and_then(|(track, _)| track.metadata["ai_generated"].as_bool());
         let Some((url, hit)) = &self.search.playing else { return };
         if *url != path {
             return;

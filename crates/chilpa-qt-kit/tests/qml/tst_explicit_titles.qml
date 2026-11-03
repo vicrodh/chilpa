@@ -15,14 +15,15 @@ TestCase {
     QtObject {
         id: detail
         property int selectedId: 1
-        property string versions: JSON.stringify([{id:1,label:"Same title",brief:"Same",explicit:true},{id:2,label:"Same title",brief:"Same",explicit:false},{id:3,label:"Same title",brief:"Same"}])
+        property string versions: JSON.stringify([{id:1,label:"Same title",brief:"Same",explicit:true,ai_generated:true},{id:2,label:"Same title",brief:"Same",explicit:false,ai_generated:false},{id:3,label:"Same title",brief:"Same"}])
         function selectVersion(value) { selectedId = Number(value) }
     }
     TechnicalCells { id: technical; y: 240; width: 2000; height: 40; title: "A & <B>"; explicitContent: true }
     AlbumVersionSelect { id: versions; y: 160; detail: detail }
     function cleanup() {
-        title.explicitContent = false; title.width = 260; title.horizontalAlignment = Text.AlignLeft
-        credit.explicitContent = false; detail.selectedId = 1
+        title.explicitContent = false; title.aiGenerated = false; title.width = 260; title.horizontalAlignment = Text.AlignLeft
+        credit.explicitContent = false; credit.aiGenerated = false; detail.selectedId = 1
+        technical.aiGenerated = false; technical.explicitContent = true
         findChild(ordinary, "selectOptions").close()
         findChild(versions.item, "selectOptions").close()
         wait(0)
@@ -36,10 +37,10 @@ TestCase {
         const badge = findChild(title, "explicitBadge")
         verify(badge)
         compare(badge.Accessible.name, "Explicit")
-        verify(badge.parent.x >= text.x + text.paintedWidth)
+        verify(badge.mapToItem(title, 0, 0).x >= text.x + text.paintedWidth)
         title.width = 60
         verify(title.truncated)
-        verify(badge.parent.x + badge.width <= title.width)
+        verify(badge.mapToItem(title, badge.width, 0).x <= title.width)
         compare(title.text, "A & <b>B</b> > C")
         title.explicitContent = false
         tryVerify(() => findChild(title, "explicitBadge") === null)
@@ -48,7 +49,7 @@ TestCase {
         title.explicitContent = true; title.horizontalAlignment = Text.AlignHCenter
         const text = findChild(title, "advisoryText"), badge = findChild(title, "explicitBadge")
         verify(text.x > 0)
-        verify(badge.parent.x >= text.x + text.paintedWidth)
+        verify(badge.mapToItem(title, 0, 0).x >= text.x + text.paintedWidth)
         credit.explicitContent = true
         const name = findChild(credit, "creditedText"), composer = findChild(credit, "titleCredit")
         compare(composer.textFormat, Text.PlainText)
@@ -90,5 +91,43 @@ TestCase {
         compare(menu.entries[0].mark, "BP")
         compare(menu.entries[1].mark, "E")
         compare(menu.entries[1].explicitContent, false)
+    }
+    function test_ai_and_explicit_labels_coexist_and_leave_the_title_intact() {
+        title.aiGenerated = true; title.explicitContent = true; title.width = 80
+        wait(0)
+        const ai = findChild(title, "aiBadge"), explicit = findChild(title, "explicitBadge")
+        verify(ai !== null && explicit !== null)
+        compare(ai.Accessible.name, "AI-generated")
+        tryVerify(() => ai.mapToItem(title, 0, 0).x >= explicit.mapToItem(title, explicit.width, 0).x)
+        verify(ai.mapToItem(title, ai.width, 0).x <= title.width)
+        verify(title.truncated)
+        compare(title.text, "A & <b>B</b> > C")
+        title.aiGenerated = false
+        tryVerify(() => findChild(title, "aiBadge") === null)
+        verify(findChild(title, "explicitBadge") !== null)
+        title.explicitContent = false
+        tryVerify(() => findChild(title, "explicitBadge") === null)
+        title.aiGenerated = true
+        tryVerify(() => findChild(title, "aiBadge") !== null)
+    }
+    function test_ai_credit_keeps_links_and_plain_titles_separate() {
+        credit.aiGenerated = true; credit.explicitContent = true
+        wait(0)
+        const name = findChild(credit, "creditedText"), composer = findChild(credit, "titleCredit"), ai = findChild(credit, "aiBadge")
+        verify(ai !== null)
+        compare(name.textFormat, Text.PlainText)
+        compare(name.y + name.baselineOffset, composer.y + composer.baselineOffset)
+        verify(composer.x >= ai.mapToItem(credit, ai.width, 0).x)
+    }
+    function test_ai_versions_rebind_without_changing_labels() {
+        const field = versions.item
+        verify(findChild(field, "aiBadge") !== null)
+        detail.selectedId = 2
+        tryVerify(() => findChild(field, "aiBadge") === null)
+        detail.selectedId = 3
+        tryVerify(() => findChild(field, "aiBadge") === null)
+        detail.selectedId = 1
+        tryVerify(() => findChild(field, "aiBadge") !== null)
+        compare(field.options, ["Same title", "Same title", "Same title"])
     }
 }

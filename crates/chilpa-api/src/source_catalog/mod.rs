@@ -37,6 +37,8 @@ mod sorting;
 mod selection;
 mod navigation;
 mod technical;
+#[cfg(test)]
+mod advisories;
 mod track_quality;
 mod residency;
 pub use selection::SelectionHold;

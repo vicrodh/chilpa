@@ -125,7 +125,7 @@ fn track_headers_keep_identity_when_their_metadata_changes() {
 
 fn album(id: i64) -> Album {
     Album { id, title: id.to_string(), artist: String::new(), year: None, track_count: 1,
-        artwork_path: String::new(), play_count: 0, explicit: None }
+        artwork_path: String::new(), play_count: 0, ai_generated: None, explicit: None }
 }
 
 #[test]

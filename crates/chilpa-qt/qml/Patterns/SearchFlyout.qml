@@ -151,6 +151,7 @@ Popup {
             delegate: SearchHit {
                 required sourceIcon
                 required sourceName
+                required aiGenerated
                 markOwn: true
                 width: list.width
                 current: index === flyout.current

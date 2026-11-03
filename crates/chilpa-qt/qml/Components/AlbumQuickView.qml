@@ -75,6 +75,7 @@ Item {
                 width: parent.width
                 text: detail.title
                 explicitContent: detail.explicitContent
+                aiGenerated: detail.aiGenerated
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
                 elide: Text.ElideRight

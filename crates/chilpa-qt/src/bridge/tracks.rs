@@ -186,7 +186,7 @@ use std::rc::Rc;
 use chilpa_qt_kit::bridge::queue_activity;
 
 /// The roles, in order from `Qt::UserRole`.
-const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo", "composer", "headerWork", "headerComposer", "headerComposerTarget", "explicitContent", "credits"];
+const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo", "composer", "headerWork", "headerComposer", "headerComposerTarget", "explicitContent", "credits", "aiGenerated"];
 const USER_ROLE: i32 = 256;
 const ROLE_PLAYING: i32 = USER_ROLE + 9;
 const ROLE_SELECTED: i32 = USER_ROLE + 10;
@@ -299,22 +299,6 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
     chilpa_qt_kit::track_roles::track(track, role, number, playing, selected, &list.group)
 }
 
-/// Adds files to the end of the queue, on the output in use.
-fn enqueue(api: &mut chilpa_api::Chilpa, paths: &[String]) {
-    api.enqueue_here(paths);
-}
-
-/// Puts files right after what is playing, on the output in use.
-fn next(api: &mut chilpa_api::Chilpa, paths: &[String]) {
-    api.play_next_here(paths);
-}
-
-fn summary(tracks: usize, ms: u64) -> String {
-    let n = tracks.to_string();
-    let songs = app::with(|api| api.tf("{} song", "{} songs", tracks as i64, &[&n]));
-    format!("{songs} · {}", format::span(ms))
-}
-
 impl qobject::TrackListModel {
     pub fn data(&self, index: &QModelIndex, role: i32) -> QVariant {
         // A group's name is known without reading the row's page.
@@ -367,10 +351,10 @@ impl qobject::TrackListModel {
     }
 
     pub fn queue_all(self: Pin<&mut Self>) {
-        self.with_all_paths(enqueue);
+        self.with_all_paths(chilpa_api::Chilpa::enqueue_here);
     }
     pub fn play_next_all(self: Pin<&mut Self>) {
-        self.with_all_paths(next);
+        self.with_all_paths(chilpa_api::Chilpa::play_next_here);
     }
 
     pub fn play_later_all(self: Pin<&mut Self>, label: &QString) {
@@ -446,11 +430,11 @@ impl qobject::TrackListModel {
     pub fn queue(self: Pin<&mut Self>, row: i32) {
         if !self.in_selection(row) {
             if let Some(track) = self.rust().track(row.max(0) as usize) {
-                app::with(|api| enqueue(api, &[track.path]));
+                app::with(|api| api.enqueue_here(&[track.path]));
             }
             return;
         }
-        self.with_selection(enqueue);
+        self.with_selection(chilpa_api::Chilpa::enqueue_here);
     }
 
     pub fn play_chosen(self: Pin<&mut Self>, row: i32) {
@@ -465,11 +449,11 @@ impl qobject::TrackListModel {
     pub fn play_next(self: Pin<&mut Self>, row: i32) {
         if !self.in_selection(row) {
             if let Some(track) = self.rust().track(row.max(0) as usize) {
-                app::with(|api| next(api, &[track.path]));
+                app::with(|api| api.play_next_here(&[track.path]));
             }
             return;
         }
-        self.with_selection(next);
+        self.with_selection(chilpa_api::Chilpa::play_next_here);
     }
 
     pub fn play_later(self: Pin<&mut Self>, row: i32, label: &QString) {
@@ -904,7 +888,7 @@ impl qobject::TrackListModel {
                         let (first, last) = (self.index(0, 0, &QModelIndex::default()), self.index(*self.count() - 1, 0, &QModelIndex::default()));
                         self.as_mut().data_changed(&first, &last, &QVector::<i32>::default());
                     }
-                    if let Some(ms) = length { let count = *self.count() as usize; self.as_mut().set_summary(QString::from(&summary(count, ms))); }
+                    if let Some(ms) = length { let count = *self.count() as usize; self.as_mut().set_summary(QString::from(&format::track_summary(count, ms))); }
                     return;
                 }
             }
@@ -967,7 +951,7 @@ impl qobject::TrackListModel {
             Rows::Snapshot { ids, .. } => ids.ids.len(),
         };
         self.as_mut().set_count(tracks as i32);
-        let text = length.map(|ms| summary(tracks, ms)).unwrap_or_default();
+        let text = length.map(|ms| format::track_summary(tracks, ms)).unwrap_or_default();
         self.as_mut().set_summary(QString::from(&text));
         self.as_mut().set_ready(true);
     }

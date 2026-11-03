@@ -19,6 +19,8 @@ Rectangle {
     property string placeholder: ""
     property var explicitOptions: []
     property bool explicitContent: false
+    property var aiOptions: []
+    property bool aiGenerated: false
     property string value
     property real menuWidthLimit: Metrics.menuMaxWidth
 
@@ -45,6 +47,7 @@ Rectangle {
 
     AdvisoryTitle {
         explicitContent: field.explicitContent
+        aiGenerated: field.aiGenerated
         id: said
         anchors.left: sourceBadge.right
         anchors.leftMargin: sourceBadge.visible ? Metrics.gap6 : 0
@@ -114,6 +117,7 @@ Rectangle {
         entries: field.options.map((text, i) => ({
             text: text,
             explicitContent: field.explicitOptions[i] === true,
+            aiGenerated: field.aiOptions[i] === true,
             enabled: field.enabledOptions[i] !== false,
             checked: i === field.current,
             sourceInfo: field.sources[i],

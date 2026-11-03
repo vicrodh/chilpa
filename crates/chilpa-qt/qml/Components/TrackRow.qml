@@ -40,6 +40,7 @@ TrackRowSlot {
     // Who wrote it, quiet after the title; empty when nobody is named.
     property string composer: ""
     property bool explicitContent: false
+    property bool aiGenerated: false
     property var sourceInfo: ({})
     property bool selectionMode: false
     // The first row of a group in a list whose group names stay at the top.
@@ -146,6 +147,7 @@ TrackRowSlot {
                     width: parent.width
                     title: row.title
                     explicitContent: row.explicitContent
+                    aiGenerated: row.aiGenerated
                     credit: row.credits.featured_html || ""
                     composer: !Prefs.trackComposers ? "" : row.credits.links ? row.credits.composer_html || "" : row.composer || ""
                     richCredits: !!row.credits.links

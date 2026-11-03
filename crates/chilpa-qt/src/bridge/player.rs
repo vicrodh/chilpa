@@ -18,6 +18,7 @@ pub mod qobject {
         #[qml_element]
         #[qml_singleton]
         #[qproperty(QString, title)]
+        #[qproperty(bool, ai_generated)]
         #[qproperty(QString, artist)]
         #[qproperty(QString, album)]
         #[qproperty(QString, origin)]
@@ -175,6 +176,7 @@ pub struct PlayerRust {
     volume_locked: bool,
     volume_note: QString,
     title: QString,
+    ai_generated: bool,
     artist: QString,
     album: QString,
     origin: QString,
@@ -391,6 +393,7 @@ impl qobject::Player {
         if changed {
             crate::registry::library(|l| l.content_changed());
         }
+        self.as_mut().set_ai_generated(now.ai_generated == Some(true));
         if now.path != self.rust().shown || now.artwork_path != self.rust().shown_art || QString::from(&now.title) != self.rust().title || QString::from(&now.format) != self.rust().output_format {
             self.as_mut().read_volume();
             self.as_mut().rust_mut().shown = now.path.clone();

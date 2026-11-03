@@ -15,6 +15,7 @@ AlbumCard {
     width: CardLayout.cardWidth
     height: implicitHeight
     title: album.title || ""
+    aiGenerated: album.ai_generated === true
     subtitle: [album.artist || "", album.year || ""].filter(Boolean).join(" · ")
     artistName: album.artist || ""
     artistDestination: artistName && plugin ? ({target:"source",key:plugin + " " + (album.artist_ref ? "native:" + album.artist_ref : "matching-artist-v3:" + artistName)}) : ({})

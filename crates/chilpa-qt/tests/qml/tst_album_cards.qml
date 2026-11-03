@@ -52,6 +52,18 @@ TestCase {
         records.explicitRows = []; records.rev++
         tryVerify(() => findChild(grid, "explicitBadge") === null)
     }
+    function test_ai_flags_update_retained_cards_and_coexist_with_explicit() {
+        card.aiGenerated = true; card.explicitContent = true
+        tryVerify(() => findChild(card, "aiBadge") !== null)
+        verify(findChild(card, "explicitBadge") !== null)
+        compare(card.title, "Record")
+        card.aiGenerated = false; card.explicitContent = false
+        tryVerify(() => findChild(card, "aiBadge") === null)
+        records.aiRows = [0, 1, 2, 3, 4, 5]; records.rev++
+        tryVerify(() => findChild(grid, "aiBadge") !== null)
+        records.aiRows = []; records.rev++
+        tryVerify(() => findChild(grid, "aiBadge") === null)
+    }
     function test_artist_name_opens_the_source_artist_without_opening_the_album() {
         card.albumId = -7; card.subtitle = "Band"
         AlbumActions.artistDestination = {target:"source",key:"fixture native:artist:7"}
