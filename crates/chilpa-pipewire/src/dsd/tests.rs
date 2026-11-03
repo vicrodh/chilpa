@@ -45,7 +45,7 @@ fn a_drain_reports_done_once_the_device_has_played_the_last_chunk() {
     // No report from PipeWire still waits for the last chunk.
     assert!((ms(unsafe { dsd_settle_ns(88_200, 0, 0, 0, 2_048) }) - (23.220 + 2.0)).abs() < 0.01);
     // A wrong report cannot hold a stop for long.
-    assert_eq!(unsafe { dsd_settle_ns(88_200, i64::MAX / 4, 1, 1, 2_048) }, 500_000_000);
+    assert_eq!(unsafe { dsd_settle_ns(88_200, i64::MAX / 4, 1, 1, 2_048) }, 1_000_000_000);
 }
 
 #[test]

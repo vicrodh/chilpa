@@ -19,7 +19,7 @@
 /* After a drain, what the device still has to play: its delay and the last
  * chunk, a little margin, and never more than this. */
 #define DSD_SETTLE_MARGIN_NS 2000000ull
-#define DSD_SETTLE_MAX_NS 500000000ull
+#define DSD_SETTLE_MAX_NS 1000000000ull
 
 struct dsd_caps {
     uint64_t serial;
@@ -76,6 +76,10 @@ struct dsd_session {
      * payload has reached the device (monotonic nanoseconds). */
     uint32_t last_chunk;
     uint64_t settle_until;
+    /* The device delay read when the drain was asked for, while the stream
+     * still streamed, in ticks of num/denom seconds. */
+    int64_t drain_delay;
+    uint32_t drain_num, drain_denom;
     uint8_t *ring;
     size_t capacity;
     uint64_t read_at, write_at;

@@ -230,8 +230,10 @@ struct dsd_session *dsd_session_new(const char *name, uint64_t serial, uint32_t 
     /* The server's version came with the core info, before the roundtrip.
      * Without reliable transport native DSD can lose payload, so it is not
      * offered and the player converts DSD to PCM instead. */
-    if (!s->error && !s->reliable)
-        dsd_fail(s, -ENOTSUP, "PipeWire before 1.6 cannot carry native DSD without losing data");
+    /* Reliable transport runs on both sides: the server and this process's
+     * PipeWire library must each be 1.6 or later. */
+    if (!s->error && !(s->reliable && dsd_reliable_server(pw_get_library_version())))
+        dsd_fail(s, -ENOTSUP, "PipeWire before 1.6, in the server or in this library, cannot carry native DSD without losing data");
     if (!s->error && dsd_roundtrip(s, deadline) == 0 && !s->physical)
         dsd_fail(s, -ENOTSUP, "DSD target is not a physical ALSA sink");
     if (!s->error) {

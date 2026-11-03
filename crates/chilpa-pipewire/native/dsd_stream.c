@@ -95,18 +95,25 @@ static void stream_drained(void *data)
 /* PipeWire reports a drain once its queue is empty, not once the device has
  * played the last chunk: the drain reports done after the device's delay,
  * measured the first time the drain is seen. */
+/* The device delay, when PipeWire can tell it: only while streaming. */
+static void device_delay(struct dsd_session *s, int64_t *delay, uint32_t *num, uint32_t *denom)
+{
+    struct pw_time time = { 0 };
+    if (pw_stream_get_time_n(s->stream, &time, sizeof(time)) >= 0 && time.rate.denom) {
+        *delay = time.delay;
+        *num = time.rate.num;
+        *denom = time.rate.denom;
+    }
+}
+
 static bool settled(struct dsd_session *s)
 {
     if (!s->drained) return false;
     if (!s->settle_until) {
-        struct pw_time time = { 0 };
-        int64_t delay = 0;
-        uint32_t num = 0, denom = 0;
-        if (pw_stream_get_time_n(s->stream, &time, sizeof(time)) >= 0) {
-            delay = time.delay;
-            num = time.rate.num;
-            denom = time.rate.denom;
-        }
+        /* What the drain read while streaming, unless PipeWire still says. */
+        int64_t delay = s->drain_delay;
+        uint32_t num = s->drain_num, denom = s->drain_denom;
+        device_delay(s, &delay, &num, &denom);
         s->settle_until = now_ns() + dsd_settle_ns(s->rate, delay, num, denom, s->last_chunk);
     }
     return now_ns() >= s->settle_until;
@@ -388,6 +395,9 @@ int chilpa_pw_dsd_drain(struct dsd_session *s)
     }
     if (!s->error && s->write_at == s->read_at && !s->drain_requested) {
         s->drain_requested = true;
+        s->drain_delay = 0;
+        s->drain_num = s->drain_denom = 0;
+        device_delay(s, &s->drain_delay, &s->drain_num, &s->drain_denom);
         int result = pw_stream_flush(s->stream, true);
         if (result < 0) dsd_fail(s, result, "Cannot drain native DSD stream");
     }
