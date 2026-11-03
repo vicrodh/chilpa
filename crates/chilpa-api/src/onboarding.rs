@@ -11,6 +11,9 @@ use serde::Serialize;
 use std::sync::Mutex;
 use std::time::Duration;
 
+// This file is itself included by path from about.rs, so its submodule's
+// path is spelled out.
+#[path = "onboarding/news.rs"]
 mod news;
 use news::news;
 
