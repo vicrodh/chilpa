@@ -7285,6 +7285,10 @@ msgstr "DACの再生開始を待っています…"
 msgid "Waiting for the engine's opening report…"
 msgstr "エンジンのオープン結果を待機中…"
 
+msgid "Waiting for {} to come back… ({} track read)"
+msgid_plural "Waiting for {} to come back… ({} tracks read)"
+msgstr[0] "{}の復帰を待っています…（{}トラックを読み取り済み）"
+
 msgid "Wallpaper"
 msgstr "壁紙"
 
@@ -8844,6 +8848,10 @@ msgstr[0] "{}日"
 
 msgid "{} did not accept the account"
 msgstr "{}がアカウントを受け付けませんでした"
+
+msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
+msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
+msgstr[0] "{}は30分以内に復帰しませんでした。読み取った{}トラックは残してあり、何も削除されていません。復帰したらもう一度同期してください。"
 
 msgid "{} did not take the change to the playlist: {}"
 msgstr "{}はプレイリストの変更を受け付けませんでした: {}"

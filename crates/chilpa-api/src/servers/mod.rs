@@ -168,6 +168,7 @@ impl Chilpa {
             .into_iter()
             .map(|s| {
                 let kind = chilpa_servers::Kind::from_provider(&s.provider);
+                let name = if s.label.is_empty() { kind.map(|k| k.name().to_string()).unwrap_or_default() } else { s.label.clone() };
                 let state = if !s.enabled && kind.is_some_and(|k| !k.signs_in()) {
                     chilpa_i18n::t("Disabled. Its records stay in the library.")
                 } else if !s.enabled {
@@ -175,7 +176,7 @@ impl Chilpa {
                 } else if removing == Some(s.source_id) {
                     chilpa_i18n::t("Being removed…")
                 } else if let Some(run) = running.get(&s.source_id) {
-                    sync_state(run)
+                    sync_state(run, &name)
                 } else if refused.contains(&s.source_id) {
                     chilpa_i18n::t("Refused the sign-in. Its records stay listed and cannot be played.")
                 } else if !s.reachable {
@@ -189,7 +190,7 @@ impl Chilpa {
                 ServerRow {
                     id: s.source_id,
                     provider: s.provider.clone(),
-                    name: if s.label.is_empty() { kind.map(|k| k.name().to_string()).unwrap_or_default() } else { s.label.clone() },
+                    name,
                     product: s.product.clone(),
                     unencrypted: plain_and_outside(&s.address),
                     address: s.address.clone(),
@@ -712,7 +713,7 @@ fn write_server(path: &std::path::Path, keys: &Keys, edit: Option<i64>, ready: &
 /// The line under a server that is syncing: what it read and for how long,
 /// or, when its thread has said nothing for a while, that Sync now starts
 /// it again.
-fn sync_state(run: &sync::Running) -> String {
+fn sync_state(run: &sync::Running, name: &str) -> String {
     if run.stuck() {
         let quiet = run.beat.elapsed().as_secs() / 60;
         let n = quiet.to_string();
@@ -721,6 +722,15 @@ fn sync_state(run: &sync::Running) -> String {
             "The sync has not moved in {} minutes. Sync now starts it again.",
             quiet as i64,
             &[&n],
+        );
+    }
+    if run.waiting {
+        let n = run.done.to_string();
+        return chilpa_i18n::tf(
+            "Waiting for {} to come back… ({} track read)",
+            "Waiting for {} to come back… ({} tracks read)",
+            run.done as i64,
+            &[name, &n],
         );
     }
     let minutes = run.started.map_or(0, |at| at.elapsed().as_secs() / 60);

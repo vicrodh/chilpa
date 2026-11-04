@@ -63,6 +63,8 @@ pub(crate) struct Reading {
     pub(crate) pages: u64,
     /// What was read is in the library now.
     pub(crate) wrote: bool,
+    /// The server stopped answering and the sync waits for it to come back.
+    pub(crate) waiting: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -93,11 +95,13 @@ pub(crate) struct Running {
     pub(crate) started: Option<Instant>,
     /// When its thread last said where it is.
     pub(crate) beat: Instant,
+    /// Waiting for its server to come back (`Reading::waiting`).
+    pub(crate) waiting: bool,
 }
 
 impl Running {
     pub(crate) fn asked() -> Self {
-        Self { done: 0, pages: 0, started: None, beat: Instant::now() }
+        Self { done: 0, pages: 0, started: None, beat: Instant::now(), waiting: false }
     }
 
     /// Begun, and no word from its thread for `STUCK`.
@@ -303,6 +307,7 @@ impl Syncer {
                     if let Some(running) = self.running.get_mut(source) {
                         running.done = reading.done;
                         running.pages = reading.pages;
+                        running.waiting = reading.waiting;
                         running.beat = Instant::now();
                     }
                 }
@@ -504,6 +509,12 @@ pub(crate) fn run(
     let (mut pages, mut stale): (u64, u64) = (0, 0);
     // Containers of a media server that could not be read and were left out.
     let mut skipped: u64 = 0;
+    // A media server is walked a request at a time, paced (`pace`), and
+    // waited for when it stops answering. Where it went down last, and how
+    // many times there: a container that takes it down twice is left out.
+    let media = server.kind == chilpa_servers::Kind::Dlna;
+    let (mut paced, mut pause) = (pace::Pace::new(), Duration::ZERO);
+    let mut fell: (Option<String>, u32) = (None, 0);
     let unwritten = || Event::Failed { source, why: chilpa_i18n::t("the library could not be written"), unreachable: false };
     eprintln!("chilpa-servers: sync of source {source} ({}) started", stored.provider);
     loop {
@@ -512,9 +523,68 @@ pub(crate) fn run(
             eprintln!("chilpa-servers: sync of source {source} stopped after {pages} pages, {} tracks", seen.len());
             return Event::Failed { source, why: chilpa_i18n::t("the sync was stopped"), unreachable: false };
         }
+        if media && !pace::rest(pause, stopped, &|| {}) {
+            continue;
+        }
         let asked_at = Instant::now();
         let page = match chilpa_servers::page(net, &server, &key, cursor.as_deref()) {
             Ok(page) => page,
+            Err(failure) if media && failure.is_unreachable() => {
+                pause = paced.after(asked_at.elapsed(), false);
+                fell = if fell.0 == cursor { (cursor.clone(), fell.1 + 1) } else { (cursor.clone(), 1) };
+                eprintln!(
+                    "chilpa-servers: sync of source {source}: the server went away at page {} ({} times there), {} tracks read: {failure}",
+                    pages + 1,
+                    fell.1,
+                    seen.len()
+                );
+                // Asked twice, the same container took the server down twice.
+                let mut ended = false;
+                if fell.1 >= 2 {
+                    match chilpa_servers::dlna::past(&server, cursor.as_deref()) {
+                        Ok(next) => {
+                            eprintln!("chilpa-servers: sync of source {source}: a container takes the server down each time it is asked; it is left out");
+                            skipped += 1;
+                            ended = next.is_none();
+                            cursor = next;
+                            fell = (None, 0);
+                        }
+                        Err(failure) => return failed(failure),
+                    }
+                }
+                sealed += keep.len() + save.len();
+                if !write(lib, source, generation, &mut keep, &mut save) {
+                    return unwritten();
+                }
+                wrote = Instant::now();
+                let reading = |waiting: bool| Reading { done: seen.len() as u64, pages, wrote: true, waiting };
+                progress(reading(true));
+                if !back(net, &server, stopped, &|| progress(reading(true))) {
+                    if stopped() {
+                        continue;
+                    }
+                    eprintln!("chilpa-servers: sync of source {source}: the server did not come back; {} tracks read are kept", seen.len());
+                    let read = seen.len().to_string();
+                    let name = if stored.label.is_empty() { server.kind.name().to_string() } else { stored.label.clone() };
+                    return Event::Failed {
+                        source,
+                        why: chilpa_i18n::tf(
+                            "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back.",
+                            "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back.",
+                            seen.len() as i64,
+                            &[&name, &read],
+                        ),
+                        unreachable: true,
+                    };
+                }
+                eprintln!("chilpa-servers: sync of source {source}: the server came back; the walk goes on where it was");
+                progress(reading(false));
+                beat = Instant::now();
+                if ended {
+                    break;
+                }
+                continue;
+            }
             Err(failure) => {
                 eprintln!(
                     "chilpa-servers: sync of source {source} failed at page {} after {:.1}s, {} tracks read: {failure}",
@@ -529,6 +599,9 @@ pub(crate) fn run(
             }
         };
         pages += 1;
+        if media {
+            pause = paced.after(asked_at.elapsed(), page.skipped == 0);
+        }
         if asked_at.elapsed() > Duration::from_secs(5) {
             eprintln!("chilpa-servers: sync of source {source}: page {pages} took {:.1}s", asked_at.elapsed().as_secs_f32());
         }
@@ -582,10 +655,10 @@ pub(crate) fn run(
             }
             wrote = Instant::now();
             beat = Instant::now();
-            progress(Reading { done: seen.len() as u64, pages, wrote: true });
+            progress(Reading { done: seen.len() as u64, pages, wrote: true, waiting: false });
         } else if beat.elapsed() >= BEAT {
             beat = Instant::now();
-            progress(Reading { done: seen.len() as u64, pages, wrote: false });
+            progress(Reading { done: seen.len() as u64, pages, wrote: false, waiting: false });
         }
         if logged.elapsed() >= LOG_EVERY {
             logged = Instant::now();
@@ -662,6 +735,21 @@ pub(crate) fn run(
         }
         Err(_) => Event::Failed { source, why: chilpa_i18n::t("the library could not be written"), unreachable: false },
     }
+}
+
+/// Waits for a media server that stopped answering, asking it after each
+/// wait (`pace::down_waits`) and saying so with `say` meanwhile. False if it
+/// did not come back, or the sync was asked to stop.
+fn back(net: &dyn Net, server: &chilpa_servers::Server, stopped: &dyn Fn() -> bool, say: &dyn Fn()) -> bool {
+    for wait in pace::down_waits() {
+        if !pace::rest(wait, stopped, say) {
+            return false;
+        }
+        if chilpa_servers::dlna::ping(net, server).is_ok() {
+            return true;
+        }
+    }
+    false
 }
 
 /// Writes what a sync read and has not written, and empties it. Each part
@@ -745,6 +833,8 @@ fn image_kind(kind: &str, body: &[u8]) -> &'static str {
         ""
     }
 }
+
+mod pace;
 
 #[cfg(test)]
 mod tests;

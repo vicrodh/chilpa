@@ -7294,6 +7294,11 @@ msgstr "Esperando a que el DAC empiece a sonar…"
 msgid "Waiting for the engine's opening report…"
 msgstr "Esperando el informe de apertura del motor…"
 
+msgid "Waiting for {} to come back… ({} track read)"
+msgid_plural "Waiting for {} to come back… ({} tracks read)"
+msgstr[0] "Esperando a que {} vuelva… ({} pista leída)"
+msgstr[1] "Esperando a que {} vuelva… ({} pistas leídas)"
+
 msgid "Wallpaper"
 msgstr "Fondo de pantalla"
 
@@ -8859,6 +8864,11 @@ msgstr[1] "{} días"
 
 msgid "{} did not accept the account"
 msgstr "{} no aceptó la cuenta"
+
+msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
+msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
+msgstr[0] "{} no volvió en 30 minutos. Se conserva {} pista leída y no se quitó nada; sincroniza otra vez cuando vuelva."
+msgstr[1] "{} no volvió en 30 minutos. Se conservan {} pistas leídas y no se quitó nada; sincroniza otra vez cuando vuelva."
 
 msgid "{} did not take the change to the playlist: {}"
 msgstr "{} no aceptó el cambio en la playlist: {}"

@@ -7294,6 +7294,11 @@ msgstr "Wachten tot de DAC begint met afspelen…"
 msgid "Waiting for the engine's opening report…"
 msgstr "Wachten op het openingsrapport van de audiomotor…"
 
+msgid "Waiting for {} to come back… ({} track read)"
+msgid_plural "Waiting for {} to come back… ({} tracks read)"
+msgstr[0] "Wachten tot {} terug is… ({} nummer gelezen)"
+msgstr[1] "Wachten tot {} terug is… ({} nummers gelezen)"
+
 msgid "Wallpaper"
 msgstr "Bureaubladachtergrond"
 
@@ -8859,6 +8864,11 @@ msgstr[1] "{} dagen"
 
 msgid "{} did not accept the account"
 msgstr "{} heeft het account niet geaccepteerd"
+
+msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
+msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
+msgstr[0] "{} is binnen 30 minuten niet teruggekomen. {} gelezen nummer blijft bewaard en er is niets verwijderd; synchroniseer opnieuw als hij terug is."
+msgstr[1] "{} is binnen 30 minuten niet teruggekomen. De {} gelezen nummers blijven bewaard en er is niets verwijderd; synchroniseer opnieuw als hij terug is."
 
 msgid "{} did not take the change to the playlist: {}"
 msgstr "{} heeft de wijziging aan de afspeellijst niet overgenomen: {}"

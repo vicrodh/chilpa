@@ -528,15 +528,9 @@ fn spent(cursor: &Cursor) -> Option<String> {
     }
 }
 
-/// One page of the containers chosen. `None` starts at the first; nothing
-/// chosen is the whole server.
-///
-/// A container that cannot be read is asked for again, twice. If it still
-/// does not come and the server answers otherwise, it is left out, the
-/// page says so (`Page::skipped`), and the walk goes on with the next one:
-/// one folder the server cannot give does not end the sync.
-pub fn page(net: &dyn Net, server: &Server, cursor: Option<&str>) -> Result<Page, Failure> {
-    let mut cursor: Cursor = match cursor {
+/// A walk's place, as `page` gives it; `None` is its start.
+fn opened(server: &Server, cursor: Option<&str>) -> Result<Cursor, Failure> {
+    Ok(match cursor {
         Some(text) => serde_json::from_str(text).map_err(|_| {
             Failure::Unexpected(chilpa_i18n::t("the sync lost its place; start it again"))
         })?,
@@ -557,7 +551,27 @@ pub fn page(net: &dyn Net, server: &Server, cursor: Option<&str>) -> Result<Page
                 ..Cursor::default()
             }
         }
-    };
+    })
+}
+
+/// The walk's place past the container `cursor` is reading, the rest of
+/// it left out: for a container whose request takes the server down every
+/// time it is asked. `None` when nothing is left to read.
+pub fn past(server: &Server, cursor: Option<&str>) -> Result<Option<String>, Failure> {
+    let mut cursor = opened(server, cursor)?;
+    cursor.advance();
+    Ok(cursor.onward())
+}
+
+/// One page of the containers chosen. `None` starts at the first; nothing
+/// chosen is the whole server.
+///
+/// A container that cannot be read is asked for again, twice. If it still
+/// does not come and the server answers otherwise, it is left out, the
+/// page says so (`Page::skipped`), and the walk goes on with the next one:
+/// one folder the server cannot give does not end the sync.
+pub fn page(net: &dyn Net, server: &Server, cursor: Option<&str>) -> Result<Page, Failure> {
+    let mut cursor = opened(server, cursor)?;
     if let Some(limit) = spent(&cursor) {
         eprintln!(
             "chilpa-servers: media server walk stopped at its limit: {} containers, {} requests, began {}",

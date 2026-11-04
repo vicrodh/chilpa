@@ -7294,6 +7294,11 @@ msgstr ""
 msgid "Waiting for the engine's opening report…"
 msgstr ""
 
+msgid "Waiting for {} to come back… ({} track read)"
+msgid_plural "Waiting for {} to come back… ({} tracks read)"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "Wallpaper"
 msgstr ""
 
@@ -8859,6 +8864,11 @@ msgstr[1] ""
 
 msgid "{} did not accept the account"
 msgstr ""
+
+msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
+msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} did not take the change to the playlist: {}"
 msgstr ""

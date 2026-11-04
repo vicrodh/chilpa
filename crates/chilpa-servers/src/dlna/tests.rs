@@ -880,6 +880,27 @@ fn a_container_met_twice_is_read_once() {
 }
 
 #[test]
+fn past_a_container_is_the_one_met_before_it_then_the_next_scope_then_nothing() {
+    let server = plex(&["top", "more"]);
+    let reading = |current: &str, waiting: &[&str]| Cursor {
+        scopes: vec!["top".into(), "more".into()],
+        current: Some(top(current)),
+        offset: 40,
+        waiting: waiting.iter().map(|id| top(id)).collect(),
+        walk: true,
+        ..Cursor::default()
+    };
+    let current = |text: Option<String>| text.map(|text| serde_json::from_str::<Cursor>(&text).unwrap()).map(|c| (c.current.unwrap().0, c.offset));
+    let text = serde_json::to_string(&reading("bad", &["a", "b"])).unwrap();
+    assert_eq!(current(past(&server, Some(&text)).unwrap()), Some(("b".to_string(), 0)), "the last met, from its start");
+    let mut last = reading("bad", &[]);
+    last.scope = 1;
+    assert_eq!(current(past(&server, Some(&serde_json::to_string(&last).unwrap())).unwrap()), None, "nothing is left");
+    // Before the first page, past the first scope is the second.
+    assert_eq!(current(past(&server, None).unwrap()), Some(("more".to_string(), 0)));
+}
+
+#[test]
 fn a_walk_ends_at_its_limits_and_says_which() {
     let server = plex(&["top"]);
     let base = || Cursor {

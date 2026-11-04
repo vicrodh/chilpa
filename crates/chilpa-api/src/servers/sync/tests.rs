@@ -545,6 +545,111 @@ fn a_media_server_larger_than_its_pages_comes_in_whole_and_is_written_in_batches
     let _ = std::fs::remove_dir_all(covers_dir(&server.instance));
 }
 
+/// `Shelves` behind a connection that drops. The `fall_at`th request finds
+/// the server gone for `gone` requests, and a Browse of `poison` takes it
+/// down for `gone` requests each time it is asked. Up, it answers a ping.
+struct Falls {
+    shelves: Shelves,
+    fall_at: usize,
+    poison: Option<&'static str>,
+    gone: usize,
+    down: std::sync::atomic::AtomicUsize,
+    sent: std::sync::atomic::AtomicUsize,
+    poisoned: std::sync::atomic::AtomicUsize,
+}
+
+impl Falls {
+    fn new(records: usize, fall_at: usize, poison: Option<&'static str>, gone: usize) -> Self {
+        let shelves = Shelves { records, songs: 2, most: 50, asked: Default::default() };
+        Self { shelves, fall_at, poison, gone, down: Default::default(), sent: Default::default(), poisoned: Default::default() }
+    }
+}
+
+impl Net for Falls {
+    fn send(&self, request: &Request) -> Result<Reply, String> {
+        use std::sync::atomic::Ordering::SeqCst;
+        let body = String::from_utf8_lossy(&request.body.as_ref().expect("a SOAP request").1).into_owned();
+        if self.sent.fetch_add(1, SeqCst) + 1 == self.fall_at {
+            self.down.store(self.gone, SeqCst);
+        }
+        let browsed = body.contains("<ObjectID>").then(|| between(&body, "<ObjectID>", "</ObjectID>").to_string());
+        if self.down.load(SeqCst) == 0 && browsed.is_some() && browsed.as_deref() == self.poison {
+            self.poisoned.fetch_add(1, SeqCst);
+            self.down.store(self.gone, SeqCst);
+        }
+        if self.down.load(SeqCst) > 0 {
+            self.down.fetch_sub(1, SeqCst);
+            return Err("connection reset by peer".into());
+        }
+        if browsed.is_none() {
+            return Ok(Reply { status: 200, headers: Default::default(), body: b"<Id>1</Id>".to_vec() });
+        }
+        self.shelves.send(request)
+    }
+}
+
+#[test]
+fn a_media_server_that_goes_away_is_waited_for_and_read_on_from_the_same_page() {
+    let lab = media_server(chilpa_library::Library::in_memory().unwrap(), r#"["top"]"#);
+    // The fourth request finds it gone: three tries and a ping on the
+    // walk's side, then two of the sync's pings, and it is back.
+    let net = Falls::new(6, 4, None, 6);
+    let readings = std::cell::RefCell::new(Vec::new());
+    let event = run(&lab.lib, &net, &lab.keys, lab.source, &|reading| readings.borrow_mut().push(reading), &never);
+
+    // `top` does not count, so the sync is partial for that alone.
+    let partial = chilpa_i18n::t("the server did not describe every track it listed; nothing was taken out, sync again");
+    assert_eq!(event, Event::Failed { source: lab.source, why: partial, unreachable: false });
+    assert_eq!(lab.lib.server(lab.source).unwrap().unwrap().tracks, 12, "every record, the one it went away on too");
+    let waited: Vec<_> = readings.borrow().iter().map(|r| r.waiting).collect();
+    assert!(waited.contains(&true), "it said it was waiting");
+    assert_eq!(readings.borrow().last().map(|r| r.waiting), Some(false), "and that it went on");
+}
+
+#[test]
+fn a_container_that_takes_the_server_down_twice_is_left_out_and_the_rest_comes_in() {
+    let lab = media_server(chilpa_library::Library::in_memory().unwrap(), r#"["top"]"#);
+    let net = Falls::new(6, 0, Some("r2"), 5);
+    let event = run(&lab.lib, &net, &lab.keys, lab.source, &|_| {}, &never);
+
+    assert_eq!(net.poisoned.load(std::sync::atomic::Ordering::SeqCst), 2, "asked again once, then left out");
+    let said = chilpa_i18n::tf(
+        "{} tracks came in; {} folder of the server could not be read and was left out. Nothing was taken out; sync again.",
+        "{} tracks came in; {} folders of the server could not be read and were left out. Nothing was taken out; sync again.",
+        1,
+        &["10", "1"],
+    );
+    assert_eq!(event, Event::Failed { source: lab.source, why: said, unreachable: false });
+    assert_eq!(lab.lib.server(lab.source).unwrap().unwrap().tracks, 10);
+}
+
+#[test]
+fn a_media_server_that_does_not_come_back_keeps_what_was_read_and_says_so() {
+    let lab = media_server(chilpa_library::Library::in_memory().unwrap(), r#"["top"]"#);
+    // Gone from the fourth request on: two pages of `top`, one record read.
+    let net = Falls::new(6, 4, None, usize::MAX / 2);
+    let event = run(&lab.lib, &net, &lab.keys, lab.source, &|_| {}, &never);
+
+    let said = chilpa_i18n::tf(
+        "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back.",
+        "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back.",
+        2,
+        &["Lab", "2"],
+    );
+    assert_eq!(event, Event::Failed { source: lab.source, why: said, unreachable: true });
+    assert_eq!(lab.lib.server(lab.source).unwrap().unwrap().tracks, 2, "what was read is kept");
+}
+
+#[test]
+fn a_sync_waiting_for_its_server_says_whom_and_how_much_it_read() {
+    let mut running = Running::asked();
+    running.started = Some(Instant::now());
+    running.done = 1234;
+    running.waiting = true;
+    let said = super::super::sync_state(&running, "Lab");
+    assert_eq!(said, chilpa_i18n::tf("Waiting for {} to come back… ({} track read)", "Waiting for {} to come back… ({} tracks read)", 1234, &["Lab", "1234"]));
+}
+
 /// Answers each request with the next status it was loaded with, and the
 /// first bytes of a JPEG under a generic type.
 struct Statuses(Mutex<VecDeque<u16>>);

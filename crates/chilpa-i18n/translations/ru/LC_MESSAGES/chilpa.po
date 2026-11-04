@@ -7303,6 +7303,12 @@ msgstr "Ожидание начала воспроизведения на DAC…
 msgid "Waiting for the engine's opening report…"
 msgstr "Ожидание отчёта аудиодвижка об открытии…"
 
+msgid "Waiting for {} to come back… ({} track read)"
+msgid_plural "Waiting for {} to come back… ({} tracks read)"
+msgstr[0] "Ожидание, пока {} снова станет доступен… (прочитан {} трек)"
+msgstr[1] "Ожидание, пока {} снова станет доступен… (прочитано {} трека)"
+msgstr[2] "Ожидание, пока {} снова станет доступен… (прочитано {} треков)"
+
 msgid "Wallpaper"
 msgstr "Обои"
 
@@ -8874,6 +8880,12 @@ msgstr[2] "{} дней"
 
 msgid "{} did not accept the account"
 msgstr "источник «{}» не принял учётную запись"
+
+msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
+msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
+msgstr[0] "{} не стал доступен в течение 30 минут. Прочитанный {} трек сохранён, ничего не удалено; синхронизируйте снова, когда он вернётся."
+msgstr[1] "{} не стал доступен в течение 30 минут. Прочитанные {} трека сохранены, ничего не удалено; синхронизируйте снова, когда он вернётся."
+msgstr[2] "{} не стал доступен в течение 30 минут. Прочитанные {} треков сохранены, ничего не удалено; синхронизируйте снова, когда он вернётся."
 
 msgid "{} did not take the change to the playlist: {}"
 msgstr "{} не принял изменение плейлиста: {}"
