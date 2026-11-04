@@ -12,6 +12,16 @@ TestCase {
     width: 900
     height: 500
     PlayerLcd { id: lcd; width: 700 }
+    function test_hidden_player_releases_art_and_stops_following_the_seek(){
+        const cover=findChild(lcd,"playerCover"),seek=findChild(lcd,"playerSeek")
+        lcd.visible=false
+        compare(String(cover.source),"")
+        const held=seek.position
+        for(let i=0;i<4;i++){Player.position=11+i*.25;wait(30);compare(seek.position,held)}
+        lcd.visible=true
+        compare(seek.position,Player.position)
+        compare(String(cover.source),String(Player.art))
+    }
     function test_existing_quality_glyph_opens_now_with_mouse_and_keyboard() {
         lcd.y = 0
         const glyph = findChild(lcd,"playbackIndicator")

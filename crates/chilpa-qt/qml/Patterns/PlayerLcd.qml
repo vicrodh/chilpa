@@ -20,10 +20,10 @@ Rectangle {
     // not here (the owner, 2026-10-09).
     property bool tall: false
     readonly property bool qualityHovered: indicator.hovered
-    readonly property var castState: JSON.parse(Cast.snapshot || "{}")
+    readonly property var castState: visible ? JSON.parse(Cast.snapshot || "{}") : ({})
     // The key of the page of what plays, when it is an entry of a source.
-    readonly property string parentSource: JSON.parse(Sources.snapshot || "{}").playing_parent || ""
-    readonly property string onAir: JSON.parse(Sources.snapshot || "{}").onAir || ""
+    readonly property string parentSource: visible ? JSON.parse(Sources.snapshot || "{}").playing_parent || "" : ""
+    readonly property string onAir: visible ? JSON.parse(Sources.snapshot || "{}").onAir || "" : ""
 
     Connections {
         target: Player
@@ -43,7 +43,7 @@ Rectangle {
         width: Metrics.lcdArt
         height: Metrics.lcdArt
         radius: Metrics.radiusArtSmall
-        source: Player.art
+        source: lcd.visible ? Player.art : ""
         // Hovered, it grows into a 400 preview; clicked, the immersive view
         // opens on Now Playing (the owner, 2026-10-09).
         HoverHandler { id: coverHover; cursorShape: Player.path !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor }
@@ -62,7 +62,7 @@ Rectangle {
         anchors.leftMargin: Metrics.gap12
         anchors.verticalCenter: parent.verticalCenter
         visible: lcd.showTimes && !lcd.tall && Player.playing
-        text: Player.elapsed
+        text: visible ? Player.elapsed : ""
         font.pointSize: Type.micro
         font.features: { "tnum": 1 }
         color: Theme.color.textTertiary
@@ -74,7 +74,7 @@ Rectangle {
         anchors.rightMargin: Metrics.gap12
         anchors.verticalCenter: parent.verticalCenter
         visible: lcd.showTimes && !lcd.tall && Player.playing && !Player.live
-        text: Player.remaining
+        text: visible ? Player.remaining : ""
         font.pointSize: Type.micro
         font.features: { "tnum": 1 }
         color: Theme.color.textTertiary
@@ -200,7 +200,7 @@ Rectangle {
         anchors.right: parent.right
         anchors.leftMargin: lcd.radius
         anchors.rightMargin: lcd.radius
-        position: Player.position
+        position: visible ? Player.position : 0
         duration: Player.duration
         bubbleText: Player.clock(hoverSeconds)
         loopStart: Controls.loopState > 0 ? Controls.loopStart : -1
