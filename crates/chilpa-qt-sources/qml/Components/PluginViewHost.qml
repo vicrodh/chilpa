@@ -30,7 +30,11 @@ Item {
         objectName: "pluginDisplayLoader"
         parent: DisplayMode.active ? stage : DisplayMode.portal
         anchors.fill: parent
+        // A surface without the display contract goes while its page is
+        // hidden and comes back with it; a display keeps its own.
         active: host.registerHost && DisplayMode.portal !== null && String(DisplayMode.entry) !== ""
+            && (DisplayMode.provider !== null || DisplayMode.portal.visible || detached)
+        readonly property bool detached: item?.detachedVisible === true
         source: active ? DisplayMode.entry : ""
         asynchronous: true
         onItemChanged: if (!item) DisplayMode.surface = null
