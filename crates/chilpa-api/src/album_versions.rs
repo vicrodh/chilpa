@@ -260,8 +260,10 @@ impl Chilpa {
     }
 
     fn library_album_sources(&mut self, album: i64) -> Vec<AlbumSource> {
+        // Every card asks this: during a server's sync they share one read
+        // of the library's editions (`shown_editions`).
+        let Some(catalog) = self.shown_editions() else { return Vec::new() };
         let Some(lib) = self.library() else { return Vec::new() };
-        let Ok(catalog) = lib.version_catalog() else { return Vec::new() };
         let versions = if lib.group_album_versions() { catalog.choices(album) }
             else { catalog.versions.get(&album).cloned().into_iter().collect() };
         let mut seen = std::collections::HashSet::new();

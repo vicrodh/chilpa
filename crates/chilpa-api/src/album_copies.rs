@@ -9,6 +9,13 @@ use crate::Chilpa;
 use chilpa_library::store::versions::VersionCatalog;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
+
+/// While a server syncs, the library changes under every card a grid
+/// draws, and each card that asked after a change rebuilt the library's
+/// editions from the whole library: a grid of cards, one rebuild after
+/// another on the window. Read this recently, they stand for the library.
+const HELD_WHILE_SYNCING: Duration = Duration::from_secs(2);
 
 /// The library's editions, the catalog's revision and "Group album
 /// versions": while they hold, the cards hold.
@@ -33,12 +40,16 @@ pub(crate) struct Held {
     index: Option<Arc<Index>>,
     /// "Group same album from different sources", read once.
     on: Option<bool>,
+    /// The library's editions as a card read them during a server's sync,
+    /// and when (`HELD_WHILE_SYNCING`).
+    editions: Option<(Instant, Arc<VersionCatalog>)>,
 }
 
 impl Held {
     /// What was integrated changed: the cards are read again.
     pub(crate) fn forget(&mut self) {
         self.index = None;
+        self.editions = None;
     }
 }
 
@@ -49,14 +60,28 @@ impl Chilpa {
 
     pub fn set_group_source_copies(&mut self, on: bool) {
         self.remember_preference(crate::library_sources::GROUP_SOURCES, if on { "true" } else { "false" });
-        self.copies = Held { index: None, on: Some(on) };
+        self.copies = Held { on: Some(on), ..Held::default() };
+    }
+
+    /// The library's editions as the cards show them. Outside a server's
+    /// sync they are the library's now; during one, the ones a card read
+    /// within `HELD_WHILE_SYNCING`, so a grid rebuilds them once.
+    pub(crate) fn shown_editions(&mut self) -> Option<Arc<VersionCatalog>> {
+        let syncing = self.server_syncing();
+        if let Some((at, editions)) = self.copies.editions.as_ref().filter(|_| syncing) {
+            if at.elapsed() < HELD_WHILE_SYNCING {
+                return Some(Arc::clone(editions));
+            }
+        }
+        let editions = self.library()?.version_catalog().ok()?;
+        self.copies.editions = syncing.then(|| (Instant::now(), Arc::clone(&editions)));
+        Some(editions)
     }
 
     fn copy_index(&mut self) -> Option<Arc<Index>> {
         if !self.group_source_copies() { return None; }
-        let lib = self.library()?;
-        let library = lib.version_catalog().ok()?;
-        let versions = lib.group_album_versions();
+        let library = self.shown_editions()?;
+        let versions = self.library()?.group_album_versions();
         let stamp = (Arc::as_ptr(&library) as usize, self.catalog.revisions().0, versions);
         if let Some(index) = self.copies.index.as_ref().filter(|index| index.stamp == stamp) {
             return Some(index.clone());

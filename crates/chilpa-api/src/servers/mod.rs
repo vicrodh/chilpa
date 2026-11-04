@@ -392,6 +392,11 @@ impl Chilpa {
         }
     }
 
+    /// Whether a server's catalogue is queued or being read now.
+    pub(crate) fn server_syncing(&self) -> bool {
+        self.servers.syncer.as_ref().is_some_and(|s| !s.running.is_empty())
+    }
+
     /// Reads the server's catalogue again.
     pub fn sync_server(&mut self, id: i64) {
         if !self.library().and_then(|lib| lib.server(id).ok().flatten()).is_some_and(|s| s.enabled) {
