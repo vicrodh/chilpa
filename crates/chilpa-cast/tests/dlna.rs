@@ -25,6 +25,17 @@ fn ssdp_header_case_is_not_significant() {
     assert_eq!(discovery::location("HTTP/1.1 200 OK\r\nlOcAtIoN: http://127.0.0.1/device.xml\r\n"), Some("http://127.0.0.1/device.xml".into()));
 }
 #[test]
+fn an_ssdp_reply_counts_only_for_the_host_that_sent_it() {
+    // The shape a media server answered with on a LAN, 2026-11-03.
+    let reply = "HTTP/1.1 200 OK\r\nLocation: http://192.168.0.69:32469/DeviceDescription.xml\r\nCache-Control: max-age=1800\r\nST: urn:schemas-upnp-org:device:MediaServer:1\r\n\r\n";
+    let peer: std::net::IpAddr = "192.168.0.69".parse().unwrap();
+    assert_eq!(discovery::accepted(reply, peer), Some("http://192.168.0.69:32469/DeviceDescription.xml".into()));
+    assert_eq!(discovery::accepted(reply, "192.168.0.70".parse().unwrap()), None, "a reply cannot point at another host");
+    assert_eq!(discovery::accepted(&reply.replace("http://", "https://"), peer), None);
+    assert_eq!(discovery::accepted("HTTP/1.1 200 OK\r\nST: upnp:rootdevice\r\n\r\n", peer), None);
+    assert!(discovery::search("upnp:rootdevice\r\nMAN: x", Duration::from_millis(1), &std::sync::atomic::AtomicBool::new(true)).is_err(), "a target cannot add a header");
+}
+#[test]
 fn protocol_advertisements_do_not_veto_a_renderer_load() {
     for sink in [include_str!("fixtures/gmediarender-sink.txt").trim(), "http-get:*:audio/*:*", "http-get:*:audio/x-flac:*", "", "http-get:*:audio/mpeg:*"] {
         let server = tiny_http::Server::http("127.0.0.1:0").unwrap();

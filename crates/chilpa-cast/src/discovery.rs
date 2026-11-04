@@ -6,22 +6,33 @@ use std::{collections::HashSet, net::UdpSocket, time::{Duration, Instant}};
 /// description cannot hide another renderer in the same search window.
 pub fn dlna(window: Duration) -> Result<Vec<Device>> { dlna_until(window, &AtomicBool::new(true)) }
 pub fn dlna_until(window: Duration, running: &AtomicBool) -> Result<Vec<Device>> {
+    let locations = search("urn:schemas-upnp-org:device:MediaRenderer:1", window, running)?;
+    let mut seen = HashSet::new();
+    Ok(locations.into_iter().take_while(|_| running.load(Ordering::Acquire)).filter_map(|url| dlna::describe(&url).ok()).map(|d| d.device).filter(|d| seen.insert(d.id.clone())).collect())
+}
+/// The description addresses of the devices of one type that answer an SSDP
+/// search within `window`, each once. A media server is found the same way
+/// as a renderer, with its own search target.
+pub fn search(target: &str, window: Duration, running: &AtomicBool) -> Result<Vec<String>> {
+    if target.contains(['\r', '\n']) { return Err(Error::Network); }
     let socket = UdpSocket::bind("0.0.0.0:0").map_err(|_| Error::Network)?;
     socket.set_read_timeout(Some(Duration::from_millis(200))).map_err(|_| Error::Network)?;
-    let request = "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 2\r\nST: urn:schemas-upnp-org:device:MediaRenderer:1\r\n\r\n";
+    let request = format!("M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 2\r\nST: {target}\r\n\r\n");
     socket.send_to(request.as_bytes(), "239.255.255.250:1900").map_err(|_| Error::Network)?;
     let until = Instant::now() + window;
     let mut locations = HashSet::new();
     let mut buf = [0u8; 8192];
     while running.load(Ordering::Acquire) && Instant::now() < until && locations.len() < 128 {
         if let Ok((n, peer)) = socket.recv_from(&mut buf) {
-            if let Some(location) = location(&String::from_utf8_lossy(&buf[..n])) {
-                if location.parse::<http::Uri>().ok().is_some_and(|u| u.scheme_str() == Some("http") && u.host().and_then(|s| s.parse::<std::net::IpAddr>().ok()) == Some(peer.ip())) { locations.insert(location); }
-            }
+            if let Some(location) = accepted(&String::from_utf8_lossy(&buf[..n]), peer.ip()) { locations.insert(location); }
         }
     }
-    let mut seen = HashSet::new();
-    Ok(locations.into_iter().take_while(|_| running.load(Ordering::Acquire)).filter_map(|url| dlna::describe(&url).ok()).map(|d| d.device).filter(|d| seen.insert(d.id.clone())).collect())
+    Ok(locations.into_iter().collect())
+}
+/// The location an SSDP reply gives, when it is plain http on the address
+/// that sent the reply: a device only names itself.
+pub fn accepted(reply: &str, peer: std::net::IpAddr) -> Option<String> {
+    location(reply).filter(|location| location.parse::<http::Uri>().ok().is_some_and(|u| u.scheme_str() == Some("http") && u.host().and_then(|s| s.parse::<std::net::IpAddr>().ok()) == Some(peer)))
 }
 pub fn location(reply: &str) -> Option<String> {
     reply.lines().filter_map(|s| s.split_once(':')).find(|(key, _)| key.eq_ignore_ascii_case("location")).map(|(_, value)| value.trim().to_string())
