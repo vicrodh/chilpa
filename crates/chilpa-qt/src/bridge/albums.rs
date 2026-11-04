@@ -132,12 +132,10 @@ pub mod qobject {
     impl cxx_qt::Initialize for AlbumGridModel {}
 }
 use crate::{app, registry, worker};
-use chilpa_api::Album;
-use std::rc::Rc;
+use chilpa_api::{list_changes::{self, Step}, Album};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant, QVector};
-use std::pin::Pin;
-use chilpa_api::list_changes::{self, Step};
+use std::{pin::Pin, rc::Rc};
 
 const USER_ROLE: i32 = 256;
 use chilpa_qt_kit::album_rows::Albums;
