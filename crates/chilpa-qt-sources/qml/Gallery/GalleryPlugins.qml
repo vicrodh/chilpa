@@ -20,6 +20,8 @@ TitledFlow {
         setup: ({step:"libraries",label:"Music server",product:"Jellyfin 10.10.7",address:"http://music.local:8096",choices:[{id:"music",name:"Music"}]}) }
     ServerFolders { width: Metrics.confirmWidth; preview: true; chosen: ["albums"]; names: ({albums: "Music › By Album"})
         setup: ({crumbs:[{id:"0",name:""},{id:"music",name:"Music"}],choices:[{id:"albums",name:"By Album"},{id:"folders",name:"By Folder"}]}) }
+    ServerQuality { width: Metrics.confirmWidth; preview: true
+        setup: ({settings: [{id: "rate", title: "Music bitrate", values: [{id: "r64", title: "64 kbps"}, {id: "r320", title: "320 kbps"}]}]}) }
     ServerLibraries { width: Metrics.confirmWidth; choices: [{id:"music",name:"Music"},{id:"books",name:"Audiobooks"}]; chosen: ["music"] }
     ServerSummary { width: Metrics.confirmWidth; kind: "dlna"; comesIn: ["Music › By Album"]
         setup: ({label:"Media server",product:"MiniDLNA 1.3.3",address:"http://192.168.0.20:8200/rootDesc.xml"}) }

@@ -26,11 +26,18 @@ QtObject {
         const here = (setup.choices || []).map(choice => choice.id)
         return setup.views === true && chosen.filter(id => here.indexOf(id) >= 0).length > 1
     }
+    // A folder chosen before that holds no songs, said while editing.
+    readonly property bool noSongsChosen: dlna && !done && page >= 1
+        && chosen.some(id => (setup.noMusic || []).some(n => n.id === id))
     // Before a first import: how it goes.
     readonly property bool firstImport: page === 4 && !done && !editing
-    readonly property string noteTitle: repeats ? I18n.tr("Several views of one library", I18n.rev)
+    readonly property string noteVariant: noSongsChosen ? "warning" : "info"
+    readonly property string noteTitle: noSongsChosen ? I18n.tr("A chosen folder holds no songs", I18n.rev)
+        : repeats ? I18n.tr("Several views of one library", I18n.rev)
         : firstImport ? I18n.tr("Albums appear as they are read", I18n.rev) : ""
-    readonly property string noteBody: repeats
+    readonly property string noteBody: noSongsChosen
+        ? I18n.tr("It is not read, and saving leaves it out. Take it out and choose the folder that holds your songs.", I18n.rev)
+        : repeats
         ? I18n.tr("This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once.", I18n.rev)
         : firstImport ? I18n.tr("If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile.", I18n.rev) : ""
     readonly property string title: {

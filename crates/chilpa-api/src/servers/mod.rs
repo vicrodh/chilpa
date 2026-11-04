@@ -301,6 +301,12 @@ impl Chilpa {
             "crumbs": v.crumbs.iter().map(|(id, name)| serde_json::json!({"id": id, "name": name})).collect::<Vec<_>>(),
             "folders": v.folders.iter().map(|(id, name)| serde_json::json!({"id": id, "name": name})).collect::<Vec<_>>(),
             "searching": v.searching, "views": v.views, "viewRoots": v.view_roots,
+            "noMusic": v.no_music.iter().map(|(id, why)| serde_json::json!({"id": id, "why": why})).collect::<Vec<_>>(),
+            "settings": v.settings.iter().map(|s| serde_json::json!({
+                "id": s.id, "title": s.title,
+                "values": s.values.iter().map(|(id, title)| serde_json::json!({"id": id, "title": title})).collect::<Vec<_>>(),
+            })).collect::<Vec<_>>(),
+            "settingSaid": v.setting_said,
             "choices": v.choices.iter().map(|(id, name, detail)| serde_json::json!({"id": id, "name": name, "detail": detail})).collect::<Vec<_>>(),
             "busy": v.busy, "error": v.error,
             "removing": self.servers.removing.as_ref().map(background::Removing::json),

@@ -252,7 +252,7 @@ Modal {
             WizardBanner {
                 objectName: "serverNote"
                 visible: words.noteTitle !== ""
-                variant: "info"
+                variant: words.noteVariant
                 title: words.noteTitle
                 body: words.noteBody
             }

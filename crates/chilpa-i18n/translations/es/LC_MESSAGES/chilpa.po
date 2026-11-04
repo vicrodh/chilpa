@@ -127,6 +127,9 @@ msgstr "Una barra u OR: basta con cualquiera"
 msgid "A change to this playlist is still on its way to {}."
 msgstr "Un cambio de esta playlist todavía va en camino a {}."
 
+msgid "A chosen folder holds no songs"
+msgstr "Una carpeta elegida no tiene canciones"
+
 msgid "A click on a record opens"
 msgstr "Un clic en un disco abre"
 
@@ -1288,6 +1291,9 @@ msgstr "Elige un preset."
 
 msgid "Choose a saved device profile."
 msgstr "Elige un perfil de dispositivo guardado."
+
+msgid "Choose a value"
+msgstr "Elige un valor"
 
 msgid "Choose an available writable storage."
 msgstr "Elige una memoria disponible que permita escritura."
@@ -3166,6 +3172,9 @@ msgstr "Invertir polaridad derecha"
 msgid "It does not answer now; try again when it is back"
 msgstr "No responde ahora; inténtalo de nuevo cuando vuelva"
 
+msgid "It is not read, and saving leaves it out. Take it out and choose the folder that holds your songs."
+msgstr "No se lee, y al guardar se deja fuera. Quítala y elige la carpeta que tiene tus canciones."
+
 msgid "It offers {} music library."
 msgid_plural "It offers {} music libraries."
 msgstr[0] "Ofrece {} biblioteca de música."
@@ -4097,6 +4106,15 @@ msgstr "Ningún ajuste dice eso"
 msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
 msgstr "No se detectaron sinks: reinstala los perfiles UCM de ALSA y luego reinicia"
 
+msgid "No songs in it: it holds other things, such as the server's own settings"
+msgstr "No tiene canciones: tiene otras cosas, como los ajustes del propio servidor"
+
+msgid "No songs in it: it holds video or pictures"
+msgstr "No tiene canciones: tiene video o imágenes"
+
+msgid "No songs in it: it is empty"
+msgstr "No tiene canciones: está vacía"
+
 msgid "No sources"
 msgstr "Ninguna fuente"
 
@@ -4321,6 +4339,9 @@ msgstr "En sus playlists solo entran pistas de esta fuente"
 
 msgid "Only with exclusive mode on."
 msgstr "Sólo con el modo exclusivo activo."
+
+msgid "Only {} holds songs at this level."
+msgstr "Solo {} tiene canciones en este nivel."
 
 msgid "Open"
 msgstr "Abrir"
@@ -5740,6 +5761,9 @@ msgstr "Dirección del servidor"
 msgid "Server name"
 msgstr "Nombre del servidor"
 
+msgid "Server quality"
+msgstr "Calidad del servidor"
+
 msgid "Server type"
 msgstr "Tipo de servidor"
 
@@ -6548,6 +6572,12 @@ msgstr "No se pudieron leer las pistas seleccionadas."
 msgid "The server answered, and Chilpa can read its music."
 msgstr "El servidor respondió y Chilpa puede leer su música."
 
+msgid "The server did not take it: {}"
+msgstr "El servidor no lo aceptó: {}"
+
+msgid "The server took it. It applies to what it sends this computer from now on."
+msgstr "El servidor lo aceptó. Se aplica a lo que envía a esta computadora a partir de ahora."
+
 msgid "The service sent no code."
 msgstr "El servicio no mandó un código."
 
@@ -6744,6 +6774,9 @@ msgstr "Esta selección no tiene pistas."
 
 msgid "This selection includes music without an available local file. I kept the device unchanged."
 msgstr "Esta selección incluye música sin un archivo local disponible. Conservé el dispositivo sin cambios."
+
+msgid "This server converts music for each device. Choose the quality you want from what it offers. A higher bitrate sounds better; these values and their limits are the server's own."
+msgstr "Este servidor convierte la música para cada dispositivo. Elige la calidad que quieras de lo que ofrece. Un bitrate más alto suena mejor; estos valores y sus límites son los del propio servidor."
 
 msgid "This server does not take an API key. Go back and sign in with your user and password."
 msgstr "Este servidor no acepta una API key. Regresa e inicia sesión con tu usuario y contraseña."

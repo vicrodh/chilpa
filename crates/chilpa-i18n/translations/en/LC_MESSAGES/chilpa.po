@@ -127,6 +127,9 @@ msgstr ""
 msgid "A change to this playlist is still on its way to {}."
 msgstr ""
 
+msgid "A chosen folder holds no songs"
+msgstr ""
+
 msgid "A click on a record opens"
 msgstr ""
 
@@ -1288,6 +1291,9 @@ msgstr ""
 
 msgid "Choose a saved device profile."
 msgstr "Choose a saved device profile."
+
+msgid "Choose a value"
+msgstr ""
 
 msgid "Choose an available writable storage."
 msgstr "Choose an available writable storage."
@@ -3166,6 +3172,9 @@ msgstr ""
 msgid "It does not answer now; try again when it is back"
 msgstr ""
 
+msgid "It is not read, and saving leaves it out. Take it out and choose the folder that holds your songs."
+msgstr ""
+
 msgid "It offers {} music library."
 msgid_plural "It offers {} music libraries."
 msgstr[0] ""
@@ -4097,6 +4106,15 @@ msgstr ""
 msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
 msgstr ""
 
+msgid "No songs in it: it holds other things, such as the server's own settings"
+msgstr ""
+
+msgid "No songs in it: it holds video or pictures"
+msgstr ""
+
+msgid "No songs in it: it is empty"
+msgstr ""
+
 msgid "No sources"
 msgstr ""
 
@@ -4320,6 +4338,9 @@ msgid "Only tracks from this source go in its playlists"
 msgstr ""
 
 msgid "Only with exclusive mode on."
+msgstr ""
+
+msgid "Only {} holds songs at this level."
 msgstr ""
 
 msgid "Open"
@@ -5740,6 +5761,9 @@ msgstr ""
 msgid "Server name"
 msgstr ""
 
+msgid "Server quality"
+msgstr ""
+
 msgid "Server type"
 msgstr ""
 
@@ -6548,6 +6572,12 @@ msgstr "The selected tracks could not be read."
 msgid "The server answered, and Chilpa can read its music."
 msgstr ""
 
+msgid "The server did not take it: {}"
+msgstr ""
+
+msgid "The server took it. It applies to what it sends this computer from now on."
+msgstr ""
+
 msgid "The service sent no code."
 msgstr ""
 
@@ -6744,6 +6774,9 @@ msgstr "This selection has no tracks."
 
 msgid "This selection includes music without an available local file. I kept the device unchanged."
 msgstr "This selection includes music without an available local file. I kept the device unchanged."
+
+msgid "This server converts music for each device. Choose the quality you want from what it offers. A higher bitrate sounds better; these values and their limits are the server's own."
+msgstr ""
 
 msgid "This server does not take an API key. Go back and sign in with your user and password."
 msgstr ""

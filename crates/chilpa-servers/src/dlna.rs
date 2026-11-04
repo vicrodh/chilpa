@@ -280,11 +280,15 @@ pub fn folders(net: &dyn Net, server: &Server, id: &str) -> Result<Vec<Library>,
         .collect())
 }
 
-/// How many containers of one level are looked into to tell which offer
-/// views of a library, the time all of them get, and each one's.
+/// How many containers of one level are looked into, to tell which hold
+/// music and which offer views of a library, the time all of them get, and
+/// each one's.
 const PEEKED: usize = 12;
-const PEEKING: Duration = Duration::from_secs(4);
-const PEEK: Duration = Duration::from_secs(3);
+const PEEKING: Duration = Duration::from_secs(12);
+const PEEK: Duration = Duration::from_secs(4);
+
+/// How many settings of a server, and values of each, are read.
+const SETTINGS: usize = 12;
 
 /// What servers call the views of one library, without a "By " or "All "
 /// in front: "By Folder", "All Music", "Genre", "Recently Added".
@@ -314,27 +318,115 @@ pub fn are_views(found: &[Library]) -> bool {
     views_among(found.iter().map(|l| l.name.as_str()))
 }
 
-/// Which of these containers offer views of a library, each looked into
-/// one level down, briefly: only for a level of a few, as a server's top or
-/// its list of sections is. One that does not answer in time is not said.
+/// One container of a level, looked into (`look_into`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Inside {
+    pub id: String,
+    /// It holds several views of one library (By Folder, By Album...).
+    pub views: bool,
+    pub holds: Holds,
+}
+
+/// The containers in a container, each with its `upnp:class`: the first
+/// page of them, as `folders` gives them.
+pub fn level(net: &dyn Net, server: &Server, id: &str) -> Result<Vec<(Library, String)>, Failure> {
+    let answer = answer(&call(net, &control(server), "Browse", &browse(id, 0))?)?;
+    Ok(listing(server, &answer.result, None, None)?
+        .folders
+        .into_iter()
+        .map(|f| (Library { id: f.id, name: f.title }, f.class))
+        .collect())
+}
+
+/// What each container of a level holds and whether it offers views of a
+/// library. Its class says it when it can; otherwise its first page does,
+/// looked into briefly, and only for a level of a few, as a server's top or
+/// its list of sections is. One not looked into may hold music.
+pub fn look_into(net: &dyn Net, server: &Server, level: &[(Library, String)]) -> Vec<Inside> {
+    let peek = level.len() <= PEEKED;
+    let until = Instant::now() + PEEKING;
+    level
+        .iter()
+        .map(|(library, class)| {
+            let inside = (peek && Instant::now() < until)
+                .then(|| first_page(net, server, &library.id).ok())
+                .flatten();
+            let views = inside
+                .as_ref()
+                .is_some_and(|l| views_among(l.folders.iter().map(|f| f.title.as_str())));
+            let holds = class_holds(class)
+                .or_else(|| inside.as_ref().map(holds_of))
+                .unwrap_or(Holds::Unknown);
+            Inside { id: library.id.clone(), views, holds }
+        })
+        .collect()
+}
+
+/// Which of these containers offer views of a library (`look_into`).
 pub fn view_roots(net: &dyn Net, server: &Server, found: &[Library]) -> Vec<String> {
-    if found.len() > PEEKED {
+    let level: Vec<(Library, String)> = found.iter().map(|l| (l.clone(), String::new())).collect();
+    look_into(net, server, &level).into_iter().filter(|i| i.views).map(|i| i.id).collect()
+}
+
+/// A container's first page, asked briefly.
+fn first_page(net: &dyn Net, server: &Server, id: &str) -> Result<Listing, Failure> {
+    call_within(net, &control(server), "Browse", &browse(id, 0), Some(PEEK))
+        .and_then(|text| answer(&text))
+        .and_then(|answer| listing(server, &answer.result, None, None))
+}
+
+/// One of a server's own settings, as its container shows it: its title as
+/// the server writes it, and the values offered, each by its id and title.
+/// What setting it is, and which value is in use, are the server's words.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Setting {
+    pub id: String,
+    pub title: String,
+    pub values: Vec<(String, String)>,
+}
+
+/// The settings a container of the server offers, read one level down and
+/// briefly: a container whose items are not songs is one setting, its items
+/// the values; one whose containers are such is a list of settings. Any
+/// other shape, or one that does not answer, offers none.
+///
+/// Measured on no server yet: this follows the shape a ContentDirectory
+/// gives settings in (a container of values, or of such containers), and
+/// shows only what the server lists.
+pub fn settings(net: &dyn Net, server: &Server, id: &str, title: &str) -> Vec<Setting> {
+    let Ok(top) = first_page(net, server, id) else { return Vec::new() };
+    if top.audio > 0 || top.pictures > 0 {
         return Vec::new();
     }
-    let until = Instant::now() + PEEKING;
-    let mut roots = Vec::new();
-    for library in found {
-        if Instant::now() >= until {
-            break;
-        }
-        let inside = call_within(net, &control(server), "Browse", &browse(&library.id, 0), Some(PEEK))
-            .and_then(|text| answer(&text))
-            .and_then(|answer| listing(server, &answer.result, None, None));
-        if inside.is_ok_and(|inside| views_among(inside.folders.iter().map(|f| f.title.as_str()))) {
-            roots.push(library.id.clone());
-        }
+    if top.folders.is_empty() {
+        return (!top.others.is_empty())
+            .then(|| Setting { id: id.to_string(), title: title.to_string(), values: top.others })
+            .into_iter()
+            .collect();
     }
-    roots
+    let until = Instant::now() + PEEKING;
+    top.folders
+        .iter()
+        .take(SETTINGS)
+        .filter(|_| Instant::now() < until)
+        .filter_map(|folder| {
+            let inside = first_page(net, server, &folder.id).ok()?;
+            (inside.audio == 0 && inside.pictures == 0 && inside.folders.is_empty() && !inside.others.is_empty())
+                .then(|| Setting { id: folder.id.clone(), title: folder.title.clone(), values: inside.others })
+        })
+        .collect()
+}
+
+/// Chooses one value of a server's setting, the way a device that browses
+/// the server picks it: one request for that item. Only when the person
+/// asks, once; never during a walk.
+pub fn choose(net: &dyn Net, server: &Server, value: &str) -> Result<(), Failure> {
+    let args = format!(
+        "<ObjectID>{}</ObjectID><BrowseFlag>BrowseMetadata</BrowseFlag><Filter>*</Filter>\
+         <StartingIndex>0</StartingIndex><RequestedCount>1</RequestedCount><SortCriteria></SortCriteria>",
+        escape(value)
+    );
+    call_within(net, &control(server), "Browse", &args, Some(PEEK)).and_then(|text| answer(&text)).map(|_| ())
 }
 
 /// Where a sync stands in a server's containers.
@@ -581,7 +673,14 @@ pub fn page(net: &dyn Net, server: &Server, cursor: Option<&str>) -> Result<Page
         page.partial = true;
     }
     cursor.total = answer.total;
-    if cursor.walk && !repeated {
+    // A container of video, pictures or a server's settings is not walked
+    // into, chosen or not: it is not an error, and the sync says nothing of
+    // it but the log.
+    let holds = holds_of(&listing);
+    if at == 0 && matches!(holds, Holds::Pictures | Holds::Others) {
+        said(&format!("it holds no music ({holds:?}); what is in it is not read"));
+    }
+    if cursor.walk && !repeated && holds.music() {
         let mut again = 0;
         for folder in listing.folders {
             if depth >= DEPTH || cursor.waiting.len() >= WAITING {
@@ -788,13 +887,85 @@ struct Folder {
     title: String,
     /// Its `upnp:albumArtURI`, as kept (`kept`); empty when it has none.
     art: String,
+    /// Its `upnp:class`.
+    class: String,
 }
 
-/// What one page listed: containers and the tracks among its items.
+/// What one page listed: containers, the tracks among its items, and how
+/// many of its items were songs (audio, read or not), video or pictures,
+/// or anything else; and the first of those others, by id and title, as a
+/// server's settings list their values.
 #[derive(Default)]
 struct Listing {
     folders: Vec<Folder>,
     tracks: Vec<Track>,
+    audio: usize,
+    pictures: usize,
+    others: Vec<(String, String)>,
+}
+
+/// What a container holds, as far as music goes: told by its class, or by
+/// a look at its first page (`holds_of`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Holds {
+    /// Songs, containers of music, or a class that is music's.
+    Music,
+    /// Containers that do not say what they hold: it may hold music.
+    Unknown,
+    /// Nothing at all.
+    Empty,
+    /// Only video or pictures.
+    Pictures,
+    /// Only items that are not songs, as a server's own settings are.
+    Others,
+}
+
+impl Holds {
+    /// Whether it may be chosen as music and walked.
+    pub fn music(self) -> bool {
+        matches!(self, Holds::Music | Holds::Unknown)
+    }
+}
+
+/// Classes of containers that hold music by what they are, and ones that
+/// hold none by what they are (UPnP AV ContentDirectory, appendix B).
+const MUSIC_CLASSES: [&str; 4] = [
+    "object.container.album.musicAlbum",
+    "object.container.person.musicArtist",
+    "object.container.genre.musicGenre",
+    "object.container.playlistContainer",
+];
+const PICTURE_CLASSES: [&str; 3] = [
+    "object.container.album.photoAlbum",
+    "object.container.genre.movieGenre",
+    "object.container.channelGroup.videoChannelGroup",
+];
+
+fn class_holds(class: &str) -> Option<Holds> {
+    let class = class.trim();
+    if MUSIC_CLASSES.iter().any(|c| class.starts_with(c)) {
+        Some(Holds::Music)
+    } else if PICTURE_CLASSES.iter().any(|c| class.starts_with(c)) {
+        Some(Holds::Pictures)
+    } else {
+        None
+    }
+}
+
+/// What a container holds, by what its first page lists.
+fn holds_of(listing: &Listing) -> Holds {
+    let classes: Vec<Option<Holds>> = listing.folders.iter().map(|f| class_holds(&f.class)).collect();
+    if listing.audio > 0 || classes.contains(&Some(Holds::Music)) {
+        Holds::Music
+    } else if classes.contains(&None) {
+        Holds::Unknown
+    } else if !listing.others.is_empty() {
+        Holds::Others
+    } else if listing.pictures > 0 || !classes.is_empty() {
+        Holds::Pictures
+    } else {
+        Holds::Empty
+    }
 }
 
 /// The container a walk groups the records of `folder` under: the folder
@@ -862,9 +1033,21 @@ fn listing(
                     same: same.to_string(),
                     title: field(node, "title"),
                     art: art_of(server, node).unwrap_or_default(),
+                    class: field(node, "class"),
                 });
             }
         } else if node.has_tag_name("item") {
+            let class = field(node, "class");
+            if class.starts_with("object.item.audioItem") {
+                out.audio += 1;
+            } else if class.starts_with("object.item.videoItem") || class.starts_with("object.item.imageItem") {
+                out.pictures += 1;
+            } else if out.others.len() < SETTINGS {
+                let id = node.attribute("id").map(str::trim).unwrap_or("");
+                if !id.is_empty() {
+                    out.others.push((id.to_string(), field(node, "title")));
+                }
+            }
             out.tracks.extend(track(server, node, regroup, art));
         }
     }

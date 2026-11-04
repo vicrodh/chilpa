@@ -127,6 +127,9 @@ msgstr "Черта или OR: достаточно одного"
 msgid "A change to this playlist is still on its way to {}."
 msgstr "Изменение этого плейлиста ещё отправляется на {}."
 
+msgid "A chosen folder holds no songs"
+msgstr "В выбранной папке нет песен"
+
 msgid "A click on a record opens"
 msgstr "Щелчок по альбому открывает"
 
@@ -1290,6 +1293,9 @@ msgstr "Выберите пресет."
 
 msgid "Choose a saved device profile."
 msgstr ""
+
+msgid "Choose a value"
+msgstr "Выберите значение"
 
 msgid "Choose an available writable storage."
 msgstr ""
@@ -3169,6 +3175,9 @@ msgstr "Инвертировать полярность справа"
 msgid "It does not answer now; try again when it is back"
 msgstr "Сейчас не отвечает; попробуйте снова, когда он вернётся"
 
+msgid "It is not read, and saving leaves it out. Take it out and choose the folder that holds your songs."
+msgstr "Она не читается и при сохранении не учитывается. Уберите её и выберите папку с вашими песнями."
+
 msgid "It offers {} music library."
 msgid_plural "It offers {} music libraries."
 msgstr[0] "Предлагает {} музыкальную библиотеку."
@@ -4102,6 +4111,15 @@ msgstr "Такой настройки нет"
 msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
 msgstr "Устройства вывода не обнаружены — переустановите профили ALSA UCM и перезагрузитесь"
 
+msgid "No songs in it: it holds other things, such as the server's own settings"
+msgstr "Песен нет: здесь другое, например собственные настройки сервера"
+
+msgid "No songs in it: it holds video or pictures"
+msgstr "Песен нет: здесь видео или изображения"
+
+msgid "No songs in it: it is empty"
+msgstr "Песен нет: папка пуста"
+
 msgid "No sources"
 msgstr "Нет источников"
 
@@ -4326,6 +4344,9 @@ msgstr "В её плейлисты попадают только треки эт
 
 msgid "Only with exclusive mode on."
 msgstr "Только при включённом эксклюзивном режиме."
+
+msgid "Only {} holds songs at this level."
+msgstr "На этом уровне песни есть только в {}."
 
 msgid "Open"
 msgstr "Открыть"
@@ -5746,6 +5767,9 @@ msgstr "Адрес сервера"
 msgid "Server name"
 msgstr "Имя сервера"
 
+msgid "Server quality"
+msgstr "Качество сервера"
+
 msgid "Server type"
 msgstr "Тип сервера"
 
@@ -6556,6 +6580,12 @@ msgstr "Не удалось прочитать выбранные треки."
 msgid "The server answered, and Chilpa can read its music."
 msgstr "Сервер ответил, и Chilpa может читать его музыку."
 
+msgid "The server did not take it: {}"
+msgstr "Сервер не принял: {}"
+
+msgid "The server took it. It applies to what it sends this computer from now on."
+msgstr "Сервер принял. Это действует для всего, что он отправляет на этот компьютер с этого момента."
+
 msgid "The service sent no code."
 msgstr "Сервис не прислал код."
 
@@ -6753,6 +6783,9 @@ msgstr "В этой подборке нет треков."
 
 msgid "This selection includes music without an available local file. I kept the device unchanged."
 msgstr ""
+
+msgid "This server converts music for each device. Choose the quality you want from what it offers. A higher bitrate sounds better; these values and their limits are the server's own."
+msgstr "Этот сервер преобразует музыку для каждого устройства. Выберите нужное качество из предложенного. Более высокий битрейт звучит лучше; эти значения и пределы задаёт сам сервер."
 
 msgid "This server does not take an API key. Go back and sign in with your user and password."
 msgstr "Этот сервер не принимает API-ключ. Вернитесь и войдите по пользователю и паролю."

@@ -8,7 +8,10 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 // hold the music: the way down as crumbs to go back up, each folder with
 // its circle to choose it and its arrow to open it, and the ones chosen at
 // any level, by the way down to each, with a cross to take one out. The
-// facade opens each level (`Servers.pick`); nothing is guessed.
+// facade opens each level (`Servers.pick`); nothing is guessed. A folder
+// that holds no songs is shown, greyed, with why, and cannot be chosen or
+// opened. Settings the server offers (its quality) are below, in its own
+// words, each changed only by Apply (`Servers.begin("choose/...")`).
 Column {
     id: navigator
     property var setup: ({})
@@ -18,6 +21,8 @@ Column {
     readonly property bool busy: setup.busy === true
     readonly property var crumbs: setup.crumbs || []
     readonly property string way: crumbs.map(crumb => crumb.name).filter(Boolean).join(" › ")
+    readonly property var noMusic: (setup.noMusic || []).map(n => n.id)
+    readonly property var musical: (setup.choices || []).filter(choice => noMusic.indexOf(choice.id) < 0)
     signal picked(string id, string name, bool on)
     spacing: Metrics.gap8
 
@@ -60,6 +65,7 @@ Column {
             required property int index
             objectName: "serverFolder_" + index
             readonly property bool picked: navigator.chosen.indexOf(modelData.id) >= 0
+            readonly property bool music: navigator.noMusic.indexOf(modelData.id) < 0
             width: navigator.width
             height: Math.max(Metrics.menuItemRich, choose.implicitHeight)
             radius: Metrics.radiusControl
@@ -74,8 +80,9 @@ Column {
                 anchors.verticalCenter: parent.verticalCenter
                 checkable: false
                 checked: folder.picked
-                text: folder.modelData.name
-                onClicked: navigator.picked(folder.modelData.id, navigator.way === "" ? folder.modelData.name : navigator.way + " › " + folder.modelData.name, !folder.picked)
+                enabled: folder.music
+                text: folder.music ? folder.modelData.name : folder.modelData.name + "\n" + folder.modelData.detail
+                onClicked: if (folder.music) navigator.picked(folder.modelData.id, navigator.way === "" ? folder.modelData.name : navigator.way + " › " + folder.modelData.name, !folder.picked)
             }
             PillButton {
                 id: openIt
@@ -86,7 +93,7 @@ Column {
                 kind: "ghost"
                 glyph: Icons.chevronRight
                 text: I18n.tr("Open", I18n.rev)
-                enabled: !navigator.busy && !navigator.preview
+                enabled: folder.music && !navigator.busy && !navigator.preview
                 onClicked: navigator.open(folder.modelData.id)
             }
         }
@@ -100,11 +107,23 @@ Column {
         color: Theme.color.textTertiary
     }
     Text {
+        objectName: "serverOnlyMusic"
+        visible: !navigator.busy && navigator.musical.length === 1 && (navigator.setup.choices || []).length > 1
+        width: parent.width
+        text: navigator.musical.length === 1 ? I18n.trArgs("Only {} holds songs at this level.", [navigator.musical[0].name], I18n.rev) : ""
+        wrapMode: Text.WordWrap
+        font.pointSize: Type.small
+        color: Theme.color.textSecondary
+    }
+    Text {
         visible: navigator.busy
         text: I18n.tr("Opening…", I18n.rev)
         font.pointSize: Type.small
         color: Theme.color.textTertiary
     }
+
+    // The server's own settings, as it words them (ServerQuality).
+    ServerQuality { width: parent.width; setup: navigator.setup; busy: navigator.busy; preview: navigator.preview }
 
     // What comes in, chosen at any level.
     Text {

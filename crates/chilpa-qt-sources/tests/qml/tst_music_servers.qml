@@ -206,6 +206,39 @@ TestCase {
         compare(last()[1], {label:"Plex Media Server: Lab",libraries:["byfolder"]})
     }
 
+    // A folder with no songs is shown, greyed, with why, and cannot be
+    // chosen or opened; the server's quality is offered in its own words,
+    // and changed only by Apply.
+    function test_a_folder_without_songs_is_shown_but_not_chosen() {
+        open(); choose("dlna")
+        const why = "No songs in it: it holds other things, such as the server's own settings"
+        Servers.show({step:"libraries",kind:"dlna",address:test.plexLocation,crumbs:[{id:"0",name:""},{id:"top",name:"Music"}],
+            choices:[{id:"music",name:"Music",detail:""},{id:"prefs",name:"Preferences",detail:why}],
+            noMusic:[{id:"prefs",why:why}],
+            settings:[{id:"rate",title:"Music bitrate: 64 kbps",values:[{id:"r64",title:"64 kbps"},{id:"r320",title:"320 kbps"}]}]})
+        dialog.page = 3
+        waitForRendering(dialog.contentItem)
+        const prefs = field("serverChooseFolder_1")
+        verify(!prefs.enabled, "it cannot be chosen")
+        verify(prefs.text.indexOf(why) > 0, prefs.text)
+        verify(!field("serverOpenFolder_1").enabled, "nor opened")
+        prefs.clicked()
+        compare(dialog.chosen, [], "a click does nothing")
+        verify(field("serverOnlyMusic").visible)
+        compare(field("serverOnlyMusic").text, "Only Music holds songs at this level.")
+        verify(field("serverSettings").visible)
+        verify(!field("serverSettingApply_0").enabled, "nothing to apply before a value is picked")
+        field("serverSettingValue_0").picked("r320")
+        verify(field("serverSettingApply_0").enabled)
+        field("serverSettingApply_0").clicked()
+        compare(last(), ["begin", "choose/r320"], "one click, a value the server offers")
+        // A folder chosen before that holds no songs is said.
+        dialog.chosen = ["prefs"]
+        tryVerify(()=>field("serverNote").visible)
+        compare(field("serverNote").title, "A chosen folder holds no songs")
+        compare(field("serverNote").variant, "warning")
+    }
+
     // A container that holds several views of one library is pointed out
     // under the choice, which stays as it was made.
     function test_a_folder_that_holds_views_is_pointed_out_and_the_choice_kept() {

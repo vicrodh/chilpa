@@ -965,3 +965,52 @@ fn views_of_one_library_are_told_from_folders() {
     assert!(view_roots(&net, &plex(&[]), &named(&many)).is_empty());
     assert!(net.asked().is_empty(), "a long level is not looked into");
 }
+
+#[test]
+fn what_a_container_holds_is_told_by_its_class_or_its_first_page() {
+    let server = plex(&[]);
+    let level: Vec<(Library, String)> = [
+        ("prefs", "object.container.storageFolder"),
+        ("music", "object.container.storageFolder"),
+        ("empty", "object.container.storageFolder"),
+        ("artist", "object.container.person.musicArtist"),
+    ]
+    .iter()
+    .map(|(id, class)| (Library { id: id.to_string(), name: id.to_string() }, class.to_string()))
+    .collect();
+    let value = |id: &str, title: &str| {
+        format!(
+            "<item id=\"{id}\" parentID=\"prefs\" restricted=\"1\"><dc:title>{title}</dc:title>\
+             <upnp:class>object.item</upnp:class></item>"
+        )
+    };
+    let values = [value("b64", "64 kbps"), value("b320", "320 kbps")].concat();
+    let net = Canned::new()
+        .answer(200, listed(&values, 2, 2).as_bytes())
+        .answer(200, listed(&song("t1", "music", "Record"), 1, 1).as_bytes())
+        .answer(200, listed("", 0, 0).as_bytes())
+        .answer(200, listed(&container("rec", "Record"), 1, 1).as_bytes());
+    let holds: Vec<Holds> = look_into(&net, &server, &level).into_iter().map(|i| i.holds).collect();
+    assert_eq!(holds, [Holds::Others, Holds::Music, Holds::Empty, Holds::Music]);
+    assert!(!Holds::Others.music() && !Holds::Empty.music() && Holds::Unknown.music());
+
+    // A container of values is one setting, in the server's own words.
+    let net = Canned::new().answer(200, listed(&values, 2, 2).as_bytes());
+    let found = settings(&net, &server, "prefs", "Music bitrate");
+    let offered = vec![("b64".to_string(), "64 kbps".to_string()), ("b320".to_string(), "320 kbps".to_string())];
+    assert_eq!(found, [Setting { id: "prefs".into(), title: "Music bitrate".into(), values: offered }]);
+    // Choosing one is one request for that value, as a device browsing it.
+    let net = Canned::new().answer(200, listed("", 0, 0).as_bytes());
+    choose(&net, &server, "b320").unwrap();
+    let sent = body(&net.asked()[0]);
+    assert!(sent.contains("<ObjectID>b320</ObjectID><BrowseFlag>BrowseMetadata</BrowseFlag>"), "{sent}");
+    assert_eq!(net.asked().len(), 1);
+    // Songs are not settings.
+    let net = Canned::new().answer(200, listed(&song("t1", "music", "Record"), 1, 1).as_bytes());
+    assert!(settings(&net, &server, "music", "Music").is_empty());
+    // Chosen anyway, a container of values is walked into and left: no
+    // tracks, no error.
+    let net = Canned::new().answer(200, listed(&values, 2, 2).as_bytes());
+    let read = page(&net, &plex(&["prefs"]), None).unwrap();
+    assert!(read.tracks.is_empty() && !read.partial && read.next.is_none(), "{read:?}");
+}

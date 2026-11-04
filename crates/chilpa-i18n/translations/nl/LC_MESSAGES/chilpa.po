@@ -127,6 +127,9 @@ msgstr "Een streep of OR: één is genoeg"
 msgid "A change to this playlist is still on its way to {}."
 msgstr "Een wijziging aan deze afspeellijst is nog onderweg naar {}."
 
+msgid "A chosen folder holds no songs"
+msgstr "Een gekozen map bevat geen nummers"
+
 msgid "A click on a record opens"
 msgstr "Een klik op een album opent"
 
@@ -1288,6 +1291,9 @@ msgstr "Kies een preset."
 
 msgid "Choose a saved device profile."
 msgstr ""
+
+msgid "Choose a value"
+msgstr "Kies een waarde"
 
 msgid "Choose an available writable storage."
 msgstr ""
@@ -3166,6 +3172,9 @@ msgstr "Rechterpolariteit omkeren"
 msgid "It does not answer now; try again when it is back"
 msgstr "Hij antwoordt nu niet; probeer het opnieuw als hij terug is"
 
+msgid "It is not read, and saving leaves it out. Take it out and choose the folder that holds your songs."
+msgstr "Die wordt niet gelezen en bij opslaan weggelaten. Haal hem weg en kies de map met je nummers."
+
 msgid "It offers {} music library."
 msgid_plural "It offers {} music libraries."
 msgstr[0] "Hij biedt {} muziekbibliotheek."
@@ -4097,6 +4106,15 @@ msgstr "Geen instelling zegt dat"
 msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
 msgstr "Geen sinks gedetecteerd — herinstalleer de ALSA UCM-profielen en herstart daarna"
 
+msgid "No songs in it: it holds other things, such as the server's own settings"
+msgstr "Geen nummers: hij bevat andere dingen, zoals de eigen instellingen van de server"
+
+msgid "No songs in it: it holds video or pictures"
+msgstr "Geen nummers: hij bevat video of afbeeldingen"
+
+msgid "No songs in it: it is empty"
+msgstr "Geen nummers: hij is leeg"
+
 msgid "No sources"
 msgstr "Geen bronnen"
 
@@ -4321,6 +4339,9 @@ msgstr "Alleen nummers van deze bron gaan in haar afspeellijsten"
 
 msgid "Only with exclusive mode on."
 msgstr "Alleen met de exclusieve modus aan."
+
+msgid "Only {} holds songs at this level."
+msgstr "Alleen {} bevat nummers op dit niveau."
 
 msgid "Open"
 msgstr "Openen"
@@ -5740,6 +5761,9 @@ msgstr "Serveradres"
 msgid "Server name"
 msgstr "Servernaam"
 
+msgid "Server quality"
+msgstr "Serverkwaliteit"
+
 msgid "Server type"
 msgstr "Soort server"
 
@@ -6548,6 +6572,12 @@ msgstr "De geselecteerde nummers konden niet worden gelezen."
 msgid "The server answered, and Chilpa can read its music."
 msgstr "De server antwoordde, en Chilpa kan de muziek lezen."
 
+msgid "The server did not take it: {}"
+msgstr "De server nam het niet aan: {}"
+
+msgid "The server took it. It applies to what it sends this computer from now on."
+msgstr "De server nam het aan. Het geldt vanaf nu voor wat hij naar deze computer stuurt."
+
 msgid "The service sent no code."
 msgstr "De aanbieder heeft geen code gestuurd."
 
@@ -6744,6 +6774,9 @@ msgstr "Deze selectie bevat geen nummers."
 
 msgid "This selection includes music without an available local file. I kept the device unchanged."
 msgstr ""
+
+msgid "This server converts music for each device. Choose the quality you want from what it offers. A higher bitrate sounds better; these values and their limits are the server's own."
+msgstr "Deze server zet muziek om voor elk apparaat. Kies de gewenste kwaliteit uit wat hij aanbiedt. Een hogere bitrate klinkt beter; deze waarden en hun grenzen zijn die van de server zelf."
 
 msgid "This server does not take an API key. Go back and sign in with your user and password."
 msgstr "Deze server neemt geen API-sleutel aan. Ga terug en meld je aan met gebruiker en wachtwoord."

@@ -127,6 +127,9 @@ msgstr "縦棒または OR：どちらか一方で十分です"
 msgid "A change to this playlist is still on its way to {}."
 msgstr "このプレイリストの変更はまだ{}へ送信中です。"
 
+msgid "A chosen folder holds no songs"
+msgstr "選んだフォルダーに曲がありません"
+
 msgid "A click on a record opens"
 msgstr "アルバムをクリックしたときに開くもの"
 
@@ -1286,6 +1289,9 @@ msgstr "プリセットを選択してください。"
 
 msgid "Choose a saved device profile."
 msgstr ""
+
+msgid "Choose a value"
+msgstr "値を選択"
 
 msgid "Choose an available writable storage."
 msgstr ""
@@ -3163,6 +3169,9 @@ msgstr "右の極性を反転"
 msgid "It does not answer now; try again when it is back"
 msgstr "今は応答がありません。戻ってきたらもう一度お試しください"
 
+msgid "It is not read, and saving leaves it out. Take it out and choose the folder that holds your songs."
+msgstr "このフォルダーは読み取られず、保存時に除外されます。外して、曲が入っているフォルダーを選んでください。"
+
 msgid "It offers {} music library."
 msgid_plural "It offers {} music libraries."
 msgstr[0] "{} 個の音楽ライブラリがあります。"
@@ -4092,6 +4101,15 @@ msgstr "該当する設定はありません"
 msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
 msgstr "シンクが検出されません — ALSA UCMプロファイルを再インストールして再起動してください"
 
+msgid "No songs in it: it holds other things, such as the server's own settings"
+msgstr "曲はありません：サーバー自身の設定など、ほかのものが入っています"
+
+msgid "No songs in it: it holds video or pictures"
+msgstr "曲はありません：動画または画像が入っています"
+
+msgid "No songs in it: it is empty"
+msgstr "曲はありません：空です"
+
 msgid "No sources"
 msgstr "ソースなし"
 
@@ -4316,6 +4334,9 @@ msgstr "このソースのプレイリストには、このソースの曲だけ
 
 msgid "Only with exclusive mode on."
 msgstr "排他モードがオンの場合のみ。"
+
+msgid "Only {} holds songs at this level."
+msgstr "この階層で曲があるのは {} だけです。"
 
 msgid "Open"
 msgstr "開く"
@@ -5734,6 +5755,9 @@ msgstr "サーバーアドレス"
 msgid "Server name"
 msgstr "サーバー名"
 
+msgid "Server quality"
+msgstr "サーバーの品質"
+
 msgid "Server type"
 msgstr "サーバーの種類"
 
@@ -6540,6 +6564,12 @@ msgstr "選択したトラックを読み取れませんでした。"
 msgid "The server answered, and Chilpa can read its music."
 msgstr "サーバーが応答し、Chilpa は音楽を読み込めます。"
 
+msgid "The server did not take it: {}"
+msgstr "サーバーは受け付けませんでした：{}"
+
+msgid "The server took it. It applies to what it sends this computer from now on."
+msgstr "サーバーが受け付けました。今後このコンピューターに送られるものに適用されます。"
+
 msgid "The service sent no code."
 msgstr "プロバイダーがコードを送信しませんでした。"
 
@@ -6735,6 +6765,9 @@ msgstr "この選択には曲がありません。"
 
 msgid "This selection includes music without an available local file. I kept the device unchanged."
 msgstr ""
+
+msgid "This server converts music for each device. Choose the quality you want from what it offers. A higher bitrate sounds better; these values and their limits are the server's own."
+msgstr "このサーバーはデバイスごとに音楽を変換します。提供されている中から希望の品質を選んでください。ビットレートが高いほど音質が良くなります。これらの値と上限はサーバー自身のものです。"
 
 msgid "This server does not take an API key. Go back and sign in with your user and password."
 msgstr "このサーバーは API キーに対応していません。戻ってユーザーとパスワードでサインインしてください。"

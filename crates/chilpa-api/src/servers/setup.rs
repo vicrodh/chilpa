@@ -65,6 +65,14 @@ pub struct ServerSetup {
     /// DLNA: containers seen to hold such views, as a library's section
     /// does. Choosing one reads every view.
     pub view_roots: Vec<String>,
+    /// DLNA: containers seen to hold no music, with why in the window's
+    /// words. They cannot be chosen, and a walk does not go into them.
+    pub no_music: Vec<(String, String)>,
+    /// DLNA: the server's own settings a container of the level offers
+    /// (`dlna::settings`), as the server words them.
+    pub settings: Vec<dlna::Setting>,
+    /// DLNA: how choosing one of its values went.
+    pub setting_said: String,
     pub busy: bool,
     pub error: String,
 }
@@ -98,9 +106,13 @@ enum Outcome {
     Found(Result<Vec<dlna::Found>, Failure>),
     /// DLNA: what an address describes.
     Described(Result<dlna::Found, Failure>),
-    /// DLNA: the containers in one, with the way down to it, and which of
-    /// them hold views of a library (`dlna::view_roots`).
-    Opened(Vec<(String, String)>, Result<Vec<Library>, Failure>, Vec<String>),
+    /// DLNA: the containers in one, with the way down to it, what each
+    /// holds (`dlna::look_into`), and the settings one of them offers.
+    Opened(Vec<(String, String)>, Result<Vec<Library>, Failure>, Vec<dlna::Inside>, Vec<dlna::Setting>),
+    /// DLNA: what the containers chosen before hold, when editing.
+    Inspected(Vec<dlna::Inside>),
+    /// DLNA: a value of one of the server's settings was chosen, or not.
+    Chosen(Result<(), Failure>),
 }
 
 struct Signed {
@@ -162,6 +174,9 @@ impl Setup {
         if provider == "search" {
             return self.search();
         }
+        if let Some(value) = provider.strip_prefix("choose/") {
+            return self.choose(value);
+        }
         let Some(kind) = Kind::from_provider(provider) else { return };
         self.generation += 1;
         *self = Setup { generation: self.generation, ..Setup::default() };
@@ -220,6 +235,16 @@ impl Setup {
         let named: HashMap<String, String> = self.signed.as_ref().map(|s| s.details.folders.iter().map(|f| (f.id.clone(), f.name.clone())).collect()).unwrap_or_default();
         self.view.folders = self.view.selected_libraries.iter().map(|id| (id.clone(), named.get(id).cloned().unwrap_or_default())).collect();
         self.known = self.view.folders.iter().cloned().collect();
+        // What the folders chosen before hold is looked into on the side,
+        // so one that holds no music is said; the window does not wait.
+        if kind == Kind::Dlna && !self.view.folders.is_empty() {
+            if let Some(signed) = self.signed.as_ref() {
+                let server = dlna::server(&stored.address, client(&self.instance), Vec::new(), signed.details.clone());
+                let chosen: Vec<(Library, String)> = self.view.folders.iter().map(|(id, name)| (Library { id: id.clone(), name: name.clone() }, String::new())).collect();
+                self.run(move || Outcome::Inspected(dlna::look_into(&Network, &server, &chosen)));
+                self.view.busy = false;
+            }
+        }
     }
 
     pub(crate) fn reauthenticate(&mut self) {
@@ -356,7 +381,8 @@ impl Setup {
         let chosen: Vec<String> = if kind == Kind::Dlna {
             // Chosen at any level, in the order they were chosen.
             let mut kept: Vec<String> = Vec::new();
-            for id in chosen.iter().filter(|id| self.known.contains_key(*id)) {
+            let no_music = |id: &str| self.view.no_music.iter().any(|(n, _)| n == id);
+            for id in chosen.iter().filter(|id| self.known.contains_key(*id) && !no_music(id.as_str())) {
                 if !kept.contains(id) {
                     kept.push(id.clone());
                 }
@@ -474,6 +500,13 @@ impl Setup {
             details: signed.details.clone(),
         };
         let key = signed.key.clone();
+        // A media server's top is a level like any other: what each of its
+        // containers holds is looked into too.
+        if kind == Kind::Dlna {
+            let crumbs = vec![(dlna::ROOT.to_string(), String::new())];
+            self.run(move || opened(&server, dlna::ROOT, crumbs));
+            return;
+        }
         self.run(move || Outcome::Libraries(chilpa_servers::libraries(&Network, &server, &key)));
     }
 
@@ -496,25 +529,18 @@ impl Setup {
         let Some(crumbs) = self.crumbs_to(id) else { return };
         let server = dlna::server(&self.view.address, client(&self.instance), Vec::new(), signed.details.clone());
         let id = id.to_string();
-        self.run(move || {
-            let found = dlna::folders(&Network, &server, &id);
-            let roots = found.as_ref().map(|found| dlna::view_roots(&Network, &server, found)).unwrap_or_default();
-            Outcome::Opened(crumbs, found, roots)
-        });
+        self.run(move || opened(&server, &id, crumbs));
     }
 
     /// DLNA: what the window shows of the container open. Each container
     /// offered is kept with the way down to it, the name it is shown by
     /// once chosen.
-    fn show_containers(&mut self, crumbs: Vec<(String, String)>, found: Vec<Library>, roots: Vec<String>) {
+    fn show_containers(&mut self, crumbs: Vec<(String, String)>, found: Vec<Library>, inside: Vec<dlna::Inside>, settings: Vec<dlna::Setting>) {
         // Said under the choice: views repeat the same songs (the window
         // advises one; the choice stays the person's).
         self.view.views = dlna::are_views(&found);
-        for root in roots {
-            if self.view.view_roots.len() < KNOWN && !self.view.view_roots.contains(&root) {
-                self.view.view_roots.push(root);
-            }
-        }
+        self.take_inside(&inside);
+        self.view.settings = settings;
         let way = crumbs.iter().map(|(_, title)| title.as_str()).filter(|t| !t.is_empty()).collect::<Vec<_>>().join(" › ");
         for library in &found {
             if self.known.len() < KNOWN || self.known.contains_key(&library.id) {
@@ -522,9 +548,37 @@ impl Setup {
                 self.known.insert(library.id.clone(), name);
             }
         }
-        self.view.choices = found.into_iter().map(|l| (l.id, l.name, String::new())).collect();
+        // One that holds no music says why where its detail goes.
+        let why = |id: &str| self.view.no_music.iter().find(|(n, _)| n == id).map(|(_, why)| why.clone()).unwrap_or_default();
+        self.view.choices = found.into_iter().map(|l| { let said = why(&l.id); (l.id, l.name, said) }).collect();
         self.view.crumbs = crumbs;
         self.view.step = "libraries".into();
+    }
+
+    /// DLNA: what containers hold, as `look_into` says: views of a library,
+    /// and no music.
+    fn take_inside(&mut self, inside: &[dlna::Inside]) {
+        for container in inside {
+            if container.views && self.view.view_roots.len() < KNOWN && !self.view.view_roots.contains(&container.id) {
+                self.view.view_roots.push(container.id.clone());
+            }
+            if let Some(why) = no_music_said(container.holds) {
+                if self.view.no_music.len() < KNOWN && !self.view.no_music.iter().any(|(id, _)| id == &container.id) {
+                    self.view.no_music.push((container.id.clone(), why));
+                }
+            }
+        }
+    }
+
+    /// DLNA: chooses a value of one of the server's settings, one the setup
+    /// read from it and the window shows. Once, when the person asks.
+    fn choose(&mut self, value: &str) {
+        let offered = self.view.settings.iter().any(|s| s.values.iter().any(|(id, _)| id == value));
+        let (true, false, Some(signed)) = (offered, self.view.busy, self.signed.as_ref()) else { return };
+        let server = dlna::server(&self.view.address, client(&self.instance), Vec::new(), signed.details.clone());
+        let value = value.to_string();
+        self.view.setting_said.clear();
+        self.run(move || Outcome::Chosen(dlna::choose(&Network, &server, &value)));
     }
 
     fn take(&mut self, outcome: Outcome) {
@@ -616,7 +670,7 @@ impl Setup {
                     return self.fail(Failure::Unexpected(chilpa_i18n::t("that server has no music library")));
                 }
                 if self.kind == Some(Kind::Dlna) {
-                    return self.show_containers(vec![(dlna::ROOT.to_string(), String::new())], found, Vec::new());
+                    return self.show_containers(vec![(dlna::ROOT.to_string(), String::new())], found, Vec::new(), Vec::new());
                 }
                 self.view.choices = found.into_iter().map(|l| (l.id, l.name, String::new())).collect();
                 self.view.step = "libraries".into();
@@ -654,7 +708,14 @@ impl Setup {
                 });
                 self.libraries();
             }
-            Outcome::Opened(crumbs, Ok(found), roots) => self.show_containers(crumbs, found, roots),
+            Outcome::Opened(crumbs, Ok(found), inside, settings) => self.show_containers(crumbs, found, inside, settings),
+            Outcome::Inspected(inside) => self.take_inside(&inside),
+            Outcome::Chosen(Ok(())) => {
+                self.view.setting_said = chilpa_i18n::t("The server took it. It applies to what it sends this computer from now on.");
+            }
+            Outcome::Chosen(Err(f)) => {
+                self.view.setting_said = chilpa_i18n::t_args("The server did not take it: {}", &[&f.to_string()]);
+            }
             Outcome::Found(Err(f)) => {
                 self.view.searching = false;
                 self.fail(f);
@@ -669,12 +730,45 @@ impl Setup {
             | Outcome::Reached(Err(f))
             | Outcome::Libraries(Err(f))
             | Outcome::Described(Err(f))
-            | Outcome::Opened(_, Err(f), _) => self.fail(f),
+            | Outcome::Opened(_, Err(f), _, _) => self.fail(f),
         }
     }
 }
 
 /// The host of an address, to name a server that has no name of its own.
+/// How many containers of one level have their settings read.
+const SETTINGS_READ: usize = 12;
+
+/// DLNA: a level of a media server's containers, on the setup's thread:
+/// what each holds, and the settings the ones that hold other things than
+/// songs offer, as the server words them.
+fn opened(server: &chilpa_servers::Server, id: &str, crumbs: Vec<(String, String)>) -> Outcome {
+    match dlna::level(&Network, server, id) {
+        Ok(level) => {
+            let inside = dlna::look_into(&Network, server, &level);
+            let settings = inside
+                .iter()
+                .zip(&level)
+                .filter(|(container, _)| container.holds == dlna::Holds::Others)
+                .take(SETTINGS_READ)
+                .flat_map(|(container, (library, _))| dlna::settings(&Network, server, &container.id, &library.name))
+                .collect();
+            Outcome::Opened(crumbs, Ok(level.into_iter().map(|(library, _)| library).collect()), inside, settings)
+        }
+        Err(f) => Outcome::Opened(crumbs, Err(f), Vec::new(), Vec::new()),
+    }
+}
+
+/// Why a container cannot be chosen as music, in the window's words.
+fn no_music_said(holds: dlna::Holds) -> Option<String> {
+    match holds {
+        dlna::Holds::Empty => Some(chilpa_i18n::t("No songs in it: it is empty")),
+        dlna::Holds::Pictures => Some(chilpa_i18n::t("No songs in it: it holds video or pictures")),
+        dlna::Holds::Others => Some(chilpa_i18n::t("No songs in it: it holds other things, such as the server's own settings")),
+        dlna::Holds::Music | dlna::Holds::Unknown => None,
+    }
+}
+
 fn host_of(address: &str) -> String {
     address.split("://").nth(1).unwrap_or(address).split(['/', ':']).next().unwrap_or(address).to_string()
 }

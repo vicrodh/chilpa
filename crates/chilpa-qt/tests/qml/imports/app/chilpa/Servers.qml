@@ -7,7 +7,7 @@ QtObject {
     function show(doc) { setup = JSON.stringify(doc) }
     function begin(kind) {
         calls.push(["begin", kind])
-        if (kind !== "search") show({step:"address",kind:kind.startsWith("edit/")?"jellyfin":kind,label:"Saved server",address:"http://music.local",editing:kind.startsWith("edit/")})
+        if (kind !== "search" && !kind.startsWith("choose/")) show({step:"address",kind:kind.startsWith("edit/")?"jellyfin":kind,label:"Saved server",address:"http://music.local",editing:kind.startsWith("edit/")})
     }
     function cancel() { calls.push(["cancel"]); show({step:"idle"}) }
     function address(value) { calls.push(["address",value]) }
