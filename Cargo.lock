@@ -1130,6 +1130,7 @@ dependencies = [
  "chilpa-i18n",
  "md-5",
  "rand 0.10.3",
+ "roxmltree",
  "serde",
  "serde_json",
 ]

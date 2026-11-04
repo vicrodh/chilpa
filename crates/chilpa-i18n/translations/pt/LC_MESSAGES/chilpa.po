@@ -7253,6 +7253,9 @@ msgstr "Seus programas"
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "um manifesto DASH, que o Chilpa ainda não consegue ler"
 
+msgid "a DLNA / UPnP server keeps no playlists"
+msgstr "um servidor DLNA / UPnP não guarda playlists"
+
 msgid "a DST frame decoded to {} bytes and not 9408"
 msgstr "um quadro DST foi decodificado em {} bytes e não em 9408"
 
@@ -7804,6 +7807,9 @@ msgstr "tags"
 msgid "that Plex account reaches no server"
 msgstr "essa conta do Plex não acessa nenhum servidor"
 
+msgid "that address does not answer like a DLNA media server (HTTP {})"
+msgstr "esse endereço não responde como um servidor de mídia DLNA (HTTP {})"
+
 msgid "that address does not answer like a Jellyfin server (HTTP {})"
 msgstr "esse endereço não responde como um servidor Jellyfin (HTTP {})"
 
@@ -7812,6 +7818,9 @@ msgstr "esse endereço não responde como um servidor Plex (HTTP {})"
 
 msgid "that address does not answer like a Subsonic server (HTTP {})"
 msgstr "esse endereço não responde como um servidor Subsonic (HTTP {})"
+
+msgid "that address does not describe a DLNA media server"
+msgstr "esse endereço não descreve um servidor de mídia DLNA"
 
 msgid "that album has no playable tracks"
 msgstr "esse álbum não tem faixas reproduzíveis"
@@ -8133,6 +8142,15 @@ msgstr "o manifesto não é compreendido: {}"
 
 msgid "the manifest says API {} and the module answers {}; it does not load"
 msgstr "o manifesto diz API {} e o módulo responde {}; não será carregado"
+
+msgid "the media server answered with something that is not a listing"
+msgstr "o servidor de mídia respondeu com algo que não é uma listagem"
+
+msgid "the media server does not let this computer in; allow it in its own settings"
+msgstr "o servidor de mídia não permite a entrada deste computador; libere-o nas configurações do servidor"
+
+msgid "the media server refused the request (UPnP error {})"
+msgstr "o servidor de mídia recusou a solicitação (erro UPnP {})"
 
 msgid "the module could not be loaded: {}"
 msgstr "não foi possível carregar o módulo: {}"

@@ -7253,6 +7253,9 @@ msgstr "Tus programas"
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "un manifiesto DASH, que Chilpa todavía no sabe leer"
 
+msgid "a DLNA / UPnP server keeps no playlists"
+msgstr "un servidor DLNA / UPnP no guarda playlists"
+
 msgid "a DST frame decoded to {} bytes and not 9408"
 msgstr "un frame DST se decodificó en {} bytes y no en 9408"
 
@@ -7804,6 +7807,9 @@ msgstr "tags"
 msgid "that Plex account reaches no server"
 msgstr "esa cuenta de Plex no alcanza ningún servidor"
 
+msgid "that address does not answer like a DLNA media server (HTTP {})"
+msgstr "esa dirección no responde como un servidor de medios DLNA (HTTP {})"
+
 msgid "that address does not answer like a Jellyfin server (HTTP {})"
 msgstr "esa dirección no responde como un servidor Jellyfin (HTTP {})"
 
@@ -7812,6 +7818,9 @@ msgstr "esa dirección no responde como un servidor Plex (HTTP {})"
 
 msgid "that address does not answer like a Subsonic server (HTTP {})"
 msgstr "esa dirección no responde como un servidor Subsonic (HTTP {})"
+
+msgid "that address does not describe a DLNA media server"
+msgstr "esa dirección no describe un servidor de medios DLNA"
 
 msgid "that album has no playable tracks"
 msgstr "ese álbum no tiene pistas disponibles"
@@ -8133,6 +8142,15 @@ msgstr "el manifest no se entiende: {}"
 
 msgid "the manifest says API {} and the module answers {}; it does not load"
 msgstr "el manifest dice API {} y el módulo contesta {}; no se carga"
+
+msgid "the media server answered with something that is not a listing"
+msgstr "el servidor de medios respondió con algo que no es un listado"
+
+msgid "the media server does not let this computer in; allow it in its own settings"
+msgstr "el servidor de medios no deja entrar a esta computadora; permítela en los ajustes del servidor"
+
+msgid "the media server refused the request (UPnP error {})"
+msgstr "el servidor de medios rechazó la solicitud (error UPnP {})"
 
 msgid "the module could not be loaded: {}"
 msgstr "el módulo no se pudo cargar: {}"

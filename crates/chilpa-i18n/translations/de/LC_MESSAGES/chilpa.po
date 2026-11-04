@@ -7253,6 +7253,9 @@ msgstr "Deine Sendungen"
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "ein DASH-Manifest, das Chilpa noch nicht lesen kann"
 
+msgid "a DLNA / UPnP server keeps no playlists"
+msgstr "ein DLNA-/UPnP-Server hat keine Playlists"
+
 msgid "a DST frame decoded to {} bytes and not 9408"
 msgstr "ein DST-Frame wurde zu {} Bytes decodiert statt zu 9408"
 
@@ -7804,6 +7807,9 @@ msgstr "Tags"
 msgid "that Plex account reaches no server"
 msgstr "dieses Plex-Konto erreicht keinen Server"
 
+msgid "that address does not answer like a DLNA media server (HTTP {})"
+msgstr "diese Adresse antwortet nicht wie ein DLNA-Medienserver (HTTP {})"
+
 msgid "that address does not answer like a Jellyfin server (HTTP {})"
 msgstr "diese Adresse antwortet nicht wie ein Jellyfin-Server (HTTP {})"
 
@@ -7812,6 +7818,9 @@ msgstr "diese Adresse antwortet nicht wie ein Plex-Server (HTTP {})"
 
 msgid "that address does not answer like a Subsonic server (HTTP {})"
 msgstr "diese Adresse antwortet nicht wie ein Subsonic-Server (HTTP {})"
+
+msgid "that address does not describe a DLNA media server"
+msgstr "diese Adresse beschreibt keinen DLNA-Medienserver"
 
 msgid "that album has no playable tracks"
 msgstr "dieses Album hat keine abspielbaren Titel"
@@ -8133,6 +8142,15 @@ msgstr "das Manifest wird nicht verstanden: {}"
 
 msgid "the manifest says API {} and the module answers {}; it does not load"
 msgstr "das Manifest nennt API {}, und das Modul antwortet mit {}; es wird nicht geladen"
+
+msgid "the media server answered with something that is not a listing"
+msgstr "der Medienserver hat mit etwas geantwortet, das keine Auflistung ist"
+
+msgid "the media server does not let this computer in; allow it in its own settings"
+msgstr "der Medienserver lässt diesen Computer nicht zu; erlaube ihn in den Einstellungen des Servers"
+
+msgid "the media server refused the request (UPnP error {})"
+msgstr "der Medienserver hat die Anfrage abgelehnt (UPnP-Fehler {})"
 
 msgid "the module could not be loaded: {}"
 msgstr "das Modul konnte nicht geladen werden: {}"

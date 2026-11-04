@@ -7258,6 +7258,9 @@ msgstr "Ваши подкасты"
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "манифест DASH, который Chilpa пока не умеет читать"
 
+msgid "a DLNA / UPnP server keeps no playlists"
+msgstr "сервер DLNA / UPnP не хранит плейлисты"
+
 msgid "a DST frame decoded to {} bytes and not 9408"
 msgstr "кадр DST декодирован в {} байт, а не в 9408"
 
@@ -7810,6 +7813,9 @@ msgstr "теги"
 msgid "that Plex account reaches no server"
 msgstr "эта учётная запись Plex не даёт доступа ни к одному серверу"
 
+msgid "that address does not answer like a DLNA media server (HTTP {})"
+msgstr "этот адрес отвечает не как медиасервер DLNA (HTTP {})"
+
 msgid "that address does not answer like a Jellyfin server (HTTP {})"
 msgstr "этот адрес отвечает не как сервер Jellyfin (HTTP {})"
 
@@ -7818,6 +7824,9 @@ msgstr "этот адрес отвечает не как сервер Plex (HTTP
 
 msgid "that address does not answer like a Subsonic server (HTTP {})"
 msgstr "этот адрес отвечает не как сервер Subsonic (HTTP {})"
+
+msgid "that address does not describe a DLNA media server"
+msgstr "по этому адресу нет описания медиасервера DLNA"
 
 msgid "that album has no playable tracks"
 msgstr "в этом альбоме нет воспроизводимых треков"
@@ -8139,6 +8148,15 @@ msgstr "манифест не распознан: {}"
 
 msgid "the manifest says API {} and the module answers {}; it does not load"
 msgstr "в манифесте указан API {}, а модуль отвечает {}; не загружается"
+
+msgid "the media server answered with something that is not a listing"
+msgstr "медиасервер ответил чем-то, что не является списком"
+
+msgid "the media server does not let this computer in; allow it in its own settings"
+msgstr "медиасервер не пускает этот компьютер; разрешите его в настройках сервера"
+
+msgid "the media server refused the request (UPnP error {})"
+msgstr "медиасервер отклонил запрос (ошибка UPnP {})"
 
 msgid "the module could not be loaded: {}"
 msgstr "не удалось загрузить модуль: {}"

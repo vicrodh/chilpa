@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root configId="10360161" xmlns="urn:schemas-upnp-org:device-1-0" xmlns:dlna="urn:schemas-dlna-org:device-1-0">
+  <specVersion>
+    <major>1</major>
+    <minor>1</minor>
+  </specVersion>
+  <device>
+    <deviceType>urn:schemas-upnp-org:device:MediaServer:1</deviceType>
+    <friendlyName>Plex Media Server: Lab</friendlyName>
+    <manufacturer>Plex, Inc.</manufacturer>
+    <manufacturerURL>http://www.plexapp.com/</manufacturerURL>
+    <modelDescription>Plex Media Server</modelDescription>
+    <modelName>Plex Media Server</modelName>
+    <modelNumber>1.43.5.11079</modelNumber>
+    <modelURL>http://www.plexapp.com/</modelURL>
+    <UDN>uuid:f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f</UDN>
+    <dlna:X_DLNADOC xmlns:dlna="urn:schemas-dlna-org:device-1-0">DMS-1.50</dlna:X_DLNADOC>
+    <iconList>
+      <icon>
+        <mimetype>image/png</mimetype>
+        <width>260</width>
+        <height>260</height>
+        <depth>24</depth>
+        <url>/proxy/000000000000000a1000/260x260.png</url>
+      </icon>
+      <icon>
+        <mimetype>image/png</mimetype>
+        <width>120</width>
+        <height>120</height>
+        <depth>24</depth>
+        <url>/proxy/000000000000000a1005/120x120.png</url>
+      </icon>
+      <icon>
+        <mimetype>image/png</mimetype>
+        <width>48</width>
+        <height>48</height>
+        <depth>24</depth>
+        <url>/proxy/000000000000000a1002/48x48.png</url>
+      </icon>
+      <icon>
+        <mimetype>image/jpeg</mimetype>
+        <width>260</width>
+        <height>260</height>
+        <depth>24</depth>
+        <url>/proxy/000000000000000a1004/260x260.jpg</url>
+      </icon>
+      <icon>
+        <mimetype>image/jpeg</mimetype>
+        <width>120</width>
+        <height>120</height>
+        <depth>24</depth>
+        <url>/proxy/000000000000000a1003/120x120.jpg</url>
+      </icon>
+      <icon>
+        <mimetype>image/jpeg</mimetype>
+        <width>48</width>
+        <height>48</height>
+        <depth>24</depth>
+        <url>/proxy/000000000000000a1001/48x48.jpg</url>
+      </icon>
+    </iconList>
+    <serviceList>
+      <service>
+        <serviceType>urn:microsoft.com:service:X_MS_MediaReceiverRegistrar:1</serviceType>
+        <serviceId>urn:microsoft.com:serviceId:X_MS_MediaReceiverRegistrar</serviceId>
+        <SCPDURL>/X_MS_MediaReceiverRegistrar/f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f/scpd.xml</SCPDURL>
+        <controlURL>/X_MS_MediaReceiverRegistrar/f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f/control.xml</controlURL>
+        <eventSubURL>/X_MS_MediaReceiverRegistrar/f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f/event.xml</eventSubURL>
+      </service>
+      <service>
+        <serviceType>urn:schemas-upnp-org:service:ContentDirectory:1</serviceType>
+        <serviceId>urn:upnp-org:serviceId:ContentDirectory</serviceId>
+        <SCPDURL>/ContentDirectory/f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f/scpd.xml</SCPDURL>
+        <controlURL>/ContentDirectory/f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f/control.xml</controlURL>
+        <eventSubURL>/ContentDirectory/f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f/event.xml</eventSubURL>
+      </service>
+      <service>
+        <serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>
+        <serviceId>urn:upnp-org:serviceId:ConnectionManager</serviceId>
+        <SCPDURL>/ConnectionManager/f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f/scpd.xml</SCPDURL>
+        <controlURL>/ConnectionManager/f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f/control.xml</controlURL>
+        <eventSubURL>/ConnectionManager/f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f/event.xml</eventSubURL>
+      </service>
+    </serviceList>
+  </device>
+</root>

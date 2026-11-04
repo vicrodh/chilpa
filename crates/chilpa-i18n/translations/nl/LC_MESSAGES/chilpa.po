@@ -7253,6 +7253,9 @@ msgstr "Jouw shows"
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "een DASH-manifest, dat Chilpa nog niet kan lezen"
 
+msgid "a DLNA / UPnP server keeps no playlists"
+msgstr "een DLNA-/UPnP-server houdt geen afspeellijsten bij"
+
 msgid "a DST frame decoded to {} bytes and not 9408"
 msgstr "een DST-frame is gedecodeerd naar {} bytes in plaats van 9408"
 
@@ -7804,6 +7807,9 @@ msgstr "tags"
 msgid "that Plex account reaches no server"
 msgstr "dat Plex-account heeft toegang tot geen enkele server"
 
+msgid "that address does not answer like a DLNA media server (HTTP {})"
+msgstr "dat adres antwoordt niet als een DLNA-mediaserver (HTTP {})"
+
 msgid "that address does not answer like a Jellyfin server (HTTP {})"
 msgstr "dat adres antwoordt niet als een Jellyfin-server (HTTP {})"
 
@@ -7812,6 +7818,9 @@ msgstr "dat adres antwoordt niet als een Plex-server (HTTP {})"
 
 msgid "that address does not answer like a Subsonic server (HTTP {})"
 msgstr "dat adres antwoordt niet als een Subsonic-server (HTTP {})"
+
+msgid "that address does not describe a DLNA media server"
+msgstr "dat adres beschrijft geen DLNA-mediaserver"
 
 msgid "that album has no playable tracks"
 msgstr "dat album heeft geen afspeelbare nummers"
@@ -8133,6 +8142,15 @@ msgstr "het manifest wordt niet begrepen: {}"
 
 msgid "the manifest says API {} and the module answers {}; it does not load"
 msgstr "het manifest zegt API {} en de module antwoordt {}; het wordt niet geladen"
+
+msgid "the media server answered with something that is not a listing"
+msgstr "de mediaserver antwoordde met iets dat geen lijst is"
+
+msgid "the media server does not let this computer in; allow it in its own settings"
+msgstr "de mediaserver laat deze computer niet toe; sta hem toe in de instellingen van de server"
+
+msgid "the media server refused the request (UPnP error {})"
+msgstr "de mediaserver weigerde het verzoek (UPnP-fout {})"
 
 msgid "the module could not be loaded: {}"
 msgstr "de module kon niet worden geladen: {}"

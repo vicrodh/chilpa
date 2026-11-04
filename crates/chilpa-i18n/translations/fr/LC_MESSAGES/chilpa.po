@@ -7253,6 +7253,9 @@ msgstr "Vos émissions"
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "un manifeste DASH, que Chilpa ne sait pas encore lire"
 
+msgid "a DLNA / UPnP server keeps no playlists"
+msgstr "un serveur DLNA / UPnP ne garde pas de playlists"
+
 msgid "a DST frame decoded to {} bytes and not 9408"
 msgstr "une trame DST décodée en {} octets et non 9408"
 
@@ -7804,6 +7807,9 @@ msgstr "étiquettes"
 msgid "that Plex account reaches no server"
 msgstr "ce compte Plex n'accède à aucun serveur"
 
+msgid "that address does not answer like a DLNA media server (HTTP {})"
+msgstr "cette adresse ne répond pas comme un serveur multimédia DLNA (HTTP {})"
+
 msgid "that address does not answer like a Jellyfin server (HTTP {})"
 msgstr "cette adresse ne répond pas comme un serveur Jellyfin (HTTP {})"
 
@@ -7812,6 +7818,9 @@ msgstr "cette adresse ne répond pas comme un serveur Plex (HTTP {})"
 
 msgid "that address does not answer like a Subsonic server (HTTP {})"
 msgstr "cette adresse ne répond pas comme un serveur Subsonic (HTTP {})"
+
+msgid "that address does not describe a DLNA media server"
+msgstr "cette adresse ne décrit pas un serveur multimédia DLNA"
 
 msgid "that album has no playable tracks"
 msgstr "cet album n'a aucune piste lisible"
@@ -8133,6 +8142,15 @@ msgstr "le manifeste n'est pas compris : {}"
 
 msgid "the manifest says API {} and the module answers {}; it does not load"
 msgstr "le manifeste indique l'API {} et le module répond {} ; il ne se charge pas"
+
+msgid "the media server answered with something that is not a listing"
+msgstr "le serveur multimédia a répondu avec autre chose qu'une liste"
+
+msgid "the media server does not let this computer in; allow it in its own settings"
+msgstr "le serveur multimédia n'autorise pas cet ordinateur ; autorisez-le dans les paramètres du serveur"
+
+msgid "the media server refused the request (UPnP error {})"
+msgstr "le serveur multimédia a refusé la requête (erreur UPnP {})"
 
 msgid "the module could not be loaded: {}"
 msgstr "le module n'a pas pu être chargé : {}"

@@ -16,3 +16,6 @@ serde_json = "1"
 md-5 = "0.10"
 # A fresh salt per Subsonic request, and ids nobody can guess.
 rand = "0.10"
+# A DLNA media server answers in XML: its description, SOAP, DIDL-Lite.
+# The same reader the renderer side of casting uses.
+roxmltree = "0.21"

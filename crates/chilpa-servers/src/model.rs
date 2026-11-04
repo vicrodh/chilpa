@@ -1,4 +1,4 @@
-//! The words the three protocols are translated into.
+//! The words the protocols are translated into.
 
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -10,10 +10,12 @@ pub enum Kind {
     Subsonic,
     Jellyfin,
     Plex,
+    /// A UPnP AV media server (DLNA) on the LAN.
+    Dlna,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 3] = [Kind::Subsonic, Kind::Jellyfin, Kind::Plex];
+    pub const ALL: [Kind; 4] = [Kind::Subsonic, Kind::Jellyfin, Kind::Plex, Kind::Dlna];
 
     /// The provider of its `SourceId`.
     pub fn provider(self) -> &'static str {
@@ -21,7 +23,21 @@ impl Kind {
             Kind::Subsonic => "subsonic",
             Kind::Jellyfin => "jellyfin",
             Kind::Plex => "plex",
+            Kind::Dlna => "dlna",
         }
+    }
+
+    /// Whether it has a credential to seal. A media server on the LAN has
+    /// no sign-in: who may read it is the server's own setting.
+    pub fn signs_in(self) -> bool {
+        self != Kind::Dlna
+    }
+
+    /// Whether it keeps playlists of its own. A media server's protocol has
+    /// none: nothing about playlists is asked of it, and it is not offered
+    /// as a place to make one.
+    pub fn has_playlists(self) -> bool {
+        self != Kind::Dlna
     }
 
     pub fn from_provider(provider: &str) -> Option<Kind> {
@@ -34,6 +50,7 @@ impl Kind {
             Kind::Subsonic => "OpenSubsonic",
             Kind::Jellyfin => "Jellyfin",
             Kind::Plex => "Plex",
+            Kind::Dlna => "DLNA / UPnP",
         }
     }
 
@@ -45,6 +62,7 @@ impl Kind {
             Kind::Subsonic => "opensubsonic",
             Kind::Jellyfin => "jellyfin",
             Kind::Plex => "plex",
+            Kind::Dlna => "dlna",
         }
     }
 }
@@ -83,6 +101,16 @@ pub struct Details {
     /// Plex: the server's `machineIdentifier`, which a playlist write names
     /// its tracks by. The library keeps it as the server's identity.
     pub machine: String,
+    /// DLNA: where its ContentDirectory takes requests, a path on the
+    /// description's host or a whole address when only the port differs.
+    pub control: String,
+    /// DLNA: it answers `Search` by class, so a library is read without
+    /// walking its containers.
+    pub search: bool,
+    /// DLNA: the containers chosen as its music, each with the way down to
+    /// it as the setup showed it ("Music › Library › By Folder"), so editing
+    /// the server names them again without opening each level.
+    pub folders: Vec<Library>,
 }
 
 /// A server as a request is built for it.
@@ -111,6 +139,8 @@ pub enum Credential {
     /// Plex: the account's token, to find the server again, and the
     /// server's own, to talk to it.
     Plex { account: String, server: String },
+    /// A kind without a sign-in (`Kind::signs_in`). Never sealed.
+    Anonymous,
 }
 
 impl std::fmt::Debug for Credential {
@@ -122,6 +152,7 @@ impl std::fmt::Debug for Credential {
             Credential::ApiKey { .. } => "api key",
             Credential::Token { .. } => "token",
             Credential::Plex { .. } => "plex tokens",
+            Credential::Anonymous => "none",
         };
         write!(f, "Credential({kind})")
     }

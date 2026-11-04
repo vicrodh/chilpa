@@ -7248,6 +7248,9 @@ msgstr "あなたの番組"
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "DASHマニフェスト（Chilpaはまだ読み取れません）"
 
+msgid "a DLNA / UPnP server keeps no playlists"
+msgstr "DLNA / UPnP サーバーにはプレイリストがありません"
+
 msgid "a DST frame decoded to {} bytes and not 9408"
 msgstr "DSTフレームが{}バイトにデコードされました（9408バイトではありません）"
 
@@ -7798,6 +7801,9 @@ msgstr "タグ"
 msgid "that Plex account reaches no server"
 msgstr "そのPlexアカウントではどのサーバーにも接続できません"
 
+msgid "that address does not answer like a DLNA media server (HTTP {})"
+msgstr "そのアドレスはDLNAメディアサーバーのようには応答しません（HTTP {}）"
+
 msgid "that address does not answer like a Jellyfin server (HTTP {})"
 msgstr "そのアドレスはJellyfinサーバーのようには応答しません（HTTP {}）"
 
@@ -7806,6 +7812,9 @@ msgstr "そのアドレスはPlexサーバーのようには応答しません�
 
 msgid "that address does not answer like a Subsonic server (HTTP {})"
 msgstr "そのアドレスはSubsonicサーバーのようには応答しません（HTTP {}）"
+
+msgid "that address does not describe a DLNA media server"
+msgstr "そのアドレスはDLNAメディアサーバーの説明ではありません"
 
 msgid "that album has no playable tracks"
 msgstr "そのアルバムには再生可能なトラックがありません"
@@ -8127,6 +8136,15 @@ msgstr "マニフェストを理解できません: {}"
 
 msgid "the manifest says API {} and the module answers {}; it does not load"
 msgstr "マニフェストのAPIは{}ですが、モジュールは{}と答えています。読み込まれません"
+
+msgid "the media server answered with something that is not a listing"
+msgstr "メディアサーバーの応答は一覧ではありませんでした"
+
+msgid "the media server does not let this computer in; allow it in its own settings"
+msgstr "メディアサーバーがこのコンピューターを許可していません。サーバー側の設定で許可してください"
+
+msgid "the media server refused the request (UPnP error {})"
+msgstr "メディアサーバーが要求を拒否しました（UPnPエラー {}）"
 
 msgid "the module could not be loaded: {}"
 msgstr "モジュールを読み込めませんでした: {}"

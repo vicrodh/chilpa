@@ -1,6 +1,6 @@
 //! A server's own playlists, read and changed (ADR-017, as amended for
-//! them): the words the three protocols read them into, and what can be
-//! asked of one.
+//! them): the words the three protocols that keep them read them into, and
+//! what can be asked of one. A DLNA media server keeps none.
 //!
 //! The server owns each playlist. A change is asked of the server and
 //! nothing else is changed until it answers; whoever asks reads the
@@ -170,6 +170,12 @@ fn longest_run(order: &[usize]) -> Vec<bool> {
 /// A change that names places the playlist as read does not have.
 pub(crate) fn misfit() -> Failure {
     Failure::Unexpected(chilpa_i18n::t("that change does not fit the playlist as it was read"))
+}
+
+/// Asked of a kind of server that keeps no playlists (`Kind::has_playlists`):
+/// said at once, without a request that could only fail.
+pub(crate) fn not_offered() -> Failure {
+    Failure::Unexpected(chilpa_i18n::t("a DLNA / UPnP server keeps no playlists"))
 }
 
 /// A new order for a playlist that was not read whole.

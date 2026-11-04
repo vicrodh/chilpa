@@ -7253,6 +7253,9 @@ msgstr ""
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr ""
 
+msgid "a DLNA / UPnP server keeps no playlists"
+msgstr ""
+
 msgid "a DST frame decoded to {} bytes and not 9408"
 msgstr ""
 
@@ -7804,6 +7807,9 @@ msgstr ""
 msgid "that Plex account reaches no server"
 msgstr ""
 
+msgid "that address does not answer like a DLNA media server (HTTP {})"
+msgstr ""
+
 msgid "that address does not answer like a Jellyfin server (HTTP {})"
 msgstr ""
 
@@ -7811,6 +7817,9 @@ msgid "that address does not answer like a Plex server (HTTP {})"
 msgstr ""
 
 msgid "that address does not answer like a Subsonic server (HTTP {})"
+msgstr ""
+
+msgid "that address does not describe a DLNA media server"
 msgstr ""
 
 msgid "that album has no playable tracks"
@@ -8132,6 +8141,15 @@ msgid "the manifest is not understood: {}"
 msgstr ""
 
 msgid "the manifest says API {} and the module answers {}; it does not load"
+msgstr ""
+
+msgid "the media server answered with something that is not a listing"
+msgstr ""
+
+msgid "the media server does not let this computer in; allow it in its own settings"
+msgstr ""
+
+msgid "the media server refused the request (UPnP error {})"
 msgstr ""
 
 msgid "the module could not be loaded: {}"

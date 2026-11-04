@@ -81,9 +81,9 @@ fn tracks_go_in_by_the_server_s_uri_and_entries_come_out_by_their_own_id() {
     assert_eq!((asked[5].method, asked[5].url.clone()), ("DELETE", format!("{AT}/playlists/30")));
     assert!(asked.iter().all(|r| header(r, "X-Plex-Token") == Some("srv")));
     let describable: Vec<bool> = crate::model::Kind::ALL.iter().map(|&kind| crate::playlist_describable(kind)).collect();
-    assert_eq!(describable, [true, false, true], "Subsonic and Plex take a description; Jellyfin only a name");
+    assert_eq!(describable, [true, false, true, false], "Subsonic and Plex take a description; Jellyfin only a name; a media server has no playlists");
     let needs_tracks: Vec<bool> = crate::model::Kind::ALL.iter().map(|&kind| crate::playlist_needs_tracks(kind)).collect();
-    assert_eq!(needs_tracks, [false, false, true], "only Plex refuses an empty playlist");
+    assert_eq!(needs_tracks, [false, false, true, false], "only Plex refuses an empty playlist");
 }
 
 /// A playlist that waited in Chilpa, empty, goes to the server with its first

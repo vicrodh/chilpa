@@ -1,25 +1,29 @@
-//! Servers of mine: OpenSubsonic, Jellyfin and Plex (ADR-017).
+//! Servers of mine: OpenSubsonic, Jellyfin, Plex and DLNA media servers
+//! (ADR-017).
 //!
 //! This crate speaks their protocols and nothing else. It has no network:
 //! it builds each request and reads each answer, and whoever calls hands in
 //! the request itself (`Net`). So every test runs against answers saved from
 //! real servers, without going out.
 //!
-//! It is also the only place in Chilpa that names the three. Outside it a
+//! It is also the only place in Chilpa that names them. Outside it a
 //! server is a `source` with a kind, and the library keeps what it holds in
 //! the same tables as the local files.
 //!
 //! What goes in and out:
 //!
 //! - signing in, which each protocol does its own way (`subsonic`,
-//!   `jellyfin`, `plex`);
+//!   `jellyfin`, `plex`), and finding a media server, which has none
+//!   (`dlna`);
 //! - the libraries a server offers, to choose which come in;
 //! - the catalogue, a page at a time, and the detail of the tracks whose
 //!   listing does not carry their quality;
 //! - its own playlists, their entries in order, and the changes asked of
-//!   one: create, rename, delete, add, take out and reorder (`playlist`);
+//!   one: create, rename, delete, add, take out and reorder (`playlist`).
+//!   A media server has none (`Kind::has_playlists`);
 //! - where to read a track's original bytes, and a record's cover.
 
+pub mod dlna;
 pub mod jellyfin;
 pub mod model;
 pub mod net;
@@ -38,15 +42,19 @@ pub fn ping(net: &dyn Net, server: &Server, key: &Credential) -> Result<(), Fail
         Kind::Subsonic => subsonic::ping(net, server, key),
         Kind::Jellyfin => jellyfin::ping(net, server, key),
         Kind::Plex => plex::ping(net, server, key),
+        Kind::Dlna => dlna::ping(net, server),
     }
 }
 
-/// The music libraries the server offers.
+/// The music libraries the server offers. A media server offers the
+/// containers at its top; the ones below are opened one at a time
+/// (`dlna::folders`).
 pub fn libraries(net: &dyn Net, server: &Server, key: &Credential) -> Result<Vec<Library>, Failure> {
     match server.kind {
         Kind::Subsonic => subsonic::libraries(net, server, key),
         Kind::Jellyfin => jellyfin::libraries(net, server, key),
         Kind::Plex => plex::libraries(net, server, key),
+        Kind::Dlna => dlna::folders(net, server, dlna::ROOT),
     }
 }
 
@@ -57,6 +65,7 @@ pub fn page(net: &dyn Net, server: &Server, key: &Credential, cursor: Option<&st
         Kind::Subsonic => subsonic::page(net, server, key, cursor),
         Kind::Jellyfin => jellyfin::page(net, server, key, cursor),
         Kind::Plex => plex::page(net, server, key, cursor),
+        Kind::Dlna => dlna::page(net, server, cursor),
     }
 }
 
@@ -68,13 +77,13 @@ pub fn page(net: &dyn Net, server: &Server, key: &Credential, cursor: Option<&st
 pub fn census(net: &dyn Net, server: &Server, key: &Credential) -> Result<Option<u64>, Failure> {
     match server.kind {
         Kind::Subsonic => subsonic::census(net, server, key).map(Some),
-        Kind::Jellyfin | Kind::Plex => Ok(None),
+        Kind::Jellyfin | Kind::Plex | Kind::Dlna => Ok(None),
     }
 }
 
 pub fn details(net: &dyn Net, server: &Server, key: &Credential, ids: &[String]) -> Result<Vec<Track>, Failure> {
     match server.kind {
-        Kind::Subsonic => Ok(Vec::new()),
+        Kind::Subsonic | Kind::Dlna => Ok(Vec::new()),
         Kind::Jellyfin => jellyfin::details(net, server, key, ids),
         Kind::Plex => plex::details(net, server, key, ids),
     }
@@ -86,11 +95,14 @@ pub const DETAIL_BATCH: usize = 50;
 /// The playlists the account can read on the server, music only, at most
 /// `PLAYLISTS`. `account` is who signed in: on a Subsonic server it tells
 /// the account's own playlists, the ones it may change, from the others.
+/// A kind without playlists (`Kind::has_playlists`) lists none, whole, and
+/// nothing is asked of the server.
 pub fn playlists(net: &dyn Net, server: &Server, key: &Credential, account: &str) -> Result<PlaylistListing, Failure> {
     match server.kind {
         Kind::Subsonic => subsonic::playlists::playlists(net, server, key, account),
         Kind::Jellyfin => jellyfin::playlists::playlists(net, server, key),
         Kind::Plex => plex::playlists::playlists(net, server, key),
+        Kind::Dlna => Ok(PlaylistListing { found: Vec::new(), whole: true }),
     }
 }
 
@@ -100,6 +112,7 @@ pub fn playlist_tracks(net: &dyn Net, server: &Server, key: &Credential, id: &st
         Kind::Subsonic => subsonic::playlists::playlist_tracks(net, server, key, id),
         Kind::Jellyfin => jellyfin::playlists::playlist_tracks(net, server, key, id),
         Kind::Plex => plex::playlists::playlist_tracks(net, server, key, id),
+        Kind::Dlna => Err(playlist::not_offered()),
     }
 }
 
@@ -108,7 +121,7 @@ pub fn playlist_tracks(net: &dyn Net, server: &Server, key: &Credential, id: &st
 pub fn playlist_editable(net: &dyn Net, server: &Server, key: &Credential, id: &str) -> bool {
     match server.kind {
         Kind::Jellyfin => jellyfin::playlists::playlist_editable(net, server, key, id),
-        Kind::Subsonic | Kind::Plex => false,
+        Kind::Subsonic | Kind::Plex | Kind::Dlna => false,
     }
 }
 
@@ -117,7 +130,7 @@ pub fn playlist_editable(net: &dyn Net, server: &Server, key: &Credential, id: &
 pub fn playlist_describable(kind: Kind) -> bool {
     match kind {
         Kind::Subsonic | Kind::Plex => true,
-        Kind::Jellyfin => false,
+        Kind::Jellyfin | Kind::Dlna => false,
     }
 }
 
@@ -127,7 +140,7 @@ pub fn playlist_describable(kind: Kind) -> bool {
 pub fn playlist_needs_tracks(kind: Kind) -> bool {
     match kind {
         Kind::Plex => true,
-        Kind::Subsonic | Kind::Jellyfin => false,
+        Kind::Subsonic | Kind::Jellyfin | Kind::Dlna => false,
     }
 }
 
@@ -141,6 +154,7 @@ pub fn change_playlist(net: &dyn Net, server: &Server, key: &Credential, playlis
         Kind::Subsonic => subsonic::playlists::change_playlist(net, server, key, playlist, as_read, change),
         Kind::Jellyfin => jellyfin::playlists::change_playlist(net, server, key, playlist, as_read, change),
         Kind::Plex => plex::playlists::change_playlist(net, server, key, playlist, as_read, change),
+        Kind::Dlna => Err(playlist::not_offered()),
     }
 }
 
@@ -151,6 +165,7 @@ pub fn stream(server: &Server, key: &Credential, id: &str, codec: Option<&str>, 
         Kind::Subsonic => subsonic::stream(server, key, id, codec),
         Kind::Jellyfin => jellyfin::stream(server, key, id, codec),
         Kind::Plex => plex::stream(server, key, id, codec, revision),
+        Kind::Dlna => dlna::stream(server, codec, revision),
     }
 }
 
@@ -160,6 +175,7 @@ pub fn cover(server: &Server, key: &Credential, cover: &str, size: u32) -> Reque
         Kind::Subsonic => subsonic::cover(server, key, cover, size),
         Kind::Jellyfin => jellyfin::cover(server, key, cover, size),
         Kind::Plex => plex::cover(server, key, cover, size),
+        Kind::Dlna => dlna::cover(server, cover),
     }
 }
 
