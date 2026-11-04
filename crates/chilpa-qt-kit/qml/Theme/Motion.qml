@@ -24,6 +24,10 @@ QtObject {
     readonly property int revealGuard: 1500
     readonly property int ambient: reduced ? 0 : 600
     readonly property int toast: 2200
+    // A toast stays long enough to be read: this much per character over
+    // the shortest, up to the longest.
+    readonly property int toastPerChar: 60
+    readonly property int toastLongest: 12000
     // How often a view reads again what moves on another thread: a setup
     // being waited for, a sync. Not motion: never reduced.
     readonly property int poll: 300
