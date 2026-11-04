@@ -169,6 +169,9 @@ QtObject {
     readonly property int menuIconColumn: 18
     readonly property int menuItem: 30
     readonly property int menuItemTall: 44
+    // The least a rich option of a select stands: its source, its name and
+    // the line under it, wrapped whole.
+    readonly property int menuItemRich: 48
     // The date picker: its month of days, and each day.
     readonly property int datePickerWide: 252
     readonly property int datePickerDay: 32

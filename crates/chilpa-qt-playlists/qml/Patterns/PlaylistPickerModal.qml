@@ -195,19 +195,22 @@ Modal {
                     }
                 }
                 Row {
+                    width: parent.width
                     spacing: Metrics.gap8
                     Toggle {
+                        id: sameToggle
                         objectName: "sameSourceOnly"
                         anchors.verticalCenter: parent.verticalCenter
                         checked: dialog.sameSource
                         onToggled: (on) => { dialog.sameSource = on; SettingsModel.keep("ui.playlists.sameSource", on ? "true" : "false") }
                     }
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Show playlist only from the same source as the track", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
+                    Text { width: parent.width - sameToggle.width - parent.spacing; anchors.verticalCenter: parent.verticalCenter; wrapMode: Text.WordWrap; text: I18n.tr("Show playlist only from the same source as the track", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
                 }
                 Text { visible: dialog.naming; topPadding: Metrics.gap8; text: I18n.tr("Playlist Name", I18n.rev); font.pointSize: Type.small; font.weight: Type.medium; color: Theme.color.textSecondary }
                 TextField { id: name; objectName: "newPlaylistName"; visible: dialog.naming; width: parent.width; placeholder: I18n.tr("My Playlist", I18n.rev); onAccepted: dialog.create() }
                 PlaylistSourceChooser {
                     visible: dialog.naming && dialog.sourceRows.length > 0
+                    width: parent.width
                     sources: dialog.sourceRows; sourceId: dialog.sourceId; sourceName: dialog.sourceName
                     onPicked: (id, name) => { dialog.sourceId = id; dialog.sourceName = name }
                 }

@@ -3154,6 +3154,9 @@ msgstr "Keep words literal and match a genre without expanding it"
 msgid "Kept in Chilpa until you add its first tracks, then sent to {}"
 msgstr ""
 
+msgid "Kept in Chilpa; tracks from any source mix in it"
+msgstr ""
+
 msgid "Kernel"
 msgstr "Kernel"
 
@@ -3366,9 +3369,6 @@ msgstr ""
 
 msgid "Local — No folder"
 msgstr ""
-
-msgid "Local — supports mixed sources"
-msgstr "Local — supports mixed sources"
 
 msgid "Local — {}"
 msgstr ""
@@ -4206,9 +4206,6 @@ msgstr ""
 
 msgid "Only tracks from this server go in its playlists"
 msgstr ""
-
-msgid "Only tracks from this source"
-msgstr "Only tracks from this source"
 
 msgid "Only tracks from this source go in its playlists"
 msgstr ""

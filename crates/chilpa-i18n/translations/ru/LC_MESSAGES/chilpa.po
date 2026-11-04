@@ -3157,6 +3157,9 @@ msgstr "Искать слова буквально и жанр без расши
 msgid "Kept in Chilpa until you add its first tracks, then sent to {}"
 msgstr "Хранится в Chilpa, пока вы не добавите первые треки, затем отправляется на {}"
 
+msgid "Kept in Chilpa; tracks from any source mix in it"
+msgstr "Хранится в Chilpa; в нём можно смешивать треки из любых источников"
+
 msgid "Kernel"
 msgstr "Ядро"
 
@@ -3369,9 +3372,6 @@ msgstr "Локально — Chilpa"
 
 msgid "Local — No folder"
 msgstr "Локально — без папки"
-
-msgid "Local — supports mixed sources"
-msgstr "Локально — поддерживает смешанные источники"
 
 msgid "Local — {}"
 msgstr "Локально — {}"
@@ -4209,9 +4209,6 @@ msgstr "Показаны только первые {} выводов."
 
 msgid "Only tracks from this server go in its playlists"
 msgstr "В его плейлисты попадают только треки этого сервера"
-
-msgid "Only tracks from this source"
-msgstr "Только треки из этого источника"
 
 msgid "Only tracks from this source go in its playlists"
 msgstr "В её плейлисты попадают только треки этого источника"

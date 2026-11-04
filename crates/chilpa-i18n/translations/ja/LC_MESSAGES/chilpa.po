@@ -3151,6 +3151,9 @@ msgstr "語句をそのまま読み、ジャンルを拡張せずに検索する
 msgid "Kept in Chilpa until you add its first tracks, then sent to {}"
 msgstr "最初の曲を追加するまで Chilpa に保存され、その後 {} に送られます"
 
+msgid "Kept in Chilpa; tracks from any source mix in it"
+msgstr "Chilpa に保存されます。どのソースの曲も混ぜられます"
+
 msgid "Kernel"
 msgstr "カーネル"
 
@@ -3363,9 +3366,6 @@ msgstr "ローカル — Chilpa"
 
 msgid "Local — No folder"
 msgstr "ローカル — フォルダーなし"
-
-msgid "Local — supports mixed sources"
-msgstr "ローカル — 複数ソースの混在に対応"
 
 msgid "Local — {}"
 msgstr "ローカル — {}"
@@ -4203,9 +4203,6 @@ msgstr "最初の {} 件の出力のみ表示されます。"
 
 msgid "Only tracks from this server go in its playlists"
 msgstr "このサーバーのプレイリストには、このサーバーの曲だけが入ります"
-
-msgid "Only tracks from this source"
-msgstr "このソースのトラックのみ"
 
 msgid "Only tracks from this source go in its playlists"
 msgstr "このソースのプレイリストには、このソースの曲だけが入ります"

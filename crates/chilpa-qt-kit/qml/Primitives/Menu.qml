@@ -125,7 +125,7 @@ Controls.Popup {
                 required property int index
                 required property var modelData
                 width: list.width
-                entry: Object.assign({}, modelData.entry, {focused: menu.searchable && index === list.currentIndex})
+                entry: Object.assign({}, modelData.entry, {focused: menu.searchable ? index === list.currentIndex : modelData.entry.focused === true})
                 onHoveredChanged: if (hovered) { menu.hotRow = this; list.currentIndex = index; menu.entryHovered(modelData.original, mapToItem(menu.contentItem, 0, 0).y) }
                 onClicked: menu.choose(index, menu.y + mapToItem(menu.contentItem, 0, 0).y)
             }

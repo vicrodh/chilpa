@@ -3154,6 +3154,9 @@ msgstr "Woorden letterlijk lezen en een genre zonder uitbreiding zoeken"
 msgid "Kept in Chilpa until you add its first tracks, then sent to {}"
 msgstr "Blijft in Chilpa tot je de eerste nummers toevoegt, en gaat dan naar {}"
 
+msgid "Kept in Chilpa; tracks from any source mix in it"
+msgstr "Blijft in Chilpa; nummers uit elke bron kunnen erin"
+
 msgid "Kernel"
 msgstr "Kernel"
 
@@ -3366,9 +3369,6 @@ msgstr "Lokaal — Chilpa"
 
 msgid "Local — No folder"
 msgstr "Lokaal — Geen map"
-
-msgid "Local — supports mixed sources"
-msgstr "Lokaal — ondersteunt gemengde bronnen"
 
 msgid "Local — {}"
 msgstr "Lokaal — {}"
@@ -4206,9 +4206,6 @@ msgstr "Alleen de eerste {} uitvoeren worden vermeld."
 
 msgid "Only tracks from this server go in its playlists"
 msgstr "Alleen nummers van deze server gaan in zijn afspeellijsten"
-
-msgid "Only tracks from this source"
-msgstr "Alleen nummers van deze bron"
 
 msgid "Only tracks from this source go in its playlists"
 msgstr "Alleen nummers van deze bron gaan in haar afspeellijsten"

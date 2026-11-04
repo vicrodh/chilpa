@@ -3154,6 +3154,9 @@ msgstr "Wörter wörtlich lesen und ein Genre ohne Erweiterung suchen"
 msgid "Kept in Chilpa until you add its first tracks, then sent to {}"
 msgstr "Bleibt in Chilpa, bis du die ersten Titel hinzufügst, und geht dann an {}"
 
+msgid "Kept in Chilpa; tracks from any source mix in it"
+msgstr "Bleibt in Chilpa; Titel aus jeder Quelle lassen sich mischen"
+
 msgid "Kernel"
 msgstr "Kernel"
 
@@ -3366,9 +3369,6 @@ msgstr "Lokal – Chilpa"
 
 msgid "Local — No folder"
 msgstr "Lokal – Kein Ordner"
-
-msgid "Local — supports mixed sources"
-msgstr "Lokal – unterstützt gemischte Quellen"
 
 msgid "Local — {}"
 msgstr "Lokal – {}"
@@ -4206,9 +4206,6 @@ msgstr "Es werden nur die ersten {} Ausgaben aufgeführt."
 
 msgid "Only tracks from this server go in its playlists"
 msgstr "In seine Playlists kommen nur Titel dieses Servers"
-
-msgid "Only tracks from this source"
-msgstr "Nur Titel aus dieser Quelle"
 
 msgid "Only tracks from this source go in its playlists"
 msgstr "In ihre Playlists kommen nur Titel dieser Quelle"

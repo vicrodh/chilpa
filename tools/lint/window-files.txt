@@ -19,7 +19,6 @@ crates/chilpa-qt/qml/Components/PageHero.qml
 crates/chilpa-qt/qml/Components/PaneRow.qml
 crates/chilpa-qt/qml/Components/PlaylistNotice.qml
 crates/chilpa-qt/qml/Components/PlaylistPicker.qml
-crates/chilpa-qt/qml/Components/PlaylistSourceChooser.qml
 crates/chilpa-qt/qml/Components/PlaylistSourceWrite.qml
 crates/chilpa-qt/qml/Components/QueueMenu.qml
 crates/chilpa-qt/qml/Components/QueueRow.qml

@@ -157,19 +157,64 @@ TestCase {
         verify(field !== null)
     }
 
-    function test_a_source_it_cannot_take_says_why_and_cannot_be_chosen() {
-        const why = "Only with tracks: select them, then Add to playlist"
-        Playlists.sourceChoices = [{id: "plex:77aa", name: "MacMini Plex", accepts: false, why: why},
-                                   {id: "jellyfin:4f1c", name: "Living room", accepts: false}]
+    // The New playlist chooser: as wide as its field, each source with its
+    // icon in the gutter and a second line wrapped whole, a greyed one with
+    // its reason there and not taken, the chosen one marked, and the
+    // keyboard kept on the field.
+    function test_a_source_it_cannot_take_says_why_in_full_and_cannot_be_chosen() {
+        const why = "Still syncing its library for the first time, which takes a while on a big library"
+        Playlists.sourceChoices = [{id: "plex:77aa", name: "MacMini Plex", icon: "plex", accepts: true,
+                                    detail: "Kept in Chilpa until you add its first tracks, then sent to MacMini Plex"},
+                                   {id: "jellyfin:4f1c", name: "Living room", icon: "jellyfin", accepts: false, why: why},
+                                   {id: "jellyfin:0a0b", name: "Attic", icon: "jellyfin", accepts: false}]
         picker.show("[]")
         tryCompare(picker, "opened", true)
-        const menu = findChild(picker, "playlistSourceMenu")
+        const field = findChild(picker.contentItem, "playlistSourceChooser")
+        const menu = findChild(field, "selectOptions")
         verify(menu !== null)
-        compare(menu.entries.length, 3)
-        compare(menu.entries[1].note, true)
-        compare(menu.entries[1].detail, why)
-        compare(menu.entries[2].detail, "Only tracks from this source")
-        menu.choose(1, 0)
+        compare(menu.entries.length, 4)
+        compare(menu.entries[0].leadingSource.chilpa, true, "Chilpa's own mark for Local")
+        compare(menu.entries[1].leadingSource.icon, "plex", "each server its icon")
+        compare(menu.entries[2].enabled, false, "greyed")
+        compare(menu.entries[2].detail, why, "the reason is its second line")
+        compare(menu.entries[3].detail, "Only tracks from this source go in its playlists")
+        compare(menu.entries[0].checked, true, "the chosen one is marked")
+        // The modal places its fields on the next frame.
+        waitForRendering(picker.contentItem)
+        mouseClick(field, field.width / 2, field.height / 2)
+        tryCompare(menu, "opened", true)
+        compare(menu.width, field.width, "as wide as the field")
+        const rows = findChild(menu.contentItem, "menuOptions")
+        tryVerify(() => rows.itemAtIndex(2) !== null)
+        const greyed = rows.itemAtIndex(2)
+        verify(greyed.height >= 48, "a row stands at least 48: " + greyed.height)
+        verify(!greyed.cut, "nothing is cut")
+        menu.choose(2, 0)
         compare(picker.sourceId, "", "a greyed source is not taken")
+        menu.close()
+        tryCompare(menu, "opened", false)
+        field.forceActiveFocus()
+        keyClick(Qt.Key_Space)
+        tryCompare(menu, "opened", true)
+        verify(field.activeFocus, "the keyboard stays on the field")
+        keyClick(Qt.Key_Down)
+        compare(field.highlight, 1)
+        keyClick(Qt.Key_Down)
+        compare(field.highlight, 1, "a greyed one is stepped over, and there is none after")
+        keyClick(Qt.Key_Return)
+        tryCompare(menu, "opened", false)
+        compare(picker.sourceId, "plex:77aa")
+        compare(findChild(picker.contentItem, "playlistSourceLine").text, "Kept in Chilpa until you add its first tracks, then sent to MacMini Plex", "the chosen one's line stays under it")
+    }
+
+    // A playlist waiting for its first tracks says these are the ones.
+    function test_a_playlist_waiting_for_its_first_tracks_says_so_in_the_list() {
+        Playlists.rows = [{ playlist: { id: 9, name: "Night", mixed: false, source: "plex:77aa", track_count: 0, unsent: true }, icon: "plex", accepts: true, same_source: true, exact: 0, similar: 0 }]
+        picker.show("[42]")
+        tryCompare(picker, "opened", true)
+        child("playlistSearch").focusInput()
+        tryCompare(list(), "visible", true)
+        tryVerify(() => list().itemAtIndex(0) !== null)
+        verify(list().itemAtIndex(0).target.playlist.unsent)
     }
 }

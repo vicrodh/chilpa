@@ -4,7 +4,10 @@ import "../Theme"
 // One line of a Menu: a check, the text with its detail below, a mark and
 // a hint on the right; a separator; or a note, a heading nothing happens on.
 // It asks for the width its text needs; if the menu cannot give it, the text
-// is cut, never spilled, and the whole of it shows in a tooltip.
+// is cut, never spilled, and the whole of it shows in a tooltip. A rich line
+// (`rich`), a select's whose options say more, wraps its text and its
+// detail whole instead, stands at least `menuItemRich`, wears its source in
+// the gutter and its check at the end.
 Item {
     id: line
 
@@ -17,12 +20,16 @@ Item {
 
     readonly property bool separator: entry.separator === true
     readonly property bool note: entry.note === true
-    readonly property bool cut: title.truncated || detail.truncated
+    readonly property bool rich: entry.rich === true
+    readonly property bool leading: !!entry.leadingSourceIcon || !!entry.leadingSource
+    readonly property bool cut: !rich && (title.truncated || detail.truncated)
 
     implicitWidth: separator ? 0
         : Metrics.gap10 * 2 + check.width + Metrics.gap8 + Math.max(title.implicitWidth, detail.implicitWidth) // derived: padding, the check and the text
           + (tail.width > 0 ? tail.width + Metrics.gap16 : 0) + sourceBadge.width
-    implicitHeight: separator ? Metrics.gap8 + 1 : entry.detail ? Metrics.menuItemTall : Metrics.menuItem
+    implicitHeight: separator ? Metrics.gap8 + 1
+        : rich ? Math.max(Metrics.menuItemRich, texts.implicitHeight + Metrics.gap8 * 2) // derived: padding above and below
+        : entry.detail ? Metrics.menuItemTall : Metrics.menuItem
 
     Rectangle {
         visible: line.separator
@@ -42,7 +49,7 @@ Item {
 
     Icon {
         id: check
-        visible: !line.separator && !line.entry.leadingSourceIcon
+        visible: !line.separator && !line.leading
         x: Metrics.gap10
         anchors.verticalCenter: parent.verticalCenter
         width: Metrics.menuIconColumn
@@ -54,8 +61,8 @@ Item {
     }
     SourceIcon {
         anchors.centerIn: check
-        visible: !!line.entry.leadingSourceIcon && !line.separator
-        sourceInfo: ({icon: line.entry.leadingSourceIcon || ""})
+        visible: line.leading && !line.separator
+        sourceInfo: line.entry.leadingSource || ({icon: line.entry.leadingSourceIcon || ""})
         width: Metrics.iconNav
         height: Metrics.iconNav
     }
@@ -70,6 +77,7 @@ Item {
     }
 
     Column {
+        id: texts
         visible: !line.separator
         anchors.left: sourceBadge.right
         anchors.leftMargin: Metrics.gap8
@@ -83,9 +91,10 @@ Item {
             id: title
             width: parent.width
             text: line.entry.text || ""
-            elide: Text.ElideRight
+            elide: line.rich ? Text.ElideNone : Text.ElideRight
+            wrapMode: line.rich ? Text.WordWrap : Text.NoWrap
             font.pointSize: line.note ? Type.small : Type.body
-            font.weight: line.note ? Type.semibold : Type.regular
+            font.weight: line.note || (line.rich && line.entry.checked) ? Type.semibold : Type.regular
             color: line.note ? Theme.color.textTertiary : Theme.color.textPrimary
         }
         Text {
@@ -93,7 +102,8 @@ Item {
             width: parent.width
             visible: !!line.entry.detail
             text: line.entry.detail || ""
-            elide: Text.ElideRight
+            elide: line.rich ? Text.ElideNone : Text.ElideRight
+            wrapMode: line.rich ? Text.WordWrap : Text.NoWrap
             font.pointSize: Type.small
             color: Theme.color.textSecondary
         }
@@ -121,6 +131,13 @@ Item {
             text: line.entry.hint || ""
             font.pointSize: Type.label
             color: Theme.color.textTertiary
+        }
+        Icon {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: line.rich && line.leading && line.entry.checked === true
+            glyph: Icons.check
+            size: Metrics.iconNav
+            color: Theme.color.accent
         }
         Icon {
             anchors.verticalCenter: parent.verticalCenter

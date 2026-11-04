@@ -56,7 +56,7 @@ TitledFlow {
         width: section.width
         spacing: Metrics.gap12
 
-        PlaylistSourceChooser { sources: [{id: "demo", name: "Demo source", accepts: true}] }
+        PlaylistSourceChooser { width: Metrics.playlistModalWidth; sources: [{id: "demo", name: "Demo server", icon: "plex", accepts: true, detail: "Kept in Chilpa until you add its first tracks, then sent to Demo server"}, {id: "busy", name: "Busy server", icon: "jellyfin", accepts: false, why: "Still syncing its library for the first time"}] }
         PlaylistNotice { text: "A source is currently unavailable." }
         Flow {
             width: parent.width
