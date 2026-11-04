@@ -414,6 +414,9 @@ msgstr "Alben ({})"
 msgid "Albums and tracks"
 msgstr "Alben und Titel"
 
+msgid "Albums appear as they are read"
+msgstr "Alben erscheinen nach und nach, während sie gelesen werden"
+
 msgid "Albums from streaming services will not be synced."
 msgstr ""
 
@@ -2928,6 +2931,9 @@ msgstr "Icon"
 
 msgid "Identity and provenance"
 msgstr "Identität und Herkunft"
+
+msgid "If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile."
+msgstr "Wenn das deine erste Musikquelle ist, warte am besten, bis alles gelesen ist. Was schon erschienen ist, lässt sich währenddessen abspielen."
 
 msgid "Image"
 msgstr "Bild"

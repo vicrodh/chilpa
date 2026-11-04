@@ -121,6 +121,12 @@ TestCase {
         press("serverContinue")
         compare(dialog.page, 4)
         compare(field("serverLabel").text, "Living room", "the name the server gave itself")
+        // Before it is added, the last look says how the first import goes.
+        const note = field("serverFirstImport")
+        verify(note.visible, "a first import is explained before it starts")
+        compare(note.variant, "info")
+        compare(note.title, "Albums appear as they are read")
+        verify(note.body.indexOf("first music source") > 0 && note.body.indexOf("plays meanwhile") > 0, note.body)
         press("serverContinue")
         compare(last()[0], "finish")
         compare(last()[1], {label:"Living room",libraries:["music"]})
@@ -128,6 +134,7 @@ TestCase {
         tryCompare(dialog, "done", true)
         compare(field("serverContinue").text, "Close")
         verify(field("serverAdded").visible)
+        verify(!field("serverFirstImport").visible, "once added it says so instead")
     }
 
     // A failed test says what the server answered and what to do, and tries
@@ -186,6 +193,7 @@ TestCase {
         press("serverCrumb_0")
         compare(last(), ["pick","0"], "back up to the top")
         press("serverContinue")
+        verify(field("serverFirstImport").visible, "a media server's first import is explained too")
         press("serverContinue")
         compare(last()[1], {label:"Plex Media Server: Lab",libraries:["byfolder"]})
     }
@@ -216,6 +224,7 @@ TestCase {
         tryVerify(()=>dialog.height<=test.height)
         verify(field("serverFormViewport").height>0)
         press("serverContinue")
+        verify(!field("serverFirstImport").visible, "an edit is not a first import")
         press("serverContinue")
         compare(last()[0],"finish")
         compare(last()[1],{label:"Saved server",libraries:["lib2"]})

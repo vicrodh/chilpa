@@ -23,7 +23,7 @@ TitledFlow {
     ServerLibraries { width: Metrics.confirmWidth; choices: [{id:"music",name:"Music"},{id:"books",name:"Audiobooks"}]; chosen: ["music"] }
     ServerSummary { width: Metrics.confirmWidth; kind: "dlna"; comesIn: ["Music › By Album"]
         setup: ({label:"Media server",product:"MiniDLNA 1.3.3",address:"http://192.168.0.20:8200/rootDesc.xml"}) }
-    ServerWizardWords { page: 3; kind: "dlna" }
+    ServerWizardWords { wizard: ({page: 3, kind: "dlna"}) }
     MusicServers { width: Metrics.settingsMaxWidth; height: Metrics.panesHeight; model: [] }
     ServerTableRow { width: Metrics.settingsMaxWidth; name: "Music server"; status: "Connected"; server: ({icon:"navidrome",product:"Navidrome 0.64.2",tracks:1234}); options:["Edit…","Disable","Sync now","Remove…"]; values:["edit","disable","sync","remove"] }
     ServerWizard { id: serverPreview; preview: ({step:"idle"}) }

@@ -415,6 +415,9 @@ msgstr "Альбомы ({})"
 msgid "Albums and tracks"
 msgstr "Альбомы и треки"
 
+msgid "Albums appear as they are read"
+msgstr "Альбомы появляются по мере чтения"
+
 msgid "Albums from streaming services will not be synced."
 msgstr ""
 
@@ -2931,6 +2934,9 @@ msgstr "Значок"
 
 msgid "Identity and provenance"
 msgstr "Идентификатор и происхождение данных"
+
+msgid "If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile."
+msgstr "Если это ваш первый источник музыки, советуем дождаться окончания. То, что уже появилось, можно слушать и сейчас."
 
 msgid "Image"
 msgstr "Изображение"

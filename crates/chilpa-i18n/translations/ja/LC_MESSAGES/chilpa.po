@@ -413,6 +413,9 @@ msgstr "アルバム（{}）"
 msgid "Albums and tracks"
 msgstr "アルバムと曲"
 
+msgid "Albums appear as they are read"
+msgstr "アルバムは読み込みに合わせて順に表示されます"
+
 msgid "Albums from streaming services will not be synced."
 msgstr ""
 
@@ -2925,6 +2928,9 @@ msgstr "アイコン"
 
 msgid "Identity and provenance"
 msgstr "識別情報と出所"
+
+msgid "If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile."
+msgstr "初めての音楽ソースなら、完了するまで待つことをおすすめします。表示されたものはその間も再生できます。"
 
 msgid "Image"
 msgstr "画像"

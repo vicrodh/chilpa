@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/wizard/qml/Components"
 import "../Components"
 
 // Adding a music server one step at a time, over the numbered rail a
@@ -36,16 +37,7 @@ Modal {
     readonly property bool failed: !busy && error !== "" && step !== "libraries" && step !== "done"
     readonly property bool done: step === "done"
     function show(id) { serverId = id; open() }
-    ServerWizardWords {
-        id: words
-        page: wizard.page
-        kind: wizard.kind
-        step: wizard.step
-        editing: wizard.editing
-        failed: wizard.failed
-        connected: wizard.connected
-        done: wizard.done
-    }
+    ServerWizardWords { id: words; wizard: wizard }
 
     width: Math.min((parent ? parent.width : Metrics.serverWizardWidth) - Metrics.modalInsets, Metrics.serverWizardWidth)
     height: Math.min(Metrics.serverWizardHeight, (parent ? parent.height : Metrics.serverWizardHeight) - Metrics.modalInsets)
@@ -253,6 +245,15 @@ Modal {
                 done: wizard.done
                 comesIn: wizard.dlna ? wizard.chosen.map(id => wizard.names[id] || id)
                     : (wizard.setup.choices || []).filter(choice => wizard.chosen.indexOf(choice.id) >= 0).map(choice => choice.name)
+            }
+            // A first import fills the library while it runs: said before
+            // it starts, for every kind.
+            WizardBanner {
+                objectName: "serverFirstImport"
+                visible: wizard.page === 4 && !wizard.done && !wizard.editing
+                variant: "info"
+                title: I18n.tr("Albums appear as they are read", I18n.rev)
+                body: I18n.tr("If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile.", I18n.rev)
             }
             // What went wrong after the test: a folder that did not open, a
             // server that could not be added.

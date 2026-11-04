@@ -2,15 +2,17 @@ import QtQuick
 import app.chilpa.kit
 
 // What each step of adding a server is called and says under its name, by
-// the step, the kind and how the test went (ServerWizard).
+// the step, the kind and how the test went, read from the wizard it names
+// (ServerWizard), or from any object with the same properties.
 QtObject {
-    property int page: 0
-    property string kind: ""
-    property string step: ""
-    property bool editing: false
-    property bool failed: false
-    property bool connected: false
-    property bool done: false
+    property var wizard: ({})
+    readonly property int page: wizard.page || 0
+    readonly property string kind: wizard.kind || ""
+    readonly property string step: wizard.step || ""
+    readonly property bool editing: wizard.editing === true
+    readonly property bool failed: wizard.failed === true
+    readonly property bool connected: wizard.connected === true
+    readonly property bool done: wizard.done === true
     readonly property bool dlna: kind === "dlna"
     readonly property string title: {
         if (page === 0) return I18n.tr("What kind of server is it?", I18n.rev)
