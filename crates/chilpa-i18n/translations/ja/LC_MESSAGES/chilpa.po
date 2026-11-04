@@ -7762,6 +7762,9 @@ msgstr "そのアドレスはSubsonicサーバーのようには応答しませ�
 msgid "that album has no playable tracks"
 msgstr "そのアルバムには再生可能なトラックがありません"
 
+msgid "that change does not fit the playlist as it was read"
+msgstr "その変更は読み込んだ時点のプレイリストと合いません"
+
 msgid "that cover could not be fetched"
 msgstr "そのカバーを取得できませんでした"
 
@@ -8092,6 +8095,9 @@ msgstr "トラックの次のパートを開けませんでした: {}"
 msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
 msgstr "出力が、CDの16 bit・44,100 Hzに対応していません"
 
+msgid "the playlist is longer than Chilpa reads; change its order on the server"
+msgstr "プレイリストがChilpaで読み込める長さを超えています。並び順はサーバーで変更してください"
+
 msgid "the plugin could not be asked"
 msgstr "プラグインに問い合わせられませんでした"
 
@@ -8337,6 +8343,15 @@ msgstr "ソースのこの部分は現在ありません"
 
 msgid "this plugin declared no network permission"
 msgstr "このプラグインはネットワーク権限を宣言していません"
+
+msgid "this server cannot move a track that is in the playlist more than once"
+msgstr "このサーバーでは、プレイリストに複数回入っているトラックは移動できません"
+
+msgid "this server does not take a playlist's description from Chilpa"
+msgstr "このサーバーはChilpaからプレイリストの説明を受け付けません"
+
+msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
+msgstr "このサーバーはトラックのすべてのコピーをプレイリストから一度に削除します。すべて削除するか、サーバー上で変更してください"
 
 msgid "this track is on a server, and servers are not connected"
 msgstr "このトラックはサーバー上にあり、サーバーは接続されていません"

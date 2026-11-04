@@ -7768,6 +7768,9 @@ msgstr "dat adres antwoordt niet als een Subsonic-server (HTTP {})"
 msgid "that album has no playable tracks"
 msgstr "dat album heeft geen afspeelbare nummers"
 
+msgid "that change does not fit the playlist as it was read"
+msgstr "die wijziging past niet bij de afspeellijst zoals die is gelezen"
+
 msgid "that cover could not be fetched"
 msgstr "die hoes kon niet worden opgehaald"
 
@@ -8098,6 +8101,9 @@ msgstr "het volgende deel van het nummer kon niet worden geopend: {}"
 msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
 msgstr "de uitvoer accepteert geen 16 bit op 44.100 Hz, wat een cd bevat"
 
+msgid "the playlist is longer than Chilpa reads; change its order on the server"
+msgstr "de afspeellijst is langer dan Chilpa inleest; wijzig de volgorde op de server"
+
 msgid "the plugin could not be asked"
 msgstr "de plug-in kon niet worden aangesproken"
 
@@ -8343,6 +8349,15 @@ msgstr "dit deel van de bron is er nu niet"
 
 msgid "this plugin declared no network permission"
 msgstr "deze plug-in heeft geen netwerktoestemming opgegeven"
+
+msgid "this server cannot move a track that is in the playlist more than once"
+msgstr "deze server kan geen nummer verplaatsen dat meer dan eens in de afspeellijst staat"
+
+msgid "this server does not take a playlist's description from Chilpa"
+msgstr "deze server neemt de beschrijving van een afspeellijst niet over van Chilpa"
+
+msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
+msgstr "deze server haalt alle kopieën van een nummer in één keer uit de afspeellijst; haal ze allemaal weg of wijzig hem op de server"
 
 msgid "this track is on a server, and servers are not connected"
 msgstr "dit nummer staat op een server, en servers zijn niet verbonden"

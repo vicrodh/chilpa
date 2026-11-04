@@ -7774,6 +7774,9 @@ msgstr "этот адрес отвечает не как сервер Subsonic (
 msgid "that album has no playable tracks"
 msgstr "в этом альбоме нет воспроизводимых треков"
 
+msgid "that change does not fit the playlist as it was read"
+msgstr "это изменение не соответствует плейлисту в том виде, в каком он был прочитан"
+
 msgid "that cover could not be fetched"
 msgstr "не удалось получить эту обложку"
 
@@ -8104,6 +8107,9 @@ msgstr "не удалось открыть следующую часть тре�
 msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
 msgstr "вывод не принимает 16 бит на 44 100 Hz, а именно это содержит CD"
 
+msgid "the playlist is longer than Chilpa reads; change its order on the server"
+msgstr "плейлист длиннее, чем читает Chilpa; измените его порядок на сервере"
+
 msgid "the plugin could not be asked"
 msgstr "не удалось обратиться к плагину"
 
@@ -8349,6 +8355,15 @@ msgstr "этой части источника сейчас нет"
 
 msgid "this plugin declared no network permission"
 msgstr "этот плагин не объявил сетевого разрешения"
+
+msgid "this server cannot move a track that is in the playlist more than once"
+msgstr "этот сервер не может переместить трек, который есть в плейлисте больше одного раза"
+
+msgid "this server does not take a playlist's description from Chilpa"
+msgstr "этот сервер не принимает описание плейлиста от Chilpa"
+
+msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
+msgstr "этот сервер удаляет из плейлиста все копии трека сразу; удалите все или измените плейлист на сервере"
 
 msgid "this track is on a server, and servers are not connected"
 msgstr "этот трек на сервере, а серверы не подключены"

@@ -16,17 +16,21 @@
 //! - the libraries a server offers, to choose which come in;
 //! - the catalogue, a page at a time, and the detail of the tracks whose
 //!   listing does not carry their quality;
+//! - its own playlists, their entries in order, and the changes asked of
+//!   one: create, rename, delete, add, take out and reorder (`playlist`);
 //! - where to read a track's original bytes, and a record's cover.
 
 pub mod jellyfin;
 pub mod model;
 pub mod net;
+pub mod playlist;
 pub mod plex;
 pub mod subsonic;
 mod text;
 
 pub use model::{Client, Credential, Details, Failure, Kind, Library, Page, Probe, Server, Stream, Track};
 pub use net::{Net, Reply, Request};
+pub use playlist::{Change, Entry, Playlist, PlaylistListing, PlaylistTracks, PLAYLISTS, PLAYLIST_TRACKS};
 
 /// Whether the server answers and the credential is still good.
 pub fn ping(net: &dyn Net, server: &Server, key: &Credential) -> Result<(), Failure> {

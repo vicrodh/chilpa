@@ -6,11 +6,11 @@ use std::time::Duration;
 /// One request, whole: nothing is added on the way out.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Request {
-    /// `GET` or `POST`.
+    /// `GET`, `POST`, `PUT` or `DELETE`.
     pub method: &'static str,
     pub url: String,
     pub headers: Vec<(String, String)>,
-    /// The body and its type, for a `POST`.
+    /// The body and its type, for a `POST` or a `PUT`.
     pub body: Option<(String, Vec<u8>)>,
     pub timeout: Duration,
 }
@@ -22,6 +22,14 @@ impl Request {
 
     pub fn post(url: String, headers: Vec<(String, String)>, body: Option<(String, Vec<u8>)>) -> Self {
         Self { method: "POST", url, headers, body, timeout: Duration::from_secs(20) }
+    }
+
+    pub fn put(url: String, headers: Vec<(String, String)>, body: Option<(String, Vec<u8>)>) -> Self {
+        Self { method: "PUT", url, headers, body, timeout: Duration::from_secs(20) }
+    }
+
+    pub fn delete(url: String, headers: Vec<(String, String)>) -> Self {
+        Self { method: "DELETE", url, headers, body: None, timeout: Duration::from_secs(20) }
     }
 }
 

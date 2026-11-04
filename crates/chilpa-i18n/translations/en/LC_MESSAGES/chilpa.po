@@ -7768,6 +7768,9 @@ msgstr ""
 msgid "that album has no playable tracks"
 msgstr ""
 
+msgid "that change does not fit the playlist as it was read"
+msgstr ""
+
 msgid "that cover could not be fetched"
 msgstr ""
 
@@ -8098,6 +8101,9 @@ msgstr ""
 msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
 msgstr ""
 
+msgid "the playlist is longer than Chilpa reads; change its order on the server"
+msgstr ""
+
 msgid "the plugin could not be asked"
 msgstr ""
 
@@ -8342,6 +8348,15 @@ msgid "this part of the source is not there now"
 msgstr ""
 
 msgid "this plugin declared no network permission"
+msgstr ""
+
+msgid "this server cannot move a track that is in the playlist more than once"
+msgstr ""
+
+msgid "this server does not take a playlist's description from Chilpa"
+msgstr ""
+
+msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr ""
 
 msgid "this track is on a server, and servers are not connected"

@@ -80,6 +80,9 @@ pub struct Details {
     /// one in use is `Server::address`; the others are tried when it stops
     /// answering.
     pub connections: Vec<String>,
+    /// Plex: the server's `machineIdentifier`, which a playlist write names
+    /// its tracks by. The library keeps it as the server's identity.
+    pub machine: String,
 }
 
 /// A server as a request is built for it.
@@ -231,12 +234,18 @@ pub enum Failure {
     Busy(String),
     /// It answered, with something this does not understand.
     Unexpected(String),
+    /// It answered that this account may not do that there.
+    Forbidden(String),
+    /// It answered that what was asked about is not there.
+    Gone(String),
 }
 
 impl std::fmt::Display for Failure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Failure::Unreachable(why) | Failure::Refused(why) | Failure::Busy(why) | Failure::Unexpected(why) => write!(f, "{why}"),
+            Failure::Unreachable(why) | Failure::Refused(why) | Failure::Busy(why) | Failure::Unexpected(why) | Failure::Forbidden(why) | Failure::Gone(why) => {
+                write!(f, "{why}")
+            }
             Failure::Moved(to) => write!(f, "{}", chilpa_i18n::t_args("the server moved to {}; use that address", &[to])),
         }
     }

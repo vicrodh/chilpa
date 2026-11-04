@@ -7768,6 +7768,9 @@ msgstr "cette adresse ne répond pas comme un serveur Subsonic (HTTP {})"
 msgid "that album has no playable tracks"
 msgstr "cet album n'a aucune piste lisible"
 
+msgid "that change does not fit the playlist as it was read"
+msgstr "cette modification ne correspond pas à la playlist telle qu'elle a été lue"
+
 msgid "that cover could not be fetched"
 msgstr "cette pochette n'a pas pu être récupérée"
 
@@ -8098,6 +8101,9 @@ msgstr "la partie suivante de la piste n'a pas pu être ouverte : {}"
 msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
 msgstr "la sortie n'accepte pas 16 bits à 44 100 Hz, ce que contient un CD"
 
+msgid "the playlist is longer than Chilpa reads; change its order on the server"
+msgstr "la playlist est plus longue que ce que Chilpa lit ; modifiez son ordre sur le serveur"
+
 msgid "the plugin could not be asked"
 msgstr "le plugin n'a pas pu être interrogé"
 
@@ -8343,6 +8349,15 @@ msgstr "cette partie de la source n'est pas disponible pour le moment"
 
 msgid "this plugin declared no network permission"
 msgstr "ce plugin n'a déclaré aucune autorisation réseau"
+
+msgid "this server cannot move a track that is in the playlist more than once"
+msgstr "ce serveur ne peut pas déplacer une piste présente plus d'une fois dans la playlist"
+
+msgid "this server does not take a playlist's description from Chilpa"
+msgstr "ce serveur n'accepte pas la description d'une playlist depuis Chilpa"
+
+msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
+msgstr "ce serveur retire en une fois toutes les copies d'une piste de la playlist ; retirez-les toutes ou modifiez-la sur le serveur"
 
 msgid "this track is on a server, and servers are not connected"
 msgstr "cette piste est sur un serveur, et les serveurs ne sont pas connectés"

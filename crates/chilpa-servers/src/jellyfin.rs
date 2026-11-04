@@ -14,13 +14,16 @@
 //! - **Paging has no tie-breaker** by id: the caller counts what it saw
 //!   against the total before it takes anything out.
 //! - **The MBID is `MusicBrainzRecording`** (measured on 12.1).
+//! - **Its playlists are their own module** (`playlists`).
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::model::{extension_of, image, Client, Credential, Failure, Kind, Library, Page, Probe, Server, Stream, Track};
-use crate::net::{Net, Request};
+use crate::net::{Net, Reply, Request};
 use crate::text::{artist_line, encode, number, string, unix_time};
+
+pub mod playlists;
 
 /// Tracks per page.
 const PAGE: u64 = 250;
@@ -50,7 +53,11 @@ fn headers(client: &Client, key: Option<&Credential>) -> Vec<(String, String)> {
 }
 
 fn ask(net: &dyn Net, request: Request) -> Result<Value, Failure> {
-    let reply = net.send(&request).map_err(Failure::Unreachable)?;
+    read(&net.send(&request).map_err(Failure::Unreachable)?)
+}
+
+/// What an answer says, or why it says nothing.
+fn read(reply: &Reply) -> Result<Value, Failure> {
     match reply.status {
         200..=299 if reply.body.is_empty() => Ok(Value::Null),
         200..=299 => serde_json::from_slice(&reply.body).map_err(|_| not_jellyfin(reply.status)),
