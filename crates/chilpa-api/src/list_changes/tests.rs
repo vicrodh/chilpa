@@ -8,6 +8,7 @@ fn simulate(old: &[&str], new: &[&str]) -> Changes {
         if let Step::Move { from, to } = step {
             assert_ne!(from, to);
             assert!(step.destination() <= rows.len());
+            assert!(step.accepted(), "Qt would refuse {step:?}");
         }
         step.apply(&mut rows, new);
         for position in &mut positions { *position = step.remap(*position); }
@@ -169,4 +170,27 @@ fn grid_notifications_always_resolve_their_cards_and_end_in_new_order() {
     }
     assert_eq!(album_rows(30, 4, 1, &[]).len(), 4);
     assert!(album_rows(30, 0, 1, &[]).is_empty());
+}
+
+#[test]
+fn a_move_onto_its_own_place_is_what_qt_refuses() {
+    assert!(!Step::Move { from: 3, to: 3 }.accepted());
+    assert!(Step::Move { from: 3, to: 4 }.accepted());
+    assert!(Step::Move { from: 4, to: 3 }.accepted());
+    assert!(Step::Remove(0).accepted() && Step::Insert(0).accepted());
+}
+
+#[test]
+fn every_planned_move_is_one_qt_takes() {
+    let old = ["a", "b", "c", "d", "e"];
+    let mut new = old;
+    // Every rotation and its reverse: each plan is simulated, and the
+    // simulation asserts each move is accepted.
+    for _ in 0..old.len() {
+        new.rotate_left(1);
+        simulate(&old, &new);
+        let mut back = new;
+        back.reverse();
+        simulate(&old, &back);
+    }
 }

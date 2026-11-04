@@ -901,13 +901,15 @@ impl qobject::TrackListModel {
         if let Some(plan) = plan {
             let Rows::Loaded(new) = &rows else { unreachable!() };
             let parent = QModelIndex::default();
+            let mut refused = false;
             for step in plan.steps {
-                // SAFETY: each valid edit brackets its storage mutation.
-                unsafe { match step {
-                    Step::Remove(at) => self.as_mut().begin_remove_rows(&parent, at as i32, at as i32),
-                    Step::Insert(at) => self.as_mut().begin_insert_rows(&parent, at as i32, at as i32),
-                    Step::Move { from, .. } => { self.as_mut().begin_move_rows(&parent, from as i32, from as i32, &parent, step.destination() as i32); }
-                } }
+                // SAFETY: each valid edit brackets its storage mutation; a move Qt refuses changes nothing, ends nothing and becomes a reset.
+                let begun = unsafe { match step {
+                    Step::Remove(at) => { self.as_mut().begin_remove_rows(&parent, at as i32, at as i32); true }
+                    Step::Insert(at) => { self.as_mut().begin_insert_rows(&parent, at as i32, at as i32); true }
+                    Step::Move { from, .. } => self.as_mut().begin_move_rows(&parent, from as i32, from as i32, &parent, step.destination() as i32),
+                } };
+                if !begun { refused = list_changes::refused(step); unsafe { self.as_mut().begin_reset_model() }; break; }
                 { let mut this = self.as_mut().rust_mut();
                     if let Rows::Loaded(old) = &mut this.rows { step.apply(old, new); }
                     if !keys.is_empty() || !this.queue_keys.is_empty() { step.apply(&mut this.queue_keys, &keys); }
@@ -918,8 +920,9 @@ impl qobject::TrackListModel {
                     Step::Remove(_) => self.as_mut().end_remove_rows(), Step::Insert(_) => self.as_mut().end_insert_rows(), Step::Move { .. } => self.as_mut().end_move_rows(),
                 } }
             }
+            if refused { let mut this = self.as_mut().rust_mut(); if let Rows::Loaded(old) = &this.rows { this.anchor = list_changes::track_anchor(old, new, &this.queue_keys, &keys, this.anchor); } this.queue_numbers = list_changes::numbers(&keys, kind == "openMedia"); this.queue_keys = keys; }
             self.as_mut().rust_mut().rows = rows;
-            for row in plan.changed { let at = self.index(row as i32, 0, &parent); self.as_mut().data_changed(&at, &at, &QVector::<i32>::default()); }
+            if refused { unsafe { self.as_mut().end_reset_model() } } else { for row in plan.changed { let at = self.index(row as i32, 0, &parent); self.as_mut().data_changed(&at, &at, &QVector::<i32>::default()); } }
         } else {
             // SAFETY: the reset is begun and ended around the swap, as Qt asks.
             unsafe { self.as_mut().begin_reset_model() };

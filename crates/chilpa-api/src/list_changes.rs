@@ -19,6 +19,11 @@ impl Step {
     pub fn destination(self) -> usize {
         match self { Self::Move { from, to } => to + usize::from(from < to), _ => 0 }
     }
+    /// Whether Qt takes this edit: `beginMoveRows` refuses a row moved
+    /// onto its own place, the destination `from` or `from + 1`.
+    pub fn accepted(self) -> bool {
+        match self { Self::Move { from, .. } => !(from..=from + 1).contains(&self.destination()), _ => true }
+    }
     pub fn apply<T: Clone>(self, rows: &mut Vec<T>, new: &[T]) {
         match self {
             Self::Remove(at) => { rows.remove(at); }
@@ -71,7 +76,10 @@ pub fn between<K: Eq>(old: &[K], new: &[K], equal: impl Fn(usize, usize) -> bool
     for (to, origin) in origins.iter().flatten().enumerate() {
         let from = live.iter().position(|row| row == origin)?;
         if from != to {
-            result.steps.push(Step::Move { from, to });
+            let step = Step::Move { from, to };
+            // Never planned, but a move Qt would refuse makes the caller reset.
+            if !step.accepted() { return None; }
+            result.steps.push(step);
             let row = live.remove(from); live.insert(to, row);
             if result.steps.len() > MAX_STEPS { return None; }
         }
@@ -85,6 +93,16 @@ pub fn between<K: Eq>(old: &[K], new: &[K], equal: impl Fn(usize, usize) -> bool
         if result.steps.len() > MAX_STEPS { return None; }
     }
     Some(result)
+}
+
+/// Qt refused a planned move (`beginMoveRows` returned false): the model
+/// changes nothing for it, ends no move, and resets instead. The planner
+/// never makes such a move, so this is a bug to stop on in a debug build
+/// and a line in the log otherwise. Returns true, for the caller's flag.
+pub fn refused(step: Step) -> bool {
+    eprintln!("chilpa-list-changes: Qt refused the planned move {step:?}; the model resets instead");
+    debug_assert!(false, "Qt refused the planned move {step:?}");
+    true
 }
 
 #[derive(PartialEq, Eq)]

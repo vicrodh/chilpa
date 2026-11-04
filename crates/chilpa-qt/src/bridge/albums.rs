@@ -422,13 +422,15 @@ impl qobject::AlbumGridModel {
         if let Some(plan) = plan {
             let parent = QModelIndex::default();
             let staged: Vec<_> = rows.iter().cloned().map(|mut row| { row.first += offset; row }).collect();
+            let mut refused = false;
             for &step in &plan.steps {
-                // SAFETY: each planned edit brackets its storage mutation.
-                unsafe { match step {
-                    Step::Remove(at) => self.as_mut().begin_remove_rows(&parent, at as i32, at as i32),
-                    Step::Insert(at) => self.as_mut().begin_insert_rows(&parent, at as i32, at as i32),
-                    Step::Move { from, .. } => { self.as_mut().begin_move_rows(&parent, from as i32, from as i32, &parent, step.destination() as i32); }
-                } }
+                // SAFETY: each planned edit brackets its storage mutation; a move Qt refuses changes nothing, ends nothing and becomes a reset.
+                let begun = unsafe { match step {
+                    Step::Remove(at) => { self.as_mut().begin_remove_rows(&parent, at as i32, at as i32); true }
+                    Step::Insert(at) => { self.as_mut().begin_insert_rows(&parent, at as i32, at as i32); true }
+                    Step::Move { from, .. } => self.as_mut().begin_move_rows(&parent, from as i32, from as i32, &parent, step.destination() as i32),
+                } };
+                if !begun { refused = list_changes::refused(step); unsafe { self.as_mut().begin_reset_model() }; break; }
                 step.apply(&mut self.as_mut().rust_mut().rows, &staged);
                 unsafe { match step {
                     Step::Remove(_) => self.as_mut().end_remove_rows(), Step::Insert(_) => self.as_mut().end_insert_rows(), Step::Move { .. } => self.as_mut().end_move_rows(),
@@ -436,7 +438,7 @@ impl qobject::AlbumGridModel {
             }
             self.as_mut().rust_mut().list.finish(offset);
             self.as_mut().rust_mut().rows = rows;
-            for row in plan.published() { let at = self.index(row as i32, 0, &parent); self.as_mut().data_changed(&at, &at, &QVector::<i32>::default()); }
+            if refused { unsafe { self.as_mut().end_reset_model() } } else { for row in plan.published() { let at = self.index(row as i32, 0, &parent); self.as_mut().data_changed(&at, &at, &QVector::<i32>::default()); } }
         } else if same && rows == self.rust().rows && matches!(self.rust().list, Albums::Snapshot { .. }) {
             if !rows.is_empty() {
                 let (first, last) = (self.index(0, 0, &QModelIndex::default()), self.index(rows.len() as i32 - 1, 0, &QModelIndex::default()));
