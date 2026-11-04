@@ -25,7 +25,7 @@ Shared.MenuCascade {
                 ({ text: text, checked: PlayerLayout.mode === modes[index], act: "layout:" + modes[index] })) },
             { text: I18n.tr("Background", I18n.rev), glyph: Icons.stack2, submenu: true,
             children: backgrounds.map((text, index) => ({ text: text, checked: Ambient.mode === index, act: "background:" + index })) }]
-        for (const panel of DisplayMode.panels) next.push({text:panel.name,glyph:Icons.disc,submenu:true,children:DisplayMode.menuFor(panel.id)})
+        for (const panel of DisplayMode.panels()) next.push({text:panel.name,glyph:Icons.disc,submenu:true,children:DisplayMode.menuFor(panel.id)})
         entries = next
         open()
     }

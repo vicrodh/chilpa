@@ -27,7 +27,8 @@ QtObject {
     readonly property real playerExtent: customPlayer ? provider.playerExtent || 112 : 0
     readonly property string playerDock: customPlayer ? provider.playerDock || "bottom" : "bottom"
     readonly property var trayTarget: customPlayer && provider.trayTarget ? provider.trayTarget : standardTarget
-    readonly property var panels: (JSON.parse(Sources.snapshot || "{}").panels || []).filter(panel => String(Sources.display(panel.id, Sources.revision)) !== "")
+    // Read when the view menu opens, not on every change of the sources' snapshot.
+    function panels() { return (JSON.parse(Sources.snapshot || "{}").panels || []).filter(panel => String(Sources.display(panel.id, Sources.revision)) !== "") }
 
     function mount(item) { loadFailed = false; portal = item }
     function unmount(item) { if (portal === item) { requested = false; surface = null; portal = null; restoreWindow() } }
