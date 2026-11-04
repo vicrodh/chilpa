@@ -5770,6 +5770,9 @@ msgstr "Instelling"
 msgid "Settings"
 msgstr "Instellingen"
 
+msgid "Several views of one library"
+msgstr "Meerdere weergaven van één bibliotheek"
+
 msgid "Shader rendering available"
 msgstr "Shaderweergave beschikbaar"
 
@@ -6642,6 +6645,9 @@ msgstr "Dit afleveringsmateriaal kon niet worden geladen."
 
 msgid "This folder has no tracks."
 msgstr "Deze map bevat geen nummers."
+
+msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
+msgstr "Deze map toont dezelfde nummers in meerdere weergaven. Kies één weergave (we raden By Folder aan) zodat elk nummer één keer wordt gelezen."
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "Dit duurt langer dan gebruikelijk. MusicBrainz is mogelijk druk. Probeer het over een moment opnieuw."

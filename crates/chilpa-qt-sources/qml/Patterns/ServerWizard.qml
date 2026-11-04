@@ -246,14 +246,15 @@ Modal {
                 comesIn: wizard.dlna ? wizard.chosen.map(id => wizard.names[id] || id)
                     : (wizard.setup.choices || []).filter(choice => wizard.chosen.indexOf(choice.id) >= 0).map(choice => choice.name)
             }
-            // A first import fills the library while it runs: said before
-            // it starts, for every kind.
+            // What the step advises (ServerWizardWords): under a media
+            // server's folders, views that repeat the same songs; before a
+            // first import, for every kind, how it goes.
             WizardBanner {
-                objectName: "serverFirstImport"
-                visible: wizard.page === 4 && !wizard.done && !wizard.editing
+                objectName: "serverNote"
+                visible: words.noteTitle !== ""
                 variant: "info"
-                title: I18n.tr("Albums appear as they are read", I18n.rev)
-                body: I18n.tr("If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile.", I18n.rev)
+                title: words.noteTitle
+                body: words.noteBody
             }
             // What went wrong after the test: a folder that did not open, a
             // server that could not be added.

@@ -14,6 +14,25 @@ QtObject {
     readonly property bool connected: wizard.connected === true
     readonly property bool done: wizard.done === true
     readonly property bool dlna: kind === "dlna"
+    readonly property var setup: wizard.setup || ({})
+    readonly property var chosen: wizard.chosen || []
+    // Under a media server's folders: one that holds several views of a
+    // library, or two views of one level, read the same songs again. The
+    // choice stays the person's; this only advises.
+    readonly property bool repeats: {
+        if (!dlna || page !== 3) return false
+        const roots = setup.viewRoots || []
+        if (chosen.some(id => roots.indexOf(id) >= 0)) return true
+        const here = (setup.choices || []).map(choice => choice.id)
+        return setup.views === true && chosen.filter(id => here.indexOf(id) >= 0).length > 1
+    }
+    // Before a first import: how it goes.
+    readonly property bool firstImport: page === 4 && !done && !editing
+    readonly property string noteTitle: repeats ? I18n.tr("Several views of one library", I18n.rev)
+        : firstImport ? I18n.tr("Albums appear as they are read", I18n.rev) : ""
+    readonly property string noteBody: repeats
+        ? I18n.tr("This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once.", I18n.rev)
+        : firstImport ? I18n.tr("If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile.", I18n.rev) : ""
     readonly property string title: {
         if (page === 0) return I18n.tr("What kind of server is it?", I18n.rev)
         if (page === 1) return editing ? I18n.tr("Its connection", I18n.rev) : dlna ? I18n.tr("Which media server?", I18n.rev)

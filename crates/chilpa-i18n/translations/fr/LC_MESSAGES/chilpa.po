@@ -5770,6 +5770,9 @@ msgstr "Paramètre"
 msgid "Settings"
 msgstr "Paramètres"
 
+msgid "Several views of one library"
+msgstr "Plusieurs vues d'une même bibliothèque"
+
 msgid "Shader rendering available"
 msgstr "Rendu par shaders disponible"
 
@@ -6642,6 +6645,9 @@ msgstr "Le contenu de cet épisode n'a pas pu être chargé."
 
 msgid "This folder has no tracks."
 msgstr "Ce dossier ne contient aucune piste."
+
+msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
+msgstr "Ce dossier répète les mêmes morceaux sous plusieurs vues. Choisissez une seule vue (nous suggérons By Folder) pour que chaque morceau soit lu une fois."
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "Cela prend plus de temps que d'habitude. MusicBrainz est peut-être occupé. Réessayez dans un instant."

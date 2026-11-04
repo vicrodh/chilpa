@@ -5776,6 +5776,9 @@ msgstr "Настройка"
 msgid "Settings"
 msgstr "Настройки"
 
+msgid "Several views of one library"
+msgstr "Несколько представлений одной библиотеки"
+
 msgid "Shader rendering available"
 msgstr "Рендеринг шейдерами доступен"
 
@@ -6651,6 +6654,9 @@ msgstr "Не удалось загрузить материалы этого в�
 
 msgid "This folder has no tracks."
 msgstr "В этой папке нет треков."
+
+msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
+msgstr "Эта папка повторяет одни и те же песни в нескольких представлениях. Выберите одно (советуем By Folder), чтобы каждая песня читалась один раз."
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "Это занимает больше времени, чем обычно. Возможно, MusicBrainz перегружен. Повторите попытку чуть позже."

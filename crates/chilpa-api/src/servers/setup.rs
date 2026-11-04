@@ -59,6 +59,12 @@ pub struct ServerSetup {
     pub folders: Vec<(String, String)>,
     /// DLNA: the network is being searched for media servers.
     pub searching: bool,
+    /// DLNA: the containers shown look like several views of one library
+    /// (By Folder, By Album...), each listing the same songs.
+    pub views: bool,
+    /// DLNA: containers seen to hold such views, as a library's section
+    /// does. Choosing one reads every view.
+    pub view_roots: Vec<String>,
     pub busy: bool,
     pub error: String,
 }
@@ -92,8 +98,9 @@ enum Outcome {
     Found(Result<Vec<dlna::Found>, Failure>),
     /// DLNA: what an address describes.
     Described(Result<dlna::Found, Failure>),
-    /// DLNA: the containers in one, with the way down to it.
-    Opened(Vec<(String, String)>, Result<Vec<Library>, Failure>),
+    /// DLNA: the containers in one, with the way down to it, and which of
+    /// them hold views of a library (`dlna::view_roots`).
+    Opened(Vec<(String, String)>, Result<Vec<Library>, Failure>, Vec<String>),
 }
 
 struct Signed {
@@ -255,7 +262,13 @@ impl Setup {
             return;
         }
         if kind == Kind::Dlna {
-            self.run(move || Outcome::Described(dlna::probe(&Network, &address)));
+            // The names its host resolves to are its own too (`Details::hosts`).
+            self.run(move || {
+                Outcome::Described(dlna::probe(&Network, &address).map(|mut found| {
+                    found.hosts.extend(super::lan::other_names(&found.location));
+                    found
+                }))
+            });
             return;
         }
         self.run(move || {
@@ -483,13 +496,25 @@ impl Setup {
         let Some(crumbs) = self.crumbs_to(id) else { return };
         let server = dlna::server(&self.view.address, client(&self.instance), Vec::new(), signed.details.clone());
         let id = id.to_string();
-        self.run(move || Outcome::Opened(crumbs, dlna::folders(&Network, &server, &id)));
+        self.run(move || {
+            let found = dlna::folders(&Network, &server, &id);
+            let roots = found.as_ref().map(|found| dlna::view_roots(&Network, &server, found)).unwrap_or_default();
+            Outcome::Opened(crumbs, found, roots)
+        });
     }
 
     /// DLNA: what the window shows of the container open. Each container
     /// offered is kept with the way down to it, the name it is shown by
     /// once chosen.
-    fn show_containers(&mut self, crumbs: Vec<(String, String)>, found: Vec<Library>) {
+    fn show_containers(&mut self, crumbs: Vec<(String, String)>, found: Vec<Library>, roots: Vec<String>) {
+        // Said under the choice: views repeat the same songs (the window
+        // advises one; the choice stays the person's).
+        self.view.views = dlna::are_views(&found);
+        for root in roots {
+            if self.view.view_roots.len() < KNOWN && !self.view.view_roots.contains(&root) {
+                self.view.view_roots.push(root);
+            }
+        }
         let way = crumbs.iter().map(|(_, title)| title.as_str()).filter(|t| !t.is_empty()).collect::<Vec<_>>().join(" › ");
         for library in &found {
             if self.known.len() < KNOWN || self.known.contains_key(&library.id) {
@@ -591,7 +616,7 @@ impl Setup {
                     return self.fail(Failure::Unexpected(chilpa_i18n::t("that server has no music library")));
                 }
                 if self.kind == Some(Kind::Dlna) {
-                    return self.show_containers(vec![(dlna::ROOT.to_string(), String::new())], found);
+                    return self.show_containers(vec![(dlna::ROOT.to_string(), String::new())], found, Vec::new());
                 }
                 self.view.choices = found.into_iter().map(|l| (l.id, l.name, String::new())).collect();
                 self.view.step = "libraries".into();
@@ -629,7 +654,7 @@ impl Setup {
                 });
                 self.libraries();
             }
-            Outcome::Opened(crumbs, Ok(found)) => self.show_containers(crumbs, found),
+            Outcome::Opened(crumbs, Ok(found), roots) => self.show_containers(crumbs, found, roots),
             Outcome::Found(Err(f)) => {
                 self.view.searching = false;
                 self.fail(f);
@@ -644,7 +669,7 @@ impl Setup {
             | Outcome::Reached(Err(f))
             | Outcome::Libraries(Err(f))
             | Outcome::Described(Err(f))
-            | Outcome::Opened(_, Err(f)) => self.fail(f),
+            | Outcome::Opened(_, Err(f), _) => self.fail(f),
         }
     }
 }
@@ -723,12 +748,16 @@ mod tests {
             details: Details::default(),
         });
         let library = |id: &str, name: &str| Library { id: id.into(), name: name.into() };
-        setup.show_containers(vec![("0".into(), String::new())], vec![library("music", "Music")]);
+        setup.show_containers(vec![("0".into(), String::new())], vec![library("music", "Music")], vec!["music".into()]);
         assert_eq!((setup.view.step.as_str(), setup.view.crumbs.len()), ("libraries", 1));
+        assert!(!setup.view.views && setup.view.view_roots == ["music"], "a section that holds views is said");
         setup.show_containers(
             vec![("0".into(), String::new()), ("music".into(), "Music".into())],
-            vec![library("folders", "By Folder"), library("albums", "By Album")],
+            vec![library("folders", "By Folder"), library("albums", "By Album"), library("artists", "All Artists")],
+            Vec::new(),
         );
+        assert!(setup.view.views, "views of one library are said");
+        assert_eq!(setup.view.view_roots, ["music"], "and what was seen stays");
         assert_eq!(setup.view.crumbs.last().map(|(id, _)| id.as_str()), Some("music"));
         assert_eq!(setup.crumbs_to("0"), Some(vec![("0".to_string(), String::new())]), "back up to the top");
         assert_eq!(setup.crumbs_to("folders").map(|crumbs| crumbs.len()), Some(3), "down into one it shows");

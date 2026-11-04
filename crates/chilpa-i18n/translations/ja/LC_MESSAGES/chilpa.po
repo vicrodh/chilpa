@@ -5764,6 +5764,9 @@ msgstr "設定項目"
 msgid "Settings"
 msgstr "設定"
 
+msgid "Several views of one library"
+msgstr "同じライブラリの複数のビュー"
+
 msgid "Shader rendering available"
 msgstr "シェーダー描画が利用可能"
 
@@ -6633,6 +6636,9 @@ msgstr "このエピソードの資料を読み込めませんでした。"
 
 msgid "This folder has no tracks."
 msgstr "このフォルダーにトラックはありません。"
+
+msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
+msgstr "このフォルダーには同じ曲が複数のビューで含まれています。各曲が一度だけ読み取られるよう、ビューを1つ選んでください（By Folder をおすすめします）。"
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "通常より時間がかかっています。MusicBrainzが混雑している可能性があります。しばらくしてからもう一度お試しください。"

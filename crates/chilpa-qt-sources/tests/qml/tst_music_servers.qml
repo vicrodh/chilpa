@@ -122,7 +122,7 @@ TestCase {
         compare(dialog.page, 4)
         compare(field("serverLabel").text, "Living room", "the name the server gave itself")
         // Before it is added, the last look says how the first import goes.
-        const note = field("serverFirstImport")
+        const note = field("serverNote")
         verify(note.visible, "a first import is explained before it starts")
         compare(note.variant, "info")
         compare(note.title, "Albums appear as they are read")
@@ -134,7 +134,7 @@ TestCase {
         tryCompare(dialog, "done", true)
         compare(field("serverContinue").text, "Close")
         verify(field("serverAdded").visible)
-        verify(!field("serverFirstImport").visible, "once added it says so instead")
+        verify(!field("serverNote").visible, "once added it says so instead")
     }
 
     // A failed test says what the server answered and what to do, and tries
@@ -186,16 +186,43 @@ TestCase {
         press("serverOpenFolder_0")
         compare(last(), ["pick","music"])
         Servers.show({step:"libraries",kind:"dlna",address:test.plexLocation,crumbs:[{id:"0",name:""},{id:"music",name:"Music"}],
-            choices:[{id:"byfolder",name:"By Folder",detail:""},{id:"byalbum",name:"By Album",detail:""}]})
+            choices:[{id:"byfolder",name:"By Folder",detail:""},{id:"byalbum",name:"By Album",detail:""}],views:true})
         field("serverChooseFolder_0").clicked()
         compare(dialog.chosen, ["byfolder"])
         compare(dialog.names.byfolder, "Music › By Folder", "named by the way down to it")
+        verify(!field("serverNote").visible, "one view is read once")
+        field("serverChooseFolder_1").clicked()
+        tryVerify(()=>field("serverNote").visible, 1000, "two views of one library read the same songs twice")
+        compare(field("serverNote").title, "Several views of one library")
+        compare(dialog.chosen, ["byfolder","byalbum"], "advised, not changed")
+        field("serverChooseFolder_1").clicked()
+        tryVerify(()=>!field("serverNote").visible)
         press("serverCrumb_0")
         compare(last(), ["pick","0"], "back up to the top")
         press("serverContinue")
-        verify(field("serverFirstImport").visible, "a media server's first import is explained too")
+        verify(field("serverNote").visible, "a media server's first import is explained too")
         press("serverContinue")
         compare(last()[1], {label:"Plex Media Server: Lab",libraries:["byfolder"]})
+    }
+
+    // A container that holds several views of one library is pointed out
+    // under the choice, which stays as it was made.
+    function test_a_folder_that_holds_views_is_pointed_out_and_the_choice_kept() {
+        open(); choose("dlna")
+        Servers.show({step:"libraries",kind:"dlna",address:test.plexLocation,crumbs:[{id:"0",name:""},{id:"top",name:"Music"}],
+            choices:[{id:"section",name:"Music",detail:""},{id:"shared",name:"Shared Music",detail:""}],viewRoots:["section"]})
+        dialog.page = 3
+        waitForRendering(dialog.contentItem)
+        verify(!field("serverNote").visible)
+        field("serverChooseFolder_0").clicked()
+        compare(dialog.chosen, ["section"], "the choice is kept")
+        tryVerify(()=>field("serverNote").visible)
+        compare(field("serverNote").title, "Several views of one library")
+        verify(field("serverNote").body.indexOf("we suggest By Folder") > 0, field("serverNote").body)
+        field("serverChooseFolder_1").clicked()
+        verify(field("serverNote").visible, "still there while it is chosen")
+        field("serverChooseFolder_0").clicked()
+        tryVerify(()=>!field("serverNote").visible)
     }
 
     // Editing starts at the connection with the saved sign-in, and the
@@ -224,7 +251,7 @@ TestCase {
         tryVerify(()=>dialog.height<=test.height)
         verify(field("serverFormViewport").height>0)
         press("serverContinue")
-        verify(!field("serverFirstImport").visible, "an edit is not a first import")
+        verify(!field("serverNote").visible, "an edit is not a first import")
         press("serverContinue")
         compare(last()[0],"finish")
         compare(last()[1],{label:"Saved server",libraries:["lib2"]})

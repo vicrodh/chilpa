@@ -5770,6 +5770,9 @@ msgstr "Setting"
 msgid "Settings"
 msgstr ""
 
+msgid "Several views of one library"
+msgstr ""
+
 msgid "Shader rendering available"
 msgstr "Shader rendering available"
 
@@ -6641,6 +6644,9 @@ msgid "This episode material could not be loaded."
 msgstr ""
 
 msgid "This folder has no tracks."
+msgstr ""
+
+msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
 msgstr ""
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
