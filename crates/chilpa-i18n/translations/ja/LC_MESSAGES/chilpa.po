@@ -6161,6 +6161,10 @@ msgid "Syncing: {} track read"
 msgid_plural "Syncing: {} tracks read"
 msgstr[0] "同期中: {}トラックを読み取り済み"
 
+msgid "Syncing: {} track read in {} min"
+msgid_plural "Syncing: {} tracks read in {} min"
+msgstr[0] "同期中: {}トラックを読み取り済み（{}分経過）"
+
 msgid "Syncing…"
 msgstr "同期中…"
 
@@ -6526,6 +6530,10 @@ msgstr "ソースの接続が切れました。再試行する前にプレイリ
 
 msgid "The sung line lights up whole. Saves CPU."
 msgstr "歌っている行が丸ごと点灯します。CPUを節約できます。"
+
+msgid "The sync has not moved in {} minute. Sync now starts it again."
+msgid_plural "The sync has not moved in {} minutes. Sync now starts it again."
+msgstr[0] "同期が{}分間進んでいません。「今すぐ同期」でやり直せます。"
 
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "システムの壁紙。代わりに自分の画像を選ぶこともできます。"
@@ -8454,6 +8462,9 @@ msgstr "サーバーが自分のライブラリを読み取り中です。終わ
 msgid "the server is starting; try again in a moment"
 msgstr "サーバーが起動中です。しばらくしてからもう一度お試しください"
 
+msgid "the server kept listing tracks already read; the sync stopped at {} tracks and took nothing out"
+msgstr "サーバーが読み取り済みのトラックを繰り返し返したため、{}トラックで同期を停止しました。何も削除されていません"
+
 msgid "the server listed {} of its {} tracks; nothing was taken out, sync again"
 msgstr "サーバーは全{2}トラックのうち{1}トラックしか一覧しませんでした。何も削除されていません。もう一度同期してください"
 
@@ -8510,6 +8521,9 @@ msgstr "ストリームが途絶えました"
 
 msgid "the sync lost its place; start it again"
 msgstr "同期の位置を見失いました。最初からやり直してください"
+
+msgid "the sync stopped on an error; nothing was taken out, sync again"
+msgstr "エラーのため同期が停止しました。何も削除されていません。もう一度同期してください"
 
 msgid "the sync was stopped"
 msgstr "同期は停止されました"
@@ -8950,6 +8964,10 @@ msgstr[0] "サーバーの{}トラックはライブラリにありません"
 
 msgid "{} tracks"
 msgstr "{}トラック"
+
+msgid "{} tracks came in; {} folder of the server could not be read and was left out. Nothing was taken out; sync again."
+msgid_plural "{} tracks came in; {} folders of the server could not be read and were left out. Nothing was taken out; sync again."
+msgstr[0] "{}トラックを取り込みました。サーバーの{}フォルダーを読み取れず、除外しました。何も削除されていません。もう一度同期してください。"
 
 msgid "{} tracks in {} records"
 msgstr "{}トラック（{}アルバム）"

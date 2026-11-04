@@ -431,3 +431,229 @@ fn a_subsonic_playlist_of_another_user_is_read_and_not_changed_here() {
     assert!(stored.iter().all(|p| p.server && !p.writable), "both are the lab user's, not this account's");
     assert_eq!(stored.iter().find(|p| p.name == "Road Trip").unwrap().track_count, 5, "the video is not a track");
 }
+
+/// A media server added with these containers chosen.
+fn media_server(lib: chilpa_library::Library, libraries: &str) -> Lab {
+    let instance = super::super::keys::mint();
+    let root = std::env::temp_dir().join(format!("chilpa-sync-{instance}"));
+    let keys = Keys::derived(root.clone());
+    let source = lib
+        .add_server(&chilpa_library::NewServer {
+            provider: "dlna".into(),
+            instance,
+            label: "Lab".into(),
+            address: "http://192.168.0.69:32469/DeviceDescription.xml".into(),
+            libraries: libraries.into(),
+            details: r#"{"control":"/ContentDirectory/f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f/control.xml","search":false}"#.into(),
+            ..Default::default()
+        })
+        .unwrap();
+    Lab { lib, keys, source, root }
+}
+
+/// What lies between `open` and `close` in `text`.
+fn between<'a>(text: &'a str, open: &str, close: &str) -> &'a str {
+    let start = text.find(open).map(|at| at + open.len()).unwrap_or(text.len());
+    let end = text[start..].find(close).map_or(text.len(), |at| start + at);
+    &text[start..end]
+}
+
+/// A ContentDirectory made up as it is asked: a container `top` with
+/// `records` records of `songs` songs each. It gives at most `most` entries
+/// at a time whatever is asked for, does not count what `top` holds, and,
+/// asked past its end, gives its last page again.
+struct Shelves {
+    records: usize,
+    songs: usize,
+    most: usize,
+    asked: std::sync::atomic::AtomicUsize,
+}
+
+impl Shelves {
+    fn entries(&self, id: &str) -> Vec<String> {
+        if id == "top" {
+            return (0..self.records)
+                .map(|r| format!("<container id=\"r{r}\" parentID=\"top\" restricted=\"1\"><dc:title>Record {r}</dc:title><upnp:class>object.container.album.musicAlbum</upnp:class></container>"))
+                .collect();
+        }
+        (0..self.songs)
+            .map(|s| {
+                format!(
+                    "<item id=\"{id}-{s}\" parentID=\"{id}\" restricted=\"1\"><dc:title>Song {s}</dc:title><upnp:artist>Artist {id}</upnp:artist>\
+                     <upnp:album>Record {id}</upnp:album><upnp:albumArtURI>/art/{id}.jpg</upnp:albumArtURI>\
+                     <res protocolInfo=\"http-get:*:audio/flac:*\">http://192.168.0.69:32469/object/{id}-{s}.flac</res>\
+                     <upnp:class>object.item.audioItem.musicTrack</upnp:class></item>"
+                )
+            })
+            .collect()
+    }
+}
+
+impl Net for Shelves {
+    fn send(&self, request: &Request) -> Result<Reply, String> {
+        self.asked.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let body = String::from_utf8_lossy(&request.body.as_ref().expect("a SOAP request").1).into_owned();
+        let id = between(&body, "<ObjectID>", "</ObjectID>").to_string();
+        let start: usize = between(&body, "<StartingIndex>", "</StartingIndex>").parse().unwrap();
+        let entries = self.entries(&id);
+        let start = if start >= entries.len() { entries.len().saturating_sub(1) / self.most * self.most } else { start };
+        let given = &entries[start..(start + self.most).min(entries.len())];
+        let total = if id == "top" { 0 } else { entries.len() };
+        let didl = format!(
+            "<DIDL-Lite xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" \
+             xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\">{}</DIDL-Lite>",
+            given.concat()
+        );
+        let escaped = didl.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;");
+        let answer = format!(
+            "<?xml version=\"1.0\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\"><s:Body>\
+             <u:BrowseResponse xmlns:u=\"urn:schemas-upnp-org:service:ContentDirectory:1\"><Result>{escaped}</Result>\
+             <NumberReturned>{}</NumberReturned><TotalMatches>{total}</TotalMatches><UpdateID>1</UpdateID>\
+             </u:BrowseResponse></s:Body></s:Envelope>",
+            given.len()
+        );
+        Ok(Reply { status: 200, headers: Default::default(), body: answer.into_bytes() })
+    }
+}
+
+#[test]
+fn a_media_server_larger_than_its_pages_comes_in_whole_and_is_written_in_batches() {
+    let lab = media_server(chilpa_library::Library::in_memory().unwrap(), r#"["top"]"#);
+    let shelves = Shelves { records: 875, songs: 12, most: 50, asked: Default::default() };
+    let readings = std::cell::RefCell::new(Vec::new());
+    let began = Instant::now();
+    let event = run(&lab.lib, &shelves, &lab.keys, lab.source, &|reading| readings.borrow_mut().push(reading), &never);
+
+    // `top` does not count: read whole, it still cannot be shown whole.
+    let partial = chilpa_i18n::t("the server did not describe every track it listed; nothing was taken out, sync again");
+    assert_eq!(event, Event::Failed { source: lab.source, why: partial, unreachable: false });
+    let server = lab.lib.server(lab.source).unwrap().unwrap();
+    assert_eq!((server.tracks, server.albums), (10_500, 875), "every track past the first short page and the ones after it");
+    // 18 pages of `top`, one more that came again, and one per record.
+    assert_eq!(shelves.asked.load(std::sync::atomic::Ordering::Relaxed), 18 + 1 + 875);
+    let written = readings.borrow().iter().filter(|r| r.wrote).count();
+    let allowed = 10_500 / WRITE_TRACKS + 1 + (began.elapsed().as_secs() / WRITE_EVERY.as_secs()) as usize;
+    assert!(written <= allowed, "{written} writes for 875 pages: written in batches, not page by page");
+    assert_eq!(readings.borrow().last().map(|r| (r.done, r.wrote)), Some((10_500, true)));
+    assert_eq!(lab.lib.pending_server_covers(lab.source, 1_000).unwrap().len(), 875, "each record's art is named for its covers");
+}
+
+/// A media server that breaks at its first request, as a bug of the
+/// protocol would: it panics. Then it answers as the lab's walk did, and a
+/// cover is never there.
+struct Breaks {
+    broke: std::sync::atomic::AtomicBool,
+}
+
+impl Net for Breaks {
+    fn send(&self, request: &Request) -> Result<Reply, String> {
+        if !self.broke.swap(true, std::sync::atomic::Ordering::SeqCst) {
+            panic!("a protocol that panics");
+        }
+        let Some((_, body)) = request.body.as_ref() else {
+            return Ok(Reply { status: 404, headers: Default::default(), body: Vec::new() });
+        };
+        let body = String::from_utf8_lossy(body);
+        let file = match between(&body, "<ObjectID>", "</ObjectID>") {
+            "9f4b4647f8e03ff196aa" => "plex-albums.xml",
+            "6afbf8a54d0e842523ba" => "plex-album-two.xml",
+            "f3e534d429a852d0bd40" => "plex-album-one.xml",
+            "551c51ca11833b35b735" => "plex-folder.xml",
+            other => panic!("not one of the lab's containers: {other}"),
+        };
+        let path = format!("{}/../chilpa-servers/tests/answers/dlna/{file}", env!("CARGO_MANIFEST_DIR"));
+        Ok(Reply { status: 200, headers: Default::default(), body: std::fs::read(&path).unwrap() })
+    }
+}
+
+/// Polls until the sync of `source` ends.
+fn ended(syncer: &mut Syncer, source: i64) -> Event {
+    let end = Instant::now() + Duration::from_secs(60);
+    while Instant::now() < end {
+        for event in syncer.poll() {
+            if matches!(event, Event::Finished { source: s, .. } | Event::Failed { source: s, .. } if s == source) {
+                return event;
+            }
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    panic!("the sync of {source} did not end");
+}
+
+#[test]
+fn a_sync_that_panics_lets_its_server_go_and_the_next_sync_runs_whole() {
+    let instance = super::super::keys::mint();
+    let path = std::env::temp_dir().join(format!("chilpa-sync-thread-{instance}.db"));
+    let lab = media_server(chilpa_library::Library::open(&path).unwrap(), r#"["9f4b4647f8e03ff196aa","551c51ca11833b35b735"]"#);
+    let at = path.clone();
+    let open: Open = Arc::new(move || chilpa_library::Library::open(&at).ok());
+    let net: Arc<dyn Net> = Arc::new(Breaks { broke: std::sync::atomic::AtomicBool::new(false) });
+    let keys = Arc::new(Keys::derived(lab.root.clone()));
+    let mut syncer = Syncer::with(Tools { net, open, keys, gate: Arc::default() });
+
+    syncer.ask(lab.source);
+    let event = ended(&mut syncer, lab.source);
+    let error = chilpa_i18n::t("the sync stopped on an error; nothing was taken out, sync again");
+    assert_eq!(event, Event::Failed { source: lab.source, why: error, unreachable: false });
+    assert!(!syncer.running.contains_key(&lab.source), "no longer shown as syncing");
+
+    // The same thread takes the next one.
+    syncer.ask(lab.source);
+    assert_eq!(ended(&mut syncer, lab.source), Event::Finished { source: lab.source, gone: 0 });
+    assert_eq!(lab.lib.server(lab.source).unwrap().unwrap().tracks, 4);
+
+    // A thread that is gone is noticed when a sync is asked of it, and one
+    // in its place reads the server.
+    let (orders, _) = channel::<Order>();
+    let (_, events) = channel::<Event>();
+    syncer.orders = orders;
+    syncer.events = events;
+    syncer.ask(lab.source);
+    assert_eq!(ended(&mut syncer, lab.source), Event::Finished { source: lab.source, gone: 0 });
+
+    let stored = lab.lib.server(lab.source).unwrap().unwrap();
+    let _ = std::fs::remove_dir_all(covers_dir(&stored.instance));
+    drop(syncer);
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn a_sync_stopped_to_start_over_is_asked_again_when_it_ends() {
+    let (orders, inbox) = channel::<Order>();
+    let (outbox, events) = channel::<Event>();
+    let tools = Tools {
+        net: Arc::new(Saved::default()),
+        open: Arc::new(|| -> Option<chilpa_library::Library> { None }),
+        keys: Arc::new(Keys::derived(std::env::temp_dir().join("chilpa-sync-restart-keys"))),
+        gate: Arc::default(),
+    };
+    let mut syncer = Syncer {
+        tools,
+        orders,
+        events,
+        cancel: Arc::default(),
+        running: HashMap::new(),
+        queued: HashSet::new(),
+        reading: HashSet::new(),
+        again: HashSet::new(),
+        replaced_at: None,
+    };
+    let sent = |inbox: &Receiver<Order>| inbox.try_iter().map(|o| match o { Order::Catalogue(s) => s, Order::Playlists(s) => -s }).collect::<Vec<i64>>();
+    syncer.ask(7);
+    syncer.ask(7);
+    assert_eq!(sent(&inbox), [7], "asked while it runs, it goes on");
+    syncer.restart(7);
+    assert!(syncer.cancel.lock().unwrap().contains(&7), "the running one stops at its next page");
+    outbox.send(Event::Failed { source: 7, why: String::new(), unreachable: false }).unwrap();
+    syncer.poll();
+    assert!(syncer.running.contains_key(&7));
+    assert_eq!(sent(&inbox), [7], "and the new one is asked when it ends");
+
+    // Removed while it waits to start over, nothing more is asked.
+    syncer.restart(7);
+    syncer.cancel(7);
+    outbox.send(Event::Failed { source: 7, why: String::new(), unreachable: false }).unwrap();
+    syncer.poll();
+    assert!(!syncer.running.contains_key(&7));
+    assert!(sent(&inbox).is_empty());
+}

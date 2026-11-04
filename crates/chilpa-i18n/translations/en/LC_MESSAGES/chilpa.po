@@ -6168,6 +6168,11 @@ msgid_plural "Syncing: {} tracks read"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "Syncing: {} track read in {} min"
+msgid_plural "Syncing: {} tracks read in {} min"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "Syncing…"
 msgstr ""
 
@@ -6533,6 +6538,11 @@ msgstr "The source disconnected. Check the playlist before retrying."
 
 msgid "The sung line lights up whole. Saves CPU."
 msgstr ""
+
+msgid "The sync has not moved in {} minute. Sync now starts it again."
+msgid_plural "The sync has not moved in {} minutes. Sync now starts it again."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr ""
@@ -8462,6 +8472,9 @@ msgstr ""
 msgid "the server is starting; try again in a moment"
 msgstr ""
 
+msgid "the server kept listing tracks already read; the sync stopped at {} tracks and took nothing out"
+msgstr ""
+
 msgid "the server listed {} of its {} tracks; nothing was taken out, sync again"
 msgstr ""
 
@@ -8517,6 +8530,9 @@ msgid "the stream went quiet"
 msgstr ""
 
 msgid "the sync lost its place; start it again"
+msgstr ""
+
+msgid "the sync stopped on an error; nothing was taken out, sync again"
 msgstr ""
 
 msgid "the sync was stopped"
@@ -8987,6 +9003,11 @@ msgstr[1] ""
 
 msgid "{} tracks"
 msgstr "{} tracks"
+
+msgid "{} tracks came in; {} folder of the server could not be read and was left out. Nothing was taken out; sync again."
+msgid_plural "{} tracks came in; {} folders of the server could not be read and were left out. Nothing was taken out; sync again."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} tracks in {} records"
 msgstr ""

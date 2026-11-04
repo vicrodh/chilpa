@@ -80,10 +80,28 @@ pub(crate) struct Servers {
     answers: HashMap<i64, serde_json::Value>,
     /// The library changed underneath the window.
     changed: bool,
+    /// When a running sync last had the window read the library again.
+    shown_at: Option<std::time::Instant>,
+    /// A server being added or edited: the library is written on a thread.
+    adding: Option<Adding>,
+}
+
+/// A server being written into the library, away from the window: the
+/// write waits its turn behind a sync's, and an edit marks every track of
+/// the server.
+struct Adding {
+    instance: String,
+    label: String,
+    edit: Option<i64>,
+    done: std::sync::mpsc::Receiver<Result<i64, String>>,
 }
 
 /// A sync is due when the last one finished more than this long ago.
 const STALE: i64 = 60 * 60;
+
+/// While a sync runs, the window reads the library again at most this
+/// often: each time rebuilds what every card shows.
+const SHOW_EVERY: std::time::Duration = std::time::Duration::from_secs(10);
 
 impl Chilpa {
     /// Starts what the servers need: their credentials, the player's opener,
@@ -140,13 +158,8 @@ impl Chilpa {
                     chilpa_i18n::t("Disabled. Its records stay in the library.")
                 } else if !s.enabled {
                     chilpa_i18n::t("Disabled. Its records stay in the library and its sign-in is saved.")
-                } else if let Some(done) = running.get(&s.source_id) {
-                    if *done == 0 {
-                        chilpa_i18n::t("Syncing…")
-                    } else {
-                        let n = done.to_string();
-                        chilpa_i18n::tf("Syncing: {} track read", "Syncing: {} tracks read", *done as i64, &[&n])
-                    }
+                } else if let Some(run) = running.get(&s.source_id) {
+                    sync_state(run)
                 } else if refused.contains(&s.source_id) {
                     chilpa_i18n::t("Refused the sign-in. Its records stay listed and cannot be played.")
                 } else if !s.reachable {
@@ -327,68 +340,66 @@ impl Chilpa {
         self.servers.setup.cancel();
     }
 
-    /// The libraries chosen: the server is added and its first sync starts.
+    /// The libraries chosen: the server is added, or its connection changed,
+    /// and its sync starts. The library and the credential are written on a
+    /// thread of their own; `poll` picks up how it went and the setup says
+    /// it. True when it was sent.
     pub fn setup_finish(&mut self, libraries: &[String]) -> bool {
+        if self.servers.adding.is_some() {
+            return false;
+        }
         let Some(ready) = self.servers.setup.finish(libraries) else { return false };
         let Some(keys) = self.servers.keys.clone() else {
             self.servers.setup.failed(chilpa_i18n::t("servers are not started"));
             return false;
         };
-        let edit_id = self.servers.setup.edit_id;
-        let Some(lib) = self.library() else { return false };
-        if lib.server_with_identity(ready.kind.provider(), &ready.identity).ok().flatten().is_some_and(|id| Some(id) != edit_id) {
-            self.servers.setup.failed(chilpa_i18n::t("that server is already in the library"));
+        let edit = self.servers.setup.edit_id;
+        let (instance, label) = (ready.instance.clone(), ready.label.clone());
+        let path = chilpa_library::Library::default_path();
+        let (tx, done) = std::sync::mpsc::channel();
+        let spawned = std::thread::Builder::new().name("chilpa-server-add".into()).spawn(move || {
+            let _ = tx.send(write_server(&path, &keys, edit, &ready));
+        });
+        if spawned.is_err() {
+            self.servers.setup.failed(chilpa_i18n::t("the library could not be written"));
             return false;
         }
-        let new = chilpa_library::NewServer {
-            provider: ready.kind.provider().into(), instance: ready.instance.clone(), label: ready.label.clone(),
-            icon: ready.kind.icon(&ready.product).into(), address: ready.address.clone(), account: ready.account.clone(),
-            identity: ready.identity.clone(), product: ready.product.clone(),
-            libraries: serde_json::to_string(&ready.libraries).unwrap_or_else(|_| "[]".into()),
-            details: serde_json::to_string(&ready.details).unwrap_or_else(|_| "{}".into()),
+        self.servers.setup.writing();
+        self.servers.adding = Some(Adding { instance, label, edit, done });
+        true
+    }
+
+    /// How adding or editing a server went, once its thread says. What
+    /// follows is done even when the window closed the setup meanwhile.
+    fn poll_adding(&mut self) {
+        let Some(adding) = self.servers.adding.as_ref() else { return };
+        let written = match adding.done.try_recv() {
+            Ok(written) => written,
+            Err(std::sync::mpsc::TryRecvError::Empty) => return,
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => Err(chilpa_i18n::t("the library could not be written")),
         };
-        // A kind without a sign-in has nothing to seal: the keyring is not
-        // even opened for it.
-        let sealed = ready.kind.signs_in();
-        if let Some(id) = edit_id {
-            let old_key = if sealed { keys.get(&ready.instance) } else { None };
-            if sealed && !keys.put(&ready.instance, &ready.key) {
-                self.servers.setup.failed(chilpa_i18n::t("the credential could not be kept safely on this system"));
-                return false;
+        let Some(adding) = self.servers.adding.take() else { return };
+        let shown = self.servers.setup.is_writing(&adding.instance);
+        let id = match written {
+            Ok(id) => id,
+            Err(why) => {
+                if shown { self.servers.setup.failed(why); }
+                return;
             }
-            if lib.edit_server(id, &new).is_err() {
-                if let Some(key) = old_key { keys.put(&ready.instance, &key); }
-                self.servers.setup.failed(chilpa_i18n::t("the library could not be written"));
-                return false;
-            }
-            if let Some(syncer) = self.servers.syncer.as_mut() { syncer.cancel(id); }
-            if let Some(watcher) = &self.servers.watcher { watcher.ask(); }
-            self.servers.errors.remove(&id);
-            self.servers.refused.remove(&id);
-            self.servers.playlist_errors.remove(&id);
-            self.servers.changed = true;
-            self.servers.setup.done(&ready.label);
+        };
+        self.servers.errors.remove(&id);
+        self.servers.changed = true;
+        if shown { self.servers.setup.done(&adding.label); }
+        if adding.edit.is_none() {
             self.sync_server(id);
-            return true;
+            return;
         }
-        // The credential first: a server whose key could not be kept would
-        // not sign in again after a restart.
-        if sealed && !keys.put(&ready.instance, &ready.key) {
-            self.servers.setup.failed(chilpa_i18n::t("the credential could not be kept safely on this system"));
-            return false;
-        }
-        let added = lib.add_server(&new);
-        match added {
-            Ok(id) => {
-                self.servers.setup.done(&ready.label);
-                self.sync_server(id);
-                true
-            }
-            Err(_) => {
-                if sealed { keys.forget(&ready.instance); }
-                self.servers.setup.failed(chilpa_i18n::t("the library could not be written"));
-                false
-            }
+        if let Some(watcher) = &self.servers.watcher { watcher.ask(); }
+        self.servers.refused.remove(&id);
+        self.servers.playlist_errors.remove(&id);
+        // A sync of the old connection stops; one of the new follows it.
+        if self.library().and_then(|lib| lib.server(id).ok().flatten()).is_some_and(|s| s.enabled) {
+            if let Some(syncer) = self.servers.syncer.as_mut() { syncer.restart(id); }
         }
     }
 
@@ -400,6 +411,7 @@ impl Chilpa {
     /// Reads the server's catalogue again.
     pub fn sync_server(&mut self, id: i64) {
         if !self.library().and_then(|lib| lib.server(id).ok().flatten()).is_some_and(|s| s.enabled) {
+            eprintln!("chilpa-servers: sync of source {id} not asked: the server is disabled or no longer in the library");
             return;
         }
         self.servers.errors.remove(&id);
@@ -653,12 +665,21 @@ impl Chilpa {
     /// What came back from the servers' threads. `poll` calls it.
     pub(crate) fn poll_servers(&mut self) {
         self.servers.setup.poll();
+        self.poll_adding();
         self.poll_server_changes();
         let events = self.servers.syncer.as_mut().map(|s| s.poll()).unwrap_or_default();
         for event in events {
             match event {
-                sync::Event::Progress { done, .. } if done % 1_000 < 250 => self.servers.changed = true,
-                sync::Event::Progress { .. } => {}
+                // Each one is tracks written; the window reads them at most
+                // every `SHOW_EVERY`, and all of them when the sync ends.
+                sync::Event::Progress { reading, .. } if reading.wrote => {
+                    if self.servers.shown_at.is_none_or(|at| at.elapsed() >= SHOW_EVERY) {
+                        self.servers.shown_at = Some(std::time::Instant::now());
+                        self.servers.changed = true;
+                    }
+                }
+                // Where it is: the row says it, the lists have nothing new.
+                sync::Event::Progress { .. } | sync::Event::Started { .. } => {}
                 sync::Event::Finished { source, .. } => {
                     self.servers.errors.remove(&source);
                     self.servers.changed = true;
@@ -697,6 +718,74 @@ impl Chilpa {
             self.servers.changed |= look.changed;
         }
     }
+}
+
+/// Writes a server the setup made ready into the library, and its credential
+/// when its kind signs in, on the thread `setup_finish` starts. The id of
+/// its source, or why not.
+fn write_server(path: &std::path::Path, keys: &Keys, edit: Option<i64>, ready: &setup::Ready) -> Result<i64, String> {
+    let unwritten = || chilpa_i18n::t("the library could not be written");
+    let unkept = || chilpa_i18n::t("the credential could not be kept safely on this system");
+    let lib = chilpa_library::Library::open_existing(path).map_err(|_| unwritten())?;
+    if lib.server_with_identity(ready.kind.provider(), &ready.identity).ok().flatten().is_some_and(|id| Some(id) != edit) {
+        return Err(chilpa_i18n::t("that server is already in the library"));
+    }
+    let new = chilpa_library::NewServer {
+        provider: ready.kind.provider().into(), instance: ready.instance.clone(), label: ready.label.clone(),
+        icon: ready.kind.icon(&ready.product).into(), address: ready.address.clone(), account: ready.account.clone(),
+        identity: ready.identity.clone(), product: ready.product.clone(),
+        libraries: serde_json::to_string(&ready.libraries).unwrap_or_else(|_| "[]".into()),
+        details: serde_json::to_string(&ready.details).unwrap_or_else(|_| "{}".into()),
+    };
+    // A kind without a sign-in has nothing to seal: the keyring is not
+    // even opened for it.
+    let sealed = ready.kind.signs_in();
+    if let Some(id) = edit {
+        let old_key = if sealed { keys.get(&ready.instance) } else { None };
+        if sealed && !keys.put(&ready.instance, &ready.key) {
+            return Err(unkept());
+        }
+        if lib.edit_server(id, &new).is_err() {
+            if let Some(key) = old_key { keys.put(&ready.instance, &key); }
+            return Err(unwritten());
+        }
+        return Ok(id);
+    }
+    // The credential first: a server whose key could not be kept would
+    // not sign in again after a restart.
+    if sealed && !keys.put(&ready.instance, &ready.key) {
+        return Err(unkept());
+    }
+    lib.add_server(&new).map_err(|_| {
+        if sealed { keys.forget(&ready.instance); }
+        unwritten()
+    })
+}
+
+/// The line under a server that is syncing: what it read and for how long,
+/// or, when its thread has said nothing for a while, that Sync now starts
+/// it again.
+fn sync_state(run: &sync::Running) -> String {
+    if run.stuck() {
+        let quiet = run.beat.elapsed().as_secs() / 60;
+        let n = quiet.to_string();
+        return chilpa_i18n::tf(
+            "The sync has not moved in {} minute. Sync now starts it again.",
+            "The sync has not moved in {} minutes. Sync now starts it again.",
+            quiet as i64,
+            &[&n],
+        );
+    }
+    let minutes = run.started.map_or(0, |at| at.elapsed().as_secs() / 60);
+    if run.done == 0 {
+        return chilpa_i18n::t("Syncing…");
+    }
+    let n = run.done.to_string();
+    if minutes == 0 {
+        return chilpa_i18n::tf("Syncing: {} track read", "Syncing: {} tracks read", run.done as i64, &[&n]);
+    }
+    let m = minutes.to_string();
+    chilpa_i18n::tf("Syncing: {} track read in {} min", "Syncing: {} tracks read in {} min", run.done as i64, &[&n, &m])
 }
 
 /// Why a server in its first sync takes no change of a playlist.

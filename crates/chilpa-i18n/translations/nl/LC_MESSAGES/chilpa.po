@@ -6168,6 +6168,11 @@ msgid_plural "Syncing: {} tracks read"
 msgstr[0] "Synchroniseren: {} nummer gelezen"
 msgstr[1] "Synchroniseren: {} nummers gelezen"
 
+msgid "Syncing: {} track read in {} min"
+msgid_plural "Syncing: {} tracks read in {} min"
+msgstr[0] "Synchroniseren: {} nummer gelezen in {} min"
+msgstr[1] "Synchroniseren: {} nummers gelezen in {} min"
+
 msgid "Syncing…"
 msgstr "Synchroniseren…"
 
@@ -6533,6 +6538,11 @@ msgstr "De bron is losgekoppeld. Controleer de afspeellijst voordat je het opnie
 
 msgid "The sung line lights up whole. Saves CPU."
 msgstr "De gezongen regel licht in zijn geheel op. Bespaart CPU."
+
+msgid "The sync has not moved in {} minute. Sync now starts it again."
+msgid_plural "The sync has not moved in {} minutes. Sync now starts it again."
+msgstr[0] "De synchronisatie staat al {} minuut stil. Met ‘Nu synchroniseren’ begint ze opnieuw."
+msgstr[1] "De synchronisatie staat al {} minuten stil. Met ‘Nu synchroniseren’ begint ze opnieuw."
 
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "De bureaubladachtergrond van het systeem. Je kunt ook een eigen afbeelding kiezen."
@@ -8462,6 +8472,9 @@ msgstr "de server leest zijn eigen bibliotheek; synchroniseer opnieuw als dat kl
 msgid "the server is starting; try again in a moment"
 msgstr "de server start op; probeer het over een moment opnieuw"
 
+msgid "the server kept listing tracks already read; the sync stopped at {} tracks and took nothing out"
+msgstr "de server bleef al gelezen nummers vermelden; de synchronisatie stopte bij {} nummers en heeft niets verwijderd"
+
 msgid "the server listed {} of its {} tracks; nothing was taken out, sync again"
 msgstr "de server vermeldde {} van zijn {} nummers; er is niets verwijderd, synchroniseer opnieuw"
 
@@ -8518,6 +8531,9 @@ msgstr "de stream werd stil"
 
 msgid "the sync lost its place; start it again"
 msgstr "de synchronisatie is de draad kwijt; begin opnieuw"
+
+msgid "the sync stopped on an error; nothing was taken out, sync again"
+msgstr "de synchronisatie stopte door een fout; er is niets verwijderd, synchroniseer opnieuw"
 
 msgid "the sync was stopped"
 msgstr "de synchronisatie is gestopt"
@@ -8987,6 +9003,11 @@ msgstr[1] "{} nummers op de server staan niet in je bibliotheek"
 
 msgid "{} tracks"
 msgstr "{} nummers"
+
+msgid "{} tracks came in; {} folder of the server could not be read and was left out. Nothing was taken out; sync again."
+msgid_plural "{} tracks came in; {} folders of the server could not be read and were left out. Nothing was taken out; sync again."
+msgstr[0] "{} nummers zijn binnengekomen; {} map van de server kon niet worden gelezen en is overgeslagen. Er is niets verwijderd; synchroniseer opnieuw."
+msgstr[1] "{} nummers zijn binnengekomen; {} mappen van de server konden niet worden gelezen en zijn overgeslagen. Er is niets verwijderd; synchroniseer opnieuw."
 
 msgid "{} tracks in {} records"
 msgstr "{} nummers in {} albums"

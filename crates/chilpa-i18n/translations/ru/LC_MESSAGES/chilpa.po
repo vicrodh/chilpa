@@ -6175,6 +6175,12 @@ msgstr[0] "Синхронизация: прочитан {} трек"
 msgstr[1] "Синхронизация: прочитано {} трека"
 msgstr[2] "Синхронизация: прочитано {} треков"
 
+msgid "Syncing: {} track read in {} min"
+msgid_plural "Syncing: {} tracks read in {} min"
+msgstr[0] "Синхронизация: прочитан {} трек за {} мин"
+msgstr[1] "Синхронизация: прочитано {} трека за {} мин"
+msgstr[2] "Синхронизация: прочитано {} треков за {} мин"
+
 msgid "Syncing…"
 msgstr "Синхронизация…"
 
@@ -6540,6 +6546,12 @@ msgstr "Источник отключился. Проверьте плейлис
 
 msgid "The sung line lights up whole. Saves CPU."
 msgstr "Текущая строка подсвечивается целиком. Экономит CPU."
+
+msgid "The sync has not moved in {} minute. Sync now starts it again."
+msgid_plural "The sync has not moved in {} minutes. Sync now starts it again."
+msgstr[0] "Синхронизация не продвигается уже {} минуту. «Синхронизировать сейчас» запустит её заново."
+msgstr[1] "Синхронизация не продвигается уже {} минуты. «Синхронизировать сейчас» запустит её заново."
+msgstr[2] "Синхронизация не продвигается уже {} минут. «Синхронизировать сейчас» запустит её заново."
 
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "Обои системы. Можно выбрать собственное изображение."
@@ -8470,6 +8482,9 @@ msgstr "сервер читает собственную библиотеку; �
 msgid "the server is starting; try again in a moment"
 msgstr "сервер запускается; повторите попытку чуть позже"
 
+msgid "the server kept listing tracks already read; the sync stopped at {} tracks and took nothing out"
+msgstr "сервер продолжал перечислять уже прочитанные треки; синхронизация остановлена, прочитано треков: {}; ничего не удалено"
+
 msgid "the server listed {} of its {} tracks; nothing was taken out, sync again"
 msgstr "сервер перечислил не все свои треки ({} из {}); ничего не удалено, синхронизируйте снова"
 
@@ -8526,6 +8541,9 @@ msgstr "поток затих"
 
 msgid "the sync lost its place; start it again"
 msgstr "синхронизация потеряла позицию; запустите её снова"
+
+msgid "the sync stopped on an error; nothing was taken out, sync again"
+msgstr "синхронизация остановлена из-за ошибки; ничего не удалено, синхронизируйте снова"
 
 msgid "the sync was stopped"
 msgstr "синхронизация остановлена"
@@ -9024,6 +9042,12 @@ msgstr[2] "{} треков с сервера отсутствуют в ваше�
 
 msgid "{} tracks"
 msgstr "Треков: {}"
+
+msgid "{} tracks came in; {} folder of the server could not be read and was left out. Nothing was taken out; sync again."
+msgid_plural "{} tracks came in; {} folders of the server could not be read and were left out. Nothing was taken out; sync again."
+msgstr[0] "Получено треков: {}; {} папку сервера не удалось прочитать, она пропущена. Ничего не удалено; синхронизируйте снова."
+msgstr[1] "Получено треков: {}; {} папки сервера не удалось прочитать, они пропущены. Ничего не удалено; синхронизируйте снова."
+msgstr[2] "Получено треков: {}; {} папок сервера не удалось прочитать, они пропущены. Ничего не удалено; синхронизируйте снова."
 
 msgid "{} tracks in {} records"
 msgstr "Треков: {}, записей: {}"

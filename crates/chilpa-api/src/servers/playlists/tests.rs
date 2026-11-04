@@ -176,7 +176,7 @@ fn a_playlist_waiting_here_is_renamed_and_deleted_here_even_in_a_first_sync() {
     api.library().unwrap().connection().execute("UPDATE servers SET synced_at = NULL WHERE source_id = ?1", [plex]).unwrap();
     let keys = std::sync::Arc::new(super::super::keys::Keys::derived(std::env::temp_dir().join("chilpa-unsent-keys")));
     let mut syncer = super::super::sync::Syncer::start(keys, std::sync::Arc::new(std::sync::Mutex::new(())));
-    syncer.running.insert(plex, 10);
+    syncer.running.insert(plex, super::super::sync::Running::asked());
     api.servers.syncer = Some(syncer);
     api.rename_playlist(id, "Night drive");
     assert_eq!(api.now_playing().error, "", "renamed here, not held");
@@ -206,7 +206,7 @@ fn the_first_tracks_added_to_a_waiting_playlist_make_it_and_wait_like_any_change
     api.library().unwrap().connection().execute("UPDATE servers SET synced_at = NULL WHERE source_id = ?1", [plex]).unwrap();
     let keys = std::sync::Arc::new(super::super::keys::Keys::derived(std::env::temp_dir().join("chilpa-unsent-add-keys")));
     let mut syncer = super::super::sync::Syncer::start(keys, std::sync::Arc::new(std::sync::Mutex::new(())));
-    syncer.running.insert(plex, 10);
+    syncer.running.insert(plex, super::super::sync::Running::asked());
     api.servers.syncer = Some(syncer);
     let generation = api.library().unwrap().begin_server_sync(plex).unwrap();
     let song = chilpa_library::ServerTrack { external_id: "remote:plex/77aa0b1c2d3e4f50/17".into(), title: "Song".into(), artist: "Band".into(), duration_ms: 1_000, ..Default::default() };
@@ -226,7 +226,7 @@ fn a_server_in_its_first_sync_takes_no_change_of_its_playlists_until_it_ends() {
     api.library().unwrap().connection().execute("UPDATE servers SET synced_at = NULL WHERE source_id = ?1", [source]).unwrap();
     let keys = std::sync::Arc::new(super::super::keys::Keys::derived(std::env::temp_dir().join("chilpa-first-sync-keys")));
     let mut syncer = super::super::sync::Syncer::start(keys, std::sync::Arc::new(std::sync::Mutex::new(())));
-    syncer.running.insert(source, 250);
+    syncer.running.insert(source, super::super::sync::Running::asked());
     api.servers.syncer = Some(syncer);
     let told = chilpa_i18n::t_args("{} is still syncing its library for the first time. Try again when it finishes.", &["Living room"]);
     api.rename_playlist(id, "Night");

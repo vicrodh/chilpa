@@ -6168,6 +6168,11 @@ msgid_plural "Syncing: {} tracks read"
 msgstr[0] "Synchronisierung: {} Titel gelesen"
 msgstr[1] "Synchronisierung: {} Titel gelesen"
 
+msgid "Syncing: {} track read in {} min"
+msgid_plural "Syncing: {} tracks read in {} min"
+msgstr[0] "Synchronisierung: {} Titel gelesen in {} Min."
+msgstr[1] "Synchronisierung: {} Titel gelesen in {} Min."
+
 msgid "Syncing…"
 msgstr "Wird synchronisiert…"
 
@@ -6533,6 +6538,11 @@ msgstr "Die Quelle hat die Verbindung getrennt. Prüfe die Playlist, bevor du es
 
 msgid "The sung line lights up whole. Saves CPU."
 msgstr "Die gesungene Zeile leuchtet als Ganzes auf. Spart CPU."
+
+msgid "The sync has not moved in {} minute. Sync now starts it again."
+msgid_plural "The sync has not moved in {} minutes. Sync now starts it again."
+msgstr[0] "Die Synchronisierung kommt seit {} Minute nicht voran. „Jetzt synchronisieren“ startet sie neu."
+msgstr[1] "Die Synchronisierung kommt seit {} Minuten nicht voran. „Jetzt synchronisieren“ startet sie neu."
 
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "Das Hintergrundbild des Systems. Alternativ ein eigenes Bild wählen."
@@ -8462,6 +8472,9 @@ msgstr "der Server liest gerade seine eigene Bibliothek; synchronisiere erneut, 
 msgid "the server is starting; try again in a moment"
 msgstr "der Server startet; versuche es gleich noch einmal"
 
+msgid "the server kept listing tracks already read; the sync stopped at {} tracks and took nothing out"
+msgstr "der Server hat immer wieder bereits gelesene Titel aufgelistet; die Synchronisierung wurde bei {} Titeln gestoppt und hat nichts entfernt"
+
 msgid "the server listed {} of its {} tracks; nothing was taken out, sync again"
 msgstr "der Server hat {} von seinen {} Titeln aufgelistet; nichts wurde entfernt, synchronisiere erneut"
 
@@ -8518,6 +8531,9 @@ msgstr "der Stream ist verstummt"
 
 msgid "the sync lost its place; start it again"
 msgstr "die Synchronisierung hat ihre Position verloren; starte sie erneut"
+
+msgid "the sync stopped on an error; nothing was taken out, sync again"
+msgstr "die Synchronisierung wurde durch einen Fehler gestoppt; nichts wurde entfernt, synchronisiere erneut"
 
 msgid "the sync was stopped"
 msgstr "die Synchronisierung wurde gestoppt"
@@ -8987,6 +9003,11 @@ msgstr[1] "{} Titel auf dem Server sind nicht in deiner Bibliothek"
 
 msgid "{} tracks"
 msgstr "{} Titel"
+
+msgid "{} tracks came in; {} folder of the server could not be read and was left out. Nothing was taken out; sync again."
+msgid_plural "{} tracks came in; {} folders of the server could not be read and were left out. Nothing was taken out; sync again."
+msgstr[0] "{} Titel sind angekommen; {} Ordner des Servers konnte nicht gelesen werden und wurde ausgelassen. Nichts wurde entfernt; synchronisiere erneut."
+msgstr[1] "{} Titel sind angekommen; {} Ordner des Servers konnten nicht gelesen werden und wurden ausgelassen. Nichts wurde entfernt; synchronisiere erneut."
 
 msgid "{} tracks in {} records"
 msgstr "{} Titel in {} Alben"

@@ -385,6 +385,19 @@ impl Setup {
         })
     }
 
+    /// The server is being written into the library: the window waits, and
+    /// `done` or `failed` says how it went.
+    pub(crate) fn writing(&mut self) {
+        self.view.busy = true;
+        self.view.error.clear();
+    }
+
+    /// Whether this setup is the one waiting for that server to be written,
+    /// and not one closed or started again since.
+    pub(crate) fn is_writing(&self, instance: &str) -> bool {
+        self.view.busy && self.view.step == "libraries" && self.instance == instance
+    }
+
     pub(crate) fn done(&mut self, name: &str) {
         self.view = ServerSetup { step: "done".into(), kind: self.view.kind.clone(), product: name.to_string(), ..ServerSetup::default() };
     }
