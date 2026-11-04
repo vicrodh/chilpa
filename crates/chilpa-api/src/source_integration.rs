@@ -208,13 +208,14 @@ impl Chilpa {
         self.source_panels();
         let active: std::collections::HashSet<_> = self.sources.listed.lock().unwrap_or_else(|e| e.into_inner()).iter()
             .filter(|plugin| matches!(plugin.state.as_str(), "fine" | "stumbling")).map(|plugin| plugin.id.clone()).collect();
-        let servers: std::collections::HashSet<_> = self.library().and_then(|lib| lib.servers().ok()).unwrap_or_default()
-            .into_iter().filter(|server| server.enabled).map(|server| server.source_id).collect();
+        // The servers that are on, with the icon their playlists wear.
+        let servers: std::collections::HashMap<i64, String> = self.server_origins().into_iter()
+            .filter(|origin| origin.enabled).map(|origin| (origin.source_id, origin.icon)).collect();
         let root = Self::plugins_dir();
         let group_sources = self.preference(GROUP_PLAYLISTS).as_deref() == Some("true");
         let mut playlists: Vec<Value> = self.playlists().into_iter().filter(|p| {
             if p.id < 0 { self.natives.is_native(&p.source) }
-            else { p.mixed || active.contains(&p.source) || servers.contains(&p.source_id) }
+            else { p.mixed || active.contains(&p.source) || servers.contains_key(&p.source_id) }
         }).map(|p| {
             let mut row = serde_json::to_value(&p).unwrap_or_default();
             if let Some(card) = self.catalog.card(p.id) {
@@ -222,7 +223,13 @@ impl Chilpa {
                 row["native_ref"] = card.identity.into();
                 row["native_folder"] = card.metadata["native_folder"].clone();
             }
-            row["source_icon"] = crate::plugin_icons::image_url(&root, &p.source).into();
+            match servers.get(&p.source_id).filter(|_| !p.mixed) {
+                Some(icon) => {
+                    row["source_icon"] = icon.clone().into();
+                    row["server"] = true.into();
+                }
+                None => row["source_icon"] = crate::plugin_icons::image_url(&root, &p.source).into(),
+            }
             row
         }).collect();
         let words: Vec<_> = query.to_lowercase().split_whitespace().map(str::to_owned).collect();

@@ -139,7 +139,7 @@ impl Chilpa {
     }
 
     pub fn playlist_sources_json(&mut self, ids: &[i64]) -> String {
-        let mut rows = Vec::new();
+        let mut rows = self.server_playlist_sources(ids);
         for plugin in self.natives.ids() {
             if !self.natives.edits_playlists(&plugin) { continue; }
             rows.push(json!({"id":plugin,"name":self.catalog.name(&plugin).unwrap_or_else(|| plugin.clone()),
@@ -151,6 +151,13 @@ impl Chilpa {
 
     /// Dispatches a source mutation on the existing asynchronous action worker.
     pub fn write_source_playlist(&mut self, plugin: &str, id: i64, title: &str, description: &str, ids: &[i64], request: &str) -> bool {
+        // A server makes the playlist itself; the picker adds to one of its
+        // playlists as to any of the library's (`add_track_ids_to_playlist`).
+        if id == 0 {
+            if let Some(sent) = self.create_server_playlist(plugin, title, ids, request) {
+                return sent;
+            }
+        }
         if !self.natives.edits_playlists(plugin) { return false; }
         let Some(tracks) = self.playlist_refs(ids, plugin) else { return false };
         let input = if id == 0 {
@@ -189,6 +196,9 @@ impl Chilpa {
     }
 
     pub fn playlist_write_state(&mut self, plugin: &str) -> String {
+        if let Some(state) = self.server_write_state(plugin) {
+            return state;
+        }
         self.advance_plugins();
         self.advance_sources();
         self.sources.native_actions.get(plugin).unwrap_or(&Value::Null).to_string()

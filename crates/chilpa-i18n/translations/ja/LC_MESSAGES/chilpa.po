@@ -121,6 +121,9 @@ msgstr "PCMキャリアを開いてもDoPの検証にはなりません。テス
 msgid "A bar or OR: either is enough"
 msgstr "縦棒または OR：どちらか一方で十分です"
 
+msgid "A change to this playlist is still on its way to {}."
+msgstr "このプレイリストの変更はまだ{}へ送信中です。"
+
 msgid "A click on a record opens"
 msgstr "アルバムをクリックしたときに開くもの"
 
@@ -6207,6 +6210,9 @@ msgstr ""
 msgid "The player is not responding. Reconnect it and try again."
 msgstr ""
 
+msgid "The playlist changed on {}; it now shows what the server has. Try again."
+msgstr "{}でプレイリストが変更されました。サーバー上の内容を表示しています。もう一度お試しください。"
+
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
 msgstr "プレイリストは作成されましたが、一部のトラックを追加できませんでした。再試行する前に開いて確認してください。"
 
@@ -6692,6 +6698,9 @@ msgstr "Tunnel"
 
 msgid "Tunnel Flow"
 msgstr "Tunnel Flow"
+
+msgid "Turn the network on to change a server's playlist."
+msgstr "サーバーのプレイリストを変更するには、ネットワークをオンにしてください。"
 
 msgid "Type"
 msgstr "種類"
@@ -8101,6 +8110,9 @@ msgstr "出力が、CDの16 bit・44,100 Hzに対応していません"
 msgid "the playlist is longer than Chilpa reads; change its order on the server"
 msgstr "プレイリストがChilpaで読み込める長さを超えています。並び順はサーバーで変更してください"
 
+msgid "the playlist is no longer in the library"
+msgstr "このプレイリストはライブラリにもうありません"
+
 msgid "the plugin could not be asked"
 msgstr "プラグインに問い合わせられませんでした"
 
@@ -8484,12 +8496,18 @@ msgstr[0] "{}日"
 msgid "{} did not accept the account"
 msgstr "{}がアカウントを受け付けませんでした"
 
+msgid "{} did not take the change to the playlist: {}"
+msgstr "{}はプレイリストの変更を受け付けませんでした: {}"
+
 msgid "{} disc"
 msgid_plural "{} discs"
 msgstr[0] "{}ディスク"
 
 msgid "{} does not answer. The record will open when it is back."
 msgstr "{}が応答しません。戻り次第、アルバムが開きます。"
+
+msgid "{} does not answer; change its playlist when it is back."
+msgstr "{}が応答しません。復帰してからプレイリストを変更してください。"
 
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"
@@ -8569,6 +8587,9 @@ msgstr "音源のビット深度：{}ビット"
 
 msgid "{} no longer accepts the account; connect again"
 msgstr "{}はアカウントを受け付けなくなりました。もう一度接続してください"
+
+msgid "{} no longer has this playlist; it left your playlists here too."
+msgstr "{}にはこのプレイリストがもうありません。こちらのプレイリストからも削除されました。"
 
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "このうち{}トラックが、{}個のプレイリストから削除されます。"

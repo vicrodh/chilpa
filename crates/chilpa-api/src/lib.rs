@@ -454,7 +454,7 @@ pub struct Playlist {
     /// writable only when its source declares that capability.
     pub writable: bool,
     pub mixed: bool,
-    /// The plugin it came from, empty when it is one of ours.
+    /// The plugin or server it came from, empty when it is one of ours.
     pub source: String,
     /// The id that source gives it, empty when it is one of ours.
     pub external_id: String,

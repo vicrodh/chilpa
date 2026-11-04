@@ -121,6 +121,9 @@ msgstr "Несущая PCM не проверяет DoP. Тестовый тон 
 msgid "A bar or OR: either is enough"
 msgstr "Черта или OR: достаточно одного"
 
+msgid "A change to this playlist is still on its way to {}."
+msgstr "Изменение этого плейлиста ещё отправляется на {}."
+
 msgid "A click on a record opens"
 msgstr "Щелчок по альбому открывает"
 
@@ -6217,6 +6220,9 @@ msgstr ""
 msgid "The player is not responding. Reconnect it and try again."
 msgstr ""
 
+msgid "The playlist changed on {}; it now shows what the server has. Try again."
+msgstr "Плейлист изменился на {}; теперь он показывает то, что есть на сервере. Попробуйте ещё раз."
+
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
 msgstr "Плейлист создан, но некоторые треки добавить не удалось. Откройте его, прежде чем повторять попытку."
 
@@ -6702,6 +6708,9 @@ msgstr "Tunnel"
 
 msgid "Tunnel Flow"
 msgstr "Tunnel Flow"
+
+msgid "Turn the network on to change a server's playlist."
+msgstr "Включите сеть, чтобы изменить плейлист на сервере."
 
 msgid "Type"
 msgstr "Тип"
@@ -8113,6 +8122,9 @@ msgstr "вывод не принимает 16 бит на 44 100 Hz, а имен
 msgid "the playlist is longer than Chilpa reads; change its order on the server"
 msgstr "плейлист длиннее, чем читает Chilpa; измените его порядок на сервере"
 
+msgid "the playlist is no longer in the library"
+msgstr "плейлиста больше нет в библиотеке"
+
 msgid "the plugin could not be asked"
 msgstr "не удалось обратиться к плагину"
 
@@ -8506,6 +8518,9 @@ msgstr[2] "{} дней"
 msgid "{} did not accept the account"
 msgstr "источник «{}» не принял учётную запись"
 
+msgid "{} did not take the change to the playlist: {}"
+msgstr "{} не принял изменение плейлиста: {}"
+
 msgid "{} disc"
 msgid_plural "{} discs"
 msgstr[0] "{} диск"
@@ -8514,6 +8529,9 @@ msgstr[2] "{} дисков"
 
 msgid "{} does not answer. The record will open when it is back."
 msgstr "{} не отвечает. Запись откроется, когда он вернётся."
+
+msgid "{} does not answer; change its playlist when it is back."
+msgstr "{} не отвечает; измените плейлист, когда сервер снова будет доступен."
 
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"
@@ -8613,6 +8631,9 @@ msgstr "{} значащих бит"
 
 msgid "{} no longer accepts the account; connect again"
 msgstr "{} больше не принимает учётную запись; подключите снова"
+
+msgid "{} no longer has this playlist; it left your playlists here too."
+msgstr "На {} больше нет этого плейлиста; здесь он тоже удалён из ваших плейлистов."
 
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "Из ваших плейлистов уйдут его треки: {1} (плейлистов: {2})."

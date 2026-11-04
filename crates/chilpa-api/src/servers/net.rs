@@ -48,13 +48,14 @@ pub(crate) fn client(instance: &str) -> Client {
 
 /// A server as the library keeps it, as the protocols want it.
 pub(crate) fn server(stored: &chilpa_library::StoredServer) -> Option<Server> {
-    Some(Server {
-        kind: Kind::from_provider(&stored.provider)?,
-        address: stored.address.clone(),
-        client: client(&stored.instance),
-        libraries: serde_json::from_str(&stored.libraries).unwrap_or_default(),
-        details: serde_json::from_str::<Details>(&stored.details).unwrap_or_default(),
-    })
+    let kind = Kind::from_provider(&stored.provider)?;
+    let mut details = serde_json::from_str::<Details>(&stored.details).unwrap_or_default();
+    // A Plex playlist write names the server by its machineIdentifier,
+    // which is the identity the library keeps for it.
+    if kind == Kind::Plex && details.machine.is_empty() {
+        details.machine = stored.identity.clone();
+    }
+    Some(Server { kind, address: stored.address.clone(), client: client(&stored.instance), libraries: serde_json::from_str(&stored.libraries).unwrap_or_default(), details })
 }
 
 /// The queue entry of a server's track: what the library keeps as its

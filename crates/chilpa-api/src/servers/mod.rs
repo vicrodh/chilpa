@@ -11,10 +11,12 @@
 pub(crate) mod keys;
 mod net;
 mod opener;
+pub(crate) mod playlists;
 mod reading;
 mod setup;
 mod sync;
 mod watch;
+pub(crate) mod writing;
 
 use crate::Chilpa;
 use chilpa_models::RemoteEntry;
@@ -67,6 +69,14 @@ pub(crate) struct Servers {
     playlist_errors: HashMap<i64, String>,
     /// Held while a server's playlists are read or one of them is changed.
     gate: Arc<Mutex<()>>,
+    writer: Option<writing::Writer>,
+    /// The playlists with a change on its way to their server, and, as the
+    /// negative of its source, a server with a playlist being created.
+    pending: std::collections::HashSet<i64>,
+    /// How the last change the window waits on went, by server, as the
+    /// playlist picker reads a source's write: its request, and whether it
+    /// is pending or why it failed.
+    answers: HashMap<i64, serde_json::Value>,
     /// The library changed underneath the window.
     changed: bool,
 }
@@ -87,6 +97,7 @@ impl Chilpa {
         self.install_openers();
         self.servers.syncer = Some(sync::Syncer::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
         self.servers.watcher = Some(watch::Watcher::start(Arc::clone(&keys)));
+        self.servers.writer = Some(writing::Writer::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
         self.servers.keys = Some(keys);
         // A queue restored before the opener existed could not name a
         // server's track; now it can.
@@ -383,6 +394,73 @@ impl Chilpa {
         }
     }
 
+    /// Sends one change of a server's playlist to its thread. Refused, with
+    /// why, when it cannot go out now: the network is off, the server does
+    /// not answer, or a change of the same playlist is still on its way.
+    /// Nothing is kept to send later: the server is the source of truth.
+    pub(crate) fn ask_server_change(&mut self, write: writing::Write) -> Result<(), String> {
+        let Some(stored) = self.library().and_then(|lib| lib.server(write.source).ok().flatten()) else {
+            return Err(chilpa_i18n::t("that server is no longer in the library"));
+        };
+        if self.offline() {
+            return Err(chilpa_i18n::t("Turn the network on to change a server's playlist."));
+        }
+        if !stored.enabled {
+            return Err(chilpa_i18n::t("that server is disabled"));
+        }
+        if !stored.reachable {
+            return Err(chilpa_i18n::t_args("{} does not answer; change its playlist when it is back.", &[&stored.label]));
+        }
+        let key = if write.playlist > 0 { write.playlist } else { -write.source };
+        if self.servers.pending.contains(&key) {
+            return Err(chilpa_i18n::t_args("A change to this playlist is still on its way to {}.", &[&stored.label]));
+        }
+        let (source, request) = (write.source, write.request.clone());
+        if !self.servers.writer.as_ref().is_some_and(|writer| writer.ask(write)) {
+            return Err(chilpa_i18n::t("servers are not started"));
+        }
+        self.servers.pending.insert(key);
+        if !request.is_empty() {
+            self.servers.answers.insert(source, serde_json::json!({"request_id": request, "pending": true}));
+        }
+        Ok(())
+    }
+
+    /// Whether a change of that playlist of the library is on its way to its
+    /// server.
+    pub(crate) fn server_change_pending(&self, playlist: i64) -> bool {
+        self.servers.pending.contains(&playlist)
+    }
+
+    /// How the last change the window waits on went at that server.
+    pub(crate) fn server_change_answer(&self, source: i64) -> Option<&serde_json::Value> {
+        self.servers.answers.get(&source)
+    }
+
+    /// What came back from the changes of servers' playlists: the window
+    /// is told of a failure nobody waits on, and a playlist that now names
+    /// a track the library lacks asks for a sync.
+    fn poll_server_changes(&mut self) {
+        let done = self.servers.writer.as_ref().map(|writer| writer.poll()).unwrap_or_default();
+        for written in done {
+            self.servers.pending.remove(&if written.asked > 0 { written.asked } else { -written.source });
+            if !written.request.is_empty() {
+                let state = if written.why.is_empty() {
+                    serde_json::json!({"request_id": written.request, "pending": false, "result": {"playlist": written.playlist}})
+                } else {
+                    serde_json::json!({"request_id": written.request, "pending": false, "error": written.why})
+                };
+                self.servers.answers.insert(written.source, state);
+            } else if !written.why.is_empty() {
+                self.now.error = written.why.clone();
+            }
+            if written.missing {
+                self.sync_server(written.source);
+            }
+            self.servers.changed = true;
+        }
+    }
+
     /// Reads every server's playlists again, as the playlists' Refresh asks:
     /// a server whose sync is queued reads them with it. Nothing goes out
     /// with the network off.
@@ -488,6 +566,7 @@ impl Chilpa {
         self.servers.errors.remove(&id);
         self.servers.refused.remove(&id);
         self.servers.playlist_errors.remove(&id);
+        self.servers.answers.remove(&id);
         self.servers.changed = true;
         self.persist_queue_session();
         true
@@ -546,6 +625,7 @@ impl Chilpa {
     /// What came back from the servers' threads. `poll` calls it.
     pub(crate) fn poll_servers(&mut self) {
         self.servers.setup.poll();
+        self.poll_server_changes();
         let events = self.servers.syncer.as_mut().map(|s| s.poll()).unwrap_or_default();
         for event in events {
             match event {

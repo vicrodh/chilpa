@@ -121,6 +121,9 @@ msgstr "Een PCM-drager verifieert DoP niet. Er wordt geen testtoon of bibliothee
 msgid "A bar or OR: either is enough"
 msgstr "Een streep of OR: één is genoeg"
 
+msgid "A change to this playlist is still on its way to {}."
+msgstr "Een wijziging aan deze afspeellijst is nog onderweg naar {}."
+
 msgid "A click on a record opens"
 msgstr "Een klik op een album opent"
 
@@ -6212,6 +6215,9 @@ msgstr ""
 msgid "The player is not responding. Reconnect it and try again."
 msgstr ""
 
+msgid "The playlist changed on {}; it now shows what the server has. Try again."
+msgstr "De afspeellijst is gewijzigd op {}; hij toont nu wat de server heeft. Probeer het opnieuw."
+
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
 msgstr "De afspeellijst is aangemaakt, maar sommige nummers konden niet worden toegevoegd. Open hem voordat je het opnieuw probeert."
 
@@ -6697,6 +6703,9 @@ msgstr "Tunnel"
 
 msgid "Tunnel Flow"
 msgstr "Tunnel Flow"
+
+msgid "Turn the network on to change a server's playlist."
+msgstr "Zet het netwerk aan om een afspeellijst van een server te wijzigen."
 
 msgid "Type"
 msgstr "Type"
@@ -8107,6 +8116,9 @@ msgstr "de uitvoer accepteert geen 16 bit op 44.100 Hz, wat een cd bevat"
 msgid "the playlist is longer than Chilpa reads; change its order on the server"
 msgstr "de afspeellijst is langer dan Chilpa inleest; wijzig de volgorde op de server"
 
+msgid "the playlist is no longer in the library"
+msgstr "de afspeellijst staat niet meer in de bibliotheek"
+
 msgid "the plugin could not be asked"
 msgstr "de plug-in kon niet worden aangesproken"
 
@@ -8495,6 +8507,9 @@ msgstr[1] "{} dagen"
 msgid "{} did not accept the account"
 msgstr "{} heeft het account niet geaccepteerd"
 
+msgid "{} did not take the change to the playlist: {}"
+msgstr "{} heeft de wijziging aan de afspeellijst niet overgenomen: {}"
+
 msgid "{} disc"
 msgid_plural "{} discs"
 msgstr[0] "{} schijf"
@@ -8502,6 +8517,9 @@ msgstr[1] "{} schijven"
 
 msgid "{} does not answer. The record will open when it is back."
 msgstr "{} reageert niet. Het item wordt geopend zodra het weer beschikbaar is."
+
+msgid "{} does not answer; change its playlist when it is back."
+msgstr "{} reageert niet; wijzig de afspeellijst als de server terug is."
 
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"
@@ -8591,6 +8609,9 @@ msgstr "{} signaalbits"
 
 msgid "{} no longer accepts the account; connect again"
 msgstr "{} accepteert het account niet meer; verbind opnieuw"
+
+msgid "{} no longer has this playlist; it left your playlists here too."
+msgstr "{} heeft deze afspeellijst niet meer; hij is hier ook uit je afspeellijsten verdwenen."
 
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "{} van de nummers verdwijnen uit {} van je afspeellijsten."

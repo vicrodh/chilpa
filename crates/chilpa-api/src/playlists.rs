@@ -48,6 +48,15 @@ fn homes_of(entries: &[chilpa_library::PlaylistEntry]) -> Vec<Home> {
 
 pub(crate) fn playlist_of(p: chilpa_library::StoredPlaylist) -> Playlist {
     let local = p.provider == "local";
+    // A server's playlists are told apart by the server: two of one kind are
+    // two sources, keyed as the library's filters key their tracks.
+    let source = if local {
+        String::new()
+    } else if p.server {
+        crate::servers::playlists::source_key(&p.provider, &p.instance)
+    } else {
+        p.provider.clone()
+    };
     Playlist {
         id: p.id,
         source_id: p.source_id,
@@ -66,10 +75,11 @@ pub(crate) fn playlist_of(p: chilpa_library::StoredPlaylist) -> Playlist {
         visible_sidebar: p.visible_sidebar,
         updated_at: p.updated_at,
         // Source writes are closed until the plugin API exposes the declared
-        // capability and operation. Read-only is the safe default.
+        // capability and operation. Read-only is the safe default. A
+        // server's says whether the account may change it there.
         writable: p.writable,
         mixed: local,
-        source: if local { String::new() } else { p.provider },
+        source,
         external_id: p.external_id,
     }
 }
@@ -237,10 +247,12 @@ impl Chilpa {
             }
         }
         drop(host);
+        let hidden = self.disabled_server_sources();
         let Some(lib) = self.library() else {
             return Vec::new();
         };
-        let mut playlists: Vec<Playlist> = lib.playlists().unwrap_or_default().into_iter().filter(|p| p.provider != crate::source_opener::PROVIDER).map(playlist_of).collect();
+        let mut playlists: Vec<Playlist> =
+            lib.playlists().unwrap_or_default().into_iter().filter(|p| p.provider != crate::source_opener::PROVIDER && !hidden.contains(&p.source_id)).map(playlist_of).collect();
         for playlist in &mut playlists {
             playlist.covers = lib.playlist_covers(playlist.id, 4).unwrap_or_default();
         }
@@ -256,8 +268,12 @@ impl Chilpa {
     /// the tracks means playing one is the same click as playing a search
     /// result, down the same path.
     ///
-    /// Returns how many tracks came back.
+    /// Returns how many tracks came back. A server's playlist is the
+    /// library's already: no plugin is asked, and nothing comes back.
     pub fn open_source_playlist(&mut self, source: &str, external_id: &str) -> usize {
+        if self.is_server_source(source) {
+            return 0;
+        }
         let names: std::collections::HashMap<String, String> = self.sources().into_iter().collect();
         let name = names.get(source).cloned().unwrap_or_else(|| source.to_string());
         let request = messages::write(&messages::Resolve::new(external_id));
@@ -407,6 +423,10 @@ impl Chilpa {
         let _ = lib;
         let entries = self.mixed_playlist_entries(track_ids, false).unwrap_or_default();
         let native = self.native_playlist_rows();
+        let hidden = self.disabled_server_sources();
+        // A server's playlist takes tracks only while a change can reach it.
+        let open: std::collections::HashSet<i64> =
+            self.cached_playlists().into_iter().filter(|p| p.source_id > 0 && !p.mixed && p.writable).filter(|p| self.server_playlist_open(p)).map(|p| p.id).collect();
         let Some(lib) = self.library() else { return Vec::new() };
         let local = lib.source_id("local", "default").ok();
         let homes = homes_of(&entries);
@@ -415,6 +435,7 @@ impl Chilpa {
         let mut targets: Vec<_> = lib.playlists()
             .unwrap_or_default()
             .into_iter()
+            .filter(|p| !hidden.contains(&p.source_id) && (!p.server || open.contains(&p.id)))
             .map(playlist_of)
             .filter(|playlist| {
                 let name = playlist.name.to_lowercase();
@@ -456,6 +477,10 @@ impl Chilpa {
     }
 
     fn add_track_ids(&mut self, playlist_id: i64, track_ids: &[i64], repeats: bool) -> PlaylistAddResult {
+        // A server's playlist takes them through its server.
+        if let Some(sent) = self.add_to_server_playlist(playlist_id, track_ids, repeats) {
+            return sent;
+        }
         let Some(lib) = self.library() else {
             return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
         };
@@ -487,6 +512,10 @@ impl Chilpa {
     }
 
     pub fn remove_tracks_from_playlist(&mut self, playlist_id: i64, track_ids: &[i64]) -> usize {
+        let rows = self.server_playlist_rows(playlist_id, track_ids);
+        if let Some(sent) = self.change_server_playlist(playlist_id, crate::servers::writing::Change::Remove { rows: rows.clone() }) {
+            return if sent { rows.len() } else { 0 };
+        }
         if !self.playlist(playlist_id).is_some_and(|playlist| playlist.mixed) {
             return 0;
         }
@@ -509,6 +538,11 @@ impl Chilpa {
 
     /// Moves a track of a list from one position to another.
     pub fn move_in_playlist(&mut self, playlist_id: i64, from: usize, to: usize) -> bool {
+        if let Some(rows) = crate::servers::playlists::moved(self.server_playlist_len(playlist_id), from, to) {
+            if let Some(sent) = self.change_server_playlist(playlist_id, crate::servers::writing::Change::Reorder { rows }) {
+                return sent;
+            }
+        }
         if !self.playlist(playlist_id).is_some_and(|playlist| playlist.mixed) {
             return false;
         }
@@ -518,6 +552,12 @@ impl Chilpa {
     /// Moves several tracks of a list, dragged together, to where one was
     /// dropped. True if any of them moved.
     pub fn move_group_in_playlist(&mut self, playlist_id: i64, rows: &[usize], to: usize) -> bool {
+        // A server's playlist gets its new order as one change.
+        if let Some(order) = crate::servers::playlists::moved_group(self.server_playlist_len(playlist_id), rows, to) {
+            if let Some(sent) = self.change_server_playlist(playlist_id, crate::servers::writing::Change::Reorder { rows: order }) {
+                return sent;
+            }
+        }
         let mut moved = false;
         for (from, to) in group_moves(rows, to) {
             moved |= self.move_in_playlist(playlist_id, from, to);
@@ -527,6 +567,9 @@ impl Chilpa {
 
     /// Takes the track at that position out of a list.
     pub fn remove_from_playlist(&mut self, playlist_id: i64, position: usize) -> bool {
+        if let Some(sent) = self.change_server_playlist(playlist_id, crate::servers::writing::Change::Remove { rows: vec![position] }) {
+            return sent;
+        }
         if !self.playlist(playlist_id).is_some_and(|playlist| playlist.mixed) {
             return false;
         }
@@ -546,10 +589,12 @@ impl Chilpa {
     /// Every cached playlist, without touching a source. Used by the manager
     /// and the picker after the facade's refresh path has run.
     pub fn cached_playlists(&mut self) -> Vec<Playlist> {
+        let hidden = self.disabled_server_sources();
         let Some(lib) = self.library() else {
             return Vec::new();
         };
-        let mut playlists: Vec<Playlist> = lib.playlists().unwrap_or_default().into_iter().filter(|p| p.provider != crate::source_opener::PROVIDER).map(playlist_of).collect();
+        let mut playlists: Vec<Playlist> =
+            lib.playlists().unwrap_or_default().into_iter().filter(|p| p.provider != crate::source_opener::PROVIDER && !hidden.contains(&p.source_id)).map(playlist_of).collect();
         for playlist in &mut playlists {
             playlist.covers = lib.playlist_covers(playlist.id, 4).unwrap_or_default();
         }
@@ -577,6 +622,10 @@ impl Chilpa {
             self.remove_source_playlist(playlist_id);
             return;
         }
+        // A server's is deleted on the server, and here once it answers.
+        if self.change_server_playlist(playlist_id, crate::servers::writing::Change::Delete).is_some() {
+            return;
+        }
         if let Some(lib) = self.library() {
             let _ = lib.delete_playlist(playlist_id);
         }
@@ -601,14 +650,22 @@ impl Chilpa {
             self.now.error = chilpa_i18n::t("a list needs a name");
             return;
         }
+        if self.change_server_playlist(playlist_id, crate::servers::writing::Change::Edit { name: Some(name.clone()), description: None }).is_some() {
+            return;
+        }
         if let Some(lib) = self.library() {
             let _ = lib.rename_playlist(playlist_id, &name);
         }
     }
 
     /// Changes a local playlist's metadata. Source-owned metadata belongs to
-    /// its source and is therefore left alone.
+    /// its source and is therefore left alone; a server's name and
+    /// description go to the server, and its folder here stays the
+    /// library's own.
     pub fn update_playlist(&mut self, playlist_id: i64, name: &str, description: &str, artwork_path: Option<&str>, tags: &[String], folder_id: Option<i64>) -> bool {
+        if let Some(sent) = self.edit_server_playlist(playlist_id, name, description, folder_id) {
+            return sent;
+        }
         let Some(playlist) = self.playlist(playlist_id) else {
             return false;
         };

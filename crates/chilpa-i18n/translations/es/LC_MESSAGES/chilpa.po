@@ -121,6 +121,9 @@ msgstr "Un portador PCM no verifica DoP. No se reproducirán tonos ni pistas de 
 msgid "A bar or OR: either is enough"
 msgstr "Una barra u OR: basta con cualquiera"
 
+msgid "A change to this playlist is still on its way to {}."
+msgstr "Un cambio de esta playlist todavía va en camino a {}."
+
 msgid "A click on a record opens"
 msgstr "Un clic en un disco abre"
 
@@ -6212,6 +6215,9 @@ msgstr "El reproductor está ocupado. Cierra la otra aplicación de transferenci
 msgid "The player is not responding. Reconnect it and try again."
 msgstr "El reproductor no responde. Vuelve a conectarlo e inténtalo de nuevo."
 
+msgid "The playlist changed on {}; it now shows what the server has. Try again."
+msgstr "La playlist cambió en {}; ahora muestra lo que tiene el servidor. Vuelve a intentarlo."
+
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
 msgstr "La playlist se creó, pero no se pudieron añadir todas las pistas. Ábrela antes de reintentarlo."
 
@@ -6697,6 +6703,9 @@ msgstr "Túnel"
 
 msgid "Tunnel Flow"
 msgstr "Flujo de túnel"
+
+msgid "Turn the network on to change a server's playlist."
+msgstr "Activa la red para cambiar una playlist de un servidor."
 
 msgid "Type"
 msgstr "Tipo"
@@ -8107,6 +8116,9 @@ msgstr "la salida no acepta 44 100 Hz de 16 bits, que es lo que trae un CD"
 msgid "the playlist is longer than Chilpa reads; change its order on the server"
 msgstr "la playlist es más larga de lo que Chilpa lee; cambia su orden en el servidor"
 
+msgid "the playlist is no longer in the library"
+msgstr "la playlist ya no está en la biblioteca"
+
 msgid "the plugin could not be asked"
 msgstr "no se le pudo preguntar al plugin"
 
@@ -8495,6 +8507,9 @@ msgstr[1] "{} días"
 msgid "{} did not accept the account"
 msgstr "{} no aceptó la cuenta"
 
+msgid "{} did not take the change to the playlist: {}"
+msgstr "{} no aceptó el cambio en la playlist: {}"
+
 msgid "{} disc"
 msgid_plural "{} discs"
 msgstr[0] "{} disco"
@@ -8502,6 +8517,9 @@ msgstr[1] "{} discos"
 
 msgid "{} does not answer. The record will open when it is back."
 msgstr "{} no responde. El disco se abrirá cuando regrese."
+
+msgid "{} does not answer; change its playlist when it is back."
+msgstr "{} no responde; cambia su playlist cuando vuelva."
 
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"
@@ -8591,6 +8609,9 @@ msgstr "{} bits de señal"
 
 msgid "{} no longer accepts the account; connect again"
 msgstr "{} ya no acepta la cuenta; vuelve a conectar"
+
+msgid "{} no longer has this playlist; it left your playlists here too."
+msgstr "{} ya no tiene esta playlist; también se quitó de tus playlists aquí."
 
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "{} de sus pistas salen de {} de tus playlists."
