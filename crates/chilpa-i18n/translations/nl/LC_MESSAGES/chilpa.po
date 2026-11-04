@@ -2231,6 +2231,9 @@ msgstr "Bewerken…"
 msgid "Either genre: a comma means or"
 msgstr "Een van beide genres: een komma betekent ‘of’"
 
+msgid "Eject"
+msgstr "Uitwerpen"
+
 msgid "Elevated"
 msgstr "Verhoogd"
 
@@ -2626,6 +2629,9 @@ msgstr "Volledige breedte, onderaan"
 
 msgid "Full width, top"
 msgstr "Volledige breedte, bovenaan"
+
+msgid "Fullscreen"
+msgstr "Volledig scherm"
 
 msgid "GPU"
 msgstr "GPU"
@@ -3331,6 +3337,9 @@ msgstr "Een label uitsluiten: een min betekent ‘niet’"
 
 msgid "Leave one empty for an open end. Both ends included."
 msgstr "Laat er één leeg voor een open einde. Beide grenzen tellen mee."
+
+msgid "Leave view"
+msgstr "Weergave verlaten"
 
 msgid "Left delay · 0–30 ms"
 msgstr "Linkervertraging · 0–30 ms"
@@ -4456,6 +4465,9 @@ msgstr ""
 
 msgid "Open the folder used for disposable files."
 msgstr "Open de map voor wegwerpbestanden."
+
+msgid "Open view"
+msgstr "Weergave openen"
 
 msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."
 msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex of DLNA / UPnP. De muziek komt in de bibliotheek."

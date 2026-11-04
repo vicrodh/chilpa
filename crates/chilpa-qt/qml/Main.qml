@@ -1,6 +1,7 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.controls
+import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as Driving
 import "qrc:/qt/qml/app/chilpa/ambient/qml/Patterns" as Backdrop
@@ -21,14 +22,14 @@ Window {
     // The metadata editor wants the width: the queue and the lyrics step
     // aside while it is open and come back as they were when it closes,
     // unless one of them is opened in the meantime.
-    property bool panelAside: false
+    property alias panelAside: host.panelAside
     function deferNavigation(action, ...args) { sidebar.deferNavigation(function() { action.apply(null, args) }) }
 
     // As big as it was left, and maximized if it was (design/04 Window).
     width: WindowPlace.width
     height: WindowPlace.height
-    minimumWidth: WindowPlace.smallestWidth
-    minimumHeight: WindowPlace.smallestHeight
+    minimumWidth: DisplayMode.customPlayer ? Math.max(Metrics.displayMinWidth, DisplayMode.provider.minimumWidth || 0) : WindowPlace.smallestWidth
+    minimumHeight: DisplayMode.active ? Math.max(Metrics.displayMinHeight, DisplayMode.provider ? DisplayMode.provider.minimumHeight || 0 : 0) : WindowPlace.smallestHeight
     visibility: WindowPlace.maximized ? Window.Maximized : Window.Windowed
     // A Mac's window keeps its frame, and with it the system's controls.
     flags: systemControls.kept ? Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint
@@ -41,8 +42,9 @@ Window {
 
     // The dynamic background, under everything (design/01 1.6).
     Backdrop.AppBackground {
+        visible: !DisplayMode.active || !DisplayMode.provider || DisplayMode.provider.ambient !== false
         anchors.fill: parent
-        plane: Qt.rect(host.x, host.y, host.width, host.height)
+        plane: DisplayMode.active ? Qt.rect(0, 0, window.width, window.height) : Qt.rect(host.x, host.y, host.width, host.height)
     }
 
     // The screen scrolls under nothing but the player: it is cut at the
@@ -62,7 +64,7 @@ Window {
     // The content is a plane like the panels beside it. Under the dynamic
     // background the field shows through its corners instead.
     PlaneCorners {
-        visible: !Theme.ambient
+        visible: !DisplayMode.active && !Theme.ambient
         x: host.x
         y: host.y
         width: host.width
@@ -71,7 +73,7 @@ Window {
     TabBar {
         openSource: sidebar.openSource
         x: Metrics.spaceWindow
-        width: window.width - Metrics.spaceWindow * 2 // derived: a margin on each side
+        width: window.width - Metrics.spaceWindow - Metrics.spaceWindow // derived: a margin on each side
         controlsRoom: systemControls.room
         onQuitAsked: driving.requestQuit()
     }
@@ -84,16 +86,12 @@ Window {
     RightPanelFrame {
         id: right
         z: 2
-        open: (SettingsModel.queueOpen || SettingsModel.lyricsOpen) && !window.panelAside
+        open: !DisplayMode.active && (SettingsModel.queueOpen || SettingsModel.lyricsOpen) && !window.panelAside
         x: window.width - width - Metrics.spaceWindow
         y: plan.planeTop
         height: window.height - y - plan.planeBottom
     }
 
-    Connections {
-        target: host
-        function onPreparingRoute() { window.panelAside = Navigation.screen === "metadata" }
-    }
 
     PlayerBar {
         id: player
@@ -102,9 +100,10 @@ Window {
         onShowPanel: window.panelAside = false
         // Floating, the plane's width less the window's gap on each side
         // (the owner, 2026-10-08 night); docked, the window's (PlayerPlan).
-        width: plan.barWidth
-        x: plan.barX
-        y: plan.barY
+        visible: !DisplayMode.customPlayer
+        width: DisplayMode.active ? window.width - Metrics.spaceWindow - Metrics.spaceWindow : plan.barWidth
+        x: DisplayMode.active ? Metrics.spaceWindow : plan.barX
+        y: DisplayMode.active ? window.height - height - Metrics.spaceWindow : plan.barY
         Behavior on y { NumberAnimation { duration: Motion.panel; easing.type: Easing.OutCubic } }
     }
     Driving.PlayerPlan { id: plan; window: window; content: host; tall: player.implicitHeight; away: idle.away }
@@ -116,17 +115,16 @@ Window {
     }
 
     SelectionBar {
-        id: selection
         z: 4
-        visible: AlbumActions.selectedCount > 0
-        x: host.x + (host.width - width) / 2 // derived: centered over the content
+        visible: !DisplayMode.active && AlbumActions.selectedCount > 0
+        x: DisplayMode.active ? (window.width - width) / 2 : host.x + (host.width - width) / 2 // derived: centered over the content
         y: window.height - height - Metrics.selectionBottom
     }
 
     Toast {
         z: 5
-        x: host.x + (host.width - width) / 2 // derived: centered over the content
-        y: window.height - height - (selection.visible ? Metrics.toastWithSelectionBottom : Metrics.toastBottom)
+        x: DisplayMode.active ? (window.width - width) / 2 : host.x + (host.width - width) / 2 // derived: centered over the content
+        y: window.height - height - (!DisplayMode.active && AlbumActions.selectedCount > 0 ? Metrics.toastWithSelectionBottom : Metrics.toastBottom)
     }
 
     // Above the content and the tab bar, so its grip is never covered.
@@ -145,8 +143,9 @@ Window {
     DevHooks { window: window }
 
     Driving.WindowControls { id: driving; window: window }
-    Mini.MiniHost { window: window; controls: driving }
+    Mini.MiniHost { window: window; controls: driving; beforeEnter:() => { if(DisplayMode.active)DisplayMode.leave() } }
     Overlay.ImmersiveView { anchors.fill: parent; z: 6; window: window; controls: driving }
+    PluginViewHost { anchors.fill: parent; z: 2.5; window: window; standardPlayerHeight: player.height; chrome:[host,systemControls,sidebar] }
     // Nothing starts with the keyboard: the search field only takes it when
     // it is clicked or asked for.
     Component.onCompleted: {

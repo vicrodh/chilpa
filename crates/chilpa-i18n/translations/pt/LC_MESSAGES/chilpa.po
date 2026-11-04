@@ -2231,6 +2231,9 @@ msgstr "Editar…"
 msgid "Either genre: a comma means or"
 msgstr "Um ou outro gênero: a vírgula significa “ou”"
 
+msgid "Eject"
+msgstr "Ejetar"
+
 msgid "Elevated"
 msgstr "Elevado"
 
@@ -2626,6 +2629,9 @@ msgstr "Largura total, na base"
 
 msgid "Full width, top"
 msgstr "Largura total, no topo"
+
+msgid "Fullscreen"
+msgstr "Tela cheia"
 
 msgid "GPU"
 msgstr "GPU"
@@ -3331,6 +3337,9 @@ msgstr "Deixar uma gravadora de fora: o menos significa “não”"
 
 msgid "Leave one empty for an open end. Both ends included."
 msgstr "Deixe um vazio para uma ponta aberta. As duas pontas contam."
+
+msgid "Leave view"
+msgstr "Sair da visualização"
 
 msgid "Left delay · 0–30 ms"
 msgstr "Atraso esquerdo · 0–30 ms"
@@ -4456,6 +4465,9 @@ msgstr ""
 
 msgid "Open the folder used for disposable files."
 msgstr "Abre a pasta usada para arquivos descartáveis."
+
+msgid "Open view"
+msgstr "Abrir visualização"
 
 msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."
 msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex ou DLNA / UPnP. A música do servidor entra na biblioteca."

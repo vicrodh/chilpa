@@ -13,6 +13,8 @@ QtObject {
     readonly property int windowHeight: 800
     readonly property int windowMinWidth: 960
     readonly property int windowMinHeight: 600
+    readonly property int displayMinWidth: 340
+    readonly property int displayMinHeight: 320
     // The strip along the edges where dragging resizes a frameless window.
     readonly property int windowGrip: 6
 

@@ -72,6 +72,7 @@ TestCase {
         }
         Menu { id: context; entries: [{text:"Action"}]; onChosen: test.menuChoices++ }
         PillButton { id: menuButton; y: 180; text: "Menu"; onClicked: context.open() }
+        Toggle {id:insideToggle;x:120;y:140;onToggled:on=>insideToggle.checked=on}
         TextInput { id: field; x: 110; y: 90; width: 80; height: 40; text: "Edit" }
     }
 
@@ -94,6 +95,18 @@ TestCase {
         compare(backgroundDrags, 0)
     }
     function open() { dialog.open(); tryVerify(() => dialog.opened) }
+
+    function test_release_within_bounds_switch_keeps_mouse_and_touch_input() {
+        open()
+        insideToggle.checked=false
+        mouseClick(insideToggle,insideToggle.width/2,insideToggle.height/2)
+        tryCompare(insideToggle,"checked",true)
+        const touch=touchEvent(insideToggle)
+        touch.press(0,insideToggle,insideToggle.width/2,insideToggle.height/2).commit()
+        touch.release(0,insideToggle).commit()
+        tryCompare(insideToggle,"checked",false)
+        untouched()
+    }
 
     function test_transition_and_focus_changes_keep_shortcuts_blocked() {
         dialog.open()

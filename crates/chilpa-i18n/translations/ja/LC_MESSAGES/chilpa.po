@@ -2229,6 +2229,9 @@ msgstr "編集…"
 msgid "Either genre: a comma means or"
 msgstr "どちらかのジャンル：カンマは「または」"
 
+msgid "Eject"
+msgstr "取り出す"
+
 msgid "Elevated"
 msgstr "浮き出し"
 
@@ -2624,6 +2627,9 @@ msgstr "全幅、下"
 
 msgid "Full width, top"
 msgstr "全幅、上"
+
+msgid "Fullscreen"
+msgstr "全画面表示"
 
 msgid "GPU"
 msgstr "GPU"
@@ -3326,6 +3332,9 @@ msgstr "レーベルを除外：マイナスは「以外」"
 
 msgid "Leave one empty for an open end. Both ends included."
 msgstr "片方を空にすると上限・下限なし。両端を含みます。"
+
+msgid "Leave view"
+msgstr "ビューを閉じる"
 
 msgid "Left delay · 0–30 ms"
 msgstr "左ディレイ · 0–30 ms"
@@ -4451,6 +4460,9 @@ msgstr ""
 
 msgid "Open the folder used for disposable files."
 msgstr "使い捨てファイルに使うフォルダーを開きます。"
+
+msgid "Open view"
+msgstr "ビューを開く"
 
 msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."
 msgstr "OpenSubsonic（Navidrome、gonic…）、Jellyfin、Plex、DLNA / UPnP。その音楽はライブラリに追加されます。"

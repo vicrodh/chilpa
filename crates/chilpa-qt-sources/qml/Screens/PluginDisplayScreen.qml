@@ -1,3 +1,4 @@
+import "../Components" as Presentation
 import QtQuick
 import app.chilpa.kit
 import app.chilpa.sources
@@ -8,20 +9,16 @@ Item {
     id: page
     required property string pluginId
     required property url entry
-    Loader {
-        id: surface
-        objectName: "pluginDisplayLoader"
-        anchors.fill: parent
-        // A trusted display may move its surface to its own visible window.
-        active: String(page.entry) !== "" && (page.visible || item?.detachedVisible === true)
-        source: active ? page.entry : ""
-        asynchronous: true
-    }
     Text {
         anchors.centerIn: parent
-        visible: surface.status === Loader.Error
+        width: parent.width - Metrics.contentHorizontalMargins
+        visible: Presentation.DisplayMode.loadFailed
         text: I18n.tr("The plugin interface could not be opened.", I18n.rev)
-        font.pointSize: Type.small
-        color: Theme.color.statusNegative
+        color: Theme.color.textSecondary
+        font.pointSize: Type.body
+        wrapMode: Text.WordWrap
+        horizontalAlignment: Text.AlignHCenter
     }
+    Component.onCompleted: Presentation.DisplayMode.mount(page)
+    Component.onDestruction: Presentation.DisplayMode.unmount(page)
 }

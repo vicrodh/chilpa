@@ -893,3 +893,6 @@ linkname
 xattrs
 # A role of Qt's palette.
 midlight
+
+# Qt QML object factory used for presentation bindings.
+instantiator

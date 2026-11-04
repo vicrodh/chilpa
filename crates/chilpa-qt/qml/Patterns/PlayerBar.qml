@@ -1,5 +1,7 @@
+import "qrc:/qt/qml/app/chilpa/sources/qml/Components" as Presentation
 import QtQuick
 import app.chilpa
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/dsp/qml/Components" as DspUi
 import app.chilpa.kit
 import app.chilpa.ambient
@@ -24,6 +26,7 @@ Item {
     // editor). Their buttons then bring the panel back as it was, rather than
     // closing what is not showing.
     property bool panelAside: false
+    readonly property bool displayView: Presentation.DisplayMode.active
     signal showPanel()
 
     // Brings the set-aside panel back with `which` open.
@@ -40,11 +43,11 @@ Item {
     // Standing tall with the waveform seek in a band above everything else,
     // which stays where it was (the owner, 2026-10-09).
     readonly property bool tall: Waveform.open
-    readonly property bool onTop: PlayerLayout.mode === "top"
-    readonly property bool docked: PlayerLayout.mode !== "floating"
+    readonly property bool onTop: !displayView && PlayerLayout.mode === "top"
+    readonly property bool docked: displayView || PlayerLayout.mode !== "floating"
     implicitHeight: tall ? Metrics.playerHeightTall : Metrics.playerHeight
     // Only a floating bar covers the content's end.
-    Binding { target: Metrics; property: "playerSpace"; value: PlayerLayout.mode === "floating" ? bar.implicitHeight : 0 }
+    Binding { target: Metrics; property: "playerSpace"; value: !displayView && PlayerLayout.mode === "floating" ? bar.implicitHeight : 0 }
 
     // The pointer is over the bar: it does not step away from under it.
     readonly property bool pointed: area.containsMouse
@@ -59,6 +62,7 @@ Item {
         acceptedButtons: Qt.AllButtons
         onWheel: (wheel) => wheel.accepted = true
     }
+
 
     ElevatedShadow { target: panel; radius: panel.radius; subtle: bar.docked }
 
@@ -87,7 +91,7 @@ Item {
     // width, and the bar follows every pixel a panel moves.
     Loader {
         objectName: "playerBand"
-        active: bar.tall
+        active: bar.tall && bar.visible
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.leftMargin: Metrics.playerPadLeft
@@ -188,6 +192,7 @@ Item {
         // views of the player join this menu as they come.
         IconButton {
             id: viewButton
+            objectName:"playerViewMode"
             anchors.verticalCenter: parent.verticalCenter
             tip: I18n.tr("View", I18n.rev)
             glyph: Lucide.proportions
@@ -197,40 +202,15 @@ Item {
             checked: viewMenu.opened
             onClicked: viewMenu.opened ? viewMenu.close() : viewMenu.show()
 
-            CascadingMenu {
-                id: viewMenu
-                x: viewButton.width - width
-                y: bar.onTop ? parent.height + Metrics.gap10 : -height - Metrics.gap10
-                readonly property var modes: ["floating", "bottom", "top"]
-                readonly property var layouts: [I18n.tr("Floating", I18n.rev), I18n.tr("Full width, bottom", I18n.rev), I18n.tr("Full width, top", I18n.rev)]
-                readonly property var backgrounds: [I18n.tr("Off", I18n.rev), I18n.tr("Ambient", I18n.rev), I18n.tr("Blurred art", I18n.rev),
-                    I18n.tr("Wallpaper", I18n.rev), I18n.tr("Wallpaper, blurred", I18n.rev)]
-                function show() {
-                    entries = [{ text: I18n.tr("Mini player", I18n.rev), glyph: Icons.pictureInPicture, act: "mini" },
-                        { text: I18n.tr("Immersive", I18n.rev), glyph: Icons.arrowsMaximize, act: "immersive" }, { separator: true },
-                        { text: I18n.tr("Player", I18n.rev), glyph: Icons.layoutBottombarExpand, submenu: true, children: layouts.map((text, index) =>
-                            ({ text: text, checked: PlayerLayout.mode === modes[index], act: "layout:" + modes[index] })) },
-                        { text: I18n.tr("Background", I18n.rev), glyph: Icons.stack2, submenu: true,
-                        children: backgrounds.map((text, index) => ({ text: text, checked: Ambient.mode === index, act: "background:" + index })) }]
-                    open()
-                }
-                onActionChosen: (entry) => {
-                    if (entry.act === "mini")
-                        Mini.enter()
-                    else if (entry.act === "immersive")
-                        Immersive.openFromMenu()
-                    else if (entry.act.startsWith("layout:"))
-                        PlayerLayout.mode = entry.act.split(":")[1]
-                    else if (entry.act.startsWith("background:"))
-                        Ambient.choose(Number(entry.act.split(":")[1]))
-                }
-            }
+            Presentation.PlayerViewMenu { id:viewMenu; objectName:"playerViewMenu"; onTop:bar.onTop; triggerWidth:viewButton.width; triggerHeight:viewButton.height }
         }
         Parts.VolumeControl {
             opensDown: bar.onTop
             anchors.verticalCenter: parent.verticalCenter
             visible: bar.width >= Metrics.playerNoVolume
         }
+        Presentation.DisplayPlayerIntegration { bar:bar }
+
         IconButton {
             id: optionsButton
             tip: I18n.tr("Playback options", I18n.rev)

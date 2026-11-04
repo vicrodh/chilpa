@@ -23,10 +23,14 @@ PageTransition {
     id: host
     visible: !Immersive.open
     retainedScreen: "folders"
+    property bool panelAside: false
     Binding { target: CardLayout; property: "viewportWidth"; value: host.width }
     Connections { target: Navigation; function onRouteRequested() { host.request(true) } }
     Driving.FrameSettlement { navigation: Navigation; router: host }
-    onPreparingRoute: if (Navigation.prepare()) Sources.refresh()
+    onPreparingRoute: {
+        if (Navigation.prepare()) Sources.refresh()
+        panelAside = Navigation.screen === "metadata"
+    }
     route: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.routeKey].join("\u001f")
     Connections { target: OpenMedia; function onOpened() { Navigation.go("openMedia", 0) } }
     Connections { target: Player; function onWindowAsked(what) { if (what === 4) OpenMedia.openRequested() } }

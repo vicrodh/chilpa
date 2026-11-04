@@ -1,3 +1,4 @@
+import "qrc:/qt/qml/app/chilpa/sources/qml/Components" as Presentation
 import QtQuick
 import app.chilpa
 import app.chilpa.kit
@@ -17,6 +18,7 @@ import app.chilpa.controls
 // the window's controls. Its empty space moves the window, and a double
 // click maximizes it.
 Item {
+    visible: !Presentation.DisplayMode.active
     id: bar
     property var openSource: function(action, id, text) { Navigation.goKey("source", id) }
     // The menu's Quit, which the window's controls ask about first.

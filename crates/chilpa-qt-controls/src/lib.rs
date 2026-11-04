@@ -6,6 +6,7 @@
 pub mod bridge {
     pub mod audio_output;
     pub mod controls;
+    pub mod transport_actions;
     pub mod commands;
     pub mod hotkeys;
     pub mod now_about;

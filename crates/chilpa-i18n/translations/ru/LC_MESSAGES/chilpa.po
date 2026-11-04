@@ -2233,6 +2233,9 @@ msgstr "Изменить…"
 msgid "Either genre: a comma means or"
 msgstr "Любой из двух жанров: запятая значит «или»"
 
+msgid "Eject"
+msgstr "Извлечь"
+
 msgid "Elevated"
 msgstr "Приподнятый"
 
@@ -2628,6 +2631,9 @@ msgstr "На всю ширину, снизу"
 
 msgid "Full width, top"
 msgstr "На всю ширину, сверху"
+
+msgid "Fullscreen"
+msgstr "Полный экран"
 
 msgid "GPU"
 msgstr "GPU"
@@ -3336,6 +3342,9 @@ msgstr "Исключить лейбл: минус значит «не»"
 
 msgid "Leave one empty for an open end. Both ends included."
 msgstr "Оставьте одно поле пустым для открытой границы. Обе границы включены."
+
+msgid "Leave view"
+msgstr "Выйти из режима"
 
 msgid "Left delay · 0–30 ms"
 msgstr "Задержка слева · 0–30 ms"
@@ -4461,6 +4470,9 @@ msgstr ""
 
 msgid "Open the folder used for disposable files."
 msgstr "Открыть папку для временных файлов."
+
+msgid "Open view"
+msgstr "Открыть режим"
 
 msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."
 msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex или DLNA / UPnP. Его музыка добавляется в библиотеку."

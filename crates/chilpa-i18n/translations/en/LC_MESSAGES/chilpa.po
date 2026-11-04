@@ -2231,6 +2231,9 @@ msgstr ""
 msgid "Either genre: a comma means or"
 msgstr ""
 
+msgid "Eject"
+msgstr "Eject"
+
 msgid "Elevated"
 msgstr ""
 
@@ -2626,6 +2629,9 @@ msgstr ""
 
 msgid "Full width, top"
 msgstr ""
+
+msgid "Fullscreen"
+msgstr "Fullscreen"
 
 msgid "GPU"
 msgstr ""
@@ -3331,6 +3337,9 @@ msgstr ""
 
 msgid "Leave one empty for an open end. Both ends included."
 msgstr ""
+
+msgid "Leave view"
+msgstr "Leave view"
 
 msgid "Left delay · 0–30 ms"
 msgstr ""
@@ -4456,6 +4465,9 @@ msgstr "Open the Library before choosing music for a device."
 
 msgid "Open the folder used for disposable files."
 msgstr ""
+
+msgid "Open view"
+msgstr "Open view"
 
 msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."
 msgstr ""

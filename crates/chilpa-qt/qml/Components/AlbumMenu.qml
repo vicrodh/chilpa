@@ -20,6 +20,9 @@ CascadingMenu {
     // The artist whose page this is, so "Go to artist" leads nowhere new.
     property string artistPage
     property var nativeInfo: ({})
+    property var extraEntries: []
+    property var playAction: null
+    signal extraAction(var entry)
 
     signal quick(int at)
 
@@ -53,7 +56,7 @@ CascadingMenu {
               act: favorite ? "unfavorite" : "favorite", when: one && (id > 0 || nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")) }
         ]
         // The extra queues come from the facade, as they do for a track.
-        entries = all.filter(e => e.when === undefined || e.when).concat(JSON.parse(AlbumActions.listenTargetsJson()))
+        entries = extraEntries.concat(all.filter(e => e.when === undefined || e.when)).concat(JSON.parse(AlbumActions.listenTargetsJson()))
         x = left
         y = top
         open()
@@ -61,9 +64,10 @@ CascadingMenu {
 
     onActionChosen: (entry) => {
         const act = entry.act || ""
+        if (act.startsWith("extension:")) { menu.extraAction(entry); return }
         if (act.startsWith("buffer:")) { AlbumActions.listAction(albumId, act); ListenList.refresh(); if (act === "buffer:new") Navigation.go("listenlist", 0); return }
         switch (act) {
-        case "play": AlbumActions.play(albumId, false); break
+        case "play": if (playAction) playAction(); else AlbumActions.play(albumId, false); break
         case "next": AlbumActions.playNext(albumId); break
         case "later": AlbumActions.playLater(albumId, title); break
         case "queue": AlbumActions.queue(albumId); break

@@ -23,6 +23,7 @@ Item {
     // The window's controls: their asks, and the word that puts the window
     // back in its place.
     property var controls: null
+    property var beforeEnter: null
     // Whether the development hook may open the mini player at start.
     property bool hooked: true
     property var mini: null
@@ -101,6 +102,7 @@ Item {
         target: Mini
         function onOpenChanged() {
             if (Mini.open) {
+                if (host.beforeEnter) host.beforeEnter()
                 host.present()
                 host.window.hide()
             } else if (host.mini !== null) {

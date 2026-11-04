@@ -57,6 +57,7 @@ pub mod qobject {
         #[qproperty(i32, fresh)]
         /// The library's records beside a source's: they wear the player's badge.
         #[qproperty(bool, mixed)]
+        #[qproperty(QString, group_index)]
         type AlbumGridModel = super::AlbumGridRust;
         #[qinvokable]
         fn title(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
@@ -167,6 +168,7 @@ pub struct AlbumGridRust {
     list: Albums,
     /// Where each group starts, and the rows that leaves at this width.
     groups: Vec<(usize, String)>,
+    group_index: QString,
     rows: Vec<chilpa_api::GridRow>,
     pending: bool,
     generation: u64,
@@ -392,6 +394,8 @@ impl qobject::AlbumGridModel {
     }
 
     fn show(mut self: Pin<&mut Self>, mut list: Albums) {
+        let groups = serde_json::to_string(&self.rust().groups).unwrap_or_else(|_| "[]".into());
+        self.as_mut().set_group_index(QString::from(groups));
         let identity = (self.kind().to_string(), self.key().to_string(), self.order().to_string(), self.group().to_string(), self.filter().to_string());
         let same = self.rust().loaded.as_ref() == Some(&identity);
         let rows = list_changes::album_rows(list.len(), self.rust().columns.max(0) as usize, self.rust().max_rows.max(0) as usize, &self.rust().groups);
