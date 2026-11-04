@@ -20,6 +20,7 @@ TestCase {
     MusicServers { id: table; width: 650; height: 400; model: rows }
     ListModel { id: facadeRows }
     ServerWizard { id: dialog }
+    ServerRemoveDialog { id: removal }
     SignalSpy { id: addSpy; target: table; signalName: "addRequested" }
     SignalSpy { id: actionSpy; target: table; signalName: "actionRequested" }
     readonly property string plexLocation: "http://192.168.0.69:32469/DeviceDescription.xml"
@@ -258,6 +259,40 @@ TestCase {
         Servers.show({step:"done",kind:"jellyfin",product:"Saved server"})
         tryCompare(dialog,"visible",false, 2000, "an edit that was saved closes")
     }
+    // Removing a server keeps its dialog, covered and unanswerable, until
+    // the removal ends; a failure stays readable, and success closes it.
+    function test_removing_a_server_keeps_the_dialog_until_it_ends() {
+        removal.serverId = 7
+        removal.message = Servers.removal(7)
+        removal.open(); tryCompare(removal, "opened", true)
+        const find = name => findChild(removal.contentItem, name)
+        verify(!find("serverRemoving").visible)
+        find("serverRemoveConfirm").clicked()
+        compare(last(), ["remove", 7])
+        Servers.show({step:"idle", removing:{id:7, name:"Lab", state:"removing"}})
+        tryVerify(()=>find("serverRemoving").visible)
+        verify(find("serverRemovingText").text.indexOf("Removing Lab") === 0, find("serverRemovingText").text)
+        verify(!find("serverRemoveConfirm").enabled && !find("serverRemoveCancel").enabled, "nothing to press under it")
+        keyClick(Qt.Key_Escape)
+        mouseClick(test, 955, 695)
+        verify(removal.opened, "neither Esc nor a click outside closes it")
+        // It fails: what failed, what to do, and words to copy.
+        Servers.show({step:"idle", removing:{id:7, name:"Lab", state:"failed", title:"Lab could not be removed",
+            advice:"The library stayed busy with another task. Nothing more was taken out; try again in a moment.", detail:"database is locked"}})
+        tryVerify(()=>find("serverRemoveFailed").visible)
+        verify(!find("serverRemoving").visible)
+        compare(find("serverRemoveFailed").title, "Lab could not be removed")
+        compare(find("serverRemoveFailed").variant, "error")
+        compare(find("serverRemoveDetail").text, "database is locked")
+        verify(find("serverRemoveDetail").selectByMouse && find("serverRemoveDetail").readOnly)
+        compare(find("serverRemoveConfirm").text, "Try again")
+        find("serverRemoveConfirm").clicked()
+        compare(last(), ["remove", 7], "tried again")
+        Servers.show({step:"idle", removing:{id:7, name:"Lab", state:"removing"}})
+        Servers.show({step:"idle", removing:{id:7, name:"Lab", state:"done"}, notice:{seq:1, text:"Lab was removed"}})
+        tryCompare(removal, "visible", false)
+    }
+
     function test_secrets_are_destroyed_and_polling_stops_on_close() {
         open(); choose("jellyfin")
         field("serverSecret").text="fixture-secret"

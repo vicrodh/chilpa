@@ -840,6 +840,9 @@ msgstr ""
 msgid "Bass"
 msgstr "Bass"
 
+msgid "Being removed…"
+msgstr ""
+
 msgid "Between tracks"
 msgstr ""
 
@@ -5255,6 +5258,9 @@ msgstr ""
 msgid "Removing saved profile…"
 msgstr ""
 
+msgid "Removing {}… Its songs and playlists are leaving your library. This can take a moment."
+msgstr ""
+
 msgid "Rename"
 msgstr ""
 
@@ -6369,6 +6375,12 @@ msgid "The image is too large"
 msgstr ""
 
 msgid "The incorrect lyrics could not be excluded. Try again."
+msgstr ""
+
+msgid "The library could not be changed. Try again; the detail below says what happened."
+msgstr ""
+
+msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr ""
 
 msgid "The line being sung stays in view."
@@ -8202,9 +8214,6 @@ msgstr ""
 msgid "the cover is larger than 12,000 pixels on a side"
 msgstr ""
 
-msgid "the covers of {} could not be deleted from {}"
-msgstr ""
-
 msgid "the credential could not be kept safely on this system"
 msgstr ""
 
@@ -8425,6 +8434,9 @@ msgid "the record has no artist"
 msgstr ""
 
 msgid "the record has no title"
+msgstr ""
+
+msgid "the removal stopped on an error"
 msgstr ""
 
 msgid "the reply could not be built"
@@ -8777,7 +8789,16 @@ msgstr ""
 msgid "{} could not be reached; try again"
 msgstr ""
 
+msgid "{} could not be removed"
+msgstr ""
+
 msgid "{} could not be replaced: {}"
+msgstr ""
+
+msgid "{} could not be turned off"
+msgstr ""
+
+msgid "{} could not be turned on"
 msgstr ""
 
 msgid "{} could not be written: {}"
@@ -9040,6 +9061,9 @@ msgid "{} unreadable"
 msgstr "{} unreadable"
 
 msgid "{} was not allowed in time; connect again"
+msgstr ""
+
+msgid "{} was removed"
 msgstr ""
 
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"

@@ -839,6 +839,9 @@ msgstr "{artist} · {genres}に基づく"
 msgid "Bass"
 msgstr "低音"
 
+msgid "Being removed…"
+msgstr "削除中…"
+
 msgid "Between tracks"
 msgstr "トラック間"
 
@@ -5250,6 +5253,9 @@ msgstr "削除…"
 msgid "Removing saved profile…"
 msgstr ""
 
+msgid "Removing {}… Its songs and playlists are leaving your library. This can take a moment."
+msgstr "{}を削除しています… 曲とプレイリストをライブラリから取り除いています。しばらくかかることがあります。"
+
 msgid "Rename"
 msgstr "名前を変更"
 
@@ -6362,6 +6368,12 @@ msgstr "画像が大きすぎます"
 
 msgid "The incorrect lyrics could not be excluded. Try again."
 msgstr "誤った歌詞を除外できませんでした。再試行してください。"
+
+msgid "The library could not be changed. Try again; the detail below says what happened."
+msgstr "ライブラリを変更できませんでした。もう一度お試しください。下の詳細に何が起きたかが書かれています。"
+
+msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
+msgstr "ライブラリが別の処理で使用中のままでした。これ以上は削除されていません。少ししてからもう一度お試しください。"
 
 msgid "The line being sung stays in view."
 msgstr "歌っている行が常に表示されます。"
@@ -8192,9 +8204,6 @@ msgstr "カバーは25 MiB以下の画像である必要があります"
 msgid "the cover is larger than 12,000 pixels on a side"
 msgstr "カバーの一辺が12,000ピクセルを超えています"
 
-msgid "the covers of {} could not be deleted from {}"
-msgstr "{}のカバーを{}から削除できませんでした"
-
 msgid "the credential could not be kept safely on this system"
 msgstr "認証情報をこのシステムに安全に保持できませんでした"
 
@@ -8416,6 +8425,9 @@ msgstr "アルバムにアーティストがありません"
 
 msgid "the record has no title"
 msgstr "アルバムにタイトルがありません"
+
+msgid "the removal stopped on an error"
+msgstr "エラーのため削除が停止しました"
 
 msgid "the reply could not be built"
 msgstr "応答を構築できませんでした"
@@ -8763,8 +8775,17 @@ msgstr "{}をコピーできませんでした: {}"
 msgid "{} could not be reached; try again"
 msgstr "{}に接続できませんでした。もう一度お試しください"
 
+msgid "{} could not be removed"
+msgstr "{}を削除できませんでした"
+
 msgid "{} could not be replaced: {}"
 msgstr "{}を置き換えられませんでした: {}"
+
+msgid "{} could not be turned off"
+msgstr "{}をオフにできませんでした"
+
+msgid "{} could not be turned on"
+msgstr "{}をオンにできませんでした"
 
 msgid "{} could not be written: {}"
 msgstr "{}を書き込めませんでした: {}"
@@ -9001,6 +9022,9 @@ msgstr "読み取り不可: {}"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "{}が時間内に許可されませんでした。もう一度接続してください"
+
+msgid "{} was removed"
+msgstr "{}を削除しました"
 
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr "{}は書き込まれましたが、「{}」の内容が正しくありません。何も置き換えられていません"

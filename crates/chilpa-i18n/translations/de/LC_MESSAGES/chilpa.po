@@ -840,6 +840,9 @@ msgstr "Basierend auf {artist} · {genres}"
 msgid "Bass"
 msgstr "Bass"
 
+msgid "Being removed…"
+msgstr "Wird entfernt…"
+
 msgid "Between tracks"
 msgstr "Zwischen Titeln"
 
@@ -5255,6 +5258,9 @@ msgstr "Entfernen…"
 msgid "Removing saved profile…"
 msgstr ""
 
+msgid "Removing {}… Its songs and playlists are leaving your library. This can take a moment."
+msgstr "{} wird entfernt… Seine Titel und Playlists verlassen deine Bibliothek. Das kann einen Moment dauern."
+
 msgid "Rename"
 msgstr "Umbenennen"
 
@@ -6370,6 +6376,12 @@ msgstr "Das Bild ist zu groß"
 
 msgid "The incorrect lyrics could not be excluded. Try again."
 msgstr "Der falsche Liedtext konnte nicht ausgeschlossen werden. Bitte erneut versuchen."
+
+msgid "The library could not be changed. Try again; the detail below says what happened."
+msgstr "Die Bibliothek konnte nicht geändert werden. Versuche es erneut; das Detail unten sagt, was passiert ist."
+
+msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
+msgstr "Die Bibliothek war weiter mit einer anderen Aufgabe beschäftigt. Nichts weiter wurde entfernt; versuche es gleich noch einmal."
 
 msgid "The line being sung stays in view."
 msgstr "Die gerade gesungene Zeile bleibt im Blick."
@@ -8202,9 +8214,6 @@ msgstr "das Cover muss ein Bild von bis zu 25 MiB sein"
 msgid "the cover is larger than 12,000 pixels on a side"
 msgstr "das Cover ist an einer Seite größer als 12.000 Pixel"
 
-msgid "the covers of {} could not be deleted from {}"
-msgstr "die Cover von {} konnten nicht aus {} gelöscht werden"
-
 msgid "the credential could not be kept safely on this system"
 msgstr "die Zugangsdaten konnten auf diesem System nicht sicher aufbewahrt werden"
 
@@ -8426,6 +8435,9 @@ msgstr "das Album hat keinen Künstler"
 
 msgid "the record has no title"
 msgstr "das Album hat keinen Titel"
+
+msgid "the removal stopped on an error"
+msgstr "das Entfernen wurde durch einen Fehler gestoppt"
 
 msgid "the reply could not be built"
 msgstr "die Antwort konnte nicht erstellt werden"
@@ -8777,8 +8789,17 @@ msgstr "{} konnte nicht kopiert werden: {}"
 msgid "{} could not be reached; try again"
 msgstr "{} war nicht erreichbar; versuche es erneut"
 
+msgid "{} could not be removed"
+msgstr "{} konnte nicht entfernt werden"
+
 msgid "{} could not be replaced: {}"
 msgstr "{} konnte nicht ersetzt werden: {}"
+
+msgid "{} could not be turned off"
+msgstr "{} konnte nicht deaktiviert werden"
+
+msgid "{} could not be turned on"
+msgstr "{} konnte nicht aktiviert werden"
 
 msgid "{} could not be written: {}"
 msgstr "{} konnte nicht geschrieben werden: {}"
@@ -9041,6 +9062,9 @@ msgstr "{} nicht lesbar"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "Die Freigabe bei {} kam nicht rechtzeitig; verbinde das Konto erneut"
+
+msgid "{} was removed"
+msgstr "{} wurde entfernt"
 
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr "{} wurde geschrieben und sagt in „{}“ nicht das aus, was es sollte; nichts wurde ersetzt"

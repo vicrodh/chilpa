@@ -16,4 +16,6 @@ QtObject {
     function refresh() { refreshes++ }
     function quickConnect() { calls.push(["quickConnect"]) }
     function pick(id) { calls.push(["pick",id]) }
+    function remove(id) { calls.push(["remove",id]); return true }
+    function removal(id) { return "This removes 3 tracks in 1 record from your library." }
 }

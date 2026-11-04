@@ -841,6 +841,9 @@ msgstr "На основе: {artist} · {genres}"
 msgid "Bass"
 msgstr "Низкие"
 
+msgid "Being removed…"
+msgstr "Удаляется…"
+
 msgid "Between tracks"
 msgstr "Между треками"
 
@@ -5260,6 +5263,9 @@ msgstr "Удалить…"
 msgid "Removing saved profile…"
 msgstr ""
 
+msgid "Removing {}… Its songs and playlists are leaving your library. This can take a moment."
+msgstr "Удаление {}… Его песни и плейлисты уходят из вашей библиотеки. Это может занять некоторое время."
+
 msgid "Rename"
 msgstr "Переименовать"
 
@@ -6378,6 +6384,12 @@ msgstr "Изображение слишком большое"
 
 msgid "The incorrect lyrics could not be excluded. Try again."
 msgstr "Не удалось исключить неверный текст. Повторите попытку."
+
+msgid "The library could not be changed. Try again; the detail below says what happened."
+msgstr "Не удалось изменить библиотеку. Попробуйте снова; ниже указано, что произошло."
+
+msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
+msgstr "Библиотека оставалась занята другой задачей. Больше ничего не удалено; попробуйте снова чуть позже."
 
 msgid "The line being sung stays in view."
 msgstr "Текущая строка остаётся в поле зрения."
@@ -8212,9 +8224,6 @@ msgstr "обложка должна быть изображением разме
 msgid "the cover is larger than 12,000 pixels on a side"
 msgstr "обложка больше 12 000 пикселей по стороне"
 
-msgid "the covers of {} could not be deleted from {}"
-msgstr "не удалось удалить обложки сервера «{}» из {}"
-
 msgid "the credential could not be kept safely on this system"
 msgstr "не удалось безопасно сохранить учётные данные в этой системе"
 
@@ -8436,6 +8445,9 @@ msgstr "у записи нет исполнителя"
 
 msgid "the record has no title"
 msgstr "у записи нет названия"
+
+msgid "the removal stopped on an error"
+msgstr "удаление остановлено из-за ошибки"
 
 msgid "the reply could not be built"
 msgstr "не удалось собрать ответ"
@@ -8791,8 +8803,17 @@ msgstr "не удалось скопировать {}: {}"
 msgid "{} could not be reached; try again"
 msgstr "не удалось связаться с {}; повторите попытку"
 
+msgid "{} could not be removed"
+msgstr "Не удалось удалить {}"
+
 msgid "{} could not be replaced: {}"
 msgstr "не удалось заменить {}: {}"
+
+msgid "{} could not be turned off"
+msgstr "Не удалось отключить {}"
+
+msgid "{} could not be turned on"
+msgstr "Не удалось включить {}"
 
 msgid "{} could not be written: {}"
 msgstr "не удалось записать {}: {}"
@@ -9081,6 +9102,9 @@ msgstr "Не удалось прочитать: {}"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "{}: разрешение не получено вовремя; подключите снова"
+
+msgid "{} was removed"
+msgstr "{} удалён"
 
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr "После записи {} содержимое «{}» не совпало с ожидаемым; ничего не заменено"

@@ -191,16 +191,7 @@ Item {
     }
     ServerWizard { id: editing; onClosed: { actions.editingServerKey = ""; rows.refresh() } }
 
-    ConfirmDialog {
-        id: removing
-        property int serverId
-        title: I18n.tr("Remove this server?", I18n.rev)
-        confirmText: I18n.tr("Remove", I18n.rev)
-        destructive: true
-        onConfirmed: {
-            Servers.remove(serverId); Servers.cancel(); actions.editingServerKey = ""; rows.refresh()
-        }
-    }
+    ServerRemoveDialog { id: removing; onClosed: { actions.editingServerKey = ""; rows.refresh() } }
 
     WizardPatterns.OutputDiagnosisDialog { id: diagnosis; settingsPage: rows }
     AnalysisUi.AnalysisInventoryDialog { id: inventory }

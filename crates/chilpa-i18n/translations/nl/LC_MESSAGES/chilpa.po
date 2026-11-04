@@ -840,6 +840,9 @@ msgstr "Gebaseerd op {artist} · {genres}"
 msgid "Bass"
 msgstr "Bas"
 
+msgid "Being removed…"
+msgstr "Wordt verwijderd…"
+
 msgid "Between tracks"
 msgstr "Tussen nummers"
 
@@ -5255,6 +5258,9 @@ msgstr "Verwijderen…"
 msgid "Removing saved profile…"
 msgstr ""
 
+msgid "Removing {}… Its songs and playlists are leaving your library. This can take a moment."
+msgstr "{} wordt verwijderd… De nummers en playlists ervan verdwijnen uit je bibliotheek. Dit kan even duren."
+
 msgid "Rename"
 msgstr "Hernoemen"
 
@@ -6370,6 +6376,12 @@ msgstr "De afbeelding is te groot"
 
 msgid "The incorrect lyrics could not be excluded. Try again."
 msgstr "De onjuiste songtekst kon niet worden uitgesloten. Probeer het opnieuw."
+
+msgid "The library could not be changed. Try again; the detail below says what happened."
+msgstr "De bibliotheek kon niet worden gewijzigd. Probeer het opnieuw; het detail hieronder zegt wat er gebeurde."
+
+msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
+msgstr "De bibliotheek bleef bezig met een andere taak. Er is niets meer verwijderd; probeer het zo opnieuw."
 
 msgid "The line being sung stays in view."
 msgstr "De regel die wordt gezongen blijft in beeld."
@@ -8202,9 +8214,6 @@ msgstr "de hoes moet een afbeelding van maximaal 25 MiB zijn"
 msgid "the cover is larger than 12,000 pixels on a side"
 msgstr "de hoes is aan één kant groter dan 12.000 pixels"
 
-msgid "the covers of {} could not be deleted from {}"
-msgstr "de hoezen van {} konden niet worden verwijderd uit {}"
-
 msgid "the credential could not be kept safely on this system"
 msgstr "de inloggegevens konden niet veilig op dit systeem worden bewaard"
 
@@ -8426,6 +8435,9 @@ msgstr "het album heeft geen artiest"
 
 msgid "the record has no title"
 msgstr "het album heeft geen titel"
+
+msgid "the removal stopped on an error"
+msgstr "het verwijderen stopte door een fout"
 
 msgid "the reply could not be built"
 msgstr "het antwoord kon niet worden opgebouwd"
@@ -8777,8 +8789,17 @@ msgstr "{} kon niet worden gekopieerd: {}"
 msgid "{} could not be reached; try again"
 msgstr "{} kon niet worden bereikt; probeer het opnieuw"
 
+msgid "{} could not be removed"
+msgstr "{} kon niet worden verwijderd"
+
 msgid "{} could not be replaced: {}"
 msgstr "{} kon niet worden vervangen: {}"
+
+msgid "{} could not be turned off"
+msgstr "{} kon niet worden uitgeschakeld"
+
+msgid "{} could not be turned on"
+msgstr "{} kon niet worden ingeschakeld"
 
 msgid "{} could not be written: {}"
 msgstr "{} kon niet worden geschreven: {}"
@@ -9041,6 +9062,9 @@ msgstr "{} onleesbaar"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "er is bij {} niet op tijd toestemming gegeven; verbind opnieuw"
+
+msgid "{} was removed"
+msgstr "{} is verwijderd"
 
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr "{} is geschreven maar zegt in ‘{}' niet wat het zou moeten; er is niets vervangen"

@@ -840,6 +840,9 @@ msgstr "Baseado em {artist} · {genres}"
 msgid "Bass"
 msgstr "Graves"
 
+msgid "Being removed…"
+msgstr "Sendo removido…"
+
 msgid "Between tracks"
 msgstr "Entre faixas"
 
@@ -5255,6 +5258,9 @@ msgstr "Remover…"
 msgid "Removing saved profile…"
 msgstr ""
 
+msgid "Removing {}… Its songs and playlists are leaving your library. This can take a moment."
+msgstr "Removendo {}… As músicas e playlists dele estão saindo da sua biblioteca. Isso pode levar um momento."
+
 msgid "Rename"
 msgstr "Renomear"
 
@@ -6370,6 +6376,12 @@ msgstr "A imagem é grande demais"
 
 msgid "The incorrect lyrics could not be excluded. Try again."
 msgstr "Não foi possível excluir a letra incorreta. Tente novamente."
+
+msgid "The library could not be changed. Try again; the detail below says what happened."
+msgstr "Não foi possível alterar a biblioteca. Tente de novo; o detalhe abaixo diz o que aconteceu."
+
+msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
+msgstr "A biblioteca continuou ocupada com outra tarefa. Nada mais foi removido; tente de novo em um momento."
 
 msgid "The line being sung stays in view."
 msgstr "A linha que está sendo cantada permanece à vista."
@@ -8202,9 +8214,6 @@ msgstr "a capa precisa ser uma imagem de até 25 MiB"
 msgid "the cover is larger than 12,000 pixels on a side"
 msgstr "a capa tem mais de 12.000 pixels de lado"
 
-msgid "the covers of {} could not be deleted from {}"
-msgstr "não foi possível excluir as capas de {} em {}"
-
 msgid "the credential could not be kept safely on this system"
 msgstr "não foi possível guardar a credencial com segurança neste sistema"
 
@@ -8426,6 +8435,9 @@ msgstr "o disco não tem artista"
 
 msgid "the record has no title"
 msgstr "o disco não tem título"
+
+msgid "the removal stopped on an error"
+msgstr "a remoção parou por um erro"
 
 msgid "the reply could not be built"
 msgstr "não foi possível montar a resposta"
@@ -8777,8 +8789,17 @@ msgstr "não foi possível copiar {}: {}"
 msgid "{} could not be reached; try again"
 msgstr "não foi possível alcançar {}; tente novamente"
 
+msgid "{} could not be removed"
+msgstr "Não foi possível remover {}"
+
 msgid "{} could not be replaced: {}"
 msgstr "não foi possível substituir {}: {}"
+
+msgid "{} could not be turned off"
+msgstr "Não foi possível desativar {}"
+
+msgid "{} could not be turned on"
+msgstr "Não foi possível ativar {}"
 
 msgid "{} could not be written: {}"
 msgstr "não foi possível gravar {}: {}"
@@ -9041,6 +9062,9 @@ msgstr "{} ilegíveis"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "{} não foi autorizado a tempo; conecte novamente"
+
+msgid "{} was removed"
+msgstr "{} foi removido"
 
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr "{} foi gravado e não diz o que deveria em “{}”; nada foi substituído"

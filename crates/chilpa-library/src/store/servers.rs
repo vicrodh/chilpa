@@ -489,6 +489,56 @@ impl Library {
         self.remove_source_catalog(source_id, false)
     }
 
+    /// Takes up to `limit` of a source's tracks out of the library in one
+    /// short transaction, with what hangs on each (genres, composers,
+    /// analysis, plays, scanned files, overlays) and the records and genres
+    /// it leaves empty. A track a playlist names is left for
+    /// `remove_source`, which rewrites the playlists. Returns how many
+    /// went: none left when it returns zero. A large source is taken out
+    /// this way first, so no single transaction holds the library long.
+    pub fn remove_source_tracks(&self, source_id: i64, limit: usize) -> rusqlite::Result<usize> {
+        let tx = self.own_transaction()?;
+        let ids: Vec<i64> = {
+            let mut stmt = tx.prepare(
+                "SELECT id FROM tracks WHERE source_id = ?1
+                   AND id NOT IN (SELECT track_id FROM playlist_tracks WHERE track_id IS NOT NULL)
+                 LIMIT ?2",
+            )?;
+            let rows = stmt.query_map(params![source_id, limit as i64], |r| r.get(0))?;
+            rows.collect::<rusqlite::Result<_>>()?
+        };
+        if ids.is_empty() {
+            tx.finish()?;
+            return Ok(0);
+        }
+        // Integers only: the list is written into the statement.
+        let list = ids.iter().map(i64::to_string).collect::<Vec<_>>().join(",");
+        let column = |sql: String| -> rusqlite::Result<Vec<i64>> {
+            let mut stmt = tx.prepare(&sql)?;
+            let rows = stmt.query_map([], |r| r.get(0))?;
+            rows.collect()
+        };
+        let albums = column(format!("SELECT DISTINCT album_id FROM tracks WHERE id IN ({list}) AND album_id IS NOT NULL"))?;
+        let genres = column(format!("SELECT DISTINCT genre_id FROM track_genres WHERE track_id IN ({list})"))?;
+        tx.execute("DELETE FROM source_overlay WHERE source_id = ?1", params![source_id])?;
+        for table in ["play_events", "track_genres", "track_composers", "audio_features", "scanned_files"] {
+            tx.execute(&format!("DELETE FROM {table} WHERE track_id IN ({list})"), [])?;
+        }
+        tx.execute(&format!("DELETE FROM tracks WHERE id IN ({list})"), [])?;
+        {
+            let mut delete = tx.prepare("DELETE FROM albums WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM tracks WHERE album_id = ?1)")?;
+            for album in albums {
+                delete.execute(params![album])?;
+            }
+            let mut delete = tx.prepare("DELETE FROM genres WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM track_genres WHERE genre_id = ?1)")?;
+            for genre in genres {
+                delete.execute(params![genre])?;
+            }
+        }
+        tx.finish()?;
+        Ok(ids.len())
+    }
+
     /// Uninstall removes the source's catalog, retaining entries saved in other playlists.
     pub fn remove_plugin_source(&self, source_id: i64) -> rusqlite::Result<()> {
         self.remove_source_catalog(source_id, true)

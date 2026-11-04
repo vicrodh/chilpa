@@ -4,14 +4,15 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
 
 // QBZ's WarningBanner: a title and a body over a wash of the variant's
-// tone, info, success or warning.
+// tone, info, success, warning or error.
 Item {
     id: banner
     property string title
     property string body
     property string variant: "warning"
     readonly property color tone: variant === "info" ? Theme.color.accent
-                                : variant === "success" ? Theme.color.statusPositive : Theme.color.statusWarning
+                                : variant === "success" ? Theme.color.statusPositive
+                                : variant === "error" ? Theme.color.statusNegative : Theme.color.statusWarning
     width: parent ? parent.width : 0
     implicitHeight: row.implicitHeight + Metrics.gap24
 

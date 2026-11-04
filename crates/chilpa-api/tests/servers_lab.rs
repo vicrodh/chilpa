@@ -104,7 +104,8 @@ fn an_opensubsonic_server_is_added_synced_played_and_removed() {
     let said = chilpa.server_removal(row.id);
     assert!(said.contains(&row.tracks.to_string()), "{said}");
     assert!(chilpa.remove_server(row.id));
-    assert!(chilpa.servers().is_empty());
+    // Taken out away from the window: its sync stops, then its rows go.
+    until(&mut chilpa, "the removal", Duration::from_secs(120), |c| c.servers().is_empty());
     let lib = chilpa_library::Library::open(&dir.join("data/chilpa/library.db")).unwrap();
     assert_eq!(lib.track_count(true).unwrap(), 0, "no trace left");
 }

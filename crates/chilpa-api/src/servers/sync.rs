@@ -227,6 +227,12 @@ impl Syncer {
         }
     }
 
+    /// Whether anything of that server is queued or running on the thread:
+    /// its catalogue, its playlists or its covers.
+    pub(crate) fn has(&self, source: i64) -> bool {
+        self.queued.contains(&source) || self.reading.contains(&source) || self.covering.contains_key(&source)
+    }
+
     /// Stops the sync of a server that is being removed, at the next page.
     pub(crate) fn cancel(&mut self, source: i64) {
         self.again.remove(&source);

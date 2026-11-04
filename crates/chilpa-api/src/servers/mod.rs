@@ -8,6 +8,7 @@
 //! a thread; `poll`, which the window calls four times a second, picks up
 //! what came back.
 
+mod background;
 pub(crate) mod keys;
 mod lan;
 mod net;
@@ -84,6 +85,16 @@ pub(crate) struct Servers {
     shown_at: Option<std::time::Instant>,
     /// A server being added or edited: the library is written on a thread.
     adding: Option<Adding>,
+    /// A server being removed, or how its removal went until the window
+    /// has read it (`background`).
+    removing: Option<background::Removing>,
+    /// Removals a closed app left unfinished, to go on one at a time.
+    resumed: Vec<(i64, String, String, String)>,
+    /// A server being turned off or on.
+    toggling: Option<background::Toggling>,
+    /// What the window says once, as a notice: a number that moves with each
+    /// one, and the words.
+    notice: (u64, String),
 }
 
 /// A server being written into the library, away from the window: the
@@ -118,6 +129,7 @@ impl Chilpa {
         self.servers.watcher = Some(watch::Watcher::start(Arc::clone(&keys)));
         self.servers.writer = Some(writing::Writer::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
         self.servers.keys = Some(keys);
+        self.servers.resumed = background::unfinished();
         // A queue restored before the opener existed could not name a
         // server's track; now it can.
         if on_a_server(&self.now.path) {
@@ -158,6 +170,8 @@ impl Chilpa {
                     chilpa_i18n::t("Disabled. Its records stay in the library.")
                 } else if !s.enabled {
                     chilpa_i18n::t("Disabled. Its records stay in the library and its sign-in is saved.")
+                } else if self.servers.removing.as_ref().is_some_and(|r| r.id == s.source_id && r.running()) {
+                    chilpa_i18n::t("Being removed…")
                 } else if let Some(run) = running.get(&s.source_id) {
                     sync_state(run)
                 } else if refused.contains(&s.source_id) {
@@ -289,6 +303,8 @@ impl Chilpa {
             "searching": v.searching, "views": v.views, "viewRoots": v.view_roots,
             "choices": v.choices.iter().map(|(id, name, detail)| serde_json::json!({"id": id, "name": name, "detail": detail})).collect::<Vec<_>>(),
             "busy": v.busy, "error": v.error,
+            "removing": self.servers.removing.as_ref().map(background::Removing::json),
+            "notice": {"seq": self.servers.notice.0, "text": self.servers.notice.1},
         })
         .to_string()
     }
@@ -336,8 +352,11 @@ impl Chilpa {
         self.servers.setup.plex_account(token);
     }
 
+    /// Closes the setup, and lets go of how the last removal went: the
+    /// window that showed it is closed.
     pub fn setup_cancel(&mut self) {
         self.servers.setup.cancel();
+        self.forget_removal();
     }
 
     /// The libraries chosen: the server is added, or its connection changed,
@@ -410,8 +429,8 @@ impl Chilpa {
 
     /// Reads the server's catalogue again.
     pub fn sync_server(&mut self, id: i64) {
-        if !self.library().and_then(|lib| lib.server(id).ok().flatten()).is_some_and(|s| s.enabled) {
-            eprintln!("chilpa-servers: sync of source {id} not asked: the server is disabled or no longer in the library");
+        if self.removing_server(id) || !self.library().and_then(|lib| lib.server(id).ok().flatten()).is_some_and(|s| s.enabled) {
+            eprintln!("chilpa-servers: sync of source {id} not asked: the server is disabled, being removed or no longer in the library");
             return;
         }
         self.servers.errors.remove(&id);
@@ -516,26 +535,6 @@ impl Chilpa {
         }
     }
 
-    /// Pauses or resumes a server while retaining its catalogue and sign-in.
-    pub fn set_server_enabled(&mut self, id: i64, enabled: bool) -> bool {
-        let current = RemoteEntry::parse(&self.now.path);
-        let Some(server) = self.library().and_then(|lib| lib.server(id).ok().flatten()) else { return false };
-        let playing_here = !enabled && current.is_some_and(|entry| entry.source.provider == server.provider && entry.source.instance == server.instance);
-        let changed = self.library().and_then(|lib| lib.set_server_enabled(id, enabled).ok()).unwrap_or(false);
-        if !changed { return false; }
-        if enabled {
-            if let Some(watcher) = &self.servers.watcher { watcher.ask(); }
-        } else if let Some(syncer) = self.servers.syncer.as_mut() {
-            syncer.cancel(id);
-        }
-        if playing_here { self.stop(); }
-        self.servers.errors.remove(&id);
-        self.servers.refused.remove(&id);
-        self.servers.playlist_errors.remove(&id);
-        self.servers.changed = true;
-        true
-    }
-
     /// What removing a server takes out of the library, as the confirmation
     /// says it.
     pub fn server_removal(&mut self, id: i64) -> String {
@@ -567,49 +566,6 @@ impl Chilpa {
         text.push(' ');
         text.push_str(&chilpa_i18n::t_args("{} and its files are not touched.", &[&server.label]));
         text
-    }
-
-    /// Takes the server and everything that came from it out of the
-    /// library, with its credential and its covers (ADR-017 §6).
-    ///
-    /// The credential goes first: if it cannot be deleted nothing else is
-    /// touched, and the server stays in Settings to try again. The covers
-    /// are a cache; if they cannot be deleted the removal still stands and
-    /// the window says where they are.
-    pub fn remove_server(&mut self, id: i64) -> bool {
-        if let Some(syncer) = self.servers.syncer.as_mut() {
-            syncer.cancel(id);
-        }
-        let Some(stored) = self.library().and_then(|lib| lib.server(id).ok().flatten()) else { return false };
-        if self.servers.keys.as_ref().is_some_and(|keys| !keys.forget(&stored.instance)) {
-            self.now.error = chilpa_i18n::t_args("the credential of {} could not be deleted; nothing was removed", &[&stored.label]);
-            return false;
-        }
-        let prefix = RemoteEntry::new(chilpa_models::SourceId::new(stored.provider.clone(), stored.instance.clone()), "x").to_entry();
-        let prefix = prefix.trim_end_matches('x').to_string();
-        self.purge_queue(|path| path.starts_with(&prefix));
-        let Some(lib) = self.library() else { return false };
-        let chosen = lib.overlay_covers_dir(id);
-        if lib.remove_source(id).is_err() {
-            self.now.error = chilpa_i18n::t("the library could not be written");
-            return false;
-        }
-        // Its own covers, and the ones chosen here for its records: the
-        // overlays those went with left the library with the source.
-        for covers in std::iter::once(sync::covers_dir(&stored.instance)).chain(chosen) {
-            if let Err(e) = std::fs::remove_dir_all(&covers) {
-                if e.kind() != std::io::ErrorKind::NotFound {
-                    self.now.error = chilpa_i18n::t_args("the covers of {} could not be deleted from {}", &[&stored.label, &covers.display().to_string()]);
-                }
-            }
-        }
-        self.servers.errors.remove(&id);
-        self.servers.refused.remove(&id);
-        self.servers.playlist_errors.remove(&id);
-        self.servers.answers.remove(&id);
-        self.servers.changed = true;
-        self.persist_queue_session();
-        true
     }
 
     /// Whether that record can be opened now: some track of it plays
@@ -666,6 +622,7 @@ impl Chilpa {
     pub(crate) fn poll_servers(&mut self) {
         self.servers.setup.poll();
         self.poll_adding();
+        self.poll_background();
         self.poll_server_changes();
         let events = self.servers.syncer.as_mut().map(|s| s.poll()).unwrap_or_default();
         for event in events {
