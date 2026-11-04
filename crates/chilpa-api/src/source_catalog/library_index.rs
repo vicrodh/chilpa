@@ -239,8 +239,8 @@ impl Catalog {
             for section in [albums.then_some("albums"), tracks.then_some("tracks")].into_iter().flatten() {
                 let Some(shelf) = inner.store.shelves.get(&format!("{plugin} section:{section}")) else { 0_u8.hash(&mut hash); continue };
                 (shelf.read_at, &shelf.cards, &shelf.tracks).hash(&mut hash);
-                for card in shelf.cards.iter().filter_map(|id| inner.store.cards.get(id)) {
-                    (card.read_at, card.tracks.as_ref().map(Vec::len)).hash(&mut hash);
+                for card in shelf.cards.iter().copied().chain(shelf.tracks.iter().filter_map(|id|inner.store.tracks.get(id)).map(|track|track.album_id)).filter_map(|id| inner.store.cards.get(&id)) {
+                    (card.read_at, card.tracks.as_ref().map(Vec::len),card.metadata["favorite"]==true,card.metadata["in_library"]!=false).hash(&mut hash);
                 }
             }
         }
@@ -260,6 +260,31 @@ impl Catalog {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn album_hearts_refresh_the_index_without_changing_library_membership(){
+        let catalog=Catalog::new();
+        let (saved,loose)={
+            let mut inner=catalog.lock();
+            let saved=inner.store.take_item("fixture",&json!({"kind":"album","ref":"album:1","title":"Saved","favorite":false,"in_library":true}),1).unwrap();
+            let loose=inner.store.take_item("fixture",&json!({"kind":"album","ref":"album:2","title":"Track album","favorite":false,"in_library":false}),1).unwrap();
+            let track=inner.store.track_id("plugin:fixture:track:1");
+            inner.store.tracks.get_mut(&track).unwrap().album_id=loose;
+            inner.store.shelves.insert("fixture section:albums".into(),super::super::store::Shelf{cards:vec![saved],..Default::default()});
+            inner.store.shelves.insert("fixture section:tracks".into(),super::super::store::Shelf{tracks:vec![track],..Default::default()});
+            (saved,loose)
+        };
+        let chosen=vec![("fixture".into(),true,true)];
+        let before=catalog.integrated_signature(&chosen);
+        catalog.mark_native_favorite("fixture","album:1",true);
+        let loved=catalog.integrated_signature(&chosen);
+        assert_ne!(before,loved);
+        let items=catalog.integrated_items(&["fixture".into()],&["fixture".into()]);
+        assert!(items.iter().any(|item|item.album==saved && item.favorite_album && item.saved_album));
+        catalog.mark_native_favorite("fixture","album:2",true);
+        assert_ne!(loved,catalog.integrated_signature(&chosen));
+        assert!(catalog.integrated_items(&["fixture".into()],&["fixture".into()]).iter().any(|item|item.album==loose && item.favorite_album && !item.saved_album));
+    }
 
     #[test]
     fn source_play_counts_are_optional_and_belong_to_tracks() {
