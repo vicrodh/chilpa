@@ -5285,8 +5285,8 @@ msgstr "Remover…"
 msgid "Removing saved profile…"
 msgstr ""
 
-msgid "Removing {}…"
-msgstr "Removendo {}…"
+msgid "Removing {}"
+msgstr "Removendo {}"
 
 msgid "Removing…"
 msgstr "Removendo…"
@@ -5657,6 +5657,9 @@ msgstr "Buscar estações pelo nome"
 msgid "Search these episodes"
 msgstr "Buscar nestes episódios"
 
+msgid "Search this network"
+msgstr "Procurar nesta rede"
+
 msgid "Search this page…"
 msgstr "Buscar nesta página…"
 
@@ -5770,8 +5773,8 @@ msgstr "Endereço do servidor"
 msgid "Server name"
 msgstr "Nome do servidor"
 
-msgid "Server quality"
-msgstr "Qualidade do servidor"
+msgid "Server quality (optional)"
+msgstr "Qualidade do servidor (opcional)"
 
 msgid "Server type"
 msgstr "Tipo de servidor"

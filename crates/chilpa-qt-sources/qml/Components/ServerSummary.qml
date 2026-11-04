@@ -50,11 +50,12 @@ Column {
             onTextEdited: summary.named = true
         }
         Grid {
+            id: facts
             width: parent.width
             columns: 2
             columnSpacing: Metrics.gap12
             rowSpacing: Metrics.gap6
-            Text { text: I18n.tr("Kind", I18n.rev); font.pointSize: Type.small; color: Theme.color.textTertiary }
+            Text { id: kindLabel; text: I18n.tr("Kind", I18n.rev); font.pointSize: Type.small; color: Theme.color.textTertiary }
             Row {
                 spacing: Metrics.gap6
                 SourceIcon { anchors.verticalCenter: parent.verticalCenter; sourceInfo: ({icon: summary.kind === "subsonic" ? "opensubsonic" : summary.kind}) }
@@ -65,11 +66,12 @@ Column {
                     color: Theme.color.textPrimary
                 }
             }
-            Text { visible: (summary.setup.product || "") !== ""; text: I18n.tr("What it is", I18n.rev); font.pointSize: Type.small; color: Theme.color.textTertiary }
+            Text { id: whatLabel; visible: (summary.setup.product || "") !== ""; text: I18n.tr("What it is", I18n.rev); font.pointSize: Type.small; color: Theme.color.textTertiary }
             Text { visible: (summary.setup.product || "") !== ""; text: summary.setup.product || ""; textFormat: Text.PlainText; font.pointSize: Type.body; color: Theme.color.textPrimary }
-            Text { text: I18n.tr("Address", I18n.rev); font.pointSize: Type.small; color: Theme.color.textTertiary }
+            Text { id: addressLabel; text: I18n.tr("Address", I18n.rev); font.pointSize: Type.small; color: Theme.color.textTertiary }
             Text {
-                width: summary.width / 2 // derived: the second column
+                // The rest of the row, beside the widest label.
+                width: summary.width - Math.max(kindLabel.implicitWidth, whatLabel.implicitWidth, addressLabel.implicitWidth) - facts.columnSpacing
                 text: summary.setup.address || ""
                 textFormat: Text.PlainText
                 wrapMode: Text.WrapAnywhere

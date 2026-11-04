@@ -5285,8 +5285,8 @@ msgstr "Entfernen…"
 msgid "Removing saved profile…"
 msgstr ""
 
-msgid "Removing {}…"
-msgstr "{} wird entfernt…"
+msgid "Removing {}"
+msgstr "{} wird entfernt"
 
 msgid "Removing…"
 msgstr "Wird entfernt…"
@@ -5657,6 +5657,9 @@ msgstr "Sender nach Name suchen"
 msgid "Search these episodes"
 msgstr "In diesen Folgen suchen"
 
+msgid "Search this network"
+msgstr "Dieses Netzwerk durchsuchen"
+
 msgid "Search this page…"
 msgstr "Diese Seite durchsuchen…"
 
@@ -5770,8 +5773,8 @@ msgstr "Serveradresse"
 msgid "Server name"
 msgstr "Servername"
 
-msgid "Server quality"
-msgstr "Serverqualität"
+msgid "Server quality (optional)"
+msgstr "Serverqualität (optional)"
 
 msgid "Server type"
 msgstr "Servertyp"

@@ -10,13 +10,13 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 // any level, by the way down to each, with a cross to take one out. The
 // facade opens each level (`Servers.pick`); nothing is guessed. A folder
 // that holds no songs is shown, greyed, with why, and cannot be chosen or
-// opened. Settings the server offers (its quality) are below, in its own
-// words, each changed only by Apply (`Servers.begin("choose/...")`).
+// opened. Settings the server offers (its quality) are below, folded, in
+// its own words (ServerQuality). What comes in is kept in sight under the
+// step, outside its scrolling (ServerChosen).
 Column {
     id: navigator
     property var setup: ({})
     property var chosen: []
-    property var names: ({})
     property bool preview: false
     readonly property bool busy: setup.busy === true
     readonly property var crumbs: setup.crumbs || []
@@ -124,42 +124,4 @@ Column {
 
     // The server's own settings, as it words them (ServerQuality).
     ServerQuality { width: parent.width; setup: navigator.setup; busy: navigator.busy; preview: navigator.preview }
-
-    // What comes in, chosen at any level.
-    Text {
-        width: parent.width
-        topPadding: Metrics.gap8
-        text: navigator.chosen.length === 0 ? I18n.tr("Nothing chosen yet. Choose at least one folder.", I18n.rev)
-            : I18n.trCount("{} folder comes in:", "{} folders come in:", navigator.chosen.length, I18n.rev)
-        wrapMode: Text.WordWrap
-        font.pointSize: Type.small
-        font.weight: Type.semibold
-        color: Theme.color.textSecondary
-    }
-    Repeater {
-        model: navigator.chosen
-        Row {
-            id: kept
-            required property string modelData
-            required property int index
-            width: navigator.width
-            spacing: Metrics.gap6
-            IconButton {
-                id: drop
-                objectName: "serverDropFolder_" + kept.index
-                size: Metrics.button24
-                glyph: Icons.x
-                tip: I18n.tr("Take it out", I18n.rev)
-                onClicked: navigator.picked(kept.modelData, "", false)
-            }
-            Text {
-                width: parent.width - drop.width - parent.spacing
-                anchors.verticalCenter: parent.verticalCenter
-                text: navigator.names[kept.modelData] || I18n.tr("A folder chosen before", I18n.rev)
-                wrapMode: Text.WordWrap
-                font.pointSize: Type.body
-                color: Theme.color.textPrimary
-            }
-        }
-    }
 }

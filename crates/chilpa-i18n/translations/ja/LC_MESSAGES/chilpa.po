@@ -5280,8 +5280,8 @@ msgstr "削除…"
 msgid "Removing saved profile…"
 msgstr ""
 
-msgid "Removing {}…"
-msgstr "{}を削除しています…"
+msgid "Removing {}"
+msgstr "{}を削除しています"
 
 msgid "Removing…"
 msgstr "削除中…"
@@ -5652,6 +5652,9 @@ msgstr "名前でステーションを検索"
 msgid "Search these episodes"
 msgstr "これらのエピソードを検索"
 
+msgid "Search this network"
+msgstr "このネットワークを検索"
+
 msgid "Search this page…"
 msgstr "このページを検索…"
 
@@ -5764,8 +5767,8 @@ msgstr "サーバーアドレス"
 msgid "Server name"
 msgstr "サーバー名"
 
-msgid "Server quality"
-msgstr "サーバーの品質"
+msgid "Server quality (optional)"
+msgstr "サーバーの品質（任意）"
 
 msgid "Server type"
 msgstr "サーバーの種類"

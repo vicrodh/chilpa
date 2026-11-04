@@ -5290,8 +5290,8 @@ msgstr "Удалить…"
 msgid "Removing saved profile…"
 msgstr ""
 
-msgid "Removing {}…"
-msgstr "Удаление {}…"
+msgid "Removing {}"
+msgstr "Удаление {}"
 
 msgid "Removing…"
 msgstr "Удаление…"
@@ -5662,6 +5662,9 @@ msgstr "Поиск станций по названию"
 msgid "Search these episodes"
 msgstr "Поиск по этим выпускам"
 
+msgid "Search this network"
+msgstr "Искать в этой сети"
+
 msgid "Search this page…"
 msgstr "Поиск по странице…"
 
@@ -5776,8 +5779,8 @@ msgstr "Адрес сервера"
 msgid "Server name"
 msgstr "Имя сервера"
 
-msgid "Server quality"
-msgstr "Качество сервера"
+msgid "Server quality (optional)"
+msgstr "Качество сервера (необязательно)"
 
 msgid "Server type"
 msgstr "Тип сервера"

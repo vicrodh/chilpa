@@ -52,7 +52,9 @@ Column {
                 anchors.left: parent.left
                 anchors.right: again.left
                 anchors.verticalCenter: parent.verticalCenter
-                text: form.setup.searching === true ? I18n.tr("Searching this network…", I18n.rev) : I18n.tr("Found on this network", I18n.rev)
+                // An edit searches only when asked: until then nothing is said found.
+                text: form.setup.searching === true ? I18n.tr("Searching this network…", I18n.rev)
+                    : form.found.length > 0 || !form.editing ? I18n.tr("Found on this network", I18n.rev) : ""
                 elide: Text.ElideRight
                 font.pointSize: Type.small
                 font.weight: Type.semibold
@@ -64,7 +66,8 @@ Column {
                 anchors.right: parent.right
                 kind: "ghost"
                 glyph: Icons.refresh
-                text: I18n.tr("Search again", I18n.rev)
+                text: form.editing && form.found.length === 0 && form.setup.searching !== true
+                    ? I18n.tr("Search this network", I18n.rev) : I18n.tr("Search again", I18n.rev)
                 enabled: !form.preview && form.setup.busy !== true && form.setup.step === "address"
                 onClicked: Servers.begin("search")
             }

@@ -147,13 +147,15 @@ Modal {
             objectName: "serverFormViewport"
             anchors.top: rail.bottom
             anchors.topMargin: Metrics.gap16
-            anchors.bottom: footer.top
+            anchors.bottom: tray.visible ? tray.top : footer.top
             anchors.bottomMargin: Metrics.gap12
             width: parent.width
             clip: true
             contentHeight: content.implicitHeight
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap4 }
+            // Shown whenever the step is taller than its place, in the
+            // margin beside it: nothing is hidden without a sign of it.
+            ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.gap8; policy: ScrollBar.AlwaysOn }
             Loader {
                 id: content
                 width: flick.width
@@ -161,31 +163,19 @@ Modal {
                 sourceComponent: pagesComponent
             }
         }
-        Item {
-            id: footer
-            anchors.bottom: parent.bottom
+        ServerWizardFooter { id: footer; anchors.bottom: parent.bottom; width: parent.width; wizard: wizard }
+        // What comes in stays in sight while a media server's folders are
+        // browsed; the folders scroll above it.
+        ServerChosen {
+            id: tray
+            visible: wizard.page === 3 && wizard.dlna
+            anchors.bottom: footer.top
+            anchors.bottomMargin: Metrics.gap12
             width: parent.width
-            height: Metrics.pillHeight
-            PillButton {
-                objectName: "serverBack"
-                visible: wizard.page > (wizard.editing ? 1 : 0) && !wizard.done
-                anchors.left: parent.left
-                text: I18n.tr("Back", I18n.rev)
-                enabled: !wizard.busy || wizard.setup.searching === true || wizard.step === "code"
-                onClicked: wizard.back()
-            }
-            Row {
-                anchors.right: parent.right
-                spacing: Metrics.gap8
-                PillButton { visible: !wizard.done; text: I18n.tr("Cancel", I18n.rev); onClicked: wizard.close() }
-                PillButton {
-                    objectName: "serverContinue"
-                    kind: "primary"
-                    text: wizard.primaryText
-                    enabled: wizard.primaryEnabled
-                    onClicked: wizard.primary()
-                }
-            }
+            chosen: wizard.chosen
+            names: wizard.names
+            rows: wizard.height < Metrics.serverWizardHeight ? 2 : 3 // derived: fewer rows when the dialog is short
+            onPicked: (id, name, on) => wizard.pick(id, name, on)
         }
     }
 
@@ -226,7 +216,6 @@ Modal {
                 width: parent.width
                 setup: wizard.setup
                 chosen: wizard.chosen
-                names: wizard.names
                 preview: !!wizard.preview
                 onPicked: (id, name, on) => wizard.pick(id, name, on)
             }

@@ -5285,7 +5285,7 @@ msgstr ""
 msgid "Removing saved profile…"
 msgstr ""
 
-msgid "Removing {}…"
+msgid "Removing {}"
 msgstr ""
 
 msgid "Removing…"
@@ -5657,6 +5657,9 @@ msgstr ""
 msgid "Search these episodes"
 msgstr ""
 
+msgid "Search this network"
+msgstr ""
+
 msgid "Search this page…"
 msgstr ""
 
@@ -5770,7 +5773,7 @@ msgstr ""
 msgid "Server name"
 msgstr ""
 
-msgid "Server quality"
+msgid "Server quality (optional)"
 msgstr ""
 
 msgid "Server type"

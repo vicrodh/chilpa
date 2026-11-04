@@ -80,11 +80,12 @@ Modal {
         Text {
             objectName: "serverRemoveTitle"
             width: parent.width
-            text: dialog.phase === "removing" ? I18n.trArgs("Removing {}…", [dialog.name], I18n.rev)
+            text: dialog.phase === "removing" ? I18n.trArgs("Removing {}", [dialog.name], I18n.rev)
                 : dialog.phase === "failed" ? (dialog.removal.title || "")
                 : I18n.trArgs("Remove {}?", [dialog.name], I18n.rev)
             textFormat: Text.PlainText
-            wrapMode: Text.WordWrap
+            // A long name takes another line, even one without spaces.
+            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
             font.pointSize: Type.titleSmall
             font.weight: Type.bold
             color: Theme.color.textPrimary
@@ -115,15 +116,23 @@ Modal {
             Row {
                 width: parent.width
                 spacing: Metrics.gap12
-                // Drawn and turned by the render thread, in the theme's
-                // accent: it moves even while the window is busy a moment.
-                BusyIndicator {
+                // The app's busy mark as a glyph (BusyMark), larger and in
+                // the accent, turned by the render thread: it moves even
+                // while the window is busy a moment.
+                Icon {
                     id: spinner
-                    width: Metrics.button32
-                    height: width
+                    objectName: "serverRemovingSpinner"
+                    size: Metrics.button32
+                    glyph: Icons.loader2
+                    color: Theme.color.accent
                     anchors.verticalCenter: parent.verticalCenter
-                    running: dialog.visible && dialog.phase === "removing"
-                    palette.dark: Theme.color.accent
+                    RotationAnimator on rotation {
+                        from: 0
+                        to: 360
+                        duration: Motion.busyLoop
+                        loops: Animation.Infinite
+                        running: dialog.visible && dialog.phase === "removing" && !Motion.reduced
+                    }
                 }
                 Text {
                     objectName: "serverRemovingText"
