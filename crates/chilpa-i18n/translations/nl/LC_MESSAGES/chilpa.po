@@ -1118,6 +1118,9 @@ msgstr "Chilpa kan deze link niet lezen"
 msgid "Chilpa could not release the exclusive output. Stop playback and try the diagnosis again."
 msgstr "Chilpa kon de exclusieve uitvoer niet vrijgeven. Stop de weergave en probeer de diagnose opnieuw."
 
+msgid "Chilpa does not send {} requests to a server"
+msgstr "Chilpa stuurt geen {}-verzoeken naar een server"
+
 msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
 msgstr "Chilpa is verpakt als Flatpak/Snap en kan de audiostack van je host niet inspecteren. Als de weergave al werkt, ben je klaar. Kies hieronder je distributie en init-systeem voor de juiste installatiecommando's."
 

@@ -24,11 +24,13 @@ use crate::fetch::{FetchError, Fetched};
 /// One request to a server.
 #[derive(Clone, Debug)]
 pub struct Call<'a> {
-    /// `GET` or `POST`.
+    /// `GET`, `POST`, `PUT` or `DELETE`. Any other is refused before it
+    /// goes out: sent as a `GET`, a write would read instead and say
+    /// nothing.
     pub method: &'a str,
     pub url: &'a str,
     pub headers: &'a [(String, String)],
-    /// The body and its type, for a `POST`.
+    /// The body and its type, for a `POST` or a `PUT`.
     pub body: Option<(&'a str, &'a [u8])>,
     pub timeout: Duration,
     /// A reply larger than this is refused.
@@ -76,24 +78,18 @@ pub fn call(request: &Call) -> Result<Fetched, FetchError> {
         return Err(FetchError::Scheme);
     }
     let agent = agent(request.timeout, request.timeout);
-    let reply = match (request.method, request.body) {
-        ("POST", body) => {
-            let mut builder = agent.post(request.url);
-            for (name, value) in request.headers {
-                builder = builder.header(name.as_str(), value.as_str());
-            }
-            match body {
+    let reply = match request.method {
+        "GET" => headed(agent.get(request.url), request.headers).call(),
+        "DELETE" => headed(agent.delete(request.url), request.headers).call(),
+        "POST" | "PUT" => {
+            let builder = if request.method == "PUT" { agent.put(request.url) } else { agent.post(request.url) };
+            let builder = headed(builder, request.headers);
+            match request.body {
                 Some((kind, bytes)) => builder.header("Content-Type", kind).send(bytes),
                 None => builder.send_empty(),
             }
         }
-        _ => {
-            let mut builder = agent.get(request.url);
-            for (name, value) in request.headers {
-                builder = builder.header(name.as_str(), value.as_str());
-            }
-            builder.call()
-        }
+        other => return Err(FetchError::Transport(chilpa_i18n::t_args("Chilpa does not send {} requests to a server", &[other]))),
     }
     .map_err(|e| FetchError::Transport(describe(&e)))?;
 
@@ -111,6 +107,14 @@ pub fn call(request: &Call) -> Result<Fetched, FetchError> {
         other => FetchError::Transport(describe(&other)),
     })?;
     Ok(Fetched { status, headers, body })
+}
+
+/// The request with every header it carries.
+fn headed<B>(mut builder: ureq::RequestBuilder<B>, headers: &[(String, String)]) -> ureq::RequestBuilder<B> {
+    for (name, value) in headers {
+        builder = builder.header(name.as_str(), value.as_str());
+    }
+    builder
 }
 
 #[cfg(test)]
@@ -167,6 +171,28 @@ mod tests {
         assert!(asked.starts_with("POST "));
         assert!(asked.to_ascii_lowercase().contains("content-type: application/json"));
         assert!(asked.contains(r#"{"Username":"me"}"#));
+    }
+
+    #[test]
+    fn a_put_and_a_delete_go_out_as_such() {
+        let (url, asked) = answering(b"HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n".to_vec());
+        assert_eq!(ask(&url, "PUT", None).unwrap().status, 204);
+        assert!(asked.join().unwrap().starts_with("PUT "), "a PUT is sent as a PUT");
+        let (url, asked) = answering(b"HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n".to_vec());
+        assert_eq!(ask(&url, "DELETE", None).unwrap().status, 204);
+        let asked = asked.join().unwrap();
+        // Before, anything that was not a POST went out as a GET.
+        assert!(asked.starts_with("DELETE "), "{asked}");
+        assert!(asked.to_ascii_lowercase().contains("x-plex-token: tok"), "with its headers");
+    }
+
+    #[test]
+    fn a_method_it_does_not_send_is_refused_before_going_out() {
+        let server = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        server.set_nonblocking(true).unwrap();
+        let url = format!("http://127.0.0.1:{}/x", server.local_addr().unwrap().port());
+        assert!(matches!(ask(&url, "PATCH", None), Err(FetchError::Transport(_))));
+        assert!(server.accept().is_err(), "nothing reached the server");
     }
 
     #[test]
