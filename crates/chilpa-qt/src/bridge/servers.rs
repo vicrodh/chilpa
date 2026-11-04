@@ -39,7 +39,7 @@ pub mod qobject {
         fn remove(self: Pin<&mut Servers>, id: i64) -> bool;
     }
 }
-use crate::{app, registry};
+use crate::app;
 use cxx_qt_lib::QString;
 use std::pin::Pin;
 #[derive(Default)]
@@ -96,9 +96,9 @@ impl qobject::Servers {
     pub fn removal(&self, id: i64) -> QString {
         QString::from(&app::with(|api| api.server_removal(id)))
     }
+    /// Starts the removal; the library changes, and is read again, when it
+    /// ends (`Chilpa::remove_server`).
     pub fn remove(self: Pin<&mut Self>, id: i64) -> bool {
-        let removed = app::with(|api| api.remove_server(id));
-        registry::library(|l| l.content_changed());
-        removed
+        app::with(|api| api.remove_server(id))
     }
 }

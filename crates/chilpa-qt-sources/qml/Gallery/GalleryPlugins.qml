@@ -30,7 +30,7 @@ TitledFlow {
     ServerTableRow { width: Metrics.settingsMaxWidth; name: "Music server"; status: "Connected"; server: ({icon:"navidrome",product:"Navidrome 0.64.2",tracks:1234}); options:["Edit…","Disable","Sync now","Remove…"]; values:["edit","disable","sync","remove"] }
     ServerWizard { id: serverPreview; preview: ({step:"idle"}) }
     PillButton { text: "Music server modal"; onClicked: serverPreview.open() }
-    ServerRemoveDialog { id: removePreview; serverId: 7; message: "This removes 1,234 tracks in 98 records from your library."
+    ServerRemoveDialog { id: removePreview; serverId: 7; message: JSON.stringify({name: "Music server", tracks: 1234, albums: 98, plays: 12})
         preview: ({removing: {id: 7, name: "Music server", state: "removing"}}) }
     PillButton { text: "Removing a music server"; onClicked: removePreview.open() }
     EpisodeMaterial { width: Metrics.confirmWidth; entry: ({description:"Episode notes"}) }

@@ -3201,6 +3201,12 @@ msgstr "そのページ、または行の下のクイックビュー。"
 msgid "Its playlists could not be read: {}."
 msgstr "プレイリストを読み込めませんでした: {}。"
 
+msgid "Its songs, albums and playlists are leaving your library. This can take a moment; you can keep using Chilpa meanwhile."
+msgstr "曲、アルバム、プレイリストをライブラリから取り除いています。しばらくかかることがありますが、その間も Chilpa を使えます。"
+
+msgid "Its {} leave too."
+msgstr "{}も取り除かれます。"
+
 msgid "JUMP TO"
 msgstr "ジャンプ"
 
@@ -5262,11 +5268,11 @@ msgstr "小さいカバーと背景を削除します。必要に応じてChilpa
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "このプラグインと、そのアカウント、設定、キャッシュしたライブラリをChilpaから削除しますか？ソース側のアカウントやプレイリストは削除されません。"
 
-msgid "Remove this server?"
-msgstr "このサーバーを削除しますか？"
-
 msgid "Remove unreferenced images from sources and plugins. Needed images download again."
 msgstr "ソースやプラグインから参照されていない画像を削除します。必要な画像は再度ダウンロードされます。"
+
+msgid "Remove {}?"
+msgstr "{}を削除しますか？"
 
 msgid "Remove…"
 msgstr "削除…"
@@ -5274,8 +5280,11 @@ msgstr "削除…"
 msgid "Removing saved profile…"
 msgstr ""
 
-msgid "Removing {}… Its songs and playlists are leaving your library. This can take a moment."
-msgstr "{}を削除しています… 曲とプレイリストをライブラリから取り除いています。しばらくかかることがあります。"
+msgid "Removing {}…"
+msgstr "{}を削除しています…"
+
+msgid "Removing…"
+msgstr "削除中…"
 
 msgid "Rename"
 msgstr "名前を変更"
@@ -6748,9 +6757,6 @@ msgstr "このクエリはグループを 3 段まで入れ子にしています
 msgid "This record cannot be played now."
 msgstr "このアルバムは現在再生できません。"
 
-msgid "This removes {} from your library."
-msgstr "ライブラリから{}を削除します。"
-
 msgid "This saved query catalog uses an unsupported version; I kept its original data."
 msgstr "このクエリ一覧のバージョンには対応していません。元のデータは保持しました。"
 
@@ -7480,6 +7486,9 @@ msgstr "お使いのディストリビューション"
 msgid "Your music"
 msgstr "あなたの音楽"
 
+msgid "Your music files on the server are not touched."
+msgstr "サーバー上の音楽ファイルには触れません。"
+
 msgid "Your music is up to date"
 msgstr ""
 
@@ -7494,6 +7503,12 @@ msgstr "選択したソースの応答に通常より時間がかかっていま
 
 msgid "Your shows"
 msgstr "あなたの番組"
+
+msgid "Your {} and {} of them are removed too."
+msgstr "それらの{}と{}も削除されます。"
+
+msgid "Your {} of them are removed too."
+msgstr "それらの{}も削除されます。"
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "DASHマニフェスト（Chilpaはまだ読み取れません）"
@@ -8769,8 +8784,8 @@ msgstr[0] "{}アルバム"
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr "解析済み{}件、ビートなし{}件、読み取り不可{}件"
 
-msgid "{} and its files are not touched."
-msgstr "{}とそのファイルには手を加えません。"
+msgid "{} and {} leave your library."
+msgstr "{}と{}がライブラリから取り除かれます。"
 
 msgid "{} answered something Chilpa did not expect: {}"
 msgstr "{}がChilpaの想定外の応答を返しました: {}"

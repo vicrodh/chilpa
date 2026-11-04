@@ -195,6 +195,7 @@ Modal {
             property alias connect: connectPage
             property alias summary: summaryPage
             width: content.width
+            spacing: Metrics.gap12
             ServerKindChoice {
                 visible: wizard.page === 0
                 width: parent.width

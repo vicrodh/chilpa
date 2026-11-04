@@ -33,7 +33,7 @@ TestCase {
         rows=fixture
         table.model=rows
     }
-    function cleanup() { dialog.close(); tryCompare(dialog,"visible",false) }
+    function cleanup() { dialog.close(); removal.close(); tryCompare(dialog,"visible",false); tryCompare(removal,"visible",false) }
     function open() { dialog.open(); tryCompare(dialog,"opened",true); waitForRendering(dialog.contentItem) }
     function field(name) { return findChild(dialog.contentItem,name) }
     function last() { return Servers.calls[Servers.calls.length-1] }
@@ -299,13 +299,17 @@ TestCase {
         removal.message = Servers.removal(7)
         removal.open(); tryCompare(removal, "opened", true)
         const find = name => findChild(removal.contentItem, name)
+        compare(find("serverRemoveTitle").text, "Remove Lab?")
+        const facts = find("serverRemoveFacts").text
+        verify(facts.indexOf("12") >= 0 && facts.indexOf("826 albums") >= 0 && facts.indexOf("not touched") > 0, facts)
         verify(!find("serverRemoving").visible)
         find("serverRemoveConfirm").clicked()
         compare(last(), ["remove", 7])
+        tryVerify(()=>find("serverRemoving").visible, 1000, "at once, before the facade answers")
         Servers.show({step:"idle", removing:{id:7, name:"Lab", state:"removing"}})
-        tryVerify(()=>find("serverRemoving").visible)
-        verify(find("serverRemovingText").text.indexOf("Removing Lab") === 0, find("serverRemovingText").text)
-        verify(!find("serverRemoveConfirm").enabled && !find("serverRemoveCancel").enabled, "nothing to press under it")
+        compare(find("serverRemoveTitle").text, "Removing Lab…")
+        verify(!find("serverRemoveFacts").visible, "one state at a time, never two drawn together")
+        verify(!find("serverRemoveConfirm").visible && !find("serverRemoveCancel").visible, "nothing to press while it runs")
         keyClick(Qt.Key_Escape)
         mouseClick(test, 955, 695)
         verify(removal.opened, "neither Esc nor a click outside closes it")
@@ -314,7 +318,7 @@ TestCase {
             advice:"The library stayed busy with another task. Nothing more was taken out; try again in a moment.", detail:"database is locked"}})
         tryVerify(()=>find("serverRemoveFailed").visible)
         verify(!find("serverRemoving").visible)
-        compare(find("serverRemoveFailed").title, "Lab could not be removed")
+        compare(find("serverRemoveTitle").text, "Lab could not be removed")
         compare(find("serverRemoveFailed").variant, "error")
         compare(find("serverRemoveDetail").text, "database is locked")
         verify(find("serverRemoveDetail").selectByMouse && find("serverRemoveDetail").readOnly)

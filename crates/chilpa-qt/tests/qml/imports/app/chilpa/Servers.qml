@@ -17,5 +17,5 @@ QtObject {
     function quickConnect() { calls.push(["quickConnect"]) }
     function pick(id) { calls.push(["pick",id]) }
     function remove(id) { calls.push(["remove",id]); return true }
-    function removal(id) { return "This removes 3 tracks in 1 record from your library." }
+    function removal(id) { return JSON.stringify({name:"Lab", tracks:12789, albums:826, ratings:0, plays:3, playlists:1, entries:0, touched:0}) }
 }

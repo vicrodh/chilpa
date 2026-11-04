@@ -3206,6 +3206,12 @@ msgstr ""
 msgid "Its playlists could not be read: {}."
 msgstr ""
 
+msgid "Its songs, albums and playlists are leaving your library. This can take a moment; you can keep using Chilpa meanwhile."
+msgstr ""
+
+msgid "Its {} leave too."
+msgstr ""
+
 msgid "JUMP TO"
 msgstr ""
 
@@ -5267,10 +5273,10 @@ msgstr ""
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 
-msgid "Remove this server?"
+msgid "Remove unreferenced images from sources and plugins. Needed images download again."
 msgstr ""
 
-msgid "Remove unreferenced images from sources and plugins. Needed images download again."
+msgid "Remove {}?"
 msgstr ""
 
 msgid "Remove…"
@@ -5279,7 +5285,10 @@ msgstr ""
 msgid "Removing saved profile…"
 msgstr ""
 
-msgid "Removing {}… Its songs and playlists are leaving your library. This can take a moment."
+msgid "Removing {}…"
+msgstr ""
+
+msgid "Removing…"
 msgstr ""
 
 msgid "Rename"
@@ -6757,9 +6766,6 @@ msgstr ""
 msgid "This record cannot be played now."
 msgstr ""
 
-msgid "This removes {} from your library."
-msgstr ""
-
 msgid "This saved query catalog uses an unsupported version; I kept its original data."
 msgstr "This saved query catalog uses an unsupported version; I kept its original data."
 
@@ -7489,6 +7495,9 @@ msgstr ""
 msgid "Your music"
 msgstr "Your music"
 
+msgid "Your music files on the server are not touched."
+msgstr ""
+
 msgid "Your music is up to date"
 msgstr "Your music is up to date"
 
@@ -7502,6 +7511,12 @@ msgid "Your selected sources are taking longer than usual. Try again in a moment
 msgstr ""
 
 msgid "Your shows"
+msgstr ""
+
+msgid "Your {} and {} of them are removed too."
+msgstr ""
+
+msgid "Your {} of them are removed too."
 msgstr ""
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
@@ -8780,7 +8795,7 @@ msgstr[1] ""
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr ""
 
-msgid "{} and its files are not touched."
+msgid "{} and {} leave your library."
 msgstr ""
 
 msgid "{} answered something Chilpa did not expect: {}"

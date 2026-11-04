@@ -3206,6 +3206,12 @@ msgstr "Sua página, ou a visualização rápida sob a linha."
 msgid "Its playlists could not be read: {}."
 msgstr "Não foi possível ler as playlists dele: {}."
 
+msgid "Its songs, albums and playlists are leaving your library. This can take a moment; you can keep using Chilpa meanwhile."
+msgstr "As músicas, álbuns e playlists dele estão saindo da sua biblioteca. Isso pode levar um momento; enquanto isso, você pode continuar usando o Chilpa."
+
+msgid "Its {} leave too."
+msgstr "As {} dele também saem."
+
 msgid "JUMP TO"
 msgstr "IR PARA"
 
@@ -5267,11 +5273,11 @@ msgstr "Remove as capas e os fundos menores. O Chilpa os cria novamente conforme
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "Remover do Chilpa este plugin, sua conta, as configurações e a biblioteca em cache? Isso não exclui sua conta nem suas playlists na fonte."
 
-msgid "Remove this server?"
-msgstr "Remover este servidor?"
-
 msgid "Remove unreferenced images from sources and plugins. Needed images download again."
 msgstr "Remove as imagens sem referência de fontes e plugins. As imagens necessárias são baixadas novamente."
+
+msgid "Remove {}?"
+msgstr "Remover {}?"
 
 msgid "Remove…"
 msgstr "Remover…"
@@ -5279,8 +5285,11 @@ msgstr "Remover…"
 msgid "Removing saved profile…"
 msgstr ""
 
-msgid "Removing {}… Its songs and playlists are leaving your library. This can take a moment."
-msgstr "Removendo {}… As músicas e playlists dele estão saindo da sua biblioteca. Isso pode levar um momento."
+msgid "Removing {}…"
+msgstr "Removendo {}…"
+
+msgid "Removing…"
+msgstr "Removendo…"
 
 msgid "Rename"
 msgstr "Renomear"
@@ -6757,9 +6766,6 @@ msgstr "Esta consulta aninha grupos em três níveis. As linhas mostram dois, en
 msgid "This record cannot be played now."
 msgstr "Este disco não pode ser reproduzido agora."
 
-msgid "This removes {} from your library."
-msgstr "Isso remove {} da sua biblioteca."
-
 msgid "This saved query catalog uses an unsupported version; I kept its original data."
 msgstr "A versão do catálogo não é compatível; mantive os dados originais."
 
@@ -7489,6 +7495,9 @@ msgstr "Sua distribuição"
 msgid "Your music"
 msgstr "Sua música"
 
+msgid "Your music files on the server are not touched."
+msgstr "Seus arquivos de música no servidor não são alterados."
+
 msgid "Your music is up to date"
 msgstr ""
 
@@ -7503,6 +7512,12 @@ msgstr "Suas fontes selecionadas estão demorando mais que o normal. Tente novam
 
 msgid "Your shows"
 msgstr "Seus programas"
+
+msgid "Your {} and {} of them are removed too."
+msgstr "Suas {} e {} delas também são removidas."
+
+msgid "Your {} of them are removed too."
+msgstr "Suas {} delas também são removidas."
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "um manifesto DASH, que o Chilpa ainda não consegue ler"
@@ -8780,8 +8795,8 @@ msgstr[1] "{} álbuns"
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr "{} analisadas, {} sem pulso, {} ilegíveis"
 
-msgid "{} and its files are not touched."
-msgstr "{} e seus arquivos não são alterados."
+msgid "{} and {} leave your library."
+msgstr "{} e {} saem da sua biblioteca."
 
 msgid "{} answered something Chilpa did not expect: {}"
 msgstr "{} respondeu algo que o Chilpa não esperava: {}"

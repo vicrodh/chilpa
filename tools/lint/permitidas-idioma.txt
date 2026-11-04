@@ -891,3 +891,5 @@ github
 gz
 linkname
 xattrs
+# A role of Qt's palette.
+midlight

@@ -10,7 +10,9 @@ Item {
     property string title
     property string body
     property string variant: "warning"
-    readonly property color tone: variant === "info" ? Theme.color.accent
+    // Information is said in a neutral tone: the accent can be red, and
+    // then it reads as an error.
+    readonly property color tone: variant === "info" ? Theme.color.textSecondary
                                 : variant === "success" ? Theme.color.statusPositive
                                 : variant === "error" ? Theme.color.statusNegative : Theme.color.statusWarning
     width: parent ? parent.width : 0

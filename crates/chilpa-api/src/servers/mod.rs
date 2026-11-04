@@ -247,7 +247,9 @@ impl Chilpa {
                     description = said.clone();
                 }
             }
-            let action = if !server.enabled {
+            let action = if self.removing_server(server.id) {
+                chilpa_i18n::t("Removing…")
+            } else if !server.enabled {
                 chilpa_i18n::t("Disabled")
             } else if server.syncing {
                 chilpa_i18n::t("Syncing")
@@ -543,37 +545,17 @@ impl Chilpa {
         }
     }
 
-    /// What removing a server takes out of the library, as the confirmation
-    /// says it.
+    /// What removing a server takes out of the library, for the window to
+    /// say: its name and each count, as JSON. The window writes the numbers
+    /// in the person's locale.
     pub fn server_removal(&mut self, id: i64) -> String {
         let Some(lib) = self.library() else { return String::new() };
         let (Ok(Some(server)), Ok(r)) = (lib.server(id), lib.removal(id)) else { return String::new() };
-        // Each count is its own call, so the extractor finds its words.
-        let (tracks, albums, ratings, plays) = (r.tracks.to_string(), r.albums.to_string(), r.ratings.to_string(), r.plays.to_string());
-        let mut parts = vec![
-            chilpa_i18n::tf("{} track", "{} tracks", r.tracks as i64, &[&tracks]),
-            chilpa_i18n::tf("{} record", "{} records", r.albums as i64, &[&albums]),
-        ];
-        if r.ratings > 0 {
-            parts.push(chilpa_i18n::tf("{} rating", "{} ratings", r.ratings as i64, &[&ratings]));
-        }
-        if r.plays > 0 {
-            parts.push(chilpa_i18n::tf("{} play", "{} plays", r.plays as i64, &[&plays]));
-        }
-        // Its own playlists leave with it; on the server they stay.
-        if r.playlists > 0 {
-            let lists = r.playlists.to_string();
-            parts.push(chilpa_i18n::tf("{} playlist", "{} playlists", r.playlists as i64, &[&lists]));
-        }
-        let mut text = chilpa_i18n::t_args("This removes {} from your library.", &[&parts.join(", ")]);
-        if r.playlist_entries > 0 {
-            let (n, lists) = (r.playlist_entries.to_string(), r.playlists_touched.to_string());
-            text.push(' ');
-            text.push_str(&chilpa_i18n::t_args("{} of its tracks leave {} of your playlists.", &[&n, &lists]));
-        }
-        text.push(' ');
-        text.push_str(&chilpa_i18n::t_args("{} and its files are not touched.", &[&server.label]));
-        text
+        serde_json::json!({
+            "name": server.label, "tracks": r.tracks, "albums": r.albums, "ratings": r.ratings, "plays": r.plays,
+            "playlists": r.playlists, "entries": r.playlist_entries, "touched": r.playlists_touched,
+        })
+        .to_string()
     }
 
     /// Whether that record can be opened now: some track of it plays
