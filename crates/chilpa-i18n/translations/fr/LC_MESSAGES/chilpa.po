@@ -3100,6 +3100,9 @@ msgstr "Sa musique rejoint votre bibliothèque, listée avec vos propres fichier
 msgid "Its page, or its quick view under the row."
 msgstr "Sa page, ou son aperçu rapide sous la ligne."
 
+msgid "Its playlists could not be read: {}."
+msgstr "Ses playlists n'ont pas pu être lues : {}."
+
 msgid "JUMP TO"
 msgstr "ALLER À"
 
@@ -8681,6 +8684,11 @@ msgid "{} track"
 msgid_plural "{} tracks"
 msgstr[0] "{} piste"
 msgstr[1] "{} pistes"
+
+msgid "{} track of its playlists is not in your library and was left out."
+msgid_plural "{} tracks of its playlists are not in your library and were left out."
+msgstr[0] "{} piste de ses playlists n'est pas dans votre bibliothèque et a été omise."
+msgstr[1] "{} pistes de ses playlists ne sont pas dans votre bibliothèque et ont été omises."
 
 msgid "{} tracks"
 msgstr "{} pistes"

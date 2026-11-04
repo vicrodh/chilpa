@@ -3100,6 +3100,9 @@ msgstr "De muziek komt in je bibliotheek, naast je eigen bestanden."
 msgid "Its page, or its quick view under the row."
 msgstr "De pagina ervan, of de snelweergave onder de rij."
 
+msgid "Its playlists could not be read: {}."
+msgstr "De afspeellijsten van de server konden niet worden gelezen: {}."
+
 msgid "JUMP TO"
 msgstr "SPRING NAAR"
 
@@ -8681,6 +8684,11 @@ msgid "{} track"
 msgid_plural "{} tracks"
 msgstr[0] "{} nummer"
 msgstr[1] "{} nummers"
+
+msgid "{} track of its playlists is not in your library and was left out."
+msgid_plural "{} tracks of its playlists are not in your library and were left out."
+msgstr[0] "{} nummer uit de afspeellijsten van de server staat niet in je bibliotheek en is weggelaten."
+msgstr[1] "{} nummers uit de afspeellijsten van de server staan niet in je bibliotheek en zijn weggelaten."
 
 msgid "{} tracks"
 msgstr "{} nummers"

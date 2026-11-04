@@ -3097,6 +3097,9 @@ msgstr "音楽はライブラリに追加され、お持ちのファイルと一
 msgid "Its page, or its quick view under the row."
 msgstr "そのページ、または行の下のクイックビュー。"
 
+msgid "Its playlists could not be read: {}."
+msgstr "プレイリストを読み込めませんでした: {}。"
+
 msgid "JUMP TO"
 msgstr "ジャンプ"
 
@@ -8650,6 +8653,10 @@ msgstr ""
 msgid "{} track"
 msgid_plural "{} tracks"
 msgstr[0] "{}トラック"
+
+msgid "{} track of its playlists is not in your library and was left out."
+msgid_plural "{} tracks of its playlists are not in your library and were left out."
+msgstr[0] "プレイリストの{}トラックはライブラリにないため、除外されました。"
 
 msgid "{} tracks"
 msgstr "{}トラック"

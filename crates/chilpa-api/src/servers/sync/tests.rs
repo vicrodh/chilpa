@@ -250,3 +250,118 @@ fn a_cover_is_fetched_once_into_the_server_s_own_folder() {
     assert!(std::fs::read(&art).is_ok());
     let _ = std::fs::remove_dir_all(covers_dir(&instance));
 }
+
+/// What 10.10.7 answers the playlists' owner asking whether it may change one.
+const EDITS: &str = r#"{"UserId":"501512e000854c8d832d2f1d2a26a0a0","CanEdit":true}"#;
+
+/// A saved answer of the lab's, read as JSON to be changed.
+fn answer(name: &str) -> serde_json::Value {
+    serde_json::from_slice(&std::fs::read(format!("{}/../chilpa-servers/tests/answers/{name}", env!("CARGO_MANIFEST_DIR"))).unwrap()).unwrap()
+}
+
+/// The lab's catalogue cut to the five tracks its saved details describe,
+/// so a sync of it finishes and the playlists find what they name.
+fn five_described() -> Saved {
+    let described: Vec<String> = answer("jellyfin/jellyfin-details.json")["Items"].as_array().unwrap().iter().map(|t| t["Id"].as_str().unwrap().to_string()).collect();
+    let mut items = answer("jellyfin/jellyfin-items.json");
+    items["Items"].as_array_mut().unwrap().retain(|t| described.iter().any(|id| t["Id"] == id.as_str()));
+    items["TotalRecordCount"] = serde_json::json!(5);
+    Saved::default().file("jellyfin/jellyfin-views.json").body(&items.to_string()).file("jellyfin/jellyfin-details.json")
+}
+
+/// The lab's two music playlists, each asked whether the account may change it.
+fn road_and_empty() -> Saved {
+    Saved::default().file("jellyfin/jellyfin-playlists.json").file("jellyfin/jellyfin-playlist-empty.json").body(EDITS).file("jellyfin/jellyfin-playlist-items.json").body(EDITS)
+}
+
+fn titles(lab: &Lab, playlist: i64) -> Vec<String> {
+    lab.lib.playlist_entries(playlist).unwrap().iter().map(|e| lab.lib.connection().query_row("SELECT title FROM tracks WHERE id = ?1", [e.track_id.unwrap()], |r| r.get(0)).unwrap()).collect()
+}
+
+#[test]
+fn a_server_s_playlists_come_in_after_its_catalogue_in_the_server_s_order() {
+    let lab = jellyfin();
+    assert_eq!(run(&lab.lib, &five_described(), &lab.keys, lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 0 });
+    let lists = road_and_empty();
+    let event = reading::read(&lab.lib, &lists, &lab.keys, lab.source, &Mutex::new(()), &never);
+    // Hi-Res D2 T1 is in "Road Trip" and not among the five: it is left out.
+    assert_eq!(event, Event::Playlists { source: lab.source, kept: 2, left_out: 1 });
+    let asked = lists.asked();
+    assert_eq!(asked.len(), 5, "the list, then each music playlist and whether it may be changed: {asked:?}");
+    assert!(asked.iter().all(|u| !u.contains("7c4e1a9b2d5f4083b6e9a1c7d3f5e28b")), "a playlist of videos is not read");
+
+    let stored = lab.lib.playlists().unwrap();
+    assert_eq!(stored.len(), 2);
+    let road = stored.iter().find(|p| p.name == "Road Trip").unwrap();
+    assert!(road.server && road.writable, "the server's, and the account may change it there");
+    assert_eq!((road.description.as_str(), road.left_out), ("Songs for the drive", 1));
+    assert_eq!(titles(&lab, road.id), ["First Song 1", "Comp Track 2", "First Song 1", "Comp Track 1"], "its order and its repeat; the video and the missing track left out");
+    let entries = lab.lib.playlist_entries(road.id).unwrap();
+    assert!(chilpa_models::RemoteEntry::parse(&entries[0].external_id).is_some(), "an entry is the track's queue entry: {}", entries[0].external_id);
+    assert_eq!(stored.iter().find(|p| p.name == "Empty for now").unwrap().track_count, 0);
+    assert_eq!(lab.lib.server_playlists_left_out(lab.source).unwrap(), 1);
+}
+
+#[test]
+fn a_partial_sync_still_brings_the_playlists_in_and_a_missing_track_asks_for_the_catalogue() {
+    let lab = jellyfin();
+    let partial = Saved::default().file("jellyfin/jellyfin-views.json").file("jellyfin/jellyfin-items.json").file("jellyfin/jellyfin-details.json");
+    let event = run(&lab.lib, &partial, &lab.keys, lab.source, &|_| {}, &never);
+    assert!(matches!(&event, Event::Failed { unreachable: false, .. }), "{event:?}");
+    assert!(reads_playlists_after(&event), "partial: its playlists are read anyway");
+    assert!(!reads_playlists_after(&Event::Failed { source: lab.source, why: String::new(), unreachable: true }), "not from a server that does not answer");
+    let event = reading::read(&lab.lib, &road_and_empty(), &lab.keys, lab.source, &Mutex::new(()), &never);
+    assert_eq!(event, Event::Playlists { source: lab.source, kept: 2, left_out: 1 });
+    assert!(asks_for_catalogue(&event), "read alone, a track the library lacks asks for a sync first");
+    let again = reading::read(&lab.lib, &road_and_empty(), &lab.keys, lab.source, &Mutex::new(()), &never);
+    assert_eq!(again, Event::Playlists { source: lab.source, kept: 2, left_out: 1 });
+    assert!(asks_for_catalogue(&again), "still missing at the next reading alone, it asks again");
+    assert!(!asks_for_catalogue(&Event::Playlists { source: lab.source, kept: 2, left_out: 0 }));
+    assert!(!asks_for_catalogue(&Event::PlaylistsFailed { source: lab.source, why: String::new() }));
+}
+
+#[test]
+fn a_playlist_deleted_on_the_server_leaves_and_one_that_cannot_be_read_stays() {
+    let lab = jellyfin();
+    run(&lab.lib, &five_described(), &lab.keys, lab.source, &|_| {}, &never);
+    reading::read(&lab.lib, &road_and_empty(), &lab.keys, lab.source, &Mutex::new(()), &never);
+
+    // "Empty for now" was deleted on the server; "Road Trip" answers with
+    // something that is not a playlist's items.
+    let mut listing = answer("jellyfin/jellyfin-playlists.json");
+    listing["Items"].as_array_mut().unwrap().retain(|p| p["Name"] != "Empty for now");
+    listing["TotalRecordCount"] = serde_json::json!(2);
+    let again = Saved::default().body(&listing.to_string()).body("<html>Bad gateway</html>");
+    assert_eq!(reading::read(&lab.lib, &again, &lab.keys, lab.source, &Mutex::new(()), &never), Event::Playlists { source: lab.source, kept: 0, left_out: 0 });
+    let stored = lab.lib.playlists().unwrap();
+    assert_eq!(stored.iter().map(|p| p.name.as_str()).collect::<Vec<_>>(), ["Road Trip"], "gone there, gone here");
+    assert_eq!(stored[0].track_count, 4, "one that could not be read keeps what it had");
+}
+
+#[test]
+fn a_server_that_stops_answering_leaves_its_playlists_as_they_were() {
+    let lab = jellyfin();
+    run(&lab.lib, &five_described(), &lab.keys, lab.source, &|_| {}, &never);
+    reading::read(&lab.lib, &road_and_empty(), &lab.keys, lab.source, &Mutex::new(()), &never);
+
+    let event = reading::read(&lab.lib, &Saved::default().silence(), &lab.keys, lab.source, &Mutex::new(()), &never);
+    assert!(matches!(&event, Event::PlaylistsFailed { why, .. } if why.contains("could not be reached")), "{event:?}");
+    let cut = Saved::default().file("jellyfin/jellyfin-playlists.json").file("jellyfin/jellyfin-playlist-empty.json").body(EDITS).silence();
+    assert!(matches!(reading::read(&lab.lib, &cut, &lab.keys, lab.source, &Mutex::new(()), &never), Event::PlaylistsFailed { .. }));
+    let stored = lab.lib.playlists().unwrap();
+    assert_eq!(stored.len(), 2, "nothing taken out");
+    assert_eq!(stored.iter().find(|p| p.name == "Road Trip").unwrap().track_count, 4);
+}
+
+#[test]
+fn a_subsonic_playlist_of_another_user_is_read_and_not_changed_here() {
+    let lab = subsonic();
+    assert_eq!(run(&lab.lib, &navidrome(Saved::default()), &lab.keys, lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 0 });
+    lab.lib.connection().execute("UPDATE servers SET account = 'someone' WHERE source_id = ?1", [lab.source]).unwrap();
+    let empty = r#"{"subsonic-response":{"status":"ok","version":"1.16.1","playlist":{"id":"0QwErTyUiOpAsDfGhJkLzX","name":"Empty for now","entry":[]}}}"#;
+    let lists = Saved::default().file("navidrome/subsonic-playlists.json").file("navidrome/subsonic-playlist.json").body(empty);
+    assert_eq!(reading::read(&lab.lib, &lists, &lab.keys, lab.source, &Mutex::new(()), &never), Event::Playlists { source: lab.source, kept: 2, left_out: 0 });
+    let stored = lab.lib.playlists().unwrap();
+    assert!(stored.iter().all(|p| p.server && !p.writable), "both are the lab user's, not this account's");
+    assert_eq!(stored.iter().find(|p| p.name == "Road Trip").unwrap().track_count, 5, "the video is not a track");
+}

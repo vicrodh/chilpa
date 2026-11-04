@@ -5,14 +5,19 @@
 //! when the whole catalogue was read and the count adds up. A sync that is
 //! cut off, or that saw fewer tracks than the server announced, leaves the
 //! library as it was.
+//!
+//! The server's own playlists are read on this thread too (`reading`):
+//! after its catalogue, whether the sync finished or ended partial, and
+//! alone when the listener asks for them again.
 
 use super::keys::Keys;
 use super::net::{self, Network};
+use super::reading;
 use chilpa_servers::{Failure, Net};
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// Cover size asked for: the window's largest.
 const COVER: u32 = 1200;
@@ -25,25 +30,62 @@ pub(crate) enum Event {
     /// The covers of the records that had none are in.
     Covered { source: i64 },
     Failed { source: i64, why: String, unreachable: bool },
+    /// The server's playlists were read: how many came in, and how many of
+    /// their entries name a track the library does not hold.
+    Playlists { source: i64, kept: usize, left_out: usize },
+    /// Its playlists could not be read. The ones kept stay as they were.
+    PlaylistsFailed { source: i64, why: String },
+}
+
+/// What the thread is asked to do for one server.
+enum Order {
+    /// Its catalogue, then its playlists.
+    Catalogue(i64),
+    /// Its playlists alone, and its catalogue after them when one of them
+    /// names a track the library does not hold.
+    Playlists(i64),
+}
+
+/// Whether the playlists are read after this end of a catalogue: after
+/// one that finished and after one that ended partial, not after a server
+/// that stopped answering.
+pub(crate) fn reads_playlists_after(event: &Event) -> bool {
+    !matches!(event, Event::Failed { unreachable: true, .. })
+}
+
+/// Whether a reading of the playlists alone asks for the catalogue: one of
+/// them names a track the library does not hold, which a sync may bring.
+/// The reading that follows that sync asks for nothing: what is still not
+/// there is left out.
+pub(crate) fn asks_for_catalogue(event: &Event) -> bool {
+    matches!(event, Event::Playlists { left_out, .. } if *left_out > 0)
 }
 
 pub(crate) struct Syncer {
-    orders: Sender<i64>,
+    orders: Sender<Order>,
     events: Receiver<Event>,
     /// Asked to stop: the source being removed.
     cancel: Arc<std::sync::Mutex<HashSet<i64>>>,
     pub(crate) running: HashMap<i64, u64>,
     queued: HashSet<i64>,
+    /// The servers whose playlists alone are queued or being read.
+    reading: HashSet<i64>,
 }
 
 impl Syncer {
-    pub(crate) fn start(keys: Arc<Keys>) -> Self {
-        let (orders, inbox) = channel::<i64>();
+    /// `gate` is held while playlists are read, so a change of one never
+    /// lands in the middle of a reading.
+    pub(crate) fn start(keys: Arc<Keys>, gate: Arc<Mutex<()>>) -> Self {
+        let (orders, inbox) = channel::<Order>();
         let (outbox, events) = channel::<Event>();
         let cancel: Arc<std::sync::Mutex<HashSet<i64>>> = Arc::default();
         let stop = Arc::clone(&cancel);
         let _ = std::thread::Builder::new().name("chilpa-server-sync".into()).spawn(move || {
-            while let Ok(source) = inbox.recv() {
+            while let Ok(order) = inbox.recv() {
+                let (source, catalogue) = match order {
+                    Order::Catalogue(source) => (source, true),
+                    Order::Playlists(source) => (source, false),
+                };
                 let stopped = AtomicBool::new(false);
                 let asked_to_stop = || {
                     let asked = stop.lock().map(|s| s.contains(&source)).unwrap_or(false);
@@ -51,37 +93,60 @@ impl Syncer {
                     asked
                 };
                 let Ok(lib) = chilpa_core::open_library() else {
-                    let _ = outbox.send(Event::Failed { source, why: chilpa_i18n::t("the library could not be opened"), unreachable: false });
+                    let why = chilpa_i18n::t("the library could not be opened");
+                    let _ = outbox.send(if catalogue { Event::Failed { source, why, unreachable: false } } else { Event::PlaylistsFailed { source, why } });
                     continue;
                 };
-                let event = run(&lib, &Network, &keys, source, &|done| {
-                    let _ = outbox.send(Event::Progress { source, done });
-                }, &asked_to_stop);
-                let finished = matches!(event, Event::Finished { .. });
-                let _ = outbox.send(event);
-                if finished && !asked_to_stop() {
-                    covers(&lib, &Network, &keys, source, &asked_to_stop);
-                    let _ = outbox.send(Event::Covered { source });
+                let wanted = if catalogue {
+                    true
+                } else {
+                    let event = reading::read(&lib, &Network, &keys, source, &gate, &asked_to_stop);
+                    let asks = asks_for_catalogue(&event);
+                    let _ = outbox.send(event);
+                    asks && !asked_to_stop()
+                };
+                if wanted {
+                    let event = run(&lib, &Network, &keys, source, &|done| {
+                        let _ = outbox.send(Event::Progress { source, done });
+                    }, &asked_to_stop);
+                    let finished = matches!(event, Event::Finished { .. });
+                    let reads = reads_playlists_after(&event);
+                    let _ = outbox.send(event);
+                    if reads && !asked_to_stop() {
+                        let _ = outbox.send(reading::read(&lib, &Network, &keys, source, &gate, &asked_to_stop));
+                    }
+                    if finished && !asked_to_stop() {
+                        covers(&lib, &Network, &keys, source, &asked_to_stop);
+                        let _ = outbox.send(Event::Covered { source });
+                    }
                 }
                 if let Ok(mut s) = stop.lock() {
                     s.remove(&source);
                 }
             }
         });
-        Self { orders, events, cancel, running: HashMap::new(), queued: HashSet::new() }
+        Self { orders, events, cancel, running: HashMap::new(), queued: HashSet::new(), reading: HashSet::new() }
     }
 
     /// Queues a sync of that server, unless one is queued or running.
     pub(crate) fn ask(&mut self, source: i64) {
         if self.queued.insert(source) {
             self.running.insert(source, 0);
-            let _ = self.orders.send(source);
+            let _ = self.orders.send(Order::Catalogue(source));
+        }
+    }
+
+    /// Queues a reading of the server's playlists, unless a sync, which
+    /// reads them too, or another reading is queued or running.
+    pub(crate) fn ask_playlists(&mut self, source: i64) {
+        if !self.queued.contains(&source) && self.reading.insert(source) {
+            let _ = self.orders.send(Order::Playlists(source));
         }
     }
 
     /// Stops the sync of a server that is being removed, at the next page.
     pub(crate) fn cancel(&mut self, source: i64) {
-        if !self.queued.contains(&source) { return; }
+        if !self.queued.contains(&source) && !self.reading.contains(&source) { return; }
         if let Ok(mut s) = self.cancel.lock() {
             s.insert(source);
         }
@@ -97,6 +162,9 @@ impl Syncer {
                 Event::Finished { source, .. } | Event::Failed { source, .. } => {
                     self.running.remove(source);
                     self.queued.remove(source);
+                }
+                Event::Playlists { source, .. } | Event::PlaylistsFailed { source, .. } => {
+                    self.reading.remove(source);
                 }
                 Event::Covered { .. } => {}
             }

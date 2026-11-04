@@ -3,14 +3,15 @@
 //!
 //! The protocols are `chilpa-servers`; the mirror, the availability and the
 //! purge are `chilpa-library`. What is here is what ties them to the
-//! window: adding a server, syncing it, knowing whether it answers, playing
-//! its tracks and removing it. Everything that goes to the network runs on
+//! window: adding a server, syncing it and its playlists, knowing whether it
+//! answers, playing its tracks and removing it. Everything that goes to the network runs on
 //! a thread; `poll`, which the window calls four times a second, picks up
 //! what came back.
 
 pub(crate) mod keys;
 mod net;
 mod opener;
+mod reading;
 mod setup;
 mod sync;
 mod watch;
@@ -62,6 +63,10 @@ pub(crate) struct Servers {
     errors: HashMap<i64, String>,
     /// The servers that refused their credential at the last look.
     refused: std::collections::HashSet<i64>,
+    /// Why the last reading of each server's playlists did not finish.
+    playlist_errors: HashMap<i64, String>,
+    /// Held while a server's playlists are read or one of them is changed.
+    gate: Arc<Mutex<()>>,
     /// The library changed underneath the window.
     changed: bool,
 }
@@ -80,7 +85,7 @@ impl Chilpa {
         let keys = Arc::new(Keys::new(chilpa_dirs::data().join("servers")));
         self.sources.servers_opener = Some(Arc::new(opener::Opener::new(Arc::clone(&keys), Arc::clone(&self.servers.failures))));
         self.install_openers();
-        self.servers.syncer = Some(sync::Syncer::start(Arc::clone(&keys)));
+        self.servers.syncer = Some(sync::Syncer::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
         self.servers.watcher = Some(watch::Watcher::start(Arc::clone(&keys)));
         self.servers.keys = Some(keys);
         // A queue restored before the opener existed could not name a
@@ -178,6 +183,21 @@ impl Chilpa {
                     server.orphans as i64,
                     &[&n],
                 ));
+            }
+            let left_out = self.library().and_then(|lib| lib.server_playlists_left_out(server.id).ok()).unwrap_or(0);
+            if left_out > 0 {
+                let n = left_out.to_string();
+                description.push(' ');
+                description.push_str(&chilpa_i18n::tf(
+                    "{} track of its playlists is not in your library and was left out.",
+                    "{} tracks of its playlists are not in your library and were left out.",
+                    left_out as i64,
+                    &[&n],
+                ));
+            }
+            if let Some(why) = self.servers.playlist_errors.get(&server.id) {
+                description.push(' ');
+                description.push_str(why);
             }
             if let Some((said_key, said)) = notes.said {
                 if said_key == &key {
@@ -325,6 +345,7 @@ impl Chilpa {
             if let Some(watcher) = &self.servers.watcher { watcher.ask(); }
             self.servers.errors.remove(&id);
             self.servers.refused.remove(&id);
+            self.servers.playlist_errors.remove(&id);
             self.servers.changed = true;
             self.servers.setup.done(&ready.label);
             self.sync_server(id);
@@ -362,6 +383,21 @@ impl Chilpa {
         }
     }
 
+    /// Reads every server's playlists again, as the playlists' Refresh asks:
+    /// a server whose sync is queued reads them with it. Nothing goes out
+    /// with the network off.
+    pub fn refresh_server_playlists(&mut self) {
+        if self.offline() {
+            return;
+        }
+        let enabled: Vec<i64> = self.library().and_then(|lib| lib.servers().ok()).unwrap_or_default().into_iter().filter(|s| s.enabled).map(|s| s.source_id).collect();
+        if let Some(syncer) = self.servers.syncer.as_mut() {
+            for id in enabled {
+                syncer.ask_playlists(id);
+            }
+        }
+    }
+
     /// Pauses or resumes a server while retaining its catalogue and sign-in.
     pub fn set_server_enabled(&mut self, id: i64, enabled: bool) -> bool {
         let current = RemoteEntry::parse(&self.now.path);
@@ -377,6 +413,7 @@ impl Chilpa {
         if playing_here { self.stop(); }
         self.servers.errors.remove(&id);
         self.servers.refused.remove(&id);
+        self.servers.playlist_errors.remove(&id);
         self.servers.changed = true;
         true
     }
@@ -397,6 +434,11 @@ impl Chilpa {
         }
         if r.plays > 0 {
             parts.push(chilpa_i18n::tf("{} play", "{} plays", r.plays as i64, &[&plays]));
+        }
+        // Its own playlists leave with it; on the server they stay.
+        if r.playlists > 0 {
+            let lists = r.playlists.to_string();
+            parts.push(chilpa_i18n::tf("{} playlist", "{} playlists", r.playlists as i64, &[&lists]));
         }
         let mut text = chilpa_i18n::t_args("This removes {} from your library.", &[&parts.join(", ")]);
         if r.playlist_entries > 0 {
@@ -445,6 +487,7 @@ impl Chilpa {
         }
         self.servers.errors.remove(&id);
         self.servers.refused.remove(&id);
+        self.servers.playlist_errors.remove(&id);
         self.servers.changed = true;
         self.persist_queue_session();
         true
@@ -513,6 +556,14 @@ impl Chilpa {
                     self.servers.changed = true;
                 }
                 sync::Event::Covered { .. } => self.servers.changed = true,
+                sync::Event::Playlists { source, .. } => {
+                    self.servers.playlist_errors.remove(&source);
+                    self.servers.changed = true;
+                }
+                sync::Event::PlaylistsFailed { source, why } => {
+                    self.servers.playlist_errors.insert(source, why);
+                    self.servers.changed = true;
+                }
                 sync::Event::Failed { source, why, unreachable } => {
                     self.servers.errors.insert(source, why);
                     if unreachable {

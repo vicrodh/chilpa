@@ -3100,6 +3100,9 @@ msgstr ""
 msgid "Its page, or its quick view under the row."
 msgstr ""
 
+msgid "Its playlists could not be read: {}."
+msgstr ""
+
 msgid "JUMP TO"
 msgstr ""
 
@@ -8679,6 +8682,11 @@ msgstr "{} to copy · {} to update · {} to remove · {} unchanged"
 
 msgid "{} track"
 msgid_plural "{} tracks"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} track of its playlists is not in your library and was left out."
+msgid_plural "{} tracks of its playlists are not in your library and were left out."
 msgstr[0] ""
 msgstr[1] ""
 

@@ -3103,6 +3103,9 @@ msgstr "Его музыка добавляется в вашу библиоте�
 msgid "Its page, or its quick view under the row."
 msgstr "Его страница или быстрый просмотр под строкой."
 
+msgid "Its playlists could not be read: {}."
+msgstr "Не удалось прочитать его плейлисты: {}."
+
 msgid "JUMP TO"
 msgstr "ПЕРЕЙТИ К"
 
@@ -8712,6 +8715,12 @@ msgid_plural "{} tracks"
 msgstr[0] "{} трек"
 msgstr[1] "{} трека"
 msgstr[2] "{} треков"
+
+msgid "{} track of its playlists is not in your library and was left out."
+msgid_plural "{} tracks of its playlists are not in your library and were left out."
+msgstr[0] "{} трек из его плейлистов отсутствует в вашей библиотеке и пропущен."
+msgstr[1] "{} трека из его плейлистов отсутствуют в вашей библиотеке и пропущены."
+msgstr[2] "{} треков из его плейлистов отсутствуют в вашей библиотеке и пропущены."
 
 msgid "{} tracks"
 msgstr "Треков: {}"
