@@ -1,0 +1,3 @@
+review: sol /mnt/build/tmp/blitzkriegfc/shield-28/sol-stream-put-delete.md
+review: astra /mnt/build/tmp/blitzkriegfc/shield-28/astra-stream-put-delete.md
+smoke: owner 2026-11-03, release binary of ee449b90d (sha256 d2a121b6), his DAC: played Jellyfin and Navidrome tracks and a radio; created and edited server playlists. All good. Plex playback not tested.
