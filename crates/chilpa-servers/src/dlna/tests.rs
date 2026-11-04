@@ -851,3 +851,117 @@ fn a_record_s_art_is_its_own_an_image_it_carries_or_its_folder_s() {
         "asked of the server it came from, as it was written"
     );
 }
+
+#[test]
+fn a_container_met_twice_is_read_once() {
+    let server = plex(&["top"]);
+    let views = [container("a", "By Album"), container("b", "By Folder")].concat();
+    // The same record under the second view, and a reference to it.
+    let reference = "<container id=\"r\" refID=\"rec\" parentID=\"a\" restricted=\"1\"><dc:title>Record</dc:title>\
+                     <upnp:class>object.container</upnp:class></container>";
+    let again = [container("rec", "Record"), reference.to_string()].concat();
+    let net = Canned::new()
+        .answer(200, listed(&views, 2, 2).as_bytes())
+        .answer(200, listed(&container("rec", "Record"), 1, 1).as_bytes())
+        .answer(200, listed(&song("t1", "rec", "Record"), 1, 1).as_bytes())
+        .answer(200, listed(&again, 2, 2).as_bytes());
+    let (mut cursor, mut tracks, mut pages) = (None::<String>, Vec::new(), 0);
+    loop {
+        let read = page(&net, &server, cursor.as_deref()).unwrap();
+        tracks.extend(read.tracks);
+        pages += 1;
+        cursor = read.next;
+        if cursor.is_none() || pages > 10 {
+            break;
+        }
+    }
+    assert_eq!(net.asked().len(), 4, "the record is read once, under one view");
+    assert_eq!(tracks.len(), 1);
+}
+
+#[test]
+fn a_walk_ends_at_its_limits_and_says_which() {
+    let server = plex(&["top"]);
+    let base = || Cursor {
+        scopes: vec!["top".into()],
+        current: Some(top("top")),
+        walk: true,
+        began: now(),
+        ..Cursor::default()
+    };
+    for (cursor, said) in [
+        (Cursor { containers: WALK_CONTAINERS, ..base() }, "50000"),
+        (Cursor { requests: WALK_REQUESTS, ..base() }, "150000"),
+        (Cursor { began: now() - WALK_HOURS * 60 * 60, ..base() }, "4 hours"),
+    ] {
+        let net = Canned::new();
+        let text = serde_json::to_string(&cursor).unwrap();
+        let failure = page(&net, &server, Some(&text)).unwrap_err();
+        assert!(matches!(&failure, Failure::Unexpected(why) if why.contains(said)), "{failure}");
+        assert!(net.asked().is_empty(), "nothing more is asked");
+    }
+}
+
+#[test]
+fn a_file_on_another_name_of_the_server_s_host_is_its_own() {
+    let named = saved("plex-description.xml").replacen(
+        "<device>",
+        "<URLBase>http://lab-nas.lan:32469/</URLBase><device>",
+        1,
+    );
+    let found = description(PLEX, named.as_bytes()).unwrap();
+    assert_eq!(found.hosts, ["lab-nas.lan"], "the base it names is another name of its host");
+    assert_eq!(found.control, format!("http://lab-nas.lan:32469{PLEX_CONTROL}"));
+    let mut server = plex(&["rec"]);
+    server.details.hosts = found.details().hosts;
+    let item = |id: &str, at: &str| {
+        format!(
+            "<item id=\"{id}\" parentID=\"rec\" restricted=\"1\"><dc:title>Song {id}</dc:title>\
+             <res protocolInfo=\"http-get:*:audio/flac:*\">http://{at}/object/{id}/file.flac</res>\
+             <upnp:class>object.item.audioItem.musicTrack</upnp:class></item>"
+        )
+    };
+    let songs = [
+        item("named", "lab-nas.lan:32469"),
+        item("away", "203.0.113.9:32469"),
+        item("ip", "192.168.0.69:32469"),
+    ]
+    .concat();
+    let net = Canned::new().answer(200, listed(&songs, 3, 3).as_bytes());
+    let tracks = page(&net, &server, None).unwrap().tracks;
+    let ids: Vec<&str> = tracks.iter().map(|t| t.id.as_str()).collect();
+    assert_eq!(ids, ["named", "ip"], "another host is still refused");
+    let named = tracks.iter().find(|t| t.id == "named").unwrap();
+    assert_eq!(
+        stream(&server, named.codec.as_deref(), named.revision.as_deref()).url,
+        "http://lab-nas.lan:32469/object/named/file.flac",
+        "kept whole, on the name it was given by"
+    );
+}
+
+#[test]
+fn views_of_one_library_are_told_from_folders() {
+    let named = |names: &[&str]| {
+        names
+            .iter()
+            .map(|n| Library { id: n.to_string(), name: n.to_string() })
+            .collect::<Vec<_>>()
+    };
+    assert!(are_views(&named(&["All Artists", "By Album", "By Genre", "By Decade", "By Folder", "Recently Added"])));
+    assert!(are_views(&named(&["All Music", "Genre", "Artist", "Album", "Folders", "Playlists"])));
+    assert!(!are_views(&named(&["Albums", "Singles", "Live"])), "a folder named Albums is not a list of views");
+    assert!(!are_views(&named(&["Jazz", "Rock", "Ambient", "Classical"])));
+    // Of a list of sections, the one whose inside is views is said.
+    let inside = [container("1", "All Artists"), container("2", "By Album"), container("3", "By Folder")].concat();
+    let records = [container("4", "Record One"), container("5", "Record Two")].concat();
+    let net = Canned::new()
+        .answer(200, listed(&inside, 3, 3).as_bytes())
+        .answer(200, listed(&records, 2, 2).as_bytes());
+    assert_eq!(view_roots(&net, &plex(&[]), &named(&["Music", "Shared Music"])), ["Music"]);
+    assert_eq!(net.asked()[0].timeout, PEEK, "looked into briefly");
+    let many: Vec<String> = (0..PEEKED + 1).map(|n| n.to_string()).collect();
+    let many: Vec<&str> = many.iter().map(String::as_str).collect();
+    let net = Canned::new();
+    assert!(view_roots(&net, &plex(&[]), &named(&many)).is_empty());
+    assert!(net.asked().is_empty(), "a long level is not looked into");
+}

@@ -8348,6 +8348,15 @@ msgstr "メディアサーバーがこのコンピューターを許可してい
 msgid "the media server refused the request (UPnP error {})"
 msgstr "メディアサーバーが要求を拒否しました（UPnPエラー {}）"
 
+msgid "the media server's walk reached its limit of {} folders for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder"
+msgstr "メディアサーバーの読み取りが1回の同期の上限（{}フォルダー）に達したため、そこで停止しました。何も削除されていません。By Folder など、音楽のビューを1つ選んでください"
+
+msgid "the media server's walk reached its limit of {} hours for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder"
+msgstr "メディアサーバーの読み取りが1回の同期の上限（{}時間）に達したため、そこで停止しました。何も削除されていません。By Folder など、音楽のビューを1つ選んでください"
+
+msgid "the media server's walk reached its limit of {} requests for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder"
+msgstr "メディアサーバーの読み取りが1回の同期の上限（{}リクエスト）に達したため、そこで停止しました。何も削除されていません。By Folder など、音楽のビューを1つ選んでください"
+
 msgid "the module could not be loaded: {}"
 msgstr "モジュールを読み込めませんでした: {}"
 

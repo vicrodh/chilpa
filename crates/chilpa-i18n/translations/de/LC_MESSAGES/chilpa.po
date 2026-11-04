@@ -8358,6 +8358,15 @@ msgstr "der Medienserver lässt diesen Computer nicht zu; erlaube ihn in den Ein
 msgid "the media server refused the request (UPnP error {})"
 msgstr "der Medienserver hat die Anfrage abgelehnt (UPnP-Fehler {})"
 
+msgid "the media server's walk reached its limit of {} folders for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder"
+msgstr "das Durchsuchen des Medienservers hat sein Limit von {} Ordnern pro Synchronisierung erreicht; sie wurde dort gestoppt und hat nichts entfernt. Wähle eine einzige Ansicht seiner Musik, etwa By Folder"
+
+msgid "the media server's walk reached its limit of {} hours for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder"
+msgstr "das Durchsuchen des Medienservers hat sein Limit von {} Stunden pro Synchronisierung erreicht; sie wurde dort gestoppt und hat nichts entfernt. Wähle eine einzige Ansicht seiner Musik, etwa By Folder"
+
+msgid "the media server's walk reached its limit of {} requests for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder"
+msgstr "das Durchsuchen des Medienservers hat sein Limit von {} Anfragen pro Synchronisierung erreicht; sie wurde dort gestoppt und hat nichts entfernt. Wähle eine einzige Ansicht seiner Musik, etwa By Folder"
+
 msgid "the module could not be loaded: {}"
 msgstr "das Modul konnte nicht geladen werden: {}"
 

@@ -30,7 +30,8 @@
 
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use std::time::Duration;
+use std::collections::HashSet;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use crate::model::{
     extension_of, image, Client, Details, Failure, Kind, Library, Page, Server, Stream, Track,
@@ -97,6 +98,9 @@ pub struct Found {
     pub control: String,
     /// It answers `Search` by class.
     pub search: bool,
+    /// The other names its host goes by: the base its description names,
+    /// and what the address resolved to when it was added (`Details::hosts`).
+    pub hosts: Vec<String>,
 }
 
 impl Found {
@@ -105,6 +109,7 @@ impl Found {
         Details {
             control: self.control.clone(),
             search: self.search,
+            hosts: self.hosts.clone(),
             ..Details::default()
         }
     }
@@ -165,6 +170,12 @@ pub fn description(location: &str, body: &[u8]) -> Result<Found, Failure> {
         .map(str::trim)
         .filter(|b| !b.is_empty())
         .unwrap_or(location);
+    // A base on another name of the same machine: what the server names
+    // under it is its own.
+    let hosts: Vec<String> = host(base)
+        .filter(|b| host(location).as_ref() != Some(b))
+        .into_iter()
+        .collect();
     let control = device
         .descendants()
         .filter(|n| {
@@ -172,7 +183,9 @@ pub fn description(location: &str, body: &[u8]) -> Result<Found, Failure> {
                 && field(*n, "serviceType")
                     .starts_with("urn:schemas-upnp-org:service:ContentDirectory:")
         })
-        .find_map(|n| resolve(base, &field(n, "controlURL")).and_then(|url| kept(location, &url)))
+        .find_map(|n| {
+            resolve(base, &field(n, "controlURL")).and_then(|url| kept_on(location, &hosts, &url))
+        })
         .ok_or_else(not_a_media_server)?;
     let identity = field(device, "UDN");
     if identity.is_empty() {
@@ -192,6 +205,7 @@ pub fn description(location: &str, body: &[u8]) -> Result<Found, Failure> {
         identity,
         control,
         search: false,
+        hosts,
     })
 }
 
@@ -266,6 +280,63 @@ pub fn folders(net: &dyn Net, server: &Server, id: &str) -> Result<Vec<Library>,
         .collect())
 }
 
+/// How many containers of one level are looked into to tell which offer
+/// views of a library, the time all of them get, and each one's.
+const PEEKED: usize = 12;
+const PEEKING: Duration = Duration::from_secs(4);
+const PEEK: Duration = Duration::from_secs(3);
+
+/// What servers call the views of one library, without a "By " or "All "
+/// in front: "By Folder", "All Music", "Genre", "Recently Added".
+const VIEWS: [&str; 32] = [
+    "folder", "folders", "directory", "directories", "artist", "artists", "album artist",
+    "album artists", "album", "albums", "genre", "genres", "year", "years", "decade", "decades",
+    "composer", "composers", "collection", "collections", "track", "tracks", "song", "songs",
+    "music", "audio", "playlist", "playlists", "recently added", "rating", "ratings", "date",
+];
+
+/// Whether these names look like several views of one library, each
+/// listing the same songs: three or more of them are named as views are.
+fn views_among<'a>(names: impl IntoIterator<Item = &'a str>) -> bool {
+    let view = |name: &str| {
+        let lower = name.trim().to_lowercase();
+        let bare = lower
+            .strip_prefix("by ")
+            .or_else(|| lower.strip_prefix("all "))
+            .unwrap_or(&lower);
+        VIEWS.iter().any(|v| *v == bare)
+    };
+    names.into_iter().filter(|name| view(*name)).count() >= 3
+}
+
+/// Whether the containers of one level look like views of one library.
+pub fn are_views(found: &[Library]) -> bool {
+    views_among(found.iter().map(|l| l.name.as_str()))
+}
+
+/// Which of these containers offer views of a library, each looked into
+/// one level down, briefly: only for a level of a few, as a server's top or
+/// its list of sections is. One that does not answer in time is not said.
+pub fn view_roots(net: &dyn Net, server: &Server, found: &[Library]) -> Vec<String> {
+    if found.len() > PEEKED {
+        return Vec::new();
+    }
+    let until = Instant::now() + PEEKING;
+    let mut roots = Vec::new();
+    for library in found {
+        if Instant::now() >= until {
+            break;
+        }
+        let inside = call_within(net, &control(server), "Browse", &browse(&library.id, 0), Some(PEEK))
+            .and_then(|text| answer(&text))
+            .and_then(|answer| listing(server, &answer.result, None, None));
+        if inside.is_ok_and(|inside| views_among(inside.folders.iter().map(|f| f.title.as_str()))) {
+            roots.push(library.id.clone());
+        }
+    }
+    roots
+}
+
 /// Where a sync stands in a server's containers.
 #[derive(Serialize, Deserialize, Default)]
 struct Cursor {
@@ -287,6 +358,19 @@ struct Cursor {
     /// that answers the next page with the same one is not moving.
     #[serde(default)]
     last: u64,
+    /// Every container met, by a fingerprint of what it is (its `refID`, or
+    /// its id): one reached again, under another container or by a
+    /// reference, is not read twice.
+    #[serde(default)]
+    met: HashSet<u64>,
+    /// What the whole walk has taken: containers read, requests sent, and
+    /// when it began, in seconds since the epoch (`WALK_*`).
+    #[serde(default)]
+    containers: u64,
+    #[serde(default)]
+    requests: u64,
+    #[serde(default)]
+    began: u64,
 }
 
 impl Cursor {
@@ -316,6 +400,42 @@ fn top(scope: &str) -> (String, u8, String, String) {
 /// come: once, then once more.
 const RETRIES: [Duration; 2] = [Duration::from_millis(500), Duration::from_secs(2)];
 
+/// What a whole walk may take: containers read, requests sent, and time.
+/// A server whose views list the same songs again and again can take a
+/// walk far past its library; past any of these the sync stops there, says
+/// which, and takes nothing out.
+const WALK_CONTAINERS: u64 = 50_000;
+const WALK_REQUESTS: u64 = 150_000;
+const WALK_HOURS: u64 = 4;
+
+fn now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs())
+}
+
+/// The limit of `WALK_*` a walk reached, said for the window.
+fn spent(cursor: &Cursor) -> Option<String> {
+    if cursor.containers >= WALK_CONTAINERS {
+        Some(chilpa_i18n::t_args(
+            "the media server's walk reached its limit of {} folders for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder",
+            &[&WALK_CONTAINERS.to_string()],
+        ))
+    } else if cursor.requests >= WALK_REQUESTS {
+        Some(chilpa_i18n::t_args(
+            "the media server's walk reached its limit of {} requests for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder",
+            &[&WALK_REQUESTS.to_string()],
+        ))
+    } else if cursor.began > 0 && now().saturating_sub(cursor.began) >= WALK_HOURS * 60 * 60 {
+        Some(chilpa_i18n::t_args(
+            "the media server's walk reached its limit of {} hours for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder",
+            &[&WALK_HOURS.to_string()],
+        ))
+    } else {
+        None
+    }
+}
+
 /// One page of the containers chosen. `None` starts at the first; nothing
 /// chosen is the whole server.
 ///
@@ -335,14 +455,24 @@ pub fn page(net: &dyn Net, server: &Server, cursor: Option<&str>) -> Result<Page
                 server.libraries.clone()
             };
             let current = scopes.first().map(|scope| top(scope));
+            let met = scopes.iter().map(|scope| fingerprint(scope)).collect();
             Cursor {
                 scopes,
                 current,
                 walk: !server.details.search,
+                met,
+                began: now(),
                 ..Cursor::default()
             }
         }
     };
+    if let Some(limit) = spent(&cursor) {
+        eprintln!(
+            "chilpa-servers: media server walk stopped at its limit: {} containers, {} requests, began {}",
+            cursor.containers, cursor.requests, cursor.began
+        );
+        return Err(Failure::Unexpected(limit));
+    }
     let (Some(scope), Some((container, depth, group, art))) = (
         cursor.scopes.get(cursor.scope).cloned(),
         cursor.current.clone(),
@@ -369,9 +499,13 @@ pub fn page(net: &dyn Net, server: &Server, cursor: Option<&str>) -> Result<Page
         Ok((answer, listing))
     };
     let at = cursor.offset;
+    if at == 0 {
+        cursor.containers += 1;
+    }
     let read = if cursor.walk {
         let mut tries = 0;
         loop {
+            cursor.requests += 1;
             match ask() {
                 Ok(read) => break Some(read),
                 Err(failure) if tries < RETRIES.len() => {
@@ -385,8 +519,11 @@ pub fn page(net: &dyn Net, server: &Server, cursor: Option<&str>) -> Result<Page
                 Err(failure) => {
                     // A server that no longer answers ends the sync; one that
                     // answers, and cannot give this container, leaves it out.
-                    if failure.is_unreachable() && ping(net, server).is_err() {
-                        return Err(failure);
+                    if failure.is_unreachable() {
+                        cursor.requests += 1;
+                        if ping(net, server).is_err() {
+                            return Err(failure);
+                        }
                     }
                     eprintln!(
                         "chilpa-servers: media server container {container} left out after {} tries at StartingIndex {at}: {failure}",
@@ -397,6 +534,7 @@ pub fn page(net: &dyn Net, server: &Server, cursor: Option<&str>) -> Result<Page
             }
         }
     } else {
+        cursor.requests += 1;
         match ask() {
             Ok(read) => Some(read),
             // A server that announced `Search` and then refuses it is
@@ -444,16 +582,24 @@ pub fn page(net: &dyn Net, server: &Server, cursor: Option<&str>) -> Result<Page
     }
     cursor.total = answer.total;
     if cursor.walk && !repeated {
+        let mut again = 0;
         for folder in listing.folders {
             if depth >= DEPTH || cursor.waiting.len() >= WAITING {
                 said("containers below it were left out: too deep, or too many waiting");
                 page.partial = true;
                 break;
             }
+            if !cursor.met.insert(fingerprint(&folder.same)) {
+                again += 1;
+                continue;
+            }
             let under = grouped_under(&folder, &group);
             // A container without art of its own shows the one above it.
             let shown = if folder.art.is_empty() { art.clone() } else { folder.art };
             cursor.waiting.push((folder.id, depth + 1, under, shown));
+        }
+        if again > 0 {
+            said(&format!("{again} containers in it were met before and are not read again"));
         }
     }
     if !repeated {
@@ -512,6 +658,17 @@ pub fn cover(server: &Server, cover: &str) -> Request {
 
 /// Sends one action to the ContentDirectory and returns the answer's text.
 fn call(net: &dyn Net, control: &str, action: &str, args: &str) -> Result<String, Failure> {
+    call_within(net, control, action, args, None)
+}
+
+/// `call`, waiting at most `timeout` for the answer when one is given.
+fn call_within(
+    net: &dyn Net,
+    control: &str,
+    action: &str,
+    args: &str,
+    timeout: Option<Duration>,
+) -> Result<String, Failure> {
     let body = format!(
         "<?xml version=\"1.0\" encoding=\"utf-8\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" \
          s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body><u:{action} xmlns:u=\"{SERVICE}\">{args}\
@@ -519,13 +676,11 @@ fn call(net: &dyn Net, control: &str, action: &str, args: &str) -> Result<String
     );
     let headers = vec![("SOAPAction".to_string(), format!("\"{SERVICE}#{action}\""))];
     let kind = "text/xml; charset=\"utf-8\"".to_string();
-    let reply = net
-        .send(&Request::post(
-            control.to_string(),
-            headers,
-            Some((kind, body.into_bytes())),
-        ))
-        .map_err(Failure::Unreachable)?;
+    let mut request = Request::post(control.to_string(), headers, Some((kind, body.into_bytes())));
+    if let Some(timeout) = timeout {
+        request.timeout = timeout;
+    }
+    let reply = net.send(&request).map_err(Failure::Unreachable)?;
     match reply.status {
         200..=299 => String::from_utf8(reply.body).map_err(|_| not_a_listing()),
         300..=399 => Err(Failure::moved(
@@ -628,6 +783,8 @@ fn escape(text: &str) -> String {
 /// A container a page listed.
 struct Folder {
     id: String,
+    /// What it is: the container its `refID` names, or itself.
+    same: String,
     title: String,
     /// Its `upnp:albumArtURI`, as kept (`kept`); empty when it has none.
     art: String,
@@ -695,8 +852,14 @@ fn listing(
                 .map(str::trim)
                 .filter(|id| !id.is_empty())
             {
+                let same = node
+                    .attribute("refID")
+                    .map(str::trim)
+                    .filter(|r| !r.is_empty())
+                    .unwrap_or(id);
                 out.folders.push(Folder {
                     id: id.to_string(),
+                    same: same.to_string(),
                     title: field(node, "title"),
                     art: art_of(server, node).unwrap_or_default(),
                 });
@@ -822,7 +985,10 @@ fn track(
 /// `upnp:albumArtURI`, or else a `res` that is an image, the way some
 /// servers give a cover. Only on the server's own host.
 fn art_of(server: &Server, node: roxmltree::Node<'_, '_>) -> Option<String> {
-    let on_host = |uri: &str| resolve(&server.address, uri).and_then(|url| kept(&server.address, &url));
+    let on_host = |uri: &str| {
+        resolve(&server.address, uri)
+            .and_then(|url| kept_on(&server.address, &server.details.hosts, &url))
+    };
     let named = node
         .children()
         .filter(|n| n.has_tag_name("albumArtURI"))
@@ -893,7 +1059,8 @@ fn original(server: &Server, res: roxmltree::Node<'_, '_>) -> Option<Original> {
         return None;
     }
     let codec = codec_of(mime)?;
-    let url = resolve(&server.address, res.text()?).and_then(|url| kept(&server.address, &url))?;
+    let url = resolve(&server.address, res.text()?)
+        .and_then(|url| kept_on(&server.address, &server.details.hosts, &url))?;
     let attribute = |name: &str| {
         res.attribute(name)
             .and_then(|v| v.trim().parse::<u64>().ok())
@@ -1070,15 +1237,27 @@ fn resolve(base: &str, named: &str) -> Option<String> {
 /// description's scheme, host and port, the whole address when only the
 /// port differs, and nothing when it points at another host. A server on
 /// the LAN does not get to send this machine anywhere else.
+#[cfg(test)]
 fn kept(location: &str, url: &str) -> Option<String> {
+    kept_on(location, &[], url)
+}
+
+/// `kept`, where `hosts` are other names of the description's host
+/// (`Details::hosts`): an address on one of them is the server's own and is
+/// kept whole. Any other host is still refused.
+fn kept_on(location: &str, hosts: &[String], url: &str) -> Option<String> {
     if !(url.starts_with("http://") || url.starts_with("https://"))
         || url.contains(char::is_whitespace)
     {
         return None;
     }
     let (here, there) = (origin(location)?, origin(url)?);
-    if host(here)? != host(there)? {
-        return None;
+    let theirs = host(there)?;
+    if host(here)? != theirs {
+        return hosts
+            .iter()
+            .any(|h| h.eq_ignore_ascii_case(&theirs))
+            .then(|| url.to_string());
     }
     if !here.eq_ignore_ascii_case(there) {
         return Some(url.to_string());

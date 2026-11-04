@@ -111,6 +111,10 @@ pub struct Details {
     /// it as the setup showed it ("Music › Library › By Folder"), so editing
     /// the server names them again without opening each level.
     pub folders: Vec<Library>,
+    /// DLNA: other names of its host, in lower case: the base its
+    /// description names and what its address resolved to. A file or a
+    /// cover on one of them is the server's own.
+    pub hosts: Vec<String>,
 }
 
 /// A server as a request is built for it.

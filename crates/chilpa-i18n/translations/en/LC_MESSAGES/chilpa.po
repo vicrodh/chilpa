@@ -8358,6 +8358,15 @@ msgstr ""
 msgid "the media server refused the request (UPnP error {})"
 msgstr ""
 
+msgid "the media server's walk reached its limit of {} folders for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder"
+msgstr ""
+
+msgid "the media server's walk reached its limit of {} hours for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder"
+msgstr ""
+
+msgid "the media server's walk reached its limit of {} requests for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder"
+msgstr ""
+
 msgid "the module could not be loaded: {}"
 msgstr ""
 
