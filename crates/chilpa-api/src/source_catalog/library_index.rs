@@ -70,6 +70,7 @@ fn record(card: &Card, enrichment: &super::genres::State) -> SourceItem {
     let tracks = card.tracks.as_ref().map_or_else(|| card.metadata["tracks"].as_u64().unwrap_or_default() as usize, Vec::len);
     SourceItem {
         album: card.id,
+        favorite_album:card.metadata["favorite"].as_bool().unwrap_or(false),
         plugin: card.plugin.clone(),
         identity: card.identity.clone(),
         album_identity: card.identity.clone(),
@@ -106,6 +107,7 @@ fn song(track: &Track, card: Option<&Card>, saved: bool, enrichment: &super::gen
     if composers.is_empty() { composers = album.as_ref().map(|a| a.composers.clone()).unwrap_or_default(); }
     SourceItem {
         track: track.id,
+        favorite_album:album.as_ref().is_some_and(|record|record.favorite_album),
         plays: track.metadata["plays"].as_i64().filter(|n| *n >= 0),
         album: if track.album_id < 0 { track.album_id } else { 0 },
         plugin: track.plugin.clone(),
@@ -143,10 +145,10 @@ fn items_of(store: &Store, albums: &[String], tracks: &[String], enrichment: &su
                     for track in ids.iter().filter_map(|id| store.tracks.get(id)) {
                         if at.contains_key(&track.id) { continue; }
                         at.insert(track.id, items.len());
-                        items.push(SourceItem { saved_album: true, ..song(track, Some(card), false, enrichment, credits) });
+                        items.push(SourceItem { saved_album: card.metadata["in_library"] != false, ..song(track, Some(card), false, enrichment, credits) });
                     }
                 }
-                _ => items.push(SourceItem { saved_album: true, ..record(card, enrichment) }),
+                _ => items.push(SourceItem { saved_album: card.metadata["in_library"] != false, ..record(card, enrichment) }),
             }
         }
     }

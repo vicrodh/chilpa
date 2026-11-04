@@ -8,6 +8,7 @@ import app.chilpa.sources
 // One approved display mount shared by its route and the full-window host.
 QtObject {
     id: mode
+    readonly property int albumScopeVersion:1
     property var portal: null
     property var surface: null
     property var window: null

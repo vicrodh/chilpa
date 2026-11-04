@@ -53,7 +53,7 @@ CascadingMenu {
               act: "apart", when: apart >= 0, keepApart: apart === 0 },
             { separator: true, when: one && id > 0 },
             { text: favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev),
-              act: favorite ? "unfavorite" : "favorite", when: one && (id > 0 || nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")) }
+              act: favorite ? "unfavorite" : "favorite", when: one && (id > 0 || nativeInfo.favorite_supported !== false && nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")) }
         ]
         // The extra queues come from the facade, as they do for a track.
         entries = extraEntries.concat(all.filter(e => e.when === undefined || e.when)).concat(JSON.parse(AlbumActions.listenTargetsJson()))

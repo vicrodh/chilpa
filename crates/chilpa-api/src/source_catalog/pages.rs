@@ -140,9 +140,12 @@ fn decorate_header(catalog: &Catalog, plugin: &str, value: &mut Value) {
     value["plugin"] = json!(plugin);
     if let Some(date) = value["release_date"].as_str() { value["released"] = json!(crate::album_versions::release_label(date)); }
     let kind = value["kind"].as_str().unwrap_or_default();
-    if !value["favorite"].is_boolean() && matches!(kind,"album" | "artist" | "playlist" | "label") {
+    if matches!(kind,"album" | "artist" | "playlist" | "label") {
         if let Some(shelf) = catalog.shelf(&format!("{plugin} section:{kind}s")) {
-            value["favorite"] = json!(catalog.cards(&shelf.cards).iter().any(|c| c.identity == value["ref"].as_str().unwrap_or_default()));
+            let reference=value["ref"].as_str().unwrap_or_default();
+            let card=catalog.cards(&shelf.cards).into_iter().find(|c|c.identity==reference);
+            if !value["in_library"].is_boolean(){value["in_library"]=json!(card.as_ref().is_some_and(|card|card.metadata["in_library"]!=false))}
+            if !value["favorite"].is_boolean(){value["favorite"]=json!(card.and_then(|c|c.metadata["favorite"].as_bool()).unwrap_or(false))}
         }
     }
     if let Some(image) = value["image"].as_str() {
@@ -369,6 +372,21 @@ impl crate::Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn a_saved_header_keeps_membership_and_favorite_separate(){
+        let app=crate::Chilpa::new();
+        let id=app.catalog.lock().store.take_item("fixture",&json!({"kind":"album","ref":"album:1","title":"Saved","favorite":false}),1).unwrap();
+        app.catalog.lock().store.shelves.insert("fixture section:albums".into(),super::super::store::Shelf{cards:vec![id],..Default::default()});
+        let mut header=json!({"kind":"album","ref":"album:1","title":"Saved"});
+        decorate_header(&app.catalog,"fixture",&mut header);
+        assert_eq!(header["in_library"],true);
+        assert_eq!(header["favorite"],false);
+        let mut explicit=json!({"kind":"album","ref":"album:1","favorite":false});
+        decorate_header(&app.catalog,"fixture",&mut explicit);
+        assert_eq!(explicit["in_library"],true);
+        assert_eq!(explicit["favorite"],false);
+    }
+
     #[test]
     fn paging_reuses_occurrences_and_decorates_failures_without_losing_rows() {
         let original = json!({"id":"albums","items":[{"ref":"one"},{"ref":"two"}],"more":"next"});

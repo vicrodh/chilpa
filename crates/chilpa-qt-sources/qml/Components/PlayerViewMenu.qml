@@ -27,6 +27,7 @@ Shared.MenuCascade {
             children: backgrounds.map((text, index) => ({ text: text, checked: Ambient.mode === index, act: "background:" + index })) }]
         for (const panel of DisplayMode.panels()) next.push({text:panel.name,glyph:Icons.disc,submenu:true,children:DisplayMode.menuFor(panel.id)})
         entries = next
+        reserveRight(triggerWidth-implicitWidth)
         open()
     }
     onActionChosen: (entry) => {

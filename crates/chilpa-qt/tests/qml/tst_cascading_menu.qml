@@ -98,12 +98,13 @@ TestCase {
         verify(branch.contentItem.contentHeight>branch.availableHeight)
         popup.close()
     }
-    function test_left_edge_escape_and_leaving_both() {
+    function test_left_edge_escape_and_slow_pointer_crossing() {
         let branch=openBranch(700)
         verify(branch.x < 0)
         mouseMove(test,10,550)
         wait(500)
-        verify(!menu.visible && !branch.visible)
+        verify(menu.visible && branch.visible)
+        menu.close()
         branch=openBranch(100)
         keyClick(Qt.Key_Escape)
         tryCompare(branch,"visible",false)

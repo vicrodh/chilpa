@@ -286,6 +286,16 @@ impl Catalog {
         for key in keys { revalidation::queue(self, &mut inner, key, false); }
     }
 
+    /// Explicit hearts in a library listing, independent of its saved membership.
+    pub(crate) fn favorite_identities_of(&self,key:&str)->Vec<String>{
+        let inner=self.lock();
+        let Some(shelf)=inner.store.shelves.get(key) else{return Vec::new()};
+        shelf.tracks.iter().filter_map(|id|inner.store.tracks.get(id))
+            .filter(|track|track.metadata["favorite"]==true)
+            .filter_map(|track|track.metadata["ref"].as_str())
+            .map(|reference|reference.split_once("@playlist:").map_or(reference,|(song,_)|song).to_string()).collect()
+    }
+
     /// What the source calls each track of a listing.
     pub(crate) fn rating_identities_of(&self, key: &str) -> Vec<String> {
         let inner = self.lock();

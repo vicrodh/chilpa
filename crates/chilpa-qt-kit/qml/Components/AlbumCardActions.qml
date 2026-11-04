@@ -30,7 +30,7 @@ Rectangle {
     property string quickGlyph: Icons.layoutBottombarExpand
     property bool selectionVisible: true
     readonly property var nativeInfo: albumId < 0 ? JSON.parse(Sources.card(albumId, Library.remoteRev) || "{}") : ({})
-    readonly property bool favoriteSupported: albumId > 0 || !!nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")
+    readonly property bool favoriteSupported: albumId > 0 || nativeInfo.favorite_supported !== false && !!nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")
     readonly property bool favorite: nativeInfo.plugin ? nativeInfo.favorite === true : Ratings.favorite("album", albumId, Ratings.rev)
     readonly property var information: JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}")
     readonly property string genre: (Array.isArray(information.genres) && typeof information.genres[0] === "string"

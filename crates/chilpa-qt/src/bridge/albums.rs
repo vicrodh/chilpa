@@ -304,9 +304,10 @@ impl qobject::AlbumGridModel {
                 self.as_mut().rust_mut().generation = generation;
                 let (order, group, text) = (self.rust().order.to_string(), self.rust().group.to_string(), self.rust().filter.to_string());
                 let extras = crate::browse::read(|s| s.filter.clone());
+                let scope = self.rust().key.to_string();
                 let thread = self.qt_thread();
                 worker::submit(move |reader| {
-                    let found = reader.albums_view(&order, &group, &text, &extras);
+                    let found = reader.albums_view_scoped(&order, &group, &text, &extras, &scope);
                     let _ = thread.queue(move |model| model.arrive(generation, found));
                 });
                 return;

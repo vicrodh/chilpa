@@ -1,8 +1,7 @@
 //! Favorites a source keeps: the heart of a track that lives in a service.
 //!
-//! The listener's favorite tracks in a source are that source's own list,
-//! the "tracks" tab of its library. A track of the source is a favorite
-//! when it is on that list. Marking one asks the source, off the window's
+//! A source's explicit heart status is independent of a track being saved
+//! in its library. Marking one asks the source, off the window's
 //! thread, and shows it at once: what was changed here is laid over the
 //! list until the source says it could not be done.
 
@@ -83,7 +82,7 @@ impl Chilpa {
         for plugin in &sources {
             let key = listing(plugin);
             self.catalog.shelf(&key);
-            let kept = self.catalog.rating_identities_of(&key);
+            let kept = self.catalog.favorite_identities_of(&key);
             listed.extend(kept.into_iter().map(|identity| (plugin.clone(), identity)));
         }
         let marked = favorites_among(&known, &listed, &self.source_favorites.changed);

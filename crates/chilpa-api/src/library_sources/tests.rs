@@ -315,3 +315,16 @@ fn focus_album_alternatives_match_local_and_source_titles() {
     assert_eq!(facets.albums.len(), 5, "I can still add another album");
     assert_eq!(snapshot.ids, [10, 11, -2]);
 }
+
+#[test]
+fn saved_albums_and_explicit_hearts_are_independent_filters(){
+    let (reader,mut index)=fixture();
+    reader.lib.set_favorite(chilpa_library::store::favorites::FavoriteTarget::Album(1),true).unwrap();
+    for item in &mut index.items {item.favorite_album=matches!(item.album,-11 | -12);}
+    let found=reader.albums_view_selected("artist","","",&Filter::default(),&index,true);
+    let selected:std::collections::HashSet<_>=found.ids.into_iter().collect();
+    assert_eq!(selected,[1,-11,-12].into());
+    let filter=Filter{excluded_sources:vec!["plugin:guest".into()],..Default::default()};
+    let found=reader.albums_view_selected("artist","","",&filter,&index,true);
+    assert_eq!(found.ids,[1]);
+}

@@ -67,6 +67,8 @@ pub(crate) struct SourceItem {
     pub saved_track: bool,
     /// On one of the source's saved records: Albums shows that record.
     pub saved_album: bool,
+    /// An explicit album heart, independent of saved-library membership.
+    pub favorite_album: bool,
     /// How many tracks it stands for: one, or a record's count.
     pub tracks: usize,
     pub playable: bool,

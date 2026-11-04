@@ -6,6 +6,7 @@ use crate::{Filter, Reader, TrackOrder};
 use chilpa_library::AlbumSort;
 use std::collections::HashSet;
 
+mod scope;
 mod artists;
 pub use artists::{artist_cards, ListedArtist};
 
@@ -88,14 +89,22 @@ impl Reader {
     }
 
     pub(crate) fn albums_view_using(&self, order: &str, group: &str, text: &str, extras: &Filter, index: &crate::library_sources::SourceIndex) -> AlbumsFound {
+        self.albums_view_selected(order,group,text,extras,index,false)
+    }
+
+    pub(super) fn albums_view_selected(&self, order: &str, group: &str, text: &str, extras: &Filter, index: &crate::library_sources::SourceIndex, favorites_only: bool) -> AlbumsFound {
         let (name, turned) = turned_order(order);
         let order = AlbumSort::from_name(name);
         let mut ids = self.lib.album_ids_matching(order, text).unwrap_or_default();
         if let Some(left) = self.passing_album_ids(extras) {
             ids.retain(|id| left.contains(id));
         }
+        if favorites_only {
+            let favorites=self.lib.favorites().unwrap_or_default().albums;
+            ids.retain(|id|favorites.contains(id));
+        }
         let mut ids = self.lib.grouped_album_ids(&ids).unwrap_or(ids);
-        let mut remote = saved_records(index, text, extras);
+        let mut remote = saved_records(index, text, extras, favorites_only);
         if !remote.is_empty() {
             remote.sort_by(|a, b| order.compare(&a.1, &b.1));
             let keys = self.lib.album_keys(&ids).unwrap_or_default();
@@ -151,7 +160,7 @@ impl Reader {
 
 /// The integrated sources' saved records that hold every word of `text` in
 /// their title or artist and pass the extras, each once, in grid order keys.
-fn saved_records(index: &crate::library_sources::SourceIndex, text: &str, extras: &Filter) -> Vec<(i64, chilpa_library::AlbumKey)> {
+fn saved_records(index: &crate::library_sources::SourceIndex, text: &str, extras: &Filter, favorites_only: bool) -> Vec<(i64, chilpa_library::AlbumKey)> {
     let words: Vec<String> = text.to_lowercase().split_whitespace().map(String::from).collect();
     let through = crate::library_sources::Prepared::new(&Filter {
         excluded_sources: extras.excluded_sources.clone(), qualities: extras.qualities.clone(), formats: extras.formats.clone(), ..Filter::default()
@@ -159,7 +168,7 @@ fn saved_records(index: &crate::library_sources::SourceIndex, text: &str, extras
     let stars = crate::library_sources::Stars::default();
     let mut records: std::collections::HashMap<i64, chilpa_library::AlbumKey> = std::collections::HashMap::new();
     let mut order = Vec::new();
-    for item in index.items.iter().filter(|item| item.saved_album && item.album != 0) {
+    for item in index.items.iter().filter(|item| item.album != 0 && (if favorites_only {item.favorite_album} else {item.saved_album})) {
         let named = |word: &String| item.folded.album_title.contains(word.as_str()) || item.folded.artists.iter().any(|a| a.contains(word.as_str()));
         if !words.iter().all(named) || !through.passes(item, &stars) { continue; }
         let key = records.entry(item.album).or_insert_with(|| {

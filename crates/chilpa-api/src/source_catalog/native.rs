@@ -270,7 +270,11 @@ fn library_items(mut ask: impl FnMut(u64) -> Result<Value, String>) -> Result<(V
 
 fn library_shelf(store: &mut Store, plugin: &str, key: &str, kind: &str, items: Vec<Value>, folders: Value, stamp: u64) -> Shelf {
     let mut shelf = Shelf { read_at: stamp, epoch: 1, document: json!({"folders":folders}), ..Shelf::default() };
-    for item in items {
+    for mut item in items {
+        // Listing in a personal library proves membership, never a heart.
+        if item.is_object() && !item["in_library"].is_boolean(){item["in_library"]=json!(true)}
+        let favorite=item["favorite"].as_bool().unwrap_or_else(|| item["membership"].as_str().is_some_and(|value|value.split(',').any(|m|m=="favorites")));
+        if item.is_object() && !item["favorite"].is_boolean(){item["favorite"]=json!(favorite)}
         if kind == "tracks" {
             shelf.tracks.extend(store.take_owned_item_track(plugin, item, None, stamp));
         } else if let Some(id) = store.take_owned_item(plugin, item, stamp) {
@@ -278,7 +282,8 @@ fn library_shelf(store: &mut Store, plugin: &str, key: &str, kind: &str, items: 
                 card.seen_in = key.to_string();
             }
             shelf.cards.push(id);
-            shelf.membership.insert(id, "favorites".into());
+            let saved=store.cards.get(&id).is_none_or(|card|card.metadata["in_library"]!=false);
+            shelf.membership.insert(id, match (saved,favorite){(true,true)=>"library,favorites",(true,false)=>"library",(false,true)=>"favorites",_=>""}.into());
         }
     }
     let mut seen = std::collections::HashSet::new();
@@ -529,6 +534,18 @@ mod tests {
     }
 
     #[test]
+    fn saved_membership_never_implies_a_heart(){
+        let mut store=Store::default();
+        let items=vec![json!({"kind":"album","ref":"album:1","title":"Saved","favorite":false}),json!({"kind":"album","ref":"album:2","title":"Loved","favorite":true}),json!({"kind":"album","ref":"album:3","title":"Unknown"})];
+        let shelf=library_shelf(&mut store,"fixture","fixture section:albums","albums",items,Value::Null,1);
+        for &id in &shelf.cards{assert_eq!(store.cards[&id].metadata["in_library"],true);}
+        assert_eq!(shelf.membership[&shelf.cards[0]],"library");
+        assert_eq!(shelf.membership[&shelf.cards[1]],"library,favorites");
+        assert_eq!(shelf.membership[&shelf.cards[2]],"library");
+        assert_eq!(store.cards[&shelf.cards[2]].metadata["favorite"],false);
+    }
+
+    #[test]
     fn library_pages_move_rows_and_keep_folders_order_and_membership() {
         let mut asked = Vec::new();
         let (items, folders) = library_items(|page| {
@@ -548,7 +565,7 @@ mod tests {
         assert_eq!(shelf.cards.len(), 501);
         assert_eq!(store.cards[&shelf.cards[0]].title, "Updated");
         assert_eq!(store.cards[&shelf.cards[500]].identity, "list:500");
-        assert!(shelf.cards.iter().all(|id| shelf.membership[id] == "favorites" && store.cards[id].seen_in == "fixture section:playlists"));
+        assert!(shelf.cards.iter().all(|id| shelf.membership[id] == "library" && store.cards[id].seen_in == "fixture section:playlists"));
         let failed = library_items(|page| if page == 0 { Ok(json!({"total":501,"items":vec![json!({"ref":"list:1"}); PAGE as usize]})) }
             else { Err("retry later".into()) });
         assert_eq!(failed.unwrap_err(), "retry later");
