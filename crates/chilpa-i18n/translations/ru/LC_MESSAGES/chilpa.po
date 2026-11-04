@@ -3097,6 +3097,9 @@ msgstr "Инвертировать полярность слева"
 msgid "Invert right polarity"
 msgstr "Инвертировать полярность справа"
 
+msgid "It does not answer now; try again when it is back"
+msgstr "Сейчас не отвечает; попробуйте снова, когда он вернётся"
+
 msgid "Italian"
 msgstr "Итальянский"
 
@@ -3150,6 +3153,9 @@ msgstr "Сохранять очередь между сеансами"
 
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "Искать слова буквально и жанр без расширения"
+
+msgid "Kept in Chilpa until you add its first tracks, then sent to {}"
+msgstr "Хранится в Chilpa, пока вы не добавите первые треки, затем отправляется на {}"
 
 msgid "Kernel"
 msgstr "Ядро"
@@ -4201,14 +4207,17 @@ msgstr "Удалять можно только личные пресеты."
 msgid "Only the first {} outputs are listed."
 msgstr "Показаны только первые {} выводов."
 
+msgid "Only tracks from this server go in its playlists"
+msgstr "В его плейлисты попадают только треки этого сервера"
+
 msgid "Only tracks from this source"
 msgstr "Только треки из этого источника"
 
+msgid "Only tracks from this source go in its playlists"
+msgstr "В её плейлисты попадают только треки этого источника"
+
 msgid "Only with exclusive mode on."
 msgstr "Только при включённом эксклюзивном режиме."
-
-msgid "Only with tracks: select them, then Add to playlist"
-msgstr "Только с треками: выберите их, затем «Добавить в плейлист»"
 
 msgid "Open"
 msgstr "Открыть"
@@ -4440,6 +4449,12 @@ msgstr "Пик"
 
 msgid "Pending"
 msgstr "Ожидает"
+
+msgid "Pending: it will be sent to {} with its first tracks."
+msgstr "Ожидает: будет отправлен на {} вместе с первыми треками."
+
+msgid "Pending: sent with these tracks"
+msgstr "Ожидает: отправится с этими треками"
 
 msgid "Per-app bit-perfect (PipeWire client)"
 msgstr "Bit-perfect для приложения (клиент PipeWire)"
@@ -5374,8 +5389,14 @@ msgstr ""
 msgid "Saved for the displayed inspection. Refresh after changing equipment or configuration."
 msgstr "Сохранено для показанных данных. Обновите их после смены оборудования или конфигурации."
 
+msgid "Saved in your account there; only its own tracks"
+msgstr "Сохраняется в вашей учётной записи там; только её собственные треки"
+
 msgid "Saved lyrics and translations will be fetched again when needed."
 msgstr "Сохранённые тексты песен и переводы будут загружены заново при необходимости."
+
+msgid "Saved on the server; only its own tracks"
+msgstr "Сохраняется на сервере; только его собственные треки"
 
 msgid "Saved position"
 msgstr "Сохранённая позиция"
@@ -6213,6 +6234,9 @@ msgstr "API текстов не удалось сохранить сообщен
 
 msgid "The lyrics cache could not be opened."
 msgstr "Не удалось открыть кэш текстов песен."
+
+msgid "The network is off; turn it on in Settings › Integrations"
+msgstr "Сеть выключена; включите её в Настройки › Интеграции"
 
 msgid "The output changed during the check. Its new configuration was kept."
 msgstr "Выход изменился во время проверки. Его новая конфигурация сохранена."
@@ -8625,9 +8649,6 @@ msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{} прослушивание ожидает отправки"
 msgstr[1] "{} прослушивания ожидают отправки"
 msgstr[2] "{} прослушиваний ожидают отправки"
-
-msgid "{} makes a playlist only with tracks in it: select them, then Add to playlist."
-msgstr "{} создаёт плейлист только с треками: выберите их, затем «Добавить в плейлист»."
 
 msgid "{} min"
 msgstr "{} мин"

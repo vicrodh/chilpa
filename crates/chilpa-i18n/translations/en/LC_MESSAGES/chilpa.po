@@ -3094,6 +3094,9 @@ msgstr ""
 msgid "Invert right polarity"
 msgstr ""
 
+msgid "It does not answer now; try again when it is back"
+msgstr ""
+
 msgid "Italian"
 msgstr ""
 
@@ -3147,6 +3150,9 @@ msgstr ""
 
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "Keep words literal and match a genre without expanding it"
+
+msgid "Kept in Chilpa until you add its first tracks, then sent to {}"
+msgstr ""
 
 msgid "Kernel"
 msgstr "Kernel"
@@ -4198,13 +4204,16 @@ msgstr ""
 msgid "Only the first {} outputs are listed."
 msgstr ""
 
+msgid "Only tracks from this server go in its playlists"
+msgstr ""
+
 msgid "Only tracks from this source"
 msgstr "Only tracks from this source"
 
-msgid "Only with exclusive mode on."
+msgid "Only tracks from this source go in its playlists"
 msgstr ""
 
-msgid "Only with tracks: select them, then Add to playlist"
+msgid "Only with exclusive mode on."
 msgstr ""
 
 msgid "Open"
@@ -4436,6 +4445,12 @@ msgid "Peak"
 msgstr ""
 
 msgid "Pending"
+msgstr ""
+
+msgid "Pending: it will be sent to {} with its first tracks."
+msgstr ""
+
+msgid "Pending: sent with these tracks"
 msgstr ""
 
 msgid "Per-app bit-perfect (PipeWire client)"
@@ -5371,8 +5386,14 @@ msgstr "Saved device selection"
 msgid "Saved for the displayed inspection. Refresh after changing equipment or configuration."
 msgstr "Saved for the displayed inspection. Refresh after changing equipment or configuration."
 
+msgid "Saved in your account there; only its own tracks"
+msgstr ""
+
 msgid "Saved lyrics and translations will be fetched again when needed."
 msgstr "Saved lyrics and translations will be fetched again when needed."
+
+msgid "Saved on the server; only its own tracks"
+msgstr ""
 
 msgid "Saved position"
 msgstr ""
@@ -6207,6 +6228,9 @@ msgid "The lyrics API could not save the report. This result is excluded on this
 msgstr ""
 
 msgid "The lyrics cache could not be opened."
+msgstr ""
+
+msgid "The network is off; turn it on in Settings › Integrations"
 msgstr ""
 
 msgid "The output changed during the check. Its new configuration was kept."
@@ -8605,9 +8629,6 @@ msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] ""
 msgstr[1] ""
-
-msgid "{} makes a playlist only with tracks in it: select them, then Add to playlist."
-msgstr ""
 
 msgid "{} min"
 msgstr ""

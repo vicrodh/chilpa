@@ -1,5 +1,6 @@
 import QtQuick
 import app.chilpa
+import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
@@ -31,6 +32,9 @@ Item {
     property bool nested: false
     // A server's own that the account may change there: renamed there.
     property bool renamable: false
+    // A server's own made here and not sent yet: it waits for its first
+    // tracks, and the mark says so.
+    property bool unsent: false
 
     signal opened()
     signal menu(real x, real y)
@@ -83,12 +87,27 @@ Item {
         visible: row.showSourceBadge && (collage.active || row.local) && !row.editing
         sourceInfo: ({icon: row.sourceIcon, label: row.sourceName})
     }
+    Icon {
+        id: waiting
+        objectName: "playlistUnsent"
+        anchors.right: sourceBadge.visible ? sourceBadge.left : parent.right
+        anchors.rightMargin: sourceBadge.visible ? Metrics.gap6 : Metrics.navItemPadding
+        anchors.verticalCenter: parent.verticalCenter
+        visible: row.unsent && !row.editing
+        width: visible ? Metrics.iconSm : 0
+        glyph: Icons.clockPlus
+        size: Metrics.iconSm
+        color: Theme.color.statusWarning
+        HoverHandler {
+            onHoveredChanged: hovered ? TipState.show(I18n.trArgs("Pending: it will be sent to {} with its first tracks.", [row.sourceName], I18n.rev), waiting) : TipState.hide(waiting)
+        }
+    }
     Text {
         visible: !row.editing
         anchors.left: icon.right
         anchors.leftMargin: Metrics.navItemPadding - (icon.width - Metrics.iconMd) / 2 // derived: where the name was
         anchors.right: parent.right
-        anchors.rightMargin: Metrics.navItemPadding + (sourceBadge.visible ? sourceBadge.width + Metrics.gap6 : 0)
+        anchors.rightMargin: Metrics.navItemPadding + (sourceBadge.visible ? sourceBadge.width + Metrics.gap6 : 0) + (waiting.visible ? waiting.width + Metrics.gap6 : 0)
         anchors.verticalCenter: parent.verticalCenter
         text: row.name
         elide: Text.ElideRight

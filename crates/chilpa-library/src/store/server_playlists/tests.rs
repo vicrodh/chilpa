@@ -105,3 +105,51 @@ fn a_playlist_the_server_no_longer_lists_leaves_and_nothing_else_does() {
     lib.remove_source(source).unwrap();
     assert!(lib.playlists().unwrap().iter().all(|p| p.name != "Kept"), "removing the server takes its playlists");
 }
+
+#[test]
+fn a_playlist_made_here_waits_unsent_and_a_reading_of_the_server_leaves_it_alone() {
+    let lib = Library::in_memory().unwrap();
+    let source = synced(&lib, "aaaa", &["1", "2"]);
+    let road = lib.mirror_server_playlist(source, &listed("pl-1", "Road", true, &["1"])).unwrap().id;
+    let waiting = lib.create_unsent_server_playlist(source, "Night", "For the drive home").unwrap();
+    let stored = lib.playlists().unwrap().into_iter().find(|p| p.id == waiting).unwrap();
+    assert_eq!((stored.server, stored.unsent, stored.writable, stored.track_count), (true, true, true, 0), "the server's, not sent, empty");
+    assert_eq!((stored.external_id.as_str(), stored.description.as_str()), ("", "For the drive home"));
+    // The server's whole list does not name it: only what it lists goes.
+    assert_eq!(lib.prune_server_playlists(source, &[]).unwrap(), 1, "Road is gone from the server");
+    let left: Vec<i64> = lib.playlists().unwrap().into_iter().filter(|p| p.source_id == source).map(|p| p.id).collect();
+    assert_eq!(left, [waiting], "the unsent one stays");
+    assert_ne!(road, waiting);
+}
+
+#[test]
+fn a_playlist_sent_takes_its_server_id_and_keeps_its_place() {
+    let lib = Library::in_memory().unwrap();
+    let source = synced(&lib, "aaaa", &["1", "2"]);
+    let waiting = lib.create_unsent_server_playlist(source, "Night", "").unwrap();
+    let folder = lib.create_playlist_folder("Drives", "").unwrap();
+    lib.move_playlist_to_folder(waiting, Some(folder)).unwrap();
+    let before = lib.playlists().unwrap().into_iter().find(|p| p.id == waiting).unwrap();
+    assert!(lib.bind_unsent(waiting, "pl-9").unwrap());
+    assert!(!lib.bind_unsent(waiting, "pl-10").unwrap(), "sent once");
+    let mirrored = lib.mirror_server_playlist(source, &listed("pl-9", "Night", true, &["2", "1"])).unwrap();
+    assert_eq!(mirrored.id, waiting, "the same row, not a second playlist");
+    let after = lib.playlists().unwrap().into_iter().find(|p| p.id == waiting).unwrap();
+    assert_eq!((after.unsent, after.external_id.as_str(), after.track_count), (false, "pl-9", 2));
+    assert_eq!((after.folder_id, after.custom_position), (before.folder_id, before.custom_position), "its folder and its place");
+    assert_eq!(lib.playlists().unwrap().iter().filter(|p| p.source_id == source).count(), 1);
+}
+
+#[test]
+fn a_playlist_not_sent_outlives_a_restart() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("library.db");
+    let waiting = {
+        let lib = Library::open(&path).unwrap();
+        let source = synced(&lib, "aaaa", &["1"]);
+        lib.create_unsent_server_playlist(source, "Night", "").unwrap()
+    };
+    let lib = Library::open(&path).unwrap();
+    let stored = lib.playlists().unwrap().into_iter().find(|p| p.id == waiting).unwrap();
+    assert!(stored.unsent && stored.name == "Night", "still waiting for its first tracks");
+}

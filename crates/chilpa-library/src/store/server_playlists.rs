@@ -104,12 +104,13 @@ impl Library {
 
     /// Takes out the server's playlists it no longer lists. `listed` is
     /// every id of the server's whole list: a list that was cut short never
-    /// comes here. The tracks stay; a playlist is a view. Returns how many
-    /// left.
+    /// comes here. The tracks stay; a playlist is a view. One made here and
+    /// not sent yet (`unsent`) is not on the server's list and stays.
+    /// Returns how many left.
     pub fn prune_server_playlists(&self, source_id: i64, listed: &[String]) -> rusqlite::Result<usize> {
         let tx = self.own_transaction()?;
         let stored: Vec<(i64, Option<String>)> = {
-            let mut stmt = tx.prepare("SELECT id, external_id FROM playlists WHERE source_id = ?1")?;
+            let mut stmt = tx.prepare("SELECT id, external_id FROM playlists WHERE source_id = ?1 AND unsent = 0")?;
             let rows = stmt.query_map(params![source_id], |r| Ok((r.get(0)?, r.get(1)?)))?;
             rows.collect::<rusqlite::Result<_>>()?
         };
@@ -122,6 +123,30 @@ impl Library {
         }
         tx.finish()?;
         Ok(gone)
+    }
+
+    /// Makes a playlist of the server's here, empty and not sent yet
+    /// (`StoredPlaylist::unsent`), last in the custom order. Nothing is asked
+    /// of the server: it goes there with its first tracks (`bind_unsent`).
+    pub fn create_unsent_server_playlist(&self, source_id: i64, name: &str, description: &str) -> rusqlite::Result<i64> {
+        self.db.execute(
+            "INSERT INTO playlists
+                    (source_id, name, description, created_at, updated_at,
+                     custom_position, writable, unsent)
+             VALUES (?1, ?2, ?3, ?4, ?4,
+                     COALESCE((SELECT max(custom_position) + 1 FROM playlists), 0), 1, 1)",
+            params![source_id, name, description, now_unix()],
+        )?;
+        Ok(self.db.last_insert_rowid())
+    }
+
+    /// The server made the playlist that waited here: it takes the id the
+    /// server gave it, and the next mirror of it writes over this row, with
+    /// its folder, its place in the sidebar and its plays. `false` when the
+    /// row is gone or was sent already.
+    pub fn bind_unsent(&self, playlist_id: i64, external_id: &str) -> rusqlite::Result<bool> {
+        let changed = self.db.execute("UPDATE playlists SET external_id = ?2, unsent = 0 WHERE id = ?1 AND unsent = 1", params![playlist_id, external_id])?;
+        Ok(changed > 0)
     }
 
     /// How many entries of the server's playlists name a track the library

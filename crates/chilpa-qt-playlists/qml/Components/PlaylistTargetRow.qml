@@ -51,9 +51,12 @@ Rectangle {
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap12
         anchors.verticalCenter: parent.verticalCenter
-        text: row.caption !== "" ? row.caption : I18n.trCount("{} track", "{} tracks", row.target.playlist.track_count || 0, I18n.rev)
+        // One waiting for its first tracks says these are the ones.
+        text: row.caption !== "" ? row.caption
+            : row.target.playlist.unsent === true ? I18n.tr("Pending: sent with these tracks", I18n.rev)
+            : I18n.trCount("{} track", "{} tracks", row.target.playlist.track_count || 0, I18n.rev)
         font.pointSize: Type.small
-        font.italic: row.caption !== ""
+        font.italic: row.caption !== "" || row.target.playlist.unsent === true
         color: Theme.color.textTertiary
     }
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }

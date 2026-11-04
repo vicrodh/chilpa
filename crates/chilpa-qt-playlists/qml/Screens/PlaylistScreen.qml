@@ -74,13 +74,17 @@ Flickable {
 
         PlaylistHeader {
             id: hero
+            objectName: "playlistHero"
             width: parent.width
             name: page.playlistName
             // The library's own lists are Chilpa's, as the Home's cards name them.
             sourceName: page.editable ? "Chilpa" : Playlists.sourceName(page.playlistId, Playlists.rev)
             sourceIcon: page.editable ? "qrc:/qt/qml/app/chilpa/kit/assets/logo.png" : page.server.icon || ""
             covers: page.covers
-            meta: (tracks.count > 0 || find.typed !== "" ? tracks.summary : I18n.tr("Empty. Add tracks from any list with a right click.", I18n.rev))
+            // One made here for a server that makes a playlist only with
+            // tracks in it waits for them: it says where they will take it.
+            meta: page.server.unsent === true ? I18n.trArgs("Pending: it will be sent to {} with its first tracks.", [page.server.server || ""], I18n.rev)
+                : (tracks.count > 0 || find.typed !== "" ? tracks.summary : I18n.tr("Empty. Add tracks from any list with a right click.", I18n.rev))
                 + (page.server.left_out > 0 ? " · " + I18n.trCount("{} track on the server is not in your library", "{} tracks on the server are not in your library", page.server.left_out, I18n.rev) : "")
             description: Playlists.description(page.playlistId, page.rev)
             markKey: page.playlistId > 0 ? page.playlistId.toString() : ""

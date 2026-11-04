@@ -91,6 +91,18 @@ TestCase {
         tryCompare(play, "visible", false)
     }
 
+    // One made here for a server that makes a playlist only with tracks in
+    // it says, in plain words, that it waits for them, and changes here.
+    function test_a_playlist_not_sent_yet_says_it_waits_for_its_first_tracks() {
+        PlaylistManager.serverPlaylists = {"-3": {server: "MacMini Plex", icon: "plex", writable: true, pending: false, held: "", left_out: 0, unsent: true}}
+        Playlists.rev++
+        tryCompare(serverPage, "ofServer", true)
+        compare(findChild(serverPage, "playlistHero").meta, "Pending: it will be sent to MacMini Plex with its first tracks.")
+        verify(serverPage.changeable, "renamed and deleted here")
+        PlaylistManager.serverPlaylists = ({})
+        Playlists.rev++
+    }
+
     // While its server reads its library for the first time, a server's
     // playlist takes no change, and the page says why.
     function test_a_server_s_playlist_held_by_its_first_sync_says_so_and_takes_no_change() {

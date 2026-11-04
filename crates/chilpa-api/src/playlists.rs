@@ -81,6 +81,7 @@ pub(crate) fn playlist_of(p: chilpa_library::StoredPlaylist) -> Playlist {
         mixed: local,
         source,
         external_id: p.external_id,
+        unsent: p.unsent,
     }
 }
 
@@ -147,6 +148,7 @@ pub fn playlist_manager_entries(mut playlists: Vec<Playlist>, mut folders: Vec<P
             local: true,
             writable: true,
             visible_sidebar: true,
+            unsent: false,
         }));
     }
     if !matches!(filter, "folders" | "empty") {
@@ -166,6 +168,7 @@ pub fn playlist_manager_entries(mut playlists: Vec<Playlist>, mut folders: Vec<P
             local: playlist.mixed,
             writable: playlist.writable,
             visible_sidebar: playlist.visible_sidebar,
+            unsent: playlist.unsent,
         }));
     }
     rows
@@ -852,7 +855,7 @@ mod group_tests {
     fn listed(id: i64, source: &str) -> Playlist {
         Playlist { id, source_id: 0, name: format!("List {id}"), description: String::new(), artwork_path: String::new(), covers: Vec::new(), tags: Vec::new(),
             provider: if source.is_empty() { "local".into() } else { source.into() }, instance: String::new(), track_count: 1, play_count: 0, last_played_at: None,
-            folder_id: None, custom_position: id, visible_sidebar: true, updated_at: 0, writable: source.is_empty(), mixed: source.is_empty(), source: source.into(), external_id: String::new() }
+            folder_id: None, custom_position: id, visible_sidebar: true, updated_at: 0, writable: source.is_empty(), mixed: source.is_empty(), source: source.into(), external_id: String::new(), unsent: false }
     }
 
     #[test]

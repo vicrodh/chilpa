@@ -20,6 +20,8 @@ Rectangle {
     required property bool local
     required property string source
     required property string sourceName
+    // A server's own made here and not sent yet (`unsent`).
+    required property bool unsent
 
     property var manager
     // The sources' panels, for a source playlist's name.
@@ -85,10 +87,13 @@ Rectangle {
             width: parent.width
             text: row.folder
                 ? I18n.trCount("{} playlist", "{} playlists", row.tracks, I18n.rev)
+                : row.unsent ? I18n.trArgs("Pending: it will be sent to {} with its first tracks.", [row.owner], I18n.rev)
                 : row.owner + " · " + I18n.trCount("{} track", "{} tracks", row.tracks, I18n.rev)
-            elide: Text.ElideRight
+            wrapMode: row.unsent ? Text.WordWrap : Text.NoWrap
+            elide: row.unsent ? Text.ElideNone : Text.ElideRight
+            maximumLineCount: row.unsent ? 2 : 1
             font.pointSize: Type.small
-            color: Theme.color.textTertiary
+            color: row.unsent ? Theme.color.statusWarning : Theme.color.textTertiary
         }
     }
 

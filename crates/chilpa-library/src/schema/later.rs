@@ -236,3 +236,12 @@ CREATE TABLE source_overlay (
 pub(super) const MIGRATION_V49: &str = r#"
 ALTER TABLE playlists ADD COLUMN left_out INTEGER NOT NULL DEFAULT 0;
 "#;
+
+/// A server's playlist made here before the server has it: one whose
+/// server makes a playlist only with tracks in it waits here, empty, and is
+/// sent with the first tracks added to it. Until then it has no id there,
+/// a reading of the server's playlists leaves it alone, and its name and
+/// its deletion are the library's own. Zero for every other playlist.
+pub(super) const MIGRATION_V50: &str = r#"
+ALTER TABLE playlists ADD COLUMN unsent INTEGER NOT NULL DEFAULT 0;
+"#;

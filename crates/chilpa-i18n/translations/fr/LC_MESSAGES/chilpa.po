@@ -3094,6 +3094,9 @@ msgstr "Inverser la polarité gauche"
 msgid "Invert right polarity"
 msgstr "Inverser la polarité droite"
 
+msgid "It does not answer now; try again when it is back"
+msgstr "Il ne répond pas pour l'instant ; réessayez quand il sera de retour"
+
 msgid "Italian"
 msgstr "Italien"
 
@@ -3147,6 +3150,9 @@ msgstr "Conserver la file d'attente entre les sessions"
 
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "Lire les mots littéralement et chercher un genre sans élargissement"
+
+msgid "Kept in Chilpa until you add its first tracks, then sent to {}"
+msgstr "Gardée dans Chilpa jusqu'à ce que vous ajoutiez ses premières pistes, puis envoyée à {}"
 
 msgid "Kernel"
 msgstr "Noyau"
@@ -4198,14 +4204,17 @@ msgstr "Seuls les préréglages personnels peuvent être supprimés."
 msgid "Only the first {} outputs are listed."
 msgstr "Seules les {} premières sorties sont listées."
 
+msgid "Only tracks from this server go in its playlists"
+msgstr "Seules les pistes de ce serveur vont dans ses playlists"
+
 msgid "Only tracks from this source"
 msgstr "Uniquement les pistes de cette source"
 
+msgid "Only tracks from this source go in its playlists"
+msgstr "Seules les pistes de cette source vont dans ses playlists"
+
 msgid "Only with exclusive mode on."
 msgstr "Uniquement avec le mode exclusif activé."
-
-msgid "Only with tracks: select them, then Add to playlist"
-msgstr "Uniquement avec des pistes : sélectionnez-les, puis Ajouter à une playlist"
 
 msgid "Open"
 msgstr "Ouvrir"
@@ -4437,6 +4446,12 @@ msgstr "Cloche"
 
 msgid "Pending"
 msgstr "En attente"
+
+msgid "Pending: it will be sent to {} with its first tracks."
+msgstr "En attente : elle sera envoyée à {} avec ses premières pistes."
+
+msgid "Pending: sent with these tracks"
+msgstr "En attente : envoyée avec ces pistes"
 
 msgid "Per-app bit-perfect (PipeWire client)"
 msgstr "Bit-perfect par application (client PipeWire)"
@@ -5371,8 +5386,14 @@ msgstr ""
 msgid "Saved for the displayed inspection. Refresh after changing equipment or configuration."
 msgstr "Enregistré pour les données affichées. Actualisez-les après un changement d’équipement ou de configuration."
 
+msgid "Saved in your account there; only its own tracks"
+msgstr "Enregistrée dans votre compte là-bas ; uniquement ses propres pistes"
+
 msgid "Saved lyrics and translations will be fetched again when needed."
 msgstr "Les paroles et traductions enregistrées seront récupérées à nouveau au besoin."
+
+msgid "Saved on the server; only its own tracks"
+msgstr "Enregistrée sur le serveur ; uniquement ses propres pistes"
 
 msgid "Saved position"
 msgstr "Position enregistrée"
@@ -6208,6 +6229,9 @@ msgstr "L’API de paroles n’a pas pu enregistrer le signalement. Ce résultat
 
 msgid "The lyrics cache could not be opened."
 msgstr "Le cache des paroles n'a pas pu être ouvert."
+
+msgid "The network is off; turn it on in Settings › Integrations"
+msgstr "Le réseau est coupé ; activez-le dans Paramètres › Intégrations"
 
 msgid "The output changed during the check. Its new configuration was kept."
 msgstr "La sortie a changé pendant la vérification. Sa nouvelle configuration a été conservée."
@@ -8605,9 +8629,6 @@ msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{} écoute en attente d'envoi"
 msgstr[1] "{} écoutes en attente d'envoi"
-
-msgid "{} makes a playlist only with tracks in it: select them, then Add to playlist."
-msgstr "{} ne crée une playlist qu'avec des pistes : sélectionnez-les, puis Ajouter à une playlist."
 
 msgid "{} min"
 msgstr "{} min"

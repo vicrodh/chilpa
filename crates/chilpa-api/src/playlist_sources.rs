@@ -138,12 +138,21 @@ impl Chilpa {
         }).collect()
     }
 
+    /// Where a new playlist can be made, as the New playlist dialog's source
+    /// chooser lists them: each with its icon, whether it takes the tracks,
+    /// and a line to show under its name, what making it there does or why
+    /// it cannot take them (`why`).
     pub fn playlist_sources_json(&mut self, ids: &[i64]) -> String {
         let mut rows = self.server_playlist_sources(ids);
+        let root = Self::plugins_dir();
         for plugin in self.natives.ids() {
             if !self.natives.edits_playlists(&plugin) { continue; }
-            rows.push(json!({"id":plugin,"name":self.catalog.name(&plugin).unwrap_or_else(|| plugin.clone()),
-                "accepts":self.playlist_refs(ids, &plugin).is_some()}));
+            let accepts = self.playlist_refs(ids, &plugin).is_some();
+            let mut row = json!({"id":plugin,"name":self.catalog.name(&plugin).unwrap_or_else(|| plugin.clone()),
+                "icon":crate::plugin_icons::image_url(&root, &plugin),"accepts":accepts,
+                "detail":chilpa_i18n::t("Saved in your account there; only its own tracks")});
+            if !accepts { row["why"] = chilpa_i18n::t("Only tracks from this source go in its playlists").into(); }
+            rows.push(row);
         }
         rows.sort_by(|a,b| a["name"].as_str().cmp(&b["name"].as_str()));
         json!(rows).to_string()

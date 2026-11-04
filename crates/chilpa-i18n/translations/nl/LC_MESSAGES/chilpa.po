@@ -3094,6 +3094,9 @@ msgstr "Linkerpolariteit omkeren"
 msgid "Invert right polarity"
 msgstr "Rechterpolariteit omkeren"
 
+msgid "It does not answer now; try again when it is back"
+msgstr "Hij antwoordt nu niet; probeer het opnieuw als hij terug is"
+
 msgid "Italian"
 msgstr "Italiaans"
 
@@ -3147,6 +3150,9 @@ msgstr "De wachtrij tussen sessies bewaren"
 
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "Woorden letterlijk lezen en een genre zonder uitbreiding zoeken"
+
+msgid "Kept in Chilpa until you add its first tracks, then sent to {}"
+msgstr "Blijft in Chilpa tot je de eerste nummers toevoegt, en gaat dan naar {}"
 
 msgid "Kernel"
 msgstr "Kernel"
@@ -4198,14 +4204,17 @@ msgstr "Alleen persoonlijke presets kunnen worden verwijderd."
 msgid "Only the first {} outputs are listed."
 msgstr "Alleen de eerste {} uitvoeren worden vermeld."
 
+msgid "Only tracks from this server go in its playlists"
+msgstr "Alleen nummers van deze server gaan in zijn afspeellijsten"
+
 msgid "Only tracks from this source"
 msgstr "Alleen nummers van deze bron"
 
+msgid "Only tracks from this source go in its playlists"
+msgstr "Alleen nummers van deze bron gaan in haar afspeellijsten"
+
 msgid "Only with exclusive mode on."
 msgstr "Alleen met de exclusieve modus aan."
-
-msgid "Only with tracks: select them, then Add to playlist"
-msgstr "Alleen met nummers: selecteer ze en kies dan Aan afspeellijst toevoegen"
 
 msgid "Open"
 msgstr "Openen"
@@ -4437,6 +4446,12 @@ msgstr "Piek"
 
 msgid "Pending"
 msgstr "In afwachting"
+
+msgid "Pending: it will be sent to {} with its first tracks."
+msgstr "In afwachting: hij gaat met de eerste nummers naar {}."
+
+msgid "Pending: sent with these tracks"
+msgstr "In afwachting: gaat mee met deze nummers"
 
 msgid "Per-app bit-perfect (PipeWire client)"
 msgstr "Bit-perfect per app (PipeWire-client)"
@@ -5371,8 +5386,14 @@ msgstr ""
 msgid "Saved for the displayed inspection. Refresh after changing equipment or configuration."
 msgstr "Opgeslagen voor de getoonde inspectie. Vernieuw na wijzigingen aan apparatuur of configuratie."
 
+msgid "Saved in your account there; only its own tracks"
+msgstr "Wordt daar in je account bewaard; alleen eigen nummers"
+
 msgid "Saved lyrics and translations will be fetched again when needed."
 msgstr "Opgeslagen songteksten en vertalingen worden zo nodig opnieuw opgehaald."
+
+msgid "Saved on the server; only its own tracks"
+msgstr "Wordt op de server bewaard; alleen zijn eigen nummers"
 
 msgid "Saved position"
 msgstr "Opgeslagen positie"
@@ -6208,6 +6229,9 @@ msgstr "De songtekst-API kon de melding niet opslaan. Dit resultaat is op dit ap
 
 msgid "The lyrics cache could not be opened."
 msgstr "De songtekstcache kon niet worden geopend."
+
+msgid "The network is off; turn it on in Settings › Integrations"
+msgstr "Het netwerk staat uit; zet het aan in Instellingen › Integraties"
 
 msgid "The output changed during the check. Its new configuration was kept."
 msgstr "De uitvoer is gewijzigd tijdens de controle. De nieuwe configuratie is behouden."
@@ -8605,9 +8629,6 @@ msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{} beluistering wacht op verzending"
 msgstr[1] "{} beluisteringen wachten op verzending"
-
-msgid "{} makes a playlist only with tracks in it: select them, then Add to playlist."
-msgstr "{} maakt een afspeellijst alleen met nummers: selecteer ze en kies dan Aan afspeellijst toevoegen."
 
 msgid "{} min"
 msgstr "{} min"

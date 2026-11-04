@@ -52,7 +52,7 @@ Item {
             entryId: entry.id, name: entry.name, source: entry.source, sourceName: entry.source_name,
             artwork: entry.artwork_path || "", covers: entry.covers || [], colorName: entry.color,
             tracks: entry.track_count, local: entry.local, writable: entry.writable === true, server: !!servers[entry.source],
-            visibleInSidebar: entry.visible_sidebar}))
+            visibleInSidebar: entry.visible_sidebar, unsent: entry.unsent === true}))
     }
     function enterFolder(id, name) { folderId = id; folderName = name; reload() }
     function leaveFolder() { folderId = 0; folderName = ""; reload() }
@@ -187,6 +187,7 @@ Item {
                 name: modelData.name
                 folder: modelData.rowKind === 1
                 detail: folder ? I18n.trCount("{} playlist", "{} playlists", modelData.tracks, I18n.rev)
+                    : modelData.unsent ? I18n.trArgs("Pending: it will be sent to {} with its first tracks.", [page.ownerOf(modelData)], I18n.rev)
                     : page.ownerOf(modelData) + " · " + I18n.trCount("{} track", "{} tracks", modelData.tracks, I18n.rev)
                 art: modelData.artwork
                 covers: modelData.covers

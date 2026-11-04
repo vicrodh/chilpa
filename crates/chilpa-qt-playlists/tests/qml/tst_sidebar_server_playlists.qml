@@ -21,7 +21,9 @@ TestCase {
             {id: 12, name: "Road Trip", source: "example:4f1c", provider: "Living room", mixed: false, server: true, writable: true,
                 visible_sidebar: true, track_count: 4, artwork_path: "", covers: [], custom_position: 0, updated_at: 1, source_icon: "server"},
             {id: 13, name: "Shared", source: "example:4f1c", provider: "Living room", mixed: false, server: true, writable: false,
-                visible_sidebar: true, track_count: 2, artwork_path: "", covers: [], custom_position: 1, updated_at: 2, source_icon: "server"}]}
+                visible_sidebar: true, track_count: 2, artwork_path: "", covers: [], custom_position: 1, updated_at: 2, source_icon: "server"},
+            {id: 14, name: "Night", source: "example:4f1c", provider: "Living room", mixed: false, server: true, writable: true, unsent: true,
+                visible_sidebar: true, track_count: 0, artwork_path: "", covers: [], custom_position: 2, updated_at: 3, source_icon: "server"}]}
         sidebar.reload()
     }
     function menu() { return findChild(actions, "playlistsMenu") }
@@ -60,6 +62,17 @@ TestCase {
         verify(form.described, "a description for one that takes it")
         dialog.close()
         PlaylistManager.serverPlaylists = ({})
+    }
+
+    // One made here and not sent yet wears the mark that says it waits.
+    function test_a_playlist_not_sent_yet_is_marked_in_the_sidebar() {
+        const night = sidebar.rows.find(row => row.playlistId === 14)
+        verify(night.unsent, "the tree carries it")
+        tryVerify(() => findChild(sidebar, "playlistUnsent") !== null)
+        const marks = []
+        const walk = item => { if (item.objectName === "playlistUnsent" && item.visible) marks.push(item); for (const child of item.children) walk(child) }
+        walk(sidebar)
+        compare(marks.length, 1, "only the one that waits")
     }
 
     function test_refresh_asks_the_servers_for_their_playlists_too() {

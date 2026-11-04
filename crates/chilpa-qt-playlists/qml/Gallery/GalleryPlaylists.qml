@@ -50,8 +50,8 @@ Item {
             PlaylistSortButton { playlistId: 1 }
             Column {
                 width: Metrics.confirmWidth
-                PlaylistManagerRow { width: parent.width; index: 0; rowKind: 1; entryId: 1; name: "Road music"; artwork: ""; colorName: "warning"; tracks: 4; local: true; source: ""; sourceName: ""; manager: playlistManager }
-                PlaylistManagerRow { width: parent.width; index: 1; rowKind: 0; entryId: 2; name: "Late Night"; artwork: ""; colorName: ""; tracks: 18; local: false; source: "demo"; sourceName: "Example source"; manager: playlistManager }
+                PlaylistManagerRow { width: parent.width; index: 0; rowKind: 1; entryId: 1; name: "Road music"; artwork: ""; colorName: "warning"; tracks: 4; local: true; source: ""; sourceName: ""; unsent: false; manager: playlistManager }
+                PlaylistManagerRow { width: parent.width; index: 1; rowKind: 0; entryId: 2; name: "Late Night"; artwork: ""; colorName: ""; tracks: 0; local: false; source: "demo"; sourceName: "Example source"; unsent: true; manager: playlistManager }
             }
             PlaylistManagerActions { manager: playlistManager }
             PlaylistManagerTools { width: Metrics.settingsMaxWidth; sources: ["local", "demo"] }

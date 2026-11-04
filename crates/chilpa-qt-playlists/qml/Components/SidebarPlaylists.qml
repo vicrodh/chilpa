@@ -162,6 +162,7 @@ Item {
                     visibleInSidebar: host.entry.visibleInSidebar
                     nested: host.entry.nested === true
                     renamable: host.entry.server === true && host.entry.writable === true
+                    unsent: host.entry.unsent === true
                     covers: host.entry.covers
                     active: Navigation.screen === (playlistId < 0 ? "album" : "playlist") && Navigation.routeId === playlistId
                     onOpened: section.openPlaylist(playlistId)

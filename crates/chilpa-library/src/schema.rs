@@ -27,7 +27,7 @@ use later::*;
 use steps::*;
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 49;
+pub const VERSION: i64 = 50;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -35,7 +35,7 @@ pub const VERSION: i64 = 49;
 /// Each step runs once and is never edited after shipping: a database that
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
-const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30, MIGRATION_V31, MIGRATION_V32, MIGRATION_V33, MIGRATION_V34, MIGRATION_V35, MIGRATION_V36, MIGRATION_V37, MIGRATION_V38, MIGRATION_V39, MIGRATION_V40, MIGRATION_V41, MIGRATION_V42, revisions::MIGRATION_V43, metadata::MIGRATION_V44, device_sync::MIGRATION_V45, revisions::MIGRATION_V46, MIGRATION_V47, MIGRATION_V48, MIGRATION_V49];
+const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30, MIGRATION_V31, MIGRATION_V32, MIGRATION_V33, MIGRATION_V34, MIGRATION_V35, MIGRATION_V36, MIGRATION_V37, MIGRATION_V38, MIGRATION_V39, MIGRATION_V40, MIGRATION_V41, MIGRATION_V42, revisions::MIGRATION_V43, metadata::MIGRATION_V44, device_sync::MIGRATION_V45, revisions::MIGRATION_V46, MIGRATION_V47, MIGRATION_V48, MIGRATION_V49, MIGRATION_V50];
 
 /// Where the copy of a library about to be upgraded goes.
 ///
@@ -460,6 +460,23 @@ mod tests {
         assert!(db.execute("INSERT INTO source_overlay (source_id, scope, key, document, updated_at) VALUES (1, 'folder', 'x', '{}', 1)", []).is_err(), "a scope is a record or a track");
         db.execute_batch("DELETE FROM tracks; DELETE FROM sources WHERE id = 1;").unwrap_or_else(|e| panic!("{e}"));
         assert_eq!(db.query_row("SELECT count(*) FROM source_overlay", [], |r| r.get::<_, i64>(0)).unwrap(), 0, "it goes with its source");
+    }
+
+    #[test]
+    fn a_library_at_forty_nine_gains_the_unsent_mark_and_keeps_its_playlists() {
+        let db = Connection::open_in_memory().unwrap();
+        stop_at(&db, 49);
+        db.execute_batch(
+            "INSERT INTO sources(id, provider, instance, kind) VALUES (1, 'example-server', 'aaaa', 'server');
+            INSERT INTO playlists(id, source_id, external_id, name, created_at, updated_at, left_out) VALUES (1, 1, 'pl-1', 'Road', 0, 0, 2);",
+        )
+        .unwrap();
+        let columns = |db: &Connection| db.prepare("PRAGMA table_info(playlists)").unwrap().query_map([], |r| r.get::<_, String>(1)).unwrap().map(|r| r.unwrap()).collect::<Vec<_>>();
+        assert!(!columns(&db).iter().any(|c| c == "unsent"), "version 49 did not have it");
+        migrate(&db).unwrap();
+        assert_eq!(db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).unwrap(), VERSION);
+        let (name, left_out, unsent): (String, i64, i64) = db.query_row("SELECT name, left_out, unsent FROM playlists WHERE id = 1", [], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?))).unwrap();
+        assert_eq!((name.as_str(), left_out, unsent), ("Road", 2, 0), "the playlist is there, on its server");
     }
 
     #[test]

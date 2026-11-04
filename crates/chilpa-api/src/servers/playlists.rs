@@ -26,12 +26,6 @@ pub(crate) struct Origin {
     pub(crate) kind: Option<chilpa_servers::Kind>,
 }
 
-/// Why a server that makes a playlist only with tracks in it is not offered
-/// for an empty one.
-fn needs_tracks() -> String {
-    chilpa_i18n::t("Only with tracks: select them, then Add to playlist")
-}
-
 /// The source a server's playlists carry: the key of its tracks in the
 /// library's filters (`Library::facet_sources`).
 pub(crate) fn source_key(provider: &str, instance: &str) -> String {
@@ -102,8 +96,9 @@ impl Chilpa {
         let pending = self.server_change_pending(id);
         let describable = chilpa_servers::Kind::from_provider(&stored.provider).is_some_and(chilpa_servers::playlist_describable);
         let server = self.library().and_then(|lib| lib.server(stored.source_id).ok().flatten());
-        let held = if server.is_some_and(|server| self.first_sync(&server)) { super::first_sync_said(&origin.name) } else { String::new() };
-        serde_json::json!({"server": origin.name, "icon": origin.icon, "writable": stored.writable, "pending": pending, "held": held, "left_out": stored.left_out, "describable": describable})
+        // One made here and not sent yet changes here: nothing holds it.
+        let held = if !stored.unsent && server.is_some_and(|server| self.first_sync(&server)) { super::first_sync_said(&origin.name) } else { String::new() };
+        serde_json::json!({"server": origin.name, "icon": origin.icon, "writable": stored.writable, "pending": pending, "held": held, "left_out": stored.left_out, "describable": describable, "unsent": stored.unsent})
             .to_string()
     }
 
@@ -120,6 +115,9 @@ impl Chilpa {
     /// go, and the window says why.
     pub(crate) fn change_server_playlist(&mut self, id: i64, change: Change) -> Option<bool> {
         let stored = self.server_playlist_of(id)?;
+        if stored.unsent {
+            return Some(self.change_unsent_playlist(&stored, change));
+        }
         if matches!(&change, Change::Remove { rows } if rows.is_empty()) {
             return Some(false);
         }
@@ -134,6 +132,30 @@ impl Chilpa {
                 Some(false)
             }
         }
+    }
+
+    /// What is asked of a server's playlist made here and not sent yet: its
+    /// name, its description and its deletion are the library's own and need
+    /// no network, nor wait for a first sync. It has no row to take out or
+    /// move.
+    fn change_unsent_playlist(&mut self, stored: &chilpa_library::StoredPlaylist, change: Change) -> bool {
+        let Some(lib) = self.library() else { return false };
+        let done = match change {
+            Change::Delete => lib.delete_playlist(stored.id).is_ok(),
+            Change::Edit { name, description } => {
+                let edit = chilpa_library::PlaylistEdit {
+                    name: name.unwrap_or_else(|| stored.name.clone()),
+                    description: description.unwrap_or_else(|| stored.description.clone()),
+                    artwork_path: stored.artwork_path.clone(),
+                    tags: stored.tags.clone(),
+                    folder_id: stored.folder_id,
+                };
+                lib.update_playlist(stored.id, &edit).is_ok()
+            }
+            Change::Create { .. } | Change::Add { .. } | Change::Remove { .. } | Change::Reorder { .. } => false,
+        };
+        self.servers.changed |= done;
+        done
     }
 
     /// Sends what the edit dialog changed of a server's playlist: its name
@@ -187,7 +209,8 @@ impl Chilpa {
         }
         let added = tracks.len();
         if added > 0 {
-            if let Err(why) = self.ask_server_change(Write { source: stored.source_id, playlist: id, request: String::new(), change: Change::Add { tracks } }) {
+            let change = first_change(&stored, tracks);
+            if let Err(why) = self.ask_server_change(Write { source: stored.source_id, playlist: id, request: String::new(), change }) {
                 self.now.error = why;
                 return rejected;
             }
@@ -199,12 +222,28 @@ impl Chilpa {
     /// those library tracks, each one of that server's, and the description
     /// where the server takes one. The window waits on `request`
     /// (`server_write_state`). `None` when `source` is no server.
+    ///
+    /// A server that makes a playlist only with tracks in it gets an empty
+    /// one later: it is made here, unsent, and goes there with its first
+    /// tracks (`add_to_server_playlist`). Nothing is sent now, so neither
+    /// the network nor a first sync holds it.
     pub(crate) fn create_server_playlist(&mut self, source: &str, name: &str, description: &str, track_ids: &[i64], request: &str) -> Option<bool> {
         let origin = self.server_origins().into_iter().find(|origin| origin.key == source)?;
         let name = name.trim();
         if track_ids.is_empty() && origin.kind.is_some_and(chilpa_servers::playlist_needs_tracks) {
-            self.now.error = chilpa_i18n::t_args("{} makes a playlist only with tracks in it: select them, then Add to playlist.", &[&origin.name]);
-            return Some(false);
+            if name.is_empty() {
+                return Some(false);
+            }
+            let description = if origin.kind.is_some_and(chilpa_servers::playlist_describable) { description.trim() } else { "" };
+            let Some(id) = self.library().and_then(|lib| lib.create_unsent_server_playlist(origin.source_id, name, description).ok()) else {
+                self.now.error = chilpa_i18n::t("the library could not be written");
+                return Some(false);
+            };
+            if !request.is_empty() {
+                self.servers.answers.insert(origin.source_id, serde_json::json!({"request_id": request, "pending": false, "result": {"playlist": id}}));
+            }
+            self.servers.changed = true;
+            return Some(true);
         }
         let Some(entries) = self.mixed_playlist_entries(track_ids, false) else { return Some(false) };
         if name.is_empty() || entries.len() != track_ids.len() || entries.iter().any(|e| e.source_id != Some(origin.source_id)) {
@@ -231,10 +270,12 @@ impl Chilpa {
     }
 
     /// The servers a new playlist can be made on, as the picker's source
-    /// chooser lists them: those that are on, and that take every one of the
-    /// tracks, all of them theirs. One that makes a playlist only with
-    /// tracks in it is not offered for an empty one, nor one in its first
-    /// sync, and `why` says so.
+    /// chooser lists them, each with its icon and a line under its name:
+    /// what making it there does, or, when it cannot take these tracks now,
+    /// why (`why`). One takes them when it is on, all of them are its own,
+    /// the network is on, it answers and it is not in its first sync. An
+    /// empty one on a server that makes a playlist only with tracks in it
+    /// waits here and needs none of that (`create_server_playlist`).
     pub(crate) fn server_playlist_sources(&mut self, track_ids: &[i64]) -> Vec<serde_json::Value> {
         let entries = self.mixed_playlist_entries(track_ids, false).unwrap_or_default();
         let complete = entries.len() == track_ids.len();
@@ -247,19 +288,47 @@ impl Chilpa {
             .filter(|origin| origin.enabled)
             .map(|origin| {
                 let theirs = complete && entries.iter().all(|e| e.source_id == Some(origin.source_id));
-                let empty = track_ids.is_empty() && origin.kind.is_some_and(chilpa_servers::playlist_needs_tracks);
+                let waits = track_ids.is_empty() && origin.kind.is_some_and(chilpa_servers::playlist_needs_tracks);
                 let first = syncing.contains(&origin.source_id);
-                let accepts = theirs && !empty && !first && !offline && reachable.contains(&origin.source_id);
-                let mut row = serde_json::json!({"id": origin.key, "name": origin.name, "accepts": accepts});
-                if empty {
-                    row["why"] = needs_tracks().into();
+                let answers = reachable.contains(&origin.source_id);
+                let why = if !theirs {
+                    chilpa_i18n::t("Only tracks from this server go in its playlists")
+                } else if waits {
+                    String::new()
                 } else if first {
-                    row["why"] = chilpa_i18n::t("Still syncing its library for the first time").into();
+                    chilpa_i18n::t("Still syncing its library for the first time")
+                } else if offline {
+                    chilpa_i18n::t("The network is off; turn it on in Settings › Integrations")
+                } else if !answers {
+                    chilpa_i18n::t("It does not answer now; try again when it is back")
+                } else {
+                    String::new()
+                };
+                let detail = if waits {
+                    chilpa_i18n::t_args("Kept in Chilpa until you add its first tracks, then sent to {}", &[&origin.name])
+                } else {
+                    chilpa_i18n::t("Saved on the server; only its own tracks")
+                };
+                let mut row = serde_json::json!({"id": origin.key, "name": origin.name, "icon": origin.icon, "accepts": why.is_empty(), "detail": detail});
+                if !why.is_empty() {
+                    row["why"] = why.into();
                 }
                 row
             })
             .collect()
     }
+}
+
+/// What adding tracks asks of a server's playlist: an add, or, for one made
+/// here and not sent yet, its making there with these tracks in one request
+/// and what it says of itself after; until the server answers it stays as
+/// it is.
+pub(crate) fn first_change(stored: &chilpa_library::StoredPlaylist, tracks: Vec<String>) -> Change {
+    if !stored.unsent {
+        return Change::Add { tracks };
+    }
+    let describable = chilpa_servers::Kind::from_provider(&stored.provider).is_some_and(chilpa_servers::playlist_describable);
+    Change::Create { name: stored.name.clone(), description: if describable { stored.description.clone() } else { String::new() }, tracks }
 }
 
 /// The rows of a playlist of `len` after moving one from `from` to `to`.

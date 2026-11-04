@@ -458,6 +458,9 @@ pub struct Playlist {
     pub source: String,
     /// The id that source gives it, empty when it is one of ours.
     pub external_id: String,
+    /// A server's playlist made here and not on the server yet: it is sent
+    /// with its first tracks.
+    pub unsent: bool,
 }
 
 /// One folder in the playlist manager.
@@ -503,6 +506,8 @@ pub struct PlaylistManagerEntry {
     /// is theirs at a source that edits playlists.
     pub writable: bool,
     pub visible_sidebar: bool,
+    /// A server's playlist made here and not sent yet (`Playlist::unsent`).
+    pub unsent: bool,
 }
 
 /// What the wizard found about an output.

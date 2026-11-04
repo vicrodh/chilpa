@@ -127,9 +127,8 @@ fn a_server_s_playlist_takes_only_that_server_s_tracks() {
     assert!(!accepts.iter().any(|(name, accepts)| name == "Attic" && *accepts), "a new playlist on another server does not take it: {accepts:?}");
 }
 
-#[test]
-fn a_server_that_makes_no_empty_playlist_is_not_offered_for_one() {
-    let (mut api, _, _, _, _) = with_a_server_playlist();
+/// A Plex server beside the library's Jellyfin one, answering, synced.
+fn with_a_plex(api: &mut Chilpa) -> (i64, String) {
     let lib = api.library().unwrap();
     let new = chilpa_library::NewServer {
         provider: "plex".into(),
@@ -141,16 +140,82 @@ fn a_server_that_makes_no_empty_playlist_is_not_offered_for_one() {
     };
     let plex = lib.add_server(&new).unwrap();
     lib.set_source_reachable(plex, true).unwrap();
-    let key = source_key("plex", "77aa0b1c2d3e4f50");
+    (plex, source_key("plex", "77aa0b1c2d3e4f50"))
+}
+
+#[test]
+fn an_empty_playlist_on_a_server_that_makes_none_waits_here_and_nothing_goes_out() {
+    let (mut api, _, _, _, _) = with_a_server_playlist();
+    let (plex, key) = with_a_plex(&mut api);
     let sources = api.server_playlist_sources(&[]);
     let row = sources.iter().find(|s| s["id"] == key.as_str()).unwrap();
-    assert_eq!((row["accepts"].as_bool(), row["why"].as_str()), (Some(false), Some(needs_tracks().as_str())), "greyed, with the reason");
+    assert_eq!((row["accepts"].as_bool(), row["icon"].as_str()), (Some(true), Some("plex")), "offered again for an empty one");
+    assert!(row["why"].is_null() && row["detail"].as_str().is_some_and(|d| d.contains("MacMini Plex")), "{row}");
+    // No writer is started here: anything sent would come back refused.
+    let about = "The Iron Maiden records of the eighties";
+    assert_eq!(api.create_server_playlist(&key, "Iron Maiden 80s", about, &[], "r1"), Some(true));
+    assert_eq!(api.now_playing().error, "", "nothing was sent, so nothing was refused");
+    let waiting = api.library().unwrap().playlists().unwrap().into_iter().find(|p| p.source_id == plex).unwrap();
+    assert_eq!((waiting.name.as_str(), waiting.description.as_str(), waiting.unsent, waiting.external_id.as_str()), ("Iron Maiden 80s", about, true, ""));
+    let state: serde_json::Value = serde_json::from_str(&api.server_write_state(&key).unwrap()).unwrap();
+    assert_eq!((state["request_id"].as_str(), state["pending"].as_bool(), state["result"]["playlist"].as_i64()), (Some("r1"), Some(false), Some(waiting.id)), "the dialog is told at once");
+    let page: serde_json::Value = serde_json::from_str(&api.server_playlist_json(waiting.id)).unwrap();
+    assert_eq!((page["unsent"].as_bool(), page["held"].as_str(), page["server"].as_str()), (Some(true), Some(""), Some("MacMini Plex")));
+    assert!(api.cached_playlists().iter().any(|p| p.id == waiting.id && p.unsent), "in the sidebar and the manager");
     let jellyfin = sources.iter().find(|s| s["name"] == "Living room").unwrap();
-    assert!(jellyfin["why"].is_null(), "another kind makes an empty one");
-    // Asked anyway, nothing goes to its door, and the window is told why.
-    assert_eq!(api.create_server_playlist(&key, "Iron Maiden 80s", "The Iron Maiden records of the eighties", &[], "r1"), Some(false));
-    let told = chilpa_i18n::t_args("{} makes a playlist only with tracks in it: select them, then Add to playlist.", &["MacMini Plex"]);
+    assert!(!jellyfin["detail"].as_str().unwrap_or_default().contains("first tracks"), "a server that makes an empty one makes it at once");
+}
+
+#[test]
+fn a_playlist_waiting_here_is_renamed_and_deleted_here_even_in_a_first_sync() {
+    let (mut api, _, _, _, _) = with_a_server_playlist();
+    let (plex, key) = with_a_plex(&mut api);
+    assert_eq!(api.create_server_playlist(&key, "Night", "", &[], ""), Some(true));
+    let id = api.library().unwrap().playlists().unwrap().into_iter().find(|p| p.source_id == plex).unwrap().id;
+    // Its sync is running, as Settings shows it, and none has finished yet.
+    api.library().unwrap().connection().execute("UPDATE servers SET synced_at = NULL WHERE source_id = ?1", [plex]).unwrap();
+    let keys = std::sync::Arc::new(super::super::keys::Keys::derived(std::env::temp_dir().join("chilpa-unsent-keys")));
+    let mut syncer = super::super::sync::Syncer::start(keys, std::sync::Arc::new(std::sync::Mutex::new(())));
+    syncer.running.insert(plex, 10);
+    api.servers.syncer = Some(syncer);
+    api.rename_playlist(id, "Night drive");
+    assert_eq!(api.now_playing().error, "", "renamed here, not held");
+    assert_eq!(api.playlist(id).unwrap().name, "Night drive");
+    assert_eq!(api.update_playlist(id, "Night drive", "Home late", None, &[], None), true);
+    assert_eq!(api.playlist(id).unwrap().description, "Home late");
+    api.delete_playlist(id);
+    assert_eq!(api.now_playing().error, "");
+    assert!(api.playlist(id).is_none(), "deleted here: it never was there");
+}
+
+#[test]
+fn the_first_tracks_added_to_a_waiting_playlist_make_it_and_wait_like_any_change() {
+    let (mut api, _, _, _, _) = with_a_server_playlist();
+    let (plex, key) = with_a_plex(&mut api);
+    assert_eq!(api.create_server_playlist(&key, "Night", "Home late", &[], ""), Some(true));
+    let stored = api.library().unwrap().playlists().unwrap().into_iter().find(|p| p.source_id == plex).unwrap();
+    // Sent, it is made there with the tracks and what it says of itself.
+    let tracks = vec!["remote:plex/77aa0b1c2d3e4f50/17".to_string()];
+    assert_eq!(
+        first_change(&stored, tracks.clone()),
+        super::super::writing::Change::Create { name: "Night".into(), description: "Home late".into(), tracks: tracks.clone() }
+    );
+    let sent = chilpa_library::StoredPlaylist { unsent: false, ..stored.clone() };
+    assert_eq!(first_change(&sent, tracks.clone()), super::super::writing::Change::Add { tracks });
+    // In a first sync the add is refused, as any change, and it keeps waiting.
+    api.library().unwrap().connection().execute("UPDATE servers SET synced_at = NULL WHERE source_id = ?1", [plex]).unwrap();
+    let keys = std::sync::Arc::new(super::super::keys::Keys::derived(std::env::temp_dir().join("chilpa-unsent-add-keys")));
+    let mut syncer = super::super::sync::Syncer::start(keys, std::sync::Arc::new(std::sync::Mutex::new(())));
+    syncer.running.insert(plex, 10);
+    api.servers.syncer = Some(syncer);
+    let generation = api.library().unwrap().begin_server_sync(plex).unwrap();
+    let song = chilpa_library::ServerTrack { external_id: "remote:plex/77aa0b1c2d3e4f50/17".into(), title: "Song".into(), artist: "Band".into(), duration_ms: 1_000, ..Default::default() };
+    api.library().unwrap().save_server_tracks(plex, generation, &[song]).unwrap();
+    let track: i64 = api.library().unwrap().connection().query_row("SELECT id FROM tracks WHERE external_id = 'remote:plex/77aa0b1c2d3e4f50/17'", [], |r| r.get(0)).unwrap();
+    assert!(api.add_to_server_playlist(stored.id, &[track], false).is_some_and(|added| added.rejected));
+    let told = chilpa_i18n::t_args("{} is still syncing its library for the first time. Try again when it finishes.", &["MacMini Plex"]);
     assert_eq!(api.now_playing().error, told);
+    assert!(api.playlist(stored.id).unwrap().unsent, "still waiting");
 }
 
 #[test]

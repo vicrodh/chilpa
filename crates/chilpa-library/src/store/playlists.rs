@@ -38,6 +38,9 @@ pub struct StoredPlaylist {
     /// Entries of a server's playlist whose track the library does not
     /// hold, at its last reading.
     pub left_out: usize,
+    /// A server's playlist made here and not sent yet: its server makes one
+    /// only with tracks in it, and it goes there with its first ones.
+    pub unsent: bool,
 }
 
 /// A folder that organises local and source-owned playlists.
@@ -303,7 +306,7 @@ impl Library {
                                 FROM playlist_tags WHERE playlist_id = p.id), ''),
                     count(pt.position), p.play_count, p.folder_id,
                     p.custom_position, p.visible_sidebar, p.writable, p.updated_at, p.last_played_at,
-                    s.kind = 'server', p.left_out
+                    s.kind = 'server', p.left_out, p.unsent
              FROM playlists p
              JOIN sources s ON s.id = p.source_id
              LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.id
@@ -332,6 +335,7 @@ impl Library {
                 last_played_at: r.get(17)?,
                 server: r.get::<_, i64>(18)? != 0,
                 left_out: r.get::<_, i64>(19)? as usize,
+                unsent: r.get::<_, i64>(20)? != 0,
             })
         })?;
         rows.collect()

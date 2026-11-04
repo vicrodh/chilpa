@@ -164,10 +164,13 @@ pub(crate) fn apply(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, g
         return failed(said(&chilpa_i18n::t("that change does not fit the playlist as it was read")));
     };
     let asked = chilpa_servers::change_playlist(net, &server, &key, &remote, &as_read, &change);
+    // A playlist that waited here, unsent, has nothing on the server to read
+    // back or to lose: a failure leaves it waiting.
+    let unsent = kept.as_ref().is_some_and(|p| p.unsent);
     let created = match (&write.change, asked) {
         (_, Err(failure)) => {
             // Whatever reached the server before the failure is read back.
-            if let Some(p) = kept.as_ref().filter(|_| !stops(&failure) && !matches!(failure, Failure::Gone(_))) {
+            if let Some(p) = kept.as_ref().filter(|_| !unsent && !stops(&failure) && !matches!(failure, Failure::Gone(_))) {
                 // Some may change a playlist and not delete it: a refused
                 // delete says nothing of the rest.
                 let writable = p.writable && !(matches!(failure, Failure::Forbidden(_)) && !matches!(write.change, Change::Delete));
@@ -176,7 +179,7 @@ pub(crate) fn apply(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, g
                 }
             }
             return match (kept.as_ref(), &failure) {
-                (Some(p), Failure::Gone(_)) => lost(lib, write, p.id, &stored.label, &failure),
+                (Some(p), Failure::Gone(_)) if !unsent => lost(lib, write, p.id, &stored.label, &failure),
                 _ => failed(said(&failure.to_string())),
             };
         }
@@ -192,12 +195,25 @@ pub(crate) fn apply(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, g
     let (id, name, description) = match (&write.change, created, kept.as_ref()) {
         (Change::Create { name, .. }, Some(id), _) => (id, name.clone(), String::new()),
         // Created, and the server did not say its id: a sync, which reads
-        // its playlists after, brings it in.
-        (Change::Create { .. }, None, _) => return Written { missing: true, ..failed(String::new()) },
+        // its playlists after, brings it in, and one that waited here gives
+        // way to it instead of being a second one.
+        (Change::Create { .. }, None, _) => {
+            if let Some(p) = kept.as_ref().filter(|_| unsent) {
+                let _ = lib.delete_playlist(p.id);
+            }
+            return Written { playlist: 0, missing: true, ..failed(String::new()) };
+        }
         (Change::Edit { name, description }, _, Some(p)) => (remote.clone(), name.clone().unwrap_or_else(|| p.name.clone()), description.clone().unwrap_or_else(|| p.description.clone())),
         (_, _, Some(p)) => (remote.clone(), p.name.clone(), p.description.clone()),
         (_, _, None) => return failed(String::new()),
     };
+    // One that waited here takes the id the server gave it, so the playlist
+    // read back lands on its row: its place in the sidebar, its folder.
+    if let Some(p) = kept.as_ref().filter(|_| unsent) {
+        if !lib.bind_unsent(p.id, &id).unwrap_or(false) {
+            return failed(said(&chilpa_i18n::t("the library could not be written")));
+        }
+    }
     // Made, it takes its description as an edit. Refused, the playlist is
     // read in all the same, and the window says why.
     let (description, why) = match &write.change {

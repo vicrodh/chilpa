@@ -29,7 +29,7 @@ QtObject {
                 sourceIcon:p.mixed ? "qrc:/qt/qml/app/chilpa/kit/assets/logo.png" : p.source_icon || "",showSourceBadge:true,artwork:p.artwork_path || "",
                 folderId:p.folder_id || 0,visibleInSidebar:p.visible_sidebar !== false,covers:p.covers || [],folderColor:"",expanded:false,
                 depth:depth,nested:nested === true,nativeRef:p.native_ref || "",nativeFolder:p.native_folder || "",containArt:p.contain_art === true,
-                server:p.server === true,writable:p.writable === true}
+                server:p.server === true,writable:p.writable === true,unsent:p.unsent === true}
         }
         let nextFolderId = -1000
         function branch(scope, parent, depth) {

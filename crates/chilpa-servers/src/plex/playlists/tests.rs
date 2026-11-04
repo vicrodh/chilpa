@@ -86,15 +86,29 @@ fn tracks_go_in_by_the_server_s_uri_and_entries_come_out_by_their_own_id() {
     assert_eq!(needs_tracks, [false, false, true], "only Plex refuses an empty playlist");
 }
 
+/// A playlist that waited in Chilpa, empty, goes to the server with its first
+/// tracks: one create carries the first hundred in its `uri`, as Plex's own
+/// apps make one, and the rest follow as adds. Empty, it is never sent: the
+/// server answers 400 to a `POST /playlists` without a `uri`.
 #[test]
-fn a_playlist_with_nothing_in_it_is_not_asked_for() {
+fn a_new_playlist_goes_with_its_first_hundred_tracks_and_the_rest_after() {
     let (server, key) = lab();
-    // What the server answered to a `POST /playlists` without a `uri`.
     let net = Canned::new().answer(400, b"");
     let empty = Change::Create { name: "Iron Maiden 80s".into(), tracks: Vec::new() };
-    let refused = change_playlist(&net, &server, &key, "", &PlaylistTracks::default(), &empty).unwrap_err();
-    assert!(net.asked().is_empty(), "nothing goes out: the server makes none without tracks");
-    assert!(matches!(refused, Failure::Unexpected(_)) && !refused.to_string().contains("400"), "{refused}");
+    assert!(change_playlist(&net, &server, &key, "", &PlaylistTracks::default(), &empty).is_err());
+    assert!(net.asked().is_empty(), "nothing goes out without tracks");
+
+    let tracks: Vec<String> = (1..=101).map(|n| n.to_string()).collect();
+    let made = br#"{"MediaContainer":{"size":1,"Metadata":[{"ratingKey":"44","type":"playlist","title":"Iron Maiden 80s","smart":false}]}}"#;
+    let net = Canned::new().answer(200, made).answer(200, b"");
+    let created = change_playlist(&net, &server, &key, "", &PlaylistTracks::default(), &Change::Create { name: "Iron Maiden 80s".into(), tracks }).unwrap();
+    assert_eq!(created.as_deref(), Some("44"));
+    let asked = net.asked();
+    assert_eq!(asked.len(), 2, "one create, then one add for what did not fit");
+    let first: Vec<String> = (1..=100).map(|n| n.to_string()).collect();
+    let uri = |keys: &[String]| format!("server%3A%2F%2Ff00dfeed%2Fcom.plexapp.plugins.library%2Flibrary%2Fmetadata%2F{}", keys.join("%2C"));
+    assert_eq!((asked[0].method, asked[0].url.clone()), ("POST", format!("{AT}/playlists?type=audio&title=Iron%20Maiden%2080s&smart=0&uri={}", uri(&first))));
+    assert_eq!((asked[1].method, asked[1].url.clone()), ("PUT", format!("{AT}/playlists/44/items?uri={}", uri(&["101".to_string()]))));
 }
 
 #[test]

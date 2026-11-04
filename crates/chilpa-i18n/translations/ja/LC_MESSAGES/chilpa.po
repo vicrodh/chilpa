@@ -3091,6 +3091,9 @@ msgstr "左の極性を反転"
 msgid "Invert right polarity"
 msgstr "右の極性を反転"
 
+msgid "It does not answer now; try again when it is back"
+msgstr "今は応答がありません。戻ってきたらもう一度お試しください"
+
 msgid "Italian"
 msgstr "イタリア語"
 
@@ -3144,6 +3147,9 @@ msgstr "セッション間でキューを保持"
 
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "語句をそのまま読み、ジャンルを拡張せずに検索する"
+
+msgid "Kept in Chilpa until you add its first tracks, then sent to {}"
+msgstr "最初の曲を追加するまで Chilpa に保存され、その後 {} に送られます"
 
 msgid "Kernel"
 msgstr "カーネル"
@@ -4195,14 +4201,17 @@ msgstr "削除できるのは個人用プリセットのみです。"
 msgid "Only the first {} outputs are listed."
 msgstr "最初の {} 件の出力のみ表示されます。"
 
+msgid "Only tracks from this server go in its playlists"
+msgstr "このサーバーのプレイリストには、このサーバーの曲だけが入ります"
+
 msgid "Only tracks from this source"
 msgstr "このソースのトラックのみ"
 
+msgid "Only tracks from this source go in its playlists"
+msgstr "このソースのプレイリストには、このソースの曲だけが入ります"
+
 msgid "Only with exclusive mode on."
 msgstr "排他モードがオンの場合のみ。"
-
-msgid "Only with tracks: select them, then Add to playlist"
-msgstr "トラックが必要です: 選択してから「プレイリストに追加」を使ってください"
 
 msgid "Open"
 msgstr "開く"
@@ -4434,6 +4443,12 @@ msgstr "ピーク"
 
 msgid "Pending"
 msgstr "未処理"
+
+msgid "Pending: it will be sent to {} with its first tracks."
+msgstr "保留中：最初の曲と一緒に {} に送られます。"
+
+msgid "Pending: sent with these tracks"
+msgstr "保留中：これらの曲と一緒に送信"
 
 msgid "Per-app bit-perfect (PipeWire client)"
 msgstr "アプリごとのビットパーフェクト（PipeWireクライアント）"
@@ -5368,8 +5383,14 @@ msgstr ""
 msgid "Saved for the displayed inspection. Refresh after changing equipment or configuration."
 msgstr "表示中の確認結果に対応する記録です。機器や設定を変更したら情報を再取得してください。"
 
+msgid "Saved in your account there; only its own tracks"
+msgstr "そちらのアカウントに保存されます。そのソースの曲だけです"
+
 msgid "Saved lyrics and translations will be fetched again when needed."
 msgstr "保存済みの歌詞と翻訳は、必要になったときに再取得されます。"
+
+msgid "Saved on the server; only its own tracks"
+msgstr "サーバーに保存されます。そのサーバーの曲だけです"
 
 msgid "Saved position"
 msgstr "保存した位置"
@@ -6203,6 +6224,9 @@ msgstr "歌詞APIに報告を保存できませんでした。この結果はこ
 
 msgid "The lyrics cache could not be opened."
 msgstr "歌詞キャッシュを開けませんでした。"
+
+msgid "The network is off; turn it on in Settings › Integrations"
+msgstr "ネットワークがオフです。設定 › 連携 でオンにしてください"
 
 msgid "The output changed during the check. Its new configuration was kept."
 msgstr "チェック中に出力が変更されました。新しい設定を保持しました。"
@@ -8585,9 +8609,6 @@ msgstr[0] "{}件の再生記録を保存しました"
 msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{}件の再生記録が送信待ちです"
-
-msgid "{} makes a playlist only with tracks in it: select them, then Add to playlist."
-msgstr "{}ではトラックを含むプレイリストしか作成できません。トラックを選択してから「プレイリストに追加」を使ってください。"
 
 msgid "{} min"
 msgstr "{}分"

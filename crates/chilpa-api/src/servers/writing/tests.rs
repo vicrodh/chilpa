@@ -285,3 +285,35 @@ fn a_server_that_does_not_answer_changes_nothing_and_a_foreign_track_goes_nowher
     let written = lab.apply(&net, road, Change::Add { tracks: vec![foreign] });
     assert!(!written.why.is_empty() && net.asked().is_empty(), "another server's track is not sent: {}", written.why);
 }
+
+#[test]
+fn a_playlist_that_waited_here_is_made_on_its_server_with_its_first_tracks_and_keeps_its_row() {
+    let lab = Lab::plex();
+    let about = "The Iron Maiden records of the eighties";
+    let waiting = lab.lib.create_unsent_server_playlist(lab.stored.source_id, "Iron Maiden 80s", about).unwrap();
+    let folder = lab.lib.create_playlist_folder("Metal", "").unwrap();
+    lab.lib.move_playlist_to_folder(waiting, Some(folder)).unwrap();
+    let made = r#"{"MediaContainer":{"size":1,"Metadata":[{"ratingKey":"44","type":"playlist","title":"Iron Maiden 80s","smart":false}]}}"#;
+    let read = r#"{"MediaContainer":{"size":2,"totalSize":2,"Metadata":[{"ratingKey":"17","type":"track","playlistItemID":901},{"ratingKey":"8","type":"track","playlistItemID":902}]}}"#;
+    let net = Answers::default().with(200, made).with(200, "").with(200, read);
+    let written = lab.apply(&net, waiting, Change::Create { name: "Iron Maiden 80s".into(), description: about.into(), tracks: vec![lab.entry("17"), lab.entry("8")] });
+    assert_eq!((written.why.as_str(), written.asked, written.playlist), ("", waiting, waiting));
+    let asked = net.asked();
+    let uri = "server%3A%2F%2Ff00dfeed%2Fcom.plexapp.plugins.library%2Flibrary%2Fmetadata%2F17%2C8";
+    assert_eq!(asked[0], ("POST".to_string(), format!("{PLEX}/playlists?type=audio&title=Iron%20Maiden%2080s&smart=0&uri={uri}")), "one create, with the tracks");
+    assert_eq!(asked[1].0, "PUT", "then described");
+    assert_eq!(asked.len(), 3, "then read back");
+    let all = lab.lib.playlists().unwrap();
+    assert_eq!(all.len(), 1, "the row that waited, not a second one");
+    assert_eq!((all[0].id, all[0].unsent, all[0].external_id.as_str(), all[0].folder_id), (waiting, false, "44", Some(folder)), "on the server now, in its folder");
+    assert_eq!(lab.holds(waiting), ["17", "8"]);
+
+    // Refused, it keeps waiting, and nothing is read back from a playlist
+    // the server does not have.
+    let night = lab.lib.create_unsent_server_playlist(lab.stored.source_id, "Night", "").unwrap();
+    let net = Answers::default().with(500, "");
+    let written = lab.apply(&net, night, Change::Create { name: "Night".into(), description: String::new(), tracks: vec![lab.entry("17")] });
+    assert!(written.why.starts_with("MacMini Plex did not take the change"), "{}", written.why);
+    assert_eq!(net.asked().len(), 1);
+    assert!(lab.lib.playlists().unwrap().into_iter().any(|p| p.id == night && p.unsent));
+}
