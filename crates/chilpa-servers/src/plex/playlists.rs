@@ -1,5 +1,6 @@
-//! A Plex server's playlists, as python-plexapi's `Playlist` asks for them
-//! (read on 2026-11-03; no official reference was found):
+//! A Plex server's playlists, as python-plexapi's `Playlist`, Plex Web
+//! 4.163 (`PlaylistModel`) and Plexamp 4.13.2 (`createPlaylist`,
+//! `updatePlaylist`) ask for them (read on 2026-11-03):
 //!
 //! - **Audio playlists are `/playlists?playlistType=audio`**, smart ones
 //!   included, and their entries `/playlists/{ratingKey}/items`, paged like
@@ -12,6 +13,10 @@
 //!   playlist itself.
 //! - **Tracks are named by a URI of the server**,
 //!   `server://{machineIdentifier}/com.plexapp.plugins.library/library/metadata/{ratingKeys}`.
+//! - **A playlist is made with something in it.** The `POST` always carries
+//!   a `uri` (or a `playQueueID`); none of the three asks for an empty one,
+//!   and the server answered 400 to one asked without. The description is
+//!   no part of it: Plexamp sends `summary` after, in the `PUT` of an edit.
 
 use serde_json::Value;
 
@@ -118,9 +123,12 @@ pub fn change_playlist(net: &dyn Net, server: &Server, key: &Credential, playlis
     let entry = |place: usize| as_read.entries.get(place).map(|e| encode(&e.entry)).filter(|e| !e.is_empty()).ok_or_else(misfit);
     match change {
         Change::Create { name, tracks } => {
+            // Without a `uri` the server answers 400: nothing is sent.
+            if tracks.is_empty() {
+                return Err(Failure::Unexpected(chilpa_i18n::t("a playlist is made there only with tracks in it")));
+            }
             let (first, rest) = tracks.split_at(tracks.len().min(IDS_PER_REQUEST));
-            let with = if first.is_empty() { String::new() } else { format!("&uri={}", uri(server, first)) };
-            let asked = format!("{}/playlists?type=audio&title={}&smart=0{with}", server.address, encode(name));
+            let asked = format!("{}/playlists?type=audio&title={}&smart=0&uri={}", server.address, encode(name), uri(server, first));
             let made = answer(net, Request::post(asked, head(), None))?;
             let created = made.get("MediaContainer").and_then(|c| c.get("Metadata")).and_then(Value::as_array).and_then(|m| m.first()).and_then(|p| id(p, "ratingKey"));
             let created = created.ok_or_else(|| not_plex(200))?;

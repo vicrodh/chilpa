@@ -4204,6 +4204,9 @@ msgstr "Somente faixas desta fonte"
 msgid "Only with exclusive mode on."
 msgstr "Somente com o modo exclusivo ativado."
 
+msgid "Only with tracks: select them, then Add to playlist"
+msgstr "Somente com faixas: selecione-as e use Adicionar à playlist"
+
 msgid "Open"
 msgstr "Abrir"
 
@@ -7280,6 +7283,9 @@ msgstr "um número de 1 a 9999, ou nada"
 msgid "a parenthesis is not closed"
 msgstr "um parêntese não foi fechado"
 
+msgid "a playlist is made there only with tracks in it"
+msgstr "lá uma playlist só é criada com faixas"
+
 msgid "a quote is not closed"
 msgstr "aspas não foram fechadas"
 
@@ -8593,6 +8599,9 @@ msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{} reprodução aguardando envio"
 msgstr[1] "{} reproduções aguardando envio"
+
+msgid "{} makes a playlist only with tracks in it: select them, then Add to playlist."
+msgstr "{} só cria uma playlist com faixas: selecione-as e use Adicionar à playlist."
 
 msgid "{} min"
 msgstr "{} min"

@@ -154,7 +154,7 @@ impl Chilpa {
         // A server makes the playlist itself; the picker adds to one of its
         // playlists as to any of the library's (`add_track_ids_to_playlist`).
         if id == 0 {
-            if let Some(sent) = self.create_server_playlist(plugin, title, ids, request) {
+            if let Some(sent) = self.create_server_playlist(plugin, title, description, ids, request) {
                 return sent;
             }
         }

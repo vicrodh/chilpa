@@ -23,6 +23,13 @@ pub(crate) struct Origin {
     /// Its glyph among the source icons.
     pub(crate) icon: String,
     pub(crate) enabled: bool,
+    pub(crate) kind: Option<chilpa_servers::Kind>,
+}
+
+/// Why a server that makes a playlist only with tracks in it is not offered
+/// for an empty one.
+fn needs_tracks() -> String {
+    chilpa_i18n::t("Only with tracks: select them, then Add to playlist")
 }
 
 /// The source a server's playlists carry: the key of its tracks in the
@@ -47,6 +54,7 @@ impl Chilpa {
                     name: if s.label.is_empty() { kind.map(|k| k.name().to_string()).unwrap_or_default() } else { s.label.clone() },
                     icon: kind.map(|k| k.icon(&s.product)).unwrap_or("server").to_string(),
                     enabled: s.enabled,
+                    kind,
                 }
             })
             .collect()
@@ -183,17 +191,23 @@ impl Chilpa {
     }
 
     /// Creates a playlist on the server whose source key `source` is, with
-    /// those library tracks, each one of that server's. The window waits on
-    /// `request` (`server_write_state`). `None` when `source` is no server.
-    pub(crate) fn create_server_playlist(&mut self, source: &str, name: &str, track_ids: &[i64], request: &str) -> Option<bool> {
+    /// those library tracks, each one of that server's, and the description
+    /// where the server takes one. The window waits on `request`
+    /// (`server_write_state`). `None` when `source` is no server.
+    pub(crate) fn create_server_playlist(&mut self, source: &str, name: &str, description: &str, track_ids: &[i64], request: &str) -> Option<bool> {
         let origin = self.server_origins().into_iter().find(|origin| origin.key == source)?;
         let name = name.trim();
+        if track_ids.is_empty() && origin.kind.is_some_and(chilpa_servers::playlist_needs_tracks) {
+            self.now.error = chilpa_i18n::t_args("{} makes a playlist only with tracks in it: select them, then Add to playlist.", &[&origin.name]);
+            return Some(false);
+        }
         let Some(entries) = self.mixed_playlist_entries(track_ids, false) else { return Some(false) };
         if name.is_empty() || entries.len() != track_ids.len() || entries.iter().any(|e| e.source_id != Some(origin.source_id)) {
             return Some(false);
         }
         let tracks = entries.into_iter().map(|e| e.external_id).collect();
-        let write = Write { source: origin.source_id, playlist: 0, request: request.to_string(), change: Change::Create { name: name.to_string(), tracks } };
+        let description = if origin.kind.is_some_and(chilpa_servers::playlist_describable) { description.trim().to_string() } else { String::new() };
+        let write = Write { source: origin.source_id, playlist: 0, request: request.to_string(), change: Change::Create { name: name.to_string(), description, tracks } };
         Some(match self.ask_server_change(write) {
             Ok(()) => true,
             Err(why) => {
@@ -213,7 +227,8 @@ impl Chilpa {
 
     /// The servers a new playlist can be made on, as the picker's source
     /// chooser lists them: those that are on, and that take every one of the
-    /// tracks, all of them theirs.
+    /// tracks, all of them theirs. One that makes a playlist only with
+    /// tracks in it is not offered for an empty one, and `why` says so.
     pub(crate) fn server_playlist_sources(&mut self, track_ids: &[i64]) -> Vec<serde_json::Value> {
         let entries = self.mixed_playlist_entries(track_ids, false).unwrap_or_default();
         let complete = entries.len() == track_ids.len();
@@ -224,7 +239,12 @@ impl Chilpa {
             .filter(|origin| origin.enabled)
             .map(|origin| {
                 let theirs = complete && entries.iter().all(|e| e.source_id == Some(origin.source_id));
-                serde_json::json!({"id": origin.key, "name": origin.name, "accepts": theirs && !offline && reachable.contains(&origin.source_id)})
+                let empty = track_ids.is_empty() && origin.kind.is_some_and(chilpa_servers::playlist_needs_tracks);
+                let mut row = serde_json::json!({"id": origin.key, "name": origin.name, "accepts": theirs && !empty && !offline && reachable.contains(&origin.source_id)});
+                if empty {
+                    row["why"] = needs_tracks().into();
+                }
+                row
             })
             .collect()
     }

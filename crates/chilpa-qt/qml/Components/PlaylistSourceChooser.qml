@@ -12,10 +12,10 @@ PillButton {
     text: sourceId ? sourceName : I18n.tr("Local — supports mixed sources", I18n.rev)
     onClicked: menu.open()
     Menu {
-        id: menu
+        id: menu; objectName: "playlistSourceMenu"
         y: parent.height
         entries: [{text: I18n.tr("Local — supports mixed sources", I18n.rev), value: ""}].concat(
-            chooser.sources.map(row => ({text: row.name, value: row.id, note: !row.accepts, detail: row.accepts ? "" : I18n.tr("Only tracks from this source", I18n.rev)})))
+            chooser.sources.map(row => ({text: row.name, value: row.id, note: !row.accepts, detail: row.accepts ? "" : (row.why || I18n.tr("Only tracks from this source", I18n.rev))})))
         onChosen: index => chooser.picked(entries[index].value, entries[index].text)
     }
 }

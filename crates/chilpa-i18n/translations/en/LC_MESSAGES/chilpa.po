@@ -4204,6 +4204,9 @@ msgstr "Only tracks from this source"
 msgid "Only with exclusive mode on."
 msgstr ""
 
+msgid "Only with tracks: select them, then Add to playlist"
+msgstr ""
+
 msgid "Open"
 msgstr ""
 
@@ -7280,6 +7283,9 @@ msgstr ""
 msgid "a parenthesis is not closed"
 msgstr ""
 
+msgid "a playlist is made there only with tracks in it"
+msgstr ""
+
 msgid "a quote is not closed"
 msgstr ""
 
@@ -8593,6 +8599,9 @@ msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "{} makes a playlist only with tracks in it: select them, then Add to playlist."
+msgstr ""
 
 msgid "{} min"
 msgstr ""

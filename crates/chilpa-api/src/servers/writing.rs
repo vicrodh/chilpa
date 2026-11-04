@@ -23,8 +23,11 @@ use std::sync::{Arc, Mutex};
 /// their place in the library's playlist.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Change {
+    /// A description no server takes in its creation: it goes after, as an
+    /// edit, when it is not empty.
     Create {
         name: String,
+        description: String,
         tracks: Vec<String>,
     },
     /// A new name, a new description, or both; `None` keeps that one.
@@ -195,6 +198,18 @@ pub(crate) fn apply(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, g
         (_, _, Some(p)) => (remote.clone(), p.name.clone(), p.description.clone()),
         (_, _, None) => return failed(String::new()),
     };
+    // Made, it takes its description as an edit. Refused, the playlist is
+    // read in all the same, and the window says why.
+    let (description, why) = match &write.change {
+        Change::Create { description: text, .. } if !text.is_empty() => {
+            let edit = chilpa_servers::Change::Edit { name: None, description: Some(text.clone()) };
+            match chilpa_servers::change_playlist(net, &server, &key, &id, &PlaylistTracks::default(), &edit) {
+                Ok(_) => (text.clone(), String::new()),
+                Err(failure) => (description, said(&failure.to_string())),
+            }
+        }
+        _ => (description, String::new()),
+    };
     let writable = kept.as_ref().is_none_or(|p| p.writable);
     let read = match chilpa_servers::playlist_tracks(net, &server, &key, &id) {
         Ok(read) => read,
@@ -202,7 +217,7 @@ pub(crate) fn apply(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, g
     };
     let playlist = Playlist { id, name, description, editable: Some(writable) };
     match mirror(lib, &stored, &playlist, writable, &read) {
-        Some(now) => Written { playlist: now.id, missing: now.left_out > 0, ..failed(String::new()) },
+        Some(now) => Written { playlist: now.id, missing: now.left_out > 0, ..failed(why) },
         None => failed(said(&chilpa_i18n::t("the library could not be written"))),
     }
 }
@@ -222,7 +237,7 @@ fn lost(lib: &chilpa_library::Library, write: &Write, playlist: i64, server: &st
 fn protocol(stored: &chilpa_library::StoredServer, as_read: &PlaylistTracks, places: &[usize], change: &Change) -> Option<chilpa_servers::Change> {
     let ids = |tracks: &[String]| -> Option<Vec<String>> { tracks.iter().map(|entry| server_id(stored, entry)).collect() };
     Some(match change {
-        Change::Create { name, tracks } => chilpa_servers::Change::Create { name: name.clone(), tracks: ids(tracks.as_slice())? },
+        Change::Create { name, tracks, .. } => chilpa_servers::Change::Create { name: name.clone(), tracks: ids(tracks.as_slice())? },
         Change::Edit { name, description } => chilpa_servers::Change::Edit { name: name.clone(), description: description.clone() },
         Change::Delete => chilpa_servers::Change::Delete,
         Change::Add { tracks } => chilpa_servers::Change::Add { tracks: ids(tracks.as_slice())? },

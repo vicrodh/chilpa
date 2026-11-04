@@ -4201,6 +4201,9 @@ msgstr "このソースのトラックのみ"
 msgid "Only with exclusive mode on."
 msgstr "排他モードがオンの場合のみ。"
 
+msgid "Only with tracks: select them, then Add to playlist"
+msgstr "トラックが必要です: 選択してから「プレイリストに追加」を使ってください"
+
 msgid "Open"
 msgstr "開く"
 
@@ -7275,6 +7278,9 @@ msgstr "1から9999までの数字、または空欄"
 msgid "a parenthesis is not closed"
 msgstr "括弧が閉じられていません"
 
+msgid "a playlist is made there only with tracks in it"
+msgstr "そこではトラックを含むプレイリストしか作成できません"
+
 msgid "a quote is not closed"
 msgstr "引用符が閉じられていません"
 
@@ -8573,6 +8579,9 @@ msgstr[0] "{}件の再生記録を保存しました"
 msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{}件の再生記録が送信待ちです"
+
+msgid "{} makes a playlist only with tracks in it: select them, then Add to playlist."
+msgstr "{}ではトラックを含むプレイリストしか作成できません。トラックを選択してから「プレイリストに追加」を使ってください。"
 
 msgid "{} min"
 msgstr "{}分"

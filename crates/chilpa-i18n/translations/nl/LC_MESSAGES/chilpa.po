@@ -4204,6 +4204,9 @@ msgstr "Alleen nummers van deze bron"
 msgid "Only with exclusive mode on."
 msgstr "Alleen met de exclusieve modus aan."
 
+msgid "Only with tracks: select them, then Add to playlist"
+msgstr "Alleen met nummers: selecteer ze en kies dan Aan afspeellijst toevoegen"
+
 msgid "Open"
 msgstr "Openen"
 
@@ -7280,6 +7283,9 @@ msgstr "een getal van 1 tot 9999, of niets"
 msgid "a parenthesis is not closed"
 msgstr "een haakje is niet gesloten"
 
+msgid "a playlist is made there only with tracks in it"
+msgstr "daar wordt een afspeellijst alleen met nummers gemaakt"
+
 msgid "a quote is not closed"
 msgstr "een aanhalingsteken is niet gesloten"
 
@@ -8593,6 +8599,9 @@ msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{} beluistering wacht op verzending"
 msgstr[1] "{} beluisteringen wachten op verzending"
+
+msgid "{} makes a playlist only with tracks in it: select them, then Add to playlist."
+msgstr "{} maakt een afspeellijst alleen met nummers: selecteer ze en kies dan Aan afspeellijst toevoegen."
 
 msgid "{} min"
 msgstr "{} min"

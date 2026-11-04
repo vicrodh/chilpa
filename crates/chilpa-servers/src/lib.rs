@@ -121,6 +121,16 @@ pub fn playlist_describable(kind: Kind) -> bool {
     }
 }
 
+/// Whether the server makes a playlist only with tracks in it. Asked for an
+/// empty one, Plex answers 400; its own apps make one only from something
+/// to put in it.
+pub fn playlist_needs_tracks(kind: Kind) -> bool {
+    match kind {
+        Kind::Plex => true,
+        Kind::Subsonic | Kind::Jellyfin => false,
+    }
+}
+
 /// Asks the server for one change of a playlist, read just before as
 /// `as_read` (a new one is `""`, read as nothing). Returns the id of a
 /// playlist it created, when the server says it. A change made of several

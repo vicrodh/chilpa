@@ -82,6 +82,19 @@ fn tracks_go_in_by_the_server_s_uri_and_entries_come_out_by_their_own_id() {
     assert!(asked.iter().all(|r| header(r, "X-Plex-Token") == Some("srv")));
     let describable: Vec<bool> = crate::model::Kind::ALL.iter().map(|&kind| crate::playlist_describable(kind)).collect();
     assert_eq!(describable, [true, false, true], "Subsonic and Plex take a description; Jellyfin only a name");
+    let needs_tracks: Vec<bool> = crate::model::Kind::ALL.iter().map(|&kind| crate::playlist_needs_tracks(kind)).collect();
+    assert_eq!(needs_tracks, [false, false, true], "only Plex refuses an empty playlist");
+}
+
+#[test]
+fn a_playlist_with_nothing_in_it_is_not_asked_for() {
+    let (server, key) = lab();
+    // What the server answered to a `POST /playlists` without a `uri`.
+    let net = Canned::new().answer(400, b"");
+    let empty = Change::Create { name: "Iron Maiden 80s".into(), tracks: Vec::new() };
+    let refused = change_playlist(&net, &server, &key, "", &PlaylistTracks::default(), &empty).unwrap_err();
+    assert!(net.asked().is_empty(), "nothing goes out: the server makes none without tracks");
+    assert!(matches!(refused, Failure::Unexpected(_)) && !refused.to_string().contains("400"), "{refused}");
 }
 
 #[test]

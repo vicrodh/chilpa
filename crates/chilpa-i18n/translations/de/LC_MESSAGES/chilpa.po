@@ -4204,6 +4204,9 @@ msgstr "Nur Titel aus dieser Quelle"
 msgid "Only with exclusive mode on."
 msgstr "Nur bei aktivem Exklusivmodus."
 
+msgid "Only with tracks: select them, then Add to playlist"
+msgstr "Nur mit Titeln: wähle sie aus, dann Zur Playlist hinzufügen"
+
 msgid "Open"
 msgstr "Öffnen"
 
@@ -7280,6 +7283,9 @@ msgstr "eine Zahl von 1 bis 9999 oder nichts"
 msgid "a parenthesis is not closed"
 msgstr "eine Klammer ist nicht geschlossen"
 
+msgid "a playlist is made there only with tracks in it"
+msgstr "dort wird eine Playlist nur mit Titeln erstellt"
+
 msgid "a quote is not closed"
 msgstr "ein Anführungszeichen ist nicht geschlossen"
 
@@ -8593,6 +8599,9 @@ msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{} Wiedergabe wartet auf das Senden"
 msgstr[1] "{} Wiedergaben warten auf das Senden"
+
+msgid "{} makes a playlist only with tracks in it: select them, then Add to playlist."
+msgstr "{} erstellt eine Playlist nur mit Titeln: wähle sie aus, dann Zur Playlist hinzufügen."
 
 msgid "{} min"
 msgstr "{} Min."

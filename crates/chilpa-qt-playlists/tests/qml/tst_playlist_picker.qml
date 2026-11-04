@@ -156,4 +156,20 @@ TestCase {
         const field = findChild(picker.contentItem, "playlistName")
         verify(field !== null)
     }
+
+    function test_a_source_it_cannot_take_says_why_and_cannot_be_chosen() {
+        const why = "Only with tracks: select them, then Add to playlist"
+        Playlists.sourceChoices = [{id: "plex:77aa", name: "MacMini Plex", accepts: false, why: why},
+                                   {id: "jellyfin:4f1c", name: "Living room", accepts: false}]
+        picker.show("[]")
+        tryCompare(picker, "opened", true)
+        const menu = findChild(picker, "playlistSourceMenu")
+        verify(menu !== null)
+        compare(menu.entries.length, 3)
+        compare(menu.entries[1].note, true)
+        compare(menu.entries[1].detail, why)
+        compare(menu.entries[2].detail, "Only tracks from this source")
+        menu.choose(1, 0)
+        compare(picker.sourceId, "", "a greyed source is not taken")
+    }
 }

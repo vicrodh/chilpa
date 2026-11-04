@@ -14,6 +14,7 @@ const COMP_TRACK_1: &str = "5d0a04cb4d421afbbd017f0be4168548";
 const COMP_TRACK_2: &str = "7a12ca93c59e64ce0a53286039943fd7";
 const ELSEWHERE: &str = "ab93228537aa8104f4f440f2d4bdc42e";
 const VIDEO: &str = "9e1f2a3b4c5d4e6f8a7b6c5d4e3f2a1b";
+const PLEX: &str = "http://192.168.0.69:32400";
 
 /// Answers with what it was loaded with, in order, and writes down what it
 /// was asked: the method and the address.
@@ -65,31 +66,20 @@ impl Drop for Lab {
 }
 
 impl Lab {
-    /// A Jellyfin server whose catalogue in the library holds three tracks,
-    /// and a playlist of it, "Road Trip", that holds `road`.
-    fn new(road: &[&str]) -> (Lab, i64) {
+    /// That server in a library in memory, its catalogue holding `ids`.
+    fn server(new: chilpa_library::NewServer, key: chilpa_servers::Credential, ids: &[&str]) -> Lab {
         let lib = chilpa_library::Library::in_memory().unwrap();
-        let instance = super::super::keys::mint();
-        let root = std::env::temp_dir().join(format!("chilpa-writes-{instance}"));
+        let root = std::env::temp_dir().join(format!("chilpa-writes-{}", new.instance));
         let keys = Keys::derived(root.clone());
-        assert!(keys.put(&instance, &chilpa_servers::Credential::Token { token: "t".into() }));
-        let new = chilpa_library::NewServer {
-            provider: "jellyfin".into(),
-            instance,
-            label: "Living room".into(),
-            address: "http://jf.lan:8096".into(),
-            libraries: "[]".into(),
-            details: format!(r#"{{"user_id":"{USER}"}}"#),
-            ..Default::default()
-        };
+        assert!(keys.put(&new.instance, &key));
         let source = lib.add_server(&new).unwrap();
         let stored = lib.server(source).unwrap().unwrap();
         let generation = lib.begin_server_sync(source).unwrap();
-        let tracks: Vec<chilpa_library::ServerTrack> = [FIRST_SONG_1, COMP_TRACK_1, COMP_TRACK_2]
+        let tracks: Vec<chilpa_library::ServerTrack> = ids
             .iter()
-            .map(|id| chilpa_library::ServerTrack {
+            .map(|&id| chilpa_library::ServerTrack {
                 external_id: net::entry(&stored, id),
-                title: id[..4].to_string(),
+                title: id.get(..4).unwrap_or(id).to_string(),
                 artist: "Band".into(),
                 album: "One".into(),
                 duration_ms: 1_000,
@@ -98,7 +88,37 @@ impl Lab {
             .collect();
         lib.save_server_tracks(source, generation, &tracks).unwrap();
         lib.finish_server_sync(source, generation).unwrap();
-        let lab = Lab { lib, keys, stored, root };
+        Lab { lib, keys, stored, root }
+    }
+
+    /// A Plex server whose catalogue holds two tracks, by their ratingKeys.
+    fn plex() -> Lab {
+        let new = chilpa_library::NewServer {
+            provider: "plex".into(),
+            instance: super::super::keys::mint(),
+            label: "MacMini Plex".into(),
+            address: PLEX.into(),
+            identity: "f00dfeed".into(),
+            libraries: "[]".into(),
+            details: "{}".into(),
+            ..Default::default()
+        };
+        Lab::server(new, chilpa_servers::Credential::Plex { account: "acct".into(), server: "srv".into() }, &["17", "8"])
+    }
+
+    /// A Jellyfin server whose catalogue in the library holds three tracks,
+    /// and a playlist of it, "Road Trip", that holds `road`.
+    fn new(road: &[&str]) -> (Lab, i64) {
+        let new = chilpa_library::NewServer {
+            provider: "jellyfin".into(),
+            instance: super::super::keys::mint(),
+            label: "Living room".into(),
+            address: "http://jf.lan:8096".into(),
+            libraries: "[]".into(),
+            details: format!(r#"{{"user_id":"{USER}"}}"#),
+            ..Default::default()
+        };
+        let lab = Lab::server(new, chilpa_servers::Credential::Token { token: "t".into() }, &[FIRST_SONG_1, COMP_TRACK_1, COMP_TRACK_2]);
         let read =
             chilpa_servers::playlist_tracks(&Answers::default().with(200, &items(road)), &net::server(&lab.stored).unwrap(), &chilpa_servers::Credential::Token { token: "t".into() }, ROAD).unwrap();
         let playlist = Playlist { id: ROAD.into(), name: "Road Trip".into(), description: String::new(), editable: Some(true) };
@@ -208,11 +228,35 @@ fn deleting_takes_the_playlist_out_there_and_here_and_creating_reads_the_new_one
 
     let made = "0a1b2c3d4e5f60718293a4b5c6d7e8f9";
     let net = Answers::default().with(200, &format!(r#"{{"Id":"{made}"}}"#)).with(200, &items(&[COMP_TRACK_2, FIRST_SONG_1]));
-    let written = lab.apply(&net, 0, Change::Create { name: "Night drive".into(), tracks: vec![lab.entry(COMP_TRACK_2), lab.entry(FIRST_SONG_1)] });
+    let written = lab.apply(&net, 0, Change::Create { name: "Night drive".into(), description: String::new(), tracks: vec![lab.entry(COMP_TRACK_2), lab.entry(FIRST_SONG_1)] });
     assert_eq!(written.why, "");
     let created = lab.lib.playlists().unwrap().into_iter().find(|p| p.id == written.playlist).unwrap();
     assert_eq!((created.name.as_str(), created.external_id.as_str(), created.writable, created.server), ("Night drive", made, true, true));
     assert_eq!(lab.holds(created.id), [COMP_TRACK_2, FIRST_SONG_1]);
+}
+
+#[test]
+fn a_new_playlist_takes_its_description_after_it_is_made() {
+    let lab = Lab::plex();
+    let made = r#"{"MediaContainer":{"size":1,"Metadata":[{"ratingKey":"44","type":"playlist","title":"Iron Maiden 80s","smart":false}]}}"#;
+    let read = r#"{"MediaContainer":{"size":2,"totalSize":2,"Metadata":[{"ratingKey":"17","type":"track","playlistItemID":901},{"ratingKey":"8","type":"track","playlistItemID":902}]}}"#;
+    let net = Answers::default().with(200, made).with(200, "").with(200, read);
+    let about = "The Iron Maiden records of the eighties";
+    let written = lab.apply(&net, 0, Change::Create { name: "Iron Maiden 80s".into(), description: about.into(), tracks: vec![lab.entry("17"), lab.entry("8")] });
+    assert_eq!(written.why, "");
+    let asked = net.asked();
+    let uri = "server%3A%2F%2Ff00dfeed%2Fcom.plexapp.plugins.library%2Flibrary%2Fmetadata%2F17%2C8";
+    assert_eq!(asked[0], ("POST".to_string(), format!("{PLEX}/playlists?type=audio&title=Iron%20Maiden%2080s&smart=0&uri={uri}")), "made with its tracks");
+    assert_eq!(asked[1], ("PUT".to_string(), format!("{PLEX}/playlists/44?summary=The%20Iron%20Maiden%20records%20of%20the%20eighties")), "then described");
+    assert_eq!(asked[2], ("GET".to_string(), format!("{PLEX}/playlists/44/items")), "then read back");
+    let created = lab.lib.playlists().unwrap().into_iter().find(|p| p.id == written.playlist).unwrap();
+    assert_eq!((created.name.as_str(), created.description.as_str()), ("Iron Maiden 80s", about));
+    assert_eq!(lab.holds(created.id), ["17", "8"]);
+
+    // A description the server refuses leaves the playlist made, and says so.
+    let net = Answers::default().with(200, made).with(500, "").with(200, read);
+    let written = lab.apply(&net, 0, Change::Create { name: "Iron Maiden 80s".into(), description: about.into(), tracks: vec![lab.entry("17")] });
+    assert!(written.why.starts_with("MacMini Plex did not take the change") && written.playlist > 0, "{}", written.why);
 }
 
 #[test]

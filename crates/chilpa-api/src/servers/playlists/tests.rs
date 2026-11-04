@@ -128,6 +128,32 @@ fn a_server_s_playlist_takes_only_that_server_s_tracks() {
 }
 
 #[test]
+fn a_server_that_makes_no_empty_playlist_is_not_offered_for_one() {
+    let (mut api, _, _, _, _) = with_a_server_playlist();
+    let lib = api.library().unwrap();
+    let new = chilpa_library::NewServer {
+        provider: "plex".into(),
+        instance: "77aa0b1c2d3e4f50".into(),
+        label: "MacMini Plex".into(),
+        identity: "f00dfeed".into(),
+        details: "{}".into(),
+        ..Default::default()
+    };
+    let plex = lib.add_server(&new).unwrap();
+    lib.set_source_reachable(plex, true).unwrap();
+    let key = source_key("plex", "77aa0b1c2d3e4f50");
+    let sources = api.server_playlist_sources(&[]);
+    let row = sources.iter().find(|s| s["id"] == key.as_str()).unwrap();
+    assert_eq!((row["accepts"].as_bool(), row["why"].as_str()), (Some(false), Some(needs_tracks().as_str())), "greyed, with the reason");
+    let jellyfin = sources.iter().find(|s| s["name"] == "Living room").unwrap();
+    assert!(jellyfin["why"].is_null(), "another kind makes an empty one");
+    // Asked anyway, nothing goes to its door, and the window is told why.
+    assert_eq!(api.create_server_playlist(&key, "Iron Maiden 80s", "The Iron Maiden records of the eighties", &[], "r1"), Some(false));
+    let told = chilpa_i18n::t_args("{} makes a playlist only with tracks in it: select them, then Add to playlist.", &["MacMini Plex"]);
+    assert_eq!(api.now_playing().error, told);
+}
+
+#[test]
 fn a_disabled_server_s_playlists_are_hidden_and_kept() {
     let (mut api, id, _, track, _) = with_a_server_playlist();
     let source = api.playlist(id).unwrap().source_id;

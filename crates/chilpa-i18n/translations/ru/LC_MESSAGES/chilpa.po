@@ -4207,6 +4207,9 @@ msgstr "Только треки из этого источника"
 msgid "Only with exclusive mode on."
 msgstr "Только при включённом эксклюзивном режиме."
 
+msgid "Only with tracks: select them, then Add to playlist"
+msgstr "Только с треками: выберите их, затем «Добавить в плейлист»"
+
 msgid "Open"
 msgstr "Открыть"
 
@@ -7285,6 +7288,9 @@ msgstr "число от 1 до 9999 или пусто"
 msgid "a parenthesis is not closed"
 msgstr "скобка не закрыта"
 
+msgid "a playlist is made there only with tracks in it"
+msgstr "там плейлист создаётся только с треками"
+
 msgid "a quote is not closed"
 msgstr "кавычки не закрыты"
 
@@ -8613,6 +8619,9 @@ msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{} прослушивание ожидает отправки"
 msgstr[1] "{} прослушивания ожидают отправки"
 msgstr[2] "{} прослушиваний ожидают отправки"
+
+msgid "{} makes a playlist only with tracks in it: select them, then Add to playlist."
+msgstr "{} создаёт плейлист только с треками: выберите их, затем «Добавить в плейлист»."
 
 msgid "{} min"
 msgstr "{} мин"
