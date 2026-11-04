@@ -558,6 +558,10 @@ QtObject {
     readonly property int metadataHitsShown: 5
     readonly property int metadataColumnMin: 340
     readonly property int confirmWidth: 440
+    // The add-a-server wizard: as wide as the HiFi Wizard's card, and as
+    // tall as its longest step needs before it scrolls.
+    readonly property int serverWizardWidth: 620
+    readonly property int serverWizardHeight: 600
 
     // The artist page (ui/design: artist). The portrait, the one card of
     // the latest release, the Network sidebar and its rows, the jump bar,

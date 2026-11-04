@@ -39,7 +39,7 @@ Item {
         }
         Text {
             width: parent.width
-            text: I18n.tr("Connect OpenSubsonic, Jellyfin or Plex to add its music to your library.", I18n.rev)
+            text: I18n.tr("Connect Jellyfin, Navidrome or another OpenSubsonic server, Plex, or a DLNA / UPnP media server to add its music to your library.", I18n.rev)
             wrapMode: Text.WordWrap
             font.pointSize: Type.meta
             color: Theme.color.textSecondary

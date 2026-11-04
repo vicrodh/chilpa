@@ -118,6 +118,9 @@ msgstr "Um grafo JACK roda a uma única taxa e todos os programas nele rodam a e
 msgid "A PCM carrier does not verify DoP. No tone or library track will play."
 msgstr "Uma portadora PCM não verifica DoP. Nenhum tom ou faixa da biblioteca será reproduzido."
 
+msgid "A Plex Media Server. You sign in with your Plex account, with a code at plex.tv/link."
+msgstr "Um Plex Media Server. Você entra com a sua conta Plex, com um código em plex.tv/link."
+
 msgid "A bar or OR: either is enough"
 msgstr "Uma barra ou OR: basta uma"
 
@@ -132,6 +135,15 @@ msgstr ""
 
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr ""
+
+msgid "A folder chosen before"
+msgstr "Uma pasta escolhida antes"
+
+msgid "A media server on this network, such as MiniDLNA, Gerbera or the DLNA side of Plex. There is nothing to sign in to."
+msgstr "Um servidor de mídia nesta rede, como MiniDLNA, Gerbera ou o lado DLNA do Plex. Não há login."
+
+msgid "A media server you run yourself. You sign in with its user and password, or with Quick Connect."
+msgstr "Um servidor de mídia que você mesmo mantém. Você entra com o usuário e a senha dele, ou com o Quick Connect."
 
 msgid "A name for this memory"
 msgstr ""
@@ -268,9 +280,6 @@ msgstr "Adicionar uma pasta à biblioteca"
 msgid "Add a new server"
 msgstr "Adicionar servidor"
 
-msgid "Add a server"
-msgstr "Adicionar um servidor"
-
 msgid "Add a storage profile"
 msgstr ""
 
@@ -356,6 +365,12 @@ msgstr[1] "Adicionando {} faixas"
 
 msgid "Adding..."
 msgstr "Adicionando..."
+
+msgid "Address"
+msgstr "Endereço"
+
+msgid "Address of the media server, or of its description"
+msgstr "Endereço do servidor de mídia ou da descrição dele"
 
 msgid "Add…"
 msgstr "Adicionar…"
@@ -662,6 +677,9 @@ msgstr "Pede à API de letras do Chilpa que traduza letras sem tradução no seu
 
 msgid "Ask before quitting"
 msgstr "Perguntar antes de sair"
+
+msgid "Asking Plex for a code…"
+msgstr "Pedindo um código ao Plex…"
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Pede ao PipeWire ou ao PulseAudio que solte a placa enquanto o Chilpa toca nela, e a devolve quando o Chilpa para ou fica pausado por muito tempo."
@@ -1010,14 +1028,20 @@ msgstr "Alterar capa"
 msgid "Change image"
 msgstr "Alterar imagem"
 
-msgid "Change sign-in"
-msgstr "Alterar login"
-
 msgid "Change source"
 msgstr "Alterar fonte"
 
 msgid "Change spectrum style ({})"
 msgstr "Alterar estilo do espectro ({})"
+
+msgid "Change the address if the server moved."
+msgstr "Mude o endereço se o servidor mudou de lugar."
+
+msgid "Change the address if the server moved. Its sign-in stays as it is unless you change it."
+msgstr "Mude o endereço se o servidor mudou de lugar. O login continua igual, a menos que você o troque."
+
+msgid "Change the sign-in"
+msgstr "Trocar o login"
 
 msgid "Changes"
 msgstr ""
@@ -1058,8 +1082,20 @@ msgstr "Verificar atualizações automaticamente"
 msgid "Check for updates now"
 msgstr "Buscar atualizações agora"
 
+msgid "Check its name and what comes in."
+msgstr "Confira o nome e o que entra."
+
 msgid "Check one format"
 msgstr "Verificar um formato"
+
+msgid "Check the address and its port, and that the server is on and reachable from this computer, then try again."
+msgstr "Confira o endereço e a porta, e se o servidor está ligado e acessível a partir deste computador; depois tente de novo."
+
+msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
+msgstr "Confira o endereço, se o DLNA está ligado nas configurações do servidor e se ele aceita este computador; depois tente de novo."
+
+msgid "Check the user and the password or the API key, then go back and try again."
+msgstr "Confira o usuário e a senha ou a chave de API; depois volte e tente de novo."
 
 msgid "Checking available space"
 msgstr "Verificando espaço disponível"
@@ -1106,6 +1142,9 @@ msgstr "O Chilpa já fixa taxa, sink e modo exclusivo durante a execução. Este
 msgid "Chilpa applies the processing shown below."
 msgstr "O Chilpa aplica o processamento mostrado abaixo."
 
+msgid "Chilpa asks Plex for a code; on the next step you type it at plex.tv/link."
+msgstr "O Chilpa pede um código ao Plex; no próximo passo você o digita em plex.tv/link."
+
 msgid "Chilpa can also read the tempo, musical key and loudness of what this folder holds. It takes much longer than reading the folder: it starts when the scan is done, runs in the background, and can be stopped in Settings > Library > Analysis."
 msgstr "O Chilpa também pode ler o andamento, a tonalidade e o volume do que esta pasta contém. Isso leva muito mais tempo do que ler a pasta: começa quando o escaneamento termina, roda em segundo plano e pode ser parado em Configurações > Biblioteca > Análise."
 
@@ -1150,6 +1189,12 @@ msgstr "Plugins do Chilpa"
 
 msgid "Chilpa proxy"
 msgstr "Proxy do Chilpa"
+
+msgid "Chilpa reads its music now and lists it with yours as it arrives, with its playlists. Nothing on the server changes unless you change one of its playlists."
+msgstr "O Chilpa lê a música agora, com as playlists, e a mostra com a sua conforme chega. Nada muda no servidor, a menos que você mude uma das playlists dele."
+
+msgid "Chilpa reads its music now and lists it with yours as it arrives. Nothing on the server changes, and a DLNA / UPnP server has no playlists to bring."
+msgstr "O Chilpa lê a música agora e a mostra com a sua conforme chega. Nada muda no servidor, e um servidor DLNA / UPnP não tem playlists para trazer."
 
 msgid "Chilpa requesting {} · {}-bit"
 msgstr "Chilpa solicitando {} · {} bits"
@@ -1490,14 +1535,17 @@ msgstr "Arquivos de configuração que você pode criar:"
 msgid "Configure"
 msgstr "Configurar"
 
+msgid "Confirm"
+msgstr "Confirmar"
+
 msgid "Confirm this preview and its removals before syncing."
 msgstr ""
 
 msgid "Connect"
 msgstr "Conectar"
 
-msgid "Connect OpenSubsonic, Jellyfin or Plex to add its music to your library."
-msgstr "Conecte OpenSubsonic, Jellyfin ou Plex para adicionar suas músicas à biblioteca."
+msgid "Connect Jellyfin, Navidrome or another OpenSubsonic server, Plex, or a DLNA / UPnP media server to add its music to your library."
+msgstr "Conecte Jellyfin, Navidrome ou outro servidor OpenSubsonic, Plex ou um servidor de mídia DLNA / UPnP para trazer a música dele para a sua biblioteca."
 
 msgid "Connect a player or memory card. Save a profile for each storage."
 msgstr "Conecte um reprodutor ou cartão de memória. Salve um perfil para cada armazenamento."
@@ -1516,6 +1564,9 @@ msgstr "Conectado"
 
 msgid "Connected as {}"
 msgstr "Conectado como {}"
+
+msgid "Connected to {}"
+msgstr "Conectado a {}"
 
 msgid "Connecting…"
 msgstr "Conectando…"
@@ -1591,6 +1642,9 @@ msgstr "O CoreAudio não informa nenhum dispositivo capaz de reproduzir"
 
 msgid "Could not add tracks to this playlist."
 msgstr "Não foi possível adicionar as faixas a esta playlist."
+
+msgid "Could not connect"
+msgstr "Não foi possível conectar"
 
 msgid "Could not create the playlist. Please try again."
 msgstr "Não foi possível criar a playlist. Tente novamente."
@@ -2159,9 +2213,6 @@ msgstr "Editar metadados…"
 msgid "Edit playlist"
 msgstr "Editar playlist"
 
-msgid "Edit server"
-msgstr "Editar servidor"
-
 msgid "Edit…"
 msgstr "Editar…"
 
@@ -2503,6 +2554,9 @@ msgstr "Avançar"
 
 msgid "Forward 10 seconds"
 msgstr "Avançar 10 segundos"
+
+msgid "Found on this network"
+msgstr "Encontrados nesta rede"
 
 msgid "Four stars or more; rating:0 has none"
 msgstr "Quatro estrelas ou mais; rating:0 é sem estrelas"
@@ -2917,6 +2971,9 @@ msgstr "Importar playlist"
 msgid "Imported"
 msgstr "Importado"
 
+msgid "In a Jellyfin app where you are signed in, open Quick Connect and type this code. Chilpa notices by itself."
+msgstr "Num app do Jellyfin em que você está conectado, abra o Quick Connect e digite este código. O Chilpa percebe sozinho."
+
 msgid "In library"
 msgstr "Na biblioteca"
 
@@ -3100,14 +3157,30 @@ msgstr "Inverter polaridade direita"
 msgid "It does not answer now; try again when it is back"
 msgstr "Não responde agora; tente de novo quando voltar"
 
+msgid "It offers {} music library."
+msgid_plural "It offers {} music libraries."
+msgstr[0] "Oferece {} biblioteca de música."
+msgstr[1] "Oferece {} bibliotecas de música."
+
+msgid "It shows {} folder at its top. Next, open the one that holds your music."
+msgid_plural "It shows {} folders at its top. Next, open the one that holds your music."
+msgstr[0] "Mostra {} pasta no nível de cima. Agora abra a que tem a sua música."
+msgstr[1] "Mostra {} pastas no nível de cima. Agora abra a que tem a sua música."
+
 msgid "Italian"
 msgstr "Italiano"
+
+msgid "Its connection"
+msgstr "A conexão"
 
 msgid "Its music is being read; it appears in the library as it arrives."
 msgstr "A música do servidor está sendo lida; ela aparece na biblioteca conforme chega."
 
-msgid "Its music joins your library, listed with your own files."
-msgstr "A música do servidor entra na sua biblioteca, listada junto com seus próprios arquivos."
+msgid "Its music is read again with what you changed."
+msgstr "A música é lida de novo com o que você mudou."
+
+msgid "Its music joins your library, listed with your own files. Nothing on the server changes."
+msgstr "A música entra na sua biblioteca, junto dos seus arquivos. Nada muda no servidor."
 
 msgid "Its page, or its quick view under the row."
 msgstr "Sua página, ou a visualização rápida sob a linha."
@@ -3171,6 +3244,9 @@ msgstr "Atalhos de teclado"
 
 msgid "Keymap"
 msgstr "Mapa de teclas"
+
+msgid "Kind"
+msgstr "Tipo"
 
 msgid "LABELS"
 msgstr "GRAVADORAS"
@@ -3246,6 +3322,9 @@ msgstr "Nível"
 
 msgid "Level loudness across tracks. This breaks strict bit perfect."
 msgstr "Nivela o volume sonoro entre as faixas. Isso quebra o bit-perfect estrito."
+
+msgid "Libraries"
+msgstr "Bibliotecas"
 
 msgid "Library"
 msgstr "Biblioteca"
@@ -3718,6 +3797,9 @@ msgstr "Nome"
 msgid "Name a personal preset"
 msgstr "Dê um nome a um preset pessoal"
 
+msgid "Name in Chilpa"
+msgstr "Nome no Chilpa"
+
 msgid "Name this preset."
 msgstr "Dê um nome a este preset."
 
@@ -3747,6 +3829,9 @@ msgstr "Nativa — {} — Sem pasta"
 
 msgid "Native — {} — {}"
 msgstr "Nativa — {} — {}"
+
+msgid "Navidrome, gonic or another server that speaks Subsonic. You sign in with its user and password, or an API key."
+msgstr "Navidrome, gonic ou outro servidor que fale Subsonic. Você entra com o usuário e a senha dele, ou com uma chave de API."
 
 msgid "Navigation"
 msgstr "Navegação"
@@ -3934,6 +4019,9 @@ msgstr "Nenhum plugin correspondente"
 msgid "No matching selections. Create a local playlist or save a query in Refine."
 msgstr ""
 
+msgid "No media server answered the search. Some do not answer searches: type its address below, such as 192.168.0.20:8200."
+msgstr "Nenhum servidor de mídia respondeu à busca. Alguns não respondem a buscas: digite o endereço abaixo, por exemplo 192.168.0.20:8200."
+
 msgid "No music has been synced with Chilpa to this storage yet."
 msgstr "Ainda não foi sincronizada música com o Chilpa neste armazenamento."
 
@@ -4081,6 +4169,12 @@ msgstr "Não verificado"
 msgid "Notch"
 msgstr "Notch"
 
+msgid "Nothing chosen yet. Choose at least one folder."
+msgstr "Nada escolhido ainda. Escolha pelo menos uma pasta."
+
+msgid "Nothing chosen yet. Choose at least one library."
+msgstr "Nada escolhido ainda. Escolha pelo menos uma biblioteca."
+
 msgid "Nothing found for “{}”"
 msgstr "Nada encontrado para “{}”"
 
@@ -4119,6 +4213,9 @@ msgstr "Nada na fila."
 
 msgid "Nothing saved yet."
 msgstr "Nada salvo ainda."
+
+msgid "Nothing to type here. You need a browser where you can sign in to your Plex account."
+msgstr "Não há nada para digitar aqui. Você precisa de um navegador em que possa entrar na sua conta Plex."
 
 msgid "Nov"
 msgstr "nov"
@@ -4264,6 +4361,9 @@ msgstr "Abrir CD de áudio"
 msgid "Open downloads"
 msgstr "Abrir downloads"
 
+msgid "Open folders until you reach the one that holds your music, and choose it. A server shows the same music in several views: choose one, such as its folders or its albums."
+msgstr "Abra pastas até chegar à que tem a sua música e escolha-a. Um servidor mostra a mesma música em várias visões: escolha uma, como as pastas ou os álbuns."
+
 msgid "Open in browser"
 msgstr "Abrir no navegador"
 
@@ -4303,6 +4403,9 @@ msgstr "Abrir importador de playlists"
 msgid "Open plex.tv/link"
 msgstr "Abrir plex.tv/link"
 
+msgid "Open plex.tv/link in a browser, signed in to your Plex account, and type this code. Chilpa notices by itself."
+msgstr "Abra plex.tv/link num navegador, com a sua conta Plex conectada, e digite este código. O Chilpa percebe sozinho."
+
 msgid "Open plugins"
 msgstr "Abrir plugins"
 
@@ -4338,6 +4441,9 @@ msgstr "Modo de abertura"
 
 msgid "Opening: {} · Audibility: {}"
 msgstr "Abertura: {} · Audibilidade: {}"
+
+msgid "Opening…"
+msgstr "Abrindo…"
 
 msgid "Operating system"
 msgstr "Sistema operacional"
@@ -4837,6 +4943,9 @@ msgstr "Fila · {}"
 msgid "Queues"
 msgstr "Filas"
 
+msgid "Quick Connect is off on this server. Go back and sign in with your user and password, or turn Quick Connect on in its dashboard."
+msgstr "O Quick Connect está desligado neste servidor. Volte e entre com o usuário e a senha, ou ligue o Quick Connect no painel dele."
+
 msgid "Quick Connect is turned off on that server"
 msgstr "O Quick Connect está desativado nesse servidor"
 
@@ -4884,6 +4993,9 @@ msgstr "Avaliação"
 
 msgid "Re-fetch album information"
 msgstr "Buscar novamente as informações do álbum"
+
+msgid "Reaching the server…"
+msgstr "Conectando ao servidor…"
 
 msgid "Reactivate"
 msgstr "Reativar"
@@ -4939,6 +5051,9 @@ msgstr "Lendo as faixas selecionadas…"
 msgid "Reading the files…"
 msgstr "Lendo os arquivos…"
 
+msgid "Reading the media server's description and its folders…"
+msgstr "Lendo a descrição do servidor de mídia e as pastas dele…"
+
 msgid "Reading the selected tracks timed out. Please try again."
 msgstr "A leitura das faixas selecionadas expirou. Tente novamente."
 
@@ -4953,6 +5068,9 @@ msgstr "Lê o andamento, a tonalidade e o volume sonoro em segundo plano. O Auto
 
 msgid "Ready for local PCM playback"
 msgstr "Pronto para reprodução PCM local"
+
+msgid "Ready to add it"
+msgstr "Pronto para adicionar"
 
 msgid "Ready to review"
 msgstr "Pronto para revisão"
@@ -5368,6 +5486,9 @@ msgstr "Salvar consulta"
 msgid "Save stations to find them here."
 msgstr "Salve estações para encontrá-las aqui."
 
+msgid "Save the changes?"
+msgstr "Salvar as alterações?"
+
 msgid "Save the cover"
 msgstr "Salvar a capa"
 
@@ -5446,6 +5567,9 @@ msgstr "Role para ajustar o volume"
 msgid "Search"
 msgstr "Buscar"
 
+msgid "Search again"
+msgstr "Procurar de novo"
+
 msgid "Search artists"
 msgstr "Buscar artistas"
 
@@ -5505,6 +5629,9 @@ msgstr "Buscando artistas de {genre} no MusicBrainz…"
 
 msgid "Searching for devices…"
 msgstr "Procurando dispositivos…"
+
+msgid "Searching this network…"
+msgstr "Procurando nesta rede…"
 
 msgid "Searching…"
 msgstr "Buscando…"
@@ -5600,6 +5727,9 @@ msgstr "Endereço do servidor"
 
 msgid "Server name"
 msgstr "Nome do servidor"
+
+msgid "Server type"
+msgstr "Tipo de servidor"
 
 msgid "Servers"
 msgstr "Servidores"
@@ -5748,23 +5878,35 @@ msgstr ""
 msgid "Sidecar"
 msgstr "Arquivo auxiliar"
 
-msgid "Sign in"
-msgstr "Entrar"
-
 msgid "Sign in from Account to see your purchases."
 msgstr "Faça login em Conta para ver suas compras."
 
 msgid "Sign in on Discogs to search with your account."
 msgstr "Faça login no Discogs para buscar com sua conta."
 
+msgid "Sign in to Plex again"
+msgstr "Entrar no Plex de novo"
+
 msgid "Sign in with Discogs"
 msgstr "Entrar com o Discogs"
 
-msgid "Sign in with an API key"
-msgstr "Entrar com uma chave de API"
+msgid "Sign in with Plex"
+msgstr "Entrar com o Plex"
+
+msgid "Sign in with Quick Connect: approve a code in a Jellyfin app where you are signed in"
+msgstr "Entrar com o Quick Connect: aprove um código num app do Jellyfin em que você está conectado"
+
+msgid "Sign in with an API key instead (OpenSubsonic servers that offer one)"
+msgstr "Entrar com uma chave de API (servidores OpenSubsonic que oferecem uma)"
+
+msgid "Sign in with your Plex account"
+msgstr "Entre com a sua conta Plex"
 
 msgid "Signed out"
 msgstr "Sessão encerrada"
+
+msgid "Signing in and reading its libraries…"
+msgstr "Entrando e lendo as bibliotecas…"
 
 msgid "Silent opening checks accept PCM only. Opening a PCM carrier does not check DoP."
 msgstr "As verificações silenciosas de abertura aceitam apenas PCM. Abrir uma portadora PCM não verifica DoP."
@@ -6050,6 +6192,9 @@ msgstr "Tags, separadas por vírgulas"
 msgid "Tags: {}"
 msgstr "Tags: {}"
 
+msgid "Take it out"
+msgstr "Tirar"
+
 msgid "Take the card from the sound server"
 msgstr "Tomar a placa do servidor de som"
 
@@ -6067,6 +6212,12 @@ msgstr "Testar"
 
 msgid "Test Playback"
 msgstr "Testar a reprodução"
+
+msgid "Test the connection"
+msgstr "Testar a conexão"
+
+msgid "Testing the connection"
+msgstr "Testando a conexão"
 
 msgid "Text"
 msgstr "Texto"
@@ -6112,6 +6263,9 @@ msgstr "A conta não conectou. Você pode fechar esta aba."
 
 msgid "The account expired; connect it again."
 msgstr "A conta expirou; conecte-a novamente."
+
+msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
+msgstr "O endereço em que você abre o servidor num navegador, com a porta, e o usuário com que o Chilpa entra."
 
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr "O teste integrado reproduz quatro faixas com profundidades de bits e taxas de amostragem diferentes (16/44.1, 24/44.1, 24/96, 24/192) para você ver seu DAC mudar de taxa. Cada uma é a faixa mais reproduzida da sua biblioteca nesse formato, ou um sinal de teste gerado quando você não tem nenhuma. Se preferir usar sua própria fila, adicione antes uma faixa de cada tipo para que todas as taxas sejam testadas."
@@ -6365,6 +6519,9 @@ msgstr "O armazenamento selecionado mudou ou foi desconectado."
 msgid "The selected tracks could not be read."
 msgstr "Não foi possível ler as faixas selecionadas."
 
+msgid "The server answered, and Chilpa can read its music."
+msgstr "O servidor respondeu e o Chilpa consegue ler a música."
+
 msgid "The service sent no code."
 msgstr "O serviço não enviou nenhum código."
 
@@ -6398,14 +6555,23 @@ msgstr "A visualização inicial do imersivo. Lembrar mantém a última usada."
 msgid "The view the mini player opens with. Remember keeps the one it was last on."
 msgstr "A visualização inicial do mini player. Lembrar mantém a última usada."
 
+msgid "Their music joins yours. With all of them chosen, a library added later on the server comes in too."
+msgstr "A música delas se junta à sua. Com todas escolhidas, uma biblioteca criada depois no servidor também entra."
+
 msgid "Theme"
 msgstr "Tema"
+
+msgid "There are no folders inside this one. Choose it from the level above, or go back up."
+msgstr "Esta pasta não tem pastas dentro. Escolha-a no nível de cima ou volte."
 
 msgid "There is no previous EQ to restore."
 msgstr "Não há EQ anterior para restaurar."
 
 msgid "There is not enough space for this selection and its temporary files."
 msgstr ""
+
+msgid "These answered a search of this network. Choose yours, or type its address."
+msgstr "Estes responderam a uma busca nesta rede. Escolha o seu ou digite o endereço."
 
 msgid "These records' barcodes are sent to MusicBrainz."
 msgstr "Os códigos de barras desses discos são enviados ao MusicBrainz."
@@ -6545,6 +6711,9 @@ msgstr "Esta seleção não contém faixas."
 msgid "This selection includes music without an available local file. I kept the device unchanged."
 msgstr ""
 
+msgid "This server does not take an API key. Go back and sign in with your user and password."
+msgstr "Este servidor não aceita chave de API. Volte e entre com o usuário e a senha."
+
 msgid "This server is no longer available."
 msgstr "Este servidor não está mais disponível."
 
@@ -6565,6 +6734,9 @@ msgstr ""
 
 msgid "This storage is read-only."
 msgstr ""
+
+msgid "This takes a few seconds."
+msgstr "Isso leva alguns segundos."
 
 msgid "This track has no album to open"
 msgstr "Esta faixa não tem álbum para abrir"
@@ -6643,6 +6815,9 @@ msgstr ""
 
 msgid "Tools"
 msgstr "Ferramentas"
+
+msgid "Top level"
+msgstr "Nível de cima"
 
 msgid "Top result"
 msgstr "Melhor resultado"
@@ -6731,6 +6906,9 @@ msgstr "Programas em alta"
 msgid "Try again"
 msgstr "Tentar novamente"
 
+msgid "Try again to get a new code."
+msgstr "Tente de novo para receber um código novo."
+
 msgid "Tue"
 msgstr "ter"
 
@@ -6749,11 +6927,8 @@ msgstr "Tipo"
 msgid "Type / version"
 msgstr "Tipo / versão"
 
-msgid "Type this code at plex.tv/link, signed in to your Plex account."
-msgstr "Digite este código em plex.tv/link, conectado à sua conta do Plex."
-
-msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
-msgstr "Digite este código no Quick Connect, em um Jellyfin no qual você esteja conectado."
+msgid "Type the code"
+msgstr "Digite o código"
 
 msgid "Type words and press Enter"
 msgstr "Digite palavras e pressione Enter"
@@ -6899,9 +7074,6 @@ msgstr "Falha na atualização; a versão anterior foi mantida"
 msgid "Update ready"
 msgstr "Atualização pronta"
 
-msgid "Update the connection, sign-in or libraries for this server."
-msgstr "Atualize a conexão, o acesso ou as bibliotecas deste servidor."
-
 msgid "Updated"
 msgstr "Atualizado"
 
@@ -6940,9 +7112,6 @@ msgstr "Uso"
 
 msgid "Use MusicBrainz"
 msgstr "Usar o MusicBrainz"
-
-msgid "Use Quick Connect"
-msgstr "Usar o Quick Connect"
 
 msgid "Use a name of 1 to 80 characters, without line breaks."
 msgstr "Use um nome de 1 a 80 caracteres, sem quebras de linha."
@@ -7094,6 +7263,12 @@ msgstr "Boas-vindas ao Chilpa"
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "O que a tecla Enter faz com um resultado da busca da visualização imersiva. Desativada desliga a busca."
 
+msgid "What it is"
+msgstr "O que é"
+
+msgid "What kind of server is it?"
+msgstr "Que tipo de servidor é?"
+
 msgid "What should happen to the original queues?"
 msgstr "O que deve acontecer com as filas originais?"
 
@@ -7112,6 +7287,12 @@ msgstr "Novidades"
 msgid "What's new in v{}"
 msgstr "Novidades da v{}"
 
+msgid "Where is it, and who signs in?"
+msgstr "Onde ele está e quem entra?"
+
+msgid "Where is your music?"
+msgstr "Onde está a sua música?"
+
 msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
 msgstr "Onde o editor de metadados busca primeiro. “Somente tags embutidas” nunca acessa a rede."
 
@@ -7127,8 +7308,14 @@ msgstr "Quais DACs você quer configurar?"
 msgid "Which GPU renders the app. Only the GPUs actually present are listed. Choosing one other than the default also switches the renderer to Vulkan — the only backend Qt can select a GPU on (requires restart)"
 msgstr "Qual GPU renderiza o app. Só são listadas as GPUs realmente presentes. Escolher uma diferente da padrão também muda o renderizador para Vulkan — o único backend em que o Qt consegue selecionar GPU (requer reinicialização)"
 
-msgid "Which of its libraries come in?"
-msgstr "Quais das bibliotecas dele devem entrar?"
+msgid "Which libraries come in?"
+msgstr "Quais bibliotecas entram?"
+
+msgid "Which media server?"
+msgstr "Qual servidor de mídia?"
+
+msgid "Which server?"
+msgstr "Qual servidor?"
 
 msgid "Which sources count"
 msgstr "Quais fontes contam"
@@ -7171,9 +7358,6 @@ msgstr "Palavras no título do álbum e no da faixa"
 
 msgid "Work"
 msgstr "Obra"
-
-msgid "Working…"
-msgstr "Processando…"
 
 msgid "Write XML"
 msgstr "Gravar XML"
@@ -7226,8 +7410,8 @@ msgstr "Seu DAC"
 msgid "Your DAC is ready for bit-perfect playback. If you applied the config files, restart the audio services (or log out and back in) for them to take effect."
 msgstr "Seu DAC está pronto para a reprodução bit-perfect. Se você aplicou os arquivos de configuração, reinicie os serviços de áudio (ou saia da sessão e entre novamente) para que tenham efeito."
 
-msgid "Your account reaches more than one server. Which one?"
-msgstr "Sua conta acessa mais de um servidor. Qual deles?"
+msgid "Your Plex account reaches more than one server."
+msgstr "A sua conta Plex alcança mais de um servidor."
 
 msgid "Your audio stack is ready for bit-perfect playback."
 msgstr "Sua pilha de áudio está pronta para a reprodução bit-perfect."
@@ -8597,6 +8781,11 @@ msgid_plural "{} folders"
 msgstr[0] "{} pasta"
 msgstr[1] "{} pastas"
 
+msgid "{} folder comes in:"
+msgid_plural "{} folders come in:"
+msgstr[0] "Entra {} pasta:"
+msgstr[1] "Entram {} pastas:"
+
 msgid "{} has no place for \"{}\""
 msgstr "{} não tem lugar para “{}”"
 
@@ -8610,6 +8799,9 @@ msgstr[1] "{} h"
 
 msgid "{} is busy; try again in {} seconds"
 msgstr "{} está ocupado; tente novamente em {} segundos"
+
+msgid "{} is in your library now. Its music appears as it is read."
+msgstr "{} já está na sua biblioteca. A música aparece conforme é lida."
 
 msgid "{} is missing"
 msgstr "{} está ausente"
@@ -8641,6 +8833,11 @@ msgid "{} label"
 msgid_plural "{} labels"
 msgstr[0] "{} gravadora"
 msgstr[1] "{} gravadoras"
+
+msgid "{} library comes in:"
+msgid_plural "{} libraries come in:"
+msgstr[0] "Entra {} biblioteca:"
+msgstr[1] "Entram {} bibliotecas:"
 
 msgid "{} listen"
 msgid_plural "{} listens"
@@ -8690,6 +8887,9 @@ msgstr "{} das faixas da lista sumiram"
 
 msgid "{} of {}"
 msgstr "{} de {}"
+
+msgid "{} of {} chosen"
+msgstr "{} de {} escolhidas"
 
 msgid "{} of {} files were changed before it failed: {}"
 msgstr "{} de {} arquivos foram alterados antes da falha: {}"

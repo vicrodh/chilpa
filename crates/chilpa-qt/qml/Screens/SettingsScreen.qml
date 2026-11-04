@@ -16,7 +16,6 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
-import "qrc:/qt/qml/app/chilpa/sources/qml/Components" as SourceParts
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components/SettingsActions.js" as SettingsActions
 import "qrc:/qt/qml/app/chilpa/wizard/qml/Patterns" as WizardPatterns
 import "qrc:/qt/qml/app/chilpa/stats/qml/Patterns" as AnalysisUi
@@ -186,11 +185,11 @@ Item {
 
     CastPicker { id: casting }
 
-    ServerSetupDialog {
+    ServerWizard {
         id: adding
         onClosed: rows.refresh()
     }
-    SourceParts.ServerConnectionDialog { id: editing; onClosed: { actions.editingServerKey = ""; rows.refresh() } }
+    ServerWizard { id: editing; onClosed: { actions.editingServerKey = ""; rows.refresh() } }
 
     ConfirmDialog {
         id: removing

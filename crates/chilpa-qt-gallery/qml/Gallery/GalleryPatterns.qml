@@ -24,7 +24,7 @@ TitledFlow {
     PlaylistEditDialog { id: playlistEditor }
     PlaylistFolderDialog { id: folderEditor }
     SidebarPlaylistActions { id: playlistActions; sidebar: sampleSidebar }
-    ServerSetupDialog { id: serverSetup }
+    ServerWizard { id: serverSetup }
     QueueTools.SettingsFocus { section: "gallery"; viewport: null; model: null; highlight: null }
     AnalysisUi.AnalysisInventoryDialog { id: inventoryPreview }
     CastPicker { id: castPreview; preview: true }

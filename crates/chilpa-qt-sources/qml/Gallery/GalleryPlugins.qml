@@ -13,11 +13,20 @@ TitledFlow {
     title: "Plugins"
     HomeSection { width: Metrics.confirmWidth; entry: ({kind:"albums",title:"Deferred module"}) }
     MediaListeningPanel { width: Metrics.confirmWidth; height: Metrics.panesHeight }
-    ServerEditForm { width: Metrics.confirmWidth; height: implicitHeight
-        preview: ({step:"libraries",kind:"jellyfin",label:"Music server",address:"http://music.local:8096",choices:[{id:"music",name:"Music",detail:""}],selectedLibraries:[]}) }
+    ServerKindChoice { width: Metrics.confirmWidth; chosen: "dlna" }
+    ServerConnect { width: Metrics.confirmWidth; kind: "dlna"; preview: true
+        setup: ({step:"address",kind:"dlna",searching:false,choices:[{id:"http://192.168.0.20:8200/rootDesc.xml",name:"Media server",detail:"MiniDLNA 1.3.3"}]}) }
+    ServerCheck { width: Metrics.confirmWidth; kind: "jellyfin"; connected: true
+        setup: ({step:"libraries",label:"Music server",product:"Jellyfin 10.10.7",address:"http://music.local:8096",choices:[{id:"music",name:"Music"}]}) }
+    ServerFolders { width: Metrics.confirmWidth; preview: true; chosen: ["albums"]; names: ({albums: "Music › By Album"})
+        setup: ({crumbs:[{id:"0",name:""},{id:"music",name:"Music"}],choices:[{id:"albums",name:"By Album"},{id:"folders",name:"By Folder"}]}) }
+    ServerLibraries { width: Metrics.confirmWidth; choices: [{id:"music",name:"Music"},{id:"books",name:"Audiobooks"}]; chosen: ["music"] }
+    ServerSummary { width: Metrics.confirmWidth; kind: "dlna"; comesIn: ["Music › By Album"]
+        setup: ({label:"Media server",product:"MiniDLNA 1.3.3",address:"http://192.168.0.20:8200/rootDesc.xml"}) }
+    ServerWizardWords { page: 3; kind: "dlna" }
     MusicServers { width: Metrics.settingsMaxWidth; height: Metrics.panesHeight; model: [] }
     ServerTableRow { width: Metrics.settingsMaxWidth; name: "Music server"; status: "Connected"; server: ({icon:"navidrome",product:"Navidrome 0.64.2",tracks:1234}); options:["Edit…","Disable","Sync now","Remove…"]; values:["edit","disable","sync","remove"] }
-    ServerConnectionDialog { id: serverPreview; preview: ({step:"idle"}) }
+    ServerWizard { id: serverPreview; preview: ({step:"idle"}) }
     PillButton { text: "Music server modal"; onClicked: serverPreview.open() }
     EpisodeMaterial { width: Metrics.confirmWidth; entry: ({description:"Episode notes"}) }
     ImportCheck { text: "Mixed playlist"; checked: true; width: Metrics.confirmWidth }

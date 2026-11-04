@@ -118,6 +118,9 @@ msgstr "JACKグラフは1つのレートで動作し、その中のすべての�
 msgid "A PCM carrier does not verify DoP. No tone or library track will play."
 msgstr "PCMキャリアを開いてもDoPの検証にはなりません。テスト音やライブラリの曲は再生しません。"
 
+msgid "A Plex Media Server. You sign in with your Plex account, with a code at plex.tv/link."
+msgstr "Plex Media Server です。plex.tv/link でコードを入力し、Plex アカウントでサインインします。"
+
 msgid "A bar or OR: either is enough"
 msgstr "縦棒または OR：どちらか一方で十分です"
 
@@ -132,6 +135,15 @@ msgstr ""
 
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr ""
+
+msgid "A folder chosen before"
+msgstr "以前に選んだフォルダ"
+
+msgid "A media server on this network, such as MiniDLNA, Gerbera or the DLNA side of Plex. There is nothing to sign in to."
+msgstr "MiniDLNA、Gerbera、Plex の DLNA 機能など、このネットワーク上のメディアサーバーです。サインインは不要です。"
+
+msgid "A media server you run yourself. You sign in with its user and password, or with Quick Connect."
+msgstr "自分で運用するメディアサーバーです。ユーザーとパスワード、または Quick Connect でサインインします。"
 
 msgid "A name for this memory"
 msgstr ""
@@ -268,9 +280,6 @@ msgstr "ライブラリにフォルダーを追加"
 msgid "Add a new server"
 msgstr "サーバーを追加"
 
-msgid "Add a server"
-msgstr "サーバーを追加"
-
 msgid "Add a storage profile"
 msgstr ""
 
@@ -355,6 +364,12 @@ msgstr[0] "{}トラックを追加中"
 
 msgid "Adding..."
 msgstr "追加中..."
+
+msgid "Address"
+msgstr "アドレス"
+
+msgid "Address of the media server, or of its description"
+msgstr "メディアサーバーまたはその説明のアドレス"
 
 msgid "Add…"
 msgstr "追加…"
@@ -661,6 +676,9 @@ msgstr "お使いの言語の翻訳がない歌詞を、Chilpaの歌詞APIに翻
 
 msgid "Ask before quitting"
 msgstr "終了前に確認"
+
+msgid "Asking Plex for a code…"
+msgstr "Plex にコードを問い合わせています…"
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Chilpaが再生している間、PipeWireまたはPulseAudioにカードの解放を要求し、Chilpaが停止または長時間一時停止したときに返します。"
@@ -1008,14 +1026,20 @@ msgstr "カバーを変更"
 msgid "Change image"
 msgstr "画像を変更"
 
-msgid "Change sign-in"
-msgstr "ログイン情報を変更"
-
 msgid "Change source"
 msgstr "提供元を変更"
 
 msgid "Change spectrum style ({})"
 msgstr "スペクトルのスタイルを変更（{}）"
+
+msgid "Change the address if the server moved."
+msgstr "サーバーが移動した場合はアドレスを変更してください。"
+
+msgid "Change the address if the server moved. Its sign-in stays as it is unless you change it."
+msgstr "サーバーが移動した場合はアドレスを変更してください。サインインは変更しない限りそのままです。"
+
+msgid "Change the sign-in"
+msgstr "サインインを変更"
 
 msgid "Changes"
 msgstr ""
@@ -1056,8 +1080,20 @@ msgstr "アップデートを自動で確認"
 msgid "Check for updates now"
 msgstr "今すぐ更新を確認"
 
+msgid "Check its name and what comes in."
+msgstr "名前と取り込む内容を確認してください。"
+
 msgid "Check one format"
 msgstr "1つのフォーマットをチェック"
+
+msgid "Check the address and its port, and that the server is on and reachable from this computer, then try again."
+msgstr "アドレスとポート、サーバーが起動していてこのコンピュータから届くことを確認してから、もう一度お試しください。"
+
+msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
+msgstr "アドレス、サーバーの設定で DLNA がオンになっていること、このコンピュータが許可されていることを確認してから、もう一度お試しください。"
+
+msgid "Check the user and the password or the API key, then go back and try again."
+msgstr "ユーザーとパスワード、または API キーを確認し、戻ってもう一度お試しください。"
 
 msgid "Checking available space"
 msgstr "空き容量を確認中"
@@ -1104,6 +1140,9 @@ msgstr "Chilpaはレート、シンク、排他モードを実行時にすでに
 msgid "Chilpa applies the processing shown below."
 msgstr "Chilpaは以下の処理を適用しています。"
 
+msgid "Chilpa asks Plex for a code; on the next step you type it at plex.tv/link."
+msgstr "Chilpa が Plex にコードを依頼します。次の手順で plex.tv/link に入力します。"
+
 msgid "Chilpa can also read the tempo, musical key and loudness of what this folder holds. It takes much longer than reading the folder: it starts when the scan is done, runs in the background, and can be stopped in Settings > Library > Analysis."
 msgstr "Chilpaは、このフォルダーにあるもののテンポ、キー、ラウドネスも読み取れます。フォルダーの読み取りよりはるかに時間がかかります。スキャンの完了後に開始してバックグラウンドで実行され、設定 > ライブラリ > 解析で停止できます。"
 
@@ -1148,6 +1187,12 @@ msgstr "Chilpaプラグイン"
 
 msgid "Chilpa proxy"
 msgstr "Chilpaプロキシ"
+
+msgid "Chilpa reads its music now and lists it with yours as it arrives, with its playlists. Nothing on the server changes unless you change one of its playlists."
+msgstr "Chilpa は今から音楽とプレイリストを読み込み、届いた順にあなたのライブラリに並べます。プレイリストを変更しない限り、サーバー側は何も変わりません。"
+
+msgid "Chilpa reads its music now and lists it with yours as it arrives. Nothing on the server changes, and a DLNA / UPnP server has no playlists to bring."
+msgstr "Chilpa は今から音楽を読み込み、届いた順にあなたのライブラリに並べます。サーバー側は何も変わりません。DLNA / UPnP サーバーにはプレイリストがありません。"
 
 msgid "Chilpa requesting {} · {}-bit"
 msgstr "Chilpaがリクエスト中: {} · {}ビット"
@@ -1488,14 +1533,17 @@ msgstr "作成できる設定ファイル："
 msgid "Configure"
 msgstr "設定"
 
+msgid "Confirm"
+msgstr "確認"
+
 msgid "Confirm this preview and its removals before syncing."
 msgstr ""
 
 msgid "Connect"
 msgstr "接続"
 
-msgid "Connect OpenSubsonic, Jellyfin or Plex to add its music to your library."
-msgstr "OpenSubsonic、Jellyfin、Plexに接続して、ライブラリに音楽を追加できます。"
+msgid "Connect Jellyfin, Navidrome or another OpenSubsonic server, Plex, or a DLNA / UPnP media server to add its music to your library."
+msgstr "Jellyfin、Navidrome などの OpenSubsonic サーバー、Plex、または DLNA / UPnP メディアサーバーを接続すると、その音楽がライブラリに追加されます。"
 
 msgid "Connect a player or memory card. Save a profile for each storage."
 msgstr "プレーヤーかメモリーカードを接続し、ストレージごとにプロファイルを保存します。"
@@ -1514,6 +1562,9 @@ msgstr "接続済み"
 
 msgid "Connected as {}"
 msgstr "{}として接続済み"
+
+msgid "Connected to {}"
+msgstr "{} に接続しました"
 
 msgid "Connecting…"
 msgstr "接続中…"
@@ -1589,6 +1640,9 @@ msgstr "CoreAudioは再生可能なデバイスを検出していません"
 
 msgid "Could not add tracks to this playlist."
 msgstr "このプレイリストにトラックを追加できませんでした。"
+
+msgid "Could not connect"
+msgstr "接続できませんでした"
 
 msgid "Could not create the playlist. Please try again."
 msgstr "プレイリストを作成できませんでした。もう一度お試しください。"
@@ -2157,9 +2211,6 @@ msgstr "メタデータを編集…"
 msgid "Edit playlist"
 msgstr "プレイリストを編集"
 
-msgid "Edit server"
-msgstr "サーバーを編集"
-
 msgid "Edit…"
 msgstr "編集…"
 
@@ -2501,6 +2552,9 @@ msgstr "進む"
 
 msgid "Forward 10 seconds"
 msgstr "10秒進む"
+
+msgid "Found on this network"
+msgstr "このネットワークで見つかったもの"
 
 msgid "Four stars or more; rating:0 has none"
 msgstr "星4つ以上。rating:0 は星なし"
@@ -2914,6 +2968,9 @@ msgstr "プレイリストをインポート"
 msgid "Imported"
 msgstr "インポート済み"
 
+msgid "In a Jellyfin app where you are signed in, open Quick Connect and type this code. Chilpa notices by itself."
+msgstr "サインイン済みの Jellyfin アプリで Quick Connect を開き、このコードを入力してください。Chilpa が自動で気づきます。"
+
 msgid "In library"
 msgstr "ライブラリ内"
 
@@ -3097,14 +3154,28 @@ msgstr "右の極性を反転"
 msgid "It does not answer now; try again when it is back"
 msgstr "今は応答がありません。戻ってきたらもう一度お試しください"
 
+msgid "It offers {} music library."
+msgid_plural "It offers {} music libraries."
+msgstr[0] "{} 個の音楽ライブラリがあります。"
+
+msgid "It shows {} folder at its top. Next, open the one that holds your music."
+msgid_plural "It shows {} folders at its top. Next, open the one that holds your music."
+msgstr[0] "最上位に {} 個のフォルダがあります。次に、音楽が入っているフォルダを開いてください。"
+
 msgid "Italian"
 msgstr "イタリア語"
+
+msgid "Its connection"
+msgstr "接続"
 
 msgid "Its music is being read; it appears in the library as it arrives."
 msgstr "音楽を読み取り中です。届いた順にライブラリに表示されます。"
 
-msgid "Its music joins your library, listed with your own files."
-msgstr "音楽はライブラリに追加され、お持ちのファイルと一緒に一覧表示されます。"
+msgid "Its music is read again with what you changed."
+msgstr "変更した内容で音楽をもう一度読み込みます。"
+
+msgid "Its music joins your library, listed with your own files. Nothing on the server changes."
+msgstr "その音楽はあなたのファイルと一緒にライブラリに並びます。サーバー側は何も変わりません。"
 
 msgid "Its page, or its quick view under the row."
 msgstr "そのページ、または行の下のクイックビュー。"
@@ -3168,6 +3239,9 @@ msgstr "キーボードショートカット"
 
 msgid "Keymap"
 msgstr "キーマップ"
+
+msgid "Kind"
+msgstr "種類"
 
 msgid "LABELS"
 msgstr "レーベル"
@@ -3243,6 +3317,9 @@ msgstr "レベル"
 
 msgid "Level loudness across tracks. This breaks strict bit perfect."
 msgstr "トラック間のラウドネスをそろえます。厳密なビットパーフェクトではなくなります。"
+
+msgid "Libraries"
+msgstr "ライブラリ"
 
 msgid "Library"
 msgstr "ライブラリ"
@@ -3715,6 +3792,9 @@ msgstr "名前"
 msgid "Name a personal preset"
 msgstr "個人用プリセットに名前を付ける"
 
+msgid "Name in Chilpa"
+msgstr "Chilpa での名前"
+
 msgid "Name this preset."
 msgstr "このプリセットに名前を付けてください。"
 
@@ -3744,6 +3824,9 @@ msgstr "ネイティブ — {} — フォルダーなし"
 
 msgid "Native — {} — {}"
 msgstr "ネイティブ — {} — {}"
+
+msgid "Navidrome, gonic or another server that speaks Subsonic. You sign in with its user and password, or an API key."
+msgstr "Navidrome、gonic など Subsonic に対応したサーバーです。ユーザーとパスワード、または API キーでサインインします。"
 
 msgid "Navigation"
 msgstr "ナビゲーション"
@@ -3931,6 +4014,9 @@ msgstr "一致するプラグインはありません"
 msgid "No matching selections. Create a local playlist or save a query in Refine."
 msgstr ""
 
+msgid "No media server answered the search. Some do not answer searches: type its address below, such as 192.168.0.20:8200."
+msgstr "検索に応答したメディアサーバーはありません。検索に応答しないサーバーもあります。下にアドレスを入力してください（例：192.168.0.20:8200）。"
+
 msgid "No music has been synced with Chilpa to this storage yet."
 msgstr "このストレージにはChilpaで同期した音楽がまだありません。"
 
@@ -4078,6 +4164,12 @@ msgstr "未検証"
 msgid "Notch"
 msgstr "ノッチ"
 
+msgid "Nothing chosen yet. Choose at least one folder."
+msgstr "まだ何も選ばれていません。フォルダを1つ以上選んでください。"
+
+msgid "Nothing chosen yet. Choose at least one library."
+msgstr "まだ何も選ばれていません。ライブラリを1つ以上選んでください。"
+
 msgid "Nothing found for “{}”"
 msgstr "「{}」は見つかりませんでした"
 
@@ -4116,6 +4208,9 @@ msgstr "キューは空です。"
 
 msgid "Nothing saved yet."
 msgstr "まだ何も保存されていません。"
+
+msgid "Nothing to type here. You need a browser where you can sign in to your Plex account."
+msgstr "ここで入力するものはありません。Plex アカウントにサインインできるブラウザが必要です。"
 
 msgid "Nov"
 msgstr "11月"
@@ -4261,6 +4356,9 @@ msgstr "オーディオCDを開く"
 msgid "Open downloads"
 msgstr "ダウンロードを開く"
 
+msgid "Open folders until you reach the one that holds your music, and choose it. A server shows the same music in several views: choose one, such as its folders or its albums."
+msgstr "音楽が入っているフォルダにたどり着くまで開いて、それを選んでください。サーバーは同じ音楽を複数の表示で見せます。フォルダ別やアルバム別など、1つだけ選んでください。"
+
 msgid "Open in browser"
 msgstr "ブラウザーで開く"
 
@@ -4300,6 +4398,9 @@ msgstr "プレイリストインポーターを開く"
 msgid "Open plex.tv/link"
 msgstr "plex.tv/linkを開く"
 
+msgid "Open plex.tv/link in a browser, signed in to your Plex account, and type this code. Chilpa notices by itself."
+msgstr "Plex アカウントにサインインしたブラウザで plex.tv/link を開き、このコードを入力してください。Chilpa が自動で気づきます。"
+
 msgid "Open plugins"
 msgstr "プラグインを開く"
 
@@ -4335,6 +4436,9 @@ msgstr "オープンモード"
 
 msgid "Opening: {} · Audibility: {}"
 msgstr "オープン：{} · 可聴性：{}"
+
+msgid "Opening…"
+msgstr "開いています…"
 
 msgid "Operating system"
 msgstr "オペレーティングシステム"
@@ -4834,6 +4938,9 @@ msgstr "キュー · {}"
 msgid "Queues"
 msgstr "キュー"
 
+msgid "Quick Connect is off on this server. Go back and sign in with your user and password, or turn Quick Connect on in its dashboard."
+msgstr "このサーバーでは Quick Connect がオフです。戻ってユーザーとパスワードでサインインするか、ダッシュボードで Quick Connect をオンにしてください。"
+
 msgid "Quick Connect is turned off on that server"
 msgstr "そのサーバーではQuick Connectがオフになっています"
 
@@ -4881,6 +4988,9 @@ msgstr "評価"
 
 msgid "Re-fetch album information"
 msgstr "アルバム情報を再取得"
+
+msgid "Reaching the server…"
+msgstr "サーバーに接続しています…"
 
 msgid "Reactivate"
 msgstr "再有効化"
@@ -4936,6 +5046,9 @@ msgstr "選択したトラックを読み取っています…"
 msgid "Reading the files…"
 msgstr "ファイルを読み取っています…"
 
+msgid "Reading the media server's description and its folders…"
+msgstr "メディアサーバーの説明とフォルダを読み込んでいます…"
+
 msgid "Reading the selected tracks timed out. Please try again."
 msgstr "選択したトラックの読み取りがタイムアウトしました。もう一度お試しください。"
 
@@ -4950,6 +5063,9 @@ msgstr "テンポ、キー、ラウドネスをバックグラウンドで読み
 
 msgid "Ready for local PCM playback"
 msgstr "ローカルPCM再生の準備ができました"
+
+msgid "Ready to add it"
+msgstr "追加の準備ができました"
 
 msgid "Ready to review"
 msgstr "確認の準備完了"
@@ -5365,6 +5481,9 @@ msgstr "クエリを保存"
 msgid "Save stations to find them here."
 msgstr "ステーションを保存すると、ここに表示されます。"
 
+msgid "Save the changes?"
+msgstr "変更を保存しますか？"
+
 msgid "Save the cover"
 msgstr "カバーを保存"
 
@@ -5443,6 +5562,9 @@ msgstr "スクロールで音量を調整"
 msgid "Search"
 msgstr "検索"
 
+msgid "Search again"
+msgstr "もう一度検索"
+
 msgid "Search artists"
 msgstr "アーティストを検索"
 
@@ -5502,6 +5624,9 @@ msgstr "MusicBrainzで{genre}のアーティストを検索しています…"
 
 msgid "Searching for devices…"
 msgstr "デバイスを検索しています…"
+
+msgid "Searching this network…"
+msgstr "このネットワークを検索しています…"
 
 msgid "Searching…"
 msgstr "検索中…"
@@ -5596,6 +5721,9 @@ msgstr "サーバーアドレス"
 
 msgid "Server name"
 msgstr "サーバー名"
+
+msgid "Server type"
+msgstr "サーバーの種類"
 
 msgid "Servers"
 msgstr "サーバー"
@@ -5744,23 +5872,35 @@ msgstr ""
 msgid "Sidecar"
 msgstr "サイドカー"
 
-msgid "Sign in"
-msgstr "ログイン"
-
 msgid "Sign in from Account to see your purchases."
 msgstr "購入を確認するには、アカウントからログインしてください。"
 
 msgid "Sign in on Discogs to search with your account."
 msgstr "アカウントで検索するにはDiscogsにログインしてください。"
 
+msgid "Sign in to Plex again"
+msgstr "Plex にもう一度サインイン"
+
 msgid "Sign in with Discogs"
 msgstr "Discogsでログイン"
 
-msgid "Sign in with an API key"
-msgstr "APIキーでログイン"
+msgid "Sign in with Plex"
+msgstr "Plex でサインイン"
+
+msgid "Sign in with Quick Connect: approve a code in a Jellyfin app where you are signed in"
+msgstr "Quick Connect でサインイン：サインイン済みの Jellyfin アプリでコードを承認します"
+
+msgid "Sign in with an API key instead (OpenSubsonic servers that offer one)"
+msgstr "代わりに API キーでサインイン（API キーを提供する OpenSubsonic サーバー）"
+
+msgid "Sign in with your Plex account"
+msgstr "Plex アカウントでサインイン"
 
 msgid "Signed out"
 msgstr "ログアウト済み"
+
+msgid "Signing in and reading its libraries…"
+msgstr "サインインしてライブラリを読み込んでいます…"
 
 msgid "Silent opening checks accept PCM only. Opening a PCM carrier does not check DoP."
 msgstr "無音のオープンチェックはPCMのみ対応します。PCMキャリアを開いてもDoPのチェックにはなりません。"
@@ -6045,6 +6185,9 @@ msgstr "タグ（コンマ区切り）"
 msgid "Tags: {}"
 msgstr "タグ: {}"
 
+msgid "Take it out"
+msgstr "外す"
+
 msgid "Take the card from the sound server"
 msgstr "サウンドサーバーからカードを取得します"
 
@@ -6062,6 +6205,12 @@ msgstr "テスト"
 
 msgid "Test Playback"
 msgstr "再生をテスト"
+
+msgid "Test the connection"
+msgstr "接続をテスト"
+
+msgid "Testing the connection"
+msgstr "接続をテストしています"
 
 msgid "Text"
 msgstr "テキスト"
@@ -6107,6 +6256,9 @@ msgstr "アカウントに接続できませんでした。このタブは閉じ
 
 msgid "The account expired; connect it again."
 msgstr "アカウントの有効期限が切れました。もう一度接続してください。"
+
+msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
+msgstr "ブラウザでサーバーを開くときのアドレス（ポートを含む）と、Chilpa がサインインするユーザーです。"
 
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr "内蔵テストは、ビット深度とサンプルレートが異なる4つのトラック（16/44.1、24/44.1、24/96、24/192）を再生し、DACの切り替わりを確認できます。各トラックは、ライブラリでそのフォーマットの最も再生回数が多いトラックで、ない場合は生成したテスト信号です。自分のキューを使いたい場合は、すべてのレートが試されるように、先に各種類のトラックを1つずつ追加してください。"
@@ -6360,6 +6512,9 @@ msgstr "選択したストレージが変更されたか、接続が切れまし
 msgid "The selected tracks could not be read."
 msgstr "選択したトラックを読み取れませんでした。"
 
+msgid "The server answered, and Chilpa can read its music."
+msgstr "サーバーが応答し、Chilpa は音楽を読み込めます。"
+
 msgid "The service sent no code."
 msgstr "プロバイダーがコードを送信しませんでした。"
 
@@ -6393,14 +6548,23 @@ msgstr "没入表示が開くときの表示です。「前回のまま」を選
 msgid "The view the mini player opens with. Remember keeps the one it was last on."
 msgstr "ミニプレーヤーが開くときの表示です。「前回のまま」を選ぶと、最後に表示していたものが維持されます。"
 
+msgid "Their music joins yours. With all of them chosen, a library added later on the server comes in too."
+msgstr "その音楽があなたのライブラリに加わります。すべて選ぶと、後でサーバーに追加されたライブラリも取り込まれます。"
+
 msgid "Theme"
 msgstr "テーマ"
+
+msgid "There are no folders inside this one. Choose it from the level above, or go back up."
+msgstr "このフォルダの中にはフォルダがありません。上の階層で選ぶか、戻ってください。"
 
 msgid "There is no previous EQ to restore."
 msgstr "復元できる以前のEQがありません。"
 
 msgid "There is not enough space for this selection and its temporary files."
 msgstr ""
+
+msgid "These answered a search of this network. Choose yours, or type its address."
+msgstr "このネットワークの検索に応答したサーバーです。自分のサーバーを選ぶか、アドレスを入力してください。"
 
 msgid "These records' barcodes are sent to MusicBrainz."
 msgstr "これらのアルバムのバーコードがMusicBrainzに送信されます。"
@@ -6540,6 +6704,9 @@ msgstr "この選択には曲がありません。"
 msgid "This selection includes music without an available local file. I kept the device unchanged."
 msgstr ""
 
+msgid "This server does not take an API key. Go back and sign in with your user and password."
+msgstr "このサーバーは API キーに対応していません。戻ってユーザーとパスワードでサインインしてください。"
+
 msgid "This server is no longer available."
 msgstr "このサーバーは利用できなくなりました。"
 
@@ -6560,6 +6727,9 @@ msgstr ""
 
 msgid "This storage is read-only."
 msgstr ""
+
+msgid "This takes a few seconds."
+msgstr "数秒かかります。"
 
 msgid "This track has no album to open"
 msgstr "このトラックには開けるアルバムがありません"
@@ -6638,6 +6808,9 @@ msgstr ""
 
 msgid "Tools"
 msgstr "ツール"
+
+msgid "Top level"
+msgstr "最上位"
 
 msgid "Top result"
 msgstr "トップ結果"
@@ -6726,6 +6899,9 @@ msgstr "トレンドの番組"
 msgid "Try again"
 msgstr "もう一度試す"
 
+msgid "Try again to get a new code."
+msgstr "もう一度試すと新しいコードが表示されます。"
+
 msgid "Tue"
 msgstr "火"
 
@@ -6744,11 +6920,8 @@ msgstr "種類"
 msgid "Type / version"
 msgstr "種類 / バージョン"
 
-msgid "Type this code at plex.tv/link, signed in to your Plex account."
-msgstr "Plexアカウントにログインした状態で、plex.tv/linkでこのコードを入力してください。"
-
-msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
-msgstr "ログイン済みのJellyfinのQuick Connectで、このコードを入力してください。"
+msgid "Type the code"
+msgstr "コードを入力"
 
 msgid "Type words and press Enter"
 msgstr "語を入力して Enter"
@@ -6894,9 +7067,6 @@ msgstr "アップデートに失敗しました。以前のバージョンは保
 msgid "Update ready"
 msgstr "アップデートの準備完了"
 
-msgid "Update the connection, sign-in or libraries for this server."
-msgstr "このサーバーの接続、ログイン、ライブラリを変更します。"
-
 msgid "Updated"
 msgstr "更新済み"
 
@@ -6935,9 +7105,6 @@ msgstr "使用量"
 
 msgid "Use MusicBrainz"
 msgstr "MusicBrainzを使用"
-
-msgid "Use Quick Connect"
-msgstr "Quick Connectを使用"
 
 msgid "Use a name of 1 to 80 characters, without line breaks."
 msgstr "名前は改行なしで1〜80文字にしてください。"
@@ -7089,6 +7256,12 @@ msgstr "Chilpaへようこそ"
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "没入表示の検索結果でEnterキーを押したときの動作です。「無効」にすると検索がオフになります。"
 
+msgid "What it is"
+msgstr "製品"
+
+msgid "What kind of server is it?"
+msgstr "どの種類のサーバーですか？"
+
 msgid "What should happen to the original queues?"
 msgstr "元のキューをどうしますか？"
 
@@ -7107,6 +7280,12 @@ msgstr "新機能"
 msgid "What's new in v{}"
 msgstr "v{} の新機能"
 
+msgid "Where is it, and who signs in?"
+msgstr "サーバーの場所とサインインするユーザー"
+
+msgid "Where is your music?"
+msgstr "音楽はどこにありますか？"
+
 msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
 msgstr "メタデータエディターが最初に検索する場所です。「埋め込みタグのみ」の場合、ネットワークには一切接続しません。"
 
@@ -7122,8 +7301,14 @@ msgstr "設定するDACを選択してください"
 msgid "Which GPU renders the app. Only the GPUs actually present are listed. Choosing one other than the default also switches the renderer to Vulkan — the only backend Qt can select a GPU on (requires restart)"
 msgstr "アプリを描画するGPU。実際に存在するGPUのみを表示します。既定以外を選ぶとレンダラーもVulkanに切り替わります — QtがGPUを選択できる唯一のバックエンドです（再起動が必要）"
 
-msgid "Which of its libraries come in?"
+msgid "Which libraries come in?"
 msgstr "どのライブラリを取り込みますか？"
+
+msgid "Which media server?"
+msgstr "どのメディアサーバーですか？"
+
+msgid "Which server?"
+msgstr "どのサーバーですか？"
 
 msgid "Which sources count"
 msgstr "対象にするソース"
@@ -7166,9 +7351,6 @@ msgstr "アルバム名とトラック名に含まれる語"
 
 msgid "Work"
 msgstr "作品"
-
-msgid "Working…"
-msgstr "処理中…"
 
 msgid "Write XML"
 msgstr "XMLを書き込み"
@@ -7221,8 +7403,8 @@ msgstr "あなたのDAC"
 msgid "Your DAC is ready for bit-perfect playback. If you applied the config files, restart the audio services (or log out and back in) for them to take effect."
 msgstr "DACはビットパーフェクト再生の準備ができています。設定ファイルを適用した場合は、有効にするためにオーディオサービスを再起動（またはログアウトして再ログイン）してください。"
 
-msgid "Your account reaches more than one server. Which one?"
-msgstr "アカウントから複数のサーバーに接続できます。どれにしますか？"
+msgid "Your Plex account reaches more than one server."
+msgstr "Plex アカウントから複数のサーバーにアクセスできます。"
 
 msgid "Your audio stack is ready for bit-perfect playback."
 msgstr "オーディオスタックはビットパーフェクト再生の準備ができています。"
@@ -8583,6 +8765,10 @@ msgid "{} folder"
 msgid_plural "{} folders"
 msgstr[0] "{}フォルダー"
 
+msgid "{} folder comes in:"
+msgid_plural "{} folders come in:"
+msgstr[0] "{} 個のフォルダを取り込みます："
+
 msgid "{} has no place for \"{}\""
 msgstr "{}に「{}」の置き場所がありません"
 
@@ -8595,6 +8781,9 @@ msgstr[0] "{}時間"
 
 msgid "{} is busy; try again in {} seconds"
 msgstr "{}はビジー状態です。{}秒後にもう一度お試しください"
+
+msgid "{} is in your library now. Its music appears as it is read."
+msgstr "{} がライブラリに追加されました。読み込みに合わせて音楽が表示されます。"
 
 msgid "{} is missing"
 msgstr "{}がありません"
@@ -8624,6 +8813,10 @@ msgstr "{} にはプレイリストがありません。このプレイリスト
 msgid "{} label"
 msgid_plural "{} labels"
 msgstr[0] "{}レーベル"
+
+msgid "{} library comes in:"
+msgid_plural "{} libraries come in:"
+msgstr[0] "{} 個のライブラリを取り込みます："
 
 msgid "{} listen"
 msgid_plural "{} listens"
@@ -8668,6 +8861,9 @@ msgstr "リストの{}トラックがなくなっています"
 
 msgid "{} of {}"
 msgstr "{} / {}"
+
+msgid "{} of {} chosen"
+msgstr "{} / {} 件を選択"
 
 msgid "{} of {} files were changed before it failed: {}"
 msgstr "失敗するまでに{} / {}個のファイルが変更されました: {}"
