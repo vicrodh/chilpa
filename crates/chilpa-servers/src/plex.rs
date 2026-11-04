@@ -24,14 +24,17 @@
 //! - **The part's key changes when its file does**
 //!   (`/library/parts/10/<changestamp>/file.flac`), so it is the track's
 //!   revision and where its bytes are.
+//! - **Its playlists are their own module** (`playlists`).
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::Duration;
 
 use crate::model::{extension_of, image, Client, Credential, Failure, Kind, Library, Page, Server, Stream, Track};
-use crate::net::{Net, Request};
+use crate::net::{Net, Reply, Request};
 use crate::text::{encode, id, number, string};
+
+pub mod playlists;
 
 /// Where the user confirms the PIN.
 pub const LINK: &str = "https://plex.tv/link";
@@ -61,7 +64,11 @@ fn server_token(key: &Credential) -> Option<&str> {
 }
 
 fn ask(net: &dyn Net, request: Request) -> Result<Value, Failure> {
-    let reply = net.send(&request).map_err(Failure::Unreachable)?;
+    read(&net.send(&request).map_err(Failure::Unreachable)?)
+}
+
+/// What an answer says, or why it says nothing.
+fn read(reply: &Reply) -> Result<Value, Failure> {
     match reply.status {
         200..=299 if reply.body.is_empty() => Ok(Value::Null),
         200..=299 => serde_json::from_slice(&reply.body).map_err(|_| not_plex(reply.status)),

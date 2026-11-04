@@ -83,6 +83,57 @@ pub fn details(net: &dyn Net, server: &Server, key: &Credential, ids: &[String])
 /// How many tracks `details` is asked about at once.
 pub const DETAIL_BATCH: usize = 50;
 
+/// The playlists the account can read on the server, music only, at most
+/// `PLAYLISTS`. `account` is who signed in: on a Subsonic server it tells
+/// the account's own playlists, the ones it may change, from the others.
+pub fn playlists(net: &dyn Net, server: &Server, key: &Credential, account: &str) -> Result<PlaylistListing, Failure> {
+    match server.kind {
+        Kind::Subsonic => subsonic::playlists::playlists(net, server, key, account),
+        Kind::Jellyfin => jellyfin::playlists::playlists(net, server, key),
+        Kind::Plex => plex::playlists::playlists(net, server, key),
+    }
+}
+
+/// The entries of one playlist, in its order, at most `PLAYLIST_TRACKS`.
+pub fn playlist_tracks(net: &dyn Net, server: &Server, key: &Credential, id: &str) -> Result<PlaylistTracks, Failure> {
+    match server.kind {
+        Kind::Subsonic => subsonic::playlists::playlist_tracks(net, server, key, id),
+        Kind::Jellyfin => jellyfin::playlists::playlist_tracks(net, server, key, id),
+        Kind::Plex => plex::playlists::playlist_tracks(net, server, key, id),
+    }
+}
+
+/// Whether the account may change a playlist whose listing did not say
+/// (`Playlist::editable` is `None`). Anything that is not a yes is a no.
+pub fn playlist_editable(net: &dyn Net, server: &Server, key: &Credential, id: &str) -> bool {
+    match server.kind {
+        Kind::Jellyfin => jellyfin::playlists::playlist_editable(net, server, key, id),
+        Kind::Subsonic | Kind::Plex => false,
+    }
+}
+
+/// Whether the server takes a playlist's description from Chilpa, and not
+/// only its name.
+pub fn playlist_describable(kind: Kind) -> bool {
+    match kind {
+        Kind::Subsonic | Kind::Plex => true,
+        Kind::Jellyfin => false,
+    }
+}
+
+/// Asks the server for one change of a playlist, read just before as
+/// `as_read` (a new one is `""`, read as nothing). Returns the id of a
+/// playlist it created, when the server says it. A change made of several
+/// requests stops at the first that fails: the playlist is read again to
+/// know where it stands.
+pub fn change_playlist(net: &dyn Net, server: &Server, key: &Credential, playlist: &str, as_read: &PlaylistTracks, change: &Change) -> Result<Option<String>, Failure> {
+    match server.kind {
+        Kind::Subsonic => subsonic::playlists::change_playlist(net, server, key, playlist, as_read, change),
+        Kind::Jellyfin => jellyfin::playlists::change_playlist(net, server, key, playlist, as_read, change),
+        Kind::Plex => plex::playlists::change_playlist(net, server, key, playlist, as_read, change),
+    }
+}
+
 /// Where a track's original bytes are read from. `codec` and `revision`
 /// are what the library kept of it.
 pub fn stream(server: &Server, key: &Credential, id: &str, codec: Option<&str>, revision: Option<&str>) -> Stream {
