@@ -46,12 +46,7 @@ pub unsafe extern "C" fn chilpa_network_allowed(address: *const std::ffi::c_char
 /// Makes a derivative off the UI thread. The C strings are valid and `out`
 /// has room for `capacity` bytes.
 #[no_mangle]
-pub unsafe extern "C" fn chilpa_cover(
-    path: *const std::ffi::c_char,
-    size: u32,
-    out: *mut std::ffi::c_char,
-    capacity: std::ffi::c_ulong,
-) -> bool {
+pub unsafe extern "C" fn chilpa_cover(path: *const std::ffi::c_char, size: u32, out: *mut std::ffi::c_char, capacity: std::ffi::c_ulong) -> bool {
     let Ok(path) = unsafe { std::ffi::CStr::from_ptr(path) }.to_str() else { return false };
     unsafe { format::write_path(chilpa_api::cover_derivative(std::path::Path::new(path), size), out, capacity) }
 }
@@ -184,6 +179,9 @@ fn main() {
         std::process::exit(0);
     });
     drop(engine);
+    // What the engine left goes while Qt's theme stands, then the
+    // application object; the facade still answers their destructors.
+    chilpa_qt_kit::close_application(app);
     app::shutdown();
     drop(log_capture);
     std::process::exit(0);

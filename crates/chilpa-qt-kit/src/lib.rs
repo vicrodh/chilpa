@@ -23,6 +23,7 @@ unsafe extern "C" {
     fn chilpa_use_japanese_fallback(resource: *const std::ffi::c_char) -> bool;
     #[cfg(target_os = "linux")]
     fn chilpa_has_desktop_entry(name: *const std::ffi::c_char) -> bool;
+    fn chilpa_delete_what_is_left();
 }
 
 /// Makes a font of the resources the application's default, before any QML
@@ -45,4 +46,16 @@ pub fn use_japanese_fallback(resource: &std::ffi::CStr) -> bool {
 pub fn has_desktop_entry(name: &std::ffi::CStr) -> bool {
     // SAFETY: as above.
     unsafe { chilpa_has_desktop_entry(name.as_ptr()) }
+}
+
+/// Ends the application in Qt's own order once its loop has returned and the
+/// engine is gone (`cxx/application_exit.cpp`): the deletes the engine left
+/// are delivered while the Quick theme still exists, and then the
+/// application object goes. Left to `exit()`, those deletes ran after the
+/// theme and crashed the process on its way out.
+pub fn close_application(app: cxx::UniquePtr<cxx_qt_lib::QGuiApplication>) {
+    // SAFETY: on the GUI thread, after `exec()` returned, with the
+    // application object still alive.
+    unsafe { chilpa_delete_what_is_left() };
+    drop(app);
 }
