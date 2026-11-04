@@ -684,7 +684,7 @@ impl Chilpa {
                     self.servers.errors.remove(&source);
                     self.servers.changed = true;
                 }
-                sync::Event::Covered { .. } => self.servers.changed = true,
+                sync::Event::Covers { .. } => self.servers.changed = true,
                 sync::Event::Playlists { source, .. } => {
                     self.servers.playlist_errors.remove(&source);
                     self.servers.changed = true;

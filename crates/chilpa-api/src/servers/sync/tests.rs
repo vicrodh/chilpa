@@ -307,7 +307,7 @@ fn a_cover_is_fetched_once_into_the_server_s_own_folder() {
     let lab = subsonic();
     run(&lab.lib, &navidrome(Saved::default()), &lab.keys, lab.source, &|_| {}, &never);
     let net = Saved::default().body("jpeg-1").body("jpeg-2").body("jpeg-3");
-    covers(&lab.lib, &net, &lab.keys, lab.source, &never);
+    assert_eq!(covers(&lab.lib, &net, &lab.keys, lab.source, 0, &never), None);
     assert!(lab.lib.pending_server_covers(lab.source, 10).unwrap().is_empty());
     let art: String = lab.lib.connection().query_row(
         "SELECT artwork_path FROM albums WHERE title = 'Lab Album One'", [], |r| r.get(0)).unwrap();
@@ -536,6 +536,43 @@ fn a_media_server_larger_than_its_pages_comes_in_whole_and_is_written_in_batches
     assert!(written <= allowed, "{written} writes for 875 pages: written in batches, not page by page");
     assert_eq!(readings.borrow().last().map(|r| (r.done, r.wrote)), Some((10_500, true)));
     assert_eq!(lab.lib.pending_server_covers(lab.source, 1_000).unwrap().len(), 875, "each record's art is named for its covers");
+
+    // Its covers come in runs of a bounded size; the rest wait for another.
+    let images = Statuses(Mutex::new(std::iter::repeat(200).take(COVERS_PER_RUN).collect()));
+    let next = covers(&lab.lib, &images, &lab.keys, lab.source, 0, &never);
+    assert!(next.is_some(), "the rest wait for another run");
+    assert_eq!(lab.lib.pending_server_covers(lab.source, 1_000).unwrap().len(), 875 - COVERS_PER_RUN);
+    let _ = std::fs::remove_dir_all(covers_dir(&server.instance));
+}
+
+/// Answers each request with the next status it was loaded with, and the
+/// first bytes of a JPEG under a generic type.
+struct Statuses(Mutex<VecDeque<u16>>);
+
+impl Net for Statuses {
+    fn send(&self, _: &Request) -> Result<Reply, String> {
+        let status = self.0.lock().unwrap().pop_front().ok_or("nothing was loaded")?;
+        let mut headers = std::collections::BTreeMap::new();
+        headers.insert("content-type".into(), "application/octet-stream".into());
+        Ok(Reply { status, headers, body: vec![0xFF, 0xD8, 0xFF, 0xE0] })
+    }
+}
+
+#[test]
+fn a_cover_the_server_could_not_give_is_asked_again_a_few_times() {
+    let lab = subsonic();
+    run(&lab.lib, &navidrome(Saved::default()), &lab.keys, lab.source, &|_| {}, &never);
+    assert_eq!(lab.lib.pending_server_covers(lab.source, 10).unwrap().len(), 3);
+    let net = Statuses(Mutex::new([503, 404, 200].into()));
+    assert_eq!(covers(&lab.lib, &net, &lab.keys, lab.source, 0, &never), None, "three is one run");
+    assert_eq!(lab.lib.pending_server_covers(lab.source, 10).unwrap().len(), 1, "only the one it could not give now");
+    let saved: i64 = lab.lib.connection().query_row("SELECT count(*) FROM albums WHERE artwork_path LIKE '%.jpg'", [], |r| r.get(0)).unwrap();
+    assert_eq!(saved, 1, "a JPEG under a generic type is kept as one");
+    for _ in 1..chilpa_library::store::servers::COVER_TRIES {
+        covers(&lab.lib, &Statuses(Mutex::new([500].into())), &lab.keys, lab.source, 0, &never);
+    }
+    assert!(lab.lib.pending_server_covers(lab.source, 10).unwrap().is_empty(), "missed every time, it is left");
+    let _ = std::fs::remove_dir_all(covers_dir(&lab.lib.server(lab.source).unwrap().unwrap().instance));
 }
 
 /// A media server that breaks at its first request, as a bug of the
@@ -636,9 +673,10 @@ fn a_sync_stopped_to_start_over_is_asked_again_when_it_ends() {
         queued: HashSet::new(),
         reading: HashSet::new(),
         again: HashSet::new(),
+        covering: HashMap::new(),
         replaced_at: None,
     };
-    let sent = |inbox: &Receiver<Order>| inbox.try_iter().map(|o| match o { Order::Catalogue(s) => s, Order::Playlists(s) => -s }).collect::<Vec<i64>>();
+    let sent = |inbox: &Receiver<Order>| inbox.try_iter().map(|o| match o { Order::Catalogue(s) => s, Order::Playlists(s) | Order::Covers(s, _) => -s }).collect::<Vec<i64>>();
     syncer.ask(7);
     syncer.ask(7);
     assert_eq!(sent(&inbox), [7], "asked while it runs, it goes on");

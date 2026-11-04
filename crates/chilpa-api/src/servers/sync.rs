@@ -47,6 +47,11 @@ const STUCK: Duration = Duration::from_secs(180);
 /// How often a running sync says where it is when it writes nothing.
 const BEAT: Duration = Duration::from_secs(2);
 
+/// What one run of cover fetches may take: covers and time. The rest wait
+/// behind whatever else was asked of the thread, and go on after it.
+const COVERS_PER_RUN: usize = 200;
+const COVERS_TIME: Duration = Duration::from_secs(60);
+
 /// A thread that is gone or stuck is started again at most this often.
 const REPLACE_EVERY: Duration = Duration::from_secs(10);
 
@@ -68,8 +73,9 @@ pub(crate) enum Event {
     Progress { source: i64, reading: Reading },
     /// The catalogue is in. `gone` tracks were taken out.
     Finished { source: i64, gone: usize },
-    /// The covers of the records that had none are in.
-    Covered { source: i64 },
+    /// Covers of the server's records came in, or are due: `next` says
+    /// where the rest start, and they are fetched after what is queued.
+    Covers { source: i64, next: Option<i64> },
     Failed { source: i64, why: String, unreachable: bool },
     /// The server's playlists were read: how many came in, and how many of
     /// their entries name a track the library does not hold.
@@ -107,6 +113,8 @@ enum Order {
     /// Its playlists alone, and its catalogue after them when one of them
     /// names a track the library does not hold.
     Playlists(i64),
+    /// One run of its covers, from the record after this one.
+    Covers(i64, i64),
 }
 
 /// Whether the playlists are read after this end of a catalogue: after
@@ -151,6 +159,8 @@ pub(crate) struct Syncer {
     /// Servers whose sync was stopped to start again: asked again when the
     /// stopped one ends.
     again: HashSet<i64>,
+    /// Servers with a run of covers queued or running, and where it starts.
+    covering: HashMap<i64, i64>,
     /// When a thread last took the place of one gone or stuck.
     replaced_at: Option<Instant>,
 }
@@ -173,6 +183,7 @@ impl Syncer {
             queued: HashSet::new(),
             reading: HashSet::new(),
             again: HashSet::new(),
+            covering: HashMap::new(),
             replaced_at: None,
         }
     }
@@ -219,7 +230,7 @@ impl Syncer {
     /// Stops the sync of a server that is being removed, at the next page.
     pub(crate) fn cancel(&mut self, source: i64) {
         self.again.remove(&source);
-        if !self.queued.contains(&source) && !self.reading.contains(&source) {
+        if !self.queued.contains(&source) && !self.reading.contains(&source) && !self.covering.contains_key(&source) {
             return;
         }
         if let Ok(mut s) = self.cancel.lock() {
@@ -242,7 +253,7 @@ impl Syncer {
         );
         let old = std::mem::take(&mut self.cancel);
         if let Ok(mut stop) = old.lock() {
-            stop.extend(self.queued.iter().chain(self.reading.iter()).copied());
+            stop.extend(self.queued.iter().chain(self.reading.iter()).chain(self.covering.keys()).copied());
         }
         let (orders, events) = worker(self.tools.clone(), Arc::clone(&self.cancel));
         self.orders = orders;
@@ -255,6 +266,9 @@ impl Syncer {
         for source in self.reading.clone() {
             let _ = self.orders.send(Order::Playlists(source));
         }
+        for (source, after) in self.covering.clone() {
+            let _ = self.orders.send(Order::Covers(source, after));
+        }
     }
 
     pub(crate) fn poll(&mut self) -> Vec<Event> {
@@ -265,7 +279,7 @@ impl Syncer {
                 Err(std::sync::mpsc::TryRecvError::Empty) => break,
                 // Its thread ended: whatever was asked of it is asked again.
                 Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                    if !(self.queued.is_empty() && self.reading.is_empty()) {
+                    if !(self.queued.is_empty() && self.reading.is_empty() && self.covering.is_empty()) {
                         self.replace_thread("the sync thread is gone");
                     }
                     break;
@@ -296,7 +310,19 @@ impl Syncer {
                 Event::Playlists { source, .. } | Event::PlaylistsFailed { source, .. } => {
                     self.reading.remove(source);
                 }
-                Event::Covered { .. } => {}
+                // Covers due while a run of them is on its way: that run
+                // covers them.
+                Event::Covers { source, next: Some(0) } if self.covering.contains_key(source) => {}
+                // The rest of its covers wait behind what is queued now.
+                Event::Covers { source, next: Some(after) } => {
+                    self.covering.insert(*source, *after);
+                    if self.orders.send(Order::Covers(*source, *after)).is_err() {
+                        self.replace_thread("the sync thread is gone");
+                    }
+                }
+                Event::Covers { source, next: None } => {
+                    self.covering.remove(source);
+                }
             }
         }
         events
@@ -311,14 +337,15 @@ fn worker(tools: Tools, stop: Arc<Mutex<HashSet<i64>>>) -> (Sender<Order>, Recei
     let (outbox, events) = channel::<Event>();
     let spawned = std::thread::Builder::new().name("chilpa-server-sync".into()).spawn(move || {
         while let Ok(order) = inbox.recv() {
-            let (source, catalogue) = match order {
-                Order::Catalogue(source) => (source, true),
-                Order::Playlists(source) => (source, false),
+            let (source, owes) = match order {
+                Order::Catalogue(source) => (source, OWE_CATALOGUE),
+                Order::Playlists(source) => (source, OWE_PLAYLISTS),
+                Order::Covers(source, _) => (source, OWE_COVERS),
             };
             // A panic still ends the order, once: the server would show as
             // syncing for as long as the window stays open, and the thread
             // would take no other order.
-            let owed = AtomicU8::new(if catalogue { OWE_CATALOGUE } else { OWE_PLAYLISTS });
+            let owed = AtomicU8::new(owes);
             let served = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| serve(order, &tools, &stop, &outbox, &owed)));
             if served.is_err() {
                 eprintln!("chilpa-servers: sync of source {source} panicked; nothing was taken out");
@@ -326,6 +353,7 @@ fn worker(tools: Tools, stop: Arc<Mutex<HashSet<i64>>>) -> (Sender<Order>, Recei
                 let end = match owed.load(Ordering::Relaxed) {
                     OWE_CATALOGUE => Some(Event::Failed { source, why, unreachable: false }),
                     OWE_PLAYLISTS => Some(Event::PlaylistsFailed { source, why }),
+                    OWE_COVERS => Some(Event::Covers { source, next: None }),
                     _ => None,
                 };
                 if let Some(end) = end {
@@ -348,12 +376,14 @@ fn worker(tools: Tools, stop: Arc<Mutex<HashSet<i64>>>) -> (Sender<Order>, Recei
 const OWE_NOTHING: u8 = 0;
 const OWE_PLAYLISTS: u8 = 1;
 const OWE_CATALOGUE: u8 = 2;
+const OWE_COVERS: u8 = 3;
 
 /// One order, on the sync's thread. `owed` follows which end is still owed.
 fn serve(order: Order, tools: &Tools, stop: &Mutex<HashSet<i64>>, outbox: &Sender<Event>, owed: &AtomicU8) {
-    let (source, catalogue) = match order {
-        Order::Catalogue(source) => (source, true),
-        Order::Playlists(source) => (source, false),
+    let (source, catalogue, after) = match order {
+        Order::Catalogue(source) => (source, true, None),
+        Order::Playlists(source) => (source, false, None),
+        Order::Covers(source, after) => (source, false, Some(after)),
     };
     let asked_to_stop = || stop.lock().map(|s| s.contains(&source)).unwrap_or(false);
     let say = |event: Event| {
@@ -363,10 +393,20 @@ fn serve(order: Order, tools: &Tools, stop: &Mutex<HashSet<i64>>, outbox: &Sende
         eprintln!("chilpa-servers: sync of source {source} not begun: the library could not be opened");
         let why = chilpa_i18n::t("the library could not be opened");
         owed.store(OWE_NOTHING, Ordering::Relaxed);
-        say(if catalogue { Event::Failed { source, why, unreachable: false } } else { Event::PlaylistsFailed { source, why } });
+        say(match (catalogue, after) {
+            (true, _) => Event::Failed { source, why, unreachable: false },
+            (false, None) => Event::PlaylistsFailed { source, why },
+            (false, Some(_)) => Event::Covers { source, next: None },
+        });
         return;
     };
     let net = tools.net.as_ref();
+    if let Some(after) = after {
+        let next = covers(&lib, net, &tools.keys, source, after, &asked_to_stop);
+        owed.store(OWE_NOTHING, Ordering::Relaxed);
+        say(Event::Covers { source, next: next.filter(|_| !asked_to_stop()) });
+        return;
+    }
     let wanted = if catalogue {
         true
     } else {
@@ -391,9 +431,9 @@ fn serve(order: Order, tools: &Tools, stop: &Mutex<HashSet<i64>>, outbox: &Sende
     if goes_on && !asked_to_stop() {
         say(reading::read(&lib, net, &tools.keys, source, &tools.gate, &asked_to_stop));
     }
+    // Its covers are fetched in runs of their own, behind what is queued.
     if goes_on && !asked_to_stop() {
-        covers(&lib, net, &tools.keys, source, &asked_to_stop);
-        say(Event::Covered { source });
+        say(Event::Covers { source, next: Some(0) });
     }
 }
 
@@ -413,9 +453,18 @@ pub(crate) fn run(
     if !stored.enabled {
         return Event::Failed { source, why: chilpa_i18n::t("that server is disabled"), unreachable: false };
     }
-    let Some(server) = net::server(&stored) else {
+    let Some(mut server) = net::server(&stored) else {
         return Event::Failed { source, why: chilpa_i18n::t("that server is no longer in the library"), unreachable: false };
     };
+    // A media server added by a name may give its files by its address:
+    // what the name resolves to now is its own too.
+    if server.kind == chilpa_servers::Kind::Dlna {
+        for name in super::lan::other_names(&server.address) {
+            if !server.details.hosts.contains(&name) {
+                server.details.hosts.push(name);
+            }
+        }
+    }
     let Some(key) = net::key(keys, &stored) else {
         return Event::Failed { source, why: chilpa_i18n::t_args("sign in to {} again", &[&stored.label]), unreachable: false };
     };
@@ -618,31 +667,52 @@ pub(crate) fn covers_dir(instance: &str) -> std::path::PathBuf {
     chilpa_dirs::cache().join("servers").join(instance)
 }
 
-/// Fetches the covers of the server's records that have none yet.
-pub(crate) fn covers(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, source: i64, stopped: &dyn Fn() -> bool) {
-    let Some(stored) = lib.server(source).ok().flatten().filter(|s| s.enabled) else { return };
-    let (Some(server), Some(key)) = (net::server(&stored), net::key(keys, &stored)) else { return };
+/// Fetches covers of the server's records that have none yet, after the
+/// record `after`: at most `COVERS_PER_RUN` of them, for at most
+/// `COVERS_TIME`. Where the next run starts, or `None` when none is left
+/// to ask for this time.
+///
+/// A cover the server says it does not have (404, 410), or that is not an
+/// image, is not asked for again until the server names another. One it
+/// could not give now (another status, no answer) is asked for again at a
+/// later sync, up to `COVER_TRIES` times.
+pub(crate) fn covers(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, source: i64, after: i64, stopped: &dyn Fn() -> bool) -> Option<i64> {
+    let stored = lib.server(source).ok().flatten().filter(|s| s.enabled)?;
+    let (server, key) = (net::server(&stored)?, net::key(keys, &stored)?);
     let dir = covers_dir(&stored.instance);
     let _ = std::fs::create_dir_all(&dir);
-    for (album, cover) in lib.pending_server_covers(source, 100_000).unwrap_or_default() {
+    let pending = lib.pending_server_covers_after(source, after, COVERS_PER_RUN).unwrap_or_default();
+    let (began, full) = (Instant::now(), pending.len() >= COVERS_PER_RUN);
+    let (mut last, mut missed) = (after, 0);
+    for (album, cover) in pending {
         if stopped() {
-            return;
+            return None;
         }
+        if began.elapsed() >= COVERS_TIME {
+            eprintln!("chilpa-servers: covers of source {source}: run ended after {}s at record {last}", COVERS_TIME.as_secs());
+            return Some(last);
+        }
+        last = album;
         let request = chilpa_servers::cover(&server, &key, &cover, COVER);
-        let saved = match net.send(&request) {
+        let _ = match net.send(&request) {
             Ok(reply) if reply.status == 200 => {
                 let kind = reply.headers.get("content-type").cloned().unwrap_or_default();
                 let ext = image_kind(&kind, &reply.body);
                 let path = dir.join(format!("{album}.{ext}"));
-                (!ext.is_empty() && std::fs::write(&path, &reply.body).is_ok()).then(|| path.display().to_string())
+                let saved = (!ext.is_empty() && std::fs::write(&path, &reply.body).is_ok()).then(|| path.display().to_string());
+                lib.set_server_cover(album, saved.as_deref())
             }
-            // No cover, or the server does not answer: asked again next sync
-            // only if it does not answer.
-            Ok(_) => None,
-            Err(_) => continue,
+            Ok(reply) if matches!(reply.status, 404 | 410) => lib.set_server_cover(album, None),
+            Ok(_) | Err(_) => {
+                missed += 1;
+                lib.missed_server_cover(album)
+            }
         };
-        let _ = lib.set_server_cover(album, saved.as_deref());
     }
+    if missed > 0 {
+        eprintln!("chilpa-servers: covers of source {source}: {missed} not given now, asked again at a later sync");
+    }
+    full.then_some(last)
 }
 
 /// The extension a cover is kept with: from its type, or, when a server

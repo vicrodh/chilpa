@@ -110,6 +110,11 @@ pub struct Removal {
 
 const TRACKS_OF: &str = "SELECT id FROM tracks WHERE source_id = ?1";
 
+
+/// How many times a cover a server did not give is asked for, once per
+/// run of fetches, before it is left until the server names another.
+pub const COVER_TRIES: i64 = 5;
+
 impl Library {
     /// Adds a server as a source of the library and returns its id.
     pub fn add_server(&self, new: &NewServer) -> rusqlite::Result<i64> {
@@ -347,14 +352,30 @@ impl Library {
 
     /// Records of the server whose cover has not been fetched yet.
     pub fn pending_server_covers(&self, source_id: i64, limit: usize) -> rusqlite::Result<Vec<(i64, String)>> {
+        self.pending_server_covers_after(source_id, 0, limit)
+    }
+
+    /// `pending_server_covers`, of the records after `after` in the order
+    /// they are fetched in: a run of fetches goes on where the last one
+    /// stopped. A cover the server did not give is pending until it was
+    /// missed `COVER_TRIES` times (`missed_server_cover`).
+    pub fn pending_server_covers_after(&self, source_id: i64, after: i64, limit: usize) -> rusqlite::Result<Vec<(i64, String)>> {
         let mut stmt = self.db.prepare(
             "SELECT c.album_id, c.cover FROM server_covers c
-             WHERE c.fetched = 0 AND EXISTS
+             WHERE c.fetched <= 0 AND c.fetched > -?4 AND c.album_id > ?3 AND EXISTS
                 (SELECT 1 FROM tracks t WHERE t.album_id = c.album_id AND t.source_id = ?1 AND t.present = 1)
              ORDER BY c.album_id LIMIT ?2",
         )?;
-        let rows = stmt.query_map(params![source_id, limit as i64], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        let rows = stmt.query_map(params![source_id, limit as i64, after, COVER_TRIES], |r| Ok((r.get(0)?, r.get(1)?)))?;
         rows.collect()
+    }
+
+    /// The server did not give a record's cover this time: it is asked again
+    /// at a later sync, up to `COVER_TRIES` times. `fetched` counts the
+    /// misses below zero; a new name for the cover starts it over.
+    pub fn missed_server_cover(&self, album_id: i64) -> rusqlite::Result<()> {
+        self.db.execute("UPDATE server_covers SET fetched = fetched - 1 WHERE album_id = ?1 AND fetched <= 0", params![album_id])?;
+        Ok(())
     }
 
     /// The cover of a server's record, once it is on disk. `None` is a

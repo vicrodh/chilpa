@@ -103,3 +103,35 @@ mod tests {
         );
     }
 }
+
+/// What a server's host name resolves to, in lower case: other names of
+/// the same machine, under which its files and covers are its own
+/// (`Details::hosts`). Nothing offline, and nothing for an address that is
+/// already an IP.
+pub(crate) fn other_names(address: &str) -> Vec<String> {
+    use std::net::{IpAddr, ToSocketAddrs};
+    if chilpa_core::network::current().offline {
+        return Vec::new();
+    }
+    let Some((scheme, rest)) = address.split_once("://") else { return Vec::new() };
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or("");
+    if authority.is_empty() || authority.starts_with('[') || authority.contains('@') {
+        return Vec::new();
+    }
+    let (host, port) = match authority.rsplit_once(':') {
+        Some((host, port)) => (host, port.parse::<u16>().ok()),
+        None => (authority, None),
+    };
+    if host.parse::<IpAddr>().is_ok() {
+        return Vec::new();
+    }
+    let port = port.unwrap_or(if scheme.eq_ignore_ascii_case("https") { 443 } else { 80 });
+    let mut names: Vec<String> = Vec::new();
+    for at in (host, port).to_socket_addrs().into_iter().flatten() {
+        let name = at.ip().to_string().to_ascii_lowercase();
+        if !names.contains(&name) {
+            names.push(name);
+        }
+    }
+    names
+}
