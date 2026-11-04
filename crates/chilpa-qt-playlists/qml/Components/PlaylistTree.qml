@@ -28,7 +28,8 @@ QtObject {
             return {id:"playlist:" + (p.source || "") + ":" + p.id,rowKind:0,playlistId:p.id,name:p.name,tracks:p.track_count,source:p.source || "",sourceName:p.provider || "",local:p.mixed === true,
                 sourceIcon:p.mixed ? "qrc:/qt/qml/app/chilpa/kit/assets/logo.png" : p.source_icon || "",showSourceBadge:true,artwork:p.artwork_path || "",
                 folderId:p.folder_id || 0,visibleInSidebar:p.visible_sidebar !== false,covers:p.covers || [],folderColor:"",expanded:false,
-                depth:depth,nested:nested === true,nativeRef:p.native_ref || "",nativeFolder:p.native_folder || "",containArt:p.contain_art === true}
+                depth:depth,nested:nested === true,nativeRef:p.native_ref || "",nativeFolder:p.native_folder || "",containArt:p.contain_art === true,
+                server:p.server === true,writable:p.writable === true}
         }
         let nextFolderId = -1000
         function branch(scope, parent, depth) {

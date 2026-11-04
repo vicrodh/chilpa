@@ -3,6 +3,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import app.chilpa.playlists
 
 Item {
     id: actions
@@ -51,6 +52,10 @@ Item {
         if (!folder && value.local) entries.push(
             {text: I18n.tr("Edit playlist", I18n.rev), action: "edit"},
             {text: I18n.tr("Delete…", I18n.rev), action: "deletePlaylist"})
+        // A server's own that the account may change is edited and deleted there.
+        else if (!folder && value.server && value.writable) entries.push(
+            {text: I18n.tr("Edit playlist", I18n.rev), action: "edit"},
+            {text: I18n.tr("Delete…", I18n.rev), action: "deletePlaylist"})
         entries = entries.concat([
             {separator: true},
             {text: I18n.tr("Move up", I18n.rev), action: "move", value: -1},
@@ -83,18 +88,19 @@ Item {
             case "folder": folderDialog.show(0, "", "accent"); break
             case "group": actions.sidebar.setGrouped(!actions.sidebar.grouped); break
             case "sort": if (item.value === actions.sidebar.order && item.value !== "custom") actions.sidebar.reverseOrder(); else actions.sidebar.setOrder(item.value); break
-            case "refresh": Playlists.refresh(); break
+            case "refresh": Playlists.refresh(); PlaylistManager.refreshServers(); break
             case "manage": Navigation.go("playlistManager", 0); break
             case "play": Playlists.play(row.playlistId, false); break
             case "shuffle": Playlists.play(row.playlistId, true); break
             case "queue": Playlists.queue(row.playlistId); break
             case "deletePlaylist":
-                menu.entries = [{text: I18n.trArgs("Delete “{}”?", [row.name], I18n.rev), note: true},
+                menu.entries = [{text: row.server ? I18n.trArgs("Delete “{}” on {}? It leaves the server too.", [row.name, row.sourceName], I18n.rev)
+                                                  : I18n.trArgs("Delete “{}”?", [row.name], I18n.rev), note: true},
                     {text: I18n.tr("Delete", I18n.rev), action: "confirmPlaylist"}, {text: I18n.tr("Cancel", I18n.rev)}]
                 menu.open(); break
             case "confirmPlaylist": Playlists.remove(row.playlistId); break
             case "open": actions.sidebar.openPlaylist(row.playlistId); break
-            case "edit": if (row.local) editDialog.show(row.playlistId); else actions.sidebar.openPlaylist(row.playlistId); break
+            case "edit": if (row.local || row.server) editDialog.show(row.playlistId); else actions.sidebar.openPlaylist(row.playlistId); break
             case "hide": Playlists.setVisible(row.playlistId, false); break
             case "moveFolder": folderDialog.move(row); break
             case "editNativeFolder": folderDialog.showNative(row); break

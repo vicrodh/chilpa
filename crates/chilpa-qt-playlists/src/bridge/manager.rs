@@ -27,6 +27,17 @@ pub mod qobject {
         fn track_order(self: &PlaylistManager, id: i64) -> QString;
         #[qinvokable]
         fn set_track_order(self: &PlaylistManager, id: i64, order: &QString);
+        /// The music servers by the source their playlists carry: name,
+        /// icon and whether they are on, as JSON.
+        #[qinvokable]
+        fn servers_json(self: &PlaylistManager) -> QString;
+        /// What a playlist page shows of a server's own playlist, as JSON;
+        /// `{}` for any other.
+        #[qinvokable]
+        fn server_playlist(self: &PlaylistManager, id: i64, rev: i32) -> QString;
+        /// Reads every server's playlists again.
+        #[qinvokable]
+        fn refresh_servers(self: &PlaylistManager);
     }
 }
 
@@ -53,5 +64,14 @@ impl qobject::PlaylistManager {
     }
     pub fn sources_json(&self) -> QString {
         QString::from(&serde_json::to_string(&app::with(|api| api.managed_playlist_sources())).unwrap_or_else(|_| "[]".into()))
+    }
+    pub fn servers_json(&self) -> QString {
+        QString::from(&app::with(|api| api.playlist_servers_json()))
+    }
+    pub fn server_playlist(&self, id: i64, _rev: i32) -> QString {
+        QString::from(&app::with(|api| api.server_playlist_json(id)))
+    }
+    pub fn refresh_servers(&self) {
+        app::with(|api| api.refresh_server_playlists());
     }
 }

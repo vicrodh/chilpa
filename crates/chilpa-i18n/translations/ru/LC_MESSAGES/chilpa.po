@@ -1858,6 +1858,9 @@ msgstr "Удалить сохранённый запрос"
 msgid "Delete the saved query “{}”?"
 msgstr "Удалить сохранённый запрос «{}»?"
 
+msgid "Delete “{}” on {}? It leaves the server too."
+msgstr "Удалить «{}» на {}? Он удалится и с сервера."
+
 msgid "Delete “{}”?"
 msgstr "Удалить «{}»?"
 
@@ -5557,6 +5560,9 @@ msgstr "Отправлять в Last.fm"
 msgid "Send to ListenBrainz"
 msgstr "Отправлять в ListenBrainz"
 
+msgid "Sending the change to {}…"
+msgstr "Изменение отправляется на {}…"
+
 msgid "Sep"
 msgstr "сент."
 
@@ -8742,6 +8748,12 @@ msgid_plural "{} tracks of its playlists are not in your library and were left o
 msgstr[0] "{} трек из его плейлистов отсутствует в вашей библиотеке и пропущен."
 msgstr[1] "{} трека из его плейлистов отсутствуют в вашей библиотеке и пропущены."
 msgstr[2] "{} треков из его плейлистов отсутствуют в вашей библиотеке и пропущены."
+
+msgid "{} track on the server is not in your library"
+msgid_plural "{} tracks on the server are not in your library"
+msgstr[0] "{} трек с сервера отсутствует в вашей библиотеке"
+msgstr[1] "{} трека с сервера отсутствуют в вашей библиотеке"
+msgstr[2] "{} треков с сервера отсутствуют в вашей библиотеке"
 
 msgid "{} tracks"
 msgstr "Треков: {}"

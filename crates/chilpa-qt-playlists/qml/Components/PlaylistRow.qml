@@ -29,6 +29,8 @@ Item {
     property bool showSourceBadge: false
     // A playlist inside a folder, local or from a source, steps in under it.
     property bool nested: false
+    // A server's own that the account may change there: renamed there.
+    property bool renamable: false
 
     signal opened()
     signal menu(real x, real y)
@@ -124,6 +126,6 @@ Item {
         enabled: !row.editing
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onTapped: (point, button) => button === Qt.RightButton ? row.menu(point.position.x, point.position.y) : row.opened()
-        onDoubleTapped: if (row.local) row.editing = true
+        onDoubleTapped: if (row.local || row.renamable) row.editing = true
     }
 }

@@ -28,7 +28,9 @@ Item {
     property string source: SettingsModel.kept("ui.playlists.source") || ""
     property var sources: []
     readonly property var panels: JSON.parse(Sources.snapshot || "{}").panels || []
-    function sourceLabel(id) { return id === "local" ? "Chilpa" : (panels.find(panel => panel.id === id) || {}).name || id }
+    // The music servers whose playlists are listed, by the source they carry.
+    property var servers: ({})
+    function sourceLabel(id) { return id === "local" ? "Chilpa" : (panels.find(panel => panel.id === id) || {}).name || (servers[id] || {}).name || id }
     onSourceChanged: reload()
     readonly property int folderCount: rows.filter(row => row.rowKind === 1).length
     readonly property int playlistCount: rows.length - folderCount
@@ -36,9 +38,11 @@ Item {
 
     // Whose a playlist is: the library's own wear Chilpa's mark, a source's its icon.
     function panelOf(source) { return panels.find(panel => panel.id === source) || ({}) }
-    function originOf(row) { return row.rowKind === 1 ? ({}) : row.local ? ({chilpa: true}) : ({icon: panelOf(row.source).icon_image || panelOf(row.source).icon || ""}) }
-    function ownerOf(row) { return row.local ? "Chilpa" : panelOf(row.source).name || row.sourceName }
+    function iconOf(source) { return panelOf(source).icon_image || panelOf(source).icon || (servers[source] || {}).icon || "" }
+    function originOf(row) { return row.rowKind === 1 ? ({}) : row.local ? ({chilpa: true}) : ({icon: iconOf(row.source)}) }
+    function ownerOf(row) { return row.local ? "Chilpa" : panelOf(row.source).name || (servers[row.source] || {}).name || row.sourceName }
     function reload() {
+        servers = JSON.parse(PlaylistManager.serversJson() || "{}")
         sources = JSON.parse(PlaylistManager.sourcesJson() || "[]")
         // A source no longer there lists every one, not nothing.
         const kept = source.split(",").filter(id => sources.indexOf(id) >= 0)
@@ -47,7 +51,7 @@ Item {
         rows = raw.map(entry => ({rowKind: entry.kind === "Folder" ? 1 : 0,
             entryId: entry.id, name: entry.name, source: entry.source, sourceName: entry.source_name,
             artwork: entry.artwork_path || "", covers: entry.covers || [], colorName: entry.color,
-            tracks: entry.track_count, local: entry.local, writable: entry.writable === true,
+            tracks: entry.track_count, local: entry.local, writable: entry.writable === true, server: !!servers[entry.source],
             visibleInSidebar: entry.visible_sidebar}))
     }
     function enterFolder(id, name) { folderId = id; folderName = name; reload() }
@@ -137,7 +141,7 @@ Item {
             source: page.source
             grid: page.grid
             sourceLabel: page.sourceLabel
-            sourceIcon: (id) => page.panelOf(id).icon_image || page.panelOf(id).icon || ""
+            sourceIcon: (id) => page.iconOf(id)
             onChanged: page.reload()
             onSourceChosen: (value) => {
                 page.source = value

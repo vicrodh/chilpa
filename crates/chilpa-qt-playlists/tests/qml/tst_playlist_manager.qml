@@ -148,4 +148,22 @@ TestCase {
         compare(editor.mode, "update")
         editor.close()
     }
+
+    // A server's own playlist is named and drawn as its server, never by
+    // its key, and one the account may change is deleted there.
+    function test_a_server_s_playlist_is_named_by_its_server_and_deleted_there() {
+        PlaylistManager.servers = {"example:4f1c": {name: "Living room", icon: "server", enabled: true}}
+        PlaylistManager.rows = stored.concat([{ kind: "Playlist", id: 12, name: "Road Trip", detail: "", source: "example:4f1c", source_name: "Living room", artwork_path: "", covers: [], color: "", track_count: 4, play_count: 0, folder_id: null, local: false, writable: true, visible_sidebar: true }])
+        screen.reload()
+        compare(screen.sourceLabel("example:4f1c"), "Living room", "not its raw key")
+        compare(screen.iconOf("example:4f1c"), "server")
+        const row = screen.rows.find(r => r.name === "Road Trip")
+        verify(row.server && row.writable)
+        const actions = findChild(screen, "playlistActions")
+        actions.row = row
+        verify(actions.removable, "the account may change it there")
+        actions.row = Object.assign({}, row, {writable: false})
+        verify(!actions.removable, "one it may only read stays")
+        PlaylistManager.servers = ({})
+    }
 }

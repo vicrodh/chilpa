@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.playlists
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../../qml/Screens"
 import "../../qml/Patterns"
@@ -17,6 +18,8 @@ TestCase {
     height: 800
 
     PlaylistScreen { id: screen; width: 1100; height: 800; playlistId: 7 }
+    // One this page does not edit itself: the stub edits positive ids only.
+    PlaylistScreen { id: serverPage; y: 900; width: 1100; height: 800; playlistId: -3 }
     PlaylistHeader { id: lone; y: 500; width: 900; covers: ["file:///covers/one.jpg"] }
     PlaylistHeader { id: several; y: 500; width: 900; covers: ["file:///covers/one.jpg", "file:///covers/two.jpg"] }
 
@@ -63,5 +66,28 @@ TestCase {
         compare(tracks.lastAction, "playAll")
         screen.playlistId = 8
         compare(find.text, "", "another playlist starts with nothing typed")
+    }
+
+    // A music server's own playlist plays whole from its header, wears the
+    // server's icon, and takes changes only while the account may make them
+    // there and none is on its way.
+    function test_a_server_s_playlist_plays_from_its_header_and_changes_through_its_server() {
+        const play = findChild(serverPage, "playlistPlay")
+        verify(!play.visible, "neither ours nor a server's: it does not play whole from here")
+        PlaylistManager.serverPlaylists = {"-3": {server: "Living room", icon: "server", writable: true, pending: false, left_out: 2}}
+        Playlists.rev++
+        tryCompare(play, "visible", true)
+        verify(serverPage.ofServer && serverPage.changeable, "the account may change it there")
+        compare(serverPage.server.icon, "server")
+        PlaylistManager.serverPlaylists = {"-3": {server: "Living room", icon: "server", writable: true, pending: true, left_out: 0}}
+        Playlists.rev++
+        tryCompare(serverPage, "changeable", false)
+        PlaylistManager.serverPlaylists = {"-3": {server: "Living room", icon: "server", writable: false, pending: false, left_out: 0}}
+        Playlists.rev++
+        tryCompare(serverPage, "changeable", false)
+        verify(play.visible, "only read here, it still plays")
+        PlaylistManager.serverPlaylists = ({})
+        Playlists.rev++
+        tryCompare(play, "visible", false)
     }
 }

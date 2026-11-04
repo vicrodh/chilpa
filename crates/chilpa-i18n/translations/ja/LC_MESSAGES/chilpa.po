@@ -1854,6 +1854,9 @@ msgstr "保存したクエリを削除"
 msgid "Delete the saved query “{}”?"
 msgstr "保存したクエリ「{}」を削除しますか？"
 
+msgid "Delete “{}” on {}? It leaves the server too."
+msgstr "{2}の「{1}」を削除しますか？サーバーからも削除されます。"
+
 msgid "Delete “{}”?"
 msgstr "「{}」を削除しますか？"
 
@@ -5549,6 +5552,9 @@ msgstr "Last.fmに送信"
 msgid "Send to ListenBrainz"
 msgstr "ListenBrainzに送信"
 
+msgid "Sending the change to {}…"
+msgstr "{}に変更を送信しています…"
+
 msgid "Sep"
 msgstr "9月"
 
@@ -8678,6 +8684,10 @@ msgstr[0] "{}トラック"
 msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."
 msgstr[0] "プレイリストの{}トラックはライブラリにないため、除外されました。"
+
+msgid "{} track on the server is not in your library"
+msgid_plural "{} tracks on the server are not in your library"
+msgstr[0] "サーバーの{}トラックはライブラリにありません"
 
 msgid "{} tracks"
 msgstr "{}トラック"

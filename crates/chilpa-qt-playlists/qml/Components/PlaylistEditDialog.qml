@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.playlists
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
@@ -11,11 +12,18 @@ Modal {
     property int playlistId: 0
     property int folderId: 0
     property string notice: ""
+    // A music server's own: its name, and its description where the server
+    // takes one, go to the server; its picture and tags are not its own.
+    property bool server: false
+    property bool describable: true
     width: Math.max(Metrics.modalInsets, Math.min(Metrics.playlistModalWidth, parent.width - Metrics.modalInset))
     height: Math.max(Metrics.modalInsets, Math.min(body.implicitHeight + Metrics.modalInsets, parent.height - Metrics.modalInset))
 
     function show(id) {
         playlistId = id
+        const own = JSON.parse(PlaylistManager.serverPlaylist(id, Playlists.rev) || "{}")
+        server = own.icon !== undefined
+        describable = !server || own.describable === true
         folderId = Playlists.folderId(id, Playlists.rev)
         form.name = Playlists.name(id, Playlists.rev)
         form.description = Playlists.description(id, Playlists.rev)
@@ -52,7 +60,7 @@ Modal {
                 }
                 IconButton { id: closeButton; glyph: Icons.x; tip: I18n.tr("Close", I18n.rev); onClicked: dialog.close() }
             }
-            PlaylistForm { id: form; width: parent.width; onAccepted: dialog.save() }
+            PlaylistForm { id: form; objectName: "playlistEditForm"; width: parent.width; localMetadata: !dialog.server; described: dialog.describable; onAccepted: dialog.save() }
             Text {
                 visible: dialog.notice !== ""
                 width: parent.width

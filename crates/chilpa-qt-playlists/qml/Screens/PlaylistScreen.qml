@@ -3,6 +3,7 @@ import QtQuick.Window
 import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.playlists
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
@@ -19,8 +20,16 @@ Flickable {
     id: page
 
     property int playlistId: Navigation.routeId
-    readonly property string playlistName: Playlists.name(playlistId, Playlists.rev)
+    // A server answers after the change was asked: the library's turn too.
+    readonly property int rev: Playlists.rev + Library.contentRev
+    readonly property string playlistName: Playlists.name(playlistId, page.rev)
     readonly property bool editable: Playlists.editable(playlistId, Playlists.rev)
+    // A music server's own playlist: it plays as a whole, and its tracks are
+    // changed through the server, while the account may and nothing else of
+    // it is on its way there.
+    readonly property var server: JSON.parse(PlaylistManager.serverPlaylist(playlistId, page.rev) || "{}")
+    readonly property bool ofServer: server.icon !== undefined
+    readonly property bool changeable: editable || (ofServer && server.writable === true && server.pending !== true)
     readonly property var covers: Playlists.covers(playlistId, Playlists.rev)
     // The order the playlist keeps for its tracks, chosen with its sort button.
     readonly property string order: sort.order
@@ -46,7 +55,7 @@ Flickable {
         playingPath: Player.path
         order: page.order
         ascending: page.ascending
-        playlistEditable: page.editable
+        playlistEditable: page.changeable
         key: find.typed
     }
     AlbumHeaderBackground {
@@ -69,13 +78,14 @@ Flickable {
             name: page.playlistName
             // The library's own lists are Chilpa's, as the Home's cards name them.
             sourceName: page.editable ? "Chilpa" : Playlists.sourceName(page.playlistId, Playlists.rev)
-            sourceIcon: page.editable ? "qrc:/qt/qml/app/chilpa/kit/assets/logo.png" : ""
+            sourceIcon: page.editable ? "qrc:/qt/qml/app/chilpa/kit/assets/logo.png" : page.server.icon || ""
             covers: page.covers
-            meta: tracks.count > 0 || find.typed !== "" ? tracks.summary : I18n.tr("Empty. Add tracks from any list with a right click.", I18n.rev)
-            description: Playlists.description(page.playlistId, Playlists.rev)
+            meta: (tracks.count > 0 || find.typed !== "" ? tracks.summary : I18n.tr("Empty. Add tracks from any list with a right click.", I18n.rev))
+                + (page.server.left_out > 0 ? " · " + I18n.trCount("{} track on the server is not in your library", "{} tracks on the server are not in your library", page.server.left_out, I18n.rev) : "")
+            description: Playlists.description(page.playlistId, page.rev)
             markKey: page.playlistId > 0 ? page.playlistId.toString() : ""
-            canPlay: page.editable
-            canSelect: page.editable && tracks.count > 0
+            canPlay: page.editable || page.ofServer
+            canSelect: page.changeable && tracks.count > 0
             selecting: page.selectionMode
             contrasted: page.contrasted
             onPlay: tracks.playAll(false)
@@ -107,9 +117,10 @@ Flickable {
                     id: hint
                     width: parent.width - Metrics.iconSm - parent.spacing
                     elide: Text.ElideRight
-                    text: page.selectionMode && tracks.selectedCount === 0 ? I18n.tr("Click tracks to select them; Shift selects a range.", I18n.rev)
+                    text: page.server.pending === true ? I18n.trArgs("Sending the change to {}…", [page.server.server || ""], I18n.rev)
+                        : page.selectionMode && tracks.selectedCount === 0 ? I18n.tr("Click tracks to select them; Shift selects a range.", I18n.rev)
                         : page.order !== "custom" || find.typed !== "" ? ""
-                        : page.editable ? I18n.tr("Drag or use ↑↓ to keep a custom order.", I18n.rev) : I18n.tr("This source owns the order.", I18n.rev)
+                        : page.changeable ? I18n.tr("Drag or use ↑↓ to keep a custom order.", I18n.rev) : I18n.tr("This source owns the order.", I18n.rev)
                     font.pointSize: Type.meta
                     color: Theme.color.textTertiary
                 }
@@ -152,7 +163,7 @@ Flickable {
             order: page.order
             selectionMode: page.selectionMode
             // Rows found by what is typed are not the whole order to move in.
-            reorderable: page.editable && page.order === "custom" && !page.selectionMode && find.typed === ""
+            reorderable: page.changeable && page.order === "custom" && !page.selectionMode && find.typed === ""
         }
     }
 
@@ -169,7 +180,7 @@ Flickable {
         z: 2
         model: tracks
         playlistName: page.playlistName
-        canRemove: page.editable
+        canRemove: page.changeable
         x: (page.width - width) / 2
         y: page.contentY + page.height - height - Metrics.selectionBottom
         onFinished: {
@@ -181,12 +192,12 @@ Flickable {
     // The playlist's own order is changed a place at a time.
     Shortcut {
         sequence: "Alt+Up"
-        enabled: !InputLayers.blocksShortcuts(page.Window.window) && (page.editable && page.order === "custom" && find.typed === "")
+        enabled: !InputLayers.blocksShortcuts(page.Window.window) && (page.changeable && page.order === "custom" && find.typed === "")
         onActivated: tracks.moveInPlaylist(tracks.selectedRow(), -1)
     }
     Shortcut {
         sequence: "Alt+Down"
-        enabled: !InputLayers.blocksShortcuts(page.Window.window) && (page.editable && page.order === "custom" && find.typed === "")
+        enabled: !InputLayers.blocksShortcuts(page.Window.window) && (page.changeable && page.order === "custom" && find.typed === "")
         onActivated: tracks.moveInPlaylist(tracks.selectedRow(), 1)
     }
 }

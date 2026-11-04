@@ -1856,6 +1856,9 @@ msgstr "Delete saved query"
 msgid "Delete the saved query “{}”?"
 msgstr "Delete the saved query “{}”?"
 
+msgid "Delete “{}” on {}? It leaves the server too."
+msgstr ""
+
 msgid "Delete “{}”?"
 msgstr ""
 
@@ -5553,6 +5556,9 @@ msgstr ""
 msgid "Send to ListenBrainz"
 msgstr ""
 
+msgid "Sending the change to {}…"
+msgstr ""
+
 msgid "Sep"
 msgstr ""
 
@@ -8708,6 +8714,11 @@ msgstr[1] ""
 
 msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} track on the server is not in your library"
+msgid_plural "{} tracks on the server are not in your library"
 msgstr[0] ""
 msgstr[1] ""
 

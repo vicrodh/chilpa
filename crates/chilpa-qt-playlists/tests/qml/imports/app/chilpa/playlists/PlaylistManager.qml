@@ -16,5 +16,13 @@ QtObject {
     property var trackOrders: ({})
     function trackOrder(id) { return trackOrders[id] || "custom" }
     function setTrackOrder(id, order) { const next = Object.assign({}, trackOrders); next[id] = order; trackOrders = next }
+    // The music servers' names and icons, what the page of one of their
+    // playlists shows, and how many times their playlists were asked for.
+    property var servers: ({})
+    function serversJson() { return JSON.stringify(servers) }
+    property var serverPlaylists: ({})
+    function serverPlaylist(id, rev) { return JSON.stringify(serverPlaylists[id] || {}) }
+    property int serverRefreshes: 0
+    function refreshServers() { serverRefreshes++ }
     function groupSources(grouped) { Playlists.catalog = Object.assign({}, Playlists.catalog, {group_sources:grouped}); SettingsModel.keep("navigation.groupSourcePlaylists", String(grouped)); Prefs.changed() }
 }

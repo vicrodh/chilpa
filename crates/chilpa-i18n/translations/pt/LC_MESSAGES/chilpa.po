@@ -1856,6 +1856,9 @@ msgstr "Excluir consulta salva"
 msgid "Delete the saved query “{}”?"
 msgstr "Excluir a consulta salva “{}”?"
 
+msgid "Delete “{}” on {}? It leaves the server too."
+msgstr "Excluir “{}” em {}? Ela também sai do servidor."
+
 msgid "Delete “{}”?"
 msgstr "Excluir “{}”?"
 
@@ -5553,6 +5556,9 @@ msgstr "Enviar ao Last.fm"
 msgid "Send to ListenBrainz"
 msgstr "Enviar ao ListenBrainz"
 
+msgid "Sending the change to {}…"
+msgstr "Enviando a alteração para {}…"
+
 msgid "Sep"
 msgstr "set"
 
@@ -8710,6 +8716,11 @@ msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."
 msgstr[0] "{} faixa das playlists dele não está na sua biblioteca e foi omitida."
 msgstr[1] "{} faixas das playlists dele não estão na sua biblioteca e foram omitidas."
+
+msgid "{} track on the server is not in your library"
+msgid_plural "{} tracks on the server are not in your library"
+msgstr[0] "{} faixa do servidor não está na sua biblioteca"
+msgstr[1] "{} faixas do servidor não estão na sua biblioteca"
 
 msgid "{} tracks"
 msgstr "{} faixas"

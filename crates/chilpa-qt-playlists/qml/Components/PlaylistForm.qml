@@ -8,6 +8,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 Column {
     id: form
     property bool localMetadata: true
+    // A server that takes no description from Chilpa leaves it out.
+    property bool described: true
     property alias name: nameField.text
     property alias description: descriptionField.text
     property alias tags: tagsField.text
@@ -27,8 +29,8 @@ Column {
         placeholder: I18n.tr("Playlist name", I18n.rev)
         onAccepted: if (form.valid) form.accepted()
     }
-    Text { text: I18n.tr("Description", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
-    TextField { id: descriptionField; width: parent.width; placeholder: I18n.tr("Description", I18n.rev) }
+    Text { visible: form.described; text: I18n.tr("Description", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
+    TextField { id: descriptionField; visible: form.described; width: parent.width; placeholder: I18n.tr("Description", I18n.rev) }
     Text { visible: form.localMetadata; text: I18n.tr("Tags, separated by commas", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
     TextField { id: tagsField; visible: form.localMetadata; width: parent.width; placeholder: I18n.tr("Tags, separated by commas", I18n.rev) }
     Text { visible: form.localMetadata; text: I18n.tr("Custom image", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }

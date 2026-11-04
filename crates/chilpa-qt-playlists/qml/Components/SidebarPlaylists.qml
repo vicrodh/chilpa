@@ -161,6 +161,7 @@ Item {
                     folderId: host.entry.folderId
                     visibleInSidebar: host.entry.visibleInSidebar
                     nested: host.entry.nested === true
+                    renamable: host.entry.server === true && host.entry.writable === true
                     covers: host.entry.covers
                     active: Navigation.screen === (playlistId < 0 ? "album" : "playlist") && Navigation.routeId === playlistId
                     onOpened: section.openPlaylist(playlistId)
@@ -169,7 +170,7 @@ Item {
                         actions.row(host.entry, at.x, at.y)
                     }
                     onRenamed: (text) => {
-                        if (local)
+                        if (local || renamable)
                             Playlists.rename(playlistId, text)
                     }
                 }

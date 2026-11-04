@@ -19,8 +19,9 @@ Menu {
     signal editSource(int id)
     readonly property bool folder: row.rowKind === 1
     // The library's own, or a source's the listener may change there.
-    readonly property bool editable: row.local === true || (row.entryId < 0 && row.writable === true)
-    readonly property bool removable: row.local === true || row.entryId < 0
+    readonly property bool editable: row.local === true || (row.entryId < 0 && row.writable === true) || (row.server === true && row.writable === true)
+    // A server's own the account may change is deleted on the server.
+    readonly property bool removable: row.local === true || row.entryId < 0 || (row.server === true && row.writable === true)
 
     function show(value, item, left, top) {
         row = value
@@ -58,7 +59,7 @@ Menu {
         case "play": Playlists.play(row.entryId, false); break
         case "edit":
             if (folder) editFolder(row.entryId, row.name, row.colorName)
-            else if (row.local) editPlaylist(row.entryId)
+            else if (row.local || row.server === true) editPlaylist(row.entryId)
             else editSource(row.entryId)
             break
         case "visible": manager.setVisible(row.entryId, !row.visibleInSidebar); break
@@ -66,8 +67,9 @@ Menu {
         case "remove":
             // Asked again: what is the listener's is deleted, and one only
             // followed is taken from the library.
-            entries = [{text: folder || editable ? I18n.trArgs("Delete “{}”?", [row.name], I18n.rev) : row.name, note: true},
-                       {text: folder || editable ? I18n.tr("Delete", I18n.rev) : I18n.tr("Remove from library", I18n.rev), act: "confirm"},
+            entries = [{text: row.server === true && !folder ? I18n.trArgs("Delete “{}” on {}? It leaves the server too.", [row.name, row.sourceName], I18n.rev)
+                            : folder || editable ? I18n.trArgs("Delete “{}”?", [row.name], I18n.rev) : row.name, note: true},
+                       {text: folder || editable || row.server === true ? I18n.tr("Delete", I18n.rev) : I18n.tr("Remove from library", I18n.rev), act: "confirm"},
                        {text: I18n.tr("Cancel", I18n.rev)}]
             open()
             break
