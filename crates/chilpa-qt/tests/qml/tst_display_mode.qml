@@ -28,14 +28,17 @@ TestCase {
             property real playerExtent: 112
             property string playerDock: "bottom"
             property var trayTarget: null
+            property bool canEject:true
             property var menuEntries: [{text:"Settings",command:"settings"}]
             property var actions: []
             function command(action) { actions = actions.concat([action]) }
         }
     }
     Component { id: futureDeck; Item {} }
+    Presentation.DisplayPlayerIntegration {id:ejectIntegration;bar:owner;registerTarget:false}
     readonly property var mode: Presentation.DisplayMode
     function init() {
+        ejectIntegration.visible=Qt.binding(()=>mode.active && mode.provider!==null)
         mode.requested = false; mode.surface = null; mode.portal = null
         owner.visibility = Window.Windowed; owner.width = 900; owner.height = 700
         mode.window = owner; mode.pendingPlugin = ""; mode.pendingAction = ""
@@ -87,5 +90,14 @@ TestCase {
         mode.mount(portal);mode.mount(other);mode.unmount(portal)
         compare(mode.portal,other)
         mode.unmount(other);compare(mode.portal,null)
+    }
+    function test_removing_a_provider_disables_eject_before_the_bar_hides(){
+        failOnWarning(/TypeError|Cannot read/)
+        mode.mount(portal);mode.bind(surface)
+        const button=findChild(ejectIntegration,"displayEject")
+        verify(button.enabled)
+        ejectIntegration.visible=true
+        mode.surface=null
+        verify(!button.enabled)
     }
 }

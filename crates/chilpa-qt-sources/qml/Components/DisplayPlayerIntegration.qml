@@ -12,9 +12,9 @@ Item {
     implicitHeight: Metrics.button28
     IconButton {
         objectName:"displayEject"
-        enabled:integration.visible && DisplayMode.provider.canEject
+        enabled:integration.visible && DisplayMode.provider !== null && DisplayMode.provider.canEject
         tip:I18n.tr("Eject",I18n.rev); glyph:Lucide.eject; iconFamily:Lucide.font; size:Metrics.button28
-        onClicked:DisplayMode.provider.command("eject")
+        onClicked:if(DisplayMode.provider)DisplayMode.provider.command("eject")
     }
     DropArea {
         id:target
