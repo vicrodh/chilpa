@@ -102,7 +102,8 @@ fn an_opensubsonic_server_is_added_synced_played_and_removed() {
     plays_a_track(&mut chilpa, &dir);
 
     let said = chilpa.server_removal(row.id);
-    assert!(said.contains(&row.tracks.to_string()), "{said}");
+    let facts: serde_json::Value = serde_json::from_str(&said).unwrap_or_else(|e| panic!("{said}: {e}"));
+    assert_eq!(facts["tracks"].as_u64(), Some(row.tracks as u64), "{said}");
     assert!(chilpa.remove_server(row.id));
     // Taken out away from the window: its sync stops, then its rows go.
     until(&mut chilpa, "the removal", Duration::from_secs(120), |c| c.servers().is_empty());

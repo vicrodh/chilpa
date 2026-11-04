@@ -269,7 +269,13 @@ fn removing_the_server_says_its_playlists_leave_with_it() {
     let (mut api, _, _, _, _) = with_a_server_playlist();
     let server = api.servers()[0].id;
     let said = api.server_removal(server);
-    assert!(said.contains("1 playlist"), "{said}");
+    let facts: serde_json::Value = serde_json::from_str(&said).unwrap_or_else(|e| panic!("{said}: {e}"));
+    assert_eq!(facts["name"], "Living room", "{said}");
+    assert_eq!(facts["playlists"], 1, "its playlist leaves with it: {said}");
+    assert_eq!((facts["tracks"].as_u64(), facts["albums"].as_u64()), (Some(1), Some(1)), "{said}");
+    for kept in ["ratings", "plays", "entries", "touched"] {
+        assert_eq!(facts[kept], 0, "{kept}: {said}");
+    }
 }
 
 #[test]

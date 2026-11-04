@@ -114,3 +114,31 @@ fn a_server_s_tracks_go_a_part_at_a_time() {
     assert_eq!(left, 0);
     let _ = std::fs::remove_file(&path);
 }
+
+#[test]
+fn a_server_being_removed_says_so_in_its_row_and_its_setting() {
+    let lib = chilpa_library::Library::in_memory().unwrap();
+    let instance = super::super::keys::mint();
+    let source = lib
+        .add_server(&chilpa_library::NewServer {
+            provider: "subsonic".into(),
+            instance: instance.clone(),
+            label: "Lab".into(),
+            address: "http://lab.lan".into(),
+            libraries: "[]".into(),
+            details: "{}".into(),
+            ..Default::default()
+        })
+        .unwrap();
+    let mut api = Chilpa::new();
+    api.library = Some(lib);
+    let (_ends, done) = std::sync::mpsc::channel();
+    api.servers.removing = Some(Removing { id: source, label: "Lab".into(), instance, stage: Stage::Taking(done), asked: true });
+
+    let row = api.servers().into_iter().find(|row| row.id == source).unwrap();
+    assert_eq!(row.state, chilpa_i18n::t("Being removed…"));
+    let notes = crate::settings_rows::RowNotes { report: None, said: None, plugin_link: None };
+    let key = format!("sources.server/{source}");
+    let setting = api.server_rows(&notes).into_iter().find(|row| row.key == key).unwrap();
+    assert_eq!(setting.action, chilpa_i18n::t("Removing…"), "not Syncing, whatever else it was doing");
+}
