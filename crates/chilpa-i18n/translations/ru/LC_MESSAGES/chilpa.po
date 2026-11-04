@@ -5902,6 +5902,9 @@ msgstr "Стереонастройки действуют на двухкана�
 msgid "Stereo width · 0–100%"
 msgstr "Ширина стерео · 0–100%"
 
+msgid "Still syncing its library for the first time"
+msgstr "Ещё впервые синхронизирует библиотеку"
+
 msgid "Stop"
 msgstr "Остановить"
 
@@ -8589,6 +8592,9 @@ msgstr "{} пока недоступен: {}"
 
 msgid "{} is not available. The record will open when it is back."
 msgstr "{} недоступен. Запись откроется, когда он вернётся."
+
+msgid "{} is still syncing its library for the first time. Try again when it finishes."
+msgstr "{} ещё впервые синхронизирует свою библиотеку. Попробуйте ещё раз, когда синхронизация закончится."
 
 msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."

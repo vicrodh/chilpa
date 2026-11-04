@@ -81,25 +81,30 @@ impl Chilpa {
     }
 
     /// Whether a change of that server playlist can be sent now: the
-    /// account may change it, the network is on, the server answers and no
-    /// other change of it is on its way.
+    /// account may change it, the network is on, the server answers, it is
+    /// not in its first sync and no other change of it is on its way.
     pub(crate) fn server_playlist_open(&mut self, playlist: &crate::Playlist) -> bool {
         if !playlist.writable || self.offline() || self.server_change_pending(playlist.id) {
             return false;
         }
-        self.library().and_then(|lib| lib.server(playlist.source_id).ok().flatten()).is_some_and(|s| s.enabled && s.reachable)
+        let Some(server) = self.library().and_then(|lib| lib.server(playlist.source_id).ok().flatten()) else { return false };
+        server.enabled && server.reachable && !self.first_sync(&server)
     }
 
     /// What a playlist page shows of a server's playlist, as JSON: the
     /// server's name and icon, whether the account may change it, whether
-    /// a change is on its way, and how many of its entries are not in the
-    /// library. `{}` for any other playlist.
+    /// a change is on its way, why none can go now (`held`, empty when one
+    /// can), and how many of its entries are not in the library. `{}` for
+    /// any other playlist.
     pub fn server_playlist_json(&mut self, id: i64) -> String {
         let Some(stored) = self.server_playlist_of(id) else { return "{}".into() };
         let Some(origin) = self.server_origins().into_iter().find(|origin| origin.source_id == stored.source_id) else { return "{}".into() };
         let pending = self.server_change_pending(id);
         let describable = chilpa_servers::Kind::from_provider(&stored.provider).is_some_and(chilpa_servers::playlist_describable);
-        serde_json::json!({"server": origin.name, "icon": origin.icon, "writable": stored.writable, "pending": pending, "left_out": stored.left_out, "describable": describable}).to_string()
+        let server = self.library().and_then(|lib| lib.server(stored.source_id).ok().flatten());
+        let held = if server.is_some_and(|server| self.first_sync(&server)) { super::first_sync_said(&origin.name) } else { String::new() };
+        serde_json::json!({"server": origin.name, "icon": origin.icon, "writable": stored.writable, "pending": pending, "held": held, "left_out": stored.left_out, "describable": describable})
+            .to_string()
     }
 
     /// The servers by the source their playlists carry, with their names
@@ -228,21 +233,28 @@ impl Chilpa {
     /// The servers a new playlist can be made on, as the picker's source
     /// chooser lists them: those that are on, and that take every one of the
     /// tracks, all of them theirs. One that makes a playlist only with
-    /// tracks in it is not offered for an empty one, and `why` says so.
+    /// tracks in it is not offered for an empty one, nor one in its first
+    /// sync, and `why` says so.
     pub(crate) fn server_playlist_sources(&mut self, track_ids: &[i64]) -> Vec<serde_json::Value> {
         let entries = self.mixed_playlist_entries(track_ids, false).unwrap_or_default();
         let complete = entries.len() == track_ids.len();
         let offline = self.offline();
-        let reachable: HashSet<i64> = self.library().and_then(|lib| lib.servers().ok()).unwrap_or_default().into_iter().filter(|s| s.reachable).map(|s| s.source_id).collect();
+        let stored = self.library().and_then(|lib| lib.servers().ok()).unwrap_or_default();
+        let reachable: HashSet<i64> = stored.iter().filter(|s| s.reachable).map(|s| s.source_id).collect();
+        let syncing: HashSet<i64> = stored.iter().filter(|s| self.first_sync(s)).map(|s| s.source_id).collect();
         self.server_origins()
             .into_iter()
             .filter(|origin| origin.enabled)
             .map(|origin| {
                 let theirs = complete && entries.iter().all(|e| e.source_id == Some(origin.source_id));
                 let empty = track_ids.is_empty() && origin.kind.is_some_and(chilpa_servers::playlist_needs_tracks);
-                let mut row = serde_json::json!({"id": origin.key, "name": origin.name, "accepts": theirs && !empty && !offline && reachable.contains(&origin.source_id)});
+                let first = syncing.contains(&origin.source_id);
+                let accepts = theirs && !empty && !first && !offline && reachable.contains(&origin.source_id);
+                let mut row = serde_json::json!({"id": origin.key, "name": origin.name, "accepts": accepts});
                 if empty {
                     row["why"] = needs_tracks().into();
+                } else if first {
+                    row["why"] = chilpa_i18n::t("Still syncing its library for the first time").into();
                 }
                 row
             })

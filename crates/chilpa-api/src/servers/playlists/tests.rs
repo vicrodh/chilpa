@@ -154,6 +154,39 @@ fn a_server_that_makes_no_empty_playlist_is_not_offered_for_one() {
 }
 
 #[test]
+fn a_server_in_its_first_sync_takes_no_change_of_its_playlists_until_it_ends() {
+    let (mut api, id, key, track, _) = with_a_server_playlist();
+    let source = api.playlist(id).unwrap().source_id;
+    // Its sync is running, as Settings shows it, and none has finished yet.
+    api.library().unwrap().connection().execute("UPDATE servers SET synced_at = NULL WHERE source_id = ?1", [source]).unwrap();
+    let keys = std::sync::Arc::new(super::super::keys::Keys::derived(std::env::temp_dir().join("chilpa-first-sync-keys")));
+    let mut syncer = super::super::sync::Syncer::start(keys, std::sync::Arc::new(std::sync::Mutex::new(())));
+    syncer.running.insert(source, 250);
+    api.servers.syncer = Some(syncer);
+    let told = chilpa_i18n::t_args("{} is still syncing its library for the first time. Try again when it finishes.", &["Living room"]);
+    api.rename_playlist(id, "Night");
+    assert_eq!(api.now_playing().error, told, "a rename is not sent");
+    api.now.error.clear();
+    assert!(api.add_to_server_playlist(id, &[track], true).is_some_and(|added| added.rejected));
+    assert_eq!(api.now_playing().error, told, "an add is not sent");
+    assert_eq!(api.create_server_playlist(&key, "Night drive", "", &[track], "r1"), Some(false));
+    assert_eq!(api.now_playing().error, told, "a new one is not made");
+    // Nothing offers it meanwhile, and its page says why.
+    let sources = api.server_playlist_sources(&[track]);
+    let row = sources.iter().find(|s| s["id"] == key.as_str()).unwrap();
+    assert_eq!((row["accepts"].as_bool(), row["why"].as_str()), (Some(false), Some(chilpa_i18n::t("Still syncing its library for the first time").as_str())));
+    assert!(api.playlist_targets(&[track], "").iter().all(|t| t.playlist.id != id), "not in the picker");
+    let page: serde_json::Value = serde_json::from_str(&api.server_playlist_json(id)).unwrap();
+    assert_eq!(page["held"].as_str(), Some(told.as_str()));
+    // Once that sync ends, a change goes to the server's door again.
+    api.servers.syncer.as_mut().unwrap().running.remove(&source);
+    api.rename_playlist(id, "Night");
+    assert_ne!(api.now_playing().error, told);
+    let page: serde_json::Value = serde_json::from_str(&api.server_playlist_json(id)).unwrap();
+    assert_eq!(page["held"].as_str(), Some(""));
+}
+
+#[test]
 fn a_disabled_server_s_playlists_are_hidden_and_kept() {
     let (mut api, id, _, track, _) = with_a_server_playlist();
     let source = api.playlist(id).unwrap().source_id;

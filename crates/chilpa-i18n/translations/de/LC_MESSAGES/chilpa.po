@@ -5898,6 +5898,9 @@ msgstr "Die Stereo-Regler gelten für zweikanaliges PCM. EQ und verknüpfte Komp
 msgid "Stereo width · 0–100%"
 msgstr "Stereobreite · 0–100%"
 
+msgid "Still syncing its library for the first time"
+msgstr "Synchronisiert seine Bibliothek noch zum ersten Mal"
+
 msgid "Stop"
 msgstr "Stopp"
 
@@ -8574,6 +8577,9 @@ msgstr "{} ist noch nicht verfügbar: {}"
 
 msgid "{} is not available. The record will open when it is back."
 msgstr "{} ist nicht verfügbar. Das Album öffnet sich, sobald es wieder da ist."
+
+msgid "{} is still syncing its library for the first time. Try again when it finishes."
+msgstr "{} synchronisiert seine Bibliothek noch zum ersten Mal. Versuche es noch einmal, wenn das fertig ist."
 
 msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."

@@ -90,4 +90,20 @@ TestCase {
         Playlists.rev++
         tryCompare(play, "visible", false)
     }
+
+    // While its server reads its library for the first time, a server's
+    // playlist takes no change, and the page says why.
+    function test_a_server_s_playlist_held_by_its_first_sync_says_so_and_takes_no_change() {
+        const held = "Living room is still syncing its library for the first time. Try again when it finishes."
+        PlaylistManager.serverPlaylists = {"-3": {server: "Living room", icon: "server", writable: true, pending: false, held: held, left_out: 0}}
+        Playlists.rev++
+        tryCompare(serverPage, "ofServer", true)
+        compare(serverPage.changeable, false)
+        compare(findChild(serverPage, "playlistHint").text, held)
+        PlaylistManager.serverPlaylists = {"-3": {server: "Living room", icon: "server", writable: true, pending: false, held: "", left_out: 0}}
+        Playlists.rev++
+        tryCompare(serverPage, "changeable", true)
+        PlaylistManager.serverPlaylists = ({})
+        Playlists.rev++
+    }
 }

@@ -5898,6 +5898,9 @@ msgstr ""
 msgid "Stereo width · 0–100%"
 msgstr ""
 
+msgid "Still syncing its library for the first time"
+msgstr ""
+
 msgid "Stop"
 msgstr ""
 
@@ -8573,6 +8576,9 @@ msgid "{} is not available yet: {}"
 msgstr ""
 
 msgid "{} is not available. The record will open when it is back."
+msgstr ""
+
+msgid "{} is still syncing its library for the first time. Try again when it finishes."
 msgstr ""
 
 msgid "{} item needs attention before bit-perfect playback will work."

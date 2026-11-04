@@ -395,13 +395,17 @@ impl Chilpa {
     }
 
     /// Sends one change of a server's playlist to its thread. Refused, with
-    /// why, when it cannot go out now: the network is off, the server does
-    /// not answer, or a change of the same playlist is still on its way.
+    /// why, when it cannot go out now: the server is in its first sync, the
+    /// network is off, the server does not answer, or a change of the same
+    /// playlist is still on its way.
     /// Nothing is kept to send later: the server is the source of truth.
     pub(crate) fn ask_server_change(&mut self, write: writing::Write) -> Result<(), String> {
         let Some(stored) = self.library().and_then(|lib| lib.server(write.source).ok().flatten()) else {
             return Err(chilpa_i18n::t("that server is no longer in the library"));
         };
+        if self.first_sync(&stored) {
+            return Err(first_sync_said(&stored.label));
+        }
         if self.offline() {
             return Err(chilpa_i18n::t("Turn the network on to change a server's playlist."));
         }
@@ -424,6 +428,14 @@ impl Chilpa {
             self.servers.answers.insert(source, serde_json::json!({"request_id": request, "pending": true}));
         }
         Ok(())
+    }
+
+    /// Whether the server is reading its catalogue for the first time, the
+    /// sync Settings shows as running and none before it finished. Until it
+    /// ends, its playlists take no change: the sync is writing the library
+    /// the change would be read back into.
+    pub(crate) fn first_sync(&self, stored: &chilpa_library::StoredServer) -> bool {
+        stored.synced_at.is_none() && self.servers.syncer.as_ref().is_some_and(|s| s.running.contains_key(&stored.source_id))
     }
 
     /// Whether a change of that playlist of the library is on its way to its
@@ -669,6 +681,11 @@ impl Chilpa {
             self.servers.changed |= look.changed;
         }
     }
+}
+
+/// Why a server in its first sync takes no change of a playlist.
+pub(crate) fn first_sync_said(server: &str) -> String {
+    chilpa_i18n::t_args("{} is still syncing its library for the first time. Try again when it finishes.", &[server])
 }
 
 /// Whether a queue entry, or a track's path, is a track on a server.

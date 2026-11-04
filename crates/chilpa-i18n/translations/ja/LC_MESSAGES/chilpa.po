@@ -5894,6 +5894,9 @@ msgstr "ステレオ設定は2チャンネルのPCMに適用されます。EQと
 msgid "Stereo width · 0–100%"
 msgstr "ステレオ幅 · 0–100%"
 
+msgid "Still syncing its library for the first time"
+msgstr "ライブラリを初めて同期しています"
+
 msgid "Stop"
 msgstr "停止"
 
@@ -8559,6 +8562,9 @@ msgstr "{}はまだ利用できません: {}"
 
 msgid "{} is not available. The record will open when it is back."
 msgstr "{}は利用できません。戻り次第、アルバムが開きます。"
+
+msgid "{} is still syncing its library for the first time. Try again when it finishes."
+msgstr "{}はライブラリを初めて同期しています。終わってからもう一度お試しください。"
 
 msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."

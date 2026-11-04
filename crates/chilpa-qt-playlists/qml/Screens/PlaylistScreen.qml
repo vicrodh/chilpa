@@ -25,11 +25,11 @@ Flickable {
     readonly property string playlistName: Playlists.name(playlistId, page.rev)
     readonly property bool editable: Playlists.editable(playlistId, Playlists.rev)
     // A music server's own playlist: it plays as a whole, and its tracks are
-    // changed through the server, while the account may and nothing else of
-    // it is on its way there.
+    // changed through the server, while the account may, nothing else of it
+    // is on its way there and nothing holds it (`held` says what).
     readonly property var server: JSON.parse(PlaylistManager.serverPlaylist(playlistId, page.rev) || "{}")
     readonly property bool ofServer: server.icon !== undefined
-    readonly property bool changeable: editable || (ofServer && server.writable === true && server.pending !== true)
+    readonly property bool changeable: editable || (ofServer && server.writable === true && server.pending !== true && !server.held)
     readonly property var covers: Playlists.covers(playlistId, Playlists.rev)
     // The order the playlist keeps for its tracks, chosen with its sort button.
     readonly property string order: sort.order
@@ -114,10 +114,11 @@ Flickable {
                 visible: hint.text !== ""
                 Icon { glyph: Icons.infoCircle; size: Metrics.iconSm; color: Theme.color.textTertiary }
                 Text {
-                    id: hint
+                    id: hint; objectName: "playlistHint"
                     width: parent.width - Metrics.iconSm - parent.spacing
                     elide: Text.ElideRight
                     text: page.server.pending === true ? I18n.trArgs("Sending the change to {}…", [page.server.server || ""], I18n.rev)
+                        : page.server.held ? page.server.held
                         : page.selectionMode && tracks.selectedCount === 0 ? I18n.tr("Click tracks to select them; Shift selects a range.", I18n.rev)
                         : page.order !== "custom" || find.typed !== "" ? ""
                         : page.changeable ? I18n.tr("Drag or use ↑↓ to keep a custom order.", I18n.rev) : I18n.tr("This source owns the order.", I18n.rev)

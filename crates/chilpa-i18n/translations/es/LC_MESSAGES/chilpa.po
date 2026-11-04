@@ -5898,6 +5898,9 @@ msgstr "Los controles estéreo se aplican a PCM de dos canales. El EQ y la compr
 msgid "Stereo width · 0–100%"
 msgstr "Anchura estéreo · 0–100%"
 
+msgid "Still syncing its library for the first time"
+msgstr "Todavía sincroniza su biblioteca por primera vez"
+
 msgid "Stop"
 msgstr "Detener"
 
@@ -8574,6 +8577,9 @@ msgstr "{} todavía no está disponible: {}"
 
 msgid "{} is not available. The record will open when it is back."
 msgstr "{} no está disponible. El disco se abrirá cuando regrese."
+
+msgid "{} is still syncing its library for the first time. Try again when it finishes."
+msgstr "{} todavía está sincronizando su biblioteca por primera vez. Vuelve a intentarlo cuando termine."
 
 msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."

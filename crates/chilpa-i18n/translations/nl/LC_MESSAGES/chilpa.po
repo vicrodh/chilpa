@@ -5898,6 +5898,9 @@ msgstr "Stereoregelaars gelden voor tweekanaals PCM. EQ en gekoppelde compressie
 msgid "Stereo width · 0–100%"
 msgstr "Stereobreedte · 0–100%"
 
+msgid "Still syncing its library for the first time"
+msgstr "Synchroniseert zijn bibliotheek nog voor het eerst"
+
 msgid "Stop"
 msgstr "Stoppen"
 
@@ -8574,6 +8577,9 @@ msgstr "{} is nog niet beschikbaar: {}"
 
 msgid "{} is not available. The record will open when it is back."
 msgstr "{} is niet beschikbaar. Het item wordt geopend zodra het weer beschikbaar is."
+
+msgid "{} is still syncing its library for the first time. Try again when it finishes."
+msgstr "{} synchroniseert zijn bibliotheek nog voor het eerst. Probeer het opnieuw als dat klaar is."
 
 msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."
