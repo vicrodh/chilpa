@@ -8224,6 +8224,9 @@ msgstr ""
 msgid "the server stopped sending the file"
 msgstr ""
 
+msgid "the server takes no list this long in one request"
+msgstr ""
+
 msgid "the server took too long to answer"
 msgstr ""
 

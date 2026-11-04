@@ -8224,6 +8224,9 @@ msgstr "o servidor não enviou áudio: {}"
 msgid "the server stopped sending the file"
 msgstr "o servidor parou de enviar o arquivo"
 
+msgid "the server takes no list this long in one request"
+msgstr "o servidor não aceita uma lista tão longa em uma única solicitação"
+
 msgid "the server took too long to answer"
 msgstr "o servidor demorou demais para responder"
 

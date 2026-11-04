@@ -16,6 +16,7 @@
 //! - **Errors come with HTTP 200**, as JSON even on a binary endpoint.
 //! - **The original bytes are `stream?format=raw`.** Several servers
 //!   convert per client or per user unless told not to.
+//! - **Its playlists are their own module** (`playlists`).
 
 use md5::{Digest, Md5};
 use serde::{Deserialize, Serialize};
@@ -24,6 +25,8 @@ use serde_json::Value;
 use crate::model::{extension_of, image, Client, Credential, Failure, Kind, Library, Page, Probe, Server, Stream, Track};
 use crate::net::{Net, Request};
 use crate::text::{artist_line, encode, id, number, random_hex, string, unix_time};
+
+pub mod playlists;
 
 /// The protocol version asked for. Every server studied answers 1.15 or
 /// 1.16, and a client may not ask for more than the server has.
@@ -52,14 +55,19 @@ fn url(address: &str, endpoint: &str, key: Option<&Credential>, extra: &str) -> 
 /// Sends one request and returns what is inside `subsonic-response`, or why
 /// not.
 fn ask(net: &dyn Net, url: String) -> Result<Value, Failure> {
-    let reply = net.send(&Request::get(url, Vec::new())).map_err(Failure::Unreachable)?;
+    send(net, Request::get(url, Vec::new()), error_of)
+}
+
+/// The same for any request, with what each error code means for it.
+fn send(net: &dyn Net, request: Request, error: fn(&Value) -> Failure) -> Result<Value, Failure> {
+    let reply = net.send(&request).map_err(Failure::Unreachable)?;
     if (300..400).contains(&reply.status) {
         return Err(Failure::moved(reply.headers.get("location").map(String::as_str).unwrap_or("")));
     }
     let body: Value = match serde_json::from_slice(&reply.body) {
         Ok(v) => v,
         // Some errors come as XML even when JSON was asked for.
-        Err(_) if reply.body.starts_with(b"<") => return Err(xml_error(&reply.body)),
+        Err(_) if reply.body.starts_with(b"<") => return Err(error(&xml_error(&reply.body))),
         Err(_) if reply.status == 401 || reply.status == 403 => {
             return Err(Failure::Refused(chilpa_i18n::t("the server did not accept the user or the password")));
         }
@@ -68,7 +76,7 @@ fn ask(net: &dyn Net, url: String) -> Result<Value, Failure> {
     let Some(response) = body.get("subsonic-response") else { return Err(not_subsonic(reply.status)) };
     match response.get("status").and_then(Value::as_str) {
         Some("ok") => Ok(response.clone()),
-        Some("failed") => Err(error_of(response.get("error").unwrap_or(&Value::Null))),
+        Some("failed") => Err(error(response.get("error").unwrap_or(&Value::Null))),
         _ => Err(not_subsonic(reply.status)),
     }
 }
@@ -89,10 +97,11 @@ fn error_of(error: &Value) -> Failure {
     }
 }
 
-fn xml_error(body: &[u8]) -> Failure {
+/// The error an XML answer carries, as the JSON one would.
+fn xml_error(body: &[u8]) -> Value {
     let text = String::from_utf8_lossy(body);
-    let code = text.split("code=\"").nth(1).and_then(|rest| rest.split('"').next()).and_then(|c| c.parse().ok()).unwrap_or(0);
-    error_of(&serde_json::json!({ "code": code }))
+    let code = text.split("code=\"").nth(1).and_then(|rest| rest.split('"').next()).and_then(|c| c.parse::<i64>().ok()).unwrap_or(0);
+    serde_json::json!({ "code": code })
 }
 
 /// What the server says of itself, before signing in.

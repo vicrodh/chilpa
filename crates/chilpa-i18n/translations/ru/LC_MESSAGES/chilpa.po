@@ -8230,6 +8230,9 @@ msgstr "сервер не прислал звук: {}"
 msgid "the server stopped sending the file"
 msgstr "сервер перестал отправлять файл"
 
+msgid "the server takes no list this long in one request"
+msgstr "сервер не принимает такой длинный список в одном запросе"
+
 msgid "the server took too long to answer"
 msgstr "сервер слишком долго отвечал"
 
