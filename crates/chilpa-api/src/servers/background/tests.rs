@@ -12,24 +12,25 @@ fn busy() -> rusqlite::Error {
 fn a_busy_library_is_tried_again_and_one_that_stays_busy_is_said() {
     let short = [Duration::from_millis(5); 3];
     let tries = Cell::new(0);
-    let got = retried("a test write", &short, || {
+    let got = retried("a test write", &short, chilpa_library::is_busy, || {
         tries.set(tries.get() + 1);
         if tries.get() < 3 { Err(busy()) } else { Ok(7) }
     });
     assert_eq!((got.ok(), tries.get()), (Some(7), 3), "busy twice, then written");
 
     let tries = Cell::new(0);
-    let got: rusqlite::Result<()> = retried("a test write", &short, || {
+    let got: rusqlite::Result<()> = retried("a test write", &short, chilpa_library::is_busy, || {
         tries.set(tries.get() + 1);
         Err(busy())
     });
     assert!(got.is_err());
     assert_eq!(tries.get(), short.len() + 1, "every wait, and no more");
-    let refusal = Refusal::of("Lab could not be removed".into(), &got.unwrap_err());
+    let error = got.unwrap_err();
+    let refusal = Refusal::library("Lab could not be removed".into(), &error, chilpa_library::is_busy(&error));
     assert!(refusal.advice.contains("busy") && !refusal.detail.is_empty(), "{refusal:?}");
 
     let tries = Cell::new(0);
-    let got: rusqlite::Result<()> = retried("a test write", &short, || {
+    let got: rusqlite::Result<()> = retried("a test write", &short, chilpa_library::is_busy, || {
         tries.set(tries.get() + 1);
         Err(rusqlite::Error::InvalidQuery)
     });

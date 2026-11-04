@@ -160,6 +160,8 @@ impl Chilpa {
         let running = self.servers.syncer.as_ref().map(|s| s.running.clone()).unwrap_or_default();
         let errors = self.servers.errors.clone();
         let refused = self.servers.refused.clone();
+        // Read before the library is: it holds `self` from there on.
+        let removing = self.servers.removing.as_ref().filter(|r| r.running()).map(|r| r.id);
         let Some(lib) = self.library() else { return Vec::new() };
         lib.servers()
             .unwrap_or_default()
@@ -170,7 +172,7 @@ impl Chilpa {
                     chilpa_i18n::t("Disabled. Its records stay in the library.")
                 } else if !s.enabled {
                     chilpa_i18n::t("Disabled. Its records stay in the library and its sign-in is saved.")
-                } else if self.servers.removing.as_ref().is_some_and(|r| r.id == s.source_id && r.running()) {
+                } else if removing == Some(s.source_id) {
                     chilpa_i18n::t("Being removed…")
                 } else if let Some(run) = running.get(&s.source_id) {
                     sync_state(run)

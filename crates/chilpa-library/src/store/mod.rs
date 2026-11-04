@@ -704,6 +704,14 @@ pub(crate) fn fts_query(text: &str) -> Option<String> {
     (!tokens.is_empty()).then(|| tokens.join(" "))
 }
 
+/// Whether a library call failed only because another connection was
+/// writing: worth asking again a little later. Callers that are not this
+/// crate need not know the database underneath to tell.
+pub fn is_busy(error: &rusqlite::Error) -> bool {
+    matches!(error, rusqlite::Error::SqliteFailure(failure, _)
+        if matches!(failure.code, rusqlite::ErrorCode::DatabaseBusy | rusqlite::ErrorCode::DatabaseLocked))
+}
+
 pub(crate) fn now_unix() -> i64 {
     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0)
 }

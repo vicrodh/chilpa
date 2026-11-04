@@ -341,7 +341,7 @@ impl Syncer {
 /// instead of failing the sync (`background::retried`).
 pub(crate) fn open_library() -> Option<chilpa_library::Library> {
     let path = chilpa_library::Library::default_path();
-    super::background::retried("opening the library for a server's thread", &super::background::WAITS, || {
+    super::background::retried("opening the library for a server's thread", &super::background::WAITS, chilpa_library::is_busy, || {
         chilpa_library::Library::open_existing(&path)
     })
     .ok()

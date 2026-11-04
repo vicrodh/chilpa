@@ -842,12 +842,22 @@ mod tests {
             details: Details::default(),
         });
         let library = |id: &str, name: &str| Library { id: id.into(), name: name.into() };
-        setup.show_containers(vec![("0".into(), String::new())], vec![library("music", "Music")], vec!["music".into()]);
+        let inside = |id: &str, views: bool, holds: dlna::Holds| dlna::Inside { id: id.into(), views, holds };
+        setup.show_containers(
+            vec![("0".into(), String::new())],
+            vec![library("music", "Music"), library("prefs", "Preferences")],
+            vec![inside("music", true, dlna::Holds::Music), inside("prefs", false, dlna::Holds::Others)],
+            Vec::new(),
+        );
         assert_eq!((setup.view.step.as_str(), setup.view.crumbs.len()), ("libraries", 1));
         assert!(!setup.view.views && setup.view.view_roots == ["music"], "a section that holds views is said");
+        assert_eq!(setup.view.no_music.len(), 1, "one with no songs is said");
+        assert_eq!(setup.view.choices[1].0, "prefs");
+        assert!(!setup.view.choices[1].2.is_empty(), "with why, where its detail goes");
         setup.show_containers(
             vec![("0".into(), String::new()), ("music".into(), "Music".into())],
             vec![library("folders", "By Folder"), library("albums", "By Album"), library("artists", "All Artists")],
+            Vec::new(),
             Vec::new(),
         );
         assert!(setup.view.views, "views of one library are said");
@@ -856,7 +866,7 @@ mod tests {
         assert_eq!(setup.crumbs_to("0"), Some(vec![("0".to_string(), String::new())]), "back up to the top");
         assert_eq!(setup.crumbs_to("folders").map(|crumbs| crumbs.len()), Some(3), "down into one it shows");
         assert_eq!(setup.crumbs_to("elsewhere"), None, "never into one it did not show");
-        let ready = setup.finish(&["folders".into(), "music".into(), "nowhere".into(), "folders".into()]).unwrap();
+        let ready = setup.finish(&["folders".into(), "music".into(), "prefs".into(), "nowhere".into(), "folders".into()]).unwrap();
         assert_eq!(ready.libraries, vec!["folders".to_string(), "music".to_string()], "chosen at two levels, once each");
         assert_eq!(ready.key, Credential::Anonymous);
         let names: Vec<(&str, &str)> = ready.details.folders.iter().map(|f| (f.id.as_str(), f.name.as_str())).collect();

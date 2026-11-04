@@ -42,13 +42,20 @@ pub(crate) struct Refusal {
 }
 
 impl Refusal {
-    fn of(title: String, error: &rusqlite::Error) -> Self {
-        let advice = if is_busy(error) {
+    /// What a library error says, under `title`: `busy` when another
+    /// writer held the library (`chilpa_library::is_busy`).
+    fn of(title: String, busy: bool, detail: String) -> Self {
+        let advice = if busy {
             chilpa_i18n::t("The library stayed busy with another task. Nothing more was taken out; try again in a moment.")
         } else {
             chilpa_i18n::t("The library could not be changed. Try again; the detail below says what happened.")
         };
-        Self { title, advice, detail: error.to_string() }
+        Self { title, advice, detail }
+    }
+
+    /// `of`, for a library error.
+    fn library(title: String, error: &impl std::fmt::Display, busy: bool) -> Self {
+        Self::of(title, busy, error.to_string())
     }
 
     /// One line for a notice, when no dialog waits on it.
@@ -158,7 +165,9 @@ impl Chilpa {
             }
             return;
         };
-        removing.stage = match removing.stage {
+        // Taken out, so `removing` stays whole for what follows.
+        let stage = std::mem::replace(&mut removing.stage, Stage::Done);
+        removing.stage = match stage {
             Stage::Stopping(since) => {
                 let syncing = self.servers.syncer.as_ref().is_some_and(|s| s.has(removing.id));
                 if syncing && since.elapsed() < STOP_WAIT {
@@ -255,13 +264,13 @@ impl Chilpa {
         let (path, label) = (chilpa_library::Library::default_path(), server.label.clone());
         let spawned = std::thread::Builder::new().name("chilpa-server-toggle".into()).spawn(move || {
             let turned = chilpa_library::Library::open_existing(&path)
-                .and_then(|lib| retried("turning a server off or on", &WAITS, || lib.set_server_enabled(id, enabled)));
+                .and_then(|lib| retried("turning a server off or on", &WAITS, chilpa_library::is_busy, || lib.set_server_enabled(id, enabled)));
             let title = if enabled {
                 chilpa_i18n::t_args("{} could not be turned on", &[&label])
             } else {
                 chilpa_i18n::t_args("{} could not be turned off", &[&label])
             };
-            let _ = tx.send(turned.map_err(|e| Refusal::of(title, &e)));
+            let _ = tx.send(turned.map_err(|e| Refusal::library(title, &e, chilpa_library::is_busy(&e))));
         });
         if spawned.is_err() {
             return false;
@@ -303,7 +312,8 @@ impl Chilpa {
 /// between tries.
 pub(crate) fn take(path: &Path, keys: Option<&Keys>, id: i64, instance: &str, label: &str, waits: &[Duration]) -> Result<(), Refusal> {
     let title = || chilpa_i18n::t_args("{} could not be removed", &[label]);
-    let lib = chilpa_library::Library::open_existing(path).map_err(|e| Refusal::of(title(), &e))?;
+    let refused = |e: &_| Refusal::library(title(), e, chilpa_library::is_busy(e));
+    let lib = chilpa_library::Library::open_existing(path).map_err(|e| refused(&e))?;
     if keys.is_some_and(|keys| !keys.forget(instance)) {
         unmark(id);
         return Err(Refusal {
@@ -312,17 +322,17 @@ pub(crate) fn take(path: &Path, keys: Option<&Keys>, id: i64, instance: &str, la
             detail: String::new(),
         });
     }
-    retried("turning a server off to remove it", waits, || lib.set_server_enabled(id, false)).map_err(|e| Refusal::of(title(), &e))?;
+    retried("turning a server off to remove it", waits, chilpa_library::is_busy, || lib.set_server_enabled(id, false)).map_err(|e| refused(&e))?;
     let mut taken = 0;
     loop {
-        let part = retried("taking a server's tracks out", waits, || lib.remove_source_tracks(id, PART)).map_err(|e| Refusal::of(title(), &e))?;
+        let part = retried("taking a server's tracks out", waits, chilpa_library::is_busy, || lib.remove_source_tracks(id, PART)).map_err(|e| refused(&e))?;
         if part == 0 {
             break;
         }
         taken += part;
     }
     let chosen = lib.overlay_covers_dir(id);
-    retried("taking the rest of a server out", waits, || lib.remove_source(id)).map_err(|e| Refusal::of(title(), &e))?;
+    retried("taking the rest of a server out", waits, chilpa_library::is_busy, || lib.remove_source(id)).map_err(|e| refused(&e))?;
     for covers in std::iter::once(sync::covers_dir(instance)).chain(chosen) {
         if let Err(e) = std::fs::remove_dir_all(&covers) {
             if e.kind() != std::io::ErrorKind::NotFound {
@@ -335,15 +345,20 @@ pub(crate) fn take(path: &Path, keys: Option<&Keys>, id: i64, instance: &str, la
     Ok(())
 }
 
-/// Runs a write, again after each of `waits` while the library is busy
-/// with another writer. Any other error, or still busy after the last, is
-/// returned, and written to the log.
-pub(crate) fn retried<T>(what: &str, waits: &[Duration], mut write: impl FnMut() -> rusqlite::Result<T>) -> rusqlite::Result<T> {
+/// Runs a write, again after each of `waits` while `busy` says the library
+/// is held by another writer (`chilpa_library::is_busy`). Any other error,
+/// or still busy after the last, is returned, and written to the log.
+pub(crate) fn retried<T, E: std::fmt::Display>(
+    what: &str,
+    waits: &[Duration],
+    busy: impl Fn(&E) -> bool,
+    mut write: impl FnMut() -> Result<T, E>,
+) -> Result<T, E> {
     let mut tries = 0;
     loop {
         match write() {
             Ok(value) => return Ok(value),
-            Err(e) if is_busy(&e) && tries < waits.len() => {
+            Err(e) if busy(&e) && tries < waits.len() => {
                 eprintln!("chilpa-servers: {what}: the library is busy; tried again in {:?}", waits[tries]);
                 std::thread::sleep(waits[tries]);
                 tries += 1;
@@ -354,11 +369,6 @@ pub(crate) fn retried<T>(what: &str, waits: &[Duration], mut write: impl FnMut()
             }
         }
     }
-}
-
-fn is_busy(error: &rusqlite::Error) -> bool {
-    matches!(error, rusqlite::Error::SqliteFailure(failure, _)
-        if matches!(failure.code, rusqlite::ErrorCode::DatabaseBusy | rusqlite::ErrorCode::DatabaseLocked))
 }
 
 /// Where unfinished removals are marked, one file per source.
