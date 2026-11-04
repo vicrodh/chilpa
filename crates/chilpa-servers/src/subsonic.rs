@@ -237,7 +237,7 @@ pub fn page(net: &dyn Net, server: &Server, key: &Credential, cursor: Option<&st
     } else {
         None
     };
-    Ok(Page { tracks, next: next.map(|c| serde_json::to_string(&c).unwrap_or_default()), total: None, scope: cursor.folder.to_string(), partial })
+    Ok(Page { tracks, next: next.map(|c| serde_json::to_string(&c).unwrap_or_default()), total: None, scope: cursor.folder.to_string(), partial, skipped: 0 })
 }
 
 /// How many songs the chosen folders have now, from the record list alone.

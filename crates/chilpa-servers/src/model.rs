@@ -233,6 +233,9 @@ pub struct Page {
     /// songs, an item that is not a track as it should be, a count that was
     /// not said. The sync then takes nothing out.
     pub partial: bool,
+    /// Containers of a media server that could not be read and were left
+    /// out, so the walk went on past them. Such a page is partial too.
+    pub skipped: u64,
 }
 
 /// Where a track's bytes are read from.

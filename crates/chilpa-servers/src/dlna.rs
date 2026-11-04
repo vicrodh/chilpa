@@ -256,7 +256,7 @@ pub fn ping(net: &dyn Net, server: &Server) -> Result<(), Failure> {
 /// of them.
 pub fn folders(net: &dyn Net, server: &Server, id: &str) -> Result<Vec<Library>, Failure> {
     let answer = answer(&call(net, &control(server), "Browse", &browse(id, 0))?)?;
-    Ok(listing(server, &answer.result, None)?
+    Ok(listing(server, &answer.result, None, None)?
         .folders
         .into_iter()
         .map(|f| Library {
@@ -272,20 +272,57 @@ struct Cursor {
     /// The containers chosen, and which one is being read.
     scopes: Vec<String>,
     scope: usize,
-    /// The container being read, how deep it is below its scope, and the
-    /// container its records are grouped under (`grouped_under`).
-    current: Option<(String, u8, String)>,
+    /// The container being read, how deep it is below its scope, the
+    /// container its records are grouped under (`grouped_under`), and its
+    /// art, for the tracks in it that name none.
+    current: Option<(String, u8, String, String)>,
     /// Where its next page starts, and what its pages counted.
     offset: u64,
     total: u64,
-    /// Containers met and not read yet, with their depth and grouping.
-    waiting: Vec<(String, u8, String)>,
+    /// Containers met and not read yet, as `current`.
+    waiting: Vec<(String, u8, String, String)>,
     /// `Search` is not used: each scope is walked.
     walk: bool,
+    /// A fingerprint of the last page of the container being read. A server
+    /// that answers the next page with the same one is not moving.
+    #[serde(default)]
+    last: u64,
 }
+
+impl Cursor {
+    /// The next container to read: the last one met, then the next scope.
+    fn advance(&mut self) {
+        self.offset = 0;
+        self.total = 0;
+        self.last = 0;
+        self.current = self.waiting.pop();
+        if self.current.is_none() && self.scope + 1 < self.scopes.len() {
+            self.scope += 1;
+            self.current = self.scopes.get(self.scope).map(|scope| top(scope));
+        }
+    }
+
+    fn onward(&self) -> Option<String> {
+        self.current.as_ref().and_then(|_| serde_json::to_string(self).ok())
+    }
+}
+
+/// A chosen container, as a walk starts reading it.
+fn top(scope: &str) -> (String, u8, String, String) {
+    (scope.to_string(), 0, scope.to_string(), String::new())
+}
+
+/// How long a walk waits before asking again for a container that did not
+/// come: once, then once more.
+const RETRIES: [Duration; 2] = [Duration::from_millis(500), Duration::from_secs(2)];
 
 /// One page of the containers chosen. `None` starts at the first; nothing
 /// chosen is the whole server.
+///
+/// A container that cannot be read is asked for again, twice. If it still
+/// does not come and the server answers otherwise, it is left out, the
+/// page says so (`Page::skipped`), and the walk goes on with the next one:
+/// one folder the server cannot give does not end the sync.
 pub fn page(net: &dyn Net, server: &Server, cursor: Option<&str>) -> Result<Page, Failure> {
     let mut cursor: Cursor = match cursor {
         Some(text) => serde_json::from_str(text).map_err(|_| {
@@ -297,9 +334,7 @@ pub fn page(net: &dyn Net, server: &Server, cursor: Option<&str>) -> Result<Page
             } else {
                 server.libraries.clone()
             };
-            let current = scopes
-                .first()
-                .map(|scope| (scope.clone(), 0, scope.clone()));
+            let current = scopes.first().map(|scope| top(scope));
             Cursor {
                 scopes,
                 current,
@@ -308,7 +343,7 @@ pub fn page(net: &dyn Net, server: &Server, cursor: Option<&str>) -> Result<Page
             }
         }
     };
-    let (Some(scope), Some((container, depth, group))) = (
+    let (Some(scope), Some((container, depth, group, art))) = (
         cursor.scopes.get(cursor.scope).cloned(),
         cursor.current.clone(),
     ) else {
@@ -325,76 +360,134 @@ pub fn page(net: &dyn Net, server: &Server, cursor: Option<&str>) -> Result<Page
     } else {
         ("Search", search(&container, cursor.offset))
     };
-    let answer = match call(net, &control(server), action, &args).and_then(|text| answer(&text)) {
-        Ok(answer) => answer,
-        // A server that announced `Search` and then refuses it is walked,
-        // from the top of the scope.
-        Err(Failure::Unexpected(_)) if !cursor.walk => {
-            cursor.walk = true;
-            cursor.offset = 0;
-            cursor.total = 0;
-            cursor.waiting.clear();
-            cursor.current = Some((page.scope.clone(), 0, page.scope.clone()));
-            page.next = serde_json::to_string(&cursor).ok();
-            return Ok(page);
-        }
-        Err(failure) => return Err(failure),
-    };
     // A walk knows which container it reads; a search gives items from
     // anywhere below the scope.
     let regroup = cursor.walk.then_some((container.as_str(), group.as_str()));
-    let listing = listing(server, &answer.result, regroup)?;
+    let ask = || -> Result<(Answer, Listing), Failure> {
+        let answer = answer(&call(net, &control(server), action, &args)?)?;
+        let listing = listing(server, &answer.result, regroup, Some(art.as_str()))?;
+        Ok((answer, listing))
+    };
+    let at = cursor.offset;
+    let read = if cursor.walk {
+        let mut tries = 0;
+        loop {
+            match ask() {
+                Ok(read) => break Some(read),
+                Err(failure) if tries < RETRIES.len() => {
+                    eprintln!(
+                        "chilpa-servers: media server container {container}: Browse at StartingIndex {at} failed ({failure}); asked again in {:?}",
+                        RETRIES[tries]
+                    );
+                    std::thread::sleep(RETRIES[tries]);
+                    tries += 1;
+                }
+                Err(failure) => {
+                    // A server that no longer answers ends the sync; one that
+                    // answers, and cannot give this container, leaves it out.
+                    if failure.is_unreachable() && ping(net, server).is_err() {
+                        return Err(failure);
+                    }
+                    eprintln!(
+                        "chilpa-servers: media server container {container} left out after {} tries at StartingIndex {at}: {failure}",
+                        tries + 1
+                    );
+                    break None;
+                }
+            }
+        }
+    } else {
+        match ask() {
+            Ok(read) => Some(read),
+            // A server that announced `Search` and then refuses it is
+            // walked, from the top of the scope.
+            Err(Failure::Unexpected(_)) => {
+                cursor.walk = true;
+                cursor.offset = 0;
+                cursor.total = 0;
+                cursor.waiting.clear();
+                cursor.current = Some(top(&page.scope));
+                page.next = cursor.onward();
+                return Ok(page);
+            }
+            Err(failure) => return Err(failure),
+        }
+    };
+    let Some((answer, listing)) = read else {
+        page.partial = true;
+        page.skipped = 1;
+        cursor.advance();
+        page.next = cursor.onward();
+        return Ok(page);
+    };
+    // What each odd answer was, for the log: a sync that ends short says
+    // where.
+    let said = |why: &str| {
+        eprintln!(
+            "chilpa-servers: media server container {container}: {why} (StartingIndex {at}, NumberReturned {}, TotalMatches {})",
+            answer.returned, answer.total
+        );
+    };
+    // The same page again where the next one was asked for: reading on would
+    // ask for it until a cap, and nothing new would come.
+    let print = fingerprint(&answer.result);
+    let repeated = at > 0 && answer.returned > 0 && print == cursor.last;
+    if repeated {
+        said("the page before came again; the container is left there");
+        page.partial = true;
+    }
     // A count that changes between pages: the container changed while it
     // was read.
-    if cursor.offset > 0 && answer.total != cursor.total {
+    if at > 0 && answer.total != cursor.total {
+        said("its count changed while it was read");
         page.partial = true;
     }
     cursor.total = answer.total;
-    if cursor.walk {
+    if cursor.walk && !repeated {
         for folder in listing.folders {
             if depth >= DEPTH || cursor.waiting.len() >= WAITING {
+                said("containers below it were left out: too deep, or too many waiting");
                 page.partial = true;
                 break;
             }
             let under = grouped_under(&folder, &group);
-            cursor.waiting.push((folder.id, depth + 1, under));
+            // A container without art of its own shows the one above it.
+            let shown = if folder.art.is_empty() { art.clone() } else { folder.art };
+            cursor.waiting.push((folder.id, depth + 1, under, shown));
         }
     }
-    page.tracks = listing.tracks;
-    let read = cursor.offset + answer.returned;
-    let mut more = if answer.total > 0 {
-        answer.returned > 0 && read < answer.total
-    } else {
-        answer.returned >= PAGE
-    };
+    if !repeated {
+        page.tracks = listing.tracks;
+    }
+    let read = at + answer.returned;
+    // One that does not count is read until a page brings nothing: a page
+    // shorter than asked is not its end, some servers give less at a time.
+    let mut more = !repeated && answer.returned > 0 && (answer.total == 0 || read < answer.total);
     if more && read >= ENTRIES {
+        said("it holds more entries than a container is read for");
         more = false;
         page.partial = true;
     }
     // A container that does not count its entries, or gives fewer than it
     // counts, cannot be shown to have been read whole.
-    if (answer.total == 0 && answer.returned > 0) || (!more && read < answer.total) {
+    if answer.total == 0 && answer.returned > 0 {
+        if at == 0 {
+            said("it does not count its entries");
+        }
+        page.partial = true;
+    }
+    if !more && !repeated && read < answer.total {
+        said("it gave fewer entries than it counts");
         page.partial = true;
     }
     if more {
+        said("read in pages");
         cursor.offset = read;
+        cursor.last = print;
     } else {
-        cursor.offset = 0;
-        cursor.total = 0;
-        cursor.current = cursor.waiting.pop();
-        if cursor.current.is_none() && cursor.scope + 1 < cursor.scopes.len() {
-            cursor.scope += 1;
-            cursor.current = cursor
-                .scopes
-                .get(cursor.scope)
-                .map(|scope| (scope.clone(), 0, scope.clone()));
-        }
+        cursor.advance();
     }
-    page.next = if cursor.current.is_some() {
-        serde_json::to_string(&cursor).ok()
-    } else {
-        None
-    };
+    page.next = cursor.onward();
     Ok(page)
 }
 
@@ -536,6 +629,8 @@ fn escape(text: &str) -> String {
 struct Folder {
     id: String,
     title: String,
+    /// Its `upnp:albumArtURI`, as kept (`kept`); empty when it has none.
+    art: String,
 }
 
 /// What one page listed: containers and the tracks among its items.
@@ -579,8 +674,14 @@ fn is_disc(title: &str) -> bool {
 }
 
 /// What a page lists. `regroup` is the container a walk reads and the one
-/// its records are grouped under, when they differ (`grouped_under`).
-fn listing(server: &Server, didl: &str, regroup: Option<(&str, &str)>) -> Result<Listing, Failure> {
+/// its records are grouped under, when they differ (`grouped_under`);
+/// `art` is the container's art, for a track that names none.
+fn listing(
+    server: &Server,
+    didl: &str,
+    regroup: Option<(&str, &str)>,
+    art: Option<&str>,
+) -> Result<Listing, Failure> {
     let mut out = Listing::default();
     if didl.trim().is_empty() {
         return Ok(out);
@@ -597,10 +698,11 @@ fn listing(server: &Server, didl: &str, regroup: Option<(&str, &str)>) -> Result
                 out.folders.push(Folder {
                     id: id.to_string(),
                     title: field(node, "title"),
+                    art: art_of(server, node).unwrap_or_default(),
                 });
             }
         } else if node.has_tag_name("item") {
-            out.tracks.extend(track(server, node, regroup));
+            out.tracks.extend(track(server, node, regroup, art));
         }
     }
     Ok(out)
@@ -611,6 +713,7 @@ fn track(
     server: &Server,
     node: roxmltree::Node<'_, '_>,
     regroup: Option<(&str, &str)>,
+    art: Option<&str>,
 ) -> Option<Track> {
     let class = field(node, "class");
     if !class.starts_with("object.item.audioItem")
@@ -679,12 +782,9 @@ fn track(
             genres.push(genre.to_string());
         }
     }
-    let cover = node
-        .children()
-        .find(|n| n.has_tag_name("albumArtURI"))
-        .and_then(|n| n.text())
-        .and_then(|uri| resolve(&server.address, uri))
-        .and_then(|url| kept(&server.address, &url));
+    // Its own art, or the container's when it names none.
+    let cover = art_of(server, node)
+        .or_else(|| art.filter(|a| !a.is_empty()).map(str::to_string));
     let mut track = Track {
         id,
         title: field(node, "title"),
@@ -716,6 +816,29 @@ fn track(
     ));
     track.revision = Some(format!("{stamp:016x} {}", original.url));
     Some(track)
+}
+
+/// The art an item or a container names, as kept (`kept`): its
+/// `upnp:albumArtURI`, or else a `res` that is an image, the way some
+/// servers give a cover. Only on the server's own host.
+fn art_of(server: &Server, node: roxmltree::Node<'_, '_>) -> Option<String> {
+    let on_host = |uri: &str| resolve(&server.address, uri).and_then(|url| kept(&server.address, &url));
+    let named = node
+        .children()
+        .filter(|n| n.has_tag_name("albumArtURI"))
+        .filter_map(|n| n.text())
+        .find_map(&on_host);
+    named.or_else(|| {
+        node.children()
+            .filter(|n| n.has_tag_name("res"))
+            .filter(|res| {
+                res.attribute("protocolInfo")
+                    .and_then(|info| info.split(':').nth(2))
+                    .is_some_and(|mime| mime.trim().to_ascii_lowercase().starts_with("image/"))
+            })
+            .filter_map(|res| res.text())
+            .find_map(&on_host)
+    })
 }
 
 /// The performers an item names: its artists without a role, or with the

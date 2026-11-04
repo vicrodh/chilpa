@@ -721,3 +721,133 @@ fn a_duration_reads_in_milliseconds() {
         assert_eq!(duration_ms(odd), None, "{odd}");
     }
 }
+
+#[test]
+fn a_page_that_comes_again_ends_its_container_and_is_partial() {
+    let server = plex(&[RECORD]);
+    let again = counted(&saved("plex-album-one.xml"), 3, 6);
+    let net = Canned::new()
+        .answer(200, again.as_bytes())
+        .answer(200, again.as_bytes());
+    let first = page(&net, &server, None).unwrap();
+    assert!(!first.partial && first.next.is_some(), "{first:?}");
+    assert_eq!(first.tracks.len(), 3);
+    let second = page(&net, &server, first.next.as_deref()).unwrap();
+    assert!(second.partial, "six counted, the same three given twice");
+    assert!(second.tracks.is_empty() && second.next.is_none(), "{second:?}");
+    assert_eq!(net.asked().len(), 2, "not asked a third time");
+}
+
+#[test]
+fn a_container_that_does_not_count_is_read_past_a_short_page() {
+    let server = plex(&[RECORD]);
+    let net = Canned::new()
+        .answer(200, counted(&saved("plex-album-one.xml"), 3, 0).as_bytes())
+        .answer(200, listed("", 0, 0).as_bytes());
+    let first = page(&net, &server, None).unwrap();
+    assert_eq!(first.tracks.len(), 3);
+    assert!(first.partial, "a container that does not count cannot be shown whole");
+    let next = first.next.as_deref().expect("three of two hundred is not its end");
+    let second = page(&net, &server, Some(next)).unwrap();
+    assert!(second.tracks.is_empty() && second.next.is_none(), "{second:?}");
+    assert!(body(&net.asked()[1]).contains("<StartingIndex>3</StartingIndex>"));
+}
+
+#[test]
+fn a_container_the_server_cannot_give_is_left_out_and_the_walk_goes_on() {
+    let server = plex(&["top"]);
+    let top = [container("good", "Good"), container("bad", "Bad")].concat();
+    // The walk reads the last container met first: three tries, then a
+    // ping, which answers.
+    let net = Canned::new()
+        .answer(200, listed(&top, 2, 2).as_bytes())
+        .silence()
+        .silence()
+        .silence()
+        .file("dlna/plex-update-id.xml")
+        .answer(200, listed(&song("t1", "good", "Record"), 1, 1).as_bytes());
+    let first = page(&net, &server, None).unwrap();
+    let left = page(&net, &server, first.next.as_deref()).unwrap();
+    assert_eq!(left.skipped, 1);
+    assert!(left.partial && left.tracks.is_empty(), "{left:?}");
+    let good = page(&net, &server, left.next.as_deref()).unwrap();
+    assert_eq!(good.tracks.len(), 1, "the walk went on past it");
+    assert!(good.next.is_none());
+    let asked: Vec<String> = net.asked().iter().map(body).collect();
+    assert!(asked[1..4].iter().all(|b| b.contains("<ObjectID>bad</ObjectID>")), "{asked:?}");
+    assert!(asked[4].contains("GetSystemUpdateID"), "{}", asked[4]);
+
+    // A server that no longer answers at all ends the walk.
+    let net = Canned::new()
+        .answer(200, listed(&top, 2, 2).as_bytes())
+        .silence()
+        .silence()
+        .silence()
+        .silence();
+    let first = page(&net, &server, None).unwrap();
+    assert!(page(&net, &server, first.next.as_deref())
+        .unwrap_err()
+        .is_unreachable());
+
+    // One that answers with something that is not a listing is left out
+    // without a ping.
+    let net = Canned::new()
+        .answer(200, listed(&top, 2, 2).as_bytes())
+        .answer(200, b"<html>Bad gateway</html>")
+        .answer(200, b"<html>Bad gateway</html>")
+        .answer(200, b"<html>Bad gateway</html>");
+    let first = page(&net, &server, None).unwrap();
+    assert_eq!(page(&net, &server, first.next.as_deref()).unwrap().skipped, 1);
+    assert_eq!(net.asked().len(), 4);
+}
+
+#[test]
+fn a_record_s_art_is_its_own_an_image_it_carries_or_its_folder_s() {
+    let art = |path: &str| format!("<upnp:albumArtURI>{path}</upnp:albumArtURI>");
+    let folder = format!(
+        "<container id=\"rec\" parentID=\"top\" restricted=\"1\"><dc:title>Record</dc:title>{}\
+         <upnp:class>object.container.album.musicAlbum</upnp:class></container>",
+        art("/art/Rec%20One.jpg")
+    );
+    let item = |id: &str, extra: &str| {
+        format!(
+            "<item id=\"{id}\" parentID=\"rec\" restricted=\"1\"><dc:title>Song {id}</dc:title>\
+             <upnp:album>Record</upnp:album>{extra}\
+             <res protocolInfo=\"http-get:*:audio/flac:*\">http://192.168.0.69:32469/object/{id}/file.flac</res>\
+             <upnp:class>object.item.audioItem.musicTrack</upnp:class></item>"
+        )
+    };
+    let songs = [
+        item("own", &art("http://192.168.0.69:32469/proxy/own/albumart.jpg")),
+        item(
+            "res",
+            "<res protocolInfo=\"http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN\">http://192.168.0.69:32469/thumb/res.jpg</res>",
+        ),
+        item("away", &art("http://203.0.113.9/art/away.jpg")),
+        item("none", ""),
+        item("port", &art("http://192.168.0.69:8080/art/port.jpg")),
+    ]
+    .concat();
+    let net = Canned::new()
+        .answer(200, listed(&folder, 1, 1).as_bytes())
+        .answer(200, listed(&songs, 5, 5).as_bytes());
+    let server = plex(&["top"]);
+    let first = page(&net, &server, None).unwrap();
+    let tracks = page(&net, &server, first.next.as_deref()).unwrap().tracks;
+    assert_eq!(tracks.len(), 5);
+    let cover = |id: &str| tracks.iter().find(|t| t.id == id).and_then(|t| t.cover.clone());
+    assert_eq!(cover("own").as_deref(), Some("/proxy/own/albumart.jpg"), "its own, as a path on the server");
+    assert_eq!(cover("res").as_deref(), Some("/thumb/res.jpg"), "an image among its res");
+    assert_eq!(cover("away").as_deref(), Some("/art/Rec%20One.jpg"), "another host's is not taken: its folder's is");
+    assert_eq!(cover("none").as_deref(), Some("/art/Rec%20One.jpg"), "none of its own: its folder's");
+    assert_eq!(
+        cover("port").as_deref(),
+        Some("http://192.168.0.69:8080/art/port.jpg"),
+        "another port of the same host, whole"
+    );
+    assert_eq!(
+        crate::dlna::cover(&server, "/art/Rec%20One.jpg").url,
+        "http://192.168.0.69:32469/art/Rec%20One.jpg",
+        "asked of the server it came from, as it was written"
+    );
+}
