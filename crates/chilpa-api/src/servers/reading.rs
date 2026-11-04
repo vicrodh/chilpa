@@ -27,7 +27,12 @@ pub(crate) fn read(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, so
     if !stored.enabled {
         return failed(chilpa_i18n::t("that server is disabled"));
     }
-    let (Some(server), Some(key)) = (net::server(&stored), keys.get(&stored.instance)) else {
+    // A kind that keeps no playlists has none to read: nothing is asked of
+    // it, and nothing is said as a failure.
+    if chilpa_servers::Kind::from_provider(&stored.provider).is_some_and(|kind| !kind.has_playlists()) {
+        return Event::Playlists { source, kept: 0, left_out: 0 };
+    }
+    let (Some(server), Some(key)) = (net::server(&stored), net::key(keys, &stored)) else {
         return failed(chilpa_i18n::t_args("sign in to {} again", &[&stored.label]));
     };
     let _reading = gate.lock().unwrap_or_else(|e| e.into_inner());

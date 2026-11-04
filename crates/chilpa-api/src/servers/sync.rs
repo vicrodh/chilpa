@@ -192,7 +192,7 @@ pub(crate) fn run(
     let Some(server) = net::server(&stored) else {
         return Event::Failed { source, why: chilpa_i18n::t("that server is no longer in the library"), unreachable: false };
     };
-    let Some(key) = keys.get(&stored.instance) else {
+    let Some(key) = net::key(keys, &stored) else {
         return Event::Failed { source, why: chilpa_i18n::t_args("sign in to {} again", &[&stored.label]), unreachable: false };
     };
     let Ok(generation) = lib.begin_server_sync(source) else {
@@ -298,7 +298,7 @@ pub(crate) fn covers_dir(instance: &str) -> std::path::PathBuf {
 /// Fetches the covers of the server's records that have none yet.
 pub(crate) fn covers(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, source: i64, stopped: &dyn Fn() -> bool) {
     let Some(stored) = lib.server(source).ok().flatten() else { return };
-    let (Some(server), Some(key)) = (net::server(&stored), keys.get(&stored.instance)) else { return };
+    let (Some(server), Some(key)) = (net::server(&stored), net::key(keys, &stored)) else { return };
     let dir = covers_dir(&stored.instance);
     let _ = std::fs::create_dir_all(&dir);
     for (album, cover) in lib.pending_server_covers(source, 100_000).unwrap_or_default() {

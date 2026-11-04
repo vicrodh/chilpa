@@ -1946,6 +1946,9 @@ msgstr ""
 msgid "Disabled. Its records stay in the library and its sign-in is saved."
 msgstr ""
 
+msgid "Disabled. Its records stay in the library."
+msgstr ""
+
 msgid "Disc"
 msgstr ""
 
@@ -4315,7 +4318,7 @@ msgstr "Open the Library before choosing music for a device."
 msgid "Open the folder used for disposable files."
 msgstr ""
 
-msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
+msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."
 msgstr ""
 
 msgid "Opened by Chilpa"
@@ -7409,6 +7412,9 @@ msgstr ""
 msgid "cannot be done"
 msgstr ""
 
+msgid "choose at least one folder that holds your music"
+msgstr ""
+
 msgid "choose at least one library"
 msgstr ""
 
@@ -8398,6 +8404,9 @@ msgstr ""
 msgid "this cannot be played"
 msgstr ""
 
+msgid "this computer could not search the network"
+msgstr ""
+
 msgid "this device delivers bit-perfect in no common format"
 msgstr ""
 
@@ -8624,6 +8633,9 @@ msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "{} keeps no playlists; make this one in Chilpa."
+msgstr ""
 
 msgid "{} label"
 msgid_plural "{} labels"

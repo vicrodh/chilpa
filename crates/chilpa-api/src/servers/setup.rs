@@ -11,9 +11,17 @@
 //!   an API key, or Jellyfin's Quick Connect), then which libraries.
 //! - **Plex:** a PIN confirmed at plex.tv/link, then which server when the
 //!   account reaches more than one, then which music sections.
+//! - **DLNA / UPnP:** the media servers a search of the network finds, or
+//!   the address of a description, then the containers that hold the music,
+//!   opened one level at a time and chosen by the person: no guess at which
+//!   of a server's views is the music. Nothing to sign in to.
+//!
+//! `begin("search")` searches the network again without starting over, so
+//! a server being edited can be found at its new address.
 
 use super::net::{client, Network};
-use chilpa_servers::{jellyfin, plex, subsonic, Credential, Details, Failure, Kind, Library, Probe};
+use chilpa_servers::{dlna, jellyfin, plex, subsonic, Credential, Details, Failure, Kind, Library, Probe};
+use std::collections::HashMap;
 use std::sync::mpsc::{channel, Receiver};
 use std::time::{Duration, Instant};
 
@@ -22,7 +30,7 @@ use std::time::{Duration, Instant};
 pub struct ServerSetup {
     /// `idle`, `address`, `signin`, `code`, `servers`, `libraries`, `done`.
     pub step: String,
-    /// The provider being added: `subsonic`, `jellyfin`, `plex`.
+    /// The provider being added: `subsonic`, `jellyfin`, `plex`, `dlna`.
     pub kind: String,
     pub address: String,
     pub label: String,
@@ -40,7 +48,17 @@ pub struct ServerSetup {
     /// typed in a Jellyfin already signed in.
     pub link: String,
     /// The servers or the libraries to choose from: (id, name, detail).
+    /// DLNA: the media servers found (the address of each description, its
+    /// name, what it is), then the containers in the one open.
     pub choices: Vec<(String, String, String)>,
+    /// DLNA: the way down to the container open, (id, title), the top first
+    /// with no title.
+    pub crumbs: Vec<(String, String)>,
+    /// DLNA: the containers chosen before, when editing, each with the way
+    /// down to it: (id, "Music › Library › By Folder").
+    pub folders: Vec<(String, String)>,
+    /// DLNA: the network is being searched for media servers.
+    pub searching: bool,
     pub busy: bool,
     pub error: String,
 }
@@ -70,6 +88,12 @@ enum Outcome {
     PlexServers(Result<Vec<plex::PlexServer>, Failure>),
     Reached(Result<(plex::PlexServer, String), Failure>),
     Libraries(Result<Vec<Library>, Failure>),
+    /// DLNA: the media servers a search found.
+    Found(Result<Vec<dlna::Found>, Failure>),
+    /// DLNA: what an address describes.
+    Described(Result<dlna::Found, Failure>),
+    /// DLNA: the containers in one, with the way down to it.
+    Opened(Vec<(String, String)>, Result<Vec<Library>, Failure>),
 }
 
 struct Signed {
@@ -97,10 +121,18 @@ pub(crate) struct Setup {
     generation: u64,
     /// When to ask again whether the code was accepted.
     again: Option<Instant>,
+    /// DLNA: every container offered so far, and the ones already chosen
+    /// when editing, each with the way down to it: only these can be chosen.
+    known: HashMap<String, String>,
 }
 
 /// How often a code is checked while the user types it elsewhere.
 const CHECK_EVERY: Duration = Duration::from_secs(2);
+
+/// DLNA: how deep the containers are opened, and how many the setup keeps
+/// in mind.
+const CRUMBS: usize = 32;
+const KNOWN: usize = 5_000;
 
 impl Setup {
     fn run(&mut self, work: impl FnOnce() -> Outcome + Send + 'static) {
@@ -120,6 +152,9 @@ impl Setup {
 
     /// Starts adding a server of that kind.
     pub(crate) fn begin(&mut self, provider: &str) {
+        if provider == "search" {
+            return self.search();
+        }
         let Some(kind) = Kind::from_provider(provider) else { return };
         self.generation += 1;
         *self = Setup { generation: self.generation, ..Setup::default() };
@@ -133,8 +168,22 @@ impl Setup {
                 let who = client(&self.instance);
                 self.run(move || Outcome::Pin(plex::pin_start(&Network, &who)));
             }
+            Kind::Dlna => {
+                self.view.step = "address".into();
+                self.search();
+            }
             _ => self.view.step = "address".into(),
         }
+    }
+
+    /// DLNA: searches the network for media servers, at the address step.
+    /// What it finds replaces the list; nothing else of the setup changes.
+    fn search(&mut self) {
+        if self.kind != Some(Kind::Dlna) || self.view.busy || self.view.step != "address" {
+            return;
+        }
+        self.run(|| Outcome::Found(super::lan::media_servers()));
+        self.view.searching = true;
     }
 
     /// I reuse the original source and sealed credential while I change its
@@ -159,10 +208,15 @@ impl Setup {
             selected_libraries: serde_json::from_str(&stored.libraries).unwrap_or_default(),
             ..ServerSetup::default()
         };
+        // The containers chosen before stay choosable, wherever they are,
+        // and keep the name they were chosen by.
+        let named: HashMap<String, String> = self.signed.as_ref().map(|s| s.details.folders.iter().map(|f| (f.id.clone(), f.name.clone())).collect()).unwrap_or_default();
+        self.view.folders = self.view.selected_libraries.iter().map(|id| (id.clone(), named.get(id).cloned().unwrap_or_default())).collect();
+        self.known = self.view.folders.iter().cloned().collect();
     }
 
     pub(crate) fn reauthenticate(&mut self) {
-        let Some(kind) = self.kind else { return };
+        let Some(kind) = self.kind.filter(|kind| kind.signs_in()) else { return };
         self.signed = None;
         self.view.error.clear();
         if kind == Kind::Plex {
@@ -185,7 +239,12 @@ impl Setup {
 
     /// The address was typed: see what answers there.
     pub(crate) fn address(&mut self, text: &str) {
-        let (Some(kind), false) = (self.kind, self.view.busy) else { return };
+        let Some(kind) = self.kind else { return };
+        // A search of the network gives way to an address typed or chosen.
+        if self.view.busy && !self.view.searching {
+            return;
+        }
+        self.view.searching = false;
         let address = match chilpa_servers::normalize(text) {
             Ok(a) => a,
             Err(f) => return self.fail(f),
@@ -193,6 +252,10 @@ impl Setup {
         self.view.address = address.clone();
         if kind == Kind::Plex {
             self.libraries();
+            return;
+        }
+        if kind == Kind::Dlna {
+            self.run(move || Outcome::Described(dlna::probe(&Network, &address)));
             return;
         }
         self.run(move || {
@@ -249,8 +312,18 @@ impl Setup {
         self.take(Outcome::PinToken(Ok(Some(token.to_string()))));
     }
 
-    /// Plex: the server chosen among those the account reaches.
+    /// Plex: the server chosen among those the account reaches. DLNA: a
+    /// media server found on the network, by the address of its
+    /// description; then, among its containers, the one to open.
     pub(crate) fn pick_server(&mut self, identity: &str) {
+        if self.kind == Some(Kind::Dlna) {
+            if self.view.step == "libraries" {
+                self.open(identity);
+            } else if self.view.choices.iter().any(|(id, _, _)| id == identity) {
+                self.address(identity);
+            }
+            return;
+        }
         let Some(chosen) = self.plex.iter().find(|s| s.identity == identity).cloned() else { return };
         let who = client(&self.instance);
         self.run(move || {
@@ -267,15 +340,37 @@ impl Setup {
             return None;
         }
         let all: Vec<String> = self.view.choices.iter().map(|(id, _, _)| id.clone()).collect();
-        let chosen: Vec<String> = all.iter().filter(|id| chosen.contains(id)).cloned().collect();
+        let chosen: Vec<String> = if kind == Kind::Dlna {
+            // Chosen at any level, in the order they were chosen.
+            let mut kept: Vec<String> = Vec::new();
+            for id in chosen.iter().filter(|id| self.known.contains_key(*id)) {
+                if !kept.contains(id) {
+                    kept.push(id.clone());
+                }
+            }
+            kept
+        } else {
+            all.iter().filter(|id| chosen.contains(id)).cloned().collect()
+        };
         // None chosen is not "all": the list below keeps "all" as empty.
         if chosen.is_empty() {
-            self.view.error = chilpa_i18n::t("choose at least one library");
+            self.view.error = if kind == Kind::Dlna {
+                chilpa_i18n::t("choose at least one folder that holds your music")
+            } else {
+                chilpa_i18n::t("choose at least one library")
+            };
             return None;
         }
+        // A media server's folders keep the way down to each, to be named
+        // again when the server is edited.
+        let mut details = signed.details.clone();
+        if kind == Kind::Dlna {
+            details.folders = chosen.iter().map(|id| Library { id: id.clone(), name: self.known.get(id).cloned().unwrap_or_default() }).collect();
+        }
         // All of them chosen is kept as "all": a library added later on the
-        // server comes in by itself.
-        let libraries = if chosen.len() == all.len() { Vec::new() } else { chosen };
+        // server comes in by itself. A media server's containers are kept as
+        // they were chosen: all of the ones at one level are not the server.
+        let libraries = if kind != Kind::Dlna && chosen.len() == all.len() { Vec::new() } else { chosen };
         Some(Ready {
             kind,
             instance: self.instance.clone(),
@@ -285,7 +380,7 @@ impl Setup {
             identity: if signed.identity.is_empty() { self.probe.identity.clone() } else { signed.identity.clone() },
             product: if signed.product.is_empty() { self.view.product.clone() } else { signed.product.clone() },
             libraries,
-            details: signed.details.clone(),
+            details,
             key: signed.key.clone(),
         })
     }
@@ -356,6 +451,44 @@ impl Setup {
         self.run(move || Outcome::Libraries(chilpa_servers::libraries(&Network, &server, &key)));
     }
 
+    /// DLNA: the way down to a container, when it is one above the one open
+    /// or one in it.
+    fn crumbs_to(&self, id: &str) -> Option<Vec<(String, String)>> {
+        let crumbs = &self.view.crumbs;
+        if let Some(at) = crumbs.iter().position(|(crumb, _)| crumb == id) {
+            return Some(crumbs[..=at].to_vec());
+        }
+        let (_, title, _) = self.view.choices.iter().find(|(choice, _, _)| choice == id)?;
+        let mut crumbs = crumbs.clone();
+        crumbs.push((id.to_string(), title.clone()));
+        (crumbs.len() <= CRUMBS).then_some(crumbs)
+    }
+
+    /// DLNA: shows the containers in that one.
+    fn open(&mut self, id: &str) {
+        let (Some(signed), false) = (self.signed.as_ref(), self.view.busy) else { return };
+        let Some(crumbs) = self.crumbs_to(id) else { return };
+        let server = dlna::server(&self.view.address, client(&self.instance), Vec::new(), signed.details.clone());
+        let id = id.to_string();
+        self.run(move || Outcome::Opened(crumbs, dlna::folders(&Network, &server, &id)));
+    }
+
+    /// DLNA: what the window shows of the container open. Each container
+    /// offered is kept with the way down to it, the name it is shown by
+    /// once chosen.
+    fn show_containers(&mut self, crumbs: Vec<(String, String)>, found: Vec<Library>) {
+        let way = crumbs.iter().map(|(_, title)| title.as_str()).filter(|t| !t.is_empty()).collect::<Vec<_>>().join(" › ");
+        for library in &found {
+            if self.known.len() < KNOWN || self.known.contains_key(&library.id) {
+                let name = if way.is_empty() { library.name.clone() } else { format!("{way} › {}", library.name) };
+                self.known.insert(library.id.clone(), name);
+            }
+        }
+        self.view.choices = found.into_iter().map(|l| (l.id, l.name, String::new())).collect();
+        self.view.crumbs = crumbs;
+        self.view.step = "libraries".into();
+    }
+
     fn take(&mut self, outcome: Outcome) {
         match outcome {
             Outcome::Probed(Ok(probe)) => {
@@ -368,6 +501,7 @@ impl Setup {
                 self.view.api_key = probe.api_key;
                 self.view.quick_connect = probe.quick_connect;
                 if self.edit_id.is_none() || self.label.is_empty() { self.label = probe.name.clone(); }
+                self.view.label = self.label.clone();
                 self.probe = probe;
                 if self.edit_id.is_some() && self.signed.is_some() { self.libraries(); }
                 else { self.view.step = "signin".into(); }
@@ -428,6 +562,7 @@ impl Setup {
                 self.view.address = address;
                 self.view.product = server.product.clone();
                 self.label = server.name.clone();
+                self.view.label = self.label.clone();
                 self.probe.identity = server.identity.clone();
                 self.signed = Some(Signed {
                     key: Credential::Plex { account: self.account_token.clone(), server: server.token.clone() },
@@ -442,12 +577,48 @@ impl Setup {
                 if found.is_empty() {
                     return self.fail(Failure::Unexpected(chilpa_i18n::t("that server has no music library")));
                 }
+                if self.kind == Some(Kind::Dlna) {
+                    return self.show_containers(vec![(dlna::ROOT.to_string(), String::new())], found);
+                }
                 self.view.choices = found.into_iter().map(|l| (l.id, l.name, String::new())).collect();
                 self.view.step = "libraries".into();
             }
-            Outcome::Libraries(Err(f)) if self.edit_id.is_some() && self.signed.is_some() => {
+            // A media server has no sign-in to change: it stays the one being
+            // edited, and its address is tried again.
+            Outcome::Libraries(Err(f)) if self.edit_id.is_some() && self.signed.is_some() && self.kind != Some(Kind::Dlna) => {
                 self.signed = None;
                 self.view.step = if self.kind == Some(Kind::Plex) { "address" } else { "signin" }.into();
+                self.fail(f);
+            }
+            // None found is said by the window, next to the address field:
+            // it is not a failure, the server may not answer a search.
+            Outcome::Found(Ok(found)) => {
+                self.view.searching = false;
+                self.view.choices = found.into_iter().map(|f| (f.location, f.name, f.product)).collect();
+            }
+            Outcome::Described(Ok(found)) => {
+                if self.edit_id.is_some() && self.signed.as_ref().is_some_and(|signed| signed.identity != found.identity) {
+                    return self.fail(Failure::Unexpected(chilpa_i18n::t("This address belongs to a different server.")));
+                }
+                self.view.address = found.location.clone();
+                self.view.product = found.product.clone();
+                if self.edit_id.is_none() || self.label.is_empty() {
+                    self.label = found.name.clone();
+                }
+                self.view.label = self.label.clone();
+                self.probe.identity = found.identity.clone();
+                self.signed = Some(Signed {
+                    key: Credential::Anonymous,
+                    account: String::new(),
+                    identity: found.identity.clone(),
+                    product: found.product.clone(),
+                    details: found.details(),
+                });
+                self.libraries();
+            }
+            Outcome::Opened(crumbs, Ok(found)) => self.show_containers(crumbs, found),
+            Outcome::Found(Err(f)) => {
+                self.view.searching = false;
                 self.fail(f);
             }
             Outcome::Probed(Err(f))
@@ -458,7 +629,9 @@ impl Setup {
             | Outcome::PinToken(Err(f))
             | Outcome::PlexServers(Err(f))
             | Outcome::Reached(Err(f))
-            | Outcome::Libraries(Err(f)) => self.fail(f),
+            | Outcome::Libraries(Err(f))
+            | Outcome::Described(Err(f))
+            | Outcome::Opened(_, Err(f)) => self.fail(f),
         }
     }
 }
@@ -524,5 +697,77 @@ mod tests {
         assert!(setup.finish(&["9".into()]).is_none(), "an id it never offered is not a choice");
         assert_eq!(setup.finish(&["2".into()]).unwrap().libraries, vec!["2".to_string()]);
         assert!(setup.finish(&["1".into(), "2".into()]).unwrap().libraries.is_empty(), "all of them is kept as all");
+    }
+
+    #[test]
+    fn a_media_server_keeps_the_containers_chosen_at_any_level_with_the_way_to_each() {
+        let mut setup = Setup { kind: Some(Kind::Dlna), ..Setup::default() };
+        setup.signed = Some(Signed {
+            key: Credential::Anonymous,
+            account: String::new(),
+            identity: "uuid:lab".into(),
+            product: "Lab".into(),
+            details: Details::default(),
+        });
+        let library = |id: &str, name: &str| Library { id: id.into(), name: name.into() };
+        setup.show_containers(vec![("0".into(), String::new())], vec![library("music", "Music")]);
+        assert_eq!((setup.view.step.as_str(), setup.view.crumbs.len()), ("libraries", 1));
+        setup.show_containers(
+            vec![("0".into(), String::new()), ("music".into(), "Music".into())],
+            vec![library("folders", "By Folder"), library("albums", "By Album")],
+        );
+        assert_eq!(setup.view.crumbs.last().map(|(id, _)| id.as_str()), Some("music"));
+        assert_eq!(setup.crumbs_to("0"), Some(vec![("0".to_string(), String::new())]), "back up to the top");
+        assert_eq!(setup.crumbs_to("folders").map(|crumbs| crumbs.len()), Some(3), "down into one it shows");
+        assert_eq!(setup.crumbs_to("elsewhere"), None, "never into one it did not show");
+        let ready = setup.finish(&["folders".into(), "music".into(), "nowhere".into(), "folders".into()]).unwrap();
+        assert_eq!(ready.libraries, vec!["folders".to_string(), "music".to_string()], "chosen at two levels, once each");
+        assert_eq!(ready.key, Credential::Anonymous);
+        let names: Vec<(&str, &str)> = ready.details.folders.iter().map(|f| (f.id.as_str(), f.name.as_str())).collect();
+        assert_eq!(names, [("folders", "Music › By Folder"), ("music", "Music")], "each with the way down to it");
+        let every = setup.finish(&["music".into(), "folders".into(), "albums".into()]).unwrap();
+        assert_eq!(every.libraries.len(), 3, "every container met is not the whole server");
+        assert!(setup.finish(&[]).is_none());
+        assert!(!setup.view.error.is_empty(), "nothing chosen says so");
+    }
+
+    #[test]
+    fn editing_a_media_server_names_the_folders_chosen_before_and_seals_nothing() {
+        let stored = chilpa_library::StoredServer {
+            source_id: 7,
+            provider: "dlna".into(),
+            instance: "0123456789abcdef".into(),
+            label: "Lab".into(),
+            reachable: true,
+            enabled: true,
+            address: "http://192.168.0.69:32469/DeviceDescription.xml".into(),
+            account: String::new(),
+            identity: "uuid:lab".into(),
+            product: "Lab 1.0".into(),
+            libraries: r#"["deep","gone"]"#.into(),
+            details: r#"{"control":"/ctl","folders":[{"id":"deep","name":"Music › Lab › By Folder"}]}"#.into(),
+            added_at: 0,
+            synced_at: None,
+            tracks: 0,
+            albums: 0,
+        };
+        let mut setup = Setup::default();
+        setup.begin_edit(&stored, Credential::Anonymous);
+        assert_eq!(setup.view.folders, vec![("deep".to_string(), "Music › Lab › By Folder".to_string()), ("gone".to_string(), String::new())]);
+        setup.reauthenticate();
+        assert!(setup.signed.is_some(), "no sign-in to change: the server stays the one edited");
+        setup.view.step = "libraries".into();
+        let ready = setup.finish(&["deep".into()]).unwrap();
+        assert_eq!((ready.libraries.clone(), ready.details.folders[0].name.as_str()), (vec!["deep".to_string()], "Music › Lab › By Folder"));
+        assert_eq!(ready.details.control, "/ctl", "what the server said of itself stays");
+    }
+
+    #[test]
+    fn a_search_starts_only_at_the_address_of_a_media_server() {
+        let mut setup = Setup::default();
+        setup.begin("subsonic");
+        setup.begin("search");
+        assert!(!setup.view.busy && !setup.view.searching, "a server with an address of its own is not searched for");
+        assert_eq!(setup.view.kind, "subsonic");
     }
 }

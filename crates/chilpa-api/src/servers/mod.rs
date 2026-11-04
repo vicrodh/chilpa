@@ -1,5 +1,5 @@
-//! My servers: OpenSubsonic, Jellyfin and Plex, as sources of the library
-//! (ADR-017).
+//! My servers: OpenSubsonic, Jellyfin, Plex and DLNA media servers, as
+//! sources of the library (ADR-017).
 //!
 //! The protocols are `chilpa-servers`; the mirror, the availability and the
 //! purge are `chilpa-library`. What is here is what ties them to the
@@ -9,6 +9,7 @@
 //! what came back.
 
 pub(crate) mod keys;
+mod lan;
 mod net;
 mod opener;
 pub(crate) mod playlists;
@@ -135,7 +136,9 @@ impl Chilpa {
             .into_iter()
             .map(|s| {
                 let kind = chilpa_servers::Kind::from_provider(&s.provider);
-                let state = if !s.enabled {
+                let state = if !s.enabled && kind.is_some_and(|k| !k.signs_in()) {
+                    chilpa_i18n::t("Disabled. Its records stay in the library.")
+                } else if !s.enabled {
                     chilpa_i18n::t("Disabled. Its records stay in the library and its sign-in is saved.")
                 } else if let Some(done) = running.get(&s.source_id) {
                     if *done == 0 {
@@ -248,7 +251,7 @@ impl Chilpa {
             kind: 1,
             key: "sources.addServer".into(),
             title: chilpa_i18n::t("Add a new server"),
-            description: chilpa_i18n::t("OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."),
+            description: chilpa_i18n::t("OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."),
             control: "button".into(),
             action: chilpa_i18n::t("Add…"),
             ..Default::default()
@@ -268,6 +271,9 @@ impl Chilpa {
             "step": v.step, "kind": v.kind, "address": v.address, "product": v.product,
             "label": v.label, "editing": v.editing, "selectedLibraries": v.selected_libraries,
             "apiKey": v.api_key, "quickConnect": v.quick_connect, "code": v.code, "link": v.link,
+            "crumbs": v.crumbs.iter().map(|(id, name)| serde_json::json!({"id": id, "name": name})).collect::<Vec<_>>(),
+            "folders": v.folders.iter().map(|(id, name)| serde_json::json!({"id": id, "name": name})).collect::<Vec<_>>(),
+            "searching": v.searching,
             "choices": v.choices.iter().map(|(id, name, detail)| serde_json::json!({"id": id, "name": name, "detail": detail})).collect::<Vec<_>>(),
             "busy": v.busy, "error": v.error,
         })
@@ -284,7 +290,7 @@ impl Chilpa {
             self.servers.setup.failed(chilpa_i18n::t("This server is no longer available."));
             return;
         };
-        let Some(key) = self.servers.keys.as_ref().and_then(|keys| keys.get(&stored.instance)) else {
+        let Some(key) = self.servers.keys.as_ref().and_then(|keys| net::key(keys, &stored)) else {
             self.servers.setup.failed(chilpa_i18n::t("The saved sign-in could not be opened."));
             return;
         };
@@ -341,9 +347,12 @@ impl Chilpa {
             libraries: serde_json::to_string(&ready.libraries).unwrap_or_else(|_| "[]".into()),
             details: serde_json::to_string(&ready.details).unwrap_or_else(|_| "{}".into()),
         };
+        // A kind without a sign-in has nothing to seal: the keyring is not
+        // even opened for it.
+        let sealed = ready.kind.signs_in();
         if let Some(id) = edit_id {
-            let old_key = keys.get(&ready.instance);
-            if !keys.put(&ready.instance, &ready.key) {
+            let old_key = if sealed { keys.get(&ready.instance) } else { None };
+            if sealed && !keys.put(&ready.instance, &ready.key) {
                 self.servers.setup.failed(chilpa_i18n::t("the credential could not be kept safely on this system"));
                 return false;
             }
@@ -364,7 +373,7 @@ impl Chilpa {
         }
         // The credential first: a server whose key could not be kept would
         // not sign in again after a restart.
-        if !keys.put(&ready.instance, &ready.key) {
+        if sealed && !keys.put(&ready.instance, &ready.key) {
             self.servers.setup.failed(chilpa_i18n::t("the credential could not be kept safely on this system"));
             return false;
         }
@@ -376,7 +385,7 @@ impl Chilpa {
                 true
             }
             Err(_) => {
-                keys.forget(&ready.instance);
+                if sealed { keys.forget(&ready.instance); }
                 self.servers.setup.failed(chilpa_i18n::t("the library could not be written"));
                 false
             }
@@ -480,7 +489,9 @@ impl Chilpa {
         if self.offline() {
             return;
         }
-        let enabled: Vec<i64> = self.library().and_then(|lib| lib.servers().ok()).unwrap_or_default().into_iter().filter(|s| s.enabled).map(|s| s.source_id).collect();
+        // A kind without playlists of its own has none to read again.
+        let keeps = |s: &chilpa_library::StoredServer| chilpa_servers::Kind::from_provider(&s.provider).is_some_and(chilpa_servers::Kind::has_playlists);
+        let enabled: Vec<i64> = self.library().and_then(|lib| lib.servers().ok()).unwrap_or_default().into_iter().filter(|s| s.enabled && keeps(s)).map(|s| s.source_id).collect();
         if let Some(syncer) = self.servers.syncer.as_mut() {
             for id in enabled {
                 syncer.ask_playlists(id);

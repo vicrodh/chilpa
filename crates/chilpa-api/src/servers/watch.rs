@@ -79,7 +79,7 @@ pub(crate) fn look(lib: &chilpa_library::Library, net: &dyn chilpa_servers::Net,
     let mut refused = HashSet::new();
     for stored in lib.servers().unwrap_or_default() {
         if !stored.enabled { continue; }
-        let (Some(mut server), Some(key)) = (net::server(&stored), keys.get(&stored.instance)) else {
+        let (Some(mut server), Some(key)) = (net::server(&stored), net::key(keys, &stored)) else {
             refused.insert(stored.source_id);
             changed |= lib.set_source_reachable(stored.source_id, false).unwrap_or(false);
             continue;

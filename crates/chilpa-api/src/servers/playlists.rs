@@ -230,6 +230,10 @@ impl Chilpa {
     pub(crate) fn create_server_playlist(&mut self, source: &str, name: &str, description: &str, track_ids: &[i64], request: &str) -> Option<bool> {
         let origin = self.server_origins().into_iter().find(|origin| origin.key == source)?;
         let name = name.trim();
+        if origin.kind.is_some_and(|kind| !kind.has_playlists()) {
+            self.now.error = chilpa_i18n::t_args("{} keeps no playlists; make this one in Chilpa.", &[&origin.name]);
+            return Some(false);
+        }
         if track_ids.is_empty() && origin.kind.is_some_and(chilpa_servers::playlist_needs_tracks) {
             if name.is_empty() {
                 return Some(false);
@@ -275,7 +279,9 @@ impl Chilpa {
     /// why (`why`). One takes them when it is on, all of them are its own,
     /// the network is on, it answers and it is not in its first sync. An
     /// empty one on a server that makes a playlist only with tracks in it
-    /// waits here and needs none of that (`create_server_playlist`).
+    /// waits here and needs none of that (`create_server_playlist`). A kind
+    /// that keeps no playlists is not listed at all, as a plugin that does
+    /// not edit them is not.
     pub(crate) fn server_playlist_sources(&mut self, track_ids: &[i64]) -> Vec<serde_json::Value> {
         let entries = self.mixed_playlist_entries(track_ids, false).unwrap_or_default();
         let complete = entries.len() == track_ids.len();
@@ -285,7 +291,7 @@ impl Chilpa {
         let syncing: HashSet<i64> = stored.iter().filter(|s| self.first_sync(s)).map(|s| s.source_id).collect();
         self.server_origins()
             .into_iter()
-            .filter(|origin| origin.enabled)
+            .filter(|origin| origin.enabled && origin.kind.is_some_and(chilpa_servers::Kind::has_playlists))
             .map(|origin| {
                 let theirs = complete && entries.iter().all(|e| e.source_id == Some(origin.source_id));
                 let waits = track_ids.is_empty() && origin.kind.is_some_and(chilpa_servers::playlist_needs_tracks);

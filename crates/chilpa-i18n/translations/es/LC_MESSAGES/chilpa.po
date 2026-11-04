@@ -1946,6 +1946,9 @@ msgstr "Desactivada"
 msgid "Disabled. Its records stay in the library and its sign-in is saved."
 msgstr "Desactivado. Sus álbumes siguen en la biblioteca y sus credenciales están guardadas."
 
+msgid "Disabled. Its records stay in the library."
+msgstr "Desactivado. Sus álbumes siguen en la biblioteca."
+
 msgid "Disc"
 msgstr "Disco"
 
@@ -4315,8 +4318,8 @@ msgstr "Abre la biblioteca antes de elegir música para un dispositivo."
 msgid "Open the folder used for disposable files."
 msgstr "Abrir la carpeta de archivos temporales."
 
-msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
-msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin o Plex. Su música se une a la biblioteca."
+msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."
+msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex o DLNA / UPnP. Su música se une a la biblioteca."
 
 msgid "Opened by Chilpa"
 msgstr "Abierto por Chilpa"
@@ -7409,6 +7412,9 @@ msgstr "llamar a \"{}\", que nadie ha aprobado"
 msgid "cannot be done"
 msgstr "no se puede"
 
+msgid "choose at least one folder that holds your music"
+msgstr "elige al menos una carpeta que tenga tu música"
+
 msgid "choose at least one library"
 msgstr "elige al menos una biblioteca"
 
@@ -8398,6 +8404,9 @@ msgstr "esta Mac ya no tiene ninguna salida llamada \"{}\""
 msgid "this cannot be played"
 msgstr "esto no se puede reproducir"
 
+msgid "this computer could not search the network"
+msgstr "esta computadora no pudo buscar en la red"
+
 msgid "this device delivers bit-perfect in no common format"
 msgstr "este dispositivo no entrega bit-perfect en ningún formato común"
 
@@ -8624,6 +8633,9 @@ msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."
 msgstr[0] "{} cosa necesita atención antes de que funcione la reproducción bit-perfect."
 msgstr[1] "{} cosas necesitan atención antes de que funcione la reproducción bit-perfect."
+
+msgid "{} keeps no playlists; make this one in Chilpa."
+msgstr "{} no guarda playlists; crea esta en Chilpa."
 
 msgid "{} label"
 msgid_plural "{} labels"

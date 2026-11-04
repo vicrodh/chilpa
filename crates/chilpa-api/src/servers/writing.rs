@@ -125,7 +125,7 @@ pub(crate) fn apply(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, g
     if !stored.enabled {
         return failed(chilpa_i18n::t("that server is disabled"));
     }
-    let (Some(server), Some(key)) = (net::server(&stored), keys.get(&stored.instance)) else {
+    let (Some(server), Some(key)) = (net::server(&stored), net::key(keys, &stored)) else {
         return failed(chilpa_i18n::t_args("sign in to {} again", &[&stored.label]));
     };
     let said = |why: &str| chilpa_i18n::t_args("{} did not take the change to the playlist: {}", &[&stored.label, why]);

@@ -47,7 +47,7 @@ impl RemoteOpener for Opener {
             return Err(chilpa_i18n::t("that server is disabled"));
         }
         let server = super::net::server(&stored).ok_or_else(|| chilpa_i18n::t("that track is no longer in the library"))?;
-        let key = self.keys.get(&stored.instance).ok_or_else(|| chilpa_i18n::t_args("sign in to {} again", &[&stored.label]))?;
+        let key = super::net::key(&self.keys, &stored).ok_or_else(|| chilpa_i18n::t_args("sign in to {} again", &[&stored.label]))?;
         let stream = chilpa_servers::stream(&server, &key, &entry.external_id, codec.as_deref(), revision.as_deref());
         Ok(Located {
             normalization: None,

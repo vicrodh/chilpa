@@ -236,6 +236,72 @@ fn a_sync_that_saw_fewer_tracks_than_announced_takes_nothing_out() {
     assert_eq!(lab.lib.track_count(false).unwrap(), before);
 }
 
+/// A media server as the setup adds it: no sealed key, two containers of a
+/// Plex Media Server's DLNA side chosen, its records and one of its folders.
+fn dlna() -> Lab {
+    let lib = chilpa_library::Library::in_memory().unwrap();
+    let instance = super::super::keys::mint();
+    let root = std::env::temp_dir().join(format!("chilpa-sync-{instance}"));
+    let keys = Keys::derived(root.clone());
+    let source = lib
+        .add_server(&chilpa_library::NewServer {
+            provider: "dlna".into(),
+            instance,
+            label: "Lab".into(),
+            address: "http://192.168.0.69:32469/DeviceDescription.xml".into(),
+            libraries: r#"["9f4b4647f8e03ff196aa","551c51ca11833b35b735"]"#.into(),
+            details: r#"{"control":"/ContentDirectory/f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f/control.xml","search":false}"#.into(),
+            ..Default::default()
+        })
+        .unwrap();
+    Lab { lib, keys, source, root }
+}
+
+/// The records answer without its second record.
+fn without_record_two() -> String {
+    let albums = std::fs::read_to_string(format!(
+        "{}/../chilpa-servers/tests/answers/dlna/plex-albums.xml", env!("CARGO_MANIFEST_DIR"))).unwrap();
+    let start = albums.find("&lt;container id=\"6afbf8a54d0e842523ba\"").unwrap();
+    let end = start + albums[start..].find("&lt;/container&gt;").unwrap() + "&lt;/container&gt;".len();
+    format!("{}{}", &albums[..start], &albums[end..])
+        .replace("<NumberReturned>2</NumberReturned><TotalMatches>2</TotalMatches>", "<NumberReturned>1</NumberReturned><TotalMatches>1</TotalMatches>")
+}
+
+fn walk(net: Saved) -> Saved {
+    net.file("dlna/plex-albums.xml").file("dlna/plex-album-two.xml").file("dlna/plex-album-one.xml").file("dlna/plex-folder.xml")
+}
+
+#[test]
+fn a_media_server_is_walked_without_a_sealed_key_and_each_track_lands_once() {
+    let lab = dlna();
+    let net = walk(Saved::default());
+    let event = run(&lab.lib, &net, &lab.keys, lab.source, &|_| {}, &never);
+    assert_eq!(event, Event::Finished { source: lab.source, gone: 0 });
+    let server = lab.lib.server(lab.source).unwrap().unwrap();
+    assert_eq!((server.tracks, server.albums), (4, 2), "the folder repeats three tracks the records already gave");
+    assert_eq!(net.asked().len(), 4, "four containers, no census and no details");
+    let entry: String = lab.lib.connection().query_row("SELECT external_id FROM tracks WHERE title = 'Lab Song One'", [], |r| r.get(0)).unwrap();
+    let parsed = chilpa_models::RemoteEntry::parse(&entry).expect("a queue entry");
+    assert_eq!((parsed.source.provider.as_str(), parsed.external_id.as_str()), ("dlna", "b2000000000000000001"));
+    let (codec, revision) = lab.lib.server_track(lab.source, &entry).unwrap().unwrap();
+    let stream = chilpa_servers::stream(&net::server(&server).unwrap(), &chilpa_servers::Credential::Anonymous, &parsed.external_id, codec.as_deref(), revision.as_deref());
+    assert_eq!(stream.url, "http://192.168.0.69:32469/object/b2000000000000000001/file.flac");
+    assert_eq!(stream.extension.as_deref(), Some("flac"));
+
+    // The same answers again change nothing.
+    assert_eq!(run(&lab.lib, &walk(Saved::default()), &lab.keys, lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 0 });
+    assert_eq!(lab.lib.track_count(false).unwrap(), 4);
+
+    // A record the server no longer lists leaves; a walk cut short takes nothing.
+    let net = Saved::default().body(&without_record_two()).file("dlna/plex-album-one.xml").file("dlna/plex-folder.xml");
+    assert_eq!(run(&lab.lib, &net, &lab.keys, lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 1 });
+    assert_eq!(lab.lib.track_count(false).unwrap(), 3);
+    let cut = Saved::default().file("dlna/plex-albums.xml").silence();
+    let event = run(&lab.lib, &cut, &lab.keys, lab.source, &|_| {}, &never);
+    assert!(matches!(event, Event::Failed { unreachable: true, .. }), "{event:?}");
+    assert_eq!(lab.lib.track_count(false).unwrap(), 3, "nothing taken out");
+}
+
 #[test]
 fn a_cover_is_fetched_once_into_the_server_s_own_folder() {
     let lab = subsonic();

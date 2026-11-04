@@ -1946,6 +1946,9 @@ msgstr "Deaktiviert"
 msgid "Disabled. Its records stay in the library and its sign-in is saved."
 msgstr "Deaktiviert. Seine Alben bleiben in der Bibliothek, und die Anmeldung bleibt gespeichert."
 
+msgid "Disabled. Its records stay in the library."
+msgstr "Deaktiviert. Seine Alben bleiben in der Bibliothek."
+
 msgid "Disc"
 msgstr "Disc"
 
@@ -4315,8 +4318,8 @@ msgstr ""
 msgid "Open the folder used for disposable files."
 msgstr "Den Ordner für entbehrliche Dateien öffnen."
 
-msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
-msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin oder Plex. Seine Musik wird Teil der Bibliothek."
+msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."
+msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex oder DLNA / UPnP. Seine Musik wird Teil der Bibliothek."
 
 msgid "Opened by Chilpa"
 msgstr "Von Chilpa geöffnet"
@@ -7409,6 +7412,9 @@ msgstr "Aufruf von „{}“, das niemand genehmigt hat"
 msgid "cannot be done"
 msgstr "nicht möglich"
 
+msgid "choose at least one folder that holds your music"
+msgstr "wähle mindestens einen Ordner, der deine Musik enthält"
+
 msgid "choose at least one library"
 msgstr "wähle mindestens eine Bibliothek"
 
@@ -8398,6 +8404,9 @@ msgstr "dieser Mac hat keine Ausgabe mehr mit dem Namen „{}“"
 msgid "this cannot be played"
 msgstr "das lässt sich nicht abspielen"
 
+msgid "this computer could not search the network"
+msgstr "dieser Computer konnte das Netzwerk nicht durchsuchen"
+
 msgid "this device delivers bit-perfect in no common format"
 msgstr "dieses Gerät liefert in keinem gängigen Format Bit-perfect"
 
@@ -8624,6 +8633,9 @@ msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."
 msgstr[0] "{} Punkt erfordert Aufmerksamkeit, bevor die Bit-perfect-Wiedergabe funktioniert."
 msgstr[1] "{} Punkte erfordern Aufmerksamkeit, bevor die Bit-perfect-Wiedergabe funktioniert."
+
+msgid "{} keeps no playlists; make this one in Chilpa."
+msgstr "{} hat keine Playlists; erstelle diese in Chilpa."
 
 msgid "{} label"
 msgid_plural "{} labels"

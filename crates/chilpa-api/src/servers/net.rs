@@ -1,8 +1,9 @@
 //! The network the servers' protocols are handed, and how a server stored
 //! in the library becomes one a request can be built for.
 
+use super::keys::Keys;
 use chilpa_models::SourceId;
-use chilpa_servers::{Client, Details, Kind, Net, Reply, Request, Server};
+use chilpa_servers::{Client, Credential, Details, Kind, Net, Reply, Request, Server};
 
 /// `chilpa_core::call_server`: plain http allowed, no redirect followed,
 /// the system's certificates (ADR-017 §7-8).
@@ -56,6 +57,15 @@ pub(crate) fn server(stored: &chilpa_library::StoredServer) -> Option<Server> {
         details.machine = stored.identity.clone();
     }
     Some(Server { kind, address: stored.address.clone(), client: client(&stored.instance), libraries: serde_json::from_str(&stored.libraries).unwrap_or_default(), details })
+}
+
+/// The credential a stored server is asked with: the sealed one for a kind
+/// that signs in, and none, without opening the keys, for one that does not.
+pub(crate) fn key(keys: &Keys, stored: &chilpa_library::StoredServer) -> Option<Credential> {
+    match Kind::from_provider(&stored.provider) {
+        Some(kind) if !kind.signs_in() => Some(Credential::Anonymous),
+        _ => keys.get(&stored.instance),
+    }
 }
 
 /// The queue entry of a server's track: what the library keeps as its

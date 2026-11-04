@@ -1948,6 +1948,9 @@ msgstr "Отключено"
 msgid "Disabled. Its records stay in the library and its sign-in is saved."
 msgstr "Отключён. Его записи остаются в библиотеке, данные для входа сохранены."
 
+msgid "Disabled. Its records stay in the library."
+msgstr "Отключён. Его записи остаются в библиотеке."
+
 msgid "Disc"
 msgstr "Диск"
 
@@ -4318,8 +4321,8 @@ msgstr ""
 msgid "Open the folder used for disposable files."
 msgstr "Открыть папку для временных файлов."
 
-msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
-msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin или Plex. Его музыка добавляется в библиотеку."
+msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."
+msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex или DLNA / UPnP. Его музыка добавляется в библиотеку."
 
 msgid "Opened by Chilpa"
 msgstr "Открыто Chilpa"
@@ -7414,6 +7417,9 @@ msgstr "вызов плагина «{}», который никто не одо�
 msgid "cannot be done"
 msgstr "невозможно"
 
+msgid "choose at least one folder that holds your music"
+msgstr "выберите хотя бы одну папку с вашей музыкой"
+
 msgid "choose at least one library"
 msgstr "выберите хотя бы одну библиотеку"
 
@@ -8404,6 +8410,9 @@ msgstr "на этом Mac больше нет вывода «{}»"
 msgid "this cannot be played"
 msgstr "это нельзя воспроизвести"
 
+msgid "this computer could not search the network"
+msgstr "этому компьютеру не удалось выполнить поиск в сети"
+
 msgid "this device delivers bit-perfect in no common format"
 msgstr "это устройство не отдаёт bit-perfect ни в одном общем формате"
 
@@ -8640,6 +8649,9 @@ msgid_plural "{} items need attention before bit-perfect playback will work."
 msgstr[0] "{} элемент требует внимания, прежде чем заработает bit-perfect."
 msgstr[1] "{} элемента требуют внимания, прежде чем заработает bit-perfect."
 msgstr[2] "{} элементов требуют внимания, прежде чем заработает bit-perfect."
+
+msgid "{} keeps no playlists; make this one in Chilpa."
+msgstr "{} не хранит плейлисты; создайте этот плейлист в Chilpa."
 
 msgid "{} label"
 msgid_plural "{} labels"

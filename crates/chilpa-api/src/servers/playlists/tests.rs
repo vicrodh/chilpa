@@ -280,3 +280,38 @@ fn a_move_and_a_dropped_group_are_one_new_order() {
     assert_eq!(moved_group(5, &[1, 4], 2), Some(vec![0, 2, 1, 4, 3]), "one from above and one from below meet at the target");
     assert_eq!(moved_group(4, &[2, 3], 2), None, "dropped on itself, nothing moves");
 }
+
+#[test]
+fn a_media_server_is_not_offered_for_a_playlist_and_its_playlists_are_never_asked_for() {
+    let (mut api, _, _, _, _) = with_a_server_playlist();
+    let lib = api.library().unwrap();
+    let new = chilpa_library::NewServer {
+        provider: "dlna".into(),
+        instance: "5e6f7a8b9c0d1e2f".into(),
+        label: "Lab media server".into(),
+        identity: "uuid:lab".into(),
+        details: r#"{"control":"/ctl"}"#.into(),
+        ..Default::default()
+    };
+    let dlna = lib.add_server(&new).unwrap();
+    lib.set_source_reachable(dlna, true).unwrap();
+    let key = source_key("dlna", "5e6f7a8b9c0d1e2f");
+    let sources = api.server_playlist_sources(&[]);
+    assert!(sources.iter().all(|s| s["id"] != key.as_str()), "not offered: {sources:?}");
+    assert!(sources.iter().any(|s| s["name"] == "Living room"), "a server that keeps playlists still is");
+    // Asked anyway, nothing goes to its door, and the window is told why.
+    assert_eq!(api.create_server_playlist(&key, "Mix", "", &[], "r1"), Some(false));
+    let told = chilpa_i18n::t_args("{} keeps no playlists; make this one in Chilpa.", &["Lab media server"]);
+    assert_eq!(api.now_playing().error, told);
+    // Its sync reads no playlists: no request is sent, and nothing failed.
+    struct Closed;
+    impl chilpa_servers::Net for Closed {
+        fn send(&self, request: &chilpa_servers::Request) -> Result<chilpa_servers::Reply, String> {
+            panic!("asked {}", request.url)
+        }
+    }
+    let keys = super::super::keys::Keys::derived(std::env::temp_dir().join("chilpa-dlna-playlist-keys"));
+    let lib = api.library().unwrap();
+    let event = super::super::reading::read(lib, &Closed, &keys, dlna, &std::sync::Mutex::new(()), &|| false);
+    assert_eq!(event, super::super::sync::Event::Playlists { source: dlna, kept: 0, left_out: 0 });
+}

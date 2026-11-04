@@ -1944,6 +1944,9 @@ msgstr "無効"
 msgid "Disabled. Its records stay in the library and its sign-in is saved."
 msgstr "無効です。アルバムはライブラリに残り、ログイン情報は保存されます。"
 
+msgid "Disabled. Its records stay in the library."
+msgstr "無効です。アルバムはライブラリに残ります。"
+
 msgid "Disc"
 msgstr "ディスク"
 
@@ -4312,8 +4315,8 @@ msgstr ""
 msgid "Open the folder used for disposable files."
 msgstr "使い捨てファイルに使うフォルダーを開きます。"
 
-msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
-msgstr "OpenSubsonic（Navidrome、gonic…）、Jellyfin、Plex。その音楽はライブラリに追加されます。"
+msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."
+msgstr "OpenSubsonic（Navidrome、gonic…）、Jellyfin、Plex、DLNA / UPnP。その音楽はライブラリに追加されます。"
 
 msgid "Opened by Chilpa"
 msgstr "Chilpaがオープン"
@@ -7404,6 +7407,9 @@ msgstr "「{}」を呼び出していますが、誰も承認していません"
 msgid "cannot be done"
 msgstr "非対応"
 
+msgid "choose at least one folder that holds your music"
+msgstr "音楽が入っているフォルダを1つ以上選んでください"
+
 msgid "choose at least one library"
 msgstr "ライブラリを1つ以上選んでください"
 
@@ -8392,6 +8398,9 @@ msgstr "このMacに「{}」という出力はもうありません"
 msgid "this cannot be played"
 msgstr "これは再生できません"
 
+msgid "this computer could not search the network"
+msgstr "このコンピューターはネットワークを検索できませんでした"
+
 msgid "this device delivers bit-perfect in no common format"
 msgstr "このデバイスは、共通のどのフォーマットでもビットパーフェクトで再生できません"
 
@@ -8608,6 +8617,9 @@ msgstr "{}はライブラリを初めて同期しています。終わってか�
 msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."
 msgstr[0] "ビットパーフェクト再生を有効にするには{}項目の対応が必要です。"
+
+msgid "{} keeps no playlists; make this one in Chilpa."
+msgstr "{} にはプレイリストがありません。このプレイリストは Chilpa で作成してください。"
 
 msgid "{} label"
 msgid_plural "{} labels"

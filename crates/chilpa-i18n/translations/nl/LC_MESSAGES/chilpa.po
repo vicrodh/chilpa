@@ -1946,6 +1946,9 @@ msgstr "Uitgeschakeld"
 msgid "Disabled. Its records stay in the library and its sign-in is saved."
 msgstr "Uitgeschakeld. De bijbehorende items blijven in de bibliotheek en de inloggegevens blijven opgeslagen."
 
+msgid "Disabled. Its records stay in the library."
+msgstr "Uitgeschakeld. De bijbehorende items blijven in de bibliotheek."
+
 msgid "Disc"
 msgstr "Schijf"
 
@@ -4315,8 +4318,8 @@ msgstr ""
 msgid "Open the folder used for disposable files."
 msgstr "Open de map voor wegwerpbestanden."
 
-msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
-msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin of Plex. De muziek komt in de bibliotheek."
+msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."
+msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex of DLNA / UPnP. De muziek komt in de bibliotheek."
 
 msgid "Opened by Chilpa"
 msgstr "Geopend door Chilpa"
@@ -7409,6 +7412,9 @@ msgstr "het aanroepen van ‘{}', die niemand heeft goedgekeurd"
 msgid "cannot be done"
 msgstr "kan niet"
 
+msgid "choose at least one folder that holds your music"
+msgstr "kies minstens één map met je muziek"
+
 msgid "choose at least one library"
 msgstr "kies minstens één bibliotheek"
 
@@ -8398,6 +8404,9 @@ msgstr "deze Mac heeft geen uitvoer meer met de naam ‘{}'"
 msgid "this cannot be played"
 msgstr "dit kan niet worden afgespeeld"
 
+msgid "this computer could not search the network"
+msgstr "deze computer kon het netwerk niet doorzoeken"
+
 msgid "this device delivers bit-perfect in no common format"
 msgstr "dit apparaat levert bit-perfect in geen enkel gangbaar formaat"
 
@@ -8624,6 +8633,9 @@ msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."
 msgstr[0] "{} item vereist aandacht voordat bit-perfecte weergave werkt."
 msgstr[1] "{} items vereisen aandacht voordat bit-perfecte weergave werkt."
+
+msgid "{} keeps no playlists; make this one in Chilpa."
+msgstr "{} houdt geen afspeellijsten bij; maak deze in Chilpa."
 
 msgid "{} label"
 msgid_plural "{} labels"
