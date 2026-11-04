@@ -227,3 +227,12 @@ CREATE TABLE source_overlay (
     PRIMARY KEY (source_id, scope, key)
 );
 "#;
+
+/// How many entries of a server's own playlist name a track the library
+/// does not hold, at its last reading. They are on the server and not
+/// here, and the playlist says how many; the count has to outlive a restart
+/// because a playlist is read again only with a sync or a refresh. Zero for
+/// every other playlist.
+pub(super) const MIGRATION_V49: &str = r#"
+ALTER TABLE playlists ADD COLUMN left_out INTEGER NOT NULL DEFAULT 0;
+"#;

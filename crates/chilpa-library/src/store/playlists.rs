@@ -32,6 +32,12 @@ pub struct StoredPlaylist {
     pub visible_sidebar: bool,
     pub writable: bool,
     pub updated_at: i64,
+    /// It is one of a music server's own: the server owns its name, its
+    /// entries and their order.
+    pub server: bool,
+    /// Entries of a server's playlist whose track the library does not
+    /// hold, at its last reading.
+    pub left_out: usize,
 }
 
 /// A folder that organises local and source-owned playlists.
@@ -296,7 +302,8 @@ impl Library {
                     COALESCE((SELECT group_concat(tag, char(31))
                                 FROM playlist_tags WHERE playlist_id = p.id), ''),
                     count(pt.position), p.play_count, p.folder_id,
-                    p.custom_position, p.visible_sidebar, p.writable, p.updated_at, p.last_played_at
+                    p.custom_position, p.visible_sidebar, p.writable, p.updated_at, p.last_played_at,
+                    s.kind = 'server', p.left_out
              FROM playlists p
              JOIN sources s ON s.id = p.source_id
              LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.id
@@ -323,6 +330,8 @@ impl Library {
                 writable: r.get::<_, i64>(15)? != 0,
                 updated_at: r.get(16)?,
                 last_played_at: r.get(17)?,
+                server: r.get::<_, i64>(18)? != 0,
+                left_out: r.get::<_, i64>(19)? as usize,
             })
         })?;
         rows.collect()

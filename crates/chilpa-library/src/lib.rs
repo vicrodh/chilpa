@@ -25,7 +25,7 @@ pub use playlist::Playlist;
 pub use scan::{scan_root, scan_root_with_cache, ScanReport};
 pub use scan_job::{ScanJob, ScanProgress};
 pub use smart::{builtins as smart_builtins, Order as SmartOrder, Rule, SmartList};
-pub use store::{NewServer, Removal, ServerTrack, StoredServer};
+pub use store::{MirroredPlaylist, NewServer, Removal, ServerPlaylist, ServerTrack, StoredServer};
 pub use store::ExportTrack;
 pub use store::{is_various, split_genres, letter_of, AlbumDisc, AlbumEdit, ArtistRole, EditTrack, Edited, Hosted, Put, TrackEdit, AlbumSort, BrowseTrack, FacetEntry, Filter, FolderEntry, Library, PlaylistEdit, PlaylistEntry, PlaylistFolder, PlaylistMembership, PlaylistTrackMetadata, Snapshot, Stats, StoredAlbum, StoredArtist, StoredPlaylist, StoredRoot, StoredTrack, Totals, TrackOrder, TrackStat, RecentRelease};
 pub use store::overlay::StoredOverlay;

@@ -72,6 +72,7 @@ pub mod regroup;
 pub mod saved;
 mod related;
 pub(crate) mod reach;
+pub mod server_playlists;
 pub mod servers;
 pub mod overlay;
 mod compilations;
@@ -86,6 +87,7 @@ pub use browse::{letter_of, BrowseTrack, FacetEntry, Filter, FolderEntry, Snapsh
 pub use find::Found;
 pub use playlists::{PlaylistEdit, PlaylistEntry, PlaylistFolder, PlaylistMembership, PlaylistTrackMetadata, StoredPlaylist};
 pub use plays::{RecentRelease, Stats, TrackStat};
+pub use server_playlists::{MirroredPlaylist, ServerPlaylist};
 pub use servers::{NewServer, Removal, ServerTrack, StoredServer};
 
 use crate::schema;
