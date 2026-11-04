@@ -12,6 +12,7 @@
 //! allows: a big cover takes a fifth of a second to decode and a hundred MB
 //! while it does.
 
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::sync::{Condvar, Mutex};
 use image::ImageDecoder;
@@ -25,6 +26,60 @@ const DECODE_JOBS: usize = 2;
 static DECODE_BUDGET: DecodeBudget = DecodeBudget::new();
 
 struct DecodeBudget { used: Mutex<(usize, u64)>, wake: Condvar }
+
+/// Files being made now, by target. A second asker for the same file waits
+/// for the first and takes its result instead of decoding the cover again.
+/// Askers are the image threads, never the window's.
+static MAKING: Making = Making { targets: Mutex::new(BTreeSet::new()), done: Condvar::new() };
+
+struct Making { targets: Mutex<BTreeSet<PathBuf>>, done: Condvar }
+
+/// One target's claim, given back however its making ends.
+struct Claim<'a> { making: &'a Making, target: PathBuf }
+
+impl Drop for Claim<'_> {
+    fn drop(&mut self) {
+        self.making.targets.lock().unwrap_or_else(|error| error.into_inner()).remove(&self.target);
+        self.making.done.notify_all();
+    }
+}
+
+impl Making {
+    /// `target`, made by `make` (which gives the bytes it wrote) unless it
+    /// is already there or another asker makes it meanwhile.
+    fn once(&self, target: &Path, make: impl FnOnce() -> Option<u64>) -> Option<PathBuf> {
+        let mut targets = self.targets.lock().unwrap_or_else(|error| error.into_inner());
+        while targets.contains(target) {
+            targets = self.done.wait(targets).unwrap_or_else(|error| error.into_inner());
+        }
+        if target.is_file() { return Some(target.to_path_buf()); }
+        targets.insert(target.to_path_buf());
+        drop(targets);
+        let _claim = Claim { making: self, target: target.to_path_buf() };
+        crate::storage_cache::note_stored(make()?);
+        Some(target.to_path_buf())
+    }
+}
+
+/// Writes `target` through a temporary file of its own beside it, created
+/// exclusively under a name no other writer has, and moved over the target
+/// whole: a half-written file is never loaded and two writers never share
+/// one. The temporary keeps the target's extension, so one a crash leaves
+/// behind is still swept with the cache. Gives the bytes written.
+fn written(target: &Path, write: impl FnOnce(&mut std::io::BufWriter<&mut std::fs::File>) -> Option<()>) -> Option<u64> {
+    let folder = target.parent()?;
+    std::fs::create_dir_all(folder).ok()?;
+    let suffix = format!(".{}", target.extension()?.to_str()?);
+    let mut file = tempfile::Builder::new().prefix(".making-").suffix(&suffix).tempfile_in(folder).ok()?;
+    {
+        let mut writer = std::io::BufWriter::new(file.as_file_mut());
+        write(&mut writer)?;
+        std::io::Write::flush(&mut writer).ok()?;
+    }
+    let bytes = file.as_file().metadata().ok()?.len();
+    file.persist(target).ok()?;
+    Some(bytes)
+}
 
 impl DecodeBudget {
     const fn new() -> Self { Self { used: Mutex::new((0, 0)), wake: Condvar::new() } }
@@ -110,14 +165,10 @@ pub fn contained_cover(path: &Path, size: u32) -> Option<PathBuf> {
     let directory = chilpa_dirs::cache().join("contained-covers");
     let output = directory.join(small.file_name()?);
     if output.is_file() { return Some(output); }
-    let field = with_cover(&small, |art| contain_image(&art.into_rgb8(), size))?;
-    std::fs::create_dir_all(directory).ok()?;
-    let mut file = tempfile::NamedTempFile::new_in(output.parent()?).ok()?;
-    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut file, QUALITY).encode_image(&field).ok()?;
-    let bytes = file.as_file().metadata().ok()?.len();
-    file.persist(&output).ok()?;
-    crate::storage_cache::note_stored(bytes);
-    Some(output)
+    MAKING.once(&output, || {
+        let field = with_cover(&small, |art| contain_image(&art.into_rgb8(), size))?;
+        written(&output, |writer| image::codecs::jpeg::JpegEncoder::new_with_quality(writer, QUALITY).encode_image(&field).ok())
+    })
 }
 
 fn contain_image(art: &image::RgbImage, size: u32) -> image::RgbImage {
@@ -157,39 +208,29 @@ fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBuf> {
     if out.exists() {
         return Some(out);
     }
-    // A cover smaller than asked is kept at its size: making it bigger
-    // only makes it blurrier and heavier.
-    let pixels = with_cover(path, |cover| {
-        let small = if cover.width().max(cover.height()) > size { cover.thumbnail(size, size) } else { cover };
-        small.into_rgb8()
-    })?;
-    std::fs::create_dir_all(dir).ok()?;
-    // Written beside and moved over: a half-written file is never loaded.
-    let next = out.with_extension("jpg.new");
-    let file = std::fs::File::create(&next).ok()?;
-    let mut writer = std::io::BufWriter::new(file);
-    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut writer, QUALITY).encode_image(&pixels).ok()?;
-    drop(writer);
-    std::fs::rename(&next, &out).ok()?;
-    if let Ok(meta) = std::fs::metadata(&out) { crate::storage_cache::note_stored(meta.len()); }
-    Some(out)
+    MAKING.once(&out, || {
+        // A cover smaller than asked is kept at its size: making it bigger
+        // only makes it blurrier and heavier.
+        let pixels = with_cover(path, |cover| {
+            let small = if cover.width().max(cover.height()) > size { cover.thumbnail(size, size) } else { cover };
+            small.into_rgb8()
+        })?;
+        written(&out, |writer| image::codecs::jpeg::JpegEncoder::new_with_quality(writer, QUALITY).encode_image(&pixels).ok())
+    })
 }
 
 fn atmosphere_in(dir: &Path, path: &Path) -> Option<PathBuf> {
     let modified = std::fs::metadata(path).and_then(|m| m.modified()).ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map_or(0, |d| d.as_secs());
     let out = dir.join(format!("{:016x}.png", key(path, modified)));
     if out.exists() { return Some(out) }
-    let tiny = with_cover(path, |source| source.resize_exact(8, 8, image::imageops::FilterType::Triangle).into_rgba8())?;
-    let large = image::imageops::resize(&tiny, 128, 128, image::imageops::FilterType::CatmullRom);
-    let mut field = image::imageops::blur(&large, 16.0);
-    color_field(&mut field);
-    vignette(&mut field);
-    std::fs::create_dir_all(dir).ok()?;
-    let next = out.with_extension("png.new");
-    field.save_with_format(&next, image::ImageFormat::Png).ok()?;
-    std::fs::rename(next, &out).ok()?;
-    if let Ok(meta) = std::fs::metadata(&out) { crate::storage_cache::note_stored(meta.len()); }
-    Some(out)
+    MAKING.once(&out, || {
+        let tiny = with_cover(path, |source| source.resize_exact(8, 8, image::imageops::FilterType::Triangle).into_rgba8())?;
+        let large = image::imageops::resize(&tiny, 128, 128, image::imageops::FilterType::CatmullRom);
+        let mut field = image::imageops::blur(&large, 16.0);
+        color_field(&mut field);
+        vignette(&mut field);
+        written(&out, |writer| field.write_to(writer, image::ImageFormat::Png).ok())
+    })
 }
 
 fn color_field(image: &mut image::RgbaImage) {
@@ -264,6 +305,56 @@ mod tests {
         // Another size is another file.
         assert_ne!(derivative_in(&cache, &original, 512).unwrap(), small);
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn many_askers_for_one_cover_get_one_whole_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let original = cover(dir.path(), "cover.png", 1200);
+        let cache = dir.path().join("cache");
+        let start = std::sync::Barrier::new(8);
+        let made: Vec<_> = std::thread::scope(|scope| {
+            let mut askers = Vec::new();
+            for _ in 0..8 { askers.push(scope.spawn(|| { start.wait(); derivative_in(&cache, &original, 256) })); }
+            askers.into_iter().map(|asker| asker.join().unwrap()).collect()
+        });
+        let first = made[0].clone().expect("a derivative");
+        assert!(made.iter().all(|path| path.as_ref() == Some(&first)), "{made:?}");
+        assert_eq!(image::open(&first).unwrap().width(), 256);
+        let left: Vec<_> = std::fs::read_dir(&cache).unwrap().map(|entry| entry.unwrap().file_name()).collect();
+        assert_eq!(left.len(), 1, "no temporary file is left behind: {left:?}");
+    }
+
+    #[test]
+    fn a_second_asker_waits_for_the_first_instead_of_making_it_again() {
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("made.jpg");
+        let makes = std::sync::atomic::AtomicUsize::new(0);
+        let start = std::sync::Barrier::new(4);
+        std::thread::scope(|scope| {
+            for _ in 0..4 {
+                scope.spawn(|| {
+                    start.wait();
+                    let made = MAKING.once(&target, || {
+                        makes.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                        written(&target, |writer| std::io::Write::write_all(writer, b"cover").ok())
+                    });
+                    assert_eq!(made.as_deref(), Some(target.as_path()));
+                });
+            }
+        });
+        assert_eq!(makes.load(std::sync::atomic::Ordering::SeqCst), 1);
+        assert_eq!(std::fs::read(&target).unwrap(), b"cover");
+    }
+
+    #[test]
+    fn a_failed_making_leaves_nothing_and_lets_the_next_asker_try() {
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("failed.png");
+        assert!(MAKING.once(&target, || written(&target, |_| None)).is_none());
+        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0, "the temporary is gone");
+        assert!(MAKING.once(&target, || written(&target, |writer| std::io::Write::write_all(writer, b"x").ok())).is_some());
     }
 
     #[test]
