@@ -21,7 +21,9 @@ QtObject {
     property bool changedFullscreen: false
     readonly property string pluginId: portal ? portal.pluginId : ""
     readonly property url entry: portal ? Sources.display(pluginId, Sources.revision) : ""
-    readonly property var provider: surface && surface.display && surface.display.version === 1 ? surface.display : null
+    readonly property var provider: contract(surface)
+    // The display contract a loaded surface offers, or null.
+    function contract(item) { return item && item.display && item.display.version === 1 ? item.display : null }
     readonly property bool active: requested && portal !== null && String(entry) !== ""
     readonly property bool customPlayer: active && provider !== null && provider.useCustomPlayer && provider.playerComponent !== null
     readonly property real playerExtent: customPlayer ? provider.playerExtent || 112 : 0

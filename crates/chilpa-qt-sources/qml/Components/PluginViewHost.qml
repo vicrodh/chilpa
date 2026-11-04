@@ -31,14 +31,19 @@ Item {
         parent: DisplayMode.active ? stage : DisplayMode.portal
         anchors.fill: parent
         // A surface without the display contract goes while its page is
-        // hidden and comes back with it; a display keeps its own.
+        // hidden and comes back with it; a display, or any surface while the
+        // window is asked for, stays. Which kind it is gets read when it
+        // loads and kept until another page mounts: a new revision loading
+        // in place tears the old surface down first, and that is no hiding.
+        property bool plain: true
         active: host.registerHost && DisplayMode.portal !== null && String(DisplayMode.entry) !== ""
-            && (DisplayMode.provider !== null || DisplayMode.portal.visible || detached)
+            && (!plain || DisplayMode.requested || DisplayMode.portal.visible || detached)
         readonly property bool detached: item?.detachedVisible === true
         source: active ? DisplayMode.entry : ""
         asynchronous: true
         onItemChanged: if (!item) DisplayMode.surface = null
-        onLoaded: DisplayMode.bind(item)
+        onLoaded: { plain = DisplayMode.contract(item) === null; DisplayMode.bind(item) }
+        Connections { target: DisplayMode; function onPortalChanged() { mount.plain = true } }
         onStatusChanged: if (status === Loader.Error) { DisplayMode.loadFailed = true; DisplayMode.requested = false; DisplayMode.surface = null }
     }
     Loader {
