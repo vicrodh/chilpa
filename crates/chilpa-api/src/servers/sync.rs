@@ -167,7 +167,7 @@ pub(crate) struct Syncer {
 
 impl Syncer {
     pub(crate) fn start(keys: Arc<Keys>, gate: Arc<Mutex<()>>) -> Self {
-        let open: Open = Arc::new(|| chilpa_core::open_library().ok());
+        let open: Open = Arc::new(open_library);
         Self::with(Tools { net: Arc::new(Network), open, keys, gate })
     }
 
@@ -333,6 +333,18 @@ impl Syncer {
         }
         events
     }
+}
+
+/// The library, opened for one of the servers' threads. The window opened
+/// it first and brought it up to date: this one does not migrate it, and a
+/// library another writer holds right now is opened again a little later
+/// instead of failing the sync (`background::retried`).
+pub(crate) fn open_library() -> Option<chilpa_library::Library> {
+    let path = chilpa_library::Library::default_path();
+    super::background::retried("opening the library for a server's thread", &super::background::WAITS, || {
+        chilpa_library::Library::open_existing(&path)
+    })
+    .ok()
 }
 
 /// Starts a thread that serves orders until its sender is dropped. If it

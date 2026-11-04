@@ -92,9 +92,9 @@ impl Writer {
         let (outbox, done) = channel::<Written>();
         let _ = std::thread::Builder::new().name("chilpa-server-writes".into()).spawn(move || {
             while let Ok(write) = inbox.recv() {
-                let written = match chilpa_core::open_library() {
-                    Ok(lib) => apply(&lib, &Network, &keys, &gate, &write),
-                    Err(_) => refused(&write, chilpa_i18n::t("the library could not be opened")),
+                let written = match super::sync::open_library() {
+                    Some(lib) => apply(&lib, &Network, &keys, &gate, &write),
+                    None => refused(&write, chilpa_i18n::t("the library could not be opened")),
                 };
                 let _ = outbox.send(written);
             }
