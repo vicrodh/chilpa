@@ -121,6 +121,26 @@ impl Visualizer {
         self.0.controls.enabled()
     }
 
+    /// On-demand control facts for a diagnostic probe. I read no audio samples
+    /// and neither start workers nor consume pending frames. The fields are
+    /// independent observations, not an atomic snapshot across the workers.
+    pub fn diagnostics(&self) -> String {
+        let shared = &self.0;
+        let compact = shared.compact_mode.load(Ordering::Relaxed);
+        serde_json::json!({
+            "enabled": shared.controls.enabled(),
+            "paused": shared.controls.paused(),
+            "sources": shared.sources.load(Ordering::Relaxed),
+            "compact_mode": (compact != u32::MAX).then_some(compact),
+            "presented": shared.presented.load(Ordering::Relaxed),
+            "marshal_all": shared.marshal_all.load(Ordering::Relaxed),
+            "producer_attached": shared.producer.get().is_some(),
+            "drain_attached": shared.drain.get().is_some(),
+            "frame_ready": shared.frame_ready.load(Ordering::Relaxed),
+            "tap_frames": shared.tap.frames(),
+        }).to_string()
+    }
+
     /// The immersive view opened: every stream it draws publishes each
     /// frame from here on, and the producer runs if it was not.
     pub fn open(&self) {
@@ -484,6 +504,32 @@ mod tests {
 
     fn parsed(json: &str) -> serde_json::Value {
         serde_json::from_str(json).expect("the pack is JSON")
+    }
+
+    #[test]
+    fn diagnostics_preserve_a_hidden_view_and_its_pending_frame() {
+        let handle = Visualizer::new(Tap::new());
+        handle.set_presented(false);
+        handle.open();
+        handle.set_paused(true);
+        Latch(handle.0.clone()).submit(Frame::Bars([0.25; BARS]));
+
+        for _ in 0..2 {
+            let state = parsed(&handle.diagnostics());
+            assert_eq!(state["enabled"], false);
+            assert_eq!(state["paused"], true);
+            assert_eq!(state["sources"], 0);
+            assert_eq!(state["compact_mode"], serde_json::Value::Null);
+            assert_eq!(state["presented"], false);
+            assert_eq!(state["marshal_all"], true);
+            assert_eq!(state["producer_attached"], false);
+            assert_eq!(state["drain_attached"], false);
+            assert_eq!(state["frame_ready"], false);
+            assert_eq!(state["tap_frames"], 0);
+        }
+        assert_eq!(*handle.0.cells.bars.lock().unwrap(), Some([0.25; BARS]),
+            "diagnostic reads must leave the next visual frame for its consumer");
+        assert!(handle.0.producer.get().is_none(), "diagnostics must not start capture");
     }
 
     #[test]

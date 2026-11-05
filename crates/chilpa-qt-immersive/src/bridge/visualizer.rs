@@ -48,6 +48,9 @@ pub mod qobject {
         fn set_cursor(self: &Visualizer, track: &QString, position: f64, duration: f64);
         #[qinvokable]
         fn ribbon_snapshot(self: &Visualizer) -> QByteArray;
+        /// On-demand control facts, without audio samples or track metadata.
+        #[qinvokable]
+        fn diagnostics(self: &Visualizer) -> QString;
     }
 
     impl cxx_qt::Threading for Visualizer {}
@@ -134,6 +137,10 @@ impl qobject::Visualizer {
 
     pub fn ribbon_snapshot(&self) -> QByteArray {
         app::with(|api| api.visualizer()).ribbon_snapshot().map(|bytes| QByteArray::from(bytes.as_slice())).unwrap_or_default()
+    }
+
+    pub fn diagnostics(&self) -> QString {
+        QString::from(&app::with(|api| api.visualizer()).diagnostics())
     }
 }
 
