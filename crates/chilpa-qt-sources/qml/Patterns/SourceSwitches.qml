@@ -14,9 +14,11 @@ Column {
     id: switches
 
     property bool active: false
-    readonly property alias rows: source.rows
-    function flip(row, on) { source.flip(row, on) }
-    SourceRows { id: source; active: switches.active }
+    // A display may supply its own visibility scope with the same row contract.
+    property var sourceModel: null
+    readonly property var rows: (sourceModel || source).rows
+    function flip(row, on) { (sourceModel || source).flip(row, on) }
+    SourceRows { id: source; active: switches.active && !switches.sourceModel }
 
     spacing: Metrics.gap8
 

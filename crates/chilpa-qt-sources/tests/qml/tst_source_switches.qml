@@ -15,6 +15,23 @@ TestCase {
 
     SourceSwitches { id: switches; active: true; width: 360 }
 
+    QtObject {
+        id: scoped
+        property var rows: [{key:"plugin:fixture.scoped",label:"Scoped source",icon:"",count:-1,on:false}]
+        property var asked: []
+        function flip(row,on){asked=asked.concat([[row.key,on]])}
+    }
+    function cleanup(){switches.sourceModel=null}
+    function test_a_scoped_model_reuses_rows_without_changing_the_shared_selection(){
+        switches.sourceModel=scoped
+        const toggle=findChild(switches,"sourceSwitch-plugin:fixture.scoped")
+        verify(toggle)
+        compare(switches.rows.length,1)
+        mouseClick(toggle)
+        compare(scoped.asked,[["plugin:fixture.scoped",true]])
+        compare(Sources.asked,[])
+        compare(Library.asked,[])
+    }
     function init() {
         Sources.asked = []
         Library.asked = []
