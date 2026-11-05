@@ -4,6 +4,7 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 
 
@@ -36,8 +37,9 @@ def main() -> int:
     # The context owns the profile until the command and its session bus exit.
     with tempfile.TemporaryDirectory(prefix="chilpa-api-tests-") as directory:
         environment = profile_environment(Path(directory))
-        return subprocess.run(["dbus-run-session", "--", *command], env=environment,
-                              check=False).returncode
+        if sys.platform.startswith("linux"):
+            command = ["dbus-run-session", "--", *command]
+        return subprocess.run(command, env=environment, check=False).returncode
 
 
 if __name__ == "__main__":

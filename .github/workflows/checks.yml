@@ -33,7 +33,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pkg-config clang libclang-dev cmake nasm \
-            libasound2-dev libjack-jackd2-dev libpulse-dev libpipewire-0.3-dev libdbus-1-dev libssl-dev bubblewrap
+            libasound2-dev libjack-jackd2-dev libpulse-dev libpipewire-0.3-dev libdbus-1-dev libssl-dev bubblewrap dbus-daemon
           # Ubuntu 24.04 confines unprivileged user namespaces, and the plugin sandbox tests need them.
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - if: runner.os == 'macOS'
@@ -53,7 +53,7 @@ jobs:
           python3 -m unittest discover -s scripts/tests
           cargo test --locked -q -p chilpa-library --lib
           cargo test --locked -q -p chilpa-core --lib
-          cargo test --locked -q -p chilpa-api --lib
+          python3 scripts/run-api-tests-isolated.py -- cargo test --locked -q -p chilpa-api --lib
           cargo test --locked -q -p chilpa-bwrap --lib
 
   interface:

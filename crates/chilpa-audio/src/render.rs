@@ -426,8 +426,13 @@ fn deliver<K: AudioSink>(
     let source_format = source_format.unwrap_or(format);
     let conversion = source_format.sample_format == crate::format::SampleFormat::F32
         || source_format.sample_format != format.sample_format;
+    // Existing gain/conversion chunks are already bounded. Keep one source
+    // copy across partial writes; visibility never changes audio chunk sizes.
+    let mut source_pcm = [0u8; 16 * 1024];
+    let mut captured_chunk = false;
+    let separate_source = volume.is_some() || conversion;
     // I reserve the bound once so a short first chunk cannot make Vec growth
-    // retain more than 16 KiB. Matching integer formats allocate no scratch buffer.
+    // retain more than 16 KiB. Matching integer formats need no conversion allocation.
     let mut converted = if conversion { Vec::with_capacity(16 * 1024) } else { Vec::new() };
     crate::diagnostics::trace("render", "started", format_args!("format={format:?}"));
     let mut frames: u64 = 0;
@@ -559,6 +564,8 @@ fn deliver<K: AudioSink>(
                 chunk_start = offset;
                 processed_end = (offset + chunk).min(block.len());
                 let bytes = &mut block[offset..processed_end];
+                captured_chunk = separate_source && sink.wants_source_pcm();
+                if captured_chunk { source_pcm[..bytes.len()].copy_from_slice(bytes); }
                 if let Some(volume) = &mut volume { volume(bytes); }
                 if conversion {
                     crate::dsp::volume::convert_pcm(bytes, source_format.sample_format, format.sample_format, &mut converted);
@@ -568,7 +575,18 @@ fn deliver<K: AudioSink>(
             let bytes = if conversion {
                 &converted[(offset - chunk_start) / frame_bytes * format.frame_bytes()..]
             } else { &block[offset..processed_end] };
-            match sink.write(bytes) {
+            let result = if separate_source {
+                let source = captured_chunk.then(|| crate::sink::SourcePcm {
+                    bytes: &source_pcm[offset - chunk_start..processed_end - chunk_start],
+                    format: source_format,
+                });
+                sink.write_with_source(bytes, source)
+            } else {
+                // Matching integer PCM without gain keeps the existing output
+                // history, including DSP, and its original full-block processing.
+                sink.write(bytes)
+            };
+            match result {
                 // Full: nothing was taken, and the rest of the block is
                 // offered again. Taking this for "on to the next block"
                 // dropped the rest of it, which on a device with a queue of
@@ -1238,3 +1256,7 @@ mod tests {
 #[cfg(test)]
 #[path = "render_volume_tests.rs"]
 mod volume_tests;
+
+#[cfg(test)]
+#[path = "render_source_tests.rs"]
+mod source_tests;

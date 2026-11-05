@@ -12,6 +12,7 @@ import tempfile
 import time
 import wave
 import random
+import resource
 import shutil
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import threading
@@ -32,7 +33,10 @@ parser.add_argument("--private-pipewire",action="store_true",help="Use an isolat
 parser.add_argument("--volume",type=int,default=99,choices=range(101),metavar="0..100",help="Software volume for the isolated playback fixture.")
 parser.add_argument("--format",choices=("wav","flac"),default="wav",help="Encoding of the generated PCM fixture.")
 parser.add_argument("--muted",action="store_true",help="Mute the isolated player while checking source analysis.")
+parser.add_argument("--exclusive",action="store_true",help="Open the isolated output in exclusive mode.")
 parser.add_argument("--minimum-visual-peak",type=float,default=0,help="Minimum peak in the selected compact stream for the generated signal.")
+parser.add_argument("--minimum-waveform-hz",type=float,default=0,help="Minimum distinct waveform updates per second in compact mode.")
+parser.add_argument("--benchmark-mode",type=int,choices=range(7),help="Measure one compact mode without screenshot overhead.")
 args = parser.parse_args()
 if args.headless_rhi and args.backend != "opengl":
     parser.error("--headless-rhi requires the OpenGL backend")
@@ -63,6 +67,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-live-visualizer-") as directory,
     settings="output = "+audio_device+"\nlanguage = es\n"
     settings+="playback.volume = "+str(args.volume)+"\n"
     settings+="playback.muted = "+str(args.muted).lower()+"\n"
+    settings+="audio.exclusive = "+str(args.exclusive).lower()+"\n"
     if args.restored:settings+="ui.queue.visualizer = true\nui.queue.visualizer.mode = 5\n"
     (profile / "config/chilpa/settings.conf").write_text(settings)
     if args.dsp_package:
@@ -120,13 +125,15 @@ with tempfile.TemporaryDirectory(prefix="chilpa-live-visualizer-") as directory,
         seconds=0, shuffle=False, repeat=0, stop_after=None)
     (profile / "data/chilpa/listenlist.json").write_text(json.dumps(dict(version=1, buffers=[buffer], active=1, selected=1, next=2)))
     fixture = profile / "live.qml"
-    template = "main-live-visualizer.qml" if args.main else "queue-visualizer.qml" if args.queues else "live-visualizer.qml"
+    template = "benchmark-visualizer.qml" if args.benchmark_mode is not None else "main-live-visualizer.qml" if args.main else "queue-visualizer.qml" if args.queues else "live-visualizer.qml"
     fixture.write_text((scripts / "fixtures" / template).read_text()
         .replace('"OUTPUT_DIRECTORY"', json.dumps(str(output)))
         .replace('"RESTORED"', str(args.restored).lower())
         .replace('"MINIMUM_VISUAL_PEAK"',str(args.minimum_visual_peak))
+        .replace('"MINIMUM_WAVEFORM_HZ"',str(args.minimum_waveform_hz))
         .replace('"FIXTURE_VOLUME"',str(args.volume))
         .replace('"FIXTURE_MUTED"',str(args.muted).lower())
+        .replace('"BENCHMARK_MODE"',str(args.benchmark_mode or 0))
         .replace('fixture.wav',music.name)
         .replace('"file:capture"', json.dumps(audio_device))
         .replace('"WITH_DSP"', "true" if args.dsp_package else "false"))
@@ -147,8 +154,23 @@ with tempfile.TemporaryDirectory(prefix="chilpa-live-visualizer-") as directory,
     bus.write_text('<busconfig><type>session</type><listen>unix:tmpdir='+str(profile/"runtime")+'</listen><auth>EXTERNAL</auth><policy context="default"><allow send_destination="*" eavesdrop="true"/><allow receive_sender="*" eavesdrop="true"/><allow own="*"/></policy></busconfig>')
     with display as address, log_path.open("w") as log:
         environment["DISPLAY"] = address
-        result = subprocess.run(["timeout", "--kill-after=2s", "65s", "dbus-run-session", "--config-file="+str(bus), "--", str(args.binary.resolve())],
-            env=environment, cwd=profile, stdout=log, stderr=subprocess.STDOUT, timeout=70)
+        app_command = [str(args.binary.resolve())]
+        metrics = nullcontext()
+        if args.benchmark_mode is not None:
+            metrics_spec = importlib.util.spec_from_file_location("visualizer_metrics", scripts / "fixtures/visualizer_metrics.py")
+            metrics_module = importlib.util.module_from_spec(metrics_spec); metrics_spec.loader.exec_module(metrics_module)
+            pid_file = profile / "owned-qt.pid"
+            launcher = "import os,sys;from pathlib import Path;Path(sys.argv[1]).write_text(str(os.getpid()));os.execv(sys.argv[2],[sys.argv[2]])"
+            app_command = [os.sys.executable, "-c", launcher, str(pid_file), str(args.binary.resolve())]
+            metrics = metrics_module.measure(pid_file, log_path, output)
+        usage_before = resource.getrusage(resource.RUSAGE_CHILDREN)
+        command_started = time.monotonic()
+        with metrics:
+            result = subprocess.run(["timeout", "--kill-after=2s", "65s", "dbus-run-session", "--config-file="+str(bus), "--", *app_command],
+                env=environment, cwd=profile, stdout=log, stderr=subprocess.STDOUT, timeout=70)
+        command_seconds = time.monotonic() - command_started
+        usage_after = resource.getrusage(resource.RUSAGE_CHILDREN)
+        command_cpu = usage_after.ru_utime + usage_after.ru_stime - usage_before.ru_utime - usage_before.ru_stime
     transcript = log_path.read_text()
     errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "Binding loop", "Unable to assign", "is not a type",
               "Failed to compile shader", "Failed to build graphics pipeline state", "Failed to link shader program")
@@ -158,10 +180,15 @@ with tempfile.TemporaryDirectory(prefix="chilpa-live-visualizer-") as directory,
     capture = profile / "tmp/chilpa-capture.raw"
     captured_bytes = capture.stat().st_size if capture.exists() else 0
     print(f"SMOKE live capture bytes={captured_bytes}")
-    marker = "SMOKE Main visualizer completed" if args.main else "SMOKE queue visualizer completed" if args.queues else "SMOKE live visualizer completed"
+    marker = "SMOKE Main visualizer benchmark completed" if args.benchmark_mode is not None else "SMOKE Main visualizer completed" if args.main else "SMOKE queue visualizer completed" if args.queues else "SMOKE live visualizer completed"
     passed = (result.returncode == 0 and (args.private_pipewire or captured_bytes > rate * 4)
               and marker in transcript and not any(error in transcript for error in errors))
     (output / "report.json").write_text(json.dumps(dict(binary=str(args.binary.resolve()), backend=args.backend,
         captured_bytes=captured_bytes, audio_device=audio_device, private_pipewire=args.private_pipewire, volume=args.volume, muted=args.muted, format=args.format, minimum_visual_peak=args.minimum_visual_peak, exit_code=result.returncode, passed=passed, log=str(log_path),
+        command_seconds=command_seconds, command_cpu_seconds=command_cpu,
+        command_cpu_one_core_percent=100 * command_cpu / command_seconds,
+        minimum_waveform_hz=args.minimum_waveform_hz,
+        benchmark_mode=args.benchmark_mode,
+        exclusive=args.exclusive,
         seconds=round(time.monotonic() - started, 2)), indent=2) + "\n")
     raise SystemExit(0 if passed else 1)

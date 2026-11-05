@@ -8,6 +8,7 @@
 pub mod backends;
 pub mod devices;
 mod evidence;
+mod pcm_timing;
 pub mod hardware_volume;
 pub mod realtime;
 pub mod reserve;
@@ -192,9 +193,14 @@ impl AlsaSink {
             // title of the next track. A device that cannot keep this little
             // gets the nearest it can; this is not worth refusing one over.
             let _ = params.set_buffer_time_near(500_000, ValueOr::Nearest);
-            // Four periods to the buffer: the device wakes the writer every
-            // quarter of it, as mpd sets it.
-            let _ = params.set_periods_near(4, ValueOr::Nearest);
+            // PCM wakes regularly without reducing the half-second queue.
+            // Native DSD keeps its existing four-period underrun protection.
+            let period_configured = pcm_timing::period_frames(stream)
+                .is_some_and(|period| params.set_period_size_near(period, ValueOr::Nearest).is_ok());
+            if !period_configured {
+                // An unsupported PCM period keeps the previous negotiation too.
+                let _ = params.set_periods_near(4, ValueOr::Nearest);
+            }
             pcm.hw_params(&params).map_err(backend)?;
             let rate = params.get_rate().map_err(backend)?;
             let channels = params.get_channels().map_err(backend)? as u16;
@@ -205,9 +211,10 @@ impl AlsaSink {
             // no more than a third of a second at DSD256 ran dry on the
             // way out of every seek. The same after every recovery, since
             // the thresholds survive a prepare.
+            let start_threshold = pcm_timing::start_threshold(stream.sample_format, buffer, period);
             {
                 let sw = pcm.sw_params_current().map_err(backend)?;
-                sw.set_start_threshold((buffer - period).max(1)).map_err(backend)?;
+                sw.set_start_threshold(start_threshold).map_err(backend)?;
                 sw.set_avail_min(period).map_err(backend)?;
                 pcm.sw_params(&sw).map_err(backend)?;
             }
@@ -217,7 +224,7 @@ impl AlsaSink {
                 format_args!(
                     "device={device:?} buffer_frames={buffer} buffer_ms={} period_frames={period} start_threshold={}",
                     buffer as u64 * 1000 / u64::from(rate.max(1)),
-                    (buffer - period).max(1)
+                    start_threshold
                 ),
             );
             if rate != stream.sample_rate_hz || channels != stream.channels {

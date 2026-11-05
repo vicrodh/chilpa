@@ -94,23 +94,14 @@ impl<K: AudioSink> Measured<K> {
         self.meter.get_mut().discard(self.inner.format().sample_rate_hz, reason, close);
     }
 }
-impl<K: AudioSink> AudioSink for Measured<K> {
-    fn set_dop(&mut self, dop: bool) { self.inner.set_dop(dop); }
-    fn position_changed(&mut self, position: Option<u64>) {
-        if let Some(segment) = self.meter.get_mut().segments.back_mut() { segment.position = position; }
-        self.inner.position_changed(position);
-    }
-    fn format(&self) -> StreamFormat { self.inner.format() }
-    fn held(&self) -> u64 {
-        let held = self.inner.held();
-        if !self.meter.borrow().segments.is_empty() {
-            self.meter.borrow_mut().sample(held, self.inner.format().sample_rate_hz, "playing");
-        }
-        held
-    }
-    fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+impl<K: AudioSink> Measured<K> {
+    fn write_measured(&mut self, frames: &[u8], source: Option<Option<chilpa_audio::sink::SourcePcm<'_>>>) -> Result<usize, SinkError> {
         self.sample("playing");
-        match self.inner.write(frames) {
+        let result = match source {
+            None => self.inner.write(frames),
+            Some(source) => self.inner.write_with_source(frames, source),
+        };
+        match result {
             Ok(written) => {
                 if let Some(segment) = self.meter.get_mut().segments.back_mut() {
                     segment.pending += written as u64;
@@ -125,6 +116,28 @@ impl<K: AudioSink> AudioSink for Measured<K> {
                 Err(error)
             }
         }
+    }
+}
+impl<K: AudioSink> AudioSink for Measured<K> {
+    fn set_dop(&mut self, dop: bool) { self.inner.set_dop(dop); }
+    fn position_changed(&mut self, position: Option<u64>) {
+        if let Some(segment) = self.meter.get_mut().segments.back_mut() { segment.position = position; }
+        self.inner.position_changed(position);
+    }
+    fn format(&self) -> StreamFormat { self.inner.format() }
+    fn held(&self) -> u64 {
+        let held = self.inner.held();
+        if !self.meter.borrow().segments.is_empty() {
+            self.meter.borrow_mut().sample(held, self.inner.format().sample_rate_hz, "playing");
+        }
+        held
+    }
+    fn wants_source_pcm(&self) -> bool { self.inner.wants_source_pcm() }
+    fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+        self.write_measured(frames, None)
+    }
+    fn write_with_source(&mut self, frames: &[u8], source: Option<chilpa_audio::sink::SourcePcm<'_>>) -> Result<usize, SinkError> {
+        self.write_measured(frames, Some(source))
     }
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
         self.sample("playing");
@@ -172,6 +185,40 @@ mod tests {
     use super::*;
     use std::sync::Mutex;
     use chilpa_audio::format::SampleFormat;
+    #[test]
+    fn measured_writes_forward_source_pcm_without_changing_accounting() {
+        struct SourceSink { source: Vec<u8>, output: Vec<u8> }
+        impl AudioSink for SourceSink {
+            fn format(&self) -> StreamFormat { StreamFormat::new(SampleFormat::S16, 8_000, 1) }
+            fn wants_source_pcm(&self) -> bool { true }
+            fn write(&mut self, bytes: &[u8]) -> Result<usize, SinkError> {
+                self.output.extend_from_slice(bytes);
+                Ok(bytes.len() / 2)
+            }
+            fn write_with_source(&mut self, bytes: &[u8], source: Option<chilpa_audio::sink::SourcePcm<'_>>) -> Result<usize, SinkError> {
+                self.source.extend_from_slice(source.unwrap().bytes);
+                self.write(bytes)
+            }
+            fn close(&mut self) -> Result<(), SinkError> { Ok(()) }
+        }
+        let mut sink = Measured::new(SourceSink { source: Vec::new(), output: Vec::new() });
+        struct SilentObserver;
+        impl Observer for SilentObserver {
+            fn update(&self, _: u64, _: u32, _: &'static str, _: Option<&'static str>) {}
+        }
+        sink.begin(Some(Arc::new(SilentObserver)));
+        assert!(sink.wants_source_pcm());
+        let source = [0.25f32.to_le_bytes(), 0.5f32.to_le_bytes()].concat();
+        assert_eq!(sink.write_with_source(&[0; 4], Some(chilpa_audio::sink::SourcePcm {
+            bytes: &source, format: StreamFormat::new(SampleFormat::F32, 8_000, 1),
+        })).unwrap(), 2);
+        assert_eq!(sink.inner.source, source);
+        assert_eq!(sink.inner.output, [0; 4]);
+        let meter = sink.meter.borrow();
+        assert_eq!(meter.segments.back().unwrap().played, 2);
+        assert_eq!(meter.segments.back().unwrap().pending, 0);
+    }
+
     #[test]
     fn seeking_moves_the_media_cursor_without_creating_listening_time() {
         #[derive(Default)]

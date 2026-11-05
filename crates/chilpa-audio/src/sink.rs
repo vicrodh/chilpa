@@ -61,6 +61,14 @@ impl SinkError {
     }
 }
 
+/// PCM before software gain, with the same frame timeline as the output.
+/// Borrowed only for a write; the sink must commit only the accepted prefix.
+#[derive(Clone, Copy)]
+pub struct SourcePcm<'a> {
+    pub bytes: &'a [u8],
+    pub format: StreamFormat,
+}
+
 /// An open output device.
 pub trait AudioSink {
     /// I announce each new source, including DoP in an ordinary PCM carrier.
@@ -76,6 +84,16 @@ pub trait AudioSink {
     /// Writes frames and returns how many it took. It may take fewer: the
     /// caller retries the rest.
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError>;
+
+    /// Whether a visible PCM consumer needs a pre-gain copy for this chunk.
+    fn wants_source_pcm(&self) -> bool { false }
+
+    /// Writes output with optional pre-gain PCM. None means that the chunk
+    /// began while analysis was hidden: never replace it with attenuated PCM.
+    /// Sinks without analysis keep their ordinary write behavior.
+    fn write_with_source(&mut self, frames: &[u8], _source: Option<SourcePcm<'_>>) -> Result<usize, SinkError> {
+        self.write(frames)
+    }
 
     /// Releases the device. It waits neither for the buffer to empty nor for
     /// the device to answer.
@@ -169,6 +187,12 @@ impl AudioSink for Box<dyn AudioSink + Send> {
 
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
         (**self).write(frames)
+    }
+
+    fn wants_source_pcm(&self) -> bool { (**self).wants_source_pcm() }
+
+    fn write_with_source(&mut self, frames: &[u8], source: Option<SourcePcm<'_>>) -> Result<usize, SinkError> {
+        (**self).write_with_source(frames, source)
     }
 
     fn close(&mut self) -> Result<(), SinkError> {

@@ -1,9 +1,8 @@
 //! Watching what goes out, without touching it.
 //!
-//! A visualizer needs the samples that were really delivered. The only
-//! honest way to give it them is to copy them **after** packing and
-//! **before** writing, without changing a single byte of what goes to the
-//! device.
+//! Output meters describe delivered bytes. Visual history can instead use
+//! matching source PCM before software gain, committed only after the device
+//! accepts those frames. Neither copy changes the audio sent to the device.
 //!
 //! Three rules that keep this from eating bit-perfect or the CPU:
 //!
@@ -18,7 +17,7 @@
 //!    matters to nobody; a gap in the audio does.
 
 use crate::format::{SampleFormat, StreamFormat};
-use crate::sink::{AudioSink, SinkError};
+use crate::sink::{AudioSink, SinkError, SourcePcm};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -84,7 +83,9 @@ impl Tap {
     }
 
     /// Copies what was delivered. If the lock is busy, it does nothing.
-    fn copy(&self, bytes: &[u8], format: StreamFormat, held: u64) {
+    // Outer None preserves the ordinary output analysis; Some(None) skips
+    // history for a chunk prepared while hidden. Both share the meter lock.
+    fn copy_with_source(&self, bytes: &[u8], format: StreamFormat, held: u64, source: Option<Option<SourcePcm<'_>>>) {
         let Ok(mut e) = self.0.try_lock() else { return };
         if e.samples.is_empty() || e.dsd {
             return;
@@ -97,7 +98,7 @@ impl Tap {
         let total = e.samples.len();
         let mut cursor = e.cursor;
         let mut written = 0usize;
-        if e.visualizing {
+        if e.visualizing && source.is_none() {
             for frame in bytes.chunks_exact(width * channels) {
                 let mut stereo = [0.0; 2];
                 for (channel, sample) in frame.chunks_exact(width).enumerate() {
@@ -116,6 +117,18 @@ impl Tap {
                 e.samples[cursor] = normalize(sample, format.sample_format);
                 cursor = (cursor + 1) % total;
                 written += 1;
+            }
+        }
+        if e.visualizing {
+            if let Some(Some(source)) = source {
+                let width = source.format.sample_format.bytes();
+                let channels = source.format.channels.max(1) as usize;
+                for frame in source.bytes.chunks_exact(width * channels) {
+                    let left = normalize(&frame[..width], source.format.sample_format);
+                    let right = if channels == 1 { left } else { normalize(&frame[width..width * 2], source.format.sample_format) };
+                    e.history.push([left, right]);
+                }
+                e.history.set_delay(held);
             }
         }
         e.cursor = cursor;
@@ -203,6 +216,39 @@ pub struct TapSink<S: AudioSink> {
     dop: bool,
 }
 
+impl<S: AudioSink> TapSink<S> {
+    fn write_tapped(&mut self, frames: &[u8], source: Option<Option<SourcePcm<'_>>>) -> Result<usize, SinkError> {
+        let visualizing = self.tap.2.load(Ordering::Relaxed);
+        // A visible PCM visualizer needs a regular feed instead of long
+        // accepted-write bursts. Partial writes preserve pending DSP/gain and
+        // device buffer sizes. Hidden taps use the original write unchanged.
+        let frames = if visualizing && !self.dop && !self.format.sample_format.is_dsd() {
+            let limit = pcm_feed_frames(self.format.sample_rate_hz) * self.format.frame_bytes();
+            &frames[..frames.len().min(limit)]
+        } else { frames };
+        // Write first, then copy what the device accepted: copying more would
+        // show samples that never played.
+        let accepted = self.inner.write(frames)?;
+        let Some(bytes) = accepted.checked_mul(self.format.frame_bytes()) else { return Ok(accepted) };
+        if let Some(delivered) = frames.get(..bytes) {
+            if self.dop || self.format.sample_format.is_dsd() {
+                self.tap.1.copy(delivered);
+            } else {
+                let held = if visualizing { self.inner.held() } else { 0 };
+                let source = source.map(|source| source.and_then(|source| {
+                    if source.format.sample_rate_hz != self.format.sample_rate_hz
+                        || source.format.sample_format.is_dsd() || source.format.channels == 0 { return None; }
+                    let bytes = accepted.checked_mul(source.format.frame_bytes())?;
+                    Some(SourcePcm { bytes: source.bytes.get(..bytes)?, format: source.format })
+                }));
+                self.tap.copy_with_source(delivered, self.format, held, source);
+            }
+        }
+        Ok(accepted)
+    }
+
+}
+
 impl<S: AudioSink> AudioSink for TapSink<S> {
     fn set_dop(&mut self, dop: bool) {
         self.inner.set_dop(dop);
@@ -221,28 +267,16 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
         self.inner.format()
     }
 
+    fn wants_source_pcm(&self) -> bool {
+        self.tap.2.load(Ordering::Relaxed) && !self.dop && !self.format.sample_format.is_dsd()
+    }
+
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
-        let visualizing = self.tap.2.load(Ordering::Relaxed);
-        // A visible PCM visualizer needs a regular feed instead of long
-        // accepted-write bursts. Partial writes preserve pending DSP/gain and
-        // device buffer sizes. Hidden taps use the original write unchanged.
-        let frames = if visualizing && !self.dop && !self.format.sample_format.is_dsd() {
-            let limit = pcm_feed_frames(self.format.sample_rate_hz) * self.format.frame_bytes();
-            &frames[..frames.len().min(limit)]
-        } else { frames };
-        // Write first, then copy what the device accepted: copying more would
-        // show samples that never played.
-        let accepted = self.inner.write(frames)?;
-        let Some(bytes) = accepted.checked_mul(self.format.frame_bytes()) else { return Ok(accepted) };
-        if let Some(delivered) = frames.get(..bytes) {
-            if self.dop || self.format.sample_format.is_dsd() {
-                self.tap.1.copy(delivered);
-            } else {
-                let held = if visualizing { self.inner.held() } else { 0 };
-                self.tap.copy(delivered, self.format, held);
-            }
-        }
-        Ok(accepted)
+        self.write_tapped(frames, None)
+    }
+
+    fn write_with_source(&mut self, frames: &[u8], source: Option<SourcePcm<'_>>) -> Result<usize, SinkError> {
+        self.write_tapped(frames, Some(source))
     }
 
     fn close(&mut self) -> Result<(), SinkError> {
@@ -356,6 +390,24 @@ mod tests {
             v.extend_from_slice(&(-m).to_le_bytes());
         }
         v
+    }
+
+    #[test]
+    fn a_busy_analysis_lock_never_blocks_or_changes_the_device_write() {
+        let format = StreamFormat::new(SampleFormat::S16, 48_000, 2);
+        let tap = Tap::new();
+        tap.set_visualizing(true);
+        let device = mirror(format, 0);
+        let delivered = device.written.clone();
+        let mut sink = tap.wrap(device);
+        let bytes = ramp(32);
+        let lock = tap.0.lock().unwrap();
+        assert_eq!(sink.write_with_source(&bytes, Some(SourcePcm { bytes: &bytes, format })).unwrap(), 32);
+        assert_eq!(*delivered.borrow(), bytes);
+        drop(lock);
+        assert_eq!(tap.frames(), 0, "a busy tap skips both copies together");
+        let mut out = [0.0; 8];
+        assert_eq!(tap.visualizer_snapshot(&mut out), 0);
     }
 
     #[test]

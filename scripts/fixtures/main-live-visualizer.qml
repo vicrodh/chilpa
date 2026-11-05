@@ -10,6 +10,7 @@ Item {
     property string outputDirectory: "OUTPUT_DIRECTORY"
     property bool restored: "RESTORED"
     property real minimumVisualPeak: "MINIMUM_VISUAL_PEAK"
+    property real minimumWaveformHz: "MINIMUM_WAVEFORM_HZ"
     property int fixtureVolume: "FIXTURE_VOLUME"
     property bool fixtureMuted: "FIXTURE_MUTED"
     property bool firstRestored: restored
@@ -17,6 +18,7 @@ Item {
     property int phase: 0
     property int mode: 0
     property int began: 0
+    property real beganMs: 0
     property int ticks: 0
     property bool capturing: false
     property var counts: ({bars:0,waveform:0,energy:0,goniometer:0,oscilloscope:0,pack:0})
@@ -30,7 +32,7 @@ Item {
     function find(item,name){if(item.objectName===name)return item;for(const child of item.children || []){const found=find(child,name);if(found)return found}return null}
     function check(ok,message){if(!ok)throw new Error(message)}
     function peak(values){let result=0;for(let i=0;i<values.length;i++)result=Math.max(result,Math.abs(values[i]));return result}
-    function begin(){began=ticks;before=Object.assign({},counts);pulseBefore=Pulse.ms}
+    function begin(){began=ticks;beganMs=Date.now();before=Object.assign({},counts);pulseBefore=Pulse.ms}
     function capture(name,next){
         capturing=true
         mainWindow.contentItem.grabToImage(image=>{
@@ -42,7 +44,7 @@ Item {
     function report(name){
         const fresh={};for(const key of Object.keys(counts))fresh[key]=counts[key]-before[key]
         const engine=typeof Visualizer.diagnostics==="function" ? JSON.parse(Visualizer.diagnostics()):null
-        console.log("SMOKE Main visualizer stage "+JSON.stringify({name:name,fresh:fresh,pulse:Pulse.ms-pulseBefore,playing:Player.playing,paused:Player.paused,volume:Player.volume,muted:Player.muted,bars:Array.from(Visualizer.bars),energy:Array.from(Visualizer.energy),engine:engine}))
+        console.log("SMOKE Main visualizer stage "+JSON.stringify({name:name,seconds:(Date.now()-beganMs)/1000,fresh:fresh,pulse:Pulse.ms-pulseBefore,playing:Player.playing,paused:Player.paused,volume:Player.volume,muted:Player.muted,bars:Array.from(Visualizer.bars),energy:Array.from(Visualizer.energy),engine:engine}))
     }
     function selectCompact(next){mode=next;find(mainWindow.contentItem,"listenNow").visualizationMode=next;begin()}
     function selectImmersive(next){mode=next;Immersive.openView(0,views[mode].mode,0);Immersive.chooseScene(views[mode].scene);begin()}
@@ -90,6 +92,7 @@ Item {
                     probe.report("compact-"+probe.mode)
                     probe.check(probe.counts[probe.names[probe.mode]]-probe.before[probe.names[probe.mode]]>3,"no fresh compact stream "+probe.mode)
                     probe.check(probe.peak(Visualizer[probe.names[probe.mode]])>=probe.minimumVisualPeak,"compact signal was attenuated below the usable visual range")
+                    if(probe.mode===1)probe.check((probe.counts.waveform-probe.before.waveform)*1000/(Date.now()-probe.beganMs)>=probe.minimumWaveformHz,"distinct waveform updates fell below the required cadence")
                     if(probe.mode!==3 && probe.mode!==4)probe.check(Pulse.ms>probe.pulseBefore,"compact animation pulse stopped")
                     probe.capture("compact-"+probe.mode,()=>{
                         if(probe.firstRestored){probe.firstRestored=false;probe.selectCompact(0);return}

@@ -4,6 +4,7 @@ fn main() {
     }
     let library = pkg_config::Config::new()
         .range_version("1.0"..)
+        .cargo_metadata(false)
         .probe("libpipewire-0.3")
         .expect("PipeWire development headers >= 1.0 are required on Linux");
     let mut build = cc::Build::new();
@@ -28,4 +29,9 @@ fn main() {
     }
     println!("cargo:rerun-if-changed=native/dsd.h");
     build.compile("chilpa_pipewire_dsd");
+    // The static archive must precede its dependency for --as-needed linkers.
+    pkg_config::Config::new()
+        .range_version("1.0"..)
+        .probe("libpipewire-0.3")
+        .expect("PipeWire development libraries >= 1.0 are required on Linux");
 }
