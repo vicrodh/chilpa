@@ -29,6 +29,10 @@ parser.add_argument("--main", action="store_true", help="Check compact and immer
 parser.add_argument("--restored", action="store_true", help="Start Main with the compact visualizer already enabled.")
 parser.add_argument("--http", action="store_true", help="Read the synthetic fixture through a loopback HTTP server.")
 parser.add_argument("--private-pipewire",action="store_true",help="Use an isolated PipeWire graph containing only a null sink.")
+parser.add_argument("--volume",type=int,default=99,choices=range(101),metavar="0..100",help="Software volume for the isolated playback fixture.")
+parser.add_argument("--format",choices=("wav","flac"),default="wav",help="Encoding of the generated PCM fixture.")
+parser.add_argument("--muted",action="store_true",help="Mute the isolated player while checking source analysis.")
+parser.add_argument("--minimum-visual-peak",type=float,default=0,help="Minimum peak in the selected compact stream for the generated signal.")
 args = parser.parse_args()
 if args.headless_rhi and args.backend != "opengl":
     parser.error("--headless-rhi requires the OpenGL backend")
@@ -57,6 +61,8 @@ with tempfile.TemporaryDirectory(prefix="chilpa-live-visualizer-") as directory,
         audio_device=graph["device"]
         audio_environment={key:value for key,value in graph["environment"].items() if key.startswith(("PIPEWIRE_","PULSE_")) or key=="ALSA_CONFIG_PATH"}
     settings="output = "+audio_device+"\nlanguage = es\n"
+    settings+="playback.volume = "+str(args.volume)+"\n"
+    settings+="playback.muted = "+str(args.muted).lower()+"\n"
     if args.restored:settings+="ui.queue.visualizer = true\nui.queue.visualizer.mode = 5\n"
     (profile / "config/chilpa/settings.conf").write_text(settings)
     if args.dsp_package:
@@ -88,13 +94,18 @@ with tempfile.TemporaryDirectory(prefix="chilpa-live-visualizer-") as directory,
     with wave.open(str(music), "wb") as stream:
         stream.setparams((2, 2, rate, 0, "NONE", "not compressed"))
         stream.writeframes(samples.tobytes())
+    if args.format == "flac":
+        encoded = music.with_suffix(".flac")
+        subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-i", str(music),
+                        "-c:a", "flac", str(encoded)], check=True, timeout=30)
+        music = encoded
     media_path=str(music)
     if args.http:
         class FixtureHandler(BaseHTTPRequestHandler):
             def log_message(self,*args): pass
             def do_GET(self):
-                if self.path!="/fixture.wav":self.send_error(404);return
-                self.send_response(200);self.send_header("Content-Type","audio/wav")
+                if self.path!="/"+music.name:self.send_error(404);return
+                self.send_response(200);self.send_header("Content-Type","audio/flac" if args.format=="flac" else "audio/wav")
                 self.send_header("Content-Length",str(music.stat().st_size));self.end_headers()
                 try:
                     with music.open("rb") as source:
@@ -103,7 +114,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-live-visualizer-") as directory,
         server=ThreadingHTTPServer(("127.0.0.1",0),FixtureHandler)
         worker=threading.Thread(target=server.serve_forever,daemon=True);worker.start()
         cleanup.callback(server.server_close);cleanup.callback(worker.join,2);cleanup.callback(server.shutdown)
-        media_path=f"http://127.0.0.1:{server.server_port}/fixture.wav"
+        media_path=f"http://127.0.0.1:{server.server_port}/{music.name}"
     buffer = dict(id=1, name="Now playing", renamed=False, epoch=1, paths=[media_path], origins=[],
         removed=[False], placement=["Original"], groups=[], order=[0], cursor=0,
         seconds=0, shuffle=False, repeat=0, stop_after=None)
@@ -113,6 +124,10 @@ with tempfile.TemporaryDirectory(prefix="chilpa-live-visualizer-") as directory,
     fixture.write_text((scripts / "fixtures" / template).read_text()
         .replace('"OUTPUT_DIRECTORY"', json.dumps(str(output)))
         .replace('"RESTORED"', str(args.restored).lower())
+        .replace('"MINIMUM_VISUAL_PEAK"',str(args.minimum_visual_peak))
+        .replace('"FIXTURE_VOLUME"',str(args.volume))
+        .replace('"FIXTURE_MUTED"',str(args.muted).lower())
+        .replace('fixture.wav',music.name)
         .replace('"file:capture"', json.dumps(audio_device))
         .replace('"WITH_DSP"', "true" if args.dsp_package else "false"))
     inherited = {key:value for key,value in os.environ.items()
@@ -147,6 +162,6 @@ with tempfile.TemporaryDirectory(prefix="chilpa-live-visualizer-") as directory,
     passed = (result.returncode == 0 and (args.private_pipewire or captured_bytes > rate * 4)
               and marker in transcript and not any(error in transcript for error in errors))
     (output / "report.json").write_text(json.dumps(dict(binary=str(args.binary.resolve()), backend=args.backend,
-        captured_bytes=captured_bytes, audio_device=audio_device, private_pipewire=args.private_pipewire, exit_code=result.returncode, passed=passed, log=str(log_path),
+        captured_bytes=captured_bytes, audio_device=audio_device, private_pipewire=args.private_pipewire, volume=args.volume, muted=args.muted, format=args.format, minimum_visual_peak=args.minimum_visual_peak, exit_code=result.returncode, passed=passed, log=str(log_path),
         seconds=round(time.monotonic() - started, 2)), indent=2) + "\n")
     raise SystemExit(0 if passed else 1)

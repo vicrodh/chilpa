@@ -9,6 +9,9 @@ Item {
     id: probe
     property string outputDirectory: "OUTPUT_DIRECTORY"
     property bool restored: "RESTORED"
+    property real minimumVisualPeak: "MINIMUM_VISUAL_PEAK"
+    property int fixtureVolume: "FIXTURE_VOLUME"
+    property bool fixtureMuted: "FIXTURE_MUTED"
     property bool firstRestored: restored
     property var mainWindow: null
     property int phase: 0
@@ -26,6 +29,7 @@ Item {
     SettingsPage {id: audio; section:"audio"}
     function find(item,name){if(item.objectName===name)return item;for(const child of item.children || []){const found=find(child,name);if(found)return found}return null}
     function check(ok,message){if(!ok)throw new Error(message)}
+    function peak(values){let result=0;for(let i=0;i<values.length;i++)result=Math.max(result,Math.abs(values[i]));return result}
     function begin(){began=ticks;before=Object.assign({},counts);pulseBefore=Pulse.ms}
     function capture(name,next){
         capturing=true
@@ -38,7 +42,7 @@ Item {
     function report(name){
         const fresh={};for(const key of Object.keys(counts))fresh[key]=counts[key]-before[key]
         const engine=typeof Visualizer.diagnostics==="function" ? JSON.parse(Visualizer.diagnostics()):null
-        console.log("SMOKE Main visualizer stage "+JSON.stringify({name:name,fresh:fresh,pulse:Pulse.ms-pulseBefore,playing:Player.playing,paused:Player.paused,bars:Array.from(Visualizer.bars),energy:Array.from(Visualizer.energy),engine:engine}))
+        console.log("SMOKE Main visualizer stage "+JSON.stringify({name:name,fresh:fresh,pulse:Pulse.ms-pulseBefore,playing:Player.playing,paused:Player.paused,volume:Player.volume,muted:Player.muted,bars:Array.from(Visualizer.bars),energy:Array.from(Visualizer.energy),engine:engine}))
     }
     function selectCompact(next){mode=next;find(mainWindow.contentItem,"listenNow").visualizationMode=next;begin()}
     function selectImmersive(next){mode=next;Immersive.openView(0,views[mode].mode,0);Immersive.chooseScene(views[mode].scene);begin()}
@@ -74,6 +78,8 @@ Item {
                 if(probe.phase===2){
                     const toggle=probe.find(probe.mainWindow.contentItem,"queueVisualizationToggle")
                     if(!Player.playing || Player.paused || !toggle || !toggle.visible || !toggle.enabled)return
+                    Player.chooseVolume(probe.fixtureVolume)
+                    Player.chooseMuted(probe.fixtureMuted)
                     if(probe.firstRestored){probe.mode=5;probe.begin()}
                     else{toggle.clicked();probe.selectCompact(0)}
                     probe.phase=3;return
@@ -83,6 +89,7 @@ Item {
                 if(probe.phase===3){
                     probe.report("compact-"+probe.mode)
                     probe.check(probe.counts[probe.names[probe.mode]]-probe.before[probe.names[probe.mode]]>3,"no fresh compact stream "+probe.mode)
+                    probe.check(probe.peak(Visualizer[probe.names[probe.mode]])>=probe.minimumVisualPeak,"compact signal was attenuated below the usable visual range")
                     if(probe.mode!==3 && probe.mode!==4)probe.check(Pulse.ms>probe.pulseBefore,"compact animation pulse stopped")
                     probe.capture("compact-"+probe.mode,()=>{
                         if(probe.firstRestored){probe.firstRestored=false;probe.selectCompact(0);return}
