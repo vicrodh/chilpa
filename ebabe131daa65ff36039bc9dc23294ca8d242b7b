@@ -1,0 +1,3 @@
+review: source_tap_review /mnt/build/artifacts/chilpa/visualizer-source-20261105/validation/REVIEWS.md approved combined 16-file source, cadence, build and isolated-test patch.
+review: post_smoke_review /mnt/build/artifacts/chilpa/visualizer-source-20261105/validation/REVIEWS.md approved combined 16-file patch and local fast-forward integration.
+smoke: owner 2026-11-05 fc9f05f1963fb3bfe5d357c72f4c10028d7878d8eedbdcd44bc5e88de93b470b confirmed restored audio reaction and animation in immersive, then exclusive playback and Nest both working. Physical DSD/DoP and Raspberry Pi not exercised.
