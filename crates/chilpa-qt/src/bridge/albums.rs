@@ -73,6 +73,8 @@ pub mod qobject {
         fn art(self: &AlbumGridModel, index: i32, rev: i32) -> QUrl;
         #[qinvokable]
         fn album_id(self: &AlbumGridModel, index: i32, rev: i32) -> i64;
+        #[qinvokable]
+        fn index_of_album(self: &AlbumGridModel, id: i64) -> i32;
         /// An artist's card of "artists": its name and the sources that hold its records.
         #[qinvokable]
         fn artist(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
@@ -218,6 +220,9 @@ impl qobject::AlbumGridModel {
     }
     pub fn album_id(&self, index: i32, _rev: i32) -> i64 {
         self.rust().get(index, |a| a.id).unwrap_or(0)
+    }
+    pub fn index_of_album(&self, id: i64) -> i32 {
+        self.rust().list.position(id).and_then(|index| i32::try_from(index).ok()).unwrap_or(-1)
     }
 
     pub fn select(mut self: Pin<&mut Self>, index: i32, modifiers: i32) {
@@ -410,11 +415,7 @@ impl qobject::AlbumGridModel {
         self.as_mut().set_fresh(-1);
         let opened = self.rust().get(self.rust().expanded, |a| a.id)
             .map(|id| app::with(|api| api.selected_album_version(id)));
-        let expanded = match (&list, opened) {
-            (Albums::Loaded(cards), Some(id)) => cards.iter().position(|a| a.id == id),
-            (Albums::Snapshot { ids, .. }, Some(id)) => ids.iter().position(|a| *a == id),
-            _ => None,
-        }.map(|at| at as i32).unwrap_or(-1);
+        let expanded = opened.and_then(|id| list.position(id)).map(|at| at as i32).unwrap_or(-1);
         let count = list.len() as i32;
         self.as_mut().set_mixed(list.mixed());
         let anchor = self.rust().anchor.and_then(|at| self.rust().get(at, |a| a.id));
