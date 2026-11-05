@@ -12,7 +12,7 @@ fn queue_protection_follows_edits_disabled_persistence_and_both_restore_formats(
         let profile = tempfile::tempdir().unwrap();
         let result = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "source_catalog::queue_retention_tests::queue_protection_follows_edits_disabled_persistence_and_both_restore_formats", "--nocapture"])
-            .env(CHILD, "1").envs(chilpa_dirs::profile_environment(profile.path())).output().unwrap();
+            .env(CHILD, "1").envs(crate::test_support::profile_environment(profile.path())).output().unwrap();
         assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
         return;
     }

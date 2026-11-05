@@ -737,6 +737,8 @@ impl Chilpa {
     pub fn new() -> Self { Self::with_listing(outputs::Listing::new()) }
     /// `new`, reading the outputs from that listing instead of one of the machine's (tests).
     pub(crate) fn with_listing(outputs_listing: outputs::Listing) -> Self {
+        #[cfg(test)]
+        test_support::assert_isolated_profile();
         // The language is set before anything can speak: a message built
         // during startup has to come out in the same language as the rest.
         let saved = chilpa_core::settings::load();
@@ -1490,3 +1492,5 @@ impl Drop for Chilpa {
 mod albumless_tests;
 #[cfg(test)]
 mod lib_tests;
+#[cfg(test)]
+mod test_support;

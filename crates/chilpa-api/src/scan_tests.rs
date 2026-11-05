@@ -9,7 +9,7 @@ fn isolated(name: &str) -> bool {
     let profile = tempfile::tempdir().unwrap();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", name, "--nocapture"]).env(CHILD, name)
-        .envs(chilpa_dirs::profile_environment(profile.path())).output().unwrap();
+        .envs(crate::test_support::profile_environment(profile.path())).output().unwrap();
     assert!(output.status.success(), "{}\n{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
     assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
     false

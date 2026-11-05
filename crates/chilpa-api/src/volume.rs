@@ -197,7 +197,7 @@ mod tests {
             let profile = tempfile::tempdir().unwrap();
             let result = std::process::Command::new(std::env::current_exe().unwrap())
                 .args(["--exact", "volume::tests::pipewire_one_bit_volume_keeps_pcm_preferences_across_route_changes", "--nocapture"])
-                .env(CHILD, "1").envs(chilpa_dirs::profile_environment(profile.path())).output().unwrap();
+                .env(CHILD, "1").envs(crate::test_support::profile_environment(profile.path())).output().unwrap();
             assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
             assert!(String::from_utf8_lossy(&result.stdout).contains("1 passed; 0 failed"));
             return;

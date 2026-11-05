@@ -41,7 +41,7 @@ fn scanned_loose_tracks_refresh_into_and_out_of_records_and_play_from_the_snapsh
         std::fs::create_dir(&temporary).unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", NAME, "--nocapture"]).env(CHILD, NAME).env("TMPDIR", temporary)
-            .envs(chilpa_dirs::profile_environment(profile.path())).output().unwrap();
+            .envs(crate::test_support::profile_environment(profile.path())).output().unwrap();
         assert!(output.status.success(), "{}\n{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
         assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
         return;

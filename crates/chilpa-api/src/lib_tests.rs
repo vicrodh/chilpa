@@ -8,7 +8,7 @@ fn play_restarts_a_queue_after_the_worker_reported_an_error() {
         let result = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "lib_tests::play_restarts_a_queue_after_the_worker_reported_an_error", "--nocapture"])
             .env(CHILD, "1").env("TMPDIR", profile.path())
-            .envs(chilpa_dirs::profile_environment(profile.path())).output().unwrap();
+            .envs(crate::test_support::profile_environment(profile.path())).output().unwrap();
         assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
         assert!(String::from_utf8_lossy(&result.stdout).contains("1 passed; 0 failed"));
         return;
@@ -114,7 +114,7 @@ fn the_state_starts_empty_and_without_error() {
     let result = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", "lib_tests::the_state_starts_empty_and_without_error", "--nocapture"])
         .env(CHILD, "1")
-        .envs(chilpa_dirs::profile_environment(profile.path()))
+        .envs(crate::test_support::profile_environment(profile.path()))
         .output()
         .unwrap();
     let stdout = String::from_utf8_lossy(&result.stdout);

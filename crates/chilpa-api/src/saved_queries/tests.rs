@@ -113,7 +113,7 @@ fn facade_reopens_saved_queries_without_a_library_or_queue_changes() {
         let root = tempfile::tempdir().unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "saved_queries::tests::facade_reopens_saved_queries_without_a_library_or_queue_changes", "--nocapture"])
-            .env(CHILD, "1").envs(chilpa_dirs::profile_environment(root.path())).output().unwrap();
+            .env(CHILD, "1").envs(crate::test_support::profile_environment(root.path())).output().unwrap();
         assert!(output.status.success(), "{}\n{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
         return;
     }

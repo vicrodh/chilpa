@@ -71,7 +71,7 @@ fn restored_stored_playlist_roots_use_a_reader_before_the_main_library_opens() {
         let profile = tempfile::tempdir().unwrap();
         let result = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "source_catalog::navigation::tests::restored_stored_playlist_roots_use_a_reader_before_the_main_library_opens", "--nocapture"])
-            .env(CHILD, "1").envs(chilpa_dirs::profile_environment(profile.path())).output().unwrap();
+            .env(CHILD, "1").envs(crate::test_support::profile_environment(profile.path())).output().unwrap();
         assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
         return;
     }
@@ -173,7 +173,7 @@ fn disabling_tab_restore_still_protects_current_navigation_and_closing_releases_
         let profile = tempfile::tempdir().unwrap();
         let result = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "source_catalog::navigation::tests::disabling_tab_restore_still_protects_current_navigation_and_closing_releases_it", "--nocapture"])
-            .env(CHILD, "1").envs(chilpa_dirs::profile_environment(profile.path())).output().unwrap();
+            .env(CHILD, "1").envs(crate::test_support::profile_environment(profile.path())).output().unwrap();
         assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
         return;
     }
@@ -205,7 +205,7 @@ fn restored_tabs_protect_the_disk_catalog_before_workers_or_views_start() {
         let profile = tempfile::tempdir().unwrap();
         let result = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "source_catalog::navigation::tests::restored_tabs_protect_the_disk_catalog_before_workers_or_views_start", "--nocapture"])
-            .env(CHILD, "1").envs(chilpa_dirs::profile_environment(profile.path())).output().unwrap();
+            .env(CHILD, "1").envs(crate::test_support::profile_environment(profile.path())).output().unwrap();
         assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
         return;
     }
