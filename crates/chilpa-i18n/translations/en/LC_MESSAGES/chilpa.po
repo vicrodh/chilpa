@@ -1185,13 +1185,13 @@ msgid "Chilpa never writes these files"
 msgstr ""
 
 msgid "Chilpa opens with the tabs it had when it closed."
-msgstr ""
+msgstr "Chilpa remembers the open tabs and restores them on app start."
 
 msgid "Chilpa output"
 msgstr ""
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
-msgstr "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
+msgstr "Chilpa plays files from your local disks and your servers, and with plugins you can add even more sources. It clearly states whether the audio reaching your DAC is bit-perfect."
 
 msgid "Chilpa plugins"
 msgstr ""
@@ -3393,7 +3393,7 @@ msgid "Like Track"
 msgstr ""
 
 msgid "Like cursor track"
-msgstr ""
+msgstr "Like selected track"
 
 msgid "Limits and cleanup"
 msgstr ""
@@ -4677,10 +4677,10 @@ msgid "Play count"
 msgstr ""
 
 msgid "Play cursor track"
-msgstr ""
+msgstr "Play selected track"
 
 msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
-msgstr "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
+msgstr "Play audio from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
 
 msgid "Play indicator animation"
 msgstr ""
@@ -4965,7 +4965,7 @@ msgid "Queue and playlist actions"
 msgstr ""
 
 msgid "Queue cursor track"
-msgstr ""
+msgstr "Queue selected track"
 
 msgid "Queue is empty"
 msgstr ""
@@ -7971,7 +7971,7 @@ msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr ""
 
 msgid "none of that can be played now: its folder is not mounted or its server does not answer"
-msgstr ""
+msgstr "Playback not possible: the containing folder is not mounted or the server does not answer"
 
 msgid "none of that record's files are here now"
 msgstr ""
@@ -9180,4 +9180,4 @@ msgid "{}s"
 msgstr ""
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
-msgstr ""
+msgstr "“{}” has changes that were not saved. They will get lost if you open this album."

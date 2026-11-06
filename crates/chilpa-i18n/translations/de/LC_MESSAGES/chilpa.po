@@ -1185,13 +1185,13 @@ msgid "Chilpa never writes these files"
 msgstr "Chilpa schreibt diese Dateien nie"
 
 msgid "Chilpa opens with the tabs it had when it closed."
-msgstr "Chilpa öffnet sich mit den Tabs, die beim Schließen offen waren."
+msgstr "Chilpa merkt sich die offenen Tabs und stellt diese beim starten automatisch wieder her."
 
 msgid "Chilpa output"
 msgstr "Ausgabe von Chilpa"
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
-msgstr "Chilpa spielt die Dateien auf deinen Laufwerken und deine eigenen Server ab, und Plugins fügen weitere Quellen hinzu. Es sagt dir klar, ob das, was bei deinem DAC ankommt, bit-perfect ist."
+msgstr "Chilpa spielt Dateien von deinen lokalen Laufwerken und deinen Servern ab, und mit Plugins lassen sich zahreiche weitere Quellen hinzufügen. Es zeigt dir klar an, ob das an deinen DAC gesendete Audiosignal bitgenau ankommt."
 
 msgid "Chilpa plugins"
 msgstr "Chilpa-Plugins"
@@ -3390,10 +3390,10 @@ msgid "Light themes"
 msgstr "Helle Themes"
 
 msgid "Like Track"
-msgstr "Titel favorisieren"
+msgstr "Titel zu Favoriten hinzufügen"
 
 msgid "Like cursor track"
-msgstr "Titel am Cursor favorisieren"
+msgstr "Ausgewählten Titel zu Favoriten hinzufügen"
 
 msgid "Limits and cleanup"
 msgstr "Limits und Bereinigung"
@@ -3804,7 +3804,7 @@ msgid "Mute"
 msgstr "Stummschalten"
 
 msgid "Mute / Unmute"
-msgstr "Stumm / Ton an"
+msgstr "Ton an / aus"
 
 msgid "Muted"
 msgstr "Stumm"
@@ -4368,7 +4368,7 @@ msgid "Open Last.fm"
 msgstr "Last.fm öffnen"
 
 msgid "Open ListenList"
-msgstr "ListenList öffnen"
+msgstr "Wiedergabeliste öffnen"
 
 msgid "Open Music Link"
 msgstr "Musik-Link öffnen"
@@ -4677,10 +4677,10 @@ msgid "Play count"
 msgstr "Wiedergaben"
 
 msgid "Play cursor track"
-msgstr "Titel am Cursor abspielen"
+msgstr "Ausgewählten Titel abspielen"
 
 msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
-msgstr "Spiele von deinen eigenen Servern ab und füge Quellen und Funktionen mit Plugins aus dem offiziellen Katalog oder dem von Drittanbietern hinzu."
+msgstr "Spiele Audiodateien von deinen eigenen Servern ab und füge Quellen und Funktionen mit Plugins aus dem offiziellen Katalog oder von Drittanbietern hinzu."
 
 msgid "Play indicator animation"
 msgstr "Animation der Wiedergabeanzeige"
@@ -4965,7 +4965,7 @@ msgid "Queue and playlist actions"
 msgstr "Aktionen für Warteschlange und Playlist"
 
 msgid "Queue cursor track"
-msgstr "Titel am Cursor in die Warteschlange"
+msgstr "Ausgewählten Titel zur Warteschlange hinzufügen"
 
 msgid "Queue is empty"
 msgstr "Warteschlange ist leer"
@@ -7971,7 +7971,7 @@ msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr "kein Soundserver hat geantwortet; installiere pipewire und pipewire-pulse"
 
 msgid "none of that can be played now: its folder is not mounted or its server does not answer"
-msgstr "nichts davon lässt sich jetzt wiedergeben: Der Ordner ist nicht eingehängt oder der Server antwortet nicht"
+msgstr "Wiedergabe nicht möglich: Der übergeordnete Ordner ist nicht eingehängt oder der Server antwortet nicht"
 
 msgid "none of that record's files are here now"
 msgstr "keine der Dateien dieses Albums ist jetzt hier"
