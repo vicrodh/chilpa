@@ -53,6 +53,7 @@ pub mod listening;
 pub mod list_changes;
 mod metadata;
 pub mod navigation;
+pub mod discover_genres;
 pub mod queue_origin;
 pub mod playback_view;
 mod queue_activity;
