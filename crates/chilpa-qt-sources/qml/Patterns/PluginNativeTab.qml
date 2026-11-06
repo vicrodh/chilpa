@@ -17,6 +17,8 @@ Flickable {
     readonly property var installed: controller.installedRows.filter(p => !p.origin)
     readonly property var offered: controller.view.native_catalog || []
     contentHeight: column.height
+    // The last rows scroll clear of a floating player.
+    bottomMargin: Metrics.contentBottom
     clip: true
     boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: P.ViewportScrollBar { gutter: -Metrics.gap8 }

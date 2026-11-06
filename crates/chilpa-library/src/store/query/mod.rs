@@ -54,6 +54,10 @@ pub enum Field {
     Words,
     /// A genre without alias or spelling expansion.
     ExactGenre,
+    /// The track's bit depth.
+    Bits,
+    /// The track's sample rate, in hertz.
+    Rate,
 }
 
 impl Field {
@@ -65,6 +69,8 @@ impl Field {
         ("added", Field::Added), ("plays", Field::Plays), ("p", Field::Plays),
         ("type", Field::Type), ("ty", Field::Type), ("quality", Field::Quality), ("q", Field::Quality),
         ("words", Field::Words), ("genre=", Field::ExactGenre),
+        ("bits", Field::Bits), ("bitdepth", Field::Bits), ("bd", Field::Bits),
+        ("rate", Field::Rate), ("samplerate", Field::Rate), ("sr", Field::Rate),
     ];
 
     /// The name a query is printed with.
@@ -75,6 +81,7 @@ impl Field {
             Field::Added => "added", Field::Text => "",
             Field::Words => "words", Field::ExactGenre => "genre=",
             Field::Plays => "plays", Field::Type => "type", Field::Quality => "quality",
+            Field::Bits => "bits", Field::Rate => "rate",
         }
     }
 }
@@ -212,8 +219,18 @@ fn set(field: Field, values: &Values, now: i64, args: &mut Args) -> String {
             args.extend(stars.into_iter().map(|s| Box::new(s) as Box<dyn ToSql>));
             sql
         }
-        (Field::Year | Field::Rating | Field::Added, Values::Range(from, to)) => {
-            let column = match field { Field::Year => "CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END", Field::Rating => ALBUM_STARS, _ => "t.added_at" };
+        (Field::Bits | Field::Rate, Values::Any(numbers)) => {
+            let column = if field == Field::Bits { "t.bit_depth" } else { "t.sample_rate_hz" };
+            let numbers: Vec<i64> = numbers.iter().filter_map(|n| n.trim().parse().ok()).collect();
+            let sql = format!("{tracks} {column} IN ({})", marks(numbers.len()));
+            args.extend(numbers.into_iter().map(|n| Box::new(n) as Box<dyn ToSql>));
+            sql
+        }
+        (Field::Year | Field::Rating | Field::Added | Field::Bits | Field::Rate, Values::Range(from, to)) => {
+            let column = match field {
+                Field::Year => "CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END", Field::Rating => ALBUM_STARS,
+                Field::Bits => "t.bit_depth", Field::Rate => "t.sample_rate_hz", _ => "t.added_at",
+            };
             let mut parts = Vec::new();
             if let Some(from) = from { parts.push(format!("{column} >= ?")); args.push(Box::new(*from)); }
             if let Some(to) = to { parts.push(format!("{column} <= ?")); args.push(Box::new(*to)); }

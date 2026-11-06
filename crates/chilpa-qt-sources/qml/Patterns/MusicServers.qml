@@ -53,6 +53,7 @@ Item {
         anchors.bottom: parent.bottom
         width: parent.width
         clip: true
+        bottomMargin: Metrics.contentBottom // the last rows scroll clear of a floating player
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.pageGutter }
         delegate: ServerTableRow {

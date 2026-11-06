@@ -4,6 +4,15 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "Bit depth"
+msgstr "Bit depth"
+
+msgid "More than 16 bits"
+msgstr "More than 16 bits"
+
+msgid "More than 48 kHz"
+msgstr "More than 48 kHz"
+
 msgid "\"{}\" brings nothing today"
 msgstr ""
 
@@ -7677,6 +7686,9 @@ msgstr ""
 msgid "between"
 msgstr ""
 
+msgid "bits takes whole numbers like 16 or 24, or a range with the lower bound first"
+msgstr "bits takes whole numbers like 16 or 24, or a range with the lower bound first"
+
 msgid "bring catalogue: search for and fetch music"
 msgstr ""
 
@@ -8035,6 +8047,9 @@ msgstr "quality takes lossy, cd, hires or dsd"
 
 msgid "quarantined"
 msgstr ""
+
+msgid "rate takes hertz or kilohertz like 44100 or 44.1k, or a range with the lower bound first"
+msgstr "rate takes hertz or kilohertz like 44100 or 44.1k, or a range with the lower bound first"
 
 msgid "ratings could not be loaded: {}"
 msgstr ""
@@ -8837,6 +8852,9 @@ msgstr "{} available of {}"
 
 msgid "{} bit at {} Hz, {}"
 msgstr ""
+
+msgid "{} bits"
+msgstr "{} bits"
 
 msgid "{} came out with different audio; nothing was replaced"
 msgstr ""

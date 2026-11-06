@@ -59,6 +59,9 @@ pub(crate) struct SourceItem {
     pub disc: Option<i64>,
     pub number: Option<i64>,
     pub duration_ms: u64,
+    /// The source's bit depth and sample rate in hertz, when it says them.
+    pub bits: Option<i64>,
+    pub rate: Option<i64>,
     /// "lossy", "lossless", "hires", "dsd" or "unknown".
     pub tier: &'static str,
     /// The library's format key ("flac", "ogg", ...), empty when unknown.

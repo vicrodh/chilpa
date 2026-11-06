@@ -4,6 +4,15 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
 
+msgid "Bit depth"
+msgstr "Разрядность"
+
+msgid "More than 16 bits"
+msgstr "Больше 16 бит"
+
+msgid "More than 48 kHz"
+msgstr "Больше 48 кГц"
+
 msgid "\"{}\" brings nothing today"
 msgstr "«{}» сегодня ничего не приносит"
 
@@ -7687,6 +7696,9 @@ msgstr "быть плагином другого вида: {}"
 msgid "between"
 msgstr "между"
 
+msgid "bits takes whole numbers like 16 or 24, or a range with the lower bound first"
+msgstr "bits принимает целые числа вроде 16 или 24 либо диапазон с нижней границей впереди"
+
 msgid "bring catalogue: search for and fetch music"
 msgstr "предоставлять каталог: искать и получать музыку"
 
@@ -8046,6 +8058,9 @@ msgstr "quality принимает lossy, cd, hires или dsd"
 
 msgid "quarantined"
 msgstr "в карантине"
+
+msgid "rate takes hertz or kilohertz like 44100 or 44.1k, or a range with the lower bound first"
+msgstr "rate принимает герцы или килогерцы вроде 44100 или 44.1k либо диапазон с нижней границей впереди"
 
 msgid "ratings could not be loaded: {}"
 msgstr "не удалось загрузить рейтинги: {}"
@@ -8850,6 +8865,9 @@ msgstr ""
 
 msgid "{} bit at {} Hz, {}"
 msgstr "{} бит на {} Hz, {}"
+
+msgid "{} bits"
+msgstr "{} бит"
 
 msgid "{} came out with different audio; nothing was replaced"
 msgstr "у {} получился другой звук; ничего не заменено"

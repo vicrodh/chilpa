@@ -145,3 +145,28 @@ fn literal_fields_execute_like_the_original_fields() {
         assert_eq!(sql,plain); assert_eq!(args.len(),plain_args.len());
     }
 }
+
+#[test]
+fn bit_depth_and_sample_rate_filter_the_tracks_that_have_them() {
+    let lib = library();
+    for (id, bits, rate) in [(1, 16, 44_100), (2, 24, 96_000), (3, 24, 192_000), (4, 16, 48_000), (5, 32, 44_100)] {
+        lib.connection().execute("UPDATE tracks SET bit_depth = ?2, sample_rate_hz = ?3 WHERE id = ?1", params![id, bits, rate]).unwrap();
+    }
+    assert_eq!(found(&lib, "bits:24"), [2, 3]);
+    assert_eq!(found(&lib, "bits:16,32"), [1, 4, 5]);
+    assert_eq!(found(&lib, "bits:24.."), [2, 3, 5], "a lower bound");
+    assert_eq!(found(&lib, "rate:44100"), [1, 5]);
+    assert_eq!(found(&lib, "rate:44.1k,96k"), [1, 2, 5], "kilohertz are hertz");
+    assert_eq!(found(&lib, "rate:88200.."), [2, 3]);
+    assert_eq!(found(&lib, "samplerate:..48k"), [1, 4, 5], "the long names work");
+    assert_eq!(found(&lib, "bits:24 rate:192k"), [3]);
+    assert_eq!(found(&lib, "-rate:44100 bitdepth:16"), [4]);
+    assert_eq!(parse("rate:44.1k..96khz").unwrap().to_string(), "rate:44100..96000");
+}
+
+#[test]
+fn bit_depth_and_sample_rate_refuse_what_is_not_a_number() {
+    for query in ["bits:deep", "bits:0", "bits:24..16", "rate:fast", "rate:-5", "rate:96k..44.1k", "rate:1.2345k"] {
+        assert!(parse(query).is_err(), "{query}");
+    }
+}

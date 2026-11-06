@@ -68,6 +68,7 @@ Item {
         anchors.right: parent.right
         clip: true
         reuseItems: true
+        bottomMargin: Metrics.contentBottom // the last rows scroll clear of a floating player
         model: tab.controller.catalogRows
         ScrollBar.vertical: P.ViewportScrollBar { gutter: -Metrics.gap8 }
         delegate: PluginRow {

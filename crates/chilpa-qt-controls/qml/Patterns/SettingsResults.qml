@@ -27,6 +27,7 @@ ListView {
     }
     onMatchesChanged: current = 0
     clip: true
+    bottomMargin: Metrics.contentBottom // the last result scrolls clear of a floating player
     boundsBehavior: Flickable.StopAtBounds
     model: matches
     spacing: Metrics.gap2

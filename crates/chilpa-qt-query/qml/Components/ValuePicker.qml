@@ -133,7 +133,7 @@ Item {
             Loader {
                 width: parent.width
                 sourceComponent: picker.isList ? listBody : picker.field === "year" ? yearBody : picker.field === "rating" ? ratingBody
-                    : picker.field === "added" ? addedBody : picker.field === "plays" ? playsBody : picker.field === "type" || picker.field === "quality" ? choicesBody : wordsBody
+                    : picker.field === "added" ? addedBody : picker.field === "plays" ? playsBody : picker.field === "bits" ? bitsBody : picker.field === "rate" ? rateBody : picker.field === "type" || picker.field === "quality" ? choicesBody : wordsBody
             }
             Item {
                 width: parent.width
@@ -177,6 +177,8 @@ Item {
             onEdit: (change) => picker.edit(change)
         }
     }
+    Component { id: bitsBody; PickAudio { field: "bits"; held: picker.find("range"); onEdit: (change) => picker.edit(change) } }
+    Component { id: rateBody; PickAudio { field: "rate"; held: picker.find("range"); onEdit: (change) => picker.edit(change) } }
     Component {
         id: choicesBody
         Column {

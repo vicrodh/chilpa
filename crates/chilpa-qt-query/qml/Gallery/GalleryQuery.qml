@@ -45,6 +45,7 @@ Column {
     PickValues { width: gallery.width; field: "label" }
     PickYears { width: gallery.width; range: ({ from: 1960, to: 1969 }) }
     PickRatings { width: gallery.width }
+    PickAudio { width: gallery.width; field: "rate"; held: ({ from: 96000, to: 96000 }) }
     PickPresets { width: gallery.width; lead: "in the last"; choices: [{ text: "30 days", on: true }, { text: "1 year", on: false }] }
     PickWords { width: gallery.width; field: "title" }
     EngineNotes { width: gallery.width; notes: [{ from: "A. Smith", field: "composer", to: "A Smith", kind: "name" }, { from: "rock", field: "genre", to: "Rock & Roll", kind: "near" }] }

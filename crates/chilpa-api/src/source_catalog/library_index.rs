@@ -86,6 +86,7 @@ fn record(card: &Card, enrichment: &super::genres::State) -> SourceItem {
         release_type: release_type(&card.metadata),
         duration_ms: card.metadata["duration_ms"].as_u64().unwrap_or(0),
         tier, format, tracks,
+        bits: card.format.as_ref().and_then(|f| f.bits).map(i64::from), rate: card.format.as_ref().and_then(|f| f.rate).map(i64::from),
         ..SourceItem::default()
     }
 }
@@ -93,7 +94,8 @@ fn record(card: &Card, enrichment: &super::genres::State) -> SourceItem {
 /// A track, with what its record says of what the track does not.
 fn song(track: &Track, card: Option<&Card>, saved: bool, enrichment: &super::genres::State, credits: &super::composers::State) -> SourceItem {
     let album = card.map(|card| record(card, enrichment));
-    let (tier, format) = quality(track.format.as_ref().or(card.and_then(|c| c.format.as_ref())));
+    let measured = track.format.as_ref().or(card.and_then(|c| c.format.as_ref()));
+    let (tier, format) = quality(measured);
     let mut artists: Vec<String> = [track.artist.clone()].into_iter().filter(|a| !a.trim().is_empty()).collect();
     if let Some(owner) = album.as_ref().map(|a| a.album_artist.clone()).filter(|a| !a.trim().is_empty() && !artists.iter().any(|seen| seen.eq_ignore_ascii_case(a))) {
         artists.push(owner);
@@ -127,6 +129,7 @@ fn song(track: &Track, card: Option<&Card>, saved: bool, enrichment: &super::gen
         number: (track.number > 0).then_some(track.number as i64),
         duration_ms: track.duration_ms,
         tier, format,
+        bits: measured.and_then(|f| f.bits).map(i64::from), rate: measured.and_then(|f| f.rate).map(i64::from),
         saved_track: saved,
         tracks: 1,
         playable: track.playable,

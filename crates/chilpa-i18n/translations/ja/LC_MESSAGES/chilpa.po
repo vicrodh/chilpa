@@ -4,6 +4,15 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
+msgid "Bit depth"
+msgstr "ビット深度"
+
+msgid "More than 16 bits"
+msgstr "16 ビットより上"
+
+msgid "More than 48 kHz"
+msgstr "48 kHz より上"
+
 msgid "\"{}\" brings nothing today"
 msgstr "「{}」には今日は何もありません"
 
@@ -7667,6 +7676,9 @@ msgstr "別の種類のプラグインになる: {}"
 msgid "between"
 msgstr "範囲"
 
+msgid "bits takes whole numbers like 16 or 24, or a range with the lower bound first"
+msgstr "bits には 16 や 24 のような整数、または下限を先に書いた範囲を指定できます"
+
 msgid "bring catalogue: search for and fetch music"
 msgstr "カタログを提供する: 音楽を検索して取得する"
 
@@ -8024,6 +8036,9 @@ msgstr "quality には lossy、cd、hires、dsd を指定します"
 
 msgid "quarantined"
 msgstr "隔離済み"
+
+msgid "rate takes hertz or kilohertz like 44100 or 44.1k, or a range with the lower bound first"
+msgstr "rate には 44100 や 44.1k のようなヘルツまたはキロヘルツ、または下限を先に書いた範囲を指定できます"
 
 msgid "ratings could not be loaded: {}"
 msgstr "評価を読み込めませんでした: {}"
@@ -8824,6 +8839,9 @@ msgstr ""
 
 msgid "{} bit at {} Hz, {}"
 msgstr "{}ビット・{} Hz、{}"
+
+msgid "{} bits"
+msgstr "{} ビット"
 
 msgid "{} came out with different audio; nothing was replaced"
 msgstr "{}は異なる音声で出力されました。何も置き換えられていません"

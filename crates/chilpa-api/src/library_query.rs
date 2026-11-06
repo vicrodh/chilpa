@@ -158,6 +158,7 @@ fn field_label(field: Field) -> String {
         Field::Artist => "Artist", Field::Album => "Album", Field::Title => "Title", Field::Rating => "Rating",
         Field::Added => "Added", Field::Text | Field::Words => "Words",
         Field::Plays => i18n::mark("Plays"), Field::Type => i18n::mark("Release type"), Field::Quality => i18n::mark("Quality"),
+        Field::Bits => i18n::mark("Bit depth"), Field::Rate => i18n::mark("Sample rate"),
     })
 }
 

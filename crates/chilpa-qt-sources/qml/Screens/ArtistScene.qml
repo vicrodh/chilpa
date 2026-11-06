@@ -171,6 +171,7 @@ Item {
                 ListView {
                     id: grid
                     anchors.fill: parent; clip: true; boundsBehavior: Flickable.StopAtBounds
+                    bottomMargin: Metrics.contentBottom // the last row scrolls clear of a floating player
                     model: sceneRows; cacheBuffer: (root.cardH + root.rowGap) * 2
                     NumberAnimation { id: jumpAnimation; target: grid; property: "contentY"; duration: Metrics.sceneJumpDuration; easing.type: Easing.OutCubic }
                     header: SceneHero {

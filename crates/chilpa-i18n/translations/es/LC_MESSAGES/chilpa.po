@@ -4,6 +4,15 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "Bit depth"
+msgstr "Profundidad de bits"
+
+msgid "More than 16 bits"
+msgstr "Más de 16 bits"
+
+msgid "More than 48 kHz"
+msgstr "Más de 48 kHz"
+
 msgid "\"{}\" brings nothing today"
 msgstr "\"{}\" no trae nada hoy"
 
@@ -7677,6 +7686,9 @@ msgstr "ser un plugin de otro tipo: {}"
 msgid "between"
 msgstr "entre"
 
+msgid "bits takes whole numbers like 16 or 24, or a range with the lower bound first"
+msgstr "bits acepta números enteros como 16 o 24, o un rango con el límite menor primero"
+
 msgid "bring catalogue: search for and fetch music"
 msgstr "aportar catálogo: buscar y traer música"
 
@@ -8035,6 +8047,9 @@ msgstr "quality acepta lossy, cd, hires o dsd"
 
 msgid "quarantined"
 msgstr "en cuarentena"
+
+msgid "rate takes hertz or kilohertz like 44100 or 44.1k, or a range with the lower bound first"
+msgstr "rate acepta hercios o kilohercios como 44100 o 44.1k, o un rango con el límite menor primero"
 
 msgid "ratings could not be loaded: {}"
 msgstr "No se pudieron cargar las valoraciones: {}"
@@ -8837,6 +8852,9 @@ msgstr "{} disponibles de {}"
 
 msgid "{} bit at {} Hz, {}"
 msgstr "{} bits a {} Hz, {}"
+
+msgid "{} bits"
+msgstr "{} bits"
 
 msgid "{} came out with different audio; nothing was replaced"
 msgstr "{} salió con otro audio; no se reemplazó nada"
