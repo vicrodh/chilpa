@@ -142,7 +142,7 @@ Window {
     WindowGrips { anchors.fill: parent; window: window }
     DevHooks { window: window }
 
-    Driving.WindowControls { id: driving; window: window }
+    Driving.WindowControls { id: driving; window: window; onVolumeKeyed: player.peekVolume() }
     Mini.MiniHost { window: window; controls: driving; beforeEnter:() => { if(DisplayMode.active)DisplayMode.leave() } }
     Overlay.ImmersiveView { anchors.fill: parent; z: 6; window: window; controls: driving }
     PluginViewHost { anchors.fill: parent; z: 2.5; window: window; standardPlayerHeight: player.height; chrome:[host,systemControls,sidebar] }

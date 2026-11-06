@@ -28,6 +28,8 @@ Item {
     property bool panelAside: false
     readonly property bool displayView: Presentation.DisplayMode.active
     signal showPanel()
+    // A volume key was pressed: the level shows for a moment.
+    function peekVolume() { volumeControl.peek() }
 
     // Brings the set-aside panel back with `which` open.
     function reveal(which) {
@@ -205,6 +207,7 @@ Item {
             Presentation.PlayerViewMenu { id:viewMenu; objectName:"playerViewMenu"; onTop:bar.onTop; triggerWidth:viewButton.width; triggerHeight:viewButton.height }
         }
         Parts.VolumeControl {
+            id: volumeControl
             opensDown: bar.onTop
             anchors.verticalCenter: parent.verticalCenter
             visible: bar.width >= Metrics.playerNoVolume

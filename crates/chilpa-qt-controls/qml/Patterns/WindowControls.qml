@@ -80,7 +80,8 @@ Item {
             for (let n = 0; n < Math.max(1, Hotkeys.repeat || 1); n++) run(action)
     }
 
-    WindowActions { id: actions; controls: controls; commandBar: commandBar; sheet: sheet; settings: commandSettings }
+    signal volumeKeyed()
+    WindowActions { id: actions; onVolumeKeyed: controls.volumeKeyed(); controls: controls; commandBar: commandBar; sheet: sheet; settings: commandSettings }
     function run(action, args) { actions.run(action, args) }
 
     // The window's own item gets every key nothing inside it took.
