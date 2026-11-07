@@ -6,6 +6,7 @@ license.workspace = true
 rust-version.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
+chilpa-dirs.workspace = true
 chilpa-plugin.workspace = true
 libc = "0.2"
 serde_json = "1"

@@ -46,6 +46,9 @@ impl ScanPhase {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct LibraryFolder {
     pub path: String,
+    /// The path as it is shown: inside a sandbox, a folder handed over by the
+    /// file chooser shows by its place on the host.
+    pub shown: String,
     pub last_scan: Option<i64>,
     pub reachable: bool,
     pub scan_policy: ScanPolicy,
@@ -98,11 +101,14 @@ pub(crate) struct Runtime {
     pub written: u64,
     pub shown_at: Option<Instant>,
     pub shown_written: u64,
+    /// Where the document portal's folders live on the host.
+    pub host_paths: crate::sandbox::HostPaths,
 }
 impl Default for Runtime {
     fn default() -> Self {
         Self { initialized: false, policies: BTreeMap::new(), last_attempts: BTreeMap::new(),
-            startup: BTreeSet::new(), intent: Vec::new(), next_check: Instant::now(), written: 0, shown_at: None, shown_written: 0 }
+            startup: BTreeSet::new(), intent: Vec::new(), next_check: Instant::now(), written: 0, shown_at: None, shown_written: 0,
+            host_paths: crate::sandbox::HostPaths::default() }
     }
 }
 

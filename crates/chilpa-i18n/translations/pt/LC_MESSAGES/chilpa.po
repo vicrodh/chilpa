@@ -1232,6 +1232,9 @@ msgstr "Chilpa {} está pronto"
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
 msgstr "Ícone do Chilpa no painel: um clique mostra ou oculta a janela, o botão do meio reproduz ou pausa, a roda muda o volume."
 
+msgid "Chilpa's sandbox hides memory cards and USB drives. Choose a folder on one, or allow Chilpa to read {}."
+msgstr "O sandbox do Chilpa oculta cartões de memória e unidades USB. Escolha uma pasta em um deles ou permita que o Chilpa leia {}."
+
 msgid "Chilpatl is Nahuatl for hornet. Chilpa is a music player for the desktop, where local files, self-hosted servers and plugins are all just sources."
 msgstr "Chilpatl significa vespão em náuatle. O Chilpa é um player de música para o desktop, onde arquivos locais, servidores próprios e plugins são todos apenas fontes."
 
@@ -9019,6 +9022,9 @@ msgstr[1] "{} itens precisam de atenção antes que a reprodução bit-perfect f
 
 msgid "{} keeps no playlists; make this one in Chilpa."
 msgstr "{} não guarda playlists; crie esta no Chilpa."
+
+msgid "{} keeps this copy of Chilpa up to date. Update it from your software center."
+msgstr "{} mantém esta cópia do Chilpa atualizada. Atualize-a pela sua central de software."
 
 msgid "{} label"
 msgid_plural "{} labels"

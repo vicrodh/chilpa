@@ -22,6 +22,24 @@ impl Drop for Updates { fn drop(&mut self) { self.cancel.store(true, Ordering::R
 
 impl Updates {
     fn new(automatic: bool) -> Self {
+        match chilpa_dirs::sandbox() {
+            chilpa_dirs::Sandbox::None => Self::unconfined(automatic),
+            sandbox => Self::sandboxed(automatic, sandbox),
+        }
+    }
+
+    /// A sandbox's packages are updated by their store, and Flathub does not
+    /// allow a program to update itself: nothing is checked or downloaded,
+    /// and the changelog of the version running stays.
+    fn sandboxed(automatic: bool, sandbox: chilpa_dirs::Sandbox) -> Self {
+        let (label, kind) = if sandbox == chilpa_dirs::Sandbox::Snap { ("Snap", "snap") } else { ("Flatpak", "flatpak") };
+        Self { installation: None, native: None, view: Arc::new(Mutex::new(json!({"supported":true,"can_install":false,"can_check":false,
+            "current_version":env!("CARGO_PKG_VERSION"),"installation":label,"kind":kind,
+            "automatic":automatic,"phase":"idle","progress":0.0,"busy":false}))),
+            cancel: Arc::new(AtomicBool::new(false)), launch_checked: AtomicBool::new(false) }
+    }
+
+    fn unconfined(automatic: bool) -> Self {
         let installation = chilpa_dirs::appimage().and_then(|image| {
             let path = chilpa_dirs::executable_helper("../share/chilpa/release.json")?;
             let bytes = fs::read(path).ok().filter(|bytes| bytes.len() < 4096)?;
@@ -40,16 +58,18 @@ impl Updates {
             (None, Some(found)) => (found.kind.label(), found.kind.key()),
             (None, None) => ("System / manual", "manual"),
         };
-        Self { installation, native, view: Arc::new(Mutex::new(json!({"supported":true,"can_install":can_install,
+        Self { installation, native, view: Arc::new(Mutex::new(json!({"supported":true,"can_install":can_install,"can_check":true,
             "current_version":current_version,"installation":label,"kind":kind,
             "automatic":automatic,"phase":"idle","progress":0.0,"busy":false}))),
             cancel: Arc::new(AtomicBool::new(false)), launch_checked: AtomicBool::new(false) }
     }
     fn claim_launch_check(&self) -> bool {
-        !self.launch_checked.swap(true, Ordering::AcqRel) && self.view.lock().unwrap()["automatic"] == true
+        !self.launch_checked.swap(true, Ordering::AcqRel) && self.view.lock().unwrap()["automatic"] == true && self.can_check()
     }
+    /// False where the store updates Chilpa, which then never asks the release service.
+    fn can_check(&self) -> bool { self.view.lock().unwrap()["can_check"] != false }
     fn start(&self, download: bool) -> bool {
-        if chilpa_core::network::current().offline { return false; }
+        if chilpa_core::network::current().offline || !self.can_check() { return false; }
         let mut installation = self.installation.clone();
         let native = self.native.clone();
         if download && installation.is_none() && native.is_none() { return false; }
@@ -378,6 +398,8 @@ impl Chilpa {
         let offline = self.offline();
         let state = self.updates().view.lock().unwrap();
         match row.key.as_str() {
+            // The store checks; there is nothing here to turn on or press.
+            "updates.automatic" | "updates.check" if state["can_check"] == false => row.control.clear(),
             "updates.automatic" => row.value = (state["automatic"] == true).to_string(),
             "updates.current" | "updates.installation" => {
                 row.kind = 2;
@@ -499,6 +521,32 @@ mod tests {
         app.updates_settings_row(&mut row);
         assert_eq!(row.control, "buttonBusy");
         assert_eq!(row.action, chilpa_i18n::t("Update ready"));
+    }
+    #[test]
+    fn a_sandboxed_copy_checks_nothing_and_keeps_its_changelog() {
+        for (sandbox, kind, label) in [(chilpa_dirs::Sandbox::Flatpak, "flatpak", "Flatpak"), (chilpa_dirs::Sandbox::Snap, "snap", "Snap")] {
+            let updates = Updates::sandboxed(true, sandbox);
+            let view = updates.view.lock().unwrap().clone();
+            assert_eq!((view["kind"].as_str(), view["installation"].as_str()), (Some(kind), Some(label)));
+            assert_eq!((view["can_install"].as_bool(), view["can_check"].as_bool()), (Some(false), Some(false)));
+            assert_eq!(view["current_version"], env!("CARGO_PKG_VERSION"));
+            assert!(!updates.claim_launch_check(), "no check at launch");
+            assert!(!updates.start(false) && !updates.start(true), "no check and no download by hand");
+            assert_eq!(updates.view.lock().unwrap()["phase"], "idle");
+        }
+        let mut app = Chilpa::new();
+        app.appimage_updates = Some(Updates::sandboxed(true, chilpa_dirs::Sandbox::Flatpak));
+        let row = |app: &mut Chilpa, key: &str| {
+            let mut row = crate::settings_rows::SettingsRow { key: key.into(), control: "button".into(), ..Default::default() };
+            app.updates_settings_row(&mut row);
+            row
+        };
+        assert!(row(&mut app, "updates.automatic").control.is_empty(), "the toggle is left out");
+        assert!(row(&mut app, "updates.check").control.is_empty(), "the button is left out");
+        assert_eq!(row(&mut app, "updates.installation").value, "Flatpak");
+        assert_eq!(row(&mut app, "updates.changelog").control, "button", "the changelog stays");
+        assert_eq!(app.updates_maintenance("updates.check"), Some(String::new()));
+        assert_eq!(app.updates().view.lock().unwrap()["phase"], "idle", "a stale check press asks nothing");
     }
     #[test]
     fn progress_accepts_cli_records_and_rejects_invalid_percentages() {

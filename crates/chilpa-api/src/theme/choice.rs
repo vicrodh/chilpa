@@ -322,9 +322,26 @@ pub mod auto {
         })
     }
 
+    /// How long a generation waits for the Settings portal's first answer.
+    const PORTAL_WAIT: std::time::Duration = std::time::Duration::from_secs(3);
+
+    /// The desktop's colour scheme: its own settings, or, inside a sandbox,
+    /// where those are the sandbox's, what the Settings portal says.
+    fn scheme() -> Result<chilpa_theme::auto::SystemColorScheme, String> {
+        if !crate::sandbox::sandboxed() {
+            return chilpa_theme::auto::get_system_color_scheme();
+        }
+        let said = crate::sandbox::appearance_within(PORTAL_WAIT).ok_or("the Settings portal did not answer")?;
+        Ok(crate::sandbox::color_scheme(said))
+    }
+
     /// The desktop's wallpaper: the resolver the wallpaper background uses,
-    /// then QBZ's own readers for the desktops it does not know.
+    /// then QBZ's own readers for the desktops it does not know. No portal
+    /// names it, so a sandbox has none.
     fn wallpaper() -> Result<String, String> {
+        if crate::sandbox::sandboxed() {
+            return Err("a sandbox cannot read the desktop's wallpaper".into());
+        }
         match crate::wallpaper::resolve_system() {
             Some(path) => Ok(path.to_string_lossy().into_owned()),
             None => chilpa_theme::auto::get_system_wallpaper(),
@@ -338,7 +355,7 @@ pub mod auto {
         let run = RUN.fetch_add(1, Ordering::SeqCst) + 1;
         let source = source();
         std::thread::spawn(move || {
-            let colors = match chilpa_theme::generate_auto_theme(&source, wallpaper) {
+            let colors = match chilpa_theme::generate_auto_theme(&source, scheme, wallpaper) {
                 Ok(colors) => {
                     let _ = std::fs::create_dir_all(chilpa_dirs::cache());
                     let _ = std::fs::write(cache_path(), colors.to_hex_list());

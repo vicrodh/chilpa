@@ -1,13 +1,17 @@
 //! Chilpa on a Linux desktop's session bus: the MPRIS media controls, the
-//! tray icon, the lock that keeps the machine awake while music plays, and
-//! the name that makes a second launch hand over to the first.
+//! tray icon, the lock that keeps the machine awake while music plays, the
+//! name that makes a second launch hand over to the first, and the portals
+//! a sandboxed Chilpa reads the desktop through.
 //!
 //! Nothing here knows the player: it is told what plays and says what was
 //! asked. The facade does the rest.
 #![cfg(target_os = "linux")]
 
+#[cfg(test)]
+mod fake_bus;
 mod inhibit;
 pub mod instance;
+pub mod portal;
 mod server;
 pub mod tray;
 mod types;

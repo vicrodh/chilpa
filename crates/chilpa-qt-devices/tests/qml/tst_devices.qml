@@ -121,6 +121,17 @@ TestCase {
         click("deviceCreateProfile")
         compare(DeviceSync.lastAction, ["create", "Reader card", "Chilpa"])
     }
+    function test_a_sandbox_that_hides_cards_says_how_to_reach_one() {
+        DeviceSync.setStatus({destination:"mounted"})
+        page.creating = true
+        wait(20)
+        verify(child("deviceChooseFolder").visible)
+        verify(!child("deviceRemovableNotice").visible)
+        DeviceSync.data = Object.assign({},DeviceSync.data,{removable_notice:"Choose a folder on one."})
+        wait(20)
+        verify(child("deviceRemovableNotice").visible)
+        compare(child("deviceRemovableNotice").text, "Choose a folder on one.")
+    }
     function test_removals_need_consent_for_the_current_preview() {
         DeviceSync.setStatus({phase:"review",plan:"first",label:"Ready to sync",removals:2,summary:"2 to copy · 2 to remove"})
         wait(20)

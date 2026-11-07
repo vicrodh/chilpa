@@ -80,6 +80,7 @@ pub use worker_services::WorkerContext;
 mod worker_install;
 mod plugin_repositories;
 mod appimage_updates;
+mod sandbox;
 mod bundle_updates;
 pub mod appimage_desktop;
 pub use plugin_repositories::{PluginRepositories, PluginRepository};

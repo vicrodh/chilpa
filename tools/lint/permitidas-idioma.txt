@@ -927,3 +927,5 @@ verneednum
 # The compatibility worker: its runtime folder and its interpreter.
 compat
 perl
+# The init system's session manager, which keeps the machine awake outside a sandbox.
+logind

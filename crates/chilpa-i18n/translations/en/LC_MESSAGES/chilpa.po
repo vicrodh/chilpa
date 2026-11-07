@@ -1232,6 +1232,9 @@ msgstr ""
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
 msgstr ""
 
+msgid "Chilpa's sandbox hides memory cards and USB drives. Choose a folder on one, or allow Chilpa to read {}."
+msgstr ""
+
 msgid "Chilpatl is Nahuatl for hornet. Chilpa is a music player for the desktop, where local files, self-hosted servers and plugins are all just sources."
 msgstr ""
 
@@ -9018,6 +9021,9 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid "{} keeps no playlists; make this one in Chilpa."
+msgstr ""
+
+msgid "{} keeps this copy of Chilpa up to date. Update it from your software center."
 msgstr ""
 
 msgid "{} label"

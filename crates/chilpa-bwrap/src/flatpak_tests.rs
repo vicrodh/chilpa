@@ -169,7 +169,7 @@ fn a_folder_is_handed_over_only_as_itself_never_through_a_link() {
 #[test]
 #[ignore = "needs the real Flatpak portal: run it inside the Chilpa Flatpak"]
 fn a_native_plugin_sees_only_its_folders_through_the_portal() {
-    assert!(crate::linux::in_flatpak(), "this smoke runs inside the Chilpa Flatpak");
+    assert!(chilpa_dirs::sandbox() == chilpa_dirs::Sandbox::Flatpak, "this smoke runs inside the Chilpa Flatpak");
     // Only the application's own folders can be handed over from inside it.
     let cache = std::env::var_os("XDG_CACHE_HOME").map(PathBuf::from).expect("XDG_CACHE_HOME names the application's cache");
     let root = tempfile::tempdir_in(cache).unwrap();

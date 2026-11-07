@@ -94,7 +94,7 @@ fn without_perl_or_its_runtime_there_is_no_worker_and_the_reason_names_what_is_m
 #[test]
 #[ignore = "needs the real Flatpak portal and Perl under /app: run it inside the Chilpa Flatpak"]
 fn an_isolated_worker_cannot_fork_or_use_network_and_timeout_revokes_it_through_the_portal() {
-    assert!(crate::linux::in_flatpak(), "this smoke runs inside the Chilpa Flatpak");
+    assert!(chilpa_dirs::sandbox() == chilpa_dirs::Sandbox::Flatpak, "this smoke runs inside the Chilpa Flatpak");
     let cache = std::env::var_os("XDG_CACHE_HOME").map(PathBuf::from).expect("XDG_CACHE_HOME names the application's cache");
     let root = tempfile::tempdir_in(cache).unwrap();
     let base = root.path().canonicalize().unwrap();

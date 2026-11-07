@@ -21,8 +21,13 @@ pub fn resolve(custom: &str) -> Option<PathBuf> {
     path.is_file().then_some(path)
 }
 
-/// The desktop's current wallpaper, if this desktop tells us.
+/// The desktop's current wallpaper, if this desktop tells us. A sandbox
+/// reads its own configuration, not the desktop's, and no portal names the
+/// wallpaper: there it is `None`, and an image the user picks still works.
 pub fn resolve_system() -> Option<PathBuf> {
+    if crate::sandbox::sandboxed() {
+        return None;
+    }
     #[cfg(target_os = "windows")]
     return windows_wallpaper();
     #[cfg(target_os = "macos")]

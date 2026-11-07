@@ -130,6 +130,62 @@ fn prefers_dark_from(gnome: Option<&str>, config: &std::path::Path) -> bool {
     false
 }
 
+/// The packaging sandbox Chilpa runs in. Inside one, `/run`, `/proc/1`,
+/// `os-release` and the desktop's configuration are the sandbox's, not the
+/// host's, and the desktop is reached through its portals.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Sandbox {
+    None,
+    /// Marked by `/.flatpak-info`, which Flatpak puts at the root of every
+    /// sandbox it builds.
+    Flatpak,
+    /// Marked by `SNAP`, which snapd sets for every confined program.
+    Snap,
+}
+
+/// The sandbox this process runs in, read once: it cannot change while the
+/// process lives. `None` away from Linux.
+pub fn sandbox() -> Sandbox {
+    static FOUND: std::sync::OnceLock<Sandbox> = std::sync::OnceLock::new();
+    *FOUND.get_or_init(|| sandbox_from(std::path::Path::new("/.flatpak-info").exists(), from_env("SNAP").is_some()))
+}
+
+fn sandbox_from(flatpak_info: bool, snap: bool) -> Sandbox {
+    if !cfg!(target_os = "linux") {
+        Sandbox::None
+    } else if flatpak_info {
+        Sandbox::Flatpak
+    } else if snap {
+        Sandbox::Snap
+    } else {
+        Sandbox::None
+    }
+}
+
+/// Where the document portal shows the files and folders a sandboxed
+/// program was handed through the file chooser: `$XDG_RUNTIME_DIR/doc`, and
+/// `/run/flatpak/doc`, the same mount, which Flatpak adds to every sandbox.
+/// Each entry under them is `<id>/<name>`, with an id that stays the same
+/// while the program keeps its permission. Empty away from Linux.
+pub fn document_portal_mounts() -> Vec<PathBuf> {
+    if !cfg!(target_os = "linux") {
+        return Vec::new();
+    }
+    let mut mounts: Vec<PathBuf> = from_env("XDG_RUNTIME_DIR").map(|runtime| runtime.join("doc")).into_iter().collect();
+    mounts.push(PathBuf::from("/run/flatpak/doc"));
+    mounts
+}
+
+/// Where a Linux desktop mounts memory cards and USB drives: udisks2's
+/// `/run/media`, and `/media`, which older systems and some distributions
+/// use. A sandbox shows them only when it is given them. Empty elsewhere.
+pub fn removable_media_roots() -> Vec<PathBuf> {
+    if !cfg!(target_os = "linux") {
+        return Vec::new();
+    }
+    vec![PathBuf::from("/run/media"), PathBuf::from("/media")]
+}
+
 /// The original image outside its read-only runtime mount, on Linux only.
 pub fn appimage() -> Option<PathBuf> {
     if !cfg!(target_os = "linux") { return None; }
@@ -333,6 +389,31 @@ mod tests {
             ("kdeglobals", "[General]\nColorScheme=BreezeDark\n"),
         ]);
         assert!(prefers_dark_from(None, &root));
+    }
+
+    #[test]
+    fn flatpak_marks_win_over_snap_and_only_linux_has_a_sandbox() {
+        let expected = |sandbox: Sandbox| if cfg!(target_os = "linux") { sandbox } else { Sandbox::None };
+        assert_eq!(sandbox_from(true, true), expected(Sandbox::Flatpak));
+        assert_eq!(sandbox_from(false, true), expected(Sandbox::Snap));
+        assert_eq!(sandbox_from(false, false), Sandbox::None);
+    }
+
+    #[test]
+    fn the_document_portal_sits_under_the_runtime_directory() {
+        let _looking = LOOKING.lock();
+        let before = std::env::var_os("XDG_RUNTIME_DIR");
+        std::env::set_var("XDG_RUNTIME_DIR", "/run/user/1000");
+        let mounts = document_portal_mounts();
+        match before {
+            Some(runtime) => std::env::set_var("XDG_RUNTIME_DIR", runtime),
+            None => std::env::remove_var("XDG_RUNTIME_DIR"),
+        }
+        if cfg!(target_os = "linux") {
+            assert_eq!(mounts, [PathBuf::from("/run/user/1000/doc"), PathBuf::from("/run/flatpak/doc")]);
+        } else {
+            assert!(mounts.is_empty());
+        }
     }
 
     #[test]

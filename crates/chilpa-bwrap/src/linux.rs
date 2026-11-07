@@ -3,11 +3,6 @@
 use chilpa_plugin::bridge::BridgeError;
 use std::{path::{Path, PathBuf}, process::Command};
 
-/// True inside a Flatpak sandbox, which marks itself with this file.
-pub(crate) fn in_flatpak() -> bool {
-    Path::new("/.flatpak-info").exists()
-}
-
 /// Starts a worker from the one thread that lives as long as Chilpa.
 ///
 /// `--die-with-parent` is a parent-death signal, and Linux sends it when the
@@ -61,7 +56,7 @@ pub(crate) fn runtime_revision(adapter: &Path, libraries: &Path) -> Option<Strin
 /// It never starts one outside a sandbox.
 pub fn compatibility(root: &Path) -> Result<std::sync::Arc<dyn chilpa_plugin::bridge::WorkerLauncher>, crate::Unavailable> {
     use crate::Unavailable;
-    if in_flatpak() {
+    if chilpa_dirs::sandbox() == chilpa_dirs::Sandbox::Flatpak {
         return crate::FlatpakWorker::installed(root).map(|worker| std::sync::Arc::new(worker) as std::sync::Arc<dyn chilpa_plugin::bridge::WorkerLauncher>);
     }
     if unsafe { libc::geteuid() } == 0 { return Err(Unavailable::Privileged); }
