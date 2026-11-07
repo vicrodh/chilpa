@@ -1517,6 +1517,15 @@ msgstr "Kompatibilität ist nicht vollständig geprüft"
 msgid "Compatible plugins"
 msgstr "Kompatible Plugins"
 
+msgid "Compatible plugins do not run while Chilpa runs as root."
+msgstr "Kompatible Plugins laufen nicht, solange Chilpa als root läuft."
+
+msgid "Compatible plugins need the Flatpak portal, which is not available."
+msgstr "Kompatible Plugins brauchen das Flatpak-Portal, das nicht verfügbar ist."
+
+msgid "Compatible plugins need {}, which is not installed."
+msgstr "Kompatible Plugins brauchen {}, das nicht installiert ist."
+
 msgid "Compilation"
 msgstr "Compilation"
 

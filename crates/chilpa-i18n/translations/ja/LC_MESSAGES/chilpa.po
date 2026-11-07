@@ -1515,6 +1515,15 @@ msgstr "互換性は完全には確認されていません"
 msgid "Compatible plugins"
 msgstr "互換性のあるプラグイン"
 
+msgid "Compatible plugins do not run while Chilpa runs as root."
+msgstr "Chilpaをrootで実行している間は、互換性のあるプラグインは動作しません。"
+
+msgid "Compatible plugins need the Flatpak portal, which is not available."
+msgstr "互換性のあるプラグインにはFlatpakのポータルが必要ですが、利用できません。"
+
+msgid "Compatible plugins need {}, which is not installed."
+msgstr "互換性のあるプラグインには{}が必要ですが、インストールされていません。"
+
 msgid "Compilation"
 msgstr "コンピレーション"
 

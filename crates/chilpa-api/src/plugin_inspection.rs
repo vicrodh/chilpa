@@ -23,7 +23,7 @@ impl crate::StagedPackage {
         let transport = launcher.launch(&root).map_err(|_| "The isolated inspection runtime could not start.")?;
         let mut session = BridgeSession::new(transport);
         let mut services = InspectionServices::default();
-        let result = session.call("initialize", json!({"root": launcher.guest_root(),
+        let result = session.call("initialize", json!({"root": launcher.guest_root(&root),
             "namespace": metadata.namespace, "language": language}), Duration::from_secs(15), &mut services)
             .map_err(|_| "The isolated plugin inspection did not finish.")?;
         if result.get("error").is_some() {

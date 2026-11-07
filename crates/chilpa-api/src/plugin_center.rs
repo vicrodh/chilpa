@@ -535,9 +535,9 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     let mut native_catalog = Vec::new();
     let third_party = repositories.third_party_ids();
     let runtime = crate::plugin_runtimes::unavailable(plugins)?;
-    let (compatibility_available, process_plugins) = {
+    let (compatibility_available, compatibility_unavailable, process_plugins) = {
         let host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
-        (host.compatibility_launcher().is_some(), crate::plugin_runtimes::ProcessPlugins::of(runtime, &host))
+        (host.compatibility_launcher().is_some(), host.compatibility_unavailable(), crate::plugin_runtimes::ProcessPlugins::of(runtime, &host))
     };
     for entry in repositories.cached("native")? {
         if entry.adapter != "native" { continue; }
@@ -570,6 +570,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     }
     state["categories"] = json!(categories);
     state["process_plugins"] = process_plugins.state();
+    state["compatibility"] = json!({"available": compatibility_available, "reason": compatibility_unavailable.unwrap_or_default()});
     state["native_catalog"] = json!(latest_per_plugin(native_catalog));
     state["catalog"] = json!(catalog);
     let plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
@@ -666,7 +667,7 @@ mod tests {
     struct Launcher;
     struct Transport { id: u64, operation: String }
     impl WorkerLauncher for Launcher {
-        fn guest_root(&self) -> &str { "/guest" }
+        fn guest_root(&self, _: &std::path::Path) -> String { "/guest".into() }
         fn inspection_revision(&self) -> Option<String> { Some("fixture".into()) }
         fn launch(&self, _: &std::path::Path) -> Result<Box<dyn WorkerTransport>, BridgeError> {
             Ok(Box::new(Transport {id:0, operation:String::new()}))
@@ -892,6 +893,24 @@ mod tests {
             Err(reason.clone()), "it is not switched on");
         run("disable", &json!({"id":id}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
         assert!(!plugins.lock().unwrap().enabled(id), "switching it off still works");
+    }
+
+    #[test]
+    fn the_plugin_center_says_why_compatibility_plugins_cannot_run() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().join("plugins");
+        let plugins = Arc::new(Mutex::new(Plugins::new(root.clone()).unwrap()));
+        let (mut pending, mut state) = (None, json!({}));
+        let mut evidence = crate::plugin_evidence::Evidence::load(&root.join(".repositories"), None);
+        let playing = AtomicBool::new(false);
+        run("filter", &json!({}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
+        if cfg!(target_os = "linux") {
+            assert_eq!(state["compatibility"]["available"], false, "no runtime is installed in a fresh profile");
+            assert!(!state["compatibility"]["reason"].as_str().unwrap().is_empty(), "the reason is said: {}", state["compatibility"]);
+        }
+        plugins.lock().unwrap().set_worker_launcher(Arc::new(Launcher));
+        run("filter", &json!({}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
+        assert_eq!(state["compatibility"], json!({"available": true, "reason": ""}));
     }
 
     /// Answers as a Flatpak without its portal, and counts the questions

@@ -924,3 +924,6 @@ verdef
 verdefnum
 verneed
 verneednum
+# The compatibility worker: its runtime folder and its interpreter.
+compat
+perl

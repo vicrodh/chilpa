@@ -368,6 +368,22 @@ TestCase {
         findChild(dialog.contentItem, "installOlderVersion").clicked()
         compare(backend.calls[backend.calls.length - 1], ["install_native", {repository: "native", id: "app.example.one"}])
     }
+    // Where the compatibility worker cannot run, its section says why.
+    function test_the_compatible_section_says_why_its_plugins_cannot_run() {
+        const reason = "Compatible plugins need /app/bin/perl, which is not installed."
+        backend.state = {busy: false, repositories: [], installed: [], catalog: [], compatibility: {available: false, reason: reason}}
+        manager.section = "compatible"
+        manager.read()
+        const note = findChild(manager, "compatibilityUnavailable")
+        verify(note !== null)
+        tryVerify(() => note.visible)
+        compare(note.text, reason)
+        backend.state = {busy: false, repositories: [], installed: [], catalog: [], compatibility: {available: true, reason: ""}}
+        manager.read()
+        tryVerify(() => !note.visible)
+        manager.section = "native"
+    }
+
     // Where process plugins cannot run, their offers stay listed with the
     // reason and nothing sends install_native for them.
     function test_process_plugins_that_cannot_run_here_are_shown_but_never_installed() {

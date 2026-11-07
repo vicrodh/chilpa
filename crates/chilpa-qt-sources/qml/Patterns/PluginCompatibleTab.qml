@@ -25,6 +25,17 @@ Item {
             color: Theme.color.textSecondary
             font.pointSize: Type.body
         }
+        Text {
+            objectName: "compatibilityUnavailable"
+            readonly property var compatibility: tab.controller.view.compatibility || ({})
+            visible: compatibility.available === false && (compatibility.reason || "") !== ""
+            width: parent.width
+            text: compatibility.reason || ""
+            textFormat: Text.PlainText
+            wrapMode: Text.WordWrap
+            color: Theme.color.statusWarning
+            font.pointSize: Type.body
+        }
         Flow {
             width: parent.width
             spacing: Metrics.gap8

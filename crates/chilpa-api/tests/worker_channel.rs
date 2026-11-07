@@ -126,7 +126,7 @@ fn staged_inspection_acknowledges_initial_preferences_in_the_real_channel() {
     use std::io::Cursor;
     struct Launcher;
     impl WorkerLauncher for Launcher {
-        fn guest_root(&self) -> &str { "/guest" }
+        fn guest_root(&self, _: &std::path::Path) -> String { "/guest".into() }
         fn launch(&self, _: &std::path::Path) -> Result<Box<dyn WorkerTransport>, BridgeError> {
             Ok(Box::new(FixtureTransport::start()))
         }

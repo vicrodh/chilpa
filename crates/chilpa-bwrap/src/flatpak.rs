@@ -23,15 +23,15 @@ use std::sync::{Arc, Mutex};
 const RUNNER: &str = "/app/libexec/chilpa-plugin-runner";
 
 /// A folder held open, and the path it has for Chilpa and for the plugin.
-struct Exposed {
-    fd: OwnedFd,
-    path: PathBuf,
+pub(crate) struct Exposed {
+    pub(crate) fd: OwnedFd,
+    pub(crate) path: PathBuf,
 }
 
 impl Exposed {
     /// Opens a real directory, never a link to one. Its path comes from the
     /// descriptor, so what the plugin is told is what was opened.
-    fn open(path: &Path) -> Result<Self, BridgeError> {
+    pub(crate) fn open(path: &Path) -> Result<Self, BridgeError> {
         let name = CString::new(path.as_os_str().as_bytes()).map_err(|_| BridgeError::Denied)?;
         let fd = unsafe { libc::open(name.as_ptr(), libc::O_PATH | libc::O_NOFOLLOW | libc::O_DIRECTORY | libc::O_CLOEXEC) };
         if fd < 0 { return Err(BridgeError::Disconnected); }
@@ -69,13 +69,20 @@ fn environment(data: &Path, cache: &Path) -> Result<Vec<(&'static str, String)>,
 /// The Flatpak portal, from inside Chilpa's own sandbox. It never falls back
 /// to starting a plugin outside a sandbox.
 pub struct Flatpak {
-    runner: PathBuf,
+    pub(crate) runner: PathBuf,
     bus: Bus,
     /// The connection every spawn goes through, made once, on first use.
     /// Chilpa asks at startup, before any lock is held; a failed connection
     /// or a lost bus leaves process plugins unavailable for this run, so no
     /// later caller waits on a connection.
     portal: Mutex<Option<Result<Arc<Portal>, ()>>>,
+}
+
+/// The one Flatpak backend of this process: process plugins and the
+/// compatibility worker share its portal connection.
+pub(crate) fn shared() -> Arc<Flatpak> {
+    static SHARED: std::sync::OnceLock<Arc<Flatpak>> = std::sync::OnceLock::new();
+    SHARED.get_or_init(|| Arc::new(Flatpak::default())).clone()
 }
 
 impl Default for Flatpak {
@@ -90,7 +97,7 @@ impl Flatpak {
         Self { runner, bus, portal: Mutex::new(None) }
     }
 
-    fn portal(&self) -> Option<Arc<Portal>> {
+    pub(crate) fn portal(&self) -> Option<Arc<Portal>> {
         let mut slot = self.portal.lock().unwrap_or_else(|error| error.into_inner());
         let connected = slot.get_or_insert_with(|| Portal::connect(&self.bus)
             .map_err(|problem| eprintln!("flatpak: the portal cannot start process plugins: {problem}")));

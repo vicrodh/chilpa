@@ -64,6 +64,14 @@ mod portal;
 mod flatpak;
 #[cfg(target_os = "linux")]
 pub use flatpak::Flatpak;
+#[cfg(target_os = "linux")]
+mod flatpak_worker;
+#[cfg(target_os = "linux")]
+pub use flatpak_worker::FlatpakWorker;
+#[cfg(target_os = "linux")]
+pub use linux::compatibility;
+#[cfg(all(test, target_os = "linux"))]
+mod worker_conformance;
 #[cfg(all(test, target_os = "linux"))]
 mod fake_portal;
 #[cfg(all(test, target_os = "linux"))]
