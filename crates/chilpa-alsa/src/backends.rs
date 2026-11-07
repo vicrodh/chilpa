@@ -299,6 +299,18 @@ fn what_default_is() -> String {
     String::new()
 }
 
+/// Whether ALSA's configuration lists a PCM called `name`, as `aplay -L`
+/// prints them: a plugin's entry, `pipewire` or `pulse`, is there when its
+/// configuration is installed where this process's ALSA reads it. Asked of
+/// the library itself, so it answers where `aplay` is not installed, as in a
+/// Flatpak runtime.
+pub fn lists_pcm(name: &str) -> bool {
+    alsa::device_name::HintIter::new_str(None, "pcm")
+        .into_iter()
+        .flatten()
+        .any(|hint| hint.name.as_deref() == Some(name))
+}
+
 /// The name inside ALSA's description of `default`.
 ///
 /// ALSA writes "Default ALSA Output (currently PipeWire Media Server)", and
@@ -490,6 +502,13 @@ mod tests {
         if AlsaPcm.info().present {
             assert_eq!(AlsaPcm.info().fidelity, Fidelity::Never);
         }
+    }
+
+    #[test]
+    fn the_pcm_list_is_read_from_alsa_itself() {
+        // `null` is in every ALSA configuration, with a hint.
+        assert!(lists_pcm("null"));
+        assert!(!lists_pcm("no-such-pcm-anywhere"));
     }
 
     #[test]

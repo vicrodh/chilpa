@@ -1172,6 +1172,9 @@ msgstr "Chilpa kann diesen Link nicht lesen"
 msgid "Chilpa could not release the exclusive output. Stop playback and try the diagnosis again."
 msgstr "Chilpa konnte die exklusive Ausgabe nicht freigeben. Stoppe die Wiedergabe und starte die Diagnose erneut."
 
+msgid "Chilpa could not set PipeWire's graph to {} Hz: its settings can be read from here but not changed, which is all a sandboxed program is allowed. The graph only runs at {} Hz, so this track would be resampled; add its rate to default.clock.allowed-rates, or choose the card itself"
+msgstr "Chilpa konnte den Graph von PipeWire nicht auf {} Hz stellen: Seine Einstellungen lassen sich von hier aus lesen, aber nicht ändern, und mehr ist einem Programm in einer Sandbox nicht erlaubt. Der Graph läuft nur mit {} Hz, daher würde dieser Titel per Resampling umgerechnet; füge seine Rate zu default.clock.allowed-rates hinzu oder wähle die Soundkarte selbst"
+
 msgid "Chilpa does not send {} requests to a server"
 msgstr "Chilpa sendet keine {}-Anfragen an einen Server"
 
@@ -4655,6 +4658,9 @@ msgstr "PipeWire reicht die Samples nur dann unverändert durch, wenn es die Aus
 msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
 msgstr "Der Graph von PipeWire läuft nur mit {} Hz, daher würde {} Hz per Resampling umgerechnet; füge die Rate zu default.clock.allowed-rates hinzu oder wähle die Soundkarte selbst"
 
+msgid "PipeWire's own socket, which Chilpa plays through, cannot be reached from here; inside a Flatpak, allow it with: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+msgstr "der eigene Socket von PipeWire, über den Chilpa abspielt, ist von hier aus nicht erreichbar; in einem Flatpak erlaubst du ihn mit: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+
 msgid "Plain seek bar"
 msgstr "Einfache Positionsleiste"
 
@@ -7972,6 +7978,9 @@ msgstr "in der Nähe"
 
 msgid "network"
 msgstr "Netzwerk"
+
+msgid "no JACK graph answered, and PipeWire's own socket, through which PipeWire answers for JACK, cannot be reached from here; start a JACK graph, or inside a Flatpak allow the socket with: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+msgstr "kein JACK-Graph hat geantwortet, und der eigene Socket von PipeWire, über den PipeWire für JACK antwortet, ist von hier aus nicht erreichbar; starte einen JACK-Graph oder erlaube den Socket in einem Flatpak mit: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
 
 msgid "no JACK graph is running"
 msgstr "es läuft kein JACK-Graph"

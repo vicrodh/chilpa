@@ -1172,6 +1172,9 @@ msgstr ""
 msgid "Chilpa could not release the exclusive output. Stop playback and try the diagnosis again."
 msgstr ""
 
+msgid "Chilpa could not set PipeWire's graph to {} Hz: its settings can be read from here but not changed, which is all a sandboxed program is allowed. The graph only runs at {} Hz, so this track would be resampled; add its rate to default.clock.allowed-rates, or choose the card itself"
+msgstr ""
+
 msgid "Chilpa does not send {} requests to a server"
 msgstr ""
 
@@ -4655,6 +4658,9 @@ msgstr ""
 msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
 msgstr ""
 
+msgid "PipeWire's own socket, which Chilpa plays through, cannot be reached from here; inside a Flatpak, allow it with: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+msgstr ""
+
 msgid "Plain seek bar"
 msgstr ""
 
@@ -7971,6 +7977,9 @@ msgid "nearby"
 msgstr ""
 
 msgid "network"
+msgstr ""
+
+msgid "no JACK graph answered, and PipeWire's own socket, through which PipeWire answers for JACK, cannot be reached from here; start a JACK graph, or inside a Flatpak allow the socket with: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
 msgstr ""
 
 msgid "no JACK graph is running"

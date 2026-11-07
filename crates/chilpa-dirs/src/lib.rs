@@ -157,6 +157,45 @@ pub fn block_device_node(device: &str) -> Option<PathBuf> {
 #[cfg(target_os = "macos")]
 pub fn mounted_volume_directory() -> &'static std::path::Path { std::path::Path::new("/Volumes") }
 
+/// PipeWire's own socket, when it is there: the one its client library
+/// connects to, which is how its ALSA plugin, its JACK library and its tools
+/// reach the graph. Its PulseAudio socket is another, and a sandbox can have
+/// that one without this. `None` when there is no socket where the library
+/// would look, and away from Linux.
+pub fn pipewire_socket() -> Option<PathBuf> {
+    if !cfg!(target_os = "linux") {
+        return None;
+    }
+    let path = pipewire_socket_from(
+        from_env("PIPEWIRE_REMOTE"),
+        from_env("PIPEWIRE_RUNTIME_DIR").or_else(|| from_env("XDG_RUNTIME_DIR")).or_else(|| from_env("USERPROFILE")),
+    )?;
+    is_socket(&path).then_some(path)
+}
+
+/// Where the client library looks, as `libpipewire-module-protocol-native`
+/// does: `PIPEWIRE_REMOTE` when it is a path, otherwise that name, or
+/// `pipewire-0`, under the first runtime directory that is set. A list of
+/// names in `PIPEWIRE_REMOTE` is not read.
+fn pipewire_socket_from(remote: Option<PathBuf>, runtime: Option<PathBuf>) -> Option<PathBuf> {
+    let name = remote.unwrap_or_else(|| PathBuf::from("pipewire-0"));
+    if name.is_absolute() {
+        return Some(name);
+    }
+    runtime.map(|directory| directory.join(name))
+}
+
+#[cfg(unix)]
+fn is_socket(path: &std::path::Path) -> bool {
+    use std::os::unix::fs::FileTypeExt;
+    std::fs::metadata(path).is_ok_and(|found| found.file_type().is_socket())
+}
+
+#[cfg(not(unix))]
+fn is_socket(_: &std::path::Path) -> bool {
+    false
+}
+
 /// A variable, when it is set to something.
 ///
 /// An empty value is the same as unset: a shell that exports `XDG_DATA_HOME=`
@@ -289,6 +328,33 @@ mod tests {
         for path in [config(), data(), cache()] {
             assert!(path.ends_with("chilpa"), "{path:?}");
         }
+    }
+
+    #[test]
+    fn pipewire_s_socket_is_looked_for_where_its_library_looks() {
+        let runtime = Some(PathBuf::from("/run/user/1000"));
+        assert_eq!(pipewire_socket_from(None, runtime.clone()), Some(PathBuf::from("/run/user/1000/pipewire-0")));
+        assert_eq!(
+            pipewire_socket_from(Some("other".into()), runtime.clone()),
+            Some(PathBuf::from("/run/user/1000/other"))
+        );
+        assert_eq!(
+            pipewire_socket_from(Some("/elsewhere/pw".into()), None),
+            Some(PathBuf::from("/elsewhere/pw")),
+            "a path needs no runtime directory"
+        );
+        assert_eq!(pipewire_socket_from(None, None), None, "a name with nowhere to look");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn only_a_socket_counts_as_pipewire_s() {
+        let root = desktop_files(&[("pipewire-0", "")]);
+        assert!(!is_socket(&root.join("pipewire-0")), "a plain file is not a socket");
+        assert!(!is_socket(&root.join("absent")));
+        let listener = std::os::unix::net::UnixListener::bind(root.join("pipewire-1")).unwrap();
+        assert!(is_socket(&root.join("pipewire-1")));
+        drop(listener);
     }
 
     fn desktop_files(files: &[(&str, &str)]) -> PathBuf {

@@ -1170,6 +1170,9 @@ msgstr "Chilpaはこのリンクを読み取れません"
 msgid "Chilpa could not release the exclusive output. Stop playback and try the diagnosis again."
 msgstr "Chilpaは排他出力を解放できませんでした。再生を停止して、もう一度診断してください。"
 
+msgid "Chilpa could not set PipeWire's graph to {} Hz: its settings can be read from here but not changed, which is all a sandboxed program is allowed. The graph only runs at {} Hz, so this track would be resampled; add its rate to default.clock.allowed-rates, or choose the card itself"
+msgstr "ChilpaはPipeWireのグラフを{} Hzに設定できませんでした。ここからは設定を読み取れますが変更はできず、サンドボックス内のプログラムに許されているのはそこまでです。グラフは{} Hzでしか動作しないため、このトラックはリサンプリングされます。そのレートをdefault.clock.allowed-ratesに追加するか、カード自体を選んでください"
+
 msgid "Chilpa does not send {} requests to a server"
 msgstr "Chilpaはサーバーに{}リクエストを送信しません"
 
@@ -4650,6 +4653,9 @@ msgstr "PipeWireがサンプルをそのまま通すのは、出力を一度に1
 msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
 msgstr "PipeWireのグラフは{} Hzでしか動作しないため、{} Hzはリサンプリングされます。default.clock.allowed-ratesに追加するか、カード自体を選んでください"
 
+msgid "PipeWire's own socket, which Chilpa plays through, cannot be reached from here; inside a Flatpak, allow it with: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+msgstr "Chilpaが再生に使うPipeWire自身のソケットに、ここからは接続できません。Flatpak内では次のコマンドで許可してください: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+
 msgid "Plain seek bar"
 msgstr "シンプルなシークバー"
 
@@ -7961,6 +7967,9 @@ msgstr "近く"
 
 msgid "network"
 msgstr "ネットワーク"
+
+msgid "no JACK graph answered, and PipeWire's own socket, through which PipeWire answers for JACK, cannot be reached from here; start a JACK graph, or inside a Flatpak allow the socket with: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+msgstr "JACKグラフが応答せず、PipeWireがJACKを代行するときに使うPipeWire自身のソケットにもここからは接続できません。JACKグラフを起動するか、Flatpak内では次のコマンドでソケットを許可してください: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
 
 msgid "no JACK graph is running"
 msgstr "JACKグラフが動作していません"

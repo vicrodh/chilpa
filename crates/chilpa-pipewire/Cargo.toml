@@ -11,6 +11,8 @@ chilpa-i18n.workspace = true
 chilpa-audio.workspace = true
 # PCM keeps using the ALSA plugin; native DSD owns a PipeWire stream.
 chilpa-alsa.workspace = true
+# Where PipeWire's own socket is, which both of them need.
+chilpa-dirs.workspace = true
 # The HiFi Wizard reads the graph out of `pw-dump`.
 serde_json = "1"
 
