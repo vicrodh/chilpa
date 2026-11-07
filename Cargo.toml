@@ -13,6 +13,7 @@ members = [
     "crates/chilpa-analysis",
     "crates/chilpa-plugin",
     "crates/chilpa-bwrap",
+    "crates/chilpa-plugin-runner",
     "crates/chilpa-secrets",
     "crates/chilpa-auth",
     "crates/chilpa-meta",

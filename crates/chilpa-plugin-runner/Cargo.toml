@@ -1,0 +1,18 @@
+[package]
+name = "chilpa-plugin-runner"
+description = "Sets a process plugin's resource limits, then becomes the plugin"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "chilpa-plugin-runner"
+path = "src/main.rs"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+[target.'cfg(target_os = "macos")'.dependencies]
+[target.'cfg(target_os = "android")'.dependencies]

@@ -769,6 +769,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "chilpa-plugin-runner"
+version = "0.1.2"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "chilpa-pulse"
 version = "0.1.2"
 dependencies = [
