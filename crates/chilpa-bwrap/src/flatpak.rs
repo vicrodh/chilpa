@@ -11,7 +11,7 @@
 
 use crate::portal::{Bus, Portal, Spawn};
 use crate::process::{log_errors, LaunchedNative, NativeLauncher, NativeProcess, Notice, CACHE_DIR_VARIABLE, DATA_DIR_VARIABLE};
-use crate::{NativePaths, Unavailable};
+use crate::{Incompatible, NativePaths, Unavailable};
 use chilpa_plugin::{bridge::BridgeError, native::NativeClient};
 use std::ffi::{CString, OsStr};
 use std::os::fd::{AsFd, AsRawFd, FromRawFd, OwnedFd};
@@ -102,6 +102,12 @@ impl NativeLauncher for Flatpak {
     fn availability(&self) -> Result<(), Unavailable> {
         if !self.runner.is_file() { return Err(Unavailable::MissingProgram(self.runner.clone())); }
         self.portal().map(|_| ()).ok_or(Unavailable::Portal)
+    }
+
+    /// The plugin's sandbox shares this one's runtime, so what its loader
+    /// finds is what is under `/` here.
+    fn preflight(&self, folder: &Path) -> Result<(), Incompatible> {
+        crate::elf::preflight(&folder.join("plugin"), Path::new("/"))
     }
 
     fn launch(&self, paths: &NativePaths, name: &str, memory_bytes: usize, network: bool, notice: Notice)

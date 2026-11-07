@@ -139,6 +139,16 @@ fn availability_needs_the_runner_and_a_portal_of_version_3() {
 }
 
 #[test]
+fn a_plugin_this_runtime_cannot_load_is_found_before_it_starts() {
+    let fixture = Fixture::new();
+    std::fs::write(fixture.paths.folder.join("plugin"), "not a program").unwrap();
+    let flatpak = Flatpak::on(Bus::Address("unix:path=/nonexistent".into()), fixture.runner.clone());
+    assert_eq!(flatpak.preflight(&fixture.paths.folder), Err(Incompatible::Format));
+    std::fs::write(fixture.paths.folder.join("plugin"), "#!/nonexistent/interpreter\n").unwrap();
+    assert_eq!(flatpak.preflight(&fixture.paths.folder), Err(Incompatible::Interpreter("/nonexistent/interpreter".into())));
+}
+
+#[test]
 fn a_folder_is_handed_over_only_as_itself_never_through_a_link() {
     let root = tempfile::tempdir().unwrap();
     let base = root.path().canonicalize().unwrap();

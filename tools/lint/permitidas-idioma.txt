@@ -909,3 +909,18 @@ prlimit
 setfd
 getfl
 killpg
+# ELF dynamic-table and program-header names, as glibc and readelf spell them.
+aux
+dt
+pt
+glibc
+interp
+libm
+rpath
+runpath
+strsz
+strtab
+verdef
+verdefnum
+verneed
+verneednum

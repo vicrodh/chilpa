@@ -6790,6 +6790,21 @@ msgstr "Esta playlist não usa uma codificação UTF-8 válida."
 msgid "This playlist references music outside the recorded selection. Sync it again to refresh its contents."
 msgstr "Esta playlist faz referência a músicas fora da seleção registrada. Sincronize-a novamente para atualizar seu conteúdo."
 
+msgid "This plugin needs the library {}, which this system does not have."
+msgstr "Este plugin precisa da biblioteca {}, que este sistema não tem."
+
+msgid "This plugin needs the program {}, which this system does not have."
+msgstr "Este plugin precisa do programa {}, que este sistema não tem."
+
+msgid "This plugin needs {} from {}, and this system has {} at most."
+msgstr "Este plugin precisa de {} em {}, e este sistema tem no máximo {}."
+
+msgid "This plugin needs {} from {}, which this system does not have."
+msgstr "Este plugin precisa de {} em {}, que este sistema não tem."
+
+msgid "This plugin's program is not built for this system."
+msgstr "O programa deste plugin não foi feito para este sistema."
+
 msgid "This preset uses precise filters; each band shows its level. To move the bands, create a separate graphic EQ. You can restore your previous EQ."
 msgstr "Este preset usa filtros precisos; cada banda mostra seu nível. Para mover as bandas, crie um EQ gráfico separado. Você pode restaurar seu EQ anterior."
 

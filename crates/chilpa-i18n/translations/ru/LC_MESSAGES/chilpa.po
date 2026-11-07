@@ -6799,6 +6799,21 @@ msgstr "У этого плейлиста неверная кодировка UTF
 msgid "This playlist references music outside the recorded selection. Sync it again to refresh its contents."
 msgstr "Этот плейлист ссылается на музыку вне записанной подборки. Синхронизируйте его ещё раз, чтобы обновить содержимое."
 
+msgid "This plugin needs the library {}, which this system does not have."
+msgstr "Этому плагину нужна библиотека {}, но в этой системе её нет."
+
+msgid "This plugin needs the program {}, which this system does not have."
+msgstr "Этому плагину нужна программа {}, но в этой системе её нет."
+
+msgid "This plugin needs {} from {}, and this system has {} at most."
+msgstr "Этому плагину нужна {} из {}, а в этой системе есть не новее {}."
+
+msgid "This plugin needs {} from {}, which this system does not have."
+msgstr "Этому плагину нужна {} из {}, но в этой системе её нет."
+
+msgid "This plugin's program is not built for this system."
+msgstr "Программа этого плагина собрана не для этой системы."
+
 msgid "This preset uses precise filters; each band shows its level. To move the bands, create a separate graphic EQ. You can restore your previous EQ."
 msgstr "В этом пресете используются точные фильтры; каждая полоса показывает свой уровень. Чтобы двигать полосы, создайте отдельный графический EQ. Прежний EQ можно восстановить."
 

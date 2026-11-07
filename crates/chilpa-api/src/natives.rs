@@ -252,8 +252,10 @@ impl Natives {
         self.start_locked(manifest, folder)
     }
     fn start_locked(self: &Arc<Self>, manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, PluginError> {
-        // Said before any folder is made or any process spawned.
+        // Said before any folder is made or any process spawned: first for
+        // every process plugin, then for this one's program.
         self.availability().map_err(PluginError::RuntimeUnavailable)?;
+        self.preflight(folder).map_err(PluginError::RuntimeUnavailable)?;
         let network = process_network(chilpa_core::network::current().offline, manifest);
         let (client, data, cache) = launch(self, manifest, folder, network)?;
         let greeting = client.call("initialize", json!({
@@ -383,6 +385,31 @@ impl Natives {
             chilpa_bwrap::Unavailable::Privileged => chilpa_i18n::t("Process plugins do not run while Chilpa runs as root."),
         })
     }
+
+    /// Why this plugin's program cannot run here, in the user's language,
+    /// read from its file without starting it.
+    fn preflight(&self, folder: &Path) -> Result<(), String> {
+        self.launcher().preflight(folder).map_err(|reason| {
+            eprintln!("native: {} cannot load here: {reason:?}", folder.display());
+            incompatible(reason)
+        })
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn incompatible(reason: chilpa_bwrap::Incompatible) -> String {
+    use chilpa_bwrap::Incompatible;
+    match reason {
+        Incompatible::Format => chilpa_i18n::t("This plugin's program is not built for this system."),
+        Incompatible::Interpreter(program) => chilpa_i18n::t_args(
+            "This plugin needs the program {}, which this system does not have.", &[&program.display().to_string()]),
+        Incompatible::Library(library) => chilpa_i18n::t_args(
+            "This plugin needs the library {}, which this system does not have.", &[&library]),
+        Incompatible::Version { library, needed, newest: Some(newest) } => chilpa_i18n::t_args(
+            "This plugin needs {} from {}, and this system has {} at most.", &[&needed, &library, &newest]),
+        Incompatible::Version { library, needed, newest: None } => chilpa_i18n::t_args(
+            "This plugin needs {} from {}, which this system does not have.", &[&needed, &library]),
+    }
 }
 
 /// Platforms without process isolation list a reason and never start a worker.
@@ -394,6 +421,10 @@ fn unsupported() -> String {
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
 impl Natives {
     pub(crate) fn availability(&self) -> Result<(), String> {
+        Err(unsupported())
+    }
+
+    fn preflight(&self, _: &Path) -> Result<(), String> {
         Err(unsupported())
     }
 }
@@ -450,6 +481,37 @@ pub(crate) mod tests {
         assert_eq!(registry.state("test.source"), chilpa_plugin::State::Unavailable { reason });
         assert!(registry.quarantined().is_empty());
         assert!(!natives.is_native("test.source"), "nothing was started");
+    }
+
+    /// A backend with a sandbox, whose runtime lacks a library the plugin links.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    struct MissingLibrary;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    impl chilpa_bwrap::NativeLauncher for MissingLibrary {
+        fn availability(&self) -> Result<(), chilpa_bwrap::Unavailable> { Ok(()) }
+        fn preflight(&self, _: &Path) -> Result<(), chilpa_bwrap::Incompatible> {
+            Err(chilpa_bwrap::Incompatible::Library("libmissing.so.1".into()))
+        }
+        fn launch(&self, _: &chilpa_bwrap::NativePaths, _: &str, _: usize, _: bool, _: chilpa_bwrap::Notice)
+            -> Result<chilpa_bwrap::LaunchedNative, chilpa_plugin::bridge::BridgeError> {
+            panic!("a program that cannot load here is never started")
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn a_plugin_whose_program_cannot_load_here_is_marked_with_its_own_reason() {
+        let natives = Arc::new(Natives::default());
+        with_launcher(&natives, Arc::new(MissingLibrary));
+        assert_eq!(natives.availability(), Ok(()), "other process plugins still can run");
+        let folder = tempfile::tempdir().unwrap();
+        let manifest = r#"{"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","runtime":"process"}"#;
+        let mut registry = Registry::new();
+        assert!(!install(&mut registry, manifest, folder.path(), &natives, |_| true));
+        let reason = chilpa_i18n::t_args("This plugin needs the library {}, which this system does not have.", &[&"libmissing.so.1"]);
+        assert_eq!(registry.state("test.source"), chilpa_plugin::State::Unavailable { reason });
+        assert!(registry.quarantined().is_empty());
+        assert!(!natives.is_native("test.source"));
     }
 
     #[test]

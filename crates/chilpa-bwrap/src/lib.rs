@@ -29,6 +29,22 @@ pub enum Unavailable {
     Privileged,
 }
 
+/// Why one process plugin's program cannot run on this system, read from its
+/// file without starting it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Incompatible {
+    /// It is no program this system runs: another processor, a 32-bit
+    /// build, or neither an ELF program nor a script.
+    Format,
+    /// The program loader or script interpreter it names is not there.
+    Interpreter(PathBuf),
+    /// A library it links is not there.
+    Library(String),
+    /// A library is there without a symbol version it asks for. `newest`
+    /// is the newest one of the same family that is there, if any.
+    Version { library: String, needed: String, newest: Option<String> },
+}
+
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 mod process;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
@@ -40,6 +56,8 @@ mod linux;
 mod linux_bwrap;
 #[cfg(target_os = "linux")]
 pub use linux_bwrap::{launch, Bwrap, RuntimePaths};
+#[cfg(target_os = "linux")]
+mod elf;
 #[cfg(target_os = "linux")]
 mod portal;
 #[cfg(target_os = "linux")]

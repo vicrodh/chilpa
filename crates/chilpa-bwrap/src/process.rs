@@ -1,10 +1,10 @@
 //! What every process backend shares: the launcher contract, the handle on
 //! a started process and the reader of its standard error.
 
-use crate::{NativePaths, Unavailable};
+use crate::{Incompatible, NativePaths, Unavailable};
 use chilpa_plugin::{bridge::BridgeError, native::NativeClient};
 use std::io::{BufRead, BufReader, Read};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Child;
 use std::sync::{Arc, Mutex};
 
@@ -25,6 +25,13 @@ pub trait NativeLauncher: Send + Sync {
     /// Whether this backend can start a plugin here, checked without
     /// starting one.
     fn availability(&self) -> Result<(), Unavailable>;
+
+    /// Whether the plugin in `folder` can run here, read from its program
+    /// without starting it. Only a backend whose plugins run on another
+    /// system than the host's has anything to check.
+    fn preflight(&self, _folder: &Path) -> Result<(), Incompatible> {
+        Ok(())
+    }
 
     /// Starts the plugin confined to its folders, with the network or
     /// without it. It never starts one outside the sandbox.
