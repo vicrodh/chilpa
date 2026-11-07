@@ -265,6 +265,29 @@ fn measured() -> Result<chilpa_audio::negotiate::DeviceCaps, Silence> {
     })
 }
 
+/// Why no graph answered, in words somebody can act on.
+///
+/// PipeWire's JACK library -- the `libjack` the KDE 6.11 runtime ships is
+/// PipeWire's -- reaches the graph through PipeWire's own socket. Inside a
+/// Flatpak without that socket no client can join, and the advice to start
+/// a graph or install pipewire-jack sent somebody after what the runtime
+/// already has: what is missing there is the permission.
+fn absent(pipewire_socket: bool) -> String {
+    if pipewire_socket {
+        chilpa_i18n::t(
+            "no JACK graph is running; start one, or install pipewire-jack to have \
+             PipeWire answer for it",
+        )
+    } else {
+        chilpa_i18n::t(
+            "no JACK graph answered, and PipeWire's own socket, through which PipeWire answers \
+             for JACK, cannot be reached from here; start a JACK graph, or inside a Flatpak allow \
+             the socket with: flatpak override --user --filesystem=xdg-run/pipewire-0 \
+             app.chilpa.Chilpa",
+        )
+    }
+}
+
 impl OutputBackend for Jack {
     fn inspect(&self, id: &str) -> chilpa_audio::evidence::Inspection {
         capabilities().map(|caps| chilpa_audio::evidence::Inspection::convertible("jack",id,format!("{:?}",caps.sample_rates),&caps))
@@ -278,13 +301,7 @@ impl OutputBackend for Jack {
         let rate = match ask(|client| client.sample_rate()) {
             Ok(rate) => rate,
             Err(Silence::Absent) => {
-                return BackendInfo::missing(
-                    BackendKind::Jack,
-                    chilpa_i18n::t(
-                        "no JACK graph is running; start one, or install pipewire-jack to have \
-                         PipeWire answer for it",
-                    ),
-                )
+                return BackendInfo::missing(BackendKind::Jack, absent(chilpa_dirs::pipewire_socket().is_some()))
             }
             // Busy is late by another road: the previous question's client
             // was still closing when the patience ran out. Said as late,
@@ -734,6 +751,16 @@ mod tests {
         } else {
             assert!(!info.missing.is_empty());
         }
+    }
+
+    #[test]
+    fn a_graph_out_of_reach_of_pipewire_s_socket_names_the_permission() {
+        // Inside a Flatpak, libjack is PipeWire's and PipeWire's own socket
+        // was not given: no client could join, and the stack said to start
+        // a graph or install pipewire-jack, which the runtime already has.
+        let unreachable = absent(false);
+        assert!(unreachable.contains("xdg-run/pipewire-0"), "it names the permission: {unreachable}");
+        assert!(!absent(true).contains("xdg-run"), "with the socket there, the permission is not what is missing");
     }
 
     #[test]

@@ -640,6 +640,7 @@ name = "chilpa-jack"
 version = "0.1.2"
 dependencies = [
  "chilpa-audio",
+ "chilpa-dirs",
  "chilpa-i18n",
  "jack",
  "libc",
@@ -710,6 +711,7 @@ dependencies = [
  "cc",
  "chilpa-alsa",
  "chilpa-audio",
+ "chilpa-dirs",
  "chilpa-i18n",
  "pkg-config",
  "serde_json",

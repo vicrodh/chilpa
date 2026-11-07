@@ -50,6 +50,65 @@ fn no_knob() -> String {
     chilpa_i18n::t("this output has no volume control of its own")
 }
 
+/// What the card stack says about itself, out of the cards ALSA lists.
+///
+/// What this backend needs is a card. Not a daemon, not a library that might
+/// be a stand-in for another: a card, and they are listed in a file. Listed
+/// is not enough, though: inside a Flatpak without the devices,
+/// `/proc/asound` names every card and `/dev/snd` is not there, so each card
+/// failed the moment it was played. A stack with no card it can open is
+/// missing, and says which permission it lacks.
+fn cards_info(cards: &[devices::Device]) -> BackendInfo {
+    if cards.is_empty() {
+        return BackendInfo::missing(
+            BackendKind::Alsa,
+            chilpa_i18n::t("no sound card is listed in /proc/asound"),
+        );
+    }
+    if !cards.iter().any(|card| card.reachable) {
+        return BackendInfo::missing(
+            BackendKind::Alsa,
+            chilpa_i18n::t(
+                "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot \
+                 be opened from here; inside a Flatpak, allow them with: flatpak override --user \
+                 --device=all app.chilpa.Chilpa",
+            ),
+        );
+    }
+    BackendInfo {
+        kind: BackendKind::Alsa,
+        present: true,
+        missing: String::new(),
+        provider: String::new(),
+        fidelity: Fidelity::Exact,
+        caveat: String::new(),
+    }
+}
+
+/// The cards that can be opened, as outputs. One whose nodes this process
+/// cannot reach is not offered: picking it could only fail.
+fn card_outputs(mut found: Vec<devices::Device>) -> Vec<BackendOutput> {
+    found.retain(|card| card.reachable);
+    // What somebody plugged in on purpose, above what is soldered to the
+    // board. Sorted on the bus and not on the line the window shows: that
+    // line is in the reader's language now, so `starts_with("USB")` would
+    // have held only while the window spoke English.
+    found.sort_by_key(|d| d.bus != devices::Bus::Usb);
+    found
+        .into_iter()
+        .map(|d| BackendOutput {
+            id: d.id.clone(),
+            label: d.label(),
+            detail: d.detail(),
+            // Every output this backend offers is a `hw:` device, which
+            // is what "direct" means. It does not follow that any format
+            // will play: what the device refuses is a different question
+            // and the wizard answers it by measuring.
+            bit_perfect: true,
+        })
+        .collect()
+}
+
 impl OutputBackend for Alsa {
     fn inspect(&self, id: &str) -> chilpa_audio::evidence::Inspection { crate::evidence::inspect(id) }
     fn observation(&self, id: &str) -> chilpa_audio::evidence::Observation { crate::evidence::observation(id) }
@@ -58,46 +117,11 @@ impl OutputBackend for Alsa {
     }
 
     fn info(&self) -> BackendInfo {
-        // What this backend needs is a card. Not a daemon, not a library
-        // that might be a stand-in for another: a card, and they are listed
-        // in a file.
-        let cards = devices::list();
-        if cards.is_empty() {
-            return BackendInfo::missing(
-                BackendKind::Alsa,
-                chilpa_i18n::t("no sound card is listed in /proc/asound"),
-            );
-        }
-        BackendInfo {
-            kind: BackendKind::Alsa,
-            present: true,
-            missing: String::new(),
-            provider: String::new(),
-            fidelity: Fidelity::Exact,
-            caveat: String::new(),
-        }
+        cards_info(&devices::list())
     }
 
     fn outputs(&self) -> Vec<BackendOutput> {
-        let mut found = devices::list();
-        // What somebody plugged in on purpose, above what is soldered to the
-        // board. Sorted on the bus and not on the line the window shows: that
-        // line is in the reader's language now, so `starts_with("USB")` would
-        // have held only while the window spoke English.
-        found.sort_by_key(|d| d.bus != devices::Bus::Usb);
-        found
-            .into_iter()
-            .map(|d| BackendOutput {
-                id: d.id.clone(),
-                label: d.label(),
-                detail: d.detail(),
-                // Every output this backend offers is a `hw:` device, which
-                // is what "direct" means. It does not follow that any format
-                // will play: what the device refuses is a different question
-                // and the wizard answers it by measuring.
-                bit_perfect: true,
-            })
-            .collect()
+        card_outputs(devices::list())
     }
 
     /// Every card and every device on it, which is what changes when a DAC is
@@ -273,6 +297,18 @@ fn what_default_is() -> String {
         }
     }
     String::new()
+}
+
+/// Whether ALSA's configuration lists a PCM called `name`, as `aplay -L`
+/// prints them: a plugin's entry, `pipewire` or `pulse`, is there when its
+/// configuration is installed where this process's ALSA reads it. Asked of
+/// the library itself, so it answers where `aplay` is not installed, as in a
+/// Flatpak runtime.
+pub fn lists_pcm(name: &str) -> bool {
+    alsa::device_name::HintIter::new_str(None, "pcm")
+        .into_iter()
+        .flatten()
+        .any(|hint| hint.name.as_deref() == Some(name))
 }
 
 /// The name inside ALSA's description of `default`.
@@ -466,6 +502,41 @@ mod tests {
         if AlsaPcm.info().present {
             assert_eq!(AlsaPcm.info().fidelity, Fidelity::Never);
         }
+    }
+
+    #[test]
+    fn the_pcm_list_is_read_from_alsa_itself() {
+        // `null` is in every ALSA configuration, with a hint.
+        assert!(lists_pcm("null"));
+        assert!(!lists_pcm("no-such-pcm-anywhere"));
+    }
+
+    #[test]
+    fn cards_whose_nodes_cannot_be_reached_leave_the_stack_missing_and_say_why() {
+        // A Flatpak without the devices: `/proc/asound` lists both cards and
+        // `/dev/snd` is not in the sandbox. The stack said it was here, the
+        // window offered `hw:1,0`, and it failed when it was played.
+        let listed = vec![
+            devices::Device::listed("hw:1,0", "Fosi Audio ZH3", false),
+            devices::Device::listed("hw:0,0", "HDA Intel PCH", false),
+        ];
+        let info = cards_info(&listed);
+        assert!(!info.present, "a card that cannot be opened is not here");
+        assert!(info.missing.contains("--device=all"), "it names the permission: {}", info.missing);
+        assert!(card_outputs(listed).is_empty(), "nothing that cannot open is offered");
+    }
+
+    #[test]
+    fn only_the_cards_that_can_be_reached_are_offered() {
+        let listed = vec![
+            devices::Device::listed("hw:2,0", "Out of reach", false),
+            devices::Device::listed("hw:1,0", "Fosi Audio ZH3", true),
+        ];
+        let info = cards_info(&listed);
+        assert!(info.present);
+        assert_eq!(info.fidelity, Fidelity::Exact);
+        let offered: Vec<String> = card_outputs(listed).into_iter().map(|o| o.id).collect();
+        assert_eq!(offered, ["hw:1,0"]);
     }
 
     #[test]

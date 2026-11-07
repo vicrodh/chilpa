@@ -1174,6 +1174,9 @@ msgstr "Chilpa не может прочитать эту ссылку"
 msgid "Chilpa could not release the exclusive output. Stop playback and try the diagnosis again."
 msgstr "Chilpa не удалось освободить эксклюзивный вывод. Остановите воспроизведение и повторите диагностику."
 
+msgid "Chilpa could not set PipeWire's graph to {} Hz: its settings can be read from here but not changed, which is all a sandboxed program is allowed. The graph only runs at {} Hz, so this track would be resampled; add its rate to default.clock.allowed-rates, or choose the card itself"
+msgstr "Chilpa не удалось установить граф PipeWire на {} Hz: отсюда его настройки можно прочитать, но не изменить, и большего программе в песочнице не позволено. Граф работает только на частоте {} Hz, поэтому этот трек пришлось бы ресемплировать; добавьте его частоту в default.clock.allowed-rates или выберите саму карту"
+
 msgid "Chilpa does not send {} requests to a server"
 msgstr "Chilpa не отправляет на сервер запросы {}"
 
@@ -4672,6 +4675,9 @@ msgstr "PipeWire передаёт сэмплы без изменений, тол
 msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
 msgstr "Граф PipeWire работает только на частоте {} Hz, поэтому {} Hz пришлось бы ресемплировать; добавьте её в default.clock.allowed-rates или выберите саму карту"
 
+msgid "PipeWire's own socket, which Chilpa plays through, cannot be reached from here; inside a Flatpak, allow it with: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+msgstr "собственный сокет PipeWire, через который играет Chilpa, отсюда недоступен; внутри Flatpak разрешите его командой: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+
 msgid "Plain seek bar"
 msgstr "Простая полоса перемотки"
 
@@ -8014,6 +8020,9 @@ msgstr "по соседству"
 msgid "network"
 msgstr "сеть"
 
+msgid "no JACK graph answered, and PipeWire's own socket, through which PipeWire answers for JACK, cannot be reached from here; start a JACK graph, or inside a Flatpak allow the socket with: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+msgstr "ни один граф JACK не ответил, а собственный сокет PipeWire, через который PipeWire отвечает вместо JACK, отсюда недоступен; запустите граф JACK или внутри Flatpak разрешите сокет командой: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+
 msgid "no JACK graph is running"
 msgstr "граф JACK не запущен"
 
@@ -8679,6 +8688,9 @@ msgstr "сертификат сервера не пользуется довер
 
 msgid "the sidecar could not be written: {}"
 msgstr "не удалось записать вспомогательный файл: {}"
+
+msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
+msgstr "звуковые карты перечислены в /proc/asound, но их устройства в /dev/snd отсюда открыть нельзя; внутри Flatpak разрешите их командой: flatpak override --user --device=all app.chilpa.Chilpa"
 
 msgid "the sound server would not let go of card {}"
 msgstr "звуковой сервер не отпустил карту {}"
