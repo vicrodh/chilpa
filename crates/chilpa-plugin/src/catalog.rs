@@ -26,6 +26,12 @@ pub struct CatalogEntry {
     pub adapter: String,
     /// Catalog problems prevent installation but remain visible in the list.
     pub problem: String,
+    /// The catalog offered a build for this operating system and
+    /// architecture. Catalogs name no runtime, and only a process plugin
+    /// ships per platform; a portable package, and a cache written before
+    /// this field, read false.
+    #[serde(default)]
+    pub platform_build: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -104,7 +110,8 @@ fn read_native_for_platform(text: &str, platform: &str) -> Result<Vec<CatalogEnt
     Ok(catalog.plugins.into_iter().filter_map(|mut entry| {
         let problem = if entry.api.min <= crate::API_VERSION && entry.api.max >= crate::API_VERSION { String::new() }
             else { "This plugin requires another version of the plugin API.".into() };
-        if !entry.packages.is_empty() {
+        let platform_build = !entry.packages.is_empty();
+        if platform_build {
             match entry.packages.remove(platform) {
                 Some(package) => { entry.package = package.package; entry.sha256 = package.sha256; }
                 None => return None,
@@ -113,7 +120,7 @@ fn read_native_for_platform(text: &str, platform: &str) -> Result<Vec<CatalogEnt
         Some(CatalogEntry {
             id: entry.id, name: entry.name, version: entry.version, description: entry.description,
             author: entry.author, category: entry.category, repository: entry.repository, package: entry.package,
-            digest: Digest { algorithm: "sha256".into(), value: entry.sha256 }, adapter: "native".into(), problem,
+            digest: Digest { algorithm: "sha256".into(), value: entry.sha256 }, adapter: "native".into(), problem, platform_build,
         })
     }).collect())
 }
@@ -154,7 +161,8 @@ fn read_extensions(text: &str, language: &str) -> Result<Vec<CatalogEntry>, Cata
         CatalogEntry { name: if title.is_empty() { entry.name.clone() } else { title }, id: entry.name,
             version: entry.version, author: entry.author, category: entry.category, description: localized(&entry.descriptions, language),
             repository: entry.repository, package: entry.package,
-            digest: Digest { algorithm: "sha1".into(), value: entry.sha }, adapter: "perl".into(), problem: String::new() }
+            digest: Digest { algorithm: "sha1".into(), value: entry.sha }, adapter: "perl".into(), problem: String::new(),
+            platform_build: false }
     }).collect())
 }
 
@@ -263,7 +271,10 @@ mod tests {
             assert_eq!(entries.len(), 1);
             assert_eq!(entries[0].id, "app.example.portable");
         }
-        assert_eq!(read_native_for_platform(&catalog, "linux-x86_64").unwrap().len(), 2);
+        let both = read_native_for_platform(&catalog, "linux-x86_64").unwrap();
+        assert_eq!(both.len(), 2);
+        assert!(both[0].platform_build, "a build for this platform is marked");
+        assert!(!both[1].platform_build, "a portable package is not");
     }
 
     #[test]

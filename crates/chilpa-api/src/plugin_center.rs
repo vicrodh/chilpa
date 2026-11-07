@@ -357,7 +357,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                 description: manifest.description.clone(), category: String::new(), author: String::new(),
                 repository: String::new(), package: address.into(),
                 digest: chilpa_plugin::catalog::Digest { algorithm: "sha256".into(), value: package.sha256.clone() },
-                adapter: "native".into(), problem: String::new(),
+                adapter: "native".into(), problem: String::new(), platform_build: false,
             };
             let mut host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
             let installed = crate::native_install::installed_version(root, &manifest.id);
@@ -390,6 +390,9 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         "enable" | "disable" => {
             if action == "enable" && input["permission_revision"] != permission_review(root, id)?["revision"] { return Err("Review and accept the plugin permissions before enabling it.".into()); }
             let mut plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
+            // A process plugin that cannot start here is not switched on; switching one off still works.
+            let unavailable = crate::plugin_runtimes::ProcessPlugins::of(&plugins).installed(id);
+            if action == "enable" && !unavailable.is_empty() { return Err(unavailable); }
             if action == "enable" { plugins.approve(id)?; state["approval"] = Value::Null; } else { plugins.revoke(id)?; }
             plugins.reload_one(id);
             if action == "enable" && !plugins.update_healthy(id, true) {
@@ -530,31 +533,20 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     let mut counts = json!({"installed":0,"valid":0,"uninspected":0,"incompatible":0});
     let mut native_catalog = Vec::new();
     let third_party = repositories.third_party_ids();
+    let (compatibility_available, process_plugins) = {
+        let host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
+        (host.compatibility_launcher().is_some(), crate::plugin_runtimes::ProcessPlugins::of(&host))
+    };
     for entry in repositories.cached("native")? {
         if entry.adapter != "native" { continue; }
-        let installed = crate::native_install::installed_version(root, &entry.id);
-        if installed.as_ref().is_some_and(|version| !crate::plugin_updates::newer(&entry.version, version)) { continue; }
-        let mut row = json!(entry);
-        row["repository_id"] = "native".into();
-        row["update"] = installed.is_some().into();
-        row["third_party"] = third_party.contains(&entry.id).into();
-        row["third_party_by"] = third_party_by(&third_party, &entry).into();
-        native_catalog.push(row);
+        native_catalog.extend(native_offer(root, &entry, "native", &third_party, &process_plugins));
     }
-    let compatibility_available = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.compatibility_launcher().is_some();
     for repository in repositories.sources() {
         for entry in repositories.cached(&repository.id)? {
             // A native plugin is offered in its own section, to install or
             // to update when the repository has a newer version.
             if entry.adapter == "native" {
-                let installed = crate::native_install::installed_version(root, &entry.id);
-                if installed.as_ref().is_some_and(|version| !crate::plugin_updates::newer(&entry.version, version)) { continue; }
-                let mut row = json!(entry);
-                row["repository_id"] = repository.id.clone().into();
-                row["update"] = installed.is_some().into();
-                row["third_party"] = third_party.contains(&entry.id).into();
-                row["third_party_by"] = third_party_by(&third_party, &entry).into();
-                native_catalog.push(row);
+                native_catalog.extend(native_offer(root, &entry, &repository.id, &third_party, &process_plugins));
                 continue;
             }
             if !compatibility_available { continue; }
@@ -575,6 +567,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         }
     }
     state["categories"] = json!(categories);
+    state["process_plugins"] = process_plugins.state();
     state["native_catalog"] = json!(latest_per_plugin(native_catalog));
     state["catalog"] = json!(catalog);
     let plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
@@ -590,7 +583,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             .and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or(Value::Null);
         let integration = library.as_ref().and_then(|lib| lib.find_source(crate::source_opener::PROVIDER, &plugin.id).ok().flatten()
             .and_then(|source| lib.imported_source_state(source).ok())).unwrap_or_default();
-        json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"downloads":downloads,"download_access":crate::plugin_access::read(root,&plugin.id),"integration_available":sidebar_order.contains(&plugin.id) || !library_kinds.is_empty(),"integration":crate::source_integration::read(root, &plugin.id),"native":native,"limited_network":limited_network,"enabled":enabled,"folder_write":export::enabled(root,&plugin.id),"export_folder":export::read(root,&plugin.id).map(|p|p.display().to_string()),"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
+        json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"downloads":downloads,"download_access":crate::plugin_access::read(root,&plugin.id),"integration_available":sidebar_order.contains(&plugin.id) || !library_kinds.is_empty(),"integration":crate::source_integration::read(root, &plugin.id),"native":native,"unavailable":process_plugins.installed(&plugin.id),"limited_network":limited_network,"enabled":enabled,"folder_write":export::enabled(root,&plugin.id),"export_folder":export::read(root,&plugin.id).map(|p|p.display().to_string()),"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
             "problem":plugin.problem,"permissions":plugin.asks,"origin":origin,"third_party":third_party.contains(&plugin.id),"third_party_by":if third_party.contains(&plugin.id) { origin["catalog_entry"]["repository"].as_str().and_then(crate::plugin_repositories::github_owner).unwrap_or_default() } else { String::new() },
             "icon":crate::plugin_icons::image_url(root, &plugin.id),"tint":crate::plugin_icons::tint(root, &plugin.id),
             "settings":native_settings || origin["inspection"]["settings_pages"].as_array().is_some_and(|pages| !pages.is_empty()),
@@ -604,6 +597,22 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     counts["installed"] = json!(state["installed"].as_array().into_iter().flatten().filter(|row| !row["origin"].is_null()).count());
     state["counts"] = counts;
     failure.map_or(Ok(activated), Err)
+}
+
+/// A native catalog entry as the list offers it, or nothing when the version
+/// installed is the same or newer. One that cannot run here stays listed,
+/// with the reason in `unavailable`.
+fn native_offer(root: &std::path::Path, entry: &chilpa_plugin::catalog::CatalogEntry, repository: &str,
+    third_party: &std::collections::HashSet<String>, process: &crate::plugin_runtimes::ProcessPlugins) -> Option<Value> {
+    let installed = crate::native_install::installed_version(root, &entry.id);
+    if installed.as_ref().is_some_and(|version| !crate::plugin_updates::newer(&entry.version, version)) { return None; }
+    let mut row = json!(entry);
+    row["repository_id"] = repository.into();
+    row["update"] = installed.is_some().into();
+    row["third_party"] = third_party.contains(&entry.id).into();
+    row["third_party_by"] = third_party_by(third_party, entry).into();
+    row["unavailable"] = process.offer(entry).into();
+    Some(row)
 }
 
 /// One row per plugin, whichever catalogs offer it: the highest version stays
@@ -837,6 +846,50 @@ mod tests {
         assert_eq!(std::fs::read(root.join("app.test.local/plugin")).unwrap(), b"must not run");
         center.command("install_local", json!({"path":"https://example.org/package.zip"}));
         assert_ne!(wait_finished(&center)["error"], "");
+    }
+
+    /// Where process plugins cannot run, their offers and installations stay
+    /// in the list with the reason instead of disappearing.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn process_plugins_that_cannot_run_here_stay_listed_and_marked() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().join("plugins");
+        let id = "app.test.process";
+        std::fs::create_dir_all(root.join(id)).unwrap();
+        std::fs::write(root.join(id).join("manifest.json"), format!(r#"{{"id":"{id}","name":"Process","version":"1.0.0","api_version":1,
+            "kind":"source","runtime":"process","capabilities":[]}}"#)).unwrap();
+        std::fs::write(root.join(id).join("plugin"), b"never started").unwrap();
+        let mut host = Plugins::new(root.clone()).unwrap();
+        crate::natives::tests::without_sandbox(&host.natives);
+        host.load_all(); host.approve(id).unwrap(); host.reload_one(id);
+        let platform = format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH);
+        let offer = |id: &str| json!({"id":id,"name":id,"repository":"https://example.org/source","package":"https://example.org/package.zip",
+            "sha256":"a".repeat(64),"api":{"min":1,"max":1}});
+        let mut process = offer("app.test.offer");
+        process["packages"] = json!({platform: {"package":"https://example.org/platform.zip","sha256":"b".repeat(64)}});
+        let index = temporary.path().join("index.json");
+        std::fs::write(&index, json!({"version":1,"plugins":[process, offer("app.test.portable")]}).to_string()).unwrap();
+        PluginRepositories::load(root.join(".repositories")).unwrap().load_native_file(&index, "EN").unwrap();
+        let plugins = Arc::new(Mutex::new(host));
+        let (mut pending, mut state) = (None, json!({}));
+        let mut evidence = crate::plugin_evidence::Evidence::load(&root.join(".repositories"), None);
+        let playing = AtomicBool::new(false);
+        run("filter", &json!({}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
+        let reason = chilpa_i18n::t("Process plugins cannot run in the Flatpak version of Chilpa yet.");
+        assert_eq!(state["process_plugins"], json!({"available": false, "reason": reason}));
+        let rows = state["native_catalog"].as_array().unwrap();
+        let process = rows.iter().find(|row| row["id"] == "app.test.offer").expect("a process plugin's offer is kept, not hidden");
+        assert_eq!(process["unavailable"], reason);
+        let portable = rows.iter().find(|row| row["id"] == "app.test.portable").expect("a portable offer is listed");
+        assert_eq!(portable["unavailable"], "", "a portable plugin still installs");
+        let installed = state["installed"].as_array().unwrap().iter().find(|row| row["id"] == id).expect("it stays installed");
+        assert_eq!((&installed["state"], &installed["problem"], &installed["unavailable"]), (&json!("unavailable"), &json!(reason), &json!(reason)));
+        let revision = permission_review(&root, id).unwrap()["revision"].clone();
+        assert_eq!(run("enable", &json!({"id":id,"permission_revision":revision}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing),
+            Err(reason.clone()), "it is not switched on");
+        run("disable", &json!({"id":id}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
+        assert!(!plugins.lock().unwrap().enabled(id), "switching it off still works");
     }
 
 }

@@ -603,6 +603,11 @@ impl Plugins {
             .map(|plugin| (plugin.id.clone(), self.enabled(&plugin.id))).collect()
     }
 
+    /// Each installed plugin's runtime, from the manifest it was read with.
+    pub(crate) fn runtimes(&self) -> std::collections::HashMap<String, chilpa_plugin::Runtime> {
+        self.registry.installed().filter_map(|plugin| Some((plugin.id.clone(), plugin.manifest.as_ref()?.runtime))).collect()
+    }
+
     pub fn approve(&mut self, id: &str) -> Result<(), String> {
         let manifest = self
             .registry

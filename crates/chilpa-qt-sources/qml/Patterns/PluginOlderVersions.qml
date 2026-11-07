@@ -49,8 +49,8 @@ P.Modal {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     text: I18n.tr("Install", I18n.rev)
-                    enabled: !dialog.controller.view.busy && !modelData.problem
-                    onClicked: { dialog.close(); dialog.controller.command("install_native", {repository: modelData.repository_id, id: modelData.id}) }
+                    enabled: !dialog.controller.view.busy && !modelData.problem && !modelData.unavailable
+                    onClicked: { dialog.close(); dialog.controller.installNative(modelData) }
                 }
             }
         }

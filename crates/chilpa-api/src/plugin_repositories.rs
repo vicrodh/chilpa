@@ -293,7 +293,7 @@ mod tests {
         let mut repositories = PluginRepositories::load(root.path().into()).unwrap();
         let entry = |id: &str| CatalogEntry { id: id.into(), name: id.into(), version: "1.0.0".into(), description: String::new(),
             category: String::new(), author: String::new(), repository: String::new(), package: "https://example.org/one.zip".into(),
-            digest: chilpa_plugin::catalog::Digest { algorithm: "sha256".into(), value: "00".repeat(32) }, adapter: "native".into(), problem: String::new() };
+            digest: chilpa_plugin::catalog::Digest { algorithm: "sha256".into(), value: "00".repeat(32) }, adapter: "native".into(), problem: String::new(), platform_build: false };
         assert!(repositories.third_party_ids().is_empty(), "nothing is named before it is read");
         repositories.cache(THIRD_PARTY, &[entry("app.example.stream")]).unwrap();
         assert!(repositories.third_party_ids().contains("app.example.stream"));

@@ -123,7 +123,7 @@ mod tests {
             zip.start_file(name, zip::write::SimpleFileOptions::default()).unwrap(); zip.write_all(&bytes).unwrap();
         }
         let bytes = zip.finish().unwrap().into_inner();
-        let entry = chilpa_plugin::catalog::CatalogEntry {id:"app.test.update".into(),name:"Fixture".into(),version:version.into(),description:String::new(),category:String::new(),author:String::new(),repository:String::new(),package:"https://example.org/plugin.zip".into(),digest:chilpa_plugin::catalog::Digest {algorithm:"sha256".into(),value:format!("{:x}",Sha256::digest(&bytes))},adapter:"native".into(),problem:String::new()};
+        let entry = chilpa_plugin::catalog::CatalogEntry {id:"app.test.update".into(),name:"Fixture".into(),version:version.into(),description:String::new(),category:String::new(),author:String::new(),repository:String::new(),package:"https://example.org/plugin.zip".into(),digest:chilpa_plugin::catalog::Digest {algorithm:"sha256".into(),value:format!("{:x}",Sha256::digest(&bytes))},adapter:"native".into(),problem:String::new(),platform_build:false};
         (crate::StagedPackage::unpack(&root.join("staging"), &bytes, &entry.digest).unwrap(), entry)
     }
     #[test]
@@ -176,5 +176,30 @@ mod tests {
             ("1.0.0-beta.2", "1.0.0"), ("1.0.0+new", "1.0.0+old"), ("broken", "1.0.0")] {
             assert!(!newer(next, current), "{next} must not replace {current}");
         }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn a_process_plugin_is_not_installed_where_none_can_start() {
+        use sha2::{Digest, Sha256};
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().join("plugins");
+        let manifest = json!({"id":"app.test.process","name":"Process","version":"1.0.0","api_version":1,"kind":"source","runtime":"process",
+            "capabilities":[{"type":"register_source"}]});
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        for (name, bytes) in [("manifest.json", serde_json::to_vec(&manifest).unwrap()), ("plugin", b"never started".to_vec())] {
+            zip.start_file(name, zip::write::SimpleFileOptions::default()).unwrap(); zip.write_all(&bytes).unwrap();
+        }
+        let bytes = zip.finish().unwrap().into_inner();
+        let entry: chilpa_plugin::catalog::CatalogEntry = serde_json::from_value(json!({"id":"app.test.process","name":"Process",
+            "version":"1.0.0","description":"","author":"","repository":"","package":"https://example.org/plugin.zip",
+            "digest":{"algorithm":"sha256","value":format!("{:x}", Sha256::digest(&bytes))},"adapter":"native","problem":"","platform_build":true})).unwrap();
+        let package = crate::StagedPackage::unpack(&directory.path().join("staging"), &bytes, &entry.digest).unwrap();
+        let mut host = Plugins::new(root.clone()).unwrap();
+        crate::natives::tests::without_sandbox(&host.natives);
+        let reason = chilpa_i18n::t("Process plugins cannot run in the Flatpak version of Chilpa yet.");
+        assert_eq!(activate_native(&root, &mut host, &package, &entry, "native", true, true), Err(reason));
+        assert_eq!(crate::native_install::installed_version(&root, &entry.id), None, "nothing was put in the plugins folder");
+        assert!(host.list().is_empty());
     }
 }

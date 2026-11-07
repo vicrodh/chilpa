@@ -94,6 +94,7 @@ mod plugin_access;
 mod svg_icon;
 mod plugin_library;
 mod plugin_center;
+mod plugin_runtimes;
 mod web_sign_in;
 mod plugin_replacement;
 mod plugin_updates;

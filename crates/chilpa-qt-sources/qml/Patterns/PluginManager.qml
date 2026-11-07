@@ -51,6 +51,8 @@ Item {
             openDownloads({id: initialDownloadsId})
     }
     function command(action, input) { page.pluginCommand(action, JSON.stringify(input || {})); read() }
+    // A process plugin this system cannot run is offered, never installed.
+    function installNative(entry) { if (!entry.unavailable) command("install_native", {repository: entry.repository_id, id: entry.id}) }
     function categoryLabel(value) {
         const labels = {musicservices: I18n.tr("Music services", I18n.rev), tools: I18n.tr("Tools", I18n.rev), information: I18n.tr("Information", I18n.rev), misc: I18n.tr("Other", I18n.rev), playlists: I18n.tr("Playlists", I18n.rev), hardware: I18n.tr("Hardware", I18n.rev), radio: I18n.tr("Radio", I18n.rev), scanning: I18n.tr("Library scanning", I18n.rev), skin: I18n.tr("Appearance", I18n.rev), uncategorized: I18n.tr("Uncategorized", I18n.rev)}
         return labels[value] || value

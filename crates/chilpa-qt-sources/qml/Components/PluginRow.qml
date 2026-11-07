@@ -44,6 +44,17 @@ Item {
             color: Theme.color.textSecondary
             font.pointSize: Type.meta
         }
+        // A process plugin this system cannot run says why.
+        Text {
+            objectName: "pluginUnavailable"
+            width: parent.width
+            text: row.plugin.unavailable || ""
+            visible: text !== ""
+            textFormat: Text.PlainText
+            wrapMode: Text.WordWrap
+            color: Theme.color.statusWarning
+            font.pointSize: Type.meta
+        }
     }
     Row {
         id: controls
@@ -91,7 +102,10 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             objectName: "pluginEnabledToggle"
             checked: row.plugin.enabled === true
-            onToggled: (on) => row.switched(on)
+            // One that cannot run here can still be switched off, never on.
+            enabled: !row.plugin.unavailable || row.plugin.enabled === true
+            opacity: enabled ? 1 : Metrics.disabledOpacity
+            onToggled: (on) => { if (!on || !row.plugin.unavailable) row.switched(on) }
         }
         PillButton {
             objectName: "openPluginDownloads"
