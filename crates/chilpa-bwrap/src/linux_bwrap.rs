@@ -2,7 +2,7 @@
 //! plugin and for the compatibility worker.
 
 use crate::linux::{canonical_directory, spawn};
-use crate::process::{log_errors, ChildProcess, LaunchedNative, NativeLauncher, NativeProcess, Notice};
+use crate::process::{log_errors, ChildProcess, LaunchedNative, NativeLauncher, NativeProcess, Notice, CACHE_DIR_VARIABLE, DATA_DIR_VARIABLE};
 use crate::{NativePaths, Unavailable};
 
 use chilpa_plugin::{bridge::BridgeError, native::NativeClient, pipe_transport::PipeTransport};
@@ -148,7 +148,8 @@ impl NativeLauncher for Bwrap {
             .arg("--bind").arg(&cache).arg(GUEST_CACHE);
         if let Some(export) = export { command.arg("--bind").arg(export).arg("/export"); }
         command.args(["--chdir", GUEST_DATA, "--clearenv", "--setenv", "PATH", "/usr/bin", "--setenv", "HOME", GUEST_DATA,
-                "--setenv", "XDG_CACHE_HOME", GUEST_CACHE, "--setenv", "SSL_CERT_DIR", "/etc/ssl/certs", "--",
+                "--setenv", "XDG_CACHE_HOME", GUEST_CACHE, "--setenv", DATA_DIR_VARIABLE, GUEST_DATA,
+                "--setenv", CACHE_DIR_VARIABLE, GUEST_CACHE, "--setenv", "SSL_CERT_DIR", "/etc/ssl/certs", "--",
                 LIMITS])
             .arg(format!("--as={memory_bytes}"))
             .args(["--nofile=256", "--core=0", "--", "/plugin/plugin"])
@@ -259,7 +260,7 @@ done
     }
 
     #[test]
-    fn bwrap_names_its_private_roots_and_stops_once() {
+    fn bwrap_names_its_private_roots_before_and_in_initialize_and_stops_once() {
         use std::os::unix::fs::PermissionsExt;
         assert_eq!(Bwrap.availability(), Ok(()), "this test starts bwrap");
         let root = tempfile::tempdir().unwrap();
@@ -268,7 +269,7 @@ done
         let script = r#"#!/usr/bin/bash
 while IFS= read -r line; do
   id=$(printf '%s' "$line" | sed -E 's/.*"id":([0-9]+).*/\1/')
-  printf '{"jsonrpc":"2.0","id":%s,"result":{}}\n' "$id"
+  printf '{"jsonrpc":"2.0","id":%s,"result":{"data":"%s","cache":"%s"}}\n' "$id" "$CHILPA_PLUGIN_DATA_DIR" "$CHILPA_PLUGIN_CACHE_DIR"
 done
 "#;
         std::fs::write(folder.join("plugin"), script).unwrap();
@@ -276,7 +277,8 @@ done
         let paths = NativePaths { folder, data: root.path().join("data"), cache: root.path().join("cache"), export: None };
         let launched = Bwrap.launch(&paths, "test", 512 * 1024 * 1024, false, Box::new(|_: &str, _: &Value| {})).unwrap();
         assert_eq!(launched.guest_directories, (PathBuf::from("/data"), PathBuf::from("/cache")));
-        assert_eq!(launched.client.call("inspect", json!({}), Duration::from_secs(5)).unwrap(), json!({}));
+        assert_eq!(launched.client.call("inspect", json!({}), Duration::from_secs(5)).unwrap(),
+            json!({"data": "/data", "cache": "/cache"}), "the variables name the same folders as initialize");
         assert!(launched.process.alive());
         launched.client.stop();
         launched.client.stop();

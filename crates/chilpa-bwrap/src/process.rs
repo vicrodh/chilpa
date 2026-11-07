@@ -8,6 +8,11 @@ use std::path::PathBuf;
 use std::process::Child;
 use std::sync::{Arc, Mutex};
 
+/// What a plugin reads before `initialize` to find its data folder.
+pub(crate) const DATA_DIR_VARIABLE: &str = "CHILPA_PLUGIN_DATA_DIR";
+/// What a plugin reads before `initialize` to find its cache folder.
+pub(crate) const CACHE_DIR_VARIABLE: &str = "CHILPA_PLUGIN_CACHE_DIR";
+
 /// Longest piece of a plugin's standard error logged as one line. A longer
 /// line is logged in pieces, so one that never ends cannot grow its buffer.
 const ERROR_PIECE: u64 = 8192;

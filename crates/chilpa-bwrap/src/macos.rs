@@ -1,5 +1,5 @@
 //! Seatbelt confines each worker to its own package, state and cache.
-use crate::process::{log_errors, ChildProcess, LaunchedNative, NativeLauncher, NativeProcess, Notice};
+use crate::process::{log_errors, ChildProcess, LaunchedNative, NativeLauncher, NativeProcess, Notice, CACHE_DIR_VARIABLE, DATA_DIR_VARIABLE};
 use crate::{NativePaths, Unavailable};
 use chilpa_plugin::{bridge::BridgeError, native::NativeClient};
 use std::{ffi::OsString, path::{Path, PathBuf}, process::{Command, Stdio}, sync::Arc};
@@ -48,7 +48,7 @@ fn command(paths: &NativePaths, network: bool) -> Result<Command, BridgeError> {
     command.env_clear().env("PATH", "/usr/bin:/bin").env("HOME", &data)
         .env("CFFIXED_USER_HOME", &data).env("CFPREFERENCES_AVOID_DAEMON", "1")
         .env("TMPDIR", &temporary).env("XDG_CACHE_HOME", &cache)
-        .env("CHILPA_PLUGIN_DATA_DIR", &data).env("CHILPA_PLUGIN_CACHE_DIR", &cache)
+        .env(DATA_DIR_VARIABLE, &data).env(CACHE_DIR_VARIABLE, &cache)
         .current_dir(&data).arg("-p").arg(policy).arg(program)
         .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
     // The shared dyld cache reserves far more address space than resident memory.
