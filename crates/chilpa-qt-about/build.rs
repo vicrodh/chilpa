@@ -23,10 +23,15 @@ fn files(dir: &str, keep: &dyn Fn(&Path) -> bool) -> Vec<String> {
     out
 }
 
+#[path = "build/stamp.rs"]
+mod stamp;
+
 /// The build's date and short commit, for the About window's Build row:
 /// the date from `SOURCE_DATE_EPOCH` when a reproducible build sets it, else
-/// the clock; the commit from git, empty in a tree without one. Neither can
-/// fail the build. It runs again when HEAD or the branch it names moves.
+/// the clock; the commit from git when this workspace is git's work tree,
+/// else from `CHILPA_BUILD_COMMIT`, else empty (`build/stamp.rs`). Neither
+/// can fail the build. It runs again when HEAD or the branch it names moves,
+/// or when either variable changes.
 fn stamp() {
     let git = |args: &[&str]| {
         std::process::Command::new("git").args(args).output().ok()
@@ -43,11 +48,18 @@ fn stamp() {
         println!("cargo:rerun-if-changed={path}");
     }
     println!("cargo:rerun-if-env-changed=SOURCE_DATE_EPOCH");
+    println!("cargo:rerun-if-env-changed={}", stamp::COMMIT_VARIABLE);
     let epoch = std::env::var("SOURCE_DATE_EPOCH").ok().and_then(|s| s.trim().parse::<i64>().ok())
         .or_else(|| std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).ok().map(|d| d.as_secs() as i64))
         .unwrap_or(0);
     println!("cargo:rustc-env=CHILPA_BUILD_DATE={}", day_of(epoch));
-    println!("cargo:rustc-env=CHILPA_BUILD_COMMIT={}", git(&["rev-parse", "--short=9", "HEAD"]).unwrap_or_default());
+    // The workspace root, two levels above this crate.
+    let workspace = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let work_tree = git(&["rev-parse", "--show-toplevel"]).map(PathBuf::from);
+    let head = git(&["rev-parse", &format!("--short={}", stamp::SHORT), "HEAD"]);
+    let variable = std::env::var(stamp::COMMIT_VARIABLE).ok();
+    let commit = stamp::commit(&workspace, work_tree.as_deref(), head.as_deref(), variable.as_deref());
+    println!("cargo:rustc-env=CHILPA_BUILD_COMMIT={commit}");
 }
 
 /// Seconds since 1970 as `YYYY-MM-DD` in UTC (Howard Hinnant's
