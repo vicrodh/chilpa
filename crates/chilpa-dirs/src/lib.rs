@@ -130,6 +130,38 @@ fn prefers_dark_from(gnome: Option<&str>, config: &std::path::Path) -> bool {
     false
 }
 
+/// The packaging sandbox Chilpa runs in. Inside one, `/run`, `/proc/1`,
+/// `os-release` and the desktop's configuration are the sandbox's, not the
+/// host's, and the desktop is reached through its portals.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Sandbox {
+    None,
+    /// Marked by `/.flatpak-info`, which Flatpak puts at the root of every
+    /// sandbox it builds.
+    Flatpak,
+    /// Marked by `SNAP`, which snapd sets for every confined program.
+    Snap,
+}
+
+/// The sandbox this process runs in, read once: it cannot change while the
+/// process lives. `None` away from Linux.
+pub fn sandbox() -> Sandbox {
+    static FOUND: std::sync::OnceLock<Sandbox> = std::sync::OnceLock::new();
+    *FOUND.get_or_init(|| sandbox_from(std::path::Path::new("/.flatpak-info").exists(), from_env("SNAP").is_some()))
+}
+
+fn sandbox_from(flatpak_info: bool, snap: bool) -> Sandbox {
+    if !cfg!(target_os = "linux") {
+        Sandbox::None
+    } else if flatpak_info {
+        Sandbox::Flatpak
+    } else if snap {
+        Sandbox::Snap
+    } else {
+        Sandbox::None
+    }
+}
+
 /// The original image outside its read-only runtime mount, on Linux only.
 pub fn appimage() -> Option<PathBuf> {
     if !cfg!(target_os = "linux") { return None; }
@@ -333,6 +365,14 @@ mod tests {
             ("kdeglobals", "[General]\nColorScheme=BreezeDark\n"),
         ]);
         assert!(prefers_dark_from(None, &root));
+    }
+
+    #[test]
+    fn flatpak_marks_win_over_snap_and_only_linux_has_a_sandbox() {
+        let expected = |sandbox: Sandbox| if cfg!(target_os = "linux") { sandbox } else { Sandbox::None };
+        assert_eq!(sandbox_from(true, true), expected(Sandbox::Flatpak));
+        assert_eq!(sandbox_from(false, true), expected(Sandbox::Snap));
+        assert_eq!(sandbox_from(false, false), Sandbox::None);
     }
 
     #[test]

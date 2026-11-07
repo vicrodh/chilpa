@@ -5,11 +5,6 @@ use crate::{NativePaths, Unavailable};
 use chilpa_plugin::bridge::BridgeError;
 use std::{path::{Path, PathBuf}, process::Command};
 
-/// True inside a Flatpak sandbox, which marks itself with this file.
-pub(crate) fn in_flatpak() -> bool {
-    Path::new("/.flatpak-info").exists()
-}
-
 /// A system with no backend: it says why and starts nothing.
 pub(crate) struct NoBackend(pub(crate) Unavailable);
 

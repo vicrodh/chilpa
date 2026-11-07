@@ -57,7 +57,7 @@ pub trait NativeProcess: Send + Sync {
 pub fn launcher() -> Arc<dyn NativeLauncher> {
     #[cfg(target_os = "linux")]
     {
-        if crate::linux::in_flatpak() {
+        if chilpa_dirs::sandbox() == chilpa_dirs::Sandbox::Flatpak {
             return Arc::new(crate::linux::NoBackend(Unavailable::Flatpak));
         }
         Arc::new(crate::Bwrap)

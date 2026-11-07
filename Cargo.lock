@@ -552,6 +552,7 @@ dependencies = [
 name = "chilpa-bwrap"
 version = "0.1.2"
 dependencies = [
+ "chilpa-dirs",
  "chilpa-plugin",
  "libc",
  "serde_json",
@@ -724,6 +725,7 @@ name = "chilpa-mpris"
 version = "0.1.2"
 dependencies = [
  "async-channel",
+ "chilpa-dirs",
  "image",
  "ksni",
  "log",
