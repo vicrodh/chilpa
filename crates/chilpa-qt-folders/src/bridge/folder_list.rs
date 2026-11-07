@@ -56,7 +56,7 @@ use cxx_qt::CxxQtType as _;
 use cxx_qt_lib::{QDateTime, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QTimeZone, QVariant};
 use std::pin::Pin;
 
-const ROLES: &[&str] = &["path", "name", "lastScan", "reachable", "scanPolicy"];
+const ROLES: &[&str] = &["path", "name", "lastScan", "reachable", "scanPolicy", "shownPath"];
 const USER_ROLE: i32 = 256;
 
 #[derive(Default)]
@@ -80,6 +80,7 @@ impl qobject::FolderListModel {
             },
             3 => QVariant::from(&f.reachable),
             4 => QVariant::from(&QString::from(f.scan_policy.key())),
+            5 => QVariant::from(&QString::from(&f.shown)),
             _ => QVariant::default(),
         }
     }

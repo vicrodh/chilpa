@@ -1232,6 +1232,9 @@ msgstr "Chilpa {} ist bereit"
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
 msgstr "Chilpas Icon im Panel: Ein Klick zeigt oder verbirgt das Fenster, die mittlere Taste startet oder pausiert die Wiedergabe, das Mausrad ändert die Lautstärke."
 
+msgid "Chilpa's sandbox hides memory cards and USB drives. Choose a folder on one, or allow Chilpa to read {}."
+msgstr "Die Sandbox von Chilpa verbirgt Speicherkarten und USB-Laufwerke. Wähle einen Ordner auf einem davon aus oder erlaube Chilpa, {} zu lesen."
+
 msgid "Chilpatl is Nahuatl for hornet. Chilpa is a music player for the desktop, where local files, self-hosted servers and plugins are all just sources."
 msgstr "Chilpatl ist Nahuatl für Hornisse. Chilpa ist ein Musikplayer für den Desktop, in dem lokale Dateien, selbst gehostete Server und Plugins alle einfach Quellen sind."
 

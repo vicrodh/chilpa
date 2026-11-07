@@ -1230,6 +1230,9 @@ msgstr "Chilpa {} の準備ができました"
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
 msgstr "パネル上のChilpaのアイコン: クリックでウィンドウの表示と非表示、中ボタンで再生と一時停止、ホイールで音量を調整します。"
 
+msgid "Chilpa's sandbox hides memory cards and USB drives. Choose a folder on one, or allow Chilpa to read {}."
+msgstr "Chilpa のサンドボックスではメモリーカードと USB ドライブが表示されません。そのいずれかにあるフォルダーを選ぶか、Chilpa に {} の読み取りを許可してください。"
+
 msgid "Chilpatl is Nahuatl for hornet. Chilpa is a music player for the desktop, where local files, self-hosted servers and plugins are all just sources."
 msgstr "Chilpatlはナワトル語でスズメバチのことです。Chilpaはデスクトップ向けの音楽プレーヤーで、ローカルファイル、セルフホストのサーバー、プラグインがすべて単なるソースとして扱われます。"
 

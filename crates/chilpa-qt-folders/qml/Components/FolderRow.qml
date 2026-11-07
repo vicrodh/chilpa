@@ -11,6 +11,9 @@ Item {
     id: row
 
     required property string path
+    // Where it is, as a person reads it: the host's path for a folder a
+    // sandbox was handed.
+    required property string shownPath
     required property string name
     required property var lastScan
     required property bool reachable
@@ -47,7 +50,7 @@ Item {
         y: (Metrics.folderRow - height) / 2 // derived: centered in the folder's first line
 
         Text { width: parent.width; text: row.name; elide: Text.ElideRight; font.pointSize: Type.body; font.weight: Type.medium; color: Theme.color.textPrimary }
-        Text { width: parent.width; text: row.path; elide: Text.ElideMiddle; font.pointSize: Type.small; color: Theme.color.textTertiary }
+        Text { objectName: "folderShownPath"; width: parent.width; text: row.shownPath; elide: Text.ElideMiddle; font.pointSize: Type.small; color: Theme.color.textTertiary }
     }
 
     Text {

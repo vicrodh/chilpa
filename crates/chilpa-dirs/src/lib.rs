@@ -176,6 +176,16 @@ pub fn document_portal_mounts() -> Vec<PathBuf> {
     mounts
 }
 
+/// Where a Linux desktop mounts memory cards and USB drives: udisks2's
+/// `/run/media`, and `/media`, which older systems and some distributions
+/// use. A sandbox shows them only when it is given them. Empty elsewhere.
+pub fn removable_media_roots() -> Vec<PathBuf> {
+    if !cfg!(target_os = "linux") {
+        return Vec::new();
+    }
+    vec![PathBuf::from("/run/media"), PathBuf::from("/media")]
+}
+
 /// The original image outside its read-only runtime mount, on Linux only.
 pub fn appimage() -> Option<PathBuf> {
     if !cfg!(target_os = "linux") { return None; }

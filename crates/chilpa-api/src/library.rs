@@ -240,10 +240,13 @@ impl Chilpa {
         self.ensure_scan_runtime();
         let Some(lib) = self.library() else { return Vec::new() };
         let roots = lib.roots().unwrap_or_default();
-        roots.into_iter().map(|r| LibraryFolder {
-                scan_policy: self.scan_runtime.policies.get(r.path.to_string_lossy().as_ref()).copied().unwrap_or_default(),
+        let paths: Vec<String> = roots.iter().map(|r| r.path.to_string_lossy().into_owned()).collect();
+        let shown = self.shown_paths(&paths);
+        roots.into_iter().zip(paths).zip(shown).map(|((r, path), shown)| LibraryFolder {
+                scan_policy: self.scan_runtime.policies.get(&path).copied().unwrap_or_default(),
                 reachable: r.reachable,
-                path: r.path.to_string_lossy().into_owned(),
+                path,
+                shown,
                 last_scan: r.last_scan,
             })
             .collect()

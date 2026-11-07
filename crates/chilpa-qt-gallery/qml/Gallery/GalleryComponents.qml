@@ -203,8 +203,8 @@ TitledFlow {
             model: audio
             SettingsRow { width: section.width; page: audio }
         }
-        FolderRow { width: section.width; path: "/music/Mora Vale/Low Orbit"; name: "Low Orbit"; lastScan: new Date(); reachable: true; scanPolicy: "startup" }
-        FolderRow { width: section.width; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false; scanPolicy: "manual" }
+        FolderRow { width: section.width; path: "/music/Mora Vale/Low Orbit"; shownPath: path; name: "Low Orbit"; lastScan: new Date(); reachable: true; scanPolicy: "startup" }
+        FolderRow { width: section.width; path: "/mnt/nas/DSD"; shownPath: path; name: "DSD"; lastScan: undefined; reachable: false; scanPolicy: "manual" }
         ScanProgress { width: section.width }
         PillButton {
             text: "Analysis offer"

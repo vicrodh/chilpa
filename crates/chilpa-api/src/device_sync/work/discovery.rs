@@ -19,8 +19,12 @@ pub(crate) fn discover(catalog: &Catalog, cancel: &Cancellation) -> (Vec<Destina
     let mut rows = Vec::new();
     let mut error = None;
     let isolated = std::env::var("CHILPA_DEVICE_TEST_MOUNTED_ONLY").as_deref() == Ok("1");
+    // A sandbox that hides the mounts has none to list; a chosen folder still
+    // reaches a card.
+    let hidden = crate::sandbox::removable_media_hidden();
     if !isolated {
-        match chilpa_devices::volumes::mounted() {
+        let volumes = if hidden { Ok(Vec::new()) } else { chilpa_devices::volumes::mounted() };
+        match volumes {
             Ok(volumes) => for volume in volumes {
                 if cancel.check().is_err() { break; }
                 let mut profiles = Vec::new();
