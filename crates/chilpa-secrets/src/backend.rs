@@ -1,8 +1,13 @@
-//! Which of the two paths is used, and why.
+//! Which of the three paths is used, and why.
 //!
 //! Opening tries the system keyring first. If that works, a 32-byte master
 //! key lives there and everything is encrypted with it. If it does not, for
 //! whatever reason, the key is derived with HKDF from device identifiers.
+//!
+//! Inside a Flatpak the keyring sits behind a bus name the sandbox is not
+//! given, and it is not asked. The desktop portal's per-app value is asked
+//! instead, and the master key is HKDF over it; without it, the key is
+//! derived as above.
 //!
 //! **Only Linux, macOS and Windows consult the keyring.** That is a
 //! correctness requirement, not a preference: without the native feature,
@@ -13,16 +18,18 @@
 //! The derived path, by contrast, comes from the same install id every
 //! start.
 //!
-//! The backend marker travels inside every envelope. A box on the keyring
-//! opens what the derived path sealed with the derived key, which this
-//! install can always rebuild: a start that found no keyring costs nothing on
-//! the next one. A box without the keyring refuses what the keyring sealed,
-//! by name, because it has no keyring key to open it with.
+//! The backend marker travels inside every envelope. A box on the keyring or
+//! the portal opens what the derived path sealed with the derived key, which
+//! this install can always rebuild: a start that found neither costs nothing
+//! on the next one, and what such a box seals from then on carries its own
+//! marker, so the next write moves a record over. A box refuses what another
+//! backend's key sealed, by name, because it has no such key to open it with.
 //!
 //! The keyring is asked once per process and per service name
-//! (`MasterKeys`): the boxes that open at startup, each on its own thread,
-//! share one resolution instead of racing each other to mint the first key.
-//! When that resolution refuses the keyring, it says why on stderr, once.
+//! (`MasterKeys`), and the portal once per process (`portal::Shared`): the
+//! boxes that open at startup, each on its own thread, share one resolution
+//! instead of racing each other to mint the first key. When that resolution
+//! refuses, it says why on stderr, once.
 
 use std::path::{Path, PathBuf};
 
@@ -43,6 +50,7 @@ const HKDF_INFO: &[u8] = b"chilpa-secrets master-key derivation v1";
 
 const MARKER_KEYRING: u8 = 0;
 const MARKER_DERIVED: u8 = 1;
+const MARKER_PORTAL: u8 = 2;
 
 /// Which path ended up active. Used to tell the user: having the system
 /// keyring is not the same as not having it, and hiding that would promise
@@ -56,6 +64,10 @@ pub enum BackendKind {
     /// to the machine, but anyone with filesystem access and the `machine-id`
     /// can rebuild it.
     Derived,
+    /// Inside a Flatpak: the key is derived from a per-app value the desktop
+    /// keeps in its own store and hands over through its portal. Copying the
+    /// files to another machine leaves them unreadable, as on the keyring.
+    Portal,
 }
 
 impl BackendKind {
@@ -66,6 +78,7 @@ impl BackendKind {
             BackendKind::Derived => chilpa_i18n::t(
                 "encrypted and tied to this machine (there is no system keyring)",
             ),
+            BackendKind::Portal => chilpa_i18n::t("encrypted with a key the system keyring keeps for Chilpa"),
         }
     }
 }
@@ -74,20 +87,29 @@ pub struct Backend {
     kind: BackendKind,
     master_key: [u8; MASTER_KEY_LEN],
     /// What the derived key is rebuilt from, for an envelope the derived
-    /// path sealed while this box is on the keyring.
+    /// path sealed while this box is on the keyring or the portal.
     service_name: String,
     storage_dir: PathBuf,
 }
 
 impl Backend {
     pub fn new(service_name: &str, storage_dir: &Path) -> Result<Self, SecretError> {
+        // In a Flatpak: the portal, then the derived path. Asking the keyring
+        // there would only find a bus name the sandbox does not reach.
+        #[cfg(target_os = "linux")]
+        if crate::portal::sandboxed() {
+            if let Ok(master_key) = try_portal(service_name) {
+                return Ok(Self::with_key(BackendKind::Portal, master_key, service_name, storage_dir));
+            }
+            return Self::derived_only(service_name, storage_dir);
+        }
+
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
         if let Ok(master_key) = try_keyring(service_name) {
             return Ok(Self::with_key(BackendKind::Keyring, master_key, service_name, storage_dir));
         }
 
-        let master_key = derive_key(service_name, storage_dir)?;
-        Ok(Self::with_key(BackendKind::Derived, master_key, service_name, storage_dir))
+        Self::derived_only(service_name, storage_dir)
     }
 
     fn with_key(
@@ -104,15 +126,15 @@ impl Backend {
         }
     }
 
-    /// The derived path only, without touching the keyring.
+    /// The derived path only, without touching the keyring or the portal.
     ///
-    /// It exists for the tests. Reaching the real Keychain from a test is not
-    /// stronger, it is flakier: macOS binds an entry's permission to the exact
-    /// binary that created it, so the **second** `cargo test` after editing
-    /// code is a new binary against an old entry, and the system blocks the
-    /// process with a dialog a headless run can never answer. What is being
-    /// tested — the round trip, and catching tampering — is identical on either
-    /// path.
+    /// The fallback of [`Backend::new`], and the tests' box. Reaching the
+    /// real Keychain from a test is not stronger, it is flakier: macOS binds
+    /// an entry's permission to the exact binary that created it, so the
+    /// **second** `cargo test` after editing code is a new binary against an
+    /// old entry, and the system blocks the process with a dialog a headless
+    /// run can never answer. What is being tested — the round trip, and
+    /// catching tampering — is identical on either path.
     pub fn derived_only(service_name: &str, storage_dir: &Path) -> Result<Self, SecretError> {
         let master_key = derive_key(service_name, storage_dir)?;
         Ok(Self::with_key(BackendKind::Derived, master_key, service_name, storage_dir))
@@ -131,6 +153,18 @@ impl Backend {
         Ok(Self::with_key(BackendKind::Keyring, master_key, service_name, storage_dir))
     }
 
+    /// The portal path with the value given: the tests' portal-backed box,
+    /// which never reaches a bus.
+    #[cfg(all(test, target_os = "linux"))]
+    pub(crate) fn with_portal_value(
+        service_name: &str,
+        storage_dir: &Path,
+        value: &[u8],
+    ) -> Result<Self, SecretError> {
+        let master_key = crate::portal::master_key(value, service_name)?;
+        Ok(Self::with_key(BackendKind::Portal, master_key, service_name, storage_dir))
+    }
+
     pub fn kind(&self) -> BackendKind {
         self.kind
     }
@@ -139,6 +173,7 @@ impl Backend {
         match self.kind {
             BackendKind::Keyring => MARKER_KEYRING,
             BackendKind::Derived => MARKER_DERIVED,
+            BackendKind::Portal => MARKER_PORTAL,
         }
     }
 
@@ -146,14 +181,16 @@ impl Backend {
         seal_with_key(&self.master_key, self.marker(), plaintext)
     }
 
-    /// Opens with the primary key. On the keyring, an envelope the derived
-    /// path sealed opens with the derived key: a start without the keyring
-    /// sealed it, and losing it would ask the user for a sign-in again. The
-    /// install id is read, never created; without it nothing here was ever
-    /// derived, and the envelope is refused as another backend's.
+    /// Opens with the primary key. On the keyring or the portal, an envelope
+    /// the derived path sealed opens with the derived key: a start without
+    /// either sealed it, or a build that predates the portal, and losing it
+    /// would ask the user for a sign-in again. What it holds is sealed with
+    /// the primary key on its next write. The install id is read, never
+    /// created; without it nothing here was ever derived, and the envelope
+    /// is refused as another backend's.
     pub fn open(&self, sealed: &[u8]) -> Result<Vec<u8>, SecretError> {
         match open_with_key(&self.master_key, self.marker(), sealed) {
-            Err(SecretError::BackendMismatch) if self.kind == BackendKind::Keyring => {
+            Err(SecretError::BackendMismatch) if self.kind != BackendKind::Derived => {
                 let key = existing_derived_key(&self.service_name, &self.storage_dir)
                     .ok_or(SecretError::BackendMismatch)?;
                 open_with_key(&key, MARKER_DERIVED, sealed)
@@ -161,6 +198,14 @@ impl Backend {
             opened => opened,
         }
     }
+}
+
+/// The master key from the portal's per-app value, asked once per process.
+#[cfg(target_os = "linux")]
+fn try_portal(service_name: &str) -> Result<[u8; MASTER_KEY_LEN], SecretError> {
+    use crate::portal;
+    let value = portal::SHARED.resolve(|| portal::retrieve(&portal::Bus::Session, &portal::WAITS))?;
+    portal::master_key(&value, service_name)
 }
 
 /// Reads, or creates and stores, the master key in the system store.
@@ -610,6 +655,49 @@ mod tests {
             );
         }
         assert_eq!(*entry.reads.lock().unwrap(), 1, "the second box asks the store nothing");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn a_portal_box_opens_what_the_derived_path_sealed_and_moves_it_over_on_the_next_write() {
+        // A build before the portal, or a start whose portal did not answer,
+        // sealed with the derived key. The next start has the portal.
+        let install = tempfile::tempdir().unwrap();
+        let derived = Backend::derived_only("test-portal-flip", install.path()).unwrap();
+        let sealed = derived.seal(b"token").unwrap();
+        let portal = Backend::with_portal_value("test-portal-flip", install.path(), &[4u8; 64]).unwrap();
+        assert_eq!(portal.kind(), BackendKind::Portal);
+        assert_eq!(portal.open(&sealed).unwrap(), b"token", "no sign-in is asked for again");
+        let resealed = portal.seal(b"token").unwrap();
+        assert_eq!(resealed[1], MARKER_PORTAL, "the next write seals with the portal's key");
+        assert!(matches!(derived.open(&resealed).unwrap_err(), SecretError::BackendMismatch), "refused by name");
+        let next_start = Backend::with_portal_value("test-portal-flip", install.path(), &[4u8; 64]).unwrap();
+        assert_eq!(next_start.open(&resealed).unwrap(), b"token", "the same value gives the same key");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn the_portal_and_the_keyring_refuse_each_others_envelopes_by_name() {
+        let install = tempfile::tempdir().unwrap();
+        let entry = fresh();
+        let keyring = Backend::with_entry("test-portal-keyring", install.path(), &entry).unwrap();
+        let portal = Backend::with_portal_value("test-portal-keyring", install.path(), &[6u8; 64]).unwrap();
+        let by_keyring = keyring.seal(b"token").unwrap();
+        let by_portal = portal.seal(b"token").unwrap();
+        assert!(matches!(portal.open(&by_keyring).unwrap_err(), SecretError::BackendMismatch));
+        assert!(matches!(keyring.open(&by_portal).unwrap_err(), SecretError::BackendMismatch));
+        assert!(!install.path().join("install-id").exists(), "opening writes no install id");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn another_portal_value_does_not_open_what_the_first_sealed() {
+        // Another install of the app, or another machine: the desktop hands
+        // out another value.
+        let install = tempfile::tempdir().unwrap();
+        let sealed = Backend::with_portal_value("test-portal-other", install.path(), &[1u8; 64]).unwrap().seal(b"token").unwrap();
+        let other = Backend::with_portal_value("test-portal-other", install.path(), &[2u8; 64]).unwrap();
+        assert!(matches!(other.open(&sealed).unwrap_err(), SecretError::Cipher(_)));
     }
 
     #[test]

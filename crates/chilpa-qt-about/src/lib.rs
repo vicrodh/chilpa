@@ -14,3 +14,8 @@ pub mod bridge {
 
 mod log_capture;
 pub use log_capture::{start_logging, LogCapture};
+
+/// The build script's choice of commit, compiled here for its tests only.
+#[cfg(test)]
+#[path = "../build/stamp.rs"]
+mod build_stamp;

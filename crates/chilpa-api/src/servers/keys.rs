@@ -178,6 +178,7 @@ fn backend_name(kind: BackendKind) -> &'static str {
     match kind {
         BackendKind::Keyring => "keyring",
         BackendKind::Derived => "derived",
+        BackendKind::Portal => "portal",
     }
 }
 

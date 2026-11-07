@@ -7800,6 +7800,9 @@ msgstr "Display"
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr "verschlüsselt und an diesen Rechner gebunden (es gibt keinen System-Schlüsselbund)"
 
+msgid "encrypted with a key the system keyring keeps for Chilpa"
+msgstr "verschlüsselt mit einem Schlüssel, den der System-Schlüsselbund für Chilpa aufbewahrt"
+
 msgid "exactly"
 msgstr "genau"
 

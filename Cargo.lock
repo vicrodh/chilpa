@@ -1098,6 +1098,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.20",
  "uuid 1.26.1",
+ "zbus 5.19.0",
 ]
 
 [[package]]

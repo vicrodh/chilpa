@@ -7810,6 +7810,9 @@ msgstr "дисплей"
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr "зашифровано и привязано к этому компьютеру (системной связки ключей нет)"
 
+msgid "encrypted with a key the system keyring keeps for Chilpa"
+msgstr "зашифровано ключом, который системная связка ключей хранит для Chilpa"
+
 msgid "exactly"
 msgstr "ровно"
 

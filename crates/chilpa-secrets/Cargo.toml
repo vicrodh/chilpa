@@ -43,6 +43,10 @@ keyring = { version = "3", default-features = false, features = [
   "async-secret-service",
   "crypto-rust",
 ] }
+# Inside a Flatpak the store above sits behind a bus name the sandbox is not
+# given; the desktop's portal hands over a per-app value instead. The same
+# bus library and features chilpa-bwrap and chilpa-mpris use, blocking.
+zbus = { version = "5", default-features = false, features = ["async-io", "blocking-api"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 keyring = { version = "3", default-features = false, features = ["apple-native"] }

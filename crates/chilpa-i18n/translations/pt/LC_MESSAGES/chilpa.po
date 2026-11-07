@@ -7800,6 +7800,9 @@ msgstr "tela"
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr "criptografado e vinculado a este computador (não há chaveiro do sistema)"
 
+msgid "encrypted with a key the system keyring keeps for Chilpa"
+msgstr "criptografado com uma chave que o chaveiro do sistema guarda para o Chilpa"
+
 msgid "exactly"
 msgstr "exatamente"
 

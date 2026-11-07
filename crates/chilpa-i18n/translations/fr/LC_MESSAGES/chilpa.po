@@ -7800,6 +7800,9 @@ msgstr "écran"
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr "chiffré et lié à cette machine (il n'y a pas de trousseau de clés système)"
 
+msgid "encrypted with a key the system keyring keeps for Chilpa"
+msgstr "chiffré avec une clé que le trousseau de clés système conserve pour Chilpa"
+
 msgid "exactly"
 msgstr "exactement"
 
