@@ -4,15 +4,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-msgid "Bit depth"
-msgstr "ビット深度"
-
-msgid "More than 16 bits"
-msgstr "16 ビットより上"
-
-msgid "More than 48 kHz"
-msgstr "48 kHz より上"
-
 msgid "\"{}\" brings nothing today"
 msgstr "「{}」には今日は何もありません"
 
@@ -856,6 +847,9 @@ msgstr "削除中…"
 
 msgid "Between tracks"
 msgstr "トラック間"
+
+msgid "Bit depth"
+msgstr "ビット深度"
 
 msgid "Bit depth not stated"
 msgstr "ビット深度の記載なし"
@@ -3728,6 +3722,12 @@ msgstr "その他の操作"
 
 msgid "More options"
 msgstr "その他の操作"
+
+msgid "More than 16 bits"
+msgstr "16 ビットより上"
+
+msgid "More than 48 kHz"
+msgstr "48 kHz より上"
 
 msgid "Most at {}:00"
 msgstr "{}:00が最多"
@@ -8042,6 +8042,9 @@ msgstr "rate には 44100 や 44.1k のようなヘルツまたはキロヘル�
 
 msgid "ratings could not be loaded: {}"
 msgstr "評価を読み込めませんでした: {}"
+
+msgid "reach any address on the internet: it names {}, but a process plugin is not held to that list"
+msgstr "インターネット上のどのアドレスにも接続する（{}を挙げていますが、プロセスのプラグインはその一覧に制限されません）"
 
 msgid "reach the internet, only {}"
 msgstr "インターネットに接続する（{}のみ）"

@@ -4,15 +4,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
 
-msgid "Bit depth"
-msgstr "Разрядность"
-
-msgid "More than 16 bits"
-msgstr "Больше 16 бит"
-
-msgid "More than 48 kHz"
-msgstr "Больше 48 кГц"
-
 msgid "\"{}\" brings nothing today"
 msgstr "«{}» сегодня ничего не приносит"
 
@@ -858,6 +849,9 @@ msgstr "Удаляется…"
 
 msgid "Between tracks"
 msgstr "Между треками"
+
+msgid "Bit depth"
+msgstr "Разрядность"
 
 msgid "Bit depth not stated"
 msgstr "Разрядность не указана"
@@ -3738,6 +3732,12 @@ msgstr "Другие действия"
 
 msgid "More options"
 msgstr "Другие действия"
+
+msgid "More than 16 bits"
+msgstr "Больше 16 бит"
+
+msgid "More than 48 kHz"
+msgstr "Больше 48 кГц"
 
 msgid "Most at {}:00"
 msgstr "Пик в {}:00"
@@ -8064,6 +8064,9 @@ msgstr "rate принимает герцы или килогерцы вроде 
 
 msgid "ratings could not be loaded: {}"
 msgstr "не удалось загрузить рейтинги: {}"
+
+msgid "reach any address on the internet: it names {}, but a process plugin is not held to that list"
+msgstr "выходить на любой адрес в интернете: он называет {}, но процессный плагин этим списком не ограничен"
 
 msgid "reach the internet, only {}"
 msgstr "выходить в интернет, только на {}"

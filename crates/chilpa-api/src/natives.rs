@@ -252,7 +252,8 @@ impl Natives {
         self.start_locked(manifest, folder)
     }
     fn start_locked(self: &Arc<Self>, manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, PluginError> {
-        let (client, data, cache) = launch(self, manifest, folder)?;
+        let network = process_network(chilpa_core::network::current().offline, manifest);
+        let (client, data, cache) = launch(self, manifest, folder, network)?;
         let greeting = client.call("initialize", json!({
             "protocol": PROTOCOL,
             "playback_events": 1,
@@ -260,7 +261,7 @@ impl Natives {
             "data_dir": data,
             "cache_dir": cache,
             "locale": chilpa_i18n::current_language(),
-            "network": {"enabled": !chilpa_core::network::current().offline},
+            "network": {"enabled": network},
         }), GREETING).map_err(|e| PluginError::Crashed(e.to_string()))?;
         if greeting.get("protocol").and_then(Value::as_u64) != Some(PROTOCOL as u64) {
             client.stop();
@@ -332,8 +333,14 @@ pub(crate) fn install(
 
 type Launched = (Arc<NativeClient>, PathBuf, PathBuf);
 
+/// Whether a process is given the network: all of it, or none. Its domains
+/// are not enforced one by one, so naming none is what keeps it offline.
+fn process_network(offline: bool, manifest: &Manifest) -> bool {
+    !offline && !manifest.allowed_domains().is_empty()
+}
+
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-fn launch(natives: &Arc<Natives>, manifest: &Manifest, folder: &Path) -> Result<Launched, PluginError> {
+fn launch(natives: &Arc<Natives>, manifest: &Manifest, folder: &Path, network: bool) -> Result<Launched, PluginError> {
     let id = manifest.id.clone();
     let paths = chilpa_bwrap::NativePaths {
         folder: folder.to_path_buf(),
@@ -352,7 +359,6 @@ fn launch(natives: &Arc<Natives>, manifest: &Manifest, folder: &Path) -> Result<
             eprintln!("plugin[{name}]: {}", params.get("message").and_then(Value::as_str).unwrap_or(""));
         }
     });
-    let network = !chilpa_core::network::current().offline && !manifest.allowed_domains().is_empty();
     let launched = natives.launcher().launch(&paths, &id, MEMORY, network, notice)
         .map_err(|_| PluginError::Crashed("the plugin's sandbox could not start".into()))?;
     let (data, cache) = launched.guest_directories;
@@ -368,7 +374,7 @@ impl Natives {
 
 /// Platforms without process isolation list a reason and never start a worker.
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
-fn launch(_: &Arc<Natives>, _: &Manifest, _: &Path) -> Result<Launched, PluginError> {
+fn launch(_: &Arc<Natives>, _: &Manifest, _: &Path, _: bool) -> Result<Launched, PluginError> {
     Err(PluginError::NotAllowed("native plugins need a sandbox this system does not have yet".into()))
 }
 
@@ -381,6 +387,17 @@ pub(crate) mod tests {
             manifest, folder: PathBuf::new(), capabilities, discover: Vec::new(),
             restarts: 0, restarting: false, last_start: Instant::now(),
         });
+    }
+
+    #[test]
+    fn initialize_reports_the_network_the_process_was_given() {
+        let manifest = |capabilities: Value| -> Manifest { serde_json::from_value(json!({"id":"test.source","name":"Fixture",
+            "version":"1.0.0","api_version":1,"kind":"source","runtime":"process","capabilities":capabilities})).unwrap() };
+        let named = manifest(json!([{"type":"network","domains":["api.example.org"]}]));
+        let unnamed = manifest(json!([]));
+        assert!(process_network(false, &named));
+        assert!(!process_network(true, &named), "offline mode takes it away");
+        assert!(!process_network(false, &unnamed), "online, but a process that names no domain has no network");
     }
 
     #[test]

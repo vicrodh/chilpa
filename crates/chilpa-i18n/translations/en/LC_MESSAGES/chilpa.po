@@ -4,15 +4,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "Bit depth"
-msgstr "Bit depth"
-
-msgid "More than 16 bits"
-msgstr "More than 16 bits"
-
-msgid "More than 48 kHz"
-msgstr "More than 48 kHz"
-
 msgid "\"{}\" brings nothing today"
 msgstr ""
 
@@ -857,6 +848,9 @@ msgstr ""
 
 msgid "Between tracks"
 msgstr ""
+
+msgid "Bit depth"
+msgstr "Bit depth"
 
 msgid "Bit depth not stated"
 msgstr ""
@@ -3733,6 +3727,12 @@ msgstr ""
 
 msgid "More options"
 msgstr ""
+
+msgid "More than 16 bits"
+msgstr "More than 16 bits"
+
+msgid "More than 48 kHz"
+msgstr "More than 48 kHz"
 
 msgid "Most at {}:00"
 msgstr ""
@@ -8052,6 +8052,9 @@ msgid "rate takes hertz or kilohertz like 44100 or 44.1k, or a range with the lo
 msgstr "rate takes hertz or kilohertz like 44100 or 44.1k, or a range with the lower bound first"
 
 msgid "ratings could not be loaded: {}"
+msgstr ""
+
+msgid "reach any address on the internet: it names {}, but a process plugin is not held to that list"
 msgstr ""
 
 msgid "reach the internet, only {}"

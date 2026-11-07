@@ -43,7 +43,7 @@ pub(crate) fn native(root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &
     if needs_review && !reviewed {
         if automatic { return Err("The plugin update needs permission review.".into()); }
         state["approval"] = json!({"id":id,"name":manifest.name,"description":manifest.description,"version":manifest.version,
-            "permissions":manifest.capabilities.iter().map(|cap|cap.describe()).collect::<Vec<_>>(),"revision":revision,
+            "permissions":manifest.permissions(),"revision":revision,
             "update":true,"repository":repo});
         return Ok(None);
     }

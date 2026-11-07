@@ -329,7 +329,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                     let domains = crate::plugin_domains::candidates(&package);
                     let prepared = package.prepare_extension(repo, &entry, &inspection, domains.clone())?;
                     state["proposal"] = json!({"id":prepared.manifest().id,"catalog_id":entry.id,"repository_id":repo,"name":entry.name,"domains":domains,
-                        "permissions":prepared.manifest().capabilities.iter().map(|cap| cap.describe()).collect::<Vec<_>>(),
+                        "permissions":prepared.manifest().permissions(),
                         "inspection":inspection,"light":"green"});
                     *pending = Some(prepared);
                 }
@@ -371,7 +371,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             let reviewed = input["permission_revision"].as_str() == Some(revision.as_str());
             if needs_review && !reviewed {
                 state["approval"] = json!({"id":manifest.id,"name":manifest.name,"description":manifest.description,"version":manifest.version,
-                    "permissions":manifest.capabilities.iter().map(|cap|cap.describe()).collect::<Vec<_>>(),"revision":revision,
+                    "permissions":manifest.permissions(),"revision":revision,
                     "update":true,"local_update":true,"path":address});
             } else {
                 let enabled = host.enabled(&manifest.id);
@@ -849,7 +849,7 @@ pub(crate) fn permission_review(root: &std::path::Path, id: &str) -> Result<Valu
     let manifest = chilpa_plugin::Manifest::parse_for_runtime(std::str::from_utf8(&bytes).map_err(|e| e.to_string())?, runtime).map_err(|e| e.to_string())?;
     use sha2::Digest;
     Ok(json!({"id":id,"name":manifest.name,"description":value["description"],"version":manifest.version,
-        "permissions":manifest.capabilities.iter().map(|cap| cap.describe()).collect::<Vec<_>>(),
+        "permissions":manifest.permissions(),
         "revision":format!("{:x}", sha2::Sha256::digest(&bytes))}))
 }
 

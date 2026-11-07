@@ -4,15 +4,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "Bit depth"
-msgstr "Bittiefe"
-
-msgid "More than 16 bits"
-msgstr "Mehr als 16 Bit"
-
-msgid "More than 48 kHz"
-msgstr "Mehr als 48 kHz"
-
 msgid "\"{}\" brings nothing today"
 msgstr "„{}“ liefert heute nichts"
 
@@ -857,6 +848,9 @@ msgstr "Wird entfernt…"
 
 msgid "Between tracks"
 msgstr "Zwischen Titeln"
+
+msgid "Bit depth"
+msgstr "Bittiefe"
 
 msgid "Bit depth not stated"
 msgstr "Bittiefe nicht angegeben"
@@ -3733,6 +3727,12 @@ msgstr "Weitere Aktionen"
 
 msgid "More options"
 msgstr "Weitere Optionen"
+
+msgid "More than 16 bits"
+msgstr "Mehr als 16 Bit"
+
+msgid "More than 48 kHz"
+msgstr "Mehr als 48 kHz"
 
 msgid "Most at {}:00"
 msgstr "Am meisten um {}:00"
@@ -8053,6 +8053,9 @@ msgstr "rate nimmt Hertz oder Kilohertz wie 44100 oder 44.1k oder einen Bereich 
 
 msgid "ratings could not be loaded: {}"
 msgstr "Bewertungen konnten nicht geladen werden: {}"
+
+msgid "reach any address on the internet: it names {}, but a process plugin is not held to that list"
+msgstr "jede Adresse im Internet erreichen: es nennt {}, aber ein Prozess-Plugin ist nicht an diese Liste gebunden"
 
 msgid "reach the internet, only {}"
 msgstr "ins Internet gehen, nur zu {}"
