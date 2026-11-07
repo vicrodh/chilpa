@@ -39,6 +39,14 @@ mod linux;
 mod linux_bwrap;
 #[cfg(target_os = "linux")]
 pub use linux_bwrap::{launch, Bwrap, RuntimePaths};
+#[cfg(target_os = "linux")]
+mod portal;
+#[cfg(target_os = "linux")]
+mod flatpak;
+#[cfg(target_os = "linux")]
+pub use flatpak::Flatpak;
+#[cfg(all(test, target_os = "linux"))]
+mod fake_portal;
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_os = "macos")]

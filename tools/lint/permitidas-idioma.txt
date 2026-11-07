@@ -907,3 +907,5 @@ getrlimit
 nproc
 prlimit
 setfd
+getfl
+killpg
