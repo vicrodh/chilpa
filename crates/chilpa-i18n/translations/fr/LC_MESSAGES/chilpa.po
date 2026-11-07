@@ -8996,6 +8996,9 @@ msgstr[1] "{} éléments nécessitent votre attention avant que la lecture bit-p
 msgid "{} keeps no playlists; make this one in Chilpa."
 msgstr "{} ne garde pas de playlists ; créez celle-ci dans Chilpa."
 
+msgid "{} keeps this copy of Chilpa up to date. Update it from your software center."
+msgstr "{} maintient cette copie de Chilpa à jour. Mettez-la à jour depuis votre gestionnaire de logiciels."
+
 msgid "{} label"
 msgid_plural "{} labels"
 msgstr[0] "{} label"

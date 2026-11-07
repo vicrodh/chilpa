@@ -8996,6 +8996,9 @@ msgstr[1] "{} itens precisam de atenção antes que a reprodução bit-perfect f
 msgid "{} keeps no playlists; make this one in Chilpa."
 msgstr "{} não guarda playlists; crie esta no Chilpa."
 
+msgid "{} keeps this copy of Chilpa up to date. Update it from your software center."
+msgstr "{} mantém esta cópia do Chilpa atualizada. Atualize-a pela sua central de software."
+
 msgid "{} label"
 msgid_plural "{} labels"
 msgstr[0] "{} gravadora"

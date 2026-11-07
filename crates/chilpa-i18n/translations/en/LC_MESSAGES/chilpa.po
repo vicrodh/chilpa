@@ -8996,6 +8996,9 @@ msgstr[1] ""
 msgid "{} keeps no playlists; make this one in Chilpa."
 msgstr ""
 
+msgid "{} keeps this copy of Chilpa up to date. Update it from your software center."
+msgstr ""
+
 msgid "{} label"
 msgid_plural "{} labels"
 msgstr[0] ""

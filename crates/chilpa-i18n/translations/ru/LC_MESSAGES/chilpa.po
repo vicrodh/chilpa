@@ -9019,6 +9019,9 @@ msgstr[2] "{} элементов требуют внимания, прежде �
 msgid "{} keeps no playlists; make this one in Chilpa."
 msgstr "{} не хранит плейлисты; создайте этот плейлист в Chilpa."
 
+msgid "{} keeps this copy of Chilpa up to date. Update it from your software center."
+msgstr "{} поддерживает эту копию Chilpa в актуальном состоянии. Обновляйте её через центр приложений."
+
 msgid "{} label"
 msgid_plural "{} labels"
 msgstr[0] "{} лейбл"

@@ -8996,6 +8996,9 @@ msgstr[1] "{} Punkte erfordern Aufmerksamkeit, bevor die Bit-perfect-Wiedergabe 
 msgid "{} keeps no playlists; make this one in Chilpa."
 msgstr "{} hat keine Playlists; erstelle diese in Chilpa."
 
+msgid "{} keeps this copy of Chilpa up to date. Update it from your software center."
+msgstr "{} hält diese Kopie von Chilpa aktuell. Aktualisiere sie über deine Softwareverwaltung."
+
 msgid "{} label"
 msgid_plural "{} labels"
 msgstr[0] "{} Label"

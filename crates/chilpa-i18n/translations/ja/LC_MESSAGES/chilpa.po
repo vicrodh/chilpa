@@ -8973,6 +8973,9 @@ msgstr[0] "ビットパーフェクト再生を有効にするには{}項目の�
 msgid "{} keeps no playlists; make this one in Chilpa."
 msgstr "{} にはプレイリストがありません。このプレイリストは Chilpa で作成してください。"
 
+msgid "{} keeps this copy of Chilpa up to date. Update it from your software center."
+msgstr "{} がこの Chilpa を最新の状態に保ちます。ソフトウェアセンターから更新してください。"
+
 msgid "{} label"
 msgid_plural "{} labels"
 msgstr[0] "{}レーベル"
