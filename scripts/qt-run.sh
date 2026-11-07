@@ -88,14 +88,15 @@ cargo build -p chilpa-qt "${profile_args[@]}"
 [[ -x "${binary}" ]] || die "Cargo succeeded but ${binary} is missing"
 # The sign-in window for plugins whose browser sign-in ends on an address only
 # their own application receives (crates/chilpa-web-sign-in). It is built only
-# where the web engine is installed; without it the link opens the browser.
+# where Qt WebEngine 6.9 or later is installed; without it the link opens the
+# browser.
 sign_in="${target_dir}/${profile}/chilpa-web-sign-in"
 rm -f "${sign_in}"
-if [[ "$(uname -s)" == Linux ]] && pkg-config --exists webkitgtk-6.0 gtk4 2>/dev/null; then
+if [[ "$(uname -s)" == Linux ]] && pkg-config --atleast-version=6.9 Qt6WebEngineWidgets 2>/dev/null; then
   say "building chilpa-web-sign-in"
-  cargo build -p chilpa-web-sign-in --features webkit "${profile_args[@]}"
+  cargo build -p chilpa-web-sign-in --features webengine "${profile_args[@]}"
 else
-  warn "webkitgtk-6.0 or gtk4 not found: plugin sign-in pages open in the browser"
+  warn "Qt6WebEngineWidgets 6.9 or later not found: plugin sign-in pages open in the browser"
 fi
 build_seconds="$(( $(date +%s) - build_started ))"
 say "build finished in ${build_seconds}s"
