@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 vicrodh -->
+<component type="desktop-application">
+  <id>app.chilpa.Chilpa</id>
+
+  <name>Chilpa</name>
+  <summary>Play and organize your music</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <developer id="app.chilpa">
+    <name translate="no">vicrodh</name>
+  </developer>
+
+  <description>
+    <p>
+      Chilpa plays your music library, your own media servers and sources
+      added by plugins from one window. It shows the format that reaches the
+      output device and says whether playback is bit-perfect or what changed
+      the signal on the way.
+    </p>
+    <ul>
+      <li>FLAC, ALAC, WAV, AIFF, DSF, DFF, MP3 and Ogg Vorbis, with CUE sheets and SACD disc images</li>
+      <li>Jellyfin, Plex, Subsonic-compatible and DLNA/UPnP media servers beside local files</li>
+      <li>Multiple queues, playlists, and search across the library and connected sources</li>
+      <li>Refine narrows the library by artist, genre, year, composer, label, rating, quality or source, and saves the query</li>
+      <li>Synchronized lyrics with translations, and immersive views that react to the audio</li>
+      <li>Listening statistics that stay on your computer, with export to CSV or PNG</li>
+      <li>Plugins for internet radio, podcasts and an equalizer with listening presets</li>
+      <li>A command line opened with <code>:</code>, and configurable keyboard shortcuts</li>
+    </ul>
+    <p>
+      Chilpa sends no telemetry. Online lookups for metadata, artwork and
+      lyrics can be switched off, and offline mode blocks every network
+      request.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">app.chilpa.Chilpa.desktop</launchable>
+
+  <provides>
+    <binary>chilpa-qt</binary>
+  </provides>
+
+  <url type="homepage">https://chilpa.app/</url>
+  <url type="bugtracker">https://github.com/vicrodh/chilpa/issues</url>
+  <url type="vcs-browser">https://github.com/vicrodh/chilpa</url>
+  <url type="contribute">https://github.com/vicrodh/chilpa/blob/main/CONTRIBUTING.md</url>
+
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-info">mild</content_attribute>
+  </content_rating>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#EC999D</color>
+    <color type="primary" scheme_preference="dark">#4A0D10</color>
+  </branding>
+
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/vicrodh/chilpa/v0.1.2/assets/captures/04_artist_page_light.png</image>
+      <caption>An artist page with popular tracks, the latest release and similar artists</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/vicrodh/chilpa/v0.1.2/assets/captures/05_refine_light.png</image>
+      <caption>The library narrowed with Refine</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/vicrodh/chilpa/v0.1.2/assets/captures/02_bit-perfect_light.png</image>
+      <caption>A queue and the route of the current track to the output device</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/vicrodh/chilpa/v0.1.2/assets/captures/06_immersive_lyrics.png</image>
+      <caption>The immersive view with synchronized lyrics</caption>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="0.1.2" date="2026-11-03">
+      <url type="details">https://github.com/vicrodh/chilpa/releases/tag/v0.1.2</url>
+      <description>
+        <p>Bug fixes only.</p>
+        <ul>
+          <li>Radio asks for the cover once per song instead of on every audio write, and the cover comes back after a reconnect</li>
+          <li>Native DSD through PipeWire plays on a real DAC again; it needs PipeWire 1.6 or later, and older versions get DSD converted to PCM</li>
+          <li>A fresh install no longer loses saved credentials when two parts of Chilpa create their own install id at the same time</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.1.1" date="2026-10-31">
+      <url type="details">https://github.com/vicrodh/chilpa/releases/tag/v0.1.1</url>
+      <description>
+        <ul>
+          <li>Audio outputs are listed away from the window, which no longer freezes while the sound server answers</li>
+          <li>The theme follows the desktop on sessions where Qt reports none, such as Hyprland</li>
+          <li>Third-party plugins show their publisher, and older versions of a plugin can be installed</li>
+          <li>Edits to records from your own servers are kept on this device</li>
+          <li>A server sign-in is no longer lost at the next start of a fresh install</li>
+          <li>Source settings have a numbered setup wizard</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.1.0" date="2026-10-30">
+      <url type="details">https://github.com/vicrodh/chilpa/releases/tag/v0.1.0</url>
+      <description>
+        <p>
+          First public release: local libraries and connected sources in one
+          interface, with multiple queues, playlists, album editions, search,
+          synchronized lyrics with translations, immersive views and an
+          official plugin catalog that works offline.
+        </p>
+      </description>
+    </release>
+  </releases>
+</component>
