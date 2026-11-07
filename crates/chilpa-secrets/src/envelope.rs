@@ -2,16 +2,16 @@
 //!
 //! ```text
 //! [0]       version (u8)        — always 1 today
-//! [1]       backend marker      — 0 = keyring, 1 = derived
+//! [1]       backend marker      — 0 = keyring, 1 = derived, 2 = portal
 //! [2..14]   nonce (12 bytes)    — different on every seal
 //! [14..]    ciphertext + tag    — what AES-256-GCM produces
 //! ```
 //!
 //! The marker travels inside so the box knows which key sealed it. Without
-//! the keyring, what the keyring sealed is **refused** by name rather than
-//! failing with a cipher error that says nothing. On the keyring, what the
-//! fallback sealed is opened with the derived key, so gaining keyring access
-//! after a run with the fallback does not lose that run's data.
+//! the keyring or the portal, what they sealed is **refused** by name rather
+//! than failing with a cipher error that says nothing. On either of them,
+//! what the fallback sealed is opened with the derived key, so gaining
+//! access after a run with the fallback does not lose that run's data.
 
 use crate::error::SecretError;
 

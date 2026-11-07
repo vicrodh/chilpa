@@ -7763,6 +7763,9 @@ msgstr "ディスプレイ"
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr "暗号化され、このコンピューターに紐づけられています（システムのキーリングがありません）"
 
+msgid "encrypted with a key the system keyring keeps for Chilpa"
+msgstr "システムのキーリングがChilpa用に保管する鍵で暗号化されています"
+
 msgid "exactly"
 msgstr "ちょうど"
 

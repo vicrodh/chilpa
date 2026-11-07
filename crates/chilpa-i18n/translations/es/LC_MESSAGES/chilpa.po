@@ -7773,6 +7773,9 @@ msgstr "pantalla"
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr "cifrado y atado a este equipo (no hay llavero del sistema)"
 
+msgid "encrypted with a key the system keyring keeps for Chilpa"
+msgstr "cifrado con una llave que el llavero del sistema guarda para Chilpa"
+
 msgid "exactly"
 msgstr "exactamente"
 

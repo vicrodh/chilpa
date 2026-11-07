@@ -8,6 +8,9 @@ pub enum SecretError {
     #[error("the system keyring: {0}")]
     Keyring(String),
 
+    #[error("the desktop portal: {0}")]
+    Portal(String),
+
     #[error("the encryption: {0}")]
     Cipher(String),
 
@@ -31,6 +34,7 @@ impl SecretError {
         match self {
             SecretError::NoBackend(_) => "no-backend",
             SecretError::Keyring(_) => "keyring",
+            SecretError::Portal(_) => "portal",
             SecretError::Cipher(_) => "cipher",
             SecretError::Malformed(_) => "malformed",
             SecretError::BackendMismatch => "backend-mismatch",
