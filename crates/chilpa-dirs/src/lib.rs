@@ -162,6 +162,20 @@ fn sandbox_from(flatpak_info: bool, snap: bool) -> Sandbox {
     }
 }
 
+/// Where the document portal shows the files and folders a sandboxed
+/// program was handed through the file chooser: `$XDG_RUNTIME_DIR/doc`, and
+/// `/run/flatpak/doc`, the same mount, which Flatpak adds to every sandbox.
+/// Each entry under them is `<id>/<name>`, with an id that stays the same
+/// while the program keeps its permission. Empty away from Linux.
+pub fn document_portal_mounts() -> Vec<PathBuf> {
+    if !cfg!(target_os = "linux") {
+        return Vec::new();
+    }
+    let mut mounts: Vec<PathBuf> = from_env("XDG_RUNTIME_DIR").map(|runtime| runtime.join("doc")).into_iter().collect();
+    mounts.push(PathBuf::from("/run/flatpak/doc"));
+    mounts
+}
+
 /// The original image outside its read-only runtime mount, on Linux only.
 pub fn appimage() -> Option<PathBuf> {
     if !cfg!(target_os = "linux") { return None; }
@@ -373,6 +387,23 @@ mod tests {
         assert_eq!(sandbox_from(true, true), expected(Sandbox::Flatpak));
         assert_eq!(sandbox_from(false, true), expected(Sandbox::Snap));
         assert_eq!(sandbox_from(false, false), Sandbox::None);
+    }
+
+    #[test]
+    fn the_document_portal_sits_under_the_runtime_directory() {
+        let _looking = LOOKING.lock();
+        let before = std::env::var_os("XDG_RUNTIME_DIR");
+        std::env::set_var("XDG_RUNTIME_DIR", "/run/user/1000");
+        let mounts = document_portal_mounts();
+        match before {
+            Some(runtime) => std::env::set_var("XDG_RUNTIME_DIR", runtime),
+            None => std::env::remove_var("XDG_RUNTIME_DIR"),
+        }
+        if cfg!(target_os = "linux") {
+            assert_eq!(mounts, [PathBuf::from("/run/user/1000/doc"), PathBuf::from("/run/flatpak/doc")]);
+        } else {
+            assert!(mounts.is_empty());
+        }
     }
 
     #[test]

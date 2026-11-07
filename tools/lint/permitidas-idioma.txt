@@ -909,3 +909,5 @@ prlimit
 setfd
 getfl
 killpg
+# The init system's session manager, which keeps the machine awake outside a sandbox.
+logind
