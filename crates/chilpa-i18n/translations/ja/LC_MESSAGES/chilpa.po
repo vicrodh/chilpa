@@ -4893,6 +4893,18 @@ msgstr "以前に保存済み"
 msgid "Privacy & network"
 msgstr "プライバシーとネットワーク"
 
+msgid "Process plugins cannot run in the Flatpak version of Chilpa yet."
+msgstr "プロセスのプラグインは、Flatpak版のChilpaではまだ動作しません。"
+
+msgid "Process plugins cannot run on this system yet."
+msgstr "このシステムでは、プロセスのプラグインはまだ動作しません。"
+
+msgid "Process plugins do not run while Chilpa runs as root."
+msgstr "Chilpaをrootで実行している間は、プロセスのプラグインは動作しません。"
+
+msgid "Process plugins need {}, which is not installed."
+msgstr "プロセスのプラグインには{}が必要ですが、インストールされていません。"
+
 msgid "Processed"
 msgstr "処理後"
 
@@ -8768,6 +8780,9 @@ msgstr "検索するには、タイトル、アーティスト、またはカタ
 
 msgid "type takes album, single, ep, compilation, live or soundtrack"
 msgstr "type には album、single、ep、compilation、live、soundtrack を指定します"
+
+msgid "unavailable"
+msgstr "利用不可"
 
 msgid "unrated"
 msgstr "未評価"

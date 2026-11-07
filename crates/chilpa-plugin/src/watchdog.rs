@@ -35,6 +35,9 @@ pub enum State {
     Stumbling { failures: usize },
     /// Switched off until the user turns it back on.
     Quarantined { reason: String },
+    /// Its runtime cannot start on this system. It is not quarantined: it
+    /// did nothing wrong, and only a change to the system brings it back.
+    Unavailable { reason: String },
 }
 
 impl State {

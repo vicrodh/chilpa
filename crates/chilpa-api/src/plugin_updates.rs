@@ -33,6 +33,8 @@ pub(crate) fn native(root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &
     let (package_root, manifest) = crate::native_install::check(&package, &entry)?;
     if installed.is_some() && active.load(std::sync::atomic::Ordering::Acquire) { return Err("Waiting for playback to stop.".into()); }
     let mut host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
+    // Its permissions are not put to the user for a process that cannot start here.
+    runtime_available(&host, &manifest)?;
     let was_enabled = host.enabled(id);
     let needs_review = installed.is_some() && !host.covers_update(&manifest);
     let revision = {
@@ -55,9 +57,17 @@ pub(crate) fn native(root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &
     Ok(host.natives.is_native(id).then(|| id.to_string()))
 }
 
+/// A process plugin is refused, with the reason, where none can start; the
+/// installed version stays as it was.
+fn runtime_available(host: &Plugins, manifest: &chilpa_plugin::Manifest) -> Result<(), String> {
+    if manifest.runtime == chilpa_plugin::Runtime::Process { host.natives.availability()?; }
+    Ok(())
+}
+
 pub(crate) fn activate_native(root: &Path, host: &mut Plugins, package: &crate::StagedPackage,
     entry: &chilpa_plugin::catalog::CatalogEntry, repo: &str, grant: bool, was_enabled: bool) -> Result<(), String> {
     let (_, manifest) = crate::native_install::check(package, entry)?;
+    runtime_available(host, &manifest)?;
     let id = &entry.id;
     host.stop_for_update(id);
     let result = (|| {

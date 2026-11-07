@@ -4898,6 +4898,18 @@ msgstr ""
 msgid "Privacy & network"
 msgstr ""
 
+msgid "Process plugins cannot run in the Flatpak version of Chilpa yet."
+msgstr ""
+
+msgid "Process plugins cannot run on this system yet."
+msgstr ""
+
+msgid "Process plugins do not run while Chilpa runs as root."
+msgstr ""
+
+msgid "Process plugins need {}, which is not installed."
+msgstr ""
+
 msgid "Processed"
 msgstr ""
 
@@ -8779,6 +8791,9 @@ msgstr ""
 
 msgid "type takes album, single, ep, compilation, live or soundtrack"
 msgstr "type takes album, single, ep, compilation, live or soundtrack"
+
+msgid "unavailable"
+msgstr ""
 
 msgid "unrated"
 msgstr ""

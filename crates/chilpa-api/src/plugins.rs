@@ -243,7 +243,7 @@ pub struct PluginInfo {
     pub name: String,
     /// What it says it is, in its own words. Empty if it says nothing.
     pub description: String,
-    /// "awaiting approval", "fine", "stumbling" or "quarantined".
+    /// "awaiting approval", "fine", "stumbling", "quarantined" or "unavailable".
     pub state: String,
     /// Why it is in the corner, or empty.
     pub problem: String,
@@ -480,9 +480,10 @@ impl Plugins {
                         chilpa_plugin::State::Healthy => chilpa_i18n::mark("fine").into(),
                         chilpa_plugin::State::Stumbling { .. } => chilpa_i18n::mark("stumbling").into(),
                         chilpa_plugin::State::Quarantined { .. } => chilpa_i18n::mark("quarantined").into(),
+                        chilpa_plugin::State::Unavailable { .. } => chilpa_i18n::mark("unavailable").into(),
                     },
                     problem: match (&state, &i.problem) {
-                        (chilpa_plugin::State::Quarantined { reason }, _) => reason.clone(),
+                        (chilpa_plugin::State::Quarantined { reason } | chilpa_plugin::State::Unavailable { reason }, _) => reason.clone(),
                         (_, Some(p)) => p.clone(),
                         _ => String::new(),
                     },

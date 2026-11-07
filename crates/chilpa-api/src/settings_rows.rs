@@ -595,6 +595,7 @@ impl Chilpa {
             "fine" => (chilpa_i18n::t("Active"), "positive"),
             "awaiting approval" => (chilpa_i18n::t("Awaiting approval"), "warning"),
             "stumbling" => (chilpa_i18n::t("Stumbling"), "warning"),
+            "unavailable" => (chilpa_i18n::t("Unavailable"), "warning"),
             _ => (chilpa_i18n::t("Quarantined"), "negative"),
         };
         let mut row = Row { kind: 1, key, title: plugin.name.clone(), description: details.join(" "), control: "status".into(), action: word, marks: vec![light.into()], ..Row::default() };

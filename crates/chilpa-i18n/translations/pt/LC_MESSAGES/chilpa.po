@@ -4898,6 +4898,18 @@ msgstr "Salvo anteriormente"
 msgid "Privacy & network"
 msgstr "Privacidade e rede"
 
+msgid "Process plugins cannot run in the Flatpak version of Chilpa yet."
+msgstr "Os plugins de processo ainda não funcionam na versão Flatpak do Chilpa."
+
+msgid "Process plugins cannot run on this system yet."
+msgstr "Os plugins de processo ainda não funcionam neste sistema."
+
+msgid "Process plugins do not run while Chilpa runs as root."
+msgstr "Os plugins de processo não funcionam enquanto o Chilpa é executado como root."
+
+msgid "Process plugins need {}, which is not installed."
+msgstr "Os plugins de processo precisam de {}, que não está instalado."
+
 msgid "Processed"
 msgstr "Processado"
 
@@ -8779,6 +8791,9 @@ msgstr "digite um título, um artista ou um número de catálogo para buscar"
 
 msgid "type takes album, single, ep, compilation, live or soundtrack"
 msgstr "type aceita album, single, ep, compilation, live ou soundtrack"
+
+msgid "unavailable"
+msgstr "indisponível"
 
 msgid "unrated"
 msgstr "sem estrelas"

@@ -27,6 +27,8 @@ pub struct Installed {
     pub problem: Option<String>,
     /// True if it is waiting for the user to approve what it asks for.
     pub pending: bool,
+    /// True if its runtime cannot start on this system; `problem` says why.
+    pub unavailable: bool,
 }
 
 impl Installed {
@@ -118,6 +120,7 @@ impl Registry {
                         plugin: None,
                         problem: Some(e.to_string()),
                         pending: false,
+                        unavailable: false,
                     },
                 );
                 return false;
@@ -135,6 +138,7 @@ impl Registry {
                     plugin: None,
                     problem: None,
                     pending: true,
+                    unavailable: false,
                 },
             );
             return false;
@@ -158,9 +162,27 @@ impl Registry {
                         plugin: Some(p),
                         problem: None,
                         pending: false,
+                        unavailable: false,
                     },
                 );
                 true
+            }
+            // Not the plugin's doing: it is not quarantined, and it keeps its
+            // reason to show until the system changes.
+            Err(PluginError::RuntimeUnavailable(reason)) => {
+                self.plugins.insert(
+                    id.clone(),
+                    Installed {
+                        id,
+                        name,
+                        manifest: Some(shown),
+                        plugin: None,
+                        problem: Some(reason),
+                        pending: false,
+                        unavailable: true,
+                    },
+                );
+                false
             }
             Err(e) => {
                 let reason = e.to_string();
@@ -174,6 +196,7 @@ impl Registry {
                         plugin: None,
                         problem: Some(reason),
                         pending: false,
+                        unavailable: false,
                     },
                 );
                 false
@@ -253,6 +276,9 @@ impl Registry {
         if inst.pending {
             return State::PendingApproval;
         }
+        if inst.unavailable {
+            return State::Unavailable { reason: inst.problem.clone().unwrap_or_default() };
+        }
         self.watchdog.state(id)
     }
 
@@ -303,6 +329,9 @@ impl Registry {
                 "calling \"{}\", which nobody has approved",
                 &[id],
             )));
+        }
+        if inst.unavailable {
+            return Err(PluginError::RuntimeUnavailable(inst.problem.clone().unwrap_or_default()));
         }
         let Some(plugin) = &mut inst.plugin else {
             return Err(PluginError::NotAllowed(chilpa_i18n::t_args(
@@ -379,6 +408,27 @@ mod tests {
         let inst = r.installed().next().unwrap();
         assert_eq!(inst.name, "It is called this", "it shows up in the list by its name");
         assert!(inst.problem.as_ref().unwrap().contains("version"));
+    }
+
+    #[test]
+    fn a_runtime_that_cannot_start_here_is_noted_apart_from_a_failure() {
+        let host = Host::new().unwrap();
+        let services: Services = std::sync::Arc::new(std::sync::Mutex::new(crate::services::NoServices));
+        let mut r = Registry::new();
+        let json = r#"{"id":"com.a.b","name":"Process","version":"1","api_version":1,"kind":"source","runtime":"process"}"#;
+        let reason = "no sandbox for process plugins here";
+        assert!(!r.install_adapter(Runtime::Process, json, |_| true, |_| Err(PluginError::RuntimeUnavailable(reason.into()))));
+        assert_eq!(r.state("com.a.b"), State::Unavailable { reason: reason.into() });
+        assert!(r.quarantined().is_empty(), "it did nothing wrong, so it is not quarantined");
+        let inst = r.installed().next().unwrap();
+        assert_eq!(inst.problem.as_deref(), Some(reason));
+        assert!(inst.manifest.is_some(), "it stays listed by what it is");
+        assert!(r.usable().is_empty());
+        assert_eq!(r.call(&host, &services, "com.a.b", "search", b"{}", Limits::default()),
+            Err(PluginError::RuntimeUnavailable(reason.into())), "a call says why, not that it did not load");
+        assert!(r.quarantined().is_empty(), "and the call does not count against it");
+        assert!(!r.install_adapter(Runtime::Process, json, |_| true, |_| Err(PluginError::Crashed("broke".into()))));
+        assert!(matches!(r.state("com.a.b"), State::Quarantined { .. }), "a crash is still a failure");
     }
 
     #[test]

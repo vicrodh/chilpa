@@ -252,6 +252,8 @@ impl Natives {
         self.start_locked(manifest, folder)
     }
     fn start_locked(self: &Arc<Self>, manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, PluginError> {
+        // Said before any folder is made or any process spawned.
+        self.availability().map_err(PluginError::RuntimeUnavailable)?;
         let network = process_network(chilpa_core::network::current().offline, manifest);
         let (client, data, cache) = launch(self, manifest, folder, network)?;
         let greeting = client.call("initialize", json!({
@@ -370,12 +372,35 @@ impl Natives {
     fn launcher(&self) -> &Arc<dyn chilpa_bwrap::NativeLauncher> {
         self.launcher.get_or_init(chilpa_bwrap::launcher)
     }
+
+    /// Whether process plugins can start here. The reason is for the user,
+    /// in their language, and is found without starting anything.
+    pub(crate) fn availability(&self) -> Result<(), String> {
+        self.launcher().availability().map_err(|reason| match reason {
+            chilpa_bwrap::Unavailable::Flatpak => chilpa_i18n::t("Process plugins cannot run in the Flatpak version of Chilpa yet."),
+            chilpa_bwrap::Unavailable::MissingProgram(program) => chilpa_i18n::t_args(
+                "Process plugins need {}, which is not installed.", &[&program.display().to_string()]),
+            chilpa_bwrap::Unavailable::Privileged => chilpa_i18n::t("Process plugins do not run while Chilpa runs as root."),
+        })
+    }
 }
 
 /// Platforms without process isolation list a reason and never start a worker.
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+fn unsupported() -> String {
+    chilpa_i18n::t("Process plugins cannot run on this system yet.")
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+impl Natives {
+    pub(crate) fn availability(&self) -> Result<(), String> {
+        Err(unsupported())
+    }
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn launch(_: &Arc<Natives>, _: &Manifest, _: &Path, _: bool) -> Result<Launched, PluginError> {
-    Err(PluginError::NotAllowed("native plugins need a sandbox this system does not have yet".into()))
+    Err(PluginError::RuntimeUnavailable(unsupported()))
 }
 
 #[cfg(test)]
@@ -387,6 +412,39 @@ pub(crate) mod tests {
             manifest, folder: PathBuf::new(), capabilities, discover: Vec::new(),
             restarts: 0, restarting: false, last_start: Instant::now(),
         });
+    }
+
+    /// A backend that never has a sandbox, and fails the test if asked to start one.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    struct NoSandbox;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    impl chilpa_bwrap::NativeLauncher for NoSandbox {
+        fn availability(&self) -> Result<(), chilpa_bwrap::Unavailable> { Err(chilpa_bwrap::Unavailable::Flatpak) }
+        fn launch(&self, _: &chilpa_bwrap::NativePaths, _: &str, _: usize, _: bool, _: chilpa_bwrap::Notice)
+            -> Result<chilpa_bwrap::LaunchedNative, chilpa_plugin::bridge::BridgeError> {
+            panic!("an unavailable backend is never asked to start a plugin")
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    pub(crate) fn without_sandbox(natives: &Natives) {
+        let _ = natives.launcher.set(Arc::new(NoSandbox));
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn a_process_plugin_that_cannot_start_here_is_listed_with_the_reason() {
+        let natives = Arc::new(Natives::default());
+        without_sandbox(&natives);
+        let reason = chilpa_i18n::t("Process plugins cannot run in the Flatpak version of Chilpa yet.");
+        assert_eq!(natives.availability(), Err(reason.clone()));
+        let folder = tempfile::tempdir().unwrap();
+        let manifest = r#"{"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","runtime":"process"}"#;
+        let mut registry = Registry::new();
+        assert!(!install(&mut registry, manifest, folder.path(), &natives, |_| true));
+        assert_eq!(registry.state("test.source"), chilpa_plugin::State::Unavailable { reason });
+        assert!(registry.quarantined().is_empty());
+        assert!(!natives.is_native("test.source"), "nothing was started");
     }
 
     #[test]
