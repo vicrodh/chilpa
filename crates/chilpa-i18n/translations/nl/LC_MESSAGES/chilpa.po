@@ -4898,14 +4898,14 @@ msgstr "Eerder opgeslagen"
 msgid "Privacy & network"
 msgstr "Privacy en netwerk"
 
-msgid "Process plugins cannot run in the Flatpak version of Chilpa yet."
-msgstr "Plug-ins met een apart proces werken nog niet in de Flatpak-versie van Chilpa."
-
 msgid "Process plugins cannot run on this system yet."
 msgstr "Plug-ins met een apart proces werken nog niet op dit systeem."
 
 msgid "Process plugins do not run while Chilpa runs as root."
 msgstr "Plug-ins met een apart proces werken niet zolang Chilpa als root draait."
+
+msgid "Process plugins need the Flatpak portal, which is not available."
+msgstr "Plug-ins met een apart proces hebben het Flatpak-portaal nodig, maar dat is niet beschikbaar."
 
 msgid "Process plugins need {}, which is not installed."
 msgstr "Plug-ins met een apart proces hebben {} nodig, maar dat is niet geïnstalleerd."

@@ -6,6 +6,15 @@ use crate::plugins::Plugins;
 use chilpa_plugin::{catalog::CatalogEntry, Runtime};
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::sync::Mutex;
+
+/// Why process plugins cannot start here, in the user's language, asked
+/// without holding the host's lock: in Flatpak the first answer opens the
+/// portal's connection.
+pub(crate) fn unavailable(plugins: &Mutex<Plugins>) -> Result<Option<String>, &'static str> {
+    let natives = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.natives.clone();
+    Ok(natives.availability().err())
+}
 
 /// What the plugin center knows about process plugins on this system.
 pub(crate) struct ProcessPlugins {
@@ -16,8 +25,9 @@ pub(crate) struct ProcessPlugins {
 }
 
 impl ProcessPlugins {
-    pub(crate) fn of(plugins: &Plugins) -> Self {
-        Self { unavailable: plugins.natives.availability().err(), runtimes: plugins.runtimes() }
+    /// `unavailable` comes from [`unavailable`], asked before `plugins` was locked.
+    pub(crate) fn of(unavailable: Option<String>, plugins: &Plugins) -> Self {
+        Self { unavailable, runtimes: plugins.runtimes() }
     }
 
     /// The plugin center's `process_plugins`.

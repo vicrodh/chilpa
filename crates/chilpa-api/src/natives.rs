@@ -377,7 +377,7 @@ impl Natives {
     /// in their language, and is found without starting anything.
     pub(crate) fn availability(&self) -> Result<(), String> {
         self.launcher().availability().map_err(|reason| match reason {
-            chilpa_bwrap::Unavailable::Flatpak => chilpa_i18n::t("Process plugins cannot run in the Flatpak version of Chilpa yet."),
+            chilpa_bwrap::Unavailable::Portal => chilpa_i18n::t("Process plugins need the Flatpak portal, which is not available."),
             chilpa_bwrap::Unavailable::MissingProgram(program) => chilpa_i18n::t_args(
                 "Process plugins need {}, which is not installed.", &[&program.display().to_string()]),
             chilpa_bwrap::Unavailable::Privileged => chilpa_i18n::t("Process plugins do not run while Chilpa runs as root."),
@@ -419,7 +419,7 @@ pub(crate) mod tests {
     struct NoSandbox;
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     impl chilpa_bwrap::NativeLauncher for NoSandbox {
-        fn availability(&self) -> Result<(), chilpa_bwrap::Unavailable> { Err(chilpa_bwrap::Unavailable::Flatpak) }
+        fn availability(&self) -> Result<(), chilpa_bwrap::Unavailable> { Err(chilpa_bwrap::Unavailable::Portal) }
         fn launch(&self, _: &chilpa_bwrap::NativePaths, _: &str, _: usize, _: bool, _: chilpa_bwrap::Notice)
             -> Result<chilpa_bwrap::LaunchedNative, chilpa_plugin::bridge::BridgeError> {
             panic!("an unavailable backend is never asked to start a plugin")
@@ -427,8 +427,13 @@ pub(crate) mod tests {
     }
 
     #[cfg(any(target_os = "linux", target_os = "macos"))]
+    pub(crate) fn with_launcher(natives: &Natives, launcher: Arc<dyn chilpa_bwrap::NativeLauncher>) {
+        let _ = natives.launcher.set(launcher);
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     pub(crate) fn without_sandbox(natives: &Natives) {
-        let _ = natives.launcher.set(Arc::new(NoSandbox));
+        with_launcher(natives, Arc::new(NoSandbox));
     }
 
     #[cfg(any(target_os = "linux", target_os = "macos"))]
@@ -436,7 +441,7 @@ pub(crate) mod tests {
     fn a_process_plugin_that_cannot_start_here_is_listed_with_the_reason() {
         let natives = Arc::new(Natives::default());
         without_sandbox(&natives);
-        let reason = chilpa_i18n::t("Process plugins cannot run in the Flatpak version of Chilpa yet.");
+        let reason = chilpa_i18n::t("Process plugins need the Flatpak portal, which is not available.");
         assert_eq!(natives.availability(), Err(reason.clone()));
         let folder = tempfile::tempdir().unwrap();
         let manifest = r#"{"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","runtime":"process"}"#;

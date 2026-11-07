@@ -71,8 +71,10 @@ fn environment(data: &Path, cache: &Path) -> Result<Vec<(&'static str, String)>,
 pub struct Flatpak {
     runner: PathBuf,
     bus: Bus,
-    /// The connection every spawn goes through, made on first use. A failed
-    /// one stays failed; one whose bus went is made again.
+    /// The connection every spawn goes through, made once, on first use.
+    /// Chilpa asks at startup, before any lock is held; a failed connection
+    /// or a lost bus leaves process plugins unavailable for this run, so no
+    /// later caller waits on a connection.
     portal: Mutex<Option<Result<Arc<Portal>, ()>>>,
 }
 
@@ -90,23 +92,16 @@ impl Flatpak {
 
     fn portal(&self) -> Option<Arc<Portal>> {
         let mut slot = self.portal.lock().unwrap_or_else(|error| error.into_inner());
-        match &*slot {
-            Some(Ok(portal)) if !portal.lost() => return Some(portal.clone()),
-            Some(Err(())) => return None,
-            _ => {}
-        }
-        let connected = Portal::connect(&self.bus)
-            .map_err(|problem| eprintln!("flatpak: the portal cannot start process plugins: {problem}"));
-        let portal = connected.as_ref().ok().cloned();
-        *slot = Some(connected);
-        portal
+        let connected = slot.get_or_insert_with(|| Portal::connect(&self.bus)
+            .map_err(|problem| eprintln!("flatpak: the portal cannot start process plugins: {problem}")));
+        connected.as_ref().ok().filter(|portal| !portal.lost()).cloned()
     }
 }
 
 impl NativeLauncher for Flatpak {
     fn availability(&self) -> Result<(), Unavailable> {
         if !self.runner.is_file() { return Err(Unavailable::MissingProgram(self.runner.clone())); }
-        self.portal().map(|_| ()).ok_or(Unavailable::Flatpak)
+        self.portal().map(|_| ()).ok_or(Unavailable::Portal)
     }
 
     fn launch(&self, paths: &NativePaths, name: &str, memory_bytes: usize, network: bool, notice: Notice)

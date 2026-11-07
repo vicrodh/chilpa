@@ -389,9 +389,10 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         "cancel_permissions" => state["approval"] = Value::Null,
         "enable" | "disable" => {
             if action == "enable" && input["permission_revision"] != permission_review(root, id)?["revision"] { return Err("Review and accept the plugin permissions before enabling it.".into()); }
+            let runtime = if action == "enable" { crate::plugin_runtimes::unavailable(plugins)? } else { None };
             let mut plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
             // A process plugin that cannot start here is not switched on; switching one off still works.
-            let unavailable = crate::plugin_runtimes::ProcessPlugins::of(&plugins).installed(id);
+            let unavailable = crate::plugin_runtimes::ProcessPlugins::of(runtime, &plugins).installed(id);
             if action == "enable" && !unavailable.is_empty() { return Err(unavailable); }
             if action == "enable" { plugins.approve(id)?; state["approval"] = Value::Null; } else { plugins.revoke(id)?; }
             plugins.reload_one(id);
@@ -533,9 +534,10 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     let mut counts = json!({"installed":0,"valid":0,"uninspected":0,"incompatible":0});
     let mut native_catalog = Vec::new();
     let third_party = repositories.third_party_ids();
+    let runtime = crate::plugin_runtimes::unavailable(plugins)?;
     let (compatibility_available, process_plugins) = {
         let host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
-        (host.compatibility_launcher().is_some(), crate::plugin_runtimes::ProcessPlugins::of(&host))
+        (host.compatibility_launcher().is_some(), crate::plugin_runtimes::ProcessPlugins::of(runtime, &host))
     };
     for entry in repositories.cached("native")? {
         if entry.adapter != "native" { continue; }
@@ -876,7 +878,7 @@ mod tests {
         let mut evidence = crate::plugin_evidence::Evidence::load(&root.join(".repositories"), None);
         let playing = AtomicBool::new(false);
         run("filter", &json!({}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
-        let reason = chilpa_i18n::t("Process plugins cannot run in the Flatpak version of Chilpa yet.");
+        let reason = chilpa_i18n::t("Process plugins need the Flatpak portal, which is not available.");
         assert_eq!(state["process_plugins"], json!({"available": false, "reason": reason}));
         let rows = state["native_catalog"].as_array().unwrap();
         let process = rows.iter().find(|row| row["id"] == "app.test.offer").expect("a process plugin's offer is kept, not hidden");
@@ -890,6 +892,60 @@ mod tests {
             Err(reason.clone()), "it is not switched on");
         run("disable", &json!({"id":id}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
         assert!(!plugins.lock().unwrap().enabled(id), "switching it off still works");
+    }
+
+    /// Answers as a Flatpak without its portal, and counts the questions
+    /// asked while the host's lock was held.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[derive(Default)]
+    struct LockProbe {
+        host: std::sync::OnceLock<std::sync::Weak<Mutex<Plugins>>>,
+        asked: AtomicUsize,
+        while_locked: AtomicUsize,
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    impl chilpa_bwrap::NativeLauncher for LockProbe {
+        fn availability(&self) -> Result<(), chilpa_bwrap::Unavailable> {
+            self.asked.fetch_add(1, Ordering::SeqCst);
+            if self.host.get().and_then(std::sync::Weak::upgrade).is_some_and(|host| host.try_lock().is_err()) {
+                self.while_locked.fetch_add(1, Ordering::SeqCst);
+            }
+            Err(chilpa_bwrap::Unavailable::Portal)
+        }
+
+        fn launch(&self, _: &chilpa_bwrap::NativePaths, _: &str, _: usize, _: bool, _: chilpa_bwrap::Notice)
+            -> Result<chilpa_bwrap::LaunchedNative, BridgeError> {
+            panic!("nothing is started")
+        }
+    }
+
+    /// In Flatpak the first answer opens the portal's connection, which can
+    /// take seconds; whoever waits for the host's lock must not wait for it.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn the_plugin_center_asks_whether_process_plugins_can_run_without_the_host_lock() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().join("plugins");
+        let id = "app.test.process";
+        std::fs::create_dir_all(root.join(id)).unwrap();
+        std::fs::write(root.join(id).join("manifest.json"), format!(r#"{{"id":"{id}","name":"Process","version":"1.0.0","api_version":1,
+            "kind":"source","runtime":"process","capabilities":[]}}"#)).unwrap();
+        let mut host = Plugins::new(root.clone()).unwrap();
+        let probe = Arc::new(LockProbe::default());
+        crate::natives::tests::with_launcher(&host.natives, probe.clone());
+        host.load_all();
+        let plugins = Arc::new(Mutex::new(host));
+        let _ = probe.host.set(Arc::downgrade(&plugins));
+        let (mut pending, mut state) = (None, json!({}));
+        let mut evidence = crate::plugin_evidence::Evidence::load(&root.join(".repositories"), None);
+        let playing = AtomicBool::new(false);
+        let asked = probe.asked.load(Ordering::SeqCst);
+        run("filter", &json!({}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
+        let revision = permission_review(&root, id).unwrap()["revision"].clone();
+        assert!(run("enable", &json!({"id":id,"permission_revision":revision}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).is_err());
+        assert!(probe.asked.load(Ordering::SeqCst) >= asked + 2, "the list and the switch both asked");
+        assert_eq!(probe.while_locked.load(Ordering::SeqCst), 0, "none of them while the host's lock was held");
     }
 
 }

@@ -4903,14 +4903,14 @@ msgstr "Сохранено ранее"
 msgid "Privacy & network"
 msgstr "Конфиденциальность и сеть"
 
-msgid "Process plugins cannot run in the Flatpak version of Chilpa yet."
-msgstr "Процессные плагины пока не работают в версии Chilpa для Flatpak."
-
 msgid "Process plugins cannot run on this system yet."
 msgstr "Процессные плагины пока не работают в этой системе."
 
 msgid "Process plugins do not run while Chilpa runs as root."
 msgstr "Процессные плагины не работают при запуске Chilpa от имени root."
+
+msgid "Process plugins need the Flatpak portal, which is not available."
+msgstr "Процессным плагинам нужен портал Flatpak, но он недоступен."
 
 msgid "Process plugins need {}, which is not installed."
 msgstr "Процессным плагинам нужен {}, но он не установлен."

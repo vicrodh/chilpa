@@ -197,7 +197,7 @@ mod tests {
         let package = crate::StagedPackage::unpack(&directory.path().join("staging"), &bytes, &entry.digest).unwrap();
         let mut host = Plugins::new(root.clone()).unwrap();
         crate::natives::tests::without_sandbox(&host.natives);
-        let reason = chilpa_i18n::t("Process plugins cannot run in the Flatpak version of Chilpa yet.");
+        let reason = chilpa_i18n::t("Process plugins need the Flatpak portal, which is not available.");
         assert_eq!(activate_native(&root, &mut host, &package, &entry, "native", true, true), Err(reason));
         assert_eq!(crate::native_install::installed_version(&root, &entry.id), None, "nothing was put in the plugins folder");
         assert!(host.list().is_empty());

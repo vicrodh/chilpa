@@ -4898,14 +4898,14 @@ msgstr "Enregistrés précédemment"
 msgid "Privacy & network"
 msgstr "Confidentialité et réseau"
 
-msgid "Process plugins cannot run in the Flatpak version of Chilpa yet."
-msgstr "Les plugins en processus séparé ne fonctionnent pas encore dans la version Flatpak de Chilpa."
-
 msgid "Process plugins cannot run on this system yet."
 msgstr "Les plugins en processus séparé ne fonctionnent pas encore sur ce système."
 
 msgid "Process plugins do not run while Chilpa runs as root."
 msgstr "Les plugins en processus séparé ne fonctionnent pas tant que Chilpa s'exécute en tant que root."
+
+msgid "Process plugins need the Flatpak portal, which is not available."
+msgstr "Les plugins en processus séparé ont besoin du portail Flatpak, qui n'est pas disponible."
 
 msgid "Process plugins need {}, which is not installed."
 msgstr "Les plugins en processus séparé ont besoin de {}, qui n'est pas installé."

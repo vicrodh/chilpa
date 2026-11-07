@@ -1,26 +1,11 @@
 //! What every Linux backend shares, whichever sandbox it builds.
 
-use crate::process::{LaunchedNative, NativeLauncher, Notice};
-use crate::{NativePaths, Unavailable};
 use chilpa_plugin::bridge::BridgeError;
 use std::{path::{Path, PathBuf}, process::Command};
 
 /// True inside a Flatpak sandbox, which marks itself with this file.
 pub(crate) fn in_flatpak() -> bool {
     Path::new("/.flatpak-info").exists()
-}
-
-/// A system with no backend: it says why and starts nothing.
-pub(crate) struct NoBackend(pub(crate) Unavailable);
-
-impl NativeLauncher for NoBackend {
-    fn availability(&self) -> Result<(), Unavailable> {
-        Err(self.0.clone())
-    }
-
-    fn launch(&self, _: &NativePaths, _: &str, _: usize, _: bool, _: Notice) -> Result<LaunchedNative, BridgeError> {
-        Err(BridgeError::Denied)
-    }
 }
 
 /// Starts a worker from the one thread that lives as long as Chilpa.
@@ -48,21 +33,4 @@ pub(crate) fn canonical_directory(path: &Path) -> Result<PathBuf, BridgeError> {
     let path = path.canonicalize().map_err(|_| BridgeError::Disconnected)?;
     if !path.is_dir() { return Err(BridgeError::Disconnected); }
     Ok(path)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_system_without_a_backend_says_why_and_starts_nothing() {
-        let root = tempfile::tempdir().unwrap();
-        let paths = NativePaths { folder: root.path().join("plugin"), data: root.path().join("data"),
-            cache: root.path().join("cache"), export: None };
-        let none = NoBackend(Unavailable::Flatpak);
-        assert_eq!(none.availability(), Err(Unavailable::Flatpak));
-        let quiet = Box::new(|_: &str, _: &serde_json::Value| {});
-        assert!(matches!(none.launch(&paths, "test", 512 * 1024 * 1024, true, quiet), Err(BridgeError::Denied)));
-        assert!(!paths.data.exists(), "not even its folders are made");
-    }
 }

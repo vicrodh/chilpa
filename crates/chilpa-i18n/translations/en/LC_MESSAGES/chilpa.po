@@ -4898,13 +4898,13 @@ msgstr ""
 msgid "Privacy & network"
 msgstr ""
 
-msgid "Process plugins cannot run in the Flatpak version of Chilpa yet."
-msgstr ""
-
 msgid "Process plugins cannot run on this system yet."
 msgstr ""
 
 msgid "Process plugins do not run while Chilpa runs as root."
+msgstr ""
+
+msgid "Process plugins need the Flatpak portal, which is not available."
 msgstr ""
 
 msgid "Process plugins need {}, which is not installed."

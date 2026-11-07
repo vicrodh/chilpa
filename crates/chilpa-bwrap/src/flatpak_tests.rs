@@ -124,17 +124,17 @@ fn availability_needs_the_runner_and_a_portal_of_version_3() {
     let fixture = Fixture::new();
     let missing = fixture.base().join("missing");
     assert_eq!(Flatpak::on(bus.bus(), missing.clone()).availability(), Err(Unavailable::MissingProgram(missing)));
-    assert_eq!(Flatpak::on(bus.bus(), fixture.runner.clone()).availability(), Err(Unavailable::Flatpak), "nobody owns the portal's name");
+    assert_eq!(Flatpak::on(bus.bus(), fixture.runner.clone()).availability(), Err(Unavailable::Portal), "nobody owns the portal's name");
     let old = PrivateBus::start();
     let _old = FakePortal::serve(&old, 2);
-    assert_eq!(Flatpak::on(old.bus(), fixture.runner.clone()).availability(), Err(Unavailable::Flatpak), "version 2 has no descriptors to expose");
+    assert_eq!(Flatpak::on(old.bus(), fixture.runner.clone()).availability(), Err(Unavailable::Portal), "version 2 has no descriptors to expose");
     let _fake = FakePortal::serve(&bus, 8);
     let flatpak = Flatpak::on(bus.bus(), fixture.runner.clone());
     assert_eq!(flatpak.availability(), Ok(()));
     let portal = flatpak.portal().unwrap();
     bus.end();
     assert!(portal.wait_lost(Duration::from_secs(3)), "the reader of exits saw the bus go");
-    assert_eq!(flatpak.availability(), Err(Unavailable::Flatpak), "a lost bus is asked again, and it is gone");
+    assert_eq!(flatpak.availability(), Err(Unavailable::Portal), "a lost bus is not connected to again");
     assert!(matches!(flatpak.launch(&fixture.paths, "test", MEMORY, false, quiet()), Err(BridgeError::Disconnected)));
 }
 
@@ -147,4 +147,22 @@ fn a_folder_is_handed_over_only_as_itself_never_through_a_link() {
     assert_eq!(Exposed::open(&base.join("real")).unwrap().path, base.join("real"));
     assert!(Exposed::open(&base.join("link")).is_err(), "O_NOFOLLOW refuses the link");
     assert!(Exposed::open(&base.join("absent")).is_err());
+}
+
+/// The conformance bubblewrap passes, through the real portal. It runs only
+/// inside the Chilpa Flatpak, and is the smoke for this backend there: build
+/// this crate's tests with the runtime's SDK (org.kde.Sdk 6.11 with the Rust
+/// extension), install chilpa-plugin-runner at /app/libexec, copy the test
+/// binary under ~/.var/app/app.chilpa.Chilpa/data and run
+/// `flatpak run --command=<that binary> app.chilpa.Chilpa --ignored --exact
+/// flatpak::tests::a_native_plugin_sees_only_its_folders_through_the_portal`.
+#[test]
+#[ignore = "needs the real Flatpak portal: run it inside the Chilpa Flatpak"]
+fn a_native_plugin_sees_only_its_folders_through_the_portal() {
+    assert!(crate::linux::in_flatpak(), "this smoke runs inside the Chilpa Flatpak");
+    // Only the application's own folders can be handed over from inside it.
+    let cache = std::env::var_os("XDG_CACHE_HOME").map(PathBuf::from).expect("XDG_CACHE_HOME names the application's cache");
+    let root = tempfile::tempdir_in(cache).unwrap();
+    let base = root.path().canonicalize().unwrap();
+    crate::conformance::a_native_plugin_sees_only_its_folders(&Flatpak::default(), &base, &|export| export.to_path_buf());
 }

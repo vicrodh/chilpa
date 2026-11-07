@@ -57,8 +57,10 @@ pub trait NativeProcess: Send + Sync {
 pub fn launcher() -> Arc<dyn NativeLauncher> {
     #[cfg(target_os = "linux")]
     {
+        // Inside Flatpak the host's bubblewrap is out of reach, and nothing
+        // starts outside a sandbox: the portal, or no process plugins.
         if crate::linux::in_flatpak() {
-            return Arc::new(crate::linux::NoBackend(Unavailable::Flatpak));
+            return Arc::new(crate::Flatpak::default());
         }
         Arc::new(crate::Bwrap)
     }

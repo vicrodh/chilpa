@@ -166,18 +166,6 @@ impl NativeLauncher for Bwrap {
     }
 }
 
-/// The channel alone, as the tests below were written against.
-#[cfg(test)]
-fn launch_native(
-    paths: &NativePaths,
-    name: &str,
-    memory_bytes: usize,
-    network: bool,
-    notice: impl Fn(&str, &serde_json::Value) + Send + 'static,
-) -> Result<Arc<NativeClient>, BridgeError> {
-    Bwrap.launch(paths, name, memory_bytes, network, Box::new(notice)).map(|launched| launched.client)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -226,37 +214,8 @@ while(1){
 
     #[test]
     fn a_native_plugin_sees_only_its_folders() {
-        use std::os::unix::fs::PermissionsExt;
         let root = tempfile::tempdir().unwrap();
-        let folder = root.path().join("plugin");
-        std::fs::create_dir(&folder).unwrap();
-        let script = r#"#!/usr/bin/bash
-while IFS= read -r line; do
-  id=$(printf '%s' "$line" | sed -E 's/.*"id":([0-9]+).*/\1/')
-  home=false; [ -e /home ] && home=true
-  data=false; touch /data/written 2>/dev/null && data=true
-  sealed=true; touch /plugin/written 2>/dev/null && sealed=false
-  network=$(readlink /proc/self/ns/net)
-  printf 'checked\n' >&2
-  printf '{"jsonrpc":"2.0","id":%s,"result":{"home":%s,"data":%s,"sealed":%s,"network":"%s"}}\n' "$id" "$home" "$data" "$sealed" "$network"
-done
-"#;
-        std::fs::write(folder.join("plugin"), script).unwrap();
-        std::fs::set_permissions(folder.join("plugin"), std::fs::Permissions::from_mode(0o755)).unwrap();
-        let paths = NativePaths { folder, data: root.path().join("data"), cache: root.path().join("cache"), export: None };
-        let client = launch_native(&paths, "test", 512 * 1024 * 1024, false, |_, _| {}).unwrap();
-        let inspected = client.call("inspect", json!({}), Duration::from_secs(5)).unwrap();
-        assert_eq!(inspected["home"], false);
-        assert_eq!(inspected["data"], true);
-        assert_eq!(inspected["sealed"], true);
-        let network = std::fs::read_link("/proc/self/ns/net").unwrap().display().to_string();
-        assert_ne!(inspected["network"], network, "offline processes have their own network namespace");
-        assert!(root.path().join("data/written").is_file(), "its data folder is the one Chilpa gave it");
-        client.stop();
-        assert!(!client.alive());
-        let online = launch_native(&paths, "test", 512 * 1024 * 1024, true, |_, _| {}).unwrap();
-        assert_eq!(online.call("inspect", json!({}), Duration::from_secs(5)).unwrap()["network"], network);
-        online.stop();
+        crate::conformance::a_native_plugin_sees_only_its_folders(&Bwrap, root.path(), &|_| PathBuf::from("/export"));
     }
 
     #[test]

@@ -20,8 +20,9 @@ pub struct NativePaths {
 /// Why process plugins cannot start on this system, found without starting one.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Unavailable {
-    /// Chilpa itself runs in a Flatpak sandbox, where no backend exists yet.
-    Flatpak,
+    /// Chilpa runs in a Flatpak sandbox, and the portal that starts a
+    /// sandbox of its own did not answer or is older than version 3.
+    Portal,
     /// A program the sandbox is built from is not installed.
     MissingProgram(PathBuf),
     /// Chilpa runs as root, and the sandbox does not contain a privileged caller.
@@ -47,6 +48,8 @@ mod flatpak;
 pub use flatpak::Flatpak;
 #[cfg(all(test, target_os = "linux"))]
 mod fake_portal;
+#[cfg(all(test, target_os = "linux"))]
+mod conformance;
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_os = "macos")]
