@@ -150,7 +150,9 @@ ALLOWED = {
 }
 
 # Los únicos crates que pueden tener tipos de Qt.
-SHELLS = {"chilpa-qt", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders", "chilpa-qt-ambient", "chilpa-qt-mini", "chilpa-qt-dsp", "chilpa-qt-immersive", "chilpa-qt-waveform", "chilpa-qt-artwork", "chilpa-qt-about", "chilpa-qt-stats", "chilpa-qt-graphics", "chilpa-qt-link", "chilpa-qt-query", "chilpa-qt-wizard", "chilpa-qt-playlists", "chilpa-qt-devices", "chilpa-qt-themes"}
+# chilpa-web-sign-in is the sign-in window, a separate executable on Qt
+# WebEngine: Qt in its own process, which nothing links.
+SHELLS = {"chilpa-web-sign-in", "chilpa-qt", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders", "chilpa-qt-ambient", "chilpa-qt-mini", "chilpa-qt-dsp", "chilpa-qt-immersive", "chilpa-qt-waveform", "chilpa-qt-artwork", "chilpa-qt-about", "chilpa-qt-stats", "chilpa-qt-graphics", "chilpa-qt-link", "chilpa-qt-query", "chilpa-qt-wizard", "chilpa-qt-playlists", "chilpa-qt-devices", "chilpa-qt-themes"}
 QT_RE = re.compile(r"\bcxx[-_]qt\b|\bQString\b|\bQObject\b|\bQVariant\b")
 
 MAX_LOC_FILE = 1500

@@ -805,13 +805,9 @@ ean
 ttls
 navbar
 dep
-gio
 gtk
 src
-webkit
 mediasource
-webaudio
-webrtc
 ipc
 
 refetch
@@ -929,3 +925,16 @@ compat
 perl
 # The init system's session manager, which keeps the machine awake outside a sandbox.
 logind
+# The sign-in window: process calls from libc, a pkg-config option and its feature name.
+atleast
+getpgrp
+getpid
+getppid
+pdeathsig
+pr
+pidfd
+pollfd
+pollin
+prctl
+revents
+webengine
