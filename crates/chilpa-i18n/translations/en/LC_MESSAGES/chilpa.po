@@ -8639,6 +8639,9 @@ msgstr ""
 msgid "the sidecar could not be written: {}"
 msgstr ""
 
+msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
+msgstr ""
+
 msgid "the sound server would not let go of card {}"
 msgstr ""
 

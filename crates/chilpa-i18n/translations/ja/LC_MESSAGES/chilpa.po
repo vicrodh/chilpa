@@ -8628,6 +8628,9 @@ msgstr "サーバーの証明書がこのシステムで信頼されていませ
 msgid "the sidecar could not be written: {}"
 msgstr "サイドカーファイルを書き込めませんでした: {}"
 
+msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
+msgstr "サウンドカードは/proc/asoundに一覧されていますが、/dev/sndにあるそのデバイスをここから開けません。Flatpak内では次のコマンドで許可してください: flatpak override --user --device=all app.chilpa.Chilpa"
+
 msgid "the sound server would not let go of card {}"
 msgstr "サウンドサーバーがカード{}を手放しませんでした"
 

@@ -8650,6 +8650,9 @@ msgstr "сертификат сервера не пользуется довер
 msgid "the sidecar could not be written: {}"
 msgstr "не удалось записать вспомогательный файл: {}"
 
+msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
+msgstr "звуковые карты перечислены в /proc/asound, но их устройства в /dev/snd отсюда открыть нельзя; внутри Flatpak разрешите их командой: flatpak override --user --device=all app.chilpa.Chilpa"
+
 msgid "the sound server would not let go of card {}"
 msgstr "звуковой сервер не отпустил карту {}"
 

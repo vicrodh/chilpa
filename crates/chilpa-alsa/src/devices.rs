@@ -112,6 +112,10 @@ pub struct Device {
     /// Whether the card has more than one playback device, which decides
     /// whether the device's own name is worth showing.
     siblings: bool,
+    /// Whether this process can reach the card's device nodes. A sandbox can
+    /// show `/proc/asound` and keep `/dev/snd` out, and then the card is
+    /// listed and does not open.
+    pub reachable: bool,
 }
 
 impl Device {
@@ -162,7 +166,29 @@ impl Device {
     }
 }
 
-/// Lists the direct outputs by reading `/proc/asound`.
+/// Where the cards' device nodes are.
+const NODES: &str = "/dev/snd";
+
+/// Whether the card's control node, `<nodes>/controlC<card>`, is there and
+/// this process may read and write it: the permission its PCM nodes carry
+/// too, and the one a Flatpak without the devices does not have, because
+/// `/dev/snd` is not in its sandbox at all.
+///
+/// Asked of the node's permissions with `access`, not by opening it: the
+/// listing opens nothing.
+fn reachable(nodes: &std::path::Path, card: u32) -> bool {
+    use std::os::unix::ffi::OsStrExt;
+    let node = nodes.join(format!("controlC{card}"));
+    let Ok(node) = std::ffi::CString::new(node.as_os_str().as_bytes()) else {
+        return false;
+    };
+    // SAFETY: the path is a NUL-terminated string that outlives the call,
+    // and `access` only reads the node's permissions.
+    unsafe { libc::access(node.as_ptr(), libc::R_OK | libc::W_OK) == 0 }
+}
+
+/// Lists the direct outputs by reading `/proc/asound`, each with whether
+/// its card's nodes can be reached.
 pub fn list() -> Vec<Device> {
     let mut outputs = Vec::new();
     let Ok(cards) = fs::read_to_string("/proc/asound/cards") else {
@@ -179,6 +205,7 @@ pub fn list() -> Vec<Device> {
         let card_name = card_name(rest);
         let devices = card_devices(card);
         let siblings = devices.len() > 1;
+        let reachable = reachable(std::path::Path::new(NODES), card);
         let usb = fs::metadata(format!("/proc/asound/card{card}/usbid")).is_ok();
         for (device, name) in devices {
             let bus = if name.contains("HDMI") || name.contains("DisplayPort") {
@@ -195,6 +222,7 @@ pub fn list() -> Vec<Device> {
                 bus,
                 declared: declared(card, device, bus, line),
                 siblings,
+                reachable,
             });
         }
     }
@@ -355,6 +383,22 @@ pub fn capabilities(id: &str) -> Result<DeviceCaps, chilpa_audio::sink::SinkErro
 }
 
 #[cfg(test)]
+impl Device {
+    /// A card as the listing would give it, for the stacks' tests.
+    pub(crate) fn listed(id: &str, card: &str, reachable: bool) -> Self {
+        Device {
+            id: id.into(),
+            card: card.into(),
+            name: "USB Audio".into(),
+            bus: Bus::Usb,
+            declared: Declared::default(),
+            siblings: false,
+            reachable,
+        }
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -366,7 +410,36 @@ mod tests {
             bus: Bus::Usb,
             declared: Declared::default(),
             siblings,
+            reachable: true,
         }
+    }
+
+    /// A folder of the test's own, standing in for `/dev/snd`.
+    fn nodes(name: &str) -> std::path::PathBuf {
+        let root = std::env::temp_dir().join(format!("chilpa-alsa-nodes-{}-{name}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        root
+    }
+
+    #[test]
+    fn a_card_without_its_control_node_cannot_be_reached() {
+        // A Flatpak without the devices: `/proc/asound` lists the card and
+        // `/dev/snd` is not there.
+        use std::os::unix::fs::PermissionsExt;
+        let root = nodes("reach");
+        fs::write(root.join("controlC1"), b"").unwrap();
+        fs::set_permissions(root.join("controlC1"), fs::Permissions::from_mode(0o600)).unwrap();
+        assert!(reachable(&root, 1), "a node this process may read and write");
+        assert!(!reachable(&root, 2), "no node");
+        assert!(!reachable(&root.join("missing"), 1), "no folder of nodes at all");
+        fs::write(root.join("controlC3"), b"").unwrap();
+        fs::set_permissions(root.join("controlC3"), fs::Permissions::from_mode(0o400)).unwrap();
+        // SAFETY: geteuid takes no arguments and cannot fail.
+        if unsafe { libc::geteuid() } != 0 {
+            assert!(!reachable(&root, 3), "a node it may only read");
+        }
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]

@@ -8639,6 +8639,9 @@ msgstr "das Zertifikat des Servers wird von diesem System nicht als vertrauensw�
 msgid "the sidecar could not be written: {}"
 msgstr "die Begleitdatei konnte nicht geschrieben werden: {}"
 
+msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
+msgstr "die Soundkarten sind in /proc/asound aufgeführt, aber ihre Geräte in /dev/snd lassen sich von hier aus nicht öffnen; in einem Flatpak erlaubst du sie mit: flatpak override --user --device=all app.chilpa.Chilpa"
+
 msgid "the sound server would not let go of card {}"
 msgstr "der Soundserver wollte die Karte {} nicht freigeben"
 
