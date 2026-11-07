@@ -19,7 +19,7 @@ impl Chilpa {
     /// Whether the desktop asks for dark colours, for the places Qt cannot
     /// say: a compositor without a platform theme reports no scheme at all.
     pub fn desktop_prefers_dark(&self) -> bool {
-        chilpa_dirs::desktop_prefers_dark()
+        crate::sandbox::prefers_dark()
     }
 
     fn chosen_theme(&self) -> String {
