@@ -1,4 +1,8 @@
 //! Process isolation for desktop plugins and the Linux compatibility worker.
+//!
+//! Every backend hands back the same three pieces: the plugin's channel, the
+//! folders it is told about in `initialize`, and a handle on its process. No
+//! backend falls back to starting a plugin outside its sandbox.
 
 use std::path::PathBuf;
 
@@ -13,21 +17,29 @@ pub struct NativePaths {
     pub export: Option<PathBuf>,
 }
 
-impl NativePaths {
-    /// The paths I send in initialize; Linux mounts private namespace roots.
-    pub fn guest_directories(&self) -> std::io::Result<(PathBuf, PathBuf)> {
-        #[cfg(target_os = "linux")]
-        { Ok(("/data".into(), "/cache".into())) }
-        #[cfg(not(target_os = "linux"))]
-        { Ok((self.data.canonicalize()?, self.cache.canonicalize()?)) }
-    }
+/// Why process plugins cannot start on this system, found without starting one.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Unavailable {
+    /// Chilpa itself runs in a Flatpak sandbox, where no backend exists yet.
+    Flatpak,
+    /// A program the sandbox is built from is not installed.
+    MissingProgram(PathBuf),
+    /// Chilpa runs as root, and the sandbox does not contain a privileged caller.
+    Privileged,
 }
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+mod process;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+pub use process::{launcher, LaunchedNative, NativeLauncher, NativeProcess, Notice};
 
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
-pub use linux::{launch, launch_native, RuntimePaths};
+mod linux_bwrap;
+#[cfg(target_os = "linux")]
+pub use linux_bwrap::{launch, Bwrap, RuntimePaths};
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_os = "macos")]
-pub use macos::launch_native;
+pub use macos::Seatbelt;

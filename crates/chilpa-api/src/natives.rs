@@ -34,6 +34,9 @@ pub(crate) struct Natives {
     live: RwLock<HashMap<String, Arc<NativeClient>>>,
     /// What each was started from, to start it again.
     known: Mutex<HashMap<String, Known>>,
+    /// The backend that starts the processes, chosen on first use.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    launcher: std::sync::OnceLock<Arc<dyn chilpa_bwrap::NativeLauncher>>,
 }
 
 struct Known {
@@ -249,7 +252,7 @@ impl Natives {
         self.start_locked(manifest, folder)
     }
     fn start_locked(self: &Arc<Self>, manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, PluginError> {
-        let (client, data, cache) = launch(manifest, folder, Arc::downgrade(self))?;
+        let (client, data, cache) = launch(self, manifest, folder)?;
         let greeting = client.call("initialize", json!({
             "protocol": PROTOCOL,
             "playback_events": 1,
@@ -330,7 +333,7 @@ pub(crate) fn install(
 type Launched = (Arc<NativeClient>, PathBuf, PathBuf);
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-fn launch(manifest: &Manifest, folder: &Path, natives: std::sync::Weak<Natives>) -> Result<Launched, PluginError> {
+fn launch(natives: &Arc<Natives>, manifest: &Manifest, folder: &Path) -> Result<Launched, PluginError> {
     let id = manifest.id.clone();
     let paths = chilpa_bwrap::NativePaths {
         folder: folder.to_path_buf(),
@@ -341,21 +344,31 @@ fn launch(manifest: &Manifest, folder: &Path, natives: std::sync::Weak<Natives>)
         } else { None },
     };
     let name = id.clone();
-    let client = chilpa_bwrap::launch_native(&paths, &id, MEMORY, !chilpa_core::network::current().offline && !manifest.allowed_domains().is_empty(), move |method, params| {
+    let weak = Arc::downgrade(natives);
+    let notice = Box::new(move |method: &str, params: &Value| {
         if method == "host.request" {
-            if let Some(natives) = natives.upgrade() { crate::plugin_broker::dispatch(&natives, &name, params.clone()); }
+            if let Some(natives) = weak.upgrade() { crate::plugin_broker::dispatch(&natives, &name, params.clone()); }
         } else if method == "log" {
             eprintln!("plugin[{name}]: {}", params.get("message").and_then(Value::as_str).unwrap_or(""));
         }
-    })
-    .map_err(|_| PluginError::Crashed("the plugin's sandbox could not start".into()))?;
-    let (data, cache) = paths.guest_directories().map_err(|_| PluginError::Crashed("the plugin's private folders are unavailable".into()))?;
-    Ok((client, data, cache))
+    });
+    let network = !chilpa_core::network::current().offline && !manifest.allowed_domains().is_empty();
+    let launched = natives.launcher().launch(&paths, &id, MEMORY, network, notice)
+        .map_err(|_| PluginError::Crashed("the plugin's sandbox could not start".into()))?;
+    let (data, cache) = launched.guest_directories;
+    Ok((launched.client, data, cache))
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+impl Natives {
+    fn launcher(&self) -> &Arc<dyn chilpa_bwrap::NativeLauncher> {
+        self.launcher.get_or_init(chilpa_bwrap::launcher)
+    }
 }
 
 /// Platforms without process isolation list a reason and never start a worker.
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
-fn launch(_: &Manifest, _: &Path, _: std::sync::Weak<Natives>) -> Result<Launched, PluginError> {
+fn launch(_: &Arc<Natives>, _: &Manifest, _: &Path) -> Result<Launched, PluginError> {
     Err(PluginError::NotAllowed("native plugins need a sandbox this system does not have yet".into()))
 }
 
