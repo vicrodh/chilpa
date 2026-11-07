@@ -1,11 +1,14 @@
 [Desktop Entry]
 Type=Application
 Name=Chilpa
-Comment=Music player
+Comment=Play and organize your music
+# A Flatpak sets Exec=chilpa-qt %U: its binary is /app/bin/chilpa-qt. The
+# packages keep this absolute path, which older KWin releases match before
+# granting the interface named at the end.
 Exec=/usr/bin/chilpa-qt %U
 Icon=app.chilpa.Chilpa
 Terminal=false
-Categories=AudioVideo;Audio;Music;Player;Qt;
+Categories=AudioVideo;Audio;Player;Music;
 Keywords=music;audio;player;hifi;flac;lyrics;
 StartupNotify=true
 # "Open with" in a file manager: files and folders open as temporary media.
