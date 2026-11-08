@@ -243,6 +243,30 @@ fn a_library_is_looked_for_only_where_the_plugin_s_sandbox_sees() {
     assert_eq!(preflight(&path, system.path()), Ok(()), "one under the runtime's /usr is found there");
 }
 
+#[test]
+fn the_libraries_one_preflight_reads_share_one_budget() {
+    // Each library within its own budget, twenty of them together past the
+    // preflight's: a package can bundle as many libraries as it likes.
+    let system = system();
+    let triplet = this_machine().map(|(_, triplet)| triplet).unwrap_or("x86_64-linux-gnu");
+    let libraries = system.path().join("usr/lib").join(triplet);
+    let filler: &'static str = Box::leak("v".repeat(900 << 10).into_boxed_str());
+    let mut needed = Vec::new();
+    let mut wants = Vec::new();
+    for index in 0..20 {
+        let name: &'static str = Box::leak(format!("libpart{index}.so.1").into_boxed_str());
+        let version: &'static str = Box::leak(format!("PART_{index}").into_boxed_str());
+        std::fs::write(libraries.join(name), elf(&Fixture { defines: vec![filler, version], ..Default::default() })).unwrap();
+        needed.push(name);
+        wants.push((name, vec![version]));
+    }
+    let folder = tempfile::tempdir().unwrap();
+    let path = program(folder.path(), &Fixture { needed: needed.clone(), wants: wants.clone(), ..Default::default() });
+    assert_eq!(preflight(&path, system.path()), Err(Incompatible::Format), "18 MiB of names in all is over the 16 MiB of one preflight");
+    let path = program(folder.path(), &Fixture { needed: needed[..10].to_vec(), wants: wants[..10].to_vec(), ..Default::default() });
+    assert_eq!(preflight(&path, system.path()), Ok(()), "nine MiB in all is within it");
+}
+
 /// The named plugins against a real runtime, when one is given:
 /// `CHILPA_PREFLIGHT_RUNTIME` is the runtime's `files` folder,
 /// `CHILPA_PREFLIGHT_PLUGINS` a folder of unpacked packages, and

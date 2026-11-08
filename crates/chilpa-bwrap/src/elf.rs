@@ -7,8 +7,9 @@
 //! bundled interpreter loads its own libraries, is not seen here.
 //!
 //! It runs in Chilpa's process before any sandbox bounds the plugin, so
-//! what one file can make it hold is bounded: each table read, and all the
-//! names copied out of one file together. A library is looked for only
+//! what one package can make it hold is bounded: each table read, the names
+//! copied out of one file, and the names copied out of the program and every
+//! library one preflight reads, all together. A library is looked for only
 //! where the plugin's sandbox sees it: the package, `/app` and `/usr`.
 
 use crate::Incompatible;
@@ -25,6 +26,15 @@ const MAX_TABLE: u64 = 4 << 20;
 const MAX_ENTRIES: usize = 4096;
 /// Bytes of names copied out of one file, all of them together.
 const MAX_NAMES: usize = 1 << 20;
+/// Bytes of names copied for one preflight: the program and every library
+/// it reads together. A real program and its libraries name a few hundred
+/// kilobytes at most (glibc's versions take under 1 KiB, a C++ runtime's a
+/// few), so 16 MiB leaves every real one far inside while it bounds what a
+/// package of many libraries can make Chilpa hold.
+const MAX_NAMES_IN_ALL: usize = 16 << 20;
+/// Entries walked for one preflight, all files together: sixteen files at
+/// the bound of one.
+const MAX_ENTRIES_IN_ALL: usize = 16 * MAX_ENTRIES;
 
 const PT_LOAD: u32 = 1;
 const PT_DYNAMIC: u32 = 2;
@@ -101,31 +111,50 @@ fn u64_at(bytes: &[u8], at: usize) -> Option<u64> {
     Some(u64::from_le_bytes(bytes.get(at..at.checked_add(8)?)?.try_into().ok()?))
 }
 
-/// What is left to copy out of one file: entries walked and bytes of names.
+/// What is left to copy, entries walked and bytes of names: out of the file
+/// being read, and out of the whole preflight.
 struct Budget {
     entries: usize,
     bytes: usize,
+    entries_in_all: usize,
+    bytes_in_all: usize,
+    /// A name or an entry was refused because the preflight's budget, not
+    /// the file's, ran out.
+    spent: bool,
 }
 
 impl Default for Budget {
     fn default() -> Self {
-        Self { entries: MAX_ENTRIES, bytes: MAX_NAMES }
+        Self { entries: MAX_ENTRIES, bytes: MAX_NAMES, entries_in_all: MAX_ENTRIES_IN_ALL, bytes_in_all: MAX_NAMES_IN_ALL, spent: false }
     }
 }
 
 impl Budget {
-    /// One more entry walked; `None` past the budget.
+    /// The next file of the same preflight: its own budget starts again.
+    fn next_file(&mut self) {
+        self.entries = MAX_ENTRIES;
+        self.bytes = MAX_NAMES;
+    }
+
+    /// One more entry walked; `None` past either budget.
     fn entry(&mut self) -> Option<()> {
         self.entries = self.entries.checked_sub(1)?;
+        let Some(left) = self.entries_in_all.checked_sub(1) else { self.spent = true; return None };
+        self.entries_in_all = left;
         Some(())
     }
 
-    /// The name at `at` in `table`, copied only while the budget allows it.
+    /// The name at `at` in `table`, copied only while both budgets allow it.
     fn string_at(&mut self, table: &[u8], at: u64) -> Option<String> {
         self.entry()?;
         let rest = table.get(usize::try_from(at).ok()?..)?;
-        let end = rest.iter().take(self.bytes.saturating_add(1)).position(|byte| *byte == 0)?;
+        let allowed = self.bytes.min(self.bytes_in_all);
+        let Some(end) = rest.iter().take(allowed.saturating_add(1)).position(|byte| *byte == 0) else {
+            self.spent |= self.bytes_in_all < self.bytes && rest.len() > self.bytes_in_all;
+            return None;
+        };
         self.bytes = self.bytes.checked_sub(end)?;
+        self.bytes_in_all = self.bytes_in_all.checked_sub(end)?;
         String::from_utf8(rest[..end].to_vec()).ok()
     }
 }
@@ -136,8 +165,15 @@ fn string_at(table: &[u8], at: u64) -> Option<String> {
     String::from_utf8(rest[..end].to_vec()).ok()
 }
 
-/// Reads `path`. `Err` says, for the log, why it is no program this system runs.
+/// Reads `path`. `Err` says, for the log, why it is no program this system
+/// runs. A preflight reads within its own budget instead.
+#[cfg(test)]
 pub(crate) fn read(path: &Path) -> Result<Kind, String> {
+    read_within(path, &mut Budget::default())
+}
+
+/// Reads `path` within what is left of `budget`.
+fn read_within(path: &Path, budget: &mut Budget) -> Result<Kind, String> {
     let file = File::open(path).map_err(|error| format!("it cannot be opened: {error}"))?;
     let len = file.metadata().map_err(|error| error.to_string())?.len();
     let reader = Reader { file, len };
@@ -160,10 +196,10 @@ pub(crate) fn read(path: &Path) -> Result<Kind, String> {
     if let Some((expected, _)) = this_machine() {
         if machine != expected { return Err(format!("it is built for another processor (ELF machine {machine})")); }
     }
-    program(&reader, &head).map(Kind::Program).ok_or_else(|| "its tables are malformed".into())
+    program(&reader, &head, budget).map(Kind::Program).ok_or_else(|| "its tables are malformed".into())
 }
 
-fn program(reader: &Reader, head: &[u8]) -> Option<Program> {
+fn program(reader: &Reader, head: &[u8], budget: &mut Budget) -> Option<Program> {
     let (table, size, count) = (u64_at(head, 32)?, u16_at(head, 54)? as u64, u16_at(head, 56)? as u64);
     if size < 56 { return None; }
     let headers = reader.bytes(table, size.checked_mul(count)?)?;
@@ -193,7 +229,6 @@ fn program(reader: &Reader, head: &[u8]) -> Option<Program> {
     let at = |address: u64| loads.iter().find(|(start, _, length)| address >= *start && address - start < *length)
         .and_then(|(start, offset, _)| (address - start).checked_add(*offset));
     let strings = reader.bytes(at(tag(DT_STRTAB)?)?, tag(DT_STRSZ)?)?;
-    let mut budget = Budget::default();
     for (kind, value) in &tags {
         match *kind {
             DT_NEEDED => found.needed.push(budget.string_at(&strings, *value)?),
@@ -278,7 +313,8 @@ fn find(name: &str, program: &Path, runpath: &[String], system: &Path) -> Option
 /// root is `system`, as its sandbox sees it: `/` inside Flatpak.
 pub(crate) fn preflight(program: &Path, system: &Path) -> Result<(), Incompatible> {
     let inside = |path: &str| system.join(path.trim_start_matches('/'));
-    match read(program).map_err(|why| { eprintln!("preflight: {}: {why}", program.display()); Incompatible::Format })? {
+    let mut budget = Budget::default();
+    match read_within(program, &mut budget).map_err(|why| { eprintln!("preflight: {}: {why}", program.display()); Incompatible::Format })? {
         Kind::Script { interpreter, argument } => {
             if !inside(&interpreter).is_file() { return Err(Incompatible::Interpreter(interpreter.into())); }
             // `env` finds its program on the plugin's PATH, which is /usr/bin.
@@ -298,14 +334,24 @@ pub(crate) fn preflight(program: &Path, system: &Path) -> Result<(), Incompatibl
             for name in &found.needed {
                 if find(name, program, &found.runpath, system).is_none() { return Err(Incompatible::Library(name.clone())); }
             }
-            // Each library is read once, however many entries name it.
+            // Each library is read once, however many entries name it, and all
+            // of them within the one budget of this preflight.
             let mut read_once: HashMap<PathBuf, Vec<String>> = HashMap::new();
             let mut check = |library: &String, versions: &[String]| -> Result<(), Incompatible> {
                 let path = find(library, program, &found.runpath, system).ok_or_else(|| Incompatible::Library(library.clone()))?;
-                let defines = read_once.entry(path).or_insert_with_key(|path| match read(path) {
-                    Ok(Kind::Program(library)) => library.defines,
-                    _ => Vec::new(),
-                });
+                if !read_once.contains_key(&path) {
+                    budget.next_file();
+                    let defines = match read_within(&path, &mut budget) {
+                        Ok(Kind::Program(library)) => library.defines,
+                        _ if budget.spent => {
+                            eprintln!("preflight: {}: its libraries name more than {} MiB in all", program.display(), MAX_NAMES_IN_ALL >> 20);
+                            return Err(Incompatible::Format);
+                        }
+                        _ => Vec::new(),
+                    };
+                    read_once.insert(path.clone(), defines);
+                }
+                let defines = &read_once[&path];
                 match versions.iter().find(|version| !defines.contains(version)) {
                     Some(missing) => {
                         let newest = defines.iter().filter(|defined| family(defined) == family(missing))
