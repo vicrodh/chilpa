@@ -156,3 +156,47 @@ fn what_the_runner_was_started_with_stays_out_of_the_plugin_s_reach() {
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     assert_eq!(String::from_utf8(output.stdout).unwrap().trim(), "0 0", "neither the variable nor descriptor 9 is readable through the runner");
 }
+
+/// Starts the runner over `script` and reads the first line it prints.
+fn started(args: &[&str], script: &str) -> (std::process::Child, String) {
+    use std::io::{BufRead, BufReader};
+    let mut runner = Command::new(RUNNER).args(args).args(["--", "/bin/sh", "-c", script])
+        .stdout(std::process::Stdio::piped()).spawn().unwrap();
+    let mut line = String::new();
+    BufReader::new(runner.stdout.take().unwrap()).read_line(&mut line).unwrap();
+    (runner, line.trim().to_string())
+}
+
+/// True while `pid` names a process that runs: not reaped, and not a zombie.
+fn running(pid: libc::pid_t) -> bool {
+    std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()
+        .and_then(|stat| stat.rsplit_once(')').map(|(_, rest)| !rest.trim_start().starts_with('Z')))
+        .unwrap_or(false)
+}
+
+#[test]
+fn a_plugin_asked_to_end_hears_it_and_gets_a_moment_first() {
+    let mark = std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("runner-asked-{}", std::process::id()));
+    let _ = std::fs::remove_file(&mark);
+    let script = format!(r#"trap 'echo ended > "{}"; exit 0' TERM; echo ready; while :; do sleep 0.05; done"#, mark.display());
+    let (mut runner, _) = started(&[], &script);
+    unsafe { libc::kill(runner.id() as libc::pid_t, libc::SIGTERM); }
+    runner.wait().unwrap();
+    let ended = std::fs::read_to_string(&mark).unwrap_or_default();
+    let _ = std::fs::remove_file(&mark);
+    assert_eq!(ended.trim(), "ended", "the plugin got the SIGTERM before anything was killed");
+}
+
+#[test]
+fn a_plugin_that_does_not_end_when_asked_is_killed_after_a_moment() {
+    let (mut runner, line) = started(&[], "trap '' TERM; echo $$; exec sleep 30");
+    let plugin: libc::pid_t = line.parse().unwrap();
+    let start = std::time::Instant::now();
+    unsafe { libc::kill(runner.id() as libc::pid_t, libc::SIGTERM); }
+    runner.wait().unwrap();
+    let waited = start.elapsed();
+    let survived = running(plugin);
+    end(plugin);
+    assert!(!survived, "after the grace it was killed");
+    assert!(waited >= std::time::Duration::from_millis(1500) && waited < std::time::Duration::from_secs(5), "it was given {waited:?}");
+}

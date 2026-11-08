@@ -10,8 +10,9 @@
 //! gets, so nothing else that reached the runner's environment goes on.
 //!
 //! The plugin runs as the runner's child, and the runner adopts whatever the
-//! plugin leaves behind (a child subreaper). When the plugin exits, or the
-//! runner is asked to end, everything still below the runner is ended and
+//! plugin leaves behind (a child subreaper). Asked to end, the runner hands
+//! the signal on to the plugin and gives it two seconds. When the plugin
+//! exits, or that time is up, everything still below the runner is ended and
 //! reaped before the runner exits, so the exit the portal reports means
 //! nothing of the plugin is left. Before the plugin starts, the runner
 //! closes its own descriptors, wipes its environment and becomes
@@ -319,10 +320,15 @@ pub fn release_stdio() {
     if null > libc::STDERR_FILENO { unsafe { libc::close(null); } }
 }
 
+/// How long a plugin asked to end has to do so before it is killed.
+const GRACE: Duration = Duration::from_secs(2);
+
 /// Waits until the plugin `plugin` exits or the runner is asked to end,
-/// then ends and reaps everything still below the runner. Returns the
-/// status to exit with: the plugin's, or 128 plus the signal that asked.
-/// The watched signals must be held.
+/// then ends and reaps everything still below the runner. Asked to end,
+/// the runner first hands the signal on to the plugin, as if it were the
+/// plugin, and gives it [`GRACE`] to exit. Returns the status to exit with:
+/// the plugin's, or 128 plus the signal that asked. The watched signals must
+/// be held.
 pub fn supervise(plugin: libc::pid_t) -> i32 {
     let set = watched();
     let code = loop {
@@ -331,11 +337,30 @@ pub fn supervise(plugin: libc::pid_t) -> i32 {
             if io::Error::last_os_error().raw_os_error() == Some(libc::EINTR) { continue; }
             break 1;
         }
-        if signal != libc::SIGCHLD { break 128 + signal; }
-        if let Some(code) = reap(plugin) { break code; }
+        if signal == libc::SIGCHLD {
+            if let Some(code) = reap(plugin) { break code; }
+            continue;
+        }
+        unsafe { libc::kill(plugin, signal); }
+        wait_for(plugin, GRACE, &set);
+        break 128 + signal;
     };
     end_all();
     code
+}
+
+/// Waits up to `grace` for the plugin to exit, reaping whatever exits
+/// meanwhile. A second ask to end stops the wait.
+fn wait_for(plugin: libc::pid_t, grace: Duration, set: &libc::sigset_t) {
+    let deadline = Instant::now() + grace;
+    loop {
+        if reap(plugin).is_some() { return; }
+        let left = deadline.saturating_duration_since(Instant::now());
+        if left.is_zero() { return; }
+        let timeout = libc::timespec { tv_sec: left.as_secs() as libc::time_t, tv_nsec: left.subsec_nanos() as libc::c_long };
+        let signal = unsafe { libc::sigtimedwait(set, std::ptr::null_mut(), &timeout) };
+        if signal > 0 && signal != libc::SIGCHLD { return; }
+    }
 }
 
 /// Reaps every child that has exited; the plugin's status, if it was one.

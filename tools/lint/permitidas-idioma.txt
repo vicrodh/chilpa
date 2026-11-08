@@ -981,3 +981,6 @@ clearenv
 dumpable
 undumpable
 strlen
+# How the runner waits for a plugin asked to end: libc names.
+sigtimedwait
+timespec
