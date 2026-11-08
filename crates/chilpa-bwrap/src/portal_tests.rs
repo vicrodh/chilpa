@@ -204,3 +204,38 @@ fn a_handle_dropped_while_its_process_runs_keeps_its_pid_and_ends_it() {
     assert!(eventually(Duration::from_secs(5), || !fake.running().contains(&pid)), "what nothing holds was ended");
     assert!(eventually(Duration::from_secs(2), || portal.tracked().is_empty()), "its exit took it off the ledger");
 }
+
+/// A `Spawn` call as Chilpa sends it, and the portal's answer to it.
+fn spawn_call() -> Message {
+    Message::method_call(PATH, "Spawn").unwrap().destination(NAME).unwrap().interface(INTERFACE).unwrap().build(&()).unwrap()
+}
+
+fn spawn_answer(call: &Message, pid: u32) -> Message {
+    Message::method_return(&call.header()).unwrap().build(&pid).unwrap()
+}
+
+#[test]
+fn a_late_spawn_answer_whose_call_was_let_go_is_still_ended() {
+    let ledger = Ledger::default();
+    // Given up on, then let go to keep the ledger bounded: nothing is kept
+    // under its serial when its answer comes.
+    let call = spawn_call();
+    let serial = call.primary_header().serial_num().get();
+    assert_eq!(ledger.answered(serial, &spawn_answer(&call, 41)), Some(41), "the process it names is ended");
+    // A pid a live handle holds is another process by now, and is left alone.
+    ledger.state().started(77, false);
+    let call = spawn_call();
+    assert_eq!(ledger.answered(call.primary_header().serial_num().get(), &spawn_answer(&call, 77)), None);
+    assert!(ledger.running(77));
+}
+
+#[test]
+fn a_late_spawn_answer_is_ended_even_with_the_ledger_full() {
+    let ledger = Ledger::default();
+    for pid in 1000..1000 + ABANDONED as u32 { ledger.state().started(pid, true); }
+    let call = spawn_call();
+    let serial = call.primary_header().serial_num().get();
+    ledger.expect(serial, Kind::Spawn).unwrap();
+    assert!(ledger.answer(serial, Duration::ZERO).is_err(), "its caller gave up");
+    assert_eq!(ledger.answered(serial, &spawn_answer(&call, 2000)), Some(2000), "a full ledger still ends what it names");
+}

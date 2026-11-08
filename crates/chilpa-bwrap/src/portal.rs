@@ -14,7 +14,8 @@
 //! A signal the portal refused is sent again while its process is waited
 //! for. A process whose handle goes while it may still run is not forgotten:
 //! its pid stays in the ledger and it is ended, and so is one whose `Spawn`
-//! answer came after the spawn was given up on.
+//! answer came after the spawn was given up on, even when the ledger no
+//! longer keeps that call or has no room left to track the process.
 //!
 //! Resources, declared (ADR-018): one connection and its bus thread, one
 //! thread that reads exits and answers, blocked on the socket, never
@@ -255,14 +256,17 @@ fn signal(conn: &Connection, ledger: &Ledger, pid: u32, timeout: Duration) -> Re
 }
 
 /// Ends a process nothing holds any more, on a thread of its own: the
-/// reader of exits cannot wait for an answer it is the one to read.
+/// reader of exits cannot wait for an answer it is the one to read. One the
+/// ledger has no room to track is signalled all the same, until the portal
+/// takes the signal or says the pid is gone.
 fn end_abandoned(conn: Connection, ledger: Arc<Ledger>, pid: u32, timeout: Duration) {
     let (sender, kept) = (conn.clone(), ledger.clone());
     let work = move || {
         for attempt in 1..=SIGNAL_ATTEMPTS {
-            if !kept.running(pid) { return; }
+            if kept.left_alone(pid) { return; }
             match signal(&sender, &kept, pid, timeout) {
                 Ok(()) => return,
+                Err(problem) if problem.contains("UnixProcessIdUnknown") => return,
                 Err(problem) => eprintln!("flatpak: could not end process {pid}, which nothing holds (attempt {attempt}): {problem}"),
             }
             std::thread::sleep(RETRY_PAUSE);
@@ -402,17 +406,30 @@ impl Entries {
     }
 
     /// The portal answered a spawn. Its exit may have been read already.
-    fn started(&mut self, pid: u32, abandoned: bool) {
+    /// False when it is known to have ended.
+    fn started(&mut self, pid: u32, abandoned: bool) -> bool {
         let early = self.early.iter().position(|(exited, _)| *exited == pid);
         let status = early.and_then(|index| self.early.remove(index)).map(|(_, status)| status);
         if abandoned {
-            if status.is_some() { return; }
+            if status.is_some() { return false; }
             if self.tracked.values().filter(|tracked| tracked.abandoned).count() >= ABANDONED {
-                eprintln!("flatpak: {ABANDONED} processes nothing holds are kept already; process {pid} is left to the bus");
-                return;
+                eprintln!("flatpak: {ABANDONED} processes nothing holds are kept already; process {pid} is ended untracked");
+                return true;
             }
         }
         self.tracked.insert(pid, Tracked { status, abandoned });
+        status.is_none()
+    }
+
+    /// A `Spawn` answered after its caller gave up: the pid to end, unless
+    /// the process is known to have ended, or the pid is one a live handle
+    /// holds, which makes it another process by now.
+    fn late(&mut self, reply: &Message) -> Option<u32> {
+        if reply.message_type() != Type::MethodReturn { return None; }
+        let pid = reply.body().deserialize::<u32>().ok()?;
+        if self.tracked.get(&pid).is_some_and(|tracked| !tracked.abandoned && tracked.status.is_none()) { return None; }
+        eprintln!("flatpak: the portal answered a spawn given up on; process {pid} is ended");
+        self.started(pid, true).then_some(pid)
     }
 }
 
@@ -457,7 +474,10 @@ impl Ledger {
     /// An answer came. Returns the pid of a process nothing holds, to end.
     fn answered(&self, serial: u32, reply: &Message) -> Option<u32> {
         let mut state = self.state();
-        let call = state.calls.remove(&serial)?;
+        // No call kept under this serial: a `Spawn` given up on and let go to
+        // keep the ledger bounded. Only a pid answers one, and that process
+        // is ended all the same.
+        let Some(call) = state.calls.remove(&serial) else { return state.late(reply) };
         let answer = match reply.message_type() {
             Type::Error => Err(zbus::Error::from(reply.clone()).to_string()),
             _ => Ok(reply.clone()),
@@ -473,12 +493,7 @@ impl Ledger {
                 self.changed.notify_all();
                 None
             }
-            Call::GivenUp => {
-                let pid = pid()?;
-                eprintln!("flatpak: the portal answered a spawn given up on; process {pid} is ended");
-                state.started(pid, true);
-                state.running(pid).then_some(pid)
-            }
+            Call::GivenUp => state.late(reply),
             Call::Answered(answer) => {
                 state.calls.insert(serial, Call::Answered(answer));
                 None
@@ -507,6 +522,14 @@ impl Ledger {
 
     fn running(&self, pid: u32) -> bool {
         self.state().running(pid)
+    }
+
+    /// Not to be signalled as a process nothing holds: its exit was read,
+    /// the bus is gone, or a live handle holds the pid now, which makes it
+    /// another process. A pid the ledger does not track may still run.
+    fn left_alone(&self, pid: u32) -> bool {
+        let state = self.state();
+        state.lost || state.tracked.get(&pid).is_some_and(|tracked| tracked.status.is_some() || !tracked.abandoned)
     }
 
     /// Waits for the process to end, or the bus to go; false if neither
