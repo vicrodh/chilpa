@@ -14,8 +14,12 @@
 //! - A seccomp filter: no UNIX socket can be created, so no socket of
 //!   Chilpa's sandbox (its session bus, its display, its sound server) can be
 //!   reached by path, whatever Landlock version, and no directory outside
-//!   can be watched with inotify. A pair of connected sockets is still made
-//!   with `socketpair`.
+//!   can be watched with inotify. `io_uring` is refused whole, since its
+//!   socket operation would create one past the filter. A connected pair is
+//!   still made with `socketpair`, of the stream and seqpacket types only: a
+//!   datagram endpoint can send to any socket by its path. Sending with an
+//!   address cannot be filtered (it is behind a pointer), and needs none: the
+//!   pairs allowed ignore or refuse one.
 //!
 //! Without Landlock 3 the plugin is not started. What neither covers, a
 //! known limit (packaging/flatpak/BUILD-NOTES.md, section 10): a path
@@ -128,11 +132,13 @@ const JUMP_EQUAL: u16 = 0x05 | 0x10; // BPF_JMP | BPF_JEQ | BPF_K
 #[cfg(target_arch = "x86_64")]
 const JUMP_AT_LEAST: u16 = 0x05 | 0x30; // BPF_JMP | BPF_JGE | BPF_K
 const RETURN: u16 = 0x06; // BPF_RET | BPF_K
+const AND: u16 = 0x04 | 0x50; // BPF_ALU | BPF_AND | BPF_K
 // Offsets in struct seccomp_data; the low half of the first argument on a
 // little-endian machine.
 const NUMBER: u32 = 0;
 const ARCHITECTURE: u32 = 4;
 const FIRST_ARGUMENT: u32 = 16;
+const SECOND_ARGUMENT: u32 = 24;
 
 #[cfg(target_arch = "x86_64")]
 const NATIVE: u32 = 0xc000_003e; // AUDIT_ARCH_X86_64
@@ -147,9 +153,11 @@ fn jump(code: u16, k: u32, jt: u8, jf: u8) -> libc::sock_filter {
     libc::sock_filter { code, jt, jf, k }
 }
 
-/// The filter: `socket(AF_UNIX, ..)` and `inotify_add_watch` answer EACCES;
-/// a call made through another ABI of this machine, such as `int 0x80` on
-/// x86-64, answers ENOSYS; everything else is allowed.
+/// The filter: `socket(AF_UNIX, ..)`, a datagram `socketpair(AF_UNIX, ..)`
+/// and `inotify_add_watch` answer EACCES; `io_uring_setup`, `io_uring_enter`
+/// and `io_uring_register` answer ENOSYS, as on a kernel without it, and so
+/// does a call made through another ABI of this machine, such as `int 0x80`
+/// on x86-64; everything else is allowed.
 #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
 pub fn filter() -> Option<Vec<libc::sock_filter>> {
     let refuse = libc::SECCOMP_RET_ERRNO | libc::EACCES as u32;
@@ -163,12 +171,26 @@ pub fn filter() -> Option<Vec<libc::sock_filter>> {
     // The x32 ABI shares the architecture and sets this bit in the number.
     #[cfg(target_arch = "x86_64")]
     program.extend([jump(JUMP_AT_LEAST, 0x4000_0000, 0, 1), statement(RETURN, foreign)]);
+    for absent in [libc::SYS_io_uring_setup, libc::SYS_io_uring_enter, libc::SYS_io_uring_register] {
+        program.extend([jump(JUMP_EQUAL, absent as u32, 0, 1), statement(RETURN, foreign)]);
+    }
+    // The flags a socket type may carry, which say nothing of its kind.
+    let kind = !((libc::SOCK_NONBLOCK | libc::SOCK_CLOEXEC) as u32);
     program.extend([
         jump(JUMP_EQUAL, libc::SYS_inotify_add_watch as u32, 0, 1),
         statement(RETURN, refuse),
-        jump(JUMP_EQUAL, libc::SYS_socket as u32, 0, 3),
+        jump(JUMP_EQUAL, libc::SYS_socket as u32, 0, 4),
         statement(LOAD_WORD, FIRST_ARGUMENT),
         jump(JUMP_EQUAL, libc::AF_UNIX as u32, 0, 1),
+        statement(RETURN, refuse),
+        statement(RETURN, libc::SECCOMP_RET_ALLOW),
+        jump(JUMP_EQUAL, libc::SYS_socketpair as u32, 0, 7),
+        statement(LOAD_WORD, FIRST_ARGUMENT),
+        jump(JUMP_EQUAL, libc::AF_UNIX as u32, 0, 5),
+        statement(LOAD_WORD, SECOND_ARGUMENT),
+        statement(AND, kind),
+        jump(JUMP_EQUAL, libc::SOCK_STREAM as u32, 2, 0),
+        jump(JUMP_EQUAL, libc::SOCK_SEQPACKET as u32, 1, 0),
         statement(RETURN, refuse),
         statement(RETURN, libc::SECCOMP_RET_ALLOW),
     ]);
@@ -203,27 +225,50 @@ mod tests {
         }
     }
 
-    /// 0 when the call failed with EACCES, 1 when it succeeded, 2 otherwise.
-    fn outcome(result: libc::c_int) -> i32 {
+    /// 0 when the call failed with EACCES, 1 when it succeeded, 3 when it
+    /// failed with ENOSYS, 2 otherwise.
+    fn outcome(result: libc::c_long) -> i32 {
         if result >= 0 { return 1; }
-        if io::Error::last_os_error().raw_os_error() == Some(libc::EACCES) { 0 } else { 2 }
+        match io::Error::last_os_error().raw_os_error() {
+            Some(libc::EACCES) => 0,
+            Some(libc::ENOSYS) => 3,
+            _ => 2,
+        }
+    }
+
+    fn pair(kind: libc::c_int) -> i32 {
+        let mut pair = [0; 2];
+        outcome(unsafe { libc::socketpair(libc::AF_UNIX, kind, 0, pair.as_mut_ptr()) } as libc::c_long)
     }
 
     #[test]
     fn the_filter_refuses_unix_sockets_and_watches_but_not_pairs_or_the_network() {
-        assert_eq!(filtered(|| outcome(unsafe { libc::socket(libc::AF_UNIX, libc::SOCK_STREAM, 0) })), 0, "no UNIX socket");
-        assert_eq!(filtered(|| outcome(unsafe { libc::socket(libc::AF_UNIX, libc::SOCK_DGRAM | libc::SOCK_CLOEXEC, 0) })), 0);
+        assert_eq!(filtered(|| outcome(unsafe { libc::socket(libc::AF_UNIX, libc::SOCK_STREAM, 0) } as libc::c_long)), 0, "no UNIX socket");
+        assert_eq!(filtered(|| outcome(unsafe { libc::socket(libc::AF_UNIX, libc::SOCK_DGRAM | libc::SOCK_CLOEXEC, 0) } as libc::c_long)), 0);
         assert_eq!(filtered(|| {
             let watcher = unsafe { libc::inotify_init1(libc::IN_CLOEXEC) };
             if watcher < 0 { return 2; }
-            outcome(unsafe { libc::inotify_add_watch(watcher, c"/".as_ptr(), libc::IN_CREATE) })
+            outcome(unsafe { libc::inotify_add_watch(watcher, c"/".as_ptr(), libc::IN_CREATE) } as libc::c_long)
         }), 0, "no inotify watch");
+        assert_eq!(filtered(|| pair(libc::SOCK_STREAM)), 1, "a connected pair is still made");
+        assert_eq!(filtered(|| pair(libc::SOCK_STREAM | libc::SOCK_NONBLOCK | libc::SOCK_CLOEXEC)), 1, "with its flags");
+        assert_eq!(filtered(|| pair(libc::SOCK_SEQPACKET | libc::SOCK_CLOEXEC)), 1);
+        assert_eq!(filtered(|| outcome(unsafe { libc::socket(libc::AF_INET, libc::SOCK_STREAM, 0) } as libc::c_long)), 1, "the network is the sandbox's to give");
+        assert_eq!(filtered(|| outcome(unsafe { libc::getpid() } as libc::c_long)), 1);
+    }
+
+    #[test]
+    fn the_filter_closes_the_other_ways_to_a_socket_by_path() {
+        // A datagram endpoint sends to any socket by its path.
+        assert_eq!(filtered(|| pair(libc::SOCK_DGRAM)), 0, "no datagram pair");
+        assert_eq!(filtered(|| pair(libc::SOCK_DGRAM | libc::SOCK_NONBLOCK | libc::SOCK_CLOEXEC)), 0, "whatever its flags");
+        // io_uring's socket operation would make one past the filter.
         assert_eq!(filtered(|| {
-            let mut pair = [0; 2];
-            outcome(unsafe { libc::socketpair(libc::AF_UNIX, libc::SOCK_STREAM, 0, pair.as_mut_ptr()) })
-        }), 1, "a connected pair is still made");
-        assert_eq!(filtered(|| outcome(unsafe { libc::socket(libc::AF_INET, libc::SOCK_STREAM, 0) })), 1, "the network is the sandbox's to give");
-        assert_eq!(filtered(|| outcome(unsafe { libc::getpid() })), 1);
+            let mut parameters = [0u8; 120];
+            outcome(unsafe { libc::syscall(libc::SYS_io_uring_setup, 4u32, parameters.as_mut_ptr()) })
+        }), 3, "io_uring answers as if absent");
+        assert_eq!(filtered(|| outcome(unsafe { libc::syscall(libc::SYS_io_uring_enter, -1, 0u32, 0u32, 0u32, std::ptr::null::<u8>(), 0usize) })), 3);
+        assert_eq!(filtered(|| outcome(unsafe { libc::syscall(libc::SYS_io_uring_register, -1, 0u32, std::ptr::null::<u8>(), 0u32) })), 3);
     }
 
     #[test]

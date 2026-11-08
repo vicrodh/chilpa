@@ -490,10 +490,18 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
     later handles every file right it knows and grants them only beneath
     the plugin's own root and beneath the folder, so a file reached through
     `..` is refused whatever the mount; and a seccomp filter answers EACCES
-    to `socket(AF_UNIX, ...)` and `inotify_add_watch`, and ENOSYS to a call
-    through another ABI. Version 3 is the first that covers `truncate` by
-    path; pathname sockets are covered by Landlock only from version 9,
-    hence the filter. `socketpair` still works.
+    to `socket(AF_UNIX, ...)`, to a datagram `socketpair(AF_UNIX, ...)` and
+    to `inotify_add_watch`, and ENOSYS to `io_uring_setup`,
+    `io_uring_enter`, `io_uring_register` and a call through another ABI.
+    Version 3 is the first that covers `truncate` by path; pathname sockets
+    are covered by Landlock only from version 9, hence the filter. io_uring
+    goes whole because its socket operation creates a socket the filter
+    never sees; a datagram pair goes because its endpoint can `sendto` any
+    socket by its path ([built], 2026-11-08). Stream and seqpacket pairs
+    stay: a stream endpoint refuses an address (EISCONN) and a seqpacket
+    one sends to its peer whatever address it is given ([built]). Neither
+    `sendto` nor `sendmsg` can be filtered on their address, which is
+    behind a pointer; with no socket able to use one, none needs to be.
   - Without Landlock 3 such a folder is never handed over: choosing it says
     why ([read] `crates/chilpa-api/src/plugin_export.rs`, `UNCONFINABLE`), a
     recorded one is dropped before the launch and the plugin starts without
