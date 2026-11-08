@@ -34,6 +34,8 @@ pub(crate) struct Natives {
     live: RwLock<HashMap<String, Arc<NativeClient>>>,
     /// What each was started from, to start it again.
     known: Mutex<HashMap<String, Known>>,
+    /// The last generation given to a start.
+    generations: std::sync::atomic::AtomicU64,
     /// The backend that starts the processes, chosen on first use.
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     launcher: std::sync::OnceLock<Arc<dyn chilpa_bwrap::NativeLauncher>>,
@@ -49,6 +51,9 @@ struct Known {
     restarts: usize,
     restarting: bool,
     last_start: Instant,
+    /// Which start this is. A restart scheduled for one generation does
+    /// nothing once an update, a stop or a network change replaced it.
+    generation: u64,
 }
 
 impl Natives {
@@ -73,10 +78,18 @@ impl Natives {
         let _guard = self.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
         let clients: Vec<_> = self.live.write().unwrap_or_else(|e| e.into_inner()).drain().map(|(_, client)| client).collect();
         for client in clients { client.stop(); }
-        let plugins: Vec<_> = self.known.lock().unwrap_or_else(|e| e.into_inner()).values()
-            .map(|known| (known.manifest.clone(), known.folder.clone())).collect();
+        let plugins: Vec<_> = {
+            let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
+            // A restart scheduled before this one is for a process that is gone.
+            for k in known.values_mut() { k.generation = self.next_generation(); k.restarting = false; }
+            known.values().map(|known| (known.manifest.clone(), known.folder.clone())).collect()
+        };
         for (manifest, folder) in plugins { let _ = self.start_locked(&manifest, &folder); }
         catalog.changed();
+    }
+
+    fn next_generation(&self) -> u64 {
+        self.generations.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1
     }
 
     pub(crate) fn history_changed(&self, plugin: &str) { self.personal_changed.lock().unwrap_or_else(|e| e.into_inner()).insert(plugin.into()); }
@@ -101,7 +114,7 @@ impl Natives {
         if client.alive() {
             return Some(client);
         }
-        self.restart(id);
+        let _ = self.restart(id);
         None
     }
 
@@ -290,19 +303,19 @@ impl Natives {
         let discover = known.get(&id).map(|k| k.discover.clone()).unwrap_or_default();
         known.insert(id.clone(), Known { manifest: manifest.clone(), folder: folder.to_path_buf(),
             capabilities: greeting.get("capabilities").cloned().unwrap_or(Value::Null),
-            discover, restarts, restarting: false, last_start: Instant::now() });
+            discover, restarts, restarting: false, last_start: Instant::now(), generation: self.next_generation() });
         drop(known);
         self.live.write().unwrap_or_else(|e| e.into_inner()).insert(id, client.clone());
         self.reports.get_or_init(|| crate::native_reporting::Reports::start(Arc::downgrade(self)));
         Ok(client)
     }
 
-    fn restart(self: &Arc<Self>, id: &str) {
-        let (manifest, folder, wait) = {
+    fn restart(self: &Arc<Self>, id: &str) -> Option<std::thread::JoinHandle<()>> {
+        let (generation, wait) = {
             let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
-            let Some(k) = known.get_mut(id) else { return };
+            let k = known.get_mut(id)?;
             if k.restarting {
-                return;
+                return None;
             }
             // A plugin that ran a good while before ending starts over.
             if k.last_start.elapsed() > Duration::from_secs(300) {
@@ -311,14 +324,15 @@ impl Natives {
             k.restarting = true;
             let wait = RESTART_WAITS[k.restarts.min(RESTART_WAITS.len() - 1)];
             k.restarts += 1;
-            (k.manifest.clone(), k.folder.clone(), wait)
+            (k.generation, wait)
         };
         let me = self.clone();
-        let id = id.to_string();
-        let _ = std::thread::Builder::new().name("chilpa-native-restart".into()).spawn(move || {
+        let named = id.to_string();
+        let spawned = std::thread::Builder::new().name("chilpa-native-restart".into()).spawn(move || {
             std::thread::sleep(Duration::from_secs(wait));
+            let id = named;
             let _guard = me.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
-            if !me.known.lock().unwrap_or_else(|e| e.into_inner()).contains_key(&id) { return; }
+            let Some((manifest, folder)) = me.still_due(&id, generation) else { return };
             me.broker.revoke(&id);
             let previous = me.live.read().unwrap_or_else(|e| e.into_inner()).get(&id).cloned();
             // A closed protocol pipe can leave its worker alive. I reap it
@@ -326,10 +340,45 @@ impl Natives {
             if let Some(client) = previous { client.stop(); }
             let started = me.start_locked(&manifest, &folder);
             eprintln!("native: plugin={id} restarted ok={}", started.is_ok());
-            if let Some(k) = me.known.lock().unwrap_or_else(|e| e.into_inner()).get_mut(&id) {
-                k.restarting = false;
-            }
+            me.restarted(&id, generation);
         });
+        match spawned {
+            Ok(handle) => Some(handle),
+            Err(error) => {
+                eprintln!("native: no thread to restart plugin={id} on ({error}); it is tried again on its next call");
+                self.restarted(id, generation);
+                None
+            }
+        }
+    }
+
+    /// What to start again, if the plugin is still the start the restart was
+    /// scheduled for, its manifest on disk is still that one and it is still
+    /// approved. Called under the lifecycle lock.
+    fn still_due(&self, id: &str, generation: u64) -> Option<(Manifest, PathBuf)> {
+        let (manifest, folder) = {
+            let known = self.known.lock().unwrap_or_else(|e| e.into_inner());
+            // Replaced since: what replaced it schedules its own restarts.
+            let k = known.get(id).filter(|k| k.generation == generation)?;
+            (k.manifest.clone(), k.folder.clone())
+        };
+        let current = std::fs::read_to_string(folder.join("manifest.json")).ok()
+            .and_then(|text| Manifest::parse_for_runtime(&text, Runtime::Process).ok());
+        let root = folder.parent().unwrap_or(&folder);
+        let due = current.is_some_and(|current| current == manifest && crate::approvals::Approvals::load(root).covers(&current));
+        if !due {
+            eprintln!("native: plugin={id} changed or is no longer approved since it ended; it is not started again");
+            self.restarted(id, generation);
+            return None;
+        }
+        Some((manifest, folder))
+    }
+
+    /// The restart scheduled for `generation` is over, whatever came of it.
+    fn restarted(&self, id: &str, generation: u64) {
+        if let Some(k) = self.known.lock().unwrap_or_else(|e| e.into_inner()).get_mut(id) {
+            if k.generation == generation { k.restarting = false; }
+        }
     }
 }
 
@@ -453,9 +502,10 @@ pub(crate) mod tests {
     use super::*;
 
     pub(crate) fn remember_source(natives: &Natives, manifest: Manifest, capabilities: Value) {
+        let generation = natives.next_generation();
         natives.known.lock().unwrap().insert(manifest.id.clone(), Known {
             manifest, folder: PathBuf::new(), capabilities, discover: Vec::new(),
-            restarts: 0, restarting: false, last_start: Instant::now(),
+            restarts: 0, restarting: false, last_start: Instant::now(), generation,
         });
     }
 
@@ -573,7 +623,7 @@ pub(crate) mod tests {
         let natives = Arc::new(Natives::default());
         for audio in [false, true] {
             let manifest: Manifest = serde_json::from_value(json!({"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","delivers_audio":audio})).unwrap();
-            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest, folder:PathBuf::new(), capabilities:json!({}), discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now() });
+            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest, folder:PathBuf::new(), capabilities:json!({}), discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now(), generation: 1 });
             assert_eq!(natives.delivers_audio("test.source"), audio);
             let reply = crate::source_search::native_reply(&natives, "test.source", "Fixture", "Song", 1, "");
             assert_eq!(reply.delivers_audio, audio, "even a failed search retains its declared capability");
@@ -586,9 +636,82 @@ pub(crate) mod tests {
         let natives = Natives::default();
         let manifest: Manifest = serde_json::from_value(json!({"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source"})).unwrap();
         for (capabilities, edits, removes) in [(json!({}), false, false), (json!({"playlist_remove":true}), false, true), (json!({"playlist_edit":true}), true, false)] {
-            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest: manifest.clone(), folder:PathBuf::new(), capabilities, discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now() });
+            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest: manifest.clone(), folder:PathBuf::new(), capabilities, discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now(), generation: 1 });
             assert_eq!((natives.edits_playlists("test.source"), natives.removes_playlists("test.source")), (edits, removes));
         }
+    }
+    /// A backend with a sandbox that counts the plugins it is asked to start, and starts none.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[derive(Default)]
+    struct Counting(std::sync::atomic::AtomicUsize);
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    impl chilpa_bwrap::NativeLauncher for Counting {
+        fn availability(&self) -> Result<(), chilpa_bwrap::Unavailable> { Ok(()) }
+        fn launch(&self, _: &chilpa_bwrap::NativePaths, _: &str, _: usize, _: bool, _: chilpa_bwrap::Notice)
+            -> Result<chilpa_bwrap::LaunchedNative, chilpa_plugin::bridge::BridgeError> {
+            self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Err(chilpa_plugin::bridge::BridgeError::Denied)
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    fn counting(natives: &Natives) -> Arc<Counting> {
+        let launches = Arc::new(Counting::default());
+        with_launcher(natives, launches.clone());
+        launches
+    }
+
+    const PROCESS: &str = r#"{"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","runtime":"process","capabilities":[{"type":"network","domains":["api.example.org"]}]}"#;
+
+    /// A plugin folder under a plugins root, its manifest approved or not.
+    fn installed(root: &Path, manifest: &str, approved: bool) -> (PathBuf, Manifest) {
+        let folder = root.join("test.source");
+        std::fs::create_dir_all(&folder).unwrap();
+        std::fs::write(folder.join("manifest.json"), manifest).unwrap();
+        let parsed = Manifest::parse_for_runtime(manifest, Runtime::Process).unwrap();
+        if approved { crate::approvals::Approvals::load(root).approve(&parsed).unwrap(); }
+        (folder, parsed)
+    }
+
+    /// What a start leaves known of a plugin.
+    fn started(natives: &Natives, manifest: Manifest, folder: &Path) {
+        let generation = natives.next_generation();
+        natives.known.lock().unwrap().insert(manifest.id.clone(), Known { manifest, folder: folder.to_path_buf(),
+            capabilities: Value::Null, discover: Vec::new(), restarts: 0, restarting: false, last_start: Instant::now(), generation });
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn a_restart_due_from_before_an_update_does_not_bring_the_old_one_back() {
+        let natives = Arc::new(Natives::default());
+        let launches = counting(&natives);
+        let root = tempfile::tempdir().unwrap();
+        let (folder, before) = installed(root.path(), PROCESS, true);
+        started(&natives, before, &folder);
+        let pending = natives.restart("test.source").unwrap();
+        // Within the wait, the update stops it and starts the new version,
+        // which asks for no network.
+        let updated = PROCESS.replace("1.0.0", "1.1.0").replace(r#"{"type":"network","domains":["api.example.org"]}"#, "");
+        let (folder, after) = installed(root.path(), &updated, true);
+        started(&natives, after, &folder);
+        pending.join().unwrap();
+        assert_eq!(launches.0.load(std::sync::atomic::Ordering::SeqCst), 0, "the old manifest was not started again");
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn a_restart_starts_only_what_is_still_approved() {
+        let natives = Arc::new(Natives::default());
+        let launches = counting(&natives);
+        let root = tempfile::tempdir().unwrap();
+        let (folder, manifest) = installed(root.path(), PROCESS, true);
+        started(&natives, manifest.clone(), &folder);
+        natives.restart("test.source").unwrap().join().unwrap();
+        assert_eq!(launches.0.load(std::sync::atomic::Ordering::SeqCst), 1, "an approved plugin is started again");
+        std::fs::remove_file(root.path().join("approvals.json")).unwrap();
+        started(&natives, manifest, &folder);
+        natives.restart("test.source").unwrap().join().unwrap();
+        assert_eq!(launches.0.load(std::sync::atomic::Ordering::SeqCst), 1, "one no longer approved is not");
     }
 
     #[test]
