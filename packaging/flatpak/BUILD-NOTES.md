@@ -503,10 +503,19 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
     `sendto` nor `sendmsg` can be filtered on their address, which is
     behind a pointer; with no socket able to use one, none needs to be.
   - Without Landlock 3 such a folder is never handed over: choosing it says
-    why ([read] `crates/chilpa-api/src/plugin_export.rs`, `UNCONFINABLE`), a
-    recorded one is dropped before the launch and the plugin starts without
-    `export_dir`, the backend refuses one it is given, and the runner
-    refuses to start the plugin. The kernel needs
+    why, a recorded one is dropped before the launch and the plugin starts
+    without `export_dir`, its page saying why, the backend refuses one it
+    is given, and the runner refuses to start the plugin ([read]
+    `crates/chilpa-api/src/plugin_export.rs`, `unconfinable_message`,
+    `refusal`). The message gives the way that needs no Landlock:
+    `flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa`,
+    a restart, and choosing the folder again. With that access the file
+    chooser hands back the folder's own path instead of a Documents one
+    (xdg-desktop-portal registers a document only for a file the
+    application cannot reach), so it is a mounted folder like any other:
+    the portal mounts it into the plugin's sandbox at that path and the
+    runner closes descriptor 3 ([built], the mounted case of the portal
+    smoke, 2026-11-08). The file chooser's side was not run here. The kernel needs
     `CONFIG_SECURITY_LANDLOCK=y` and `landlock` in `CONFIG_LSM` or `lsm=`.
     The kernel these notes were built on (7.3.1-gentoo) has no Landlock:
     there the refusal is what was run ([built],
