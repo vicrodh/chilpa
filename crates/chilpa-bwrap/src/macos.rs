@@ -33,7 +33,22 @@ fn granted_export(paths: &NativePaths) -> Result<Option<PathBuf>, BridgeError> {
     Ok(Some(export))
 }
 
+/// The sandboxed command and the canonical folders its policy grants,
+/// resolved once: the folders the plugin is told are these same paths, so a
+/// link swapped in between cannot make the two differ.
+struct Prepared {
+    command: Command,
+    data: PathBuf,
+    cache: PathBuf,
+    export: Option<PathBuf>,
+}
+
+#[cfg(test)]
 fn command(paths: &NativePaths, network: bool) -> Result<Command, BridgeError> {
+    prepare(paths, network).map(|prepared| prepared.command)
+}
+
+fn prepare(paths: &NativePaths, network: bool) -> Result<Prepared, BridgeError> {
     if unsafe { libc::geteuid() } == 0 { return Err(BridgeError::Denied); }
     let folder = directory(&paths.folder)?;
     let program = folder.join("plugin").canonicalize().map_err(|_| BridgeError::Disconnected)?;
@@ -48,8 +63,9 @@ fn command(paths: &NativePaths, network: bool) -> Result<Command, BridgeError> {
     for (name, path) in [("PLUGIN", &folder), ("PROGRAM", &program), ("DATA", &data), ("CACHE", &cache)] {
         parameter(&mut command, name, path);
     }
-    if let Some(export) = granted_export(paths)? {
-        parameter(&mut command, "EXPORT", &export);
+    let export = granted_export(paths)?;
+    if let Some(export) = &export {
+        parameter(&mut command, "EXPORT", export);
         policy.push_str("\n(allow file-read* file-write* (subpath (param \"EXPORT\")))\n");
     }
     if network {
@@ -73,7 +89,7 @@ fn command(paths: &NativePaths, network: bool) -> Result<Command, BridgeError> {
             Ok(())
         });
     }
-    Ok(command)
+    Ok(Prepared { command, data, cache, export })
 }
 
 fn footprint(pid: u32) -> Option<u64> {
@@ -98,10 +114,9 @@ impl NativeLauncher for Seatbelt {
     fn launch(&self, paths: &NativePaths, name: &str, memory_bytes: usize, network: bool, notice: Notice)
         -> Result<LaunchedNative, BridgeError> {
         if memory_bytes < 64 * 1024 * 1024 { return Err(BridgeError::Denied); }
-        let mut sandboxed = command(paths, network)?;
         // The plugin is told the same canonical folders the policy grants.
-        let guest_directories = (directory(&paths.data)?, directory(&paths.cache)?);
-        let export = granted_export(paths)?;
+        let Prepared { command: mut sandboxed, data, cache, export } = prepare(paths, network)?;
+        let guest_directories = (data, cache);
         let mut child = sandboxed.spawn().map_err(|_| BridgeError::Disconnected)?;
         let input = child.stdin.take().ok_or(BridgeError::Disconnected)?;
         let output = child.stdout.take().ok_or(BridgeError::Disconnected)?;
