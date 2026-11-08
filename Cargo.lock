@@ -1092,6 +1092,7 @@ version = "0.1.2"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",
+ "chilpa-dirs",
  "chilpa-i18n",
  "hkdf",
  "keyring",

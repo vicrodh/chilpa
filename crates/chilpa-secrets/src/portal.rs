@@ -20,7 +20,6 @@ use std::collections::HashMap;
 use std::io::{ErrorKind, Read};
 use std::os::fd::AsFd;
 use std::os::unix::net::UnixStream;
-use std::path::Path;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{mpsc, Arc, Mutex, MutexGuard};
 use std::time::Duration;
@@ -61,11 +60,6 @@ pub(crate) struct Waits {
 }
 
 pub(crate) const WAITS: Waits = Waits { call: Duration::from_secs(10), whole: Duration::from_secs(30) };
-
-/// True inside a Flatpak sandbox, which marks itself with this file.
-pub(crate) fn sandboxed() -> bool {
-    Path::new("/.flatpak-info").exists()
-}
 
 /// The session bus the portal is reached on.
 #[derive(Clone, Debug)]

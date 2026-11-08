@@ -97,7 +97,7 @@ impl Backend {
         // In a Flatpak: the portal, then the derived path. Asking the keyring
         // there would only find a bus name the sandbox does not reach.
         #[cfg(target_os = "linux")]
-        if crate::portal::sandboxed() {
+        if chilpa_dirs::sandbox() == chilpa_dirs::Sandbox::Flatpak {
             if let Ok(master_key) = try_portal(service_name) {
                 return Ok(Self::with_key(BackendKind::Portal, master_key, service_name, storage_dir));
             }
