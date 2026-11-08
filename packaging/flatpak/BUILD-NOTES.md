@@ -294,3 +294,63 @@ reads `/.flatpak-info` once ([read] `crates/chilpa-dirs/src/lib.rs:148-151`).
 7. The compatibility worker needs Perl at `/app/bin/perl`, built for the
    runtime, and `compat-runtime` with its Perl modules beside `chilpa-qt`.
    No script in the repository builds either for the runtime (section 5).
+
+## 10. Known limits of the sandbox boundary
+
+What the code cannot close from inside the Flatpak, each with what bounds it
+today. Read from the code at the cited lines; the portal's and bubblewrap's
+behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
+`bubblewrap.c`, main branches, read 2026-11-07).
+
+- **The portal forgets a process at its exit.** When the process it started
+  exits, the portal emits `SpawnExited`, drops the pid and answers a later
+  `SpawnSignal` with "No such pid" (`child_watch_died`,
+  `handle_spawn_signal`). Its process is bubblewrap's outer one, which exits
+  when the sandbox's first process exits while the sandbox's pid 1 keeps
+  running with whatever that process left (`monitor_child`, `do_init`). So
+  `chilpa-plugin-runner` does not exec the plugin: it runs it as a child,
+  adopts its orphans as a child subreaper and ends them before exiting
+  ([read] `crates/chilpa-plugin-runner/src/lib.rs`, `supervise` and
+  `end_all`). Whether Flatpak's seccomp filter allows
+  `PR_SET_CHILD_SUBREAPER`: [unverified]. If it refuses, the runner exits
+  with 126 and no process plugin starts.
+- **Chilpa leaving the bus sends SIGINT, not SIGKILL.** `WATCH_BUS` ends
+  each sandbox with `killpg(pid, SIGINT)` (`name_owner_changed`). The runner
+  answers SIGINT, SIGTERM and SIGHUP by ending everything below it; a
+  plugin that ignores SIGINT is still ended that way.
+- **A spawn the portal never answers.** A `Spawn` answered after its caller
+  gave up (10 s, [read] `crates/chilpa-bwrap/src/portal.rs:76-78`) is ended
+  when the answer comes; one never answered runs until Chilpa leaves the
+  bus. A signal the portal refuses is sent again while the process is
+  waited for, and a process whose handle goes while it may still run stays
+  in the ledger and is signalled from a thread of its own ([read]
+  `portal.rs`, `wait`, `Drop for PortalProcess`, `end_abandoned`).
+- **The compatibility worker's /tmp has no total bound.** Bubblewrap mounts
+  a 16 MiB tmpfs there ([read] `crates/chilpa-bwrap/src/linux_bwrap.rs:65`);
+  the portal has no option for one. What bounds the worker is what the
+  runner sets ([read] `crates/chilpa-bwrap/src/flatpak_worker.rs:91-93`):
+  no forks (`--nproc=0`), 1 MiB per file (`--fsize`), 64 descriptors and
+  120 s of CPU in all. They bound each file and the time spent writing, not
+  the sum of the files: a worker that writes and closes files in a loop can
+  fill the sandbox's /tmp until its CPU runs out. Lowering them does not
+  change that order of magnitude, since writing a tmpfs takes little CPU
+  per byte, and it would cut the worker's legitimate work first; they stay
+  as bubblewrap's. Where that /tmp lives for a sandboxed spawn (a tmpfs of
+  its own or a folder under the user's runtime directory), and so what
+  fills up: [unverified].
+- **Locks held across portal calls.** `Natives::lifecycle` is held while a
+  plugin is stopped and started ([read] `crates/chilpa-api/src/natives.rs:77-78`,
+  `:265-266`, `:276-277`), and enabling, disabling, updating and granting
+  network hold `Mutex<Plugins>` around `reload_one`, which stops and starts
+  ([read] `crates/chilpa-api/src/plugin_center.rs:393-398`,
+  `crates/chilpa-api/src/plugin_updates.rs:35`,
+  `crates/chilpa-api/src/plugins.rs:352-354`). Each wait has a bound: 3 s
+  for a `SpawnSignal` answer and 10 s for the exit, then 2 s for a worker's
+  pipe threads ([read] `crates/chilpa-plugin/src/pipe_transport.rs:16`);
+  10 s for a `Spawn` answer and 15 s for the plugin's greeting
+  ([read] `natives.rs:24`). A slow portal therefore holds plugin management
+  for up to about 40 s per plugin, and a network change replaces the
+  plugins one after another under the lifecycle lock. Moving the portal
+  calls out of these locks would let stops, starts, updates and restarts
+  of the same plugin interleave, which the restart's generation check
+  relies on not happening; it is not a small change and is not made here.

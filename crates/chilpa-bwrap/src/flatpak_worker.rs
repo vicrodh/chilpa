@@ -4,8 +4,15 @@
 //! are the adapter and its modules when they are not under /app. The worker
 //! gets no network and no writable folder: what it reaches outside goes
 //! through the host's WorkerServices, as under bubblewrap. Its limits come
-//! from chilpa-plugin-runner. The 16 MiB bound bubblewrap puts on its /tmp
-//! has no portal option and is not there.
+//! from chilpa-plugin-runner.
+//!
+//! Known limit: the 16 MiB bound bubblewrap puts on its /tmp has no portal
+//! option and is not there. No forks, 1 MiB per file and 120 s of CPU bound
+//! each file and the time it has to write, not the sum: a worker that keeps
+//! writing and closing files can fill the sandbox's /tmp until its CPU runs
+//! out. Lower limits would not change that order of magnitude and would cut
+//! its real work first, so they stay as bubblewrap's (packaging/flatpak/
+//! BUILD-NOTES.md, section 10).
 
 use crate::flatpak::{keep_env, Exposed, Flatpak};
 use crate::portal::Spawn;
