@@ -174,8 +174,12 @@ const NODES: &str = "/dev/snd";
 /// too, and the one a Flatpak without the devices does not have, because
 /// `/dev/snd` is not in its sandbox at all.
 ///
-/// Asked of the node's permissions with `access`, not by opening it: the
-/// listing opens nothing.
+/// Asked of the node's permissions, not by opening it: the listing opens
+/// nothing. `faccessat` with `AT_EACCESS` checks with the effective ids and
+/// capabilities, which are what `open` is checked with. Plain `access`
+/// takes the real ids, and no capabilities when the real uid is not root,
+/// so it hid a card from a Chilpa started with a group or a capability its
+/// real ids lack, which could have opened it.
 fn reachable(nodes: &std::path::Path, card: u32) -> bool {
     use std::os::unix::ffi::OsStrExt;
     let node = nodes.join(format!("controlC{card}"));
@@ -183,8 +187,8 @@ fn reachable(nodes: &std::path::Path, card: u32) -> bool {
         return false;
     };
     // SAFETY: the path is a NUL-terminated string that outlives the call,
-    // and `access` only reads the node's permissions.
-    unsafe { libc::access(node.as_ptr(), libc::R_OK | libc::W_OK) == 0 }
+    // and `faccessat` only reads the node's permissions.
+    unsafe { libc::faccessat(libc::AT_FDCWD, node.as_ptr(), libc::R_OK | libc::W_OK, libc::AT_EACCESS) == 0 }
 }
 
 /// Lists the direct outputs by reading `/proc/asound`, each with whether
@@ -440,6 +444,88 @@ mod tests {
             assert!(!reachable(&root, 3), "a node it may only read");
         }
         let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_node_that_open_reaches_through_the_effective_credentials_is_reachable() {
+        // `access` checks with the real ids, and drops the capabilities of a
+        // process whose real uid is not root, while `open` is checked with
+        // the effective ones: a Chilpa started with a capability or a group
+        // its real ids lack could open the card, and the card was not
+        // offered. Shown in a user namespace of a forked child, where this
+        // user's uid keeps CAP_DAC_OVERRIDE over its own files, on a node no
+        // mode bit lets it read or write.
+        use std::os::unix::ffi::OsStrExt;
+        use std::os::unix::fs::PermissionsExt;
+        let root = nodes("effective");
+        let node = root.join("controlC4");
+        fs::write(&node, b"").unwrap();
+        fs::set_permissions(&node, fs::Permissions::from_mode(0o000)).unwrap();
+        // SAFETY: neither takes arguments or can fail.
+        let (uid, gid) = unsafe { (libc::geteuid(), libc::getegid()) };
+        if uid == 0 {
+            let _ = fs::remove_dir_all(&root);
+            eprintln!("skipped: root's access() keeps its capabilities, so there is nothing to tell apart");
+            return;
+        }
+        let (uid_map, gid_map) = (format!("{uid} {uid} 1"), format!("{gid} {gid} 1"));
+        let maps: [(&std::ffi::CStr, &[u8]); 3] = [
+            (c"/proc/self/uid_map", uid_map.as_bytes()),
+            (c"/proc/self/setgroups", b"deny"),
+            (c"/proc/self/gid_map", gid_map.as_bytes()),
+        ];
+        let node_path = std::ffi::CString::new(node.as_os_str().as_bytes()).unwrap();
+        // SAFETY: the child runs only the calls below and leaves through
+        // _exit, never back into the test harness; glibc's allocator, which
+        // `reachable` uses, is safe to use after a fork.
+        let child = unsafe { libc::fork() };
+        assert!(child >= 0, "fork");
+        if child == 0 {
+            // SAFETY: as above; a forked child has one thread, which
+            // unshare(CLONE_NEWUSER) requires.
+            let code = unsafe {
+                if libc::unshare(libc::CLONE_NEWUSER) != 0 || !maps.iter().all(|(path, text)| write_whole(path, text)) {
+                    2
+                } else {
+                    let fd = libc::open(node_path.as_ptr(), libc::O_RDWR | libc::O_CLOEXEC);
+                    if fd < 0 {
+                        3
+                    } else {
+                        libc::close(fd);
+                        if reachable(&root, 4) { 0 } else { 1 }
+                    }
+                }
+            };
+            // SAFETY: ends the child without running the parent's handlers.
+            unsafe { libc::_exit(code) };
+        }
+        let mut status = 0;
+        // SAFETY: waits for the child forked above.
+        unsafe { libc::waitpid(child, &mut status, 0) };
+        let _ = fs::remove_dir_all(&root);
+        assert!(libc::WIFEXITED(status), "the child ended by a signal: {status}");
+        match libc::WEXITSTATUS(status) {
+            0 => {}
+            1 => panic!("open() reaches the node through the effective credentials, and reachable() said no"),
+            2 => eprintln!("skipped: no user namespace here to start a process with a capability"),
+            3 => eprintln!("skipped: the user namespace gave no capability over the node"),
+            other => panic!("the child ended with {other}"),
+        }
+    }
+
+    /// Writes `text` to `path` with plain system calls, for a forked child.
+    fn write_whole(path: &std::ffi::CStr, text: &[u8]) -> bool {
+        // SAFETY: the path is NUL-terminated and the buffer is whole; the
+        // descriptor opened here is closed here.
+        unsafe {
+            let fd = libc::open(path.as_ptr(), libc::O_WRONLY | libc::O_CLOEXEC);
+            if fd < 0 {
+                return false;
+            }
+            let written = libc::write(fd, text.as_ptr().cast(), text.len());
+            libc::close(fd);
+            written == text.len() as isize
+        }
     }
 
     #[test]

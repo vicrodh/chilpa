@@ -968,3 +968,11 @@ wtermsig
 rdwr
 stdin
 fileno
+# How a card's nodes are checked with the effective credentials, and the user namespace a test shows it in: libc names.
+eaccess
+faccessat
+getegid
+gid
+newuser
+unshare
+wronly
