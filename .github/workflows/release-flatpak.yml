@@ -38,7 +38,6 @@ jobs:
     outputs:
       commit: ${{ steps.source.outputs.commit }}
       version: ${{ steps.version.outputs.version }}
-      release: ${{ steps.release.outputs.release }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -58,18 +57,9 @@ jobs:
           RELEASE_REF: ${{ github.ref }}
           RELEASE_EVENT: ${{ github.event_name }}
         run: python3 scripts/release_version.py --github-output "$GITHUB_OUTPUT"
-      - id: release
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          FORK: ${{ github.event.repository.fork }}
-        run: |
-          # Only a release tag pushed to this repository, checked above, signs.
-          release=false
-          if [[ "$EVENT_NAME" == push && "$GITHUB_REF" == refs/tags/v* && "$FORK" == false ]]; then release=true; fi
-          echo "release=$release" >> "$GITHUB_OUTPUT"
 
   # Runs the checked-out ref's own build scripts, a manual dispatch's
-  # included, so it holds no secret.
+  # included, so it holds no secret, and what it hands on is data.
   build:
     needs: identity
     runs-on: ubuntu-24.04
@@ -79,7 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ needs.identity.outputs.commit }}
+          ref: ${{ github.event_name == 'push' && github.sha || needs.identity.outputs.commit }}
           persist-credentials: false
       - name: Validate release identity
         env:
@@ -87,7 +77,7 @@ jobs:
           RELEASE_EVENT: ${{ github.event_name }}
         run: python3 scripts/release_version.py --github-env "$GITHUB_ENV"
       - name: Check the packaging scripts
-        run: python3 -m unittest scripts/tests/test_flatpak_descriptors.py scripts/tests/test_release_version.py
+        run: python3 -m unittest scripts/tests/test_flatpak_descriptors.py scripts/tests/test_release_version.py scripts/tests/test_flatpak_repo_archive.py
       - name: Make room for the SDK and the build tree
         run: |
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
@@ -109,9 +99,11 @@ jobs:
           key: flatpak-downloads-${{ hashFiles('Cargo.lock', 'packaging/flatpak/**') }}
           restore-keys: flatpak-downloads-
       - name: Build the Flatpak, its repository and its bundle, unsigned
+        env:
+          BUILD_COMMIT: ${{ github.event_name == 'push' && github.sha || needs.identity.outputs.commit }}
         run: |
           scripts/package-flatpak.sh --output "$RUNNER_TEMP/flatpak" \
-            --commit "${{ needs.identity.outputs.commit }}" --branch "$FLATPAK_BRANCH" \
+            --commit "$BUILD_COMMIT" --branch "$FLATPAK_BRANCH" \
             --state-dir "$RUNNER_TEMP/flatpak-state" --jobs 2 --install-deps \
             --bundle "Chilpa-$RELEASE_VERSION-x86_64-unsigned.flatpak"
       - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
@@ -155,32 +147,46 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # A verified release tag only. The flatpak-release environment holds the
-  # signing key; it admits v* tags and main (publish-flatpak.yml's manual
-  # run). What runs here is the tag's own scripts, which main holds.
+  # A release tag pushed to this repository only, decided from the event
+  # itself: nothing a job that ran the built ref's code wrote reaches this
+  # one but the unsigned artifact, which is unpacked as data. Every script
+  # here comes from main's checkout, never from the tag, and the tag's
+  # commit is checked against main by that code before the key is imported.
+  # The flatpak-release environment holds the key; limit it to protected v*
+  # tags (and main, for publish-flatpak.yml's manual run).
   sign:
-    if: needs.identity.outputs.release == 'true'
-    needs: [identity, build]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && !github.event.repository.fork
+    needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     environment: flatpak-release
     env:
       FLATPAK_BRANCH: stable
       FLATPAK_REPO_URL: ${{ vars.FLATPAK_REPO_URL }}
-      RELEASE_VERSION: ${{ needs.identity.outputs.version }}
+      TAG: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ needs.identity.outputs.commit }}
+          ref: main
           fetch-depth: 0
           persist-credentials: false
-      - name: Require the tag's own commit, on main, before the key
-        env:
-          TAG: ${{ github.ref_name }}
+      - name: Require the tag's commit on main, with main's code
+        id: tag
         run: |
           set -euo pipefail
-          scripts/verify-release-tag.sh "$TAG"
-          [[ "$(git rev-parse HEAD)" == "${{ needs.identity.outputs.commit }}" ]]
+          commit="$(scripts/verify-release-tag.sh --on-main "$TAG")"
+          if [[ "$commit" != "$GITHUB_SHA" ]]; then
+            echo "::error::The tag names $commit, and this run was started for $GITHUB_SHA."
+            exit 1
+          fi
+          version="${TAG#v}"
+          python3 scripts/release_version.py --version "$version" > /dev/null
+          tagged="$(git show "$commit:Cargo.toml" | python3 -c 'import sys, tomllib; print(tomllib.loads(sys.stdin.read())["workspace"]["package"]["version"])')"
+          if [[ "$tagged" != "$version" ]]; then
+            echo "::error::The tag says $version and its commit's Cargo.toml says $tagged."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Require the repository's address
         run: |
           if [[ -z "$FLATPAK_REPO_URL" ]]; then
@@ -194,7 +200,13 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: chilpa-flatpak-unsigned
-          path: ${{ runner.temp }}/unsigned
+          path: ${{ runner.temp }}/artifact
+      # As data: only an OSTree repository's own files, never a link.
+      - name: Unpack the unsigned repository
+        run: |
+          set -euo pipefail
+          sha256sum "$RUNNER_TEMP/artifact/repo-unsigned.tar"
+          python3 scripts/flatpak-repo-archive.py "$RUNNER_TEMP/artifact/repo-unsigned.tar" "$RUNNER_TEMP/unsigned"
       - name: Import the signing key
         env:
           FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
@@ -203,11 +215,20 @@ jobs:
         run: |
           set -euo pipefail
           key="$(scripts/flatpak-signing-key.sh import "$RUNNER_TEMP/gnupg")"
+          # The key main publishes, when it is there, is the key that signs.
+          if [[ -s packaging/flatpak/chilpa-flatpak.gpg ]]; then
+            published="$(gpg --batch --with-colons --show-keys packaging/flatpak/chilpa-flatpak.gpg | awk -F: '$1 == "fpr" { print $10; exit }')"
+            if [[ "$published" != "$key" ]]; then
+              echo "::error::The signing key is not packaging/flatpak/chilpa-flatpak.gpg on main."
+              exit 1
+            fi
+          fi
           echo "FLATPAK_KEY=$key" >> "$GITHUB_ENV"
       - name: Sign the repository and write the bundle
+        env:
+          RELEASE_VERSION: ${{ steps.tag.outputs.version }}
         run: |
           set -euo pipefail
-          tar -C "$RUNNER_TEMP/unsigned" -xf "$RUNNER_TEMP/unsigned/repo-unsigned.tar"
           scripts/sign-flatpak.sh --repo "$RUNNER_TEMP/unsigned/repo" --output dist \
             --gpg-sign "$FLATPAK_KEY" --gpg-homedir "$RUNNER_TEMP/gnupg" --repo-url "$FLATPAK_REPO_URL" \
             --branch "$FLATPAK_BRANCH" --bundle "Chilpa-$RELEASE_VERSION-x86_64.flatpak"
@@ -217,6 +238,8 @@ jobs:
           if [[ -d "$RUNNER_TEMP/gnupg" ]]; then gpgconf --homedir "$RUNNER_TEMP/gnupg" --kill all || true; fi
           rm -rf "$RUNNER_TEMP/gnupg"
       - name: Write the descriptors, the repository tarball and the checksums
+        env:
+          RELEASE_VERSION: ${{ steps.tag.outputs.version }}
         run: |
           set -euo pipefail
           python3 scripts/flatpak-descriptors.py --url "$FLATPAK_REPO_URL" --key dist/chilpa-flatpak.gpg \
@@ -235,7 +258,7 @@ jobs:
   # A manual dispatch: the same signing, with a key made here and thrown
   # away, and no secret this job could reach.
   sign-dry-run:
-    if: needs.identity.outputs.release != 'true'
+    if: ${{ !(github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && !github.event.repository.fork) }}
     needs: [identity, build]
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -255,12 +278,12 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: chilpa-flatpak-unsigned
-          path: ${{ runner.temp }}/unsigned
+          path: ${{ runner.temp }}/artifact
       - name: Sign with a throwaway key
         run: |
           set -euo pipefail
           key="$(scripts/flatpak-signing-key.sh throwaway "$RUNNER_TEMP/gnupg")"
-          tar -C "$RUNNER_TEMP/unsigned" -xf "$RUNNER_TEMP/unsigned/repo-unsigned.tar"
+          python3 scripts/flatpak-repo-archive.py "$RUNNER_TEMP/artifact/repo-unsigned.tar" "$RUNNER_TEMP/unsigned"
           scripts/sign-flatpak.sh --repo "$RUNNER_TEMP/unsigned/repo" --output dist \
             --gpg-sign "$key" --gpg-homedir "$RUNNER_TEMP/gnupg" --repo-url "$FLATPAK_REPO_URL" \
             --branch "$FLATPAK_BRANCH" --bundle "Chilpa-$RELEASE_VERSION-x86_64.flatpak"
@@ -278,11 +301,12 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # The desktop workflow creates the draft release for the same tag; it takes
-  # longer than this one, so its draft is waited for.
+  # The desktop workflow creates the draft release for the same tag. Its
+  # draft is waited for; the release should stay a draft until these files
+  # are on it, and publish-flatpak.yml waits for them if it does not.
   attach:
-    if: needs.identity.outputs.release == 'true'
-    needs: [identity, sign]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && !github.event.repository.fork
+    needs: sign
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     permissions:
@@ -299,7 +323,12 @@ jobs:
       - name: Wait for the draft release
         run: |
           for attempt in $(seq 1 160); do
-            if gh release view "$RELEASE_TAG" --json isDraft >/dev/null 2>&1; then exit 0; fi
+            if draft="$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft 2>/dev/null)"; then
+              if [[ "$draft" != true ]]; then
+                echo "::warning::$RELEASE_TAG was published before its Flatpak files; publish-flatpak.yml waits for them, or run it again by hand."
+              fi
+              exit 0
+            fi
             sleep 60
           done
           echo "The release for $RELEASE_TAG did not appear within 160 minutes." >&2
