@@ -512,6 +512,26 @@ mod tests {
     }
 
     #[test]
+    fn a_host_keeps_a_card_its_nodes_do_not_reach_and_a_flatpak_hides_it() {
+        // On a host the card is offered and opened as before the check
+        // existed, which hid a DAC whose ACL had not arrived yet. Inside a
+        // Flatpak without the devices it cannot open, and is not offered.
+        use chilpa_dirs::Sandbox;
+        let nodes = std::env::temp_dir().join(format!("chilpa-alsa-offered-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&nodes);
+        std::fs::create_dir_all(&nodes).unwrap();
+        let card = |sandbox| devices::Device::listed("hw:1,0", "Fosi Audio ZH3", devices::offered_in(sandbox, &nodes, 1));
+        for host in [Sandbox::None, Sandbox::Snap] {
+            assert!(cards_info(&[card(host)]).present, "{host:?}: the stack is there, as before");
+            let offered: Vec<String> = card_outputs(vec![card(host)]).into_iter().map(|o| o.id).collect();
+            assert_eq!(offered, ["hw:1,0"], "{host:?}: the card is offered, as before");
+        }
+        assert!(!cards_info(&[card(Sandbox::Flatpak)]).present, "a Flatpak without /dev/snd");
+        assert!(card_outputs(vec![card(Sandbox::Flatpak)]).is_empty());
+        let _ = std::fs::remove_dir_all(&nodes);
+    }
+
+    #[test]
     fn cards_whose_nodes_cannot_be_reached_leave_the_stack_missing_and_say_why() {
         // A Flatpak without the devices: `/proc/asound` lists both cards and
         // `/dev/snd` is not in the sandbox. The stack said it was here, the

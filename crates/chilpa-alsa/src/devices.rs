@@ -112,9 +112,10 @@ pub struct Device {
     /// Whether the card has more than one playback device, which decides
     /// whether the device's own name is worth showing.
     siblings: bool,
-    /// Whether this process can reach the card's device nodes. A sandbox can
-    /// show `/proc/asound` and keep `/dev/snd` out, and then the card is
-    /// listed and does not open.
+    /// Whether the card is offered. Inside a Flatpak, whether this process
+    /// can reach the card's device nodes: the sandbox can show
+    /// `/proc/asound` and keep `/dev/snd` out, and then the card is listed
+    /// and does not open. Anywhere else, always ([`offered_in`]).
     pub reachable: bool,
 }
 
@@ -191,8 +192,16 @@ fn reachable(nodes: &std::path::Path, card: u32) -> bool {
     unsafe { libc::faccessat(libc::AT_FDCWD, node.as_ptr(), libc::R_OK | libc::W_OK, libc::AT_EACCESS) == 0 }
 }
 
+/// Whether a listed card is offered: inside a Flatpak, only when its nodes
+/// can be reached; anywhere else always, as before the check existed. A
+/// host's permissions are asked when the card is opened, and the check made
+/// in advance hid cards there, such as a DAC listed before its ACL arrived.
+pub(crate) fn offered_in(sandbox: chilpa_dirs::Sandbox, nodes: &std::path::Path, card: u32) -> bool {
+    sandbox != chilpa_dirs::Sandbox::Flatpak || reachable(nodes, card)
+}
+
 /// Lists the direct outputs by reading `/proc/asound`, each with whether
-/// its card's nodes can be reached.
+/// it is offered ([`offered_in`]).
 pub fn list() -> Vec<Device> {
     let mut outputs = Vec::new();
     let Ok(cards) = fs::read_to_string("/proc/asound/cards") else {
@@ -209,7 +218,7 @@ pub fn list() -> Vec<Device> {
         let card_name = card_name(rest);
         let devices = card_devices(card);
         let siblings = devices.len() > 1;
-        let reachable = reachable(std::path::Path::new(NODES), card);
+        let reachable = offered_in(chilpa_dirs::sandbox(), std::path::Path::new(NODES), card);
         let usb = fs::metadata(format!("/proc/asound/card{card}/usbid")).is_ok();
         for (device, name) in devices {
             let bus = if name.contains("HDMI") || name.contains("DisplayPort") {
