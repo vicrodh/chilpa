@@ -44,13 +44,18 @@ pub(crate) const INTERFACE: &str = "org.freedesktop.portal.Flatpak";
 /// The first version with `sandbox-expose-fd` and `sandbox-flags`.
 const MIN_VERSION: u32 = 3;
 
+/// The bus itself, which says who owns a name.
+const BUS: &str = "org.freedesktop.DBus";
+const BUS_PATH: &str = "/org/freedesktop/DBus";
+/// The bus's signal each time the portal's name changes hands.
+const OWNER_CHANGES: &str = "type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='org.freedesktop.portal.Flatpak'";
+
 pub(crate) const CLEAR_ENV: u32 = 1;
 pub(crate) const SANDBOX: u32 = 4;
 pub(crate) const NO_NETWORK: u32 = 8;
 pub(crate) const WATCH_BUS: u32 = 16;
 
-/// Messages from the portal the connection queues for the reader before it
-/// holds back.
+/// Messages the connection queues for the reader before it holds back.
 const QUEUED: usize = 64;
 /// Exits kept for spawns whose answer has not been read yet.
 const EARLY_EXITS: usize = 32;
@@ -149,7 +154,11 @@ impl Portal {
             #[cfg(test)]
             Bus::Address(address) => Builder::address(address.as_str()),
         }.map_err(text)?;
-        let conn = builder.method_timeout(timeouts.spawn).build().map_err(text)?;
+        let conn = builder.method_timeout(timeouts.spawn).max_queued(QUEUED).build().map_err(text)?;
+        // Everything that comes to this connection, which is the portal's
+        // alone, read from before the first call so no change of owner is
+        // missed.
+        let messages = MessageIterator::from(&conn);
         // Reading the version also starts the portal when it is not running.
         let version = conn.call_method(Some(NAME), PATH, Some("org.freedesktop.DBus.Properties"), "Get", &(INTERFACE, "version"))
             .and_then(|reply| reply.body().deserialize::<OwnedValue>()).map_err(text)?;
@@ -157,17 +166,18 @@ impl Portal {
         if version < MIN_VERSION {
             return Err(format!("the portal speaks version {version}, and {MIN_VERSION} is needed"));
         }
-        // Exits and answers are read only from the portal's own connection.
-        let owner = conn.call_method(Some("org.freedesktop.DBus"), "/org/freedesktop/DBus", Some("org.freedesktop.DBus"), "GetNameOwner", &NAME)
+        // Exits and answers are read only from the connection that owns the
+        // portal's name, which a restart of the portal changes.
+        conn.call_method(Some(BUS), BUS_PATH, Some(BUS), "AddMatch", &OWNER_CHANGES).map_err(text)?;
+        let owner = conn.call_method(Some(BUS), BUS_PATH, Some(BUS), "GetNameOwner", &NAME)
             .and_then(|reply| reply.body().deserialize::<String>()).map_err(text)?;
-        let rule = zbus::MatchRule::builder().sender(owner.as_str()).map_err(text)?.build();
-        let messages = MessageIterator::for_match_rule(rule, &conn, Some(QUEUED)).map_err(text)?;
         let ledger = Arc::new(Ledger::default());
         let (reader, late) = (ledger.clone(), conn.clone());
         std::thread::Builder::new().name("chilpa-portal-exits".into()).spawn(move || {
+            let mut owner = owner;
             for message in messages {
                 let Ok(message) = message else { break };
-                read(&reader, &late, &message, timeouts.signal);
+                read(&reader, &late, &message, timeouts.signal, &mut owner);
             }
             // The bus is gone, and the portal ended every sandbox with it.
             reader.lose();
@@ -291,9 +301,32 @@ fn end_abandoned(conn: Connection, ledger: Arc<Ledger>, pid: u32, timeout: Durat
     }
 }
 
-/// What the reader does with one message from the portal.
-fn read(ledger: &Arc<Ledger>, conn: &Connection, message: &Message, signal_timeout: Duration) {
+/// What the reader does with one message that came to the connection.
+/// `owner` is the connection that owns the portal's name, kept current from
+/// the bus's own signal: only its exits and answers are read, so a portal
+/// that restarts is followed to its new connection. The bus answers for a
+/// portal that left with a call unanswered, and that answer is read too.
+fn read(ledger: &Arc<Ledger>, conn: &Connection, message: &Message, signal_timeout: Duration, owner: &mut String) {
     let header = message.header();
+    let sender = header.sender().map(|sender| sender.as_str());
+    if sender == Some(BUS) {
+        match message.message_type() {
+            Type::Signal if header.member().is_some_and(|member| member.as_str() == "NameOwnerChanged") => {
+                let Ok((name, _, new)) = message.body().deserialize::<(String, String, String)>() else { return };
+                if name != NAME { return; }
+                if new.is_empty() {
+                    eprintln!("flatpak: the portal left the bus; what it started can no longer be signalled, and the next start asks the next one");
+                }
+                *owner = new;
+            }
+            Type::Error => {
+                if let Some(serial) = header.reply_serial() { ledger.answered(serial.get(), message); }
+            }
+            _ => {}
+        }
+        return;
+    }
+    if owner.is_empty() || sender != Some(owner.as_str()) { return; }
     match message.message_type() {
         Type::Signal => {
             let exited = header.path().is_some_and(|path| path.as_str() == PATH)

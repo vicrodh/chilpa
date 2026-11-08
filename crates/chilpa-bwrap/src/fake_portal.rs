@@ -110,7 +110,7 @@ struct Record {
 
 pub(crate) struct FakePortal {
     record: Arc<Mutex<Record>>,
-    _conn: Connection,
+    conn: Connection,
 }
 
 impl FakePortal {
@@ -128,7 +128,7 @@ impl FakePortal {
                 answer(&server, &message, version, &kept);
             }
         });
-        Self { record, _conn: conn }
+        Self { record, conn }
     }
 
     pub(crate) fn spawned(&self) -> Vec<Spawned> {
@@ -161,6 +161,14 @@ impl FakePortal {
     /// each command, as a runner that refuses to start its plugin does.
     pub(crate) fn refuse_starts(&self) {
         self.record.lock().unwrap().refusing = true;
+    }
+
+    /// Leaves the bus, as a portal that exits does while the bus stays: its
+    /// name is free for the next one, and a call it had not answered gets
+    /// the bus's own error.
+    pub(crate) fn vanish(&self) {
+        let _ = self.conn.release_name(NAME);
+        let _ = self.conn.clone().close();
     }
 }
 

@@ -207,6 +207,56 @@ fn a_handle_dropped_while_its_process_runs_keeps_its_pid_and_ends_it() {
     assert!(eventually(Duration::from_secs(2), || portal.tracked().is_empty()), "its exit took it off the ledger");
 }
 
+#[test]
+fn a_portal_that_restarts_while_the_bus_stays_is_followed_to_its_new_connection() {
+    let bus = PrivateBus::start();
+    let first = FakePortal::serve(&bus, 8);
+    let portal = Portal::connect_with(&bus.bus(), quick()).unwrap();
+    let root = tempfile::tempdir().unwrap();
+    let (before, _a, _b) = spawn(&portal, root.path(), "exit 0", false, &[], &[]);
+    assert!(ended_within(&before, Duration::from_secs(3)));
+    // The portal exits and the bus starts it again: a new connection owns
+    // its name.
+    first.vanish();
+    let second = FakePortal::serve(&bus, 8);
+    let start = Instant::now();
+    let (after, mut input, _c) = spawn(&portal, root.path(), "read line; exit 0", false, &[], &[]);
+    assert!(start.elapsed() < Duration::from_secs(1), "the new connection's answer was read, not waited out");
+    assert_eq!(second.spawned().len(), 1);
+    assert!(after.alive());
+    writeln!(input, "go").unwrap();
+    assert!(ended_within(&after, Duration::from_secs(3)), "its exit, from the new connection, was read");
+    assert!(!portal.lost(), "the bus never went");
+}
+
+#[test]
+fn a_spawn_the_portal_leaves_unanswered_fails_at_once() {
+    let bus = PrivateBus::start();
+    let fake = FakePortal::serve(&bus, 8);
+    let portal = Portal::connect_with(&bus.bus(), Timeouts { spawn: Duration::from_secs(10), ..quick() }).unwrap();
+    fake.delay_answers(Duration::from_secs(8));
+    let root = tempfile::tempdir().unwrap();
+    let leaving = { let fake = std::sync::Arc::new(fake); let held = fake.clone();
+        (std::thread::spawn(move || { std::thread::sleep(Duration::from_millis(300)); held.vanish(); }), fake) };
+    let (child_input, _input) = std::io::pipe().unwrap();
+    let (_output, child_output) = std::io::pipe().unwrap();
+    let errors = std::fs::OpenOptions::new().write(true).open("/dev/null").unwrap();
+    let request = Spawn {
+        cwd: root.path(),
+        argv: [RUNNER, "--", "/bin/sh", "-c", "exec sleep 30"].map(OsStr::new).to_vec(),
+        env: Vec::new(),
+        stdio: [child_input.as_fd(), child_output.as_fd(), errors.as_fd()],
+        descriptors: Vec::new(),
+        network: false,
+        writable: Vec::new(),
+        readable: Vec::new(),
+    };
+    let start = Instant::now();
+    assert!(portal.spawn(&request).is_err());
+    assert!(start.elapsed() < Duration::from_secs(3), "the bus's answer for the portal that left was read: {:?}", start.elapsed());
+    leaving.0.join().unwrap();
+}
+
 /// A `Spawn` call as Chilpa sends it, and the portal's answer to it.
 fn spawn_call() -> Message {
     Message::method_call(PATH, "Spawn").unwrap().destination(NAME).unwrap().interface(INTERFACE).unwrap().build(&()).unwrap()
