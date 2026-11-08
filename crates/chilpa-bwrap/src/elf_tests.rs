@@ -10,6 +10,8 @@ struct Fixture {
     runpath: Option<String>,
     wants: Vec<(&'static str, Vec<&'static str>)>,
     defines: Vec<&'static str>,
+    /// More `DT_NEEDED` entries, each naming the first one's string again.
+    again: usize,
 }
 
 fn add(strings: &mut Vec<u8>, text: &str) -> u32 {
@@ -56,7 +58,8 @@ fn elf(fixture: &Fixture) -> Vec<u8> {
     let dynamic_at = (verdef_at + verdef.len()).next_multiple_of(8);
     let mut dynamic = Vec::new();
     let mut entry = |tag: u64, value: u64| { dynamic.extend(tag.to_le_bytes()); dynamic.extend(value.to_le_bytes()); };
-    for name in needed { entry(DT_NEEDED, name as u64); }
+    for name in &needed { entry(DT_NEEDED, *name as u64); }
+    for _ in 0..fixture.again { entry(DT_NEEDED, needed[0] as u64); }
     if let Some(path) = runpath { entry(DT_RUNPATH, path as u64); }
     entry(DT_STRTAB, strings_at as u64);
     entry(DT_STRSZ, strings.len() as u64);
@@ -192,6 +195,52 @@ fn what_this_system_cannot_run_is_not_a_program_here() {
     truncated.truncate(200);
     std::fs::write(&path, truncated).unwrap();
     assert_eq!(preflight(&path, system.path()), Err(Incompatible::Format), "tables that point past the end are refused");
+}
+
+#[test]
+fn names_copied_out_of_one_program_have_a_budget_of_their_own() {
+    let folder = tempfile::tempdir().unwrap();
+    let long: &'static str = Box::leak(format!("lib{}.so", "x".repeat(16 << 10)).into_boxed_str());
+    // Each table is small; the same 16 KiB name, named 600 times, is not.
+    let path = program(folder.path(), &Fixture { needed: vec![long], again: 599, ..Default::default() });
+    assert!(read(&path).is_err(), "600 copies of one 16 KiB name are refused before they are made");
+    let path = program(folder.path(), &Fixture { needed: vec!["libc.so.6"], again: 5000, ..Default::default() });
+    assert!(read(&path).is_err(), "so are more names than any program has");
+    let path = program(folder.path(), &Fixture { needed: vec!["libc.so.6"], again: 40, ..Default::default() });
+    assert!(read(&path).is_ok(), "a program of ordinary size is read");
+}
+
+#[test]
+fn an_address_whose_translation_overflows_is_malformed_not_a_panic() {
+    let folder = tempfile::tempdir().unwrap();
+    let mut bytes = elf(&linked(vec!["GLIBC_2.34"]));
+    // The first program header is the PT_LOAD: its offset field.
+    bytes[64 + 8..64 + 16].copy_from_slice(&u64::MAX.to_le_bytes());
+    let path = folder.path().join("plugin");
+    std::fs::write(&path, bytes).unwrap();
+    assert!(read(&path).is_err());
+}
+
+#[test]
+fn a_library_is_looked_for_only_where_the_plugin_s_sandbox_sees() {
+    let system = system();
+    let base = tempfile::tempdir().unwrap();
+    let package = base.path().join("package");
+    std::fs::create_dir_all(base.path().join("outside")).unwrap();
+    let outside = base.path().join("outside/libbundled.so.1");
+    std::fs::write(&outside, elf(&Fixture::default())).unwrap();
+    let path = program(&package, &Fixture { needed: vec!["libbundled.so.1", "libc.so.6"], runpath: Some("$ORIGIN/../outside".into()),
+        ..linked(vec!["GLIBC_2.34"]) });
+    assert_eq!(preflight(&path, system.path()), Err(Incompatible::Library("libbundled.so.1".into())),
+        "$ORIGIN/.. leaves the package, and the sandbox does not see where it leads");
+    let named: &'static str = Box::leak(outside.display().to_string().into_boxed_str());
+    let path = program(&package, &Fixture { needed: vec![named], ..Default::default() });
+    assert_eq!(preflight(&path, system.path()), Err(Incompatible::Library(named.into())),
+        "a path named whole is looked for under the sandbox's root, not Chilpa's");
+    let triplet = this_machine().map(|(_, triplet)| triplet).unwrap_or("x86_64-linux-gnu");
+    let inside: &'static str = Box::leak(format!("/usr/lib/{triplet}/libc.so.6").into_boxed_str());
+    let path = program(&package, &Fixture { needed: vec![inside], ..Default::default() });
+    assert_eq!(preflight(&path, system.path()), Ok(()), "one under the runtime's /usr is found there");
 }
 
 /// The named plugins against a real runtime, when one is given:

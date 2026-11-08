@@ -5,8 +5,14 @@
 //!
 //! Only the program itself is read. What it opens later by name, as a
 //! bundled interpreter loads its own libraries, is not seen here.
+//!
+//! It runs in Chilpa's process before any sandbox bounds the plugin, so
+//! what one file can make it hold is bounded: each table read, and all the
+//! names copied out of one file together. A library is looked for only
+//! where the plugin's sandbox sees it: the package, `/app` and `/usr`.
 
 use crate::Incompatible;
+use std::collections::HashMap;
 use std::fs::File;
 use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
@@ -14,8 +20,11 @@ use std::path::{Path, PathBuf};
 /// The most read for any one table. A program's tables are kilobytes; a
 /// larger one means the file is not what its header says.
 const MAX_TABLE: u64 = 4 << 20;
-/// Version entries walked per table, for the same reason.
+/// Names and version entries walked in one file, all tables together, for
+/// the same reason.
 const MAX_ENTRIES: usize = 4096;
+/// Bytes of names copied out of one file, all of them together.
+const MAX_NAMES: usize = 1 << 20;
 
 const PT_LOAD: u32 = 1;
 const PT_DYNAMIC: u32 = 2;
@@ -92,6 +101,35 @@ fn u64_at(bytes: &[u8], at: usize) -> Option<u64> {
     Some(u64::from_le_bytes(bytes.get(at..at.checked_add(8)?)?.try_into().ok()?))
 }
 
+/// What is left to copy out of one file: entries walked and bytes of names.
+struct Budget {
+    entries: usize,
+    bytes: usize,
+}
+
+impl Default for Budget {
+    fn default() -> Self {
+        Self { entries: MAX_ENTRIES, bytes: MAX_NAMES }
+    }
+}
+
+impl Budget {
+    /// One more entry walked; `None` past the budget.
+    fn entry(&mut self) -> Option<()> {
+        self.entries = self.entries.checked_sub(1)?;
+        Some(())
+    }
+
+    /// The name at `at` in `table`, copied only while the budget allows it.
+    fn string_at(&mut self, table: &[u8], at: u64) -> Option<String> {
+        self.entry()?;
+        let rest = table.get(usize::try_from(at).ok()?..)?;
+        let end = rest.iter().take(self.bytes.saturating_add(1)).position(|byte| *byte == 0)?;
+        self.bytes = self.bytes.checked_sub(end)?;
+        String::from_utf8(rest[..end].to_vec()).ok()
+    }
+}
+
 fn string_at(table: &[u8], at: u64) -> Option<String> {
     let rest = table.get(usize::try_from(at).ok()?..)?;
     let end = rest.iter().position(|byte| *byte == 0)?;
@@ -153,12 +191,13 @@ fn program(reader: &Reader, head: &[u8]) -> Option<Program> {
     let tag = |wanted: u64| tags.iter().find(|(tag, _)| *tag == wanted).map(|(_, value)| *value);
     // Addresses in the dynamic table are where the loader maps them.
     let at = |address: u64| loads.iter().find(|(start, _, length)| address >= *start && address - start < *length)
-        .map(|(start, offset, _)| address - start + offset);
+        .and_then(|(start, offset, _)| (address - start).checked_add(*offset));
     let strings = reader.bytes(at(tag(DT_STRTAB)?)?, tag(DT_STRSZ)?)?;
+    let mut budget = Budget::default();
     for (kind, value) in &tags {
         match *kind {
-            DT_NEEDED => found.needed.push(string_at(&strings, *value)?),
-            DT_RUNPATH | DT_RPATH => found.runpath.extend(string_at(&strings, *value)?.split(':').filter(|dir| !dir.is_empty()).map(str::to_string)),
+            DT_NEEDED => found.needed.push(budget.string_at(&strings, *value)?),
+            DT_RUNPATH | DT_RPATH => found.runpath.extend(budget.string_at(&strings, *value)?.split(':').filter(|dir| !dir.is_empty()).map(str::to_string)),
             _ => {}
         }
     }
@@ -171,12 +210,12 @@ fn program(reader: &Reader, head: &[u8]) -> Option<Program> {
             let mut aux = entry.checked_add(first as u64)?;
             for _ in 0..(versions as usize).min(MAX_ENTRIES) {
                 let version = reader.bytes(aux, 16)?;
-                names.push(string_at(&strings, u32_at(&version, 8)? as u64)?);
+                names.push(budget.string_at(&strings, u32_at(&version, 8)? as u64)?);
                 let next = u32_at(&version, 12)?;
                 if next == 0 { break; }
                 aux = aux.checked_add(next as u64)?;
             }
-            found.versions.push((string_at(&strings, file as u64)?, names));
+            found.versions.push((budget.string_at(&strings, file as u64)?, names));
             if next == 0 { break; }
             entry = entry.checked_add(next as u64)?;
         }
@@ -188,7 +227,7 @@ fn program(reader: &Reader, head: &[u8]) -> Option<Program> {
             let (first, next) = (u32_at(&definition, 12)?, u32_at(&definition, 16)?);
             // The first name is the version; the ones after it are its parents.
             let name = reader.bytes(entry.checked_add(first as u64)?, 8)?;
-            found.defines.push(string_at(&strings, u32_at(&name, 0)? as u64)?);
+            found.defines.push(budget.string_at(&strings, u32_at(&name, 0)? as u64)?);
             if next == 0 { break; }
             entry = entry.checked_add(next as u64)?;
         }
@@ -207,15 +246,32 @@ fn number(version: &str) -> Vec<u64> {
 }
 
 /// Where the loader in the plugin's sandbox looks for a library: the
-/// program's own run paths, then the application's and the runtime's.
+/// program's own run paths, then the application's and the runtime's. What
+/// is found counts only when, links resolved, it lies in the package, `/app`
+/// or `/usr` of `system`: the rest of what Chilpa sees, its sandbox does not.
 fn find(name: &str, program: &Path, runpath: &[String], system: &Path) -> Option<PathBuf> {
-    if name.contains('/') { return Some(PathBuf::from(name)).filter(|path| path.is_file()); }
-    let origin = program.parent().unwrap_or(Path::new("/")).to_string_lossy().into_owned();
-    let own = runpath.iter().map(|dir| PathBuf::from(dir.replace("${ORIGIN}", &origin).replace("$ORIGIN", &origin)));
+    let package = program.parent()?.canonicalize().ok()?;
+    let seen: Vec<PathBuf> = ["app", "usr"].iter().filter_map(|dir| system.join(dir).canonicalize().ok())
+        .chain([package.clone()]).collect();
+    let confined = |path: PathBuf| path.canonicalize().ok()
+        .filter(|real| real.is_file() && seen.iter().any(|root| real.starts_with(root)));
+    let inside = |path: &str| system.join(path.trim_start_matches('/'));
+    if name.contains('/') {
+        // One relative to the sandbox's working folder is not looked for.
+        return name.starts_with('/').then(|| confined(inside(name))).flatten();
+    }
+    // Inside the sandbox the package keeps the path it has here.
+    let origin = package.to_string_lossy().into_owned();
+    let own = runpath.iter().filter_map(|dir| {
+        let expanded = dir.replace("${ORIGIN}", &origin).replace("$ORIGIN", &origin);
+        if dir.starts_with("$ORIGIN") || dir.starts_with("${ORIGIN}") { Some(PathBuf::from(expanded)) }
+        else if expanded.starts_with('/') { Some(inside(&expanded)) }
+        else { None }
+    });
     let triplet = this_machine().map(|(_, triplet)| triplet).unwrap_or("");
     let shared = ["app/lib".to_string(), format!("usr/lib/{triplet}"), "usr/lib64".into(), "usr/lib".into(),
         format!("lib/{triplet}"), "lib64".into(), "lib".into()].into_iter().map(|dir| system.join(dir));
-    own.chain(shared).map(|dir| dir.join(name)).find(|path| path.is_file())
+    own.chain(shared).map(|dir| dir.join(name)).find_map(confined)
 }
 
 /// Whether the program in `program` can be started on the system whose
@@ -242,9 +298,14 @@ pub(crate) fn preflight(program: &Path, system: &Path) -> Result<(), Incompatibl
             for name in &found.needed {
                 if find(name, program, &found.runpath, system).is_none() { return Err(Incompatible::Library(name.clone())); }
             }
-            let check = |library: &String, versions: &[String]| -> Result<(), Incompatible> {
+            // Each library is read once, however many entries name it.
+            let mut read_once: HashMap<PathBuf, Vec<String>> = HashMap::new();
+            let mut check = |library: &String, versions: &[String]| -> Result<(), Incompatible> {
                 let path = find(library, program, &found.runpath, system).ok_or_else(|| Incompatible::Library(library.clone()))?;
-                let defines = match read(&path) { Ok(Kind::Program(library)) => library.defines, _ => Vec::new() };
+                let defines = read_once.entry(path).or_insert_with_key(|path| match read(path) {
+                    Ok(Kind::Program(library)) => library.defines,
+                    _ => Vec::new(),
+                });
                 match versions.iter().find(|version| !defines.contains(version)) {
                     Some(missing) => {
                         let newest = defines.iter().filter(|defined| family(defined) == family(missing))
