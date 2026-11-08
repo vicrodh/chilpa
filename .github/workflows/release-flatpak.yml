@@ -187,10 +187,15 @@ jobs:
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Require the repository's address
+      - name: Require the repository's address and public key
         run: |
           if [[ -z "$FLATPAK_REPO_URL" ]]; then
             echo "::error::FLATPAK_REPO_URL is not set: a signed bundle and its descriptors must name the repository they update from."
+            exit 1
+          fi
+          # publish-flatpak.yml verifies against it; better found here than at publication.
+          if [[ ! -s packaging/flatpak/chilpa-flatpak.gpg ]]; then
+            echo "::error::packaging/flatpak/chilpa-flatpak.gpg is not on main: commit the repository's public key (gpg --export, binary) before tagging."
             exit 1
           fi
       - name: Install the signing tools
@@ -215,13 +220,11 @@ jobs:
         run: |
           set -euo pipefail
           key="$(scripts/flatpak-signing-key.sh import "$RUNNER_TEMP/gnupg")"
-          # The key main publishes, when it is there, is the key that signs.
-          if [[ -s packaging/flatpak/chilpa-flatpak.gpg ]]; then
-            published="$(gpg --batch --with-colons --show-keys packaging/flatpak/chilpa-flatpak.gpg | awk -F: '$1 == "fpr" { print $10; exit }')"
-            if [[ "$published" != "$key" ]]; then
-              echo "::error::The signing key is not packaging/flatpak/chilpa-flatpak.gpg on main."
-              exit 1
-            fi
+          # The key main publishes is the key that signs.
+          published="$(gpg --batch --with-colons --show-keys packaging/flatpak/chilpa-flatpak.gpg | awk -F: '$1 == "fpr" { print $10; exit }')"
+          if [[ "$published" != "$key" ]]; then
+            echo "::error::The signing key is not packaging/flatpak/chilpa-flatpak.gpg on main."
+            exit 1
           fi
           echo "FLATPAK_KEY=$key" >> "$GITHUB_ENV"
       - name: Sign the repository and write the bundle
@@ -282,6 +285,9 @@ jobs:
       - name: Sign with a throwaway key
         run: |
           set -euo pipefail
+          if [[ ! -s packaging/flatpak/chilpa-flatpak.gpg ]]; then
+            echo "::notice::packaging/flatpak/chilpa-flatpak.gpg is not in this checkout: this dry run signs all the same, but a release tag fails until main carries the repository's public key."
+          fi
           key="$(scripts/flatpak-signing-key.sh throwaway "$RUNNER_TEMP/gnupg")"
           python3 scripts/flatpak-repo-archive.py "$RUNNER_TEMP/artifact/repo-unsigned.tar" "$RUNNER_TEMP/unsigned"
           scripts/sign-flatpak.sh --repo "$RUNNER_TEMP/unsigned/repo" --output dist \
