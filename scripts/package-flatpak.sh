@@ -12,7 +12,11 @@
 # (default app.chilpa.Chilpa.flatpak). With --gpg-sign the commits and the
 # summary are signed, the public key is written to DIR/chilpa-flatpak.gpg and
 # embedded in the bundle; with --repo-url an installed bundle updates from
-# that repository. The state directory holds downloads and the build tree;
+# that repository. Each commit exported names the release it is in its
+# message, as two lines `chilpa-version: X.Y.Z` and `chilpa-commit: SHA`,
+# which the signature then covers: the publisher reads them back from the
+# verified commit, so an older signed repository cannot pass for a newer
+# release. The state directory holds downloads and the build tree;
 # it defaults to ~/.cache/chilpa-flatpak-builder and must lie outside the
 # checkout, which the manifest copies whole. --install-deps installs the
 # runtime, SDK, Rust extension and base app from Flathub first.
@@ -59,7 +63,10 @@ case "$state/" in
   "$root"/*) printf 'the state directory lies inside the checkout: %s\n' "$state" >&2; exit 2 ;;
 esac
 commit="${commit:-$(git -C "$root" rev-parse HEAD)}"
+commit="$(git -C "$root" rev-parse --verify "$commit^{commit}")"
 epoch="${SOURCE_DATE_EPOCH:-$(git -C "$root" log -1 --format=%ct "$commit")}"
+version="$(git -C "$root" show "$commit:Cargo.toml" | python3 -c 'import sys, tomllib; print(tomllib.loads(sys.stdin.read())["workspace"]["package"]["version"])')"
+stamp="$(printf 'chilpa-version: %s\nchilpa-commit: %s' "$version" "$commit")"
 signing=()
 [[ -z "$key" ]] || signing=(--gpg-sign="$key" --gpg-homedir="$gpg_home")
 
@@ -69,6 +76,7 @@ signing=()
 flatpak run org.flatpak.Builder --force-clean --disable-rofiles-fuse \
   --state-dir="$state" --repo="$output/repo" --default-branch="$branch" \
   --override-source-date-epoch="$epoch" --jobs="$jobs" "${deps[@]}" "${signing[@]}" \
+  --subject="Chilpa $version" --body="$stamp" \
   "$state/build" "$manifest"
 
 # Deltas let a client download one file per update instead of every object.
@@ -84,4 +92,4 @@ if [[ -n "$key" ]]; then
 fi
 [[ -z "$repo_url" ]] || bundling+=(--repo-url="$repo_url")
 flatpak build-bundle "${bundling[@]}" "$output/repo" "$output/$bundle" "$app_id" "$branch"
-printf 'package-flatpak: %s, %s on branch %s, commit %s\n' "$output/$bundle" "$app_id" "$branch" "$commit"
+printf 'package-flatpak: %s, %s %s on branch %s, commit %s\n' "$output/$bundle" "$app_id" "$version" "$branch" "$commit"
