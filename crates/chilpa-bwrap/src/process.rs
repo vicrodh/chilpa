@@ -45,6 +45,11 @@ pub struct LaunchedNative {
     /// Its data and cache folders as the plugin sees them, which is what
     /// `initialize` names.
     pub guest_directories: (PathBuf, PathBuf),
+    /// Where the plugin reaches its approved export folder, which is what
+    /// `initialize` names as `export_dir`; none when no folder was handed
+    /// over. It can be a `/proc/self/fd/` path, valid in the plugin and in
+    /// the children that inherit its descriptor.
+    pub export: Option<PathBuf>,
     /// The process behind the channel. It can end while its pipes stay open.
     pub process: Arc<dyn NativeProcess>,
 }

@@ -2,8 +2,8 @@
 //! against each: it is told its folders before and in `initialize` and can
 //! write there, its package is read-only, a file beside its folders that it
 //! was not handed is out of reach, an export folder is there only once
-//! approved, it has a network only when given one, and stopping it leaves no
-//! process behind.
+//! approved and is where `initialize` says, it has a network only when
+//! given one, and stopping it leaves no process behind.
 
 use crate::{NativeLauncher, NativePaths, Notice};
 use serde_json::{json, Value};
@@ -53,6 +53,7 @@ pub(crate) fn a_native_plugin_sees_only_its_folders(launcher: &dyn NativeLaunche
     let own_network = json!(std::fs::read_link("/proc/self/ns/net").unwrap().display().to_string());
 
     let offline = launcher.launch(&paths, "test", MEMORY, false, quiet()).unwrap();
+    assert_eq!(offline.export, None, "no export folder is named before one is approved");
     let (data, cache) = offline.guest_directories.clone();
     let inspected = offline.client.call("inspect", json!({"data_dir": data, "cache_dir": cache, "outside": outside,
         "export": "", "withheld": export}), Duration::from_secs(5)).unwrap();
@@ -71,8 +72,9 @@ pub(crate) fn a_native_plugin_sees_only_its_folders(launcher: &dyn NativeLaunche
     paths.export = Some(export.clone());
     let online = launcher.launch(&paths, "test", MEMORY, true, quiet()).unwrap();
     let (data, cache) = online.guest_directories.clone();
+    assert_eq!(online.export, Some(export_guest(&export)), "initialize names the export folder where the backend shows it");
     let inspected = online.client.call("inspect", json!({"data_dir": data, "cache_dir": cache, "outside": outside,
-        "export": export_guest(&export), "withheld": ""}), Duration::from_secs(5)).unwrap();
+        "export": online.export, "withheld": ""}), Duration::from_secs(5)).unwrap();
     assert_eq!(inspected["exported"], true, "an approved export folder is writable");
     assert!(export.join("written").is_file());
     assert_eq!(inspected["network"], own_network, "online, it shares Chilpa's network");

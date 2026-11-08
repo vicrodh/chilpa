@@ -23,6 +23,16 @@ fn parameter(command: &mut Command, name: &str, path: &Path) {
     command.arg("-D").arg(argument);
 }
 
+/// The export folder the policy grants, at its canonical path. Resolved
+/// again at each launch, so checked again: a folder above it may have become
+/// a link into Chilpa's own since it was approved.
+fn granted_export(paths: &NativePaths) -> Result<Option<PathBuf>, BridgeError> {
+    let Some(export) = &paths.export else { return Ok(None) };
+    let export = directory(export)?;
+    if paths.is_private(&export) { return Err(BridgeError::Denied); }
+    Ok(Some(export))
+}
+
 fn command(paths: &NativePaths, network: bool) -> Result<Command, BridgeError> {
     if unsafe { libc::geteuid() } == 0 { return Err(BridgeError::Denied); }
     let folder = directory(&paths.folder)?;
@@ -38,11 +48,7 @@ fn command(paths: &NativePaths, network: bool) -> Result<Command, BridgeError> {
     for (name, path) in [("PLUGIN", &folder), ("PROGRAM", &program), ("DATA", &data), ("CACHE", &cache)] {
         parameter(&mut command, name, path);
     }
-    if let Some(export) = &paths.export {
-        // Resolved again here, so checked again: a folder above it may have
-        // become a link into Chilpa's own since it was approved.
-        let export = directory(export)?;
-        if paths.is_private(&export) { return Err(BridgeError::Denied); }
+    if let Some(export) = granted_export(paths)? {
         parameter(&mut command, "EXPORT", &export);
         policy.push_str("\n(allow file-read* file-write* (subpath (param \"EXPORT\")))\n");
     }
@@ -95,6 +101,7 @@ impl NativeLauncher for Seatbelt {
         let mut sandboxed = command(paths, network)?;
         // The plugin is told the same canonical folders the policy grants.
         let guest_directories = (directory(&paths.data)?, directory(&paths.cache)?);
+        let export = granted_export(paths)?;
         let mut child = sandboxed.spawn().map_err(|_| BridgeError::Disconnected)?;
         let input = child.stdin.take().ok_or(BridgeError::Disconnected)?;
         let output = child.stdout.take().ok_or(BridgeError::Disconnected)?;
@@ -116,7 +123,7 @@ impl NativeLauncher for Seatbelt {
         if monitor.is_err() { process.terminate(); process.wait(); return Err(BridgeError::Disconnected); }
         let ended = process.clone();
         let client = NativeClient::start(input, output, move || { ended.terminate(); ended.wait(); }, notice);
-        Ok(LaunchedNative { client, guest_directories, process })
+        Ok(LaunchedNative { client, guest_directories, export, process })
     }
 }
 

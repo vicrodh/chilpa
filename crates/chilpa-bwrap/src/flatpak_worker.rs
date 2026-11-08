@@ -101,6 +101,7 @@ impl WorkerLauncher for FlatpakWorker {
             argv,
             env,
             stdio: [child_input.as_fd(), child_output.as_fd(), errors.as_fd()],
+            descriptors: Vec::new(),
             network: false,
             writable: Vec::new(),
             readable,

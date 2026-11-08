@@ -1,8 +1,10 @@
 //! A stand-in for the Flatpak portal on a private bus, for the tests that
 //! run without Flatpak. It records what each `Spawn` asked for and runs the
-//! command after the runner's `--` with the descriptors it was handed, then
-//! reports its exit to the caller, as the portal does. It starts no sandbox:
-//! what it checks is the request, not the confinement.
+//! command after the runner's `--` with the descriptors it was handed, each
+//! at its number, then reports its exit to the caller, as the portal does.
+//! Of the runner, it does what its starter sees: the ready line when the
+//! command line asks for one. It starts no sandbox: what it checks is the
+//! request, not the confinement.
 
 use crate::portal::{Bus, INTERFACE, NAME, PATH};
 use std::collections::HashMap;
@@ -101,6 +103,8 @@ struct Record {
     refused: u32,
     /// How long it holds each `Spawn` answer back, after starting the process.
     delay: std::time::Duration,
+    /// Starts nothing behind each spawn, as a runner that refused would.
+    refusing: bool,
 }
 
 pub(crate) struct FakePortal {
@@ -150,6 +154,12 @@ impl FakePortal {
     /// as a portal too slow for its caller would.
     pub(crate) fn delay_answers(&self, delay: std::time::Duration) {
         self.record.lock().unwrap().delay = delay;
+    }
+
+    /// Runs a process that exits at once without its ready line in place of
+    /// each command, as a runner that refuses to start its plugin does.
+    pub(crate) fn refuse_starts(&self) {
+        self.record.lock().unwrap().refusing = true;
     }
 }
 
@@ -206,9 +216,29 @@ fn spawn(conn: &Connection, message: &Message, record: &Arc<Mutex<Record>>) -> R
         let fd = fds.get(&number).ok_or(format!("no descriptor {number}"))?;
         fd.as_fd().try_clone_to_owned().map(Stdio::from).map_err(|error| error.to_string())
     };
-    let mut command = Command::new(text(program));
-    command.args(argv[start + 1..].iter().map(|arg| text(arg))).env_clear().envs(&env).current_dir(text(&cwd))
-        .process_group(0).stdin(stdio(0)?).stdout(stdio(1)?).stderr(stdio(2)?);
+    let refusing = record.lock().unwrap().refusing;
+    let mut command = if refusing { Command::new("/bin/true") } else { Command::new(text(program)) };
+    if !refusing { command.args(argv[start + 1..].iter().map(|arg| text(arg))); }
+    command.env_clear().envs(&env).current_dir(text(&cwd)).process_group(0).stdin(stdio(0)?).stdout(stdio(1)?).stderr(stdio(2)?);
+    // Each descriptor above the standard three at its own number, as the
+    // portal's map puts it.
+    let further: Vec<(libc::c_int, libc::c_int)> = fds.iter().filter(|(number, _)| **number >= 3)
+        .map(|(number, fd)| (*number as libc::c_int, fd.as_raw_fd())).collect();
+    unsafe {
+        command.pre_exec(move || {
+            for (number, fd) in &further {
+                if (*fd != *number && libc::dup2(*fd, *number) < 0) || libc::fcntl(*number, libc::F_SETFD, 0) < 0 {
+                    return Err(std::io::Error::last_os_error());
+                }
+            }
+            Ok(())
+        });
+    }
+    if !refusing && argv[..start].iter().any(|arg| arg.as_slice() == b"--ready\0") {
+        let output = fds.get(&1).ok_or("no descriptor 1")?;
+        std::io::Write::write_all(&mut std::fs::File::from(output.as_fd().try_clone_to_owned().map_err(|error| error.to_string())?), b"\n")
+            .map_err(|error| error.to_string())?;
+    }
     let mut child = command.spawn().map_err(|error| error.to_string())?;
     let pid = child.id();
     let exposed = |key: &str| -> Vec<Exposed> {

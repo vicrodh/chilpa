@@ -286,16 +286,9 @@ impl Natives {
         self.availability().map_err(PluginError::RuntimeUnavailable)?;
         self.preflight(folder).map_err(PluginError::RuntimeUnavailable)?;
         let network = process_network(chilpa_core::network::current().offline, manifest);
-        let (client, data, cache) = launch(self, manifest, folder, network)?;
-        let greeting = client.call("initialize", json!({
-            "protocol": PROTOCOL,
-            "playback_events": 1,
-            "host": {"name": "chilpa", "version": env!("CARGO_PKG_VERSION")},
-            "data_dir": data,
-            "cache_dir": cache,
-            "locale": chilpa_i18n::current_language(),
-            "network": {"enabled": network},
-        }), GREETING).map_err(|e| PluginError::Crashed(e.to_string()))?;
+        let launched = launch(self, manifest, folder, network)?;
+        let client = launched.client.clone();
+        let greeting = client.call("initialize", greeting(&launched, network), GREETING).map_err(|e| PluginError::Crashed(e.to_string()))?;
         if greeting.get("protocol").and_then(Value::as_u64) != Some(PROTOCOL as u64) {
             client.stop();
             return Err(PluginError::Crashed(format!("it speaks another protocol than {PROTOCOL}")));
@@ -407,7 +400,32 @@ pub(crate) fn install(
     })
 }
 
-type Launched = (Arc<NativeClient>, PathBuf, PathBuf);
+/// A started plugin and its folders as it sees them.
+#[cfg_attr(not(any(target_os = "linux", target_os = "macos")), allow(dead_code))]
+struct Launched {
+    client: Arc<NativeClient>,
+    data: PathBuf,
+    cache: PathBuf,
+    /// Its approved export folder; none when there is none to hand over.
+    export: Option<PathBuf>,
+}
+
+/// What `initialize` tells a plugin. `export_dir` is there only when an
+/// export folder was approved and handed over, and names it as the plugin
+/// reaches it.
+fn greeting(launched: &Launched, network: bool) -> Value {
+    let mut params = json!({
+        "protocol": PROTOCOL,
+        "playback_events": 1,
+        "host": {"name": "chilpa", "version": env!("CARGO_PKG_VERSION")},
+        "data_dir": launched.data,
+        "cache_dir": launched.cache,
+        "locale": chilpa_i18n::current_language(),
+        "network": {"enabled": network},
+    });
+    if let Some(export) = &launched.export { params["export_dir"] = json!(export); }
+    params
+}
 
 /// Whether a process is given the network: all of it, or none. Its domains
 /// are not enforced one by one, so naming none is what keeps it offline.
@@ -439,7 +457,7 @@ fn launch(natives: &Arc<Natives>, manifest: &Manifest, folder: &Path, network: b
     let launched = natives.launcher().launch(&paths, &id, MEMORY, network, notice)
         .map_err(|_| PluginError::Crashed("the plugin's sandbox could not start".into()))?;
     let (data, cache) = launched.guest_directories;
-    Ok((launched.client, data, cache))
+    Ok(Launched { client: launched.client, data, cache, export: launched.export })
 }
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
@@ -749,6 +767,68 @@ pub(crate) mod tests {
         started(&natives, manifest, &folder, &client);
         natives.restart("test.source", &client).unwrap().join().unwrap();
         assert_eq!(launches.0.load(std::sync::atomic::Ordering::SeqCst), 1, "one no longer approved is not");
+    }
+
+    /// A backend whose plugin answers `initialize` and keeps what it was
+    /// told, and that shows any export folder at `/guest/export`.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[derive(Default)]
+    struct Greeted {
+        handed: Mutex<Vec<Option<PathBuf>>>,
+        told: Arc<Mutex<Vec<Value>>>,
+    }
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    impl chilpa_bwrap::NativeLauncher for Greeted {
+        fn availability(&self) -> Result<(), chilpa_bwrap::Unavailable> { Ok(()) }
+        fn launch(&self, paths: &chilpa_bwrap::NativePaths, _: &str, _: usize, _: bool, _: chilpa_bwrap::Notice)
+            -> Result<chilpa_bwrap::LaunchedNative, chilpa_plugin::bridge::BridgeError> {
+            use std::io::{BufRead, Write};
+            self.handed.lock().unwrap().push(paths.export.clone());
+            let (plugin_reads, input) = std::io::pipe().unwrap();
+            let (output, mut plugin_writes) = std::io::pipe().unwrap();
+            let told = self.told.clone();
+            std::thread::spawn(move || {
+                for line in std::io::BufReader::new(plugin_reads).lines().map_while(Result::ok) {
+                    let message: Value = serde_json::from_str(&line).unwrap();
+                    told.lock().unwrap().push(message["params"].clone());
+                    let reply = json!({"jsonrpc": "2.0", "id": message["id"], "result": {"protocol": PROTOCOL}});
+                    if writeln!(plugin_writes, "{reply}").is_err() { break; }
+                }
+            });
+            let client = NativeClient::start(input, output, || {}, |_, _| {});
+            Ok(chilpa_bwrap::LaunchedNative { client, guest_directories: ("/guest/data".into(), "/guest/cache".into()),
+                export: paths.export.as_ref().map(|_| PathBuf::from("/guest/export")), process: Arc::new(Gone) })
+        }
+    }
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    struct Gone;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    impl chilpa_bwrap::NativeProcess for Gone {
+        fn alive(&self) -> bool { false }
+        fn terminate(&self) {}
+        fn wait(&self) {}
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn initialize_names_the_export_folder_where_the_plugin_reaches_it_and_only_once_approved() {
+        let natives = Arc::new(Natives::default());
+        let launcher = Arc::new(Greeted::default());
+        with_launcher(&natives, launcher.clone());
+        let root = tempfile::tempdir().unwrap();
+        let writes = PROCESS.replace(r#"{"type":"network","domains":["api.example.org"]}"#, r#"{"type":"folder_write"}"#);
+        let (folder, manifest) = installed(root.path(), &writes, true);
+        natives.start(&manifest, &folder).unwrap().stop();
+        let chosen = root.path().join("music");
+        std::fs::create_dir(&chosen).unwrap();
+        crate::plugin_center::export::set(root.path(), "test.source", &chosen).unwrap();
+        natives.start(&manifest, &folder).unwrap().stop();
+        assert_eq!(*launcher.handed.lock().unwrap(), vec![None, Some(chosen.canonicalize().unwrap())],
+            "the backend is handed the approved folder");
+        let told = launcher.told.lock().unwrap().clone();
+        assert_eq!(told[0].get("export_dir"), None, "no export_dir before a folder is approved");
+        assert_eq!(told[1]["export_dir"], json!("/guest/export"), "the path the backend says the plugin reaches it at");
+        assert_eq!(told[1]["data_dir"], json!("/guest/data"));
     }
 
     #[test]

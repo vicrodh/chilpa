@@ -18,6 +18,8 @@ const LIMITS: &str = "/usr/bin/prlimit";
 /// Where a native plugin finds its writable folders inside its namespace.
 const GUEST_DATA: &str = "/data";
 const GUEST_CACHE: &str = "/cache";
+/// Where it finds an approved export folder.
+const GUEST_EXPORT: &str = "/export";
 
 /// These are host-selected runtime components, never repository arguments.
 pub struct RuntimePaths {
@@ -151,7 +153,7 @@ fn launch_with(paths: &NativePaths, export: Option<Exposed>, name: &str, memory_
         .arg("--bind").arg(&cache).arg(GUEST_CACHE);
     if let Some(export) = &export {
         let fd = export.fd.as_raw_fd();
-        command.arg("--bind-fd").arg(fd.to_string()).arg("/export");
+        command.arg("--bind-fd").arg(fd.to_string()).arg(GUEST_EXPORT);
         // Inherited by bubblewrap alone: it closes the descriptor once bound.
         unsafe {
             command.pre_exec(move || if libc::fcntl(fd, libc::F_SETFD, 0) < 0 { Err(std::io::Error::last_os_error()) } else { Ok(()) });
@@ -172,7 +174,8 @@ fn launch_with(paths: &NativePaths, export: Option<Exposed>, name: &str, memory_
     let process = Arc::new(ChildProcess::new(child, false));
     let ended = process.clone();
     let client = NativeClient::start(input, output, move || { ended.terminate(); ended.wait(); }, notice);
-    Ok(LaunchedNative { client, guest_directories: (GUEST_DATA.into(), GUEST_CACHE.into()), process })
+    let export = export.map(|_| PathBuf::from(GUEST_EXPORT));
+    Ok(LaunchedNative { client, guest_directories: (GUEST_DATA.into(), GUEST_CACHE.into()), export, process })
 }
 
 #[cfg(test)]
@@ -220,6 +223,7 @@ done
         std::fs::rename(base.join("music"), base.join("moved")).unwrap();
         std::os::unix::fs::symlink(base.join("private"), base.join("music")).unwrap();
         let launched = launch_with(&paths, checked, "test", 512 * 1024 * 1024, false, Box::new(|_: &str, _: &Value| {})).unwrap();
+        assert_eq!(launched.export, Some(PathBuf::from("/export")), "initialize names where it is bound");
         launched.client.call("write", json!({}), Duration::from_secs(5)).unwrap();
         launched.client.stop();
         assert!(base.join("moved/export/written").is_file(), "the folder that was checked got the write");
@@ -244,6 +248,7 @@ done
         let paths = NativePaths { folder, data: root.path().join("data"), cache: root.path().join("cache"), export: None, private: Vec::new() };
         let launched = Bwrap.launch(&paths, "test", 512 * 1024 * 1024, false, Box::new(|_: &str, _: &Value| {})).unwrap();
         assert_eq!(launched.guest_directories, (PathBuf::from("/data"), PathBuf::from("/cache")));
+        assert_eq!(launched.export, None, "no export folder was approved");
         assert_eq!(launched.client.call("inspect", json!({}), Duration::from_secs(5)).unwrap(),
             json!({"data": "/data", "cache": "/cache"}), "the variables name the same folders as initialize");
         assert!(launched.process.alive());

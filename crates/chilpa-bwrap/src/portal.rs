@@ -103,6 +103,9 @@ pub(crate) struct Spawn<'a> {
     pub(crate) env: Vec<(&'static str, String)>,
     /// Its standard input, output and error, in that order.
     pub(crate) stdio: [BorrowedFd<'a>; 3],
+    /// Further descriptors it starts with, each at the number given, 3 or
+    /// above.
+    pub(crate) descriptors: Vec<(u32, BorrowedFd<'a>)>,
     pub(crate) network: bool,
     /// Folders mounted read-write at their own paths.
     pub(crate) writable: Vec<BorrowedFd<'a>>,
@@ -195,7 +198,11 @@ impl Portal {
     }
 
     pub(crate) fn spawn(self: &Arc<Self>, request: &Spawn<'_>) -> Result<Arc<PortalProcess>, String> {
-        let fds: HashMap<u32, Fd<'_>> = request.stdio.iter().zip(0u32..).map(|(fd, number)| (number, Fd::from(*fd))).collect();
+        let mut fds: HashMap<u32, Fd<'_>> = request.stdio.iter().zip(0u32..).map(|(fd, number)| (number, Fd::from(*fd))).collect();
+        for (number, fd) in &request.descriptors {
+            if *number < 3 || fds.contains_key(number) { return Err(format!("descriptor {number} is taken")); }
+            fds.insert(*number, Fd::from(*fd));
+        }
         let options: HashMap<&str, Value<'_>> = HashMap::from([
             ("sandbox-flags", Value::U32(0)),
             ("sandbox-expose-fd", exposed(&request.writable)),

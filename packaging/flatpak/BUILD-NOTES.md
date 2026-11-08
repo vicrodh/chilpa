@@ -395,14 +395,40 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
   devices are read-only fails there ([built]); `/usr` and `/app` are
   read-only. What the worker writes there reaches nothing of the host and
   takes memory until it exits.
-- **A folder from the file chooser does not reach a plugin.** Without a
-  filesystem permission, the file chooser hands the application a folder
-  of the Documents portal, under `$XDG_RUNTIME_DIR/doc/<id>/`. Exposed to a
-  `Spawn` with `sandbox-expose-fd`, that path does not exist in the
-  plugin's sandbox, and `Spawn` still succeeds; a folder the application
-  sees at its host path (its own data, or one granted with
-  `--filesystem`) is writable there ([built]). An approved export folder
-  chosen that way is therefore not writable by the plugin.
+- **A folder from the file chooser reaches a plugin as a descriptor.**
+  Without a filesystem permission, the file chooser hands the application
+  a folder of the Documents portal, `$XDG_RUNTIME_DIR/doc/<id>/<name>`,
+  which the application's descriptors name as `/run/flatpak/doc/<id>/<name>`
+  ([built]). The portal cannot mount that in another sandbox: it checks
+  each `sandbox-expose-fd` by statting the path the descriptor names on the
+  host, where the Documents portal shows the same document as another
+  inode, logs the mismatch at info level and starts the process without it
+  (flatpak 1.18.4 `portal/flatpak-portal.c`, `validate_opath_fd`,
+  `handle_spawn`); and a
+  sandboxed spawn gets no Documents portal of its own
+  (`common/flatpak-run.c`, `flatpak_run_app`). A descriptor reaches the
+  Documents portal from any sandbox, and a write through it lands in the
+  chosen host folder, from the plugin and from the children that inherit it
+  ([built], a throwaway application spawning `bash` through the portal).
+  So a Documents folder is not given to `sandbox-expose-fd`; it is handed
+  over at descriptor 3 and the plugin is told `/proc/self/fd/3` as its
+  `export_dir`. Any other export folder is mounted at its own path, as
+  before, and held at descriptor 3 too. The runner gets `--export=PATH` and
+  checks, before the plugin exists, that PATH is the folder descriptor 3
+  holds and can be written; Chilpa waits for the runner's ready line, so a
+  folder the portal skipped fails the start at launch instead of reaching
+  the plugin as a missing path ([read] `crates/chilpa-bwrap/src/flatpak.rs`,
+  `launch`; `crates/chilpa-plugin-runner/src/lib.rs`, `check_export`). A
+  folder Chilpa cannot write is refused before the spawn, since the portal
+  would skip it too. The Documents portal answers `access(W_OK)` with the
+  grant, not only the host folder's mode (xdg-desktop-portal 1.20.4
+  `document-portal/document-portal-fuse.c`, `xdp_fuse_access`). Revoking
+  the grant while the plugin runs makes its next write fail with EACCES
+  ([built]); revoked before a start, the folder no longer resolves, the
+  plugin center shows no export folder and the plugin starts without
+  `export_dir`. A `/proc/self/fd/3` path is valid in the plugin and in what
+  inherits the descriptor; resolving it with `realpath` fails, since it
+  names a path that does not exist in the plugin's sandbox ([built]).
 - **Locks held across portal calls.** `Natives::lifecycle` is held while a
   plugin is stopped and started ([read] `crates/chilpa-api/src/natives.rs:77-78`,
   `:265-266`, `:276-277`), and enabling, disabling, updating and granting
