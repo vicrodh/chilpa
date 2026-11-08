@@ -390,3 +390,37 @@ fn the_id_is_the_threads_own() {
     assert_ne!(here, 0);
     assert_ne!(here, there);
 }
+
+/// A limit's soft and hard parts, which the libc struct does not compare.
+fn parts(limit: libc::rlimit) -> (libc::rlim_t, libc::rlim_t) {
+    (limit.rlim_cur, limit.rlim_max)
+}
+
+fn limit(soft: libc::rlim_t, hard: libc::rlim_t) -> libc::rlimit {
+    libc::rlimit { rlim_cur: soft, rlim_max: hard }
+}
+
+const MS: libc::rlim_t = 1000;
+
+#[test]
+fn asking_through_the_portal_never_raises_the_time_limit() {
+    let none = libc::RLIM_INFINITY;
+    // From no limit at all, the most RealtimeKit allows: it reads the hard
+    // limit and refuses one above that.
+    assert_eq!(parts(rt_time_for(limit(none, none), 200 * MS)), (200 * MS, 200 * MS));
+    // A limit already lower stays: raising it is not allowed, and
+    // RealtimeKit takes it as it is.
+    assert_eq!(parts(rt_time_for(limit(50 * MS, 100 * MS), 200 * MS)), (50 * MS, 100 * MS));
+    assert_eq!(parts(rt_time_for(limit(none, 100 * MS), 200 * MS)), (100 * MS, 100 * MS));
+}
+
+#[test]
+fn after_a_refusal_from_no_limit_the_soft_limit_comes_back_as_far_as_the_hard_one_lets_it() {
+    let none = libc::RLIM_INFINITY;
+    // The hard limit RealtimeKit required stays: without CAP_SYS_RESOURCE it
+    // does not go back up, and the soft one cannot pass it.
+    let now = limit(200 * MS, 200 * MS);
+    assert_eq!(parts(rt_time_back(limit(none, none), now)), (200 * MS, 200 * MS));
+    assert_eq!(parts(rt_time_back(limit(50 * MS, none), now)), (50 * MS, 200 * MS));
+}
+

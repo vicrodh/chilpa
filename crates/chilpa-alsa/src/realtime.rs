@@ -224,16 +224,23 @@ fn portal(connection: &Connection) -> Proxy<'_, &Connection> {
 /// The real-time priority to ask `grantor` for, within what it allows, once
 /// the time a thread may run without blocking has been set to its limit,
 /// which RealtimeKit requires before it grants anything. Its three numbers
-/// are the same properties on RealtimeKit and on the portal.
-fn real_time_within(grantor: &Proxy<'_, &Connection>, interface: &str) -> Option<u32> {
+/// are the same properties on RealtimeKit and on the portal. `from` is the
+/// limit as it stands, for an ask that must never raise it; without it the
+/// limit is set to RealtimeKit's, as on the system bus.
+fn real_time_within(grantor: &Proxy<'_, &Connection>, interface: &str, from: Option<libc::rlimit>) -> Option<u32> {
     let most: i32 = grantor.get(interface, "MaxRealtimePriority").ok()?;
     let longest: i64 = grantor.get(interface, "RTTimeUSecMax").ok()?;
     if most < 1 || longest < 1 {
         return None;
     }
-    let limit = libc::rlimit { rlim_cur: longest as libc::rlim_t, rlim_max: longest as libc::rlim_t };
+    let longest = longest as libc::rlim_t;
+    let limit = match from {
+        Some(now) => rt_time_for(now, longest),
+        None => libc::rlimit { rlim_cur: longest, rlim_max: longest },
+    };
+    let unchanged = from.is_some_and(|now| (now.rlim_cur, now.rlim_max) == (limit.rlim_cur, limit.rlim_max));
     // SAFETY: the struct is whole; the limit applies to this process.
-    if unsafe { libc::setrlimit(libc::RLIMIT_RTTIME, &limit) } != 0 {
+    if !unchanged && unsafe { libc::setrlimit(libc::RLIMIT_RTTIME, &limit) } != 0 {
         return None;
     }
     Some((PRIORITY as i32).min(most) as u32)
@@ -249,7 +256,7 @@ fn nice_within(grantor: &Proxy<'_, &Connection>, interface: &str) -> Option<i32>
 /// to run without blocking, which it has to be told the thread accepts.
 fn granted(connection: &Connection) -> Option<Elevation> {
     let kit = kit(connection);
-    let priority = real_time_within(&kit, KIT)?;
+    let priority = real_time_within(&kit, KIT, None)?;
     kit.method_call(KIT, "MakeThreadRealtime", (thread_id(), priority)).map(|(): ()| Elevation::Granted(priority)).ok()
 }
 
@@ -263,15 +270,21 @@ fn nicer(connection: &Connection) -> Option<Elevation> {
 /// Real time through the portal, which takes the process and the thread as
 /// this process sees them and maps both before it asks RealtimeKit.
 ///
-/// The time limit RealtimeKit wants is set on the whole process before it
-/// is asked. When the portal refuses, or its answer does not come, the
-/// limit goes back to what it was, as far as the kernel allows: a hard
-/// limit that was lowered cannot be raised again without CAP_SYS_RESOURCE,
-/// and then only the soft limit goes back, within the new hard one.
+/// RealtimeKit reads the hard `RLIMIT_RTTIME` of the process it is asked
+/// for, in /proc, and refuses above its `RTTimeUSecMax`, before it grants
+/// and again after (rtkit-daemon.c, `verify_process_rttime`); the soft
+/// limit alone does not do. So a hard limit above that is lowered to it
+/// before the portal is asked, and one already lower is left as it is: the
+/// limit is never raised. When the portal refuses, or its answer does not
+/// come, the limit goes back as far as the kernel allows: a lowered hard
+/// limit does not go back up without CAP_SYS_RESOURCE, and the soft one
+/// comes back within it. What stays lowered bounds only real-time threads,
+/// and inside a Flatpak every real-time grant comes from RealtimeKit, which
+/// requires the same.
 fn granted_by_portal(connection: &Connection) -> Option<Elevation> {
     let portal = portal(connection);
     let before = rt_time_limit()?;
-    let priority = real_time_within(&portal, REALTIME)?;
+    let priority = real_time_within(&portal, REALTIME, Some(before))?;
     match portal.method_call(REALTIME, "MakeThreadRealtimeWithPID", (process_id(), thread_id(), priority)) {
         Ok(()) => Some(Elevation::Granted(priority)),
         Err(_) => {
@@ -279,6 +292,21 @@ fn granted_by_portal(connection: &Connection) -> Option<Elevation> {
             None
         }
     }
+}
+
+/// The limit to ask the portal under, from the limit `now`: its hard part no
+/// higher than `longest`, which RealtimeKit requires, and neither part
+/// raised.
+fn rt_time_for(now: libc::rlimit, longest: libc::rlim_t) -> libc::rlimit {
+    let hard = now.rlim_max.min(longest);
+    libc::rlimit { rlim_cur: now.rlim_cur.min(hard), rlim_max: hard }
+}
+
+/// The limit to go back to after a refusal when the hard limit cannot go
+/// back to `before`'s: the hard limit `now` keeps, and the soft one as
+/// close to `before`'s as that allows.
+fn rt_time_back(before: libc::rlimit, now: libc::rlimit) -> libc::rlimit {
+    libc::rlimit { rlim_cur: before.rlim_cur.min(now.rlim_max), rlim_max: now.rlim_max }
 }
 
 /// This process's `RLIMIT_RTTIME`.
@@ -295,7 +323,7 @@ fn put_back_rt_time(before: libc::rlimit) {
     let whole = unsafe { libc::setrlimit(libc::RLIMIT_RTTIME, &before) } == 0;
     let soft = whole
         || rt_time_limit().is_some_and(|now| {
-            let soft = libc::rlimit { rlim_cur: before.rlim_cur.min(now.rlim_max), rlim_max: now.rlim_max };
+            let soft = rt_time_back(before, now);
             // SAFETY: as above.
             unsafe { libc::setrlimit(libc::RLIMIT_RTTIME, &soft) == 0 }
         });
