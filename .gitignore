@@ -8,3 +8,6 @@ CLAUDE.md
 # Bytecode Python writes next to the lint; it carries the source's mtime and
 # would leave the tree dirty after every checkout.
 __pycache__/
+
+# Written before a Flatpak build by scripts/flatpak-sources.sh.
+packaging/flatpak/generated/

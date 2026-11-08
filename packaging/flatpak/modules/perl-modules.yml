@@ -1,0 +1,224 @@
+# The CPAN distributions the compatibility worker loads (compat/perl), built
+# with the Perl of perl.yml. They are installed in a staging folder that
+# scripts/package-compat.sh copies to /app/bin/compat-runtime/libraries, beside
+# the worker's adapter. XS distributions are compiled here; nothing is fetched
+# while building. The releases are the ones the host runtime has used since
+# 2026-10-01, plus XML-Parser and HTTP-Cookies, which outside a Flatpak came
+# from the system's Perl. Each sha256 matches metacpan's checksum_sha256.
+name: perl-modules
+buildsystem: simple
+build-commands:
+  - >-
+    bash build-compat-runtime.sh /app/bin/perl /app/lib/chilpa-compat/libraries .
+    Module-Build-0.4234
+    Canary-Stability-2013
+    common-sense-3.75
+    Types-Serialiser-1.01
+    JSON-XS-4.04
+    JSON-XS-VersionOneAndTwo-0.31
+    AnyEvent-7.17
+    Try-Tiny-0.32
+    Exporter-Tiny-1.006003
+    List-MoreUtils-XS-0.430
+    List-MoreUtils-0.430
+    MIME-Base32-1.303
+    URI-5.37
+    Encode-Locale-1.05
+    IO-HTML-1.004
+    LWP-MediaTypes-6.05
+    TimeDate-2.35
+    HTTP-Date-6.08
+    Clone-0.50
+    HTTP-Message-7.04
+    HTTP-Cookies-6.12
+    HTML-Tagset-3.24
+    HTML-Parser-3.86
+    HTML-Tree-5.07
+    AppConfig-1.71
+    Template-Toolkit-3.106
+    XML-Parser-2.47
+    Async-Util-0.01
+    Carp-Assert-0.22
+    Class-Data-Inheritable-0.10
+    Class-ISA-0.36
+    Class-Virtual-0.08
+    Data-URIEncode-0.11
+    enum-1.12
+    Exporter-Lite-0.09
+    Text-Unidecode-1.30
+    Tie-Cache-LRU-20150301
+    Tie-Cache-LRU-Expires-0.55
+    Tie-RegexpHash-0.17
+    Test-Fatal-0.019
+  # The adapter's own imports and the XS modules load from this tree alone,
+  # found as the worker finds them, through PERL5LIB.
+  - >-
+    env PERL5LIB=/app/lib/chilpa-compat/libraries/lib/perl5 /app/bin/perl
+    -MXML::Parser -MTemplate -MTemplate::Stash::XS -MHTML::TreeBuilder -MHTTP::Cookies
+    -MHTTP::Request -MHTTP::Response -MHTTP::Headers -MURI -MJSON::XS -MAnyEvent -MList::MoreUtils
+    -MClone -MTie::Cache::LRU -MTie::Cache::LRU::Expires -MDate::Parse -MTry::Tiny -e 1
+cleanup:
+  - /lib/chilpa-compat
+sources:
+  - type: file
+    path: ../../../scripts/build-compat-runtime.sh
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/L/LE/LEONT/Module-Build-0.4234.tar.gz
+    sha256: 66aeac6127418be5e471ead3744648c766bd01482825c5b66652675f2bc86a8f
+    dest: Module-Build-0.4234
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/M/ML/MLEHMANN/Canary-Stability-2013.tar.gz
+    sha256: a5c91c62cf95fcb868f60eab5c832908f6905221013fea2bce3ff57046d7b6ea
+    dest: Canary-Stability-2013
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/M/ML/MLEHMANN/common-sense-3.75.tar.gz
+    sha256: a86a1c4ca4f3006d7479064425a09fa5b6689e57261fcb994fe67d061cba0e7e
+    dest: common-sense-3.75
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/M/ML/MLEHMANN/Types-Serialiser-1.01.tar.gz
+    sha256: f8c7173b0914d0e3d957282077b366f0c8c70256715eaef3298ff32b92388a80
+    dest: Types-Serialiser-1.01
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/M/ML/MLEHMANN/JSON-XS-4.04.tar.gz
+    sha256: 8eff1e9f304c5625b59ab7b42258415f6d3e3681c1ddab6b725518a018a7f5e0
+    dest: JSON-XS-4.04
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/L/LB/LBROCARD/JSON-XS-VersionOneAndTwo-0.31.tar.gz
+    sha256: e6092c4d961fae777acf7fe99fb3cd6e5b710fec85765a6b90417480e4c94a34
+    dest: JSON-XS-VersionOneAndTwo-0.31
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/M/ML/MLEHMANN/AnyEvent-7.17.tar.gz
+    sha256: 50beea689c098fe4aaeb83806c40b9fe7f946d5769acf99f849f099091a4b985
+    dest: AnyEvent-7.17
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/T/TO/TOBYINK/Exporter-Tiny-1.006003.tar.gz
+    sha256: 6499f09a6432cf87b133fb9580a8a9a9a6c566821346b1fdee95f7b64c0317b1
+    dest: Exporter-Tiny-1.006003
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/R/RE/REHSACK/List-MoreUtils-XS-0.430.tar.gz
+    sha256: e8ce46d57c179eecd8758293e9400ff300aaf20fefe0a9d15b9fe2302b9cb242
+    dest: List-MoreUtils-XS-0.430
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/R/RE/REHSACK/List-MoreUtils-0.430.tar.gz
+    sha256: 63b1f7842cd42d9b538d1e34e0330de5ff1559e4c2737342506418276f646527
+    dest: List-MoreUtils-0.430
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/O/OA/OALDERS/URI-5.37.tar.gz
+    sha256: 5a8750ddd8ee743d7cc89bebdd542a9b78a34023164ebe19dea0c248e121c21e
+    dest: URI-5.37
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/G/GA/GAAS/Encode-Locale-1.05.tar.gz
+    sha256: 176fa02771f542a4efb1dbc2a4c928e8f4391bf4078473bd6040d8f11adb0ec1
+    dest: Encode-Locale-1.05
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/C/CJ/CJM/IO-HTML-1.004.tar.gz
+    sha256: c87b2df59463bbf2c39596773dfb5c03bde0f7e1051af339f963f58c1cbd8bf5
+    dest: IO-HTML-1.004
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/O/OA/OALDERS/LWP-MediaTypes-6.05.tar.gz
+    sha256: abb2dcfbf069317fe65b098e3b2ad58c5eb33e9a839b9190cce6d371f8966cc1
+    dest: LWP-MediaTypes-6.05
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/O/OA/OALDERS/HTTP-Date-6.08.tar.gz
+    sha256: b57d80ca6d821c6949ca48b27467d45aba7a9c77346562306facca781a003e44
+    dest: HTTP-Date-6.08
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/A/AT/ATOOMIC/TimeDate-2.35.tar.gz
+    sha256: baddd0306ae2e86e9ec28d3de5439e514643e80b3735e43bd0fbb426d73304de
+    dest: TimeDate-2.35
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/A/AT/ATOOMIC/Clone-0.50.tar.gz
+    sha256: f9732a4a857974db30905233589113003301b585b0cecda29a21cfba5bb014f9
+    dest: Clone-0.50
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/O/OA/OALDERS/HTTP-Message-7.04.tar.gz
+    sha256: 699f3350dbb7bd8fdc9f3b013b0c91b7c059783708443e39bc395fa33352f006
+    dest: HTTP-Message-7.04
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/O/OA/OALDERS/HTTP-Cookies-6.12.tar.gz
+    sha256: 4e460c4bae76285bfc726f641349402fc9038fcd9ca0f33346bec036d73876b8
+    dest: HTTP-Cookies-6.12
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/P/PE/PETDANCE/HTML-Tagset-3.24.tar.gz
+    sha256: eb89e145a608ed1f8f141a57472ee5f69e67592a432dcd2e8b1dbb445f2b230b
+    dest: HTML-Tagset-3.24
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/O/OA/OALDERS/HTML-Parser-3.86.tar.gz
+    sha256: 5305e1d5faa70ee0aa282d85a5c9aa93911e8c7afa590ad1ced5703a544e20f6
+    dest: HTML-Parser-3.86
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/K/KE/KENTNL/HTML-Tree-5.07.tar.gz
+    sha256: f0374db84731c204b86c1d5b90975fef0d30a86bd9def919343e554e31a9dbbf
+    dest: HTML-Tree-5.07
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/N/NE/NEILB/AppConfig-1.71.tar.gz
+    sha256: 1177027025ecb09ee64d9f9f255615c04db5e14f7536c344af632032eb887b0f
+    dest: AppConfig-1.71
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/T/TO/TODDR/Template-Toolkit-3.106.tar.gz
+    sha256: c7474050be80201f1fb55f0a569b9c0ab6c1c3f0cebbd7e601bda9b4046eec85
+    dest: Template-Toolkit-3.106
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/T/TO/TODDR/XML-Parser-2.47.tar.gz
+    sha256: ad4aae643ec784f489b956abe952432871a622d4e2b5c619e8855accbfc4d1d8
+    dest: XML-Parser-2.47
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/W/WH/WHITNEY/Async-Util-0.01.tar.gz
+    sha256: 8f32b11cabc50f65e387bf56f2658157a22c35a8793666e1b5f8acfe13109106
+    dest: Async-Util-0.01
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/Y/YV/YVES/Carp-Assert-0.22.tar.gz
+    sha256: 807ea97c6bed76ac2e4969efba7dae48fefeb9f28797f112671b3ac8a49355f7
+    dest: Carp-Assert-0.22
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/R/RS/RSHERER/Class-Data-Inheritable-0.10.tar.gz
+    sha256: aa1ae68a611357b7bfd9a2f64907cc196ddd6d047cae64ef9d0ad099d98ae54a
+    dest: Class-Data-Inheritable-0.10
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/S/SM/SMUELLER/Class-ISA-0.36.tar.gz
+    sha256: 8816f34e9a38e849a10df756030dccf9fe061a196c11ac3faafd7113c929b964
+    dest: Class-ISA-0.36
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/M/MS/MSCHWERN/Class-Virtual-0.08.tar.gz
+    sha256: c6499b42d3b4e5c6488a5e82fbc28698e6c9860165072dddfa6749355a9cfbb2
+    dest: Class-Virtual-0.08
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/R/RH/RHANDOM/Data-URIEncode-0.11.tar.gz
+    sha256: 51c9efbf8423853616eaa24841e4d1996b2db0036900617fb1dbc76c75a1f360
+    dest: Data-URIEncode-0.11
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/N/NE/NEILB/enum-1.12.tar.gz
+    sha256: 69a7a891cd3888ed8b02c5e99a1f489f92a62ec351c0bc7894fd7bd7d1447ea9
+    dest: enum-1.12
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/N/NE/NEILB/Exporter-Lite-0.09.tar.gz
+    sha256: 79d8b14fd5013922c63e850f15bf51059f2502404535eb6690ef23612c2a198d
+    dest: Exporter-Lite-0.09
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/R/RE/REHSACK/MIME-Base32-1.303.tar.gz
+    sha256: ab21fa99130e33a0aff6cdb596f647e5e565d207d634ba2ef06bdbef50424e99
+    dest: MIME-Base32-1.303
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/S/SB/SBURKE/Text-Unidecode-1.30.tar.gz
+    sha256: 6c24f14ddc1d20e26161c207b73ca184eed2ef57f08b5fb2ee196e6e2e88b1c6
+    dest: Text-Unidecode-1.30
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/M/MS/MSCHWERN/Tie-Cache-LRU-20150301.tar.gz
+    sha256: 1bf740450d3a6d7c12b48c25f7da5964e44e7cc38b28572cfb76ff22464f4469
+    dest: Tie-Cache-LRU-20150301
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/O/OE/OESTERHOL/Tie-Cache-LRU-Expires-0.55.tar.gz
+    sha256: b316d849acd25f24346d55a9950d281fee0746398767c601234122159573eb9a
+    dest: Tie-Cache-LRU-Expires-0.55
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/A/AL/ALTREUS/Tie-RegexpHash-0.17.tar.gz
+    sha256: 0c207850e77efb16618e0aa015507926a3425b34aad5aa6e3e40d83989a085a3
+    dest: Tie-RegexpHash-0.17
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/E/ET/ETHER/Try-Tiny-0.32.tar.gz
+    sha256: ef2d6cab0bad18e3ab1c4e6125cc5f695c7e459899f512451c8fa3ef83fa7fc0
+    dest: Try-Tiny-0.32
+  - type: archive
+    url: https://cpan.metacpan.org/authors/id/R/RJ/RJBS/Test-Fatal-0.019.tar.gz
+    sha256: d8f6b6c87bb399a7d60c295a94a4b741a85b23889cfd6b72f1ff62f0c55cf70b
+    dest: Test-Fatal-0.019
