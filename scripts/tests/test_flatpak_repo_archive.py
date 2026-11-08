@@ -22,12 +22,9 @@ GOOD = {
     "repo/config": b"[core]\nmode=archive-z2\n",
     "repo/summary": b"summary",
     "repo/summary.sig": b"sig",
-    "repo/summaries/" + "d" * 64 + ".gz": b"gz",
     OBJECT: b"object",
     "repo/objects/12/" + "e" * 62 + ".commitmeta2": b"meta",
     "repo/refs/heads/app/app.chilpa.Chilpa/x86_64/stable": b"f" * 64,
-    "repo/deltas/FL/2fzxFR3YlE58oNurZiPnvmAg5IZAtf7x5Pf8EpVdI/superblock": b"delta",
-    "repo/delta-indexes/FL/2fzxFR3YlE58oNurZiPnvmAg5IZAtf7x5Pf8EpVdI.index": b"index",
     "repo/.lock": b"",
     "repo/tmp/cache/flatpak-delta-cache": b"cache",
 }
@@ -70,6 +67,10 @@ class RepoArchiveTests(unittest.TestCase):
             "a path out of the folder": dict(GOOD, **{"repo/../escape": b"x"}),
             "an absolute path": dict(GOOD, **{"/tmp/escape": b"x"}),
             "no config": {name: data for name, data in GOOD.items() if name != "repo/config"},
+            "a static delta": dict(GOOD, **{"repo/deltas/FL/2fzxFR3YlE58oNurZiPnvmAg5IZAtf7x5Pf8EpVdI/superblock": b"x"}),
+            "a delta index": dict(GOOD, **{"repo/delta-indexes/FL/2fzxFR3YlE58oNurZiPnvmAg5IZAtf7x5Pf8EpVdI.index": b"x"}),
+            "a summary index": dict(GOOD, **{"repo/summary.idx": b"x", "repo/summary.idx.sig": b"x"}),
+            "a subsummary": dict(GOOD, **{"repo/summaries/" + "d" * 64 + ".gz": b"x"}),
         }
         for case, files in cases.items():
             with self.subTest(case):

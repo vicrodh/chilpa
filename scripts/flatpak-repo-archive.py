@@ -4,9 +4,11 @@
 A job that holds a key unpacks an archive another job or a release made, so
 nothing in it is trusted: each member must be a plain file or folder under
 repo/, with no absolute path, no `..` and no `.git` part, and each file must
-be one an OSTree repository holds (its config and summaries, objects, refs,
-static deltas and their indexes). The lock and the tmp, state and extensions
-folders are left out; anything else stops the unpacking. Files are written
+be one an OSTree repository holds (its config, its signed summary, objects
+and refs). The lock and the tmp, state and extensions folders are left out.
+Static deltas and a summary index stop the unpacking: they are never made,
+since nothing a publisher can verify covers them, and a client reads the
+signed summary instead. Anything else stops it too. Files are written
 without execute bits, never through a link, into a folder that must not
 exist yet. Reads the archive whole before writing anything.
 
@@ -19,18 +21,16 @@ import tarfile
 from pathlib import Path, PurePosixPath
 
 # Each file a served OSTree repository holds, relative to repo/.
-_B64 = r"[A-Za-z0-9+_]"
 ALLOWED = [re.compile(pattern) for pattern in (
     r"config",
-    r"summary(\.idx)?(\.sig)?",
-    r"summaries/[0-9a-f]{64}(\.gz|\.idx|\.idx\.sig|-[0-9a-f]{64}\.delta)",
+    r"summary(\.sig)?",
     r"objects/[0-9a-f]{2}/[0-9a-f]{62}\.(filez|file|dirtree|dirmeta|commit|commitmeta|commitmeta2)",
-    rf"deltas/{_B64}{{2}}/{_B64}+(-{_B64}+)?/(superblock|[0-9]+)",
-    rf"delta-indexes/{_B64}{{2}}/{_B64}+\.index",
     r"refs/heads/[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*",
 )]
 # What a repository keeps for itself and a copy does not need.
 SKIPPED = re.compile(r"\.lock|(tmp|state|extensions)(/.*)?")
+# What is never published, file or folder.
+NEVER = re.compile(r"(deltas|delta-indexes|summaries)(/.*)?|summary\.idx(\.sig)?")
 
 
 class Refused(ValueError):
@@ -60,6 +60,8 @@ def plan(archive):
         inner = relative(member.name)
         if inner is not None and SKIPPED.fullmatch(inner):
             continue
+        if inner is not None and NEVER.fullmatch(inner):
+            raise Refused(f"a static delta or a summary index, which is never published: {member.name!r}")
         if member.isdir():
             if inner is not None:
                 folders.append(inner)

@@ -4,11 +4,11 @@
 #
 #   scripts/sign-flatpak.sh --repo DIR --output DIR --gpg-sign KEY-ID
 #     --gpg-homedir DIR --repo-url URL --bundle NAME
-#     [--app-id ID] [--branch stable] [--jobs N]
+#     [--app-id ID] [--branch stable]
 #
-# Every ref's commit gets a signature, the appstream ones included. The
-# static deltas are then made again, so none was made before its commit was
-# signed, and the summary is signed. The public key goes to
+# Every ref's commit gets a signature, the appstream ones included, and the
+# summary is signed. No static delta and no summary index is made (see
+# scripts/package-flatpak.sh), and any found is removed first. The public key goes to
 # OUTPUT/chilpa-flatpak.gpg and into the bundle, which updates from URL.
 # Needs flatpak, ostree and gpg; runs nothing from the repository it signs.
 set -euo pipefail
@@ -21,7 +21,6 @@ repo_url=''
 bundle=''
 app_id='app.chilpa.Chilpa'
 branch='stable'
-jobs="${CARGO_BUILD_JOBS:-2}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -33,14 +32,12 @@ while [[ $# -gt 0 ]]; do
     --bundle) bundle="$2"; shift 2 ;;
     --app-id) app_id="$2"; shift 2 ;;
     --branch) branch="$2"; shift 2 ;;
-    --jobs) jobs="$2"; shift 2 ;;
     *) printf 'unknown option: %s\n' "$1" >&2; exit 2 ;;
   esac
 done
 for required in repo output key gpg_home repo_url bundle; do
   [[ -n "${!required}" ]] || { printf 'pass --%s\n' "${required//_/-}" >&2; exit 2; }
 done
-[[ "$jobs" =~ ^[1-9][0-9]*$ ]] || { printf 'not a job count: %s\n' "$jobs" >&2; exit 2; }
 [[ "$repo_url" == https://* ]] || { printf 'the repository URL must be https://: %s\n' "$repo_url" >&2; exit 2; }
 [[ -f "$repo/config" && -d "$repo/objects" ]] || { printf 'not an OSTree repository: %s\n' "$repo" >&2; exit 2; }
 mkdir -p "$output"
@@ -53,9 +50,10 @@ for ref in "${refs[@]}"; do
   ostree --repo="$repo" gpg-sign --gpg-homedir="$gpg_home" "$ref" "$key"
 done
 
-rm -rf "$repo/deltas" "$repo/delta-indexes"
-flatpak build-update-repo --title=Chilpa --default-branch="$branch" --generate-static-deltas \
-  --static-delta-jobs="$jobs" --prune --gpg-sign="$key" --gpg-homedir="$gpg_home" "$repo"
+rm -rf "$repo/deltas" "$repo/delta-indexes" "$repo/summaries"
+flatpak build-update-repo --title=Chilpa --default-branch="$branch" --no-summary-index \
+  --prune --gpg-sign="$key" --gpg-homedir="$gpg_home" "$repo"
+rm -rf "$repo/summaries"
 
 gpg --homedir "$gpg_home" --batch --export "$key" > "$output/chilpa-flatpak.gpg"
 [[ -s "$output/chilpa-flatpak.gpg" ]] || { printf 'no public key exported for %s\n' "$key" >&2; exit 1; }

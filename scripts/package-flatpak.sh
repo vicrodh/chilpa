@@ -79,10 +79,14 @@ flatpak run org.flatpak.Builder --force-clean --disable-rofiles-fuse \
   --subject="Chilpa $version" --body="$stamp" \
   "$state/build" "$manifest"
 
-# Deltas let a client download one file per update instead of every object.
+# No static deltas and no summary index: nothing a publisher can verify
+# covers them, and a client reads the one signed summary and fetches each
+# object, checked against the signed commit. Turning the index off removes
+# summary.idx but leaves its subsummaries, which go here.
 flatpak run --command=flatpak org.flatpak.Builder build-update-repo --title=Chilpa \
-  --default-branch="$branch" --generate-static-deltas --static-delta-jobs="$jobs" --prune \
+  --default-branch="$branch" --no-summary-index --prune \
   "${signing[@]}" "$output/repo"
+rm -rf "$output/repo/summaries" "$output/repo/deltas" "$output/repo/delta-indexes"
 
 bundling=(--runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo)
 if [[ -n "$key" ]]; then
