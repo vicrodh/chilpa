@@ -10,9 +10,15 @@ Marks:
 - **[read]**: taken from the cited file and line in this repository.
 - **[unverified]**: inferred, or depends on the runtime or on flatpak-builder;
   it needs a real Flatpak build to confirm.
+- **[built]**: seen in the first build of
+  `packaging/flatpak/app.chilpa.Chilpa.yml` and in its installed result,
+  2026-11-08: org.kde.Sdk 6.11 (Qt 6.11.3, base 25.08), rust-stable 25.08
+  (Rust 1.98.1), io.qt.qtwebengine.BaseApp 6.11, flatpak-builder 1.4.12,
+  Flatpak 1.18.4.
 
 The target is `org.kde.Platform` / `org.kde.Sdk` 6.11 with sources generated
-by flatpak-cargo-generator and an offline build.
+by flatpak-cargo-generator and an offline build. That build is
+`packaging/flatpak/app.chilpa.Chilpa.yml`, run by `scripts/package-flatpak.sh`.
 
 ## 1. Cargo builds
 
@@ -53,7 +59,10 @@ a dependency of `chilpa-qt`, so building `chilpa-qt` alone leaves them out.
 | `CHILPA_BUILD_COMMIT` | [read] `crates/chilpa-qt-about/build.rs:51,56-62`, `build/stamp.rs:13,28` | Commit of the Build row, used when `git` is missing or its work tree is not this workspace (a source tree without `.git`). A full hex commit is cut to 9 digits; letters, digits and `.-_+` only, at most 64 characters. Git still wins when the tree is a git checkout. |
 | `CXX_QT_QT_MODULES` | [read] `cxx-qt-build-0.7.3/src/lib.rs:302-303` (registry) | Not set by the repository. |
 
-Whether flatpak-builder sets `SOURCE_DATE_EPOCH` on its own: [unverified].
+flatpak-builder sets `SOURCE_DATE_EPOCH` to the manifest's modification time
+unless `--override-source-date-epoch` gives one ([built], its `--help`);
+`scripts/package-flatpak.sh` passes the commit's time, and the About window
+of the build read `2026-11-08 (9b186e0cb)` ([built]).
 
 ## 3. Qt
 
@@ -72,27 +81,34 @@ Whether flatpak-builder sets `SOURCE_DATE_EPOCH` on its own: [unverified].
 - QML imports used at runtime: QtQuick, QtQuick.Controls.Basic,
   QtQuick.Effects, QtQuick.Window, QtQuick.Dialogs, QtQuick.Controls.impl,
   QtQml, QtQml.Models ([read] `crates/*/qml`). SVG images are drawn from QML,
-  so the QtSvg image format plugin is needed ([unverified]; the AUR package
-  depends on `qt6-svg`, [read] `packaging/aur/chilpa-bin/PKGBUILD:22`).
+  so the QtSvg image format plugin is needed (the AUR package depends on
+  `qt6-svg`, [read] `packaging/aur/chilpa-bin/PKGBUILD:22`); the runtime has
+  `lib/plugins/imageformats/libqsvg.so` ([built]).
 - `crates/chilpa-qt-graphics/build.rs`:
   - `build_scene_items()` requires Qt and fails the build without it:
     `QtBuild::new(...).expect("Qt6 is required for the scene items")`
     ([read] `:99-100`). It runs moc on six headers and includes
-    `<rhi/qrhi.h>` ([read] `:106-113`; `cxx/linebed_item.cpp:25`). That header
-    is in QtGui's public include folder since Qt 6.6 ([unverified]).
+    `<rhi/qrhi.h>` ([read] `:106-113`; `cxx/linebed_item.cpp:25`). In
+    org.kde.Sdk 6.11 that header is only at
+    `include/QtGui/6.11.3/QtGui/rhi/qrhi.h`, the private folder below, so the
+    build depends on that folder being added ([built]).
   - Private headers: `<headers>/{QtCore,QtGui,QtQml,QtQuick}/<version>` and
     `.../<version>/<Module>` are added only when the folder exists
     ([read] `:46-62`, `:118-134`). The only private header used is
     `private/qvulkandefaultinstance_p.h`, together with `vulkan/vulkan.h`,
     behind `__has_include` ([read] `cxx/probe.cpp:18-21`). Without them the
     build succeeds and the Vulkan device list is empty, leaving the renderer
-    on Auto ([read] `build.rs:42-45`). Whether org.kde.Sdk ships QtGui's
-    private headers and the Vulkan headers: [unverified].
+    on Auto ([read] `build.rs:42-45`). org.kde.Sdk 6.11 ships both,
+    `include/QtGui/6.11.3/QtGui/private` and `include/vulkan/vulkan.h`
+    ([built]).
 - `chilpa-web-sign-in` with `--features webengine` probes pkg-config
   `Qt6WebEngineWidgets` at 6.9 or later and panics without it
   ([read] `crates/chilpa-web-sign-in/build.rs:16-20`). Qt WebEngine is not part
-  of org.kde.Platform; it normally comes from the
-  `io.qt.qtwebengine.BaseApp` base app ([unverified]). At runtime the window
+  of org.kde.Platform; it comes from the `io.qt.qtwebengine.BaseApp` 6.11
+  base app, whose `Qt6WebEngineWidgets.pc` sits in
+  `/app/lib/x86_64-linux-gnu/pkgconfig`, outside the SDK's default
+  `PKG_CONFIG_PATH`, and whose `QtWebEngineProcess` is in `/app/bin`
+  ([built]). At runtime the window
   needs `QtWebEngineProcess` from `QTWEBENGINEPROCESS_PATH`, Qt's
   LibraryExecutables or Binaries path, or the executable's folder
   ([read] `cxx/window.cpp:138-152`).
@@ -107,15 +123,16 @@ Whether flatpak-builder sets `SOURCE_DATE_EPOCH` on its own: [unverified].
 | `jack` | `jack-sys` 0.5.1 `build.rs:11-14` (registry): `pkg_config::find_library("jack")` is unwrapped on Linux | build fails, although libjack is opened with dlopen at runtime |
 | `libpulse`, `libpulse-simple` | `libpulse-sys` 1.23.0 `build.rs` (registry), through `crates/chilpa-pulse/Cargo.toml:15-16` | falls back to plain `-l` flags |
 | `sqlite3` >= 3.34.1 | `libsqlite3-sys` 0.38.2 `build.rs:490-507` (registry); no crate enables `bundled` | falls back to `-lsqlite3` |
-| OpenSSL | `openssl-sys` through native-tls ([read] `crates/chilpa-cast/Cargo.toml:15,26-27`) | [unverified]; `openssl-sys/build.rs` was not read |
+| OpenSSL | `openssl-sys` through native-tls ([read] `crates/chilpa-cast/Cargo.toml:15,26-27`) | `openssl.pc` 3.5.9 is in the SDK and links ([built]) |
 
 `openssl-src` is in `Cargo.lock` ([read] `Cargo.lock:3367`) only for the
 Android target's `vendored` feature ([read] `crates/chilpa-cast/Cargo.toml:20-21`).
-It is not built on Linux ([unverified]), but flatpak-cargo-generator lists it
-because it is in the lock file.
+It is not built on Linux (downloaded, never compiled, [built]), but
+flatpak-cargo-generator lists it because it is in the lock file.
 
-Whether org.kde.Sdk 6.11 ships `jack.pc` and the runtime ships
-`libjack.so.0`: [unverified]. This is the first build blocker to check.
+org.kde.Sdk 6.11 ships `jack.pc` (3.1409.0, PipeWire's JACK) and the
+runtime ships `libjack.so.0` ([built]); `libpipewire-0.3` 1.4.9, `alsa`
+1.2.14, `dbus-1` 1.16.2 and `sqlite3` 3.50.4 are there too.
 
 ## 5. Install layout
 
@@ -127,7 +144,7 @@ repository-relative.
 | `target/release/chilpa-qt` | `/app/bin/chilpa-qt` | |
 | `target/release/chilpa-web-sign-in` | `/app/bin/chilpa-web-sign-in` | Found beside `chilpa-qt` with `current_exe().with_file_name(...)` and used only if it is a file ([read] `crates/chilpa-api/src/web_sign_in.rs:17,63-67`). Without it plugin sign-in links open in the browser ([read] `scripts/qt-run.sh:89-92`). |
 | `target/release/chilpa-plugin-runner` | `/app/libexec/chilpa-plugin-runner` | Hard-coded path ([read] `crates/chilpa-bwrap/src/flatpak.rs:23`). Inside a Flatpak the launcher selects the portal backend ([read] `crates/chilpa-bwrap/src/process.rs:64-73`), which starts every process plugin and the compatibility worker behind this runner. Without the file the backend answers "missing program" and no process plugin starts ([read] `flatpak.rs:109-111`). |
-| `target/release/compat-runtime` (from `scripts/package-compat.sh`) | `/app/bin/compat-runtime` | The compatibility worker's `adapter/worker.pl` and `libraries/lib/perl5`, found beside the executable ([read] `crates/chilpa-bwrap/src/linux.rs:29-32`). `package-compat.sh` copies `compat/perl` as `adapter/` and the `libraries/` of the runtime folder it is given ([read] `scripts/package-compat.sh:4-15`); no script in the repository produces that runtime folder. |
+| `target/release/compat-runtime` (from `scripts/package-compat.sh`) | `/app/bin/compat-runtime` | The compatibility worker's `adapter/worker.pl` and `libraries/lib/perl5`, found beside the executable ([read] `crates/chilpa-bwrap/src/linux.rs:29-32`). `package-compat.sh` copies `compat/perl` as `adapter/` and the `libraries/` of the runtime folder it is given ([read] `scripts/package-compat.sh:4-15`). `scripts/build-compat-runtime.sh` builds that folder's modules; in the Flatpak, `modules/perl-modules.yml` stages them in `/app/lib/chilpa-compat` and the manifest copies them here ([built]). |
 | Perl, built against the runtime's glibc | `/app/bin/perl` | Hard-coded path ([read] `crates/chilpa-bwrap/src/flatpak_worker.rs:21-22`); the runtime has no Perl. Without it, or without the adapter or its modules, the compatible plugins section says which is missing ([read] `flatpak_worker.rs:40-46`). |
 | `packaging/linux/app.chilpa.Chilpa.desktop` | `/app/share/applications/app.chilpa.Chilpa.desktop` | Its `Exec=/usr/bin/chilpa-qt %U` ([read] `:8`) has to become `Exec=chilpa-qt %U`, as its comment says ([read] `:5-7`) and as the AppImage build rewrites it ([read] `scripts/package-linux.py:113`). `Icon=app.chilpa.Chilpa`, `StartupWMClass=chilpa-qt`. The window takes the desktop file name `app.chilpa.Chilpa` only when Qt finds that file in its applications folders ([read] `crates/chilpa-qt/src/main.rs:121-125`). |
 | `packaging/linux/app.chilpa.Chilpa.svg` | `/app/share/icons/hicolor/scalable/apps/app.chilpa.Chilpa.svg` | The scalable application icon ([read] `packaging/linux/README.md`, "Desktop metadata"). The tarball and the AppImage install `assets/logo.png`, a 512x512 PNG, instead ([read] `scripts/package-linux.py:83-85,115`). |
@@ -207,8 +224,10 @@ No license text for the embedded LINE Seed JP font was found in the tree.
   ([read] `crates/chilpa-qt-graphics/build.rs:32`) and Qt's host tools through
   `qt-build-utils`.
 - A `[patch.crates-io]` entry with a path works together with a source
-  replacement to a vendored directory, so `cargo build --offline --locked`
-  works in principle ([unverified]).
+  replacement to a vendored directory: `cargo build --offline --locked`
+  built all three packages from flatpak-cargo-generator's sources, the
+  release build of `chilpa-qt` and `chilpa-plugin-runner` in 61 min with
+  two jobs ([built]).
 - `cargo-sources.json` has to be generated from the `Cargo.lock` of the
   commit being built; `--locked` refuses a lock file that is out of date.
 
@@ -262,8 +281,10 @@ reads `/.flatpak-info` once ([read] `crates/chilpa-dirs/src/lib.rs:148-151`).
   WirePlumber's clients out of `pw-dump` and ALSA's own list of PCMs before it
   asks `systemctl`, `pgrep` or `aplay` ([read] `src/setup.rs:32-79`). In a
   sandbox the desktop's colours come from the `Settings` portal and not from
-  `gsettings` ([read] `crates/chilpa-api/src/sandbox.rs:83-89`). Which of
-  these programs exist in the runtime: [unverified].
+  `gsettings` ([read] `crates/chilpa-api/src/sandbox.rs:83-89`). The
+  org.kde.Platform 6.11 runtime has `pactl`, `pw-metadata`, `pw-dump`,
+  `pgrep` and `gsettings`; it has no `aplay`, `systemctl`, `xfconf-query`
+  or `adb` ([built]).
 - Linked system libraries: Qt, libpipewire-0.3, libasound, libpulse and
   libpulse-simple, libdbus-1, libsqlite3, OpenSSL. libjack is opened with
   dlopen as `libjack.so.0` ([read] `jack-sys` 0.5.1 `src/consts.rs:17`,
@@ -275,8 +296,8 @@ reads `/.flatpak-info` once ([read] `crates/chilpa-dirs/src/lib.rs:148-151`).
 
 ## 9. Blockers, in the order a build meets them
 
-1. `jack-sys` needs `jack.pc` at build time on Linux (section 4).
-   [unverified] whether the SDK has it.
+1. `jack-sys` needs `jack.pc` at build time on Linux (section 4). The SDK
+   has it ([built]).
 2. `libpipewire-0.3` >= 1.0, `alsa` and `dbus-1` >= 1.6 must be found by
    pkg-config (section 4).
 3. `qmake` (or `qmake6`) must answer for the SDK's Qt, or `QMAKE` must point
@@ -287,13 +308,15 @@ reads `/.flatpak-info` once ([read] `crates/chilpa-dirs/src/lib.rs:148-151`).
 5. Without `.git` in the build directory, set `CHILPA_BUILD_COMMIT`, or the
    About window names no commit; set `SOURCE_DATE_EPOCH` for a reproducible
    build date.
-6. `chilpa-plugin-runner` is not built by any existing script; it needs its
-   own `cargo build -p chilpa-plugin-runner --release` and the
-   `/app/libexec` path. Inside a Flatpak every process plugin starts through
-   the portal behind it, so without it none starts (section 5).
+6. `chilpa-plugin-runner` is not built by `qt-run.sh` nor by the release
+   workflow; the manifest builds it with `chilpa-qt` and installs it at
+   `/app/libexec`. Inside a Flatpak every process plugin starts through the
+   portal behind it, so without it none starts (section 5).
 7. The compatibility worker needs Perl at `/app/bin/perl`, built for the
    runtime, and `compat-runtime` with its Perl modules beside `chilpa-qt`.
-   No script in the repository builds either for the runtime (section 5).
+   `modules/perl.yml` and `modules/perl-modules.yml` build both (section 5).
+   The adapter's 15 test files pass with that Perl and those modules
+   ([built]).
 
 ## 10. Known limits of the sandbox boundary
 
@@ -311,9 +334,14 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
   `chilpa-plugin-runner` does not exec the plugin: it runs it as a child,
   adopts its orphans as a child subreaper and ends them before exiting
   ([read] `crates/chilpa-plugin-runner/src/lib.rs`, `supervise` and
-  `end_all`). Whether Flatpak's seccomp filter allows
-  `PR_SET_CHILD_SUBREAPER`: [unverified]. If it refuses, the runner exits
-  with 126 and no process plugin starts.
+  `end_all`). Flatpak's seccomp filter allows `PR_SET_CHILD_SUBREAPER`,
+  both in the application's sandbox and in a `Spawn` with `SANDBOX`,
+  `CLEAR_ENV`, `WATCH_BUS` and `NO_NETWORK`: the call returns 0, reads back
+  1 and an orphan is reparented to the caller ([built]). The runner started
+  there exits with its program's status, and an orphan in a session of its
+  own is gone when it exits. A plugin's child and orphan were gone within
+  1 s of `chilpa-qt` being killed with SIGKILL or SIGTERM, and no instance
+  of the application was left ([built]).
 - **Chilpa leaving the bus sends SIGINT, not SIGKILL.** `WATCH_BUS` ends
   each sandbox with `killpg(pid, SIGINT)` (`name_owner_changed`). The runner
   answers SIGINT, SIGTERM and SIGHUP by ending everything below it; a
@@ -335,9 +363,21 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
   fill the sandbox's /tmp until its CPU runs out. Lowering them does not
   change that order of magnitude, since writing a tmpfs takes little CPU
   per byte, and it would cut the worker's legitimate work first; they stay
-  as bubblewrap's. Where that /tmp lives for a sandboxed spawn (a tmpfs of
-  its own or a folder under the user's runtime directory), and so what
-  fills up: [unverified].
+  as bubblewrap's. In a sandboxed spawn /tmp is not a mount of its own: it
+  is part of the sandbox's root, a private tmpfs sized at half the
+  machine's memory, discarded when the sandbox ends ([built]). That root
+  and `/dev` are writable too, so the worker's check that the root and the
+  devices are read-only fails there ([built]); `/usr` and `/app` are
+  read-only. What the worker writes there reaches nothing of the host and
+  takes memory until it exits.
+- **A folder from the file chooser does not reach a plugin.** Without a
+  filesystem permission, the file chooser hands the application a folder
+  of the Documents portal, under `$XDG_RUNTIME_DIR/doc/<id>/`. Exposed to a
+  `Spawn` with `sandbox-expose-fd`, that path does not exist in the
+  plugin's sandbox, and `Spawn` still succeeds; a folder the application
+  sees at its host path (its own data, or one granted with
+  `--filesystem`) is writable there ([built]). An approved export folder
+  chosen that way is therefore not writable by the plugin.
 - **Locks held across portal calls.** `Natives::lifecycle` is held while a
   plugin is stopped and started ([read] `crates/chilpa-api/src/natives.rs:77-78`,
   `:265-266`, `:276-277`), and enabling, disabling, updating and granting
