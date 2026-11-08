@@ -10,11 +10,12 @@ name: Flatpak repository
 # uploaded as an artifact.
 #
 # Everything that runs here is main's. The release's files are data: the
-# archive is unpacked to an OSTree repository's own files only; every commit,
-# every object and the summary are verified against
-# packaging/flatpak/chilpa-flatpak.gpg on main, and the summary index and its
-# current subsummary by a Flatpak client with that key; the descriptors are
-# written here from it. The version published is the one the verified app
+# archive is unpacked to an OSTree repository's own files only, with no
+# static delta and no summary index; every commit, every object and the
+# summary are verified against packaging/flatpak/chilpa-flatpak.gpg on main,
+# and a Flatpak client with that key must see the same commits; what is
+# published is the verified mirror's tree, and the descriptors are written
+# here from that key. The version published is the one the verified app
 # commit carries (chilpa-version, with chilpa-commit naming the tag's commit),
 # so a signed repository of another release is refused. A release older than
 # the one the site serves is refused, the push leases the branch it read, and
@@ -134,12 +135,12 @@ jobs:
 
       # Every ref's commit, every object and the summary, against main's
       # key: an untrusted mirror pull into a scratch repository checks each
-      # object's hash and fails on anything not signed with it. Then a
-      # Flatpak client checks what it reads first: the summary index's
-      # signature and the current subsummary's digest. An older subsummary
-      # or a subsummary delta is only ever used once it matches the signed
-      # index (flatpak 1.18.4 common/flatpak-dir.c, the indexed summary
-      # fetch), so it is kept, and each kept subsummary must hash to its name.
+      # object's hash and fails on anything not signed with it. A Flatpak
+      # client with the same key must then see the same commit for every app
+      # and runtime ref. The archive carries no static delta and no summary
+      # index (the unpacking refuses both), and what is published is the
+      # mirror's own tree: only the objects the signed commits reach, the
+      # verified summary and its signature.
       - name: Verify every signature and hash against main's key
         id: verified
         env:
@@ -152,16 +153,16 @@ jobs:
           ostree init --repo="$verify" --mode=archive
           ostree remote add --repo="$verify" --gpg-import="$KEY" --set=gpg-verify-summary=true release "file://$repo"
           ostree pull --repo="$verify" --mirror --untrusted release
-          ostree refs --repo="$verify"
+          for ref in $(ostree refs --repo="$verify" | sort); do
+            printf '%s %s\n' "$ref" "$(ostree rev-parse --repo="$verify" "$ref")"
+          done > "$RUNNER_TEMP/mirror-refs"
           export FLATPAK_USER_DIR="$RUNNER_TEMP/flatpak-verify"
           flatpak remote-add --user --gpg-import="$KEY" release "file://$repo"
-          flatpak remote-ls --user --all release
-          flatpak remote-info --user release app.chilpa.Chilpa//stable
-          for file in "$repo"/summaries/*.gz; do
-            [[ -e "$file" ]] || continue
-            name="$(basename "$file" .gz)"
-            [[ "$(gzip -dc "$file" | sha256sum | cut -d' ' -f1)" == "$name" ]] || { echo "::error::summaries/$name.gz does not hash to its name."; exit 1; }
-          done
+          for ref in $(flatpak remote-ls --user --all --columns=ref release | sort); do
+            printf '%s %s\n' "$ref" "$(flatpak remote-info --user --show-commit release "$ref")"
+          done > "$RUNNER_TEMP/client-refs"
+          cat "$RUNNER_TEMP/mirror-refs"
+          python3 scripts/flatpak-publish-site.py agree "$RUNNER_TEMP/client-refs" "$RUNNER_TEMP/mirror-refs"
           # The release the verified app commit says it is.
           shown="$(ostree show --repo="$verify" app/app.chilpa.Chilpa/x86_64/stable)"
           stamped_version="$(sed -n 's/^ *chilpa-version: *\([^ ]*\) *$/\1/p' <<<"$shown")"
@@ -171,8 +172,9 @@ jobs:
             echo "::error::The signed app commit is ${stamped_version:-unstamped} from ${stamped_commit:-an unnamed commit}; $TAG is $VERSION from $tagged."
             exit 1
           fi
+          python3 scripts/flatpak-publish-site.py assemble "$verify" "$RUNNER_TEMP/site/repo"
           echo "version=$stamped_version" >> "$GITHUB_OUTPUT"
-          rm -rf "$verify" "$FLATPAK_USER_DIR"
+          rm -rf "$verify" "$FLATPAK_USER_DIR" "$RUNNER_TEMP/unpacked"
 
       - name: Assemble the site
         env:
@@ -180,8 +182,6 @@ jobs:
         run: |
           set -euo pipefail
           site="$RUNNER_TEMP/site"
-          mkdir -p "$site"
-          mv "$RUNNER_TEMP/unpacked/repo" "$site/repo"
           python3 scripts/flatpak-descriptors.py --url "${REPO_URL:-https://flatpak.invalid/repo/}" --key "$KEY" \
             --branch stable --output "$site"
           # The version the site serves, as its verified commit says it, read
