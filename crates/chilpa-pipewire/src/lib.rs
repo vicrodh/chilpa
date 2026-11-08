@@ -437,7 +437,9 @@ impl OutputBackend for PipeWire {
     }
 
     fn info(&self) -> BackendInfo {
-        stack_info(&server(), chilpa_dirs::pipewire_socket().is_some())
+        // Asked of a Flatpak only: elsewhere the library finds its socket
+        // through settings this crate does not read.
+        stack_info(&server(), !chilpa_dirs::pipewire_out_of_reach())
     }
 
     /// A server takes whatever it is handed and makes it fit, so there is
@@ -478,10 +480,10 @@ impl OutputBackend for PipeWire {
         format: StreamFormat,
         exclusive: bool,
     ) -> Result<Box<dyn AudioSink + Send>, SinkError> {
-        // What `info` checks, checked again for an output remembered from
-        // before: without PipeWire's own socket the PCM fails, and its error
-        // reads as another program holding the output.
-        if chilpa_dirs::pipewire_socket().is_none() {
+        // What `info` checks inside a Flatpak, checked again for an output
+        // remembered from before: without PipeWire's own socket the PCM
+        // fails, and its error reads as another program holding the output.
+        if chilpa_dirs::pipewire_out_of_reach() {
             return Err(SinkError::Backend(no_native_socket()));
         }
         #[cfg(target_os = "linux")]

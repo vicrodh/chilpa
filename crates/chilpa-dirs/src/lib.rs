@@ -219,32 +219,128 @@ pub fn block_device_node(device: &str) -> Option<PathBuf> {
 #[cfg(target_os = "macos")]
 pub fn mounted_volume_directory() -> &'static std::path::Path { std::path::Path::new("/Volumes") }
 
-/// PipeWire's own socket, when it is there: the one its client library
-/// connects to, which is how its ALSA plugin, its JACK library and its tools
-/// reach the graph. Its PulseAudio socket is another, and a sandbox can have
-/// that one without this. `None` when there is no socket where the library
-/// would look, and away from Linux.
+/// Whether PipeWire's own socket is out of this process's reach: true only
+/// inside a Flatpak that has no socket where the client library would look.
+///
+/// Outside a Flatpak nothing is checked in advance. The library decides
+/// where it connects, out of `PIPEWIRE_REMOTE`, `remote.name` in its
+/// configuration or its default, and only it reads all three; a guess made
+/// here refused outputs that it would have reached.
+pub fn pipewire_out_of_reach() -> bool {
+    pipewire_out_of_reach_in(sandbox(), pipewire_socket)
+}
+
+/// [`pipewire_out_of_reach`], for a given sandbox and way of finding the
+/// socket. The socket is looked for only inside a Flatpak.
+pub fn pipewire_out_of_reach_in(sandbox: Sandbox, socket: impl FnOnce() -> Option<PathBuf>) -> bool {
+    sandbox == Sandbox::Flatpak && socket().is_none()
+}
+
+/// PipeWire's own socket, when there is one where its client library would
+/// look: the one its ALSA plugin, its JACK library and its tools reach the
+/// graph through. Its PulseAudio socket is another, and a sandbox can have
+/// that one without this. `None` away from Linux.
+///
+/// Read from the environment only; `remote.name` in the library's
+/// configuration is not. That is why this answers inside a Flatpak, where
+/// the socket it is given is `xdg-run/pipewire-0`, and nowhere else.
 pub fn pipewire_socket() -> Option<PathBuf> {
     if !cfg!(target_os = "linux") {
         return None;
     }
-    let path = pipewire_socket_from(
-        from_env("PIPEWIRE_REMOTE"),
-        from_env("PIPEWIRE_RUNTIME_DIR").or_else(|| from_env("XDG_RUNTIME_DIR")).or_else(|| from_env("USERPROFILE")),
-    )?;
-    is_socket(&path).then_some(path)
+    let remote = std::env::var_os("PIPEWIRE_REMOTE").map(|remote| remote.to_string_lossy().into_owned());
+    let runtime = ["PIPEWIRE_RUNTIME_DIR", "XDG_RUNTIME_DIR", "USERPROFILE"].into_iter().find_map(std::env::var_os);
+    pipewire_socket_in(remote.as_deref(), runtime.as_deref(), std::path::Path::new(PIPEWIRE_SYSTEM_DIR))
 }
 
-/// Where the client library looks, as `libpipewire-module-protocol-native`
-/// does: `PIPEWIRE_REMOTE` when it is a path, otherwise that name, or
-/// `pipewire-0`, under the first runtime directory that is set. A list of
-/// names in `PIPEWIRE_REMOTE` is not read.
-fn pipewire_socket_from(remote: Option<PathBuf>, runtime: Option<PathBuf>) -> Option<PathBuf> {
-    let name = remote.unwrap_or_else(|| PathBuf::from("pipewire-0"));
-    if name.is_absolute() {
-        return Some(name);
+/// Where a system-wide PipeWire puts its sockets, the library's second place
+/// to look for a name.
+const PIPEWIRE_SYSTEM_DIR: &str = "/run/pipewire";
+
+/// The first socket that is there, out of the names `remote` gives, as
+/// `libpipewire-module-protocol-native` tries them (`local-socket.c`): a
+/// name that starts with `/` is a path; one that starts with `@` is an
+/// abstract socket, which has no file to look for and is taken as there;
+/// any other is looked for under `runtime`, then under `system`.
+fn pipewire_socket_in(
+    remote: Option<&str>,
+    runtime: Option<&std::ffi::OsStr>,
+    system: &std::path::Path,
+) -> Option<PathBuf> {
+    pipewire_names(remote).into_iter().find_map(|name| {
+        if name.starts_with('@') {
+            return Some(PathBuf::from(name));
+        }
+        if name.starts_with('/') {
+            let path = PathBuf::from(name);
+            return is_socket(&path).then_some(path);
+        }
+        let places = runtime.map(|runtime| under(runtime, &name)).into_iter().chain([under(system.as_os_str(), &name)]);
+        places.into_iter().find(|path| is_socket(path))
+    })
+}
+
+/// `<directory>/<name>`, written out as the library does with `"%s/%s"`: a
+/// runtime directory set to "" is the root, not this process's folder.
+fn under(directory: &std::ffi::OsStr, name: &str) -> PathBuf {
+    let mut path = directory.to_os_string();
+    path.push("/");
+    path.push(name);
+    PathBuf::from(path)
+}
+
+/// The names in `PIPEWIRE_REMOTE`, in the order the library tries them. It
+/// takes an SPA-JSON array of names, `[pipewire-1,pipewire-0]` or
+/// `["pipewire-1", "pipewire-0"]`, or one name; unset or empty is
+/// `pipewire-0`.
+fn pipewire_names(remote: Option<&str>) -> Vec<String> {
+    let remote = remote.filter(|remote| !remote.is_empty()).unwrap_or("pipewire-0");
+    match remote.trim_start().strip_prefix('[') {
+        Some(items) => spa_json_strings(items),
+        None => vec![remote.to_string()],
     }
-    runtime.map(|directory| directory.join(name))
+}
+
+/// The strings of an SPA-JSON array, read after its `[` up to its `]`.
+/// SPA-JSON is JSON that also takes bare words for strings and spaces, `:`
+/// or `=` where JSON takes commas. A value that is not a string ends the
+/// list, as `spa_json_get_string` ends the library's loop.
+fn spa_json_strings(items: &str) -> Vec<String> {
+    let mut names = Vec::new();
+    let mut chars = items.chars().peekable();
+    loop {
+        while chars.next_if(|c| c.is_whitespace() || matches!(c, ',' | ':' | '=')).is_some() {}
+        match chars.peek() {
+            None | Some(']' | '[' | '{' | '}') => return names,
+            Some('"') => {
+                chars.next();
+                let mut name = String::new();
+                while let Some(c) = chars.next() {
+                    match c {
+                        '"' => break,
+                        '\\' => match chars.next() {
+                            Some('n') => name.push('\n'),
+                            Some('t') => name.push('\t'),
+                            Some('r') => name.push('\r'),
+                            Some(other) => name.push(other),
+                            None => break,
+                        },
+                        c => name.push(c),
+                    }
+                }
+                names.push(name);
+            }
+            Some(_) => {
+                let mut name = String::new();
+                while let Some(c) =
+                    chars.next_if(|c| !c.is_whitespace() && !matches!(c, ',' | ':' | '=' | ']' | '[' | '{' | '}' | '"'))
+                {
+                    name.push(c);
+                }
+                names.push(name);
+            }
+        }
+    }
 }
 
 #[cfg(unix)]
@@ -393,19 +489,50 @@ mod tests {
     }
 
     #[test]
-    fn pipewire_s_socket_is_looked_for_where_its_library_looks() {
-        let runtime = Some(PathBuf::from("/run/user/1000"));
-        assert_eq!(pipewire_socket_from(None, runtime.clone()), Some(PathBuf::from("/run/user/1000/pipewire-0")));
-        assert_eq!(
-            pipewire_socket_from(Some("other".into()), runtime.clone()),
-            Some(PathBuf::from("/run/user/1000/other"))
-        );
-        assert_eq!(
-            pipewire_socket_from(Some("/elsewhere/pw".into()), None),
-            Some(PathBuf::from("/elsewhere/pw")),
-            "a path needs no runtime directory"
-        );
-        assert_eq!(pipewire_socket_from(None, None), None, "a name with nowhere to look");
+    fn pipewire_s_names_are_read_as_its_library_reads_them() {
+        assert_eq!(pipewire_names(None), ["pipewire-0"]);
+        assert_eq!(pipewire_names(Some("")), ["pipewire-0"], "empty is unset");
+        assert_eq!(pipewire_names(Some("pipewire-1")), ["pipewire-1"]);
+        assert_eq!(pipewire_names(Some("[pipewire-1,pipewire-0]")), ["pipewire-1", "pipewire-0"]);
+        assert_eq!(pipewire_names(Some(r#"["pipewire-1", "pipewire-0"]"#)), ["pipewire-1", "pipewire-0"]);
+        assert_eq!(pipewire_names(Some(" [ a b ] ")), ["a", "b"], "spaces part SPA-JSON's values too");
+        assert_eq!(pipewire_names(Some(r#"[ "a\"b" ]"#)), ["a\"b"]);
+        assert_eq!(pipewire_names(Some("[ a { b } c ]")), ["a"], "a value that is not a string ends the list");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_list_of_sockets_is_reached_through_any_one_that_is_there() {
+        // A host without pipewire-0 and with PIPEWIRE_REMOTE listing two:
+        // libpipewire connects to the second, and the check looked for one
+        // socket named after the whole list and found the stack missing.
+        let runtime = desktop_files(&[]);
+        let system = desktop_files(&[]);
+        let listener = std::os::unix::net::UnixListener::bind(runtime.join("pipewire-0")).unwrap();
+        let found = |remote: &str| pipewire_socket_in(Some(remote), Some(runtime.as_os_str()), &system);
+        assert_eq!(found("[pipewire-1,pipewire-0]"), Some(runtime.join("pipewire-0")));
+        assert_eq!(found(r#"["pipewire-1", "pipewire-0"]"#), Some(runtime.join("pipewire-0")));
+        assert_eq!(found("[pipewire-1]"), None, "none of them is there");
+        assert_eq!(pipewire_socket_in(None, Some(runtime.as_os_str()), &system), Some(runtime.join("pipewire-0")));
+        let system_wide = std::os::unix::net::UnixListener::bind(system.join("pipewire-1")).unwrap();
+        assert_eq!(found("pipewire-1"), Some(system.join("pipewire-1")), "after the runtime folder, the system's");
+        let path = system.join("pipewire-1").display().to_string();
+        assert_eq!(pipewire_socket_in(Some(&path), None, &runtime), Some(system.join("pipewire-1")), "a path is itself");
+        assert_eq!(found("@pipewire-abstract"), Some(PathBuf::from("@pipewire-abstract")), "nothing to look for");
+        drop((listener, system_wide));
+    }
+
+    #[test]
+    fn pipewire_s_socket_is_only_ever_missing_inside_a_flatpak() {
+        // Outside a Flatpak, libpipewire decides where to connect, as it did
+        // before the check existed: `remote.name` in its configuration is
+        // read by the library only, and a guess made here refused outputs
+        // the library would have reached.
+        let nowhere = || None;
+        assert!(!pipewire_out_of_reach_in(Sandbox::None, nowhere), "a host is never refused in advance");
+        assert!(!pipewire_out_of_reach_in(Sandbox::Snap, nowhere));
+        assert!(pipewire_out_of_reach_in(Sandbox::Flatpak, nowhere), "a Flatpak not given the socket");
+        assert!(!pipewire_out_of_reach_in(Sandbox::Flatpak, || Some(PathBuf::from("/run/user/1000/pipewire-0"))));
     }
 
     #[cfg(unix)]
