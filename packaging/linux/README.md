@@ -90,3 +90,16 @@ repository is needed to compile.
 The official plugin index is bundled as the initial offline catalog. Its public
 URL remains configured by default; Refresh in the plugin manager retrieves the
 current index. Installed plugins still need their normal permission approval.
+
+## Desktop metadata
+
+`app.chilpa.Chilpa.desktop`, `app.chilpa.Chilpa.svg` and
+`app.chilpa.Chilpa.metainfo.xml` describe Chilpa to application menus and
+software centers. Under the install prefix they go to `share/applications/`,
+`share/icons/hicolor/scalable/apps/` and `share/metainfo/`. A Flatpak also sets
+`Exec=chilpa-qt %U` in the desktop entry, because its binary is
+`/app/bin/chilpa-qt`.
+
+Each release adds a `<release>` element at the top of the metainfo, with the
+date it was published and its notes. Check both files with
+`appstreamcli validate --strict` and `desktop-file-validate`.
