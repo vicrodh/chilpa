@@ -1164,6 +1164,9 @@ msgstr "Chilpaは、ほかのプラットフォーム向けに作られた一部
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpaはこのマシンの出力を認識していますが、まだそれらを通して再生できません"
 
+msgid "Chilpa cannot keep a plugin inside a folder chosen this way: this system's kernel has no Landlock. To use the folder without it, give Chilpa direct access to it with flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa, then restart Chilpa and choose the folder again."
+msgstr "この方法で選んだフォルダーの中にプラグインをとどめておくことはできません。このシステムのカーネルにはLandlockがありません。Landlockなしでこのフォルダーを使うには、flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa でChilpaに直接アクセスを許可し、Chilpaを再起動してから、フォルダーを選び直してください。"
+
 msgid "Chilpa cannot read this link"
 msgstr "Chilpaはこのリンクを読み取れません"
 

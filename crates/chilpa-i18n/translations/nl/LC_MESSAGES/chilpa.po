@@ -1166,6 +1166,9 @@ msgstr "Chilpa kan sommige plug-ins uitvoeren die voor andere platforms zijn gem
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpa ziet de uitvoeren van deze machine, maar kan er nog niet via afspelen"
 
+msgid "Chilpa cannot keep a plugin inside a folder chosen this way: this system's kernel has no Landlock. To use the folder without it, give Chilpa direct access to it with flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa, then restart Chilpa and choose the folder again."
+msgstr "Chilpa kan een plug-in niet binnen een op deze manier gekozen map houden: de kernel van dit systeem heeft geen Landlock. Om de map zonder Landlock te gebruiken, geef je Chilpa er direct toegang toe met flatpak override --user --filesystem=/pad/naar/map app.chilpa.Chilpa, start je Chilpa opnieuw en kies je de map nog een keer."
+
 msgid "Chilpa cannot read this link"
 msgstr "Chilpa kan deze link niet lezen"
 

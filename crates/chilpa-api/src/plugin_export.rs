@@ -9,9 +9,13 @@
 //! out of it.
 use std::path::{Path, PathBuf};
 
-/// Why a folder of the Documents portal is refused, shown where the folder
-/// is chosen.
-const UNCONFINABLE: &str = "Chilpa cannot keep a plugin inside a folder chosen this way, because this system's kernel has no Landlock. Give Chilpa access to the folder with flatpak override, or use a kernel with Landlock enabled.";
+/// Why a folder of the Documents portal is refused where it is chosen, and
+/// why a recorded one is not handed over, with the way that needs no
+/// Landlock: a folder Chilpa reaches at its own path is mounted into the
+/// plugin's sandbox there, and needs no descriptor.
+fn unconfinable_message() -> String {
+    chilpa_i18n::t("Chilpa cannot keep a plugin inside a folder chosen this way: this system's kernel has no Landlock. To use the folder without it, give Chilpa direct access to it with flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa, then restart Chilpa and choose the folder again.")
+}
 
 /// Whether a plugin could not be kept inside `folder` (chilpa-bwrap).
 #[cfg(target_os = "linux")]
@@ -39,11 +43,26 @@ fn is_private(folder: &Path, private: &[PathBuf]) -> bool {
     private.iter().any(|own| own.starts_with(folder) || folder.starts_with(own))
 }
 
-fn read_with(root: &Path, id: &str, private: &[PathBuf], unconfinable: &dyn Fn(&Path) -> bool) -> Option<PathBuf> {
+/// The folder recorded for the plugin, canonical, before any check.
+fn recorded(root: &Path, id: &str) -> Option<PathBuf> {
     if !valid_id(id) { return None; }
     let path: String = serde_json::from_slice(&std::fs::read(file(root, id)).ok()?).ok()?;
     let path = PathBuf::from(path);
-    let folder = std::fs::symlink_metadata(&path).ok()?.file_type().is_dir().then(|| path.canonicalize().ok()).flatten()?;
+    std::fs::symlink_metadata(&path).ok()?.file_type().is_dir().then(|| path.canonicalize().ok()).flatten()
+}
+
+/// Why the recorded folder is not handed over, for the person to read; None
+/// when it is, or when nothing they can do would change it.
+pub(crate) fn refusal(root: &Path, id: &str) -> Option<String> {
+    refusal_with(root, id, &unconfinable)
+}
+
+fn refusal_with(root: &Path, id: &str, unconfinable: &dyn Fn(&Path) -> bool) -> Option<String> {
+    recorded(root, id).filter(|folder| unconfinable(folder)).map(|_| unconfinable_message())
+}
+
+fn read_with(root: &Path, id: &str, private: &[PathBuf], unconfinable: &dyn Fn(&Path) -> bool) -> Option<PathBuf> {
+    let folder = recorded(root, id)?;
     if is_private(&folder, private) {
         eprintln!("plugin-export: {id}'s destination now leads into Chilpa's own folders; it is not handed over");
         return None;
@@ -74,7 +93,7 @@ fn set_with(root: &Path, id: &str, selected: &Path, private: &[PathBuf], unconfi
     if selected.parent().is_none() || is_private(&selected, private) {
         return Err("Choose a music folder instead of a system or application folder.".into());
     }
-    if unconfinable(&selected) { return Err(UNCONFINABLE.into()); }
+    if unconfinable(&selected) { return Err(unconfinable_message()); }
     let parent = root.join(".exports");
     std::fs::create_dir_all(&parent).map_err(|_| "The destination could not be saved.")?;
     let value = serde_json::to_vec(&selected.to_string_lossy().to_string()).map_err(|_| "Invalid destination.")?;
@@ -150,13 +169,19 @@ mod tests {
         for folder in [&portal, &music] { std::fs::create_dir_all(folder).unwrap(); }
         let documents = base.join("doc");
         let unconfinable = move |folder: &Path| folder.starts_with(&documents);
-        assert_eq!(set_with(&plugins, "app.example.download", &portal, &[], &unconfinable), Err(UNCONFINABLE.to_string()),
-            "the person choosing it is told why");
+        assert_eq!(set_with(&plugins, "app.example.download", &portal, &[], &unconfinable), Err(unconfinable_message()),
+            "the person choosing it is told why, and the way that needs no Landlock");
+        assert!(unconfinable_message().contains("flatpak override --user --filesystem="));
         set_with(&plugins, "app.example.download", &music, &[], &unconfinable).unwrap();
         // Recorded while the kernel could confine it, read on one that cannot.
         std::fs::write(file(&plugins, "app.example.download"), serde_json::to_vec(&portal.to_string_lossy()).unwrap()).unwrap();
         assert_eq!(read_with(&plugins, "app.example.download", &[], &|_| false), Some(portal.clone()));
         assert_eq!(read_with(&plugins, "app.example.download", &[], &unconfinable), None, "the plugin starts without it");
+        assert_eq!(refusal_with(&plugins, "app.example.download", &unconfinable), Some(unconfinable_message()),
+            "and the plugin's page says why");
+        assert_eq!(refusal_with(&plugins, "app.example.download", &|_| false), None);
+        set_with(&plugins, "app.example.download", &music, &[], &unconfinable).unwrap();
+        assert_eq!(refusal_with(&plugins, "app.example.download", &unconfinable), None, "a folder Chilpa reaches at its path needs nothing");
     }
 
     #[cfg(unix)]

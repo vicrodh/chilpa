@@ -1166,6 +1166,9 @@ msgstr "Chilpa can run some plugins made for other platforms. Add a plugin catal
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr ""
 
+msgid "Chilpa cannot keep a plugin inside a folder chosen this way: this system's kernel has no Landlock. To use the folder without it, give Chilpa direct access to it with flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa, then restart Chilpa and choose the folder again."
+msgstr ""
+
 msgid "Chilpa cannot read this link"
 msgstr ""
 
