@@ -158,7 +158,8 @@ jobs:
           flatpak install --user -y --noninteractive --bundle "dist/Chilpa-$RELEASE_VERSION-x86_64.flatpak"
           flatpak info --user app.chilpa.Chilpa
           set +e
-          timeout --signal=TERM --kill-after=5s 30s dbus-run-session -- flatpak run --user \
+          # --die-with-parent: otherwise the sandbox outlives the timeout.
+          timeout --signal=TERM --kill-after=5s 30s dbus-run-session -- flatpak run --user --die-with-parent \
             --env=QT_QPA_PLATFORM=offscreen --env=QT_QUICK_BACKEND=software app.chilpa.Chilpa \
             > "$RUNNER_TEMP/flatpak-startup.log" 2>&1
           result=$?
