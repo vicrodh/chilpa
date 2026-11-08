@@ -380,8 +380,10 @@ fn a_documents_folder_takes_the_plugin_s_writes_until_it_is_revoked_through_the_
         assert!(!chosen.join("written").exists());
         launched.client.stop();
     } else {
-        assert!(matches!(flatpak.launch(&paths, "test", MEMORY, false, quiet()), Err(BridgeError::Disconnected)),
-            "a plugin the runner cannot keep inside the folder is not started");
+        // Chilpa drops such a folder before the launch; handed one all the
+        // same, the backend refuses it before anything starts.
+        assert!(matches!(flatpak.launch(&paths, "test", MEMORY, false, quiet()), Err(BridgeError::Denied)),
+            "a plugin nothing can keep inside the folder is not started");
         assert!(!chosen.join("written").exists());
         documents_delete(&bus, &id);
     }
