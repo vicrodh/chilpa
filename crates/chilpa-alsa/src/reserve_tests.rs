@@ -11,9 +11,34 @@ struct TestBus { child: Child, address: String }
 
 impl TestBus {
     fn new() -> Self {
-        let mut child = Command::new("dbus-daemon")
-            .args(["--session", "--nofork", "--print-address=1"])
-            .stdout(Stdio::piped()).spawn().expect("private session bus");
+        Self::started(Command::new("dbus-daemon").args(["--session", "--nofork", "--print-address=1"]))
+    }
+
+    /// A bus whose policy lets nobody own a reservation name, as a
+    /// sandbox's bus proxy refuses one without the permission.
+    fn denying_reservations() -> Self {
+        let folder = std::env::temp_dir().join(format!("chilpa-alsa-denying-bus-{}", std::process::id()));
+        std::fs::create_dir_all(&folder).unwrap();
+        let config = folder.join("bus.conf");
+        std::fs::write(&config, format!(r#"<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <type>session</type>
+  <listen>unix:dir={}</listen>
+  <auth>EXTERNAL</auth>
+  <policy context="default">
+    <allow send_destination="*" eavesdrop="true"/>
+    <allow eavesdrop="true"/>
+    <allow own="*"/>
+    <deny own_prefix="org.freedesktop.ReserveDevice1"/>
+  </policy>
+</busconfig>
+"#, folder.display())).unwrap();
+        Self::started(Command::new("dbus-daemon").arg("--config-file").arg(&config).args(["--nofork", "--print-address=1"]))
+    }
+
+    fn started(command: &mut Command) -> Self {
+        let mut child = command.stdout(Stdio::piped()).spawn().expect("private session bus");
         let mut address = String::new();
         BufReader::new(child.stdout.take().unwrap()).read_line(&mut address).unwrap();
         Self { child, address: address.trim().into() }
@@ -79,7 +104,7 @@ fn sound_server(bus: &TestBus, reply: Reply) -> Server {
 #[test]
 fn an_unowned_card_is_published_and_disconnect_releases_it() {
     let bus = TestBus::new();
-    let reservation = Reservation::on_bus(CARD, bus.connection()).unwrap();
+    let reservation = Reservation::on_bus(CARD, bus.connection()).unwrap().expect("a reservation");
     assert_eq!(bus.owner(NAME), Some(reservation.owner_name.clone()));
     let connection = bus.connection();
     let proxy = connection.with_proxy(NAME, PATH, PATIENCE);
@@ -96,7 +121,7 @@ fn repeated_handoffs_answer_priority_queries_without_losing_replies() {
     for _ in 0..40 {
         let server = sound_server(&bus, Reply::Release);
         let started = std::time::Instant::now();
-        let reservation = Reservation::on_bus(CARD, bus.connection()).unwrap();
+        let reservation = Reservation::on_bus(CARD, bus.connection()).unwrap().expect("a reservation");
         assert!(started.elapsed() < Duration::from_secs(1), "handoff stalled");
         assert_eq!(bus.owner(NAME), Some(reservation.owner_name.clone()));
         drop(reservation);
@@ -139,4 +164,16 @@ fn an_unresponsive_owner_times_out_without_stranding_the_next_attempt() {
     drop(server);
     assert_eq!(bus.owner(NAME), None);
     drop(Reservation::on_bus(CARD, bus.connection()).unwrap());
+}
+
+#[test]
+fn a_bus_that_will_not_let_chilpa_own_the_name_opens_the_card_without_one() {
+    let bus = TestBus::denying_reservations();
+    let started = std::time::Instant::now();
+    let taken = Reservation::on_bus(CARD, bus.connection());
+    assert!(taken.is_ok(), "a denied name is nobody to ask, not a refusal: {:?}", taken.as_ref().err());
+    assert!(started.elapsed() < Duration::from_secs(1));
+    drop(taken);
+    assert_eq!(bus.owner(NAME), None, "nothing was reserved");
+    assert!(Reservation::on_bus(CARD, bus.connection()).is_ok(), "again, without waiting");
 }
