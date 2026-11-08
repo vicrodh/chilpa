@@ -112,6 +112,7 @@ impl NativeLauncher for Bwrap {
         let data = canonical_directory(&paths.data)?;
         let cache = canonical_directory(&paths.cache)?;
         let export = paths.export.as_deref().map(canonical_directory).transpose()?;
+        if export.as_ref().is_some_and(|export| paths.is_private(export)) { return Err(BridgeError::Denied); }
         if !folder.join("plugin").is_file() {
             return Err(BridgeError::Disconnected);
         }
@@ -186,7 +187,7 @@ done
 "#;
         std::fs::write(folder.join("plugin"), script).unwrap();
         std::fs::set_permissions(folder.join("plugin"), std::fs::Permissions::from_mode(0o755)).unwrap();
-        let paths = NativePaths { folder, data: root.path().join("data"), cache: root.path().join("cache"), export: None };
+        let paths = NativePaths { folder, data: root.path().join("data"), cache: root.path().join("cache"), export: None, private: Vec::new() };
         let launched = Bwrap.launch(&paths, "test", 512 * 1024 * 1024, false, Box::new(|_: &str, _: &Value| {})).unwrap();
         assert_eq!(launched.guest_directories, (PathBuf::from("/data"), PathBuf::from("/cache")));
         assert_eq!(launched.client.call("inspect", json!({}), Duration::from_secs(5)).unwrap(),

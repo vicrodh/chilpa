@@ -33,7 +33,7 @@ impl Fixture {
         std::fs::set_permissions(folder.join("plugin"), std::fs::Permissions::from_mode(0o755)).unwrap();
         let runner = base.join("runner");
         std::fs::write(&runner, "").unwrap();
-        let paths = NativePaths { folder, data: base.join("data"), cache: base.join("cache"), export: None };
+        let paths = NativePaths { folder, data: base.join("data"), cache: base.join("cache"), export: None, private: Vec::new() };
         Self { root, paths, runner }
     }
 
@@ -146,6 +146,30 @@ fn a_plugin_this_runtime_cannot_load_is_found_before_it_starts() {
     assert_eq!(flatpak.preflight(&fixture.paths.folder), Err(Incompatible::Format));
     std::fs::write(fixture.paths.folder.join("plugin"), "#!/nonexistent/interpreter\n").unwrap();
     assert_eq!(flatpak.preflight(&fixture.paths.folder), Err(Incompatible::Interpreter("/nonexistent/interpreter".into())));
+}
+
+#[test]
+fn an_export_folder_that_now_lies_in_chilpa_s_own_is_refused_at_launch() {
+    let bus = PrivateBus::start();
+    let fake = FakePortal::serve(&bus, 8);
+    let mut fixture = Fixture::new();
+    let base = fixture.base();
+    let private = base.join("private");
+    std::fs::create_dir_all(private.join("export")).unwrap();
+    // The folder above the approved one was swapped for a link after the
+    // grant: only the last component is opened without following links.
+    std::os::unix::fs::symlink(&private, base.join("music")).unwrap();
+    fixture.paths.private = vec![private.clone()];
+    fixture.paths.export = Some(base.join("music/export"));
+    let flatpak = Flatpak::on(bus.bus(), fixture.runner.clone());
+    assert!(matches!(flatpak.launch(&fixture.paths, "test", MEMORY, false, quiet()), Err(BridgeError::Denied)));
+    assert!(fake.spawned().is_empty(), "nothing was started");
+    fixture.paths.private = vec![base.join("elsewhere")];
+    std::fs::create_dir(base.join("elsewhere")).unwrap();
+    let launched = flatpak.launch(&fixture.paths, "test", MEMORY, false, quiet()).unwrap();
+    assert_eq!(fake.spawned()[0].writable.last().map(|exposed| exposed.path.clone()), Some(private.join("export")),
+        "the same folder, outside Chilpa's own, is handed over as what it is");
+    launched.client.stop();
 }
 
 #[test]

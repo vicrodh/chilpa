@@ -4,7 +4,7 @@
 //! folders it is told about in `initialize`, and a handle on its process. No
 //! backend falls back to starting a plugin outside its sandbox.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Where a native plugin lives and keeps its things. Chilpa chooses these;
 /// the plugin's manifest never does.
@@ -15,6 +15,18 @@ pub struct NativePaths {
     pub cache: PathBuf,
     /// A host-selected export folder, after permission approval.
     pub export: Option<PathBuf>,
+    /// Chilpa's own folders, canonical. An export folder that is one of
+    /// them, lies inside one or holds one is refused at launch, whatever it
+    /// was when it was approved.
+    pub private: Vec<PathBuf>,
+}
+
+impl NativePaths {
+    /// Whether `folder` is one of Chilpa's own folders, lies inside one or
+    /// holds one. Both sides are compared as given: canonical paths.
+    pub fn is_private(&self, folder: &Path) -> bool {
+        self.private.iter().any(|own| own.starts_with(folder) || folder.starts_with(own))
+    }
 }
 
 /// Why process plugins cannot start on this system, found without starting one.

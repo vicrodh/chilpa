@@ -353,6 +353,7 @@ fn launch(natives: &Arc<Natives>, manifest: &Manifest, folder: &Path, network: b
         export: if manifest.has(&chilpa_plugin::Capability::FolderWrite) {
             crate::plugin_center::export::read(folder.parent().unwrap_or(folder), &id)
         } else { None },
+        private: crate::plugin_center::export::private(),
     };
     let name = id.clone();
     let weak = Arc::downgrade(natives);

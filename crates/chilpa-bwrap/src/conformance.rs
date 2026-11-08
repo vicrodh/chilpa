@@ -49,7 +49,7 @@ pub(crate) fn a_native_plugin_sees_only_its_folders(launcher: &dyn NativeLaunche
     std::fs::write(&outside, "not handed over").unwrap();
     let export = root.join("export");
     std::fs::create_dir(&export).unwrap();
-    let mut paths = NativePaths { folder, data: root.join("data"), cache: root.join("cache"), export: None };
+    let mut paths = NativePaths { folder, data: root.join("data"), cache: root.join("cache"), export: None, private: Vec::new() };
     let own_network = json!(std::fs::read_link("/proc/self/ns/net").unwrap().display().to_string());
 
     let offline = launcher.launch(&paths, "test", MEMORY, false, quiet()).unwrap();

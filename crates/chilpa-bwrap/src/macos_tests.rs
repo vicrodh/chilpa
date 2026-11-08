@@ -9,7 +9,7 @@ fn paths(root: &Path, executable: &str) -> NativePaths {
     let signed = Command::new("/usr/bin/codesign").args(["--force", "--sign", "-"])
         .arg(folder.join("plugin")).output().unwrap();
     assert!(signed.status.success(), "{}", String::from_utf8_lossy(&signed.stderr));
-    NativePaths { folder, data: root.join("data"), cache: root.join("cache"), export: None }
+    NativePaths { folder, data: root.join("data"), cache: root.join("cache"), export: None, private: Vec::new() }
 }
 
 #[test]

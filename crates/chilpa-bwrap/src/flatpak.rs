@@ -128,6 +128,12 @@ impl NativeLauncher for Flatpak {
         let data = Exposed::open(&paths.data)?;
         let cache = Exposed::open(&paths.cache)?;
         let export = paths.export.as_deref().map(Exposed::open).transpose()?;
+        // Checked on what was opened, not on the path it was approved as: a
+        // folder above it may have become a link since.
+        if export.as_ref().is_some_and(|export| paths.is_private(&export.path)) {
+            eprintln!("flatpak: plugin {name}'s export folder now leads into Chilpa's own folders; it is not started");
+            return Err(BridgeError::Denied);
+        }
         let program = folder.path.join("plugin").canonicalize().map_err(|_| BridgeError::Disconnected)?;
         if !program.is_file() || !program.starts_with(&folder.path) { return Err(BridgeError::Denied); }
         let memory = format!("--as={memory_bytes}");
