@@ -5,9 +5,18 @@
 //!
 //! The options are prlimit's, `--as=N` or `--cpu=SOFT:HARD`, so a command
 //! line moves from one to the other unchanged. A single number sets the soft
-//! and the hard limit, and the plugin cannot raise either. `--keep-env=A,B`
-//! is the runner's own: the variables it names are the only ones the plugin
-//! gets, so nothing else that reached the runner's environment goes on.
+//! and the hard limit, and the plugin cannot raise either. Three are the
+//! runner's own. `--keep-env=A,B`: the variables it names are the only ones
+//! the plugin gets, so nothing else that reached the runner's environment
+//! goes on. `--export=PATH`: descriptor 3 holds the plugin's export folder,
+//! and PATH is where the plugin is told to find it; the runner checks that
+//! PATH is that folder and can be written, and refuses to start the plugin
+//! otherwise, so a folder the sandbox did not take is never a silent
+//! failure. Descriptor 3 then stays open for the plugin, which is what makes
+//! a PATH under `/proc/self/fd/3` work. `--ready`: once its setup is done,
+//! just before the plugin starts, the runner writes one newline on its
+//! standard output, so whoever started it tells a start it refused from one
+//! that went ahead.
 //!
 //! The plugin runs as the runner's child, and the runner adopts whatever the
 //! plugin leaves behind (a child subreaper). Asked to end, the runner hands
@@ -27,7 +36,11 @@
 
 use std::ffi::OsString;
 use std::io;
+use std::path::Path;
 use std::time::{Duration, Instant};
+
+/// The descriptor that holds the export folder when `--export` is given.
+pub const EXPORT_DESCRIPTOR: libc::c_int = 3;
 
 /// A resource the runner bounds.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -89,33 +102,54 @@ pub struct Limit {
     pub hard: u64,
 }
 
-/// A command line, read: the limits, the variables kept, then the program
-/// and its arguments.
+/// A command line, read: the limits, the variables kept, the export folder
+/// and the ready line, then the program and its arguments.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Plan {
     pub limits: Vec<Limit>,
     /// The only variables the plugin's environment keeps.
     pub keep: Vec<OsString>,
+    /// Where the plugin finds the export folder held at [`EXPORT_DESCRIPTOR`].
+    pub export: Option<OsString>,
+    /// Whether the runner writes its ready newline before the plugin starts.
+    pub ready: bool,
     pub program: OsString,
     pub args: Vec<OsString>,
 }
 
 /// The option that names the variables kept.
 const KEEP: &str = "keep-env";
+/// The option that names where the plugin finds its export folder.
+const EXPORT: &str = "export";
+/// The option that asks for the ready newline.
+const READY: &str = "--ready";
 
-/// Reads `[--LIMIT=N[:H]]... [--keep-env=NAME[,NAME]...] -- PROGRAM [ARGS]...`.
-/// Everything after the first `--` belongs to the program, another `--`
-/// included.
+/// Reads `[--LIMIT=N[:H]]... [--keep-env=NAME[,NAME]...] [--export=PATH]
+/// [--ready] -- PROGRAM [ARGS]...`. Everything after the first `--` belongs
+/// to the program, another `--` included.
 pub fn plan(args: impl IntoIterator<Item = OsString>) -> Result<Plan, String> {
     let mut args = args.into_iter();
     let mut limits: Vec<Limit> = Vec::new();
     let mut keep: Option<Vec<OsString>> = None;
+    let mut export: Option<OsString> = None;
+    let mut ready = false;
     loop {
         let Some(arg) = args.next() else { return Err("no -- before the program".into()) };
         if arg == "--" { break; }
+        if arg == READY {
+            if ready { return Err(format!("{READY} is given twice")); }
+            ready = true;
+            continue;
+        }
         let text = arg.to_str().ok_or_else(|| format!("{} is not an option", arg.to_string_lossy()))?;
         let (name, value) = text.strip_prefix("--").and_then(|option| option.split_once('='))
             .ok_or_else(|| format!("{text} is not an option"))?;
+        if name == EXPORT {
+            if export.is_some() { return Err(format!("--{EXPORT} is given twice")); }
+            if !value.starts_with('/') { return Err(format!("--{EXPORT}: {value} is not an absolute path")); }
+            export = Some(value.into());
+            continue;
+        }
         if name == KEEP {
             if keep.is_some() { return Err(format!("--{KEEP} is given twice")); }
             let names: Vec<&str> = value.split(',').collect();
@@ -136,7 +170,48 @@ pub fn plan(args: impl IntoIterator<Item = OsString>) -> Result<Plan, String> {
         limits.push(Limit { resource, soft, hard });
     }
     let program = args.next().ok_or("no program after --")?;
-    Ok(Plan { limits, keep: keep.unwrap_or_default(), program, args: args.collect() })
+    Ok(Plan { limits, keep: keep.unwrap_or_default(), export, ready, program, args: args.collect() })
+}
+
+/// Whether `path` is the folder `descriptor` holds, as the plugin will reach
+/// it, and can be written. A folder the sandbox did not mount is not there,
+/// and one mounted read-only cannot be written.
+pub fn check_export(descriptor: libc::c_int, path: &Path) -> Result<(), String> {
+    use std::os::unix::fs::MetadataExt;
+    let mut held = std::mem::MaybeUninit::<libc::stat>::uninit();
+    if unsafe { libc::fstat(descriptor, held.as_mut_ptr()) } != 0 {
+        return Err(format!("descriptor {descriptor} holds nothing: {}", io::Error::last_os_error()));
+    }
+    let held = unsafe { held.assume_init() };
+    if held.st_mode & libc::S_IFMT != libc::S_IFDIR { return Err(format!("descriptor {descriptor} holds no folder")); }
+    let seen = std::fs::metadata(path).map_err(|error| format!("it is not there: {error}"))?;
+    if !seen.is_dir() { return Err("it is not a folder".into()); }
+    if (seen.dev(), seen.ino()) != (held.st_dev as u64, held.st_ino as u64) {
+        return Err(format!("it is not the folder descriptor {descriptor} holds"));
+    }
+    let name = std::ffi::CString::new(std::os::unix::ffi::OsStrExt::as_bytes(path.as_os_str()))
+        .map_err(|_| "its path holds a NUL".to_string())?;
+    if unsafe { libc::access(name.as_ptr(), libc::W_OK | libc::X_OK) } != 0 {
+        return Err(format!("it cannot be written: {}", io::Error::last_os_error()));
+    }
+    Ok(())
+}
+
+/// Leaves the export folder's descriptor open in the program, between fork
+/// and exec. Async-signal-safe.
+pub fn hand_over_export() -> io::Result<()> {
+    if unsafe { libc::fcntl(EXPORT_DESCRIPTOR, libc::F_SETFD, 0) } < 0 { Err(io::Error::last_os_error()) } else { Ok(()) }
+}
+
+/// Writes the ready newline on standard output.
+pub fn announce() -> io::Result<()> {
+    loop {
+        let written = unsafe { libc::write(libc::STDOUT_FILENO, b"\n".as_ptr().cast(), 1) };
+        if written == 1 { return Ok(()); }
+        let error = io::Error::last_os_error();
+        if written < 0 && error.raw_os_error() == Some(libc::EINTR) { continue; }
+        return Err(if written < 0 { error } else { io::Error::from(io::ErrorKind::WriteZero) });
+    }
 }
 
 /// The plugin's whole environment: each variable in `keep` the runner has,
@@ -228,18 +303,18 @@ fn seal(fd: libc::c_int) -> io::Result<()> {
 /// is wiped, and the runner becomes undumpable, which closes its /proc
 /// entries to processes of its user that lack CAP_SYS_PTRACE. Called once
 /// the plugin's own environment is in hand, before the plugin exists. The
-/// plugin is dumpable again: exec sets that back.
-pub fn conceal() -> io::Result<()> {
-    close_descriptors()?;
+/// plugin is dumpable again: exec sets that back. With `keep_export`, the
+/// export folder's descriptor stays: it is the plugin's.
+pub fn conceal(keep_export: bool) -> io::Result<()> {
+    close_descriptors(if keep_export { EXPORT_DESCRIPTOR + 1 } else { 3 })?;
     forget_environment();
     let undumpable = unsafe { libc::prctl(libc::PR_SET_DUMPABLE, 0 as libc::c_ulong, 0 as libc::c_ulong, 0 as libc::c_ulong, 0 as libc::c_ulong) };
     if undumpable == 0 { Ok(()) } else { Err(io::Error::last_os_error()) }
 }
 
-/// Closes every descriptor above the standard three.
-fn close_descriptors() -> io::Result<()> {
-    let first: libc::c_uint = 3;
-    if unsafe { libc::syscall(libc::SYS_close_range, first, libc::c_uint::MAX, 0 as libc::c_uint) } == 0 { return Ok(()); }
+/// Closes every descriptor from `first` up.
+fn close_descriptors(first: libc::c_int) -> io::Result<()> {
+    if unsafe { libc::syscall(libc::SYS_close_range, first as libc::c_uint, libc::c_uint::MAX, 0 as libc::c_uint) } == 0 { return Ok(()); }
     // Kernels older than 5.9: each one the descriptor table lists, or every
     // number when it cannot be listed, as the seal does.
     let open = match open_descriptors() {
@@ -251,10 +326,10 @@ fn close_descriptors() -> io::Result<()> {
             if last > MOST_WALKED {
                 return Err(io::Error::other(format!("the open descriptors cannot be listed, and {last} are too many to walk")));
             }
-            (3..last as libc::c_int).collect()
+            (first..last as libc::c_int).collect()
         }
     };
-    for fd in open.into_iter().filter(|fd| *fd >= 3) { unsafe { libc::close(fd); } }
+    for fd in open.into_iter().filter(|fd| *fd >= first) { unsafe { libc::close(fd); } }
     Ok(())
 }
 
@@ -462,8 +537,11 @@ mod tests {
         assert_eq!(plan.program, "/plugin/plugin");
         assert_eq!(plan.args, vec![OsString::from("--"), OsString::from("-x")], "what follows the program is its own");
         let bare = read(&["--", "/bin/true"]).unwrap();
-        assert_eq!((bare.limits, bare.keep), (Vec::new(), Vec::new()));
+        assert_eq!((bare.limits, bare.keep, bare.export, bare.ready), (Vec::new(), Vec::new(), None, false));
         assert_eq!(Resource::FileSize.option(), "fsize");
+        let own = read(&["--export=/music/export", "--ready", "--", "/plugin/plugin", "--ready"]).unwrap();
+        assert_eq!((own.export, own.ready), (Some(OsString::from("/music/export")), true));
+        assert_eq!(own.args, vec![OsString::from("--ready")], "the program's own --ready is not the runner's");
     }
 
     #[test]
@@ -478,8 +556,36 @@ mod tests {
             (&["--cpu=9:8", "--", "/bin/true"][..], "--cpu: the soft limit is above the hard one"),
             (&["--keep-env=PATH", "--keep-env=HOME", "--", "/bin/true"][..], "--keep-env is given twice"),
             (&["--keep-env=PATH,,HOME", "--", "/bin/true"][..], "--keep-env: PATH,,HOME is not a list of variable names"),
+            (&["--export=music", "--", "/bin/true"][..], "--export: music is not an absolute path"),
+            (&["--export=/a", "--export=/b", "--", "/bin/true"][..], "--export is given twice"),
+            (&["--ready", "--ready", "--", "/bin/true"][..], "--ready is given twice"),
+            (&["--ready=1", "--", "/bin/true"][..], "--ready is not a limit"),
         ] {
             assert_eq!(read(args), Err(problem.to_string()), "{args:?}");
+        }
+    }
+
+    #[test]
+    fn an_export_folder_is_accepted_only_as_the_writable_folder_its_descriptor_holds() {
+        use std::os::fd::AsRawFd;
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let (chosen, other, sealed) = (root.path().join("chosen"), root.path().join("other"), root.path().join("sealed"));
+        for folder in [&chosen, &other, &sealed] { std::fs::create_dir(folder).unwrap(); }
+        let held = std::fs::File::open(&chosen).unwrap();
+        let fd = held.as_raw_fd();
+        assert_eq!(check_export(fd, &chosen), Ok(()));
+        assert_eq!(check_export(fd, &chilpa_dirs::own_descriptors().join(fd.to_string())), Ok(()), "its descriptor's own path is the folder");
+        assert_eq!(check_export(fd, &other), Err(format!("it is not the folder descriptor {fd} holds")));
+        assert!(check_export(fd, &root.path().join("absent")).unwrap_err().starts_with("it is not there: "));
+        let file = std::fs::File::open("/dev/null").unwrap();
+        assert_eq!(check_export(file.as_raw_fd(), &chosen), Err(format!("descriptor {} holds no folder", file.as_raw_fd())));
+        std::fs::set_permissions(&sealed, std::fs::Permissions::from_mode(0o555)).unwrap();
+        let sealed_held = std::fs::File::open(&sealed).unwrap();
+        let refused = check_export(sealed_held.as_raw_fd(), &sealed);
+        std::fs::set_permissions(&sealed, std::fs::Permissions::from_mode(0o755)).unwrap();
+        if unsafe { libc::geteuid() } != 0 {
+            assert!(refused.unwrap_err().starts_with("it cannot be written: "), "a read-only folder is refused");
         }
     }
 

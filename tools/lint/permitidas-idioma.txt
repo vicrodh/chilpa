@@ -988,3 +988,7 @@ timespec
 esrch
 # The sandbox program, by its full name.
 bubblewrap
+# How the runner checks the export folder its descriptor holds: libc names.
+fstat
+ifdir
+ifmt
