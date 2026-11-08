@@ -54,16 +54,29 @@ struct Known {
 impl Natives {
     /// I replace the processes so existing sockets cannot outlive offline mode.
     pub(crate) fn network_changed(self: &Arc<Self>, catalog: Arc<crate::source_catalog::Catalog>) {
-        let me = self.clone();
-        let _ = std::thread::Builder::new().name("chilpa-native-network".into()).spawn(move || {
-            let _guard = me.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
-            let clients: Vec<_> = me.live.write().unwrap_or_else(|e| e.into_inner()).drain().map(|(_, client)| client).collect();
-            for client in clients { client.stop(); }
-            let plugins: Vec<_> = me.known.lock().unwrap_or_else(|e| e.into_inner()).values()
-                .map(|known| (known.manifest.clone(), known.folder.clone())).collect();
-            for (manifest, folder) in plugins { let _ = me.start_locked(&manifest, &folder); }
-            catalog.changed();
-        });
+        self.network_changed_with(catalog, |job| std::thread::Builder::new().name("chilpa-native-network".into()).spawn(job).map(drop))
+    }
+
+    /// `spawn` hands the work to a thread of its own. Without one the work
+    /// runs here, on the caller's: no socket outlives offline mode because a
+    /// thread could not be made.
+    fn network_changed_with(self: &Arc<Self>, catalog: Arc<crate::source_catalog::Catalog>,
+        spawn: impl FnOnce(Box<dyn FnOnce() + Send>) -> std::io::Result<()>) {
+        let (me, theirs) = (self.clone(), catalog.clone());
+        if let Err(error) = spawn(Box::new(move || me.replace_processes(&theirs))) {
+            eprintln!("native: no thread to replace the processes on ({error}); they are replaced on this one");
+            self.replace_processes(&catalog);
+        }
+    }
+
+    fn replace_processes(self: &Arc<Self>, catalog: &crate::source_catalog::Catalog) {
+        let _guard = self.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
+        let clients: Vec<_> = self.live.write().unwrap_or_else(|e| e.into_inner()).drain().map(|(_, client)| client).collect();
+        for client in clients { client.stop(); }
+        let plugins: Vec<_> = self.known.lock().unwrap_or_else(|e| e.into_inner()).values()
+            .map(|known| (known.manifest.clone(), known.folder.clone())).collect();
+        for (manifest, folder) in plugins { let _ = self.start_locked(&manifest, &folder); }
+        catalog.changed();
     }
 
     pub(crate) fn history_changed(&self, plugin: &str) { self.personal_changed.lock().unwrap_or_else(|e| e.into_inner()).insert(plugin.into()); }
@@ -576,5 +589,20 @@ pub(crate) mod tests {
             natives.known.lock().unwrap().insert("test.source".into(), Known { manifest: manifest.clone(), folder:PathBuf::new(), capabilities, discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now() });
             assert_eq!((natives.edits_playlists("test.source"), natives.removes_playlists("test.source")), (edits, removes));
         }
+    }
+
+    #[test]
+    fn a_network_change_without_a_thread_to_run_on_still_ends_every_process() {
+        let natives = Arc::new(Natives::default());
+        let ended = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let (plugin_reads, input) = std::io::pipe().unwrap();
+        let (output, plugin_writes) = std::io::pipe().unwrap();
+        let flag = ended.clone();
+        let client = NativeClient::start(input, output, move || flag.store(true, std::sync::atomic::Ordering::SeqCst), |_, _| {});
+        natives.live.write().unwrap().insert("test.source".into(), client);
+        natives.network_changed_with(crate::source_catalog::Catalog::new(), |_| Err(std::io::Error::other("no thread left")));
+        assert!(ended.load(std::sync::atomic::Ordering::SeqCst), "its process was ended on the caller's thread");
+        assert!(!natives.is_native("test.source"));
+        drop((plugin_reads, plugin_writes));
     }
 }
