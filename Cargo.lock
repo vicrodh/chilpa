@@ -744,6 +744,7 @@ dependencies = [
 name = "chilpa-plugin-runner"
 version = "0.1.2"
 dependencies = [
+ "chilpa-dirs",
  "libc",
 ]
 

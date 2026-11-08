@@ -940,3 +940,6 @@ revents
 webengine
 # The portal's process ids.
 pids
+# The runner's descriptor flags and errors, from libc.
+ebadf
+getfd

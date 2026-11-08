@@ -79,8 +79,10 @@ fn a_plugin_gets_its_folders_as_descriptors_and_is_told_their_paths() {
     assert_eq!(spawned.writable, received(&[data.clone(), cache.clone()]));
     assert_eq!(spawned.cwd, byte_string(&data));
     let program = base.join("plugin/plugin");
+    let keep = "--keep-env=PATH,HOME,XDG_CACHE_HOME,XDG_CONFIG_HOME,XDG_DATA_HOME,XDG_STATE_HOME,TMPDIR,CHILPA_PLUGIN_DATA_DIR,CHILPA_PLUGIN_CACHE_DIR,SSL_CERT_DIR";
     assert_eq!(spawned.argv, [fixture.runner.as_os_str(), OsStr::new("--as=536870912"), OsStr::new("--nofile=256"),
-        OsStr::new("--core=0"), OsStr::new("--"), program.as_os_str()].map(|arg| byte_string(arg)).to_vec(), "the limits bubblewrap sets with prlimit");
+        OsStr::new("--core=0"), OsStr::new(keep), OsStr::new("--"), program.as_os_str()].map(|arg| byte_string(arg)).to_vec(),
+        "the limits bubblewrap sets with prlimit, and the runner keeps only the variables it is started with");
     let expected: HashMap<String, String> = environment(&data, &cache).unwrap().into_iter().map(|(name, value)| (name.to_string(), value)).collect();
     assert_eq!(spawned.env, expected);
     assert_eq!(spawned.env["XDG_DATA_HOME"], data.join(".local/share").display().to_string());

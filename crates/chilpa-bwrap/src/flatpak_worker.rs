@@ -7,7 +7,7 @@
 //! from chilpa-plugin-runner. The 16 MiB bound bubblewrap puts on its /tmp
 //! has no portal option and is not there.
 
-use crate::flatpak::{Exposed, Flatpak};
+use crate::flatpak::{keep_env, Exposed, Flatpak};
 use crate::portal::Spawn;
 use crate::process::{NativeLauncher, NativeProcess};
 use crate::Unavailable;
@@ -78,10 +78,12 @@ impl WorkerLauncher for FlatpakWorker {
         let worker = seen(&self.adapter)?.join("worker.pl");
         let modules = seen(&self.libraries)?.join("lib/perl5");
         let memory = format!("--as={MEMORY}");
-        let argv = vec![self.flatpak.runner.as_os_str(), OsStr::new(&memory), OsStr::new("--nproc=0"), OsStr::new("--nofile=64"),
-            OsStr::new("--fsize=1048576"), OsStr::new("--cpu=120:120"), OsStr::new("--core=0"), OsStr::new("--"),
-            self.perl.as_os_str(), worker.as_os_str()];
         let modules = modules.to_str().ok_or(BridgeError::Denied)?.to_string();
+        let env = vec![("PATH", "/usr/bin".to_string()), ("PERL5LIB", modules)];
+        let keep = keep_env(&env);
+        let argv = vec![self.flatpak.runner.as_os_str(), OsStr::new(&memory), OsStr::new("--nproc=0"), OsStr::new("--nofile=64"),
+            OsStr::new("--fsize=1048576"), OsStr::new("--cpu=120:120"), OsStr::new("--core=0"), OsStr::new(&keep), OsStr::new("--"),
+            self.perl.as_os_str(), worker.as_os_str()];
         let (child_input, input) = std::io::pipe().map_err(|_| BridgeError::Disconnected)?;
         let (output, child_output) = std::io::pipe().map_err(|_| BridgeError::Disconnected)?;
         let errors = std::fs::OpenOptions::new().write(true).open("/dev/null").map_err(|_| BridgeError::Disconnected)?;
@@ -90,7 +92,7 @@ impl WorkerLauncher for FlatpakWorker {
         let request = Spawn {
             cwd: &guest.path,
             argv,
-            env: vec![("PATH", "/usr/bin".into()), ("PERL5LIB", modules)],
+            env,
             stdio: [child_input.as_fd(), child_output.as_fd(), errors.as_fd()],
             network: false,
             writable: Vec::new(),

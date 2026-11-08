@@ -60,7 +60,7 @@ fn the_worker_starts_offline_with_its_limits_and_only_reads_its_package() {
     assert_eq!(spawned.cwd, byte_string(&guest));
     let script = runtime.join("adapter/worker.pl");
     assert_eq!(spawned.argv, [runner.as_os_str(), OsStr::new("--as=268435456"), OsStr::new("--nproc=0"), OsStr::new("--nofile=64"),
-        OsStr::new("--fsize=1048576"), OsStr::new("--cpu=120:120"), OsStr::new("--core=0"), OsStr::new("--"),
+        OsStr::new("--fsize=1048576"), OsStr::new("--cpu=120:120"), OsStr::new("--core=0"), OsStr::new("--keep-env=PATH,PERL5LIB"), OsStr::new("--"),
         OsStr::new("/usr/bin/perl"), script.as_os_str()].map(|arg| byte_string(arg)).to_vec(), "the limits bubblewrap sets with prlimit");
     assert_eq!(spawned.env, HashMap::from([("PATH".to_string(), "/usr/bin".to_string()),
         ("PERL5LIB".to_string(), runtime.join("libraries/lib/perl5").display().to_string())]));

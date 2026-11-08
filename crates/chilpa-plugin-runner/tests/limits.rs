@@ -48,8 +48,13 @@ fn a_descriptor_its_starter_left_open_does_not_reach_the_plugin() {
     let file = std::fs::File::open("/dev/null").unwrap();
     let raw = file.as_raw_fd();
     let leaked = |command: &mut Command| -> String {
-        // dup2 leaves the copy without close-on-exec, as a careless starter would.
-        unsafe { command.pre_exec(move || if libc::dup2(raw, 9) < 0 { Err(std::io::Error::last_os_error()) } else { Ok(()) }); }
+        // Number 9 without close-on-exec, as a careless starter leaves it. The
+        // flag is cleared by hand: when the file already is 9, dup2 does nothing.
+        unsafe {
+            command.pre_exec(move || {
+                if libc::dup2(raw, 9) < 0 || libc::fcntl(9, libc::F_SETFD, 0) < 0 { Err(std::io::Error::last_os_error()) } else { Ok(()) }
+            });
+        }
         String::from_utf8(command.output().unwrap().stdout).unwrap().trim().to_string()
     };
     assert_eq!(leaked(Command::new("/bin/sh").args(["-c", probe])), "open", "the probe sees a leaked descriptor");
@@ -64,4 +69,19 @@ fn a_bad_command_line_or_a_missing_program_starts_nothing() {
         assert_eq!(output.status.code(), Some(code), "{args:?}");
         assert!(String::from_utf8_lossy(&output.stderr).starts_with("chilpa-plugin-runner: "), "{args:?}");
     }
+}
+
+#[test]
+fn only_the_variables_it_is_told_to_keep_reach_the_plugin() {
+    let probe = r#"printf '%s %s' "${LEAKED-unset}" "${MARK-unset}""#;
+    let shown = |args: &[&str]| -> String {
+        let mut command = Command::new(RUNNER);
+        command.args(args);
+        for (name, value) in [("LEAKED", "from-the-starter"), ("MARK", "set")] { command.env(name, value); }
+        let output = command.output().unwrap();
+        assert!(output.status.success(), "{args:?}: {}", String::from_utf8_lossy(&output.stderr));
+        String::from_utf8(output.stdout).unwrap()
+    };
+    assert_eq!(shown(&["--keep-env=MARK", "--", "/bin/sh", "-c", probe]), "unset set");
+    assert_eq!(shown(&["--", "/bin/sh", "-c", probe]), "unset unset", "nothing is kept unless named");
 }

@@ -204,6 +204,9 @@ pub fn executable_helper(name: &str) -> Option<PathBuf> {
 pub fn mount_info_file() -> &'static std::path::Path { std::path::Path::new("/proc/self/mountinfo") }
 #[cfg(any(target_os = "linux", target_os = "android"))]
 pub fn mount_events_file() -> &'static std::ffi::CStr { c"/proc/self/mounts" }
+/// This process's open descriptors, one entry per number.
+#[cfg(any(target_os = "linux", target_os = "android"))]
+pub fn own_descriptors() -> &'static std::path::Path { std::path::Path::new("/proc/self/fd") }
 #[cfg(any(target_os = "linux", target_os = "android"))]
 pub fn block_device_node(device: &str) -> Option<PathBuf> {
     let (major, minor) = device.split_once(':')?;

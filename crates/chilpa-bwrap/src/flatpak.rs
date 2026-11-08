@@ -66,6 +66,12 @@ fn environment(data: &Path, cache: &Path) -> Result<Vec<(&'static str, String)>,
     ])
 }
 
+/// The runner's option that names the variables the plugin keeps: the ones
+/// it is started with, and no other that reaches the runner.
+pub(crate) fn keep_env(env: &[(&'static str, String)]) -> String {
+    format!("--keep-env={}", env.iter().map(|(name, _)| *name).collect::<Vec<_>>().join(","))
+}
+
 /// The Flatpak portal, from inside Chilpa's own sandbox. It never falls back
 /// to starting a plugin outside a sandbox.
 pub struct Flatpak {
@@ -138,7 +144,10 @@ impl NativeLauncher for Flatpak {
         if !program.is_file() || !program.starts_with(&folder.path) { return Err(BridgeError::Denied); }
         let memory = format!("--as={memory_bytes}");
         let runner = self.runner.as_os_str();
-        let argv = vec![runner, OsStr::new(&memory), OsStr::new("--nofile=256"), OsStr::new("--core=0"), OsStr::new("--"), program.as_os_str()];
+        let env = environment(&data.path, &cache.path)?;
+        let keep = keep_env(&env);
+        let argv = vec![runner, OsStr::new(&memory), OsStr::new("--nofile=256"), OsStr::new("--core=0"), OsStr::new(&keep),
+            OsStr::new("--"), program.as_os_str()];
         let (child_input, input) = std::io::pipe().map_err(|_| BridgeError::Disconnected)?;
         let (output, child_output) = std::io::pipe().map_err(|_| BridgeError::Disconnected)?;
         let (errors, child_errors) = std::io::pipe().map_err(|_| BridgeError::Disconnected)?;
@@ -147,7 +156,7 @@ impl NativeLauncher for Flatpak {
         let request = Spawn {
             cwd: &data.path,
             argv,
-            env: environment(&data.path, &cache.path)?,
+            env,
             stdio: [child_input.as_fd(), child_output.as_fd(), child_errors.as_fd()],
             network,
             writable,
