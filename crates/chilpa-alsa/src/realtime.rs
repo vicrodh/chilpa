@@ -59,7 +59,8 @@ thread_local! {
 }
 
 /// The session bus, where the portal is: opened the first time the portal
-/// is asked and kept for the threads that ask after it.
+/// is asked, inside a Flatpak only, and kept for the threads that ask after
+/// it.
 static PORTAL: Shared<fn() -> Result<Connection, dbus::Error>> =
     Shared::new(Connection::new_session as fn() -> Result<Connection, dbus::Error>);
 
@@ -70,30 +71,36 @@ pub fn elevate() -> Elevation {
         return got;
     }
     let started = std::time::Instant::now();
-    let got = ask(scheduled, Connection::new_system, &PORTAL);
+    let got = ask(chilpa_dirs::sandbox(), scheduled, Connection::new_system, &PORTAL);
     HELD.set(Some(got));
     chilpa_audio::diagnostics::trace("alsa", "thread_priority", format_args!("got={got:?} after={:?}", started.elapsed()));
     got
 }
 
 /// Asks, in order, until something is granted: the scheduler, RealtimeKit
-/// on the system bus for real time and then for a nicer level, and only
-/// when the system bus gave nothing, the portal for the same two.
+/// on the system bus for real time and then for a nicer level, and, inside
+/// a Flatpak and only when the system bus gave nothing, the portal for the
+/// same two.
 ///
-/// The portal comes last on purpose: on a desktop where the system bus
-/// answers, nothing here asks the session bus anything.
+/// The portal is a sandbox's road to RealtimeKit. Outside a Flatpak the
+/// session bus is never asked anything: the thread that is about to open
+/// the device does not wait on a portal it has no use for.
 fn ask<O>(
+    sandbox: chilpa_dirs::Sandbox,
     scheduler: impl FnOnce() -> Option<Elevation>,
     system: impl Fn() -> Result<Connection, dbus::Error>,
     portal: &Shared<O>,
 ) -> Elevation
 where
-    O: Fn() -> Result<Connection, dbus::Error>,
+    O: Fn() -> Result<Connection, dbus::Error> + Clone + Send + 'static,
 {
     scheduler()
         .or_else(|| granted(&system().ok()?))
         .or_else(|| nicer(&system().ok()?))
         .or_else(|| {
+            if sandbox != chilpa_dirs::Sandbox::Flatpak {
+                return None;
+            }
             let got = portal.with(|connection| granted_by_portal(connection).or_else(|| nicer_by_portal(connection)));
             chilpa_audio::diagnostics::trace("alsa", "thread_priority", format_args!("portal={got:?}"));
             got
@@ -114,23 +121,46 @@ impl<O> Shared<O> {
     }
 }
 
-impl<O: Fn() -> Result<Connection, dbus::Error>> Shared<O> {
-    /// `work` on the connection, opened now if it is not open yet. One ask
-    /// at a time, each bounded by [`PATIENCE`] per question. A connection
-    /// through which nothing was granted is let go, so a portal that was
-    /// restarted, or a bus that went away, is reached again by the next
-    /// ask instead of failing every one after it.
+impl<O: Fn() -> Result<Connection, dbus::Error> + Clone + Send + 'static> Shared<O> {
+    /// `work` on the kept connection, or on one opened now within
+    /// [`PATIENCE`]. The connection is taken out of the lock for the
+    /// questions, so the lock is held for a swap and never while the portal
+    /// is asked: a thread that asks while another is asking opens a
+    /// connection of its own instead of waiting behind it. Each question is
+    /// bounded by [`PATIENCE`]. A connection through which nothing was
+    /// granted is let go, so a portal that was restarted, or a bus that went
+    /// away, is reached again by the next ask instead of failing every one
+    /// after it.
     fn with(&self, work: impl FnOnce(&Connection) -> Option<Elevation>) -> Option<Elevation> {
-        let mut held = self.held.lock().unwrap_or_else(|e| e.into_inner());
-        if held.is_none() {
-            *held = (self.open)().ok();
-        }
-        let got = work(held.as_ref()?);
-        if got.is_none() {
-            *held = None;
+        let kept = self.held.lock().unwrap_or_else(|e| e.into_inner()).take();
+        let connection = match kept {
+            Some(connection) => connection,
+            None => opened_within(self.open.clone(), PATIENCE)?,
+        };
+        let got = work(&connection);
+        if got.is_some() {
+            *self.held.lock().unwrap_or_else(|e| e.into_inner()) = Some(connection);
         }
         got
     }
+}
+
+/// A connection out of `open`, or nothing if it is not there within
+/// `patience`. `Connection::new_session` takes no time limit, so it runs on
+/// a thread of its own and the asking thread stops waiting for it; one that
+/// arrives late is dropped with the channel.
+fn opened_within<O>(open: O, patience: Duration) -> Option<Connection>
+where
+    O: FnOnce() -> Result<Connection, dbus::Error> + Send + 'static,
+{
+    let (sender, receiver) = std::sync::mpsc::sync_channel(1);
+    std::thread::Builder::new()
+        .name("chilpa-rt-portal".into())
+        .spawn(move || {
+            let _ = sender.send(open());
+        })
+        .ok()?;
+    receiver.recv_timeout(patience).ok()?.ok()
 }
 
 /// Puts the calling thread back among the others, once it no longer feeds

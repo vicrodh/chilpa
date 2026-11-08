@@ -13,6 +13,8 @@ use std::io::{BufRead, BufReader};
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::time::Instant;
+use chilpa_dirs::Sandbox;
 
 struct TestBus {
     child: Child,
@@ -64,7 +66,7 @@ impl TestBus {
 
     /// Opens a connection to this bus each time it is called, as
     /// `Connection::new_system` and `new_session` do to theirs.
-    fn opener(&self) -> impl Fn() -> Result<Connection, dbus::Error> {
+    fn opener(&self) -> impl Fn() -> Result<Connection, dbus::Error> + Clone + Send + Sync + 'static {
         let address = self.address.clone();
         move || Connection::new_address(&address)
     }
@@ -176,6 +178,13 @@ fn grantor(bus: &TestBus, who: Grantor, refuse_real_time: bool) -> (Asked, Servi
     (asked, Serving { stop, worker: Some(worker) })
 }
 
+/// RealtimeKit's limit is set on this process, which every test shares:
+/// the tests that may set it, or that read it, take turns.
+fn limits() -> std::sync::MutexGuard<'static, ()> {
+    static LIMITS: Mutex<()> = Mutex::new(());
+    LIMITS.lock().unwrap_or_else(|e| e.into_inner())
+}
+
 /// The system bus inside a Flatpak that was not given it: not there.
 fn no_system_bus() -> Result<Connection, dbus::Error> {
     Err(dbus::Error::new_failed("no system bus in this sandbox"))
@@ -183,13 +192,14 @@ fn no_system_bus() -> Result<Connection, dbus::Error> {
 
 #[test]
 fn the_portal_grants_real_time_when_the_system_bus_cannot() {
+    let _limits = limits();
     // Inside a Flatpak the scheduler says no and no system bus reaches
     // RealtimeKit, so the thread fed the device at an ordinary priority,
     // behind whatever else the machine was doing. The portal is where a
     // sandbox asks, with its own process and thread ids.
     let bus = TestBus::new();
     let (asked, _portal) = grantor(&bus, Grantor::Portal, false);
-    let got = ask(|| None, no_system_bus, &Shared::new(bus.opener()));
+    let got = ask(Sandbox::Flatpak, || None, no_system_bus, &Shared::new(bus.opener()));
     assert_eq!(got, Elevation::Granted(15), "real time, within the 15 the portal allows");
     assert_eq!(
         *asked.lock().unwrap(),
@@ -200,9 +210,10 @@ fn the_portal_grants_real_time_when_the_system_bus_cannot() {
 
 #[test]
 fn a_portal_that_refuses_real_time_still_puts_the_thread_ahead() {
+    let _limits = limits();
     let bus = TestBus::new();
     let (asked, _portal) = grantor(&bus, Grantor::Portal, true);
-    let got = ask(|| None, no_system_bus, &Shared::new(bus.opener()));
+    let got = ask(Sandbox::Flatpak, || None, no_system_bus, &Shared::new(bus.opener()));
     assert_eq!(got, Elevation::Nicer(NICE), "-11, within the -15 it allows");
     let methods: Vec<String> = asked.lock().unwrap().iter().map(|a| a.0.clone()).collect();
     assert_eq!(methods, ["MakeThreadRealtimeWithPID", "MakeThreadHighPriorityWithPID"]);
@@ -210,12 +221,13 @@ fn a_portal_that_refuses_real_time_still_puts_the_thread_ahead() {
 
 #[test]
 fn where_the_system_bus_grants_the_session_bus_is_never_asked() {
+    let _limits = limits();
     // Outside a sandbox nothing changes: RealtimeKit answers on the system
     // bus and the portal hears nothing.
     let (system, session) = (TestBus::new(), TestBus::new());
     let (kit_asked, _kit) = grantor(&system, Grantor::Kit, false);
     let (portal_asked, _portal) = grantor(&session, Grantor::Portal, false);
-    let got = ask(|| None, system.opener(), &Shared::new(session.opener()));
+    let got = ask(Sandbox::Flatpak, || None, system.opener(), &Shared::new(session.opener()));
     assert_eq!(got, Elevation::Granted(15));
     assert_eq!(*kit_asked.lock().unwrap(), [("MakeThreadRealtime".to_string(), 0, thread_id(), 15)]);
     assert!(portal_asked.lock().unwrap().is_empty(), "the portal was asked: {:?}", portal_asked.lock().unwrap());
@@ -223,10 +235,11 @@ fn where_the_system_bus_grants_the_session_bus_is_never_asked() {
 
 #[test]
 fn a_nicer_level_from_the_system_bus_is_taken_before_the_portal_is_asked() {
+    let _limits = limits();
     let (system, session) = (TestBus::new(), TestBus::new());
     let (_kit_asked, _kit) = grantor(&system, Grantor::Kit, true);
     let (portal_asked, _portal) = grantor(&session, Grantor::Portal, false);
-    let got = ask(|| None, system.opener(), &Shared::new(session.opener()));
+    let got = ask(Sandbox::Flatpak, || None, system.opener(), &Shared::new(session.opener()));
     assert_eq!(got, Elevation::Nicer(NICE));
     assert!(portal_asked.lock().unwrap().is_empty());
 }
@@ -236,7 +249,7 @@ fn the_scheduler_comes_first_and_then_nobody_is_asked() {
     let bus = TestBus::new();
     let (asked, _portal) = grantor(&bus, Grantor::Portal, false);
     let system = || -> Result<Connection, dbus::Error> { panic!("the system bus was asked") };
-    let got = ask(|| Some(Elevation::Scheduled(20)), system, &Shared::new(bus.opener()));
+    let got = ask(Sandbox::Flatpak, || Some(Elevation::Scheduled(20)), system, &Shared::new(bus.opener()));
     assert_eq!(got, Elevation::Scheduled(20));
     assert!(asked.lock().unwrap().is_empty());
 }
@@ -246,7 +259,7 @@ fn a_session_without_the_portal_leaves_the_thread_as_it_was_without_waiting() {
     let bus = TestBus::new();
     let portal = Shared::new(bus.opener());
     let started = std::time::Instant::now();
-    assert_eq!(ask(|| None, no_system_bus, &portal), Elevation::AsItWas);
+    assert_eq!(ask(Sandbox::Flatpak, || None, no_system_bus, &portal), Elevation::AsItWas);
     assert!(started.elapsed() < PATIENCE, "nobody owns the name, and the bus says so at once");
     assert!(portal.held.lock().unwrap().is_none(), "a connection that got nothing is let go");
     let connection = bus.connection();
@@ -258,6 +271,7 @@ fn a_session_without_the_portal_leaves_the_thread_as_it_was_without_waiting() {
 
 #[test]
 fn the_portal_connection_is_opened_once_and_kept_while_it_grants() {
+    let _limits = limits();
     let bus = TestBus::new();
     let (asked, _portal) = grantor(&bus, Grantor::Portal, false);
     let opened = Arc::new(AtomicUsize::new(0));
@@ -268,16 +282,80 @@ fn the_portal_connection_is_opened_once_and_kept_while_it_grants() {
         Connection::new_address(&address)
     });
     for _ in 0..3 {
-        assert_eq!(ask(|| None, no_system_bus, &portal), Elevation::Granted(15));
+        assert_eq!(ask(Sandbox::Flatpak, || None, no_system_bus, &portal), Elevation::Granted(15));
     }
     assert_eq!(opened.load(Ordering::Relaxed), 1, "one connection for three asks");
     assert_eq!(asked.lock().unwrap().len(), 3);
+}
+
+#[test]
+fn outside_a_flatpak_the_portal_is_never_asked() {
+    // A host without RealtimeKit and with a desktop portal: the thread that
+    // opens the device asked the session bus, and waited on it, before it
+    // opened anything. Before the portal it went on at an ordinary
+    // priority, and that is what it does again.
+    let _limits = limits();
+    let bus = TestBus::new();
+    let (asked, _portal) = grantor(&bus, Grantor::Portal, false);
+    for sandbox in [Sandbox::None, Sandbox::Snap] {
+        let opened = Arc::new(AtomicUsize::new(0));
+        let (count, address) = (Arc::clone(&opened), bus.address.clone());
+        let portal = Shared::new(move || {
+            count.fetch_add(1, Ordering::Relaxed);
+            Connection::new_address(&address)
+        });
+        assert_eq!(ask(sandbox, || None, no_system_bus, &portal), Elevation::AsItWas, "{sandbox:?}");
+        assert_eq!(opened.load(Ordering::Relaxed), 0, "{sandbox:?}: the session bus was opened");
+    }
+    assert!(asked.lock().unwrap().is_empty(), "the portal was asked: {:?}", asked.lock().unwrap());
+}
+
+#[test]
+fn a_session_bus_that_does_not_answer_holds_the_thread_no_longer_than_the_patience() {
+    // Opening the session bus has no time limit of its own, and the thread
+    // waiting on it is the one about to open the device.
+    let portal = Shared::new(|| -> Result<Connection, dbus::Error> {
+        std::thread::sleep(PATIENCE * 3);
+        Err(dbus::Error::new_failed("a bus that answered too late"))
+    });
+    let started = Instant::now();
+    assert_eq!(ask(Sandbox::Flatpak, || None, no_system_bus, &portal), Elevation::AsItWas);
+    let waited = started.elapsed();
+    assert!(waited < PATIENCE + Duration::from_millis(500), "it waited {waited:?} for the bus");
+}
+
+#[test]
+fn a_thread_does_not_wait_behind_another_threads_questions() {
+    // The lock was held while the portal was asked, so a second thread that
+    // opened a device waited out the first one's questions, up to two
+    // seconds each.
+    let _limits = limits();
+    let bus = TestBus::new();
+    let (_asked, _portal) = grantor(&bus, Grantor::Portal, false);
+    let portal = Shared::new(bus.opener());
+    let (inside, entered) = std::sync::mpsc::channel();
+    std::thread::scope(|scope| {
+        let first = &portal;
+        scope.spawn(move || {
+            first.with(|connection| {
+                inside.send(()).unwrap();
+                std::thread::sleep(PATIENCE * 2);
+                granted_by_portal(connection)
+            })
+        });
+        entered.recv().unwrap();
+        let started = Instant::now();
+        assert_eq!(portal.with(granted_by_portal), Some(Elevation::Granted(15)));
+        let waited = started.elapsed();
+        assert!(waited < PATIENCE, "it waited {waited:?} behind the other thread");
+    });
 }
 
 /// Whatever this machine grants, asking twice on one thread asks once,
 /// and the answer is the same answer; given back, it can be asked again.
 #[test]
 fn a_thread_asks_once_and_gives_back() {
+    let _limits = limits();
     let first = elevate();
     let second = elevate();
     assert_eq!(first, second);
