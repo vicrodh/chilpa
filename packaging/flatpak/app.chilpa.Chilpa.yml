@@ -23,7 +23,16 @@ finish-args:
   - --socket=wayland
   - --socket=fallback-x11
   - --socket=pulseaudio
-  - --device=dri
+  # The sound cards in /dev/snd for the direct ALSA stack (hw: devices,
+  # bit-perfect), and the GPU, which all includes.
+  - --device=all
+  # PipeWire's own socket, which its ALSA PCM, the native DSD stream and its
+  # JACK library connect to; the PulseAudio socket alone does not do.
+  - --filesystem=xdg-run/pipewire-0:ro
+  # The device reservation a card held exclusively takes on the session bus,
+  # so a sound server lets it go. Chilpa's own repository only: Flathub
+  # refuses it.
+  - --own-name=org.freedesktop.ReserveDevice1.*
   # The bus names app.chilpa.Chilpa (one instance) and
   # org.mpris.MediaPlayer2.app.chilpa.Chilpa (media controls) need no line:
   # Flatpak grants both to the application.
