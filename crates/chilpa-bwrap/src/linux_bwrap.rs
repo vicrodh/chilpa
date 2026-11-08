@@ -187,8 +187,9 @@ mod tests {
     #[test]
     fn isolated_worker_cannot_fork_or_use_network_and_timeout_revokes_it() {
         let root = tempfile::tempdir().unwrap();
-        crate::worker_conformance::an_isolated_worker_cannot_fork_or_use_network_and_timeout_revokes_it(root.path(), true,
-            |runtime| Box::new(RuntimePaths { sandbox: "/usr/bin/bwrap".into(), system: "/usr".into(),
+        use crate::worker_conformance::{Expected, Root};
+        crate::worker_conformance::an_isolated_worker_cannot_fork_or_use_network_and_timeout_revokes_it(root.path(),
+            Expected { root: Root::ReadOnly, temporary_bounded: true }, |runtime| Box::new(RuntimePaths { sandbox: "/usr/bin/bwrap".into(), system: "/usr".into(),
                 libraries: runtime.join("libraries"), adapter: runtime.join("adapter") }));
     }
 

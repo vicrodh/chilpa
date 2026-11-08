@@ -378,23 +378,38 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
   waited for, and a process whose handle goes while it may still run stays
   in the ledger and is signalled from a thread of its own ([read]
   `portal.rs`, `wait`, `Drop for PortalProcess`, `end_abandoned`).
-- **The compatibility worker's /tmp has no total bound.** Bubblewrap mounts
-  a 16 MiB tmpfs there ([read] `crates/chilpa-bwrap/src/linux_bwrap.rs:68`);
-  the portal has no option for one. What bounds the worker is what the
-  runner sets ([read] `crates/chilpa-bwrap/src/flatpak_worker.rs:91-93`):
-  no forks (`--nproc=0`), 1 MiB per file (`--fsize`), 64 descriptors and
-  120 s of CPU in all. They bound each file and the time spent writing, not
-  the sum of the files: a worker that writes and closes files in a loop can
-  fill the sandbox's /tmp until its CPU runs out. Lowering them does not
-  change that order of magnitude, since writing a tmpfs takes little CPU
-  per byte, and it would cut the worker's legitimate work first; they stay
-  as bubblewrap's. In a sandboxed spawn /tmp is not a mount of its own: it
-  is part of the sandbox's root, a private tmpfs sized at half the
-  machine's memory, discarded when the sandbox ends ([built]). That root
-  and `/dev` are writable too, so the worker's check that the root and the
-  devices are read-only fails there ([built]); `/usr` and `/app` are
-  read-only. What the worker writes there reaches nothing of the host and
-  takes memory until it exits.
+- **The compatibility worker's root, /dev and /tmp: writable, private, and
+  bounded only by the runner's limits.** In a sandboxed spawn /tmp is not a
+  mount of its own: it is part of the sandbox's root, a tmpfs bubblewrap
+  makes for that spawn, sized at half the machine's memory, and `/dev` is
+  another; both are writable, and both are discarded when the sandbox ends
+  ([built]). Bubblewrap outside Flatpak remounts its root and `/dev`
+  read-only and mounts a 16 MiB tmpfs at /tmp ([read]
+  `crates/chilpa-bwrap/src/linux_bwrap.rs`, `launch`); the portal has no
+  option for either. That is not an escape: what the worker writes there is
+  seen by nothing else, neither the host, nor Chilpa, nor the next worker,
+  while `/usr`, `/app` and its package stay read-only and the package cannot
+  be moved. The worker conformance checks exactly that for each backend
+  ([read] `crates/chilpa-bwrap/src/worker_conformance.rs`, `Root`): read-only
+  root and `/dev` under bubblewrap; under the portal, writable, with a
+  second worker started beside the first not seeing what the first wrote
+  and the application not seeing it either. What remains is memory: a
+  tmpfs counts against RAM, and what bounds the worker's writes is what
+  the runner sets ([read] `crates/chilpa-bwrap/src/flatpak_worker.rs`,
+  `launch`): no forks (`--nproc=0`), 1 MiB per file (`--fsize`), 64
+  descriptors and 120 s of CPU in all. They bound each file and the time
+  spent writing, not the sum of the files: a worker that writes and closes
+  files in a loop can take up to that half of the memory until it exits or
+  its CPU runs out. Nothing cheaper bounds it from inside: the address-space
+  limit does not count a tmpfs file's pages, which are not mapped by the
+  writer; the sandbox cannot mount a bounded tmpfs, since Flatpak's seccomp
+  filter answers `mount` and `unshare` with EPERM (flatpak 1.18.4
+  `common/flatpak-run.c`, `setup_seccomp`); and Landlock, which could make
+  the root read-only but not bound /tmp, is not in every kernel (not in the
+  one these notes were built on). Lowering the limits does not change the
+  order of magnitude, since writing a tmpfs takes little CPU per byte, and
+  it would cut the worker's legitimate work first; they stay as
+  bubblewrap's.
 - **A folder from the file chooser reaches a plugin as a descriptor.**
   Without a filesystem permission, the file chooser hands the application
   a folder of the Documents portal, `$XDG_RUNTIME_DIR/doc/<id>/<name>`,

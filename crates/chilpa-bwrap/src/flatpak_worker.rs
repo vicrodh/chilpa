@@ -6,13 +6,22 @@
 //! through the host's WorkerServices, as under bubblewrap. Its limits come
 //! from chilpa-plugin-runner.
 //!
-//! Known limit: the 16 MiB bound bubblewrap puts on its /tmp has no portal
-//! option and is not there. No forks, 1 MiB per file and 120 s of CPU bound
-//! each file and the time it has to write, not the sum: a worker that keeps
-//! writing and closing files can fill the sandbox's /tmp until its CPU runs
-//! out. Lower limits would not change that order of magnitude and would cut
-//! its real work first, so they stay as bubblewrap's (packaging/flatpak/
-//! BUILD-NOTES.md, section 10).
+//! Known limit: its root, /dev and /tmp. Under the portal they are a private
+//! tmpfs of the spawn, writable where bubblewrap's are read-only, discarded
+//! when the spawn ends and seen by nothing else: not the host, not Chilpa,
+//! not another worker. /usr, /app and the package stay read-only, and the
+//! package cannot be moved. So what is written there escapes nothing; it
+//! takes memory, which a tmpfs counts against RAM up to half of it. The
+//! 16 MiB bound bubblewrap puts on its /tmp has no portal option, and the
+//! sandbox cannot mount one: Flatpak's seccomp filter refuses mount and
+//! unshare. What bounds the worker there is the runner's limits: no forks,
+//! 1 MiB per file, 64 descriptors and 120 s of CPU. They bound each file and
+//! the time spent writing, not the sum: a worker that writes and closes
+//! files in a loop can take that memory until it exits or its CPU runs out.
+//! The address-space limit does not count it, since a tmpfs file's pages are
+//! not in the writer's address space. Lower limits would not change that
+//! order of magnitude and would cut its real work first, so they stay as
+//! bubblewrap's (packaging/flatpak/BUILD-NOTES.md, section 10).
 
 use crate::flatpak::{keep_env, Exposed, Flatpak};
 use crate::portal::Spawn;
