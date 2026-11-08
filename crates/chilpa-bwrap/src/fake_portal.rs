@@ -97,6 +97,10 @@ struct Record {
     signals: Vec<(u32, u32, bool)>,
     /// What it started and has not seen end.
     running: Vec<u32>,
+    /// How many of the next signals it refuses.
+    refused: u32,
+    /// How long it holds each `Spawn` answer back, after starting the process.
+    delay: std::time::Duration,
 }
 
 pub(crate) struct FakePortal {
@@ -126,9 +130,26 @@ impl FakePortal {
         self.record.lock().unwrap().spawned.clone()
     }
 
-    /// Each `SpawnSignal`: pid, signal and whether it went to the group.
+    /// Each `SpawnSignal`, refused or taken: pid, signal and whether it went
+    /// to the group.
     pub(crate) fn signals(&self) -> Vec<(u32, u32, bool)> {
         self.record.lock().unwrap().signals.clone()
+    }
+
+    /// What it started and has not seen end.
+    pub(crate) fn running(&self) -> Vec<u32> {
+        self.record.lock().unwrap().running.clone()
+    }
+
+    /// Answers the next `count` signals with an error, without sending them.
+    pub(crate) fn refuse_signals(&self, count: u32) {
+        self.record.lock().unwrap().refused = count;
+    }
+
+    /// Holds each `Spawn` answer back for `delay` after starting the process,
+    /// as a portal too slow for its caller would.
+    pub(crate) fn delay_answers(&self, delay: std::time::Duration) {
+        self.record.lock().unwrap().delay = delay;
     }
 }
 
@@ -147,13 +168,21 @@ fn answer(conn: &Connection, message: &Message, version: u32, record: &Arc<Mutex
     let _ = match header.member().map(|member| member.as_str()) {
         Some("Get") => conn.reply(&header, &Value::U32(version)),
         Some("Spawn") => match spawn(conn, message, record) {
-            Ok(pid) => conn.reply(&header, &pid),
+            Ok(pid) => {
+                let delay = record.lock().unwrap().delay;
+                std::thread::sleep(delay);
+                conn.reply(&header, &pid)
+            }
             Err(problem) => conn.reply_dbus_error(&header, zbus::fdo::Error::Failed(problem)),
         },
         Some("SpawnSignal") => {
             let (pid, signal, group): (u32, u32, bool) = message.body().deserialize().unwrap();
             let mut record = record.lock().unwrap();
             record.signals.push((pid, signal, group));
+            if record.refused > 0 {
+                record.refused -= 1;
+                return drop(conn.reply_dbus_error(&header, zbus::fdo::Error::Failed("refused".into())));
+            }
             // Only what still runs: a reaped pid can be another process's.
             if record.running.contains(&pid) {
                 let (pid, signal) = (pid as libc::pid_t, signal as libc::c_int);

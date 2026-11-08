@@ -938,3 +938,5 @@ pollin
 prctl
 revents
 webengine
+# The portal's process ids.
+pids

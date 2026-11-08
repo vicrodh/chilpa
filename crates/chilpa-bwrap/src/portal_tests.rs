@@ -113,17 +113,94 @@ fn a_portal_older_than_version_3_or_none_at_all_is_refused() {
 
 #[test]
 fn an_exit_read_before_its_spawn_answer_is_kept_and_the_early_ones_are_bounded() {
-    let exits = Exits::default();
-    exits.exited(7, 0);
-    exits.started(7);
-    assert!(!exits.running(7), "the exit that came first is not lost");
-    exits.started(8);
-    assert!(exits.running(8));
-    for pid in 100..100 + EARLY_EXITS as u32 + 5 { exits.exited(pid, 0); }
-    assert_eq!(exits.state().early.len(), EARLY_EXITS);
-    exits.forget(8);
-    assert!(!exits.state().tracked.contains_key(&8));
-    exits.lose();
-    exits.started(9);
-    assert!(!exits.running(9), "after the bus is lost nothing runs");
+    let ledger = Ledger::default();
+    ledger.exited(7, 0);
+    ledger.state().started(7, false);
+    assert!(!ledger.running(7), "the exit that came first is not lost");
+    ledger.state().started(8, false);
+    assert!(ledger.running(8));
+    for pid in 100..100 + EARLY_EXITS as u32 + 5 { ledger.exited(pid, 0); }
+    assert_eq!(ledger.state().early.len(), EARLY_EXITS);
+    assert!(ledger.release(8), "a process whose handle goes while it runs stays, held by nothing");
+    assert!(ledger.running(8));
+    ledger.exited(8, 0);
+    assert!(!ledger.state().tracked.contains_key(&8), "its exit took it off");
+    ledger.lose();
+    ledger.state().started(9, false);
+    assert!(!ledger.running(9), "after the bus is lost nothing runs");
+}
+
+/// Short waits, so a test that waits them out stays quick.
+fn quick() -> Timeouts {
+    Timeouts { spawn: Duration::from_secs(2), signal: Duration::from_secs(1), exit: Duration::from_secs(3) }
+}
+
+/// True once `condition` holds, checked until `bound` passes.
+fn eventually(bound: Duration, condition: impl Fn() -> bool) -> bool {
+    let start = Instant::now();
+    while start.elapsed() < bound {
+        if condition() { return true; }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    condition()
+}
+
+#[test]
+fn a_signal_the_portal_refused_is_sent_again_until_it_takes() {
+    let bus = PrivateBus::start();
+    let fake = FakePortal::serve(&bus, 8);
+    let portal = Portal::connect_with(&bus.bus(), quick()).unwrap();
+    let root = tempfile::tempdir().unwrap();
+    let (process, _input, _output) = spawn(&portal, root.path(), "exec sleep 30", false, &[], &[]);
+    fake.refuse_signals(2);
+    process.terminate();
+    process.wait();
+    assert!(!process.alive(), "the signal was sent again while it was waited for");
+    let pid = fake.spawned()[0].pid;
+    assert_eq!(fake.signals(), vec![(pid, libc::SIGKILL as u32, true); 3], "two refused, then one taken");
+}
+
+#[test]
+fn a_spawn_answered_after_its_caller_gave_up_is_ended_when_the_answer_comes() {
+    let bus = PrivateBus::start();
+    let fake = FakePortal::serve(&bus, 8);
+    let portal = Portal::connect_with(&bus.bus(), Timeouts { spawn: Duration::from_millis(300), ..quick() }).unwrap();
+    fake.delay_answers(Duration::from_millis(1500));
+    let root = tempfile::tempdir().unwrap();
+    let (child_input, _input) = std::io::pipe().unwrap();
+    let (_output, child_output) = std::io::pipe().unwrap();
+    let errors = std::fs::OpenOptions::new().write(true).open("/dev/null").unwrap();
+    let request = Spawn {
+        cwd: root.path(),
+        argv: [RUNNER, "--", "/bin/sh", "-c", "exec sleep 30"].map(OsStr::new).to_vec(),
+        env: Vec::new(),
+        stdio: [child_input.as_fd(), child_output.as_fd(), errors.as_fd()],
+        network: false,
+        writable: Vec::new(),
+        readable: Vec::new(),
+    };
+    assert!(portal.spawn(&request).is_err(), "its answer came after the caller stopped waiting");
+    assert_eq!(fake.spawned().len(), 1, "the portal started it all the same");
+    let pid = fake.spawned()[0].pid;
+    assert!(eventually(Duration::from_secs(5), || fake.signals().contains(&(pid, libc::SIGKILL as u32, true))
+        && !fake.running().contains(&pid)), "the late answer named it, and it was ended: {:?}", fake.signals());
+    assert!(eventually(Duration::from_secs(2), || portal.tracked().is_empty()), "its exit took it off the ledger");
+}
+
+#[test]
+fn a_handle_dropped_while_its_process_runs_keeps_its_pid_and_ends_it() {
+    let bus = PrivateBus::start();
+    let fake = FakePortal::serve(&bus, 8);
+    let portal = Portal::connect_with(&bus.bus(), Timeouts { exit: Duration::from_millis(800), ..quick() }).unwrap();
+    let root = tempfile::tempdir().unwrap();
+    let (process, _input, _output) = spawn(&portal, root.path(), "exec sleep 30", false, &[], &[]);
+    let pid = fake.spawned()[0].pid;
+    fake.refuse_signals(u32::MAX);
+    process.terminate();
+    process.wait();
+    assert!(process.alive(), "every signal so far was refused");
+    fake.refuse_signals(0);
+    drop(process);
+    assert!(eventually(Duration::from_secs(5), || !fake.running().contains(&pid)), "what nothing holds was ended");
+    assert!(eventually(Duration::from_secs(2), || portal.tracked().is_empty()), "its exit took it off the ledger");
 }
