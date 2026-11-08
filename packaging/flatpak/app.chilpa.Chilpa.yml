@@ -1,0 +1,88 @@
+# Flatpak manifest for Chilpa's own Flatpak repository. The manifest for a
+# Flathub submission is written separately, by hand, and does not derive from
+# this file.
+#
+# It builds offline from the checkout it sits in. Two files are generated
+# before a build, into packaging/flatpak/generated/ (not versioned), by
+# scripts/flatpak-sources.sh: cargo-sources.json, the crates of Cargo.lock as
+# flatpak-builder sources, and build-env, the commit the About window names.
+# packaging/flatpak/BUILD-NOTES.md lists what each step comes from.
+id: app.chilpa.Chilpa
+runtime: org.kde.Platform
+runtime-version: '6.11'
+sdk: org.kde.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+# Qt WebEngine, for the plugin sign-in window (chilpa-web-sign-in).
+base: io.qt.qtwebengine.BaseApp
+base-version: '6.11'
+command: chilpa-qt
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --device=dri
+  # The bus names app.chilpa.Chilpa (one instance) and
+  # org.mpris.MediaPlayer2.app.chilpa.Chilpa (media controls) need no line:
+  # Flatpak grants both to the application.
+
+  # The tray icon, registered without a well-known name inside a sandbox.
+  - --talk-name=org.kde.StatusNotifierWatcher
+cleanup-commands:
+  - /app/cleanup-BaseApp.sh
+modules:
+  - modules/perl.yml
+  - modules/perl-modules.yml
+
+  - name: chilpa
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/rust-stable/bin
+      env:
+        CARGO_HOME: /run/build/chilpa/cargo
+        CARGO_NET_OFFLINE: 'true'
+        RUSTFLAGS: --remap-path-prefix=/run/build/chilpa=. --remap-path-prefix=/run/build/chilpa/cargo=/cargo
+    build-commands:
+      # The application and the runner every process plugin starts behind.
+      - >-
+        set -a && . ./build-env && set +a &&
+        cargo build --offline --locked --release -j "$FLATPAK_BUILDER_N_JOBS"
+        -p chilpa-qt -p chilpa-plugin-runner
+      # The sign-in window links Qt WebEngine from the base app, whose
+      # pkg-config files sit in its multiarch folder.
+      - >-
+        set -a && . ./build-env && set +a &&
+        PKG_CONFIG_PATH="/app/lib/${FLATPAK_ARCH}-linux-gnu/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+        cargo build --offline --locked --release -j "$FLATPAK_BUILDER_N_JOBS"
+        -p chilpa-web-sign-in --features webengine
+      - install -Dm755 target/release/chilpa-qt /app/bin/chilpa-qt
+      - install -Dm755 target/release/chilpa-web-sign-in /app/bin/chilpa-web-sign-in
+      - install -Dm755 target/release/chilpa-plugin-runner /app/libexec/chilpa-plugin-runner
+      # The compatibility worker's adapter beside its modules, at
+      # /app/bin/compat-runtime, where the worker looks beside chilpa-qt.
+      - scripts/package-compat.sh /app/lib/chilpa-compat /app/bin
+      - >-
+        sed 's|^Exec=/usr/bin/chilpa-qt |Exec=chilpa-qt |' packaging/linux/app.chilpa.Chilpa.desktop
+        > app.chilpa.Chilpa.desktop
+      - grep -qx 'Exec=chilpa-qt %U' app.chilpa.Chilpa.desktop
+      - install -Dm644 app.chilpa.Chilpa.desktop /app/share/applications/app.chilpa.Chilpa.desktop
+      - install -Dm644 packaging/linux/app.chilpa.Chilpa.metainfo.xml /app/share/metainfo/app.chilpa.Chilpa.metainfo.xml
+      - install -Dm644 packaging/linux/app.chilpa.Chilpa.svg /app/share/icons/hicolor/scalable/apps/app.chilpa.Chilpa.svg
+      - install -Dm644 -t /app/share/licenses/app.chilpa.Chilpa LICENSE licenses/* packaging/linux/Inter-OFL.txt
+      - install -Dm644 vendor/chilpa-plugin-api/LICENSE /app/share/licenses/app.chilpa.Chilpa/plugin-protocol-MIT.txt
+    sources:
+      - type: dir
+        path: ../..
+        skip:
+          - .git
+          - target
+          - crates/target
+          - packaging/flatpak/generated
+          - .flatpak-builder
+          - AGENTS.md
+          - CLAUDE.md
+      - type: file
+        path: generated/build-env
+      - generated/cargo-sources.json
