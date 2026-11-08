@@ -38,7 +38,10 @@ a dependency of `chilpa-qt`, so building `chilpa-qt` alone leaves them out.
   run ([read] `:68-71`), the guard against another cargo process
   ([read] `:60-66`), `cargo metadata` piped to python3 ([read] `:78-81`), and
   the artifact directory with its git commit and dirty state
-  ([read] `:105-143`).
+  ([read] `:105-143`). One step inside that block is needed: when
+  `target/compat-runtime` exists, `scripts/package-compat.sh` copies it beside
+  the binary as `compat-runtime` ([read] `:128-131`), which is where the
+  compatibility worker looks for it (section 5).
 
 ## 2. Environment variables read at build time
 
@@ -106,7 +109,7 @@ Whether flatpak-builder sets `SOURCE_DATE_EPOCH` on its own: [unverified].
 | `sqlite3` >= 3.34.1 | `libsqlite3-sys` 0.38.2 `build.rs:490-507` (registry); no crate enables `bundled` | falls back to `-lsqlite3` |
 | OpenSSL | `openssl-sys` through native-tls ([read] `crates/chilpa-cast/Cargo.toml:15,26-27`) | [unverified]; `openssl-sys/build.rs` was not read |
 
-`openssl-src` is in `Cargo.lock` ([read] `Cargo.lock:3361`) only for the
+`openssl-src` is in `Cargo.lock` ([read] `Cargo.lock:3367`) only for the
 Android target's `vendored` feature ([read] `crates/chilpa-cast/Cargo.toml:20-21`).
 It is not built on Linux ([unverified]), but flatpak-cargo-generator lists it
 because it is in the lock file.
@@ -123,16 +126,21 @@ repository-relative.
 | --- | --- | --- |
 | `target/release/chilpa-qt` | `/app/bin/chilpa-qt` | |
 | `target/release/chilpa-web-sign-in` | `/app/bin/chilpa-web-sign-in` | Found beside `chilpa-qt` with `current_exe().with_file_name(...)` and used only if it is a file ([read] `crates/chilpa-api/src/web_sign_in.rs:17,63-67`). Without it plugin sign-in links open in the browser ([read] `scripts/qt-run.sh:89-92`). |
-| `target/release/chilpa-plugin-runner` | `/app/libexec/chilpa-plugin-runner` | Hard-coded path ([read] `crates/chilpa-bwrap/src/flatpak.rs:23`). Today the launcher still answers "unavailable" inside a Flatpak ([read] `crates/chilpa-bwrap/src/process.rs:57-62`), so the runner is used only once that launcher selects the portal backend. |
-| `packaging/linux/app.chilpa.Chilpa.desktop` | `/app/share/applications/app.chilpa.Chilpa.desktop` | Its `Exec=/usr/bin/chilpa-qt %U` ([read] `:5`) has to become `Exec=chilpa-qt %U`, as the AppImage build rewrites it ([read] `scripts/package-linux.py:113`). `Icon=app.chilpa.Chilpa`, `StartupWMClass=chilpa-qt`. The window takes the desktop file name `app.chilpa.Chilpa` only when Qt finds that file in its applications folders ([read] `crates/chilpa-qt/src/main.rs:121-125`). |
-| `assets/logo.png` | `/app/share/icons/hicolor/512x512/apps/app.chilpa.Chilpa.png` | The only application icon: 512x512 PNG, no other sizes and no scalable icon ([read] `scripts/package-linux.py:86-88`). |
-| AppStream metainfo | `/app/share/metainfo/app.chilpa.Chilpa.metainfo.xml` | Does not exist in the repository. |
+| `target/release/chilpa-plugin-runner` | `/app/libexec/chilpa-plugin-runner` | Hard-coded path ([read] `crates/chilpa-bwrap/src/flatpak.rs:23`). Inside a Flatpak the launcher selects the portal backend ([read] `crates/chilpa-bwrap/src/process.rs:64-73`), which starts every process plugin and the compatibility worker behind this runner. Without the file the backend answers "missing program" and no process plugin starts ([read] `flatpak.rs:109-111`). |
+| `target/release/compat-runtime` (from `scripts/package-compat.sh`) | `/app/bin/compat-runtime` | The compatibility worker's `adapter/worker.pl` and `libraries/lib/perl5`, found beside the executable ([read] `crates/chilpa-bwrap/src/linux.rs:29-32`). `package-compat.sh` copies `compat/perl` as `adapter/` and the `libraries/` of the runtime folder it is given ([read] `scripts/package-compat.sh:4-15`); no script in the repository produces that runtime folder. |
+| Perl, built against the runtime's glibc | `/app/bin/perl` | Hard-coded path ([read] `crates/chilpa-bwrap/src/flatpak_worker.rs:21-22`); the runtime has no Perl. Without it, or without the adapter or its modules, the compatible plugins section says which is missing ([read] `flatpak_worker.rs:40-46`). |
+| `packaging/linux/app.chilpa.Chilpa.desktop` | `/app/share/applications/app.chilpa.Chilpa.desktop` | Its `Exec=/usr/bin/chilpa-qt %U` ([read] `:8`) has to become `Exec=chilpa-qt %U`, as its comment says ([read] `:5-7`) and as the AppImage build rewrites it ([read] `scripts/package-linux.py:113`). `Icon=app.chilpa.Chilpa`, `StartupWMClass=chilpa-qt`. The window takes the desktop file name `app.chilpa.Chilpa` only when Qt finds that file in its applications folders ([read] `crates/chilpa-qt/src/main.rs:121-125`). |
+| `packaging/linux/app.chilpa.Chilpa.svg` | `/app/share/icons/hicolor/scalable/apps/app.chilpa.Chilpa.svg` | The scalable application icon ([read] `packaging/linux/README.md`, "Desktop metadata"). The tarball and the AppImage install `assets/logo.png`, a 512x512 PNG, instead ([read] `scripts/package-linux.py:83-85,115`). |
+| `packaging/linux/app.chilpa.Chilpa.metainfo.xml` | `/app/share/metainfo/app.chilpa.Chilpa.metainfo.xml` | Its `<launchable>` names `app.chilpa.Chilpa.desktop` ([read] `:40`). Checked with `appstreamcli validate --strict`, and the desktop entry with `desktop-file-validate` ([read] `packaging/linux/README.md`). |
 
 Not installed in a Flatpak:
 
-- `packaging/linux/chilpa-restart` and the AppImage updater: used only when
-  `$APPIMAGE` is set ([read] `crates/chilpa-api/src/appimage_updates.rs:25,31-32`).
-- `release.json`: its presence turns on the tarball or AppImage self-update
+- `packaging/linux/chilpa-restart`, the AppImage updater and `release.json`:
+  inside a sandbox the updates view takes the store's place and reads none of
+  them; it checks and downloads nothing ([read]
+  `crates/chilpa-api/src/appimage_updates.rs:24-40`). Outside one, the AppImage
+  updater needs `$APPIMAGE` ([read] `:43`, `crates/chilpa-dirs/src/lib.rs:190-193`)
+  and `release.json` turns on the tarball's self-update
   ([read] `crates/chilpa-api/src/bundle_updates.rs:57-66`).
 - `packaging/linux/chilpa-mini-player-keep-above.kwinrule`: imported by hand,
   never installed by a package ([read] its lines 16-18).
@@ -185,7 +193,7 @@ No license text for the embedded LINE Seed JP font was found in the tree.
 
 - `Cargo.lock`: 512 crates.io registry entries, no `git+` source and no other
   registry. `qt-build-utils` and `chilpa-plugin-api` are path entries
-  ([read] `Cargo.lock:733-736,3562-3568`).
+  ([read] `Cargo.lock:737-740,3568-3574`).
 - Workspace path crates outside `crates/`: `vendor/chilpa-plugin-api`
   (depends only on serde) and `crates/chilpa-qt-kit/vendor/qt-build-utils`,
   both excluded from the workspace and present in the tree
@@ -206,26 +214,64 @@ No license text for the embedded LINE Seed JP font was found in the tree.
 
 ## 8. What the code expects from the sandbox at runtime
 
-- Credentials: inside a Flatpak (`/.flatpak-info` exists) the box asks the
-  desktop portal's `org.freedesktop.portal.Secret` for the app's value and
-  never the Secret Service; without an answer within 30 s it falls back to a
-  key derived from `/etc/machine-id` and an install id
-  ([read] `crates/chilpa-secrets/src/backend.rs` `Backend::new`,
-  `src/portal.rs`). Which desktops serve that portal interface
-  (gnome-keyring, KWallet) on the target systems: [unverified].
-- Process plugins: `org.freedesktop.portal.Flatpak` `Spawn`, version 3 or
-  later ([read] `crates/chilpa-bwrap/src/portal.rs:27-32`).
+Every check for a Flatpak goes through `chilpa_dirs::sandbox()`, which
+reads `/.flatpak-info` once ([read] `crates/chilpa-dirs/src/lib.rs:148-151`).
+`chilpa-pipewire` keeps its own copy of that check behind the playback shield
+([read] `crates/chilpa-pipewire/src/setup.rs:160-177`).
+
+- Credentials: inside a Flatpak the box asks the desktop portal's
+  `org.freedesktop.portal.Secret` for the app's value and never the Secret
+  Service; without an answer within 30 s it falls back to a key derived from
+  `/etc/machine-id` and an install id
+  ([read] `crates/chilpa-secrets/src/backend.rs:96-106`, `src/portal.rs`).
+  Which desktops serve that portal interface (gnome-keyring, KWallet) on the
+  target systems: [unverified].
+- Process plugins and the compatibility worker:
+  `org.freedesktop.portal.Flatpak` `Spawn`, version 3 or later
+  ([read] `crates/chilpa-bwrap/src/portal.rs:27-32`), with the runner and Perl
+  of section 5.
+- Other portals, all on the session bus: `Inhibit` keeps the machine awake
+  while playing, where logind is used outside a sandbox
+  ([read] `crates/chilpa-mpris/src/inhibit.rs:28,80`); `Settings` gives the
+  colour scheme and accent ([read] `crates/chilpa-mpris/src/portal.rs:21`,
+  `crates/chilpa-api/src/sandbox.rs:83-89`); `Documents` maps a folder chosen
+  through the file chooser to its host path ([read] `portal.rs:23`);
+  `Realtime` raises the thread that feeds an ALSA device when RealtimeKit on
+  the system bus does not answer ([read] `crates/chilpa-alsa/src/realtime.rs:16-19,40`).
+  No portal names the desktop's wallpaper, so the wallpaper background has
+  none in a sandbox ([read] `crates/chilpa-api/src/wallpaper.rs:24`).
+- Devices and sockets the audio stacks name when they are missing, each as a
+  `flatpak override` the user can run: `--device=all` for the cards in
+  `/dev/snd`, without which the direct stacks offer no card
+  ([read] `crates/chilpa-alsa/src/backends.rs:70-75`), and
+  `--filesystem=xdg-run/pipewire-0` for PipeWire's own socket, which its ALSA
+  PCM, the native DSD stream and its JACK library connect to
+  ([read] `crates/chilpa-pipewire/src/lib.rs:252-258`,
+  `crates/chilpa-jack/src/lib.rs:285`). `pactl` talks to the PulseAudio
+  socket instead, so the PipeWire stack also checks for PipeWire's own socket
+  after `pactl` has answered ([read] `crates/chilpa-pipewire/src/lib.rs:398-400,440`).
+- Device sync finds memory cards under `/run/media` or `/media`
+  ([read] `crates/chilpa-dirs/src/lib.rs:182-187`); when neither is visible
+  it says so and offers a folder chosen on the card
+  ([read] `crates/chilpa-api/src/sandbox.rs:182-197`).
 - Programs run by name, all optional (a missing one is tolerated): `pactl`,
   `pw-metadata`, `pw-dump`, `aplay`, `systemctl --user`, `pgrep`,
   `gsettings`, `xfconf-query`, `adb` ([read] `crates/chilpa-pipewire/src/lib.rs:84,93-105`,
-  `src/setup.rs:33-40`, `crates/chilpa-dirs/src/lib.rs:99`,
-  `crates/chilpa-devices/src/transport/adb.rs:13`). Which of them exist in
-  the runtime: [unverified].
+  `src/setup.rs:41-52`, `crates/chilpa-dirs/src/lib.rs:99`,
+  `crates/chilpa-devices/src/transport/adb.rs:13`). The HiFi wizard reads
+  WirePlumber's clients out of `pw-dump` and ALSA's own list of PCMs before it
+  asks `systemctl`, `pgrep` or `aplay` ([read] `src/setup.rs:32-79`). In a
+  sandbox the desktop's colours come from the `Settings` portal and not from
+  `gsettings` ([read] `crates/chilpa-api/src/sandbox.rs:83-89`). Which of
+  these programs exist in the runtime: [unverified].
 - Linked system libraries: Qt, libpipewire-0.3, libasound, libpulse and
   libpulse-simple, libdbus-1, libsqlite3, OpenSSL. libjack is opened with
   dlopen as `libjack.so.0` ([read] `jack-sys` 0.5.1 `src/consts.rs:17`,
-  registry). Decoding, CD reading, TLS for streams and D-Bus for MPRIS and
-  the portals are pure Rust.
+  registry). Decoding, CD reading and TLS for streams are pure Rust, and so
+  is D-Bus for MPRIS and the Inhibit, Settings, Documents, Secret and Flatpak
+  portals (zbus). RealtimeKit and the Realtime portal go through libdbus-1
+  ([read] `crates/chilpa-alsa/src/realtime.rs:23-24`,
+  `crates/chilpa-alsa/Cargo.toml:13`).
 
 ## 9. Blockers, in the order a build meets them
 
@@ -243,5 +289,8 @@ No license text for the embedded LINE Seed JP font was found in the tree.
    build date.
 6. `chilpa-plugin-runner` is not built by any existing script; it needs its
    own `cargo build -p chilpa-plugin-runner --release` and the
-   `/app/libexec` path.
-7. No AppStream metainfo file exists in the repository.
+   `/app/libexec` path. Inside a Flatpak every process plugin starts through
+   the portal behind it, so without it none starts (section 5).
+7. The compatibility worker needs Perl at `/app/bin/perl`, built for the
+   runtime, and `compat-runtime` with its Perl modules beside `chilpa-qt`.
+   No script in the repository builds either for the runtime (section 5).
