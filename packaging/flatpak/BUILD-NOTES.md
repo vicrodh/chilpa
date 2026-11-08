@@ -300,7 +300,8 @@ reads `/.flatpak-info` once ([read] `crates/chilpa-dirs/src/lib.rs:148-151`).
 What the code cannot close from inside the Flatpak, each with what bounds it
 today. Read from the code at the cited lines; the portal's and bubblewrap's
 behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
-`bubblewrap.c`, main branches, read 2026-11-07).
+`bubblewrap.c`, main branches, read 2026-11-07; RealtimeKit's
+`rtkit-daemon.c`, read 2026-11-08).
 
 - **The portal forgets a process at its exit.** When the process it started
   exits, the portal emits `SpawnExited`, drops the pid and answers a later
@@ -313,20 +314,44 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
   ([read] `crates/chilpa-plugin-runner/src/lib.rs`, `supervise` and
   `end_all`). Whether Flatpak's seccomp filter allows
   `PR_SET_CHILD_SUBREAPER`: [unverified]. If it refuses, the runner exits
-  with 126 and no process plugin starts.
+  with 126 and no process plugin starts. Before the plugin starts, the
+  runner closes its own descriptors, wipes its environment and becomes
+  undumpable, so the plugin, which runs as the same user, reads neither
+  through `/proc/$PPID` ([read] `lib.rs`, `conceal`).
+- **A plugin that kills its runner.** The plugin runs as the runner's own
+  user and can `kill(getppid(), SIGKILL)`; nothing in the sandbox can
+  forbid it. The plugin itself dies with the runner (`PR_SET_PDEATHSIG`,
+  [read] `lib.rs`, `die_with`), but what the plugin started on its own has
+  no such tie: it is left under the sandbox's pid 1, and the portal, which
+  saw its process exit, no longer answers for it. It ends when Chilpa
+  leaves the bus only if it does not ignore SIGINT. Closing this needs the
+  sandbox's pid 1 to end what it holds when the runner goes, which
+  bubblewrap does only with `--die-with-parent`, an option the portal does
+  not pass.
 - **Chilpa leaving the bus sends SIGINT, not SIGKILL.** `WATCH_BUS` ends
   each sandbox with `killpg(pid, SIGINT)` (`name_owner_changed`). The runner
-  answers SIGINT, SIGTERM and SIGHUP by ending everything below it; a
-  plugin that ignores SIGINT is still ended that way.
+  hands SIGINT, SIGTERM and SIGHUP on to the plugin, gives it 2 s to exit
+  and then kills everything below it; a plugin that ignores SIGINT is still
+  ended that way ([read] `lib.rs`, `supervise`).
+- **End of output while the plugin lives: a test for a real Flatpak.** The
+  runner lets go of its copies of the plugin's standard input and output
+  ([read] `lib.rs`, `release_stdio`), so a plugin that closes its standard
+  output gives Chilpa end of file outside a sandbox. Under the portal,
+  bubblewrap's monitor and the sandbox's pid 1 may hold copies too:
+  [unverified]. To check inside the Chilpa Flatpak: a process plugin that
+  answers `initialize`, then closes its standard output and sleeps; the
+  plugin's channel should report it closed within a second, not when the
+  sleep ends.
 - **A spawn the portal never answers.** A `Spawn` answered after its caller
-  gave up (10 s, [read] `crates/chilpa-bwrap/src/portal.rs:76-78`) is ended
-  when the answer comes; one never answered runs until Chilpa leaves the
-  bus. A signal the portal refuses is sent again while the process is
+  gave up (10 s, [read] `crates/chilpa-bwrap/src/portal.rs:77-79`) is ended
+  when the answer comes, also when the ledger no longer keeps that call or
+  has no room left to track the process; one never answered runs until
+  Chilpa leaves the bus. A signal the portal refuses is sent again while the process is
   waited for, and a process whose handle goes while it may still run stays
   in the ledger and is signalled from a thread of its own ([read]
   `portal.rs`, `wait`, `Drop for PortalProcess`, `end_abandoned`).
 - **The compatibility worker's /tmp has no total bound.** Bubblewrap mounts
-  a 16 MiB tmpfs there ([read] `crates/chilpa-bwrap/src/linux_bwrap.rs:65`);
+  a 16 MiB tmpfs there ([read] `crates/chilpa-bwrap/src/linux_bwrap.rs:68`);
   the portal has no option for one. What bounds the worker is what the
   runner sets ([read] `crates/chilpa-bwrap/src/flatpak_worker.rs:91-93`):
   no forks (`--nproc=0`), 1 MiB per file (`--fsize`), 64 descriptors and
@@ -354,3 +379,15 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
   calls out of these locks would let stops, starts, updates and restarts
   of the same plugin interleave, which the restart's generation check
   relies on not happening; it is not a small change and is not made here.
+- **Real time through the portal lowers the hard time limit for good.**
+  RealtimeKit reads the hard `RLIMIT_RTTIME` of the process it is asked for
+  and refuses above its `RTTimeUSecMax` (200 ms by default), before it
+  grants and again after (`verify_process_rttime`); the soft limit alone
+  does not do. So a hard limit above that is lowered to it before the
+  portal is asked, and one already lower is left as it is ([read]
+  `crates/chilpa-alsa/src/realtime.rs`, `granted_by_portal`, `rt_time_for`).
+  If the portal then refuses, the hard limit cannot go back up without
+  CAP_SYS_RESOURCE; the soft one comes back within it. What stays lowered
+  bounds only real-time threads, and inside a Flatpak every real-time grant
+  comes from RealtimeKit, which requires the same limit; ordinary threads
+  are not bounded by it.
