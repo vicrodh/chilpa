@@ -289,6 +289,23 @@ fn the_portal_connection_is_opened_once_and_kept_while_it_grants() {
 }
 
 #[test]
+fn a_portal_that_refuses_real_time_leaves_the_time_limit_as_it_was() {
+    // RealtimeKit wants RLIMIT_RTTIME set before it grants anything, and it
+    // was set on the process and kept when the portal said no.
+    let _limits = limits();
+    let before = libc::rlimit { rlim_cur: 50_000, rlim_max: 200_000 };
+    // SAFETY: the struct is whole; the limit applies to this test process.
+    assert_eq!(unsafe { libc::setrlimit(libc::RLIMIT_RTTIME, &before) }, 0, "a limit the test may set");
+    let bus = TestBus::new();
+    let (_asked, _portal) = grantor(&bus, Grantor::Portal, true);
+    assert_eq!(ask(Sandbox::Flatpak, || None, no_system_bus, &Shared::new(bus.opener())), Elevation::Nicer(NICE));
+    let mut now = libc::rlimit { rlim_cur: 0, rlim_max: 0 };
+    // SAFETY: the struct is whole, and getrlimit only writes it.
+    assert_eq!(unsafe { libc::getrlimit(libc::RLIMIT_RTTIME, &mut now) }, 0);
+    assert_eq!((now.rlim_cur, now.rlim_max), (50_000, 200_000), "the limit set for the refused ask stayed");
+}
+
+#[test]
 fn outside_a_flatpak_the_portal_is_never_asked() {
     // A host without RealtimeKit and with a desktop portal: the thread that
     // opens the device asked the session bus, and waited on it, before it

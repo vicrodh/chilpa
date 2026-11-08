@@ -262,13 +262,44 @@ fn nicer(connection: &Connection) -> Option<Elevation> {
 
 /// Real time through the portal, which takes the process and the thread as
 /// this process sees them and maps both before it asks RealtimeKit.
+///
+/// The time limit RealtimeKit wants is set on the whole process before it
+/// is asked. When the portal refuses, or its answer does not come, the
+/// limit goes back to what it was, as far as the kernel allows: a hard
+/// limit that was lowered cannot be raised again without CAP_SYS_RESOURCE,
+/// and then only the soft limit goes back, within the new hard one.
 fn granted_by_portal(connection: &Connection) -> Option<Elevation> {
     let portal = portal(connection);
+    let before = rt_time_limit()?;
     let priority = real_time_within(&portal, REALTIME)?;
-    portal
-        .method_call(REALTIME, "MakeThreadRealtimeWithPID", (process_id(), thread_id(), priority))
-        .map(|(): ()| Elevation::Granted(priority))
-        .ok()
+    match portal.method_call(REALTIME, "MakeThreadRealtimeWithPID", (process_id(), thread_id(), priority)) {
+        Ok(()) => Some(Elevation::Granted(priority)),
+        Err(_) => {
+            put_back_rt_time(before);
+            None
+        }
+    }
+}
+
+/// This process's `RLIMIT_RTTIME`.
+fn rt_time_limit() -> Option<libc::rlimit> {
+    let mut limit = libc::rlimit { rlim_cur: 0, rlim_max: 0 };
+    // SAFETY: the struct is whole, and getrlimit only writes it.
+    (unsafe { libc::getrlimit(libc::RLIMIT_RTTIME, &mut limit) } == 0).then_some(limit)
+}
+
+/// Sets `RLIMIT_RTTIME` back to `before`, or, when the hard limit cannot go
+/// back up, the soft limit back within the hard one that stays.
+fn put_back_rt_time(before: libc::rlimit) {
+    // SAFETY: the structs are whole; the limit applies to this process.
+    let whole = unsafe { libc::setrlimit(libc::RLIMIT_RTTIME, &before) } == 0;
+    let soft = whole
+        || rt_time_limit().is_some_and(|now| {
+            let soft = libc::rlimit { rlim_cur: before.rlim_cur.min(now.rlim_max), rlim_max: now.rlim_max };
+            // SAFETY: as above.
+            unsafe { libc::setrlimit(libc::RLIMIT_RTTIME, &soft) == 0 }
+        });
+    chilpa_audio::diagnostics::trace("alsa", "thread_priority", format_args!("rttime_back whole={whole} soft={soft}"));
 }
 
 /// A nicer level through the portal, when it refused real time.
