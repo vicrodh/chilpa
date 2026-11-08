@@ -1,31 +1,52 @@
-//! Sets a process plugin's resource limits, then becomes the plugin.
+//! Sets a process plugin's resource limits and environment, runs it, and
+//! ends whatever it leaves behind before exiting itself.
 //!
 //! `chilpa-plugin-runner [--as=N] [--nofile=N] [--core=N] [--nproc=N]
 //!  [--fsize=N] [--cpu=SOFT[:HARD]] [--keep-env=NAME[,NAME]...] -- PROGRAM [ARGS]...`
 //!
 //! The Flatpak backend starts every process plugin through it, from the
 //! application's `libexec` folder, because the portal that starts the
-//! sandbox has no resource limits of its own. Descriptors above the
-//! standard three are closed when the program starts, and only the
-//! variables `--keep-env` names reach it.
+//! sandbox has no resource limits of its own and stops answering for a
+//! process once it exits. Descriptors above the standard three are closed
+//! when the program starts, and only the variables `--keep-env` names reach
+//! it.
 //!
-//! Exit status when the program never started: 2 for an invalid command
-//! line, 126 when a limit or the descriptors could not be set, 127 when the
-//! program could not be started.
+//! Exit status: the program's, or 128 plus the signal that ended it or the
+//! runner. When the program never started: 2 for an invalid command line,
+//! 126 when a limit, the descriptors or the runner's own setup could not be
+//! set, 127 when the program could not be started.
 
 #[cfg(target_os = "linux")]
 fn main() {
+    use chilpa_plugin_runner::Resource;
     use std::os::unix::process::CommandExt;
     let plan = chilpa_plugin_runner::plan(std::env::args_os().skip(1)).unwrap_or_else(|problem| fail(2, &problem));
     if let Err(error) = chilpa_plugin_runner::seal_descriptors() {
         fail(126, &format!("could not close the inherited descriptors: {error}"));
     }
-    if let Err((resource, error)) = chilpa_plugin_runner::apply(&plan.limits) {
+    if let Err(error) = chilpa_plugin_runner::adopt_orphans() {
+        fail(126, &format!("could not adopt what the plugin leaves behind: {error}"));
+    }
+    // The process count is the program's alone: the runner still has it to start.
+    let (own, program): (Vec<_>, Vec<_>) = plan.limits.iter().cloned().partition(|limit| limit.resource != Resource::Processes);
+    if let Err((resource, error)) = chilpa_plugin_runner::apply(&own).and_then(|()| chilpa_plugin_runner::settable(&program)) {
         fail(126, &format!("could not set --{}: {error}", resource.option()));
     }
-    let error = std::process::Command::new(&plan.program).args(&plan.args).env_clear()
-        .envs(chilpa_plugin_runner::environment(&plan.keep)).exec();
-    fail(127, &format!("could not start {}: {error}", plan.program.to_string_lossy()));
+    if let Err(error) = chilpa_plugin_runner::hold_signals() {
+        fail(126, &format!("could not hold its signals: {error}"));
+    }
+    let mut command = std::process::Command::new(&plan.program);
+    command.args(&plan.args).env_clear().envs(chilpa_plugin_runner::environment(&plan.keep));
+    unsafe {
+        command.pre_exec(move || {
+            chilpa_plugin_runner::release_signals()?;
+            chilpa_plugin_runner::apply(&program).map_err(|(_, error)| error)
+        });
+    }
+    let started = command.spawn()
+        .unwrap_or_else(|error| fail(127, &format!("could not start {}: {error}", plan.program.to_string_lossy())));
+    chilpa_plugin_runner::release_stdio();
+    std::process::exit(chilpa_plugin_runner::supervise(started.id() as i32));
 }
 
 #[cfg(target_os = "linux")]

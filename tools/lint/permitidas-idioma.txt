@@ -943,3 +943,28 @@ pids
 # The runner's descriptor flags and errors, from libc.
 ebadf
 getfd
+# How the runner waits on its signals and children, adopts orphans and lets go of its pipes: libc names.
+eintr
+ppid
+pthread
+sigmask
+setmask
+sig
+sigaddset
+sigchld
+sigemptyset
+sighup
+sigint
+sigset
+sigterm
+sigwaitinfo
+subreaper
+waitpid
+wexitstatus
+wifexited
+wifsignaled
+wnohang
+wtermsig
+rdwr
+stdin
+fileno

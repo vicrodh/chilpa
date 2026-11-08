@@ -204,6 +204,9 @@ pub fn executable_helper(name: &str) -> Option<PathBuf> {
 pub fn mount_info_file() -> &'static std::path::Path { std::path::Path::new("/proc/self/mountinfo") }
 #[cfg(any(target_os = "linux", target_os = "android"))]
 pub fn mount_events_file() -> &'static std::ffi::CStr { c"/proc/self/mounts" }
+/// The table of running processes, one folder per pid.
+#[cfg(any(target_os = "linux", target_os = "android"))]
+pub fn process_table() -> &'static std::path::Path { std::path::Path::new("/proc") }
 /// This process's open descriptors, one entry per number.
 #[cfg(any(target_os = "linux", target_os = "android"))]
 pub fn own_descriptors() -> &'static std::path::Path { std::path::Path::new("/proc/self/fd") }

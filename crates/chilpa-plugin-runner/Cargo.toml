@@ -1,6 +1,6 @@
 [package]
 name = "chilpa-plugin-runner"
-description = "Sets a process plugin's resource limits, then becomes the plugin"
+description = "Sets a process plugin's resource limits, runs it and ends what it leaves behind"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

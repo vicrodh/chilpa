@@ -98,8 +98,8 @@ ALLOWED = {
     "chilpa-appkit": set(),
     "chilpa-bwrap": {"chilpa-plugin"},
     # A separate executable: sets a process plugin's resource limits where the
-    # sandbox that starts it cannot, under the Flatpak portal, then becomes the
-    # plugin. Nothing links it.
+    # sandbox that starts it cannot, under the Flatpak portal, then runs the
+    # plugin and ends what it leaves behind. Nothing links it.
     "chilpa-plugin-runner": set(),
     # A Linux desktop's session bus: MPRIS, the sleep inhibitor and the
     # one-instance name. It knows nothing of the player.

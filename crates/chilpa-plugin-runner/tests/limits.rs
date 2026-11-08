@@ -85,3 +85,54 @@ fn only_the_variables_it_is_told_to_keep_reach_the_plugin() {
     assert_eq!(shown(&["--keep-env=MARK", "--", "/bin/sh", "-c", probe]), "unset set");
     assert_eq!(shown(&["--", "/bin/sh", "-c", probe]), "unset unset", "nothing is kept unless named");
 }
+
+/// True while `pid` names a process that has not been reaped.
+fn exists(pid: libc::pid_t) -> bool {
+    unsafe { libc::kill(pid, 0) == 0 }
+}
+
+/// Ends `pid` if a failed check left it behind.
+fn end(pid: libc::pid_t) {
+    if exists(pid) { unsafe { libc::kill(pid, libc::SIGKILL); } }
+}
+
+#[test]
+fn nothing_the_plugin_leaves_behind_outlives_it() {
+    // The sleeper gets a session of its own, then the shell exits at once.
+    let output = run(&["--", "/bin/sh", "-c", "setsid sleep 30 </dev/null >/dev/null 2>&1 & echo $!"]);
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    let left: libc::pid_t = String::from_utf8(output.stdout).unwrap().trim().parse().unwrap();
+    let survived = exists(left);
+    end(left);
+    assert!(!survived, "the runner ended what the plugin left before it exited itself");
+}
+
+#[test]
+fn the_plugin_s_output_ends_when_the_plugin_closes_it() {
+    use std::io::Read;
+    let start = std::time::Instant::now();
+    let mut runner = Command::new(RUNNER).args(["--", "/bin/sh", "-c", "exec >&-; sleep 2"])
+        .stdout(std::process::Stdio::piped()).spawn().unwrap();
+    let mut output = Vec::new();
+    runner.stdout.take().unwrap().read_to_end(&mut output).unwrap();
+    let closed = start.elapsed();
+    let _ = runner.wait();
+    assert!(closed < std::time::Duration::from_secs(1), "the runner holds no copy of the pipe; it closed after {closed:?}");
+}
+
+#[test]
+fn ending_the_runner_ends_what_the_plugin_started() {
+    use std::io::{BufRead, BufReader};
+    let mut runner = Command::new(RUNNER).args(["--", "/bin/sh", "-c", "sleep 30 & echo $!; wait"])
+        .stdout(std::process::Stdio::piped()).spawn().unwrap();
+    let mut line = String::new();
+    BufReader::new(runner.stdout.take().unwrap()).read_line(&mut line).unwrap();
+    let started: libc::pid_t = line.trim().parse().unwrap();
+    assert!(exists(started));
+    unsafe { libc::kill(runner.id() as libc::pid_t, libc::SIGTERM); }
+    let status = runner.wait().unwrap();
+    let survived = exists(started);
+    end(started);
+    assert!(!survived, "a SIGTERM to the runner, as the portal's SIGINT when Chilpa leaves the bus, took the plugin's own children");
+    assert!(!status.success());
+}

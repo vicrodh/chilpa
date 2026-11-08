@@ -1,16 +1,26 @@
-//! What the runner does before it becomes a process plugin, for a sandbox
-//! that cannot bound the process itself: the Flatpak portal has no option
-//! for resource limits.
+//! What the runner does around a process plugin, for a sandbox that cannot
+//! bound the process itself: the Flatpak portal has no option for resource
+//! limits, and once the process it started exits it forgets it, whatever
+//! that process left running.
 //!
 //! The options are prlimit's, `--as=N` or `--cpu=SOFT:HARD`, so a command
 //! line moves from one to the other unchanged. A single number sets the soft
 //! and the hard limit, and the plugin cannot raise either. `--keep-env=A,B`
 //! is the runner's own: the variables it names are the only ones the plugin
 //! gets, so nothing else that reached the runner's environment goes on.
+//!
+//! The plugin runs as the runner's child, and the runner adopts whatever the
+//! plugin leaves behind (a child subreaper). When the plugin exits, or the
+//! runner is asked to end, everything still below the runner is ended and
+//! reaped before the runner exits, so the exit the portal reports means
+//! nothing of the plugin is left. Resources (ADR-018): the runner's own
+//! process, asleep on its signals; it reads the process table only while it
+//! ends what is left.
 #![cfg(target_os = "linux")]
 
 use std::ffi::OsString;
 use std::io;
+use std::time::{Duration, Instant};
 
 /// A resource the runner bounds.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -46,6 +56,20 @@ impl Resource {
                 Resource::Processes => libc::setrlimit(libc::RLIMIT_NPROC, value),
                 Resource::FileSize => libc::setrlimit(libc::RLIMIT_FSIZE, value),
                 Resource::CpuSeconds => libc::setrlimit(libc::RLIMIT_CPU, value),
+            }
+        }
+    }
+
+    /// `getrlimit` for this resource.
+    fn get(self, value: &mut libc::rlimit) -> libc::c_int {
+        unsafe {
+            match self {
+                Resource::AddressSpace => libc::getrlimit(libc::RLIMIT_AS, value),
+                Resource::Descriptors => libc::getrlimit(libc::RLIMIT_NOFILE, value),
+                Resource::CoreSize => libc::getrlimit(libc::RLIMIT_CORE, value),
+                Resource::Processes => libc::getrlimit(libc::RLIMIT_NPROC, value),
+                Resource::FileSize => libc::getrlimit(libc::RLIMIT_FSIZE, value),
+                Resource::CpuSeconds => libc::getrlimit(libc::RLIMIT_CPU, value),
             }
         }
     }
@@ -114,12 +138,28 @@ pub fn environment(keep: &[OsString]) -> Vec<(OsString, OsString)> {
     keep.iter().filter_map(|name| std::env::var_os(name).map(|value| (name.clone(), value))).collect()
 }
 
-/// Sets each limit on this process, which the program it becomes inherits.
+/// Sets each limit on this process, which the program it starts inherits.
+/// Async-signal-safe, so a child can call it between fork and exec.
 pub fn apply(limits: &[Limit]) -> Result<(), (Resource, io::Error)> {
     for limit in limits {
         let value = libc::rlimit { rlim_cur: limit.soft as libc::rlim_t, rlim_max: limit.hard as libc::rlim_t };
         if limit.resource.set(&value) != 0 {
             return Err((limit.resource, io::Error::last_os_error()));
+        }
+    }
+    Ok(())
+}
+
+/// Whether each limit can be set by the program's starter, checked here
+/// before it starts: a hard limit is only ever lowered.
+pub fn settable(limits: &[Limit]) -> Result<(), (Resource, io::Error)> {
+    for limit in limits {
+        let mut current = libc::rlimit { rlim_cur: 0, rlim_max: 0 };
+        if limit.resource.get(&mut current) != 0 {
+            return Err((limit.resource, io::Error::last_os_error()));
+        }
+        if current.rlim_max != libc::RLIM_INFINITY && limit.hard as libc::rlim_t > current.rlim_max {
+            return Err((limit.resource, io::Error::from_raw_os_error(libc::EPERM)));
         }
     }
     Ok(())
@@ -174,6 +214,130 @@ fn seal(fd: libc::c_int) -> io::Result<()> {
     if error.raw_os_error() == Some(libc::EBADF) { Ok(()) } else { Err(error) }
 }
 
+/// Makes this process the one that whatever the plugin leaves behind is
+/// handed to when its parent goes.
+pub fn adopt_orphans() -> io::Result<()> {
+    let adopted = unsafe { libc::prctl(libc::PR_SET_CHILD_SUBREAPER, 1 as libc::c_ulong, 0 as libc::c_ulong, 0 as libc::c_ulong, 0 as libc::c_ulong) };
+    if adopted == 0 { Ok(()) } else { Err(io::Error::last_os_error()) }
+}
+
+/// The signals the runner waits on: a child's exit, and being asked to end.
+fn watched() -> libc::sigset_t {
+    let mut set: libc::sigset_t = unsafe { std::mem::zeroed() };
+    unsafe {
+        libc::sigemptyset(&mut set);
+        for signal in [libc::SIGCHLD, libc::SIGINT, libc::SIGTERM, libc::SIGHUP] { libc::sigaddset(&mut set, signal); }
+    }
+    set
+}
+
+/// Holds the watched signals for the runner to wait on.
+pub fn hold_signals() -> io::Result<()> {
+    let set = watched();
+    match unsafe { libc::pthread_sigmask(libc::SIG_BLOCK, &set, std::ptr::null_mut()) } {
+        0 => Ok(()),
+        error => Err(io::Error::from_raw_os_error(error)),
+    }
+}
+
+/// Gives the program the signals the runner held. Async-signal-safe, for
+/// between fork and exec.
+pub fn release_signals() -> io::Result<()> {
+    let mut empty: libc::sigset_t = unsafe { std::mem::zeroed() };
+    unsafe { libc::sigemptyset(&mut empty); }
+    match unsafe { libc::pthread_sigmask(libc::SIG_SETMASK, &empty, std::ptr::null_mut()) } {
+        0 => Ok(()),
+        error => Err(io::Error::from_raw_os_error(error)),
+    }
+}
+
+/// Lets go of the standard input and output the plugin was started with,
+/// so its pipes close when the plugin closes them, as if the runner had
+/// become it. Standard error stays, for the runner's own messages.
+pub fn release_stdio() {
+    let null = unsafe { libc::open(c"/dev/null".as_ptr(), libc::O_RDWR | libc::O_CLOEXEC) };
+    for fd in [libc::STDIN_FILENO, libc::STDOUT_FILENO] {
+        if null < 0 || unsafe { libc::dup2(null, fd) } < 0 { unsafe { libc::close(fd); } }
+    }
+    if null > libc::STDERR_FILENO { unsafe { libc::close(null); } }
+}
+
+/// Waits until the plugin `plugin` exits or the runner is asked to end,
+/// then ends and reaps everything still below the runner. Returns the
+/// status to exit with: the plugin's, or 128 plus the signal that asked.
+/// The watched signals must be held.
+pub fn supervise(plugin: libc::pid_t) -> i32 {
+    let set = watched();
+    let code = loop {
+        let signal = unsafe { libc::sigwaitinfo(&set, std::ptr::null_mut()) };
+        if signal < 0 {
+            if io::Error::last_os_error().raw_os_error() == Some(libc::EINTR) { continue; }
+            break 1;
+        }
+        if signal != libc::SIGCHLD { break 128 + signal; }
+        if let Some(code) = reap(plugin) { break code; }
+    };
+    end_all();
+    code
+}
+
+/// Reaps every child that has exited; the plugin's status, if it was one.
+fn reap(plugin: libc::pid_t) -> Option<i32> {
+    let mut found = None;
+    loop {
+        let mut status = 0;
+        let pid = unsafe { libc::waitpid(-1, &mut status, libc::WNOHANG) };
+        if pid <= 0 { return found; }
+        if pid == plugin { found = Some(exit_code(status)); }
+    }
+}
+
+fn exit_code(status: libc::c_int) -> i32 {
+    if libc::WIFEXITED(status) { libc::WEXITSTATUS(status) }
+    else if libc::WIFSIGNALED(status) { 128 + libc::WTERMSIG(status) }
+    else { 1 }
+}
+
+/// How long ending what is left may take before the runner gives up on it.
+const END_WAIT: Duration = Duration::from_secs(5);
+
+/// Ends everything still below this process and reaps it, until nothing is
+/// left. What a child started comes here when that child goes, so each
+/// round reaches the next generation.
+fn end_all() {
+    let me = std::process::id() as libc::pid_t;
+    let deadline = Instant::now() + END_WAIT;
+    while Instant::now() < deadline {
+        let children = children_of(me);
+        for child in &children { unsafe { libc::kill(*child, libc::SIGKILL); } }
+        let mut status = 0;
+        let flags = if children.is_empty() { libc::WNOHANG } else { 0 };
+        let reaped = unsafe { libc::waitpid(-1, &mut status, flags) };
+        if reaped < 0 {
+            match io::Error::last_os_error().raw_os_error() {
+                Some(libc::EINTR) => continue,
+                // Nothing is left.
+                _ => return,
+            }
+        }
+        // A child the table did not list yet: it is read again shortly.
+        if reaped == 0 { std::thread::sleep(Duration::from_millis(10)); }
+    }
+    eprintln!("chilpa-plugin-runner: what the plugin started did not all end within {} s", END_WAIT.as_secs());
+}
+
+/// The processes whose parent is `parent`, as the process table lists them.
+fn children_of(parent: libc::pid_t) -> Vec<libc::pid_t> {
+    let Ok(entries) = std::fs::read_dir(chilpa_dirs::process_table()) else { return Vec::new() };
+    entries.flatten().filter_map(|entry| {
+        let pid: libc::pid_t = entry.file_name().to_str()?.parse().ok()?;
+        let stat = std::fs::read_to_string(entry.path().join("stat")).ok()?;
+        // "pid (name) state ppid ...": the name may hold spaces and parentheses.
+        let ppid: libc::pid_t = stat.rsplit_once(')')?.1.split_whitespace().nth(1)?.parse().ok()?;
+        (ppid == parent).then_some(pid)
+    }).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -209,6 +373,18 @@ mod tests {
             (&["--keep-env=PATH,,HOME", "--", "/bin/true"][..], "--keep-env: PATH,,HOME is not a list of variable names"),
         ] {
             assert_eq!(read(args), Err(problem.to_string()), "{args:?}");
+        }
+    }
+
+    #[test]
+    fn a_hard_limit_above_the_current_one_is_refused_before_anything_starts() {
+        let mut current = libc::rlimit { rlim_cur: 0, rlim_max: 0 };
+        assert_eq!(unsafe { libc::getrlimit(libc::RLIMIT_NPROC, &mut current) }, 0);
+        let lower = Limit { resource: Resource::Processes, soft: 1, hard: 1 };
+        assert!(settable(&[lower]).is_ok());
+        if current.rlim_max != libc::RLIM_INFINITY {
+            let higher = Limit { resource: Resource::Processes, soft: 1, hard: current.rlim_max as u64 + 1 };
+            assert_eq!(settable(&[higher]).map_err(|(resource, _)| resource), Err(Resource::Processes));
         }
     }
 
