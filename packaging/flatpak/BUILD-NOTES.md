@@ -259,14 +259,33 @@ reads `/.flatpak-info` once ([read] `crates/chilpa-dirs/src/lib.rs:148-151`).
   the system bus does not answer ([read] `crates/chilpa-alsa/src/realtime.rs:16-19,40`).
   No portal names the desktop's wallpaper, so the wallpaper background has
   none in a sandbox ([read] `crates/chilpa-api/src/wallpaper.rs:24`).
-- Devices and sockets the audio stacks name when they are missing, each as a
-  `flatpak override` the user can run: `--device=all` for the cards in
-  `/dev/snd`, without which the direct stacks offer no card
-  ([read] `crates/chilpa-alsa/src/backends.rs:70-75`), and
-  `--filesystem=xdg-run/pipewire-0` for PipeWire's own socket, which its ALSA
-  PCM, the native DSD stream and its JACK library connect to
-  ([read] `crates/chilpa-pipewire/src/lib.rs:252-258`,
-  `crates/chilpa-jack/src/lib.rs:285`). `pactl` talks to the PulseAudio
+- Devices, sockets and bus names for direct audio. The manifest of Chilpa's
+  own repository grants three, which the owner has still to confirm
+  (2026-11-08): `--device=all` for the cards in `/dev/snd`, without which the
+  direct stacks offer no card ([read] `crates/chilpa-alsa/src/backends.rs:70-75`),
+  in place of `--device=dri`, which it includes; `--filesystem=xdg-run/pipewire-0:ro`
+  for PipeWire's own socket, which its ALSA PCM, the native DSD stream and its
+  JACK library connect to ([read] `crates/chilpa-pipewire/src/lib.rs:252-258`,
+  `crates/chilpa-jack/src/lib.rs:285`); and
+  `--own-name=org.freedesktop.ReserveDevice1.*`, the name a card held
+  exclusively is reserved under (`crates/chilpa-alsa/src/reserve.rs`).
+  flatpak-builder-lint flags none of the three ([built], 2026-11-08); it
+  flags `all` beside `dri` as redundant. Flathub's reviewers refuse the
+  reservation name, so a Flathub-style manifest leaves all three to the user:
+  `flatpak override --user --device=all app.chilpa.Chilpa`,
+  `--filesystem=xdg-run/pipewire-0` and
+  `--own-name=org.freedesktop.ReserveDevice1.*`, which the code names when it
+  misses one. Without the reservation name the bus refuses it, and the card
+  is opened without a reservation, said once in the log ([read]
+  `reserve.rs`, `denied`). PipeWire's exclusive mode also needs the host's
+  `default.clock.allowed-rates` to cover the tracks' rates: WirePlumber gives
+  a Flatpak client the graph's settings read-only, so `clock.force-rate`
+  cannot be written from the sandbox ([read]
+  `crates/chilpa-pipewire/src/lib.rs`, `held_at`). A rate outside that list
+  fails the exclusive open, and nothing then opens the output shared
+  ([read] `held_at` and `open` there, `crates/chilpa-core/src/queue_playback.rs`,
+  `play_queue_told`): the track does not play. Reported 2026-11-08; not
+  changed here, it is in the playback shield. `pactl` talks to the PulseAudio
   socket instead, so the PipeWire stack also checks for PipeWire's own socket
   after `pactl` has answered ([read] `crates/chilpa-pipewire/src/lib.rs:398-400,440`).
 - Device sync finds memory cards under `/run/media` or `/media`
@@ -351,8 +370,12 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
   forbid it. The plugin itself dies with the runner (`PR_SET_PDEATHSIG`,
   [read] `lib.rs`, `die_with`), but what the plugin started on its own has
   no such tie: it is left under the sandbox's pid 1, and the portal, which
-  saw its process exit, no longer answers for it. It ends when Chilpa
-  leaves the bus only if it does not ignore SIGINT. Closing this needs the
+  saw its process exit, no longer answers for it. What it keeps, it keeps:
+  the network, when the plugin was given it, and descriptor 3, when the
+  plugin was handed a Documents folder through it. Landlock and the seccomp
+  filter stay with it (both are inherited and cannot be dropped), so that
+  descriptor still reaches the folder and nothing beside it. It ends when
+  Chilpa leaves the bus only if it does not ignore SIGINT. Closing this needs the
   sandbox's pid 1 to end what it holds when the runner goes, which
   bubblewrap does only with `--die-with-parent`, an option the portal does
   not pass.
@@ -370,6 +393,17 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
   answers `initialize`, then closes its standard output and sleeps; the
   plugin's channel should report it closed within a second, not when the
   sleep ends.
+- **A portal that restarts while the bus stays.** The reader of exits and
+  answers keeps the connection that owns the portal's name current from the
+  bus's `NameOwnerChanged`, so the next `Spawn` is answered and its exit read
+  from the new instance; a call the old instance left unanswered gets the
+  bus's own error and fails at once ([read]
+  `crates/chilpa-bwrap/src/portal.rs`, `read`). What the old instance
+  started can no longer be signalled: `SpawnSignal` goes to the name, which
+  the new instance holds, and it does not know those pids. Those sandboxes
+  end when their plugin exits on its closed pipes, or with Chilpa leaving
+  the bus only if the old instance's watch survived it, which nothing here
+  checks.
 - **A spawn the portal never answers.** A `Spawn` answered after its caller
   gave up (10 s, [read] `crates/chilpa-bwrap/src/portal.rs:77-79`) is ended
   when the answer comes, also when the ledger no longer keeps that call or
@@ -431,33 +465,76 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
   So a Documents folder is not given to `sandbox-expose-fd`; it is handed
   over at descriptor 3 and the plugin is told `/proc/self/fd/3` as its
   `export_dir`. Any other export folder is mounted at its own path, as
-  before, and held at descriptor 3 too. The runner gets `--export=PATH` and
-  checks, before the plugin exists, that PATH is the folder descriptor 3
-  holds and can be written; Chilpa waits for the runner's ready line, so a
-  folder the portal skipped fails the start at launch instead of reaching
-  the plugin as a missing path ([read] `crates/chilpa-bwrap/src/flatpak.rs`,
-  `launch`; `crates/chilpa-plugin-runner/src/lib.rs`, `check_export`). A
-  folder Chilpa cannot write is refused before the spawn, since the portal
-  would skip it too. Inside a Flatpak of this tree, a plugin wrote into a
-  Documents folder through `/proc/self/fd/3`; a read-only Documents folder
-  was refused before the spawn; and a folder of the application's own
-  `/tmp`, which the portal skips, failed the launch with the runner's "it
-  is not there" ([built],
+  before, and held at descriptor 3 for the runner alone. The runner gets
+  `--export=PATH` and checks, before the plugin exists, that PATH is the
+  folder descriptor 3 holds and can be written ([read]
+  `crates/chilpa-plugin-runner/src/lib.rs`, `check_export`). A folder
+  Chilpa cannot write is refused before the spawn, since the portal would
+  skip it too.
+- **A path resolved from descriptor 3 walks Chilpa's sandbox, not the
+  plugin's.** The descriptor was opened in Chilpa's mount namespace, and
+  `..` from it climbs that tree: through `/proc/self/fd/3/..` a process in a
+  sandbox of its own listed, read and wrote the folder's siblings and
+  climbed above them ([built], bubblewrap with an `O_PATH` descriptor,
+  2026-11-08). In Chilpa's sandbox that reaches Chilpa's data and settings,
+  every folder the Documents portal granted Chilpa, and the sockets of its
+  session bus (and through it the portal's unsandboxed `Spawn`), display and
+  sound server. No mount inside a Flatpak can cut that tree (`mount`,
+  `unshare` and `open_tree` are refused), so:
+  - A folder the portal mounts reaches the plugin only at its path: the
+    runner closes descriptor 3 after its check ([read] `main.rs`,
+    `through_descriptor`).
+  - A Documents folder, which only the descriptor reaches, is kept for the
+    plugin, and the runner confines the plugin between fork and exec
+    ([read] `crates/chilpa-plugin-runner/src/confine.rs`): Landlock 3 or
+    later handles every file right it knows and grants them only beneath
+    the plugin's own root and beneath the folder, so a file reached through
+    `..` is refused whatever the mount; and a seccomp filter answers EACCES
+    to `socket(AF_UNIX, ...)` and `inotify_add_watch`, and ENOSYS to a call
+    through another ABI. Version 3 is the first that covers `truncate` by
+    path; pathname sockets are covered by Landlock only from version 9,
+    hence the filter. `socketpair` still works.
+  - Without Landlock 3 such a folder is never handed over: choosing it says
+    why ([read] `crates/chilpa-api/src/plugin_export.rs`, `UNCONFINABLE`), a
+    recorded one is dropped before the launch and the plugin starts without
+    `export_dir`, the backend refuses one it is given, and the runner
+    refuses to start the plugin. The kernel needs
+    `CONFIG_SECURITY_LANDLOCK=y` and `landlock` in `CONFIG_LSM` or `lsm=`.
+    The kernel these notes were built on (7.3.1-gentoo) has no Landlock:
+    there the refusal is what was run ([built],
+    `tests/export.rs`, `a_plugin_given_the_export_folder_s_descriptor_cannot_walk_out_of_it`),
+    and the confined start has not run on any kernel yet [unverified].
+  - What the confinement leaves: a path outside the folder that the plugin
+    guesses can still be looked up, its metadata read, and its mode, times
+    and extended attributes changed (Landlock does not cover them); opening
+    it, listing, writing, creating, removing, renaming, truncating and
+    running it are refused. A folder granted with `flatpak override
+    --filesystem=PATH` is mounted at its path and needs none of this.
+- **The ready line comes after the exec.** The runner writes it on
+  descriptor 4, a pipe of its own that the plugin never holds, once
+  `Command::spawn` returns, which is after the exec succeeded; a refusal or
+  a program that cannot be executed closes it with nothing written, and the
+  launch fails there ([read] `main.rs`; `crates/chilpa-bwrap/src/flatpak.rs`,
+  `ready`). Inside a Flatpak of this tree (2026-11-08, before these
+  changes), a plugin wrote into a Documents folder through
+  `/proc/self/fd/3`; a read-only Documents folder was refused before the
+  spawn; and a folder of the application's own `/tmp`, which the portal
+  skips, failed the launch with the runner's "it is not there" ([built],
   `flatpak::tests::a_documents_folder_takes_the_plugin_s_writes_until_it_is_revoked_through_the_portal`).
   The real runner, given a Documents folder granted from the host outside
   the application's sandbox, let the plugin write there, and refused with
   126 once the grant was revoked ([built]). The Documents portal answers
-  `access(W_OK)` with the
-  grant, not only the host folder's mode (xdg-desktop-portal 1.20.4
-  `document-portal/document-portal-fuse.c`, `xdp_fuse_access`). Revoking
-  the grant while the plugin runs makes its next write fail with EACCES
-  ([built]); revoked before a start, the folder no longer resolves: the
-  launch is refused when it is asked to hand it over ([built]), and
-  Chilpa, which resolves the recorded folder first, shows no export folder
-  for the plugin and starts it without `export_dir` ([read]
-  `crates/chilpa-api/src/plugin_export.rs`, `read_with`). A `/proc/self/fd/3` path is valid in the plugin and in what
-  inherits the descriptor; resolving it with `realpath` fails, since it
-  names a path that does not exist in the plugin's sandbox ([built]).
+  `access(W_OK)` with the grant, not only the host folder's mode
+  (xdg-desktop-portal 1.20.4 `document-portal/document-portal-fuse.c`,
+  `xdp_fuse_access`). Revoking the grant while the plugin runs makes its
+  next write fail with EACCES ([built]); revoked before a start, the folder
+  no longer resolves: the launch is refused when it is asked to hand it
+  over ([built]), and Chilpa, which resolves the recorded folder first,
+  shows no export folder for the plugin and starts it without `export_dir`
+  ([read] `crates/chilpa-api/src/plugin_export.rs`, `read_with`). A
+  `/proc/self/fd/3` path is valid in the plugin and in what inherits the
+  descriptor; resolving it with `realpath` fails, since it names a path that
+  does not exist in the plugin's sandbox ([built]).
 - **Locks held across portal calls.** `Natives::lifecycle` is held while a
   plugin is stopped and started ([read] `crates/chilpa-api/src/natives.rs:77-78`,
   `:265-266`, `:276-277`), and enabling, disabling, updating and granting
