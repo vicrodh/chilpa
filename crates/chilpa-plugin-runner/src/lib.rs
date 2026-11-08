@@ -306,24 +306,35 @@ const END_WAIT: Duration = Duration::from_secs(5);
 /// round reaches the next generation.
 fn end_all() {
     let me = std::process::id() as libc::pid_t;
-    let deadline = Instant::now() + END_WAIT;
-    while Instant::now() < deadline {
-        let children = children_of(me);
-        for child in &children { unsafe { libc::kill(*child, libc::SIGKILL); } }
-        let mut status = 0;
-        let flags = if children.is_empty() { libc::WNOHANG } else { 0 };
-        let reaped = unsafe { libc::waitpid(-1, &mut status, flags) };
-        if reaped < 0 {
+    let left = end_all_within(END_WAIT, || children_of(me), |child| unsafe { libc::kill(child, libc::SIGKILL); },
+        |flags| { let mut status = 0; unsafe { libc::waitpid(-1, &mut status, flags) } });
+    if !left.is_empty() {
+        eprintln!("chilpa-plugin-runner: what the plugin started did not all end within {} s: {left:?}", END_WAIT.as_secs());
+    }
+}
+
+/// Each round kills what `children` lists and reaps, without waiting, what
+/// has exited; a child SIGKILL does not end at once, as one held in the
+/// kernel, is never waited on past `bound`. What is still listed then is
+/// returned. `reap` is waitpid(-1, ..) with the flags given.
+fn end_all_within(bound: Duration, children: impl Fn() -> Vec<libc::pid_t>, kill: impl Fn(libc::pid_t),
+    reap: impl Fn(libc::c_int) -> libc::pid_t) -> Vec<libc::pid_t> {
+    let deadline = Instant::now() + bound;
+    loop {
+        for child in children() { kill(child); }
+        loop {
+            let reaped = reap(libc::WNOHANG);
+            if reaped > 0 { continue; }
+            if reaped == 0 { break; }
             match io::Error::last_os_error().raw_os_error() {
                 Some(libc::EINTR) => continue,
-                // Nothing is left.
-                _ => return,
+                // No children: nothing is left.
+                _ => return Vec::new(),
             }
         }
-        // A child the table did not list yet: it is read again shortly.
-        if reaped == 0 { std::thread::sleep(Duration::from_millis(10)); }
+        if Instant::now() >= deadline { return children(); }
+        std::thread::sleep(Duration::from_millis(10));
     }
-    eprintln!("chilpa-plugin-runner: what the plugin started did not all end within {} s", END_WAIT.as_secs());
 }
 
 /// The processes whose parent is `parent`, as the process table lists them.
@@ -408,5 +419,18 @@ mod tests {
         assert_eq!(restored, 0);
         sealed.unwrap();
         assert!(flags >= 0 && flags & libc::FD_CLOEXEC != 0, "descriptor {fd}, above the soft limit, closes when the plugin starts");
+    }
+
+    #[test]
+    fn ending_what_is_left_never_waits_past_its_deadline() {
+        // A child SIGKILL does not end in time, as one held in the kernel:
+        // waiting for it to be reaped would block for as long as it is held.
+        let stuck = 4_000_000;
+        let start = Instant::now();
+        let left = end_all_within(Duration::from_millis(200), || vec![stuck], |_| {}, |flags| {
+            if flags & libc::WNOHANG == 0 { std::thread::sleep(Duration::from_secs(5)); stuck } else { 0 }
+        });
+        assert!(start.elapsed() < Duration::from_secs(1), "it waited {:?}", start.elapsed());
+        assert_eq!(left, vec![stuck], "what is left at the deadline is said");
     }
 }
