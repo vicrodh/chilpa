@@ -284,9 +284,14 @@ const DOCUMENTS_PATH: &str = "/org/freedesktop/portal/documents";
 /// is recorded.
 fn documents_add(bus: &zbus::blocking::Connection, folder: &Path) -> (String, PathBuf) {
     const DIRECTORY: u32 = 8;
-    let held = Exposed::open(folder).unwrap();
+    // The Documents portal takes an O_PATH descriptor only without
+    // O_NOFOLLOW, and grants writing only through one.
+    let name = CString::new(folder.as_os_str().as_bytes()).unwrap();
+    let raw = unsafe { libc::open(name.as_ptr(), libc::O_PATH | libc::O_DIRECTORY | libc::O_CLOEXEC) };
+    assert!(raw >= 0, "{} opens", folder.display());
+    let held = unsafe { OwnedFd::from_raw_fd(raw) };
     let reply = bus.call_method(Some(DOCUMENTS), DOCUMENTS_PATH, Some(DOCUMENTS), "AddFull",
-        &(vec![zbus::zvariant::Fd::from(held.fd.as_fd())], DIRECTORY, "", Vec::<&str>::new())).unwrap();
+        &(vec![zbus::zvariant::Fd::from(held.as_fd())], DIRECTORY, "", Vec::<&str>::new())).unwrap();
     let (ids, _): (Vec<String>, HashMap<String, zbus::zvariant::OwnedValue>) = reply.body().deserialize().unwrap();
     let mount: Vec<u8> = bus.call_method(Some(DOCUMENTS), DOCUMENTS_PATH, Some(DOCUMENTS), "GetMountPoint", &())
         .unwrap().body().deserialize().unwrap();
