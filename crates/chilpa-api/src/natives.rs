@@ -54,6 +54,9 @@ struct Known {
     /// Which start this is. A restart scheduled for one generation does
     /// nothing once an update, a stop or a network change replaced it.
     generation: u64,
+    /// The channel this start opened. A death seen on another channel, one
+    /// already replaced, is not this start's to restart.
+    client: std::sync::Weak<NativeClient>,
 }
 
 impl Natives {
@@ -114,7 +117,7 @@ impl Natives {
         if client.alive() {
             return Some(client);
         }
-        let _ = self.restart(id);
+        let _ = self.restart(id, &client);
         None
     }
 
@@ -298,23 +301,30 @@ impl Natives {
             return Err(PluginError::Crashed(format!("it speaks another protocol than {PROTOCOL}")));
         }
         let id = manifest.id.clone();
+        // The channel is live before its generation is published: until then
+        // the start before it is what a restart is scheduled for, and the
+        // new generation makes that restart drop.
+        self.live.write().unwrap_or_else(|e| e.into_inner()).insert(id.clone(), client.clone());
         let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
         let restarts = known.get(&id).map(|k| k.restarts).unwrap_or(0);
         let discover = known.get(&id).map(|k| k.discover.clone()).unwrap_or_default();
-        known.insert(id.clone(), Known { manifest: manifest.clone(), folder: folder.to_path_buf(),
+        known.insert(id, Known { manifest: manifest.clone(), folder: folder.to_path_buf(),
             capabilities: greeting.get("capabilities").cloned().unwrap_or(Value::Null),
-            discover, restarts, restarting: false, last_start: Instant::now(), generation: self.next_generation() });
+            discover, restarts, restarting: false, last_start: Instant::now(), generation: self.next_generation(),
+            client: Arc::downgrade(&client) });
         drop(known);
-        self.live.write().unwrap_or_else(|e| e.into_inner()).insert(id, client.clone());
         self.reports.get_or_init(|| crate::native_reporting::Reports::start(Arc::downgrade(self)));
         Ok(client)
     }
 
-    fn restart(self: &Arc<Self>, id: &str) -> Option<std::thread::JoinHandle<()>> {
+    /// Restarts the plugin whose channel `observed` was found ended. The
+    /// restart belongs to the start that opened that channel: one already
+    /// replaced by a newer start schedules nothing.
+    fn restart(self: &Arc<Self>, id: &str, observed: &Arc<NativeClient>) -> Option<std::thread::JoinHandle<()>> {
         let (generation, wait) = {
             let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
             let k = known.get_mut(id)?;
-            if k.restarting {
+            if k.restarting || !std::sync::Weak::ptr_eq(&k.client, &Arc::downgrade(observed)) {
                 return None;
             }
             // A plugin that ran a good while before ending starts over.
@@ -505,7 +515,7 @@ pub(crate) mod tests {
         let generation = natives.next_generation();
         natives.known.lock().unwrap().insert(manifest.id.clone(), Known {
             manifest, folder: PathBuf::new(), capabilities, discover: Vec::new(),
-            restarts: 0, restarting: false, last_start: Instant::now(), generation,
+            restarts: 0, restarting: false, last_start: Instant::now(), generation, client: std::sync::Weak::new(),
         });
     }
 
@@ -623,7 +633,7 @@ pub(crate) mod tests {
         let natives = Arc::new(Natives::default());
         for audio in [false, true] {
             let manifest: Manifest = serde_json::from_value(json!({"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","delivers_audio":audio})).unwrap();
-            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest, folder:PathBuf::new(), capabilities:json!({}), discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now(), generation: 1 });
+            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest, folder:PathBuf::new(), capabilities:json!({}), discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now(), generation: 1, client: std::sync::Weak::new() });
             assert_eq!(natives.delivers_audio("test.source"), audio);
             let reply = crate::source_search::native_reply(&natives, "test.source", "Fixture", "Song", 1, "");
             assert_eq!(reply.delivers_audio, audio, "even a failed search retains its declared capability");
@@ -636,7 +646,7 @@ pub(crate) mod tests {
         let natives = Natives::default();
         let manifest: Manifest = serde_json::from_value(json!({"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source"})).unwrap();
         for (capabilities, edits, removes) in [(json!({}), false, false), (json!({"playlist_remove":true}), false, true), (json!({"playlist_edit":true}), true, false)] {
-            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest: manifest.clone(), folder:PathBuf::new(), capabilities, discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now(), generation: 1 });
+            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest: manifest.clone(), folder:PathBuf::new(), capabilities, discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now(), generation: 1, client: std::sync::Weak::new() });
             assert_eq!((natives.edits_playlists("test.source"), natives.removes_playlists("test.source")), (edits, removes));
         }
     }
@@ -673,11 +683,36 @@ pub(crate) mod tests {
         (folder, parsed)
     }
 
-    /// What a start leaves known of a plugin.
-    fn started(natives: &Natives, manifest: Manifest, folder: &Path) {
+    /// What a start of `client` leaves known of a plugin, and live.
+    fn started(natives: &Natives, manifest: Manifest, folder: &Path, client: &Arc<NativeClient>) {
         let generation = natives.next_generation();
+        natives.live.write().unwrap().insert(manifest.id.clone(), client.clone());
         natives.known.lock().unwrap().insert(manifest.id.clone(), Known { manifest, folder: folder.to_path_buf(),
-            capabilities: Value::Null, discover: Vec::new(), restarts: 0, restarting: false, last_start: Instant::now(), generation });
+            capabilities: Value::Null, discover: Vec::new(), restarts: 0, restarting: false, last_start: Instant::now(), generation,
+            client: Arc::downgrade(client) });
+    }
+
+    /// A channel to no process, and the far ends of its pipes.
+    fn channel() -> (Arc<NativeClient>, (std::io::PipeReader, std::io::PipeWriter)) {
+        let (plugin_reads, input) = std::io::pipe().unwrap();
+        let (output, plugin_writes) = std::io::pipe().unwrap();
+        (NativeClient::start(input, output, || {}, |_, _| {}), (plugin_reads, plugin_writes))
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn a_death_seen_on_a_client_already_replaced_restarts_nothing() {
+        let natives = Arc::new(Natives::default());
+        let launches = counting(&natives);
+        let root = tempfile::tempdir().unwrap();
+        let (folder, manifest) = installed(root.path(), PROCESS, true);
+        let ((old, _old_ends), (new, _new_ends)) = (channel(), channel());
+        // A caller read `old` from the live map; before it asked for a
+        // restart, an update put `new` in its place.
+        started(&natives, manifest, &folder, &new);
+        assert!(natives.restart("test.source", &old).is_none(), "the death seen was the replaced client's");
+        natives.restart("test.source", &new).expect("the current client's death is restarted").join().unwrap();
+        assert_eq!(launches.0.load(std::sync::atomic::Ordering::SeqCst), 1);
     }
 
     #[cfg(any(target_os = "linux", target_os = "macos"))]
@@ -687,13 +722,14 @@ pub(crate) mod tests {
         let launches = counting(&natives);
         let root = tempfile::tempdir().unwrap();
         let (folder, before) = installed(root.path(), PROCESS, true);
-        started(&natives, before, &folder);
-        let pending = natives.restart("test.source").unwrap();
+        let ((first, _first_ends), (second, _second_ends)) = (channel(), channel());
+        started(&natives, before, &folder, &first);
+        let pending = natives.restart("test.source", &first).unwrap();
         // Within the wait, the update stops it and starts the new version,
         // which asks for no network.
         let updated = PROCESS.replace("1.0.0", "1.1.0").replace(r#"{"type":"network","domains":["api.example.org"]}"#, "");
         let (folder, after) = installed(root.path(), &updated, true);
-        started(&natives, after, &folder);
+        started(&natives, after, &folder, &second);
         pending.join().unwrap();
         assert_eq!(launches.0.load(std::sync::atomic::Ordering::SeqCst), 0, "the old manifest was not started again");
     }
@@ -705,12 +741,13 @@ pub(crate) mod tests {
         let launches = counting(&natives);
         let root = tempfile::tempdir().unwrap();
         let (folder, manifest) = installed(root.path(), PROCESS, true);
-        started(&natives, manifest.clone(), &folder);
-        natives.restart("test.source").unwrap().join().unwrap();
+        let (client, _ends) = channel();
+        started(&natives, manifest.clone(), &folder, &client);
+        natives.restart("test.source", &client).unwrap().join().unwrap();
         assert_eq!(launches.0.load(std::sync::atomic::Ordering::SeqCst), 1, "an approved plugin is started again");
         std::fs::remove_file(root.path().join("approvals.json")).unwrap();
-        started(&natives, manifest, &folder);
-        natives.restart("test.source").unwrap().join().unwrap();
+        started(&natives, manifest, &folder, &client);
+        natives.restart("test.source", &client).unwrap().join().unwrap();
         assert_eq!(launches.0.load(std::sync::atomic::Ordering::SeqCst), 1, "one no longer approved is not");
     }
 
