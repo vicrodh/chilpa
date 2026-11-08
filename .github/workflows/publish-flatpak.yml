@@ -3,13 +3,19 @@ name: Flatpak repository
 # Publishes the signed Flatpak repository a stable release carries
 # (chilpa-flatpak-repo-X.Y.Z.tar, attached by release-flatpak.yml) as the
 # static site behind FLATPAK_REPO_URL, when that release is published: the
-# whole site is replaced by one commit, force-pushed to the Pages repository
-# FLATPAK_PAGES_REPOSITORY with the deploy key FLATPAK_PAGES_DEPLOY_KEY. Off
-# unless the repository variable FLATPAK_REPO_PUBLISH is 'pages'; otherwise
-# the site is assembled and uploaded as an artifact. A release older than
-# the one the site serves is refused, and one run waits for the other.
-# A release made before this file existed is published with
-# workflow_dispatch, from main.
+# whole site is replaced by one commit, force-pushed to the main branch of
+# the Pages repository FLATPAK_PAGES_REPOSITORY with the deploy key
+# FLATPAK_PAGES_DEPLOY_KEY. Off unless the repository variable
+# FLATPAK_REPO_PUBLISH is 'pages'; otherwise the site is assembled and
+# uploaded as an artifact.
+#
+# Everything that runs here is main's. The release's files are data: the
+# archive is unpacked to an OSTree repository's own files only, every commit
+# and the summary are verified against packaging/flatpak/chilpa-flatpak.gpg
+# on main, and the descriptors are written here from that key. A release
+# older than the one the site serves is refused, and one run waits for the
+# other. A release published before its Flatpak files are attached is waited
+# for; a run that still misses them can be started again by hand, from main.
 
 on:
   release:
@@ -37,8 +43,8 @@ jobs:
   publish:
     if: github.event_name == 'workflow_dispatch' || (!github.event.release.prerelease && !github.event.release.draft)
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    # Holds the deploy key; admits v* tags and main.
+    timeout-minutes: 240
+    # Holds the deploy key; admits protected v* tags and main.
     environment: flatpak-release
     env:
       GH_TOKEN: ${{ github.token }}
@@ -47,6 +53,8 @@ jobs:
       PAGES_DOMAIN: ${{ vars.FLATPAK_PAGES_DOMAIN }}
       REPO_URL: ${{ vars.FLATPAK_REPO_URL }}
       REPO_PUBLISH: ${{ vars.FLATPAK_REPO_PUBLISH }}
+      KEY: packaging/flatpak/chilpa-flatpak.gpg
+      PAGES_BRANCH: main
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -83,22 +91,55 @@ jobs:
           else
             echo "::notice::FLATPAK_REPO_PUBLISH, FLATPAK_PAGES_REPOSITORY or FLATPAK_REPO_URL is not set: the site goes to an artifact."
           fi
+          if [[ ! -s "$KEY" ]]; then
+            echo "::error::$KEY is not on main: commit the repository's public key (gpg --export) before publishing."
+            exit 1
+          fi
           echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
 
-      - name: Download the repository and its descriptors and verify them
+      - name: Install the verification tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ostree gnupg
+
+      # Attached by release-flatpak.yml's last job, which can come after the
+      # release is published.
+      - name: Wait for the repository archive and download it
         env:
           TAG: ${{ steps.release.outputs.tag }}
           VERSION: ${{ steps.release.outputs.version }}
         run: |
           set -euo pipefail
-          dir="$RUNNER_TEMP/release"
-          files=(chilpa-flatpak-repo-"$VERSION".tar chilpa.flatpakrepo app.chilpa.Chilpa.flatpakref)
-          gh release download "$TAG" --dir "$dir" --pattern SHA256SUMS-flatpak "${files[@]/#/--pattern=}"
-          cd "$dir"
-          for name in "${files[@]}"; do
-            grep -qE "^[0-9a-f]{64}  ${name//./\\.}\$" SHA256SUMS-flatpak || { echo "::error::$name is not in SHA256SUMS-flatpak"; exit 1; }
+          archive="chilpa-flatpak-repo-$VERSION.tar"
+          for attempt in $(seq 1 180); do
+            names="$(gh release view "$TAG" --json assets --jq '.assets[].name')"
+            if grep -qx "$archive" <<<"$names" && grep -qx SHA256SUMS-flatpak <<<"$names"; then break; fi
+            if [[ "$attempt" -eq 180 ]]; then echo "::error::$TAG has no $archive after 180 minutes."; exit 1; fi
+            sleep 60
           done
-          grep -E "  ($(IFS='|'; echo "${files[*]//./\\.}"))\$" SHA256SUMS-flatpak | sha256sum --check --strict
+          dir="$RUNNER_TEMP/release"
+          gh release download "$TAG" --dir "$dir" --pattern SHA256SUMS-flatpak --pattern "$archive"
+          # A check of the transfer; what the files are is checked below.
+          cd "$dir"
+          grep -E "^[0-9a-f]{64}  ${archive//./\\.}\$" SHA256SUMS-flatpak | sha256sum --check --strict
+
+      - name: Unpack the repository as data
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: python3 scripts/flatpak-repo-archive.py "$RUNNER_TEMP/release/chilpa-flatpak-repo-$VERSION.tar" "$RUNNER_TEMP/unpacked"
+
+      # Every ref's commit and the summary, against main's key: a mirror pull
+      # into a scratch repository fails on any that is not signed with it.
+      - name: Verify every signature against main's key
+        run: |
+          set -euo pipefail
+          verify="$RUNNER_TEMP/verify"
+          ostree init --repo="$verify" --mode=archive
+          ostree remote add --repo="$verify" --gpg-import="$KEY" --set=gpg-verify-summary=true \
+            release "file://$RUNNER_TEMP/unpacked/repo"
+          ostree pull --repo="$verify" --mirror release
+          ostree refs --repo="$verify"
+          rm -rf "$verify"
 
       - name: Assemble the site
         env:
@@ -107,9 +148,9 @@ jobs:
           set -euo pipefail
           site="$RUNNER_TEMP/site"
           mkdir -p "$site"
-          tar -C "$site" -xf "$RUNNER_TEMP/release/chilpa-flatpak-repo-$VERSION.tar"
-          [[ -s "$site/repo/summary" && -s "$site/repo/summary.sig" ]] || { echo "::error::The repository is not signed."; exit 1; }
-          cp "$RUNNER_TEMP"/release/*.flatpakrepo "$RUNNER_TEMP"/release/*.flatpakref "$site/"
+          mv "$RUNNER_TEMP/unpacked/repo" "$site/repo"
+          python3 scripts/flatpak-descriptors.py --url "${REPO_URL:-https://flatpak.invalid/repo/}" --key "$KEY" \
+            --branch stable --output "$site"
           # The version the site serves, read before the next one replaces it.
           printf '%s\n' "$VERSION" > "$site/RELEASE"
           # Pages would otherwise drop the repository's dot files.
@@ -120,6 +161,8 @@ jobs:
           fi
           du -sh "$site"
 
+      # The deploy key exists only in this step, and no hook can run: git
+      # starts without a template and with hooks pointed at nothing.
       - name: Replace the published repository
         if: steps.mode.outputs.deploy == 'true'
         env:
@@ -134,36 +177,34 @@ jobs:
           chmod 600 "$RUNNER_TEMP/ssh/key"
           echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$RUNNER_TEMP/ssh/known_hosts"
           export GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/ssh/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$RUNNER_TEMP/ssh/known_hosts -o StrictHostKeyChecking=yes"
+          git_() { git -c core.hooksPath=/dev/null -c init.templateDir= "$@"; }
           remote="git@github.com:${PAGES_REPOSITORY}.git"
-          # What the site serves now: an older release never replaces a newer one.
-          # Only an empty Pages repository (2) skips the check; any other
-          # failure to read it stops here.
+          # What the publication branch serves now: an older release never
+          # replaces a newer one. An empty Pages repository is the first
+          # publication; one with branches but not this one is refused.
+          refs="$(git_ ls-remote "$remote")"
           published=''
-          set +e
-          git ls-remote --exit-code "$remote" refs/heads/main >/dev/null
-          listed=$?
-          set -e
-          case "$listed" in
-            0)
-              git clone -q --depth 1 --filter=blob:none --no-checkout "$remote" "$RUNNER_TEMP/published"
-              # A site published before the version was recorded has none.
-              if [[ -n "$(git -C "$RUNNER_TEMP/published" ls-tree --name-only HEAD -- RELEASE)" ]]; then
-                published="$(git -C "$RUNNER_TEMP/published" show HEAD:RELEASE)"
-              fi
-              ;;
-            2) ;;
-            *) echo "::error::The Pages repository could not be read (git ls-remote exited $listed)."; exit 1 ;;
-          esac
+          if grep -q "refs/heads/$PAGES_BRANCH\$" <<<"$refs"; then
+            git_ clone -q --template= --depth 1 --filter=blob:none --no-checkout --single-branch --branch "$PAGES_BRANCH" \
+              "$remote" "$RUNNER_TEMP/published"
+            # A site published before the version was recorded has none.
+            if [[ -n "$(git_ -C "$RUNNER_TEMP/published" ls-tree --name-only HEAD -- RELEASE)" ]]; then
+              published="$(git_ -C "$RUNNER_TEMP/published" show HEAD:RELEASE)"
+            fi
+          elif [[ -n "$refs" ]]; then
+            echo "::error::$PAGES_REPOSITORY has branches but no $PAGES_BRANCH; publish nothing over them."
+            exit 1
+          fi
           if [[ -n "$published" ]]; then
             python3 scripts/release_version.py --version "$VERSION" --not-older-than "$published"
           fi
-          echo "Publishing ${VERSION}; the site served ${published:-nothing}."
+          echo "Publishing ${VERSION}; $PAGES_BRANCH served ${published:-nothing}."
           cd "$RUNNER_TEMP/site"
-          git init -q -b main
-          git add -A
-          git -c user.name=vicrodh -c user.email=103399283+vicrodh@users.noreply.github.com \
-            commit -q -m "Publish the Flatpak repository for ${TAG}"
-          git push --force "$remote" main
+          git_ init -q --template= -b "$PAGES_BRANCH"
+          git_ add -A
+          git_ -c user.name=vicrodh -c user.email=103399283+vicrodh@users.noreply.github.com \
+            commit -q --no-verify -m "Publish the Flatpak repository for ${TAG}"
+          git_ push --force "$remote" "$PAGES_BRANCH"
 
       - name: Upload the dry-run site
         if: steps.mode.outputs.deploy != 'true'
