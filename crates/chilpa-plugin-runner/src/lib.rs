@@ -12,11 +12,17 @@
 //! and PATH is where the plugin is told to find it; the runner checks that
 //! PATH is that folder and can be written, and refuses to start the plugin
 //! otherwise, so a folder the sandbox did not take is never a silent
-//! failure. Descriptor 3 then stays open for the plugin, which is what makes
-//! a PATH under `/proc/self/fd/3` work. `--ready`: once its setup is done,
-//! just before the plugin starts, the runner writes one newline on its
-//! standard output, so whoever started it tells a start it refused from one
-//! that went ahead.
+//! failure. A folder mounted at PATH is reached there, and descriptor 3 is
+//! closed before the plugin starts: a path resolved from that descriptor
+//! walks the starter's tree, not the plugin's, and `..` leads out of the
+//! folder. Only when PATH is `/proc/self/fd/3`, a folder the sandbox could
+//! not mount, does the descriptor stay open for the plugin, and then the
+//! plugin is confined to its own root and that folder ([`confine`]), or not
+//! started. `--ready=FD`: once the plugin's program has been executed, the
+//! runner writes one newline on descriptor FD and closes it; a start it
+//! refused, or a program that could not be executed, closes FD with nothing
+//! written. FD is the runner's alone, never the plugin's, so the line cannot
+//! be mixed with what the plugin writes.
 //!
 //! The plugin runs as the runner's child, and the runner adopts whatever the
 //! plugin leaves behind (a child subreaper). Asked to end, the runner hands
@@ -33,6 +39,8 @@
 //! process, asleep on its signals; it reads the process table only while it
 //! ends what is left.
 #![cfg(target_os = "linux")]
+
+pub mod confine;
 
 use std::ffi::OsString;
 use std::io;
@@ -111,8 +119,8 @@ pub struct Plan {
     pub keep: Vec<OsString>,
     /// Where the plugin finds the export folder held at [`EXPORT_DESCRIPTOR`].
     pub export: Option<OsString>,
-    /// Whether the runner writes its ready newline before the plugin starts.
-    pub ready: bool,
+    /// The descriptor the ready newline goes to once the program runs.
+    pub ready: Option<libc::c_int>,
     pub program: OsString,
     pub args: Vec<OsString>,
 }
@@ -121,26 +129,21 @@ pub struct Plan {
 const KEEP: &str = "keep-env";
 /// The option that names where the plugin finds its export folder.
 const EXPORT: &str = "export";
-/// The option that asks for the ready newline.
-const READY: &str = "--ready";
+/// The option that names the descriptor for the ready newline.
+const READY: &str = "ready";
 
 /// Reads `[--LIMIT=N[:H]]... [--keep-env=NAME[,NAME]...] [--export=PATH]
-/// [--ready] -- PROGRAM [ARGS]...`. Everything after the first `--` belongs
-/// to the program, another `--` included.
+/// [--ready=FD] -- PROGRAM [ARGS]...`. Everything after the first `--`
+/// belongs to the program, another `--` included.
 pub fn plan(args: impl IntoIterator<Item = OsString>) -> Result<Plan, String> {
     let mut args = args.into_iter();
     let mut limits: Vec<Limit> = Vec::new();
     let mut keep: Option<Vec<OsString>> = None;
     let mut export: Option<OsString> = None;
-    let mut ready = false;
+    let mut ready: Option<libc::c_int> = None;
     loop {
         let Some(arg) = args.next() else { return Err("no -- before the program".into()) };
         if arg == "--" { break; }
-        if arg == READY {
-            if ready { return Err(format!("{READY} is given twice")); }
-            ready = true;
-            continue;
-        }
         let text = arg.to_str().ok_or_else(|| format!("{} is not an option", arg.to_string_lossy()))?;
         let (name, value) = text.strip_prefix("--").and_then(|option| option.split_once('='))
             .ok_or_else(|| format!("{text} is not an option"))?;
@@ -148,6 +151,13 @@ pub fn plan(args: impl IntoIterator<Item = OsString>) -> Result<Plan, String> {
             if export.is_some() { return Err(format!("--{EXPORT} is given twice")); }
             if !value.starts_with('/') { return Err(format!("--{EXPORT}: {value} is not an absolute path")); }
             export = Some(value.into());
+            continue;
+        }
+        if name == READY {
+            if ready.is_some() { return Err(format!("--{READY} is given twice")); }
+            let fd = value.parse::<libc::c_int>().ok().filter(|fd| *fd > libc::STDERR_FILENO)
+                .ok_or_else(|| format!("--{READY}: {value} is not a descriptor above the standard three"))?;
+            ready = Some(fd);
             continue;
         }
         if name == KEEP {
@@ -169,8 +179,23 @@ pub fn plan(args: impl IntoIterator<Item = OsString>) -> Result<Plan, String> {
         if soft > hard { return Err(format!("--{name}: the soft limit is above the hard one")); }
         limits.push(Limit { resource, soft, hard });
     }
+    if export.is_some() && ready == Some(EXPORT_DESCRIPTOR) {
+        return Err(format!("--{READY}: descriptor {EXPORT_DESCRIPTOR} holds the export folder"));
+    }
     let program = args.next().ok_or("no program after --")?;
     Ok(Plan { limits, keep: keep.unwrap_or_default(), export, ready, program, args: args.collect() })
+}
+
+/// Whether the plugin is told to reach its export folder through the
+/// descriptor itself, `/proc/self/fd/3`, and so must keep it. Any other
+/// path is a folder mounted there.
+pub fn through_descriptor(path: &Path) -> bool {
+    path == chilpa_dirs::own_descriptors().join(EXPORT_DESCRIPTOR.to_string())
+}
+
+/// Whether `fd` is open, checked before anything starts.
+pub fn is_open(fd: libc::c_int) -> bool {
+    unsafe { libc::fcntl(fd, libc::F_GETFD) >= 0 }
 }
 
 /// Whether `path` is the folder `descriptor` holds, as the plugin will reach
@@ -198,20 +223,26 @@ pub fn check_export(descriptor: libc::c_int, path: &Path) -> Result<(), String> 
 }
 
 /// Leaves the export folder's descriptor open in the program, between fork
-/// and exec. Async-signal-safe.
+/// and exec, for a plugin told to reach the folder through it.
+/// Async-signal-safe.
 pub fn hand_over_export() -> io::Result<()> {
     if unsafe { libc::fcntl(EXPORT_DESCRIPTOR, libc::F_SETFD, 0) } < 0 { Err(io::Error::last_os_error()) } else { Ok(()) }
 }
 
-/// Writes the ready newline on standard output.
-pub fn announce() -> io::Result<()> {
-    loop {
-        let written = unsafe { libc::write(libc::STDOUT_FILENO, b"\n".as_ptr().cast(), 1) };
-        if written == 1 { return Ok(()); }
+/// Writes the ready newline on `fd`, then closes it. Called once the
+/// program has been executed: `Command::spawn` returns only after the exec,
+/// through its own close-on-exec pipe, and fails when the exec or anything
+/// before it in the child failed.
+pub fn announce(fd: libc::c_int) -> io::Result<()> {
+    let written = loop {
+        let written = unsafe { libc::write(fd, b"\n".as_ptr().cast(), 1) };
+        if written == 1 { break Ok(()); }
         let error = io::Error::last_os_error();
         if written < 0 && error.raw_os_error() == Some(libc::EINTR) { continue; }
-        return Err(if written < 0 { error } else { io::Error::from(io::ErrorKind::WriteZero) });
-    }
+        break Err(if written < 0 { error } else { io::Error::from(io::ErrorKind::WriteZero) });
+    };
+    unsafe { libc::close(fd); }
+    written
 }
 
 /// The plugin's whole environment: each variable in `keep` the runner has,
@@ -303,18 +334,37 @@ fn seal(fd: libc::c_int) -> io::Result<()> {
 /// is wiped, and the runner becomes undumpable, which closes its /proc
 /// entries to processes of its user that lack CAP_SYS_PTRACE. Called once
 /// the plugin's own environment is in hand, before the plugin exists. The
-/// plugin is dumpable again: exec sets that back. With `keep_export`, the
-/// export folder's descriptor stays: it is the plugin's.
-pub fn conceal(keep_export: bool) -> io::Result<()> {
-    close_descriptors(if keep_export { EXPORT_DESCRIPTOR + 1 } else { 3 })?;
+/// plugin is dumpable again: exec sets that back. The descriptors in `keep`
+/// stay: the export folder's, when the plugin is told to reach it through
+/// it, and the ready line's, which closes on its own when the program runs.
+pub fn conceal(keep: &[libc::c_int]) -> io::Result<()> {
+    close_descriptors_but(keep)?;
     forget_environment();
     let undumpable = unsafe { libc::prctl(libc::PR_SET_DUMPABLE, 0 as libc::c_ulong, 0 as libc::c_ulong, 0 as libc::c_ulong, 0 as libc::c_ulong) };
     if undumpable == 0 { Ok(()) } else { Err(io::Error::last_os_error()) }
 }
 
-/// Closes every descriptor from `first` up.
-fn close_descriptors(first: libc::c_int) -> io::Result<()> {
-    if unsafe { libc::syscall(libc::SYS_close_range, first as libc::c_uint, libc::c_uint::MAX, 0 as libc::c_uint) } == 0 { return Ok(()); }
+/// The runs of descriptor numbers from 3 up that are not in `keep`, each as
+/// its first and last number.
+fn closed_runs(keep: &[libc::c_int]) -> Vec<(libc::c_uint, libc::c_uint)> {
+    let mut kept: Vec<libc::c_uint> = keep.iter().filter(|fd| **fd >= 3).map(|fd| *fd as libc::c_uint).collect();
+    kept.sort_unstable();
+    kept.dedup();
+    let mut runs = Vec::new();
+    let mut first: libc::c_uint = 3;
+    for fd in kept {
+        if fd > first { runs.push((first, fd - 1)); }
+        first = fd + 1;
+    }
+    runs.push((first, libc::c_uint::MAX));
+    runs
+}
+
+/// Closes every descriptor from 3 up but those in `keep`.
+fn close_descriptors_but(keep: &[libc::c_int]) -> io::Result<()> {
+    let runs = closed_runs(keep);
+    let closed = runs.iter().all(|(first, last)| unsafe { libc::syscall(libc::SYS_close_range, *first, *last, 0 as libc::c_uint) } == 0);
+    if closed { return Ok(()); }
     // Kernels older than 5.9: each one the descriptor table lists, or every
     // number when it cannot be listed, as the seal does.
     let open = match open_descriptors() {
@@ -326,10 +376,10 @@ fn close_descriptors(first: libc::c_int) -> io::Result<()> {
             if last > MOST_WALKED {
                 return Err(io::Error::other(format!("the open descriptors cannot be listed, and {last} are too many to walk")));
             }
-            (first..last as libc::c_int).collect()
+            (3..last as libc::c_int).collect()
         }
     };
-    for fd in open.into_iter().filter(|fd| *fd >= first) { unsafe { libc::close(fd); } }
+    for fd in open.into_iter().filter(|fd| *fd >= 3 && !keep.contains(fd)) { unsafe { libc::close(fd); } }
     Ok(())
 }
 
@@ -537,11 +587,29 @@ mod tests {
         assert_eq!(plan.program, "/plugin/plugin");
         assert_eq!(plan.args, vec![OsString::from("--"), OsString::from("-x")], "what follows the program is its own");
         let bare = read(&["--", "/bin/true"]).unwrap();
-        assert_eq!((bare.limits, bare.keep, bare.export, bare.ready), (Vec::new(), Vec::new(), None, false));
+        assert_eq!((bare.limits, bare.keep, bare.export, bare.ready), (Vec::new(), Vec::new(), None, None));
         assert_eq!(Resource::FileSize.option(), "fsize");
-        let own = read(&["--export=/music/export", "--ready", "--", "/plugin/plugin", "--ready"]).unwrap();
-        assert_eq!((own.export, own.ready), (Some(OsString::from("/music/export")), true));
-        assert_eq!(own.args, vec![OsString::from("--ready")], "the program's own --ready is not the runner's");
+        let own = read(&["--export=/music/export", "--ready=4", "--", "/plugin/plugin", "--ready=4"]).unwrap();
+        assert_eq!((own.export, own.ready), (Some(OsString::from("/music/export")), Some(4)));
+        assert_eq!(own.args, vec![OsString::from("--ready=4")], "the program's own --ready is not the runner's");
+    }
+
+    #[test]
+    fn only_the_descriptor_itself_keeps_the_export_folder_s_descriptor() {
+        let descriptors = chilpa_dirs::own_descriptors();
+        assert!(through_descriptor(&descriptors.join("3")));
+        for mounted in [Path::new("/music/export").to_path_buf(), descriptors.join("3/inside"), descriptors.join("4")] {
+            assert!(!through_descriptor(&mounted), "{}", mounted.display());
+        }
+    }
+
+    #[test]
+    fn concealing_closes_every_run_but_the_descriptors_kept() {
+        assert_eq!(closed_runs(&[]), vec![(3, libc::c_uint::MAX)]);
+        assert_eq!(closed_runs(&[3]), vec![(4, libc::c_uint::MAX)]);
+        assert_eq!(closed_runs(&[4]), vec![(3, 3), (5, libc::c_uint::MAX)]);
+        assert_eq!(closed_runs(&[3, 4]), vec![(5, libc::c_uint::MAX)]);
+        assert_eq!(closed_runs(&[7, 4, 4, 1]), vec![(3, 3), (5, 6), (8, libc::c_uint::MAX)], "unordered, repeated and standard ones");
     }
 
     #[test]
@@ -558,8 +626,11 @@ mod tests {
             (&["--keep-env=PATH,,HOME", "--", "/bin/true"][..], "--keep-env: PATH,,HOME is not a list of variable names"),
             (&["--export=music", "--", "/bin/true"][..], "--export: music is not an absolute path"),
             (&["--export=/a", "--export=/b", "--", "/bin/true"][..], "--export is given twice"),
-            (&["--ready", "--ready", "--", "/bin/true"][..], "--ready is given twice"),
-            (&["--ready=1", "--", "/bin/true"][..], "--ready is not a limit"),
+            (&["--ready=4", "--ready=5", "--", "/bin/true"][..], "--ready is given twice"),
+            (&["--ready", "--", "/bin/true"][..], "--ready is not an option"),
+            (&["--ready=1", "--", "/bin/true"][..], "--ready: 1 is not a descriptor above the standard three"),
+            (&["--ready=out", "--", "/bin/true"][..], "--ready: out is not a descriptor above the standard three"),
+            (&["--export=/a", "--ready=3", "--", "/bin/true"][..], "--ready: descriptor 3 holds the export folder"),
         ] {
             assert_eq!(read(args), Err(problem.to_string()), "{args:?}");
         }

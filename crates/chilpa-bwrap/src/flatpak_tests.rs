@@ -74,15 +74,15 @@ fn a_plugin_gets_its_folders_as_descriptors_and_is_told_their_paths() {
     let spawned = fake.spawned().remove(0);
     assert_eq!(spawned.flags, CLEAR_ENV | SANDBOX | WATCH_BUS | NO_NETWORK);
     assert_eq!(spawned.sandbox_flags, Some(0));
-    assert_eq!(spawned.fds, vec![0, 1, 2]);
+    assert_eq!(spawned.fds, vec![0, 1, 2, 4], "the runner's ready line comes on a descriptor of its own");
     assert_eq!(spawned.readable, received(&[base.join("plugin")]), "the package, read-only, as an O_PATH descriptor");
     assert_eq!(spawned.writable, received(&[data.clone(), cache.clone()]));
     assert_eq!(spawned.cwd, byte_string(&data));
     let program = base.join("plugin/plugin");
     let keep = "--keep-env=PATH,HOME,XDG_CACHE_HOME,XDG_CONFIG_HOME,XDG_DATA_HOME,XDG_STATE_HOME,TMPDIR,CHILPA_PLUGIN_DATA_DIR,CHILPA_PLUGIN_CACHE_DIR,SSL_CERT_DIR";
     assert_eq!(spawned.argv, [fixture.runner.as_os_str(), OsStr::new("--as=536870912"), OsStr::new("--nofile=256"),
-        OsStr::new("--core=0"), OsStr::new(keep), OsStr::new("--ready"), OsStr::new("--"), program.as_os_str()].map(|arg| byte_string(arg)).to_vec(),
-        "the limits bubblewrap sets with prlimit, the runner keeps only the variables it is started with, and says when it starts the plugin");
+        OsStr::new("--core=0"), OsStr::new(keep), OsStr::new("--ready=4"), OsStr::new("--"), program.as_os_str()].map(|arg| byte_string(arg)).to_vec(),
+        "the limits bubblewrap sets with prlimit, the runner keeps only the variables it is started with, and says when the plugin runs");
     assert_eq!(launched.export, None, "no export folder was approved");
     let expected: HashMap<String, String> = environment(&data, &cache).unwrap().into_iter().map(|(name, value)| (name.to_string(), value)).collect();
     assert_eq!(spawned.env, expected);
@@ -115,11 +115,11 @@ fn a_network_change_ends_the_plugin_then_starts_it_again_without() {
     assert_eq!(spawned[0].flags & NO_NETWORK, 0);
     assert_eq!(spawned[1].flags & NO_NETWORK, NO_NETWORK);
     assert_eq!(spawned[0].writable, received(&[base.join("data"), base.join("cache"), base.join("export")]), "an approved export folder");
-    assert_eq!(spawned[0].fds, vec![0, 1, 2, 3], "held at descriptor 3 too, for the runner to check");
+    assert_eq!(spawned[0].fds, vec![0, 1, 2, 3, 4], "held at descriptor 3 too, for the runner to check");
     assert!(spawned[0].argv.contains(&byte_string(format!("--export={}", base.join("export").display()))));
     assert_eq!(online.export, Some(base.join("export")), "at its own path, where the portal mounts it");
     assert_eq!(spawned[1].writable, received(&[base.join("data"), base.join("cache")]));
-    assert_eq!(spawned[1].fds, vec![0, 1, 2]);
+    assert_eq!(spawned[1].fds, vec![0, 1, 2, 4]);
     assert!(!spawned[1].argv.iter().any(|arg| arg.starts_with(b"--export=")));
     assert_eq!(fake.signals().len(), 1, "only the first one was ended");
     assert!(offline.process.alive());
@@ -152,10 +152,29 @@ fn a_documents_portal_folder_goes_over_as_its_descriptor_and_is_named_by_it() {
     assert_eq!(launched.export, Some(told.clone()), "the plugin reaches it through the descriptor it holds");
     let spawned = fake.spawned().remove(0);
     assert_eq!(spawned.writable, received(&[base.join("data"), base.join("cache")]), "the portal is not asked to mount what it cannot");
-    assert_eq!(spawned.fds, vec![0, 1, 2, 3]);
+    assert_eq!(spawned.fds, vec![0, 1, 2, 3, 4]);
     assert!(spawned.argv.contains(&byte_string(format!("--export={}", told.display()))));
     assert_eq!(launched.client.call("write", json!({"export": told}), Duration::from_secs(5)).unwrap(), json!({"wrote": true}));
     assert!(chosen.join("written").is_file(), "the write landed in the chosen folder");
+    launched.client.stop();
+}
+
+#[test]
+fn a_documents_portal_folder_is_never_handed_over_on_a_kernel_that_cannot_confine_the_plugin() {
+    let bus = PrivateBus::start();
+    let fake = FakePortal::serve(&bus, 8);
+    let mut fixture = Fixture::new();
+    let base = fixture.base();
+    let chosen = base.join("doc/a1b2c3/Music");
+    std::fs::create_dir_all(&chosen).unwrap();
+    fixture.paths.export = Some(chosen);
+    let flatpak = Flatpak::on(bus.bus(), fixture.runner.clone()).with_documents(vec![base.join("doc")]).without_confinement();
+    assert!(matches!(flatpak.launch(&fixture.paths, "test", MEMORY, false, quiet()), Err(BridgeError::Denied)));
+    assert!(fake.spawned().is_empty(), "nothing was started");
+    // A folder the portal mounts needs no confinement.
+    std::fs::create_dir(base.join("export")).unwrap();
+    fixture.paths.export = Some(base.join("export"));
+    let launched = flatpak.launch(&fixture.paths, "test", MEMORY, false, quiet()).unwrap();
     launched.client.stop();
 }
 
@@ -304,11 +323,31 @@ fn documents_delete(bus: &zbus::blocking::Connection, id: &str) {
     bus.call_method(Some(DOCUMENTS), DOCUMENTS_PATH, Some(DOCUMENTS), "Delete", &(id,)).unwrap();
 }
 
+/// A plugin that touches `written` in the export folder each call names and
+/// tries to list what lies two folders above it, Chilpa's side of the
+/// Documents portal.
+const WRITES_AND_LOOKS_ABOVE: &str = r#"#!/usr/bin/bash
+while IFS= read -r line; do
+  id=$(printf '%s' "$line" | sed -E 's/.*"id":([0-9]+).*/\1/')
+  export=$(printf '%s' "$line" | sed -E 's/.*"export":"([^"]*)".*/\1/')
+  wrote=false; touch "$export/written" 2>/dev/null && wrote=true
+  above=false; ls "$export/../.." >/dev/null 2>&1 && above=true
+  printf '{"jsonrpc":"2.0","id":%s,"result":{"wrote":%s,"above":%s}}\n' "$id" "$wrote" "$above"
+done
+"#;
+
+/// The Landlock version this kernel offers, if any.
+fn landlock() -> Option<i64> {
+    let version = unsafe { libc::syscall(libc::SYS_landlock_create_ruleset, std::ptr::null::<u8>(), 0usize, 1u32) };
+    (version > 0).then_some(version)
+}
+
 /// An export folder chosen through the file chooser, through the real
-/// portals: the plugin writes there while the grant lasts, and every way it
-/// cannot is a start that fails or a write that is refused, never a plugin
-/// told of a folder it cannot reach. Run inside the Chilpa Flatpak as the
-/// smoke above is.
+/// portals: the plugin writes there while the grant lasts and cannot walk
+/// out of it, and every way it cannot write is a start that fails or a
+/// write that is refused, never a plugin told of a folder it cannot reach.
+/// Without Landlock 3 the runner cannot confine it, and nothing starts. Run
+/// inside the Chilpa Flatpak as the smoke above is.
 #[test]
 #[ignore = "needs the real Flatpak and Documents portals: run it inside the Chilpa Flatpak"]
 fn a_documents_folder_takes_the_plugin_s_writes_until_it_is_revoked_through_the_portal() {
@@ -318,7 +357,7 @@ fn a_documents_folder_takes_the_plugin_s_writes_until_it_is_revoked_through_the_
     let base = root.path().canonicalize().unwrap();
     let folder = base.join("plugin");
     std::fs::create_dir(&folder).unwrap();
-    std::fs::write(folder.join("plugin"), WRITES_ITS_EXPORT).unwrap();
+    std::fs::write(folder.join("plugin"), WRITES_AND_LOOKS_ABOVE).unwrap();
     std::fs::set_permissions(folder.join("plugin"), std::fs::Permissions::from_mode(0o755)).unwrap();
     let bus = zbus::blocking::Connection::session().unwrap();
     let chosen = base.join("chosen");
@@ -327,17 +366,25 @@ fn a_documents_folder_takes_the_plugin_s_writes_until_it_is_revoked_through_the_
     let mut paths = NativePaths { folder, data: base.join("data"), cache: base.join("cache"), export: Some(path), private: Vec::new() };
     let flatpak = Flatpak::default();
 
-    let launched = flatpak.launch(&paths, "test", MEMORY, false, quiet()).unwrap();
-    let told = launched.export.clone().expect("an approved export folder is named");
-    assert_eq!(told, chilpa_dirs::own_descriptors().join("3"));
-    assert_eq!(launched.client.call("write", json!({"export": told}), Duration::from_secs(5)).unwrap(), json!({"wrote": true}));
-    assert!(chosen.join("written").is_file(), "the write landed in the chosen folder");
-    std::fs::remove_file(chosen.join("written")).unwrap();
-    // Revoked while the plugin runs: its next write is refused.
-    documents_delete(&bus, &id);
-    assert_eq!(launched.client.call("write", json!({"export": told}), Duration::from_secs(5)).unwrap(), json!({"wrote": false}));
-    assert!(!chosen.join("written").exists());
-    launched.client.stop();
+    if landlock().is_some_and(|version| version >= 3) {
+        let launched = flatpak.launch(&paths, "test", MEMORY, false, quiet()).unwrap();
+        let told = launched.export.clone().expect("an approved export folder is named");
+        assert_eq!(told, chilpa_dirs::own_descriptors().join("3"));
+        assert_eq!(launched.client.call("write", json!({"export": told}), Duration::from_secs(5)).unwrap(), json!({"wrote": true, "above": false}),
+            "it writes in the folder, and the Documents portal's other folders are out of its reach");
+        assert!(chosen.join("written").is_file(), "the write landed in the chosen folder");
+        std::fs::remove_file(chosen.join("written")).unwrap();
+        // Revoked while the plugin runs: its next write is refused.
+        documents_delete(&bus, &id);
+        assert_eq!(launched.client.call("write", json!({"export": told}), Duration::from_secs(5)).unwrap()["wrote"], json!(false));
+        assert!(!chosen.join("written").exists());
+        launched.client.stop();
+    } else {
+        assert!(matches!(flatpak.launch(&paths, "test", MEMORY, false, quiet()), Err(BridgeError::Disconnected)),
+            "a plugin the runner cannot keep inside the folder is not started");
+        assert!(!chosen.join("written").exists());
+        documents_delete(&bus, &id);
+    }
     // Revoked before a start: the folder is not there, and nothing starts.
     assert!(flatpak.launch(&paths, "test", MEMORY, false, quiet()).is_err());
 

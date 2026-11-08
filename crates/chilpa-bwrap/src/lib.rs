@@ -75,7 +75,7 @@ mod portal;
 #[cfg(target_os = "linux")]
 mod flatpak;
 #[cfg(target_os = "linux")]
-pub use flatpak::Flatpak;
+pub use flatpak::{confines_descriptor_exports, unconfinable_export, Flatpak};
 #[cfg(target_os = "linux")]
 mod flatpak_worker;
 #[cfg(target_os = "linux")]

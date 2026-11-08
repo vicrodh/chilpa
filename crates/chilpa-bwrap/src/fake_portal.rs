@@ -2,9 +2,10 @@
 //! run without Flatpak. It records what each `Spawn` asked for and runs the
 //! command after the runner's `--` with the descriptors it was handed, each
 //! at its number, then reports its exit to the caller, as the portal does.
-//! Of the runner, it does what its starter sees: the ready line when the
-//! command line asks for one. It starts no sandbox: what it checks is the
-//! request, not the confinement.
+//! Of the runner, it does what its starter sees: the ready line on the
+//! descriptor the command line names, once the command runs, and that
+//! descriptor kept from the command. It starts no sandbox: what it checks is
+//! the request, not the confinement.
 
 use crate::portal::{Bus, INTERFACE, NAME, PATH};
 use std::collections::HashMap;
@@ -220,9 +221,13 @@ fn spawn(conn: &Connection, message: &Message, record: &Arc<Mutex<Record>>) -> R
     let mut command = if refusing { Command::new("/bin/true") } else { Command::new(text(program)) };
     if !refusing { command.args(argv[start + 1..].iter().map(|arg| text(arg))); }
     command.env_clear().envs(&env).current_dir(text(&cwd)).process_group(0).stdin(stdio(0)?).stdout(stdio(1)?).stderr(stdio(2)?);
-    // Each descriptor above the standard three at its own number, as the
-    // portal's map puts it.
-    let further: Vec<(libc::c_int, libc::c_int)> = fds.iter().filter(|(number, _)| **number >= 3)
+    // The runner's ready descriptor, which it keeps from the plugin.
+    let ready: Option<u32> = argv[..start].iter().find_map(|arg| {
+        text(arg).to_str()?.strip_prefix("--ready=")?.parse().ok()
+    });
+    // Each other descriptor above the standard three at its own number, as
+    // the portal's map puts it.
+    let further: Vec<(libc::c_int, libc::c_int)> = fds.iter().filter(|(number, _)| **number >= 3 && Some(**number) != ready)
         .map(|(number, fd)| (*number as libc::c_int, fd.as_raw_fd())).collect();
     unsafe {
         command.pre_exec(move || {
@@ -234,12 +239,13 @@ fn spawn(conn: &Connection, message: &Message, record: &Arc<Mutex<Record>>) -> R
             Ok(())
         });
     }
-    if !refusing && argv[..start].iter().any(|arg| arg.as_slice() == b"--ready\0") {
-        let output = fds.get(&1).ok_or("no descriptor 1")?;
-        std::io::Write::write_all(&mut std::fs::File::from(output.as_fd().try_clone_to_owned().map_err(|error| error.to_string())?), b"\n")
+    let mut child = command.spawn().map_err(|error| error.to_string())?;
+    // Once the program runs, as the runner says it.
+    if let Some(number) = ready.filter(|_| !refusing) {
+        let started = fds.get(&number).ok_or(format!("no descriptor {number}"))?;
+        std::io::Write::write_all(&mut std::fs::File::from(started.as_fd().try_clone_to_owned().map_err(|error| error.to_string())?), b"\n")
             .map_err(|error| error.to_string())?;
     }
-    let mut child = command.spawn().map_err(|error| error.to_string())?;
     let pid = child.id();
     let exposed = |key: &str| -> Vec<Exposed> {
         match options.get(key) {

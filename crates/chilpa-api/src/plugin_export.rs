@@ -3,7 +3,21 @@
 //! A destination is never one of Chilpa's own folders, inside one or above
 //! one: not when it is chosen, and not when the plugin starts, when the path
 //! recorded is resolved again and a folder above it may have become a link.
+//! Nor is it a folder the plugin could not be kept inside: inside a Flatpak,
+//! a folder of the Documents portal reaches the plugin only as a descriptor,
+//! and without Landlock in the kernel nothing keeps the plugin from walking
+//! out of it.
 use std::path::{Path, PathBuf};
+
+/// Why a folder of the Documents portal is refused, shown where the folder
+/// is chosen.
+const UNCONFINABLE: &str = "Chilpa cannot keep a plugin inside a folder chosen this way, because this system's kernel has no Landlock. Give Chilpa access to the folder with flatpak override, or use a kernel with Landlock enabled.";
+
+/// Whether a plugin could not be kept inside `folder` (chilpa-bwrap).
+#[cfg(target_os = "linux")]
+fn unconfinable(folder: &Path) -> bool { chilpa_bwrap::unconfinable_export(folder) }
+#[cfg(not(target_os = "linux"))]
+fn unconfinable(_: &Path) -> bool { false }
 
 fn file(root: &Path, id: &str) -> PathBuf { root.join(".exports").join(format!("{id}.json")) }
 fn valid_id(id: &str) -> bool {
@@ -11,7 +25,7 @@ fn valid_id(id: &str) -> bool {
 }
 
 pub(crate) fn read(root: &Path, id: &str) -> Option<PathBuf> {
-    read_with(root, id, &private())
+    read_with(root, id, &private(), &unconfinable)
 }
 
 /// Chilpa's own folders, canonical where they exist.
@@ -25,13 +39,17 @@ fn is_private(folder: &Path, private: &[PathBuf]) -> bool {
     private.iter().any(|own| own.starts_with(folder) || folder.starts_with(own))
 }
 
-fn read_with(root: &Path, id: &str, private: &[PathBuf]) -> Option<PathBuf> {
+fn read_with(root: &Path, id: &str, private: &[PathBuf], unconfinable: &dyn Fn(&Path) -> bool) -> Option<PathBuf> {
     if !valid_id(id) { return None; }
     let path: String = serde_json::from_slice(&std::fs::read(file(root, id)).ok()?).ok()?;
     let path = PathBuf::from(path);
     let folder = std::fs::symlink_metadata(&path).ok()?.file_type().is_dir().then(|| path.canonicalize().ok()).flatten()?;
     if is_private(&folder, private) {
         eprintln!("plugin-export: {id}'s destination now leads into Chilpa's own folders; it is not handed over");
+        return None;
+    }
+    if unconfinable(&folder) {
+        eprintln!("plugin-export: {id}'s destination is a Documents portal folder, and this kernel has no Landlock 3 to keep the plugin inside it; it is not handed over");
         return None;
     }
     Some(folder)
@@ -46,16 +64,17 @@ pub(crate) fn enabled(root: &Path, id: &str) -> bool {
 }
 
 pub(crate) fn set(root: &Path, id: &str, selected: &Path) -> Result<(), String> {
-    set_with(root, id, selected, &private())
+    set_with(root, id, selected, &private(), &unconfinable)
 }
 
-fn set_with(root: &Path, id: &str, selected: &Path, private: &[PathBuf]) -> Result<(), String> {
+fn set_with(root: &Path, id: &str, selected: &Path, private: &[PathBuf], unconfinable: &dyn Fn(&Path) -> bool) -> Result<(), String> {
     if !enabled(root, id) { return Err("This plugin cannot write to a selected folder.".into()); }
     let selected = selected.canonicalize().map_err(|_| "Choose an existing folder.")?;
     if !selected.is_dir() { return Err("Choose an existing folder.".into()); }
     if selected.parent().is_none() || is_private(&selected, private) {
         return Err("Choose a music folder instead of a system or application folder.".into());
     }
+    if unconfinable(&selected) { return Err(UNCONFINABLE.into()); }
     let parent = root.join(".exports");
     std::fs::create_dir_all(&parent).map_err(|_| "The destination could not be saved.")?;
     let value = serde_json::to_vec(&selected.to_string_lossy().to_string()).map_err(|_| "Invalid destination.")?;
@@ -114,10 +133,30 @@ mod tests {
         for folder in [private.join("plugin-data/other"), base.join("music")] { std::fs::create_dir_all(folder).unwrap(); }
         let own = [private.clone()];
         for refused in [private.join("plugin-data/other"), private.clone(), base.clone()] {
-            assert!(set_with(&plugins, "app.example.download", &refused, &own).is_err(), "{} is in, is, or holds Chilpa's own", refused.display());
+            assert!(set_with(&plugins, "app.example.download", &refused, &own, &|_| false).is_err(), "{} is in, is, or holds Chilpa's own", refused.display());
         }
-        set_with(&plugins, "app.example.download", &base.join("music"), &own).unwrap();
-        assert_eq!(read_with(&plugins, "app.example.download", &own), Some(base.join("music")));
+        set_with(&plugins, "app.example.download", &base.join("music"), &own, &|_| false).unwrap();
+        assert_eq!(read_with(&plugins, "app.example.download", &own, &|_| false), Some(base.join("music")));
+    }
+
+    #[test]
+    fn a_folder_the_plugin_could_not_be_kept_inside_is_refused_and_never_handed_over() {
+        let root = tempfile::tempdir().unwrap();
+        let base = root.path().canonicalize().unwrap();
+        let plugins = base.join("plugins");
+        std::fs::create_dir_all(plugins.join("app.example.download")).unwrap();
+        std::fs::write(plugins.join("app.example.download/manifest.json"), FOLDER_WRITE).unwrap();
+        let (portal, music) = (base.join("doc/a1b2/Music"), base.join("music"));
+        for folder in [&portal, &music] { std::fs::create_dir_all(folder).unwrap(); }
+        let documents = base.join("doc");
+        let unconfinable = move |folder: &Path| folder.starts_with(&documents);
+        assert_eq!(set_with(&plugins, "app.example.download", &portal, &[], &unconfinable), Err(UNCONFINABLE.to_string()),
+            "the person choosing it is told why");
+        set_with(&plugins, "app.example.download", &music, &[], &unconfinable).unwrap();
+        // Recorded while the kernel could confine it, read on one that cannot.
+        std::fs::write(file(&plugins, "app.example.download"), serde_json::to_vec(&portal.to_string_lossy()).unwrap()).unwrap();
+        assert_eq!(read_with(&plugins, "app.example.download", &[], &|_| false), Some(portal.clone()));
+        assert_eq!(read_with(&plugins, "app.example.download", &[], &unconfinable), None, "the plugin starts without it");
     }
 
     #[cfg(unix)]
@@ -131,10 +170,10 @@ mod tests {
         for folder in [base.join("music/staging"), private.join("staging")] { std::fs::create_dir_all(folder).unwrap(); }
         std::fs::write(file(&plugins, "app.example.download"), serde_json::to_vec(&base.join("music/staging").to_string_lossy()).unwrap()).unwrap();
         let own = [private.clone()];
-        assert_eq!(read_with(&plugins, "app.example.download", &own), Some(base.join("music/staging")));
+        assert_eq!(read_with(&plugins, "app.example.download", &own, &|_| false), Some(base.join("music/staging")));
         // Whoever can write the music folder swaps the folder above for a link.
         std::fs::remove_dir_all(base.join("music")).unwrap();
         std::os::unix::fs::symlink(&private, base.join("music")).unwrap();
-        assert_eq!(read_with(&plugins, "app.example.download", &own), None, "it now leads into Chilpa's data");
+        assert_eq!(read_with(&plugins, "app.example.download", &own, &|_| false), None, "it now leads into Chilpa's data");
     }
 }

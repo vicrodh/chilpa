@@ -992,3 +992,21 @@ bubblewrap
 fstat
 ifdir
 ifmt
+# How the runner keeps a plugin that holds the export descriptor inside the
+# folder: Landlock's and seccomp's own names, and the libc ones around them.
+landlock
+ruleset
+unconfinable
+seccomp
+fprog
+ushort
+jf
+jt
+privs
+inotify
+af
+inet
+dgram
+socketpair
+enosys
+dupfd

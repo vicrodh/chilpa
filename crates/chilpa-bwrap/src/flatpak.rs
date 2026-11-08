@@ -17,9 +17,14 @@
 //! any sandbox, and the plugin is told `/proc/self/fd/3`. Every export
 //! folder is held at descriptor 3, and the runner checks that the path the
 //! plugin is told is that folder and can be written before the plugin
-//! starts. The backend waits for the runner's ready line, so a start the
-//! runner refuses fails here, at launch, and not later on the plugin's first
-//! write.
+//! starts. A folder the portal mounts never reaches the plugin as that
+//! descriptor: the runner closes it, since a path resolved from a descriptor
+//! opened here walks this sandbox's tree, out of the folder with `..`. A
+//! plugin that must keep it is confined by the runner to its own root and
+//! that folder, or not started. The backend waits for the runner's ready
+//! line, which comes on descriptor 4 once the plugin's program runs, so a
+//! start the runner refuses, or a program that cannot be executed, fails
+//! here, at launch, and not later on the plugin's first write.
 
 use crate::portal::{Bus, Portal, Spawn};
 use crate::process::{log_errors, LaunchedNative, NativeLauncher, NativeProcess, Notice, CACHE_DIR_VARIABLE, DATA_DIR_VARIABLE};
@@ -35,11 +40,13 @@ use std::time::{Duration, Instant};
 
 /// Where the Flatpak installs the runner, visible from the plugin's sandbox.
 const RUNNER: &str = "/app/libexec/chilpa-plugin-runner";
-/// Where the runner finds the export folder, and the plugin with it: the
-/// runner's own `EXPORT_DESCRIPTOR`.
+/// Where the runner finds the export folder: the runner's own
+/// `EXPORT_DESCRIPTOR`.
 const EXPORT_DESCRIPTOR: u32 = 3;
-/// How long the runner has to say the plugin is starting, as long as the
-/// portal has to answer the spawn.
+/// Where the runner writes its ready line, a pipe of its own.
+const READY_DESCRIPTOR: u32 = 4;
+/// How long the runner has to say the plugin started, as long as the portal
+/// has to answer the spawn.
 const READY_WAIT: Duration = Duration::from_secs(10);
 
 /// A folder held open, and the path it has for Chilpa and for the plugin.
@@ -63,6 +70,25 @@ impl Exposed {
     }
 }
 
+/// Whether this kernel lets the runner keep a plugin inside a folder it
+/// holds as a descriptor: Landlock 3 or later, the runner's own minimum.
+pub fn confines_descriptor_exports() -> bool {
+    static FOUND: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *FOUND.get_or_init(|| {
+        let version = unsafe { libc::syscall(libc::SYS_landlock_create_ruleset, std::ptr::null::<u8>(), 0usize, 1u32) };
+        version >= 3
+    })
+}
+
+/// Whether `folder`, as an export folder, would reach a plugin only as a
+/// descriptor, a folder of the Documents portal inside a Flatpak, that this
+/// kernel cannot keep the plugin inside. Such a folder is never handed over.
+pub fn unconfinable_export(folder: &Path) -> bool {
+    chilpa_dirs::sandbox() == chilpa_dirs::Sandbox::Flatpak
+        && chilpa_dirs::document_portal_mounts().iter().any(|mount| folder.starts_with(mount))
+        && !confines_descriptor_exports()
+}
+
 fn text(path: &Path) -> Result<String, BridgeError> {
     path.to_str().map(str::to_owned).ok_or(BridgeError::Denied)
 }
@@ -74,9 +100,8 @@ fn can_write(fd: &OwnedFd) -> bool {
     CString::new(path.as_os_str().as_bytes()).is_ok_and(|name| unsafe { libc::access(name.as_ptr(), libc::W_OK | libc::X_OK) } == 0)
 }
 
-/// Reads the runner's ready line, the first byte of the plugin's output,
-/// waiting up to `bound`. False when the output closed first, when anything
-/// else came, or when nothing came in time.
+/// Reads the runner's ready line, waiting up to `bound`. False when its pipe
+/// closed first, when anything else came, or when nothing came in time.
 fn ready(output: &mut std::io::PipeReader, bound: Duration) -> bool {
     let deadline = Instant::now() + bound;
     let mut waited = libc::pollfd { fd: output.as_raw_fd(), events: libc::POLLIN, revents: 0 };
@@ -127,6 +152,9 @@ pub struct Flatpak {
     portal: Mutex<Option<Result<Arc<Portal>, ()>>>,
     /// Where the Documents portal's folders appear in this sandbox.
     documents: Vec<PathBuf>,
+    /// Whether a folder of theirs can be handed over: the runner can keep
+    /// the plugin inside it ([`confines_descriptor_exports`]).
+    confines: bool,
 }
 
 /// The one Flatpak backend of this process: process plugins and the
@@ -138,20 +166,28 @@ pub(crate) fn shared() -> Arc<Flatpak> {
 
 impl Default for Flatpak {
     fn default() -> Self {
-        Self { runner: RUNNER.into(), bus: Bus::Session, portal: Mutex::new(None), documents: chilpa_dirs::document_portal_mounts() }
+        Self { runner: RUNNER.into(), bus: Bus::Session, portal: Mutex::new(None), documents: chilpa_dirs::document_portal_mounts(),
+            confines: confines_descriptor_exports() }
     }
 }
 
 impl Flatpak {
+    /// The fake portal runs no runner, so these tests confine nothing.
     #[cfg(test)]
     pub(crate) fn on(bus: Bus, runner: PathBuf) -> Self {
-        Self { runner, bus, portal: Mutex::new(None), documents: Vec::new() }
+        Self { runner, bus, portal: Mutex::new(None), documents: Vec::new(), confines: true }
     }
 
     /// The same backend, with the Documents portal's folders under `mounts`.
     #[cfg(test)]
     pub(crate) fn with_documents(self, mounts: Vec<PathBuf>) -> Self {
         Self { documents: mounts, ..self }
+    }
+
+    /// The same backend on a kernel that cannot confine a plugin.
+    #[cfg(test)]
+    pub(crate) fn without_confinement(self) -> Self {
+        Self { confines: false, ..self }
     }
 
     /// Where the plugin is told to find `export`: at its own path, where the
@@ -206,6 +242,12 @@ impl NativeLauncher for Flatpak {
             eprintln!("flatpak: plugin {name}'s export folder now leads into Chilpa's own folders; it is not started");
             return Err(BridgeError::Denied);
         }
+        // Chilpa drops such a folder before the launch; this is the second
+        // guard, and the runner the third.
+        if export.as_ref().is_some_and(|export| self.in_documents(&export.path)) && !self.confines {
+            eprintln!("flatpak: plugin {name}'s export folder is a folder of the Documents portal, and this kernel has no Landlock 3 to keep the plugin inside it; it is not started");
+            return Err(BridgeError::Denied);
+        }
         // The portal would skip a folder it cannot mount writable and start
         // the plugin all the same: refused here, before anything starts.
         if let Some(export) = export.as_ref().filter(|export| !can_write(&export.fd)) {
@@ -220,20 +262,24 @@ impl NativeLauncher for Flatpak {
         let env = environment(&data.path, &cache.path)?;
         let keep = keep_env(&env);
         let told = guest_export.as_deref().map(text).transpose()?.map(|path| format!("--export={path}"));
+        let ready_option = format!("--ready={READY_DESCRIPTOR}");
         let mut argv = vec![runner, OsStr::new(&memory), OsStr::new("--nofile=256"), OsStr::new("--core=0"), OsStr::new(&keep)];
         argv.extend(told.as_deref().map(OsStr::new));
-        argv.extend([OsStr::new("--ready"), OsStr::new("--"), program.as_os_str()]);
+        argv.extend([OsStr::new(&ready_option), OsStr::new("--"), program.as_os_str()]);
         let (child_input, input) = std::io::pipe().map_err(|_| BridgeError::Disconnected)?;
-        let (mut output, child_output) = std::io::pipe().map_err(|_| BridgeError::Disconnected)?;
+        let (output, child_output) = std::io::pipe().map_err(|_| BridgeError::Disconnected)?;
         let (errors, child_errors) = std::io::pipe().map_err(|_| BridgeError::Disconnected)?;
+        let (mut started, child_started) = std::io::pipe().map_err(|_| BridgeError::Disconnected)?;
         let mut writable = vec![data.fd.as_fd(), cache.fd.as_fd()];
         writable.extend(export.as_ref().filter(|export| !self.in_documents(&export.path)).map(|export| export.fd.as_fd()));
+        let mut descriptors: Vec<(u32, std::os::fd::BorrowedFd<'_>)> = export.as_ref().map(|export| (EXPORT_DESCRIPTOR, export.fd.as_fd())).into_iter().collect();
+        descriptors.push((READY_DESCRIPTOR, child_started.as_fd()));
         let request = Spawn {
             cwd: &data.path,
             argv,
             env,
             stdio: [child_input.as_fd(), child_output.as_fd(), child_errors.as_fd()],
-            descriptors: export.as_ref().map(|export| (EXPORT_DESCRIPTOR, export.fd.as_fd())).into_iter().collect(),
+            descriptors,
             network,
             writable,
             readable: vec![folder.fd.as_fd()],
@@ -242,12 +288,13 @@ impl NativeLauncher for Flatpak {
             eprintln!("flatpak: the portal did not start plugin {name}: {error}");
             BridgeError::Disconnected
         })?;
-        // Only the plugin holds the far ends now, so its exit closes them.
+        // Only the runner and the plugin hold the far ends now, so their
+        // exits close them.
         drop(request);
-        drop((child_input, child_output, child_errors));
+        drop((child_input, child_output, child_errors, child_started));
         log_errors(name, errors);
-        if !ready(&mut output, READY_WAIT) {
-            eprintln!("flatpak: plugin {name} did not start: its runner refused it, its reason above, or said nothing within {} s",
+        if !ready(&mut started, READY_WAIT) {
+            eprintln!("flatpak: plugin {name} did not start: its runner refused it or could not execute it, its reason above, or said nothing within {} s",
                 READY_WAIT.as_secs());
             process.terminate();
             process.wait();
