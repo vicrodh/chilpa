@@ -288,6 +288,14 @@ fn absent(pipewire_socket: bool) -> String {
     }
 }
 
+/// What `info` says when no graph answered, in `sandbox`, with `socket`
+/// finding PipeWire's own. Only inside a Flatpak can a socket that is not
+/// there be the reason: on a host without PipeWire the advice is the one it
+/// was before the socket was looked for.
+fn absence(sandbox: chilpa_dirs::Sandbox, socket: impl FnOnce() -> Option<std::path::PathBuf>) -> String {
+    absent(!chilpa_dirs::pipewire_out_of_reach_in(sandbox, socket))
+}
+
 impl OutputBackend for Jack {
     fn inspect(&self, id: &str) -> chilpa_audio::evidence::Inspection {
         capabilities().map(|caps| chilpa_audio::evidence::Inspection::convertible("jack",id,format!("{:?}",caps.sample_rates),&caps))
@@ -301,7 +309,7 @@ impl OutputBackend for Jack {
         let rate = match ask(|client| client.sample_rate()) {
             Ok(rate) => rate,
             Err(Silence::Absent) => {
-                return BackendInfo::missing(BackendKind::Jack, absent(chilpa_dirs::pipewire_socket().is_some()))
+                return BackendInfo::missing(BackendKind::Jack, absence(chilpa_dirs::sandbox(), chilpa_dirs::pipewire_socket))
             }
             // Busy is late by another road: the previous question's client
             // was still closing when the patience ran out. Said as late,
@@ -761,6 +769,18 @@ mod tests {
         let unreachable = absent(false);
         assert!(unreachable.contains("xdg-run/pipewire-0"), "it names the permission: {unreachable}");
         assert!(!absent(true).contains("xdg-run"), "with the socket there, the permission is not what is missing");
+    }
+
+    #[test]
+    fn outside_a_flatpak_no_pipewire_is_not_blamed_on_one() {
+        // A host with a stopped jackd and no PipeWire: the advice named a
+        // Flatpak override that has nothing to do with it.
+        use chilpa_dirs::Sandbox;
+        let nowhere = || None;
+        assert_eq!(absence(Sandbox::None, nowhere), absent(true), "the advice from before the socket was looked for");
+        assert_eq!(absence(Sandbox::Snap, nowhere), absent(true));
+        assert!(absence(Sandbox::Flatpak, nowhere).contains("xdg-run/pipewire-0"), "inside one, the permission");
+        assert_eq!(absence(Sandbox::Flatpak, || Some("/run/user/1000/pipewire-0".into())), absent(true));
     }
 
     #[test]
