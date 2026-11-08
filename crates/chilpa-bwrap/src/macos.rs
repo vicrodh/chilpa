@@ -39,7 +39,11 @@ fn command(paths: &NativePaths, network: bool) -> Result<Command, BridgeError> {
         parameter(&mut command, name, path);
     }
     if let Some(export) = &paths.export {
-        parameter(&mut command, "EXPORT", &directory(export)?);
+        // Resolved again here, so checked again: a folder above it may have
+        // become a link into Chilpa's own since it was approved.
+        let export = directory(export)?;
+        if paths.is_private(&export) { return Err(BridgeError::Denied); }
+        parameter(&mut command, "EXPORT", &export);
         policy.push_str("\n(allow file-read* file-write* (subpath (param \"EXPORT\")))\n");
     }
     if network {

@@ -986,3 +986,5 @@ sigtimedwait
 timespec
 # The error a runner already gone gives: libc's name.
 esrch
+# The sandbox program, by its full name.
+bubblewrap
