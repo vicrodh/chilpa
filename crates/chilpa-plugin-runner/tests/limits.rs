@@ -136,3 +136,23 @@ fn ending_the_runner_ends_what_the_plugin_started() {
     assert!(!survived, "a SIGTERM to the runner, as the portal's SIGINT when Chilpa leaves the bus, took the plugin's own children");
     assert!(!status.success());
 }
+
+#[test]
+fn what_the_runner_was_started_with_stays_out_of_the_plugin_s_reach() {
+    // The plugin runs as the runner's own user, so the runner's environment
+    // and descriptors are one /proc away unless the runner hides them.
+    let probe = r#"n=$(tr '\0' '\n' < /proc/$PPID/environ 2>/dev/null | grep -c '^LEAKED='); f=$(ls /proc/$PPID/fd 2>/dev/null | grep -cx 9); echo "$n $f""#;
+    let file = std::fs::File::open("/dev/null").unwrap();
+    let raw = file.as_raw_fd();
+    let mut command = Command::new(RUNNER);
+    command.args(["--", "/bin/sh", "-c", probe]);
+    command.env("LEAKED", "from-the-starter");
+    unsafe {
+        command.pre_exec(move || {
+            if libc::dup2(raw, 9) < 0 || libc::fcntl(9, libc::F_SETFD, 0) < 0 { Err(std::io::Error::last_os_error()) } else { Ok(()) }
+        });
+    }
+    let output = command.output().unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    assert_eq!(String::from_utf8(output.stdout).unwrap().trim(), "0 0", "neither the variable nor descriptor 9 is readable through the runner");
+}

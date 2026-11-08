@@ -37,6 +37,10 @@ fn main() {
     }
     let mut command = std::process::Command::new(&plan.program);
     command.args(&plan.args).env_clear().envs(chilpa_plugin_runner::environment(&plan.keep));
+    // What the runner was started with leaves the plugin's reach before the plugin exists.
+    if let Err(error) = chilpa_plugin_runner::conceal() {
+        fail(126, &format!("could not hide what it was started with: {error}"));
+    }
     unsafe {
         command.pre_exec(move || {
             chilpa_plugin_runner::release_signals()?;

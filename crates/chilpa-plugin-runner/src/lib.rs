@@ -13,7 +13,10 @@
 //! plugin leaves behind (a child subreaper). When the plugin exits, or the
 //! runner is asked to end, everything still below the runner is ended and
 //! reaped before the runner exits, so the exit the portal reports means
-//! nothing of the plugin is left. Resources (ADR-018): the runner's own
+//! nothing of the plugin is left. Before the plugin starts, the runner
+//! closes its own descriptors, wipes its environment and becomes
+//! undumpable, so the plugin, which runs as the same user, reads neither
+//! through /proc. Resources (ADR-018): the runner's own
 //! process, asleep on its signals; it reads the process table only while it
 //! ends what is left.
 #![cfg(target_os = "linux")]
@@ -212,6 +215,60 @@ fn seal(fd: libc::c_int) -> io::Result<()> {
     if set >= 0 { return Ok(()); }
     let error = io::Error::last_os_error();
     if error.raw_os_error() == Some(libc::EBADF) { Ok(()) } else { Err(error) }
+}
+
+/// Takes out of the plugin's reach what the runner was started with. The
+/// plugin runs as the runner's own user, and would otherwise read the
+/// runner's environment and reopen its descriptors through /proc: every
+/// descriptor above the standard three is closed, the environment's memory
+/// is wiped, and the runner becomes undumpable, which closes its /proc
+/// entries to processes of its user that lack CAP_SYS_PTRACE. Called once
+/// the plugin's own environment is in hand, before the plugin exists. The
+/// plugin is dumpable again: exec sets that back.
+pub fn conceal() -> io::Result<()> {
+    close_descriptors()?;
+    forget_environment();
+    let undumpable = unsafe { libc::prctl(libc::PR_SET_DUMPABLE, 0 as libc::c_ulong, 0 as libc::c_ulong, 0 as libc::c_ulong, 0 as libc::c_ulong) };
+    if undumpable == 0 { Ok(()) } else { Err(io::Error::last_os_error()) }
+}
+
+/// Closes every descriptor above the standard three.
+fn close_descriptors() -> io::Result<()> {
+    let first: libc::c_uint = 3;
+    if unsafe { libc::syscall(libc::SYS_close_range, first, libc::c_uint::MAX, 0 as libc::c_uint) } == 0 { return Ok(()); }
+    // Kernels older than 5.9: each one the descriptor table lists, or every
+    // number when it cannot be listed, as the seal does.
+    let open = match open_descriptors() {
+        Ok(open) => open,
+        Err(_) => {
+            let mut limit = libc::rlimit { rlim_cur: 0, rlim_max: 0 };
+            if unsafe { libc::getrlimit(libc::RLIMIT_NOFILE, &mut limit) } != 0 { return Err(io::Error::last_os_error()); }
+            let last = (limit.rlim_max as u64).max(WALKED);
+            if last > MOST_WALKED {
+                return Err(io::Error::other(format!("the open descriptors cannot be listed, and {last} are too many to walk")));
+            }
+            (3..last as libc::c_int).collect()
+        }
+    };
+    for fd in open.into_iter().filter(|fd| *fd >= 3) { unsafe { libc::close(fd); } }
+    Ok(())
+}
+
+/// Wipes the strings of this process's environment where the kernel shows
+/// them in /proc, then lets go of them.
+fn forget_environment() {
+    extern "C" {
+        static mut environ: *mut *mut libc::c_char;
+    }
+    unsafe {
+        let mut entry = std::ptr::addr_of!(environ).read();
+        while !entry.is_null() && !(*entry).is_null() {
+            let text = *entry;
+            std::ptr::write_bytes(text, 0, libc::strlen(text));
+            entry = entry.add(1);
+        }
+        libc::clearenv();
+    }
 }
 
 /// Makes this process the one that whatever the plugin leaves behind is

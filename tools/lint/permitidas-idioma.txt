@@ -976,3 +976,8 @@ gid
 newuser
 unshare
 wronly
+# What the runner wipes and closes before the plugin starts: libc names.
+clearenv
+dumpable
+undumpable
+strlen
