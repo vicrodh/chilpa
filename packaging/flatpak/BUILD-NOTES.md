@@ -393,7 +393,10 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
   ([read] `crates/chilpa-bwrap/src/worker_conformance.rs`, `Root`): read-only
   root and `/dev` under bubblewrap; under the portal, writable, with a
   second worker started beside the first not seeing what the first wrote
-  and the application not seeing it either. What remains is memory: a
+  and the application not seeing it either; both checks pass, the second
+  through the portal inside a Flatpak of this tree ([built],
+  `flatpak_worker::tests::an_isolated_worker_cannot_fork_or_use_network_and_timeout_revokes_it_through_the_portal`).
+  What remains is memory: a
   tmpfs counts against RAM, and what bounds the worker's writes is what
   the runner sets ([read] `crates/chilpa-bwrap/src/flatpak_worker.rs`,
   `launch`): no forks (`--nproc=0`), 1 MiB per file (`--fsize`), 64
@@ -435,13 +438,24 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
   the plugin as a missing path ([read] `crates/chilpa-bwrap/src/flatpak.rs`,
   `launch`; `crates/chilpa-plugin-runner/src/lib.rs`, `check_export`). A
   folder Chilpa cannot write is refused before the spawn, since the portal
-  would skip it too. The Documents portal answers `access(W_OK)` with the
+  would skip it too. Inside a Flatpak of this tree, a plugin wrote into a
+  Documents folder through `/proc/self/fd/3`; a read-only Documents folder
+  was refused before the spawn; and a folder of the application's own
+  `/tmp`, which the portal skips, failed the launch with the runner's "it
+  is not there" ([built],
+  `flatpak::tests::a_documents_folder_takes_the_plugin_s_writes_until_it_is_revoked_through_the_portal`).
+  The real runner, given a Documents folder granted from the host outside
+  the application's sandbox, let the plugin write there, and refused with
+  126 once the grant was revoked ([built]). The Documents portal answers
+  `access(W_OK)` with the
   grant, not only the host folder's mode (xdg-desktop-portal 1.20.4
   `document-portal/document-portal-fuse.c`, `xdp_fuse_access`). Revoking
   the grant while the plugin runs makes its next write fail with EACCES
-  ([built]); revoked before a start, the folder no longer resolves, the
-  plugin center shows no export folder and the plugin starts without
-  `export_dir`. A `/proc/self/fd/3` path is valid in the plugin and in what
+  ([built]); revoked before a start, the folder no longer resolves: the
+  launch is refused when it is asked to hand it over ([built]), and
+  Chilpa, which resolves the recorded folder first, shows no export folder
+  for the plugin and starts it without `export_dir` ([read]
+  `crates/chilpa-api/src/plugin_export.rs`, `read_with`). A `/proc/self/fd/3` path is valid in the plugin and in what
   inherits the descriptor; resolving it with `realpath` fails, since it
   names a path that does not exist in the plugin's sandbox ([built]).
 - **Locks held across portal calls.** `Natives::lifecycle` is held while a
