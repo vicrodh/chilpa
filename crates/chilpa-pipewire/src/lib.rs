@@ -199,14 +199,24 @@ impl Clock for Graph {
 /// `clock.allowed-rates` -- and to none when `clock.force-rate` is set. Any
 /// other rate is resampled, exclusive or not.
 ///
-/// The rate that was set is read back before anything is promised.
-/// WirePlumber lets a program in a Flatpak read the graph's settings and
-/// not change them (`find-flatpak-access.lua` grants it `rx`), and
-/// `pw-metadata` writes without saying it was refused: the rate stayed where
-/// it was, the check found the graph unable to switch, and the reason given
-/// was a rate missing from `default.clock.allowed-rates`, for a rate that
-/// was never set.
-fn held_at(clock: &dyn Clock, rate: u32, exclusive: bool, forcing: bool) -> Result<Option<u32>, String> {
+/// Inside a Flatpak (`sandboxed`), what was set is read back before
+/// anything is promised. WirePlumber lets a program in a Flatpak read the
+/// graph's settings and not change them (`find-flatpak-access.lua` grants it
+/// `rx`), and `pw-metadata` writes without saying it was refused: the rate
+/// stayed where it was, the check found the graph unable to switch, and the
+/// reason given was a rate missing from `default.clock.allowed-rates`, for
+/// a rate that was never set. Only a read-back that names another rate says
+/// the write was dropped; one that failed says nothing about it, so what
+/// was there before is given back as it is elsewhere. Outside a Flatpak
+/// nothing is read into the write: what was there goes back on every
+/// refusal and when the stream closes.
+fn held_at(
+    clock: &dyn Clock,
+    rate: u32,
+    exclusive: bool,
+    forcing: bool,
+    sandboxed: bool,
+) -> Result<Option<u32>, String> {
     if !exclusive {
         return Ok(None);
     }
@@ -215,11 +225,15 @@ fn held_at(clock: &dyn Clock, rate: u32, exclusive: bool, forcing: bool) -> Resu
         clock.force(rate);
     }
     let settings = clock.settings();
-    let took = was.is_some() && settings.as_deref().map(forced_in) == Some(rate);
+    let dropped = sandboxed && was.is_some() && settings.as_deref().is_some_and(|s| forced_in(s) != rate);
     if was.is_some() {
-        chilpa_audio::diagnostics::trace("pipewire", "force_rate", format_args!("asked={rate} took={took}"));
+        chilpa_audio::diagnostics::trace(
+            "pipewire",
+            "force_rate",
+            format_args!("asked={rate} read_back={} dropped={dropped}", settings.is_some()),
+        );
     }
-    let before = if took { was } else { None };
+    let before = if dropped { None } else { was };
     let rates = settings.as_deref().and_then(rates_in);
     match untouched_at(rate, rates.as_deref()) {
         Ok(()) => Ok(before),
@@ -228,7 +242,7 @@ fn held_at(clock: &dyn Clock, rate: u32, exclusive: bool, forcing: bool) -> Resu
                 clock.force(before);
             }
             Err(match rates {
-                Some(rates) if was.is_some() && !took => not_set(rate, &rates),
+                Some(rates) if dropped => not_set(rate, &rates),
                 _ => why,
             })
         }
@@ -504,8 +518,9 @@ impl OutputBackend for PipeWire {
         // Held at the track's rate, when asked to: set before the check, so
         // the check reads what the graph really took.
         let rate = format.sample_rate_hz;
-        let before =
-            held_at(&Graph, rate, exclusive, FORCING.load(Ordering::Relaxed)).map_err(SinkError::Backend)?;
+        let sandboxed = chilpa_dirs::sandbox() == chilpa_dirs::Sandbox::Flatpak;
+        let before = held_at(&Graph, rate, exclusive, FORCING.load(Ordering::Relaxed), sandboxed)
+            .map_err(SinkError::Backend)?;
         let give_back = || {
             if let Some(before) = before {
                 force_rate(before);
@@ -557,20 +572,26 @@ mod tests {
 
     /// A graph's clock kept in memory: `writable` false is a Flatpak's
     /// program, whose writes WirePlumber drops without a word.
+    /// `deaf_after_write` is a `pw-metadata` that fails or runs out of time
+    /// on every read after the first write.
     struct Fake {
         settings: std::cell::RefCell<String>,
         writable: bool,
+        deaf_after_write: bool,
         written: std::cell::RefCell<Vec<u32>>,
     }
 
     impl Fake {
         fn new(writable: bool) -> Self {
-            Fake { settings: SETTINGS.to_string().into(), writable, written: Vec::new().into() }
+            Fake { settings: SETTINGS.to_string().into(), writable, deaf_after_write: false, written: Vec::new().into() }
         }
     }
 
     impl Clock for Fake {
         fn settings(&self) -> Option<String> {
+            if self.deaf_after_write && !self.written.borrow().is_empty() {
+                return None;
+            }
             Some(self.settings.borrow().clone())
         }
 
@@ -591,29 +612,57 @@ mod tests {
         // the forced rate never took, and the reason given was a rate missing
         // from default.clock.allowed-rates.
         let clock = Fake::new(false);
-        let why = held_at(&clock, 176_400, true, true).expect_err("176.4 kHz would be resampled at 48");
+        let why = held_at(&clock, 176_400, true, true, true).expect_err("176.4 kHz would be resampled at 48");
         assert!(why.contains("could not set"), "it says the rate was not set: {why}");
         assert!(why.contains("176400"), "{why}");
         assert_eq!(*clock.written.borrow(), [176_400], "nothing to put back: nothing was set");
         // A rate the graph may switch to on its own still plays alone, and
         // nothing is held: nothing was set to give back.
-        assert_eq!(held_at(&clock, 96_000, true, true), Ok(None));
+        assert_eq!(held_at(&clock, 96_000, true, true, true), Ok(None));
     }
 
     #[test]
     fn a_rate_that_was_set_is_held_and_put_back_by_whoever_holds_it() {
-        let clock = Fake::new(true);
-        assert_eq!(held_at(&clock, 176_400, true, true), Ok(Some(0)), "what was there before: not forced");
-        assert_eq!(forced_in(&clock.settings().unwrap()), 176_400);
-        assert_eq!(*clock.written.borrow(), [176_400]);
+        for sandboxed in [false, true] {
+            let clock = Fake::new(true);
+            let held = held_at(&clock, 176_400, true, true, sandboxed);
+            assert_eq!(held, Ok(Some(0)), "sandboxed={sandboxed}: what was there before: not forced");
+            assert_eq!(forced_in(&clock.settings().unwrap()), 176_400);
+            assert_eq!(*clock.written.borrow(), [176_400]);
+        }
+    }
+
+    #[test]
+    fn a_read_back_that_fails_still_gives_the_rate_back() {
+        // The write took and the read after it failed: nothing could be
+        // promised, the stream was refused, and the graph stayed at 192 kHz
+        // for every other program. A failed read does not show the write
+        // was dropped, so what was there goes back, as it did before the
+        // read-back.
+        for sandboxed in [false, true] {
+            let clock = Fake { deaf_after_write: true, ..Fake::new(true) };
+            assert!(held_at(&clock, 192_000, true, true, sandboxed).is_err(), "nothing read, nothing promised");
+            assert_eq!(*clock.written.borrow(), [192_000, 0], "sandboxed={sandboxed}: what was there went back");
+        }
+    }
+
+    #[test]
+    fn outside_a_flatpak_a_write_is_given_back_whatever_the_read_back_says() {
+        // On a host the forced rate is set, checked and given back as it was
+        // before the read-back existed; the read-back is a Flatpak's.
+        let clock = Fake::new(false);
+        let why = held_at(&clock, 176_400, true, true, false).expect_err("176.4 kHz would be resampled at 48");
+        assert!(why.contains("default.clock.allowed-rates") && !why.contains("could not set"), "{why}");
+        assert_eq!(*clock.written.borrow(), [176_400, 0], "given back on the refusal");
+        assert_eq!(held_at(&clock, 96_000, true, true, false), Ok(Some(0)), "held, and given back on close");
     }
 
     #[test]
     fn without_forcing_the_graph_is_only_read() {
         let clock = Fake::new(true);
-        let why = held_at(&clock, 176_400, true, false).expect_err("the graph cannot switch to it");
+        let why = held_at(&clock, 176_400, true, false, true).expect_err("the graph cannot switch to it");
         assert!(why.contains("default.clock.allowed-rates") && !why.contains("could not set"), "{why}");
-        assert_eq!(held_at(&clock, 176_400, false, true), Ok(None), "shared: nothing is asked of the graph");
+        assert_eq!(held_at(&clock, 176_400, false, true, true), Ok(None), "shared: nothing is asked of the graph");
         assert!(clock.written.borrow().is_empty());
     }
 
