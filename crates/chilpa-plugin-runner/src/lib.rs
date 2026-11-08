@@ -17,7 +17,10 @@
 //! nothing of the plugin is left. Before the plugin starts, the runner
 //! closes its own descriptors, wipes its environment and becomes
 //! undumpable, so the plugin, which runs as the same user, reads neither
-//! through /proc. Resources (ADR-018): the runner's own
+//! through /proc. The plugin dies with the runner, should it kill the
+//! runner; what the plugin started itself is then left behind, a known limit
+//! (packaging/flatpak/BUILD-NOTES.md, section 10). Resources (ADR-018): the
+//! runner's own
 //! process, asleep on its signals; it reads the process table only while it
 //! ends what is left.
 #![cfg(target_os = "linux")]
@@ -307,6 +310,17 @@ pub fn release_signals() -> io::Result<()> {
         0 => Ok(()),
         error => Err(io::Error::from_raw_os_error(error)),
     }
+}
+
+/// Makes the plugin die with the runner, between fork and exec: a plugin
+/// that kills the runner goes with it. What the plugin started itself has no
+/// such tie and is left. Async-signal-safe.
+pub fn die_with(runner: libc::pid_t) -> io::Result<()> {
+    let tied = unsafe { libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL as libc::c_ulong, 0 as libc::c_ulong, 0 as libc::c_ulong, 0 as libc::c_ulong) };
+    if tied != 0 { return Err(io::Error::last_os_error()); }
+    // The runner went before the tie took, so the signal would never come.
+    if unsafe { libc::getppid() } != runner { return Err(io::Error::from_raw_os_error(libc::ESRCH)); }
+    Ok(())
 }
 
 /// Lets go of the standard input and output the plugin was started with,

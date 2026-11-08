@@ -200,3 +200,23 @@ fn a_plugin_that_does_not_end_when_asked_is_killed_after_a_moment() {
     assert!(!survived, "after the grace it was killed");
     assert!(waited >= std::time::Duration::from_millis(1500) && waited < std::time::Duration::from_secs(5), "it was given {waited:?}");
 }
+
+/// True once `condition` holds, checked until `bound` passes.
+fn eventually(bound: std::time::Duration, condition: impl Fn() -> bool) -> bool {
+    let start = std::time::Instant::now();
+    while start.elapsed() < bound {
+        if condition() { return true; }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    condition()
+}
+
+#[test]
+fn a_plugin_that_kills_its_runner_goes_with_it() {
+    let (mut runner, line) = started(&[], "echo $$; kill -9 $PPID; exec sleep 30");
+    let plugin: libc::pid_t = line.parse().unwrap();
+    runner.wait().unwrap();
+    let gone = eventually(std::time::Duration::from_secs(2), || !running(plugin));
+    end(plugin);
+    assert!(gone, "the plugin did not outlive the runner it killed");
+}

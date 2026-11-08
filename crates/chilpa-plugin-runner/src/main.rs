@@ -41,9 +41,11 @@ fn main() {
     if let Err(error) = chilpa_plugin_runner::conceal() {
         fail(126, &format!("could not hide what it was started with: {error}"));
     }
+    let runner = std::process::id() as i32;
     unsafe {
         command.pre_exec(move || {
             chilpa_plugin_runner::release_signals()?;
+            chilpa_plugin_runner::die_with(runner)?;
             chilpa_plugin_runner::apply(&program).map_err(|(_, error)| error)
         });
     }

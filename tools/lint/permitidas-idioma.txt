@@ -984,3 +984,5 @@ strlen
 # How the runner waits for a plugin asked to end: libc names.
 sigtimedwait
 timespec
+# The error a runner already gone gives: libc's name.
+esrch
