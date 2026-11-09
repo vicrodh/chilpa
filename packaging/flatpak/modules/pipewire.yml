@@ -1,0 +1,74 @@
+# PipeWire's client library for Chilpa's own processes. The runtime's is
+# 1.4.9 (libpipewire-0.3.so.0.1409.0), and native DSD needs the reliable
+# transport of 1.6, which runs in the client library as well as in the
+# server: crates/chilpa-pipewire/native/dsd_session.c asks both for 1.6 and
+# converts DSD to PCM otherwise. This one has the runtime library's soname
+# and is installed in /app/lib, which the loader searches before the
+# runtime, so chilpa-qt and the runtime's ALSA and JACK PipeWire plugins load
+# it. The server is the host's. Only what a client loads is kept: the modules
+# client.conf and jack.conf name, the support and audioconvert SPA plugins,
+# and those two files. The release is the one the host this was built on
+# runs; the sha256 is of the archive GitLab serves, whose SHA512 and size
+# match Gentoo's Manifest for the same release.
+name: pipewire
+buildsystem: meson
+config-opts:
+  - --wrap-mode=nodownload
+  # Anything left on auto is off; what the client needs is named below.
+  - -Dauto_features=disabled
+  - -Ddocs=disabled
+  - -Dman=disabled
+  - -Dexamples=disabled
+  - -Dtests=disabled
+  - -Dinstalled_tests=disabled
+  - -Dsession-managers=[]
+  - -Dpipewire-alsa=disabled
+  - -Dpipewire-jack=disabled
+  - -Dpipewire-v4l2=disabled
+  - -Dspa-plugins=enabled
+  - -Dsupport=enabled
+  - -Daudioconvert=enabled
+  # libpipewire-module-rt asks for real time over the session bus.
+  - -Ddbus=enabled
+  - -Daudiomixer=disabled
+  - -Dcontrol=disabled
+  - -Daudiotestsrc=disabled
+  - -Dvideoconvert=disabled
+  - -Dvideotestsrc=disabled
+  # Server-side only: module-access and the PulseAudio protocol.
+  - -Dflatpak=disabled
+  - -Dlegacy-rtkit=false
+  - -Drlimits-install=false
+post-install:
+  # The modules a client loads, from client.conf and jack.conf; the others
+  # are the server's.
+  - >-
+    find /app/lib/pipewire-0.3 -name 'libpipewire-module-*.so'
+    ! -name libpipewire-module-rt.so
+    ! -name libpipewire-module-protocol-native.so
+    ! -name libpipewire-module-client-node.so
+    ! -name libpipewire-module-client-device.so
+    ! -name libpipewire-module-adapter.so
+    ! -name libpipewire-module-metadata.so
+    ! -name libpipewire-module-session-manager.so
+    -delete
+  - test "$(ls /app/lib/pipewire-0.3 | wc -l)" -eq 7
+  - test -e /app/lib/libpipewire-0.3.so.0.1611.0
+cleanup:
+  # The daemon and its tools: the runtime's tools load this library too.
+  - /bin
+  # Headers and pkg-config file, which chilpa builds against before cleanup.
+  - /include
+  - /lib/pkgconfig
+  - /share/locale
+  # The server's configuration and the SPA plugins only its modules load.
+  - /share/pipewire/pipewire*.conf
+  - /share/pipewire/pipewire*.conf.avail
+  - /share/pipewire/filter-chain*
+  - /share/pipewire/minimal.conf
+  - /lib/spa-0.2/aec
+  - /lib/spa-0.2/filter-graph
+sources:
+  - type: archive
+    url: https://gitlab.freedesktop.org/pipewire/pipewire/-/archive/1.6.11/pipewire-1.6.11.tar.bz2
+    sha256: 0b32fbbece4591376b45dde5a818bfa5b3517e70913a2f7414e33c47c20b07ee

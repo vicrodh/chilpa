@@ -44,6 +44,8 @@ cleanup-commands:
 modules:
   - modules/perl.yml
   - modules/perl-modules.yml
+  # PipeWire 1.6's client library, for native DSD; the runtime's is 1.4.
+  - modules/pipewire.yml
 
   - name: chilpa
     buildsystem: simple
@@ -54,6 +56,9 @@ modules:
         CARGO_NET_OFFLINE: 'true'
         RUSTFLAGS: --remap-path-prefix=/run/build/chilpa=. --remap-path-prefix=/run/build/chilpa/cargo=/cargo
     build-commands:
+      # chilpa-pipewire compiles and links against modules/pipewire.yml's
+      # library, not the runtime's.
+      - test "$(pkg-config --modversion libpipewire-0.3)" = 1.6.11
       # The application and the runner every process plugin starts behind.
       - >-
         set -a && . ./build-env && set +a &&

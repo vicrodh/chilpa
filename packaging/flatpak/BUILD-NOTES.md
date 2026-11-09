@@ -117,7 +117,7 @@ of the build read `2026-11-08 (9b186e0cb)` ([built]).
 
 | Module | Required by | When missing |
 | --- | --- | --- |
-| `libpipewire-0.3` >= 1.0 | [read] `crates/chilpa-pipewire/build.rs:5-9,33-36` | build fails |
+| `libpipewire-0.3` >= 1.0 | [read] `crates/chilpa-pipewire/build.rs:5-9,33-36`; in the Flatpak, 1.6.11 from `modules/pipewire.yml` (section 11) | build fails |
 | `alsa` | `alsa-sys` 0.6.1 `build.rs:7-14` (registry) | build fails |
 | `dbus-1` >= 1.6 | `libdbus-sys` 0.2.7 `build.rs:15-26` (registry), through `crates/chilpa-alsa/Cargo.toml:13-14` | build fails |
 | `jack` | `jack-sys` 0.5.1 `build.rs:11-14` (registry): `pkg_config::find_library("jack")` is unwrapped on Linux | build fails, although libjack is opened with dlopen at runtime |
@@ -132,7 +132,10 @@ flatpak-cargo-generator lists it because it is in the lock file.
 
 org.kde.Sdk 6.11 ships `jack.pc` (3.1409.0, PipeWire's JACK) and the
 runtime ships `libjack.so.0` ([built]); `libpipewire-0.3` 1.4.9, `alsa`
-1.2.14, `dbus-1` 1.16.2 and `sqlite3` 3.50.4 are there too.
+1.2.14, `dbus-1` 1.16.2 and `sqlite3` 3.50.4 are there too. The build does not
+use that PipeWire: `modules/pipewire.yml` installs 1.6.11 in `/app` first, and
+the `chilpa` module stops unless `pkg-config --modversion libpipewire-0.3`
+says 1.6.11 (section 11).
 
 ## 5. Install layout
 
@@ -285,7 +288,13 @@ reads `/.flatpak-info` once ([read] `crates/chilpa-dirs/src/lib.rs:148-151`).
   fails the exclusive open, and nothing then opens the output shared
   ([read] `held_at` and `open` there, `crates/chilpa-core/src/queue_playback.rs`,
   `play_queue_told`): the track does not play. Reported 2026-11-08; not
-  changed here, it is in the playback shield. `pactl` talks to the PulseAudio
+  changed here, it is in the playback shield. An exclusive stream is also
+  refused while another program is linked to the same sink: WirePlumber's
+  `prepare-link.lua` answers -2, which ALSA reports as ENOENT from
+  `snd_pcm_hw_params`, and Chilpa says another program is using the output.
+  With those programs closed, an exclusive stream at a rate in the list
+  opens although the `clock.force-rate` write is dropped (seen 2026-11-08;
+  `prepare-link.lua` not read here). `pactl` talks to the PulseAudio
   socket instead, so the PipeWire stack also checks for PipeWire's own socket
   after `pactl` has answered ([read] `crates/chilpa-pipewire/src/lib.rs:398-400,440`).
 - Device sync finds memory cards under `/run/media` or `/media`
@@ -304,7 +313,8 @@ reads `/.flatpak-info` once ([read] `crates/chilpa-dirs/src/lib.rs:148-151`).
   org.kde.Platform 6.11 runtime has `pactl`, `pw-metadata`, `pw-dump`,
   `pgrep` and `gsettings`; it has no `aplay`, `systemctl`, `xfconf-query`
   or `adb` ([built]).
-- Linked system libraries: Qt, libpipewire-0.3, libasound, libpulse and
+- Linked system libraries: Qt, libpipewire-0.3 (in the Flatpak, the 1.6.11
+  of section 11, not the runtime's), libasound, libpulse and
   libpulse-simple, libdbus-1, libsqlite3, OpenSSL. libjack is opened with
   dlopen as `libjack.so.0` ([read] `jack-sys` 0.5.1 `src/consts.rs:17`,
   registry). Decoding, CD reading and TLS for streams are pure Rust, and so
@@ -580,3 +590,72 @@ behaviour from their sources (flatpak `portal/flatpak-portal.c`, bubblewrap
   bounds only real-time threads, and inside a Flatpak every real-time grant
   comes from RealtimeKit, which requires the same limit; ordinary threads
   are not bounded by it.
+
+## 11. PipeWire 1.6 in /app, for native DSD
+
+Native DSD through PipeWire needs reliable transport, which PipeWire has
+from 1.6 on and which runs on both sides: the node and port scheduling and
+`pw_stream`'s buffer handoff are in libpipewire (`src/pipewire/impl-node.c`,
+`impl-port.c`, `stream.c:2550-2551` of 1.6.11), which a client loads. So
+Chilpa asks the server's version (core info) and `pw_get_library_version()`
+for 1.6 or later before it offers native DSD, and converts DSD to PCM
+otherwise ([read] `crates/chilpa-pipewire/native/dsd_session.c:228-236`,
+`native/dsd_format.c:8`). The check is at run time only; nothing in the
+native code depends on the headers' version ([read] `native/*.c`).
+org.kde.Platform 6.11 ships libpipewire 1.4.9
+(`lib/x86_64-linux-gnu/libpipewire-0.3.so.0.1409.0`, [read]), so inside the
+Flatpak native DSD was never offered, whatever the host's server was:
+`pipewire-dsd.unavailable reason=PipeWire before 1.6, in the server or in
+this library` in the log, with the host at 1.6.11.
+
+`modules/pipewire.yml` builds PipeWire 1.6.11, the host's release, from
+GitLab's archive of the tag (its sha256 in the module; SHA512 and size equal
+to Gentoo's Manifest for the same release, [read]). What it keeps:
+
+- `libpipewire-0.3.so.0.1611.0`, with the runtime library's soname
+  `libpipewire-0.3.so.0`, in `/app/lib`. A Flatpak's loader searches
+  `/app/lib` before the runtime, so `chilpa-qt` and every runtime library
+  that needs `libpipewire-0.3.so.0` load this one [unverified, the smoke
+  checks it].
+- The modules `client.conf` and `jack.conf` load (`rt`, `protocol-native`,
+  `client-node`, `client-device`, `adapter`, `metadata`,
+  `session-manager`), in `/app/lib/pipewire-0.3`; `client.conf` names them
+  without `ifexists`, so a missing one fails the context.
+- The SPA plugins a client loads, `support` (with `dbus`) and
+  `audioconvert`, which `pw_stream`'s adapter uses for every audio stream
+  ([read] `stream.c:2197-2212`), in `/app/lib/spa-0.2`, beside `libspa.so`.
+- `client.conf`, `client.conf.avail` and `jack.conf` in
+  `/app/share/pipewire`.
+
+Built with `prefix=/app`, the library looks for its modules, SPA plugins
+and configuration only under `/app` (`MODULEDIR`, `PLUGINDIR`,
+`PIPEWIRE_CONFDATADIR` in 1.6.11's `meson.build:244-256`), never in the
+runtime's 1.4.9 folders, and the runtime sets none of `SPA_PLUGIN_DIR`,
+`PIPEWIRE_MODULE_DIR` or `PIPEWIRE_CONFIG_DIR` ([read], its `metadata`). What
+it links besides libc and libm is `libdbus-1.so.3` (`module-rt`,
+`libspa-dbus`), which the runtime has ([read], `readelf -d` of a staged
+install). The daemon, the tools, the server's modules, its configuration
+and the `aec` and `filter-graph` plugins are removed; the runtime's own
+`pw-dump`, `pw-metadata` and `pactl`, which Chilpa runs by name, stay and
+load this library.
+
+The meson options are `auto_features=disabled` plus the few the client
+needs; everything else that defaults to enabled is turned off by name, and
+`session-managers=[]` keeps meson from fetching WirePlumber. A staged
+install with these options in org.kde.Sdk 6.11 took 2 min 46 s with two
+jobs and came to 11 MiB before cleanup ([read], 2026-11-08).
+
+The runtime's own PipeWire plugins keep running against this library: the
+ALSA PCM plugin (`alsa-lib/libasound_module_pcm_pipewire.so`, the
+`pipewire:` PCM of section 8), the ALSA control plugin and PipeWire's JACK
+library (`libjack.so.0`) were built against 1.4.9, and import 42, 34 and 64
+`pw_`/`spa_` symbols that 1.6.11 all exports; libpipewire has no symbol
+versions ([read], `nm -D` against the staged library). The ALSA plugin asks
+for no configuration of its own, so it reads `client.conf`; the JACK
+library reads `jack.conf`, both now 1.6.11's [unverified: a 1.4.9 plugin
+reading 1.6.11's files]. The plugins themselves are not rebuilt: alsa-lib
+finds them in its own folder of the runtime.
+
+Flathub: a Flathub manifest would carry the same module; Flathub's
+reviewers have not been asked about a client library the runtime also
+ships.
