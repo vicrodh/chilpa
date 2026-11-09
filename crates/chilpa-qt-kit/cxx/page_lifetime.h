@@ -11,4 +11,6 @@ public:
     Q_INVOKABLE void cancel(QObject *root);
 };
 
+extern "C" void chilpa_page_lifetime_register_qml_type();
+
 #endif

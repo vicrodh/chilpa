@@ -46,9 +46,12 @@ void PageLifetime::cancel(QObject *root)
     cancelTree(root, visited);
 }
 
-static void registerPageLifetime()
+extern "C" void chilpa_page_lifetime_register_qml_type()
 {
+    static bool registered = false;
+    if (registered) return;
+    registered = true;
     qmlRegisterType<PageLifetime>("app.chilpa.kit", 1, 0, "PageLifetime");
 }
 
-Q_COREAPP_STARTUP_FUNCTION(registerPageLifetime)
+Q_COREAPP_STARTUP_FUNCTION(chilpa_page_lifetime_register_qml_type)

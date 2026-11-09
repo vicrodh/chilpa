@@ -38,6 +38,7 @@ fn main() {
     println!("cargo:rerun-if-changed=cxx/application_exit.cpp");
     println!("cargo:rerun-if-changed=cxx/frame_fence.cpp");
     println!("cargo:rerun-if-changed=cxx/page_lifetime.cpp");
+    println!("cargo:rerun-if-changed=cxx/qml_types.cpp");
     println!("cargo:rerun-if-changed=cxx/playing_surface.cpp");
     CxxQtBuilder::library(Interface::default())
         .qobject_header("cxx/frame_fence.h")
@@ -59,6 +60,7 @@ fn main() {
             cc.file("cxx/application_exit.cpp");
             cc.file("cxx/frame_fence.cpp");
             cc.file("cxx/page_lifetime.cpp");
+            cc.file("cxx/qml_types.cpp");
             cc.file("cxx/playing_surface.cpp");
         })
         .build();
