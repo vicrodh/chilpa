@@ -615,8 +615,13 @@ to Gentoo's Manifest for the same release, [read]). What it keeps:
 - `libpipewire-0.3.so.0.1611.0`, with the runtime library's soname
   `libpipewire-0.3.so.0`, in `/app/lib`. A Flatpak's loader searches
   `/app/lib` before the runtime, so `chilpa-qt` and every runtime library
-  that needs `libpipewire-0.3.so.0` load this one [unverified, the smoke
-  checks it].
+  that needs `libpipewire-0.3.so.0` load this one. Inside the sandbox `ldd`
+  resolves it to `/app/lib` for `chilpa-qt`, both ALSA PipeWire plugins and
+  `libjack.so.0`; a running `chilpa-qt` maps
+  `/app/lib/libpipewire-0.3.so.0.1611.0`; and the runtime's `pw-cli` says
+  "Linked with libpipewire 1.6.11" and reaches the host's server as
+  version 1.6.11 ([built], a build of this manifest under a throwaway id,
+  2026-11-08).
 - The modules `client.conf` and `jack.conf` load (`rt`, `protocol-native`,
   `client-node`, `client-device`, `adapter`, `metadata`,
   `session-manager`), in `/app/lib/pipewire-0.3`; `client.conf` names them
@@ -643,7 +648,13 @@ The meson options are `auto_features=disabled` plus the few the client
 needs; everything else that defaults to enabled is turned off by name, and
 `session-managers=[]` keeps meson from fetching WirePlumber. A staged
 install with these options in org.kde.Sdk 6.11 took 2 min 46 s with two
-jobs and came to 11 MiB before cleanup ([read], 2026-11-08).
+jobs and came to 11 MiB before cleanup ([read], 2026-11-08). In the built
+application `/app` holds the library, the seven modules, `libspa.so`,
+`support` with `dbus`, `audioconvert`, `client.conf`, `client.conf.avail`
+and `jack.conf`, and no PipeWire binary, header or pkg-config file; the
+whole build took 87 min with two jobs, and flatpak-builder-lint reports
+only the two screenshot rules of `lint-exceptions.json` on the build
+directory and the repository ([built]).
 
 The runtime's own PipeWire plugins keep running against this library: the
 ALSA PCM plugin (`alsa-lib/libasound_module_pcm_pipewire.so`, the
@@ -652,9 +663,12 @@ library (`libjack.so.0`) were built against 1.4.9, and import 42, 34 and 64
 `pw_`/`spa_` symbols that 1.6.11 all exports; libpipewire has no symbol
 versions ([read], `nm -D` against the staged library). The ALSA plugin asks
 for no configuration of its own, so it reads `client.conf`; the JACK
-library reads `jack.conf`, both now 1.6.11's [unverified: a 1.4.9 plugin
-reading 1.6.11's files]. The plugins themselves are not rebuilt: alsa-lib
-finds them in its own folder of the runtime.
+library reads `jack.conf`, both now 1.6.11's [unverified: neither a
+`pipewire:` PCM nor a JACK client was opened with them]. The plugins
+themselves are not rebuilt: alsa-lib finds them in its own folder of the
+runtime. Native DSD itself has not run through this library: both of the
+check's inputs say 1.6.11 inside the sandbox ([built]), and the stream on a
+DAC is the owner's smoke [unverified].
 
 Flathub: a Flathub manifest would carry the same module; Flathub's
 reviewers have not been asked about a client library the runtime also
