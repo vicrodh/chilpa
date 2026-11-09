@@ -39,6 +39,8 @@ with tempfile.TemporaryDirectory(prefix="chilpa-source-smoke-") as directory:
     for name in ("config", "cache", "runtime", "data/chilpa/plugins"):
         (profile / name).mkdir(parents=True)
     (profile / "runtime").chmod(0o700)
+    (profile / "config/chilpa").mkdir()
+    (profile / "config/chilpa/settings.conf").write_text("audio.device = file:capture\nintegrations.musicbrainz.enabled = false\nintegrations.lastfm.enabled = false\nlanguage = en\n")
     approvals = {}
     for plugin in ("app.test.navigation", "app.test.second"):
         folder = profile / "data/chilpa/plugins" / plugin
@@ -56,9 +58,10 @@ with tempfile.TemporaryDirectory(prefix="chilpa-source-smoke-") as directory:
     smoke = profile / "sources.qml"
     fixture = ("home-source-modules.qml" if "--home-modules" in sys.argv[3:] else
                "source-advisories.qml" if "--content-advisories" in sys.argv[3:] else
+               "album-revision.qml" if "--album-revision" in sys.argv[3:] else
                "artist-source-links.qml" if "--artist-links" in sys.argv[3:] else "source-navigation.qml")
     smoke.write_text((root / fixture).read_text().replace('property string captureFolder: ""', 'property string captureFolder: ' + json.dumps(str(output))))
-    env = dict(os.environ, XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"), XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"), QT_QPA_PLATFORM="offscreen", CHILPA_RENDERER="software", CHILPA_QML_SMOKE=str(smoke))
+    env = dict(os.environ, XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"), XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"), QT_QPA_PLATFORM="offscreen", CHILPA_RENDERER="software", CHILPA_QML_SMOKE=str(smoke), CHILPA_SECOND_INSTANCE="1")
     result = subprocess.run(["timeout", "--signal=TERM", "--kill-after=2s", "40s", "dbus-run-session", "--", sys.argv[1]], env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     (output / "source-navigation.log").write_text(result.stdout)
     errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "binding loop", "QQmlApplicationEngine failed", "is not a type", "Type ")
@@ -69,6 +72,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-source-smoke-") as directory:
         sys.exit(1)
     completed = ("SMOKE native Home modules completed" if fixture == "home-source-modules.qml" else
                  "SMOKE source advisories completed" if fixture == "source-advisories.qml" else
+                 "SMOKE album revision completed" if fixture == "album-revision.qml" else
                  "SMOKE source artist links completed" if fixture == "artist-source-links.qml" else "SMOKE sources completed")
     if result.returncode or any(error in result.stdout for error in errors) or completed not in result.stdout:
         sys.exit(1)

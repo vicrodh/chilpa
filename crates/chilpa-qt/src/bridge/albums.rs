@@ -406,8 +406,7 @@ impl qobject::AlbumGridModel {
         let same = self.rust().loaded.as_ref() == Some(&identity);
         let rows = list_changes::album_rows(list.len(), self.rust().columns.max(0) as usize, self.rust().max_rows.max(0) as usize, &self.rust().groups);
         if same && rows == self.rust().rows && matches!((&self.rust().list, &list), (Albums::Loaded(a), Albums::Loaded(b)) if a == b) { let ready = self.rust().kind.to_string() != "source" || self.rust().source_ready; self.as_mut().set_ready(ready); return; }
-        let next = self.rev().wrapping_add(1);
-        self.as_mut().set_rev(next);
+        self.as_mut().rust_mut().rev = self.rev().wrapping_add(1);
         let plan = if same && !self.rust().rows.is_empty() { match (&self.rust().list, &list) {
             (Albums::Loaded(old), Albums::Loaded(new)) => list_changes::albums(old, new, &self.rust().rows, &rows),
             _ => None,
@@ -458,6 +457,7 @@ impl qobject::AlbumGridModel {
         self.as_mut().set_albums(count);
         let ready = self.rust().kind.to_string() != "source" || self.rust().source_ready;
         self.as_mut().set_ready(ready);
+        self.as_mut().rev_changed();
     }
 
     /// Reflows cached albums without querying their data again.
