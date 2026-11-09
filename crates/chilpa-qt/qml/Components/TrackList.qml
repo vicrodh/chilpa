@@ -92,7 +92,7 @@ Item {
         function onModelReset() {
             list.rowsRev++
             if (list.cursorRow >= view.count) list.cursorRow = -1
-            Qt.callLater(list.restorePlace)
+            keptViewport.restoreLater()
         }
     }
 

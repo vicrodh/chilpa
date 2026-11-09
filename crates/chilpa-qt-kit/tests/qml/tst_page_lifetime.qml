@@ -15,6 +15,19 @@ TestCase {
     Loader { id: owner; anchors.fill: parent }
     PageTransition { id: pages; anchors.fill: parent }
     Component { id: emptyPage; Item {} }
+    Component {
+        id: boundPage
+        Item {
+            property bool requested: true
+            property alias body: body
+            Loader {
+                id: body
+                active: parent.requested
+                asynchronous: true
+                sourceComponent: Item { Repeater { model: 300; delegate: Rectangle {} } }
+            }
+        }
+    }
     ListModel { id: records; ListElement { title: "Retained record" } }
     Component {
         id: listPage
@@ -95,6 +108,17 @@ TestCase {
     function init() {
         failOnWarning(/Cannot create delegate|Object or context destroyed during incubation|invalid context|TypeError/)
         Motion.reduced = true
+    }
+    function test_retired_loader_bindings_cannot_restart_creation() {
+        owner.sourceComponent = boundPage
+        const page = owner.item, body = page.body
+        lifetime.cancel(page)
+        compare(body.active, false)
+        page.requested = false
+        page.requested = true
+        compare(body.active, false, "a retired binding must not recreate its contents")
+        owner.sourceComponent = null
+        wait(30)
     }
     function test_departing_page_cancels_nested_creation() {
         for (let index = 0; index < 8; index++) {

@@ -2,9 +2,16 @@ import QtQuick
 
 // The visible row and its offset survive a reset of the same track list.
 QtObject {
+    id: viewport
     required property var model
     required property var view
     property var place: null
+    // One reset restoration per turn, cancelled with the owning list.
+    readonly property Timer pending: Timer {
+        interval: 0
+        onTriggered: viewport.restore()
+    }
+    function restoreLater() { pending.restart() }
     function identity() { return model ? model.kind + "\n" + model.albumId + "\n" + model.key : "" }
     function keep() {
         const row = view.indexAt(0, view.contentY)

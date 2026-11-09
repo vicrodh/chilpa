@@ -4,6 +4,7 @@
 #include <QtCore/QSet>
 #include <QtCore/QVariant>
 #include <QtQml/qqml.h>
+#include <QtQml/QQmlProperty>
 #include <QtQuick/QQuickItem>
 
 namespace {
@@ -34,9 +35,11 @@ void cancelTree(QObject *root, QSet<QObject *> &visited)
         if (child) cancelTree(child, visited);
     }
     if (!guard) return;
-    if (root->inherits("QQuickLoader")) root->setProperty("active", false);
+    // A C++ setter leaves QML bindings attached; geometry changes could
+    // otherwise reactivate a retired loader while its parent is clearing.
+    if (root->inherits("QQuickLoader")) QQmlProperty::write(root, QStringLiteral("active"), false);
     else if (root->inherits("QQuickItemView") || root->inherits("QQuickRepeater"))
-        root->setProperty("model", QVariant());
+        QQmlProperty::write(root, QStringLiteral("model"), QVariant());
 }
 }
 
