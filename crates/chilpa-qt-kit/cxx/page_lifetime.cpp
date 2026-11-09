@@ -6,20 +6,32 @@
 #include <QtQml/qqml.h>
 #include <QtQml/QQmlProperty>
 #include <QtQuick/QQuickItem>
+#include <cstring>
 
 namespace {
+enum class Content { None, Loader, View, Repeater };
+
 void cancelTree(QObject *root, QSet<QObject *> &visited)
 {
     if (!root || visited.contains(root)) return;
     visited.insert(root);
     const QPointer<QObject> guard(root);
+    bool visual = false;
+    Content content = Content::None;
+    // Read the class hierarchy once without invoking every generated metacast.
+    for (const QMetaObject *type = root->metaObject(); type; type = type->superClass()) {
+        if (type == &QQuickItem::staticMetaObject) { visual = true; break; }
+        if (std::strcmp(type->className(), "QQuickLoader") == 0) content = Content::Loader;
+        else if (std::strcmp(type->className(), "QQuickItemView") == 0) content = Content::View;
+        else if (std::strcmp(type->className(), "QQuickRepeater") == 0) content = Content::Repeater;
+    }
     QList<QPointer<QObject>> children;
     for (QObject *child : root->children()) children.append(child);
-    if (auto *item = qobject_cast<QQuickItem *>(root))
-        for (QQuickItem *child : item->childItems()) children.append(child);
+    if (visual)
+        for (QQuickItem *child : static_cast<QQuickItem *>(root)->childItems()) children.append(child);
     // Repeater delegates are visual siblings, with separate QObject owners.
     // Stop their loaders before clearing the model destroys their contexts.
-    if (root->inherits("QQuickRepeater")) {
+    if (content == Content::Repeater) {
         const int count = root->property("count").toInt();
         for (int index = 0; index < count; ++index) {
             QQuickItem *item = nullptr;
@@ -37,8 +49,8 @@ void cancelTree(QObject *root, QSet<QObject *> &visited)
     if (!guard) return;
     // A C++ setter leaves QML bindings attached; geometry changes could
     // otherwise reactivate a retired loader while its parent is clearing.
-    if (root->inherits("QQuickLoader")) QQmlProperty::write(root, QStringLiteral("active"), false);
-    else if (root->inherits("QQuickItemView") || root->inherits("QQuickRepeater"))
+    if (content == Content::Loader) QQmlProperty::write(root, QStringLiteral("active"), false);
+    else if (content == Content::View || content == Content::Repeater)
         QQmlProperty::write(root, QStringLiteral("model"), QVariant());
 }
 }

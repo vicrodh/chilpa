@@ -32,9 +32,14 @@ Item {
         lifetime.cancel(loader)
         loader.sourceComponent = null
     }
+    function releaseAll() {
+        lifetime.cancel(transition)
+        first.sourceComponent = null
+        second.sourceComponent = null
+    }
     Connections {
         target: Application
-        function onAboutToQuit() { transition.release(first); transition.release(second) }
+        function onAboutToQuit() { transition.releaseAll() }
     }
 
     function routeKeyOf(loader) { return ((loader?.pageRoute || "").split("\u001f")[3]) || "" }
@@ -214,12 +219,8 @@ Item {
             key: transition.scrollKeyOf(loader)
         }
     }
-    PageSlot {
-        id: first
-    }
-    PageSlot {
-        id: second
-    }
+    PageSlot { id: first }
+    PageSlot { id: second }
     FrameFence {
         id: frameFence
         onPresented: token => {

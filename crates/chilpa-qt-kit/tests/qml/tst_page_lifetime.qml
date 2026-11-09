@@ -132,6 +132,17 @@ TestCase {
         }
         wait(50)
     }
+    function test_shutdown_cancels_content_owned_outside_page_slots() {
+        const extra = boundPage.createObject(pages)
+        compare(extra.body.status, Loader.Loading)
+        pages.releaseAll()
+        compare(extra.body.active, false)
+        extra.requested = false
+        extra.requested = true
+        compare(extra.body.active, false)
+        extra.destroy()
+        wait(30)
+    }
     function test_nested_creation_is_cancelled_before_the_context() {
         for (let index = 0; index < 8; index++) {
             owner.sourceComponent = nestedPage
