@@ -70,6 +70,16 @@ TestCase {
         compare(block.item, retained)
         compare(block.height, height)
     }
+    function test_release_rows_reserve_their_height_before_the_viewport_mounts_them() {
+        const page = createTemporaryObject(pageMaker, test, {visible:false})
+        tryVerify(() => page.blockOf(artistKey + "|album") !== null)
+        const block = page.blockOf(artistKey + "|album")
+        const reserved = block.reservedHeight
+        page.visible = true
+        ready(page)
+        verify(Math.abs(block.height - reserved) <= 1,
+            "Mounting cached releases changed height from " + reserved + " to " + block.height)
+    }
     function test_popular_expansion_returns_with_its_section() {
         const first = createTemporaryObject(tracksMaker, test)
         waitForRendering(first)

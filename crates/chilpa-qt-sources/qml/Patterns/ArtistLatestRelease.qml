@@ -9,7 +9,7 @@ Column {
     id: latest
     property var section: ({})
     property Flickable viewport: null
-    readonly property bool ready: record.ready && (!section.tracks_key || tracks.ready)
+    readonly property bool ready: record.ready && (!section.tracks_key || preview.item?.ready === true)
     readonly property bool shown: record.albums > 0
     spacing: Metrics.gap12
     visible: shown
@@ -19,13 +19,6 @@ Column {
         key: latest.section.model_key || latest.section.key || ""
         limit: 1; columns: 1
         contentRev: Library.remoteRev + Library.remoteArtRev
-    }
-    TrackListModel {
-        id: tracks
-        kind: latest.section.tracks_key ? "source" : ""
-        key: latest.section.tracks_key || ""
-        limit: 6; filterRev: Library.remoteRev + Library.remoteArtRev
-        playingPath: Player.path
     }
     Item {
         width: parent.width; height: Math.max(Metrics.shelfHeader, openRelease.implicitHeight)
@@ -59,12 +52,27 @@ Column {
             canExpand: false
             onClicked: Navigation.go("album", albumId)
         }
-        TrackList {
-            objectName: "latestReleaseTracks"
-            visible: tracks.count > 0
+        Loader {
+            id: preview
+            active: !!latest.section.tracks_key
+            visible: item?.shown === true
             width: parent.columns === 1 ? parent.width : parent.width - CardLayout.cardWidth - parent.spacing
-            height: implicitHeight; fitContent: true; viewport: latest.viewport
-            model: tracks; header: false; showArtist: false; showAlbum: false
+            sourceComponent: Column {
+                readonly property bool ready: tracks.ready
+                readonly property bool shown: tracks.count > 0
+                TrackListModel {
+                    id: tracks
+                    kind: "source"; key: latest.section.tracks_key || ""
+                    limit: 6; filterRev: Library.remoteRev + Library.remoteArtRev
+                    playingPath: Player.path
+                }
+                TrackList {
+                    objectName: "latestReleaseTracks"
+                    width: parent.width; height: implicitHeight; fitContent: true
+                    viewport: latest.viewport; model: tracks; header: false
+                    showArtist: false; showAlbum: false
+                }
+            }
         }
     }
 }

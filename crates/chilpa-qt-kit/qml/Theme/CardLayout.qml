@@ -9,4 +9,9 @@ QtObject {
     function columns(width) {
         return Math.max(1, Math.floor((Math.max(0, width - Metrics.cardRing * 2) + Metrics.gridGap) / (cardWidth + Metrics.gridGap)))
     }
+    function gridHeight(count, width, list) {
+        const rows = Math.ceil(count / (list ? 1 : columns(width)))
+        const gap = list ? Metrics.gap2 : Metrics.gridGap
+        return rows * (list ? Metrics.rowRich : cardHeight) + Math.max(0, rows - 1) * gap
+    }
 }

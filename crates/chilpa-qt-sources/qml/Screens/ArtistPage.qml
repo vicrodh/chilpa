@@ -115,12 +115,18 @@ Item {
                     readonly property string role: section.role || "shelf"
                     readonly property bool knownEmpty: page.about.loading !== true && ["release", "appears"].includes(role) && (section.items || []).length === 0 && !section.more && section.loading !== true
                     readonly property bool ready: status === Loader.Ready && item?.ready === true
+                    readonly property bool releaseGrid: role === "release" || role === "appears" && section.kind !== "track"
+                    readonly property real reservedHeight: releaseGrid
+                        ? Math.max(skeleton.implicitHeight, Metrics.shelfHeader + Metrics.button32
+                            + CardLayout.gridHeight((section.items || []).length, width, section.presentation === "ranked")
+                            + Metrics.gap8 + Metrics.gap12 * 2 + (section.more ? Metrics.gap12 + Metrics.pillHeight : 0)) // derived: title, controls, card rows and optional continuation
+                        : skeleton.implicitHeight
                     property bool mounted: false
                     width: column.width - panel.width
                     // Each block says whether it has anything to show; its
                     // own visibility would read back the Loader's.
                     visible: !knownEmpty && (!ready || item.shown === true)
-                    height: visible ? ready ? Math.max(skeleton.implicitHeight, item.implicitHeight) : skeleton.implicitHeight : 0
+                    height: visible ? ready ? Math.max(skeleton.implicitHeight, item.implicitHeight) : reservedHeight : 0
                     active: !knownEmpty && page.presented && (mounted || page.about.loading !== true && column.y + y < flick.contentY + flick.height * 2)
                     asynchronous: true
                     sourceComponent: role === "popular" || (role === "appears" && section.kind === "track") ? trackBlock
