@@ -27,6 +27,15 @@ Item {
     signal acknowledgedFrame(string destination)
     signal preparingRoute()
     LoggingCategory { id: timing; name: "chilpa.nav.timing"; defaultLogLevel: LoggingCategory.Warning }
+    PageLifetime { id: lifetime }
+    function release(loader) {
+        lifetime.cancel(loader)
+        loader.sourceComponent = null
+    }
+    Connections {
+        target: Application
+        function onAboutToQuit() { transition.release(first); transition.release(second) }
+    }
 
     function routeKeyOf(loader) { return ((loader?.pageRoute || "").split("\u001f")[3]) || "" }
     function routeIdOf(loader) { return Number((loader?.pageRoute || "").split("\u001f")[2]) || 0 }
@@ -99,16 +108,18 @@ Item {
         if (epoch !== generation) return
         const current = frontA ? first : second
         const next = frontA ? second : first
+        lifetime.cancel(current.item)
         if (current.item?.leaving !== undefined) current.item.leaving = true
         if (epoch !== generation) return
         next.scroll.enabled = false
-        next.sourceComponent = null
+        release(next)
         next.pageRoute = componentRoute
         next.epoch = epoch
         pendingComponent = sourceComponent
         if (!pendingComponent) { phase = "error"; return }
         phase = "loading"
         next.sourceComponent = pendingComponent
+        next.active = true
     }
 
     function present(next, epoch) {
@@ -131,7 +142,7 @@ Item {
         if (epoch !== generation) return
         pendingRoute = ""
         current.scroll.enabled = false
-        current.sourceComponent = null
+        release(current)
         if (!Motion.reduced) {
             reveal.restart()
             revealGuard.restart()
@@ -185,39 +196,29 @@ Item {
         function onReducedChanged() { if (Motion.reduced) transition.settleReveal() }
     }
 
-    Loader {
-        id: first
+    component PageSlot: Loader {
+        id: loader
         property string pageRoute: ""
         property int epoch: -1
-        readonly property alias scroll: firstScroll
+        readonly property alias scroll: memory
         anchors.fill: parent
+        active: false
         asynchronous: true
-        visible: transition.phase === "content" && transition.frontA
+        visible: transition.phase === "content" && (transition.frontA ? loader === first : loader === second)
         enabled: visible
-        onLoaded: Qt.callLater(transition.present, first, epoch)
+        onLoaded: Qt.callLater(transition.present, loader, epoch)
         onStatusChanged: if (status === Loader.Error && epoch === transition.generation) transition.phase = "error"
         ScrollMemory {
-            id: firstScroll
-            viewport: first.item && first.item.contentY !== undefined ? first.item : first.item?.scrollView || null
-            key: transition.scrollKeyOf(first)
+            id: memory
+            viewport: loader.item && loader.item.contentY !== undefined ? loader.item : loader.item?.scrollView || null
+            key: transition.scrollKeyOf(loader)
         }
     }
-    Loader {
+    PageSlot {
+        id: first
+    }
+    PageSlot {
         id: second
-        property string pageRoute: ""
-        property int epoch: -1
-        readonly property alias scroll: secondScroll
-        anchors.fill: parent
-        asynchronous: true
-        visible: transition.phase === "content" && !transition.frontA
-        enabled: visible
-        onLoaded: Qt.callLater(transition.present, second, epoch)
-        onStatusChanged: if (status === Loader.Error && epoch === transition.generation) transition.phase = "error"
-        ScrollMemory {
-            id: secondScroll
-            viewport: second.item && second.item.contentY !== undefined ? second.item : second.item?.scrollView || null
-            key: transition.scrollKeyOf(second)
-        }
     }
     FrameFence {
         id: frameFence

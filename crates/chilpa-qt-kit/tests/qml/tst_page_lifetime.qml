@@ -1,0 +1,87 @@
+import QtQuick
+import QtTest
+import app.chilpa.kit
+import "../../qml/Patterns"
+import "../../qml/Theme"
+
+TestCase {
+    id: test
+    name: "PageLifetime"
+    when: windowShown
+    visible: true
+    width: 500; height: 400
+    property int built: 0
+    PageLifetime { id: lifetime }
+    Loader { id: owner; anchors.fill: parent }
+    PageTransition { id: pages; anchors.fill: parent }
+    Component { id: emptyPage; Item {} }
+    ListModel { id: records; ListElement { title: "Retained record" } }
+    Component {
+        id: listPage
+        ListView {
+            objectName: "recordsView"
+            model: records
+            delegate: Item { width: 100; height: 30 }
+        }
+    }
+    Component {
+        id: nestedPage
+        Item {
+            Loader {
+                objectName: "pendingBody"
+                asynchronous: true
+                sourceComponent: Item {
+                    Repeater {
+                        model: 300
+                        delegate: Item {
+                            Component.onCompleted: test.built++
+                            Repeater { model: 4; delegate: Rectangle {} }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    function init() {
+        failOnWarning(/Cannot create delegate|Object or context destroyed during incubation|invalid context|TypeError/)
+        Motion.reduced = true
+    }
+    function test_departing_page_cancels_nested_creation() {
+        for (let index = 0; index < 8; index++) {
+            pages.sourceComponent = nestedPage
+            pages.route = "nested-" + index
+            tryCompare(pages, "phase", "content")
+            // A ready page may still own an independently incubating child.
+            pages.sourceComponent = emptyPage
+            pages.route = "empty-" + index
+            tryCompare(pages, "committedRoute", pages.route)
+        }
+        wait(50)
+    }
+    function test_nested_creation_is_cancelled_before_the_context() {
+        for (let index = 0; index < 8; index++) {
+            owner.sourceComponent = nestedPage
+            const body = findChild(owner.item, "pendingBody")
+            compare(body.status, Loader.Loading)
+            const previousBuilds = test.built
+            lifetime.cancel(owner.item)
+            compare(body.status, Loader.Null)
+            compare(body.asynchronous, true)
+            compare(test.built, previousBuilds, "cancelling must not finish unused delegates")
+            owner.sourceComponent = null
+            wait(1)
+        }
+        wait(50)
+    }
+    function test_cancelling_a_view_preserves_its_records_and_can_reopen() {
+        owner.sourceComponent = listPage
+        compare(owner.item.count, 1)
+        lifetime.cancel(owner.item)
+        compare(owner.item.count, 0)
+        compare(records.count, 1)
+        owner.sourceComponent = null
+        owner.sourceComponent = listPage
+        compare(owner.item.count, 1)
+        owner.sourceComponent = null
+    }
+}

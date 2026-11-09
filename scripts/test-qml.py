@@ -2,6 +2,7 @@
 """Run QML tests with the application's real resource paths and test bridges."""
 import argparse
 import os
+import re
 from pathlib import Path
 import shlex
 import shutil
@@ -13,7 +14,9 @@ import xml.etree.ElementTree as ET
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("tests", type=Path, nargs="+")
-tests = [path.resolve(strict=True) for path in parser.parse_args().tests]
+parser.add_argument("--strict-incubation", action="store_true")
+arguments = parser.parse_args()
+tests = [path.resolve(strict=True) for path in arguments.tests]
 qtpaths = os.environ.get("QT_BIN_DIR")
 if qtpaths:
     qt = Path(qtpaths)
@@ -41,6 +44,9 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
     fence_header = fence.with_suffix(".h")
     fence_moc = temporary / "moc_frame_fence.cpp"
     subprocess.run([str(libexec / "moc"), str(fence_header), "-o", str(fence_moc)], check=True)
+    lifetime = root / "crates/chilpa-qt-kit/cxx/page_lifetime.cpp"
+    lifetime_moc = temporary / "moc_page_lifetime.cpp"
+    subprocess.run([str(libexec / "moc"), str(lifetime.with_suffix(".h")), "-o", str(lifetime_moc)], check=True)
     surface = root / "crates/chilpa-qt-kit/cxx/playing_surface.cpp"
     surface_moc = temporary / "moc_playing_surface.cpp"
     subprocess.run([str(libexec / "moc"), str(surface.with_suffix(".h")), "-o", str(surface_moc)], check=True)
@@ -52,7 +58,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
         subprocess.run([str(libexec / "moc"), str(spectrum.with_suffix(".h")), "-o", str(spectrum_moc)], check=True)
         spectrum_sources = [str(spectrum), str(spectrum_moc)]
     flags = shlex.split(subprocess.check_output(["pkg-config", "--cflags", "--libs", "Qt6Quick", "Qt6Qml"], text=True))
-    subprocess.run(["c++", "-std=c++17", "-shared", "-fPIC", str(loader), str(fence), str(fence_moc), str(surface), str(surface_moc), *spectrum_sources,
+    subprocess.run(["c++", "-std=c++17", "-shared", "-fPIC", str(loader), str(fence), str(fence_moc), str(lifetime), str(lifetime_moc), str(surface), str(surface_moc), *spectrum_sources,
                     "-o", str(temporary / "loader.so"), *flags], check=True)
     imports = temporary / "imports"
     shutil.copytree(root / "crates/chilpa-qt/tests/qml/imports", imports)
@@ -70,8 +76,12 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
     failed = []
     for test in tests:
         # I share the prepared files, while each suite keeps its own Qt process.
-        result = subprocess.run([str(qt / "qmltestrunner"), "-import", str(imports), "-input", str(test)], env=environment)
-        if result.returncode:
+        result = subprocess.run([str(qt / "qmltestrunner"), "-import", str(imports), "-input", str(test)], env=environment,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        print(result.stdout, end="", flush=True)
+        incubation_error = arguments.strict_incubation and re.search(
+            r"Object or context destroyed during incubation|Cannot create delegate|items in the process of being created", result.stdout)
+        if result.returncode or incubation_error:
             failed.append(str(test))
     if failed:
         print("Failed QML suites:\n" + "\n".join(failed), file=sys.stderr)

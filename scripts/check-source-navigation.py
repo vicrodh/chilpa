@@ -64,7 +64,8 @@ with tempfile.TemporaryDirectory(prefix="chilpa-source-smoke-") as directory:
     env = dict(os.environ, XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"), XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"), QT_QPA_PLATFORM="offscreen", CHILPA_RENDERER="software", CHILPA_QML_SMOKE=str(smoke), CHILPA_SECOND_INSTANCE="1")
     result = subprocess.run(["timeout", "--signal=TERM", "--kill-after=2s", "40s", "dbus-run-session", "--", sys.argv[1]], env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     (output / "source-navigation.log").write_text(result.stdout)
-    errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "binding loop", "QQmlApplicationEngine failed", "is not a type", "Type ")
+    errors = ("SMOKE FAIL", "ReferenceError:", "TypeError:", "binding loop", "QQmlApplicationEngine failed", "is not a type", "Type ",
+              "Object or context destroyed during incubation", "Cannot create delegate", "items in the process of being created")
     print("\n".join(line for line in result.stdout.splitlines() if "SMOKE" in line or "qrc:" in line or "plugin[" in line))
     print(f"SMOKE delayed image requests={requests}")
     if requests == 0:
