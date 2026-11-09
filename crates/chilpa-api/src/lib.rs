@@ -1245,7 +1245,6 @@ impl Chilpa {
         self.advance_discord();
         self.advance_source_favorites();
         self.advance_plugins();
-        self.plugin_update_activity(self.now.playing || self.now.paused || self.listen.pending.is_some());
         self.advance_dsp();
         self.advance_audio_output();
         self.advance_search();
@@ -1445,6 +1444,7 @@ impl Chilpa {
         self.mark_scaled(gain);
         if self.player.as_ref().is_some_and(|p| p.dsp().touched()) { self.now.bit_perfect = false; }
         self.finish_tick(started);
+        self.plugin_update_activity(self.plugin_playback_active());
         &self.now
     }
 

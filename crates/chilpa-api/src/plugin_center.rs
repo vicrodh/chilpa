@@ -19,7 +19,7 @@ pub(crate) struct PluginCenter {
 }
 
 impl PluginCenter {
-    fn start(plugins: Arc<Mutex<Plugins>>, root: PathBuf, catalog: Arc<crate::source_catalog::Catalog>) -> Self {
+    fn start(plugins: Arc<Mutex<Plugins>>, root: PathBuf, catalog: Arc<crate::source_catalog::Catalog>, playback_active: bool) -> Self {
         let (sender, receiver) = mpsc::sync_channel::<(String, Value)>(2);
         let commands = Arc::new(sender);
         let view = Arc::new(Mutex::new(json!({})));
@@ -38,7 +38,7 @@ impl PluginCenter {
         let reload = refreshed.clone();
         let inbox = Arc::new(Mutex::new(crate::plugin_notifications::Inbox::default()));
         let notifications = inbox.clone();
-        let playback = Arc::new(AtomicBool::new(true));
+        let playback = Arc::new(AtomicBool::new(playback_active));
         let playing = playback.clone();
         let completions = Arc::downgrade(&commands);
         std::thread::spawn(move || {
@@ -267,7 +267,7 @@ impl Chilpa {
         if self.plugin_center.is_none() {
             if self.plugins.is_none() { self.start_plugins(); }
             if let Some(plugins) = &self.plugins {
-                let center = PluginCenter::start(plugins.clone(), Self::plugins_dir(), self.catalog.clone());
+                let center = PluginCenter::start(plugins.clone(), Self::plugins_dir(), self.catalog.clone(), self.plugin_playback_active());
                 center.command("refresh", json!({"initial":true}));
                 self.plugin_center = Some(center);
             }
@@ -275,6 +275,14 @@ impl Chilpa {
     }
     pub(crate) fn plugin_update_activity(&self, playing: bool) {
         if let Some(center) = &self.plugin_center { center.playback.store(playing, Ordering::Release); }
+    }
+    pub(crate) fn plugin_playback_active(&self) -> bool {
+        // A stop acknowledgement takes precedence over cached playback and pause flags.
+        let local = self.player.as_ref().map_or(self.now.playing, |player| {
+            !player.idle() && (self.now.playing || player.is_paused())
+        });
+        local || self.listen.pending.is_some() || self.casting.local_start.is_some()
+            || self.casting.active() && (self.now.playing || self.now.paused)
     }
     pub fn plugin_center_json(&mut self) -> String {
         self.advance_plugins();
@@ -295,6 +303,7 @@ impl Chilpa {
     }
     pub fn plugin_center_command(&mut self, action: &str, input: &str) {
         let Ok(input) = serde_json::from_str::<Value>(input) else { return };
+        self.plugin_update_activity(self.plugin_playback_active());
         if matches!(action, "disable" | "uninstall" | "restart") {
             if let Some(id) = input["id"].as_str() { self.sources.native_actions.remove(id); }
         }
@@ -698,12 +707,124 @@ mod tests {
         }
         center.snapshot()
     }
+    fn quiet_center(playback: bool) -> (PluginCenter, mpsc::Receiver<(String, Value)>) {
+        let (commands, received) = mpsc::sync_channel(2);
+        let center = PluginCenter {
+            commands: Arc::new(commands),
+            view: Arc::new(Mutex::new(json!({}))),
+            busy: Arc::new(AtomicUsize::new(0)),
+            foreground: Arc::new(AtomicBool::new(false)),
+            library_dirty: Arc::new(AtomicBool::new(false)),
+            removed: Arc::new(Mutex::new(Vec::new())),
+            refreshed: Arc::new(Mutex::new(Vec::new())),
+            operation: Arc::new(Mutex::new(String::new())),
+            inbox: Arc::new(Mutex::new(Default::default())),
+            playback: Arc::new(AtomicBool::new(playback)),
+        };
+        (center, received)
+    }
+    #[test]
+    fn a_new_manager_starts_with_the_current_playback_activity() {
+        for active in [false, true] {
+            let temporary = tempfile::tempdir().unwrap();
+            let root = temporary.path().join("plugins");
+            let host = Arc::new(Mutex::new(Plugins::new(root.clone()).unwrap()));
+            let center = PluginCenter::start(host, root, crate::source_catalog::Catalog::new(), active);
+            assert_eq!(center.playback.load(Ordering::Acquire), active);
+        }
+    }
+    #[test]
+    fn manual_commands_replace_cached_activity_with_the_current_state() {
+        for (playing, paused, pending, expected) in [
+            (false, false, false, false), (true, false, false, true),
+            (false, true, false, false), (false, false, true, true),
+        ] {
+            let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
+            let (center, _received) = quiet_center(!expected);
+            api.plugin_center = Some(center);
+            api.now.playing = playing;
+            api.now.paused = paused;
+            api.listen.pending = pending.then_some((1, 0, 0.0));
+            api.plugin_center_command("filter", "{}");
+            assert_eq!(api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire), expected);
+        }
+    }
+    #[test]
+    fn a_pending_local_handoff_keeps_updates_blocked() {
+        let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
+        let (center, _received) = quiet_center(false);
+        api.plugin_center = Some(center);
+        api.casting.local_start = Some((0, "file:capture".into(), None));
+        api.plugin_center_command("filter", "{}");
+        assert!(api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
+    }
+    fn silent_track(directory: &std::path::Path) -> PathBuf {
+        let track = directory.join("silence.wav");
+        let data_len = 4410u32 * 4;
+        let mut wave = b"RIFF".to_vec();
+        wave.extend((36 + data_len).to_le_bytes());
+        wave.extend(b"WAVEfmt ");
+        wave.extend(16u32.to_le_bytes());
+        wave.extend(1u16.to_le_bytes());
+        wave.extend(2u16.to_le_bytes());
+        wave.extend(44_100u32.to_le_bytes());
+        wave.extend(176_400u32.to_le_bytes());
+        wave.extend(4u16.to_le_bytes());
+        wave.extend(16u16.to_le_bytes());
+        wave.extend(b"data");
+        wave.extend(data_len.to_le_bytes());
+        wave.resize(wave.len() + data_len as usize, 0);
+        std::fs::write(&track, wave).unwrap();
+        track
+    }
+    #[test]
+    fn paused_playback_blocks_until_the_worker_acknowledges_stop() {
+        let temporary = tempfile::tempdir().unwrap();
+        let track = silent_track(temporary.path());
+        let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
+        let (center, _received) = quiet_center(true);
+        api.plugin_center = Some(center);
+        api.player = Some(chilpa_core::spawn_player());
+        let player = api.player.as_ref().unwrap();
+        player.play_all_from_paused(&[track], "file:capture", None, true);
+        assert!(!player.idle());
+        api.now.paused = true;
+        api.plugin_center_command("filter", "{}");
+        assert!(api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
+        let player = api.player.as_ref().unwrap();
+        player.stop();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !player.idle() && Instant::now() < deadline { std::thread::sleep(Duration::from_millis(5)); }
+        assert!(player.idle());
+        api.now.playing = true;
+        api.plugin_center_command("filter", "{}");
+        assert!(!api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
+        api.plugin_center.as_ref().unwrap().playback.store(true, Ordering::Release);
+        api.poll();
+        assert!(!api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
+    }
+    #[test]
+    fn natural_completion_releases_the_update_guard_in_the_same_poll() {
+        let temporary = tempfile::tempdir().unwrap();
+        let track = silent_track(temporary.path());
+        let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
+        let (center, _received) = quiet_center(true);
+        api.plugin_center = Some(center);
+        api.replace_queue(vec![track.to_string_lossy().into_owned()]);
+        api.now.playing = true;
+        api.player = Some(chilpa_core::spawn_player());
+        api.player.as_ref().unwrap().play_all_from_paused(&[track], "file:capture", None, false);
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while api.now.playing && Instant::now() < deadline {
+            api.poll();
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(!api.now.playing && api.now.error.is_empty(), "{:?}", api.now);
+        assert!(!api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
+    }
     #[test]
     fn maintenance_is_invisible_and_does_not_drop_a_foreground_action() {
-        let (commands, received) = mpsc::sync_channel(2);
-        let center = PluginCenter { commands: Arc::new(commands), view: Arc::new(Mutex::new(json!({}))),
-            busy: Arc::new(AtomicUsize::new(0)), foreground: Arc::new(AtomicBool::new(false)), library_dirty: Arc::new(AtomicBool::new(false)), removed: Arc::new(Mutex::new(Vec::new())), refreshed: Arc::new(Mutex::new(Vec::new())),
-            operation: Arc::new(Mutex::new(String::new())), inbox: Arc::new(Mutex::new(Default::default())), playback: Arc::new(AtomicBool::new(false)) };
+        let (center, received) = quiet_center(false);
         center.command("tick", json!({"id":"guest"}));
         assert_eq!(center.snapshot()["busy"], false);
         assert_eq!(center.snapshot()["working"], true);
@@ -736,7 +857,7 @@ mod tests {
         let mut host = Plugins::new(root.clone()).unwrap();
         host.load_all(); host.approve(id).unwrap(); host.reload_one(id);
         let host = Arc::new(Mutex::new(host));
-        let center = PluginCenter::start(host.clone(), root, crate::source_catalog::Catalog::new());
+        let center = PluginCenter::start(host.clone(), root, crate::source_catalog::Catalog::new(), false);
         center.command("tick", json!({"id":id}));
         let view = wait_finished(&center);
         assert_ne!(view["maintenance_failed"], true, "{view}");
@@ -775,7 +896,7 @@ mod tests {
         let mut plugins = Plugins::new(temporary.path().join("plugins")).unwrap();
         plugins.set_worker_launcher(Arc::new(Launcher));
         let root = temporary.path().join("plugins");
-        let center = PluginCenter::start(Arc::new(Mutex::new(plugins)), root.clone(), crate::source_catalog::Catalog::new());
+        let center = PluginCenter::start(Arc::new(Mutex::new(plugins)), root.clone(), crate::source_catalog::Catalog::new(), false);
         center.command("add", json!({"url":format!("http://{address}/catalog.xml")}));
         let view = wait(&center); let repository = view["repositories"][0]["id"].clone();
         assert_eq!(view["catalog"].as_array().unwrap().len(), 1);
@@ -812,7 +933,7 @@ mod tests {
         let temporary = tempfile::tempdir().unwrap();
         let root = temporary.path().join("plugins");
         let host = Arc::new(Mutex::new(Plugins::new(root.clone()).unwrap()));
-        let center = PluginCenter::start(host.clone(), root.clone(), crate::source_catalog::Catalog::new());
+        let center = PluginCenter::start(host.clone(), root.clone(), crate::source_catalog::Catalog::new(), false);
         let manifest = r#"{"id":"app.test.local","name":"Local","version":"1.0","api_version":1,"kind":"source","runtime":"process","capabilities":[{"type":"register_source"}]}"#;
         let mut archive = zip::ZipWriter::new(Cursor::new(Vec::new()));
         for (name, bytes) in [("wrapper/manifest.json", manifest.as_bytes()), ("wrapper/plugin", b"must not run".as_slice())] {
