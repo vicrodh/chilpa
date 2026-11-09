@@ -4,6 +4,14 @@ import app.chilpa
 // I share the album grid's pointer actions and source badge presentation.
 QtObject {
     property Item grid
+    function shelfHeight(view, rowHeight) {
+        // Internal ListView items can follow the viewport's height. Only
+        // album delegates contribute, including their open quick view.
+        let tallest = rowHeight
+        for (const item of view.contentItem.children)
+            if (item.first !== undefined) tallest = Math.max(tallest, item.height)
+        return tallest
+    }
     function clicked(at, albumId, title, modifiers, available) {
         if (!available)
             AlbumActions.explain(albumId)

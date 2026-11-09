@@ -59,7 +59,7 @@ Item {
 
     Tools.AlbumGridInteraction { id: interaction; objectName: "albumGridInteraction"; grid: grid }
 
-    implicitHeight: shelf ? Math.max(rowHeight, view.contentItem.childrenRect.height) + Metrics.cardRing * 2 : view.contentHeight // derived: the shelf keeps both selection rings
+    implicitHeight: shelf ? interaction.shelfHeight(view, rowHeight) + Metrics.cardRing * 2 : view.contentHeight // derived: room for both selection rings
 
     Tools.MotionListView {
         id: view

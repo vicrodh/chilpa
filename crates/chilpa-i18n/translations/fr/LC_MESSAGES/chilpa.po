@@ -2729,6 +2729,9 @@ msgstr "Aller aux journaux"
 msgid "Go to podcast"
 msgstr "Aller au podcast"
 
+msgid "Go to release"
+msgstr "Aller à la sortie"
+
 msgid "Go to source"
 msgstr "Aller à la source"
 

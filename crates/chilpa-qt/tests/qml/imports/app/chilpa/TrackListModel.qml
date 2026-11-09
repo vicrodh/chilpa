@@ -82,7 +82,7 @@ ListModel {
     Component.onCompleted: fill()
     property string filledKey: ""
     function fill() {
-        const wanted = key.endsWith("|tracks") ? 8 : kind === "mostPlayed" ? 30 : 0
+        const wanted = key.endsWith("|tracks") ? 8 : key.endsWith("|latest-tracks") ? 6 : kind === "mostPlayed" ? 30 : 0
         const count = limit > 0 ? Math.min(limit, wanted) : wanted
         if (filledKey !== key) { clear(); filledKey = key }
         while (this.count > count) remove(this.count - 1)

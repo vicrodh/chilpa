@@ -2729,6 +2729,9 @@ msgstr "Zu den Protokollen"
 msgid "Go to podcast"
 msgstr "Zum Podcast"
 
+msgid "Go to release"
+msgstr "Zur Veröffentlichung"
+
 msgid "Go to source"
 msgstr "Zur Quelle"
 

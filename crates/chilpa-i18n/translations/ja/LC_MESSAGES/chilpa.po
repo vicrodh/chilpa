@@ -2727,6 +2727,9 @@ msgstr "ログを開く"
 msgid "Go to podcast"
 msgstr "ポッドキャストへ移動"
 
+msgid "Go to release"
+msgstr "リリースへ移動"
+
 msgid "Go to source"
 msgstr "ソースへ移動"
 

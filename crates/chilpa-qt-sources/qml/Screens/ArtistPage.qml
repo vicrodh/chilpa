@@ -121,7 +121,7 @@ Item {
                     // own visibility would read back the Loader's.
                     visible: !knownEmpty && (!ready || item.shown === true)
                     height: visible ? ready ? Math.max(skeleton.implicitHeight, item.implicitHeight) : skeleton.implicitHeight : 0
-                    active: !knownEmpty && page.presented && page.about.loading !== true && (mounted || column.y + y < flick.contentY + flick.height * 2)
+                    active: !knownEmpty && page.presented && (mounted || page.about.loading !== true && column.y + y < flick.contentY + flick.height * 2)
                     asynchronous: true
                     sourceComponent: role === "popular" || (role === "appears" && section.kind === "track") ? trackBlock
                         : role === "latest" ? latestBlock : role === "other" ? otherBlock : shelfBlock
@@ -139,28 +139,7 @@ Item {
         }
     }
     Component { id: trackBlock; ArtistTracks { section: parent.section; viewport: flick; actions: (section.role || "") === "popular" } }
-    Component {
-        id: latestBlock
-        Column {
-            id: latest
-            property var section: parent.section
-            readonly property bool ready: one.ready
-            readonly property bool shown: one.albums > 0
-            spacing: Metrics.gap12
-            visible: shown
-            AlbumGridModel { id: one; kind: latest.section.model || "source"; key: latest.section.model_key || latest.section.key || ""; limit: 1; columns: 1; contentRev: Library.remoteRev + Library.remoteArtRev }
-            Text { text: latest.section.title || ""; textFormat: Text.PlainText; font.pointSize: Type.section; font.weight: Type.heading; font.letterSpacing: Type.sectionTracking; color: Theme.color.textPrimary }
-            AlbumCard {
-                width: CardLayout.cardWidth
-                albumId: one.albumId(0, one.rev); title: one.title(0, one.rev); subtitle: one.subtitle(0, one.rev); year: one.year(0, one.rev); art: one.art(0, one.rev)
-                aiGenerated: one.aiGenerated(0, one.rev)
-                sources: albumId < 0 ? JSON.parse(AlbumActions.sources(albumId, one.rev) || "[]") : []
-                qualityInfo: JSON.parse(AlbumActions.quality(albumId, one.rev) || "{}")
-                canExpand: false
-                onClicked: Navigation.go("album", albumId)
-            }
-        }
-    }
+    Component { id: latestBlock; ArtistLatestRelease { section: parent.section; viewport: flick } }
     Component {
         id: shelfBlock
         SourceShelf {

@@ -2729,6 +2729,9 @@ msgstr "Naar de logboeken"
 msgid "Go to podcast"
 msgstr "Naar podcast"
 
+msgid "Go to release"
+msgstr "Naar uitgave"
+
 msgid "Go to source"
 msgstr "Naar bron"
 

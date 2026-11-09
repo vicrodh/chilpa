@@ -2729,6 +2729,9 @@ msgstr "Go to logs"
 msgid "Go to podcast"
 msgstr "Go to podcast"
 
+msgid "Go to release"
+msgstr "Go to release"
+
 msgid "Go to source"
 msgstr "Go to source"
 

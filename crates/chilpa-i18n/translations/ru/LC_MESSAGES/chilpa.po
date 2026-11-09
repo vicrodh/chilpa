@@ -2731,6 +2731,9 @@ msgstr "Перейти к журналам"
 msgid "Go to podcast"
 msgstr "Перейти к подкасту"
 
+msgid "Go to release"
+msgstr "Перейти к релизу"
+
 msgid "Go to source"
 msgstr "Перейти к источнику"
 

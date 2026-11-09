@@ -2729,6 +2729,9 @@ msgstr "Ir a los registros"
 msgid "Go to podcast"
 msgstr "Ir al podcast"
 
+msgid "Go to release"
+msgstr "Ir al lanzamiento"
+
 msgid "Go to source"
 msgstr "Ir al origen"
 
