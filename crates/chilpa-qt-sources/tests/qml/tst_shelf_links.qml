@@ -9,7 +9,13 @@ TestCase {
     when: windowShown
     visible: true
     width: 1000; height: 800
-    SourceShelf { id: shelf; width: parent.width }
+    Flickable {
+        id: viewport
+        width: parent.width; height: parent.height
+        contentWidth: width; contentHeight: shelf.height + height
+        clip: true
+        SourceShelf { id: shelf; width: parent.width; viewport: viewport }
+    }
     function visibleArtist(item) {
         if (item.objectName === "albumCardArtist" && item.visible) return item
         for (const child of item.children || []) {
