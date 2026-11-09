@@ -42,6 +42,56 @@ TestCase {
             }
         }
     }
+    property bool cancelledDelegate: false
+    Component {
+        id: repeatingPage
+        Item {
+            property alias delegates: repeats
+            Repeater {
+                id: repeats
+                model: 1
+                delegate: Loader {
+                    asynchronous: true
+                    onActiveChanged: if (!active) test.cancelledDelegate = true
+                    sourceComponent: Item { Repeater { model: 300; delegate: Rectangle {} } }
+                }
+            }
+        }
+    }
+    function test_repeater_loaders_are_cancelled_before_removal() {
+        test.cancelledDelegate = false
+        owner.sourceComponent = repeatingPage
+        compare(owner.item.delegates.itemAt(0).status, Loader.Loading)
+        lifetime.cancel(owner.item)
+        verify(test.cancelledDelegate, "the delegate's own loader must be stopped before its context")
+        owner.sourceComponent = null
+        wait(50)
+    }
+    Component {
+        id: listedPage
+        ListView {
+            model: 1
+            width: 400; height: 300
+            delegate: Loader {
+                width: 400; height: 100
+                asynchronous: true
+                onActiveChanged: if (!active) test.cancelledDelegate = true
+                sourceComponent: Item { Repeater { model: 300; delegate: Rectangle {} } }
+            }
+        }
+    }
+    function test_visual_view_delegates_are_cancelled_before_removal() {
+        test.cancelledDelegate = false
+        owner.sourceComponent = listedPage
+        owner.item.forceLayout()
+        const delegate = owner.item.itemAtIndex(0)
+        verify(delegate !== null)
+        compare(delegate.status, Loader.Loading)
+        lifetime.cancel(owner.item)
+        verify(test.cancelledDelegate)
+        owner.sourceComponent = null
+        wait(50)
+    }
     function init() {
         failOnWarning(/Cannot create delegate|Object or context destroyed during incubation|invalid context|TypeError/)
         Motion.reduced = true
