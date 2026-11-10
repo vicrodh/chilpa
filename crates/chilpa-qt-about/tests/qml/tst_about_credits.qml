@@ -21,7 +21,7 @@ TestCase {
         compare(requests.signalArguments[0][0], "https://github.com/vicrodh")
         const flow = findChild(credits, "aboutContributorFlow")
         const people = flow.children.filter(item => item.objectName === "aboutContributor")
-        compare(people.map(item => item.handle).sort(), ["TheMelmacian", "afonsojorgeramos", "jakumule"].sort())
+        compare(people.map(item => item.handle).sort(), ["TheMelmacian", "afonsojramos", "jakumule"].sort())
         verify(people[people.length - 1].y > people[0].y, "narrow layouts wrap the profiles")
         for (const person of people) {
             verify(person.x + person.width <= flow.width)

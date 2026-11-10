@@ -37,7 +37,7 @@ impl crate::Chilpa {
             "platform": platform_label(),
             "build": build.trim(),
             "author": profile("vicrodh"),
-            "contributors": [profile("afonsojorgeramos"), profile("jakumule"), profile("TheMelmacian")],
+            "contributors": [profile("afonsojramos"), profile("jakumule"), profile("TheMelmacian")],
             "links": [{ "label": chilpa_i18n::t("Website"), "url": "https://chilpa.app" }],
         })
         .to_string()
@@ -53,7 +53,7 @@ mod tests {
         assert_eq!(doc["author"]["name"], "vicrodh");
         let contributors = doc["contributors"].as_array().unwrap();
         assert_eq!(contributors.len(), 3);
-        for (person, handle) in contributors.iter().zip(["afonsojorgeramos", "jakumule", "TheMelmacian"]) {
+        for (person, handle) in contributors.iter().zip(["afonsojramos", "jakumule", "TheMelmacian"]) {
             assert_eq!(person["name"], handle);
             assert_eq!(person["url"], format!("https://github.com/{handle}"));
             assert_eq!(person["avatar"], format!("{handle}.png"));
