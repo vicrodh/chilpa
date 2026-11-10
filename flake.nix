@@ -68,8 +68,6 @@
           postInstall = ''
             install -Dm644 packaging/linux/app.chilpa.Chilpa.desktop \
               $out/share/applications/app.chilpa.Chilpa.desktop
-            substituteInPlace $out/share/applications/app.chilpa.Chilpa.desktop \
-              --replace-fail "Exec=/usr/bin/chilpa-qt" "Exec=chilpa-qt"
             install -Dm644 assets/logo.png \
               $out/share/icons/hicolor/512x512/apps/app.chilpa.Chilpa.png
             install -Dm644 LICENSE $out/share/licenses/chilpa/LICENSE

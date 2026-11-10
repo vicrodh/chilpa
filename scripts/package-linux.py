@@ -110,7 +110,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
     if runtime.is_dir():
         shutil.copytree(runtime, bin_dir / "compat-runtime")
     desktop = work / "app.chilpa.Chilpa.desktop"
-    desktop.write_text((root / "packaging/linux/app.chilpa.Chilpa.desktop").read_text().replace("Exec=/usr/bin/chilpa-qt", "Exec=chilpa-qt"))
+    shutil.copy2(root / "packaging/linux/app.chilpa.Chilpa.desktop", desktop)
     icon = work / "app.chilpa.Chilpa.png"
     shutil.copy2(root / "assets/logo.png", icon)
     subprocess.run(["desktop-file-validate", str(desktop)], check=True)
