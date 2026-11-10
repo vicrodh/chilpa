@@ -6,13 +6,15 @@ import "../Primitives"
 Item {
     id: cells
     property var facts: ({})
+    property var shown: null
     property bool explicitContent: false
     property bool aiGenerated: false
     property string title
     property string artist
     property string year
     property bool header: false
-    TechnicalColumns { id: columns; tableWidth: cells.width }
+    TechnicalColumns { id: columns; tableWidth: cells.width; shown: cells.shown }
+    readonly property real minimumWidth: columns.minimumWidth
     Rectangle { anchors.fill: parent; visible: cells.header; color: Theme.color.surfaceWindow }
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Metrics.hairline; visible: cells.header; color: Theme.color.strokeHairline }
     Repeater {

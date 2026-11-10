@@ -11,13 +11,16 @@ Modal {
     objectName: "albumColumns"
 
     property var shown: []
+    property var options: []
     signal chosen(var columns)
 
-    readonly property var all: [
+    readonly property var all: options.length > 0 ? options : [
         { name: "year", text: I18n.tr("Year", I18n.rev) },
         { name: "tracks", text: I18n.tr("Tracks", I18n.rev) },
         { name: "duration", text: I18n.tr("Duration", I18n.rev) },
         { name: "genre", text: I18n.tr("Genre", I18n.rev) },
+        { name: "rate", text: I18n.tr("Sample rate", I18n.rev) },
+        { name: "bits", text: I18n.tr("Bit depth", I18n.rev) },
         { name: "rating", text: I18n.tr("Rating", I18n.rev) },
         { name: "source", text: I18n.tr("Source", I18n.rev) }
     ]

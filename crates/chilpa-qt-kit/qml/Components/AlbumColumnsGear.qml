@@ -11,6 +11,7 @@ IconButton {
     objectName: "listColumnsButton"
 
     property var shown: []
+    property var options: []
     signal chosen(var columns)
 
     tip: I18n.tr("Columns", I18n.rev)
@@ -18,5 +19,5 @@ IconButton {
     round: true
     onClicked: chooser.open()
 
-    AlbumColumnsModal { id: chooser; shown: gear.shown; onChosen: (columns) => gear.chosen(columns) }
+    AlbumColumnsModal { id: chooser; shown: gear.shown; options: gear.options; onChosen: (columns) => gear.chosen(columns) }
 }

@@ -22,6 +22,13 @@ Column {
         facts: ({tracks: 8, rate: null, bits: null, mixed_fields: ["format", "codec", "rate"]})
     }
     TechnicalColumns { tableWidth: section.width }
+    AlbumGroupHeading { width: section.width; text: "Group" }
+    AlbumListCells {
+        height: Metrics.rowRich
+        columns: ["year", "tracks", "rate", "bits", "rating"]
+        year: "2003"; tracks: 12; facts: ({rate: 96000, bits: 24})
+    }
+    AlbumViewTools { columns: ["rate", "bits"]; view: "nerdy" }
     AlbumGridInteraction { grid: null }
     TrackColumns { id: rowCols; width: section.width }
     Item {

@@ -22,6 +22,8 @@ Column {
             {column:"label", label:I18n.tr("Label", I18n.rev)},
             {column:"composer", label:I18n.tr("Composer", I18n.rev)},
             {column:"rating", label:I18n.tr("Rating", I18n.rev)},
+            {column:"bits", label:I18n.tr("Bit depth", I18n.rev)},
+            {column:"rate", label:I18n.tr("Sample rate", I18n.rev)},
             {column:"artist", label:I18n.tr("Artist", I18n.rev)},
             {column:"album", label:I18n.tr("Album", I18n.rev)}
         ]

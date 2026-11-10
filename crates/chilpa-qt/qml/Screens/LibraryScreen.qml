@@ -9,6 +9,7 @@ import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/query/qml/Components"
 import "qrc:/qt/qml/app/chilpa/query/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/query/qml/Patterns/ColumnChoices.js" as ColumnChoices
 
 // Library (design/02 9, design/06): the filter columns in cascade and
 // the records they leave, as cards or as rows. A fixed layout with no scroll of
@@ -17,22 +18,8 @@ Item {
     id: page
 
     // The filter columns turned on in the sources popover, kept.
-    property var panes: initialPanes()
-    function initialPanes() {
-        const saved = SettingsModel.kept("ui.library.columns")
-        if (saved) { try { const columns = JSON.parse(saved); if (Array.isArray(columns)) return columns } catch (_) {} }
-        return (SettingsModel.kept("ui.library.panes") || "year,genre").split(",").filter(c => c !== "" && c !== "-").concat(["artist", "album"])
-    }
-    function togglePane(column) {
-        const on = page.panes.indexOf(column) < 0
-        page.panes = on ? page.panes.concat([column]) : page.panes.filter(c => c !== column)
-        SettingsModel.keep("ui.library.columns", JSON.stringify(page.panes))
-        // A column turned off does not narrow what it no longer shows.
-        if (!on) {
-            Library.searchColumn(column, "")
-            Library.clearColumn(column)
-        }
-    }
+    property var panes: ColumnChoices.initial(SettingsModel)
+    function togglePane(column) { page.panes = ColumnChoices.toggle(page.panes, column, SettingsModel, Library) }
     // The columns' height while their grip is dragged, or -1.
     property real dragged: -1
     // The columns' height when the grip was pressed.
@@ -47,6 +34,8 @@ Item {
     property string group: SettingsModel.kept("ui.library.group")
     // The list's columns; genre stays off until asked for.
     property var listColumns: (SettingsModel.kept("ui.library.listColumns") || "year,tracks,duration,rating,source").split(",").filter(c => c !== "" && c !== "-")
+
+    property var nerdyColumns: (SettingsModel.kept("ui.library.nerdyColumns") || "tracks,format,codec,rate,bits,channels,bytes,duration_ms,year,source,artwork").split(",").filter(c => c !== "" && c !== "-")
 
     TrackListModel {
         id: tracks
@@ -216,8 +205,12 @@ Item {
         enabled: !Library.busy
         albumless: Library.albumless
         onAlbumlessToggled: Library.showAlbumless(!Library.albumless)
-        columns: page.listColumns
-        onColumnsChosen: (columns) => { page.listColumns = columns; SettingsModel.keep("ui.library.listColumns", columns.join(",") || "-") }
+        columns: page.nerdy ? page.nerdyColumns : page.listColumns
+        onColumnsChosen: (columns) => {
+            if (page.nerdy) page.nerdyColumns = columns
+            else page.listColumns = columns
+            SettingsModel.keep(page.nerdy ? "ui.library.nerdyColumns" : "ui.library.listColumns", columns.join(",") || "-")
+        }
     }
 
     // The records the columns leave, as cards or as rows.
@@ -235,6 +228,7 @@ Item {
         list: !page.grid
         technical: page.nerdy
         listColumns: page.listColumns
+        technicalColumns: page.nerdyColumns
         model: records
         onOpen: (albumId) => Navigation.go("album", albumId)
     }

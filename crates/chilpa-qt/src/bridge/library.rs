@@ -108,7 +108,7 @@ pub struct LibraryRust {
 
 const ORDER_KEY: &str = "ui.library.order";
 
-const ORDER: [&str; 7] = ["year", "genre", "label", "composer", "rating", "artist", "album"];
+const ORDER: [&str; 9] = ["year", "genre", "label", "composer", "rating", "artist", "album", "bits", "rate"];
 
 fn strings(items: impl IntoIterator<Item = String>) -> QStringList {
     let mut list = QList::<QString>::default();

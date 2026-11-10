@@ -579,8 +579,10 @@ impl qobject::TrackListModel {
         if row < 0 { return QString::from(app::with(|api| api.collection_queue_menu()).to_string()); }
         let this = self.rust();
         let editable = this.kind.to_string() == "playlist" && this.playlist_editable;
+        let chosen = self.chosen_track_ids(row);
         let context = chilpa_api::TrackMenuContext {
-            count: if row < 0 { 0 } else { self.chosen_track_ids(row).len() },
+            count: if row < 0 { 0 } else { chosen.len() },
+            server_delete: chosen.len() == 1 && app::with(|api| api.server_media_info("track", chosen[0]) != "{}"),
             queued: !this.queue_keys.is_empty(),
             editable,
             move_up: editable && this.order.to_string() == "custom" && row > 0,

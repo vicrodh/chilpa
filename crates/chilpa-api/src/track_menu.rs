@@ -19,6 +19,7 @@ pub struct TrackMenuContext {
     pub unavailable: bool,
     /// A track whose metadata comes from a source catalog.
     pub remote: bool,
+    pub server_delete: bool,
 }
 
 pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
@@ -87,6 +88,10 @@ pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
             }
         }
         entries.push(item("remove", i18n::mark("Remove from playlist")));
+    }
+    if context.count == 1 && context.server_delete {
+        entries.push(json!({"separator": true}));
+        entries.push(item("server_delete", i18n::mark("Delete from server…")));
     }
     entries
 }

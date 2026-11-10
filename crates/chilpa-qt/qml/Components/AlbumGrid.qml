@@ -39,6 +39,7 @@ Item {
     property bool list: false
     // A compact record table with stored technical facts and no cover objects.
     property bool technical: false
+    property var technicalColumns: null
     // The columns of those rows (`AlbumRow.columns`).
     property var listColumns: ["year"]
     property real viewportX: 0
@@ -99,7 +100,7 @@ Item {
         Binding {
             target: view; property: "contentWidth"
             when: grid.technical
-            value: Math.max(view.width, Metrics.nerdyTableWidth)
+            value: Math.max(view.width, view.headerItem ? view.headerItem.minimumWidth : Metrics.nerdyTableWidth)
             restoreMode: Binding.RestoreBindingOrValue
         }
 
@@ -117,17 +118,11 @@ Item {
             width: grid.shelf ? grid.cardWidth : grid.technical ? view.contentWidth : grid.width
             height: lead + grid.rowHeight + (quick.active ? Metrics.gap8 + quick.height : 0)
 
-            Text {
+            Tools.AlbumGroupHeading {
                 visible: row.group !== ""
                 x: Metrics.cardRing
                 width: grid.layoutWidth
-                height: Metrics.rowGroup
-                verticalAlignment: Text.AlignVCenter
                 text: row.group
-                elide: Text.ElideRight
-                font.pointSize: Type.meta
-                font.weight: Type.semibold
-                color: Theme.color.textSecondary
             }
 
             AlbumRow {
@@ -138,6 +133,7 @@ Item {
                 y: row.lead
                 width: grid.layoutWidth
                 technical: grid.technical
+                technicalColumns: grid.technicalColumns
                 rev: grid.detailsRev
                 albumId: shown ? grid.model.albumId(row.first, row.revision) : 0
                 title: shown ? grid.model.title(row.first, row.revision) : ""
@@ -232,6 +228,7 @@ Item {
             width: grid.layoutWidth
             height: Metrics.rowHeader
             header: true
+            shown: grid.technicalColumns
         }
     }
 

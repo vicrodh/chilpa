@@ -3,6 +3,13 @@ import QtQuick
 import app.chilpa
 QtObject {
     property int revision: 0
+    signal serverMediaRequested(string kind, double id)
+    property var mediaInfo: ({})
+    property var mediaCalls: []
+    property var mediaReceipt: ({request_id:"media-test",pending:true})
+    function serverMediaInfo(kind, id) { return JSON.stringify(mediaInfo) }
+    function serverMediaDelete(kind, id, reference, source) { mediaCalls = mediaCalls.concat([[kind,id,reference,source]]); return JSON.stringify(mediaReceipt) }
+    function serverMediaStatus(request) { return JSON.stringify(mediaReceipt) }
     property var state: ({ panels: [{ id: "radio", name: "Radio", icon: "broadcast" }], source: "radio", name: "Radio", crumbs: [], entries: [], searchable: true, loading: false, more: false, error: "" })
     property var asked: []
     readonly property string snapshot: JSON.stringify(state)

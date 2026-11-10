@@ -79,29 +79,15 @@ Item {
         laterLabel: I18n.tr("Library selection", I18n.rev)
     }
 
-    Row {
+    AlbumViewTools {
         id: viewTools
         objectName: "libraryViewTools"
         visible: !bar.albumless
         y: bar.separateViews ? loose.y + loose.height + Metrics.gap8 : loose.y
         anchors.right: parent.right
-        spacing: Metrics.gap8
-        AlbumColumnsGear {
-            visible: SettingsModel.libraryView === "tracks"
-            anchors.verticalCenter: parent.verticalCenter
-            shown: bar.columns
-            onChosen: (columns) => bar.columnsChosen(columns)
-        }
-        SegmentedControl {
-            objectName: "libraryViewSwitcher"
-            anchors.verticalCenter: parent.verticalCenter
-            options: [
-                { glyph: Icons.list, tip: I18n.tr("List", I18n.rev) },
-                { glyph: Icons.layoutGrid, tip: I18n.tr("Grid", I18n.rev) },
-                { glyph: Lucide.glasses, iconFamily: Lucide.font, tip: I18n.tr("Nerdy", I18n.rev) }
-            ]
-            current: SettingsModel.libraryView === "nerdy" ? 2 : SettingsModel.libraryView === "grid" ? 1 : 0
-            onActivated: (index) => SettingsModel.libraryView = index === 2 ? "nerdy" : index === 1 ? "grid" : "tracks"
-        }
+        view: SettingsModel.libraryView
+        columns: bar.columns
+        onColumnsChosen: (columns) => bar.columnsChosen(columns)
+        onViewChosen: (view) => SettingsModel.libraryView = view
     }
 }

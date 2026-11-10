@@ -22,12 +22,29 @@ TestCase {
         records.albums = 1000
     }
     function init() {
+        grid.technicalColumns = null
         grid.width = 1050
         grid.technical = true
         grid.scrollView.contentX = 0
         grid.scrollView.positionViewAtBeginning()
         mouseMove(test, 1150, 600)
         tryVerify(() => grid.scrollView.itemAtIndex(0) !== null)
+    }
+    function test_optional_technical_columns_share_the_header_and_rows_and_reduce_scroll_width() {
+        const wide = grid.scrollView.contentWidth
+        grid.technicalColumns = ["rate","bits"]
+        const header = grid.scrollView.headerItem
+        tryVerify(() => findChild(header,"technicalHeader_codec") === null)
+        tryVerify(() => findChild(header,"technicalHeader_rate") !== null)
+        tryVerify(() => findChild(grid.scrollView.itemAtIndex(0),"technicalCell_codec") === null)
+        const cell = findChild(grid.scrollView.itemAtIndex(0),"technicalCell_bits")
+        compare(cell.text,"24")
+        verify(grid.scrollView.contentWidth < wide)
+        grid.technicalColumns = []
+        tryVerify(() => findChild(header,"technicalHeader_rate") === null)
+        verify(findChild(header,"technicalHeader_album") !== null)
+        grid.technicalColumns = null
+        tryVerify(() => findChild(header,"technicalHeader_codec") !== null)
     }
     function test_clicking_the_album_row_opens_its_album_in_both_list_modes() {
         function albumRow(item) {

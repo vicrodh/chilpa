@@ -58,7 +58,7 @@ fn loose_tracks_contribute_to_columns_refine_and_split_artist_credits() {
     assert!(lib.facet_albums(&loose).unwrap().is_empty());
     for filter in [
         Filter { artist: Some("Solo".into()), year: Some(1997), ..loose.clone() },
-        Filter { queries: ["1997".into(), "Jazz".into(), "".into(), "Writer".into(), "".into(), "Solo".into(), "".into()], ..loose.clone() },
+        Filter { queries: ["1997".into(), "Jazz".into(), "".into(), "Writer".into(), "".into(), "Solo".into(), "".into(), "".into(), "".into()], ..loose.clone() },
         Filter { formats: vec!["flac".into()], qualities: vec!["lossless".into()], ..loose.clone() },
     ] {
         assert_eq!(lib.browse_ids(&filter, TrackOrder::Title).unwrap().ids, [2, 3]);

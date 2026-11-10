@@ -15,6 +15,7 @@ mod net;
 mod opener;
 pub(crate) mod playlists;
 mod reading;
+mod media;
 mod setup;
 mod sync;
 mod watch;
@@ -72,6 +73,7 @@ pub(crate) struct Servers {
     /// Held while a server's playlists are read or one of them is changed.
     gate: Arc<Mutex<()>>,
     writer: Option<writing::Writer>,
+    media: media::State,
     /// The playlists with a change on its way to their server, and, as the
     /// negative of its source, a server with a playlist being created.
     pending: std::collections::HashSet<i64>,
@@ -440,6 +442,7 @@ impl Chilpa {
 
     /// Reads the server's catalogue again.
     pub fn sync_server(&mut self, id: i64) {
+        if self.servers.media.affects(id) { return; }
         if self.removing_server(id) || !self.library().and_then(|lib| lib.server(id).ok().flatten()).is_some_and(|s| s.enabled) {
             eprintln!("chilpa-servers: sync of source {id} not asked: the server is disabled, being removed or no longer in the library");
             return;
@@ -456,6 +459,9 @@ impl Chilpa {
     /// playlist is still on its way.
     /// Nothing is kept to send later: the server is the source of truth.
     pub(crate) fn ask_server_change(&mut self, write: writing::Write) -> Result<(), String> {
+        if matches!(&write.change, writing::Change::DeleteMedia { .. }) {
+            return Err(chilpa_i18n::t("That change is not a playlist edit."));
+        }
         let Some(stored) = self.library().and_then(|lib| lib.server(write.source).ok().flatten()) else {
             return Err(chilpa_i18n::t("that server is no longer in the library"));
         };
@@ -511,6 +517,7 @@ impl Chilpa {
     fn poll_server_changes(&mut self) {
         let done = self.servers.writer.as_ref().map(|writer| writer.poll()).unwrap_or_default();
         for written in done {
+            if written.media { self.server_media_finished(written); continue; }
             self.servers.pending.remove(&if written.asked > 0 { written.asked } else { -written.source });
             if !written.request.is_empty() {
                 let state = if written.why.is_empty() {
@@ -541,7 +548,7 @@ impl Chilpa {
         let enabled: Vec<i64> = self.library().and_then(|lib| lib.servers().ok()).unwrap_or_default().into_iter().filter(|s| s.enabled && keeps(s)).map(|s| s.source_id).collect();
         if let Some(syncer) = self.servers.syncer.as_mut() {
             for id in enabled {
-                syncer.ask_playlists(id);
+                if !self.servers.media.affects(id) { syncer.ask_playlists(id); }
             }
         }
     }
@@ -652,6 +659,7 @@ impl Chilpa {
                 }
             }
         }
+        self.poll_server_media();
         let failed = std::mem::take(&mut *self.servers.failures.lock().unwrap_or_else(|e| e.into_inner()));
         if !failed.is_empty() {
             if let Some(watcher) = &self.servers.watcher {

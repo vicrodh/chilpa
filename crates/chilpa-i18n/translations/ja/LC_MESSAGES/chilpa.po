@@ -187,6 +187,9 @@ msgstr ""
 msgid "A selected queue is no longer available."
 msgstr "選択したキューは利用できなくなりました。"
 
+msgid "A server deletion is still in progress."
+msgstr ""
+
 msgid "A sidecar sets this, not the file"
 msgstr "この値はファイルではなくサイドカーファイルで設定されています"
 
@@ -1929,11 +1932,20 @@ msgstr "既定"
 msgid "Delete"
 msgstr "削除"
 
+msgid "Delete album from server?"
+msgstr ""
+
 msgid "Delete folder"
 msgstr "フォルダーを削除"
 
 msgid "Delete folder…"
 msgstr "フォルダーを削除…"
+
+msgid "Delete from server"
+msgstr ""
+
+msgid "Delete from server…"
+msgstr ""
 
 msgid "Delete playlist"
 msgstr "プレイリストを削除"
@@ -1947,14 +1959,23 @@ msgstr "保存したクエリを削除"
 msgid "Delete the saved query “{}”?"
 msgstr "保存したクエリ「{}」を削除しますか？"
 
+msgid "Delete track from server?"
+msgstr ""
+
 msgid "Delete “{}” on {}? It leaves the server too."
 msgstr "{2}の「{1}」を削除しますか？サーバーからも削除されます。"
 
 msgid "Delete “{}”?"
 msgstr "「{}」を削除しますか？"
 
+msgid "Deleted from server."
+msgstr ""
+
 msgid "Delete…"
 msgstr "削除…"
+
+msgid "Deleting…"
+msgstr ""
 
 msgid "Description"
 msgstr "説明"
@@ -6336,6 +6357,9 @@ msgstr "テキスト"
 msgid "That answer does not belong to this window."
 msgstr "その応答はこのウィンドウのものではありません。"
 
+msgid "That change is not a playlist edit."
+msgstr ""
+
 msgid "That file is not a JPEG, PNG or WebP image"
 msgstr "そのファイルはJPEG、PNG、WebPのいずれの画像でもありません"
 
@@ -6627,6 +6651,9 @@ msgstr "スキャン処理が予期せず停止しました。"
 msgid "The selected hardware volume control is gone."
 msgstr "選択したハードウェア音量コントロールがなくなりました。"
 
+msgid "The selected music changed. Open its menu and confirm again."
+msgstr ""
+
 msgid "The selected queues are empty."
 msgstr "選択したキューは空です。"
 
@@ -6638,6 +6665,9 @@ msgstr "選択したトラックを読み取れませんでした。"
 
 msgid "The server answered, and Chilpa can read its music."
 msgstr "サーバーが応答し、Chilpa は音楽を読み込めます。"
+
+msgid "The server deleted the music, but the local catalogue could not be updated. Sync the server again."
+msgstr ""
 
 msgid "The server did not take it: {}"
 msgstr "サーバーは受け付けませんでした：{}"
@@ -6739,6 +6769,9 @@ msgstr "このコレクションは現在のページ上限を超えています
 msgid "This computer"
 msgstr "このコンピューター"
 
+msgid "This deletion request is no longer active."
+msgstr ""
+
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr "この直接出力にはハードウェア音量コントロールがありません。DACまたはアンプを使ってください。"
 
@@ -6762,6 +6795,9 @@ msgstr "通常より時間がかかっています。MusicBrainzが混雑して�
 
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "システムがすでに音を送っている先なので、サンプルがどうなるかはその設定次第です。通常は他の音とミックスされ、結果がリサンプリングされます。必ず動作します。サンプルをそのまま届けるには、カード自体を選んでください。"
+
+msgid "This item is no longer available from the server."
+msgstr ""
 
 msgid "This looks like a playlist."
 msgstr "これはプレイリストのようです。"
@@ -6798,6 +6834,12 @@ msgstr "この出力はDSDをPCMに変換して受け取ります。DoPには排
 
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "この出力はDSDをPCMに変換して受け取ります。そのまま受け取るのはhwのカードだけです。カードに選んだ設定は保持されます。"
+
+msgid "This permanently deletes the album and all its tracks from the server's filesystem. It cannot be undone from Chilpa."
+msgstr ""
+
+msgid "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
+msgstr ""
 
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "このプレイリストには、追加する{2}トラックのうち{1}トラックがすでに含まれています。新しいものだけを追加するか、重複を含めてすべて追加してください。"
@@ -7065,6 +7107,9 @@ msgstr "Tunnel Flow"
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "サーバーのプレイリストを変更するには、ネットワークをオンにしてください。"
+
+msgid "Turn the network on to delete music from the server."
+msgstr ""
 
 msgid "Type"
 msgstr "種類"
@@ -8232,14 +8277,23 @@ msgstr "{}に問い合わせられるものではありません"
 msgid "that list is empty"
 msgstr "そのリストは空です"
 
+msgid "that music item is no longer available from this server"
+msgstr ""
+
 msgid "that server has no music library"
 msgstr "そのサーバーには音楽ライブラリがありません"
 
 msgid "that server is already in the library"
 msgstr "そのサーバーはすでにライブラリにあります"
 
+msgid "that server is being removed"
+msgstr ""
+
 msgid "that server is disabled"
 msgstr "そのサーバーは無効です"
+
+msgid "that server is disabled or no longer in the library"
+msgstr ""
 
 msgid "that server is no longer in the library"
 msgstr "そのサーバーはもうライブラリにありません"
@@ -8601,6 +8655,9 @@ msgstr "スキャンに失敗しました: {}"
 msgid "the sector is not encoded the way its area says"
 msgstr "セクターが、その領域が示す方式でエンコードされていません"
 
+msgid "the selected item is not the music item that was confirmed"
+msgstr ""
+
 msgid "the server answered with a message instead of the file"
 msgstr "サーバーがファイルではなくメッセージを返しました"
 
@@ -8627,6 +8684,9 @@ msgstr "サーバーがユーザーまたはパスワードを受け付けませ
 
 msgid "the server did not describe every track it listed; nothing was taken out, sync again"
 msgstr "サーバーが、一覧したトラックの一部について情報を返しませんでした。何も削除されていません。もう一度同期してください"
+
+msgid "the server did not describe the selected music item"
+msgstr ""
 
 msgid "the server did not say how long the file is"
 msgstr "サーバーがファイルの長さを返しませんでした"
@@ -8808,6 +8868,9 @@ msgstr "このプラグインはネットワーク権限を宣言していませ
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "このサーバーでは、プレイリストに複数回入っているトラックは移動できません"
 
+msgid "this server does not support deleting music from Chilpa"
+msgstr ""
+
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "このサーバーはChilpaからプレイリストの説明を受け付けません"
 
@@ -8816,6 +8879,9 @@ msgstr "このサーバーはトラックのすべてのコピーをプレイリ
 
 msgid "this track is on a server, and servers are not connected"
 msgstr "このトラックはサーバー上にあり、サーバーは接続されていません"
+
+msgid "this user may not delete that music on the server"
+msgstr ""
 
 msgid "this user may not do that on the server"
 msgstr "このユーザーには、サーバー上でその操作は許可されていません"

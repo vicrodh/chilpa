@@ -145,6 +145,8 @@ pub struct Facets {
     pub ratings: Vec<FacetEntry>,
     pub artists: Vec<FacetEntry>,
     pub albums: Vec<FacetEntry>,
+    pub bits: Vec<FacetEntry>,
+    pub rates: Vec<FacetEntry>,
 }
 
 /// A rating column's entry named for the window: its stars, or none.
@@ -740,7 +742,7 @@ impl Reader {
         let mut left = crate::library_query::facet_filter(f, "artist");
         let album_filter = crate::library_query::facet_filter(f, "album");
         left.choose(5, &[]);
-        left.queries[5..].fill(String::new());
+        left.queries[5..7].fill(String::new());
         let left_albums = read!(self.lib.facet_albums(&left));
         let left_ids: Vec<i64> = left_albums.iter().filter_map(|a| a.key.parse().ok()).collect();
         let mut albums = if f.artist.is_none() && f.artists.is_empty() && f.queries[5].trim().is_empty() && left.query == album_filter.query {
@@ -777,6 +779,8 @@ impl Reader {
         let years = read!(self.lib.facet_years_matching(&crate::library_query::facet_filter(f, "year")));
         Some(Facets {
             sources, years,
+            bits: read!(self.lib.facet_technical(&crate::library_query::facet_filter(f, "bits"), "bits")),
+            rates: read!(self.lib.facet_technical(&crate::library_query::facet_filter(f, "rate"), "rate")),
             genres: read!(self.lib.facet_genres(&crate::library_query::facet_filter(f, "genre"))), labels: read!(self.lib.facet_labels(&crate::library_query::facet_filter(f, "label"))),
             composers: read!(self.lib.facet_composers(&crate::library_query::facet_filter(f, "composer"))),
             ratings: read!(self.lib.facet_ratings(&crate::library_query::facet_filter(f, "rating"))).into_iter().map(named_stars).collect(), artists, albums,

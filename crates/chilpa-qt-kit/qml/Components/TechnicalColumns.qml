@@ -4,8 +4,10 @@ import "../Theme"
 
 // I share column boundaries between the album table's header and its rows.
 QtObject {
+    id: layoutModel
+    property var shown: null
     property real tableWidth: Metrics.nerdyTableWidth
-    readonly property var fields: [
+    readonly property var allFields: [
         { key: "tracks", width: Metrics.colPlaysCompact, label: I18n.tr("Tracks", I18n.rev) },
         { key: "format", width: Metrics.nerdyFormat, label: I18n.tr("Container", I18n.rev) },
         { key: "codec", width: Metrics.nerdyCodec, label: I18n.tr("Codec", I18n.rev) },
@@ -18,6 +20,10 @@ QtObject {
         { key: "source", width: Metrics.nerdySource, label: I18n.tr("Source", I18n.rev) },
         { key: "artwork", width: Metrics.nerdyArtwork, label: I18n.tr("Artwork", I18n.rev) }
     ]
+    readonly property var fields: shown === null ? allFields : allFields.filter(field => shown.indexOf(field.key) >= 0)
+    readonly property real minimumWidth: Metrics.nerdyTableWidth - allFields.reduce((sum, field) => sum + field.width, 0)
+        + fields.reduce((sum, field) => sum + field.width, 0)
+    readonly property var choices: allFields.map(field => ({ name: field.key, text: field.key === "bits" ? I18n.tr("Bit depth", I18n.rev) : field.label }))
     readonly property real textWidth: tableWidth - fields.reduce((sum, field) => sum + field.width, 0)
     readonly property var columns: layout([
         { key: "album", width: textWidth * 0.6, label: I18n.tr("Album", I18n.rev) },

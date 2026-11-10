@@ -15,7 +15,7 @@ pub fn entries(facets: &Facets, name: &str) -> Vec<FacetEntry> {
     match name {
         "year" => &facets.years, "genre" => &facets.genres, "label" => &facets.labels,
         "composer" => &facets.composers, "rating" => &facets.ratings,
-        "artist" => &facets.artists, "album" => &facets.albums, _ => return vec![],
+        "artist" => &facets.artists, "album" => &facets.albums, "bits" => &facets.bits, "rate" => &facets.rates, _ => return vec![],
     }.clone()
 }
 

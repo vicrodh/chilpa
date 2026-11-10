@@ -26,7 +26,7 @@ use rusqlite::params_from_iter;
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Filter {
     /// Header searches participate in the result, even with All selected.
-    pub queries: [String; 7],
+    pub queries: [String; 9],
     pub year: Option<i32>,
     pub genre: Option<String>,
     /// An album credit or any artist contributing to the album.
@@ -360,6 +360,8 @@ pub(super) fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
             3 => " AND t.id IN (SELECT cq.track_id FROM track_composers cq JOIN composers cc ON cc.id = cq.composer_id WHERE cc.name LIKE ? ESCAPE '\\')",
             // A rating's header search narrows its column, not the tracks.
             4 => continue,
+            7 => " AND CAST(t.bit_depth AS TEXT) LIKE ? ESCAPE '\\'",
+            8 => " AND CAST(t.sample_rate_hz AS TEXT) LIKE ? ESCAPE '\\'",
             _ => " AND a.title LIKE ? ESCAPE '\\'",
         });
         args.push(Box::new(pattern));
@@ -479,6 +481,25 @@ impl Library {
                 year: None,
                 icon: r.get(4)?,
             })
+        })?;
+        rows.collect()
+    }
+
+    /// Numeric technical choices, bounded to 4096 distinct positive values.
+    /// Unknown metadata stays unknown instead of becoming a zero-bit file.
+    pub fn facet_technical(&self, filter: &Filter, name: &str) -> rusqlite::Result<Vec<FacetEntry>> {
+        let (column, index) = match name {
+            "bits" => ("t.bit_depth", 7), "rate" => ("t.sample_rate_hz", 8), _ => return Ok(Vec::new()),
+        };
+        let mut filter = filter.clone();
+        filter.queries[index].clear();
+        let (condition, args) = self.browse_clause(&filter);
+        let sql = format!("SELECT {column}, count(DISTINCT coalesce(a.id, -t.id)) {FACET_FROM} {condition}
+            AND {column} > 0 GROUP BY {column} ORDER BY {column} LIMIT 4096");
+        let mut statement = self.db.prepare(&sql)?;
+        let rows = statement.query_map(params_from_iter(args.iter().map(|v| v.as_ref())), |row| {
+            let key = row.get::<_, i64>(0)?.to_string();
+            Ok(FacetEntry { label: key.clone(), key, albums: row.get::<_, i64>(1)? as usize, year: None, icon: String::new() })
         })?;
         rows.collect()
     }

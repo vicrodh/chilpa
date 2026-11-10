@@ -36,6 +36,7 @@ pub(crate) enum Change {
         description: Option<String>,
     },
     Delete,
+    DeleteMedia { target: chilpa_library::store::server_media::Target, remote: String },
     Add {
         tracks: Vec<String>,
     },
@@ -78,6 +79,7 @@ pub(crate) struct Written {
     /// Read back, the playlist names a track the library does not hold: a
     /// sync may bring it.
     pub(crate) missing: bool,
+    pub(crate) media: bool,
 }
 
 pub(crate) struct Writer {
@@ -112,12 +114,15 @@ impl Writer {
 }
 
 fn refused(write: &Write, why: String) -> Written {
-    Written { source: write.source, asked: write.playlist, playlist: write.playlist, request: write.request.clone(), why, missing: false }
+    Written { source: write.source, asked: write.playlist, playlist: write.playlist, request: write.request.clone(), why, missing: false, media: matches!(write.change, Change::DeleteMedia { .. }) }
 }
 
 /// Asks the server for one change, and writes the playlist as the server
 /// has it after.
 pub(crate) fn apply(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, gate: &Mutex<()>, write: &Write) -> Written {
+    if let Change::DeleteMedia { target, remote } = &write.change {
+        return super::media::apply(lib, net, keys, gate, write, target, remote);
+    }
     let failed = |why: String| refused(write, why);
     let Some(stored) = lib.server(write.source).ok().flatten() else {
         return failed(chilpa_i18n::t("that server is no longer in the library"));
@@ -256,6 +261,7 @@ fn protocol(stored: &chilpa_library::StoredServer, as_read: &PlaylistTracks, pla
         Change::Create { name, tracks, .. } => chilpa_servers::Change::Create { name: name.clone(), tracks: ids(tracks.as_slice())? },
         Change::Edit { name, description } => chilpa_servers::Change::Edit { name: name.clone(), description: description.clone() },
         Change::Delete => chilpa_servers::Change::Delete,
+        Change::DeleteMedia { .. } => return None,
         Change::Add { tracks } => chilpa_servers::Change::Add { tracks: ids(tracks.as_slice())? },
         Change::Remove { rows } => chilpa_servers::Change::Remove { at: rows.iter().map(|&row| places.get(row).copied()).collect::<Option<_>>()? },
         Change::Reorder { rows } => {

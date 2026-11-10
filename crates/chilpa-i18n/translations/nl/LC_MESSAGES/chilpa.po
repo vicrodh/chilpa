@@ -187,6 +187,9 @@ msgstr ""
 msgid "A selected queue is no longer available."
 msgstr "Een geselecteerde wachtrij is niet meer beschikbaar."
 
+msgid "A server deletion is still in progress."
+msgstr ""
+
 msgid "A sidecar sets this, not the file"
 msgstr "Een sidecar-bestand bepaalt dit, niet het bestand zelf"
 
@@ -1931,11 +1934,20 @@ msgstr "Standaard"
 msgid "Delete"
 msgstr "Verwijderen"
 
+msgid "Delete album from server?"
+msgstr ""
+
 msgid "Delete folder"
 msgstr "Map verwijderen"
 
 msgid "Delete folder…"
 msgstr "Map verwijderen…"
+
+msgid "Delete from server"
+msgstr ""
+
+msgid "Delete from server…"
+msgstr ""
 
 msgid "Delete playlist"
 msgstr "Afspeellijst verwijderen"
@@ -1949,14 +1961,23 @@ msgstr "Opgeslagen zoekopdracht verwijderen"
 msgid "Delete the saved query “{}”?"
 msgstr "Opgeslagen zoekopdracht ‘{}’ verwijderen?"
 
+msgid "Delete track from server?"
+msgstr ""
+
 msgid "Delete “{}” on {}? It leaves the server too."
 msgstr "‘{}' op {} verwijderen? Hij verdwijnt ook van de server."
 
 msgid "Delete “{}”?"
 msgstr "‘{}' verwijderen?"
 
+msgid "Deleted from server."
+msgstr ""
+
 msgid "Delete…"
 msgstr "Verwijderen…"
+
+msgid "Deleting…"
+msgstr ""
 
 msgid "Description"
 msgstr "Beschrijving"
@@ -6344,6 +6365,9 @@ msgstr "Tekst"
 msgid "That answer does not belong to this window."
 msgstr "Dat antwoord hoort niet bij dit venster."
 
+msgid "That change is not a playlist edit."
+msgstr ""
+
 msgid "That file is not a JPEG, PNG or WebP image"
 msgstr "Dat bestand is geen JPEG-, PNG- of WebP-afbeelding"
 
@@ -6635,6 +6659,9 @@ msgstr "Het scanproces is onverwacht gestopt."
 msgid "The selected hardware volume control is gone."
 msgstr "De geselecteerde hardwarevolumeregeling bestaat niet meer."
 
+msgid "The selected music changed. Open its menu and confirm again."
+msgstr ""
+
 msgid "The selected queues are empty."
 msgstr "De geselecteerde wachtrijen zijn leeg."
 
@@ -6646,6 +6673,9 @@ msgstr "De geselecteerde nummers konden niet worden gelezen."
 
 msgid "The server answered, and Chilpa can read its music."
 msgstr "De server antwoordde, en Chilpa kan de muziek lezen."
+
+msgid "The server deleted the music, but the local catalogue could not be updated. Sync the server again."
+msgstr ""
 
 msgid "The server did not take it: {}"
 msgstr "De server nam het niet aan: {}"
@@ -6748,6 +6778,9 @@ msgstr "Deze collectie overschrijdt de huidige paginalimiet."
 msgid "This computer"
 msgstr "Deze computer"
 
+msgid "This deletion request is no longer active."
+msgstr ""
+
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr "Deze directe uitvoer heeft geen hardwarevolumeregeling. Gebruik de DAC of versterker."
 
@@ -6771,6 +6804,9 @@ msgstr "Dit duurt langer dan gebruikelijk. MusicBrainz is mogelijk druk. Probeer
 
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "Dit is waar de machine al geluid naartoe stuurt, dus wat er met de samples gebeurt, hangt af van hoe dat is ingesteld -- meestal worden ze met al het andere gemixt en wordt het resultaat geresampled. Het werkt altijd. Kies voor samples die ongewijzigd aankomen de kaart zelf."
+
+msgid "This item is no longer available from the server."
+msgstr ""
 
 msgid "This looks like a playlist."
 msgstr "Dit lijkt een afspeellijst te zijn."
@@ -6807,6 +6843,12 @@ msgstr "Deze uitvoer krijgt DSD dat naar PCM is omgezet. DoP vereist de exclusie
 
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "Deze uitvoer krijgt DSD dat naar PCM is omgezet. Alleen een kaart op hw krijgt het ongewijzigd; wat voor de kaart is gekozen, blijft behouden."
+
+msgid "This permanently deletes the album and all its tracks from the server's filesystem. It cannot be undone from Chilpa."
+msgstr ""
+
+msgid "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
+msgstr ""
 
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "Deze afspeellijst bevat al {} van de {} nummers die je toevoegt. Voeg alleen de nieuwe toe, of voeg alles toe inclusief duplicaten."
@@ -7074,6 +7116,9 @@ msgstr "Tunnel Flow"
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Zet het netwerk aan om een afspeellijst van een server te wijzigen."
+
+msgid "Turn the network on to delete music from the server."
+msgstr ""
 
 msgid "Type"
 msgstr "Type"
@@ -8243,14 +8288,23 @@ msgstr "daar kan niet naar worden gevraagd bij {}"
 msgid "that list is empty"
 msgstr "die lijst is leeg"
 
+msgid "that music item is no longer available from this server"
+msgstr ""
+
 msgid "that server has no music library"
 msgstr "die server heeft geen muziekbibliotheek"
 
 msgid "that server is already in the library"
 msgstr "die server staat al in de bibliotheek"
 
+msgid "that server is being removed"
+msgstr ""
+
 msgid "that server is disabled"
 msgstr "die server is uitgeschakeld"
+
+msgid "that server is disabled or no longer in the library"
+msgstr ""
 
 msgid "that server is no longer in the library"
 msgstr "die server staat niet meer in de bibliotheek"
@@ -8612,6 +8666,9 @@ msgstr "de scan is mislukt: {}"
 msgid "the sector is not encoded the way its area says"
 msgstr "de sector is niet gecodeerd zoals het gebied aangeeft"
 
+msgid "the selected item is not the music item that was confirmed"
+msgstr ""
+
 msgid "the server answered with a message instead of the file"
 msgstr "de server antwoordde met een bericht in plaats van het bestand"
 
@@ -8638,6 +8695,9 @@ msgstr "de server heeft de gebruiker of het wachtwoord niet geaccepteerd"
 
 msgid "the server did not describe every track it listed; nothing was taken out, sync again"
 msgstr "de server heeft niet elk nummer beschreven dat het vermeldde; er is niets verwijderd, synchroniseer opnieuw"
+
+msgid "the server did not describe the selected music item"
+msgstr ""
 
 msgid "the server did not say how long the file is"
 msgstr "de server zei niet hoe lang het bestand is"
@@ -8819,6 +8879,9 @@ msgstr "deze plug-in heeft geen netwerktoestemming opgegeven"
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "deze server kan geen nummer verplaatsen dat meer dan eens in de afspeellijst staat"
 
+msgid "this server does not support deleting music from Chilpa"
+msgstr ""
+
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "deze server neemt de beschrijving van een afspeellijst niet over van Chilpa"
 
@@ -8827,6 +8890,9 @@ msgstr "deze server haalt alle kopieën van een nummer in één keer uit de afsp
 
 msgid "this track is on a server, and servers are not connected"
 msgstr "dit nummer staat op een server, en servers zijn niet verbonden"
+
+msgid "this user may not delete that music on the server"
+msgstr ""
 
 msgid "this user may not do that on the server"
 msgstr "deze gebruiker mag dat niet doen op de server"

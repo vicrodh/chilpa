@@ -26,6 +26,7 @@
 pub mod dlna;
 pub mod jellyfin;
 pub mod model;
+pub mod media;
 pub mod net;
 pub mod playlist;
 pub mod plex;
@@ -33,6 +34,7 @@ pub mod subsonic;
 mod text;
 
 pub use model::{Client, Credential, Details, Failure, Kind, Library, Page, Probe, Server, Stream, Track};
+pub use media::MediaKind;
 pub use net::{Net, Reply, Request};
 pub use playlist::{Change, Entry, Playlist, PlaylistListing, PlaylistTracks, PLAYLISTS, PLAYLIST_TRACKS};
 

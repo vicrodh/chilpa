@@ -23,6 +23,8 @@ Rectangle {
         { column: "label", title: I18n.tr("Label", I18n.rev) },
         { column: "composer", title: I18n.tr("Composer", I18n.rev) },
         { column: "rating", title: I18n.tr("Rating", I18n.rev) },
+        { column: "bits", title: I18n.tr("Bit depth", I18n.rev) },
+        { column: "rate", title: I18n.tr("Sample rate", I18n.rev) },
         { column: "artist", title: I18n.tr("Artist", I18n.rev) },
         { column: "album", title: I18n.tr("Album", I18n.rev) }
     ]

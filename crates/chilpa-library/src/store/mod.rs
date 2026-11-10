@@ -73,6 +73,7 @@ pub mod saved;
 mod related;
 pub(crate) mod reach;
 pub mod server_playlists;
+pub mod server_media;
 pub mod servers;
 pub mod overlay;
 mod compilations;

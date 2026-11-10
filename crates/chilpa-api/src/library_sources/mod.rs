@@ -305,6 +305,8 @@ impl Prepared {
                 2 => names.label.contains(query.as_str()),
                 3 => holds(&names.composers, query),
                 5 => holds(&names.artists, query),
+                7 => item.bits.is_some_and(|value| value.to_string().contains(query.as_str())),
+                8 => item.rate.is_some_and(|value| value.to_string().contains(query.as_str())),
                 _ => names.album_title.contains(query.as_str()),
             };
             if !found { return false; }

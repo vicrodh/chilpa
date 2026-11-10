@@ -30,7 +30,7 @@ fn field(name: &str) -> Option<Field> {
     Some(match name {
         "year" => Field::Year, "genre" => Field::Genre, "label" => Field::Label,
         "composer" => Field::Composer, "artist" => Field::Artist, "album" => Field::Album,
-        "rating" => Field::Rating, "added" => Field::Added, _ => return None,
+        "rating" => Field::Rating, "added" => Field::Added, "bits" => Field::Bits, "rate" => Field::Rate, _ => return None,
     })
 }
 

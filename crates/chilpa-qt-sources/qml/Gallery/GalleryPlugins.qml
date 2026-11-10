@@ -13,6 +13,9 @@ TitledFlow {
     title: "Plugins"
     HomeSection { width: Metrics.confirmWidth; entry: ({kind:"albums",title:"Deferred module"}) }
     MediaListeningPanel { width: Metrics.confirmWidth; height: Metrics.panesHeight }
+    PillButton { text: "Delete server music"; onClicked: mediaDelete.open() }
+    ServerMediaDeletion { listenForRequests: false }
+    ServerMediaDeleteDialog { id: mediaDelete; kind: "album"; localId: 0 }
     ServerKindChoice { width: Metrics.confirmWidth; chosen: "dlna" }
     ServerConnect { width: Metrics.confirmWidth; kind: "dlna"; preview: true
         setup: ({step:"address",kind:"dlna",searching:false,choices:[{id:"http://192.168.0.20:8200/rootDesc.xml",name:"Media server",detail:"MiniDLNA 1.3.3"}]}) }

@@ -111,7 +111,7 @@ fn value_terms(node: Node, terms: &mut Vec<Node>) {
 }
 
 fn set_value(nodes: &mut Vec<Node>, f: Field, v: String, state: ValueState) -> Option<()> {
-    if !matches!(f, Field::Year | Field::Genre | Field::Label | Field::Composer | Field::Artist | Field::Album | Field::Rating | Field::Plays | Field::Type | Field::Quality) { return None; }
+    if !matches!(f, Field::Year | Field::Genre | Field::Label | Field::Composer | Field::Artist | Field::Album | Field::Rating | Field::Plays | Field::Type | Field::Quality | Field::Bits | Field::Rate) { return None; }
     let same = |s: &str| s.to_lowercase() == v.to_lowercase();
     let f = if f==Field::Genre && nodes.iter().any(|n| {
         let inner=if let Node::Not(inner)=n {inner.as_ref()} else {n};

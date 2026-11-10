@@ -40,6 +40,8 @@ Window {
     // does not keep it away, so there is none to draw, as in QBZ.
     title: systemControls.kept ? "" : "Chilpa"
 
+    ServerMediaDeletion {}
+
     // The dynamic background, under everything (design/01 1.6).
     Backdrop.AppBackground {
         visible: !DisplayMode.active || !DisplayMode.provider || DisplayMode.provider.ambient !== false

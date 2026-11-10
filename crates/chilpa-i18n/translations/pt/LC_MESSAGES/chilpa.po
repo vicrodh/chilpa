@@ -187,6 +187,9 @@ msgstr ""
 msgid "A selected queue is no longer available."
 msgstr "Uma fila selecionada não está mais disponível."
 
+msgid "A server deletion is still in progress."
+msgstr ""
+
 msgid "A sidecar sets this, not the file"
 msgstr "Um arquivo auxiliar define isso, não o arquivo de áudio"
 
@@ -1931,11 +1934,20 @@ msgstr "Padrão"
 msgid "Delete"
 msgstr "Excluir"
 
+msgid "Delete album from server?"
+msgstr ""
+
 msgid "Delete folder"
 msgstr "Excluir pasta"
 
 msgid "Delete folder…"
 msgstr "Excluir pasta…"
+
+msgid "Delete from server"
+msgstr ""
+
+msgid "Delete from server…"
+msgstr ""
 
 msgid "Delete playlist"
 msgstr "Excluir playlist"
@@ -1949,14 +1961,23 @@ msgstr "Excluir consulta salva"
 msgid "Delete the saved query “{}”?"
 msgstr "Excluir a consulta salva “{}”?"
 
+msgid "Delete track from server?"
+msgstr ""
+
 msgid "Delete “{}” on {}? It leaves the server too."
 msgstr "Excluir “{}” em {}? Ela também sai do servidor."
 
 msgid "Delete “{}”?"
 msgstr "Excluir “{}”?"
 
+msgid "Deleted from server."
+msgstr ""
+
 msgid "Delete…"
 msgstr "Excluir…"
+
+msgid "Deleting…"
+msgstr ""
 
 msgid "Description"
 msgstr "Descrição"
@@ -6344,6 +6365,9 @@ msgstr "Texto"
 msgid "That answer does not belong to this window."
 msgstr "Essa resposta não pertence a esta janela."
 
+msgid "That change is not a playlist edit."
+msgstr ""
+
 msgid "That file is not a JPEG, PNG or WebP image"
 msgstr "Esse arquivo não é uma imagem JPEG, PNG ou WebP"
 
@@ -6635,6 +6659,9 @@ msgstr "O processo de verificação parou inesperadamente."
 msgid "The selected hardware volume control is gone."
 msgstr "O controle de volume de hardware selecionado não existe mais."
 
+msgid "The selected music changed. Open its menu and confirm again."
+msgstr ""
+
 msgid "The selected queues are empty."
 msgstr "As filas selecionadas estão vazias."
 
@@ -6646,6 +6673,9 @@ msgstr "Não foi possível ler as faixas selecionadas."
 
 msgid "The server answered, and Chilpa can read its music."
 msgstr "O servidor respondeu e o Chilpa consegue ler a música."
+
+msgid "The server deleted the music, but the local catalogue could not be updated. Sync the server again."
+msgstr ""
 
 msgid "The server did not take it: {}"
 msgstr "O servidor não aceitou: {}"
@@ -6748,6 +6778,9 @@ msgstr "Esta coleção excede o limite atual de páginas."
 msgid "This computer"
 msgstr "Este computador"
 
+msgid "This deletion request is no longer active."
+msgstr ""
+
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr "Esta saída direta não tem controle de volume de hardware. Use o DAC ou o amplificador."
 
@@ -6771,6 +6804,9 @@ msgstr "Isso está demorando mais que o normal. O MusicBrainz pode estar ocupado
 
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "É para onde a máquina já envia o som, então o que acontece com as amostras depende de como isso estiver configurado -- em geral, misturá-las com todo o resto e reamostrar o resultado. Sempre funciona. Para amostras que chegam como saíram, escolha a própria placa."
+
+msgid "This item is no longer available from the server."
+msgstr ""
 
 msgid "This looks like a playlist."
 msgstr "Isto parece ser uma playlist."
@@ -6807,6 +6843,12 @@ msgstr "Esta saída recebe DSD convertido para PCM. O DoP exige o modo exclusivo
 
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "Esta saída recebe DSD convertido para PCM. Só uma placa em hw o recebe sem alteração; o que foi escolhido para a placa é mantido."
+
+msgid "This permanently deletes the album and all its tracks from the server's filesystem. It cannot be undone from Chilpa."
+msgstr ""
+
+msgid "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
+msgstr ""
 
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "Esta playlist já contém {} das {} faixas que você está adicionando. Adicione apenas as novas ou tudo, incluindo as duplicadas."
@@ -7074,6 +7116,9 @@ msgstr "Tunnel Flow"
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Ative a rede para alterar uma playlist de um servidor."
+
+msgid "Turn the network on to delete music from the server."
+msgstr ""
 
 msgid "Type"
 msgstr "Tipo"
@@ -8243,14 +8288,23 @@ msgstr "isso não é algo que {} possa pedir"
 msgid "that list is empty"
 msgstr "essa lista está vazia"
 
+msgid "that music item is no longer available from this server"
+msgstr ""
+
 msgid "that server has no music library"
 msgstr "esse servidor não tem biblioteca de música"
 
 msgid "that server is already in the library"
 msgstr "esse servidor já está na biblioteca"
 
+msgid "that server is being removed"
+msgstr ""
+
 msgid "that server is disabled"
 msgstr "esse servidor está desativado"
+
+msgid "that server is disabled or no longer in the library"
+msgstr ""
 
 msgid "that server is no longer in the library"
 msgstr "esse servidor não está mais na biblioteca"
@@ -8612,6 +8666,9 @@ msgstr "o escaneamento falhou: {}"
 msgid "the sector is not encoded the way its area says"
 msgstr "o setor não está codificado como a área dele diz"
 
+msgid "the selected item is not the music item that was confirmed"
+msgstr ""
+
 msgid "the server answered with a message instead of the file"
 msgstr "o servidor respondeu com uma mensagem em vez do arquivo"
 
@@ -8638,6 +8695,9 @@ msgstr "o servidor não aceitou o usuário ou a senha"
 
 msgid "the server did not describe every track it listed; nothing was taken out, sync again"
 msgstr "o servidor não descreveu todas as faixas que listou; nada foi removido, sincronize novamente"
+
+msgid "the server did not describe the selected music item"
+msgstr ""
 
 msgid "the server did not say how long the file is"
 msgstr "o servidor não informou o tamanho do arquivo"
@@ -8819,6 +8879,9 @@ msgstr "este plugin não declarou nenhuma permissão de rede"
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "este servidor não consegue mover uma faixa que está mais de uma vez na playlist"
 
+msgid "this server does not support deleting music from Chilpa"
+msgstr ""
+
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "este servidor não aceita a descrição de uma playlist vinda do Chilpa"
 
@@ -8827,6 +8890,9 @@ msgstr "este servidor tira da playlist todas as cópias de uma faixa de uma vez;
 
 msgid "this track is on a server, and servers are not connected"
 msgstr "esta faixa está em um servidor, e os servidores não estão conectados"
+
+msgid "this user may not delete that music on the server"
+msgstr ""
 
 msgid "this user may not do that on the server"
 msgstr "este usuário não pode fazer isso no servidor"

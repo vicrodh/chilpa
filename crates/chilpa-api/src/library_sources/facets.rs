@@ -13,7 +13,7 @@ fn left_of(f: &Filter, column: usize) -> Filter {
     let name = ["year", "genre", "label", "composer", "rating", "artist", "album"][column];
     let mut left = crate::library_query::facet_filter(f, name);
     left.choose(column, &[]);
-    left.queries[column..].fill(String::new());
+    left.queries[column..7].fill(String::new());
     left
 }
 
@@ -57,6 +57,23 @@ fn add_named(entries: &mut Vec<FacetEntry>, found: Vec<(String, usize)>) {
 pub(crate) fn merge(facets: &mut Facets, f: &Filter, index: &SourceIndex, stars: &Stars, grouping: Option<super::Grouping>) {
     if index.items.is_empty() { return; }
     facets.sources.extend(index.sources.iter().cloned());
+    for (name, query, rows) in [("bits", 7, &mut facets.bits), ("rate", 8, &mut facets.rates)] {
+        let mut filter = crate::library_query::facet_filter(f, name);
+        filter.queries[query].clear();
+        let prepared = Prepared::new(&filter);
+        let mut values = std::collections::BTreeMap::<i64, HashSet<i64>>::new();
+        for item in index.items.iter().filter(|item| prepared.passes(item, stars)) {
+            if let Some(value) = (if name == "bits" { item.bits } else { item.rate }).filter(|value| *value > 0) {
+                if values.len() < 4096 || values.contains_key(&value) { values.entry(value).or_default().insert(item.record()); }
+            }
+        }
+        for (value, records) in values {
+            let key = value.to_string();
+            if let Some(row) = rows.iter_mut().find(|row| row.key == key) { row.albums += records.len(); }
+            else if rows.len() < 4096 { rows.push(FacetEntry { label: key.clone(), key, albums: records.len(), year: None, icon: String::new() }); }
+        }
+        rows.sort_by_key(|row| row.key.parse::<i64>().unwrap_or(0));
+    }
     let left = |column: usize| { let filter = Prepared::new(&left_of(f, column)); move |item: &&SourceItem| filter.passes(item, stars) };
     let mut years: HashMap<i32, HashSet<i64>> = HashMap::new();
     for item in index.items.iter().filter(left(0)) {

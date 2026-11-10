@@ -24,6 +24,7 @@ use crate::net::{Net, Reply, Request};
 use crate::text::{artist_line, encode, number, string, unix_time};
 
 pub mod playlists;
+pub(crate) mod media;
 
 /// Tracks per page.
 const PAGE: u64 = 250;

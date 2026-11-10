@@ -152,7 +152,7 @@ impl Chilpa {
                 };
                 lib.update_playlist(stored.id, &edit).is_ok()
             }
-            Change::Create { .. } | Change::Add { .. } | Change::Remove { .. } | Change::Reorder { .. } => false,
+            Change::Create { .. } | Change::Add { .. } | Change::Remove { .. } | Change::Reorder { .. } | Change::DeleteMedia { .. } => false,
         };
         self.servers.changed |= done;
         done

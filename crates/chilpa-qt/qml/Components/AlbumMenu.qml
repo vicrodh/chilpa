@@ -34,6 +34,7 @@ CascadingMenu {
         const favorite = nativeInfo.plugin ? nativeInfo.favorite : Ratings.favorite("album", id, Ratings.rev)
         // 1 kept apart from its other versions, 0 grouped with one, -1 neither.
         const apart = one && id > 0 ? Library.albumApart(id) : -1
+        const deletable = one && id > 0 && !!JSON.parse(Sources.serverMediaInfo("album", id)).ref
         const all = [
             { text: I18n.trCount("{} record", "{} records", AlbumActions.selectedCount, I18n.rev), note: true, when: !one },
             { text: I18n.tr("Play now", I18n.rev), act: "play", glyph: Icons.playerPlayFilled, filled: true },
@@ -55,6 +56,7 @@ CascadingMenu {
             { text: favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev),
               act: favorite ? "unfavorite" : "favorite", when: one && (id > 0 || nativeInfo.favorite_supported !== false && nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")) }
         ]
+        if (deletable) all.push({separator:true}, {text:I18n.tr("Delete from server…", I18n.rev),act:"server_delete",glyph:Icons.trash})
         // The extra queues come from the facade, as they do for a track.
         entries = extraEntries.concat(all.filter(e => e.when === undefined || e.when)).concat(JSON.parse(AlbumActions.listenTargetsJson()))
         x = left
@@ -67,6 +69,7 @@ CascadingMenu {
         if (act.startsWith("extension:")) { menu.extraAction(entry); return }
         if (act.startsWith("buffer:")) { AlbumActions.listAction(albumId, act); ListenList.refresh(); if (act === "buffer:new") Navigation.go("listenlist", 0); return }
         switch (act) {
+        case "server_delete": Sources.serverMediaRequested("album", albumId); break;
         case "play": if (playAction) playAction(); else AlbumActions.play(albumId, false); break
         case "next": AlbumActions.playNext(albumId); break
         case "later": AlbumActions.playLater(albumId, title); break

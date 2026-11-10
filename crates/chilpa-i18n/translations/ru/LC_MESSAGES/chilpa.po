@@ -187,6 +187,9 @@ msgstr ""
 msgid "A selected queue is no longer available."
 msgstr "Выбранная очередь больше недоступна."
 
+msgid "A server deletion is still in progress."
+msgstr ""
+
 msgid "A sidecar sets this, not the file"
 msgstr "Это задаёт вспомогательный файл, а не сам файл"
 
@@ -1933,11 +1936,20 @@ msgstr "По умолчанию"
 msgid "Delete"
 msgstr "Удалить"
 
+msgid "Delete album from server?"
+msgstr ""
+
 msgid "Delete folder"
 msgstr "Удалить папку"
 
 msgid "Delete folder…"
 msgstr "Удалить папку…"
+
+msgid "Delete from server"
+msgstr ""
+
+msgid "Delete from server…"
+msgstr ""
 
 msgid "Delete playlist"
 msgstr "Удалить плейлист"
@@ -1951,14 +1963,23 @@ msgstr "Удалить сохранённый запрос"
 msgid "Delete the saved query “{}”?"
 msgstr "Удалить сохранённый запрос «{}»?"
 
+msgid "Delete track from server?"
+msgstr ""
+
 msgid "Delete “{}” on {}? It leaves the server too."
 msgstr "Удалить «{}» на {}? Он удалится и с сервера."
 
 msgid "Delete “{}”?"
 msgstr "Удалить «{}»?"
 
+msgid "Deleted from server."
+msgstr ""
+
 msgid "Delete…"
 msgstr "Удалить…"
+
+msgid "Deleting…"
+msgstr ""
 
 msgid "Description"
 msgstr "Описание"
@@ -6352,6 +6373,9 @@ msgstr "Текст"
 msgid "That answer does not belong to this window."
 msgstr "Этот ответ не относится к этому окну."
 
+msgid "That change is not a playlist edit."
+msgstr ""
+
 msgid "That file is not a JPEG, PNG or WebP image"
 msgstr "Этот файл не является изображением JPEG, PNG или WebP"
 
@@ -6643,6 +6667,9 @@ msgstr "Процесс сканирования неожиданно остан�
 msgid "The selected hardware volume control is gone."
 msgstr "Выбранный регулятор аппаратной громкости исчез."
 
+msgid "The selected music changed. Open its menu and confirm again."
+msgstr ""
+
 msgid "The selected queues are empty."
 msgstr "Выбранные очереди пусты."
 
@@ -6654,6 +6681,9 @@ msgstr "Не удалось прочитать выбранные треки."
 
 msgid "The server answered, and Chilpa can read its music."
 msgstr "Сервер ответил, и Chilpa может читать его музыку."
+
+msgid "The server deleted the music, but the local catalogue could not be updated. Sync the server again."
+msgstr ""
 
 msgid "The server did not take it: {}"
 msgstr "Сервер не принял: {}"
@@ -6757,6 +6787,9 @@ msgstr "Эта коллекция превышает текущий лимит �
 msgid "This computer"
 msgstr "Этот компьютер"
 
+msgid "This deletion request is no longer active."
+msgstr ""
+
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr "У этого прямого вывода нет аппаратной регулировки громкости. Используйте DAC или усилитель."
 
@@ -6780,6 +6813,9 @@ msgstr "Это занимает больше времени, чем обычно
 
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "Это то, куда система уже отправляет звук, поэтому с сэмплами происходит то, что там настроено, — обычно они смешиваются со всем остальным, а результат ресемплируется. Работает всегда. Чтобы сэмплы приходили в том виде, в каком были в файле, выберите саму карту."
+
+msgid "This item is no longer available from the server."
+msgstr ""
 
 msgid "This looks like a playlist."
 msgstr "Похоже, это плейлист."
@@ -6816,6 +6852,12 @@ msgstr "Этот вывод принимает DSD, преобразованны
 
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "Этот вывод принимает DSD, преобразованный в PCM. Без изменений его принимает только карта на hw; выбранное для карты сохраняется."
+
+msgid "This permanently deletes the album and all its tracks from the server's filesystem. It cannot be undone from Chilpa."
+msgstr ""
+
+msgid "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
+msgstr ""
 
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "В этом плейлисте уже есть часть добавляемых треков: {} из {}. Можно добавить только новые или все, включая дубликаты."
@@ -7083,6 +7125,9 @@ msgstr "Tunnel Flow"
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Включите сеть, чтобы изменить плейлист на сервере."
+
+msgid "Turn the network on to delete music from the server."
+msgstr ""
 
 msgid "Type"
 msgstr "Тип"
@@ -8254,14 +8299,23 @@ msgstr "у {} нельзя запросить это"
 msgid "that list is empty"
 msgstr "этот список пуст"
 
+msgid "that music item is no longer available from this server"
+msgstr ""
+
 msgid "that server has no music library"
 msgstr "на этом сервере нет музыкальной библиотеки"
 
 msgid "that server is already in the library"
 msgstr "этот сервер уже есть в библиотеке"
 
+msgid "that server is being removed"
+msgstr ""
+
 msgid "that server is disabled"
 msgstr "этот сервер отключён"
+
+msgid "that server is disabled or no longer in the library"
+msgstr ""
 
 msgid "that server is no longer in the library"
 msgstr "этого сервера больше нет в библиотеке"
@@ -8623,6 +8677,9 @@ msgstr "сбой сканирования: {}"
 msgid "the sector is not encoded the way its area says"
 msgstr "сектор закодирован не так, как указывает его область"
 
+msgid "the selected item is not the music item that was confirmed"
+msgstr ""
+
 msgid "the server answered with a message instead of the file"
 msgstr "сервер ответил сообщением вместо файла"
 
@@ -8649,6 +8706,9 @@ msgstr "сервер не принял пользователя или паро�
 
 msgid "the server did not describe every track it listed; nothing was taken out, sync again"
 msgstr "сервер описал не все треки из своего списка; ничего не удалено, синхронизируйте снова"
+
+msgid "the server did not describe the selected music item"
+msgstr ""
 
 msgid "the server did not say how long the file is"
 msgstr "сервер не сообщил длину файла"
@@ -8830,6 +8890,9 @@ msgstr "этот плагин не объявил сетевого разреш�
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "этот сервер не может переместить трек, который есть в плейлисте больше одного раза"
 
+msgid "this server does not support deleting music from Chilpa"
+msgstr ""
+
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "этот сервер не принимает описание плейлиста от Chilpa"
 
@@ -8838,6 +8901,9 @@ msgstr "этот сервер удаляет из плейлиста все ко
 
 msgid "this track is on a server, and servers are not connected"
 msgstr "этот трек на сервере, а серверы не подключены"
+
+msgid "this user may not delete that music on the server"
+msgstr ""
 
 msgid "this user may not do that on the server"
 msgstr "этому пользователю это не разрешено на сервере"
