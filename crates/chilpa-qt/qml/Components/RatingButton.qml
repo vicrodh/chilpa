@@ -42,6 +42,9 @@ Item {
 
     Popup {
         id: flyout
+        objectName: "ratingFlyout"
+        // Expose the owned item without starting deferred popup construction.
+        readonly property Item inputItem: ratingContent
         PopupInput { surface: flyout }
 
         modal: true
@@ -71,9 +74,11 @@ Item {
         }
 
         contentItem: Column {
+            id: ratingContent
             spacing: Metrics.gap8
 
             RatingStars {
+                objectName: "ratingFlyoutStars"
                 anchors.horizontalCenter: parent.horizontalCenter
                 value: control.value
                 onRated: (stars) => {
