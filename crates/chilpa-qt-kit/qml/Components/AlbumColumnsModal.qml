@@ -9,6 +9,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 Modal {
     id: chooser
     objectName: "albumColumns"
+    preferredWidth: Metrics.sleepTimer + Metrics.modalInsets
 
     property var shown: []
     property var options: []

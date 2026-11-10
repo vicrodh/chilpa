@@ -17,6 +17,8 @@ Modal {
     property string page: preview ? "equipment" : AudioOutput.tab
     property Item returnFocus
     property var ownerWindow: parent ? parent.Window.window : null
+    // The panel's own width; Modal's default is a confirmation's.
+    preferredWidth: Metrics.outputDetailsWidth + Metrics.modalInsets
     modal: false
     dim: false
     closePolicy: QQC.Popup.CloseOnEscape
@@ -29,7 +31,7 @@ Modal {
         if (!preview) AudioOutput.close()
     }
     Column {
-        width: Math.min(Metrics.outputDetailsWidth, Math.max(0, (panel.parent?.width ?? Metrics.outputDetailsWidth) - Metrics.modalInsets - Metrics.gap24))
+        width: parent.width
         spacing: Metrics.gap12
         Row {
             width: parent.width

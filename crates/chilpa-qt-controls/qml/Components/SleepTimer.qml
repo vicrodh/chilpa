@@ -12,6 +12,7 @@ import "../Theme"
 Modal {
     id: timer
     objectName: "sleepTimer"
+    preferredWidth: Metrics.sleepTimer + Metrics.modalInsets
 
     readonly property bool running: Controls.sleepLeft !== ""
     // The times offered, in minutes; after them, one typed by hand.
