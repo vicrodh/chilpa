@@ -3,6 +3,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as Confirmations
 import app.chilpa
 import app.chilpa.devices
 import app.chilpa.sources
+import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
@@ -29,6 +30,11 @@ CascadingMenu {
             entry.filled = entry.act === "play"
             return entry
         })
+        const chosen = model.chosenTrackIdsJson(row)
+        if (JSON.parse(Sources.offline("info", "tracks", chosen)).count > 0) {
+            if (entries.length > 0) entries = entries.concat([{separator:true}])
+            entries = entries.concat([{act:"offline",text:I18n.tr("Make available offline…", I18n.rev)}])
+        }
         if (entries.length === 0) return
         x = left
         y = top
@@ -37,8 +43,12 @@ CascadingMenu {
 
     onActionChosen: (entry) => {
         const act = entry.act
-        if (["dequeue","remove","listen:remove","listen:after"].includes(act) || act.startsWith("buffer:replace:")) {
-            removal.show(model,row,act,false,"")
+        if (act === "offline") {
+            Sources.offlineRequested("tracks", model.chosenTrackIdsJson(row))
+            return
+        }
+        if (act === "remove") {
+            removal.show(model,row)
             return
         }
         if (act.startsWith("buffer:") || act.startsWith("listen:")) {
@@ -59,7 +69,9 @@ CascadingMenu {
         } else if (act === "sync") {
             DeviceSync.useTracks(model.chosenTrackIdsJson(row))
             Navigation.go("deviceSync", 0)
-        } else if (act === "server_delete") {
+        } else if (act === "dequeue")
+            Player.removeQueued(row)
+        else if (act === "server_delete") {
             const ids = JSON.parse(model.chosenTrackIdsJson(row))
             if (ids.length === 1) Sources.serverMediaRequested("track", ids[0])
         } else if (act === "up" || act === "down")

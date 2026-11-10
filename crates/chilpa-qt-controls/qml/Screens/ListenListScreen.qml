@@ -139,7 +139,7 @@ Item {
                 }
                 IconButton { objectName: "queueSavePlaylist"; glyph: Icons.playlistAdd; size: Metrics.button32; round: true; tip: I18n.tr("Save as playlist", I18n.rev); enabled: tracks.count > 0; onClicked: { page.forceActiveFocus(); ListenList.command("save", page.document.selected, "") } }
                 IconButton { objectName: "queueMerge"; glyph: Icons.stack2; size: Metrics.button32; round: true; tip: I18n.tr("Combine queues", I18n.rev); enabled: (page.document.tabs || []).length > 1 && !page.document.pending; onClicked: merging.show() }
-                IconButton { glyph: Icons.trash; size: Metrics.button32; round: true; tip: I18n.tr("Clear queue", I18n.rev); onClicked: clearing.show(page.document.selected, false) }
+                IconButton { objectName: "clearQueue"; glyph: Icons.trash; size: Metrics.button32; round: true; tip: I18n.tr("Clear queue", I18n.rev); onClicked: ListenList.command("clear", page.document.selected, "") }
                 IconButton { glyph: Lucide.undo2; iconFamily: Lucide.font; size: Metrics.button32; round: true; tip: I18n.tr("Undo queue edit", I18n.rev); enabled: page.document.undo || false; onClicked: ListenList.command("undo", "", "") }
                 IconButton { objectName: "queuesTimer"; glyph: SourceGlyphs.clock; iconFamily: SourceGlyphs.font; size: Metrics.button32; round: true; tone: Controls.sleepLeft !== "" ? "accent" : "secondary"; tip: Controls.sleepLeft !== "" ? I18n.trArgs("Stops in {}", [Controls.sleepLeft], I18n.rev) : I18n.tr("Sleep timer", I18n.rev); onClicked: sleep.open() }
             }
@@ -239,5 +239,4 @@ Item {
             font.pointSize: Type.body
         }
     }
-    Parts.QueueClearDialog { id: clearing }
 }

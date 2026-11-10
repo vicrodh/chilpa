@@ -41,6 +41,12 @@ TestCase {
         compare(submitted.signalArguments[0][2].plugin,"fixture.id")
         compare(submitted.signalArguments[0][2].revision,1)
     }
+    function test_replacing_settings_requires_one_confirmation() {
+        form.document = {revision:1,form:{fields:[],actions:[{key:"disconnect",label:"Reset",fields:[],destructive:"settings"}]}}
+        ask()
+        findChild(question().contentItem,"confirmationAccept").clicked()
+        compare(submitted.count,1)
+    }
     function test_cancel_discards_the_captured_payload_without_submitting() {
         ask()
         first()

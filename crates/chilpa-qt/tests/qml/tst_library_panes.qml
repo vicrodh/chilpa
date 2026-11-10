@@ -19,6 +19,10 @@ TestCase {
 
     LibraryPanes { id: panes; width: 1200; height: 300 }
 
+    function init() {
+        failOnWarning(/Cannot create delegate|Object or context destroyed during incubation|invalid context|TypeError/)
+    }
+
     function shown() {
         const out = []
         for (let i = 0; i < panes.children.length; ++i) {
@@ -92,5 +96,32 @@ TestCase {
         panes.shown = ["composer"]
         waitForRendering(panes)
         compare(shown().map(c => c.column).join(","), "composer")
+    }
+
+    function test_equivalent_columns_keep_their_models_and_rows() {
+        panes.shown = ["artist", "album"]
+        waitForRendering(panes)
+        const original = shown()
+        panes.shown = ["artist", "album"]
+        waitForRendering(panes)
+        compare(shown()[0], original[0])
+        compare(shown()[1], original[1])
+    }
+
+    function test_retiring_columns_cancels_cached_rows_before_their_contexts() {
+        const entries = Array.from({length:500}, (_, index) => ({
+            key:String(index),label:"Fixture "+index,meta:"1",selected:false,excluded:false,all:false
+        }))
+        for (let cycle = 0; cycle < 12; ++cycle) {
+            panes.shown = ["artist", "album", "bits", "rate"]
+            for (const column of shown()) {
+                const list = Array.from(column.children).find(child => child.contentItem !== undefined)
+                list.model.append(entries)
+            }
+            wait(1)
+            panes.shown = ["artist"]
+            waitForRendering(panes)
+            compare(shown().length, 1)
+        }
     }
 }

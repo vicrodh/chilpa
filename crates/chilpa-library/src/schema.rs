@@ -21,6 +21,8 @@ mod revisions;
 mod metadata;
 mod device_sync;
 mod server_sessions;
+mod server_storage;
+mod offline_audio;
 
 use rusqlite::Connection;
 use std::path::{Path, PathBuf};
@@ -28,7 +30,7 @@ use later::*;
 use steps::*;
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 51;
+pub const VERSION: i64 = 53;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -36,7 +38,7 @@ pub const VERSION: i64 = 51;
 /// Each step runs once and is never edited after shipping: a database that
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
-const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30, MIGRATION_V31, MIGRATION_V32, MIGRATION_V33, MIGRATION_V34, MIGRATION_V35, MIGRATION_V36, MIGRATION_V37, MIGRATION_V38, MIGRATION_V39, MIGRATION_V40, MIGRATION_V41, MIGRATION_V42, revisions::MIGRATION_V43, metadata::MIGRATION_V44, device_sync::MIGRATION_V45, revisions::MIGRATION_V46, MIGRATION_V47, MIGRATION_V48, MIGRATION_V49, MIGRATION_V50, server_sessions::MIGRATION_V51];
+const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30, MIGRATION_V31, MIGRATION_V32, MIGRATION_V33, MIGRATION_V34, MIGRATION_V35, MIGRATION_V36, MIGRATION_V37, MIGRATION_V38, MIGRATION_V39, MIGRATION_V40, MIGRATION_V41, MIGRATION_V42, revisions::MIGRATION_V43, metadata::MIGRATION_V44, device_sync::MIGRATION_V45, revisions::MIGRATION_V46, MIGRATION_V47, MIGRATION_V48, MIGRATION_V49, MIGRATION_V50, server_sessions::MIGRATION_V51, server_storage::MIGRATION_V52, offline_audio::MIGRATION_V53];
 
 /// Where the copy of a library about to be upgraded goes.
 ///
@@ -491,6 +493,19 @@ mod tests {
         let kept: (i64,String,String) = db.query_row("SELECT session_revision,account,details FROM servers WHERE source_id=1",[],
             |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?))).unwrap();
         assert_eq!(kept,(0,"fixture-user".into(),r#"{"extensions":["songLyrics"]}"#.into()));
+    }
+
+    #[test]
+    fn offline_destinations_start_inherited_and_preserve_existing_sessions() {
+        let db = Connection::open_in_memory().unwrap();
+        stop_at(&db,51);
+        db.execute_batch("INSERT INTO sources(id,provider,instance,kind) VALUES(1,'example-server','fixture','server');
+            INSERT INTO servers(source_id,address,account,identity,product,libraries,details,added_at,session_revision)
+            VALUES(1,'http://fixture.invalid','fixture-user','fixture-server','Fixture','[]','{}',0,7);").unwrap();
+        migrate(&db).unwrap();
+        let kept: (String,i64,String) = db.query_row("SELECT offline_folder,session_revision,account FROM servers WHERE source_id=1",[],
+            |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?))).unwrap();
+        assert_eq!(kept,(String::new(),7,"fixture-user".into()));
     }
 
     #[test]

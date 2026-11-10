@@ -31,6 +31,7 @@ Item {
             : I18n.tr("Chilpa will make smaller covers and backgrounds again when needed.", I18n.rev)
         confirmText: I18n.tr("Clear", I18n.rev)
         destructive: true
+        doubleConfirmation: true
         onConfirmed: storage.rows.press("storage.clear." + kind)
     }
     Timer {

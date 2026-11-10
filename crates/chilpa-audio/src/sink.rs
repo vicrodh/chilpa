@@ -284,8 +284,9 @@ impl StopSignal {
 
     /// Clears the flag for the next track. An old stop order must not kill
     /// what starts afterwards.
+    /// Acquires the state published with the consumed stop signal.
     pub fn reset(&self) {
-        self.0.store(false, Ordering::Release);
+        self.0.swap(false, Ordering::AcqRel);
     }
 }
 

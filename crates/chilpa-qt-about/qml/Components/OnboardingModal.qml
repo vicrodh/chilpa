@@ -86,7 +86,8 @@ Modal {
     Item {
         id: keys
         width: modal.width - Metrics.modalInsets
-        height: modal.preferredHeight - Metrics.modalInsets
+        height: Math.max(OnboardingFrame.header + OnboardingFrame.footer + OnboardingFrame.gap * 2 + OnboardingFrame.inset * 2, // derived: top and bottom chrome
+            Math.min(modal.preferredHeight,modal.maximumHeight) - Metrics.modalInsets) // derived: visible chrome and capped content
         focus: true
         Keys.onLeftPressed: modal.goBack()
         Keys.onRightPressed: modal.goNext()

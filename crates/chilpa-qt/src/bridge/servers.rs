@@ -73,12 +73,7 @@ impl qobject::Servers {
         self.refresh();
     }
     pub fn finish(self: Pin<&mut Self>, chosen: &QString) -> bool {
-        let value: serde_json::Value = serde_json::from_str(&chosen.to_string()).unwrap_or_default();
-        let libraries: Vec<String> = serde_json::from_value(value.get("libraries").cloned().unwrap_or_else(|| value.clone())).unwrap_or_default();
-        let added = app::with(|api| {
-            if let Some(label) = value.get("label").and_then(|v| v.as_str()) { api.setup_label(label); }
-            api.setup_finish(&libraries)
-        });
+        let added = app::with(|api| api.setup_finish_json(&chosen.to_string()));
         self.refresh();
         added
     }

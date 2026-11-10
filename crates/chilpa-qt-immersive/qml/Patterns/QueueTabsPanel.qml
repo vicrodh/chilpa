@@ -4,7 +4,6 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Controls
 import "../Components"
 import "../Theme"
 
@@ -79,7 +78,7 @@ Item {
                         Text { text: Icons.trash; font.family: Icons.outline; font.pixelSize: Stage.queueClearIcon; color: Theme.color.immersiveTextStrong; opacity: clearArea.containsMouse ? 1 : 0.8; anchors.verticalCenter: parent.verticalCenter }
                         Text { text: I18n.tr("Clear", I18n.rev); color: clearArea.containsMouse ? Theme.color.immersiveTextStrong : Theme.color.immersiveTextDim; font.pointSize: Stage.queueClearText; font.weight: Type.medium; anchors.verticalCenter: parent.verticalCenter }
                     }
-                    MouseArea { id: clearArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: clearing.show(panel.activeBuffer, false) }
+                    MouseArea { id: clearArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: ListenList.command("clear", panel.activeBuffer, "") }
                 }
             }
             Rectangle { width: parent.width; height: Metrics.hairline; color: Theme.color.immersiveQueueLine }
@@ -212,5 +211,4 @@ Item {
             }
         }
     }
-    Controls.QueueClearDialog { id: clearing }
 }

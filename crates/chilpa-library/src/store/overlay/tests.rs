@@ -4,6 +4,7 @@ use rusqlite::params;
 
 fn new_server(instance: &str) -> NewServer {
     NewServer {
+        offline_folder: String::new(),
         provider: "example-server".into(),
         instance: instance.into(),
         label: format!("Server {instance}"),

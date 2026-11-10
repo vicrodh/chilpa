@@ -13,6 +13,10 @@ pub(crate) struct Scope {
 }
 
 impl Scope {
+    pub(crate) fn retained_bytes(&self) -> usize {
+        self.provider.capacity()+self.instance.capacity()+self.account.capacity()+self.identity.capacity()
+            +std::mem::size_of::<Self>()*2+32
+    }
     pub(crate) fn of(server: &StoredServer) -> Self {
         Self { source:server.source_id, provider:server.provider.clone(), instance:server.instance.clone(),
             account:server.account.clone(), identity:server.identity.clone(), revision:server.session_revision }

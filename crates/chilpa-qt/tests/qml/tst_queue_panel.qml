@@ -40,6 +40,12 @@ TestCase {
         const right = item => item.mapToItem(page, item.width, 0).x
         tryVerify(() => Math.abs(right(search) - right(list)) < 1, 1000, "search " + right(search) + " rows " + right(list))
     }
+    function test_clearing_the_queue_runs_immediately() {
+        ListenList.lastAction = ""
+        findChild(page,"clearQueue").clicked()
+        compare(ListenList.lastAction,"clear")
+        compare(findChild(page,"queueClearConfirmation"),null)
+    }
 
     function test_three_tabs_and_the_one_in_view_is_kept() {
         const tabs = findChild(page, "queuePanelTabs")

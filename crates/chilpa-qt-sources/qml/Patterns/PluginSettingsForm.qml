@@ -11,6 +11,10 @@ Column {
     required property var document
     property string pluginName: ""
     property string pluginId: ""
+    property string hostStatus: ""
+    property bool hostBusy: false
+    property var shownFields: []
+    property string fieldScope: ""
     property var values: ({})
     signal submitted(string action, var values, var scope)
     // Whether a sign-in window can open a link that declares a return address.
@@ -18,7 +22,30 @@ Column {
     signal linked(string url)
     signal captured(var link)
     spacing: Metrics.gap12
-    onDocumentChanged: values = Object.assign({}, document.values || {})
+    onDocumentChanged: {
+        values = visible ? Object.assign({}, document.values || {}) : ({})
+        updateFields()
+    }
+    onVisibleChanged: {
+        if (visible) { values = Object.assign({}, (document || {}).values || {}); updateFields() }
+        else { shownFields = []; fieldScope = ""; values = ({}) }
+    }
+    onPluginIdChanged: { shownFields = []; fieldScope = ""; updateFields() }
+    function updateFields() {
+        const doc = document || {}, wizard = doc.wizard || {}
+        const scope = JSON.stringify([pluginId,doc.page || "",wizard.step ?? ""])
+        const fields = (doc.form || {}).fields || []
+        const waiting = wizard.waiting === true || (doc.status || {}).phase === "running"
+        if (!visible) { shownFields = []; return }
+        if (scope !== fieldScope || !waiting || fields.length > 0) shownFields = fields
+        fieldScope = scope
+    }
+    readonly property string statusMessage: {
+        const doc = document || {}
+        return [hostStatus,(doc.wizard || {}).description,(doc.status || {}).description]
+            .concat(doc.notices || [],(doc.content || []).map(item => item.text))
+            .filter(text => typeof text === "string" && text !== "").join("\n\n")
+    }
 
     function actionStamp(action) {
         return action ? JSON.stringify([action.key,action.label,action.fields,action.destructive]) : ""
@@ -48,61 +75,25 @@ Column {
         active: Array.isArray((form.document.wizard || {}).steps) && form.document.wizard.steps.length > 0
         visible: active
         sourceComponent: Component {
-            PluginSetupWizard { width: form.width; document: form.document.wizard || ({}) }
-        }
-    }
-    Repeater {
-        model: form.document.notices || []
-        Text {
-            required property string modelData
-            width: form.width
-            text: modelData
-            textFormat: Text.PlainText
-            wrapMode: Text.WordWrap
-            color: Theme.color.statusWarning
-            font.pointSize: Type.body
+            PluginSetupWizard { width: form.width; document: form.document.wizard || ({}); showDescription: false }
         }
     }
     PluginValidation {
+        objectName: "pluginValidationArea"
         width: form.width
-        visible: !!form.document.status
-            && !Array.isArray((form.document.wizard || {}).steps)
-        phase: (form.document.status || {}).phase || "pending"
+        inspection: false
+        phase: form.hostBusy ? "running" : (form.document.status || {}).phase || "pending"
         label: (form.document.status || {}).label || ""
-        problem: (form.document.status || {}).description || ""
-    }
-
-    Rectangle {
-        width: form.width
-        height: Metrics.progress
-        radius: Metrics.radiusControl
-        color: Theme.color.strokeHairline
-        visible: (form.document.progress || {}).total > 0
-        Rectangle {
-            width: parent.width * Math.max(0, Math.min(1,
-                ((form.document.progress || {}).done || 0) / ((form.document.progress || {}).total || 1)))
-            height: parent.height
-            radius: parent.radius
-            color: Theme.color.accent
-        }
+        problem: form.statusMessage
+        progress: (form.document.progress || {}).total > 0
+            ? ((form.document.progress || {}).done || 0) / form.document.progress.total : -1
     }
 
     Repeater {
-        model: form.document.content || []
-        Text {
-            required property var modelData
-            width: form.width
-            text: modelData.text
-            textFormat: Text.PlainText
-            wrapMode: Text.WordWrap
-            color: Theme.color.textSecondary
-            font.pointSize: Type.body
-        }
-    }
-    Repeater {
-        model: (form.document.form || {}).fields || []
+        model: form.shownFields
         Column {
             id: field
+            enabled: ((form.document.form || {}).fields || []).length > 0
             required property var modelData
             width: form.width
             spacing: Metrics.gap6
@@ -191,6 +182,7 @@ Column {
             : effect === "cache" ? I18n.tr("This permanently clears cached plugin data. Content may need to be downloaded again.",I18n.rev)
             : I18n.tr("This plugin action permanently removes or replaces data. Review the action and its description before proceeding.",I18n.rev)
         destructive: true
+        doubleConfirmation: effect !== "settings"
         confirmText: actionLabel
         targetValid: scope.plugin === form.pluginId && String(scope.revision ?? "") === String(form.document.revision ?? "")
             && definition === form.actionStamp(((form.document.form || {}).actions || []).find(action => action.key === actionKey))

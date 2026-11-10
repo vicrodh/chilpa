@@ -34,6 +34,7 @@ pub struct ServerSetup {
     pub kind: String,
     pub address: String,
     pub label: String,
+    pub offline_folder: String,
     pub editing: bool,
     pub selected_libraries: Vec<String>,
     /// What the server said it is.
@@ -83,6 +84,7 @@ pub(crate) struct Ready {
     pub(crate) kind: Kind,
     pub(crate) instance: String,
     pub(crate) label: String,
+    pub(crate) offline_folder: String,
     pub(crate) address: String,
     pub(crate) account: String,
     pub(crate) identity: String,
@@ -154,6 +156,12 @@ const CRUMBS: usize = 32;
 const KNOWN: usize = 5_000;
 
 impl Setup {
+    pub(crate) fn offline_default(&self, root: &std::path::Path) -> Option<std::path::PathBuf> {
+        let signed = self.signed.as_ref()?;
+        let product = if signed.product.is_empty() { &self.view.product } else { &signed.product };
+        super::offline::destination(self.kind?,product,&self.instance,&signed.account,"",root).ok()
+    }
+
     fn run(&mut self, work: impl FnOnce() -> Outcome + Send + 'static) {
         let (tx, rx) = channel();
         let _ = std::thread::Builder::new().name("chilpa-server-setup".into()).spawn(move || {
@@ -217,6 +225,7 @@ impl Setup {
         self.edit_id = Some(stored.source_id);
         self.instance = stored.instance.clone();
         self.label = stored.label.clone();
+        self.view.offline_folder = stored.offline_folder.clone();
         self.signed = Some(Signed {
             key,
             account: stored.account.clone(),
@@ -414,6 +423,7 @@ impl Setup {
             kind,
             instance: self.instance.clone(),
             label: if self.label.is_empty() { host_of(&self.view.address) } else { self.label.clone() },
+            offline_folder: self.view.offline_folder.clone(),
             address: self.view.address.clone(),
             account: signed.account.clone(),
             identity: if signed.identity.is_empty() { self.probe.identity.clone() } else { signed.identity.clone() },
@@ -882,6 +892,7 @@ mod tests {
         let stored = chilpa_library::StoredServer {
             source_id: 7,
             session_revision: 0,
+            offline_folder: String::new(),
             provider: "dlna".into(),
             instance: "0123456789abcdef".into(),
             label: "Lab".into(),

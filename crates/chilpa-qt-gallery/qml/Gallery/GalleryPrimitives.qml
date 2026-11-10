@@ -8,6 +8,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 TitledFlow {
     CircleCheck { text: "Selected"; checked: true }
+    FolderChoice { width: Metrics.confirmWidth; title:"Offline folder"; defaultLabel:"Default destination" }
+    StatusArea { width: Metrics.confirmWidth; label:"Validation"; text:"Transient progress stays within this area." }
     KeyedModel { items: [{id:"preview", title:"Stable descriptor"}] }
     ViewportScrollBar { visible: false }
     Item {

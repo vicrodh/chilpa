@@ -41,13 +41,6 @@ TestCase {
         const selector = findChild(dialog, "mergedQueueOriginals")
         selector.picked("remove")
         dialog.combine()
-        compare(Queues.merged.length,0)
-        const question = findChild(dialog,"queueMergeRemovalConfirmation")
-        tryCompare(question,"opened",true)
-        findChild(question.contentItem,"confirmationAccept").clicked()
-        compare(Queues.merged.length,0)
-        findChild(question.contentItem,"destructiveAcknowledgement").checked = true
-        findChild(question.contentItem,"confirmationAccept").clicked()
         compare(Queues.merged[2], false)
         dialog.show(); tryVerify(() => dialog.opened)
         compare(selector.value, "keep", "every combination asks again")

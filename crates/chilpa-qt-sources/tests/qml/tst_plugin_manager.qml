@@ -541,7 +541,7 @@ TestCase {
     }
 
     function test_toggle_retains_its_intrinsic_width_inside_a_full_width_form() {
-        backend.state = {busy: false, form: {revision: 3, values: {enabled: true}, form: {
+        backend.state = {busy: false, settings_id:"guest", form: {revision: 3, values: {enabled: true}, form: {
             fields: [{key: "enabled", label: "Enabled", control: {type: "toggle"}}], actions: []}}}
         manager.read()
         manager.settings({id: "guest", name: "Guest"})
@@ -555,7 +555,7 @@ TestCase {
     }
 
     function test_select_displays_the_option_label_and_submits_its_value() {
-        backend.state = {busy: false, form: {revision: 2, values: {choice: "0"}, form: {
+        backend.state = {busy: false, settings_id:"guest", form: {revision: 2, values: {choice: "0"}, form: {
             fields: [{key: "choice", label: "Choice", control: {type: "select", choices: [{label: "Yes", value: "1"}, {label: "No", value: "0"}]}}], actions: []}}}
         manager.read()
         manager.settings({id: "guest", name: "Guest"})

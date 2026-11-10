@@ -55,6 +55,17 @@ impl Kind {
         }
     }
 
+    /// A controlled directory component for the server's music copies.
+    pub fn offline_folder_name(self, product: &str) -> &'static str {
+        match self {
+            Kind::Subsonic if product.starts_with("Navidrome") => "Navidrome",
+            Kind::Subsonic => "OpenSubsonic",
+            Kind::Jellyfin => "Jellyfin",
+            Kind::Plex => "Plex",
+            Kind::Dlna => "DLNA",
+        }
+    }
+
     /// Its glyph among the source icons (`tools/icons/sources.txt`), by what
     /// the server says it is: the protocol is shared, the product is not.
     pub fn icon(self, product: &str) -> &'static str {

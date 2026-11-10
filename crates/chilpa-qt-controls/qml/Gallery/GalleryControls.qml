@@ -32,7 +32,6 @@ TitledFlow {
     ShortcutColumns { width: Metrics.settingsMaxWidth; keys: ({ col1: [{ label: "Playback", rows: [{ id: "playback.toggle", label: "Play / Pause", shortcut: "Space", modified: false }] }] }) }
     LoopRow { width: Metrics.playbackOptionsWidth }
     LoopButton {}
-    QueueClearDialog {}
     ModelActionConfirmation {}
     QueueFooter { width: Metrics.rightPanel }
     QueueEnds { summary: "12 songs 1 hr 5 min"; remaining: 65 * 60000 } // derived: an hour and five minutes

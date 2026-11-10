@@ -4,6 +4,20 @@ import app.chilpa
 QtObject {
     property int revision: 0
     signal serverMediaRequested(string kind, double id)
+    signal offlineRequested(string kind, string selected)
+    property var offlineInfo: ({count:0})
+    property var offlineStatus: ({running:false,total:0})
+    property var offlineCalls: []
+    property var offlineRemoval: ({ticket:"fixture-removal",count:2})
+    function offline(action, kind, selected) {
+        offlineCalls = offlineCalls.concat([[action,kind,selected]])
+        if (action === "info") return JSON.stringify(offlineInfo)
+        if (action === "removal_info") return JSON.stringify(offlineRemoval)
+        if (action === "remove") offlineStatus = {running:true,removing:true,total:2,done:0,failed:0}
+        if (action === "start") offlineStatus = {running:true,total:offlineInfo.count,done:0,failed:0}
+        if (action === "cancel") offlineStatus = Object.assign({},offlineStatus,{cancelled:true})
+        return JSON.stringify(offlineStatus)
+    }
     property var mediaInfo: ({})
     property var mediaCalls: []
     property var mediaReceipt: ({request_id:"media-test",pending:true})

@@ -25,6 +25,7 @@ QtObject {
     readonly property int dot: 7
     readonly property int dotGap: dot // derived: the dots sit their own width apart
     readonly property int cardInset: Metrics.gap24 + Metrics.gap4 // derived: QBZ's 28
+    readonly property real cardAspectRatio: 16 / 9 // derived: the deck artwork is 1440 by 810
     readonly property int cardGap: Metrics.gap10
     readonly property int cardButton: 34
     readonly property int notesWidest: 720

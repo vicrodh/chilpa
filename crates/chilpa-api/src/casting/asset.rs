@@ -12,6 +12,26 @@ impl RangeSource for FileSource {
         Ok(Box::new(file.take(length)))
     }
 }
+// Each reader owns its position. The shared open handle pins the verified
+// bytes, and only a bounded read holds its lock across concurrent ranges.
+struct OpenFile {file:Arc<std::sync::Mutex<std::fs::File>>,lease:Arc<dyn Send+Sync>}
+struct FileReader {file:Arc<std::sync::Mutex<std::fs::File>>,_lease:Arc<dyn Send+Sync>,position:u64,left:u64}
+impl Read for FileReader {
+    fn read(&mut self, output:&mut [u8]) -> io::Result<usize> {
+        let amount=output.len().min(self.left.min(64*1024) as usize);
+        if amount==0 {return Ok(0);}
+        let mut file=self.file.lock().unwrap_or_else(|error| error.into_inner());
+        file.seek(SeekFrom::Start(self.position))?;
+        let count=file.read(&mut output[..amount])?;
+        self.position+=count as u64;self.left-=count as u64;
+        Ok(count)
+    }
+}
+impl RangeSource for OpenFile {
+    fn open(&self,start:u64,length:u64) -> io::Result<Box<dyn Read+Send>> {
+        Ok(Box::new(FileReader {file:self.file.clone(),_lease:self.lease.clone(),position:start,left:length}))
+    }
+}
 #[derive(Clone)]
 struct ServerSource { request: chilpa_core::RangedRequest, length: u64 }
 impl ServerSource {
@@ -54,13 +74,19 @@ pub(super) fn resolve(path: &str) -> Result<(ExternalAsset, Metadata, Presentati
     if let Some(entry) = chilpa_models::RemoteEntry::parse(path) {
         let (located, described) = chilpa_core::remote::external(&entry).map_err(|_| Error::Asset)?;
         let mime = mime(located.extension.as_deref().unwrap_or_default());
-        let mut headers = located.request.headers.clone();
+        let metadata = Metadata { title: described.tags.title.clone().unwrap_or_default(), artist: described.tags.artist_line(), album: described.tags.album.unwrap_or_default(), duration: described.duration.as_secs_f64() };
+        if let chilpa_core::remote::Media::File {file,lease}=located.media {
+            let length=file.metadata().map_err(|_| Error::Asset)?.len();
+            return Ok((ExternalAsset {length,mime:mime.into(),source:Arc::new(OpenFile {file:Arc::new(std::sync::Mutex::new(file)),lease})},metadata,
+                Presentation {playback:located.playback,artwork:described.artwork,bits:None,rate:None}));
+        }
+        let chilpa_core::remote::Media::Remote(request)=located.media else {return Err(Error::Asset)};
+        let mut headers = request.headers.clone();
         headers.push(("Range".into(), "bytes=0-0".into())); headers.push(("Accept-Encoding".into(), "identity".into()));
-        let reply = chilpa_core::call_server(&chilpa_core::Call { method: "GET", url: &located.request.url, headers: &headers, body: None, timeout: Duration::from_secs(20), max_bytes: 1 }).map_err(|_| Error::Asset)?;
+        let reply = chilpa_core::call_server(&chilpa_core::Call { method: "GET", url: &request.url, headers: &headers, body: None, timeout: Duration::from_secs(20), max_bytes: 1 }).map_err(|_| Error::Asset)?;
         let length = reply.headers.iter().find(|(k,_)| k.eq_ignore_ascii_case("content-range")).and_then(|(_,v)| v.strip_prefix("bytes 0-0/")).and_then(|v| v.parse::<u64>().ok()).filter(|n| *n > 0).ok_or(Error::Asset)?;
         if reply.status != 206 || reply.body.len() != 1 { return Err(Error::Asset); }
-        let metadata = Metadata { title: described.tags.title.clone().unwrap_or_default(), artist: described.tags.artist_line(), album: described.tags.album.unwrap_or_default(), duration: described.duration.as_secs_f64() };
-        return Ok((ExternalAsset { length, mime: mime.into(), source: Arc::new(ServerSource { request: located.request, length }) }, metadata, Presentation { playback: located.playback, artwork: described.artwork, bits: None, rate: None }));
+        return Ok((ExternalAsset { length, mime: mime.into(), source: Arc::new(ServerSource { request, length }) }, metadata, Presentation { playback: located.playback, artwork: described.artwork, bits: None, rate: None }));
     }
     let path = Path::new(path);
     let mime = mime(path.extension().and_then(|s| s.to_str()).unwrap_or_default());

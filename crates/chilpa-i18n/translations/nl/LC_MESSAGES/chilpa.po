@@ -139,6 +139,9 @@ msgstr ""
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr ""
 
+msgid "A download is still in progress."
+msgstr "Er wordt nog gedownload."
+
 msgid "A folder chosen before"
 msgstr "Een eerder gekozen map"
 
@@ -438,9 +441,6 @@ msgstr "Alle artiesten"
 msgid "All categories"
 msgstr "Alle categorieën"
 
-msgid "All custom key bindings will be replaced with the defaults for the current keymap."
-msgstr "Alle aangepaste sneltoetsen worden vervangen door de standaardtoetsen van de huidige toetsindeling."
-
 msgid "All discs"
 msgstr "Alle schijven"
 
@@ -485,12 +485,6 @@ msgstr "Alle thema's"
 
 msgid "All time"
 msgstr "Altijd"
-
-msgid "All tracks after this occurrence will be removed from the queue."
-msgstr "Alle nummers na deze vermelding worden uit de wachtrij verwijderd."
-
-msgid "All tracks will be removed from this queue. Playback from this queue will stop."
-msgstr "Alle nummers worden uit deze wachtrij verwijderd. Het afspelen vanuit deze wachtrij stopt."
 
 msgid "Allow Chilpa on Discogs, then paste the code below."
 msgstr "Geef Chilpa toestemming op Discogs en plak de code hieronder."
@@ -614,6 +608,9 @@ msgstr "Elke bron — beste kwaliteit (lokale gemengde afspeellijst)"
 
 msgid "Any time"
 msgstr "Altijd"
+
+msgid "App data folder"
+msgstr "Map met appgegevens"
 
 msgid "Appearance"
 msgstr "Uiterlijk"
@@ -1130,6 +1127,9 @@ msgstr "Beschikbare ruimte controleren"
 msgid "Checking destination files"
 msgstr "Doelbestanden controleren"
 
+msgid "Checking downloaded audio…"
+msgstr "Gedownloade audio controleren…"
+
 msgid "Checking for updates…"
 msgstr "Op updates controleren…"
 
@@ -1337,6 +1337,9 @@ msgstr "Kies minstens twee verschillende wachtrijen."
 msgid "Choose at most 512 playlists or queries for one storage."
 msgstr ""
 
+msgid "Choose between 1 and 10,000 server tracks for an offline download."
+msgstr "Selecteer 1 tot 10.000 servernummers om offline te downloaden."
+
 msgid "Choose between 1 and 50,000 Library tracks."
 msgstr ""
 
@@ -1345,6 +1348,9 @@ msgstr "Downloadmap kiezen"
 
 msgid "Choose download folder…"
 msgstr "Downloadmap kiezen…"
+
+msgid "Choose fewer offline files for this action."
+msgstr "Selecteer minder offlinebestanden voor deze actie."
 
 msgid "Choose file…"
 msgstr "Bestand kiezen…"
@@ -1439,9 +1445,6 @@ msgstr "Het filter wissen"
 msgid "Clear the selection"
 msgstr "Selectie wissen"
 
-msgid "Clear “{}”?"
-msgstr "‘{}’ leegmaken?"
-
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr "Gewist: {} songteksten vergeten. Ze worden opnieuw opgezocht terwijl nummers worden afgespeeld."
 
@@ -1472,9 +1475,6 @@ msgstr "Tabblad sluiten"
 msgid "Close media"
 msgstr "Media sluiten"
 
-msgid "Close queue"
-msgstr "Wachtrij sluiten"
-
 msgid "Close search"
 msgstr "Zoeken sluiten"
 
@@ -1486,9 +1486,6 @@ msgstr "Sluit de aanhalingstekens."
 
 msgid "Close to tray"
 msgstr "Sluiten naar systeemvak"
-
-msgid "Close “{}”?"
-msgstr "‘{}’ sluiten?"
 
 msgid "Closing stops a scan. Saved progress can be continued here after reopening."
 msgstr "Sluiten stopt de scan. Na het opnieuw openen kunt u hier de opgeslagen voortgang hervatten."
@@ -1522,9 +1519,6 @@ msgstr "Kolommen"
 
 msgid "Combine"
 msgstr "Samenvoegen"
-
-msgid "Combine and remove originals"
-msgstr "Samenvoegen en originelen verwijderen"
 
 msgid "Combine queues"
 msgstr "Wachtrijen samenvoegen"
@@ -2207,8 +2201,8 @@ msgstr "Terugzetten in de bibliotheek"
 msgid "Documentation"
 msgstr "Documentatie"
 
-msgid "Does not answer. Its records stay listed and cannot be played."
-msgstr "Reageert niet. De bijbehorende items blijven in de lijst staan en kunnen niet worden afgespeeld."
+msgid "Does not answer. Its records stay in the library."
+msgstr "Reageert niet. De albums blijven in de bibliotheek."
 
 msgid "Don't ask again"
 msgstr "Niet meer vragen"
@@ -2234,8 +2228,14 @@ msgstr "Opnieuw downloaden"
 msgid "Download album"
 msgstr "Album downloaden"
 
+msgid "Download cancelled."
+msgstr "Download geannuleerd."
+
 msgid "Download track"
 msgstr "Nummer downloaden"
+
+msgid "Download {} server tracks for offline listening."
+msgstr "Download {} servernummers om offline te luisteren."
 
 msgid "Downloaded"
 msgstr "Gedownload"
@@ -2251,6 +2251,9 @@ msgstr "Downloaden: {} van {}"
 
 msgid "Downloads"
 msgstr "Downloads"
+
+msgid "Downloads are grouped by server type. Each account has its own subfolder."
+msgstr "Downloads worden gegroepeerd op servertype. Elk account heeft een eigen submap."
 
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr "Sleep of gebruik ↑↓ om een eigen volgorde te behouden."
@@ -2770,6 +2773,9 @@ msgstr "Eerste stappen"
 
 msgid "GitHub is limiting requests from this network. Try again later."
 msgstr "GitHub beperkt de verzoeken vanaf dit netwerk. Probeer het later opnieuw."
+
+msgid "Global offline folder"
+msgstr "Algemene offlinemap"
 
 msgid "Go Back"
 msgstr "Terug"
@@ -3659,6 +3665,9 @@ msgstr "Magazine"
 msgid "Maintenance"
 msgstr "Onderhoud"
 
+msgid "Make available offline…"
+msgstr "Offline beschikbaar maken…"
+
 msgid "Make it yours"
 msgstr "Maak het van jou"
 
@@ -4094,6 +4103,9 @@ msgstr "Geen apparaten gevonden"
 msgid "No download folder selected"
 msgstr "Geen downloadmap geselecteerd"
 
+msgid "No downloaded files were found in this selection."
+msgstr "Er zijn geen gedownloade bestanden in deze selectie gevonden."
+
 msgid "No files need to change."
 msgstr ""
 
@@ -4394,8 +4406,17 @@ msgstr "Uit"
 msgid "Offline"
 msgstr ""
 
+msgid "Offline folder"
+msgstr "Offlinemap"
+
+msgid "Offline folder for this server"
+msgstr "Offlinemap voor deze server"
+
 msgid "Offline mode"
 msgstr "Offlinemodus"
+
+msgid "Offline music"
+msgstr "Offline muziek"
 
 msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
 msgstr "Oudere tijdelijke afbeeldingen worden op de achtergrond verwijderd. Hoezen waar je bibliotheek naar verwijst, blijven behouden."
@@ -4597,6 +4618,9 @@ msgstr "Optioneel toegangstoken voor privéafspeellijsten"
 
 msgid "Original audio"
 msgstr "Originele audio"
+
+msgid "Original audio is saved in the offline folder configured for each server. Offline storage is limited to 2 GiB, with up to 512 MiB per file."
+msgstr "Originele audio wordt opgeslagen in de offline-map van elke server. De opslag is beperkt tot 2 GiB, met maximaal 512 MiB per bestand."
 
 msgid "Original audio over the selected network transport"
 msgstr "Oorspronkelijke audio via het geselecteerde netwerktransport"
@@ -5315,9 +5339,6 @@ msgstr "Aankopen vernieuwen"
 msgid "Refresh settings"
 msgstr "Instellingen vernieuwen"
 
-msgid "Refused the sign-in. Its records stay listed and cannot be played."
-msgstr "De aanmelding is geweigerd. De bijbehorende items blijven in de lijst staan en kunnen niet worden afgespeeld."
-
 msgid "Regenerate"
 msgstr "Opnieuw genereren"
 
@@ -5357,6 +5378,12 @@ msgstr "Voorwaarde verwijderen"
 msgid "Remove cover"
 msgstr "Hoes verwijderen"
 
+msgid "Remove downloaded audio?"
+msgstr "Gedownloade audio verwijderen?"
+
+msgid "Remove downloaded files…"
+msgstr "Gedownloade bestanden verwijderen…"
+
 msgid "Remove filter"
 msgstr "Filter verwijderen"
 
@@ -5389,9 +5416,6 @@ msgstr "Verwijder één voorwaarde om resultaten te krijgen:"
 
 msgid "Remove original queues"
 msgstr "Originele wachtrijen verwijderen"
-
-msgid "Remove original queues?"
-msgstr "Oorspronkelijke wachtrijen verwijderen?"
 
 msgid "Remove plugin repository?"
 msgstr "Plug-inrepository verwijderen?"
@@ -5456,17 +5480,11 @@ msgstr "Hersteld. Er is niets verloren gegaan."
 msgid "Repeat"
 msgstr "Herhalen"
 
-msgid "Replace"
-msgstr "Vervangen"
-
 msgid "Replace current queue"
 msgstr "Huidige wachtrij vervangen"
 
 msgid "Replace queue {}"
 msgstr "Wachtrij {} vervangen"
-
-msgid "Replace queue?"
-msgstr "Wachtrij vervangen?"
 
 msgid "Report an issue"
 msgstr "Probleem melden"
@@ -5507,17 +5525,8 @@ msgstr "Alles naar standaardwaarden herstellen"
 msgid "Reset EQ"
 msgstr "EQ resetten"
 
-msgid "Reset all shortcuts?"
-msgstr "Alle sneltoetsen herstellen?"
-
 msgid "Reset counter"
 msgstr "Teller resetten"
-
-msgid "Reset equalizer?"
-msgstr "Equalizer herstellen?"
-
-msgid "Reset shortcut?"
-msgstr "Sneltoets herstellen?"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "Resolutie verlaagd van {} naar {} bits"
@@ -5539,9 +5548,6 @@ msgstr "Standaard herstellen"
 
 msgid "Restore defaults"
 msgstr "Standaardwaarden herstellen"
-
-msgid "Restore page defaults?"
-msgstr "Standaardinstellingen van de pagina herstellen?"
 
 msgid "Restore previous EQ"
 msgstr "Vorige EQ herstellen"
@@ -6109,6 +6115,9 @@ msgstr "In plaats daarvan aanmelden met een API-sleutel (OpenSubsonic-servers di
 msgid "Sign in with your Plex account"
 msgstr "Aanmelden met je Plex-account"
 
+msgid "Sign-in was refused. Its records stay in the library."
+msgstr "De aanmelding is geweigerd. De albums blijven in de bibliotheek."
+
 msgid "Signed out"
 msgstr "Uitgelogd"
 
@@ -6494,23 +6503,8 @@ msgstr "De controle is voltooid, maar de vorige samplefrequentie kon niet worden
 msgid "The connection is not encrypted."
 msgstr "De verbinding is niet versleuteld."
 
-msgid "The current equalizer changes will be replaced with the previous preset."
-msgstr "De huidige equalizerwijzigingen worden vervangen door de vorige voorinstelling."
-
-msgid "The current filter gains will be reset to zero."
-msgstr "De huidige filterversterkingen worden op nul gezet."
-
 msgid "The current track has no such destination."
 msgstr "Het huidige nummer heeft zo'n bestemming niet."
-
-msgid "The custom key binding for this action will be replaced with its default."
-msgstr "De aangepaste sneltoets voor deze actie wordt vervangen door de standaardtoets."
-
-msgid "The custom sections, visibility and order for this page will be replaced with their defaults."
-msgstr "De aangepaste secties, zichtbaarheid en volgorde van deze pagina worden vervangen door de standaardinstellingen."
-
-msgid "The destination queue and its saved order will be replaced with the selected tracks."
-msgstr "De doelwachtrij en de opgeslagen volgorde worden vervangen door de geselecteerde nummers."
 
 msgid "The device playlist picker can show at most 2,048 playlists."
 msgstr ""
@@ -6533,8 +6527,20 @@ msgstr ""
 msgid "The device task stopped. Its progress is saved for recovery."
 msgstr ""
 
+msgid "The download is incomplete. Try again."
+msgstr "De download is onvolledig. Probeer het opnieuw."
+
 msgid "The download view is unavailable."
 msgstr "De downloadweergave is niet beschikbaar."
+
+msgid "The download was interrupted. Try again."
+msgstr "De download is onderbroken. Probeer het opnieuw."
+
+msgid "The download worker could not be started."
+msgstr "Het downloadproces kon niet worden gestart."
+
+msgid "The downloaded file could not be verified as complete audio."
+msgstr "Het gedownloade bestand kon niet als volledige audio worden geverifieerd."
 
 msgid "The engine reports unchanged samples on this route."
 msgstr "De audiomotor meldt ongewijzigde samples op dit pad."
@@ -6622,6 +6628,24 @@ msgstr "De songtekstcache kon niet worden geopend."
 
 msgid "The network is off; turn it on in Settings › Integrations"
 msgstr "Het netwerk staat uit; zet het aan in Instellingen › Integraties"
+
+msgid "The offline copy is damaged. Remove the offline copy before downloading it again."
+msgstr "De offlinekopie is beschadigd. Verwijder deze voordat je opnieuw downloadt."
+
+msgid "The offline file could not be removed. Check playback and folder permissions."
+msgstr "Het offlinebestand kon niet worden verwijderd. Controleer de weergave en mapmachtigingen."
+
+msgid "The offline file could not be written."
+msgstr "Het offlinebestand kon niet worden geschreven."
+
+msgid "The offline folder cannot be represented as a local path."
+msgstr "De offline-map kan niet als lokaal pad worden weergegeven."
+
+msgid "The offline folder must be an absolute local folder."
+msgstr "De offlinemap moet een lokale map met een absoluut pad zijn."
+
+msgid "The offline storage limit has been reached."
+msgstr "De limiet voor offlineopslag is bereikt."
 
 msgid "The output changed during the check. Its new configuration was kept."
 msgstr "De uitvoer is gewijzigd tijdens de controle. De nieuwe configuratie is behouden."
@@ -6752,9 +6776,6 @@ msgstr ""
 msgid "The selected queues are empty."
 msgstr "De geselecteerde wachtrijen zijn leeg."
 
-msgid "The selected queues will be removed after their tracks are copied to the combined queue. Their separate names and saved order will be lost."
-msgstr "De geselecteerde wachtrijen worden verwijderd nadat hun nummers naar de samengevoegde wachtrij zijn gekopieerd. Hun afzonderlijke namen en opgeslagen volgorde gaan verloren."
-
 msgid "The selected storage changed or disconnected."
 msgstr "De geselecteerde opslag is gewijzigd of losgekoppeld."
 
@@ -6773,6 +6794,9 @@ msgstr "De serververbinding of het account is gewijzigd. Controleer de actie en 
 msgid "The server deleted the music, but the local catalogue could not be updated. Sync the server again."
 msgstr ""
 
+msgid "The server did not identify the account for this API key."
+msgstr "De server heeft het account voor deze API-sleutel niet geïdentificeerd."
+
 msgid "The server did not take it: {}"
 msgstr "De server nam het niet aan: {}"
 
@@ -6784,6 +6808,9 @@ msgstr "De aanbieder heeft geen code gestuurd."
 
 msgid "The service's answer is missing."
 msgstr "Het antwoord van de aanbieder ontbreekt."
+
+msgid "The settings could not be saved."
+msgstr "De instellingen konden niet worden opgeslagen."
 
 msgid "The source disconnected. Check the playlist before retrying."
 msgstr "De bron is losgekoppeld. Controleer de afspeellijst voordat je het opnieuw probeert."
@@ -6919,8 +6946,8 @@ msgstr "Deze maand vs vorige maand"
 msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
 msgstr "Deze muziekweergave overschrijdt 50.000 bestanden of 16 MiB aan metagegevens."
 
-msgid "This occurrence will be removed from the queue."
-msgstr "Deze vermelding wordt uit de wachtrij verwijderd."
+msgid "This offline file is in use. Stop playback before removing it."
+msgstr "Dit offlinebestand is in gebruik. Stop de weergave voordat je het verwijdert."
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Deze maakt geen geluid. Hij schrijft weg wat naar het apparaat zou zijn gegaan, zodat het bestand kan worden vergeleken met het nummer waar het van komt -- de enige manier om bit-perfect te bewijzen in plaats van te beweren."
@@ -6967,6 +6994,9 @@ msgstr "Dit verwijdert de geselecteerde persoonlijke audiovoorinstelling en de o
 msgid "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
 msgstr "Dit verwijdert het nummer definitief uit het bestandssysteem van de server. Dit kan vanuit Chilpa niet ongedaan worden gemaakt."
 
+msgid "This permanently deletes {} downloaded audio files from this device."
+msgstr "Hiermee worden {} gedownloade audiobestanden definitief van dit apparaat verwijderd."
+
 msgid "This permanently removes the playlist and its saved order."
 msgstr "Dit verwijdert de afspeellijst en de opgeslagen volgorde definitief."
 
@@ -7008,9 +7038,6 @@ msgstr "Deze aankoop kan niet worden gedownload."
 
 msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
 msgstr "Deze zoekopdracht nest groepen drie niveaus diep. Rijen tonen er twee, dus hier blijft hij tekst. Hij geldt nog steeds."
-
-msgid "This queue and its saved order will be removed."
-msgstr "Deze wachtrij en de opgeslagen volgorde worden verwijderd."
 
 msgid "This record cannot be played now."
 msgstr "Dit item kan nu niet worden afgespeeld."
@@ -7068,6 +7095,9 @@ msgstr "Dit duurt een paar seconden."
 
 msgid "This track has no album to open"
 msgstr "Dit nummer heeft geen album om te openen"
+
+msgid "This track has no verified offline copy. Download it while connected."
+msgstr "Dit nummer heeft geen geverifieerde offlinekopie. Download het terwijl je verbonden bent."
 
 msgid "This transcript format is not supported."
 msgstr "Dit transcriptieformaat wordt niet ondersteund."
@@ -7465,6 +7495,9 @@ msgstr "Mijn huidige wachtrij gebruiken"
 msgid "Use the default"
 msgstr "Standaard gebruiken"
 
+msgid "Use the global offline folder or choose a separate destination."
+msgstr "Gebruik de algemene offlinemap of kies een andere bestemming."
+
 msgid "Use the playlist icon or a cover collage."
 msgstr "Gebruik het afspeellijstpictogram of een hoescollage."
 
@@ -7488,6 +7521,9 @@ msgstr ""
 
 msgid "Verifying copied files…"
 msgstr ""
+
+msgid "Verifying downloaded audio…"
+msgstr "Gedownloade audio verifiëren…"
 
 msgid "Version"
 msgstr "Versie"
@@ -9316,6 +9352,12 @@ msgstr "{} van {}"
 msgid "{} of {} chosen"
 msgstr "{} van {} gekozen"
 
+msgid "{} of {} downloaded. {} failed."
+msgstr "{} van {} gedownload. {} mislukt."
+
+msgid "{} of {} files removed. {} failed."
+msgstr "{} van {} bestanden verwijderd. {} mislukt."
+
 msgid "{} of {} files were changed before it failed: {}"
 msgstr "{} van {} bestanden zijn gewijzigd voordat het mislukte: {}"
 
@@ -9327,6 +9369,9 @@ msgstr "{} van {} formaten komen ongewijzigd aan"
 
 msgid "{} of {} tracks match this release"
 msgstr "{} van {} nummers komen overeen met deze uitgave"
+
+msgid "{} offline audio files saved on this device."
+msgstr "{} offline-audiobestanden opgeslagen op dit apparaat."
 
 msgid "{} play"
 msgid_plural "{} plays"

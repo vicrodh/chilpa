@@ -90,6 +90,7 @@ P.Modal {
         message: I18n.trArgs("Chilpa will stop checking this repository for plugins and updates.\n{}", [repositoryUrl], I18n.rev)
         confirmText: I18n.tr("Remove", I18n.rev)
         destructive: true
+        doubleConfirmation: true
         onConfirmed: dialog.manager.command("remove_repository", {id: repositoryId})
     }
 }

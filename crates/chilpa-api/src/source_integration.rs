@@ -72,7 +72,7 @@ mod tests {
         let server = library.add_server(&chilpa_library::NewServer {
             provider:"example-server".into(),instance:"fixture".into(),label:"Server".into(),icon:"server".into(),
             address:"https://example.org".into(),account:"fixture".into(),identity:"fixture".into(),product:String::new(),
-            libraries:"[]".into(),details:"{}".into(),
+            libraries:"[]".into(),details:"{}".into(),offline_folder:String::new(),
         }).unwrap();
         let server_list = library.sync_source_playlist(server, "playlist:1", "Server", "", None).unwrap();
         let mut api = Chilpa::new(); api.library = Some(library); api.plugins = Some(host.clone());

@@ -16,6 +16,11 @@ P.Modal {
     readonly property bool settingsLoading: manager.view.settings_loading_id === plugin.id
     readonly property var validation: manager.view.validation || ({})
     readonly property bool matching: !!validation.id && validation.id === plugin.id && validation.repository_id === plugin.repository_id
+    readonly property bool hasSettingsForm: mode === "settings" && tab === "settings" && manager.selected === plugin.id
+        && !!manager.view.form && manager.view.settings_id === plugin.id
+    readonly property string operationStatus: manager.view.busy || settingsLoading
+        ? (manager.view.operation === "install" ? I18n.tr("Installing plugin…", I18n.rev) : I18n.tr("Loading…", I18n.rev))
+        : manager.view.error || ""
     property alias domains: domains.text
     onClosed: { manager.selected = ""; if (mode === "permissions" && manager.view.approval) manager.command("cancel_permissions", {}) }
     preferredWidth: Math.min(Metrics.settingsMaxWidth, parent ? parent.width - Metrics.modalInsets : Metrics.confirmWidth)
@@ -50,18 +55,17 @@ P.Modal {
                 visible: details.mode === "inspection"
                 phase: details.manager.view.busy && details.manager.view.operation === "prepare" ? "running"
                     : details.matching ? details.validation.state : "pending"
-                problem: details.matching ? details.validation.problem || "" : ""
+                problem: details.manager.view.error || (details.matching ? details.validation.problem || "" : "")
             }
-            Text {
-                objectName: "pluginStatus"
+            PluginValidation {
+                textObjectName: "pluginStatus"
                 width: parent.width
-                text: details.manager.view.busy || details.settingsLoading
-                    ? (details.manager.view.operation === "install" ? I18n.tr("Installing plugin…", I18n.rev) : I18n.tr("Loading…", I18n.rev))
-                    : details.manager.view.error || ""
-                visible: text !== "" && (details.mode === "settings" || details.manager.view.operation !== "prepare")
-                wrapMode: Text.WordWrap
-                color: Theme.color.statusWarning
-                font.pointSize: Type.body
+                visible: details.mode !== "inspection" && !details.hasSettingsForm
+                inspection: false
+                label: ""
+                lines: Metrics.statusBriefLines
+                reserveProgress: false
+                problem: details.operationStatus
             }
         }
         Column {
@@ -151,9 +155,11 @@ P.Modal {
                 PluginSettingsForm {
                     pluginName: details.plugin.name || details.plugin.id || ""
                     pluginId: details.plugin.id || ""
+                    hostStatus: details.operationStatus
+                    hostBusy: details.manager.view.busy || details.settingsLoading
                     objectName: "pluginSettingsForm"
                     width: parent.width
-                    visible: !!details.manager.view.form && details.manager.view.settings_id === details.plugin.id
+                    visible: details.hasSettingsForm
                     document: details.manager.settingsDocument
                     enabled: !details.manager.view.busy && !details.settingsLoading
                     onSubmitted: (action, values, scope) => details.manager.command("submit", {id: scope.plugin, submission: {revision: scope.revision, action: action, values: values}})
@@ -217,6 +223,7 @@ P.Modal {
         confirmText: I18n.tr("Uninstall", I18n.rev)
         option: I18n.tr("Also delete the lyrics saved for this plugin's tracks", I18n.rev)
         destructive: true
+        doubleConfirmation: true
         onConfirmed: { details.manager.command("uninstall", {id: details.plugin.id, lyrics: removal.optionChecked}); details.close() }
     }
 }

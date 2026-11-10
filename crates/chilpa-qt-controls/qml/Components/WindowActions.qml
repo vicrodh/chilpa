@@ -78,7 +78,7 @@ QtObject {
         case "nav.quit": controls.requestQuit(); break
         case "ui.sidebar": SettingsModel.sidebarMode = sidebarTurns[SettingsModel.sidebarMode] || "open"; break
         case "ui.queue":
-            if (args.argument === "clear") controls.clearQueue(args.target || "")
+            if (args.argument === "clear") ListenList.command("clear", args.target || "", "")
             else if ((args.argument || "").startsWith("save ")) ListenList.command("saveNamed", args.target || "", args.argument.slice(5).trim().replace(/^([\'"])(.*)\1$/, "$2"))
             else SettingsModel.queueOpen = args.argument !== undefined ? true : !SettingsModel.queueOpen
             break

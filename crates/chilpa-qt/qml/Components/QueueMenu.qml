@@ -1,7 +1,7 @@
 import QtQuick
-import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as Confirmations
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
@@ -12,6 +12,7 @@ CascadingMenu {
     property TrackListModel model
     property string laterLabel
     property bool canRemove: false
+    property int offlinePlaylistId: 0
     property int groupRow: -1
     property string activeLabel
 
@@ -35,6 +36,8 @@ CascadingMenu {
             { separator: true },
             { text: I18n.tr("Delete playlist", I18n.rev), act: "remove" }
         ] : [])
+        if (groupRow < 0 && offlinePlaylistId > 0 && JSON.parse(Sources.offline("info", "playlist", JSON.stringify([offlinePlaylistId]))).count > 0)
+            entries = entries.concat([{separator:true}, {text:I18n.tr("Make available offline…", I18n.rev),act:"offline"}])
         x = left
         y = top
         open()
@@ -42,8 +45,8 @@ CascadingMenu {
 
     onActionChosen: entry => {
         const action = entry.act
-        if (action.startsWith("buffer:replace:")) {
-            replacement.show(model,groupRow,action,groupRow >= 0,activeLabel)
+        if (action === "offline") {
+            Sources.offlineRequested("playlist", JSON.stringify([offlinePlaylistId]))
             return
         }
         if (groupRow >= 0) {
@@ -63,5 +66,4 @@ CascadingMenu {
         else if (action === "remove")
             menu.remove()
     }
-    Confirmations.ModelActionConfirmation { id: replacement }
 }

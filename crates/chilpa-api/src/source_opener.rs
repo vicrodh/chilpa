@@ -104,7 +104,7 @@ impl Openers {
                 gain_db: gain as f32, peak: answer["normalization"]["peak"].as_f64().map(|p| p as f32),
             }).and_then(chilpa_core::remote::Normalization::valid),
             playback: answer.get("resolution_id").and_then(serde_json::Value::as_str).and_then(|id| natives.playback(plugin, id)),
-            request: chilpa_core::RangedRequest { url: url.to_string(), headers: Vec::new() },
+            media: chilpa_core::remote::Media::Remote(chilpa_core::RangedRequest { url: url.to_string(), headers: Vec::new() }),
             extension: answer.pointer("/format/codec").and_then(serde_json::Value::as_str).filter(|c| !c.is_empty() && *c != "unknown").map(str::to_string),
             server: self.catalog.name(plugin).unwrap_or_else(|| plugin.to_string()),
         })
@@ -133,14 +133,14 @@ impl Openers {
         Ok(Located {
             normalization: None,
             playback: None,
-            request: chilpa_core::RangedRequest { url: final_address_with(&url, domains.as_deref(), |address| {
+            media: chilpa_core::remote::Media::Remote(chilpa_core::RangedRequest { url: final_address_with(&url, domains.as_deref(), |address| {
                 if let Some(host) = url::Url::parse(address).ok().and_then(|url| url.host_str().map(str::to_string)) {
                     if let Ok(mut requests) = requests.lock() {
                         let pending = requests.entry(plugin.clone()).or_default();
                         if pending.len() < 128 { pending.insert(host); }
                     }
                 }
-            })?, headers: Vec::new() },
+            })?, headers: Vec::new() }),
             extension: stream.codec.map(|c| c.to_ascii_lowercase()).filter(|c| !c.is_empty()),
             server: name,
         })
@@ -208,8 +208,8 @@ fn joined(from: &str, to: &str) -> String {
 
 impl RemoteOpener for Openers {
     fn locate(&self, entry: &RemoteEntry) -> Result<Located, String> {
-        if chilpa_core::network::current().offline { return Err(chilpa_core::network::blocked()); }
         if entry.source.provider == PROVIDER {
+            if chilpa_core::network::current().offline { return Err(chilpa_core::network::blocked()); }
             if let Some(located) = self.take_ahead(entry) {
                 return Ok(located);
             }

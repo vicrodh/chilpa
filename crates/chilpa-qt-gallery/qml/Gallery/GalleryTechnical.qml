@@ -38,6 +38,7 @@ Column {
         message: "This removes the selected example from the saved collection."
         confirmText: "Remove example"
         destructive: true
+        doubleConfirmation: true
     }
     AlbumGridInteraction { grid: null }
     TrackColumns { id: rowCols; width: section.width }

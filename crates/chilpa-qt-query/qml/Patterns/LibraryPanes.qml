@@ -28,8 +28,22 @@ Rectangle {
         { column: "artist", title: I18n.tr("Artist", I18n.rev) },
         { column: "album", title: I18n.tr("Album", I18n.rev) }
     ]
-    readonly property var columns: all.filter(c => shown.indexOf(c.column) >= 0)
+    property var columns: []
+    property bool built: false
     readonly property real shares: columns.reduce((sum, c) => sum + Metrics.paneShare[c.column], 0)
+    PageLifetime { id: lifetime }
+    function rebuild() {
+        const selected = all.filter(c => shown.indexOf(c.column) >= 0)
+        if (columns.length === selected.length && columns.every((entry, index) =>
+                entry.column === selected[index].column && entry.title === selected[index].title)) return
+        // Cancel cached row creation while each column context is still alive.
+        for (let index = 0; index < repeated.count; ++index)
+            lifetime.cancel(repeated.itemAt(index))
+        columns = selected
+    }
+    onShownChanged: if (built) rebuild()
+    onAllChanged: if (built) rebuild()
+    Component.onCompleted: { built = true; rebuild() }
 
     Row {
         id: group
@@ -40,6 +54,7 @@ Rectangle {
         layer.effect: MultiEffect { maskEnabled: true; maskSource: groupMask }
 
         Repeater {
+            id: repeated
             model: panes.columns
 
             PaneColumn {

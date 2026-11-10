@@ -139,6 +139,9 @@ msgstr "A device operation is still running."
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr "A device selection can contain at most 50,000 files and playlists."
 
+msgid "A download is still in progress."
+msgstr "A download is still in progress."
+
 msgid "A folder chosen before"
 msgstr ""
 
@@ -438,9 +441,6 @@ msgstr ""
 msgid "All categories"
 msgstr "All categories"
 
-msgid "All custom key bindings will be replaced with the defaults for the current keymap."
-msgstr "All custom key bindings will be replaced with the defaults for the current keymap."
-
 msgid "All discs"
 msgstr ""
 
@@ -485,12 +485,6 @@ msgstr ""
 
 msgid "All time"
 msgstr ""
-
-msgid "All tracks after this occurrence will be removed from the queue."
-msgstr "All tracks after this occurrence will be removed from the queue."
-
-msgid "All tracks will be removed from this queue. Playback from this queue will stop."
-msgstr "All tracks will be removed from this queue. Playback from this queue will stop."
 
 msgid "Allow Chilpa on Discogs, then paste the code below."
 msgstr "Allow Chilpa on Discogs, then paste the code below."
@@ -614,6 +608,9 @@ msgstr "Any source — best quality (local mixed playlist)"
 
 msgid "Any time"
 msgstr ""
+
+msgid "App data folder"
+msgstr "App data folder"
 
 msgid "Appearance"
 msgstr ""
@@ -1130,6 +1127,9 @@ msgstr "Checking available space"
 msgid "Checking destination files"
 msgstr "Checking destination files"
 
+msgid "Checking downloaded audio…"
+msgstr "Checking downloaded audio…"
+
 msgid "Checking for updates…"
 msgstr ""
 
@@ -1337,6 +1337,9 @@ msgstr ""
 msgid "Choose at most 512 playlists or queries for one storage."
 msgstr "Choose at most 512 playlists or queries for one storage."
 
+msgid "Choose between 1 and 10,000 server tracks for an offline download."
+msgstr "Choose between 1 and 10,000 server tracks for an offline download."
+
 msgid "Choose between 1 and 50,000 Library tracks."
 msgstr "Choose between 1 and 50,000 Library tracks."
 
@@ -1345,6 +1348,9 @@ msgstr "Choose download folder"
 
 msgid "Choose download folder…"
 msgstr "Choose download folder…"
+
+msgid "Choose fewer offline files for this action."
+msgstr "Choose fewer offline files for this action."
 
 msgid "Choose file…"
 msgstr "Choose file…"
@@ -1439,9 +1445,6 @@ msgstr ""
 msgid "Clear the selection"
 msgstr ""
 
-msgid "Clear “{}”?"
-msgstr "Clear “{}”?"
-
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr ""
 
@@ -1472,9 +1475,6 @@ msgstr ""
 msgid "Close media"
 msgstr "Close media"
 
-msgid "Close queue"
-msgstr "Close queue"
-
 msgid "Close search"
 msgstr ""
 
@@ -1486,9 +1486,6 @@ msgstr ""
 
 msgid "Close to tray"
 msgstr ""
-
-msgid "Close “{}”?"
-msgstr "Close “{}”?"
 
 msgid "Closing stops a scan. Saved progress can be continued here after reopening."
 msgstr "Closing stops a scan. Saved progress can be continued here after reopening."
@@ -1522,9 +1519,6 @@ msgstr "Columns"
 
 msgid "Combine"
 msgstr ""
-
-msgid "Combine and remove originals"
-msgstr "Combine and remove originals"
 
 msgid "Combine queues"
 msgstr ""
@@ -2207,8 +2201,8 @@ msgstr ""
 msgid "Documentation"
 msgstr ""
 
-msgid "Does not answer. Its records stay listed and cannot be played."
-msgstr ""
+msgid "Does not answer. Its records stay in the library."
+msgstr "Does not answer. Its records stay in the library."
 
 msgid "Don't ask again"
 msgstr ""
@@ -2234,8 +2228,14 @@ msgstr "Download again"
 msgid "Download album"
 msgstr "Download album"
 
+msgid "Download cancelled."
+msgstr "Download cancelled."
+
 msgid "Download track"
 msgstr "Download track"
+
+msgid "Download {} server tracks for offline listening."
+msgstr "Download {} server tracks for offline listening."
 
 msgid "Downloaded"
 msgstr "Downloaded"
@@ -2251,6 +2251,9 @@ msgstr "Downloading {} of {}"
 
 msgid "Downloads"
 msgstr "Downloads"
+
+msgid "Downloads are grouped by server type. Each account has its own subfolder."
+msgstr "Downloads are grouped by server type. Each account has its own subfolder."
 
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr ""
@@ -2770,6 +2773,9 @@ msgstr "Getting started"
 
 msgid "GitHub is limiting requests from this network. Try again later."
 msgstr ""
+
+msgid "Global offline folder"
+msgstr "Global offline folder"
 
 msgid "Go Back"
 msgstr ""
@@ -3659,6 +3665,9 @@ msgstr ""
 msgid "Maintenance"
 msgstr ""
 
+msgid "Make available offline…"
+msgstr "Make available offline…"
+
 msgid "Make it yours"
 msgstr "Make it yours"
 
@@ -4094,6 +4103,9 @@ msgstr ""
 msgid "No download folder selected"
 msgstr "No download folder selected"
 
+msgid "No downloaded files were found in this selection."
+msgstr "No downloaded files were found in this selection."
+
 msgid "No files need to change."
 msgstr "No files need to change."
 
@@ -4394,8 +4406,17 @@ msgstr ""
 msgid "Offline"
 msgstr ""
 
+msgid "Offline folder"
+msgstr "Offline folder"
+
+msgid "Offline folder for this server"
+msgstr "Offline folder for this server"
+
 msgid "Offline mode"
 msgstr ""
+
+msgid "Offline music"
+msgstr "Offline music"
 
 msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
 msgstr ""
@@ -4597,6 +4618,9 @@ msgstr "Optional access token for private playlists"
 
 msgid "Original audio"
 msgstr "Original audio"
+
+msgid "Original audio is saved in the offline folder configured for each server. Offline storage is limited to 2 GiB, with up to 512 MiB per file."
+msgstr "Original audio is saved in the offline folder configured for each server. Offline storage is limited to 2 GiB, with up to 512 MiB per file."
 
 msgid "Original audio over the selected network transport"
 msgstr ""
@@ -5315,9 +5339,6 @@ msgstr "Refresh purchases"
 msgid "Refresh settings"
 msgstr "Refresh settings"
 
-msgid "Refused the sign-in. Its records stay listed and cannot be played."
-msgstr ""
-
 msgid "Regenerate"
 msgstr ""
 
@@ -5357,6 +5378,12 @@ msgstr ""
 msgid "Remove cover"
 msgstr ""
 
+msgid "Remove downloaded audio?"
+msgstr "Remove downloaded audio?"
+
+msgid "Remove downloaded files…"
+msgstr "Remove downloaded files…"
+
 msgid "Remove filter"
 msgstr ""
 
@@ -5389,9 +5416,6 @@ msgstr ""
 
 msgid "Remove original queues"
 msgstr ""
-
-msgid "Remove original queues?"
-msgstr "Remove original queues?"
 
 msgid "Remove plugin repository?"
 msgstr "Remove plugin repository?"
@@ -5456,17 +5480,11 @@ msgstr ""
 msgid "Repeat"
 msgstr ""
 
-msgid "Replace"
-msgstr "Replace"
-
 msgid "Replace current queue"
 msgstr ""
 
 msgid "Replace queue {}"
 msgstr ""
-
-msgid "Replace queue?"
-msgstr "Replace queue?"
 
 msgid "Report an issue"
 msgstr ""
@@ -5507,17 +5525,8 @@ msgstr ""
 msgid "Reset EQ"
 msgstr "Reset EQ"
 
-msgid "Reset all shortcuts?"
-msgstr "Reset all shortcuts?"
-
 msgid "Reset counter"
 msgstr "Reset counter"
-
-msgid "Reset equalizer?"
-msgstr "Reset equalizer?"
-
-msgid "Reset shortcut?"
-msgstr "Reset shortcut?"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr ""
@@ -5539,9 +5548,6 @@ msgstr ""
 
 msgid "Restore defaults"
 msgstr ""
-
-msgid "Restore page defaults?"
-msgstr "Restore page defaults?"
 
 msgid "Restore previous EQ"
 msgstr "Restore previous EQ"
@@ -6109,6 +6115,9 @@ msgstr ""
 msgid "Sign in with your Plex account"
 msgstr ""
 
+msgid "Sign-in was refused. Its records stay in the library."
+msgstr "Sign-in was refused. Its records stay in the library."
+
 msgid "Signed out"
 msgstr ""
 
@@ -6494,23 +6503,8 @@ msgstr ""
 msgid "The connection is not encrypted."
 msgstr ""
 
-msgid "The current equalizer changes will be replaced with the previous preset."
-msgstr "The current equalizer changes will be replaced with the previous preset."
-
-msgid "The current filter gains will be reset to zero."
-msgstr "The current filter gains will be reset to zero."
-
 msgid "The current track has no such destination."
 msgstr ""
-
-msgid "The custom key binding for this action will be replaced with its default."
-msgstr "The custom key binding for this action will be replaced with its default."
-
-msgid "The custom sections, visibility and order for this page will be replaced with their defaults."
-msgstr "The custom sections, visibility and order for this page will be replaced with their defaults."
-
-msgid "The destination queue and its saved order will be replaced with the selected tracks."
-msgstr "The destination queue and its saved order will be replaced with the selected tracks."
 
 msgid "The device playlist picker can show at most 2,048 playlists."
 msgstr "The device playlist picker can show at most 2,048 playlists."
@@ -6533,8 +6527,20 @@ msgstr "The device review needs attention before continuing."
 msgid "The device task stopped. Its progress is saved for recovery."
 msgstr "The device task stopped. Its progress is saved for recovery."
 
+msgid "The download is incomplete. Try again."
+msgstr "The download is incomplete. Try again."
+
 msgid "The download view is unavailable."
 msgstr "The download view is unavailable."
+
+msgid "The download was interrupted. Try again."
+msgstr "The download was interrupted. Try again."
+
+msgid "The download worker could not be started."
+msgstr "The download worker could not be started."
+
+msgid "The downloaded file could not be verified as complete audio."
+msgstr "The downloaded file could not be verified as complete audio."
 
 msgid "The engine reports unchanged samples on this route."
 msgstr ""
@@ -6622,6 +6628,24 @@ msgstr ""
 
 msgid "The network is off; turn it on in Settings › Integrations"
 msgstr ""
+
+msgid "The offline copy is damaged. Remove the offline copy before downloading it again."
+msgstr "The offline copy is damaged. Remove the offline copy before downloading it again."
+
+msgid "The offline file could not be removed. Check playback and folder permissions."
+msgstr "The offline file could not be removed. Check playback and folder permissions."
+
+msgid "The offline file could not be written."
+msgstr "The offline file could not be written."
+
+msgid "The offline folder cannot be represented as a local path."
+msgstr "The offline folder cannot be represented as a local path."
+
+msgid "The offline folder must be an absolute local folder."
+msgstr "The offline folder must be an absolute local folder."
+
+msgid "The offline storage limit has been reached."
+msgstr "The offline storage limit has been reached."
 
 msgid "The output changed during the check. Its new configuration was kept."
 msgstr ""
@@ -6752,9 +6776,6 @@ msgstr ""
 msgid "The selected queues are empty."
 msgstr ""
 
-msgid "The selected queues will be removed after their tracks are copied to the combined queue. Their separate names and saved order will be lost."
-msgstr "The selected queues will be removed after their tracks are copied to the combined queue. Their separate names and saved order will be lost."
-
 msgid "The selected storage changed or disconnected."
 msgstr "The selected storage changed or disconnected."
 
@@ -6773,6 +6794,9 @@ msgstr "The server connection or account changed. Review the action and try agai
 msgid "The server deleted the music, but the local catalogue could not be updated. Sync the server again."
 msgstr ""
 
+msgid "The server did not identify the account for this API key."
+msgstr "The server did not identify the account for this API key."
+
 msgid "The server did not take it: {}"
 msgstr ""
 
@@ -6784,6 +6808,9 @@ msgstr ""
 
 msgid "The service's answer is missing."
 msgstr ""
+
+msgid "The settings could not be saved."
+msgstr "The settings could not be saved."
 
 msgid "The source disconnected. Check the playlist before retrying."
 msgstr "The source disconnected. Check the playlist before retrying."
@@ -6919,8 +6946,8 @@ msgstr ""
 msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
 msgstr "This music view exceeds 50,000 files or 16 MiB of metadata."
 
-msgid "This occurrence will be removed from the queue."
-msgstr "This occurrence will be removed from the queue."
+msgid "This offline file is in use. Stop playback before removing it."
+msgstr "This offline file is in use. Stop playback before removing it."
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr ""
@@ -6967,6 +6994,9 @@ msgstr "This permanently deletes the selected personal audio preset and its save
 msgid "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
 msgstr "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
 
+msgid "This permanently deletes {} downloaded audio files from this device."
+msgstr "This permanently deletes {} downloaded audio files from this device."
+
 msgid "This permanently removes the playlist and its saved order."
 msgstr "This permanently removes the playlist and its saved order."
 
@@ -7008,9 +7038,6 @@ msgstr "This purchase is unavailable for download."
 
 msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
 msgstr ""
-
-msgid "This queue and its saved order will be removed."
-msgstr "This queue and its saved order will be removed."
 
 msgid "This record cannot be played now."
 msgstr ""
@@ -7068,6 +7095,9 @@ msgstr ""
 
 msgid "This track has no album to open"
 msgstr ""
+
+msgid "This track has no verified offline copy. Download it while connected."
+msgstr "This track has no verified offline copy. Download it while connected."
 
 msgid "This transcript format is not supported."
 msgstr ""
@@ -7465,6 +7495,9 @@ msgstr ""
 msgid "Use the default"
 msgstr ""
 
+msgid "Use the global offline folder or choose a separate destination."
+msgstr "Use the global offline folder or choose a separate destination."
+
 msgid "Use the playlist icon or a cover collage."
 msgstr ""
 
@@ -7488,6 +7521,9 @@ msgstr ""
 
 msgid "Verifying copied files…"
 msgstr ""
+
+msgid "Verifying downloaded audio…"
+msgstr "Verifying downloaded audio…"
 
 msgid "Version"
 msgstr ""
@@ -9316,6 +9352,12 @@ msgstr ""
 msgid "{} of {} chosen"
 msgstr ""
 
+msgid "{} of {} downloaded. {} failed."
+msgstr "{} of {} downloaded. {} failed."
+
+msgid "{} of {} files removed. {} failed."
+msgstr "{} of {} files removed. {} failed."
+
 msgid "{} of {} files were changed before it failed: {}"
 msgstr ""
 
@@ -9327,6 +9369,9 @@ msgstr ""
 
 msgid "{} of {} tracks match this release"
 msgstr ""
+
+msgid "{} offline audio files saved on this device."
+msgstr "{} offline audio files saved on this device."
 
 msgid "{} play"
 msgid_plural "{} plays"

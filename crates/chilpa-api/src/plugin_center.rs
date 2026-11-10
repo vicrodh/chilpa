@@ -785,17 +785,21 @@ mod tests {
         let (center, _received) = quiet_center(true);
         api.plugin_center = Some(center);
         api.player = Some(chilpa_core::spawn_player());
-        let player = api.player.as_ref().unwrap();
-        player.play_all_from_paused(&[track], "file:capture", None, true);
-        assert!(!player.idle());
-        api.now.paused = true;
-        api.plugin_center_command("filter", "{}");
-        assert!(api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
-        let player = api.player.as_ref().unwrap();
-        player.stop();
-        let deadline = Instant::now() + Duration::from_secs(5);
-        while !player.idle() && Instant::now() < deadline { std::thread::sleep(Duration::from_millis(5)); }
-        assert!(player.idle());
+        for _ in 0..64 {
+            let player = api.player.as_ref().unwrap();
+            player.play_all_from_paused(std::slice::from_ref(&track), "file:capture", None, true);
+            assert!(!player.idle());
+            api.now.paused = true;
+            api.plugin_center_command("filter", "{}");
+            assert!(api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
+            let player = api.player.as_ref().unwrap();
+            player.stop();
+            let deadline = Instant::now() + Duration::from_secs(5);
+            while !player.idle() && Instant::now() < deadline {
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            assert!(player.idle());
+        }
         api.now.playing = true;
         api.plugin_center_command("filter", "{}");
         assert!(!api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));

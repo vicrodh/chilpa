@@ -5,6 +5,7 @@ use std::collections::HashSet;
 
 fn new_server(instance: &str, identity: &str) -> NewServer {
     NewServer {
+        offline_folder: String::new(),
         provider: "example-server".into(),
         instance: instance.into(),
         label: format!("Server {instance}"),
@@ -159,9 +160,13 @@ fn editing_a_server_keeps_its_source_and_playlist_references() {
     changed.label = "Renamed".into();
     changed.address = "https://music.example.test".into();
     changed.account = "another-user".into();
+    changed.offline_folder = "file:///selected/offline".into();
     lib.edit_server(server, &changed).unwrap();
     let stored = lib.server(server).unwrap().unwrap();
     assert_eq!((&stored.label, &stored.address, &stored.account), (&changed.label, &changed.address, &changed.account));
+    assert_eq!(stored.offline_folder,changed.offline_folder);
+    lib.update_server(server,&stored.label,&stored.address,&stored.product,&stored.libraries,&stored.details).unwrap();
+    assert_eq!(lib.server(server).unwrap().unwrap().offline_folder,changed.offline_folder);
     assert_eq!(lib.playlist_entries(playlist).unwrap()[0].track_id, Some(track_id));
     assert!(!lib.tracks_by_ids(&[track_id]).unwrap()[0].available);
 }

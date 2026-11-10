@@ -16,6 +16,7 @@ rusqlite = { version = "0.40", features = ["functions"] }
 # A sidecar is JSON, read and written by hand so a key this version does not
 # know is kept as it came.
 serde_json = "1"
+sha2 = "0.10"
 
 [dev-dependencies]
 tempfile = "3"

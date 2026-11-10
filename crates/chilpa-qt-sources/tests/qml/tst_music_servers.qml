@@ -32,6 +32,18 @@ TestCase {
         for (let i=0;i<80;i++) fixture.push({key:"sources.server/"+i,title:"Server "+i,description:"Connection details",action:"Connected",value:JSON.stringify({icon:"navidrome",product:"Navidrome 0.64.2",tracks:i}),options:["Edit…","Disable","Sync now","Remove…"],optionValues:["edit","disable","sync","remove"]})
         rows=fixture
         table.model=rows
+        SettingsModel.preferences = ({})
+    }
+    function test_the_global_offline_folder_can_be_chosen_and_restored() {
+        const folder = findChild(table,"globalOfflineFolder")
+        verify(folder)
+        folder.chosen("file:///tmp/M%C3%BAsica%20offline")
+        compare(SettingsModel.kept("offline.folder"),"file:///tmp/M%C3%BAsica%20offline")
+        compare(folder.folder,"file:///tmp/M%C3%BAsica%20offline")
+        compare(folder.error,"")
+        findChild(folder,"defaultFolder").clicked()
+        compare(folder.folder,"")
+        compare(SettingsModel.kept("offline.folder"),"")
     }
     function cleanup() { dialog.close(); removal.close(); tryCompare(dialog,"visible",false); tryCompare(removal,"visible",false) }
     function open() { dialog.open(); tryCompare(dialog,"opened",true); waitForRendering(dialog.contentItem) }
@@ -130,7 +142,7 @@ TestCase {
         verify(note.body.indexOf("first music source") > 0 && note.body.indexOf("plays meanwhile") > 0, note.body)
         press("serverContinue")
         compare(last()[0], "finish")
-        compare(last()[1], {label:"Living room",libraries:["music"]})
+        compare(last()[1], {label:"Living room",libraries:["music"],offlineFolder:""})
         Servers.show({step:"done",kind:"jellyfin",product:"Living room"})
         tryCompare(dialog, "done", true)
         compare(field("serverContinue").text, "Close")
@@ -208,7 +220,7 @@ TestCase {
         press("serverContinue")
         verify(field("serverNote").visible, "a media server's first import is explained too")
         press("serverContinue")
-        compare(last()[1], {label:"Plex Media Server: Lab",libraries:["byfolder"]})
+        compare(last()[1], {label:"Plex Media Server: Lab",libraries:["byfolder"],offlineFolder:""})
     }
 
     // A folder with no songs is shown, greyed, with why, and cannot be
@@ -297,7 +309,7 @@ TestCase {
         verify(!field("serverNote").visible, "an edit is not a first import")
         press("serverContinue")
         compare(last()[0],"finish")
-        compare(last()[1],{label:"Saved server",libraries:["lib2"]})
+        compare(last()[1],{label:"Saved server",libraries:["lib2"],offlineFolder:""})
         Servers.show({step:"done",kind:"jellyfin",product:"Saved server"})
         tryCompare(dialog,"visible",false, 2000, "an edit that was saved closes")
     }

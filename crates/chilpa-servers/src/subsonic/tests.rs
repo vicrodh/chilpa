@@ -110,6 +110,17 @@ fn an_api_key_asks_the_server_whose_it_is() {
 }
 
 #[test]
+fn an_api_key_without_a_verified_account_cannot_share_an_empty_identity() {
+    for identity in [serde_json::Value::Null,serde_json::json!({}),serde_json::json!({"username":""}),
+        serde_json::json!({"username":"  "}),serde_json::json!({"username":27})] {
+        let reply = serde_json::json!({"subsonic-response":{"status":"ok","tokenInfo":identity}});
+        let net = Canned::new().answer(200,br#"{"subsonic-response":{"status":"ok"}}"#)
+            .answer(200,&serde_json::to_vec(&reply).unwrap());
+        assert!(matches!(sign_in(&net,AT,"","fixture-key",true),Err(Failure::Unexpected(_))));
+    }
+}
+
+#[test]
 fn the_catalogue_is_read_record_by_record_with_what_each_song_carries() {
     let (server, key) = lab();
     let net = Canned::new()

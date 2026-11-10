@@ -43,10 +43,6 @@ TestCase {
         tryCompare(confirmation, "opened", true)
         verify(confirmation.message.indexOf("Living room") >= 0, "the question names the server")
         const accept = findChild(confirmation.contentItem, "confirmationAccept")
-        accept.clicked()
-        verify(Playlists.removed !== 12)
-        const acknowledgement = findChild(confirmation.contentItem, "destructiveAcknowledgement")
-        acknowledgement.checked = true
         actions.selected = sidebar.rows.find(row => row.playlistId === 13)
         accept.clicked()
         compare(Playlists.removed, 12)

@@ -1013,3 +1013,6 @@ dupfd
 # The socket kinds and the ring the confined plugin's filter names.
 seqpacket
 uring
+# Symphonia TimeBase fields.
+denom
+numer

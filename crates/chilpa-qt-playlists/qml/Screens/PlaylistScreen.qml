@@ -177,6 +177,7 @@ Flickable {
         model: tracks
         laterLabel: page.playlistName
         canRemove: page.editable
+        offlinePlaylistId: page.playlistId
         onRemove: { deletion.targetId = page.playlistId; deletion.open() }
     }
 

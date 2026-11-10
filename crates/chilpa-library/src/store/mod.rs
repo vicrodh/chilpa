@@ -74,6 +74,7 @@ mod related;
 pub(crate) mod reach;
 pub mod server_playlists;
 pub mod server_media;
+pub mod offline;
 pub mod servers;
 pub mod overlay;
 mod compilations;

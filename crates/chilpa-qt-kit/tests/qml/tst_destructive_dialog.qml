@@ -22,6 +22,7 @@ TestCase {
         message: I18n.tr("This permanently removes the playlist and its saved order.",I18n.rev)
         confirmText: I18n.tr("Delete",I18n.rev)
         destructive: true
+        doubleConfirmation: true
     }
     SignalSpy { id: accepted; target: question; signalName: "confirmed" }
     Modal {
@@ -59,6 +60,7 @@ TestCase {
     function cleanup() {
         question.close(); natural.close(); owner.close(); accepted.clear()
         question.targetValid = true
+        question.doubleConfirmation = true
         test.Window.window.width = savedWindowWidth
         test.Window.window.height = savedWindowHeight
     }
@@ -77,6 +79,14 @@ TestCase {
         press(question,"destructiveAcknowledgement")
         tryCompare(button,"enabled",true)
         waitForRendering(question.contentItem)
+        press(question,"confirmationAccept")
+        compare(accepted.count,1)
+        tryCompare(question,"visible",false)
+    }
+    function test_a_destructive_style_alone_requires_only_one_confirmation() {
+        question.doubleConfirmation = false
+        question.open()
+        tryCompare(question,"opened",true)
         press(question,"confirmationAccept")
         compare(accepted.count,1)
         tryCompare(question,"visible",false)

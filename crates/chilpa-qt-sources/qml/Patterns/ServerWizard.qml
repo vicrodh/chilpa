@@ -103,7 +103,7 @@ Modal {
             page = 3
         } else if (page === 3) page = 4
         else if (done) close()
-        else Servers.finish(JSON.stringify({label: pages.summary.label, libraries: chosen}))
+        else Servers.finish(JSON.stringify({label: pages.summary.label, libraries: chosen, offlineFolder:pages.summary.offlineFolder}))
     }
     function back() {
         said = ""

@@ -8,6 +8,7 @@
 //! 32-bit PCM output reference; its conversion boundary is in `vorbis`.
 
 mod vorbis;
+pub mod verification;
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use std::fs::File;
@@ -213,6 +214,8 @@ pub struct Decoded {
     /// What the decoder reads, by the library's name for it: a container
     /// such as MP4 does not say on its own whether it holds FLAC or AAC.
     codec: &'static str,
+    /// Dropped after the format reader has closed the managed file.
+    _lease: Option<std::sync::Arc<dyn Send+Sync>>,
 }
 
 /// The library's name for a codec, empty for one it does not name.
@@ -237,12 +240,19 @@ impl Decoded {
     /// Opens a file and prepares its decoder.
     pub fn open(path: &Path) -> Result<Self, DecodeError> {
         let file = File::open(path).map_err(DecodeError::Open)?;
+        Self::open_file(file, path.extension().and_then(|e| e.to_str()))
+    }
+
+    /// Keeps the already opened, verified file alive through decoding and seek.
+    pub fn open_file(file: File, extension: Option<&str>) -> Result<Self, DecodeError> {
         let mut hint = Hint::new();
-        if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+        if let Some(ext) = extension {
             hint.with_extension(ext);
         }
         Self::from_source(Box::new(file), hint)
     }
+
+    pub fn pin(&mut self, lease: std::sync::Arc<dyn Send+Sync>) {self._lease=Some(lease);}
 
     /// Opens a network stream. It has no duration and cannot be seeked.
     ///
@@ -377,6 +387,7 @@ impl Decoded {
             _ => integers,
         };
         Ok(Self {
+            _lease:None,
             format,
             decoder,
             track_id,

@@ -21,6 +21,7 @@ mod sync;
 mod watch;
 pub(crate) mod writing;
 mod session;
+mod offline;
 
 use crate::Chilpa;
 use chilpa_models::RemoteEntry;
@@ -65,6 +66,7 @@ pub(crate) struct Servers {
     syncer: Option<sync::Syncer>,
     watcher: Option<watch::Watcher>,
     failures: Arc<Mutex<Vec<i64>>>,
+    invalid_copies:offline::InvalidCopies,
     /// Why the last sync of each server did not finish.
     errors: HashMap<i64, String>,
     /// The servers that refused their credential at the last look.
@@ -75,6 +77,7 @@ pub(crate) struct Servers {
     gate: Arc<Mutex<()>>,
     writer: Option<writing::Writer>,
     media: media::State,
+    offline: offline::State,
     /// The playlists with a change on its way to their server, and, as the
     /// negative of its source, a server with a playlist being created.
     pending: std::collections::HashSet<i64>,
@@ -118,6 +121,9 @@ const STALE: i64 = 60 * 60;
 const SHOW_EVERY: std::time::Duration = std::time::Duration::from_secs(10);
 
 impl Chilpa {
+    pub(crate) fn server_network_changed(&self) {
+        if let Some(watcher)=&self.servers.watcher {watcher.ask();}
+    }
     /// Starts what the servers need: their credentials, the player's opener,
     /// the sync, the watcher. The window calls it once, at startup, like
     /// `start_scrobbling`; a test never does.
@@ -126,10 +132,10 @@ impl Chilpa {
             return;
         }
         let keys = Arc::new(Keys::new(chilpa_dirs::data().join("servers")));
-        self.sources.servers_opener = Some(Arc::new(opener::Opener::new(Arc::clone(&keys), Arc::clone(&self.servers.failures))));
+        self.sources.servers_opener = Some(Arc::new(opener::Opener::new(Arc::clone(&keys), Arc::clone(&self.servers.failures),self.servers.invalid_copies.clone())));
         self.install_openers();
         self.servers.syncer = Some(sync::Syncer::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
-        self.servers.watcher = Some(watch::Watcher::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
+        self.servers.watcher = Some(watch::Watcher::start(Arc::clone(&keys), Arc::clone(&self.servers.gate),self.servers.invalid_copies.clone()));
         self.servers.writer = Some(writing::Writer::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
         self.servers.keys = Some(keys);
         self.servers.resumed = background::unfinished();
@@ -140,6 +146,7 @@ impl Chilpa {
         }
         let now = crate::now_unix();
         let stored = self.library().and_then(|lib| lib.servers().ok()).unwrap_or_default();
+        self.start_offline_recovery();
         // A server added before its kind had a glyph of its own takes it now.
         if let Some(lib) = self.library() {
             for s in &stored {
@@ -181,9 +188,9 @@ impl Chilpa {
                 } else if let Some(run) = running.get(&s.source_id) {
                     sync_state(run, &name)
                 } else if refused.contains(&s.source_id) {
-                    chilpa_i18n::t("Refused the sign-in. Its records stay listed and cannot be played.")
+                    chilpa_i18n::t("Sign-in was refused. Its records stay in the library.")
                 } else if !s.reachable {
-                    chilpa_i18n::t("Does not answer. Its records stay listed and cannot be played.")
+                    chilpa_i18n::t("Does not answer. Its records stay in the library.")
                 } else if let Some(why) = errors.get(&s.source_id) {
                     why.clone()
                 } else {
@@ -302,9 +309,16 @@ impl Chilpa {
     /// The same, as JSON for the window's dialog.
     pub fn server_setup_json(&self) -> String {
         let v = &self.servers.setup.view;
+        let root = offline::global_directory(self.preference(offline::ROOT_PREFERENCE).as_deref());
+        let inherited = root.as_ref().ok().and_then(|root| self.servers.setup.offline_default(root));
+        let folder_url = |path: &std::path::Path| url::Url::from_file_path(path).ok().map(String::from).unwrap_or_default();
         serde_json::json!({
             "step": v.step, "kind": v.kind, "address": v.address, "product": v.product,
             "label": v.label, "editing": v.editing, "selectedLibraries": v.selected_libraries,
+            "offlineFolder":v.offline_folder,
+            "offlineRoot":root.as_ref().ok().map(|path| folder_url(path)),
+            "offlineDefaultFolder":inherited.as_deref().map(folder_url),
+            "offlineError":root.as_ref().err(),
             "apiKey": v.api_key, "quickConnect": v.quick_connect, "code": v.code, "link": v.link,
             "crumbs": v.crumbs.iter().map(|(id, name)| serde_json::json!({"id": id, "name": name})).collect::<Vec<_>>(),
             "folders": v.folders.iter().map(|(id, name)| serde_json::json!({"id": id, "name": name})).collect::<Vec<_>>(),
@@ -344,6 +358,8 @@ impl Chilpa {
 
     pub fn setup_label(&mut self, label: &str) { self.servers.setup.label(label); }
 
+    pub fn setup_offline_folder(&mut self, folder: &str) { self.servers.setup.view.offline_folder = folder.to_string(); }
+
     pub fn setup_address(&mut self, address: &str) {
         self.servers.setup.address(address);
     }
@@ -377,6 +393,14 @@ impl Chilpa {
     /// and its sync starts. The library and the credential are written on a
     /// thread of their own; `poll` picks up how it went and the setup says
     /// it. True when it was sent.
+    pub fn setup_finish_json(&mut self, chosen: &str) -> bool {
+        let value: serde_json::Value = serde_json::from_str(chosen).unwrap_or_default();
+        let libraries: Vec<String> = serde_json::from_value(value.get("libraries").cloned().unwrap_or_else(|| value.clone())).unwrap_or_default();
+        if let Some(label) = value.get("label").and_then(serde_json::Value::as_str) { self.setup_label(label); }
+        if let Some(folder) = value.get("offlineFolder").and_then(serde_json::Value::as_str) { self.setup_offline_folder(folder); }
+        self.setup_finish(&libraries)
+    }
+
     pub fn setup_finish(&mut self, libraries: &[String]) -> bool {
         if self.servers.adding.is_some() {
             return false;
@@ -621,6 +645,7 @@ impl Chilpa {
 
     /// What came back from the servers' threads. `poll` calls it.
     pub(crate) fn poll_servers(&mut self) {
+        self.poll_server_offline();
         self.servers.setup.poll();
         self.poll_adding();
         self.poll_background();
@@ -713,6 +738,7 @@ fn write_server(path: &std::path::Path, keys: &Keys, edit: Option<i64>, ready: &
         identity: ready.identity.clone(), product: ready.product.clone(),
         libraries: serde_json::to_string(&ready.libraries).unwrap_or_else(|_| "[]".into()),
         details: serde_json::to_string(&details).unwrap_or_else(|_| "{}".into()),
+        offline_folder: offline::choice(&ready.offline_folder)?,
     };
     // A kind without a sign-in has nothing to seal: the keyring is not
     // even opened for it.
@@ -814,7 +840,7 @@ mod tests {
         let path = root.path().join("library.db");
         let lib = chilpa_library::Library::open(&path).unwrap();
         let keys = Keys::derived(root.path().join("servers"));
-        let original = setup::Ready { kind:chilpa_servers::Kind::Jellyfin, instance:keys::mint(), label:"Fixture".into(),
+        let original = setup::Ready { kind:chilpa_servers::Kind::Jellyfin, instance:keys::mint(), label:"Fixture".into(), offline_folder:String::new(),
             address:"http://fixture.invalid".into(), account:"first-user".into(), identity:"fixture-server".into(),
             product:"Fixture".into(), libraries:vec![], details:Default::default(),
             key:chilpa_servers::Credential::Token {token:"first-session".into()} };
@@ -838,7 +864,7 @@ mod tests {
         let path = root.path().join("library.db");
         let lib = chilpa_library::Library::open(&path).unwrap();
         let keys = Keys::derived(root.path().join("servers"));
-        let mut ready = setup::Ready { kind:chilpa_servers::Kind::Subsonic, instance:keys::mint(), label:"Fixture".into(),
+        let mut ready = setup::Ready { kind:chilpa_servers::Kind::Subsonic, instance:keys::mint(), label:"Fixture".into(), offline_folder:String::new(),
             address:"http://fixture.invalid".into(), account:"fixture-user".into(), identity:"fixture-server".into(),
             product:"Fixture".into(), libraries:vec![], details:chilpa_servers::Details {
                 extensions:vec!["songLyrics".into()],extension_versions:std::collections::BTreeMap::from([("songLyrics".into(),vec![1,2])]),

@@ -57,28 +57,9 @@ Modal {
     function combine() {
         const ids = []
         for (let i = 0; i < queues.count; i++) if (queues.get(i).chosen) ids.push(queues.get(i).queueId)
-        if (originals.value === "remove") {
-            removing.queueIds = JSON.stringify(ids)
-            removing.queueName = name.text
-            removing.open()
-        } else finish(JSON.stringify(ids), name.text, true)
-    }
-    function finish(ids, label, keep) {
-        error = Queues.merge(ids, label, keep)
+        error = Queues.merge(JSON.stringify(ids),name.text,originals.value === "keep")
         ListenList.refresh()
         if (error === "") close()
-    }
-    ConfirmationDialog {
-        id: removing
-        objectName: "queueMergeRemovalConfirmation"
-        property string queueIds: "[]"
-        property string queueName: ""
-        title: I18n.tr("Remove original queues?", I18n.rev)
-        message: I18n.tr("The selected queues will be removed after their tracks are copied to the combined queue. Their separate names and saved order will be lost.", I18n.rev)
-        confirmText: I18n.tr("Combine and remove originals", I18n.rev)
-        destructive: true
-        targetValid: !dialog.document.pending && JSON.parse(queueIds).every(id => (dialog.document.tabs || []).some(tab => tab.id === id))
-        onConfirmed: dialog.finish(queueIds,queueName,false)
     }
     onDocumentChanged: if (opened) sync()
 

@@ -11,3 +11,6 @@ chilpa-i18n.workspace = true
 chilpa-audio.workspace = true
 chilpa-stream.workspace = true
 symphonia = { version = "0.5", features = ["all"] }
+
+[dev-dependencies]
+tempfile = "3"

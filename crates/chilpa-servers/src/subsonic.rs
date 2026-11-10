@@ -202,7 +202,9 @@ pub fn sign_in(net: &dyn Net, address: &str, user: &str, secret: &str, api_key: 
     let account = if api_key {
         // An API key does not say whose it is; `tokenInfo` does.
         let info = ask(net, url(address, "tokenInfo", Some(&key), ""))?;
-        info.get("tokenInfo").and_then(|t| string(t, "username")).unwrap_or_default()
+        info.get("tokenInfo").and_then(|t| string(t, "username"))
+            .filter(|name| !name.trim().is_empty() && name.len() <= 1024)
+            .ok_or_else(|| Failure::Unexpected(chilpa_i18n::t("The server did not identify the account for this API key.")))?
     } else {
         user.trim().to_string()
     };

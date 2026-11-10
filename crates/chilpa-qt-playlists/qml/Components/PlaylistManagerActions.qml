@@ -1,6 +1,7 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
@@ -40,6 +41,8 @@ Menu {
             {text: I18n.tr("Move to root", I18n.rev), act: "folder", id: 0}
         ]
         if (!folder) {
+            if (row.entryId > 0 && JSON.parse(Sources.offline("info", "playlist", JSON.stringify([row.entryId]))).count > 0)
+                base.push({text:I18n.tr("Make available offline…", I18n.rev),act:"offline"})
             const ids = manager.folderIds(), names = manager.folderNames()
             for (let i = 0; i < ids.length; ++i)
                 base.push({text: names[i], act: "folder", id: Number(ids[i])})
@@ -56,6 +59,7 @@ Menu {
     onChosen: (at) => {
         const entry = entries[at]
         switch (entry.act) {
+        case "offline": Sources.offlineRequested("playlist", JSON.stringify([row.entryId])); break
         case "open": manager.open(row.index); break
         case "play": Playlists.play(row.entryId, false); break
         case "edit":

@@ -5,7 +5,6 @@ import app.chilpa.kit
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Theme"
 import "../Components"
 
@@ -104,16 +103,8 @@ Modal {
             opacity: enabled ? 1 : Sizes.idle
             glyph: Icons.refresh
             text: I18n.tr("Reset All to Defaults", I18n.rev)
-            onClicked: resetting.open()
+            onClicked: Hotkeys.command("reset-all", "")
         }
     }
-    ConfirmationDialog {
-        id: resetting
-        objectName: "shortcutResetAllConfirmation"
-        title: I18n.tr("Reset all shortcuts?", I18n.rev)
-        message: I18n.tr("All custom key bindings will be replaced with the defaults for the current keymap.", I18n.rev)
-        confirmText: I18n.tr("Reset All to Defaults", I18n.rev)
-        destructive: true
-        onConfirmed: Hotkeys.command("reset-all", "")
-    }
+
 }

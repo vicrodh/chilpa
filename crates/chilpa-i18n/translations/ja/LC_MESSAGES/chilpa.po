@@ -139,6 +139,9 @@ msgstr ""
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr ""
 
+msgid "A download is still in progress."
+msgstr "ダウンロードが進行中です。"
+
 msgid "A folder chosen before"
 msgstr "以前に選んだフォルダ"
 
@@ -437,9 +440,6 @@ msgstr "すべてのアーティスト"
 msgid "All categories"
 msgstr "すべてのカテゴリ"
 
-msgid "All custom key bindings will be replaced with the defaults for the current keymap."
-msgstr "すべてのカスタムキー割り当てを現在のキーマップの既定値に置き換えます。"
-
 msgid "All discs"
 msgstr "すべてのディスク"
 
@@ -484,12 +484,6 @@ msgstr "すべてのテーマ"
 
 msgid "All time"
 msgstr "全期間"
-
-msgid "All tracks after this occurrence will be removed from the queue."
-msgstr "キュー内のこの位置より後のすべての曲を削除します。"
-
-msgid "All tracks will be removed from this queue. Playback from this queue will stop."
-msgstr "このキューからすべての曲を削除し、このキューの再生を停止します。"
 
 msgid "Allow Chilpa on Discogs, then paste the code below."
 msgstr "DiscogsでChilpaを許可し、以下にコードを貼り付けてください。"
@@ -613,6 +607,9 @@ msgstr "すべてのソース — 最高音質（ローカルのミックスプ�
 
 msgid "Any time"
 msgstr "期間を問わない"
+
+msgid "App data folder"
+msgstr "アプリのデータフォルダー"
 
 msgid "Appearance"
 msgstr "外観"
@@ -1128,6 +1125,9 @@ msgstr "空き容量を確認中"
 msgid "Checking destination files"
 msgstr "転送先のファイルを確認中"
 
+msgid "Checking downloaded audio…"
+msgstr "ダウンロード済みの音声を確認中…"
+
 msgid "Checking for updates…"
 msgstr "アップデートを確認中…"
 
@@ -1335,6 +1335,9 @@ msgstr "異なるキューを2つ以上選択してください。"
 msgid "Choose at most 512 playlists or queries for one storage."
 msgstr ""
 
+msgid "Choose between 1 and 10,000 server tracks for an offline download."
+msgstr "オフライン用にサーバーの曲を1〜10,000曲選択してください。"
+
 msgid "Choose between 1 and 50,000 Library tracks."
 msgstr ""
 
@@ -1343,6 +1346,9 @@ msgstr "ダウンロードフォルダーを選択"
 
 msgid "Choose download folder…"
 msgstr "ダウンロードフォルダーを選択…"
+
+msgid "Choose fewer offline files for this action."
+msgstr "この操作では選択するオフラインファイルを減らしてください。"
 
 msgid "Choose file…"
 msgstr "ファイルを選択…"
@@ -1437,9 +1443,6 @@ msgstr "フィルターを解除"
 msgid "Clear the selection"
 msgstr "選択を解除"
 
-msgid "Clear “{}”?"
-msgstr "「{}」を空にしますか？"
-
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr "クリアしました。{}件の歌詞を削除しました。トラックの再生時にもう一度検索されます。"
 
@@ -1470,9 +1473,6 @@ msgstr "タブを閉じる"
 msgid "Close media"
 msgstr "メディアを閉じる"
 
-msgid "Close queue"
-msgstr "キューを閉じる"
-
 msgid "Close search"
 msgstr "検索を閉じる"
 
@@ -1484,9 +1484,6 @@ msgstr "引用符を閉じてください。"
 
 msgid "Close to tray"
 msgstr "閉じてトレイに格納"
-
-msgid "Close “{}”?"
-msgstr "「{}」を閉じますか？"
 
 msgid "Closing stops a scan. Saved progress can be continued here after reopening."
 msgstr "アプリを閉じるとスキャンは停止します。再度開いた後、ここで保存済みの処理を続行できます。"
@@ -1520,9 +1517,6 @@ msgstr "列"
 
 msgid "Combine"
 msgstr "結合"
-
-msgid "Combine and remove originals"
-msgstr "結合して元のキューを削除"
 
 msgid "Combine queues"
 msgstr "キューを結合"
@@ -2205,8 +2199,8 @@ msgstr "ライブラリに戻す"
 msgid "Documentation"
 msgstr "ドキュメント"
 
-msgid "Does not answer. Its records stay listed and cannot be played."
-msgstr "応答がありません。アルバムは一覧に残りますが、再生できません。"
+msgid "Does not answer. Its records stay in the library."
+msgstr "応答がありません。アルバムはライブラリに保持します。"
 
 msgid "Don't ask again"
 msgstr "今後は確認しない"
@@ -2232,8 +2226,14 @@ msgstr "もう一度ダウンロード"
 msgid "Download album"
 msgstr "アルバムをダウンロード"
 
+msgid "Download cancelled."
+msgstr "ダウンロードをキャンセルしました。"
+
 msgid "Download track"
 msgstr "トラックをダウンロード"
+
+msgid "Download {} server tracks for offline listening."
+msgstr "サーバーの{}曲をオフライン再生用にダウンロードします。"
 
 msgid "Downloaded"
 msgstr "ダウンロード済み"
@@ -2249,6 +2249,9 @@ msgstr "{}/{}をダウンロード中"
 
 msgid "Downloads"
 msgstr "ダウンロード"
+
+msgid "Downloads are grouped by server type. Each account has its own subfolder."
+msgstr "ダウンロードをサーバーの種類ごとにまとめます。アカウントごとに個別のサブフォルダーを使用します。"
 
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr "ドラッグするか↑↓を使って、カスタムの順序を維持します。"
@@ -2768,6 +2771,9 @@ msgstr "はじめに"
 
 msgid "GitHub is limiting requests from this network. Try again later."
 msgstr "このネットワークからのリクエストはGitHubによって制限されています。後でもう一度お試しください。"
+
+msgid "Global offline folder"
+msgstr "共通のオフライン用フォルダー"
 
 msgid "Go Back"
 msgstr "戻る"
@@ -3654,6 +3660,9 @@ msgstr "マガジン"
 msgid "Maintenance"
 msgstr "メンテナンス"
 
+msgid "Make available offline…"
+msgstr "オフラインで再生できるようにする…"
+
 msgid "Make it yours"
 msgstr "自分好みに"
 
@@ -4089,6 +4098,9 @@ msgstr "デバイスが見つかりません"
 msgid "No download folder selected"
 msgstr "ダウンロードフォルダーが選択されていません"
 
+msgid "No downloaded files were found in this selection."
+msgstr "選択範囲にダウンロード済みファイルがありません。"
+
 msgid "No files need to change."
 msgstr ""
 
@@ -4389,8 +4401,17 @@ msgstr "オフ"
 msgid "Offline"
 msgstr ""
 
+msgid "Offline folder"
+msgstr "オフライン用フォルダー"
+
+msgid "Offline folder for this server"
+msgstr "このサーバーのオフライン用フォルダー"
+
 msgid "Offline mode"
 msgstr "オフラインモード"
+
+msgid "Offline music"
+msgstr "オフラインの音楽"
 
 msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
 msgstr "古い一時画像はバックグラウンドで削除されます。ライブラリが参照しているアートワークは残ります。"
@@ -4592,6 +4613,9 @@ msgstr "非公開プレイリスト用の任意のアクセストークン"
 
 msgid "Original audio"
 msgstr "元のオーディオ"
+
+msgid "Original audio is saved in the offline folder configured for each server. Offline storage is limited to 2 GiB, with up to 512 MiB per file."
+msgstr "元の音声を各サーバーで設定したオフラインフォルダーに保存します。保存容量の上限は2 GiB、1ファイルあたり512 MiBです。"
 
 msgid "Original audio over the selected network transport"
 msgstr "選択したネットワーク経路で元の音声を送信"
@@ -5310,9 +5334,6 @@ msgstr "購入を更新"
 msgid "Refresh settings"
 msgstr "設定を更新"
 
-msgid "Refused the sign-in. Its records stay listed and cannot be played."
-msgstr "ログインが拒否されました。アルバムは一覧に残りますが、再生できません。"
-
 msgid "Regenerate"
 msgstr "再生成"
 
@@ -5352,6 +5373,12 @@ msgstr "条件を削除"
 msgid "Remove cover"
 msgstr "カバーを削除"
 
+msgid "Remove downloaded audio?"
+msgstr "ダウンロード済みの音声を削除しますか？"
+
+msgid "Remove downloaded files…"
+msgstr "ダウンロード済みファイルを削除…"
+
 msgid "Remove filter"
 msgstr "フィルターを削除"
 
@@ -5384,9 +5411,6 @@ msgstr "条件を 1 つ外すと結果が出ます："
 
 msgid "Remove original queues"
 msgstr "元のキューを削除"
-
-msgid "Remove original queues?"
-msgstr "元のキューを削除しますか？"
 
 msgid "Remove plugin repository?"
 msgstr "プラグインリポジトリを削除しますか？"
@@ -5451,17 +5475,11 @@ msgstr "修復しました。失われたものはありません。"
 msgid "Repeat"
 msgstr "リピート"
 
-msgid "Replace"
-msgstr "置き換え"
-
 msgid "Replace current queue"
 msgstr "現在のキューを置き換え"
 
 msgid "Replace queue {}"
 msgstr "キュー「{}」を置き換え"
-
-msgid "Replace queue?"
-msgstr "キューを置き換えますか？"
 
 msgid "Report an issue"
 msgstr "問題を報告"
@@ -5502,17 +5520,8 @@ msgstr "すべて既定値に戻す"
 msgid "Reset EQ"
 msgstr "EQをリセット"
 
-msgid "Reset all shortcuts?"
-msgstr "すべてのショートカットをリセットしますか？"
-
 msgid "Reset counter"
 msgstr "カウンターをリセット"
-
-msgid "Reset equalizer?"
-msgstr "イコライザーをリセットしますか？"
-
-msgid "Reset shortcut?"
-msgstr "ショートカットをリセットしますか？"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "解像度を{}ビットから{}ビットに縮小"
@@ -5534,9 +5543,6 @@ msgstr "既定値に戻す"
 
 msgid "Restore defaults"
 msgstr "既定値に戻す"
-
-msgid "Restore page defaults?"
-msgstr "ページの既定値を復元しますか？"
 
 msgid "Restore previous EQ"
 msgstr "以前のEQに戻す"
@@ -6103,6 +6109,9 @@ msgstr "代わりに API キーでサインイン（API キーを提供する Op
 msgid "Sign in with your Plex account"
 msgstr "Plex アカウントでサインイン"
 
+msgid "Sign-in was refused. Its records stay in the library."
+msgstr "ログインが拒否されました。アルバムはライブラリに保持します。"
+
 msgid "Signed out"
 msgstr "ログアウト済み"
 
@@ -6486,23 +6495,8 @@ msgstr "チェックは完了しましたが、以前のサンプルレートを
 msgid "The connection is not encrypted."
 msgstr "接続は暗号化されていません。"
 
-msgid "The current equalizer changes will be replaced with the previous preset."
-msgstr "現在のイコライザーの変更を以前のプリセットで置き換えます。"
-
-msgid "The current filter gains will be reset to zero."
-msgstr "現在のフィルターゲインをゼロに戻します。"
-
 msgid "The current track has no such destination."
 msgstr "現在のトラックにはそのような移動先がありません。"
-
-msgid "The custom key binding for this action will be replaced with its default."
-msgstr "この操作のカスタムキー割り当てを既定値に置き換えます。"
-
-msgid "The custom sections, visibility and order for this page will be replaced with their defaults."
-msgstr "このページのカスタムセクション、表示設定、順序を既定値に置き換えます。"
-
-msgid "The destination queue and its saved order will be replaced with the selected tracks."
-msgstr "対象キューと保存済みの順序を選択した曲で置き換えます。"
 
 msgid "The device playlist picker can show at most 2,048 playlists."
 msgstr ""
@@ -6525,8 +6519,20 @@ msgstr ""
 msgid "The device task stopped. Its progress is saved for recovery."
 msgstr ""
 
+msgid "The download is incomplete. Try again."
+msgstr "ダウンロードが不完全です。もう一度お試しください。"
+
 msgid "The download view is unavailable."
 msgstr "ダウンロード表示は利用できません。"
+
+msgid "The download was interrupted. Try again."
+msgstr "ダウンロードが中断されました。もう一度お試しください。"
+
+msgid "The download worker could not be started."
+msgstr "ダウンロード処理を開始できませんでした。"
+
+msgid "The downloaded file could not be verified as complete audio."
+msgstr "ダウンロードしたファイルが完全な音声であることを確認できませんでした。"
 
 msgid "The engine reports unchanged samples on this route."
 msgstr "エンジンはこの経路でサンプルが変更されていないと報告しています。"
@@ -6614,6 +6620,24 @@ msgstr "歌詞キャッシュを開けませんでした。"
 
 msgid "The network is off; turn it on in Settings › Integrations"
 msgstr "ネットワークがオフです。設定 › 連携 でオンにしてください"
+
+msgid "The offline copy is damaged. Remove the offline copy before downloading it again."
+msgstr "オフラインコピーが破損しています。削除してから再度ダウンロードしてください。"
+
+msgid "The offline file could not be removed. Check playback and folder permissions."
+msgstr "オフラインファイルを削除できませんでした。再生状態とフォルダーの権限を確認してください。"
+
+msgid "The offline file could not be written."
+msgstr "オフラインファイルを書き込めませんでした。"
+
+msgid "The offline folder cannot be represented as a local path."
+msgstr "オフラインフォルダーをローカルパスで表現できません。"
+
+msgid "The offline folder must be an absolute local folder."
+msgstr "オフライン用フォルダーには、ローカルフォルダーの絶対パスを指定してください。"
+
+msgid "The offline storage limit has been reached."
+msgstr "オフライン保存容量の上限に達しました。"
 
 msgid "The output changed during the check. Its new configuration was kept."
 msgstr "チェック中に出力が変更されました。新しい設定を保持しました。"
@@ -6744,9 +6768,6 @@ msgstr ""
 msgid "The selected queues are empty."
 msgstr "選択したキューは空です。"
 
-msgid "The selected queues will be removed after their tracks are copied to the combined queue. Their separate names and saved order will be lost."
-msgstr "選択したキューの曲を結合先のキューにコピーした後、元のキューを削除します。個別の名前と保存済みの順序は失われます。"
-
 msgid "The selected storage changed or disconnected."
 msgstr "選択したストレージが変更されたか、接続が切れました。"
 
@@ -6765,6 +6786,9 @@ msgstr "サーバー接続またはアカウントが変わりました。操作
 msgid "The server deleted the music, but the local catalogue could not be updated. Sync the server again."
 msgstr ""
 
+msgid "The server did not identify the account for this API key."
+msgstr "サーバーはこのAPIキーに対応するアカウントを識別できませんでした。"
+
 msgid "The server did not take it: {}"
 msgstr "サーバーは受け付けませんでした：{}"
 
@@ -6776,6 +6800,9 @@ msgstr "プロバイダーがコードを送信しませんでした。"
 
 msgid "The service's answer is missing."
 msgstr "プロバイダーの応答がありません。"
+
+msgid "The settings could not be saved."
+msgstr "設定を保存できませんでした。"
 
 msgid "The source disconnected. Check the playlist before retrying."
 msgstr "ソースの接続が切れました。再試行する前にプレイリストを確認してください。"
@@ -6910,8 +6937,8 @@ msgstr "今月 vs 先月"
 msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
 msgstr "この音楽表示は50,000ファイルまたは16 MiBのメタデータの上限を超えています。"
 
-msgid "This occurrence will be removed from the queue."
-msgstr "キューからこの位置の曲を削除します。"
+msgid "This offline file is in use. Stop playback before removing it."
+msgstr "このオフラインファイルは使用中です。再生を停止してから削除してください。"
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "これは音を出しません。デバイスに送られるはずだったものをファイルに書き出すので、元のトラックと比較できます。ビットパーフェクトは主張するのではなく、これで証明できます。"
@@ -6958,6 +6985,9 @@ msgstr "選択した個人用オーディオプリセットと保存済みの設
 msgid "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
 msgstr "サーバーのファイルシステムから曲を完全に削除します。Chilpaから元に戻すことはできません。"
 
+msgid "This permanently deletes {} downloaded audio files from this device."
+msgstr "このデバイスからダウンロード済みの音声ファイル{}件を完全に削除します。"
+
 msgid "This permanently removes the playlist and its saved order."
 msgstr "プレイリストと保存済みの順序を完全に削除します。"
 
@@ -6999,9 +7029,6 @@ msgstr "この購入はダウンロードできません。"
 
 msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
 msgstr "このクエリはグループを 3 段まで入れ子にしています。行では 2 段まで表示できるため、ここではテキストのまま表示します。条件は適用されています。"
-
-msgid "This queue and its saved order will be removed."
-msgstr "このキューと保存済みの順序を削除します。"
 
 msgid "This record cannot be played now."
 msgstr "このアルバムは現在再生できません。"
@@ -7059,6 +7086,9 @@ msgstr "数秒かかります。"
 
 msgid "This track has no album to open"
 msgstr "このトラックには開けるアルバムがありません"
+
+msgid "This track has no verified offline copy. Download it while connected."
+msgstr "この曲には検証済みのオフラインコピーがありません。接続中にダウンロードしてください。"
 
 msgid "This transcript format is not supported."
 msgstr "この文字起こし形式には対応していません。"
@@ -7456,6 +7486,9 @@ msgstr "現在のキューを使用"
 msgid "Use the default"
 msgstr "既定値を使用"
 
+msgid "Use the global offline folder or choose a separate destination."
+msgstr "共通のオフライン用フォルダーを使うか、別の保存先を選択してください。"
+
 msgid "Use the playlist icon or a cover collage."
 msgstr "プレイリストアイコンまたはカバーのコラージュを使用します。"
 
@@ -7479,6 +7512,9 @@ msgstr ""
 
 msgid "Verifying copied files…"
 msgstr ""
+
+msgid "Verifying downloaded audio…"
+msgstr "ダウンロードした音声を検証中…"
 
 msgid "Version"
 msgstr "バージョン"
@@ -9286,6 +9322,12 @@ msgstr "{} / {}"
 msgid "{} of {} chosen"
 msgstr "{} / {} 件を選択"
 
+msgid "{} of {} downloaded. {} failed."
+msgstr "{} / {} 件をダウンロードしました。失敗 {} 件。"
+
+msgid "{} of {} files removed. {} failed."
+msgstr "{} / {} ファイルを削除しました。失敗 {} 件。"
+
 msgid "{} of {} files were changed before it failed: {}"
 msgstr "失敗するまでに{} / {}個のファイルが変更されました: {}"
 
@@ -9297,6 +9339,9 @@ msgstr "{} / {}個のフォーマットがそのまま出力されます"
 
 msgid "{} of {} tracks match this release"
 msgstr "{} / {}トラックがこのリリースに一致します"
+
+msgid "{} offline audio files saved on this device."
+msgstr "このデバイスにオフライン音声ファイル{}件を保存しています。"
 
 msgid "{} play"
 msgid_plural "{} plays"

@@ -1,8 +1,6 @@
 ArtistSources 1.0 ArtistSources.qml
 singleton DisplayMode 1.0 DisplayMode.qml
 DisplayPlayerIntegration 1.0 DisplayPlayerIntegration.qml
-ImportCheck 1.0 ImportCheck.qml
-ImportMatch 1.0 ImportMatch.qml
 LibraryColumnChoices 1.0 LibraryColumnChoices.qml
 MediaArtwork 1.0 MediaArtwork.qml
 MediaCard 1.0 MediaCard.qml

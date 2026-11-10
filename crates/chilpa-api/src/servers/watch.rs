@@ -33,7 +33,7 @@ pub(crate) struct Look {
 }
 
 impl Watcher {
-    pub(crate) fn start(keys: Arc<Keys>, gate: Arc<Mutex<()>>) -> Self {
+    pub(crate) fn start(keys: Arc<Keys>, gate: Arc<Mutex<()>>,invalid:super::offline::InvalidCopies) -> Self {
         let (asks, inbox) = channel::<()>();
         let (outbox, looked) = channel::<Look>();
         let _ = std::thread::Builder::new().name("chilpa-reach".into()).spawn(move || {
@@ -49,7 +49,10 @@ impl Watcher {
                 // I keep this worker's connection instead of repeating library maintenance.
                 if library.is_none() { library = chilpa_core::open_library().ok(); }
                 if let Some(lib) = &library {
-                    let _ = outbox.send(look(lib, &Network, &keys, &gate));
+                    let changed=invalidate_copies(lib,&invalid);
+                    let mut result=look(lib,&Network,&keys,&gate);
+                    result.changed|=changed;
+                    let _ = outbox.send(result);
                 }
                 wait = EVERY;
             }
@@ -69,12 +72,51 @@ impl Watcher {
     }
 }
 
+pub(super) fn invalidate_copies(lib:&chilpa_library::Library,invalid:&super::offline::InvalidCopies) -> bool {
+    use std::sync::atomic::Ordering;
+    let scan=invalid.scan.swap(false,Ordering::AcqRel);
+    let copies=std::mem::take(&mut *invalid.pending.lock().unwrap_or_else(|error| error.into_inner()));
+    let mut changed=false;
+    for snapshot in copies {changed|=invalidate_copy(lib,&snapshot,invalid);}
+    if scan {
+        let mut after=String::new();
+        loop {
+            let copies=match lib.offline_current_copy_page(&after) {
+                Ok(copies)=>copies,
+                Err(_)=>{invalid.scan.store(true,Ordering::Release);break;}
+            };
+            if copies.is_empty() {break;}
+            for copy in copies {
+                after=copy.key.clone();
+                changed|=invalidate_copy(lib,&copy,invalid);
+            }
+        }
+    }
+    changed
+}
+
+fn invalidate_copy(lib:&chilpa_library::Library,snapshot:&chilpa_library::store::offline::Copy,
+    invalid:&super::offline::InvalidCopies) -> bool {
+    use std::sync::atomic::Ordering;
+    let current=match lib.offline_copy_by_key(&snapshot.key) {
+        Ok(copy)=>copy.filter(|copy| copy.state=="complete" && copy.path==snapshot.path
+            && copy.checksum==snapshot.checksum && copy.bytes==snapshot.bytes),
+        Err(_)=>{invalid.scan.store(true,Ordering::Release);return false;}
+    };
+    let Some(current)=current else {return false;};
+    match super::offline::checked(&current,|| false) {
+        Err(super::offline::CheckError::Invalid)=>match lib.invalidate_checked_offline_copy(&current,super::offline::disk_bytes(&current)) {
+            Ok(changed)=>changed,
+            Err(_)=>{invalid.scan.store(true,Ordering::Release);false}
+        },
+        Err(_)=>{invalid.scan.store(true,Ordering::Release);false}
+        Ok(_)=>false,
+    }
+}
+
 /// One look at every folder and every server.
 ///
-/// Only a server that answers with its credential accepted can play. One
-/// that refuses it, or whose credential cannot be opened here, stays listed
-/// and dimmed like one that does not answer (ADR-017 §2): its tracks would
-/// fail at the first request.
+/// Availability combines authenticated reachability and verified downloads.
 pub(crate) fn look(lib: &chilpa_library::Library, net: &dyn chilpa_servers::Net, keys: &Keys, gate: &Mutex<()>) -> Look {
     let mut changed = lib.refresh_roots().unwrap_or(false);
     let mut refused = HashSet::new();
@@ -84,6 +126,10 @@ pub(crate) fn look(lib: &chilpa_library::Library, net: &dyn chilpa_servers::Net,
         let Some(stored) = lib.server(stored.source_id).ok().flatten() else { continue };
         if !stored.enabled { continue; }
         sessions.insert(stored.source_id,super::session::Scope::of(&stored));
+        if chilpa_core::network::current().offline {
+            changed |= lib.set_source_reachable(stored.source_id,false).unwrap_or(false);
+            continue;
+        }
         let (Some(mut server), Some(key)) = (net::server(&stored), net::key(keys, &stored)) else {
             refused.insert(stored.source_id);
             changed |= lib.set_source_reachable(stored.source_id, false).unwrap_or(false);

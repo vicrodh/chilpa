@@ -6,7 +6,7 @@
 //! waits on the keyring and never holds a secret longer than one request.
 
 use super::keys::Keys;
-use chilpa_core::remote::{Described, Located, RemoteOpener};
+use chilpa_core::remote::{Described, Located, Media, RemoteOpener};
 use chilpa_models::RemoteEntry;
 use std::sync::{Arc, Mutex};
 
@@ -15,17 +15,22 @@ pub(crate) struct Opener {
     library: Mutex<Option<chilpa_library::Library>>,
     /// Sources whose track failed to open, for the facade to check.
     pub(crate) failures: Arc<Mutex<Vec<i64>>>,
+    invalid:super::offline::InvalidCopies,
 }
 
 impl Opener {
-    pub(crate) fn new(keys: Arc<Keys>, failures: Arc<Mutex<Vec<i64>>>) -> Self {
-        Self { keys, library: Mutex::new(None), failures }
+    fn signal_failure(&self,source:i64) {
+        let mut failures=self.failures.lock().unwrap_or_else(|error| error.into_inner());
+        if failures.len()<64 && !failures.contains(&source) {failures.push(source);}
+    }
+    pub(crate) fn new(keys: Arc<Keys>, failures: Arc<Mutex<Vec<i64>>>,invalid:super::offline::InvalidCopies) -> Self {
+        Self { keys, library: Mutex::new(None), failures,invalid }
     }
 
     fn with_library<T>(&self, f: impl FnOnce(&chilpa_library::Library) -> Option<T>) -> Option<T> {
         let mut library = self.library.lock().unwrap_or_else(|e| e.into_inner());
         if library.is_none() {
-            *library = chilpa_core::open_library().ok();
+            *library = chilpa_library::Library::open_read_only(&chilpa_library::Library::default_path()).ok();
         }
         f(library.as_ref()?)
     }
@@ -33,19 +38,51 @@ impl Opener {
 
 impl RemoteOpener for Opener {
     fn locate(&self, entry: &RemoteEntry) -> Result<Located, String> {
-        let _session = self.keys.session();
         let written = entry.to_entry();
         let found = self.with_library(|lib| {
             let source = lib.find_source(&entry.source.provider, &entry.source.instance).ok()??;
             let stored = lib.server(source).ok()??;
             let (codec, revision) = lib.server_track(source, &written).ok()??;
-            Some((stored, codec, revision))
+            let copy=lib.offline_copy(source,&stored.account,&stored.identity,&written).ok().flatten();
+            Some((stored, codec, revision, copy))
         });
-        let Some((stored, codec, revision)) = found else {
+        let Some((stored, codec, revision, copy)) = found else {
             return Err(chilpa_i18n::t("that track is no longer in the library"));
         };
         if !stored.enabled {
             return Err(chilpa_i18n::t("that server is disabled"));
+        }
+        let copy=copy.filter(|item| item.revision==super::offline::digest(revision.as_deref().unwrap_or("")));
+        let checked=copy.as_ref().map(|item| super::offline::checked(item,|| false));
+        if matches!(&checked,Some(Err(super::offline::CheckError::Invalid))) {
+            if let Some(item)=&copy {
+                let mut invalid=self.invalid.pending.lock().unwrap_or_else(|error| error.into_inner());
+                let bytes=invalid.iter().map(chilpa_library::store::offline::Copy::retained_bytes).sum::<usize>();
+                if let Some(queued)=invalid.iter().find(|copy| copy.key==item.key) {
+                    if queued.checksum!=item.checksum || queued.path!=item.path || queued.bytes!=item.bytes {
+                        self.invalid.scan.store(true,std::sync::atomic::Ordering::Release);
+                    }
+                } else if invalid.len()<64 && bytes.saturating_add(item.retained_bytes())<=chilpa_library::store::offline::MAX_SELECTION_BYTES {
+                    invalid.push(item.clone());
+                } else {self.invalid.scan.store(true,std::sync::atomic::Ordering::Release);}
+            }
+            self.signal_failure(stored.source_id);
+        }
+        if let Some(Ok((file,lease)))=checked {
+            if !self.with_library(|lib| lib.server(stored.source_id).ok().flatten())
+                .is_some_and(|current| current.enabled && current.account==stored.account && current.identity==stored.identity) {
+                return Err(super::session::changed());
+            }
+            return Ok(Located {normalization:None,playback:None,media:Media::File {file,lease},extension:copy.as_ref().map(|item| item.extension.clone()),server:stored.label});
+        }
+        if chilpa_core::network::current().offline {
+            return Err(chilpa_i18n::t("This track has no verified offline copy. Download it while connected."));
+        }
+        let _session=self.keys.session();
+        // A connection edit may have completed during local verification.
+        if !self.with_library(|lib| lib.server(stored.source_id).ok().flatten())
+            .is_some_and(|current| super::session::Scope::of(&stored).matches(&current) && current.enabled) {
+            return Err(super::session::changed());
         }
         let server = super::net::server(&stored).ok_or_else(|| chilpa_i18n::t("that track is no longer in the library"))?;
         let key = super::net::key(&self.keys, &stored).ok_or_else(|| chilpa_i18n::t_args("sign in to {} again", &[&stored.label]))?;
@@ -53,7 +90,7 @@ impl RemoteOpener for Opener {
         Ok(Located {
             normalization: None,
             playback: None,
-            request: chilpa_core::RangedRequest { url: stream.url, headers: stream.headers },
+            media: chilpa_core::remote::Media::Remote(chilpa_core::RangedRequest { url: stream.url, headers: stream.headers }),
             extension: stream.extension,
             server: stored.label.clone(),
         })
@@ -75,7 +112,7 @@ impl RemoteOpener for Opener {
     fn failed(&self, entry: &RemoteEntry, _why: &str) {
         let source = self.with_library(|lib| lib.find_source(&entry.source.provider, &entry.source.instance).ok().flatten());
         if let Some(source) = source {
-            self.failures.lock().unwrap_or_else(|e| e.into_inner()).push(source);
+            self.signal_failure(source);
         }
     }
 }

@@ -599,6 +599,7 @@ dependencies = [
  "chilpa-i18n",
  "chilpa-stream",
  "symphonia",
+ "tempfile",
 ]
 
 [[package]]
@@ -656,6 +657,7 @@ dependencies = [
  "chilpa-tags",
  "rusqlite",
  "serde_json",
+ "sha2",
  "tempfile",
 ]
 

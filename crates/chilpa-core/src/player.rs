@@ -148,6 +148,9 @@ impl Player {
                             chilpa_audio::diagnostics::trace("player", "order_received", format_args!("kind=stop barrier=passed"));
                         }
                         Order::Play { queue, generation, device, start_at, start_index } => {
+                            // Acquire a consumed stop before checking its generation.
+                            // A later stop stays raised for the delivery loop.
+                            stop_thread.reset();
                             let latest = generation_thread.load(Ordering::Acquire);
                             if generation != latest {
                                 chilpa_audio::diagnostics::trace(
@@ -166,13 +169,10 @@ impl Player {
                                     controls_thread.pause.is_paused()
                                 ),
                             );
-                            // Every track starts with the flag clear: an old
-                            // stop order does not kill the next one. The
-                            // pause is not touched here: it was set when the
-                            // order was sent (`play_all_from_paused`).
+                            // Pause was set when the order was sent
+                            // (`play_all_from_paused`).
                             controls_thread.handoff.set(false);
                             controls_thread.gain_active.store(false,Ordering::Release);
-                            stop_thread.reset();
                             skip_thread.take();
                             // Whatever seek was left pending belonged to the
                             // play that just ended, and serving it to the new

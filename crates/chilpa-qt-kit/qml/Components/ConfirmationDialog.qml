@@ -3,8 +3,8 @@ import app.chilpa.kit
 import "../Theme"
 import "../Primitives"
 
-// Shared confirmations keep their body only while visible. Destructive
-// commands require two steps and a separate acknowledgement of their effects.
+// Shared confirmations keep their body only while visible. File deletion,
+// integration removal and database cleanup opt into a second confirmation.
 Modal {
     id: dialog
 
@@ -15,6 +15,7 @@ Modal {
     // The confirming button in the accent, or as the other one when what it
     // does loses something.
     property bool destructive: false
+    property bool doubleConfirmation: false
     property bool targetValid: true
     property var checkTarget: null
     property bool invalidated: false
@@ -67,7 +68,7 @@ Modal {
                 checked: dialog.optionChecked
                 onCheckedChanged: dialog.optionChecked = checked
             }
-            DestructiveSteps { id: steps; width: parent.width; visible: dialog.destructive }
+            DestructiveSteps { id: steps; width: parent.width; visible: dialog.doubleConfirmation }
             Text {
                 visible: !dialog.targetValid || dialog.invalidated
                 width: parent.width
@@ -86,11 +87,11 @@ Modal {
                     maximumWidth: actions.width
                     wrapText: true
                     kind: dialog.destructive ? "secondary" : "primary"
-                    text: dialog.destructive && steps.step === 1 ? I18n.tr("Continue", I18n.rev) : dialog.confirmText
-                    enabled: dialog.targetValid && !dialog.invalidated && (!dialog.destructive || steps.ready)
+                    text: dialog.doubleConfirmation && steps.step === 1 ? I18n.tr("Continue", I18n.rev) : dialog.confirmText
+                    enabled: dialog.targetValid && !dialog.invalidated && (!dialog.doubleConfirmation || steps.ready)
                     onClicked: {
                         if (!dialog.targetValid) return
-                        if (dialog.destructive && !steps.advance()) return
+                        if (dialog.doubleConfirmation && !steps.advance()) return
                         if (dialog.checkTarget && !dialog.checkTarget()) { dialog.invalidated = true; return }
                         dialog.answered = true
                         dialog.close()

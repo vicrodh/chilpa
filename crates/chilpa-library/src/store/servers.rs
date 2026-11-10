@@ -30,6 +30,8 @@ pub struct NewServer {
     pub libraries: String,
     /// JSON.
     pub details: String,
+    /// A selected folder URL. Empty inherits the profile's offline folder.
+    pub offline_folder: String,
 }
 
 /// A server as the library keeps it.
@@ -47,6 +49,7 @@ pub struct StoredServer {
     pub product: String,
     pub libraries: String,
     pub details: String,
+    pub offline_folder: String,
     pub added_at: i64,
     /// Connection or account edits invalidate jobs captured before this revision.
     pub session_revision: i64,
@@ -127,9 +130,9 @@ impl Library {
         )?;
         let source = tx.last_insert_rowid();
         tx.execute(
-            "INSERT INTO servers (source_id, address, account, identity, product, libraries, details, added_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            params![source, new.address, new.account, new.identity, new.product, new.libraries, new.details, now_unix()],
+            "INSERT INTO servers (source_id, address, account, identity, product, libraries, details, added_at, offline_folder)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![source, new.address, new.account, new.identity, new.product, new.libraries, new.details, now_unix(), new.offline_folder],
         )?;
         tx.finish()?;
         Ok(source)
@@ -151,7 +154,7 @@ impl Library {
                     (SELECT count(*) FROM tracks t WHERE t.source_id = v.source_id AND t.present = 1),
                     (SELECT count(DISTINCT t.album_id) FROM tracks t
                       WHERE t.source_id = v.source_id AND t.present = 1 AND t.album_id IS NOT NULL),
-                    v.session_revision
+                    v.session_revision, v.offline_folder
              FROM servers v JOIN sources s ON s.id = v.source_id {tail}"
         );
         let mut stmt = self.db.prepare(&sql)?;
@@ -174,6 +177,7 @@ impl Library {
                 tracks: r.get::<_, i64>(14)? as usize,
                 albums: r.get::<_, i64>(15)? as usize,
                 session_revision: r.get(16)?,
+                offline_folder: r.get(17)?,
             })
         })?;
         rows.collect()
@@ -219,11 +223,13 @@ impl Library {
         let tx = self.own_transaction()?;
         tx.execute("UPDATE sources SET label = ?2, icon = ?3, reachable = 0 WHERE id = ?1 AND kind = 'server'",
             params![source_id, new.label, new.icon])?;
-        tx.execute("UPDATE servers SET address = ?2, account = ?3, identity = ?4, product = ?5, libraries = ?6, details = ?7,
+        tx.execute("UPDATE servers SET address = ?2, account = ?3, identity = ?4, product = ?5, libraries = ?6, details = ?7, offline_folder = ?8,
                     session_revision = session_revision + 1, generation = generation + 1 WHERE source_id = ?1",
-            params![source_id, new.address, new.account, new.identity, new.product, new.libraries, new.details])?;
+            params![source_id, new.address, new.account, new.identity, new.product, new.libraries, new.details, new.offline_folder])?;
         tx.execute("UPDATE tracks SET reachable = 0 WHERE source_id = ?1", params![source_id])?;
-        tx.finish()
+        tx.finish()?;
+        self.set_source_reachable(source_id,false)?;
+        Ok(())
     }
 
     /// Starts a sync and returns its generation. Every track the sync sees

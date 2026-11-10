@@ -244,16 +244,9 @@ Modal {
         }
         Row {
             id: actions; spacing: Metrics.gap8
-            PillButton { text: I18n.tr("Restore defaults", I18n.rev); onClicked: resetting.open() }
+            PillButton { text: I18n.tr("Restore defaults", I18n.rev); onClicked: customization.restored() }
             PillButton { text: I18n.tr("Close", I18n.rev); onClicked: customization.close() }
         }
     }
-    ConfirmationDialog {
-        id: resetting
-        title: I18n.tr("Restore page defaults?", I18n.rev)
-        message: I18n.tr("The custom sections, visibility and order for this page will be replaced with their defaults.", I18n.rev)
-        confirmText: I18n.tr("Restore defaults", I18n.rev)
-        destructive: true
-        onConfirmed: customization.restored()
-    }
+
 }

@@ -139,6 +139,9 @@ msgstr "Todavía hay una operación del dispositivo en curso."
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr "La selección del dispositivo puede contener hasta 50,000 archivos y playlists."
 
+msgid "A download is still in progress."
+msgstr "Hay una descarga en curso."
+
 msgid "A folder chosen before"
 msgstr "Una carpeta elegida antes"
 
@@ -438,9 +441,6 @@ msgstr "Todos los artistas"
 msgid "All categories"
 msgstr "Todas las categorías"
 
-msgid "All custom key bindings will be replaced with the defaults for the current keymap."
-msgstr "Todos los atajos personalizados se reemplazarán por los predeterminados del mapa de teclas actual."
-
 msgid "All discs"
 msgstr "Todos los discos"
 
@@ -485,12 +485,6 @@ msgstr "Todos los temas"
 
 msgid "All time"
 msgstr "Todo"
-
-msgid "All tracks after this occurrence will be removed from the queue."
-msgstr "Se quitarán de la cola todas las pistas posteriores a esta aparición."
-
-msgid "All tracks will be removed from this queue. Playback from this queue will stop."
-msgstr "Se quitarán todas las pistas de esta cola y se detendrá su reproducción."
 
 msgid "Allow Chilpa on Discogs, then paste the code below."
 msgstr "Autoriza a Chilpa en Discogs y pega el código aquí abajo."
@@ -614,6 +608,9 @@ msgstr "Cualquier fuente — mejor calidad (playlist local mixta)"
 
 msgid "Any time"
 msgstr "Cuando sea"
+
+msgid "App data folder"
+msgstr "Carpeta de datos de la app"
 
 msgid "Appearance"
 msgstr "Apariencia"
@@ -1130,6 +1127,9 @@ msgstr "Comprobando espacio disponible"
 msgid "Checking destination files"
 msgstr "Comprobando archivos de destino"
 
+msgid "Checking downloaded audio…"
+msgstr "Revisando el audio descargado…"
+
 msgid "Checking for updates…"
 msgstr "Buscando actualizaciones…"
 
@@ -1337,6 +1337,9 @@ msgstr "Elige al menos dos colas distintas."
 msgid "Choose at most 512 playlists or queries for one storage."
 msgstr "Elige hasta 512 playlists o consultas para una memoria."
 
+msgid "Choose between 1 and 10,000 server tracks for an offline download."
+msgstr "Selecciona entre 1 y 10,000 pistas de servidores para descargarlas sin conexión."
+
 msgid "Choose between 1 and 50,000 Library tracks."
 msgstr "Elige entre 1 y 50,000 pistas de la biblioteca."
 
@@ -1345,6 +1348,9 @@ msgstr "Elegir carpeta de descargas"
 
 msgid "Choose download folder…"
 msgstr "Elegir carpeta de descargas…"
+
+msgid "Choose fewer offline files for this action."
+msgstr "Selecciona menos archivos sin conexión para esta acción."
 
 msgid "Choose file…"
 msgstr "Elegir archivo…"
@@ -1439,9 +1445,6 @@ msgstr "Quita el filtro"
 msgid "Clear the selection"
 msgstr "Quitar la selección"
 
-msgid "Clear “{}”?"
-msgstr "¿Vaciar «{}»?"
-
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr "Listo: se olvidaron {} letras. Se vuelven a buscar al reproducir."
 
@@ -1472,9 +1475,6 @@ msgstr "Cerrar pestaña"
 msgid "Close media"
 msgstr "Cerrar medios"
 
-msgid "Close queue"
-msgstr "Cerrar cola"
-
 msgid "Close search"
 msgstr "Cerrar búsqueda"
 
@@ -1486,9 +1486,6 @@ msgstr "Falta cerrar las comillas."
 
 msgid "Close to tray"
 msgstr "Cerrar a la bandeja"
-
-msgid "Close “{}”?"
-msgstr "¿Cerrar «{}»?"
 
 msgid "Closing stops a scan. Saved progress can be continued here after reopening."
 msgstr "Cerrar la app detiene el escaneo. Puedes continuar el progreso guardado aquí al volver a abrirla."
@@ -1522,9 +1519,6 @@ msgstr "Columnas"
 
 msgid "Combine"
 msgstr "Combinar"
-
-msgid "Combine and remove originals"
-msgstr "Combinar y quitar las originales"
 
 msgid "Combine queues"
 msgstr "Combinar colas"
@@ -2207,8 +2201,8 @@ msgstr "Volver a acoplar en la biblioteca"
 msgid "Documentation"
 msgstr "Documentación"
 
-msgid "Does not answer. Its records stay listed and cannot be played."
-msgstr "No responde. Sus discos siguen en la lista y no se pueden reproducir."
+msgid "Does not answer. Its records stay in the library."
+msgstr "No responde. Sus discos siguen en la biblioteca."
 
 msgid "Don't ask again"
 msgstr "No volver a preguntar"
@@ -2234,8 +2228,14 @@ msgstr "Descargar de nuevo"
 msgid "Download album"
 msgstr "Descargar álbum"
 
+msgid "Download cancelled."
+msgstr "Descarga cancelada."
+
 msgid "Download track"
 msgstr "Descargar pista"
+
+msgid "Download {} server tracks for offline listening."
+msgstr "Descargar {} pistas de servidores para escucharlas sin conexión."
 
 msgid "Downloaded"
 msgstr "Descargado"
@@ -2251,6 +2251,9 @@ msgstr "Descargando {} de {}"
 
 msgid "Downloads"
 msgstr "Descargas"
+
+msgid "Downloads are grouped by server type. Each account has its own subfolder."
+msgstr "Las descargas se agrupan por tipo de servidor. Cada cuenta tiene su propia subcarpeta."
 
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr "Arrastra o usa ↑↓ para conservar un orden personalizado."
@@ -2770,6 +2773,9 @@ msgstr "Primeros pasos"
 
 msgid "GitHub is limiting requests from this network. Try again later."
 msgstr "GitHub está limitando las solicitudes desde esta red. Inténtalo más tarde."
+
+msgid "Global offline folder"
+msgstr "Carpeta offline global"
 
 msgid "Go Back"
 msgstr "Atrás"
@@ -3659,6 +3665,9 @@ msgstr "Revista"
 msgid "Maintenance"
 msgstr "Mantenimiento"
 
+msgid "Make available offline…"
+msgstr "Guardar para escuchar sin conexión…"
+
 msgid "Make it yours"
 msgstr "Hazlo tuyo"
 
@@ -4094,6 +4103,9 @@ msgstr "No se encontraron dispositivos"
 msgid "No download folder selected"
 msgstr "No se ha elegido una carpeta de descargas"
 
+msgid "No downloaded files were found in this selection."
+msgstr "No se encontraron archivos descargados en esta selección."
+
 msgid "No files need to change."
 msgstr "No hace falta cambiar ningún archivo."
 
@@ -4394,8 +4406,17 @@ msgstr "Apagado"
 msgid "Offline"
 msgstr "Sin conexión"
 
+msgid "Offline folder"
+msgstr "Carpeta offline"
+
+msgid "Offline folder for this server"
+msgstr "Carpeta offline para este servidor"
+
 msgid "Offline mode"
 msgstr "Modo offline"
+
+msgid "Offline music"
+msgstr "Música sin conexión"
 
 msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
 msgstr "Las imágenes temporales más antiguas se borran en segundo plano. Se conservan las portadas que usa tu biblioteca."
@@ -4597,6 +4618,9 @@ msgstr "Token de acceso opcional para playlists privadas"
 
 msgid "Original audio"
 msgstr "Audio original"
+
+msgid "Original audio is saved in the offline folder configured for each server. Offline storage is limited to 2 GiB, with up to 512 MiB per file."
+msgstr "El audio original se guarda en la carpeta sin conexión configurada para cada servidor. El almacenamiento está limitado a 2 GiB, con un máximo de 512 MiB por archivo."
 
 msgid "Original audio over the selected network transport"
 msgstr "Audio original por el transporte de red seleccionado"
@@ -5315,9 +5339,6 @@ msgstr "Actualizar compras"
 msgid "Refresh settings"
 msgstr "Actualizar ajustes"
 
-msgid "Refused the sign-in. Its records stay listed and cannot be played."
-msgstr "Rechazó el inicio de sesión. Sus discos siguen en la lista y no se pueden reproducir."
-
 msgid "Regenerate"
 msgstr "Regenerar"
 
@@ -5357,6 +5378,12 @@ msgstr "Quitar condición"
 msgid "Remove cover"
 msgstr "Quitar carátula"
 
+msgid "Remove downloaded audio?"
+msgstr "¿Eliminar el audio descargado?"
+
+msgid "Remove downloaded files…"
+msgstr "Eliminar archivos descargados…"
+
 msgid "Remove filter"
 msgstr "Quitar filtro"
 
@@ -5389,9 +5416,6 @@ msgstr "Quita una condición para obtener resultados:"
 
 msgid "Remove original queues"
 msgstr "Eliminar las colas originales"
-
-msgid "Remove original queues?"
-msgstr "¿Quitar las colas originales?"
 
 msgid "Remove plugin repository?"
 msgstr "¿Quitar el repositorio de plugins?"
@@ -5456,17 +5480,11 @@ msgstr "Reparada. No se perdió nada."
 msgid "Repeat"
 msgstr "Repetir"
 
-msgid "Replace"
-msgstr "Reemplazar"
-
 msgid "Replace current queue"
 msgstr "Reemplazar la cola actual"
 
 msgid "Replace queue {}"
 msgstr "Reemplazar queue {}"
-
-msgid "Replace queue?"
-msgstr "¿Reemplazar la cola?"
 
 msgid "Report an issue"
 msgstr "Reportar un problema"
@@ -5507,17 +5525,8 @@ msgstr "Restablecer todos"
 msgid "Reset EQ"
 msgstr "Restablecer EQ"
 
-msgid "Reset all shortcuts?"
-msgstr "¿Restablecer todos los atajos?"
-
 msgid "Reset counter"
 msgstr "Reiniciar contador"
-
-msgid "Reset equalizer?"
-msgstr "¿Restablecer el ecualizador?"
-
-msgid "Reset shortcut?"
-msgstr "¿Restablecer el atajo?"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "Resolución reducida de {} a {} bits"
@@ -5539,9 +5548,6 @@ msgstr "Restaurar predeterminado"
 
 msgid "Restore defaults"
 msgstr "Restaurar valores predeterminados"
-
-msgid "Restore page defaults?"
-msgstr "¿Restaurar los valores predeterminados de la página?"
 
 msgid "Restore previous EQ"
 msgstr "Recuperar EQ anterior"
@@ -6109,6 +6115,9 @@ msgstr "Iniciar sesión con una API key (servidores OpenSubsonic que la ofrecen)
 msgid "Sign in with your Plex account"
 msgstr "Inicia sesión con tu cuenta de Plex"
 
+msgid "Sign-in was refused. Its records stay in the library."
+msgstr "Se rechazó el inicio de sesión. Sus discos siguen en la biblioteca."
+
 msgid "Signed out"
 msgstr "Sesión cerrada"
 
@@ -6494,23 +6503,8 @@ msgstr "La comprobación terminó, pero no se pudo restaurar la tasa de muestreo
 msgid "The connection is not encrypted."
 msgstr "La conexión no está cifrada."
 
-msgid "The current equalizer changes will be replaced with the previous preset."
-msgstr "Los cambios actuales del ecualizador se reemplazarán por el preset anterior."
-
-msgid "The current filter gains will be reset to zero."
-msgstr "Las ganancias actuales de los filtros se restablecerán a cero."
-
 msgid "The current track has no such destination."
 msgstr "No hay una pista actual con ese destino."
-
-msgid "The custom key binding for this action will be replaced with its default."
-msgstr "El atajo personalizado de esta acción se reemplazará por el predeterminado."
-
-msgid "The custom sections, visibility and order for this page will be replaced with their defaults."
-msgstr "Las secciones, su visibilidad y su orden personalizados de esta página se reemplazarán por los predeterminados."
-
-msgid "The destination queue and its saved order will be replaced with the selected tracks."
-msgstr "La cola de destino y su orden guardado se reemplazarán por las pistas seleccionadas."
 
 msgid "The device playlist picker can show at most 2,048 playlists."
 msgstr "El selector del dispositivo puede mostrar hasta 2,048 playlists."
@@ -6533,8 +6527,20 @@ msgstr "Necesito que revises los cambios del dispositivo antes de continuar."
 msgid "The device task stopped. Its progress is saved for recovery."
 msgstr "La operación del dispositivo se detuvo. Conservé su avance para poder recuperarla."
 
+msgid "The download is incomplete. Try again."
+msgstr "La descarga está incompleta. Inténtalo de nuevo."
+
 msgid "The download view is unavailable."
 msgstr "La vista de descargas no está disponible."
+
+msgid "The download was interrupted. Try again."
+msgstr "La descarga se interrumpió. Inténtalo de nuevo."
+
+msgid "The download worker could not be started."
+msgstr "No se pudo iniciar el proceso de descarga."
+
+msgid "The downloaded file could not be verified as complete audio."
+msgstr "No se pudo verificar que el archivo descargado contenga audio completo."
 
 msgid "The engine reports unchanged samples on this route."
 msgstr "El motor informa muestras sin cambios en esta ruta."
@@ -6622,6 +6628,24 @@ msgstr "No se pudo abrir la caché de letras."
 
 msgid "The network is off; turn it on in Settings › Integrations"
 msgstr "La red está apagada; enciéndela en Ajustes › Integraciones"
+
+msgid "The offline copy is damaged. Remove the offline copy before downloading it again."
+msgstr "La copia sin conexión está dañada. Elimínala antes de descargarla de nuevo."
+
+msgid "The offline file could not be removed. Check playback and folder permissions."
+msgstr "No se pudo eliminar el archivo sin conexión. Revisa la reproducción y los permisos de la carpeta."
+
+msgid "The offline file could not be written."
+msgstr "No se pudo escribir el archivo sin conexión."
+
+msgid "The offline folder cannot be represented as a local path."
+msgstr "No se pudo representar la carpeta sin conexión como una ruta local."
+
+msgid "The offline folder must be an absolute local folder."
+msgstr "La carpeta offline debe ser una carpeta local con una ruta absoluta."
+
+msgid "The offline storage limit has been reached."
+msgstr "Se alcanzó el límite de almacenamiento sin conexión."
 
 msgid "The output changed during the check. Its new configuration was kept."
 msgstr "La salida cambió durante la comprobación. Se conservó su nueva configuración."
@@ -6752,9 +6776,6 @@ msgstr "La música seleccionada cambió. Abre su menú y confirma de nuevo."
 msgid "The selected queues are empty."
 msgstr "Las colas seleccionadas están vacías."
 
-msgid "The selected queues will be removed after their tracks are copied to the combined queue. Their separate names and saved order will be lost."
-msgstr "Las colas seleccionadas se quitarán después de copiar sus pistas a la cola combinada. Se perderán sus nombres individuales y su orden guardado."
-
 msgid "The selected storage changed or disconnected."
 msgstr "La memoria seleccionada cambió o se desconectó."
 
@@ -6773,6 +6794,9 @@ msgstr "Cambió la conexión o la cuenta del servidor. Revisa la acción y vuelv
 msgid "The server deleted the music, but the local catalogue could not be updated. Sync the server again."
 msgstr "El servidor borró la música, pero no se pudo actualizar el catálogo local. Sincroniza el servidor de nuevo."
 
+msgid "The server did not identify the account for this API key."
+msgstr "El servidor no identificó la cuenta de esta clave API."
+
 msgid "The server did not take it: {}"
 msgstr "El servidor no lo aceptó: {}"
 
@@ -6784,6 +6808,9 @@ msgstr "El servicio no mandó un código."
 
 msgid "The service's answer is missing."
 msgstr "Falta la respuesta del servicio."
+
+msgid "The settings could not be saved."
+msgstr "No se pudieron guardar los ajustes."
 
 msgid "The source disconnected. Check the playlist before retrying."
 msgstr "La fuente se desconectó. Revisa la playlist antes de reintentarlo."
@@ -6919,8 +6946,8 @@ msgstr "Este mes vs el mes pasado"
 msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
 msgstr "Esta vista de música supera los 50,000 archivos o 16 MiB de metadatos."
 
-msgid "This occurrence will be removed from the queue."
-msgstr "Esta aparición se quitará de la cola."
+msgid "This offline file is in use. Stop playback before removing it."
+msgstr "Este archivo sin conexión está en uso. Detén la reproducción antes de eliminarlo."
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder comparar el archivo contra la pista de la que salió, que es la única forma de demostrar bit-perfect en vez de afirmarlo."
@@ -6967,6 +6994,9 @@ msgstr "Esto elimina permanentemente el preset de audio personal seleccionado y 
 msgid "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
 msgstr "Esto borra de forma permanente la pista del sistema de archivos del servidor. No se puede deshacer desde Chilpa."
 
+msgid "This permanently deletes {} downloaded audio files from this device."
+msgstr "Esto elimina permanentemente {} archivos de audio descargados de este dispositivo."
+
 msgid "This permanently removes the playlist and its saved order."
 msgstr "Esto elimina permanentemente la playlist y su orden guardado."
 
@@ -7008,9 +7038,6 @@ msgstr "Esta compra no está disponible para descargar."
 
 msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
 msgstr "Esta consulta anida grupos en tres niveles. Las filas muestran dos, así que aquí queda como texto. Se sigue aplicando."
-
-msgid "This queue and its saved order will be removed."
-msgstr "Se quitarán esta cola y su orden guardado."
 
 msgid "This record cannot be played now."
 msgstr "Este disco no se puede reproducir ahora."
@@ -7068,6 +7095,9 @@ msgstr "Esto tarda unos segundos."
 
 msgid "This track has no album to open"
 msgstr "Esta pista no tiene un álbum que abrir"
+
+msgid "This track has no verified offline copy. Download it while connected."
+msgstr "Esta pista no tiene una copia sin conexión verificada. Descárgala mientras tengas conexión."
 
 msgid "This transcript format is not supported."
 msgstr "Este formato de transcripción no es compatible."
@@ -7465,6 +7495,9 @@ msgstr "Usar mi cola actual"
 msgid "Use the default"
 msgstr "Usar el predeterminado"
 
+msgid "Use the global offline folder or choose a separate destination."
+msgstr "Usa la carpeta offline global o elige otro destino."
+
 msgid "Use the playlist icon or a cover collage."
 msgstr "Usa el icono de playlist o un collage de portadas."
 
@@ -7488,6 +7521,9 @@ msgstr "Verificar archivos después de transferir"
 
 msgid "Verifying copied files…"
 msgstr "Verificando archivos copiados…"
+
+msgid "Verifying downloaded audio…"
+msgstr "Verificando el audio descargado…"
 
 msgid "Version"
 msgstr "Versión"
@@ -9316,6 +9352,12 @@ msgstr "{} de {}"
 msgid "{} of {} chosen"
 msgstr "{} de {} elegidas"
 
+msgid "{} of {} downloaded. {} failed."
+msgstr "{} de {} descargados. {} fallidos."
+
+msgid "{} of {} files removed. {} failed."
+msgstr "{} de {} archivos eliminados. {} fallidos."
+
 msgid "{} of {} files were changed before it failed: {}"
 msgstr "{} de {} archivos se cambiaron antes de que fallara: {}"
 
@@ -9327,6 +9369,9 @@ msgstr "{} de {} formatos salen tal cual"
 
 msgid "{} of {} tracks match this release"
 msgstr "{} de {} pistas coinciden con este release"
+
+msgid "{} offline audio files saved on this device."
+msgstr "{} archivos de audio sin conexión guardados en este dispositivo."
 
 msgid "{} play"
 msgid_plural "{} plays"

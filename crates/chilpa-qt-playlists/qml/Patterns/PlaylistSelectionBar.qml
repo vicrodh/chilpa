@@ -79,7 +79,7 @@ Item {
             visible: bar.canRemove
             glyph: Icons.trash
             tip: I18n.tr("Remove from playlist", I18n.rev)
-            onClicked: removal.show(bar.model,bar.model.selectedAnyRow(),"remove",false,"")
+            onClicked: removal.show(bar.model,bar.model.selectedAnyRow())
         }
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter

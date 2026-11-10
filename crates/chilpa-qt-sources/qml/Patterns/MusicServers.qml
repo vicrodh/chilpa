@@ -1,8 +1,11 @@
 import QtQuick
 import QtQuick.Controls.Basic
+import app.chilpa
 import app.chilpa.kit
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 
 Item {
@@ -43,6 +46,27 @@ Item {
             wrapMode: Text.WordWrap
             font.pointSize: Type.meta
             color: Theme.color.textSecondary
+        }
+        FolderChoice {
+            id: offline
+            objectName: "globalOfflineFolder"
+            width: parent.width
+            title: I18n.tr("Offline folder",I18n.rev)
+            description: I18n.tr("Downloads are grouped by server type. Each account has its own subfolder.",I18n.rev)
+            defaultLabel: I18n.tr("App data folder",I18n.rev)
+            defaultFolder: JSON.parse(Servers.setup || "{}").offlineRoot || ""
+            folder: SettingsModel.kept("offline.folder") || ""
+            onChosen: selected => {
+                SettingsModel.keep("offline.folder",selected)
+                folder = SettingsModel.kept("offline.folder") || ""
+                error = folder === selected ? "" : I18n.tr("The settings could not be saved.",I18n.rev)
+                Servers.refresh()
+            }
+        }
+        PillButton {
+            objectName: "offlineDownloads"
+            text: I18n.tr("Offline music", I18n.rev)
+            onClicked: Sources.offlineRequested("downloads", "[]")
         }
         ServerTableRow { width: parent.width; heading: true }
     }

@@ -83,8 +83,6 @@ Item {
     signal volumeKeyed()
     WindowActions { id: actions; onVolumeKeyed: controls.volumeKeyed(); controls: controls; commandBar: commandBar; sheet: sheet; settings: commandSettings }
     function run(action, args) { actions.run(action, args) }
-    function clearQueue(target) { clearing.show(target, false) }
-    QueueClearDialog { id: clearing }
 
     // The window's own item gets every key nothing inside it took.
     property bool listening: false
