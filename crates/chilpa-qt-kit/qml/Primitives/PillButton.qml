@@ -17,6 +17,8 @@ Rectangle {
     property bool filled: false
     // "primary", "secondary", "ghost" or "backdrop".
     property string kind: "secondary"
+    property bool wrapText: false
+    property real maximumWidth: Number.POSITIVE_INFINITY
 
     signal clicked()
 
@@ -26,8 +28,11 @@ Rectangle {
     readonly property color ink: primary ? Theme.color.textOnAccent : backdrop ? Theme.color.backdropText
         : ghost ? Theme.color.textSecondary : Theme.color.textPrimary
 
-    implicitWidth: row.implicitWidth + (ghost ? Metrics.gap8 : Metrics.pillPadding) * 2 // derived: padding on both sides
-    implicitHeight: ghost ? Metrics.button28 : Metrics.pillHeight
+    readonly property real horizontalPadding: ghost ? Metrics.gap8 : Metrics.pillPadding
+    implicitWidth: label.implicitWidth + (icon.visible ? icon.width + Metrics.gap6 : 0) + horizontalPadding * 2 // derived: horizontal padding on both sides
+    implicitHeight: wrapText ? Math.max(ghost ? Metrics.button28 : Metrics.pillHeight, label.implicitHeight + Metrics.gap8 * 2) // derived: vertical padding above and below wrapped text
+        : ghost ? Metrics.button28 : Metrics.pillHeight
+    width: Math.min(implicitWidth, maximumWidth)
     opacity: enabled ? 1 : Metrics.disabledOpacity
     radius: ghost ? Metrics.radiusControl : height / 2 // derived: a pill
     color: ghost ? (area.containsMouse ? Theme.color.stateHover : "transparent")
@@ -42,6 +47,7 @@ Rectangle {
         spacing: Metrics.gap6
 
         Icon {
+            id: icon
             anchors.verticalCenter: parent.verticalCenter
             visible: root.glyph !== ""
             glyph: root.glyph
@@ -52,7 +58,10 @@ Rectangle {
         }
 
         Text {
+            id: label
             anchors.verticalCenter: parent.verticalCenter
+            width: root.wrapText ? Math.max(0, root.width - root.horizontalPadding * 2 - (icon.visible ? icon.width + Metrics.gap6 : 0)) : implicitWidth // derived: the label between its padding and optional icon
+            wrapMode: root.wrapText ? Text.WrapAtWordBoundaryOrAnywhere : Text.NoWrap
             text: root.text
             font.pointSize: root.ghost ? Type.small : Type.body
             font.weight: root.primary ? Type.semibold : Type.medium

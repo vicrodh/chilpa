@@ -10,8 +10,8 @@ Modal {
     objectName: "reportIssueDialog"
     property bool listenForRequests: true
     property var openExternal: function(url) { Qt.openUrlExternally(url) }
-    width: Math.min(Metrics.confirmWidth + Metrics.modalInsets, parent.width - Metrics.modalInsets)
-    height: Math.min(body.implicitHeight + Metrics.modalInsets, parent.height - Metrics.modalInsets)
+    preferredWidth: Math.min(Metrics.confirmWidth + Metrics.modalInsets, parent.width - Metrics.modalInsets)
+    preferredHeight: Math.min(body.implicitHeight + Metrics.modalInsets, parent.height - Metrics.modalInsets)
     onClosed: if (review.item) review.item.close()
     Connections {
         target: About

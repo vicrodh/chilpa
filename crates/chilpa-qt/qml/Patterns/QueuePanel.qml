@@ -94,7 +94,7 @@ Item {
         id: foot
         anchors.bottom: parent.bottom
         width: parent.width
-        onClear: Player.clearQueue()
+        onClear: clearing.show("", true)
         sleepLeft: Controls.sleepLeft
         onTimer: sleep.open()
         onSearched: (text) => queue.key = text
@@ -108,4 +108,5 @@ Item {
         objectName: "queueRowMenu"
         model: queue
     }
+    Parts.QueueClearDialog { id: clearing }
 }

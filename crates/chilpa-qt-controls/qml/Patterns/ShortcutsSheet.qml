@@ -20,7 +20,7 @@ Modal {
     // The room the window leaves it, once it is in one.
     readonly property real room: parent ? parent.height - Metrics.shortcutsAround : 0
 
-    width: Math.min((parent ? parent.width : 0) - Metrics.shortcutsAround, Metrics.shortcutsSheet)
+    preferredWidth: Math.min((parent ? parent.width : 0) - Metrics.shortcutsAround, Metrics.shortcutsSheet)
     onAboutToShow: Hotkeys.refresh()
 
     Column {

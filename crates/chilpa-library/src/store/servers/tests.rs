@@ -18,6 +18,75 @@ fn new_server(instance: &str, identity: &str) -> NewServer {
     }
 }
 
+#[test]
+fn editing_a_connection_invalidates_old_catalogue_pages_and_completion() {
+    let lib = Library::in_memory().unwrap();
+    let mut new = new_server("session-fixture","session-server");
+    let source = lib.add_server(&new).unwrap();
+    let generation = lib.begin_server_sync(source).unwrap();
+    lib.save_server_tracks(source,generation,&[track("kept","record")]).unwrap();
+    let before = lib.server(source).unwrap().unwrap();
+    new.account = "other-account".into();
+    lib.edit_server(source,&new).unwrap();
+    let after = lib.server(source).unwrap().unwrap();
+    assert_eq!(after.session_revision,before.session_revision+1);
+    assert!(lib.save_server_tracks(source,generation,&[track("late","record")]).is_err());
+    assert!(lib.keep_server_tracks(source,generation,&["kept".into()]).is_err());
+    assert!(lib.finish_server_sync(source,generation).is_err());
+    assert_eq!(lib.track_count(true).unwrap(),1);
+    let current = lib.begin_server_sync(source).unwrap();
+    lib.save_server_tracks(source,current,&[track("current","record")]).unwrap();
+    lib.finish_server_sync(source,current).unwrap();
+    assert_eq!(lib.track_count(false).unwrap(),1);
+}
+
+#[test]
+fn explicit_source_imports_keep_their_shared_track_writer() {
+    let lib = Library::in_memory().unwrap();
+    let source = lib.source_id("guest","import-session").unwrap();
+    lib.save_server_tracks(source,123456,&[track("imported","record")]).unwrap();
+    assert_eq!(lib.imported_source_state(source).unwrap(),(1,true));
+}
+
+#[test]
+fn accounts_on_one_server_keep_separate_mirrors_and_session_revisions() {
+    let lib = Library::in_memory().unwrap();
+    let mut first = new_server("first-account","shared-server");
+    let first_id = lib.add_server(&first).unwrap();
+    first.instance = "second-account".into();
+    first.account = "another-user".into();
+    let second_id = lib.add_server(&first).unwrap();
+    assert_eq!(lib.server_with_account_identity("example-server","shared-server","me").unwrap(),Some(first_id));
+    assert_eq!(lib.server_with_account_identity("example-server","shared-server","another-user").unwrap(),Some(second_id));
+    let before = lib.server(first_id).unwrap().unwrap().session_revision;
+    assert!(lib.set_server_enabled(first_id,false).unwrap());
+    assert!(!lib.set_server_enabled(first_id,false).unwrap());
+    assert!(lib.set_server_enabled(first_id,true).unwrap());
+    assert_eq!(lib.server(first_id).unwrap().unwrap().session_revision,before+2);
+    assert_eq!(lib.server(second_id).unwrap().unwrap().session_revision,0);
+}
+
+#[test]
+fn concurrent_syncs_receive_distinct_generations() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("library.db");
+    let lib = Library::open(&path).unwrap();
+    let source = lib.add_server(&new_server("concurrent-syncs","server")).unwrap();
+    let barrier = std::sync::Arc::new(std::sync::Barrier::new(2));
+    let workers: Vec<_> = (0..2).map(|_| {
+        let (path,barrier) = (path.clone(),barrier.clone());
+        std::thread::spawn(move || {
+            let lib = Library::open_existing(&path).unwrap();
+            barrier.wait();
+            (0..50).map(|_| lib.begin_server_sync(source).unwrap()).collect::<Vec<_>>()
+        })
+    }).collect();
+    let generations: std::collections::HashSet<i64> = workers.into_iter().flat_map(|worker| worker.join().unwrap()).collect();
+    assert_eq!(generations.len(),100);
+    assert_eq!(generations.iter().min(),Some(&1));
+    assert_eq!(generations.iter().max(),Some(&100));
+}
+
 fn track(id: &str, album: &str) -> ServerTrack {
     ServerTrack {
         external_id: id.into(),

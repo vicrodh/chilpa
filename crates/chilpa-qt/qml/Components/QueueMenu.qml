@@ -1,4 +1,5 @@
 import QtQuick
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as Confirmations
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
@@ -41,6 +42,10 @@ CascadingMenu {
 
     onActionChosen: entry => {
         const action = entry.act
+        if (action.startsWith("buffer:replace:")) {
+            replacement.show(model,groupRow,action,groupRow >= 0,activeLabel)
+            return
+        }
         if (groupRow >= 0) {
             model.groupAction(groupRow, action, activeLabel)
             if (action.startsWith("buffer:")) { ListenList.refresh(); if (action === "buffer:new") Navigation.go("listenlist", 0) }
@@ -58,4 +63,5 @@ CascadingMenu {
         else if (action === "remove")
             menu.remove()
     }
+    Confirmations.ModelActionConfirmation { id: replacement }
 }

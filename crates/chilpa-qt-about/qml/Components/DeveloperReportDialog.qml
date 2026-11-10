@@ -8,8 +8,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 Modal {
     id: dialog
     property bool offerIssue: true
-    width: Math.min(Metrics.settingsMaxWidth, parent.width - Metrics.modalInsets)
-    height: Math.min(Metrics.panesHeight + Metrics.modalInsets, parent.height - Metrics.modalInsets)
+    preferredWidth: Math.min(Metrics.settingsMaxWidth, parent.width - Metrics.modalInsets)
+    preferredHeight: header.height + report.implicitHeight + footer.implicitHeight + Metrics.gap16 * 2 + Metrics.modalInsets // derived: gaps on either side of the report
     onAboutToShow: Developers.prepareReport()
     onClosed: Developers.closeReport()
     Column {

@@ -25,7 +25,53 @@ fn a_probe_reads_what_the_server_is_before_anyone_signs_in() {
     assert_eq!(found.product, "Navidrome 0.64.2");
     assert!(!found.api_key, "Navidrome 0.64.2 takes no API key");
     assert!(found.extensions.contains(&"songLyrics".to_string()));
+    assert_eq!(found.extension_versions.get("songLyrics"), Some(&vec![1,2]));
     assert!(net.asked().iter().all(|r| query(&r.url, "u").is_none()), "nothing of mine went out");
+}
+
+#[test]
+fn advertised_versions_are_canonical_and_unknown_extensions_are_preserved() {
+    let response = serde_json::json!({"openSubsonicExtensions":[
+        {"name":"songLyrics","versions":[2,1,2,-1,"3",null,0,4294967296u64]},
+        {"name":"futureFeature","versions":[7]},
+        {"name":"songLyrics","versions":[1]},
+        {"name":"nameOnly"}, {"name":"","versions":[1]}
+    ]});
+    let found = extensions(&response);
+    assert_eq!(found.get("songLyrics"), Some(&vec![1,2]));
+    assert_eq!(found.get("futureFeature"), Some(&vec![7]));
+    assert_eq!(found.get("nameOnly"), Some(&vec![]));
+    let details = crate::Details { extension_versions:found, ..Default::default() };
+    assert!(details.supports_extension("songLyrics",2));
+    assert!(!details.supports_extension("songLyrics",3));
+    let legacy: crate::Details = serde_json::from_str(r#"{"extensions":["songLyrics"]}"#).unwrap();
+    assert_eq!(legacy.extensions,["songLyrics"]);
+    assert!(!legacy.supports_extension("songLyrics",1));
+}
+
+#[test]
+fn a_classic_server_or_failed_advertisement_does_not_enable_extensions() {
+    for reply in [200,403,503] {
+        let net = Canned::new().file("navidrome/subsonic-ping.json").answer(reply,b"{}");
+        let signed = sign_in(&net,AT,"lab","lab-password",false).unwrap();
+        assert!(signed.extension_versions.is_empty());
+        assert!(signed.extensions.is_empty());
+    }
+}
+
+#[test]
+fn advertisement_failures_keep_their_operation_status() {
+    for (status,expected) in [(404,ExtensionStatus::Unsupported),(501,ExtensionStatus::Unsupported),
+        (401,ExtensionStatus::Refused),(403,ExtensionStatus::Forbidden),(503,ExtensionStatus::Unavailable)] {
+        let net = Canned::new().answer(status,b"{}");
+        let (result,versions) = advertisement(&net,AT,None);
+        assert_eq!(result,expected);
+        assert!(versions.is_empty());
+    }
+    let net = Canned::new().answer(200,br#"{"subsonic-response":{"status":"failed","error":{"code":50}}}"#);
+    assert_eq!(advertisement(&net,AT,None).0,ExtensionStatus::Forbidden);
+    let net = Canned::new().file("navidrome/subsonic-extensions.json");
+    assert_eq!(advertisement(&net,AT,None).0,ExtensionStatus::Known);
 }
 
 #[test]

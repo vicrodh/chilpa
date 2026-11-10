@@ -36,6 +36,13 @@ TestCase {
         return state
     }
     function lastAction() { return Dsp.actions[Dsp.actions.length - 1] }
+    function confirmReset() {
+        const question = findChild(panel,"dspResetConfirmation")
+        tryCompare(question,"opened",true)
+        findChild(question.contentItem,"confirmationAccept").clicked()
+        findChild(question.contentItem,"destructiveAcknowledgement").checked = true
+        findChild(question.contentItem,"confirmationAccept").clicked()
+    }
     function visualNamed(item, name) {
         if (item.objectName === name) return item
         for (const child of item.children || []) {
@@ -101,6 +108,8 @@ TestCase {
         Dsp.snapshot = JSON.stringify(state)
         panel.open()
         findChild(panel, "dspResetGraphic").clicked()
+        compare(Dsp.actions.length,0)
+        confirmReset()
         compare(lastAction().action, "edit")
         verify(lastAction().input.filters.every(filter => filter.gain_db === 0))
         compare(lastAction().input.preamp_db, -4)
@@ -137,6 +146,8 @@ TestCase {
         verify(restore.visible)
         restore.forceActiveFocus()
         keyClick(Qt.Key_Space)
+        compare(Dsp.actions.length,0)
+        confirmReset()
         compare(lastAction().action, "graphic_restore")
         const preamp = findChild(panel, "dspPreamp")
         preamp.forceActiveFocus()

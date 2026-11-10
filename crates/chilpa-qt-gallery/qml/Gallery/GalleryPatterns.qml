@@ -1,3 +1,4 @@
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import QtQuick

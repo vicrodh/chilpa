@@ -425,7 +425,7 @@ fn serve(order: Order, tools: &Tools, stop: &Mutex<HashSet<i64>>, outbox: &Sende
     };
     let net = tools.net.as_ref();
     if let Some(after) = after {
-        let next = covers(&lib, net, &tools.keys, source, after, &asked_to_stop);
+        let next = covers(&lib, net, &tools.keys, &tools.gate, source, after, &asked_to_stop);
         owed.store(OWE_NOTHING, Ordering::Relaxed);
         say(Event::Covers { source, next: next.filter(|_| !asked_to_stop()) });
         return;
@@ -445,7 +445,7 @@ fn serve(order: Order, tools: &Tools, stop: &Mutex<HashSet<i64>>, outbox: &Sende
     owed.store(OWE_CATALOGUE, Ordering::Relaxed);
     say(Event::Started { source });
     let progress = |reading: Reading| say(Event::Progress { source, reading });
-    let event = run(&lib, net, &tools.keys, source, &progress, &asked_to_stop);
+    let event = run(&lib, net, &tools.keys, &tools.gate, source, &progress, &asked_to_stop);
     // What came in has its covers fetched, whether the sync finished or
     // ended partial: a server read in part still shows its records whole.
     let goes_on = reads_playlists_after(&event);
@@ -465,11 +465,13 @@ pub(crate) fn run(
     lib: &chilpa_library::Library,
     net: &dyn Net,
     keys: &Keys,
+    gate: &Mutex<()>,
     source: i64,
     progress: &dyn Fn(Reading),
     stopped: &dyn Fn() -> bool,
 ) -> Event {
     let failed = |failure: Failure| Event::Failed { source, unreachable: failure.is_unreachable(), why: failure.to_string() };
+    let opening = gate.lock().unwrap_or_else(|error| error.into_inner());
     let Some(stored) = lib.server(source).ok().flatten() else {
         return Event::Failed { source, why: chilpa_i18n::t("that server is no longer in the library"), unreachable: false };
     };
@@ -494,6 +496,10 @@ pub(crate) fn run(
     let Ok(generation) = lib.begin_server_sync(source) else {
         return Event::Failed { source, why: chilpa_i18n::t("the library could not be written"), unreachable: false };
     };
+    let session = super::session::Scope::of(&stored);
+    drop(opening);
+    let outdated = || stopped() || lib.server(source).ok().flatten().is_none_or(|now| !now.enabled || !session.matches(&now));
+    let stopped: &dyn Fn() -> bool = &outdated;
     let known = lib.server_revisions(source).unwrap_or_default();
     let mut seen: HashSet<String> = HashSet::new();
     // What was kept or saved in this sync: only that counts as read.
@@ -728,9 +734,10 @@ pub(crate) fn run(
             unreachable: false,
         };
     }
+    let _finishing = gate.lock().unwrap_or_else(|error| error.into_inner());
+    if stopped() { return Event::Failed { source, why:super::session::changed(), unreachable:false }; }
     match lib.finish_server_sync(source, generation) {
         Ok(gone) => {
-            let _ = lib.set_source_reachable(source, true);
             Event::Finished { source, gone }
         }
         Err(_) => Event::Failed { source, why: chilpa_i18n::t("the library could not be written"), unreachable: false },
@@ -782,9 +789,12 @@ pub(crate) fn covers_dir(instance: &str) -> std::path::PathBuf {
 /// image, is not asked for again until the server names another. One it
 /// could not give now (another status, no answer) is asked for again at a
 /// later sync, up to `COVER_TRIES` times.
-pub(crate) fn covers(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, source: i64, after: i64, stopped: &dyn Fn() -> bool) -> Option<i64> {
+pub(crate) fn covers(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, gate: &Mutex<()>, source: i64, after: i64, stopped: &dyn Fn() -> bool) -> Option<i64> {
+    let opening = gate.lock().unwrap_or_else(|error| error.into_inner());
     let stored = lib.server(source).ok().flatten().filter(|s| s.enabled)?;
     let (server, key) = (net::server(&stored)?, net::key(keys, &stored)?);
+    let session = super::session::Scope::of(&stored);
+    drop(opening);
     let dir = covers_dir(&stored.instance);
     let _ = std::fs::create_dir_all(&dir);
     let pending = lib.pending_server_covers_after(source, after, COVERS_PER_RUN).unwrap_or_default();
@@ -800,7 +810,10 @@ pub(crate) fn covers(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, 
         }
         last = album;
         let request = chilpa_servers::cover(&server, &key, &cover, COVER);
-        let _ = match net.send(&request) {
+        let reply = net.send(&request);
+        let _publishing = gate.lock().unwrap_or_else(|error| error.into_inner());
+        if stopped() || lib.server(source).ok().flatten().is_none_or(|now| !now.enabled || !session.matches(&now)) { return None; }
+        let _ = match reply {
             Ok(reply) if reply.status == 200 => {
                 let kind = reply.headers.get("content-type").cloned().unwrap_or_default();
                 let ext = image_kind(&kind, &reply.body);

@@ -187,17 +187,13 @@ Item {
         sourceComponent: Component { Modal {
         id: dialog
         objectName: "artistBiography"
-        width: Math.min(Metrics.settingsMaxWidth, (header.Window.window?.width || header.width) - Metrics.modalInsets)
-        height: Math.min((header.Window.window?.height || header.height) - Metrics.modalInsets, Metrics.heroArt * 3) // derived: readable body with room for the title and close action
+        preferredWidth: Math.min(Metrics.settingsMaxWidth, (header.Window.window?.width || header.width) - Metrics.modalInsets)
+        preferredHeight: biographyContent.implicitHeight + Metrics.modalInsets
         Column {
-            anchors.fill: parent; spacing: Metrics.gap12
+            id: biographyContent
+            width: parent.width; spacing: Metrics.gap12
             Text { id: biographyTitle; width: parent.width; text: header.info.title || ""; textFormat: Text.PlainText; font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
-            ScrollView {
-                width: parent.width; height: parent.height - biographyTitle.height - attribution.height - closeButton.height - parent.spacing * 3 // derived: the three gaps between four body items
-                clip: true; contentWidth: availableWidth
-                ScrollBar.vertical: ViewportScrollBar {}
-                Text { width: parent.width; text: TextLinks.render(header.bio, hoveredLink, color, Theme.color.accentHover); textFormat: Text.RichText; wrapMode: Text.WordWrap; color: Theme.color.textSecondary; font.pointSize: Type.body; onLinkActivated: (link) => header.follow(link) }
-            }
+            Text { width: parent.width; text: TextLinks.render(header.bio, hoveredLink, color, Theme.color.accentHover); textFormat: Text.RichText; wrapMode: Text.WordWrap; color: Theme.color.textSecondary; font.pointSize: Type.body; onLinkActivated: (link) => header.follow(link) }
             Text {
                 id: attribution; width: parent.width; textFormat: Text.PlainText; font.pointSize: Type.meta; color: Theme.color.textTertiary
                 text: [I18n.tr("Source: {}", I18n.rev).replace("{}", header.info.description_source || header.sourceInfo.name || ""), header.info.bio_updated ? I18n.tr("Updated {}", I18n.rev).replace("{}", header.info.bio_updated) : ""].filter(Boolean).join(" · ")

@@ -193,6 +193,12 @@ TestCase {
         verify(conflict.visible)
         compare(conflict.text, "Already used by Queue")
         mouseClick(findChild(editor.contentItem, "resetAll"))
+        verify(Hotkeys.commands[Hotkeys.commands.length - 1] !== "reset-all:")
+        const confirmation = findChild(editor,"shortcutResetAllConfirmation")
+        tryCompare(confirmation,"opened",true)
+        findChild(confirmation.contentItem,"confirmationAccept").clicked()
+        findChild(confirmation.contentItem,"destructiveAcknowledgement").checked = true
+        findChild(confirmation.contentItem,"confirmationAccept").clicked()
         compare(Hotkeys.commands[Hotkeys.commands.length - 1], "reset-all:")
         editor.close()
         tryVerify(() => !editor.opened)

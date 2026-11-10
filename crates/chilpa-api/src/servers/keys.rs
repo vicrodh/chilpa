@@ -24,6 +24,8 @@ pub(crate) struct Keys {
     /// credential waits for it now.
     secrets: Arc<OnceLock<Option<SecretBox>>>,
     open: RwLock<HashMap<String, Credential>>,
+    /// Atomically capture an opener's stored account and its current key.
+    editing: Mutex<()>,
     /// The last step each instance failed at, so the watcher's minute does
     /// not repeat it.
     reported: Mutex<HashMap<String, String>>,
@@ -42,7 +44,7 @@ impl Keys {
             // No thread to wait on: opened here, rather than never.
             let _ = secrets.set(open_box(&root));
         }
-        Self { root, secrets, open: RwLock::new(HashMap::new()), reported: Mutex::new(HashMap::new()) }
+        Self { root, secrets, open: RwLock::new(HashMap::new()), editing:Mutex::new(()), reported: Mutex::new(HashMap::new()) }
     }
 
     /// Keys sealed with a key derived from this machine only, for tests: the
@@ -50,7 +52,11 @@ impl Keys {
     #[cfg(test)]
     pub(crate) fn derived(root: PathBuf) -> Self {
         let secrets = Arc::new(OnceLock::from(SecretBox::derived_only("chilpa", &root).ok()));
-        Self { root, secrets, open: RwLock::new(HashMap::new()), reported: Mutex::new(HashMap::new()) }
+        Self { root, secrets, open: RwLock::new(HashMap::new()), editing:Mutex::new(()), reported: Mutex::new(HashMap::new()) }
+    }
+
+    pub(crate) fn session(&self) -> std::sync::MutexGuard<'_,()> {
+        self.editing.lock().unwrap_or_else(|error| error.into_inner())
     }
 
     /// The box, once it is open: this waits for the keyring.

@@ -65,13 +65,13 @@ Item {
     Modal {
         id: appDetails
         objectName: "appUpdateDetails"
-        width: Frame.updateWidth + Metrics.modalInsets
+        preferredWidth: Frame.updateWidth + Metrics.modalInsets
         Loader { width: appDetails.width - Metrics.modalInsets; active: appDetails.opened; sourceComponent: UpdatesPanel {} }
     }
     Modal {
         id: pluginDetails
         objectName: "pluginUpdateDetails"
-        width: Frame.widest
+        preferredWidth: Frame.widest
         Loader {
             width: pluginDetails.width - Metrics.modalInsets
             active: pluginDetails.opened

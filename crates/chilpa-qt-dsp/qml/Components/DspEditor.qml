@@ -3,6 +3,7 @@ import app.chilpa.kit
 import app.chilpa.dsp
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 Column {
     id: editor
@@ -42,13 +43,13 @@ Column {
         onBandChanged: (index, gain) => editor.changeGraphicBand(index, gain)
         onStartRequested: editor.command("graphic_start", {})
         onAdvancedRequested: { editor.advancedTab = 0; editor.tabRequested(1) }
-        onResetRequested: editor.resetGraphic()
+        onResetRequested: { resetting.restoring = false; resetting.open() }
     }
     PillButton {
         objectName: "dspRestorePrevious"
         visible: !!editor.state.selection?.graphic_origin
         text: I18n.tr("Restore previous EQ", I18n.rev)
-        onClicked: editor.command("graphic_restore", {})
+        onClicked: { resetting.restoring = true; resetting.open() }
     }
     SegmentedControl {
         visible: editor.tab === 1
@@ -67,5 +68,19 @@ Column {
         clipped: Number(editor.state.clipped || 0)
         onCommitted: gain => editor.changePreamp(gain)
         onResetMeter: editor.command("reset_meter", {})
+    }
+    ConfirmationDialog {
+        id: resetting
+        objectName: "dspResetConfirmation"
+        property bool restoring: false
+        property string original: ""
+        onAboutToShow: original = JSON.stringify(editor.draft)
+        title: restoring ? I18n.tr("Restore previous EQ", I18n.rev) : I18n.tr("Reset equalizer?", I18n.rev)
+        message: restoring ? I18n.tr("The current equalizer changes will be replaced with the previous preset.", I18n.rev)
+            : I18n.tr("The current filter gains will be reset to zero.", I18n.rev)
+        confirmText: restoring ? I18n.tr("Restore previous EQ", I18n.rev) : I18n.tr("Reset", I18n.rev)
+        destructive: true
+        targetValid: original === JSON.stringify(editor.draft)
+        onConfirmed: restoring ? editor.command("graphic_restore", {}) : editor.resetGraphic()
     }
 }

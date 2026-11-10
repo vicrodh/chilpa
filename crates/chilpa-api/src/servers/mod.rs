@@ -20,6 +20,7 @@ mod setup;
 mod sync;
 mod watch;
 pub(crate) mod writing;
+mod session;
 
 use crate::Chilpa;
 use chilpa_models::RemoteEntry;
@@ -128,7 +129,7 @@ impl Chilpa {
         self.sources.servers_opener = Some(Arc::new(opener::Opener::new(Arc::clone(&keys), Arc::clone(&self.servers.failures))));
         self.install_openers();
         self.servers.syncer = Some(sync::Syncer::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
-        self.servers.watcher = Some(watch::Watcher::start(Arc::clone(&keys)));
+        self.servers.watcher = Some(watch::Watcher::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
         self.servers.writer = Some(writing::Writer::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
         self.servers.keys = Some(keys);
         self.servers.resumed = background::unfinished();
@@ -388,8 +389,10 @@ impl Chilpa {
         let edit = self.servers.setup.edit_id;
         let (instance, label) = (ready.instance.clone(), ready.label.clone());
         let path = chilpa_library::Library::default_path();
+        let gate = Arc::clone(&self.servers.gate);
         let (tx, done) = std::sync::mpsc::channel();
         let spawned = std::thread::Builder::new().name("chilpa-server-add".into()).spawn(move || {
+            let _editing = gate.lock().unwrap_or_else(|error| error.into_inner());
             let _ = tx.send(write_server(&path, &keys, edit, &ready));
         });
         if spawned.is_err() {
@@ -666,7 +669,9 @@ impl Chilpa {
                 watcher.ask();
             }
         }
-        if let Some(look) = self.servers.watcher.as_ref().and_then(|w| w.looked()) {
+        if let Some(mut look) = self.servers.watcher.as_ref().and_then(|w| w.looked()) {
+            look.refused.retain(|source| self.library().and_then(|lib| lib.server(*source).ok().flatten())
+                .is_some_and(|stored| look.sessions.get(source).is_some_and(|scope| scope.matches(&stored))));
             if look.refused != self.servers.refused {
                 self.servers.refused = look.refused;
                 self.servers.changed = true;
@@ -680,18 +685,34 @@ impl Chilpa {
 /// when its kind signs in, on the thread `setup_finish` starts. The id of
 /// its source, or why not.
 fn write_server(path: &std::path::Path, keys: &Keys, edit: Option<i64>, ready: &setup::Ready) -> Result<i64, String> {
+    let _session = keys.session();
     let unwritten = || chilpa_i18n::t("the library could not be written");
     let unkept = || chilpa_i18n::t("the credential could not be kept safely on this system");
     let lib = chilpa_library::Library::open_existing(path).map_err(|_| unwritten())?;
-    if lib.server_with_identity(ready.kind.provider(), &ready.identity).ok().flatten().is_some_and(|id| Some(id) != edit) {
+    let previous = match edit {
+        Some(id) => Some(lib.server(id).ok().flatten().ok_or_else(unwritten)?),
+        None => None,
+    };
+    if previous.as_ref().is_some_and(|stored| stored.account != ready.account || stored.instance != ready.instance || stored.provider != ready.kind.provider()) {
+        return Err(chilpa_i18n::t("To use a different account, add it as a separate server."));
+    }
+    if lib.server_with_account_identity(ready.kind.provider(), &ready.identity, &ready.account).ok().flatten().is_some_and(|id| Some(id) != edit) {
         return Err(chilpa_i18n::t("that server is already in the library"));
+    }
+    let mut details = ready.details.clone();
+    if ready.kind == chilpa_servers::Kind::Subsonic
+        && !matches!(details.extension_status,chilpa_servers::ExtensionStatus::Known | chilpa_servers::ExtensionStatus::Unsupported) {
+        if let Some(known) = previous.as_ref().and_then(|stored| serde_json::from_str::<chilpa_servers::Details>(&stored.details).ok()) {
+            details.extensions = known.extensions;
+            details.extension_versions = known.extension_versions;
+        }
     }
     let new = chilpa_library::NewServer {
         provider: ready.kind.provider().into(), instance: ready.instance.clone(), label: ready.label.clone(),
         icon: ready.kind.icon(&ready.product).into(), address: ready.address.clone(), account: ready.account.clone(),
         identity: ready.identity.clone(), product: ready.product.clone(),
         libraries: serde_json::to_string(&ready.libraries).unwrap_or_else(|_| "[]".into()),
-        details: serde_json::to_string(&ready.details).unwrap_or_else(|_| "{}".into()),
+        details: serde_json::to_string(&details).unwrap_or_else(|_| "{}".into()),
     };
     // A kind without a sign-in has nothing to seal: the keyring is not
     // even opened for it.
@@ -786,6 +807,56 @@ fn plain_and_outside(address: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn changing_accounts_preserves_the_old_mirror_and_uses_a_new_instance() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("library.db");
+        let lib = chilpa_library::Library::open(&path).unwrap();
+        let keys = Keys::derived(root.path().join("servers"));
+        let original = setup::Ready { kind:chilpa_servers::Kind::Jellyfin, instance:keys::mint(), label:"Fixture".into(),
+            address:"http://fixture.invalid".into(), account:"first-user".into(), identity:"fixture-server".into(),
+            product:"Fixture".into(), libraries:vec![], details:Default::default(),
+            key:chilpa_servers::Credential::Token {token:"first-session".into()} };
+        let first = write_server(&path,&keys,None,&original).unwrap();
+        let mut other = original.clone();
+        other.account = "second-user".into();
+        other.key = chilpa_servers::Credential::Token {token:"second-session".into()};
+        assert!(write_server(&path,&keys,Some(first),&other).is_err());
+        assert_eq!(lib.server(first).unwrap().unwrap().account,"first-user");
+        assert_eq!(keys.get(&original.instance),Some(original.key.clone()));
+        other.instance = keys::mint();
+        let second = write_server(&path,&keys,None,&other).unwrap();
+        assert_ne!(first,second);
+        assert_eq!(lib.servers().unwrap().len(),2);
+        assert!(write_server(&path,&keys,None,&other).is_err());
+    }
+
+    #[test]
+    fn a_transient_advertisement_failure_keeps_the_previous_versions() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("library.db");
+        let lib = chilpa_library::Library::open(&path).unwrap();
+        let keys = Keys::derived(root.path().join("servers"));
+        let mut ready = setup::Ready { kind:chilpa_servers::Kind::Subsonic, instance:keys::mint(), label:"Fixture".into(),
+            address:"http://fixture.invalid".into(), account:"fixture-user".into(), identity:"fixture-server".into(),
+            product:"Fixture".into(), libraries:vec![], details:chilpa_servers::Details {
+                extensions:vec!["songLyrics".into()],extension_versions:std::collections::BTreeMap::from([("songLyrics".into(),vec![1,2])]),
+                extension_status:chilpa_servers::ExtensionStatus::Known,..Default::default() },
+            key:chilpa_servers::Credential::Password {user:"fixture-user".into(),password:"fixture-password".into()} };
+        let source = write_server(&path,&keys,None,&ready).unwrap();
+        ready.details = chilpa_servers::Details {extension_status:chilpa_servers::ExtensionStatus::Unavailable,..Default::default()};
+        write_server(&path,&keys,Some(source),&ready).unwrap();
+        let saved = lib.server(source).unwrap().unwrap();
+        let details: chilpa_servers::Details = serde_json::from_str(&saved.details).unwrap();
+        assert!(details.supports_extension("songLyrics",2));
+        assert_eq!(details.extension_status,chilpa_servers::ExtensionStatus::Unavailable);
+        ready.details.extension_status = chilpa_servers::ExtensionStatus::Unsupported;
+        write_server(&path,&keys,Some(source),&ready).unwrap();
+        let saved = lib.server(source).unwrap().unwrap();
+        let details: chilpa_servers::Details = serde_json::from_str(&saved.details).unwrap();
+        assert!(!details.supports_extension("songLyrics",1));
+    }
 
     #[test]
     fn plain_http_is_pointed_out_only_outside_the_lan() {

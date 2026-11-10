@@ -36,8 +36,9 @@ Modal {
     readonly property var card: showingNotes ? null : deck[cardIndex] || null
     readonly property bool lastCard: cardIndex === cardCount - 1
 
-    width: Math.min((parent ? parent.width : OnboardingFrame.widest) - OnboardingFrame.gutter, OnboardingFrame.widest)
-    height: Math.min((parent ? parent.height : OnboardingFrame.tallest) - OnboardingFrame.gutter, OnboardingFrame.tallest)
+    preferredWidth: Math.min((parent ? parent.width : OnboardingFrame.widest) - OnboardingFrame.gutter, OnboardingFrame.widest)
+    preferredHeight: header.height + footer.height + (showingNotes ? notes.implicitHeight : deckCard.implicitHeight)
+        + OnboardingFrame.gap * 2 + OnboardingFrame.inset * 2 + Metrics.modalInsets
     Overlay.modal: Rectangle { color: Theme.color.lightboxScrim }
 
     property int reached: 0
@@ -85,7 +86,7 @@ Modal {
     Item {
         id: keys
         width: modal.width - Metrics.modalInsets
-        height: modal.height - Metrics.modalInsets
+        height: modal.preferredHeight - Metrics.modalInsets
         focus: true
         Keys.onLeftPressed: modal.goBack()
         Keys.onRightPressed: modal.goNext()
@@ -146,6 +147,7 @@ Modal {
                 anchors.bottomMargin: OnboardingFrame.gap
 
                 DeckCard {
+                    id: deckCard
                     objectName: "deckCard"
                     anchors.fill: parent
                     visible: !modal.showingNotes
@@ -156,6 +158,7 @@ Modal {
                     onActionChosen: action => modal.follow(action)
                 }
                 ReleaseNotes {
+                    id: notes
                     objectName: "releaseNotes"
                     anchors.fill: parent
                     visible: modal.showingNotes

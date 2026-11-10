@@ -17,6 +17,7 @@ Rectangle {
     signal renameAsked(var entry)
     signal removeAsked(var entry)
     readonly property real nameWidth: (list.width - Refine.savedActionsWide - Refine.innerApart) * Refine.savedNameShare
+    implicitHeight: Refine.savedHeaderTall + Refine.pickPad * 2 + Math.max(1,entries.length) * Refine.savedRowTall // derived: padding above and below the table
     radius: Refine.groupRound
     color: Theme.color.surfacePane
     border.width: Metrics.hairline

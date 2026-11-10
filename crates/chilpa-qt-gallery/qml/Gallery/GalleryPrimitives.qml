@@ -60,7 +60,7 @@ TitledFlow {
 
     Modal {
         id: sampleModal
-        width: Metrics.playlistFolderDialog
+        preferredWidth: Metrics.playlistFolderDialog
         Column {
             spacing: Metrics.gap12
             Text { text: "Modal"; font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }

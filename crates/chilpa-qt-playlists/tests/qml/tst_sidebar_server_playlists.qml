@@ -39,8 +39,16 @@ TestCase {
         verify(offered().indexOf("deletePlaylist") < 0, "one the account may only read is not deleted")
         actions.row(road, 0, 0)
         menu().chosen(offered().indexOf("deletePlaylist"))
-        verify(menu().entries[0].text.indexOf("Living room") >= 0, "the question names the server: " + menu().entries[0].text)
-        menu().chosen(offered().indexOf("confirmPlaylist"))
+        const confirmation = findChild(actions, "playlistDeletionConfirmation")
+        tryCompare(confirmation, "opened", true)
+        verify(confirmation.message.indexOf("Living room") >= 0, "the question names the server")
+        const accept = findChild(confirmation.contentItem, "confirmationAccept")
+        accept.clicked()
+        verify(Playlists.removed !== 12)
+        const acknowledgement = findChild(confirmation.contentItem, "destructiveAcknowledgement")
+        acknowledgement.checked = true
+        actions.selected = sidebar.rows.find(row => row.playlistId === 13)
+        accept.clicked()
         compare(Playlists.removed, 12)
     }
 

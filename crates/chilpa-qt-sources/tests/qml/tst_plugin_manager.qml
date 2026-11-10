@@ -151,8 +151,14 @@ TestCase {
         remove.clicked()
         const confirmation = findChild(manager.detailsView, "confirmPluginRemoval")
         verify(confirmation.opened)
-        confirmation.confirmed()
-        confirmation.close()
+        const calls = backend.calls.length
+        const accept = findChild(confirmation,"confirmationAccept")
+        accept.clicked()
+        compare(backend.calls.length,calls)
+        verify(!accept.enabled)
+        findChild(confirmation,"destructiveAcknowledgement").toggle()
+        verify(accept.enabled)
+        accept.clicked()
         compare(backend.calls[backend.calls.length - 1], ["uninstall", {id: "guest", lyrics: false}])
         compare(manager.selected, "")
     }
@@ -166,8 +172,14 @@ TestCase {
         verify(option.visible, "the lyrics question is asked")
         verify(!option.checked, "keeping the lyrics is the default")
         option.toggle()
-        confirmation.confirmed()
-        confirmation.close()
+        const calls = backend.calls.length
+        const accept = findChild(confirmation,"confirmationAccept")
+        accept.clicked()
+        compare(backend.calls.length,calls)
+        verify(!accept.enabled)
+        findChild(confirmation,"destructiveAcknowledgement").toggle()
+        verify(accept.enabled)
+        accept.clicked()
         compare(backend.calls[backend.calls.length - 1], ["uninstall", {id: "guest", lyrics: true}])
     }
     function test_permissions_require_explicit_acceptance() {
@@ -194,11 +206,16 @@ TestCase {
         button.clicked()
         compare(manager.selected, "native")
         compare(backend.calls[0], ["settings", {id: "native"}])
-        backend.state = {busy: false, installed: [plugin], settings_id: "native", form: {revision: 7, values: {}, form: {fields: [], actions: []}}}
+        backend.state = {busy: false, installed: [plugin], settings_id: "native", form: {revision: 7, values: {}, form: {
+            fields: [{key:"app_id",label:"App ID",control:{type:"text"}}],
+            actions: [{key:"sign_in",label:"Sign in",fields:["app_id"]}]}}}
         manager.read()
         const form = findChild(manager.detailsView, "pluginSettingsForm")
         verify(form.visible && form.enabled)
-        form.submitted("sign_in", {app_id: "fixture"})
+        form.values = {app_id:"fixture"}
+        const submit = findChild(form,"pluginAction_sign_in")
+        verify(submit.visible && submit.enabled)
+        submit.clicked()
         compare(backend.calls[backend.calls.length - 1], ["submit", {id: "native", submission: {revision: 7, action: "sign_in", values: {app_id: "fixture"}}}])
         manager.detailsView.close()
     }

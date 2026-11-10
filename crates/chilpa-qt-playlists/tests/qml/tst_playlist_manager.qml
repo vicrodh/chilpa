@@ -121,14 +121,22 @@ TestCase {
         cardOf(7).menuAsked(0, 0)
         choose(menu, "remove")
         compare(Playlists.removed, 0, "nothing yet")
-        compare(menu.entries[0].text, "Delete “Stored playlist”?")
-        choose(menu, "confirm")
+        const confirmation = findChild(screen,"playlistDeletionConfirmation")
+        tryCompare(confirmation,"opened",true)
+        compare(confirmation.title, "Delete “Stored playlist”?")
+        findChild(confirmation.contentItem,"confirmationAccept").clicked()
+        compare(Playlists.removed,0)
+        findChild(confirmation.contentItem,"destructiveAcknowledgement").checked = true
+        findChild(confirmation.contentItem,"confirmationAccept").clicked()
         compare(Playlists.removed, 7)
         cardOf(-9).menuAsked(0, 0)
         verify(!menu.entries.some(entry => entry.act === "edit"), "someone else's list is not edited here")
         choose(menu, "remove")
-        compare(menu.entries[1].text, "Remove from library", "only followed: taken from the library")
-        choose(menu, "confirm")
+        tryCompare(confirmation,"opened",true)
+        compare(confirmation.message,"Remove this playlist from your library?", "only followed: taken from the library")
+        findChild(confirmation.contentItem,"confirmationAccept").clicked()
+        findChild(confirmation.contentItem,"destructiveAcknowledgement").checked = true
+        findChild(confirmation.contentItem,"confirmationAccept").clicked()
         compare(Playlists.removed, -9)
     }
 

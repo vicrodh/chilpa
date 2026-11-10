@@ -6,6 +6,7 @@ import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives" as Kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 Modal {
     id: dialog
@@ -14,8 +15,9 @@ Modal {
     property string error: ""
     property int selectedCount: 0
     property int trackCount: 0
-    width: Math.min(Metrics.playlistPickerWidth, parent ? parent.width - Metrics.modalInsets : 0)
-    height: Math.min(Metrics.playlistPickerHeight, parent ? parent.height - Metrics.modalInsets : 0)
+    preferredWidth: Math.min(Metrics.playlistPickerWidth, parent ? parent.width - Metrics.modalInsets : 0)
+    preferredHeight: header.implicitHeight + Math.max(Metrics.button32, list.contentHeight) + footer.implicitHeight
+        + Metrics.gap12 * 2 + Metrics.modalInsets
     ListModel { id: queues }
 
     function count() {
@@ -55,9 +57,28 @@ Modal {
     function combine() {
         const ids = []
         for (let i = 0; i < queues.count; i++) if (queues.get(i).chosen) ids.push(queues.get(i).queueId)
-        error = Queues.merge(JSON.stringify(ids), name.text, originals.value === "keep")
+        if (originals.value === "remove") {
+            removing.queueIds = JSON.stringify(ids)
+            removing.queueName = name.text
+            removing.open()
+        } else finish(JSON.stringify(ids), name.text, true)
+    }
+    function finish(ids, label, keep) {
+        error = Queues.merge(ids, label, keep)
         ListenList.refresh()
         if (error === "") close()
+    }
+    ConfirmationDialog {
+        id: removing
+        objectName: "queueMergeRemovalConfirmation"
+        property string queueIds: "[]"
+        property string queueName: ""
+        title: I18n.tr("Remove original queues?", I18n.rev)
+        message: I18n.tr("The selected queues will be removed after their tracks are copied to the combined queue. Their separate names and saved order will be lost.", I18n.rev)
+        confirmText: I18n.tr("Combine and remove originals", I18n.rev)
+        destructive: true
+        targetValid: !dialog.document.pending && JSON.parse(queueIds).every(id => (dialog.document.tabs || []).some(tab => tab.id === id))
+        onConfirmed: dialog.finish(queueIds,queueName,false)
     }
     onDocumentChanged: if (opened) sync()
 

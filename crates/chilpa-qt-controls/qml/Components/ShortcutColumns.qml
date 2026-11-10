@@ -1,8 +1,10 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa.controls
+import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Theme"
 
 // Each group fills a responsive grid of shortcut rows.
@@ -63,11 +65,20 @@ Flickable {
                             tried: view.keys.tried || ""
                             takenBy: view.keys.takenBy || ""
                             onRecord: Hotkeys.command("record", modelData.id)
-                            onReset: Hotkeys.command("reset", modelData.id)
+                            onReset: { resetting.actionId = modelData.id; resetting.open() }
                         }
                     }
                 }
             }
         }
+    }
+    ConfirmationDialog {
+        id: resetting
+        property string actionId: ""
+        title: I18n.tr("Reset shortcut?", I18n.rev)
+        message: I18n.tr("The custom key binding for this action will be replaced with its default.", I18n.rev)
+        confirmText: I18n.tr("Reset", I18n.rev)
+        destructive: true
+        onConfirmed: Hotkeys.command("reset", actionId)
     }
 }

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls.Basic
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -9,10 +10,10 @@ P.Modal {
     id: dialog
     objectName: "pluginRepositories"
     required property var manager
-    width: Math.min(Metrics.settingsMaxWidth, parent ? parent.width - Metrics.modalInsets : Metrics.confirmWidth)
+    preferredWidth: Math.min(Metrics.settingsMaxWidth, parent ? parent.width - Metrics.modalInsets : Metrics.confirmWidth)
     // As tall as what it lists, up to the window: then the list scrolls and
     // Close stays in reach. A fixed height once let the list run over Close.
-    height: Math.min(parent ? parent.height - Metrics.modalInsets : body.contentHeight, body.contentHeight + Metrics.gap12 + close.height + Metrics.modalInsets) // derived: the list, the gap and Close inside the frame
+    preferredHeight: body.contentHeight + Metrics.gap12 + close.height + Metrics.modalInsets
     Flickable {
         id: body
         objectName: "pluginRepositoriesBody"
@@ -74,11 +75,21 @@ P.Modal {
                     Row {
                         spacing: Metrics.gap8
                         P.PillButton { text: I18n.tr("Refresh", I18n.rev); enabled: !dialog.manager.view.busy; onClicked: dialog.manager.command("refresh_repository", {id: modelData.id}) }
-                        P.PillButton { text: I18n.tr("Remove", I18n.rev); enabled: !dialog.manager.view.busy; onClicked: dialog.manager.command("remove_repository", {id: modelData.id}) }
+                        P.PillButton { text: I18n.tr("Remove", I18n.rev); enabled: !dialog.manager.view.busy; onClicked: { removal.repositoryId = modelData.id; removal.repositoryUrl = modelData.url; removal.open() } }
                     }
                 }
             }
         }
     }
     P.PillButton { id: close; objectName: "closePluginRepositories"; anchors.bottom: parent.bottom; anchors.right: parent.right; text: I18n.tr("Close", I18n.rev); onClicked: dialog.close() }
+    ConfirmationDialog {
+        id: removal
+        property string repositoryId: ""
+        property string repositoryUrl: ""
+        title: I18n.tr("Remove plugin repository?", I18n.rev)
+        message: I18n.trArgs("Chilpa will stop checking this repository for plugins and updates.\n{}", [repositoryUrl], I18n.rev)
+        confirmText: I18n.tr("Remove", I18n.rev)
+        destructive: true
+        onConfirmed: dialog.manager.command("remove_repository", {id: repositoryId})
+    }
 }

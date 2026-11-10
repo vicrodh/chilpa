@@ -42,6 +42,18 @@ pub struct Action {
     /// Only these fields may accompany this action. An authentication
     /// action cannot accidentally receive unrelated account settings.
     pub fields: BTreeSet<String>,
+    /// The host explains this effect and obtains two confirmations before submit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub destructive: Option<DestructiveEffect>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DestructiveEffect {
+    Account,
+    Files,
+    Settings,
+    Cache,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -186,7 +198,7 @@ mod tests {
                 key: "password".into(), label: "Password".into(), description: String::new(),
                 required: true, control: Control::Secret { max_length: 256 },
             }],
-            actions: vec![Action { key: "connect".into(), label: "Connect".into(), fields: BTreeSet::from(["password".into()]) }],
+            actions: vec![Action { key: "connect".into(), label: "Connect".into(), fields: BTreeSet::from(["password".into()]), destructive:None }],
             ..Form::default()
         }
     }
@@ -232,5 +244,15 @@ mod tests {
         assert!(field.accepts(&json!(27)));
         assert!(!field.accepts(&json!("27")));
         assert!(!field.accepts(&json!(999)));
+    }
+
+    #[test]
+    fn destructive_effects_are_optional_for_legacy_forms_and_typed_when_declared() {
+        let old: Action = serde_json::from_value(json!({"key":"save","label":"Save","fields":[]})).unwrap();
+        assert_eq!(old.destructive,None);
+        assert!(serde_json::to_value(old).unwrap().get("destructive").is_none());
+        let action: Action = serde_json::from_value(json!({"key":"disconnect","label":"Disconnect","fields":[],"destructive":"account"})).unwrap();
+        assert_eq!(action.destructive,Some(DestructiveEffect::Account));
+        assert!(serde_json::from_value::<Action>(json!({"key":"unknown","label":"Unknown","fields":[],"destructive":"unrecognized"})).is_err());
     }
 }

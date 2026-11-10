@@ -13,8 +13,8 @@ P.Modal {
     required property var controller
     property var plugin: ({})
     readonly property var versions: plugin.older || []
-    width: Math.min(Metrics.confirmWidth + Metrics.modalInsets, parent.width - Metrics.modalInsets)
-    height: Math.min(content.implicitHeight + Metrics.modalInsets, parent.height - Metrics.modalInsets)
+    preferredWidth: Math.min(Metrics.confirmWidth + Metrics.modalInsets, parent.width - Metrics.modalInsets)
+    preferredHeight: content.implicitHeight + Metrics.modalInsets
     Column {
         id: content
         width: parent.width

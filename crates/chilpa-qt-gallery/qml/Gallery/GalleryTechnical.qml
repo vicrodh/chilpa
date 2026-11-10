@@ -2,6 +2,7 @@ import QtQuick
 import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 
 Column {
@@ -29,6 +30,15 @@ Column {
         year: "2003"; tracks: 12; facts: ({rate: 96000, bits: 24})
     }
     AlbumViewTools { columns: ["rate", "bits"]; view: "nerdy" }
+    DestructiveSteps { width: section.width; step: 2 }
+    PillButton { text: "Destructive confirmation"; onClicked: confirmation.open() }
+    ConfirmationDialog {
+        id: confirmation
+        title: "Remove this example?"
+        message: "This removes the selected example from the saved collection."
+        confirmText: "Remove example"
+        destructive: true
+    }
     AlbumGridInteraction { grid: null }
     TrackColumns { id: rowCols; width: section.width }
     Item {

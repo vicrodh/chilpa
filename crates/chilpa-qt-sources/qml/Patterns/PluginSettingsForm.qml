@@ -1,20 +1,47 @@
 import QtQuick
 import app.chilpa
+import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 
 Column {
     id: form
     required property var document
+    property string pluginName: ""
+    property string pluginId: ""
     property var values: ({})
-    signal submitted(string action, var values)
+    signal submitted(string action, var values, var scope)
     // Whether a sign-in window can open a link that declares a return address.
     property bool captures: false
     signal linked(string url)
     signal captured(var link)
     spacing: Metrics.gap12
     onDocumentChanged: values = Object.assign({}, document.values || {})
+
+    function actionStamp(action) {
+        return action ? JSON.stringify([action.key,action.label,action.fields,action.destructive]) : ""
+    }
+    function submitAction(action) {
+        const payload = {}
+        const scope = {plugin:pluginId,revision:document.revision}
+        for (const key of action.fields)
+            if (values[key] !== undefined) payload[key] = values[key]
+        if (action.destructive) {
+            confirmation.actionKey = action.key
+            confirmation.actionLabel = action.label
+            confirmation.effect = String(action.destructive)
+            confirmation.scope = scope
+            confirmation.definition = actionStamp(action)
+            confirmation.payload = payload
+            confirmation.open()
+        } else dispatch(action.key,payload,scope)
+    }
+    function dispatch(action,payload,scope) {
+        values = ({})
+        submitted(action,payload,scope)
+    }
 
     Loader {
         width: form.width
@@ -140,15 +167,38 @@ Column {
                 required property var modelData
                 required property int index
                 text: modelData.label
+                objectName: "pluginAction_" + modelData.key
+                maximumWidth: form.width
+                wrapText: true
                 kind: Array.isArray((form.document.wizard || {}).steps) && index === 0 ? "primary" : "secondary"
-                onClicked: {
-                    const submitted = {}
-                    for (const key of modelData.fields)
-                        if (form.values[key] !== undefined) submitted[key] = form.values[key]
-                    form.submitted(modelData.key, submitted)
-                    form.values = ({})
-                }
+                onClicked: form.submitAction(modelData)
             }
         }
+    }
+    ConfirmationDialog {
+        id: confirmation
+        objectName: "pluginActionConfirmation"
+        property string actionKey: ""
+        property string actionLabel: ""
+        property string effect: ""
+        property var scope: ({})
+        property string definition: ""
+        property var payload: ({})
+        title: I18n.trArgs("Confirm “{}” for {}?",[actionLabel,form.pluginName || I18n.tr("Plugin",I18n.rev)],I18n.rev)
+        message: effect === "account" ? I18n.tr("This removes the plugin's saved account session and account-related data from this device. You will need to sign in again.",I18n.rev)
+            : effect === "files" ? I18n.tr("This permanently deletes files managed by the plugin. Review the affected files in the plugin's description.",I18n.rev)
+            : effect === "settings" ? I18n.tr("This replaces the plugin's saved settings. Review the affected settings before proceeding.",I18n.rev)
+            : effect === "cache" ? I18n.tr("This permanently clears cached plugin data. Content may need to be downloaded again.",I18n.rev)
+            : I18n.tr("This plugin action permanently removes or replaces data. Review the action and its description before proceeding.",I18n.rev)
+        destructive: true
+        confirmText: actionLabel
+        targetValid: scope.plugin === form.pluginId && String(scope.revision ?? "") === String(form.document.revision ?? "")
+            && definition === form.actionStamp(((form.document.form || {}).actions || []).find(action => action.key === actionKey))
+        onConfirmed: {
+            const values = payload, captured = scope
+            payload = ({}); scope = ({})
+            form.dispatch(actionKey,values,captured)
+        }
+        onDismissed: { payload = ({}); scope = ({}) }
     }
 }

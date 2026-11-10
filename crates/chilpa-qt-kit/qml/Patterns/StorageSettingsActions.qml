@@ -10,8 +10,8 @@ Item {
     property bool current: false
 
     function press(key) {
-        if (key.startsWith("storage.clear.")) {
-            removal.kind = key.substring("storage.clear.".length)
+        if (key.startsWith("storage.clear.") || key === "library.lyricsCache") {
+            removal.kind = key === "library.lyricsCache" ? "lyrics" : key.substring("storage.clear.".length)
             removal.open()
             return true
         }

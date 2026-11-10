@@ -14,35 +14,42 @@ struct Fixture {
     source: i64,
     track: i64,
     album: i64,
+    track_reference: &'static str,
+    album_reference: &'static str,
     _root: tempfile::TempDir,
 }
 impl Fixture {
     fn new() -> Self {
+        Self::for_server("jellyfin",TRACK,ALBUM)
+    }
+    fn for_server(provider: &str, track_reference: &'static str, album_reference: &'static str) -> Self {
         let root = tempfile::tempdir().unwrap();
         let keys = Keys::derived(root.path().to_path_buf());
         let lib = chilpa_library::Library::in_memory().unwrap();
         let instance = super::super::keys::mint();
-        assert!(keys.put(&instance,&chilpa_servers::Credential::Token {token:"fixture-session".into()}));
+        let key = if provider == "plex" { chilpa_servers::Credential::Plex {account:"fixture-account".into(),server:"fixture-session".into()} }
+            else { chilpa_servers::Credential::Token {token:"fixture-session".into()} };
+        assert!(keys.put(&instance,&key));
         let source = lib.add_server(&chilpa_library::NewServer {
-            provider:"jellyfin".into(),instance,label:"Music server".into(),address:"http://fixture.invalid".into(),
+            provider:provider.into(),instance,label:"Music server".into(),address:"http://fixture.invalid".into(),identity:"fixture-machine".into(),
             libraries:"[]".into(),details:format!(r#"{{"user_id":"{USER}"}}"#),..Default::default()
         }).unwrap();
         let stored = lib.server(source).unwrap().unwrap();
         let generation = lib.begin_server_sync(source).unwrap();
-        let tracks: Vec<_> = [TRACK,"5d0a04cb4d421afbbd017f0be4168548"].into_iter().map(|id| chilpa_library::ServerTrack {
+        let tracks: Vec<_> = [track_reference,"124"].into_iter().map(|id| chilpa_library::ServerTrack {
             external_id:net::entry(&stored,id),title:"Track".into(),artist:"Artist".into(),album:"Album".into(),
-            album_artist:"Artist".into(),album_key:ALBUM.into(),..Default::default()
+            album_artist:"Artist".into(),album_key:album_reference.into(),..Default::default()
         }).collect();
         lib.save_server_tracks(source,generation,&tracks).unwrap();
         lib.finish_server_sync(source,generation).unwrap();
-        let track = lib.track_by_entry(&net::entry(&stored,TRACK)).unwrap().unwrap().0;
+        let track = lib.track_by_entry(&net::entry(&stored,track_reference)).unwrap().unwrap().0;
         let album = lib.browse_ids(&crate::Filter::default(),crate::TrackOrder::Album).unwrap().album_ids[0];
-        Self {lib,keys,source,track,album,_root:root}
+        Self {lib,keys,source,track,album,track_reference,album_reference,_root:root}
     }
     fn write(&self, album: bool) -> writing::Write {
         let id = if album {self.album} else {self.track};
-        writing::Write {source:self.source,playlist:id,request:"media-fixture".into(),change:writing::Change::DeleteMedia {
-            target:self.lib.server_media_target(album,id).unwrap().unwrap(),remote:if album {ALBUM} else {TRACK}.into(),
+        writing::Write {session:super::super::session::Scope::of(&self.lib.server(self.source).unwrap().unwrap()),source:self.source,playlist:id,request:"media-fixture".into(),change:writing::Change::DeleteMedia {
+            target:self.lib.server_media_target(album,id).unwrap().unwrap(),remote:if album {self.album_reference} else {self.track_reference}.into(),
         }}
     }
 }
@@ -98,4 +105,38 @@ fn local_confirmation_is_bound_to_the_same_server_and_item() {
     assert!(api.servers.media.job.is_none());
     assert_eq!(api.library().unwrap().track_count(false).unwrap(),2);
     assert_eq!(api.server_media_info("track",-1),"{}");
+}
+
+#[test]
+fn a_confirmed_deletion_cannot_cross_an_account_edit() {
+    let fixture = Fixture::new();
+    let write = fixture.write(false);
+    let stored = fixture.lib.server(fixture.source).unwrap().unwrap();
+    fixture.lib.edit_server(fixture.source,&chilpa_library::NewServer {
+        provider:stored.provider,instance:stored.instance,label:stored.label,address:stored.address,
+        account:"another-user".into(),identity:stored.identity,product:stored.product,
+        libraries:stored.libraries,details:stored.details,..Default::default()
+    }).unwrap();
+    let net = Answers::ready(TRACK,"Audio",true,204);
+    let result = writing::apply(&fixture.lib,&net,&fixture.keys,&Mutex::new(()),&write);
+    assert!(!result.why.is_empty());
+    assert!(net.asked.lock().unwrap().is_empty());
+    assert_eq!(fixture.lib.track_count(true).unwrap(),2);
+}
+
+#[test]
+fn numeric_music_ids_keep_the_same_confirmed_deletion_path() {
+    for album in [false,true] {
+        let fixture = Fixture::for_server("plex","123","456");
+        let reference = if album {"456"} else {"123"};
+        let item = json!({"MediaContainer":{"Metadata":[{"type":if album {"album"} else {"track"},"ratingKey":reference}]}});
+        let policy = json!({"MediaContainer":{"machineIdentifier":"fixture-machine","allowMediaDeletion":true}});
+        let replies = [policy,item].into_iter().map(|document| Reply {status:200,headers:Default::default(),body:document.to_string().into_bytes()})
+            .chain([Reply {status:200,headers:Default::default(),body:vec![]}]).collect();
+        let net = Answers {replies:Mutex::new(replies),..Default::default()};
+        let result = writing::apply(&fixture.lib,&net,&fixture.keys,&Mutex::new(()),&fixture.write(album));
+        assert!(result.why.is_empty(),"{}",result.why);
+        assert_eq!(fixture.lib.track_count(false).unwrap(),if album {0} else {1});
+        assert_eq!(*net.asked.lock().unwrap(),["GET","GET","DELETE"]);
+    }
 }

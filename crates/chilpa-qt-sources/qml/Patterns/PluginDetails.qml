@@ -18,62 +18,55 @@ P.Modal {
     readonly property bool matching: !!validation.id && validation.id === plugin.id && validation.repository_id === plugin.repository_id
     property alias domains: domains.text
     onClosed: { manager.selected = ""; if (mode === "permissions" && manager.view.approval) manager.command("cancel_permissions", {}) }
-    width: Math.min(Metrics.settingsMaxWidth, parent ? parent.width - Metrics.modalInsets : Metrics.confirmWidth)
-    height: Math.min(Metrics.panesHeight + Metrics.heroArt, parent ? parent.height - Metrics.modalInsets : Metrics.panesHeight)
+    preferredWidth: Math.min(Metrics.settingsMaxWidth, parent ? parent.width - Metrics.modalInsets : Metrics.confirmWidth)
     Column {
-        id: heading
         width: parent.width
-        spacing: Metrics.gap8
-        Flow {
-            objectName: "pluginTabs"
+        spacing: Metrics.gap12
+        Column {
+            id: heading
             width: parent.width
             spacing: Metrics.gap8
-            visible: details.mode === "settings"
-            Repeater {
-                model: [{id: "about", title: I18n.tr("About", I18n.rev)}, {id: "settings", title: details.plugin.downloads === true ? I18n.tr("Account", I18n.rev) : I18n.tr("Plugin Settings", I18n.rev)}]
-                    .concat(details.plugin.integration_available === false ? [] : [{id: "integration", title: I18n.tr("Plugin integration", I18n.rev)}])
-                P.PillButton {
-                    required property var modelData
-                    objectName: "pluginTab_" + modelData.id
-                    text: modelData.title
-                    kind: details.tab === modelData.id ? "primary" : "secondary"
-                    onClicked: details.tab = modelData.id
+            Flow {
+                objectName: "pluginTabs"
+                width: parent.width
+                spacing: Metrics.gap8
+                visible: details.mode === "settings"
+                Repeater {
+                    model: [{id: "about", title: I18n.tr("About", I18n.rev)}, {id: "settings", title: details.plugin.downloads === true ? I18n.tr("Account", I18n.rev) : I18n.tr("Plugin Settings", I18n.rev)}]
+                        .concat(details.plugin.integration_available === false ? [] : [{id: "integration", title: I18n.tr("Plugin integration", I18n.rev)}])
+                    P.PillButton {
+                        required property var modelData
+                        objectName: "pluginTab_" + modelData.id
+                        text: modelData.title
+                        kind: details.tab === modelData.id ? "primary" : "secondary"
+                        onClicked: details.tab = modelData.id
+                    }
                 }
             }
+            Text { width: parent.width; text: details.plugin.name || ""; textFormat: Text.PlainText; wrapMode: Text.WrapAtWordBoundaryOrAnywhere; font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
+            PluginValidation {
+                objectName: "validationStatus"
+                width: parent.width
+                visible: details.mode === "inspection"
+                phase: details.manager.view.busy && details.manager.view.operation === "prepare" ? "running"
+                    : details.matching ? details.validation.state : "pending"
+                problem: details.matching ? details.validation.problem || "" : ""
+            }
+            Text {
+                objectName: "pluginStatus"
+                width: parent.width
+                text: details.manager.view.busy || details.settingsLoading
+                    ? (details.manager.view.operation === "install" ? I18n.tr("Installing plugin…", I18n.rev) : I18n.tr("Loading…", I18n.rev))
+                    : details.manager.view.error || ""
+                visible: text !== "" && (details.mode === "settings" || details.manager.view.operation !== "prepare")
+                wrapMode: Text.WordWrap
+                color: Theme.color.statusWarning
+                font.pointSize: Type.body
+            }
         }
-        Text { text: details.plugin.name || ""; textFormat: Text.PlainText; font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
-        PluginValidation {
-            objectName: "validationStatus"
-            width: parent.width
-            visible: details.mode === "inspection"
-            phase: details.manager.view.busy && details.manager.view.operation === "prepare" ? "running"
-                : details.matching ? details.validation.state : "pending"
-            problem: details.matching ? details.validation.problem || "" : ""
-        }
-        Text {
-            objectName: "pluginStatus"
-            width: parent.width
-            text: details.manager.view.busy || details.settingsLoading
-                ? (details.manager.view.operation === "install" ? I18n.tr("Installing plugin…", I18n.rev) : I18n.tr("Loading…", I18n.rev))
-                : details.manager.view.error || ""
-            visible: text !== "" && (details.mode === "settings" || details.manager.view.operation !== "prepare")
-            wrapMode: Text.WordWrap
-            color: Theme.color.statusWarning
-            font.pointSize: Type.body
-        }
-    }
-    Flickable {
-        anchors.top: heading.bottom
-        anchors.topMargin: Metrics.gap12
-        anchors.bottom: footer.top
-        anchors.bottomMargin: Metrics.gap12
-        width: parent.width
-        contentHeight: body.height
-        clip: true
-        ScrollBar.vertical: P.ViewportScrollBar { gutter: -Metrics.gap8;}
         Column {
             id: body
-            width: parent.width - Metrics.gap12
+            width: parent.width
             spacing: Metrics.gap12
             Text {
                 objectName: "pluginAbout"
@@ -156,12 +149,14 @@ P.Modal {
                     onClicked: details.manager.command("choose_export_folder", {id: details.plugin.id})
                 }
                 PluginSettingsForm {
+                    pluginName: details.plugin.name || details.plugin.id || ""
+                    pluginId: details.plugin.id || ""
                     objectName: "pluginSettingsForm"
                     width: parent.width
                     visible: !!details.manager.view.form && details.manager.view.settings_id === details.plugin.id
                     document: details.manager.settingsDocument
                     enabled: !details.manager.view.busy && !details.settingsLoading
-                    onSubmitted: (action, values) => details.manager.command("submit", {id: details.plugin.id, submission: {revision: details.manager.view.form.revision, action: action, values: values}})
+                    onSubmitted: (action, values, scope) => details.manager.command("submit", {id: scope.plugin, submission: {revision: scope.revision, action: action, values: values}})
                     captures: details.manager.view.web_sign_in === true
                     onLinked: (url) => /^https?:\/\//i.test(url) ? Qt.openUrlExternally(url) : details.manager.command("settings", {id: details.plugin.id, page: url.replace(/^\//, "")})
                     onCaptured: (link) => details.manager.command("web_sign_in", {id: details.plugin.id, url: link.url, capture: link.capture,
@@ -201,43 +196,19 @@ P.Modal {
                 }
             }
         }
-    }
-    Item {
-        id: footer
-        width: parent.width
-        anchors.bottom: parent.bottom
-        height: Math.max(actions.implicitHeight, close.implicitHeight)
-        Flow {
-            id: actions
-            width: parent.width - close.width - Metrics.gap12
-            spacing: Metrics.gap8
-            P.PillButton {
-                objectName: "uninstallPlugin"
-                visible: details.mode === "settings"
-                enabled: !details.manager.view.busy
-                text: I18n.tr("Uninstall plugin and remove account data", I18n.rev)
-                onClicked: removal.open()
-            }
-            P.PillButton {
-                objectName: "refreshPluginSettings"
-                visible: details.mode === "settings"
-                text: I18n.tr("Refresh settings", I18n.rev)
-                glyph: Lucide.refreshCcwDot
-                iconFamily: Lucide.font
-                enabled: !details.manager.view.busy
-                onClicked: details.manager.command("settings", {id: details.plugin.id})
-            }
-            P.PillButton {
-                objectName: "acceptPluginPermissions"
-                visible: details.mode === "permissions"
-                text: I18n.tr("Accept permissions and enable", I18n.rev)
-                enabled: !details.manager.view.busy && !!details.plugin.revision
-                onClicked: details.manager.command(details.plugin.local_update ? "install_local" : details.plugin.update ? "install_native" : "enable", details.plugin.update
-                    ? {id: details.plugin.id, repository: details.plugin.repository, path: details.plugin.path, permission_revision: details.plugin.revision}
-                    : {id: details.plugin.id, permission_revision: details.plugin.revision})
-            }
+        PluginDialogActions {
+            id: footer
+            width: parent.width
+            plugin: details.plugin
+            view: details.manager.view
+            mode: details.mode
+            onUninstallRequested: removal.open()
+            onRefreshRequested: details.manager.command("settings", {id: details.plugin.id})
+            onCloseRequested: details.close()
+            onPermissionAccepted: details.manager.command(details.plugin.local_update ? "install_local" : details.plugin.update ? "install_native" : "enable", details.plugin.update
+                ? {id: details.plugin.id, repository: details.plugin.repository, path: details.plugin.path, permission_revision: details.plugin.revision}
+                : {id: details.plugin.id, permission_revision: details.plugin.revision})
         }
-        P.PillButton { id: close; anchors.right: parent.right; text: I18n.tr("Close", I18n.rev); onClicked: details.close() }
     }
     ConfirmDialog {
         id: removal; objectName: "confirmPluginRemoval"

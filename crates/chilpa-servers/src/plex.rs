@@ -35,6 +35,7 @@ use crate::net::{Net, Reply, Request};
 use crate::text::{encode, id, number, string};
 
 pub mod playlists;
+pub(crate) mod media;
 
 /// Where the user confirms the PIN.
 pub const LINK: &str = "https://plex.tv/link";

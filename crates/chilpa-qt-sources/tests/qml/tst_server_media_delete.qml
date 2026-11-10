@@ -11,7 +11,7 @@ TestCase {
     ServerMediaDeletion { id: host }
     ServerMediaDeleteDialog { id: dialog; kind: "track"; localId: 7 }
     function init() {
-        Sources.mediaInfo = {title:"A <b>track</b>",server:"Music server",address:"http://fixture.invalid",source:2,ref:"item-id"}
+        Sources.mediaInfo = {title:"A <b>track</b>",server:"Music server",address:"http://fixture.invalid",source:2,ref:"item-id",confirmation:"item-id:instance:0"}
         Sources.mediaCalls = []
         Sources.mediaReceipt = {request_id:"media-test",pending:true}
     }
@@ -31,8 +31,17 @@ TestCase {
         dialog.open()
         tryCompare(dialog,"opened",true)
         mouseClick(findChild(dialog.contentItem,"serverDeleteConfirm"))
+        compare(Sources.mediaCalls.length,0)
+        const confirm = findChild(dialog.contentItem,"serverDeleteConfirm")
+        tryCompare(confirm,"enabled",false)
+        const acknowledgement = findChild(dialog.contentItem,"destructiveAcknowledgement")
+        waitForRendering(dialog.contentItem)
+        acknowledgement.toggle()
+        tryCompare(confirm,"enabled",true)
+        waitForRendering(dialog.contentItem)
+        mouseClick(confirm)
         compare(Sources.mediaCalls.length,1)
-        compare(JSON.stringify(Sources.mediaCalls[0]),JSON.stringify(["track",7,"item-id",2]))
+        compare(JSON.stringify(Sources.mediaCalls[0]),JSON.stringify(["track",7,"item-id:instance:0",2]))
         compare(dialog.busy,true)
         keyClick(Qt.Key_Escape)
         verify(dialog.visible,"the confirmed operation keeps its progress visible")

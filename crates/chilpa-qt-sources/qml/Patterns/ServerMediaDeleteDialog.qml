@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // Mounted on demand by a music menu. Only confirmation starts network work.
 Modal {
@@ -15,9 +16,9 @@ Modal {
     property var info: ({})
     property var receipt: ({})
     readonly property bool busy: receipt.pending === true
-    width: Metrics.confirmWidth
+    preferredWidth: Metrics.confirmWidth
     closePolicy: busy ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
-    onOpened: { info = JSON.parse(Sources.serverMediaInfo(kind, localId)); receipt = ({}) }
+    onOpened: { info = JSON.parse(Sources.serverMediaInfo(kind, localId)); receipt = ({}); confirmation.reset() }
 
     Column {
         width: parent.width
@@ -71,21 +72,34 @@ Modal {
             font.pointSize: Type.body
             color: dialog.receipt.error ? Theme.color.statusNegative : Theme.color.textSecondary
         }
-        Row {
-            anchors.right: parent.right
+        DestructiveSteps {
+            id: confirmation
+            visible: !dialog.receipt.request_id
+            width: parent.width
+        }
+        Flow {
+            id: actions
+            width: parent.width
             spacing: Metrics.gap8
             PillButton {
                 objectName: "serverDeleteCancel"
+                maximumWidth: actions.width
+                wrapText: true
                 text: dialog.receipt.request_id ? I18n.tr("Close", I18n.rev) : I18n.tr("Cancel", I18n.rev)
                 enabled: !dialog.busy
                 onClicked: dialog.close()
             }
             PillButton {
                 objectName: "serverDeleteConfirm"
-                text: I18n.tr("Delete from server", I18n.rev)
+                maximumWidth: actions.width
+                wrapText: true
+                text: confirmation.step === 1 ? I18n.tr("Continue", I18n.rev) : I18n.tr("Delete from server", I18n.rev)
                 visible: !dialog.receipt.request_id
-                enabled: !!dialog.info.ref && !dialog.busy
-                onClicked: dialog.receipt = JSON.parse(Sources.serverMediaDelete(dialog.kind, dialog.localId, dialog.info.ref, dialog.info.source))
+                enabled: !!dialog.info.ref && !dialog.busy && confirmation.ready
+                onClicked: {
+                    if (confirmation.advance())
+                        dialog.receipt = JSON.parse(Sources.serverMediaDelete(dialog.kind, dialog.localId, dialog.info.confirmation, dialog.info.source))
+                }
             }
         }
     }

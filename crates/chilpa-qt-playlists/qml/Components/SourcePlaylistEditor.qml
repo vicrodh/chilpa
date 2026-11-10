@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 Modal {
     id: editor
@@ -12,12 +13,11 @@ Modal {
     property string mode: "update"
     property string request: ""
     property string operation: ""
-    property bool confirming: false
     property var results: []
     readonly property var state: (JSON.parse(Sources.snapshot || "{}").native_actions || {})[info.plugin] || ({})
     readonly property bool pending: state.pending === true
     readonly property string error: state.request_id === request ? state.error || "" : ""
-    width: Math.min(Metrics.confirmWidth + Metrics.confirmWidth, parent ? parent.width - Metrics.modalInsets : Metrics.confirmWidth)
+    preferredWidth: Math.min(Metrics.confirmWidth + Metrics.confirmWidth, parent ? parent.width - Metrics.modalInsets : Metrics.confirmWidth)
     closePolicy: pending ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
 
     function begin(value, action) {
@@ -26,7 +26,6 @@ Modal {
         titleField.text = action === "create" ? "" : value.title || ""
         descriptionField.text = value.description || ""
         publicField.checked = action === "copy" ? false : value.public === true
-        confirming = false
         results = []
         find.text = ""
         request = ""
@@ -54,14 +53,8 @@ Modal {
         Flow {
             width: parent.width; spacing: Metrics.gap8
             PillButton { text: editor.pending ? I18n.tr("Loading…", I18n.rev) : I18n.tr("Save", I18n.rev); enabled: !editor.pending && titleField.text.trim().length > 0; onClicked: editor.submit(editor.mode, {title:titleField.text, description:descriptionField.text, public:publicField.checked}) }
-            PillButton { visible: editor.mode === "update"; text: I18n.tr("Delete…", I18n.rev); enabled: !editor.pending; onClicked: editor.confirming = true }
+            PillButton { visible: editor.mode === "update"; text: I18n.tr("Delete…", I18n.rev); enabled: !editor.pending; onClicked: deletion.open() }
             PillButton { text: I18n.tr("Close", I18n.rev); enabled: !editor.pending; onClicked: editor.close() }
-        }
-        Row {
-            visible: editor.confirming; spacing: Metrics.gap8
-            Text { text: I18n.trArgs("Delete “{}”?", [titleField.text], I18n.rev); color: Theme.color.textPrimary }
-            PillButton { text: I18n.tr("Delete", I18n.rev); enabled: !editor.pending; onClicked: editor.submit("delete") }
-            PillButton { text: I18n.tr("Cancel", I18n.rev); onClicked: editor.confirming = false }
         }
         Text { width: parent.width; visible: !!editor.error; text: editor.error; wrapMode: Text.WordWrap; color: Theme.color.textSecondary; textFormat: Text.PlainText }
         Row {
@@ -76,8 +69,34 @@ Modal {
             adding: !!find.text
             busy: editor.pending
             onAdd: reference => editor.submit("add", {tracks:[reference]})
-            onRemove: member => editor.submit("remove", {members:[member]})
+            onRemove: member => { memberRemoval.member = member; memberRemoval.reference = editor.info.ref; memberRemoval.plugin = editor.info.plugin; memberRemoval.open() }
             onMove: (member, before) => editor.submit("move", {members:[member],before:before})
         }
     }
+    ConfirmationDialog {
+        id: deletion
+        property string reference: ""
+        property string plugin: ""
+        onAboutToShow: { reference = editor.info.ref; plugin = editor.info.plugin }
+        title: I18n.trArgs("Delete “{}”?", [editor.info.title || ""], I18n.rev)
+        message: I18n.tr("This permanently deletes the playlist at the source.", I18n.rev)
+        confirmText: I18n.tr("Delete", I18n.rev)
+        destructive: true
+        targetValid: reference === editor.info.ref && plugin === editor.info.plugin && !editor.pending
+        onConfirmed: editor.submit("delete")
+    }
+    ConfirmationDialog {
+        id: memberRemoval
+        property string member: ""
+        property string reference: ""
+        property string plugin: ""
+        title: I18n.tr("Remove from playlist", I18n.rev)
+        message: I18n.tr("The selected tracks will be removed from this playlist and its saved order.", I18n.rev)
+        confirmText: I18n.tr("Remove", I18n.rev)
+        destructive: true
+        targetValid: reference === editor.info.ref && plugin === editor.info.plugin && !editor.pending
+            && (editor.info.entries || []).some(entry => entry.member === member)
+        onConfirmed: editor.submit("remove", {members:[member]})
+    }
+
 }

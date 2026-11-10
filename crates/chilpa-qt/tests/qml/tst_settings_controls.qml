@@ -67,8 +67,11 @@ TestCase {
         compare(writes[0], ["navigation.trackComposers", "true"])
         compare(toggle.checked, true)
     }
-    function test_lyrics_cleanup_dispatches_only_after_confirmation() {
-        compare(storage.press("storage.clear.lyrics"), true)
+    function test_lyrics_cleanup_dispatches_only_after_confirmation_data() {
+        return [{tag:"storage",key:"storage.clear.lyrics"},{tag:"library",key:"library.lyricsCache"}]
+    }
+    function test_lyrics_cleanup_dispatches_only_after_confirmation(data) {
+        compare(storage.press(data.key), true)
         const dialog = findChild(storage, "storageClearConfirmation")
         tryCompare(dialog, "opened", true)
         compare(dialog.title, "Clear lyrics cache?")
@@ -77,9 +80,13 @@ TestCase {
         tryCompare(dialog, "visible", false)
         compare(backgroundClicks, 0)
         compare(presses.length, 0)
-        storage.press("storage.clear.lyrics")
+        storage.press(data.key)
         tryCompare(dialog, "opened", true)
-        dialog.confirmed()
+        const accept = findChild(dialog.contentItem,"confirmationAccept")
+        accept.clicked()
+        compare(presses.length,0)
+        findChild(dialog.contentItem,"destructiveAcknowledgement").checked = true
+        accept.clicked()
         compare(presses, ["storage.clear.lyrics"])
         compare(storage.press("library.rescan"), false)
     }

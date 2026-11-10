@@ -438,6 +438,9 @@ msgstr "Todos los artistas"
 msgid "All categories"
 msgstr "Todas las categorías"
 
+msgid "All custom key bindings will be replaced with the defaults for the current keymap."
+msgstr "Todos los atajos personalizados se reemplazarán por los predeterminados del mapa de teclas actual."
+
 msgid "All discs"
 msgstr "Todos los discos"
 
@@ -482,6 +485,12 @@ msgstr "Todos los temas"
 
 msgid "All time"
 msgstr "Todo"
+
+msgid "All tracks after this occurrence will be removed from the queue."
+msgstr "Se quitarán de la cola todas las pistas posteriores a esta aparición."
+
+msgid "All tracks will be removed from this queue. Playback from this queue will stop."
+msgstr "Se quitarán todas las pistas de esta cola y se detendrá su reproducción."
 
 msgid "Allow Chilpa on Discogs, then paste the code below."
 msgstr "Autoriza a Chilpa en Discogs y pega el código aquí abajo."
@@ -1235,6 +1244,9 @@ msgstr "Chilpa pone el aparato a la frecuencia de cada pista. Con el modo exclus
 msgid "Chilpa will make smaller covers and backgrounds again when needed."
 msgstr "Chilpa volverá a crear las portadas pequeñas y los fondos cuando los necesite."
 
+msgid "Chilpa will stop checking this repository for plugins and updates.\n{}"
+msgstr "Chilpa dejará de consultar este repositorio para buscar plugins y actualizaciones.\n{}"
+
 msgid "Chilpa {} is available"
 msgstr "Chilpa {} está disponible"
 
@@ -1400,6 +1412,9 @@ msgstr "Borrar imágenes generadas"
 msgid "Clear generated images?"
 msgstr "¿Borrar las imágenes generadas?"
 
+msgid "Clear logs?"
+msgstr "¿Borrar los registros?"
+
 msgid "Clear loop"
 msgstr "Quitar bucle"
 
@@ -1423,6 +1438,9 @@ msgstr "Quita el filtro"
 
 msgid "Clear the selection"
 msgstr "Quitar la selección"
+
+msgid "Clear “{}”?"
+msgstr "¿Vaciar «{}»?"
 
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr "Listo: se olvidaron {} letras. Se vuelven a buscar al reproducir."
@@ -1454,6 +1472,9 @@ msgstr "Cerrar pestaña"
 msgid "Close media"
 msgstr "Cerrar medios"
 
+msgid "Close queue"
+msgstr "Cerrar cola"
+
 msgid "Close search"
 msgstr "Cerrar búsqueda"
 
@@ -1465,6 +1486,9 @@ msgstr "Falta cerrar las comillas."
 
 msgid "Close to tray"
 msgstr "Cerrar a la bandeja"
+
+msgid "Close “{}”?"
+msgstr "¿Cerrar «{}»?"
 
 msgid "Closing stops a scan. Saved progress can be continued here after reopening."
 msgstr "Cerrar la app detiene el escaneo. Puedes continuar el progreso guardado aquí al volver a abrirla."
@@ -1498,6 +1522,9 @@ msgstr "Columnas"
 
 msgid "Combine"
 msgstr "Combinar"
+
+msgid "Combine and remove originals"
+msgstr "Combinar y quitar las originales"
 
 msgid "Combine queues"
 msgstr "Combinar colas"
@@ -1579,6 +1606,12 @@ msgstr "Confirmar"
 
 msgid "Confirm this preview and its removals before syncing."
 msgstr "Confirma esta vista previa y sus eliminaciones antes de sincronizar."
+
+msgid "Confirm “{}” for {}?"
+msgstr "¿Confirmar «{}» para {}?"
+
+msgid "Confirmation {} of {}"
+msgstr "Confirmación {} de {}"
 
 msgid "Connect"
 msgstr "Conectar"
@@ -1937,9 +1970,6 @@ msgstr "Borrar"
 msgid "Delete album from server?"
 msgstr "¿Borrar el álbum del servidor?"
 
-msgid "Delete folder"
-msgstr "Eliminar carpeta"
-
 msgid "Delete folder…"
 msgstr "Eliminar carpeta…"
 
@@ -1952,8 +1982,14 @@ msgstr "Borrar del servidor…"
 msgid "Delete playlist"
 msgstr "Eliminar playlist"
 
+msgid "Delete playlist?"
+msgstr "¿Eliminar la playlist?"
+
 msgid "Delete preset"
 msgstr "Eliminar preset"
+
+msgid "Delete preset?"
+msgstr "¿Eliminar el preset?"
 
 msgid "Delete saved query"
 msgstr "Eliminar consulta guardada"
@@ -2988,6 +3024,9 @@ msgstr "Ya reinicié los servicios de audio"
 
 msgid "I understand and accept these terms"
 msgstr "Entiendo y acepto estos términos"
+
+msgid "I understand the consequences and want to proceed."
+msgstr "Entiendo las consecuencias y quiero continuar."
 
 msgid "INFLUENCES"
 msgstr "INFLUENCIAS"
@@ -4835,8 +4874,8 @@ msgstr "Vista previa de la playlist"
 msgid "Playlists"
 msgstr "Playlists"
 
-msgid "Playlists will be kept at the root."
-msgstr "Las playlists se conservarán en la raíz."
+msgid "Playlists in this folder move to the root."
+msgstr "Las playlists de esta carpeta se trasladan a la raíz."
 
 msgid "Plays"
 msgstr "Reproducciones"
@@ -4849,6 +4888,9 @@ msgstr "Reproduce cuatro pistas con distintas profundidades de bits y frecuencia
 
 msgid "Plex did not accept the session; sign in again"
 msgstr "Plex no aceptó la sesión; vuelve a iniciar sesión"
+
+msgid "Plugin"
+msgstr "Plugin"
 
 msgid "Plugin Settings"
 msgstr "Ajustes del plugin"
@@ -5348,11 +5390,20 @@ msgstr "Quita una condición para obtener resultados:"
 msgid "Remove original queues"
 msgstr "Eliminar las colas originales"
 
+msgid "Remove original queues?"
+msgstr "¿Quitar las colas originales?"
+
+msgid "Remove plugin repository?"
+msgstr "¿Quitar el repositorio de plugins?"
+
 msgid "Remove saved profile"
 msgstr "Eliminar perfil guardado"
 
 msgid "Remove smaller covers and backgrounds. Chilpa makes them again as needed."
 msgstr "Borrar portadas pequeñas y fondos. Chilpa volverá a crearlos cuando hagan falta."
+
+msgid "Remove this playlist from your library?"
+msgstr "¿Quitar esta playlist de tu biblioteca?"
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "¿Eliminar este plugin, su cuenta, ajustes y biblioteca en caché de Chilpa? Esto no elimina tu cuenta ni tus playlists en el servicio."
@@ -5405,11 +5456,17 @@ msgstr "Reparada. No se perdió nada."
 msgid "Repeat"
 msgstr "Repetir"
 
+msgid "Replace"
+msgstr "Reemplazar"
+
 msgid "Replace current queue"
 msgstr "Reemplazar la cola actual"
 
 msgid "Replace queue {}"
 msgstr "Reemplazar queue {}"
+
+msgid "Replace queue?"
+msgstr "¿Reemplazar la cola?"
 
 msgid "Report an issue"
 msgstr "Reportar un problema"
@@ -5450,8 +5507,17 @@ msgstr "Restablecer todos"
 msgid "Reset EQ"
 msgstr "Restablecer EQ"
 
+msgid "Reset all shortcuts?"
+msgstr "¿Restablecer todos los atajos?"
+
 msgid "Reset counter"
 msgstr "Reiniciar contador"
+
+msgid "Reset equalizer?"
+msgstr "¿Restablecer el ecualizador?"
+
+msgid "Reset shortcut?"
+msgstr "¿Restablecer el atajo?"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "Resolución reducida de {} a {} bits"
@@ -5473,6 +5539,9 @@ msgstr "Restaurar predeterminado"
 
 msgid "Restore defaults"
 msgstr "Restaurar valores predeterminados"
+
+msgid "Restore page defaults?"
+msgstr "¿Restaurar los valores predeterminados de la página?"
 
 msgid "Restore previous EQ"
 msgstr "Recuperar EQ anterior"
@@ -5521,6 +5590,9 @@ msgstr "Revisa los cambios del dispositivo antes de sincronizar."
 
 msgid "Review the requested permissions before installing."
 msgstr "Revisa los permisos solicitados antes de instalar."
+
+msgid "Review the target and the effects described above. The next confirmation applies this destructive action."
+msgstr "Revisa el destino y los efectos descritos arriba. La siguiente confirmación ejecuta esta acción destructiva."
 
 msgid "Reviewing changes…"
 msgstr "Revisando cambios…"
@@ -6422,8 +6494,23 @@ msgstr "La comprobación terminó, pero no se pudo restaurar la tasa de muestreo
 msgid "The connection is not encrypted."
 msgstr "La conexión no está cifrada."
 
+msgid "The current equalizer changes will be replaced with the previous preset."
+msgstr "Los cambios actuales del ecualizador se reemplazarán por el preset anterior."
+
+msgid "The current filter gains will be reset to zero."
+msgstr "Las ganancias actuales de los filtros se restablecerán a cero."
+
 msgid "The current track has no such destination."
 msgstr "No hay una pista actual con ese destino."
+
+msgid "The custom key binding for this action will be replaced with its default."
+msgstr "El atajo personalizado de esta acción se reemplazará por el predeterminado."
+
+msgid "The custom sections, visibility and order for this page will be replaced with their defaults."
+msgstr "Las secciones, su visibilidad y su orden personalizados de esta página se reemplazarán por los predeterminados."
+
+msgid "The destination queue and its saved order will be replaced with the selected tracks."
+msgstr "La cola de destino y su orden guardado se reemplazarán por las pistas seleccionadas."
 
 msgid "The device playlist picker can show at most 2,048 playlists."
 msgstr "El selector del dispositivo puede mostrar hasta 2,048 playlists."
@@ -6665,14 +6752,23 @@ msgstr "La música seleccionada cambió. Abre su menú y confirma de nuevo."
 msgid "The selected queues are empty."
 msgstr "Las colas seleccionadas están vacías."
 
+msgid "The selected queues will be removed after their tracks are copied to the combined queue. Their separate names and saved order will be lost."
+msgstr "Las colas seleccionadas se quitarán después de copiar sus pistas a la cola combinada. Se perderán sus nombres individuales y su orden guardado."
+
 msgid "The selected storage changed or disconnected."
 msgstr "La memoria seleccionada cambió o se desconectó."
 
 msgid "The selected tracks could not be read."
 msgstr "No se pudieron leer las pistas seleccionadas."
 
+msgid "The selected tracks will be removed from this playlist and its saved order."
+msgstr "Las pistas seleccionadas se quitarán de esta playlist y de su orden guardado."
+
 msgid "The server answered, and Chilpa can read its music."
 msgstr "El servidor respondió y Chilpa puede leer su música."
+
+msgid "The server connection or account changed. Review the action and try again."
+msgstr "Cambió la conexión o la cuenta del servidor. Revisa la acción y vuelve a intentarlo."
 
 msgid "The server deleted the music, but the local catalogue could not be updated. Sync the server again."
 msgstr "El servidor borró la música, pero no se pudo actualizar el catálogo local. Sincroniza el servidor de nuevo."
@@ -6702,6 +6798,9 @@ msgstr[1] "La sincronización no ha avanzado en {} minutos. «Sincronizar ahora�
 
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "El fondo de pantalla del sistema. Elige una imagen tuya en su lugar."
+
+msgid "The target changed. Cancel and review the action again."
+msgstr "Cambió el destino. Cancela y revisa la acción nuevamente."
 
 msgid "The temporary media queue cannot be combined."
 msgstr "La cola temporal de archivos abiertos no se puede combinar."
@@ -6820,6 +6919,9 @@ msgstr "Este mes vs el mes pasado"
 msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
 msgstr "Esta vista de música supera los 50,000 archivos o 16 MiB de metadatos."
 
+msgid "This occurrence will be removed from the queue."
+msgstr "Esta aparición se quitará de la cola."
+
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder comparar el archivo contra la pista de la que salió, que es la única forma de demostrar bit-perfect en vez de afirmarlo."
 
@@ -6844,11 +6946,29 @@ msgstr "Esta salida toma el DSD convertido a PCM. DoP necesita el modo exclusivo
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "Esta salida recibe el DSD convertido a PCM. Solo una tarjeta en hw lo recibe intacto; lo elegido para la tarjeta se conserva."
 
+msgid "This permanently clears cached plugin data. Content may need to be downloaded again."
+msgstr "Esto borra permanentemente los datos en caché del plugin. Puede ser necesario descargar el contenido nuevamente."
+
+msgid "This permanently clears the saved diagnostic log. Copy any entries you need first."
+msgstr "Esto borra permanentemente el registro de diagnóstico guardado. Copia antes las entradas que necesites."
+
+msgid "This permanently deletes files managed by the plugin. Review the affected files in the plugin's description."
+msgstr "Esto elimina permanentemente archivos gestionados por el plugin. Revisa los archivos afectados en su descripción."
+
 msgid "This permanently deletes the album and all its tracks from the server's filesystem. It cannot be undone from Chilpa."
 msgstr "Esto borra de forma permanente el álbum y todas sus pistas del sistema de archivos del servidor. No se puede deshacer desde Chilpa."
 
+msgid "This permanently deletes the playlist at the source."
+msgstr "Esto elimina permanentemente la playlist en el origen."
+
+msgid "This permanently deletes the selected personal audio preset and its saved settings."
+msgstr "Esto elimina permanentemente el preset de audio personal seleccionado y sus ajustes guardados."
+
 msgid "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
 msgstr "Esto borra de forma permanente la pista del sistema de archivos del servidor. No se puede deshacer desde Chilpa."
+
+msgid "This permanently removes the playlist and its saved order."
+msgstr "Esto elimina permanentemente la playlist y su orden guardado."
 
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "Esta playlist ya tiene {} de las {} pistas que estás agregando. Agrega solo las nuevas o agrégalas todas, incluidas las repetidas."
@@ -6861,6 +6981,9 @@ msgstr "Esta playlist no tiene una codificación UTF-8 válida."
 
 msgid "This playlist references music outside the recorded selection. Sync it again to refresh its contents."
 msgstr "Esta playlist incluye música fuera de la selección registrada. Vuelve a sincronizarla para actualizar su contenido."
+
+msgid "This plugin action permanently removes or replaces data. Review the action and its description before proceeding."
+msgstr "Esta acción del plugin elimina o reemplaza datos permanentemente. Revisa la acción y su descripción antes de continuar."
 
 msgid "This plugin needs the library {}, which this system does not have."
 msgstr "Este plugin necesita la biblioteca {}, que este sistema no tiene."
@@ -6886,8 +7009,17 @@ msgstr "Esta compra no está disponible para descargar."
 msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
 msgstr "Esta consulta anida grupos en tres niveles. Las filas muestran dos, así que aquí queda como texto. Se sigue aplicando."
 
+msgid "This queue and its saved order will be removed."
+msgstr "Se quitarán esta cola y su orden guardado."
+
 msgid "This record cannot be played now."
 msgstr "Este disco no se puede reproducir ahora."
+
+msgid "This removes the plugin's saved account session and account-related data from this device. You will need to sign in again."
+msgstr "Esto elimina de este dispositivo la sesión guardada del plugin y los datos relacionados con la cuenta. Deberás iniciar sesión nuevamente."
+
+msgid "This replaces the plugin's saved settings. Review the affected settings before proceeding."
+msgstr "Esto reemplaza los ajustes guardados del plugin. Revisa los ajustes afectados antes de continuar."
 
 msgid "This saved query catalog uses an unsupported version; I kept its original data."
 msgstr "El catálogo usa una versión no compatible; conservé los datos originales."
@@ -6984,6 +7116,9 @@ msgstr "Hasta"
 
 msgid "To move to"
 msgstr "Para moverse"
+
+msgid "To use a different account, add it as a separate server."
+msgstr "Para usar otra cuenta, agrégala como un servidor separado."
 
 msgid "Today"
 msgstr "Hoy"

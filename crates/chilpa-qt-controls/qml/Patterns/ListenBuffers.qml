@@ -6,6 +6,7 @@ import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
+import "../Components"
 Item {
     id: strip
     property var document: ({tabs: [], selected: ""})
@@ -46,7 +47,7 @@ Item {
                     width: implicitWidth
                     height: implicitHeight
                     onActivated: ListenList.command("select", modelData.id, "")
-                    onClosed: ListenList.command("close", modelData.id, "")
+                    onClosed: closing.show(modelData.id, false, true)
                     onRenamed: (name) => ListenList.command("rename", modelData.id, name)
                 }
             }
@@ -61,4 +62,5 @@ Item {
         tip: I18n.tr("New queue", I18n.rev)
         onClicked: ListenList.command("new", "", "")
     }
+    QueueClearDialog { id: closing }
 }

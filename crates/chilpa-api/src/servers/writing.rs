@@ -54,6 +54,7 @@ pub(crate) enum Change {
 /// One change asked of one server.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Write {
+    pub(crate) session: super::session::Scope,
     /// The server's source.
     pub(crate) source: i64,
     /// The playlist in the library; 0 for one to create.
@@ -124,9 +125,11 @@ pub(crate) fn apply(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, g
         return super::media::apply(lib, net, keys, gate, write, target, remote);
     }
     let failed = |why: String| refused(write, why);
+    let _writing = gate.lock().unwrap_or_else(|error| error.into_inner());
     let Some(stored) = lib.server(write.source).ok().flatten() else {
         return failed(chilpa_i18n::t("that server is no longer in the library"));
     };
+    if !write.session.matches(&stored) { return failed(super::session::changed()); }
     if !stored.enabled {
         return failed(chilpa_i18n::t("that server is disabled"));
     }
@@ -141,7 +144,6 @@ pub(crate) fn apply(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, g
             None => return failed(said(&chilpa_i18n::t("the playlist is no longer in the library"))),
         },
     };
-    let _writing = gate.lock().unwrap_or_else(|e| e.into_inner());
     let remote = kept.as_ref().map(|p| p.external_id.clone()).unwrap_or_default();
     let meta =
         |name: &str, writable: bool| Playlist { id: remote.clone(), name: name.to_string(), description: kept.as_ref().map(|p| p.description.clone()).unwrap_or_default(), editable: Some(writable) };

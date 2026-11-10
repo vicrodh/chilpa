@@ -221,7 +221,7 @@ Item {
         active: false
         sourceComponent: Component { Modal {
         objectName: "sceneChoice"
-        width: Math.min(Metrics.settingsMaxWidth, page.width - Metrics.modalInsets)
+        preferredWidth: Math.min(Metrics.settingsMaxWidth, page.width - Metrics.modalInsets)
         Column {
             width: parent.width; spacing: Metrics.gap16
             Text { width: parent.width; text: I18n.tr("Artists from this scene", I18n.rev); font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }

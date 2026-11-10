@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Theme"
 import "../Components"
 
@@ -22,7 +23,7 @@ Modal {
     // The room the window leaves it, once it is in one.
     readonly property real room: parent ? parent.height - Metrics.shortcutsAround : 0
 
-    width: Math.min((parent ? parent.width : 0) - Metrics.shortcutsAround, Metrics.shortcutsEditor)
+    preferredWidth: Math.min((parent ? parent.width : 0) - Metrics.shortcutsAround, Metrics.shortcutsEditor)
     // While a key is being recorded Escape is that recording's, not the
     // editor's.
     closePolicy: recording ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
@@ -103,7 +104,16 @@ Modal {
             opacity: enabled ? 1 : Sizes.idle
             glyph: Icons.refresh
             text: I18n.tr("Reset All to Defaults", I18n.rev)
-            onClicked: Hotkeys.command("reset-all", "")
+            onClicked: resetting.open()
         }
+    }
+    ConfirmationDialog {
+        id: resetting
+        objectName: "shortcutResetAllConfirmation"
+        title: I18n.tr("Reset all shortcuts?", I18n.rev)
+        message: I18n.tr("All custom key bindings will be replaced with the defaults for the current keymap.", I18n.rev)
+        confirmText: I18n.tr("Reset All to Defaults", I18n.rev)
+        destructive: true
+        onConfirmed: Hotkeys.command("reset-all", "")
     }
 }

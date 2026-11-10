@@ -9,9 +9,9 @@
 use super::keys::Keys;
 use super::net::{self, Network};
 use chilpa_servers::{Failure, Kind};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 /// How often it looks without being asked.
@@ -29,10 +29,11 @@ pub(crate) struct Look {
     /// The servers that refused their credential, or whose credential could
     /// not be opened: they cannot play, and the row says why.
     pub(crate) refused: HashSet<i64>,
+    pub(crate) sessions: HashMap<i64, super::session::Scope>,
 }
 
 impl Watcher {
-    pub(crate) fn start(keys: Arc<Keys>) -> Self {
+    pub(crate) fn start(keys: Arc<Keys>, gate: Arc<Mutex<()>>) -> Self {
         let (asks, inbox) = channel::<()>();
         let (outbox, looked) = channel::<Look>();
         let _ = std::thread::Builder::new().name("chilpa-reach".into()).spawn(move || {
@@ -48,7 +49,7 @@ impl Watcher {
                 // I keep this worker's connection instead of repeating library maintenance.
                 if library.is_none() { library = chilpa_core::open_library().ok(); }
                 if let Some(lib) = &library {
-                    let _ = outbox.send(look(lib, &Network, &keys));
+                    let _ = outbox.send(look(lib, &Network, &keys, &gate));
                 }
                 wait = EVERY;
             }
@@ -64,7 +65,7 @@ impl Watcher {
     /// What the looks since the last time this was asked found: whether
     /// anything changed, and the latest set of refusals.
     pub(crate) fn looked(&self) -> Option<Look> {
-        self.looked.try_iter().reduce(|a, b| Look { changed: a.changed || b.changed, refused: b.refused })
+        self.looked.try_iter().reduce(|a, b| Look { changed: a.changed || b.changed, refused: b.refused, sessions:b.sessions })
     }
 }
 
@@ -74,11 +75,15 @@ impl Watcher {
 /// that refuses it, or whose credential cannot be opened here, stays listed
 /// and dimmed like one that does not answer (ADR-017 §2): its tracks would
 /// fail at the first request.
-pub(crate) fn look(lib: &chilpa_library::Library, net: &dyn chilpa_servers::Net, keys: &Keys) -> Look {
+pub(crate) fn look(lib: &chilpa_library::Library, net: &dyn chilpa_servers::Net, keys: &Keys, gate: &Mutex<()>) -> Look {
     let mut changed = lib.refresh_roots().unwrap_or(false);
     let mut refused = HashSet::new();
+    let mut sessions = HashMap::new();
     for stored in lib.servers().unwrap_or_default() {
+        let _watching = gate.lock().unwrap_or_else(|error| error.into_inner());
+        let Some(stored) = lib.server(stored.source_id).ok().flatten() else { continue };
         if !stored.enabled { continue; }
+        sessions.insert(stored.source_id,super::session::Scope::of(&stored));
         let (Some(mut server), Some(key)) = (net::server(&stored), net::key(keys, &stored)) else {
             refused.insert(stored.source_id);
             changed |= lib.set_source_reachable(stored.source_id, false).unwrap_or(false);
@@ -106,7 +111,7 @@ pub(crate) fn look(lib: &chilpa_library::Library, net: &dyn chilpa_servers::Net,
         }
         changed |= lib.set_source_reachable(stored.source_id, answers).unwrap_or(false);
     }
-    Look { changed, refused }
+    Look { changed, refused, sessions }
 }
 
 #[cfg(test)]
@@ -121,22 +126,22 @@ mod tests {
         let writer = Library::open(&database).unwrap();
         let watcher = Library::open_existing(&database).unwrap();
         let keys = Keys::derived(directory.path().join("keys"));
-        assert!(!look(&watcher, &Network, &keys).changed);
+        assert!(!look(&watcher, &Network, &keys, &Mutex::new(())).changed);
 
         let source = writer.source_id("local", "default").unwrap();
         let folder = directory.path().join("music");
         let root = writer.root_id(source, &folder).unwrap();
-        assert!(look(&watcher, &Network, &keys).changed);
+        assert!(look(&watcher, &Network, &keys, &Mutex::new(())).changed);
         assert!(!watcher.roots().unwrap()[0].reachable);
-        assert!(!look(&watcher, &Network, &keys).changed);
+        assert!(!look(&watcher, &Network, &keys, &Mutex::new(())).changed);
 
         std::fs::create_dir(&folder).unwrap();
-        assert!(look(&watcher, &Network, &keys).changed);
+        assert!(look(&watcher, &Network, &keys, &Mutex::new(())).changed);
         assert!(watcher.roots().unwrap()[0].reachable);
-        assert!(!look(&watcher, &Network, &keys).changed);
+        assert!(!look(&watcher, &Network, &keys, &Mutex::new(())).changed);
 
         writer.forget_root(root).unwrap();
-        assert!(!look(&watcher, &Network, &keys).changed);
+        assert!(!look(&watcher, &Network, &keys, &Mutex::new(())).changed);
         assert!(watcher.roots().unwrap().is_empty());
     }
 }

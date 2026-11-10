@@ -1,4 +1,5 @@
 import QtQuick
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as Confirmations
 import app.chilpa
 import app.chilpa.devices
 import app.chilpa.sources
@@ -36,6 +37,10 @@ CascadingMenu {
 
     onActionChosen: (entry) => {
         const act = entry.act
+        if (["dequeue","remove","listen:remove","listen:after"].includes(act) || act.startsWith("buffer:replace:")) {
+            removal.show(model,row,act,false,"")
+            return
+        }
         if (act.startsWith("buffer:") || act.startsWith("listen:")) {
             model.listAction(act.startsWith("listen:") ? act.slice("listen:".length) : act, row, -1)
             ListenList.refresh()
@@ -54,18 +59,15 @@ CascadingMenu {
         } else if (act === "sync") {
             DeviceSync.useTracks(model.chosenTrackIdsJson(row))
             Navigation.go("deviceSync", 0)
-        } else if (act === "dequeue")
-            Player.removeQueued(row)
-        else if (act === "server_delete") {
+        } else if (act === "server_delete") {
             const ids = JSON.parse(model.chosenTrackIdsJson(row))
             if (ids.length === 1) Sources.serverMediaRequested("track", ids[0])
-        } else if (act === "remove")
-            model.removeChosen(row)
-        else if (act === "up" || act === "down")
+        } else if (act === "up" || act === "down")
             model.moveInPlaylist(row, act === "up" ? -1 : 1)
         else
             model.go(row, act)
     }
 
     PlaylistPicker { id: picker; parent: menu.parent }
+    Confirmations.ModelActionConfirmation { id: removal }
 }

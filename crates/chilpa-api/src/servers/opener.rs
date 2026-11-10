@@ -33,6 +33,7 @@ impl Opener {
 
 impl RemoteOpener for Opener {
     fn locate(&self, entry: &RemoteEntry) -> Result<Located, String> {
+        let _session = self.keys.session();
         let written = entry.to_entry();
         let found = self.with_library(|lib| {
             let source = lib.find_source(&entry.source.provider, &entry.source.instance).ok()??;

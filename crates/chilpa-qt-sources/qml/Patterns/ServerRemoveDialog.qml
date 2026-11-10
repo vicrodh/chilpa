@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/wizard/qml/Components"
 
 // Removing a server, built as the app's other confirmations are
@@ -29,17 +30,18 @@ Modal {
     readonly property string phase: removal.state === "failed" ? "failed" : sent || removal.state === "removing" ? "removing" : "confirm"
     readonly property string name: facts.name || removal.name || ""
 
-    width: Metrics.confirmWidth
+    preferredWidth: Metrics.confirmWidth
     closePolicy: phase === "removing" ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
 
-    onAboutToShow: sent = false
+    onAboutToShow: { sent = false; confirmation.reset() }
     onClosed: if (!preview) Servers.cancel()
     // Closed after the change is taken in: closing says so to the facade,
     // which changes the state being read.
     onRemovalChanged: if (sent && removal.state === "done") Qt.callLater(close)
-    onPhaseChanged: if (phase === "failed") sent = false
+    onPhaseChanged: if (phase === "failed") { sent = false; confirmation.reset() }
 
     function remove() {
+        if (!confirmation.advance()) return
         sent = true
         if (preview) return
         Servers.remove(serverId)
@@ -179,19 +181,31 @@ Modal {
             }
         }
 
-        Row {
+        DestructiveSteps {
+            id: confirmation
+            width: parent.width
             visible: dialog.phase !== "removing"
-            anchors.right: parent.right
+        }
+        Flow {
+            id: actions
+            visible: dialog.phase !== "removing"
+            width: parent.width
             spacing: Metrics.gap8
             PillButton {
                 objectName: "serverRemoveCancel"
+                maximumWidth: actions.width
+                wrapText: true
                 text: dialog.phase === "failed" ? I18n.tr("Close", I18n.rev) : I18n.tr("Cancel", I18n.rev)
                 onClicked: dialog.close()
             }
             PillButton {
                 objectName: "serverRemoveConfirm"
+                maximumWidth: actions.width
+                wrapText: true
                 kind: "secondary"
-                text: dialog.phase === "failed" ? I18n.tr("Try again", I18n.rev) : I18n.tr("Remove", I18n.rev)
+                enabled: confirmation.ready
+                text: confirmation.step === 1 ? I18n.tr("Continue", I18n.rev)
+                    : dialog.phase === "failed" ? I18n.tr("Try again", I18n.rev) : I18n.tr("Remove", I18n.rev)
                 onClicked: dialog.remove()
             }
         }

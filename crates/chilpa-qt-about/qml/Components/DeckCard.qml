@@ -18,6 +18,7 @@ Rectangle {
     signal actionChosen(string action)
 
     readonly property bool ink: !!card.model && card.model.ink === true
+    implicitHeight: copy.implicitHeight + OnboardingFrame.cardInset * 2 // derived: content inset above and below
 
     radius: Metrics.radiusControl
     color: Theme.color.surfaceRaised
@@ -47,6 +48,7 @@ Rectangle {
     }
 
     Column {
+        id: copy
         anchors.left: parent.left
         anchors.leftMargin: card.ink ? Math.round(card.width * OnboardingFrame.inkFrom) : OnboardingFrame.cardInset
         anchors.right: card.ink ? parent.right : parent.horizontalCenter
@@ -94,8 +96,9 @@ Rectangle {
             objectName: "cardAction"
             visible: !!card.model && (card.model.action || "") !== ""
             kind: "primary"
-            height: OnboardingFrame.cardButton
             text: card.model ? card.model.actionLabel || "" : ""
+            maximumWidth: copy.width
+            wrapText: true
             onClicked: card.actionChosen(card.model.action)
         }
     }

@@ -39,6 +39,7 @@ QtObject {
     readonly property int gap20: 20
     readonly property int modalInset: 20
     readonly property int modalInsets: 40
+    readonly property real modalMaxHeightRatio: 0.8
     readonly property int gap22: 22
     readonly property int gap24: 24
 

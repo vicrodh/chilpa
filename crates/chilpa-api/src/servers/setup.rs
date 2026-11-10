@@ -315,7 +315,7 @@ impl Setup {
                     account: s.account,
                     identity: s.identity,
                     product: s.product,
-                    details: Details { extensions: s.extensions, ..Details::default() },
+                    details: Details { extensions: s.extensions, extension_versions: s.extension_versions, extension_status:s.extension_status, ..Details::default() },
                 }),
                 _ => jellyfin::sign_in(&Network, &address, &who, &user, &secret).map(|s| Signed {
                     key: s.key,
@@ -881,6 +881,7 @@ mod tests {
     fn editing_a_media_server_names_the_folders_chosen_before_and_seals_nothing() {
         let stored = chilpa_library::StoredServer {
             source_id: 7,
+            session_revision: 0,
             provider: "dlna".into(),
             instance: "0123456789abcdef".into(),
             label: "Lab".into(),

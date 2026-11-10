@@ -13,7 +13,7 @@ Modal {
     property bool showOffline: false
     readonly property var displayedRows: visible ? rows.filter(row => showOffline || row.connected) : []
     signal forgetAsked(string id)
-    width: Math.min(Metrics.settingsMaxWidth, parent ? parent.width - Metrics.modalInsets : Metrics.settingsMaxWidth)
+    preferredWidth: Math.min(Metrics.settingsMaxWidth, parent ? parent.width - Metrics.modalInsets : Metrics.settingsMaxWidth)
     onOpened: showOffline = false
 
     Column {

@@ -21,8 +21,9 @@
 use md5::{Digest, Md5};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::BTreeMap;
 
-use crate::model::{extension_of, image, Client, Credential, Failure, Kind, Library, Page, Probe, Server, Stream, Track};
+use crate::model::{extension_of, image, Client, Credential, ExtensionStatus, Failure, Kind, Library, Page, Probe, Server, Stream, Track};
 use crate::net::{Net, Request};
 use crate::text::{artist_line, encode, id, number, random_hex, string, unix_time};
 
@@ -115,10 +116,9 @@ pub fn probe(net: &dyn Net, address: &str) -> Result<Probe, Failure> {
     let mut probe = Probe { product: product(response), ..Probe::default() };
     // Public by the spec; gonic and Ampache still ask for credentials, and
     // then it is read again after signing in.
-    if let Ok(found) = ask(net, url(address, "getOpenSubsonicExtensions", None, "")) {
-        probe.extensions = extensions(&found);
-        probe.api_key = probe.extensions.iter().any(|e| e == "apiKeyAuthentication");
-    }
+    (probe.extension_status,probe.extension_versions) = advertisement(net,address,None);
+    probe.extensions = probe.extension_versions.keys().cloned().collect();
+    probe.api_key = probe.extension_versions.get("apiKeyAuthentication").is_some_and(|versions| versions.contains(&1));
     Ok(probe)
 }
 
@@ -135,8 +135,47 @@ fn product(response: &Value) -> String {
     }
 }
 
-fn extensions(response: &Value) -> Vec<String> {
-    response.get("openSubsonicExtensions").and_then(Value::as_array).into_iter().flatten().filter_map(|e| string(e, "name")).collect()
+fn extensions(response: &Value) -> BTreeMap<String, Vec<u32>> {
+    // The bounded advertisement belongs to one signed-in server session.
+    let mut found = BTreeMap::<String, Vec<u32>>::new();
+    for extension in response.get("openSubsonicExtensions").and_then(Value::as_array).into_iter().flatten().take(128) {
+        let Some(name) = string(extension, "name").filter(|name| !name.is_empty() && name.len() <= 128) else { continue };
+        let versions = found.entry(name).or_default();
+        for version in extension.get("versions").and_then(Value::as_array).into_iter().flatten().take(16) {
+            if let Some(version) = version.as_u64().and_then(|version| u32::try_from(version).ok()).filter(|version| *version > 0) {
+                if versions.len() < 16 && !versions.contains(&version) { versions.push(version); }
+            }
+        }
+        versions.sort_unstable();
+    }
+    found
+}
+
+fn advertisement(net: &dyn Net, address: &str, key: Option<&Credential>) -> (ExtensionStatus,BTreeMap<String,Vec<u32>>) {
+    let empty = |status| (status,BTreeMap::new());
+    let request = Request::get(url(address,"getOpenSubsonicExtensions",key,""),Vec::new());
+    let Ok(reply) = net.send(&request) else { return empty(ExtensionStatus::Unavailable) };
+    match reply.status {
+        404 | 501 => return empty(ExtensionStatus::Unsupported),
+        401 => return empty(ExtensionStatus::Refused),
+        403 => return empty(ExtensionStatus::Forbidden),
+        200..=299 => {},
+        _ => return empty(ExtensionStatus::Unavailable),
+    }
+    let Ok(body) = serde_json::from_slice::<Value>(&reply.body) else { return empty(ExtensionStatus::Unavailable) };
+    let Some(response) = body.get("subsonic-response") else { return empty(ExtensionStatus::Unavailable) };
+    if response["status"] == "failed" {
+        return empty(match response["error"]["code"].as_u64() {
+            Some(20 | 30 | 70) => ExtensionStatus::Unsupported,
+            Some(40..=44) => ExtensionStatus::Refused,
+            Some(50) => ExtensionStatus::Forbidden,
+            _ => ExtensionStatus::Unavailable,
+        });
+    }
+    if response["status"] != "ok" || !response["openSubsonicExtensions"].is_array() {
+        return empty(ExtensionStatus::Unavailable);
+    }
+    (ExtensionStatus::Known,extensions(response))
 }
 
 /// What signing in gives: the credential to seal, who it is, and what the
@@ -147,6 +186,8 @@ pub struct SignedIn {
     pub identity: String,
     pub product: String,
     pub extensions: Vec<String>,
+    pub extension_versions: BTreeMap<String, Vec<u32>>,
+    pub extension_status: ExtensionStatus,
 }
 
 /// Signs in with a password, or with an API key when `api_key` says the
@@ -165,10 +206,11 @@ pub fn sign_in(net: &dyn Net, address: &str, user: &str, secret: &str, api_key: 
     } else {
         user.trim().to_string()
     };
-    let extensions = ask(net, url(address, "getOpenSubsonicExtensions", Some(&key), "")).map(|r| extensions(&r)).unwrap_or_default();
+    let (extension_status,extension_versions) = advertisement(net,address,Some(&key));
+    let extensions = extension_versions.keys().cloned().collect();
     // No server id in the protocol: the address and the user stand for it.
     let identity = format!("{}|{}", address.to_lowercase(), account.to_lowercase());
-    Ok(SignedIn { key, account, identity, product: product(&pong), extensions })
+    Ok(SignedIn { key, account, identity, product: product(&pong), extensions, extension_versions, extension_status })
 }
 
 pub fn ping(net: &dyn Net, server: &Server, key: &Credential) -> Result<(), Failure> {

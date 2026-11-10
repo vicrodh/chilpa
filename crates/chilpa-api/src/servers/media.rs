@@ -29,8 +29,7 @@ fn remote_id(target: &Target, stored: &chilpa_library::StoredServer) -> Option<S
         if entry.source.provider != stored.provider || entry.source.instance != stored.instance { return None; }
         entry.external_id
     };
-    let compact: String = reference.chars().filter(|c| *c != '-').collect();
-    (compact.len() == 32 && compact.bytes().all(|c| c.is_ascii_hexdigit())).then_some(reference)
+    chilpa_servers::media::valid_id(chilpa_servers::Kind::from_provider(&stored.provider)?, &reference).then_some(reference)
 }
 
 fn target(api: &mut Chilpa, kind: &str, id: i64) -> Option<(Target, chilpa_library::StoredServer, String)> {
@@ -48,7 +47,7 @@ impl Chilpa {
     pub fn server_media_info(&mut self, kind: &str, id: i64) -> String {
         match target(self, kind, id) {
             Some((item, stored, reference)) => json!({"kind":kind,"id":id,"title":item.title,"server":stored.label,
-                "address":stored.address,"source":stored.source_id,"ref":reference}).to_string(),
+                "address":stored.address,"source":stored.source_id,"ref":reference,"confirmation":super::session::confirmation(&stored,&reference)}).to_string(),
             None => "{}".into(),
         }
     }
@@ -62,7 +61,7 @@ impl Chilpa {
         let Some((item, stored, reference)) = target(self, kind, id) else {
             return refused(chilpa_i18n::t("that music item is no longer available from this server"));
         };
-        if source != stored.source_id || reference != expected {
+        if source != stored.source_id || super::session::confirmation(&stored,&reference) != expected {
             return refused(chilpa_i18n::t("The selected music changed. Open its menu and confirm again."));
         }
         if self.servers.writer.is_none() { return refused(chilpa_i18n::t("servers are not started")); }
@@ -73,7 +72,7 @@ impl Chilpa {
         state.resume = self.servers.syncer.as_ref().is_some_and(|syncer| syncer.has(source));
         state.receipt = json!({"request_id":request,"pending":true});
         state.started = false;
-        state.job = Some(writing::Write { source, playlist:id, request,
+        state.job = Some(writing::Write { source, session:super::session::Scope::of(&stored), playlist:id, request,
             change: writing::Change::DeleteMedia { target:item, remote:reference } });
         // A catalogue page already in flight finishes before deletion, so
         // an old reply cannot restore the item after the server removed it.
@@ -123,9 +122,11 @@ pub(super) fn apply(lib: &chilpa_library::Library, net: &dyn Net, keys: &super::
     gate: &std::sync::Mutex<()>, write: &writing::Write, item: &Target, expected: &str) -> writing::Written {
     let failed = |why: String, missing| writing::Written { source:write.source, asked:write.playlist, playlist:0,
         request:write.request.clone(), why, missing, media:true };
+    let _writing = gate.lock().unwrap_or_else(|error| error.into_inner());
     let Some(stored) = lib.server(write.source).ok().flatten().filter(|server| server.enabled) else {
         return failed(chilpa_i18n::t("that server is disabled or no longer in the library"), false);
     };
+    if !write.session.matches(&stored) { return failed(super::session::changed(), false); }
     if lib.server_media_target(item.album, item.local).ok().flatten().as_ref() != Some(item)
         || remote_id(item, &stored).as_deref() != Some(expected) {
         return failed(chilpa_i18n::t("The selected music changed. Open its menu and confirm again."), false);
@@ -133,7 +134,6 @@ pub(super) fn apply(lib: &chilpa_library::Library, net: &dyn Net, keys: &super::
     let (Some(server), Some(key)) = (net::server(&stored), net::key(keys, &stored)) else {
         return failed(chilpa_i18n::t_args("sign in to {} again", &[&stored.label]), false);
     };
-    let _writing = gate.lock().unwrap_or_else(|error| error.into_inner());
     let kind = if item.album { MediaKind::Album } else { MediaKind::Track };
     let observed = Attempt { net, sent: std::sync::atomic::AtomicBool::new(false) };
     if let Err(error) = chilpa_servers::media::delete(&observed, &server, &key, expected, kind) {

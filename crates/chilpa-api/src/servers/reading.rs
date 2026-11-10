@@ -21,6 +21,7 @@ use std::sync::Mutex;
 /// `PLAYLIST_TRACKS`.
 pub(crate) fn read(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, source: i64, gate: &Mutex<()>, stopped: &dyn Fn() -> bool) -> Event {
     let failed = |why: String| Event::PlaylistsFailed { source, why: chilpa_i18n::t_args("Its playlists could not be read: {}.", &[&why]) };
+    let _reading = gate.lock().unwrap_or_else(|error| error.into_inner());
     let Some(stored) = lib.server(source).ok().flatten() else {
         return failed(chilpa_i18n::t("that server is no longer in the library"));
     };
@@ -35,7 +36,6 @@ pub(crate) fn read(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, so
     let (Some(server), Some(key)) = (net::server(&stored), net::key(keys, &stored)) else {
         return failed(chilpa_i18n::t_args("sign in to {} again", &[&stored.label]));
     };
-    let _reading = gate.lock().unwrap_or_else(|e| e.into_inner());
     let listing = match chilpa_servers::playlists(net, &server, &key, &stored.account) {
         Ok(listing) => listing,
         Err(failure) => return failed(failure.to_string()),

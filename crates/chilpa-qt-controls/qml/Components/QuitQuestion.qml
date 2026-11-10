@@ -12,7 +12,7 @@ Modal {
         stopAsking.checked = false
         open()
     }
-    width: Metrics.confirmWidth
+    preferredWidth: Metrics.confirmWidth
 
     Column {
         width: parent.width

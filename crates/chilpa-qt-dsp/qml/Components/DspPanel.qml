@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls.Basic as Controls
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import app.chilpa.dsp
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -8,8 +9,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 Modal {
     id: panel
     objectName: "dspPanel"
-    width: Math.min(Metrics.dspPanelWidth, parent ? parent.width - Metrics.modalInsets : Metrics.dspPanelWidth)
-    height: Math.min(Metrics.dspPanelHeight, parent ? parent.height - Metrics.modalInsets : Metrics.dspPanelHeight)
+    preferredWidth: Math.min(Metrics.dspPanelWidth, parent ? parent.width - Metrics.modalInsets : Metrics.dspPanelWidth)
     readonly property var state: JSON.parse(Dsp.snapshot || "{}")
     readonly property var selection: state.selection || ({})
     readonly property string presetData: JSON.stringify(state.preset || {})
@@ -37,7 +37,6 @@ Modal {
 
     Column {
         width: panel.availableWidth - Metrics.modalInsets
-        height: panel.availableHeight - Metrics.modalInsets
         spacing: Metrics.gap10
         Row {
             width: parent.width
@@ -152,20 +151,14 @@ Modal {
             value: String(panel.tab)
             onPicked: value => panel.tab = Number(value)
         }
-        Controls.ScrollView {
+        DspEditor {
             width: parent.width
-            height: Math.max(Metrics.fieldHeight, parent.height - y - footer.height - Metrics.gap10)
-            contentWidth: availableWidth
-            clip: true
-            DspEditor {
-                width: parent.width
-                state: panel.state
-                draft: panel.draft
-                tab: panel.tab
-                onCommand: (action, data) => panel.send(action, data)
-                onEdited: value => panel.edit(value)
-                onTabRequested: tab => panel.tab = tab
-            }
+            state: panel.state
+            draft: panel.draft
+            tab: panel.tab
+            onCommand: (action, data) => panel.send(action, data)
+            onEdited: value => panel.edit(value)
+            onTabRequested: tab => panel.tab = tab
         }
         Column {
             id: footer
@@ -184,8 +177,18 @@ Modal {
                 spacing: Metrics.gap8
                 TextField { id: saveName; width: parent.width - saveButton.width - deleteButton.width - parent.spacing * 2; placeholder: I18n.tr("Name a personal preset", I18n.rev); Accessible.name: placeholder } // derived: room for two buttons
                 PillButton { id: saveButton; text: I18n.tr("Save preset", I18n.rev); enabled: saveName.text.trim() !== ""; onClicked: panel.send("save", { name: saveName.text }) }
-                IconButton { id: deleteButton; glyph: Icons.trash; tip: I18n.tr("Delete preset", I18n.rev); enabled: (panel.selection.preset || "").startsWith("user-"); onClicked: panel.send("delete", {}); activeFocusOnTab: enabled; Accessible.name: tip; Accessible.role: Accessible.Button; Keys.onReturnPressed: clicked(); Keys.onSpacePressed: clicked() }
+                IconButton { id: deleteButton; glyph: Icons.trash; tip: I18n.tr("Delete preset", I18n.rev); enabled: (panel.selection.preset || "").startsWith("user-"); onClicked: { deletion.presetKey = panel.selectedKey; deletion.open() } activeFocusOnTab: enabled; Accessible.name: tip; Accessible.role: Accessible.Button; Keys.onReturnPressed: clicked(); Keys.onSpacePressed: clicked() }
             }
         }
+    }
+    ConfirmationDialog {
+        id: deletion
+        property string presetKey: ""
+        title: I18n.tr("Delete preset?", I18n.rev)
+        message: I18n.tr("This permanently deletes the selected personal audio preset and its saved settings.", I18n.rev)
+        confirmText: I18n.tr("Delete preset", I18n.rev)
+        destructive: true
+        targetValid: presetKey === panel.selectedKey
+        onConfirmed: panel.send("delete", {})
     }
 }

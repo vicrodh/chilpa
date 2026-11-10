@@ -80,6 +80,7 @@ impl Library {
         )?;
         if changed > 0 {
             tx.execute("UPDATE tracks SET reachable = 0 WHERE source_id = ?1", params![source_id])?;
+            tx.execute("UPDATE servers SET session_revision = session_revision + 1, generation = generation + 1 WHERE source_id = ?1", [source_id])?;
         }
         tx.finish()?;
         Ok(changed > 0)

@@ -4,6 +4,7 @@ import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import app.chilpa.playlists
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 Item {
     id: actions
@@ -94,11 +95,13 @@ Item {
             case "shuffle": Playlists.play(row.playlistId, true); break
             case "queue": Playlists.queue(row.playlistId); break
             case "deletePlaylist":
-                menu.entries = [{text: row.server ? I18n.trArgs("Delete “{}” on {}? It leaves the server too.", [row.name, row.sourceName], I18n.rev)
-                                                  : I18n.trArgs("Delete “{}”?", [row.name], I18n.rev), note: true},
-                    {text: I18n.tr("Delete", I18n.rev), action: "confirmPlaylist"}, {text: I18n.tr("Cancel", I18n.rev)}]
-                menu.open(); break
-            case "confirmPlaylist": Playlists.remove(row.playlistId); break
+                deletion.targetId = row.playlistId
+                deletion.folder = false
+                deletion.title = I18n.trArgs("Delete “{}”?", [row.name], I18n.rev)
+                deletion.message = row.server ? I18n.trArgs("Delete “{}” on {}? It leaves the server too.", [row.name, row.sourceName], I18n.rev)
+                    : I18n.tr("This permanently removes the playlist and its saved order.", I18n.rev)
+                deletion.open()
+                break
             case "open": actions.sidebar.openPlaylist(row.playlistId); break
             case "edit": if (row.local || row.server) editDialog.show(row.playlistId); else actions.sidebar.openPlaylist(row.playlistId); break
             case "hide": Playlists.setVisible(row.playlistId, false); break
@@ -108,13 +111,23 @@ Item {
             case "move": actions.move(item.value); break
             case "editFolder": folderDialog.show(row.folderId, row.name, row.folderColor); break
             case "deleteFolder":
-                menu.entries = [{text: I18n.tr("Playlists will be kept at the root.", I18n.rev), note: true},
-                    {text: I18n.tr("Delete folder", I18n.rev), action: "confirmDelete"},
-                    {text: I18n.tr("Cancel", I18n.rev)}]
-                menu.open(); break
-            case "confirmDelete": Playlists.removeFolder(row.folderId); break
+                deletion.targetId = row.folderId
+                deletion.folder = true
+                deletion.title = I18n.trArgs("Delete “{}”?", [row.name], I18n.rev)
+                deletion.message = I18n.tr("Playlists in this folder move to the root.", I18n.rev)
+                deletion.open()
+                break
             }
         }
+    }
+    ConfirmationDialog {
+        id: deletion
+        objectName: "playlistDeletionConfirmation"
+        property int targetId: 0
+        property bool folder: false
+        destructive: true
+        confirmText: I18n.tr("Delete", I18n.rev)
+        onConfirmed: folder ? Playlists.removeFolder(targetId) : Playlists.remove(targetId)
     }
     PlaylistFolderDialog { id: folderDialog }
     PlaylistEditDialog { id: editDialog }

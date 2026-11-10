@@ -3,6 +3,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // The menu of a folder or playlist in the manager, one for every card and
 // row: open and play it, edit it, keep it in the sidebar or not, move it to
@@ -65,18 +66,26 @@ Menu {
         case "visible": manager.setVisible(row.entryId, !row.visibleInSidebar); break
         case "folder": manager.moveToFolder(row.entryId, entry.id); break
         case "remove":
-            // Asked again: what is the listener's is deleted, and one only
-            // followed is taken from the library.
-            entries = [{text: row.server === true && !folder ? I18n.trArgs("Delete “{}” on {}? It leaves the server too.", [row.name, row.sourceName], I18n.rev)
-                            : folder || editable ? I18n.trArgs("Delete “{}”?", [row.name], I18n.rev) : row.name, note: true},
-                       {text: folder || editable || row.server === true ? I18n.tr("Delete", I18n.rev) : I18n.tr("Remove from library", I18n.rev), act: "confirm"},
-                       {text: I18n.tr("Cancel", I18n.rev)}]
-            open()
-            break
-        case "confirm":
-            if (folder) manager.removeFolder(row.entryId)
-            else Playlists.remove(row.entryId)
+            deletion.targetId = row.entryId
+            deletion.folder = folder
+            deletion.title = I18n.trArgs("Delete “{}”?", [row.name], I18n.rev)
+            deletion.message = row.server === true && !folder
+                ? I18n.trArgs("Delete “{}” on {}? It leaves the server too.", [row.name, row.sourceName], I18n.rev)
+                : folder ? I18n.tr("Playlists in this folder move to the root.", I18n.rev)
+                : editable ? I18n.tr("This permanently removes the playlist and its saved order.", I18n.rev)
+                : I18n.tr("Remove this playlist from your library?", I18n.rev)
+            deletion.open()
             break
         }
     }
+    ConfirmationDialog {
+        id: deletion
+        objectName: "playlistDeletionConfirmation"
+        property int targetId: 0
+        property bool folder: false
+        destructive: true
+        confirmText: I18n.tr("Remove", I18n.rev)
+        onConfirmed: folder ? actions.manager.removeFolder(targetId) : Playlists.remove(targetId)
+    }
+
 }

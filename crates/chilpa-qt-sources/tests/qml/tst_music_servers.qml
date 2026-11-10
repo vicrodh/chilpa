@@ -108,7 +108,7 @@ TestCase {
         compare(last(), ["address","http://jf.lan:8096"])
         compare(dialog.page, 2)
         Servers.show({step:"signin",kind:"jellyfin",busy:false,quickConnect:false})
-        compare(last(), ["signIn","fixture-user","fixture-secret",false], "signed in with what was typed, once")
+        tryVerify(() => JSON.stringify(last()) === JSON.stringify(["signIn","fixture-user","fixture-secret",false]),1000,"signed in with what was typed, once")
         Servers.show({step:"libraries",kind:"jellyfin",label:"Living room",product:"Jellyfin 10.10.7",address:"http://jf.lan:8096",
             choices:[{id:"music",name:"Music",detail:""},{id:"books",name:"Audiobooks",detail:""}]})
         tryCompare(dialog, "connected", true)
@@ -312,6 +312,10 @@ TestCase {
         const facts = find("serverRemoveFacts").text
         verify(facts.indexOf("12") >= 0 && facts.indexOf("826 albums") >= 0 && facts.indexOf("not touched") > 0, facts)
         verify(!find("serverRemoving").visible)
+        const before = Servers.calls.length
+        find("serverRemoveConfirm").clicked()
+        compare(Servers.calls.length,before)
+        find("destructiveAcknowledgement").toggle()
         find("serverRemoveConfirm").clicked()
         compare(last(), ["remove", 7])
         tryVerify(()=>find("serverRemoving").visible, 1000, "at once, before the facade answers")
@@ -332,7 +336,10 @@ TestCase {
         compare(find("serverRemoveFailed").variant, "error")
         compare(find("serverRemoveDetail").text, "database is locked")
         verify(find("serverRemoveDetail").selectByMouse && find("serverRemoveDetail").readOnly)
-        compare(find("serverRemoveConfirm").text, "Try again")
+        compare(find("serverRemoveConfirm").text, "Continue")
+        find("serverRemoveConfirm").clicked()
+        compare(find("serverRemoveConfirm").text,"Try again")
+        find("destructiveAcknowledgement").toggle()
         find("serverRemoveConfirm").clicked()
         compare(last(), ["remove", 7], "tried again")
         Servers.show({step:"idle", removing:{id:7, name:"Lab", state:"removing"}})

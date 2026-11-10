@@ -16,8 +16,8 @@ Modal {
     // takes one, go to the server; its picture and tags are not its own.
     property bool server: false
     property bool describable: true
-    width: Math.max(Metrics.modalInsets, Math.min(Metrics.playlistModalWidth, parent.width - Metrics.modalInset))
-    height: Math.max(Metrics.modalInsets, Math.min(body.implicitHeight + Metrics.modalInsets, parent.height - Metrics.modalInset))
+    preferredWidth: Math.max(Metrics.modalInsets, Math.min(Metrics.playlistModalWidth, parent.width - Metrics.modalInset))
+    preferredHeight: Math.max(Metrics.modalInsets, Math.min(body.implicitHeight + Metrics.modalInsets, parent.height - Metrics.modalInset))
 
     function show(id) {
         playlistId = id

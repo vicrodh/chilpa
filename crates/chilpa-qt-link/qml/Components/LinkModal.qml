@@ -9,7 +9,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 // The facade verifies destinations before this surface offers a choice.
 Modal {
     id: modal
-    width: Math.min((parent ? parent.width : Metrics.linkModal) - Metrics.modalInsets, Metrics.linkModal + Metrics.sidebarWidth)
+    preferredWidth: Math.min((parent ? parent.width : Metrics.linkModal) - Metrics.modalInsets, Metrics.linkModal + Metrics.sidebarWidth)
     readonly property var destinations: {
         try { return JSON.parse(Link.choices || "[]") } catch (_) { return [] }
     }

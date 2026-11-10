@@ -127,7 +127,7 @@ impl Lab {
     }
 
     fn apply(&self, net: &Answers, playlist: i64, change: Change) -> Written {
-        apply(&self.lib, net, &self.keys, &Mutex::new(()), &Write { source: self.stored.source_id, playlist, request: "r1".into(), change })
+        apply(&self.lib, net, &self.keys, &Mutex::new(()), &Write { session:super::super::session::Scope::of(&self.stored), source: self.stored.source_id, playlist, request: "r1".into(), change })
     }
 
     fn entry(&self, id: &str) -> String {

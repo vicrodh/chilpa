@@ -11,6 +11,7 @@ import "qrc:/qt/qml/app/chilpa/qml/Patterns"
 
 TitledFlow {
     title: "Plugins"
+    PluginDialogActions { width: Metrics.confirmWidth; mode: "permissions"; plugin: ({revision:"example"}) }
     HomeSection { width: Metrics.confirmWidth; entry: ({kind:"albums",title:"Deferred module"}) }
     MediaListeningPanel { width: Metrics.confirmWidth; height: Metrics.panesHeight }
     PillButton { text: "Delete server music"; onClicked: mediaDelete.open() }

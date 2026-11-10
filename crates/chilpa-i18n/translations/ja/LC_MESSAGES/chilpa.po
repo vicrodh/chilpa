@@ -437,6 +437,9 @@ msgstr "すべてのアーティスト"
 msgid "All categories"
 msgstr "すべてのカテゴリ"
 
+msgid "All custom key bindings will be replaced with the defaults for the current keymap."
+msgstr "すべてのカスタムキー割り当てを現在のキーマップの既定値に置き換えます。"
+
 msgid "All discs"
 msgstr "すべてのディスク"
 
@@ -481,6 +484,12 @@ msgstr "すべてのテーマ"
 
 msgid "All time"
 msgstr "全期間"
+
+msgid "All tracks after this occurrence will be removed from the queue."
+msgstr "キュー内のこの位置より後のすべての曲を削除します。"
+
+msgid "All tracks will be removed from this queue. Playback from this queue will stop."
+msgstr "このキューからすべての曲を削除し、このキューの再生を停止します。"
 
 msgid "Allow Chilpa on Discogs, then paste the code below."
 msgstr "DiscogsでChilpaを許可し、以下にコードを貼り付けてください。"
@@ -1233,6 +1242,9 @@ msgstr "Chilpaはデバイスを各トラックのレートに設定します。
 msgid "Chilpa will make smaller covers and backgrounds again when needed."
 msgstr "必要になったとき、Chilpaは小さいカバーと背景をもう一度作成します。"
 
+msgid "Chilpa will stop checking this repository for plugins and updates.\n{}"
+msgstr "このリポジトリでのプラグインと更新の確認を停止します。\n{}"
+
 msgid "Chilpa {} is available"
 msgstr "Chilpa {} が利用できます"
 
@@ -1398,6 +1410,9 @@ msgstr "生成された画像をクリア"
 msgid "Clear generated images?"
 msgstr "生成された画像をクリアしますか？"
 
+msgid "Clear logs?"
+msgstr "ログを消去しますか？"
+
 msgid "Clear loop"
 msgstr "ループを解除"
 
@@ -1421,6 +1436,9 @@ msgstr "フィルターを解除"
 
 msgid "Clear the selection"
 msgstr "選択を解除"
+
+msgid "Clear “{}”?"
+msgstr "「{}」を空にしますか？"
 
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr "クリアしました。{}件の歌詞を削除しました。トラックの再生時にもう一度検索されます。"
@@ -1452,6 +1470,9 @@ msgstr "タブを閉じる"
 msgid "Close media"
 msgstr "メディアを閉じる"
 
+msgid "Close queue"
+msgstr "キューを閉じる"
+
 msgid "Close search"
 msgstr "検索を閉じる"
 
@@ -1463,6 +1484,9 @@ msgstr "引用符を閉じてください。"
 
 msgid "Close to tray"
 msgstr "閉じてトレイに格納"
+
+msgid "Close “{}”?"
+msgstr "「{}」を閉じますか？"
 
 msgid "Closing stops a scan. Saved progress can be continued here after reopening."
 msgstr "アプリを閉じるとスキャンは停止します。再度開いた後、ここで保存済みの処理を続行できます。"
@@ -1496,6 +1520,9 @@ msgstr "列"
 
 msgid "Combine"
 msgstr "結合"
+
+msgid "Combine and remove originals"
+msgstr "結合して元のキューを削除"
 
 msgid "Combine queues"
 msgstr "キューを結合"
@@ -1577,6 +1604,12 @@ msgstr "確認"
 
 msgid "Confirm this preview and its removals before syncing."
 msgstr ""
+
+msgid "Confirm “{}” for {}?"
+msgstr "{2}の「{1}」を確認しますか？"
+
+msgid "Confirmation {} of {}"
+msgstr "確認 {} / {}"
 
 msgid "Connect"
 msgstr "接続"
@@ -1933,16 +1966,13 @@ msgid "Delete"
 msgstr "削除"
 
 msgid "Delete album from server?"
-msgstr ""
-
-msgid "Delete folder"
-msgstr "フォルダーを削除"
+msgstr "サーバーからアルバムを削除しますか？"
 
 msgid "Delete folder…"
 msgstr "フォルダーを削除…"
 
 msgid "Delete from server"
-msgstr ""
+msgstr "サーバーから削除"
 
 msgid "Delete from server…"
 msgstr ""
@@ -1950,8 +1980,14 @@ msgstr ""
 msgid "Delete playlist"
 msgstr "プレイリストを削除"
 
+msgid "Delete playlist?"
+msgstr "プレイリストを削除しますか？"
+
 msgid "Delete preset"
 msgstr "プリセットを削除"
+
+msgid "Delete preset?"
+msgstr "プリセットを削除しますか？"
 
 msgid "Delete saved query"
 msgstr "保存したクエリを削除"
@@ -1960,7 +1996,7 @@ msgid "Delete the saved query “{}”?"
 msgstr "保存したクエリ「{}」を削除しますか？"
 
 msgid "Delete track from server?"
-msgstr ""
+msgstr "サーバーから曲を削除しますか？"
 
 msgid "Delete “{}” on {}? It leaves the server too."
 msgstr "{2}の「{1}」を削除しますか？サーバーからも削除されます。"
@@ -1969,13 +2005,13 @@ msgid "Delete “{}”?"
 msgstr "「{}」を削除しますか？"
 
 msgid "Deleted from server."
-msgstr ""
+msgstr "サーバーから削除しました。"
 
 msgid "Delete…"
 msgstr "削除…"
 
 msgid "Deleting…"
-msgstr ""
+msgstr "削除中…"
 
 msgid "Description"
 msgstr "説明"
@@ -2985,6 +3021,9 @@ msgstr "オーディオサービスを再起動しました"
 
 msgid "I understand and accept these terms"
 msgstr "これらの規約を理解し、同意します"
+
+msgid "I understand the consequences and want to proceed."
+msgstr "影響を理解したうえで続行します。"
 
 msgid "INFLUENCES"
 msgstr "影響を受けたアーティスト"
@@ -4830,8 +4869,8 @@ msgstr "プレイリストのプレビュー"
 msgid "Playlists"
 msgstr "プレイリスト"
 
-msgid "Playlists will be kept at the root."
-msgstr "プレイリストはルートに残ります。"
+msgid "Playlists in this folder move to the root."
+msgstr "このフォルダー内のプレイリストをルートに移動します。"
 
 msgid "Plays"
 msgstr "再生回数"
@@ -4844,6 +4883,9 @@ msgstr "選択したDACで、ビット深度とサンプルレートが異なる
 
 msgid "Plex did not accept the session; sign in again"
 msgstr "Plexがセッションを受け付けませんでした。もう一度ログインしてください"
+
+msgid "Plugin"
+msgstr "プラグイン"
 
 msgid "Plugin Settings"
 msgstr "プラグイン設定"
@@ -5343,11 +5385,20 @@ msgstr "条件を 1 つ外すと結果が出ます："
 msgid "Remove original queues"
 msgstr "元のキューを削除"
 
+msgid "Remove original queues?"
+msgstr "元のキューを削除しますか？"
+
+msgid "Remove plugin repository?"
+msgstr "プラグインリポジトリを削除しますか？"
+
 msgid "Remove saved profile"
-msgstr ""
+msgstr "保存済みプロファイルを削除"
 
 msgid "Remove smaller covers and backgrounds. Chilpa makes them again as needed."
 msgstr "小さいカバーと背景を削除します。必要に応じてChilpaが再作成します。"
+
+msgid "Remove this playlist from your library?"
+msgstr "このプレイリストをライブラリから削除しますか？"
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "このプラグインと、そのアカウント、設定、キャッシュしたライブラリをChilpaから削除しますか？ソース側のアカウントやプレイリストは削除されません。"
@@ -5400,11 +5451,17 @@ msgstr "修復しました。失われたものはありません。"
 msgid "Repeat"
 msgstr "リピート"
 
+msgid "Replace"
+msgstr "置き換え"
+
 msgid "Replace current queue"
 msgstr "現在のキューを置き換え"
 
 msgid "Replace queue {}"
 msgstr "キュー「{}」を置き換え"
+
+msgid "Replace queue?"
+msgstr "キューを置き換えますか？"
 
 msgid "Report an issue"
 msgstr "問題を報告"
@@ -5445,8 +5502,17 @@ msgstr "すべて既定値に戻す"
 msgid "Reset EQ"
 msgstr "EQをリセット"
 
+msgid "Reset all shortcuts?"
+msgstr "すべてのショートカットをリセットしますか？"
+
 msgid "Reset counter"
 msgstr "カウンターをリセット"
+
+msgid "Reset equalizer?"
+msgstr "イコライザーをリセットしますか？"
+
+msgid "Reset shortcut?"
+msgstr "ショートカットをリセットしますか？"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "解像度を{}ビットから{}ビットに縮小"
@@ -5468,6 +5534,9 @@ msgstr "既定値に戻す"
 
 msgid "Restore defaults"
 msgstr "既定値に戻す"
+
+msgid "Restore page defaults?"
+msgstr "ページの既定値を復元しますか？"
 
 msgid "Restore previous EQ"
 msgstr "以前のEQに戻す"
@@ -5516,6 +5585,9 @@ msgstr ""
 
 msgid "Review the requested permissions before installing."
 msgstr "インストールする前に、要求された権限を確認してください。"
+
+msgid "Review the target and the effects described above. The next confirmation applies this destructive action."
+msgstr "対象と上記の影響を確認してください。次の確認でこの破壊的な操作を実行します。"
 
 msgid "Reviewing changes…"
 msgstr ""
@@ -6414,8 +6486,23 @@ msgstr "チェックは完了しましたが、以前のサンプルレートを
 msgid "The connection is not encrypted."
 msgstr "接続は暗号化されていません。"
 
+msgid "The current equalizer changes will be replaced with the previous preset."
+msgstr "現在のイコライザーの変更を以前のプリセットで置き換えます。"
+
+msgid "The current filter gains will be reset to zero."
+msgstr "現在のフィルターゲインをゼロに戻します。"
+
 msgid "The current track has no such destination."
 msgstr "現在のトラックにはそのような移動先がありません。"
+
+msgid "The custom key binding for this action will be replaced with its default."
+msgstr "この操作のカスタムキー割り当てを既定値に置き換えます。"
+
+msgid "The custom sections, visibility and order for this page will be replaced with their defaults."
+msgstr "このページのカスタムセクション、表示設定、順序を既定値に置き換えます。"
+
+msgid "The destination queue and its saved order will be replaced with the selected tracks."
+msgstr "対象キューと保存済みの順序を選択した曲で置き換えます。"
 
 msgid "The device playlist picker can show at most 2,048 playlists."
 msgstr ""
@@ -6657,14 +6744,23 @@ msgstr ""
 msgid "The selected queues are empty."
 msgstr "選択したキューは空です。"
 
+msgid "The selected queues will be removed after their tracks are copied to the combined queue. Their separate names and saved order will be lost."
+msgstr "選択したキューの曲を結合先のキューにコピーした後、元のキューを削除します。個別の名前と保存済みの順序は失われます。"
+
 msgid "The selected storage changed or disconnected."
 msgstr "選択したストレージが変更されたか、接続が切れました。"
 
 msgid "The selected tracks could not be read."
 msgstr "選択したトラックを読み取れませんでした。"
 
+msgid "The selected tracks will be removed from this playlist and its saved order."
+msgstr "選択した曲をこのプレイリストと保存済みの順序から削除します。"
+
 msgid "The server answered, and Chilpa can read its music."
 msgstr "サーバーが応答し、Chilpa は音楽を読み込めます。"
+
+msgid "The server connection or account changed. Review the action and try again."
+msgstr "サーバー接続またはアカウントが変わりました。操作を確認してから再試行してください。"
 
 msgid "The server deleted the music, but the local catalogue could not be updated. Sync the server again."
 msgstr ""
@@ -6693,6 +6789,9 @@ msgstr[0] "同期が{}分間進んでいません。「今すぐ同期」でや�
 
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "システムの壁紙。代わりに自分の画像を選ぶこともできます。"
+
+msgid "The target changed. Cancel and review the action again."
+msgstr "対象が変わりました。キャンセルして操作を再確認してください。"
 
 msgid "The temporary media queue cannot be combined."
 msgstr "一時的なメディアキューは結合できません。"
@@ -6811,6 +6910,9 @@ msgstr "今月 vs 先月"
 msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
 msgstr "この音楽表示は50,000ファイルまたは16 MiBのメタデータの上限を超えています。"
 
+msgid "This occurrence will be removed from the queue."
+msgstr "キューからこの位置の曲を削除します。"
+
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "これは音を出しません。デバイスに送られるはずだったものをファイルに書き出すので、元のトラックと比較できます。ビットパーフェクトは主張するのではなく、これで証明できます。"
 
@@ -6835,11 +6937,29 @@ msgstr "この出力はDSDをPCMに変換して受け取ります。DoPには排
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "この出力はDSDをPCMに変換して受け取ります。そのまま受け取るのはhwのカードだけです。カードに選んだ設定は保持されます。"
 
+msgid "This permanently clears cached plugin data. Content may need to be downloaded again."
+msgstr "プラグインのキャッシュデータを完全に消去します。コンテンツの再ダウンロードが必要になる場合があります。"
+
+msgid "This permanently clears the saved diagnostic log. Copy any entries you need first."
+msgstr "保存済みの診断ログを完全に消去します。必要な項目は先にコピーしてください。"
+
+msgid "This permanently deletes files managed by the plugin. Review the affected files in the plugin's description."
+msgstr "プラグインが管理するファイルを完全に削除します。プラグインの説明で対象のファイルを確認してください。"
+
 msgid "This permanently deletes the album and all its tracks from the server's filesystem. It cannot be undone from Chilpa."
-msgstr ""
+msgstr "サーバーのファイルシステムからアルバムと全曲を完全に削除します。Chilpaから元に戻すことはできません。"
+
+msgid "This permanently deletes the playlist at the source."
+msgstr "配信元でプレイリストを完全に削除します。"
+
+msgid "This permanently deletes the selected personal audio preset and its saved settings."
+msgstr "選択した個人用オーディオプリセットと保存済みの設定を完全に削除します。"
 
 msgid "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
-msgstr ""
+msgstr "サーバーのファイルシステムから曲を完全に削除します。Chilpaから元に戻すことはできません。"
+
+msgid "This permanently removes the playlist and its saved order."
+msgstr "プレイリストと保存済みの順序を完全に削除します。"
 
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "このプレイリストには、追加する{2}トラックのうち{1}トラックがすでに含まれています。新しいものだけを追加するか、重複を含めてすべて追加してください。"
@@ -6852,6 +6972,9 @@ msgstr "このプレイリストのUTF-8エンコーディングは無効です�
 
 msgid "This playlist references music outside the recorded selection. Sync it again to refresh its contents."
 msgstr "このプレイリストは記録された選択の範囲外にある音楽を参照しています。再同期して内容を更新してください。"
+
+msgid "This plugin action permanently removes or replaces data. Review the action and its description before proceeding."
+msgstr "このプラグインの操作はデータを完全に削除または置き換えます。続行する前に操作と説明を確認してください。"
 
 msgid "This plugin needs the library {}, which this system does not have."
 msgstr "このプラグインにはライブラリ{}が必要ですが、このシステムにはありません。"
@@ -6877,8 +7000,17 @@ msgstr "この購入はダウンロードできません。"
 msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
 msgstr "このクエリはグループを 3 段まで入れ子にしています。行では 2 段まで表示できるため、ここではテキストのまま表示します。条件は適用されています。"
 
+msgid "This queue and its saved order will be removed."
+msgstr "このキューと保存済みの順序を削除します。"
+
 msgid "This record cannot be played now."
 msgstr "このアルバムは現在再生できません。"
+
+msgid "This removes the plugin's saved account session and account-related data from this device. You will need to sign in again."
+msgstr "このデバイスからプラグインに保存されたアカウントのセッションと関連データを削除します。再度ログインが必要になります。"
+
+msgid "This replaces the plugin's saved settings. Review the affected settings before proceeding."
+msgstr "プラグインの保存済み設定を置き換えます。続行する前に対象の設定を確認してください。"
 
 msgid "This saved query catalog uses an unsupported version; I kept its original data."
 msgstr "このクエリ一覧のバージョンには対応していません。元のデータは保持しました。"
@@ -6975,6 +7107,9 @@ msgstr "終了"
 
 msgid "To move to"
 msgstr "動きたいときに"
+
+msgid "To use a different account, add it as a separate server."
+msgstr "別のアカウントを使うには、別のサーバーとして追加してください。"
 
 msgid "Today"
 msgstr "今日"

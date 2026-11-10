@@ -111,7 +111,7 @@ fn never() -> bool {
 fn a_server_s_catalogue_lands_in_the_library_under_the_entries_the_queue_carries() {
     let lab = subsonic();
     let net = navidrome(Saved::default());
-    let event = run(&lab.lib, &net, &lab.keys, lab.source, &|_| {}, &never);
+    let event = run(&lab.lib, &net, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
 
     assert_eq!(event, Event::Finished { source: lab.source, gone: 0 });
     let server = lab.lib.server(lab.source).unwrap().unwrap();
@@ -129,11 +129,11 @@ fn a_server_s_catalogue_lands_in_the_library_under_the_entries_the_queue_carries
 #[test]
 fn a_record_the_server_no_longer_has_leaves_and_a_sync_that_is_cut_takes_nothing() {
     let lab = subsonic();
-    run(&lab.lib, &navidrome(Saved::default()), &lab.keys, lab.source, &|_| {}, &never);
+    run(&lab.lib, &navidrome(Saved::default()), &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
 
     // Cut off at the second record.
     let net = Saved::default().file("navidrome/subsonic-scan.json").file("navidrome/subsonic-albums.json").file("navidrome/subsonic-album-0.json").silence();
-    let event = run(&lab.lib, &net, &lab.keys, lab.source, &|_| {}, &never);
+    let event = run(&lab.lib, &net, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     assert!(matches!(event, Event::Failed { unreachable: true, .. }), "{event:?}");
     assert_eq!(lab.lib.track_count(false).unwrap(), 12, "nothing taken out");
 
@@ -147,14 +147,14 @@ fn a_record_the_server_no_longer_has_leaves_and_a_sync_that_is_cut_takes_nothing
         .file("navidrome/subsonic-album-3.json")
         .file("navidrome/subsonic-scan.json")
         .body(&list);
-    assert_eq!(run(&lab.lib, &net, &lab.keys, lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 3 });
+    assert_eq!(run(&lab.lib, &net, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 3 });
     assert_eq!(lab.lib.track_count(false).unwrap(), 9);
 }
 
 #[test]
 fn a_record_skipped_between_pages_takes_nothing_out() {
     let lab = subsonic();
-    run(&lab.lib, &navidrome(Saved::default()), &lab.keys, lab.source, &|_| {}, &never);
+    run(&lab.lib, &navidrome(Saved::default()), &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
 
     // The pages missed the compilation, but the server still has it: the
     // count asked after the last page says so.
@@ -166,7 +166,7 @@ fn a_record_skipped_between_pages_takes_nothing_out() {
             .file("navidrome/subsonic-album-1.json")
             .file("navidrome/subsonic-album-3.json"),
     );
-    let event = run(&lab.lib, &net, &lab.keys, lab.source, &|_| {}, &never);
+    let event = run(&lab.lib, &net, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     assert!(matches!(&event, Event::Failed { why, .. } if why.contains("9") && why.contains("12")), "{event:?}");
     assert_eq!(lab.lib.track_count(false).unwrap(), 12, "nothing taken out");
 }
@@ -174,7 +174,7 @@ fn a_record_skipped_between_pages_takes_nothing_out() {
 #[test]
 fn a_record_listed_and_then_not_read_takes_nothing_out() {
     let lab = subsonic();
-    run(&lab.lib, &navidrome(Saved::default()), &lab.keys, lab.source, &|_| {}, &never);
+    run(&lab.lib, &navidrome(Saved::default()), &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     let net = census(
         Saved::default()
             .file("navidrome/subsonic-scan.json")
@@ -184,7 +184,7 @@ fn a_record_listed_and_then_not_read_takes_nothing_out() {
             .body(r#"{"subsonic-response":{"status":"ok","version":"1.16.1"}}"#)
             .file("navidrome/subsonic-album-3.json"),
     );
-    let event = run(&lab.lib, &net, &lab.keys, lab.source, &|_| {}, &never);
+    let event = run(&lab.lib, &net, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     assert!(matches!(&event, Event::Failed { .. }), "{event:?}");
     assert_eq!(lab.lib.track_count(false).unwrap(), 12, "nothing taken out");
 }
@@ -197,7 +197,7 @@ fn jellyfin() -> Lab {
 fn only_what_changed_is_asked_about_again() {
     let lab = jellyfin();
     let first = Saved::default().file("jellyfin/jellyfin-views.json").file("jellyfin/jellyfin-items.json").file("jellyfin/jellyfin-details.json");
-    let event = run(&lab.lib, &first, &lab.keys, lab.source, &|_| {}, &never);
+    let event = run(&lab.lib, &first, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     // The saved details answer holds five of the twelve: the other seven
     // were not described, so they are not in the library yet, and the sync
     // says it could not read everything instead of finishing.
@@ -209,7 +209,7 @@ fn only_what_changed_is_asked_about_again() {
     // The same listing again: the five known ones are kept as they are, and
     // only the seven never described are asked about.
     let second = Saved::default().file("jellyfin/jellyfin-views.json").file("jellyfin/jellyfin-items.json").file("jellyfin/jellyfin-details.json");
-    run(&lab.lib, &second, &lab.keys, lab.source, &|_| {}, &never);
+    run(&lab.lib, &second, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     let details = second.asked().into_iter().find(|u| u.contains("MediaSources")).unwrap();
     let ids = details.split("Ids=").nth(1).unwrap().split('&').next().unwrap();
     assert_eq!(ids.split(',').count(), 7, "{ids}");
@@ -219,7 +219,7 @@ fn only_what_changed_is_asked_about_again() {
 fn a_sync_that_saw_fewer_tracks_than_announced_takes_nothing_out() {
     let lab = jellyfin();
     let full = Saved::default().file("jellyfin/jellyfin-views.json").file("jellyfin/jellyfin-items.json").file("jellyfin/jellyfin-details.json");
-    run(&lab.lib, &full, &lab.keys, lab.source, &|_| {}, &never);
+    run(&lab.lib, &full, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     let before = lab.lib.track_count(false).unwrap();
 
     let mut items: serde_json::Value = serde_json::from_slice(&std::fs::read(format!(
@@ -231,7 +231,7 @@ fn a_sync_that_saw_fewer_tracks_than_announced_takes_nothing_out() {
         .file("jellyfin/jellyfin-views.json")
         .body(&items.to_string())
         .body(r#"{"Items":[],"TotalRecordCount":12,"StartIndex":3}"#);
-    let event = run(&lab.lib, &short, &lab.keys, lab.source, &|_| {}, &never);
+    let event = run(&lab.lib, &short, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     assert!(matches!(&event, Event::Failed { why, .. } if why.contains("3") && why.contains("12")), "{event:?}");
     assert_eq!(lab.lib.track_count(false).unwrap(), before);
 }
@@ -275,7 +275,7 @@ fn walk(net: Saved) -> Saved {
 fn a_media_server_is_walked_without_a_sealed_key_and_each_track_lands_once() {
     let lab = dlna();
     let net = walk(Saved::default());
-    let event = run(&lab.lib, &net, &lab.keys, lab.source, &|_| {}, &never);
+    let event = run(&lab.lib, &net, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     assert_eq!(event, Event::Finished { source: lab.source, gone: 0 });
     let server = lab.lib.server(lab.source).unwrap().unwrap();
     assert_eq!((server.tracks, server.albums), (4, 2), "the folder repeats three tracks the records already gave");
@@ -289,15 +289,15 @@ fn a_media_server_is_walked_without_a_sealed_key_and_each_track_lands_once() {
     assert_eq!(stream.extension.as_deref(), Some("flac"));
 
     // The same answers again change nothing.
-    assert_eq!(run(&lab.lib, &walk(Saved::default()), &lab.keys, lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 0 });
+    assert_eq!(run(&lab.lib, &walk(Saved::default()), &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 0 });
     assert_eq!(lab.lib.track_count(false).unwrap(), 4);
 
     // A record the server no longer lists leaves; a walk cut short takes nothing.
     let net = Saved::default().body(&without_record_two()).file("dlna/plex-album-one.xml").file("dlna/plex-folder.xml");
-    assert_eq!(run(&lab.lib, &net, &lab.keys, lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 1 });
+    assert_eq!(run(&lab.lib, &net, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 1 });
     assert_eq!(lab.lib.track_count(false).unwrap(), 3);
     let cut = Saved::default().file("dlna/plex-albums.xml").silence();
-    let event = run(&lab.lib, &cut, &lab.keys, lab.source, &|_| {}, &never);
+    let event = run(&lab.lib, &cut, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     assert!(matches!(event, Event::Failed { unreachable: true, .. }), "{event:?}");
     assert_eq!(lab.lib.track_count(false).unwrap(), 3, "nothing taken out");
 }
@@ -305,9 +305,9 @@ fn a_media_server_is_walked_without_a_sealed_key_and_each_track_lands_once() {
 #[test]
 fn a_cover_is_fetched_once_into_the_server_s_own_folder() {
     let lab = subsonic();
-    run(&lab.lib, &navidrome(Saved::default()), &lab.keys, lab.source, &|_| {}, &never);
+    run(&lab.lib, &navidrome(Saved::default()), &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     let net = Saved::default().body("jpeg-1").body("jpeg-2").body("jpeg-3");
-    assert_eq!(covers(&lab.lib, &net, &lab.keys, lab.source, 0, &never), None);
+    assert_eq!(covers(&lab.lib, &net, &lab.keys, &std::sync::Mutex::new(()), lab.source, 0, &never), None);
     assert!(lab.lib.pending_server_covers(lab.source, 10).unwrap().is_empty());
     let art: String = lab.lib.connection().query_row(
         "SELECT artwork_path FROM albums WHERE title = 'Lab Album One'", [], |r| r.get(0)).unwrap();
@@ -347,7 +347,7 @@ fn titles(lab: &Lab, playlist: i64) -> Vec<String> {
 #[test]
 fn a_server_s_playlists_come_in_after_its_catalogue_in_the_server_s_order() {
     let lab = jellyfin();
-    assert_eq!(run(&lab.lib, &five_described(), &lab.keys, lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 0 });
+    assert_eq!(run(&lab.lib, &five_described(), &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 0 });
     let lists = road_and_empty();
     let event = reading::read(&lab.lib, &lists, &lab.keys, lab.source, &Mutex::new(()), &never);
     // Hi-Res D2 T1 is in "Road Trip" and not among the five: it is left out.
@@ -372,7 +372,7 @@ fn a_server_s_playlists_come_in_after_its_catalogue_in_the_server_s_order() {
 fn a_partial_sync_still_brings_the_playlists_in_and_a_missing_track_asks_for_the_catalogue() {
     let lab = jellyfin();
     let partial = Saved::default().file("jellyfin/jellyfin-views.json").file("jellyfin/jellyfin-items.json").file("jellyfin/jellyfin-details.json");
-    let event = run(&lab.lib, &partial, &lab.keys, lab.source, &|_| {}, &never);
+    let event = run(&lab.lib, &partial, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     assert!(matches!(&event, Event::Failed { unreachable: false, .. }), "{event:?}");
     assert!(reads_playlists_after(&event), "partial: its playlists are read anyway");
     assert!(!reads_playlists_after(&Event::Failed { source: lab.source, why: String::new(), unreachable: true }), "not from a server that does not answer");
@@ -389,7 +389,7 @@ fn a_partial_sync_still_brings_the_playlists_in_and_a_missing_track_asks_for_the
 #[test]
 fn a_playlist_deleted_on_the_server_leaves_and_one_that_cannot_be_read_stays() {
     let lab = jellyfin();
-    run(&lab.lib, &five_described(), &lab.keys, lab.source, &|_| {}, &never);
+    run(&lab.lib, &five_described(), &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     reading::read(&lab.lib, &road_and_empty(), &lab.keys, lab.source, &Mutex::new(()), &never);
 
     // "Empty for now" was deleted on the server; "Road Trip" answers with
@@ -407,7 +407,7 @@ fn a_playlist_deleted_on_the_server_leaves_and_one_that_cannot_be_read_stays() {
 #[test]
 fn a_server_that_stops_answering_leaves_its_playlists_as_they_were() {
     let lab = jellyfin();
-    run(&lab.lib, &five_described(), &lab.keys, lab.source, &|_| {}, &never);
+    run(&lab.lib, &five_described(), &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     reading::read(&lab.lib, &road_and_empty(), &lab.keys, lab.source, &Mutex::new(()), &never);
 
     let event = reading::read(&lab.lib, &Saved::default().silence(), &lab.keys, lab.source, &Mutex::new(()), &never);
@@ -422,7 +422,7 @@ fn a_server_that_stops_answering_leaves_its_playlists_as_they_were() {
 #[test]
 fn a_subsonic_playlist_of_another_user_is_read_and_not_changed_here() {
     let lab = subsonic();
-    assert_eq!(run(&lab.lib, &navidrome(Saved::default()), &lab.keys, lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 0 });
+    assert_eq!(run(&lab.lib, &navidrome(Saved::default()), &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never), Event::Finished { source: lab.source, gone: 0 });
     lab.lib.connection().execute("UPDATE servers SET account = 'someone' WHERE source_id = ?1", [lab.source]).unwrap();
     let empty = r#"{"subsonic-response":{"status":"ok","version":"1.16.1","playlist":{"id":"0QwErTyUiOpAsDfGhJkLzX","name":"Empty for now","entry":[]}}}"#;
     let lists = Saved::default().file("navidrome/subsonic-playlists.json").file("navidrome/subsonic-playlist.json").body(empty);
@@ -522,7 +522,7 @@ fn a_media_server_larger_than_its_pages_comes_in_whole_and_is_written_in_batches
     let shelves = Shelves { records: 875, songs: 12, most: 50, asked: Default::default() };
     let readings = std::cell::RefCell::new(Vec::new());
     let began = Instant::now();
-    let event = run(&lab.lib, &shelves, &lab.keys, lab.source, &|reading| readings.borrow_mut().push(reading), &never);
+    let event = run(&lab.lib, &shelves, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|reading| readings.borrow_mut().push(reading), &never);
 
     // `top` does not count: read whole, it still cannot be shown whole.
     let partial = chilpa_i18n::t("the server did not describe every track it listed; nothing was taken out, sync again");
@@ -539,7 +539,7 @@ fn a_media_server_larger_than_its_pages_comes_in_whole_and_is_written_in_batches
 
     // Its covers come in runs of a bounded size; the rest wait for another.
     let images = Statuses(Mutex::new(std::iter::repeat(200).take(COVERS_PER_RUN).collect()));
-    let next = covers(&lab.lib, &images, &lab.keys, lab.source, 0, &never);
+    let next = covers(&lab.lib, &images, &lab.keys, &std::sync::Mutex::new(()), lab.source, 0, &never);
     assert!(next.is_some(), "the rest wait for another run");
     assert_eq!(lab.lib.pending_server_covers(lab.source, 1_000).unwrap().len(), 875 - COVERS_PER_RUN);
     let _ = std::fs::remove_dir_all(covers_dir(&server.instance));
@@ -595,7 +595,7 @@ fn a_media_server_that_goes_away_is_waited_for_and_read_on_from_the_same_page() 
     // walk's side, then two of the sync's pings, and it is back.
     let net = Falls::new(6, 4, None, 6);
     let readings = std::cell::RefCell::new(Vec::new());
-    let event = run(&lab.lib, &net, &lab.keys, lab.source, &|reading| readings.borrow_mut().push(reading), &never);
+    let event = run(&lab.lib, &net, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|reading| readings.borrow_mut().push(reading), &never);
 
     // `top` does not count, so the sync is partial for that alone.
     let partial = chilpa_i18n::t("the server did not describe every track it listed; nothing was taken out, sync again");
@@ -610,7 +610,7 @@ fn a_media_server_that_goes_away_is_waited_for_and_read_on_from_the_same_page() 
 fn a_container_that_takes_the_server_down_twice_is_left_out_and_the_rest_comes_in() {
     let lab = media_server(chilpa_library::Library::in_memory().unwrap(), r#"["top"]"#);
     let net = Falls::new(6, 0, Some("r2"), 5);
-    let event = run(&lab.lib, &net, &lab.keys, lab.source, &|_| {}, &never);
+    let event = run(&lab.lib, &net, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
 
     assert_eq!(net.poisoned.load(std::sync::atomic::Ordering::SeqCst), 2, "asked again once, then left out");
     let said = chilpa_i18n::tf(
@@ -628,7 +628,7 @@ fn a_media_server_that_does_not_come_back_keeps_what_was_read_and_says_so() {
     let lab = media_server(chilpa_library::Library::in_memory().unwrap(), r#"["top"]"#);
     // Gone from the fourth request on: two pages of `top`, one record read.
     let net = Falls::new(6, 4, None, usize::MAX / 2);
-    let event = run(&lab.lib, &net, &lab.keys, lab.source, &|_| {}, &never);
+    let event = run(&lab.lib, &net, &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
 
     let said = chilpa_i18n::tf(
         "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back.",
@@ -666,15 +666,15 @@ impl Net for Statuses {
 #[test]
 fn a_cover_the_server_could_not_give_is_asked_again_a_few_times() {
     let lab = subsonic();
-    run(&lab.lib, &navidrome(Saved::default()), &lab.keys, lab.source, &|_| {}, &never);
+    run(&lab.lib, &navidrome(Saved::default()), &lab.keys, &std::sync::Mutex::new(()), lab.source, &|_| {}, &never);
     assert_eq!(lab.lib.pending_server_covers(lab.source, 10).unwrap().len(), 3);
     let net = Statuses(Mutex::new([503, 404, 200].into()));
-    assert_eq!(covers(&lab.lib, &net, &lab.keys, lab.source, 0, &never), None, "three is one run");
+    assert_eq!(covers(&lab.lib, &net, &lab.keys, &std::sync::Mutex::new(()), lab.source, 0, &never), None, "three is one run");
     assert_eq!(lab.lib.pending_server_covers(lab.source, 10).unwrap().len(), 1, "only the one it could not give now");
     let saved: i64 = lab.lib.connection().query_row("SELECT count(*) FROM albums WHERE artwork_path LIKE '%.jpg'", [], |r| r.get(0)).unwrap();
     assert_eq!(saved, 1, "a JPEG under a generic type is kept as one");
     for _ in 1..chilpa_library::store::servers::COVER_TRIES {
-        covers(&lab.lib, &Statuses(Mutex::new([500].into())), &lab.keys, lab.source, 0, &never);
+        covers(&lab.lib, &Statuses(Mutex::new([500].into())), &lab.keys, &std::sync::Mutex::new(()), lab.source, 0, &never);
     }
     assert!(lab.lib.pending_server_covers(lab.source, 10).unwrap().is_empty(), "missed every time, it is left");
     let _ = std::fs::remove_dir_all(covers_dir(&lab.lib.server(lab.source).unwrap().unwrap().instance));

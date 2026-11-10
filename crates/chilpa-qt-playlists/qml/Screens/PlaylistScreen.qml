@@ -177,7 +177,7 @@ Flickable {
         model: tracks
         laterLabel: page.playlistName
         canRemove: page.editable
-        onRemove: Playlists.remove(page.playlistId)
+        onRemove: { deletion.targetId = page.playlistId; deletion.open() }
     }
 
     PlaylistSelectionBar {
@@ -205,4 +205,14 @@ Flickable {
         enabled: !InputLayers.blocksShortcuts(page.Window.window) && (page.changeable && page.order === "custom" && find.typed === "")
         onActivated: tracks.moveInPlaylist(tracks.selectedRow(), 1)
     }
+    ConfirmationDialog {
+        id: deletion
+        property int targetId: 0
+        title: I18n.tr("Delete playlist?", I18n.rev)
+        message: I18n.tr("This permanently removes the playlist and its saved order.", I18n.rev)
+        confirmText: I18n.tr("Delete", I18n.rev)
+        destructive: true
+        onConfirmed: Playlists.remove(targetId)
+    }
+
 }

@@ -16,8 +16,8 @@ Modal {
             return ({})
         }
     }
-    width: Math.min((parent ? parent.width : Frame.widest) - Frame.gutter, Frame.widest)
-    height: Math.min((parent ? parent.height : Frame.tallest) - Frame.gutter, Frame.tallest)
+    preferredWidth: Math.min((parent ? parent.width : Frame.widest) - Frame.gutter, Frame.widest)
+    preferredHeight: Frame.head + Metrics.gap16 * 2 + Metrics.hairline + flick.contentHeight + Metrics.modalInsets // derived: two vertical gaps around the divider
 
     Item {
         width: about.width - Metrics.modalInsets

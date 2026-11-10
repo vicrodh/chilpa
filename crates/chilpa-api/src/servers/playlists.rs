@@ -125,7 +125,8 @@ impl Chilpa {
             self.now.error = chilpa_i18n::t("this user may not do that on the server");
             return Some(false);
         }
-        match self.ask_server_change(Write { source: stored.source_id, playlist: id, request: String::new(), change }) {
+        let Some(server) = self.library().and_then(|lib| lib.server(stored.source_id).ok().flatten()) else { return Some(false) };
+        match self.ask_server_change(Write { session:super::session::Scope::of(&server), source: stored.source_id, playlist: id, request: String::new(), change }) {
             Ok(()) => Some(true),
             Err(why) => {
                 self.now.error = why;
@@ -210,7 +211,8 @@ impl Chilpa {
         let added = tracks.len();
         if added > 0 {
             let change = first_change(&stored, tracks);
-            if let Err(why) = self.ask_server_change(Write { source: stored.source_id, playlist: id, request: String::new(), change }) {
+            let Some(server) = self.library().and_then(|lib| lib.server(stored.source_id).ok().flatten()) else { return rejected };
+            if let Err(why) = self.ask_server_change(Write { session:super::session::Scope::of(&server), source: stored.source_id, playlist: id, request: String::new(), change }) {
                 self.now.error = why;
                 return rejected;
             }
@@ -255,7 +257,8 @@ impl Chilpa {
         }
         let tracks = entries.into_iter().map(|e| e.external_id).collect();
         let description = if origin.kind.is_some_and(chilpa_servers::playlist_describable) { description.trim().to_string() } else { String::new() };
-        let write = Write { source: origin.source_id, playlist: 0, request: request.to_string(), change: Change::Create { name: name.to_string(), description, tracks } };
+        let Some(stored) = self.library().and_then(|lib| lib.server(origin.source_id).ok().flatten()) else { return Some(false) };
+        let write = Write { session:super::session::Scope::of(&stored), source: origin.source_id, playlist: 0, request: request.to_string(), change: Change::Create { name: name.to_string(), description, tracks } };
         Some(match self.ask_server_change(write) {
             Ok(()) => true,
             Err(why) => {

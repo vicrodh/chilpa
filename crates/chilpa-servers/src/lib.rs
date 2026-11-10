@@ -33,7 +33,7 @@ pub mod plex;
 pub mod subsonic;
 mod text;
 
-pub use model::{Client, Credential, Details, Failure, Kind, Library, Page, Probe, Server, Stream, Track};
+pub use model::{Client, Credential, Details, ExtensionStatus, Failure, Kind, Library, Page, Probe, Server, Stream, Track};
 pub use media::MediaKind;
 pub use net::{Net, Reply, Request};
 pub use playlist::{Change, Entry, Playlist, PlaylistListing, PlaylistTracks, PLAYLISTS, PLAYLIST_TRACKS};

@@ -1,10 +1,11 @@
 import QtQuick
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as Confirmations
 import QtQuick.Effects
 import app.chilpa
+import app.chilpa.playlists
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import "../Components"
 
 // Bulk actions for the opt-in selection mode on a playlist.
 Item {
@@ -72,16 +73,13 @@ Item {
             id: add
             glyph: Icons.playlistAdd
             tip: I18n.tr("Add to playlist…", I18n.rev)
-            onClicked: {
-                picker.trackIdsJson = bar.model.selectedTrackIdsJson()
-                picker.show(add.x, 0)
-            }
+            onClicked: AddToPlaylist.show(bar.model.selectedTrackIdsJson())
         }
         IconButton {
             visible: bar.canRemove
             glyph: Icons.trash
             tip: I18n.tr("Remove from playlist", I18n.rev)
-            onClicked: bar.model.removeChosen(bar.model.selectedAnyRow())
+            onClicked: removal.show(bar.model,bar.model.selectedAnyRow(),"remove",false,"")
         }
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
@@ -95,5 +93,5 @@ Item {
             onClicked: bar.finished()
         }
     }
-    PlaylistPicker { id: picker }
+    Confirmations.ModelActionConfirmation { id: removal }
 }

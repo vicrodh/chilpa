@@ -39,8 +39,9 @@ Modal {
     function show(id) { serverId = id; open() }
     ServerWizardWords { id: words; wizard: wizard }
 
-    width: Math.min((parent ? parent.width : Metrics.serverWizardWidth) - Metrics.modalInsets, Metrics.serverWizardWidth)
-    height: Math.min(Metrics.serverWizardHeight, (parent ? parent.height : Metrics.serverWizardHeight) - Metrics.modalInsets)
+    preferredWidth: Math.min((parent ? parent.width : Metrics.serverWizardWidth) - Metrics.modalInsets, Metrics.serverWizardWidth)
+    preferredHeight: rail.height + Metrics.gap16 + content.implicitHeight + footer.height
+        + (tray.visible ? tray.height + Metrics.gap12 : 0) + Metrics.gap12 + Metrics.modalInsets
 
     onAboutToShow: {
         page = editing ? 1 : 0
@@ -54,9 +55,11 @@ Modal {
             names = named
         } else Servers.cancel()
     }
-    onClosed: if (!preview) Servers.cancel()
-    onStepChanged: advance()
-    onBusyChanged: advance()
+    onClosed: { advanceSoon.stop(); if (!preview) Servers.cancel() }
+    // A facade effect runs after the setup binding has finished evaluating.
+    onStepChanged: if (visible && !preview) advanceSoon.restart()
+    onBusyChanged: if (visible && !preview) advanceSoon.restart()
+    Timer { id: advanceSoon; interval: 0; onTriggered: wizard.advance() }
     Timer {
         interval: Motion.poll
         repeat: true
@@ -174,7 +177,7 @@ Modal {
             width: parent.width
             chosen: wizard.chosen
             names: wizard.names
-            rows: wizard.height < Metrics.serverWizardHeight ? 2 : 3 // derived: fewer rows when the dialog is short
+            rows: wizard.maximumHeight < Metrics.serverWizardHeight ? 2 : 3 // derived: fewer rows when the available window is short
             onPicked: (id, name, on) => wizard.pick(id, name, on)
         }
     }
