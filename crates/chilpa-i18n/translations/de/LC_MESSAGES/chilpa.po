@@ -744,6 +744,9 @@ msgstr "August"
 msgid "Aurora"
 msgstr "Aurora"
 
+msgid "Author"
+msgstr "Autor"
+
 msgid "Author: {}"
 msgstr "Autor: {}"
 
@@ -1194,13 +1197,13 @@ msgid "Chilpa never writes these files"
 msgstr "Chilpa schreibt diese Dateien nie"
 
 msgid "Chilpa opens with the tabs it had when it closed."
-msgstr "Chilpa merkt sich die offenen Tabs und stellt diese beim starten automatisch wieder her."
+msgstr "Chilpa merkt sich die offenen Tabs und stellt diese beim Starten automatisch wieder her."
 
 msgid "Chilpa output"
 msgstr "Ausgabe von Chilpa"
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
-msgstr "Chilpa spielt Dateien von deinen lokalen Laufwerken und deinen Servern ab, und mit Plugins lassen sich zahreiche weitere Quellen hinzufügen. Es zeigt dir klar an, ob das an deinen DAC gesendete Audiosignal bitgenau ankommt."
+msgstr "Chilpa spielt Dateien von deinen lokalen Laufwerken und deinen Servern ab, und mit Plugins lassen sich zahlreiche weitere Quellen hinzufügen. Es zeigt dir klar an, ob das an deinen DAC gesendete Audiosignal bitgenau ankommt."
 
 msgid "Chilpa plugins"
 msgstr "Chilpa-Plugins"
@@ -1621,6 +1624,9 @@ msgstr "Weiterhören"
 
 msgid "Continue or dismiss the interrupted scan before starting another."
 msgstr "Setze den unterbrochenen Scan fort oder verwirf ihn, bevor ein weiterer gestartet wird."
+
+msgid "Contributors"
+msgstr "Mitwirkende"
 
 msgid "Convert to PCM"
 msgstr "In PCM umwandeln"
@@ -4398,7 +4404,7 @@ msgid "Open Last.fm"
 msgstr "Last.fm öffnen"
 
 msgid "Open ListenList"
-msgstr "Wiedergabeliste öffnen"
+msgstr "ListenList öffnen"
 
 msgid "Open Music Link"
 msgstr "Musik-Link öffnen"

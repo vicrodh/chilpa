@@ -743,6 +743,9 @@ msgstr "8月"
 msgid "Aurora"
 msgstr "Aurora"
 
+msgid "Author"
+msgstr "作者"
+
 msgid "Author: {}"
 msgstr "作者: {}"
 
@@ -1619,6 +1622,9 @@ msgstr "続きを再生"
 
 msgid "Continue or dismiss the interrupted scan before starting another."
 msgstr "別のスキャンを開始する前に、中断されたスキャンを続行または破棄してください。"
+
+msgid "Contributors"
+msgstr "貢献者"
 
 msgid "Convert to PCM"
 msgstr "PCMに変換"

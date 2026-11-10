@@ -744,6 +744,9 @@ msgstr "agosto"
 msgid "Aurora"
 msgstr "Aurora"
 
+msgid "Author"
+msgstr "Autor"
+
 msgid "Author: {}"
 msgstr "Autor: {}"
 
@@ -1621,6 +1624,9 @@ msgstr "Continuar ouvindo"
 
 msgid "Continue or dismiss the interrupted scan before starting another."
 msgstr "Continue ou descarte a verificação interrompida antes de iniciar outra."
+
+msgid "Contributors"
+msgstr "Colaboradores"
 
 msgid "Convert to PCM"
 msgstr "Converter para PCM"

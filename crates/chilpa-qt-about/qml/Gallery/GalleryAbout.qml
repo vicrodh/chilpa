@@ -31,6 +31,8 @@ Item {
         PillButton { text: "Report an issue"; onClicked: reportIssue.open() }
         PillButton { text: "About"; onClicked: about.open() }
         AboutBody { width: gallery.sampleWide; doc: ({ version: "0.0.0", build: "2026-10-09 (405e25a54)", platform: "Linux (Qt)", links: [{ label: "Website", url: "https://chilpa.app" }] }) }
+        AboutCredit { person: ({ name: "contributor", url: "https://github.com/vicrodh/chilpa", avatar: "vicrodh.png" }) }
+        AboutCredits { width: gallery.sampleWide; doc: JSON.parse(About.document(0)) }
         UpdatesPanel { width: gallery.sampleWide }
         PluginUpdatesPanel { width: gallery.sampleWide }
         UpdatesIndicator {}

@@ -744,6 +744,9 @@ msgstr ""
 msgid "Aurora"
 msgstr ""
 
+msgid "Author"
+msgstr "Author"
+
 msgid "Author: {}"
 msgstr "Author: {}"
 
@@ -1621,6 +1624,9 @@ msgstr ""
 
 msgid "Continue or dismiss the interrupted scan before starting another."
 msgstr "Continue or dismiss the interrupted scan before starting another."
+
+msgid "Contributors"
+msgstr "Contributors"
 
 msgid "Convert to PCM"
 msgstr ""

@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
-// The About window's numbers (QBZ's AboutModal): as wide and tall as the
+// The About window's dimensions: as wide and tall as the
 // window allows up to its largest, 40 from each edge; a head row as tall as
 // the logo; the labels of the build's facts in a column of their own.
 QtObject {
@@ -12,6 +12,8 @@ QtObject {
     readonly property int head: 56
     readonly property int factLabel: 84
     readonly property int logoDecode: 112
+    readonly property int avatar: 20
+    readonly property int avatarDecode: 40
     readonly property int updateWidth: Metrics.menuMaxWidth
     readonly property int updateDelay: 15000
     readonly property int updateInterval: 86400000
