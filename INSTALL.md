@@ -104,7 +104,7 @@ tar xf chilpa-0.1.2-linux-x86_64.tar.gz
 
 The tarball uses your system libraries: Qt 6.11 or newer with Qt Quick, ALSA, PulseAudio, D-Bus, SQLite and OpenSSL 3. Chilpa updates it in place: About has the switch for the automatic check and a Check for updates button. The folder keeps its name and path, and the previous version stays beside it as `<folder>.previous`. Keep the folder where you can write to it.
 
-It includes a desktop entry and an icon. The entry runs `/usr/bin/chilpa-qt`, which suits a package. To add Chilpa to your own menu, run this from the folder where you extracted it:
+It includes a desktop entry and an icon. The entry runs `chilpa-qt` from your `PATH`, which suits a package. To add Chilpa to your own menu, run this from the folder where you extracted it:
 
 ```sh
 mkdir -p ~/.local/share/applications

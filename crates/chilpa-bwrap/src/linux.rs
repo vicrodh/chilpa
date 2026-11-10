@@ -3,6 +3,24 @@ use crate::NativePaths;
 use chilpa_plugin::{bridge::BridgeError, pipe_transport::PipeTransport};
 use std::{path::{Path, PathBuf}, process::{Command, Stdio}};
 
+/// Where Nix keeps what a distribution would put under `/usr`.
+const STORE: &str = "/nix/store";
+
+/// The folder the guest sees as `/usr`, which also holds the sandbox's own
+/// program. A distribution has it at `/usr`. NixOS keeps nothing there, so
+/// its package builds one and names it in `CHILPA_SANDBOX_SYSTEM`.
+fn system() -> PathBuf {
+    std::env::var_os("CHILPA_SANDBOX_SYSTEM").map(PathBuf::from).filter(|path| path.is_absolute()).unwrap_or_else(|| "/usr".into())
+}
+
+/// A system built in the store is links into the rest of it, so the guest
+/// sees the store too, read-only. Elsewhere it keeps seeing `/usr` alone.
+fn bind_store(command: &mut Command, system: &Path) -> bool {
+    let stored = system.starts_with(STORE);
+    if stored { command.args(["--ro-bind", STORE, STORE]); }
+    stored
+}
+
 /// These are host-selected runtime components, never repository arguments.
 pub struct RuntimePaths {
     pub sandbox: PathBuf,
@@ -17,7 +35,8 @@ impl RuntimePaths {
     pub fn installed(root: &Path) -> Option<Self> {
         let adjacent = std::env::current_exe().ok()?.parent()?.join("compat-runtime");
         let root = if adjacent.join("adapter/worker.pl").is_file() { adjacent.as_path() } else { root };
-        let paths = Self { sandbox: "/usr/bin/bwrap".into(), system: "/usr".into(),
+        let system = system();
+        let paths = Self { sandbox: system.join("bin/bwrap"), system,
             libraries: root.join("libraries"), adapter: root.join("adapter") };
         (paths.sandbox.is_file() && paths.adapter.join("worker.pl").is_file()
             && paths.libraries.join("lib/perl5").is_dir()).then_some(paths)
@@ -62,7 +81,9 @@ pub fn launch(paths: &RuntimePaths, guest: &Path, memory_bytes: usize) -> Result
     let guest = canonical_directory(guest)?;
     let mut command = Command::new(&paths.sandbox);
     command.env_clear().args(["--unshare-all", "--die-with-parent", "--new-session", "--cap-drop", "ALL"])
-        .arg("--ro-bind").arg(system).arg("/usr")
+        .arg("--ro-bind").arg(&system).arg("/usr");
+    bind_store(&mut command, &system);
+    command
         .args(["--symlink", "usr/lib", "/lib", "--symlink", "usr/lib64", "/lib64",
             "--proc", "/proc", "--dev", "/dev", "--size", "16777216", "--tmpfs", "/tmp"])
         .arg("--ro-bind").arg(libraries).arg("/runtime")
@@ -110,17 +131,21 @@ pub fn launch_native(
     if !folder.join("plugin").is_file() {
         return Err(BridgeError::Disconnected);
     }
-    let mut command = Command::new("/usr/bin/bwrap");
+    let system = canonical_directory(&system())?;
+    let mut command = Command::new(system.join("bin/bwrap"));
     command.env_clear().arg("--unshare-all");
     if network { command.arg("--share-net"); }
     command.args(["--die-with-parent", "--new-session", "--cap-drop", "ALL"])
-        .args(["--ro-bind", "/usr", "/usr", "--symlink", "usr/lib", "/lib", "--symlink", "usr/lib64", "/lib64",
+        .arg("--ro-bind").arg(&system).arg("/usr")
+        .args(["--symlink", "usr/lib", "/lib", "--symlink", "usr/lib64", "/lib64",
             "--symlink", "usr/bin", "/bin", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp"]);
+    let stored = bind_store(&mut command, &system);
     // The loader's cache and configuration too: a native binary links
     // libraries that live outside /usr/lib on some systems (libgcc_s under
     // the compiler's folder), found only through them.
+    // NixOS links the certificates and the resolver through /etc/static.
     for shared in ["/etc/ssl", "/etc/ca-certificates", "/etc/pki", "/etc/resolv.conf", "/etc/hosts", "/etc/nsswitch.conf",
-        "/etc/ld.so.cache", "/etc/ld.so.conf", "/etc/ld.so.conf.d"] {
+        "/etc/ld.so.cache", "/etc/ld.so.conf", "/etc/ld.so.conf.d", "/etc/static"] {
         command.args(["--ro-bind-try", shared, shared]);
     }
     command.arg("--ro-bind").arg(&folder).arg("/plugin")
@@ -128,8 +153,10 @@ pub fn launch_native(
         .arg("--bind").arg(&cache).arg("/cache");
     if let Some(export) = export { command.arg("--bind").arg(export).arg("/export"); }
     command.args(["--chdir", "/data", "--clearenv", "--setenv", "PATH", "/usr/bin", "--setenv", "HOME", "/data",
-            "--setenv", "XDG_CACHE_HOME", "/cache", "--setenv", "SSL_CERT_DIR", "/etc/ssl/certs", "--",
-            "/usr/bin/prlimit"])
+            "--setenv", "XDG_CACHE_HOME", "/cache", "--setenv", "SSL_CERT_DIR", "/etc/ssl/certs"]);
+    // A stored system has no loader cache to say where its libraries are.
+    if stored { command.args(["--setenv", "LD_LIBRARY_PATH", "/usr/lib"]); }
+    command.args(["--", "/usr/bin/prlimit"])
         .arg(format!("--as={memory_bytes}"))
         .args(["--nofile=256", "--core=0", "--", "/plugin/plugin"])
         .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
@@ -216,7 +243,7 @@ while(1){
 }
 "#;
         std::fs::write(adapter.join("worker.pl"), fixture).unwrap();
-        let paths = RuntimePaths { sandbox: "/usr/bin/bwrap".into(), system: "/usr".into(), libraries, adapter };
+        let paths = RuntimePaths { sandbox: system().join("bin/bwrap"), system: system(), libraries, adapter };
         let mut session = BridgeSession::new(launch(&paths, &guest, 256 * 1024 * 1024).unwrap());
         assert_eq!(session.call("inspect", json!({}), Duration::from_secs(3), &mut Deny).unwrap(),
             json!({"fork_denied":true,"network_denied":true,"home_hidden":true,"root_readonly":true,"devices_readonly":true,"temporary_bounded":true}));

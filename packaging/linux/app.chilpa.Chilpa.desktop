@@ -2,7 +2,7 @@
 Type=Application
 Name=Chilpa
 Comment=Music player
-Exec=/usr/bin/chilpa-qt %U
+Exec=chilpa-qt %U
 Icon=app.chilpa.Chilpa
 Terminal=false
 Categories=AudioVideo;Audio;Music;Player;Qt;
