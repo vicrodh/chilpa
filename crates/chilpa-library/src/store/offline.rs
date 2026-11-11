@@ -6,7 +6,8 @@ use sha2::{Digest, Sha256};
 
 pub const MAX_TRACKS: usize = 10_000;
 pub const MAX_SELECTION_BYTES: usize = 8 * 1024 * 1024;
-pub const QUOTA_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+/// The most copies the offline page lists at once.
+pub const MAX_LISTED: usize = 20_000;
 
 pub fn revision_digest(revision: Option<&str>) -> String {
     format!("{:x}", Sha256::digest(revision.unwrap_or("").as_bytes()))
@@ -53,6 +54,36 @@ pub struct Copy {
     pub validator: String,
     pub state: String,
     pub error: String,
+}
+
+/// What one server keeps offline.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct SourceUsage {
+    pub source: i64,
+    pub files: usize,
+    pub bytes: u64,
+}
+
+/// A copy as the offline page lists it.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Listed {
+    pub key: String,
+    pub source: i64,
+    pub bytes: u64,
+    pub state: String,
+    pub error: String,
+    pub changed_at: i64,
+    /// The library's track, or 0 when it left the library.
+    pub track: i64,
+    pub title: String,
+    pub artist: String,
+    pub duration_ms: u64,
+    pub disc: i64,
+    pub number: i64,
+    pub album: i64,
+    pub album_title: String,
+    pub album_artist: String,
+    pub artwork: String,
 }
 
 impl Copy {
@@ -315,8 +346,16 @@ impl Library {
         tx.finish()
     }
 
-    /// Quota includes final files and the active temporary reservation.
-    pub fn reserve_offline_copy(&self, key: &str, maximum: u64) -> rusqlite::Result<u64> {
+    /// The bytes one transfer may write, at most `maximum`; zero refuses it.
+    /// Under a quota the reservation is recorded, so final files and active
+    /// transfers share it. Without one nothing is reserved and nothing is
+    /// refused: the disk is the limit.
+    pub fn reserve_offline_copy(
+        &self,
+        key: &str,
+        maximum: u64,
+        quota: Option<u64>,
+    ) -> rusqlite::Result<u64> {
         let tx = self.own_transaction()?;
         let (state, previous): (String, i64) = tx.query_row(
             "SELECT state,bytes FROM offline_audio WHERE key=?1",
@@ -326,20 +365,90 @@ impl Library {
         if state == "complete" {
             return Ok(0);
         }
-        let used: i64 = tx.query_row(
-            "SELECT coalesce(sum(bytes),0) FROM offline_audio",
-            [],
-            |row| row.get(0),
-        )?;
-        let reservation = QUOTA_BYTES
-            .saturating_sub(used.saturating_sub(previous).max(0) as u64)
-            .min(maximum);
+        let (budget, recorded) = match quota {
+            Some(quota) => {
+                let used: i64 = tx.query_row(
+                    "SELECT coalesce(sum(bytes),0) FROM offline_audio",
+                    [],
+                    |row| row.get(0),
+                )?;
+                let reservation = quota
+                    .saturating_sub(used.saturating_sub(previous).max(0) as u64)
+                    .min(maximum);
+                (reservation, reservation)
+            }
+            None => (maximum, 0),
+        };
         tx.execute(
             "UPDATE offline_audio SET bytes=?2,state='downloading',error='' WHERE key=?1",
-            params![key, reservation as i64],
+            params![
+                key,
+                i64::try_from(recorded).map_err(|_| rusqlite::Error::InvalidQuery)?
+            ],
         )?;
         tx.finish()?;
-        Ok(reservation)
+        Ok(budget)
+    }
+
+    /// Files and bytes kept offline for each server, reservations included.
+    pub fn offline_usage_by_source(&self) -> rusqlite::Result<Vec<SourceUsage>> {
+        let mut statement = self.db.prepare(
+            "SELECT source_id,count(*),coalesce(sum(bytes),0) FROM offline_audio
+            GROUP BY source_id ORDER BY source_id LIMIT 1024",
+        )?;
+        let rows = statement.query_map([], |row| {
+            Ok(SourceUsage {
+                source: row.get(0)?,
+                files: row.get::<_, i64>(1)?.max(0) as usize,
+                bytes: row.get::<_, i64>(2)?.max(0) as u64,
+            })
+        })?;
+        rows.collect()
+    }
+
+    /// Every copy with the track and record it belongs to, for the offline
+    /// page. A copy whose track left the library keeps its row, with an
+    /// empty title and track id 0. At most `MAX_LISTED + 1` rows, so the
+    /// caller can tell that more exist.
+    pub fn offline_listing(&self) -> rusqlite::Result<Vec<Listed>> {
+        let mut statement = self.db.prepare(&format!(
+            "SELECT o.key,o.source_id,o.bytes,o.state,o.error,o.changed_at,coalesce(t.id,0),coalesce(t.title,''),
+            coalesce(t.artist,''),coalesce(t.duration_ms,0),coalesce(t.disc_number,0),coalesce(t.track_number,0),
+            coalesce(t.album_id,0),coalesce(a.title,''),coalesce(a.album_artist,''),coalesce(a.artwork_path,'')
+            FROM offline_audio o LEFT JOIN tracks t ON t.source_id=o.source_id AND t.external_id=o.entry
+            LEFT JOIN albums a ON a.id=t.album_id ORDER BY o.key LIMIT {}",
+            MAX_LISTED + 1
+        ))?;
+        let rows = statement.query_map([], |row| {
+            Ok(Listed {
+                key: row.get(0)?,
+                source: row.get(1)?,
+                bytes: row.get::<_, i64>(2)?.max(0) as u64,
+                state: row.get(3)?,
+                error: row.get(4)?,
+                changed_at: row.get(5)?,
+                track: row.get(6)?,
+                title: row.get(7)?,
+                artist: row.get(8)?,
+                duration_ms: row.get::<_, i64>(9)?.max(0) as u64,
+                disc: row.get(10)?,
+                number: row.get(11)?,
+                album: row.get(12)?,
+                album_title: row.get(13)?,
+                album_artist: row.get(14)?,
+                artwork: row.get(15)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    /// Where a server's next copies go: a folder URL, or empty for the
+    /// profile's offline folder. Copies already saved keep their paths.
+    pub fn set_server_offline_folder(&self, source_id: i64, folder: &str) -> rusqlite::Result<bool> {
+        Ok(self.db.execute(
+            "UPDATE servers SET offline_folder=?2 WHERE source_id=?1",
+            params![source_id, folder],
+        )? > 0)
     }
 
     /// Called after file promotion. The account and track identity must
@@ -478,12 +587,14 @@ mod tests {
         (lib, source, item)
     }
 
+    const QUOTA_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+
     #[test]
     fn reservations_and_complete_files_share_one_quota_and_accounts_never_share_copies() {
         let (lib, source, item) = fixture();
         lib.queue_offline_copy(&item, "album/1").unwrap();
         assert_eq!(
-            lib.reserve_offline_copy(&item.key, QUOTA_BYTES).unwrap(),
+            lib.reserve_offline_copy(&item.key, QUOTA_BYTES, Some(QUOTA_BYTES)).unwrap(),
             QUOTA_BYTES
         );
         assert_eq!(lib.offline_bytes().unwrap(), QUOTA_BYTES);
@@ -491,7 +602,7 @@ mod tests {
         other.key = "other".into();
         other.revision = "new".into();
         lib.queue_offline_copy(&other, "album/1").unwrap();
-        assert_eq!(lib.reserve_offline_copy(&other.key, 1).unwrap(), 0);
+        assert_eq!(lib.reserve_offline_copy(&other.key, 1, Some(QUOTA_BYTES)).unwrap(), 0);
         assert!(!lib.complete_offline_copy(&item, 999).unwrap());
         let revision = lib.server(source).unwrap().unwrap().session_revision;
         assert!(lib.complete_offline_copy(&item, revision).unwrap());
@@ -511,7 +622,59 @@ mod tests {
                 .checksum,
             "hash"
         );
-        assert_eq!(lib.reserve_offline_copy(&item.key, 100).unwrap(), 0);
+        assert_eq!(lib.reserve_offline_copy(&item.key, 100, Some(QUOTA_BYTES)).unwrap(), 0);
+    }
+
+    #[test]
+    fn a_quota_counts_every_step_and_no_quota_reserves_nothing_and_refuses_nothing() {
+        let (lib, _, item) = fixture();
+        let quota = 1000;
+        lib.queue_offline_copy(&item, "album/1").unwrap();
+        assert_eq!(lib.reserve_offline_copy(&item.key, 600, Some(quota)).unwrap(), 600);
+        let mut second = item.clone();
+        second.key = "second".into();
+        second.revision = "second".into();
+        lib.queue_offline_copy(&second, "album/1").unwrap();
+        assert_eq!(lib.reserve_offline_copy(&second.key, 600, Some(quota)).unwrap(), 400, "what the first left");
+        assert_eq!(lib.offline_bytes().unwrap(), 1000);
+        let mut third = item.clone();
+        third.key = "third".into();
+        third.revision = "third".into();
+        lib.queue_offline_copy(&third, "album/1").unwrap();
+        assert_eq!(lib.reserve_offline_copy(&third.key, 600, Some(quota)).unwrap(), 0, "full");
+        assert_eq!(lib.reserve_offline_copy(&third.key, 600, Some(500)).unwrap(), 0, "a quota lowered under the usage refuses");
+        assert_eq!(lib.offline_bytes().unwrap(), 1000, "and removes nothing");
+        assert_eq!(lib.reserve_offline_copy(&third.key, u64::MAX / 2, None).unwrap(), u64::MAX / 2, "no quota, the whole budget");
+        assert_eq!(lib.offline_bytes().unwrap(), 1000, "and nothing recorded for it");
+        assert_eq!(lib.offline_usage_by_source().unwrap(), [SourceUsage { source: item.source, files: 3, bytes: 1000 }]);
+    }
+
+    #[test]
+    fn the_listing_names_the_track_and_record_and_keeps_copies_that_left_the_library() {
+        let (lib, source, item) = fixture();
+        lib.queue_offline_copy(&item, "album/1").unwrap();
+        let mut gone = item.clone();
+        gone.key = "gone".into();
+        gone.entry = "remote:subsonic/fixture/removed".into();
+        lib.queue_offline_copy(&gone, "album/1").unwrap();
+        let listed = lib.offline_listing().unwrap();
+        assert_eq!(listed.len(), 2);
+        let found = listed.iter().find(|row| row.key == item.key).unwrap();
+        assert!(found.track > 0 && found.album > 0);
+        assert_eq!((found.title.as_str(), found.album_title.as_str(), found.state.as_str()), ("Song", "Album", "queued"));
+        let left = listed.iter().find(|row| row.key == "gone").unwrap();
+        assert_eq!((left.track, left.title.as_str(), left.source), (0, "", source));
+    }
+
+    #[test]
+    fn a_server_folder_changes_alone() {
+        let (lib, source, _) = fixture();
+        let before = lib.server(source).unwrap().unwrap();
+        assert!(lib.set_server_offline_folder(source, "file:///music/offline").unwrap());
+        let after = lib.server(source).unwrap().unwrap();
+        assert_eq!(after.offline_folder, "file:///music/offline");
+        assert_eq!(after.session_revision, before.session_revision, "no job is invalidated");
+        assert!(!lib.set_server_offline_folder(source + 100, "").unwrap());
     }
 
     #[test]

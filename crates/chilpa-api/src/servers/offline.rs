@@ -4,7 +4,12 @@ use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 
 pub(super) mod leases;
+mod limit;
+mod manager;
+mod page;
 mod worker;
+pub(crate) use limit::LIMIT;
+pub(super) use page::Page;
 pub(super) use worker::State;
 #[derive(Default)]
 pub(super) struct Invalidations {
@@ -40,7 +45,7 @@ pub(super) fn checked(
     if !metadata.is_file()
         || metadata.len() != item.bytes
         || item.bytes == 0
-        || item.bytes > worker::MAX_FILE_BYTES
+        || item.bytes > limit::CEILING_FILE_BYTES
     {
         return Err(CheckError::Invalid);
     }

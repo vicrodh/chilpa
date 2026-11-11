@@ -12,6 +12,7 @@ import "qrc:/qt/qml/app/chilpa/folders/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/stats/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/devices/qml/Screens"
+import "qrc:/qt/qml/app/chilpa/offline/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Driving
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
@@ -32,13 +33,7 @@ PageTransition {
         panelAside = Navigation.screen === "metadata"
     }
     route: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.routeKey].join("\u001f")
-    Connections { target: OpenMedia; function onOpened() { Navigation.go("openMedia", 0) } }
-    Connections { target: Player; function onWindowAsked(what) { if (what === 4) OpenMedia.openRequested() } }
-    Connections {
-        target: Library
-        function onContentRevChanged() { Ratings.refresh() }
-        function onRemoteRevChanged() { Ratings.refresh() }
-    }
+    Driving.WindowRequests {}
     readonly property var sourceDocument: JSON.parse(Sources.snapshot || "{}")
     readonly property bool medium: ["radio", "podcasts"].indexOf(sourceDocument.medium) >= 0
     readonly property var requested: host.componentRoute.split("\u001f")
@@ -64,6 +59,7 @@ PageTransition {
         case "settings": return settings
         case "pluginDownloads": return pluginDownloads
         case "libraryFolders": return libraryFolders
+        case "offlineMusic": return offlineMusic
         case "folders": return folders
         case "openMedia": return openMedia
         case "playlist": return playlist
@@ -94,6 +90,7 @@ PageTransition {
     Component { id: pluginDownloads; PluginDownloadsScreen { pluginId: host.routeKeyOf(parent); purchaseCard: purchaseAlbumCard } }
     Component { id: purchaseAlbumCard; PurchaseAlbumCard {} }
     Component { id: libraryFolders; LibraryFoldersScreen {} }
+    Component { id: offlineMusic; OfflineMusicScreen {} }
     Component { id: folders; FoldersScreen { routeKey: host.routeKeyOf(parent) } }
     Component { id: openMedia; OpenMediaScreen {} }
     Component { id: playlist; PlaylistScreen { playlistId: host.routeIdOf(parent) } }

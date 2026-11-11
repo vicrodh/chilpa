@@ -30,6 +30,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 pub use chilpa_library::Removal as ServerRemoval;
+pub(crate) use offline::LIMIT as OFFLINE_LIMIT;
 pub use setup::ServerSetup;
 
 /// A server as Settings shows it.
@@ -78,6 +79,8 @@ pub(crate) struct Servers {
     writer: Option<writing::Writer>,
     media: media::State,
     offline: offline::State,
+    /// The Offline music page: the selection a menu sent and its listing.
+    offline_page: offline::Page,
     /// The playlists with a change on its way to their server, and, as the
     /// negative of its source, a server with a playlist being created.
     pending: std::collections::HashSet<i64>,

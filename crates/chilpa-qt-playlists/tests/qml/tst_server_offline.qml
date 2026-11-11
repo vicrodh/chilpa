@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import app.chilpa
 import app.chilpa.sources
+import app.chilpa.offline
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "../../../chilpa-qt/qml/Components"
 import "../../qml/Components"
@@ -17,7 +18,7 @@ TestCase {
     TrackMenu { id: trackMenu; model: tracks }
     AlbumMenu { id: albumMenu }
     QueueMenu { id: playlistMenu; model: tracks; offlinePlaylistId: 17 }
-    ServerOfflineDialog { id: dialog; kind: "playlist"; selected: "[17]" }
+    ServerMediaDeletion { id: host }
     SidebarPlaylistActions { id: sidebarActions; sidebar: test }
     QtObject {
         id: manager
@@ -25,14 +26,14 @@ TestCase {
         function folderNames() { return [] }
     }
     PlaylistManagerActions { id: managerActions; manager: manager }
-    SignalSpy { id: requested; target: Sources; signalName: "offlineRequested" }
+    SignalSpy { id: requested; target: Offline; signalName: "requested" }
     function init() {
-        Sources.offlineInfo = {count:2}
-        Sources.offlineStatus = {running:false,total:0}
-        Sources.offlineCalls = []
+        Offline.info = {count:2}
+        Offline.status = {running:false,total:0}
+        Offline.calls = []
         requested.clear()
     }
-    function cleanup() { dialog.close(); trackMenu.close(); albumMenu.close(); playlistMenu.close(); managerActions.close() }
+    function cleanup() { trackMenu.close(); albumMenu.close(); playlistMenu.close(); managerActions.close() }
     function choose(menu) {
         const action = menu.entries.find(entry => entry.act === "offline")
         verify(action !== undefined)
@@ -76,47 +77,20 @@ TestCase {
         menu.close()
     }
     function test_local_only_music_does_not_offer_a_server_download() {
-        Sources.offlineInfo = {count:0}
+        Offline.info = {count:0}
         trackMenu.show(2,0,0)
         verify(!trackMenu.entries.some(entry => entry.act === "offline"))
     }
-    function test_opening_only_reads_and_download_requires_its_button() {
-        dialog.open()
-        tryCompare(dialog,"opened",true)
-        verify(Sources.offlineCalls.every(call => call[0] !== "start"))
-        findChild(dialog,"startOfflineDownload").clicked()
-        verify(Sources.offlineCalls.some(call => JSON.stringify(call) === '["start","playlist","[17]"]'))
-        compare(dialog.busy,true)
-        dialog.close()
-        verify(!Sources.offlineCalls.some(call => call[0] === "cancel"))
-    }
-    function test_status_changes_keep_the_dialog_height_stable() {
-        dialog.open()
-        tryCompare(dialog,"opened",true)
-        const original = dialog.height
-        Sources.offlineStatus = {running:true,total:2,title:"Remote metadata ".repeat(120),done:0,failed:0}
-        dialog.refresh()
-        waitForRendering(test)
-        compare(dialog.height,original)
-        findChild(dialog,"cancelOfflineDownload").clicked()
-        verify(Sources.offlineCalls.some(call => call[0] === "cancel"))
-        compare(dialog.height,original)
-    }
-    function test_file_removal_requires_both_confirmations_and_the_acknowledgement() {
-        dialog.open()
-        tryCompare(dialog,"opened",true)
-        findChild(dialog,"removeOfflineFiles").clicked()
-        const confirmation = findChild(dialog,"offlineRemovalConfirmation")
-        tryCompare(confirmation,"opened",true)
-        const accept = findChild(confirmation,"confirmationAccept")
-        accept.clicked()
-        verify(!Sources.offlineCalls.some(call => call[0] === "remove"))
-        const check = findChild(confirmation,"destructiveAcknowledgement")
-        compare(accept.enabled,false)
-        check.checked = true
-        tryCompare(accept,"enabled",true)
-        accept.clicked()
-        verify(Sources.offlineCalls.some(call => call[0] === "remove" && call[2] === "fixture-removal"))
-        compare(dialog.busy,true)
+    // The window's host takes every menu to the Offline music page with its
+    // choice staged; no dialog is opened for it.
+    function test_a_menu_choice_opens_the_offline_page_with_it_staged() {
+        Navigation.page = ""
+        albumMenu.show(17,"Record","Artist",0,0,0)
+        choose(albumMenu)
+        compare(Navigation.page,"offlineMusic")
+        verify(Offline.calls.some(call => JSON.stringify(call) === '["stage","album","[17]"]'))
+        compare(Offline.selection.kind,"album")
+        verify(!Offline.calls.some(call => call[0] === "start"), "choosing only opens the page")
+        compare(findChild(test,"serverOfflineDialog"),null)
     }
 }

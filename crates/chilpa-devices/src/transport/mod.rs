@@ -6,4 +6,6 @@ mod native_fs;
 pub mod mtp;
 pub use adb::{Adb, AdbSelector};
 pub use mounted::Mounted;
+/// The bytes a folder's filesystem can still take.
+pub use native_fs::available;
 pub use chilpa_sync::transport::{Entry, Transport};

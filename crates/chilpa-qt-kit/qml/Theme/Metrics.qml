@@ -327,6 +327,12 @@ QtObject {
     readonly property int slimColumns: 4
     readonly property int slimRows: 3
     readonly property int slimPages: 2
+    // The Offline music page, as QBZ's offline cache (OfflineManagerView):
+    // a record's row, a track's, the artists' rail, and the usage bar.
+    readonly property int offlineRecordRow: 60
+    readonly property int offlineTrackRow: 44
+    readonly property int offlineRail: 210
+    readonly property int offlineUsageBar: 8
     // The results page, as QBZ's (SearchView): a rail of thirty at most, six
     // songs on All and six more at a time, and twenty more at a time on a tab
     // of its own. Records page up to three rows at a time.

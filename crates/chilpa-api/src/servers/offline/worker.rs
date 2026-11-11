@@ -1,6 +1,10 @@
 //! One lazy download worker, at most 10,000 selected identities and 64 KiB
-//! transfer memory. All copies are explicitly pinned within a 2 GiB quota.
+//! transfer memory. All copies are explicitly pinned within the offline
+//! limit, or within the disk when there is none (`limit`).
 
+use super::limit::{Limit, CEILING_FILE_BYTES};
+#[cfg(test)]
+use super::limit::LIMITED_FILE_BYTES;
 use super::{destination, digest, global_directory};
 use crate::Chilpa;
 use chilpa_library::{
@@ -19,7 +23,6 @@ use std::{
     },
 };
 
-pub(super) const MAX_FILE_BYTES: u64 = 512 * 1024 * 1024;
 const MAX_SELECTION_BYTES: usize = 8 * 1024 * 1024;
 
 #[derive(Default)]
@@ -54,7 +57,7 @@ impl Drop for State {
     }
 }
 
-fn ids(value: &str) -> Vec<i64> {
+pub(super) fn ids(value: &str) -> Vec<i64> {
     if value.len() > MAX_TRACKS * 24 {
         return Vec::new();
     }
@@ -144,6 +147,7 @@ impl Chilpa {
             Err(error) => return refused(error),
         };
         let collection = digest(&format!("{kind}:{selected}"));
+        let limit = self.offline_limit();
         let progress = Arc::new(Mutex::new(Progress {
             total: tracks.len(),
             running: true,
@@ -164,6 +168,7 @@ impl Chilpa {
                     &tracks,
                     &scopes,
                     &collection,
+                    &limit,
                     &worker_progress,
                     &worker_cancelled,
                     &worker_changed,
@@ -231,6 +236,7 @@ fn run(
     tracks: &[Track],
     scopes: &HashMap<i64, super::super::session::Scope>,
     collection: &str,
+    limit: &Limit,
     progress: &Mutex<Progress>,
     cancelled: &AtomicBool,
     changed: &AtomicBool,
@@ -267,6 +273,7 @@ fn run(
                     track,
                     scope,
                     collection,
+                    limit,
                     cancelled,
                     |update| {
                         let mut state = progress.lock().unwrap_or_else(|error| error.into_inner());
@@ -371,6 +378,7 @@ fn download(
     track: &Track,
     scope: &super::super::session::Scope,
     collection: &str,
+    limit: &Limit,
     cancelled: &AtomicBool,
     progress: impl Fn(Update),
 ) -> Result<(), String> {
@@ -408,7 +416,7 @@ fn download(
     }
     let path = PathBuf::from(&item.path);
     let result = transfer(
-        lib, keys, track, &stored, scope, &mut item, &path, cancelled, progress,
+        lib, keys, track, &stored, scope, &mut item, &path, limit, cancelled, progress,
     );
     if let Err(error) = &result {
         let retained = super::disk_bytes(&item);
@@ -426,20 +434,33 @@ fn transfer(
     scope: &super::super::session::Scope,
     item: &mut Copy,
     path: &Path,
+    limit: &Limit,
     cancelled: &AtomicBool,
     progress: impl Fn(Update),
 ) -> Result<(), String> {
     let failed = || chilpa_i18n::t("The offline file could not be written.");
     let folder = path.parent().ok_or_else(failed)?;
     std::fs::create_dir_all(folder).map_err(|_| failed())?;
+    // Without a limit the disk is the budget: a file larger than its free
+    // space is refused before a byte is written.
+    let maximum = match limit.quota {
+        None if !path.exists() => chilpa_devices::transport::available(folder)
+            .map_or(limit.file_bytes(), |free| free.min(limit.file_bytes())),
+        _ => limit.file_bytes(),
+    };
+    let full = || {
+        if limit.quota.is_some() {
+            chilpa_i18n::t("The offline storage limit has been reached.")
+        } else {
+            chilpa_i18n::t("There is not enough free space on the disk for this file.")
+        }
+    };
     let reservation = lib
-        .reserve_offline_copy(&item.key, MAX_FILE_BYTES)
+        .reserve_offline_copy(&item.key, maximum, limit.quota)
         .map_err(|_| failed())?;
     item.bytes = reservation;
     if reservation == 0 {
-        return Err(chilpa_i18n::t(
-            "The offline storage limit has been reached.",
-        ));
+        return Err(full());
     }
     let temporary = path.with_extension("part");
     // A prior final file can be the atomic promotion left by a crash.
@@ -454,9 +475,7 @@ fn transfer(
             ));
         }
         if bytes > reservation {
-            return Err(chilpa_i18n::t(
-                "The offline storage limit has been reached.",
-            ));
+            return Err(full());
         }
         item.bytes = bytes;
         item.checksum = checksum;
@@ -513,7 +532,10 @@ fn transfer(
             |bytes| progress(Update::Bytes(bytes)),
         );
         let result = (|| {
-            let received = received?;
+            // The transfer says the limit was reached when the file is larger
+            // than its budget; without a limit that budget is the disk.
+            let limited = chilpa_i18n::t("The offline storage limit has been reached.");
+            let received = received.map_err(|error| if error == limited { full() } else { error })?;
             output.flush().map_err(|_| failed())?;
             output.sync_all().map_err(|_| failed())?;
             drop(output);
@@ -568,7 +590,7 @@ fn inspect(
     let invalid = || chilpa_i18n::t("The downloaded file could not be verified as complete audio.");
     let mut file = std::fs::File::open(path).map_err(|_| invalid())?;
     let bytes = file.metadata().map_err(|_| invalid())?.len();
-    if bytes == 0 || bytes > MAX_FILE_BYTES {
+    if bytes == 0 || bytes > CEILING_FILE_BYTES {
         return Err(invalid());
     }
     let mut buffer = [0u8; 64 * 1024];

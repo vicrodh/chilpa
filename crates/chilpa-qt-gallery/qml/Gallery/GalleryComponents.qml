@@ -47,6 +47,7 @@ TitledFlow {
     AlbumArtistLine { document: ({artist_html:"<a href=\"0\">Artist</a>",artist_links:[{target:"artist",key:"Artist"}]}) }
     Clipboard {}
     Driving.FrameSettlement {}
+    Driving.WindowRequests {}
     ShelfSkeleton { width: Metrics.confirmWidth; count: 3 }
     CoverCollage { covers: ["", "", "", ""] }
     QueueProgress { visible: true }

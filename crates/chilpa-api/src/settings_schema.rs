@@ -303,12 +303,19 @@ pub const SECTIONS: &[Section] = &[
         id: "sources",
         label: Chilpa::mark("Music servers"),
         icon: "lucide:cable",
-        groups: &[Group {
-            title: Chilpa::mark("Servers"),
-            // Expands to one row per server, and the row that adds one
-            // (ADR-017).
-            settings: &[setting("sources.servers", Chilpa::mark("Servers"), "", Control::Status)],
-        }],
+        groups: &[
+            Group {
+                title: Chilpa::mark("Servers"),
+                // Expands to one row per server, and the row that adds one
+                // (ADR-017).
+                settings: &[setting("sources.servers", Chilpa::mark("Servers"), "", Control::Status)],
+            },
+            // Shown on the Offline music page, which Music servers opens.
+            Group {
+                title: Chilpa::mark("Offline music"),
+                settings: &[setting(crate::servers::OFFLINE_LIMIT, Chilpa::mark("Storage limit"), Chilpa::mark("Downloads stop when offline music reaches this size, and nothing is deleted to make room. Each file can be up to 512 MiB. Unlimited lets offline music use all the free space on the disk, with no size limit per file."), Control::Select)],
+            },
+        ],
     },
     // A section of its own and not a group under Sources: a plugin is not
     // always a source, and approving one is the first thing done with it.

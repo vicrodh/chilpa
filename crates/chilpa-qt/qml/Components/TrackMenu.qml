@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.devices
 import app.chilpa.sources
 import app.chilpa.kit
+import app.chilpa.offline
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
@@ -31,7 +32,7 @@ CascadingMenu {
             return entry
         })
         const chosen = model.chosenTrackIdsJson(row)
-        if (JSON.parse(Sources.offline("info", "tracks", chosen)).count > 0) {
+        if (JSON.parse(Offline.call("info", "tracks", chosen)).count > 0) {
             if (entries.length > 0) entries = entries.concat([{separator:true}])
             entries = entries.concat([{act:"offline",text:I18n.tr("Make available offline…", I18n.rev)}])
         }
@@ -44,7 +45,7 @@ CascadingMenu {
     onActionChosen: (entry) => {
         const act = entry.act
         if (act === "offline") {
-            Sources.offlineRequested("tracks", model.chosenTrackIdsJson(row))
+            Offline.requested("tracks", model.chosenTrackIdsJson(row))
             return
         }
         if (act === "remove") {

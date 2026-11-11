@@ -1,0 +1,2 @@
+module app.chilpa.offline
+singleton Offline 1.0 Offline.qml

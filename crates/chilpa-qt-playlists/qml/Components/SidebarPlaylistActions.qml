@@ -5,6 +5,7 @@ import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import app.chilpa.playlists
+import app.chilpa.offline
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 Item {
@@ -63,7 +64,7 @@ Item {
             {text: I18n.tr("Move up", I18n.rev), action: "move", value: -1},
             {text: I18n.tr("Move down", I18n.rev), action: "move", value: 1}])
         if (!folder) entries.push({separator:true},{text:I18n.tr("Move to folder…",I18n.rev),action:"moveFolder"})
-        if (!folder && value.playlistId > 0 && JSON.parse(Sources.offline("info", "playlist", JSON.stringify([value.playlistId]))).count > 0)
+        if (!folder && value.playlistId > 0 && JSON.parse(Offline.call("info", "playlist", JSON.stringify([value.playlistId]))).count > 0)
             entries.push({text:I18n.tr("Make available offline…", I18n.rev),action:"offline"})
         if (folder && value.nativeRef) entries = [{text:I18n.tr("Edit folder",I18n.rev),action:"editNativeFolder"}]
         menu.entries = entries
@@ -87,7 +88,7 @@ Item {
         onChosen: index => {
             const item = entries[index], row = actions.selected
             switch (item.action) {
-            case "offline": Sources.offlineRequested("playlist", JSON.stringify([row.playlistId])); break
+            case "offline": Offline.requested("playlist", JSON.stringify([row.playlistId])); break
             case "create": actions.createPlaylist(); break
             case "import": Navigation.go("playlistImport", 0); break
             case "folder": folderDialog.show(0, "", "accent"); break
