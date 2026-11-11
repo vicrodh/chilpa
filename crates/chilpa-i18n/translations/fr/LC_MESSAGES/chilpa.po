@@ -531,6 +531,9 @@ msgstr "Supprimer aussi les fichiers musicaux désélectionnés"
 msgid "Also write the other tag layers"
 msgstr "Écrire aussi les autres couches d'étiquettes"
 
+msgid "Always go to the previous track"
+msgstr "Toujours revenir au titre précédent"
+
 msgid "Ambient"
 msgstr "Ambiant"
 
@@ -827,6 +830,9 @@ msgstr "Retour"
 
 msgid "Back 10 seconds"
 msgstr "Reculer de 10 secondes"
+
+msgid "Back button"
+msgstr "Bouton retour"
 
 msgid "Back to plugins"
 msgstr "Retour aux plugins"
@@ -5540,6 +5546,9 @@ msgstr "Redémarrer Chilpa"
 msgid "Restart plugin"
 msgstr "Redémarrer le plugin"
 
+msgid "Restart the track, then go back"
+msgstr "Relancer le titre, puis revenir en arrière"
+
 msgid "Restore"
 msgstr "Restaurer"
 
@@ -7643,6 +7652,9 @@ msgstr "Ce que c'est"
 
 msgid "What kind of server is it?"
 msgstr "Quel type de serveur est-ce ?"
+
+msgid "What one press does. A second press right after goes to the previous track."
+msgstr "Ce que fait un appui. Un second appui juste après revient au titre précédent."
 
 msgid "What should happen to the original queues?"
 msgstr "Que faire des files d'attente d'origine ?"

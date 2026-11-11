@@ -327,7 +327,7 @@ impl qobject::Player {
     pub fn previous(self: Pin<&mut Self>) {
         app::with(|api| {
             let (device, bit_perfect) = api.chosen_output();
-            api.previous_track(&device, bit_perfect);
+            api.back_pressed(&device, bit_perfect);
         });
     }
 

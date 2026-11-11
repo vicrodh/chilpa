@@ -17,6 +17,7 @@ pub(crate) const COMMANDS: &[crate::commands::Command] = &[
 
 use super::*;
 
+pub(crate) mod back_button;
 pub(crate) mod normalization;
 
 /// Where the playback switches are kept.

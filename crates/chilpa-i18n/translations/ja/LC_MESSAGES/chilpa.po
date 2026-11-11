@@ -530,6 +530,9 @@ msgstr "選択を解除した音楽ファイルも削除"
 msgid "Also write the other tag layers"
 msgstr "ほかのタグレイヤーにも書き込む"
 
+msgid "Always go to the previous track"
+msgstr "常に前のトラックへ戻る"
+
 msgid "Ambient"
 msgstr "アンビエント"
 
@@ -826,6 +829,9 @@ msgstr "戻る"
 
 msgid "Back 10 seconds"
 msgstr "10秒戻る"
+
+msgid "Back button"
+msgstr "戻るボタン"
 
 msgid "Back to plugins"
 msgstr "プラグインに戻る"
@@ -5535,6 +5541,9 @@ msgstr "Chilpaを再起動"
 msgid "Restart plugin"
 msgstr "プラグインを再起動"
 
+msgid "Restart the track, then go back"
+msgstr "トラックを頭出しし、その後で前へ戻る"
+
 msgid "Restore"
 msgstr "元に戻す"
 
@@ -7633,6 +7642,9 @@ msgstr "製品"
 
 msgid "What kind of server is it?"
 msgstr "どの種類のサーバーですか？"
+
+msgid "What one press does. A second press right after goes to the previous track."
+msgstr "1回押したときの動作です。続けてもう一度押すと前のトラックへ戻ります。"
 
 msgid "What should happen to the original queues?"
 msgstr "元のキューをどうしますか？"
