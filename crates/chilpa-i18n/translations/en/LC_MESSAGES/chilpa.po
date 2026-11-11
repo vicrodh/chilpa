@@ -531,6 +531,9 @@ msgstr "Also remove music files no longer selected"
 msgid "Also write the other tag layers"
 msgstr ""
 
+msgid "Always go to the previous track"
+msgstr "Always go to the previous track"
+
 msgid "Ambient"
 msgstr ""
 
@@ -827,6 +830,9 @@ msgstr ""
 
 msgid "Back 10 seconds"
 msgstr ""
+
+msgid "Back button"
+msgstr "Back button"
 
 msgid "Back to plugins"
 msgstr "Back to plugins"
@@ -5540,6 +5546,9 @@ msgstr ""
 msgid "Restart plugin"
 msgstr ""
 
+msgid "Restart the track, then go back"
+msgstr "Restart the track, then go back"
+
 msgid "Restore"
 msgstr ""
 
@@ -7643,6 +7652,9 @@ msgstr ""
 
 msgid "What kind of server is it?"
 msgstr ""
+
+msgid "What one press does. A second press right after goes to the previous track."
+msgstr "What one press does. A second press right after goes to the previous track."
 
 msgid "What should happen to the original queues?"
 msgstr ""

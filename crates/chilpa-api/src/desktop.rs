@@ -57,6 +57,8 @@ pub(crate) struct Desktop {
     told: (Option<TrackMeta>, Option<PlaybackStatus>),
     /// A jump the desktop has not heard of yet, in seconds.
     pub(crate) seeked: Option<f64>,
+    /// When the back button last restarted the track, for the second press.
+    pub(crate) back_restarted: Option<std::time::Instant>,
     /// What the menu-bar item and the Dock ask of a Mac.
     #[cfg(target_os = "macos")]
     mac: MacDesktop,
@@ -312,7 +314,7 @@ impl Chilpa {
             MacAsked::Tray(Event::Next) => self.next_track(),
             MacAsked::Tray(Event::Previous) => {
                 let (device, bit_perfect) = self.chosen_output();
-                self.previous_track(&device, bit_perfect);
+                self.back_pressed(&device, bit_perfect);
             }
             MacAsked::Tray(Event::ToggleWindow) => self.desktop.requests.push_back(WindowRequest::Toggle),
             MacAsked::Tray(Event::QuitAsked) => self.desktop.requests.push_back(WindowRequest::QuitAsked),
@@ -327,7 +329,7 @@ impl Chilpa {
                     Command::Next => self.next_track(),
                     Command::Previous => {
                         let (device, bit_perfect) = self.chosen_output();
-                        self.previous_track(&device, bit_perfect);
+                        self.back_pressed(&device, bit_perfect);
                     }
                     Command::Stop => self.stop(),
                     Command::SeekBy(_) | Command::SetPosition(_) => {
@@ -388,7 +390,7 @@ impl Chilpa {
             MediaEvent::Next => self.next_track(),
             MediaEvent::Previous => {
                 let (device, bit_perfect) = self.chosen_output();
-                self.previous_track(&device, bit_perfect);
+                self.back_pressed(&device, bit_perfect);
             }
             MediaEvent::Stop => self.stop(),
             MediaEvent::SeekBy(micros) => self.desktop_seek(self.now.seconds + micros as f64 / 1e6),

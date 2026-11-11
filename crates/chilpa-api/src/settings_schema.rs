@@ -135,6 +135,7 @@ pub const SECTIONS: &[Section] = &[
                     setting("playback.normalize", Chilpa::mark("Volume normalization"), Chilpa::mark("Level loudness across tracks. This breaks strict bit perfect."), Control::Toggle),
                     setting(crate::queue::normalization::TARGET, Chilpa::mark("Target loudness"), Chilpa::mark("The loudness every track is aligned to. -14 LUFS matches streaming services, -18 LUFS is the ReplayGain reference."), Control::Select),
                     setting(crate::queue::normalization::PREVENT_CLIPPING, Chilpa::mark("Prevent clipping"), Chilpa::mark("Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."), Control::Toggle),
+                    setting(crate::queue::back_button::BACK, Chilpa::mark("Back button"), Chilpa::mark("What one press does. A second press right after goes to the previous track."), Control::Select),
                     setting("playback.keepQueue", Chilpa::mark("Keep the queue between sessions"), Chilpa::mark("Reopens the upcoming queue paused, at the place where you left it."), Control::Toggle),
                 ],
             },

@@ -532,6 +532,9 @@ msgstr "Также удалять музыкальные файлы, сняты�
 msgid "Also write the other tag layers"
 msgstr "Записывать также в другие слои тегов"
 
+msgid "Always go to the previous track"
+msgstr "Всегда переходить к предыдущему треку"
+
 msgid "Ambient"
 msgstr "Атмосферный"
 
@@ -828,6 +831,9 @@ msgstr "Назад"
 
 msgid "Back 10 seconds"
 msgstr "Назад на 10 секунд"
+
+msgid "Back button"
+msgstr "Кнопка «Назад»"
 
 msgid "Back to plugins"
 msgstr "Назад к плагинам"
@@ -5545,6 +5551,9 @@ msgstr "Перезапустить Chilpa"
 msgid "Restart plugin"
 msgstr "Перезапустить плагин"
 
+msgid "Restart the track, then go back"
+msgstr "Сначала начать трек заново, затем вернуться"
+
 msgid "Restore"
 msgstr "Восстановить"
 
@@ -7653,6 +7662,9 @@ msgstr "Что это"
 
 msgid "What kind of server is it?"
 msgstr "Какой это сервер?"
+
+msgid "What one press does. A second press right after goes to the previous track."
+msgstr "Что делает одно нажатие. Второе нажатие сразу после него переходит к предыдущему треку."
 
 msgid "What should happen to the original queues?"
 msgstr "Что сделать с исходными очередями?"

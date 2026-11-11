@@ -531,6 +531,9 @@ msgstr "Ook niet meer geselecteerde muziekbestanden verwijderen"
 msgid "Also write the other tag layers"
 msgstr "Schrijf ook de andere taglagen"
 
+msgid "Always go to the previous track"
+msgstr "Altijd naar het vorige nummer gaan"
+
 msgid "Ambient"
 msgstr "Ambient"
 
@@ -827,6 +830,9 @@ msgstr "Terug"
 
 msgid "Back 10 seconds"
 msgstr "10 seconden terug"
+
+msgid "Back button"
+msgstr "Terugknop"
 
 msgid "Back to plugins"
 msgstr "Terug naar plug-ins"
@@ -5540,6 +5546,9 @@ msgstr "Chilpa herstarten"
 msgid "Restart plugin"
 msgstr "Plug-in herstarten"
 
+msgid "Restart the track, then go back"
+msgstr "Nummer herstarten, daarna terug"
+
 msgid "Restore"
 msgstr "Herstellen"
 
@@ -7643,6 +7652,9 @@ msgstr "Wat het is"
 
 msgid "What kind of server is it?"
 msgstr "Wat voor server is het?"
+
+msgid "What one press does. A second press right after goes to the previous track."
+msgstr "Wat één druk doet. Een tweede druk meteen daarna gaat naar het vorige nummer."
 
 msgid "What should happen to the original queues?"
 msgstr "Wat moet er met de originele wachtrijen gebeuren?"
