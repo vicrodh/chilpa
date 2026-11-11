@@ -16,6 +16,7 @@ use super::super::keys::Keys;
 use super::super::net::{self, Network};
 use super::super::sync;
 use crate::ratings::writer::{self, Tools};
+use chilpa_servers::favorite;
 use chilpa_servers::rating::{self, Rated};
 use chilpa_servers::{Credential, Net, Reply, Request, Server};
 use serde_json::Value;
@@ -110,8 +111,8 @@ impl Net for Guarded {
     fn send(&self, request: &Request) -> Result<Reply, String> {
         let mut request = request.clone();
         let path = path_of(&request.url);
-        assert_ne!(request.method, "DELETE", "a live check never deletes");
         if let Some(client_id) = &self.plex {
+            assert_ne!(request.method, "DELETE", "a live check never deletes on Plex");
             for (name, value) in request.headers.iter_mut() {
                 match name.as_str() {
                     "X-Plex-Client-Identifier" => *value = client_id.clone(),
@@ -130,7 +131,9 @@ impl Net for Guarded {
         } else {
             match request.method {
                 "GET" => {}
-                "POST" => assert!(path.ends_with("/Users/AuthenticateByName") || path.ends_with("/UserData"), "refused: an unexpected POST"),
+                "POST" => assert!(path.ends_with("/Users/AuthenticateByName") || path.ends_with("/UserData") || path.starts_with("/UserFavoriteItems/"), "refused: an unexpected POST"),
+                // Test servers only: a heart taken off, a rating taken off.
+                "DELETE" => assert!(path.starts_with("/UserFavoriteItems/") || (path.starts_with("/UserItems/") && path.ends_with("/Rating")), "refused: an unexpected DELETE"),
                 other => panic!("refused: {other}"),
             }
         }
@@ -177,6 +180,69 @@ fn round_trip(net: &Guarded, server: &Server, key: &Credential, rated: Rated, id
     rating::rate(net, server, key, rated, id, back).map_err(shown).unwrap();
     assert_eq!(rating::held(net, server, key, rated, id).map_err(shown).unwrap().value, before.value, "{rated:?} is as it was");
     eprintln!("live: {rated:?} {} -> {target} -> {} (raw)", before.value, before.value);
+}
+
+/// Hearts an item, reads it back, and puts back what it held before.
+fn heart_round_trip(net: &Guarded, server: &Server, key: &Credential, rated: Rated, id: &str) {
+    let shown = |e: chilpa_servers::Failure| net.hide(&e.to_string());
+    let before = favorite::is_favorite(net, server, key, rated, id).map_err(shown).unwrap();
+    let _put_back = HeartBack { net, server: server.clone(), key: key.clone(), rated, id: id.to_string(), on: before };
+    favorite::favor(net, server, key, rated, id, !before).map_err(shown).unwrap();
+    assert_eq!(favorite::is_favorite(net, server, key, rated, id).map_err(shown).unwrap(), !before, "{rated:?} took the heart");
+    favorite::favor(net, server, key, rated, id, before).map_err(shown).unwrap();
+    assert_eq!(favorite::is_favorite(net, server, key, rated, id).map_err(shown).unwrap(), before, "{rated:?} is as it was");
+    eprintln!("live: {rated:?} heart {before} -> {} -> {before}", !before);
+}
+
+/// Puts an item's heart back as it was, even when a check failed halfway.
+struct HeartBack<'a> {
+    net: &'a Guarded,
+    server: Server,
+    key: Credential,
+    rated: Rated,
+    id: String,
+    on: bool,
+}
+
+impl Drop for HeartBack<'_> {
+    fn drop(&mut self) {
+        if favorite::is_favorite(self.net, &self.server, &self.key, self.rated, &self.id).ok() != Some(self.on) {
+            let put = favorite::favor(self.net, &self.server, &self.key, self.rated, &self.id, self.on);
+            eprintln!("live: {:?} heart put back: {}", self.rated, put.is_ok());
+        }
+    }
+}
+
+/// The whole path for hearts: a sync takes the server's favorites in, a
+/// heart changed here goes out through the writer, and it is put back.
+fn hearts_end_to_end(net: Arc<Guarded>, provider: &str, address: &str, details: &str, key: Credential, track: &str) {
+    let lib = chilpa_library::Library::in_memory().unwrap();
+    let instance = super::super::keys::mint();
+    let root = std::env::temp_dir().join(format!("chilpa-live-hearts-{instance}"));
+    let keys = Arc::new(Keys::derived(root.clone()));
+    assert!(keys.put(&instance, &key));
+    let source = lib.add_server(&chilpa_library::NewServer {
+        provider: provider.into(), instance: instance.clone(), label: "Live".into(), address: address.into(),
+        libraries: "[]".into(), details: details.into(), ..Default::default()
+    }).unwrap();
+    let event = sync::run(&lib, net.as_ref(), &keys, &Mutex::new(()), source, &|_| {}, &|| false);
+    eprintln!("live: sync ended: {}", matches!(event, sync::Event::Finished { .. }));
+    let stored = lib.server(source).unwrap().unwrap();
+    let server = net::server(&stored).unwrap();
+    let held = favorite::is_favorite(net.as_ref(), &server, &key, Rated::Track, track).map_err(|e| net.hide(&e.to_string())).unwrap();
+    let _put_back = HeartBack { net: net.as_ref(), server: server.clone(), key: key.clone(), rated: Rated::Track, id: track.to_string(), on: held };
+    let local: i64 = lib.connection().query_row("SELECT id FROM tracks WHERE external_id = ?1", [net::entry(&stored, track)], |r| r.get(0)).unwrap();
+    let here = lib.is_favorite(chilpa_library::store::favorite_sync::Hearted::Track(local)).unwrap();
+    assert!(!held || here, "a favorite of the server came in");
+    let origin = crate::ratings::sync::server_origin(&instance);
+    let tools = Tools { net: net.clone(), keys: keys.clone(), plugins: Arc::new(NoPlugins), open: Arc::new(|| None) };
+    for on in [!held, held] {
+        lib.queue_favorite(&origin, "track", track, on, None).unwrap();
+        let outcome = writer::run(&lib, &tools, crate::now_unix());
+        assert_eq!((outcome.sent, outcome.failing), (1, 0));
+        assert_eq!(favorite::is_favorite(net.as_ref(), &server, &key, Rated::Track, track).map_err(|e| net.hide(&e.to_string())).unwrap(), on, "the server holds what Chilpa sent");
+    }
+    let _ = std::fs::remove_dir_all(root);
 }
 
 /// The whole path: a sync takes the ratings in, a change made here goes out
@@ -238,6 +304,7 @@ fn live_plex_lab_ratings_go_both_ways() {
         return;
     };
     let net = Arc::new(Guarded::new(vec![at.clone(), host, token.clone()]).plex(client_id));
+    let token_for_reads = token.clone();
     let key = Credential::Plex { account: String::new(), server: token };
     let every = chilpa_servers::plex::server(&at, client(), Vec::new(), Vec::new());
     let sections = chilpa_servers::libraries(net.as_ref(), &every, &key).map_err(|e| net.hide(&e.to_string())).unwrap();
@@ -252,6 +319,16 @@ fn live_plex_lab_ratings_go_both_ways() {
     let track = page.tracks.first().expect("the lab library has a track").clone();
     round_trip(&net, &server, &key, Rated::Track, &track.id, (6.0, 8.0));
     round_trip(&net, &server, &key, Rated::Album, &track.album_id, (6.0, 8.0));
+    // Hearts: a lab track says nothing of a favorite of its own.
+    let look = Request::get(format!("{at}/library/metadata/{}", track.id), vec![
+        ("Accept".into(), "application/json".into()), ("X-Plex-Token".into(), token_for_reads),
+        ("X-Plex-Client-Identifier".into(), String::new()), ("X-Plex-Product".into(), String::new())]);
+    let reply = net.send(&look).unwrap();
+    let meta: Value = serde_json::from_slice(&reply.body).unwrap_or(Value::Null);
+    let fields: Vec<String> = meta["MediaContainer"]["Metadata"][0].as_object().into_iter().flat_map(|o| o.keys())
+        .filter(|k| ["fav", "love", "like", "heart"].iter().any(|w| k.to_lowercase().contains(w))).cloned().collect();
+    eprintln!("live: a lab track's fields that could be a heart: {fields:?}");
+    assert!(fields.is_empty(), "Plex keeps a heart of its own: {fields:?}");
     end_to_end(net, "plex", &at, &[lab.id], key, &track.id);
 }
 
@@ -278,15 +355,20 @@ fn live_navidrome_ratings_go_both_ways() {
     let track = page.tracks.first().expect("the server has a song").clone();
     round_trip(&net, &server, &signed.key, Rated::Track, &track.id, (3.0, 5.0));
     round_trip(&net, &server, &signed.key, Rated::Album, &track.album_id, (3.0, 5.0));
-    end_to_end(net, "subsonic", &at, &[], signed.key, &track.id);
+    let starred = favorite::favorites(net.as_ref(), &server, &signed.key, 4, Instant::now() + Duration::from_secs(60)).map_err(|e| net.hide(&e.to_string())).unwrap();
+    eprintln!("live: starred: {} songs, {} records, whole: {}", starred.tracks.len(), starred.albums.len(), starred.whole);
+    heart_round_trip(&net, &server, &signed.key, Rated::Track, &track.id);
+    heart_round_trip(&net, &server, &signed.key, Rated::Album, &track.album_id);
+    end_to_end(net.clone(), "subsonic", &at, &[], signed.key.clone(), &track.id);
+    hearts_end_to_end(net, "subsonic", &at, "{}", signed.key, &track.id);
 }
 
-/// What Jellyfin offers for ratings, read from the server itself: its
-/// plugins, what a track's user data holds, and whether `Rating` written
-/// there is kept. It writes one track's `Rating` and puts it back.
+/// What Jellyfin offers for ratings, read from the server itself (its
+/// plugins, what a song's user data holds, how `Rating` moves the like),
+/// and its hearts both ways. Every change is put back.
 #[test]
 #[ignore = "live: needs JELLYFIN_HOST, JELLYFIN_USER and JELLYFIN_PASSWORD"]
-fn live_jellyfin_rating_discovery() {
+fn live_jellyfin_ratings_and_hearts() {
     let (Some(host), Some(user), Some(password)) = (
         var(&["JELLYFIN_HOST", "CHILPA_LIVE_JELLYFIN_URL"]),
         var(&["JELLYFIN_USER", "CHILPA_LIVE_JELLYFIN_USER"]),
@@ -324,23 +406,36 @@ fn live_jellyfin_rating_discovery() {
     eprintln!("live: a song's user data says {keys:?}; Rating {}, Likes {}", item["UserData"]["Rating"], item["UserData"]["Likes"]);
     let full = get(&format!("/Users/{uid}/Items/{id}"));
     eprintln!("live: CommunityRating {}, CriticRating {}", full["CommunityRating"], full["CriticRating"]);
-    // `Rating` set cannot be taken off again without a DELETE, which these
-    // checks never send: only a song that already has one is written.
-    let Some(before) = item["UserData"]["Rating"].as_f64() else {
-        eprintln!("live: write skipped: this song has no Rating, and one written could not be taken off again");
-        return;
-    };
-    let post = |rating: f64| {
-        let body = serde_json::json!({ "Rating": rating }).to_string().into_bytes();
+    // Rating: written and put back, to see it move the like. A song that
+    // had none has it taken off again with a DELETE (test server).
+    let before = item["UserData"]["Rating"].as_f64();
+    let post = |body: Value| {
+        let body = body.to_string().into_bytes();
         let reply = net.send(&Request::post(format!("{at}/UserItems/{id}/UserData?userId={uid}"), headers.clone(), Some(("application/json".into(), body)))).unwrap();
         eprintln!("live: UpdateItemUserData answered HTTP {}", reply.status);
     };
-    let target = if before == 8.0 { 4.0 } else { 8.0 };
-    post(target);
+    let target = if before == Some(8.0) { 4.0 } else { 8.0 };
+    post(serde_json::json!({ "Rating": target }));
     let after = get(&format!("/UserItems/{id}/UserData?userId={uid}"));
     eprintln!("live: after writing {target}: Rating {}, Likes {}", after["Rating"], after["Likes"]);
-    post(before);
+    match before {
+        Some(before) => post(serde_json::json!({ "Rating": before })),
+        None => {
+            let reply = net.send(&Request::delete(format!("{at}/UserItems/{id}/Rating?userId={uid}"), headers.clone())).unwrap();
+            eprintln!("live: DeleteUserItemRating answered HTTP {}", reply.status);
+        }
+    }
     let restored = get(&format!("/UserItems/{id}/UserData?userId={uid}"));
-    eprintln!("live: put back: Rating {} (was {before}), Likes {}", restored["Rating"], restored["Likes"]);
-    assert_eq!(restored["Rating"].as_f64(), Some(before));
+    eprintln!("live: put back: Rating {}, Likes {}", restored["Rating"], restored["Likes"]);
+    assert_eq!(restored["Rating"].as_f64(), before);
+    // Hearts: IsFavorite, for the song and its record, and the whole path.
+    let server = chilpa_servers::jellyfin::server(&at, client(), Vec::new(), uid);
+    let listed = favorite::favorites(&net, &server, &signed.key, 8, Instant::now() + Duration::from_secs(60)).map_err(|e| net.hide(&e.to_string())).unwrap();
+    eprintln!("live: favorites: {} songs, {} records, whole: {}", listed.tracks.len(), listed.albums.len(), listed.whole);
+    heart_round_trip(&net, &server, &signed.key, Rated::Track, &id);
+    if let Some(album) = item["AlbumId"].as_str() {
+        heart_round_trip(&net, &server, &signed.key, Rated::Album, album);
+    }
+    let details = serde_json::json!({ "user_id": uid }).to_string();
+    hearts_end_to_end(Arc::new(net), "jellyfin", &at, &details, signed.key.clone(), &id);
 }
