@@ -10,6 +10,7 @@ Column {
     width: Metrics.menuMaxWidth * 2 // derived: room for rows and the picker
     spacing: Metrics.gap12
     QueryChipRow { width: gallery.width; query: gallery.sample; onEdited: (query) => gallery.sample = query }
+    ColumnSearchCrumbs {}
     LibraryPanes { width: gallery.width; height: Metrics.panesHeight }
     PaneColumn { width: Metrics.sidebarWidth; height: Metrics.panesHeight; title: "Genre"; column: "genre" }
     RefineSwitch {}

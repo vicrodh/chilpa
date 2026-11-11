@@ -6763,6 +6763,9 @@ msgstr "De onjuiste songtekst kon niet worden uitgesloten. Probeer het opnieuw."
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "De bibliotheek kon niet worden gewijzigd. Probeer het opnieuw; het detail hieronder zegt wat er gebeurde."
 
+msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
+msgstr "De bibliotheek bleef bezig met een andere taak, dus deze keuze is niet bewaard. Probeer het zo opnieuw."
+
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "De bibliotheek bleef bezig met een andere taak. Er is niets meer verwijderd; probeer het zo opnieuw."
 
@@ -7070,6 +7073,9 @@ msgstr "Dit kan enkele minuten duren wanneer MusicBrainz het druk heeft."
 
 msgid "This chapter format is not supported."
 msgstr "Dit hoofdstukformaat wordt niet ondersteund."
+
+msgid "This choice could not be kept: {}"
+msgstr "Deze keuze kon niet worden bewaard: {}"
 
 msgid "This collection exceeds the current page limit."
 msgstr "Deze collectie overschrijdt de huidige paginalimiet."

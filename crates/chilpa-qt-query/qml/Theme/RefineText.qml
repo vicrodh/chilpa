@@ -13,6 +13,15 @@ QtObject {
     readonly property var order: ["genre", "year", "artist", "composer", "label", "rating", "added", "album", "title", "plays", "type", "quality", "bits", "rate"]
         .filter(name => name !== "rating" || Prefs.ratings)
 
+    // The columns as the bridge keeps their header texts, and those whose
+    // text narrows the library: a rating's narrows its own column only
+    // (`chilpa-library` `browse::clause`).
+    readonly property var headerColumns: ["year", "genre", "label", "composer", "rating", "artist", "album", "bits", "rate"]
+    function columnSearches(queries) {
+        return headerColumns.map((column, at) => ({ column: column, text: String((queries || [])[at] || "").trim() }))
+            .filter(search => search.text !== "" && search.column !== "rating")
+    }
+
     function field(name) {
         switch (name) {
         case "genre": return I18n.tr("Genre", I18n.rev)

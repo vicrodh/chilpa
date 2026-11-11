@@ -88,6 +88,7 @@ Rectangle {
         id: head
         width: parent.width
         conditions: panel.conditions
+        searching: RefineText.columnSearches(Library.queries).length > 0
         mode: panel.reading.mode || "all"
         summary: panel.summary
         loading: panel.loading
@@ -96,7 +97,11 @@ Rectangle {
         canDetach: !panel.narrow && !panel.detached
         onModeChosen: (mode) => panel.edit({ op: "mode", mode: mode })
         onUndoAsked: Library.applyQuery(QueryChips.undo())
-        onClearAsked: { panel.target = ""; Library.applyQuery("") }
+        onClearAsked: {
+            panel.target = ""
+            for (const search of RefineText.columnSearches(Library.queries)) Library.searchColumn(search.column, "")
+            Library.applyQuery("")
+        }
         onConsoleToggled: panel.consoleShown = !panel.consoleShown
         onDetachAsked: panel.detachAsked()
         canSave: panel.query.trim() !== ""

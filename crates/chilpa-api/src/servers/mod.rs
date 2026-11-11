@@ -8,7 +8,7 @@
 //! a thread; `poll`, which the window calls four times a second, picks up
 //! what came back.
 
-mod background;
+pub(crate) mod background;
 pub(crate) mod keys;
 mod lan;
 mod net;

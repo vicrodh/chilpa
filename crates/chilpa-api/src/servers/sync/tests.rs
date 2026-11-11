@@ -800,3 +800,85 @@ fn a_sync_stopped_to_start_over_is_asked_again_when_it_ends() {
     assert!(!syncer.running.contains_key(&7));
     assert!(sent(&inbox).is_empty());
 }
+
+/// A library on disk with a server whose sync has begun, and `tracks`
+/// tracks as its server describes them.
+fn on_disk(tracks: usize) -> (tempfile::TempDir, std::path::PathBuf, i64, i64, Vec<chilpa_library::ServerTrack>) {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("library.db");
+    let lib = chilpa_library::Library::open(&path).unwrap();
+    let source = lib
+        .add_server(&chilpa_library::NewServer {
+            provider: "subsonic".into(),
+            instance: super::super::keys::mint(),
+            label: "Lab".into(),
+            address: "http://lab.lan".into(),
+            libraries: "[]".into(),
+            details: "{}".into(),
+            ..Default::default()
+        })
+        .unwrap();
+    let generation = lib.begin_server_sync(source).unwrap();
+    let songs = (0..tracks)
+        .map(|n| chilpa_library::ServerTrack {
+            external_id: format!("remote:subsonic/lab/{n}"),
+            title: format!("Song {n}"),
+            artist: format!("Artist {}", n / 40),
+            album: format!("Record {}", n / 12),
+            album_artist: format!("Artist {}", n / 40),
+            album_key: format!("record-{}", n / 12),
+            genres: vec!["Lab".into(), format!("Lab {}", n % 7)],
+            duration_ms: 1_000,
+            ..Default::default()
+        })
+        .collect();
+    (dir, path, source, generation, songs)
+}
+
+#[test]
+fn a_page_of_thousands_is_written_in_short_parts_that_leave_the_library_free_between_them() {
+    let (_dir, path, source, generation, mut save) = on_disk(1_234);
+    let lib = chilpa_library::Library::open_existing(&path).unwrap();
+    let other = chilpa_library::Library::open_existing(&path).unwrap();
+    other.connection().busy_timeout(Duration::ZERO).unwrap();
+    let mut keep: Vec<String> = Vec::new();
+    let mut parts = 0;
+    assert!(write_in_parts(&lib, source, generation, &mut keep, &mut save, &mut || {
+        parts += 1;
+        other.set_group_album_versions(parts % 2 == 0).expect("between two parts another writer gets in without waiting");
+    }));
+    assert_eq!(parts, 1_234_usize.div_ceil(SAVE_PART), "no transaction saves more than a part");
+    assert!(save.is_empty(), "what was written is not written again");
+    let written: i64 = lib.connection().query_row("SELECT count(*) FROM tracks WHERE source_id = ?1 AND present = 1", [source], |r| r.get(0)).unwrap();
+    assert_eq!(written, 1_234);
+
+    // Seen again unchanged, they are stamped a part at a time too.
+    let mut keep: Vec<String> = (0..1_234).map(|n| format!("remote:subsonic/lab/{n}")).collect();
+    let mut parts = 0;
+    assert!(write_in_parts(&lib, source, generation, &mut keep, &mut Vec::new(), &mut || parts += 1));
+    assert_eq!(parts, 1_234_usize.div_ceil(KEEP_PART));
+}
+
+#[test]
+fn another_writer_waits_less_than_the_busy_timeout_while_a_sync_writes_a_large_page() {
+    let (_dir, path, source, generation, mut save) = on_disk(6_000);
+    let other = chilpa_library::Library::open_existing(&path).unwrap();
+    let writing = std::thread::spawn(move || {
+        let lib = chilpa_library::Library::open_existing(&path).unwrap();
+        let began = Instant::now();
+        let written = write(&lib, source, generation, &mut Vec::new(), &mut save);
+        (written, began.elapsed())
+    });
+    std::thread::sleep(Duration::from_millis(300));
+    let mut longest = Duration::ZERO;
+    while !writing.is_finished() {
+        let asked = Instant::now();
+        other.set_group_album_versions(false).expect("another writer is never refused while a sync writes");
+        longest = longest.max(asked.elapsed());
+        std::thread::sleep(Duration::from_millis(200));
+    }
+    let (written, took) = writing.join().unwrap();
+    assert!(written);
+    assert!(took > SPAN * 2, "the page took {took:?}: too short to show anything");
+    assert!(longest < SPAN * 3, "another writer waited {longest:?} for a sync's page");
+}
