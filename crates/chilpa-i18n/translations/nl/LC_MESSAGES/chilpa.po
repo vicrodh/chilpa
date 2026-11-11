@@ -196,6 +196,12 @@ msgstr ""
 msgid "A sidecar sets this, not the file"
 msgstr "Een sidecar-bestand bepaalt dit, niet het bestand zelf"
 
+msgid "A small icon on the status says whether the track plays or is paused."
+msgstr "Een klein pictogram op de status laat zien of het nummer speelt of gepauzeerd is."
+
+msgid "A source's own cover, or the front cover the Cover Art Archive has of a local album, found by the file's MusicBrainz IDs or by the album's name. Local albums need MusicBrainz on."
+msgstr "De eigen hoes van een bron, of de voorhoes die het Cover Art Archive van een lokaal album heeft, gevonden via de MusicBrainz-ID's van het bestand of via de naam van het album. Lokale albums hebben MusicBrainz nodig."
+
 msgid "A sync operation still uses this profile."
 msgstr ""
 
@@ -1436,6 +1442,9 @@ msgstr "Songtekstencache wissen"
 msgid "Clear lyrics cache?"
 msgstr "Songtekstcache wissen?"
 
+msgid "Clear on pause"
+msgstr "Wissen bij pauze"
+
 msgid "Clear queue"
 msgstr "Wachtrij wissen"
 
@@ -1450,6 +1459,9 @@ msgstr "Het filter wissen"
 
 msgid "Clear the selection"
 msgstr "Selectie wissen"
+
+msgid "Clear the status while playback is paused."
+msgstr "Wist de status zolang het afspelen gepauzeerd is."
 
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr "Gewist: {} songteksten vergeten. Ze worden opnieuw opgezocht terwijl nummers worden afgespeeld."
@@ -2602,6 +2614,9 @@ msgstr "Selecteren voltooien"
 
 msgid "Finished"
 msgstr "Voltooid"
+
+msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
+msgstr "Eerste regel van de status. Velden: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Tekst tussen [ ] verschijnt alleen als een veld erin een waarde heeft. Functies: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Leeg zet de standaard terug."
 
 msgid "First track"
 msgstr "Eerste nummer"
@@ -5858,6 +5873,9 @@ msgstr "Zoeken…"
 msgid "Search…"
 msgstr "Zoeken…"
 
+msgid "Second line of the status, written like the title."
+msgstr "Tweede regel van de status, geschreven zoals de titel."
+
 msgid "Secondary text"
 msgstr "Secundaire tekst"
 
@@ -6019,6 +6037,9 @@ msgstr "Tonen"
 msgid "Show Shortcuts"
 msgstr "Sneltoetsen tonen"
 
+msgid "Show artwork"
+msgstr "Albumhoes tonen"
+
 msgid "Show audio path"
 msgstr "Audiopad tonen"
 
@@ -6048,6 +6069,9 @@ msgstr ""
 
 msgid "Show older versions"
 msgstr "Oudere versies tonen"
+
+msgid "Show play state"
+msgstr "Afspeelstatus tonen"
 
 msgid "Show playlist only from the same source as the track"
 msgstr "Toon alleen afspeellijsten van dezelfde bron als het nummer"
@@ -6087,6 +6111,9 @@ msgstr "Venster tonen/verbergen"
 
 msgid "Showing"
 msgstr "Weergegeven"
+
+msgid "Shown when pointing at the cover, written like the title."
+msgstr "Verschijnt bij het aanwijzen van de hoes, geschreven zoals de titel."
 
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "Toont resultaten onder het zoekvak terwijl je typt. Uit: typen opent de resultatenpagina."
@@ -6939,6 +6966,9 @@ msgstr "Deze map bevat geen nummers."
 
 msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
 msgstr "Deze map toont dezelfde nummers in meerdere weergaven. Kies één weergave (we raden By Folder aan) zodat elk nummer één keer wordt gelezen."
+
+msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
+msgstr "Dit formaat is vanaf teken {} niet leesbaar, dus Discord krijgt een lege regel. Sluit elke %, [, ( en elk aanhalingsteken, en gebruik alleen de functies die onder Titel staan."
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "Dit duurt langer dan gebruikelijk. MusicBrainz is mogelijk druk. Probeer het over een moment opnieuw."

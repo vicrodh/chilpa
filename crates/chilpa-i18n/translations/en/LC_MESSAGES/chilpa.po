@@ -196,6 +196,12 @@ msgstr ""
 msgid "A sidecar sets this, not the file"
 msgstr ""
 
+msgid "A small icon on the status says whether the track plays or is paused."
+msgstr "A small icon on the status says whether the track plays or is paused."
+
+msgid "A source's own cover, or the front cover the Cover Art Archive has of a local album, found by the file's MusicBrainz IDs or by the album's name. Local albums need MusicBrainz on."
+msgstr "A source's own cover, or the front cover the Cover Art Archive has of a local album, found by the file's MusicBrainz IDs or by the album's name. Local albums need MusicBrainz on."
+
 msgid "A sync operation still uses this profile."
 msgstr ""
 
@@ -1436,6 +1442,9 @@ msgstr ""
 msgid "Clear lyrics cache?"
 msgstr "Clear lyrics cache?"
 
+msgid "Clear on pause"
+msgstr "Clear on pause"
+
 msgid "Clear queue"
 msgstr ""
 
@@ -1450,6 +1459,9 @@ msgstr ""
 
 msgid "Clear the selection"
 msgstr ""
+
+msgid "Clear the status while playback is paused."
+msgstr "Clear the status while playback is paused."
 
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr ""
@@ -2602,6 +2614,9 @@ msgstr ""
 
 msgid "Finished"
 msgstr ""
+
+msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
+msgstr "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
 
 msgid "First track"
 msgstr ""
@@ -5858,6 +5873,9 @@ msgstr ""
 msgid "Search…"
 msgstr ""
 
+msgid "Second line of the status, written like the title."
+msgstr "Second line of the status, written like the title."
+
 msgid "Secondary text"
 msgstr ""
 
@@ -6019,6 +6037,9 @@ msgstr ""
 msgid "Show Shortcuts"
 msgstr ""
 
+msgid "Show artwork"
+msgstr "Show artwork"
+
 msgid "Show audio path"
 msgstr "Show audio path"
 
@@ -6048,6 +6069,9 @@ msgstr ""
 
 msgid "Show older versions"
 msgstr ""
+
+msgid "Show play state"
+msgstr "Show play state"
 
 msgid "Show playlist only from the same source as the track"
 msgstr ""
@@ -6087,6 +6111,9 @@ msgstr ""
 
 msgid "Showing"
 msgstr ""
+
+msgid "Shown when pointing at the cover, written like the title."
+msgstr "Shown when pointing at the cover, written like the title."
 
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "Shows results under the search box as you type. Off, typing opens the results page."
@@ -6939,6 +6966,9 @@ msgstr ""
 
 msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
 msgstr ""
+
+msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
+msgstr "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr ""

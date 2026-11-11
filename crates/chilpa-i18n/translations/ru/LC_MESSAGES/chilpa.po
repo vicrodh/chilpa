@@ -196,6 +196,12 @@ msgstr ""
 msgid "A sidecar sets this, not the file"
 msgstr "Это задаёт вспомогательный файл, а не сам файл"
 
+msgid "A small icon on the status says whether the track plays or is paused."
+msgstr "Небольшой значок в статусе показывает, играет трек или стоит на паузе."
+
+msgid "A source's own cover, or the front cover the Cover Art Archive has of a local album, found by the file's MusicBrainz IDs or by the album's name. Local albums need MusicBrainz on."
+msgstr "Собственная обложка источника или передняя обложка локального альбома из Cover Art Archive, найденная по идентификаторам MusicBrainz в файле или по названию альбома. Для локальных альбомов нужен включённый MusicBrainz."
+
 msgid "A sync operation still uses this profile."
 msgstr ""
 
@@ -1438,6 +1444,9 @@ msgstr "Очистить кэш текстов песен"
 msgid "Clear lyrics cache?"
 msgstr "Очистить кэш текстов песен?"
 
+msgid "Clear on pause"
+msgstr "Очищать при паузе"
+
 msgid "Clear queue"
 msgstr "Очистить очередь"
 
@@ -1452,6 +1461,9 @@ msgstr "Убрать фильтр"
 
 msgid "Clear the selection"
 msgstr "Снять выделение"
+
+msgid "Clear the status while playback is paused."
+msgstr "Очищает статус, пока воспроизведение на паузе."
 
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr "Очищено, забыто текстов песен: {}. При воспроизведении треков они ищутся снова."
@@ -2604,6 +2616,9 @@ msgstr "Завершить выбор"
 
 msgid "Finished"
 msgstr "Завершено"
+
+msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
+msgstr "Первая строка статуса. Поля: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Текст в [ ] показывается, только если у какого-нибудь поля внутри есть значение. Функции: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Пустое поле возвращает значение по умолчанию."
 
 msgid "First track"
 msgstr "Первый трек"
@@ -5863,6 +5878,9 @@ msgstr "Поиск…"
 msgid "Search…"
 msgstr "Поиск…"
 
+msgid "Second line of the status, written like the title."
+msgstr "Вторая строка статуса, записывается так же, как название."
+
 msgid "Secondary text"
 msgstr "Вторичный текст"
 
@@ -6025,6 +6043,9 @@ msgstr "Показать"
 msgid "Show Shortcuts"
 msgstr "Показать сочетания клавиш"
 
+msgid "Show artwork"
+msgstr "Показывать обложку"
+
 msgid "Show audio path"
 msgstr "Показать аудиотракт"
 
@@ -6054,6 +6075,9 @@ msgstr ""
 
 msgid "Show older versions"
 msgstr "Показать старые версии"
+
+msgid "Show play state"
+msgstr "Показывать состояние воспроизведения"
 
 msgid "Show playlist only from the same source as the track"
 msgstr "Показывать только плейлисты из того же источника, что и трек"
@@ -6093,6 +6117,9 @@ msgstr "Показать/Скрыть окно"
 
 msgid "Showing"
 msgstr "Показано"
+
+msgid "Shown when pointing at the cover, written like the title."
+msgstr "Показывается при наведении на обложку, записывается так же, как название."
 
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "Показывает результаты под строкой поиска, пока вы печатаете. Если выключено, ввод открывает страницу результатов."
@@ -6948,6 +6975,9 @@ msgstr "В этой папке нет треков."
 
 msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
 msgstr "Эта папка повторяет одни и те же песни в нескольких представлениях. Выберите одно (советуем By Folder), чтобы каждая песня читалась один раз."
+
+msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
+msgstr "Этот формат не читается начиная с символа {}, поэтому Discord получает пустую строку. Закройте каждый %, [, ( и кавычку и используйте только функции, перечисленные в поле «Название»."
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "Это занимает больше времени, чем обычно. Возможно, MusicBrainz перегружен. Повторите попытку чуть позже."

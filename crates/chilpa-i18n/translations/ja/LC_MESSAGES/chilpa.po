@@ -196,6 +196,12 @@ msgstr ""
 msgid "A sidecar sets this, not the file"
 msgstr "この値はファイルではなくサイドカーファイルで設定されています"
 
+msgid "A small icon on the status says whether the track plays or is paused."
+msgstr "ステータスの小さなアイコンで、再生中か一時停止中かを示します。"
+
+msgid "A source's own cover, or the front cover the Cover Art Archive has of a local album, found by the file's MusicBrainz IDs or by the album's name. Local albums need MusicBrainz on."
+msgstr "ソース自身のカバー、またはローカルアルバムについて Cover Art Archive にあるフロントカバー。ファイルの MusicBrainz ID かアルバム名で探します。ローカルアルバムには MusicBrainz を有効にする必要があります。"
+
 msgid "A sync operation still uses this profile."
 msgstr ""
 
@@ -1434,6 +1440,9 @@ msgstr "歌詞キャッシュをクリア"
 msgid "Clear lyrics cache?"
 msgstr "歌詞のキャッシュを消去しますか？"
 
+msgid "Clear on pause"
+msgstr "一時停止中はクリア"
+
 msgid "Clear queue"
 msgstr "キューをクリア"
 
@@ -1448,6 +1457,9 @@ msgstr "フィルターを解除"
 
 msgid "Clear the selection"
 msgstr "選択を解除"
+
+msgid "Clear the status while playback is paused."
+msgstr "再生が一時停止している間、ステータスをクリアします。"
 
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr "クリアしました。{}件の歌詞を削除しました。トラックの再生時にもう一度検索されます。"
@@ -2600,6 +2612,9 @@ msgstr "選択を終了"
 
 msgid "Finished"
 msgstr "完了"
+
+msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
+msgstr "ステータスの1行目。フィールド: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%。[ ] 内のテキストは、中のフィールドに値があるときだけ表示されます。関数: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr。空にすると既定値に戻ります。"
 
 msgid "First track"
 msgstr "最初のトラック"
@@ -5853,6 +5868,9 @@ msgstr "検索中…"
 msgid "Search…"
 msgstr "検索…"
 
+msgid "Second line of the status, written like the title."
+msgstr "ステータスの2行目。タイトルと同じ書き方です。"
+
 msgid "Secondary text"
 msgstr "セカンダリテキスト"
 
@@ -6013,6 +6031,9 @@ msgstr "表示"
 msgid "Show Shortcuts"
 msgstr "ショートカットを表示"
 
+msgid "Show artwork"
+msgstr "アートワークを表示"
+
 msgid "Show audio path"
 msgstr "オーディオ経路を表示"
 
@@ -6042,6 +6063,9 @@ msgstr ""
 
 msgid "Show older versions"
 msgstr "以前のバージョンを表示"
+
+msgid "Show play state"
+msgstr "再生状態を表示"
 
 msgid "Show playlist only from the same source as the track"
 msgstr "トラックと同じソースのプレイリストのみ表示"
@@ -6081,6 +6105,9 @@ msgstr "ウィンドウを表示／非表示"
 
 msgid "Showing"
 msgstr "表示中"
+
+msgid "Shown when pointing at the cover, written like the title."
+msgstr "カバーにポインターを合わせると表示されます。タイトルと同じ書き方です。"
 
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "入力中に検索ボックスの下へ結果を表示します。オフにすると、入力で結果ページが開きます。"
@@ -6930,6 +6957,9 @@ msgstr "このフォルダーにトラックはありません。"
 
 msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
 msgstr "このフォルダーには同じ曲が複数のビューで含まれています。各曲が一度だけ読み取られるよう、ビューを1つ選んでください（By Folder をおすすめします）。"
+
+msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
+msgstr "このフォーマットは {} 文字目から読み取れないため、Discord には空の行が送られます。%、[、( と引用符をすべて閉じ、「タイトル」に記載された関数だけを使ってください。"
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "通常より時間がかかっています。MusicBrainzが混雑している可能性があります。しばらくしてからもう一度お試しください。"

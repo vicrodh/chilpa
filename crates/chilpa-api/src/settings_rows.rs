@@ -248,7 +248,7 @@ impl Chilpa {
 
     /// The value, the options and anything the row says about its state.
     fn fill(&mut self, row: &mut Row, output: &str, notes: &RowNotes) {
-        if self.discogs_row(row) || self.updates_settings_row(row) {return;}
+        if self.discogs_row(row) || self.updates_settings_row(row) || self.discord_row(row) {return;}
         if self.graphics_row(row) || self.normalization_row(row) || self.back_button_row(row) || self.wizard_row(row) || self.theme_row(row) {
             return;
         }
@@ -495,7 +495,7 @@ impl Chilpa {
             }
             "integrations.lastfm.enabled" => row.value = self.lastfm().enabled.to_string(),
             "integrations.musicbrainz.enabled" => row.value = self.musicbrainz_enabled().to_string(),
-            "integrations.offline" | crate::discord::ENABLED => row.value = self.pref_on(&row.key, false),
+            "integrations.offline" => row.value = self.pref_on(&row.key, false),
             "integrations.proxy.enabled" | "integrations.lyrics.enabled" | "integrations.lyrics.service" => row.value = self.pref_on(&row.key, true),
             "integrations.lyrics.translate" => {
                 row.value = self.pref_on(&row.key, true);
