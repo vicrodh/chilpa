@@ -2423,6 +2423,9 @@ msgstr "Toutes les 12 heures"
 msgid "Every 24 hours"
 msgstr "Toutes les 24 heures"
 
+msgid "Every track plays on this output, whatever its source, even when the system default changes. If it is unplugged, Chilpa plays on the default and says so."
+msgstr "Chaque piste est lue sur cette sortie, quelle que soit sa source, même si la sortie par défaut du système change. Si elle est débranchée, Chilpa lit sur la sortie par défaut et le signale."
+
 msgid "Every week"
 msgstr "Chaque semaine"
 
@@ -3589,6 +3592,9 @@ msgstr "Local — Aucun dossier"
 
 msgid "Local — {}"
 msgstr "Local — {}"
+
+msgid "Lock output device"
+msgstr "Verrouiller le périphérique de sortie"
 
 msgid "Logs"
 msgstr "Journaux"
@@ -6619,6 +6625,9 @@ msgstr "La ligne chantée reste visible."
 
 msgid "The listening history could not be saved"
 msgstr "L'historique d'écoute n'a pas pu être enregistré"
+
+msgid "The locked output is not connected; playing on {}."
+msgstr "La sortie verrouillée n'est pas connectée ; lecture sur {}."
 
 msgid "The log file could not be opened. Session logs remain available here."
 msgstr "Impossible d’ouvrir le fichier journal. Les journaux de la session restent disponibles ici."

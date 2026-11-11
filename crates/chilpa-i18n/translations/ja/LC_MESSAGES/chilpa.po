@@ -2421,6 +2421,9 @@ msgstr "12時間ごと"
 msgid "Every 24 hours"
 msgstr "24時間ごと"
 
+msgid "Every track plays on this output, whatever its source, even when the system default changes. If it is unplugged, Chilpa plays on the default and says so."
+msgstr "どのソースのトラックも、システムの既定の出力が変わってもこの出力で再生します。取り外されたときは既定の出力で再生し、そのことを知らせます。"
+
 msgid "Every week"
 msgstr "毎週"
 
@@ -3584,6 +3587,9 @@ msgstr "ローカル — フォルダーなし"
 
 msgid "Local — {}"
 msgstr "ローカル — {}"
+
+msgid "Lock output device"
+msgstr "出力デバイスをロック"
 
 msgid "Logs"
 msgstr "ログ"
@@ -6611,6 +6617,9 @@ msgstr "歌っている行が常に表示されます。"
 
 msgid "The listening history could not be saved"
 msgstr "再生履歴を保存できませんでした"
+
+msgid "The locked output is not connected; playing on {}."
+msgstr "ロックした出力が接続されていません。{}で再生します。"
 
 msgid "The log file could not be opened. Session logs remain available here."
 msgstr "ログファイルを開けませんでした。このセッションのログは引き続きここで確認できます。"

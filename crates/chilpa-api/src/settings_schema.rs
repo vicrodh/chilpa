@@ -103,6 +103,7 @@ pub const SECTIONS: &[Section] = &[
                 settings: &[
                     setting("audio.backend", Chilpa::mark("Audio stack"), Chilpa::mark("Where the samples go: straight to the device, or through a sound server."), Control::Select),
                     setting("audio.device", Chilpa::mark("Output device"), Chilpa::mark("BP marks an output that takes the samples untouched."), Control::Device),
+                    setting(crate::outputs::device_lock::LOCK, Chilpa::mark("Lock output device"), Chilpa::mark("Every track plays on this output, whatever its source, even when the system default changes. If it is unplugged, Chilpa plays on the default and says so."), Control::Toggle),
                     setting("audio.dsdMode", Chilpa::mark("DSD playback"), Chilpa::mark("Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."), Control::Select),
                     setting("audio.exclusive", Chilpa::mark("Exclusive mode"), Chilpa::mark("The output plays only Chilpa. Other programs wait until it lets go."), Control::Toggle),
                     setting("audio.forceRate", Chilpa::mark("DAC passthrough"), Chilpa::mark("Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."), Control::Toggle),

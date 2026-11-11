@@ -2423,6 +2423,9 @@ msgstr "Elke 12 uur"
 msgid "Every 24 hours"
 msgstr "Elke 24 uur"
 
+msgid "Every track plays on this output, whatever its source, even when the system default changes. If it is unplugged, Chilpa plays on the default and says so."
+msgstr "Elk nummer speelt via deze uitvoer, ongeacht de bron, ook als de standaarduitvoer van het systeem verandert. Wordt hij losgekoppeld, dan speelt Chilpa via de standaarduitvoer en meldt dat."
+
 msgid "Every week"
 msgstr "Elke week"
 
@@ -3589,6 +3592,9 @@ msgstr "Lokaal — Geen map"
 
 msgid "Local — {}"
 msgstr "Lokaal — {}"
+
+msgid "Lock output device"
+msgstr "Uitvoerapparaat vergrendelen"
 
 msgid "Logs"
 msgstr "Logboeken"
@@ -6619,6 +6625,9 @@ msgstr "De regel die wordt gezongen blijft in beeld."
 
 msgid "The listening history could not be saved"
 msgstr "De luistergeschiedenis kon niet worden opgeslagen"
+
+msgid "The locked output is not connected; playing on {}."
+msgstr "De vergrendelde uitvoer is niet verbonden; afspelen via {}."
 
 msgid "The log file could not be opened. Session logs remain available here."
 msgstr "Het logbestand kon niet worden geopend. Sessielogs blijven hier beschikbaar."

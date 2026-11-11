@@ -2425,6 +2425,9 @@ msgstr "Каждые 12 часов"
 msgid "Every 24 hours"
 msgstr "Каждые 24 часа"
 
+msgid "Every track plays on this output, whatever its source, even when the system default changes. If it is unplugged, Chilpa plays on the default and says so."
+msgstr "Все треки играют через этот вывод, из какого бы источника они ни были, даже если меняется вывод системы по умолчанию. Если его отключить, Chilpa играет через вывод по умолчанию и сообщает об этом."
+
 msgid "Every week"
 msgstr "Каждую неделю"
 
@@ -3594,6 +3597,9 @@ msgstr "Локально — без папки"
 
 msgid "Local — {}"
 msgstr "Локально — {}"
+
+msgid "Lock output device"
+msgstr "Заблокировать устройство вывода"
 
 msgid "Logs"
 msgstr "Журналы"
@@ -6627,6 +6633,9 @@ msgstr "Текущая строка остаётся в поле зрения."
 
 msgid "The listening history could not be saved"
 msgstr "Не удалось сохранить историю прослушивания"
+
+msgid "The locked output is not connected; playing on {}."
+msgstr "Заблокированный вывод не подключён; воспроизведение через {}."
 
 msgid "The log file could not be opened. Session logs remain available here."
 msgstr "Не удалось открыть файл журнала. Журналы сеанса по-прежнему доступны здесь."

@@ -13,6 +13,7 @@ pub(crate) const FORCE_RATE: &str = "audio.forceRate";
 /// on Linux only, under every stack there.
 pub(crate) const HIFI_WIZARD: &str = "audio.hifiWizard";
 
+pub(crate) mod device_lock;
 #[cfg(target_os = "linux")]
 mod hifi_wizard;
 mod listing;

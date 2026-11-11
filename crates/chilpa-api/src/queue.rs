@@ -225,8 +225,9 @@ impl Chilpa {
         // An output called nothing is not handed to the player to fail on:
         // where nothing could be named without the listing, the listing is
         // waited for here, briefly, and a play that still has no output is
-        // refused and says so.
-        let Some(device) = self.output_for_play(device) else {
+        // refused and says so. With the output locked, every play goes to the
+        // locked one, or says why it cannot (`outputs/device_lock.rs`).
+        let Some((device, said)) = self.launch_output(device) else {
             self.now.error = chilpa_i18n::t("No audio output is known yet; try again in a moment.");
             chilpa_core::trace_playback("facade", "launch_refused", format_args!("from={from} reason={why:?}: no output"));
             return;
@@ -293,6 +294,8 @@ impl Chilpa {
         } else {
             NowPlaying { path: self.queue[from].clone(), index: from, seconds: start_at.map_or(0.0, |at| at.as_secs_f64()), playing: true, queue_len: total, ..NowPlaying::default() }
         };
+        // A locked output that is gone is said once what is shown is reset.
+        if !said.is_empty() { self.now.error = said; }
         // Moved while paused, it stays paused where it went.
         let paused = why == Relaunch::Output && self.now.paused;
         chilpa_core::trace_playback(
