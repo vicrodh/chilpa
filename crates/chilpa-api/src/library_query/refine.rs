@@ -126,7 +126,7 @@ pub fn refine(text: &str) -> Value {
     let (any, nodes) = parts(parsed.clone().ok().flatten());
     let rows: Option<Vec<_>> = nodes.iter().enumerate().map(|(i,n)| row(n, i.to_string(), false)).collect();
     if let (Ok(_), Some(rows)) = (&parsed, rows) {
-        json!({"mode":if any {"any"} else {"all"},"rows":rows,"complex":null})
+        json!({"mode":if any {"any"} else {"all"},"rows":crate::rating_switch::rows(rows, crate::rating_switch::on()),"complex":null})
     } else {
         let message = parsed.as_ref().err().cloned().unwrap_or_else(||
             chilpa_i18n::t(chilpa_i18n::mark("I keep this filter applied; edit its text to change it.")));

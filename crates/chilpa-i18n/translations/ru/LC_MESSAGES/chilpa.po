@@ -5266,8 +5266,14 @@ msgstr ""
 msgid "Rate"
 msgstr "Оценить"
 
+msgid "Rate tracks, albums and playlists with one to five stars. Off, stars leave every list, page and filter; the ratings already given are kept."
+msgstr "Оценивайте треки, альбомы и плейлисты от одной до пяти звёзд. Если выключено, звёзды исчезают из всех списков, страниц и фильтров; поставленные оценки сохраняются."
+
 msgid "Rating"
 msgstr "Рейтинг"
+
+msgid "Ratings"
+msgstr "Оценки"
 
 msgid "Re-fetch album information"
 msgstr "Повторно получить сведения об альбоме"
@@ -6366,6 +6372,9 @@ msgstr "Стандартный: ожидает"
 
 msgid "Standard processed"
 msgstr "Стандартный: обработано"
+
+msgid "Star ratings"
+msgstr "Оценки звёздами"
 
 msgid "Start"
 msgstr "Начать"

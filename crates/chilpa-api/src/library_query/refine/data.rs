@@ -32,7 +32,9 @@ pub(crate) fn has_field(node: &Node,f: Field) -> bool {
 }
 
 fn effective(node: Option<Node>, known: &[(Field,Vec<String>)], genres: &[String]) -> Filter {
-    Filter { query:node.map(|n| super::super::widen_genres(&super::super::resolve_names(&n.ungrouped(),known),genres)), ..Filter::default() }
+    let filter = Filter { query:node.map(|n| super::super::widen_genres(&super::super::resolve_names(&n.ungrouped(),known),genres)), ..Filter::default() };
+    if let std::borrow::Cow::Owned(unrated) = crate::rating_switch::applied(&filter, crate::rating_switch::on()) { return unrated; }
+    filter
 }
 
 impl Reader {

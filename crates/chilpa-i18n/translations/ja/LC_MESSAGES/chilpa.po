@@ -5256,7 +5256,13 @@ msgstr ""
 msgid "Rate"
 msgstr "評価する"
 
+msgid "Rate tracks, albums and playlists with one to five stars. Off, stars leave every list, page and filter; the ratings already given are kept."
+msgstr "トラック、アルバム、プレイリストを1〜5つ星で評価します。オフの場合、星はすべてのリスト、ページ、フィルターから消えます。付けた評価はそのまま保持されます。"
+
 msgid "Rating"
+msgstr "評価"
+
+msgid "Ratings"
 msgstr "評価"
 
 msgid "Re-fetch album information"
@@ -6352,6 +6358,9 @@ msgstr "標準: 未処理"
 
 msgid "Standard processed"
 msgstr "標準: 処理済み"
+
+msgid "Star ratings"
+msgstr "星による評価"
 
 msgid "Start"
 msgstr "開始"

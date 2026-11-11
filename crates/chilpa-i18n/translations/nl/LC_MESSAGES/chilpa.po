@@ -5261,8 +5261,14 @@ msgstr ""
 msgid "Rate"
 msgstr "Waarderen"
 
+msgid "Rate tracks, albums and playlists with one to five stars. Off, stars leave every list, page and filter; the ratings already given are kept."
+msgstr "Waardeer nummers, albums en afspeellijsten met één tot vijf sterren. Uit: de sterren verdwijnen uit alle lijsten, pagina's en filters; gegeven waarderingen blijven bewaard."
+
 msgid "Rating"
 msgstr "Waardering"
+
+msgid "Ratings"
+msgstr "Waarderingen"
 
 msgid "Re-fetch album information"
 msgstr "Albuminformatie opnieuw ophalen"
@@ -6359,6 +6365,9 @@ msgstr "Standaard in afwachting"
 
 msgid "Standard processed"
 msgstr "Standaard verwerkt"
+
+msgid "Star ratings"
+msgstr "Sterwaarderingen"
 
 msgid "Start"
 msgstr "Starten"

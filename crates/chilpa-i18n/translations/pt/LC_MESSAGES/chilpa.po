@@ -5261,8 +5261,14 @@ msgstr ""
 msgid "Rate"
 msgstr "Avaliar"
 
+msgid "Rate tracks, albums and playlists with one to five stars. Off, stars leave every list, page and filter; the ratings already given are kept."
+msgstr "Avalie faixas, álbuns e playlists de uma a cinco estrelas. Desativado, as estrelas saem de todas as listas, páginas e filtros; as avaliações já dadas são mantidas."
+
 msgid "Rating"
 msgstr "Avaliação"
+
+msgid "Ratings"
+msgstr "Avaliações"
 
 msgid "Re-fetch album information"
 msgstr "Buscar novamente as informações do álbum"
@@ -6359,6 +6365,9 @@ msgstr "Padrão pendente"
 
 msgid "Standard processed"
 msgstr "Padrão processado"
+
+msgid "Star ratings"
+msgstr "Avaliação com estrelas"
 
 msgid "Start"
 msgstr "Iniciar"
