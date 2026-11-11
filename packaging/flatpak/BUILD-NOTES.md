@@ -297,6 +297,15 @@ reads `/.flatpak-info` once ([read] `crates/chilpa-dirs/src/lib.rs:148-151`).
   `prepare-link.lua` not read here). `pactl` talks to the PulseAudio
   socket instead, so the PipeWire stack also checks for PipeWire's own socket
   after `pactl` has answered ([read] `crates/chilpa-pipewire/src/lib.rs:398-400,440`).
+- Discord Rich Presence reaches Discord's socket through two lines, the
+  ones Fooyin's Flathub manifest uses: `--filesystem=xdg-run/discord-ipc-0`,
+  where a Discord installed on the system listens, and
+  `--filesystem=xdg-run/app/com.discordapp.Discord:create`, the Discord
+  Flatpak's folder. Both show inside the sandbox where the presence looks
+  for them, so no wrapper links them ([read]
+  `crates/chilpa-api/src/discord/ipc.rs`, `pipe_folders`). Other Discord
+  clients in a Flatpak of their own, and a Discord that listens on another
+  number than 0, are not reached.
 - Device sync finds memory cards under `/run/media` or `/media`
   ([read] `crates/chilpa-dirs/src/lib.rs:182-187`); when neither is visible
   it says so and offers a folder chosen on the card

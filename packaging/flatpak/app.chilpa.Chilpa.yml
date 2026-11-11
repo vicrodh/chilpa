@@ -29,6 +29,11 @@ finish-args:
   # PipeWire's own socket, which its ALSA PCM, the native DSD stream and its
   # JACK library connect to; the PulseAudio socket alone does not do.
   - --filesystem=xdg-run/pipewire-0:ro
+  # Discord's sockets, for the Rich Presence: the one a Discord installed
+  # on the system leaves in the runtime folder, and the folder the Discord
+  # Flatpak leaves its own in. The same two lines as Fooyin's manifest.
+  - --filesystem=xdg-run/discord-ipc-0
+  - --filesystem=xdg-run/app/com.discordapp.Discord:create
   # The device reservation a card held exclusively takes on the session bus,
   # so a sound server lets it go. Chilpa's own repository only: Flathub
   # refuses it.
