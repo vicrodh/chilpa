@@ -6754,6 +6754,9 @@ msgstr "誤った歌詞を除外できませんでした。再試行してくだ
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "ライブラリを変更できませんでした。もう一度お試しください。下の詳細に何が起きたかが書かれています。"
 
+msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
+msgstr "ライブラリが別の処理で使用中のままだったため、この選択は保存されませんでした。少ししてからもう一度お試しください。"
+
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "ライブラリが別の処理で使用中のままでした。これ以上は削除されていません。少ししてからもう一度お試しください。"
 
@@ -7060,6 +7063,9 @@ msgstr "MusicBrainzが混雑している場合、数分かかることがあり�
 
 msgid "This chapter format is not supported."
 msgstr "このチャプター形式には対応していません。"
+
+msgid "This choice could not be kept: {}"
+msgstr "この選択を保存できませんでした: {}"
 
 msgid "This collection exceeds the current page limit."
 msgstr "このコレクションは現在のページ上限を超えています。"

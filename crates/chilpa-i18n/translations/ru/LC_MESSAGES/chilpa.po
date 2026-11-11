@@ -6772,6 +6772,9 @@ msgstr "Не удалось исключить неверный текст. По
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "Не удалось изменить библиотеку. Попробуйте снова; ниже указано, что произошло."
 
+msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
+msgstr "Библиотека оставалась занята другой задачей, поэтому этот выбор не сохранён. Попробуйте снова чуть позже."
+
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "Библиотека оставалась занята другой задачей. Больше ничего не удалено; попробуйте снова чуть позже."
 
@@ -7080,6 +7083,9 @@ msgstr "Это может занять несколько минут, когда
 
 msgid "This chapter format is not supported."
 msgstr "Этот формат глав не поддерживается."
+
+msgid "This choice could not be kept: {}"
+msgstr "Не удалось сохранить этот выбор: {}"
 
 msgid "This collection exceeds the current page limit."
 msgstr "Эта коллекция превышает текущий лимит страниц."

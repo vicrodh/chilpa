@@ -6763,6 +6763,9 @@ msgstr "Não foi possível excluir a letra incorreta. Tente novamente."
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "Não foi possível alterar a biblioteca. Tente de novo; o detalhe abaixo diz o que aconteceu."
 
+msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
+msgstr "A biblioteca continuou ocupada com outra tarefa, então esta escolha não foi salva. Tente de novo em um momento."
+
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "A biblioteca continuou ocupada com outra tarefa. Nada mais foi removido; tente de novo em um momento."
 
@@ -7070,6 +7073,9 @@ msgstr "Isso pode levar alguns minutos quando o MusicBrainz está ocupado."
 
 msgid "This chapter format is not supported."
 msgstr "Este formato de capítulos não é compatível."
+
+msgid "This choice could not be kept: {}"
+msgstr "Não foi possível salvar esta escolha: {}"
 
 msgid "This collection exceeds the current page limit."
 msgstr "Esta coleção excede o limite atual de páginas."

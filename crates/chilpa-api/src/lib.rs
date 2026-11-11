@@ -717,6 +717,7 @@ pub struct Chilpa {
     artwork: chosen_artwork::State,
     /// Every copy of a record the library and the sources keep, as cards.
     copies: album_copies::Held,
+    grouping: album_versions::Writes,
     /// Queue entries this run found it cannot play (`queue/unavailable.rs`).
     unavailable: queue::unavailable::State,
 }
@@ -832,6 +833,7 @@ impl Chilpa {
             credits_read_at: (0, 0),
             artwork: Default::default(),
             copies: Default::default(),
+            grouping: Default::default(),
             unavailable: Default::default(),
         };
         chilpa.migrate_output_identity();
@@ -1259,6 +1261,7 @@ impl Chilpa {
         self.keep_place(false);
         self.advance_connect();
         self.poll_servers();
+        self.poll_grouping();
         self.poll_cast();
         if let Some(player) = &self.player {
             self.now.paused = player.is_paused();

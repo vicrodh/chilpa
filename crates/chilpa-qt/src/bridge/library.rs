@@ -124,11 +124,9 @@ impl qobject::Library {
         self.refresh();
     }
 
-    pub fn group_artist_albums(mut self: Pin<&mut Self>, on: bool) {
-        if app::with(|api| api.set_group_artist_versions(on)) {
-            self.as_mut().set_artist_group_versions(on);
-            self.content_changed();
-        }
+    /// Shown at once; the library is read again once the facade kept it.
+    pub fn group_artist_albums(self: Pin<&mut Self>, on: bool) {
+        if app::with(|api| api.set_group_artist_versions(on)) { self.set_artist_group_versions(on); }
     }
 
     pub fn apply_query(self: Pin<&mut Self>, text: &QString) -> QString {
@@ -149,11 +147,8 @@ impl qobject::Library {
         self.content_changed();
     }
 
-    pub fn group_albums(mut self: Pin<&mut Self>, on: bool) {
-        if app::with(|api| api.set_group_album_versions(on)) {
-            self.as_mut().set_group_versions(on);
-            self.content_changed();
-        }
+    pub fn group_albums(self: Pin<&mut Self>, on: bool) {
+        if app::with(|api| api.set_group_album_versions(on)) { self.set_group_versions(on); }
     }
 
     pub fn album_apart(&self, id: i64) -> i32 {
@@ -161,9 +156,7 @@ impl qobject::Library {
     }
 
     pub fn keep_album_apart(self: Pin<&mut Self>, id: i64, apart: bool) {
-        if app::with(|api| api.set_album_apart(id, apart)) {
-            self.content_changed();
-        }
+        app::with(|api| api.set_album_apart(id, apart));
     }
 
     pub fn search_column(mut self: Pin<&mut Self>, column: &QString, query: &QString) {
@@ -238,9 +231,12 @@ impl qobject::Library {
         self.refresh();
     }
 
-    /// The library changed under the screens: read it again and tell them.
+    /// The library changed under the screens: read it again and tell them,
+    /// and its grouping switches as the facade has them now.
     pub fn content_changed(mut self: Pin<&mut Self>) {
-        app::with(|api| api.invalidate_artist_collections());
+        let (versions, artists) = app::with(|api| { api.invalidate_artist_collections(); (api.group_album_versions(), api.group_artist_versions()) });
+        self.as_mut().set_group_versions(versions);
+        self.as_mut().set_artist_group_versions(artists);
         let next = self.content_rev().wrapping_add(1);
         self.as_mut().set_content_rev(next);
         self.refresh();

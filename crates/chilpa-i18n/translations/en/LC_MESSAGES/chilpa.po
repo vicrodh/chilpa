@@ -5274,6 +5274,8 @@ msgid "Rating"
 msgstr ""
 
 msgid "Ratings"
+msgstr ""
+
 msgid "Ratings are not synced with it."
 msgstr ""
 
@@ -6761,6 +6763,9 @@ msgstr ""
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr ""
 
+msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
+msgstr ""
+
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr ""
 
@@ -7067,6 +7072,9 @@ msgid "This can take a few minutes when MusicBrainz is busy."
 msgstr ""
 
 msgid "This chapter format is not supported."
+msgstr ""
+
+msgid "This choice could not be kept: {}"
 msgstr ""
 
 msgid "This collection exceeds the current page limit."
