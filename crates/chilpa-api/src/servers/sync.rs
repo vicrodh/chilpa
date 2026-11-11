@@ -1,10 +1,11 @@
 //! Mirroring a server into the library, on a thread of its own (ADR-017 §5).
 //!
-//! One server at a time, in the order they were asked for. Every page lands
-//! whole or not at all; what the server no longer has is taken out only
-//! when the whole catalogue was read and the count adds up. A sync that is
-//! cut off, or that saw fewer tracks than the server announced, leaves the
-//! library as it was.
+//! One server at a time, in the order they were asked for. What it reads is
+//! written in short transactions, with room left between them for other
+//! writers (`write`); what the server no longer has is taken out only when
+//! the whole catalogue was read and the count adds up. A sync that is cut
+//! off, or that saw fewer tracks than the server announced, takes nothing
+//! out.
 //!
 //! The server's own playlists are read on this thread too (`reading`):
 //! after its catalogue, whether the sync finished or ended partial, and
@@ -29,6 +30,21 @@ const COVER: u32 = 1200;
 /// library under the window, which read it again each time.
 const WRITE_TRACKS: usize = 500;
 const WRITE_EVERY: Duration = Duration::from_secs(5);
+
+/// Tracks one transaction saves, or stamps as unchanged, at most. A page
+/// can hold thousands (a server that lists 500 records with their songs),
+/// and the library's triggers make each saved track several milliseconds:
+/// 7,462 in one transaction held a real library for 37 s, and every other
+/// writer waited out its 5 s busy timeout and failed.
+const SAVE_PART: usize = 50;
+const KEEP_PART: usize = 500;
+
+/// After this long writing, the sync leaves the library alone for `ROOM`.
+/// A writer that waits tries again at most every 100 ms (SQLite's busy
+/// handler), so a gap longer than that is always its turn; without one, the
+/// next part began before it looked.
+const SPAN: Duration = Duration::from_secs(1);
+const ROOM: Duration = Duration::from_millis(150);
 
 /// Pages in a row that bring no track the sync had not seen. Past this the
 /// server is listing the same tracks again and again: the sync stops there,
@@ -784,8 +800,11 @@ fn back(net: &dyn Net, server: &chilpa_servers::Server, stopped: &dyn Fn() -> bo
     false
 }
 
-/// Writes what a sync read and has not written, and empties it. Each part
-/// lands whole or not at all. False when the library could not be written.
+/// Writes what a sync read and has not written, and empties it: in parts
+/// of at most `KEEP_PART` and `SAVE_PART` tracks, each its own transaction,
+/// leaving the library free for `ROOM` after every `SPAN` of writing. False
+/// when the library could not be written; the parts before stay, stamped
+/// with this sync, and take nothing out.
 fn write(
     lib: &chilpa_library::Library,
     source: i64,
@@ -793,8 +812,35 @@ fn write(
     keep: &mut Vec<String>,
     save: &mut Vec<chilpa_library::ServerTrack>,
 ) -> bool {
-    let kept = keep.is_empty() || lib.keep_server_tracks(source, generation, keep.as_slice()).is_ok();
-    let saved = kept && (save.is_empty() || lib.save_server_tracks(source, generation, save.as_slice()).is_ok());
+    let mut since = Instant::now();
+    write_in_parts(lib, source, generation, keep, save, &mut || {
+        if since.elapsed() >= SPAN {
+            std::thread::sleep(ROOM);
+            since = Instant::now();
+        }
+    })
+}
+
+/// `write`, calling `between` after each part, while nothing holds the
+/// library.
+fn write_in_parts(
+    lib: &chilpa_library::Library,
+    source: i64,
+    generation: i64,
+    keep: &mut Vec<String>,
+    save: &mut Vec<chilpa_library::ServerTrack>,
+    between: &mut dyn FnMut(),
+) -> bool {
+    let kept = keep.chunks(KEEP_PART).all(|part| {
+        let written = lib.keep_server_tracks(source, generation, part).is_ok();
+        between();
+        written
+    });
+    let saved = kept && save.chunks(SAVE_PART).all(|part| {
+        let written = lib.save_server_tracks(source, generation, part).is_ok();
+        between();
+        written
+    });
     keep.clear();
     save.clear();
     saved
