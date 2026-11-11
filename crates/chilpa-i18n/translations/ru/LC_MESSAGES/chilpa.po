@@ -7999,9 +7999,6 @@ msgstr "Выбранные источники отвечают дольше об
 msgid "Your shows"
 msgstr "Ваши подкасты"
 
-msgid "Your {} and {} of them are removed too."
-msgstr "Также удаляются ваши {} и {} для них."
-
 msgid "Your {} of them are removed too."
 msgstr "Также удаляются ваши {} для них."
 
@@ -9591,12 +9588,6 @@ msgstr "Защищено библиотекой: {}"
 
 msgid "{} queues · {} tracks"
 msgstr "Очередей: {} · треков: {}"
-
-msgid "{} rating"
-msgid_plural "{} ratings"
-msgstr[0] "{} оценка"
-msgstr[1] "{} оценки"
-msgstr[2] "{} оценок"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "Прочитано: {}, без изменений: {}, отсутствует: {}"

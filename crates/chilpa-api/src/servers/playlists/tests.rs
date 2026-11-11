@@ -273,9 +273,10 @@ fn removing_the_server_says_its_playlists_leave_with_it() {
     assert_eq!(facts["name"], "Living room", "{said}");
     assert_eq!(facts["playlists"], 1, "its playlist leaves with it: {said}");
     assert_eq!((facts["tracks"].as_u64(), facts["albums"].as_u64()), (Some(1), Some(1)), "{said}");
-    for kept in ["ratings", "plays", "entries", "touched"] {
+    for kept in ["plays", "entries", "touched"] {
         assert_eq!(facts[kept], 0, "{kept}: {said}");
     }
+    assert!(facts.get("ratings").is_none(), "the stars go unsaid: {said}");
 }
 
 #[test]

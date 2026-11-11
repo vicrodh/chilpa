@@ -7977,9 +7977,6 @@ msgstr "選択したソースの応答に通常より時間がかかっていま
 msgid "Your shows"
 msgstr "あなたの番組"
 
-msgid "Your {} and {} of them are removed too."
-msgstr "それらの{}と{}も削除されます。"
-
 msgid "Your {} of them are removed too."
 msgstr "それらの{}も削除されます。"
 
@@ -9525,10 +9522,6 @@ msgstr "{}はライブラリによって保護されています"
 
 msgid "{} queues · {} tracks"
 msgstr "{}キュー · {}トラック"
-
-msgid "{} rating"
-msgid_plural "{} ratings"
-msgstr[0] "{}件の評価"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{}個を読み取り、{}個は変更なし、{}個は見つかりません"

@@ -7,7 +7,7 @@ import "../../qml/Patterns"
 // With ratings off the filters of the Library and Tracks screens offer no
 // stars: no rating column to turn on, no stars to keep, and the filter
 // button does not say a hidden choice is in force. What was chosen stays
-// chosen. Removing a server still says the stars it deletes.
+// chosen. Removing a server says nothing of stars, with ratings on or off.
 TestCase {
     id: test
     name: "RatingsOptOutSources"
@@ -57,10 +57,12 @@ TestCase {
         verify(shown(five) && forTracks.starred)
     }
 
-    function test_removing_a_server_says_the_stars_it_deletes_with_ratings_on_or_off() {
-        verify(removal.said.indexOf("5 ratings") >= 0, removal.said)
-        Prefs.ratings = false
-        verify(removal.said.indexOf("5 ratings") >= 0, "the stars go with the server either way: " + removal.said)
-        verify(removal.said.indexOf("2 plays") >= 0, removal.said)
+    // A facts document that still counts stars is not said either.
+    function test_removing_a_server_says_nothing_of_stars_with_ratings_on_or_off() {
+        for (const on of [true, false]) {
+            Prefs.ratings = on
+            verify(removal.said.indexOf("rating") < 0 && removal.said.indexOf("5") < 0, removal.said)
+            verify(removal.said.indexOf("Your 2 plays of them are removed too.") >= 0, removal.said)
+        }
     }
 }

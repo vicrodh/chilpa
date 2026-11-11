@@ -7988,9 +7988,6 @@ msgstr "Je geselecteerde bronnen doen er langer over dan gebruikelijk. Probeer h
 msgid "Your shows"
 msgstr "Jouw shows"
 
-msgid "Your {} and {} of them are removed too."
-msgstr "Ook je {} en {} ervan worden verwijderd."
-
 msgid "Your {} of them are removed too."
 msgstr "Ook je {} ervan worden verwijderd."
 
@@ -9558,11 +9555,6 @@ msgstr "{} beschermd door de bibliotheek"
 
 msgid "{} queues · {} tracks"
 msgstr "{} wachtrijen · {} nummers"
-
-msgid "{} rating"
-msgid_plural "{} ratings"
-msgstr[0] "{} waardering"
-msgstr[1] "{} waarderingen"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{} gelezen, {} ongewijzigd, {} ontbrekend"

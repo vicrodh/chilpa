@@ -54,12 +54,9 @@ Modal {
     readonly property string said: {
         const f = facts
         const parts = [I18n.trArgs("{} and {} leave your library.", [counted(I18n.trN("{} track", "{} tracks", f.tracks || 0, I18n.rev), f.tracks), counted(I18n.trN("{} album", "{} albums", f.albums || 0, I18n.rev), f.albums)], I18n.rev)]
-        const kept = []
-        // Said even with ratings off: the stars of its tracks are deleted with the server.
-        if ((f.ratings || 0) > 0) kept.push(counted(I18n.trN("{} rating", "{} ratings", f.ratings || 0, I18n.rev), f.ratings))
-        if ((f.plays || 0) > 0) kept.push(counted(I18n.trN("{} play", "{} plays", f.plays || 0, I18n.rev), f.plays))
-        if (kept.length === 2) parts.push(I18n.trArgs("Your {} and {} of them are removed too.", kept, I18n.rev))
-        if (kept.length === 1) parts.push(I18n.trArgs("Your {} of them are removed too.", kept, I18n.rev))
+        // Stars go with the server too, unsaid: adding a server reads its own again.
+        if ((f.plays || 0) > 0)
+            parts.push(I18n.trArgs("Your {} of them are removed too.", [counted(I18n.trN("{} play", "{} plays", f.plays || 0, I18n.rev), f.plays)], I18n.rev))
         if ((f.playlists || 0) > 0)
             parts.push(I18n.trArgs("Its {} leave too.", [counted(I18n.trN("{} playlist", "{} playlists", f.playlists || 0, I18n.rev), f.playlists)], I18n.rev))
         if ((f.entries || 0) > 0)

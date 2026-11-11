@@ -7988,9 +7988,6 @@ msgstr "Vos sources sélectionnées mettent plus de temps que d'habitude. Réess
 msgid "Your shows"
 msgstr "Vos émissions"
 
-msgid "Your {} and {} of them are removed too."
-msgstr "Vos {} et {} associées sont aussi supprimées."
-
 msgid "Your {} of them are removed too."
 msgstr "Vos {} associées sont aussi supprimées."
 
@@ -9558,11 +9555,6 @@ msgstr "{} protégés par la bibliothèque"
 
 msgid "{} queues · {} tracks"
 msgstr "{} files d'attente · {} pistes"
-
-msgid "{} rating"
-msgid_plural "{} ratings"
-msgstr[0] "{} note"
-msgstr[1] "{} notes"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{} lus, {} inchangés, {} manquants"

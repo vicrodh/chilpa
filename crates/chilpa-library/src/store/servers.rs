@@ -102,8 +102,6 @@ pub struct ServerTrack {
 pub struct Removal {
     pub tracks: usize,
     pub albums: usize,
-    /// Tracks and records that carry my stars.
-    pub ratings: usize,
     /// Listens that counted as plays.
     pub plays: usize,
     /// The server's own playlists.
@@ -495,10 +493,6 @@ impl Library {
         Ok(Removal {
             tracks: count("SELECT count(*) FROM tracks WHERE source_id = ?1 AND present = 1")?,
             albums: count(&format!("SELECT count(*) FROM ({})", ALBUMS_ONLY_OF))?,
-            ratings: count(&format!(
-                "SELECT (SELECT count(*) FROM track_ratings WHERE stars > 0 AND track_id IN ({TRACKS_OF}))
-                      + (SELECT count(*) FROM album_ratings WHERE stars > 0 AND album_id IN ({ALBUMS_ONLY_OF}))"
-            ))?,
             plays: count(&format!(
                 "SELECT count(*) FROM play_events
                  WHERE (source_id = ?1 OR track_id IN ({TRACKS_OF}))

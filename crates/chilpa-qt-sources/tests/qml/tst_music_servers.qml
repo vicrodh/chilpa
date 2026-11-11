@@ -323,6 +323,7 @@ TestCase {
         compare(find("serverRemoveTitle").text, "Remove Lab?")
         const facts = find("serverRemoveFacts").text
         verify(facts.indexOf("12") >= 0 && facts.indexOf("826 albums") >= 0 && facts.indexOf("not touched") > 0, facts)
+        verify(facts.indexOf("rating") < 0 && facts.indexOf("Your 3 plays of them are removed too.") >= 0, "no word of stars: " + facts)
         verify(!find("serverRemoving").visible)
         const before = Servers.calls.length
         find("serverRemoveConfirm").clicked()
