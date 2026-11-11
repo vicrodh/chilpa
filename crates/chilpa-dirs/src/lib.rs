@@ -253,6 +253,28 @@ pub fn pipewire_socket() -> Option<PathBuf> {
     pipewire_socket_in(remote.as_deref(), runtime.as_deref(), std::path::Path::new(PIPEWIRE_SYSTEM_DIR))
 }
 
+/// The folders where a desktop program leaves the sockets other programs
+/// reach it by, in the order to look: the session's runtime folder, then
+/// the temporary ones (`TMPDIR`, `TMP`, `TEMP`, `/tmp`). Each once. On
+/// Windows a program is reached by a named pipe, so it is empty there.
+pub fn socket_dirs() -> Vec<PathBuf> {
+    socket_dirs_in(cfg!(unix), from_env)
+}
+
+fn socket_dirs_in(unix: bool, env: impl Fn(&str) -> Option<PathBuf>) -> Vec<PathBuf> {
+    if !unix {
+        return Vec::new();
+    }
+    let named = ["XDG_RUNTIME_DIR", "TMPDIR", "TMP", "TEMP"].into_iter().filter_map(env);
+    let mut dirs: Vec<PathBuf> = Vec::new();
+    for dir in named.chain([PathBuf::from("/tmp")]) {
+        if !dirs.contains(&dir) {
+            dirs.push(dir);
+        }
+    }
+    dirs
+}
+
 /// Where a system-wide PipeWire puts its sockets, the library's second place
 /// to look for a name.
 const PIPEWIRE_SYSTEM_DIR: &str = "/run/pipewire";
@@ -441,6 +463,18 @@ mod tests {
 
     /// The three of them share a process's environment, so they take turns.
     static LOOKING: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    #[test]
+    fn sockets_are_looked_for_in_the_runtime_folder_then_the_temporary_ones_each_once() {
+        let env = |name: &str| match name {
+            "XDG_RUNTIME_DIR" => Some(PathBuf::from("/run/user/1000")),
+            "TMP" | "TEMP" => Some(PathBuf::from("/var/tmp")),
+            _ => None,
+        };
+        let dirs = socket_dirs_in(true, env);
+        assert_eq!(dirs, [PathBuf::from("/run/user/1000"), PathBuf::from("/var/tmp"), PathBuf::from("/tmp")]);
+        assert!(socket_dirs_in(false, env).is_empty(), "a named pipe has no folder");
+    }
 
     #[test]
     fn the_environment_wins_on_every_platform() {
