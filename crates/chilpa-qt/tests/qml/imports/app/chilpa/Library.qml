@@ -24,5 +24,6 @@ QtObject {
     property bool groupSources: true
     function groupCopies(on) { groupSources = on }
     property string queryText: ""
-    function applyQuery(text) { queryText = text; return "" }
+    property int applied: 0
+    function applyQuery(text) { queryText = text; ++applied; return "" }
 }

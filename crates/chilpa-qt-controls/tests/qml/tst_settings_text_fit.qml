@@ -247,6 +247,27 @@ TestCase {
     function test_smallest_window_data() { return TextAudit.cases() }
     function test_smallest_window(data) { fits(test.smallest, data) }
 
+    // The ratings switch (Library > Ratings), read from the schema like every
+    // row above: whole in each language at both widths, and said in the
+    // language's own words.
+    function test_ratings_switch_data() { return TextAudit.cases() }
+    function test_ratings_switch(data) {
+        I18n.choose(data.language)
+        const read = schema().find(row => row.key === "crate::rating_switch::ENABLED")
+        verify(read !== undefined, "the switch is read from the schema")
+        compare(read.control, "toggle")
+        if (data.language !== "en")
+            verify(I18n.tr(read.title) !== read.title && I18n.tr(read.description) !== read.description, "the switch is translated")
+        const row = Object.assign({}, read, { title: I18n.tr(read.title), description: I18n.tr(read.description), value: "true", options: [], optionValues: [], marks: [] })
+        delete row.source
+        for (const width of [test.usual, test.smallest]) {
+            const list = createTemporaryObject(listFactory, test, { width: width })
+            verify(rowFactory.createObject(list, Object.assign({ width: width, page: actions }, row)) !== null)
+            const found = TextAudit.check(test, list, data.scale).concat(brokenWords(list))
+            compare(found.length, 0, found.join("\n"))
+        }
+    }
+
     // A row whose control would leave its texts less room than it takes goes
     // under them in the smallest window, and stays beside them in a usual one;
     // a switch never needs to.

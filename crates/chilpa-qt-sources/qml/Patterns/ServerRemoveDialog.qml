@@ -55,7 +55,7 @@ Modal {
         const f = facts
         const parts = [I18n.trArgs("{} and {} leave your library.", [counted(I18n.trN("{} track", "{} tracks", f.tracks || 0, I18n.rev), f.tracks), counted(I18n.trN("{} album", "{} albums", f.albums || 0, I18n.rev), f.albums)], I18n.rev)]
         const kept = []
-        if ((f.ratings || 0) > 0) kept.push(counted(I18n.trN("{} rating", "{} ratings", f.ratings || 0, I18n.rev), f.ratings))
+        if (Prefs.ratings && (f.ratings || 0) > 0) kept.push(counted(I18n.trN("{} rating", "{} ratings", f.ratings || 0, I18n.rev), f.ratings))
         if ((f.plays || 0) > 0) kept.push(counted(I18n.trN("{} play", "{} plays", f.plays || 0, I18n.rev), f.plays))
         if (kept.length === 2) parts.push(I18n.trArgs("Your {} and {} of them are removed too.", kept, I18n.rev))
         if (kept.length === 1) parts.push(I18n.trArgs("Your {} of them are removed too.", kept, I18n.rev))

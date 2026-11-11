@@ -15,6 +15,7 @@ Item {
     property string query: Library.queryText
     readonly property var reading: {
         I18n.rev
+        Prefs.ratings
         return JSON.parse(QueryChips.refine(chips.query) || "{\"rows\":[]}")
     }
     readonly property var shown: reading.complex ? [Object.assign({ console: true }, reading.complex)] : (reading.rows || [])

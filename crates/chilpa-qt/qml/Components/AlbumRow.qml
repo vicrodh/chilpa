@@ -34,7 +34,7 @@ Item {
     property int tracks: facts.tracks || 0
     property real durationMs: facts.duration_ms || 0
     property string genre: facts.genre || ""
-    property int stars: !technical && albumId !== 0 && shows("rating") ? Ratings.stars("album", albumId, Ratings.rev) : 0
+    property int stars: !technical && albumId !== 0 && cells.shows("rating") ? Ratings.stars("album", albumId, Ratings.rev) : 0
     // The record's sources; their column only where a list mixes them.
     property var sources: []
     property bool mixed: false

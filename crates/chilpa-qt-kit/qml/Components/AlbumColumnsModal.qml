@@ -47,7 +47,8 @@ Modal {
             color: Theme.color.textPrimary
         }
         Repeater {
-            model: chooser.all
+            // Without ratings no rating switch; `chosen` still keeps its column.
+            model: chooser.all.filter(c => c.name !== "rating" || Prefs.ratings)
             Item {
                 required property var modelData
                 readonly property real wants: label.implicitWidth

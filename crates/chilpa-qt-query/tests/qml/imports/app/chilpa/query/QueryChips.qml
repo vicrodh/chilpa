@@ -27,7 +27,9 @@ QtObject {
     property var refineOf: ({})
     property var lastRefineEdit: ({})
     property string refinedText: ""
-    function refine(query) { return JSON.stringify(refineOf[query] || { mode: "all", rows: [], complex: null }) }
+    // Every query read, kept in place: a counter written here would loop the bindings that read.
+    readonly property var refined: []
+    function refine(query) { refined.push(query); return JSON.stringify(refineOf[query] || { mode: "all", rows: [], complex: null }) }
     function refineEdit(query, change) { lastQuery = query; lastRefineEdit = JSON.parse(change); return refinedText }
     property bool canUndo: false
     property string undoneText: ""

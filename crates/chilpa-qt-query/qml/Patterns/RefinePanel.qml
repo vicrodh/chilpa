@@ -35,6 +35,7 @@ Rectangle {
 
     readonly property var reading: {
         I18n.rev
+        Prefs.ratings
         return JSON.parse(QueryChips.refine(panel.query) || "{\"mode\":\"all\",\"rows\":[]}")
     }
     readonly property var rows: reading.rows || []

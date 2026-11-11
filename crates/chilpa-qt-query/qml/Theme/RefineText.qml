@@ -8,8 +8,10 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 // and `ratingStr` in the handoff's source). A row is the facade's JSON:
 // {field, kind, negated, values, from, to, min, max, n, unit} or a group.
 QtObject {
-    // The fields in the order the panel offers them.
+    // The fields in the order the panel offers them; no rating while
+    // ratings are off.
     readonly property var order: ["genre", "year", "artist", "composer", "label", "rating", "added", "album", "title", "plays", "type", "quality", "bits", "rate"]
+        .filter(name => name !== "rating" || Prefs.ratings)
 
     function field(name) {
         switch (name) {

@@ -7,6 +7,7 @@ QtObject {
     property string previewValue: ""
     property bool animatedIndicator: false
     property bool trackComposers: false
+    property bool ratings: true
     function preview(key, value) { previewKey = key; previewValue = value }
     function changed() { rev += 1 }
 }

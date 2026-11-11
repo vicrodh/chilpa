@@ -1,11 +1,15 @@
 import QtQuick
+import app.chilpa.kit
 import "../Theme"
 
 // Five stars without five controls: two glyph runs and one hit target keep
 // the rating cheap enough for every visible track row. I draw only the filled
-// prefix so each row can batch its glyphs without a separate clip.
+// prefix so each row can batch its glyphs without a separate clip. With
+// ratings off they are not drawn: a place that shows them for its own
+// reason says so in its `visible`.
 Item {
     id: root
+    visible: Prefs.ratings
 
     property int value: 0
     property bool interactive: true

@@ -184,7 +184,7 @@ Item {
             albumHovered: index === view.albumHovered
             cols: columns
             canRate: trackId !== 0
-            rating: inViewport && list.showRating ? Ratings.stars("track", trackId, Ratings.rev) : 0
+            rating: inViewport && columns.rating > 0 ? Ratings.stars("track", trackId, Ratings.rev) : 0
             favorite: inViewport && Ratings.favorite("track", trackId, Ratings.rev)
             ratingPreview: index === view.hovered ? view.ratingHovered : 0
             hovered: index === view.hovered || list.activeFocus && index === list.cursorRow

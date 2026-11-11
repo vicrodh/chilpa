@@ -27,7 +27,7 @@ Rectangle {
         { column: "rate", title: I18n.tr("Sample rate", I18n.rev) },
         { column: "artist", title: I18n.tr("Artist", I18n.rev) },
         { column: "album", title: I18n.tr("Album", I18n.rev) }
-    ]
+    ].filter(c => c.column !== "rating" || Prefs.ratings) // a chosen rating column stays chosen
     property var columns: []
     property bool built: false
     readonly property real shares: columns.reduce((sum, c) => sum + Metrics.paneShare[c.column], 0)

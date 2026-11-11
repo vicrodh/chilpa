@@ -29,6 +29,8 @@ Column {
         ]
         Item {
             required property var modelData
+            // Kept when chosen, not offered while ratings are off.
+            visible: modelData.column !== "rating" || Prefs.ratings
             width: choices.width
             height: Metrics.button28
             Text {
