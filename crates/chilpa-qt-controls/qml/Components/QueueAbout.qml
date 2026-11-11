@@ -8,7 +8,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // What is known of what plays, under the queue's art: the track by default,
 // or the record it is on. Its source's word when it says much, MusicBrainz's
-// when it does not; who said it closes the list.
+// when it does not; who said it closes the list. Where its file or server
+// entry is belongs to the information modal, not to this column.
 Item {
     id: about
     // "track" or "album".
@@ -18,8 +19,6 @@ Item {
     readonly property var facts: found.facts || []
     readonly property var credits: found.credits || []
     readonly property string description: found.description || ""
-    // Where the track lives: its file, or its entry on a server.
-    readonly property var file: part === "track" && found.file ? found.file : ({})
     function read(text) { try { return JSON.parse(text || "{}") } catch (e) { return ({}) } }
 
     SegmentedControl {
@@ -115,34 +114,9 @@ Item {
                     Text { width: parent.width; visible: text !== ""; text: modelData.roles || ""; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pointSize: Type.meta; color: Theme.color.textSecondary }
                 }
             }
-            Column {
-                objectName: "queueAboutFile"
-                visible: !!about.file.value
-                width: column.width
-                Text { text: about.file.title || ""; font.pointSize: Type.meta; color: Theme.color.textTertiary }
-                TextEdit {
-                    objectName: "queueAboutFilePath"
-                    width: parent.width
-                    text: about.file.value || ""
-                    readOnly: true; selectByMouse: true; wrapMode: TextEdit.WrapAnywhere
-                    selectionColor: Theme.color.accent
-                    font.family: Type.consoleFamily
-                    font.pointSize: Type.meta
-                    color: Theme.color.textSecondary
-                }
-                Text {
-                    objectName: "queueAboutFileNote"
-                    visible: text !== ""
-                    width: parent.width
-                    text: about.file.note || ""
-                    wrapMode: Text.Wrap
-                    font.pointSize: Type.meta
-                    color: Theme.color.textTertiary
-                }
-            }
             Text {
                 objectName: "queueAboutNothing"
-                visible: about.found.loading === false && about.facts.length === 0 && about.credits.length === 0 && about.description === "" && !about.file.value && !about.found.failed && !about.found.busy
+                visible: about.found.loading === false && about.facts.length === 0 && about.credits.length === 0 && about.description === "" && !about.found.failed && !about.found.busy
                 width: parent.width
                 wrapMode: Text.Wrap
                 text: I18n.tr("Nothing more is known about it.", I18n.rev)

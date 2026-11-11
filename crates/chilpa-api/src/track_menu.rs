@@ -20,20 +20,31 @@ pub struct TrackMenuContext {
     /// A track whose metadata comes from a source catalog.
     pub remote: bool,
     pub server_delete: bool,
+    /// The one track "Track info" opens on: the path that names it and the
+    /// title its row shows. Without it, or for several, there is no entry.
+    pub about: Option<(String, String)>,
+}
+
+/// What is known of the one track, read where it lives; nothing plays.
+fn about_entry(context: &TrackMenuContext) -> Option<Value> {
+    let (path, title) = context.about.as_ref().filter(|(path, _)| context.count == 1 && !path.is_empty())?;
+    Some(json!({"act": "info", "text": i18n::t(i18n::mark("Track info")), "path": path, "title": title}))
 }
 
 pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
     if context.count == 0 {
         return Vec::new();
     }
-    // What cannot be played now offers nothing but leaving a list of mine,
-    // and outside one, nothing at all (ADR-017).
+    // What cannot be played now offers only what is known of it, which is
+    // how a missing file is traced back to where it came from, and leaving
+    // a list of mine (ADR-017).
     if context.unavailable {
-        return if context.editable {
-            vec![json!({"act": "remove", "text": i18n::t(i18n::mark("Remove from playlist"))})]
-        } else {
-            Vec::new()
-        };
+        let mut entries: Vec<Value> = about_entry(&context).into_iter().collect();
+        if context.editable {
+            if !entries.is_empty() { entries.push(json!({"separator": true})); }
+            entries.push(json!({"act": "remove", "text": i18n::t(i18n::mark("Remove from playlist"))}));
+        }
+        return entries;
     }
     let mut entries = Vec::new();
     if context.count > 1 {
@@ -72,6 +83,7 @@ pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
                 navigation.push(item(act, label));
             }
         }
+        navigation.extend(about_entry(&context));
     }
     if !navigation.is_empty() {
         entries.push(json!({"separator": true}));
@@ -200,6 +212,38 @@ mod unavailable_tests {
             .len()
                 > 1
         );
+    }
+}
+
+#[cfg(test)]
+mod info_tests {
+    use super::*;
+
+    #[test]
+    fn one_track_offers_its_information_by_its_own_path_and_several_do_not() {
+        let about = Some(("/music/Record/01.flac".to_string(), "Song".to_string()));
+        let menu = track_menu(TrackMenuContext { count: 1, about: about.clone(), ..Default::default() });
+        let info = menu.iter().find(|entry| entry["act"] == "info").expect("one track offers its information");
+        assert_eq!((info["path"].as_str(), info["title"].as_str()), (Some("/music/Record/01.flac"), Some("Song")));
+        assert_eq!(info["text"], i18n::t("Track info"));
+        assert_eq!(menu.iter().filter(|entry| entry["act"] == "info").count(), 1);
+        let several = track_menu(TrackMenuContext { count: 3, about, ..Default::default() });
+        assert!(!several.iter().any(|entry| entry["act"] == "info"), "a selection is not one track");
+        let nameless = track_menu(TrackMenuContext { count: 1, about: Some((String::new(), "Song".into())), ..Default::default() });
+        assert!(!nameless.iter().any(|entry| entry["act"] == "info"));
+    }
+
+    #[test]
+    fn a_track_that_cannot_play_still_says_where_its_file_was() {
+        let about = Some(("/music/Gone/01.flac".to_string(), "Gone".to_string()));
+        let acts = |menu: Vec<Value>| menu.iter().filter_map(|entry| entry["act"].as_str().map(str::to_string)).collect::<Vec<_>>();
+        let elsewhere = track_menu(TrackMenuContext { count: 1, about: about.clone(), unavailable: true, album: true, ..Default::default() });
+        assert_eq!(acts(elsewhere.clone()), ["info"], "nothing that plays, queues or navigates");
+        assert_eq!(elsewhere[0]["path"], "/music/Gone/01.flac");
+        let in_playlist = track_menu(TrackMenuContext { count: 1, about: about.clone(), unavailable: true, editable: true, ..Default::default() });
+        assert_eq!(acts(in_playlist), ["info", "remove"]);
+        let several = track_menu(TrackMenuContext { count: 2, about, unavailable: true, editable: true, ..Default::default() });
+        assert_eq!(acts(several), ["remove"], "a selection is not one track");
     }
 }
 

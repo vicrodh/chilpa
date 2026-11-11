@@ -596,6 +596,7 @@ impl qobject::TrackListModel {
             // Over the whole selection it acts on, not the row clicked: one
             // that cannot play among several leaves only what removes it.
             unavailable: self.acts_on_unavailable(row),
+            about: this.track(row.max(0) as usize).filter(|_| chosen.len() == 1).map(|t| (t.path, t.title)),
         };
         let mut entries = app::with(|api| api.track_queue_menu(context));
         if let Some(key) = this.queue_keys.get(row.max(0) as usize) {

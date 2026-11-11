@@ -6,8 +6,11 @@ import QtQuick
 // hand; the QML literal check fails if it does.
 QtObject {
     readonly property int outputDetailsWidth: 700
-    readonly property int trackInfoWidth: 460
-    readonly property int trackInfoHeight: 560
+    // The track information modal: room for three columns of facts, each no
+    // narrower than a cell; a narrower window takes fewer columns.
+    readonly property int trackInfoWidth: 680
+    readonly property int trackInfoHeight: 620
+    readonly property int trackInfoCell: 150
     readonly property int outputDetailsHeight: 520
     readonly property int outputDetailsChrome: 240
     // The window.

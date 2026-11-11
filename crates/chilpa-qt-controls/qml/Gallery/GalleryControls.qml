@@ -38,6 +38,11 @@ TitledFlow {
     ShortcutsSheet {}
     TrackInfoModal {}
     Item { width: Metrics.confirmWidth; height: Metrics.button32; TrackInfoLink {} }
+    TrackInfoModal { subject: "/music/Record/01 Song.flac"; subjectTitle: "Song" }
+    TrackInfoRequests { listenForRequests: false }
+    TrackInfoSections { width: Metrics.trackInfoWidth; height: Metrics.trackInfoHeight }
+    InfoSection { width: Metrics.trackInfoWidth; title: "Technical data"; cells: [{label: "Format", value: "FLAC"}, {label: "Bit depth", value: "24"}, {label: "Sample rate", value: "96 kHz"}] }
+    InfoSection { width: Metrics.trackInfoWidth; title: "Media info"; code: true; cells: [{label: "File", value: "/music/Record/01 Song.flac", note: "Not found on disk"}] }
     CommandHelp { width: Metrics.settingsMaxWidth; room: Metrics.settingsMaxWidth; lines: [{usage:":help",description:"Command help"}] }
     ShortcutsEditor {}
     SleepTimer {}

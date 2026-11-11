@@ -431,6 +431,9 @@ msgstr "アルバムページ"
 msgid "Album radio"
 msgstr "アルバムラジオ"
 
+msgid "Album review"
+msgstr "アルバムレビュー"
+
 msgid "Albums"
 msgstr "アルバム"
 
@@ -1734,6 +1737,9 @@ msgstr "現在適用中のテーマの色を出発点としてエディターに
 msgid "Copy the redacted logs to help diagnose the issue. You can review them before sharing."
 msgstr "問題の診断に役立つよう、個人情報を除去したログをコピーしてください。共有前に内容を確認できます。"
 
+msgid "Copy track, album and artist"
+msgstr "トラック、アルバム、アーティストをコピー"
+
 msgid "Copyright"
 msgstr "著作権"
 
@@ -2056,7 +2062,7 @@ msgid "Destinations"
 msgstr "取り込み先"
 
 msgid "Details"
-msgstr ""
+msgstr "詳細"
 
 msgid "Details available"
 msgstr "詳細を取得済み"
@@ -2935,7 +2941,7 @@ msgid "Hide audio path"
 msgstr "オーディオ経路を非表示"
 
 msgid "Hide details"
-msgstr ""
+msgstr "詳細を隠す"
 
 msgid "Hide explicit"
 msgstr "露骨な表現を非表示"
@@ -3480,6 +3486,9 @@ msgstr "ビューを閉じる"
 msgid "Left delay · 0–30 ms"
 msgstr "左ディレイ · 0–30 ms"
 
+msgid "Legal data"
+msgstr "権利情報"
+
 msgid "Length"
 msgstr "長さ"
 
@@ -3761,6 +3770,9 @@ msgstr "最大 32/384"
 
 msgid "May"
 msgstr "5月"
+
+msgid "Media info"
+msgstr "メディア情報"
 
 msgid "Member Of"
 msgstr "所属"
@@ -6492,6 +6504,9 @@ msgstr "ターゲット"
 msgid "Target loudness"
 msgstr "目標ラウドネス"
 
+msgid "Technical data"
+msgstr "技術データ"
+
 msgid "Temporary episode storage is unavailable."
 msgstr ""
 
@@ -7281,6 +7296,9 @@ msgstr "トラックの詳細 · {}"
 
 msgid "Track format"
 msgstr "曲の形式"
+
+msgid "Track info"
+msgstr "トラック情報"
 
 msgid "Track lists"
 msgstr "トラック一覧"

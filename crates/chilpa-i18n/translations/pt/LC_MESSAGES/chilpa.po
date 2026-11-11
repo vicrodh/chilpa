@@ -432,6 +432,9 @@ msgstr "Página do álbum"
 msgid "Album radio"
 msgstr "Rádio do álbum"
 
+msgid "Album review"
+msgstr "Resenha do álbum"
+
 msgid "Albums"
 msgstr "Álbuns"
 
@@ -1736,6 +1739,9 @@ msgstr "Copia as cores do tema aplicado atualmente para o editor como ponto de p
 msgid "Copy the redacted logs to help diagnose the issue. You can review them before sharing."
 msgstr "Copie os registros com dados sensíveis ocultos para ajudar no diagnóstico. Você pode revisá-los antes de compartilhar."
 
+msgid "Copy track, album and artist"
+msgstr "Copiar faixa, álbum e artista"
+
 msgid "Copyright"
 msgstr "Copyright"
 
@@ -2058,7 +2064,7 @@ msgid "Destinations"
 msgstr "Destinos"
 
 msgid "Details"
-msgstr ""
+msgstr "Detalhes"
 
 msgid "Details available"
 msgstr "Detalhes disponíveis"
@@ -2937,7 +2943,7 @@ msgid "Hide audio path"
 msgstr "Ocultar caminho do áudio"
 
 msgid "Hide details"
-msgstr ""
+msgstr "Ocultar detalhes"
 
 msgid "Hide explicit"
 msgstr "Ocultar explícitos"
@@ -3485,6 +3491,9 @@ msgstr "Sair da visualização"
 msgid "Left delay · 0–30 ms"
 msgstr "Atraso esquerdo · 0–30 ms"
 
+msgid "Legal data"
+msgstr "Dados legais"
+
 msgid "Length"
 msgstr "Duração"
 
@@ -3766,6 +3775,9 @@ msgstr "Máximo 32/384"
 
 msgid "May"
 msgstr "maio"
+
+msgid "Media info"
+msgstr "Informações da mídia"
 
 msgid "Member Of"
 msgstr "Membro de"
@@ -6500,6 +6512,9 @@ msgstr "Módulo"
 msgid "Target loudness"
 msgstr "Sonoridade alvo"
 
+msgid "Technical data"
+msgstr "Dados técnicos"
+
 msgid "Temporary episode storage is unavailable."
 msgstr ""
 
@@ -7290,6 +7305,9 @@ msgstr "Detalhes da faixa · {}"
 
 msgid "Track format"
 msgstr "Formato da faixa"
+
+msgid "Track info"
+msgstr "Informações da faixa"
 
 msgid "Track lists"
 msgstr "Listas de faixas"

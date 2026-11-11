@@ -227,6 +227,7 @@ pub fn found_menu(row: &FoundRow, names: Vec<String>, favorite: bool) -> Vec<Val
                 artists: names,
                 folder: !crate::on_a_server(&t.path),
                 unavailable: !t.available,
+                about: Some((t.path.clone(), t.title.clone())),
                 ..TrackMenuContext::default()
             })
         }
@@ -458,6 +459,14 @@ mod tests {
         assert!(ids[0] < 0, "a source's song by its catalog id, first as it is listed");
         assert_eq!(ids[1], 5);
         assert!(api.found_songs_selection(&rows[3..]).is_err(), "nothing that can sound is nothing to add");
+    }
+
+    #[test]
+    fn a_song_found_in_the_library_offers_its_information_by_its_own_path() {
+        let song = TrackRow { id: 5, title: "Song".into(), available: true, ..crate::browse::file_row("/music/own.flac") };
+        let menu = found_menu(&FoundRow::Track(song), Vec::new(), false);
+        let info = menu.iter().find(|entry| entry["act"] == "info").expect("a found song offers its information");
+        assert_eq!((info["path"].as_str(), info["title"].as_str()), (Some("/music/own.flac"), Some("Song")));
     }
 
     #[test]

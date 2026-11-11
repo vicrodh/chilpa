@@ -432,6 +432,9 @@ msgstr "Albumpagina"
 msgid "Album radio"
 msgstr "Albumradio"
 
+msgid "Album review"
+msgstr "Albumrecensie"
+
 msgid "Albums"
 msgstr "Albums"
 
@@ -1736,6 +1739,9 @@ msgstr "Kopieer de kleuren van het momenteel toegepaste thema naar de editor als
 msgid "Copy the redacted logs to help diagnose the issue. You can review them before sharing."
 msgstr "Kopieer de logs met afgeschermde gegevens om het probleem te helpen onderzoeken. Je kunt ze vóór het delen controleren."
 
+msgid "Copy track, album and artist"
+msgstr "Nummer, album en artiest kopiëren"
+
 msgid "Copyright"
 msgstr "Copyright"
 
@@ -2058,7 +2064,7 @@ msgid "Destinations"
 msgstr "Bestemmingen"
 
 msgid "Details"
-msgstr ""
+msgstr "Details"
 
 msgid "Details available"
 msgstr "Details beschikbaar"
@@ -2937,7 +2943,7 @@ msgid "Hide audio path"
 msgstr "Audiopad verbergen"
 
 msgid "Hide details"
-msgstr ""
+msgstr "Details verbergen"
 
 msgid "Hide explicit"
 msgstr "Expliciet verbergen"
@@ -3485,6 +3491,9 @@ msgstr "Weergave verlaten"
 msgid "Left delay · 0–30 ms"
 msgstr "Linkervertraging · 0–30 ms"
 
+msgid "Legal data"
+msgstr "Juridische gegevens"
+
 msgid "Length"
 msgstr "Lengte"
 
@@ -3766,6 +3775,9 @@ msgstr "Maximaal 32/384"
 
 msgid "May"
 msgstr "mei"
+
+msgid "Media info"
+msgstr "Media-info"
 
 msgid "Member Of"
 msgstr "Lid van"
@@ -6500,6 +6512,9 @@ msgstr "Module"
 msgid "Target loudness"
 msgstr "Doelluidheid"
 
+msgid "Technical data"
+msgstr "Technische gegevens"
+
 msgid "Temporary episode storage is unavailable."
 msgstr ""
 
@@ -7290,6 +7305,9 @@ msgstr "Nummerdetails · {}"
 
 msgid "Track format"
 msgstr "Formaat van nummer"
+
+msgid "Track info"
+msgstr "Nummerinfo"
 
 msgid "Track lists"
 msgstr "Nummerlijsten"

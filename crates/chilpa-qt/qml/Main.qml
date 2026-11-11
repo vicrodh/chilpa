@@ -41,6 +41,7 @@ Window {
     title: systemControls.kept ? "" : "Chilpa"
 
     ServerMediaDeletion {}
+    Driving.TrackInfoRequests {}
 
     // The dynamic background, under everything (design/01 1.6).
     Backdrop.AppBackground {

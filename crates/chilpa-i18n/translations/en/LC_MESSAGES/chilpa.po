@@ -432,6 +432,9 @@ msgstr ""
 msgid "Album radio"
 msgstr "Album radio"
 
+msgid "Album review"
+msgstr "Album review"
+
 msgid "Albums"
 msgstr ""
 
@@ -1735,6 +1738,9 @@ msgstr ""
 
 msgid "Copy the redacted logs to help diagnose the issue. You can review them before sharing."
 msgstr "Copy the redacted logs to help diagnose the issue. You can review them before sharing."
+
+msgid "Copy track, album and artist"
+msgstr "Copy track, album and artist"
 
 msgid "Copyright"
 msgstr "Copyright"
@@ -3485,6 +3491,9 @@ msgstr "Leave view"
 msgid "Left delay · 0–30 ms"
 msgstr ""
 
+msgid "Legal data"
+msgstr "Legal data"
+
 msgid "Length"
 msgstr ""
 
@@ -3766,6 +3775,9 @@ msgstr ""
 
 msgid "May"
 msgstr ""
+
+msgid "Media info"
+msgstr "Media info"
 
 msgid "Member Of"
 msgstr ""
@@ -6500,6 +6512,9 @@ msgstr "Target"
 msgid "Target loudness"
 msgstr ""
 
+msgid "Technical data"
+msgstr "Technical data"
+
 msgid "Temporary episode storage is unavailable."
 msgstr ""
 
@@ -7290,6 +7305,9 @@ msgstr ""
 
 msgid "Track format"
 msgstr "Track format"
+
+msgid "Track info"
+msgstr "Track info"
 
 msgid "Track lists"
 msgstr ""

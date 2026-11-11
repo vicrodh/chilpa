@@ -10,8 +10,10 @@ use serde_json::{json, Value};
 mod memory;
 mod metadata;
 mod contributors;
+mod technical;
 use memory::{kept, read};
 use metadata::{Hint, Reader};
+use technical::Technical;
 /// A fact as the tab lists it: what it is, and its value.
 type Fact = (&'static str, String);
 
@@ -29,16 +31,46 @@ fn text(value: &Value, key: &str) -> String {
     }
 }
 
+/// The facts the information modal keeps apart as legal data.
+const LEGAL: [&str; 5] = ["Label", "Copyright", "ISRC", "Barcode", "Catalog number"];
+
 /// The answer as the window reads it, its facts named in the language of now.
 fn shown(mut found: Value) -> String {
-    let facts: Vec<Value> = found["facts"].as_array().into_iter().flatten()
-        .map(|fact| json!({"label": i18n::t(fact[0].as_str().unwrap_or_default()), "value": fact[1]})).collect();
-    found["facts"] = json!(facts);
+    for key in ["facts", "technical"] {
+        let facts: Vec<Value> = found[key].as_array().into_iter().flatten().map(|fact| {
+            let what = fact[0].as_str().unwrap_or_default();
+            json!({"label": i18n::t(what), "value": fact[1], "group": if LEGAL.contains(&what) { "legal" } else { "details" }})
+        }).collect();
+        found[key] = json!(facts);
+    }
     for credit in found["credits"].as_array_mut().into_iter().flatten() { contributors::show(credit); }
     for key in ["title", "note"] {
         if let Some(said) = found["file"][key].as_str().filter(|said| !said.is_empty()) { found["file"][key] = json!(i18n::t(said)); }
     }
+    copied(&mut found);
     found.to_string()
+}
+
+/// What the copy button takes from a track's answer: the track, its record
+/// and its artist on one line, or everything the modal says as plain text.
+fn copied(found: &mut Value) {
+    let line: Vec<String> = ["title", "album", "artist"].iter()
+        .filter_map(|key| found["heading"][key].as_str()).filter(|said| !said.is_empty()).map(str::to_string).collect();
+    if line.is_empty() { return; }
+    let said = |key: &str, group: Option<&str>| -> Vec<String> {
+        found[key].as_array().into_iter().flatten().filter(|fact| group.is_none_or(|group| fact["group"] == group))
+            .map(|fact| format!("{}: {}", fact["label"].as_str().unwrap_or_default(), fact["value"].as_str().unwrap_or_default())).collect()
+    };
+    let credits: Vec<String> = found["credits"].as_array().into_iter().flatten()
+        .map(|credit| [credit["name"].as_str(), credit["roles"].as_str()].into_iter().flatten().filter(|said| !said.is_empty()).collect::<Vec<_>>().join(" — ")).collect();
+    let file: Vec<String> = [found["file"]["value"].as_str(), found["file"]["note"].as_str()].into_iter().flatten()
+        .filter(|said| !said.is_empty()).map(str::to_string).collect();
+    let mut full = line.clone();
+    for block in [said("facts", Some("details")), said("technical", None), credits, said("facts", Some("legal")), file] {
+        if !block.is_empty() { full.push(String::new()); full.extend(block); }
+    }
+    found["copy_basic"] = json!(line.join(" - "));
+    found["copy_full"] = json!(full.join("\n"));
 }
 
 /// Where a track lives, for whoever is hunting a file down: its path on this
@@ -65,8 +97,10 @@ fn answer(facts: Vec<Fact>, credits: Vec<Value>, origin: String, link: String, d
 
 /// I retain source and tag facts, supplementing their credits with
 /// MusicBrainz recording and work relationships when it is allowed.
-fn read_track(path: String, source: Option<(Value, String)>, musicbrainz: bool, mut hint: Hint) -> Value {
+fn read_track(path: String, source: Option<(Value, String)>, musicbrainz: bool, mut hint: Hint, stored: Technical) -> Value {
     let (mut facts, mut credits, mut origin, mut link) = (Vec::new(), Vec::new(), String::new(), String::new());
+    let mut heading = json!({"title": hint.title.clone(), "album": hint.album.clone(), "artist": hint.artist.clone()});
+    let mut technical = stored;
     let (mut isrc, mut recording) = (String::new(), String::new());
     let from_source = source.is_some();
     match source {
@@ -87,7 +121,12 @@ fn read_track(path: String, source: Option<(Value, String)>, musicbrainz: bool, 
         // A server's entry is not a path on this machine.
         None if chilpa_models::RemoteEntry::parse(&path).is_some() => {}
         None => if let Ok(file) = chilpa_tags::read(std::path::Path::new(&path)) {
+            technical.read_file(&path, &file);
             let tags = file.tags;
+            // A file the library does not hold is named by its own tags.
+            for (key, said) in [("title", tags.title.clone()), ("album", tags.album.clone()), ("artist", Some(tags.artists.join(", ")))] {
+                if heading[key] == "" { if let Some(said) = said.filter(|said| !said.is_empty()) { heading[key] = json!(said); } }
+            }
             push(&mut facts, i18n::mark("Composer"), tags.composers.join(", "));
             push(&mut facts, i18n::mark("Work"), tags.work.unwrap_or_default());
             push(&mut facts, i18n::mark("Genre"), tags.genres.join(", "));
@@ -121,6 +160,8 @@ fn read_track(path: String, source: Option<(Value, String)>, musicbrainz: bool, 
     let mut found = answer(facts, credits, origin, link, String::new());
     found["failed"] = json!(failed);
     found["file"] = file_where(&path, from_source);
+    found["technical"] = json!(technical.facts().into_iter().map(|(what, value)| json!([what, value])).collect::<Vec<_>>());
+    found["heading"] = heading;
     found
 }
 
@@ -182,31 +223,47 @@ fn read_album(record: Record, musicbrainz: bool, refresh: bool) -> Value {
     found
 }
 
+/// Whom an answer speaks of: the track that plays, or one chosen from a
+/// list, named by its path.
+#[derive(Clone, Debug, Default, PartialEq)]
+struct Subject { path: String, title: String, artist: String, album: String, duration_ms: u64, album_id: i64, stored: Technical }
+
 impl Chilpa {
     /// I discard one failed panel's session answer before its explicit retry.
     pub fn retry_now_about(&mut self, part: &str, path: &str) -> bool {
         if path.is_empty() || self.now_playing().path != path { return false; }
+        let subject = self.playing_subject();
+        self.retry_about_of(part, &subject)
+    }
+
+    fn retry_about_of(&mut self, part: &str, subject: &Subject) -> bool {
         let identity = match part {
-            "track" => path.to_string(),
-            "album" if self.now.album_id != 0 => self.now.album_id.to_string(),
+            "track" => subject.path.clone(),
+            "album" if subject.album_id != 0 => subject.album_id.to_string(),
             _ => return false,
         };
         let policy = chilpa_core::network::current();
         let key = format!("{part}:{}:{}:{identity}", policy.musicbrainz, policy.offline);
         if part == "album" && kept(&key).is_some_and(|found| found["refetch_failed"] == true) {
-            return self.refetch_now_album_about(path);
+            return self.refetch_album_of(subject);
         }
         memory::retry_failed(&key)
     }
 
     /// I refresh only the currently requested album; an old view cannot target the next track.
     pub fn refetch_now_album_about(&mut self, path: &str) -> bool {
-        if path.is_empty() || self.now_playing().path != path || self.now.album_id == 0 { return false; }
+        if path.is_empty() || self.now_playing().path != path { return false; }
+        let subject = self.playing_subject();
+        self.refetch_album_of(&subject)
+    }
+
+    fn refetch_album_of(&mut self, subject: &Subject) -> bool {
+        let id = subject.album_id;
+        if id == 0 { return false; }
         let policy = chilpa_core::network::current();
         if !policy.musicbrainz || policy.offline { return false; }
-        let id = self.now.album_id;
         let key = format!("album:true:false:{id}");
-        let record = self.about_record(id);
+        let record = self.about_record(id, subject);
         memory::refresh(self.catalog.clone(), key, id.to_string(), move || read_album(record, true, true))
     }
 
@@ -214,33 +271,38 @@ impl Chilpa {
     /// (label, value), `credits` (name, roles), `origin` (who said it),
     /// `link` and `loading`. Empty when nothing plays.
     pub fn now_track_about(&mut self) -> String {
-        let path = self.now_playing().path.clone();
-        if path.is_empty() { return "{}".into(); }
+        if self.now_playing().path.is_empty() { return "{}".into(); }
+        let subject = self.playing_subject();
+        self.track_about_of(subject)
+    }
+
+    fn track_about_of(&mut self, subject: Subject) -> String {
         let policy = chilpa_core::network::current();
         let musicbrainz = policy.musicbrainz;
-        let key = format!("track:{musicbrainz}:{}:{path}", policy.offline);
+        let key = format!("track:{musicbrainz}:{}:{}", policy.offline, subject.path);
         if let Some(found) = kept(&key) { return shown(found); }
-        let source = self.catalog.track_by_path(&path).map(|(track, _)| {
+        let source = self.catalog.track_by_path(&subject.path).map(|(track, _)| {
             let name = self.catalog.name(&track.plugin).unwrap_or_else(|| track.plugin.clone());
             (track.metadata, name)
         });
-        let hint = self.about_hint(&path);
-        shown(read(self.catalog.clone(), key, self.now.album_id.to_string(), move || read_track(path, source, musicbrainz, hint)))
+        let hint = self.about_hint(&subject);
+        let (path, scope, stored) = (subject.path, subject.album_id.to_string(), subject.stored);
+        shown(read(self.catalog.clone(), key, scope, move || read_track(path, source, musicbrainz, hint, stored)))
     }
 
-    fn about_hint(&mut self, path: &str) -> Hint {
-        let mut hint = Hint { title: self.now.title.clone(), artist: self.now.artist.clone(), album: self.now.album.clone(),
-            album_artist: self.now.artist.clone(), duration_ms: (self.now.total_seconds * 1000.0).max(0.0) as u64,
-            path: path.into(), ..Default::default() };
-        if self.now.album_id != 0 {
-            let info: Value = serde_json::from_str(&self.album_information(self.now.album_id)).unwrap_or_default();
+    fn about_hint(&mut self, subject: &Subject) -> Hint {
+        let mut hint = Hint { title: subject.title.clone(), artist: subject.artist.clone(), album: subject.album.clone(),
+            album_artist: subject.artist.clone(), duration_ms: subject.duration_ms,
+            path: subject.path.clone(), ..Default::default() };
+        if subject.album_id != 0 {
+            let info: Value = serde_json::from_str(&self.album_information(subject.album_id)).unwrap_or_default();
             let artist = text(&info, "artist");
             if !artist.is_empty() { hint.album_artist = artist; }
             hint.release_id = text(&info, "musicbrainz_release_id");
             hint.catalog_number = text(&info, "catalog_number");
         }
         if let Some(library) = self.library() {
-            if let Some(row) = library.tracks_by_paths(&[path.to_string()]).ok().and_then(|mut rows| rows.pop().flatten()) {
+            if let Some(row) = library.tracks_by_paths(&[subject.path.clone()]).ok().and_then(|mut rows| rows.pop().flatten()) {
                 if let Some((isrc, mbid)) = library.fingerprints_for(&[row.id]).ok().and_then(|mut ids| ids.remove(&row.id)) {
                     hint.isrc = isrc.unwrap_or_default();
                     hint.recording_id = mbid.unwrap_or_default();
@@ -253,20 +315,25 @@ impl Chilpa {
     /// What the About tab says of the record the track is on, as JSON, in
     /// the shape of `now_track_about`, with its review as `description`.
     pub fn now_album_about(&mut self) -> String {
-        let id = self.now_playing().album_id;
+        let subject = self.playing_subject();
+        self.album_about_of(&subject)
+    }
+
+    fn album_about_of(&mut self, subject: &Subject) -> String {
+        let id = subject.album_id;
         if id == 0 { return "{}".into(); }
         let policy = chilpa_core::network::current();
         let musicbrainz = policy.musicbrainz;
         let key = format!("album:{musicbrainz}:{}:{id}", policy.offline);
         let mut found = if let Some(found) = kept(&key) { found } else {
-            let record = self.about_record(id);
+            let record = self.about_record(id, subject);
             read(self.catalog.clone(), key, id.to_string(), move || read_album(record, musicbrainz, false))
         };
         found["can_refetch"] = json!(musicbrainz && !policy.offline);
         shown(found)
     }
 
-    fn about_record(&mut self, id: i64) -> Record {
+    fn about_record(&mut self, id: i64, subject: &Subject) -> Record {
         let info: Value = serde_json::from_str(&self.album_information(id)).unwrap_or_default();
         let source = if id < 0 { info["plugin"].as_str().and_then(|plugin| self.catalog.name(plugin)).unwrap_or_default() } else { "Chilpa".to_string() };
         let mut facts = Vec::new();
@@ -277,9 +344,75 @@ impl Chilpa {
         push(&mut facts, i18n::mark("Copyright"), text(&info, "copyright"));
         push(&mut facts, i18n::mark("Barcode"), text(&info, "upc"));
         Record { title: text(&info, "title"), artist: text(&info, "artist"), description: text(&info, "description"),
-            label: text(&info, "label"), source, facts, hint: self.about_hint(&self.now.path.clone()) }
+            label: text(&info, "label"), source, facts, hint: self.about_hint(subject) }
+    }
+
+    fn playing_subject(&self) -> Subject {
+        let now = &self.now;
+        let duration_ms = (now.total_seconds * 1000.0).max(0.0) as u64;
+        Subject { path: now.path.clone(), title: now.title.clone(), artist: now.artist.clone(), album: now.album.clone(),
+            duration_ms, album_id: now.album_id, stored: Technical { quality: now.quality.clone(), duration_ms, ..Default::default() } }
+    }
+
+    /// A track that does not play, named by its path, as the library, a
+    /// source's catalog or the media open now hold it. Neither its file nor
+    /// its source is read here: a hung mount or a slow server cannot hold
+    /// the window, and what only they know is read on the background.
+    fn subject_of(&mut self, path: &str) -> Subject {
+        let known = self.library().and_then(|library| library.tracks_by_paths(&[path.to_string()]).ok()).and_then(|mut rows| rows.pop().flatten());
+        let stored = |quality, duration_ms| Technical { quality, duration_ms, ..Default::default() };
+        if let Some(row) = known {
+            let quality = crate::Quality::of_track(path, row.codec.as_deref(), row.bit_depth, row.sample_rate_hz);
+            return Subject { path: path.into(), title: row.title, artist: row.artist, album: row.album, duration_ms: row.duration_ms,
+                album_id: row.album_id.unwrap_or(0), stored: stored(quality, row.duration_ms) };
+        }
+        if let Some((track, _)) = self.catalog.track_by_path(path) {
+            let quality = track.format.as_ref().map(|format| format.quality()).unwrap_or_default();
+            return Subject { path: path.into(), title: track.title, artist: track.artist, album: track.album, duration_ms: track.duration_ms,
+                album_id: track.album_id, stored: stored(quality, track.duration_ms) };
+        }
+        self.media_row(path).map(|row| Subject { path: path.into(), stored: stored(row.quality, row.duration_ms), title: row.title, artist: row.artist,
+            album: row.album, duration_ms: row.duration_ms, album_id: row.album_id })
+            .unwrap_or_else(|| Subject { path: path.into(), ..Default::default() })
+    }
+
+    /// What the About tab says of the track `path` names, playing or not, in
+    /// the shape of `now_track_about`; the track that plays gets that same
+    /// answer. Asking plays nothing and leaves the queue as it is.
+    pub fn track_about(&mut self, path: &str) -> String {
+        if path.is_empty() { return "{}".into(); }
+        if path == self.now.path { return self.now_track_about(); }
+        let subject = self.subject_of(path);
+        self.track_about_of(subject)
+    }
+
+    /// The record the track `path` names is on, as `now_album_about` says it.
+    pub fn album_about(&mut self, path: &str) -> String {
+        if path.is_empty() { return "{}".into(); }
+        if path == self.now.path { return self.now_album_about(); }
+        let subject = self.subject_of(path);
+        self.album_about_of(&subject)
+    }
+
+    /// `retry_now_about` for the track `path` names, playing or not.
+    pub fn retry_about(&mut self, part: &str, path: &str) -> bool {
+        if path.is_empty() { return false; }
+        if path == self.now.path { return self.retry_now_about(part, path); }
+        let subject = self.subject_of(path);
+        self.retry_about_of(part, &subject)
+    }
+
+    /// `refetch_now_album_about` for the record of the track `path` names.
+    pub fn refetch_album_about(&mut self, path: &str) -> bool {
+        if path.is_empty() { return false; }
+        if path == self.now.path { return self.refetch_now_album_about(path); }
+        let subject = self.subject_of(path);
+        self.refetch_album_of(&subject)
     }
 }
+
+#[cfg(test)]
+mod chosen_tests;
 
 #[cfg(test)]
 mod tests {
@@ -288,12 +421,12 @@ mod tests {
     #[test]
     fn a_source_s_credits_are_its_own_and_its_facts_are_named_in_the_window_s_language() {
         let metadata = json!({"performers": "Michael Stipe, MainArtist, Vocals - Peter Buck, Guitar", "composer": "Bill Berry", "isrc": "USWB19900001", "copyright": "1991 Warner"});
-        let found = read_track(String::new(), Some((metadata, "Fixture".into())), false, Hint::default());
+        let found = read_track(String::new(), Some((metadata, "Fixture".into())), false, Hint::default(), Technical::default());
         assert_eq!(found["origin"], "Fixture", "credits from the source are the source's");
         assert_eq!(found["credits"][0]["name"], "Michael Stipe");
         assert_eq!(found["credits"][1]["roles"], "Guitar");
-        let shown: Value = serde_json::from_str(&shown(found)).unwrap();
-        let facts: Vec<(String, String)> = shown["facts"].as_array().unwrap().iter()
+        let said: Value = serde_json::from_str(&shown(found)).unwrap();
+        let facts: Vec<(String, String)> = said["facts"].as_array().unwrap().iter()
             .map(|fact| (fact["label"].as_str().unwrap().to_string(), fact["value"].as_str().unwrap().to_string())).collect();
         assert!(facts.contains(&("Composer".into(), "Bill Berry".into())));
         assert_eq!(facts.last().unwrap(), &("ISRC".to_string(), "USWB19900001".to_string()), "the code last");
@@ -301,7 +434,7 @@ mod tests {
 
     #[test]
     fn a_source_that_says_little_is_not_named_and_musicbrainz_is_not_asked_when_off() {
-        let found = read_track(String::new(), Some((json!({"genre": "Rock"}), "Fixture".into())), false, Hint::default());
+        let found = read_track(String::new(), Some((json!({"genre": "Rock"}), "Fixture".into())), false, Hint::default(), Technical::default());
         assert_eq!(found["origin"], "", "a genre alone is not rich");
         assert!(found["credits"].as_array().unwrap().is_empty());
         let record = Record { title: "Out of Time".into(), artist: "R.E.M.".into(), description: String::new(), label: String::new(),
@@ -341,5 +474,28 @@ mod tests {
         push(&mut facts, i18n::mark("Composer"), "B");
         push(&mut facts, i18n::mark("Label"), "  ");
         assert_eq!(facts, [(i18n::mark("Composer"), "A".to_string())]);
+    }
+}
+
+#[cfg(test)]
+mod shown_tests {
+    use super::*;
+
+    #[test]
+    fn legal_facts_are_kept_apart_and_the_copy_says_what_the_modal_says() {
+        let mut found = answer(vec![(i18n::mark("Composer"), "Writer".into()), (i18n::mark("Label"), "House".into()), ("ISRC", "XX0000000001".into())],
+            vec![json!({"name": "Player", "roles": "Guitar"})], String::new(), String::new(), String::new());
+        found["technical"] = json!([[i18n::mark("Format"), "FLAC"]]);
+        found["heading"] = json!({"title": "Song", "album": "Record", "artist": ""});
+        found["file"] = json!({"title": i18n::mark("Server item"), "value": "provider/home/7", "note": ""});
+        let said: Value = serde_json::from_str(&shown(found)).unwrap();
+        let groups: Vec<&str> = said["facts"].as_array().unwrap().iter().map(|fact| fact["group"].as_str().unwrap()).collect();
+        assert_eq!(groups, ["details", "legal", "legal"]);
+        assert_eq!(said["copy_basic"], "Song - Record");
+        let full = said["copy_full"].as_str().unwrap();
+        for said in ["Song", "Record", "Player — Guitar", "provider/home/7", "XX0000000001"] { assert!(full.contains(said), "{said} in {full}"); }
+        assert!(full.find("Player").unwrap() < full.find("XX0000000001").unwrap(), "credits before legal data");
+        let album: Value = serde_json::from_str(&shown(json!({"facts": []}))).unwrap();
+        assert!(album.get("copy_basic").is_none(), "nothing to copy without a heading");
     }
 }

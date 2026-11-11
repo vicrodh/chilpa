@@ -388,6 +388,7 @@ TestCase {
             { act: "artist:0", text: I18n.trArgs("Go to {}", ["Orquesta Sinfónica de la Radiotelevisión Española"], I18n.rev), glyph: SourceGlyphs.musicArtist, family: SourceGlyphs.font },
             { act: "folder", text: t("Show in folder"), glyph: Icons.folder },
             { act: "metadata", text: t("Edit metadata…") },
+            { act: "info", text: t("Track info"), glyph: Icons.infoCircle },
             { separator: true },
             { act: "up", text: t("Move up"), hint: "Alt ↑", glyph: Icons.chevronUp },
             { act: "down", text: t("Move down"), hint: "Alt ↓", glyph: Icons.chevronDown },
