@@ -14,7 +14,8 @@ Rectangle {
     property var group: ({ rows: [] })
     property bool target: false
     property bool narrow: false
-    property bool longLabels: false
+    // The label column its rows share with the panel's.
+    property real labelWide: Refine.labelWide
     property string picking: ""
     signal modeChosen(string mode)
     signal targetToggled()
@@ -85,7 +86,7 @@ Rectangle {
                 width: content.width
                 row: modelData
                 narrow: box.narrow
-                longLabels: box.longLabels
+                labelWide: box.labelWide
                 picking: box.picking === modelData.field
                 onRemoved: box.rowRemoved(modelData.id)
                 onOperatorChosen: (key) => box.rowOperator(modelData.id, key)

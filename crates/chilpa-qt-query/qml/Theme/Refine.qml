@@ -31,7 +31,8 @@ QtObject {
     readonly property int rowApartX: 8
     readonly property int rowApartY: 4
     readonly property int labelWide: 104
-    readonly property int labelWideLong: 124
+    // The most of a row the label column takes before names wrap.
+    readonly property real labelShare: 0.2
     readonly property int labelIcon: 15
     readonly property int labelApart: 7
     readonly property int innerApart: 6
