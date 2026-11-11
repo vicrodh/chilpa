@@ -315,7 +315,6 @@ fn removing_a_server_says_first_what_it_takes() {
     assert_eq!(removal, Removal {
         tracks: 3,
         albums: 2,
-        ratings: 2,
         plays: 2,
         playlists: 0,
         playlist_entries: 2,

@@ -17,6 +17,7 @@ Segments {
     // How many conditions the query holds, groups counted by their own.
     readonly property var reading: {
         I18n.rev
+        Prefs.ratings
         return JSON.parse(QueryChips.refine(Library.queryText) || "{\"rows\":[]}")
     }
     readonly property int conditions: reading.complex ? (reading.complex.count || 1)

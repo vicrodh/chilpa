@@ -165,8 +165,9 @@ impl Chilpa {
                     "description":crate::hotkeys::command_label(command.action)})).collect();
             if arg == "filter" {
                 // The console's font is monospaced: the descriptions line up.
-                let wide = crate::library_query::EXAMPLES.iter().map(|(example, _)| example.chars().count()).max().unwrap_or(0);
-                lines.extend(crate::library_query::EXAMPLES.iter().map(|(example, what)|
+                let examples = crate::rating_switch::examples(crate::rating_switch::on());
+                let wide = examples.iter().map(|(example, _)| example.chars().count()).max().unwrap_or(0);
+                lines.extend(examples.into_iter().map(|(example, what)|
                     json!({"usage":format!("{example:<wide$}"), "description":chilpa_i18n::t(what), "example":true})));
             }
             return Ok(json!({"action":"commands.help","lines":lines}));

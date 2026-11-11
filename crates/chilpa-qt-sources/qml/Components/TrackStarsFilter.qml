@@ -12,6 +12,7 @@ Column {
     // The stars chosen, 0 for none; empty keeps every track.
     property var ratings: []
     signal chosen(var ratings)
+    visible: Prefs.ratings
     spacing: Metrics.gap8
 
     Text {

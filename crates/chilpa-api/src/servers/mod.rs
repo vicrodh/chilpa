@@ -590,7 +590,7 @@ impl Chilpa {
         let Some(lib) = self.library() else { return String::new() };
         let (Ok(Some(server)), Ok(r)) = (lib.server(id), lib.removal(id)) else { return String::new() };
         serde_json::json!({
-            "name": server.label, "tracks": r.tracks, "albums": r.albums, "ratings": r.ratings, "plays": r.plays,
+            "name": server.label, "tracks": r.tracks, "albums": r.albums, "plays": r.plays,
             "playlists": r.playlists, "entries": r.playlist_entries, "touched": r.playlists_touched,
         })
         .to_string()

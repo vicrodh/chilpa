@@ -120,7 +120,7 @@ impl Reader {
             excluded_sources: extras.excluded_sources.clone(),
             qualities: extras.qualities.clone(),
             formats: extras.formats.clone(),
-            track_ratings: query.ratings.clone(),
+            track_ratings: if crate::rating_switch::on() { query.ratings.clone() } else { Vec::new() },
             grouped_by: if query.grouped() && query.group != "plays" { query.group.clone() } else { String::new() },
             ..Filter::default()
         };

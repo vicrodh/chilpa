@@ -21,7 +21,7 @@ Popup {
     // The Tracks screen's stars to keep, or null where a screen has none.
     property var ratings: null
     signal ratingsChosen(var ratings)
-    readonly property bool starred: ratings !== null && ratings.length > 0
+    readonly property bool starred: Prefs.ratings && ratings !== null && ratings.length > 0
     readonly property real half: sourcesOnly ? popover.availableWidth : (popover.availableWidth - Metrics.gap16) / 2 // derived: two columns and the gap between
 
     // A click outside closes it and is nothing else: it is not also a click
@@ -186,7 +186,7 @@ Popup {
                 }
 
                 TrackStarsFilter {
-                    visible: popover.ratings !== null
+                    visible: popover.ratings !== null && Prefs.ratings
                     width: parent.width
                     ratings: popover.ratings || []
                     onChosen: (next) => popover.ratingsChosen(next)

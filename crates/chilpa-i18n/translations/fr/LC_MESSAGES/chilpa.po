@@ -5261,8 +5261,14 @@ msgstr ""
 msgid "Rate"
 msgstr "Noter"
 
+msgid "Rate tracks, albums and playlists with one to five stars. Off, stars leave every list, page and filter; the ratings already given are kept."
+msgstr "Notez pistes, albums et playlists d'une à cinq étoiles. Désactivé, les étoiles quittent toutes les listes, pages et filtres ; les notes déjà données sont conservées."
+
 msgid "Rating"
 msgstr "Note"
+
+msgid "Ratings"
+msgstr "Notes"
 
 msgid "Re-fetch album information"
 msgstr "Récupérer à nouveau les informations de l’album"
@@ -6359,6 +6365,9 @@ msgstr "Standard en attente"
 
 msgid "Standard processed"
 msgstr "Pistes traitées en standard"
+
+msgid "Star ratings"
+msgstr "Notes en étoiles"
 
 msgid "Start"
 msgstr "Commencer"
@@ -7979,9 +7988,6 @@ msgstr "Vos sources sélectionnées mettent plus de temps que d'habitude. Réess
 msgid "Your shows"
 msgstr "Vos émissions"
 
-msgid "Your {} and {} of them are removed too."
-msgstr "Vos {} et {} associées sont aussi supprimées."
-
 msgid "Your {} of them are removed too."
 msgstr "Vos {} associées sont aussi supprimées."
 
@@ -9549,11 +9555,6 @@ msgstr "{} protégés par la bibliothèque"
 
 msgid "{} queues · {} tracks"
 msgstr "{} files d'attente · {} pistes"
-
-msgid "{} rating"
-msgid_plural "{} ratings"
-msgstr[0] "{} note"
-msgstr[1] "{} notes"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{} lus, {} inchangés, {} manquants"

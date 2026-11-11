@@ -13,8 +13,10 @@ Column {
     id: zero
     property string query: Library.queryText
     property bool active: false
-    readonly property var reading: active ? JSON.parse(QueryChips.refine(query) || "{\"rows\":[]}") : ({ rows: [] })
-    readonly property var offers: active ? JSON.parse(QueryChips.withoutEach(query) || "[]") : []
+    // Read again when ratings are turned on or off: a rating condition then
+    // counts, or does not.
+    readonly property var reading: { Prefs.ratings; return active ? JSON.parse(QueryChips.refine(query) || "{\"rows\":[]}") : ({ rows: [] }) }
+    readonly property var offers: { Prefs.ratings; return active ? JSON.parse(QueryChips.withoutEach(query) || "[]") : [] }
 
     visible: active
     topPadding: Refine.zeroTop

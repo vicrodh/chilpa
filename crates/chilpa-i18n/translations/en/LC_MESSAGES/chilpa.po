@@ -5261,7 +5261,13 @@ msgstr ""
 msgid "Rate"
 msgstr ""
 
+msgid "Rate tracks, albums and playlists with one to five stars. Off, stars leave every list, page and filter; the ratings already given are kept."
+msgstr ""
+
 msgid "Rating"
+msgstr ""
+
+msgid "Ratings"
 msgstr ""
 
 msgid "Re-fetch album information"
@@ -6358,6 +6364,9 @@ msgid "Standard pending"
 msgstr ""
 
 msgid "Standard processed"
+msgstr ""
+
+msgid "Star ratings"
 msgstr ""
 
 msgid "Start"
@@ -7979,9 +7988,6 @@ msgstr ""
 msgid "Your shows"
 msgstr ""
 
-msgid "Your {} and {} of them are removed too."
-msgstr ""
-
 msgid "Your {} of them are removed too."
 msgstr ""
 
@@ -9549,11 +9555,6 @@ msgstr ""
 
 msgid "{} queues · {} tracks"
 msgstr ""
-
-msgid "{} rating"
-msgid_plural "{} ratings"
-msgstr[0] ""
-msgstr[1] ""
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr ""

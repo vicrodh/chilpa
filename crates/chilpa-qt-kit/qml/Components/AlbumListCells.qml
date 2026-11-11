@@ -25,7 +25,8 @@ Row {
         if (!value) return "—"
         return key === "rate" ? Number(value).toLocaleString(Qt.locale(), "f", 0) + " Hz" : String(value)
     }
-    function shows(column) { return cells.columns.indexOf(column) >= 0 }
+    // The rating column stays chosen while ratings are off, and is not shown.
+    function shows(column) { return cells.columns.indexOf(column) >= 0 && (column !== "rating" || Prefs.ratings) }
     // hh:mm:ss, as long records run past the hour.
     function clock(ms) {
         const s = Math.round(ms / 1000), two = (n) => (n < 10 ? "0" : "") + n

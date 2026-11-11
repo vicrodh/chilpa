@@ -35,7 +35,7 @@ Item {
     TrackListModel {
         id: tracks
         kind: "tracks"
-        key: [page.order === "default" ? "" : page.order, page.group, page.typed, page.ratings.join(",")].join("\u001f")
+        key: [page.order === "default" ? "" : page.order, page.group, page.typed, (Prefs.ratings ? page.ratings : []).join(",")].join("\u001f")
         filterRev: Library.rev + Library.contentRev + Library.remoteRev
         playingPath: Player.path
     }
@@ -126,10 +126,10 @@ Item {
         IconButton {
             id: filterButton
             anchors.verticalCenter: parent.verticalCenter
-            tip: I18n.tr("Quality, format, source and rating filters", I18n.rev)
+            tip: Prefs.ratings ? I18n.tr("Quality, format, source and rating filters", I18n.rev) : I18n.tr("Quality, format and source filters", I18n.rev)
             glyph: Icons.filter
             round: true
-            checked: Library.extraFiltered || filters.opened || page.ratings.length > 0
+            checked: Library.extraFiltered || filters.opened || filters.starred
             onClicked: filters.opened ? filters.close() : filters.open()
 
             SourcesPopover {

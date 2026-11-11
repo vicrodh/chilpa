@@ -32,7 +32,7 @@ Item {
     readonly property int art: rich && showArt ? Metrics.colArt : 0
     readonly property int sourceWidth: showSource ? named(Metrics.colSource, sourceName) : 0
     readonly property int quality: named(rich ? Metrics.colQualityRich : Metrics.colQualityCompact, qualityName)
-    readonly property int rating: showRating ? named(Metrics.colRating, ratingName) : 0
+    readonly property int rating: showRating && Prefs.ratings ? named(Metrics.colRating, ratingName) : 0
     readonly property int plays: showPlays ? named(rich ? Metrics.colPlaysRich : Metrics.colPlaysCompact, playsName) : 0
     // An hour-long track's time fits too: "1:02:47", not cut into the next column.
     readonly property int time: Math.max(named(rich ? Metrics.colTimeRich : Metrics.colTimeCompact, timeName), Math.ceil(clock.implicitWidth))

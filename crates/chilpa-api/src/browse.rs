@@ -652,6 +652,8 @@ impl Reader {
     /// The same, with the integrated sources given.
     pub(crate) fn refresh_using(&self, filter: &Filter, order: TrackOrder, current: impl Fn() -> bool,
         (stamp, index): (crate::library_sources::Stamp, std::rc::Rc<crate::library_sources::SourceIndex>)) -> Option<(Facets, Snapshot)> {
+        let unrated = crate::rating_switch::applied(filter, crate::rating_switch::on());
+        let filter = unrated.as_ref();
         // A genre typed close to one there is reads as that one too, and
         // words that are a name the library has read as that name.
         let widened;

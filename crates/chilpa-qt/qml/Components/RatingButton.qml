@@ -23,7 +23,7 @@ Item {
 
     implicitWidth: opener.implicitWidth
     implicitHeight: opener.implicitHeight
-    visible: Number.isFinite(target) && target !== 0
+    visible: Prefs.ratings && Number.isFinite(target) && target !== 0
 
     // What it is about changed under it: the flyout was for the other one.
     onTargetChanged: flyout.close()
