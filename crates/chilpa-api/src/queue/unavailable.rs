@@ -1,16 +1,17 @@
 //! Queue entries that cannot be played this run, and what the queue does
 //! when one comes up.
 //!
-//! The player ends its whole queue when a track will not open: its loop
-//! returns the error, and what reaches the facade is only text. That text
-//! reads the same for a file that is gone and for an output that refuses the
-//! format, so it is not read here. The facade judges the entries itself: a
-//! local file it looks for, and a server's or a source's item the opener
-//! reports when it fails to open it. What is found unavailable is marked for
-//! the run and passed over in the queue's own order, so shuffle, repeat and
-//! the stop mark still hold. A failure where nothing unavailable stands is
-//! the output's, and stops playback as it always did: an unplugged DAC must
-//! not walk the whole queue.
+//! The player passes over a track that will not open or breaks partway, and
+//! says which and why (`PlayerEvent::Skipped`); it fails only on the output,
+//! or when nothing it reached could play. The facade does not read the
+//! failure's text. Before the player gets there, it judges the entries
+//! itself: a local file it looks for, and a server's or a source's item the
+//! opener reports when it fails to open it. What is found unavailable, or
+//! what the player passed over, is marked for the run and left out of the
+//! player's walk in the queue's own order, so shuffle, repeat and the stop
+//! mark still hold. A failure once a track of the launch has started, or with
+//! something playable where the player was going, is the output's, and stops
+//! playback as it always did: an unplugged DAC must not walk the whole queue.
 
 use std::collections::HashMap;
 use std::io::ErrorKind;
@@ -30,6 +31,9 @@ pub(crate) enum Unavailable {
     NoAccess,
     /// Its server or source could not open it, and said why.
     Source(String),
+    /// It is there and the player could not read it: it would not open, or
+    /// it broke partway. The player passed over it and said why.
+    Unreadable(String),
 }
 
 impl Unavailable {
@@ -38,7 +42,7 @@ impl Unavailable {
         match self {
             Unavailable::Missing => "missing",
             Unavailable::NoAccess => "no access",
-            Unavailable::Source(why) => why,
+            Unavailable::Source(why) | Unavailable::Unreadable(why) => why,
         }
     }
 }
@@ -129,12 +133,11 @@ struct Mark {
     launch: u64,
 }
 
-/// The launch in flight: where it started, on which output, and whether a
-/// track of it has started.
+/// The launch in flight: where it started, and whether a track of it has
+/// started.
 #[derive(Clone)]
 struct Launch {
     from: usize,
-    device: String,
     started: bool,
 }
 
@@ -147,10 +150,6 @@ pub(crate) struct State {
     /// Launches so far. A mark made before the current one was handed to
     /// the player as a removed row, so it cannot be what the player failed on.
     launches: u64,
-    /// Relaunches past a failure this run.
-    relaunches: usize,
-    /// Set while the facade relaunches to skip: the run goes on.
-    skipping: bool,
     /// Grows when the marks change, so the queue's rows are read again.
     revision: u64,
     reports: Reports,
@@ -227,16 +226,14 @@ fn same_entry(path: &str, entry: &str) -> bool {
 }
 
 impl Chilpa {
-    /// Before a launch: a run starts, unless this launch skips or moves the
-    /// output, and the start moves past what cannot be played. `None` when
-    /// nothing from there can; the queue has then been ended.
+    /// Before a launch: a run starts, unless this launch moves the output,
+    /// and the start moves past what cannot be played. `None` when nothing
+    /// from there can; the queue has then been ended.
     pub(crate) fn playable_start(&mut self, from: usize, why: Relaunch) -> Option<usize> {
         if why == Relaunch::Output {
             return Some(from);
         }
-        if !self.unavailable.skipping {
-            self.new_unavailable_run();
-        }
+        self.new_unavailable_run();
         let walk = self.walk_unavailable(from, true);
         match walk.target {
             Some(target) if !walk.reached_mark => Some(target),
@@ -247,10 +244,10 @@ impl Chilpa {
         }
     }
 
-    /// The launch went out from `from` on `device`.
-    pub(crate) fn launched_from(&mut self, from: usize, device: &str) {
+    /// The launch went out from `from`.
+    pub(crate) fn launched_from(&mut self, from: usize) {
         self.unavailable.launches += 1;
-        self.unavailable.launch = Some(Launch { from, device: device.to_string(), started: false });
+        self.unavailable.launch = Some(Launch { from, started: false });
         if self.now.error.is_empty() {
             self.say_skipped();
         }
@@ -314,8 +311,27 @@ impl Chilpa {
         }
     }
 
-    /// The player failed. When what it was going to play cannot be played,
-    /// the queue goes on past it; otherwise playback stops and says why.
+    /// The player passed over a queue entry it could not play -- it would not
+    /// open, or it broke partway -- and went on. The entry is marked like one
+    /// found missing, left out of the laps that follow, and counted.
+    pub(crate) fn player_skipped(&mut self, index: usize, path: &Path, why: String) {
+        let positions: Vec<usize> = (0..self.queue.len()).filter(|&at| Path::new(&self.queue[at]) == path).collect();
+        chilpa_core::trace_playback("facade", "unavailable_passed", format_args!("index={} positions={positions:?} why={why:?}", self.base + index));
+        // A queue that was replaced since does not hold it.
+        let Some(&first) = positions.first() else { return };
+        let entry = self.queue[first].clone();
+        if !self.unavailable.marked.contains_key(&entry) {
+            let launch = self.unavailable.launches;
+            self.unavailable.marked.insert(entry, Mark { why: Unavailable::Unreadable(why), launch });
+            self.unavailable.revision += 1;
+        }
+        self.leave_out(&positions);
+        self.say_skipped();
+    }
+
+    /// The player failed. When nothing it reached in this launch could be
+    /// played, the queue ends as one that ran out; otherwise playback stops
+    /// and says why.
     pub(crate) fn player_failed(&mut self, message: String) {
         if self.skip_failure() {
             return;
@@ -362,7 +378,6 @@ impl Chilpa {
             self.unavailable.marked.clear();
             self.unavailable.revision += 1;
         }
-        self.unavailable.relaunches = 0;
     }
 
     /// Walks the queue as the player would, marking what cannot be played.
@@ -405,51 +420,36 @@ impl Chilpa {
         }
     }
 
-    /// Whether the failure was the player reaching something that cannot be
-    /// played; if so, the queue went on past it or ended as a finished one.
+    /// Whether the failure was the player running out of what it could play
+    /// in this launch; if so, the queue ended as a finished one. The player
+    /// passes over what will not open or breaks partway and says so as it
+    /// goes, so it fails on a track only when nothing it reached played: once
+    /// a track of the launch has started, or where something playable stands
+    /// on its way, the failure is the output's and is not skipped.
     fn skip_failure(&mut self) -> bool {
         self.take_unavailable_reports();
         let Some(launch) = self.unavailable.launch.clone() else { return false };
-        if self.casting.active() || self.queue.is_empty() {
+        if launch.started || self.casting.active() || self.queue.is_empty() {
             return false;
         }
-        let at = self.now.index;
-        // Where the player was going: the launch's first track if none
-        // started; under repeat-one the same track again, unless it is there,
-        // in which case Next moved it on; otherwise the one after.
-        let walk = if !launch.started {
-            self.walk_unavailable(launch.from, true)
-        } else if self.repeat == Repeat::One {
-            let again = self.walk_unavailable(at, true);
-            if again.target == Some(at) { self.walk_unavailable(at, false) } else { again }
-        } else {
-            self.walk_unavailable(at, false)
-        };
+        let walk = self.walk_unavailable(launch.from, true);
         // Only an entry marked during this launch can be what the player
         // failed on: one marked before was handed to it as a removed row.
         let current = self.unavailable.launches;
         let fresh = walk.passed.iter().any(|&index| {
             self.queue.get(index).and_then(|path| self.unavailable.marked.get(path)).is_some_and(|mark| mark.launch == current)
         });
-        if !fresh || self.unavailable.relaunches >= self.queue.len() {
+        if !fresh || (walk.target.is_some() && !walk.reached_mark) {
             return false;
         }
         let why: Vec<&str> = walk.passed.iter()
             .filter_map(|&index| self.queue.get(index).and_then(|path| self.unavailable.marked.get(path)))
             .map(|mark| mark.why.said()).collect();
-        chilpa_core::trace_playback("facade", "unavailable_skipped", format_args!("passed={:?} why={why:?} target={:?} mark={}", walk.passed, walk.target, walk.reached_mark));
+        chilpa_core::trace_playback("facade", "unavailable_skipped", format_args!("passed={:?} why={why:?} mark={}", walk.passed, walk.reached_mark));
         self.say_skipped();
-        // The player has returned and closed its output: nothing to hand off.
+        // The player has returned and closed its output.
         self.now.playing = false;
-        match walk.target {
-            Some(target) if !walk.reached_mark => {
-                self.unavailable.relaunches += 1;
-                self.unavailable.skipping = true;
-                self.spawn_from(target, &launch.device, false, None, Relaunch::Track);
-                self.unavailable.skipping = false;
-            }
-            _ => self.finish_queue(),
-        }
+        self.finish_queue();
         true
     }
 
