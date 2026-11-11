@@ -58,6 +58,9 @@ msgstr "-18 LUFS · ReplayGain"
 msgid "-23 LUFS · Broadcast (EBU R128)"
 msgstr "-23 LUFS · Вещание (EBU R128)"
 
+msgid "1 hour"
+msgstr "1 час"
+
 msgid "1 hr"
 msgstr "1 ч"
 
@@ -69,6 +72,9 @@ msgstr "1. Найдите свой DAC в разделе «Audio > Sinks» и з
 
 msgid "1. Origin"
 msgstr "1. Источник импорта"
+
+msgid "12 hours"
+msgstr "12 часов"
 
 msgid "16 bit"
 msgstr "16 бит"
@@ -87,6 +93,9 @@ msgstr "24 бита в 3 байтах"
 
 msgid "24 bit in 32"
 msgstr "24 бита в 32 битах"
+
+msgid "24 hours"
+msgstr "24 часа"
 
 msgid "3 hr"
 msgstr "3 ч"
@@ -111,6 +120,9 @@ msgstr "4. Итог"
 
 msgid "5 hr"
 msgstr "5 ч"
+
+msgid "72 hours"
+msgstr "72 часа"
 
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Граф JACK работает на одной частоте, и все программы в нём работают на ней же — сейчас это {} Hz. Трек, записанный на любой другой частоте, ресемплируется ещё до того, как Chilpa что-либо решит, и никакая настройка здесь этого не меняет. JACK предназначен для маршрутизации звука между программами; чтобы файл дошёл до DAC без изменений, выберите саму карту."
@@ -195,6 +207,12 @@ msgstr ""
 
 msgid "A sidecar sets this, not the file"
 msgstr "Это задаёт вспомогательный файл, а не сам файл"
+
+msgid "A small icon on the status says whether the track plays or is paused."
+msgstr "Небольшой значок в статусе показывает, играет трек или стоит на паузе."
+
+msgid "A source's own cover, or the front cover the Cover Art Archive has of a local album, found by the file's MusicBrainz IDs or by the album's name. Local albums need MusicBrainz on."
+msgstr "Собственная обложка источника или передняя обложка локального альбома из Cover Art Archive, найденная по идентификаторам MusicBrainz в файле или по названию альбома. Для локальных альбомов нужен включённый MusicBrainz."
 
 msgid "A sync operation still uses this profile."
 msgstr ""
@@ -684,6 +702,9 @@ msgstr "Исполнители этой сцены"
 
 msgid "Artwork"
 msgstr "Обложка"
+
+msgid "Artwork source"
+msgstr "Источник обложки"
 
 msgid "Artwork view"
 msgstr "Вид обложки"
@@ -1438,6 +1459,9 @@ msgstr "Очистить кэш текстов песен"
 msgid "Clear lyrics cache?"
 msgstr "Очистить кэш текстов песен?"
 
+msgid "Clear on pause"
+msgstr "Очищать при паузе"
+
 msgid "Clear queue"
 msgstr "Очистить очередь"
 
@@ -1452,6 +1476,9 @@ msgstr "Убрать фильтр"
 
 msgid "Clear the selection"
 msgstr "Снять выделение"
+
+msgid "Clear the status while playback is paused."
+msgstr "Очищает статус, пока воспроизведение на паузе."
 
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr "Очищено, забыто текстов песен: {}. При воспроизведении треков они ищутся снова."
@@ -2608,6 +2635,9 @@ msgstr "Завершить выбор"
 msgid "Finished"
 msgstr "Завершено"
 
+msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
+msgstr "Первая строка статуса. Поля: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Текст в [ ] показывается, только если у какого-нибудь поля внутри есть значение. Функции: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Пустое поле возвращает значение по умолчанию."
+
 msgid "First track"
 msgstr "Первый трек"
 
@@ -2973,6 +3003,9 @@ msgstr "История"
 
 msgid "Home"
 msgstr "Главная"
+
+msgid "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
+msgstr "Сколько Litterbox хранит загруженную обложку. Пока альбом играет, она загружается снова до истечения срока."
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Насколько размыты обои за окном: 0 % — чётко, 100 % — максимальное размытие."
@@ -3363,6 +3396,9 @@ msgstr "Оставить текущую"
 
 msgid "Keep the queue between sessions"
 msgstr "Сохранять очередь между сеансами"
+
+msgid "Keep uploads for"
+msgstr "Хранить загрузки"
 
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "Искать слова буквально и жанр без расширения"
@@ -5794,6 +5830,9 @@ msgstr "Прокрутка — регулировка громкости"
 msgid "Search"
 msgstr "Поиск"
 
+msgid "Search MusicBrainz, or upload if not found"
+msgstr "Искать в MusicBrainz, а если не найдено, загрузить"
+
 msgid "Search again"
 msgstr "Искать снова"
 
@@ -5869,6 +5908,9 @@ msgstr "Поиск…"
 msgid "Search…"
 msgstr "Поиск…"
 
+msgid "Second line of the status, written like the title."
+msgstr "Вторая строка статуса, записывается так же, как название."
+
 msgid "Secondary text"
 msgstr "Вторичный текст"
 
@@ -5931,6 +5973,9 @@ msgstr "Выбранная музыка"
 
 msgid "Selected output"
 msgstr "Выбранный выход"
+
+msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
+msgstr "Отправляет обложку альбома с этого компьютера на litterbox.catbox.moe, публичный файловый хостинг, чтобы Discord мог её показать. Любой, у кого есть ссылка, может открыть её до истечения срока. Отправляется только изображение: без имени и пути к файлу."
 
 msgid "Send to Last.fm"
 msgstr "Отправлять в Last.fm"
@@ -6031,6 +6076,9 @@ msgstr "Показать"
 msgid "Show Shortcuts"
 msgstr "Показать сочетания клавиш"
 
+msgid "Show artwork"
+msgstr "Показывать обложку"
+
 msgid "Show audio path"
 msgstr "Показать аудиотракт"
 
@@ -6060,6 +6108,9 @@ msgstr ""
 
 msgid "Show older versions"
 msgstr "Показать старые версии"
+
+msgid "Show play state"
+msgstr "Показывать состояние воспроизведения"
 
 msgid "Show playlist only from the same source as the track"
 msgstr "Показывать только плейлисты из того же источника, что и трек"
@@ -6099,6 +6150,9 @@ msgstr "Показать/Скрыть окно"
 
 msgid "Showing"
 msgstr "Показано"
+
+msgid "Shown when pointing at the cover, written like the title."
+msgstr "Показывается при наведении на обложку, записывается так же, как название."
 
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "Показывает результаты под строкой поиска, пока вы печатаете. Если выключено, ввод открывает страницу результатов."
@@ -6958,6 +7012,9 @@ msgstr "В этой папке нет треков."
 msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
 msgstr "Эта папка повторяет одни и те же песни в нескольких представлениях. Выберите одно (советуем By Folder), чтобы каждая песня читалась один раз."
 
+msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
+msgstr "Этот формат не читается начиная с символа {}, поэтому Discord получает пустую строку. Закройте каждый %, [, ( и кавычку и используйте только функции, перечисленные в поле «Название»."
+
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "Это занимает больше времени, чем обычно. Возможно, MusicBrainz перегружен. Повторите попытку чуть позже."
 
@@ -7495,8 +7552,17 @@ msgstr "Подсчёт использования…"
 msgid "Upload (public)"
 msgstr "Загрузить (публично)"
 
+msgid "Upload covers to Litterbox"
+msgstr "Загружать обложки на Litterbox"
+
 msgid "Upload failed."
 msgstr "Не удалось загрузить."
+
+msgid "Upload only"
+msgstr "Только загружать"
+
+msgid "Upload, or search MusicBrainz if it fails"
+msgstr "Загрузить, а при неудаче искать в MusicBrainz"
 
 msgid "Uploading…"
 msgstr "Загрузка…"
@@ -7671,6 +7737,9 @@ msgstr "Добро пожаловать в Chilpa"
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "Что делает Enter с результатом поиска в иммерсивном режиме. «Отключено» выключает поиск."
+
+msgid "What is tried first for a local album's cover."
+msgstr "Что пробуется первым для обложки локального альбома."
 
 msgid "What it is"
 msgstr "Что это"

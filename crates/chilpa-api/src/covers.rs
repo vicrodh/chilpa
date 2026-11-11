@@ -135,7 +135,7 @@ pub(crate) fn with_decoded<R: std::io::BufRead + std::io::Seek, T>(
     Some(use_picture(picture))
 }
 
-fn with_cover<T>(path: &Path, use_picture: impl FnOnce(image::DynamicImage) -> T) -> Option<T> {
+pub(crate) fn with_cover<T>(path: &Path, use_picture: impl FnOnce(image::DynamicImage) -> T) -> Option<T> {
     let file = std::fs::File::open(path).ok()?;
     if file.metadata().ok()?.len() > ENCODED_BYTES { return None; }
     let reader = image::ImageReader::new(std::io::BufReader::new(file)).with_guessed_format().ok()?;

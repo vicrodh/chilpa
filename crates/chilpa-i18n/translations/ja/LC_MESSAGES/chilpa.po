@@ -58,6 +58,9 @@ msgstr "-18 LUFS · ReplayGain"
 msgid "-23 LUFS · Broadcast (EBU R128)"
 msgstr "-23 LUFS · 放送（EBU R128）"
 
+msgid "1 hour"
+msgstr "1時間"
+
 msgid "1 hr"
 msgstr "1時間"
 
@@ -69,6 +72,9 @@ msgstr "1. 「Audio > Sinks」でDACを見つけて番号をメモします"
 
 msgid "1. Origin"
 msgstr "1. 取り込み元"
+
+msgid "12 hours"
+msgstr "12時間"
 
 msgid "16 bit"
 msgstr "16 bit"
@@ -87,6 +93,9 @@ msgstr "24 bit（3バイト）"
 
 msgid "24 bit in 32"
 msgstr "24 bit（32 bit内）"
+
+msgid "24 hours"
+msgstr "24時間"
 
 msgid "3 hr"
 msgstr "3時間"
@@ -111,6 +120,9 @@ msgstr "4. まとめ"
 
 msgid "5 hr"
 msgstr "5時間"
+
+msgid "72 hours"
+msgstr "72時間"
 
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "JACKグラフは1つのレートで動作し、その中のすべてのプログラムが同じレートで動きます。このグラフは{} Hzです。ほかのレートで録音されたトラックは、Chilpaが関与する前にリサンプリングされ、ここの設定では変更できません。JACKはプログラム間のオーディオルーティング用です。ファイルを加工せずDACに届けたい場合は、カードそのものを選んでください。"
@@ -195,6 +207,12 @@ msgstr ""
 
 msgid "A sidecar sets this, not the file"
 msgstr "この値はファイルではなくサイドカーファイルで設定されています"
+
+msgid "A small icon on the status says whether the track plays or is paused."
+msgstr "ステータスの小さなアイコンで、再生中か一時停止中かを示します。"
+
+msgid "A source's own cover, or the front cover the Cover Art Archive has of a local album, found by the file's MusicBrainz IDs or by the album's name. Local albums need MusicBrainz on."
+msgstr "ソース自身のカバー、またはローカルアルバムについて Cover Art Archive にあるフロントカバー。ファイルの MusicBrainz ID かアルバム名で探します。ローカルアルバムには MusicBrainz を有効にする必要があります。"
 
 msgid "A sync operation still uses this profile."
 msgstr ""
@@ -682,6 +700,9 @@ msgstr "このシーンのアーティスト"
 
 msgid "Artwork"
 msgstr "アートワーク"
+
+msgid "Artwork source"
+msgstr "アートワークの取得元"
 
 msgid "Artwork view"
 msgstr "アートワーク表示"
@@ -1434,6 +1455,9 @@ msgstr "歌詞キャッシュをクリア"
 msgid "Clear lyrics cache?"
 msgstr "歌詞のキャッシュを消去しますか？"
 
+msgid "Clear on pause"
+msgstr "一時停止中はクリア"
+
 msgid "Clear queue"
 msgstr "キューをクリア"
 
@@ -1448,6 +1472,9 @@ msgstr "フィルターを解除"
 
 msgid "Clear the selection"
 msgstr "選択を解除"
+
+msgid "Clear the status while playback is paused."
+msgstr "再生が一時停止している間、ステータスをクリアします。"
 
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr "クリアしました。{}件の歌詞を削除しました。トラックの再生時にもう一度検索されます。"
@@ -2604,6 +2631,9 @@ msgstr "選択を終了"
 msgid "Finished"
 msgstr "完了"
 
+msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
+msgstr "ステータスの1行目。フィールド: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%。[ ] 内のテキストは、中のフィールドに値があるときだけ表示されます。関数: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr。空にすると既定値に戻ります。"
+
 msgid "First track"
 msgstr "最初のトラック"
 
@@ -2969,6 +2999,9 @@ msgstr "履歴"
 
 msgid "Home"
 msgstr "ホーム"
+
+msgid "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
+msgstr "アップロードしたカバーを Litterbox が保持する時間。アルバムの再生が続いている間は、期限が切れる前に再度アップロードします。"
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "ウィンドウの背後に見える壁紙のぼかしの強さ。0%でくっきり、100%で最も強くぼかします。"
@@ -3353,6 +3386,9 @@ msgstr "現在のものを残す"
 
 msgid "Keep the queue between sessions"
 msgstr "セッション間でキューを保持"
+
+msgid "Keep uploads for"
+msgstr "アップロードの保持期間"
 
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "語句をそのまま読み、ジャンルを拡張せずに検索する"
@@ -5784,6 +5820,9 @@ msgstr "スクロールで音量を調整"
 msgid "Search"
 msgstr "検索"
 
+msgid "Search MusicBrainz, or upload if not found"
+msgstr "MusicBrainz で検索し、見つからなければアップロード"
+
 msgid "Search again"
 msgstr "もう一度検索"
 
@@ -5859,6 +5898,9 @@ msgstr "検索中…"
 msgid "Search…"
 msgstr "検索…"
 
+msgid "Second line of the status, written like the title."
+msgstr "ステータスの2行目。タイトルと同じ書き方です。"
+
 msgid "Secondary text"
 msgstr "セカンダリテキスト"
 
@@ -5919,6 +5961,9 @@ msgstr "選択した音楽"
 
 msgid "Selected output"
 msgstr "選択中の出力"
+
+msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
+msgstr "Discord で表示できるように、このコンピューターからアルバムのカバーを公開ファイルホスティングの litterbox.catbox.moe に送信します。リンクを知っている人は期限が切れるまで開けます。送られるのは画像だけで、名前やファイルパスは送られません。"
 
 msgid "Send to Last.fm"
 msgstr "Last.fmに送信"
@@ -6019,6 +6064,9 @@ msgstr "表示"
 msgid "Show Shortcuts"
 msgstr "ショートカットを表示"
 
+msgid "Show artwork"
+msgstr "アートワークを表示"
+
 msgid "Show audio path"
 msgstr "オーディオ経路を表示"
 
@@ -6048,6 +6096,9 @@ msgstr ""
 
 msgid "Show older versions"
 msgstr "以前のバージョンを表示"
+
+msgid "Show play state"
+msgstr "再生状態を表示"
 
 msgid "Show playlist only from the same source as the track"
 msgstr "トラックと同じソースのプレイリストのみ表示"
@@ -6087,6 +6138,9 @@ msgstr "ウィンドウを表示／非表示"
 
 msgid "Showing"
 msgstr "表示中"
+
+msgid "Shown when pointing at the cover, written like the title."
+msgstr "カバーにポインターを合わせると表示されます。タイトルと同じ書き方です。"
 
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "入力中に検索ボックスの下へ結果を表示します。オフにすると、入力で結果ページが開きます。"
@@ -6940,6 +6994,9 @@ msgstr "このフォルダーにトラックはありません。"
 msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
 msgstr "このフォルダーには同じ曲が複数のビューで含まれています。各曲が一度だけ読み取られるよう、ビューを1つ選んでください（By Folder をおすすめします）。"
 
+msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
+msgstr "このフォーマットは {} 文字目から読み取れないため、Discord には空の行が送られます。%、[、( と引用符をすべて閉じ、「タイトル」に記載された関数だけを使ってください。"
+
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "通常より時間がかかっています。MusicBrainzが混雑している可能性があります。しばらくしてからもう一度お試しください。"
 
@@ -7477,8 +7534,17 @@ msgstr "使用量を更新しています…"
 msgid "Upload (public)"
 msgstr "アップロード(公開)"
 
+msgid "Upload covers to Litterbox"
+msgstr "カバーを Litterbox にアップロード"
+
 msgid "Upload failed."
 msgstr "アップロードに失敗しました。"
+
+msgid "Upload only"
+msgstr "アップロードのみ"
+
+msgid "Upload, or search MusicBrainz if it fails"
+msgstr "アップロードし、失敗したら MusicBrainz で検索"
 
 msgid "Uploading…"
 msgstr "アップロード中…"
@@ -7651,6 +7717,9 @@ msgstr "Chilpaへようこそ"
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "没入表示の検索結果でEnterキーを押したときの動作です。「無効」にすると検索がオフになります。"
+
+msgid "What is tried first for a local album's cover."
+msgstr "ローカルアルバムのカバーで最初に試す方法。"
 
 msgid "What it is"
 msgstr "製品"

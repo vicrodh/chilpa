@@ -40,6 +40,8 @@ pub enum Control {
     /// The theme's picker: the list with its light/dark filter, and under
     /// it the options of the auto and the custom themes.
     Theme,
+    /// A line of text, kept when Enter is pressed or the field is left.
+    Text,
 }
 
 impl Control {
@@ -58,6 +60,7 @@ impl Control {
             Control::Slider => "slider",
             Control::File => "file",
             Control::Theme => "theme",
+            Control::Text => "text",
         }
     }
 }
@@ -339,8 +342,18 @@ pub const SECTIONS: &[Section] = &[
                     setting("integrations.lastfm.enabled", Chilpa::mark("Send to Last.fm"), Chilpa::mark("The same rule as ListenBrainz: half of a track, or four minutes."), Control::Toggle),
                 ],
             },
+            // Fooyin's Discord page, in its order (`discordpage.cpp`).
             Group { title: "Discord", settings: &[
                 setting("integrations.discord.enabled", Chilpa::mark("Discord Rich Presence"), Chilpa::mark("Show what you're listening to as your Discord status. Opt-in — Discord must be running."), Control::Toggle),
+                setting("integrations.discord.showState", Chilpa::mark("Show play state"), Chilpa::mark("A small icon on the status says whether the track plays or is paused."), Control::Toggle),
+                setting("integrations.discord.clearOnPause", Chilpa::mark("Clear on pause"), Chilpa::mark("Clear the status while playback is paused."), Control::Toggle),
+                setting("integrations.discord.titleFormat", Chilpa::mark("Title"), Chilpa::mark("First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."), Control::Text),
+                setting("integrations.discord.artistFormat", Chilpa::mark("Artist"), Chilpa::mark("Second line of the status, written like the title."), Control::Text),
+                setting("integrations.discord.albumFormat", Chilpa::mark("Album"), Chilpa::mark("Shown when pointing at the cover, written like the title."), Control::Text),
+                setting("integrations.discord.artwork", Chilpa::mark("Show artwork"), Chilpa::mark("A source's own cover, or the front cover the Cover Art Archive has of a local album, found by the file's MusicBrainz IDs or by the album's name. Local albums need MusicBrainz on."), Control::Toggle),
+                setting("integrations.discord.upload", Chilpa::mark("Upload covers to Litterbox"), Chilpa::mark("Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."), Control::Toggle),
+                setting("integrations.discord.artworkSource", Chilpa::mark("Artwork source"), Chilpa::mark("What is tried first for a local album's cover."), Control::Select),
+                setting("integrations.discord.artworkRetention", Chilpa::mark("Keep uploads for"), Chilpa::mark("How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."), Control::Select),
             ] },
             Group { title: "Discogs", settings: &[
                 action("integrations.discogs.account", Chilpa::mark("Discogs account"), Chilpa::mark("Sign in on Discogs to search with your account."), Control::Button, Chilpa::mark("Connect")),

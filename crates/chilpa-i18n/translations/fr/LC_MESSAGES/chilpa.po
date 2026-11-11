@@ -58,6 +58,9 @@ msgstr "-18 LUFS · ReplayGain"
 msgid "-23 LUFS · Broadcast (EBU R128)"
 msgstr "-23 LUFS · Diffusion (EBU R128)"
 
+msgid "1 hour"
+msgstr "1 heure"
+
 msgid "1 hr"
 msgstr "1 h"
 
@@ -69,6 +72,9 @@ msgstr "1. Trouvez votre DAC sous « Audio > Sinks » et notez son numéro"
 
 msgid "1. Origin"
 msgstr "1. Origine"
+
+msgid "12 hours"
+msgstr "12 heures"
 
 msgid "16 bit"
 msgstr "16 bits"
@@ -87,6 +93,9 @@ msgstr "24 bits sur 3 octets"
 
 msgid "24 bit in 32"
 msgstr "24 bits sur 32"
+
+msgid "24 hours"
+msgstr "24 heures"
 
 msgid "3 hr"
 msgstr "3 h"
@@ -111,6 +120,9 @@ msgstr "4. Récapitulatif"
 
 msgid "5 hr"
 msgstr "5 h"
+
+msgid "72 hours"
+msgstr "72 heures"
 
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Un graphe JACK fonctionne à une seule fréquence et chaque programme qu'il contient fonctionne à cette fréquence : celui-ci est à {} Hz. Une piste enregistrée à une autre fréquence est rééchantillonnée avant que Chilpa ait son mot à dire, et aucun paramètre ici ne change cela. JACK sert à router l'audio entre des programmes ; pour remettre un fichier intact à un DAC, choisissez la carte elle-même."
@@ -195,6 +207,12 @@ msgstr ""
 
 msgid "A sidecar sets this, not the file"
 msgstr "Défini par un fichier annexe, pas par le fichier"
+
+msgid "A small icon on the status says whether the track plays or is paused."
+msgstr "Une petite icône sur le statut indique si le morceau est en lecture ou en pause."
+
+msgid "A source's own cover, or the front cover the Cover Art Archive has of a local album, found by the file's MusicBrainz IDs or by the album's name. Local albums need MusicBrainz on."
+msgstr "La pochette propre à une source, ou la pochette avant que le Cover Art Archive possède pour un album local, trouvée grâce aux identifiants MusicBrainz du fichier ou au nom de l'album. Les albums locaux nécessitent que MusicBrainz soit activé."
 
 msgid "A sync operation still uses this profile."
 msgstr ""
@@ -683,6 +701,9 @@ msgstr "Artistes de cette scène"
 
 msgid "Artwork"
 msgstr "Illustration"
+
+msgid "Artwork source"
+msgstr "Source de l'illustration"
 
 msgid "Artwork view"
 msgstr "Vue illustration"
@@ -1436,6 +1457,9 @@ msgstr "Vider le cache des paroles"
 msgid "Clear lyrics cache?"
 msgstr "Vider le cache des paroles ?"
 
+msgid "Clear on pause"
+msgstr "Effacer en pause"
+
 msgid "Clear queue"
 msgstr "Vider la file d'attente"
 
@@ -1450,6 +1474,9 @@ msgstr "Retirer le filtre"
 
 msgid "Clear the selection"
 msgstr "Effacer la sélection"
+
+msgid "Clear the status while playback is paused."
+msgstr "Efface le statut tant que la lecture est en pause."
 
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr "Cache vidé : les paroles de {} pistes ont été oubliées. Elles seront cherchées à nouveau à la lecture des pistes."
@@ -2606,6 +2633,9 @@ msgstr "Terminer la sélection"
 msgid "Finished"
 msgstr "Terminé"
 
+msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
+msgstr "Première ligne du statut. Champs : %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Le texte entre [ ] ne s'affiche que si un champ qu'il contient a une valeur. Fonctions : $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Laissé vide, la valeur par défaut revient."
+
 msgid "First track"
 msgstr "Première piste"
 
@@ -2971,6 +3001,9 @@ msgstr "Historique"
 
 msgid "Home"
 msgstr "Accueil"
+
+msgid "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
+msgstr "Durée pendant laquelle Litterbox conserve une pochette envoyée. Tant que l'album joue, elle est renvoyée avant son expiration."
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Intensité du flou du fond d'écran derrière la fenêtre : 0 % le laisse net, 100 % est le flou maximal."
@@ -3358,6 +3391,9 @@ msgstr "Garder l'actuelle"
 
 msgid "Keep the queue between sessions"
 msgstr "Conserver la file d'attente entre les sessions"
+
+msgid "Keep uploads for"
+msgstr "Conserver les envois"
 
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "Lire les mots littéralement et chercher un genre sans élargissement"
@@ -5789,6 +5825,9 @@ msgstr "Faire défiler pour régler le volume"
 msgid "Search"
 msgstr "Rechercher"
 
+msgid "Search MusicBrainz, or upload if not found"
+msgstr "Chercher sur MusicBrainz, ou envoyer si rien n'est trouvé"
+
 msgid "Search again"
 msgstr "Chercher à nouveau"
 
@@ -5864,6 +5903,9 @@ msgstr "Recherche…"
 msgid "Search…"
 msgstr "Rechercher…"
 
+msgid "Second line of the status, written like the title."
+msgstr "Deuxième ligne du statut, écrite comme le titre."
+
 msgid "Secondary text"
 msgstr "Texte secondaire"
 
@@ -5925,6 +5967,9 @@ msgstr "Musique sélectionnée"
 
 msgid "Selected output"
 msgstr "Sortie sélectionnée"
+
+msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
+msgstr "Envoie la pochette de l'album depuis cet ordinateur vers litterbox.catbox.moe, un hébergeur de fichiers public, pour que Discord puisse l'afficher. Toute personne qui a le lien peut l'ouvrir jusqu'à son expiration. Seule l'image part : ni nom, ni chemin de fichier."
 
 msgid "Send to Last.fm"
 msgstr "Envoyer à Last.fm"
@@ -6025,6 +6070,9 @@ msgstr "Afficher"
 msgid "Show Shortcuts"
 msgstr "Afficher les raccourcis"
 
+msgid "Show artwork"
+msgstr "Afficher l'illustration"
+
 msgid "Show audio path"
 msgstr "Afficher le chemin audio"
 
@@ -6054,6 +6102,9 @@ msgstr ""
 
 msgid "Show older versions"
 msgstr "Afficher les versions précédentes"
+
+msgid "Show play state"
+msgstr "Afficher l'état de lecture"
 
 msgid "Show playlist only from the same source as the track"
 msgstr "Afficher uniquement les playlists de la même source que la piste"
@@ -6093,6 +6144,9 @@ msgstr "Afficher/Masquer la fenêtre"
 
 msgid "Showing"
 msgstr "Affichage"
+
+msgid "Shown when pointing at the cover, written like the title."
+msgstr "Affiché au survol de la pochette, écrit comme le titre."
 
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "Affiche les résultats sous le champ de recherche pendant la saisie. Désactivé, la saisie ouvre la page des résultats."
@@ -6949,6 +7003,9 @@ msgstr "Ce dossier ne contient aucune piste."
 msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
 msgstr "Ce dossier répète les mêmes morceaux sous plusieurs vues. Choisissez une seule vue (nous suggérons By Folder) pour que chaque morceau soit lu une fois."
 
+msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
+msgstr "Ce format est illisible à partir du caractère {}, Discord reçoit donc une ligne vide. Fermez chaque %, [, ( et guillemet, et n'utilisez que les fonctions listées sous Titre."
+
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "Cela prend plus de temps que d'habitude. MusicBrainz est peut-être occupé. Réessayez dans un instant."
 
@@ -7486,8 +7543,17 @@ msgstr "Mise à jour de l'utilisation…"
 msgid "Upload (public)"
 msgstr "Téléverser (public)"
 
+msgid "Upload covers to Litterbox"
+msgstr "Envoyer les pochettes sur Litterbox"
+
 msgid "Upload failed."
 msgstr "Échec du téléversement."
+
+msgid "Upload only"
+msgstr "Envoyer uniquement"
+
+msgid "Upload, or search MusicBrainz if it fails"
+msgstr "Envoyer, ou chercher sur MusicBrainz en cas d'échec"
 
 msgid "Uploading…"
 msgstr "Téléversement…"
@@ -7661,6 +7727,9 @@ msgstr "Bienvenue dans Chilpa"
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "Ce que fait Entrée avec un résultat de la recherche de la vue immersive. Désactivé coupe la recherche."
+
+msgid "What is tried first for a local album's cover."
+msgstr "Ce qui est essayé en premier pour la pochette d'un album local."
 
 msgid "What it is"
 msgstr "Ce que c'est"

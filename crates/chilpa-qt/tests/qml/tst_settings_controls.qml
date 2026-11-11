@@ -37,6 +37,7 @@ TestCase {
         description: ""; control: "toggle"; action: ""; value: "false"
         options: []; optionValues: []; marks: []; page: actions
     }
+    SettingsRow { id: format; y: 180; width: parent.width; rowKind: 1; key: "integrations.discord.titleFormat"; title: "Title"; description: ""; control: "text"; action: ""; value: "%title%"; options: []; optionValues: []; marks: []; page: actions }
     StorageSettingsActions { id: storage; rows: actions }
     function init() {
         writes = []; presses = []; backgroundClicks = 0
@@ -66,6 +67,11 @@ TestCase {
         compare(writes.length, 1)
         compare(writes[0], ["navigation.trackComposers", "true"])
         compare(toggle.checked, true)
+    }
+    function test_a_text_row_keeps_what_is_typed_on_enter() {
+        const field = findChild(format, "settingText.integrations.discord.titleFormat")
+        compare(field.text, "%title%"); field.focusInput(); keyClick(Qt.Key_X); keyClick(Qt.Key_Return)
+        compare(writes[0], ["integrations.discord.titleFormat", "x"]); format.value = "x"
     }
     function test_lyrics_cleanup_dispatches_only_after_confirmation_data() {
         return [{tag:"storage",key:"storage.clear.lyrics"},{tag:"library",key:"library.lyricsCache"}]
