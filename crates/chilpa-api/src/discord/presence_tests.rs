@@ -104,7 +104,7 @@ fn a_playing_track_gives_every_field_of_the_status() {
         "state": "Pink Floyd",
         "details": "Time",
         "timestamps": {"start": 1_000, "end": 1_413},
-        "assets": {"large_image": "cover", "large_text": "The Dark Side of the Moon", "small_image": "icon", "small_text": "Playing"},
+        "assets": {"large_image": "cover", "large_text": "The Dark Side of the Moon", "small_image": "play", "small_text": "Playing"},
         "buttons": [{"label": "Get Chilpa", "url": "https://chilpa.app"}],
     }))]);
 }
@@ -119,6 +119,7 @@ fn a_pause_drops_the_timestamps_and_says_so() {
     bench.wait(50);
     assert_eq!(bench.last()["timestamps"], json!({}));
     assert_eq!(bench.last()["assets"]["small_text"], "Paused");
+    assert_eq!(bench.last()["assets"]["small_image"], "pause");
     let options = Arc::new(Options { clear_on_pause: true, show_state: false, ..defaults() });
     bench.tell(100, Message::Show(paused, options.clone()));
     bench.wait(150);
@@ -184,7 +185,7 @@ fn a_cover_is_looked_for_a_second_after_the_track_changes_and_shown_when_found()
     bench.tell(1_500, Message::Cover(MOON.into(), Outcome::Found(COVER.into())));
     bench.wait(1_550);
     assert_eq!(bench.last()["assets"]["large_image"], COVER);
-    assert_eq!(bench.last()["assets"]["small_image"], "icon");
+    assert_eq!(bench.last()["assets"]["small_image"], "icon", "the logo over a cover, the play badge without one");
     bench.tell(2_000, show("/music/money.flac", &options));
     bench.wait(4_000);
     assert_eq!(bench.searches().len(), 1, "another track of the album asks nothing");

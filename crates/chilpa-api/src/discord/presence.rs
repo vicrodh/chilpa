@@ -23,10 +23,12 @@ const HOMEPAGE: &str = "https://chilpa.app";
 /// "cover", the large image while there is no artwork.
 const BADGE: &str = "icon";
 const COVER_ASSET: &str = "cover";
-/// Where Fooyin shows its "play" and "pause" badges. Chilpa's app has only
-/// its icon so far, so both are the icon and the text tells them apart.
-const PLAYING_BADGE: &str = BADGE;
-const PAUSED_BADGE: &str = BADGE;
+/// Fooyin's "play" and "pause" badges: art assets of Chilpa's Discord app,
+/// uploaded by hand in Discord's developer portal. Discord does not say
+/// whether an asset is there, so these names are the whole agreement: an
+/// asset missing there shows no badge.
+const PLAYING_BADGE: &str = "play";
+const PAUSED_BADGE: &str = "pause";
 /// Changes this close together go as one (Fooyin's `SignalThrottler`).
 const SETTLE: Duration = Duration::from_millis(50);
 /// How long a track has to stay before its cover is looked for (Fooyin's
