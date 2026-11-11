@@ -94,11 +94,13 @@ Item {
     PluginMaintenance { controller: manager }
     // Two sections, each one scroll: the native plugins, and the compatible
     // ones Chilpa can run from other platforms. A repository serves either.
+    // The buttons go under the sections when both do not fit on one line.
     Item {
         id: header
         visible: manager.listing
         width: parent.width
-        height: sections.height
+        readonly property bool together: sections.width + Metrics.gap8 + headerActions.width <= width
+        height: together ? Math.max(sections.height, headerActions.height) : sections.height + Metrics.gap8 + headerActions.height
         P.SegmentedControl {
             id: sections
             objectName: "pluginSections"
@@ -107,8 +109,9 @@ Item {
             onActivated: (index) => manager.section = index === 1 ? "compatible" : "native"
         }
         Row {
+            id: headerActions
             anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
+            y: header.together ? (header.height - height) / 2 : sections.height + Metrics.gap8 // derived: centred beside the sections, or under them
             spacing: Metrics.gap8
             P.PillButton {
                 objectName: "installLocalPlugin"

@@ -131,6 +131,8 @@ QtObject {
     readonly property int pickPad: 8
     readonly property int pickApart: 10
     readonly property int pickFieldsWide: 158
+    // The most of the picker its field names take before they elide.
+    readonly property real pickFieldsShare: 0.3
     readonly property int pickFieldRow: 28
     readonly property int pickFieldsShown: 9
     readonly property int pickFieldRound: 6

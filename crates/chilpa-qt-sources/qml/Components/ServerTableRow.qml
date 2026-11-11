@@ -63,12 +63,15 @@ Item {
         color: row.heading ? Theme.color.textSecondary : Theme.color.textPrimary
         HoverHandler { onHoveredChanged: hovered && !row.heading ? TipState.show(product.text, parent) : TipState.hide(parent) }
     }
+    // The heading as the column sets it: the column is as wide as the
+    // heading says in this language, in every row, so the counts line up.
+    Text { id: tracksHeading; visible: false; text: I18n.tr("# Tracks", I18n.rev); font.pointSize: Type.meta }
     Text {
         id: tracks
         anchors.right: actions.left
         anchors.rightMargin: Metrics.gap16
         anchors.verticalCenter: parent.verticalCenter
-        width: Metrics.settingsPercent + Metrics.gap24
+        width: Math.max(Metrics.settingsPercent + Metrics.gap24, tracksHeading.implicitWidth)
         horizontalAlignment: Text.AlignRight
         text: row.heading ? I18n.tr("# Tracks", I18n.rev) : Number(row.server.tracks || 0).toLocaleString(Qt.locale(), 'f', 0)
         font.pointSize: Type.meta
