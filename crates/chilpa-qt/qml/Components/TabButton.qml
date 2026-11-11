@@ -20,6 +20,7 @@ Item {
     // What renaming starts from: the name alone, without what the title adds.
     property string name: title
     property bool editing: false
+    readonly property bool pencil: renamable && active && !editing
 
     signal activated()
     signal closed()
@@ -101,7 +102,9 @@ Item {
             id: label
             visible: !tab.editing
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.min(implicitWidth, Metrics.tabMaxWidth - Metrics.tabPadLeft - Metrics.tabPadRight - Metrics.iconSm - Metrics.tabClose - Metrics.gap12)
+            // What the icon, the close button, the pencil while it shows and
+            // their gaps leave of the widest tab.
+            width: Math.min(implicitWidth, Metrics.tabMaxWidth - Metrics.tabPadLeft - Metrics.tabPadRight - Metrics.iconSm - Metrics.tabClose - Metrics.gap12 - (tab.pencil ? Metrics.tabClose + row.spacing : 0)) // derived: the row's other pieces
             text: tab.title
             elide: Text.ElideRight
             font.pointSize: Type.meta
@@ -127,7 +130,7 @@ Item {
 
         IconButton {
             objectName: "renameTab"
-            visible: tab.renamable && tab.active && !tab.editing
+            visible: tab.pencil
             anchors.verticalCenter: parent.verticalCenter
             tip: I18n.tr("Rename", I18n.rev)
             glyph: Icons.pencil
