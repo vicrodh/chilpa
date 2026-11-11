@@ -148,9 +148,14 @@ impl Chilpa {
             return self.set_tracks_favorite(&[id], on);
         }
         let Some(target) = marked(kind, key) else { return false };
+        let id = key.parse::<i64>().unwrap_or(0);
+        let before = self.hearts_before(kind, &[id]).first().copied().unwrap_or(false);
         let Some(lib) = self.library() else { return false };
         match lib.set_favorite(target, on) {
-            Ok(()) => true,
+            Ok(()) => {
+                self.heart_changed(kind, id, before, on);
+                true
+            }
             Err(error) => {
                 self.now.error = chilpa_i18n::t_args("the favorite could not be saved: {}", &[&error.to_string()]);
                 false

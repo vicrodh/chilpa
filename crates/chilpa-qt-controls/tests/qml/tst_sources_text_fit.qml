@@ -53,15 +53,15 @@ TestCase {
         compare(found.length, 0, found.join("\n"))
     }
 
-    // A server's actions, opened, with the rating sync entries the facade
-    // adds: each one whole in the list, in each language.
+    // A server's actions, opened, with the rating and favorite sync entries
+    // the facade adds: each one whole in the list, in each language.
     function test_server_actions_data() { return TextAudit.cases() }
     function test_server_actions(data) {
         I18n.choose(data.language)
         SettingsModel.preferences = ({})
-        const words = ["Edit…", "Disable", "Sync now", "Remove…", "Stop syncing ratings", "Sync ratings"]
+        const words = ["Edit…", "Disable", "Sync now", "Remove…", "Stop syncing ratings", "Sync ratings", "Stop syncing favorites", "Sync favorites"]
         const row = Object.assign({}, test.servers[0], { options: words.map(word => I18n.tr(word, I18n.rev)),
-            optionValues: ["edit", "disable", "sync", "remove", "ratings-off", "ratings-on"] })
+            optionValues: ["edit", "disable", "sync", "remove", "ratings-off", "ratings-on", "favorites-off", "favorites-on"] })
         const table = createTemporaryObject(serversFactory, test, { width: 520, model: [row] })
         // The heading row has an actions field too, with nothing in it.
         const fields = []

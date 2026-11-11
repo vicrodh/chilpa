@@ -461,7 +461,8 @@ fn serve(order: Order, tools: &Tools, stop: &Mutex<HashSet<i64>>, outbox: &Sende
 }
 
 /// Reads the whole catalogue of one server into the library, with the
-/// listener's ratings when its kind keeps them (`ratings`).
+/// listener's ratings and favorites when its kind keeps them (`ratings`,
+/// `favorites`).
 pub(crate) fn run(
     lib: &chilpa_library::Library,
     net: &dyn Net,
@@ -476,6 +477,7 @@ pub(crate) fn run(
     if let Some(rates) = rates {
         super::ratings::finish(lib, net, keys, source, rates, &event, stopped);
     }
+    super::favorites::finish(lib, net, keys, source, &event, stopped, super::favorites::on_for_all());
     event
 }
 

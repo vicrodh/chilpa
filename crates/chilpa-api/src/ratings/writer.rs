@@ -1,5 +1,5 @@
-//! The listener's rating changes on their way to their sources, on a thread
-//! of its own that sleeps until the window wakes it.
+//! The listener's rating and heart changes on their way to their sources, on
+//! a thread of its own that sleeps until the window wakes it.
 //!
 //! Each run takes the changes due, oldest first, at most `PER_RUN`, and
 //! sends each one: to a server through its protocol (`servers::ratings`),
@@ -166,9 +166,41 @@ pub(crate) fn run(lib: &chilpa_library::Library, tools: &Tools, now: i64) -> Out
             eprintln!("ratings: how a change went could not be kept: {error}");
         }
     }
-    outcome.failing = lib.rating_failures().unwrap_or_default().iter().map(|(_, count, _)| count).sum();
-    outcome.next_due = lib.next_rating_due().ok().flatten();
+    for change in lib.due_favorites(now, PER_RUN).unwrap_or_default() {
+        let delivery = match change.origin.strip_prefix("server:") {
+            Some(instance) => crate::servers::favorites::deliver(lib, tools.net.as_ref(), &tools.keys, instance, &change),
+            None => Delivery::Never(format!("unknown origin {}", change.origin)),
+        };
+        let kept = match &delivery {
+            Delivery::Sent(_) => {
+                outcome.sent += 1;
+                lib.favorite_sent(&change, super::sync::now_ms())
+            }
+            Delivery::Later(why) => {
+                let wait = WAITS[(change.attempts.max(0) as usize).min(WAITS.len() - 1)];
+                eprintln!("ratings: a heart for {} was not taken ({why}); tried again in {wait}s", change.origin);
+                lib.favorite_failed(&change, why, now.saturating_add(wait))
+            }
+            Delivery::Never(why) => {
+                outcome.dropped += 1;
+                eprintln!("ratings: a heart for {} was dropped: {why}", change.origin);
+                lib.drop_favorite(&change)
+            }
+        };
+        if let Err(error) = kept {
+            eprintln!("ratings: how a heart went could not be kept: {error}");
+        }
+    }
+    outcome.failing = lib.rating_failures().unwrap_or_default().iter().chain(lib.favorite_failures().unwrap_or_default().iter()).map(|(_, count, _)| count).sum();
+    outcome.next_due = next_due(lib);
     outcome
+}
+
+/// When the next rating or heart is due, in unix seconds.
+pub(crate) fn next_due(lib: &chilpa_library::Library) -> Option<i64> {
+    let ratings = lib.next_rating_due().ok().flatten();
+    let hearts = lib.next_favorite_due().ok().flatten();
+    ratings.into_iter().chain(hearts).min()
 }
 
 fn deliver(lib: &chilpa_library::Library, tools: &Tools, change: &Pending) -> Delivery {

@@ -140,7 +140,7 @@ impl Chilpa {
             state.next_due = outcome.next_due;
             state.looked = true;
             if outcome.failing > 0 && state.failing == 0 {
-                self.now.error = chilpa_i18n::t("Some ratings could not reach their source. Chilpa will try again.");
+                self.now.error = chilpa_i18n::t("Some ratings or favorites could not reach their source. Chilpa will try again.");
             }
             self.servers.ratings.failing = outcome.failing;
             if outcome.sent > 0 || outcome.dropped > 0 {
@@ -149,7 +149,7 @@ impl Chilpa {
         }
         if !self.servers.ratings.looked {
             self.servers.ratings.looked = true;
-            self.servers.ratings.next_due = self.library().and_then(|lib| lib.next_rating_due().ok()).flatten();
+            self.servers.ratings.next_due = self.library().and_then(|lib| super::writer::next_due(lib));
         }
         let due = self.servers.ratings.next_due.is_some_and(|at| at <= crate::now_unix());
         if !due || self.servers.ratings.sending || self.offline() {

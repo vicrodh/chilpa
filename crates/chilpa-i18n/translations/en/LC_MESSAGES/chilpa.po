@@ -2564,6 +2564,9 @@ msgstr ""
 msgid "Favorites"
 msgstr ""
 
+msgid "Favorites are not synced with it."
+msgstr ""
+
 msgid "Feb"
 msgstr ""
 
@@ -2934,6 +2937,9 @@ msgid "Heard"
 msgstr ""
 
 msgid "Heard {} of {}"
+msgstr ""
+
+msgid "Hearts on the tracks and records of your servers go both ways. Turned off, they stay in Chilpa."
 msgstr ""
 
 msgid "Hi-Res"
@@ -6309,7 +6315,7 @@ msgstr ""
 msgid "Some packages are missing"
 msgstr ""
 
-msgid "Some ratings could not reach their source. Chilpa will try again."
+msgid "Some ratings or favorites could not reach their source. Chilpa will try again."
 msgstr ""
 
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
@@ -6432,6 +6438,9 @@ msgstr ""
 msgid "Stop scan"
 msgstr "Stop scan"
 
+msgid "Stop syncing favorites"
+msgstr ""
+
 msgid "Stop syncing ratings"
 msgstr ""
 
@@ -6497,6 +6506,12 @@ msgstr "Sync cancelled"
 
 msgid "Sync complete"
 msgstr "Sync complete"
+
+msgid "Sync favorites"
+msgstr ""
+
+msgid "Sync favorites with sources"
+msgstr ""
 
 msgid "Sync needs attention"
 msgstr "Sync needs attention"
@@ -9232,6 +9247,9 @@ msgstr ""
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr ""
 
+msgid "this server keeps no favorites Chilpa can change"
+msgstr ""
+
 msgid "this server keeps no ratings Chilpa can change"
 msgstr ""
 
@@ -9404,6 +9422,11 @@ msgstr ""
 
 msgid "{} does not answer; change its playlist when it is back."
 msgstr ""
+
+msgid "{} favorite waits to reach it: {}"
+msgid_plural "{} favorites wait to reach it: {}"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"

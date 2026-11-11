@@ -201,6 +201,6 @@ impl Chilpa {
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 #[cfg(test)]
 mod live;

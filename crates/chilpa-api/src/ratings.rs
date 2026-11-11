@@ -1,6 +1,7 @@
 //! I keep personal ratings source-independent and report failed writes to the shell.
 //! A source that keeps ratings of its own has them kept in step (`sync`).
 
+pub(crate) mod favorites;
 pub(crate) mod scale;
 pub(crate) mod sync;
 pub(crate) mod writer;

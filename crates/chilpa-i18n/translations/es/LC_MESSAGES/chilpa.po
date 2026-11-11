@@ -2564,6 +2564,9 @@ msgstr "Preset favorito"
 msgid "Favorites"
 msgstr "Favoritos"
 
+msgid "Favorites are not synced with it."
+msgstr "Los favoritos no se sincronizan con este servidor."
+
 msgid "Feb"
 msgstr "febrero"
 
@@ -2935,6 +2938,9 @@ msgstr "Escuchado"
 
 msgid "Heard {} of {}"
 msgstr "Se escuchó {} de {}"
+
+msgid "Hearts on the tracks and records of your servers go both ways. Turned off, they stay in Chilpa."
+msgstr "Los favoritos de las pistas y álbumes de tus servidores se sincronizan en ambos sentidos. Si lo desactivas, se quedan en Chilpa."
 
 msgid "Hi-Res"
 msgstr "Alta resolución"
@@ -6309,8 +6315,8 @@ msgstr "Algunas de estas pistas ya estaban agregadas"
 msgid "Some packages are missing"
 msgstr "Faltan algunos paquetes"
 
-msgid "Some ratings could not reach their source. Chilpa will try again."
-msgstr "Algunas calificaciones no llegaron a su origen. Chilpa lo volverá a intentar."
+msgid "Some ratings or favorites could not reach their source. Chilpa will try again."
+msgstr "Algunas calificaciones o favoritos no llegaron a su origen. Chilpa lo volverá a intentar."
 
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
 msgstr "Faltan algunas pistas seleccionadas de la biblioteca. Conservé el dispositivo sin cambios."
@@ -6432,6 +6438,9 @@ msgstr "¿Detener la reproducción para diagnosticar?"
 msgid "Stop scan"
 msgstr "Detener escaneo"
 
+msgid "Stop syncing favorites"
+msgstr "Dejar de sincronizar favoritos"
+
 msgid "Stop syncing ratings"
 msgstr "Dejar de sincronizar calificaciones"
 
@@ -6497,6 +6506,12 @@ msgstr "Sincronización cancelada"
 
 msgid "Sync complete"
 msgstr "Sincronización terminada"
+
+msgid "Sync favorites"
+msgstr "Sincronizar favoritos"
+
+msgid "Sync favorites with sources"
+msgstr "Sincronizar favoritos con las fuentes"
 
 msgid "Sync needs attention"
 msgstr "Necesito que revises la sincronización"
@@ -9232,6 +9247,9 @@ msgstr "este servidor no permite borrar música desde Chilpa"
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "este servidor no acepta la descripción de una playlist desde Chilpa"
 
+msgid "this server keeps no favorites Chilpa can change"
+msgstr "este servidor no guarda favoritos que Chilpa pueda cambiar"
+
 msgid "this server keeps no ratings Chilpa can change"
 msgstr "este servidor no guarda calificaciones que Chilpa pueda cambiar"
 
@@ -9404,6 +9422,11 @@ msgstr "{} no responde. El disco se abrirá cuando regrese."
 
 msgid "{} does not answer; change its playlist when it is back."
 msgstr "{} no responde; cambia su playlist cuando vuelva."
+
+msgid "{} favorite waits to reach it: {}"
+msgid_plural "{} favorites wait to reach it: {}"
+msgstr[0] "{} favorito está pendiente de enviarse: {}"
+msgstr[1] "{} favoritos están pendientes de enviarse: {}"
 
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"

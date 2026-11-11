@@ -149,7 +149,7 @@ fn the_window_is_told_once_when_ratings_start_failing() {
     tx.send(writer::Outcome { failing: 3, next_due: Some(i64::MAX), ..Default::default() }).unwrap();
     api.servers.ratings.writer = Some(writer::Writer::for_tests(rx));
     api.poll_ratings();
-    assert_eq!(api.now.error, "Some ratings could not reach their source. Chilpa will try again.");
+    assert_eq!(api.now.error, "Some ratings or favorites could not reach their source. Chilpa will try again.");
     api.now.error.clear();
     let (tx, rx) = std::sync::mpsc::channel();
     tx.send(writer::Outcome { failing: 3, next_due: Some(i64::MAX), ..Default::default() }).unwrap();

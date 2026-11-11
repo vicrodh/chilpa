@@ -263,6 +263,15 @@ pub const SECTIONS: &[Section] = &[
                 )],
             },
             Group {
+                title: Chilpa::mark("Favorites"),
+                settings: &[setting(
+                    crate::servers::favorites::SYNC,
+                    Chilpa::mark("Sync favorites with sources"),
+                    Chilpa::mark("Hearts on the tracks and records of your servers go both ways. Turned off, they stay in Chilpa."),
+                    Control::Toggle,
+                )],
+            },
+            Group {
                 title: Chilpa::mark("Maintenance"),
                 settings: &[
                     action("library.repair", Chilpa::mark("Repair the library"), Chilpa::mark("Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."), Control::Button, Chilpa::mark("Repair")),

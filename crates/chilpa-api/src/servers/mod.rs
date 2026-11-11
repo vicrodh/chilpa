@@ -13,6 +13,7 @@ pub(crate) mod keys;
 mod lan;
 mod net;
 mod opener;
+pub(crate) mod favorites;
 pub(crate) mod playlists;
 pub(crate) mod ratings;
 mod reading;
@@ -283,6 +284,7 @@ impl Chilpa {
             let mut options = if server.enabled { vec![chilpa_i18n::t("Edit…"), chilpa_i18n::t("Disable"), chilpa_i18n::t("Sync now"), chilpa_i18n::t("Remove…")] }
                 else { vec![chilpa_i18n::t("Edit…"), chilpa_i18n::t("Enable"), chilpa_i18n::t("Remove…")] };
             self.server_rating_row(server.id, &mut description, &mut values, &mut options);
+            self.server_favorite_row(server.id, &mut description, &mut values, &mut options);
             rows.push(crate::SettingsRow {
                 kind: 1,
                 key,

@@ -2564,6 +2564,9 @@ msgstr "Favoriete preset"
 msgid "Favorites"
 msgstr "Favorieten"
 
+msgid "Favorites are not synced with it."
+msgstr "Favorieten worden niet met deze server gesynchroniseerd."
+
 msgid "Feb"
 msgstr "feb"
 
@@ -2935,6 +2938,9 @@ msgstr "Beluisterd"
 
 msgid "Heard {} of {}"
 msgstr "{} van {} beluisterd"
+
+msgid "Hearts on the tracks and records of your servers go both ways. Turned off, they stay in Chilpa."
+msgstr "Favorieten van nummers en albums op je servers gaan beide kanten op. Uitgeschakeld blijven ze in Chilpa."
 
 msgid "Hi-Res"
 msgstr "Hi-Res"
@@ -6309,8 +6315,8 @@ msgstr "Sommige van deze nummers waren al toegevoegd"
 msgid "Some packages are missing"
 msgstr "Sommige pakketten ontbreken"
 
-msgid "Some ratings could not reach their source. Chilpa will try again."
-msgstr "Sommige waarderingen konden hun bron niet bereiken. Chilpa probeert het opnieuw."
+msgid "Some ratings or favorites could not reach their source. Chilpa will try again."
+msgstr "Sommige waarderingen of favorieten konden hun bron niet bereiken. Chilpa probeert het opnieuw."
 
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
 msgstr ""
@@ -6432,6 +6438,9 @@ msgstr "Afspelen stoppen om te diagnosticeren?"
 msgid "Stop scan"
 msgstr "Scan stoppen"
 
+msgid "Stop syncing favorites"
+msgstr "Favorieten niet synchroniseren"
+
 msgid "Stop syncing ratings"
 msgstr "Waarderingen niet synchroniseren"
 
@@ -6497,6 +6506,12 @@ msgstr ""
 
 msgid "Sync complete"
 msgstr ""
+
+msgid "Sync favorites"
+msgstr "Favorieten synchroniseren"
+
+msgid "Sync favorites with sources"
+msgstr "Favorieten met bronnen synchroniseren"
 
 msgid "Sync needs attention"
 msgstr ""
@@ -9232,6 +9247,9 @@ msgstr ""
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "deze server neemt de beschrijving van een afspeellijst niet over van Chilpa"
 
+msgid "this server keeps no favorites Chilpa can change"
+msgstr "deze server bewaart geen favorieten die Chilpa kan wijzigen"
+
 msgid "this server keeps no ratings Chilpa can change"
 msgstr "deze server bewaart geen waarderingen die Chilpa kan wijzigen"
 
@@ -9404,6 +9422,11 @@ msgstr "{} reageert niet. Het item wordt geopend zodra het weer beschikbaar is."
 
 msgid "{} does not answer; change its playlist when it is back."
 msgstr "{} reageert niet; wijzig de afspeellijst als de server terug is."
+
+msgid "{} favorite waits to reach it: {}"
+msgid_plural "{} favorites wait to reach it: {}"
+msgstr[0] "{} favoriet wacht op verzending: {}"
+msgstr[1] "{} favorieten wachten op verzending: {}"
 
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"

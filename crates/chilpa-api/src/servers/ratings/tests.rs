@@ -12,34 +12,34 @@ use std::sync::{Arc, Mutex};
 /// Answers in order with what it was loaded with, and keeps what it was
 /// asked, method and address.
 #[derive(Default)]
-struct Answers {
+pub(crate) struct Answers {
     replies: Mutex<VecDeque<Result<(u16, Vec<u8>), String>>>,
     asked: Mutex<Vec<(String, String)>>,
 }
 
 impl Answers {
-    fn file(self, name: &str) -> Self {
+    pub(crate) fn file(self, name: &str) -> Self {
         let path = format!("{}/../chilpa-servers/tests/answers/{name}", env!("CARGO_MANIFEST_DIR"));
         let body = std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
         self.replies.lock().unwrap().push_back(Ok((200, body)));
         self
     }
-    fn status(self, status: u16, body: &str) -> Self {
+    pub(crate) fn status(self, status: u16, body: &str) -> Self {
         self.replies.lock().unwrap().push_back(Ok((status, body.as_bytes().to_vec())));
         self
     }
-    fn silence(self) -> Self {
+    pub(crate) fn silence(self) -> Self {
         self.replies.lock().unwrap().push_back(Err("the server could not be reached".into()));
         self
     }
-    fn asked(&self) -> Vec<(String, String)> {
+    pub(crate) fn asked(&self) -> Vec<(String, String)> {
         self.asked.lock().unwrap().clone()
     }
 }
 
 impl Net for Answers {
     fn send(&self, request: &Request) -> Result<Reply, String> {
-        assert_ne!(request.method, "DELETE", "nothing about ratings ever deletes");
+        assert!(request.method != "DELETE" || request.url.contains("/UserFavoriteItems/"), "the only DELETE is taking a heart off");
         self.asked.lock().unwrap().push((request.method.to_string(), request.url.clone()));
         let (status, body) = self.replies.lock().unwrap().pop_front().unwrap_or_else(|| Err("nothing was loaded".into()))?;
         Ok(Reply { status, headers: Default::default(), body })
@@ -58,12 +58,12 @@ impl Plugins for NoPlugins {
     fn took(&self, _: &str, _: &str, _: &str, _: f64) {}
 }
 
-struct Lab {
-    lib: chilpa_library::Library,
-    keys: Arc<Keys>,
-    source: i64,
-    instance: String,
-    root: std::path::PathBuf,
+pub(crate) struct Lab {
+    pub(crate) lib: chilpa_library::Library,
+    pub(crate) keys: Arc<Keys>,
+    pub(crate) source: i64,
+    pub(crate) instance: String,
+    pub(crate) root: std::path::PathBuf,
 }
 
 impl Drop for Lab {
@@ -73,7 +73,7 @@ impl Drop for Lab {
 }
 
 impl Lab {
-    fn new(provider: &str, libraries: &str, key: chilpa_servers::Credential) -> Lab {
+    pub(crate) fn new(provider: &str, libraries: &str, key: chilpa_servers::Credential) -> Lab {
         let lib = chilpa_library::Library::in_memory().unwrap();
         let instance = super::super::keys::mint();
         let root = std::env::temp_dir().join(format!("chilpa-ratings-{instance}"));
@@ -93,20 +93,20 @@ impl Lab {
         Lab { lib, keys, source, instance, root }
     }
 
-    fn origin(&self) -> String {
+    pub(crate) fn origin(&self) -> String {
         server_origin(&self.instance)
     }
 
-    fn sync(&self, net: &Answers) -> Event {
+    pub(crate) fn sync(&self, net: &Answers) -> Event {
         super::super::sync::run(&self.lib, net, &self.keys, &Mutex::new(()), self.source, &|_| {}, &|| false)
     }
 
-    fn track(&self, server_id: &str) -> i64 {
+    pub(crate) fn track(&self, server_id: &str) -> i64 {
         let stored = self.lib.server(self.source).unwrap().unwrap();
         self.lib.connection().query_row("SELECT id FROM tracks WHERE external_id = ?1", [net::entry(&stored, server_id)], |r| r.get(0)).unwrap()
     }
 
-    fn album(&self, release: &str) -> i64 {
+    pub(crate) fn album(&self, release: &str) -> i64 {
         self.lib.connection().query_row("SELECT id FROM albums WHERE version_key = ?1", [format!("{}:{release}", self.source)], |r| r.get(0)).unwrap()
     }
 
@@ -114,7 +114,7 @@ impl Lab {
         self.lib.stars_of(target).unwrap()
     }
 
-    fn tools(&self, net: Arc<Answers>) -> Tools {
+    pub(crate) fn tools(&self, net: Arc<Answers>) -> Tools {
         Tools { net, keys: self.keys.clone(), plugins: Arc::new(NoPlugins), open: Arc::new(|| None) }
     }
 
@@ -125,17 +125,17 @@ impl Lab {
 
 use chilpa_library::store::ratings::RatingTarget::{Album, Track};
 
-fn subsonic() -> Lab {
+pub(crate) fn subsonic() -> Lab {
     Lab::new("subsonic", "[]", chilpa_servers::Credential::Password { user: "lab".into(), password: "lab-password".into() })
 }
 
-fn plex() -> Lab {
+pub(crate) fn plex() -> Lab {
     Lab::new("plex", r#"["1"]"#, chilpa_servers::Credential::Plex { account: "acct".into(), server: "srv".into() })
 }
 
 /// Navidrome's saved catalogue, its first record rated, and the census
 /// asked after the last page.
-fn navidrome(album_zero: &str) -> Answers {
+pub(crate) fn navidrome(album_zero: &str) -> Answers {
     Answers::default()
         .file("navidrome/subsonic-scan.json")
         .file("navidrome/subsonic-albums.json")
@@ -149,11 +149,11 @@ fn navidrome(album_zero: &str) -> Answers {
 
 /// The saved Plex track listing with two tracks rated, their details, and
 /// the records listed apart.
-fn plex_catalogue() -> Answers {
+pub(crate) fn plex_catalogue() -> Answers {
     Answers::default().file("plex/plex-tracks-rated.json").file("plex/plex-metadata.json").file("plex/plex-albums-rated.json")
 }
 
-fn ok() -> &'static str {
+pub(crate) fn ok() -> &'static str {
     r#"{"subsonic-response":{"status":"ok","version":"1.16.1"}}"#
 }
 
@@ -292,7 +292,7 @@ fn the_listener_s_change_goes_out_once_and_the_last_one_wins() {
 }
 
 /// The lab's library, opened again by its file, for an api that owns it.
-fn lab_library(lab: &Lab) -> chilpa_library::Library {
+pub(crate) fn lab_library(lab: &Lab) -> chilpa_library::Library {
     let path = lab.root.join("library.db");
     std::fs::create_dir_all(&lab.root).unwrap();
     lab.lib.connection().execute("VACUUM INTO ?1", [path.to_string_lossy().as_ref()]).unwrap();
