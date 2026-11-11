@@ -205,7 +205,7 @@ msgstr ""
 msgid "A server deletion is still in progress."
 msgstr ""
 
-msgid "A sidecar sets this, not the file"
+msgid "A sidecar sets this, not the file. Click to use the file's value."
 msgstr ""
 
 msgid "A small icon on the status says whether the track plays or is paused."
@@ -1215,6 +1215,9 @@ msgid "Chilpa can run some plugins made for other platforms. Add a plugin catalo
 msgstr "Chilpa can run some plugins made for other platforms. Add a plugin catalog you use. Compatibility is not guaranteed; Chilpa is not responsible for these plugins' behavior."
 
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
+msgstr ""
+
+msgid "Chilpa cannot change this server's metadata"
 msgstr ""
 
 msgid "Chilpa cannot keep a plugin inside a folder chosen this way: this system's kernel has no Landlock. To use the folder without it, give Chilpa direct access to it with flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa, then restart Chilpa and choose the folder again."
@@ -3431,6 +3434,9 @@ msgstr ""
 msgid "Kept in Chilpa; tracks from any source mix in it"
 msgstr ""
 
+msgid "Kept on this device, over what the server says, until you take it off."
+msgstr ""
+
 msgid "Kernel"
 msgstr "Kernel"
 
@@ -4530,9 +4536,6 @@ msgid "On app startup"
 msgstr "On app startup"
 
 msgid "On the sidebar's destinations."
-msgstr ""
-
-msgid "On this device"
 msgstr ""
 
 msgid "Onboarding"
@@ -5837,6 +5840,9 @@ msgstr "Saved queries"
 msgid "Saved results remain available between sessions."
 msgstr ""
 
+msgid "Saved to {} and read back from it."
+msgstr ""
+
 msgid "Saving selection…"
 msgstr "Saving selection…"
 
@@ -6043,6 +6049,9 @@ msgstr ""
 msgid "September"
 msgstr ""
 
+msgid "Server"
+msgstr ""
+
 msgid "Server added"
 msgstr ""
 
@@ -6076,7 +6085,7 @@ msgstr ""
 msgid "Set loop start (A)"
 msgstr ""
 
-msgid "Set on this device, not what the server says"
+msgid "Set on this device, over what the server says. Click to use the server's value."
 msgstr ""
 
 msgid "Set preference"
@@ -6871,9 +6880,6 @@ msgstr ""
 msgid "The record is not open in the editor."
 msgstr ""
 
-msgid "The record is on a server. Changes stay on this device and are not sent to it."
-msgstr ""
-
 msgid "The record's cover"
 msgstr ""
 
@@ -6958,6 +6964,9 @@ msgstr "The selected tracks will be removed from this playlist and its saved ord
 msgid "The server answered, and Chilpa can read its music."
 msgstr ""
 
+msgid "The server cannot take the changes: {}. Choose Sidecar to keep them on this device."
+msgstr ""
+
 msgid "The server connection or account changed. Review the action and try again."
 msgstr "The server connection or account changed. Review the action and try again."
 
@@ -6968,6 +6977,9 @@ msgid "The server did not identify the account for this API key."
 msgstr "The server did not identify the account for this API key."
 
 msgid "The server did not take it: {}"
+msgstr ""
+
+msgid "The server does not keep this. Choose Sidecar to change it here."
 msgstr ""
 
 msgid "The server took it. It applies to what it sends this computer from now on."
@@ -7459,6 +7471,9 @@ msgid "Tunnel Flow"
 msgstr ""
 
 msgid "Turn the network on to change a server's playlist."
+msgstr ""
+
+msgid "Turn the network on to change the server's metadata."
 msgstr ""
 
 msgid "Turn the network on to delete music from the server."
@@ -8093,7 +8108,7 @@ msgstr ""
 msgid "a rating must be between 0 and 5 stars"
 msgstr ""
 
-msgid "a record on a server keeps its changes on this device"
+msgid "a record on a server has no files here to write to"
 msgstr ""
 
 msgid "a scan is already running"
@@ -8187,6 +8202,9 @@ msgid "choose at least one folder that holds your music"
 msgstr ""
 
 msgid "choose at least one library"
+msgstr ""
+
+msgid "choose where to save the changes: the server cannot take them, the sidecar keeps them on this device"
 msgstr ""
 
 msgid "contains"
@@ -8476,6 +8494,9 @@ msgstr ""
 msgid "nothing was found"
 msgstr ""
 
+msgid "nothing was saved to the server: {}"
+msgstr ""
+
 msgid "now at {}"
 msgstr ""
 
@@ -8556,6 +8577,11 @@ msgstr ""
 
 msgid "run through a different plugin runtime"
 msgstr ""
+
+msgid "saved; the server keeps {} change differently, and what it keeps is shown"
+msgid_plural "saved; the server keeps {} changes differently, and what it keeps is shown"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "sector {} could not be read: {}"
 msgstr ""
@@ -8768,6 +8794,12 @@ msgid "the changes could not be kept in the library: {}"
 msgstr ""
 
 msgid "the changes were saved"
+msgstr ""
+
+msgid "the changes were saved to the server"
+msgstr ""
+
+msgid "the changes were saved to the server, but it could not be read back: {}; sync it to see them"
 msgstr ""
 
 msgid "the client_id came in empty"
@@ -9073,6 +9105,9 @@ msgstr ""
 msgid "the server could not be reached"
 msgstr ""
 
+msgid "the server could not be read: {}"
+msgstr ""
+
 msgid "the server did not accept the session; sign in again"
 msgstr ""
 
@@ -9277,6 +9312,9 @@ msgstr ""
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr ""
 
+msgid "this server does not keep this field; save it to the sidecar on this device, or put it back"
+msgstr ""
+
 msgid "this server does not support deleting music from Chilpa"
 msgstr ""
 
@@ -9293,6 +9331,9 @@ msgid "this server reads tags and covers from its files and offers no way to cha
 msgstr ""
 
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
+msgstr ""
+
+msgid "this server takes no cover from Chilpa; save the cover to the sidecar on this device"
 msgstr ""
 
 msgid "this track is on a server, and servers are not connected"
@@ -9335,6 +9376,9 @@ msgid "virtual"
 msgstr ""
 
 msgid "vs {}"
+msgstr ""
+
+msgid "what the server says now could not be written down in the library: {}; sync it to see it"
 msgstr ""
 
 msgid "what was saved could not be written down in the library: {}; rescan to see it"
@@ -9588,6 +9632,9 @@ msgid "{} of the list's tracks are gone"
 msgstr ""
 
 msgid "{} of {}"
+msgstr ""
+
+msgid "{} of {} changes reached the server before it failed: {}"
 msgstr ""
 
 msgid "{} of {} chosen"

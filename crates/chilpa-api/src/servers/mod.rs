@@ -11,7 +11,7 @@
 mod background;
 pub(crate) mod keys;
 mod lan;
-mod net;
+pub(crate) mod net;
 mod opener;
 pub(crate) mod favorites;
 pub(crate) mod playlists;
@@ -20,6 +20,7 @@ mod reading;
 mod media;
 mod setup;
 mod sync;
+pub(crate) use sync::covers_dir;
 mod watch;
 pub(crate) mod writing;
 mod session;

@@ -205,8 +205,8 @@ msgstr "Una de las colas seleccionadas ya no está disponible."
 msgid "A server deletion is still in progress."
 msgstr "Todavía hay un borrado del servidor en curso."
 
-msgid "A sidecar sets this, not the file"
-msgstr "Lo pone un sidecar, no el archivo"
+msgid "A sidecar sets this, not the file. Click to use the file's value."
+msgstr "Un sidecar define esto, no el archivo. Haz clic para usar el valor del archivo."
 
 msgid "A small icon on the status says whether the track plays or is paused."
 msgstr "Un pequeño ícono en el estado indica si la pista se está reproduciendo o está en pausa."
@@ -1216,6 +1216,9 @@ msgstr "Chilpa puede ejecutar algunos plugins de otras plataformas. Agrega un ca
 
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reproducir por ellas"
+
+msgid "Chilpa cannot change this server's metadata"
+msgstr "Chilpa no puede cambiar los metadatos de este servidor"
 
 msgid "Chilpa cannot keep a plugin inside a folder chosen this way: this system's kernel has no Landlock. To use the folder without it, give Chilpa direct access to it with flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa, then restart Chilpa and choose the folder again."
 msgstr "Chilpa no puede mantener a un plugin dentro de una carpeta elegida así: el kernel de este sistema no tiene Landlock. Para usar la carpeta sin él, permite que Chilpa entre directo a ella con flatpak override --user --filesystem=/ruta/a/la/carpeta app.chilpa.Chilpa, reinicia Chilpa y vuelve a elegir la carpeta."
@@ -3431,6 +3434,9 @@ msgstr "Se guarda en Chilpa hasta que agregues sus primeras pistas; luego se env
 msgid "Kept in Chilpa; tracks from any source mix in it"
 msgstr "Se guarda en Chilpa; acepta pistas de cualquier fuente"
 
+msgid "Kept on this device, over what the server says, until you take it off."
+msgstr "Se queda en este dispositivo, por encima de lo que dice el servidor, hasta que lo quites."
+
 msgid "Kernel"
 msgstr "Kernel"
 
@@ -4531,9 +4537,6 @@ msgstr "Al abrir la app"
 
 msgid "On the sidebar's destinations."
 msgstr "En los destinos del sidebar."
-
-msgid "On this device"
-msgstr "En este dispositivo"
 
 msgid "Onboarding"
 msgstr "Introducción"
@@ -5837,6 +5840,9 @@ msgstr "Consultas guardadas"
 msgid "Saved results remain available between sessions."
 msgstr "Los resultados guardados se conservan entre sesiones."
 
+msgid "Saved to {} and read back from it."
+msgstr "Se guarda en {} y se vuelve a leer de ahí."
+
 msgid "Saving selection…"
 msgstr "Guardando selección…"
 
@@ -6043,6 +6049,9 @@ msgstr "Los límites de entrada separados no establecen todas las combinaciones 
 msgid "September"
 msgstr "septiembre"
 
+msgid "Server"
+msgstr "Servidor"
+
 msgid "Server added"
 msgstr "Servidor agregado"
 
@@ -6076,8 +6085,8 @@ msgstr "Marcar fin (B)"
 msgid "Set loop start (A)"
 msgstr "Marcar inicio (A)"
 
-msgid "Set on this device, not what the server says"
-msgstr "Se fijó en este dispositivo; no es lo que dice el servidor"
+msgid "Set on this device, over what the server says. Click to use the server's value."
+msgstr "Definido en este dispositivo, por encima de lo que dice el servidor. Haz clic para usar el valor del servidor."
 
 msgid "Set preference"
 msgstr "Cambiar preferencia"
@@ -6871,9 +6880,6 @@ msgstr "El receptor no informa el formato de su DAC físico."
 msgid "The record is not open in the editor."
 msgstr "El disco no está abierto en el editor."
 
-msgid "The record is on a server. Changes stay on this device and are not sent to it."
-msgstr "El disco está en un servidor. Los cambios se quedan en este dispositivo y no se le envían."
-
 msgid "The record's cover"
 msgstr "La carátula del disco"
 
@@ -6958,6 +6964,9 @@ msgstr "Las pistas seleccionadas se quitarán de esta playlist y de su orden gua
 msgid "The server answered, and Chilpa can read its music."
 msgstr "El servidor respondió y Chilpa puede leer su música."
 
+msgid "The server cannot take the changes: {}. Choose Sidecar to keep them on this device."
+msgstr "El servidor no puede recibir los cambios: {}. Elige Sidecar para guardarlos en este dispositivo."
+
 msgid "The server connection or account changed. Review the action and try again."
 msgstr "Cambió la conexión o la cuenta del servidor. Revisa la acción y vuelve a intentarlo."
 
@@ -6969,6 +6978,9 @@ msgstr "El servidor no identificó la cuenta de esta clave API."
 
 msgid "The server did not take it: {}"
 msgstr "El servidor no lo aceptó: {}"
+
+msgid "The server does not keep this. Choose Sidecar to change it here."
+msgstr "El servidor no guarda esto. Elige Sidecar para cambiarlo aquí."
 
 msgid "The server took it. It applies to what it sends this computer from now on."
 msgstr "El servidor lo aceptó. Se aplica a lo que envía a esta computadora a partir de ahora."
@@ -7460,6 +7472,9 @@ msgstr "Flujo de túnel"
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Activa la red para cambiar una playlist de un servidor."
+
+msgid "Turn the network on to change the server's metadata."
+msgstr "Activa la red para cambiar los metadatos del servidor."
 
 msgid "Turn the network on to delete music from the server."
 msgstr "Activa la red para borrar música del servidor."
@@ -8093,8 +8108,8 @@ msgstr "una calificación va de 0 a 5"
 msgid "a rating must be between 0 and 5 stars"
 msgstr "La valoración debe estar entre 0 y 5 estrellas"
 
-msgid "a record on a server keeps its changes on this device"
-msgstr "un disco en un servidor guarda sus cambios en este dispositivo"
+msgid "a record on a server has no files here to write to"
+msgstr "un disco en un servidor no tiene archivos aquí en los que escribir"
 
 msgid "a scan is already running"
 msgstr "ya hay un escaneo corriendo"
@@ -8188,6 +8203,9 @@ msgstr "elige al menos una carpeta que tenga tu música"
 
 msgid "choose at least one library"
 msgstr "elige al menos una biblioteca"
+
+msgid "choose where to save the changes: the server cannot take them, the sidecar keeps them on this device"
+msgstr "elige dónde guardar los cambios: el servidor no puede recibirlos, el sidecar los guarda en este dispositivo"
 
 msgid "contains"
 msgstr "contiene"
@@ -8476,6 +8494,9 @@ msgstr "no soportado: {}"
 msgid "nothing was found"
 msgstr "no se encontró nada"
 
+msgid "nothing was saved to the server: {}"
+msgstr "no se guardó nada en el servidor: {}"
+
 msgid "now at {}"
 msgstr "ahora en {}"
 
@@ -8556,6 +8577,11 @@ msgstr "ejecutar una interfaz de confianza dentro de Chilpa, fuera del aislamien
 
 msgid "run through a different plugin runtime"
 msgstr "ejecutarse mediante otro entorno de plugins"
+
+msgid "saved; the server keeps {} change differently, and what it keeps is shown"
+msgid_plural "saved; the server keeps {} changes differently, and what it keeps is shown"
+msgstr[0] "guardado; el servidor guarda {} cambio de otra forma, y se muestra lo que guarda"
+msgstr[1] "guardado; el servidor guarda {} cambios de otra forma, y se muestra lo que guarda"
 
 msgid "sector {} could not be read: {}"
 msgstr "no se pudo leer el sector {}: {}"
@@ -8769,6 +8795,12 @@ msgstr "los cambios no se pudieron guardar en la biblioteca: {}"
 
 msgid "the changes were saved"
 msgstr "los cambios se guardaron"
+
+msgid "the changes were saved to the server"
+msgstr "los cambios se guardaron en el servidor"
+
+msgid "the changes were saved to the server, but it could not be read back: {}; sync it to see them"
+msgstr "los cambios se guardaron en el servidor, pero no se pudo volver a leer: {}; sincronízalo para verlos"
 
 msgid "the client_id came in empty"
 msgstr "el client_id viene vacío"
@@ -9073,6 +9105,9 @@ msgstr "el servidor no puede enviar parte de un archivo, y este es demasiado gra
 msgid "the server could not be reached"
 msgstr "no se pudo llegar al servidor"
 
+msgid "the server could not be read: {}"
+msgstr "no se pudo leer el servidor: {}"
+
 msgid "the server did not accept the session; sign in again"
 msgstr "el servidor no aceptó la sesión; vuelve a iniciar sesión"
 
@@ -9277,6 +9312,9 @@ msgstr "este plugin no declaró permiso de red"
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "este servidor no puede mover una pista que está más de una vez en la playlist"
 
+msgid "this server does not keep this field; save it to the sidecar on this device, or put it back"
+msgstr "este servidor no guarda este campo; guárdalo en el sidecar de este dispositivo o déjalo como estaba"
+
 msgid "this server does not support deleting music from Chilpa"
 msgstr "este servidor no permite borrar música desde Chilpa"
 
@@ -9294,6 +9332,9 @@ msgstr "este servidor lee etiquetas y portadas de sus archivos y no ofrece forma
 
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "este servidor quita de la playlist todas las copias de una pista a la vez; quítalas todas o cámbiala en el servidor"
+
+msgid "this server takes no cover from Chilpa; save the cover to the sidecar on this device"
+msgstr "este servidor no acepta portadas de Chilpa; guarda la portada en el sidecar de este dispositivo"
 
 msgid "this track is on a server, and servers are not connected"
 msgstr "esta pista está en un servidor, y los servidores no están conectados"
@@ -9336,6 +9377,9 @@ msgstr "virtual"
 
 msgid "vs {}"
 msgstr "vs {}"
+
+msgid "what the server says now could not be written down in the library: {}; sync it to see it"
+msgstr "lo que el servidor dice ahora no se pudo anotar en la biblioteca: {}; sincronízalo para verlo"
 
 msgid "what was saved could not be written down in the library: {}; rescan to see it"
 msgstr "lo que se guardó no se pudo anotar en la biblioteca: {}; vuelve a escanear para verlo"
@@ -9589,6 +9633,9 @@ msgstr "{} de las pistas de la lista ya no están"
 
 msgid "{} of {}"
 msgstr "{} de {}"
+
+msgid "{} of {} changes reached the server before it failed: {}"
+msgstr "{} de {} cambios llegaron al servidor antes de que fallara: {}"
 
 msgid "{} of {} chosen"
 msgstr "{} de {} elegidas"

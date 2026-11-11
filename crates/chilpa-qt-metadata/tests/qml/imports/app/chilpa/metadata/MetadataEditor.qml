@@ -15,5 +15,9 @@ QtObject {
     function openAlbum(album, track) { opened = opened.concat([album]) }
     function save() { ++saved }
     function close() { ++closed }
+    // Where a save was asked to go, in order.
+    property var modes: []
+    function setMode(mode) { modes = modes.concat([mode]); return true }
+    function revert() {}
     function show(next) { view = next; ++rev }
 }

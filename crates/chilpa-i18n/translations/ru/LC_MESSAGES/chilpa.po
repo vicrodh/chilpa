@@ -205,8 +205,8 @@ msgstr "Выбранная очередь больше недоступна."
 msgid "A server deletion is still in progress."
 msgstr ""
 
-msgid "A sidecar sets this, not the file"
-msgstr "Это задаёт вспомогательный файл, а не сам файл"
+msgid "A sidecar sets this, not the file. Click to use the file's value."
+msgstr "Это задаёт вспомогательный файл, а не сам файл. Нажмите, чтобы взять значение из файла."
 
 msgid "A small icon on the status says whether the track plays or is paused."
 msgstr "Небольшой значок в статусе показывает, играет трек или стоит на паузе."
@@ -1218,6 +1218,9 @@ msgstr "Chilpa может запускать некоторые плагины, 
 
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpa видит устройства вывода этого компьютера, но пока не может воспроизводить через них"
+
+msgid "Chilpa cannot change this server's metadata"
+msgstr "Chilpa не может менять метаданные этого сервера"
 
 msgid "Chilpa cannot keep a plugin inside a folder chosen this way: this system's kernel has no Landlock. To use the folder without it, give Chilpa direct access to it with flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa, then restart Chilpa and choose the folder again."
 msgstr "Chilpa не может удержать плагин внутри папки, выбранной таким способом: в ядре этой системы нет Landlock. Чтобы использовать папку без него, дайте Chilpa прямой доступ к ней командой flatpak override --user --filesystem=/путь/к/папке app.chilpa.Chilpa, перезапустите Chilpa и выберите папку снова."
@@ -3436,6 +3439,9 @@ msgstr "Хранится в Chilpa, пока вы не добавите перв
 msgid "Kept in Chilpa; tracks from any source mix in it"
 msgstr "Хранится в Chilpa; в нём можно смешивать треки из любых источников"
 
+msgid "Kept on this device, over what the server says, until you take it off."
+msgstr "Хранится на этом устройстве поверх данных сервера, пока вы это не уберёте."
+
 msgid "Kernel"
 msgstr "Ядро"
 
@@ -4536,9 +4542,6 @@ msgstr "При запуске приложения"
 
 msgid "On the sidebar's destinations."
 msgstr "На пунктах боковой панели."
-
-msgid "On this device"
-msgstr "На этом устройстве"
 
 msgid "Onboarding"
 msgstr "Знакомство"
@@ -5842,6 +5845,9 @@ msgstr "Сохранённые запросы"
 msgid "Saved results remain available between sessions."
 msgstr "Сохранённые результаты доступны между сеансами."
 
+msgid "Saved to {} and read back from it."
+msgstr "Сохраняется на {} и затем считывается оттуда."
+
 msgid "Saving selection…"
 msgstr ""
 
@@ -6049,6 +6055,9 @@ msgstr "Отдельные пределы входа не подтверждаю
 msgid "September"
 msgstr "сентября"
 
+msgid "Server"
+msgstr "Сервер"
+
 msgid "Server added"
 msgstr "Сервер добавлен"
 
@@ -6082,8 +6091,8 @@ msgstr "Задать конец повтора (B)"
 msgid "Set loop start (A)"
 msgstr "Задать начало повтора (A)"
 
-msgid "Set on this device, not what the server says"
-msgstr "Задано на этом устройстве, а не то, что сообщает сервер"
+msgid "Set on this device, over what the server says. Click to use the server's value."
+msgstr "Задано на этом устройстве поверх данных сервера. Нажмите, чтобы взять значение сервера."
 
 msgid "Set preference"
 msgstr "Задать параметр"
@@ -6880,9 +6889,6 @@ msgstr "Приёмник не сообщает формат своего физ�
 msgid "The record is not open in the editor."
 msgstr "Запись не открыта в редакторе."
 
-msgid "The record is on a server. Changes stay on this device and are not sent to it."
-msgstr "Запись находится на сервере. Изменения остаются на этом устройстве и на сервер не отправляются."
-
 msgid "The record's cover"
 msgstr "Обложка записи"
 
@@ -6967,6 +6973,9 @@ msgstr "Выбранные треки будут удалены из этого 
 msgid "The server answered, and Chilpa can read its music."
 msgstr "Сервер ответил, и Chilpa может читать его музыку."
 
+msgid "The server cannot take the changes: {}. Choose Sidecar to keep them on this device."
+msgstr "Сервер не может принять изменения: {}. Выберите «Вспомогательный файл», чтобы сохранить их на этом устройстве."
+
 msgid "The server connection or account changed. Review the action and try again."
 msgstr "Подключение к серверу или учётная запись изменились. Проверьте действие и повторите попытку."
 
@@ -6978,6 +6987,9 @@ msgstr "Сервер не определил учётную запись для 
 
 msgid "The server did not take it: {}"
 msgstr "Сервер не принял: {}"
+
+msgid "The server does not keep this. Choose Sidecar to change it here."
+msgstr "Сервер это не хранит. Выберите «Вспомогательный файл», чтобы изменить это здесь."
 
 msgid "The server took it. It applies to what it sends this computer from now on."
 msgstr "Сервер принял. Это действует для всего, что он отправляет на этот компьютер с этого момента."
@@ -7470,6 +7482,9 @@ msgstr "Tunnel Flow"
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Включите сеть, чтобы изменить плейлист на сервере."
+
+msgid "Turn the network on to change the server's metadata."
+msgstr "Включите сеть, чтобы изменить метаданные сервера."
 
 msgid "Turn the network on to delete music from the server."
 msgstr ""
@@ -8104,8 +8119,8 @@ msgstr "рейтинг — от 0 до 5"
 msgid "a rating must be between 0 and 5 stars"
 msgstr "рейтинг должен быть от 0 до 5 звёзд"
 
-msgid "a record on a server keeps its changes on this device"
-msgstr "изменения записи на сервере остаются на этом устройстве"
+msgid "a record on a server has no files here to write to"
+msgstr "у альбома на сервере здесь нет файлов для записи"
 
 msgid "a scan is already running"
 msgstr "сканирование уже выполняется"
@@ -8199,6 +8214,9 @@ msgstr "выберите хотя бы одну папку с вашей муз�
 
 msgid "choose at least one library"
 msgstr "выберите хотя бы одну библиотеку"
+
+msgid "choose where to save the changes: the server cannot take them, the sidecar keeps them on this device"
+msgstr "выберите, где сохранить изменения: сервер не может их принять, вспомогательный файл сохранит их на этом устройстве"
 
 msgid "contains"
 msgstr "содержит"
@@ -8488,6 +8506,9 @@ msgstr "не поддерживается: {}"
 msgid "nothing was found"
 msgstr "ничего не найдено"
 
+msgid "nothing was saved to the server: {}"
+msgstr "на сервере ничего не сохранено: {}"
+
 msgid "now at {}"
 msgstr "сейчас: {}"
 
@@ -8568,6 +8589,12 @@ msgstr ""
 
 msgid "run through a different plugin runtime"
 msgstr "работать в другой среде выполнения плагинов"
+
+msgid "saved; the server keeps {} change differently, and what it keeps is shown"
+msgid_plural "saved; the server keeps {} changes differently, and what it keeps is shown"
+msgstr[0] "сохранено; сервер хранит {} изменение иначе, и показано то, что он хранит"
+msgstr[1] "сохранено; сервер хранит {} изменения иначе, и показано то, что он хранит"
+msgstr[2] "сохранено; сервер хранит {} изменений иначе, и показано то, что он хранит"
 
 msgid "sector {} could not be read: {}"
 msgstr "не удалось прочитать сектор {}: {}"
@@ -8781,6 +8808,12 @@ msgstr "не удалось сохранить изменения в библи�
 
 msgid "the changes were saved"
 msgstr "изменения сохранены"
+
+msgid "the changes were saved to the server"
+msgstr "изменения сохранены на сервере"
+
+msgid "the changes were saved to the server, but it could not be read back: {}; sync it to see them"
+msgstr "изменения сохранены на сервере, но его не удалось перечитать: {}; синхронизируйте его, чтобы их увидеть"
 
 msgid "the client_id came in empty"
 msgstr "client_id пришёл пустым"
@@ -9085,6 +9118,9 @@ msgstr "сервер не может отправить часть файла, �
 msgid "the server could not be reached"
 msgstr "не удалось связаться с сервером"
 
+msgid "the server could not be read: {}"
+msgstr "не удалось прочитать сервер: {}"
+
 msgid "the server did not accept the session; sign in again"
 msgstr "сервер не принял сеанс; войдите снова"
 
@@ -9289,6 +9325,9 @@ msgstr "этот плагин не объявил сетевого разреш�
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "этот сервер не может переместить трек, который есть в плейлисте больше одного раза"
 
+msgid "this server does not keep this field; save it to the sidecar on this device, or put it back"
+msgstr "этот сервер не хранит это поле; сохраните его во вспомогательный файл на этом устройстве или верните как было"
+
 msgid "this server does not support deleting music from Chilpa"
 msgstr ""
 
@@ -9306,6 +9345,9 @@ msgstr "этот сервер читает теги и обложки из св�
 
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "этот сервер удаляет из плейлиста все копии трека сразу; удалите все или измените плейлист на сервере"
+
+msgid "this server takes no cover from Chilpa; save the cover to the sidecar on this device"
+msgstr "этот сервер не принимает обложки от Chilpa; сохраните обложку во вспомогательный файл на этом устройстве"
 
 msgid "this track is on a server, and servers are not connected"
 msgstr "этот трек на сервере, а серверы не подключены"
@@ -9348,6 +9390,9 @@ msgstr "виртуальный"
 
 msgid "vs {}"
 msgstr "по сравнению с {}"
+
+msgid "what the server says now could not be written down in the library: {}; sync it to see it"
+msgstr "то, что сейчас сообщает сервер, не удалось записать в библиотеку: {}; синхронизируйте его, чтобы увидеть"
 
 msgid "what was saved could not be written down in the library: {}; rescan to see it"
 msgstr "сохранённое не удалось записать в библиотеку: {}; пересканируйте, чтобы это увидеть"
@@ -9621,6 +9666,9 @@ msgstr "Пропало треков из списка: {}"
 
 msgid "{} of {}"
 msgstr "{} из {}"
+
+msgid "{} of {} changes reached the server before it failed: {}"
+msgstr "до сбоя на сервер попало {} из {} изменений: {}"
 
 msgid "{} of {} chosen"
 msgstr "Выбрано {} из {}"

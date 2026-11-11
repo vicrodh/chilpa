@@ -137,6 +137,10 @@ fn a_record_on_a_server_is_edited_into_an_overlay_kept_on_this_device() {
     assert_eq!(view.tracks[0].file, "1", "a track goes by its id on the server");
     assert_eq!(track_field(&view, 0, "title").0, "Song 1");
     assert!(!view.dirty);
+    // A server Chilpa cannot change: nothing is chosen for the listener.
+    assert_eq!(view.save.mode, "", "no sidecar is made unasked");
+    assert!(!view.save.server.allowed && !view.save.server.refused.is_empty(), "{:?}", view.save.server);
+    assert!(!chilpa.metadata_set_mode("server"), "the server cannot take it");
     assert!(!chilpa.metadata_set_mode("files"), "a file mode has nothing to write into");
     assert!(!chilpa.metadata_view().error.is_empty());
     assert!(!chilpa.metadata_set_mode("xml"));
@@ -227,6 +231,11 @@ fn a_record_on_a_server_is_edited_into_an_overlay_kept_on_this_device() {
     }
     assert!(chilpa.metadata_set_track(first, "composers", ""));
     assert!(chilpa.metadata_set_album("date", ""));
+    assert!(!chilpa.metadata_save(), "nothing goes to a sidecar until it is chosen");
+    assert!(!chilpa.metadata_view().error.is_empty());
+    assert_eq!(chilpa.metadata_view().state, "ready", "and what was typed is still there");
+    assert!(chilpa.metadata_view().dirty);
+    assert!(chilpa.metadata_set_mode("sidecar"));
     assert!(chilpa.metadata_save());
     until(&mut chilpa, "closed");
     assert!(chilpa.metadata_view().error.is_empty(), "{}", chilpa.metadata_view().error);

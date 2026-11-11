@@ -205,8 +205,8 @@ msgstr "Une file d'attente sélectionnée n'est plus disponible."
 msgid "A server deletion is still in progress."
 msgstr ""
 
-msgid "A sidecar sets this, not the file"
-msgstr "Défini par un fichier annexe, pas par le fichier"
+msgid "A sidecar sets this, not the file. Click to use the file's value."
+msgstr "Un fichier annexe définit ceci, pas le fichier. Cliquez pour utiliser la valeur du fichier."
 
 msgid "A small icon on the status says whether the track plays or is paused."
 msgstr "Une petite icône sur le statut indique si le morceau est en lecture ou en pause."
@@ -1216,6 +1216,9 @@ msgstr "Chilpa peut exécuter certains plugins conçus pour d'autres plateformes
 
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpa voit les sorties de cette machine, mais ne peut pas encore lire sur celles-ci"
+
+msgid "Chilpa cannot change this server's metadata"
+msgstr "Chilpa ne peut pas modifier les métadonnées de ce serveur"
 
 msgid "Chilpa cannot keep a plugin inside a folder chosen this way: this system's kernel has no Landlock. To use the folder without it, give Chilpa direct access to it with flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa, then restart Chilpa and choose the folder again."
 msgstr "Chilpa ne peut pas garder un plugin à l'intérieur d'un dossier choisi de cette façon : le noyau de ce système n'a pas Landlock. Pour utiliser ce dossier sans Landlock, donnez à Chilpa un accès direct avec flatpak override --user --filesystem=/chemin/vers/le/dossier app.chilpa.Chilpa, redémarrez Chilpa et choisissez à nouveau le dossier."
@@ -3431,6 +3434,9 @@ msgstr "Gardée dans Chilpa jusqu'à ce que vous ajoutiez ses premières pistes,
 msgid "Kept in Chilpa; tracks from any source mix in it"
 msgstr "Gardée dans Chilpa ; les pistes de toutes les sources s'y mélangent"
 
+msgid "Kept on this device, over what the server says, until you take it off."
+msgstr "Reste sur cet appareil, par-dessus ce que dit le serveur, jusqu'à ce que vous le retiriez."
+
 msgid "Kernel"
 msgstr "Noyau"
 
@@ -4531,9 +4537,6 @@ msgstr "Au démarrage de l’application"
 
 msgid "On the sidebar's destinations."
 msgstr "Sur les destinations de la barre latérale."
-
-msgid "On this device"
-msgstr "Sur cet appareil"
 
 msgid "Onboarding"
 msgstr "Prise en main"
@@ -5837,6 +5840,9 @@ msgstr "Requêtes enregistrées"
 msgid "Saved results remain available between sessions."
 msgstr "Les résultats enregistrés restent disponibles d'une session à l'autre."
 
+msgid "Saved to {} and read back from it."
+msgstr "Enregistré sur {} puis relu depuis celui-ci."
+
 msgid "Saving selection…"
 msgstr ""
 
@@ -6043,6 +6049,9 @@ msgstr "Des limites d’entrée séparées ne prouvent pas toutes les combinaiso
 msgid "September"
 msgstr "septembre"
 
+msgid "Server"
+msgstr "Serveur"
+
 msgid "Server added"
 msgstr "Serveur ajouté"
 
@@ -6076,8 +6085,8 @@ msgstr "Définir la fin de la boucle (B)"
 msgid "Set loop start (A)"
 msgstr "Définir le début de la boucle (A)"
 
-msgid "Set on this device, not what the server says"
-msgstr "Défini sur cet appareil, pas ce que dit le serveur"
+msgid "Set on this device, over what the server says. Click to use the server's value."
+msgstr "Défini sur cet appareil, par-dessus ce que dit le serveur. Cliquez pour utiliser la valeur du serveur."
 
 msgid "Set preference"
 msgstr "Changer la préférence"
@@ -6871,9 +6880,6 @@ msgstr "Le récepteur ne signale pas le format de son DAC physique."
 msgid "The record is not open in the editor."
 msgstr "Le disque n'est pas ouvert dans l'éditeur."
 
-msgid "The record is on a server. Changes stay on this device and are not sent to it."
-msgstr "Le disque est sur un serveur. Les modifications restent sur cet appareil et ne lui sont pas envoyées."
-
 msgid "The record's cover"
 msgstr "La pochette du disque"
 
@@ -6958,6 +6964,9 @@ msgstr "Les titres sélectionnés seront retirés de cette playlist et de son or
 msgid "The server answered, and Chilpa can read its music."
 msgstr "Le serveur a répondu, et Chilpa peut lire sa musique."
 
+msgid "The server cannot take the changes: {}. Choose Sidecar to keep them on this device."
+msgstr "Le serveur ne peut pas recevoir les modifications : {}. Choisissez « Fichier annexe » pour les garder sur cet appareil."
+
 msgid "The server connection or account changed. Review the action and try again."
 msgstr "La connexion au serveur ou le compte a changé. Vérifiez l’action et réessayez."
 
@@ -6969,6 +6978,9 @@ msgstr "Le serveur n’a pas identifié le compte associé à cette clé API."
 
 msgid "The server did not take it: {}"
 msgstr "Le serveur ne l'a pas accepté : {}"
+
+msgid "The server does not keep this. Choose Sidecar to change it here."
+msgstr "Le serveur ne conserve pas ceci. Choisissez « Fichier annexe » pour le modifier ici."
 
 msgid "The server took it. It applies to what it sends this computer from now on."
 msgstr "Le serveur l'a accepté. Cela s'applique à ce qu'il envoie à cet ordinateur à partir de maintenant."
@@ -7460,6 +7472,9 @@ msgstr "Tunnel Flow"
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Activez le réseau pour modifier une playlist d'un serveur."
+
+msgid "Turn the network on to change the server's metadata."
+msgstr "Activez le réseau pour modifier les métadonnées du serveur."
 
 msgid "Turn the network on to delete music from the server."
 msgstr ""
@@ -8093,8 +8108,8 @@ msgstr "une note va de 0 à 5"
 msgid "a rating must be between 0 and 5 stars"
 msgstr "une note doit être comprise entre 0 et 5 étoiles"
 
-msgid "a record on a server keeps its changes on this device"
-msgstr "un disque sur un serveur garde ses modifications sur cet appareil"
+msgid "a record on a server has no files here to write to"
+msgstr "un album sur un serveur n'a ici aucun fichier dans lequel écrire"
 
 msgid "a scan is already running"
 msgstr "une analyse de la bibliothèque est déjà en cours"
@@ -8188,6 +8203,9 @@ msgstr "choisissez au moins un dossier qui contient votre musique"
 
 msgid "choose at least one library"
 msgstr "choisissez au moins une bibliothèque"
+
+msgid "choose where to save the changes: the server cannot take them, the sidecar keeps them on this device"
+msgstr "choisissez où enregistrer les modifications : le serveur ne peut pas les recevoir, le fichier annexe les garde sur cet appareil"
 
 msgid "contains"
 msgstr "contient"
@@ -8476,6 +8494,9 @@ msgstr "non pris en charge : {}"
 msgid "nothing was found"
 msgstr "rien n'a été trouvé"
 
+msgid "nothing was saved to the server: {}"
+msgstr "rien n'a été enregistré sur le serveur : {}"
+
 msgid "now at {}"
 msgstr "maintenant à {}"
 
@@ -8556,6 +8577,11 @@ msgstr ""
 
 msgid "run through a different plugin runtime"
 msgstr "s'exécuter via un autre runtime de plugin"
+
+msgid "saved; the server keeps {} change differently, and what it keeps is shown"
+msgid_plural "saved; the server keeps {} changes differently, and what it keeps is shown"
+msgstr[0] "enregistré ; le serveur conserve {} modification autrement, et c'est ce qu'il conserve qui est affiché"
+msgstr[1] "enregistré ; le serveur conserve {} modifications autrement, et c'est ce qu'il conserve qui est affiché"
 
 msgid "sector {} could not be read: {}"
 msgstr "le secteur {} n'a pas pu être lu : {}"
@@ -8769,6 +8795,12 @@ msgstr "les modifications n'ont pas pu être conservées dans la bibliothèque :
 
 msgid "the changes were saved"
 msgstr "les modifications ont été enregistrées"
+
+msgid "the changes were saved to the server"
+msgstr "les modifications ont été enregistrées sur le serveur"
+
+msgid "the changes were saved to the server, but it could not be read back: {}; sync it to see them"
+msgstr "les modifications ont été enregistrées sur le serveur, mais il n'a pas pu être relu : {} ; synchronisez-le pour les voir"
 
 msgid "the client_id came in empty"
 msgstr "le client_id est arrivé vide"
@@ -9073,6 +9105,9 @@ msgstr "le serveur ne peut pas envoyer une partie d'un fichier, et celui-ci est 
 msgid "the server could not be reached"
 msgstr "le serveur est injoignable"
 
+msgid "the server could not be read: {}"
+msgstr "le serveur n'a pas pu être lu : {}"
+
 msgid "the server did not accept the session; sign in again"
 msgstr "le serveur n'a pas accepté la session ; reconnectez-vous"
 
@@ -9277,6 +9312,9 @@ msgstr "ce plugin n'a déclaré aucune autorisation réseau"
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "ce serveur ne peut pas déplacer une piste présente plus d'une fois dans la playlist"
 
+msgid "this server does not keep this field; save it to the sidecar on this device, or put it back"
+msgstr "ce serveur ne conserve pas ce champ ; enregistrez-le dans le fichier annexe de cet appareil, ou remettez-le comme avant"
+
 msgid "this server does not support deleting music from Chilpa"
 msgstr ""
 
@@ -9294,6 +9332,9 @@ msgstr "ce serveur lit les étiquettes et les pochettes dans ses fichiers et ne 
 
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "ce serveur retire en une fois toutes les copies d'une piste de la playlist ; retirez-les toutes ou modifiez-la sur le serveur"
+
+msgid "this server takes no cover from Chilpa; save the cover to the sidecar on this device"
+msgstr "ce serveur n'accepte pas de pochette venant de Chilpa ; enregistrez la pochette dans le fichier annexe de cet appareil"
 
 msgid "this track is on a server, and servers are not connected"
 msgstr "cette piste est sur un serveur, et les serveurs ne sont pas connectés"
@@ -9336,6 +9377,9 @@ msgstr "virtuel"
 
 msgid "vs {}"
 msgstr "vs {}"
+
+msgid "what the server says now could not be written down in the library: {}; sync it to see it"
+msgstr "ce que le serveur indique maintenant n'a pas pu être inscrit dans la bibliothèque : {} ; synchronisez-le pour le voir"
 
 msgid "what was saved could not be written down in the library: {}; rescan to see it"
 msgstr "ce qui a été enregistré n'a pas pu être consigné dans la bibliothèque : {} ; analysez à nouveau pour le voir"
@@ -9589,6 +9633,9 @@ msgstr "{} pistes de la liste ont disparu"
 
 msgid "{} of {}"
 msgstr "{} sur {}"
+
+msgid "{} of {} changes reached the server before it failed: {}"
+msgstr "{} modifications sur {} sont arrivées au serveur avant l'échec : {}"
 
 msgid "{} of {} chosen"
 msgstr "{} sur {} choisies"
