@@ -7291,6 +7291,9 @@ msgstr "Titeldetails · {}"
 msgid "Track format"
 msgstr "Format des Titels"
 
+msgid "Track info"
+msgstr "Titelinfo"
+
 msgid "Track lists"
 msgstr "Titellisten"
 

@@ -7300,6 +7300,9 @@ msgstr "Сведения о треке · {}"
 msgid "Track format"
 msgstr "Формат трека"
 
+msgid "Track info"
+msgstr "Информация о треке"
+
 msgid "Track lists"
 msgstr "Списки треков"
 

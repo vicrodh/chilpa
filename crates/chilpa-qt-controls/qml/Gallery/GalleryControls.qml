@@ -38,6 +38,8 @@ TitledFlow {
     ShortcutsSheet {}
     TrackInfoModal {}
     Item { width: Metrics.confirmWidth; height: Metrics.button32; TrackInfoLink {} }
+    TrackInfoModal { subject: "/music/Record/01 Song.flac"; subjectTitle: "Song" }
+    TrackInfoRequests { listenForRequests: false }
     CommandHelp { width: Metrics.settingsMaxWidth; room: Metrics.settingsMaxWidth; lines: [{usage:":help",description:"Command help"}] }
     ShortcutsEditor {}
     SleepTimer {}

@@ -7291,6 +7291,9 @@ msgstr "Nummerdetails · {}"
 msgid "Track format"
 msgstr "Formaat van nummer"
 
+msgid "Track info"
+msgstr "Nummerinfo"
+
 msgid "Track lists"
 msgstr "Nummerlijsten"
 

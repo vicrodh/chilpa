@@ -7291,6 +7291,9 @@ msgstr "Detalhes da faixa · {}"
 msgid "Track format"
 msgstr "Formato da faixa"
 
+msgid "Track info"
+msgstr "Informações da faixa"
+
 msgid "Track lists"
 msgstr "Listas de faixas"
 

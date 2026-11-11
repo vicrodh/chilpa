@@ -1,6 +1,7 @@
 import QtQuick
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as Confirmations
 import app.chilpa
+import app.chilpa.controls
 import app.chilpa.devices
 import app.chilpa.sources
 import app.chilpa.kit
@@ -21,7 +22,7 @@ CascadingMenu {
             pick: Icons.playlistAdd, album: Icons.disc, artist: SourceGlyphs.musicArtist,
             folder: Icons.folder, sync: Icons.deviceMobile,
             remove: Icons.trash, dequeue: Icons.trash, server_delete: Icons.trash,
-            up: Icons.chevronUp, down: Icons.chevronDown
+            up: Icons.chevronUp, down: Icons.chevronDown, info: Icons.infoCircle
         }
         entries = JSON.parse(model.menuJson(row)).map(function(entry) {
             entry.glyph = icons[(entry.act || "").split(":")[0]] || ""
@@ -74,7 +75,9 @@ CascadingMenu {
         else if (act === "server_delete") {
             const ids = JSON.parse(model.chosenTrackIdsJson(row))
             if (ids.length === 1) Sources.serverMediaRequested("track", ids[0])
-        } else if (act === "up" || act === "down")
+        } else if (act === "info")
+            NowAbout.trackInfoRequested(entry.path, entry.title)
+        else if (act === "up" || act === "down")
             model.moveInPlaylist(row, act === "up" ? -1 : 1)
         else
             model.go(row, act)

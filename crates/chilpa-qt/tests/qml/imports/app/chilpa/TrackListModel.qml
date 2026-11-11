@@ -59,7 +59,9 @@ ListModel {
             { act: "later", text: "Play later" },
             { separator: true },
             { act: "pick", text: "Add to playlist…" },
-            { act: "sync", text: "Sync to device…" }
+            { act: "sync", text: "Sync to device…" },
+            { separator: true },
+            { act: "info", text: "Track info", path: "/music/Track " + row + ".flac", title: "Track " + row }
         ])
     }
     function chosenTrackIdsJson(row) { return "[42,43]" }

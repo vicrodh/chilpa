@@ -7291,6 +7291,9 @@ msgstr "Detalles de la pista · {}"
 msgid "Track format"
 msgstr "Formato de la pista"
 
+msgid "Track info"
+msgstr "Información de la pista"
+
 msgid "Track lists"
 msgstr "Listas de pistas"
 

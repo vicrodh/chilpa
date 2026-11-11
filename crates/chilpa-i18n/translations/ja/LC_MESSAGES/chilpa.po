@@ -7282,6 +7282,9 @@ msgstr "トラックの詳細 · {}"
 msgid "Track format"
 msgstr "曲の形式"
 
+msgid "Track info"
+msgstr "トラック情報"
+
 msgid "Track lists"
 msgstr "トラック一覧"
 
