@@ -21,7 +21,9 @@
 //! - its own playlists, their entries in order, and the changes asked of
 //!   one: create, rename, delete, add, take out and reorder (`playlist`).
 //!   A media server has none (`Kind::has_playlists`);
-//! - where to read a track's original bytes, and a record's cover.
+//! - where to read a track's original bytes, and a record's cover;
+//! - the listener's ratings of tracks and records, read and written
+//!   (`rating`), on the kinds that keep them.
 
 pub mod dlna;
 pub mod jellyfin;
@@ -30,6 +32,7 @@ pub mod media;
 pub mod net;
 pub mod playlist;
 pub mod plex;
+pub mod rating;
 pub mod subsonic;
 mod text;
 
@@ -37,6 +40,7 @@ pub use model::{Client, Credential, Details, ExtensionStatus, Failure, Kind, Lib
 pub use media::MediaKind;
 pub use net::{Net, Reply, Request};
 pub use playlist::{Change, Entry, Playlist, PlaylistListing, PlaylistTracks, PLAYLISTS, PLAYLIST_TRACKS};
+pub use rating::{RatingRead, Rated};
 
 /// Whether the server answers and the credential is still good.
 pub fn ping(net: &dyn Net, server: &Server, key: &Credential) -> Result<(), Failure> {

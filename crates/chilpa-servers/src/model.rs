@@ -277,6 +277,10 @@ pub struct Page {
     /// Containers of a media server that could not be read and were left
     /// out, so the walk went on past them. Such a page is partial too.
     pub skipped: u64,
+    /// The listener's ratings of what the page listed, on the server's own
+    /// scale, for a kind that keeps them (`Kind::rating_scale`); 0 is
+    /// unrated. Empty for one that keeps none.
+    pub ratings: Vec<crate::rating::RatingRead>,
 }
 
 /// Where a track's bytes are read from.

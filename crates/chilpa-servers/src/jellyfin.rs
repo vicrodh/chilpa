@@ -213,7 +213,7 @@ pub fn page(net: &dyn Net, server: &Server, key: &Credential, cursor: Option<&st
     } else {
         None
     };
-    Ok(Page { tracks, next: next.map(|c| serde_json::to_string(&c).unwrap_or_default()), total, scope: view.clone(), partial, skipped: 0 })
+    Ok(Page { tracks, next: next.map(|c| serde_json::to_string(&c).unwrap_or_default()), total, scope: view.clone(), partial, skipped: 0, ratings: Vec::new() })
 }
 
 pub fn details(net: &dyn Net, server: &Server, key: &Credential, ids: &[String]) -> Result<Vec<Track>, Failure> {

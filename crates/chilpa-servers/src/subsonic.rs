@@ -25,6 +25,7 @@ use std::collections::BTreeMap;
 
 use crate::model::{extension_of, image, Client, Credential, ExtensionStatus, Failure, Kind, Library, Page, Probe, Server, Stream, Track};
 use crate::net::{Net, Request};
+use crate::rating::{user_rating, RatingRead, Rated};
 use crate::text::{artist_line, encode, id, number, random_hex, string, unix_time};
 
 pub mod playlists;
@@ -48,7 +49,7 @@ fn credentials(key: &Credential) -> String {
     }
 }
 
-fn url(address: &str, endpoint: &str, key: Option<&Credential>, extra: &str) -> String {
+pub(crate) fn url(address: &str, endpoint: &str, key: Option<&Credential>, extra: &str) -> String {
     let auth = key.map(credentials).filter(|a| !a.is_empty()).map(|a| format!("{a}&")).unwrap_or_default();
     format!("{address}/rest/{endpoint}.view?{auth}v={VERSION}&c={}&f=json{extra}", Client::PRODUCT)
 }
@@ -60,7 +61,7 @@ fn ask(net: &dyn Net, url: String) -> Result<Value, Failure> {
 }
 
 /// The same for any request, with what each error code means for it.
-fn send(net: &dyn Net, request: Request, error: fn(&Value) -> Failure) -> Result<Value, Failure> {
+pub(crate) fn send(net: &dyn Net, request: Request, error: fn(&Value) -> Failure) -> Result<Value, Failure> {
     let reply = net.send(&request).map_err(Failure::Unreachable)?;
     if (300..400).contains(&reply.status) {
         return Err(Failure::moved(reply.headers.get("location").map(String::as_str).unwrap_or("")));
@@ -86,7 +87,7 @@ fn not_subsonic(status: u16) -> Failure {
     Failure::Unexpected(chilpa_i18n::t_args("that address does not answer like a Subsonic server (HTTP {})", &[&status.to_string()]))
 }
 
-fn error_of(error: &Value) -> Failure {
+pub(crate) fn error_of(error: &Value) -> Failure {
     let code = error.get("code").and_then(Value::as_i64).unwrap_or(0);
     let message = string(error, "message").unwrap_or_default();
     match code {
@@ -256,6 +257,7 @@ pub fn page(net: &dyn Net, server: &Server, key: &Credential, cursor: Option<&st
     let list = ask(net, url(&server.address, "getAlbumList2", Some(key), &format!("&type=alphabeticalByName&size={RECORDS}&offset={}{folder}", cursor.offset)))?;
     let records = list.get("albumList2").and_then(|l| l.get("album")).and_then(Value::as_array).cloned().unwrap_or_default();
     let mut tracks = Vec::new();
+    let mut ratings = Vec::new();
     let mut partial = false;
     for record in &records {
         let Some(record_id) = id(record, "id") else {
@@ -267,9 +269,13 @@ pub fn page(net: &dyn Net, server: &Server, key: &Credential, cursor: Option<&st
             partial = true;
             continue;
         };
+        ratings.push(RatingRead { rated: Rated::Album, id: record_id.clone(), value: user_rating(album) });
         for song in album.get("song").and_then(Value::as_array).into_iter().flatten() {
             match track(song, album) {
-                Some(track) => tracks.push(track),
+                Some(track) => {
+                    ratings.push(RatingRead { rated: Rated::Track, id: track.id.clone(), value: user_rating(song) });
+                    tracks.push(track);
+                }
                 None => partial = true,
             }
         }
@@ -281,7 +287,7 @@ pub fn page(net: &dyn Net, server: &Server, key: &Credential, cursor: Option<&st
     } else {
         None
     };
-    Ok(Page { tracks, next: next.map(|c| serde_json::to_string(&c).unwrap_or_default()), total: None, scope: cursor.folder.to_string(), partial, skipped: 0 })
+    Ok(Page { tracks, next: next.map(|c| serde_json::to_string(&c).unwrap_or_default()), total: None, scope: cursor.folder.to_string(), partial, skipped: 0, ratings })
 }
 
 /// How many songs the chosen folders have now, from the record list alone.
