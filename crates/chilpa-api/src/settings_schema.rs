@@ -40,6 +40,8 @@ pub enum Control {
     /// The theme's picker: the list with its light/dark filter, and under
     /// it the options of the auto and the custom themes.
     Theme,
+    /// A line of text, kept when Enter is pressed or the field is left.
+    Text,
 }
 
 impl Control {
@@ -58,6 +60,7 @@ impl Control {
             Control::Slider => "slider",
             Control::File => "file",
             Control::Theme => "theme",
+            Control::Text => "text",
         }
     }
 }

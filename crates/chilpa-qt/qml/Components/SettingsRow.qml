@@ -70,6 +70,7 @@ Item {
             : row.control === "slider" ? slider
             : row.control === "file" ? file
             : row.control === "theme" ? row.themePicker
+            : row.control === "text" ? textField
             : null
     }
 
@@ -197,6 +198,7 @@ Item {
             onCleared: row.page.set(row.key, "")
         }
     }
+    Component { id: textField; TextField { objectName: "settingText." + row.key; text: row.value; onEditingFinished: if (text !== row.value) row.page.set(row.key, text) } }
     Component { id: verdict; Text {
         text: row.value; font.pointSize: Type.row
         color: row.value === "bit-perfect" ? Theme.color.accent : Theme.color.textSecondary
