@@ -68,11 +68,13 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
             for module in sorted(modules.iterdir()):
                 if module.is_dir():
                     shutil.copytree(module, imports / "app/chilpa" / module.name, dirs_exist_ok=True)
+    # The test translator reads the shipped catalogs from beside itself.
+    shutil.copytree(root / "crates/chilpa-i18n/translations", imports / "app/chilpa/kit/translations")
     if native_spectrum:
         module = imports / "app/chilpa/graphics/qmldir"
         module.write_text("\n".join(line for line in module.read_text().splitlines() if not line.startswith("SpectrumItem ")) + "\n")
     environment = dict(os.environ, QT_QPA_PLATFORM="offscreen", CHILPA_QML_RESOURCES=str(temporary / "resources.rcc"),
-                       LD_PRELOAD=str(temporary / "loader.so"))
+                       LD_PRELOAD=str(temporary / "loader.so"), QML_XHR_ALLOW_FILE_READ="1")
     failed = []
     for test in tests:
         # I share the prepared files, while each suite keeps its own Qt process.

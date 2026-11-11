@@ -135,10 +135,12 @@ Popup {
             }
         }
         ChoiceRow {
+            id: translationChoice
             width: parent.width
             title: I18n.tr("Translation", I18n.rev)
             SelectField {
-                width: Metrics.lyricsLanguage
+                // The chosen language said whole, up to the row.
+                width: Math.min(Math.max(Metrics.lyricsLanguage, wholeWidth), translationChoice.width)
                 values: flyout.languages
                 options: [I18n.tr("Auto (app language)", I18n.rev), I18n.tr("English", I18n.rev), I18n.tr("Spanish", I18n.rev),
                     I18n.tr("French", I18n.rev), I18n.tr("German", I18n.rev), I18n.tr("Italian", I18n.rev), I18n.tr("Portuguese", I18n.rev),
@@ -188,18 +190,28 @@ Popup {
                 onActivated: (index) => flyout.choose("dimming", flyout.dimmingLevels[index])
             }
         }
-        Row {
-            anchors.right: parent.right
-            topPadding: Metrics.gap8
-            spacing: Metrics.gap8
+        // The two buttons at the right, one over the other when they do not
+        // fit side by side.
+        Item {
+            id: foot
+            width: parent.width
+            readonly property bool together: copy.width + Metrics.gap8 + reset.width <= width
+            height: Metrics.gap8 + (together ? Math.max(copy.height, reset.height) : copy.height + Metrics.gap8 + reset.height) // derived: the gap above, and one or two lines of buttons
 
             PillButton {
+                id: copy
+                x: foot.width - width - (foot.together ? reset.width + Metrics.gap8 : 0)
+                y: Metrics.gap8
+                maximumWidth: foot.width
                 text: I18n.tr("Copy lyrics", I18n.rev)
                 glyph: Icons.copy
                 enabled: flyout.canCopy
                 onClicked: flyout.copy()
             }
             PillButton {
+                id: reset
+                x: foot.width - width
+                y: foot.together ? copy.y : copy.y + copy.height + Metrics.gap8
                 text: I18n.tr("Reset", I18n.rev)
                 onClicked: flyout.reset()
             }

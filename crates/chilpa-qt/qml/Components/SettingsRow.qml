@@ -26,7 +26,13 @@ Item {
     readonly property bool group: rowKind === 0
     readonly property bool line: rowKind === 2
     readonly property bool editingServer: page && page.editingServerKey === key && key.startsWith("sources.server/")
-    readonly property real baseHeight: group ? Metrics.settingsGroup : Math.max(line ? Metrics.menuItem : Metrics.settingsRow, texts.implicitHeight + Metrics.gap12)
+    // Beside its control the texts get as much room as the control takes, or
+    // what they need on one line if that is less, and never less than their
+    // longest word; where the row is too narrow for that the control goes
+    // under them and the row grows.
+    readonly property bool stacked: !group && controls.width > 0 && width - texts.x - controls.width - Metrics.gap16 < Math.max(texts.least, Math.min(texts.natural, controls.width))
+    readonly property real baseHeight: group ? Metrics.settingsGroup : stacked ? texts.implicitHeight + Metrics.gap8 + controls.height + Metrics.gap12
+        : Math.max(line ? Metrics.menuItem : Metrics.settingsRow, texts.implicitHeight + Metrics.gap12)
     opacity: control === "fixed" ? Metrics.disabledOpacity : 1
     implicitHeight: baseHeight + (editingServer ? editor.implicitHeight + Metrics.gap12 : 0) + (themeBox ? options.implicitHeight + Metrics.gap12 : 0)
     Text {
@@ -42,11 +48,9 @@ Item {
     SettingText {
         id: texts
         visible: !row.group
-        anchors.left: parent.left
-        anchors.leftMargin: row.line ? Metrics.gap16 : 0
-        anchors.right: controls.left
-        anchors.rightMargin: Metrics.gap16
-        y: (row.baseHeight - height) / 2
+        x: row.line ? Metrics.gap16 : 0
+        width: row.width - x - (row.stacked ? 0 : controls.width + Metrics.gap16)
+        y: row.stacked ? Metrics.gap6 : (row.baseHeight - height) / 2
         title: row.title
         description: row.description
         line: row.line
@@ -55,8 +59,8 @@ Item {
     Loader {
         id: controls
         visible: !row.group
-        anchors.right: parent.right
-        y: (row.baseHeight - height) / 2
+        x: row.stacked ? texts.x : row.width - width
+        y: row.stacked ? texts.y + texts.height + Metrics.gap8 : (row.baseHeight - height) / 2
         sourceComponent: row.line || (row.control === "none" && row.value !== "") ? verdict
             : row.control === "toggle" || (row.control === "fixed" && row.options.length === 0) ? toggle
             : row.control === "select" || row.control === "device" || row.control === "fixed" ? select
@@ -93,6 +97,9 @@ Item {
         id: select
         SelectField {
             objectName: "settingSelect." + row.key
+            // Its options whole, in the field and in the list, as far as the row goes.
+            width: Math.min(wholeWidth, row.width - texts.x)
+            menuWidthLimit: Math.max(Metrics.menuMaxWidth, row.width - texts.x)
             enabled: row.control !== "fixed"
             options: row.options
             values: row.optionValues

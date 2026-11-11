@@ -31,7 +31,8 @@ QtObject {
     readonly property int rowApartX: 8
     readonly property int rowApartY: 4
     readonly property int labelWide: 104
-    readonly property int labelWideLong: 124
+    // The most of a row the label column takes before names wrap.
+    readonly property real labelShare: 0.2
     readonly property int labelIcon: 15
     readonly property int labelApart: 7
     readonly property int innerApart: 6
@@ -130,6 +131,8 @@ QtObject {
     readonly property int pickPad: 8
     readonly property int pickApart: 10
     readonly property int pickFieldsWide: 158
+    // The most of the picker its field names take before they elide.
+    readonly property real pickFieldsShare: 0.3
     readonly property int pickFieldRow: 28
     readonly property int pickFieldsShown: 9
     readonly property int pickFieldRound: 6

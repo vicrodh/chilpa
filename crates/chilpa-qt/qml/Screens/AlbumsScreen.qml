@@ -38,125 +38,98 @@ Item {
         columns: grid.columns
     }
 
-    Item {
+    ScreenHead {
         id: head
         x: Metrics.contentX
         y: Metrics.contentTop
         width: page.width - Metrics.contentX * 2 // derived: padding on both sides
-        height: Metrics.shelfHeader
+        title: page.source ? page.about.title || page.about.name || "" : I18n.tr("Albums", I18n.rev)
+        count: page.about.entity === "playlist" ? I18n.trCount("{} playlist", "{} playlists", all.albums, I18n.rev)
+            : page.about.entity === "label" ? I18n.trCount("{} label", "{} labels", all.albums, I18n.rev)
+            : page.about.entity === "artist" ? I18n.trCount("{} artist", "{} artists", all.albums, I18n.rev) : I18n.trCount("{} album", "{} albums", all.albums, I18n.rev)
+        flexible: find
 
-        Text {
-            id: title
+        SearchField {
+            id: find
             anchors.verticalCenter: parent.verticalCenter
-            text: page.source ? page.about.title || page.about.name || "" : I18n.tr("Albums", I18n.rev)
-            font.pointSize: Type.title
-            font.weight: Type.bold
-            font.letterSpacing: Type.titleTracking
-            color: Theme.color.textPrimary
+            width: Math.max(0, Math.min(Metrics.screenSearch, head.flexibleRoom))
+            placeholder: I18n.tr("Filter albums", I18n.rev)
+            onEscaped: text = ""
         }
-        // How many there are, in the room the title and the tools leave.
-        Text {
-            anchors.left: title.right
-            anchors.leftMargin: Metrics.gap12
-            anchors.right: tools.left
-            anchors.rightMargin: Metrics.gap12
-            anchors.baseline: title.baseline
-            text: page.about.entity === "playlist" ? I18n.trCount("{} playlist", "{} playlists", all.albums, I18n.rev)
-                : page.about.entity === "label" ? I18n.trCount("{} label", "{} labels", all.albums, I18n.rev)
-                : page.about.entity === "artist" ? I18n.trCount("{} artist", "{} artists", all.albums, I18n.rev) : I18n.trCount("{} album", "{} albums", all.albums, I18n.rev)
-            elide: Text.ElideRight
-            font.pointSize: Type.meta
-            color: Theme.color.textSecondary
-        }
-        Row {
-            id: tools
-            anchors.right: parent.right
+        SourceLibraryControls { id: sourceControls; visible: !!page.source; source: page.source; entity: page.about.entity || "album" }
+        SortButton {
+            id: sort
+            visible: !page.source
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Metrics.gap12
+            value: Library.albumOrder
+            options: [
+                { value: "artist", text: I18n.tr("Artist", I18n.rev) },
+                { value: "title", text: I18n.tr("Title", I18n.rev) },
+                { value: "year", text: I18n.tr("Year", I18n.rev), descending: true },
+                { value: "added", text: I18n.tr("Date added", I18n.rev), descending: true },
+                { value: "played", text: I18n.tr("Most played", I18n.rev), descending: true },
+                { value: "last_played", text: I18n.tr("Recently played", I18n.rev), descending: true }
+            ]
+            onPicked: (value) => Library.albumOrder = value
+        }
+        SortButton {
+            id: grouping
+            objectName: "albumsGrouping"
+            visible: !page.source
+            anchors.verticalCenter: parent.verticalCenter
+            glyph: Icons.stack2
+            directed: false
+            value: page.group
+            options: [
+                { value: "", text: I18n.tr("No grouping", I18n.rev) },
+                { value: "letter", text: I18n.tr("By letter", I18n.rev) },
+                { value: "artist", text: I18n.tr("By artist", I18n.rev) },
+                { value: "year", text: I18n.tr("By year", I18n.rev) },
+                { value: "decade", text: I18n.tr("By decade", I18n.rev) },
+                { value: "genre", text: I18n.tr("By genre", I18n.rev) },
+                { value: "label", text: I18n.tr("By label", I18n.rev) },
+                { value: "composer", text: I18n.tr("By composer", I18n.rev) },
+                { value: "quality", text: I18n.tr("By quality", I18n.rev) },
+                { value: "source", text: I18n.tr("By source", I18n.rev) },
+                { value: "added", text: I18n.tr("By date added", I18n.rev) },
+                { value: "type", text: I18n.tr("By release type", I18n.rev) },
+                { value: "plays", text: I18n.tr("By plays", I18n.rev) }
+            ]
+            onPicked: (value) => { page.group = value; SettingsModel.keep("ui.albums.group", value) }
+        }
+        IconButton {
+            id: filterButton
+            visible: !page.source
+            anchors.verticalCenter: parent.verticalCenter
+            tip: I18n.tr("Quality, format and source filters", I18n.rev)
+            glyph: Icons.filter
+            round: true
+            checked: Library.extraFiltered || filters.opened
+            onClicked: filters.opened ? filters.close() : filters.open()
 
-            SearchField {
-                id: find
-                anchors.verticalCenter: parent.verticalCenter
-                // What the title and the other tools leave, and no less than it takes to type in.
-                width: Math.max(Metrics.folderTreeMin, Math.min(Metrics.screenSearch, head.width - title.width - sort.width - grouping.width - filterButton.width - views.width - Metrics.folderTreeMin))
-                placeholder: I18n.tr("Filter albums", I18n.rev)
-                onEscaped: text = ""
+            SourcesPopover {
+                id: filters
+                x: filterButton.width - width
+                y: filterButton.height + Metrics.gap6
             }
-            SourceLibraryControls { id: sourceControls; visible: !!page.source; source: page.source; entity: page.about.entity || "album" }
-            SortButton {
-                id: sort
-                visible: !page.source
-                anchors.verticalCenter: parent.verticalCenter
-                value: Library.albumOrder
-                options: [
-                    { value: "artist", text: I18n.tr("Artist", I18n.rev) },
-                    { value: "title", text: I18n.tr("Title", I18n.rev) },
-                    { value: "year", text: I18n.tr("Year", I18n.rev), descending: true },
-                    { value: "added", text: I18n.tr("Date added", I18n.rev), descending: true },
-                    { value: "played", text: I18n.tr("Most played", I18n.rev), descending: true },
-                    { value: "last_played", text: I18n.tr("Recently played", I18n.rev), descending: true }
-                ]
-                onPicked: (value) => Library.albumOrder = value
-            }
-            SortButton {
-                id: grouping
-                objectName: "albumsGrouping"
-                visible: !page.source
-                anchors.verticalCenter: parent.verticalCenter
-                glyph: Icons.stack2
-                directed: false
-                value: page.group
-                options: [
-                    { value: "", text: I18n.tr("No grouping", I18n.rev) },
-                    { value: "letter", text: I18n.tr("By letter", I18n.rev) },
-                    { value: "artist", text: I18n.tr("By artist", I18n.rev) },
-                    { value: "year", text: I18n.tr("By year", I18n.rev) },
-                    { value: "decade", text: I18n.tr("By decade", I18n.rev) },
-                    { value: "genre", text: I18n.tr("By genre", I18n.rev) },
-                    { value: "label", text: I18n.tr("By label", I18n.rev) },
-                    { value: "composer", text: I18n.tr("By composer", I18n.rev) },
-                    { value: "quality", text: I18n.tr("By quality", I18n.rev) },
-                    { value: "source", text: I18n.tr("By source", I18n.rev) },
-                    { value: "added", text: I18n.tr("By date added", I18n.rev) },
-                    { value: "type", text: I18n.tr("By release type", I18n.rev) },
-                    { value: "plays", text: I18n.tr("By plays", I18n.rev) }
-                ]
-                onPicked: (value) => { page.group = value; SettingsModel.keep("ui.albums.group", value) }
-            }
-            IconButton {
-                id: filterButton
-                visible: !page.source
-                anchors.verticalCenter: parent.verticalCenter
-                tip: I18n.tr("Quality, format and source filters", I18n.rev)
-                glyph: Icons.filter
-                round: true
-                checked: Library.extraFiltered || filters.opened
-                onClicked: filters.opened ? filters.close() : filters.open()
-
-                SourcesPopover {
-                    id: filters
-                    x: filterButton.width - width
-                    y: filterButton.height + Metrics.gap6
-                }
-            }
-            AlbumColumnsGear {
-                visible: page.rows
-                anchors.verticalCenter: parent.verticalCenter
-                shown: page.listColumns
-                onChosen: (columns) => { page.listColumns = columns; SettingsModel.keep("ui.albums.listColumns", columns.join(",") || "-") }
-            }
-            SegmentedControl {
-                id: views
-                anchors.verticalCenter: parent.verticalCenter
-                options: [
-                    { glyph: Icons.list, tip: I18n.tr("List", I18n.rev) },
-                    { glyph: Icons.layoutGrid, tip: I18n.tr("Grid", I18n.rev) }
-                ]
-                current: page.rows ? 0 : 1
-                onActivated: (index) => {
-                    page.rows = index === 0
-                    SettingsModel.keep("ui.albums.view", page.rows ? "list" : "grid")
-                }
+        }
+        AlbumColumnsGear {
+            visible: page.rows
+            anchors.verticalCenter: parent.verticalCenter
+            shown: page.listColumns
+            onChosen: (columns) => { page.listColumns = columns; SettingsModel.keep("ui.albums.listColumns", columns.join(",") || "-") }
+        }
+        SegmentedControl {
+            id: views
+            anchors.verticalCenter: parent.verticalCenter
+            options: [
+                { glyph: Icons.list, tip: I18n.tr("List", I18n.rev) },
+                { glyph: Icons.layoutGrid, tip: I18n.tr("Grid", I18n.rev) }
+            ]
+            current: page.rows ? 0 : 1
+            onActivated: (index) => {
+                page.rows = index === 0
+                SettingsModel.keep("ui.albums.view", page.rows ? "list" : "grid")
             }
         }
     }

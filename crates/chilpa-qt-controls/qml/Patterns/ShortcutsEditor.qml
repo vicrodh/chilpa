@@ -19,9 +19,6 @@ Modal {
     readonly property bool recording: (keys.recording || "") !== ""
     readonly property var keymaps: ["default", "letters", "vi"]
 
-    // The room the window leaves it, once it is in one.
-    readonly property real room: parent ? parent.height - Metrics.shortcutsAround : 0
-
     preferredWidth: Math.min((parent ? parent.width : 0) - Metrics.shortcutsAround, Metrics.shortcutsEditor)
     // While a key is being recorded Escape is that recording's, not the
     // editor's.
@@ -42,22 +39,32 @@ Modal {
         width: editor.width - Metrics.modalInsets
         spacing: Metrics.gap16
 
+        // The title and its count, the keymap beside them while all of it
+        // fits one line and under them when it does not, the close button in
+        // the corner.
         Item {
+            id: head
             width: parent.width
-            implicitHeight: close.height
+            readonly property real line: Math.max(title.height, close.height)
+            readonly property bool stacked: title.width + keymap.width + close.width + keymap.spacing * 2 > width // derived: a gap on each side of the keymap
+            implicitHeight: stacked ? line + keymap.spacing + keymap.height : Math.max(line, keymap.height)
 
             Row {
-                anchors.verticalCenter: parent.verticalCenter
+                id: title
+                y: (head.line - height) / 2 // derived: centred on the first line
                 spacing: Metrics.gap10
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
+                    width: Math.min(implicitWidth, head.width - close.width - title.spacing - (count.visible ? count.width + title.spacing : 0))
                     text: I18n.tr("Customize Shortcuts", I18n.rev)
+                    wrapMode: Text.Wrap
                     font.pointSize: Type.section
                     font.weight: Type.semibold
                     color: Theme.color.textPrimary
                 }
                 Chip {
+                    id: count
                     objectName: "modified"
                     anchors.verticalCenter: parent.verticalCenter
                     visible: (editor.keys.modified || 0) > 0
@@ -65,8 +72,9 @@ Modal {
                 }
             }
             Row {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
+                id: keymap
+                x: head.stacked ? 0 : close.x - spacing - width
+                y: head.stacked ? head.line + spacing : (head.line - height) / 2 // derived: under the title, or centred beside it
                 spacing: Metrics.gap10
 
                 Text {
@@ -82,21 +90,25 @@ Modal {
                     current: Math.max(0, editor.keymaps.indexOf(editor.keys.keymap))
                     onActivated: (index) => Hotkeys.command("keymap", editor.keymaps[index])
                 }
-                IconButton {
-                    id: close
-                    tip: I18n.tr("Close", I18n.rev)
-                    glyph: Icons.x
-                    onClicked: editor.close()
-                }
+            }
+            IconButton {
+                id: close
+                anchors.right: parent.right
+                y: (head.line - height) / 2 // derived: centred on the first line
+                tip: I18n.tr("Close", I18n.rev)
+                glyph: Icons.x
+                onClicked: editor.close()
             }
         }
+        // What the modal's height leaves once its head and foot are in.
         ShortcutColumns {
             width: parent.width
-            height: Math.min(implicitHeight, Math.max(0, editor.room - Sizes.sheetChrome))
+            height: Math.min(implicitHeight, Math.max(0, editor.maximumHeight - Metrics.modalInsets - head.height - foot.height - parent.spacing * 2)) // derived: the gaps above and below
             keys: editor.keys
             editing: true
         }
         PillButton {
+            id: foot
             objectName: "resetAll"
             anchors.horizontalCenter: parent.horizontalCenter
             enabled: (editor.keys.modified || 0) > 0

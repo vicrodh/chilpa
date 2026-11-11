@@ -65,117 +65,91 @@ Item {
         onTriggered: page.typed = find.text.trim()
     }
 
-    Item {
+    ScreenHead {
         id: head
         x: Metrics.contentX
         y: Metrics.contentTop
         width: page.width - Metrics.contentX * 2 // derived: padding on both sides
-        height: Metrics.shelfHeader
+        title: I18n.tr("Tracks", I18n.rev)
+        count: tracks.summary
 
-        Text {
-            id: title
+
+        SearchField {
+            id: find
             anchors.verticalCenter: parent.verticalCenter
-            text: I18n.tr("Tracks", I18n.rev)
-            font.pointSize: Type.title
-            font.weight: Type.bold
-            font.letterSpacing: Type.titleTracking
-            color: Theme.color.textPrimary
+            width: Metrics.screenSearch
+            placeholder: I18n.tr("Search", I18n.rev)
+            text: page.typed
+            onTextChanged: if (text.trim() !== page.typed) settle.restart()
+            onEscaped: text = ""
         }
-        // How many there are, in the room the title and the tools leave.
-        Text {
-            anchors.left: title.right
-            anchors.leftMargin: Metrics.gap12
-            anchors.right: tools.left
-            anchors.rightMargin: Metrics.gap12
-            anchors.baseline: title.baseline
-            text: tracks.summary
-            elide: Text.ElideRight
-            font.pointSize: Type.meta
-            color: Theme.color.textSecondary
-        }
-        Row {
-            id: tools
-            anchors.right: parent.right
+        SortButton {
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Metrics.gap12
+            value: page.order
+            options: [
+                { value: "default", text: I18n.tr("Default", I18n.rev), fixed: true },
+                { value: "artist", text: I18n.tr("Artist", I18n.rev) },
+                { value: "title", text: I18n.tr("Title", I18n.rev) },
+                { value: "album", text: I18n.tr("Album", I18n.rev) },
+                { value: "year", text: I18n.tr("Year", I18n.rev) },
+                { value: "added", text: I18n.tr("Date added", I18n.rev), descending: true },
+                { value: "duration", text: I18n.tr("Duration", I18n.rev) }
+            ]
+            onPicked: (value) => {
+                page.order = value
+                SettingsModel.keep("ui.tracks.order", value)
+            }
+        }
+        SortButton {
+            objectName: "tracksGrouping"
+            anchors.verticalCenter: parent.verticalCenter
+            glyph: Icons.stack2
+            directed: false
+            value: page.group
+            options: [
+                { value: "off", text: I18n.tr("No grouping", I18n.rev) },
+                { value: "album", text: I18n.tr("By album", I18n.rev) },
+                { value: "artist", text: I18n.tr("By artist", I18n.rev) },
+                { value: "name", text: I18n.tr("By name", I18n.rev) },
+                { value: "year", text: I18n.tr("By year", I18n.rev) },
+                { value: "decade", text: I18n.tr("By decade", I18n.rev) },
+                { value: "genre", text: I18n.tr("By genre", I18n.rev) },
+                { value: "label", text: I18n.tr("By label", I18n.rev) },
+                { value: "composer", text: I18n.tr("By composer", I18n.rev) },
+                { value: "plays", text: I18n.tr("By plays", I18n.rev) }
+            ]
+            onPicked: (value) => {
+                page.group = value
+                SettingsModel.keep("ui.tracks.group", value)
+            }
+        }
+        IconButton {
+            id: filterButton
+            anchors.verticalCenter: parent.verticalCenter
+            tip: I18n.tr("Quality, format, source and rating filters", I18n.rev)
+            glyph: Icons.filter
+            round: true
+            checked: Library.extraFiltered || filters.opened || page.ratings.length > 0
+            onClicked: filters.opened ? filters.close() : filters.open()
 
-            SearchField {
-                id: find
-                anchors.verticalCenter: parent.verticalCenter
-                width: Metrics.screenSearch
-                placeholder: I18n.tr("Search", I18n.rev)
-                text: page.typed
-                onTextChanged: if (text.trim() !== page.typed) settle.restart()
-                onEscaped: text = ""
+            SourcesPopover {
+                id: filters
+                showAlbumGrouping: false
+                ratings: page.ratings
+                onRatingsChosen: (chosen) => page.ratings = chosen
+                x: filterButton.width - width
+                y: filterButton.height + Metrics.gap6
             }
-            SortButton {
-                anchors.verticalCenter: parent.verticalCenter
-                value: page.order
-                options: [
-                    { value: "default", text: I18n.tr("Default", I18n.rev), fixed: true },
-                    { value: "artist", text: I18n.tr("Artist", I18n.rev) },
-                    { value: "title", text: I18n.tr("Title", I18n.rev) },
-                    { value: "album", text: I18n.tr("Album", I18n.rev) },
-                    { value: "year", text: I18n.tr("Year", I18n.rev) },
-                    { value: "added", text: I18n.tr("Date added", I18n.rev), descending: true },
-                    { value: "duration", text: I18n.tr("Duration", I18n.rev) }
-                ]
-                onPicked: (value) => {
-                    page.order = value
-                    SettingsModel.keep("ui.tracks.order", value)
-                }
-            }
-            SortButton {
-                objectName: "tracksGrouping"
-                anchors.verticalCenter: parent.verticalCenter
-                glyph: Icons.stack2
-                directed: false
-                value: page.group
-                options: [
-                    { value: "off", text: I18n.tr("No grouping", I18n.rev) },
-                    { value: "album", text: I18n.tr("By album", I18n.rev) },
-                    { value: "artist", text: I18n.tr("By artist", I18n.rev) },
-                    { value: "name", text: I18n.tr("By name", I18n.rev) },
-                    { value: "year", text: I18n.tr("By year", I18n.rev) },
-                    { value: "decade", text: I18n.tr("By decade", I18n.rev) },
-                    { value: "genre", text: I18n.tr("By genre", I18n.rev) },
-                    { value: "label", text: I18n.tr("By label", I18n.rev) },
-                    { value: "composer", text: I18n.tr("By composer", I18n.rev) },
-                    { value: "plays", text: I18n.tr("By plays", I18n.rev) }
-                ]
-                onPicked: (value) => {
-                    page.group = value
-                    SettingsModel.keep("ui.tracks.group", value)
-                }
-            }
-            IconButton {
-                id: filterButton
-                anchors.verticalCenter: parent.verticalCenter
-                tip: I18n.tr("Quality, format, source and rating filters", I18n.rev)
-                glyph: Icons.filter
-                round: true
-                checked: Library.extraFiltered || filters.opened || page.ratings.length > 0
-                onClicked: filters.opened ? filters.close() : filters.open()
-
-                SourcesPopover {
-                    id: filters
-                    showAlbumGrouping: false
-                    ratings: page.ratings
-                    onRatingsChosen: (chosen) => page.ratings = chosen
-                    x: filterButton.width - width
-                    y: filterButton.height + Metrics.gap6
-                }
-            }
-            IconButton {
-                anchors.verticalCenter: parent.verticalCenter
-                tip: I18n.tr("Select tracks", I18n.rev)
-                glyph: Icons.checkbox
-                round: true
-                checked: page.selectionMode
-                onClicked: {
-                    page.selectionMode = !page.selectionMode
-                    tracks.clearSelection()
-                }
+        }
+        IconButton {
+            anchors.verticalCenter: parent.verticalCenter
+            tip: I18n.tr("Select tracks", I18n.rev)
+            glyph: Icons.checkbox
+            round: true
+            checked: page.selectionMode
+            onClicked: {
+                page.selectionMode = !page.selectionMode
+                tracks.clearSelection()
             }
         }
     }

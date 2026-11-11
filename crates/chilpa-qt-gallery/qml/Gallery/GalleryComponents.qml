@@ -79,6 +79,7 @@ TitledFlow {
             PlayingIndicator {}
         }
         SectionHeader { width: parent.width; title: "Section header"; link: "See all" }
+        ScreenHead { width: parent.width; title: "Albums"; count: "1,234 albums" }
         AnimatedCover { width: Metrics.heroArt; height: width; colors: [Theme.color.surfacePanel, Theme.color.accent, Theme.color.statusWarning]; label: "Daily mix" }
         ScrollMemory { key: "gallery" }
         LibraryPanes { width: parent.width; height: Metrics.panesHeight }

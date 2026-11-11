@@ -8,6 +8,7 @@ crate's test doubles on the import path.
 
     run_qml.py <name> [<name> ...]     # tst_<name>.qml, in whichever crate
 """
+import os
 import pathlib
 import shutil
 import subprocess
@@ -48,10 +49,13 @@ with tempfile.TemporaryDirectory(prefix="chilpa-shared-qml-") as directory:
             if (root / "crates" / crate / part).is_dir():
                 shutil.copytree(root / "crates" / crate / part, stage / "crates" / crate / part)
     shutil.copytree(root / "crates/chilpa-qt-kit/assets", stage / "crates/chilpa-qt-kit/assets")
+    # The test translator reads the shipped catalogs from beside itself.
+    shutil.copytree(root / "crates/chilpa-i18n/translations", stage / "crates/chilpa-qt-kit/tests/qml/imports/app/chilpa/kit/translations")
     for path in stage.rglob("*.qml"):
         text = path.read_text()
         for crate, prefix in CRATES.items():
             text = text.replace(prefix, (stage / "crates" / crate / "qml").as_uri() + "/")
+        text = text.replace("qrc:/qt/qml/app/chilpa/kit/assets/", (stage / "crates/chilpa-qt-kit/assets").as_uri() + "/")
         path.write_text(text)
     imports = [str(found) for found in sorted(stage.glob("crates/*/tests/qml/imports"))]
     # I give the complete shell doubles priority over the kit's minimal module.
@@ -65,4 +69,4 @@ with tempfile.TemporaryDirectory(prefix="chilpa-shared-qml-") as directory:
         command = ["/usr/lib64/qt6/bin/qmltestrunner", "-platform", "offscreen"]
         for found in imports:
             command += ["-import", found]
-        subprocess.run(command + ["-input", str(candidates[0])], check=True)
+        subprocess.run(command + ["-input", str(candidates[0])], check=True, env=dict(os.environ, QML_XHR_ALLOW_FILE_READ="1"))

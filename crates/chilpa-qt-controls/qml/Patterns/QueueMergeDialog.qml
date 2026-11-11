@@ -63,9 +63,11 @@ Modal {
     }
     onDocumentChanged: if (opened) sync()
 
+    // As tall as what it holds: in a short window the list keeps one row and
+    // the modal scrolls instead of pushing the foot past its edge.
     Column {
         id: layout
-        anchors.fill: parent
+        width: parent.width
         spacing: Metrics.gap12
         Column {
             id: header
@@ -78,7 +80,7 @@ Modal {
         ListView {
             id: list
             width: parent.width
-            height: Math.max(Metrics.button32, layout.height - header.height - footer.height - Metrics.gap12 - Metrics.gap12)
+            height: Math.max(Metrics.button32, dialog.height - Metrics.modalInsets - header.height - footer.height - Metrics.gap12 - Metrics.gap12)
             clip: true
             model: queues
             spacing: Metrics.gap4

@@ -19,6 +19,7 @@ Column {
     RefineFoot { width: gallery.width; canGroup: true }
     ConditionRow { width: gallery.width; row: ({ field: "genre", kind: "list", negated: false, values: ["Jazz", "Soul"] }) }
     ConditionGroup { width: gallery.width; group: ({ mode: "any", rows: [{ field: "composer", kind: "list", negated: false, values: ["Thelonious Monk"] }] }) }
+    LabelColumn { fields: ["bits", "rate"]; rowsWide: gallery.width }
     Row {
         spacing: Metrics.gap8
         OperatorSwitch { row: ({ field: "year", kind: "range", from: 1960, to: 1969 }) }
