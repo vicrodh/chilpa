@@ -5826,7 +5826,7 @@ msgid "Search"
 msgstr "Rechercher"
 
 msgid "Search MusicBrainz, or upload if not found"
-msgstr "Chercher sur MusicBrainz, ou envoyer si rien n'est trouvé"
+msgstr "Chercher sur MusicBrainz, sinon envoyer"
 
 msgid "Search again"
 msgstr "Chercher à nouveau"
@@ -7553,7 +7553,7 @@ msgid "Upload only"
 msgstr "Envoyer uniquement"
 
 msgid "Upload, or search MusicBrainz if it fails"
-msgstr "Envoyer, ou chercher sur MusicBrainz en cas d'échec"
+msgstr "Envoyer, sinon chercher sur MusicBrainz"
 
 msgid "Uploading…"
 msgstr "Téléversement…"
