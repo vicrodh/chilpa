@@ -4286,6 +4286,9 @@ msgstr "No compatibles"
 msgid "Not for me"
 msgstr "No es para mí"
 
+msgid "Not found on disk"
+msgstr "No se encuentra en el disco"
+
 msgid "Not heard first"
 msgstr "Sin escuchar primero"
 
@@ -5931,6 +5934,9 @@ msgstr "Servidor agregado"
 
 msgid "Server address"
 msgstr "Dirección del servidor"
+
+msgid "Server item"
+msgstr "Elemento del servidor"
 
 msgid "Server name"
 msgstr "Nombre del servidor"

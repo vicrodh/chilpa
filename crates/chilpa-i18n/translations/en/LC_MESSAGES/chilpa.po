@@ -4286,6 +4286,9 @@ msgstr "Not compatible"
 msgid "Not for me"
 msgstr ""
 
+msgid "Not found on disk"
+msgstr "Not found on disk"
+
 msgid "Not heard first"
 msgstr ""
 
@@ -5931,6 +5934,9 @@ msgstr ""
 
 msgid "Server address"
 msgstr ""
+
+msgid "Server item"
+msgstr "Server item"
 
 msgid "Server name"
 msgstr ""
