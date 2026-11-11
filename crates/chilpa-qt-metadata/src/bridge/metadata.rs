@@ -33,7 +33,7 @@ pub mod qobject {
         #[qinvokable] fn set_album(self: Pin<&mut MetadataEditor>, name: &QString, value: &QString) -> bool;
         #[qinvokable] fn set_track(self: Pin<&mut MetadataEditor>, track_id: i64, name: &QString, value: &QString) -> bool;
         #[qinvokable] fn revert(self: Pin<&mut MetadataEditor>);
-        /// "sidecar" | "files"
+        /// "sidecar" | "files" | "xml" | "server"
         #[qinvokable] fn set_mode(self: Pin<&mut MetadataEditor>, mode: &QString) -> bool;
         /// "2.4" | "2.3"
         #[qinvokable] fn set_id3(self: Pin<&mut MetadataEditor>, version: &QString) -> bool;

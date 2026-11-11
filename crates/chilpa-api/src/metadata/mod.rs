@@ -15,6 +15,7 @@ mod draft;
 mod fields;
 mod hosted;
 mod save;
+mod server;
 pub mod view;
 pub(crate) mod worker;
 
@@ -53,6 +54,23 @@ pub(crate) enum Mode {
     Sidecar,
     Files,
     Xml,
+    /// A record on a server: to the server.
+    Server,
+    /// A record on a server that cannot take the changes: nothing until
+    /// the listener chooses the sidecar. A sidecar is never made unasked.
+    Undecided,
+}
+
+impl Mode {
+    fn name(self) -> &'static str {
+        match self {
+            Mode::Sidecar => "sidecar",
+            Mode::Files => "files",
+            Mode::Xml => "xml",
+            Mode::Server => "server",
+            Mode::Undecided => "",
+        }
+    }
 }
 
 pub(crate) struct Editor {
@@ -89,6 +107,11 @@ pub(crate) struct Editor {
     /// The homes on a server a save is going to write once the worker has
     /// landed the rest.
     pending_hosted: Vec<save::HomePlan>,
+    /// The server of a record on one: what it lets be done.
+    server: Option<server::ServerState>,
+    /// The network and the credential every server is asked with. Tests
+    /// only: nothing in one goes out.
+    server_access: Option<(Arc<dyn chilpa_servers::Net>, chilpa_servers::Credential)>,
     progress: (usize, usize),
     error: String,
     notice: String,
@@ -128,6 +151,8 @@ impl Default for Editor {
             waiting: None,
             cover: String::new(),
             pending_hosted: Vec::new(),
+            server: None,
+            server_access: None,
             progress: (0, 0),
             error: String::new(),
             notice: String::new(),
@@ -187,6 +212,7 @@ impl Editor {
         self.waiting = None;
         self.cover.clear();
         self.pending_hosted.clear();
+        self.server = None;
         self.progress = (0, 0);
         self.focus = -1;
         artwork::sweep();
@@ -222,6 +248,8 @@ impl Chilpa {
         // What the worker would read beside a file is read from the library
         // for a record on a server, here, where the library is.
         let hosted = self.library().map(|lib| hosted::homes(lib, &tracks)).unwrap_or_default();
+        // And how to ask its server what it says of it.
+        let reach = self.metadata_reach(&tracks);
         let chosen = match self.preference("library.metaSrc").as_deref() {
             Some("discogs") => Provider::Discogs,
             _ if !self.musicbrainz_enabled() => Provider::Discogs,
@@ -243,7 +271,7 @@ impl Chilpa {
         editor.error.clear();
         editor.notice.clear();
         let session = editor.session;
-        if !editor.ask(Job::Open { session, tracks, hosted }) {
+        if !editor.ask(Job::Open { session, tracks, hosted, reach }) {
             editor.forget();
             return editor.refuse(chilpa_i18n::t("the editor could not be started"));
         }
@@ -308,7 +336,7 @@ impl Chilpa {
         editor.refresh();
     }
 
-    /// "sidecar" | "files" | "xml"
+    /// "sidecar" | "files" | "xml" | "server"
     pub fn metadata_set_mode(&mut self, mode: &str) -> bool {
         let editor = &mut self.metadata;
         let Some(draft) = editor.draft.as_ref().filter(|_| editor.state == State::Ready) else { return false };
@@ -316,8 +344,16 @@ impl Chilpa {
             "sidecar" => Mode::Sidecar,
             "files" => Mode::Files,
             "xml" => Mode::Xml,
+            "server" => Mode::Server,
             _ => return false,
         };
+        if mode == Mode::Server {
+            let state = editor.server.clone().unwrap_or_default();
+            if !state.writable {
+                let why = if state.why.is_empty() { chilpa_i18n::t("Chilpa cannot change this server's metadata") } else { state.why };
+                return editor.refuse(why);
+            }
+        }
         if mode == Mode::Files {
             let refused = view::files_refused(draft, &editor.layers);
             if !refused.is_empty() {
@@ -379,10 +415,19 @@ impl Chilpa {
         }
         let editor = &mut self.metadata;
         match done {
-            Done::Opened { reads, homes, layers, tracks, .. } => {
+            Done::Opened { reads, homes, layers, tracks, server, .. } => {
                 let Some(album) = editor.album.as_ref() else { return };
                 let draft = Draft::open(album, tracks, reads, homes);
                 editor.focus = draft.row(editor.focus_track).map_or(-1, |row| row as i32);
+                // A record on a server saves to the server when it takes the
+                // changes; when it does not, nothing is chosen for the
+                // listener: a sidecar is made only when asked for.
+                editor.mode = match &server {
+                    Some(state) if state.writable => Mode::Server,
+                    Some(_) => Mode::Undecided,
+                    None => Mode::Sidecar,
+                };
+                editor.server = server;
                 editor.draft = Some(draft);
                 editor.layers = layers;
                 editor.state = State::Ready;
@@ -435,6 +480,7 @@ impl Chilpa {
             }
             Done::Saved { written, .. } => return self.metadata_saved(written, None),
             Done::SaveFailed { reason, written, .. } => return self.metadata_saved(written, Some(reason)),
+            Done::ServerSaved { outcome, .. } => return self.metadata_server_saved(outcome),
             // For a search, a load or a cover that is no longer the last asked for.
             other => artwork::discard(&other),
         }
@@ -446,5 +492,12 @@ impl Chilpa {
     pub fn metadata_network(&mut self, network: Arc<dyn chilpa_meta::Http>) {
         self.metadata.network = network;
         self.metadata.worker = None;
+    }
+
+    /// Hands the editor the network and the credential every server is
+    /// asked with. For tests: nothing in one goes out.
+    #[doc(hidden)]
+    pub fn metadata_server_network(&mut self, network: Arc<dyn chilpa_servers::Net>, credential: chilpa_servers::Credential) {
+        self.metadata.server_access = Some((network, credential));
     }
 }

@@ -205,8 +205,8 @@ msgstr "選択したキューは利用できなくなりました。"
 msgid "A server deletion is still in progress."
 msgstr ""
 
-msgid "A sidecar sets this, not the file"
-msgstr "この値はファイルではなくサイドカーファイルで設定されています"
+msgid "A sidecar sets this, not the file. Click to use the file's value."
+msgstr "これはファイルではなくサイドカーが設定しています。クリックするとファイルの値を使います。"
 
 msgid "A small icon on the status says whether the track plays or is paused."
 msgstr "ステータスの小さなアイコンで、再生中か一時停止中かを示します。"
@@ -1214,6 +1214,9 @@ msgstr "Chilpaは、ほかのプラットフォーム向けに作られた一部
 
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpaはこのマシンの出力を認識していますが、まだそれらを通して再生できません"
+
+msgid "Chilpa cannot change this server's metadata"
+msgstr "Chilpa はこのサーバーのメタデータを変更できません"
 
 msgid "Chilpa cannot keep a plugin inside a folder chosen this way: this system's kernel has no Landlock. To use the folder without it, give Chilpa direct access to it with flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa, then restart Chilpa and choose the folder again."
 msgstr "この方法で選んだフォルダーの中にプラグインをとどめておくことはできません。このシステムのカーネルにはLandlockがありません。Landlockなしでこのフォルダーを使うには、flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa でChilpaに直接アクセスを許可し、Chilpaを再起動してから、フォルダーを選び直してください。"
@@ -3426,6 +3429,9 @@ msgstr "最初の曲を追加するまで Chilpa に保存され、その後 {} 
 msgid "Kept in Chilpa; tracks from any source mix in it"
 msgstr "Chilpa に保存されます。どのソースの曲も混ぜられます"
 
+msgid "Kept on this device, over what the server says, until you take it off."
+msgstr "取り消すまで、サーバーの内容より優先してこのデバイスに保存されます。"
+
 msgid "Kernel"
 msgstr "カーネル"
 
@@ -4526,9 +4532,6 @@ msgstr "アプリ起動時"
 
 msgid "On the sidebar's destinations."
 msgstr "サイドバーの各項目で有効です。"
-
-msgid "On this device"
-msgstr "このデバイス上"
 
 msgid "Onboarding"
 msgstr "はじめに"
@@ -5832,6 +5835,9 @@ msgstr "保存したクエリ"
 msgid "Saved results remain available between sessions."
 msgstr "保存した結果は、セッションをまたいで利用できます。"
 
+msgid "Saved to {} and read back from it."
+msgstr "{} に保存し、そこから読み直します。"
+
 msgid "Saving selection…"
 msgstr ""
 
@@ -6037,6 +6043,9 @@ msgstr "個別の入力上限から、サンプルレート、ワード幅、チ
 msgid "September"
 msgstr "9月"
 
+msgid "Server"
+msgstr "サーバー"
+
 msgid "Server added"
 msgstr "サーバーを追加しました"
 
@@ -6070,8 +6079,8 @@ msgstr "ループの終了点を設定 (B)"
 msgid "Set loop start (A)"
 msgstr "ループの開始点を設定 (A)"
 
-msgid "Set on this device, not what the server says"
-msgstr "この値はサーバーの値ではなく、このデバイスで設定されたものです"
+msgid "Set on this device, over what the server says. Click to use the server's value."
+msgstr "サーバーの内容より優先してこのデバイスで設定されています。クリックするとサーバーの値を使います。"
 
 msgid "Set preference"
 msgstr "設定を変更"
@@ -6865,9 +6874,6 @@ msgstr "受信機は物理DACのフォーマットを報告していません。
 msgid "The record is not open in the editor."
 msgstr "そのアルバムはエディターで開かれていません。"
 
-msgid "The record is on a server. Changes stay on this device and are not sent to it."
-msgstr "このアルバムはサーバー上にあります。変更はこのデバイスにのみ保存され、サーバーには送られません。"
-
 msgid "The record's cover"
 msgstr "アルバムのカバー"
 
@@ -6952,6 +6958,9 @@ msgstr "選択した曲をこのプレイリストと保存済みの順序から
 msgid "The server answered, and Chilpa can read its music."
 msgstr "サーバーが応答し、Chilpa は音楽を読み込めます。"
 
+msgid "The server cannot take the changes: {}. Choose Sidecar to keep them on this device."
+msgstr "サーバーは変更を受け付けられません: {}。このデバイスに残すには「サイドカー」を選んでください。"
+
 msgid "The server connection or account changed. Review the action and try again."
 msgstr "サーバー接続またはアカウントが変わりました。操作を確認してから再試行してください。"
 
@@ -6963,6 +6972,9 @@ msgstr "サーバーはこのAPIキーに対応するアカウントを識別で
 
 msgid "The server did not take it: {}"
 msgstr "サーバーは受け付けませんでした：{}"
+
+msgid "The server does not keep this. Choose Sidecar to change it here."
+msgstr "サーバーはこれを保持しません。ここで変更するには「サイドカー」を選んでください。"
 
 msgid "The server took it. It applies to what it sends this computer from now on."
 msgstr "サーバーが受け付けました。今後このコンピューターに送られるものに適用されます。"
@@ -7456,6 +7468,9 @@ msgstr "Tunnel Flow"
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "サーバーのプレイリストを変更するには、ネットワークをオンにしてください。"
+
+msgid "Turn the network on to change the server's metadata."
+msgstr "サーバーのメタデータを変更するにはネットワークをオンにしてください。"
 
 msgid "Turn the network on to delete music from the server."
 msgstr ""
@@ -8064,6 +8079,9 @@ msgstr "ステレオ領域のフレームの1つがステレオではありま�
 msgid "a list needs a name"
 msgstr "リストには名前が必要です"
 
+msgid "a media server (DLNA) takes no changes"
+msgstr "メディアサーバー (DLNA) は変更を受け付けません"
+
 msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
 msgstr "このサイドカーファイルはより新しいChilpaで書き込まれました。変更するにはChilpaを更新してください"
 
@@ -8085,8 +8103,8 @@ msgstr "評価は 0 から 5 です"
 msgid "a rating must be between 0 and 5 stars"
 msgstr "評価は0から5つ星の間でなければなりません"
 
-msgid "a record on a server keeps its changes on this device"
-msgstr "サーバー上のアルバムの変更はこのデバイスに保存されます"
+msgid "a record on a server has no files here to write to"
+msgstr "サーバー上のアルバムには、ここに書き込めるファイルがありません"
 
 msgid "a scan is already running"
 msgstr "スキャンはすでに実行中です"
@@ -8180,6 +8198,9 @@ msgstr "音楽が入っているフォルダを1つ以上選んでください"
 
 msgid "choose at least one library"
 msgstr "ライブラリを1つ以上選んでください"
+
+msgid "choose where to save the changes: the server cannot take them, the sidecar keeps them on this device"
+msgstr "変更の保存先を選んでください。サーバーは受け付けられません。サイドカーならこのデバイスに保存されます"
 
 msgid "contains"
 msgstr "含む"
@@ -8467,6 +8488,9 @@ msgstr "サポートされていません: {}"
 msgid "nothing was found"
 msgstr "見つかりませんでした"
 
+msgid "nothing was saved to the server: {}"
+msgstr "サーバーには何も保存されませんでした: {}"
+
 msgid "now at {}"
 msgstr "現在{}"
 
@@ -8481,6 +8505,9 @@ msgstr "1つ以上のファイルに書き込めません"
 
 msgid "one or more files cannot take tags"
 msgstr "1つ以上のファイルにタグを付けられません"
+
+msgid "only an administrator of this server can change its metadata"
+msgstr "このサーバーのメタデータを変更できるのは管理者だけです"
 
 msgid "open it again from where it is listed"
 msgstr "一覧された場所からもう一度開いてください"
@@ -8544,6 +8571,10 @@ msgstr ""
 
 msgid "run through a different plugin runtime"
 msgstr "別のプラグインランタイムで実行する"
+
+msgid "saved; the server keeps {} change differently, and what it keeps is shown"
+msgid_plural "saved; the server keeps {} changes differently, and what it keeps is shown"
+msgstr[0] "保存しました。サーバーは {} 件の変更を別の形で保持しており、その内容を表示しています"
 
 msgid "sector {} could not be read: {}"
 msgstr "セクター{}を読み取れませんでした: {}"
@@ -8625,6 +8656,9 @@ msgstr "そのファイルは画像ではありません"
 
 msgid "that id does not work as a folder"
 msgstr "そのIDはフォルダーとして使えません"
+
+msgid "that image cannot be sent"
+msgstr "その画像は送信できません"
 
 msgid "that is an Emby server, and Chilpa does not speak Emby"
 msgstr "それはEmbyサーバーで、ChilpaはEmbyに対応していません"
@@ -8746,11 +8780,20 @@ msgstr "この領域にはトラックが宣言されていません"
 msgid "the audio area falls outside the image"
 msgstr "オーディオ領域がイメージの外にあります"
 
+msgid "the change could not be written down"
+msgstr "変更を準備できませんでした"
+
 msgid "the changes could not be kept in the library: {}"
 msgstr "変更をライブラリに保存できませんでした: {}"
 
 msgid "the changes were saved"
 msgstr "変更を保存しました"
+
+msgid "the changes were saved to the server"
+msgstr "変更をサーバーに保存しました"
+
+msgid "the changes were saved to the server, but it could not be read back: {}; sync it to see them"
+msgstr "変更はサーバーに保存されましたが、読み直せませんでした: {}。確認するには同期してください"
 
 msgid "the client_id came in empty"
 msgstr "client_idが空でした"
@@ -9037,6 +9080,12 @@ msgstr "サーバーがファイルではなくメッセージを返しました
 msgid "the server answered with something that is not HTTP"
 msgstr "サーバーがHTTPではないものを返しました"
 
+msgid "the server answered without the item"
+msgstr "サーバーの応答に項目が含まれていませんでした"
+
+msgid "the server answered without the item's library"
+msgstr "サーバーの応答に項目のライブラリが含まれていませんでした"
+
 msgid "the server answered {}"
 msgstr "サーバーの応答: {}"
 
@@ -9048,6 +9097,9 @@ msgstr "サーバーはファイルの一部を送れず、このファイルは
 
 msgid "the server could not be reached"
 msgstr "サーバーに接続できませんでした"
+
+msgid "the server could not be read: {}"
+msgstr "サーバーを読み取れませんでした: {}"
 
 msgid "the server did not accept the session; sign in again"
 msgstr "サーバーがセッションを受け付けませんでした。もう一度ログインしてください"
@@ -9064,8 +9116,14 @@ msgstr ""
 msgid "the server did not say how long the file is"
 msgstr "サーバーがファイルの長さを返しませんでした"
 
+msgid "the server did not take the change (HTTP {})"
+msgstr "サーバーが変更を受け付けませんでした (HTTP {})"
+
 msgid "the server does not accept this way of signing in"
 msgstr "サーバーはこのログイン方法に対応していません"
+
+msgid "the server does not take \"{}\""
+msgstr "サーバーは「{}」を受け付けません"
 
 msgid "the server is converting the file instead of sending it as it is"
 msgstr "サーバーがファイルをそのまま送らず、変換しています"
@@ -9099,6 +9157,9 @@ msgstr "サーバーが音声を送りませんでした: {}"
 
 msgid "the server stopped sending the file"
 msgstr "サーバーがファイルの送信を止めました"
+
+msgid "the server takes no image for it"
+msgstr "サーバーはこれに画像を受け付けません"
 
 msgid "the server takes no list this long in one request"
 msgstr "サーバーは1回のリクエストでこれほど長いリストを受け付けません"
@@ -9208,6 +9269,9 @@ msgstr "このコンピューターには秘密情報を保管する場所があ
 msgid "this Mac has no output called \"{}\" any more"
 msgstr "このMacに「{}」という出力はもうありません"
 
+msgid "this account may not change that server's metadata"
+msgstr "このアカウントではそのサーバーのメタデータを変更できません"
+
 msgid "this cannot be played"
 msgstr "これは再生できません"
 
@@ -9241,6 +9305,9 @@ msgstr "このプラグインはネットワーク権限を宣言していませ
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "このサーバーでは、プレイリストに複数回入っているトラックは移動できません"
 
+msgid "this server does not keep this field; save it to the sidecar on this device, or put it back"
+msgstr "このサーバーはこの項目を保持しません。このデバイスのサイドカーに保存するか、元に戻してください"
+
 msgid "this server does not support deleting music from Chilpa"
 msgstr ""
 
@@ -9253,8 +9320,14 @@ msgstr "このサーバーにはChilpaが変更できるお気に入りがあり
 msgid "this server keeps no ratings Chilpa can change"
 msgstr "このサーバーにはChilpaが変更できる評価がありません"
 
+msgid "this server reads tags and covers from its files and offers no way to change them"
+msgstr "このサーバーはタグとカバーをファイルから読み取り、変更する方法を提供していません"
+
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "このサーバーはトラックのすべてのコピーをプレイリストから一度に削除します。すべて削除するか、サーバー上で変更してください"
+
+msgid "this server takes no cover from Chilpa; save the cover to the sidecar on this device"
+msgstr "このサーバーは Chilpa からのカバーを受け付けません。カバーはこのデバイスのサイドカーに保存してください"
 
 msgid "this track is on a server, and servers are not connected"
 msgstr "このトラックはサーバー上にあり、サーバーは接続されていません"
@@ -9297,6 +9370,9 @@ msgstr "仮想"
 
 msgid "vs {}"
 msgstr "vs {}"
+
+msgid "what the server says now could not be written down in the library: {}; sync it to see it"
+msgstr "サーバーの現在の内容をライブラリに記録できませんでした: {}。確認するには同期してください"
 
 msgid "what was saved could not be written down in the library: {}; rescan to see it"
 msgstr "保存した内容をライブラリに記録できませんでした: {}。再スキャンして確認してください"
@@ -9530,6 +9606,9 @@ msgstr "リストの{}トラックがなくなっています"
 
 msgid "{} of {}"
 msgstr "{} / {}"
+
+msgid "{} of {} changes reached the server before it failed: {}"
+msgstr "失敗する前に {2} 件中 {1} 件の変更がサーバーに届きました: {3}"
 
 msgid "{} of {} chosen"
 msgstr "{} / {} 件を選択"

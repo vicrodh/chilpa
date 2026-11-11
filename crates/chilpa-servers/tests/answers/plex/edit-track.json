@@ -1,0 +1,41 @@
+{
+ "MediaContainer": {
+  "size": 1,
+  "librarySectionID": 12,
+  "librarySectionTitle": "Chilpa Lab",
+  "Metadata": [
+   {
+    "ratingKey": "98778",
+    "key": "/library/metadata/98778",
+    "parentRatingKey": "98777",
+    "grandparentRatingKey": "98667",
+    "type": "track",
+    "title": "Hells Bells",
+    "grandparentTitle": "AC/DC",
+    "parentTitle": "Back in Black",
+    "summary": "",
+    "index": 1,
+    "parentIndex": 1,
+    "parentYear": 1980,
+    "thumb": "/library/metadata/98777/thumb/1790641408",
+    "parentThumb": "/library/metadata/98777/thumb/1790641408",
+    "addedAt": 1787514467,
+    "updatedAt": 1793267950,
+    "Genre": [
+     {
+      "id": 277158,
+      "tag": "Pop/Rock"
+     }
+    ],
+    "Guid": [
+     {
+      "id": "mbid://1342ecee-79f1-3477-adcd-9ab5ff7a6a4c"
+     }
+    ],
+    "librarySectionID": 12,
+    "librarySectionTitle": "Chilpa Lab",
+    "librarySectionKey": "/library/sections/12"
+   }
+  ]
+ }
+}

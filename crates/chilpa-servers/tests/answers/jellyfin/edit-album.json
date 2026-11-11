@@ -1,0 +1,68 @@
+{
+ "Name": "...And Justice For All",
+ "Id": "c29baf0d2a798b1c11612f09fb2d6243",
+ "Etag": "e7238bba5012163f12786b3fedfeedd2",
+ "DateCreated": "2026-09-07T17:53:14.0000000Z",
+ "CanDelete": true,
+ "CanDownload": false,
+ "SortName": "   and justice for all",
+ "PremiereDate": "1988-01-01T00:00:00.0000000Z",
+ "EnableMediaSourceDisplay": true,
+ "Genres": [
+  "Metal"
+ ],
+ "CumulativeRunTimeTicks": 39480245310,
+ "RunTimeTicks": 39480245310,
+ "ProductionYear": 1988,
+ "ProviderIds": {
+  "MusicBrainzAlbum": "4dede30f-58cf-4d43-a857-b342ad7be945",
+  "MusicBrainzReleaseGroup": "bd14f98a-8c45-4a0d-b148-17cbc96740aa"
+ },
+ "IsFolder": true,
+ "Type": "MusicAlbum",
+ "Studios": [
+  {
+   "Name": "Elektra",
+   "Id": "7afbb66bb9253add67fe03b34e5ba534"
+  }
+ ],
+ "GenreItems": [
+  {
+   "Name": "Metal",
+   "Id": "f179eaba20e0c9f97144d2883b84f428"
+  }
+ ],
+ "LocalTrailerCount": 0,
+ "RecursiveItemCount": 9,
+ "ChildCount": 9,
+ "SpecialFeatureCount": 0,
+ "Tags": [
+  "heavy metal",
+  "rock"
+ ],
+ "PrimaryImageAspectRatio": 1,
+ "Artists": [
+  "Metallica"
+ ],
+ "ArtistItems": [
+  {
+   "Name": "Metallica",
+   "Id": "1b118dd9abb1bd96c156a8e7512c358a"
+  }
+ ],
+ "AlbumArtist": "Metallica",
+ "AlbumArtists": [
+  {
+   "Name": "Metallica",
+   "Id": "1b118dd9abb1bd96c156a8e7512c358a"
+  }
+ ],
+ "ImageTags": {
+  "Primary": "853cd70a58cb88ffc89950e0eac82b79"
+ },
+ "BackdropImageTags": [],
+ "LocationType": "FileSystem",
+ "MediaType": "Unknown",
+ "LockedFields": [],
+ "LockData": false
+}

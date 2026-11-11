@@ -256,7 +256,9 @@ pub fn track_can_go(track: &crate::TrackRow, kind: &str, _key: &str, target: &st
         "album" => track.album_id != 0,
         "artist" => !track.artist.is_empty(),
         "folder" => kind != "folder" && !crate::on_a_server(&track.path),
-        "metadata" => track.album_id > 0 && !crate::on_a_server(&track.path),
+        // A server's track opens its record in the editor too: saved to
+        // the server, or kept on this device when the listener says so.
+        "metadata" => track.album_id > 0,
         _ => false,
     }
 }

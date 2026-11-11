@@ -205,8 +205,8 @@ msgstr "Een geselecteerde wachtrij is niet meer beschikbaar."
 msgid "A server deletion is still in progress."
 msgstr ""
 
-msgid "A sidecar sets this, not the file"
-msgstr "Een sidecar-bestand bepaalt dit, niet het bestand zelf"
+msgid "A sidecar sets this, not the file. Click to use the file's value."
+msgstr "Een sidecar-bestand bepaalt dit, niet het bestand. Klik om de waarde van het bestand te gebruiken."
 
 msgid "A small icon on the status says whether the track plays or is paused."
 msgstr "Een klein pictogram op de status laat zien of het nummer speelt of gepauzeerd is."
@@ -1216,6 +1216,9 @@ msgstr "Chilpa kan sommige plug-ins uitvoeren die voor andere platforms zijn gem
 
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpa ziet de uitvoeren van deze machine, maar kan er nog niet via afspelen"
+
+msgid "Chilpa cannot change this server's metadata"
+msgstr "Chilpa kan de metadata van deze server niet wijzigen"
 
 msgid "Chilpa cannot keep a plugin inside a folder chosen this way: this system's kernel has no Landlock. To use the folder without it, give Chilpa direct access to it with flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa, then restart Chilpa and choose the folder again."
 msgstr "Chilpa kan een plug-in niet binnen een op deze manier gekozen map houden: de kernel van dit systeem heeft geen Landlock. Om de map zonder Landlock te gebruiken, geef je Chilpa er direct toegang toe met flatpak override --user --filesystem=/pad/naar/map app.chilpa.Chilpa, start je Chilpa opnieuw en kies je de map nog een keer."
@@ -3431,6 +3434,9 @@ msgstr "Blijft in Chilpa tot je de eerste nummers toevoegt, en gaat dan naar {}"
 msgid "Kept in Chilpa; tracks from any source mix in it"
 msgstr "Blijft in Chilpa; nummers uit elke bron kunnen erin"
 
+msgid "Kept on this device, over what the server says, until you take it off."
+msgstr "Blijft op dit apparaat, boven wat de server zegt, tot je het weghaalt."
+
 msgid "Kernel"
 msgstr "Kernel"
 
@@ -4531,9 +4537,6 @@ msgstr "Bij het starten van de app"
 
 msgid "On the sidebar's destinations."
 msgstr "Op de bestemmingen van de zijbalk."
-
-msgid "On this device"
-msgstr "Op dit apparaat"
 
 msgid "Onboarding"
 msgstr "Introductie"
@@ -5837,6 +5840,9 @@ msgstr "Opgeslagen zoekopdrachten"
 msgid "Saved results remain available between sessions."
 msgstr "Opgeslagen resultaten blijven beschikbaar tussen sessies."
 
+msgid "Saved to {} and read back from it."
+msgstr "Opgeslagen op {} en daarvandaan teruggelezen."
+
 msgid "Saving selection…"
 msgstr ""
 
@@ -6043,6 +6049,9 @@ msgstr "Afzonderlijke invoerlimieten bewijzen niet elke combinatie van samplefre
 msgid "September"
 msgstr "september"
 
+msgid "Server"
+msgstr "Server"
+
 msgid "Server added"
 msgstr "Server toegevoegd"
 
@@ -6076,8 +6085,8 @@ msgstr "Loopeinde instellen (B)"
 msgid "Set loop start (A)"
 msgstr "Loopbegin instellen (A)"
 
-msgid "Set on this device, not what the server says"
-msgstr "Op dit apparaat ingesteld, niet wat de server zegt"
+msgid "Set on this device, over what the server says. Click to use the server's value."
+msgstr "Ingesteld op dit apparaat, boven wat de server zegt. Klik om de waarde van de server te gebruiken."
 
 msgid "Set preference"
 msgstr "Voorkeur instellen"
@@ -6874,9 +6883,6 @@ msgstr "De ontvanger meldt het formaat van de fysieke DAC niet."
 msgid "The record is not open in the editor."
 msgstr "Het album is niet geopend in de editor."
 
-msgid "The record is on a server. Changes stay on this device and are not sent to it."
-msgstr "Het album staat op een server. Wijzigingen blijven op dit apparaat en worden er niet naartoe gestuurd."
-
 msgid "The record's cover"
 msgstr "De hoes van het album"
 
@@ -6961,6 +6967,9 @@ msgstr "De geselecteerde nummers worden uit deze afspeellijst en de opgeslagen v
 msgid "The server answered, and Chilpa can read its music."
 msgstr "De server antwoordde, en Chilpa kan de muziek lezen."
 
+msgid "The server cannot take the changes: {}. Choose Sidecar to keep them on this device."
+msgstr "De server kan de wijzigingen niet aannemen: {}. Kies Sidecar om ze op dit apparaat te bewaren."
+
 msgid "The server connection or account changed. Review the action and try again."
 msgstr "De serververbinding of het account is gewijzigd. Controleer de actie en probeer het opnieuw."
 
@@ -6972,6 +6981,9 @@ msgstr "De server heeft het account voor deze API-sleutel niet geïdentificeerd.
 
 msgid "The server did not take it: {}"
 msgstr "De server nam het niet aan: {}"
+
+msgid "The server does not keep this. Choose Sidecar to change it here."
+msgstr "De server bewaart dit niet. Kies Sidecar om het hier te wijzigen."
 
 msgid "The server took it. It applies to what it sends this computer from now on."
 msgstr "De server nam het aan. Het geldt vanaf nu voor wat hij naar deze computer stuurt."
@@ -7466,6 +7478,9 @@ msgstr "Tunnel Flow"
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Zet het netwerk aan om een afspeellijst van een server te wijzigen."
+
+msgid "Turn the network on to change the server's metadata."
+msgstr "Zet het netwerk aan om de metadata van de server te wijzigen."
 
 msgid "Turn the network on to delete music from the server."
 msgstr ""
@@ -8075,6 +8090,9 @@ msgstr "een frame van het stereogebied is geen stereo"
 msgid "a list needs a name"
 msgstr "een lijst heeft een naam nodig"
 
+msgid "a media server (DLNA) takes no changes"
+msgstr "een mediaserver (DLNA) accepteert geen wijzigingen"
+
 msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
 msgstr "een nieuwere Chilpa heeft dit sidecar-bestand geschreven; werk Chilpa bij om het te wijzigen"
 
@@ -8096,8 +8114,8 @@ msgstr "een waardering loopt van 0 tot 5"
 msgid "a rating must be between 0 and 5 stars"
 msgstr "een waardering moet tussen 0 en 5 sterren liggen"
 
-msgid "a record on a server keeps its changes on this device"
-msgstr "een album op een server bewaart zijn wijzigingen op dit apparaat"
+msgid "a record on a server has no files here to write to"
+msgstr "een album op een server heeft hier geen bestanden om naar te schrijven"
 
 msgid "a scan is already running"
 msgstr "er loopt al een scan"
@@ -8191,6 +8209,9 @@ msgstr "kies minstens één map met je muziek"
 
 msgid "choose at least one library"
 msgstr "kies minstens één bibliotheek"
+
+msgid "choose where to save the changes: the server cannot take them, the sidecar keeps them on this device"
+msgstr "kies waar de wijzigingen worden opgeslagen: de server kan ze niet aannemen, de sidecar bewaart ze op dit apparaat"
 
 msgid "contains"
 msgstr "bevat"
@@ -8479,6 +8500,9 @@ msgstr "niet ondersteund: {}"
 msgid "nothing was found"
 msgstr "er is niets gevonden"
 
+msgid "nothing was saved to the server: {}"
+msgstr "er is niets op de server opgeslagen: {}"
+
 msgid "now at {}"
 msgstr "nu op {}"
 
@@ -8493,6 +8517,9 @@ msgstr "in een of meer bestanden kan niet worden geschreven"
 
 msgid "one or more files cannot take tags"
 msgstr "een of meer bestanden kunnen geen tags opslaan"
+
+msgid "only an administrator of this server can change its metadata"
+msgstr "alleen een beheerder van deze server kan de metadata ervan wijzigen"
 
 msgid "open it again from where it is listed"
 msgstr "open het opnieuw vanuit de plek waar het staat"
@@ -8556,6 +8583,11 @@ msgstr ""
 
 msgid "run through a different plugin runtime"
 msgstr "via een andere plug-inruntime draaien"
+
+msgid "saved; the server keeps {} change differently, and what it keeps is shown"
+msgid_plural "saved; the server keeps {} changes differently, and what it keeps is shown"
+msgstr[0] "opgeslagen; de server bewaart {} wijziging anders, en wat hij bewaart wordt getoond"
+msgstr[1] "opgeslagen; de server bewaart {} wijzigingen anders, en wat hij bewaart wordt getoond"
 
 msgid "sector {} could not be read: {}"
 msgstr "sector {} kon niet worden gelezen: {}"
@@ -8637,6 +8669,9 @@ msgstr "dat bestand is geen afbeelding"
 
 msgid "that id does not work as a folder"
 msgstr "die id werkt niet als map"
+
+msgid "that image cannot be sent"
+msgstr "die afbeelding kan niet worden verzonden"
 
 msgid "that is an Emby server, and Chilpa does not speak Emby"
 msgstr "dat is een Emby-server, en Chilpa spreekt geen Emby"
@@ -8758,11 +8793,20 @@ msgstr "het gebied bevat geen nummers"
 msgid "the audio area falls outside the image"
 msgstr "het audiogebied valt buiten de image"
 
+msgid "the change could not be written down"
+msgstr "de wijziging kon niet worden voorbereid"
+
 msgid "the changes could not be kept in the library: {}"
 msgstr "de wijzigingen konden niet in de bibliotheek worden bewaard: {}"
 
 msgid "the changes were saved"
 msgstr "de wijzigingen zijn opgeslagen"
+
+msgid "the changes were saved to the server"
+msgstr "de wijzigingen zijn op de server opgeslagen"
+
+msgid "the changes were saved to the server, but it could not be read back: {}; sync it to see them"
+msgstr "de wijzigingen zijn op de server opgeslagen, maar hij kon niet worden teruggelezen: {}; synchroniseer hem om ze te zien"
 
 msgid "the client_id came in empty"
 msgstr "de client_id was leeg"
@@ -9049,6 +9093,12 @@ msgstr "de server antwoordde met een bericht in plaats van het bestand"
 msgid "the server answered with something that is not HTTP"
 msgstr "de server antwoordde met iets dat geen HTTP is"
 
+msgid "the server answered without the item"
+msgstr "de server antwoordde zonder het item"
+
+msgid "the server answered without the item's library"
+msgstr "de server antwoordde zonder de bibliotheek van het item"
+
 msgid "the server answered {}"
 msgstr "de server antwoordde {}"
 
@@ -9060,6 +9110,9 @@ msgstr "de server kan geen deel van een bestand sturen, en dit bestand is te gro
 
 msgid "the server could not be reached"
 msgstr "de server kon niet worden bereikt"
+
+msgid "the server could not be read: {}"
+msgstr "de server kon niet worden gelezen: {}"
 
 msgid "the server did not accept the session; sign in again"
 msgstr "de server heeft de sessie niet geaccepteerd; log opnieuw in"
@@ -9076,8 +9129,14 @@ msgstr ""
 msgid "the server did not say how long the file is"
 msgstr "de server zei niet hoe lang het bestand is"
 
+msgid "the server did not take the change (HTTP {})"
+msgstr "de server heeft de wijziging niet geaccepteerd (HTTP {})"
+
 msgid "the server does not accept this way of signing in"
 msgstr "de server accepteert deze manier van inloggen niet"
+
+msgid "the server does not take \"{}\""
+msgstr "de server accepteert “{}” niet"
 
 msgid "the server is converting the file instead of sending it as it is"
 msgstr "de server zet het bestand om in plaats van het ongewijzigd te sturen"
@@ -9111,6 +9170,9 @@ msgstr "de server stuurde geen audio: {}"
 
 msgid "the server stopped sending the file"
 msgstr "de server stopte met het sturen van het bestand"
+
+msgid "the server takes no image for it"
+msgstr "de server accepteert hiervoor geen afbeelding"
 
 msgid "the server takes no list this long in one request"
 msgstr "de server accepteert zo'n lange lijst niet in één verzoek"
@@ -9220,6 +9282,9 @@ msgstr "er is geen plek om een geheim te bewaren op deze machine"
 msgid "this Mac has no output called \"{}\" any more"
 msgstr "deze Mac heeft geen uitvoer meer met de naam ‘{}'"
 
+msgid "this account may not change that server's metadata"
+msgstr "dit account mag de metadata van die server niet wijzigen"
+
 msgid "this cannot be played"
 msgstr "dit kan niet worden afgespeeld"
 
@@ -9253,6 +9318,9 @@ msgstr "deze plug-in heeft geen netwerktoestemming opgegeven"
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "deze server kan geen nummer verplaatsen dat meer dan eens in de afspeellijst staat"
 
+msgid "this server does not keep this field; save it to the sidecar on this device, or put it back"
+msgstr "deze server bewaart dit veld niet; sla het op in de sidecar op dit apparaat, of zet het terug"
+
 msgid "this server does not support deleting music from Chilpa"
 msgstr ""
 
@@ -9265,8 +9333,14 @@ msgstr "deze server bewaart geen favorieten die Chilpa kan wijzigen"
 msgid "this server keeps no ratings Chilpa can change"
 msgstr "deze server bewaart geen waarderingen die Chilpa kan wijzigen"
 
+msgid "this server reads tags and covers from its files and offers no way to change them"
+msgstr "deze server leest tags en hoezen uit zijn bestanden en biedt geen manier om ze te wijzigen"
+
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "deze server haalt alle kopieën van een nummer in één keer uit de afspeellijst; haal ze allemaal weg of wijzig hem op de server"
+
+msgid "this server takes no cover from Chilpa; save the cover to the sidecar on this device"
+msgstr "deze server accepteert geen hoes van Chilpa; sla de hoes op in de sidecar op dit apparaat"
 
 msgid "this track is on a server, and servers are not connected"
 msgstr "dit nummer staat op een server, en servers zijn niet verbonden"
@@ -9309,6 +9383,9 @@ msgstr "virtueel"
 
 msgid "vs {}"
 msgstr "vs {}"
+
+msgid "what the server says now could not be written down in the library: {}; sync it to see it"
+msgstr "wat de server nu zegt kon niet in de bibliotheek worden opgenomen: {}; synchroniseer hem om het te zien"
 
 msgid "what was saved could not be written down in the library: {}; rescan to see it"
 msgstr "wat is opgeslagen kon niet in de bibliotheek worden vastgelegd: {}; scan opnieuw om het te zien"
@@ -9562,6 +9639,9 @@ msgstr "{} van de nummers in de lijst zijn verdwenen"
 
 msgid "{} of {}"
 msgstr "{} van {}"
+
+msgid "{} of {} changes reached the server before it failed: {}"
+msgstr "{} van {} wijzigingen bereikten de server voordat het misging: {}"
 
 msgid "{} of {} chosen"
 msgstr "{} van {} gekozen"

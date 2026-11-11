@@ -18,7 +18,8 @@ Item {
     property bool ofTrack: false
     property bool cell: false
     // The record is on a server: what is laid over a field was set on this
-    // device, not by a sidecar beside a file.
+    // device, not by a sidecar beside a file, and a field it cannot take is
+    // one the server does not keep.
     property bool hosted: false
 
     signal edited(string name, string value)
@@ -86,16 +87,24 @@ Item {
 
     Icon {
         id: layer
+        objectName: "metadataLaidOver"
         visible: root.field.overridden === true && !root.cell
         anchors.right: parent.right
         glyph: Icons.stack2
         size: Metrics.iconXs
         color: Theme.color.textTertiary
 
+        // A click takes it off: the field says what is under it again, and
+        // a save stops laying it over.
         HoverHandler {
+            cursorShape: Qt.PointingHandCursor
             onHoveredChanged: hovered
-                ? TipState.show(root.hosted ? I18n.tr("Set on this device, not what the server says", I18n.rev) : I18n.tr("A sidecar sets this, not the file", I18n.rev), layer)
+                ? TipState.show(root.hosted ? I18n.tr("Set on this device, over what the server says. Click to use the server's value.", I18n.rev)
+                                            : I18n.tr("A sidecar sets this, not the file. Click to use the file's value.", I18n.rev), layer)
                 : TipState.hide(layer)
+        }
+        TapHandler {
+            onTapped: root.edited(root.name, root.field.beneath || "")
         }
     }
 
@@ -139,6 +148,7 @@ Item {
         spacing: Metrics.gap8
         Toggle {
             anchors.verticalCenter: parent.verticalCenter
+            enabled: root.field.editable !== false
             checked: root.field.value === "true"
             onToggled: (on) => root.edited(root.name, on ? "true" : "false")
         }
@@ -166,5 +176,12 @@ Item {
     HoverHandler {
         enabled: root.cell && root.invalid !== ""
         onHoveredChanged: hovered ? TipState.show(root.invalid, input) : TipState.hide(input)
+    }
+
+    // A field the server does not keep says so where it cannot be typed in.
+    HoverHandler {
+        objectName: "metadataNotKept"
+        enabled: root.hosted && root.field.editable === false && root.invalid === ""
+        onHoveredChanged: hovered ? TipState.show(I18n.tr("The server does not keep this. Choose Sidecar to change it here.", I18n.rev), input) : TipState.hide(input)
     }
 }
