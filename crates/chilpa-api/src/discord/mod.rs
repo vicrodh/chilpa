@@ -16,9 +16,10 @@ mod artwork;
 mod format;
 mod ipc;
 mod presence;
+mod upload;
 
 use crate::Chilpa;
-use presence::{Message, Options, Playing};
+use presence::{Message, Options, Playing, Source};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -30,10 +31,29 @@ const TITLE_FORMAT: &str = "integrations.discord.titleFormat";
 const ARTIST_FORMAT: &str = "integrations.discord.artistFormat";
 const ALBUM_FORMAT: &str = "integrations.discord.albumFormat";
 const ARTWORK: &str = "integrations.discord.artwork";
+const UPLOAD: &str = "integrations.discord.upload";
+const SOURCE: &str = "integrations.discord.artworkSource";
+const RETENTION: &str = "integrations.discord.artworkRetention";
 
 /// The switches and their defaults: Fooyin's, but the artwork, which
-/// Chilpa showed before Fooyin's behaviour came.
-const SWITCHES: [(&str, bool); 3] = [(SHOW_STATE, true), (CLEAR_ON_PAUSE, false), (ARTWORK, true)];
+/// Chilpa showed before Fooyin's behaviour came. Uploading the cover to a
+/// public host is the listener's choice, and off until it is made.
+const SWITCHES: [(&str, bool); 4] = [(SHOW_STATE, true), (CLEAR_ON_PAUSE, false), (ARTWORK, true), (UPLOAD, false)];
+/// Which way to a cover goes first once uploading is allowed, as Fooyin
+/// lists them; the first is the default.
+const SOURCES: [(&str, Source, &str); 3] = [
+    ("search-then-upload", Source::SearchThenUpload, chilpa_i18n::mark("Search MusicBrainz, or upload if not found")),
+    ("upload", Source::UploadOnly, chilpa_i18n::mark("Upload only")),
+    ("upload-then-search", Source::UploadThenSearch, chilpa_i18n::mark("Upload, or search MusicBrainz if it fails")),
+];
+/// How long the host keeps an upload, Fooyin's four; 24 hours by default.
+const RETENTIONS: [(&str, &str); 4] = [
+    ("1", chilpa_i18n::mark("1 hour")),
+    ("12", chilpa_i18n::mark("12 hours")),
+    ("24", chilpa_i18n::mark("24 hours")),
+    ("72", chilpa_i18n::mark("72 hours")),
+];
+const RETENTION_DEFAULT: &str = "24";
 /// The formats and their defaults, Fooyin's.
 const FORMATS: [(&str, &str); 3] = [(TITLE_FORMAT, "%title%"), (ARTIST_FORMAT, "%artist%"), (ALBUM_FORMAT, "%album%")];
 /// What a format may be, in characters.
@@ -61,6 +81,7 @@ struct Told {
     album: String,
     paused: bool,
     started_at: i64,
+    artwork_path: String,
     options: Arc<Options>,
 }
 
@@ -100,6 +121,18 @@ impl Chilpa {
         self.preference(key).filter(|format| !format.trim().is_empty()).unwrap_or_else(|| default.to_string())
     }
 
+    /// The way to a cover that goes first, as set, or the default.
+    fn discord_source(&self) -> &'static str {
+        let chosen = self.preference(SOURCE);
+        SOURCES.iter().map(|(value, ..)| *value).find(|value| chosen.as_deref() == Some(*value)).unwrap_or(SOURCES[0].0)
+    }
+
+    /// The hours an upload is kept, as set, or the default.
+    fn discord_retention(&self) -> &'static str {
+        let chosen = self.preference(RETENTION);
+        RETENTIONS.iter().map(|(value, _)| *value).find(|value| chosen.as_deref() == Some(*value)).unwrap_or(RETENTION_DEFAULT)
+    }
+
     fn discord_enabled(&self) -> bool {
         self.discord.enabled.unwrap_or_else(|| self.preference(ENABLED).as_deref() == Some("true"))
     }
@@ -115,6 +148,9 @@ impl Chilpa {
             artist: self.discord_format(ARTIST_FORMAT),
             album: self.discord_format(ALBUM_FORMAT),
             artwork: self.discord_switch(ARTWORK),
+            upload: self.discord_switch(UPLOAD),
+            source: SOURCES.iter().find(|(value, ..)| *value == self.discord_source()).map_or(Source::SearchThenUpload, |(_, source, _)| *source),
+            hours: self.discord_retention().parse().unwrap_or(24),
         });
         self.discord.options = Some(options.clone());
         options
@@ -133,6 +169,11 @@ impl Chilpa {
         } else if FORMATS.iter().any(|(known, _)| *known == key) {
             let format: String = value.chars().take(FORMAT_LONGEST).collect();
             self.remember_preference(key, &format);
+        } else if key == SOURCE && SOURCES.iter().any(|(known, ..)| *known == value)
+            || key == RETENTION && RETENTIONS.iter().any(|(known, _)| *known == value) {
+            self.remember_preference(key, value);
+        } else if key == SOURCE || key == RETENTION {
+            return true;
         } else {
             return false;
         }
@@ -141,7 +182,8 @@ impl Chilpa {
     }
 
     /// The rows of the presence: everything under the switch goes while it
-    /// is off, and while Chilpa is offline.
+    /// is off, and while Chilpa is offline; the upload goes with the
+    /// artwork, and its way and time with the upload.
     pub(crate) fn discord_row(&mut self, row: &mut crate::SettingsRow) -> bool {
         let key = row.key.as_str();
         if key == ENABLED {
@@ -149,11 +191,26 @@ impl Chilpa {
             return true;
         }
         let switch = SWITCHES.iter().any(|(known, _)| *known == key);
-        if !switch && !FORMATS.iter().any(|(known, _)| *known == key) {
+        let choice = key == SOURCE || key == RETENTION;
+        if !switch && !choice && !FORMATS.iter().any(|(known, _)| *known == key) {
             return false;
         }
-        if !self.discord_enabled() || self.offline() {
+        let shown = self.discord_enabled() && !self.offline()
+            && (!(choice || key == UPLOAD) || self.discord_switch(ARTWORK))
+            && (!choice || self.discord_switch(UPLOAD));
+        if !shown {
             row.control.clear();
+        } else if choice {
+            let (chosen, labels): (&str, Vec<(&str, &str)>) = if key == SOURCE {
+                (self.discord_source(), SOURCES.iter().map(|(value, _, label)| (*value, *label)).collect())
+            } else {
+                (self.discord_retention(), RETENTIONS.to_vec())
+            };
+            for (value, label) in labels {
+                row.values.push(value.to_string());
+                row.options.push(chilpa_i18n::t(label));
+            }
+            row.value = chosen.to_string();
         } else if switch {
             row.value = self.discord_switch(key).to_string();
         } else {
@@ -186,7 +243,8 @@ impl Chilpa {
             None => !now.playing && self.discord.worker.is_some(),
             Some(told) => {
                 now.playing && told.path == now.path && told.index == now.index && told.title == now.title && told.artist == now.artist
-                    && told.album == now.album && told.paused == now.paused && Arc::ptr_eq(&told.options, &options)
+                    && told.album == now.album && told.paused == now.paused && told.artwork_path == now.artwork_path
+                    && Arc::ptr_eq(&told.options, &options)
                     && (now.paused || (told.started_at - started_at).abs() <= DRIFT)
             }
         };
@@ -202,6 +260,7 @@ impl Chilpa {
             album: now.album.clone(),
             paused: now.paused,
             started_at,
+            artwork_path: now.artwork_path.clone(),
             options,
         });
         let serve = self.discord.serve;
@@ -237,6 +296,7 @@ impl Chilpa {
             track: listed.as_ref().map(|track| u32::from(track.number)).filter(|n| *n > 0),
             disc: listed.as_ref().map(|track| u32::from(track.disc)).filter(|n| *n > 0),
             look_up: plugin.is_none() && self.musicbrainz_enabled(),
+            artwork_path: now.artwork_path.clone(),
         }
     }
 }
@@ -308,6 +368,43 @@ mod tests {
         api.discord_setting(ENABLED, "false");
         api.advance_discord();
         assert!(api.discord.worker.is_none() && api.discord.told.is_none(), "off again, the thread ends");
+    }
+
+    fn row(api: &mut Chilpa, key: &str, control: &str) -> crate::SettingsRow {
+        let mut row = crate::SettingsRow { key: key.into(), control: control.into(), ..Default::default() };
+        assert!(api.discord_row(&mut row));
+        row
+    }
+
+    #[test]
+    fn the_upload_is_off_until_chosen_and_its_rows_follow_it() {
+        assert_eq!(RETENTIONS.map(|(hours, _)| hours.parse::<u32>().unwrap()), upload::HOURS, "the host's times");
+        let mut api = Chilpa::new();
+        if api.offline() {
+            return;
+        }
+        api.discord.enabled = Some(true);
+        if api.preference(UPLOAD).is_none() {
+            let options = api.discord_options();
+            assert!(!options.upload, "off until the listener chooses it");
+            assert_eq!((options.source, options.hours), (Source::SearchThenUpload, 24));
+        }
+        api.discord_setting(ARTWORK, "true");
+        api.discord_setting(UPLOAD, "false");
+        assert!(row(&mut api, SOURCE, "select").control.is_empty(), "no way to choose while nothing is uploaded");
+        api.discord_setting(UPLOAD, "true");
+        let source = row(&mut api, SOURCE, "select");
+        assert_eq!(source.values, ["search-then-upload", "upload", "upload-then-search"]);
+        assert_eq!(source.options.len(), 3);
+        api.discord_setting(RETENTION, "72");
+        api.discord_setting(RETENTION, "48");
+        assert_eq!(row(&mut api, RETENTION, "select").value, "72", "a time the host does not offer is not kept");
+        assert_eq!(api.discord_options().hours, 72);
+        api.discord_setting(ARTWORK, "false");
+        assert!(row(&mut api, UPLOAD, "toggle").control.is_empty(), "the upload goes with the artwork");
+        api.discord_setting(ARTWORK, "true");
+        api.discord_setting(UPLOAD, "false");
+        api.discord_setting(RETENTION, RETENTION_DEFAULT);
     }
 
     #[test]

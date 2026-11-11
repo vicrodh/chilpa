@@ -58,6 +58,9 @@ msgstr "-18 LUFS · ReplayGain"
 msgid "-23 LUFS · Broadcast (EBU R128)"
 msgstr "-23 LUFS · 放送（EBU R128）"
 
+msgid "1 hour"
+msgstr "1時間"
+
 msgid "1 hr"
 msgstr "1時間"
 
@@ -69,6 +72,9 @@ msgstr "1. 「Audio > Sinks」でDACを見つけて番号をメモします"
 
 msgid "1. Origin"
 msgstr "1. 取り込み元"
+
+msgid "12 hours"
+msgstr "12時間"
 
 msgid "16 bit"
 msgstr "16 bit"
@@ -87,6 +93,9 @@ msgstr "24 bit（3バイト）"
 
 msgid "24 bit in 32"
 msgstr "24 bit（32 bit内）"
+
+msgid "24 hours"
+msgstr "24時間"
 
 msgid "3 hr"
 msgstr "3時間"
@@ -111,6 +120,9 @@ msgstr "4. まとめ"
 
 msgid "5 hr"
 msgstr "5時間"
+
+msgid "72 hours"
+msgstr "72時間"
 
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "JACKグラフは1つのレートで動作し、その中のすべてのプログラムが同じレートで動きます。このグラフは{} Hzです。ほかのレートで録音されたトラックは、Chilpaが関与する前にリサンプリングされ、ここの設定では変更できません。JACKはプログラム間のオーディオルーティング用です。ファイルを加工せずDACに届けたい場合は、カードそのものを選んでください。"
@@ -688,6 +700,9 @@ msgstr "このシーンのアーティスト"
 
 msgid "Artwork"
 msgstr "アートワーク"
+
+msgid "Artwork source"
+msgstr "アートワークの取得元"
 
 msgid "Artwork view"
 msgstr "アートワーク表示"
@@ -2982,6 +2997,9 @@ msgstr "履歴"
 msgid "Home"
 msgstr "ホーム"
 
+msgid "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
+msgstr "アップロードしたカバーを Litterbox が保持する時間。アルバムの再生が続いている間は、期限が切れる前に再度アップロードします。"
+
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "ウィンドウの背後に見える壁紙のぼかしの強さ。0%でくっきり、100%で最も強くぼかします。"
 
@@ -3365,6 +3383,9 @@ msgstr "現在のものを残す"
 
 msgid "Keep the queue between sessions"
 msgstr "セッション間でキューを保持"
+
+msgid "Keep uploads for"
+msgstr "アップロードの保持期間"
 
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "語句をそのまま読み、ジャンルを拡張せずに検索する"
@@ -5793,6 +5814,9 @@ msgstr "スクロールで音量を調整"
 msgid "Search"
 msgstr "検索"
 
+msgid "Search MusicBrainz, or upload if not found"
+msgstr "MusicBrainz で検索し、見つからなければアップロード"
+
 msgid "Search again"
 msgstr "もう一度検索"
 
@@ -5931,6 +5955,9 @@ msgstr "選択した音楽"
 
 msgid "Selected output"
 msgstr "選択中の出力"
+
+msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
+msgstr "Discord で表示できるように、このコンピューターからアルバムのカバーを公開ファイルホスティングの litterbox.catbox.moe に送信します。リンクを知っている人は期限が切れるまで開けます。送られるのは画像だけで、名前やファイルパスは送られません。"
 
 msgid "Send to Last.fm"
 msgstr "Last.fmに送信"
@@ -7498,8 +7525,17 @@ msgstr "使用量を更新しています…"
 msgid "Upload (public)"
 msgstr "アップロード(公開)"
 
+msgid "Upload covers to Litterbox"
+msgstr "カバーを Litterbox にアップロード"
+
 msgid "Upload failed."
 msgstr "アップロードに失敗しました。"
+
+msgid "Upload only"
+msgstr "アップロードのみ"
+
+msgid "Upload, or search MusicBrainz if it fails"
+msgstr "アップロードし、失敗したら MusicBrainz で検索"
 
 msgid "Uploading…"
 msgstr "アップロード中…"
@@ -7672,6 +7708,9 @@ msgstr "Chilpaへようこそ"
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "没入表示の検索結果でEnterキーを押したときの動作です。「無効」にすると検索がオフになります。"
+
+msgid "What is tried first for a local album's cover."
+msgstr "ローカルアルバムのカバーで最初に試す方法。"
 
 msgid "What it is"
 msgstr "製品"

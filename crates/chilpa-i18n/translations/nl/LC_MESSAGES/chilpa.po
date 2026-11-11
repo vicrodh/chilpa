@@ -58,6 +58,9 @@ msgstr "-18 LUFS · ReplayGain"
 msgid "-23 LUFS · Broadcast (EBU R128)"
 msgstr "-23 LUFS · Omroep (EBU R128)"
 
+msgid "1 hour"
+msgstr "1 uur"
+
 msgid "1 hr"
 msgstr "1 uur"
 
@@ -69,6 +72,9 @@ msgstr "1. Zoek je DAC onder ‘Audio > Sinks' en noteer het nummer"
 
 msgid "1. Origin"
 msgstr "1. Herkomst"
+
+msgid "12 hours"
+msgstr "12 uur"
 
 msgid "16 bit"
 msgstr "16 bit"
@@ -87,6 +93,9 @@ msgstr "24 bit in 3 bytes"
 
 msgid "24 bit in 32"
 msgstr "24 bit in 32"
+
+msgid "24 hours"
+msgstr "24 uur"
 
 msgid "3 hr"
 msgstr "3 uur"
@@ -111,6 +120,9 @@ msgstr "4. Samenvatting"
 
 msgid "5 hr"
 msgstr "5 uur"
+
+msgid "72 hours"
+msgstr "72 uur"
 
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Een JACK-graph draait op één samplefrequentie en elk programma erin draait op die frequentie -- deze staat op {} Hz. Een nummer dat met een andere frequentie is opgenomen, wordt geresampled voordat Chilpa er iets over te zeggen heeft, en geen enkele instelling hier verandert dat. JACK is bedoeld om audio tussen programma's te routeren; kies voor een bestand dat ongewijzigd naar een DAC gaat de geluidskaart zelf."
@@ -689,6 +701,9 @@ msgstr "Artiesten uit deze scène"
 
 msgid "Artwork"
 msgstr "Albumhoes"
+
+msgid "Artwork source"
+msgstr "Bron van de albumhoes"
 
 msgid "Artwork view"
 msgstr "Hoesweergave"
@@ -2984,6 +2999,9 @@ msgstr "Geschiedenis"
 msgid "Home"
 msgstr "Startpagina"
 
+msgid "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
+msgstr "Hoe lang Litterbox een geüploade hoes bewaart. Zolang het album nog speelt, wordt hij vóór die tijd opnieuw geüpload."
+
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Hoe sterk de bureaubladachtergrond achter het venster wordt vervaagd: 0% houdt hem scherp, 100% is de sterkste vervaging."
 
@@ -3370,6 +3388,9 @@ msgstr "De huidige behouden"
 
 msgid "Keep the queue between sessions"
 msgstr "De wachtrij tussen sessies bewaren"
+
+msgid "Keep uploads for"
+msgstr "Uploads bewaren voor"
 
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "Woorden letterlijk lezen en een genre zonder uitbreiding zoeken"
@@ -5798,6 +5819,9 @@ msgstr "Scrol om het volume aan te passen"
 msgid "Search"
 msgstr "Zoeken"
 
+msgid "Search MusicBrainz, or upload if not found"
+msgstr "Zoeken in MusicBrainz, of uploaden als er niets is"
+
 msgid "Search again"
 msgstr "Opnieuw zoeken"
 
@@ -5937,6 +5961,9 @@ msgstr "Geselecteerde muziek"
 
 msgid "Selected output"
 msgstr "Geselecteerde uitvoer"
+
+msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
+msgstr "Stuurt de hoes van het album vanaf deze computer naar litterbox.catbox.moe, een openbare bestandshost, zodat Discord hem kan tonen. Iedereen met de link kan hem openen tot hij verloopt. Alleen de afbeelding gaat mee: geen naam, geen bestandspad."
 
 msgid "Send to Last.fm"
 msgstr "Naar Last.fm sturen"
@@ -7507,8 +7534,17 @@ msgstr "Gebruik bijwerken…"
 msgid "Upload (public)"
 msgstr "Uploaden (openbaar)"
 
+msgid "Upload covers to Litterbox"
+msgstr "Hoezen uploaden naar Litterbox"
+
 msgid "Upload failed."
 msgstr "Uploaden mislukt."
+
+msgid "Upload only"
+msgstr "Alleen uploaden"
+
+msgid "Upload, or search MusicBrainz if it fails"
+msgstr "Uploaden, of zoeken in MusicBrainz als dat mislukt"
 
 msgid "Uploading…"
 msgstr "Uploaden…"
@@ -7682,6 +7718,9 @@ msgstr "Welkom bij Chilpa"
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "Wat Enter doet met een resultaat van het zoeken in de immersieve weergave. Uitgeschakeld zet het zoeken uit."
+
+msgid "What is tried first for a local album's cover."
+msgstr "Wat als eerste wordt geprobeerd voor de hoes van een lokaal album."
 
 msgid "What it is"
 msgstr "Wat het is"

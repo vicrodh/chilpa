@@ -68,7 +68,10 @@ fn no_tags(_: &str) -> Tags {
 }
 
 fn defaults() -> Options {
-    Options { show_state: true, clear_on_pause: false, title: "%title%".into(), artist: "%artist%".into(), album: "%album%".into(), artwork: true }
+    Options {
+        show_state: true, clear_on_pause: false, title: "%title%".into(), artist: "%artist%".into(), album: "%album%".into(), artwork: true,
+        upload: false, source: Source::SearchThenUpload, hours: 24,
+    }
 }
 
 fn playing(path: &str, album: &str) -> Box<Playing> {
@@ -254,6 +257,56 @@ fn a_sources_cover_is_shown_at_once_and_artwork_off_shows_the_asset() {
     bench.wait(5_000);
     assert_eq!(bench.last()["assets"]["large_image"], "cover");
     assert!(bench.searches().is_empty(), "nothing is looked for");
+}
+
+fn uploading(source: Source) -> Arc<Options> {
+    Arc::new(Options { upload: true, source, hours: 1, ..defaults() })
+}
+
+fn with_cover(path: &str) -> Box<Playing> {
+    let mut playing = playing(path, "The Dark Side of the Moon");
+    playing.artwork_path = "/covers/moon.jpg".into();
+    playing
+}
+
+const UPLOAD: &str = "upload:1h:/covers/moon.jpg";
+
+#[test]
+fn an_upload_is_tried_where_the_source_setting_puts_it() {
+    for (source, key) in [(Source::SearchThenUpload, format!("{MOON}|{UPLOAD}")), (Source::UploadOnly, UPLOAD.to_string()),
+        (Source::UploadThenSearch, format!("{UPLOAD}|{MOON}"))] {
+        let mut bench = Bench::new(no_tags, true);
+        bench.tell(0, Message::Show(with_cover("/music/time.flac"), uploading(source)));
+        bench.wait(1_000);
+        assert_eq!(bench.searches(), [key], "{source:?}");
+    }
+    let mut bench = Bench::new(no_tags, true);
+    bench.tell(0, Message::Show(with_cover("/music/time.flac"), Arc::new(defaults())));
+    bench.wait(1_000);
+    assert_eq!(bench.searches(), [MOON], "nothing is uploaded unless it was allowed");
+    let mut bench = Bench::new(no_tags, true);
+    bench.tell(0, show("/music/time.flac", &uploading(Source::UploadOnly)));
+    bench.wait(1_000);
+    assert!(bench.searches().is_empty(), "a track without a cover on disk has nothing to upload");
+}
+
+#[test]
+fn an_uploaded_cover_is_sent_again_before_its_host_drops_it() {
+    let mut bench = Bench::new(no_tags, true);
+    let options = uploading(Source::UploadOnly);
+    bench.tell(0, Message::Show(with_cover("/music/time.flac"), options.clone()));
+    bench.wait(1_000);
+    let kept = Duration::from_secs(55 * 60);
+    bench.tell(2_000, Message::Cover(UPLOAD.into(), Outcome::Uploaded("https://litter.catbox.moe/a.jpg".into(), kept)));
+    bench.wait(2_050);
+    assert_eq!(bench.last()["assets"]["large_image"], "https://litter.catbox.moe/a.jpg");
+    assert_eq!(bench.presenter.next_wake(), Some(bench.at(2_000) + kept));
+    bench.wait(2_000 + 55 * 60 * 1_000);
+    assert_eq!(bench.searches().len(), 2, "uploaded again while it still plays");
+    assert_eq!(bench.calls().len(), 2, "the old address stays until the new one comes");
+    bench.tell(2_000 + 55 * 60 * 1_000 + 900, Message::Cover(UPLOAD.into(), Outcome::Uploaded("https://litter.catbox.moe/b.jpg".into(), kept)));
+    bench.wait(2_000 + 55 * 60 * 1_000 + 950);
+    assert_eq!(bench.last()["assets"]["large_image"], "https://litter.catbox.moe/b.jpg");
 }
 
 #[test]

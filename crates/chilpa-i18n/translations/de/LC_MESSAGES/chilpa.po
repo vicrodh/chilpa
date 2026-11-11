@@ -58,6 +58,9 @@ msgstr "-18 LUFS · ReplayGain"
 msgid "-23 LUFS · Broadcast (EBU R128)"
 msgstr "-23 LUFS · Rundfunk (EBU R128)"
 
+msgid "1 hour"
+msgstr "1 Stunde"
+
 msgid "1 hr"
 msgstr "1 Std."
 
@@ -69,6 +72,9 @@ msgstr "1. Suche deinen DAC unter „Audio > Sinks“ und notiere dir seine Numm
 
 msgid "1. Origin"
 msgstr "1. Herkunft"
+
+msgid "12 hours"
+msgstr "12 Stunden"
 
 msgid "16 bit"
 msgstr "16 bit"
@@ -87,6 +93,9 @@ msgstr "24 bit in 3 Bytes"
 
 msgid "24 bit in 32"
 msgstr "24 bit in 32"
+
+msgid "24 hours"
+msgstr "24 Stunden"
 
 msgid "3 hr"
 msgstr "3 Std."
@@ -111,6 +120,9 @@ msgstr "4. Zusammenfassung"
 
 msgid "5 hr"
 msgstr "5 Std."
+
+msgid "72 hours"
+msgstr "72 Stunden"
 
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Ein JACK-Graph läuft mit einer einzigen Abtastrate, und jedes Programm darin läuft mit dieser Rate – hier sind es {} Hz. Ein Titel mit einer anderen Rate wird per Resampling umgerechnet, bevor Chilpa mitreden kann, und keine Einstellung hier ändert das. JACK dient dazu, Audio zwischen Programmen zu routen; für eine Datei, die unverändert beim DAC ankommen soll, wähle die Karte selbst."
@@ -689,6 +701,9 @@ msgstr "Künstler aus dieser Szene"
 
 msgid "Artwork"
 msgstr "Artwork"
+
+msgid "Artwork source"
+msgstr "Artwork-Quelle"
 
 msgid "Artwork view"
 msgstr "Artwork-Ansicht"
@@ -2984,6 +2999,9 @@ msgstr "Verlauf"
 msgid "Home"
 msgstr "Startseite"
 
+msgid "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
+msgstr "Wie lange Litterbox ein hochgeladenes Cover behält. Solange das Album noch läuft, wird es vorher erneut hochgeladen."
+
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Wie stark das Hintergrundbild hinter dem Fenster weichgezeichnet wird: 0 % lässt es scharf, 100 % ist die stärkste Unschärfe."
 
@@ -3370,6 +3388,9 @@ msgstr "Das aktuelle behalten"
 
 msgid "Keep the queue between sessions"
 msgstr "Warteschlange zwischen Sitzungen behalten"
+
+msgid "Keep uploads for"
+msgstr "Uploads behalten für"
 
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "Wörter wörtlich lesen und ein Genre ohne Erweiterung suchen"
@@ -5798,6 +5819,9 @@ msgstr "Zum Anpassen der Lautstärke scrollen"
 msgid "Search"
 msgstr "Suche"
 
+msgid "Search MusicBrainz, or upload if not found"
+msgstr "In MusicBrainz suchen, sonst hochladen"
+
 msgid "Search again"
 msgstr "Erneut suchen"
 
@@ -5937,6 +5961,9 @@ msgstr "Ausgewählte Musik"
 
 msgid "Selected output"
 msgstr "Ausgewählte Ausgabe"
+
+msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
+msgstr "Sendet das Cover des Albums von diesem Computer an litterbox.catbox.moe, einen öffentlichen Dateihoster, damit Discord es anzeigen kann. Wer den Link hat, kann es öffnen, bis es abläuft. Nur das Bild geht raus: kein Name, kein Dateipfad."
 
 msgid "Send to Last.fm"
 msgstr "An Last.fm senden"
@@ -7507,8 +7534,17 @@ msgstr "Nutzung wird aktualisiert…"
 msgid "Upload (public)"
 msgstr "Hochladen (öffentlich)"
 
+msgid "Upload covers to Litterbox"
+msgstr "Cover zu Litterbox hochladen"
+
 msgid "Upload failed."
 msgstr "Hochladen fehlgeschlagen."
+
+msgid "Upload only"
+msgstr "Nur hochladen"
+
+msgid "Upload, or search MusicBrainz if it fails"
+msgstr "Hochladen, sonst in MusicBrainz suchen"
 
 msgid "Uploading…"
 msgstr "Wird hochgeladen…"
@@ -7682,6 +7718,9 @@ msgstr "Willkommen bei Chilpa"
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "Was die Eingabetaste mit einem Ergebnis der Suche in der immersiven Ansicht macht. „Deaktiviert“ schaltet die Suche aus."
+
+msgid "What is tried first for a local album's cover."
+msgstr "Was für das Cover eines lokalen Albums zuerst versucht wird."
 
 msgid "What it is"
 msgstr "Was es ist"

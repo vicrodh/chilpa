@@ -58,6 +58,9 @@ msgstr ""
 msgid "-23 LUFS · Broadcast (EBU R128)"
 msgstr ""
 
+msgid "1 hour"
+msgstr "1 hour"
+
 msgid "1 hr"
 msgstr ""
 
@@ -69,6 +72,9 @@ msgstr ""
 
 msgid "1. Origin"
 msgstr ""
+
+msgid "12 hours"
+msgstr "12 hours"
 
 msgid "16 bit"
 msgstr ""
@@ -87,6 +93,9 @@ msgstr ""
 
 msgid "24 bit in 32"
 msgstr ""
+
+msgid "24 hours"
+msgstr "24 hours"
 
 msgid "3 hr"
 msgstr ""
@@ -111,6 +120,9 @@ msgstr ""
 
 msgid "5 hr"
 msgstr ""
+
+msgid "72 hours"
+msgstr "72 hours"
 
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr ""
@@ -689,6 +701,9 @@ msgstr ""
 
 msgid "Artwork"
 msgstr ""
+
+msgid "Artwork source"
+msgstr "Artwork source"
 
 msgid "Artwork view"
 msgstr ""
@@ -2984,6 +2999,9 @@ msgstr ""
 msgid "Home"
 msgstr ""
 
+msgid "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
+msgstr "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
+
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr ""
 
@@ -3370,6 +3388,9 @@ msgstr ""
 
 msgid "Keep the queue between sessions"
 msgstr ""
+
+msgid "Keep uploads for"
+msgstr "Keep uploads for"
 
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "Keep words literal and match a genre without expanding it"
@@ -5798,6 +5819,9 @@ msgstr ""
 msgid "Search"
 msgstr "Search"
 
+msgid "Search MusicBrainz, or upload if not found"
+msgstr "Search MusicBrainz, or upload if not found"
+
 msgid "Search again"
 msgstr ""
 
@@ -5937,6 +5961,9 @@ msgstr "Selected music"
 
 msgid "Selected output"
 msgstr "Selected output"
+
+msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
+msgstr "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 
 msgid "Send to Last.fm"
 msgstr ""
@@ -7507,8 +7534,17 @@ msgstr ""
 msgid "Upload (public)"
 msgstr "Upload (public)"
 
+msgid "Upload covers to Litterbox"
+msgstr "Upload covers to Litterbox"
+
 msgid "Upload failed."
 msgstr "Upload failed."
+
+msgid "Upload only"
+msgstr "Upload only"
+
+msgid "Upload, or search MusicBrainz if it fails"
+msgstr "Upload, or search MusicBrainz if it fails"
 
 msgid "Uploading…"
 msgstr "Uploading…"
@@ -7682,6 +7718,9 @@ msgstr "Welcome to Chilpa"
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr ""
+
+msgid "What is tried first for a local album's cover."
+msgstr "What is tried first for a local album's cover."
 
 msgid "What it is"
 msgstr ""

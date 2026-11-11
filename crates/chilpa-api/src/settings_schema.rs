@@ -350,6 +350,9 @@ pub const SECTIONS: &[Section] = &[
                 setting("integrations.discord.artistFormat", Chilpa::mark("Artist"), Chilpa::mark("Second line of the status, written like the title."), Control::Text),
                 setting("integrations.discord.albumFormat", Chilpa::mark("Album"), Chilpa::mark("Shown when pointing at the cover, written like the title."), Control::Text),
                 setting("integrations.discord.artwork", Chilpa::mark("Show artwork"), Chilpa::mark("A source's own cover, or the front cover the Cover Art Archive has of a local album, found by the file's MusicBrainz IDs or by the album's name. Local albums need MusicBrainz on."), Control::Toggle),
+                setting("integrations.discord.upload", Chilpa::mark("Upload covers to Litterbox"), Chilpa::mark("Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."), Control::Toggle),
+                setting("integrations.discord.artworkSource", Chilpa::mark("Artwork source"), Chilpa::mark("What is tried first for a local album's cover."), Control::Select),
+                setting("integrations.discord.artworkRetention", Chilpa::mark("Keep uploads for"), Chilpa::mark("How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."), Control::Select),
             ] },
             Group { title: "Discogs", settings: &[
                 action("integrations.discogs.account", Chilpa::mark("Discogs account"), Chilpa::mark("Sign in on Discogs to search with your account."), Control::Button, Chilpa::mark("Connect")),

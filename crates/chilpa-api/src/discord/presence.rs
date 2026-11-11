@@ -7,7 +7,7 @@
 //! day (or an hour when there is none). Stopped, or paused with "Clear on
 //! pause", the status is cleared and the connection stays.
 
-use super::artwork::{self, Covers, Outcome, Query, Tags};
+use super::artwork::{self, Covers, Outcome, Query, Step, Tags};
 use super::format::Format;
 use super::ipc::{self, Connection, Failure};
 use serde_json::{json, Map, Value};
@@ -46,6 +46,20 @@ pub(crate) struct Options {
     pub artist: String,
     pub album: String,
     pub artwork: bool,
+    /// Whether the cover may be uploaded to a public host, which way is
+    /// tried first, and for how many hours the host keeps it.
+    pub upload: bool,
+    pub source: Source,
+    pub hours: u32,
+}
+
+/// Which way to a cover is tried first once uploading is allowed (Fooyin's
+/// `ArtworkMode`; its "MusicBrainz only" is uploading off).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Source {
+    SearchThenUpload,
+    UploadOnly,
+    UploadThenSearch,
 }
 
 /// What plays, as the window knows it when it changes.
@@ -72,6 +86,8 @@ pub(crate) struct Playing {
     pub disc: Option<u32>,
     /// Whether its cover may be looked for on MusicBrainz and the archive.
     pub look_up: bool,
+    /// The cover on disk, which may be uploaded.
+    pub artwork_path: String,
 }
 
 pub(crate) enum Message {
@@ -283,12 +299,14 @@ impl Rpc for Discord {
     }
 }
 
-/// Where the cover of what plays comes from.
+/// Where the cover of what plays comes from: a source's own address, or
+/// the ways to look for one, in order, under the key their answer is kept
+/// by.
 #[derive(Clone, Debug, PartialEq)]
 enum Plan {
     None,
     Url(String),
-    Lookup(String, Query),
+    Find(String, Vec<Step>),
 }
 
 impl Plan {
@@ -299,15 +317,25 @@ impl Plan {
         if let Some(url) = &playing.cover_url {
             return Plan::Url(url.clone());
         }
-        if !playing.look_up {
-            return Plan::None;
-        }
-        Query::of(tags, &playing.album, &playing.artist).map_or(Plan::None, |(key, query)| Plan::Lookup(key, query))
+        let search = playing.look_up.then(|| Query::of(tags, &playing.album, &playing.artist)).flatten()
+            .map(|(key, query)| (key, Step::MusicBrainz(query)));
+        let upload = (options.upload && !playing.artwork_path.is_empty()).then(|| {
+            let job = super::upload::Job { cover: playing.artwork_path.clone(), hours: options.hours };
+            (format!("upload:{}h:{}", job.hours, job.cover), Step::Upload(job))
+        });
+        let order = match (options.upload, options.source) {
+            (false, _) => [search, None],
+            (true, Source::SearchThenUpload) => [search, upload],
+            (true, Source::UploadOnly) => [upload, None],
+            (true, Source::UploadThenSearch) => [upload, search],
+        };
+        let (keys, steps): (Vec<String>, Vec<Step>) = order.into_iter().flatten().unzip();
+        if steps.is_empty() { Plan::None } else { Plan::Find(keys.join("|"), steps) }
     }
 
     fn key(&self) -> Option<&str> {
         match self {
-            Plan::Lookup(key, _) => Some(key),
+            Plan::Find(key, _) => Some(key),
             _ => None,
         }
     }
@@ -315,7 +343,7 @@ impl Plan {
 
 /// Starts looking for a cover; the outcome comes back as a
 /// [`Message::Cover`].
-type LookUp = Box<dyn FnMut(String, Query) + Send>;
+type LookUp = Box<dyn FnMut(String, Vec<Step>) + Send>;
 
 pub(crate) struct Presenter<R: Rpc> {
     rpc: R,
@@ -332,6 +360,9 @@ pub(crate) struct Presenter<R: Rpc> {
     covers: Covers,
     looking: Option<String>,
     cover_due: Option<Instant>,
+    /// When the cover shown stops being believed, so it is looked for, or
+    /// uploaded, again while the album still plays (Fooyin's refresh).
+    refresh_at: Option<Instant>,
     pending_since: Option<Instant>,
     /// What Discord was last given; `Some(None)` is a cleared status.
     told: Option<Option<Presence>>,
@@ -341,7 +372,7 @@ impl<R: Rpc> Presenter<R> {
     fn new(rpc: R, read_tags: fn(&str) -> Tags, look_up: LookUp, wanted: Arc<Mutex<Option<String>>>) -> Self {
         Presenter {
             rpc, read_tags, look_up, wanted, shown: None, tags: Tags::default(), tags_of: None, formats: None, plan: Plan::None,
-            covers: Covers::default(), looking: None, cover_due: None, pending_since: None, told: None,
+            covers: Covers::default(), looking: None, cover_due: None, refresh_at: None, pending_since: None, told: None,
         }
     }
 
@@ -349,6 +380,7 @@ impl<R: Rpc> Presenter<R> {
         if plan.key() != self.plan.key() {
             *self.wanted.lock().unwrap_or_else(|e| e.into_inner()) = plan.key().map(str::to_string);
             self.cover_due = plan.key().filter(|key| self.covers.get(key, now).is_none()).map(|_| now + COVER_DELAY);
+            self.refresh_at = plan.key().and_then(|key| self.covers.until(key));
         }
         self.plan = plan;
     }
@@ -375,14 +407,11 @@ impl<R: Rpc> Presenter<R> {
                 if self.looking.as_deref() == Some(key.as_str()) {
                     self.looking = None;
                 }
-                match outcome {
-                    Outcome::Found(url) => self.covers.put(key.clone(), Some(url), now),
-                    Outcome::Missing => self.covers.put(key.clone(), None, now),
-                    Outcome::Abandoned => {}
-                }
+                self.covers.learn(key.clone(), &outcome, now);
                 if self.plan.key() != Some(key.as_str()) {
                     return true;
                 }
+                self.refresh_at = self.covers.until(&key);
             }
             Message::Stop => return false,
         }
@@ -394,16 +423,20 @@ impl<R: Rpc> Presenter<R> {
     fn next_wake(&self) -> Option<Instant> {
         let settle = self.pending_since.map(|since| since + SETTLE);
         let cover = self.cover_due.filter(|_| self.looking.is_none());
-        settle.into_iter().chain(cover).min()
+        settle.into_iter().chain(cover).chain(self.refresh_at).min()
     }
 
     fn tick(&mut self, now: Instant) {
-        if let (Some(due), Plan::Lookup(key, query)) = (self.cover_due, &self.plan) {
+        if self.refresh_at.is_some_and(|at| at <= now) {
+            self.refresh_at = None;
+            self.cover_due.get_or_insert(now);
+        }
+        if let (Some(due), Plan::Find(key, steps)) = (self.cover_due, &self.plan) {
             if due <= now && self.looking.is_none() {
                 self.cover_due = None;
                 if self.covers.get(key, now).is_none() {
                     self.looking = Some(key.clone());
-                    (self.look_up)(key.clone(), query.clone());
+                    (self.look_up)(key.clone(), steps.clone());
                 }
             }
         }
@@ -417,7 +450,7 @@ impl<R: Rpc> Presenter<R> {
         let artwork = match &self.plan {
             Plan::None => None,
             Plan::Url(url) => Some(url.as_str()),
-            Plan::Lookup(key, _) => self.covers.get(key, now).flatten(),
+            Plan::Find(key, _) => self.covers.get(key, now).flatten(),
         };
         let wanted = match (&self.shown, &self.formats) {
             (Some((playing, _)), Some(formats)) => presence(playing, &self.tags, formats, artwork),
@@ -442,12 +475,12 @@ impl<R: Rpc> Presenter<R> {
 pub(crate) fn serve(messages: Receiver<Message>, tell: Sender<Message>) {
     let wanted = Arc::new(Mutex::new(None));
     let still = wanted.clone();
-    let look_up: LookUp = Box::new(move |key, query| {
+    let look_up: LookUp = Box::new(move |key, steps| {
         let (wanted, tell, back) = (still.clone(), tell.clone(), tell.clone());
         let named = key.clone();
         let started = std::thread::Builder::new().name("chilpa-discord-cover".into()).spawn(move || {
             let current = || wanted.lock().unwrap_or_else(|e| e.into_inner()).as_deref() == Some(key.as_str());
-            let outcome = artwork::find_online(&query, &current);
+            let outcome = artwork::find_first(&steps, &current, &artwork::find_step_online);
             let _ = tell.send(Message::Cover(key, outcome));
         });
         if started.is_err() {

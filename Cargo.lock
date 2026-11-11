@@ -476,6 +476,7 @@ dependencies = [
  "tar",
  "tempfile",
  "tiny_http",
+ "ureq",
  "url",
  "wat",
  "zip",

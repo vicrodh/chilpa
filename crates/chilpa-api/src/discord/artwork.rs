@@ -116,6 +116,8 @@ impl Query {
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Outcome {
     Found(String),
+    /// A cover uploaded to a host that keeps it for so long.
+    Uploaded(String, Duration),
     Missing,
     /// The album stopped playing before the search ended: nothing is learnt.
     Abandoned,
@@ -170,6 +172,33 @@ pub(crate) fn find_online(query: &Query, wanted: &dyn Fn() -> bool) -> Outcome {
     find(query, &http, &Net::musicbrainz(&http), wanted)
 }
 
+/// One way to a cover.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum Step {
+    MusicBrainz(Query),
+    Upload(super::upload::Job),
+}
+
+/// Each way in its turn until one has a cover (Fooyin's
+/// `tryArtworkSource`): a way that finds none hands over to the next.
+pub(crate) fn find_first(steps: &[Step], wanted: &dyn Fn() -> bool, find: &dyn Fn(&Step, &dyn Fn() -> bool) -> Outcome) -> Outcome {
+    for step in steps {
+        match find(step, wanted) {
+            Outcome::Missing => {}
+            done => return done,
+        }
+    }
+    Outcome::Missing
+}
+
+/// A way to a cover, on the network.
+pub(crate) fn find_step_online(step: &Step, wanted: &dyn Fn() -> bool) -> Outcome {
+    match step {
+        Step::MusicBrainz(query) => find_online(query, wanted),
+        Step::Upload(job) => super::upload::send_online(job, wanted),
+    }
+}
+
 /// The covers found and not found, for as long as each is believed.
 #[derive(Default)]
 pub(crate) struct Covers {
@@ -183,15 +212,28 @@ impl Covers {
         self.known.get(key).filter(|(_, until)| now < *until).map(|(url, _)| url.as_deref())
     }
 
-    pub(crate) fn put(&mut self, key: String, url: Option<String>, now: Instant) {
+    /// When a cover that was found stops being believed.
+    pub(crate) fn until(&self, key: &str) -> Option<Instant> {
+        self.known.get(key).filter(|(url, _)| url.is_some()).map(|(_, until)| *until)
+    }
+
+    /// Keeps what a search learnt: a found cover for a day, an uploaded one
+    /// for as long as its host keeps it, a missing one for an hour. An
+    /// abandoned search learnt nothing.
+    pub(crate) fn learn(&mut self, key: String, outcome: &Outcome, now: Instant) {
+        let (url, kept) = match outcome {
+            Outcome::Found(url) => (Some(url.clone()), FOUND_FOR),
+            Outcome::Uploaded(url, kept) => (Some(url.clone()), *kept),
+            Outcome::Missing => (None, MISSING_FOR),
+            Outcome::Abandoned => return,
+        };
         if self.known.len() >= KEPT && !self.known.contains_key(&key) {
             self.known.retain(|_, (_, until)| now < *until);
             if self.known.len() >= KEPT {
                 self.known.clear();
             }
         }
-        let until = now + if url.is_some() { FOUND_FOR } else { MISSING_FOR };
-        self.known.insert(key, (url, until));
+        self.known.insert(key, (url, now + kept));
     }
 }
 
@@ -308,6 +350,22 @@ mod tests {
     }
 
     #[test]
+    fn each_way_is_tried_in_turn_until_one_has_a_cover() {
+        let ids = Step::MusicBrainz(Query::Ids { release: RELEASE.into(), group: String::new() });
+        let upload = Step::Upload(super::super::upload::Job { cover: "/covers/moon.jpg".into(), hours: 24 });
+        let tried = Mutex::new(Vec::new());
+        let record = |step: &Step, _: &dyn Fn() -> bool| {
+            let uploading = matches!(step, Step::Upload(_));
+            tried.lock().unwrap().push(uploading);
+            if uploading { Outcome::Uploaded("https://litter.catbox.moe/x.jpg".into(), Duration::from_secs(60)) } else { Outcome::Missing }
+        };
+        assert!(matches!(find_first(&[ids.clone(), upload], &|| true, &record), Outcome::Uploaded(..)));
+        assert_eq!(*tried.lock().unwrap(), [false, true], "the search first, then the upload");
+        assert_eq!(find_first(&[ids], &|| true, &|_, _| Outcome::Abandoned), Outcome::Abandoned, "an abandoned way stops the rest");
+        assert_eq!(find_first(&[], &|| true, &record), Outcome::Missing);
+    }
+
+    #[test]
     fn an_album_is_known_by_its_ids_or_else_by_its_name() {
         let tags = Tags { release: RELEASE.to_uppercase(), ..Tags::default() };
         assert_eq!(Query::of(&tags, "x", "y").unwrap().0, format!("mbid:{RELEASE}:"));
@@ -322,8 +380,13 @@ mod tests {
     fn a_cover_is_believed_a_day_and_a_missing_one_an_hour() {
         let mut covers = Covers::default();
         let now = Instant::now();
-        covers.put("found".into(), Some("https://coverartarchive.org/release/x/front-1200".into()), now);
-        covers.put("missing".into(), None, now);
+        covers.learn("found".into(), &Outcome::Found("https://coverartarchive.org/release/x/front-1200".into()), now);
+        covers.learn("missing".into(), &Outcome::Missing, now);
+        covers.learn("uploaded".into(), &Outcome::Uploaded("https://litter.catbox.moe/x.jpg".into(), Duration::from_secs(55 * 60)), now);
+        covers.learn("abandoned".into(), &Outcome::Abandoned, now);
+        assert_eq!(covers.get("abandoned", now), None, "an abandoned search learnt nothing");
+        assert_eq!(covers.until("uploaded"), Some(now + Duration::from_secs(55 * 60)), "an upload is kept as long as its host keeps it");
+        assert_eq!(covers.until("missing"), None);
         assert_eq!(covers.get("found", now + Duration::from_secs(23 * 3600)), Some(Some("https://coverartarchive.org/release/x/front-1200")));
         assert_eq!(covers.get("missing", now + Duration::from_secs(59 * 60)), Some(None));
         assert_eq!(covers.get("missing", now + MISSING_FOR), None, "asked again after an hour");
@@ -336,9 +399,9 @@ mod tests {
         let mut covers = Covers::default();
         let now = Instant::now();
         for n in 0..KEPT {
-            covers.put(n.to_string(), None, now);
+            covers.learn(n.to_string(), &Outcome::Missing, now);
         }
-        covers.put("one more".into(), None, now);
+        covers.learn("one more".into(), &Outcome::Missing, now);
         assert!(covers.known.len() <= KEPT);
         assert_eq!(covers.get("one more", now), Some(None));
     }
