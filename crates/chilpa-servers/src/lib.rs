@@ -22,10 +22,11 @@
 //!   one: create, rename, delete, add, take out and reorder (`playlist`).
 //!   A media server has none (`Kind::has_playlists`);
 //! - where to read a track's original bytes, and a record's cover;
-//! - the listener's ratings of tracks and records, read and written
-//!   (`rating`), on the kinds that keep them.
+//! - the listener's ratings and favorites of tracks and records, read and
+//!   written (`rating`, `favorite`), on the kinds that keep them.
 
 pub mod dlna;
+pub mod favorite;
 pub mod jellyfin;
 pub mod model;
 pub mod media;
