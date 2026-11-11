@@ -29,7 +29,9 @@ Rectangle {
         : ghost ? Theme.color.textSecondary : Theme.color.textPrimary
 
     readonly property real horizontalPadding: ghost ? Metrics.gap8 : Metrics.pillPadding
-    implicitWidth: label.implicitWidth + (icon.visible ? icon.width + Metrics.gap6 : 0) + horizontalPadding * 2 // derived: horizontal padding on both sides
+    // The glyph by whether there is one, not by `icon.visible`: a hidden pill
+    // a screen measures with would leave it out.
+    implicitWidth: label.implicitWidth + (root.glyph !== "" ? icon.width + Metrics.gap6 : 0) + horizontalPadding * 2 // derived: horizontal padding on both sides
     implicitHeight: wrapText ? Math.max(ghost ? Metrics.button28 : Metrics.pillHeight, label.implicitHeight + Metrics.gap8 * 2) // derived: vertical padding above and below wrapped text
         : ghost ? Metrics.button28 : Metrics.pillHeight
     width: Math.min(implicitWidth, maximumWidth)
@@ -60,7 +62,7 @@ Rectangle {
         Text {
             id: label
             anchors.verticalCenter: parent.verticalCenter
-            width: root.wrapText ? Math.max(0, root.width - root.horizontalPadding * 2 - (icon.visible ? icon.width + Metrics.gap6 : 0)) : implicitWidth // derived: the label between its padding and optional icon
+            width: root.wrapText ? Math.max(0, root.width - root.horizontalPadding * 2 - (root.glyph !== "" ? icon.width + Metrics.gap6 : 0)) : implicitWidth // derived: the label between its padding and optional icon
             wrapMode: root.wrapText ? Text.WrapAtWordBoundaryOrAnywhere : Text.NoWrap
             text: root.text
             font.pointSize: root.ghost ? Type.small : Type.body

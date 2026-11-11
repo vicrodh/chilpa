@@ -55,7 +55,10 @@ Controls.Popup {
     }
     padding: Metrics.gap4
     margins: Metrics.gap10
-    implicitWidth: Math.min(widthLimit, widest + padding * 2) // derived: panel padding
+    // What the built lines ask for, as they are set: the estimate above, made
+    // before they exist, misses a submenu's chevron and a face set wider.
+    readonly property real asked: Array.from(entryItems).concat(footer.item ? Array.from(footer.item.children) : []).reduce((wide, line) => Math.max(wide, line.implicitWidth || 0), 0)
+    implicitWidth: Math.min(widthLimit, Math.max(widest, asked) + padding * 2) // derived: panel padding
     background: Item {
         Hold {}
         HoverHandler { id: panelHover }
