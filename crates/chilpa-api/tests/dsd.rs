@@ -53,6 +53,9 @@ fn shared_dsd_reaches_file_capture_as_pcm() {
 
     let mut chilpa = chilpa_api::Chilpa::new();
     assert_eq!(chilpa.play_tracks(&[track.display().to_string()], OUTPUT, false).len(), 1);
+    // A queue that runs out empties the player; the mark keeps the track
+    // and what it was announced as in view once it ends.
+    assert!(chilpa.set_stop_after(Some(0)));
     let limit = Instant::now() + Duration::from_secs(10);
     let mut started = false;
     while Instant::now() < limit {

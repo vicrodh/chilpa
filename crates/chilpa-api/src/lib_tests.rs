@@ -45,6 +45,10 @@ fn play_restarts_a_queue_after_the_worker_reported_an_error() {
     std::fs::write(&track, wave).unwrap();
     api.set_paused(false);
     assert!(api.now.playing && api.now.error.is_empty(), "Play submitted a new request");
+    // The capture can start and finish the short track within one poll, and
+    // a queue that runs out empties the player. The mark keeps the track
+    // that started in view once it ends.
+    assert!(api.set_stop_after(Some(0)));
     let until = std::time::Instant::now() + std::time::Duration::from_secs(5);
     while api.now.format.is_empty() && std::time::Instant::now() < until {
         api.poll();

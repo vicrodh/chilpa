@@ -205,8 +205,14 @@ fn found(question: &Value) -> Value {
 
 /// Plays one entry and waits for its lyrics: the text and who gave it.
 /// `None` when none show in that time.
+///
+/// The capture plays the short track out before its lyrics arrive, and a
+/// queue that runs out leaves the player empty. A stop-after mark on it
+/// keeps it in view once it ends, so it stays the track the lyrics, the
+/// cache and the source changes below are about.
 fn lyrics_of(chilpa: &mut chilpa_api::Chilpa, path: &str, title: &str, wait: Duration) -> Option<(String, String)> {
     chilpa.play_tracks(&[path.to_string()], OUTPUT, false);
+    assert!(chilpa.set_stop_after(Some(0)), "the track is held once it ends");
     let deadline = Instant::now() + wait;
     loop {
         let now = chilpa.poll();
