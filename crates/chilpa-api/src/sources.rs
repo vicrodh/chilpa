@@ -1065,8 +1065,12 @@ impl Chilpa {
         }
         self.sources.kept_at = Some(Instant::now());
         let (at, total) = (self.now.seconds, self.now.total_seconds);
-        if total <= 0.0 && at <= 0.0 {
-            // It has not started: there is no place yet.
+        if at <= 0.0 {
+            // Nothing of it has sounded: there is no place to keep. A track
+            // waiting at its start already knows its length from the
+            // catalog, and writing "0, not heard" for it would wipe the
+            // place or the Heard mark it was left with, as for the last
+            // episode of a queue that ran out, restored on the next run.
             return;
         }
         let done = total > 0.0 && at >= total - NEAR_THE_END.min(total * 0.05);

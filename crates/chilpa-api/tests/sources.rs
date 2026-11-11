@@ -335,6 +335,9 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     let _ = go(&mut chilpa, "open", ID, "");
     let show = go(&mut chilpa, "enter", "show", "");
     assert_eq!(show["entries"][0]["played"], true);
+    // The last one is waiting at its start, to be played again; waiting
+    // there does not take its mark away.
+    assert_eq!(show["entries"][1]["played"], true, "{}", show["entries"][1]);
     chilpa.sources_command("heard", "ep:two", "");
     assert_eq!(view(&mut chilpa)["entries"][1]["played"], false);
     assert_eq!(view(&mut chilpa)["entries"][1]["heard"], "");
