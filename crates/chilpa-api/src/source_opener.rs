@@ -52,11 +52,14 @@ pub(crate) struct Openers {
     /// next track's is resolved while the one before it ends, so the gap
     /// between them is not a round trip to the plugin.
     ahead: Mutex<std::collections::HashMap<String, (std::time::Instant, Located)>>,
+    /// What failed to open, for the queue to pass it over and say so, and
+    /// how fast: a burst of failures slows the next opens down.
+    reports: crate::queue::unavailable::Reports,
 }
 
 impl Openers {
-    pub(crate) fn new(servers: Option<Arc<dyn RemoteOpener>>, plugins: Option<Arc<Mutex<Plugins>>>, catalog: Arc<crate::source_catalog::Catalog>) -> Self {
-        Self { servers, plugins, catalog, library: Mutex::new(None), ahead: Mutex::new(std::collections::HashMap::new()) }
+    pub(crate) fn new(servers: Option<Arc<dyn RemoteOpener>>, plugins: Option<Arc<Mutex<Plugins>>>, catalog: Arc<crate::source_catalog::Catalog>, reports: crate::queue::unavailable::Reports) -> Self {
+        Self { servers, plugins, catalog, library: Mutex::new(None), ahead: Mutex::new(std::collections::HashMap::new()), reports }
     }
 
     /// Resolves a plugin's queue entry on a thread of its own and keeps the
@@ -208,6 +211,12 @@ fn joined(from: &str, to: &str) -> String {
 
 impl RemoteOpener for Openers {
     fn locate(&self, entry: &RemoteEntry) -> Result<Located, String> {
+        // The player passes over items that fail one after another; a server
+        // or a source that keeps saying no is asked no faster than this.
+        let wait = self.reports.pause();
+        if !wait.is_zero() && !chilpa_core::network::current().offline {
+            std::thread::sleep(wait);
+        }
         if entry.source.provider == PROVIDER {
             if chilpa_core::network::current().offline { return Err(chilpa_core::network::blocked()); }
             if let Some(located) = self.take_ahead(entry) {
@@ -255,6 +264,7 @@ impl RemoteOpener for Openers {
     }
 
     fn failed(&self, entry: &RemoteEntry, why: &str) {
+        self.reports.failed(entry.to_entry(), why, !chilpa_core::network::current().offline);
         if entry.source.provider != PROVIDER {
             if let Some(servers) = &self.servers {
                 servers.failed(entry, why);

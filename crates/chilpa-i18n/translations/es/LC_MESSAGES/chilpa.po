@@ -6268,6 +6268,11 @@ msgstr "Tamaño"
 msgid "Skipped"
 msgstr "Saltada"
 
+msgid "Skipped {} unavailable track"
+msgid_plural "Skipped {} unavailable tracks"
+msgstr[0] "Se saltó {} pista no disponible"
+msgstr[1] "Se saltaron {} pistas no disponibles"
+
 msgid "Skips"
 msgstr "Saltadas"
 

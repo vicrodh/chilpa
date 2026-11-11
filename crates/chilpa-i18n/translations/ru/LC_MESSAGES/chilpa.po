@@ -6274,6 +6274,12 @@ msgstr "Размер"
 msgid "Skipped"
 msgstr "Пропущено"
 
+msgid "Skipped {} unavailable track"
+msgid_plural "Skipped {} unavailable tracks"
+msgstr[0] "Пропущен {} недоступный трек"
+msgstr[1] "Пропущено {} недоступных трека"
+msgstr[2] "Пропущено {} недоступных треков"
+
 msgid "Skips"
 msgstr "Пропуски"
 

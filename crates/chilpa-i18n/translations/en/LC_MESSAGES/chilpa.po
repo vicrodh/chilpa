@@ -6268,6 +6268,11 @@ msgstr ""
 msgid "Skipped"
 msgstr ""
 
+msgid "Skipped {} unavailable track"
+msgid_plural "Skipped {} unavailable tracks"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "Skips"
 msgstr ""
 

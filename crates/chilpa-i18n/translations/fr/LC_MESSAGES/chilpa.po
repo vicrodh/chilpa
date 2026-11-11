@@ -6268,6 +6268,11 @@ msgstr "Taille"
 msgid "Skipped"
 msgstr "Passée"
 
+msgid "Skipped {} unavailable track"
+msgid_plural "Skipped {} unavailable tracks"
+msgstr[0] "{} piste indisponible passée"
+msgstr[1] "{} pistes indisponibles passées"
+
 msgid "Skips"
 msgstr "Pistes passées"
 

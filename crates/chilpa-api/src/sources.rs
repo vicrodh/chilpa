@@ -1478,7 +1478,7 @@ impl Chilpa {
     /// Sets the one opener the player holds: plugins here, servers there.
     pub(crate) fn install_openers(&mut self) {
         self.catalog.attach(self.plugins.clone(), self.natives.clone());
-        let openers = std::sync::Arc::new(crate::source_opener::Openers::new(self.sources.servers_opener.clone(), self.plugins.clone(), self.catalog.clone()));
+        let openers = std::sync::Arc::new(crate::source_opener::Openers::new(self.sources.servers_opener.clone(), self.plugins.clone(), self.catalog.clone(), self.unavailable.reports()));
         self.sources.openers = Some(openers.clone());
         chilpa_core::remote::install(openers);
     }

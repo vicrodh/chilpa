@@ -6262,6 +6262,10 @@ msgstr "サイズ"
 msgid "Skipped"
 msgstr "スキップ済み"
 
+msgid "Skipped {} unavailable track"
+msgid_plural "Skipped {} unavailable tracks"
+msgstr[0] "利用できない曲を{}曲スキップしました"
+
 msgid "Skips"
 msgstr "スキップ"
 

@@ -44,7 +44,7 @@ fn old_revision(app: &Chilpa) -> String {
         let mut b = app.buffer_snapshot(item.id).unwrap(); b.seconds = 0.0;
         serde_json::to_string(&b).unwrap().hash(&mut hash);
     }
-    app.now.playing.hash(&mut hash); app.now.paused.hash(&mut hash);
+    app.now.playing.hash(&mut hash); app.now.paused.hash(&mut hash); app.unavailable_revision().hash(&mut hash);
     hash.finish().to_string()
 }
 

@@ -20,6 +20,7 @@ use super::*;
 pub(crate) mod back_button;
 pub(crate) mod ended;
 pub(crate) mod normalization;
+pub(crate) mod unavailable;
 
 /// Where the playback switches are kept.
 const GAPLESS: &str = "playback.gapless";
@@ -233,6 +234,11 @@ impl Chilpa {
             return;
         };
         let device = device.as_str();
+        // What cannot be played is passed before anything opens: a first
+        // track that is gone starts the next one (`queue/unavailable.rs`).
+        let asked = from;
+        let Some(from) = self.playable_start(from, why) else { return };
+        let start_at = if from == asked { start_at } else { None };
         chilpa_core::trace_playback(
             "facade",
             "launch_requested",
@@ -269,6 +275,7 @@ impl Chilpa {
         let dsd_mode = self.dsd_mode();
         let volume = self.software_gain();
         let dsp = self.dsp_configuration(device);
+        let removed = self.removed_for_player();
         let (tap, feed) = (self.tap.clone(), self.seek_waveform.feed());
         let player = self.player.get_or_insert_with(move || {
             let player = chilpa_core::spawn_player_with(tap);
@@ -307,7 +314,8 @@ impl Chilpa {
                 tracks.first()
             ),
         );
-        player.play_from_index(&tracks, device, start_at, paused, Some(from), &self.removed, self.stop_after);
+        player.play_from_index(&tracks, device, start_at, paused, Some(from), &removed, self.stop_after);
+        self.launched_from(from, device);
     }
 
     /// Moves what is playing to another output, keeping its place.
