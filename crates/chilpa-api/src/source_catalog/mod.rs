@@ -521,6 +521,38 @@ impl Catalog {
             || inner.running.contains(&Job::Append(key.into())) || inner.queue.queued.contains(&Job::Append(key.into()))
     }
 
+    /// The ratings the sources' own lists carry, raw on each source's scale:
+    /// (kind, source, identity, value). A playlist row is its song.
+    pub(crate) fn source_ratings(&self) -> Vec<(String, String, String, f64)> {
+        let inner = self.lock();
+        let rated = |metadata: &serde_json::Value| metadata.get("rating").and_then(serde_json::Value::as_f64);
+        let cards = inner.store.cards.values().filter(|card| card.kind == store::CardKind::Album)
+            .filter_map(|card| Some(("album".to_string(), card.plugin.clone(), card.identity.clone(), rated(&card.metadata)?)));
+        let tracks = inner.store.tracks.values().filter(|track| track.metadata["kind"] == "track").filter_map(|track| {
+            let reference = track.metadata["ref"].as_str()?;
+            let song = reference.split_once("@playlist:").map_or(reference, |(song, _)| song);
+            Some(("track".to_string(), track.plugin.clone(), song.to_string(), rated(&track.metadata)?))
+        });
+        cards.chain(tracks).collect()
+    }
+
+    /// What a source holds now for one item, after Chilpa wrote it there:
+    /// its lists say so until they are read again.
+    pub(crate) fn set_source_rating(&self, plugin: &str, kind: &str, identity: &str, value: f64) {
+        let mut inner = self.lock();
+        let value = serde_json::json!(value);
+        let song = |track: &store::Track| track.metadata["ref"].as_str().is_some_and(|r| r.split_once("@playlist:").map_or(r, |(song, _)| song) == identity);
+        for card in inner.store.cards.values_mut_where(|card| kind == "album" && card.kind == store::CardKind::Album && card.plugin == plugin && card.identity == identity && card.metadata.is_object()) {
+            card.metadata["rating"] = value.clone();
+        }
+        for track in inner.store.tracks.values_mut_where(|track| kind == "track" && track.plugin == plugin && track.metadata["kind"] == "track" && song(track)) {
+            track.metadata["rating"] = value.clone();
+        }
+        inner.dirty = true;
+        drop(inner);
+        self.changed();
+    }
+
     /// I map transient display ids to stable identities without requesting the network.
     pub(crate) fn rating_identities(&self) -> Vec<(String, i64, String, String)> {
         let inner = self.lock();

@@ -2562,6 +2562,9 @@ msgstr "お気に入りのプリセット"
 msgid "Favorites"
 msgstr "お気に入り"
 
+msgid "Favorites are not synced with it."
+msgstr "お気に入りはこのサーバーと同期されません。"
+
 msgid "Feb"
 msgstr "2月"
 
@@ -2933,6 +2936,9 @@ msgstr "再生済み"
 
 msgid "Heard {} of {}"
 msgstr "{}/{}を再生済み"
+
+msgid "Hearts on the tracks and records of your servers go both ways. Turned off, they stay in Chilpa."
+msgstr "サーバーの曲とアルバムのお気に入りを双方向で同期します。オフにすると Chilpa の中だけに残ります。"
 
 msgid "Hi-Res"
 msgstr "ハイレゾ"
@@ -5265,6 +5271,9 @@ msgstr "評価"
 msgid "Ratings"
 msgstr "評価"
 
+msgid "Ratings are not synced with it."
+msgstr "評価はこのサーバーと同期されません。"
+
 msgid "Re-fetch album information"
 msgstr "アルバム情報を再取得"
 
@@ -6305,6 +6314,9 @@ msgstr "これらのトラックの一部はすでに追加されています"
 msgid "Some packages are missing"
 msgstr "一部のパッケージがありません"
 
+msgid "Some ratings or favorites could not reach their source. Chilpa will try again."
+msgstr "一部の評価やお気に入りをソースに送れませんでした。Chilpaが再試行します。"
+
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
 msgstr ""
 
@@ -6428,6 +6440,12 @@ msgstr "再生を停止して診断しますか？"
 msgid "Stop scan"
 msgstr "スキャンを停止"
 
+msgid "Stop syncing favorites"
+msgstr "お気に入りの同期を停止"
+
+msgid "Stop syncing ratings"
+msgstr "評価の同期を停止"
+
 msgid "Stopped"
 msgstr "停止"
 
@@ -6491,11 +6509,20 @@ msgstr ""
 msgid "Sync complete"
 msgstr ""
 
+msgid "Sync favorites"
+msgstr "お気に入りを同期"
+
+msgid "Sync favorites with sources"
+msgstr "お気に入りをソースと同期"
+
 msgid "Sync needs attention"
 msgstr ""
 
 msgid "Sync now"
 msgstr "今すぐ同期"
+
+msgid "Sync ratings"
+msgstr "評価を同期"
 
 msgid "Sync to device…"
 msgstr ""
@@ -9214,6 +9241,12 @@ msgstr ""
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "このサーバーはChilpaからプレイリストの説明を受け付けません"
 
+msgid "this server keeps no favorites Chilpa can change"
+msgstr "このサーバーにはChilpaが変更できるお気に入りがありません"
+
+msgid "this server keeps no ratings Chilpa can change"
+msgstr "このサーバーにはChilpaが変更できる評価がありません"
+
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "このサーバーはトラックのすべてのコピーをプレイリストから一度に削除します。すべて削除するか、サーバー上で変更してください"
 
@@ -9377,6 +9410,10 @@ msgstr "{}が応答しません。戻り次第、アルバムが開きます。"
 msgid "{} does not answer; change its playlist when it is back."
 msgstr "{}が応答しません。復帰してからプレイリストを変更してください。"
 
+msgid "{} favorite waits to reach it: {}"
+msgid_plural "{} favorites wait to reach it: {}"
+msgstr[0] "{}件のお気に入りが送信待ちです: {}"
+
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"
 msgstr[0] "タグが一致しないファイル{}個"
@@ -9522,6 +9559,10 @@ msgstr "{}はライブラリによって保護されています"
 
 msgid "{} queues · {} tracks"
 msgstr "{}キュー · {}トラック"
+
+msgid "{} rating waits to reach it: {}"
+msgid_plural "{} ratings wait to reach it: {}"
+msgstr[0] "{}件の評価が送信待ちです: {}"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{}個を読み取り、{}個は変更なし、{}個は見つかりません"

@@ -13,7 +13,9 @@ pub(crate) mod keys;
 mod lan;
 mod net;
 mod opener;
+pub(crate) mod favorites;
 pub(crate) mod playlists;
+pub(crate) mod ratings;
 mod reading;
 mod media;
 mod setup;
@@ -62,7 +64,7 @@ pub struct ServerRow {
 
 #[derive(Default)]
 pub(crate) struct Servers {
-    keys: Option<Arc<Keys>>,
+    pub(crate) keys: Option<Arc<Keys>>,
     setup: setup::Setup,
     syncer: Option<sync::Syncer>,
     watcher: Option<watch::Watcher>,
@@ -89,7 +91,7 @@ pub(crate) struct Servers {
     /// is pending or why it failed.
     answers: HashMap<i64, serde_json::Value>,
     /// The library changed underneath the window.
-    changed: bool,
+    pub(crate) changed: bool,
     /// When a running sync last had the window read the library again.
     shown_at: Option<std::time::Instant>,
     /// A server being added or edited: the library is written on a thread.
@@ -104,6 +106,9 @@ pub(crate) struct Servers {
     /// What the window says once, as a notice: a number that moves with each
     /// one, and the words.
     notice: (u64, String),
+    /// The listener's rating changes on their way to servers and plugins
+    /// (`crate::ratings::sync`).
+    pub(crate) ratings: crate::ratings::sync::State,
 }
 
 /// A server being written into the library, away from the window: the
@@ -274,6 +279,12 @@ impl Chilpa {
             } else {
                 chilpa_i18n::t("Connected")
             };
+            let mut values: Vec<String> = if server.enabled { vec!["edit".into(), "disable".into(), "sync".into(), "remove".into()] }
+                else { vec!["edit".into(), "enable".into(), "remove".into()] };
+            let mut options = if server.enabled { vec![chilpa_i18n::t("Edit…"), chilpa_i18n::t("Disable"), chilpa_i18n::t("Sync now"), chilpa_i18n::t("Remove…")] }
+                else { vec![chilpa_i18n::t("Edit…"), chilpa_i18n::t("Enable"), chilpa_i18n::t("Remove…")] };
+            self.server_rating_row(server.id, &mut description, &mut values, &mut options);
+            self.server_favorite_row(server.id, &mut description, &mut values, &mut options);
             rows.push(crate::SettingsRow {
                 kind: 1,
                 key,
@@ -285,10 +296,8 @@ impl Chilpa {
                     "enabled": server.enabled, "syncing": server.syncing,
                 }).to_string(),
                 action,
-                values: if server.enabled { vec!["edit".into(), "disable".into(), "sync".into(), "remove".into()] }
-                    else { vec!["edit".into(), "enable".into(), "remove".into()] },
-                options: if server.enabled { vec![chilpa_i18n::t("Edit…"), chilpa_i18n::t("Disable"), chilpa_i18n::t("Sync now"), chilpa_i18n::t("Remove…")] }
-                    else { vec![chilpa_i18n::t("Edit…"), chilpa_i18n::t("Enable"), chilpa_i18n::t("Remove…")] },
+                values,
+                options,
                 ..Default::default()
             });
         }
@@ -648,6 +657,7 @@ impl Chilpa {
 
     /// What came back from the servers' threads. `poll` calls it.
     pub(crate) fn poll_servers(&mut self) {
+        self.poll_ratings();
         self.poll_server_offline();
         self.servers.setup.poll();
         self.poll_adding();

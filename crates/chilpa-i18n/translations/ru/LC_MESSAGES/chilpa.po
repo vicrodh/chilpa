@@ -2566,6 +2566,9 @@ msgstr "Избранный пресет"
 msgid "Favorites"
 msgstr "Избранное"
 
+msgid "Favorites are not synced with it."
+msgstr "Избранное не синхронизируется с этим сервером."
+
 msgid "Feb"
 msgstr "февр."
 
@@ -2937,6 +2940,9 @@ msgstr "Прослушано"
 
 msgid "Heard {} of {}"
 msgstr "Прослушано {} из {}"
+
+msgid "Hearts on the tracks and records of your servers go both ways. Turned off, they stay in Chilpa."
+msgstr "Избранное для треков и альбомов на ваших серверах синхронизируется в обе стороны. Если выключить, оно остаётся только в Chilpa."
 
 msgid "Hi-Res"
 msgstr "Hi-Res"
@@ -5275,6 +5281,9 @@ msgstr "Рейтинг"
 msgid "Ratings"
 msgstr "Оценки"
 
+msgid "Ratings are not synced with it."
+msgstr "Оценки не синхронизируются с этим сервером."
+
 msgid "Re-fetch album information"
 msgstr "Повторно получить сведения об альбоме"
 
@@ -6319,6 +6328,9 @@ msgstr "Некоторые из этих треков уже добавлены"
 msgid "Some packages are missing"
 msgstr "Некоторые пакеты отсутствуют"
 
+msgid "Some ratings or favorites could not reach their source. Chilpa will try again."
+msgstr "Некоторые оценки или избранное не удалось передать источнику. Chilpa попробует снова."
+
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
 msgstr ""
 
@@ -6442,6 +6454,12 @@ msgstr "Остановить воспроизведение для диагно�
 msgid "Stop scan"
 msgstr "Остановить сканирование"
 
+msgid "Stop syncing favorites"
+msgstr "Не синхронизировать избранное"
+
+msgid "Stop syncing ratings"
+msgstr "Не синхронизировать оценки"
+
 msgid "Stopped"
 msgstr "Остановлено"
 
@@ -6505,11 +6523,20 @@ msgstr ""
 msgid "Sync complete"
 msgstr ""
 
+msgid "Sync favorites"
+msgstr "Синхронизировать избранное"
+
+msgid "Sync favorites with sources"
+msgstr "Синхронизировать избранное с источниками"
+
 msgid "Sync needs attention"
 msgstr ""
 
 msgid "Sync now"
 msgstr "Синхронизировать сейчас"
+
+msgid "Sync ratings"
+msgstr "Синхронизировать оценки"
 
 msgid "Sync to device…"
 msgstr ""
@@ -9238,6 +9265,12 @@ msgstr ""
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "этот сервер не принимает описание плейлиста от Chilpa"
 
+msgid "this server keeps no favorites Chilpa can change"
+msgstr "этот сервер не хранит избранного, которое Chilpa может изменить"
+
+msgid "this server keeps no ratings Chilpa can change"
+msgstr "этот сервер не хранит оценок, которые Chilpa может изменить"
+
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "этот сервер удаляет из плейлиста все копии трека сразу; удалите все или измените плейлист на сервере"
 
@@ -9415,6 +9448,12 @@ msgstr "{} не отвечает. Запись откроется, когда о
 msgid "{} does not answer; change its playlist when it is back."
 msgstr "{} не отвечает; измените плейлист, когда сервер снова будет доступен."
 
+msgid "{} favorite waits to reach it: {}"
+msgid_plural "{} favorites wait to reach it: {}"
+msgstr[0] "{} элемент избранного ожидает отправки: {}"
+msgstr[1] "{} элемента избранного ожидают отправки: {}"
+msgstr[2] "{} элементов избранного ожидают отправки: {}"
+
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"
 msgstr[0] "{} файл с расхождением тегов"
@@ -9588,6 +9627,12 @@ msgstr "Защищено библиотекой: {}"
 
 msgid "{} queues · {} tracks"
 msgstr "Очередей: {} · треков: {}"
+
+msgid "{} rating waits to reach it: {}"
+msgid_plural "{} ratings wait to reach it: {}"
+msgstr[0] "{} оценка ожидает отправки: {}"
+msgstr[1] "{} оценки ожидают отправки: {}"
+msgstr[2] "{} оценок ожидают отправки: {}"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "Прочитано: {}, без изменений: {}, отсутствует: {}"

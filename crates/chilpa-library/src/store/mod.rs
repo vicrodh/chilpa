@@ -68,6 +68,8 @@ pub mod progress_writer;
 pub mod listening;
 pub mod ratings;
 pub mod external_ratings;
+pub mod rating_sync;
+pub mod favorite_sync;
 pub mod regroup;
 pub mod saved;
 mod related;

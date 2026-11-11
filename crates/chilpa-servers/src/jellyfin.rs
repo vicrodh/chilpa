@@ -45,7 +45,7 @@ fn authorization(client: &Client, token: Option<&str>) -> String {
     header
 }
 
-fn headers(client: &Client, key: Option<&Credential>) -> Vec<(String, String)> {
+pub(crate) fn headers(client: &Client, key: Option<&Credential>) -> Vec<(String, String)> {
     let token = match key {
         Some(Credential::Token { token }) => Some(token.as_str()),
         _ => None,
@@ -53,12 +53,12 @@ fn headers(client: &Client, key: Option<&Credential>) -> Vec<(String, String)> {
     vec![("Authorization".into(), authorization(client, token)), ("Accept".into(), "application/json".into())]
 }
 
-fn ask(net: &dyn Net, request: Request) -> Result<Value, Failure> {
+pub(crate) fn ask(net: &dyn Net, request: Request) -> Result<Value, Failure> {
     read(&net.send(&request).map_err(Failure::Unreachable)?)
 }
 
 /// What an answer says, or why it says nothing.
-fn read(reply: &Reply) -> Result<Value, Failure> {
+pub(crate) fn read(reply: &Reply) -> Result<Value, Failure> {
     match reply.status {
         200..=299 if reply.body.is_empty() => Ok(Value::Null),
         200..=299 => serde_json::from_slice(&reply.body).map_err(|_| not_jellyfin(reply.status)),
@@ -213,7 +213,7 @@ pub fn page(net: &dyn Net, server: &Server, key: &Credential, cursor: Option<&st
     } else {
         None
     };
-    Ok(Page { tracks, next: next.map(|c| serde_json::to_string(&c).unwrap_or_default()), total, scope: view.clone(), partial, skipped: 0 })
+    Ok(Page { tracks, next: next.map(|c| serde_json::to_string(&c).unwrap_or_default()), total, scope: view.clone(), partial, skipped: 0, ratings: Vec::new() })
 }
 
 pub fn details(net: &dyn Net, server: &Server, key: &Credential, ids: &[String]) -> Result<Vec<Track>, Failure> {

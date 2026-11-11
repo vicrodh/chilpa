@@ -157,6 +157,10 @@ impl Natives {
     pub(crate) fn has_favorites(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["favorites"] == true)
     }
+    /// What the plugin said of one capability in its answer to `initialize`.
+    pub(crate) fn capability(&self, id: &str, name: &str) -> Value {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).map(|p| p.capabilities[name].clone()).unwrap_or(Value::Null)
+    }
     pub(crate) fn has_pages(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["pages"] == true)
     }
@@ -172,6 +176,10 @@ impl Natives {
     pub(crate) fn edits_folders(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p|
             p.capabilities["folder_edit"].as_bool().unwrap_or(p.capabilities["playlist_edit"] == true))
+    }
+    /// The plugins whose answer to `initialize` names that capability.
+    pub(crate) fn with_capability(&self, name: &str) -> Vec<String> {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).iter().filter(|(_, k)| !k.capabilities[name].is_null()).map(|(id, _)| id.clone()).collect()
     }
     pub(crate) fn ids(&self) -> Vec<String> {
         self.live.read().unwrap_or_else(|e| e.into_inner()).keys().cloned().collect()
@@ -702,7 +710,7 @@ pub(crate) mod tests {
     }
 
     /// What a start of `client` leaves known of a plugin, and live.
-    fn started(natives: &Natives, manifest: Manifest, folder: &Path, client: &Arc<NativeClient>) {
+    pub(crate) fn started(natives: &Natives, manifest: Manifest, folder: &Path, client: &Arc<NativeClient>) {
         let generation = natives.next_generation();
         natives.live.write().unwrap().insert(manifest.id.clone(), client.clone());
         natives.known.lock().unwrap().insert(manifest.id.clone(), Known { manifest, folder: folder.to_path_buf(),
@@ -711,7 +719,7 @@ pub(crate) mod tests {
     }
 
     /// A channel to no process, and the far ends of its pipes.
-    fn channel() -> (Arc<NativeClient>, (std::io::PipeReader, std::io::PipeWriter)) {
+    pub(crate) fn channel() -> (Arc<NativeClient>, (std::io::PipeReader, std::io::PipeWriter)) {
         let (plugin_reads, input) = std::io::pipe().unwrap();
         let (output, plugin_writes) = std::io::pipe().unwrap();
         (NativeClient::start(input, output, || {}, |_, _| {}), (plugin_reads, plugin_writes))
