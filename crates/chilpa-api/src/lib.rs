@@ -1398,9 +1398,7 @@ impl Chilpa {
                     }
                     self.keep_place(true);
                     self.now.playing = false;
-                    self.stop_after = None;
-                    self.sleep_until = None;
-                    self.log_play(false);
+                    self.finish_queue();
                 }
                 PlayerEvent::Stopped { frames } => {
                     self.set_played(frames);

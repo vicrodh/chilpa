@@ -366,3 +366,52 @@ fn queue_origins_survive_restart_for_duplicate_paths_and_insertions() {
     drop(restored);
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn a_queue_that_ran_out_shows_nothing_playing_but_keeps_its_tracks() {
+    let dir = folder("ran-out");
+    other_library(&dir);
+    let paths: Vec<String> = ["01.wav", "02.wav"]
+        .iter()
+        .map(|name| wave(&dir, name, 22_050).display().to_string())
+        .collect();
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    assert!(wait_at_least(&mut chilpa, 1), "the queue reached its last track");
+    let limit = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while chilpa.poll().playing && std::time::Instant::now() < limit {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    let now = chilpa.now_playing();
+    assert!(!now.playing, "the queue ended");
+    assert_eq!(now.path, "", "the last track is not kept on the player's face");
+    assert_eq!(now.title, "");
+    assert_eq!(now.seconds, 0.0);
+    assert_eq!(now.queue_len, 2, "the queue itself stays");
+    assert_eq!(chilpa.queue_paths().len(), 2);
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_stop_after_mark_leaves_the_track_it_stopped_on_in_the_player() {
+    let dir = folder("marked");
+    other_library(&dir);
+    let paths: Vec<String> = ["01.wav", "02.wav"]
+        .iter()
+        .map(|name| wave(&dir, name, 441_000).display().to_string())
+        .collect();
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    chilpa.set_paused(true);
+    assert!(chilpa.set_stop_after(Some(0)));
+    chilpa.set_paused(false);
+    let limit = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while chilpa.poll().playing && std::time::Instant::now() < limit {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    assert!(!chilpa.now_playing().playing);
+    assert!(chilpa.now_playing().path.ends_with("01.wav"), "a mark is not the queue running out");
+    let _ = std::fs::remove_dir_all(dir);
+}
