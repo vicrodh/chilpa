@@ -1,0 +1,9189 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Chilpa\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2026-11-11 19:37+0800\n"
+"Last-Translator: Lushih Hsieh <bruce@mail.kh.edu.tw>\n"
+"Language-Team: bruce at mail.kh.edu.tw\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Poedit 3.10\n"
+
+msgid "\"{}\" brings nothing today"
+msgstr "「{}」今天沒有帶來任何內容"
+
+msgid "\"{}\" does not say how an account connects"
+msgstr "「{}」沒有說明帳號如何連線"
+
+msgid "\"{}\" does not work as an id: it is used as a folder name, so it goes in lowercase, with dots, dashes or digits, and no slashes and no double dots"
+msgstr "「{}」不能作為 ID 使用：它會當成資料夾名稱，因此必須使用小寫、點、連字號或數字，且不能有斜線或連續兩點"
+
+msgid "\"{}\" is not a domain permission can be given to"
+msgstr "「{}」不是可以授與權限的範圍"
+
+msgid "\"{}\" would not be given to Chilpa alone ({}); turn exclusive mode off to share it"
+msgstr "「{}」不會只給 Chilpa 獨佔使用 ({})；請關閉獨佔模式以共享之"
+
+msgid "\"{}\" would not be given to Chilpa alone; turn exclusive mode off to share it"
+msgstr "「{}」不會只給 Chilpa 獨佔使用；請關閉獨佔模式以共享之"
+
+msgid "\"{}\" would not open ({} {})"
+msgstr "「{}」無法開啟 ({} {})"
+
+msgid "\"{}\" would not start ({})"
+msgstr "「{}」無法啟動 ({})"
+
+msgid "# Tracks"
+msgstr "# 曲目"
+
+msgid "(Re)start the PipeWire audio services"
+msgstr "（重新）啟動 PipeWire 音訊服務"
+
+msgid "(unreadable manifest)"
+msgstr "（無法讀取的清單檔）"
+
+msgid "+ Create new playlist"
+msgstr "+ 建立新播放清單"
+
+msgid "+{} more"
+msgstr "+更多 {}"
+
+msgid "-11 LUFS · Loud"
+msgstr "-11 響度(LUFS) · 大聲"
+
+msgid "-14 LUFS · Streaming (default)"
+msgstr "-14 響度(LUFS) · 串流（預設）"
+
+msgid "-16 LUFS"
+msgstr "-16 響度(LUFS)"
+
+msgid "-18 LUFS · ReplayGain"
+msgstr "-18 響度(LUFS) · 回放增益"
+
+msgid "-23 LUFS · Broadcast (EBU R128)"
+msgstr "-23 響度(LUFS) · 廣播（EBU R128）"
+
+msgid "1 hr"
+msgstr "1 小時"
+
+msgid "1. Back up your current PipeWire/WirePlumber config"
+msgstr "1. 備份您目前的 PipeWire/WirePlumber 設定"
+
+msgid "1. Find your DAC under 'Audio > Sinks' and note its number"
+msgstr "1. 在「音訊 > 接收端」中找到您的 DAC，並記下其編號"
+
+msgid "1. Origin"
+msgstr "1. 來源"
+
+msgid "16 bit"
+msgstr "16 位元"
+
+msgid "2 hr"
+msgstr "2 小時"
+
+msgid "2. Destinations"
+msgstr "2. 目標"
+
+msgid "2. Run with that number to read the node.name"
+msgstr "2. 使用該編號執行以讀取 node.name"
+
+msgid "24 bit in 3 bytes"
+msgstr "24 位元（包裝在 3 位元組）"
+
+msgid "24 bit in 32"
+msgstr "24 位元（包裝在 32 位元中）"
+
+msgid "3 hr"
+msgstr "3 小時"
+
+msgid "3. Restart the audio services to load the config"
+msgstr "3. 重新啟動音訊系統服務以載入設定"
+
+msgid "3. Review"
+msgstr "3. 檢視"
+
+msgid "30 min"
+msgstr "30 分鐘"
+
+msgid "32 bit"
+msgstr "32 位元"
+
+msgid "32 bit float"
+msgstr "32 位元浮點數"
+
+msgid "4. Summary"
+msgstr "4. 摘要"
+
+msgid "5 hr"
+msgstr "5 小時"
+
+msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
+msgstr "JACK 連線圖以單一取樣率運作，所有程式都必須使用該取樣率——目前為 {} Hz。以其它取樣率錄製的曲目會在 Chilpa 播放前被重新取樣，此處的設定無法改變此種行為。JACK 用於在程式間路由音訊；若要將檔案原樣傳送至 DAC，請直接選擇音效卡本身。"
+
+msgid "A PCM carrier does not verify DoP. No tone or library track will play."
+msgstr "PCM 載體不會驗證 DoP。任何測試音或音樂庫音軌都不會被播放。"
+
+msgid "A Plex Media Server. You sign in with your Plex account, with a code at plex.tv/link."
+msgstr "Plex 媒體伺服器。您可以透過在 plex.tv/link 輸入代碼並使用 Plex 帳號登入。"
+
+msgid "A bar or OR: either is enough"
+msgstr "使用 | 或 OR：符合其中一項即可"
+
+msgid "A change to this playlist is still on its way to {}."
+msgstr "此播放清單的變更仍在傳送至 {} 的途中。"
+
+msgid "A chosen folder holds no songs"
+msgstr "此資料夾沒有曲目"
+
+msgid "A click on a record opens"
+msgstr "點擊一筆錄音即可開啟"
+
+msgid "A device operation is still running."
+msgstr "裝置操作仍在進行中。"
+
+msgid "A device selection can contain at most 50,000 files and playlists."
+msgstr "裝置選取內容最多可包含 50,000 個檔案與播放清單。"
+
+msgid "A folder chosen before"
+msgstr "先前被選定的資料夾"
+
+msgid "A media server on this network, such as MiniDLNA, Gerbera or the DLNA side of Plex. There is nothing to sign in to."
+msgstr "此網路上的媒體伺服器，例如 MiniDLNA、Gerbera 或 Plex 的 DLNA 功能。無需登入。"
+
+msgid "A media server you run yourself. You sign in with its user and password, or with Quick Connect."
+msgstr "您自己維運的媒體伺服器。您可以使用其使用者名稱和密碼登錄，或使用快速連線登入。"
+
+msgid "A name for this memory"
+msgstr "此記憶的名稱"
+
+msgid "A new version of Chilpa is available."
+msgstr "Chilpa 有新版本可用。"
+
+msgid "A player for your own music"
+msgstr "專屬於你擁有的音樂的播放器"
+
+msgid "A playlist member could not be resolved."
+msgstr "無法解析播放清單中的成員。"
+
+msgid "A profile already manages this device folder."
+msgstr "已有設定檔管理此裝置資料夾。"
+
+msgid "A receiver uses network playback. Its physical DAC is not exposed here."
+msgstr "接收端使用網路播放。此處不會顯示其實體 DAC。"
+
+msgid "A saved query already has that name."
+msgstr "有同名的已儲存查詢。"
+
+msgid "A saved query may use at most 16 KiB."
+msgstr "已儲存的查詢最多可使用 16 KiB。"
+
+msgid "A scan supports up to 256 folders and 64 KiB of saved paths."
+msgstr "掃描最多支援 256 個資料夾與 64 KiB 的儲存路徑。"
+
+msgid "A secure cast URL could not be created."
+msgstr "無法建立安全的投射播放網址。"
+
+msgid "A selected local file is unavailable. I kept the device unchanged."
+msgstr "所選的本機檔案無法使用。已保持裝置不變。"
+
+msgid "A selected playlist or one of its tracks is missing. I kept the device unchanged."
+msgstr "所選的播放清單或其曲目遺失。已保持裝置不變。"
+
+msgid "A selected queue is no longer available."
+msgstr "所選的播放佇列已無法使用。"
+
+msgid "A sidecar sets this, not the file"
+msgstr "此設定由附屬檔案決定，而非檔案本身"
+
+msgid "A sync operation still uses this profile."
+msgstr "仍有同步操作正在使用此設定檔。"
+
+msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
+msgstr "曲目播放過半或達四分鐘即計為一次聆聽。離線時的聆聽紀錄會稍後傳送。"
+
+msgid "A-B loop"
+msgstr "A-B 循環"
+
+msgid "ACCENT"
+msgstr "聲調"
+
+msgid "AI-generated"
+msgstr "AI 生成的"
+
+msgid "ALSA direct"
+msgstr "ALSA 直通"
+
+msgid "ALSA plugin"
+msgstr "ALSA 外掛"
+
+msgid "API key"
+msgstr "API 金鑰"
+
+msgid "About"
+msgstr "關於"
+
+msgid "About Chilpa"
+msgstr "關於 Chilpa"
+
+msgid "Accent"
+msgstr "聲調"
+
+msgid "Accept permissions and enable"
+msgstr "接受權限並啟用"
+
+msgid "Accepted"
+msgstr "已接受"
+
+msgid "Access to downloader"
+msgstr "下載器存取權限"
+
+msgid "Account"
+msgstr "帳號"
+
+msgid "Account connected."
+msgstr "帳號已連線。"
+
+msgid "Account not connected."
+msgstr "帳號未連線。"
+
+msgid "Acknowledgments"
+msgstr "致謝"
+
+msgid "Acquired at opening"
+msgstr "開啟時取得"
+
+msgid "Acquisition was not reported by this backend"
+msgstr "此後端未回報取得狀態"
+
+msgid "Action"
+msgstr "動作"
+
+msgid "Actions"
+msgstr "動作"
+
+msgid "Active"
+msgstr "啟用中"
+
+msgid "Active modules"
+msgstr "使用中模組"
+
+msgid "Add"
+msgstr "新增"
+
+msgid "Add a condition before saving a query."
+msgstr "儲存查詢前請先新增條件。"
+
+msgid "Add a condition: type a genre, artist, year…"
+msgstr "新增條件：輸入類型、演出者、年份…"
+
+msgid "Add a condition…"
+msgstr "新增條件…"
+
+msgid "Add a folder"
+msgstr "新增資料夾"
+
+msgid "Add a folder to the library"
+msgstr "將資料夾加入音樂庫"
+
+msgid "Add a new server"
+msgstr "新增伺服器"
+
+msgid "Add a storage profile"
+msgstr "新增儲存設定檔"
+
+msgid "Add all to playlist…"
+msgstr "全部加入播放清單…"
+
+msgid "Add all to queue"
+msgstr "全部加入佇列"
+
+msgid "Add all tracks"
+msgstr "加入所有曲目"
+
+msgid "Add cover"
+msgstr "新增封面"
+
+msgid "Add filter"
+msgstr "新增篩選"
+
+msgid "Add folder to library"
+msgstr "將資料夾加入音樂庫"
+
+msgid "Add image"
+msgstr "新增圖片"
+
+msgid "Add only new tracks"
+msgstr "只加入新曲目"
+
+msgid "Add server"
+msgstr "新增伺服器"
+
+msgid "Add storage"
+msgstr "新增儲存空間"
+
+msgid "Add the folders where your music lives. Chilpa reads their tags and covers and builds your library from them."
+msgstr "新增存放音樂的資料夾。Chilpa 會讀取標籤與封面，並據此建立你的音樂庫。"
+
+msgid "Add to favorites"
+msgstr "加入我的最愛"
+
+msgid "Add to library"
+msgstr "加入音樂庫"
+
+msgid "Add to playlist"
+msgstr "加入播放清單"
+
+msgid "Add to playlist…"
+msgstr "加入播放清單…"
+
+msgid "Add to queue"
+msgstr "加入佇列"
+
+msgid "Add to queue {}"
+msgstr "加入佇列 {}"
+
+msgid "Add tracks from a track menu to this queue."
+msgstr "從曲目選單將曲目加入此佇列。"
+
+msgid "Add values"
+msgstr "新增數值"
+
+msgid "Added"
+msgstr "已新增"
+
+msgid "Added in the last 30 days: d, w, m or y"
+msgstr "最近 30 天內新增：d、w、m 或 y"
+
+msgid "Added this month"
+msgstr "本月新增"
+
+msgid "Adding storage…"
+msgstr "正在新增儲存空間…"
+
+msgid "Adding to queue…"
+msgstr "正在加入佇列…"
+
+msgid "Adding tracks…"
+msgstr "正在加入曲目…"
+
+msgid "Adding {} track"
+msgid_plural "Adding {} tracks"
+msgstr[0] "正在加入 {} 首曲目"
+
+msgid "Adding..."
+msgstr "正在加入..."
+
+msgid "Address"
+msgstr "位址"
+
+msgid "Address of the media server, or of its description"
+msgstr "媒體伺服器的位址或其描述"
+
+msgid "Add…"
+msgstr "新增…"
+
+msgid "Advanced"
+msgstr "進階"
+
+msgid "Album"
+msgstr "專輯"
+
+msgid "Album Reactive"
+msgstr "專輯反應"
+
+msgid "Album actions"
+msgstr "專輯動作"
+
+msgid "Album artist"
+msgstr "專輯演出者"
+
+msgid "Album artists"
+msgstr "專輯演出者"
+
+msgid "Album contains"
+msgstr "專輯包含"
+
+msgid "Album header"
+msgstr "專輯標題"
+
+msgid "Album page"
+msgstr "專輯頁面"
+
+msgid "Album radio"
+msgstr "專輯電台"
+
+msgid "Albums"
+msgstr "專輯"
+
+msgid "Albums ({})"
+msgstr "專輯 ({})"
+
+msgid "Albums and tracks"
+msgstr "專輯與曲目"
+
+msgid "Albums appear as they are read"
+msgstr "專輯會在被讀取時顯示"
+
+msgid "Albums from streaming services will not be synced."
+msgstr "來自串流服務的專輯不會被同步。"
+
+msgid "All"
+msgstr "全部"
+
+msgid "All ({})"
+msgstr "全部 ({})"
+
+msgid "All artists"
+msgstr "所有演出者"
+
+msgid "All categories"
+msgstr "所有分類"
+
+msgid "All discs"
+msgstr "所有碟片"
+
+msgid "All episode types"
+msgstr "所有曲集類型"
+
+msgid "All groups"
+msgstr "所有群組"
+
+msgid "All levels"
+msgstr "所有等級"
+
+msgid "All music"
+msgstr "所有音樂"
+
+msgid "All of these"
+msgstr "這些全部"
+
+msgid "All qualities"
+msgstr "所有音質"
+
+msgid "All results"
+msgstr "所有結果"
+
+msgid "All saved results"
+msgstr "所有已儲存結果"
+
+msgid "All seasons"
+msgstr "所有季節"
+
+msgid "All selections"
+msgstr "所有選取項目"
+
+msgid "All set"
+msgstr "全部就緒"
+
+msgid "All sources"
+msgstr "所有來源"
+
+msgid "All themes"
+msgstr "所有主題"
+
+msgid "All time"
+msgstr "所有時間"
+
+msgid "Allow Chilpa on Discogs, then paste the code below."
+msgstr "在 Discogs 允許 Chilpa，然後貼上下方的代碼。"
+
+msgid "Allow Chilpa on Last.fm; this updates by itself."
+msgstr "在 Last.fm 允許 Chilpa；此項目會自動更新。"
+
+msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
+msgstr "允許透過 Chilpa 代理取得選用中繼資料、簡介、Podcast 探索與 Last.fm 請求。無遙測。請求在背景執行。"
+
+msgid "Allow results from KuGou."
+msgstr "允許來自 KuGou 的結果。"
+
+msgid "Allow results from LRCLIB through Chilpa's lyrics API."
+msgstr "允許使用 Chilpa 歌詞 API 取得 LRCLIB 的結果。"
+
+msgid "Allow results from NetEase."
+msgstr "允許來自 NetEase 的結果。"
+
+msgid "Allow results from QQ Music."
+msgstr "允許來自 QQ Music 的結果。"
+
+msgid "Allow updates with the same permissions while playback is stopped. Updates that need more permissions wait for review. Your accounts and settings are kept."
+msgstr "在停止播放時允許具有相同權限的更新。需要更多權限的更新會等待審核。你的帳號與設定會被保留。"
+
+msgid "Allowed network domains, separated by commas"
+msgstr "允許的網路網域，以逗號分隔"
+
+msgid "Alphabetical"
+msgstr "字母順序"
+
+msgid "Already in"
+msgstr "已在其中"
+
+msgid "Already used by {}"
+msgstr "已被 {} 使用"
+
+msgid "Also delete the lyrics saved for this plugin's tracks"
+msgstr "同時刪除此外掛曲目已儲存的歌詞"
+
+msgid "Also remove music files no longer selected"
+msgstr "同時移除不再選取的音樂檔案"
+
+msgid "Also write the other tag layers"
+msgstr "同時寫入其他標籤層"
+
+msgid "Ambient"
+msgstr "氛圍"
+
+msgid "An EQ value is missing or invalid."
+msgstr "EQ 數值遺失或無效。"
+
+msgid "An active EQ filter is missing Q."
+msgstr "作用中的 EQ 濾波器缺少 Q 值。"
+
+msgid "An announcement or driver query does not confirm opening or audible output."
+msgstr "公告或驅動程式查詢未確認開啟或可聽輸出。"
+
+msgid "An audio check is already running."
+msgstr "音訊檢查已在進行中。"
+
+msgid "An audio output check is running. Try playback again when it finishes."
+msgstr "音訊輸出檢查正在進行。完成後請再試播放。"
+
+msgid "An interrupted sync needs recovery before reviewing new changes."
+msgstr "中斷的同步需要先復原，才能檢視新變更。"
+
+msgid "Analysis"
+msgstr "分析"
+
+msgid "Analysis history"
+msgstr "分析歷史"
+
+msgid "Analysis inventory"
+msgstr "分析清單"
+
+msgid "Analyze"
+msgstr "分析"
+
+msgid "Analyze the library"
+msgstr "分析音樂庫"
+
+msgid "Analyze the new music too?"
+msgstr "也要分析新音樂嗎？"
+
+msgid "Analyzes local files and puts the results in Playlists > Mood."
+msgstr "分析本機檔案，並將結果放在「播放清單 > 心情」。"
+
+msgid "Analyzing"
+msgstr "分析中"
+
+msgid "Analyzing Mood"
+msgstr "分析心情中"
+
+msgid "Analyzing {} of {} tracks"
+msgstr "正在分析第 {} 首曲目，全部有 {} 首"
+
+msgid "Animate the playing track's mark with equalizer bars. Off by default: a still mark with an accent edge, lighter on the CPU."
+msgstr "以等化器動態長條圖呈現目前播放曲目的標記。預設關閉：顯示靜態標記與強調邊框，CPU 負擔較輕。"
+
+msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
+msgstr "在整個應用程式背景顯示動態專輯封面。資源消耗較高：使用 GPU 加速。"
+
+msgid "Another device profile update is still running."
+msgstr "另一個裝置設定檔更新仍在進行中。"
+
+msgid "Any of these"
+msgstr "符合其中任一"
+
+msgid "Any of those years"
+msgstr "符合其中任一年度"
+
+msgid "Any quality"
+msgstr "任何音質"
+
+msgid "Any rating"
+msgstr "任何評分"
+
+msgid "Any source — best quality (local mixed playlist)"
+msgstr "任何來源 — 最佳音質（本機混合播放清單）"
+
+msgid "Any time"
+msgstr "任何時間"
+
+msgid "Appearance"
+msgstr "外觀"
+
+msgid "Appears On"
+msgstr "出現於"
+
+msgid "Application"
+msgstr "應用程式"
+
+msgid "Application logs"
+msgstr "應用程式日誌"
+
+msgid "Apply"
+msgstr "套用"
+
+msgid "Apply import"
+msgstr "套用匯入"
+
+msgid "Apply system tint to the icon"
+msgstr "將系統色調套用至圖示"
+
+msgid "Apply the same grouping to every source. Turn this off to show one combined playlist list."
+msgstr "對每個來源套用相同分組。關閉後會顯示合併的播放清單。"
+
+msgid "Apply to the form"
+msgstr "套用至表單"
+
+msgid "Approve"
+msgstr "核准"
+
+msgid "Approve network permission"
+msgstr "核准網路權限"
+
+msgid "Approve new access"
+msgstr "核准新存取權限"
+
+msgid "Approve permissions and install"
+msgstr "核准權限並安裝"
+
+msgid "Apr"
+msgstr "4 月"
+
+msgid "April"
+msgstr "四月"
+
+msgid "Architecture"
+msgstr "架構"
+
+msgid "Arranger"
+msgstr "編曲者"
+
+msgid "Artist"
+msgstr "演出者"
+
+msgid "Artist mix"
+msgstr "演出者混音"
+
+msgid "Artist radio"
+msgstr "演出者電台"
+
+msgid "Artists"
+msgstr "演出者"
+
+msgid "Artists from this scene"
+msgstr "此場景的演出者"
+
+msgid "Artwork"
+msgstr "封面圖"
+
+msgid "Artwork view"
+msgstr "封面檢視"
+
+msgid "Artwork, generated images, plugin data and other temporary files."
+msgstr "封面、產生的圖片、外掛資料與其他暫存檔案。"
+
+msgid "Ask Chilpa's lyrics API to translate lyrics that carry no translation in your language. The lines of the track are sent to it. On by default; you can turn it off."
+msgstr "請 Chilpa 歌詞 API 翻譯尚未有你語言版本的歌詞。曲目的歌詞行會傳送過去。預設開啟，可自行關閉。"
+
+msgid "Ask before quitting"
+msgstr "結束前詢問"
+
+msgid "Asking Plex for a code…"
+msgstr "向 Plex 詢問代號..."
+
+msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
+msgstr "當 Chilpa 在音效卡上播放時，請 PipeWire 或 PulseAudio 啟用音效卡；當 Chilpa 停止或長時間暫停時，請 PipeWire 或 PulseAudio 釋放音效卡。"
+
+msgid "Assumed fallback: {}"
+msgstr "假設的備用方案：{}"
+
+msgid "Audio"
+msgstr "音訊"
+
+msgid "Audio CD"
+msgstr "音樂 CD"
+
+msgid "Audio and output"
+msgstr "音訊與輸出"
+
+msgid "Audio check could not start."
+msgstr "無法啟動音訊檢查。"
+
+msgid "Audio check history could not be read."
+msgstr "無法讀取音訊檢查歷史。"
+
+msgid "Audio check history could not be saved."
+msgstr "無法儲存音訊檢查歷史。"
+
+msgid "Audio check history is damaged. The original file was kept."
+msgstr "音訊檢查歷史已損壞。已保留原始檔案。"
+
+msgid "Audio check history is too large."
+msgstr "音訊檢查歷史過大。"
+
+msgid "Audio output inspection could not start."
+msgstr "無法啟動音訊輸出檢查。"
+
+msgid "Audio output task stopped unexpectedly."
+msgstr "音訊輸出任務意外停止。"
+
+msgid "Audio path"
+msgstr "音訊路徑"
+
+msgid "Audio stack"
+msgstr "音訊堆疊"
+
+msgid "Audio stack ready"
+msgstr "音訊堆疊就緒"
+
+msgid "Auditory confirmation"
+msgstr "聽覺確認"
+
+msgid "Aug"
+msgstr "8 月"
+
+msgid "August"
+msgstr "八月"
+
+msgid "Aurora"
+msgstr "極光"
+
+msgid "Author: {}"
+msgstr "作者：{}"
+
+msgid "Auto"
+msgstr "自動"
+
+msgid "Auto (app language)"
+msgstr "自動（應用程式語言）"
+
+msgid "Auto (dynamic)"
+msgstr "自動（動態）"
+
+msgid "Auto (recommended)"
+msgstr "自動（建議）"
+
+msgid "Auto follows the desktop's colours: the light glyph on a dark panel, the dark one on a light panel."
+msgstr "自動跟隨桌面顏色：深色面板使用淺色圖示，淺色面板使用深色圖示。"
+
+msgid "Auto picks the best renderer for your graphics hardware. Only change this if the app feels slow or renders incorrectly (requires restart)"
+msgstr "自動為你的顯示硬體選擇最佳算繪器。僅在應用程式感覺緩慢或顯示異常時才需更改（需重新啟動）"
+
+msgid "Auto-detect your DACs and set up bit-perfect playback, step by step."
+msgstr "自動偵測你的 DAC，並逐步設定位元完美播放。"
+
+msgid "Auto-follow"
+msgstr "自動跟隨"
+
+msgid "Auto-tail"
+msgstr "自動追蹤"
+
+msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
+msgstr "自動檢查已暫停，直到你繼續或關閉此掃描。關閉後會保留已新增的檔案。"
+
+msgid "Automatic headroom lowers gain to leave room for EQ boosts."
+msgstr "自動動態餘裕會降低增益，為 EQ 提升預留空間。"
+
+msgid "Automatic headroom only reduces gain. Compression has no makeup gain; ratio 1 disables it."
+msgstr "自動動態餘裕只會降低增益。壓縮沒有補償增益；比率設為 1 即可停用。"
+
+msgid "Automatically update plugins"
+msgstr "自動更新外掛"
+
+msgid "Available"
+msgstr "可用"
+
+msgid "Available GPUs"
+msgstr "可用的 GPU"
+
+msgid "Available version"
+msgstr "可用版本"
+
+msgid "Awaiting approval"
+msgstr "等待核准"
+
+msgid "BORN"
+msgstr "出生"
+
+msgid "BORN IN"
+msgstr "出生於"
+
+msgid "BP"
+msgstr "BP"
+
+msgid "BP marks an output that takes the samples untouched."
+msgstr "BP 標記表示輸出會原樣接收取樣，不做任何處理。"
+
+msgid "Back"
+msgstr "返回"
+
+msgid "Back 10 seconds"
+msgstr "倒退 10 秒"
+
+msgid "Back to plugins"
+msgstr "返回外掛"
+
+msgid "Back to purchases"
+msgstr "返回購買項目"
+
+msgid "Background"
+msgstr "背景"
+
+msgid "Background image"
+msgstr "背景圖片"
+
+msgid "Balance · −100 left / +100 right"
+msgstr "平衡 · −100 左 / +100 右"
+
+msgid "Barcode"
+msgstr "條碼"
+
+msgid "Bars"
+msgstr "長條"
+
+msgid "Based on {artist} · {genres}"
+msgstr "基於 {artist} · {genres}"
+
+msgid "Bass"
+msgstr "低音"
+
+msgid "Being removed…"
+msgstr "正在移除…"
+
+msgid "Between tracks"
+msgstr "曲目之間"
+
+msgid "Bit depth not stated"
+msgstr "未標示位元深度"
+
+msgid "Bit perfect"
+msgstr "位元完美"
+
+msgid "Bit-perfect"
+msgstr "位元完美"
+
+msgid "Bits"
+msgstr "位元"
+
+msgid "Block network access, including plugins, online artwork, updates and scrobbling. Local playback, cached content and installed Mood models stay available. Artist Network is hidden."
+msgstr "封鎖網路存取，包括外掛、線上封面、更新與 scrobbling。本機播放、快取內容與已安裝的心情模型仍可使用。演出者網路會被隱藏。"
+
+msgid "Blurred art"
+msgstr "模糊封面"
+
+msgid "Bonus"
+msgstr "附贈"
+
+msgid "Booklet"
+msgstr "說明書"
+
+msgid "Border"
+msgstr "邊框"
+
+msgid "Browse for a music folder, or type its full path."
+msgstr "瀏覽音樂資料夾，或輸入完整路徑。"
+
+msgid "Browse view"
+msgstr "瀏覽檢視"
+
+msgid "Browse…"
+msgstr "瀏覽…"
+
+msgid "Buffering…"
+msgstr "緩衝中…"
+
+msgid "Build"
+msgstr "建置"
+
+msgid "Build info"
+msgstr "建置資訊"
+
+msgid "Built with Rust and Qt, and powered by Symphonia and Lofty. With thanks to MusicBrainz, Last.fm, LRCLIB, Tabler Icons, Lucide and Inter."
+msgstr "使用 Rust 與 Qt 建置，並由 Symphonia 與 Lofty 提供支援。感謝 MusicBrainz、Last.fm、LRCLIB、Tabler Icons、Lucide 與 Inter。"
+
+msgid "Busiest day"
+msgstr "最忙碌的一天"
+
+msgid "Busiest day, {} play"
+msgid_plural "Busiest day, {} plays"
+msgstr[0] "最忙碌的一天，{} 次播放"
+
+msgid "Busy"
+msgstr "忙碌"
+
+msgid "Buttons to go back or forward ten seconds, and the A-B loop."
+msgstr "可倒退或前進十秒的按鈕，以及 A-B 循環。"
+
+msgid "By album"
+msgstr "依專輯"
+
+msgid "By artist"
+msgstr "依演出者"
+
+msgid "By composer"
+msgstr "依作曲者"
+
+msgid "By date added"
+msgstr "依新增日期"
+
+msgid "By decade"
+msgstr "依年代"
+
+msgid "By genre"
+msgstr "依類型"
+
+msgid "By label"
+msgstr "依廠牌"
+
+msgid "By letter"
+msgstr "依字母"
+
+msgid "By name"
+msgstr "依名稱"
+
+msgid "By plays"
+msgstr "依播放次數"
+
+msgid "By quality"
+msgstr "依音質"
+
+msgid "By release type"
+msgstr "依發行類型"
+
+msgid "By source"
+msgstr "依來源"
+
+msgid "By year"
+msgstr "依年份"
+
+msgid "Bypass · original samples"
+msgstr "略過 · 原始取樣"
+
+msgid "CD in {}"
+msgstr "CD 於 {}"
+
+msgid "CDs are not read outside Linux yet"
+msgstr "目前僅支援在 Linux 讀取 CD"
+
+msgid "Cache folder"
+msgstr "快取資料夾"
+
+msgid "Cache used"
+msgstr "已使用快取"
+
+msgid "Calculated gain"
+msgstr "計算後增益"
+
+msgid "Calculating…"
+msgstr "計算中…"
+
+msgid "Calm"
+msgstr "平靜"
+
+msgid "Can't see your DAC?"
+msgstr "看不到你的 DAC？"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Cancel Timer"
+msgstr "取消計時器"
+
+msgid "Cancel download"
+msgstr "取消下載"
+
+msgid "Cancel stop after this track"
+msgstr "取消「此曲目後停止」"
+
+msgid "Cancelled"
+msgstr "已取消"
+
+msgid "Cancelling update…"
+msgstr "正在取消更新…"
+
+msgid "Cancelling…"
+msgstr "取消中…"
+
+msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
+msgstr "限制提升幅度，使最大峰值保持在滿刻度以下。關閉時，安靜曲目即使峰值削波也能達到目標。"
+
+msgid "Cards"
+msgstr "卡片"
+
+msgid "Cast"
+msgstr "投射"
+
+msgid "Cast destination"
+msgstr "投射目的地"
+
+msgid "Cast protocol"
+msgstr "投射協定"
+
+msgid "Cast state"
+msgstr "投射狀態"
+
+msgid "Casting needs an original file with a known size and byte ranges."
+msgstr "投射需要已知大小與位元組範圍的原始檔案。"
+
+msgid "Catalog error"
+msgstr "目錄錯誤"
+
+msgid "Catalog number"
+msgstr "目錄編號"
+
+msgid "Categories"
+msgstr "分類"
+
+msgid "Change cover"
+msgstr "變更封面"
+
+msgid "Change image"
+msgstr "變更圖片"
+
+msgid "Change source"
+msgstr "變更來源"
+
+msgid "Change spectrum style ({})"
+msgstr "變更頻譜樣式 ({})"
+
+msgid "Change the address if the server moved."
+msgstr "如果伺服器遷移，請更改位址。"
+
+msgid "Change the address if the server moved. Its sign-in stays as it is unless you change it."
+msgstr "如果伺服器遷移，請更改位址。除非您手動更改，否則登入資訊將保持不變。"
+
+msgid "Change the sign-in"
+msgstr "變更登入方式"
+
+msgid "Changes"
+msgstr "變更"
+
+msgid "Channels"
+msgstr "聲道"
+
+msgid "Chapters"
+msgstr "章節"
+
+msgid "Check"
+msgstr "檢查"
+
+msgid "Check Audio Stack"
+msgstr "檢查音訊堆疊"
+
+msgid "Check a format…"
+msgstr "檢查格式…"
+
+msgid "Check all folders"
+msgstr "檢查所有資料夾"
+
+msgid "Check for a newer version of Chilpa."
+msgstr "檢查是否有新版 Chilpa。"
+
+msgid "Check for new additions"
+msgstr "檢查新增項目"
+
+msgid "Check for new releases on launch"
+msgstr "啟動時檢查新版本"
+
+msgid "Check for updates"
+msgstr "檢查更新"
+
+msgid "Check for updates automatically"
+msgstr "自動檢查更新"
+
+msgid "Check for updates now"
+msgstr "立即檢查更新"
+
+msgid "Check its name and what comes in."
+msgstr "查看它的名稱和內容物。"
+
+msgid "Check one format"
+msgstr "檢查單一格式"
+
+msgid "Check the address and its port, and that the server is on and reachable from this computer, then try again."
+msgstr "檢查位址及其端口，並確認伺服器已開啟且可從此計算機訪問，然後重試。"
+
+msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
+msgstr "檢查位址，確認伺服器設定中已啟用 DLNA，並允許此電腦連接，然後重試。"
+
+msgid "Check the user and the password or the API key, then go back and try again."
+msgstr "請檢查使用者名稱和密碼或 API 金鑰，然後返回重試。"
+
+msgid "Checking available space"
+msgstr "正在檢查可用空間"
+
+msgid "Checking destination files"
+msgstr "正在檢查目的地檔案"
+
+msgid "Checking for updates…"
+msgstr "正在檢查更新…"
+
+msgid "Checking library folders…"
+msgstr "正在檢查音樂庫資料夾…"
+
+msgid "Checking local files"
+msgstr "正在檢查本機檔案"
+
+msgid "Checking storage identity"
+msgstr "正在檢查儲存空間識別"
+
+msgid "Checking the account…"
+msgstr "正在檢查帳號…"
+
+msgid "Checking your audio stack…"
+msgstr "正在檢查你的音訊堆疊…"
+
+msgid "Checking your library and connected sources…"
+msgstr "正在檢查你的音樂庫與已連線來源…"
+
+msgid "Checking your selected sources can take a few minutes."
+msgstr "檢查所選來源可能需要幾分鐘。"
+
+msgid "Checking {source}…"
+msgstr "正在檢查 {source}…"
+
+msgid "Checking…"
+msgstr "檢查中…"
+
+msgid "Chilpa"
+msgstr "Chilpa"
+
+msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
+msgstr "Chilpa 在執行時已固定取樣率、接收端與獨佔模式。這些檔案只會改變系統層級行為——如需使用請自行複製並執行。請先備份。"
+
+msgid "Chilpa applies the processing shown below."
+msgstr "Chilpa 會套用下方顯示的處理。"
+
+msgid "Chilpa asks Plex for a code; on the next step you type it at plex.tv/link."
+msgstr "Chilpa 會提供你一個代碼；接下來，請在 plex.tv/link 頁面輸入該代碼。"
+
+msgid "Chilpa can also read the tempo, musical key and loudness of what this folder holds. It takes much longer than reading the folder: it starts when the scan is done, runs in the background, and can be stopped in Settings > Library > Analysis."
+msgstr "Chilpa 也能讀取此資料夾內音樂的速度、調性與響度。這比單純讀取資料夾耗時得多：會在掃描完成後開始、在背景執行，並可於「設定 > 音樂庫 > 分析」中停止。"
+
+msgid "Chilpa can run some plugins made for other platforms. Add a plugin catalog you use. Compatibility is not guaranteed; Chilpa is not responsible for these plugins' behavior."
+msgstr "Chilpa 可執行部分為其他平台製作的外掛。請新增你使用的外掛目錄。相容性不保證；Chilpa 不對這些外掛的行為負責。"
+
+msgid "Chilpa can see this machine's outputs but cannot play through them yet"
+msgstr "Chilpa 可以看到此機器的輸出，但目前還無法透過它們播放"
+
+msgid "Chilpa cannot read this link"
+msgstr "Chilpa 無法讀取此連結"
+
+msgid "Chilpa could not release the exclusive output. Stop playback and try the diagnosis again."
+msgstr "Chilpa 無法釋放獨佔輸出。請停止播放後再試一次診斷。"
+
+msgid "Chilpa does not send {} requests to a server"
+msgstr "Chilpa 不能送 {} 到伺服器"
+
+msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
+msgstr "Chilpa 以 Flatpak/Snap 包裝，無法檢查主機音訊堆疊。若播放已正常運作，就無需額外設定。請在下方選擇發行版與 init 系統以取得正確的設定指令。"
+
+msgid "Chilpa is up to date."
+msgstr "Chilpa 已是最新版本。"
+
+msgid "Chilpa lyrics API"
+msgstr "Chilpa 歌詞 API"
+
+msgid "Chilpa never writes these files"
+msgstr "Chilpa 不會寫入這些檔案"
+
+msgid "Chilpa opens with the tabs it had when it closed."
+msgstr "Chilpa 會以關閉前的分頁狀態重新開啟。"
+
+msgid "Chilpa output"
+msgstr "Chilpa 輸出"
+
+msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
+msgstr "Chilpa 播放你磁碟上的檔案與自架伺服器的音樂，外掛可新增更多來源。它會清楚告知送到 DAC 的內容是否為位元完美。"
+
+msgid "Chilpa plugins"
+msgstr "Chilpa 外掛"
+
+msgid "Chilpa proxy"
+msgstr "Chilpa 代理"
+
+msgid "Chilpa reads its music now and lists it with yours as it arrives, with its playlists. Nothing on the server changes unless you change one of its playlists."
+msgstr "Chilpa 正在讀取其音樂，並在讀取完成時連同其播放清單一起與您的音樂一同列出。除非您修改伺服器上的播放清單，否則伺服器上的內容不會改變。"
+
+msgid "Chilpa reads its music now and lists it with yours as it arrives. Nothing on the server changes, and a DLNA / UPnP server has no playlists to bring."
+msgstr "Chilpa 正在讀取其音樂，並在讀取完成時與您的音樂一同列出。伺服器上的內容不會改變，且 DLNA 或 UPnP 伺服器不提供播放清單。"
+
+msgid "Chilpa requesting {} · {}-bit"
+msgstr "Chilpa 請求 {} · {} 位元"
+
+msgid "Chilpa sends no telemetry. When enabled, artist and release searches make one-way requests to MusicBrainz for results. Turning it off disables MusicBrainz features in Artist Network."
+msgstr "Chilpa 不傳送任何遙測資料。啟用後，演出者與發行搜尋會向 MusicBrainz 發送單向請求以取得結果。關閉後會停用演出者網路中的 MusicBrainz 功能。"
+
+msgid "Chilpa sends the original audio to the receiver."
+msgstr "Chilpa 會將原始音訊傳送至接收端。"
+
+msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
+msgstr "Chilpa 會將裝置設定為每首曲目的取樣率。啟用獨佔模式時，播放期間裝置僅供 Chilpa 使用，Mac 上其他程式無法同時使用。關閉獨佔模式即可共享；Mac 會混入其他正在播放的音訊。"
+
+msgid "Chilpa will make smaller covers and backgrounds again when needed."
+msgstr "需要時 Chilpa 會重新產生較小的封面與背景。"
+
+msgid "Chilpa {} is available"
+msgstr "Chilpa {} 可用"
+
+msgid "Chilpa {} is ready"
+msgstr "Chilpa {} 已就緒"
+
+msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
+msgstr "面板上的 Chilpa 圖示：點擊可顯示或隱藏視窗，中鍵可播放或暫停，滾輪可調整音量。"
+
+msgid "Chilpatl is Nahuatl for hornet. Chilpa is a music player for the desktop, where local files, self-hosted servers and plugins are all just sources."
+msgstr "Chilpatl 在納瓦特爾語中意為黃蜂。Chilpa 是一款桌面音樂播放器，本機檔案、自架伺服器與外掛都只是來源。"
+
+msgid "Chinese"
+msgstr "中文"
+
+msgid "Choose"
+msgstr "選擇"
+
+msgid "Choose DSP on or bypass."
+msgstr "選擇啟用 DSP 或略過。"
+
+msgid "Choose Unknown, Clean or Explicit"
+msgstr "選擇「未知」、「乾淨」或「明確內容」"
+
+msgid "Choose a DSP favorite."
+msgstr "選擇 DSP 最愛。"
+
+msgid "Choose a DSP plugin."
+msgstr "選擇 DSP 外掛。"
+
+msgid "Choose a DSP preset."
+msgstr "選擇 DSP 預設。"
+
+msgid "Choose a PCM format, rate and channel count."
+msgstr "選擇 PCM 格式、取樣率與聲道數。"
+
+msgid "Choose a cover"
+msgstr "選擇封面"
+
+msgid "Choose a download folder before downloading."
+msgstr "下載前請先選擇下載資料夾。"
+
+msgid "Choose a file…"
+msgstr "選擇檔案…"
+
+msgid "Choose a folder on a memory card or USB drive"
+msgstr "在記憶卡或 USB 磁碟機上選擇資料夾"
+
+msgid "Choose a folder on the memory card"
+msgstr "在記憶卡上選擇資料夾"
+
+msgid "Choose a folder…"
+msgstr "選擇資料夾…"
+
+msgid "Choose a keymap: default, letters or vi."
+msgstr "選擇鍵盤對應：預設、字母或 vi。"
+
+msgid "Choose a local ZIP file."
+msgstr "選擇本機 ZIP 檔案。"
+
+msgid "Choose a local storage folder."
+msgstr "選擇本機儲存資料夾。"
+
+msgid "Choose a playback control"
+msgstr "選擇播放控制"
+
+msgid "Choose a preset."
+msgstr "選擇預設。"
+
+msgid "Choose a saved device profile."
+msgstr "選擇已儲存的裝置設定檔。"
+
+msgid "Choose a value"
+msgstr "選擇數值"
+
+msgid "Choose an available writable storage."
+msgstr "選擇可用的可寫入儲存空間。"
+
+msgid "Choose an image"
+msgstr "選擇圖片"
+
+msgid "Choose at least two different queues."
+msgstr "請至少選擇兩個不同的佇列。"
+
+msgid "Choose at most 512 playlists or queries for one storage."
+msgstr "單一儲存空間最多可選擇 512 個播放清單或查詢。"
+
+msgid "Choose between 1 and 50,000 Library tracks."
+msgstr "請選擇 1 到 50,000 首音樂庫曲目。"
+
+msgid "Choose download folder"
+msgstr "選擇下載資料夾"
+
+msgid "Choose download folder…"
+msgstr "選擇下載資料夾…"
+
+msgid "Choose file…"
+msgstr "選擇檔案…"
+
+msgid "Choose image"
+msgstr "選擇圖片"
+
+msgid "Choose image…"
+msgstr "選擇圖片…"
+
+msgid "Choose music for this storage"
+msgstr "為此儲存空間選擇音樂"
+
+msgid "Choose playlist"
+msgstr "選擇播放清單"
+
+msgid "Choose playlist artwork"
+msgstr "選擇播放清單封面"
+
+msgid "Choose playlist file"
+msgstr "選擇播放清單檔案"
+
+msgid "Choose plugin icon"
+msgstr "選擇外掛圖示"
+
+msgid "Choose queues and arrange their order. Repeated tracks are kept."
+msgstr "選擇佇列並調整順序。重複曲目會被保留。"
+
+msgid "Choose storage"
+msgstr "選擇儲存空間"
+
+msgid "Choose the connected player and its storage first."
+msgstr "請先選擇已連線的播放器與其儲存空間。"
+
+msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
+msgstr "選擇屬於此輸出的播放混音器元件。Chilpa 會在儲存前進行驗證。"
+
+msgid "Choose the receiver in Play on to connect."
+msgstr "在「播放於」中選擇接收端以連線。"
+
+msgid "Choose the storage paired with this profile."
+msgstr "選擇與此設定檔配對的儲存空間。"
+
+msgid "Choose where to open this music"
+msgstr "選擇要在何處開啟此音樂"
+
+msgid "Clean"
+msgstr "乾淨"
+
+msgid "Clear"
+msgstr "清除"
+
+msgid "Clear after this track"
+msgstr "此曲目後清除"
+
+msgid "Clear all"
+msgstr "全部清除"
+
+msgid "Clear filter"
+msgstr "清除篩選"
+
+msgid "Clear generated images"
+msgstr "清除產生的圖片"
+
+msgid "Clear generated images?"
+msgstr "要清除產生的圖片嗎？"
+
+msgid "Clear loop"
+msgstr "清除循環"
+
+msgid "Clear lyrics cache"
+msgstr "清除歌詞快取"
+
+msgid "Clear lyrics cache?"
+msgstr "要清除歌詞快取嗎？"
+
+msgid "Clear queue"
+msgstr "清除佇列"
+
+msgid "Clear temporary remote artwork"
+msgstr "清除暫存的遠端封面"
+
+msgid "Clear temporary remote images?"
+msgstr "要清除暫存的遠端圖片嗎？"
+
+msgid "Clear the filter"
+msgstr "清除篩選條件"
+
+msgid "Clear the selection"
+msgstr "清除選取項目"
+
+msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
+msgstr "已清除：忘記 {} 首歌詞。播放曲目時會重新查詢。"
+
+msgid "Clearing in the background…"
+msgstr "正在背景清除…"
+
+msgid "Clear…"
+msgstr "清除…"
+
+msgid "Click a value to include it, − to exclude it. Counts already apply everything else."
+msgstr "點擊數值以包含，− 以排除。計數已套用其他所有條件。"
+
+msgid "Click tracks to select them; Shift selects a range."
+msgstr "點擊曲目以選取；按住 Shift 可選取範圍。"
+
+msgid "Clipped samples"
+msgstr "削波取樣"
+
+msgid "Close"
+msgstr "關閉"
+
+msgid "Close / Dismiss"
+msgstr "關閉 / 忽略"
+
+msgid "Close Tab"
+msgstr "關閉分頁"
+
+msgid "Close media"
+msgstr "關閉媒體"
+
+msgid "Close search"
+msgstr "關閉搜尋"
+
+msgid "Close tab"
+msgstr "關閉分頁"
+
+msgid "Close the quotation marks."
+msgstr "請關閉引號。"
+
+msgid "Close to tray"
+msgstr "關閉至系統匣"
+
+msgid "Closing stops a scan. Saved progress can be continued here after reopening."
+msgstr "關閉會停止掃描。重新開啟後可從此處繼續已儲存的進度。"
+
+msgid "Closing the window keeps Chilpa playing in the tray instead of quitting."
+msgstr "關閉視窗會讓 Chilpa 繼續在系統匣播放，而不是結束程式。"
+
+msgid "Codec"
+msgstr "編解碼器"
+
+msgid "Collaborators"
+msgstr "合作者"
+
+msgid "Collapse"
+msgstr "收合"
+
+msgid "Collapse all"
+msgstr "全部收合"
+
+msgid "Collapse sidebar"
+msgstr "收合側邊欄"
+
+msgid "Color"
+msgstr "顏色"
+
+msgid "Colors"
+msgstr "顏色"
+
+msgid "Columns"
+msgstr "欄"
+
+msgid "Combine"
+msgstr "合併"
+
+msgid "Combine queues"
+msgstr "合併佇列"
+
+msgid "Combined queue"
+msgstr "合併佇列"
+
+msgid "Command help"
+msgstr "指令說明"
+
+msgid "Command help · :help command for details · Esc to close"
+msgstr "指令說明 · 輸入 :help 指令查看詳細內容 · 按 Esc 關閉"
+
+msgid "Command line"
+msgstr "指令列"
+
+msgid "Compact"
+msgstr "精簡"
+
+msgid "Compact rows"
+msgstr "精簡列"
+
+msgid "Compact rows like a spreadsheet, or rich rows with the cover."
+msgstr "像試算表一樣的精簡列，或含封面的豐富列。"
+
+msgid "Compact view"
+msgstr "精簡檢視"
+
+msgid "Compatibility is not fully verified"
+msgstr "相容性尚未完全驗證"
+
+msgid "Compatible plugins"
+msgstr "相容外掛"
+
+msgid "Compilation"
+msgstr "合輯"
+
+msgid "Compilation (various artists)"
+msgstr "合輯（群星）"
+
+msgid "Compilations"
+msgstr "合輯"
+
+msgid "Completed"
+msgstr "已完成"
+
+msgid "Completed work is saved. Continue checks the folder again and skips unchanged files."
+msgstr "已完成的工作已儲存。繼續會再次檢查資料夾，並略過未變更的檔案。"
+
+msgid "Composer"
+msgstr "作曲者"
+
+msgid "Composers"
+msgstr "作曲者"
+
+msgid "Compressor ratio · 1–6"
+msgstr "壓縮器比率 · 1–6"
+
+msgid "Compressor threshold · −60–0 dB"
+msgstr "壓縮器臨界值 · −60–0 dB"
+
+msgid "Config files you can create:"
+msgstr "你可以建立的設定檔："
+
+msgid "Configure"
+msgstr "設定"
+
+msgid "Confirm"
+msgstr "確認"
+
+msgid "Confirm this preview and its removals before syncing."
+msgstr "同步前請確認此預覽與其移除項目。"
+
+msgid "Connect"
+msgstr "連線"
+
+msgid "Connect Jellyfin, Navidrome or another OpenSubsonic server, Plex, or a DLNA / UPnP media server to add its music to your library."
+msgstr "線 OpenSubsonic、Jellyfin 或 Plex，將其音樂加入你的音樂庫。"
+
+msgid "Connect a player or memory card. Save a profile for each storage."
+msgstr "連線播放器或記憶卡。為每個儲存空間儲存設定檔。"
+
+msgid "Connect at most eight USB players at a time."
+msgstr "一次最多連線八台 USB 播放器。"
+
+msgid "Connect on {}"
+msgstr "於 {} 連線"
+
+msgid "Connect {}"
+msgstr "連線 {}"
+
+msgid "Connected"
+msgstr "已連線"
+
+msgid "Connected as {}"
+msgstr "已以 {} 身分連線"
+
+msgid "Connected to {}"
+msgstr "已連線至 {}"
+
+msgid "Connecting…"
+msgstr "連線中…"
+
+msgid "Connection error"
+msgstr "連線錯誤"
+
+msgid "Container"
+msgstr "容器"
+
+msgid "Content advisory"
+msgstr "內容分級"
+
+msgid "Continue"
+msgstr "繼續"
+
+msgid "Continue listening"
+msgstr "繼續聆聽"
+
+msgid "Continue or dismiss the interrupted scan before starting another."
+msgstr "開始另一個掃描前，請先繼續或關閉中斷的掃描。"
+
+msgid "Convert to PCM"
+msgstr "轉換為 PCM"
+
+msgid "Convertible system input; physical DAC capabilities are unknown"
+msgstr "可轉換的系統輸入；實體 DAC 能力未知"
+
+msgid "Copied"
+msgstr "已複製"
+
+msgid "Copy"
+msgstr "複製"
+
+msgid "Copy URL to clipboard"
+msgstr "複製網址至剪貼簿"
+
+msgid "Copy album and artist"
+msgstr "複製專輯與演出者"
+
+msgid "Copy all"
+msgstr "全部複製"
+
+msgid "Copy diagnostics bundle"
+msgstr "複製診斷套件"
+
+msgid "Copy full information"
+msgstr "複製完整資訊"
+
+msgid "Copy lyrics"
+msgstr "複製歌詞"
+
+msgid "Copy playlist"
+msgstr "複製播放清單"
+
+msgid "Copy preset JSON"
+msgstr "複製預設 JSON"
+
+msgid "Copy report"
+msgstr "複製報告"
+
+msgid "Copy the colors of the currently applied theme into the editor as a starting point."
+msgstr "將目前套用的主題顏色複製到編輯器作為起點。"
+
+msgid "Copy the redacted logs to help diagnose the issue. You can review them before sharing."
+msgstr "複製已遮罩的日誌以協助診斷問題。分享前可先檢視。"
+
+msgid "Copyright"
+msgstr "版權"
+
+msgid "CoreAudio reports no device that can play"
+msgstr "CoreAudio 回報沒有可播放的裝置"
+
+msgid "Could not add tracks to this playlist."
+msgstr "無法新增曲目至此播放清單。"
+
+msgid "Could not connect"
+msgstr "無法連線"
+
+msgid "Could not create the playlist. Please try again."
+msgstr "無法建立播放清單，請再試一次。"
+
+msgid "Could not load the image"
+msgstr "無法載入圖片"
+
+msgid "Could not move the playlist."
+msgstr "無法移動播放清單。"
+
+msgid "Could not read the analysis inventory."
+msgstr "無法讀取分析清單。"
+
+msgid "Could not remove the saved profile."
+msgstr "無法移除儲存的設定檔。"
+
+msgid "Could not save the folder. Please try again."
+msgstr "無法儲存資料夾，請再試一次。"
+
+msgid "Could not save the playlist. Please try again."
+msgstr "無法儲存播放清單，請再試一次。"
+
+msgid "Couldn't load the test tracks"
+msgstr "無法載入測試曲目"
+
+msgid "Counting tracks…"
+msgstr "正在計算曲目數…"
+
+msgid "Countries"
+msgstr "國家/地區"
+
+msgid "Country"
+msgstr "國家/地區"
+
+msgid "Cover collage"
+msgstr "封面拼貼"
+
+msgid "Coverflow"
+msgstr "封面流（Coverflow）"
+
+msgid "Create & Add"
+msgstr "建立並新增"
+
+msgid "Create graphic EQ"
+msgstr "建立圖形 EQ"
+
+msgid "Create issue"
+msgstr "回報問題（Create issue）"
+
+msgid "Create playlist"
+msgstr "建立播放清單"
+
+msgid "Create playlists"
+msgstr "建立播放清單"
+
+msgid "Creating playlists…"
+msgstr "正在建立播放清單…"
+
+msgid "Credits"
+msgstr "製作人員"
+
+msgid "Critics' Picks"
+msgstr "樂評精選"
+
+msgid "Crossfeed · 0–50%"
+msgstr "交叉饋送（Crossfeed）· 0–50%"
+
+msgid "Current signal path"
+msgstr "目前訊號路徑"
+
+msgid "Current version"
+msgstr "目前版本"
+
+msgid "Current version: {}"
+msgstr "目前版本：{}"
+
+msgid "Cursor down"
+msgstr "游標向下"
+
+msgid "Cursor up"
+msgstr "游標向上"
+
+msgid "Custom"
+msgstr "自訂"
+
+msgid "Custom Image"
+msgstr "自訂圖片"
+
+msgid "Custom image"
+msgstr "自訂圖片"
+
+msgid "Customize"
+msgstr "自訂"
+
+msgid "Customize Shortcuts"
+msgstr "自訂捷徑"
+
+msgid "Custom…"
+msgstr "自訂…"
+
+msgid "Cycle Repeat"
+msgstr "循環重複模式"
+
+msgid "DAC passthrough"
+msgstr "DAC 直通"
+
+msgid "DAC: {} · {} · {} ch"
+msgstr "DAC：{} · {} · {} 聲道"
+
+msgid "DACs"
+msgstr "DAC 裝置"
+
+msgid "DIED"
+msgstr "逝世"
+
+msgid "DISBANDED"
+msgstr "解散"
+
+msgid "DSD converted to PCM"
+msgstr "DSD 已轉換為 PCM"
+
+msgid "DSD files keep their changes in a sidecar"
+msgstr "DSD 檔案會將變更儲存於附屬檔案中"
+
+msgid "DSD not supported: {}"
+msgstr "不支援 DSD：{}"
+
+msgid "DSD output mode"
+msgstr "DSD 輸出模式"
+
+msgid "DSD over PCM (DoP)"
+msgstr "DSD over PCM (DoP)"
+
+msgid "DSD playback"
+msgstr "DSD 播放"
+
+msgid "DSD through PipeWire"
+msgstr "透過 PipeWire 播放 DSD"
+
+msgid "DSD128 over DoP"
+msgstr "透過 DoP 播放 DSD128"
+
+msgid "DSD64 over DoP"
+msgstr "透過 DoP 播放 DSD64"
+
+msgid "DSDIFF compressed with DST"
+msgstr "使用 DST 壓縮的 DSDIFF"
+
+msgid "DSD{} · DoP at {} Hz · {}"
+msgstr "DSD{} · DoP 於 {} Hz · {}"
+
+msgid "DSD{} · Native at {} Hz · {}"
+msgstr "DSD{} · 原生（Native）於 {} Hz · {}"
+
+msgid "DSD{} · PCM at {} Hz · {}"
+msgstr "DSD{} · PCM 於 {} Hz · {}"
+
+msgid "DSP active"
+msgstr "DSP 已啟用"
+
+msgid "DSP and gain"
+msgstr "DSP 與增益"
+
+msgid "DSP applied to consumed PCM blocks"
+msgstr "已套用 DSP 至已處理的 PCM 區塊"
+
+msgid "DSP applies to local output. Cast sends the original audio."
+msgstr "DSP 僅套用於本機輸出。投射時會傳送原始音訊。"
+
+msgid "DSP catalog is too large."
+msgstr "DSP 目錄過大。"
+
+msgid "DSP changes the signal and breaks strict bit-perfect playback."
+msgstr "DSP 會改變訊號，無法維持嚴格的位元完美播放。"
+
+msgid "DSP control is unavailable."
+msgstr "DSP 控制無法使用。"
+
+msgid "DSP filters need 10–24000 Hz, −24–18 dB and Q 0.1–12."
+msgstr "DSP 濾波器需要 10–24000 Hz、−24–18 dB 與 Q 值 0.1–12。"
+
+msgid "DSP host is unavailable."
+msgstr "DSP 主機無法使用。"
+
+msgid "DSP input is too large."
+msgstr "DSP 輸入過大。"
+
+msgid "DSP preset is unavailable."
+msgstr "DSP 預設值無法使用。"
+
+msgid "DSP · Equalizer and presets"
+msgstr "DSP · 等化器與預設值"
+
+msgid "Danger"
+msgstr "危險"
+
+msgid "Dark"
+msgstr "深色"
+
+msgid "Dark OLED"
+msgstr "深色 OLED"
+
+msgid "Dark theme"
+msgstr "深色主題"
+
+msgid "Dark themes"
+msgstr "深色主題"
+
+msgid "Date"
+msgstr "日期"
+
+msgid "Date added"
+msgstr "新增日期"
+
+msgid "Date updated"
+msgstr "更新日期"
+
+msgid "Day"
+msgstr "日"
+
+msgid "Days of the week"
+msgstr "星期"
+
+msgid "Debug"
+msgstr "除錯"
+
+msgid "Dec"
+msgstr "12 月"
+
+msgid "Decades"
+msgstr "年代"
+
+msgid "December"
+msgstr "十二月"
+
+msgid "Declared by the hardware driver"
+msgstr "由硬體驅動程式宣告"
+
+msgid "Decoded floating samples quantized to {} bits"
+msgstr "解碼後的浮點取樣已量化為 {} 位元"
+
+msgid "Default"
+msgstr "預設"
+
+msgid "Delete"
+msgstr "刪除"
+
+msgid "Delete folder"
+msgstr "刪除資料夾"
+
+msgid "Delete folder…"
+msgstr "刪除資料夾…"
+
+msgid "Delete playlist"
+msgstr "刪除播放清單"
+
+msgid "Delete preset"
+msgstr "刪除預設值"
+
+msgid "Delete saved query"
+msgstr "刪除已儲存的查詢"
+
+msgid "Delete the saved query “{}”?"
+msgstr "要刪除已儲存的查詢「{}」嗎？"
+
+msgid "Delete “{}” on {}? It leaves the server too."
+msgstr "要刪除位於 {} 上的「{}」嗎？這也會將其從伺服器上移除。"
+
+msgid "Delete “{}”?"
+msgstr "要刪除「{}」嗎？"
+
+msgid "Delete…"
+msgstr "刪除…"
+
+msgid "Description"
+msgstr "說明"
+
+msgid "Description not provided yet."
+msgstr "尚未提供說明。"
+
+msgid "Desktop"
+msgstr "桌面"
+
+msgid "Desktop environment"
+msgstr "桌面環境"
+
+msgid "Destinations"
+msgstr "目的地"
+
+msgid "Details"
+msgstr "詳細資訊"
+
+msgid "Details available"
+msgstr "有詳細資訊可用"
+
+msgid "Detected: "
+msgstr "偵測到："
+
+msgid "Detecting your DACs…"
+msgstr "正在偵測你的 DAC…"
+
+msgid "Developers"
+msgstr "開發者"
+
+msgid "Device"
+msgstr "裝置"
+
+msgid "Device profiles exceed 1 MiB."
+msgstr "裝置設定檔超過 1 MiB。"
+
+msgid "Device selections exceed 512 edits or 1 MiB. Save a selection before adding more."
+msgstr "裝置選取內容超過 512 次編輯或 1 MiB。新增更多之前請先儲存選取內容。"
+
+msgid "Device sync"
+msgstr "裝置同步"
+
+msgid "Device sync was cancelled. Its progress is saved for recovery."
+msgstr "裝置同步已取消。進度已儲存以供復原。"
+
+msgid "Devices"
+msgstr "裝置"
+
+msgid "Devices in the sidebar"
+msgstr "側邊欄中的裝置"
+
+msgid "Diagnose"
+msgstr "診斷"
+
+msgid "Diagnose the output"
+msgstr "診斷輸出"
+
+msgid "Diagnosis"
+msgstr "診斷"
+
+msgid "Diagnostics"
+msgstr "診斷資訊"
+
+msgid "Different format"
+msgstr "不同格式"
+
+msgid "Dimming"
+msgstr "變暗"
+
+msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Audio."
+msgstr "直接 ALSA 不會調整取樣大小。請使用 DAC 或擴大機，或在「設定 › 音訊」中啟用硬體音量控制。"
+
+msgid "Disable"
+msgstr "停用"
+
+msgid "Disabled"
+msgstr "已停用"
+
+msgid "Disabled. Its records stay in the library and its sign-in is saved."
+msgstr "已停用。其紀錄仍會保留在音樂庫中，登入資訊也會保留。"
+
+msgid "Disabled. Its records stay in the library."
+msgstr "已停用。其紀錄仍會保留在音樂庫中。"
+
+msgid "Disc"
+msgstr "光碟/碟片"
+
+msgid "Disc subtitle"
+msgstr "碟片副標題"
+
+msgid "Disc {}"
+msgstr "光碟 {}"
+
+msgid "Discard"
+msgstr "捨棄"
+
+msgid "Discard the changes to the other record?"
+msgstr "要捨棄對另一筆紀錄的變更嗎？"
+
+msgid "Discard the changes?"
+msgstr "要捨棄變更嗎？"
+
+msgid "Discogs account"
+msgstr "Discogs 帳號"
+
+msgid "Discogs account setup could not start."
+msgstr "無法啟動 Discogs 帳號設定。"
+
+msgid "Discogs authorization code"
+msgstr "Discogs 授權碼"
+
+msgid "Discogs could not be reached. Try connecting again."
+msgstr "無法連線至 Discogs。請再試一次連線。"
+
+msgid "Discogs did not accept the token or authorization code. Connect again."
+msgstr "Discogs 未接受權杖或授權碼。請重新連線。"
+
+msgid "Discogs did not accept your account. Connect it again in Settings > Integrations."
+msgstr "Discogs 未接受你的帳號。請在「設定 > 整合」中重新連線。"
+
+msgid "Discogs has no more requests for this connection. Connect your Discogs account in Settings > Integrations."
+msgstr "此連線的 Discogs 請求次數已達上限。請在「設定 > 整合」中連線你的 Discogs 帳號。"
+
+msgid "Discogs is disconnected for now, but its saved account could not be removed. It may reconnect after restarting."
+msgstr "Discogs 目前已斷開連線，但無法移除儲存的帳號。重新啟動後可能會重新連線。"
+
+msgid "Discogs is out of requests"
+msgstr "Discogs 請求次數已達上限"
+
+msgid "Discogs limits how many requests one connection can make. To keep searching, connect your account with a personal token or by signing in."
+msgstr "Discogs 限制每個連線可發送的請求數量。若要繼續搜尋，請使用個人權杖或登入帳號。"
+
+msgid "Discogs release"
+msgstr "Discogs 發行項目"
+
+msgid "Discogs sign-in expired. Connect again."
+msgstr "Discogs 登入已過期。請重新連線。"
+
+msgid "Discogs sign-in was cancelled."
+msgstr "Discogs 登入已取消。"
+
+msgid "Discogs token"
+msgstr "Discogs 權杖"
+
+msgid "Disconnect"
+msgstr "斷開連線"
+
+msgid "Disconnect account"
+msgstr "中斷帳號連線"
+
+msgid "Disconnected"
+msgstr "已斷線"
+
+msgid "Disconnecting forgets this account here. Revoke access at discogs.com/settings/applications."
+msgstr "斷開連線將在此忘記此帳號。請至 discogs.com/settings/applications 撤銷存取權限。"
+
+msgid "Discord Rich Presence"
+msgstr "Discord 動態狀態（Rich Presence）"
+
+msgid "Discover"
+msgstr "探索"
+
+msgid "Discs"
+msgstr "光碟數"
+
+msgid "Dismiss"
+msgstr "關閉"
+
+msgid "Dismiss scan"
+msgstr "關閉掃描"
+
+msgid "Display settings"
+msgstr "顯示設定"
+
+msgid "Distribution"
+msgstr "發行版"
+
+msgid "Distribution version"
+msgstr "發行版版本"
+
+msgid "DoP carrier · {}"
+msgstr "DoP 載體 · {}"
+
+msgid "Dock"
+msgstr "停靠"
+
+msgid "Dock back into the Library"
+msgstr "停靠回音樂庫"
+
+msgid "Documentation"
+msgstr "說明文件"
+
+msgid "Does not answer. Its records stay listed and cannot be played."
+msgstr "沒有回應。其紀錄仍會列出但無法播放。"
+
+msgid "Don't ask again"
+msgstr "不再詢問"
+
+msgid "Don't group with other versions"
+msgstr "不要與其他版本分組"
+
+msgid "Don't worry about the AI slop in the image, it won't happen again. But día de muertos is a special occasion in Mexico, and here we pay tribute to our late QBZ."
+msgstr "別擔心圖片中 AI 產生的粗劣內容，不會再發生了。不過亡靈節在墨西哥是個特別的節日，在此我們向已故的 QBZ 致敬。"
+
+msgid "Done"
+msgstr "完成"
+
+msgid "Done. You can close this tab and go back to Chilpa."
+msgstr "完成。你可以關閉此分頁並返回 Chilpa。"
+
+msgid "Download"
+msgstr "下載"
+
+msgid "Download again"
+msgstr "重新下載"
+
+msgid "Download album"
+msgstr "下載專輯"
+
+msgid "Download track"
+msgstr "下載曲目"
+
+msgid "Downloaded"
+msgstr "已下載"
+
+msgid "Downloading episodes…"
+msgstr "正在下載單集…"
+
+msgid "Downloading update…"
+msgstr "正在下載更新…"
+
+msgid "Downloading {} of {}"
+msgstr "正在下載第 {} 個，共 {} 個"
+
+msgid "Downloads"
+msgstr "下載項目"
+
+msgid "Drag or use ↑↓ to keep a custom order."
+msgstr "拖曳或使用 ↑↓ 來維持自訂順序。"
+
+msgid "Driver query; playback has not been tested"
+msgstr "驅動程式查詢；尚未測試播放"
+
+msgid "Duplicate DSP preset ID."
+msgstr "重複的 DSP 預設值 ID。"
+
+msgid "Duration"
+msgstr "時長"
+
+msgid "Dutch"
+msgstr "荷蘭文"
+
+msgid "Dynamic background"
+msgstr "動態背景"
+
+msgid "EPs"
+msgstr "EP"
+
+msgid "EPs & Singles"
+msgstr "EP 與單曲"
+
+msgid "EQ response · 20 Hz–20 kHz · ±18 dB · before preamp"
+msgstr "EQ 響應 · 20 Hz–20 kHz · ±18 dB · 前級增益前"
+
+msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
+msgstr "每個檔案都會先複製、寫入並驗證讀回，確認無誤後才會替換原始檔案。所需剩餘空間需與紀錄容量相同。寫入後將無法復原。"
+
+msgid "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
+msgstr "每個選取的目的地都會建立自己的播放清單。混合播放清單會保留在 Chilpa 中，可包含來自所有已連線來源的曲目。"
+
+msgid "Earlier"
+msgstr "更早之前"
+
+msgid "Earlier tabs"
+msgstr "較早的分頁"
+
+msgid "Edit"
+msgstr "編輯"
+
+msgid "Edit as text"
+msgstr "以純文字編輯"
+
+msgid "Edit folder"
+msgstr "編輯資料夾"
+
+msgid "Edit metadata"
+msgstr "編輯中繼資料"
+
+msgid "Edit metadata…"
+msgstr "編輯中繼資料…"
+
+msgid "Edit playlist"
+msgstr "編輯播放清單"
+
+msgid "Edit…"
+msgstr "編輯…"
+
+msgid "Either genre: a comma means or"
+msgstr "任一類型：逗號表示「或」"
+
+msgid "Eject"
+msgstr "Eject"
+
+msgid "Elevated"
+msgstr "高音質"
+
+msgid "Embedded tags only"
+msgstr "僅使用內嵌標籤"
+
+msgid "Empty folders"
+msgstr "空資料夾"
+
+msgid "Empty group. Conditions you add now go here."
+msgstr "空白群組。你現在新增的條件會出現在這裡。"
+
+msgid "Empty. Add tracks from any list with a right click."
+msgstr "空白。在任何列表中按右鍵即可新增曲目。"
+
+msgid "Enable"
+msgstr "啟用"
+
+msgid "Enable Chilpa proxy for browser sign-in, or connect with a personal token below."
+msgstr "啟用 Chilpa 代理以進行瀏覽器登入，或在下方使用個人權杖連線。"
+
+msgid "Enable PipeWire in your NixOS configuration"
+msgstr "在你的 NixOS 設定中啟用 PipeWire"
+
+msgid "Enable a DSP plugin first."
+msgstr "請先啟用 DSP 外掛。"
+
+msgid "Enable audio processing; turn off for bypass"
+msgstr "啟用音訊處理；關閉以略過"
+
+msgid "Enable lyrics"
+msgstr "啟用歌詞"
+
+msgid "Enable the optional Mood plugin and manage its model download."
+msgstr "啟用選用的「心情」外掛並管理其模型下載。"
+
+msgid "Enable {} in Settings › Music servers to play this record."
+msgstr "請在「設定 › 音訊伺服器」中啟用 {} 以播放此紀錄。"
+
+msgid "Endpoint readback"
+msgstr "端點讀回"
+
+msgid "Ends at {}"
+msgstr "於 {} 結束"
+
+msgid "Engineer"
+msgstr "工程師"
+
+msgid "English"
+msgstr "英文"
+
+msgid "Enter"
+msgstr "Enter"
+
+msgid "Enter a valid command; :help lists the commands."
+msgstr "請輸入有效的指令；輸入 :help 可列出指令。"
+
+msgid "Enter a valid number or time."
+msgstr "請輸入有效的數字或時間。"
+
+msgid "Enter a valid number."
+msgstr "請輸入有效的數字。"
+
+msgid "Enter includes the first match · Shift+Enter excludes it"
+msgstr "按 Enter 包含第一個符合項目 · Shift+Enter 排除"
+
+msgid "Environment"
+msgstr "環境"
+
+msgid "Episode download was cancelled."
+msgstr "單集下載已取消。"
+
+msgid "Episode notes"
+msgstr "單集筆記"
+
+msgid "Equalizer"
+msgstr "等化器"
+
+msgid "Equipment"
+msgstr "設備"
+
+msgid "Equipment changed. Read its details again before checking a format."
+msgstr "設備已變更。檢查格式前請重新讀取詳細資訊。"
+
+msgid "Error"
+msgstr "錯誤"
+
+msgid "Errors"
+msgstr "錯誤"
+
+msgid "Every 12 hours"
+msgstr "每 12 小時"
+
+msgid "Every 24 hours"
+msgstr "每 24 小時"
+
+msgid "Every week"
+msgstr "每週"
+
+msgid "Everyone who plays on a track"
+msgstr "參與曲目製作的所有人員"
+
+msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect and exclusive mode off to share it and let Windows mix and resample."
+msgstr "在此處「精確」表示播放曲目時裝置僅供 Chilpa 獨佔使用：電腦上的其他程式甚至通知都無法使用它。關閉位元完美與獨佔模式即可共享，讓 Windows 進行混音與重新取樣。"
+
+msgid "Exclude"
+msgstr "排除"
+
+msgid "Exclusive"
+msgstr "獨佔"
+
+msgid "Exclusive mode"
+msgstr "獨佔模式"
+
+msgid "Exclusive mode was requested."
+msgstr "已請求獨佔模式。"
+
+msgid "Exit Immersive"
+msgstr "退出沉浸模式"
+
+msgid "Expand"
+msgstr "展開"
+
+msgid "Experimental: theme may not match your system exactly."
+msgstr "實驗性功能：主題可能無法完全符合你的系統設定。"
+
+msgid "Explicit"
+msgstr "明確內容（Explicit）"
+
+msgid "Explore"
+msgstr "探索"
+
+msgid "Export"
+msgstr "匯出"
+
+msgid "Export diagnostics"
+msgstr "匯出診斷資訊"
+
+msgid "Export listening history"
+msgstr "匯出聆聽歷史"
+
+msgid "Export…"
+msgstr "匯出…"
+
+msgid "Extra controls"
+msgstr "額外控制項"
+
+msgid "Extra large"
+msgstr "特大"
+
+msgid "Extra queues"
+msgstr "額外佇列"
+
+msgid "Extra small"
+msgstr "特小"
+
+msgid "Extracted from your music files and kept while the library refers to it."
+msgstr "從你的音樂檔案中擷取，只要音樂庫參照它就會保留。"
+
+msgid "FOCUS"
+msgstr "焦點"
+
+msgid "FOUNDED"
+msgstr "創立於"
+
+msgid "FOUNDED IN"
+msgstr "創立於"
+
+msgid "Failed"
+msgstr "失敗"
+
+msgid "Failed in this run"
+msgstr "本次執行失敗"
+
+msgid "Failed to load albums"
+msgstr "無法載入專輯"
+
+msgid "Favorite"
+msgstr "最愛"
+
+msgid "Favorite preset"
+msgstr "最愛預設值"
+
+msgid "Favorites"
+msgstr "我的最愛"
+
+msgid "Feb"
+msgstr "2 月"
+
+msgid "February"
+msgstr "二月"
+
+msgid "Fetching the cover…"
+msgstr "正在取得封面…"
+
+msgid "Fields"
+msgstr "欄位"
+
+msgid "File"
+msgstr "檔案"
+
+msgid "File size"
+msgstr "檔案大小"
+
+msgid "Files"
+msgstr "檔案"
+
+msgid "Fill missing composers from MusicBrainz"
+msgstr "從 MusicBrainz 補全缺少的作曲者"
+
+msgid "Fill missing genres from MusicBrainz"
+msgstr "從 MusicBrainz 補全缺少的類型"
+
+msgid "Filter"
+msgstr "篩選"
+
+msgid "Filter albums"
+msgstr "篩選專輯"
+
+msgid "Filter artists"
+msgstr "篩選演出者"
+
+msgid "Filter by genre"
+msgstr "依類型篩選"
+
+msgid "Filter playlists"
+msgstr "篩選播放清單"
+
+msgid "Filter the library"
+msgstr "篩選音樂庫"
+
+msgid "Filter tracks"
+msgstr "篩選曲目"
+
+msgid "Filter, Enter to search, or a stream URL"
+msgstr "輸入條件篩選、按 Enter 搜尋，或輸入串流網址"
+
+msgid "Find a preset or device"
+msgstr "尋找預設值或裝置"
+
+msgid "Find covers"
+msgstr "尋找封面"
+
+msgid "Find matches"
+msgstr "尋找符合項目"
+
+msgid "Find music"
+msgstr "尋找音樂"
+
+msgid "Find music or saved selections…"
+msgstr "尋找音樂或已儲存的選取內容…"
+
+msgid "Find playlists"
+msgstr "尋找播放清單"
+
+msgid "Find this music in your library and connected sources."
+msgstr "在你的音樂庫與已連線來源中尋找此音樂。"
+
+msgid "Find your DAC's PipeWire node name and paste it here:"
+msgstr "找到你 DAC 的 PipeWire 節點名稱並貼在下方："
+
+msgid "Finding matches…"
+msgstr "正在尋找符合項目…"
+
+msgid "Finish"
+msgstr "完成"
+
+msgid "Finish or cancel the current analysis first."
+msgstr "請先完成或取消目前的分析。"
+
+msgid "Finish selecting"
+msgstr "完成選取"
+
+msgid "Finished"
+msgstr "已完成"
+
+msgid "First track"
+msgstr "第一首曲目"
+
+msgid "Flat"
+msgstr "平坦（Flat）"
+
+msgid "Floating"
+msgstr "浮動"
+
+msgid "Floating over the content, or spanning the window at the top or bottom."
+msgstr "浮動於內容上方，或延伸至視窗頂部/底部。"
+
+msgid "Focus on playing"
+msgstr "專注播放"
+
+msgid "Folder colors in the sidebar"
+msgstr "側邊欄資料夾顏色"
+
+msgid "Folder name"
+msgstr "資料夾名稱"
+
+msgid "Folder on the memory card"
+msgstr "記憶卡上的資料夾"
+
+msgid "Folder path"
+msgstr "資料夾路徑"
+
+msgid "Folders"
+msgstr "資料夾"
+
+msgid "Folders are unavailable. Their existing tracks remain in the library."
+msgstr "資料夾無法使用。其現有曲目仍會保留在音樂庫中。"
+
+msgid "Follow"
+msgstr "關注"
+
+msgid "Follow lyrics"
+msgstr "滾動追蹤歌詞"
+
+msgid "Font"
+msgstr "字型"
+
+msgid "For a long while"
+msgstr "長期以來"
+
+msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
+msgstr "忘記目前找到的歌詞以及已知無歌詞的曲目。播放曲目時會重新查詢。"
+
+msgid "Format"
+msgstr "格式"
+
+msgid "Format conversion"
+msgstr "格式轉換"
+
+msgid "Forward"
+msgstr "前進"
+
+msgid "Forward 10 seconds"
+msgstr "快進 10 秒"
+
+msgid "Found on this network"
+msgstr "在此網路上找到"
+
+msgid "Four stars or more; rating:0 has none"
+msgstr "四星或以上；rating:0 為無評分"
+
+msgid "French"
+msgstr "法文"
+
+msgid "Frequency · Hz   /   Gain · dB   /   ±12 dB"
+msgstr "頻率 · Hz   /   增益 · dB   /   ±12 dB"
+
+msgid "Fri"
+msgstr "週五"
+
+msgid "From"
+msgstr "來自"
+
+msgid "From catalog"
+msgstr "來自目錄"
+
+msgid "From main sidebar"
+msgstr "來自主側邊欄"
+
+msgid "From one year to another, both included"
+msgstr "從某年到另一年（包含頭尾年份）"
+
+msgid "From plugin"
+msgstr "來自外掛"
+
+msgid "From same artist"
+msgstr "來自同一演出者"
+
+msgid "From settings menu"
+msgstr "來自設定選單"
+
+msgid "From that year on"
+msgstr "自該年份起"
+
+msgid "From this week"
+msgstr "來自本週"
+
+msgid "Full"
+msgstr "完整"
+
+msgid "Full atmosphere, artwork colors only, or no derived background."
+msgstr "完整氛圍、僅封面色彩，或不使用衍生背景。"
+
+msgid "Full details"
+msgstr "完整詳細資訊"
+
+msgid "Full episodes"
+msgstr "完整集數"
+
+msgid "Full width, bottom"
+msgstr "全寬，底部"
+
+msgid "Full width, top"
+msgstr "全寬，頂部"
+
+msgid "Fullscreen"
+msgstr "Fullscreen"
+
+msgid "GPU"
+msgstr "GPU"
+
+msgid "GPU (compatibility)"
+msgstr "GPU（相容模式）"
+
+msgid "Gain"
+msgstr "增益"
+
+msgid "Gain applied to consumed PCM blocks"
+msgstr "套用至已處理 PCM 區塊的增益"
+
+msgid "Gain in decibels. Use arrow keys to adjust; Home and End reach the limits."
+msgstr "增益（分貝）。使用方向鍵調整；Home 與 End 可至極限值。"
+
+msgid "Gapless"
+msgstr "無縫"
+
+msgid "Gapless playback"
+msgstr "無縫播放"
+
+msgid "Generate"
+msgstr "產生"
+
+msgid "Generate Mood playlists"
+msgstr "產生心情播放清單"
+
+msgid "Generate a color theme from your system wallpaper or a custom image"
+msgstr "從你的系統桌布或自訂圖片產生色彩主題"
+
+msgid "Generated images"
+msgstr "產生的圖片"
+
+msgid "Generated test signal"
+msgstr "產生的測試訊號"
+
+msgid "Genre"
+msgstr "類型"
+
+msgid "Genres"
+msgstr "類型"
+
+msgid "German"
+msgstr "德文"
+
+msgid "Get started"
+msgstr "開始使用"
+
+msgid "Getting started"
+msgstr "新手入門"
+
+msgid "GitHub is limiting requests from this network. Try again later."
+msgstr "GitHub 目前限制來自此網路的請求。請稍後再試。"
+
+msgid "Go Back"
+msgstr "返回"
+
+msgid "Go Forward"
+msgstr "前進"
+
+msgid "Go to"
+msgstr "前往"
+
+msgid "Go to album"
+msgstr "前往專輯"
+
+msgid "Go to artist"
+msgstr "前往演出者"
+
+msgid "Go to logs"
+msgstr "前往日誌"
+
+msgid "Go to podcast"
+msgstr "前往 Podcast"
+
+msgid "Go to source"
+msgstr "前往來源"
+
+msgid "Go to top"
+msgstr "回到頂部"
+
+msgid "Go to {}"
+msgstr "前往 {}"
+
+msgid "Goniometer"
+msgstr "相位計（Goniometer）"
+
+msgid "Graphic EQ"
+msgstr "圖形等化器"
+
+msgid "Graphic equalizer"
+msgstr "圖形等化器"
+
+msgid "Graphics"
+msgstr "繪圖/顯示"
+
+msgid "Grid"
+msgstr "網格"
+
+msgid "Grid view"
+msgstr "網格檢視"
+
+msgid "Group"
+msgstr "群組"
+
+msgid "Group album versions"
+msgstr "分組專輯版本"
+
+msgid "Group collections"
+msgstr "分組合輯"
+
+msgid "Group playlists by source"
+msgstr "依來源將播放清單分組"
+
+msgid "Group same album from different sources"
+msgstr "合併來自不同來源的相同專輯"
+
+msgid "Group with other versions"
+msgstr "與其他版本分組"
+
+msgid "Group: A-Z"
+msgstr "分組：A-Z"
+
+msgid "Group: Off"
+msgstr "分組：關閉"
+
+msgid "Guided DAC Setup"
+msgstr "引導式 DAC 設定"
+
+msgid "Half page down"
+msgstr "向下半頁"
+
+msgid "Half page up"
+msgstr "向上半頁"
+
+msgid "Hardware"
+msgstr "硬體"
+
+msgid "Hardware volume"
+msgstr "硬體音量"
+
+msgid "Hardware volume control"
+msgstr "硬體音量控制"
+
+msgid "Heard"
+msgstr "已聽過"
+
+msgid "Heard {} of {}"
+msgstr "已聽過 {} / {}"
+
+msgid "Hi-Res"
+msgstr "高解析（Hi-Res）"
+
+msgid "Hi-Res Lossless"
+msgstr "高解析無損"
+
+msgid "Hi-Res only"
+msgstr "僅限高解析（Hi-Res）"
+
+msgid "HiFi Wizard"
+msgstr "HiFi 精靈"
+
+msgid "HiFi Wizard — DAC Setup"
+msgstr "HiFi 精靈 — DAC 設定"
+
+msgid "Hide"
+msgstr "隱藏"
+
+msgid "Hide audio path"
+msgstr "隱藏音訊路徑"
+
+msgid "Hide details"
+msgstr "隱藏詳細資訊"
+
+msgid "Hide explicit"
+msgstr "隱藏明確內容（Explicit）"
+
+msgid "Hide from sidebar"
+msgstr "從側邊欄隱藏"
+
+msgid "Hide manual entry"
+msgstr "隱藏手動輸入"
+
+msgid "Hide review details"
+msgstr "隱藏審核詳細資訊"
+
+msgid "Hide sidebar"
+msgstr "隱藏側邊欄"
+
+msgid "Hide the console line"
+msgstr "隱藏主控台指令列"
+
+msgid "Hide token"
+msgstr "隱藏權杖"
+
+msgid "Hide translation"
+msgstr "隱藏翻譯"
+
+msgid "Hide unavailable"
+msgstr "隱藏無法使用的項目"
+
+msgid "Hide visualization"
+msgstr "隱藏視覺化效果"
+
+msgid "Hide when idle"
+msgstr "閒置時隱藏"
+
+msgid "High 24/176.4"
+msgstr "高音質 24/176.4"
+
+msgid "High 24/192"
+msgstr "高音質 24/192"
+
+msgid "High 24/88.2"
+msgstr "高音質 24/88.2"
+
+msgid "High 24/96"
+msgstr "高音質 24/96"
+
+msgid "High pass"
+msgstr "高通（High Pass）"
+
+msgid "High resolution"
+msgstr "高解析度"
+
+msgid "High shelf"
+msgstr "高音高架（High Shelf）"
+
+msgid "Historical result; the current device or configuration is not verified."
+msgstr "歷史結果；目前的裝置或設定未經驗證。"
+
+msgid "History"
+msgstr "歷史紀錄"
+
+msgid "Home"
+msgstr "首頁"
+
+msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
+msgstr "視窗後方桌布的模糊程度：0% 保持清晰，100% 為最強模糊。"
+
+msgid "I approve removing {} managed file."
+msgid_plural "I approve removing {} managed files."
+msgstr[0] "我同意移除由 {} 管理的文件。"
+msgstr[1] "我同意移除由 {} 管理的文件。"
+
+msgid "I could not finish this device operation. I kept its recovery information."
+msgstr "無法完成此裝置操作。已保留復原資訊。"
+
+msgid "I could not read the Library for device sync."
+msgstr "無法讀取用於裝置同步的音樂庫。"
+
+msgid "I could not read the device profiles."
+msgstr "無法讀取裝置設定檔。"
+
+msgid "I could not read the last synced music for this storage."
+msgstr "無法讀取此儲存空間上次同步的音樂。"
+
+msgid "I could not read the local playlists."
+msgstr "無法讀取本機播放清單。"
+
+msgid "I could not read the saved queries."
+msgstr "無法讀取儲存的查詢。"
+
+msgid "I could not read the selected Library tracks."
+msgstr "無法讀取選取的音樂庫曲目。"
+
+msgid "I could not read this Library selection. Try again."
+msgstr "無法讀取此音樂庫選取內容。請再試一次。"
+
+msgid "I could not resolve the device query."
+msgstr "無法解析裝置查詢。"
+
+msgid "I could not save the device profiles."
+msgstr "無法儲存裝置設定檔。"
+
+msgid "I could not start the device task."
+msgstr "無法啟動裝置任務。"
+
+msgid "I created a backup"
+msgstr "我已建立備份"
+
+msgid "I created the configuration files"
+msgstr "我已建立設定檔"
+
+msgid "I did not find a CD drive"
+msgstr "找不到 CD 光碟機"
+
+msgid "I did not understand that request."
+msgstr "無法理解該請求。"
+
+msgid "I do not have permission to access this USB device."
+msgstr "沒有存取此 USB 裝置的權限。"
+
+msgid "I do not know the list \"{}\""
+msgstr "我不認識列表「{}」"
+
+msgid "I keep this filter applied; edit its text to change it."
+msgstr "保持套用此篩選；編輯文字以進行變更。"
+
+msgid "I restarted the audio services"
+msgstr "我已重新啟動音訊服務"
+
+msgid "I understand and accept these terms"
+msgstr "我理解並接受這些條款"
+
+msgid "INFLUENCES"
+msgstr "受其影響"
+
+msgid "Icon"
+msgstr "圖示"
+
+msgid "Identity and provenance"
+msgstr "識別與來源出處"
+
+msgid "If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile."
+msgstr "如果這是您的第一個音樂來源，建議等待讀取完成。已顯示的內容在此期間可以正常播放。"
+
+msgid "Image"
+msgstr "圖片"
+
+msgid "Image saved"
+msgstr "圖片已儲存"
+
+msgid "Images"
+msgstr "圖片"
+
+msgid "Images from sources and plugins will download again when needed. Artwork saved in your library stays."
+msgstr "來自來源與外掛的圖片會在需要時重新下載。儲存在音樂庫中的封面會保留。"
+
+msgid "Images from sources and plugins. Covers saved in your library stay protected."
+msgstr "來自來源與外掛的圖片。音樂庫中儲存的封面會受到保護。"
+
+msgid "Immersive"
+msgstr "沉浸"
+
+msgid "Immersive default view"
+msgstr "沉浸式預設檢視"
+
+msgid "Immersive search"
+msgstr "沉浸式搜尋"
+
+msgid "Immersive view"
+msgstr "沉浸式檢視"
+
+msgid "Import / export"
+msgstr "匯入 / 匯出"
+
+msgid "Import cancelled"
+msgstr "匯入已取消"
+
+msgid "Import complete"
+msgstr "匯入完成"
+
+msgid "Import playlist"
+msgstr "匯入播放清單"
+
+msgid "Imported"
+msgstr "已匯入"
+
+msgid "In a Jellyfin app where you are signed in, open Quick Connect and type this code. Chilpa notices by itself."
+msgstr "在您已登入的 Jellyfin 應用程式中開啟「快速連線」並輸入此代碼，Chilpa 會自動偵測。"
+
+msgid "In library"
+msgstr "在音樂庫中"
+
+msgid "In progress"
+msgstr "進行中"
+
+msgid "Include"
+msgstr "包含"
+
+msgid "Include matches from your plugins?"
+msgstr "要包含來自外掛的符合項目嗎？"
+
+msgid "Include plugins"
+msgstr "包含外掛"
+
+msgid "Include source albums in Albums"
+msgstr "在「專輯」中包含來源專輯"
+
+msgid "Includes downloaded plugin models, waveform data and server caches."
+msgstr "包含已下載的外掛模型、波形資料與伺服器快取。"
+
+msgid "Influences"
+msgstr "受其影響"
+
+msgid "Info"
+msgstr "資訊"
+
+msgid "Info: Embedded tags"
+msgstr "資訊：內嵌標籤"
+
+msgid "Info: {}"
+msgstr "資訊：{}"
+
+msgid "Information"
+msgstr "資訊"
+
+msgid "Information could not be retrieved. Try again shortly."
+msgstr "無法取得資訊。請稍後再試。"
+
+msgid "Init system (service commands)"
+msgstr "Init 系統（服務指令）"
+
+msgid "Input channels"
+msgstr "輸入聲道數"
+
+msgid "Input rates (Hz)"
+msgstr "輸入取樣率 (Hz)"
+
+msgid "Input sample formats"
+msgstr "輸入取樣格式"
+
+msgid "Inspect"
+msgstr "檢視/檢查"
+
+msgid "Inspect an available output before selecting it."
+msgstr "在選取可用輸出前先進行檢視。"
+
+msgid "Inspect an output"
+msgstr "檢視輸出"
+
+msgid "Inspect an output before checking it."
+msgstr "在檢查輸出前先進行檢視。"
+
+msgid "Inspect equipment, the current signal path and individual opening checks."
+msgstr "檢視設備、目前訊號路徑與個別開啟檢查項目。"
+
+msgid "Inspecting does not select an output, reserve the DAC or start audio."
+msgstr "檢視不會選取輸出、保留 DAC 或開始播放音訊。"
+
+msgid "Inspecting plugin…"
+msgstr "正在檢查外掛…"
+
+msgid "Inspection failed"
+msgstr "檢查失敗"
+
+msgid "Inspection passed"
+msgstr "檢查通過"
+
+msgid "Install"
+msgstr "安裝"
+
+msgid "Install and enable a playlist importer in Settings → Plugins."
+msgstr "請在「設定 → 外掛」中安裝並啟用播放清單匯入器。"
+
+msgid "Install and enable the Mood plugin first."
+msgstr "請先安裝並啟用「心情」外掛。"
+
+msgid "Install from ZIP…"
+msgstr "從 ZIP 安裝…"
+
+msgid "Install method"
+msgstr "安裝方式"
+
+msgid "Install plugin from ZIP"
+msgstr "從 ZIP 安裝外掛"
+
+msgid "Install the ALSA bridge so playback can reach PipeWire"
+msgstr "安裝 ALSA 橋接器以使播放能傳送至 PipeWire"
+
+msgid "Install the PipeWire audio stack"
+msgstr "安裝 PipeWire 音訊堆疊"
+
+msgid "Install the PipeWire tools (pw-dump)"
+msgstr "安裝 PipeWire 工具 (pw-dump)"
+
+msgid "Install the Pulse compatibility tools (optional fallback)"
+msgstr "安裝 Pulse 相容工具（選用後備方案）"
+
+msgid "Installation"
+msgstr "安裝"
+
+msgid "Installed"
+msgstr "已安裝"
+
+msgid "Installing plugin…"
+msgstr "正在安裝外掛…"
+
+msgid "Instrument"
+msgstr "樂器"
+
+msgid "Integrations"
+msgstr "整合"
+
+msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
+msgstr "Inter 字型已內建於 Chilpa 中，包含設計所需的所有字重。下一次啟動 Chilpa 時生效。"
+
+msgid "Interface"
+msgstr "介面"
+
+msgid "Interface scale"
+msgstr "介面縮放比例"
+
+msgid "Interface size"
+msgstr "介面大小"
+
+msgid "Interrupted"
+msgstr "已中斷"
+
+msgid "Invalid DSP catalog."
+msgstr "無效的 DSP 目錄。"
+
+msgid "Invalid DSP gain, stereo, delay or dynamics settings."
+msgstr "無效的 DSP 增益、立體聲、延遲或動態設定。"
+
+msgid "Invalid DSP input."
+msgstr "無效的 DSP 輸入。"
+
+msgid "Invalid DSP parameters."
+msgstr "無效的 DSP 參數。"
+
+msgid "Invalid DSP preset JSON."
+msgstr "無效的 DSP 預設 JSON。"
+
+msgid "Invalid DSP preset identity."
+msgstr "無效的 DSP 預設識別。"
+
+msgid "Invalid EQ preamp line."
+msgstr "無效的 EQ 前級增益設定行。"
+
+msgid "Invalid arguments; :help shows the syntax."
+msgstr "無效的引數；輸入 :help 查看語法。"
+
+msgid "Invalid audio check request."
+msgstr "無效的音訊檢查請求。"
+
+msgid "Invalid output identity."
+msgstr "無效的輸出識別。"
+
+msgid "Invalid preference value; check its choices in Settings."
+msgstr "無效的偏好設定值；請在「設定」中查看選項。"
+
+msgid "Invalid — should contain alsa_output or alsa_input"
+msgstr "無效 — 應包含 alsa_output 或 alsa_input"
+
+msgid "Invert left polarity"
+msgstr "反轉左聲道相位"
+
+msgid "Invert right polarity"
+msgstr "反轉右聲道相位"
+
+msgid "It does not answer now; try again when it is back"
+msgstr "目前無回應；請待其恢復後再試"
+
+msgid "It is not read, and saving leaves it out. Take it out and choose the folder that holds your songs."
+msgstr "該內容未被讀取，且儲存時會予以排除。請將其移除並選擇存放您歌曲的資料夾。"
+
+msgid "It offers {} music library."
+msgid_plural "It offers {} music libraries."
+msgstr[0] "它提供 {} 個音樂庫。"
+msgstr[1] "它提供 {} 個音樂庫。"
+
+msgid "It shows {} folder at its top. Next, open the one that holds your music."
+msgid_plural "It shows {} folders at its top. Next, open the one that holds your music."
+msgstr[0] "頂層顯示了 {} 個資料夾。接下來，請開啟存放您音樂的資料夾。"
+msgstr[1] "頂層顯示了 {} 個資料夾。接下來，請開啟存放您音樂的資料夾。"
+
+msgid "Italian"
+msgstr "義大利文"
+
+msgid "Its connection"
+msgstr "連線"
+
+msgid "Its music is being read; it appears in the library as it arrives."
+msgstr "正在讀取其音樂；讀取完成後會陸續顯示於音樂庫。"
+
+msgid "Its music is read again with what you changed."
+msgstr "它的音樂會根據你所做的更改重新播放。"
+
+msgid "Its music joins your library, listed with your own files. Nothing on the server changes."
+msgstr "它的音樂會添加到你的音樂庫，與你自己的文件一起列出。伺服器上的任何內容都不會改變。"
+
+msgid "Its page, or its quick view under the row."
+msgstr "其頁面，或該列下方的快速檢視。"
+
+msgid "Its playlists could not be read: {}."
+msgstr "無法讀取其播放清單：{}。"
+
+msgid "Its songs, albums and playlists are leaving your library. This can take a moment; you can keep using Chilpa meanwhile."
+msgstr "其歌曲、專輯與播放清單正在從您的音樂庫中移除。這可能需要一點時間，期間您可以繼續使用 Chilpa。"
+
+msgid "Its {} leave too."
+msgstr "其 {} 也會一併移除。"
+
+msgid "JUMP TO"
+msgstr "跳轉至"
+
+msgid "Jan"
+msgstr "1 月"
+
+msgid "January"
+msgstr "一月"
+
+msgid "Japanese"
+msgstr "日文"
+
+msgid "Jul"
+msgstr "7 月"
+
+msgid "July"
+msgstr "七月"
+
+msgid "Jun"
+msgstr "6 月"
+
+msgid "June"
+msgstr "六月"
+
+msgid "Keep at most 64 personal presets."
+msgstr "最多保留 64 個個人預設值。"
+
+msgid "Keep original queues"
+msgstr "保留原始佇列"
+
+msgid "Keep the current one"
+msgstr "保留目前的設定"
+
+msgid "Keep the queue between sessions"
+msgstr "在不同作業階段間保留播放佇列"
+
+msgid "Keep words literal and match a genre without expanding it"
+msgstr "保持字面精確，不展開比對音樂類型"
+
+msgid "Kept in Chilpa until you add its first tracks, then sent to {}"
+msgstr "保留於 Chilpa 中，直到您加入第一首曲目後才會傳送至 {}"
+
+msgid "Kept in Chilpa; tracks from any source mix in it"
+msgstr "保留於 Chilpa 中；來自任何來源的曲目皆可混入其中"
+
+msgid "Kernel"
+msgstr "核心"
+
+msgid "Keyboard Shortcuts"
+msgstr "鍵盤捷徑"
+
+msgid "Keyboard shortcuts"
+msgstr "鍵盤捷徑"
+
+msgid "Keymap"
+msgstr "鍵盤對應"
+
+msgid "Kind"
+msgstr "種類"
+
+msgid "LABELS"
+msgstr "廠牌"
+
+msgid "Label"
+msgstr "廠牌"
+
+msgid "Labels"
+msgstr "廠牌"
+
+msgid "Language"
+msgstr "語言"
+
+msgid "Large"
+msgstr "大"
+
+msgid "Last 12 months"
+msgstr "最近 12 個月"
+
+msgid "Last 3 months"
+msgstr "最近 3 個月"
+
+msgid "Last check"
+msgstr "上次檢查"
+
+msgid "Last playlist"
+msgstr "上次播放清單"
+
+msgid "Last sync"
+msgstr "上次同步"
+
+msgid "Last synced with Chilpa. Files changed elsewhere may differ."
+msgstr "上次與 Chilpa 同步。在其他地方變更的檔案可能會有所不同。"
+
+msgid "Last track"
+msgstr "上一首曲目"
+
+msgid "Last.fm account"
+msgstr "Last.fm 帳號"
+
+msgid "Last.fm opens in the browser to allow Chilpa."
+msgstr "在瀏覽器中開啟 Last.fm 以允許 Chilpa 存取。"
+
+msgid "Later"
+msgstr "稍後"
+
+msgid "Later tabs"
+msgstr "較後的分頁"
+
+msgid "Latest release"
+msgstr "最新發行"
+
+msgid "Latest run"
+msgstr "最近一次執行"
+
+msgid "Leave a label out: a minus means not"
+msgstr "排除廠牌：減號表示「非」"
+
+msgid "Leave one empty for an open end. Both ends included."
+msgstr "留空表示不限邊界。包含邊界年份。"
+
+msgid "Leave view"
+msgstr "離開檢視"
+
+msgid "Left delay · 0–30 ms"
+msgstr "左聲道延遲 · 0–30 ms"
+
+msgid "Length"
+msgstr "長度"
+
+msgid "Letters"
+msgstr "字母"
+
+msgid "Level"
+msgstr "等級"
+
+msgid "Level loudness across tracks. This breaks strict bit perfect."
+msgstr "平衡各曲目的響度。這會無法維持嚴格的位元完美。"
+
+msgid "Libraries"
+msgstr "音樂庫"
+
+msgid "Library"
+msgstr "音樂庫"
+
+msgid "Library check complete"
+msgstr "音樂庫檢查完成"
+
+msgid "Library check failed"
+msgstr "音樂庫檢查失敗"
+
+msgid "Library check interrupted"
+msgstr "音樂庫檢查已中斷"
+
+msgid "Library folders"
+msgstr "音樂庫資料夾"
+
+msgid "Library integration"
+msgstr "音樂庫整合"
+
+msgid "Library scanning"
+msgstr "音樂庫掃描中"
+
+msgid "Library selection"
+msgstr "音樂庫選取內容"
+
+msgid "Light"
+msgstr "淺色"
+
+msgid "Light themes"
+msgstr "淺色主題"
+
+msgid "Like Track"
+msgstr "喜愛曲目"
+
+msgid "Like cursor track"
+msgstr "喜愛游標所在曲目"
+
+msgid "Limits and cleanup"
+msgstr "限制與清理"
+
+msgid "Line Bed"
+msgstr "線條床（Line Bed）"
+
+msgid "Linux audio diagnostics…"
+msgstr "Linux 音訊診斷…"
+
+msgid "List"
+msgstr "列表"
+
+msgid "Listen live"
+msgstr "線上收聽"
+
+msgid "ListenBrainz account"
+msgstr "ListenBrainz 帳號"
+
+msgid "Listening clock"
+msgstr "聆聽時鐘"
+
+msgid "Listening history"
+msgstr "聆聽歷史"
+
+msgid "Listening history (CSV)"
+msgstr "聆聽歷史 (CSV)"
+
+msgid "Listening stats"
+msgstr "聆聽統計"
+
+msgid "Listening time"
+msgstr "聆聽時間"
+
+msgid "Lite fill"
+msgstr "輕量填滿"
+
+msgid "Live"
+msgstr "現場（Live）"
+
+msgid "Load more"
+msgstr "載入更多"
+
+msgid "Loading albums…"
+msgstr "正在載入專輯…"
+
+msgid "Loading device profiles…"
+msgstr "正在載入裝置設定檔…"
+
+msgid "Loading music was cancelled."
+msgstr "載入音樂已取消。"
+
+msgid "Loading music…"
+msgstr "正在載入音樂…"
+
+msgid "Loading purchases…"
+msgstr "正在載入購買項目…"
+
+msgid "Loading the release…"
+msgstr "正在載入發行項目…"
+
+msgid "Loading…"
+msgstr "載入中…"
+
+msgid "Local"
+msgstr "本機"
+
+msgid "Local DSP and software volume are bypassed."
+msgstr "本機 DSP 與軟體音量已略過。"
+
+msgid "Local artwork"
+msgstr "本機封面"
+
+msgid "Local folders organize this sidebar. Native folders are saved in your service account."
+msgstr "本機資料夾用於整理此側邊欄。原生資料夾會儲存在你的服務帳號中。"
+
+msgid "Local library"
+msgstr "本機音樂庫"
+
+msgid "Local only"
+msgstr "僅限本機"
+
+msgid "Local tracks"
+msgstr "本機曲目"
+
+msgid "Local — Chilpa"
+msgstr "本機 — Chilpa"
+
+msgid "Local — No folder"
+msgstr "本機 — 無資料夾"
+
+msgid "Local — {}"
+msgstr "本機 — {}"
+
+msgid "Logs"
+msgstr "日誌"
+
+msgid "Look"
+msgstr "外觀"
+
+msgid "Look for changes"
+msgstr "尋找變更"
+
+msgid "Look records up in"
+msgstr "查詢紀錄於"
+
+msgid "Look up"
+msgstr "查詢"
+
+msgid "Look up lyrics through Chilpa's lyrics service when the file and its source have none."
+msgstr "當檔案與其來源均無歌詞時，透過 Chilpa 歌詞服務查詢歌詞。"
+
+msgid "Looking for files…"
+msgstr "正在尋找檔案…"
+
+msgid "Looking for files… {} found"
+msgstr "正在尋找檔案… 已找到 {}"
+
+msgid "Looking for lyrics…"
+msgstr "正在尋找歌詞…"
+
+msgid "Looking for players…"
+msgstr "正在尋找播放器…"
+
+msgid "Lossless"
+msgstr "無損"
+
+msgid "Lossless only"
+msgstr "僅限無損"
+
+msgid "Lossless or Hi-Res records; quality also takes lossy or dsd"
+msgstr "無損或高解析紀錄；品質也可接受 lossy 或 dsd"
+
+msgid "Lossy"
+msgstr "破壞性壓縮（Lossy）"
+
+msgid "Low pass"
+msgstr "低通（Low Pass）"
+
+msgid "Low shelf"
+msgstr "低音高架（Low Shelf）"
+
+msgid "Lower the overall level without changing the EQ. Zero adds no attenuation."
+msgstr "在不改變 EQ 的情況下降低整體音量。設為零表示不衰減。"
+
+msgid "Lyricist"
+msgstr "填詞者"
+
+msgid "Lyrics"
+msgstr "歌詞"
+
+msgid "Lyrics copied"
+msgstr "歌詞已複製"
+
+msgid "Lyrics could not be retrieved. Try again shortly."
+msgstr "無法取得歌詞。請稍後再試。"
+
+msgid "Lyrics show here while a track plays."
+msgstr "播放曲目時，歌詞會顯示於此。"
+
+msgid "Lyrics source:"
+msgstr "歌詞來源："
+
+msgid "Lyrics view"
+msgstr "歌詞檢視"
+
+msgid "Lyrics without one are sent to Chilpa's lyrics API."
+msgstr "未包含翻譯的歌詞會發送至 Chilpa 歌詞 API。"
+
+msgid "Magazine"
+msgstr "雜誌"
+
+msgid "Maintenance"
+msgstr "維護"
+
+msgid "Make it yours"
+msgstr "打造你的專屬風格"
+
+msgid "Manage"
+msgstr "管理"
+
+msgid "Manage playlists"
+msgstr "管理播放清單"
+
+msgid "Manage profiles"
+msgstr "管理設定檔"
+
+msgid "Manually"
+msgstr "手動"
+
+msgid "Mar"
+msgstr "3 月"
+
+msgid "March"
+msgstr "三月"
+
+msgid "Mark as heard"
+msgstr "標記為已聽過"
+
+msgid "Mark as unplayed"
+msgstr "標記為未播放"
+
+msgid "Mark the start first with :loop a."
+msgstr "請先使用 :loop a 標記起點。"
+
+msgid "Mastering engineer"
+msgstr "母帶工程師"
+
+msgid "Match"
+msgstr "符合"
+
+msgid "Match {} exactly"
+msgstr "精確符合 {}"
+
+msgid "Matched"
+msgstr "已符合"
+
+msgid "Maximize"
+msgstr "最大化"
+
+msgid "Maximum 32/384"
+msgstr "最大支援 32/384"
+
+msgid "May"
+msgstr "五月"
+
+msgid "Member Of"
+msgstr "成員於"
+
+msgid "Members & Former"
+msgstr "現任與前任成員"
+
+msgid "Memory card"
+msgstr "記憶卡"
+
+msgid "Menu"
+msgstr "選單"
+
+msgid "Message"
+msgstr "訊息"
+
+msgid "Metadata"
+msgstr "中繼資料"
+
+msgid "Micro"
+msgstr "微型"
+
+msgid "Micro view"
+msgstr "微型檢視"
+
+msgid "Middle click opens a new tab"
+msgstr "按滑鼠中鍵開啟新分頁"
+
+msgid "Mids"
+msgstr "中音"
+
+msgid "Mini player"
+msgstr "迷你播放器"
+
+msgid "Mini player default view"
+msgstr "迷你播放器預設檢視"
+
+msgid "Minimize"
+msgstr "最小化"
+
+msgid "Missing"
+msgstr "遺失"
+
+msgid "Mixed"
+msgstr "混合"
+
+msgid "Mixed output"
+msgstr "混合輸出"
+
+msgid "Mixing engineer"
+msgstr "混音工程師"
+
+msgid "Mode not reported"
+msgstr "未回報模式"
+
+msgid "Mon"
+msgstr "週一"
+
+msgid "Mono dark"
+msgstr "單色深色"
+
+msgid "Mono duplicated without changing sample values"
+msgstr "單聲道已複製且未變更取樣值"
+
+msgid "Mono light"
+msgstr "單色淺色"
+
+msgid "Month"
+msgstr "月"
+
+msgid "Mood"
+msgstr "心情"
+
+msgid "Mood analysis cancelled."
+msgstr "心情分析已取消。"
+
+msgid "Mood analysis stopped: {}"
+msgstr "心情分析已停止：{}"
+
+msgid "Mood done"
+msgstr "心情分析完成"
+
+msgid "Mood is off. Enable it in Mood models."
+msgstr "心情功能已關閉。請在「心情模型」中啟用。"
+
+msgid "Mood models"
+msgstr "心情模型"
+
+msgid "Mood pending"
+msgstr "心情分析待處理"
+
+msgid "Mood stored"
+msgstr "心情分析已儲存"
+
+msgid "Mood: {} tracks analyzed, {} playlists updated"
+msgstr "心情：已分析 {} 首曲目，已更新 {} 個播放清單"
+
+msgid "More"
+msgstr "更多"
+
+msgid "More actions"
+msgstr "更多動作"
+
+msgid "More options"
+msgstr "更多選項"
+
+msgid "Most at {}:00"
+msgstr "最高峰於 {}:00"
+
+msgid "Most played"
+msgstr "最多播放"
+
+msgid "Most played tracks"
+msgstr "最多播放曲目"
+
+msgid "Mounted storage"
+msgstr "已掛載儲存空間"
+
+msgid "Move"
+msgstr "移動"
+
+msgid "Move down"
+msgstr "向下移動"
+
+msgid "Move the output's own volume from the player bar when the selected ALSA control supports safe playback volume."
+msgstr "當選取的 ALSA 控制項支援安全播放音量時，直接從播放列調整輸出本身的音量。"
+
+msgid "Move this app to a writable folder, then try again."
+msgstr "請將此應用程式移動至可寫入的資料夾，然後再試一次。"
+
+msgid "Move to folder"
+msgstr "移動至資料夾"
+
+msgid "Move to folder…"
+msgstr "移動至資料夾…"
+
+msgid "Move to root"
+msgstr "移動至根目錄"
+
+msgid "Move up"
+msgstr "向上移動"
+
+msgid "Music"
+msgstr "音樂"
+
+msgid "Music folder"
+msgstr "音樂資料夾"
+
+msgid "Music player\nNothing playing"
+msgstr "音樂播放器\n未播放任何內容"
+
+msgid "Music servers"
+msgstr "音訊伺服器"
+
+msgid "Music services"
+msgstr "音樂服務"
+
+msgid "MusicBrainz album artists"
+msgstr "MusicBrainz 專輯演出者"
+
+msgid "MusicBrainz artists"
+msgstr "MusicBrainz 演出者"
+
+msgid "MusicBrainz is turned off in Integrations"
+msgstr "已在「整合」中關閉 MusicBrainz"
+
+msgid "MusicBrainz recording"
+msgstr "MusicBrainz 錄音項目"
+
+msgid "MusicBrainz release"
+msgstr "MusicBrainz 發行項目"
+
+msgid "MusicBrainz release group"
+msgstr "MusicBrainz 發行群組"
+
+msgid "MusicBrainz track"
+msgstr "MusicBrainz 曲目"
+
+msgid "Musical source"
+msgstr "音樂來源"
+
+msgid "Mute"
+msgstr "靜音"
+
+msgid "Mute / Unmute"
+msgstr "靜音 / 取消靜音"
+
+msgid "Muted"
+msgstr "已靜音"
+
+msgid "My Playlist"
+msgstr "我的播放清單"
+
+msgid "My library"
+msgstr "我的音樂庫"
+
+msgid "My stations"
+msgstr "我的電台"
+
+msgid "NOT needs a condition after it"
+msgstr "NOT 後方需要接續條件"
+
+msgid "NOW PLAYING"
+msgstr "正在播放"
+
+msgid "Name"
+msgstr "名稱"
+
+msgid "Name a personal preset"
+msgstr "命名個人預設值"
+
+msgid "Name in Chilpa"
+msgstr "在 Chilpa 中的名稱"
+
+msgid "Name this preset."
+msgstr "為此預設值命名。"
+
+msgid "Native DSD"
+msgstr "原生 DSD（Native DSD）"
+
+msgid "Native DSD and DoP bypass DSP. Select PCM output to process them."
+msgstr "原生 DSD 與 DoP 會略過 DSP。請選擇 PCM 輸出以進行音訊處理。"
+
+msgid "Native DSD bypasses software volume. Use the DAC or amplifier; your PCM volume is kept."
+msgstr "原生 DSD 會略過軟體音量控制。請使用 DAC 或擴大機；你的 PCM 音量會被保留。"
+
+msgid "Native DSD needs exclusive mode and a compatible output. Otherwise playback converts DSD to PCM."
+msgstr "原生 DSD 需要獨佔模式與相容的輸出裝置。否則播放時會將 DSD 轉換為 PCM。"
+
+msgid "Native plugins"
+msgstr "原生外掛"
+
+msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."
+msgstr "原生使用 ALSA 的 DSD_U32 格式。DoP 在標記的 PCM 字元中傳輸相同的單位元串流。PCM 則轉換 DSD 以使所有輸出均可播放。"
+
+msgid "Native — {}"
+msgstr "原生 — {}"
+
+msgid "Native — {} — No folder"
+msgstr "原生 — {} — 無資料夾"
+
+msgid "Native — {} — {}"
+msgstr "原生 — {} — {}"
+
+msgid "Navidrome, gonic or another server that speaks Subsonic. You sign in with its user and password, or an API key."
+msgstr "Navidrome、gonic 或其他支援 Subsonic 協定的伺服器。您可以使用其使用者名稱與密碼，或 API 金鑰進行登入。"
+
+msgid "Navigation"
+msgstr "導覽"
+
+msgid "Needs update"
+msgstr "需要更新"
+
+msgid "Negotiation prediction, not a playback test: {}"
+msgstr "交涉預測，非播放測試：{}"
+
+msgid "Nerdy"
+msgstr "專業資訊（Nerdy）"
+
+msgid "Network"
+msgstr "網路"
+
+msgid "Network access is disabled in Settings > Integrations."
+msgstr "已在「設定 > 整合」中停用網路存取。"
+
+msgid "Network access, including authentication, artwork and audio servers discovered by the plugin"
+msgstr "網路存取，包含外掛發掘的身份驗證、封面圖與音訊伺服器"
+
+msgid "Never played"
+msgstr "從未播放"
+
+msgid "Never played; plays:1.. means played at least once"
+msgstr "從未播放；plays:1.. 表示至少播放過一次"
+
+msgid "New Tab"
+msgstr "新分頁"
+
+msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
+msgstr "新的分析執行將顯示於此。已儲存的曲目結果可在「曲目」中取得。"
+
+msgid "New conditions go into this group"
+msgstr "新條件將放入此群組"
+
+msgid "New folder"
+msgstr "新資料夾"
+
+msgid "New import"
+msgstr "新匯入"
+
+msgid "New in {}"
+msgstr "{} 中的新功能"
+
+msgid "New playlist"
+msgstr "新播放清單"
+
+msgid "New plugin"
+msgstr "新外掛"
+
+msgid "New queue"
+msgstr "新佇列"
+
+msgid "New tab"
+msgstr "新分頁"
+
+msgid "New third-party plugin"
+msgstr "新第三方外掛"
+
+msgid "New, saved with the next save"
+msgstr "新建，將於下次儲存時存檔"
+
+msgid "Newest first"
+msgstr "最新優先"
+
+msgid "Next"
+msgstr "下一步"
+
+msgid "Next Track"
+msgstr "下一首曲目"
+
+msgid "Next month"
+msgstr "下個月"
+
+msgid "Next page"
+msgstr "下一頁"
+
+msgid "Next queue"
+msgstr "下一佇列"
+
+msgid "Next search result"
+msgstr "下一個搜尋結果"
+
+msgid "Next tab"
+msgstr "下一個分頁"
+
+msgid "No"
+msgstr "否"
+
+msgid "No Home modules are available for this source."
+msgstr "此來源無可用的首頁模組。"
+
+msgid "No active parametric EQ filters were found."
+msgstr "未找到啟用的參數化 EQ 濾波器。"
+
+msgid "No album tracks"
+msgstr "無專輯曲目"
+
+msgid "No albums found"
+msgstr "未找到專輯"
+
+msgid "No artists from this scene were found."
+msgstr "未找到此場景的演出者。"
+
+msgid "No artists from your selected plugins were found in this scene."
+msgstr "在此場景中未找到來自你選取外掛的演出者。"
+
+msgid "No audio output is known yet; try again in a moment."
+msgstr "尚未知曉音訊輸出；請稍後再試。"
+
+msgid "No composer"
+msgstr "無作曲者"
+
+msgid "No conditions yet. Add one below, or click values in Columns."
+msgstr "尚無條件。請在下方新增，或點擊欄位中的數值。"
+
+msgid "No connected profiles"
+msgstr "無連線的設定档"
+
+msgid "No cover"
+msgstr "無封面"
+
+msgid "No credits available"
+msgstr "無製作人員資訊"
+
+msgid "No devices found"
+msgstr "未找到裝置"
+
+msgid "No download folder selected"
+msgstr "未選擇下載資料夾"
+
+msgid "No files need to change."
+msgstr "沒有檔案需要變更。"
+
+msgid "No folder"
+msgstr "無資料夾"
+
+msgid "No folders in your local library yet."
+msgstr "本機音樂庫中尚無資料夾。"
+
+msgid "No folders match your search."
+msgstr "沒有符合搜尋的資料夾。"
+
+msgid "No genre"
+msgstr "無類型"
+
+msgid "No genres in this period."
+msgstr "此期間無音樂類型。"
+
+msgid "No grouping"
+msgstr "不分組"
+
+msgid "No hardware format table is available for this route."
+msgstr "此路徑無可用的硬體格式表。"
+
+msgid "No label"
+msgstr "無廠牌"
+
+msgid "No label info"
+msgstr "無廠牌資訊"
+
+msgid "No listens match."
+msgstr "沒有符合的聆聽紀錄。"
+
+msgid "No log entries."
+msgstr "無日誌條目。"
+
+msgid "No lyrics"
+msgstr "無歌詞"
+
+msgid "No lyrics for this track."
+msgstr "此曲目無歌詞。"
+
+msgid "No matches"
+msgstr "無符合項目"
+
+msgid "No matching music."
+msgstr "沒有符合的音樂。"
+
+msgid "No matching plugins"
+msgstr "沒有符合的外掛"
+
+msgid "No matching selections. Create a local playlist or save a query in Refine."
+msgstr "沒有符合的選取內容。請在「精細篩選」中建立本機播放清單或儲存查詢。"
+
+msgid "No media server answered the search. Some do not answer searches: type its address below, such as 192.168.0.20:8200."
+msgstr "沒有媒體伺服器回應搜尋。部分伺服器不回應搜尋：請在下方輸入其位址，例如 192.168.0.20:8200。"
+
+msgid "No music has been synced with Chilpa to this storage yet."
+msgstr "尚未有音樂透過 Chilpa 同步至此儲存空間。"
+
+msgid "No opening was confirmed"
+msgstr "未確認開啟"
+
+msgid "No physical readback is available for this route."
+msgstr "此路徑無可用的實體讀回。"
+
+msgid "No playable tracks found."
+msgstr "未找到可播放的曲目。"
+
+msgid "No playable tracks were found."
+msgstr "未找到可播放的曲目。"
+
+msgid "No playlists found"
+msgstr "未找到播放清單"
+
+msgid "No playlists yet."
+msgstr "尚無播放清單。"
+
+msgid "No plugin catalog match for this artist"
+msgstr "此演出者無外掛目錄符合項目"
+
+msgid "No plugin updates available."
+msgstr "沒有可用的外掛更新。"
+
+msgid "No plugins installed"
+msgstr "未安裝外掛"
+
+msgid "No presets match this search."
+msgstr "沒有符合此搜尋的預設值。"
+
+msgid "No purchases match the current view."
+msgstr "沒有符合目前檢視的購買項目。"
+
+msgid "No results for"
+msgstr "無結果的"
+
+msgid "No results found"
+msgstr "未找到結果"
+
+msgid "No results found."
+msgstr "未找到結果。"
+
+msgid "No review available"
+msgstr "無檢視/評論資訊"
+
+msgid "No sample changes are reported in Chilpa; the downstream path is unverified."
+msgstr "Chilpa 中未回報取樣變更；後續路徑未經驗證。"
+
+msgid "No sample processing reported in Chilpa"
+msgstr "Chilpa 中未回報取樣處理"
+
+msgid "No saved profiles"
+msgstr "沒有儲存的設定檔"
+
+msgid "No saved queries yet. Add conditions, then choose Save query."
+msgstr "尚無儲存的查詢。請新增條件，然後選擇「儲存查詢」。"
+
+msgid "No setting says that"
+msgstr "沒有設定項指定該內容"
+
+msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
+msgstr "未偵測到接收端 — 請重新安裝 ALSA UCM 設定檔並重新開機"
+
+msgid ""
+"No songs in it: it holds other things, such as the server's own settings"
+msgstr "內無歌曲：其存放的是其他內容，例如伺服器自身的設定"
+
+msgid "No songs in it: it holds video or pictures"
+msgstr "內無歌曲：其存放的是影片或圖片"
+
+msgid "No songs in it: it is empty"
+msgstr "內無歌曲：此處為空"
+
+msgid "No sources"
+msgstr "無來源"
+
+msgid "No stories for this artist"
+msgstr "無此演出者的背景故事"
+
+msgid "No track playing"
+msgstr "未播放曲目"
+
+msgid "No tracks have been processed in this run yet."
+msgstr "本次執行尚未處理任何曲目。"
+
+msgid "No tracks in the selected libraries yet."
+msgstr "選取的音樂庫中尚無曲目。"
+
+msgid "No tracks match all of these"
+msgstr "沒有曲目符合所有這些條件"
+
+msgid "No tracks match this filter."
+msgstr "沒有曲目符合此篩選條件。"
+
+msgid "No tracks match your search."
+msgstr "沒有曲目符合你的搜尋。"
+
+msgid "No tracks without an album match these filters."
+msgstr "沒有無專輯的曲目符合這些篩選條件。"
+
+msgid "No year"
+msgstr "無年份"
+
+msgid "No year; genre, label and composer take none too"
+msgstr "無年份；類型、廠牌與作曲者亦無設定"
+
+msgid "None"
+msgstr "無"
+
+msgid "Normalization"
+msgstr "響度標準化"
+
+msgid "Not answering"
+msgstr "未回應"
+
+msgid "Not compatible"
+msgstr "不相容"
+
+msgid "Not for me"
+msgstr "不感興趣"
+
+msgid "Not heard first"
+msgstr "非首次聆聽"
+
+msgid "Not in the library: this is the folder as it is on disk."
+msgstr "不在音樂庫中：此為磁碟上的原始資料夾。"
+
+msgid "Not in your library or in your sources"
+msgstr "不在你的音樂庫或來源中"
+
+msgid "Not inspected"
+msgstr "未檢查"
+
+msgid "Not now"
+msgstr "暫不"
+
+msgid "Not rated"
+msgstr "未評分"
+
+msgid "Not reported"
+msgstr "未回報"
+
+msgid "Not specified"
+msgstr "未指定"
+
+msgid "Not through this stack: it mixes by design."
+msgstr "不通過此堆疊：其設計即會進行混音。"
+
+msgid "Not verified"
+msgstr "未驗證"
+
+msgid "Notch"
+msgstr "陷波（Notch）"
+
+msgid "Nothing chosen yet. Choose at least one folder."
+msgstr "尚未選擇任何項目。請至少選擇一個資料夾。"
+
+msgid "Nothing chosen yet. Choose at least one library."
+msgstr "尚未選擇任何項目。請至少選擇一個音樂庫。"
+
+msgid "Nothing found for “{}”"
+msgstr "找不到「{}」的相關內容"
+
+msgid "Nothing has been saved. Closing the editor loses what was changed."
+msgstr "未儲存任何內容。關閉編輯器將遺失已變更的內容。"
+
+msgid "Nothing here matches."
+msgstr "此處無符合項目。"
+
+msgid "Nothing here yet: add a folder to the library and its records show up here."
+msgstr "這裡尚無內容：將資料夾新增至音樂庫後，其紀錄將顯示於此。"
+
+msgid "Nothing here."
+msgstr "這裡什麼都沒有。"
+
+msgid "Nothing in this period."
+msgstr "此期間無內容。"
+
+msgid "Nothing is playing. Equipment details remain available."
+msgstr "未在播放。設備詳細資訊仍可檢視。"
+
+msgid "Nothing more is known about it."
+msgstr "無更多相關資訊。"
+
+msgid "Nothing played yet"
+msgstr "尚未播放任何內容"
+
+msgid "Nothing played yet."
+msgstr "尚未播放任何內容。"
+
+msgid "Nothing playing"
+msgstr "未在播放"
+
+msgid "Nothing queued."
+msgstr "佇列無內容。"
+
+msgid "Nothing saved yet."
+msgstr "尚無儲存內容。"
+
+msgid "Nothing to type here. You need a browser where you can sign in to your Plex account."
+msgstr "此處無需輸入任何內容。您需要使用一款支援登入 Plex 帳戶的瀏覽器。"
+
+msgid "Nov"
+msgstr "11 月"
+
+msgid "November"
+msgstr "十一月"
+
+msgid "Now"
+msgstr "現在"
+
+msgid "Now Playing"
+msgstr "正在播放"
+
+msgid "Now playing"
+msgstr "正在播放"
+
+msgid "Now playing: {}"
+msgstr "正在播放：{}"
+
+msgid "Number of tracks"
+msgstr "曲目數量"
+
+msgid "OR needs a condition on each side"
+msgstr "OR 的兩側均需要條件"
+
+msgid "OTHER"
+msgstr "其他"
+
+msgid "Oct"
+msgstr "10 月"
+
+msgid "October"
+msgstr "十月"
+
+msgid "Off"
+msgstr "關閉"
+
+msgid "Offline"
+msgstr "離線"
+
+msgid "Offline mode"
+msgstr "離線模式"
+
+msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
+msgstr "較舊的暫存圖片會在背景被移除。音樂庫參照的封面會保留。"
+
+msgid "Older versions"
+msgstr "較舊版本"
+
+msgid "Oldest first"
+msgstr "最舊優先"
+
+msgid "On"
+msgstr "開啟"
+
+msgid "On air"
+msgstr "播送中"
+
+msgid "On app startup"
+msgstr "應用程式啟動時"
+
+msgid "On the sidebar's destinations."
+msgstr "於側邊欄的目的地。"
+
+msgid "On this device"
+msgstr "在此裝置上"
+
+msgid "Onboarding"
+msgstr "初始設定"
+
+msgid "One row"
+msgstr "單列"
+
+msgid "One track straight into the next."
+msgstr "一首曲目接續下一首。"
+
+msgid "One track straight into the next. Off, the device plays out and opens again."
+msgstr "一首曲目接續下一首。關閉時，裝置會播放完畢並重新開啟。"
+
+msgid "One-bit DSD"
+msgstr "單位元 DSD"
+
+msgid "Only personal presets can be deleted."
+msgstr "僅能刪除個人預設值。"
+
+msgid "Only the first {} outputs are listed."
+msgstr "僅列出前 {} 個輸出。"
+
+msgid "Only tracks from this server go in its playlists"
+msgstr "只有來自此伺服器的曲目才會進入其播放清單。"
+
+msgid "Only tracks from this source go in its playlists"
+msgstr "只有來自此伺服器的曲目才會進入其播放清單。"
+
+msgid "Only with exclusive mode on."
+msgstr "僅在獨佔模式開啟時。"
+
+msgid "Only {} holds songs at this level."
+msgstr "在此層級中僅有 {} 包含歌曲。"
+
+msgid "Open"
+msgstr "開啟"
+
+msgid "Open Discogs"
+msgstr "開啟 Discogs"
+
+msgid "Open Last.fm"
+msgstr "開啟 Last.fm"
+
+msgid "Open ListenList"
+msgstr "開啟 ListenList"
+
+msgid "Open Music Link"
+msgstr "開啟音樂連結"
+
+msgid "Open Refine in its own window"
+msgstr "在獨立視窗開啟精細篩選"
+
+msgid "Open SACD…"
+msgstr "開啟 SACD…"
+
+msgid "Open Wizard"
+msgstr "開啟精靈"
+
+msgid "Open a collection in the source and choose Add collection to library. Imported music appears in Albums and Tracks with its source."
+msgstr "在來源中開啟合輯並選擇「將合輯新增至音樂庫」。匯入的音樂將連同其來源顯示於「專輯」與「曲目」中。"
+
+msgid "Open a folder…"
+msgstr "開啟資料夾…"
+
+msgid "Open account page"
+msgstr "開啟帳號頁面"
+
+msgid "Open album"
+msgstr "開啟專輯"
+
+msgid "Open appearance"
+msgstr "開啟外觀設定"
+
+msgid "Open artist"
+msgstr "開啟演出者"
+
+msgid "Open audio CD"
+msgstr "開啟音樂 CD"
+
+msgid "Open downloads"
+msgstr "開啟下載項目"
+
+msgid "Open folders until you reach the one that holds your music, and choose it. A server shows the same music in several views: choose one, such as its folders or its albums."
+msgstr "依次開啟資料夾直到找到存放音樂的資料夾並選取它。伺服器會以多種檢視方式顯示相同的音樂：請選擇一種，例如依資料夾或依專輯。"
+
+msgid "Open in browser"
+msgstr "在瀏覽器中開啟"
+
+msgid "Open in new queue"
+msgstr "在新佇列中開啟"
+
+msgid "Open in new tab"
+msgstr "在新分頁中開啟"
+
+msgid "Open issue draft"
+msgstr "開啟 Issue 草稿"
+
+msgid "Open it again"
+msgstr "再次開啟"
+
+msgid "Open its page"
+msgstr "開啟其頁面"
+
+msgid "Open log file"
+msgstr "開啟日誌檔案"
+
+msgid "Open media"
+msgstr "開啟媒體"
+
+msgid "Open media without adding it to your library."
+msgstr "開啟媒體而不將其新增至音樂庫。"
+
+msgid "Open music link"
+msgstr "開啟音樂連結"
+
+msgid "Open playlist"
+msgstr "開啟播放清單"
+
+msgid "Open playlist importer"
+msgstr "開啟播放清單匯入器"
+
+msgid "Open plex.tv/link"
+msgstr "開啟 plex.tv/link"
+
+msgid "Open plex.tv/link in a browser, signed in to your Plex account, and type this code. Chilpa notices by itself."
+msgstr "在瀏覽器中開啟 plex.tv/link，登入您的 Plex 帳號並輸入此代碼，Chilpa 會自動偵測。"
+
+msgid "Open plugins"
+msgstr "開啟外掛"
+
+msgid "Open release page"
+msgstr "開啟發行頁面"
+
+msgid "Open the HiFi Wizard"
+msgstr "開啟 HiFi 精靈"
+
+msgid "Open the Library before choosing music for a device."
+msgstr "為裝置選擇音樂前請先開啟音樂庫。"
+
+msgid "Open the folder used for disposable files."
+msgstr "開啟用於一次性檔案的資料夾。"
+
+msgid "Open view"
+msgstr "開闊視野"
+
+msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."
+msgstr "OpenSubsonic（Navidrome、gonic 等）、Jellyfin、Plex 或 DLNA / UPnP。其中的音樂會被加入媒體庫。"
+
+msgid "Opened by Chilpa"
+msgstr "由 Chilpa 開啟"
+
+msgid "Opening and optional endpoint readback. Audibility remains untested."
+msgstr "開啟與選用端點讀回。可聽度未測試。"
+
+msgid "Opening checks"
+msgstr "開啟檢查項目"
+
+msgid "Opening device connection"
+msgstr "正在開啟裝置連線"
+
+msgid "Opening mode"
+msgstr "開啟模式"
+
+msgid "Opening: {} · Audibility: {}"
+msgstr "開啟：{} · 可聽度：{}"
+
+msgid "Opening…"
+msgstr "正在開啟…"
+
+msgid "Operating system"
+msgstr "作業系統"
+
+msgid "Optional access token for private playlists"
+msgstr "私人播放清單的選用存取權杖"
+
+msgid "Original audio"
+msgstr "原始音訊"
+
+msgid "Original audio over the selected network transport"
+msgstr "透過選取的網路傳輸協定傳送原始音訊"
+
+msgid "Original bytes"
+msgstr "原始位元組"
+
+msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
+msgstr "原始位元組 · Chilpa 未轉碼 · 接收端處理未知"
+
+msgid "Original music files"
+msgstr "原始音樂檔案"
+
+msgid "Oscilloscope"
+msgstr "示波器"
+
+msgid "Other"
+msgstr "其他"
+
+msgid "Other / unknown"
+msgstr "其他 / 未知"
+
+msgid "Other cache"
+msgstr "其他快取"
+
+msgid "Out of date"
+msgstr "已過期"
+
+msgid "Output"
+msgstr "輸出"
+
+msgid "Output details…"
+msgstr "輸出詳細資訊…"
+
+msgid "Output device"
+msgstr "輸出裝置"
+
+msgid "Output format"
+msgstr "輸出格式"
+
+msgid "Output identity could not be saved."
+msgstr "無法儲存輸出識別。"
+
+msgid "PCM samples cannot be written to a native DSD stream"
+msgstr "無法將 PCM 取樣寫入原生 DSD 串流"
+
+msgid "PEAK"
+msgstr "峰值（PEAK）"
+
+msgid "Page {} of {}"
+msgstr "第 {} 頁，共 {} 頁"
+
+msgid "Parentheses group; NOT works like the minus"
+msgstr "括號分組；NOT 作用類似減號"
+
+msgid "Password"
+msgstr "密碼"
+
+msgid "Paste EQ filter settings here"
+msgstr "在此貼上 EQ 濾波器設定"
+
+msgid "Paste a link from one of your sources or from another service"
+msgstr "貼上來自你來源之一或另一服務的連結"
+
+msgid "Paste a parametric EQ profile or a Chilpa preset JSON. Active unsupported filters reject the whole import."
+msgstr "貼上參數化 EQ 設定檔或 Chilpa 預設 JSON。存在未支援的啟用濾波器將拒絕整個匯入。"
+
+msgid "Paste a parametric EQ profile."
+msgstr "貼上參數化 EQ 設定檔。"
+
+msgid "Paste a personal access token from discogs.com/settings/developers."
+msgstr "貼上來自 discogs.com/settings/developers 的個人存取權杖。"
+
+msgid "Paste a valid HTTPS music link"
+msgstr "貼上有效的 HTTPS 音樂連結"
+
+msgid "Paste the code Discogs shows after you allow Chilpa."
+msgstr "貼上允許 Chilpa 後 Discogs 顯示的代碼。"
+
+msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
+msgstr "貼上來源提供的權杖。Chilpa 會加密保存，外掛永遠無法看見。"
+
+msgid "Paste the user token from listenbrainz.org/settings."
+msgstr "貼上來自 listenbrainz.org/settings 的使用者權杖。"
+
+msgid "Path unverified"
+msgstr "路徑未驗證"
+
+msgid "Pause"
+msgstr "暫停"
+
+msgid "Paused"
+msgstr "已暫停"
+
+msgid "Peak"
+msgstr "峰值"
+
+msgid "Pending"
+msgstr "待處理"
+
+msgid "Pending: it will be sent to {} with its first tracks."
+msgstr "待處理：將連同第一批曲目一同傳送至 {}。"
+
+msgid "Pending: sent with these tracks"
+msgstr "待處理：連同這些曲目一同發送"
+
+msgid "Per-app bit-perfect (PipeWire client)"
+msgstr "獨立應用程式位元完美（PipeWire 用戶端）"
+
+msgid "Performer"
+msgstr "演出者"
+
+msgid "Performers"
+msgstr "演出者"
+
+msgid "Permission required"
+msgstr "需要權限"
+
+msgid "Permission review required"
+msgstr "需要權限審核"
+
+msgid "Physical format combinations"
+msgstr "實體格式組合"
+
+msgid "Physical format match"
+msgstr "實體格式符合"
+
+msgid "Physical output unreported"
+msgstr "實體輸出未回報"
+
+msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
+msgstr "選擇主題，或保持「系統」以跟隨你的桌面，選擇語言，然後按 : 開啟指令列。"
+
+msgid "Pin the DAC + rates (WirePlumber)"
+msgstr "固定 DAC + 取樣率 (WirePlumber)"
+
+msgid "PipeWire has no output called \"{}\" any more"
+msgstr "PipeWire 已無名為「{}」的輸出"
+
+msgid "PipeWire passes the samples through untouched only when it hands the output over to one program at a time. Chilpa asks for that whenever bit-perfect or exclusive mode is on. With both off the graph mixes this with everything else and resamples the result to whatever rate it is running at."
+msgstr "PipeWire 僅在一次將輸出交給單一程式時，才會原樣傳送取樣。只要開啟位元完美或獨佔模式，Chilpa 就會做出此請求。若兩者皆關閉，架構圖會將此音訊與其他音訊混合，並將結果重新取樣為目前運行的取樣率。"
+
+msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
+msgstr "PipeWire 的架構圖僅以 {} Hz 運行，因此 {} Hz 會被重新取樣；請將其加入 default.clock.allowed-rates，或直接選擇音效卡本身"
+
+msgid "Plain seek bar"
+msgstr "簡約進度條"
+
+msgid "Plasma"
+msgstr "等離子（Plasma）"
+
+msgid "Platform"
+msgstr "平台"
+
+msgid "Play"
+msgstr "播放"
+
+msgid "Play / Pause"
+msgstr "播放 / 暫停"
+
+msgid "Play all"
+msgstr "全部播放"
+
+msgid "Play all later"
+msgstr "稍後播放全部"
+
+msgid "Play all next"
+msgstr "下一首播放全部"
+
+msgid "Play an album or track to get started"
+msgstr "播放專輯或曲目以開始使用"
+
+msgid "Play count"
+msgstr "播放次數"
+
+msgid "Play cursor track"
+msgstr "播放游標所在曲目"
+
+msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
+msgstr "播放自架伺服器上的內容，並可透過官方或第三方目錄的外掛新增來源與功能。"
+
+msgid "Play indicator animation"
+msgstr "播放指示器動畫"
+
+msgid "Play later"
+msgstr "稍後播放"
+
+msgid "Play next"
+msgstr "下一首播放"
+
+msgid "Play now"
+msgstr "立即播放"
+
+msgid "Play on"
+msgstr "播放於"
+
+msgid "Play random"
+msgstr "隨機播放"
+
+msgid "Play test"
+msgstr "播放測試音"
+
+msgid "Play this group"
+msgstr "播放此群組"
+
+msgid "Play/Pause"
+msgstr "播放/暫停"
+
+msgid "Playback"
+msgstr "播放"
+
+msgid "Playback error"
+msgstr "播放錯誤"
+
+msgid "Playback options"
+msgstr "播放選項"
+
+msgid "Playback state"
+msgstr "播放狀態"
+
+msgid "Playback stops and the window closes."
+msgstr "播放停止且視窗關閉。"
+
+msgid "Played"
+msgstr "已播放"
+
+msgid "Played 10 times or more"
+msgstr "已播放 10 次或以上"
+
+msgid "Player"
+msgstr "播放器"
+
+msgid "Player and storage"
+msgstr "播放器與儲存空間"
+
+msgid "Player bar"
+msgstr "播放列"
+
+msgid "Player bar position"
+msgstr "播放列位置"
+
+msgid "Playing"
+msgstr "播放中"
+
+msgid "Playlist"
+msgstr "播放清單"
+
+msgid "Playlist Name"
+msgstr "播放清單名稱"
+
+msgid "Playlist artwork in the sidebar"
+msgstr "側邊欄中的播放清單封面"
+
+msgid "Playlist icon"
+msgstr "播放清單圖示"
+
+msgid "Playlist manager"
+msgstr "播放清單管理員"
+
+msgid "Playlist name"
+msgstr "播放清單名稱"
+
+msgid "Playlist options"
+msgstr "播放清單選項"
+
+msgid "Playlist origin"
+msgstr "播放清單來源"
+
+msgid "Playlist preview"
+msgstr "播放清單預覽"
+
+msgid "Playlists"
+msgstr "播放清單"
+
+msgid "Playlists will be kept at the root."
+msgstr "播放清單將保留在根目錄。"
+
+msgid "Plays"
+msgstr "播放數"
+
+msgid "Plays a day"
+msgstr "每日播放數"
+
+msgid "Plays four tracks at different bit-depths and sample rates through the selected DAC. Watch your DAC's display switch rates — and confirm it below."
+msgstr "透過選取的 DAC 播放四首不同位元深度與取樣率的曲目。觀察你 DAC 螢幕上的取樣率切換 — 並於下方確認。"
+
+msgid "Plex did not accept the session; sign in again"
+msgstr "Plex 未接受此作業階段；請重新登入"
+
+msgid "Plugin Settings"
+msgstr "外掛設定"
+
+msgid "Plugin initialized successfully"
+msgstr "外掛已成功初始化"
+
+msgid "Plugin integration"
+msgstr "外掛整合"
+
+msgid "Plugin repository URL"
+msgstr "外掛儲存庫網址"
+
+msgid "Plugin results were not included for this scene"
+msgstr "此場景未包含外掛結果"
+
+msgid "Plugin updates"
+msgstr "外掛更新"
+
+msgid "Plugin-reported quality"
+msgstr "外掛回報的音質"
+
+msgid "Plugins"
+msgstr "外掛"
+
+msgid "Podcasts"
+msgstr "Podcast"
+
+msgid "Popular Tracks"
+msgstr "熱門曲目"
+
+msgid "Portuguese"
+msgstr "葡萄牙文"
+
+msgid "Position"
+msgstr "位置"
+
+msgid "Position in Streaming"
+msgstr "串流中的位置"
+
+msgid "Preamp"
+msgstr "前級增益"
+
+msgid "Precise filters"
+msgstr "精確濾波器"
+
+msgid "Predicted unchanged PCM; DoP decoding and audible output are untested"
+msgstr "預測為未變更的 PCM；DoP 解碼與可聽輸出未測試"
+
+msgid "Preferred GPU"
+msgstr "偏好的 GPU"
+
+msgid "Preparing Mood analysis"
+msgstr "正在準備心情分析"
+
+msgid "Preparing analysis…"
+msgstr "正在準備分析…"
+
+msgid "Preparing playlists"
+msgstr "正在準備播放清單"
+
+msgid "Preparing results…"
+msgstr "正在準備結果…"
+
+msgid "Preparing the updated AppImage…"
+msgstr "正在準備更新的 AppImage…"
+
+msgid "Press keys…"
+msgstr "請按下按鍵…"
+
+msgid "Prevent clipping"
+msgstr "防止削波（Clipping）"
+
+msgid "Previous"
+msgstr "上一步"
+
+msgid "Previous Track"
+msgstr "上一首曲目"
+
+msgid "Previous month"
+msgstr "上個月"
+
+msgid "Previous page"
+msgstr "上一頁"
+
+msgid "Previous queue"
+msgstr "上一佇列"
+
+msgid "Previous search result"
+msgstr "上一個搜尋結果"
+
+msgid "Previous tab"
+msgstr "上一個分頁"
+
+msgid "Previously saved"
+msgstr "先前已儲存"
+
+msgid "Privacy & network"
+msgstr "隱私與網路"
+
+msgid "Processed"
+msgstr "已處理"
+
+msgid "Processing"
+msgstr "處理中"
+
+msgid "Processing active"
+msgstr "音訊處理已啟用"
+
+msgid "Producer"
+msgstr "製作人"
+
+msgid "Profile"
+msgstr "設定檔"
+
+msgid "Profile name"
+msgstr "設定檔名稱"
+
+msgid "Profile removed. Some local sync history could not be cleared."
+msgstr "設定檔已移除。部分本機同步歷史紀錄無法清除。"
+
+msgid "Provider identifiers"
+msgstr "提供者識別碼"
+
+msgid "Public playlist"
+msgstr "公開播放清單"
+
+msgid "Public remote playlists"
+msgstr "公開遠端播放清單"
+
+msgid "Purchase date"
+msgstr "購買日期"
+
+msgid "Purchases"
+msgstr "購買項目"
+
+msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
+msgstr "將外掛資料夾放入 Chilpa 的 plugins 目錄並重新開啟應用程式。"
+
+msgid "Qt version"
+msgstr "Qt 版本"
+
+msgid "Quality"
+msgstr "音質"
+
+msgid "Quality unknown"
+msgstr "音質未知"
+
+msgid "Quality, format and source filters"
+msgstr "音質、格式與來源篩選器"
+
+msgid "Quality, format, source and rating filters"
+msgstr "音質、格式、來源與評分篩選器"
+
+msgid "Quarantined"
+msgstr "已隔離"
+
+msgid "Queries"
+msgstr "查詢"
+
+msgid "Queries supported formats and predicts delivery. This does not test audible output."
+msgstr "查詢支援的格式並預測傳輸情況。這不會測試可聽輸出。"
+
+msgid "Query name"
+msgstr "查詢名稱"
+
+msgid "Queue"
+msgstr "佇列"
+
+msgid "Queue actions"
+msgstr "佇列動作"
+
+msgid "Queue and playlist actions"
+msgstr "佇列與播放清單動作"
+
+msgid "Queue cursor track"
+msgstr "將游標所在曲目加入佇列"
+
+msgid "Queue is empty"
+msgstr "佇列為空"
+
+msgid "Queue length"
+msgstr "佇列長度"
+
+msgid "Queue options"
+msgstr "佇列選項"
+
+msgid "Queue this group"
+msgstr "將此群組加入佇列"
+
+msgid "Queue view"
+msgstr "佇列檢視"
+
+msgid "Queue {}"
+msgstr "佇列 {}"
+
+msgid "Queue · {}"
+msgstr "佇列 · {}"
+
+msgid "Queues"
+msgstr "佇列"
+
+msgid "Quick Connect is off on this server. Go back and sign in with your user and password, or turn Quick Connect on in its dashboard."
+msgstr "該伺服器已關閉「快速連線」。請返回並使用使用者名稱與密碼登入，或在其主控台中開啟「快速連線」。"
+
+msgid "Quick Connect is turned off on that server"
+msgstr "該伺服器已關閉快速連線（Quick Connect）"
+
+msgid "Quick review by size"
+msgstr "依容量快速檢視"
+
+msgid "Quick view"
+msgstr "快速檢視"
+
+msgid "Quit"
+msgstr "結束"
+
+msgid "Quit Chilpa"
+msgstr "結束 Chilpa"
+
+msgid "Quit Chilpa?"
+msgstr "要結束 Chilpa 嗎？"
+
+msgid "Quitting from the window, its menu, Ctrl+Q or the tray asks first."
+msgstr "從視窗、選單、Ctrl+Q 或系統匣結束時會先進行詢問。"
+
+msgid "Quotes keep a name with spaces or commas whole"
+msgstr "使用引號可保持包含空格或逗號的名稱完整"
+
+msgid "RECENTLY PLAYED"
+msgstr "最近播放"
+
+msgid "RELATIONSHIPS"
+msgstr "關聯項目"
+
+msgid "Radio"
+msgstr "電台"
+
+msgid "Radio and DSD fixes"
+msgstr "收音機與 DSD 修正"
+
+msgid "Radio asks for each song's cover once, and the cover stays on screen. Native DSD through PipeWire now plays on a real DAC, with PipeWire 1.6 or later."
+msgstr "電台模式只會請求一次每首歌曲的封面，且封面會保持顯示在螢幕上。在 PipeWire 1.6 或更新版本中，原生 DSD 透過 PipeWire 已可在實體 DAC 上播放。"
+
+msgid "Rate"
+msgstr "取樣率"
+
+msgid "Rating"
+msgstr "評分"
+
+msgid "Re-fetch album information"
+msgstr "重新取得專輯資訊"
+
+msgid "Reaching the server…"
+msgstr "正在連線伺服器…"
+
+msgid "Reactivate"
+msgstr "重新啟用"
+
+msgid "Reactive Rings"
+msgstr "反應環（Reactive Rings）"
+
+msgid "Read a playlist, choose destinations, review matches, then create your playlists."
+msgstr "讀取播放清單、選擇目的地、檢視符合項目，然後建立你的播放清單。"
+
+msgid "Read as"
+msgstr "讀取為"
+
+msgid "Read at opening on the selected endpoint. This does not measure audible output."
+msgstr "在選取的端點開啟時讀取。這不會測量可聽輸出。"
+
+msgid "Read equipment details"
+msgstr "讀取設備詳細資訊"
+
+msgid "Read from the selected endpoint"
+msgstr "從選取的端點讀取"
+
+msgid "Read less"
+msgstr "收合資訊"
+
+msgid "Read more"
+msgstr "閱讀更多"
+
+msgid "Read playlist"
+msgstr "讀取播放清單"
+
+msgid "Read the current size of the cache folders in the background."
+msgstr "在背景讀取快取資料夾的目前容量。"
+
+msgid "Read “{}” as words instead"
+msgstr "改將「{}」視為文字讀取"
+
+msgid "Reading Library selection…"
+msgstr "正在讀取音樂庫選取內容…"
+
+msgid "Reading file sizes"
+msgstr "正在讀取檔案大小"
+
+msgid "Reading it from {}…"
+msgstr "正在從 {} 讀取…"
+
+msgid "Reading playlist…"
+msgstr "正在讀取播放清單…"
+
+msgid "Reading selected tracks…"
+msgstr "正在讀取選取的曲目…"
+
+msgid "Reading the files…"
+msgstr "正在讀取檔案…"
+
+msgid "Reading the media server's description and its folders…"
+msgstr "正在讀取媒體伺服器的描述與其資料夾…"
+
+msgid "Reading the selected tracks timed out. Please try again."
+msgstr "讀取選取的曲目逾時。請再試一次。"
+
+msgid "Reading {} of {} files"
+msgstr "正在讀取第 {} 個檔案，共 {} 個"
+
+msgid "Reads every folder again. What did not change is not read twice."
+msgstr "再次讀取每個資料夾。未變更的內容不會重複讀取。"
+
+msgid "Reads tempo, musical key and loudness in the background. AutoMix appears when enough tracks have tempo."
+msgstr "在背景讀取速度、調性與響度。當有足夠曲目包含速度資訊時，將顯示 AutoMix。"
+
+msgid "Ready for local PCM playback"
+msgstr "已就緒可進行本機 PCM 播放"
+
+msgid "Ready to add it"
+msgstr "準備新增"
+
+msgid "Ready to review"
+msgstr "準備進行檢視"
+
+msgid "Ready to sync"
+msgstr "準備進行同步"
+
+msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
+msgstr "從曲目與播放紀錄重建計數與搜尋索引。不會遺失任何資料。"
+
+msgid "Recalculate usage"
+msgstr "重新計算使用量"
+
+msgid "Receiver"
+msgstr "接收端"
+
+msgid "Receiver processing unknown"
+msgstr "接收端處理未知"
+
+msgid "Receiver volume"
+msgstr "接收端音量"
+
+msgid "Recent"
+msgstr "近期"
+
+msgid "Recently added albums"
+msgstr "最近新增的專輯"
+
+msgid "Recently played"
+msgstr "最近播放"
+
+msgid "Recently played albums"
+msgstr "最近播放的專輯"
+
+msgid "Recently played albums in the library"
+msgstr "音樂庫中最近播放的專輯"
+
+msgid "Recently played playlists"
+msgstr "最近播放的播放清單"
+
+msgid "Recently played playlists in the library"
+msgstr "音樂庫中最近播放的播放清單"
+
+msgid "Recording engineer"
+msgstr "錄音工程師"
+
+msgid "Records"
+msgstr "紀錄"
+
+msgid "Records from that year"
+msgstr "該年份的紀錄"
+
+msgid "Records of that genre"
+msgstr "該類型的紀錄"
+
+msgid "Records with that composer"
+msgstr "包含該作曲者的紀錄"
+
+msgid "Recover interrupted sync"
+msgstr "復原中斷的同步"
+
+msgid "Refine"
+msgstr "精細篩選"
+
+msgid "Refine is in its own window"
+msgstr "精細篩選位於獨立視窗中"
+
+msgid "Refresh"
+msgstr "重新整理"
+
+msgid "Refresh connected players"
+msgstr "重新整理已連線的播放器"
+
+msgid "Refresh mix"
+msgstr "重新整理混音"
+
+msgid "Refresh purchases"
+msgstr "重新整理購買項目"
+
+msgid "Refresh settings"
+msgstr "重新整理設定"
+
+msgid "Refused the sign-in. Its records stay listed and cannot be played."
+msgstr "拒絕登入。其紀錄仍會列出但無法播放。"
+
+msgid "Regenerate"
+msgstr "重新產生"
+
+msgid "Release"
+msgstr "發行項目"
+
+msgid "Release date"
+msgstr "發行日期"
+
+msgid "Release notes"
+msgstr "版本資訊"
+
+msgid "Release notes are not available."
+msgstr "無可用的版本資訊。"
+
+msgid "Release type"
+msgstr "發行類型"
+
+msgid "Releases"
+msgstr "發行項目"
+
+msgid "Remember"
+msgstr "記住設定"
+
+msgid "Remote artwork"
+msgstr "遠端封面"
+
+msgid "Remote image limit"
+msgstr "遠端圖片限制"
+
+msgid "Remove"
+msgstr "移除"
+
+msgid "Remove condition"
+msgstr "移除條件"
+
+msgid "Remove cover"
+msgstr "移除封面"
+
+msgid "Remove filter"
+msgstr "移除篩選"
+
+msgid "Remove from favorites"
+msgstr "從我的最愛移除"
+
+msgid "Remove from library"
+msgstr "從音樂庫移除"
+
+msgid "Remove from playlist"
+msgstr "從播放清單移除"
+
+msgid "Remove from queue"
+msgstr "從佇列移除"
+
+msgid "Remove from saved"
+msgstr "從儲存項目移除"
+
+msgid "Remove from the library"
+msgstr "從音樂庫移除"
+
+msgid "Remove group"
+msgstr "移除群組"
+
+msgid "Remove image"
+msgstr "移除圖片"
+
+msgid "Remove one condition to get results:"
+msgstr "移除一個條件以取得結果："
+
+msgid "Remove original queues"
+msgstr "移除原始佇列"
+
+msgid "Remove saved profile"
+msgstr "移除儲存的設定檔"
+
+msgid "Remove smaller covers and backgrounds. Chilpa makes them again as needed."
+msgstr "移除較小的封面與背景。Chilpa 會在需要時重新產生。"
+
+msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
+msgstr "要從 Chilpa 移除此外掛及其帳號、設定與快取的音樂庫嗎？這不會刪除你在來源端的帳號或播放清單。"
+
+msgid "Remove unreferenced images from sources and plugins. Needed images download again."
+msgstr "移除來自來源與外掛且未被參照的圖片。需要的圖片會再次下載。"
+
+msgid "Remove {}?"
+msgstr "移除 {}"
+
+msgid "Remove…"
+msgstr "移除…"
+
+msgid "Removing saved profile…"
+msgstr "正在移除儲存的設定檔…"
+
+msgid "Removing {}"
+msgstr "正在移除 {}"
+
+msgid "Removing…"
+msgstr "正在移除…"
+
+msgid "Rename"
+msgstr "重新命名"
+
+msgid "Rename query"
+msgstr "重新命名查詢"
+
+msgid "Renderer"
+msgstr "算繪器"
+
+msgid "Renderer switched automatically — the previous renderer failed to start"
+msgstr "已自動切換算繪器 — 上一個算繪器啟動失敗"
+
+msgid "Rendering backend"
+msgstr "算繪後端"
+
+msgid "Reopens the upcoming queue paused, at the place where you left it."
+msgstr "以暫停狀態重新開啟即將播放的佇列，停在你離開時的位置。"
+
+msgid "Repair"
+msgstr "修復"
+
+msgid "Repair the library"
+msgstr "修復音樂庫"
+
+msgid "Repaired. Nothing was lost."
+msgstr "已修復。未遺失任何資料。"
+
+msgid "Repeat"
+msgstr "重複播放"
+
+msgid "Replace current queue"
+msgstr "取代目前佇列"
+
+msgid "Replace queue {}"
+msgstr "取代佇列 {}"
+
+msgid "Report an issue"
+msgstr "回報問題"
+
+msgid "Report plugin errors in the corresponding plugin's repository."
+msgstr "請在對應外掛的儲存庫中回報外掛錯誤。"
+
+msgid "Report saved"
+msgstr "報告已儲存"
+
+msgid "Reported by the receiver"
+msgstr "由接收端回報"
+
+msgid "Reported property"
+msgstr "回報的屬性"
+
+msgid "Repositories"
+msgstr "儲存庫"
+
+msgid "Requested and opened"
+msgstr "已請求並開啟"
+
+msgid "Requested output route"
+msgstr "請求的輸出路徑"
+
+msgid "Requests: {}"
+msgstr "請求數：{}"
+
+msgid "Rescan"
+msgstr "重新掃描"
+
+msgid "Reset"
+msgstr "重設"
+
+msgid "Reset All to Defaults"
+msgstr "全部重設為預設值"
+
+msgid "Reset EQ"
+msgstr "重設 EQ"
+
+msgid "Reset counter"
+msgstr "重設計數器"
+
+msgid "Resolution reduced from {} to {} bits"
+msgstr "解析度已從 {} 位元降低至 {} 位元"
+
+msgid "Resolving selected music"
+msgstr "正在解析選取的音樂"
+
+msgid "Restart Chilpa"
+msgstr "重新啟動 Chilpa"
+
+msgid "Restart plugin"
+msgstr "重新啟動外掛"
+
+msgid "Restore"
+msgstr "還原"
+
+msgid "Restore default"
+msgstr "還原預設值"
+
+msgid "Restore defaults"
+msgstr "還原預設值"
+
+msgid "Restore previous EQ"
+msgstr "還原先前的 EQ"
+
+msgid "Restore tabs"
+msgstr "還原分頁"
+
+msgid "Result saved on this computer."
+msgstr "結果已儲存於此電腦。"
+
+msgid "Results are saved after every track. Run Analyze again to continue the pending tracks."
+msgstr "每首曲目處理完畢後都會儲存結果。再次執行「分析」可繼續處理待處理的曲目。"
+
+msgid "Resume"
+msgstr "繼續播放"
+
+msgid "Retry"
+msgstr "重試"
+
+msgid "Revert"
+msgstr "復原"
+
+msgid "Review"
+msgstr "檢視/審核"
+
+msgid "Review & Apply"
+msgstr "檢視並套用"
+
+msgid "Review and copy logs…"
+msgstr "檢視並複製日誌…"
+
+msgid "Review and export…"
+msgstr "檢視並匯出…"
+
+msgid "Review changes"
+msgstr "檢視變更"
+
+msgid "Review changes to check what this storage needs."
+msgstr "檢視變更以檢查此儲存空間需要什麼。"
+
+msgid "Review diagnostics"
+msgstr "檢視診斷資訊"
+
+msgid "Review the device changes before syncing."
+msgstr "同步前請先檢視裝置變更。"
+
+msgid "Review the requested permissions before installing."
+msgstr "安裝前請先檢視請求的權限。"
+
+msgid "Reviewing changes…"
+msgstr "正在檢視變更…"
+
+msgid "Rich"
+msgstr "豐富"
+
+msgid "Rich rows"
+msgstr "豐富列"
+
+msgid "Right delay · 0–30 ms"
+msgstr "右聲道延遲 · 0–30 ms"
+
+msgid "Route"
+msgstr "路徑"
+
+msgid "Runtime"
+msgstr "執行階段（Runtime）"
+
+msgid "Russian"
+msgstr "俄文"
+
+msgid "SACD XML"
+msgstr "SACD XML"
+
+msgid "SACDMTOC was not found"
+msgstr "未找到 SACDMTOC"
+
+msgid "SACDTRL1 is missing"
+msgstr "缺少 SACDTRL1"
+
+msgid "SACDTRL2 is missing"
+msgstr "缺少 SACDTRL2"
+
+msgid "SIMILAR ARTISTS"
+msgstr "相似演出者"
+
+msgid "SPLIT"
+msgstr "分割"
+
+msgid "STATUS"
+msgstr "狀態"
+
+msgid "SURFACES"
+msgstr "表面/介面"
+
+msgid "Sample format"
+msgstr "取樣格式"
+
+msgid "Sample rate"
+msgstr "取樣率"
+
+msgid "Sample-rate switching (PipeWire)"
+msgstr "取樣率切換 (PipeWire)"
+
+msgid "Samples converted to floating point"
+msgstr "取樣已轉換為浮點數"
+
+msgid "Sandboxed — host check unavailable"
+msgstr "已沙盒化 — 主機檢查無法使用"
+
+msgid "Sat"
+msgstr "週六"
+
+msgid "Save"
+msgstr "儲存"
+
+msgid "Save as an image"
+msgstr "另存為圖片"
+
+msgid "Save as playlist"
+msgstr "另存為播放清單"
+
+msgid "Save as…"
+msgstr "另存為…"
+
+msgid "Save changes"
+msgstr "儲存變更"
+
+msgid "Save preset"
+msgstr "儲存預設值"
+
+msgid "Save profile"
+msgstr "儲存設定檔"
+
+msgid "Save query"
+msgstr "儲存查詢"
+
+msgid "Save stations to find them here."
+msgstr "儲存電台即可在此找到它們。"
+
+msgid "Save the changes?"
+msgstr "要儲存變更嗎？"
+
+msgid "Save the cover"
+msgstr "儲存封面"
+
+msgid "Save the image"
+msgstr "儲存圖片"
+
+msgid "Save to"
+msgstr "儲存至"
+
+msgid "Saved"
+msgstr "已儲存"
+
+msgid "Saved device selection"
+msgstr "已儲存的裝置選取內容"
+
+msgid "Saved for the displayed inspection. Refresh after changing equipment or configuration."
+msgstr "已為顯示的檢查進行儲存。更換設備或設定後請重新整理。"
+
+msgid "Saved in your account there; only its own tracks"
+msgstr "已儲存至您在該處的帳號；僅限其本身的曲目"
+
+msgid "Saved lyrics and translations will be fetched again when needed."
+msgstr "已儲存的歌詞與翻譯將會在需要時重新取得。"
+
+msgid "Saved on the server; only its own tracks"
+msgstr "已儲存於伺服器；僅限其本身的曲目"
+
+msgid "Saved position"
+msgstr "儲存的位置"
+
+msgid "Saved profile"
+msgstr "已儲存的設定檔"
+
+msgid "Saved queries"
+msgstr "已儲存的查詢"
+
+msgid "Saved results remain available between sessions."
+msgstr "已儲存的結果在不同作業階段間仍可使用。"
+
+msgid "Saving selection…"
+msgstr "正在儲存選取內容…"
+
+msgid "Saving..."
+msgstr "正在儲存..."
+
+msgid "Saving…"
+msgstr "正在儲存…"
+
+msgid "Saving… {} of {} files"
+msgstr "正在儲存第 {} 個檔案，共 {} 個"
+
+msgid "Scales the whole interface, like browser zoom. Small fits more content on screen, Large and Extra large improve readability (requires restart)"
+msgstr "縮放整個介面，類似瀏覽器縮放。「小」可以在螢幕上顯示更多內容，「大」與「特大」可提高可讀性（需要重新啟動）"
+
+msgid "Scan for cast devices…"
+msgstr "正在掃描投射裝置…"
+
+msgid "Scan settings could not be saved or read: {}"
+msgstr "無法儲存或讀取掃描設定：{}"
+
+msgid "Scanning…"
+msgstr "掃描中…"
+
+msgid "Scheduled checks run while Chilpa is open. Startup checks run once when the app opens. Unchanged files are skipped."
+msgstr "排程檢查會在 Chilpa 開啟時執行。啟動檢查會在應用程式開啟時執行一次。未變更的檔案會被略過。"
+
+msgid "Scope of this check"
+msgstr "此檢查的範圍"
+
+msgid "Scrobbling"
+msgstr "Scrobbling (紀錄播放)"
+
+msgid "Scroll to adjust volume"
+msgstr "滾動以調整音量"
+
+msgid "Search"
+msgstr "搜尋"
+
+msgid "Search again"
+msgstr "重新搜尋"
+
+msgid "Search artists"
+msgstr "搜尋演出者"
+
+msgid "Search folders"
+msgstr "搜尋資料夾"
+
+msgid "Search listens"
+msgstr "搜尋聆聽紀錄"
+
+msgid "Search logs"
+msgstr "搜尋日誌"
+
+msgid "Search playlists and folders"
+msgstr "搜尋播放清單與資料夾"
+
+msgid "Search playlists..."
+msgstr "搜尋播放清單..."
+
+msgid "Search plugins"
+msgstr "搜尋外掛"
+
+msgid "Search preview"
+msgstr "搜尋預覽"
+
+msgid "Search purchases"
+msgstr "搜尋購買項目"
+
+msgid "Search queue"
+msgstr "搜尋佇列"
+
+msgid "Search results"
+msgstr "搜尋結果"
+
+msgid "Search settings"
+msgstr "搜尋設定"
+
+msgid "Search shows"
+msgstr "搜尋節目"
+
+msgid "Search stations by name"
+msgstr "依名稱搜尋電台"
+
+msgid "Search these episodes"
+msgstr "搜尋這些單集"
+
+msgid "Search this network"
+msgstr "搜尋此網路"
+
+msgid "Search this page…"
+msgstr "搜尋此頁面…"
+
+msgid "Search this view…"
+msgstr "搜尋此檢視…"
+
+msgid "Search title, artist or album"
+msgstr "搜尋標題、演出者或專輯"
+
+msgid "Searching MusicBrainz for {genre} artists…"
+msgstr "正在 MusicBrainz 中搜尋 {genre} 演出者…"
+
+msgid "Searching for devices…"
+msgstr "正在搜尋裝置…"
+
+msgid "Searching this network…"
+msgstr "正在搜尋此網路…"
+
+msgid "Searching…"
+msgstr "搜尋中…"
+
+msgid "Search…"
+msgstr "搜尋…"
+
+msgid "Secondary text"
+msgstr "次要文字"
+
+msgid "See all"
+msgstr "查看全部"
+
+msgid "See which local tracks have analysis results and which are pending."
+msgstr "查看哪些本機曲目已有分析結果，哪些仍在待處理狀態。"
+
+msgid "See {} more"
+msgid_plural "See {} more"
+msgstr[0] "看更多 {}"
+
+msgid "Seek"
+msgstr "搜尋位置/跳轉"
+
+msgid "Seek Back"
+msgstr "倒退"
+
+msgid "Seek Back 10 s"
+msgstr "倒退 10 秒"
+
+msgid "Seek Back 5 s"
+msgstr "倒退 5 秒"
+
+msgid "Seek Forward"
+msgstr "快進"
+
+msgid "Seek Forward 10 s"
+msgstr "快進 10 秒"
+
+msgid "Seek Forward 5 s"
+msgstr "快進 5 秒"
+
+msgid "Select"
+msgstr "選取"
+
+msgid "Select Image..."
+msgstr "選取圖片..."
+
+msgid "Select a folder to see its contents."
+msgstr "選取資料夾以查看其內容。"
+
+msgid "Select an artist to see their albums"
+msgstr "選取演出者以查看其專輯"
+
+msgid "Select folders"
+msgstr "選取資料夾"
+
+msgid "Select tracks"
+msgstr "選取曲目"
+
+msgid "Selected GPU is unavailable in this display session — using Auto"
+msgstr "選取的 GPU 在此顯示作業階段中無法使用 — 改用「自動」"
+
+msgid "Selected music"
+msgstr "選取的音樂"
+
+msgid "Selected output"
+msgstr "選取的輸出"
+
+msgid "Send to Last.fm"
+msgstr "傳送至 Last.fm"
+
+msgid "Send to ListenBrainz"
+msgstr "傳送至 ListenBrainz"
+
+msgid "Sending the change to {}…"
+msgstr "正在將變更傳送至 {}…"
+
+msgid "Sep"
+msgstr "9 月"
+
+msgid "Separate input limits do not establish every combination of rate, word width and channels."
+msgstr "獨立的輸入限制無法涵蓋取樣率、字元寬度與聲道數的所有可能組合。"
+
+msgid "September"
+msgstr "九月"
+
+msgid "Server added"
+msgstr "已新增伺服器"
+
+msgid "Server address"
+msgstr "伺服器位址"
+
+msgid "Server name"
+msgstr "伺服器名稱"
+
+msgid "Server quality (optional)"
+msgstr "伺服器音質（選用）"
+
+msgid "Server type"
+msgstr "伺服器類型"
+
+msgid "Servers"
+msgstr "伺服器"
+
+msgid "Servers and plugins"
+msgstr "伺服器與外掛"
+
+msgid "Set Timer"
+msgstr "設定計時器"
+
+msgid "Set loop end (B)"
+msgstr "設定循環終點 (B)"
+
+msgid "Set loop start (A)"
+msgstr "設定循環起點 (A)"
+
+msgid "Set on this device, not what the server says"
+msgstr "在此裝置上設定，而非依據伺服器資訊"
+
+msgid "Set preference"
+msgstr "設定偏好設定"
+
+msgid "Set the overall light or dark polarity. Affects derived shades, borders and overlays."
+msgstr "設定整體淺色或深色基調。會影響衍生陰影、邊框與覆蓋層。"
+
+msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
+msgstr "當 Chilpa 獨佔輸出時，將 PipeWire 架構圖設定為每首曲目的取樣率，以使 DAC 能收到檔案原本的取樣率。Chilpa 停止時會恢復原取樣率。"
+
+msgid "Setting"
+msgstr "設定"
+
+msgid "Settings"
+msgstr "設定"
+
+msgid "Several views of one library"
+msgstr "單一音樂庫的多個檢視"
+
+msgid "Shader rendering available"
+msgstr "Shader 算繪可用"
+
+msgid "Shape the sound: raise a band to hear more, lower it to hear less."
+msgstr "塑造音效：提高頻段增加音量，降低頻段減少音量。"
+
+msgid "Shared"
+msgstr "共用"
+
+msgid "Shared at opening"
+msgstr "開啟時共用"
+
+msgid "Shared checks keep the current hardware configuration; the system may convert the input."
+msgstr "共用檢查會保持目前的硬體設定；系統可能會轉換輸入內容。"
+
+msgid "Shared mode was requested."
+msgstr "已請求共用模式。"
+
+msgid "Short names: y g l c a al t r p ty q"
+msgstr "簡短名稱：y g l c a al t r p ty q"
+
+msgid "Show"
+msgstr "顯示"
+
+msgid "Show Shortcuts"
+msgstr "顯示捷徑"
+
+msgid "Show audio path"
+msgstr "顯示音訊路徑"
+
+msgid "Show changelog for current version"
+msgstr "顯示目前版本的變更日誌"
+
+msgid "Show composers"
+msgstr "顯示作曲者"
+
+msgid "Show each playlist folder in its chosen color."
+msgstr "以選取的顏色顯示每個播放清單資料夾。"
+
+msgid "Show imported albums and tracks"
+msgstr "顯示匯入的專輯與曲目"
+
+msgid "Show in folder"
+msgstr "在資料夾中顯示"
+
+msgid "Show in sidebar"
+msgstr "在側邊欄中顯示"
+
+msgid "Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."
+msgstr "顯示來自檔案、快取與線上服務的歌詞。關閉將停止所有歌詞查詢與翻譯，並清除目前歌詞。"
+
+msgid "Show offline profiles"
+msgstr "顯示離線設定檔"
+
+msgid "Show older versions"
+msgstr "顯示較舊版本"
+
+msgid "Show playlist only from the same source as the track"
+msgstr "僅顯示與曲目來自相同來源的播放清單"
+
+msgid "Show review details"
+msgstr "顯示審核詳細資訊"
+
+msgid "Show saved tracks in Tracks"
+msgstr "在「曲目」中顯示已儲存的曲目"
+
+msgid "Show source recommendations by default in Home"
+msgstr "預設在「首頁」顯示來源推薦"
+
+msgid "Show the query as console text"
+msgstr "將查詢顯示為主控台文字"
+
+msgid "Show the shortcut for syncing players and memory cards."
+msgstr "顯示同步播放器與記憶卡的捷徑。"
+
+msgid "Show the sidebar"
+msgstr "顯示側邊欄"
+
+msgid "Show token"
+msgstr "顯示權杖"
+
+msgid "Show translation"
+msgstr "顯示翻譯"
+
+msgid "Show visualization"
+msgstr "顯示視覺化效果"
+
+msgid "Show what you're listening to as your Discord status. Opt-in — Discord must be running."
+msgstr "將你正在聆聽的內容顯示為 Discord 個人狀態。需手動啟用 — 且 Discord 必須正在執行。"
+
+msgid "Show/Hide Window"
+msgstr "顯示/隱藏視窗"
+
+msgid "Showing"
+msgstr "正在顯示"
+
+msgid "Shows results under the search box as you type. Off, typing opens the results page."
+msgstr "打字時在搜尋框下方即時顯示結果。關閉時，打字完成後才會開啟結果頁面。"
+
+msgid "Shuffle"
+msgstr "隨機播放"
+
+msgid "Shuffle all"
+msgstr "全部隨機播放"
+
+msgid "Side by side, all must hold"
+msgstr "並列條件，必須全部符合"
+
+msgid "Sidebar"
+msgstr "側邊欄"
+
+msgid "Sidecar"
+msgstr "附屬檔案（Sidecar）"
+
+msgid "Sign in from Account to see your purchases."
+msgstr "請從「帳號」登入以查看你的購買項目。"
+
+msgid "Sign in on Discogs to search with your account."
+msgstr "登入 Discogs 以使用你的帳號進行搜尋。"
+
+msgid "Sign in to Plex again"
+msgstr "重新登入 Plex"
+
+msgid "Sign in with Discogs"
+msgstr "使用 Discogs 登入"
+
+msgid "Sign in with Plex"
+msgstr "使用 Plex 登入"
+
+msgid "Sign in with Quick Connect: approve a code in a Jellyfin app where you are signed in"
+msgstr "使用快速連線登入：在您已登入的 Jellyfin 應用程式中批准驗證碼"
+
+msgid "Sign in with an API key instead (OpenSubsonic servers that offer one)"
+msgstr "請改用 API 金鑰登入（OpenSubsonic 伺服器提供此功能）。"
+
+msgid "Sign in with your Plex account"
+msgstr "使用您的 Plex 帳戶登入"
+
+msgid "Signed out"
+msgstr "已登出"
+
+msgid "Signing in and reading its libraries…"
+msgstr "登入並讀取其資料庫…"
+
+msgid "Silent opening checks accept PCM only. Opening a PCM carrier does not check DoP."
+msgstr "靜音開啟檢查僅接受 PCM。開啟 PCM 載體不會檢查 DoP。"
+
+msgid "Silent opening checks are unavailable for this output."
+msgstr "此輸出無法進行靜音開啟檢查。"
+
+msgid "Similar albums"
+msgstr "相似專輯"
+
+msgid "Similar artists"
+msgstr "相似演出者"
+
+msgid "Since {}"
+msgstr "自 {} 起"
+
+msgid "Singles"
+msgstr "單曲"
+
+msgid "Singles or EPs, using the release type grouping"
+msgstr "單曲或 EP，使用發行類型分組"
+
+msgid "Size"
+msgstr "容量大小"
+
+msgid "Skipped"
+msgstr "已略過"
+
+msgid "Skips"
+msgstr "跳過次數"
+
+msgid "Sleep timer"
+msgstr "睡眠定時器"
+
+msgid "Small"
+msgstr "小"
+
+msgid "Smaller covers and background images; Chilpa can make these again."
+msgstr "較小的封面與背景圖片；Chilpa 可以重新產生這些圖片。"
+
+msgid "Soft"
+msgstr "柔和"
+
+msgid "Software"
+msgstr "軟體"
+
+msgid "Software volume"
+msgstr "軟體音量"
+
+msgid "Some endpoint streams could not be read."
+msgstr "無法讀取部分端點串流。"
+
+msgid "Some of these tracks were already added"
+msgstr "其中部分曲目先前已新增過"
+
+msgid "Some packages are missing"
+msgstr "缺少部分套件"
+
+msgid "Some selected Library tracks are missing. I kept the device unchanged."
+msgstr "選取的音樂庫曲目有部分遺失。已保持裝置不變。"
+
+msgid "Songs"
+msgstr "歌曲"
+
+msgid "Soundtracks"
+msgstr "原聲帶"
+
+msgid "Source"
+msgstr "來源"
+
+msgid "Source: {}"
+msgstr "來源：{}"
+
+msgid "Sources"
+msgstr "來源"
+
+msgid "Sources and quality"
+msgstr "來源與音質"
+
+msgid "Sources decide what is in the Library. Refine narrows inside them."
+msgstr "來源決定音樂庫中的內容。「精細篩選」可在其中縮小搜尋範圍。"
+
+msgid "Spanish"
+msgstr "西班牙文"
+
+msgid "Spectral Ribbon"
+msgstr "光譜絲帶（Spectral Ribbon）"
+
+msgid "Spectrum"
+msgstr "頻譜"
+
+msgid "Split queue before this track"
+msgstr "在此曲目之前分割佇列"
+
+msgid "Squares"
+msgstr "正方形"
+
+msgid "Stable endpoint identity. Results also depend on its connection and configuration."
+msgstr "穩定的端點識別。結果亦取決於其連線與設定。"
+
+msgid "Standard analysis"
+msgstr "標準分析"
+
+msgid "Standard done"
+msgstr "標準分析完成"
+
+msgid "Standard pending"
+msgstr "標準分析待處理"
+
+msgid "Standard processed"
+msgstr "標準分析已處理"
+
+msgid "Start"
+msgstr "開始"
+
+msgid "Start from current theme"
+msgstr "從目前主題開始"
+
+msgid "Start silent check"
+msgstr "開始靜音檢查"
+
+msgid "Starting plugins…"
+msgstr "正在啟動外掛…"
+
+msgid "Starting {}…"
+msgstr "正在啟動 {}…"
+
+msgid "Starting…"
+msgstr "正在啟動…"
+
+msgid "Starts when the scan is done"
+msgstr "掃描完成時開始"
+
+msgid "Static"
+msgstr "靜態"
+
+msgid "Stations"
+msgstr "電台"
+
+msgid "Stats generated by Chilpa"
+msgstr "由 Chilpa 產生的統計資料"
+
+msgid "Status"
+msgstr "狀態"
+
+msgid "Stereo and dynamics"
+msgstr "立體聲與動態"
+
+msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
+msgstr "立體聲控制項套用於雙聲道 PCM。EQ 與連動壓縮套用於所有聲道。"
+
+msgid "Stereo width · 0–100%"
+msgstr "立體聲寬度 · 0–100%"
+
+msgid "Still syncing its library for the first time"
+msgstr "仍在進行第一次音樂庫同步"
+
+msgid "Stop"
+msgstr "停止"
+
+msgid "Stop after this track"
+msgstr "此曲目播放後停止"
+
+msgid "Stop and diagnose"
+msgstr "停止並診斷"
+
+msgid "Stop playback after:"
+msgstr "停止播放時間："
+
+msgid "Stop playback before checking an output. Inspection remains available while listening."
+msgstr "檢查輸出前請先停止播放。聆聽時仍可進行檢視。"
+
+msgid "Stop playback to diagnose?"
+msgstr "要停止播放以進行診斷嗎？"
+
+msgid "Stop scan"
+msgstr "停止掃描"
+
+msgid "Stopped"
+msgstr "已停止"
+
+msgid "Stopping after the current file…"
+msgstr "正在目前檔案播放後停止…"
+
+msgid "Stops in"
+msgstr "停止於"
+
+msgid "Stops in {}"
+msgstr "於 {} 後停止"
+
+msgid "Storage"
+msgstr "儲存空間"
+
+msgid "Stream address"
+msgstr "串流網址"
+
+msgid "Streaming"
+msgstr "串流"
+
+msgid "Strong"
+msgstr "強烈"
+
+msgid "Studio 24/48"
+msgstr "錄音室 24/48"
+
+msgid "Stumbling"
+msgstr "卡頓"
+
+msgid "Subscribe"
+msgstr "訂閱"
+
+msgid "Subscribe to a show to find it here."
+msgstr "訂閱節目即可在此找到它。"
+
+msgid "Subscribed"
+msgstr "已訂閱"
+
+msgid "Subscriptions"
+msgstr "訂閱項目"
+
+msgid "Success"
+msgstr "成功"
+
+msgid "Sun"
+msgstr "週日"
+
+msgid "Sung line"
+msgstr "演唱歌詞行"
+
+msgid "Surface"
+msgstr "表面"
+
+msgid "Sync cancelled"
+msgstr "同步已取消"
+
+msgid "Sync complete"
+msgstr "同步完成"
+
+msgid "Sync needs attention"
+msgstr "同步需要注意"
+
+msgid "Sync now"
+msgstr "立即同步"
+
+msgid "Sync to device…"
+msgstr "同步至裝置…"
+
+msgid "Synced music"
+msgstr "已同步的音樂"
+
+msgid "Syncing"
+msgstr "同步中"
+
+msgid "Syncing music…"
+msgstr "正在同步音樂…"
+
+msgid "Syncing: {} track read"
+msgid_plural "Syncing: {} tracks read"
+msgstr[0] "同步中：已讀取 {} 首曲目"
+
+msgid "Syncing: {} track read in {} min"
+msgid_plural "Syncing: {} tracks read in {} min"
+msgstr[0] "同步中：在 {} 分鐘內已讀取 {} 首曲目"
+
+msgid "Syncing…"
+msgstr "正在同步…"
+
+msgid "System"
+msgstr "系統"
+
+msgid "System / manual"
+msgstr "系統 / 手動"
+
+msgid "System Colors"
+msgstr "系統色彩"
+
+msgid "TEXT"
+msgstr "文字"
+
+msgid "Tabs"
+msgstr "分頁"
+
+msgid "Tags, separated by commas"
+msgstr "標籤，以逗號分隔"
+
+msgid "Tags: {}"
+msgstr "標籤：{}"
+
+msgid "Take it out"
+msgstr "移出"
+
+msgid "Take the card from the sound server"
+msgstr "從音訊伺服器接管音效卡"
+
+msgid "Target"
+msgstr "目標"
+
+msgid "Target loudness"
+msgstr "目標響度"
+
+msgid "Temporary episode storage is unavailable."
+msgstr "暫存單集儲存空間無法使用。"
+
+msgid "Test"
+msgstr "測試"
+
+msgid "Test Playback"
+msgstr "測試播放"
+
+msgid "Test the connection"
+msgstr "測試連線"
+
+msgid "Testing the connection"
+msgstr "正在測試連線"
+
+msgid "Text"
+msgstr "文字"
+
+msgid "That answer does not belong to this window."
+msgstr "該回應不屬於此視窗。"
+
+msgid "That file is not a JPEG, PNG or WebP image"
+msgstr "該檔案不是 JPEG、PNG 或 WebP 圖片"
+
+msgid "That saved query no longer exists."
+msgstr "該儲存的查詢已不存在。"
+
+msgid "The Discogs account changed. Search again."
+msgstr "Discogs 帳號已變更。請重新搜尋。"
+
+msgid "The Discogs account could not be saved. The connection was not changed."
+msgstr "無法儲存 Discogs 帳號。連線未變更。"
+
+msgid "The EQ profile is too large."
+msgstr "EQ 設定檔過大。"
+
+msgid "The HiFi Wizard checks your audio stack, finds your DAC and helps you set it up for bit-perfect playback."
+msgstr "HiFi 精靈可檢查你的音訊堆疊、找到你的 DAC，並協助你進行位元完美播放的設定。"
+
+msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
+msgstr "ISO 保持不變。支援的中繼資料會寫入 XML；其他欄位與封面圖會使用 Chilpa 附屬檔案。"
+
+msgid "The ISO stays untouched; fields without an XML place and cover art use a sidecar."
+msgstr "ISO 保持不變；在 XML 中無位置的欄位與封面圖會使用附屬檔案。"
+
+msgid "The Mood models are not ready. Finish the download in Mood models first."
+msgstr "心情模型尚未就緒。請先在「心情模型」中完成下載。"
+
+msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."
+msgstr "PulseAudio 協定會將所有程式的音訊混合在一起，並將結果重新取樣為單一取樣率，因此曲目無法以原始檔案狀態到達裝置。這裡沒有任何設定可以改變這一點。這是在所有地方都能運作的預設方式；若要傳送未經變更的取樣，請直接選擇音效卡本身或 PipeWire。"
+
+msgid "The USB connection changed. Refresh the device list."
+msgstr "USB 連線已變更。請重新整理裝置清單。"
+
+msgid "The account did not connect. You can close this tab."
+msgstr "帳號未連線。你可以關閉此分頁。"
+
+msgid "The account expired; connect it again."
+msgstr "帳號已過期；請重新連線。"
+
+msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
+msgstr "您在瀏覽器中開啟伺服器的位址（包括連接埠）以及 Chilpa 登入的使用者名稱。"
+
+msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
+msgstr "內建測試會播放四首涵蓋不同位元深度與取樣率（16/44.1、24/44.1、24/96、24/192）的曲目，讓你能看到 DAC 的切換過程。每首均為音樂庫中該格式最多播放的曲目，若無對應檔案則使用產生的測試訊號。若你希望使用自己的佇列，請先新增每種格式各一首曲目以測試所有取樣率。"
+
+msgid "The check finished, but the previous physical format could not be restored."
+msgstr "檢查已完成，但無法還原先前的實體格式。"
+
+msgid "The check finished, but the previous sample rate could not be restored."
+msgstr "檢查已完成，但無法還原先前的取樣率。"
+
+msgid "The connection is not encrypted."
+msgstr "此連線未加密。"
+
+msgid "The current track has no such destination."
+msgstr "目前曲目沒有此目的地。"
+
+msgid "The device playlist picker can show at most 2,048 playlists."
+msgstr "裝置播放清單選擇器最多可顯示 2,048 個播放清單。"
+
+msgid "The device profile catalog is damaged. I kept its original data."
+msgstr "裝置設定檔目錄損壞。已保留其原始資料。"
+
+msgid "The device profile changed. Review it again."
+msgstr "裝置設定檔已變更。請重新檢視。"
+
+msgid "The device profile revision is invalid."
+msgstr "裝置設定檔修訂版本無效。"
+
+msgid "The device query cannot be read."
+msgstr "無法讀取裝置查詢。"
+
+msgid "The device review needs attention before continuing."
+msgstr "繼續前裝置審核需要注意。"
+
+msgid "The device task stopped. Its progress is saved for recovery."
+msgstr "裝置任務已停止。進度已儲存以供復原。"
+
+msgid "The download view is unavailable."
+msgstr "下載檢視無法使用。"
+
+msgid "The engine reports unchanged samples on this route."
+msgstr "引擎回報此路徑上的取樣未經變更。"
+
+msgid "The episode audio could not be downloaded."
+msgstr "無法下載該單集的音訊。"
+
+msgid "The episode could not be saved temporarily."
+msgstr "無法暫存該單集。"
+
+msgid "The episode download is incomplete."
+msgstr "單集下載不完整。"
+
+msgid "The episode download was interrupted."
+msgstr "單集下載已中斷。"
+
+msgid "The episode exceeds the download limit."
+msgstr "單集超過下載限制。"
+
+msgid "The filter cannot be read: {}"
+msgstr "無法讀取篩選器：{}"
+
+msgid "The filter has no ON/OFF state."
+msgstr "篩選器沒有開啟/關閉狀態。"
+
+msgid "The first is the theme's own accent; the others replace it in every theme but Custom."
+msgstr "第一個是主題本身的強調色；其餘會替換除了「自訂」之外所有主題中的強調色。"
+
+msgid "The floating player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
+msgstr "浮動播放列會在滑鼠停止移動十秒後隱藏，任何移動都會使其重新顯示。"
+
+msgid "The folder is no longer in the library."
+msgstr "資料夾已不在音樂庫中。"
+
+msgid "The folder scan policy is invalid."
+msgstr "資料夾掃描原則無效。"
+
+msgid "The image could not be kept"
+msgstr "無法保留圖片"
+
+msgid "The image could not be read"
+msgstr "無法讀取圖片"
+
+msgid "The image could not be saved"
+msgstr "無法儲存圖片"
+
+msgid "The image is too large"
+msgstr "圖片過大"
+
+msgid "The incorrect lyrics could not be excluded. Try again."
+msgstr "無法排除不正確的歌詞。請再試一次。"
+
+msgid ""
+"The library could not be changed. Try again; the detail below says what "
+"happened."
+msgstr "無法變更音樂庫。請重試；下方的詳細資訊說明了發生的情況。"
+
+msgid ""
+"The library stayed busy with another task. Nothing more was taken out; try "
+"again in a moment."
+msgstr "音樂庫正忙於執行其他任務。未移除任何額外內容；請稍後再試。"
+
+msgid "The line being sung stays in view."
+msgstr "正在演唱的歌詞行會保持在畫面中。"
+
+msgid "The listening history could not be saved"
+msgstr "無法儲存聆聽歷史"
+
+msgid "The log file could not be opened. Session logs remain available here."
+msgstr "無法開啟日誌檔案。作業階段日誌仍可在在此檢視。"
+
+msgid "The log file could not be written. Session logs remain available here."
+msgstr "無法寫入日誌檔案。作業階段日誌仍可在在此檢視。"
+
+msgid "The loop cannot be marked here; its end needs at least two seconds."
+msgstr "無法在此處標記循環；循環終點至少需要兩秒。"
+
+msgid "The loudness every track is aligned to. -14 LUFS matches streaming services, -18 LUFS is the ReplayGain reference."
+msgstr "所有曲目對齊的目標響度。-14 LUFS 符合串流服務標準，-18 LUFS 為 ReplayGain 參考值。"
+
+msgid "The lower bound must not exceed the upper bound."
+msgstr "下限不得高於上限。"
+
+msgid "The lyrics API could not save the report. This result is excluded on this device."
+msgstr "歌詞 API 無法儲存報告。此結果已在此裝置上排除。"
+
+msgid "The lyrics cache could not be opened."
+msgstr "無法開啟歌詞快取。"
+
+msgid "The network is off; turn it on in Settings › Integrations"
+msgstr "網路已關閉；請至「設定 › 整合」開啟"
+
+msgid "The output changed during the check. Its new configuration was kept."
+msgstr "檢查期間輸出已變更。已保留其新設定。"
+
+msgid "The output is playing in exclusive mode. Diagnosis needs to open it directly, so playback must stop first."
+msgstr "輸出正在獨佔模式下播放。診斷需要直接開啟裝置，因此必須先停止播放。"
+
+msgid "The output is still playing"
+msgstr "輸出仍在播放中"
+
+msgid "The output plays only Chilpa. Other programs wait until it lets go."
+msgstr "該輸出僅播放 Chilpa 的音訊。其他程式需等待其釋放控制權。"
+
+msgid "The player is busy. Close the other file transfer application and try again."
+msgstr "播放器忙碌中。請關閉其他檔案傳輸應用程式後再試一次。"
+
+msgid "The player is not responding. Reconnect it and try again."
+msgstr "播放器沒有回應。請重新連線後再試一次。"
+
+msgid "The playlist changed on {}; it now shows what the server has. Try again."
+msgstr "播放清單已於 {} 發生變更；現在顯示的是伺服器上的內容。請重試。"
+
+msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
+msgstr "播放清單已建立，但部分曲目無法新增。重試前請先開啟該清單。"
+
+msgid "The plugin ZIP could not be opened."
+msgstr "無法開啟外掛 ZIP 檔案。"
+
+msgid "The plugin ZIP could not be read."
+msgstr "無法讀取外掛 ZIP 檔案。"
+
+msgid "The plugin did not answer within 15 seconds. Its account status is unknown."
+msgstr "外掛未於 15 秒內回應。其帳號狀態未知。"
+
+msgid "The plugin interface could not be opened."
+msgstr "無法開啟外掛介面。"
+
+msgid "The previous sample rate did not settle after the check."
+msgstr "檢查後先前的取樣率未穩定下來。"
+
+msgid "The publisher did not return an audio file."
+msgstr "發布者未回傳音訊檔案。"
+
+msgid "The publisher did not return the episode audio."
+msgstr "發布者未回傳單集音訊。"
+
+msgid "The queues exceed the session limit of 100,000 tracks."
+msgstr "佇列超過作業階段 100,000 首曲目的限制。"
+
+msgid "The receiver does not report its physical DAC format."
+msgstr "接收端未回報其實體 DAC 格式。"
+
+msgid "The record is not open in the editor."
+msgstr "此紀錄未在編輯器中開啟。"
+
+msgid "The record is on a server. Changes stay on this device and are not sent to it."
+msgstr "此紀錄位於伺服器上。變更僅會保留在此裝置上，不會發送至伺服器。"
+
+msgid "The record's cover"
+msgstr "紀錄的封面"
+
+msgid "The renderer description could not be read."
+msgstr "無法讀取算繪器描述。"
+
+msgid "The renderer did not answer. Check its connection."
+msgstr "算繪器沒有回應。請檢查其連線。"
+
+msgid "The renderer does not support this format or control. Chilpa does not transcode."
+msgstr "算繪器不支援此格式或控制項。Chilpa 不進行轉碼。"
+
+msgid "The renderer refused the command."
+msgstr "算繪器拒絕了指令。"
+
+msgid "The report could not be saved. Choose a new file name."
+msgstr "無法儲存報告。請選擇新的檔名。"
+
+msgid "The report could not be written."
+msgstr "無法寫入報告。"
+
+msgid "The result has not been saved. Review the error before leaving."
+msgstr "結果未儲存。離開前請檢視錯誤資訊。"
+
+msgid "The same rule as ListenBrainz: half of a track, or four minutes."
+msgstr "與 ListenBrainz 相同的規則：曲目播放過半，或達四分鐘。"
+
+msgid "The saved Discogs account could not be opened. Connect again."
+msgstr "無法開啟儲存的 Discogs 帳號。請重新連線。"
+
+msgid "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
+msgstr "取消後無法還原儲存的 Discogs 帳號。重新啟動前請檢視該帳號。"
+
+msgid "The saved folder scan policy is invalid."
+msgstr "儲存的資料夾掃描原則無效。"
+
+msgid "The saved queries could not be read or saved: {}"
+msgstr "無法讀取或儲存已儲存的查詢：{}"
+
+msgid "The saved query catalog exceeds 1 MiB."
+msgstr "儲存的查詢目錄超過 1 MiB。"
+
+msgid "The saved query catalog is damaged; I kept its original data."
+msgstr "儲存的查詢目錄已損壞；已保留其原始資料。"
+
+msgid "The saved scan could not be restored."
+msgstr "無法還原儲存的掃描進度。"
+
+msgid "The saved sign-in could not be opened."
+msgstr "無法開啟儲存的登入資訊。"
+
+msgid "The saved storage folder is unavailable. Reconnect its original memory."
+msgstr "儲存的儲存資料夾無法使用。請重新連接其原始記憶體。"
+
+msgid "The saved storage is not connected."
+msgstr "儲存的儲存空間未連線。"
+
+msgid "The scan could not start: {}"
+msgstr "無法啟動掃描：{}"
+
+msgid "The scan worker stopped unexpectedly."
+msgstr "掃描工作程序意外停止。"
+
+msgid "The selected hardware volume control is gone."
+msgstr "選取的硬體音量控制項已不存在。"
+
+msgid "The selected queues are empty."
+msgstr "選取的佇列為空。"
+
+msgid "The selected storage changed or disconnected."
+msgstr "選取的儲存空間已變更或中斷連線。"
+
+msgid "The selected tracks could not be read."
+msgstr "無法讀取選取的曲目。"
+
+msgid "The server answered, and Chilpa can read its music."
+msgstr "伺服器已回應，Chilpa 可以讀取其音樂。"
+
+msgid "The server did not take it: {}"
+msgstr "伺服器未接受：{}"
+
+msgid ""
+"The server took it. It applies to what it sends this computer from now on."
+msgstr "伺服器已接受設定。該設定將套用於從今以後傳送至此電腦的內容。"
+
+msgid "The service sent no code."
+msgstr "服務未傳送任何代碼。"
+
+msgid "The service's answer is missing."
+msgstr "缺少服務的回應。"
+
+msgid "The source disconnected. Check the playlist before retrying."
+msgstr "來源已斷開連線。重試前請檢查播放清單。"
+
+msgid "The sung line lights up whole. Saves CPU."
+msgstr "演唱的歌詞整行亮起。可節省 CPU。"
+
+msgid "The sync has not moved in {} minute. Sync now starts it again."
+msgid_plural "The sync has not moved in {} minutes. Sync now starts it again."
+msgstr[0] "同步進度已停滯 {} 分鐘。立即同步將重新啟動該程序。"
+
+msgid "The system wallpaper. Choose an image of your own instead."
+msgstr "系統桌布。亦可選擇你自己的圖片。"
+
+msgid "The temporary media queue cannot be combined."
+msgstr "無法合併暫存媒體佇列。"
+
+msgid "The update check failed. Try again."
+msgstr "檢查更新失敗。請再試一次。"
+
+msgid "The update could not be completed. The version you have is safe. Try again later."
+msgstr "無法完成更新。你目前的版本是安全的。請稍後再試。"
+
+msgid "The update is ready. Restart Chilpa to use it."
+msgstr "更新已就緒。重新啟動 Chilpa 即可使用。"
+
+msgid "The view the immersive view opens with. Remember keeps the one it was last on."
+msgstr "沉浸式檢視開啟時顯示的頁面。「記住設定」會保留上次離開時的檢視。"
+
+msgid "The view the mini player opens with. Remember keeps the one it was last on."
+msgstr "迷你播放器開啟時顯示的頁面。「記住設定」會保留上次離開時的檢視。"
+
+msgid "Their music joins yours. With all of them chosen, a library added later on the server comes in too."
+msgstr "它們的音樂會加入您的音樂庫。全選時，伺服器日後新增的音樂庫也會自動加入。"
+
+msgid "Theme"
+msgstr "主題"
+
+msgid "There are no folders inside this one. Choose it from the level above, or go back up."
+msgstr "此資料夾內無其他資料夾。請從上層進行選擇，或返回上一層。"
+
+msgid "There is no previous EQ to restore."
+msgstr "沒有可還原的先前 EQ。"
+
+msgid "There is not enough space for this selection and its temporary files."
+msgstr "沒有足夠的空間存放此選取內容及其暫存檔案。"
+
+msgid "These answered a search of this network. Choose yours, or type its address."
+msgstr "這些是在此網路搜尋中獲得回應的項目。請選擇您的伺服器，或直接輸入其位址。"
+
+msgid "These records' barcodes are sent to MusicBrainz."
+msgstr "這些紀錄的條碼會發送至 MusicBrainz。"
+
+msgid "These tracks' ISRCs are sent to MusicBrainz."
+msgstr "這些曲目的 ISRC 會發送至 MusicBrainz。"
+
+msgid "Third-party"
+msgstr "第三方"
+
+msgid "Third-party by {}"
+msgstr "由 {} 提供第三方外掛"
+
+msgid "Third-party plugins"
+msgstr "第三方外掛"
+
+msgid "This Library selection is no longer available."
+msgstr "此音樂庫選取內容已無法使用。"
+
+msgid "This address belongs to a different server."
+msgstr "此位址屬於不同的伺服器。"
+
+msgid "This album is no longer in the current view."
+msgstr "此專輯已不在目前檢視中。"
+
+msgid "This build can query the output but cannot render audio through it yet."
+msgstr "此建置版本可查詢輸出，但尚無法透過其算繪播放音訊。"
+
+msgid "This can take a few minutes when MusicBrainz is busy."
+msgstr "當 MusicBrainz 忙碌時，這可能需要幾分鐘。"
+
+msgid "This chapter format is not supported."
+msgstr "不支援此章節格式。"
+
+msgid "This collection exceeds the current page limit."
+msgstr "此合輯超過目前頁面限制。"
+
+msgid "This computer"
+msgstr "此電腦"
+
+msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
+msgstr "此直接輸出沒有硬體音量控制。請使用 DAC 或擴大機。"
+
+msgid "This entry is no longer at hand. Open it again from its source."
+msgstr "此條目已無法使用。請從其來源重新開啟。"
+
+msgid "This episode does not have a supported public audio file."
+msgstr "此單集沒有可支援的公開音訊檔案。"
+
+msgid "This episode material could not be loaded."
+msgstr "無法載入此單集素材。"
+
+msgid "This folder has no tracks."
+msgstr "此資料夾沒有曲目。"
+
+msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
+msgstr "此資料夾在多種視圖下重複顯示相同的歌曲。請選擇一種檢視（建議選擇「按資料夾」），以確保每首歌曲僅被讀取一次。"
+
+msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
+msgstr "耗時比平時更久。MusicBrainz 可能忙碌中。請稍後再試。"
+
+msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
+msgstr "這是電腦目前傳送聲音的目的地，因此取樣的處理方式取決於該系統設定 — 通常會與其他聲音混合並對結果進行重新取樣。這方式總是能正常運作。若要使取樣原樣到達，請選擇音效卡本身。"
+
+msgid "This looks like a playlist."
+msgstr "這看起來像是播放清單。"
+
+msgid "This month"
+msgstr "本月"
+
+msgid "This month vs Last month"
+msgstr "本月與上個月對比"
+
+msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
+msgstr "此音樂檢視超過 50,000 個檔案或 16 MiB 的中繼資料。"
+
+msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
+msgstr "此項目不會發出聲音。它會寫入原本要傳送至裝置的內容，因此可將檔案與來源曲目進行比對 — 這是唯一能證明（而非口頭宣稱）位元完美的方式。"
+
+msgid "This opens and closes the selected output without writing audio. Stop playback first. The queue, volume and desktop default stay as they are."
+msgstr "這會開啟並關閉選取的輸出而不寫入音訊。請先停止播放。佇列、音量與桌面預設值將保持原樣。"
+
+msgid "This output has no hardware mute switch."
+msgstr "此輸出沒有硬體靜音開關。"
+
+msgid "This output has no unambiguous, safe playback volume control."
+msgstr "此輸出沒有明確且安全的播放音量控制項。"
+
+msgid "This output is always Chilpa's alone."
+msgstr "此輸出始終僅供 Chilpa 獨佔使用。"
+
+msgid "This output is busy. Stop playback before checking it."
+msgstr "此輸出忙碌中。檢查前請先停止播放。"
+
+msgid "This output takes DSD converted to PCM. DoP needs exclusive mode, and a DAC that decodes it."
+msgstr "此輸出接受轉換為 PCM 的 DSD。DoP 需要獨佔模式以及能解碼的 DAC。"
+
+msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
+msgstr "此輸出接受轉換為 PCM 的 DSD。僅有 hw 上的音效卡能原樣接收；為該音效卡選擇的設定會被保留。"
+
+msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
+msgstr "此播放清單已包含你要新增的 {} 首曲目（共 {} 首）。僅新增新曲目，或新增包含重複項目的所有曲目。"
+
+msgid "This playlist is no longer available."
+msgstr "此播放清單已無法使用。"
+
+msgid "This playlist is not valid UTF-8."
+msgstr "此播放清單不是有效的 UTF-8 編碼。"
+
+msgid "This playlist references music outside the recorded selection. Sync it again to refresh its contents."
+msgstr "此播放清單參照了錄製選取範圍之外的音樂。請重新同步以更新其內容。"
+
+msgid "This preset uses precise filters; each band shows its level. To move the bands, create a separate graphic EQ. You can restore your previous EQ."
+msgstr "此預設值使用精確濾波器；每個頻段顯示其音量。若要移動頻段，請建立獨立的圖形 EQ。你可以還原先前的 EQ。"
+
+msgid "This purchase is unavailable for download."
+msgstr "此購買項目無法下載。"
+
+msgid "This query nests groups three levels deep. Rows show two, so it stays as text here. It still applies."
+msgstr "此查詢的群組嵌套達三層。列表僅顯示兩層，因此在此處保持為文字格式。但依然會套用。"
+
+msgid "This record cannot be played now."
+msgstr "目前無法播放此錄音。"
+
+msgid "This saved query catalog uses an unsupported version; I kept its original data."
+msgstr "此儲存的查詢目錄使用了不支援的版本；已保留其原始資料。"
+
+msgid "This screen is not built yet."
+msgstr "此畫面尚未建置。"
+
+msgid "This section is not built yet."
+msgstr "此區塊尚未建置。"
+
+msgid "This selection has no tracks."
+msgstr "此選取內容沒有曲目。"
+
+msgid "This selection includes music without an available local file. I kept the device unchanged."
+msgstr "此選取內容包含沒有可用本機檔案的音樂。已保持裝置不變。"
+
+msgid "This server converts music for each device. Choose the quality you want from what it offers. A higher bitrate sounds better; these values and their limits are the server's own."
+msgstr "此伺服器會針對各個裝置進行音樂轉碼。請從其提供的選項中選擇所需的音質。位元率越高音質越好；這些數值與限制取決於伺服器本身。"
+
+msgid "This server does not take an API key. Go back and sign in with your user and password."
+msgstr "此伺服器不接受 API 金鑰。請返回並使用使用者名稱與密碼登入。"
+
+msgid "This server is no longer available."
+msgstr "此伺服器已無法使用。"
+
+msgid "This source cannot accept these tracks right now."
+msgstr "此來源目前無法接受這些曲目。"
+
+msgid "This source owns the order."
+msgstr "此順序由該來源決定。"
+
+msgid "This source's folders are read-only. Choose a local folder to organize its playlists in Chilpa."
+msgstr "此來源的資料夾為唯讀。請選擇本機資料夾以在 Chilpa 中整理其播放清單。"
+
+msgid "This storage belongs to another saved profile."
+msgstr "此儲存空間屬於另一個已儲存的設定檔。"
+
+msgid "This storage does not match the saved profile. Choose its original memory or create a new profile."
+msgstr "此儲存空間與已儲存的設定檔不符。請選擇其原始記憶體或建立新設定檔。"
+
+msgid "This storage is read-only."
+msgstr "此儲存空間為唯讀。"
+
+msgid "This takes a few seconds."
+msgstr "這需要幾秒鐘的時間。"
+
+msgid "This track has no album to open"
+msgstr "此曲目沒有可開啟的專輯"
+
+msgid "This transcript format is not supported."
+msgstr "不支援此逐字稿格式。"
+
+msgid "This update asks for additional access."
+msgstr "此更新要求額外的存取權限。"
+
+msgid "This view as an image (PNG)"
+msgstr "將此檢視另存為圖片 (PNG)"
+
+msgid "This week"
+msgstr "本週"
+
+msgid "This week vs Last week"
+msgstr "本週與上週對比"
+
+msgid "This wizard helps you configure your DAC for bit-perfect playback on Linux. Chilpa never changes your system automatically — it auto-detects your DACs, shows you the exact commands and config to copy, and lets you test playback right here."
+msgstr "此精靈協助你在 Linux 上設定 DAC 以進行位元完美播放。Chilpa 絕不會自動變更你的系統 — 它會自動偵測你的 DAC，顯示確切指令與可供複製的設定，並讓你在此直接測試播放。"
+
+msgid "This wizard tests PCM rates. Chilpa currently converts DSD to PCM on PipeWire; exclusive mode and rate switching alone cannot verify an untouched DoP stream. For a DAC that supports DSD, use ALSA direct (hw) and choose a supported DSD mode in Audio settings."
+msgstr "此精靈測試 PCM 取樣率。Chilpa 目前在 PipeWire 上將 DSD 轉換為 PCM；僅靠獨佔模式與取樣率切換無法驗證未變更的 DoP 串流。對於支援 DSD 的 DAC，請使用 ALSA 直接模式 (hw) 並在音訊設定中選擇支援的 DSD 模式。"
+
+msgid "This year"
+msgstr "今年"
+
+msgid "This year vs Last year"
+msgstr "今年與去年對比"
+
+msgid "Thu"
+msgstr "週四"
+
+msgid "Time"
+msgstr "時間"
+
+msgid "Time is out of range."
+msgstr "時間超出範圍。"
+
+msgid "Title"
+msgstr "標題"
+
+msgid "Title contains"
+msgstr "標題包含"
+
+msgid "To"
+msgstr "至"
+
+msgid "To move to"
+msgstr "移動至"
+
+msgid "Today"
+msgstr "今天"
+
+msgid "Today vs Yesterday"
+msgstr "今天與昨天對比"
+
+msgid "Toggle Immersive View"
+msgstr "切換沉浸式檢視"
+
+msgid "Toggle Mini Player"
+msgstr "切換迷你播放器"
+
+msgid "Toggle Shuffle"
+msgstr "切換隨機播放"
+
+msgid "Toggle Sidebar"
+msgstr "切換側邊欄"
+
+msgid "Token"
+msgstr "權杖"
+
+msgid "Too many device storage locations were reported."
+msgstr "回報了過多的裝置儲存位置。"
+
+msgid "Tools"
+msgstr "工具"
+
+msgid "Top level"
+msgstr "最上層"
+
+msgid "Top result"
+msgstr "最佳結果"
+
+msgid "Trace"
+msgstr "追蹤（Trace）"
+
+msgid "Track"
+msgstr "曲目"
+
+msgid "Track album"
+msgstr "曲目專輯"
+
+msgid "Track artist"
+msgstr "曲目演出者"
+
+msgid "Track bit depth"
+msgstr "曲目位元深度"
+
+msgid "Track count"
+msgstr "曲目數量"
+
+msgid "Track credits"
+msgstr "曲目製作人員"
+
+msgid "Track details · {}"
+msgstr "曲目詳細資訊 · {}"
+
+msgid "Track format"
+msgstr "曲目格式"
+
+msgid "Track lists"
+msgstr "曲目列表"
+
+msgid "Track menu"
+msgstr "曲目選單"
+
+msgid "Track review"
+msgstr "曲目檢視"
+
+msgid "Track sample rate"
+msgstr "曲目取樣率"
+
+msgid "Track title"
+msgstr "曲目標題"
+
+msgid "Track {}"
+msgstr "曲目 {}"
+
+msgid "Tracks"
+msgstr "曲目"
+
+msgid "Tracks ({})"
+msgstr "曲目 ({})"
+
+msgid "Tracks you play will appear here"
+msgstr "你播放的曲目將顯示於此"
+
+msgid "Trailers"
+msgstr "預告片"
+
+msgid "Transcript"
+msgstr "逐字稿"
+
+msgid "Translate lyrics"
+msgstr "翻譯歌詞"
+
+msgid "Translation"
+msgstr "翻譯"
+
+msgid "Tray icon"
+msgstr "系統匣圖示"
+
+msgid "Tray icon style"
+msgstr "系統匣圖示樣式"
+
+msgid "Treble"
+msgstr "高音"
+
+msgid "Tree"
+msgstr "樹狀圖"
+
+msgid "Trending shows"
+msgstr "熱門節目"
+
+msgid "Try again"
+msgstr "重試"
+
+msgid "Try again to get a new code."
+msgstr "請再試一次以取得新代碼。"
+
+msgid "Tue"
+msgstr "週二"
+
+msgid "Tunnel"
+msgstr "隧道（Tunnel）"
+
+msgid "Tunnel Flow"
+msgstr "隧道流（Tunnel Flow）"
+
+msgid "Turn the network on to change a server's playlist."
+msgstr "請啟用網路以變更伺服器上的播放清單。"
+
+msgid "Type"
+msgstr "類型"
+
+msgid "Type / version"
+msgstr "類型 / 版本"
+
+msgid "Type the code"
+msgstr "輸入代碼"
+
+msgid "Type words and press Enter"
+msgstr "輸入關鍵字並按 Enter"
+
+msgid "UP NEXT"
+msgstr "即將播放"
+
+msgid "USB host sync is available in the desktop application."
+msgstr "USB 主機同步功能可在桌面應用程式中使用。"
+
+msgid "Unassigned"
+msgstr "未分配"
+
+msgid "Unavailable"
+msgstr "無法使用"
+
+msgid "Uncategorized"
+msgstr "未分類"
+
+msgid "Unchanged"
+msgstr "未變更"
+
+msgid "Unchanged samples"
+msgstr "未變更的取樣"
+
+msgid "Undo"
+msgstr "復原"
+
+msgid "Undo queue edit"
+msgstr "復原佇列編輯"
+
+msgid "Unfollow"
+msgstr "取消關注"
+
+msgid "Ungroup"
+msgstr "取消分組"
+
+msgid "Uninstall"
+msgstr "解除安裝"
+
+msgid "Uninstall plugin"
+msgstr "解除安裝外掛"
+
+msgid "Uninstall plugin and remove account data"
+msgstr "解除安裝外掛並移除帳號資料"
+
+msgid "Unknown"
+msgstr "未知"
+
+msgid "Unknown DSP action."
+msgstr "未知的 DSP 動作。"
+
+msgid "Unknown album"
+msgstr "未知專輯"
+
+msgid "Unknown artist"
+msgstr "未知演出者"
+
+msgid "Unknown audio output action."
+msgstr "未知的音訊輸出動作。"
+
+msgid "Unknown command; enter :help."
+msgstr "未知指令；請輸入 :help。"
+
+msgid "Unknown date"
+msgstr "未知日期"
+
+msgid "Unknown preference."
+msgstr "未知的偏好設定。"
+
+msgid "Unknown quality"
+msgstr "未知音質"
+
+msgid "Unknown release type"
+msgstr "未知發行類型"
+
+msgid "Unknown source"
+msgstr "未知來源"
+
+msgid "Unknown target; use Tab to complete the source."
+msgstr "未知目標；使用 Tab 鍵可自動補全來源。"
+
+msgid "Unknown year"
+msgstr "未知年份"
+
+msgid "Unmatched"
+msgstr "未符合"
+
+msgid "Unmute"
+msgstr "取消靜音"
+
+msgid "Unplayed"
+msgstr "未播放"
+
+msgid "Unrated"
+msgstr "未評分"
+
+msgid "Unselected playlists are removed after approval. Enable this option to remove unselected music too."
+msgstr "未選取的播放清單會在核准後移除。啟用此選項可同時移除未選取的音樂。"
+
+msgid "Unsupported"
+msgstr "不支援"
+
+msgid "Unsupported EQ directive. Paste parametric filters without channel routing or other commands."
+msgstr "不支援的 EQ 指令。請貼上不包含聲道路由或其他指令的參數化濾波器。"
+
+msgid "Unsupported EQ filter syntax or frequency unit."
+msgstr "不支援的 EQ 濾波器語法或頻率單位。"
+
+msgid "Unsupported active EQ filter. Use PK, LS, HS, LP, HP or NO."
+msgstr "不支援的啟用中 EQ 濾波器。請使用 PK、LS、HS、LP、HP 或 NO。"
+
+msgid "Unsupported or empty DSP preset catalog."
+msgstr "不支援或空白的 DSP 預設目錄。"
+
+msgid "Untested"
+msgstr "未測試"
+
+msgid "Up next"
+msgstr "即將播放"
+
+msgid "Up to that year"
+msgstr "直到該年份"
+
+msgid "Upcoming"
+msgstr "即將來臨"
+
+msgid "Update"
+msgstr "更新"
+
+msgid "Update all"
+msgstr "全部更新"
+
+msgid "Update available"
+msgstr "有可用更新"
+
+msgid "Update cancelled."
+msgstr "更新已取消。"
+
+msgid "Update failed; the previous version is kept"
+msgstr "更新失敗；已保留前一版本"
+
+msgid "Update ready"
+msgstr "更新已就緒"
+
+msgid "Updated"
+msgstr "已更新"
+
+msgid "Updated {}"
+msgstr "已更新 {}"
+
+msgid "Updates"
+msgstr "更新"
+
+msgid "Updates keep your library, settings and plugins. One previous version is kept beside the new one."
+msgstr "更新會保留你的音樂庫、設定與外掛。在新版本旁會保留一個前一版本。"
+
+msgid "Updating Chilpa…"
+msgstr "正在更新 Chilpa…"
+
+msgid "Updating the library…"
+msgstr "正在更新音樂庫…"
+
+msgid "Updating usage…"
+msgstr "正在更新使用量…"
+
+msgid "Upload (public)"
+msgstr "上傳（公開）"
+
+msgid "Upload failed."
+msgstr "上傳失敗。"
+
+msgid "Uploading…"
+msgstr "正在上傳…"
+
+msgid "Uppercase"
+msgstr "大寫"
+
+msgid "Usage"
+msgstr "使用量"
+
+msgid "Use MusicBrainz"
+msgstr "使用 MusicBrainz"
+
+msgid "Use a name of 1 to 80 characters, without line breaks."
+msgstr "請使用 1 到 80 個字元的名稱，且不可換行。"
+
+msgid "Use a token"
+msgstr "使用權杖"
+
+msgid "Use at most 10 DSP filters."
+msgstr "最多使用 10 個 DSP 濾波器。"
+
+msgid "Use current colors"
+msgstr "使用目前色彩"
+
+msgid "Use my current queue"
+msgstr "使用我目前的佇列"
+
+msgid "Use the default"
+msgstr "使用預設值"
+
+msgid "Use the playlist icon or a cover collage."
+msgstr "使用播放清單圖示或封面拼貼。"
+
+msgid "Use the system language or choose a language."
+msgstr "使用系統語言或選擇語言。"
+
+msgid "Use this output"
+msgstr "使用此輸出"
+
+msgid "User"
+msgstr "使用者"
+
+msgid "Valid"
+msgstr "有效"
+
+msgid "Valid node name"
+msgstr "有效的節點名稱"
+
+msgid "Verify files after transfer"
+msgstr "傳輸後驗證檔案"
+
+msgid "Verifying copied files…"
+msgstr "正在驗證已複製的檔案…"
+
+msgid "Version"
+msgstr "版本"
+
+msgid "Version {} is available."
+msgstr "版本 {} 現已可用。"
+
+msgid "Version: {}"
+msgstr "版本：{}"
+
+msgid "View"
+msgstr "檢視"
+
+msgid "View cover"
+msgstr "檢視封面"
+
+msgid "View image"
+msgstr "檢視圖片"
+
+msgid "View less"
+msgstr "收合"
+
+msgid "View logs"
+msgstr "檢視日誌"
+
+msgid "View precise filters"
+msgstr "檢視精確濾波器"
+
+msgid "View tracks"
+msgstr "檢視曲目"
+
+msgid "Vocals"
+msgstr "人聲"
+
+msgid "Volume"
+msgstr "音量"
+
+msgid "Volume Down"
+msgstr "調低音量"
+
+msgid "Volume Up"
+msgstr "調高音量"
+
+msgid "Volume normalization"
+msgstr "音量標準化"
+
+msgid "Volume {}%"
+msgstr "音量 {}%"
+
+msgid "Wait for the audio check to finish."
+msgstr "請等待音訊檢查完成。"
+
+msgid "Wait for the queue to finish switching."
+msgstr "請等待佇列完成切換。"
+
+msgid "Waiting for output"
+msgstr "正在等待輸出"
+
+msgid "Waiting for playback to stop"
+msgstr "正在等待播放停止"
+
+msgid "Waiting for the DAC to start playing…"
+msgstr "正在等待 DAC 開始播放…"
+
+msgid "Waiting for the engine's opening report…"
+msgstr "正在等待引擎的開啟報告…"
+
+msgid "Waiting for {} to come back… ({} track read)"
+msgid_plural "Waiting for {} to come back… ({} tracks read)"
+msgstr[0] "正在等待 {} 恢復連線…（已讀取 {} 首曲目）"
+
+msgid "Wallpaper"
+msgstr "桌布"
+
+msgid "Wallpaper Sync"
+msgstr "桌布同步"
+
+msgid "Wallpaper blur"
+msgstr "桌布模糊"
+
+msgid "Wallpaper, blurred"
+msgstr "桌布（已模糊）"
+
+msgid "Warning"
+msgstr "警告"
+
+msgid "Wave Bed"
+msgstr "波浪床（Wave Bed）"
+
+msgid "Waveform"
+msgstr "波形"
+
+msgid "Weak identity. Saved checks remain historical and cannot certify the connected unit."
+msgstr "弱識別。儲存的檢查僅供歷史記錄參考，無法驗證已連線的裝置。"
+
+msgid "Website"
+msgstr "網站"
+
+msgid "Wed"
+msgstr "週三"
+
+msgid "Week"
+msgstr "週"
+
+msgid "Welcome"
+msgstr "歡迎"
+
+msgid "Welcome to Chilpa"
+msgstr "歡迎使用 Chilpa"
+
+msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
+msgstr "在沉浸式檢視搜尋結果中按 Enter 的行為。「停用」將關閉搜尋。"
+
+msgid "What it is"
+msgstr "這是什麼"
+
+msgid "What kind of server is it?"
+msgstr "這是哪種伺服器？"
+
+msgid "What should happen to the original queues?"
+msgstr "原始佇列該如何處理？"
+
+msgid "What this route reports"
+msgstr "此路徑回報的內容"
+
+msgid "What to test with"
+msgstr "測試內容選擇"
+
+msgid "What you play most"
+msgstr "你最常播放的內容"
+
+msgid "What's new"
+msgstr "最新功能"
+
+msgid "What's new in v{}"
+msgstr "v{} 中的最新功能"
+
+msgid "Where is it, and who signs in?"
+msgstr "它在哪裡？誰來登入？"
+
+msgid "Where is your music?"
+msgstr "你的音樂在哪裡？"
+
+msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
+msgstr "中繼資料編輯器優先搜尋的位置。「僅限內嵌標籤」絕不會連線至網路。"
+
+msgid "Where the samples go: straight to the device, or through a sound server."
+msgstr "取樣的去向：直接傳送至裝置，或透過音訊伺服器。"
+
+msgid "Wherever the system is sending sound"
+msgstr "系統目前傳送聲音的任何位置"
+
+msgid "Which DACs do you want to configure?"
+msgstr "你想設定哪些 DAC？"
+
+msgid "Which GPU renders the app. Only the GPUs actually present are listed. Choosing one other than the default also switches the renderer to Vulkan — the only backend Qt can select a GPU on (requires restart)"
+msgstr "由哪個 GPU 算繪應用程式。僅列出實際存在的 GPU。選擇預設值以外的 GPU 也會將算繪器切換為 Vulkan — 這是 Qt 唯一能選擇 GPU 的後端（需要重新啟動）"
+
+msgid "Which libraries come in?"
+msgstr "有哪些音樂庫包含在內？"
+
+msgid "Which media server?"
+msgstr "哪個媒體伺服器？"
+
+msgid "Which server?"
+msgstr "哪個伺服器？"
+
+msgid "Which sources count"
+msgstr "納入計數的來源"
+
+msgid "Who the records are credited to"
+msgstr "紀錄歸屬的製作人員"
+
+msgid "Window system"
+msgstr "視窗系統"
+
+msgid "Windows audio would not answer ({})"
+msgstr "Windows 音訊沒有回應 ({})"
+
+msgid "Windows reports no playback device"
+msgstr "Windows 回報沒有播放裝置"
+
+msgid "Windows would not say what \"{}\" accepts ({})"
+msgstr "Windows 未說明「{}」接受的格式 ({})"
+
+msgid "Withdraw approval"
+msgstr "撤銷核准"
+
+msgid "Without plugins"
+msgstr "不使用外掛"
+
+msgid "Without {}"
+msgstr "不包含 {}"
+
+msgid "Word widened from {} to {} bits without sample loss"
+msgstr "字元長度已從 {} 位元擴展至 {} 位元（無取樣損失）"
+
+msgid "Words"
+msgstr "字詞"
+
+msgid "Words alone look in titles, artists and records"
+msgstr "僅搜尋字詞時會於標題、演出者與紀錄中尋找"
+
+msgid "Words in the record title and in the track title"
+msgstr "紀錄標題與曲目標題中的字詞"
+
+msgid "Work"
+msgstr "作品"
+
+msgid "Write XML"
+msgstr "寫入 XML"
+
+msgid "Write into the audio files?"
+msgstr "要寫入音訊檔案嗎？"
+
+msgid "Write into the files"
+msgstr "寫入檔案"
+
+msgid "Write the external SACD XML?"
+msgstr "要寫入外部 SACD XML 嗎？"
+
+msgid "Write to a file"
+msgstr "寫入至檔案"
+
+msgid "Writer"
+msgstr "創作者/詞曲作者"
+
+msgid "Wrong lyric"
+msgstr "錯誤歌詞"
+
+msgid "XML can be edited only for SACD images"
+msgstr "僅能針對 SACD 映像檔編輯 XML"
+
+msgid "YOU MAY ALSO LIKE"
+msgstr "你可能也會喜歡"
+
+msgid "Year"
+msgstr "年份"
+
+msgid "Yes"
+msgstr "是"
+
+msgid "Yesterday"
+msgstr "昨天"
+
+msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
+msgstr "你需自行負責備份。此為輔助工具，而非系統復原工具。"
+
+msgid "You can save at most 64 device storage profiles."
+msgstr "最多可儲存 64 個裝置儲存設定檔。"
+
+msgid "You can save up to 64 queries."
+msgstr "最多可儲存 64 個查詢。"
+
+msgid "Your DAC"
+msgstr "你的 DAC"
+
+msgid "Your DAC is ready for bit-perfect playback. If you applied the config files, restart the audio services (or log out and back in) for them to take effect."
+msgstr "你的 DAC 已就緒可進行位元完美播放。若你套用了設定檔，請重新啟動音訊服務（或登出並重新登入）以使其生效。"
+
+msgid "Your Plex account reaches more than one server."
+msgstr "您的 Plex 帳戶可以連接到多台伺服器。"
+
+msgid "Your audio stack is ready for bit-perfect playback."
+msgstr "你的音訊堆疊已就緒可進行位元完美播放。"
+
+msgid "Your distribution"
+msgstr "你的發行版"
+
+msgid "Your music"
+msgstr "你的音樂"
+
+msgid "Your music files on the server are not touched."
+msgstr "伺服器上的音樂檔案不會被更動。"
+
+msgid "Your music is up to date"
+msgstr "你的音樂已是最新狀態"
+
+msgid "Your queue is empty"
+msgstr "你的佇列為空"
+
+msgid "Your queue is empty — add some tracks first, or press Play test."
+msgstr "你的佇列為空 — 請先新增一些曲目，或按「播放測試音」。"
+
+msgid "Your selected sources are taking longer than usual. Try again in a moment."
+msgstr "你選取的來源回應時間比平時更久。請稍後再試。"
+
+msgid "Your shows"
+msgstr "你的節目"
+
+msgid "Your {} and {} of them are removed too."
+msgstr "您的 {} 以及其中的 {} 個也會一併移除。"
+
+msgid "Your {} of them are removed too."
+msgstr "您的 {} 中的該項目也會一併移除。"
+
+msgid "a DASH manifest, which Chilpa cannot read yet"
+msgstr "DASH 清單檔，Chilpa 目前尚無法讀取"
+
+msgid "a DLNA / UPnP server keeps no playlists"
+msgstr "DLNA / UPnP 伺服器不保留播放清單"
+
+msgid "a DST frame decoded to {} bytes and not 9408"
+msgstr "DST 畫格解碼為 {} 位元組而非 9408"
+
+msgid "a DST frame does not decode: {}"
+msgstr "DST 畫格無法解碼：{}"
+
+msgid "a DST frame ends before all its packets came"
+msgstr "DST 畫格在其所有封包到達前即結束"
+
+msgid "a DST frame has no timecode"
+msgstr "DST 畫格無時間碼"
+
+msgid "a DST frame is larger than 64 KiB"
+msgstr "DST 畫格大於 64 KiB"
+
+msgid "a DST frame says it spans no packets"
+msgstr "DST 畫格表示其未跨越任何封包"
+
+msgid "a DST packet belongs to no frame"
+msgstr "DST 封包不屬於任何畫格"
+
+msgid "a Mac's outputs take PCM, not native DSD"
+msgstr "Mac 的輸出接受 PCM，而非原生 DSD"
+
+msgid "a closing parenthesis has nothing to close"
+msgstr "右括號沒有可匹配的左括號"
+
+msgid "a condition is missing"
+msgstr "缺少條件"
+
+msgid "a date is a year, a year and a month, or a full day: 1984, 1984-09, 1984-09-03"
+msgstr "日期格式可為年份、年月或完整年月日：1984、1984-09、1984-09-03"
+
+msgid "a direct URL"
+msgstr "直接網址"
+
+msgid "a field needs a value"
+msgstr "欄位需要填入數值"
+
+msgid "a frame of the stereo area is not stereo"
+msgstr "立體聲區域的畫格不是立體聲"
+
+msgid "a list needs a name"
+msgstr "列表需要一個名稱"
+
+msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
+msgstr "此附屬檔案由更新版的 Chilpa 寫入；請更新 Chilpa 以進行修改"
+
+msgid "a number from 1 to 9999, or nothing"
+msgstr "1 到 9999 的數字，或留空"
+
+msgid "a parenthesis is not closed"
+msgstr "括號未未封閉"
+
+msgid "a playlist is made there only with tracks in it"
+msgstr "僅在包含曲目時才會於該處建立播放清單"
+
+msgid "a quote is not closed"
+msgstr "引號未未封閉"
+
+msgid "a rating goes from 0 to 5"
+msgstr "評分範圍為 0 到 5"
+
+msgid "a rating must be between 0 and 5 stars"
+msgstr "評分必須介於 0 到 5 星之間"
+
+msgid "a record on a server keeps its changes on this device"
+msgstr "伺服器上的紀錄會將變更保留在此裝置上"
+
+msgid "a scan is already running"
+msgstr "掃描已在進行中"
+
+msgid "a scan is running; save when it is done"
+msgstr "掃描正在進行中；完成後請儲存"
+
+msgid "a stream cannot be rewound"
+msgstr "串流無法倒退"
+
+msgid "a track has no artist"
+msgstr "曲目沒有演出者"
+
+msgid "a track has no title"
+msgstr "曲目沒有標題"
+
+msgid "a trusted interface requires one relative QML entry, a process runtime and a panel registration"
+msgstr "可信介面需要一個相對 QML 入口、行程執行階段與面板註冊資訊"
+
+msgid "a year or a rating is a number"
+msgstr "年份或評分為數字"
+
+msgid "add a command you trigger"
+msgstr "新增你觸發的指令"
+
+msgid "added takes a span like 30d, 6w, 3m or 1y"
+msgstr "新增時間接受如 30d、6w、3m 或 1y 的時間跨度"
+
+msgid "aggregate"
+msgstr "聚合"
+
+msgid "all"
+msgstr "全部"
+
+msgid "almost nothing in the queue has an analysed tempo"
+msgstr "佇列中幾乎沒有任何曲目包含已分析的速度資訊"
+
+msgid "an HLS manifest, which Chilpa cannot read yet"
+msgstr "HLS 清單檔，Chilpa 目前尚無法讀取"
+
+msgid "an analysis is already running"
+msgstr "分析已在進行中"
+
+msgid "another program has \"{}\" to itself; close it, or turn exclusive mode off to share it"
+msgstr "另一個程式正在獨佔「{}」；請關閉該程式，或關閉獨佔模式以進行共享"
+
+msgid "another program is using \"{}\"; close it, or turn bit-perfect and exclusive mode off to share it ({})"
+msgstr "另一個程式正在使用「{}」；請關閉該程式，或關閉位元完美與獨佔模式以進行共享 ({})"
+
+msgid "any"
+msgstr "任何"
+
+msgid "at least"
+msgstr "至少"
+
+msgid "awaiting approval"
+msgstr "等待核准"
+
+msgid "be a plugin of another kind: {}"
+msgstr "為另一種類型的外掛：{}"
+
+msgid "between"
+msgstr "介於"
+
+msgid "bring catalogue: search for and fetch music"
+msgstr "整合目錄：搜尋並取得音樂"
+
+msgid "by {}"
+msgstr "由 {}"
+
+msgid "calling \"{}\", which did not load"
+msgstr "呼叫「{}」，但該外掛未載入"
+
+msgid "calling \"{}\", which is in quarantine"
+msgstr "呼叫「{}」，但該外掛處於隔離狀態"
+
+msgid "calling \"{}\", which is not installed"
+msgstr "呼叫「{}」，但該外掛未安裝"
+
+msgid "calling \"{}\", which nobody has approved"
+msgstr "呼叫「{}」，但尚未經核准"
+
+msgid "cannot be done"
+msgstr "無法執行"
+
+msgid "choose at least one folder that holds your music"
+msgstr "請至少選擇一個存放音樂的資料夾"
+
+msgid "choose at least one library"
+msgstr "請至少選擇一個音樂庫"
+
+msgid "contains"
+msgstr "包含"
+
+msgid "converted to {}"
+msgstr "已轉換為 {}"
+
+msgid "could not open the stream: {}"
+msgstr "無法開啟串流：{}"
+
+msgid "could not open: {}"
+msgstr "無法開啟：{}"
+
+msgid "could not: {}"
+msgstr "無法：{}"
+
+msgid "create playlists in destinations you select for an import"
+msgstr "在您選擇的匯入目標位置建立播放清單"
+
+msgid "damaged DSD file: {}"
+msgstr "損壞的 DSD 檔案：{}"
+
+msgid "damaged file: {}"
+msgstr "損壞的檔案：{}"
+
+msgid "default"
+msgstr "預設"
+
+msgid "device: {}"
+msgstr "裝置：{}"
+
+msgid "digital"
+msgstr "數位"
+
+msgid "direct"
+msgstr "直接"
+
+msgid "discrete"
+msgstr "獨立"
+
+msgid "display"
+msgstr "顯示"
+
+msgid "encrypted and tied to this machine (there is no system keyring)"
+msgstr "已加密並綁定至此電腦（無系統金鑰圈）"
+
+msgid "exactly"
+msgstr "精確符合"
+
+msgid "exclusive"
+msgstr "獨佔"
+
+msgid "feat. {}"
+msgstr "feat. {}"
+
+msgid "file"
+msgstr "檔案"
+
+msgid "fine"
+msgstr "良好"
+
+msgid "format not supported: {}"
+msgstr "格式不支援：{}"
+
+msgid "from"
+msgstr "來自"
+
+msgid "from a file"
+msgstr "來自檔案"
+
+msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
+msgstr "在 Chilpa 之外自行處理你的帳號：該外掛表示會在系統金鑰圈中以其自身名稱保存你的憑證。Chilpa 無法看見、無法刪除亦無法檢查該過程"
+
+msgid "handle your account itself, outside Chilpa: your credential ends up wherever it decides, which may be a plaintext file. Chilpa does not see it, cannot delete it and cannot check any of this"
+msgstr "在 Chilpa 之外自行處理你的帳號：你的憑證會儲存在其指定的任何位置（可能為明文檔案）。Chilpa 無法看見、無法刪除亦無法檢查該過程"
+
+msgid "handset"
+msgstr "手持裝置"
+
+msgid "has none"
+msgstr "無內容"
+
+msgid "headphones"
+msgstr "耳機"
+
+msgid "headset"
+msgstr "頭戴式耳機"
+
+msgid "how the account connects does not work: {}"
+msgstr "帳號連線方式無法運作：{}"
+
+msgid "hw plays the samples untouched or refuses them. plughw converts what the card refuses. pcm is the card as ALSA sets it up, shared with other programs. Only hw can be bit-perfect."
+msgstr "hw 會原樣播放取樣或拒絕播放。plughw 會轉換音效卡拒絕的格式。pcm 是由 ALSA 設定的音效卡格式，與其他程式共享。僅 hw 能實現位元完美。"
+
+msgid "hw: the card alone"
+msgstr "hw：僅限音效卡本身"
+
+msgid "impossible packet counts"
+msgstr "不可能的封包數量"
+
+msgid "in the last"
+msgstr "在最近"
+
+msgid "in the system keyring"
+msgstr "在系統金鑰圈中"
+
+msgid "in title, artist or record"
+msgstr "於標題、演出者或紀錄中"
+
+msgid "integrated"
+msgstr "整合"
+
+msgid "internal"
+msgstr "內部"
+
+msgid "invalid table of contents: {}"
+msgstr "無效的目錄表格 (TOC)：{}"
+
+msgid "invalid timecode in frame-info"
+msgstr "畫格資訊中包含無效的時間碼"
+
+msgid "is"
+msgstr "是"
+
+msgid "is any of"
+msgstr "為其中任一"
+
+msgid "is none of"
+msgstr "皆非其中任一"
+
+msgid "is not"
+msgstr "不是"
+
+msgid "it answered an address not in its memory"
+msgstr "它回應了不在其記憶體中的位址"
+
+msgid "it answered nothing"
+msgstr "它未回應任何內容"
+
+msgid "it answered something that is not JSON"
+msgstr "它回應了非 JSON 格式的內容"
+
+msgid "it answered something that is not an http address"
+msgstr "它回應了非 HTTP 位址的內容"
+
+msgid "it answered something that is not understood: {}"
+msgstr "它回應了無法理解的內容：{}"
+
+msgid "it asked for more memory than it is allowed"
+msgstr "它請求了超過允許範圍的記憶體"
+
+msgid "it asked for {}, which its manifest did not declare"
+msgstr "它請求了 {}，但其清單檔中並未宣告"
+
+msgid "it asks for API version {} and this Chilpa understands {}; it does not load"
+msgstr "它請求 API 版本 {}，而此版本的 Chilpa僅支援至 {}；無法載入"
+
+msgid "it asks for the {} runtime, which does not exist yet"
+msgstr "它請求 {} 執行階段，但該執行階段尚不存在"
+
+msgid "it blew up inside: {}"
+msgstr "內部發生崩潰：{}"
+
+msgid "it cannot be written to"
+msgstr "無法寫入"
+
+msgid "it cannot take tags"
+msgstr "無法寫入標籤"
+
+msgid "it comes in several parts, which cannot be read as one file"
+msgstr "它由多個部分組成，無法作為單一檔案讀取"
+
+msgid "it could not be saved"
+msgstr "無法儲存"
+
+msgid "it delivers {}"
+msgstr "傳送了 {}"
+
+msgid "it did not answer in {} and was stopped"
+msgstr "未於 {} 內回應並已停止"
+
+msgid "it does not export \"{}\", which every plugin has to export"
+msgstr "未匯出「{}」（所有外掛必須匯出的項目）"
+
+msgid "it does not start with the DSD chunk"
+msgstr "開頭不是 DSD 區塊"
+
+msgid "it does not start with the FRM8 chunk"
+msgstr "開頭不是 FRM8 區塊"
+
+msgid "it failed {} times in a row; the last one: {}"
+msgstr "已連續失敗 {} 次；最近一次：{}"
+
+msgid "it is a DSD file"
+msgstr "這是 DSD 檔案"
+
+msgid "it is not 2048 bytes"
+msgstr "不是 2048 位元組"
+
+msgid "it is not installed"
+msgstr "未安裝"
+
+msgid "it is not where it was"
+msgstr "不在原位置"
+
+msgid "it says it handles its own account, but only a separate process plugin can do that: in WASM there are no sockets and no disk of its own"
+msgstr "它表示可自行處理帳號，但僅有獨立程序外掛能執行此操作：WASM 中沒有通訊埠與專屬磁碟空間"
+
+msgid "it went over the compute it was allowed and was stopped"
+msgstr "超過了允許的運算量並已停止"
+
+msgid "keep a credential of yours"
+msgstr "保存你的憑證"
+
+msgid "keep things of its own on disk"
+msgstr "在磁碟上記錄其專屬資料"
+
+msgid "last {} day"
+msgid_plural "last {} days"
+msgstr[0] "最近 {} 天"
+msgstr[1] "最近 {} 天"
+
+msgid "let this plugin handle its own sign-in secrets, encrypted on disk and separate from other plugins"
+msgstr "允許此前掛在磁碟上加密並獨立處理其專屬的登入機密，與其他外掛隔離"
+
+msgid "looking records up is turned off in Settings"
+msgstr "已在「設定」中關閉紀錄查詢功能"
+
+msgid "metadata is being saved; scan when it is done"
+msgstr "中繼資料正在儲存中；請在完成後進行掃描"
+
+msgid "microphone"
+msgstr "麥克風"
+
+msgid "min"
+msgstr "分鐘"
+
+msgid "mono"
+msgstr "單聲道"
+
+msgid "nearby"
+msgstr "附近"
+
+msgid "network"
+msgstr "網路"
+
+msgid "no JACK graph is running"
+msgstr "沒有正在運行的 JACK 架構圖"
+
+msgid "no JACK graph is running; start one, or install pipewire-jack to have PipeWire answer for it"
+msgstr "沒有正在運行的 JACK 架構圖；請啟動一個，或安裝 pipewire-jack 讓 PipeWire 提供支援"
+
+msgid "no covers were found"
+msgstr "未找到封面"
+
+msgid "no pulse"
+msgstr "無脈衝"
+
+msgid "no server is answering the PulseAudio protocol"
+msgstr "沒有伺服器回應 PulseAudio 協定"
+
+msgid "no sound card is listed in /proc/asound"
+msgstr "/proc/asound 中未列出任何音效卡"
+
+msgid "no sound server answered; install pipewire and pipewire-pulse"
+msgstr "沒有音訊伺服器回應；請安裝 pipewire 與 pipewire-pulse"
+
+msgid "none of that can be played now: its folder is not mounted or its server does not answer"
+msgstr "目前無法播放其中的任何內容：資料夾未掛載或伺服器未回應"
+
+msgid "none of that record's files are here now"
+msgstr "該紀錄的檔案目前皆不在此處"
+
+msgid "none of that server's addresses answers from here"
+msgstr "該伺服器的位址從此處均無回應"
+
+msgid "not supported: {}"
+msgstr "不支援：{}"
+
+msgid "nothing was found"
+msgstr "未找到任何內容"
+
+msgid "now at {}"
+msgstr "目前於 {}"
+
+msgid "one or more SACD images have no matching external XML"
+msgstr "一個或多個 SACD 映像檔沒有匹配的外部 XML"
+
+msgid "one or more files are not where they were"
+msgstr "一個或多個檔案不在原位置"
+
+msgid "one or more files cannot be written to"
+msgstr "一個或多個檔案無法寫入"
+
+msgid "one or more files cannot take tags"
+msgstr "一個或多個檔案無法寫入標籤"
+
+msgid "open it again from where it is listed"
+msgstr "請從其列出的位置重新開啟"
+
+msgid "outside the image"
+msgstr "位於映像檔之外"
+
+msgid "pcm is the card as ALSA's own configuration sets it up: usually mixed with dmix, so other programs can play at the same time, and converted to whatever rate the mix runs at. It shares the card, and for the same reason it cannot promise the samples arrive as they left."
+msgstr "pcm 是依 ALSA 本身設定所建置的音效卡模式：通常結合 dmix 進行混音，使其他程式能同時播放，並轉換為混音運行的取樣率。此模式共享音效卡，因此無法保證取樣能以原樣傳送。"
+
+msgid "pcm: shared, as ALSA sets it up"
+msgstr "pcm：共用模式，依 ALSA 設定"
+
+msgid "plays takes non-negative whole numbers or a range with the lower bound first"
+msgstr "播放 只接受非負整數，或接受一個範圍（需先指定下界）"
+
+msgid "plughw converts whatever the card does not take -- the rate, the sample format, the channels -- without saying so. It plays what the card alone would refuse, and for the same reason it cannot promise the samples arrive as they left."
+msgstr "plughw 會自動轉換音效卡無法接受的格式（包含取樣率、取樣格式與聲道數）。它能播放單純音效卡會拒絕的內容，但也因此無法保證取樣能以原樣傳送。"
+
+msgid "plughw: converts what it refuses"
+msgstr "plughw：自動轉換音效卡拒絕的格式"
+
+msgid "present"
+msgstr "存在"
+
+msgid "process PCM audio with equalization and stereo controls"
+msgstr "使用等化與立體聲控制項處理 PCM 音訊"
+
+msgid "put a panel of its own in the window"
+msgstr "在視窗中放置其專屬面板"
+
+msgid "quality takes lossy, cd, hires or dsd"
+msgstr "音質方面，支援有損格式、CD、高解析度音訊或 DSD。"
+
+msgid "quarantined"
+msgstr "已隔離"
+
+msgid "ratings could not be loaded: {}"
+msgstr "無法載入評分：{}"
+
+msgid "reach the internet, only {}"
+msgstr "存取網際網路，僅限 {}"
+
+msgid "read catalogs from other enabled plugins, without accessing their credentials"
+msgstr "讀取其他已啟用插件的目錄，且無需存取其憑證"
+
+msgid "read your library, without being able to change it"
+msgstr "讀取你的音樂庫（無修改權限）"
+
+msgid "results"
+msgstr "結果"
+
+msgid "run a trusted interface inside Chilpa, outside the plugin sandbox, with full access to the application, player, files and network"
+msgstr "在 Chilpa 內部、外掛沙盒外部執行可信介面，擁有對應用程式、播放器、檔案與網路的完全存取權"
+
+msgid "run through a different plugin runtime"
+msgstr "透過不同的外掛執行階段執行"
+
+msgid "sector {} could not be read: {}"
+msgstr "磁區 {} 無法讀取：{}"
+
+msgid "sector {} is invalid: {}"
+msgstr "磁區 {} 無效：{}"
+
+msgid "send you to grant permission at {}"
+msgstr "引導你至 {} 授予權限"
+
+msgid "servers are not started"
+msgstr "伺服器未啟動"
+
+msgid "shared"
+msgstr "共用"
+
+msgid "shared at {}"
+msgstr "於 {} 共用"
+
+msgid "shared with you"
+msgstr "與你共享"
+
+msgid "sign in to {} again"
+msgstr "重新登入 {}"
+
+msgid "stereo"
+msgstr "立體聲"
+
+msgid "stop using the account it had"
+msgstr "停止使用其原有的帳號"
+
+msgid "stop what is playing before writing to its file, or save to a sidecar"
+msgstr "寫入檔案前請先停止播放，或儲存至附屬檔案"
+
+msgid "stumbling"
+msgstr "卡頓"
+
+msgid "tags"
+msgstr "標籤"
+
+msgid "that Plex account reaches no server"
+msgstr "該 Plex 帳號無法連線至任何伺服器"
+
+msgid "that address does not answer like a DLNA media server (HTTP {})"
+msgstr "該位址的回應不符合 DLNA 媒體伺服器（HTTP {}）"
+
+msgid "that address does not answer like a Jellyfin server (HTTP {})"
+msgstr "該位址的回應不符合 Jellyfin 伺服器 (HTTP {})"
+
+msgid "that address does not answer like a Plex server (HTTP {})"
+msgstr "該位址的回應不符合 Plex 伺服器 (HTTP {})"
+
+msgid "that address does not answer like a Subsonic server (HTTP {})"
+msgstr "該位址的回應不符合 Subsonic 伺服器 (HTTP {})"
+
+msgid "that address does not describe a DLNA media server"
+msgstr "該位址無法辨識為 DLNA 媒體伺服器"
+
+msgid "that album has no playable tracks"
+msgstr "該專輯沒有可播放的曲目"
+
+msgid "that change does not fit the playlist as it was read"
+msgstr "該變更與原先讀取的播放清單不符"
+
+msgid "that cover could not be fetched"
+msgstr "無法取得該封面"
+
+msgid "that does not look like a stream address"
+msgstr "該格式不像是串流網址"
+
+msgid "that domain is not among the ones the plugin declared"
+msgstr "該網域不在外掛宣告的範圍內"
+
+msgid "that field is never empty"
+msgstr "該欄位不可留空"
+
+msgid "that file is not an image"
+msgstr "該檔案不是圖片"
+
+msgid "that id does not work as a folder"
+msgstr "該 ID 無法作為資料夾使用"
+
+msgid "that is an Emby server, and Chilpa does not speak Emby"
+msgstr "這是 Emby 伺服器，Chilpa 目前不支援 Emby"
+
+msgid "that is longer than {} characters"
+msgstr "長度超過 {} 個字元"
+
+msgid "that is more than {} values"
+msgstr "超過 {} 個數值"
+
+msgid "that is not a Discogs release number"
+msgstr "這不是 Discogs 發行編號"
+
+msgid "that is not a MusicBrainz id"
+msgstr "這不是 MusicBrainz ID"
+
+msgid "that is not a server address"
+msgstr "這不是伺服器位址"
+
+msgid "that is not something {} can be asked for"
+msgstr "這不是可向 {} 請求的項目"
+
+msgid "that list is empty"
+msgstr "該列表為空"
+
+msgid "that server has no music library"
+msgstr "該伺服器沒有音樂庫"
+
+msgid "that server is already in the library"
+msgstr "該伺服器已在音樂庫中"
+
+msgid "that server is disabled"
+msgstr "該伺服器已停用"
+
+msgid "that server is no longer in the library"
+msgstr "該伺服器已不在音樂庫中"
+
+msgid "that server name does not resolve"
+msgstr "無法解析該伺服器名稱"
+
+msgid "that source does not use OAuth"
+msgstr "該來源未使用 OAuth"
+
+msgid "that track is no longer in the library"
+msgstr "該曲目已不在音樂庫中"
+
+msgid "the CHNL chunk is missing"
+msgstr "缺少 CHNL 區塊"
+
+msgid "the DSD channel count changed while playing"
+msgstr "播放時 DSD 聲道數發生變更"
+
+msgid "the DSD chunk is missing"
+msgstr "缺少 DSD 區塊"
+
+msgid "the DST frames jump from {} to {}"
+msgstr "DST 畫格從 {} 跳躍至 {}"
+
+msgid "the FRM8 chunk does not hold DSD"
+msgstr "FRM8 區塊未包含 DSD"
+
+msgid "the FS chunk is missing"
+msgstr "缺少 FS 區塊"
+
+msgid "the JACK graph did not answer in time"
+msgstr "JACK 架構圖未及時回應"
+
+msgid "the JACK graph runs at {} Hz and this track is {} Hz; JACK cannot play it untouched"
+msgstr "JACK 架構圖以 {} Hz 運行，而此曲目為 {} Hz；JACK 無法原樣播放"
+
+msgid "the PROP chunk is not of sound"
+msgstr "PROP 區塊不屬於音訊"
+
+msgid "the PulseAudio protocol does not carry this format"
+msgstr "PulseAudio 協定不支援傳輸此格式"
+
+msgid "the PulseAudio protocol does not carry {} Hz with {} channels"
+msgstr "PulseAudio 協定不支援傳輸 {} Hz 與 {} 聲道"
+
+msgid "the SACD XML could not be written: {}"
+msgstr "無法寫入 SACD XML：{}"
+
+msgid "the URL has to be http or https"
+msgstr "網址必須為 http 或 https"
+
+msgid "the account connected but could not be saved: {}"
+msgstr "帳號已連線但無法儲存：{}"
+
+msgid "the account could not be kept for next time"
+msgstr "無法保留帳號以供下次使用"
+
+msgid "the account did not connect: {}"
+msgstr "帳號未連線：{}"
+
+msgid "the address has to be https"
+msgstr "位址必須為 https"
+
+msgid "the analysis stopped: {}"
+msgstr "分析已停止：{}"
+
+msgid "the approval could not be saved: {}"
+msgstr "無法儲存核准資訊：{}"
+
+msgid "the approval could not be withdrawn: {}"
+msgstr "無法撤銷核准：{}"
+
+msgid "the area declares no tracks"
+msgstr "該區域未宣告任何曲目"
+
+msgid "the audio area falls outside the image"
+msgstr "音訊區域位於映像檔之外"
+
+msgid "the changes could not be kept in the library: {}"
+msgstr "變更無法保留於音樂庫中：{}"
+
+msgid "the changes were saved"
+msgstr "變更已儲存"
+
+msgid "the client_id came in empty"
+msgstr "client_id 傳入為空"
+
+msgid "the code expired; start again"
+msgstr "代碼已過期；請重新開始"
+
+msgid "the connection failed: interrupted"
+msgstr "連線失敗：已中斷"
+
+msgid "the connection failed: {}"
+msgstr "連線失敗：{}"
+
+msgid "the cover could not be kept: {}"
+msgstr "無法保留封面：{}"
+
+msgid "the cover could not be read: {}"
+msgstr "無法讀取封面：{}"
+
+msgid "the cover has to be a JPEG or a PNG"
+msgstr "封面格式必須為 JPEG 或 PNG"
+
+msgid "the cover has to be an image of up to 25 MiB"
+msgstr "封面必須為小於等於 25 MiB 的圖片"
+
+msgid "the cover is larger than 12,000 pixels on a side"
+msgstr "封面的單邊長度超過 12,000 像素"
+
+msgid "the credential could not be kept safely on this system"
+msgstr "無法在此系統上安全保存憑證"
+
+msgid "the credential could not be saved: {}"
+msgstr "無法儲存憑證：{}"
+
+msgid "the credential of {} could not be deleted; nothing was removed"
+msgstr "無法刪除 {} 的憑證；未移除任何資料"
+
+msgid "the data chunk is missing"
+msgstr "缺少 data 區塊"
+
+msgid "the device could not be measured; nothing below is verified"
+msgstr "無法測量裝置；以下內容均未經驗證"
+
+msgid "the device could not be opened: {}"
+msgstr "無法開啟裝置：{}"
+
+msgid "the device did not answer in {} ms"
+msgstr "裝置未於 {} 毫秒內回應"
+
+msgid "the device does not accept {} Hz, which is what this DSD over DoP asks for"
+msgstr "裝置不接受 {} Hz（此 DSD over DoP 請求的取樣率）"
+
+msgid "the device does not accept {} at {} Hz, and the policy does not allow converting"
+msgstr "裝置不接受 {} 於 {} Hz，且原則不允許轉換"
+
+msgid "the device does not play {} Hz (it plays {}), and Chilpa does not convert rates"
+msgstr "裝置不支援播放 {} Hz（支援播放 {}），且 Chilpa 不進行取樣率轉換"
+
+msgid "the device failed after {} frames: {}"
+msgstr "裝置於 {} 畫格後發生故障：{}"
+
+msgid "the device is gone: unplugged, turned off or taken by another program"
+msgstr "裝置已不存在：已被拔出、關閉或被其他程式接管"
+
+msgid "the device opened {} Hz and {} channels, not {} Hz and {}"
+msgstr "裝置已開啟 {} Hz 與 {} 聲道，而非 {} Hz 與 {}"
+
+msgid "the device ran out of samples"
+msgstr "裝置取樣已耗盡"
+
+msgid "the device takes {} channels and this track has {}"
+msgstr "裝置接受 {} 聲道，而此曲目包含 {} 聲道"
+
+msgid "the device was already closed"
+msgstr "裝置先前已關閉"
+
+msgid "the device was not measured; without that bit-perfect is not promised"
+msgstr "未對裝置進行測量；無法保證位元完美播放"
+
+msgid "the disc carries no audio tracks"
+msgstr "光碟未包含音訊曲目"
+
+msgid "the drive does not answer: {}"
+msgstr "光碟機沒有回應：{}"
+
+msgid "the drive is missing"
+msgstr "找不到光碟機"
+
+msgid "the editor could not be started"
+msgstr "無法啟動編輯器"
+
+msgid "the favorite could not be saved: {}"
+msgstr "無法儲存最愛：{}"
+
+msgid "the file carries no tracks"
+msgstr "檔案未包含曲目"
+
+msgid "the file carries {} bits and the device only takes {}"
+msgstr "檔案包含 {} 位元，而裝置僅接受 {} 位元"
+
+msgid "the fmt chunk is missing"
+msgstr "缺少 fmt 區塊"
+
+msgid "the folder could not be forgotten: {}"
+msgstr "無法移除資料夾紀錄：{}"
+
+msgid "the frame-info records do not match the frames that start"
+msgstr "畫格資訊紀錄與開始的畫格不符"
+
+msgid "the frame-info table is cut off"
+msgstr "畫格資訊表格已截斷"
+
+msgid "the graph runs at {} Hz"
+msgstr "架構圖以 {} Hz 運行"
+
+msgid "the groups go too deep"
+msgstr "群組嵌套層級過深"
+
+msgid "the host could not serve it"
+msgstr "主機無法提供該服務"
+
+msgid "the image could not be read: {}"
+msgstr "無法讀取圖片：{}"
+
+msgid "the image ends {} frames before the track does"
+msgstr "映像檔在曲目結束前 {} 畫格即終止"
+
+msgid "the image has no track {}"
+msgstr "映像檔不包含曲目 {}"
+
+msgid "the image is shorter than its master table"
+msgstr "映像檔長度短於其主控表"
+
+msgid "the image reads as both a 2048 and a 2064-byte dump"
+msgstr "映像檔同時被讀取為 2048 與 2064 位元組的傾印檔"
+
+msgid "the length of the track is not known"
+msgstr "曲目長度未知"
+
+msgid "the library could not be checked: {}"
+msgstr "無法檢查音樂庫：{}"
+
+msgid "the library could not be opened"
+msgstr "無法開啟音樂庫"
+
+msgid "the library could not be opened: {}"
+msgstr "無法開啟音樂庫：{}"
+
+msgid "the library could not be repaired: {}"
+msgstr "無法修復音樂庫：{}"
+
+msgid "the library could not be written"
+msgstr "無法寫入音樂庫"
+
+msgid "the library is unavailable"
+msgstr "音樂庫無法使用"
+
+msgid "the link it gave has already expired"
+msgstr "提供的連結已過期"
+
+msgid "the list carries no tracks"
+msgstr "列表未包含曲目"
+
+msgid "the list could not be read: {}"
+msgstr "無法讀取列表：{}"
+
+msgid "the list could not be saved: {}"
+msgstr "無法儲存列表：{}"
+
+msgid "the listen could not be saved: {}"
+msgstr "無法儲存聆聽紀錄：{}"
+
+msgid "the manifest is not understood: {}"
+msgstr "無法理解清單檔內容：{}"
+
+msgid "the manifest says API {} and the module answers {}; it does not load"
+msgstr "清單檔標示 API {}，而模組回應 {}; 無法載入"
+
+msgid "the media server answered with something that is not a listing"
+msgstr "媒體伺服器回傳的內容不是有效的列表"
+
+msgid "the media server does not let this computer in; allow it in its own settings"
+msgstr "媒體伺服器不允許此電腦連線；請在伺服器設定中允許"
+
+msgid "the media server refused the request (UPnP error {})"
+msgstr "媒體伺服器拒絕了請求（UPnP 錯誤 {}）"
+
+msgid "the media server's walk reached its limit of {} folders for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder"
+msgstr "媒體伺服器遍歷已達到單次同步 {} 個資料夾的上限；同步已在此停止且未取出任何內容。請選擇其音樂的一種檢視方式（例如依資料夾）"
+
+msgid "the media server's walk reached its limit of {} hours for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder"
+msgstr "媒體伺服器遍歷已達到單次同步 {} 小時的時間上限；同步已在此停止且未取出任何內容。請選擇其音樂的一種檢視方式（例如依資料夾）"
+
+msgid "the media server's walk reached its limit of {} requests for one sync; it stopped there and took nothing out. Choose one view of its music, such as By Folder"
+msgstr "媒體伺服器遍歷已達到單次同步 {} 次請求的上限；同步已在此停止且未取出任何內容。請選擇其音樂的一種檢視方式（例如依資料夾）"
+
+msgid "the module could not be loaded: {}"
+msgstr "無法載入模組：{}"
+
+msgid "the mute would not move ({})"
+msgstr "無法變更靜音狀態 ({})"
+
+msgid "the name"
+msgstr "名稱"
+
+msgid "the next part of the track could not be opened: {}"
+msgstr "無法開啟曲目的下一部分：{}"
+
+msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
+msgstr "輸出不接受 16 位元 / 44,100 Hz（CD 標準格式）"
+
+msgid "the playlist is longer than Chilpa reads; change its order on the server"
+msgstr "播放清單長度超過 Chilpa 的讀取限制；請在伺服器上調整其順序"
+
+msgid "the playlist is no longer in the library"
+msgstr "該播放清單已不在音樂庫中"
+
+msgid "the plugin could not be asked"
+msgstr "無法對外掛進行請求"
+
+msgid "the plugin is not running"
+msgstr "外掛未在執行"
+
+msgid "the plugin sandbox could not be started"
+msgstr "無法啟動外掛沙盒"
+
+msgid "the plugin sandbox is not started"
+msgstr "外掛沙盒未啟動"
+
+msgid "the query has too many conditions"
+msgstr "查詢包含過多條件"
+
+msgid "the queue is empty"
+msgstr "佇列為空"
+
+msgid "the rates PipeWire's graph may run at could not be read, so nothing can be promised untouched"
+msgstr "無法讀取 PipeWire 架構圖可運行的取樣率，無法保證原始取樣傳輸"
+
+msgid "the rating could not be saved: {}"
+msgstr "無法儲存評分：{}"
+
+msgid "the read-ahead thread could not start"
+msgstr "預讀執行緒無法啟動"
+
+msgid "the record has no artist"
+msgstr "該紀錄無演出者"
+
+msgid "the record has no title"
+msgstr "該紀錄無標題"
+
+msgid "the removal stopped on an error"
+msgstr "移除程序因發生錯誤而停止"
+
+msgid "the reply could not be built"
+msgstr "無法建立回應"
+
+msgid "the reply could not be read: {}"
+msgstr "無法讀取回應：{}"
+
+msgid "the reply does not fit"
+msgstr "回應資料大小不符"
+
+msgid "the request carries no URL that can be understood"
+msgstr "請求未包含可被解析的網址"
+
+msgid "the request carries no url"
+msgstr "請求未包含網址"
+
+msgid "the request is not JSON: {}"
+msgstr "請求不是 JSON 格式：{}"
+
+msgid "the scan failed: {}"
+msgstr "掃描失敗：{}"
+
+msgid "the sector is not encoded the way its area says"
+msgstr "磁區的編碼方式與其區域宣告不符"
+
+msgid "the server answered with a message instead of the file"
+msgstr "伺服器回傳了訊息而非檔案"
+
+msgid "the server answered with something that is not HTTP"
+msgstr "伺服器回應了非 HTTP 的內容"
+
+msgid "the server answered {}"
+msgstr "伺服器回應了 {}"
+
+msgid "the server answering is {}, not PipeWire"
+msgstr "回應的伺服器為 {}，而非 PipeWire"
+
+msgid "the server cannot send part of a file, and this one is too big to take whole"
+msgstr "伺服器無法發送檔案的一部分，且此檔案過大無法完整傳送"
+
+msgid "the server could not be reached"
+msgstr "無法連線至伺服器"
+
+msgid "the server did not accept the session; sign in again"
+msgstr "伺服器未接受此作業階段；請重新登入"
+
+msgid "the server did not accept the user or the password"
+msgstr "伺服器未接受使用者名稱或密碼"
+
+msgid "the server did not describe every track it listed; nothing was taken out, sync again"
+msgstr "伺服器未提供其所列每首曲目的詳細描述；未取出任何內容，請重新同步"
+
+msgid "the server did not say how long the file is"
+msgstr "伺服器未提供檔案長度"
+
+msgid "the server does not accept this way of signing in"
+msgstr "伺服器不接受此登入方式"
+
+msgid "the server is converting the file instead of sending it as it is"
+msgstr "伺服器正在轉換檔案而非原樣發送"
+
+msgid "the server is reading its own library; sync again when it finishes"
+msgstr "伺服器正在讀取其本身的音樂庫；請在完成後重新同步"
+
+msgid "the server is starting; try again in a moment"
+msgstr "伺服器正在啟動中；請稍後再試"
+
+msgid "the server kept listing tracks already read; the sync stopped at {} tracks and took nothing out"
+msgstr "伺服器不斷列出已讀取過的曲目；同步在 {} 首曲目處停止，未提取任何內容。"
+
+msgid "the server listed {} of its {} tracks; nothing was taken out, sync again"
+msgstr "伺服器列出了其 {} 首曲目中的 {} 首；未取出任何內容，請重新同步"
+
+msgid "the server moved to {}; use that address"
+msgstr "伺服器已移動至 {}；請使用該位址"
+
+msgid "the server no longer has it"
+msgstr "伺服器上已無此檔案"
+
+msgid "the server said: {}"
+msgstr "伺服器回應：{}"
+
+msgid "the server sent more than was asked for"
+msgstr "伺服器傳送了超過請求的資料量"
+
+msgid "the server sent no audio: {}"
+msgstr "伺服器未傳送音訊：{}"
+
+msgid "the server stopped sending the file"
+msgstr "伺服器已停止傳送檔案"
+
+msgid "the server takes no list this long in one request"
+msgstr "伺服器一次請求不接受這麼長的列表"
+
+msgid "the server took too long to answer"
+msgstr "伺服器回應時間過長"
+
+msgid "the server's certificate is not trusted by this system"
+msgstr "此系統不信任伺服器的憑證"
+
+msgid "the sidecar could not be written: {}"
+msgstr "無法寫入附屬檔案：{}"
+
+msgid "the sound server would not let go of card {}"
+msgstr "音訊伺服器未釋放音效卡 {}"
+
+msgid "the source"
+msgstr "來源"
+
+msgid "the source gave no address to play"
+msgstr "來源未提供可播放的位址"
+
+msgid "the source no longer lists it"
+msgstr "來源已不再列出此項目"
+
+msgid "the stereo area (TWOCHTOC) was not found"
+msgstr "未找到立體聲區域 (TWOCHTOC)"
+
+msgid "the stream needs a network domain that this plugin was not granted"
+msgstr "串流需要此外掛未獲授權的網路網域"
+
+msgid "the stream went quiet"
+msgstr "串流已無聲音"
+
+msgid "the sync lost its place; start it again"
+msgstr "同步進度遺失；請重新開始"
+
+msgid "the sync stopped on an error; nothing was taken out, sync again"
+msgstr "同步因錯誤中止；未取出任何內容，請重新同步"
+
+msgid "the sync was stopped"
+msgstr "同步已停止"
+
+msgid "the tags could not be read: {}"
+msgstr "無法讀取標籤：{}"
+
+msgid "the token_url is not https"
+msgstr "token_url 不是 https 網址"
+
+msgid "the track on {} could not be read: {}"
+msgstr "無法讀取 {} 上的曲目：{}"
+
+msgid "the track's number is its place inside the disc image"
+msgstr "曲目編號為其在光碟映像檔內的位置"
+
+msgid "the version"
+msgstr "版本"
+
+msgid "the volume would not move ({})"
+msgstr "無法調整音量 ({})"
+
+msgid "the wait ran out"
+msgstr "等待逾時"
+
+msgid "there is no audio output on this platform yet"
+msgstr "此平台目前尚無音訊輸出功能"
+
+msgid "there is no connection to {}"
+msgstr "未連線至 {}"
+
+msgid "there is no disc in the drive"
+msgstr "光碟機內無光碟"
+
+msgid "there is no folder in the library yet"
+msgstr "音樂庫中尚無資料夾"
+
+msgid "there is no output called \"{}\" on this machine"
+msgstr "此電腦上沒有名為「{}」的輸出裝置"
+
+msgid "there is no part to open"
+msgstr "沒有可開啟的部分"
+
+msgid "there is no plugin \"{}\" with a manifest to approve"
+msgstr "找不到包含可核准清單檔的外掛「{}」"
+
+msgid "there is no queue to save"
+msgstr "沒有可儲存的佇列"
+
+msgid "there is not enough queue to mix"
+msgstr "佇列長度不足以進行混音"
+
+msgid "there is nothing Chilpa can play in {}"
+msgstr "{} 中沒有 Chilpa 可以播放的內容"
+
+msgid "there is nothing to save"
+msgstr "沒有可儲存的內容"
+
+msgid "there is nothing under {}"
+msgstr "{} 下沒有任何內容"
+
+msgid "there is nowhere to keep a secret on this machine"
+msgstr "此電腦無可安全保存機密資訊的位置"
+
+msgid "this Mac has no output called \"{}\" any more"
+msgstr "此 Mac 已無名為「{}」的輸出裝置"
+
+msgid "this cannot be played"
+msgstr "此內容無法播放"
+
+msgid "this computer could not search the network"
+msgstr "此電腦無法搜尋網路"
+
+msgid "this device delivers bit-perfect in no common format"
+msgstr "此裝置在常見格式下均無法提供位元完美播放"
+
+msgid "this library is version {} and this Chilpa understands up to {}; update Chilpa instead of opening it with an old one"
+msgstr "此音樂庫版本為 {}，而此 Chilpa 最高僅支援 {}; 請更新 Chilpa 以開啓，勿使用舊版"
+
+msgid "this output cannot be muted"
+msgstr "此輸出無法設定靜音"
+
+msgid "this output has no volume control of its own"
+msgstr "此輸出本身沒有音量控制"
+
+msgid "this output is not there any more"
+msgstr "此輸出已不存在"
+
+msgid "this output would not take DSD untouched, so none was sent; choose Convert to PCM for DSD playback"
+msgstr "此輸出無法原樣接收 DSD，因此未發送任何音訊；請選擇「轉換為 PCM」以進行 DSD 播放"
+
+msgid "this part of the source is not there now"
+msgstr "來源的此部分目前不存在"
+
+msgid "this plugin declared no network permission"
+msgstr "此外掛未宣告網路權限"
+
+msgid "this server cannot move a track that is in the playlist more than once"
+msgstr "此伺服器無法移動在播放清單中出現超過一次的曲目"
+
+msgid "this server does not take a playlist's description from Chilpa"
+msgstr "此伺服器不接受來自 Chilpa 的播放清單說明"
+
+msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
+msgstr "此伺服器會一次性將播放清單中曲目的所有副本全數移除；請將其全部移除，或在伺服器上進行修改"
+
+msgid "this track is on a server, and servers are not connected"
+msgstr "此曲目位於伺服器上，而伺服器未連線"
+
+msgid "this user may not do that on the server"
+msgstr "此使用者無權在伺服器上執行該操作"
+
+msgid "through {}"
+msgstr "透過 {}"
+
+msgid "track {}: {}"
+msgstr "曲目 {}: {}"
+
+msgid "tracks inside a disc image keep their changes in a sidecar"
+msgstr "光碟映像檔內的曲目會將變更保留於附屬檔案中"
+
+msgid "type a title, an artist or a catalog number to search"
+msgstr "輸入標題、演出者或目錄編號進行搜尋"
+
+msgid "type takes album, single, ep, compilation, live or soundtrack"
+msgstr "Type 可取值為 album、single、ep、compilation、live 或 soundtrack"
+
+msgid "unrated"
+msgstr "未評分"
+
+msgid "up to"
+msgstr "最多至"
+
+msgid "up to {} bits"
+msgstr "最高 {} 位元"
+
+msgid "virtual"
+msgstr "虛擬"
+
+msgid "vs {}"
+msgstr "對比 {}"
+
+msgid "what was saved could not be written down in the library: {}; rescan to see it"
+msgstr "儲存的內容無法寫入音樂庫：{}; 請重新掃描以進行檢視"
+
+msgid "write downloaded files into the folder you select for this plugin"
+msgstr "將下載的檔案寫入您為此外掛程式所選的資料夾中"
+
+msgid "write the address alone: no user, password or query in it"
+msgstr "僅填寫網址本身：請勿包含使用者、密碼或查詢參數"
+
+msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
+msgstr "你的音樂庫需要更新，但無法先在 {} 儲存備份副本：{}。請釋放空間或將音樂庫移動至空間充足的位置，然後重新開啟 Chilpa"
+
+msgid "your sources"
+msgstr "你的來源"
+
+msgid "{1} {2}"
+msgstr "{1} {2}"
+
+msgid "{1}–{2} {3} {4}"
+msgstr "{1}–{2} {3} {4}"
+
+msgid "{} (split)"
+msgstr "{} (分割)"
+
+msgid "{} / {} artists"
+msgstr "{} / {} 位演出者"
+
+msgid "{} Hz · {} · {} channels"
+msgstr "{} Hz · {} · {} 聲道"
+
+msgid "{} album"
+msgid_plural "{} albums"
+msgstr[0] "{} 張專輯"
+msgstr[1] "{} 張專輯"
+
+msgid "{} analyzed, {} without pulse, {} unreadable"
+msgstr "已分析 {}，{} 無脈衝，{} 無法讀取"
+
+msgid "{} and {} leave your library."
+msgstr "{} 與 {} 將從你的音樂庫中移除。"
+
+msgid "{} answered something Chilpa did not expect: {}"
+msgstr "{} 回應了 Chilpa 未預期的內容：{}"
+
+msgid "{} are not available. The record will open when they are back."
+msgstr "{} 無法使用。恢復後將開啟該紀錄。"
+
+msgid "{} artist"
+msgid_plural "{} artists"
+msgstr[0] "{} 位演出者"
+msgstr[1] "{} 位演出者"
+
+msgid "{} artists"
+msgstr "{} 位演出者"
+
+msgid "{} available of {}"
+msgstr "{}（共 {}）"
+
+msgid "{} bit at {} Hz, {}"
+msgstr "{} 位元 於 {} Hz，{}"
+
+msgid "{} came out with different audio; nothing was replaced"
+msgstr "{} 輸出了不同的音訊；未替換任何內容"
+
+msgid "{} channel"
+msgid_plural "{} channels"
+msgstr[0] "{} 聲道"
+msgstr[1] "{} 聲道"
+
+msgid "{} condition"
+msgid_plural "{} conditions"
+msgstr[0] "{} 個條件"
+msgstr[1] "{} 個條件"
+
+msgid "{} could not be copied: {}"
+msgstr "無法複製 {}：{}"
+
+msgid "{} could not be reached; try again"
+msgstr "無法連線至 {}；請再試一次"
+
+msgid "{} could not be removed"
+msgstr "無法移除 {}"
+
+msgid "{} could not be replaced: {}"
+msgstr "無法替換 {}：{}"
+
+msgid "{} could not be turned off"
+msgstr "無法停用 {}"
+
+msgid "{} could not be turned on"
+msgstr "無法啟用 {}"
+
+msgid "{} could not be written: {}"
+msgstr "無法寫入 {}：{}"
+
+msgid "{} day"
+msgid_plural "{} days"
+msgstr[0] "{} 天"
+msgstr[1] "{} 天"
+
+msgid "{} did not accept the account"
+msgstr "{} 未接受該帳號"
+
+msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
+msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
+msgstr[0] "{} 在 30 分鐘內未恢復回應。已讀取的 {} 首曲目將予以保留且未取出任何內容；請在其恢復連線後重新同步。"
+msgstr[1] "{} 在 30 分鐘內未恢復回應。已讀取的 {} 首曲目將予以保留且未取出任何內容；請在其恢復連線後重新同步。"
+
+msgid "{} did not take the change to the playlist: {}"
+msgstr "{} 未接受播放清單的變更：{}"
+
+msgid "{} disc"
+msgid_plural "{} discs"
+msgstr[0] "{} 片光碟"
+msgstr[1] "{} 片光碟"
+
+msgid "{} does not answer. The record will open when it is back."
+msgstr "{} 沒有回應。恢復後將開啟該紀錄。"
+
+msgid "{} does not answer; change its playlist when it is back."
+msgstr "{} 目前無回應；請待其恢復後再變更播放清單。"
+
+msgid "{} file whose tags disagree"
+msgid_plural "{} files whose tags disagree"
+msgstr[0] "{} 個標籤不符的檔案"
+msgstr[1] "{} 個標籤不符的檔案"
+
+msgid "{} files"
+msgstr "{} 個檔案"
+
+msgid "{} folder"
+msgid_plural "{} folders"
+msgstr[0] "{} 個資料夾"
+msgstr[1] "{} 個資料夾"
+
+msgid "{} folder comes in:"
+msgid_plural "{} folders come in:"
+msgstr[0] "引入 {} 個資料夾："
+msgstr[1] "引入 {} 個資料夾："
+
+msgid "{} has no place for \"{}\""
+msgstr "{} 沒有放置「{}」的位置"
+
+msgid "{} has to be https (or a loopback): sending someone to grant permission over http leaves their session on the road"
+msgstr "{} 必須為 https（或迴路位址）：透過 http 進行授權會暴露使用者作業階段風險"
+
+msgid "{} hr"
+msgid_plural "{} hrs"
+msgstr[0] "{} 小時"
+msgstr[1] "{} 小時"
+
+msgid "{} is busy; try again in {} seconds"
+msgstr "{} 忙碌中；請於 {} 秒後再試"
+
+msgid "{} is in your library now. Its music appears as it is read."
+msgstr "{} 現已加入您的音樂庫中。其音樂將在讀取時陸續顯示。"
+
+msgid "{} is missing"
+msgstr "缺少 {}"
+
+msgid "{} is not a direct device; only hw: is opened (no plughw and no default)"
+msgstr "{} 不是直接裝置；僅開啟 hw:（無 plughw 且無預設值）"
+
+msgid "{} is not a sidecar Chilpa can read; move it away or fix it"
+msgstr "{} 不是 Chilpa 能讀取的附屬檔案；請將其移走或進行修復"
+
+msgid "{} is not available yet: {}"
+msgstr "{} 尚未就緒：{}"
+
+msgid "{} is not available. The record will open when it is back."
+msgstr "{} 無法使用。恢復後將開啟該紀錄。"
+
+msgid "{} is still syncing its library for the first time. Try again when it finishes."
+msgstr "{} 仍在進行首次音樂庫同步。請待其完成後再試。"
+
+msgid "{} item needs attention before bit-perfect playback will work."
+msgid_plural "{} items need attention before bit-perfect playback will work."
+msgstr[0] "在位元完美播放生效前，有 {} 個項目需要注意。"
+msgstr[1] "在位元完美播放生效前，有 {} 個項目需要注意。"
+
+msgid "{} keeps no playlists; make this one in Chilpa."
+msgstr "{} 不保留播放清單；請在 Chilpa 中建立此播放清單。"
+
+msgid "{} label"
+msgid_plural "{} labels"
+msgstr[0] "{} 個廠牌"
+msgstr[1] "{} 個廠牌"
+
+msgid "{} library comes in:"
+msgid_plural "{} libraries come in:"
+msgstr[0] "引入 {} 個音樂庫："
+msgstr[1] "引入 {} 個音樂庫："
+
+msgid "{} listen"
+msgid_plural "{} listens"
+msgstr[0] "{} 次聆聽"
+msgstr[1] "{} 次聆聽"
+
+msgid "{} listen saved"
+msgid_plural "{} listens saved"
+msgstr[0] "已儲存 {} 次聆聽紀錄"
+
+msgid "{} listen waiting to be sent"
+msgid_plural "{} listens waiting to be sent"
+msgstr[0] "已儲存 {} 次聆聽紀錄"
+msgstr[1] "已儲存 {} 次聆聽紀錄"
+
+msgid "{} min"
+msgstr "{} 分鐘"
+
+msgid "{} modified"
+msgstr "{} 個已修改"
+
+msgid "{} month"
+msgid_plural "{} months"
+msgstr[0] "{} 個月"
+msgstr[1] "{} 個月"
+
+msgid "{} more playlist..."
+msgid_plural "{} more playlists..."
+msgstr[0] "還有 {} 個播放清單…"
+msgstr[1] "還有 {} 個播放清單…"
+
+msgid "{} musical bits"
+msgstr "{} 個音訊位元"
+
+msgid "{} no longer accepts the account; connect again"
+msgstr "{} 不再接受該帳號；請重新連線"
+
+msgid "{} no longer has this playlist; it left your playlists here too."
+msgstr "{} 已不再擁有此播放清單；該清單也已從您在此處的播放清單中移除。"
+
+msgid "{} of its tracks leave {} of your playlists."
+msgstr "其 {} 首曲目將從你的 {} 個播放清單中移除。"
+
+msgid "{} of the list's tracks are gone"
+msgstr "列表中有 {} 首曲目已遺失"
+
+msgid "{} of {}"
+msgstr "{} / {}"
+
+msgid "{} of {} chosen"
+msgstr "已選擇 {} / {}"
+
+msgid "{} of {} files were changed before it failed: {}"
+msgstr "失敗前已變更 {} / {} 個檔案：{}"
+
+msgid "{} of {} files · {}"
+msgstr "{} / {} 個檔案 · {}"
+
+msgid "{} of {} formats come out untouched"
+msgstr "{} / {} 種格式為原始傳輸（未經變更）"
+
+msgid "{} of {} tracks match this release"
+msgstr "{} / {} 首曲目符合此發行項目"
+
+msgid "{} play"
+msgid_plural "{} plays"
+msgstr[0] "{} 次播放"
+msgstr[1] "{} 次播放"
+
+msgid "{} playlist"
+msgid_plural "{} playlists"
+msgstr[0] "{} 個播放清單"
+msgstr[1] "{} 個播放清單"
+
+msgid "{} protected by the library"
+msgstr "{} 個受音樂庫保護"
+
+msgid "{} queues · {} tracks"
+msgstr "{} 個佇列 · {} 首曲目"
+
+msgid "{} rating"
+msgid_plural "{} ratings"
+msgstr[0] "{} 個評分"
+msgstr[1] "{} 個評分"
+
+msgid "{} read, {} unchanged, {} missing"
+msgstr "已讀取 {}，未變更 {}，遺失 {}"
+
+msgid "{} record"
+msgid_plural "{} records"
+msgstr[0] "{} 筆紀錄"
+msgstr[1] "{} 筆紀錄"
+
+msgid "{} record or track edited here is one the server no longer lists; its edits are kept."
+msgid_plural "{} records or tracks edited here are ones the server no longer lists; their edits are kept."
+msgstr[0] "在此處編輯的 {} 筆紀錄或曲目已不在伺服器的列表中；其編輯內容將予以保留。"
+msgstr[1] "在此處編輯的 {} 筆紀錄或曲目已不在伺服器的列表中；其編輯內容將予以保留。"
+
+msgid "{} required"
+msgstr "需要 {}"
+
+msgid "{} sel"
+msgstr "已選取 {}"
+
+msgid "{} selection"
+msgid_plural "{} selections"
+msgstr[0] "{} 個選擇"
+msgstr[1] "{} 個選擇"
+
+msgid "{} shown"
+msgstr "顯示{}"
+
+msgid "{} song"
+msgid_plural "{} songs"
+msgstr[0] "{} 首歌曲"
+msgstr[1] "{} 首歌曲"
+
+msgid "{} star"
+msgid_plural "{} stars"
+msgstr[0] "{} 顆星"
+msgstr[1] "{} 顆星"
+
+msgid "{} still loading · counts may grow"
+msgstr "{} 仍載入中 · 計數可能會增加"
+
+msgid "{} to copy · {} to update · {} to remove · {} already present"
+msgstr "{} 待複製 · {} 待更新 · {} 待移除 · {} 已存在"
+
+msgid "{} to copy · {} to update · {} to remove · {} unchanged"
+msgstr "{} 複製 · {} 更新 · {} 移除 · {} 保持不變"
+
+msgid "{} track"
+msgid_plural "{} tracks"
+msgstr[0] "{} 首曲目"
+msgstr[1] "{} 首曲目"
+
+msgid "{} track of its playlists is not in your library and was left out."
+msgid_plural "{} tracks of its playlists are not in your library and were left out."
+msgstr[0] "其播放清單中有 {} 首曲目不在您的音樂庫中，已予以排除。"
+msgstr[1] "其播放清單中有 {} 首曲目不在您的音樂庫中，已予以排除。"
+
+msgid "{} track on the server is not in your library"
+msgid_plural "{} tracks on the server are not in your library"
+msgstr[0] "伺服器上有 {} 首曲目不在你的音樂庫中"
+msgstr[1] "伺服器上有 {} 首曲目不在你的音樂庫中"
+
+msgid "{} tracks"
+msgstr "{} 首曲目"
+
+msgid "{} tracks came in; {} folder of the server could not be read and was left out. Nothing was taken out; sync again."
+msgid_plural "{} tracks came in; {} folders of the server could not be read and were left out. Nothing was taken out; sync again."
+msgstr[0] "已引入 {} 首曲目；伺服器上有 {} 個資料夾無法讀取並已排除。未移除任何內容，請重新同步。"
+msgstr[1] "已引入 {} 首曲目；伺服器上有 {} 個資料夾無法讀取並已排除。未移除任何內容，請重新同步。"
+
+msgid "{} tracks in {} records"
+msgstr "{} 首曲目，分屬 {} 筆紀錄"
+
+msgid "{} tracks match disc {}"
+msgstr "{} 首曲目符合光碟 {}"
+
+msgid "{} unreadable"
+msgstr "無法讀取{}"
+
+msgid "{} was not allowed in time; connect again"
+msgstr "未不及時獲得授權 {}; 請重新連線"
+
+msgid "{} was removed"
+msgstr "{} 已移除"
+
+msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
+msgstr "{} 已寫入但「{}」中的內容不符合預期；未替換任何內容"
+
+msgid "{} week"
+msgid_plural "{} weeks"
+msgstr[0] "{}週"
+msgstr[1] "{}週"
+
+msgid "{} written · {} unmatched · {} duplicates"
+msgstr "已寫入 {} · 不符合 {} · 重複 {}"
+
+msgid "{} year"
+msgid_plural "{} years"
+msgstr[0] "{} 年"
+msgstr[1] "{} 年"
+
+msgid "{} {}"
+msgstr "{} {}"
+
+msgid "{} {} {}"
+msgstr "{} {} {}"
+
+msgid "{} {}, {}"
+msgstr "{} {}, {}"
+
+msgid "{} · {}"
+msgstr "{} · {}"
+
+msgid "{} · {} Hz · {} · {} channels"
+msgstr "{} · {} Hz · {} · {} 聲道"
+
+msgid "{} · {} Hz · {}/{} bits · {} channels"
+msgstr "{} · {} Hz · {}/{} bits · {} 聲道"
+
+msgid "{}-bit / {}"
+msgstr "{}-bit / {}"
+
+msgid "{}s"
+msgstr "{}s"
+
+msgid "“{}” has changes that were not saved. Opening this record loses them."
+msgstr "「{}」有未儲存的變更。開啟此紀錄將會遺失這些變更。"
