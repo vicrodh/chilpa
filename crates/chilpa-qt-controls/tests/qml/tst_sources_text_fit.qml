@@ -53,6 +53,31 @@ TestCase {
         compare(found.length, 0, found.join("\n"))
     }
 
+    // A server's actions, opened, with the rating sync entries the facade
+    // adds: each one whole in the list, in each language.
+    function test_server_actions_data() { return TextAudit.cases() }
+    function test_server_actions(data) {
+        I18n.choose(data.language)
+        SettingsModel.preferences = ({})
+        const words = ["Edit…", "Disable", "Sync now", "Remove…", "Stop syncing ratings", "Sync ratings"]
+        const row = Object.assign({}, test.servers[0], { options: words.map(word => I18n.tr(word, I18n.rev)),
+            optionValues: ["edit", "disable", "sync", "remove", "ratings-off", "ratings-on"] })
+        const table = createTemporaryObject(serversFactory, test, { width: 520, model: [row] })
+        // The heading row has an actions field too, with nothing in it.
+        const fields = []
+        const walk = item => { if (item.objectName === "serverActions") fields.push(item); for (const child of item.children || []) walk(child) }
+        tryVerify(() => { fields.length = 0; walk(table); return fields.some(field => field.options.length === words.length) }, 2000, "the server's actions were built")
+        const select = fields.find(field => field.options.length === words.length)
+        const menu = findChild(select, "selectOptions")
+        select.show()
+        tryCompare(menu, "opened", true)
+        tryVerify(() => Array.from(menu.entryItems).filter(entry => entry.entry).length === words.length, 2000, "every action is listed")
+        const found = TextAudit.check(test, menu.contentItem, data.scale)
+            .concat(menu.entryItems.filter(entry => entry.cut).map(entry => "\"" + entry.entry.text + "\" is cut in the list"))
+        menu.close()
+        compare(found.length, 0, found.join("\n"))
+    }
+
     // Each case at the settings page's width in a usual window and in a
     // narrow one.
     function wide(cases) {

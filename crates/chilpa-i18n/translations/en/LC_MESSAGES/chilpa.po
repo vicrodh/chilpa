@@ -5264,6 +5264,9 @@ msgstr ""
 msgid "Rating"
 msgstr ""
 
+msgid "Ratings are not synced with it."
+msgstr ""
+
 msgid "Re-fetch album information"
 msgstr "Re-fetch album information"
 
@@ -6306,6 +6309,9 @@ msgstr ""
 msgid "Some packages are missing"
 msgstr ""
 
+msgid "Some ratings could not reach their source. Chilpa will try again."
+msgstr ""
+
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
 msgstr "Some selected Library tracks are missing. I kept the device unchanged."
 
@@ -6426,6 +6432,9 @@ msgstr ""
 msgid "Stop scan"
 msgstr "Stop scan"
 
+msgid "Stop syncing ratings"
+msgstr ""
+
 msgid "Stopped"
 msgstr ""
 
@@ -6493,6 +6502,9 @@ msgid "Sync needs attention"
 msgstr "Sync needs attention"
 
 msgid "Sync now"
+msgstr ""
+
+msgid "Sync ratings"
 msgstr ""
 
 msgid "Sync to device…"
@@ -9220,6 +9232,9 @@ msgstr ""
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr ""
 
+msgid "this server keeps no ratings Chilpa can change"
+msgstr ""
+
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr ""
 
@@ -9552,6 +9567,11 @@ msgstr ""
 
 msgid "{} rating"
 msgid_plural "{} ratings"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} rating waits to reach it: {}"
+msgid_plural "{} ratings wait to reach it: {}"
 msgstr[0] ""
 msgstr[1] ""
 

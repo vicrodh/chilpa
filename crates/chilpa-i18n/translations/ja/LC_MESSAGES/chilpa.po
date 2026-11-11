@@ -5259,6 +5259,9 @@ msgstr "評価する"
 msgid "Rating"
 msgstr "評価"
 
+msgid "Ratings are not synced with it."
+msgstr "評価はこのサーバーと同期されません。"
+
 msgid "Re-fetch album information"
 msgstr "アルバム情報を再取得"
 
@@ -6299,6 +6302,9 @@ msgstr "これらのトラックの一部はすでに追加されています"
 msgid "Some packages are missing"
 msgstr "一部のパッケージがありません"
 
+msgid "Some ratings could not reach their source. Chilpa will try again."
+msgstr "一部の評価をソースに送れませんでした。Chilpaが再試行します。"
+
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
 msgstr ""
 
@@ -6419,6 +6425,9 @@ msgstr "再生を停止して診断しますか？"
 msgid "Stop scan"
 msgstr "スキャンを停止"
 
+msgid "Stop syncing ratings"
+msgstr "評価の同期を停止"
+
 msgid "Stopped"
 msgstr "停止"
 
@@ -6487,6 +6496,9 @@ msgstr ""
 
 msgid "Sync now"
 msgstr "今すぐ同期"
+
+msgid "Sync ratings"
+msgstr "評価を同期"
 
 msgid "Sync to device…"
 msgstr ""
@@ -9208,6 +9220,9 @@ msgstr ""
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "このサーバーはChilpaからプレイリストの説明を受け付けません"
 
+msgid "this server keeps no ratings Chilpa can change"
+msgstr "このサーバーにはChilpaが変更できる評価がありません"
+
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "このサーバーはトラックのすべてのコピーをプレイリストから一度に削除します。すべて削除するか、サーバー上で変更してください"
 
@@ -9520,6 +9535,10 @@ msgstr "{}キュー · {}トラック"
 msgid "{} rating"
 msgid_plural "{} ratings"
 msgstr[0] "{}件の評価"
+
+msgid "{} rating waits to reach it: {}"
+msgid_plural "{} ratings wait to reach it: {}"
+msgstr[0] "{}件の評価が送信待ちです: {}"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{}個を読み取り、{}個は変更なし、{}個は見つかりません"

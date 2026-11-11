@@ -5264,6 +5264,9 @@ msgstr "Noter"
 msgid "Rating"
 msgstr "Note"
 
+msgid "Ratings are not synced with it."
+msgstr "Les notes ne sont pas synchronisées avec ce serveur."
+
 msgid "Re-fetch album information"
 msgstr "Récupérer à nouveau les informations de l’album"
 
@@ -6306,6 +6309,9 @@ msgstr "Certaines de ces pistes ont déjà été ajoutées"
 msgid "Some packages are missing"
 msgstr "Certains paquets sont manquants"
 
+msgid "Some ratings could not reach their source. Chilpa will try again."
+msgstr "Certaines notes n'ont pas pu atteindre leur source. Chilpa réessaiera."
+
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
 msgstr ""
 
@@ -6426,6 +6432,9 @@ msgstr "Arrêter la lecture pour diagnostiquer ?"
 msgid "Stop scan"
 msgstr "Arrêter l’analyse"
 
+msgid "Stop syncing ratings"
+msgstr "Ne plus synchroniser les notes"
+
 msgid "Stopped"
 msgstr "Arrêté"
 
@@ -6494,6 +6503,9 @@ msgstr ""
 
 msgid "Sync now"
 msgstr "Synchroniser maintenant"
+
+msgid "Sync ratings"
+msgstr "Synchroniser les notes"
 
 msgid "Sync to device…"
 msgstr ""
@@ -9220,6 +9232,9 @@ msgstr ""
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "ce serveur n'accepte pas la description d'une playlist depuis Chilpa"
 
+msgid "this server keeps no ratings Chilpa can change"
+msgstr "ce serveur ne conserve aucune note que Chilpa puisse modifier"
+
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "ce serveur retire en une fois toutes les copies d'une piste de la playlist ; retirez-les toutes ou modifiez-la sur le serveur"
 
@@ -9554,6 +9569,11 @@ msgid "{} rating"
 msgid_plural "{} ratings"
 msgstr[0] "{} note"
 msgstr[1] "{} notes"
+
+msgid "{} rating waits to reach it: {}"
+msgid_plural "{} ratings wait to reach it: {}"
+msgstr[0] "{} note en attente d'envoi : {}"
+msgstr[1] "{} notes en attente d'envoi : {}"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{} lus, {} inchangés, {} manquants"

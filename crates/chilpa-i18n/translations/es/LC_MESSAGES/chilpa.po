@@ -5264,6 +5264,9 @@ msgstr "Calificar"
 msgid "Rating"
 msgstr "Calificación"
 
+msgid "Ratings are not synced with it."
+msgstr "Las calificaciones no se sincronizan con este servidor."
+
 msgid "Re-fetch album information"
 msgstr "Volver a consultar la información del álbum"
 
@@ -6306,6 +6309,9 @@ msgstr "Algunas de estas pistas ya estaban agregadas"
 msgid "Some packages are missing"
 msgstr "Faltan algunos paquetes"
 
+msgid "Some ratings could not reach their source. Chilpa will try again."
+msgstr "Algunas calificaciones no llegaron a su origen. Chilpa lo volverá a intentar."
+
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
 msgstr "Faltan algunas pistas seleccionadas de la biblioteca. Conservé el dispositivo sin cambios."
 
@@ -6426,6 +6432,9 @@ msgstr "¿Detener la reproducción para diagnosticar?"
 msgid "Stop scan"
 msgstr "Detener escaneo"
 
+msgid "Stop syncing ratings"
+msgstr "Dejar de sincronizar calificaciones"
+
 msgid "Stopped"
 msgstr "Detenido"
 
@@ -6494,6 +6503,9 @@ msgstr "Necesito que revises la sincronización"
 
 msgid "Sync now"
 msgstr "Sincronizar ahora"
+
+msgid "Sync ratings"
+msgstr "Sincronizar calificaciones"
 
 msgid "Sync to device…"
 msgstr "Sincronizar con dispositivo…"
@@ -9220,6 +9232,9 @@ msgstr "este servidor no permite borrar música desde Chilpa"
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "este servidor no acepta la descripción de una playlist desde Chilpa"
 
+msgid "this server keeps no ratings Chilpa can change"
+msgstr "este servidor no guarda calificaciones que Chilpa pueda cambiar"
+
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "este servidor quita de la playlist todas las copias de una pista a la vez; quítalas todas o cámbiala en el servidor"
 
@@ -9554,6 +9569,11 @@ msgid "{} rating"
 msgid_plural "{} ratings"
 msgstr[0] "{} calificación"
 msgstr[1] "{} calificaciones"
+
+msgid "{} rating waits to reach it: {}"
+msgid_plural "{} ratings wait to reach it: {}"
+msgstr[0] "{} calificación está pendiente de enviarse: {}"
+msgstr[1] "{} calificaciones están pendientes de enviarse: {}"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{} leídos, {} sin cambios, {} faltantes"

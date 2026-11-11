@@ -460,7 +460,8 @@ fn serve(order: Order, tools: &Tools, stop: &Mutex<HashSet<i64>>, outbox: &Sende
     }
 }
 
-/// Reads the whole catalogue of one server into the library.
+/// Reads the whole catalogue of one server into the library, with the
+/// listener's ratings when its kind keeps them (`ratings`).
 pub(crate) fn run(
     lib: &chilpa_library::Library,
     net: &dyn Net,
@@ -469,6 +470,25 @@ pub(crate) fn run(
     source: i64,
     progress: &dyn Fn(Reading),
     stopped: &dyn Fn() -> bool,
+) -> Event {
+    let mut rates = super::ratings::Reads::begin(lib, source);
+    let event = catalogue(lib, net, keys, gate, source, progress, stopped, &mut rates);
+    if let Some(rates) = rates {
+        super::ratings::finish(lib, net, keys, source, rates, &event, stopped);
+    }
+    event
+}
+
+#[allow(clippy::too_many_arguments)]
+fn catalogue(
+    lib: &chilpa_library::Library,
+    net: &dyn Net,
+    keys: &Keys,
+    gate: &Mutex<()>,
+    source: i64,
+    progress: &dyn Fn(Reading),
+    stopped: &dyn Fn() -> bool,
+    rates: &mut Option<super::ratings::Reads>,
 ) -> Event {
     let failed = |failure: Failure| Event::Failed { source, unreachable: failure.is_unreachable(), why: failure.to_string() };
     let opening = gate.lock().unwrap_or_else(|error| error.into_inner());
@@ -532,8 +552,8 @@ pub(crate) fn run(
         if media && !pace::rest(pause, stopped, &|| {}) {
             continue;
         }
-        let asked_at = Instant::now();
-        let page = match chilpa_servers::page(net, &server, &key, cursor.as_deref()) {
+        let (asked_at, asked_ms) = (Instant::now(), crate::ratings::sync::now_ms());
+        let mut page = match chilpa_servers::page(net, &server, &key, cursor.as_deref()) {
             Ok(page) => page,
             Err(failure) if media && failure.is_unreachable() => {
                 pause = paced.after(asked_at.elapsed(), false);
@@ -605,6 +625,9 @@ pub(crate) fn run(
             }
         };
         pages += 1;
+        if let Some(rates) = rates.as_mut() {
+            rates.take(asked_ms, std::mem::take(&mut page.ratings));
+        }
         if media {
             pause = paced.after(asked_at.elapsed(), page.skipped == 0);
         }

@@ -5264,6 +5264,9 @@ msgstr "Waarderen"
 msgid "Rating"
 msgstr "Waardering"
 
+msgid "Ratings are not synced with it."
+msgstr "Waarderingen worden niet met deze server gesynchroniseerd."
+
 msgid "Re-fetch album information"
 msgstr "Albuminformatie opnieuw ophalen"
 
@@ -6306,6 +6309,9 @@ msgstr "Sommige van deze nummers waren al toegevoegd"
 msgid "Some packages are missing"
 msgstr "Sommige pakketten ontbreken"
 
+msgid "Some ratings could not reach their source. Chilpa will try again."
+msgstr "Sommige waarderingen konden hun bron niet bereiken. Chilpa probeert het opnieuw."
+
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
 msgstr ""
 
@@ -6426,6 +6432,9 @@ msgstr "Afspelen stoppen om te diagnosticeren?"
 msgid "Stop scan"
 msgstr "Scan stoppen"
 
+msgid "Stop syncing ratings"
+msgstr "Waarderingen niet synchroniseren"
+
 msgid "Stopped"
 msgstr "Gestopt"
 
@@ -6494,6 +6503,9 @@ msgstr ""
 
 msgid "Sync now"
 msgstr "Nu synchroniseren"
+
+msgid "Sync ratings"
+msgstr "Waarderingen synchroniseren"
 
 msgid "Sync to device…"
 msgstr ""
@@ -9220,6 +9232,9 @@ msgstr ""
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "deze server neemt de beschrijving van een afspeellijst niet over van Chilpa"
 
+msgid "this server keeps no ratings Chilpa can change"
+msgstr "deze server bewaart geen waarderingen die Chilpa kan wijzigen"
+
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "deze server haalt alle kopieën van een nummer in één keer uit de afspeellijst; haal ze allemaal weg of wijzig hem op de server"
 
@@ -9554,6 +9569,11 @@ msgid "{} rating"
 msgid_plural "{} ratings"
 msgstr[0] "{} waardering"
 msgstr[1] "{} waarderingen"
+
+msgid "{} rating waits to reach it: {}"
+msgid_plural "{} ratings wait to reach it: {}"
+msgstr[0] "{} waardering wacht op verzending: {}"
+msgstr[1] "{} waarderingen wachten op verzending: {}"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{} gelezen, {} ongewijzigd, {} ontbrekend"

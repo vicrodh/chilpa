@@ -5264,6 +5264,9 @@ msgstr "Bewerten"
 msgid "Rating"
 msgstr "Bewertung"
 
+msgid "Ratings are not synced with it."
+msgstr "Bewertungen werden mit diesem Server nicht synchronisiert."
+
 msgid "Re-fetch album information"
 msgstr "Albuminformationen erneut abrufen"
 
@@ -6306,6 +6309,9 @@ msgstr "Einige dieser Titel wurden bereits hinzugefügt"
 msgid "Some packages are missing"
 msgstr "Einige Pakete fehlen"
 
+msgid "Some ratings could not reach their source. Chilpa will try again."
+msgstr "Einige Bewertungen konnten ihre Quelle nicht erreichen. Chilpa versucht es erneut."
+
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
 msgstr ""
 
@@ -6426,6 +6432,9 @@ msgstr "Wiedergabe zur Diagnose stoppen?"
 msgid "Stop scan"
 msgstr "Scan anhalten"
 
+msgid "Stop syncing ratings"
+msgstr "Bewertungen nicht synchronisieren"
+
 msgid "Stopped"
 msgstr "Gestoppt"
 
@@ -6494,6 +6503,9 @@ msgstr ""
 
 msgid "Sync now"
 msgstr "Jetzt synchronisieren"
+
+msgid "Sync ratings"
+msgstr "Bewertungen synchronisieren"
 
 msgid "Sync to device…"
 msgstr ""
@@ -9220,6 +9232,9 @@ msgstr ""
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "dieser Server übernimmt die Beschreibung einer Playlist nicht von Chilpa"
 
+msgid "this server keeps no ratings Chilpa can change"
+msgstr "dieser Server speichert keine Bewertungen, die Chilpa ändern kann"
+
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "dieser Server entfernt alle Kopien eines Titels auf einmal aus der Playlist; entferne alle oder ändere sie auf dem Server"
 
@@ -9554,6 +9569,11 @@ msgid "{} rating"
 msgid_plural "{} ratings"
 msgstr[0] "{} Bewertung"
 msgstr[1] "{} Bewertungen"
+
+msgid "{} rating waits to reach it: {}"
+msgid_plural "{} ratings wait to reach it: {}"
+msgstr[0] "{} Bewertung wartet auf die Übertragung: {}"
+msgstr[1] "{} Bewertungen warten auf die Übertragung: {}"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{} gelesen, {} unverändert, {} fehlen"

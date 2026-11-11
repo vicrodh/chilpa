@@ -172,7 +172,7 @@ impl Chilpa {
             self.remember_preference(key, value);
             return true;
         }
-        self.track_credits_setting(key, value) || self.playlist_grouping_setting(key, value) || self.search_preview_setting(key, value) || self.device_sync_setting(key, value) || self.tray_setting(key, value) || self.discord_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value) || self.back_button_setting(key, value) || self.device_lock_setting(key, value) || self.offline_limit_setting(key, value)
+        self.track_credits_setting(key, value) || self.playlist_grouping_setting(key, value) || self.search_preview_setting(key, value) || self.device_sync_setting(key, value) || self.tray_setting(key, value) || self.discord_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value) || self.back_button_setting(key, value) || self.device_lock_setting(key, value) || self.offline_limit_setting(key, value) || self.server_ratings_setting(key, value)
     }
 
     /// A toggle's value from its preference, "true" or "false".

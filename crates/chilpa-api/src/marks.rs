@@ -79,8 +79,18 @@ impl Chilpa {
         Some(Marks { ratings, favorites, source_tracks: self.source_track_marks() })
     }
 
-    /// False when the kind takes no stars or they could not be kept.
+    /// False when the kind takes no stars or they could not be kept. A
+    /// change of what a source rates goes to it too (`ratings::sync`).
     pub fn rate_as(&mut self, kind: &str, id: i64, stars: i32) -> bool {
+        let before = self.stars_before(kind, id);
+        let kept = self.keep_rating(kind, id, stars);
+        if kept {
+            self.rating_changed(kind, id, before, stars.clamp(0, 5) as u8);
+        }
+        kept
+    }
+
+    fn keep_rating(&mut self, kind: &str, id: i64, stars: i32) -> bool {
         if id < 0 {
             if !(0..=5).contains(&stars) { return false; }
             let Some((actual, _, source, identity)) = self.catalog.rating_identities().into_iter()
