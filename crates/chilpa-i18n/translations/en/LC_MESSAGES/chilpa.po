@@ -495,6 +495,9 @@ msgstr ""
 msgid "All selections"
 msgstr "All selections"
 
+msgid "All servers"
+msgstr ""
+
 msgid "All set"
 msgstr ""
 
@@ -1115,6 +1118,9 @@ msgstr ""
 msgid "Check a format…"
 msgstr ""
 
+msgid "Check again, and download again if needed"
+msgstr ""
+
 msgid "Check all folders"
 msgstr "Check all folders"
 
@@ -1425,6 +1431,9 @@ msgid "Choose the storage paired with this profile."
 msgstr ""
 
 msgid "Choose where to open this music"
+msgstr ""
+
+msgid "Choose “Make available offline…” in the menu of a server's album, playlist or tracks."
 msgstr ""
 
 msgid "Clean"
@@ -2294,6 +2303,9 @@ msgstr "Downloads"
 msgid "Downloads are grouped by server type. Each account has its own subfolder."
 msgstr "Downloads are grouped by server type. Each account has its own subfolder."
 
+msgid "Downloads stop when offline music reaches this size, and nothing is deleted to make room. Each file can be up to 512 MiB. Unlimited lets offline music use all the free space on the disk, with no size limit per file."
+msgstr ""
+
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr ""
 
@@ -2535,6 +2547,9 @@ msgid "Failed"
 msgstr ""
 
 msgid "Failed in this run"
+msgstr ""
+
+msgid "Failed only"
 msgstr ""
 
 msgid "Failed to load albums"
@@ -3440,6 +3455,9 @@ msgstr ""
 msgid "Large"
 msgstr ""
 
+msgid "Largest"
+msgstr ""
+
 msgid "Last 12 months"
 msgstr ""
 
@@ -4226,6 +4244,9 @@ msgstr ""
 msgid "No music has been synced with Chilpa to this storage yet."
 msgstr "No music has been synced with Chilpa to this storage yet."
 
+msgid "No offline music yet"
+msgstr ""
+
 msgid "No opening was confirmed"
 msgstr ""
 
@@ -4350,6 +4371,9 @@ msgid "Not found on disk"
 msgstr "Not found on disk"
 
 msgid "Not heard first"
+msgstr ""
+
+msgid "Not in the library"
 msgstr ""
 
 msgid "Not in the library: this is the folder as it is on disk."
@@ -4646,6 +4670,9 @@ msgstr "Open the Library before choosing music for a device."
 msgid "Open the folder used for disposable files."
 msgstr ""
 
+msgid "Open the offline folder"
+msgstr ""
+
 msgid "Open view"
 msgstr "Open view"
 
@@ -4681,9 +4708,6 @@ msgstr "Optional access token for private playlists"
 
 msgid "Original audio"
 msgstr "Original audio"
-
-msgid "Original audio is saved in the offline folder configured for each server. Offline storage is limited to 2 GiB, with up to 512 MiB per file."
-msgstr "Original audio is saved in the offline folder configured for each server. Offline storage is limited to 2 GiB, with up to 512 MiB per file."
 
 msgid "Original audio over the selected network transport"
 msgstr ""
@@ -5962,6 +5986,9 @@ msgstr ""
 msgid "Select a folder to see its contents."
 msgstr ""
 
+msgid "Select all"
+msgstr ""
+
 msgid "Select an artist to see their albums"
 msgstr ""
 
@@ -6157,6 +6184,9 @@ msgstr ""
 msgid "Showing"
 msgstr ""
 
+msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
+msgstr ""
+
 msgid "Shown when pointing at the cover, written like the title."
 msgstr "Shown when pointing at the cover, written like the title."
 
@@ -6248,6 +6278,9 @@ msgid "Small"
 msgstr ""
 
 msgid "Smaller covers and background images; Chilpa can make these again."
+msgstr ""
+
+msgid "Smallest"
 msgstr ""
 
 msgid "Soft"
@@ -6401,6 +6434,9 @@ msgid "Stops in {}"
 msgstr ""
 
 msgid "Storage"
+msgstr ""
+
+msgid "Storage limit"
 msgstr ""
 
 msgid "Stream address"
@@ -6952,6 +6988,9 @@ msgstr ""
 msgid "There is no previous EQ to restore."
 msgstr "There is no previous EQ to restore."
 
+msgid "There is not enough free space on the disk for this file."
+msgstr ""
+
 msgid "There is not enough space for this selection and its temporary files."
 msgstr "There is not enough space for this selection and its temporary files."
 
@@ -7474,7 +7513,13 @@ msgstr ""
 msgid "Unknown target; use Tab to complete the source."
 msgstr ""
 
+msgid "Unknown title"
+msgstr ""
+
 msgid "Unknown year"
+msgstr ""
+
+msgid "Unlimited"
 msgstr ""
 
 msgid "Unmatched"
@@ -9484,9 +9529,6 @@ msgstr ""
 msgid "{} of {} tracks match this release"
 msgstr ""
 
-msgid "{} offline audio files saved on this device."
-msgstr "{} offline audio files saved on this device."
-
 msgid "{} play"
 msgid_plural "{} plays"
 msgstr[0] ""
@@ -9566,6 +9608,11 @@ msgstr[1] ""
 
 msgid "{} track on the server is not in your library"
 msgid_plural "{} tracks on the server are not in your library"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} track selected"
+msgid_plural "{} tracks selected"
 msgstr[0] ""
 msgstr[1] ""
 

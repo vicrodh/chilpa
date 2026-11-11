@@ -494,6 +494,9 @@ msgstr "すべてのシーズン"
 msgid "All selections"
 msgstr "すべての選択"
 
+msgid "All servers"
+msgstr "すべてのサーバー"
+
 msgid "All set"
 msgstr "準備完了"
 
@@ -1113,6 +1116,9 @@ msgstr "オーディオスタックをチェック"
 msgid "Check a format…"
 msgstr "フォーマットをチェック…"
 
+msgid "Check again, and download again if needed"
+msgstr "もう一度確認し、必要ならダウンロードし直す"
+
 msgid "Check all folders"
 msgstr "すべてのフォルダーを確認"
 
@@ -1424,6 +1430,9 @@ msgstr ""
 
 msgid "Choose where to open this music"
 msgstr ""
+
+msgid "Choose “Make available offline…” in the menu of a server's album, playlist or tracks."
+msgstr "サーバーのアルバム、プレイリスト、トラックのメニューで「オフラインで再生できるようにする…」を選んでください。"
 
 msgid "Clean"
 msgstr "露骨な表現なし"
@@ -2292,6 +2301,9 @@ msgstr "ダウンロード"
 msgid "Downloads are grouped by server type. Each account has its own subfolder."
 msgstr "ダウンロードをサーバーの種類ごとにまとめます。アカウントごとに個別のサブフォルダーを使用します。"
 
+msgid "Downloads stop when offline music reaches this size, and nothing is deleted to make room. Each file can be up to 512 MiB. Unlimited lets offline music use all the free space on the disk, with no size limit per file."
+msgstr "オフラインの音楽がこのサイズに達するとダウンロードは止まり、空きを作るために何かが削除されることはありません。1ファイルは最大512 MiBです。「無制限」では、オフラインの音楽はディスクの空き容量をすべて使え、ファイルごとのサイズ上限もありません。"
+
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr "ドラッグするか↑↓を使って、カスタムの順序を維持します。"
 
@@ -2534,6 +2546,9 @@ msgstr "失敗"
 
 msgid "Failed in this run"
 msgstr "今回の実行で失敗"
+
+msgid "Failed only"
+msgstr "失敗のみ"
 
 msgid "Failed to load albums"
 msgstr "アルバムを読み込めませんでした"
@@ -3435,6 +3450,9 @@ msgstr "言語"
 msgid "Large"
 msgstr "大"
 
+msgid "Largest"
+msgstr "大きい順"
+
 msgid "Last 12 months"
 msgstr "過去12か月"
 
@@ -4221,6 +4239,9 @@ msgstr "検索に応答したメディアサーバーはありません。検索
 msgid "No music has been synced with Chilpa to this storage yet."
 msgstr "このストレージにはChilpaで同期した音楽がまだありません。"
 
+msgid "No offline music yet"
+msgstr "オフラインの音楽はまだありません"
+
 msgid "No opening was confirmed"
 msgstr "オープンは確認されていません"
 
@@ -4346,6 +4367,9 @@ msgstr "ディスク上に見つかりません"
 
 msgid "Not heard first"
 msgstr "未再生を先に"
+
+msgid "Not in the library"
+msgstr "ライブラリにありません"
 
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "ライブラリにはありません。ディスク上のフォルダーそのままの表示です。"
@@ -4641,6 +4665,9 @@ msgstr ""
 msgid "Open the folder used for disposable files."
 msgstr "使い捨てファイルに使うフォルダーを開きます。"
 
+msgid "Open the offline folder"
+msgstr "オフライン用フォルダーを開く"
+
 msgid "Open view"
 msgstr "ビューを開く"
 
@@ -4676,9 +4703,6 @@ msgstr "非公開プレイリスト用の任意のアクセストークン"
 
 msgid "Original audio"
 msgstr "元のオーディオ"
-
-msgid "Original audio is saved in the offline folder configured for each server. Offline storage is limited to 2 GiB, with up to 512 MiB per file."
-msgstr "元の音声を各サーバーで設定したオフラインフォルダーに保存します。保存容量の上限は2 GiB、1ファイルあたり512 MiBです。"
 
 msgid "Original audio over the selected network transport"
 msgstr "選択したネットワーク経路で元の音声を送信"
@@ -5956,6 +5980,9 @@ msgstr "画像を選択..."
 msgid "Select a folder to see its contents."
 msgstr "フォルダーを選択して内容を表示します。"
 
+msgid "Select all"
+msgstr "すべて選択"
+
 msgid "Select an artist to see their albums"
 msgstr "アーティストを選択してアルバムを表示します"
 
@@ -6151,6 +6178,9 @@ msgstr "ウィンドウを表示／非表示"
 msgid "Showing"
 msgstr "表示中"
 
+msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
+msgstr "{}/{}トラックを表示しています。残りを見るにはアーティストかサーバーを選んでください。"
+
 msgid "Shown when pointing at the cover, written like the title."
 msgstr "カバーにポインターを合わせると表示されます。タイトルと同じ書き方です。"
 
@@ -6243,6 +6273,9 @@ msgstr "小"
 
 msgid "Smaller covers and background images; Chilpa can make these again."
 msgstr "小さいカバーと背景画像。Chilpaが再作成できます。"
+
+msgid "Smallest"
+msgstr "小さい順"
 
 msgid "Soft"
 msgstr "弱"
@@ -6396,6 +6429,9 @@ msgstr "{}後に停止"
 
 msgid "Storage"
 msgstr "ストレージ"
+
+msgid "Storage limit"
+msgstr "保存容量の上限"
 
 msgid "Stream address"
 msgstr "ストリームアドレス"
@@ -6943,6 +6979,9 @@ msgstr "このフォルダの中にはフォルダがありません。上の階
 msgid "There is no previous EQ to restore."
 msgstr "復元できる以前のEQがありません。"
 
+msgid "There is not enough free space on the disk for this file."
+msgstr "このファイルを保存できる空き容量がディスクにありません。"
+
 msgid "There is not enough space for this selection and its temporary files."
 msgstr ""
 
@@ -7465,8 +7504,14 @@ msgstr "ソース不明"
 msgid "Unknown target; use Tab to complete the source."
 msgstr "不明な宛先です。Tabキーでソースを補完してください。"
 
+msgid "Unknown title"
+msgstr "不明なタイトル"
+
 msgid "Unknown year"
 msgstr "年不明"
+
+msgid "Unlimited"
+msgstr "無制限"
 
 msgid "Unmatched"
 msgstr "未一致"
@@ -9454,9 +9499,6 @@ msgstr "{} / {}個のフォーマットがそのまま出力されます"
 msgid "{} of {} tracks match this release"
 msgstr "{} / {}トラックがこのリリースに一致します"
 
-msgid "{} offline audio files saved on this device."
-msgstr "このデバイスにオフライン音声ファイル{}件を保存しています。"
-
 msgid "{} play"
 msgid_plural "{} plays"
 msgstr[0] "{}回再生"
@@ -9527,6 +9569,10 @@ msgstr[0] "プレイリストの{}トラックはライブラリにないため�
 msgid "{} track on the server is not in your library"
 msgid_plural "{} tracks on the server are not in your library"
 msgstr[0] "サーバーの{}トラックはライブラリにありません"
+
+msgid "{} track selected"
+msgid_plural "{} tracks selected"
+msgstr[0] "{}トラックを選択中"
 
 msgid "{} tracks"
 msgstr "{}トラック"

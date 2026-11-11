@@ -2,6 +2,7 @@ import QtQuick
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
+import app.chilpa.offline
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
@@ -36,7 +37,7 @@ CascadingMenu {
             { separator: true },
             { text: I18n.tr("Delete playlist", I18n.rev), act: "remove" }
         ] : [])
-        if (groupRow < 0 && offlinePlaylistId > 0 && JSON.parse(Sources.offline("info", "playlist", JSON.stringify([offlinePlaylistId]))).count > 0)
+        if (groupRow < 0 && offlinePlaylistId > 0 && JSON.parse(Offline.call("info", "playlist", JSON.stringify([offlinePlaylistId]))).count > 0)
             entries = entries.concat([{separator:true}, {text:I18n.tr("Make available offline…", I18n.rev),act:"offline"}])
         x = left
         y = top
@@ -46,7 +47,7 @@ CascadingMenu {
     onActionChosen: entry => {
         const action = entry.act
         if (action === "offline") {
-            Sources.offlineRequested("playlist", JSON.stringify([offlinePlaylistId]))
+            Offline.requested("playlist", JSON.stringify([offlinePlaylistId]))
             return
         }
         if (groupRow >= 0) {

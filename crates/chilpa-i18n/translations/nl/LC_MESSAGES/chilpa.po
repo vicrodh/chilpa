@@ -495,6 +495,9 @@ msgstr "Alle seizoenen"
 msgid "All selections"
 msgstr "Alle selecties"
 
+msgid "All servers"
+msgstr "Alle servers"
+
 msgid "All set"
 msgstr "Alles gereed"
 
@@ -1115,6 +1118,9 @@ msgstr "Audiostack controleren"
 msgid "Check a format…"
 msgstr "Een formaat controleren…"
 
+msgid "Check again, and download again if needed"
+msgstr "Opnieuw controleren en zo nodig opnieuw downloaden"
+
 msgid "Check all folders"
 msgstr "Alle mappen controleren"
 
@@ -1426,6 +1432,9 @@ msgstr ""
 
 msgid "Choose where to open this music"
 msgstr ""
+
+msgid "Choose “Make available offline…” in the menu of a server's album, playlist or tracks."
+msgstr "Kies ‘Offline beschikbaar maken…’ in het menu van een album, afspeellijst of nummers van een server."
 
 msgid "Clean"
 msgstr "Geen expliciete inhoud"
@@ -2294,6 +2303,9 @@ msgstr "Downloads"
 msgid "Downloads are grouped by server type. Each account has its own subfolder."
 msgstr "Downloads worden gegroepeerd op servertype. Elk account heeft een eigen submap."
 
+msgid "Downloads stop when offline music reaches this size, and nothing is deleted to make room. Each file can be up to 512 MiB. Unlimited lets offline music use all the free space on the disk, with no size limit per file."
+msgstr "Downloads stoppen zodra offline muziek deze grootte bereikt, en er wordt niets verwijderd om ruimte te maken. Elk bestand mag tot 512 MiB groot zijn. Met ‘Onbeperkt’ mag offline muziek alle vrije ruimte op de schijf gebruiken, zonder limiet per bestand."
+
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr "Sleep of gebruik ↑↓ om een eigen volgorde te behouden."
 
@@ -2536,6 +2548,9 @@ msgstr "Mislukt"
 
 msgid "Failed in this run"
 msgstr "Mislukt in deze uitvoering"
+
+msgid "Failed only"
+msgstr "Alleen mislukt"
 
 msgid "Failed to load albums"
 msgstr "Albums laden mislukt"
@@ -3440,6 +3455,9 @@ msgstr "Taal"
 msgid "Large"
 msgstr "Groot"
 
+msgid "Largest"
+msgstr "Grootste"
+
 msgid "Last 12 months"
 msgstr "Afgelopen 12 maanden"
 
@@ -4226,6 +4244,9 @@ msgstr "Geen mediaserver antwoordde op de zoekactie. Sommige antwoorden niet op 
 msgid "No music has been synced with Chilpa to this storage yet."
 msgstr "Er is nog geen muziek met Chilpa naar deze opslag gesynchroniseerd."
 
+msgid "No offline music yet"
+msgstr "Nog geen offline muziek"
+
 msgid "No opening was confirmed"
 msgstr "Er is geen opening bevestigd"
 
@@ -4351,6 +4372,9 @@ msgstr "Niet gevonden op schijf"
 
 msgid "Not heard first"
 msgstr "Onbeluisterd eerst"
+
+msgid "Not in the library"
+msgstr "Niet in de bibliotheek"
 
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "Niet in de bibliotheek: dit is de map zoals die op schijf staat."
@@ -4646,6 +4670,9 @@ msgstr ""
 msgid "Open the folder used for disposable files."
 msgstr "Open de map voor wegwerpbestanden."
 
+msgid "Open the offline folder"
+msgstr "Offlinemap openen"
+
 msgid "Open view"
 msgstr "Weergave openen"
 
@@ -4681,9 +4708,6 @@ msgstr "Optioneel toegangstoken voor privéafspeellijsten"
 
 msgid "Original audio"
 msgstr "Originele audio"
-
-msgid "Original audio is saved in the offline folder configured for each server. Offline storage is limited to 2 GiB, with up to 512 MiB per file."
-msgstr "Originele audio wordt opgeslagen in de offline-map van elke server. De opslag is beperkt tot 2 GiB, met maximaal 512 MiB per bestand."
 
 msgid "Original audio over the selected network transport"
 msgstr "Oorspronkelijke audio via het geselecteerde netwerktransport"
@@ -5962,6 +5986,9 @@ msgstr "Afbeelding selecteren..."
 msgid "Select a folder to see its contents."
 msgstr "Selecteer een map om de inhoud te bekijken."
 
+msgid "Select all"
+msgstr "Alles selecteren"
+
 msgid "Select an artist to see their albums"
 msgstr "Selecteer een artiest om diens albums te zien"
 
@@ -6157,6 +6184,9 @@ msgstr "Venster tonen/verbergen"
 msgid "Showing"
 msgstr "Weergegeven"
 
+msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
+msgstr "{} van {} nummers worden getoond. Kies een artiest of een server om de rest te zien."
+
 msgid "Shown when pointing at the cover, written like the title."
 msgstr "Verschijnt bij het aanwijzen van de hoes, geschreven zoals de titel."
 
@@ -6249,6 +6279,9 @@ msgstr "Klein"
 
 msgid "Smaller covers and background images; Chilpa can make these again."
 msgstr "Kleinere hoezen en achtergrondafbeeldingen; Chilpa kan deze opnieuw maken."
+
+msgid "Smallest"
+msgstr "Kleinste"
 
 msgid "Soft"
 msgstr "Zacht"
@@ -6402,6 +6435,9 @@ msgstr "Stopt over {}"
 
 msgid "Storage"
 msgstr "Opslag"
+
+msgid "Storage limit"
+msgstr "Opslaglimiet"
 
 msgid "Stream address"
 msgstr "Streamadres"
@@ -6952,6 +6988,9 @@ msgstr "Deze map bevat geen mappen. Kies hem een niveau hoger, of ga terug."
 msgid "There is no previous EQ to restore."
 msgstr "Er is geen vorige EQ om te herstellen."
 
+msgid "There is not enough free space on the disk for this file."
+msgstr "Er is niet genoeg vrije ruimte op de schijf voor dit bestand."
+
 msgid "There is not enough space for this selection and its temporary files."
 msgstr ""
 
@@ -7474,8 +7513,14 @@ msgstr "Bron onbekend"
 msgid "Unknown target; use Tab to complete the source."
 msgstr "Onbekend doel; gebruik Tab om de bron aan te vullen."
 
+msgid "Unknown title"
+msgstr "Onbekende titel"
+
 msgid "Unknown year"
 msgstr "Jaar onbekend"
+
+msgid "Unlimited"
+msgstr "Onbeperkt"
 
 msgid "Unmatched"
 msgstr "Niet gevonden"
@@ -9484,9 +9529,6 @@ msgstr "{} van {} formaten komen ongewijzigd aan"
 msgid "{} of {} tracks match this release"
 msgstr "{} van {} nummers komen overeen met deze uitgave"
 
-msgid "{} offline audio files saved on this device."
-msgstr "{} offline-audiobestanden opgeslagen op dit apparaat."
-
 msgid "{} play"
 msgid_plural "{} plays"
 msgstr[0] "{} keer afgespeeld"
@@ -9568,6 +9610,11 @@ msgid "{} track on the server is not in your library"
 msgid_plural "{} tracks on the server are not in your library"
 msgstr[0] "{} nummer op de server staat niet in je bibliotheek"
 msgstr[1] "{} nummers op de server staan niet in je bibliotheek"
+
+msgid "{} track selected"
+msgid_plural "{} tracks selected"
+msgstr[0] "{} nummer geselecteerd"
+msgstr[1] "{} nummers geselecteerd"
 
 msgid "{} tracks"
 msgstr "{} nummers"

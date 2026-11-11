@@ -52,6 +52,7 @@ fn an_early_retry_failure_keeps_the_partial_file_in_the_disk_quota() {
         &track,
         &scope,
         "track/1",
+        &Limit::default(),
         &AtomicBool::new(false),
         |_| {}
     )
@@ -74,6 +75,7 @@ fn checking_a_completed_copy_is_cancellable_and_corruption_invalidates_availabil
         &track,
         &scope,
         "album/1",
+        &Limit::default(),
         &AtomicBool::new(false),
         |_| {},
     )
@@ -156,15 +158,15 @@ fn recovery_preserves_reservations_when_a_registered_path_is_not_a_regular_file(
     let stored = lib.server(track.source).unwrap().unwrap();
     let copy = draft(&stored, &track, &root.path().join("OfflineFolder")).unwrap();
     lib.queue_offline_copy(&copy, "track/1").unwrap();
-    lib.reserve_offline_copy(&copy.key, MAX_FILE_BYTES).unwrap();
+    lib.reserve_offline_copy(&copy.key, LIMITED_FILE_BYTES, Limit::default().quota).unwrap();
     let copy = lib.offline_copy_by_key(&copy.key).unwrap().unwrap();
     assert!(lib.begin_offline_removal(&copy).unwrap());
     let copy = lib.offline_copy_by_key(&copy.key).unwrap().unwrap();
     std::fs::create_dir_all(&copy.path).unwrap();
     assert!(super::recovery::reconcile(&lib, &copy, &AtomicBool::new(false)).is_err());
-    assert_eq!(lib.offline_bytes().unwrap(), MAX_FILE_BYTES);
+    assert_eq!(lib.offline_bytes().unwrap(), LIMITED_FILE_BYTES);
     assert!(lib.offline_copy_by_key(&copy.key).unwrap().is_some());
-    assert_eq!(super::super::disk_bytes(&copy), MAX_FILE_BYTES);
+    assert_eq!(super::super::disk_bytes(&copy), LIMITED_FILE_BYTES);
     std::fs::remove_dir(&copy.path).unwrap();
     std::fs::write(&copy.path, []).unwrap();
     assert!(super::recovery::reconcile(&lib, &copy, &AtomicBool::new(false)).unwrap());
@@ -257,6 +259,7 @@ fn originals_are_verified_persisted_and_reused_after_the_origin_is_gone() {
         &track,
         &scope,
         "album/1",
+        &Limit::default(),
         &cancelled,
         |_| {},
     )
@@ -284,6 +287,7 @@ fn originals_are_verified_persisted_and_reused_after_the_origin_is_gone() {
         &track,
         &scope,
         "playlist/1",
+        &Limit::default(),
         &cancelled,
         |_| {},
     )
@@ -304,6 +308,7 @@ fn originals_are_verified_persisted_and_reused_after_the_origin_is_gone() {
         &track,
         &scope,
         "album/1",
+        &Limit::default(),
         &cancelled,
         |_| {}
     )
@@ -347,6 +352,7 @@ fn queued_identities_keep_the_connection_scope_captured_at_selection_time() {
         &track,
         &scope,
         "playlist/1",
+        &Limit::default(),
         &AtomicBool::new(false),
         |_| {}
     )
@@ -369,6 +375,7 @@ fn a_success_status_and_audio_mime_do_not_promote_a_json_error() {
         &track,
         &scope,
         "track/1",
+        &Limit::default(),
         &AtomicBool::new(false),
         |_| {}
     )
@@ -420,6 +427,7 @@ fn removing_a_copy_waits_for_readers_and_then_releases_its_registered_space() {
         &track,
         &scope,
         "album/1",
+        &Limit::default(),
         &AtomicBool::new(false),
         |_| {},
     )
@@ -452,7 +460,7 @@ fn recovery_promotes_only_a_verified_final_file_and_invalidates_missing_copies()
     let stored = lib.server(track.source).unwrap().unwrap();
     let item = draft(&stored, &track, &root.path().join("OfflineFolder")).unwrap();
     lib.queue_offline_copy(&item, "album/1").unwrap();
-    lib.reserve_offline_copy(&item.key, MAX_FILE_BYTES).unwrap();
+    lib.reserve_offline_copy(&item.key, LIMITED_FILE_BYTES, Limit::default().quota).unwrap();
     let item = lib.offline_copy_by_key(&item.key).unwrap().unwrap();
     std::fs::create_dir_all(Path::new(&item.path).parent().unwrap()).unwrap();
     std::fs::write(&item.path, silence()).unwrap();
@@ -488,4 +496,52 @@ fn recovery_promotes_only_a_verified_final_file_and_invalidates_missing_copies()
         .unwrap()
         .contains(&track.entry));
     assert_eq!(lib.offline_bytes().unwrap(), 0);
+}
+
+/// A complete copy of another track, `bytes` long, already kept.
+fn kept_elsewhere(lib: &Library, source: i64, bytes: i64) {
+    lib.connection()
+        .execute(
+            "INSERT INTO offline_audio (key,source_id,account,identity,entry,revision,path,bytes,state)
+            VALUES ('elsewhere',?1,'a','b','other','r','/elsewhere.flac',?2,'complete')",
+            rusqlite::params![source, bytes],
+        )
+        .unwrap();
+}
+
+fn fetch(lib: &Library, root: &Path, keys: &super::super::super::keys::Keys, track: &Track, limit: &Limit) -> Result<(), String> {
+    let scope = super::super::super::session::Scope::of(&lib.server(track.source).unwrap().unwrap());
+    download(lib, &root.join("OfflineFolder"), keys, track, &scope, "track/1", limit, &AtomicBool::new(false), |_| {})
+}
+
+#[test]
+fn a_limit_admits_a_file_only_within_what_the_other_copies_leave() {
+    let bytes = silence();
+    let (address, origin) = origin(&bytes, "audio/wav");
+    let (root, lib, keys, track) = fixture(&address);
+    kept_elsewhere(&lib, track.source, 900);
+    let limit = Limit { quota: Some(1000) };
+    assert_eq!(fetch(&lib, root.path(), &keys, &track, &limit), Err(chilpa_i18n::t("The offline storage limit has been reached.")));
+    // The body was refused unread; how the origin's write ends is its own.
+    let _ = origin.join();
+    assert_eq!(lib.offline_bytes().unwrap(), 900, "the refused file keeps nothing and the kept one stays");
+    assert!(lib.offline_copy_by_key("elsewhere").unwrap().is_some());
+    let stored = lib.server(track.source).unwrap().unwrap();
+    assert!(lib.offline_copy(track.source, &stored.account, &stored.identity, &track.entry).unwrap().is_none());
+}
+
+#[test]
+fn without_a_limit_nothing_is_refused_and_nothing_is_removed() {
+    let bytes = silence();
+    let (address, origin) = origin(&bytes, "audio/wav");
+    let (root, lib, keys, track) = fixture(&address);
+    kept_elsewhere(&lib, track.source, 3 * 1024 * 1024 * 1024);
+    fetch(&lib, root.path(), &keys, &track, &Limit { quota: None }).unwrap();
+    origin.join().unwrap();
+    assert_eq!(lib.offline_bytes().unwrap(), 3 * 1024 * 1024 * 1024 + bytes.len() as u64);
+    assert!(lib.offline_copy_by_key("elsewhere").unwrap().is_some(), "no eviction");
+    // Back under a limit lower than what is kept: the copies stay, and the
+    // one already saved is still verified and kept.
+    fetch(&lib, root.path(), &keys, &track, &Limit { quota: Some(512 * 1024 * 1024) }).unwrap();
+    assert_eq!(lib.offline_bytes().unwrap(), 3 * 1024 * 1024 * 1024 + bytes.len() as u64);
 }

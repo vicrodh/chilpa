@@ -495,6 +495,9 @@ msgstr "Toutes les saisons"
 msgid "All selections"
 msgstr "Toutes les sélections"
 
+msgid "All servers"
+msgstr "Tous les serveurs"
+
 msgid "All set"
 msgstr "Tout est prêt"
 
@@ -1115,6 +1118,9 @@ msgstr "Vérifier la pile audio"
 msgid "Check a format…"
 msgstr "Vérifier un format…"
 
+msgid "Check again, and download again if needed"
+msgstr "Vérifier à nouveau et retélécharger si nécessaire"
+
 msgid "Check all folders"
 msgstr "Vérifier tous les dossiers"
 
@@ -1426,6 +1432,9 @@ msgstr ""
 
 msgid "Choose where to open this music"
 msgstr ""
+
+msgid "Choose “Make available offline…” in the menu of a server's album, playlist or tracks."
+msgstr "Choisissez « Rendre disponible hors ligne… » dans le menu d’un album, d’une playlist ou de pistes d’un serveur."
 
 msgid "Clean"
 msgstr "Sans contenu explicite"
@@ -2294,6 +2303,9 @@ msgstr "Téléchargements"
 msgid "Downloads are grouped by server type. Each account has its own subfolder."
 msgstr "Les téléchargements sont regroupés par type de serveur. Chaque compte dispose de son propre sous-dossier."
 
+msgid "Downloads stop when offline music reaches this size, and nothing is deleted to make room. Each file can be up to 512 MiB. Unlimited lets offline music use all the free space on the disk, with no size limit per file."
+msgstr "Les téléchargements s’arrêtent quand la musique hors ligne atteint cette taille, et rien n’est supprimé pour faire de la place. Chaque fichier peut faire jusqu’à 512 MiB. Avec « Illimité », la musique hors ligne peut utiliser tout l’espace libre du disque, sans limite de taille par fichier."
+
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr "Faites glisser ou utilisez ↑↓ pour garder un ordre personnalisé."
 
@@ -2536,6 +2548,9 @@ msgstr "Échec"
 
 msgid "Failed in this run"
 msgstr "Échec lors de cette exécution"
+
+msgid "Failed only"
+msgstr "Échecs uniquement"
 
 msgid "Failed to load albums"
 msgstr "Échec du chargement des albums"
@@ -3440,6 +3455,9 @@ msgstr "Langue"
 msgid "Large"
 msgstr "Grand"
 
+msgid "Largest"
+msgstr "Les plus lourds"
+
 msgid "Last 12 months"
 msgstr "12 derniers mois"
 
@@ -4226,6 +4244,9 @@ msgstr "Aucun serveur multimédia n'a répondu à la recherche. Certains ne rép
 msgid "No music has been synced with Chilpa to this storage yet."
 msgstr "Aucune musique n’a encore été synchronisée avec Chilpa sur ce stockage."
 
+msgid "No offline music yet"
+msgstr "Pas encore de musique hors ligne"
+
 msgid "No opening was confirmed"
 msgstr "Aucune ouverture n’a été confirmée"
 
@@ -4351,6 +4372,9 @@ msgstr "Introuvable sur le disque"
 
 msgid "Not heard first"
 msgstr "Non écoutés en premier"
+
+msgid "Not in the library"
+msgstr "Hors de la bibliothèque"
 
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "Pas dans la bibliothèque : voici le dossier tel qu'il est sur le disque."
@@ -4646,6 +4670,9 @@ msgstr ""
 msgid "Open the folder used for disposable files."
 msgstr "Ouvre le dossier des fichiers jetables."
 
+msgid "Open the offline folder"
+msgstr "Ouvrir le dossier hors connexion"
+
 msgid "Open view"
 msgstr "Ouvrir la vue"
 
@@ -4681,9 +4708,6 @@ msgstr "Jeton d'accès facultatif pour les playlists privées"
 
 msgid "Original audio"
 msgstr "Audio original"
-
-msgid "Original audio is saved in the offline folder configured for each server. Offline storage is limited to 2 GiB, with up to 512 MiB per file."
-msgstr "Les fichiers audio originaux sont enregistrés dans le dossier hors ligne de chaque serveur. Le stockage est limité à 2 Gio, avec 512 Mio maximum par fichier."
 
 msgid "Original audio over the selected network transport"
 msgstr "Audio original via le transport réseau sélectionné"
@@ -5962,6 +5986,9 @@ msgstr "Sélectionner une image..."
 msgid "Select a folder to see its contents."
 msgstr "Sélectionnez un dossier pour afficher son contenu."
 
+msgid "Select all"
+msgstr "Tout sélectionner"
+
 msgid "Select an artist to see their albums"
 msgstr "Sélectionnez un artiste pour voir ses albums"
 
@@ -6157,6 +6184,9 @@ msgstr "Afficher/Masquer la fenêtre"
 msgid "Showing"
 msgstr "Affichage"
 
+msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
+msgstr "{} pistes affichées sur {}. Choisissez un artiste ou un serveur pour voir le reste."
+
 msgid "Shown when pointing at the cover, written like the title."
 msgstr "Affiché au survol de la pochette, écrit comme le titre."
 
@@ -6249,6 +6279,9 @@ msgstr "Petit"
 
 msgid "Smaller covers and background images; Chilpa can make these again."
 msgstr "Pochettes et images de fond plus petites ; Chilpa peut les recréer."
+
+msgid "Smallest"
+msgstr "Les plus légers"
 
 msgid "Soft"
 msgstr "Légère"
@@ -6402,6 +6435,9 @@ msgstr "S'arrête dans {}"
 
 msgid "Storage"
 msgstr "Stockage"
+
+msgid "Storage limit"
+msgstr "Limite de stockage"
 
 msgid "Stream address"
 msgstr "Adresse du flux"
@@ -6952,6 +6988,9 @@ msgstr "Ce dossier ne contient aucun dossier. Choisissez-le depuis le niveau au-
 msgid "There is no previous EQ to restore."
 msgstr "Il n'y a pas d'EQ précédent à rétablir."
 
+msgid "There is not enough free space on the disk for this file."
+msgstr "Il n’y a pas assez d’espace libre sur le disque pour ce fichier."
+
 msgid "There is not enough space for this selection and its temporary files."
 msgstr ""
 
@@ -7474,8 +7513,14 @@ msgstr "Source inconnue"
 msgid "Unknown target; use Tab to complete the source."
 msgstr "Cible inconnue ; utilisez Tab pour compléter la source."
 
+msgid "Unknown title"
+msgstr "Titre inconnu"
+
 msgid "Unknown year"
 msgstr "Année inconnue"
+
+msgid "Unlimited"
+msgstr "Illimité"
 
 msgid "Unmatched"
 msgstr "Sans correspondance"
@@ -9484,9 +9529,6 @@ msgstr "{} formats sur {} sortent intacts"
 msgid "{} of {} tracks match this release"
 msgstr "{} pistes sur {} correspondent à cette sortie"
 
-msgid "{} offline audio files saved on this device."
-msgstr "{} fichiers audio hors ligne enregistrés sur cet appareil."
-
 msgid "{} play"
 msgid_plural "{} plays"
 msgstr[0] "{} lecture"
@@ -9568,6 +9610,11 @@ msgid "{} track on the server is not in your library"
 msgid_plural "{} tracks on the server are not in your library"
 msgstr[0] "{} piste du serveur n'est pas dans votre bibliothèque"
 msgstr[1] "{} pistes du serveur ne sont pas dans votre bibliothèque"
+
+msgid "{} track selected"
+msgid_plural "{} tracks selected"
+msgstr[0] "{} piste sélectionnée"
+msgstr[1] "{} pistes sélectionnées"
 
 msgid "{} tracks"
 msgstr "{} pistes"

@@ -496,6 +496,9 @@ msgstr "Все сезоны"
 msgid "All selections"
 msgstr "Все подборки"
 
+msgid "All servers"
+msgstr "Все серверы"
+
 msgid "All set"
 msgstr "Всё готово"
 
@@ -1117,6 +1120,9 @@ msgstr "Проверить аудиостек"
 msgid "Check a format…"
 msgstr "Проверить формат…"
 
+msgid "Check again, and download again if needed"
+msgstr "Проверить снова и при необходимости скачать заново"
+
 msgid "Check all folders"
 msgstr "Проверить все папки"
 
@@ -1428,6 +1434,9 @@ msgstr ""
 
 msgid "Choose where to open this music"
 msgstr ""
+
+msgid "Choose “Make available offline…” in the menu of a server's album, playlist or tracks."
+msgstr "Выберите «Сделать доступным офлайн…» в меню альбома, плейлиста или треков сервера."
 
 msgid "Clean"
 msgstr "Без откровенного содержания"
@@ -2296,6 +2305,9 @@ msgstr "Загрузки"
 msgid "Downloads are grouped by server type. Each account has its own subfolder."
 msgstr "Загрузки группируются по типу сервера. Для каждой учётной записи используется отдельная подпапка."
 
+msgid "Downloads stop when offline music reaches this size, and nothing is deleted to make room. Each file can be up to 512 MiB. Unlimited lets offline music use all the free space on the disk, with no size limit per file."
+msgstr "Загрузки останавливаются, когда офлайн-музыка достигает этого размера, и ничего не удаляется, чтобы освободить место. Каждый файл может занимать до 512 MiB. С вариантом «Без ограничений» офлайн-музыка может занять всё свободное место на диске, без ограничения размера файла."
+
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr "Перетаскивайте или используйте ↑↓, чтобы сохранить свой порядок."
 
@@ -2538,6 +2550,9 @@ msgstr "Ошибка"
 
 msgid "Failed in this run"
 msgstr "Сбои в этом запуске"
+
+msgid "Failed only"
+msgstr "Только с ошибкой"
 
 msgid "Failed to load albums"
 msgstr "Не удалось загрузить альбомы"
@@ -3445,6 +3460,9 @@ msgstr "Язык"
 msgid "Large"
 msgstr "Большой"
 
+msgid "Largest"
+msgstr "Самые большие"
+
 msgid "Last 12 months"
 msgstr "Последние 12 месяцев"
 
@@ -4231,6 +4249,9 @@ msgstr "Ни один медиасервер не ответил на поиск
 msgid "No music has been synced with Chilpa to this storage yet."
 msgstr "На этот накопитель ещё не синхронизирована музыка с помощью Chilpa."
 
+msgid "No offline music yet"
+msgstr "Офлайн-музыки пока нет"
+
 msgid "No opening was confirmed"
 msgstr "Открытие не подтверждено"
 
@@ -4356,6 +4377,9 @@ msgstr "Не найден на диске"
 
 msgid "Not heard first"
 msgstr "Сначала непрослушанные"
+
+msgid "Not in the library"
+msgstr "Нет в библиотеке"
 
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "Не в библиотеке: это папка такой, какой она лежит на диске."
@@ -4651,6 +4675,9 @@ msgstr ""
 msgid "Open the folder used for disposable files."
 msgstr "Открыть папку для временных файлов."
 
+msgid "Open the offline folder"
+msgstr "Открыть папку офлайн-музыки"
+
 msgid "Open view"
 msgstr "Открыть режим"
 
@@ -4686,9 +4713,6 @@ msgstr "Необязательный токен доступа для закры
 
 msgid "Original audio"
 msgstr "Исходное аудио"
-
-msgid "Original audio is saved in the offline folder configured for each server. Offline storage is limited to 2 GiB, with up to 512 MiB per file."
-msgstr "Исходное аудио сохраняется в офлайн-папке каждого сервера. Объём ограничен 2 ГиБ, до 512 МиБ на файл."
 
 msgid "Original audio over the selected network transport"
 msgstr "Исходное аудио через выбранный сетевой транспорт"
@@ -5968,6 +5992,9 @@ msgstr "Выбрать изображение..."
 msgid "Select a folder to see its contents."
 msgstr "Выберите папку, чтобы увидеть её содержимое."
 
+msgid "Select all"
+msgstr "Выбрать все"
+
 msgid "Select an artist to see their albums"
 msgstr "Выберите исполнителя, чтобы увидеть его альбомы"
 
@@ -6163,6 +6190,9 @@ msgstr "Показать/Скрыть окно"
 msgid "Showing"
 msgstr "Показано"
 
+msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
+msgstr "Показано {} из {} треков. Выберите исполнителя или сервер, чтобы увидеть остальные."
+
 msgid "Shown when pointing at the cover, written like the title."
 msgstr "Показывается при наведении на обложку, записывается так же, как название."
 
@@ -6255,6 +6285,9 @@ msgstr "Маленький"
 
 msgid "Smaller covers and background images; Chilpa can make these again."
 msgstr "Уменьшенные обложки и фоновые изображения; Chilpa может создать их заново."
+
+msgid "Smallest"
+msgstr "Самые маленькие"
 
 msgid "Soft"
 msgstr "Слабое"
@@ -6408,6 +6441,9 @@ msgstr "Остановится через {}"
 
 msgid "Storage"
 msgstr "Хранилище"
+
+msgid "Storage limit"
+msgstr "Лимит хранилища"
 
 msgid "Stream address"
 msgstr "Адрес потока"
@@ -6961,6 +6997,9 @@ msgstr "Внутри этой папки нет папок. Выберите е�
 msgid "There is no previous EQ to restore."
 msgstr "Нет прежнего EQ для восстановления."
 
+msgid "There is not enough free space on the disk for this file."
+msgstr "На диске недостаточно свободного места для этого файла."
+
 msgid "There is not enough space for this selection and its temporary files."
 msgstr ""
 
@@ -7483,8 +7522,14 @@ msgstr "Источник неизвестен"
 msgid "Unknown target; use Tab to complete the source."
 msgstr "Неизвестная цель; нажмите Tab, чтобы дополнить источник."
 
+msgid "Unknown title"
+msgstr "Неизвестное название"
+
 msgid "Unknown year"
 msgstr "Год неизвестен"
+
+msgid "Unlimited"
+msgstr "Без ограничений"
 
 msgid "Unmatched"
 msgstr "Без совпадений"
@@ -9514,9 +9559,6 @@ msgstr "Форматов без изменений: {} из {}"
 msgid "{} of {} tracks match this release"
 msgstr "Треков, совпадающих с этим релизом: {} из {}"
 
-msgid "{} offline audio files saved on this device."
-msgstr "На этом устройстве сохранено {} офлайн-аудиофайлов."
-
 msgid "{} play"
 msgid_plural "{} plays"
 msgstr[0] "{} воспроизведение"
@@ -9609,6 +9651,12 @@ msgid_plural "{} tracks on the server are not in your library"
 msgstr[0] "{} трек с сервера отсутствует в вашей библиотеке"
 msgstr[1] "{} трека с сервера отсутствуют в вашей библиотеке"
 msgstr[2] "{} треков с сервера отсутствуют в вашей библиотеке"
+
+msgid "{} track selected"
+msgid_plural "{} tracks selected"
+msgstr[0] "Выбран {} трек"
+msgstr[1] "Выбрано {} трека"
+msgstr[2] "Выбрано {} треков"
 
 msgid "{} tracks"
 msgstr "Треков: {}"

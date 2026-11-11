@@ -22,10 +22,6 @@ pub mod qobject {
         /// A listing's page as JSON: title, state, folders, memberships.
         #[qsignal]
         fn server_media_requested(self: Pin<&mut Sources>, kind: &QString, id: i64);
-        #[qsignal]
-        fn offline_requested(self: Pin<&mut Sources>, kind: &QString, selected: &QString);
-        #[qinvokable]
-        fn offline(self: &Sources, action: &QString, kind: &QString, selected: &QString) -> QString;
         #[qinvokable]
         fn server_media_info(self: &Sources, kind: &QString, id: i64) -> QString;
         #[qinvokable]
@@ -78,17 +74,6 @@ use std::pin::Pin;
 #[derive(Default)]
 pub struct SourcesRust { snapshot: QString, revision: i32 }
 impl qobject::Sources {
-    pub fn offline(&self, action:&QString, kind:&QString, selected:&QString) -> QString {
-        QString::from(crate::app::with(|api| match action.to_string().as_str() {
-            "info"=>api.server_offline_info(&kind.to_string(),&selected.to_string()),
-            "start"=>api.server_offline_start(&kind.to_string(),&selected.to_string()),
-            "cancel"=>{api.server_offline_cancel();api.server_offline_status()},
-            "removal_info"=>api.server_offline_removal_info(&kind.to_string(),&selected.to_string()),
-            "dismiss_removal"=>{api.server_offline_dismiss_removal();"{}".into()},
-            "remove"=>api.server_offline_remove(&selected.to_string()),
-            _=>api.server_offline_status(),
-        }))
-    }
     pub fn server_media_info(&self, kind: &QString, id: i64) -> QString {
         QString::from(crate::app::with(|api| api.server_media_info(&kind.to_string(), id)))
     }

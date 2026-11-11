@@ -3,6 +3,7 @@ import app.chilpa
 import app.chilpa.devices
 import app.chilpa.kit
 import app.chilpa.sources
+import app.chilpa.offline
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
@@ -57,7 +58,7 @@ CascadingMenu {
               act: favorite ? "unfavorite" : "favorite", when: one && (id > 0 || nativeInfo.favorite_supported !== false && nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")) }
         ]
         if (deletable) all.push({separator:true}, {text:I18n.tr("Delete from server…", I18n.rev),act:"server_delete",glyph:Icons.trash})
-        if (one && id > 0 && JSON.parse(Sources.offline("info", "album", JSON.stringify([id]))).count > 0)
+        if (one && id > 0 && JSON.parse(Offline.call("info", "album", JSON.stringify([id]))).count > 0)
             all.push({separator:true}, {text:I18n.tr("Make available offline…", I18n.rev),act:"offline"})
         // The extra queues come from the facade, as they do for a track.
         entries = extraEntries.concat(all.filter(e => e.when === undefined || e.when)).concat(JSON.parse(AlbumActions.listenTargetsJson()))
@@ -71,7 +72,7 @@ CascadingMenu {
         if (act.startsWith("extension:")) { menu.extraAction(entry); return }
         if (act.startsWith("buffer:")) { AlbumActions.listAction(albumId, act); ListenList.refresh(); if (act === "buffer:new") Navigation.go("listenlist", 0); return }
         switch (act) {
-        case "offline": Sources.offlineRequested("album", JSON.stringify([albumId])); break
+        case "offline": Offline.requested("album", JSON.stringify([albumId])); break
         case "server_delete": Sources.serverMediaRequested("album", albumId); break;
         case "play": if (playAction) playAction(); else AlbumActions.play(albumId, false); break
         case "next": AlbumActions.playNext(albumId); break

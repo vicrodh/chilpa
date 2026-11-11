@@ -18,6 +18,7 @@ use chilpa_qt_stats as _;
 use chilpa_qt_link as _;
 use chilpa_qt_query as _;
 use chilpa_qt_devices as _;
+use chilpa_qt_offline as _;
 use chilpa_qt_playlists as _;
 use chilpa_qt_wizard as _;
 use chilpa_qt_controls as _;

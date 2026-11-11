@@ -29,6 +29,9 @@ pub enum Screen {
     PluginDownloads,
     /// Settings > Library > Library folders.
     LibraryFolders,
+    /// Settings > Music servers > Offline music: what the servers' music
+    /// keeps on this device, its limit and its folders.
+    OfflineMusic,
     DeviceSync,
     /// The library by folder, or a folder opened from the disk.
     Folders,
@@ -65,6 +68,7 @@ impl Screen {
             Screen::Settings => "settings",
             Screen::PluginDownloads => "pluginDownloads",
             Screen::LibraryFolders => "libraryFolders",
+            Screen::OfflineMusic => "offlineMusic",
             Screen::DeviceSync => "deviceSync",
             Screen::Folders => "folders",
             Screen::OpenMedia => "openMedia",
@@ -82,7 +86,7 @@ impl Screen {
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::DeviceSync, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::OfflineMusic, Screen::DeviceSync, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -295,6 +299,7 @@ impl crate::Chilpa {
                 .and_then(|plugins| plugins.list().into_iter().find(|plugin| plugin.id == r.key).map(|plugin| plugin.name))
                 .unwrap_or_else(|| self.t("Purchases")), "download"),
             Screen::LibraryFolders => (self.t("Library folders"), "folder"),
+            Screen::OfflineMusic => (self.t("Offline music"), "download"),
             Screen::Artist => (r.key.clone(), "user"),
             Screen::ArtistScene => (self.t("Artists from this scene"), "hierarchy2"),
             Screen::Folders => match std::path::Path::new(&r.key).file_name() {
@@ -414,6 +419,17 @@ mod tests {
         assert_eq!(back.active(), 1);
         assert_eq!(Tabs::restore("").routes(), [Route::of(Screen::Home)], "nothing kept, Home");
         assert_eq!(Tabs::restore("9\nnowhere\t0\t").routes(), [Route::of(Screen::Home)], "nothing usable, Home");
+    }
+
+    #[test]
+    fn the_offline_page_is_a_route_with_back_and_restore() {
+        assert_eq!(Screen::from_name("offlineMusic"), Some(Screen::OfflineMusic));
+        let mut tabs = Tabs::default();
+        tabs.go(Route { screen: Screen::Settings, id: 0, key: "sources".into() });
+        tabs.go(Route::of(Screen::OfflineMusic));
+        assert_eq!(Tabs::restore(&tabs.save()).current(), Route::of(Screen::OfflineMusic));
+        tabs.back();
+        assert_eq!(tabs.current().key, "sources", "back returns to Music servers");
     }
 
     #[test]
