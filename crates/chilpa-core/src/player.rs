@@ -58,6 +58,10 @@ pub enum PlayerEvent {
     Stopped { frames: u64 },
     /// Something failed, in text the interface can show.
     Failed { message: String },
+    /// A queue entry was passed over and the queue went on: it would not
+    /// open, or it broke partway. `index` is its place in the queue the
+    /// player was given; `message` says why, in text the interface can show.
+    Skipped { index: usize, path: PathBuf, message: String },
 }
 
 enum Order {
@@ -674,13 +678,19 @@ fn play(
         &mut |_, progress| {
             let _ = events.send(PlayerEvent::Progress { frames: progress.position, played: progress.delivered });
         },
+        &mut |index, path, why| {
+            chilpa_audio::diagnostics::trace("player", "track_passed_over", format_args!("index={index}/{total} path={path:?} why={why}"));
+            let _ = events.send(PlayerEvent::Skipped { index, path: path.to_path_buf(), message: why.to_string() });
+        },
     )?;
 
-    // The end of the queue is the end of its last track.
-    Ok(results
-        .last()
-        .map(|r| r.outcome.clone())
-        .unwrap_or(Outcome::Finished { frames: 0 }))
+    // The end of the queue is the end of its last track. One that broke
+    // partway was passed over and said as it was: the queue ran out after it.
+    Ok(match results.last().map(|r| &r.outcome) {
+        Some(Outcome::Unreadable { frames, .. }) => Outcome::Finished { frames: *frames },
+        Some(outcome) => outcome.clone(),
+        None => Outcome::Finished { frames: 0 },
+    })
 }
 
 /// True if what was asked for is a URL and not a file.

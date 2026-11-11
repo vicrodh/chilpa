@@ -18,6 +18,17 @@ pub enum PlayError {
     Negotiation(NegotiationError),
     Pack(PackError),
     Sink(SinkError),
+    /// The track's own data would not read: a one-bit file, a disc image or
+    /// a server's item that did not open. Not the device.
+    Unreadable(String),
+}
+
+impl PlayError {
+    /// The track is at fault, not the output: a queue passes over it instead
+    /// of ending. Negotiation, packing and the device are the output's.
+    pub fn is_track(&self) -> bool {
+        matches!(self, PlayError::Decode(_) | PlayError::Unreadable(_))
+    }
 }
 
 impl std::fmt::Display for PlayError {
@@ -74,6 +85,7 @@ impl std::fmt::Display for PlayError {
             PlayError::Sink(e) => {
                 write!(f, "{}", chilpa_i18n::t_args("device: {}", &[&e.to_string()]))
             }
+            PlayError::Unreadable(why) => write!(f, "{why}"),
         }
     }
 }
