@@ -8058,6 +8058,9 @@ msgstr "ステレオ領域のフレームの1つがステレオではありま�
 msgid "a list needs a name"
 msgstr "リストには名前が必要です"
 
+msgid "a media server (DLNA) takes no changes"
+msgstr "メディアサーバー (DLNA) は変更を受け付けません"
+
 msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
 msgstr "このサイドカーファイルはより新しいChilpaで書き込まれました。変更するにはChilpaを更新してください"
 
@@ -8476,6 +8479,9 @@ msgstr "1つ以上のファイルに書き込めません"
 msgid "one or more files cannot take tags"
 msgstr "1つ以上のファイルにタグを付けられません"
 
+msgid "only an administrator of this server can change its metadata"
+msgstr "このサーバーのメタデータを変更できるのは管理者だけです"
+
 msgid "open it again from where it is listed"
 msgstr "一覧された場所からもう一度開いてください"
 
@@ -8620,6 +8626,9 @@ msgstr "そのファイルは画像ではありません"
 msgid "that id does not work as a folder"
 msgstr "そのIDはフォルダーとして使えません"
 
+msgid "that image cannot be sent"
+msgstr "その画像は送信できません"
+
 msgid "that is an Emby server, and Chilpa does not speak Emby"
 msgstr "それはEmbyサーバーで、ChilpaはEmbyに対応していません"
 
@@ -8739,6 +8748,9 @@ msgstr "この領域にはトラックが宣言されていません"
 
 msgid "the audio area falls outside the image"
 msgstr "オーディオ領域がイメージの外にあります"
+
+msgid "the change could not be written down"
+msgstr "変更を準備できませんでした"
 
 msgid "the changes could not be kept in the library: {}"
 msgstr "変更をライブラリに保存できませんでした: {}"
@@ -9031,6 +9043,12 @@ msgstr "サーバーがファイルではなくメッセージを返しました
 msgid "the server answered with something that is not HTTP"
 msgstr "サーバーがHTTPではないものを返しました"
 
+msgid "the server answered without the item"
+msgstr "サーバーの応答に項目が含まれていませんでした"
+
+msgid "the server answered without the item's library"
+msgstr "サーバーの応答に項目のライブラリが含まれていませんでした"
+
 msgid "the server answered {}"
 msgstr "サーバーの応答: {}"
 
@@ -9058,8 +9076,14 @@ msgstr ""
 msgid "the server did not say how long the file is"
 msgstr "サーバーがファイルの長さを返しませんでした"
 
+msgid "the server did not take the change (HTTP {})"
+msgstr "サーバーが変更を受け付けませんでした (HTTP {})"
+
 msgid "the server does not accept this way of signing in"
 msgstr "サーバーはこのログイン方法に対応していません"
+
+msgid "the server does not take \"{}\""
+msgstr "サーバーは「{}」を受け付けません"
 
 msgid "the server is converting the file instead of sending it as it is"
 msgstr "サーバーがファイルをそのまま送らず、変換しています"
@@ -9093,6 +9117,9 @@ msgstr "サーバーが音声を送りませんでした: {}"
 
 msgid "the server stopped sending the file"
 msgstr "サーバーがファイルの送信を止めました"
+
+msgid "the server takes no image for it"
+msgstr "サーバーはこれに画像を受け付けません"
 
 msgid "the server takes no list this long in one request"
 msgstr "サーバーは1回のリクエストでこれほど長いリストを受け付けません"
@@ -9202,6 +9229,9 @@ msgstr "このコンピューターには秘密情報を保管する場所があ
 msgid "this Mac has no output called \"{}\" any more"
 msgstr "このMacに「{}」という出力はもうありません"
 
+msgid "this account may not change that server's metadata"
+msgstr "このアカウントではそのサーバーのメタデータを変更できません"
+
 msgid "this cannot be played"
 msgstr "これは再生できません"
 
@@ -9246,6 +9276,9 @@ msgstr "このサーバーにはChilpaが変更できるお気に入りがあり
 
 msgid "this server keeps no ratings Chilpa can change"
 msgstr "このサーバーにはChilpaが変更できる評価がありません"
+
+msgid "this server reads tags and covers from its files and offers no way to change them"
+msgstr "このサーバーはタグとカバーをファイルから読み取り、変更する方法を提供していません"
 
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "このサーバーはトラックのすべてのコピーをプレイリストから一度に削除します。すべて削除するか、サーバー上で変更してください"

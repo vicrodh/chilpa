@@ -1,0 +1,58 @@
+{
+ "Name": "Blackened",
+ "Id": "000c166e91ff1e848c9e942ae81beba1",
+ "Etag": "e8851772c015454b84b9051b12bff5f8",
+ "DateCreated": "2026-06-08T22:42:59.6506522Z",
+ "CanDelete": true,
+ "CanDownload": true,
+ "HasLyrics": false,
+ "Container": "flac",
+ "SortName": "0001 - 0001 - Blackened",
+ "PremiereDate": "1988-01-01T00:00:00.0000000Z",
+ "EnableMediaSourceDisplay": true,
+ "Genres": [
+  "Metal"
+ ],
+ "RunTimeTicks": 4054200000,
+ "ProductionYear": 1988,
+ "IndexNumber": 1,
+ "ParentIndexNumber": 1,
+ "ProviderIds": {},
+ "IsFolder": false,
+ "Type": "Audio",
+ "Studios": [],
+ "GenreItems": [
+  {
+   "Name": "Metal",
+   "Id": "f179eaba20e0c9f97144d2883b84f428"
+  }
+ ],
+ "LocalTrailerCount": 0,
+ "SpecialFeatureCount": 0,
+ "Tags": [],
+ "Artists": [
+  "Metallica"
+ ],
+ "ArtistItems": [
+  {
+   "Name": "Metallica",
+   "Id": "1b118dd9abb1bd96c156a8e7512c358a"
+  }
+ ],
+ "Album": "...And Justice For All",
+ "AlbumId": "c29baf0d2a798b1c11612f09fb2d6243",
+ "AlbumPrimaryImageTag": "853cd70a58cb88ffc89950e0eac82b79",
+ "AlbumArtist": "Metallica",
+ "AlbumArtists": [
+  {
+   "Name": "Metallica",
+   "Id": "1b118dd9abb1bd96c156a8e7512c358a"
+  }
+ ],
+ "ImageTags": {},
+ "BackdropImageTags": [],
+ "LocationType": "FileSystem",
+ "MediaType": "Audio",
+ "LockedFields": [],
+ "LockData": false
+}

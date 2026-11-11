@@ -8069,6 +8069,9 @@ msgstr "un frame del área estéreo no es estéreo"
 msgid "a list needs a name"
 msgstr "una lista necesita un nombre"
 
+msgid "a media server (DLNA) takes no changes"
+msgstr "un servidor de medios (DLNA) no acepta cambios"
+
 msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
 msgstr "este sidecar lo escribió un Chilpa más nuevo; actualiza Chilpa para cambiarlo"
 
@@ -8488,6 +8491,9 @@ msgstr "en uno o más archivos no se puede escribir"
 msgid "one or more files cannot take tags"
 msgstr "uno o más archivos no aceptan tags"
 
+msgid "only an administrator of this server can change its metadata"
+msgstr "solo un administrador de este servidor puede cambiar sus metadatos"
+
 msgid "open it again from where it is listed"
 msgstr "ábrelo otra vez desde donde aparece"
 
@@ -8632,6 +8638,9 @@ msgstr "ese archivo no es una imagen"
 msgid "that id does not work as a folder"
 msgstr "ese id no sirve de carpeta"
 
+msgid "that image cannot be sent"
+msgstr "esa imagen no se puede enviar"
+
 msgid "that is an Emby server, and Chilpa does not speak Emby"
 msgstr "ese es un servidor Emby, y Chilpa no habla Emby"
 
@@ -8751,6 +8760,9 @@ msgstr "el área no declara pistas"
 
 msgid "the audio area falls outside the image"
 msgstr "el área de audio cae fuera de la imagen"
+
+msgid "the change could not be written down"
+msgstr "no se pudo preparar el cambio"
 
 msgid "the changes could not be kept in the library: {}"
 msgstr "los cambios no se pudieron guardar en la biblioteca: {}"
@@ -9043,6 +9055,12 @@ msgstr "el servidor respondió con un mensaje en lugar del archivo"
 msgid "the server answered with something that is not HTTP"
 msgstr "el servidor respondió con algo que no es HTTP"
 
+msgid "the server answered without the item"
+msgstr "el servidor respondió sin el elemento"
+
+msgid "the server answered without the item's library"
+msgstr "el servidor respondió sin la biblioteca del elemento"
+
 msgid "the server answered {}"
 msgstr "el servidor respondió {}"
 
@@ -9070,8 +9088,14 @@ msgstr "el servidor no describió la música seleccionada"
 msgid "the server did not say how long the file is"
 msgstr "el servidor no dijo cuánto mide el archivo"
 
+msgid "the server did not take the change (HTTP {})"
+msgstr "el servidor no aceptó el cambio (HTTP {})"
+
 msgid "the server does not accept this way of signing in"
 msgstr "el servidor no acepta esta forma de iniciar sesión"
+
+msgid "the server does not take \"{}\""
+msgstr "el servidor no acepta \"{}\""
 
 msgid "the server is converting the file instead of sending it as it is"
 msgstr "el servidor está convirtiendo el archivo en lugar de enviarlo como es"
@@ -9105,6 +9129,9 @@ msgstr "el servidor no mandó audio: {}"
 
 msgid "the server stopped sending the file"
 msgstr "el servidor dejó de enviar el archivo"
+
+msgid "the server takes no image for it"
+msgstr "el servidor no acepta una imagen para esto"
 
 msgid "the server takes no list this long in one request"
 msgstr "el servidor no acepta una lista tan larga en una sola solicitud"
@@ -9214,6 +9241,9 @@ msgstr "no hay dónde guardar un secreto en este equipo"
 msgid "this Mac has no output called \"{}\" any more"
 msgstr "esta Mac ya no tiene ninguna salida llamada \"{}\""
 
+msgid "this account may not change that server's metadata"
+msgstr "esta cuenta no puede cambiar los metadatos de ese servidor"
+
 msgid "this cannot be played"
 msgstr "esto no se puede reproducir"
 
@@ -9258,6 +9288,9 @@ msgstr "este servidor no guarda favoritos que Chilpa pueda cambiar"
 
 msgid "this server keeps no ratings Chilpa can change"
 msgstr "este servidor no guarda calificaciones que Chilpa pueda cambiar"
+
+msgid "this server reads tags and covers from its files and offers no way to change them"
+msgstr "este servidor lee etiquetas y portadas de sus archivos y no ofrece forma de cambiarlas"
 
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "este servidor quita de la playlist todas las copias de una pista a la vez; quítalas todas o cámbiala en el servidor"

@@ -5274,6 +5274,8 @@ msgid "Rating"
 msgstr ""
 
 msgid "Ratings"
+msgstr ""
+
 msgid "Ratings are not synced with it."
 msgstr ""
 
@@ -8067,6 +8069,9 @@ msgstr ""
 msgid "a list needs a name"
 msgstr ""
 
+msgid "a media server (DLNA) takes no changes"
+msgstr ""
+
 msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
 msgstr ""
 
@@ -8486,6 +8491,9 @@ msgstr ""
 msgid "one or more files cannot take tags"
 msgstr ""
 
+msgid "only an administrator of this server can change its metadata"
+msgstr ""
+
 msgid "open it again from where it is listed"
 msgstr ""
 
@@ -8630,6 +8638,9 @@ msgstr ""
 msgid "that id does not work as a folder"
 msgstr ""
 
+msgid "that image cannot be sent"
+msgstr ""
+
 msgid "that is an Emby server, and Chilpa does not speak Emby"
 msgstr ""
 
@@ -8748,6 +8759,9 @@ msgid "the area declares no tracks"
 msgstr ""
 
 msgid "the audio area falls outside the image"
+msgstr ""
+
+msgid "the change could not be written down"
 msgstr ""
 
 msgid "the changes could not be kept in the library: {}"
@@ -9041,6 +9055,12 @@ msgstr ""
 msgid "the server answered with something that is not HTTP"
 msgstr ""
 
+msgid "the server answered without the item"
+msgstr ""
+
+msgid "the server answered without the item's library"
+msgstr ""
+
 msgid "the server answered {}"
 msgstr ""
 
@@ -9068,7 +9088,13 @@ msgstr ""
 msgid "the server did not say how long the file is"
 msgstr ""
 
+msgid "the server did not take the change (HTTP {})"
+msgstr ""
+
 msgid "the server does not accept this way of signing in"
+msgstr ""
+
+msgid "the server does not take \"{}\""
 msgstr ""
 
 msgid "the server is converting the file instead of sending it as it is"
@@ -9102,6 +9128,9 @@ msgid "the server sent no audio: {}"
 msgstr ""
 
 msgid "the server stopped sending the file"
+msgstr ""
+
+msgid "the server takes no image for it"
 msgstr ""
 
 msgid "the server takes no list this long in one request"
@@ -9212,6 +9241,9 @@ msgstr ""
 msgid "this Mac has no output called \"{}\" any more"
 msgstr ""
 
+msgid "this account may not change that server's metadata"
+msgstr ""
+
 msgid "this cannot be played"
 msgstr ""
 
@@ -9255,6 +9287,9 @@ msgid "this server keeps no favorites Chilpa can change"
 msgstr ""
 
 msgid "this server keeps no ratings Chilpa can change"
+msgstr ""
+
+msgid "this server reads tags and covers from its files and offers no way to change them"
 msgstr ""
 
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"

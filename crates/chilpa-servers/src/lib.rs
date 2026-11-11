@@ -23,9 +23,12 @@
 //!   A media server has none (`Kind::has_playlists`);
 //! - where to read a track's original bytes, and a record's cover;
 //! - the listener's ratings and favorites of tracks and records, read and
-//!   written (`rating`, `favorite`), on the kinds that keep them.
+//!   written (`rating`, `favorite`), on the kinds that keep them;
+//! - what a record, a track or an artist says, and changing it, with its
+//!   image, on the kinds that take such changes (`edit`).
 
 pub mod dlna;
+pub mod edit;
 pub mod favorite;
 pub mod jellyfin;
 pub mod model;

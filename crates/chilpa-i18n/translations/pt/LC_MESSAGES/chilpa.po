@@ -8069,6 +8069,9 @@ msgstr "um quadro da área estéreo não é estéreo"
 msgid "a list needs a name"
 msgstr "uma lista precisa de um nome"
 
+msgid "a media server (DLNA) takes no changes"
+msgstr "um servidor de mídia (DLNA) não aceita alterações"
+
 msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
 msgstr "um Chilpa mais recente gravou este arquivo auxiliar; atualize o Chilpa para alterá-lo"
 
@@ -8488,6 +8491,9 @@ msgstr "não é possível gravar em um ou mais arquivos"
 msgid "one or more files cannot take tags"
 msgstr "um ou mais arquivos não aceitam tags"
 
+msgid "only an administrator of this server can change its metadata"
+msgstr "só um administrador deste servidor pode alterar os metadados dele"
+
 msgid "open it again from where it is listed"
 msgstr "abra-o novamente a partir de onde ele está listado"
 
@@ -8632,6 +8638,9 @@ msgstr "esse arquivo não é uma imagem"
 msgid "that id does not work as a folder"
 msgstr "esse ID não funciona como pasta"
 
+msgid "that image cannot be sent"
+msgstr "essa imagem não pode ser enviada"
+
 msgid "that is an Emby server, and Chilpa does not speak Emby"
 msgstr "esse é um servidor Emby, e o Chilpa não fala com o Emby"
 
@@ -8751,6 +8760,9 @@ msgstr "a área não declara nenhuma faixa"
 
 msgid "the audio area falls outside the image"
 msgstr "a área de áudio fica fora da imagem"
+
+msgid "the change could not be written down"
+msgstr "não foi possível preparar a alteração"
 
 msgid "the changes could not be kept in the library: {}"
 msgstr "não foi possível guardar as alterações na biblioteca: {}"
@@ -9043,6 +9055,12 @@ msgstr "o servidor respondeu com uma mensagem em vez do arquivo"
 msgid "the server answered with something that is not HTTP"
 msgstr "o servidor respondeu com algo que não é HTTP"
 
+msgid "the server answered without the item"
+msgstr "o servidor respondeu sem o item"
+
+msgid "the server answered without the item's library"
+msgstr "o servidor respondeu sem a biblioteca do item"
+
 msgid "the server answered {}"
 msgstr "o servidor respondeu {}"
 
@@ -9070,8 +9088,14 @@ msgstr ""
 msgid "the server did not say how long the file is"
 msgstr "o servidor não informou o tamanho do arquivo"
 
+msgid "the server did not take the change (HTTP {})"
+msgstr "o servidor não aceitou a alteração (HTTP {})"
+
 msgid "the server does not accept this way of signing in"
 msgstr "o servidor não aceita esta forma de login"
+
+msgid "the server does not take \"{}\""
+msgstr "o servidor não aceita “{}”"
 
 msgid "the server is converting the file instead of sending it as it is"
 msgstr "o servidor está convertendo o arquivo em vez de enviá-lo como está"
@@ -9105,6 +9129,9 @@ msgstr "o servidor não enviou áudio: {}"
 
 msgid "the server stopped sending the file"
 msgstr "o servidor parou de enviar o arquivo"
+
+msgid "the server takes no image for it"
+msgstr "o servidor não aceita imagem para isso"
 
 msgid "the server takes no list this long in one request"
 msgstr "o servidor não aceita uma lista tão longa em uma única solicitação"
@@ -9214,6 +9241,9 @@ msgstr "não há onde guardar um segredo neste computador"
 msgid "this Mac has no output called \"{}\" any more"
 msgstr "este Mac não tem mais uma saída chamada “{}”"
 
+msgid "this account may not change that server's metadata"
+msgstr "esta conta não pode alterar os metadados desse servidor"
+
 msgid "this cannot be played"
 msgstr "isto não pode ser reproduzido"
 
@@ -9258,6 +9288,9 @@ msgstr "este servidor não guarda favoritos que o Chilpa possa alterar"
 
 msgid "this server keeps no ratings Chilpa can change"
 msgstr "este servidor não guarda avaliações que o Chilpa possa alterar"
+
+msgid "this server reads tags and covers from its files and offers no way to change them"
+msgstr "este servidor lê tags e capas dos próprios arquivos e não oferece como alterá-las"
 
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "este servidor tira da playlist todas as cópias de uma faixa de uma vez; tire todas ou altere a playlist no servidor"

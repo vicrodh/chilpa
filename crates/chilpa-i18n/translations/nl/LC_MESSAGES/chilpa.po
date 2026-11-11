@@ -8069,6 +8069,9 @@ msgstr "een frame van het stereogebied is geen stereo"
 msgid "a list needs a name"
 msgstr "een lijst heeft een naam nodig"
 
+msgid "a media server (DLNA) takes no changes"
+msgstr "een mediaserver (DLNA) accepteert geen wijzigingen"
+
 msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
 msgstr "een nieuwere Chilpa heeft dit sidecar-bestand geschreven; werk Chilpa bij om het te wijzigen"
 
@@ -8488,6 +8491,9 @@ msgstr "in een of meer bestanden kan niet worden geschreven"
 msgid "one or more files cannot take tags"
 msgstr "een of meer bestanden kunnen geen tags opslaan"
 
+msgid "only an administrator of this server can change its metadata"
+msgstr "alleen een beheerder van deze server kan de metadata ervan wijzigen"
+
 msgid "open it again from where it is listed"
 msgstr "open het opnieuw vanuit de plek waar het staat"
 
@@ -8632,6 +8638,9 @@ msgstr "dat bestand is geen afbeelding"
 msgid "that id does not work as a folder"
 msgstr "die id werkt niet als map"
 
+msgid "that image cannot be sent"
+msgstr "die afbeelding kan niet worden verzonden"
+
 msgid "that is an Emby server, and Chilpa does not speak Emby"
 msgstr "dat is een Emby-server, en Chilpa spreekt geen Emby"
 
@@ -8751,6 +8760,9 @@ msgstr "het gebied bevat geen nummers"
 
 msgid "the audio area falls outside the image"
 msgstr "het audiogebied valt buiten de image"
+
+msgid "the change could not be written down"
+msgstr "de wijziging kon niet worden voorbereid"
 
 msgid "the changes could not be kept in the library: {}"
 msgstr "de wijzigingen konden niet in de bibliotheek worden bewaard: {}"
@@ -9043,6 +9055,12 @@ msgstr "de server antwoordde met een bericht in plaats van het bestand"
 msgid "the server answered with something that is not HTTP"
 msgstr "de server antwoordde met iets dat geen HTTP is"
 
+msgid "the server answered without the item"
+msgstr "de server antwoordde zonder het item"
+
+msgid "the server answered without the item's library"
+msgstr "de server antwoordde zonder de bibliotheek van het item"
+
 msgid "the server answered {}"
 msgstr "de server antwoordde {}"
 
@@ -9070,8 +9088,14 @@ msgstr ""
 msgid "the server did not say how long the file is"
 msgstr "de server zei niet hoe lang het bestand is"
 
+msgid "the server did not take the change (HTTP {})"
+msgstr "de server heeft de wijziging niet geaccepteerd (HTTP {})"
+
 msgid "the server does not accept this way of signing in"
 msgstr "de server accepteert deze manier van inloggen niet"
+
+msgid "the server does not take \"{}\""
+msgstr "de server accepteert “{}” niet"
 
 msgid "the server is converting the file instead of sending it as it is"
 msgstr "de server zet het bestand om in plaats van het ongewijzigd te sturen"
@@ -9105,6 +9129,9 @@ msgstr "de server stuurde geen audio: {}"
 
 msgid "the server stopped sending the file"
 msgstr "de server stopte met het sturen van het bestand"
+
+msgid "the server takes no image for it"
+msgstr "de server accepteert hiervoor geen afbeelding"
 
 msgid "the server takes no list this long in one request"
 msgstr "de server accepteert zo'n lange lijst niet in één verzoek"
@@ -9214,6 +9241,9 @@ msgstr "er is geen plek om een geheim te bewaren op deze machine"
 msgid "this Mac has no output called \"{}\" any more"
 msgstr "deze Mac heeft geen uitvoer meer met de naam ‘{}'"
 
+msgid "this account may not change that server's metadata"
+msgstr "dit account mag de metadata van die server niet wijzigen"
+
 msgid "this cannot be played"
 msgstr "dit kan niet worden afgespeeld"
 
@@ -9258,6 +9288,9 @@ msgstr "deze server bewaart geen favorieten die Chilpa kan wijzigen"
 
 msgid "this server keeps no ratings Chilpa can change"
 msgstr "deze server bewaart geen waarderingen die Chilpa kan wijzigen"
+
+msgid "this server reads tags and covers from its files and offers no way to change them"
+msgstr "deze server leest tags en hoezen uit zijn bestanden en biedt geen manier om ze te wijzigen"
 
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "deze server haalt alle kopieën van een nummer in één keer uit de afspeellijst; haal ze allemaal weg of wijzig hem op de server"

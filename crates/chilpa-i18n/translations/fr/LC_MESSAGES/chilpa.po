@@ -8069,6 +8069,9 @@ msgstr "une trame de la zone stéréo n'est pas stéréo"
 msgid "a list needs a name"
 msgstr "une liste a besoin d'un nom"
 
+msgid "a media server (DLNA) takes no changes"
+msgstr "un serveur multimédia (DLNA) n'accepte aucune modification"
+
 msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
 msgstr "un Chilpa plus récent a écrit ce fichier annexe ; mettez Chilpa à jour pour le modifier"
 
@@ -8488,6 +8491,9 @@ msgstr "un ou plusieurs fichiers n'acceptent pas l'écriture"
 msgid "one or more files cannot take tags"
 msgstr "un ou plusieurs fichiers ne peuvent pas recevoir d'étiquettes"
 
+msgid "only an administrator of this server can change its metadata"
+msgstr "seul un administrateur de ce serveur peut modifier ses métadonnées"
+
 msgid "open it again from where it is listed"
 msgstr "rouvrez-le depuis l'endroit où il est listé"
 
@@ -8632,6 +8638,9 @@ msgstr "ce fichier n'est pas une image"
 msgid "that id does not work as a folder"
 msgstr "cet identifiant ne fonctionne pas comme un dossier"
 
+msgid "that image cannot be sent"
+msgstr "cette image ne peut pas être envoyée"
+
 msgid "that is an Emby server, and Chilpa does not speak Emby"
 msgstr "c'est un serveur Emby, et Chilpa ne parle pas Emby"
 
@@ -8751,6 +8760,9 @@ msgstr "la zone ne déclare aucune piste"
 
 msgid "the audio area falls outside the image"
 msgstr "la zone audio se trouve en dehors de l'image"
+
+msgid "the change could not be written down"
+msgstr "la modification n'a pas pu être préparée"
 
 msgid "the changes could not be kept in the library: {}"
 msgstr "les modifications n'ont pas pu être conservées dans la bibliothèque : {}"
@@ -9043,6 +9055,12 @@ msgstr "le serveur a répondu par un message au lieu du fichier"
 msgid "the server answered with something that is not HTTP"
 msgstr "le serveur a répondu autre chose que du HTTP"
 
+msgid "the server answered without the item"
+msgstr "le serveur a répondu sans l'élément"
+
+msgid "the server answered without the item's library"
+msgstr "le serveur a répondu sans la bibliothèque de l'élément"
+
 msgid "the server answered {}"
 msgstr "le serveur a répondu {}"
 
@@ -9070,8 +9088,14 @@ msgstr ""
 msgid "the server did not say how long the file is"
 msgstr "le serveur n'a pas indiqué la taille du fichier"
 
+msgid "the server did not take the change (HTTP {})"
+msgstr "le serveur n'a pas accepté la modification (HTTP {})"
+
 msgid "the server does not accept this way of signing in"
 msgstr "le serveur n'accepte pas cette méthode de connexion"
+
+msgid "the server does not take \"{}\""
+msgstr "le serveur n'accepte pas « {} »"
 
 msgid "the server is converting the file instead of sending it as it is"
 msgstr "le serveur convertit le fichier au lieu de l'envoyer tel quel"
@@ -9105,6 +9129,9 @@ msgstr "le serveur n'a envoyé aucun audio : {}"
 
 msgid "the server stopped sending the file"
 msgstr "le serveur a cessé d'envoyer le fichier"
+
+msgid "the server takes no image for it"
+msgstr "le serveur n'accepte pas d'image pour cet élément"
 
 msgid "the server takes no list this long in one request"
 msgstr "le serveur n'accepte pas une liste aussi longue en une seule requête"
@@ -9214,6 +9241,9 @@ msgstr "il n'y a nulle part où conserver un secret sur cette machine"
 msgid "this Mac has no output called \"{}\" any more"
 msgstr "ce Mac n'a plus de sortie appelée « {} »"
 
+msgid "this account may not change that server's metadata"
+msgstr "ce compte ne peut pas modifier les métadonnées de ce serveur"
+
 msgid "this cannot be played"
 msgstr "ceci ne peut pas être lu"
 
@@ -9258,6 +9288,9 @@ msgstr "ce serveur ne conserve aucun favori que Chilpa puisse modifier"
 
 msgid "this server keeps no ratings Chilpa can change"
 msgstr "ce serveur ne conserve aucune note que Chilpa puisse modifier"
+
+msgid "this server reads tags and covers from its files and offers no way to change them"
+msgstr "ce serveur lit les étiquettes et les pochettes dans ses fichiers et ne permet pas de les modifier"
 
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "ce serveur retire en une fois toutes les copies d'une piste de la playlist ; retirez-les toutes ou modifiez-la sur le serveur"

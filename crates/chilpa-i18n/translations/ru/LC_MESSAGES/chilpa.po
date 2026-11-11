@@ -8080,6 +8080,9 @@ msgstr "кадр стереообласти не является стерео"
 msgid "a list needs a name"
 msgstr "списку нужно имя"
 
+msgid "a media server (DLNA) takes no changes"
+msgstr "медиасервер (DLNA) не принимает изменения"
+
 msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
 msgstr "этот вспомогательный файл записан более новой версией Chilpa; обновите Chilpa, чтобы его изменить"
 
@@ -8500,6 +8503,9 @@ msgstr "в один или несколько файлов нельзя запи
 msgid "one or more files cannot take tags"
 msgstr "в один или несколько файлов нельзя записать теги"
 
+msgid "only an administrator of this server can change its metadata"
+msgstr "изменять метаданные этого сервера может только его администратор"
+
 msgid "open it again from where it is listed"
 msgstr "откройте это снова из списка, где оно показано"
 
@@ -8644,6 +8650,9 @@ msgstr "этот файл не является изображением"
 msgid "that id does not work as a folder"
 msgstr "этот идентификатор не подходит как папка"
 
+msgid "that image cannot be sent"
+msgstr "это изображение нельзя отправить"
+
 msgid "that is an Emby server, and Chilpa does not speak Emby"
 msgstr "это сервер Emby, а Chilpa с Emby не работает"
 
@@ -8763,6 +8772,9 @@ msgstr "область не объявляет ни одного трека"
 
 msgid "the audio area falls outside the image"
 msgstr "аудиообласть выходит за пределы образа"
+
+msgid "the change could not be written down"
+msgstr "не удалось подготовить изменение"
 
 msgid "the changes could not be kept in the library: {}"
 msgstr "не удалось сохранить изменения в библиотеке: {}"
@@ -9055,6 +9067,12 @@ msgstr "сервер ответил сообщением вместо файла
 msgid "the server answered with something that is not HTTP"
 msgstr "сервер ответил чем-то, что не является HTTP"
 
+msgid "the server answered without the item"
+msgstr "сервер ответил без элемента"
+
+msgid "the server answered without the item's library"
+msgstr "сервер ответил без библиотеки элемента"
+
 msgid "the server answered {}"
 msgstr "сервер ответил {}"
 
@@ -9082,8 +9100,14 @@ msgstr ""
 msgid "the server did not say how long the file is"
 msgstr "сервер не сообщил длину файла"
 
+msgid "the server did not take the change (HTTP {})"
+msgstr "сервер не принял изменение (HTTP {})"
+
 msgid "the server does not accept this way of signing in"
 msgstr "сервер не принимает такой способ входа"
+
+msgid "the server does not take \"{}\""
+msgstr "сервер не принимает «{}»"
 
 msgid "the server is converting the file instead of sending it as it is"
 msgstr "сервер преобразует файл вместо того, чтобы отправлять его как есть"
@@ -9117,6 +9141,9 @@ msgstr "сервер не прислал звук: {}"
 
 msgid "the server stopped sending the file"
 msgstr "сервер перестал отправлять файл"
+
+msgid "the server takes no image for it"
+msgstr "сервер не принимает для этого изображение"
 
 msgid "the server takes no list this long in one request"
 msgstr "сервер не принимает такой длинный список в одном запросе"
@@ -9226,6 +9253,9 @@ msgstr "на этом компьютере негде хранить секре�
 msgid "this Mac has no output called \"{}\" any more"
 msgstr "на этом Mac больше нет вывода «{}»"
 
+msgid "this account may not change that server's metadata"
+msgstr "этой учётной записи нельзя менять метаданные этого сервера"
+
 msgid "this cannot be played"
 msgstr "это нельзя воспроизвести"
 
@@ -9270,6 +9300,9 @@ msgstr "этот сервер не хранит избранного, котор
 
 msgid "this server keeps no ratings Chilpa can change"
 msgstr "этот сервер не хранит оценок, которые Chilpa может изменить"
+
+msgid "this server reads tags and covers from its files and offers no way to change them"
+msgstr "этот сервер читает теги и обложки из своих файлов и не позволяет их менять"
 
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "этот сервер удаляет из плейлиста все копии трека сразу; удалите все или измените плейлист на сервере"

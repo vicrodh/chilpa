@@ -8069,6 +8069,9 @@ msgstr "ein Frame des Stereobereichs ist nicht stereo"
 msgid "a list needs a name"
 msgstr "eine Liste braucht einen Namen"
 
+msgid "a media server (DLNA) takes no changes"
+msgstr "ein Medienserver (DLNA) nimmt keine Änderungen an"
+
 msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
 msgstr "eine neuere Chilpa-Version hat diese Begleitdatei geschrieben; aktualisiere Chilpa, um sie zu ändern"
 
@@ -8488,6 +8491,9 @@ msgstr "eine oder mehrere Dateien lassen sich nicht beschreiben"
 msgid "one or more files cannot take tags"
 msgstr "eine oder mehrere Dateien können keine Tags aufnehmen"
 
+msgid "only an administrator of this server can change its metadata"
+msgstr "nur ein Administrator dieses Servers kann seine Metadaten ändern"
+
 msgid "open it again from where it is listed"
 msgstr "öffne es erneut dort, wo es aufgeführt ist"
 
@@ -8632,6 +8638,9 @@ msgstr "diese Datei ist kein Bild"
 msgid "that id does not work as a folder"
 msgstr "diese ID funktioniert nicht als Ordner"
 
+msgid "that image cannot be sent"
+msgstr "dieses Bild kann nicht gesendet werden"
+
 msgid "that is an Emby server, and Chilpa does not speak Emby"
 msgstr "das ist ein Emby-Server, und Chilpa spricht kein Emby"
 
@@ -8751,6 +8760,9 @@ msgstr "der Bereich deklariert keine Titel"
 
 msgid "the audio area falls outside the image"
 msgstr "der Audiobereich liegt außerhalb des Images"
+
+msgid "the change could not be written down"
+msgstr "die Änderung konnte nicht vorbereitet werden"
 
 msgid "the changes could not be kept in the library: {}"
 msgstr "die Änderungen konnten nicht in der Bibliothek gespeichert werden: {}"
@@ -9043,6 +9055,12 @@ msgstr "der Server hat mit einer Meldung statt mit der Datei geantwortet"
 msgid "the server answered with something that is not HTTP"
 msgstr "der Server hat mit etwas geantwortet, das kein HTTP ist"
 
+msgid "the server answered without the item"
+msgstr "der Server hat ohne das Element geantwortet"
+
+msgid "the server answered without the item's library"
+msgstr "der Server hat ohne die Mediathek des Elements geantwortet"
+
 msgid "the server answered {}"
 msgstr "der Server hat mit {} geantwortet"
 
@@ -9070,8 +9088,14 @@ msgstr ""
 msgid "the server did not say how long the file is"
 msgstr "der Server hat nicht gesagt, wie lang die Datei ist"
 
+msgid "the server did not take the change (HTTP {})"
+msgstr "der Server hat die Änderung nicht angenommen (HTTP {})"
+
 msgid "the server does not accept this way of signing in"
 msgstr "der Server akzeptiert diese Art der Anmeldung nicht"
+
+msgid "the server does not take \"{}\""
+msgstr "der Server nimmt „{}“ nicht an"
 
 msgid "the server is converting the file instead of sending it as it is"
 msgstr "der Server wandelt die Datei um, statt sie unverändert zu senden"
@@ -9105,6 +9129,9 @@ msgstr "der Server hat kein Audio gesendet: {}"
 
 msgid "the server stopped sending the file"
 msgstr "der Server hat aufgehört, die Datei zu senden"
+
+msgid "the server takes no image for it"
+msgstr "der Server nimmt dafür kein Bild an"
 
 msgid "the server takes no list this long in one request"
 msgstr "der Server nimmt keine so lange Liste in einer einzigen Anfrage an"
@@ -9214,6 +9241,9 @@ msgstr "auf diesem Rechner gibt es keinen Ort, um ein Geheimnis aufzubewahren"
 msgid "this Mac has no output called \"{}\" any more"
 msgstr "dieser Mac hat keine Ausgabe mehr mit dem Namen „{}“"
 
+msgid "this account may not change that server's metadata"
+msgstr "dieses Konto darf die Metadaten dieses Servers nicht ändern"
+
 msgid "this cannot be played"
 msgstr "das lässt sich nicht abspielen"
 
@@ -9258,6 +9288,9 @@ msgstr "dieser Server speichert keine Favoriten, die Chilpa ändern kann"
 
 msgid "this server keeps no ratings Chilpa can change"
 msgstr "dieser Server speichert keine Bewertungen, die Chilpa ändern kann"
+
+msgid "this server reads tags and covers from its files and offers no way to change them"
+msgstr "dieser Server liest Tags und Cover aus seinen Dateien und bietet keine Möglichkeit, sie zu ändern"
 
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "dieser Server entfernt alle Kopien eines Titels auf einmal aus der Playlist; entferne alle oder ändere sie auf dem Server"
