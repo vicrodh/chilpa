@@ -350,6 +350,15 @@ impl Library {
         tx.finish()
     }
 
+    /// Writes tracks a server was asked about outside a sync -- read back
+    /// after a change made to them there -- exactly as a sync would write
+    /// them, stamped with the server's current generation so a sync running
+    /// now counts them as seen. What is laid over them is laid again.
+    pub fn refresh_server_tracks(&self, source_id: i64, tracks: &[ServerTrack]) -> rusqlite::Result<()> {
+        let generation: i64 = self.db.query_row("SELECT generation FROM servers WHERE source_id = ?1", [source_id], |r| r.get(0))?;
+        self.save_server_tracks(source_id, generation, tracks)
+    }
+
     /// Closes a sync that saw everything: what it did not see is gone
     /// (`present = 0`, kept for my ratings and history, never listed).
     /// Returns how many went. A sync that was cut off never calls this, so

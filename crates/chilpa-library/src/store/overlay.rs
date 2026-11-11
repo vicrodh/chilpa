@@ -203,10 +203,22 @@ impl Library {
                 // A cover nothing names is a file nobody will find.
                 if sidecar.album.cover.value().is_none() {
                     sidecar.album.cover = Override::Absent;
+                    let mut dropped = false;
                     for extension in ["jpg", "png"] {
                         if let Some(at) = self.overlay_cover_at(home, extension) {
+                            dropped |= at.is_file();
                             remove(&at).map_err(io)?;
                         }
+                    }
+                    // The record shows the server's cover again: it is asked
+                    // for at the next run of covers.
+                    if dropped {
+                        self.db
+                            .execute(
+                                "UPDATE server_covers SET fetched = 0 WHERE album_id IN (SELECT id FROM albums WHERE version_key = ?1)",
+                                params![format!("{source}:{key}")],
+                            )
+                            .map_err(|e| e.to_string())?;
                     }
                 }
             }
@@ -246,8 +258,22 @@ impl Library {
     /// over its record. Returns the tracks reached. Nothing to lay leaves
     /// the mirror as it is.
     pub fn lay_overlay(&self, home: &Home) -> rusqlite::Result<Vec<i64>> {
-        let Some((source, scope, key)) = parts(home) else { return Ok(Vec::new()) };
         let Some(sidecar) = self.overlay(home).ok().flatten() else { return Ok(Vec::new()) };
+        self.lay_document(home, &sidecar)
+    }
+
+    /// Puts back what the server says of fields an overlay stopped laying
+    /// over: `word` holds the server's values of those fields, as they were
+    /// read from it, and is laid over the mirror without being kept. The
+    /// overlay in force is laid again on top. Returns the tracks reached.
+    pub fn lay_word(&self, home: &Home, word: &Sidecar) -> rusqlite::Result<Vec<i64>> {
+        let reached = self.lay_document(home, word)?;
+        self.lay_overlay(home)?;
+        Ok(reached)
+    }
+
+    fn lay_document(&self, home: &Home, sidecar: &Sidecar) -> rusqlite::Result<Vec<i64>> {
+        let Some((source, scope, key)) = parts(home) else { return Ok(Vec::new()) };
         let tx = self.own_transaction()?;
         let mut reached = Vec::new();
         match scope {
