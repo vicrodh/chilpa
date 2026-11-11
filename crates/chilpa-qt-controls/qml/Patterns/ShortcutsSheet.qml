@@ -4,7 +4,6 @@ import app.chilpa.kit
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import "../Theme"
 import "../Components"
 
 // Every keyboard shortcut at a glance. It is read here; changing one is the
@@ -17,9 +16,6 @@ Modal {
 
     signal customize()
 
-    // The room the window leaves it, once it is in one.
-    readonly property real room: parent ? parent.height - Metrics.shortcutsAround : 0
-
     preferredWidth: Math.min((parent ? parent.width : 0) - Metrics.shortcutsAround, Metrics.shortcutsSheet)
     onAboutToShow: Hotkeys.refresh()
 
@@ -28,6 +24,7 @@ Modal {
         spacing: Metrics.gap16
 
         Item {
+            id: head
             width: parent.width
             implicitHeight: close.height
 
@@ -46,12 +43,14 @@ Modal {
                 onClicked: sheet.close()
             }
         }
+        // What the modal's height leaves once its head and foot are in.
         ShortcutColumns {
             width: parent.width
-            height: Math.min(implicitHeight, Math.max(0, sheet.room - Sizes.sheetChrome))
+            height: Math.min(implicitHeight, Math.max(0, sheet.maximumHeight - Metrics.modalInsets - head.height - foot.height - parent.spacing * 2)) // derived: the gaps above and below
             keys: sheet.keys
         }
         PillButton {
+            id: foot
             objectName: "customize"
             anchors.horizontalCenter: parent.horizontalCenter
             text: I18n.tr("Customize Shortcuts", I18n.rev)

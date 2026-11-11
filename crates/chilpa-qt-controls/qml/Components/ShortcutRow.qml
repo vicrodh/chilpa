@@ -22,18 +22,20 @@ Rectangle {
     signal record()
     signal reset()
 
-    implicitHeight: Math.max(Sizes.keyRow, end.implicitHeight + Metrics.gap8)
+    implicitHeight: Math.max(Sizes.keyRow, end.implicitHeight + Metrics.gap8, name.implicitHeight + Metrics.gap8)
     radius: Metrics.radiusCard
     color: editing ? "transparent" : Theme.color.fillField
 
+    // The action's name wraps rather than hide what the key does.
     Text {
+        id: name
         anchors.left: parent.left
         anchors.leftMargin: row.editing ? 0 : Metrics.gap12
         anchors.right: end.left
         anchors.rightMargin: Metrics.gap10
         anchors.verticalCenter: parent.verticalCenter
         text: row.entry.label || ""
-        elide: Text.ElideRight
+        wrapMode: Text.Wrap
         font.pointSize: Type.body
         color: Theme.color.textPrimary
     }
