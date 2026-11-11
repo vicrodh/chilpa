@@ -258,14 +258,14 @@ pub const RELEASE_AFTER: std::time::Duration = std::time::Duration::from_secs(2)
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Outcome {
     /// The source ran out and everything of its was delivered. It is the
-    /// ONLY ending that allows moving to the next track.
+    /// ONLY ending that counts as played whole.
     Finished { frames: u64 },
     /// Somebody asked to stop.
     Stopped { frames: u64 },
     /// The device failed. The queue does not advance and the user finds out.
     Failed { frames: u64, error: SinkError },
     /// The source could not be read on: a damaged file, a disc image with a
-    /// bad sector. The same as a device failure for the queue.
+    /// bad sector. Not the device: a queue says so and passes over it.
     Unreadable { frames: u64, reason: String },
 }
 

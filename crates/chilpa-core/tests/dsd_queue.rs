@@ -99,7 +99,7 @@ impl AudioSink for Swallow {
 }
 
 #[test]
-fn truncated_dsd_stops_the_queue_in_every_delivery_mode() {
+fn truncated_dsd_is_said_and_passed_over_in_every_delivery_mode() {
     let broken = dsf("truncated", 1);
     let next = dsf("after-truncated", 1);
     let file = std::fs::OpenOptions::new().write(true).open(&broken).unwrap();
@@ -126,12 +126,13 @@ fn truncated_dsd_stops_the_queue_in_every_delivery_mode() {
             &mut |_, _| {},
         );
         let results = result.expect("the queue reports the track outcome");
-        assert_eq!(results.len(), 1);
+        assert_eq!(results.len(), 2, "{mode:?}: the queue goes on past the broken track");
         assert!(
             matches!(results[0].outcome, chilpa_audio::render::Outcome::Unreadable { .. }),
-            "{mode:?}: missing audio must fail playback"
+            "{mode:?}: missing audio is never taken for a natural end"
         );
-        assert_eq!(started, [0], "{mode:?}: the next track must not hide the error");
+        assert!(results[1].outcome.may_advance_queue(), "{mode:?}: the next track plays whole");
+        assert_eq!(started, [0, 1], "{mode:?}");
     }
     std::fs::remove_file(broken).unwrap();
     std::fs::remove_file(next).unwrap();

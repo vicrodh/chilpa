@@ -288,17 +288,48 @@ fn moving_a_disc_track_to_pcm_keeps_its_position() {
 }
 
 #[test]
-fn a_track_that_breaks_halfway_stops_the_queue_and_says_why() {
+fn a_track_that_breaks_halfway_is_passed_over_and_says_why() {
     // A sector in the middle of the first track that no longer adds up. The
     // reader said so, and DoP took it for the end of the track: the queue
-    // went on to the second as if the first had played whole.
+    // went on to the second as if the first had played whole, without a
+    // word. It goes on now because the track is broken, and says where.
     let iso = image("broken");
     let mut img = std::fs::read(&iso).unwrap();
     sector(&mut img, AUDIO_START + 5)[0] = 0;
     std::fs::write(&iso, img).unwrap();
     let tracks = [1, 2].map(|n| PathBuf::from(format!("sacd:{}#{n}", iso.display())));
-    let failed = played(&tracks).expect_err("the queue stops at the broken track");
-    assert!(failed.contains(&(AUDIO_START + 5).to_string()), "the user is told where: {failed}");
+    let player = Player::spawn(
+        Box::new(|_| {
+            Ok(DeviceCaps {
+                sample_rates: vec![44_100, 176_400],
+                formats: vec![SampleFormat::S16, SampleFormat::S24In32, SampleFormat::S32],
+                channels: vec![2],
+                probed: true,
+            })
+        }),
+        Box::new(|_, format, _| Ok(Box::new(Swallow(format)) as Box<dyn AudioSink + Send>)),
+    );
+    player.set_dsd_mode(chilpa_core::queue_playback::DsdMode::Dop);
+    player.play_all(&tracks, "alsa:hw:0,0");
+    let (mut started, mut passed, mut finished) = (Vec::new(), Vec::new(), false);
+    let limit = Instant::now() + Duration::from_secs(10);
+    while !finished && Instant::now() < limit {
+        for event in player.poll() {
+            match event {
+                PlayerEvent::Started { index, .. } => started.push(index),
+                PlayerEvent::Skipped { index, message, .. } => passed.push((index, message)),
+                PlayerEvent::Finished { .. } => finished = true,
+                PlayerEvent::Failed { message } => panic!("the queue goes on: {message}"),
+                _ => {}
+            }
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert!(finished, "the queue ran out");
+    assert_eq!(started, [0, 1], "the second track played after the broken one");
+    assert_eq!(passed.len(), 1, "{passed:?}");
+    assert_eq!(passed[0].0, 0, "the broken track is the one passed over");
+    assert!(passed[0].1.contains(&(AUDIO_START + 5).to_string()), "the user is told where: {}", passed[0].1);
     let _ = std::fs::remove_file(iso);
 }
 

@@ -735,3 +735,265 @@ fn several_skips_are_said_in_one_notice() {
     assert_eq!(chilpa.now_playing().error, "Skipped 2 unavailable tracks");
     let _ = std::fs::remove_dir_all(dir);
 }
+
+// A track that is there but cannot be played -- the decoder refuses it, or
+// it breaks partway -- is passed over by the player itself, which says so,
+// and it counts in the same notice as a missing one.
+
+/// A file with an audio name and nothing in it.
+fn empty_file(dir: &PathBuf, name: &str) -> PathBuf {
+    let path = dir.join(name);
+    std::fs::write(&path, b"").unwrap();
+    path
+}
+
+/// A file with an audio name and bytes that are no audio at all.
+fn garbage_file(dir: &PathBuf, name: &str) -> PathBuf {
+    let path = dir.join(name);
+    std::fs::write(&path, b"this is text and no audio at all. ".repeat(256)).unwrap();
+    path
+}
+
+/// A second of two channel DSD64 silence as a DSF, cut halfway through its
+/// audio: it opens, plays its first half and breaks.
+fn broken_dsf(dir: &PathBuf, name: &str) -> PathBuf {
+    let (rate, channels, block) = (2_822_400u64, 2u32, 4096u32);
+    let per_channel = ((rate / 8) as usize).div_ceil(block as usize) * block as usize;
+    let data_len = per_channel * channels as usize;
+    let data_chunk = 12 + data_len as u64;
+    let mut out = Vec::new();
+    out.extend_from_slice(b"DSD ");
+    out.extend_from_slice(&28u64.to_le_bytes());
+    out.extend_from_slice(&(28 + 52 + data_chunk).to_le_bytes());
+    out.extend_from_slice(&0u64.to_le_bytes());
+    out.extend_from_slice(b"fmt ");
+    out.extend_from_slice(&52u64.to_le_bytes());
+    out.extend_from_slice(&1u32.to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    out.extend_from_slice(&2u32.to_le_bytes());
+    out.extend_from_slice(&channels.to_le_bytes());
+    out.extend_from_slice(&(rate as u32).to_le_bytes());
+    out.extend_from_slice(&1u32.to_le_bytes());
+    out.extend_from_slice(&rate.to_le_bytes());
+    out.extend_from_slice(&block.to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    out.extend_from_slice(b"data");
+    out.extend_from_slice(&data_chunk.to_le_bytes());
+    out.resize(out.len() + data_len / 2, 0x69);
+    let path = dir.join(name);
+    std::fs::write(&path, out).unwrap();
+    path
+}
+
+/// Which rows of the playing queue, the ones already played included, are
+/// shown as playable.
+fn available_rows(chilpa: &mut chilpa_api::Chilpa) -> Vec<bool> {
+    let state: serde_json::Value = serde_json::from_str(&chilpa.listen_json()).unwrap();
+    let active: u64 = state["active"].as_str().unwrap().parse().unwrap();
+    let (rows, _) = chilpa.listen_rows(active, "", true);
+    rows.iter().filter_map(|row| match row {
+        chilpa_api::TrackEntry::Track(track) => Some(track.available),
+        _ => None,
+    }).collect()
+}
+
+#[test]
+fn a_file_the_decoder_refuses_is_skipped_and_the_queue_goes_on() {
+    let dir = folder("refused-middle");
+    other_library(&dir);
+    english();
+    let paths = strings(&[wave(&dir, "01.wav", 4_410), empty_file(&dir, "02.wav"), wave(&dir, "03.wav", 4_410)]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    assert!(wait_at_least(&mut chilpa, 2), "the track after the refused one started");
+    assert!(wait_until_stopped(&mut chilpa));
+    assert_eq!(chilpa.now_playing().error, "Skipped 1 unavailable track");
+    assert_eq!(available_rows(&mut chilpa), [true, false, true], "the queue dims the refused row");
+    assert_eq!(chilpa.queue_paths().len(), 3, "the refused track stays queued");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_first_track_that_is_not_audio_starts_the_next_one() {
+    let dir = folder("refused-first");
+    other_library(&dir);
+    english();
+    let paths = strings(&[garbage_file(&dir, "01.flac"), wave(&dir, "02.wav", 4_410), wave(&dir, "03.wav", 4_410)]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    assert!(wait_at_least(&mut chilpa, 2), "the queue played on from the second track");
+    assert!(wait_until_stopped(&mut chilpa));
+    assert_eq!(chilpa.now_playing().error, "Skipped 1 unavailable track");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_refused_last_track_ends_the_queue_as_if_it_ran_out() {
+    let dir = folder("refused-last");
+    other_library(&dir);
+    english();
+    let paths = strings(&[wave(&dir, "01.wav", 4_410), wave(&dir, "02.wav", 4_410), garbage_file(&dir, "03.flac")]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    assert!(wait_at_least(&mut chilpa, 1));
+    assert!(wait_until_stopped(&mut chilpa));
+    let now = chilpa.now_playing();
+    assert_eq!(now.path, "", "the queue ran out: nothing is left on the player's face");
+    assert_eq!(now.error, "Skipped 1 unavailable track", "the notice stays once the queue ends");
+    assert_eq!(now.queue_len, 3);
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_track_that_breaks_partway_is_skipped_and_the_queue_goes_on() {
+    let dir = folder("breaks-first");
+    other_library(&dir);
+    english();
+    let paths = strings(&[broken_dsf(&dir, "01.dsf"), wave(&dir, "02.wav", 4_410)]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    assert!(wait_at_least(&mut chilpa, 1), "the track after the broken one started");
+    assert!(wait_until_stopped(&mut chilpa));
+    let now = chilpa.now_playing();
+    assert_eq!(now.error, "Skipped 1 unavailable track");
+    assert_eq!(now.path, "", "the queue ran out after its last track");
+    assert_eq!(available_rows(&mut chilpa), [false, true]);
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_last_track_that_breaks_partway_ends_the_queue_as_if_it_ran_out() {
+    let dir = folder("breaks-last");
+    other_library(&dir);
+    english();
+    let paths = strings(&[wave(&dir, "01.wav", 4_410), broken_dsf(&dir, "02.dsf")]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    assert!(wait_at_least(&mut chilpa, 1));
+    assert!(wait_until_stopped(&mut chilpa));
+    let now = chilpa.now_playing();
+    assert_eq!(now.path, "", "the queue ran out, it did not fail");
+    assert_eq!(now.error, "Skipped 1 unavailable track", "not the decoder's own message");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_queue_where_nothing_decodes_stops_after_one_pass() {
+    let dir = folder("refused-all");
+    other_library(&dir);
+    english();
+    let paths = strings(&[empty_file(&dir, "01.wav"), garbage_file(&dir, "02.flac"), garbage_file(&dir, "03.dsf")]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.set_repeat(chilpa_api::Repeat::All);
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    assert!(wait_until_stopped(&mut chilpa));
+    let limit = std::time::Instant::now() + std::time::Duration::from_millis(300);
+    while std::time::Instant::now() < limit {
+        let now = chilpa.poll();
+        assert!(!now.playing, "nothing was relaunched");
+        assert_eq!(now.error, "Skipped 3 unavailable tracks", "each track is counted once");
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    assert_eq!(chilpa.queue_paths().len(), 3, "the queue stays");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn repeat_all_plays_around_a_refused_track_without_spinning_on_it() {
+    let dir = folder("refused-repeat-all");
+    other_library(&dir);
+    english();
+    let _realtime = Realtime::on();
+    let paths = strings(&[wave(&dir, "01.wav", SHORT), garbage_file(&dir, "02.flac"), wave(&dir, "03.wav", SHORT)]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.set_repeat(chilpa_api::Repeat::All);
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    let heard = heard(&mut chilpa, std::time::Duration::from_millis(1_500));
+    assert!(heard.len() >= 4, "it went round more than once: {heard:?}");
+    assert!(!heard.contains(&1), "the refused track never came up: {heard:?}");
+    assert!(chilpa.now_playing().playing, "it is still playing");
+    assert_eq!(chilpa.now_playing().error, "Skipped 1 unavailable track", "counted once, not once a lap");
+    chilpa.stop();
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn repeat_one_on_a_track_that_breaks_moves_on_and_repeats_the_next() {
+    let dir = folder("breaks-repeat-one");
+    other_library(&dir);
+    english();
+    let _realtime = Realtime::on();
+    let paths = strings(&[broken_dsf(&dir, "01.dsf"), wave(&dir, "02.wav", SHORT)]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.set_repeat(chilpa_api::Repeat::One);
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    let heard = heard(&mut chilpa, std::time::Duration::from_millis(1_500));
+    assert_eq!(heard, [0, 1], "the broken track is not repeated, the next one is: {heard:?}");
+    assert!(chilpa.now_playing().playing);
+    assert_eq!(chilpa.now_playing().error, "Skipped 1 unavailable track");
+    chilpa.stop();
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_stop_mark_on_a_refused_track_stops_before_it() {
+    let dir = folder("refused-stop-after");
+    other_library(&dir);
+    english();
+    let _realtime = Realtime::on();
+    let paths = strings(&[wave(&dir, "01.wav", SHORT), garbage_file(&dir, "02.flac"), wave(&dir, "03.wav", SHORT)]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    assert!(chilpa.set_stop_after(Some(1)));
+    let heard = heard(&mut chilpa, std::time::Duration::from_secs(5));
+    assert_eq!(heard, [0], "what follows the mark never plays");
+    let now = chilpa.now_playing();
+    assert!(!now.playing);
+    assert!(now.path.ends_with("01.wav"), "a mark is not the queue running out");
+    assert_eq!(now.error, "Skipped 1 unavailable track");
+    assert_eq!(chilpa.stop_after(), None, "the mark was consumed");
+    assert_eq!(available_rows(&mut chilpa), [true, false, true]);
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn refused_and_missing_tracks_are_said_in_one_notice() {
+    let dir = folder("refused-and-missing");
+    other_library(&dir);
+    english();
+    let paths = strings(&[wave(&dir, "01.wav", 4_410), dir.join("02.wav"), garbage_file(&dir, "03.flac"), wave(&dir, "04.wav", 4_410)]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    assert!(wait_at_least(&mut chilpa, 3), "the last track started");
+    assert!(wait_until_stopped(&mut chilpa));
+    assert_eq!(chilpa.now_playing().error, "Skipped 2 unavailable tracks");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_rate_the_output_refuses_after_a_refused_track_still_stops_the_queue() {
+    let dir = folder("refused-then-rate");
+    other_library(&dir);
+    english();
+    let paths = strings(&[garbage_file(&dir, "01.flac"), wave_at(&dir, "02.wav", 700, 7_000), wave(&dir, "03.wav", 4_410)]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    assert!(wait_until_stopped(&mut chilpa));
+    std::thread::sleep(std::time::Duration::from_millis(200));
+    let now = chilpa.poll();
+    assert!(!now.playing, "nothing was relaunched");
+    assert!(now.index < 2, "the track after the refused rate never started");
+    assert!(now.error.contains("7000"), "the output's own message: {}", now.error);
+    let _ = std::fs::remove_dir_all(dir);
+}

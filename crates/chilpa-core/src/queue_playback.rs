@@ -4,9 +4,11 @@
 //! change. If it changes, the device has to be reopened and the break is
 //! unavoidable: it is reported, not hidden.
 //!
-//! Every track ends with its own [`Outcome`], and only a natural end lets
-//! the next one through. A device failure stops the queue right there, which
-//! is exactly what QBZ did not do: it skipped everything in silence.
+//! Every track ends with its own [`Outcome`]. A device failure stops the
+//! queue right there, which is exactly what QBZ did not do: it skipped
+//! everything in silence. A track that will not open or breaks partway is
+//! the track's fault and not the device's: it is passed over and said, and a
+//! lap of them ends the queue.
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::gapless::{transition, Transition, Trimmer};
@@ -72,7 +74,7 @@ pub(crate) fn open_track(
     dsd_mode: DsdMode,
     direct_dsd: Option<&DeviceCaps>,
 ) -> Result<Opened, PlayError> {
-    let unreadable = |e: String| PlayError::Sink(SinkError::Backend(e));
+    let unreadable = PlayError::Unreadable;
     if let Some((image, number)) = crate::sacd_tracks::parse(path) {
         let reader = crate::sacd_tracks::open(&image, number).map_err(unreadable)?;
         let (source, delivery) = dsd_track(Box::new(reader), caps, dsd_mode, direct_dsd)?;
@@ -149,7 +151,7 @@ fn dsd_track(
 
 fn pcm_track(reader: Box<dyn DsdSource>, caps: &DeviceCaps) -> Result<(Source, Delivery), PlayError> {
     let converter = DsdPcmConverter::new(reader, DEFAULT_GAIN_DB)
-        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+        .map_err(|e| PlayError::Unreadable(e.to_string()))?;
     let request = StreamFormat::new(SampleFormat::F32, converter.output_rate(), converter.channels());
     let mut delivery = negotiate(request, caps, Policy::AllowAnything).map_err(PlayError::Negotiation)?;
     delivery.transforms.insert(0, chilpa_audio::negotiate::Transform::DsdToPcm);
@@ -882,10 +884,12 @@ where
     F: FnMut(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    play_queue_told(queue, caps, policy, controls, open_sink, &mut |index, path, delivery, _| on_track(index, path, delivery), on_progress)
+    play_queue_told(queue, caps, policy, controls, open_sink, &mut |index, path, delivery, _| on_track(index, path, delivery), on_progress, &mut |_, _, _| {})
 }
 
-/// The same, with what each track says of itself as it starts.
+/// The same, with what each track says of itself as it starts, and each
+/// track passed over because it would not open or broke partway: its index,
+/// its path and why.
 #[allow(clippy::too_many_arguments)]
 pub fn play_queue_told<F, K>(
     queue: &SharedQueue,
@@ -895,6 +899,7 @@ pub fn play_queue_told<F, K>(
     mut open_sink: F,
     on_track: &mut dyn FnMut(usize, &Path, &Delivery, &TrackAbout),
     on_progress: &mut dyn FnMut(usize, Progress),
+    on_passed: &mut dyn FnMut(usize, &Path, &str),
 ) -> Result<Vec<TrackResult>, PlayError>
 where
     F: FnMut(StreamFormat) -> Result<K, SinkError>,
@@ -910,9 +915,10 @@ where
     // loop that spins forever. How many tracks in a row did not play is
     // counted, and it cuts off after one full lap.
     let mut consecutive_silent = 0usize;
-    // A server that stopped answering: its tracks are passed over and the
-    // queue goes on (ADR-017). The last error is kept to say, when nothing
-    // at all could play, why; and a full lap of them ends it.
+    // A track that will not open, or a server that stopped answering: it is
+    // passed over and the queue goes on (ADR-017). The last error is kept to
+    // say, when nothing at all could play, why; and a full lap of them, or of
+    // tracks that broke partway, ends it.
     let mut preload = crate::preload::Preload::default();
     let mut unreachable_in_a_row = 0usize;
     let mut passed_over: Option<PlayError> = None;
@@ -954,12 +960,15 @@ where
         let ready = prepared.unwrap_or_else(|| open_track(path, caps, policy, controls.dsd_mode.get(), controls.dsd_direct(caps).as_ref()));
         let Opened { mut source, mut delivery, about } = match ready {
             Ok(opened) => opened,
-            Err(error) if crate::remote::entry(path).is_some() => {
+            Err(error) if error.is_track() || crate::remote::entry(path).is_some() => {
                 chilpa_audio::diagnostics::trace(
                     "queue",
                     "source_passed_over",
                     format_args!("after={:?} path={path:?} error={error}", source_started.elapsed()),
                 );
+                if error.is_track() {
+                    on_passed(index, path, &error.to_string());
+                }
                 unreachable_in_a_row += 1;
                 passed_over = Some(error);
                 if unreachable_in_a_row > queue.len() || stop_after.take_at(index) {
@@ -980,7 +989,6 @@ where
                 return Err(error);
             }
         };
-        unreachable_in_a_row = 0;
         let source_kind = match &source {
             Source::Pcm(..) => "pcm",
             Source::Dop(_) => "dop",
@@ -1287,24 +1295,33 @@ where
                 _ => "error",
             }
         });
-        let finished_ok = outcome.may_advance_queue();
+        // A track that broke partway is the track's fault, not the device's:
+        // what the device holds of it is heard and the queue goes on as after
+        // a natural end, without repeating it. It counts with the tracks that
+        // would not open, so a lap where nothing played whole ends the queue.
+        let broken = matches!(outcome, Outcome::Unreadable { .. });
+        if let Outcome::Unreadable { reason, .. } = &outcome {
+            on_passed(index, path, reason);
+        }
+        let finished_ok = outcome.may_advance_queue() || broken;
         ended_by_itself = finished_ok && !skipped;
         skipped_before = skipped;
         consecutive_silent = if outcome.frames() == 0 { consecutive_silent + 1 } else { 0 };
+        unreachable_in_a_row = if broken { unreachable_in_a_row + 1 } else { 0 };
         results.push(TrackResult {
             path: path.clone(),
             delivery,
             outcome,
             transition: transition,
         });
-        if !finished_ok || consecutive_silent > queue.len() {
+        if !finished_ok || consecutive_silent > queue.len() || unreachable_in_a_row > queue.len() {
             break;
         }
         if stop_after.take_at(index) {
             break;
         }
         let mode = repeat.get();
-        if mode == Repeat::One && !skipped {
+        if mode == Repeat::One && !skipped && !broken {
             continue;
         }
         match order.next(index, queue.len(), mode == Repeat::All) {

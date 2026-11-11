@@ -315,7 +315,7 @@ impl Chilpa {
             ),
         );
         player.play_from_index(&tracks, device, start_at, paused, Some(from), &removed, self.stop_after);
-        self.launched_from(from, device);
+        self.launched_from(from);
     }
 
     /// Moves what is playing to another output, keeping its place.
