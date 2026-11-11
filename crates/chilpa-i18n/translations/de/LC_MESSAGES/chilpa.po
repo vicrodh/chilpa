@@ -432,6 +432,9 @@ msgstr "Album-Seite"
 msgid "Album radio"
 msgstr "Album-Radio"
 
+msgid "Album review"
+msgstr "Albumrezension"
+
 msgid "Albums"
 msgstr "Alben"
 
@@ -1736,6 +1739,9 @@ msgstr "Kopiert die Farben des aktuell angewendeten Themes als Ausgangspunkt in 
 msgid "Copy the redacted logs to help diagnose the issue. You can review them before sharing."
 msgstr "Die Protokolle mit unkenntlich gemachten Daten zur Fehlerdiagnose kopieren. Sie können vor dem Teilen geprüft werden."
 
+msgid "Copy track, album and artist"
+msgstr "Titel, Album und Künstler kopieren"
+
 msgid "Copyright"
 msgstr "Copyright"
 
@@ -2058,7 +2064,7 @@ msgid "Destinations"
 msgstr "Ziele"
 
 msgid "Details"
-msgstr ""
+msgstr "Details"
 
 msgid "Details available"
 msgstr "Details verfügbar"
@@ -2937,7 +2943,7 @@ msgid "Hide audio path"
 msgstr "Audiopfad ausblenden"
 
 msgid "Hide details"
-msgstr ""
+msgstr "Details ausblenden"
 
 msgid "Hide explicit"
 msgstr "Explizite ausblenden"
@@ -3485,6 +3491,9 @@ msgstr "Ansicht verlassen"
 msgid "Left delay · 0–30 ms"
 msgstr "Verzögerung links · 0–30 ms"
 
+msgid "Legal data"
+msgstr "Rechtliche Angaben"
+
 msgid "Length"
 msgstr "Länge"
 
@@ -3766,6 +3775,9 @@ msgstr "Maximum 32/384"
 
 msgid "May"
 msgstr "Mai"
+
+msgid "Media info"
+msgstr "Medieninfo"
 
 msgid "Member Of"
 msgstr "Mitglied von"
@@ -6499,6 +6511,9 @@ msgstr "Modul"
 
 msgid "Target loudness"
 msgstr "Ziel-Lautheit"
+
+msgid "Technical data"
+msgstr "Technische Daten"
 
 msgid "Temporary episode storage is unavailable."
 msgstr ""

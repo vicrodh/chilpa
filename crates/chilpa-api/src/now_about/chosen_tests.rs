@@ -102,3 +102,50 @@ fn the_track_that_plays_gets_the_answer_it_always_had() {
     api.now.path.clear();
     assert_eq!(api.now_track_about(), "{}", "nothing plays, nothing is said");
 }
+
+/// A short silent WAV: 16 bits, 44.1 kHz, stereo.
+fn wave(path: &std::path::Path, frames: u32) {
+    let data = frames * 4;
+    let mut bytes = Vec::new();
+    for part in [&b"RIFF"[..], &(36 + data).to_le_bytes(), b"WAVEfmt ", &16u32.to_le_bytes(), &1u16.to_le_bytes(), &2u16.to_le_bytes(),
+        &44_100u32.to_le_bytes(), &176_400u32.to_le_bytes(), &4u16.to_le_bytes(), &16u16.to_le_bytes(), b"data", &data.to_le_bytes()] {
+        bytes.extend_from_slice(part);
+    }
+    bytes.resize(bytes.len() + data as usize, 0);
+    std::fs::write(path, bytes).unwrap();
+}
+
+fn listed(found: &Value, key: &str) -> Vec<(String, String)> {
+    found[key].as_array().unwrap().iter()
+        .map(|fact| (fact["label"].as_str().unwrap().to_string(), fact["value"].as_str().unwrap().to_string())).collect()
+}
+
+#[test]
+fn a_file_that_is_here_says_its_own_technical_data_and_one_that_is_gone_what_the_library_kept() {
+    let music = tempfile::tempdir().unwrap();
+    let here = music.path().join("here.wav");
+    wave(&here, 90_000);
+    let here = here.to_string_lossy().into_owned();
+    let gone = music.path().join("gone.flac").to_string_lossy().into_owned();
+    let library = chilpa_library::Library::in_memory().unwrap();
+    let source = library.source_id("local", "default").unwrap();
+    library.connection().execute("INSERT INTO tracks(source_id,external_id,title,artist,added_at,codec,bit_depth,sample_rate_hz,duration_ms)
+        VALUES (?1,?2,'Gone','Band',0,'flac',24,96000,241000)", rusqlite::params![source, gone]).unwrap();
+    let mut api = Chilpa::new();
+    api.library = Some(library);
+    let _policy = NoMusicBrainz::new();
+
+    let found = settled(&mut api, |api| api.track_about(&here));
+    let technical = listed(&found, "technical");
+    for fact in [("Format", "WAV"), ("Bit depth", "16"), ("Sample rate", "44.1 kHz"), ("Channels", "2"), ("Duration", "0:02")] {
+        assert!(technical.contains(&(i18n::t(fact.0), fact.1.to_string())), "{fact:?} in {technical:?}");
+    }
+    assert!(technical.iter().any(|(label, value)| *label == i18n::t("File size") && value.ends_with("MiB")), "{technical:?}");
+
+    let found = settled(&mut api, |api| api.track_about(&gone));
+    let technical = listed(&found, "technical");
+    assert_eq!(technical, [(i18n::t("Format"), "FLAC".into()), (i18n::t("Bit depth"), "24".into()),
+        (i18n::t("Sample rate"), "96 kHz".into()), (i18n::t("Duration"), "4:01".into())], "no size and no channels it never had");
+    assert_eq!(found["heading"]["title"], "Gone");
+    assert_eq!(found["copy_basic"], "Gone - Band");
+}

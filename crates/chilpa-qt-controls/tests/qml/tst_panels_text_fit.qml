@@ -166,18 +166,34 @@ TestCase {
         compare(found.length, 0, found.join("\n"))
     }
 
+    // The information modal in sections, at the window's room, the least
+    // window and a narrow one, for a file that is here, one that is gone
+    // and a server's entry, and for the record the track is on.
+    Item { id: slim; width: 460; height: 600 }
     function test_track_info_data() { return TextAudit.cases() }
     function test_track_info(data) {
         I18n.choose(data.language)
+        const t = text => I18n.tr(text)
         Player.title = "Symphony No. 6 in B minor, Op. 74 “Pathétique”: I. Adagio – Allegro non troppo"
-        NowAbout.trackAnswer = trackAnswer()
-        NowAbout.albumAnswer = Object.assign(trackAnswer(), {can_refetch: true, file: null})
+        const sectioned = Object.assign(trackAnswer(), {
+            heading: {title: Player.title, album: "Tchaikovsky: Symphonie Nr. 6 „Pathétique“ · Berliner Philharmoniker", artist: "Herbert von Karajan und das Orchester der Deutschen Oper Berlin"},
+            facts: trackAnswer().facts.map(fact => Object.assign({group: [t("Label"), t("Catalog number"), t("Copyright")].indexOf(fact.label) >= 0 ? "legal" : "details"}, fact))
+                .concat([{label: "ISRC", value: "DEF126000101", group: "legal"}]),
+            technical: [{label: t("Format"), value: "FLAC"}, {label: t("Bit depth"), value: "24"}, {label: t("Sample rate"), value: "192 kHz"},
+                {label: t("Channels"), value: "2"}, {label: t("Duration"), value: "18:24"}, {label: t("File size"), value: "1024.7 MiB"}],
+            credits: trackAnswer().credits.concat([{name: "Günter Hermanns", roles: "Recording engineer, balance engineer"}, {name: "Otto Gerdes", roles: "Producer"}]),
+            copy_basic: "x", copy_full: "x"})
+        const places = [trackAnswer().file, {title: t("File"), note: "", value: "/music/Tchaikovsky/01.flac"},
+            {title: t("Server item"), note: "", value: "plugin/app.chilpa.source/track:534924590@album:534924575"}]
+        NowAbout.albumAnswer = Object.assign({}, sectioned, {can_refetch: true, file: null, technical: [], heading: null})
         let found = []
-        for (const host of hosts) for (const part of ["track", "album"]) {
+        for (const host of hosts.concat([slim])) for (const place of places) for (const part of ["track", "album"]) {
+            if (part === "album" && place !== places[0]) continue
+            NowAbout.trackAnswer = Object.assign({}, sectioned, {file: place})
             const modal = show(trackInfo, host)
-            findChild(modal, "trackInfoAbout").part = part
+            findChild(modal, "trackInfoSections").part = part
             settle(modal.contentItem)
-            found = found.concat(audit(data, modal.contentItem, "track info " + part + " " + host.width))
+            found = found.concat(audit(data, modal.contentItem, "track info " + part + " " + host.width + " " + place.value))
             modal.close()
         }
         compare(found.length, 0, found.join("\n"))

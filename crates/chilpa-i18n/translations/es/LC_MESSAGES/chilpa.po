@@ -432,6 +432,9 @@ msgstr "Página del álbum"
 msgid "Album radio"
 msgstr "Radio del álbum"
 
+msgid "Album review"
+msgstr "Reseña del álbum"
+
 msgid "Albums"
 msgstr "Álbumes"
 
@@ -1735,6 +1738,9 @@ msgstr "Copia los colores del tema aplicado al editor como punto de partida."
 
 msgid "Copy the redacted logs to help diagnose the issue. You can review them before sharing."
 msgstr "Copia los registros sin datos sensibles para ayudar a diagnosticar el problema. Puedes revisarlos antes de compartirlos."
+
+msgid "Copy track, album and artist"
+msgstr "Copiar pista, álbum y artista"
 
 msgid "Copyright"
 msgstr "Copyright"
@@ -3485,6 +3491,9 @@ msgstr "Salir de la vista"
 msgid "Left delay · 0–30 ms"
 msgstr "Retardo izquierdo · 0–30 ms"
 
+msgid "Legal data"
+msgstr "Datos legales"
+
 msgid "Length"
 msgstr "Duración"
 
@@ -3766,6 +3775,9 @@ msgstr "Máximo 32/384"
 
 msgid "May"
 msgstr "mayo"
+
+msgid "Media info"
+msgstr "Información del medio"
 
 msgid "Member Of"
 msgstr "Miembro de"
@@ -6499,6 +6511,9 @@ msgstr "Módulo"
 
 msgid "Target loudness"
 msgstr "Volumen objetivo"
+
+msgid "Technical data"
+msgstr "Datos técnicos"
 
 msgid "Temporary episode storage is unavailable."
 msgstr "El almacenamiento temporal para episodios no está disponible."

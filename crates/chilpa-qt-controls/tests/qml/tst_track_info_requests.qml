@@ -51,10 +51,12 @@ TestCase {
         const modal = host(requests).item
         tryCompare(modal, "opened", true)
         compare(findChild(modal, "trackInfoTitle").text, "Chosen")
-        tryCompare(findChild(modal, "queueAboutFilePath"), "text", "/music/Gone/Chosen.flac")
-        compare(findChild(modal, "queueAboutFileNote").text, "Not found on disk")
+        const media = findChild(modal, "trackInfoMedia")
+        tryVerify(() => findChild(media, "infoSectionCode") !== null)
+        tryCompare(findChild(media, "infoSectionCode"), "text", "/music/Gone/Chosen.flac")
+        compare(media.cells[0].note, "Not found on disk")
         compare(NowAbout.askedPath, "/music/Gone/Chosen.flac")
-        const about = findChild(modal, "trackInfoAbout")
+        const about = findChild(modal, "trackInfoSections")
         about.part = "album"
         tryCompare(NowAbout, "askedPath", "/music/Gone/Chosen.flac")
         compare(Player.path, "/music/Playing.flac", "what plays stays")
@@ -67,7 +69,7 @@ TestCase {
         NowAbout.trackAnswers = ({"/music/Chosen.flac": {loading:false, failed:true}})
         NowAbout.trackInfoRequested("/music/Chosen.flac", "Chosen")
         tryCompare(host(requests), "active", true)
-        const retry = findChild(host(requests).item, "queueAboutRetry")
+        const retry = findChild(host(requests).item, "trackInfoRetry")
         tryCompare(retry, "visible", true)
         retry.clicked()
         compare(NowAbout.retried.path, "/music/Chosen.flac")
@@ -78,7 +80,8 @@ TestCase {
         modal.open()
         tryCompare(modal, "opened", true)
         compare(findChild(modal, "trackInfoTitle").text, "Playing")
-        tryCompare(findChild(modal, "queueAboutFilePath"), "text", "/music/Playing.flac")
+        tryVerify(() => findChild(findChild(modal, "trackInfoMedia"), "infoSectionCode") !== null)
+        tryCompare(findChild(findChild(modal, "trackInfoMedia"), "infoSectionCode"), "text", "/music/Playing.flac")
         modal.close()
     }
 

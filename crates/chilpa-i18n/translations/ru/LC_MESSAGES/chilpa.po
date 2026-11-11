@@ -433,6 +433,9 @@ msgstr "Страница альбома"
 msgid "Album radio"
 msgstr "Радио альбома"
 
+msgid "Album review"
+msgstr "Рецензия на альбом"
+
 msgid "Albums"
 msgstr "Альбомы"
 
@@ -1738,6 +1741,9 @@ msgstr "Копирует цвета текущей темы в редактор 
 msgid "Copy the redacted logs to help diagnose the issue. You can review them before sharing."
 msgstr "Скопируйте журналы со скрытыми конфиденциальными данными для диагностики проблемы. Их можно проверить перед отправкой."
 
+msgid "Copy track, album and artist"
+msgstr "Копировать трек, альбом и исполнителя"
+
 msgid "Copyright"
 msgstr "Авторские права"
 
@@ -2060,7 +2066,7 @@ msgid "Destinations"
 msgstr "Места назначения"
 
 msgid "Details"
-msgstr ""
+msgstr "Подробности"
 
 msgid "Details available"
 msgstr "Данные доступны"
@@ -2939,7 +2945,7 @@ msgid "Hide audio path"
 msgstr "Скрыть аудиотракт"
 
 msgid "Hide details"
-msgstr ""
+msgstr "Скрыть подробности"
 
 msgid "Hide explicit"
 msgstr "Скрыть с ненормативной лексикой"
@@ -3490,6 +3496,9 @@ msgstr "Выйти из режима"
 msgid "Left delay · 0–30 ms"
 msgstr "Задержка слева · 0–30 ms"
 
+msgid "Legal data"
+msgstr "Правовые сведения"
+
 msgid "Length"
 msgstr "Длительность"
 
@@ -3771,6 +3780,9 @@ msgstr "Максимум 32/384"
 
 msgid "May"
 msgstr "мая"
+
+msgid "Media info"
+msgstr "Медиаинформация"
 
 msgid "Member Of"
 msgstr "Состоит в группах"
@@ -6507,6 +6519,9 @@ msgstr "Источник"
 
 msgid "Target loudness"
 msgstr "Целевая громкость"
+
+msgid "Technical data"
+msgstr "Технические данные"
 
 msgid "Temporary episode storage is unavailable."
 msgstr ""

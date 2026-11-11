@@ -6,24 +6,19 @@ import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
-// What is known of a track, under the queue's art: the track by default,
+// What is known of what plays, under the queue's art: the track by default,
 // or the record it is on. Its source's word when it says much, MusicBrainz's
-// when it does not; who said it closes the list.
+// when it does not; who said it closes the list. Where its file or server
+// entry is belongs to the information modal, not to this column.
 Item {
     id: about
     // "track" or "album".
     property string part: "track"
-    // The track it speaks of, by the path that names it: what plays when
-    // empty, or one a list's menu chose.
-    property string subject: ""
-    readonly property string asked: subject !== "" ? subject : Player.path
     property int retryRevision: 0
-    readonly property var found: visible ? read(part === "album" ? NowAbout.album(asked, Library.remoteRev + retryRevision) : NowAbout.track(asked, Library.remoteRev + retryRevision)) : ({})
+    readonly property var found: visible ? read(part === "album" ? NowAbout.album(Player.path, Library.remoteRev + retryRevision) : NowAbout.track(Player.path, Library.remoteRev + retryRevision)) : ({})
     readonly property var facts: found.facts || []
     readonly property var credits: found.credits || []
     readonly property string description: found.description || ""
-    // Where the track lives: its file, or its entry on a server.
-    readonly property var file: part === "track" && found.file ? found.file : ({})
     function read(text) { try { return JSON.parse(text || "{}") } catch (e) { return ({}) } }
 
     SegmentedControl {
@@ -48,7 +43,7 @@ Item {
         activeFocusOnTab: true
         Keys.onReturnPressed: if (enabled) clicked()
         Keys.onSpacePressed: if (enabled) clicked()
-        onClicked: if (NowAbout.refetchAlbum(about.asked)) about.retryRevision++
+        onClicked: if (NowAbout.refetchAlbum(Player.path)) about.retryRevision++
         FocusRing {}
     }
 
@@ -119,34 +114,9 @@ Item {
                     Text { width: parent.width; visible: text !== ""; text: modelData.roles || ""; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pointSize: Type.meta; color: Theme.color.textSecondary }
                 }
             }
-            Column {
-                objectName: "queueAboutFile"
-                visible: !!about.file.value
-                width: column.width
-                Text { text: about.file.title || ""; font.pointSize: Type.meta; color: Theme.color.textTertiary }
-                TextEdit {
-                    objectName: "queueAboutFilePath"
-                    width: parent.width
-                    text: about.file.value || ""
-                    readOnly: true; selectByMouse: true; wrapMode: TextEdit.WrapAnywhere
-                    selectionColor: Theme.color.accent
-                    font.family: Type.consoleFamily
-                    font.pointSize: Type.meta
-                    color: Theme.color.textSecondary
-                }
-                Text {
-                    objectName: "queueAboutFileNote"
-                    visible: text !== ""
-                    width: parent.width
-                    text: about.file.note || ""
-                    wrapMode: Text.Wrap
-                    font.pointSize: Type.meta
-                    color: Theme.color.textTertiary
-                }
-            }
             Text {
                 objectName: "queueAboutNothing"
-                visible: about.found.loading === false && about.facts.length === 0 && about.credits.length === 0 && about.description === "" && !about.file.value && !about.found.failed && !about.found.busy
+                visible: about.found.loading === false && about.facts.length === 0 && about.credits.length === 0 && about.description === "" && !about.found.failed && !about.found.busy
                 width: parent.width
                 wrapMode: Text.Wrap
                 text: I18n.tr("Nothing more is known about it.", I18n.rev)
@@ -168,7 +138,7 @@ Item {
                 text: I18n.tr("Retry", I18n.rev)
                 glyph: Lucide.rotateCcw
                 iconFamily: Lucide.font
-                onClicked: if (NowAbout.retry(about.part, about.asked)) about.retryRevision++
+                onClicked: if (NowAbout.retry(about.part, Player.path)) about.retryRevision++
             }
             Row {
                 visible: (about.found.origin || "") !== ""
