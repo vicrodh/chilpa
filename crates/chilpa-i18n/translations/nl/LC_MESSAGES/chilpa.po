@@ -6226,6 +6226,11 @@ msgstr "Grootte"
 msgid "Skipped"
 msgstr "Overgeslagen"
 
+msgid "Skipped {} unavailable track"
+msgid_plural "Skipped {} unavailable tracks"
+msgstr[0] "{} niet-beschikbaar nummer overgeslagen"
+msgstr[1] "{} niet-beschikbare nummers overgeslagen"
+
 msgid "Skips"
 msgstr "Overgeslagen"
 

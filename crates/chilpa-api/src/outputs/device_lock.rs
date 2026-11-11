@@ -267,7 +267,10 @@ mod tests {
         api.remember(DAC, false);
         *held.lock().unwrap() = listed(&[SPEAKERS]);
         api.outputs_listing.generation = "before".into();
-        api.replace_queue(vec!["/nonexistent/device-lock.flac".into()]);
+        // A file that is there, so the play is launched; it is not audio and
+        // the fixture outputs do not exist, so nothing sounds.
+        let track = tempfile::Builder::new().suffix(".flac").tempfile().unwrap();
+        api.replace_queue(vec![track.path().display().to_string()]);
         api.spawn(0, DAC, false);
         assert!(api.now.error.contains("speakers"), "the window was not told: {:?}", api.now.error);
         api.stop();

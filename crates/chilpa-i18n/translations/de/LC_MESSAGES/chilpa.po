@@ -6226,6 +6226,11 @@ msgstr "Größe"
 msgid "Skipped"
 msgstr "Übersprungen"
 
+msgid "Skipped {} unavailable track"
+msgid_plural "Skipped {} unavailable tracks"
+msgstr[0] "{} nicht verfügbarer Titel übersprungen"
+msgstr[1] "{} nicht verfügbare Titel übersprungen"
+
 msgid "Skips"
 msgstr "Übersprungen"
 

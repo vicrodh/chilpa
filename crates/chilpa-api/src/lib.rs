@@ -716,6 +716,8 @@ pub struct Chilpa {
     artwork: chosen_artwork::State,
     /// Every copy of a record the library and the sources keep, as cards.
     copies: album_copies::Held,
+    /// Queue entries this run found it cannot play (`queue/unavailable.rs`).
+    unavailable: queue::unavailable::State,
 }
 
 /// Why the player was told to stop, when it was us who told it.
@@ -829,6 +831,7 @@ impl Chilpa {
             credits_read_at: (0, 0),
             artwork: Default::default(),
             copies: Default::default(),
+            unavailable: Default::default(),
         };
         chilpa.migrate_output_identity();
         if let Some(tabs) = chilpa.restored_tabs() {
@@ -1261,6 +1264,7 @@ impl Chilpa {
         }
         self.follow_playing_documents();
         let mut started = false;
+        self.take_unavailable_reports();
         let events = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for event in events {
             if self.listen.active == 0 { continue; }
@@ -1314,6 +1318,7 @@ impl Chilpa {
                     // counts over the whole queue.
                     self.now.index = self.base + index;
                     self.now.queue_len = if self.queue.is_empty() { queue_len } else { self.queue.len() };
+                    self.look_past_unavailable();
                     // Every start closes the previous one: in a queue, the
                     // track that starts is the proof the one before it
                     // finished.
@@ -1425,15 +1430,7 @@ impl Chilpa {
                         }
                     }
                 }
-                PlayerEvent::Failed { message } => {
-                    self.now.playing = false;
-                    self.stop_after = None;
-                    self.sleep_until = None;
-                    self.now.error = message;
-                    // A device failure is not a listen, but whatever did
-                    // play is logged, marked as interrupted.
-                    self.log_play(true);
-                }
+                PlayerEvent::Failed { message } => self.player_failed(message),
             }
         }
         // A new track's verdict cannot see the volume moved after it. The

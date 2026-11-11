@@ -6226,6 +6226,11 @@ msgstr "Tamanho"
 msgid "Skipped"
 msgstr "Pulada"
 
+msgid "Skipped {} unavailable track"
+msgid_plural "Skipped {} unavailable tracks"
+msgstr[0] "{} faixa indisponível pulada"
+msgstr[1] "{} faixas indisponíveis puladas"
+
 msgid "Skips"
 msgstr "Puladas"
 
