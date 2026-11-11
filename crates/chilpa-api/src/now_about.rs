@@ -182,31 +182,47 @@ fn read_album(record: Record, musicbrainz: bool, refresh: bool) -> Value {
     found
 }
 
+/// Whom an answer speaks of: the track that plays, or one chosen from a
+/// list, named by its path.
+#[derive(Clone, Debug, Default, PartialEq)]
+struct Subject { path: String, title: String, artist: String, album: String, duration_ms: u64, album_id: i64 }
+
 impl Chilpa {
     /// I discard one failed panel's session answer before its explicit retry.
     pub fn retry_now_about(&mut self, part: &str, path: &str) -> bool {
         if path.is_empty() || self.now_playing().path != path { return false; }
+        let subject = self.playing_subject();
+        self.retry_about_of(part, &subject)
+    }
+
+    fn retry_about_of(&mut self, part: &str, subject: &Subject) -> bool {
         let identity = match part {
-            "track" => path.to_string(),
-            "album" if self.now.album_id != 0 => self.now.album_id.to_string(),
+            "track" => subject.path.clone(),
+            "album" if subject.album_id != 0 => subject.album_id.to_string(),
             _ => return false,
         };
         let policy = chilpa_core::network::current();
         let key = format!("{part}:{}:{}:{identity}", policy.musicbrainz, policy.offline);
         if part == "album" && kept(&key).is_some_and(|found| found["refetch_failed"] == true) {
-            return self.refetch_now_album_about(path);
+            return self.refetch_album_of(subject);
         }
         memory::retry_failed(&key)
     }
 
     /// I refresh only the currently requested album; an old view cannot target the next track.
     pub fn refetch_now_album_about(&mut self, path: &str) -> bool {
-        if path.is_empty() || self.now_playing().path != path || self.now.album_id == 0 { return false; }
+        if path.is_empty() || self.now_playing().path != path { return false; }
+        let subject = self.playing_subject();
+        self.refetch_album_of(&subject)
+    }
+
+    fn refetch_album_of(&mut self, subject: &Subject) -> bool {
+        let id = subject.album_id;
+        if id == 0 { return false; }
         let policy = chilpa_core::network::current();
         if !policy.musicbrainz || policy.offline { return false; }
-        let id = self.now.album_id;
         let key = format!("album:true:false:{id}");
-        let record = self.about_record(id);
+        let record = self.about_record(id, subject);
         memory::refresh(self.catalog.clone(), key, id.to_string(), move || read_album(record, true, true))
     }
 
@@ -214,33 +230,38 @@ impl Chilpa {
     /// (label, value), `credits` (name, roles), `origin` (who said it),
     /// `link` and `loading`. Empty when nothing plays.
     pub fn now_track_about(&mut self) -> String {
-        let path = self.now_playing().path.clone();
-        if path.is_empty() { return "{}".into(); }
+        if self.now_playing().path.is_empty() { return "{}".into(); }
+        let subject = self.playing_subject();
+        self.track_about_of(subject)
+    }
+
+    fn track_about_of(&mut self, subject: Subject) -> String {
         let policy = chilpa_core::network::current();
         let musicbrainz = policy.musicbrainz;
-        let key = format!("track:{musicbrainz}:{}:{path}", policy.offline);
+        let key = format!("track:{musicbrainz}:{}:{}", policy.offline, subject.path);
         if let Some(found) = kept(&key) { return shown(found); }
-        let source = self.catalog.track_by_path(&path).map(|(track, _)| {
+        let source = self.catalog.track_by_path(&subject.path).map(|(track, _)| {
             let name = self.catalog.name(&track.plugin).unwrap_or_else(|| track.plugin.clone());
             (track.metadata, name)
         });
-        let hint = self.about_hint(&path);
-        shown(read(self.catalog.clone(), key, self.now.album_id.to_string(), move || read_track(path, source, musicbrainz, hint)))
+        let hint = self.about_hint(&subject);
+        let (path, scope) = (subject.path, subject.album_id.to_string());
+        shown(read(self.catalog.clone(), key, scope, move || read_track(path, source, musicbrainz, hint)))
     }
 
-    fn about_hint(&mut self, path: &str) -> Hint {
-        let mut hint = Hint { title: self.now.title.clone(), artist: self.now.artist.clone(), album: self.now.album.clone(),
-            album_artist: self.now.artist.clone(), duration_ms: (self.now.total_seconds * 1000.0).max(0.0) as u64,
-            path: path.into(), ..Default::default() };
-        if self.now.album_id != 0 {
-            let info: Value = serde_json::from_str(&self.album_information(self.now.album_id)).unwrap_or_default();
+    fn about_hint(&mut self, subject: &Subject) -> Hint {
+        let mut hint = Hint { title: subject.title.clone(), artist: subject.artist.clone(), album: subject.album.clone(),
+            album_artist: subject.artist.clone(), duration_ms: subject.duration_ms,
+            path: subject.path.clone(), ..Default::default() };
+        if subject.album_id != 0 {
+            let info: Value = serde_json::from_str(&self.album_information(subject.album_id)).unwrap_or_default();
             let artist = text(&info, "artist");
             if !artist.is_empty() { hint.album_artist = artist; }
             hint.release_id = text(&info, "musicbrainz_release_id");
             hint.catalog_number = text(&info, "catalog_number");
         }
         if let Some(library) = self.library() {
-            if let Some(row) = library.tracks_by_paths(&[path.to_string()]).ok().and_then(|mut rows| rows.pop().flatten()) {
+            if let Some(row) = library.tracks_by_paths(&[subject.path.clone()]).ok().and_then(|mut rows| rows.pop().flatten()) {
                 if let Some((isrc, mbid)) = library.fingerprints_for(&[row.id]).ok().and_then(|mut ids| ids.remove(&row.id)) {
                     hint.isrc = isrc.unwrap_or_default();
                     hint.recording_id = mbid.unwrap_or_default();
@@ -253,20 +274,25 @@ impl Chilpa {
     /// What the About tab says of the record the track is on, as JSON, in
     /// the shape of `now_track_about`, with its review as `description`.
     pub fn now_album_about(&mut self) -> String {
-        let id = self.now_playing().album_id;
+        let subject = self.playing_subject();
+        self.album_about_of(&subject)
+    }
+
+    fn album_about_of(&mut self, subject: &Subject) -> String {
+        let id = subject.album_id;
         if id == 0 { return "{}".into(); }
         let policy = chilpa_core::network::current();
         let musicbrainz = policy.musicbrainz;
         let key = format!("album:{musicbrainz}:{}:{id}", policy.offline);
         let mut found = if let Some(found) = kept(&key) { found } else {
-            let record = self.about_record(id);
+            let record = self.about_record(id, subject);
             read(self.catalog.clone(), key, id.to_string(), move || read_album(record, musicbrainz, false))
         };
         found["can_refetch"] = json!(musicbrainz && !policy.offline);
         shown(found)
     }
 
-    fn about_record(&mut self, id: i64) -> Record {
+    fn about_record(&mut self, id: i64, subject: &Subject) -> Record {
         let info: Value = serde_json::from_str(&self.album_information(id)).unwrap_or_default();
         let source = if id < 0 { info["plugin"].as_str().and_then(|plugin| self.catalog.name(plugin)).unwrap_or_default() } else { "Chilpa".to_string() };
         let mut facts = Vec::new();
@@ -277,9 +303,68 @@ impl Chilpa {
         push(&mut facts, i18n::mark("Copyright"), text(&info, "copyright"));
         push(&mut facts, i18n::mark("Barcode"), text(&info, "upc"));
         Record { title: text(&info, "title"), artist: text(&info, "artist"), description: text(&info, "description"),
-            label: text(&info, "label"), source, facts, hint: self.about_hint(&self.now.path.clone()) }
+            label: text(&info, "label"), source, facts, hint: self.about_hint(subject) }
+    }
+
+    fn playing_subject(&self) -> Subject {
+        let now = &self.now;
+        Subject { path: now.path.clone(), title: now.title.clone(), artist: now.artist.clone(), album: now.album.clone(),
+            duration_ms: (now.total_seconds * 1000.0).max(0.0) as u64, album_id: now.album_id }
+    }
+
+    /// A track that does not play, named by its path, as the library, a
+    /// source's catalog or the media open now hold it. Neither its file nor
+    /// its source is read here: a hung mount or a slow server cannot hold
+    /// the window, and what only they know is read on the background.
+    fn subject_of(&mut self, path: &str) -> Subject {
+        let known = self.library().and_then(|library| library.tracks_by_paths(&[path.to_string()]).ok()).and_then(|mut rows| rows.pop().flatten());
+        if let Some(row) = known {
+            return Subject { path: path.into(), title: row.title, artist: row.artist, album: row.album, duration_ms: row.duration_ms, album_id: row.album_id.unwrap_or(0) };
+        }
+        if let Some((track, _)) = self.catalog.track_by_path(path) {
+            return Subject { path: path.into(), title: track.title, artist: track.artist, album: track.album, duration_ms: track.duration_ms, album_id: track.album_id };
+        }
+        self.media_row(path).map(|row| Subject { path: path.into(), title: row.title, artist: row.artist, album: row.album, duration_ms: row.duration_ms, album_id: row.album_id })
+            .unwrap_or_else(|| Subject { path: path.into(), ..Default::default() })
+    }
+
+    /// What the About tab says of the track `path` names, playing or not, in
+    /// the shape of `now_track_about`; the track that plays gets that same
+    /// answer. Asking plays nothing and leaves the queue as it is.
+    pub fn track_about(&mut self, path: &str) -> String {
+        if path.is_empty() { return "{}".into(); }
+        if path == self.now.path { return self.now_track_about(); }
+        let subject = self.subject_of(path);
+        self.track_about_of(subject)
+    }
+
+    /// The record the track `path` names is on, as `now_album_about` says it.
+    pub fn album_about(&mut self, path: &str) -> String {
+        if path.is_empty() { return "{}".into(); }
+        if path == self.now.path { return self.now_album_about(); }
+        let subject = self.subject_of(path);
+        self.album_about_of(&subject)
+    }
+
+    /// `retry_now_about` for the track `path` names, playing or not.
+    pub fn retry_about(&mut self, part: &str, path: &str) -> bool {
+        if path.is_empty() { return false; }
+        if path == self.now.path { return self.retry_now_about(part, path); }
+        let subject = self.subject_of(path);
+        self.retry_about_of(part, &subject)
+    }
+
+    /// `refetch_now_album_about` for the record of the track `path` names.
+    pub fn refetch_album_about(&mut self, path: &str) -> bool {
+        if path.is_empty() { return false; }
+        if path == self.now.path { return self.refetch_now_album_about(path); }
+        let subject = self.subject_of(path);
+        self.refetch_album_of(&subject)
     }
 }
+
+#[cfg(test)]
+mod chosen_tests;
 
 #[cfg(test)]
 mod tests {

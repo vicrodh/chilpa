@@ -6,15 +6,19 @@ import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
-// What is known of what plays, under the queue's art: the track by default,
+// What is known of a track, under the queue's art: the track by default,
 // or the record it is on. Its source's word when it says much, MusicBrainz's
 // when it does not; who said it closes the list.
 Item {
     id: about
     // "track" or "album".
     property string part: "track"
+    // The track it speaks of, by the path that names it: what plays when
+    // empty, or one a list's menu chose.
+    property string subject: ""
+    readonly property string asked: subject !== "" ? subject : Player.path
     property int retryRevision: 0
-    readonly property var found: visible ? read(part === "album" ? NowAbout.album(Player.path, Library.remoteRev + retryRevision) : NowAbout.track(Player.path, Library.remoteRev + retryRevision)) : ({})
+    readonly property var found: visible ? read(part === "album" ? NowAbout.album(asked, Library.remoteRev + retryRevision) : NowAbout.track(asked, Library.remoteRev + retryRevision)) : ({})
     readonly property var facts: found.facts || []
     readonly property var credits: found.credits || []
     readonly property string description: found.description || ""
@@ -44,7 +48,7 @@ Item {
         activeFocusOnTab: true
         Keys.onReturnPressed: if (enabled) clicked()
         Keys.onSpacePressed: if (enabled) clicked()
-        onClicked: if (NowAbout.refetchAlbum(Player.path)) about.retryRevision++
+        onClicked: if (NowAbout.refetchAlbum(about.asked)) about.retryRevision++
         FocusRing {}
     }
 
@@ -164,7 +168,7 @@ Item {
                 text: I18n.tr("Retry", I18n.rev)
                 glyph: Lucide.rotateCcw
                 iconFamily: Lucide.font
-                onClicked: if (NowAbout.retry(about.part, Player.path)) about.retryRevision++
+                onClicked: if (NowAbout.retry(about.part, about.asked)) about.retryRevision++
             }
             Row {
                 visible: (about.found.origin || "") !== ""
