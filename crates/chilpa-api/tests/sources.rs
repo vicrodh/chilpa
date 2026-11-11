@@ -310,9 +310,12 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
         view(&mut chilpa)["entries"]
     );
     assert_eq!(view(&mut chilpa)["entries"][0]["heard"], "Heard");
-    // The bar still names the last one, so its line still leads to its page.
+    // The queue ran out: the bar names nothing, so no line leads to an
+    // episode's page. The queue keeps both.
     assert!(!chilpa.now_playing().playing);
-    assert_eq!(view(&mut chilpa)["onAir"], format!("{ID} ep:two"));
+    assert_eq!(chilpa.now_playing().path, "", "{:?}", chilpa.now_playing());
+    assert_eq!(view(&mut chilpa)["onAir"], "");
+    assert_eq!(chilpa.queue_paths().len(), 2);
     assert_eq!(view(&mut chilpa)["entries"][0]["progress"], 1.0);
     chilpa.stop();
     drop(chilpa);
