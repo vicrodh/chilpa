@@ -4297,6 +4297,9 @@ msgstr "Несовместим"
 msgid "Not for me"
 msgstr "Не для меня"
 
+msgid "Not found on disk"
+msgstr "Не найден на диске"
+
 msgid "Not heard first"
 msgstr "Сначала непрослушанные"
 
@@ -5946,6 +5949,9 @@ msgstr "Сервер добавлен"
 
 msgid "Server address"
 msgstr "Адрес сервера"
+
+msgid "Server item"
+msgstr "Элемент на сервере"
 
 msgid "Server name"
 msgstr "Имя сервера"

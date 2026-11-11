@@ -35,7 +35,27 @@ fn shown(mut found: Value) -> String {
         .map(|fact| json!({"label": i18n::t(fact[0].as_str().unwrap_or_default()), "value": fact[1]})).collect();
     found["facts"] = json!(facts);
     for credit in found["credits"].as_array_mut().into_iter().flatten() { contributors::show(credit); }
+    for key in ["title", "note"] {
+        if let Some(said) = found["file"][key].as_str().filter(|said| !said.is_empty()) { found["file"][key] = json!(i18n::t(said)); }
+    }
     found.to_string()
+}
+
+/// Where a track lives, for whoever is hunting a file down: its path on this
+/// machine, or its entry on a server. `title` and `note` are catalog keys,
+/// said in the window's language by `shown`. A streamed address is not a
+/// place, so it says nothing.
+fn file_where(path: &str, from_source: bool) -> Value {
+    if let Some(entry) = chilpa_models::RemoteEntry::parse(path) {
+        return json!({"title": i18n::mark("Server item"), "note": "",
+            "value": format!("{}/{}/{}", entry.source.provider, entry.source.instance, entry.external_id)});
+    }
+    if from_source || path.is_empty() { return Value::Null; }
+    // A disc image's track is `sacd:<image>#<n>`; the file is the image.
+    let image = path.strip_prefix("sacd:").map_or(path, |rest| rest.split('#').next().unwrap_or(rest));
+    if image.contains("://") { return Value::Null; }
+    let note = if std::path::Path::new(image).exists() { "" } else { i18n::mark("Not found on disk") };
+    json!({"title": i18n::mark("File"), "value": path, "note": note})
 }
 
 fn answer(facts: Vec<Fact>, credits: Vec<Value>, origin: String, link: String, description: String) -> Value {
@@ -48,6 +68,7 @@ fn answer(facts: Vec<Fact>, credits: Vec<Value>, origin: String, link: String, d
 fn read_track(path: String, source: Option<(Value, String)>, musicbrainz: bool, mut hint: Hint) -> Value {
     let (mut facts, mut credits, mut origin, mut link) = (Vec::new(), Vec::new(), String::new(), String::new());
     let (mut isrc, mut recording) = (String::new(), String::new());
+    let from_source = source.is_some();
     match source {
         Some((metadata, name)) => {
             credits = crate::album_information::participants(&metadata["performers"], &json!({})).into_iter()
@@ -99,6 +120,7 @@ fn read_track(path: String, source: Option<(Value, String)>, musicbrainz: bool, 
     push(&mut facts, "ISRC", isrc);
     let mut found = answer(facts, credits, origin, link, String::new());
     found["failed"] = json!(failed);
+    found["file"] = file_where(&path, from_source);
     found
 }
 
@@ -289,6 +311,27 @@ mod tests {
         let record = Record { title: "Out of Time".into(), artist: "R.E.M.".into(), description: "A review".into(), label: String::new(),
             source: "Fixture".into(), facts: Vec::new(), ..Default::default() };
         assert_eq!(read_album(record, false, false)["origin"], "Fixture", "a review is rich");
+    }
+
+    #[test]
+    fn a_file_says_where_it_is_and_whether_it_is_still_there() {
+        let here = std::env::current_exe().unwrap();
+        let found = file_where(here.to_str().unwrap(), false);
+        assert_eq!(found["value"], here.to_str().unwrap());
+        assert_eq!(found["note"], "");
+        let gone = file_where("/nonexistent/Music/gone.flac", false);
+        assert_eq!(gone["note"], "Not found on disk");
+        let image = file_where("sacd:/nonexistent/disc.iso#3", false);
+        assert_eq!(image["note"], "Not found on disk");
+        assert_eq!(image["value"], "sacd:/nonexistent/disc.iso#3");
+    }
+
+    #[test]
+    fn a_server_entry_names_its_server_and_a_stream_or_a_source_name_nothing() {
+        let entry = chilpa_models::RemoteEntry::new(chilpa_models::source::SourceId::new("provider", "home"), "abc 123").to_entry();
+        assert_eq!(file_where(&entry, false)["value"], "provider/home/abc 123");
+        assert!(file_where("https://radio.example/stream", false).is_null());
+        assert!(file_where("/music/a.flac", true).is_null());
     }
 
     #[test]

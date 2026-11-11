@@ -4287,6 +4287,9 @@ msgstr "互換性なし"
 msgid "Not for me"
 msgstr "興味なし"
 
+msgid "Not found on disk"
+msgstr "ディスク上に見つかりません"
+
 msgid "Not heard first"
 msgstr "未再生を先に"
 
@@ -5934,6 +5937,9 @@ msgstr "サーバーを追加しました"
 
 msgid "Server address"
 msgstr "サーバーアドレス"
+
+msgid "Server item"
+msgstr "サーバー上の項目"
 
 msgid "Server name"
 msgstr "サーバー名"

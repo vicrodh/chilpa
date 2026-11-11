@@ -103,6 +103,7 @@ Rectangle {
                 font.pointSize: Type.row
                 font.weight: Type.medium
                 color: Theme.color.textPrimary
+                AudioParts.TrackInfoLink {}
             }
 
             AudioParts.AudioQualityGlyph {

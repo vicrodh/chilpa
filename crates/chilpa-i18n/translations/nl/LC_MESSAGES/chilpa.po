@@ -4292,6 +4292,9 @@ msgstr "Niet compatibel"
 msgid "Not for me"
 msgstr "Niet voor mij"
 
+msgid "Not found on disk"
+msgstr "Niet gevonden op schijf"
+
 msgid "Not heard first"
 msgstr "Onbeluisterd eerst"
 
@@ -5940,6 +5943,9 @@ msgstr "Server toegevoegd"
 
 msgid "Server address"
 msgstr "Serveradres"
+
+msgid "Server item"
+msgstr "Item op de server"
 
 msgid "Server name"
 msgstr "Servernaam"

@@ -36,6 +36,8 @@ TitledFlow {
     QueueFooter { width: Metrics.rightPanel }
     QueueEnds { summary: "12 songs 1 hr 5 min"; remaining: 65 * 60000 } // derived: an hour and five minutes
     ShortcutsSheet {}
+    TrackInfoModal {}
+    Item { width: Metrics.confirmWidth; height: Metrics.button32; TrackInfoLink {} }
     CommandHelp { width: Metrics.settingsMaxWidth; room: Metrics.settingsMaxWidth; lines: [{usage:":help",description:"Command help"}] }
     ShortcutsEditor {}
     SleepTimer {}
