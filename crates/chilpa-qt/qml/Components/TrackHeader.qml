@@ -5,7 +5,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
-// The column titles of a track list, over the same widths as its rows.
+// The column titles of a track list, over the same widths as its rows; the
+// columns hold their names (`TrackColumns.names`) and fit them.
 Item {
     id: head
 
@@ -18,14 +19,14 @@ Item {
 
     readonly property var titles: [
         { x: cols.indexX, w: cols.index - Metrics.gap8, right: true, text: "#", sort: "" },
-        { x: cols.titleX, w: cols.titleW, right: false, text: I18n.tr("Title", I18n.rev), sort: "title" },
-        { x: cols.artistX, w: cols.artistW, right: false, text: I18n.tr("Artist", I18n.rev), sort: "artist" },
-        { x: cols.albumX, w: cols.albumW, right: false, text: I18n.tr("Album", I18n.rev), sort: "album" },
-        { x: cols.sourceX, w: cols.sourceWidth, right: false, text: I18n.tr("Source", I18n.rev), sort: "" },
-        { x: cols.qualityX, w: cols.quality, right: false, text: I18n.tr("Quality", I18n.rev), sort: "" },
-        { x: cols.ratingX, w: cols.rating, right: false, text: I18n.tr("Rating", I18n.rev), sort: "" },
-        { x: cols.playsX, w: cols.plays, right: true, text: I18n.tr("Plays", I18n.rev), sort: "plays" },
-        { x: cols.timeX, w: cols.time, right: true, text: I18n.tr("Time", I18n.rev), sort: "duration" }
+        { x: cols.titleX, w: cols.titleW, right: false, text: cols.names.title, sort: "title" },
+        { x: cols.artistX, w: cols.artistW, right: false, text: cols.names.artist, sort: "artist" },
+        { x: cols.albumX, w: cols.albumW, right: false, text: cols.names.album, sort: "album" },
+        { x: cols.sourceX, w: cols.sourceWidth, right: false, text: cols.names.source, sort: "" },
+        { x: cols.qualityX, w: cols.quality, right: false, text: cols.names.quality, sort: "" },
+        { x: cols.ratingX, w: cols.rating, right: false, text: cols.names.rating, sort: "" },
+        { x: cols.playsX, w: cols.plays, right: true, text: cols.names.plays, sort: "plays" },
+        { x: cols.timeX, w: cols.time, right: true, text: cols.names.time, sort: "duration" }
     ]
 
     width: cols.width

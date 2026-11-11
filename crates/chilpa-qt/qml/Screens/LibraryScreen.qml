@@ -51,86 +51,68 @@ Item {
         columns: result.columns
     }
 
-    Item {
+    ScreenHead {
         id: head
         x: Metrics.contentX
         y: Metrics.contentTop
         width: page.width - Metrics.contentX * 2 // derived: padding on both sides
-        height: Metrics.shelfHeader
+        title: I18n.tr("Library", I18n.rev)
+        count: Library.summary
+        countRight: true
 
-        Text {
+        IconButton {
+            id: sourceButton
             anchors.verticalCenter: parent.verticalCenter
-            text: I18n.tr("Library", I18n.rev)
-            font.pointSize: Type.title
-            font.weight: Type.bold
-            font.letterSpacing: Type.titleTracking
-            color: Theme.color.textPrimary
+            tip: I18n.tr("Sources and quality", I18n.rev)
+            glyph: Icons.adjustmentsHorizontal
+            round: true
+            checked: Library.extraFiltered || sources.opened
+            onClicked: sources.opened ? sources.close() : sources.open()
+
+            SourcesPopover {
+                id: sources
+                x: sourceButton.width - width
+                y: sourceButton.height + Metrics.gap6
+                panes: page.panes
+                onPaneToggled: (column) => page.togglePane(column)
+            }
         }
-        Row {
-            anchors.right: parent.right
+        SortButton {
+            value: Library.order
+            options: [
+                { value: "artist", text: I18n.tr("Artist", I18n.rev) },
+                { value: "album", text: I18n.tr("Album", I18n.rev) },
+                { value: "year", text: I18n.tr("Year", I18n.rev) },
+                { value: "added", text: I18n.tr("Date added", I18n.rev), descending: true },
+                { value: "title", text: I18n.tr("Title", I18n.rev) },
+                { value: "plays", text: I18n.tr("Most played", I18n.rev), descending: true },
+                { value: "duration", text: I18n.tr("Duration", I18n.rev) }
+            ]
+            onPicked: (value) => Library.order = value
+        }
+        SortButton {
+            objectName: "libraryGrouping"
+            visible: !Library.albumless
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Metrics.gap12
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: Library.summary
-                font.pointSize: Type.meta
-                color: Theme.color.textSecondary
-            }
-            IconButton {
-                id: sourceButton
-                anchors.verticalCenter: parent.verticalCenter
-                tip: I18n.tr("Sources and quality", I18n.rev)
-                glyph: Icons.adjustmentsHorizontal
-                round: true
-                checked: Library.extraFiltered || sources.opened
-                onClicked: sources.opened ? sources.close() : sources.open()
-
-                SourcesPopover {
-                    id: sources
-                    x: sourceButton.width - width
-                    y: sourceButton.height + Metrics.gap6
-                    panes: page.panes
-                    onPaneToggled: (column) => page.togglePane(column)
-                }
-            }
-            SortButton {
-                value: Library.order
-                options: [
-                    { value: "artist", text: I18n.tr("Artist", I18n.rev) },
-                    { value: "album", text: I18n.tr("Album", I18n.rev) },
-                    { value: "year", text: I18n.tr("Year", I18n.rev) },
-                    { value: "added", text: I18n.tr("Date added", I18n.rev), descending: true },
-                    { value: "title", text: I18n.tr("Title", I18n.rev) },
-                    { value: "plays", text: I18n.tr("Most played", I18n.rev), descending: true },
-                    { value: "duration", text: I18n.tr("Duration", I18n.rev) }
-                ]
-                onPicked: (value) => Library.order = value
-            }
-            SortButton {
-                objectName: "libraryGrouping"
-                visible: !Library.albumless
-                anchors.verticalCenter: parent.verticalCenter
-                glyph: Icons.stack2
-                directed: false
-                value: page.group
-                options: [
-                    { value: "", text: I18n.tr("No grouping", I18n.rev) },
-                    { value: "letter", text: I18n.tr("By letter", I18n.rev) },
-                    { value: "artist", text: I18n.tr("By artist", I18n.rev) },
-                    { value: "year", text: I18n.tr("By year", I18n.rev) },
-                    { value: "decade", text: I18n.tr("By decade", I18n.rev) },
-                    { value: "genre", text: I18n.tr("By genre", I18n.rev) },
-                    { value: "label", text: I18n.tr("By label", I18n.rev) },
-                    { value: "composer", text: I18n.tr("By composer", I18n.rev) },
-                    { value: "quality", text: I18n.tr("By quality", I18n.rev) },
-                    { value: "source", text: I18n.tr("By source", I18n.rev) },
-                    { value: "added", text: I18n.tr("By date added", I18n.rev) },
-                    { value: "type", text: I18n.tr("By release type", I18n.rev) },
-                    { value: "plays", text: I18n.tr("By plays", I18n.rev) }
-                ]
-                onPicked: (value) => { page.group = value; SettingsModel.keep("ui.library.group", value) }
-            }
+            glyph: Icons.stack2
+            directed: false
+            value: page.group
+            options: [
+                { value: "", text: I18n.tr("No grouping", I18n.rev) },
+                { value: "letter", text: I18n.tr("By letter", I18n.rev) },
+                { value: "artist", text: I18n.tr("By artist", I18n.rev) },
+                { value: "year", text: I18n.tr("By year", I18n.rev) },
+                { value: "decade", text: I18n.tr("By decade", I18n.rev) },
+                { value: "genre", text: I18n.tr("By genre", I18n.rev) },
+                { value: "label", text: I18n.tr("By label", I18n.rev) },
+                { value: "composer", text: I18n.tr("By composer", I18n.rev) },
+                { value: "quality", text: I18n.tr("By quality", I18n.rev) },
+                { value: "source", text: I18n.tr("By source", I18n.rev) },
+                { value: "added", text: I18n.tr("By date added", I18n.rev) },
+                { value: "type", text: I18n.tr("By release type", I18n.rev) },
+                { value: "plays", text: I18n.tr("By plays", I18n.rev) }
+            ]
+            onPicked: (value) => { page.group = value; SettingsModel.keep("ui.library.group", value) }
         }
     }
 

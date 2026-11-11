@@ -43,9 +43,12 @@ Item {
             height: Metrics.iconSm
             color: Theme.color.textSecondary
         }
+        // What the link and the chevrons leave; a longer title is cut.
         Text {
             anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(implicitWidth, Math.max(0, head.width - x - (tail.width > 0 ? tail.width + Metrics.gap12 : 0)))
             text: head.title
+            elide: Text.ElideRight
             font.pointSize: Type.section
             font.weight: Type.heading
             font.letterSpacing: Type.sectionTracking
@@ -54,6 +57,7 @@ Item {
     }
 
     Row {
+        id: tail
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap4

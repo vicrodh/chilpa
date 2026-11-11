@@ -4,11 +4,13 @@ import "../Theme"
 
 // The widths of a track list's columns, computed once and shared by the
 // header and every row, so they cannot disagree (design/03 TrackRow). A
-// hidden column measures zero, padding included.
-QtObject {
+// hidden column measures zero, padding included. It draws nothing: its texts
+// are what the fixed columns must hold, set as the header and the rows set
+// them, so the widths follow the language, the face and the platform.
+Item {
     id: cols
+    visible: false
 
-    property real width: 0
     property bool rich: false
     property bool showArtist: true
     property bool showAlbum: true
@@ -28,11 +30,27 @@ QtObject {
     readonly property int move: !reorder ? 0 : rich ? Metrics.colMoveRich : Metrics.colMoveCompact
     readonly property real fromAlbum: Math.min(move, flex.album)
     readonly property int art: rich && showArt ? Metrics.colArt : 0
-    readonly property int sourceWidth: showSource ? Metrics.colSource : 0
-    readonly property int quality: rich ? Metrics.colQualityRich : Metrics.colQualityCompact
-    readonly property int rating: showRating ? Metrics.colRating : 0
-    readonly property int plays: showPlays ? (rich ? Metrics.colPlaysRich : Metrics.colPlaysCompact) : 0
-    readonly property int time: rich ? Metrics.colTimeRich : Metrics.colTimeCompact
+    readonly property int sourceWidth: showSource ? named(Metrics.colSource, sourceName) : 0
+    readonly property int quality: named(rich ? Metrics.colQualityRich : Metrics.colQualityCompact, qualityName)
+    readonly property int rating: showRating ? named(Metrics.colRating, ratingName) : 0
+    readonly property int plays: showPlays ? named(rich ? Metrics.colPlaysRich : Metrics.colPlaysCompact, playsName) : 0
+    // An hour-long track's time fits too: "1:02:47", not cut into the next column.
+    readonly property int time: Math.max(named(rich ? Metrics.colTimeRich : Metrics.colTimeCompact, timeName), Math.ceil(clock.implicitWidth))
+
+    // The header's names. A fixed column is the design's width, or as wide
+    // as its name in the header's bold (a sorted column's) and the header's
+    // inset, so no language cuts it.
+    readonly property var names: ({ title: I18n.tr("Title", I18n.rev), artist: I18n.tr("Artist", I18n.rev), album: I18n.tr("Album", I18n.rev),
+        source: I18n.tr("Source", I18n.rev), quality: I18n.tr("Quality", I18n.rev), rating: I18n.tr("Rating", I18n.rev),
+        plays: I18n.tr("Plays", I18n.rev), time: I18n.tr("Time", I18n.rev) })
+    function named(design, name) { return Math.max(design, Math.ceil(name.implicitWidth) + Metrics.gap8) }
+    Text { id: sourceName; text: cols.names.source; font.pointSize: Type.label; font.weight: Type.bold }
+    Text { id: qualityName; text: cols.names.quality; font.pointSize: Type.label; font.weight: Type.bold }
+    Text { id: ratingName; text: cols.names.rating; font.pointSize: Type.label; font.weight: Type.bold }
+    Text { id: playsName; text: cols.names.plays; font.pointSize: Type.label; font.weight: Type.bold }
+    Text { id: timeName; text: cols.names.time; font.pointSize: Type.label; font.weight: Type.bold }
+    // The longest time a row says, in the rows' figures.
+    Text { id: clock; text: "0:00:00"; font.pointSize: Type.row; font.features: { "tnum": 1 } }
     // The time ends flush right; what follows it keeps its distance.
     readonly property int afterTime: Metrics.gap16
     readonly property int more: Metrics.colMore
