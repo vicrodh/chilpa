@@ -22,6 +22,9 @@ Popup {
     property var ratings: null
     signal ratingsChosen(var ratings)
     readonly property bool starred: Prefs.ratings && ratings !== null && ratings.length > 0
+    // The Library's columns whose header holds text: Reset clears it too.
+    readonly property var searched: panes === null ? [] : ["year", "genre", "label", "composer", "rating", "artist", "album", "bits", "rate"]
+        .filter((column, at) => String((Library.queries || [])[at] || "").trim() !== "")
     readonly property real half: sourcesOnly ? popover.availableWidth : (popover.availableWidth - Metrics.gap16) / 2 // derived: two columns and the gap between
 
     // A click outside closes it and is nothing else: it is not also a click
@@ -201,9 +204,13 @@ Popup {
             PillButton {
                 objectName: "ratingsReset"
                 visible: !popover.sourcesOnly
-                enabled: Library.extraFiltered || popover.starred
+                enabled: Library.extraFiltered || popover.starred || popover.searched.length > 0
                 text: I18n.tr("Reset", I18n.rev)
-                onClicked: { Library.resetExtra(); if (popover.starred) popover.ratingsChosen([]) }
+                onClicked: {
+                    Library.resetExtra()
+                    for (const column of popover.searched) Library.searchColumn(column, "")
+                    if (popover.starred) popover.ratingsChosen([])
+                }
             }
             PillButton {
                 kind: "primary"

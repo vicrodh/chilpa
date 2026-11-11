@@ -220,7 +220,7 @@ Item {
         anchors.fill: result
         model: tracks
     }
-    ZeroResults { anchors.top: toolbar.bottom; x: head.x; active: !Library.albumless && records.albums === 0 && Library.queryText !== "" && !Library.busy }
+    ZeroResults { anchors.top: toolbar.bottom; x: head.x; active: !Library.albumless && records.albums === 0 && !Library.busy }
     ShelfSkeleton {
         anchors.fill: result
         visible: Library.busy && (Library.albumless ? !looseTracks.published : records.albums === 0)

@@ -51,6 +51,8 @@ TestCase {
         Library.summary = ""
         Library.order = "artist"
         Library.albumOrder = "artist"
+        Library.queries = ["", "", "", "", "", "", "", "", ""]
+        Library.queryText = ""
         for (const key of ["ui.library.group", "ui.albums.group", "ui.tracks.group", "ui.tracks.order"])
             SettingsModel.keep(key, "")
     }
@@ -144,6 +146,28 @@ TestCase {
                 wait(0)
             }
         }
+        end()
+    }
+
+    // What the columns' headers narrow stands on the crumb line beside the
+    // sources and the query's chips, with the columns and with Refine.
+    function test_header_search_crumbs_data() { return TextAudit.cases() }
+    function test_header_search_crumbs(data) {
+        begin(data)
+        for (const width of widths) {
+            for (const refine of ["false", "true"]) {
+                SettingsModel.keep("ui.library.focus", refine)
+                Library.queryText = "genre:jazz"
+                Library.searchColumn("artist", "anne")
+                Library.searchColumn("composer", "Sebastian")
+                const page = createTemporaryObject(libraryPage, test, { width: width, height: 860 })
+                tryVerify(() => find(page, "columnSearchCrumb").length === 2, 2000)
+                audit(page, data, (refine === "true" ? "Refine" : "Columns") + " at " + width)
+                page.destroy()
+                wait(0)
+            }
+        }
+        SettingsModel.keep("ui.library.focus", "")
         end()
     }
 

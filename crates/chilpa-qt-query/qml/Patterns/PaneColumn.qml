@@ -42,6 +42,7 @@ Rectangle {
 
         TextInput {
             id: input
+            objectName: "paneSearch"
             text: Library.queries[["year", "genre", "label", "composer", "rating", "artist", "album", "bits", "rate"].indexOf(pane.column)] ?? ""
             onTextEdited: Library.searchColumn(pane.column, text)
             anchors.left: lens.right
