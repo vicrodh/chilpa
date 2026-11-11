@@ -49,9 +49,21 @@ Rectangle {
         menu.open()
     }
 
-    implicitWidth: briefs.length > 0
-        ? Metrics.gap10 + sourceBadge.width + Metrics.gap6 + said.implicitWidth + Metrics.gap6 + chevron.width + Metrics.gap8 // derived: what it holds and its margins
-        : Metrics.selectWidth
+    // What the field draws around the option it shows.
+    readonly property real chrome: Metrics.gap10 + sourceBadge.width + Metrics.gap6 * 2 + chevron.width + Metrics.gap8 // derived: the source, the chevron and their margins
+    // As wide as its longest option (or brief) needs to show whole, for an
+    // owner with the room to give it; set as the field sets them.
+    property real widestOption: 0
+    readonly property real wholeWidth: Math.max(implicitWidth, chrome + widestOption)
+    function measure() {
+        widestOption = (briefs.length > 0 ? briefs : options).reduce((widest, text) => { optionMetrics.text = text || ""; return Math.max(widest, optionMetrics.advanceWidth) }, 0)
+    }
+    onOptionsChanged: measure()
+    onBriefsChanged: measure()
+    Component.onCompleted: measure()
+    TextMetrics { id: optionMetrics; font: said.font; onFontChanged: field.measure() }
+
+    implicitWidth: briefs.length > 0 ? chrome + said.implicitWidth : Metrics.selectWidth
     implicitHeight: Metrics.fieldHeightLarge
     radius: Metrics.radiusControl
     color: area.containsMouse ? Theme.color.stateSelected : Theme.color.fillField
