@@ -39,11 +39,26 @@ QtObject {
     function hasWords(item) { return /[^\s\uE000-\uF8FF\uDB80-\uDBFF\uDC00-\uDFFF]/.test(item.text) }
     function isFlickable(item) { return item && "flickableDirection" in item && "contentItem" in item }
 
+    // A view that reuses its delegates keeps the released ones as children,
+    // still visible but culled: never drawn. What such a view holds beyond
+    // the items it gives for its indexes, its header, footer and highlight
+    // is one of those (its section headings too: they go unaudited there).
+    function pooled(item, live) {
+        const content = item.parent, view = content ? content.parent : null
+        if (!view || !view.reuseItems || view.contentItem !== content || typeof view.itemAtIndex !== "function") return false
+        if (!live.has(view)) {
+            const shown = new Set([view.headerItem, view.footerItem, view.highlightItem])
+            for (let i = 0; i < Math.min(view.count, 5000); ++i) shown.add(view.itemAtIndex(i))
+            live.set(view, shown)
+        }
+        return !live.get(view).has(item)
+    }
+
     function walk(root, visit) {
-        const stack = [root]
+        const stack = [root], live = new Map()
         while (stack.length > 0) {
             const item = stack.pop()
-            if (!item) continue
+            if (!item || pooled(item, live)) continue
             visit(item)
             const children = item.children || []
             for (let i = children.length - 1; i >= 0; --i) stack.push(children[i])
@@ -139,6 +154,15 @@ QtObject {
         return false
     }
 
+    // The popup a text is drawn in, or null for the window's own layer. A
+    // popup covers what is under it with its own background, so text in two
+    // layers never collides.
+    function layer(item) {
+        for (let at = item; at && at.parent; at = at.parent)
+            if (String(at.parent).startsWith("QQuickOverlay")) return at
+        return null
+    }
+
     // What of a box the clipping items above it let through, in `root`.
     function visiblePart(item, box, root) {
         let seen = rectIn(item, box, root)
@@ -185,7 +209,7 @@ QtObject {
             const box = words ? painted(item) : { x: 0, y: 0, width: item.width, height: item.height }
             const seen = visiblePart(item, box, root)
             if (!seen) return
-            leaves.push({ item: item, words: words, seen: seen })
+            leaves.push({ item: item, words: words, seen: seen, layer: layer(item) })
             if (!words) return
             const room = item.width - (item.leftPadding || 0) - (item.rightPadding || 0)
             if (item.width > 0 && item.contentWidth > room + slack) {
@@ -207,6 +231,7 @@ QtObject {
             const a = core(leaves[i])
             for (let j = 0; j < leaves.length; ++j) {
                 if (i === j || (leaves[j].words && j < i)) continue
+                if (leaves[i].layer !== leaves[j].layer) continue
                 if (contains(leaves[i].item, leaves[j].item) || contains(leaves[j].item, leaves[i].item)) continue
                 const met = cross(a, core(leaves[j]))
                 if (met.width > slack && met.height > slack)
