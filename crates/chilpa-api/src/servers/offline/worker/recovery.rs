@@ -4,88 +4,38 @@
 use super::*;
 
 impl Chilpa {
+    /// Queued before anything else at startup, so no download meets a file
+    /// that is still being reconciled.
     pub(crate) fn start_offline_recovery(&mut self) {
-        if self.servers.offline.task.is_some() {
-            return;
-        }
         let total = self
             .library()
             .and_then(|lib| lib.offline_copy_count().ok())
             .unwrap_or(0);
-        if total == 0 {
+        if total == 0 || queue::lock(&self.servers.offline.tracker).busy() {
             return;
         }
-        let progress = Arc::new(Mutex::new(Progress {
-            phase: "checking",
-            total,
-            running: true,
-            ..Default::default()
-        }));
-        let cancelled = Arc::new(AtomicBool::new(false));
-        let changed = Arc::new(AtomicBool::new(false));
-        let (worker_progress, worker_cancelled, worker_changed) =
-            (progress.clone(), cancelled.clone(), changed.clone());
-        let task = std::thread::Builder::new()
-            .name("chilpa-offline-check".into())
-            .spawn(move || {
-                if let Ok(lib) = Library::open_existing(&Library::default_path()) {
-                    let mut after = String::new();
-                    loop {
-                        let copies = match lib.offline_copy_page(&after) {
-                            Ok(copies) => copies,
-                            Err(_) => {
-                                worker_progress
-                                    .lock()
-                                    .unwrap_or_else(|error| error.into_inner())
-                                    .error = chilpa_i18n::t("the library could not be opened");
-                                break;
-                            }
-                        };
-                        if copies.is_empty() || worker_cancelled.load(Ordering::Acquire) {
-                            break;
-                        }
-                        for copy in copies {
-                            after = copy.key.clone();
-                            if worker_cancelled.load(Ordering::Acquire) {
-                                break;
-                            }
-                            let result = reconcile(&lib, &copy, &worker_cancelled);
-                            let mut progress = worker_progress
-                                .lock()
-                                .unwrap_or_else(|error| error.into_inner());
-                            match result {
-                                Ok(changed) => {
-                                    progress.done += 1;
-                                    if changed {
-                                        worker_changed.store(true, Ordering::Release);
-                                    }
-                                }
-                                Err(error) => {
-                                    progress.failed += 1;
-                                    progress.error = error;
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    worker_progress
-                        .lock()
-                        .unwrap_or_else(|error| error.into_inner())
-                        .error = chilpa_i18n::t("the library could not be opened");
-                }
-                worker_progress
-                    .lock()
-                    .unwrap_or_else(|error| error.into_inner())
-                    .running = false;
-            });
-        if let Ok(task) = task {
-            self.servers.offline = State {
-                task: Some(task),
-                progress,
-                cancelled,
-                changed,
-                removal: None,
-            };
+        let job = |seq| queue::Job { seq, scopes: HashMap::new(), collection: String::new(), root: PathBuf::new(), limit: Limit::default() };
+        self.offline_enqueue("recovery", Vec::new(), job, vec![(0, queue::Work::Recover)]);
+        let mut tracker = queue::lock(&self.servers.offline.tracker);
+        tracker.progress.total = total;
+        tracker.progress.phase = "checking";
+    }
+}
+
+/// Every registered file, a page at a time; `each` hears how each went.
+pub(super) fn check_all(lib: &Library, cancelled: &AtomicBool, each: impl Fn(Result<bool, String>)) -> Result<(), String> {
+    let mut after = String::new();
+    loop {
+        let copies = lib.offline_copy_page(&after).map_err(|_| chilpa_i18n::t("the library could not be opened"))?;
+        if copies.is_empty() || cancelled.load(Ordering::Acquire) {
+            return Ok(());
+        }
+        for copy in copies {
+            after = copy.key.clone();
+            if cancelled.load(Ordering::Acquire) {
+                return Ok(());
+            }
+            each(reconcile(lib, &copy, cancelled));
         }
     }
 }

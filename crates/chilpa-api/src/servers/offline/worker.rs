@@ -23,10 +23,10 @@ use std::{
     },
 };
 
-const MAX_SELECTION_BYTES: usize = 8 * 1024 * 1024;
+use chilpa_library::store::offline::MAX_SELECTION_BYTES;
 
 #[derive(Default)]
-struct Progress {
+pub(super) struct Progress {
     phase: &'static str,
     removing: bool,
     total: usize,
@@ -36,24 +36,28 @@ struct Progress {
     title: String,
     error: String,
     running: bool,
+    cancelled: bool,
 }
 
 enum Update {
     Bytes(u64),
     Verifying,
+    /// The file's size, when it is known before the transfer says it.
+    Size(u64),
 }
 
 #[derive(Default)]
 pub(crate) struct State {
     removal: Option<removal::Pending>,
     task: Option<std::thread::JoinHandle<()>>,
-    cancelled: Arc<AtomicBool>,
-    progress: Arc<Mutex<Progress>>,
+    pub(super) tracker: Arc<Mutex<queue::Tracker>>,
     changed: Arc<AtomicBool>,
+    /// The library's kept and failed copies, read again when one changed.
+    pub(super) stale: bool,
 }
 impl Drop for State {
     fn drop(&mut self) {
-        self.cancelled.store(true, Ordering::Release);
+        queue::lock(&self.tracker).cancel_all();
     }
 }
 
@@ -90,23 +94,27 @@ impl Chilpa {
         json!({"count":tracks.len().min(MAX_TRACKS),"too_many":tracks.len()>MAX_TRACKS}).to_string()
     }
 
+    /// Queues the selection's downloads behind whatever is queued.
     pub fn server_offline_start(&mut self, kind: &str, selected: &str) -> String {
+        self.server_offline_fetch(kind, selected, false)
+    }
+
+    /// `fresh` fetches a kept copy again instead of only checking it.
+    pub(super) fn server_offline_fetch(&mut self, kind: &str, selected: &str, fresh: bool) -> String {
         self.poll_server_offline();
-        let refused = |error: String| json!({"error":error}).to_string();
-        if self.servers.offline.task.is_some() {
-            return self.server_offline_status();
-        }
-        if self.offline() {
-            return refused(chilpa_core::network::blocked());
-        }
-        let Some(keys) = self.servers.keys.clone() else {
-            return refused(chilpa_i18n::t("servers are not started"));
-        };
         let selected_ids = ids(selected);
         let tracks = self
             .library()
             .and_then(|lib| lib.offline_selection(kind, &selected_ids).ok())
             .unwrap_or_default();
+        let chosen: Vec<i64> = tracks.iter().map(|track| track.id).collect();
+        let refused = |this: &mut Self, error: String| {
+            queue::lock(&this.servers.offline.tracker).refuse(&chosen, &error);
+            json!({"error":error}).to_string()
+        };
+        if self.offline() {
+            return refused(self, chilpa_core::network::blocked());
+        }
         let mut size: usize = tracks
             .iter()
             .map(|track| {
@@ -118,184 +126,83 @@ impl Chilpa {
             .sum::<usize>()
             + tracks.capacity() * std::mem::size_of::<Track>();
         if tracks.is_empty() || tracks.len() > MAX_TRACKS || size > MAX_SELECTION_BYTES {
-            return refused(chilpa_i18n::t(
+            return refused(self, chilpa_i18n::t(
                 "Choose between 1 and 10,000 server tracks for an offline download.",
             ));
         }
         let mut scopes = HashMap::new();
         let Some(lib) = self.library() else {
-            return refused(chilpa_i18n::t("the library could not be opened"));
+            return refused(self, chilpa_i18n::t("the library could not be opened"));
         };
+        let mut changed = None;
         for track in &tracks {
             if scopes.contains_key(&track.source) {
                 continue;
             }
             let Some(stored) = lib.server(track.source).ok().flatten() else {
-                return refused(super::super::session::changed());
+                changed = Some(super::super::session::changed());
+                break;
             };
             let scope = super::super::session::Scope::of(&stored);
             size = size.saturating_add(scope.retained_bytes());
             if size > MAX_SELECTION_BYTES {
-                return refused(chilpa_i18n::t(
+                changed = Some(chilpa_i18n::t(
                     "Choose between 1 and 10,000 server tracks for an offline download.",
                 ));
+                break;
             }
-            scopes.insert(track.source, scope);
+            scopes.insert(track.source, Some(scope));
+        }
+        if let Some(error) = changed {
+            return refused(self, error);
         }
         let root = match global_directory(self.preference(super::ROOT_PREFERENCE).as_deref()) {
             Ok(root) => root,
-            Err(error) => return refused(error),
+            Err(error) => return refused(self, error),
         };
         let collection = digest(&format!("{kind}:{selected}"));
         let limit = self.offline_limit();
-        let progress = Arc::new(Mutex::new(Progress {
-            total: tracks.len(),
-            running: true,
-            ..Default::default()
-        }));
-        let cancelled = Arc::new(AtomicBool::new(false));
-        let changed = Arc::new(AtomicBool::new(false));
-        let (worker_progress, worker_cancelled, worker_changed) =
-            (progress.clone(), cancelled.clone(), changed.clone());
-        let path = Library::default_path();
-        let task = std::thread::Builder::new()
-            .name("chilpa-offline-download".into())
-            .spawn(move || {
-                run(
-                    &path,
-                    &root,
-                    &keys,
-                    &tracks,
-                    &scopes,
-                    &collection,
-                    &limit,
-                    &worker_progress,
-                    &worker_cancelled,
-                    &worker_changed,
-                );
-                worker_progress
-                    .lock()
-                    .unwrap_or_else(|error| error.into_inner())
-                    .running = false;
-            });
-        match task {
-            Ok(task) => {
-                self.servers.offline = State {
-                    removal: None,
-                    task: Some(task),
-                    progress,
-                    cancelled,
-                    changed,
-                }
-            }
-            Err(_) => return refused(chilpa_i18n::t("The download worker could not be started.")),
-        }
-        self.server_offline_status()
+        let work = tracks.into_iter().map(|track| (track.id, queue::Work::Fetch { track, fresh })).collect();
+        self.offline_enqueue(kind, selected_ids, |seq| queue::Job { seq, scopes, collection, root, limit }, work)
     }
 
+    /// Everything waiting is dropped and the file on its way stops.
     pub fn server_offline_cancel(&mut self) {
-        self.servers
-            .offline
-            .cancelled
-            .store(true, Ordering::Release);
+        queue::lock(&self.servers.offline.tracker).cancel_all();
+    }
+
+    /// Only the selection's tracks stop or leave the queue.
+    pub(super) fn server_offline_cancel_selection(&mut self, kind: &str, selected: &str) {
+        let chosen: std::collections::HashSet<i64> = if kind == "tracks" {
+            ids(selected).into_iter().collect()
+        } else {
+            self.library()
+                .and_then(|lib| lib.offline_selection(kind, &ids(selected)).ok())
+                .unwrap_or_default()
+                .into_iter()
+                .map(|track| track.id)
+                .collect()
+        };
+        queue::lock(&self.servers.offline.tracker).cancel(|id| chosen.contains(&id));
     }
 
     pub fn server_offline_status(&self) -> String {
-        let state = &self.servers.offline;
-        let progress = state
-            .progress
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        json!({"running":progress.running,"phase":progress.phase,"removing":progress.removing,"total":progress.total,"done":progress.done,"failed":progress.failed,
+        let tracker = queue::lock(&self.servers.offline.tracker);
+        let progress = &tracker.progress;
+        json!({"running":tracker.busy(),"phase":progress.phase,"removing":progress.removing,"total":progress.total,"done":progress.done,"failed":progress.failed,
             "bytes":progress.bytes,"title":progress.title,"error":progress.error,
-            "cancelled":state.cancelled.load(Ordering::Acquire)}).to_string()
+            "cancelled":progress.cancelled}).to_string()
     }
 
     pub(crate) fn poll_server_offline(&mut self) {
         let state = &mut self.servers.offline;
         if state.changed.swap(false, Ordering::AcqRel) {
             self.servers.changed = true;
+            state.stale = true;
         }
         if state.task.as_ref().is_some_and(|task| task.is_finished()) {
             if let Some(task) = state.task.take() {
                 let _ = task.join();
-            }
-            state
-                .progress
-                .lock()
-                .unwrap_or_else(|error| error.into_inner())
-                .running = false;
-        }
-    }
-}
-
-fn run(
-    path: &Path,
-    root: &Path,
-    keys: &super::super::keys::Keys,
-    tracks: &[Track],
-    scopes: &HashMap<i64, super::super::session::Scope>,
-    collection: &str,
-    limit: &Limit,
-    progress: &Mutex<Progress>,
-    cancelled: &AtomicBool,
-    changed: &AtomicBool,
-) {
-    let lib = match Library::open_existing(path) {
-        Ok(lib) => lib,
-        Err(_) => {
-            progress
-                .lock()
-                .unwrap_or_else(|error| error.into_inner())
-                .error = chilpa_i18n::t("the library could not be opened");
-            return;
-        }
-    };
-    for track in tracks {
-        if cancelled.load(Ordering::Acquire) || chilpa_core::network::current().offline {
-            cancelled.store(true, Ordering::Release);
-            break;
-        }
-        {
-            let mut state = progress.lock().unwrap_or_else(|error| error.into_inner());
-            state.title = track.title.chars().take(512).collect();
-            state.bytes = 0;
-            state.phase = "downloading";
-        }
-        let result = scopes
-            .get(&track.source)
-            .ok_or_else(super::super::session::changed)
-            .and_then(|scope| {
-                download(
-                    &lib,
-                    root,
-                    keys,
-                    track,
-                    scope,
-                    collection,
-                    limit,
-                    cancelled,
-                    |update| {
-                        let mut state = progress.lock().unwrap_or_else(|error| error.into_inner());
-                        match update {
-                            Update::Bytes(bytes) => {
-                                state.bytes = bytes;
-                                state.phase = "downloading";
-                            }
-                            Update::Verifying => state.phase = "verifying",
-                        }
-                    },
-                )
-            });
-        let mut state = progress.lock().unwrap_or_else(|error| error.into_inner());
-        match result {
-            Ok(()) => {
-                state.done += 1;
-                changed.store(true, Ordering::Release);
-            }
-            Err(error) => {
-                state.failed += 1;
-                state.error = error;
             }
         }
     }
@@ -371,6 +278,8 @@ fn draft(
     })
 }
 
+/// A download that checks a kept copy instead of fetching it again.
+#[cfg(test)]
 fn download(
     lib: &Library,
     root: &Path,
@@ -380,6 +289,25 @@ fn download(
     collection: &str,
     limit: &Limit,
     cancelled: &AtomicBool,
+    progress: impl Fn(Update),
+) -> Result<(), String> {
+    obtain(lib, root, keys, track, scope, collection, limit, cancelled, false, progress)
+}
+
+/// One track's copy. A kept copy is only checked, unless `fresh` asks to
+/// fetch it again: then the old file stays in place until the new one is
+/// verified, and comes back if the new one does not. A cancelled first
+/// download leaves nothing behind, not even a failure.
+fn obtain(
+    lib: &Library,
+    root: &Path,
+    keys: &super::super::keys::Keys,
+    track: &Track,
+    scope: &super::super::session::Scope,
+    collection: &str,
+    limit: &Limit,
+    cancelled: &AtomicBool,
+    fresh: bool,
     progress: impl Fn(Update),
 ) -> Result<(), String> {
     let stored = lib
@@ -397,7 +325,7 @@ fn download(
         .map_err(|_| database())?
         .ok_or_else(database)?;
     progress(Update::Verifying);
-    if item.state == "complete" {
+    if item.state == "complete" && !fresh {
         match super::checked(&item, || cancelled.load(Ordering::Acquire)) {
             Ok(_) => return Ok(()),
             Err(super::CheckError::Cancelled) => return Err(chilpa_i18n::t("Download cancelled.")),
@@ -409,6 +337,10 @@ fn download(
             Err(super::CheckError::Invalid) => {}
         }
     }
+    let previous = (fresh && item.state == "complete").then(|| item.clone());
+    if let Some(previous) = &previous {
+        progress(Update::Size(previous.bytes));
+    }
     if item.state == "complete" {
         let retained = super::disk_bytes(&item);
         lib.invalidate_offline_copy(&item, "", retained)
@@ -416,12 +348,28 @@ fn download(
     }
     let path = PathBuf::from(&item.path);
     let result = transfer(
-        lib, keys, track, &stored, scope, &mut item, &path, limit, cancelled, progress,
+        lib, keys, track, &stored, scope, &mut item, &path, limit, cancelled, fresh, progress,
     );
     if let Err(error) = &result {
-        let retained = super::disk_bytes(&item);
-        lib.fail_offline_copy(&item.key, error, retained)
-            .map_err(|_| database())?;
+        let restored = previous.as_ref().is_some_and(|previous| {
+            super::checked(previous, || false).is_ok()
+                && lib.complete_offline_copy(previous, stored.session_revision).unwrap_or(false)
+        });
+        if restored {
+            return result;
+        }
+        let forgotten = previous.is_none()
+            && cancelled.load(Ordering::Acquire)
+            && lib
+                .offline_copy_by_key(&item.key)
+                .ok()
+                .flatten()
+                .is_some_and(|copy| copy.state != "complete" && removal::remove(lib, &copy, Some(scope)).is_ok());
+        if !forgotten {
+            let retained = super::disk_bytes(&item);
+            lib.fail_offline_copy(&item.key, error, retained)
+                .map_err(|_| database())?;
+        }
     }
     result
 }
@@ -436,6 +384,7 @@ fn transfer(
     path: &Path,
     limit: &Limit,
     cancelled: &AtomicBool,
+    fresh: bool,
     progress: impl Fn(Update),
 ) -> Result<(), String> {
     let failed = || chilpa_i18n::t("The offline file could not be written.");
@@ -464,8 +413,9 @@ fn transfer(
     }
     let temporary = path.with_extension("part");
     // A prior final file can be the atomic promotion left by a crash.
-    // Revalidate it and confirm its registry without replacing any bytes.
-    if path.exists() {
+    // Revalidate it and confirm its registry without replacing any bytes,
+    // unless the listener asked for the file again.
+    if path.exists() && !fresh {
         progress(Update::Verifying);
         let (bytes, checksum, codec, container) =
             inspect(path, Some(extension(track.codec.as_deref())), cancelled)?;
@@ -651,7 +601,10 @@ fn container<'a>(header: &[u8], codec: &'a str, hint: Option<&'a str>) -> &'a st
     }
 }
 
+pub(super) mod queue;
 mod recovery;
 mod removal;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod playback_tests;

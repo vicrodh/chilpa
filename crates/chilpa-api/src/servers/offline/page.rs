@@ -1,28 +1,35 @@
-//! The Offline music page and the menus that lead to it. The window's
+//! The Offline music page and the menus' offline actions. The window's
 //! bridge hands every action over by name without knowing any of them.
+//! A menu's action runs where the listener is; only Music servers' "Offline
+//! music" leads to the page.
 
-use super::{choice, global_directory, manager, worker::ids, ROOT_PREFERENCE};
+use super::{choice, global_directory, manager, marks, ROOT_PREFERENCE};
 use crate::Chilpa;
 use chilpa_library::Library;
 use serde_json::json;
 
-const SELECTIONS: [&str; 3] = ["tracks", "album", "playlist"];
-
-/// What the page acts on besides every download: the selection a menu
-/// sent, and a server folder being written.
+/// What the page acts on besides every download: a server folder being
+/// written, and the rows' marks the library holds.
 #[derive(Default)]
 pub(crate) struct Page {
-    staged: Option<(String, String)>,
     pub(super) manager: manager::Manager,
     folder: Option<std::thread::JoinHandle<Result<(), String>>>,
     said: String,
+    pub(super) marks: marks::Cache,
 }
 
 impl Chilpa {
     pub fn server_offline(&mut self, action: &str, kind: &str, selected: &str) -> String {
         match action {
             "info" => self.server_offline_info(kind, selected),
+            "menu" => self.server_offline_menu(kind, selected),
             "start" => self.server_offline_start(kind, selected),
+            "redownload" => self.server_offline_fetch(kind, selected, true),
+            "remove_now" => self.server_offline_remove_now(kind, selected),
+            "cancel_selection" => {
+                self.server_offline_cancel_selection(kind, selected);
+                self.server_offline_status()
+            }
             "cancel" => {
                 self.server_offline_cancel();
                 self.server_offline_status()
@@ -33,8 +40,6 @@ impl Chilpa {
                 "{}".into()
             }
             "remove" => self.server_offline_remove(selected),
-            "stage" => self.server_offline_stage(kind, selected),
-            "selection" => self.server_offline_selection(),
             "manager" => self.server_offline_manager(kind, selected),
             "refresh" => {
                 self.servers.offline_page.manager.stale = true;
@@ -49,23 +54,6 @@ impl Chilpa {
             "limit" => json!({"ok": self.offline_limit_setting(super::LIMIT, kind)}).to_string(),
             _ => self.server_offline_status(),
         }
-    }
-
-    /// A menu's selection, for the page to offer; anything else clears it.
-    pub fn server_offline_stage(&mut self, kind: &str, selected: &str) -> String {
-        let chosen = ids(selected);
-        self.servers.offline_page.staged = (SELECTIONS.contains(&kind) && !chosen.is_empty())
-            .then(|| (kind.to_string(), serde_json::to_string(&chosen).unwrap_or_default()));
-        self.server_offline_selection()
-    }
-
-    /// The staged selection, with what its download would take.
-    pub fn server_offline_selection(&mut self) -> String {
-        let Some((kind, selected)) = self.servers.offline_page.staged.clone() else {
-            return json!({"kind": "downloads", "selected": "[]", "count": 0}).to_string();
-        };
-        let info: serde_json::Value = serde_json::from_str(&self.server_offline_info(&kind, &selected)).unwrap_or_default();
-        json!({"kind": kind, "selected": selected, "count": info["count"], "too_many": info["too_many"]}).to_string()
     }
 
     /// The page's listing (`manager`). `seen` is the revision the page has.
@@ -115,20 +103,6 @@ impl Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn a_menu_selection_is_staged_and_anything_else_clears_it() {
-        let mut api = Chilpa::new();
-        let staged: serde_json::Value = serde_json::from_str(&api.server_offline("stage", "album", "[17]")).unwrap();
-        assert_eq!((staged["kind"].as_str(), staged["selected"].as_str()), (Some("album"), Some("[17]")));
-        let again: serde_json::Value = serde_json::from_str(&api.server_offline("selection", "", "")).unwrap();
-        assert_eq!(again["kind"], "album", "it stays until something else is staged");
-        for (kind, selected) in [("downloads", "[]"), ("album", "[]"), ("elsewhere", "[3]"), ("tracks", "not ids")] {
-            api.server_offline("stage", "tracks", "[1,2]");
-            let cleared: serde_json::Value = serde_json::from_str(&api.server_offline("stage", kind, selected)).unwrap();
-            assert_eq!(cleared["kind"], "downloads", "{kind} {selected}");
-        }
-    }
 
     #[test]
     fn the_limit_and_folders_are_taken_only_as_listed() {

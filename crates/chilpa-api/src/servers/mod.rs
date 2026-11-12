@@ -34,6 +34,7 @@ use std::sync::{Arc, Mutex};
 
 pub use chilpa_library::Removal as ServerRemoval;
 pub(crate) use offline::LIMIT as OFFLINE_LIMIT;
+pub use offline::OfflineMarks;
 pub use setup::ServerSetup;
 
 /// A server as Settings shows it.

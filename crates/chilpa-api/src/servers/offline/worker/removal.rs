@@ -4,16 +4,14 @@ use super::*;
 
 pub(super) struct Pending {
     ticket: String,
-    copies: Vec<Copy>,
+    /// Each copy with its library track, or 0 when it has none.
+    copies: Vec<(i64, Copy)>,
     scopes: HashMap<i64, Option<super::super::super::session::Scope>>,
 }
 
 impl Chilpa {
     pub fn server_offline_removal_info(&mut self, kind: &str, selected: &str) -> String {
         self.servers.offline.removal = None;
-        if self.servers.offline.task.is_some() {
-            return json!({"error":chilpa_i18n::t("A download is still in progress.")}).to_string();
-        }
         let refused = || {
             json!({"error":chilpa_i18n::t("Choose fewer offline files for this action.")})
                 .to_string()
@@ -21,9 +19,9 @@ impl Chilpa {
         let Some(lib) = self.library() else {
             return refused();
         };
-        let copies = if kind == "downloads" {
+        let copies: Vec<(i64, Copy)> = if kind == "downloads" {
             match lib.offline_all_copies() {
-                Ok(copies) => copies,
+                Ok(copies) => copies.into_iter().map(|copy| (0, copy)).collect(),
                 Err(_) => return refused(),
             }
         } else {
@@ -50,12 +48,12 @@ impl Chilpa {
                     if bytes > MAX_SELECTION_BYTES || copies.len() >= MAX_TRACKS {
                         return refused();
                     }
-                    copies.push(copy);
+                    copies.push((track.id, copy));
                 }
             }
             copies
         };
-        let mut size: usize = copies.iter().map(Copy::retained_bytes).sum();
+        let mut size: usize = copies.iter().map(|(_, copy)| copy.retained_bytes()).sum();
         if copies.is_empty() {
             return json!({"error":chilpa_i18n::t("No downloaded files were found in this selection.")}).to_string();
         }
@@ -63,7 +61,7 @@ impl Chilpa {
             return refused();
         }
         let mut scopes = HashMap::new();
-        for copy in &copies {
+        for (_, copy) in &copies {
             if scopes.contains_key(&copy.source) {
                 continue;
             }
@@ -83,7 +81,7 @@ impl Chilpa {
             scopes.insert(copy.source, scope);
         }
         let ticket = super::super::super::keys::mint();
-        let answer=json!({"ticket":ticket,"count":copies.len(),"bytes":copies.iter().map(|copy| copy.bytes).sum::<u64>()}).to_string();
+        let answer=json!({"ticket":ticket,"count":copies.len(),"bytes":copies.iter().map(|(_, copy)| copy.bytes).sum::<u64>()}).to_string();
         self.servers.offline.removal = Some(Pending {
             ticket,
             copies,
@@ -96,13 +94,8 @@ impl Chilpa {
         self.servers.offline.removal = None;
     }
 
+    /// The confirmed removal, queued behind whatever is queued.
     pub fn server_offline_remove(&mut self, ticket: &str) -> String {
-        let refused = || {
-            json!({"error":chilpa_i18n::t("The selected music changed. Open its menu and confirm again.")}).to_string()
-        };
-        if self.servers.offline.task.is_some() {
-            return refused();
-        }
         if !self
             .servers
             .offline
@@ -110,71 +103,25 @@ impl Chilpa {
             .as_ref()
             .is_some_and(|pending| pending.ticket == ticket)
         {
-            return refused();
+            return json!({"error":chilpa_i18n::t("The selected music changed. Open its menu and confirm again.")}).to_string();
         }
         let Some(pending) = self.servers.offline.removal.take() else {
-            return refused();
+            return self.server_offline_status();
         };
-        let progress = Arc::new(Mutex::new(Progress {
-            removing: true,
-            total: pending.copies.len(),
-            running: true,
-            ..Default::default()
-        }));
-        let cancelled = Arc::new(AtomicBool::new(false));
-        let changed = Arc::new(AtomicBool::new(false));
-        let (worker_progress, worker_cancelled, worker_changed) =
-            (progress.clone(), cancelled.clone(), changed.clone());
-        let task = std::thread::Builder::new()
-            .name("chilpa-offline-remove".into())
-            .spawn(move || {
-                let result = Library::open_existing(&Library::default_path());
-                if let Ok(lib) = result {
-                    for copy in pending.copies {
-                        if worker_cancelled.load(Ordering::Acquire) {
-                            break;
-                        }
-                        let result = remove(
-                            &lib,
-                            &copy,
-                            pending.scopes.get(&copy.source).and_then(Option::as_ref),
-                        );
-                        let mut progress = worker_progress
-                            .lock()
-                            .unwrap_or_else(|error| error.into_inner());
-                        match result {
-                            Ok(()) => {
-                                progress.done += 1;
-                                worker_changed.store(true, Ordering::Release);
-                            }
-                            Err(error) => {
-                                progress.failed += 1;
-                                progress.error = error;
-                            }
-                        }
-                    }
-                } else {
-                    worker_progress
-                        .lock()
-                        .unwrap_or_else(|error| error.into_inner())
-                        .error = chilpa_i18n::t("the library could not be opened");
-                }
-                worker_progress
-                    .lock()
-                    .unwrap_or_else(|error| error.into_inner())
-                    .running = false;
-            });
-        let Ok(task) = task else {
-            return refused();
-        };
-        self.servers.offline = State {
-            task: Some(task),
-            cancelled,
-            progress,
-            changed,
-            removal: None,
-        };
-        self.server_offline_status()
+        let work = pending.copies.into_iter().map(|(id, copy)| (id, queue::Work::Remove { copy })).collect();
+        let scopes = pending.scopes;
+        let job = |seq| queue::Job { seq, scopes, collection: String::new(), root: PathBuf::new(), limit: Limit::default() };
+        self.offline_enqueue("remove", Vec::new(), job, work)
+    }
+
+    /// A menu's removal: no confirmation, since the copy can be fetched
+    /// again; a file being played is refused by `remove`.
+    pub(in crate::servers::offline) fn server_offline_remove_now(&mut self, kind: &str, selected: &str) -> String {
+        let info: serde_json::Value = serde_json::from_str(&self.server_offline_removal_info(kind, selected)).unwrap_or_default();
+        match info["ticket"].as_str() {
+            Some(ticket) => self.server_offline_remove(&ticket.to_string()),
+            None => info.to_string(),
+        }
     }
 }
 
