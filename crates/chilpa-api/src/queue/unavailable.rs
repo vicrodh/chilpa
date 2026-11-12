@@ -133,12 +133,13 @@ struct Mark {
     launch: u64,
 }
 
-/// The launch in flight: where it started, and whether a track of it has
-/// started.
+/// The launch in flight: where it started, whether a track of it has
+/// started, and the player's generation for it.
 #[derive(Clone)]
 struct Launch {
     from: usize,
     started: bool,
+    generation: u64,
 }
 
 /// The run's unavailable entries and the launch in flight.
@@ -244,10 +245,10 @@ impl Chilpa {
         }
     }
 
-    /// The launch went out from `from`.
-    pub(crate) fn launched_from(&mut self, from: usize) {
+    /// The launch went out from `from`, as the player's `generation`.
+    pub(crate) fn launched_from(&mut self, from: usize, generation: u64) {
         self.unavailable.launches += 1;
-        self.unavailable.launch = Some(Launch { from, started: false });
+        self.unavailable.launch = Some(Launch { from, started: false, generation });
         if self.now.error.is_empty() {
             self.say_skipped();
         }
@@ -314,10 +315,15 @@ impl Chilpa {
     /// The player passed over a queue entry it could not play -- it would not
     /// open, or it broke partway -- and went on. The entry is marked like one
     /// found missing, left out of the laps that follow, and counted.
-    pub(crate) fn player_skipped(&mut self, index: usize, path: &Path, why: String) {
+    pub(crate) fn player_skipped(&mut self, generation: u64, index: usize, path: &Path, why: String) {
+        let current = self.unavailable.launch.as_ref().is_some_and(|launch| launch.generation == generation);
+        chilpa_core::trace_playback("facade", "unavailable_passed", format_args!("index={} generation={generation} current={current} why={why:?}", self.base + index));
+        // Said by a play this launch replaced: the queue it was about is gone,
+        // and the same entry in this one may well play.
+        if !current {
+            return;
+        }
         let positions: Vec<usize> = (0..self.queue.len()).filter(|&at| Path::new(&self.queue[at]) == path).collect();
-        chilpa_core::trace_playback("facade", "unavailable_passed", format_args!("index={} positions={positions:?} why={why:?}", self.base + index));
-        // A queue that was replaced since does not hold it.
         let Some(&first) = positions.first() else { return };
         let entry = self.queue[first].clone();
         if !self.unavailable.marked.contains_key(&entry) {

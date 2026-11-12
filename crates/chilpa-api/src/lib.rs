@@ -1435,7 +1435,7 @@ impl Chilpa {
                     }
                 }
                 PlayerEvent::Failed { message } => self.player_failed(message),
-                PlayerEvent::Skipped { index, path, message } => self.player_skipped(index, &path, message),
+                PlayerEvent::Skipped { generation, index, path, message } => self.player_skipped(generation, index, &path, message),
             }
         }
         // A new track's verdict cannot see the volume moved after it. The

@@ -314,8 +314,8 @@ impl Chilpa {
                 tracks.first()
             ),
         );
-        player.play_from_index(&tracks, device, start_at, paused, Some(from), &removed, self.stop_after);
-        self.launched_from(from);
+        let generation = player.play_from_index(&tracks, device, start_at, paused, Some(from), &removed, self.stop_after);
+        self.launched_from(from, generation);
     }
 
     /// Moves what is playing to another output, keeping its place.

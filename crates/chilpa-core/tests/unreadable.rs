@@ -398,7 +398,7 @@ fn the_player_says_which_entry_it_passed_over_and_why() {
     player.play_all(&tracks, "fake");
     let events = events_until_over(&player);
     let said: Vec<(usize, PathBuf, String)> = events.iter().filter_map(|event| match event {
-        PlayerEvent::Skipped { index, path, message } => Some((*index, path.clone(), message.clone())),
+        PlayerEvent::Skipped { index, path, message, .. } => Some((*index, path.clone(), message.clone())),
         _ => None,
     }).collect();
     assert_eq!(said.iter().map(|(index, path, _)| (*index, path.clone())).collect::<Vec<_>>(), [(1, tracks[1].clone()), (2, tracks[2].clone())]);
@@ -409,6 +409,27 @@ fn the_player_says_which_entry_it_passed_over_and_why() {
     assert!(position(&|e| matches!(e, PlayerEvent::Skipped { index: 1, .. })) < position(&|e| matches!(e, PlayerEvent::Started { index: 2, .. })));
     assert!(position(&|e| matches!(e, PlayerEvent::Skipped { index: 2, .. })) < position(&|e| matches!(e, PlayerEvent::Started { index: 3, .. })));
     assert!(matches!(events.last(), Some(PlayerEvent::Finished { .. })), "{events:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn each_entry_passed_over_says_which_play_it_belongs_to() {
+    let dir = folder("player-generation");
+    let tracks = [garbage(&dir, "01.flac"), wave(&dir, "02.wav")];
+    let player = player();
+    let said = |events: &[PlayerEvent]| -> Vec<u64> {
+        events.iter().filter_map(|event| match event {
+            PlayerEvent::Skipped { generation, .. } => Some(*generation),
+            _ => None,
+        }).collect()
+    };
+    let first = player.play_from_index(&tracks, "fake", None, false, None, &[], None);
+    let first_events = events_until_over(&player);
+    let second = player.play_from_index(&tracks, "fake", None, false, None, &[], None);
+    let second_events = events_until_over(&player);
+    assert_ne!(first, second, "each play has its own");
+    assert_eq!(said(&first_events), [first]);
+    assert_eq!(said(&second_events), [second]);
     let _ = std::fs::remove_dir_all(dir);
 }
 

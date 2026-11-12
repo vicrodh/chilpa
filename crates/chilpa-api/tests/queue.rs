@@ -997,3 +997,33 @@ fn a_rate_the_output_refuses_after_a_refused_track_still_stops_the_queue() {
     assert!(now.error.contains("7000"), "the output's own message: {}", now.error);
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn a_skip_left_over_from_a_replaced_queue_marks_nothing_in_the_new_one() {
+    let dir = folder("skip-stale");
+    other_library(&dir);
+    english();
+    let _realtime = Realtime::on();
+    let first = garbage_file(&dir, "01.wav");
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&strings(&[first.clone(), wave(&dir, "02.wav", SHORT * 10)]), OUTPUT, true);
+    // The player refuses the first track and says so; nobody reads it yet.
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    // The file is put right and a new queue holding it starts before the old
+    // word is read.
+    wave(&dir, "01.wav", SHORT);
+    chilpa.play_tracks(&strings(&[first.clone(), wave(&dir, "03.wav", SHORT)]), OUTPUT, true);
+    let limit = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    let mut played = false;
+    while !played && std::time::Instant::now() < limit {
+        let now = chilpa.poll();
+        played = now.playing && now.path == first.display().to_string();
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    assert!(played, "the track that was put right plays in the new queue");
+    let error = chilpa.now_playing().error.clone();
+    assert!(!error.starts_with("Skipped"), "nothing of the new queue was skipped: {error}");
+    assert_eq!(available_rows(&mut chilpa), [true, true], "nothing of the new queue is dimmed");
+    chilpa.stop();
+    let _ = std::fs::remove_dir_all(dir);
+}

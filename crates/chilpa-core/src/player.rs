@@ -59,9 +59,12 @@ pub enum PlayerEvent {
     /// Something failed, in text the interface can show.
     Failed { message: String },
     /// A queue entry was passed over and the queue went on: it would not
-    /// open, or it broke partway. `index` is its place in the queue the
-    /// player was given; `message` says why, in text the interface can show.
-    Skipped { index: usize, path: PathBuf, message: String },
+    /// open, or it broke partway. `generation` is the play it belongs to, as
+    /// `play_from_index` returned it: whoever started another play since can
+    /// tell it is not about the queue in front of them. `index` is its place
+    /// in the queue the player was given; `message` says why, in text the
+    /// interface can show.
+    Skipped { generation: u64, index: usize, path: PathBuf, message: String },
 }
 
 enum Order {
@@ -195,6 +198,7 @@ impl Player {
                                 &mut probe,
                                 &mut open,
                                 &events_tx,
+                                generation,
                             );
                             chilpa_audio::diagnostics::trace(
                                 "player",
@@ -263,12 +267,13 @@ impl Player {
     }
 
     /// I launch the whole queue with an explicit cursor, keeping its earlier rows.
+    /// Returns the play's generation, which every `Skipped` of it carries.
     #[allow(clippy::too_many_arguments)]
     pub fn play_from_index(
         &self, paths: &[PathBuf], device: &str,
         start_at: Option<std::time::Duration>, paused: bool, start_index: Option<usize>,
         removed: &[bool], stop_after: Option<usize>,
-    ) {
+    ) -> u64 {
         // The queue and the pause are set as the order is sent, not as the
         // thread takes it: what the caller does right after this call --
         // pause, play next, queue more -- comes after it, and the thread,
@@ -298,6 +303,7 @@ impl Player {
             start_at,
             start_index,
         });
+        generation
     }
 
     /// Pauses or resumes. The track does not lose its place.
@@ -481,6 +487,7 @@ fn play(
     probe: &mut ProbeDevice,
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
+    generation: u64,
 ) -> Result<Outcome, PlayError> {
     let exclusive = controls.exclusive.get();
     // What the samples meet after Chilpa hands them over. The delivery
@@ -680,7 +687,7 @@ fn play(
         },
         &mut |index, path, why| {
             chilpa_audio::diagnostics::trace("player", "track_passed_over", format_args!("index={index}/{total} path={path:?} why={why}"));
-            let _ = events.send(PlayerEvent::Skipped { index, path: path.to_path_buf(), message: why.to_string() });
+            let _ = events.send(PlayerEvent::Skipped { generation, index, path: path.to_path_buf(), message: why.to_string() });
         },
     )?;
 
