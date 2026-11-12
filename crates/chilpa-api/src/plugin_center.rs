@@ -118,8 +118,11 @@ impl PluginCenter {
                     let native = plugins.lock().ok().and_then(|host| host.natives.is_native(&id).then(|| (host.natives.clone(),
                         host.list().into_iter().find(|plugin| plugin.id == id).map(|plugin| plugin.name).unwrap_or_default())));
                     let capture = crate::web_sign_in::Capture::from_link(&input["url"], &input["capture"]);
+                    let window = crate::web_sign_in::executable();
+                    let skipped = if native.is_none() { "not-a-process-plugin" } else if capture.is_none() { "malformed-link" }
+                        else if window.is_none() { "no-window" } else { "closing" };
                     if let (Some((natives, name)), Some(capture), Some(window), Some(sender)) =
-                        (native, capture, crate::web_sign_in::executable(), completions.upgrade()) {
+                        (native, capture, window, completions.upgrade()) {
                         state["settings_loading_id"] = id.clone().into();
                         state["settings_id"] = id.clone().into();
                         state["error"] = Value::Null;
@@ -149,6 +152,7 @@ impl PluginCenter {
                             let _ = sender.send(("native_settings_result".into(), result_input));
                         });
                     } else {
+                        eprintln!("warning: web-sign-in: step=start skipped={skipped}");
                         state["web_sign_in"] = false.into();
                         if let Ok(mut output) = shared.lock() { *output = state.clone(); }
                     }

@@ -99,9 +99,15 @@ fn open(executable: &Path, capture: &Capture, title: &str, (data, cache): (&Path
     // stay in it, so ending the group ends all of them.
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     { use std::os::unix::process::CommandExt; command.process_group(0); }
+    // Each step is logged without the page's address or what it carries, so a
+    // failed sign-in says where it stopped.
+    eprintln!("web-sign-in: step=spawn window={} until_host={:?} limit_s={}", executable.display(), host(&capture.until), limit.as_secs());
     let mut child = match command.spawn() {
         Ok(child) => child,
-        Err(error) => return Outcome::Failed(error.to_string()),
+        Err(error) => {
+            eprintln!("warning: web-sign-in: step=spawn failed={:?}", error.kind());
+            return Outcome::Failed(error.to_string());
+        }
     };
     let started = Instant::now();
     let status = loop {
@@ -109,17 +115,22 @@ fn open(executable: &Path, capture: &Capture, title: &str, (data, cache): (&Path
             Ok(Some(status)) => break status,
             Ok(None) if !cancel() && started.elapsed() < limit => std::thread::sleep(Duration::from_millis(200)),
             Ok(None) => {
+                let reason = if started.elapsed() >= limit { "time-limit" } else { "cancelled" };
                 end_group(&child);
                 let _ = child.kill();
                 let _ = child.wait();
+                eprintln!("web-sign-in: step=closed reason={reason} elapsed_ms={}", started.elapsed().as_millis());
                 return Outcome::Closed;
             }
             Err(error) => {
                 end_group(&child);
+                eprintln!("warning: web-sign-in: step=wait failed={:?}", error.kind());
                 return Outcome::Failed(error.to_string());
             }
         }
     };
+    eprintln!("web-sign-in: step=exit status={} elapsed_ms={}", status.code().map_or_else(|| status.to_string(), |code| code.to_string()),
+        started.elapsed().as_millis());
     // A window that crashed or was killed leaves its engine's processes behind
     // until they notice; after a clean exit the group is already empty.
     end_group(&child);
@@ -130,12 +141,23 @@ fn open(executable: &Path, capture: &Capture, title: &str, (data, cache): (&Path
     match status.code() {
         Some(0) => {
             let address = printed.trim();
-            if address.starts_with(&capture.until) { Outcome::Reached(address.to_string()) } else { Outcome::Failed("unexpected address".into()) }
+            if address.starts_with(&capture.until) {
+                eprintln!("web-sign-in: step=reached host={:?}", host(address));
+                Outcome::Reached(address.to_string())
+            } else {
+                eprintln!("warning: web-sign-in: step=reached unexpected_host={:?}", host(address));
+                Outcome::Failed("unexpected address".into())
+            }
         }
         Some(1) => Outcome::Closed,
         Some(3) => Outcome::Failed("no web engine".into()),
         _ => Outcome::Failed(format!("the sign-in window ended with {status}")),
     }
+}
+
+/// The host of an address, the only part of it the log may carry.
+fn host(address: &str) -> String {
+    url::Url::parse(address).ok().and_then(|url| url.host_str().map(str::to_string)).unwrap_or_else(|| "none".into())
 }
 
 /// Kills what is left of the window's process group.
@@ -171,6 +193,12 @@ mod tests {
         other = capture();
         other["until"] = json!("javascript:alert(1)");
         assert!(Capture::from_link(&json!("https://login.example.test/a"), &other).is_none());
+    }
+
+    #[test]
+    fn the_log_carries_only_the_host_of_an_address() {
+        assert_eq!(host("https://login.example.test/return?state=1&grant=7#part"), "login.example.test");
+        assert_eq!(host("not an address"), "none");
     }
 
     #[cfg(unix)]

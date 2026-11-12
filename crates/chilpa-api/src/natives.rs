@@ -462,8 +462,11 @@ fn launch(natives: &Arc<Natives>, manifest: &Manifest, folder: &Path, network: b
             eprintln!("plugin[{name}]: {}", params.get("message").and_then(Value::as_str).unwrap_or(""));
         }
     });
-    let launched = natives.launcher().launch(&paths, &id, MEMORY, network, notice)
-        .map_err(|_| PluginError::Crashed("the plugin's sandbox could not start".into()))?;
+    let launched = natives.launcher().launch(&paths, &id, MEMORY, network, notice).map_err(|_| {
+        eprintln!("warning: plugin-launch: plugin={id:?} network={network} sandbox=failed");
+        PluginError::Crashed("the plugin's sandbox could not start".into())
+    })?;
+    eprintln!("plugin-launch: plugin={id:?} network={network}");
     let (data, cache) = launched.guest_directories;
     Ok(Launched { client: launched.client, data, cache, export: launched.export })
 }

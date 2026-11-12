@@ -6,6 +6,13 @@ use std::{ffi::OsString, path::{Path, PathBuf}, process::{Command, Stdio}, sync:
 use std::os::unix::process::CommandExt;
 
 const POLICY: &str = include_str!("macos.sb");
+/// What a worker with a network adds: outbound connections, name lookups, and
+/// the per-user trust daemon. The system's certificate verifier, which a
+/// plugin's HTTPS client may use instead of a bundled root list, evaluates a
+/// server's chain in `trustd`; without it every handshake fails with
+/// errSecInternalComponent (-26276).
+const NETWORK: &str = "\n(allow network-outbound)\n(allow mach-lookup (global-name \"com.apple.mDNSResponder\") \
+    (global-name \"com.apple.system.opendirectoryd.libinfo\") (global-name \"com.apple.trustd.agent\"))\n";
 /// The sandbox program, part of the system.
 const SANDBOX: &str = "/usr/bin/sandbox-exec";
 
@@ -69,7 +76,7 @@ fn prepare(paths: &NativePaths, network: bool) -> Result<Prepared, BridgeError> 
         policy.push_str("\n(allow file-read* file-write* (subpath (param \"EXPORT\")))\n");
     }
     if network {
-        policy.push_str("\n(allow network-outbound)\n(allow mach-lookup (global-name \"com.apple.mDNSResponder\") (global-name \"com.apple.system.opendirectoryd.libinfo\"))\n");
+        policy.push_str(NETWORK);
     }
     command.env_clear().env("PATH", "/usr/bin:/bin").env("HOME", &data)
         .env("CFFIXED_USER_HOME", &data).env("CFPREFERENCES_AVOID_DAEMON", "1")
