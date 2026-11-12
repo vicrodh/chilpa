@@ -100,6 +100,7 @@ Column {
         sourceComponent: Text {
             objectName: "pronunciation"
             text: row.romanization
+            textFormat: Text.PlainText
             opacity: row.lit
             wrapMode: Text.Wrap
             horizontalAlignment: row.centered ? Text.AlignHCenter : Text.AlignLeft

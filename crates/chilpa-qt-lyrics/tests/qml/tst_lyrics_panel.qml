@@ -306,6 +306,12 @@ TestCase {
         show(JSON.stringify(document), true, 0)
         compare(row(0).romanization, "wan tu suri")
         tryVerify(() => findChild(row(0), "pronunciation") !== null)
+        document.document.layers[0].lines[0].text = "<b>wan tu suri</b>"
+        show(JSON.stringify(document), true, 0)
+        compare(findChild(row(0), "pronunciation").textFormat, Text.PlainText, "pronunciation is literal text")
+        compare(findChild(row(0), "pronunciation").text, "<b>wan tu suri</b>")
+        document.document.layers[0].lines[0].text = "wan tu suri"
+        show(JSON.stringify(document), true, 0)
         compare(row(0).line.start_ms, 1000)
         compare(row(0).text, "One two three")
         panel.translating = true
