@@ -19,11 +19,11 @@ use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::OnceLock;
 
 /// The languages that ship, by the index stored in [`CURRENT`].
-const LANGUAGES: [&str; 8] = ["en", "es", "de", "fr", "pt", "ru", "ja", "nl","zh_TW"];
+const LANGUAGES: [&str; 9] = ["en", "es", "de", "fr", "pt", "ru", "ja", "nl","zh_TW"];
 
 /// The catalogs, owned by this crate. Keeping them here and not next to a
 /// frontend means replacing the window cannot break the translations.
-const PO: [&str; 8] = [
+const PO: [&str; 9] = [
     include_str!("../translations/en/LC_MESSAGES/chilpa.po"),
     include_str!("../translations/es/LC_MESSAGES/chilpa.po"),
     include_str!("../translations/de/LC_MESSAGES/chilpa.po"),
