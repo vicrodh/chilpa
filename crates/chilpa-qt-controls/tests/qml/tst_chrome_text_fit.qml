@@ -396,7 +396,11 @@ TestCase {
             { separator: true },
             { act: "server_delete", text: t("Delete from server…"), glyph: Icons.trash },
             { separator: true },
-            { act: "offline", text: t("Make available offline…") },
+            { act: "offline:start", text: t("Make available offline") },
+            { act: "offline:start", text: t("Retry download") },
+            { act: "offline:redownload", text: t("Re-download") },
+            { act: "offline:remove_now", text: I18n.trCount("Remove offline copy", "Remove offline copies", 12, I18n.rev) },
+            { act: "offline:cancel_selection", text: t("Cancel download") },
             { separator: true }, queues]
         const several = [{ text: I18n.trCount("{} track", "{} tracks", 12, I18n.rev), note: true }].concat(one.slice(0, 7)).concat([{ separator: true }, queues])
         const tracks = createTemporaryObject(trackListFactory, test)

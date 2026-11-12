@@ -151,9 +151,6 @@ msgstr ""
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr ""
 
-msgid "A download is still in progress."
-msgstr "Há um download em andamento."
-
 msgid "A folder chosen before"
 msgstr "Uma pasta escolhida antes"
 
@@ -834,6 +831,9 @@ msgstr "Disponíveis"
 msgid "Available GPUs"
 msgstr "GPUs disponíveis"
 
+msgid "Available offline"
+msgstr "Disponível offline"
+
 msgid "Available version"
 msgstr "Versão disponível"
 
@@ -1436,8 +1436,8 @@ msgstr ""
 msgid "Choose where to open this music"
 msgstr ""
 
-msgid "Choose “Make available offline…” in the menu of a server's album, playlist or tracks."
-msgstr "Escolha “Disponibilizar offline…” no menu de um álbum, playlist ou faixas de um servidor."
+msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
+msgstr "Escolha “Disponibilizar offline” no menu de um álbum, playlist ou faixas de um servidor."
 
 msgid "Clean"
 msgstr "Sem conteúdo explícito"
@@ -2285,14 +2285,14 @@ msgstr "Download cancelado."
 msgid "Download track"
 msgstr "Baixar faixa"
 
-msgid "Download {} server tracks for offline listening."
-msgstr "Baixar {} faixas de servidores para ouvir offline."
-
 msgid "Downloaded"
 msgstr "Baixado"
 
 msgid "Downloading episodes…"
 msgstr ""
+
+msgid "Downloading for offline listening"
+msgstr "Baixando para ouvir offline"
 
 msgid "Downloading update…"
 msgstr "Baixando atualização…"
@@ -3752,8 +3752,8 @@ msgstr "Revista"
 msgid "Maintenance"
 msgstr "Manutenção"
 
-msgid "Make available offline…"
-msgstr "Disponibilizar offline…"
+msgid "Make available offline"
+msgstr "Disponibilizar offline"
 
 msgid "Make it yours"
 msgstr "Deixe do seu jeito"
@@ -4504,6 +4504,9 @@ msgstr "Desativado"
 
 msgid "Offline"
 msgstr ""
+
+msgid "Offline download failed"
+msgstr "Falha no download offline"
 
 msgid "Offline folder"
 msgstr "Pasta offline"
@@ -5282,6 +5285,9 @@ msgstr "Avaliações"
 msgid "Ratings are not synced with it."
 msgstr "As avaliações não são sincronizadas com este servidor."
 
+msgid "Re-download"
+msgstr "Baixar novamente"
+
 msgid "Re-fetch album information"
 msgstr "Buscar novamente as informações do álbum"
 
@@ -5519,6 +5525,11 @@ msgstr "Remover grupo"
 msgid "Remove image"
 msgstr "Remover imagem"
 
+msgid "Remove offline copy"
+msgid_plural "Remove offline copies"
+msgstr[0] "Remover a cópia offline"
+msgstr[1] "Remover as cópias offline"
+
 msgid "Remove one condition to get results:"
 msgstr "Remova uma condição para obter resultados:"
 
@@ -5548,6 +5559,9 @@ msgstr "Remover {}?"
 
 msgid "Remove…"
 msgstr "Remover…"
+
+msgid "Removing offline copy"
+msgstr "Removendo a cópia offline"
 
 msgid "Removing saved profile…"
 msgstr ""
@@ -5677,6 +5691,9 @@ msgstr "Continuar"
 
 msgid "Retry"
 msgstr "Tentar novamente"
+
+msgid "Retry download"
+msgstr "Tentar baixar novamente"
 
 msgid "Revert"
 msgstr "Reverter"
@@ -7813,6 +7830,9 @@ msgid "Waiting for {} to come back… ({} track read)"
 msgid_plural "Waiting for {} to come back… ({} tracks read)"
 msgstr[0] "Aguardando {} voltar… ({} faixa lida)"
 msgstr[1] "Aguardando {} voltar… ({} faixas lidas)"
+
+msgid "Waiting in the offline queue"
+msgstr "Aguardando na fila offline"
 
 msgid "Wallpaper"
 msgstr "Papel de parede"

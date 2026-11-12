@@ -10,12 +10,12 @@ import "../Patterns"
 
 // Settings > Music servers > Offline music, after QBZ's offline cache
 // (OfflineManagerView, Qt, 2.1.2): what the servers' music keeps on this
-// device, its limit, its folders, and the download a menu asked for. The
-// facade reads the listing on a thread; this page asks for it while it
-// changes and stops asking once it is still. Back is the window's.
+// device, its limit and its folders. A menu's download happens where the
+// menu was, never here. The facade reads the listing on a thread; this page
+// asks for it while it changes and stops asking once it is still. Back is
+// the window's.
 Item {
     id: page
-    property var selection: ({kind: "downloads", count: 0})
     property var status: ({})
     property var doc: ({})
     property var filters: ({sort: "az", failed: false, server: 0, artist: ""})
@@ -47,7 +47,6 @@ Item {
     function poll() {
         const before = (status.done || 0) + (status.failed || 0), working = busy
         status = act("status", "", "[]")
-        if (working && !busy) selection = act("selection", "", "")
         if (working !== busy || before !== (status.done || 0) + (status.failed || 0)) refresh()
         else read()
     }
@@ -57,12 +56,12 @@ Item {
         if (removal.ticket) confirmation.open()
         else status = removal
     }
-    Component.onCompleted: { selection = act("selection", "", ""); status = act("status", "", "[]"); read() }
+    Component.onCompleted: { status = act("status", "", "[]"); read() }
     // Leaving lets the facade drop the listing; the next visit reads it again.
     Component.onDestruction: { Offline.call("dismiss_removal", "", ""); Offline.call("leave", "", "") }
     Connections {
         target: Offline
-        function onRequested() { Qt.callLater(() => { page.selection = page.act("selection", "", ""); page.section = 0 }) }
+        function onRequested() { page.section = 0 }
     }
     Timer {
         objectName: "offlinePoll"
@@ -83,38 +82,6 @@ Item {
             textFormat: Text.PlainText; elide: Text.ElideRight
             font.pointSize: Type.title; font.weight: Type.bold; font.letterSpacing: Type.titleTracking
             color: Theme.color.textPrimary
-        }
-        Rectangle {
-            objectName: "offlineSelection"
-            visible: page.selection.kind !== "downloads"
-            width: parent.width
-            height: visible ? offer.height + Metrics.gap12 * 2 : 0 // derived: padding above and below
-            radius: Metrics.radiusPanel
-            color: Theme.color.surfaceRaised
-            Flow {
-                id: offer
-                x: Metrics.gap16; y: Metrics.gap12; width: parent.width - Metrics.gap16 * 2 // derived: padding on both sides
-                spacing: Metrics.gap8
-                Text {
-                    width: parent.width
-                    text: I18n.trArgs("Download {} server tracks for offline listening.", [page.selection.count || 0], I18n.rev)
-                    textFormat: Text.PlainText; wrapMode: Text.WordWrap
-                    font.pointSize: Type.body; color: Theme.color.textPrimary
-                }
-                PillButton {
-                    objectName: "startOfflineDownload"
-                    kind: "primary"; glyph: Icons.download
-                    text: I18n.tr("Download", I18n.rev)
-                    enabled: !page.busy && page.selection.count > 0 && !page.selection.too_many
-                    onClicked: page.begin(page.selection.kind, page.selection.selected)
-                }
-                PillButton {
-                    objectName: "removeOfflineFiles"
-                    text: I18n.tr("Remove downloaded files…", I18n.rev)
-                    enabled: !page.busy
-                    onClicked: page.ask(page.selection.kind, page.selection.selected)
-                }
-            }
         }
         OfflineSummary {
             objectName: "offlineSummary"

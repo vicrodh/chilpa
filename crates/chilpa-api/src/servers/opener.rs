@@ -27,6 +27,12 @@ impl Opener {
         Self { keys, library: Mutex::new(None), failures,invalid }
     }
 
+    /// An opener on a library of the test's own.
+    #[cfg(test)]
+    pub(crate) fn on(keys: Arc<Keys>, library: chilpa_library::Library, invalid: super::offline::InvalidCopies) -> Self {
+        Self { keys, library: Mutex::new(Some(library)), failures: Arc::default(), invalid }
+    }
+
     fn with_library<T>(&self, f: impl FnOnce(&chilpa_library::Library) -> Option<T>) -> Option<T> {
         let mut library = self.library.lock().unwrap_or_else(|e| e.into_inner());
         if library.is_none() {

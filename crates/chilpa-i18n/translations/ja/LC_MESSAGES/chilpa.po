@@ -151,9 +151,6 @@ msgstr ""
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr ""
 
-msgid "A download is still in progress."
-msgstr "ダウンロードが進行中です。"
-
 msgid "A folder chosen before"
 msgstr "以前に選んだフォルダ"
 
@@ -833,6 +830,9 @@ msgstr "利用可能"
 msgid "Available GPUs"
 msgstr "利用可能なGPU"
 
+msgid "Available offline"
+msgstr "オフラインで再生できます"
+
 msgid "Available version"
 msgstr "利用可能なバージョン"
 
@@ -1434,8 +1434,8 @@ msgstr ""
 msgid "Choose where to open this music"
 msgstr ""
 
-msgid "Choose “Make available offline…” in the menu of a server's album, playlist or tracks."
-msgstr "サーバーのアルバム、プレイリスト、トラックのメニューで「オフラインで再生できるようにする…」を選んでください。"
+msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
+msgstr "サーバーのアルバム、プレイリスト、トラックのメニューで「オフラインで再生できるようにする」を選んでください。"
 
 msgid "Clean"
 msgstr "露骨な表現なし"
@@ -2283,14 +2283,14 @@ msgstr "ダウンロードをキャンセルしました。"
 msgid "Download track"
 msgstr "トラックをダウンロード"
 
-msgid "Download {} server tracks for offline listening."
-msgstr "サーバーの{}曲をオフライン再生用にダウンロードします。"
-
 msgid "Downloaded"
 msgstr "ダウンロード済み"
 
 msgid "Downloading episodes…"
 msgstr ""
+
+msgid "Downloading for offline listening"
+msgstr "オフライン再生用にダウンロード中"
 
 msgid "Downloading update…"
 msgstr "アップデートをダウンロード中…"
@@ -3747,8 +3747,8 @@ msgstr "マガジン"
 msgid "Maintenance"
 msgstr "メンテナンス"
 
-msgid "Make available offline…"
-msgstr "オフラインで再生できるようにする…"
+msgid "Make available offline"
+msgstr "オフラインで再生できるようにする"
 
 msgid "Make it yours"
 msgstr "自分好みに"
@@ -4499,6 +4499,9 @@ msgstr "オフ"
 
 msgid "Offline"
 msgstr ""
+
+msgid "Offline download failed"
+msgstr "オフライン用のダウンロードに失敗しました"
 
 msgid "Offline folder"
 msgstr "オフライン用フォルダー"
@@ -5277,6 +5280,9 @@ msgstr "評価"
 msgid "Ratings are not synced with it."
 msgstr "評価はこのサーバーと同期されません。"
 
+msgid "Re-download"
+msgstr "もう一度ダウンロード"
+
 msgid "Re-fetch album information"
 msgstr "アルバム情報を再取得"
 
@@ -5514,6 +5520,10 @@ msgstr "グループを削除"
 msgid "Remove image"
 msgstr "画像を削除"
 
+msgid "Remove offline copy"
+msgid_plural "Remove offline copies"
+msgstr[0] "オフラインのコピーを削除"
+
 msgid "Remove one condition to get results:"
 msgstr "条件を 1 つ外すと結果が出ます："
 
@@ -5543,6 +5553,9 @@ msgstr "{}を削除しますか？"
 
 msgid "Remove…"
 msgstr "削除…"
+
+msgid "Removing offline copy"
+msgstr "オフラインのコピーを削除中"
 
 msgid "Removing saved profile…"
 msgstr ""
@@ -5672,6 +5685,9 @@ msgstr "再開"
 
 msgid "Retry"
 msgstr "再試行"
+
+msgid "Retry download"
+msgstr "ダウンロードを再試行"
 
 msgid "Revert"
 msgstr "元に戻す"
@@ -7802,6 +7818,9 @@ msgstr "エンジンのオープン結果を待機中…"
 msgid "Waiting for {} to come back… ({} track read)"
 msgid_plural "Waiting for {} to come back… ({} tracks read)"
 msgstr[0] "{}の復帰を待っています…（{}トラックを読み取り済み）"
+
+msgid "Waiting in the offline queue"
+msgstr "オフラインの順番待ち"
 
 msgid "Wallpaper"
 msgstr "壁紙"

@@ -50,8 +50,8 @@ TestCase {
         // Tall enough that the second row is not under the foot.
         panel.height = 420
         list.model.clear()
-        list.model.append({ title: "First", artist: "Band", duration: "3:00", playing: true, art: "" })
-        list.model.append({ title: "Second", artist: "Band", duration: "4:00", playing: false, art: "" })
+        list.model.append({ title: "First", artist: "Band", duration: "3:00", playing: true, art: "", trackId: 1 })
+        list.model.append({ title: "Second", artist: "Band", duration: "4:00", playing: false, art: "", trackId: 2 })
         tryVerify(() => list.itemAtIndex(1) !== null)
         const row = list.itemAtIndex(1)
         const menu = findChild(panel, "queueRowMenu")

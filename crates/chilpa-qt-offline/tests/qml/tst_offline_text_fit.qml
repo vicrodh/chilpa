@@ -6,7 +6,7 @@ import app.chilpa.sources
 import app.chilpa.offline
 import "../../qml/Screens"
 
-// The Offline music page says its summary, limit, offer, progress, order,
+// The Offline music page says its summary, limit, progress, order,
 // filters, rail, records, selection bar and folders in each language
 // without running into each other, from a narrow window to a wide one,
 // also a tenth wider than Inter.
@@ -48,7 +48,6 @@ TestCase {
         Offline.doc = test.listing
         Offline.revision = 1
         Offline.loading = false
-        Offline.selection = {kind: "playlist", selected: "[17]", count: 1234}
         Offline.status = {running: true, total: 1234, done: 600, failed: 3, title: "Heute Abend wird es regnen", phase: "verifying",
             error: "The offline storage limit has been reached."}
         const page = createTemporaryObject(factory, test, { width: data.width, height: test.height })
@@ -76,7 +75,6 @@ TestCase {
         I18n.choose(data.language)
         Offline.doc = {files: 0, size: "0 B", limit: "unlimited", limitSize: "", usage: 0, inScope: 0, matching: 0, shown: 0, rows: [], artists: [], servers: [],
             limits: test.listing.limits, root: {folder: "", path: ""}}
-        Offline.selection = {kind: "downloads", selected: "[]", count: 0}
         Offline.status = {running: false, total: 0}
         const page = createTemporaryObject(factory, test, { width: data.width, height: test.height })
         const found = TextAudit.check(test, page, data.scale)

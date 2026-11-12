@@ -151,9 +151,6 @@ msgstr "Todavía hay una operación del dispositivo en curso."
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr "La selección del dispositivo puede contener hasta 50,000 archivos y playlists."
 
-msgid "A download is still in progress."
-msgstr "Hay una descarga en curso."
-
 msgid "A folder chosen before"
 msgstr "Una carpeta elegida antes"
 
@@ -834,6 +831,9 @@ msgstr "Disponibles"
 msgid "Available GPUs"
 msgstr "GPU disponibles"
 
+msgid "Available offline"
+msgstr "Disponible sin conexión"
+
 msgid "Available version"
 msgstr "Versión disponible"
 
@@ -1436,8 +1436,8 @@ msgstr "Elige el almacenamiento asociado a este perfil."
 msgid "Choose where to open this music"
 msgstr "Elige dónde abrir esta música"
 
-msgid "Choose “Make available offline…” in the menu of a server's album, playlist or tracks."
-msgstr "Elige “Guardar para escuchar sin conexión…” en el menú de un álbum, una playlist o unas pistas de un servidor."
+msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
+msgstr "Elige “Guardar para escuchar sin conexión” en el menú de un álbum, una playlist o unas pistas de un servidor."
 
 msgid "Clean"
 msgstr "Sin contenido explícito"
@@ -2285,14 +2285,14 @@ msgstr "Descarga cancelada."
 msgid "Download track"
 msgstr "Descargar pista"
 
-msgid "Download {} server tracks for offline listening."
-msgstr "Descargar {} pistas de servidores para escucharlas sin conexión."
-
 msgid "Downloaded"
 msgstr "Descargado"
 
 msgid "Downloading episodes…"
 msgstr "Descargando episodios…"
+
+msgid "Downloading for offline listening"
+msgstr "Descargando para escuchar sin conexión"
 
 msgid "Downloading update…"
 msgstr "Descargando actualización…"
@@ -3752,8 +3752,8 @@ msgstr "Revista"
 msgid "Maintenance"
 msgstr "Mantenimiento"
 
-msgid "Make available offline…"
-msgstr "Guardar para escuchar sin conexión…"
+msgid "Make available offline"
+msgstr "Guardar para escuchar sin conexión"
 
 msgid "Make it yours"
 msgstr "Hazlo tuyo"
@@ -4504,6 +4504,9 @@ msgstr "Apagado"
 
 msgid "Offline"
 msgstr "Sin conexión"
+
+msgid "Offline download failed"
+msgstr "No se pudo descargar para escuchar sin conexión"
 
 msgid "Offline folder"
 msgstr "Carpeta offline"
@@ -5282,6 +5285,9 @@ msgstr "Calificaciones"
 msgid "Ratings are not synced with it."
 msgstr "Las calificaciones no se sincronizan con este servidor."
 
+msgid "Re-download"
+msgstr "Volver a descargar"
+
 msgid "Re-fetch album information"
 msgstr "Volver a consultar la información del álbum"
 
@@ -5519,6 +5525,11 @@ msgstr "Quitar grupo"
 msgid "Remove image"
 msgstr "Quitar imagen"
 
+msgid "Remove offline copy"
+msgid_plural "Remove offline copies"
+msgstr[0] "Eliminar la copia sin conexión"
+msgstr[1] "Eliminar las copias sin conexión"
+
 msgid "Remove one condition to get results:"
 msgstr "Quita una condición para obtener resultados:"
 
@@ -5548,6 +5559,9 @@ msgstr "¿Quitar {}?"
 
 msgid "Remove…"
 msgstr "Quitar…"
+
+msgid "Removing offline copy"
+msgstr "Eliminando la copia sin conexión"
 
 msgid "Removing saved profile…"
 msgstr "Eliminando perfil guardado…"
@@ -5677,6 +5691,9 @@ msgstr "Continuar"
 
 msgid "Retry"
 msgstr "Reintentar"
+
+msgid "Retry download"
+msgstr "Reintentar la descarga"
 
 msgid "Revert"
 msgstr "Revertir"
@@ -7813,6 +7830,9 @@ msgid "Waiting for {} to come back… ({} track read)"
 msgid_plural "Waiting for {} to come back… ({} tracks read)"
 msgstr[0] "Esperando a que {} vuelva… ({} pista leída)"
 msgstr[1] "Esperando a que {} vuelva… ({} pistas leídas)"
+
+msgid "Waiting in the offline queue"
+msgstr "Esperando en la cola de música sin conexión"
 
 msgid "Wallpaper"
 msgstr "Fondo de pantalla"

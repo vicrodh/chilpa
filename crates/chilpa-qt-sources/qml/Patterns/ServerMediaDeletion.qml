@@ -2,10 +2,12 @@ import QtQuick
 import app.chilpa
 import app.chilpa.sources
 import app.chilpa.offline
+import "qrc:/qt/qml/app/chilpa/offline/qml/Components"
 
 // One window owns one optional confirmation. Closed state holds no dialog.
-// A menu's "Make available offline…" and Music servers' "Offline music"
-// lead to the Offline music page, with what they chose staged for it.
+// Music servers' "Offline music" leads to the Offline music page; a menu's
+// offline actions stay where the listener is, and the window's one look at
+// them keeps every row's mark current.
 Item {
     id: host
     property bool listenForRequests: true
@@ -20,11 +22,9 @@ Item {
     Connections {
         target: Offline
         enabled: host.listenForRequests
-        function onRequested(kind, selected) {
-            Offline.call("stage", kind, selected)
-            Navigation.go("offlineMusic", 0)
-        }
+        function onRequested() { Navigation.go("offlineMusic", 0) }
     }
+    OfflineActivity { listening: host.listenForRequests }
     Loader {
         active: host.requested !== null
         sourceComponent: ServerMediaDeleteDialog {

@@ -1,7 +1,7 @@
 use super::*;
 use std::io::Write;
 
-fn silence() -> Vec<u8> {
+pub(super) fn silence() -> Vec<u8> {
     let mut bytes = Vec::new();
     bytes.extend_from_slice(b"RIFF");
     bytes.extend_from_slice(&436u32.to_le_bytes());
@@ -177,7 +177,7 @@ fn recovery_preserves_reservations_when_a_registered_path_is_not_a_regular_file(
     assert_eq!(copy.bytes, 0);
 }
 
-fn origin(body: &[u8], mime: &str) -> (String, std::thread::JoinHandle<()>) {
+pub(super) fn origin(body: &[u8], mime: &str) -> (String, std::thread::JoinHandle<()>) {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let url = format!("http://{}/original", listener.local_addr().unwrap());
     let reply=format!("HTTP/1.1 200 OK\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nETag: fixture-v1\r\nConnection: close\r\n\r\n",body.len());
@@ -192,7 +192,7 @@ fn origin(body: &[u8], mime: &str) -> (String, std::thread::JoinHandle<()>) {
     (url, task)
 }
 
-fn fixture(
+pub(super) fn fixture(
     address: &str,
 ) -> (
     tempfile::TempDir,
@@ -233,7 +233,12 @@ fn fixture(
     )
     .unwrap();
     lib.finish_server_sync(source, generation).unwrap();
+    let id = lib
+        .connection()
+        .query_row("SELECT id FROM tracks WHERE source_id=?1", [source], |row| row.get(0))
+        .unwrap();
     let track = Track {
+        id,
         source,
         entry,
         revision: Some(format!("v1 {address}")),

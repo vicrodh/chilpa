@@ -3,12 +3,15 @@ import QtQuick
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.ambient
+import app.chilpa.offline
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "qrc:/qt/qml/app/chilpa/offline/qml/Primitives"
 
-// I show each queued track with a grip, cover, title, time and menu.
-// The playing row is raised and puts its bars where the time was.
+// I show each queued track with a grip, cover, title, time and menu, with
+// its offline state around the menu. The playing row is raised and puts its
+// bars where the time was.
 Item {
     id: row
 
@@ -18,6 +21,7 @@ Item {
     required property string duration
     required property bool playing
     required property url art
+    required property double trackId
 
     signal play()
     signal menu(real x, real y)
@@ -95,8 +99,16 @@ Item {
         visible: !row.playing
         size: Metrics.queueMore
         glyph: Icons.dotsVertical
-        tip: I18n.tr("More", I18n.rev)
+        tip: [I18n.tr("More", I18n.rev), Offline.tip(row.trackId, Offline.rev)].filter(text => text !== "").join("\n")
         onClicked: row.menu(x, y + height)
+    }
+    Loader {
+        id: offline
+        objectName: "queueOfflineMark"
+        readonly property string phase: Offline.state(row.trackId, Offline.rev)
+        anchors.centerIn: more
+        active: more.visible && phase !== ""
+        sourceComponent: OfflineMark { clock: Pulse; phase: offline.phase; fraction: Offline.fraction(row.trackId, Offline.rev) }
     }
 
     HoverHandler { id: hover }

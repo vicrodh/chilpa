@@ -151,9 +151,6 @@ msgstr ""
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr ""
 
-msgid "A download is still in progress."
-msgstr "Er wordt nog gedownload."
-
 msgid "A folder chosen before"
 msgstr "Een eerder gekozen map"
 
@@ -834,6 +831,9 @@ msgstr "Beschikbaar"
 msgid "Available GPUs"
 msgstr "Beschikbare GPU’s"
 
+msgid "Available offline"
+msgstr "Offline beschikbaar"
+
 msgid "Available version"
 msgstr "Beschikbare versie"
 
@@ -1436,8 +1436,8 @@ msgstr ""
 msgid "Choose where to open this music"
 msgstr ""
 
-msgid "Choose “Make available offline…” in the menu of a server's album, playlist or tracks."
-msgstr "Kies ‘Offline beschikbaar maken…’ in het menu van een album, afspeellijst of nummers van een server."
+msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
+msgstr "Kies ‘Offline beschikbaar maken’ in het menu van een album, afspeellijst of nummers van een server."
 
 msgid "Clean"
 msgstr "Geen expliciete inhoud"
@@ -2285,14 +2285,14 @@ msgstr "Download geannuleerd."
 msgid "Download track"
 msgstr "Nummer downloaden"
 
-msgid "Download {} server tracks for offline listening."
-msgstr "Download {} servernummers om offline te luisteren."
-
 msgid "Downloaded"
 msgstr "Gedownload"
 
 msgid "Downloading episodes…"
 msgstr ""
+
+msgid "Downloading for offline listening"
+msgstr "Downloaden om offline te luisteren"
 
 msgid "Downloading update…"
 msgstr "Update downloaden…"
@@ -3752,8 +3752,8 @@ msgstr "Magazine"
 msgid "Maintenance"
 msgstr "Onderhoud"
 
-msgid "Make available offline…"
-msgstr "Offline beschikbaar maken…"
+msgid "Make available offline"
+msgstr "Offline beschikbaar maken"
 
 msgid "Make it yours"
 msgstr "Maak het van jou"
@@ -4504,6 +4504,9 @@ msgstr "Uit"
 
 msgid "Offline"
 msgstr ""
+
+msgid "Offline download failed"
+msgstr "Offline download mislukt"
 
 msgid "Offline folder"
 msgstr "Offlinemap"
@@ -5282,6 +5285,9 @@ msgstr "Waarderingen"
 msgid "Ratings are not synced with it."
 msgstr "Waarderingen worden niet met deze server gesynchroniseerd."
 
+msgid "Re-download"
+msgstr "Opnieuw downloaden"
+
 msgid "Re-fetch album information"
 msgstr "Albuminformatie opnieuw ophalen"
 
@@ -5519,6 +5525,11 @@ msgstr "Groep verwijderen"
 msgid "Remove image"
 msgstr "Afbeelding verwijderen"
 
+msgid "Remove offline copy"
+msgid_plural "Remove offline copies"
+msgstr[0] "Offline kopie verwijderen"
+msgstr[1] "Offline kopieën verwijderen"
+
 msgid "Remove one condition to get results:"
 msgstr "Verwijder één voorwaarde om resultaten te krijgen:"
 
@@ -5548,6 +5559,9 @@ msgstr "{} verwijderen?"
 
 msgid "Remove…"
 msgstr "Verwijderen…"
+
+msgid "Removing offline copy"
+msgstr "Offline kopie wordt verwijderd"
 
 msgid "Removing saved profile…"
 msgstr ""
@@ -5677,6 +5691,9 @@ msgstr "Hervatten"
 
 msgid "Retry"
 msgstr "Opnieuw proberen"
+
+msgid "Retry download"
+msgstr "Download opnieuw proberen"
 
 msgid "Revert"
 msgstr "Terugzetten"
@@ -7813,6 +7830,9 @@ msgid "Waiting for {} to come back… ({} track read)"
 msgid_plural "Waiting for {} to come back… ({} tracks read)"
 msgstr[0] "Wachten tot {} terug is… ({} nummer gelezen)"
 msgstr[1] "Wachten tot {} terug is… ({} nummers gelezen)"
+
+msgid "Waiting in the offline queue"
+msgstr "Wacht in de offline wachtrij"
 
 msgid "Wallpaper"
 msgstr "Bureaubladachtergrond"

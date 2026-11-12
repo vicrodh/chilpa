@@ -6,9 +6,11 @@ use std::path::{Path, PathBuf};
 pub(super) mod leases;
 mod limit;
 mod manager;
+mod marks;
 mod page;
 mod worker;
 pub(crate) use limit::LIMIT;
+pub use marks::OfflineMarks;
 pub(super) use page::Page;
 pub(super) use worker::State;
 #[derive(Default)]

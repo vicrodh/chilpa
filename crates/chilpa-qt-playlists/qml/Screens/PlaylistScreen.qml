@@ -4,6 +4,7 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.playlists
+import "qrc:/qt/qml/app/chilpa/offline/qml/Components" as OfflineParts
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
@@ -104,7 +105,8 @@ Flickable {
             }
         }
 
-        Rectangle { width: parent.width; height: 1; color: Theme.color.strokeHairline }
+        // The header's rule, which also says how the playlist made available offline goes.
+        OfflineParts.OfflineLine { objectName: "playlistOfflineLine"; width: parent.width; kind: "playlist"; selected: JSON.stringify([page.playlistId]) }
 
         Item {
             width: parent.width

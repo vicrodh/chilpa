@@ -9,6 +9,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/offline/qml/Components" as OfflineParts
 
 // Tracks: every track of the library in one list, found by what is typed,
 // in an order, and grouped or not. Grouped, its headers say the record, the
@@ -177,6 +178,8 @@ Item {
         color: Theme.color.textSecondary
     }
 
+    // How the tracks last made available offline from a list go, in the gap over it.
+    OfflineParts.OfflineLine { objectName: "tracksOfflineLine"; x: head.x; width: list.width; anchors.bottom: groupName.top; anchors.bottomMargin: Metrics.gap6; kind: "tracks"; rule: false }
     TrackList {
         id: list
         anchors.top: groupName.bottom

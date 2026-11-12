@@ -151,9 +151,6 @@ msgstr ""
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr ""
 
-msgid "A download is still in progress."
-msgstr "Загрузка ещё выполняется."
-
 msgid "A folder chosen before"
 msgstr "Папка, выбранная раньше"
 
@@ -835,6 +832,9 @@ msgstr "Доступные"
 msgid "Available GPUs"
 msgstr "Доступные GPU"
 
+msgid "Available offline"
+msgstr "Доступно офлайн"
+
 msgid "Available version"
 msgstr "Доступная версия"
 
@@ -1438,8 +1438,8 @@ msgstr ""
 msgid "Choose where to open this music"
 msgstr ""
 
-msgid "Choose “Make available offline…” in the menu of a server's album, playlist or tracks."
-msgstr "Выберите «Сделать доступным офлайн…» в меню альбома, плейлиста или треков сервера."
+msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
+msgstr "Выберите «Сделать доступным офлайн» в меню альбома, плейлиста или треков сервера."
 
 msgid "Clean"
 msgstr "Без откровенного содержания"
@@ -2287,14 +2287,14 @@ msgstr "Загрузка отменена."
 msgid "Download track"
 msgstr "Скачать трек"
 
-msgid "Download {} server tracks for offline listening."
-msgstr "Загрузить {} треков сервера для прослушивания офлайн."
-
 msgid "Downloaded"
 msgstr "Скачано"
 
 msgid "Downloading episodes…"
 msgstr ""
+
+msgid "Downloading for offline listening"
+msgstr "Загрузка для прослушивания офлайн"
 
 msgid "Downloading update…"
 msgstr "Загрузка обновления…"
@@ -3757,8 +3757,8 @@ msgstr "Журнал"
 msgid "Maintenance"
 msgstr "Обслуживание"
 
-msgid "Make available offline…"
-msgstr "Сделать доступным офлайн…"
+msgid "Make available offline"
+msgstr "Сделать доступным офлайн"
 
 msgid "Make it yours"
 msgstr "Настройте под себя"
@@ -4509,6 +4509,9 @@ msgstr "Выкл."
 
 msgid "Offline"
 msgstr ""
+
+msgid "Offline download failed"
+msgstr "Не удалось загрузить для прослушивания офлайн"
 
 msgid "Offline folder"
 msgstr "Папка офлайн-музыки"
@@ -5287,6 +5290,9 @@ msgstr "Оценки"
 msgid "Ratings are not synced with it."
 msgstr "Оценки не синхронизируются с этим сервером."
 
+msgid "Re-download"
+msgstr "Скачать снова"
+
 msgid "Re-fetch album information"
 msgstr "Повторно получить сведения об альбоме"
 
@@ -5524,6 +5530,12 @@ msgstr "Удалить группу"
 msgid "Remove image"
 msgstr "Удалить изображение"
 
+msgid "Remove offline copy"
+msgid_plural "Remove offline copies"
+msgstr[0] "Удалить офлайн-копию"
+msgstr[1] "Удалить офлайн-копии"
+msgstr[2] "Удалить офлайн-копии"
+
 msgid "Remove one condition to get results:"
 msgstr "Уберите одно условие, чтобы получить результаты:"
 
@@ -5553,6 +5565,9 @@ msgstr "Удалить {}?"
 
 msgid "Remove…"
 msgstr "Удалить…"
+
+msgid "Removing offline copy"
+msgstr "Удаление офлайн-копии"
 
 msgid "Removing saved profile…"
 msgstr ""
@@ -5682,6 +5697,9 @@ msgstr "Продолжить"
 
 msgid "Retry"
 msgstr "Повторить"
+
+msgid "Retry download"
+msgstr "Повторить загрузку"
 
 msgid "Revert"
 msgstr "Вернуть"
@@ -7824,6 +7842,9 @@ msgid_plural "Waiting for {} to come back… ({} tracks read)"
 msgstr[0] "Ожидание, пока {} снова станет доступен… (прочитан {} трек)"
 msgstr[1] "Ожидание, пока {} снова станет доступен… (прочитано {} трека)"
 msgstr[2] "Ожидание, пока {} снова станет доступен… (прочитано {} треков)"
+
+msgid "Waiting in the offline queue"
+msgstr "Ожидает в очереди офлайн-загрузок"
 
 msgid "Wallpaper"
 msgstr "Обои"

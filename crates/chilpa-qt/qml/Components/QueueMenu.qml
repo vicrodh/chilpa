@@ -37,8 +37,8 @@ CascadingMenu {
             { separator: true },
             { text: I18n.tr("Delete playlist", I18n.rev), act: "remove" }
         ] : [])
-        if (groupRow < 0 && offlinePlaylistId > 0 && JSON.parse(Offline.call("info", "playlist", JSON.stringify([offlinePlaylistId]))).count > 0)
-            entries = entries.concat([{separator:true}, {text:I18n.tr("Make available offline…", I18n.rev),act:"offline"}])
+        const offline = groupRow < 0 && offlinePlaylistId > 0 ? JSON.parse(Offline.menu("playlist", JSON.stringify([offlinePlaylistId]))) : []
+        if (offline.length > 0) entries = entries.concat([{separator:true}], offline)
         x = left
         y = top
         open()
@@ -46,8 +46,8 @@ CascadingMenu {
 
     onActionChosen: entry => {
         const action = entry.act
-        if (action === "offline") {
-            Offline.requested("playlist", JSON.stringify([offlinePlaylistId]))
+        if (action.startsWith("offline:")) {
+            Offline.call(action.split(":")[1], "playlist", JSON.stringify([offlinePlaylistId]))
             return
         }
         if (groupRow >= 0) {

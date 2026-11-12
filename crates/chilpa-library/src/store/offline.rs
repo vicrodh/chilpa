@@ -29,6 +29,8 @@ pub(super) const READY_COPY: &str = "EXISTS (SELECT 1 FROM offline_audio o JOIN 
 
 #[derive(Clone, Debug)]
 pub struct Track {
+    /// The library's track, so the window can mark its row.
+    pub id: i64,
     pub source: i64,
     pub entry: String,
     pub revision: Option<String>,
@@ -62,6 +64,15 @@ pub struct SourceUsage {
     pub source: i64,
     pub files: usize,
     pub bytes: u64,
+}
+
+/// A library track with a copy of the current account and revision: kept
+/// and verified, or failed with the reason.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Marked {
+    pub track: i64,
+    pub ready: bool,
+    pub error: String,
 }
 
 /// A copy as the offline page lists it.
@@ -172,7 +183,7 @@ impl Library {
             format!("{predicate} IN ({marks})")
         };
         let sql = format!(
-            "SELECT t.source_id,t.external_id,t.revision,t.codec,t.title FROM tracks t
+            "SELECT t.id,t.source_id,t.external_id,t.revision,t.codec,t.title FROM tracks t
             JOIN sources s ON s.id=t.source_id JOIN servers v ON v.source_id=t.source_id
             WHERE s.enabled=1 AND t.present=1 AND {selection}
             ORDER BY t.album_id,t.disc_number,t.track_number,t.id LIMIT {}",
@@ -181,11 +192,12 @@ impl Library {
         let mut statement = self.db.prepare(&sql)?;
         let rows = statement.query_map(rusqlite::params_from_iter(ids), |row| {
             Ok(Track {
-                source: row.get(0)?,
-                entry: row.get(1)?,
-                revision: row.get(2)?,
-                codec: row.get(3)?,
-                title: row.get(4)?,
+                id: row.get(0)?,
+                source: row.get(1)?,
+                entry: row.get(2)?,
+                revision: row.get(3)?,
+                codec: row.get(4)?,
+                title: row.get(5)?,
             })
         })?;
         let mut tracks = Vec::new();
@@ -442,6 +454,36 @@ impl Library {
         rows.collect()
     }
 
+    /// The tracks a row marks: the ones kept and the ones that failed, for
+    /// the server's current account and the track's current revision. A
+    /// track with a kept copy is never also listed as failed. At most
+    /// `MAX_LISTED` of each.
+    pub fn offline_marks(&self) -> rusqlite::Result<Vec<Marked>> {
+        let mut statement = self.db.prepare(&format!(
+            "SELECT t.id,o.state='complete',o.error FROM offline_audio o
+            JOIN servers v ON v.source_id=o.source_id AND v.account=o.account AND v.identity=o.identity
+            JOIN tracks t ON t.source_id=o.source_id AND t.external_id=o.entry
+            WHERE o.state IN ('complete','failed') AND o.revision=chilpa_revision(t.revision)
+            ORDER BY o.state='complete' DESC,t.id LIMIT {}",
+            MAX_LISTED * 2
+        ))?;
+        let rows = statement.query_map([], |row| {
+            Ok(Marked { track: row.get(0)?, ready: row.get(1)?, error: row.get::<_, String>(2)?.chars().take(512).collect() })
+        })?;
+        let (mut out, mut kept, mut failed) = (Vec::new(), std::collections::HashSet::new(), 0);
+        for row in rows {
+            let row = row?;
+            if row.ready && kept.len() < MAX_LISTED {
+                kept.insert(row.track);
+                out.push(row);
+            } else if !row.ready && failed < MAX_LISTED && !kept.contains(&row.track) {
+                failed += 1;
+                out.push(row);
+            }
+        }
+        Ok(out)
+    }
+
     /// Where a server's next copies go: a folder URL, or empty for the
     /// profile's offline folder. Copies already saved keep their paths.
     pub fn set_server_offline_folder(&self, source_id: i64, folder: &str) -> rusqlite::Result<bool> {
@@ -664,6 +706,32 @@ mod tests {
         assert_eq!((found.title.as_str(), found.album_title.as_str(), found.state.as_str()), ("Song", "Album", "queued"));
         let left = listed.iter().find(|row| row.key == "gone").unwrap();
         assert_eq!((left.track, left.title.as_str(), left.source), (0, "", source));
+    }
+
+    #[test]
+    fn marks_name_kept_and_failed_tracks_of_the_current_account_and_revision() {
+        let (lib, source, item) = fixture();
+        assert!(lib.offline_marks().unwrap().is_empty());
+        let track: i64 = lib.db.query_row("SELECT id FROM tracks WHERE source_id=?1", [source], |row| row.get(0)).unwrap();
+        lib.queue_offline_copy(&item, "track/1").unwrap();
+        lib.fail_offline_copy(&item.key, "The server answered 500", 0).unwrap();
+        assert_eq!(lib.offline_marks().unwrap(), [Marked { track, ready: false, error: "The server answered 500".into() }]);
+        let session = lib.server(source).unwrap().unwrap().session_revision;
+        lib.db.execute("UPDATE offline_audio SET state='queued' WHERE key=?1", [&item.key]).unwrap();
+        assert!(lib.complete_offline_copy(&item, session).unwrap());
+        let mut stale = item.clone();
+        stale.key = "stale".into();
+        stale.revision = revision_digest(Some("an older revision"));
+        lib.queue_offline_copy(&stale, "track/1").unwrap();
+        lib.fail_offline_copy(&stale.key, "old", 0).unwrap();
+        assert_eq!(lib.offline_marks().unwrap(), [Marked { track, ready: true, error: String::new() }], "a failure of an older revision marks nothing");
+        let mut other = item.clone();
+        other.key = "other-account".into();
+        other.account = "second".into();
+        lib.queue_offline_copy(&other, "track/1").unwrap();
+        lib.db.execute_batch("DELETE FROM offline_collections WHERE key IN ('digest','stale'); DELETE FROM offline_audio WHERE key IN ('digest','stale')").unwrap();
+        lib.fail_offline_copy(&other.key, "elsewhere", 0).unwrap();
+        assert!(lib.offline_marks().unwrap().is_empty(), "another account's copy marks nothing");
     }
 
     #[test]
