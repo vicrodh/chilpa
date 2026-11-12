@@ -324,22 +324,33 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
 
     // Pronunciation is independently opt-in. Its generated layer preserves repeated lines and timing.
     let pronunciation = song(&music, "Pronunciation Song");
-    std::fs::write(Path::new(&pronunciation).with_extension("lrc"), "[00:00.05]東京\n[00:00.08]東京").unwrap();
+    std::fs::write(Path::new(&pronunciation).with_extension("ttml"), r#"<tt xmlns="http://www.w3.org/ns/ttml"
+        xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xml:lang="ja"><body><div>
+        <p begin="0.05" end="0.08">東京<span ttm:role="x-translation" xml:lang="en">Tokyo</span></p>
+        <p begin="0.08" end="0.10">東京<span ttm:role="x-translation" xml:lang="en">Tokyo</span></p>
+        </div></body></tt>"#).unwrap();
     assert_eq!(chilpa.settings_rows("integrations", &Default::default()).0.iter()
         .find(|row| row.key == "integrations.lyrics.romanize").unwrap().value, "false");
     lyrics_of(&mut chilpa, &pronunciation, "Pronunciation Song", long).expect("original Japanese lyrics");
     assert_eq!(said(&chilpa)["romanization"], Value::Null);
     assert!(service.romanized.lock().unwrap().is_empty());
+    assert_eq!(said(&chilpa)["translation"], 0);
+    let before_toggle = said(&chilpa)["document"].clone();
     assert!(chilpa.adjust("integrations.lyrics.romanize", "true"));
+    assert_eq!(said(&chilpa)["status"], "found", "enrichment never blanks the visible lyrics");
+    assert_eq!(said(&chilpa)["document"], before_toggle, "the toggle preserves translation and timing immediately");
+    assert_eq!(said(&chilpa)["translation"], 0);
     let deadline = Instant::now() + long;
     loop {
         chilpa.poll();
         let current = said(&chilpa);
-        if current["romanization"] == 0 {
+        if current["romanization"] == 1 {
             assert_eq!(current["document"]["lines"][0]["text"], "東京");
             assert_eq!(current["document"]["lines"][0]["start_ms"], 50);
             assert_eq!(current["document"]["lines"][1]["start_ms"], 80);
-            assert_eq!(current["document"]["layers"][0]["lines"][1]["text"], "Tōkyō");
+            assert_eq!(current["document"]["layers"][1]["lines"][1]["text"], "Tōkyō");
+            assert_eq!(current["translation"], 0);
+            assert_eq!(current["document"]["layers"][0], before_toggle["layers"][0]);
             break;
         }
         assert!(Instant::now() < deadline, "pronunciation did not arrive: {current}");
@@ -349,12 +360,14 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
     assert_eq!(service.romanized.lock().unwrap()[0]["lines"], json!(["東京", "東京"]));
     assert!(chilpa.adjust("integrations.lyrics.romanize", "false"));
     assert!(said(&chilpa)["romanization"].is_null());
+    assert_eq!(said(&chilpa)["status"], "found");
+    assert_eq!(said(&chilpa)["translation"], 0, "hiding pronunciation keeps the translation available");
     assert!(chilpa.adjust("integrations.offline", "true"));
     assert!(chilpa.adjust("integrations.lyrics.romanize", "true"));
     let deadline = Instant::now() + long;
     loop {
         chilpa.poll();
-        if said(&chilpa)["romanization"] == 0 { break; }
+        if said(&chilpa)["romanization"] == 1 { break; }
         assert!(Instant::now() < deadline, "cached pronunciation did not return offline");
         std::thread::sleep(Duration::from_millis(20));
     }
