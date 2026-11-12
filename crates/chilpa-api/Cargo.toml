@@ -71,5 +71,7 @@ async-channel = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 [target.'cfg(target_os = "macos")'.dependencies]
+# The sign-in window's process group (src/web_sign_in.rs).
+libc = "0.2"
 chilpa-bwrap.workspace = true
 [target.'cfg(target_os = "android")'.dependencies]

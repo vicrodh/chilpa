@@ -97,7 +97,7 @@ fn open(executable: &Path, capture: &Capture, title: &str, (data, cache): (&Path
     }
     // The window leads a process group of its own, and the engine's processes
     // stay in it, so ending the group ends all of them.
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     { use std::os::unix::process::CommandExt; command.process_group(0); }
     let mut child = match command.spawn() {
         Ok(child) => child,
@@ -140,12 +140,12 @@ fn open(executable: &Path, capture: &Capture, title: &str, (data, cache): (&Path
 
 /// Kills what is left of the window's process group.
 fn end_group(child: &std::process::Child) {
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     if let Ok(group) = libc::pid_t::try_from(child.id()) {
         // SAFETY: a signal to the group the window leads (`process_group(0)` in `open`).
         unsafe { libc::kill(-group, libc::SIGKILL); }
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
     let _ = child;
 }
 
@@ -244,7 +244,7 @@ mod tests {
     }
 
     /// Whether a process ends within a few seconds of its group being killed.
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     fn ends_soon(pid: libc::pid_t) -> bool {
         let began = Instant::now();
         // SAFETY: signal 0 only asks whether the process exists.
@@ -258,13 +258,13 @@ mod tests {
     }
 
     /// The window starts a helper of its own, as the engine does, and records it.
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     fn with_helper(folder: &Path, then: &str) -> (PathBuf, PathBuf) {
         let recorded = folder.join("helper");
         (script(folder, &format!("sleep 30 & echo $! > '{}'; {then}", recorded.display())), recorded)
     }
 
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     fn helper(recorded: &Path) -> libc::pid_t {
         let began = Instant::now();
         loop {
@@ -276,7 +276,7 @@ mod tests {
         }
     }
 
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[test]
     fn the_engine_processes_end_with_a_cancelled_or_crashed_window() {
         let folder = tempfile::tempdir().unwrap();
