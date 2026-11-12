@@ -214,6 +214,12 @@ mod tests {
         assert_eq!(left, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36");
         let chromium = left.as_str();
         assert_eq!(engine_token(chromium), None, "nothing to cut");
+        // On macOS Chromium names an Intel Mac whatever the processor; the
+        // result is what the window printed on an arm64 Mac with Qt 6.11.1.
+        let mac = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) QtWebEngine/6.11.1 Chrome/140.0.0.0 Safari/537.36";
+        let mut left_on_mac = mac.to_string();
+        left_on_mac.replace_range(engine_token(mac).unwrap(), "");
+        assert_eq!(left_on_mac, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36");
         assert_eq!(engine_token("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) QtWebEngine/6.11.2 Safari/537.36"), None,
             "no Chromium version");
         assert_eq!(engine_token("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) QtWebEngine/6.11.2 Chrome/140.0.0.0 \
