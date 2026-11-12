@@ -331,15 +331,16 @@ impl Chilpa {
             self.set_played(frames);
             self.log_play(true);
         }
-        let positions: Vec<usize> = (0..self.queue.len()).filter(|&at| Path::new(&self.queue[at]) == path).collect();
-        let Some(&first) = positions.first() else { return };
-        let entry = self.queue[first].clone();
+        // The player left that position out itself. A copy of the entry
+        // elsewhere is marked with it and passed when reached, or left out
+        // ahead as a track starts; looking for copies here walked the whole
+        // queue for every event.
+        let Some(entry) = self.queue.get(self.base + index).filter(|entry| Path::new(entry.as_str()) == path).cloned() else { return };
         if !self.unavailable.marked.contains_key(&entry) {
             let launch = self.unavailable.launches;
             self.unavailable.marked.insert(entry, Mark { why: Unavailable::Unreadable(why), launch });
             self.unavailable.revision += 1;
         }
-        self.leave_out(&positions);
         self.say_skipped();
     }
 
@@ -612,6 +613,23 @@ mod tests {
             reports.failed(n.to_string(), "gone", false);
         }
         assert_eq!(reports.take().len(), KEPT);
+    }
+
+    #[test]
+    fn a_burst_of_skips_costs_no_walk_of_the_queue() {
+        let mut api = crate::Chilpa::new();
+        let count = 10_000;
+        api.queue = (0..count).map(|n| format!("/nowhere/{n:05}.flac")).collect();
+        api.unavailable.launch = Some(Launch { from: 0, started: true, generation: 7 });
+        let started = Instant::now();
+        for index in 0..count {
+            let path = PathBuf::from(&api.queue[index]);
+            api.player_skipped(7, index, &path, "refused".into(), None);
+        }
+        let took = started.elapsed();
+        assert_eq!(api.unavailable.marked.len(), count, "each one is marked");
+        // Walking the whole queue for each one took tens of seconds here.
+        assert!(took < Duration::from_secs(2), "{count} skips took {took:?}");
     }
 
     #[test]
