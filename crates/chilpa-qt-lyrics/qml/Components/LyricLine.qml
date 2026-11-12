@@ -23,6 +23,7 @@ Column {
     property real nowMs: 0
     property real endMs: 0
     property string translation
+    property string romanization
     // How it is drawn: its size, the color of what is sung, how much the
     // other lines fade ("off", "soft" or "strong"), capitals, and whether
     // the sung line fills word by word.
@@ -88,6 +89,22 @@ Column {
                 centered: row.centered
                 shadowColor: row.shadowColor
             }
+        }
+    }
+
+    Loader {
+        objectName: "pronunciationLayer"
+        active: row.romanization !== ""
+        visible: active
+        width: row.width
+        sourceComponent: Text {
+            objectName: "pronunciation"
+            text: row.romanization
+            opacity: row.lit
+            wrapMode: Text.Wrap
+            horizontalAlignment: row.centered ? Text.AlignHCenter : Text.AlignLeft
+            font.pointSize: row.size * Type.lyricTranslation
+            color: row.past ? row.pastColor : row.dimColor
         }
     }
 

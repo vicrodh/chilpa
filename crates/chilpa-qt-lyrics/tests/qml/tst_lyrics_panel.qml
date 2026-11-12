@@ -296,6 +296,28 @@ TestCase {
         compare(row(1).translation, "")
     }
 
+    function test_pronunciation_is_a_separate_optional_layer_and_releases_its_text_when_off() {
+        const document = JSON.parse(translated)
+        document.romanization = null
+        show(JSON.stringify(document), true, 0)
+        compare(row(0).romanization, "")
+        compare(findChild(row(0), "pronunciationLayer").item, null)
+        document.romanization = 0
+        show(JSON.stringify(document), true, 0)
+        compare(row(0).romanization, "wan tu suri")
+        tryVerify(() => findChild(row(0), "pronunciation") !== null)
+        compare(row(0).line.start_ms, 1000)
+        compare(row(0).text, "One two three")
+        panel.translating = true
+        compare(row(0).translation, "Uno dos tres", "meaning and pronunciation can show together")
+        compare(row(0).romanization, "wan tu suri")
+        document.romanization = null
+        show(JSON.stringify(document), true, 0)
+        compare(row(0).romanization, "")
+        compare(findChild(row(0), "pronunciationLayer").item, null)
+        compare(row(0).translation, "Uno dos tres")
+    }
+
     function test_late_translation_keeps_follow_and_a_manual_drag_can_return_to_it() {
         show(song, true, 4)
         Player.paused = true

@@ -6,11 +6,13 @@ import QtQuick
 QtObject {
     // The lyrics as the player says them: {status, source, document, translation}.
     property var lyrics: null
+    // Both translated meaning and pronunciation are indexed layers; neither changes timing.
+    property string kind: "translation"
     readonly property var lines: {
         const document = lyrics ? lyrics.document : null
-        const at = lyrics ? lyrics.translation : null
+        const at = lyrics ? lyrics[kind] : null
         const layer = !document || at === null || at === undefined ? null : (document.layers || [])[at]
-        if (!layer)
+        if (!layer || layer.kind !== kind)
             return null
         const texts = {}
         for (const entry of layer.lines)

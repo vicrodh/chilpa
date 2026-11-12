@@ -31,6 +31,8 @@ use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+mod romanization;
+
 /// What was answered about a track's lyrics.
 #[derive(Clone, PartialEq, Debug)]
 pub enum Answer {
@@ -90,6 +92,11 @@ pub trait Translator: Send + Sync {
     fn translate(&self, track: &Track, lines: &[String], language: &str, from: Option<&str>, timeout: Duration) -> Translation;
 }
 
+/// A Latin-script pronunciation layer for the exact original lines; no new timing.
+pub trait Romanizer: Send + Sync {
+    fn romanize(&self, track: &Track, lines: &[String], from: Option<&str>, timeout: Duration) -> Translation;
+}
+
 /// The longest "ask again in a moment" that is waited out here.
 const TRANSLATION_WAIT: Duration = Duration::from_secs(10);
 /// How long a translator that failed without saying is left alone.
@@ -108,6 +115,8 @@ pub struct Request {
     /// Whether lyrics that carry no translation in that language may be
     /// sent to the translator for one.
     pub translate: bool,
+    /// Whether a missing pronunciation layer may be generated and displayed.
+    pub romanize: bool,
     /// Whether the configured remote service may answer this request.
     pub allow_remote: bool,
     /// I keep cached results available without asking a source or service.
@@ -143,6 +152,8 @@ pub struct Pipeline {
     cooling: Mutex<Option<Instant>>,
     translator: Option<Arc<dyn Translator>>,
     translator_cooling: Mutex<Option<Instant>>,
+    romanizer: Option<Arc<dyn Romanizer>>,
+    romanizer_cooling: Mutex<Option<Instant>>,
     limits: Limits,
 }
 
@@ -150,7 +161,8 @@ impl Pipeline {
     /// A pipeline over a cache. Without a `remote`, only what came with the
     /// track and what its source has are found.
     pub fn new(cache: Cache, remote: Option<Arc<dyn Remote>>, limits: Limits) -> Pipeline {
-        Pipeline { cache: Mutex::new(cache), remote, cooling: Mutex::new(None), translator: None, translator_cooling: Mutex::new(None), limits }
+        Pipeline { cache: Mutex::new(cache), remote, cooling: Mutex::new(None), translator: None, translator_cooling: Mutex::new(None),
+            romanizer: None, romanizer_cooling: Mutex::new(None), limits }
     }
 
     /// The same pipeline, with somebody to translate what is shown.
@@ -523,7 +535,7 @@ mod tests {
     }
 
     fn request(source: Option<Arc<Fake>>) -> Request {
-        Request { track: track(), path: None, source: source.map(|s| (s as Arc<dyn Source>, "track:1".to_string())), language: None, translate: false, allow_remote: true, offline: false, remote_providers: None }
+        Request { track: track(), path: None, source: source.map(|s| (s as Arc<dyn Source>, "track:1".to_string())), language: None, translate: false, romanize: false, allow_remote: true, offline: false, remote_providers: None }
     }
 
     fn origin(outcome: &Outcome) -> &str {
@@ -734,7 +746,7 @@ mod tests {
         std::fs::write(dir.join("song.lrc"), "Plain words next door\n").unwrap();
         let service = Fake::new("service", found(WORDS));
         let p = pipeline(service.clone());
-        let outcome = p.resolve(&Request { track: track(), path: Some(file), source: None, language: None, translate: false, allow_remote: true, offline: false, remote_providers: None }, false);
+        let outcome = p.resolve(&Request { track: track(), path: Some(file), source: None, language: None, translate: false, romanize: false, allow_remote: true, offline: false, remote_providers: None }, false);
         assert_eq!(origin(&outcome), "file");
         assert_eq!(service.calls(), 0, "nobody is asked when the file has lyrics, however fine the service's are");
         let _ = std::fs::remove_dir_all(dir);

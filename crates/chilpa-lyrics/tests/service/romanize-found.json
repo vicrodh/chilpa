@@ -1,0 +1,36 @@
+{
+  "request": {
+    "schema": 1,
+    "scheme": "standard",
+    "from": "ja",
+    "track": {
+      "title": "Synthetic",
+      "artist": "Fixture"
+    },
+    "lines": [
+      "東京",
+      "Hello",
+      "東京"
+    ]
+  },
+  "status": 200,
+  "response": {
+    "schema": 1,
+    "status": "found",
+    "layer": {
+      "kind": "romanization",
+      "language": "ja-Latn-hepburn",
+      "provider": "claude",
+      "lines": [
+        {
+          "line": 0,
+          "text": "Tōkyō"
+        },
+        {
+          "line": 2,
+          "text": "Tōkyō"
+        }
+      ]
+    }
+  }
+}

@@ -102,6 +102,7 @@ struct Service {
     asked: Arc<Mutex<Vec<Value>>>,
     /// The translations asked for, as they came.
     translated: Arc<Mutex<Vec<Value>>>,
+    romanized: Arc<Mutex<Vec<Value>>>,
     rejected: Arc<Mutex<Vec<Value>>>,
 }
 
@@ -132,10 +133,11 @@ fn serve() -> Service {
     let origin = format!("http://{}", server.server_addr().to_ip().unwrap());
     let asked = Arc::new(Mutex::new(Vec::new()));
     let translated = Arc::new(Mutex::new(Vec::new()));
+    let romanized = Arc::new(Mutex::new(Vec::new()));
     let rejected = Arc::new(Mutex::new(Vec::new()));
     let audio = Arc::new(wave("", ""));
     for _ in 0..4 {
-        let (server, asked, translated, rejected, audio) = (server.clone(), asked.clone(), translated.clone(), rejected.clone(), audio.clone());
+        let (server, asked, translated, romanized, rejected, audio) = (server.clone(), asked.clone(), translated.clone(), romanized.clone(), rejected.clone(), audio.clone());
         std::thread::spawn(move || {
             while let Ok(mut request) = server.recv() {
                 if request.method() == &tiny_http::Method::Get {
@@ -171,6 +173,15 @@ fn serve() -> Service {
                     let _ = request.respond(tiny_http::Response::from_string(answer.to_string()).with_status_code(200));
                     continue;
                 }
+                if request.url().ends_with("/v1/lyrics/romanize") {
+                    romanized.lock().unwrap().push(question.clone());
+                    let lines: Vec<Value> = question["lines"].as_array().unwrap().iter().enumerate()
+                        .map(|(line, _)| json!({ "line": line, "text": "Tōkyō" })).collect();
+                    let answer = json!({ "schema": 1, "status": "found", "layer": {
+                        "kind": "romanization", "language": "ja-Latn-hepburn", "provider": "fixture", "lines": lines } });
+                    let _ = request.respond(tiny_http::Response::from_string(answer.to_string()));
+                    continue;
+                }
                 let title = question["track"]["title"].as_str().unwrap_or_default().to_string();
                 asked.lock().unwrap().push(question.clone());
                 let (status, answer) = if title.starts_with("Slow") {
@@ -187,7 +198,7 @@ fn serve() -> Service {
             }
         });
     }
-    Service { origin, asked, translated, rejected }
+    Service { origin, asked, translated, romanized, rejected }
 }
 
 fn found(question: &Value) -> Value {
@@ -310,6 +321,47 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
     assert_eq!(service.translations_asked(), 1, "a translation is remembered");
     assert!(chilpa.adjust("integrations.lyrics.translate", "false"));
     assert_eq!(translate_row(&mut chilpa).value, "false");
+
+    // Pronunciation is independently opt-in. Its generated layer preserves repeated lines and timing.
+    let pronunciation = song(&music, "Pronunciation Song");
+    std::fs::write(Path::new(&pronunciation).with_extension("lrc"), "[00:00.05]東京\n[00:00.08]東京").unwrap();
+    assert_eq!(chilpa.settings_rows("integrations", &Default::default()).0.iter()
+        .find(|row| row.key == "integrations.lyrics.romanize").unwrap().value, "false");
+    lyrics_of(&mut chilpa, &pronunciation, "Pronunciation Song", long).expect("original Japanese lyrics");
+    assert_eq!(said(&chilpa)["romanization"], Value::Null);
+    assert!(service.romanized.lock().unwrap().is_empty());
+    assert!(chilpa.adjust("integrations.lyrics.romanize", "true"));
+    let deadline = Instant::now() + long;
+    loop {
+        chilpa.poll();
+        let current = said(&chilpa);
+        if current["romanization"] == 0 {
+            assert_eq!(current["document"]["lines"][0]["text"], "東京");
+            assert_eq!(current["document"]["lines"][0]["start_ms"], 50);
+            assert_eq!(current["document"]["lines"][1]["start_ms"], 80);
+            assert_eq!(current["document"]["layers"][0]["lines"][1]["text"], "Tōkyō");
+            break;
+        }
+        assert!(Instant::now() < deadline, "pronunciation did not arrive: {current}");
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert_eq!(service.romanized.lock().unwrap().len(), 1);
+    assert_eq!(service.romanized.lock().unwrap()[0]["lines"], json!(["東京", "東京"]));
+    assert!(chilpa.adjust("integrations.lyrics.romanize", "false"));
+    assert!(said(&chilpa)["romanization"].is_null());
+    assert!(chilpa.adjust("integrations.offline", "true"));
+    assert!(chilpa.adjust("integrations.lyrics.romanize", "true"));
+    let deadline = Instant::now() + long;
+    loop {
+        chilpa.poll();
+        if said(&chilpa)["romanization"] == 0 { break; }
+        assert!(Instant::now() < deadline, "cached pronunciation did not return offline");
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert_eq!(service.romanized.lock().unwrap().len(), 1);
+    assert!(chilpa.adjust("integrations.lyrics.romanize", "false"));
+    assert!(chilpa.adjust("integrations.offline", "false"));
+    lyrics_of(&mut chilpa, &remote, "Remote Song", long).expect("return to the prior track");
 
     // I can opt out completely, including the file and the cache.
     assert!(chilpa.adjust("integrations.lyrics.enabled", "false"));
