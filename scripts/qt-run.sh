@@ -89,10 +89,12 @@ cargo build -p chilpa-qt "${profile_args[@]}"
 # The sign-in window for plugins whose browser sign-in ends on an address only
 # their own application receives (crates/chilpa-web-sign-in). It is built only
 # where Qt WebEngine 6.9 or later is installed; without it the link opens the
-# browser.
+# browser. Its build finds Qt through pkg-config on Linux and on macOS, where
+# Homebrew's Qt installs the `.pc` files; on macOS the engine's helper process
+# and resources stay inside Qt's QtWebEngineCore.framework, where Qt finds them.
 sign_in="${target_dir}/${profile}/chilpa-web-sign-in"
 rm -f "${sign_in}"
-if [[ "$(uname -s)" == Linux ]] && pkg-config --atleast-version=6.9 Qt6WebEngineWidgets 2>/dev/null; then
+if [[ "$(uname -s)" =~ ^(Linux|Darwin)$ ]] && pkg-config --atleast-version=6.9 Qt6WebEngineWidgets 2>/dev/null; then
   say "building chilpa-web-sign-in"
   cargo build -p chilpa-web-sign-in --features webengine "${profile_args[@]}"
 else
