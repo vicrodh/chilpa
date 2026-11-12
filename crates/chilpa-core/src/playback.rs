@@ -31,6 +31,19 @@ impl PlayError {
     }
 }
 
+/// How a track ended once what went wrong is known. The renderer only hears
+/// that the source stopped giving blocks and calls it `Unreadable`; when the
+/// reason was a block the output could not take (`packing`), the failure is
+/// the output's, and the queue stops on it instead of passing the track over.
+pub(crate) fn output_fault(outcome: Outcome, packing: Option<PackError>) -> Outcome {
+    match (outcome, packing) {
+        (Outcome::Unreadable { frames, .. }, Some(error)) => {
+            Outcome::Failed { frames, error: SinkError::Backend(PlayError::Pack(error).to_string()) }
+        }
+        (outcome, _) => outcome,
+    }
+}
+
 impl std::fmt::Display for PlayError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

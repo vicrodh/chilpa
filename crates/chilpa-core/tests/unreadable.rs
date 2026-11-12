@@ -671,3 +671,57 @@ fn a_stop_mark_on_a_position_left_out_ends_the_queue_there() {
     assert_eq!(results.len(), 1);
     let _ = std::fs::remove_dir_all(dir);
 }
+
+/// A tenth of a second of 24 bit stereo at 44.1 kHz.
+fn wave_24(dir: &Path, name: &str) -> PathBuf {
+    let (frames, rate) = (4_410u32, 44_100u32);
+    let path = dir.join(name);
+    let data = frames * 6;
+    let mut f = std::fs::File::create(&path).unwrap();
+    f.write_all(b"RIFF").unwrap();
+    f.write_all(&(36 + data).to_le_bytes()).unwrap();
+    f.write_all(b"WAVEfmt ").unwrap();
+    f.write_all(&16u32.to_le_bytes()).unwrap();
+    f.write_all(&1u16.to_le_bytes()).unwrap();
+    f.write_all(&2u16.to_le_bytes()).unwrap();
+    f.write_all(&rate.to_le_bytes()).unwrap();
+    f.write_all(&(rate * 6).to_le_bytes()).unwrap();
+    f.write_all(&6u16.to_le_bytes()).unwrap();
+    f.write_all(&24u16.to_le_bytes()).unwrap();
+    f.write_all(b"data").unwrap();
+    f.write_all(&data.to_le_bytes()).unwrap();
+    for i in 0..frames {
+        let v = (i % 3_000) * 256 + 1;
+        f.write_all(&v.to_le_bytes()[..3]).unwrap();
+        f.write_all(&v.to_le_bytes()[..3]).unwrap();
+    }
+    path
+}
+
+#[test]
+fn a_track_the_output_cannot_pack_stops_the_queue_as_the_output_s_failure() {
+    let dir = folder("pack");
+    // Twenty-four bits do not fit in the sixteen this output takes, and the
+    // packer refuses to cut them: that is the output's limit, not the file's.
+    let tracks = vec![wave_24(&dir, "01.wav"), wave(&dir, "02.wav")];
+    let (mut started, mut passed) = (Vec::new(), Vec::new());
+    let result = play_queue_told(
+        &SharedQueue::new(tracks),
+        &caps_16(),
+        Policy::AllowAnything,
+        &Controls::new(),
+        |format| Ok(Fake { format, written: 0, lost_after: None }),
+        &mut |index, _, _, _| started.push(index),
+        &mut |_, _| {},
+        &mut |index, _, _, _| passed.push(index),
+    );
+    let results = result.expect("the queue reports how the track ended");
+    assert!(passed.is_empty(), "the output's failure is not passed over as the track's: {passed:?}");
+    assert_eq!(started, [0], "nothing after it started");
+    assert!(
+        matches!(results.last().map(|r| &r.outcome), Some(Outcome::Failed { .. })),
+        "it ends as a failure of the output: {:?}",
+        results.last().map(|r| &r.outcome)
+    );
+    let _ = std::fs::remove_dir_all(dir);
+}

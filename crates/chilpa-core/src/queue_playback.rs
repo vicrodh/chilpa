@@ -13,7 +13,7 @@
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::gapless::{transition, Transition, Trimmer};
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
-use chilpa_audio::pack::{duplicate_mono, pack, Samples};
+use chilpa_audio::pack::{duplicate_mono, pack, PackError, Samples};
 use chilpa_audio::render::{FrameSource, Outcome};
 use chilpa_audio::seek::SeekSignal;
 use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, SkipSignal, StopSignal};
@@ -676,6 +676,8 @@ struct TrackFrames<'a> {
     decoded_at: u64,
     /// How far ahead it is read: further for a track over the network.
     ahead: std::time::Duration,
+    /// A block the output could not take (`playback::output_fault`).
+    packing: Option<PackError>,
 }
 
 impl FrameSource for TrackFrames<'_> {
@@ -772,7 +774,7 @@ impl FrameSource for TrackFrames<'_> {
                     let mut bytes = Vec::new();
                     let samples = Samples::Int { data: &frames, bits };
                     crate::playback::pack_decoded(self.decoded, &samples, self.gain_format.sample_format, &mut bytes)
-                        .map_err(|e| PlayError::Pack(e).to_string())?;
+                        .map_err(|e| { self.packing = Some(e); PlayError::Pack(e).to_string() })?;
                     bytes
                 }
                 Ok(Some(Block::Float(data))) => {
@@ -796,7 +798,7 @@ impl FrameSource for TrackFrames<'_> {
                         bytes.extend(frames.iter().flat_map(|sample| sample.to_le_bytes()));
                     } else {
                         pack(&Samples::Float(&frames), self.gain_format.sample_format, &mut bytes)
-                            .map_err(|e| PlayError::Pack(e).to_string())?;
+                            .map_err(|e| { self.packing = Some(e); PlayError::Pack(e).to_string() })?;
                     }
                     bytes
                 }
@@ -1222,6 +1224,7 @@ where
                     feed: feed.clone(),
                     decoded_at: 0,
                     ahead: if crate::remote::entry(path).is_some() { chilpa_audio::render::NETWORK_AHEAD } else { chilpa_audio::render::AHEAD },
+                    packing: None,
                 };
                 let base = std::sync::Arc::clone(&frames.base);
                 let delivered = std::sync::Arc::clone(&frames.delivered);
@@ -1234,7 +1237,7 @@ where
                 if let Some(feed) = &feed {
                     feed.end(matches!(outcome, chilpa_audio::render::Outcome::Finished { .. }) && !frames.skipped);
                 }
-                (outcome, frames.skipped)
+                (crate::playback::output_fault(outcome, frames.packing), frames.skipped)
             }
             Source::Dop(reader) => {
                 let mut frames = DopFrames::new(reader.as_mut(), &mut packer, &delivery)
@@ -1284,7 +1287,7 @@ where
                 if let Some(feed) = &feed {
                     feed.end(matches!(outcome, chilpa_audio::render::Outcome::Finished { .. }) && !frames.skipped);
                 }
-                (outcome, frames.skipped)
+                (crate::playback::output_fault(outcome, frames.packing), frames.skipped)
             }
         };
         chilpa_audio::diagnostics::trace(
