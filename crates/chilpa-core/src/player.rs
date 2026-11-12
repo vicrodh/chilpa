@@ -693,13 +693,22 @@ fn play(
         },
     )?;
 
-    // The end of the queue is the end of its last track. One that broke
-    // partway was passed over and said as it was: the queue ran out after it.
-    Ok(match results.last().map(|r| &r.outcome) {
-        Some(Outcome::Unreadable { frames, .. }) => Outcome::Finished { frames: *frames },
-        Some(outcome) => outcome.clone(),
+    Ok(ending(results.last().map(|r| &r.outcome), controls.stop.is_stopped()))
+}
+
+/// How a queue that returned ended, from its last track and whether a stop
+/// was asked for while it ran. A stop is how it ended, whatever the last
+/// track said: whoever stopped it waits for `Stopped`, and a track passed
+/// over or run out meanwhile is not the queue finishing. Otherwise a last
+/// track that broke partway was passed over and said as it was: the queue
+/// ran out after it. A device failure is said as it is.
+fn ending(last: Option<&Outcome>, stopped: bool) -> Outcome {
+    match last {
+        Some(outcome @ (Outcome::Failed { .. } | Outcome::Stopped { .. })) => outcome.clone(),
+        _ if stopped => Outcome::Stopped { frames: last.map_or(0, Outcome::frames) },
+        Some(Outcome::Finished { frames } | Outcome::Unreadable { frames, .. }) => Outcome::Finished { frames: *frames },
         None => Outcome::Finished { frames: 0 },
-    })
+    }
 }
 
 /// True if what was asked for is a URL and not a file.
@@ -916,6 +925,18 @@ mod tests {
         }).collect();
         assert_eq!(songs, ["A - One", "B - Two"]);
         assert_eq!(heard.iter().filter(|event| matches!(event, PlayerEvent::Progress { .. })).count(), 1_001);
+    }
+
+    #[test]
+    fn a_stop_asked_for_is_how_the_play_ended_unless_the_device_failed() {
+        let broken = Outcome::Unreadable { frames: 7, reason: "cut".into() };
+        assert_eq!(ending(Some(&broken), false), Outcome::Finished { frames: 7 }, "a queue whose last track broke ran out");
+        assert_eq!(ending(Some(&broken), true), Outcome::Stopped { frames: 7 });
+        assert_eq!(ending(Some(&Outcome::Finished { frames: 9 }), true), Outcome::Stopped { frames: 9 });
+        assert_eq!(ending(None, true), Outcome::Stopped { frames: 0 }, "stopped before anything started");
+        assert_eq!(ending(None, false), Outcome::Finished { frames: 0 });
+        let failed = Outcome::Failed { frames: 3, error: SinkError::DeviceLost };
+        assert_eq!(ending(Some(&failed), true), failed, "a device failure is said as it is");
     }
 
     #[test]

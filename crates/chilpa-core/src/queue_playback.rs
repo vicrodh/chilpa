@@ -1369,9 +1369,10 @@ where
             format_args!("after={:?} format={format:?} final=true mode={closing}", started.elapsed()),
         );
     }
-    // Every track it reached was on a server that did not answer: that is
-    // what the window says, not that the queue ended.
-    if let (true, Some(error)) = (results.is_empty(), passed_over) {
+    // Every track it reached would not open: that is what the window says,
+    // not that the queue ended. Unless a stop came meanwhile: that is no
+    // failure.
+    if let (true, Some(error), false) = (results.is_empty(), passed_over, stop.is_stopped()) {
         return Err(error);
     }
     Ok(results)

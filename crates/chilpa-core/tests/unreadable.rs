@@ -12,7 +12,7 @@ use chilpa_audio::render::Outcome;
 use chilpa_audio::sink::{AudioSink, SinkError};
 use chilpa_core::playback::PlayError;
 use chilpa_core::player::{Player, PlayerEvent};
-use chilpa_core::queue_playback::{play_queue_with, Controls, Repeat, SharedQueue, TrackResult};
+use chilpa_core::queue_playback::{play_queue_told, play_queue_with, Controls, Repeat, SharedQueue, TrackResult};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -531,6 +531,87 @@ fn a_next_asked_while_a_track_is_refused_is_spent_on_passing_it() {
     let results = result.expect("the queue went on");
     assert_eq!(started, [1, 2]);
     assert_eq!(results[0].outcome, Outcome::Finished { frames: 4_410 }, "the track after the refused one played whole");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+
+#[test]
+fn a_stop_while_a_track_is_refused_is_no_failure_of_the_queue() {
+    let dir = folder("stop-refused");
+    let tracks = vec![garbage(&dir, "01.flac"), wave(&dir, "02.wav")];
+    let controls = Controls::new();
+    let stop = controls.stop.clone();
+    let mut started = Vec::new();
+    // The stop arrives while the refused track is being opened.
+    let result = play_queue_told(
+        &SharedQueue::new(tracks),
+        &caps(),
+        Policy::AllowAnything,
+        &controls,
+        |format| Ok(Fake { format, written: 0, lost_after: None }),
+        &mut |index, _, _, _| started.push(index),
+        &mut |_, _| {},
+        &mut |_, _, _, _| stop.stop(),
+    );
+    let results = result.expect("a stop is not the refused track's error");
+    assert!(results.is_empty() && started.is_empty(), "nothing started after the stop: {started:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+/// A named pipe with an audio name. Opening it waits until something writes
+/// to it: the first receiver says the player is in that open, and what is
+/// sent on the sender lets it read bytes that are no audio and fail.
+#[cfg(unix)]
+fn pipe(dir: &Path, name: &str) -> (PathBuf, std::sync::mpsc::Receiver<()>, std::sync::mpsc::Sender<()>) {
+    let path = dir.join(name);
+    assert!(std::process::Command::new("mkfifo").arg(&path).status().unwrap().success());
+    let (opened, opened_seen) = std::sync::mpsc::channel();
+    let (go, go_seen) = std::sync::mpsc::channel::<()>();
+    let writer = path.clone();
+    std::thread::spawn(move || {
+        let mut pipe = std::fs::OpenOptions::new().write(true).open(writer).unwrap();
+        let _ = opened.send(());
+        if go_seen.recv().is_ok() {
+            let _ = pipe.write_all(&b"this is text and no audio at all. ".repeat(256));
+        }
+    });
+    (path, opened_seen, go)
+}
+
+#[cfg(unix)]
+#[test]
+fn a_stop_while_the_first_track_fails_to_open_ends_the_play_as_stopped() {
+    let dir = folder("stop-refusing-first");
+    let (pipe, opened, go) = pipe(&dir, "01.flac");
+    let tracks = [pipe, wave(&dir, "02.wav")];
+    let player = player();
+    player.play_all(&tracks, "fake");
+    opened.recv_timeout(Duration::from_secs(10)).expect("the player is opening the first track");
+    player.stop();
+    go.send(()).unwrap();
+    let events = events_until_over(&player);
+    assert!(started(&events).is_empty(), "nothing started after the stop: {events:?}");
+    assert!(matches!(events.last(), Some(PlayerEvent::Stopped { .. })), "a stop, not the track's error: {events:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[cfg(unix)]
+#[test]
+fn a_stop_while_a_later_track_fails_to_open_ends_the_play_as_stopped() {
+    let dir = folder("stop-refusing-later");
+    let (pipe, opened, go) = pipe(&dir, "02.flac");
+    let tracks = [wave(&dir, "01.wav"), pipe];
+    let player = player();
+    // Without gapless nothing is opened ahead: the pipe is opened once the
+    // first track is over.
+    player.set_gapless(false);
+    player.play_all(&tracks, "fake");
+    opened.recv_timeout(Duration::from_secs(10)).expect("the player is opening the second track");
+    player.stop();
+    go.send(()).unwrap();
+    let events = events_until_over(&player);
+    assert_eq!(started(&events), [0]);
+    assert!(matches!(events.last(), Some(PlayerEvent::Stopped { .. })), "a stop, not a queue that ran out: {events:?}");
     let _ = std::fs::remove_dir_all(dir);
 }
 
