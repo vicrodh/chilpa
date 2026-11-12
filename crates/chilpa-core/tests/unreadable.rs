@@ -241,8 +241,7 @@ fn a_lap_where_every_track_breaks_ends_the_queue_under_repeat_all() {
     controls.repeat.set(Repeat::All);
     let (started, result) = run(&tracks, &controls);
     let results = result.expect("the queue ends");
-    assert!(results.len() > 1, "it went past the first broken track: {started:?}");
-    assert!(results.len() <= tracks.len() + 1, "one lap and no more: {started:?}");
+    assert_eq!(results.len(), tracks.len(), "each broken track is heard once, one lap and no more: {started:?}");
     assert!(results.iter().all(|r| matches!(r.outcome, Outcome::Unreadable { .. })));
     let _ = std::fs::remove_dir_all(dir);
 }
@@ -449,7 +448,7 @@ fn a_lap_where_nothing_opens_says_each_once_and_fails_with_the_last_reason() {
     player.play_all(&tracks, "fake");
     let events = events_until_over(&player);
     let passed = events.iter().filter(|event| matches!(event, PlayerEvent::Skipped { .. })).count();
-    assert!(passed <= tracks.len() + 1, "one lap and no more: {passed}");
+    assert_eq!(passed, tracks.len(), "each one once, one lap and no more");
     assert!(matches!(events.last(), Some(PlayerEvent::Failed { .. })), "{events:?}");
     let _ = std::fs::remove_dir_all(dir);
 }
@@ -612,6 +611,39 @@ fn a_stop_while_a_later_track_fails_to_open_ends_the_play_as_stopped() {
     let events = events_until_over(&player);
     assert_eq!(started(&events), [0]);
     assert!(matches!(events.last(), Some(PlayerEvent::Stopped { .. })), "a stop, not a queue that ran out: {events:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+
+#[test]
+fn under_repeat_all_a_track_passed_over_comes_up_once_and_not_every_lap() {
+    let dir = folder("repeat-all-laps");
+    let tracks = vec![wave(&dir, "01.wav"), garbage(&dir, "02.flac"), broken_dsf(&dir, "03.dsf"), wave(&dir, "04.wav")];
+    let controls = Controls::new();
+    controls.repeat.set(Repeat::All);
+    // Nobody drives the queue from outside, as when the window does not read
+    // the player's events: after a few laps the test stops it.
+    let stop = controls.stop.clone();
+    let (mut started, mut passed) = (Vec::new(), Vec::new());
+    let result = play_queue_told(
+        &SharedQueue::new(tracks),
+        &caps(),
+        Policy::AllowAnything,
+        &controls,
+        |format| Ok(Fake { format, written: 0, lost_after: None }),
+        &mut |index, _, _, _| {
+            started.push(index);
+            if started.len() >= 9 {
+                stop.stop();
+            }
+        },
+        &mut |_, _| {},
+        &mut |index, _, _, _| passed.push(index),
+    );
+    assert!(result.is_ok(), "{:?}", result.err());
+    assert_eq!(passed, [1, 2], "each one is said once: {passed:?}");
+    assert_eq!(started.iter().filter(|&&index| index == 2).count(), 1, "the broken track is not heard again each lap: {started:?}");
+    assert!(started.iter().filter(|&&index| index == 0).count() >= 3, "it did go round: {started:?}");
     let _ = std::fs::remove_dir_all(dir);
 }
 

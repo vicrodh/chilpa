@@ -967,8 +967,11 @@ where
                     "source_passed_over",
                     format_args!("after={:?} path={path:?} error={error}", source_started.elapsed()),
                 );
+                // Left out of the laps that follow by the queue itself, not
+                // only once whoever drives it reads the word.
                 if error.is_track() {
                     on_passed(index, path, &error.to_string(), None);
+                    queue.remove(index);
                 }
                 // A seek or a Next asked for while it opened was meant for it:
                 // what comes next starts at its beginning and is not skipped.
@@ -1301,11 +1304,13 @@ where
         });
         // A track that broke partway is the track's fault, not the device's:
         // what the device holds of it is heard and the queue goes on as after
-        // a natural end, without repeating it. It counts with the tracks that
-        // would not open, so a lap where nothing played whole ends the queue.
+        // a natural end, without repeating it, now or on a later lap. It
+        // counts with the tracks that would not open, so a lap where nothing
+        // played whole ends the queue.
         let broken = matches!(outcome, Outcome::Unreadable { .. });
         if let Outcome::Unreadable { frames, reason } = &outcome {
             on_passed(index, path, reason, Some(*frames));
+            queue.remove(index);
         }
         let finished_ok = outcome.may_advance_queue() || broken;
         ended_by_itself = finished_ok && !skipped;
