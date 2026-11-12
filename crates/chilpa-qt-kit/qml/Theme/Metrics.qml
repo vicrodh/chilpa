@@ -336,6 +336,11 @@ QtObject {
     readonly property int offlineTrackRow: 44
     readonly property int offlineRail: 210
     readonly property int offlineUsageBar: 8
+    // A track's offline state around its menu button, and the line of a
+    // selection's progress drawn over its page's header rule.
+    readonly property int offlineRing: 20
+    readonly property int offlineRingStroke: 2
+    readonly property int offlineLine: 2
     // The results page, as QBZ's (SearchView): a rail of thirty at most, six
     // songs on All and six more at a time, and twenty more at a time on a tab
     // of its own. Records page up to three rows at a time.

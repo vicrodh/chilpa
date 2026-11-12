@@ -2,14 +2,16 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.offline
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/offline/qml/Primitives"
 
 // What a track offers at its end, always in sight: the heart that makes it
-// a favorite and the button that opens its menu. Each is its whole cell, as
-// tall as the row, so the icon does not have to be aimed at. It has no
-// mouse handling of its own: the list tells it which one the pointer is on
-// and resolves the click.
+// a favorite and the button that opens its menu, with the track's offline
+// state around it. Each is its whole cell, as tall as the row, so the icon
+// does not have to be aimed at. It has no mouse handling of its own: the
+// list tells it which one the pointer is on and resolves the click.
 Item {
     id: end
 
@@ -41,7 +43,7 @@ Item {
         if (hovered === 0)
             TipState.hide(end)
         else
-            TipState.show(hovered === 2 ? I18n.tr("More", I18n.rev)
+            TipState.show(hovered === 2 ? [I18n.tr("More", I18n.rev), Offline.tip(trackId, Offline.rev)].filter(text => text !== "").join("\n")
                 : favorite ? I18n.tr("Remove from favorites", I18n.rev)
                 : I18n.tr("Add to favorites", I18n.rev), end)
     }
@@ -87,5 +89,15 @@ Item {
                 sourceComponent: BusyMark { clock: Pulse; size: Metrics.iconSm; color: Theme.color.accent }
             }
         }
+    }
+    // The track's offline state, around the menu button.
+    Loader {
+        id: offline
+        objectName: "trackOfflineMark"
+        readonly property string phase: Offline.state(end.trackId, Offline.rev)
+        x: Metrics.rowAction + (Metrics.rowAction - width) / 2 // derived: centred on the menu's cell
+        anchors.verticalCenter: parent.verticalCenter
+        active: phase !== ""
+        sourceComponent: OfflineMark { clock: Pulse; phase: offline.phase; fraction: Offline.fraction(end.trackId, Offline.rev); inViewport: end.inViewport }
     }
 }

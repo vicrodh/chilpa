@@ -1,8 +1,10 @@
 import QtQuick
+import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Patterns"
 import "../Components"
+import "../Primitives"
 
 TitledFlow {
     title: "Offline music"
@@ -16,4 +18,12 @@ TitledFlow {
         doc: ({servers: [{id: 7, name: "Music server", icon: "navidrome", files: 2, size: "61 MiB", folder: "", inherited: "file:///music/offline/Navidrome/"}]}) }
     OfflineRow { width: Metrics.settingsMaxWidth; row: ({kind: "track", id: 1, title: "Track", artist: "Artist", number: 1, duration: "3:07", state: "complete"}) }
     OfflineRootFolder { width: Metrics.confirmWidth }
+    // A track's mark in each state, the arc alone, a selection's line.
+    Repeater {
+        model: ["queued", "downloading", "verifying", "ready", "failed"]
+        OfflineMark { required property string modelData; clock: Pulse; phase: modelData; fraction: modelData === "downloading" ? 0.6 : -1 }
+    }
+    OfflineArc { clock: Pulse; width: Metrics.offlineRing; height: Metrics.offlineRing }
+    OfflineLine { width: Metrics.confirmWidth; kind: "album"; selected: "[1]" }
+    OfflineActivity { listening: false }
 }

@@ -32,11 +32,9 @@ CascadingMenu {
             entry.filled = entry.act === "play"
             return entry
         })
-        const chosen = model.chosenTrackIdsJson(row)
-        if (JSON.parse(Offline.call("info", "tracks", chosen)).count > 0) {
-            if (entries.length > 0) entries = entries.concat([{separator:true}])
-            entries = entries.concat([{act:"offline",text:I18n.tr("Make available offline…", I18n.rev)}])
-        }
+        // Offline happens here, in place: the rows show how it goes.
+        const offline = JSON.parse(Offline.menu("tracks", model.chosenTrackIdsJson(row)))
+        if (offline.length > 0) entries = entries.concat(entries.length > 0 ? [{separator:true}] : [], offline)
         if (entries.length === 0) return
         x = left
         y = top
@@ -45,8 +43,8 @@ CascadingMenu {
 
     onActionChosen: (entry) => {
         const act = entry.act
-        if (act === "offline") {
-            Offline.requested("tracks", model.chosenTrackIdsJson(row))
+        if (act.startsWith("offline:")) {
+            Offline.call(act.split(":")[1], "tracks", model.chosenTrackIdsJson(row))
             return
         }
         if (act === "remove") {

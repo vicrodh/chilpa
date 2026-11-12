@@ -151,9 +151,6 @@ msgstr "A device operation is still running."
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr "A device selection can contain at most 50,000 files and playlists."
 
-msgid "A download is still in progress."
-msgstr "A download is still in progress."
-
 msgid "A folder chosen before"
 msgstr ""
 
@@ -834,6 +831,9 @@ msgstr "Available"
 msgid "Available GPUs"
 msgstr "Available GPUs"
 
+msgid "Available offline"
+msgstr ""
+
 msgid "Available version"
 msgstr ""
 
@@ -1436,7 +1436,7 @@ msgstr ""
 msgid "Choose where to open this music"
 msgstr ""
 
-msgid "Choose “Make available offline…” in the menu of a server's album, playlist or tracks."
+msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
 msgstr ""
 
 msgid "Clean"
@@ -2285,13 +2285,13 @@ msgstr "Download cancelled."
 msgid "Download track"
 msgstr "Download track"
 
-msgid "Download {} server tracks for offline listening."
-msgstr "Download {} server tracks for offline listening."
-
 msgid "Downloaded"
 msgstr "Downloaded"
 
 msgid "Downloading episodes…"
+msgstr ""
+
+msgid "Downloading for offline listening"
 msgstr ""
 
 msgid "Downloading update…"
@@ -3752,8 +3752,8 @@ msgstr ""
 msgid "Maintenance"
 msgstr ""
 
-msgid "Make available offline…"
-msgstr "Make available offline…"
+msgid "Make available offline"
+msgstr ""
 
 msgid "Make it yours"
 msgstr "Make it yours"
@@ -4503,6 +4503,9 @@ msgid "Off"
 msgstr ""
 
 msgid "Offline"
+msgstr ""
+
+msgid "Offline download failed"
 msgstr ""
 
 msgid "Offline folder"
@@ -5282,6 +5285,9 @@ msgstr ""
 msgid "Ratings are not synced with it."
 msgstr ""
 
+msgid "Re-download"
+msgstr ""
+
 msgid "Re-fetch album information"
 msgstr "Re-fetch album information"
 
@@ -5519,6 +5525,11 @@ msgstr ""
 msgid "Remove image"
 msgstr ""
 
+msgid "Remove offline copy"
+msgid_plural "Remove offline copies"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "Remove one condition to get results:"
 msgstr ""
 
@@ -5547,6 +5558,9 @@ msgid "Remove {}?"
 msgstr ""
 
 msgid "Remove…"
+msgstr ""
+
+msgid "Removing offline copy"
 msgstr ""
 
 msgid "Removing saved profile…"
@@ -5676,6 +5690,9 @@ msgid "Resume"
 msgstr ""
 
 msgid "Retry"
+msgstr ""
+
+msgid "Retry download"
 msgstr ""
 
 msgid "Revert"
@@ -7813,6 +7830,9 @@ msgid "Waiting for {} to come back… ({} track read)"
 msgid_plural "Waiting for {} to come back… ({} tracks read)"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "Waiting in the offline queue"
+msgstr ""
 
 msgid "Wallpaper"
 msgstr ""

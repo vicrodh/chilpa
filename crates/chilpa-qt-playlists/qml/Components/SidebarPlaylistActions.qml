@@ -64,8 +64,8 @@ Item {
             {text: I18n.tr("Move up", I18n.rev), action: "move", value: -1},
             {text: I18n.tr("Move down", I18n.rev), action: "move", value: 1}])
         if (!folder) entries.push({separator:true},{text:I18n.tr("Move to folder…",I18n.rev),action:"moveFolder"})
-        if (!folder && value.playlistId > 0 && JSON.parse(Offline.call("info", "playlist", JSON.stringify([value.playlistId]))).count > 0)
-            entries.push({text:I18n.tr("Make available offline…", I18n.rev),action:"offline"})
+        if (!folder && value.playlistId > 0)
+            entries = entries.concat(JSON.parse(Offline.menu("playlist", JSON.stringify([value.playlistId]))).map(entry => ({text: entry.text, action: entry.act})))
         if (folder && value.nativeRef) entries = [{text:I18n.tr("Edit folder",I18n.rev),action:"editNativeFolder"}]
         menu.entries = entries
         menu.x = left; menu.y = top; menu.open()
@@ -87,8 +87,9 @@ Item {
         heightLimit: actions.sidebar.height
         onChosen: index => {
             const item = entries[index], row = actions.selected
+            // Offline happens where the listener is; the rows show how it goes.
+            if ((item.action || "").startsWith("offline:")) return Offline.call(item.action.split(":")[1], "playlist", JSON.stringify([row.playlistId]))
             switch (item.action) {
-            case "offline": Offline.requested("playlist", JSON.stringify([row.playlistId])); break
             case "create": actions.createPlaylist(); break
             case "import": Navigation.go("playlistImport", 0); break
             case "folder": folderDialog.show(0, "", "accent"); break

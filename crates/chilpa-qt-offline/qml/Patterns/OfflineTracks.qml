@@ -168,7 +168,7 @@ Item {
         Text {
             width: parent.width
             visible: (tracks.doc.files || 0) === 0
-            text: I18n.tr("Choose “Make available offline…” in the menu of a server's album, playlist or tracks.", I18n.rev)
+            text: I18n.tr("Choose “Make available offline” in the menu of a server's album, playlist or tracks.", I18n.rev)
             textFormat: Text.PlainText; wrapMode: Text.WordWrap
             font.pointSize: Type.small; color: Theme.color.textSecondary
         }

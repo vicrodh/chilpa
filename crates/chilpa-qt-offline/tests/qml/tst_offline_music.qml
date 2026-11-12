@@ -41,7 +41,6 @@ TestCase {
         Offline.calls = []
         Offline.info = {count: 2}
         Offline.status = {running: false, total: 0}
-        Offline.selection = {kind: "downloads", selected: "[]", count: 0}
         Offline.doc = listing(false)
         Offline.revision = 1
         Offline.loading = false
@@ -59,10 +58,9 @@ TestCase {
         mouseClick(findChild(servers, "offlineDownloads"))
         compare(Navigation.page, "offlineMusic")
         compare(Navigation.selectedId, 0)
-        verify(calls("stage").some(call => call[1] === "downloads"), "it clears a menu's old choice")
         compare(findChild(host, "serverOfflineDialog"), null)
         const page = open()
-        compare(findChild(page, "offlineSelection").visible, false, "nothing chosen, nothing to download")
+        compare(findChild(page, "offlineSelection"), null, "the page offers no menu's choice: menus act in place")
     }
 
     function test_with_nothing_kept_it_says_how_to_keep_some() {
@@ -91,17 +89,6 @@ TestCase {
         compare(asked.server, 9)
         findChild(page, "offlineFailedOnly").clicked()
         compare(JSON.parse(calls("manager").pop()[2]).failed, true)
-    }
-
-    function test_a_menu_choice_is_offered_and_downloaded_only_by_its_button() {
-        Offline.selection = {kind: "album", selected: "[17]", count: 12}
-        const page = open()
-        const offer = findChild(page, "offlineSelection")
-        verify(offer.visible)
-        verify(calls("start").length === 0, "opening only reads")
-        mouseClick(findChild(page, "startOfflineDownload"))
-        verify(calls("start").some(call => call[1] === "album" && call[2] === "[17]"))
-        compare(page.busy, true)
     }
 
     function test_downloading_shows_its_progress_and_blocks_other_jobs_until_cancelled() {

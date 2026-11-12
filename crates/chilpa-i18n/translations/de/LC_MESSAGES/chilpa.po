@@ -151,9 +151,6 @@ msgstr ""
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr ""
 
-msgid "A download is still in progress."
-msgstr "Ein Download läuft noch."
-
 msgid "A folder chosen before"
 msgstr "Ein früher gewählter Ordner"
 
@@ -834,6 +831,9 @@ msgstr "Verfügbar"
 msgid "Available GPUs"
 msgstr "Verfügbare GPUs"
 
+msgid "Available offline"
+msgstr "Offline verfügbar"
+
 msgid "Available version"
 msgstr "Verfügbare Version"
 
@@ -1436,8 +1436,8 @@ msgstr ""
 msgid "Choose where to open this music"
 msgstr ""
 
-msgid "Choose “Make available offline…” in the menu of a server's album, playlist or tracks."
-msgstr "Wähle „Offline verfügbar machen…“ im Menü eines Albums, einer Playlist oder von Titeln eines Servers."
+msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
+msgstr "Wähle „Offline verfügbar machen“ im Menü eines Albums, einer Playlist oder von Titeln eines Servers."
 
 msgid "Clean"
 msgstr "Unbedenklich"
@@ -2285,14 +2285,14 @@ msgstr "Download abgebrochen."
 msgid "Download track"
 msgstr "Titel herunterladen"
 
-msgid "Download {} server tracks for offline listening."
-msgstr "{} Servertitel zum Offline-Hören herunterladen."
-
 msgid "Downloaded"
 msgstr "Heruntergeladen"
 
 msgid "Downloading episodes…"
 msgstr ""
+
+msgid "Downloading for offline listening"
+msgstr "Wird für die Offline-Wiedergabe heruntergeladen"
 
 msgid "Downloading update…"
 msgstr "Update wird heruntergeladen…"
@@ -3752,8 +3752,8 @@ msgstr "Magazin"
 msgid "Maintenance"
 msgstr "Wartung"
 
-msgid "Make available offline…"
-msgstr "Offline verfügbar machen…"
+msgid "Make available offline"
+msgstr "Offline verfügbar machen"
 
 msgid "Make it yours"
 msgstr "Mach es zu deinem"
@@ -4504,6 +4504,9 @@ msgstr "Aus"
 
 msgid "Offline"
 msgstr ""
+
+msgid "Offline download failed"
+msgstr "Offline-Download fehlgeschlagen"
 
 msgid "Offline folder"
 msgstr "Offline-Ordner"
@@ -5282,6 +5285,9 @@ msgstr "Bewertungen"
 msgid "Ratings are not synced with it."
 msgstr "Bewertungen werden mit diesem Server nicht synchronisiert."
 
+msgid "Re-download"
+msgstr "Erneut herunterladen"
+
 msgid "Re-fetch album information"
 msgstr "Albuminformationen erneut abrufen"
 
@@ -5519,6 +5525,11 @@ msgstr "Gruppe entfernen"
 msgid "Remove image"
 msgstr "Bild entfernen"
 
+msgid "Remove offline copy"
+msgid_plural "Remove offline copies"
+msgstr[0] "Offline-Kopie entfernen"
+msgstr[1] "Offline-Kopien entfernen"
+
 msgid "Remove one condition to get results:"
 msgstr "Entferne eine Bedingung, um Ergebnisse zu erhalten:"
 
@@ -5548,6 +5559,9 @@ msgstr "{} entfernen?"
 
 msgid "Remove…"
 msgstr "Entfernen…"
+
+msgid "Removing offline copy"
+msgstr "Offline-Kopie wird entfernt"
 
 msgid "Removing saved profile…"
 msgstr ""
@@ -5677,6 +5691,9 @@ msgstr "Fortsetzen"
 
 msgid "Retry"
 msgstr "Erneut versuchen"
+
+msgid "Retry download"
+msgstr "Download erneut versuchen"
 
 msgid "Revert"
 msgstr "Verwerfen"
@@ -7813,6 +7830,9 @@ msgid "Waiting for {} to come back… ({} track read)"
 msgid_plural "Waiting for {} to come back… ({} tracks read)"
 msgstr[0] "Warte, bis {} wieder erreichbar ist… ({} Titel gelesen)"
 msgstr[1] "Warte, bis {} wieder erreichbar ist… ({} Titel gelesen)"
+
+msgid "Waiting in the offline queue"
+msgstr "Wartet in der Offline-Warteschlange"
 
 msgid "Wallpaper"
 msgstr "Hintergrundbild"

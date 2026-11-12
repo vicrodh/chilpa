@@ -13,6 +13,7 @@ import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/artwork/qml/Components"
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Components" as Lists
+import "qrc:/qt/qml/app/chilpa/offline/qml/Components" as OfflineParts
 
 // A record (design/06 Album): its header, the bar with discs and where the
 // information comes from, and its tracks with a header per disc.
@@ -116,7 +117,8 @@ Flickable {
             }
         }
 
-        Rectangle { width: parent.width; height: 1; color: Theme.color.strokeHairline }
+        // The header's rule, which also says how the record made available offline goes.
+        OfflineParts.OfflineLine { objectName: "albumOfflineLine"; width: parent.width; kind: "album"; selected: JSON.stringify([detail.selectedId]) }
 
         Item {
             width: parent.width
