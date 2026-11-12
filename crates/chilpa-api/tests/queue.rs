@@ -1044,3 +1044,47 @@ fn a_track_that_breaks_partway_is_logged_as_cut_short() {
     assert_eq!(logged.skips, 2, "the two that broke, in the middle of the queue and at its end, are cut short: {logged:?}");
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn a_stop_mark_on_a_later_copy_of_a_refused_track_still_stops_the_queue() {
+    let dir = folder("refused-copy-stop-after");
+    other_library(&dir);
+    english();
+    let _realtime = Realtime::on();
+    let refused = garbage_file(&dir, "01.flac");
+    let paths = strings(&[refused.clone(), wave(&dir, "02.wav", SHORT), refused, wave(&dir, "04.wav", SHORT)]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.set_repeat(chilpa_api::Repeat::One);
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    assert!(wait_started(&mut chilpa));
+    assert_eq!(chilpa.now_playing().index, 1, "the first copy was refused");
+    assert!(chilpa.set_stop_after(Some(2)), "a mark on the later copy is taken");
+    chilpa.next_track();
+    let heard = heard(&mut chilpa, std::time::Duration::from_secs(3));
+    assert!(!heard.contains(&3), "what follows the mark never plays: {heard:?}");
+    assert!(!chilpa.now_playing().playing, "the queue stopped at the mark");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_stop_mark_put_on_a_copy_already_left_out_still_stops_the_queue() {
+    let dir = folder("refused-copy-left-out-stop-after");
+    other_library(&dir);
+    english();
+    let _realtime = Realtime::on();
+    let refused = garbage_file(&dir, "01.flac");
+    let paths = strings(&[refused.clone(), wave(&dir, "02.wav", SHORT * 3), refused, wave(&dir, "04.wav", SHORT)]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    assert!(wait_started(&mut chilpa));
+    assert_eq!(chilpa.now_playing().index, 1, "the first copy was refused");
+    // The later copy was taken out of the player's walk when the second
+    // track started; the mark goes on it afterwards.
+    assert!(chilpa.set_stop_after(Some(2)), "a mark on the later copy is taken");
+    let heard = heard(&mut chilpa, std::time::Duration::from_secs(3));
+    assert!(!heard.contains(&3), "what follows the mark never plays: {heard:?}");
+    assert!(!chilpa.now_playing().playing, "the queue stopped at the mark");
+    let _ = std::fs::remove_dir_all(dir);
+}

@@ -647,3 +647,27 @@ fn under_repeat_all_a_track_passed_over_comes_up_once_and_not_every_lap() {
     let _ = std::fs::remove_dir_all(dir);
 }
 
+
+#[test]
+fn a_stop_mark_on_a_position_left_out_ends_the_queue_there() {
+    let dir = folder("mark-left-out");
+    let queue = SharedQueue::new(vec![wave(&dir, "01.wav"), wave(&dir, "02.wav"), wave(&dir, "03.wav")]);
+    // Left out by whoever drives the queue, with the stop mark on it.
+    queue.remove(1);
+    let controls = Controls::new();
+    controls.stop_after.set(Some(1));
+    let mut started = Vec::new();
+    let results = play_queue_with(
+        &queue,
+        &caps(),
+        Policy::AllowAnything,
+        &controls,
+        |format| Ok(Fake { format, written: 0, lost_after: None }),
+        &mut |index, _, _| started.push(index),
+        &mut |_, _| {},
+    )
+    .expect("the queue ends at the mark");
+    assert_eq!(started, [0], "what follows the mark never plays");
+    assert_eq!(results.len(), 1);
+    let _ = std::fs::remove_dir_all(dir);
+}
