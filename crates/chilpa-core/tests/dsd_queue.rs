@@ -138,6 +138,129 @@ fn truncated_dsd_is_said_and_passed_over_in_every_delivery_mode() {
     std::fs::remove_file(next).unwrap();
 }
 
+/// What a device was given, opening by opening, and whether each was played
+/// out or had what it held thrown away.
+#[derive(Default)]
+struct Openings {
+    bytes: Vec<Vec<u8>>,
+    drained: Vec<bool>,
+    flushed: Vec<bool>,
+}
+
+struct Record(StreamFormat, Arc<Mutex<Openings>>, usize);
+
+impl AudioSink for Record {
+    fn format(&self) -> StreamFormat {
+        self.0
+    }
+    fn write(&mut self, bytes: &[u8]) -> Result<usize, SinkError> {
+        self.1.lock().unwrap().bytes[self.2].extend_from_slice(bytes);
+        Ok(bytes.len() / self.0.frame_bytes())
+    }
+    fn drain(&mut self, _: &dyn Fn() -> bool) -> Result<(), SinkError> {
+        self.1.lock().unwrap().drained[self.2] = true;
+        Ok(())
+    }
+    fn flush(&mut self) -> Result<(), SinkError> {
+        self.1.lock().unwrap().flushed[self.2] = true;
+        Ok(())
+    }
+    fn close(&mut self) -> Result<(), SinkError> {
+        Ok(())
+    }
+}
+
+/// Plays `tracks` in one delivery mode and keeps what each opening got.
+fn record(tracks: &[PathBuf], mode: DsdMode, format: SampleFormat, rate: u32, gapless: bool) -> Openings {
+    let caps = DeviceCaps { sample_rates: vec![rate], formats: vec![format], channels: vec![2], probed: true };
+    let controls = Controls::new();
+    controls.dsd_mode.set(mode);
+    controls.direct_dsd.set(true);
+    controls.gapless.set(gapless);
+    let kept = Arc::new(Mutex::new(Openings::default()));
+    play_queue_with(
+        &SharedQueue::new(tracks.to_vec()),
+        &caps,
+        Policy::AllowAnything,
+        &controls,
+        |opened| {
+            let mut openings = kept.lock().unwrap();
+            openings.bytes.push(Vec::new());
+            openings.drained.push(false);
+            openings.flushed.push(false);
+            Ok(Record(opened, Arc::clone(&kept), openings.bytes.len() - 1))
+        },
+        &mut |_, _, _| {},
+        &mut |_, _| {},
+    )
+    .expect("the queue reports each track");
+    let openings = std::mem::take(&mut *kept.lock().unwrap());
+    openings
+}
+
+/// The DoP marker of each frame: the top byte of each left-justified 24 bit
+/// word, the same on both channels.
+fn markers(bytes: &[u8]) -> Vec<u8> {
+    bytes.chunks_exact(8).map(|frame| {
+        assert_eq!(frame[3], frame[7], "both channels of a frame carry one marker");
+        frame[3]
+    }).collect()
+}
+
+/// What DoP carries once its markers are left out.
+fn payload(bytes: &[u8]) -> Vec<u8> {
+    bytes.chunks_exact(4).flat_map(|word| [word[1], word[2]]).collect()
+}
+
+fn alternates(markers: &[u8]) -> bool {
+    markers.iter().all(|m| *m == 0x05 || *m == 0xFA) && markers.windows(2).all(|pair| pair[0] != pair[1])
+}
+
+#[test]
+fn after_a_truncated_track_the_next_one_is_heard_whole_in_every_delivery_mode() {
+    let broken = dsf("transition-truncated", 1);
+    let next = dsf_of("transition-next", u64::from(RATE) / 4);
+    let file = std::fs::OpenOptions::new().write(true).open(&broken).unwrap();
+    file.set_len(file.metadata().unwrap().len() - 1).unwrap();
+    for (mode, format, rate) in [
+        (DsdMode::Pcm, SampleFormat::S24In32, 88_200),
+        (DsdMode::Dop, SampleFormat::S24In32, 176_400),
+        (DsdMode::Native, SampleFormat::DsdU32Be, 88_200),
+    ] {
+        let alone = record(std::slice::from_ref(&next), mode, format, rate, true);
+        assert_eq!(alone.bytes.len(), 1, "{mode:?}");
+        let alone = &alone.bytes[0];
+        assert!(!alone.is_empty(), "{mode:?}");
+
+        // Gapless: one opening, the next track right after what the broken
+        // one delivered, nothing of it thrown away.
+        let kept = record(&[broken.clone(), next.clone()], mode, format, rate, true);
+        assert_eq!(kept.bytes.len(), 1, "{mode:?}: the device stays open across the break");
+        let bytes = &kept.bytes[0];
+        assert!(bytes.len() > alone.len(), "{mode:?}: the broken track delivered its first part");
+        assert!(!kept.flushed[0], "{mode:?}: what the broken track delivered is heard, not thrown away");
+        let tail = &bytes[bytes.len() - alone.len()..];
+        if mode == DsdMode::Dop {
+            assert_eq!(payload(tail), payload(alone), "{mode:?}: every frame of the next track");
+            assert!(alternates(&markers(bytes)), "{mode:?}: the marker carries on across the break");
+        } else {
+            assert!(tail == &alone[..], "{mode:?}: every frame of the next track, unchanged");
+        }
+
+        // Without gapless: what the device held of the broken track is played
+        // out, and the next track gets an opening of its own.
+        let reopened = record(&[broken.clone(), next.clone()], mode, format, rate, false);
+        assert_eq!(reopened.bytes.len(), 2, "{mode:?}: the device is opened again");
+        assert!(reopened.drained[0], "{mode:?}: the broken track's last part was played out");
+        assert!(reopened.bytes[1] == *alone, "{mode:?}: the next track from a fresh opening, as when alone");
+        if mode == DsdMode::Dop {
+            assert_eq!(markers(&reopened.bytes[1]).first(), Some(&0x05), "the marker starts over with the opening");
+        }
+    }
+    std::fs::remove_file(broken).unwrap();
+    std::fs::remove_file(next).unwrap();
+}
+
 #[test]
 fn a_dsd_album_plays_past_its_first_track() {
     let tracks = [dsf("one", 1), dsf("two", 1), dsf("three", 1)];
