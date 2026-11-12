@@ -252,17 +252,21 @@ impl qobject::Library {
         let (filter, order) = browse::read(|s| (s.filter.clone(), s.order));
         let thread = self.qt_thread();
         worker::submit(move |reader| {
-            let Some((facets, snapshot)) = reader.refresh(&filter, order, || requested.load(std::sync::atomic::Ordering::Relaxed) == generation) else { return };
+            // The first reading is never given up: the startup cover waits for it.
+            let Some((facets, snapshot)) = reader.refresh(&filter, order, || generation == 1 || requested.load(std::sync::atomic::Ordering::Relaxed) == generation) else { return };
             let _ = thread.queue(move |library| library.arrive(generation, facets, snapshot));
         });
     }
 
+    /// An older request's answer is dropped, unless nothing was shown yet:
+    /// at startup new requests come faster than one is answered.
     fn arrive(mut self: Pin<&mut Self>, generation: u64, facets: Facets, snapshot: Snapshot) {
-        if generation != self.rust().generation {
+        let latest = generation == self.rust().generation;
+        if !latest && *self.rev() != 0 {
             return;
         }
         if browse::read(|s| s.snapshot.as_ref() == &snapshot && s.facets.as_ref() == &facets && s.page_revision == self.rust().content_rev) {
-            self.as_mut().set_busy(false);
+            self.as_mut().set_busy(!latest);
             return;
         }
         let totals = snapshot.totals;
@@ -280,7 +284,7 @@ impl qobject::Library {
         });
         let line = app::with(|api| api.library_summary(totals));
         self.as_mut().set_summary(QString::from(&line));
-        self.as_mut().set_busy(false);
+        self.as_mut().set_busy(!latest);
         let next = self.rev().wrapping_add(1);
         self.as_mut().set_rev(next);
     }

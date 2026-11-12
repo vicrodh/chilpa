@@ -111,7 +111,6 @@ TitledFlow {
     ArtistSources { source: "preview"; artist: "Maiden"; sources: [{ id: "preview", name: "Preview" }] }
     TrackStarsFilter { width: Metrics.sourcesPopoverWidth / 2; ratings: [5, 0] } // derived: a column of the popover
     SourceLibraryControls { source: "preview section:albums" }
-    StartupSplash { width: Metrics.confirmWidth; height: Metrics.panesHeight }
     PluginValidation { width: Metrics.confirmWidth; phase: "passed" }
     PluginRow { width: Metrics.confirmWidth; plugin: ({name: "Catalog source", light: "yellow"}) }
     PluginRow { width: Metrics.confirmWidth; plugin: ({name: "Third-party source", light: "native", third_party: true}) }

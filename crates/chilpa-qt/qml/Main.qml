@@ -156,8 +156,8 @@ Window {
         console.info("main window constructed")
     }
 
-    // Over everything while the plugins start.
-    StartupSplash { anchors.fill: parent; z: 1000 }
+    // Over everything until what has to be read before a click is read.
+    Driving.StartupSplash { anchors.fill: parent; z: 1000 }
     // A press outside the field that has the keyboard, or another view, takes it.
     FocusRelease { key: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.screen === "folders" ? "" : Navigation.routeKey].join(" ") }
 }

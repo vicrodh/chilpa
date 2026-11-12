@@ -168,3 +168,42 @@ fn an_external_commit_refreshes_invariant_facets_but_an_external_rollback_does_n
     assert!(absent.sources.is_empty());
     assert!(absent.years.is_empty());
 }
+
+/// The library's first reading, the one the startup cover waits for, while
+/// a server's sync holds the library in the middle of a page: it does not
+/// wait for the sync, and it does not show the page's unfinished part.
+#[test]
+fn the_first_reading_neither_waits_for_a_sync_nor_shows_its_unfinished_page() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("library.db");
+    let lib = chilpa_library::Library::open(&path).unwrap();
+    let local = lib.source_id("local", "default").unwrap();
+    lib.connection().execute_batch(&format!("INSERT INTO albums(id, title, album_artist, year) VALUES (1, 'First', 'Artist', 2000);
+        INSERT INTO tracks(source_id, external_id, title, album_id, added_at) VALUES ({local}, '/one.flac', 'One', 1, 1), ({local}, '/two.flac', 'Two', 1, 1);")).unwrap();
+    let (held, holding) = std::sync::mpsc::channel();
+    let (done, finish) = std::sync::mpsc::channel::<()>();
+    let writer = std::thread::spawn({
+        let path = path.clone();
+        move || {
+            let sync = chilpa_library::Library::open_existing(&path).unwrap();
+            sync.connection().execute_batch("BEGIN IMMEDIATE").unwrap();
+            for n in 0..500 {
+                sync.connection().execute("INSERT INTO tracks(source_id, external_id, title, album_id, added_at) VALUES (?1, ?2, 'Page', 1, 1)",
+                    rusqlite::params![local, format!("/page/{n}.flac")]).unwrap();
+            }
+            held.send(()).unwrap();
+            finish.recv().unwrap();
+            sync.connection().execute_batch("COMMIT").unwrap();
+        }
+    });
+    holding.recv().unwrap();
+    let reader = Reader::open(&path).unwrap();
+    let began = std::time::Instant::now();
+    let (_, snapshot) = reader.refresh(&Filter::default(), TrackOrder::Album, || true).unwrap();
+    assert!(began.elapsed() < std::time::Duration::from_secs(2), "the reading waited {:?} for the sync", began.elapsed());
+    assert_eq!(snapshot.totals.tracks, 2, "what the sync has not committed is not shown");
+    done.send(()).unwrap();
+    writer.join().unwrap();
+    let (_, snapshot) = reader.refresh(&Filter::default(), TrackOrder::Album, || true).unwrap();
+    assert_eq!(snapshot.totals.tracks, 502, "committed, the next reading has it");
+}

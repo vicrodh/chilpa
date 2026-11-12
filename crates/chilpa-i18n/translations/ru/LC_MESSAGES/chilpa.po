@@ -5344,6 +5344,9 @@ msgstr "Чтение выбранных треков…"
 msgid "Reading the files…"
 msgstr "Чтение файлов…"
 
+msgid "Reading the library…"
+msgstr "Чтение библиотеки…"
+
 msgid "Reading the media server's description and its folders…"
 msgstr "Читаем описание медиасервера и его папки…"
 

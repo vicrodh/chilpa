@@ -5334,6 +5334,9 @@ msgstr "選択したトラックを読み取っています…"
 msgid "Reading the files…"
 msgstr "ファイルを読み取っています…"
 
+msgid "Reading the library…"
+msgstr "ライブラリを読み込んでいます…"
+
 msgid "Reading the media server's description and its folders…"
 msgstr "メディアサーバーの説明とフォルダを読み込んでいます…"
 

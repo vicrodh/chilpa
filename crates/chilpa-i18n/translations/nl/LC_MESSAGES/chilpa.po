@@ -5339,6 +5339,9 @@ msgstr "Geselecteerde nummers lezen…"
 msgid "Reading the files…"
 msgstr "Bestanden lezen…"
 
+msgid "Reading the library…"
+msgstr "Bibliotheek lezen…"
+
 msgid "Reading the media server's description and its folders…"
 msgstr "De beschrijving van de mediaserver en zijn mappen worden gelezen…"
 

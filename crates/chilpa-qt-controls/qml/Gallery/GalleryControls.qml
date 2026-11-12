@@ -20,6 +20,8 @@ TitledFlow {
     SearchResultCard { row: ({kind: 3, title: "Record", detail: "Album · Artist", art: ""}) }
     SearchRail { width: Metrics.confirmWidth; title: "Albums"; rows: [{at: 0, kind: 3, title: "Record", detail: "Album · Artist", art: ""}]; card: Component { SearchResultCard { required property var modelData; row: modelData } } }
     QueueAbout { width: Metrics.listenArt; height: Metrics.listenArt }
+    StartupSplash { width: Metrics.confirmWidth; height: Metrics.panesHeight }
+    StartupTask { width: Metrics.confirmWidth; text: "Reading the library…" }
     ListenNow { width: Metrics.listenArt; height: Metrics.listenArt * 2 } // derived: the art and room for a tab under it
     SearchTabs { width: Metrics.confirmWidth; tabs: [{id: "all", text: "All"}, {id: "songs", text: "Tracks"}]; tab: "songs"; selectable: true; selecting: true }
     SearchSongs { width: Metrics.confirmWidth; rows: previewChosen.rows; chosen: previewChosen }
