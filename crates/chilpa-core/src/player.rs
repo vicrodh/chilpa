@@ -63,8 +63,10 @@ pub enum PlayerEvent {
     /// `play_from_index` returned it: whoever started another play since can
     /// tell it is not about the queue in front of them. `index` is its place
     /// in the queue the player was given; `message` says why, in text the
-    /// interface can show.
-    Skipped { generation: u64, index: usize, path: PathBuf, message: String },
+    /// interface can show. `played` is how many frames of it went out before
+    /// it broke, and `None` when it never opened: a track heard partway is a
+    /// listen cut short.
+    Skipped { generation: u64, index: usize, path: PathBuf, message: String, played: Option<u64> },
 }
 
 enum Order {
@@ -685,9 +687,9 @@ fn play(
         &mut |_, progress| {
             let _ = events.send(PlayerEvent::Progress { frames: progress.position, played: progress.delivered });
         },
-        &mut |index, path, why| {
-            chilpa_audio::diagnostics::trace("player", "track_passed_over", format_args!("index={index}/{total} path={path:?} why={why}"));
-            let _ = events.send(PlayerEvent::Skipped { generation, index, path: path.to_path_buf(), message: why.to_string() });
+        &mut |index, path, why, played| {
+            chilpa_audio::diagnostics::trace("player", "track_passed_over", format_args!("index={index}/{total} path={path:?} played={played:?} why={why}"));
+            let _ = events.send(PlayerEvent::Skipped { generation, index, path: path.to_path_buf(), message: why.to_string(), played });
         },
     )?;
 

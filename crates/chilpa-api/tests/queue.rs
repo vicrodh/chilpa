@@ -1027,3 +1027,20 @@ fn a_skip_left_over_from_a_replaced_queue_marks_nothing_in_the_new_one() {
     chilpa.stop();
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn a_track_that_breaks_partway_is_logged_as_cut_short() {
+    let dir = folder("breaks-logged");
+    other_library(&dir);
+    english();
+    let paths = strings(&[broken_dsf(&dir, "01.dsf"), wave(&dir, "02.wav", 4_410), broken_dsf(&dir, "03.dsf")]);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    assert!(wait_at_least(&mut chilpa, 2), "the last track started");
+    assert!(wait_until_stopped(&mut chilpa));
+    let logged = chilpa.listening_summary(&chilpa_api::listening::ListenFilter::default()).unwrap();
+    assert_eq!(logged.events, 3, "each track that was heard is logged: {logged:?}");
+    assert_eq!(logged.skips, 2, "the two that broke, in the middle of the queue and at its end, are cut short: {logged:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}

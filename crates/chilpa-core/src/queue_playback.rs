@@ -884,12 +884,13 @@ where
     F: FnMut(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    play_queue_told(queue, caps, policy, controls, open_sink, &mut |index, path, delivery, _| on_track(index, path, delivery), on_progress, &mut |_, _, _| {})
+    play_queue_told(queue, caps, policy, controls, open_sink, &mut |index, path, delivery, _| on_track(index, path, delivery), on_progress, &mut |_, _, _, _| {})
 }
 
 /// The same, with what each track says of itself as it starts, and each
 /// track passed over because it would not open or broke partway: its index,
-/// its path and why.
+/// its path, why, and how many frames of it went out (`None` when it never
+/// opened).
 #[allow(clippy::too_many_arguments)]
 pub fn play_queue_told<F, K>(
     queue: &SharedQueue,
@@ -899,7 +900,7 @@ pub fn play_queue_told<F, K>(
     mut open_sink: F,
     on_track: &mut dyn FnMut(usize, &Path, &Delivery, &TrackAbout),
     on_progress: &mut dyn FnMut(usize, Progress),
-    on_passed: &mut dyn FnMut(usize, &Path, &str),
+    on_passed: &mut dyn FnMut(usize, &Path, &str, Option<u64>),
 ) -> Result<Vec<TrackResult>, PlayError>
 where
     F: FnMut(StreamFormat) -> Result<K, SinkError>,
@@ -967,7 +968,7 @@ where
                     format_args!("after={:?} path={path:?} error={error}", source_started.elapsed()),
                 );
                 if error.is_track() {
-                    on_passed(index, path, &error.to_string());
+                    on_passed(index, path, &error.to_string(), None);
                 }
                 unreachable_in_a_row += 1;
                 passed_over = Some(error);
@@ -1300,8 +1301,8 @@ where
         // a natural end, without repeating it. It counts with the tracks that
         // would not open, so a lap where nothing played whole ends the queue.
         let broken = matches!(outcome, Outcome::Unreadable { .. });
-        if let Outcome::Unreadable { reason, .. } = &outcome {
-            on_passed(index, path, reason);
+        if let Outcome::Unreadable { frames, reason } = &outcome {
+            on_passed(index, path, reason, Some(*frames));
         }
         let finished_ok = outcome.may_advance_queue() || broken;
         ended_by_itself = finished_ok && !skipped;

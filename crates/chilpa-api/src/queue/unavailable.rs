@@ -314,14 +314,22 @@ impl Chilpa {
 
     /// The player passed over a queue entry it could not play -- it would not
     /// open, or it broke partway -- and went on. The entry is marked like one
-    /// found missing, left out of the laps that follow, and counted.
-    pub(crate) fn player_skipped(&mut self, generation: u64, index: usize, path: &Path, why: String) {
+    /// found missing, left out of the laps that follow, and counted; one that
+    /// broke partway, after `played` frames, ends its listen as cut short.
+    pub(crate) fn player_skipped(&mut self, generation: u64, index: usize, path: &Path, why: String, played: Option<u64>) {
         let current = self.unavailable.launch.as_ref().is_some_and(|launch| launch.generation == generation);
-        chilpa_core::trace_playback("facade", "unavailable_passed", format_args!("index={} generation={generation} current={current} why={why:?}", self.base + index));
+        chilpa_core::trace_playback("facade", "unavailable_passed", format_args!("index={} generation={generation} current={current} played={played:?} why={why:?}", self.base + index));
         // Said by a play this launch replaced: the queue it was about is gone,
         // and the same entry in this one may well play.
         if !current {
             return;
+        }
+        // Heard up to where it broke: the listen closes here, with what was
+        // heard, and is not taken for one that played through when the next
+        // track starts or the queue runs out.
+        if let Some(frames) = played.filter(|_| self.in_progress.as_ref().is_some_and(|listen| listen.path == path)) {
+            self.set_played(frames);
+            self.log_play(true);
         }
         let positions: Vec<usize> = (0..self.queue.len()).filter(|&at| Path::new(&self.queue[at]) == path).collect();
         let Some(&first) = positions.first() else { return };

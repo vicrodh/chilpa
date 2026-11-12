@@ -403,6 +403,12 @@ fn the_player_says_which_entry_it_passed_over_and_why() {
     }).collect();
     assert_eq!(said.iter().map(|(index, path, _)| (*index, path.clone())).collect::<Vec<_>>(), [(1, tracks[1].clone()), (2, tracks[2].clone())]);
     assert!(said.iter().all(|(_, _, message)| !message.is_empty()), "each one says why: {said:?}");
+    let played: Vec<Option<u64>> = events.iter().filter_map(|event| match event {
+        PlayerEvent::Skipped { played, .. } => Some(*played),
+        _ => None,
+    }).collect();
+    assert_eq!(played[0], None, "the refused track never opened");
+    assert!(played[1].is_some_and(|frames| frames > 0), "the broken one says how much of it went out: {played:?}");
     assert_eq!(started(&events), [0, 2, 3], "the broken track started, the refused one did not");
     // Said before what follows it starts, so whoever counts them is never late.
     let position = |wanted: &dyn Fn(&PlayerEvent) -> bool| events.iter().position(wanted).unwrap();
