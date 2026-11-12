@@ -5342,6 +5342,9 @@ msgstr "Leyendo las pistas seleccionadas…"
 msgid "Reading the files…"
 msgstr "Leyendo los archivos…"
 
+msgid "Reading the library…"
+msgstr "Leyendo la biblioteca…"
+
 msgid "Reading the media server's description and its folders…"
 msgstr "Leyendo la descripción del servidor de medios y sus carpetas…"
 
