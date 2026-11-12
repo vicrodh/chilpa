@@ -77,6 +77,7 @@ ListView {
             current: view.watched
             nowMs: row.active && view.live ? view.feed.nowMs : 0
             endMs: row.active ? view.feed.currentEnd : 0
+            romanization: view.feed && view.feed.romanization ? (view.feed.romanization[row.index] || "") : ""
             size: view.lineSize
             sungColor: Theme.color.immersiveTextStrong
             dimColor: row.active ? Theme.color.immersiveLyricInactive : Theme.color.immersiveTextStrong

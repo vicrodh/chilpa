@@ -5,6 +5,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/lyrics/qml/Components" as Lines
+import "qrc:/qt/qml/app/chilpa/lyrics/qml/Primitives" as LyricData
 import "../Theme"
 
 // Surface 4 (02-mini §1.3): the lyrics of what plays, drawn by the kit's
@@ -29,6 +30,7 @@ Item {
     readonly property bool follow: (SettingsModel.kept("ui.lyrics.follow") || "true") === "true"
     readonly property bool lite: SettingsModel.kept("ui.lyrics.lite") === "true"
     readonly property bool uppercase: SettingsModel.kept("ui.lyrics.uppercase") === "true"
+    LyricData.LyricTranslation { id: pronunciation; lyrics: surface.lyrics; kind: "romanization" }
     readonly property string dimming: SettingsModel.kept("ui.lyrics.dimming") || "strong"
     readonly property string tint: SettingsModel.kept("ui.lyrics.color")
     readonly property color sungColor: tint === "" ? Theme.color.textPrimary : tint === "accent" ? Theme.color.accent : tint
@@ -110,6 +112,7 @@ Item {
         nowMs: surface.nowMs
         sungEnd: surface.lineEnd(Player.lyricsLine)
         translation: null
+        romanization: pronunciation.lines
         size: Type.lyricSmall
         sungColor: surface.sungColor
         dimming: surface.dimming

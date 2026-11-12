@@ -201,6 +201,11 @@ impl Document {
         Document { schema: SCHEMA, ..Document::default() }
     }
 
+    /// The first supplied pronunciation layer, preserving the source's choice.
+    pub fn romanization_for(&self) -> Option<usize> {
+        self.layers.iter().position(|layer| layer.kind == LayerKind::Romanization && !layer.lines.is_empty())
+    }
+
     /// The translation for somebody who reads `language`, whatever its
     /// region: a position in [`Document::layers`]. A translation into
     /// another language is not offered in its place: it would be a button

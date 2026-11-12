@@ -1027,3 +1027,4 @@ numer
 # From SecPolicyCreateSSL, the Security.framework call the macOS plugin
 # sandbox test makes.
 ssl
+Romanizer

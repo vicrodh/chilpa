@@ -24,6 +24,7 @@ ListView {
     property real sungEnd: 0
     // The translation of each line by its place, or null when none is shown.
     property var translation: null
+    property var romanization: null
     property real size: Type.lyric
     property color sungColor: Theme.color.textPrimary
     property color dimColor: Theme.color.textSecondary
@@ -45,6 +46,7 @@ ListView {
     function center() { tracker.request(false) }
     onLinesChanged: tracker.reset()
     onTranslationChanged: tracker.request(false)
+    onRomanizationChanged: tracker.request(false)
     onSizeChanged: tracker.request(false)
     onUppercaseChanged: tracker.request(false)
     LyricTracker {
@@ -87,6 +89,7 @@ ListView {
         nowMs: sung && view.live ? view.nowMs : 0
         endMs: sung ? view.sungEnd : 0
         translation: view.translation ? (view.translation[index] || "") : ""
+        romanization: view.romanization ? (view.romanization[index] || "") : ""
         size: view.size
         sungColor: view.sungColor
         dimColor: view.dimColor

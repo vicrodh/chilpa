@@ -167,7 +167,7 @@ impl Chilpa {
             self.set_musicbrainz_enabled(value == "true");
             return true;
         }
-        if matches!(key, "integrations.offline" | "integrations.proxy.enabled" | "integrations.lyrics.enabled" | "integrations.lyrics.service" | "integrations.lyrics.translate")
+        if matches!(key, "integrations.offline" | "integrations.proxy.enabled" | "integrations.lyrics.enabled" | "integrations.lyrics.service" | "integrations.lyrics.translate" | "integrations.lyrics.romanize")
             || key.starts_with("integrations.lyrics.provider.") {
             self.remember_preference(key, value);
             return true;
@@ -503,6 +503,7 @@ impl Chilpa {
                     row.control = "fixed".into();
                 }
             }
+            "integrations.lyrics.romanize" => row.value = self.pref_on(&row.key, false),
             key if key.starts_with("integrations.lyrics.provider.") => {
                 row.value = self.pref_on(&row.key, true);
                 if self.preference("integrations.lyrics.service").as_deref() == Some("false") {

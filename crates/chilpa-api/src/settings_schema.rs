@@ -387,6 +387,7 @@ pub const SECTIONS: &[Section] = &[
                 setting("integrations.lyrics.enabled", Chilpa::mark("Enable lyrics"), Chilpa::mark("Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."), Control::Toggle),
                 setting("integrations.lyrics.service", Chilpa::mark("Chilpa lyrics API"), Chilpa::mark("Look up lyrics through Chilpa's lyrics service when the file and its source have none."), Control::Toggle),
                 setting("integrations.lyrics.translate", Chilpa::mark("Translate lyrics"), Chilpa::mark("Ask Chilpa's lyrics API to translate lyrics that carry no translation in your language. The lines of the track are sent to it. On by default; you can turn it off."), Control::Toggle),
+                setting("integrations.lyrics.romanize", Chilpa::mark("Pronunciation"), Chilpa::mark("Show pronunciation in Latin script. When it is missing, send the lyrics to Chilpa's lyrics API to generate it. Off by default."), Control::Toggle),
                 setting("integrations.lyrics.provider.lrclib", "LRCLIB", Chilpa::mark("Allow results from LRCLIB through Chilpa's lyrics API."), Control::Toggle),
                 setting("integrations.lyrics.provider.netease", "NetEase", Chilpa::mark("Allow results from NetEase."), Control::Toggle),
                 setting("integrations.lyrics.provider.qq", "QQ Music", Chilpa::mark("Allow results from QQ Music."), Control::Toggle),
