@@ -938,6 +938,14 @@ pollin
 prctl
 revents
 webengine
+# The sign-in window on macOS: the kernel event queue that watches the parent, from libc.
+ev
+evfilt
+fflags
+kevent
+kqueue
+oneshot
+udata
 # The portal's process ids.
 pids
 # The runner's descriptor flags and errors, from libc.
