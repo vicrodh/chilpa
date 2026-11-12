@@ -11,6 +11,10 @@ pub(crate) fn register(db: &Connection) -> rusqlite::Result<()> {
         Ok(crate::release_kind::release_kind("", &ctx.get::<String>(0)?, &ctx.get::<String>(1)?,
             ctx.get::<i64>(2)? as usize, ctx.get(3)?).to_string())
     })?;
+    db.create_scalar_function("chilpa_format", 4, flags, |ctx| {
+        Ok(crate::quality::Quality::of_track(&ctx.get::<String>(0)?, ctx.get::<Option<String>>(1)?.as_deref(),
+            ctx.get(2)?, ctx.get(3)?).format.to_lowercase())
+    })?;
     db.create_scalar_function("chilpa_quality", 4, flags, |ctx| {
         Ok(crate::quality::Quality::of_track(&ctx.get::<String>(0)?, ctx.get::<Option<String>>(1)?.as_deref(),
             ctx.get(2)?, ctx.get(3)?).tier.rank())

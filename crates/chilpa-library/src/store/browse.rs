@@ -25,6 +25,8 @@ use rusqlite::params_from_iter;
 /// rating, artist and record. `None` is "All".
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Filter {
+    /// Independent exact selections belonging to the Tracks sheet.
+    pub sheet: super::track_sheet::Selection,
     /// Header searches participate in the result, even with All selected.
     pub queries: [String; 9],
     pub year: Option<i32>,
@@ -459,6 +461,7 @@ pub(super) fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
         sql.push_str(&condition);
         args.extend(values);
     }
+    f.sheet.append(&mut sql, &mut args);
     (sql, args)
 }
 
@@ -734,24 +737,34 @@ impl Library {
             },
             order.keys()
         );
-        let mut stmt = self.db.prepare(&sql)?;
-        let mut rows = stmt.query(params_from_iter(args.iter()))?;
-        let mut out = Snapshot::default();
-        let mut keys = Vec::new();
-        let mut albums = std::collections::HashSet::new();
-        while let Some(r) = rows.next()? {
-            out.ids.push(r.get(0)?);
-            if let Some(album) = r.get::<_, Option<i64>>(1)? {
-                if albums.insert(album) {
-                    out.album_ids.push(album);
+        let read = |stmt: &mut rusqlite::Statement<'_>| -> rusqlite::Result<_> {
+            let mut rows = stmt.query(params_from_iter(args.iter()))?;
+            let mut out = Snapshot::default();
+            let mut keys = Vec::new();
+            let mut albums = std::collections::HashSet::new();
+            while let Some(r) = rows.next()? {
+                out.ids.push(r.get(0)?);
+                if let Some(album) = r.get::<_, Option<i64>>(1)? {
+                    if albums.insert(album) {
+                        out.album_ids.push(album);
+                    }
                 }
+                out.totals.duration_ms += r.get::<_, i64>(2)? as u64;
+                if keyed { keys.push(super::order_keys::OrderKey::read(r)?); }
             }
-            out.totals.duration_ms += r.get::<_, i64>(2)? as u64;
-            if keyed { keys.push(super::order_keys::OrderKey::read(r)?); }
+            out.totals.tracks = out.ids.len();
+            out.totals.albums = albums.len();
+            Ok((out, keys))
+        };
+        // Column values are bound parameters, so edits reuse the connection's
+        // existing bounded statement cache. No result or metadata cache is added.
+        if !f.sheet.values.is_empty() || f.sheet.favorite.is_some() {
+            let mut stmt = self.db.prepare_cached(&sql)?;
+            read(&mut stmt)
+        } else {
+            let mut stmt = self.db.prepare(&sql)?;
+            read(&mut stmt)
         }
-        out.totals.tracks = out.ids.len();
-        out.totals.albums = albums.len();
-        Ok((out, keys))
     }
 
     /// The rows of those ids, in the order given. By primary key, so it

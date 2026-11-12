@@ -46,6 +46,14 @@ pub fn track(track: &chilpa_api::TrackRow, role: i32, number: i32, playing: bool
         24 => QVariant::from(&track.explicit.unwrap_or(false)),
         25 => text(&track.credits.as_ref().map(|c| c.document().to_string()).unwrap_or_default()),
         26 => QVariant::from(&track.ai_generated.unwrap_or(false)),
+        27 => text(&track.quality.format),
+        28 => {
+            let short = track.quality.short();
+            let detail = short.strip_prefix(&track.quality.format).unwrap_or(&short).trim();
+            if track.quality.tier.rank() == 4 { text(&short) }
+            else if !detail.is_empty() { text(detail) }
+            else { text(&app::t(match track.quality.tier.rank() { 1 => "Lossy", 2 => "Lossless", 3 => "Hi-Res", _ => "Unknown" })) }
+        },
         _ => QVariant::default(),
     }
 }

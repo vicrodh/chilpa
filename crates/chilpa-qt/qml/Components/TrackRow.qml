@@ -38,6 +38,8 @@ TrackRowSlot {
     property bool artistHovered: false
     property bool albumHovered: false; property string sourceName: ""
     // Who wrote it, quiet after the title; empty when nobody is named.
+    property string format: ""
+    property string qualityDetail: ""
     property string composer: ""
     property bool explicitContent: false
     property bool aiGenerated: false
@@ -68,7 +70,7 @@ TrackRowSlot {
         objectName: "trackRowBody"
         readonly property var row: track
         readonly property alias creditedTitle: creditedTitle
-        readonly property Text artistLabel: row.rich ? richArtist : compactArtist
+        readonly property Text artistLabel: row.rich && !row.cols.sheet ? richArtist : compactArtist
         readonly property alias albumText: albumLabel
         readonly property alias sourceBadge: badge
         readonly property alias end: rowEnd
@@ -114,6 +116,8 @@ TrackRowSlot {
                 gutter: row.cols.move
                 stacked: row.rich
                 number: row.number
+                showNumber: row.cols.showIndex
+                columns: row.cols
                 playing: row.playing
                 inViewport: row.immediate
                 selected: row.selected
@@ -125,7 +129,7 @@ TrackRowSlot {
             // Only a rich row with covers builds one: a compact row carries no
             // image and no shader at all.
             Loader {
-                active: row.cols.art > 0
+                active: row.cols.art > 0 && row.cols.inView(row.cols.artX, Metrics.artRow)
                 x: row.cols.artX
                 anchors.verticalCenter: parent.verticalCenter
                 sourceComponent: ArtTile {
@@ -158,7 +162,7 @@ TrackRowSlot {
                     id: richArtist
                     objectName: "trackPerformingArtistsRich"
                     width: parent.width
-                    visible: row.rich
+                    visible: row.rich && !row.cols.sheet
                     text: row.credits.links ? TextLinks.render(row.credits.artist_html, "", color, color) : row.artist
                     textFormat: row.credits.links ? Text.RichText : Text.PlainText
                     // Rich text does not elide: it is cut at its column.
@@ -208,6 +212,9 @@ TrackRowSlot {
                 visible: row.available
                 trackId: row.trackId
                 favorite: row.favorite
+                showFavorite: row.cols.showFavorite
+                favoriteWidth: row.cols.favorite
+                columns: row.cols
                 inViewport: row.immediate
                 hovered: row.actionHovered
             }

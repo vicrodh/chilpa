@@ -36,8 +36,6 @@ crates/chilpa-qt/qml/Components/TrackListPointer.qml
 crates/chilpa-qt/qml/Components/TrackList.qml
 crates/chilpa-qt/qml/Components/TrackMenu.qml
 crates/chilpa-qt/qml/Components/TrackRowEnd.qml
-crates/chilpa-qt/qml/Components/TrackRowLead.qml
-crates/chilpa-qt/qml/Components/TrackRowMove.qml
 crates/chilpa-qt/qml/Components/TrackRow.qml
 crates/chilpa-qt/qml/Components/TrackSourceLabel.qml
 crates/chilpa-qt/qml/Main.qml

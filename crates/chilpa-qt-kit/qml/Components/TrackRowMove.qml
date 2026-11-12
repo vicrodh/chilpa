@@ -2,8 +2,8 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.kit
-import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "../Theme"
+import "../Primitives"
 
 // Moving a track up or down in a list kept in its own order, before the
 // track's number and always in sight: one arrow over the other in a rich

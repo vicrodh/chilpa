@@ -47,6 +47,29 @@ Column {
         TrackRowFacts { row: ({cols: rowCols, tier: 3, quality: "FLAC", rating: 0, ratingPreview: 0,
             plays: 0, duration: "4:04", rich: false}) }
     }
+    TrackSheetState {
+        id: sheetState
+        settings: ({kept: function(key) { return "" }, keep: function(key, value) {}})
+        visits: ({recall: function(key, fallback) { return fallback }, keep: function(key, value) {}})
+    }
+    TrackColumns { id: sheetCols; width: section.width; sheet: true; optionalColumns: sheetState.columns }
+    TrackSheetTools { width: section.width; count: "24 tracks"; shownColumns: sheetState.columns; onColumned: columns => sheetState.keepColumns(columns) }
+    TrackSheetHeader {
+        width: section.width; cols: sheetCols; filters: sheetState.effective
+        onRequested: (field, label, anchor) => sheetFilter.show(field, label, sheetState.filters[field], anchor)
+    }
+    TrackColumnFilter {
+        id: sheetFilter
+        model: QtObject {
+            property string columnResult: ""
+            property bool columnBusy: false
+            function requestColumn(field, search, cursor) {
+                columnResult = JSON.stringify({field, search, cursor, items:[{key:"Example",label:"Example",count:24}], next:"", more:false})
+            }
+            function closeColumn() { columnResult = "" }
+        }
+        onApplied: (field, values) => sheetState.apply(field, values)
+    }
     Item {
         id: dragPreview
         property int dropRow: -1

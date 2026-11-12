@@ -17,6 +17,9 @@ Item {
 
     property double trackId: 0
     property bool favorite: false
+    property bool showFavorite: true
+    property var columns: null
+    property real favoriteWidth: showFavorite ? Metrics.rowAction : 0
     property bool inViewport: true
     readonly property bool busy: Ratings.pending("track", trackId, Ratings.rev)
     // 1 the heart, 2 the menu button, 0 neither: the one under the pointer.
@@ -28,8 +31,8 @@ Item {
     function actionAt(x, y) {
         if (!visible || y < 0 || y >= height)
             return 0
-        const cell = Math.floor(x / Metrics.rowAction)
-        return cell === 0 && canMark ? 1 : cell === 1 ? 2 : 0
+        if (x < 0 || x >= width) return 0
+        return x < favoriteWidth ? (showFavorite && canMark ? 1 : 0) : 2
     }
     function act() {
         if (hovered === 1 && !busy)
@@ -48,7 +51,7 @@ Item {
                 : I18n.tr("Add to favorites", I18n.rev), end)
     }
 
-    width: Metrics.colMore
+    width: favoriteWidth + Metrics.rowAction
     onHoveredChanged: explain()
     onFavoriteChanged: if (hovered === 1) explain()
 
@@ -61,10 +64,10 @@ Item {
             readonly property bool heart: index === 0
             readonly property bool pointed: end.hovered === index + 1
 
-            x: index * Metrics.rowAction
-            width: Metrics.rowAction
+            x: heart ? 0 : end.favoriteWidth
+            width: heart ? end.favoriteWidth : Metrics.rowAction
             height: end.height
-            visible: !heart || end.canMark
+            visible: !heart || end.showFavorite && end.canMark
 
             Rectangle {
                 anchors.centerIn: parent
@@ -85,7 +88,7 @@ Item {
             }
             Loader {
                 anchors.centerIn: parent
-                active: cell.heart && end.busy && end.inViewport && end.visible
+                active: cell.heart && cell.visible && end.busy && end.inViewport && end.visible && (!end.columns || end.columns.inView(end.x + cell.x + (cell.width - Metrics.iconSm) / 2, Metrics.iconSm)) // derived: the icon is centered in its cell
                 sourceComponent: BusyMark { clock: Pulse; size: Metrics.iconSm; color: Theme.color.accent }
             }
         }
@@ -95,9 +98,9 @@ Item {
         id: offline
         objectName: "trackOfflineMark"
         readonly property string phase: Offline.state(end.trackId, Offline.rev)
-        x: Metrics.rowAction + (Metrics.rowAction - width) / 2 // derived: centred on the menu's cell
+        x: end.favoriteWidth + (Metrics.rowAction - width) / 2 // derived: centred on the menu's cell
         anchors.verticalCenter: parent.verticalCenter
         active: phase !== ""
-        sourceComponent: OfflineMark { clock: Pulse; phase: offline.phase; fraction: Offline.fraction(end.trackId, Offline.rev); inViewport: end.inViewport }
+        sourceComponent: OfflineMark { clock: Pulse; phase: offline.phase; fraction: Offline.fraction(end.trackId, Offline.rev); inViewport: end.inViewport && (!end.columns || end.columns.inView(end.x + offline.x, offline.width)) }
     }
 }

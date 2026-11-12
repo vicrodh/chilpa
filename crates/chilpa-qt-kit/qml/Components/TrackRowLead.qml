@@ -1,16 +1,18 @@
 // hot-path: one per visible track, recycled while the list scrolls.
 import QtQuick
 import app.chilpa
-import app.chilpa.ambient
-import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import app.chilpa.kit
+import "../Theme"
+import "../Primitives"
 
 // I place order arrows before the track number, playing mark or selection check.
 Item {
     id: lead
 
     property int number: 0
+    property bool showNumber: true
+    property var columns: null
+    readonly property real markWidth: Prefs.animatedIndicator && Player.playing && !Player.paused ? Metrics.eqWide : Metrics.iconMd
     property bool playing: false
     property bool inViewport: true
     property bool selected: false
@@ -28,7 +30,7 @@ Item {
         x: lead.gutter
         width: lead.width - lead.gutter - Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
-        visible: !lead.selectionMode && !lead.playing
+        visible: lead.showNumber && !lead.selectionMode && !lead.playing
         text: lead.number > 0 ? lead.number : ""
         horizontalAlignment: Text.AlignRight
         font.pointSize: Type.small
@@ -40,7 +42,7 @@ Item {
         x: lead.width - Metrics.gap8 - width
         anchors.verticalCenter: parent.verticalCenter
         visible: !lead.selectionMode && lead.playing
-        running: lead.inViewport && Player.playing && !Player.paused; onToggled: Player.toggle()
+        running: lead.inViewport && (!lead.columns || lead.columns.inView(lead.x + lead.width - Metrics.gap8 - lead.markWidth, lead.markWidth)) && Player.playing && !Player.paused; onToggled: Player.toggle()
     }
 
     Icon {

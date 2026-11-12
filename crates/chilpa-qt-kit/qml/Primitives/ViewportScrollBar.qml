@@ -11,6 +11,8 @@ ScrollBar {
     property var area: null
     property var viewportArea: null
     property Item overlayParent: null
+    // A horizontally scrolled table keeps its vertical thumb at the visible edge.
+    property real rightEdge: NaN
     readonly property bool sideways: orientation === Qt.Horizontal
     // Views with a full-surface pointer handler can supply its hover state.
     property bool viewportHovered: false
@@ -53,7 +55,7 @@ ScrollBar {
                 width = Qt.binding(function() { return viewport.width })
                 height = Qt.binding(function() { return Metrics.gap4 })
             } else {
-                x = Qt.binding(function() { return (parent === viewport ? 0 : viewport.x) + viewport.width + gutter - width / 2 }) // derived: center the control in the margin
+                x = Qt.binding(function() { return (parent === viewport ? 0 : viewport.x) + (isNaN(rightEdge) ? viewport.width : rightEdge) + gutter - width / 2 }) // derived: center the control in the margin
                 y = Qt.binding(function() { return parent === viewport ? 0 : viewport.y })
                 height = Qt.binding(function() { return viewport.height })
             }

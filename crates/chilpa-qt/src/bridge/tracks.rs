@@ -186,7 +186,7 @@ use std::rc::Rc;
 use chilpa_qt_kit::bridge::queue_activity;
 
 /// The roles, in order from `Qt::UserRole`.
-const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo", "composer", "headerWork", "headerComposer", "headerComposerTarget", "explicitContent", "credits", "aiGenerated"];
+const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo", "composer", "headerWork", "headerComposer", "headerComposerTarget", "explicitContent", "credits", "aiGenerated", "format", "qualityDetail"];
 const USER_ROLE: i32 = 256;
 const ROLE_PLAYING: i32 = USER_ROLE + 9;
 const ROLE_SELECTED: i32 = USER_ROLE + 10;
@@ -786,7 +786,8 @@ impl qobject::TrackListModel {
         if kind == "tracks" {
             app::with(|api| api.prepare_track_libraries());
             // Found on the worker; what is shown stays until it is back.
-            let (query, extras) = (self.rust().key.to_string(), browse::read(|s| s.filter.clone()));
+            let query = self.rust().key.to_string();
+            let extras = app::with(|api| api.track_sheet_extras(&query, "", browse::read(|s| s.filter.clone())));
             let asked = self.rust().asked + 1;
             self.as_mut().rust_mut().asked = asked;
             let thread = self.qt_thread();

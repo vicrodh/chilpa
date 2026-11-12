@@ -48,6 +48,7 @@ pub mod order_keys;
 pub mod query;
 mod refine;
 mod browse_candidates;
+pub mod track_sheet;
 pub mod credits;
 pub mod metadata;
 pub mod edit;

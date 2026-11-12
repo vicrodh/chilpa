@@ -5180,9 +5180,6 @@ msgstr "Qualidade desconhecida"
 msgid "Quality, format and source filters"
 msgstr "Filtros de qualidade, formato e fonte"
 
-msgid "Quality, format, source and rating filters"
-msgstr "Filtros de qualidade, formato, fonte e avaliação"
-
 msgid "Quarantined"
 msgstr "Em quarentena"
 
@@ -5652,6 +5649,9 @@ msgstr "Redefinir EQ"
 
 msgid "Reset counter"
 msgstr "Zerar contador"
+
+msgid "Reset filters"
+msgstr "Redefinir filtros"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "Resolução reduzida de {} para {} bits"
@@ -6765,6 +6765,9 @@ msgstr ""
 msgid "The episode exceeds the download limit."
 msgstr ""
 
+msgid "The filter cannot be read."
+msgstr "Não é possível ler o filtro."
+
 msgid "The filter cannot be read: {}"
 msgstr "Não foi possível ler o filtro: {}"
 
@@ -6800,6 +6803,9 @@ msgstr "Não foi possível excluir a letra incorreta. Tente novamente."
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "Não foi possível alterar a biblioteca. Tente de novo; o detalhe abaixo diz o que aconteceu."
+
+msgid "The library could not be read."
+msgstr "Não foi possível ler a biblioteca."
 
 msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
 msgstr "A biblioteca continuou ocupada com outra tarefa, então esta escolha não foi salva. Tente de novo em um momento."

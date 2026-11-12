@@ -31,6 +31,32 @@ TestCase {
         fill(80)
         view.contentY = view.originY
     }
+    function test_sheet_density_changes_the_existing_rows() {
+        list.sheet = true
+        list.optionalColumns = ["art", "favorite"]
+        list.rich = false
+        const compact = view.itemAtIndex(0)
+        verify(compact !== null)
+        compare(compact.height, Metrics.rowCompact)
+        verify(list.columns.artistW > 0 && list.columns.albumW > 0)
+        compare(list.columns.art, 0)
+        list.rich = true
+        compare(view.itemAtIndex(0), compact, "density updates the same delegate")
+        compare(compact.height, Metrics.rowRich)
+        verify(list.columns.art > 0 && list.columns.artistW > 0)
+        compare(compact.artistLabel.objectName, "trackPerformingArtists")
+        compare(compact.end.actionAt(1, 1), 1)
+        Ratings.pendingTracks = {"1":true}; Ratings.rev++
+        compare(Pulse.held, 1)
+        list.optionalColumns = []
+        compare(Pulse.held, 0, "a hidden favorite releases its visual clock")
+        Ratings.pendingTracks = ({}); Ratings.rev++
+        compare(compact.end.actionAt(1, 1), 2, "hiding the favorite keeps the menu clickable")
+        list.rich = false
+        compare(compact.height, Metrics.rowCompact)
+        list.sheet = false
+    }
+
     // What a reset does to the view: the rows are read again from the top.
     function readAgain(count) {
         list.keepPlace()

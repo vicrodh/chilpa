@@ -14,7 +14,17 @@ Item {
         visible: facts.row.cols.quality > 0
         spacing: Metrics.gap6
         QualityIcon { tier: facts.row.tier }
-        Text { text: facts.row.quality; font.pointSize: Type.small; color: Theme.color.textSecondary }
+        Text { text: facts.row.cols.sheet ? facts.row.qualityDetail || facts.row.quality : facts.row.quality; font.pointSize: Type.small; color: Theme.color.textSecondary }
+    }
+    Text {
+        x: facts.row.cols.formatX
+        width: Math.max(0, facts.row.cols.format - Metrics.gap12)
+        visible: facts.row.cols.format > 0
+        anchors.verticalCenter: parent.verticalCenter
+        text: facts.row.format || ""
+        elide: Text.ElideRight
+        font.pointSize: Type.small
+        color: Theme.color.textSecondary
     }
     RatingStars {
         id: stars
@@ -40,6 +50,7 @@ Item {
         x: facts.row.cols.timeX
         width: facts.row.cols.time
         anchors.verticalCenter: parent.verticalCenter
+        visible: facts.row.cols.time > 0
         text: facts.row.duration
         horizontalAlignment: Text.AlignRight
         font.pointSize: Type.row

@@ -16,6 +16,7 @@ pub mod bridge {
     pub mod pulse;
     pub mod queue_activity;
     pub mod theme;
+    pub mod track_columns;
 }
 
 unsafe extern "C" {

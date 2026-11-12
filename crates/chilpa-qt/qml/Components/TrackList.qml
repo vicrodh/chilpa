@@ -26,10 +26,15 @@ Item {
     property bool showArt: true
     property bool showPlays: false
     property bool showRating: true
+    property bool sheet: false
+    property var optionalColumns: []
     property bool header: true
     // How far right of the rows the scrollbar sits: in the middle of the
     // page's margin, unless the screen puts something there.
     property real scrollGutter: Metrics.pageGutter
+    property real scrollbarEdge: NaN
+    property real visibleLeft: 0
+    property real visibleRight: width
     // Grow with the rows instead of scrolling: a list inside a page that
     // scrolls as a whole.
     property bool fitContent: false
@@ -105,6 +110,10 @@ Item {
         widest: !list.rich && list.model && typeof list.model.widest === "function"
             ? JSON.parse(list.model.widest(list.rowsRev + (list.model.count || 0)) || "{}") : ({})
         rich: list.rich
+        sheet: list.sheet
+        viewportLeft: list.visibleLeft
+        viewportRight: list.visibleRight
+        optionalColumns: list.optionalColumns
         showArtist: list.showArtist
         showAlbum: list.showAlbum
         showSource: list.showSource
@@ -163,6 +172,7 @@ Item {
             onPressedChanged: if (pressed) list.userScrollStarted()
             policy: list.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
             gutter: list.scrollGutter
+            rightEdge: list.scrollbarEdge
             viewportHovered: pointer.containsMouse
         }
 
@@ -172,6 +182,8 @@ Item {
             inViewport: !list.viewport || immediate || list.prefetch && y + height >= list.visibleTop - list.viewport.height && y < list.visibleTop + list.viewport.height * 2
             sourceName: model.sourceName || ""
             composer: model.composer || ""
+            format: model.format || ""
+            qualityDetail: model.qualityDetail || ""
             credits: JSON.parse(model.credits || "{}")
             explicitContent: model.explicitContent === true
             aiGenerated: model.aiGenerated === true

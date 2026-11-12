@@ -44,6 +44,9 @@ pub(crate) struct SourceItem {
     pub album_artist: String,
     pub album_title: String,
     pub title: String,
+    /// Literal track cells only when they differ from album-level index names.
+    /// At most one pair per indexed track; released with the bounded source index.
+    pub track_names: Option<Box<(String, String)>>,
     /// Who plays it: the track's artist and its record's.
     pub artists: Vec<String>,
     pub year: Option<i32>,
@@ -94,6 +97,14 @@ pub(crate) struct Folded {
 }
 
 impl SourceItem {
+    pub(crate) fn display_artist(&self) -> &str {
+        self.track_names.as_ref().map(|names| names.0.as_str()).unwrap_or_else(|| self.artists.first().map(String::as_str).unwrap_or(""))
+    }
+
+    pub(crate) fn display_album(&self) -> &str {
+        self.track_names.as_ref().map(|names| names.1.as_str()).unwrap_or(&self.album_title)
+    }
+
     pub(crate) fn source_key(&self) -> String {
         format!("{}:{}", crate::source_opener::PROVIDER, self.plugin)
     }
@@ -242,6 +253,7 @@ impl Stars {
 /// lists joined with their single choices, so an item costs comparisons and
 /// no allocation.
 pub(crate) struct Prepared {
+    sheet: chilpa_library::store::track_sheet::Selection,
     off: bool,
     albumless: bool,
     queries: Vec<(usize, String)>,
@@ -272,6 +284,7 @@ impl Prepared {
         let excluded = f.excluded_sources.iter()
             .filter_map(|key| key.strip_prefix(crate::source_opener::PROVIDER).and_then(|rest| rest.strip_prefix(':')).map(String::from)).collect();
         Self {
+            sheet: f.sheet.clone(),
             off: f.performer.is_some(),
             albumless: f.albumless,
             queries: f.queries.iter().enumerate().map(|(at, q)| (at, q.trim().to_lowercase())).filter(|(at, q)| *at != 4 && !q.is_empty()).collect(),
@@ -295,6 +308,7 @@ impl Prepared {
     /// Whether an item passes, as the database's `WHERE` would pass a track
     /// of its own: the same columns, chosen keys and extras.
     pub(crate) fn passes(&self, item: &SourceItem, stars: &Stars) -> bool {
+        if !crate::track_sheet::passes(&self.sheet, item, stars) { return false; }
         if self.off || (self.albumless && item.album != 0) { return false; }
         let names = &item.folded;
         let holds = |values: &[String], query: &str| values.iter().any(|value| value.contains(query));

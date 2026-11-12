@@ -107,7 +107,11 @@ fn song(track: &Track, card: Option<&Card>, saved: bool, enrichment: &super::gen
         .unwrap_or_else(|| track.path.clone());
     let mut composers = credits.of_track(track, super::now());
     if composers.is_empty() { composers = album.as_ref().map(|a| a.composers.clone()).unwrap_or_default(); }
+    let album_title = album.as_ref().map(|a| a.album_title.clone()).unwrap_or_else(|| track.album.clone());
+    let track_names = (artists.first().map(String::as_str).unwrap_or("") != track.artist || album_title != track.album)
+        .then(|| Box::new((track.artist.clone(), track.album.clone())));
     SourceItem {
+        track_names,
         track: track.id,
         favorite_album:album.as_ref().is_some_and(|record|record.favorite_album),
         plays: track.metadata["plays"].as_i64().filter(|n| *n >= 0),
@@ -116,7 +120,7 @@ fn song(track: &Track, card: Option<&Card>, saved: bool, enrichment: &super::gen
         identity,
         album_identity: card.map(|c| c.identity.clone()).unwrap_or_default(),
         album_artist: album.as_ref().map(|a| a.album_artist.clone()).unwrap_or_else(|| track.artist.clone()),
-        album_title: album.as_ref().map(|a| a.album_title.clone()).unwrap_or_else(|| track.album.clone()),
+        album_title,
         title: track.title.clone(),
         artists,
         year: album.as_ref().and_then(|a| a.year).filter(|y| *y > 0).or_else(|| year(&track.metadata)),

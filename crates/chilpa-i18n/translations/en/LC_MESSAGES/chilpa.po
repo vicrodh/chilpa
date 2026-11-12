@@ -5180,9 +5180,6 @@ msgstr "Quality unknown"
 msgid "Quality, format and source filters"
 msgstr ""
 
-msgid "Quality, format, source and rating filters"
-msgstr ""
-
 msgid "Quarantined"
 msgstr ""
 
@@ -5652,6 +5649,9 @@ msgstr "Reset EQ"
 
 msgid "Reset counter"
 msgstr "Reset counter"
+
+msgid "Reset filters"
+msgstr "Reset filters"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr ""
@@ -6765,6 +6765,9 @@ msgstr ""
 msgid "The episode exceeds the download limit."
 msgstr ""
 
+msgid "The filter cannot be read."
+msgstr "The filter cannot be read."
+
 msgid "The filter cannot be read: {}"
 msgstr ""
 
@@ -6800,6 +6803,9 @@ msgstr ""
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr ""
+
+msgid "The library could not be read."
+msgstr "The library could not be read."
 
 msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
 msgstr ""
