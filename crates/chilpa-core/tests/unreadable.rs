@@ -15,6 +15,7 @@ use chilpa_core::player::{Player, PlayerEvent};
 use chilpa_core::queue_playback::{play_queue_with, Controls, Repeat, SharedQueue, TrackResult};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 const DSD64: u64 = 2_822_400;
@@ -467,3 +468,69 @@ fn a_device_error_is_never_taken_for_the_track() {
     assert!(!PlayError::Sink(SinkError::Backend("busy".into())).is_track());
     assert!(!PlayError::Pack(PackError::NativeDsdNeedsDsdSource).is_track());
 }
+
+/// Sixteen bit stereo at 44.1 kHz, and nothing else.
+fn caps_16() -> DeviceCaps {
+    DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true }
+}
+
+/// A device that keeps every byte it is given.
+struct Keep {
+    format: StreamFormat,
+    kept: Arc<Mutex<Vec<u8>>>,
+}
+
+impl AudioSink for Keep {
+    fn format(&self) -> StreamFormat {
+        self.format
+    }
+    fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+        self.kept.lock().unwrap().extend_from_slice(frames);
+        Ok(frames.len() / self.format.frame_bytes())
+    }
+    fn close(&mut self) -> Result<(), SinkError> {
+        Ok(())
+    }
+}
+
+#[test]
+fn a_track_refused_at_open_leaves_no_pending_seek_for_the_next() {
+    let dir = folder("seek-refused");
+    let tracks = vec![garbage(&dir, "01.flac"), wave(&dir, "02.wav")];
+    let controls = Controls::new();
+    // Where the refused track was to resume, as a launch's `start_at` asks.
+    controls.seek.request(Duration::from_millis(50));
+    let kept = Arc::new(Mutex::new(Vec::new()));
+    let device = Arc::clone(&kept);
+    let results = play_queue_with(
+        &SharedQueue::new(tracks),
+        &caps_16(),
+        Policy::AllowAnything,
+        &controls,
+        |format| Ok(Keep { format, kept: Arc::clone(&device) }),
+        &mut |_, _, _| {},
+        &mut |_, _| {},
+    )
+    .expect("the queue went on past the refused track");
+    assert_eq!(results.len(), 1);
+    let bytes = kept.lock().unwrap();
+    let samples: Vec<i16> = bytes[..8].chunks(2).map(|pair| i16::from_le_bytes([pair[0], pair[1]])).collect();
+    assert_eq!(samples, [0, 0, 1, 1], "the next track starts at its beginning, not 50 ms in");
+    assert_eq!(bytes.len(), 4_410 * 4, "and plays whole");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_next_asked_while_a_track_is_refused_is_spent_on_passing_it() {
+    let dir = folder("next-refused");
+    let tracks = [garbage(&dir, "01.flac"), wave(&dir, "02.wav"), wave(&dir, "03.wav")];
+    let controls = Controls::new();
+    // Next, pressed while the first track was being opened.
+    controls.skip.skip();
+    let (started, result) = run(&tracks, &controls);
+    let results = result.expect("the queue went on");
+    assert_eq!(started, [1, 2]);
+    assert_eq!(results[0].outcome, Outcome::Finished { frames: 4_410 }, "the track after the refused one played whole");
+    let _ = std::fs::remove_dir_all(dir);
+}
+

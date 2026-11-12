@@ -970,6 +970,9 @@ where
                 if error.is_track() {
                     on_passed(index, path, &error.to_string(), None);
                 }
+                // A seek or a Next asked for while it opened was meant for it:
+                // what comes next starts at its beginning and is not skipped.
+                let _ = (seek.take(), skip.take());
                 unreachable_in_a_row += 1;
                 passed_over = Some(error);
                 if unreachable_in_a_row > queue.len() || stop_after.take_at(index) {
