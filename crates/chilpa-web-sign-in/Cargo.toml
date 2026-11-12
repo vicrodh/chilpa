@@ -18,7 +18,7 @@ path = "src/main.rs"
 # needs no web engine, and a build without it answers that it is unavailable.
 webengine = ["dep:cc", "dep:pkg-config"]
 
-[target.'cfg(target_os = "linux")'.dependencies]
+[target.'cfg(any(target_os = "linux", target_os = "macos"))'.dependencies]
 # The engine's processes end with the window when Chilpa ends (src/parent.rs).
 libc = "0.2"
 

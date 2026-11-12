@@ -29,7 +29,7 @@ a dependency of `chilpa-qt`, so building `chilpa-qt` alone leaves them out.
 | --- | --- | --- |
 | `chilpa-qt` | `cargo build -p chilpa-qt --release` | [read] `scripts/qt-run.sh:87` |
 | `chilpa-qt` (release CI) | `cargo build --locked --release -p chilpa-qt` | [read] `.github/workflows/release-linux.yml:142` |
-| `chilpa-web-sign-in` | `cargo build -p chilpa-web-sign-in --features webengine --release`, only when `pkg-config --atleast-version=6.9 Qt6WebEngineWidgets` succeeds | [read] `scripts/qt-run.sh:95-97` |
+| `chilpa-web-sign-in` | `cargo build -p chilpa-web-sign-in --features webengine --release`, only when `pkg-config --atleast-version=6.9 Qt6WebEngineWidgets` succeeds | [read] `scripts/qt-run.sh:97-99` |
 | `chilpa-plugin-runner` | not built by `qt-run.sh` nor by the release workflow; binary name `chilpa-plugin-runner` | [read] `crates/chilpa-plugin-runner/Cargo.toml:9-11` |
 
 - Toolchain: Rust 1.96.0 in CI ([read] `release-linux.yml:113-115`),
@@ -44,9 +44,9 @@ a dependency of `chilpa-qt`, so building `chilpa-qt` alone leaves them out.
   run ([read] `:68-71`), the guard against another cargo process
   ([read] `:60-66`), `cargo metadata` piped to python3 ([read] `:78-81`), and
   the artifact directory with its git commit and dirty state
-  ([read] `:105-143`). One step inside that block is needed: when
+  ([read] `:107-145`). One step inside that block is needed: when
   `target/compat-runtime` exists, `scripts/package-compat.sh` copies it beside
-  the binary as `compat-runtime` ([read] `:128-131`), which is where the
+  the binary as `compat-runtime` ([read] `:130-133`), which is where the
   compatibility worker looks for it (section 5).
 
 ## 2. Environment variables read at build time
@@ -103,7 +103,7 @@ of the build read `2026-11-08 (9b186e0cb)` ([built]).
     ([built]).
 - `chilpa-web-sign-in` with `--features webengine` probes pkg-config
   `Qt6WebEngineWidgets` at 6.9 or later and panics without it
-  ([read] `crates/chilpa-web-sign-in/build.rs:16-20`). Qt WebEngine is not part
+  ([read] `crates/chilpa-web-sign-in/build.rs:18-22`). Qt WebEngine is not part
   of org.kde.Platform; it comes from the `io.qt.qtwebengine.BaseApp` 6.11
   base app, whose `Qt6WebEngineWidgets.pc` sits in
   `/app/lib/x86_64-linux-gnu/pkgconfig`, outside the SDK's default
@@ -145,7 +145,7 @@ repository-relative.
 | Source | Install to | Notes |
 | --- | --- | --- |
 | `target/release/chilpa-qt` | `/app/bin/chilpa-qt` | |
-| `target/release/chilpa-web-sign-in` | `/app/bin/chilpa-web-sign-in` | Found beside `chilpa-qt` with `current_exe().with_file_name(...)` and used only if it is a file ([read] `crates/chilpa-api/src/web_sign_in.rs:17,63-67`). Without it plugin sign-in links open in the browser ([read] `scripts/qt-run.sh:89-92`). |
+| `target/release/chilpa-web-sign-in` | `/app/bin/chilpa-web-sign-in` | Found beside `chilpa-qt` with `current_exe().with_file_name(...)` and used only if it is a file ([read] `crates/chilpa-api/src/web_sign_in.rs:17,63-67`). Without it plugin sign-in links open in the browser ([read] `scripts/qt-run.sh:89-94`). |
 | `target/release/chilpa-plugin-runner` | `/app/libexec/chilpa-plugin-runner` | Hard-coded path ([read] `crates/chilpa-bwrap/src/flatpak.rs:23`). Inside a Flatpak the launcher selects the portal backend ([read] `crates/chilpa-bwrap/src/process.rs:64-73`), which starts every process plugin and the compatibility worker behind this runner. Without the file the backend answers "missing program" and no process plugin starts ([read] `flatpak.rs:109-111`). |
 | `target/release/compat-runtime` (from `scripts/package-compat.sh`) | `/app/bin/compat-runtime` | The compatibility worker's `adapter/worker.pl` and `libraries/lib/perl5`, found beside the executable ([read] `crates/chilpa-bwrap/src/linux.rs:29-32`). `package-compat.sh` copies `compat/perl` as `adapter/` and the `libraries/` of the runtime folder it is given ([read] `scripts/package-compat.sh:4-15`). `scripts/build-compat-runtime.sh` builds that folder's modules; in the Flatpak, `modules/perl-modules.yml` stages them in `/app/lib/chilpa-compat` and the manifest copies them here ([built]). |
 | Perl, built against the runtime's glibc | `/app/bin/perl` | Hard-coded path ([read] `crates/chilpa-bwrap/src/flatpak_worker.rs:21-22`); the runtime has no Perl. Without it, or without the adapter or its modules, the compatible plugins section says which is missing ([read] `flatpak_worker.rs:40-46`). |

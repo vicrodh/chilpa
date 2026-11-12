@@ -13,6 +13,8 @@ fn window() {
     println!("cargo:rerun-if-env-changed=PKG_CONFIG_PATH");
     // 6.9 is the first release with QWebEngineProfileBuilder, which gives the
     // profile its folders before it writes anything.
+    // Homebrew's Qt installs its `.pc` files too, under its own prefix, and
+    // its pkg-config reads them there.
     let qt = pkg_config::Config::new()
         .atleast_version("6.9")
         .cargo_metadata(false)
@@ -26,6 +28,12 @@ fn window() {
     for path in &qt.include_paths {
         cc.include(path);
     }
+    // A macOS Qt is made of frameworks: its `.pc` files give `-F` and
+    // `-framework` instead of `-L` and `-l`, and its headers include each
+    // other as `<QtCore/...>`, which only a framework search path resolves.
+    for path in &qt.framework_paths {
+        cc.flag(format!("-F{}", path.display()));
+    }
     for (name, value) in &qt.defines {
         cc.define(name, value.as_deref());
     }
@@ -35,7 +43,13 @@ fn window() {
     for path in &qt.link_paths {
         println!("cargo:rustc-link-search=native={}", path.display());
     }
+    for path in &qt.framework_paths {
+        println!("cargo:rustc-link-search=framework={}", path.display());
+    }
     for library in &qt.libs {
         println!("cargo:rustc-link-lib={library}");
+    }
+    for framework in &qt.frameworks {
+        println!("cargo:rustc-link-lib=framework={framework}");
     }
 }
