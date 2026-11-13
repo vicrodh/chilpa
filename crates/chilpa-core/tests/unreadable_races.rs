@@ -11,7 +11,7 @@ use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
 use chilpa_audio::render::Outcome;
 use chilpa_audio::sink::{AudioSink, SinkError};
-use chilpa_core::queue_playback::{play_queue_told, Controls, DsdMode, SharedQueue, TrackResult};
+use chilpa_core::queue_playback::{play_queue_told, Controls, DsdMode, Repeat, SharedQueue, TrackResult};
 use chilpa_core::remote::{Described, Located, Media, RemoteOpener};
 use chilpa_models::{RemoteEntry, SourceId};
 use std::collections::HashMap;
@@ -336,4 +336,39 @@ fn a_seek_or_a_next_asked_while_a_dsd_track_broke_is_not_served_to_the_next_trac
     assert_eq!(sought, undisturbed, "the next track plays from its beginning, whole");
     let skipped = after_a_dsd_track_breaks("dsd-next", &|controls| controls.skip.skip());
     assert_eq!(skipped, undisturbed, "the next track is not skipped");
+}
+
+#[test]
+fn under_repeat_one_a_copy_of_a_track_that_broke_is_not_opened_again() {
+    let dir = folder("repeat-one-copy");
+    let broken = dsf(&dir, "01.dsf", DSD64 / 10, 1);
+    let tracks = vec![broken.clone(), wave(&dir, "02.wav"), broken, wave(&dir, "04.wav")];
+    let caps = DeviceCaps { sample_rates: vec![44_100, 88_200], formats: vec![SampleFormat::S16, SampleFormat::S24In32], channels: vec![2], probed: true };
+    let controls = Controls::new();
+    controls.repeat.set(Repeat::One);
+    let (mut started, mut passed) = (Vec::new(), Vec::new());
+    let result = play_queue_told(
+        &SharedQueue::new(tracks),
+        &caps,
+        Policy::AllowAnything,
+        &controls,
+        |format| Ok(Swallow(format)),
+        &mut |index, _, _, _| {
+            // Next, pressed once the second track repeats; the mark ends the
+            // repeat of the last one, so the test ends.
+            if index == 1 && !started.contains(&1) {
+                controls.skip.skip();
+            }
+            if index == 3 {
+                controls.stop_after.set(Some(3));
+            }
+            started.push(index);
+        },
+        &mut |_, _| {},
+        &mut |index, _, _, _| passed.push(index),
+    );
+    assert!(result.is_ok(), "{:?}", result.err());
+    assert_eq!(started, [0, 1, 3], "the copy at the third position is passed unopened: its audible part is not heard again");
+    assert_eq!(passed, [0], "and it is said once");
+    let _ = std::fs::remove_dir_all(dir);
 }

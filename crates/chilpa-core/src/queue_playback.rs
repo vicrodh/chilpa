@@ -819,6 +819,11 @@ where
     let mut preload = crate::preload::Preload::default();
     let mut unreachable_in_a_row = 0usize;
     let mut passed_over: Option<PlayError> = None;
+    // The entries passed over by this play. A copy of one elsewhere in the
+    // queue is passed unopened when it is reached, under any repeat mode and
+    // whether or not whoever drives the queue has read the word: opening it
+    // again would play the part of a broken track that can be heard.
+    let mut passed = std::collections::HashSet::new();
     // The DoP marker of whatever is open. It carries on across tracks that
     // share an opening and starts over with a new one.
     let mut packer = DopPacker::new();
@@ -838,7 +843,7 @@ where
     loop {
         // A removed track is skipped without playing; if none are left, the
         // queue is over.
-        let Some(path) = next_live(queue, order, repeat, &mut index, Some(stop_after)) else { break };
+        let Some(path) = next_live(queue, order, repeat, &mut index, Some(stop_after), &passed) else { break };
         let path = &path;
         chilpa_audio::diagnostics::trace(
             "queue",
@@ -868,6 +873,7 @@ where
                 if error.is_track() {
                     on_passed(index, path, &error.to_string(), None);
                     queue.remove(index);
+                    passed.insert(path.clone());
                 }
                 // A seek or a Next asked for while it opened was meant for it:
                 // what comes next starts at its beginning and is not skipped.
@@ -1044,7 +1050,7 @@ where
         if gapless.get() {
             let next = if repeat.get() == Repeat::One { Some(index) } else { order.next(index, queue.len(), repeat.get() == Repeat::All) };
             if let Some(mut next) = next {
-                if let Some(path) = next_live(queue, order, repeat, &mut next, None) {
+                if let Some(path) = next_live(queue, order, repeat, &mut next, None, &passed) {
                     let length = match &source {
                         Source::Pcm(decoded, _, _) => decoded.frame_count().map(|frames| frames as f64 / f64::from(decoded.stream_format().sample_rate_hz.max(1))),
                         _ => None,
@@ -1208,6 +1214,7 @@ where
         if let Outcome::Unreadable { frames, reason } = &outcome {
             on_passed(index, path, reason, Some(*frames));
             queue.remove(index);
+            passed.insert(path.clone());
             // A seek or a Next asked for while its last read was failing was
             // meant for it, as when it will not open: the source looked at
             // them before that read and never again.
@@ -1289,18 +1296,22 @@ where
 /// Advances `index` until it finds a live one. Returns `None` when none
 /// are left, counting laps so as not to spin forever if the whole queue
 /// was removed with repeat turned on, and at a removed one that carries the
-/// `stop_after` mark: a position passed without opening still holds it.
+/// `stop_after` mark: a position passed without opening still holds it. A
+/// copy of an entry in `passed` is removed here, as it is reached.
 fn next_live(
     queue: &SharedQueue,
     order: &Order,
     repeat: &RepeatMode,
     index: &mut usize,
     stop_after: Option<&StopAfter>,
+    passed: &std::collections::HashSet<PathBuf>,
 ) -> Option<PathBuf> {
     let wrap = repeat.get() == Repeat::All;
     for _ in 0..=queue.len() {
-        if let Some(p) = queue.get(*index) {
-            return Some(p);
+        match queue.get(*index) {
+            Some(path) if passed.contains(&path) => { queue.remove(*index); }
+            Some(path) => return Some(path),
+            None => {}
         }
         if *index >= queue.len() || stop_after.is_some_and(|mark| mark.take_at(*index)) {
             return None;
