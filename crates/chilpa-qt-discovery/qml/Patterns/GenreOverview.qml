@@ -28,6 +28,11 @@ Item {
     signal activated(var entry)
     signal browseRequested(string section)
     signal playRequested()
+    PageLifetime { id:shelfLifetime }
+    function showShelf(loader,wanted) {
+        if (wanted) loader.active=true
+        else shelfLifetime.cancel(loader)
+    }
     function inView(item) {
         const top = Viewport.topIn(item, view.contentItem)
         return layoutReady && visible && top + item.height > view.contentY && top < view.contentY + view.height
@@ -82,7 +87,9 @@ Item {
                 id: albums
                 objectName: "genreAlbumShelf"
                 width: parent.width; height: overview.albumShelfHeight
-                active: overview.inView(albums)
+                readonly property bool wantedActive:overview.inView(albums)
+                active:false
+                onWantedActiveChanged:overview.showShelf(albums,wantedActive)
                 sourceComponent: Item {
                     AlbumGridModel { id: records; kind:"discovery"; key:overview.key; maxRows:1; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
                     AlbumGrid { id:grid; anchors.fill:parent; model:records; onOpen: albumId => Navigation.go("album", albumId) }
@@ -98,7 +105,9 @@ Item {
                 id: artists
                 objectName: "genreArtistShelf"
                 width: parent.width; height: Metrics.sceneCardHeight + Metrics.sceneRowGap
-                active: overview.inView(artists)
+                readonly property bool wantedActive:overview.inView(artists)
+                active:false
+                onWantedActiveChanged:overview.showShelf(artists,wantedActive)
                 sourceComponent: overview.artistsContent
             }
             Row {

@@ -6,6 +6,9 @@ import "../../qml/Screens"
 import "../../qml/Patterns"
 
 TestCase {
+    id:test
+    property int retiredShelves:0
+    property int uncancelledShelves:0
     name: "MusicDiscovery"
     when: windowShown
     visible: true
@@ -150,6 +153,40 @@ TestCase {
         const page = createTemporaryObject(maker, this, {routeKey:key})
         compare(page.tab, 2)
         compare(page.positions[2], 123)
+    }
+    Component {
+        id:shelfMaker
+        GenreOverview {
+            width:1100; height:640; name:"Metal"
+            about:({items:[],total:0,summary:{albums:4,images:[]}})
+            artistsContent: Component {
+                GridView {
+                    objectName:"genreShelfPendingView"
+                    property bool clearedBeforeDestroy:false
+                    model:500; cellWidth:100; cellHeight:100
+                    delegate:Item { width:100; height:100 }
+                    onModelChanged:if (model===null || model===undefined) clearedBeforeDestroy=true
+                    Component.onDestruction:{ test.retiredShelves++; if (!clearedBeforeDestroy) test.uncancelledShelves++ }
+                }
+            }
+        }
+    }
+    function test_shelves_cancel_views_before_releasing_their_creation_contexts() {
+        test.retiredShelves=0; test.uncancelledShelves=0
+        const page=createTemporaryObject(shelfMaker,this)
+        page.scrollView.contentY=600
+        let grid
+        tryVerify(()=>{grid=findChild(page,"genreShelfPendingView");return !!grid})
+        grid.clearedBeforeDestroy=false
+        page.scrollView.contentY=0
+        tryCompare(findChild(page,"genreArtistShelf"),"active",false)
+        tryCompare(test,"retiredShelves",1)
+        compare(test.uncancelledShelves,0,"a view's model is cancelled while its creation context still exists")
+        page.scrollView.contentY=600
+        tryVerify(()=>{grid=findChild(page,"genreShelfPendingView");return !!grid && grid.model===500})
+        page.scrollView.contentY=0
+        tryCompare(test,"retiredShelves",2)
+        compare(test.uncancelledShelves,0)
     }
     function test_playing_a_genre_requires_the_explicit_play_action() {
         const page = createTemporaryObject(maker, this, {routeKey:JSON.stringify({kind:"genre",name:"Metal"})})
