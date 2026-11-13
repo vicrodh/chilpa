@@ -83,7 +83,9 @@ ListModel {
     onLimitChanged: fill()
     Component.onCompleted: fill()
     property string filledKey: ""
+    property var initialTrackRequest: null
     function fill() {
+        if (kind === "tracks" && initialTrackRequest === null) initialTrackRequest = {key:key, filterRev:filterRev}
         const wanted = key.endsWith("|tracks") ? 8 : key.endsWith("|latest-tracks") ? 6 : kind === "mostPlayed" ? 30 : 0
         const count = limit > 0 ? Math.min(limit, wanted) : wanted
         if (filledKey !== key) { clear(); filledKey = key }

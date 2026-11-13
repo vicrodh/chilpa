@@ -25,6 +25,8 @@ Item {
     TrackSheetState { id: tableState; settings: SettingsModel; visits: Visit }
     readonly property var scrollView: list.rows
 
+    // Async incubation can yield between bindings; query only the completed page.
+    Component.onCompleted: tracks.kind = "tracks"
     Component.onDestruction: {
         Visit.keep("tracks.typed", typed)
     }
@@ -35,9 +37,8 @@ Item {
 
     TrackListModel {
         id: tracks
-        kind: "tracks"
         key: [page.order === "default" ? "" : page.order, page.group, page.typed, "", JSON.stringify(tableState.effective)].join("\u001f")
-        filterRev: Library.rev + Library.contentRev + Library.remoteRev + (tableState.marksFiltered ? Ratings.rev : 0)
+        filterRev: Library.contentRev + Library.remoteRev + (tableState.marksFiltered ? Ratings.rev : 0)
         playingPath: Player.path
     }
 

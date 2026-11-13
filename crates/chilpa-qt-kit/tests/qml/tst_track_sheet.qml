@@ -442,6 +442,23 @@ TestCase {
         verify(waitForRendering(skeleton.item, 450))
         verify(Date.now() - returning < 500, "re-entering Tracks restores its loading surface immediately")
     }
+    function test_sheet_refreshes_only_for_its_own_content() {
+        Library.contentRev = 17
+        Library.remoteRev = 23
+        const page = createTemporaryObject(screenMaker, test, {width:1000,height:700})
+        const model = page.scrollView.model
+        compare(model.kind, "tracks")
+        compare(model.key.split("\u001f").length, 5)
+        compare(model.initialTrackRequest.key, model.key, "the first request contains the completed sheet key")
+        compare(model.initialTrackRequest.filterRev, model.filterRev, "the first request contains the initial revisions")
+        const before = model.filterRev
+        Library.rev++
+        compare(model.filterRev, before, "shared filter snapshots do not resubmit the independent sheet")
+        Library.contentRev++
+        compare(model.filterRev, before + 1, "local content still invalidates the sheet")
+        Library.remoteRev++
+        compare(model.filterRev, before + 2, "source content still invalidates the sheet")
+    }
     function test_marks_only_refresh_queries_that_filter_marks() {
         const page = createTemporaryObject(screenMaker, test, {width:1000,height:700})
         const model = page.scrollView.model
