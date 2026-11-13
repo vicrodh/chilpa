@@ -82,12 +82,12 @@ impl Chilpa {
     // I keep the decoder's indices intact while editing the visible sequence.
     fn apply_live_buffer(&mut self, b: &Buffer) {
         let added: Vec<_> = b.paths[self.queue.len()..].iter().map(std::path::PathBuf::from).collect();
-        if let Some(p) = self.player.as_ref().filter(|p| !p.idle()) {
+        if let Some(p) = self.current_launch() {
             if !added.is_empty() { p.enqueue(&added); }
             let order = b.order.iter().copied().filter(|&i| i >= self.base).map(|i| i - self.base).collect();
             p.set_order(order, b.paths.len().saturating_sub(self.base));
             p.set_stop_after(b.stop_after.map(|i| i.saturating_sub(self.base)));
-            for (i, removed) in b.removed.iter().enumerate().skip(self.base) { if *removed { p.remove_from_queue(i - self.base); } }
+            for (i, removed) in b.removed.iter().enumerate().skip(self.base) { if *removed { p.remove(i - self.base); } }
         }
         self.listen.active = b.id;
         self.grow_rows_to(&b.paths); self.queue_origins = b.origins.clone(); self.removed = b.removed.clone();

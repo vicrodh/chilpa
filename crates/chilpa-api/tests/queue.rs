@@ -1287,3 +1287,42 @@ fn closing_with_another_queue_waiting_to_play_writes_what_was_heard_and_starts_n
     assert_eq!((logged.events, logged.skips), (1, 1), "the track that was left is one listen, cut short, and the queue that waited never started: {logged:?}");
     let _ = std::fs::remove_dir_all(dir);
 }
+
+/// A hundred thousand rows, and hundreds of them in a row that the player
+/// passes over: each is marked as its word is read, at a cost that does not
+/// grow with the queue. Marking used to look for the entry in every row.
+#[test]
+fn a_run_of_skips_in_a_very_long_queue_is_read_without_walking_it() {
+    const ROWS: usize = 100_000;
+    const SKIPS: usize = 400;
+    let dir = folder("skip-long");
+    other_library(&dir);
+    english();
+    let good = wave(&dir, "good.wav", 4_410).display().to_string();
+    // The run stands at the end, behind the one track that plays.
+    let first = ROWS - SKIPS - 1;
+    let mut paths = vec![good; first];
+    paths.push(wave(&dir, "first.wav", 4_410).display().to_string());
+    paths.extend((0..SKIPS).map(|n| garbage_file(&dir, &format!("bad-{n:04}.wav")).display().to_string()));
+    assert_eq!(paths.len(), ROWS);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.use_output(OUTPUT, false);
+    let started = std::time::Instant::now();
+    chilpa.play_from(&paths, first);
+    let limit = started + std::time::Duration::from_secs(60);
+    let mut played = false;
+    while std::time::Instant::now() < limit {
+        let now = chilpa.poll();
+        played |= now.index == first && now.seconds > 0.0;
+        if played && !now.playing {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    let took = started.elapsed();
+    assert!(played && !chilpa.now_playing().playing, "the track before the run played and the queue ran out: {:?}", chilpa.now_playing().error);
+    assert_eq!(chilpa.now_playing().error, format!("Skipped {SKIPS} unavailable tracks"));
+    assert!(took < std::time::Duration::from_secs(30), "{SKIPS} skips in {ROWS} rows took {took:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}

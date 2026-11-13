@@ -20,6 +20,8 @@ pub(crate) mod ledger;
 
 use std::collections::VecDeque;
 
+use chilpa_core::launch::{LaunchHandle, LaunchSpec};
+
 use face::{Cards, Face};
 use ledger::{Ledger, Written};
 
@@ -52,6 +54,9 @@ pub(crate) enum Replaced {
 /// One launch the player was asked for, until its last event is read.
 pub(crate) struct Play {
     pub id: u64,
+    /// What reaches it in the player: its seek, its Next, its stop mark,
+    /// its queue and its order. `None` for a play no player was asked for.
+    pub handle: Option<LaunchHandle>,
     /// The count of the queue's rows it was launched on.
     pub epoch: u64,
     /// Where in the queue it was launched from.
@@ -102,7 +107,7 @@ impl Plays {
 
     /// A launch went out: it is the play in front of the window.
     pub fn push(&mut self, id: u64, from: usize, epoch: u64, cards: Cards) {
-        self.0.push_back(Play { id, epoch, from, started: false, fate: Fate::Current, ledger: Ledger::default(), cards });
+        self.0.push_back(Play { id, handle: None, epoch, from, started: false, fate: Fate::Current, ledger: Ledger::default(), cards });
     }
 
     fn take(&mut self, id: u64) -> Option<Play> {
@@ -128,6 +133,24 @@ impl Chilpa {
         let cards = Cards { search: self.search.playing.clone(), entry: self.sounding_card() };
         self.plays.push(id, from, self.rows_epoch, cards);
         self.launch_counted();
+    }
+
+    /// Asks the player for a play and puts it in front of the window. The
+    /// player tells every play before it to stop for this one.
+    pub(crate) fn launch(&mut self, spec: LaunchSpec, from: usize, why: Relaunch) {
+        let Some(player) = &self.player else { return };
+        let handle = player.launch(spec);
+        let id = handle.id().get();
+        self.launched(id, from, why);
+        if let Some(play) = self.plays.get_mut(id) {
+            play.handle = Some(handle);
+        }
+    }
+
+    /// The play in front of the window, as the player holds it: what is
+    /// asked through it reaches that play and no other.
+    pub(crate) fn current_launch(&self) -> Option<&LaunchHandle> {
+        self.plays.current().and_then(|play| play.handle.as_ref())
     }
 
     /// Whether the play is in front of the window, launched on the rows that

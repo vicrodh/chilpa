@@ -52,8 +52,8 @@ pub(crate) struct Openers {
     /// next track's is resolved while the one before it ends, so the gap
     /// between them is not a round trip to the plugin.
     ahead: Mutex<std::collections::HashMap<String, (std::time::Instant, Located)>>,
-    /// What failed to open, for the queue to pass it over and say so, and
-    /// how fast: a burst of failures slows the next opens down.
+    /// How fast opens have been failing: a burst of failures slows the next
+    /// ones down.
     reports: crate::queue::unavailable::Reports,
 }
 
@@ -264,7 +264,8 @@ impl RemoteOpener for Openers {
     }
 
     fn failed(&self, entry: &RemoteEntry, why: &str, play: Option<u64>) {
-        self.reports.failed(entry.to_entry(), why, !chilpa_core::network::current().offline, play);
+        // Health and pacing only: the play that asked says what it passed over.
+        self.reports.failed(!chilpa_core::network::current().offline);
         if entry.source.provider != PROVIDER {
             if let Some(servers) = &self.servers {
                 servers.failed(entry, why, play);
@@ -276,6 +277,60 @@ impl RemoteOpener for Openers {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn located(address: &str) -> Located {
+        Located {
+            normalization: None,
+            playback: None,
+            media: chilpa_core::remote::Media::Remote(chilpa_core::RangedRequest { url: address.to_string(), headers: Vec::new() }),
+            extension: None,
+            server: String::new(),
+        }
+    }
+
+    /// The one thing of an open that outlives the play it was asked for: an
+    /// address resolved ahead, which may arrive after that play was replaced.
+    /// It is an address and nothing else, kept for whoever opens that entry
+    /// next, once; it marks no row and says nothing to the window.
+    #[test]
+    fn an_address_resolved_late_is_kept_for_the_next_open_of_its_entry_and_nothing_else() {
+        let mut api = crate::Chilpa::with_listed(Vec::new(), Vec::new());
+        let entry = RemoteEntry::new(SourceId::new(PROVIDER, "app.example.shows"), "ep-1");
+        let path = entry.to_entry();
+        api.swap_rows(vec![path.clone(), entry_of("app.example.shows", "ep-2")]);
+        // A play that replaced the one the address was asked for.
+        api.launched(7, 1, crate::Relaunch::Track);
+        let openers = Openers::new(None, None, api.catalog.clone(), api.unavailable.reports());
+        // The late answer of a resolve asked ahead, as its thread keeps it.
+        openers.ahead.lock().unwrap().insert(path.clone(), (std::time::Instant::now(), located("https://a.example/ep-1.mp3")));
+        api.poll();
+        assert!(!api.marked_at(0) && !api.marked_at(1), "it marks no row");
+        assert!(api.now.error.is_empty(), "{}", api.now.error);
+        assert_eq!(api.plays.current().map(|play| play.id), Some(7), "the play in front is not touched");
+        let found = openers.take_ahead(&entry).expect("the next open of the entry takes it");
+        assert!(matches!(found.media, chilpa_core::remote::Media::Remote(ref request) if request.url == "https://a.example/ep-1.mp3"));
+        assert!(openers.take_ahead(&entry).is_none(), "once");
+    }
+
+    /// An open the player started for a play that is gone, failing late:
+    /// the opener hears of it for its pacing and nothing else does.
+    #[test]
+    fn a_late_failure_of_an_open_marks_nothing_in_the_queue_in_front() {
+        let mut api = crate::Chilpa::with_listed(Vec::new(), Vec::new());
+        let entry = RemoteEntry::new(SourceId::new(PROVIDER, "app.example.shows"), "ep-1");
+        api.swap_rows(vec![entry.to_entry()]);
+        api.launched(9, 0, crate::Relaunch::Track);
+        let openers = Openers::new(None, None, api.catalog.clone(), api.unavailable.reports());
+        for play in [Some(8), Some(9), None] {
+            openers.failed(&entry, "timed out", play);
+        }
+        api.poll();
+        assert!(!api.marked_at(0), "only the play that reaches the entry says it was passed over");
+        assert!(!api.now.error.starts_with("Skipped"), "{}", api.now.error);
+        // Its own play passing it over is what marks it.
+        api.apply_player_event(9, chilpa_core::player::PlayerEvent::Skipped { generation: 9, attempt: 1, index: 0, path: entry.to_entry().into(), message: "timed out".into(), played: None }, &mut false);
+        assert!(api.marked_at(0));
+    }
 
     #[test]
     fn an_entry_of_a_plugin_round_trips_and_a_server_s_is_not_one() {

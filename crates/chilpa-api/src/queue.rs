@@ -22,6 +22,7 @@ pub(crate) mod ended;
 pub(crate) mod normalization;
 pub(crate) mod rows;
 pub(crate) mod unavailable;
+pub(crate) mod walk_order;
 
 /// Where the playback switches are kept.
 const GAPLESS: &str = "playback.gapless";
@@ -74,8 +75,8 @@ impl Chilpa {
         if self.shuffle {
             if let Some(at) = order.iter().position(|&index| index == first) { order.swap(0, at); }
         }
+        // The play that follows is launched with it.
         if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) { b.order = order.clone(); }
-        if let Some(p) = &self.player { p.set_order(order.clone(), self.queue.len()); }
         self.casting.order = order;
         self.protect_queue_catalog();
         first
@@ -255,8 +256,12 @@ impl Chilpa {
         if tracks.is_empty() {
             return;
         }
-        // The play in front of the window is told to stop for this one; what
-        // becomes of it is said as this one goes out.
+        // The play in front of the window walks the queue in this order
+        // until it is told to stop, which is before the settings every play
+        // shares are set for this one; what becomes of it is said as this
+        // one goes out. Asking for this one tells every other play that is
+        // not over to stop as well.
+        let order = self.full_queue_order();
         if self.plays.current().is_some() {
             if let Some(player) = &self.player {
                 player.stop_for_handoff();
@@ -267,7 +272,6 @@ impl Chilpa {
                 format_args!("reason={why:?}"),
             );
         }
-        let order = self.full_queue_order();
         self.base = 0;
         // I retain the complete order while changing only the cursor.
         self.mix = false;
@@ -292,7 +296,6 @@ impl Chilpa {
         player.set_dsd_mode(dsd_mode);
         player.set_volume(volume);
         let _ = player.dsp().set(dsp);
-        player.set_order(order, tracks.len());
         // Moving output is the same track going on somewhere else, so what
         // the window is showing stays up. Clearing it would blank the title,
         // the artwork and the position for the moment the new device takes to
@@ -316,8 +319,11 @@ impl Chilpa {
                 tracks.first()
             ),
         );
-        let play = player.play_from_index(&tracks, device, start_at, paused, Some(from), &removed, self.stop_after);
-        self.launched(play, from, why);
+        let spec = chilpa_core::launch::LaunchSpec {
+            paths: tracks, device: device.to_string(), start_index: Some(from), start_at, paused,
+            removed, stop_after: self.stop_after, order,
+        };
+        self.launch(spec, from, why);
     }
 
     /// Moves what is playing to another output, keeping its place.
@@ -398,11 +404,23 @@ impl Chilpa {
             if let Some(removed) = self.removed.get_mut(index) { *removed = true; return true; }
             return false;
         }
-        let Some(p) = &self.player else { return false };
-        // The player counts from where it started; the view, from the start
-        // of the queue.
-        if !p.remove_from_queue(index - self.base) {
+        if self.player.is_none() {
             return false;
+        }
+        match self.current_launch() {
+            // The play counts from where it started; the view, from the
+            // start of the queue.
+            Some(launch) => {
+                if !launch.remove(index - self.base) {
+                    return false;
+                }
+            }
+            // No play walks these rows: the row is only marked, once.
+            None => {
+                if self.removed.get(index).copied().unwrap_or(false) {
+                    return false;
+                }
+            }
         }
         if let Some(q) = self.removed.get_mut(index) {
             *q = true;
@@ -503,8 +521,8 @@ impl Chilpa {
             return false;
         }
         self.stop_after = index;
-        if let Some(player) = &self.player {
-            player.set_stop_after(index.map(|at| at - self.base));
+        if let Some(launch) = self.current_launch() {
+            launch.set_stop_after(index.map(|at| at - self.base));
         }
         true
     }
@@ -568,8 +586,8 @@ impl Chilpa {
         self.queue_placement.resize(self.queue.len(), placement);
         self.removed.resize(self.queue.len(), false);
         order.splice(at..at, first..self.queue.len());
-        if let Some(p) = self.player.as_ref().filter(|p| !p.idle()) {
-            p.enqueue(tracks); p.set_order(order.clone(), self.queue.len());
+        if let Some(launch) = self.current_launch() {
+            launch.enqueue(tracks); launch.set_order(order.clone(), self.queue.len());
         }
         if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) { b.order = order.clone(); }
         self.casting.order = order;
@@ -680,7 +698,7 @@ impl Chilpa {
         }
 
         let own = self.queue.len().saturating_sub(self.base);
-        let mut order = if self.casting.active() { self.casting.order.clone() } else { self.player.as_ref().map(|p| p.order()).unwrap_or_default() };
+        let mut order = if self.casting.active() { self.casting.order.clone() } else { self.local_order().into_iter().filter(|&index| index >= self.base).map(|index| index - self.base).collect() };
         if order.len() != own {
             order = (0..own).collect();
         }
@@ -691,7 +709,7 @@ impl Chilpa {
                 *entry = replacements.next().expect("one replacement for every visible queue row");
             }
         }
-        if self.casting.active() { self.casting.order = order; true } else { self.player.as_ref().is_some_and(|p| p.set_order(order, own)) }
+        if self.casting.active() { self.casting.order = order; true } else { self.set_walk_order(order, own) }
     }
 
     /// Folding is presentation state only; it never changes traversal.
@@ -776,9 +794,7 @@ impl Chilpa {
 
         let order = order_by_tempo(&bpms, current.min(paths.len().saturating_sub(1)));
         if self.casting.active() { self.casting.order = order.clone(); }
-        if let Some(p) = &self.player {
-            p.set_order(order, paths.len());
-        }
+        self.set_walk_order(order, paths.len());
         // Mixing and shuffling are two forms of the same thing: they cannot
         // both be on.
         self.shuffle = false;
@@ -882,9 +898,7 @@ impl Chilpa {
         } else {
             self.mix = false;
             if self.casting.active() { self.casting.order = (0..self.queue.len()).collect(); }
-            if let Some(p) = &self.player {
-                p.clear_order();
-            }
+            self.clear_walk_order();
         }
     }
 
@@ -906,7 +920,7 @@ impl Chilpa {
         }
         self.casting.order = order.clone();
         if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) { b.order = order.clone(); }
-        if let Some(p) = &self.player { p.set_order(order, self.queue.len()); }
+        self.set_walk_order(order, self.queue.len());
     }
 
     pub fn repeat(&self) -> Repeat {

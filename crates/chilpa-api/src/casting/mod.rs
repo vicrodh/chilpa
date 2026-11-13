@@ -76,11 +76,9 @@ impl Chilpa {
         let transfer = self.now.playing && !self.now.paused;
         self.casting.advance();
         if self.casting.worker.is_none() { self.casting.worker = Some(Worker::new()); }
-        self.casting.order = self.player.as_ref().map(|p| {
-            let order = p.order();
-            if order.len() == self.queue.len().saturating_sub(self.base) {
-                (0..self.base).chain(order.into_iter().map(|i| i + self.base)).collect()
-            } else { (0..self.queue.len()).collect() }
+        self.casting.order = self.player.as_ref().map(|_| {
+            let order = self.local_order();
+            if order.len() == self.queue.len() { order } else { (0..self.queue.len()).collect() }
         }).unwrap_or_else(|| if self.casting.order.len() == self.queue.len() { self.casting.order.clone() } else { (0..self.queue.len()).collect() });
         self.base = 0;
         // The player goes with the connection: its plays are settled here.

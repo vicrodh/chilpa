@@ -76,13 +76,7 @@ impl Default for Workspace {
 
 impl Chilpa {
     pub(crate) fn full_queue_order(&self) -> Vec<usize> {
-        let order = if self.casting.active() { self.casting.order.clone() }
-            else if let Some(player) = self.player.as_ref().filter(|p| !p.idle()) {
-                player.order().into_iter().map(|i| i + self.base).collect()
-            } else {
-                self.listen.buffers.iter().find(|b| b.id == self.listen.active)
-                    .map(|b| b.order.clone()).unwrap_or_default()
-            };
+        let order = if self.casting.active() { self.casting.order.clone() } else { self.local_order() };
         if order.len() == self.queue.len() { order } else { (0..self.queue.len()).collect() }
     }
     fn buffer_snapshot(&self, id: u64) -> Option<Buffer> {
@@ -115,7 +109,6 @@ impl Chilpa {
             self.listen.undo = Some(Undo { originals: vec![(at, b.clone())], created: Vec::new(), selected: b.id });
             b.epoch = b.epoch.wrapping_add(1); b.order.clear(); b.paths.clear(); b.origins.clear();
         }
-        if let Some(p) = &self.player { p.clear_order(); }
     }
     /// Where playback goes when nothing is playing, or when what plays is
     /// the opened media's queue: the queue in view, else the first that is
@@ -140,7 +133,6 @@ impl Chilpa {
         self.repeat = match b.repeat { 1 => Repeat::All, 2 => Repeat::One, _ => Repeat::Off };
         self.stop_after = b.stop_after; self.mix = false;
         self.casting.order = b.order.clone();
-        if let Some(p) = &self.player { p.set_order(b.order.clone(), b.paths.len()); }
         let cursor = b.cursor.min(b.paths.len().saturating_sub(1));
         let path = b.paths.get(cursor).cloned().unwrap_or_default();
         self.now = NowPlaying { path, index: cursor, seconds: b.seconds, queue_len: b.paths.len(),
@@ -160,7 +152,7 @@ impl Chilpa {
         if !b.live(at) { return false; }
         let seconds = if key.is_empty() { b.seconds } else { 0.0 };
         self.listen.pending = Some((id, at, seconds));
-        // I wait for the existing worker's stop barrier without blocking Qt.
+        // I wait for the plays asked so far to end without blocking Qt.
         // What plays is left for another queue: it is no longer in front of
         // the window, and its listen is one somebody chose to leave.
         self.plays.retire(Fate::Replaced(Replaced::Track));
@@ -171,10 +163,11 @@ impl Chilpa {
     }
     pub(crate) fn finish_buffer_switch(&mut self) {
         if self.listen.pending.is_none() || self.casting.disconnecting { return; }
-        if self.player.as_ref().is_some_and(|p| !p.idle()) { return; }
-        let Some((id, index, seconds)) = self.listen.pending.take() else { return };
-        // The old play has ended: what it said last settles its listens.
+        // Every play asked so far has to have said how it ended: the last of
+        // them settles its listens, and the device is free.
         self.read_player_events();
+        if !self.plays.is_empty() { return; }
+        let Some((id, index, seconds)) = self.listen.pending.take() else { return };
         self.capture_buffer();
         let Some(mut b) = self.buffer_snapshot(id) else { return };
         if !b.live(index) { return; }

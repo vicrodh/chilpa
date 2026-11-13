@@ -1166,7 +1166,7 @@ impl Chilpa {
     pub fn set_paused(&mut self, paused: bool) {
         if paused { self.casting.local_start = None; self.persist_progress(true); }
         if self.casting.active() { self.cast_pause(paused); return; }
-        if !paused && (!self.now.playing || self.player.as_ref().is_none_or(|p| p.idle())) && !self.queue.is_empty() {
+        if !paused && (!self.now.playing || self.plays.current().is_none()) && !self.queue.is_empty() {
             let restored = self.restored_at.take();
             let seconds = restored.unwrap_or(self.now.seconds).max(0.0);
             let index = self.now.index.min(self.queue.len() - 1);
@@ -1186,17 +1186,17 @@ impl Chilpa {
         self.desktop.seeked = Some(seconds);
         self.ab_jumped(seconds);
         if self.casting.active() { self.cast_seek(seconds); return; }
-        if let Some(p) = &self.player {
+        if let Some(launch) = self.current_launch() {
             let safe = seconds.max(0.0);
-            p.seek(std::time::Duration::from_secs_f64(safe));
+            launch.seek(std::time::Duration::from_secs_f64(safe));
         }
     }
 
     /// Skips to the next track in the queue.
     pub fn next_track(&mut self) {
         if self.casting.active() { self.cast_next(false); return; }
-        if let Some(p) = &self.player {
-            p.next();
+        if let Some(launch) = self.current_launch() {
+            launch.next();
         }
     }
 
@@ -1267,7 +1267,6 @@ impl Chilpa {
             self.now.paused = player.is_paused();
         }
         self.follow_playing_documents();
-        self.take_unavailable_reports();
         let started = self.read_player_events();
         // A new track's verdict cannot see the volume moved after it. The
         // level the player holds, not the settings: this runs every tick.

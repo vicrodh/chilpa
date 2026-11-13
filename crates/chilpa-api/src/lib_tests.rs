@@ -25,7 +25,7 @@ fn play_restarts_a_queue_after_the_worker_reported_an_error() {
         std::thread::sleep(std::time::Duration::from_millis(5));
     }
     assert!(!api.now.error.is_empty() && !api.now.playing);
-    assert!(!api.player.as_ref().unwrap().idle(), "no explicit stop barrier was sent");
+    assert!(api.player.is_some() && api.plays.is_empty(), "the play that failed is over, and nothing was asked to stop");
     // Repair the input and retry through the same Play action, without
     // removing the worker, resetting the queue or sending an explicit stop.
     let data_len = 4410u32 * 4;

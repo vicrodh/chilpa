@@ -31,7 +31,6 @@ pub(crate) enum Unavailable {
     /// It is there and may not be read.
     NoAccess,
     /// Its server or source could not open it, and said why.
-    Source(String),
     /// It is there and the player could not read it: it would not open, or
     /// it broke partway. The player passed over it and said why.
     Unreadable(String),
@@ -43,7 +42,7 @@ impl Unavailable {
         match self {
             Unavailable::Missing => "missing",
             Unavailable::NoAccess => "no access",
-            Unavailable::Source(why) | Unavailable::Unreadable(why) => why,
+            Unavailable::Unreadable(why) => why,
         }
     }
 }
@@ -153,23 +152,19 @@ impl State {
     }
 }
 
-/// What the remote opener passed over, as it happens on the player's thread,
-/// and how fast it has been failing. Every opener the facade installs shares
-/// it.
+/// How fast the remote opener has been failing, told on the player's thread
+/// as it happens. Every opener the facade installs shares it. What failed is
+/// not kept here: the play that asked for the open says so itself, as a track
+/// it passed over.
 #[derive(Clone, Default)]
 pub(crate) struct Reports(Arc<Mutex<Held>>);
 
 #[derive(Default)]
 struct Held {
-    /// The entry, why, and the player's generation of the play it was opened
-    /// for, when a player asked.
-    entries: Vec<(String, String, Option<u64>)>,
     failing: u32,
     last: Option<Instant>,
 }
 
-/// At most this many reports wait for the facade.
-const KEPT: usize = 256;
 /// Failures further apart than this are not one burst.
 const BURST: Duration = Duration::from_secs(3);
 /// The wait before each remote open once a burst has failed twice: at most
@@ -177,14 +172,11 @@ const BURST: Duration = Duration::from_secs(3);
 const PACE: Duration = Duration::from_millis(200);
 
 impl Reports {
-    /// The opener could not open `entry` for `play`. `online` is false when
-    /// no request went out, which is no reason to slow down.
-    pub(crate) fn failed(&self, entry: String, why: &str, online: bool, play: Option<u64>) {
-        let mut held = self.lock();
-        if held.entries.len() < KEPT {
-            held.entries.push((entry, why.to_string(), play));
-        }
+    /// The opener could not open an entry. `online` is false when no request
+    /// went out, which is no reason to slow down.
+    pub(crate) fn failed(&self, online: bool) {
         if online {
+            let mut held = self.lock();
             let now = Instant::now();
             held.failing = if held.last.is_some_and(|at| now.duration_since(at) < BURST) { held.failing.saturating_add(1) } else { 1 };
             held.last = Some(now);
@@ -195,10 +187,6 @@ impl Reports {
     pub(crate) fn pause(&self) -> Duration {
         let held = self.lock();
         pause(held.failing, held.last.map(|at| at.elapsed()))
-    }
-
-    fn take(&self) -> Vec<(String, String, Option<u64>)> {
-        std::mem::take(&mut self.lock().entries)
     }
 
     fn lock(&self) -> MutexGuard<'_, Held> {
@@ -212,11 +200,6 @@ fn pause(failing: u32, since: Option<Duration>) -> Duration {
         Some(since) if failing >= 2 && since < BURST => PACE,
         _ => Duration::ZERO,
     }
-}
-
-/// Whether a queue entry is the one the opener reported.
-fn same_entry(path: &str, entry: &str) -> bool {
-    path == entry || chilpa_models::RemoteEntry::parse(path).is_some_and(|parsed| parsed.to_entry() == entry)
 }
 
 impl Chilpa {
@@ -272,38 +255,6 @@ impl Chilpa {
             self.set_stop_after(Some(at));
         }
         if !walk.passed.is_empty() {
-            self.say_skipped();
-        }
-    }
-
-    /// Marks what the remote opener reported, and takes it out of the
-    /// player's walk for the laps that follow. A report from a play this
-    /// launch replaced is dropped: an open of the old queue that failed late
-    /// says nothing of the same entry in this one.
-    pub(crate) fn take_unavailable_reports(&mut self) {
-        let reports = self.unavailable.reports.take();
-        if reports.is_empty() {
-            return;
-        }
-        let current = self.plays.current().map(|play| play.id);
-        let mut marked = false;
-        for (entry, why, play) in reports {
-            if play.is_some() && current.is_some() && play != current {
-                chilpa_core::trace_playback("facade", "unavailable_report_dropped", format_args!("play={play:?} current={current:?} why={why:?}"));
-                continue;
-            }
-            let positions: Vec<usize> = (0..self.queue.len()).filter(|&index| same_entry(&self.queue[index], &entry)).collect();
-            let Some(&first) = positions.first() else { continue };
-            let path = self.queue[first].clone();
-            if !self.unavailable.marked.contains_key(&path) {
-                let launch = self.unavailable.launches;
-                self.unavailable.marked.insert(path, Mark { why: Unavailable::Source(why), launch });
-                marked = true;
-            }
-            self.leave_out(&positions);
-        }
-        if marked {
-            self.unavailable.revision += 1;
             self.say_skipped();
         }
     }
@@ -369,8 +320,6 @@ impl Chilpa {
     }
 
     fn new_unavailable_run(&mut self) {
-        // What the opener said during the last run is not this run's.
-        self.unavailable.reports.take();
         if !self.unavailable.marked.is_empty() {
             self.unavailable.marked.clear();
             self.unavailable.revision += 1;
@@ -402,9 +351,9 @@ impl Chilpa {
 
     /// Takes positions out of the player's walk; it passes them unopened.
     fn leave_out(&self, positions: &[usize]) {
-        let Some(player) = &self.player else { return };
+        let Some(launch) = self.current_launch() else { return };
         for &index in positions.iter().filter(|&&index| index >= self.base) {
-            player.remove_from_queue(index - self.base);
+            launch.remove(index - self.base);
         }
     }
 
@@ -424,7 +373,6 @@ impl Chilpa {
     /// a track of the launch has started, or where something playable stands
     /// on its way, the failure is the output's and is not skipped.
     fn skip_failure(&mut self, from: usize, started: bool) -> bool {
-        self.take_unavailable_reports();
         if started || self.casting.active() || self.queue.is_empty() {
             return false;
         }
@@ -578,26 +526,15 @@ mod tests {
         assert_eq!(pause(2, Some(Duration::from_millis(50))), PACE);
         assert_eq!(pause(40, Some(BURST)), Duration::ZERO, "the burst is over");
         let reports = Reports::default();
-        reports.failed("a".into(), "gone", true, None);
+        reports.failed(true);
         assert_eq!(reports.pause(), Duration::ZERO);
-        reports.failed("b".into(), "gone", true, None);
+        reports.failed(true);
         assert_eq!(reports.pause(), PACE);
         let offline = Reports::default();
-        for entry in ["a", "b", "c"] {
-            offline.failed(entry.into(), "offline", false, None);
+        for _ in 0..3 {
+            offline.failed(false);
         }
         assert_eq!(offline.pause(), Duration::ZERO, "nothing went out, nothing to slow down");
-        assert_eq!(offline.take().len(), 3);
-        assert!(offline.take().is_empty(), "taken once");
-    }
-
-    #[test]
-    fn reports_are_bounded() {
-        let reports = Reports::default();
-        for n in 0..KEPT + 10 {
-            reports.failed(n.to_string(), "gone", false, None);
-        }
-        assert_eq!(reports.take().len(), KEPT);
     }
 
     #[test]
@@ -614,29 +551,5 @@ mod tests {
         assert_eq!(api.unavailable.marked.len(), count, "each one is marked");
         // Walking the whole queue for each one took tens of seconds here.
         assert!(took < Duration::from_secs(2), "{count} skips took {took:?}");
-    }
-
-    #[test]
-    fn a_report_from_a_replaced_play_marks_nothing_in_the_queue_that_replaced_it() {
-        let entry = |id: &str| chilpa_models::RemoteEntry::new(chilpa_models::SourceId::new("plugin", "app.example"), id).to_entry();
-        let mut api = crate::Chilpa::new();
-        // The queue that replaced the one play 8 was opening `late` for.
-        api.queue = vec![entry("other"), entry("late")];
-        api.plays.push(9, 0, 0, Default::default());
-        api.unavailable.reports.failed(entry("late"), "timed out", false, Some(8));
-        api.take_unavailable_reports();
-        assert!(api.unavailable.marked.is_empty(), "the old play's failure is not this queue's");
-        assert!(!api.now.error.starts_with("Skipped"), "{}", api.now.error);
-        // The same failure from the play in front of it is this queue's.
-        api.unavailable.reports.failed(entry("late"), "timed out", false, Some(9));
-        api.take_unavailable_reports();
-        assert!(api.marked_at(1), "its own play's failure marks the entry");
-    }
-
-    #[test]
-    fn a_reported_entry_matches_its_queue_row() {
-        let entry = chilpa_models::RemoteEntry::new(chilpa_models::SourceId::new("plugin", "app.example"), "track-1").to_entry();
-        assert!(same_entry(&entry, &entry));
-        assert!(!same_entry("/music/a.flac", &entry));
     }
 }
