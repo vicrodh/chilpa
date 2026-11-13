@@ -14,7 +14,7 @@ Flow {
         model: (context.info.genres || []).map(value => typeof value === "string" ? value : value.name || value.title || "").filter(Boolean).slice(0, Metrics.discoveryPreview)
         PillButton {
             required property string modelData
-            text: modelData; kind: "ghost"
+            text: modelData; kind: "ghost"; maximumWidth: context.width
             onClicked: Navigation.goKey("genres", JSON.stringify({kind:"genre",name:modelData,trail:[modelData]}))
         }
     }

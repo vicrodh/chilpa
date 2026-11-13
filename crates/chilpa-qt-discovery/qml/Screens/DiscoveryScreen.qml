@@ -100,6 +100,7 @@ Item {
                     required property string modelData
                     required property int index
                     kind: "ghost"; text: modelData; enabled: index < discoveryPage.breadcrumb.length - 1
+                    maximumWidth: parent.width
                     onClicked: Navigation.goKey("genres", JSON.stringify({kind:"genre",name:modelData,trail:discoveryPage.breadcrumb.slice(0,index + 1)}))
                 }
             }
