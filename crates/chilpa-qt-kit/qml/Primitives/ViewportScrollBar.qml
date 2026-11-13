@@ -51,7 +51,12 @@ ScrollBar {
             area.width = Qt.binding(function() { return sideways ? viewport.width : gutter + bar.width })
             area.height = Qt.binding(function() { return sideways ? (bar.reservedBottom > 0 ? bar.height : gutter + bar.height) : Math.max(0, viewport.height - bar.reservedBottom) })
         }
-        Qt.callLater(function() {
+    }
+    // The deferred placement belongs to this control and dies with it.
+    Timer {
+        interval: 0
+        running: true
+        onTriggered: {
             if (!bar || !bar.viewport) return
             // Keep the bar inside clipped pages. A positive gutter uses a
             // free margin beside the viewport.
@@ -61,8 +66,8 @@ ScrollBar {
                 insetLayer = layerComponent.createObject(viewport)
                 if (!insetLayer) return
                 insetLayer.z = Qt.binding(function() { return bar.z })
-                parent = insetLayer
-            } else parent = surface
+                bar.parent = insetLayer
+            } else bar.parent = surface
             active = Qt.binding(function() { return hovered || pressed || viewportHovered || !!(area && area.hovered) || !!(viewportArea && viewportArea.hovered) || !!(viewport && viewport.moving) })
             if (sideways) {
                 x = Qt.binding(function() { return inset ? 0 : Viewport.pointIn(viewport, bar.parent).x })
@@ -74,7 +79,7 @@ ScrollBar {
                 y = Qt.binding(function() { return inset ? 0 : Viewport.pointIn(viewport, bar.parent).y })
                 height = Qt.binding(function() { return Math.max(0, viewport.height - bar.reservedBottom) })
             }
-        })
+        }
     }
     active: hovered || pressed || viewportHovered || !!(area && area.hovered) || !!(viewportArea && viewportArea.hovered)
     Component.onDestruction: { if (area) area.destroy(); if (viewportArea) viewportArea.destroy(); if (insetLayer) insetLayer.destroy() }
