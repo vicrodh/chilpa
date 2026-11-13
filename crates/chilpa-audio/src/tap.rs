@@ -293,6 +293,10 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
         self.inner.drain(give_up)
     }
 
+    fn drain_observed(&mut self, give_up: &dyn Fn() -> bool, held: &dyn Fn(u64)) -> Result<(), SinkError> {
+        self.inner.drain_observed(give_up, held)
+    }
+
     fn flush(&mut self) -> Result<(), SinkError> {
         self.tap.1.reset();
         self.tap.reset_pcm();
@@ -565,5 +569,33 @@ mod tests {
         assert_eq!(normalize(&1.0f32.to_le_bytes(), SampleFormat::F32), 1.0);
         // The packed 24 bits go in three bytes: the top is 0x7FFFFF.
         assert!((normalize(&[0xFF, 0xFF, 0x7F], SampleFormat::S24Packed) - 1.0).abs() < 1e-4);
+    }
+
+    /// A device that says what it holds while it drains.
+    struct Reporting;
+
+    impl AudioSink for Reporting {
+        fn format(&self) -> StreamFormat {
+            StreamFormat::new(crate::format::SampleFormat::S16, 44_100, 2)
+        }
+        fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+            Ok(frames.len() / 4)
+        }
+        fn close(&mut self) -> Result<(), SinkError> {
+            Ok(())
+        }
+        fn drain_observed(&mut self, give_up: &dyn Fn() -> bool, held: &dyn Fn(u64)) -> Result<(), SinkError> {
+            held(7);
+            let _ = give_up();
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn a_tapped_sink_hands_on_what_the_device_says_it_holds_while_draining() {
+        let mut tapped = Tap::new().wrap(Reporting);
+        let told = RefCell::new(Vec::new());
+        tapped.drain_observed(&|| false, &|held| told.borrow_mut().push(held)).unwrap();
+        assert_eq!(*told.borrow(), [7]);
     }
 }
