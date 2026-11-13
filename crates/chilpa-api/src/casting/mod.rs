@@ -76,7 +76,6 @@ impl Chilpa {
         let transfer = self.now.playing && !self.now.paused;
         self.casting.advance();
         if self.casting.worker.is_none() { self.casting.worker = Some(Worker::new()); }
-        if let Some(player) = &self.player { player.stop(); }
         self.casting.order = self.player.as_ref().map(|p| {
             let order = p.order();
             if order.len() == self.queue.len().saturating_sub(self.base) {
@@ -84,8 +83,8 @@ impl Chilpa {
             } else { (0..self.queue.len()).collect() }
         }).unwrap_or_else(|| if self.casting.order.len() == self.queue.len() { self.casting.order.clone() } else { (0..self.queue.len()).collect() });
         self.base = 0;
-        let player = self.player.take();
-        self.forget_plays();
+        // The player goes with the connection: its plays are settled here.
+        let player = self.retire_player(crate::plays::Leaving::Abandoned);
         self.casting.selected = Some(device.clone()); self.casting.connected = false;
         self.casting.status = Status::default(); self.casting.error.clear(); self.casting.loaded = false;
         self.now.bit_perfect = false;

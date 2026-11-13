@@ -341,3 +341,167 @@ fn a_queue_replaced_under_a_play_takes_the_play_off_the_window_at_once() {
     let logged = logged(&mut api, at);
     assert_eq!((logged.events, logged.skips), (1, 1), "its listen is written all the same: {logged:?}");
 }
+
+/// A WAV of that many seconds of silence.
+fn silence(path: &Path, seconds: u32) {
+    let data = 44_100 * 4 * seconds;
+    let mut wave = b"RIFF".to_vec();
+    wave.extend((36 + data).to_le_bytes());
+    wave.extend(b"WAVEfmt ");
+    wave.extend(16u32.to_le_bytes());
+    wave.extend(1u16.to_le_bytes());
+    wave.extend(2u16.to_le_bytes());
+    wave.extend(44_100u32.to_le_bytes());
+    wave.extend(176_400u32.to_le_bytes());
+    wave.extend(4u16.to_le_bytes());
+    wave.extend(16u16.to_le_bytes());
+    wave.extend(b"data");
+    wave.extend(data.to_le_bytes());
+    wave.resize(wave.len() + data as usize, 0);
+    std::fs::write(path, wave).unwrap();
+}
+
+#[test]
+fn a_purge_reads_the_last_of_the_play_it_ends() {
+    std::env::set_var("CHILPA_CAPTURE_REALTIME", "1");
+    let folder = tempfile::tempdir().unwrap();
+    let (kept, gone) = (folder.path().join("kept.wav"), folder.path().join("gone.wav"));
+    silence(&kept, 10);
+    silence(&gone, 10);
+    let (kept, gone) = (kept.display().to_string(), gone.display().to_string());
+    let mut api = facade();
+    api.use_output("file:capture", false);
+    api.play_tracks(&[kept, gone.clone()], "file:capture", false);
+    let limit = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while api.poll().seconds < 0.3 && std::time::Instant::now() < limit {
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    assert!(api.now.seconds >= 0.3, "the first track plays");
+    let recent = ListenFilter { from: Some(crate::now_unix() - 10), ..Default::default() };
+    let before = api.listening_summary(&recent).unwrap();
+    // The second track's source is removed: the queue is rebuilt without it
+    // and the player made again. The play that was cut says so before it goes.
+    api.purge_queue(|path| path == gone);
+    let after = api.listening_summary(&recent).unwrap();
+    assert_eq!((after.events - before.events, after.skips - before.skips), (1, 1), "the stretch that was cut is a listen cut short, written as the purge returns: {after:?}");
+    assert!(api.plays.current().is_some(), "and the track that stayed plays on as a play of its own");
+    api.stop();
+    std::env::remove_var("CHILPA_CAPTURE_REALTIME");
+}
+
+/// Leaves the player as a hand-over to a renderer does, with `last` being
+/// what the player had said and nobody had read.
+fn abandon(api: &mut Chilpa, last: Vec<(u64, PlayerEvent)>) {
+    api.plays.retire(Fate::Abandoned);
+    api.leave_plays(last);
+    assert!(api.plays.is_empty(), "every play is settled as the player leaves");
+}
+
+fn broke(play_path: &str) -> PlayerEvent {
+    PlayerEvent::Skipped { generation: 0, attempt: 1, index: 0, path: PathBuf::from(play_path), message: "it broke".into(), played: Some(1) }
+}
+
+#[test]
+fn a_track_playing_as_its_player_leaves_is_a_transfer_with_or_without_its_close() {
+    // The stop's close arrives after the cut: the last progress stands.
+    let (a, at) = (171, 1_000_000_171);
+    let mut api = playing(a, "/music/handed-over.flac", at);
+    say(&mut api, a, PlayerEvent::Progress { frames: seconds(3), played: seconds(3) });
+    abandon(&mut api, Vec::new());
+    let late = logged(&mut api, at);
+    assert_eq!((late.events, late.skips, late.listened_ms), (1, 0, 3_000), "{late:?}");
+    // The close is read in the cut: the device's count stands.
+    let (b, at) = (172, 1_000_000_172);
+    let mut api = playing(b, "/music/handed-over-closed.flac", at);
+    say(&mut api, b, PlayerEvent::Progress { frames: seconds(3), played: seconds(3) });
+    abandon(&mut api, vec![(b, closed(seconds(2), How::Stopped)), (b, PlayerEvent::Stopped { frames: seconds(3) })]);
+    let read = logged(&mut api, at);
+    assert_eq!((read.events, read.skips, read.listened_ms), (1, 0, 2_000), "{read:?}");
+}
+
+#[test]
+fn a_track_known_to_have_broken_before_its_player_leaves_is_cut_short_either_way() {
+    for (play, at, close_in_the_cut) in [(181, 1_000_000_181, true), (182, 1_000_000_182, false)] {
+        let path = "/music/broke-then-handed-over.flac";
+        let mut api = playing(play, path, at);
+        say(&mut api, play, PlayerEvent::Progress { frames: seconds(3), played: seconds(3) });
+        // The last track broke and said so; its last audio is still playing
+        // out when the player is handed over, which cancels it.
+        say(&mut api, play, broke(path));
+        let last = if close_in_the_cut { vec![(play, closed(seconds(3), How::Broken))] } else { Vec::new() };
+        abandon(&mut api, last);
+        let logged = logged(&mut api, at);
+        assert_eq!((logged.events, logged.skips), (1, 1), "close read in the cut: {close_in_the_cut}: {logged:?}");
+    }
+}
+
+#[test]
+fn what_a_player_says_after_it_left_is_lost_and_the_listen_is_a_transfer() {
+    // The track breaks, or the device fails, in the moment after the cut.
+    let (a, at) = (191, 1_000_000_191);
+    let mut api = playing(a, "/music/broke-after-the-cut.flac", at);
+    say(&mut api, a, PlayerEvent::Progress { frames: seconds(3), played: seconds(3) });
+    abandon(&mut api, Vec::new());
+    say(&mut api, a, closed(seconds(3), How::Failed));
+    say(&mut api, a, PlayerEvent::Failed { message: "the device failed".into() });
+    let logged = logged(&mut api, at);
+    assert_eq!((logged.events, logged.skips), (1, 0), "the declared loss: {logged:?}");
+    assert!(api.now.error.is_empty(), "and nothing of it reaches the window");
+}
+
+#[test]
+fn a_failure_or_a_stop_read_before_the_player_leaves_is_written_as_without_leaving() {
+    let (a, at) = (201, 1_000_000_201);
+    let mut api = playing(a, "/music/failed-then-handed-over.flac", at);
+    say(&mut api, a, PlayerEvent::Progress { frames: seconds(3), played: seconds(3) });
+    say(&mut api, a, closed(seconds(3), How::Failed));
+    abandon(&mut api, vec![(a, PlayerEvent::Failed { message: "the device failed".into() })]);
+    let failed = logged(&mut api, at);
+    assert_eq!((failed.events, failed.skips), (1, 1), "{failed:?}");
+    // Stopped by the listener, and its ending not read yet, when the player leaves.
+    let (b, at) = (202, 1_000_000_202);
+    let mut api = playing(b, "/music/stopped-then-handed-over.flac", at);
+    say(&mut api, b, PlayerEvent::Progress { frames: seconds(3), played: seconds(3) });
+    api.stop();
+    abandon(&mut api, Vec::new());
+    let stopped = logged(&mut api, at);
+    assert_eq!((stopped.events, stopped.skips), (1, 1), "a stop asked for before is a stop: {stopped:?}");
+}
+
+#[test]
+fn a_listen_on_its_way_to_another_output_as_the_player_leaves_is_a_transfer() {
+    let (a, b, at) = (211, 212, 1_000_000_211);
+    let mut api = playing(a, "/music/moving-then-handed-over.flac", at);
+    say(&mut api, a, PlayerEvent::Progress { frames: seconds(3), played: seconds(3) });
+    relaunch(&mut api, Relaunch::Output, b);
+    abandon(&mut api, Vec::new());
+    let logged = logged(&mut api, at);
+    assert_eq!((logged.events, logged.skips, logged.listened_ms), (1, 0, 3_000), "{logged:?}");
+}
+
+/// The player is taken out of the facade in one place.
+#[test]
+fn nothing_else_empties_the_player() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut pending = vec![root.clone()];
+    let mut found = Vec::new();
+    while let Some(folder) = pending.pop() {
+        for entry in std::fs::read_dir(&folder).unwrap().flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                pending.push(path);
+                continue;
+            }
+            let name = path.strip_prefix(&root).unwrap().to_string_lossy().replace('\\', "/");
+            if !name.ends_with(".rs") || name.ends_with("_tests.rs") || name.ends_with("/tests.rs") || name == "plays.rs" {
+                continue;
+            }
+            let text = std::fs::read_to_string(&path).unwrap();
+            let code = text.split("#[cfg(test)]").next().unwrap_or_default();
+            if ["self.player.take()", "self.player = None", "mem::take(&mut self.player)"].iter().any(|taken| code.contains(taken)) {
+                found.push(name);
+            }
+        }
+    }
+    assert!(found.is_empty(), "the player is emptied outside plays.rs: {found:?}");
+}

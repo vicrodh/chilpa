@@ -1303,8 +1303,7 @@ impl Drop for Chilpa {
         self.catalog.genre_window(false); self.catalog.composer_window(false);
         self.appimage_updates.take();
         self.persist_queue_session();
-        if let Some(player) = self.player.as_mut() { player.shutdown(); }
-        if self.player.is_some() { self.poll(); }
+        self.retire_player(plays::Leaving::Drained);
         self.settle_plays();
         self.shutdown_cast();
         if let Some(natives) = self.catalog.natives() { natives.flush_playback(); }

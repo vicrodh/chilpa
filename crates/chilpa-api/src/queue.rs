@@ -433,8 +433,7 @@ impl Chilpa {
             .collect();
         let next_group = self.next_queue_group;
         self.clear_queue_state();
-        self.player = None;
-        self.forget_plays();
+        self.retire_player(crate::plays::Leaving::Drained);
         self.next_queue_group = next_group;
         if kept.is_empty() {
             self.now = NowPlaying::default();

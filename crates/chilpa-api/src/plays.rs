@@ -161,14 +161,50 @@ impl Chilpa {
         }
     }
 
-    /// The player left with its plays unread: what they hold is written as
-    /// it stands, none of it as cut short.
-    pub(crate) fn forget_plays(&mut self) {
-        while let Some(id) = self.plays.oldest() {
-            if let Some(play) = self.plays.get_mut(id) {
-                play.fate = Fate::Abandoned;
+    /// Takes the player out of the facade, which nothing else does, with
+    /// every play settled as it returns: nothing is read from it afterwards.
+    ///
+    /// Drained, the player is closed first, so each of its plays has said
+    /// how it ended and all of it is read. Abandoned, the player goes on to
+    /// whoever takes it: the play in front of the window leaves as abandoned,
+    /// the player is told to stop, and what it has said so far is read once
+    /// more. That read is the cut. What a play still holds after it is
+    /// written with what is known: a track nobody closed as a transfer, with
+    /// the count of its last progress, unless it was already known to have
+    /// broken. Whatever the player says after the cut is lost: a track that
+    /// breaks or a device that fails in that last moment is written as a
+    /// transfer too.
+    pub(crate) fn retire_player(&mut self, how: Leaving) -> Option<chilpa_core::player::Player> {
+        let mut player = self.player.take()?;
+        match how {
+            Leaving::Drained => {
+                self.listen.pending = None;
+                player.shutdown();
             }
-            self.settle_play(id, true);
+            Leaving::Abandoned => {
+                self.plays.retire(Fate::Abandoned);
+                player.stop();
+            }
         }
+        self.leave_plays(player.poll_tagged());
+        (how == Leaving::Abandoned).then_some(player)
     }
+
+    /// The last a player says of its plays, and then whatever they still
+    /// hold, oldest first, as if each had said how it ended.
+    pub(crate) fn leave_plays(&mut self, last: Vec<(u64, chilpa_core::player::PlayerEvent)>) {
+        for (play, event) in last {
+            self.apply_player_event(play, event, &mut false);
+        }
+        self.settle_plays();
+    }
+}
+
+/// How a player leaves the facade.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum Leaving {
+    /// It is closed and everything it said is read.
+    Drained,
+    /// It goes on somewhere else, with what plays still playing.
+    Abandoned,
 }
