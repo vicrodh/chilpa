@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::channel;
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -405,6 +405,13 @@ fn events_until_over(player: &Player, play: u64) -> Vec<(u64, PlayerEvent)> {
     panic!("the play never ended: {seen:?}");
 }
 
+fn started_in(events: &[(u64, PlayerEvent)], play: u64) -> Vec<usize> {
+    events.iter().filter_map(|(generation, event)| match event {
+        PlayerEvent::Started { index, .. } if *generation == play => Some(*index),
+        _ => None,
+    }).collect()
+}
+
 #[test]
 fn every_event_says_which_play_it_belongs_to() {
     let dir = folder("tagged");
@@ -422,4 +429,58 @@ fn every_event_says_which_play_it_belongs_to() {
         assert!(second_events.iter().any(|(_, event)| format!("{event:?}").starts_with(wanted)), "{wanted} is among them: {second_events:?}");
     }
     let _ = std::fs::remove_dir_all(dir);
+}
+
+/// A named pipe with an audio name. Opening it waits until something writes
+/// to it: the first receiver says the player is in that open, and what is
+/// sent on the sender lets it read bytes that are no audio and fail.
+#[cfg(unix)]
+fn pipe(dir: &Path, name: &str) -> (PathBuf, Receiver<()>, Sender<()>) {
+    let path = dir.join(name);
+    assert!(std::process::Command::new("mkfifo").arg(&path).status().unwrap().success());
+    let (opened, opened_seen) = channel();
+    let (go, go_seen) = channel::<()>();
+    let writer = path.clone();
+    std::thread::spawn(move || {
+        let mut pipe = std::fs::OpenOptions::new().write(true).open(writer).unwrap();
+        let _ = opened.send(());
+        if go_seen.recv().is_ok() {
+            let _ = pipe.write_all(&b"this is text and no audio at all. ".repeat(256));
+        }
+    });
+    (path, opened_seen, go)
+}
+
+/// Replaces a play that is stuck opening a track that will fail, by one of
+/// three tracks with the stop mark on `mark`; then the old open fails. Says
+/// which tracks of the new play started.
+#[cfg(unix)]
+fn replaced_while_failing_to_open(name: &str, old_has_a_removed_position: bool, mark: usize) -> Vec<usize> {
+    let dir = folder(name);
+    let (pipe, opened, go) = pipe(&dir, "01.flac");
+    let player = player();
+    if old_has_a_removed_position {
+        player.play_from_index(&[pipe, wave(&dir, "02.wav")], "fake", None, false, None, &[false, true], None);
+    } else {
+        player.play_from_index(&[pipe], "fake", None, false, None, &[], None);
+    }
+    opened.recv_timeout(Duration::from_secs(10)).expect("the old play is opening its first track");
+    player.stop_for_handoff();
+    let tracks = [wave(&dir, "c.wav"), wave(&dir, "d.wav"), wave(&dir, "e.wav")];
+    let new = player.play_from_index(&tracks, "fake", None, false, None, &[], Some(mark));
+    // Only now does the old open fail, with the new play's mark already set.
+    go.send(()).unwrap();
+    let events = events_until_over(&player, new);
+    assert!(matches!(events.last(), Some((_, PlayerEvent::Finished { .. }))), "the new play ended at its mark: {events:?}");
+    let _ = std::fs::remove_dir_all(dir);
+    started_in(&events, new)
+}
+
+#[cfg(unix)]
+#[test]
+fn a_play_on_its_way_out_does_not_spend_the_stop_mark_of_the_one_replacing_it() {
+    // The old play walks past a removed position that has the new mark's number.
+    assert_eq!(replaced_while_failing_to_open("mark-removed", true, 1), [0, 1], "the new play stops after its second track");
+    // The old play's failing track has the new mark's number.
+    assert_eq!(replaced_while_failing_to_open("mark-failing", false, 0), [0], "the new play stops after its first track");
 }

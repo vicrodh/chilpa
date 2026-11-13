@@ -208,12 +208,17 @@ impl Player {
                             }
                             controls_thread.start_index.store(start_index.unwrap_or(usize::MAX), Ordering::Release);
                             let started = std::time::Instant::now();
-                            // What this play says goes out under its generation.
+                            // What is this play's alone: its events and the
+                            // stop mark set for it.
                             let events = Events { to: events_tx.clone(), generation };
+                            let controls = crate::queue_playback::Controls {
+                                stop_after: controls_thread.stop_after.of(generation),
+                                ..controls_thread.clone()
+                            };
                             let result = play(
                                 &queue,
                                 &device,
-                                &controls_thread,
+                                &controls,
                                 &mut probe,
                                 &mut open,
                                 &events,
@@ -298,13 +303,15 @@ impl Player {
         // pause, play next, queue more -- comes after it, and the thread,
         // taking the order later, would have undone it. A disc image goes
         // in as its tracks, one entry each, like any album.
-        self.controls.stop_after.set(stop_after);
         let queue = crate::queue_playback::SharedQueue::new(crate::sacd_tracks::expand(paths));
         for (index, removed) in removed.iter().enumerate() { if *removed { queue.remove(index); } }
         if let Ok(mut current) = self.queue.lock() {
             *current = queue.clone();
         }
         let generation = self.generation.fetch_add(1, Ordering::AcqRel).wrapping_add(1);
+        // The mark is this play's: what it replaces, if it is still on its
+        // way out, cannot take it.
+        self.controls.stop_after.set_for(generation, stop_after);
         self.controls.pause.set(paused);
         chilpa_audio::diagnostics::trace(
             "player",

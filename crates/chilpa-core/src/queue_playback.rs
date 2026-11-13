@@ -240,15 +240,24 @@ impl RepeatMode {
     }
 }
 
-/// A queue position after which playback stops. `usize::MAX` means none.
-/// It is consumed when reached, so repeating or starting another order does
-/// not inherit an old stop point.
+/// A queue position after which playback stops, and the play it was set
+/// for. It is consumed when reached, so repeating or starting another order
+/// does not inherit an old stop point. A play takes only the mark set for
+/// it: one that is being replaced, still failing to open a track or walking
+/// past removed positions, cannot spend the mark of the play that replaces
+/// it.
 #[derive(Clone)]
-pub struct StopAfter(std::sync::Arc<std::sync::atomic::AtomicUsize>);
+pub struct StopAfter {
+    /// The play the mark is for, and the position; `NONE` for no mark.
+    mark: std::sync::Arc<std::sync::Mutex<(u64, usize)>>,
+    /// The play this handle takes the mark for. `None` takes any: a queue
+    /// driven directly, with no player handing plays over.
+    play: Option<u64>,
+}
 
 impl Default for StopAfter {
     fn default() -> Self {
-        Self(std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(Self::NONE)))
+        Self { mark: std::sync::Arc::new(std::sync::Mutex::new((0, Self::NONE))), play: None }
     }
 }
 
@@ -259,14 +268,32 @@ impl StopAfter {
         Self::default()
     }
 
+    fn lock(&self) -> std::sync::MutexGuard<'_, (u64, usize)> {
+        self.mark.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    /// Sets or clears the mark of the play it is already for.
     pub fn set(&self, index: Option<usize>) {
-        self.0.store(index.unwrap_or(Self::NONE), std::sync::atomic::Ordering::Relaxed);
+        self.lock().1 = index.unwrap_or(Self::NONE);
+    }
+
+    /// Sets or clears the mark, for `play` from now on.
+    pub fn set_for(&self, play: u64, index: Option<usize>) {
+        *self.lock() = (play, index.unwrap_or(Self::NONE));
+    }
+
+    /// The same mark, as `play` sees it: taken only while it is for it.
+    pub fn of(&self, play: u64) -> Self {
+        Self { mark: std::sync::Arc::clone(&self.mark), play: Some(play) }
     }
 
     pub fn take_at(&self, index: usize) -> bool {
-        self.0
-            .compare_exchange(index, Self::NONE, std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed)
-            .is_ok()
+        let mut mark = self.lock();
+        let mine = index != Self::NONE && mark.1 == index && self.play.is_none_or(|play| play == mark.0);
+        if mine {
+            mark.1 = Self::NONE;
+        }
+        mine
     }
 
     pub fn clear(&self) {
